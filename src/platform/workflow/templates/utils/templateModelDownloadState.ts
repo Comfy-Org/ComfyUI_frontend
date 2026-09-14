@@ -49,51 +49,74 @@ export function getTemplateModelDownloadIdentity({
   return JSON.stringify([name, directory])
 }
 
+function requestDownload(
+  state: TemplateModelDownloadState
+): TemplateModelDownloadState {
+  if (state.status === 'idle') return { status: 'queued', attempt: 1 }
+  if (state.status === 'failed') {
+    return { status: 'queued', attempt: state.attempt + 1 }
+  }
+  return state
+}
+
+function startDownload(
+  state: TemplateModelDownloadState
+): TemplateModelDownloadState {
+  if (state.status !== 'queued') return state
+  return { status: 'starting', attempt: state.attempt }
+}
+
+function updateDownloadProgress(
+  state: TemplateModelDownloadState,
+  event: Extract<TemplateModelDownloadEvent, { type: 'progress' }>
+): TemplateModelDownloadState {
+  if (state.status !== 'starting' && state.status !== 'downloading')
+    return state
+  return {
+    status: 'downloading',
+    attempt: state.attempt,
+    activity: event.activity,
+    receivedBytes: event.receivedBytes,
+    totalBytes: event.totalBytes,
+    fraction: event.fraction
+  }
+}
+
+function completeDownload(
+  state: TemplateModelDownloadState
+): TemplateModelDownloadState {
+  if (state.status !== 'starting' && state.status !== 'downloading')
+    return state
+  return { status: 'done', attempt: state.attempt }
+}
+
+function failDownload(
+  state: TemplateModelDownloadState,
+  reason: TemplateModelDownloadFailureReason
+): TemplateModelDownloadState {
+  if (!['queued', 'starting', 'downloading'].includes(state.status))
+    return state
+  return { status: 'failed', attempt: state.attempt, reason }
+}
+
 export function reduceTemplateModelDownloadState(
   state: TemplateModelDownloadState,
   event: TemplateModelDownloadEvent
 ): TemplateModelDownloadState {
-  if (event.type === 'request') {
-    if (state.status === 'idle') return { status: 'queued', attempt: 1 }
-    if (state.status === 'failed') {
-      return { status: 'queued', attempt: state.attempt + 1 }
-    }
-    return state
-  }
+  if (event.type === 'request') return requestDownload(state)
 
   if (event.attempt !== state.attempt) return state
 
   switch (event.type) {
     case 'started':
-      return state.status === 'queued'
-        ? { status: 'starting', attempt: state.attempt }
-        : state
+      return startDownload(state)
     case 'progress':
-      return state.status === 'starting' || state.status === 'downloading'
-        ? {
-            status: 'downloading',
-            attempt: state.attempt,
-            activity: event.activity,
-            receivedBytes: event.receivedBytes,
-            totalBytes: event.totalBytes,
-            fraction: event.fraction
-          }
-        : state
+      return updateDownloadProgress(state, event)
     case 'completed':
-      return state.status === 'starting' || state.status === 'downloading'
-        ? { status: 'done', attempt: state.attempt }
-        : state
+      return completeDownload(state)
     case 'error':
     case 'cancelled':
-      return state.status === 'queued' ||
-        state.status === 'starting' ||
-        state.status === 'downloading'
-        ? {
-            status: 'failed',
-            attempt: state.attempt,
-            reason: event.type
-          }
-        : state
+      return failDownload(state, event.type)
     default:
       return event satisfies never
   }
