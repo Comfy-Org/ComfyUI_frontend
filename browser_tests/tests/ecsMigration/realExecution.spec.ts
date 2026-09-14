@@ -9,6 +9,8 @@ import {
   expectNoVisibleErrors,
   trackVisibleErrors
 } from '@e2e/fixtures/utils/errorSurfaces'
+import { getGroupTitlePosition } from '@e2e/fixtures/utils/groupHelpers'
+import { openMoreOptions } from '@e2e/fixtures/utils/selectionToolbox'
 import { z } from 'zod'
 
 import { zTaskOutput } from '@/schemas/apiSchema'
@@ -29,6 +31,94 @@ type OutputEvidence = {
   width: number
   height: number
   rgb: [number, number, number]
+}
+
+type SanitySnapshot = {
+  nodes: Array<{
+    id: string
+    type: string
+    position: [number, number]
+    collapsed: boolean
+    widgets: unknown[]
+  }>
+  links: Array<{
+    originId: string
+    originSlot: number
+    targetId: string
+    targetSlot: number
+  }>
+  groups: Array<{
+    title: string
+    color: string | undefined
+    position: [number, number]
+    size: [number, number]
+  }>
+}
+
+async function getSanitySnapshot(
+  comfyPage: ComfyPage
+): Promise<SanitySnapshot> {
+  return comfyPage.page.evaluate(() => ({
+    nodes: window
+      .app!.graph.nodes.map((node) => ({
+        id: String(node.id),
+        type: node.type,
+        position: [node.pos[0], node.pos[1]] as [number, number],
+        collapsed: node.flags.collapsed ?? false,
+        widgets: (node.widgets ?? []).map((widget) => widget.value)
+      }))
+      .sort((left, right) => left.id.localeCompare(right.id)),
+    links: [...window.app!.graph.links.values()]
+      .map((link) => ({
+        originId: String(link.origin_id),
+        originSlot: link.origin_slot,
+        targetId: String(link.target_id),
+        targetSlot: link.target_slot
+      }))
+      .sort((left, right) =>
+        `${left.originId}:${left.originSlot}:${left.targetId}:${left.targetSlot}`.localeCompare(
+          `${right.originId}:${right.originSlot}:${right.targetId}:${right.targetSlot}`
+        )
+      ),
+    groups: window
+      .app!.graph.groups.map((group) => ({
+        title: group.title,
+        color: group.color,
+        position: [group.pos[0], group.pos[1]] as [number, number],
+        size: [group.size[0], group.size[1]] as [number, number]
+      }))
+      .sort((left, right) => left.title.localeCompare(right.title))
+  }))
+}
+
+async function marqueeNodes(comfyPage: ComfyPage, nodeIds: string[]) {
+  const { from, to } = await comfyPage.page.evaluate((ids) => {
+    const bounds = ids.map((id) => {
+      const node = window.app!.graph.nodes.find(
+        (candidate) => String(candidate.id) === id
+      )!
+      const [x, y, width, height] = node.getBounding()
+      const start = window.app!.canvasPosToClientPos([x, y])
+      const end = window.app!.canvasPosToClientPos([x + width, y + height])
+      return {
+        left: Math.min(start[0], end[0]),
+        top: Math.min(start[1], end[1]),
+        right: Math.max(start[0], end[0]),
+        bottom: Math.max(start[1], end[1])
+      }
+    })
+    return {
+      from: {
+        x: Math.min(...bounds.map(({ left }) => left)) - 20,
+        y: Math.min(...bounds.map(({ top }) => top)) - 20
+      },
+      to: {
+        x: Math.max(...bounds.map(({ right }) => right)) + 20,
+        y: Math.max(...bounds.map(({ bottom }) => bottom)) + 20
+      }
+    }
+  }, nodeIds)
+  await comfyPage.canvasOps.dragAndDrop(from, to)
 }
 
 async function readOutputImage(
@@ -311,9 +401,14 @@ test.describe(
     test('sanity operations end with a real artifact and no console, page or toast errors', async ({
       comfyPage
     }) => {
-      test.setTimeout(60_000)
+      test.setTimeout(90_000)
       const runtimeErrors = collectConsoleErrors(comfyPage.page)
       await trackVisibleErrors(comfyPage.page)
+      await comfyPage.settings.setSetting(
+        'Comfy.Canvas.LeftMouseClickBehavior',
+        'select'
+      )
+      await comfyPage.settings.setSetting('Comfy.Canvas.SelectionToolbox', true)
       await comfyPage.command.executeCommand('Comfy.NewBlankWorkflow')
       await comfyPage.searchBoxV2.ensureV2Search()
       await comfyPage.searchBoxV2.addNode('Empty Im', {
@@ -391,6 +486,158 @@ test.describe(
           originId: String(source.id),
           targetId: String(target.id)
         })
+
+      const sourceIds = [String(source.id), String(target.id)]
+      const beforeCopy = await getSanitySnapshot(comfyPage)
+      await marqueeNodes(comfyPage, sourceIds)
+      await expect
+        .poll(async () =>
+          (await comfyPage.nodeOps.getSelectedNodeIds()).map(String).sort()
+        )
+        .toEqual([...sourceIds].sort())
+      await comfyPage.clipboard.copy()
+      await comfyPage.page.mouse.move(700, 600)
+      await comfyPage.clipboard.paste()
+      const pastedIds = (await comfyPage.nodeOps.getSelectedNodeIds())
+        .map(String)
+        .sort()
+      expect(pastedIds).toHaveLength(2)
+      expect(pastedIds.every((id) => !sourceIds.includes(id))).toBe(true)
+      const afterCopy = await getSanitySnapshot(comfyPage)
+      const pastedByType = new Map(
+        afterCopy.nodes
+          .filter(({ id }) => pastedIds.includes(id))
+          .map((node) => [node.type, node])
+      )
+      for (const original of beforeCopy.nodes) {
+        expect(pastedByType.get(original.type)?.widgets).toEqual(
+          original.widgets
+        )
+      }
+      const pastedSource = pastedByType.get('EmptyImage')!
+      const pastedTarget = pastedByType.get('SaveImage')!
+      expect(afterCopy.links).toContainEqual({
+        originId: pastedSource.id,
+        originSlot: 0,
+        targetId: pastedTarget.id,
+        targetSlot: 0
+      })
+      await comfyPage.keyboard.delete()
+      await expect.poll(() => comfyPage.nodeOps.getNodeCount()).toBe(2)
+
+      const beforeView = await comfyPage.page.evaluate(() => ({
+        scale: window.app!.canvas.ds.scale,
+        offset: [...window.app!.canvas.ds.offset]
+      }))
+      await comfyPage.page.mouse.move(900, 650)
+      await comfyPage.page.mouse.down({ button: 'middle' })
+      await comfyPage.page.mouse.move(973, 691)
+      await comfyPage.page.mouse.up({ button: 'middle' })
+      await comfyPage.nextFrame()
+      const pannedView = await comfyPage.page.evaluate(() => ({
+        scale: window.app!.canvas.ds.scale,
+        offset: [...window.app!.canvas.ds.offset]
+      }))
+      expect(pannedView.offset).not.toEqual(beforeView.offset)
+      await comfyPage.page.mouse.move(900, 650)
+      await comfyPage.page.mouse.wheel(0, 200)
+      await comfyPage.nextFrame()
+      const zoomedScale = await comfyPage.page.evaluate(
+        () => window.app!.canvas.ds.scale
+      )
+      expect(zoomedScale).not.toBe(pannedView.scale)
+      await marqueeNodes(comfyPage, sourceIds)
+      const beforeDrag = await getSanitySnapshot(comfyPage)
+      await source.dragBy({ x: 111, y: 69 })
+      const afterDrag = await getSanitySnapshot(comfyPage)
+      const sourceBefore = beforeDrag.nodes.find(
+        ({ id }) => id === sourceIds[0]
+      )!
+      const sourceAfter = afterDrag.nodes.find(({ id }) => id === sourceIds[0])!
+      const dragDelta = [
+        sourceAfter.position[0] - sourceBefore.position[0],
+        sourceAfter.position[1] - sourceBefore.position[1]
+      ]
+      expect(dragDelta[0]).not.toBe(0)
+      expect(dragDelta[1]).not.toBe(0)
+      for (const id of sourceIds) {
+        const nodeBefore = beforeDrag.nodes.find((node) => node.id === id)!
+        const nodeAfter = afterDrag.nodes.find((node) => node.id === id)!
+        expect([
+          nodeAfter.position[0] - nodeBefore.position[0],
+          nodeAfter.position[1] - nodeBefore.position[1]
+        ]).toEqual(dragDelta)
+      }
+      expect(afterDrag.links).toEqual(beforeDrag.links)
+
+      await comfyPage.page.keyboard.press('Control+g')
+      await comfyPage.keyboard.press('Enter')
+      const groupTitle = await getGroupTitlePosition(comfyPage, 'Group')
+      await comfyPage.page.mouse.click(groupTitle.x, groupTitle.y)
+      const menu = await openMoreOptions(comfyPage)
+      await menu.getByText('Rename', { exact: true }).click()
+      await comfyPage.nodeOps.promptDialogInput.fill('Sanity Pair')
+      await comfyPage.nodeOps.promptDialogInput.press('Enter')
+      const renamedTitle = await getGroupTitlePosition(comfyPage, 'Sanity Pair')
+      await comfyPage.page.mouse.click(renamedTitle.x, renamedTitle.y)
+      const renamedMenu = await openMoreOptions(comfyPage)
+      await renamedMenu.getByText('Color', { exact: true }).click()
+      await comfyPage.page.getByTitle('Red').first().click()
+      const groupBefore = await comfyPage.page.evaluate(() => {
+        const group = window.app!.graph.groups.find(
+          ({ title }) => title === 'Sanity Pair'
+        )!
+        return { color: group.color, position: [...group.pos] }
+      })
+      expect(groupBefore.color).toBe('#A88')
+      const membersBefore = await getSanitySnapshot(comfyPage)
+      await comfyPage.canvasOps.dragGroup({
+        name: 'Sanity Pair',
+        deltaX: 110,
+        deltaY: 70
+      })
+      const membersAfter = await getSanitySnapshot(comfyPage)
+      const groupAfter = await comfyPage.page.evaluate(() => {
+        const group = window.app!.graph.groups.find(
+          ({ title }) => title === 'Sanity Pair'
+        )!
+        return [...group.pos]
+      })
+      const groupDelta = [
+        groupAfter[0] - groupBefore.position[0],
+        groupAfter[1] - groupBefore.position[1]
+      ]
+      expect(groupDelta[0]).not.toBe(0)
+      expect(groupDelta[1]).not.toBe(0)
+      for (const id of sourceIds) {
+        const nodeBefore = membersBefore.nodes.find((node) => node.id === id)!
+        const nodeAfter = membersAfter.nodes.find((node) => node.id === id)!
+        expect(nodeAfter.position[0] - nodeBefore.position[0]).toBeCloseTo(
+          groupDelta[0],
+          8
+        )
+        expect(nodeAfter.position[1] - nodeBefore.position[1]).toBeCloseTo(
+          groupDelta[1],
+          8
+        )
+      }
+
+      const draftSaveStartedAt = Date.now()
+      await source.toggleCollapse()
+      await comfyPage.workflow.waitForDraftIndexUpdatedSince(draftSaveStartedAt)
+      const beforeReload = await getSanitySnapshot(comfyPage)
+      await comfyPage.workflow.reloadAndWaitForApp()
+      expect(await getSanitySnapshot(comfyPage)).toEqual(beforeReload)
+      await expect
+        .poll(() =>
+          comfyPage.page.evaluate(() => {
+            const group = window.app!.graph.groups.find(
+              ({ title }) => title === 'Sanity Pair'
+            )
+            return group && { title: group.title, color: group.color }
+          })
+        )
+        .toEqual({ title: 'Sanity Pair', color: '#A88' })
 
       const output = await queueAndReadPng(comfyPage)
       expect(output).toMatchObject({ width: 64, height: 48 })
