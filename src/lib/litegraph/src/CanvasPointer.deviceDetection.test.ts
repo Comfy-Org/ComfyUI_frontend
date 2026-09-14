@@ -25,7 +25,7 @@
  *
  * @vitest-environment jsdom
  */
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { CanvasPointer } from '@/lib/litegraph/src/CanvasPointer'
 
@@ -40,10 +40,6 @@ describe('CanvasPointer Device Detection - Efficient Timestamp-Based TDD Tests',
     vi.spyOn(performance, 'now').mockReturnValue(0)
     vi.spyOn(global, 'setTimeout')
     vi.spyOn(global, 'clearTimeout')
-  })
-
-  afterEach(() => {
-    vi.clearAllTimers()
   })
 
   describe('Initial State', () => {
