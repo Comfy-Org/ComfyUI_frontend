@@ -2,7 +2,6 @@ import { useToast } from '@/components/ui/toast'
 import * as THREE from 'three'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-
 import type {
   EventManagerInterface,
   MaterialMode,

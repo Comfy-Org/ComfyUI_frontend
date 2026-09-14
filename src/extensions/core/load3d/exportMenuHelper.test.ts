@@ -141,6 +141,6 @@ describe('createExportMenuItems', () => {
       'Export failed:',
       expect.any(Error)
     )
-    expect(useToast().add).not.toHaveBeenCalled()
+    expect(useToast().success).not.toHaveBeenCalled()
   })
 })

@@ -1,5 +1,6 @@
 import { fromPartial } from '@total-typescript/shoehorn'
 
+import { useToast } from '@/components/ui/toast'
 import { useAuthStore } from '@/stores/authStore'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createMemoryHistory, createRouter } from 'vue-router'

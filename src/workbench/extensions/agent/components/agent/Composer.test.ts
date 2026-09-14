@@ -15,6 +15,14 @@ import { useToast } from '@/components/ui/toast'
 import * as tooltipConfig from '@/composables/useTooltipConfig'
 import { i18n } from '@/i18n'
 
+vi.hoisted(() => {
+  globalThis.ResizeObserver = class {
+    observe() {}
+    unobserve() {}
+    disconnect() {}
+  }
+})
+
 import { useAgentRunModeStore } from '../../stores/agent/agentRunModeStore'
 import Composer from './Composer.vue'
 import { setupInlinePromptEditorDom } from './composer/inlinePromptEditorTestSetup'
@@ -36,6 +44,10 @@ const fetchApi = vi.hoisted(() =>
 )
 vi.mock<unknown>(import('@/scripts/api'), () => ({
   api: { fetchApi, addEventListener: vi.fn() }
+}))
+
+vi.mock<unknown>(import('@/scripts/app'), () => ({
+  app: { canvas: {}, rootGraph: {} }
 }))
 
 function jsonResponse(status: number, body: unknown): Response {

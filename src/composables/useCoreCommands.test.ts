@@ -802,7 +802,7 @@ describe('useCoreCommands', () => {
         asset,
         'asset_browser'
       )
-      expect(useToast().add).not.toHaveBeenCalled()
+      expect(useToast().error).not.toHaveBeenCalled()
     })
 
     it('shows an error toast when the asset cannot start a drag', async () => {

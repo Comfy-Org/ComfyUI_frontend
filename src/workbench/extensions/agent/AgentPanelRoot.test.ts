@@ -2425,9 +2425,7 @@ describe('AgentPanelRoot workflow binding', () => {
     await userEvent.click(
       await screen.findByRole('menuitemradio', { name: 'scratch' })
     )
-    await vi.waitFor(() =>
-      expect(useToastStore().messagesToAdd).toHaveLength(1)
-    )
+    await vi.waitFor(() => expect(useToast().toasts).toHaveLength(1))
     expect(
       screen.getByRole('menuitemradio', { name: 'scratch' })
     ).not.toHaveAttribute('aria-disabled', 'true')
@@ -2454,9 +2452,7 @@ describe('AgentPanelRoot workflow binding', () => {
     await userEvent.click(
       await screen.findByRole('menuitemradio', { name: 'scratch' })
     )
-    await vi.waitFor(() =>
-      expect(useToastStore().messagesToAdd).toHaveLength(1)
-    )
+    await vi.waitFor(() => expect(useToast().toasts).toHaveLength(1))
     expect(scratch.isTemporary).toBe(false)
     expect(workflowStore.activeWorkflow?.path).toBe(current.path)
     expect(screen.getByRole('menuitemradio', { name: 'current' })).toBeChecked()
@@ -2547,7 +2543,7 @@ describe('AgentPanelRoot workflow binding', () => {
     await vi.waitFor(() =>
       expect(useAgentPanelStore().selectedWorkflow).toEqual(restored)
     )
-    expect(useToastStore().messagesToAdd).toHaveLength(0)
+    expect(useToast().toasts).toHaveLength(0)
     await sendFromComposer('continue editing')
 
     expect(bodies[0]).toMatchObject({
@@ -2594,7 +2590,7 @@ describe('AgentPanelRoot workflow binding', () => {
       expect(useAgentPanelStore().selectedWorkflow).toEqual(current)
       expect(workflowStore.activeWorkflow).toEqual(current)
       expect(workflowService.openWorkflow).not.toHaveBeenCalled()
-      expect(useToastStore().messagesToAdd).toHaveLength(0)
+      expect(useToast().toasts).toHaveLength(0)
     }
   )
 
@@ -2750,10 +2746,10 @@ describe('AgentPanelRoot workflow binding', () => {
       await screen.findAllByText('Historical prompt')
       if (outcome !== 'missing-id')
         await vi.waitFor(() =>
-          expect(useToastStore().messagesToAdd).toEqual(
+          expect(useToast().toasts).toEqual(
             expect.arrayContaining([
               expect.objectContaining({
-                detail: i18n.global.t('agent.targetNavigationUnavailable')
+                title: i18n.global.t('agent.targetNavigationUnavailable')
               })
             ])
           )
@@ -2880,9 +2876,7 @@ describe('AgentPanelRoot workflow binding', () => {
     await userEvent.click(
       await screen.findByRole('menuitemradio', { name: 'other' })
     )
-    await vi.waitFor(() =>
-      expect(useToastStore().messagesToAdd).toHaveLength(1)
-    )
+    await vi.waitFor(() => expect(useToast().toasts).toHaveLength(1))
     expect(screen.getByRole('menuitemradio', { name: 'current' })).toBeChecked()
   })
 
@@ -3580,10 +3574,10 @@ describe('AgentPanelRoot workflow binding', () => {
       })
 
       await vi.waitFor(() =>
-        expect(useToastStore().messagesToAdd).toContainEqual(
+        expect(useToast().toasts).toContainEqual(
           expect.objectContaining({
-            severity: 'warn',
-            detail: i18n.global.t('agent.targetNavigationUnavailable')
+            kind: 'warning',
+            title: i18n.global.t('agent.targetNavigationUnavailable')
           })
         )
       )
@@ -4407,9 +4401,9 @@ describe('AgentPanelRoot workflow binding', () => {
         await screen.findByRole('menuitem', { name: /scratch\s*Unsaved/ })
       )
       await vi.waitFor(() =>
-        expect(useToastStore().messagesToAdd).toEqual(
+        expect(useToast().toasts).toEqual(
           expect.arrayContaining([
-            expect.objectContaining({ detail: 'Save unavailable' })
+            expect.objectContaining({ description: 'Save unavailable' })
           ])
         )
       )
@@ -4700,10 +4694,10 @@ describe('AgentPanelRoot workflow binding', () => {
         screen.getByRole('button', { name: 'Open reference' })
       )
       await vi.waitFor(() =>
-        expect(useToastStore().messagesToAdd).toEqual(
+        expect(useToast().toasts).toEqual(
           expect.arrayContaining([
             expect.objectContaining({
-              detail: i18n.global.t('agent.targetNavigationUnavailable')
+              title: i18n.global.t('agent.targetNavigationUnavailable')
             })
           ])
         )

@@ -1,6 +1,7 @@
 import type { ComfyApp } from '@/scripts/app'
 import { useSettingStore } from '@/platform/settings/settingStore'
 
+import { useToast } from '@/components/ui/toast'
 import { useDialogStore } from '@/stores/dialogStore'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 

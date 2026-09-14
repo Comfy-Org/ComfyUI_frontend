@@ -4,7 +4,7 @@ import { storeToRefs } from 'pinia'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { i18n } from '@/i18n'
 import { reportError } from '@/platform/telemetry/reportError'
-import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useToast } from '@/components/ui/toast'
 import { useDialogService } from '@/services/dialogService'
 import { useDialogStore } from '@/stores/dialogStore'
 import { useAgentConsentStore } from '@/workbench/extensions/agent/stores/agent/agentConsentStore'
@@ -22,7 +22,7 @@ export function useAgentConsent() {
   const dialogStore = useDialogStore()
   const dialogService = useDialogService()
   const consentStore = useAgentConsentStore()
-  const toastStore = useToastStore()
+  const toastStore = useToast()
   const { isLoggedIn } = useCurrentUser()
   const { accepted, identity, isChecking } = storeToRefs(consentStore)
   const { t } = i18n.global
@@ -125,10 +125,8 @@ export function useAgentConsent() {
       reportError(error, {
         errorType: 'agent_consent_sign_in_failure'
       })
-      toastStore.add({
-        severity: 'error',
-        summary: t('g.error'),
-        detail: t('agent.consent.signInError')
+      toastStore.error(t('g.error'), {
+        description: t('agent.consent.signInError')
       })
       return null
     }
@@ -142,10 +140,8 @@ export function useAgentConsent() {
       reportError(error, {
         errorType: 'agent_consent_setting_write_failure'
       })
-      toastStore.add({
-        severity: 'error',
-        summary: t('g.error'),
-        detail: t('agent.consent.saveError')
+      toastStore.error(t('g.error'), {
+        description: t('agent.consent.saveError')
       })
       return null
     }
@@ -161,10 +157,8 @@ export function useAgentConsent() {
       reportError(error, {
         errorType: 'agent_consent_setting_load_failure'
       })
-      toastStore.add({
-        severity: 'error',
-        summary: t('g.error'),
-        detail: t('agent.consent.loadError')
+      toastStore.error(t('g.error'), {
+        description: t('agent.consent.loadError')
       })
       return null
     }

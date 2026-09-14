@@ -457,8 +457,17 @@ describe('useAuthActions.reportError', () => {
 
     reportError(new FirebaseError(code, 'raw firebase'))
 
-    expect(mockToastStore.add).toHaveBeenCalledWith(
-      expect.objectContaining({ detail: `auth.errors.${code}` })
+    const warningCodes: readonly string[] = [
+      AuthErrorCodes.POPUP_CLOSED_BY_USER,
+      AuthErrorCodes.EXPIRED_POPUP_REQUEST,
+      AuthErrorCodes.POPUP_BLOCKED
+    ]
+    const notify = warningCodes.includes(code)
+      ? mockToastStore.warning
+      : mockToastStore.error
+    expect(notify).toHaveBeenCalledWith(
+      expect.any(String),
+      expect.objectContaining({ description: `auth.errors.${code}` })
     )
     expect(mockToastErrorHandler).not.toHaveBeenCalled()
   })
@@ -470,9 +479,10 @@ describe('useAuthActions.reportError', () => {
 
       reportError(new FirebaseError(code, 'raw firebase'))
 
-      expect(mockToastStore.add).toHaveBeenCalledWith(
+      expect(mockToastStore.error).toHaveBeenCalledWith(
+        'g.error',
         expect.objectContaining({
-          detail: 'auth.errors.auth/invalid-credential'
+          description: 'auth.errors.auth/invalid-credential'
         })
       )
     }
@@ -557,7 +567,7 @@ describe('useAuthActions.reportError', () => {
     reportError(networkError)
 
     expect(mockToastErrorHandler).toHaveBeenCalledWith(networkError)
-    expect(mockToastStore.add).not.toHaveBeenCalled()
+    expect(mockToastStore.toasts).toHaveLength(0)
   })
 
   it.for(popupPermissionCodes)(

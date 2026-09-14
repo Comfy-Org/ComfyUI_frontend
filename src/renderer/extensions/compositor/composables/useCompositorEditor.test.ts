@@ -38,10 +38,6 @@ function mountComposable(): ReturnType<typeof useCompositorEditor> {
   return composable
 }
 
-beforeEach(() => {
-  vi.mocked(useToast().add).mockImplementation(() => undefined)
-})
-
 describe('useCompositorEditor', () => {
   const node = { id: toNodeId(1) } as unknown as LGraphNode
 
@@ -82,7 +78,7 @@ describe('useCompositorEditor', () => {
 
     mountComposable().openCompositorEditor(node)
 
-    expect(vi.mocked(useToast().add)).not.toHaveBeenCalled()
+    expect(vi.mocked(useToast().info)).not.toHaveBeenCalled()
     expect(vi.mocked(useDialogStore().showDialog)).toHaveBeenCalledWith(
       expect.objectContaining({
         key: 'global-layer-editor',

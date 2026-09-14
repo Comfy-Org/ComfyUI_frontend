@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 
+import type * as distribution from '@/platform/distribution/types'
 import { useBottomPanelStore } from '@/stores/workspace/bottomPanelStore'
 import type { BottomPanelExtension } from '@/types/extensionTypes'
 
@@ -42,8 +43,10 @@ vi.mock(import('@/composables/bottomPanelTabs/useTerminalTabs'), () => ({
 
 const mockData = vi.hoisted(() => ({ isDesktop: false }))
 
-vi.mock(import('@/platform/distribution/types'), async (importOriginal) => ({
-  ...(await importOriginal()),
+vi.mock(import('@/platform/distribution/types'), (): typeof distribution => ({
+  DISTRIBUTION: 'localhost',
+  isCloud: false,
+  isNightly: false,
   get isDesktop() {
     return mockData.isDesktop
   }
