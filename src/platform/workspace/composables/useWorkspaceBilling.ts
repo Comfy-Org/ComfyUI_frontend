@@ -535,11 +535,14 @@ export function useWorkspaceBilling(): BillingState & BillingActions {
     }
   }
 
-  async function topup(amountCents: number): Promise<CreateTopupResponse> {
+  async function topup(
+    amountCents: number,
+    idempotencyKey?: string
+  ): Promise<CreateTopupResponse> {
     isLoading.value = true
     error.value = null
     try {
-      return await workspaceApi.createTopup(amountCents)
+      return await workspaceApi.createTopup(amountCents, idempotencyKey)
     } catch (err) {
       error.value =
         err instanceof Error ? err.message : 'Failed to top up credits'
