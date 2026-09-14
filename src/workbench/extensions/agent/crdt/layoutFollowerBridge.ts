@@ -69,6 +69,15 @@ export class LayoutFollowerBridge extends EventTarget {
    * never on the first successful open.
    */
   private sentWorkflowId: string | null = null
+  /**
+   * A schema-mismatch refusal can answer an older same-workflow subscribe after
+   * a newer attempt already left the transport. The wire protocol has no
+   * attempt id, so retain that workflow as an inbound-only recovery candidate:
+   * direct writes remain closed while REALITY is null, the composable's
+   * mismatch gate suppresses retries, and only a later readable update proves
+   * the overlapping attempt was accepted.
+   */
+  private recoverableRefusalWorkflowId: string | null = null
   /** Set once a merged doc failed the KA-11 read gate; never rendered after. */
   private schemaError: FollowerSchemaError | null = null
   /**
@@ -157,6 +166,8 @@ export class LayoutFollowerBridge extends EventTarget {
     const lineage = this.lineageWorkflowId
     this.lineageWorkflowId = workflowId
     this.desiredWorkflowId = workflowId
+    if (this.recoverableRefusalWorkflowId !== workflowId)
+      this.recoverableRefusalWorkflowId = null
     if (lineage !== null && lineage !== workflowId) {
       this.dropDocForNewLineage()
       this.dispatchEvent(
@@ -189,6 +200,7 @@ export class LayoutFollowerBridge extends EventTarget {
       trySend(() => this.client.subscribe(desired, this.follower.stateVector()))
     ) {
       this.sentWorkflowId = desired
+      this.recoverableRefusalWorkflowId = null
       this.lastSeq = null
       this.ackSeq = null
       this.catchUpPending = false
@@ -202,6 +214,7 @@ export class LayoutFollowerBridge extends EventTarget {
 
   unsubscribe(): void {
     this.desiredWorkflowId = null
+    this.recoverableRefusalWorkflowId = null
     this.reconcile()
   }
 
@@ -227,6 +240,7 @@ export class LayoutFollowerBridge extends EventTarget {
       this.client.removeEventListener('doc_ops_result', this.forwardFrame)
       this.desiredWorkflowId = null
       this.sentWorkflowId = null
+      this.recoverableRefusalWorkflowId = null
       this.followerDoc.destroy()
     }
   }
@@ -234,7 +248,12 @@ export class LayoutFollowerBridge extends EventTarget {
   private readonly onDocUpdate: EventListener = (event) => {
     if (!(event instanceof CustomEvent)) return
     const update = event.detail as DocUpdate
-    if (update.workflowId !== this.sentWorkflowId) return
+    const recoversRefusedAttempt =
+      this.sentWorkflowId === null &&
+      update.workflowId === this.recoverableRefusalWorkflowId &&
+      update.workflowId === this.desiredWorkflowId
+    if (update.workflowId !== this.sentWorkflowId && !recoversRefusedAttempt)
+      return
 
     // The first incompatible frame is already in the Y.Doc. Same-lineage
     // updates cannot remove those CRDT bytes, so keep the read gate latched
@@ -307,6 +326,10 @@ export class LayoutFollowerBridge extends EventTarget {
       return
     }
 
+    if (recoversRefusedAttempt) {
+      this.sentWorkflowId = update.workflowId
+      this.recoverableRefusalWorkflowId = null
+    }
     this.dispatchEvent(new CustomEvent('doc_update', { detail: update }))
   }
 
@@ -333,6 +356,7 @@ export class LayoutFollowerBridge extends EventTarget {
     this.followerDoc.destroy()
     this.followerDoc = new FollowerDoc()
     this.schemaError = null
+    this.recoverableRefusalWorkflowId = null
   }
 
   /**
@@ -346,19 +370,32 @@ export class LayoutFollowerBridge extends EventTarget {
    * but only an applied update ever moves {@link lastSeq}. The ack therefore
    * never rewinds a baseline established by an update that arrived first.
    *
-   * `ok: false` means the server refused: clearing REALITY re-opens
-   * the intent/reality disagreement so the next `reconcile()` (any status
-   * frame) retries, instead of the bridge holding a subscription that does not
-   * exist server-side and going silently deaf.
+   * `ok: false` means the server refused: clearing REALITY re-opens the
+   * intent/reality disagreement. A schema mismatch also preserves an
+   * inbound-only recovery candidate because an overlapping same-workflow
+   * attempt may still have been accepted; only a readable update restores
+   * REALITY. Other refusals use the ordinary bounded retry path.
    */
   private readonly onDocSubscribed: EventListener = (event) => {
     if (!(event instanceof CustomEvent)) return
     const subscribed = event.detail as DocSubscribed
-    if (subscribed.workflowId !== this.sentWorkflowId) return
+    const acceptsRecoveryAck =
+      subscribed.ok &&
+      this.sentWorkflowId === null &&
+      subscribed.workflowId === this.recoverableRefusalWorkflowId &&
+      subscribed.workflowId === this.desiredWorkflowId
+    if (subscribed.workflowId !== this.sentWorkflowId && !acceptsRecoveryAck)
+      return
     if (subscribed.ok) {
       this.ackSeq = subscribed.seq ?? null
       this.catchUpPending = this.ackSeq !== null
-    } else this.sentWorkflowId = null
+    } else {
+      this.recoverableRefusalWorkflowId =
+        subscribed.code === 'schema_version_mismatch'
+          ? subscribed.workflowId
+          : null
+      this.sentWorkflowId = null
+    }
     this.dispatchEvent(new CustomEvent(event.type, { detail: event.detail }))
   }
 
