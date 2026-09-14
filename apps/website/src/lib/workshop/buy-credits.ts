@@ -13,6 +13,11 @@ export class TopUpCheckoutError extends Error {
   }
 }
 
+// Stripe serves the hosted Checkout page from its default host or from an
+// account's configured custom checkout domain. The Comfy Stripe account uses
+// checkout.comfy.org in every environment, so both are trusted destinations.
+const CHECKOUT_HOSTS = new Set(['checkout.stripe.com', 'checkout.comfy.org'])
+
 const zTopUpCheckout = z.object({
   checkout_url: z
     .string()
@@ -22,7 +27,7 @@ const zTopUpCheckout = z.object({
         const url = new URL(raw)
         return (
           url.protocol === 'https:' &&
-          url.hostname === 'checkout.stripe.com' &&
+          CHECKOUT_HOSTS.has(url.hostname) &&
           url.port === '' &&
           url.username === '' &&
           url.password === ''
