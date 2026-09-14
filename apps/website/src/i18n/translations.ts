@@ -19,8 +19,8 @@ const translations = {
     'zh-CN': '浏览模型 - Comfy'
   },
   'workshop.meta.description': {
-    en: 'Browse and run partner models and curated workflows on Comfy.',
-    'zh-CN': '在 Comfy 上浏览并运行合作伙伴模型和精选工作流。'
+    en: 'Browse and run the latest AI image, video and audio models on Comfy.',
+    'zh-CN': '在 Comfy 上浏览并运行最新的 AI 图像、视频和音频模型。'
   },
   'workshop.hero.eyebrow': { en: 'Models', 'zh-CN': '模型' },
   'workshop.hero.heading': {
@@ -28,8 +28,8 @@ const translations = {
     'zh-CN': '运行顶尖模型'
   },
   'workshop.hero.subtitle': {
-    en: 'Partner models, ready to run. Nothing to install.',
-    'zh-CN': '合作伙伴模型，即开即用。无需安装配置。'
+    en: 'The latest AI models, ready to run. Nothing to install.',
+    'zh-CN': '最新 AI 模型，即开即用。无需安装配置。'
   },
   'workshop.search.label': {
     en: 'Search models, providers, and capabilities',
