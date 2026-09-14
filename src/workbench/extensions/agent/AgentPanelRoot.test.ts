@@ -84,8 +84,14 @@ const ws = vi.hoisted(() => {
   const emit = (type: string, data?: unknown): void => {
     for (const listener of listeners.get(type) ?? []) listener({ detail: data })
   }
+  // The CRDT document client accepts only a real CustomEvent (it discards
+  // anything else as an invalid frame), so document frames need this one.
+  const emitEvent = (type: string, data?: unknown): void => {
+    const event = new CustomEvent(type, { detail: data })
+    for (const listener of listeners.get(type) ?? []) listener(event)
+  }
   const clear = (): void => listeners.clear()
-  return { add, remove, emit, clear }
+  return { add, remove, emit, emitEvent, clear }
 })
 
 vi.mock<unknown>(import('@/scripts/api'), () => ({
@@ -267,6 +273,7 @@ import { useAgentConversationStore } from './stores/agent/agentConversationStore
 import { useAgentPanelStore } from './stores/agent/agentPanelStore'
 import { useAgentComposerStore } from './stores/agent/agentComposerStore'
 import { useAgentWorkflowTabBindingStore } from './stores/agent/agentWorkflowTabBindingStore'
+import { SUBSCRIBE_RETRY_MAX_ATTEMPTS } from './crdt/agentCrdtDocLifecycle'
 
 import AgentPanelRoot from './AgentPanelRoot.vue'
 
@@ -4818,6 +4825,77 @@ describe('AgentPanelRoot workflow binding', () => {
     expect(bodies[0]).not.toHaveProperty('draft')
     expect(bodies[0]).not.toHaveProperty('open_tabs')
     expect(bodies[0]).not.toHaveProperty('current_tab')
+  })
+
+  describe('draft seed against the follower (#17469)', () => {
+    // The follower's intent (status.workflowId) withholds the seed: a live
+    // document is the source of truth and a versionless draft would overwrite
+    // it. That guard must lift once the follower can never deliver that
+    // document, or every later turn sends no draft against no document.
+    async function bindAndSettle(): Promise<unknown[]> {
+      makeTab('wf-42')
+      const bodies = mockMessagesEndpoint('wf-42')
+      await renderAndSend('first message')
+      ws.emit('agent_message_done', { message_id: 'm-1', thread_id: 'th-1' })
+      await screen.findByRole('button', { name: 'Send' })
+      return bodies
+    }
+
+    function refuseSubscribe(): void {
+      ws.emitEvent('doc_subscribed', {
+        v: 1,
+        workflow_id: 'wf-42',
+        ok: false,
+        code: 'not_found'
+      })
+    }
+
+    it('seeds the draft again once the follower has given up on a refused subscribe', async () => {
+      vi.useFakeTimers({ shouldAdvanceTime: true })
+      const bodies = await bindAndSettle()
+
+      for (let attempt = 0; attempt < SUBSCRIBE_RETRY_MAX_ATTEMPTS; attempt++) {
+        refuseSubscribe()
+        await vi.advanceTimersByTimeAsync(500 * 2 ** attempt)
+      }
+      refuseSubscribe()
+
+      await sendFromComposer('second message')
+
+      expect(bodies[1]).toMatchObject({
+        workflow_id: 'wf-42',
+        draft: { content: { id: 'wf-42' } }
+      })
+    })
+
+    it('keeps withholding the draft while a refused subscribe still has a retry behind it', async () => {
+      vi.useFakeTimers({ shouldAdvanceTime: true })
+      const bodies = await bindAndSettle()
+
+      refuseSubscribe()
+
+      await sendFromComposer('second message')
+
+      expect(bodies[1]).toHaveProperty('workflow_id', 'wf-42')
+      expect(bodies[1]).not.toHaveProperty('draft')
+    })
+
+    it('keeps withholding the draft across an ordinary reconnect', async () => {
+      const bodies = await bindAndSettle()
+      ws.emitEvent('doc_subscribed', {
+        v: 1,
+        workflow_id: 'wf-42',
+        ok: true,
+        seq: 1
+      })
+
+      ws.emit('reconnected')
+
+      await sendFromComposer('second message')
+
+      expect(bodies[1]).toHaveProperty('workflow_id', 'wf-42')
+      expect(bodies[1]).not.toHaveProperty('draft')
+    })
   })
 
   it('keeps the editable target when viewing an unbound tab without current_tab fallback', async () => {

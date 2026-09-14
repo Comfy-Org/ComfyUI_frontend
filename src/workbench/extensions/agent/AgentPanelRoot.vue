@@ -439,9 +439,18 @@ function targetWorkflowDraft(origin?: TurnOrigin): DraftSnapshot | undefined {
   // caught up silently overwrites whatever the agent just built. The guard is
   // the follower's INTENT (the document it is bound to), not its connection
   // state: a reconnect drops `connected` for a moment, and a turn sent in that
-  // window must not seed either.
+  // window must not seed either. Intent alone is not enough, though: once the
+  // follower has given up on that document (the subscribe was refused for
+  // good, or the doc is unreadable) nothing will ever arrive for it, and a
+  // turn that still withholds the seed leaves the canvas stranded until a
+  // reload. A terminal follower therefore seeds again; the snapshot is then
+  // the only state the agent can build on.
   const documentId = cloudIdFor(target)
-  if (documentId !== undefined && crdtStatus.value.workflowId === documentId) {
+  if (
+    documentId !== undefined &&
+    crdtStatus.value.workflowId === documentId &&
+    crdtStatus.value.terminal === null
+  ) {
     return undefined
   }
   if (target.path === workflowStore.activeWorkflow?.path)
