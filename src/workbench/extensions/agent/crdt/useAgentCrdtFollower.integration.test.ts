@@ -1,6 +1,5 @@
 import { mint } from '@comfyorg/comfy-multi-player'
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
+import { getActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, ref } from 'vue'
 import * as Y from 'yjs'
@@ -39,11 +38,7 @@ const apiState = vi.hoisted(() => {
   }
 })
 
-vi.mock(import('@/scripts/api'), async (importOriginal) => {
-  const actual = await importOriginal()
-  Object.assign(actual.api, apiState.api)
-  return actual
-})
+vi.mock<unknown>(import('@/scripts/api'), () => ({ api: apiState.api }))
 
 const WORKFLOW_ID = 'wf-rejected-projection'
 const scope = {
@@ -75,8 +70,6 @@ describe('useAgentCrdtFollower projection recovery', () => {
   })
 
   it('loses a rejected projection when resubscription has no host delta', () => {
-    const pinia = createTestingPinia({ stubActions: false })
-    setActivePinia(pinia)
     let scopeAvailable = true
     const mutations = createGraphMutations({
       getScope: () => (scopeAvailable ? scope : null),
@@ -99,7 +92,7 @@ describe('useAgentCrdtFollower projection recovery', () => {
           return () => null
         }
       }),
-      { global: { plugins: [pinia] } }
+      { global: { plugins: [getActivePinia()!] } }
     )
 
     try {
