@@ -158,7 +158,7 @@ function remove(index: number) {
     :aria-label="field.label"
     :class="
       cn(
-        'has-[:focus-visible]:ring-primary-comfy-yellow flex min-w-0 flex-col gap-3 rounded-2xl has-focus-visible:ring-2',
+        'has-focus-visible:ring-primary-comfy-yellow flex min-w-0 flex-col gap-3 rounded-2xl has-focus-visible:ring-2',
         disabled && 'opacity-50'
       )
     "
