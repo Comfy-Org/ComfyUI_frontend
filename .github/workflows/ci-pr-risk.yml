@@ -71,11 +71,34 @@ jobs:
               if (phases[0].summary !== phases[1].summary) throw new Error('Risk-label change altered policy advice')
               results.push({ pr: pull_number, sha, expected: expected.verdict, metadataFailure: failure.html_url, phases })
             }
-            writeFileSync('verification-17526.json', JSON.stringify({ candidate, results }, null, 2))
+            const runtimeNumber = prs.find(number => results.find(result => result.pr === number)?.expected === 'needs-flag')
+            const { data: runtimePull } = await github.rest.pulls.get({ ...context.repo, pull_number: runtimeNumber })
+            const originalBody = runtimePull.body || ''
+            const bodyEditResults = []
+            try {
+              for (const phase of [
+                { name: 'declaration-added', body: `${originalBody}\n\n## Feature flag\n\n- **Flag**: verification_flag\n`, verdict: 'review-required' },
+                { name: 'declaration-removed', body: originalBody, verdict: 'needs-flag' }
+              ]) {
+                const { data: before } = await github.rest.checks.listForRef({ ...context.repo, ref: runtimePull.head.sha, check_name: 'feature-flag-policy', filter: 'all', per_page: 100 })
+                const previousIds = new Set(before.check_runs.map(check => check.id))
+                await github.rest.pulls.update({ ...context.repo, pull_number: runtimeNumber, body: phase.body })
+                execFileSync('node', ['--experimental-strip-types', 'scripts/cicd/feature-flag-policy.ts'], { env: { ...process.env, PR_NUMBER: String(runtimeNumber) }, stdio: 'inherit' })
+                const { data: after } = await github.rest.checks.listForRef({ ...context.repo, ref: runtimePull.head.sha, check_name: 'feature-flag-policy', filter: 'all', per_page: 100 })
+                const check = after.check_runs.filter(item => !previousIds.has(item.id)).sort((a, b) => b.id - a.id)[0]
+                if (!check || check.head_sha !== runtimePull.head.sha || check.conclusion !== 'neutral' || check.output.title !== `Feature flag advice: ${phase.verdict}`) throw new Error(`Unexpected body-edit result: ${phase.name}`)
+                const { data: current } = await github.rest.pulls.get({ ...context.repo, pull_number: runtimeNumber })
+                if (current.head.sha !== runtimePull.head.sha || current.body !== phase.body) throw new Error('Fixture changed during body-edit verification')
+                bodyEditResults.push({ phase: phase.name, pr: runtimeNumber, sha: check.head_sha, conclusion: check.conclusion, verdict: phase.verdict, url: check.html_url })
+              }
+            } finally {
+              await github.rest.pulls.update({ ...context.repo, pull_number: runtimeNumber, body: originalBody })
+            }
+            writeFileSync('verification-17526.json', JSON.stringify({ candidate, results, bodyEditResults, trigger: 'workflow_dispatch; production pull_request_target not exercised' }, null, 2))
             await core.summary.addHeading('PR #17526 disposable verification: PASS').addRaw(`Candidate: ${candidate}\n\n`).addTable([
               ['PR', 'Expected advice', 'risk:high + failed metadata', 'risk:medium + failed metadata'],
               ...results.map(r => [`#${r.pr}`, r.expected, r.phases[0].conclusion, r.phases[1].conclusion])
-            ]).addRaw('\nAll policy checks were read back from GitHub on the fixture head SHA. No fixture was merged.\n').write()
+            ]).addTable([['Body edit', 'Expected', 'Conclusion'], ...bodyEditResults.map(r => [r.phase, r.verdict, r.conclusion])]).addRaw('\nChecks were read back on each fixture head SHA. Body edits were verified on the same SHA. This run uses workflow_dispatch, not the production pull_request_target trigger. No fixture was merged.\n').write()
       - uses: actions/upload-artifact@v6
         with:
           name: verification-17526
