@@ -52,7 +52,7 @@ export const teamCreditTiers: readonly TeamCreditTier[] = [
     yearlyPrice: 2000,
     eduMonthlyPrice: 2125,
     eduYearlyPrice: 1875,
-    videos: 47830
+    videos: 47875
   }
 ]
 

@@ -1,3 +1,5 @@
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
+import { useDialogStore } from '@/stores/dialogStore'
 import { render, screen, waitFor } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -8,9 +10,6 @@ import InviteMemberDialogContent from './InviteMemberDialogContent.vue'
 import type { WorkspacePendingInvite } from '@/platform/workspace/stores/teamWorkspaceStore'
 
 const {
-  mockCreateInvite,
-  mockFetchPendingInvites,
-  mockCloseDialog,
   mockToastAdd,
   mockTrackInviteSent,
   mockTrackInviteFailed,
@@ -20,9 +19,6 @@ const {
 } = vi.hoisted(() => {
   const nullableNumber = (value: number | null) => ({ value })
   return {
-    mockCreateInvite: vi.fn(),
-    mockFetchPendingInvites: vi.fn(),
-    mockCloseDialog: vi.fn(),
     mockToastAdd: vi.fn(),
     mockTrackInviteSent: vi.fn(),
     mockTrackInviteFailed: vi.fn(),
@@ -32,7 +28,7 @@ const {
   }
 })
 
-vi.mock('@/composables/billing/useBillingContext', () => ({
+vi.mock<unknown>(import('@/composables/billing/useBillingContext'), () => ({
   useBillingContext: () => ({
     fetchStatus: mockFetchStatus,
     maxSeats: mockMaxSeats,
@@ -40,32 +36,21 @@ vi.mock('@/composables/billing/useBillingContext', () => ({
   })
 }))
 
-vi.mock('@/platform/workspace/stores/teamWorkspaceStore', () => ({
-  useTeamWorkspaceStore: () => ({
-    createInvite: mockCreateInvite,
-    fetchPendingInvites: mockFetchPendingInvites,
-    pendingInvites: []
-  })
-}))
-
-vi.mock('@/platform/telemetry', () => ({
+vi.mock<unknown>(import('@/platform/telemetry'), () => ({
   useTelemetry: () => ({
     trackWorkspaceInviteSent: mockTrackInviteSent,
     trackWorkspaceInviteFailed: mockTrackInviteFailed
   })
 }))
 
-vi.mock('@/stores/dialogStore', () => ({
-  useDialogStore: () => ({
-    closeDialog: mockCloseDialog
+vi.mock<unknown>(
+  import('primevue/usetoast'), // eslint-disable-line primevue-removal/no-imports
+  () => ({
+    useToast: () => ({
+      add: mockToastAdd
+    })
   })
-}))
-
-vi.mock('primevue/usetoast', () => ({
-  useToast: () => ({
-    add: mockToastAdd
-  })
-}))
+)
 
 const i18n = createI18n({
   legacy: false,
@@ -100,14 +85,20 @@ function inviteButton() {
   return screen.getByRole('button', { name: 'workspacePanel.invite' })
 }
 
+beforeEach(() => {
+  Object.assign(useTeamWorkspaceStore(), { pendingInvites: [] })
+  vi.mocked(useDialogStore().closeDialog).mockImplementation(() => {})
+})
+
 describe('InviteMemberDialogContent', () => {
   beforeEach(() => {
-    mockFetchPendingInvites.mockResolvedValue([])
+    vi.useRealTimers()
+    vi.mocked(useTeamWorkspaceStore().fetchPendingInvites).mockResolvedValue([])
     mockFetchStatus.mockResolvedValue(undefined)
     mockMaxSeats.value = 73
     mockOccupiedSeats.value = 0
-    mockCreateInvite.mockImplementation(async (email: string) =>
-      pendingInviteFor(email)
+    vi.mocked(useTeamWorkspaceStore().createInvite).mockImplementation(
+      async (email: string) => pendingInviteFor(email)
     )
   })
 
@@ -211,9 +202,9 @@ describe('InviteMemberDialogContent', () => {
         'workspacePanel.inviteMemberDialog.invitedMessage'
       )
     ).toBeInTheDocument()
-    expect(mockCreateInvite).toHaveBeenCalledTimes(2)
-    expect(mockCreateInvite).toHaveBeenCalledWith('a@b.com')
-    expect(mockCreateInvite).toHaveBeenCalledWith('c@d.com')
+    expect(useTeamWorkspaceStore().createInvite).toHaveBeenCalledTimes(2)
+    expect(useTeamWorkspaceStore().createInvite).toHaveBeenCalledWith('a@b.com')
+    expect(useTeamWorkspaceStore().createInvite).toHaveBeenCalledWith('c@d.com')
     expect(mockTrackInviteSent).toHaveBeenCalledWith({
       source: 'settings_members',
       count: 2
@@ -224,20 +215,26 @@ describe('InviteMemberDialogContent', () => {
       .find((button) => button.textContent.includes('g.close'))
     await user.click(closeButton!)
 
-    expect(mockCloseDialog).toHaveBeenCalledWith({ key: 'invite-member' })
+    expect(useDialogStore().closeDialog).toHaveBeenCalledWith({
+      key: 'invite-member'
+    })
   })
 
   it('keeps only failed emails as chips and toasts on partial failure', async () => {
-    mockCreateInvite.mockImplementation(async (email: string) => {
-      if (email === 'fail@x.com') throw new Error('nope')
-      return pendingInviteFor(email)
-    })
+    vi.mocked(useTeamWorkspaceStore().createInvite).mockImplementation(
+      async (email: string) => {
+        if (email === 'fail@x.com') throw new Error('nope')
+        return pendingInviteFor(email)
+      }
+    )
     const { user } = renderDialog()
 
     await user.type(emailInput(), 'ok@x.com,fail@x.com{Enter}')
     await user.click(inviteButton())
 
-    await waitFor(() => expect(mockCreateInvite).toHaveBeenCalledTimes(2))
+    await waitFor(() =>
+      expect(useTeamWorkspaceStore().createInvite).toHaveBeenCalledTimes(2)
+    )
     expect(screen.getByText('fail@x.com')).toBeInTheDocument()
     expect(screen.queryByText('ok@x.com')).not.toBeInTheDocument()
     expect(mockToastAdd).toHaveBeenCalledWith(
@@ -251,13 +248,17 @@ describe('InviteMemberDialogContent', () => {
   })
 
   it('stays on the form and keeps every chip when all invites fail', async () => {
-    mockCreateInvite.mockRejectedValue(new Error('nope'))
+    vi.mocked(useTeamWorkspaceStore().createInvite).mockRejectedValue(
+      new Error('nope')
+    )
     const { user } = renderDialog()
 
     await user.type(emailInput(), 'a@b.com,c@d.com{Enter}')
     await user.click(inviteButton())
 
-    await waitFor(() => expect(mockCreateInvite).toHaveBeenCalledTimes(2))
+    await waitFor(() =>
+      expect(useTeamWorkspaceStore().createInvite).toHaveBeenCalledTimes(2)
+    )
     expect(
       screen.queryByText('workspacePanel.inviteMemberDialog.invitedMessage')
     ).not.toBeInTheDocument()
@@ -275,7 +276,9 @@ describe('InviteMemberDialogContent', () => {
 
     await user.click(screen.getByRole('button', { name: 'g.cancel' }))
 
-    expect(mockCreateInvite).not.toHaveBeenCalled()
-    expect(mockCloseDialog).toHaveBeenCalledWith({ key: 'invite-member' })
+    expect(useTeamWorkspaceStore().createInvite).not.toHaveBeenCalled()
+    expect(useDialogStore().closeDialog).toHaveBeenCalledWith({
+      key: 'invite-member'
+    })
   })
 })

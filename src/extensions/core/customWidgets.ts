@@ -141,8 +141,8 @@ function onCustomComboCreated(this: LGraphNode) {
     },
     set value(_) {},
     draw: () => undefined,
-    computeSize: () => [0, -4],
-    options: { hidden: true },
+    hidden: true,
+    options: {},
     y: 0,
     serializeValue: (resolverNode: LGraphNode, _index: number) =>
       widgets

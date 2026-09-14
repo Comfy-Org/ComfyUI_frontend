@@ -1,8 +1,6 @@
 import { toGroupId } from '@/types/groupId'
-import { createTestingPinia } from '@pinia/testing'
 import { fromAny, fromPartial } from '@total-typescript/shoehorn'
-import { setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import type { LGraph, LGraphExtra } from '@/lib/litegraph/src/LGraph'
 import { LGraphGroup } from '@/lib/litegraph/src/litegraph'
@@ -11,7 +9,7 @@ import { attachGroupLayout } from '@/renderer/core/layout/operations/graphLayout
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { RENDER_SCALE_FACTOR } from '@/renderer/core/layout/transform/graphRenderTransform'
 
-vi.mock('@/scripts/app', () => ({
+vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: { canvas: undefined }
 }))
 
@@ -70,10 +68,6 @@ function snapshotGeometry(nodes: MockNode[]) {
 }
 
 describe('ensureCorrectLayoutScale (legacy normalizer)', () => {
-  beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-  })
-
   it('normalizes legacy Vue-scaled graph once', () => {
     const nodes = twoNodeLayout()
     const graph = createMockGraph(nodes, {

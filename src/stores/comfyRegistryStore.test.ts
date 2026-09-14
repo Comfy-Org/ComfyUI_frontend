@@ -5,7 +5,7 @@ import { useComfyRegistryService } from '@/services/comfyRegistryService'
 import { useComfyRegistryStore } from '@/stores/comfyRegistryStore'
 import type { components, operations } from '@/types/comfyRegistryTypes'
 
-vi.mock('@/services/comfyRegistryService', () => ({
+vi.mock(import('@/services/comfyRegistryService'), () => ({
   useComfyRegistryService: vi.fn()
 }))
 

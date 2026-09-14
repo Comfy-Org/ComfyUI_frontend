@@ -1,6 +1,6 @@
 import { render, screen, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { beforeEach, describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { i18n } from '@/i18n'
 import type { HistoryGroups } from '../../stores/agent/agentChatHistoryStore'
@@ -68,6 +68,7 @@ async function openRename(
 
 describe('ChatHistoryScreen', () => {
   beforeEach(() => {
+    vi.useRealTimers()
     i18n.global.locale.value = 'en'
   })
 

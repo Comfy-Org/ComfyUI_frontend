@@ -1,9 +1,14 @@
 import { render, screen } from '@testing-library/vue'
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import ViewerLightControls from '@/components/load3d/controls/viewer/ViewerLightControls.vue'
+import { useSettingStore } from '@/platform/settings/settingStore'
+
+beforeEach(() => {
+  useSettingStore().$patch({ settingValues })
+})
 
 const settingValues: Record<string, unknown> = {
   'Comfy.Load3D.LightIntensityMaximum': 10,
@@ -11,13 +16,7 @@ const settingValues: Record<string, unknown> = {
   'Comfy.Load3D.LightAdjustmentIncrement': 0.5
 }
 
-vi.mock('@/platform/settings/settingStore', () => ({
-  useSettingStore: () => ({
-    get: (key: string) => settingValues[key]
-  })
-}))
-
-vi.mock('@/components/ui/slider/Slider.vue')
+vi.mock(import('@/components/ui/slider/Slider.vue'))
 
 const i18n = createI18n({
   legacy: false,

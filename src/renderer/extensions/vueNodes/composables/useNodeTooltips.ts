@@ -125,7 +125,7 @@ export function useNodeTooltips(nodeType: MaybeRef<string>) {
       'tooltip',
       unref(nodeType),
       slotName,
-      nodeDef.value.inputs[slotName].tooltip
+      nodeDef.value.inputs[slotName]?.tooltip
     )
   }
 
@@ -158,7 +158,7 @@ export function useNodeTooltips(nodeType: MaybeRef<string>) {
       'tooltip',
       unref(nodeType),
       widget.name,
-      nodeDef.value.inputs[widget.name].tooltip
+      nodeDef.value.inputs[widget.name]?.tooltip
     )
   }
 

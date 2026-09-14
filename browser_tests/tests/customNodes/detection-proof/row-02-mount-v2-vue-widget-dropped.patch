@@ -1,22 +1,25 @@
-diff --git a/src/renderer/extensions/vueNodes/composables/useProcessedWidgets.ts b/src/renderer/extensions/vueNodes/composables/useProcessedWidgets.ts
-index e7e5549d59..4ca1314e3c 100644
---- a/src/renderer/extensions/vueNodes/composables/useProcessedWidgets.ts
-+++ b/src/renderer/extensions/vueNodes/composables/useProcessedWidgets.ts
-@@ -316,4 +316,17 @@ export function computeProcessedWidgets({
-     isVisible: visible,
-     identity: { renderKey }
-   } of uniqueWidgets) {
-+    // DETECTION PROOF (row 2, mount v2): hide ImpactInt's value widget only
-+    // in Vue Nodes. Expected: S2 red and every other tier remains green.
-+    const detectionProofTier = (
-+      globalThis as {
-+        __COMFY_CUSTOM_NODE_DETECTION_PROOF_TIER__?: string
-+      }
-+    ).__COMFY_CUSTOM_NODE_DETECTION_PROOF_TIER__
-+    if (
-+      detectionProofTier === 'S2' &&
-+      nodeData.type === 'ImpactInt' &&
-+      widget.name === 'value'
-+    )
-+      continue
-     const bareWidgetId = stripGraphPrefix(widget.nodeId ?? nodeId)
+diff --git a/src/renderer/extensions/vueNodes/composables/processedWidgetRenderModel.ts b/src/renderer/extensions/vueNodes/composables/processedWidgetRenderModel.ts
+index c09570c137..06c840aa80 100644
+--- a/src/renderer/extensions/vueNodes/composables/processedWidgetRenderModel.ts
++++ b/src/renderer/extensions/vueNodes/composables/processedWidgetRenderModel.ts
+@@ -358,6 +358,19 @@ function processWidget(
+   const widgetState = ctx.widgetValueStore.getWidget(id)
+   if (!widgetState) return null
+-
++  // DETECTION PROOF (row 2, mount v2): hide ImpactInt's value widget only
++  // in Vue Nodes. Expected: S2 red and every other tier remains green.
++  const detectionProofTier = (
++    globalThis as {
++      __COMFY_CUSTOM_NODE_DETECTION_PROOF_TIER__?: string
++    }
++  ).__COMFY_CUSTOM_NODE_DETECTION_PROOF_TIER__
++  if (
++    detectionProofTier === 'S2' &&
++    ctx.nodeData.type === 'ImpactInt' &&
++    widgetState.name === 'value'
++  )
++    return null
++
+   const liveWidget = ctx.liveWidgets.get(id)
+   const type = liveWidget?.type ?? widgetState.type
+   const renderState = ctx.widgetValueStore.getWidgetRenderState(id)

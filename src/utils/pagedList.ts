@@ -10,11 +10,11 @@ export interface PagedList<T> {
   loadNew: () => Promise<void>
 }
 
-export class WrappedList<T> implements PagedList<T> {
-  readonly items: MaybeRef<T[]>
+export class WrappedList<T, U> implements PagedList<U> {
+  readonly items: MaybeRef<U[]>
   constructor(
     private readonly childList: PagedList<T>,
-    private readonly transform: (items: readonly T[]) => T[]
+    private readonly transform: (items: readonly T[]) => U[]
   ) {
     this.items = computed(() => this.transform(toValue(this.childList.items)))
   }

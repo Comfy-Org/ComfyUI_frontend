@@ -5,6 +5,7 @@ import { useI18n } from 'vue-i18n'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import CollapseToggleButton from '@/components/rightSidePanel/layout/CollapseToggleButton.vue'
 import type { NodeId } from '@/types/nodeId'
+import { deriveWidgetVisibility } from '@/types/widgetVisibility'
 
 import { computedSectionDataList, searchWidgetsAndNodes } from '../shared'
 import type { NodeWidgetsListList } from '../shared'
@@ -31,14 +32,14 @@ const advancedWidgetsSectionDataList = computed((): NodeWidgetsListList => {
     .map((node) => {
       const { widgets = [] } = node
       const advancedWidgets = widgets
-        .filter(
-          (w) =>
-            !(
-              w.options?.canvasOnly ||
-              w.options?.hidden ||
-              w.options?.hideInPanel
-            ) && w.options?.advanced
-        )
+        .filter((w) => {
+          const visibility = w.visibility ?? deriveWidgetVisibility(w)
+          return (
+            !visibility.suppression.byExtension &&
+            !visibility.suppression.byConnection &&
+            visibility.surfaces.panel === 'advanced'
+          )
+        })
         .map((widget) => ({ node, widget }))
       return { widgets: advancedWidgets, node }
     })

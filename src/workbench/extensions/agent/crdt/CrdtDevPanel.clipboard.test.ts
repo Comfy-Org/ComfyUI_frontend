@@ -1,15 +1,17 @@
+import { fromPartial } from '@total-typescript/shoehorn'
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { useClipboard } from '@vueuse/core'
 
 const { writeText } = vi.hoisted(() => ({
-  writeText: vi.fn<(value: string) => Promise<void>>(() => Promise.resolve())
+  writeText: vi.fn<ReturnType<typeof useClipboard>['copy']>(() =>
+    Promise.resolve()
+  )
 }))
 
-vi.mock('@vueuse/core', async (importOriginal) => ({
-  ...(await importOriginal()),
-  useClipboard: () => ({ copy: writeText })
-}))
+vi.mock(import('@vueuse/core'), { spy: true })
+vi.mocked(useClipboard).mockReturnValue(fromPartial({ copy: writeText }))
 
 import type { AgentCrdtStatus } from './useAgentCrdtFollower'
 import CrdtDevPanel from './CrdtDevPanel.vue'
@@ -21,7 +23,7 @@ import {
   stringifyDevEvents
 } from './devPanelLog'
 
-vi.mock('@/scripts/api', () => ({
+vi.mock<unknown>(import('@/scripts/api'), () => ({
   api: {
     apiURL: (route: string) => `/api${route}`,
     clientId: 'client-test-1',
@@ -29,11 +31,8 @@ vi.mock('@/scripts/api', () => ({
     api_base: ''
   }
 }))
-vi.mock('@/scripts/app', () => ({
+vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: { rootGraph: { serialize: () => ({ nodes: [], links: [] }) } }
-}))
-vi.mock('@/stores/extensionStore', () => ({
-  useExtensionStore: () => ({ extensions: [] })
 }))
 
 const status: AgentCrdtStatus = {
@@ -62,6 +61,7 @@ function renderPanel(overrides: Partial<AgentCrdtStatus> = {}) {
 
 describe('CrdtDevPanel clipboard controls', () => {
   beforeEach(() => {
+    vi.mocked(useClipboard).mockReturnValue(fromPartial({ copy: writeText }))
     setCrdtDebugEnabled(true)
     clearDevEvents()
     localStorage.clear()

@@ -8,7 +8,7 @@ const hoisted = vi.hoisted(() => ({
   widths: [] as { value: number }[]
 }))
 
-vi.mock('@vueuse/core', () => ({
+vi.mock<unknown>(import('@vueuse/core'), () => ({
   useElementSize: () => {
     const width = ref(0)
     hoisted.widths.push(width)

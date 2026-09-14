@@ -40,12 +40,12 @@ const hoisted = vi.hoisted(() => {
   }
 })
 
-vi.mock('@customerio/cdp-analytics-browser', () => ({
+vi.mock<unknown>(import('@customerio/cdp-analytics-browser'), () => ({
   AnalyticsBrowser: { load: hoisted.load },
   InAppPlugin: hoisted.inAppPlugin
 }))
 
-vi.mock('@/composables/auth/useCurrentUser', () => ({
+vi.mock<unknown>(import('@/composables/auth/useCurrentUser'), () => ({
   useCurrentUser: () => ({
     userEmail: hoisted.userEmail,
     resolvedUserInfo: hoisted.resolvedUserInfo,

@@ -7,12 +7,12 @@ import { i18n } from '@/i18n'
 import type { ReplyAsset } from '../../../utils/replyAssets'
 import ReplyAudioCard from './ReplyAudioCard.vue'
 
-vi.mock('@/components/ui/slider/Slider.vue')
+vi.mock(import('@/components/ui/slider/Slider.vue'))
 
 const fetchApi = vi.hoisted(() =>
   vi.fn(async () => ({ ok: true, blob: async () => new Blob(['x']) }))
 )
-vi.mock('@/scripts/api', () => ({
+vi.mock<unknown>(import('@/scripts/api'), () => ({
   api: {
     apiURL: (route: string) => `http://x/api${route}`,
     fetchApi
@@ -20,13 +20,13 @@ vi.mock('@/scripts/api', () => ({
 }))
 
 const downloadBlob = vi.hoisted(() => vi.fn())
-vi.mock('@/base/common/downloadUtil', () => ({ downloadBlob }))
+vi.mock(import('@/base/common/downloadUtil'), () => ({ downloadBlob }))
 
 const isAssetPreviewSupported = vi.hoisted(() => vi.fn(() => false))
 const findOutputAsset = vi.hoisted(() =>
   vi.fn(async (): Promise<{ name: string } | undefined> => undefined)
 )
-vi.mock('@/platform/assets/utils/assetPreviewUtil', () => ({
+vi.mock<unknown>(import('@/platform/assets/utils/assetPreviewUtil'), () => ({
   isAssetPreviewSupported,
   findOutputAsset
 }))

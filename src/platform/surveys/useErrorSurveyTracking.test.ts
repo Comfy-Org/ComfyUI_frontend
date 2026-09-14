@@ -1,30 +1,21 @@
-import { defineStore } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { effectScope, nextTick, ref } from 'vue'
+import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 
 const trackFeatureUsed = vi.hoisted(() => vi.fn())
 
-vi.mock('./useSurveyFeatureTracking', () => ({
+vi.mock<unknown>(import('./useSurveyFeatureTracking'), () => ({
   useSurveyFeatureTracking: () => ({
     trackFeatureUsed,
     useCount: ref(0)
   })
 }))
 
-const useFakeExecutionErrorStore = defineStore('fakeExecutionError', () => {
-  const hasAnyError = ref(false)
-  return { hasAnyError }
-})
-
-vi.mock('@/stores/executionErrorStore', () => ({
-  useExecutionErrorStore: () => useFakeExecutionErrorStore()
-}))
-
 import { useErrorSurveyTracking } from './useErrorSurveyTracking'
 
 describe('useErrorSurveyTracking', () => {
   let scope: ReturnType<typeof effectScope>
-  let store: ReturnType<typeof useFakeExecutionErrorStore>
+  let store: ReturnType<typeof useExecutionErrorStore>
 
   function setup() {
     scope = effectScope()
@@ -32,7 +23,8 @@ describe('useErrorSurveyTracking', () => {
   }
 
   beforeEach(() => {
-    store = useFakeExecutionErrorStore()
+    store = useExecutionErrorStore()
+    Object.assign(store, { hasAnyError: false })
   })
 
   afterEach(() => {
@@ -41,14 +33,14 @@ describe('useErrorSurveyTracking', () => {
 
   it('counts false → true transition once', async () => {
     setup()
-    store.hasAnyError = true
+    Object.assign(store, { hasAnyError: true })
     await nextTick()
 
     expect(trackFeatureUsed).toHaveBeenCalledTimes(1)
   })
 
   it('counts initial true state on mount', async () => {
-    store.hasAnyError = true
+    Object.assign(store, { hasAnyError: true })
     setup()
     await nextTick()
 
@@ -64,9 +56,9 @@ describe('useErrorSurveyTracking', () => {
 
   it('does not count true → false transition', async () => {
     setup()
-    store.hasAnyError = true
+    Object.assign(store, { hasAnyError: true })
     await nextTick()
-    store.hasAnyError = false
+    Object.assign(store, { hasAnyError: false })
     await nextTick()
 
     expect(trackFeatureUsed).toHaveBeenCalledTimes(1)
@@ -74,11 +66,11 @@ describe('useErrorSurveyTracking', () => {
 
   it('counts a fresh error after clear as a second use', async () => {
     setup()
-    store.hasAnyError = true
+    Object.assign(store, { hasAnyError: true })
     await nextTick()
-    store.hasAnyError = false
+    Object.assign(store, { hasAnyError: false })
     await nextTick()
-    store.hasAnyError = true
+    Object.assign(store, { hasAnyError: true })
     await nextTick()
 
     expect(trackFeatureUsed).toHaveBeenCalledTimes(2)
@@ -86,9 +78,9 @@ describe('useErrorSurveyTracking', () => {
 
   it('does not double-count when state stays true', async () => {
     setup()
-    store.hasAnyError = true
+    Object.assign(store, { hasAnyError: true })
     await nextTick()
-    store.hasAnyError = true
+    Object.assign(store, { hasAnyError: true })
     await nextTick()
 
     expect(trackFeatureUsed).toHaveBeenCalledTimes(1)

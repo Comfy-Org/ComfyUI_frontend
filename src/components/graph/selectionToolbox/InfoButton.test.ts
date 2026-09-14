@@ -13,13 +13,13 @@ const { openNodeInfoMock, trackUiButtonClickedMock } = vi.hoisted(() => ({
   trackUiButtonClickedMock: vi.fn()
 }))
 
-vi.mock('@/composables/graph/useSelectionState', () => ({
+vi.mock<unknown>(import('@/composables/graph/useSelectionState'), () => ({
   useSelectionState: () => ({
     openNodeInfo: openNodeInfoMock
   })
 }))
 
-vi.mock('@/platform/telemetry', () => ({
+vi.mock<unknown>(import('@/platform/telemetry'), () => ({
   useTelemetry: () => ({
     trackUiButtonClicked: trackUiButtonClickedMock
   })

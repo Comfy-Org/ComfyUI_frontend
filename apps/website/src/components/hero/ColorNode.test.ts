@@ -2,6 +2,7 @@
 import { render, screen } from '@testing-library/vue'
 import { describe, expect, it, vi } from 'vitest'
 
+import { lastEmission, lastNumberEmitted } from '../../test/emitted'
 import ColorNode from './ColorNode.vue'
 
 describe('ColorNode', () => {
@@ -25,13 +26,12 @@ describe('ColorNode', () => {
     screen
       .getByRole('slider', { name: 'HUE' })
       .dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight' }))
-    expect(emitted('update:hue')?.at(-1)).toEqual([1])
+    expect(lastEmission(emitted('update:hue'))).toEqual([1])
 
     screen
       .getByRole('slider', { name: 'SATURATION' })
       .dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowLeft' }))
-    const [saturation] = emitted('update:saturation')?.at(-1) as [number]
-    expect(saturation).toBeCloseTo(0.95)
+    expect(lastNumberEmitted(emitted('update:saturation'))).toBeCloseTo(0.95)
   })
 
   it('settles the shared in-motion window after values stop changing', async () => {
