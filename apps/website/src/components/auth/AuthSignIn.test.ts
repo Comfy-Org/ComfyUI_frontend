@@ -1,4 +1,3 @@
-// @vitest-environment happy-dom
 import { render, screen, waitFor } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -167,7 +166,7 @@ beforeEach(() => {
 const clickGoogle = () =>
   userEvent
     .setup()
-    .click(screen.getByRole('button', { name: /log in with google/i }))
+    .click(screen.getByRole('button', { name: /^sign in with google$/i }))
 
 const openEmailForm = (user: ReturnType<typeof userEvent.setup>) =>
   user.click(screen.getByRole('button', { name: /use email instead/i }))
@@ -187,7 +186,7 @@ describe('AuthSignIn', () => {
     handles.flag!.value = true
 
     expect(
-      await screen.findByRole('button', { name: /log in with google/i })
+      await screen.findByRole('button', { name: /^sign in with google$/i })
     ).toBeTruthy()
   })
 
@@ -309,7 +308,7 @@ describe('AuthSignIn', () => {
     }
 
     expect(
-      await screen.findByRole('button', { name: /log in with google/i })
+      await screen.findByRole('button', { name: /^sign in with google$/i })
     ).toBeTruthy()
     await new Promise((resolve) => setTimeout(resolve, 0))
     expect(
@@ -329,7 +328,7 @@ describe('AuthSignIn', () => {
 
     await userEvent
       .setup()
-      .click(screen.getByRole('button', { name: /log in with github/i }))
+      .click(screen.getByRole('button', { name: /^sign in with github$/i }))
 
     const alert = await screen.findByRole('alert')
     expect(alert.getAttribute('data-severity')).toBe('warn')
@@ -673,7 +672,7 @@ describe('AuthSignIn', () => {
     handles.identitySettled!.value = true
 
     expect(
-      await screen.findByRole('button', { name: /log in with google/i })
+      await screen.findByRole('button', { name: /^sign in with google$/i })
     ).toBeTruthy()
     expect(screen.queryByTestId('auth-initializing')).toBeNull()
   })
@@ -760,7 +759,7 @@ describe('AuthSignIn', () => {
     window.dispatchEvent(new PopStateEvent('popstate'))
 
     expect(
-      await screen.findByRole('heading', { name: 'Log in to your account' })
+      await screen.findByRole('heading', { name: 'Sign in to your account' })
     ).toBeTruthy()
   })
 
@@ -774,8 +773,8 @@ describe('AuthSignIn', () => {
       await screen.findByText('Finish signing in from the pop-up window.')
     ).toBeTruthy()
     for (const name of [
-      /log in with google/i,
-      /log in with github/i,
+      /^sign in with google$/i,
+      /^sign in with github$/i,
       /use email instead/i
     ]) {
       expect(screen.getByRole('button', { name })).toHaveProperty(
@@ -814,7 +813,7 @@ describe('AuthSignIn', () => {
 
   it('does not report a sign-up open from the login page', async () => {
     render(AuthSignIn)
-    await screen.findByRole('button', { name: /log in with google/i })
+    await screen.findByRole('button', { name: /^sign in with google$/i })
 
     expect(handles.captureSignupOpened).not.toHaveBeenCalled()
   })
@@ -830,7 +829,7 @@ describe('AuthSignIn', () => {
 
   it('shows no in-app browser notice in a regular browser', async () => {
     render(AuthSignIn)
-    await screen.findByRole('button', { name: /log in with google/i })
+    await screen.findByRole('button', { name: /^sign in with google$/i })
 
     expect(screen.queryByTestId('google-sso-in-app-browser-notice')).toBeNull()
   })
@@ -966,7 +965,7 @@ describe('AuthSignIn', () => {
     await openEmailForm(user)
     expect(screen.getByLabelText('Email')).toBeTruthy()
     expect(
-      screen.queryByRole('button', { name: /log in with google/i })
+      screen.queryByRole('button', { name: /^sign in with google$/i })
     ).toBeNull()
 
     await user.click(
@@ -976,7 +975,7 @@ describe('AuthSignIn', () => {
     )
     expect(screen.queryByLabelText('Email')).toBeNull()
     expect(
-      screen.getByRole('button', { name: /log in with google/i })
+      screen.getByRole('button', { name: /^sign in with google$/i })
     ).toBeTruthy()
   })
 
@@ -1070,7 +1069,7 @@ describe('AuthSignIn', () => {
     try {
       render(FreshAuthSignIn)
       const button = screen.getByRole('button', {
-        name: /log in with google/i
+        name: /^sign in with google$/i
       }) as HTMLButtonElement
       await userEvent.setup().click(button)
 

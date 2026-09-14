@@ -1,4 +1,3 @@
-// @vitest-environment happy-dom
 import { render, screen } from '@testing-library/vue'
 import type * as Leaflet from 'leaflet'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -209,7 +208,9 @@ describe('MapPins01', () => {
     leafletState.moveendCallbacks[0]()
 
     const titles = leafletState.markers.map((marker) => marker.title)
-    expect(titles.toSorted()).toEqual(['Lyon', 'Paris', 'Tokyo'])
+    expect(
+      titles.toSorted((a, b) => String(a).localeCompare(String(b)))
+    ).toEqual(['Lyon', 'Paris', 'Tokyo'])
 
     const lyon = leafletState.markers.find((marker) => marker.title === 'Lyon')
     lyon?.click?.()
@@ -238,7 +239,9 @@ describe('MapPins01', () => {
     leafletState.moveendCallbacks[0]()
 
     expect(
-      leafletState.markers.map((marker) => marker.title).toSorted()
+      leafletState.markers
+        .map((marker) => marker.title)
+        .toSorted((a, b) => String(a).localeCompare(String(b)))
     ).toEqual(['Osaka', 'Paris, Lyon', 'Tokyo'])
   })
 
@@ -267,7 +270,9 @@ describe('MapPins01', () => {
     expect(leafletState.moveendCallbacks).toHaveLength(1)
     leafletState.moveendCallbacks[0]()
     expect(
-      leafletState.markers.map((marker) => marker.title).toSorted()
+      leafletState.markers
+        .map((marker) => marker.title)
+        .toSorted((a, b) => String(a).localeCompare(String(b)))
     ).toEqual(['Lyon', 'Paris', 'Tokyo'])
   })
 

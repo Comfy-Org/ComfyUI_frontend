@@ -16,6 +16,7 @@ import { isHttpImageSource } from '../../config/workshop-image-source'
 import { workshopExampleFile } from '../../config/workshop-example-file'
 import type { Locale, TranslationKey } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
+import InfoTooltip from '@/components/ui/tooltip/InfoTooltip.vue'
 import FileSourceInput from './FileSourceInput.vue'
 import DialogueInput from './DialogueInput.vue'
 
@@ -62,9 +63,6 @@ const fieldError = computed(() =>
     : errors[field.name]
 )
 const invalid = () => fieldError.value !== undefined
-const declaredDefault = computed(() =>
-  field.kind === 'file' ? undefined : field.defaultValue
-)
 const describedBy = computed(
   () =>
     [
@@ -111,6 +109,18 @@ const isSlider = computed(
     field.min !== undefined &&
     field.max !== undefined &&
     field.defaultValue !== undefined
+)
+// A select preselects its default, a toggle renders its state and a slider
+// prints its value beside the label, so spelling the default out under them
+// restates what the control is already showing. Only a control that starts
+// empty leaves the default invisible.
+const declaredDefault = computed(() =>
+  field.kind === 'file' ||
+  field.kind === 'select' ||
+  field.kind === 'toggle' ||
+  isSlider.value
+    ? undefined
+    : field.defaultValue
 )
 const selectedFiles = computed({
   get() {
@@ -227,6 +237,11 @@ function booleanValue(fallback = false): boolean {
               *
             </span>
           </label>
+          <InfoTooltip
+            v-if="field.hint"
+            :text="field.hint"
+            :label="field.hint"
+          />
         </div>
         <span
           v-if="field.kind === 'number' && isSlider"
@@ -235,11 +250,7 @@ function booleanValue(fallback = false): boolean {
           {{ numberValue(field.defaultValue) }}
         </span>
       </div>
-      <p
-        v-if="field.hint"
-        :id="`help-${field.name}`"
-        class="text-xs text-primary-warm-gray"
-      >
+      <p v-if="field.hint" :id="`help-${field.name}`" class="sr-only">
         {{ field.hint }}
       </p>
       <p

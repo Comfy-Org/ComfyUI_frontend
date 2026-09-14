@@ -376,12 +376,14 @@ const stepperClass =
       data-testid="buy-credits-dialog"
     >
       <template v-if="step === 'checkout'">
-        <DialogTitle class="pr-16">
-          {{ t('workshop.credits.checkoutOpenedTitle', locale) }}
-        </DialogTitle>
-        <DialogDescription class="text-base text-primary-comfy-canvas/70">
-          {{ t('workshop.credits.checkoutOpenedBody', locale) }}
-        </DialogDescription>
+        <div class="flex flex-col gap-2">
+          <DialogTitle class="pr-16">
+            {{ t('workshop.credits.checkoutOpenedTitle', locale) }}
+          </DialogTitle>
+          <DialogDescription class="text-base text-primary-comfy-canvas/70">
+            {{ t('workshop.credits.checkoutOpenedBody', locale) }}
+          </DialogDescription>
+        </div>
         <div class="mt-2 flex flex-wrap items-center justify-end gap-3">
           <Button
             variant="outline"
@@ -411,12 +413,14 @@ const stepperClass =
       </template>
 
       <template v-else-if="step === 'waiting'">
-        <DialogTitle class="pr-16">
-          {{ t('workshop.credits.waitingTitle', locale) }}
-        </DialogTitle>
-        <DialogDescription class="text-base text-primary-comfy-canvas/70">
-          {{ t('workshop.credits.waitingBody', locale) }}
-        </DialogDescription>
+        <div class="flex flex-col gap-2">
+          <DialogTitle class="pr-16">
+            {{ t('workshop.credits.waitingTitle', locale) }}
+          </DialogTitle>
+          <DialogDescription class="text-base text-primary-comfy-canvas/70">
+            {{ t('workshop.credits.waitingBody', locale) }}
+          </DialogDescription>
+        </div>
         <p
           class="flex items-center gap-3 rounded-2xl bg-transparency-white-t4 px-4 py-3 text-sm text-primary-comfy-canvas"
           data-testid="buy-credits-polling"
@@ -454,24 +458,26 @@ const stepperClass =
         >
           <Check class="size-7" :stroke-width="2.5" />
         </span>
-        <DialogTitle class="px-8 text-center" data-testid="buy-credits-done">
-          {{
-            t('workshop.credits.done', locale).replace(
-              '{n}',
-              format(landedDelta)
-            )
-          }}
-        </DialogTitle>
-        <DialogDescription
-          class="px-8 text-center text-base text-primary-comfy-canvas/70"
-        >
-          {{
-            t('workshop.credits.addedTo', locale).replace(
-              '{workspace}',
-              topUpWorkspaceName
-            )
-          }}
-        </DialogDescription>
+        <div class="flex flex-col gap-2">
+          <DialogTitle class="px-8 text-center" data-testid="buy-credits-done">
+            {{
+              t('workshop.credits.done', locale).replace(
+                '{n}',
+                format(landedDelta)
+              )
+            }}
+          </DialogTitle>
+          <DialogDescription
+            class="px-8 text-center text-base text-primary-comfy-canvas/70"
+          >
+            {{
+              t('workshop.credits.addedTo', locale).replace(
+                '{workspace}',
+                topUpWorkspaceName
+              )
+            }}
+          </DialogDescription>
+        </div>
         <dl
           class="flex flex-col gap-2 rounded-2xl bg-transparency-white-t4 px-4 py-3 text-sm"
           data-testid="buy-credits-ledger"
@@ -523,14 +529,16 @@ const stepperClass =
         >
           <Clock class="size-7" />
         </span>
-        <DialogTitle class="px-8 text-center" data-testid="buy-credits-held">
-          {{ t('workshop.credits.heldTitle', locale) }}
-        </DialogTitle>
-        <DialogDescription
-          class="px-8 text-center text-base text-primary-comfy-canvas/70"
-        >
-          {{ t('workshop.credits.heldBody', locale) }}
-        </DialogDescription>
+        <div class="flex flex-col gap-2">
+          <DialogTitle class="px-8 text-center" data-testid="buy-credits-held">
+            {{ t('workshop.credits.heldTitle', locale) }}
+          </DialogTitle>
+          <DialogDescription
+            class="px-8 text-center text-base text-primary-comfy-canvas/70"
+          >
+            {{ t('workshop.credits.heldBody', locale) }}
+          </DialogDescription>
+        </div>
         <div
           v-if="lastCheckout?.sessionId"
           class="flex flex-col gap-1 rounded-2xl bg-transparency-white-t4 px-4 py-3"
@@ -570,12 +578,14 @@ const stepperClass =
       </template>
 
       <template v-else>
-        <DialogTitle class="pr-16">
-          {{ t('workshop.credits.title', locale) }}
-        </DialogTitle>
-        <DialogDescription class="text-base text-primary-comfy-canvas/70">
-          {{ t('workshop.credits.body', locale) }}
-        </DialogDescription>
+        <div class="flex flex-col gap-2">
+          <DialogTitle class="pr-16">
+            {{ t('workshop.credits.title', locale) }}
+          </DialogTitle>
+          <DialogDescription class="text-base text-primary-comfy-canvas/70">
+            {{ t('workshop.credits.body', locale) }}
+          </DialogDescription>
+        </div>
 
         <fieldset
           :disabled="state === 'pending'"
@@ -621,7 +631,7 @@ const stepperClass =
                 <Minus class="size-3.5" aria-hidden="true" />
               </button>
               <span
-                class="w-28 text-right text-sm text-primary-comfy-canvas tabular-nums"
+                class="w-28 text-center text-sm text-primary-comfy-canvas tabular-nums"
               >
                 ${{ format(usd) }} · {{ format(credits) }}
               </span>

@@ -8,7 +8,6 @@ import {
 } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { fileURLToPath } from 'node:url'
 import type { Asset } from '@comfyorg/sdk/low'
 import { afterEach, describe, expect, it } from 'vitest'
 
@@ -22,16 +21,14 @@ const body = {
 }
 const directories: string[] = []
 const image = readFileSync(
-  fileURLToPath(
-    new URL('../../e2e/assets/placeholder-1x1.webp', import.meta.url)
-  )
+  join(process.cwd(), 'e2e/assets/placeholder-1x1.webp')
 )
 
 function directory() {
   const path = mkdtempSync(join(tmpdir(), 'models-sdk-snippets-'))
   directories.push(path)
   symlinkSync(
-    fileURLToPath(new URL('../../node_modules', import.meta.url)),
+    join(process.cwd(), 'node_modules'),
     join(path, 'node_modules'),
     'dir'
   )
@@ -98,23 +95,23 @@ function execute(
 }
 
 describe('SDK snippets', () => {
-  it('uses embedded media bytes directly and through SDK assets without requiring a local file', () => {
+  it('reads local media for native bytes and SDK assets', () => {
+    const cwd = directory()
     const sourceDataUrl = 'data:image/webp;base64,' + image.toString('base64')
     const files: SnippetFile[] = [
       {
         token: 'inline',
         name: 'image.webp',
-        mimeType: 'image/webp',
-        sourceDataUrl
+        mimeType: 'image/webp'
       },
       {
         token: 'upload',
         name: 'mask.webp',
         mimeType: 'image/webp',
-        sourceDataUrl,
         encoding: 'url'
       }
     ]
+    for (const file of files) writeFileSync(join(cwd, file.name), image)
     const result = JSON.parse(
       execute(
         buildSnippet(
@@ -125,7 +122,8 @@ describe('SDK snippets', () => {
             image: 'upload'
           },
           { files }
-        )
+        ),
+        cwd
       )
     )
     expect(result.runs[0].body).toEqual({
