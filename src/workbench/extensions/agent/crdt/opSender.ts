@@ -190,7 +190,10 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
     const identified = [...result.applied, ...result.skipped]
     if (result.failure?.op_id) identified.push(result.failure.op_id)
     if (identified.length > 0) {
-      if (!identified.some((opId) => inFlight!.opIds.has(opId))) return
+      if (!identified.some((opId) => inFlight!.opIds.has(opId))) {
+        if (staleAnonymousBudget > 0) staleAnonymousBudget--
+        return
+      }
       settle({ state: 'acknowledged', ops: inFlight.ops, result })
       return
     }
