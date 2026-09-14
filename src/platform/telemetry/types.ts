@@ -1028,6 +1028,11 @@ type BillingIntent = {
   outcome: 'pending'
 }
 
+type BillingRequestSent = {
+  stage: 'request_sent'
+  outcome: 'pending'
+}
+
 type BillingStarted = {
   stage: 'started'
   outcome: 'pending'
@@ -1061,7 +1066,13 @@ type SubscriptionCheckoutBillingEvent = {
    * `started` event through to this terminal event.
    */
   duration_ms?: number
-} & (BillingIntent | BillingStarted | BillingSucceeded | BillingFailed)
+} & (
+  | BillingIntent
+  | BillingRequestSent
+  | BillingStarted
+  | BillingSucceeded
+  | BillingFailed
+)
 
 type BillingOperationBillingEvent = {
   operation: 'operation'
@@ -1096,7 +1107,13 @@ type TopupBillingEvent = {
    * `started` event through to this terminal event.
    */
   duration_ms?: number
-} & (BillingIntent | BillingStarted | BillingSucceeded | BillingFailed)
+} & (
+  | BillingIntent
+  | BillingRequestSent
+  | BillingStarted
+  | BillingSucceeded
+  | BillingFailed
+)
 
 type DowngradeToPersonalBillingEvent = {
   operation: 'downgrade_to_personal'
@@ -1574,6 +1591,9 @@ export const TelemetryEvents = {
   AGENT_PAYWALL_CTA_CLICKED: 'app:agent_paywall_cta_clicked',
 
   // Canonical Billing Lifecycle
+  BILLING_SUBSCRIPTION_CHECKOUT_REQUEST_SENT:
+    'billing.subscription_checkout.request_sent',
+  BILLING_TOPUP_REQUEST_SENT: 'billing.topup.request_sent',
   BILLING_SUBSCRIPTION_CHECKOUT_INTENT: 'billing.subscription_checkout.intent',
   BILLING_TOPUP_INTENT: 'billing.topup.intent',
   BILLING_SUBSCRIPTION_CHECKOUT_STARTED:
