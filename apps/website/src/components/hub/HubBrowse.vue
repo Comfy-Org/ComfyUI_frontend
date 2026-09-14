@@ -14,7 +14,10 @@ import {
 import { groupModels } from '../../config/model-family'
 import hubTemplates from '../../data/hubTemplates.json'
 import { templatePath } from '../../lib/hub/workflow-detail'
-import { useCaseForTemplate } from '../../lib/hub/template-use-case'
+import {
+  modelNamesMatching,
+  useCaseForTemplate
+} from '../../lib/hub/template-use-case'
 import { tagDisplayName } from '../../lib/hub/tag-aliases'
 import { withFacetFields } from '../../lib/hub/facet-fields'
 import type { HubTemplate } from '../../lib/hub/types'
@@ -156,10 +159,12 @@ onMounted(() => {
   if (wanted) useCase.value = wanted
   const asked = params.get('provider')
   if (asked) providers.value = [asked]
-  for (const type of ['tag', 'model'] as const) {
-    const value = params.get(type)
-    if (value) store.toggleBadge({ type, value })
-  }
+  const tag = params.get('tag')
+  if (tag) store.toggleBadge({ type: 'tag', value: tag })
+  const model = params.get('model')
+  if (model)
+    for (const value of modelNamesMatching(model, templates))
+      store.toggleBadge({ type: 'model', value })
   const query = params.get('q')
   if (query) store.searchQuery.value = query
 })
@@ -296,7 +301,8 @@ const filteredTemplates = computed(() => {
   <section :class="cn(!embedded && 'pb-32')" data-testid="workshop-hub">
     <WorkshopHero
       v-if="!embedded"
-      heading-key="workshop.hub.title"
+      :heading-key="withModels ? 'workshop.hub.title' : 'templates.hero.title'"
+      :subtitle-key="withModels ? undefined : 'templates.hero.subtitle'"
       :locale
       data-testid="hub-heading"
     />

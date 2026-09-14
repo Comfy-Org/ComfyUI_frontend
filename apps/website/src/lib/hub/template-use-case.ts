@@ -165,3 +165,23 @@ export function templatesUsingModel(
     template.models.some((named) => normalize(named) === wanted)
   )
 }
+
+/**
+ * The catalogue and the workflow registry name the same model differently
+ * ("FLUX 3 Video" against "Flux.3 Video"), so a link that carries the
+ * catalogue spelling has to arrive as the spellings the grid can filter by,
+ * or the page a model page counts opens empty.
+ */
+export function modelNamesMatching(
+  asked: string,
+  templates: readonly HubTemplate[]
+): string[] {
+  const wanted = normalize(asked)
+  return [
+    ...new Set(
+      templates.flatMap((template) =>
+        template.models.filter((named) => normalize(named) === wanted)
+      )
+    )
+  ]
+}
