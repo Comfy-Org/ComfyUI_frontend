@@ -479,7 +479,7 @@ describe('FE-GAP-1 — a seq jump means a dropped frame and forces a resync', ()
     expect(transport.framesOfType('doc_subscribe')).toHaveLength(1)
   })
 
-  it.each([
+  it.for([
     { label: 'absent seq', ack: {} },
     { label: 'seq 0', ack: { seq: 0 } }
   ])(
