@@ -1,5 +1,5 @@
-// @vitest-environment happy-dom
 import '@testing-library/jest-dom/vitest'
+
 import userEvent from '@testing-library/user-event'
 import { render, screen, waitFor, within } from '@testing-library/vue'
 import { afterEach, describe, expect, it, vi } from 'vitest'
