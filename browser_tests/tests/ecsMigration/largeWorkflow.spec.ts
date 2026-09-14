@@ -34,6 +34,65 @@ test.describe(
         ])
       )
 
+      const paintedLandmarks = await comfyPage.page.evaluate(() => {
+        const canvas = window.app!.canvas
+        const landmarkTitles = [
+          'First Pipeline Landmark',
+          'Middle Pipeline Landmark',
+          'CPU Output Branch Landmark',
+          'CPU Output Input',
+          'CPU Output Landmark'
+        ]
+        const painted = new Set<string>()
+        const fillText = CanvasRenderingContext2D.prototype.fillText
+        const initialScale = canvas.ds.scale
+        const initialOffset = [...canvas.ds.offset]
+        CanvasRenderingContext2D.prototype.fillText = function (text, ...args) {
+          fillText.call(this, text, ...args)
+          if (landmarkTitles.includes(text)) painted.add(text)
+        }
+
+        try {
+          canvas.ds.scale = 1
+          for (const title of landmarkTitles) {
+            const node = canvas.graph!.nodes.find(
+              (node) => node.title === title
+            )
+            if (node) {
+              canvas.centerOnNode(node)
+            } else {
+              const group = canvas.graph!.groups.find(
+                (group) => group.title === title
+              )
+              if (!group) throw new Error(`Landmark ${title} not found`)
+              const dpi = window.devicePixelRatio || 1
+              canvas.ds.offset[0] =
+                -group.pos[0] + canvas.canvas.width / (4 * dpi)
+              canvas.ds.offset[1] =
+                -group.pos[1] + canvas.canvas.height / (4 * dpi)
+            }
+            canvas.draw(true, true)
+          }
+        } finally {
+          CanvasRenderingContext2D.prototype.fillText = fillText
+          canvas.ds.scale = initialScale
+          canvas.ds.offset[0] = initialOffset[0]
+          canvas.ds.offset[1] = initialOffset[1]
+          canvas.setDirty(true, true)
+        }
+
+        return [...painted]
+      })
+      expect(paintedLandmarks).toEqual(
+        expect.arrayContaining([
+          'First Pipeline Landmark',
+          'Middle Pipeline Landmark',
+          'CPU Output Branch Landmark',
+          'CPU Output Input',
+          'CPU Output Landmark'
+        ])
+      )
+
       const canvasBox = await comfyPage.canvas.boundingBox()
       expect(canvasBox).not.toBeNull()
       if (!canvasBox) throw new Error('Canvas bounding box not available')
