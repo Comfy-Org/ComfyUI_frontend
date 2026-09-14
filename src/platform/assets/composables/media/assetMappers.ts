@@ -60,6 +60,27 @@ export function mapTaskOutputToAssetItem(
     user_metadata: metadata
   }
 }
+export function mapChildAssetToAssetItem(
+  parent: AssetItem,
+  output: AugmentedResultItem
+): AssetItem {
+  const metadata = {
+    ...parent.user_metadata,
+    nodeId: output.nodeId,
+    subfolder: output.subfolder,
+    format: output.format
+  }
+
+  return {
+    ...parent,
+    name: output.filename,
+    display_name: output.display_name,
+    size: 0,
+    thumbnail_url: resultItemPreviewUrl(output),
+    preview_url: resultItemUrl(output),
+    user_metadata: metadata
+  }
+}
 
 const byCreatedAtAsc = (a: AssetItem, b: AssetItem): number =>
   new Date(a.created_at).getTime() - new Date(b.created_at).getTime() ||

@@ -15,6 +15,7 @@ import type { EffectScope } from 'vue'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import {
   mapInputFileToAssetItem,
+  mapChildAssetToAssetItem,
   mapTaskOutputToAssetItem,
   unflattenOutputAssets
 } from '@/platform/assets/composables/media/assetMappers'
@@ -27,10 +28,13 @@ import {
   useAssetsQuery,
   invalidateAll
 } from '@/platform/assets/composables/useAssetsQuery'
+import { getOutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
 import { assetService } from '@/platform/assets/services/assetService'
 import type { AssetPaginationOptions } from '@/platform/assets/services/assetService'
 import type { JobListItem } from '@/platform/remote/comfyui/jobs/jobTypes'
+import { getJobDetail } from '@/services/jobOutputCache'
 import { api } from '@/scripts/api'
+import { parseTaskOutput } from '@/stores/resultItemParsing'
 import { WrappedList } from '@/utils/pagedList'
 import type { PagedList } from '@/utils/pagedList'
 
@@ -151,6 +155,7 @@ export const useAssetsStore = defineStore('assets', () => {
     const isLoadingMore = ref(false)
     const allHistoryItems = ref<AssetItem[]>([])
     const loadedIds = shallowReactive(new Set<string>())
+    const resolvedAssetsCache = ref(new Map<string, AssetItem[]>())
 
     /**
      * Fetch history assets with pagination support
@@ -279,7 +284,27 @@ export const useAssetsStore = defineStore('assets', () => {
       loadMore: loadMoreHistory,
       loadNew: updateHistory
     }
-    return [outputAssets, outputAssets]
+    const flatOutputs = new WrappedList(outputAssets, () =>
+      allHistoryItems.value.flatMap((asset) => {
+        const jobId = getOutputAssetMetadata(asset.user_metadata)?.jobId
+        if (!jobId) return [asset]
+        const cached = resolvedAssetsCache.value.get(jobId)
+        if (cached) return cached
+
+        async function resolveAssets(jobId: string) {
+          const outputs = (await getJobDetail(jobId))?.outputs
+          if (!outputs) return
+
+          const childAssets = parseTaskOutput(outputs).map((resultItem) =>
+            mapChildAssetToAssetItem(asset, resultItem)
+          )
+          resolvedAssetsCache.value.set(jobId, childAssets)
+        }
+        void resolveAssets(jobId)
+        return [asset]
+      })
+    )
+    return [outputAssets, flatOutputs]
   }
 
   const inputAssets = ref<PagedList<AssetItem>>(undefined!)
