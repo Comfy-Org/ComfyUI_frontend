@@ -3,7 +3,6 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
 import { LGraphEventMode } from '@/lib/litegraph/src/litegraph'
-import { AGENT_HIGHLIGHT_LIFETIME_MS } from '@/renderer/extensions/minimap/agentHighlight'
 import { renderMinimapToCanvas } from '@/renderer/extensions/minimap/minimapCanvasRenderer'
 import type { MinimapRenderContext } from '@/renderer/extensions/minimap/types'
 import { useAgentGeneratedNodesStore } from '@/stores/agentGeneratedNodesStore'
@@ -370,7 +369,10 @@ describe('minimapCanvasRenderer', () => {
       return fills
     }
 
-    function renderWithAgentNode(generatedAt: number): string[] {
+    function renderWithAgentNode(
+      generatedAt: number,
+      { marked = true }: { marked?: boolean } = {}
+    ): string[] {
       const graph = createMockLGraph({
         _nodes: [
           createMockLGraphNode({
@@ -386,10 +388,12 @@ describe('minimapCanvasRenderer', () => {
         rootGraph: { id: GRAPH_ID } as LGraph,
         getNodeById: vi.fn()
       })
-      useAgentGeneratedNodesStore().markGenerated(
-        createNodeLocatorId(null, toNodeId('1')),
-        generatedAt
-      )
+      if (marked) {
+        useAgentGeneratedNodesStore().markGenerated(
+          createNodeLocatorId(null, toNodeId('1')),
+          generatedAt
+        )
+      }
 
       const fills = recordFills()
       renderMinimapToCanvas(mockCanvas, graph, {
@@ -418,9 +422,16 @@ describe('minimapCanvasRenderer', () => {
       expect(renderWithAgentNode(Date.now())).toContain(AGENT_COLOR_DARK)
     })
 
-    it('leaves a node alone once its mark has expired', () => {
-      const expired = Date.now() - AGENT_HIGHLIGHT_LIFETIME_MS
-      expect(renderWithAgentNode(expired)).not.toContain(AGENT_COLOR_DARK)
+    it('keeps marking the node long after the agent placed it', () => {
+      const anHourAgo = Date.now() - 60 * 60_000
+      expect(renderWithAgentNode(anHourAgo)).toContain(AGENT_COLOR_DARK)
+    })
+
+    it('leaves nodes a human placed in the ordinary fill', () => {
+      useAgentGeneratedNodesStore().clear()
+      expect(renderWithAgentNode(Date.now(), { marked: false })).not.toContain(
+        AGENT_COLOR_DARK
+      )
     })
   })
 })
