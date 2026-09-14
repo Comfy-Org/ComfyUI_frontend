@@ -1,22 +1,24 @@
-import { createTestingPinia } from '@pinia/testing'
+import { getActivePinia } from 'pinia'
 import { render } from '@testing-library/vue'
 import type { RenderOptions } from '@testing-library/vue'
-import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import { useReleaseStore } from '@/platform/updates/common/releaseStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { app } from '@/scripts/app'
 import { useBootstrapStore } from '@/stores/bootstrapStore'
 import { useExecutionStore } from '@/stores/executionStore'
-import { createNodeLocatorId } from '@/types/nodeIdentification'
 import { toNodeId } from '@/types/nodeId'
+import { createNodeLocatorId } from '@/types/nodeIdentification'
 
 import GraphCanvas from './GraphCanvas.vue'
+vi.mock(import('firebase/auth'))
+vi.mock(import('vuefire'), () => ({ useFirebaseAuth: vi.fn() }))
 
 /**
  * GraphCanvas is the only place the first-run tour is wired into startup: it
@@ -34,12 +36,7 @@ const mocks = vi.hoisted(() => ({
   loadTemplateFromUrlIfPresent: vi.fn(),
   loadSharedWorkflowFromUrlIfPresent: vi.fn(),
   runUrlActionLoaders: vi.fn(),
-  setDirty: vi.fn(),
-  workspaceStore: {
-    spinner: false,
-    focusMode: false,
-    sidebarTab: { activeSidebarTab: null }
-  }
+  setDirty: vi.fn()
 }))
 
 vi.mock<unknown>(
@@ -104,10 +101,6 @@ vi.mock(import('@/composables/useUrlActionLoaders'), () => ({
   })
 }))
 
-vi.mock<unknown>(import('@/platform/updates/common/releaseStore'), () => ({
-  useReleaseStore: () => ({ initialize: vi.fn() })
-}))
-
 vi.mock(import('@/composables/graph/useErrorClearingHooks'), () => ({
   installErrorClearingHooks: () => vi.fn()
 }))
@@ -141,10 +134,6 @@ vi.mock(import('@/composables/useContextMenuTranslation'), () => ({
 vi.mock(import('@/composables/graph/useGroupContextMenu'), () => ({
   useGroupContextMenu: vi.fn()
 }))
-// Instantiating the real one pulls in the Firebase auth store.
-vi.mock<unknown>(import('@/stores/workspaceStore'), () => ({
-  useWorkspaceStore: () => mocks.workspaceStore
-}))
 
 vi.mock(import('@/composables/useCopy'), () => ({ useCopy: vi.fn() }))
 vi.mock(import('@/composables/usePaste'), () => ({ usePaste: vi.fn() }))
@@ -156,8 +145,8 @@ vi.mock(
 async function mountGraphCanvas() {
   // Handed to the component rather than left to the active-Pinia fallback, so
   // the readiness gates below are set on the instance startup actually reads.
-  const pinia = createTestingPinia({ stubActions: false })
-  setActivePinia(pinia)
+  const pinia = getActivePinia()!
+  vi.mocked(useReleaseStore().initialize).mockResolvedValue(undefined)
   app.canvas.graph = null
 
   // Startup waits on both readiness gates before it reaches the tour hand-off.
@@ -186,13 +175,6 @@ async function mountGraphCanvas() {
 
 describe('GraphCanvas first-run tour wiring', () => {
   beforeEach(() => {
-    // Startup writes to the workspace store, and clearAllMocks does not undo
-    // writes to a plain object.
-    Object.assign(mocks.workspaceStore, {
-      spinner: false,
-      focusMode: false,
-      sidebarTab: { activeSidebarTab: null }
-    })
     mocks.initializeWorkflow.mockResolvedValue('url-intent')
     mocks.loadTemplateFromUrlIfPresent.mockResolvedValue('image_to_image')
     mocks.loadSharedWorkflowFromUrlIfPresent.mockResolvedValue(undefined)

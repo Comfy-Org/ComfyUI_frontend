@@ -7,12 +7,6 @@ vi.mock(import('@/scripts/widgets'), () => ({
   addValueControlWidgets: vi.fn()
 }))
 
-vi.mock<unknown>(import('@/platform/settings/settingStore'), () => ({
-  useSettingStore: () => ({
-    settings: {}
-  })
-}))
-
 const { onFloatValueChange } = _for_testing
 
 describe('useFloatWidget', () => {

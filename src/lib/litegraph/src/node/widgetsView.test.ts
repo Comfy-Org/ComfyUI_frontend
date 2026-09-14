@@ -1,5 +1,3 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it } from 'vitest'
 
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
@@ -91,7 +89,6 @@ function storedValue(widget: IBaseWidget) {
 /** Node packs rebuild `node.widgets` by writing to the array directly. */
 describe('widgets view', () => {
   beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
     LiteGraph.vueNodesMode = false
   })
 

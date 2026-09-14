@@ -1,21 +1,19 @@
+import { useAuthStore } from '@/stores/authStore'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { computed, reactive } from 'vue'
 
 const {
   mockIsCloud,
   mockSubscribe,
   mockTrackBeginCheckout,
-  mockTrackBillingEvent,
-  mockUserId
+  mockTrackBillingEvent
 } = vi.hoisted(() => ({
   mockIsCloud: { value: true },
   mockSubscribe: vi.fn(),
   mockTrackBeginCheckout: vi.fn(),
-  mockTrackBillingEvent: vi.fn(),
-  mockUserId: { value: 'user-1' }
+  mockTrackBillingEvent: vi.fn()
 }))
 
-vi.mock(import('@/platform/distribution/types'), () => ({
+vi.mock<unknown>(import('@/platform/distribution/types'), () => ({
   get isCloud() {
     return mockIsCloud.value
   }
@@ -42,17 +40,12 @@ vi.mock<unknown>(import('@/platform/telemetry'), () => ({
     trackBillingEvent: mockTrackBillingEvent
   })
 }))
-vi.mock<unknown>(import('@/stores/authStore'), () => ({
-  useAuthStore: () => reactive({ userId: computed(() => mockUserId.value) }),
-  AuthStoreError: class AuthStoreError extends Error {
-    constructor(message: string) {
-      super(message)
-      this.name = 'AuthStoreError'
-    }
-  }
-}))
 
 import { performTeamSubscriptionCheckout } from './teamSubscriptionCheckoutUtil'
+
+beforeEach(() => {
+  Object.assign(useAuthStore(), { userId: 'user-1' })
+})
 
 describe('performTeamSubscriptionCheckout', () => {
   let assignedHref: string | undefined
@@ -169,3 +162,4 @@ describe('performTeamSubscriptionCheckout', () => {
     expect(assignedHref).toBeUndefined()
   })
 })
+vi.mock(import('firebase/auth'))

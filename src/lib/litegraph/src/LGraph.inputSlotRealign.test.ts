@@ -1,5 +1,3 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { registerNodeState } from '@/core/graph/nodeShell/nodeShellState'
@@ -352,7 +350,6 @@ describe('normalizeConfiguredTopology', () => {
 
 describe('LGraph.configure input slot realignment (#3348)', () => {
   beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
     LiteGraph.registerNodeType('test/RealignSource', SourceNode)
     LiteGraph.registerNodeType('test/RealignTarget', ReorderTargetNode)
   })
@@ -588,7 +585,6 @@ function unmatchedInputLinkState(graph: LGraph) {
 
 describe('LGraph.configure realignment with an unmatched input name (#15581)', () => {
   beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
     LiteGraph.registerNodeType('test/RealignSource', SourceNode)
     LiteGraph.registerNodeType(
       'test/DroppedInputTarget',
@@ -637,10 +633,6 @@ describe('LGraph.configure realignment with an unmatched input name (#15581)', (
 })
 
 describe('realignInputLinkSlots with a rejected batch (#15581)', () => {
-  beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-  })
-
   it('atomically removes an unmatched blocker and moves links', () => {
     const graph = new LGraph()
     const source = new LGraphNode('Source')
@@ -696,10 +688,6 @@ describe('realignInputLinkSlots with a rejected batch (#15581)', () => {
 })
 
 describe('realignInputLinkSlots', () => {
-  beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-  })
-
   it('rekeys a serialized link', () => {
     const graph = new LGraph()
     const source = new LGraphNode('Source')

@@ -1,20 +1,9 @@
+import { useSettingStore } from '@/platform/settings/settingStore'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useKeybindingService } from '@/platform/keybindings/keybindingService'
 import { useCommandStore } from '@/stores/commandStore'
 import { useDialogStore } from '@/stores/dialogStore'
-
-vi.mock<unknown>(import('@/platform/settings/settingStore'), () => ({
-  useSettingStore: vi.fn(() => ({
-    get: vi.fn(() => [])
-  }))
-}))
-
-vi.mock<unknown>(import('@/stores/dialogStore'), () => ({
-  useDialogStore: vi.fn(() => ({
-    dialogStack: []
-  }))
-}))
 
 function createTestKeyboardEvent(
   key: string,
@@ -50,6 +39,11 @@ function createTestKeyboardEvent(
   return event
 }
 
+beforeEach(() => {
+  vi.mocked(useSettingStore().get).mockImplementation(() => [])
+  useDialogStore().dialogStack = []
+})
+
 describe('keybindingService - Canvas Keybindings', () => {
   let keybindingService: ReturnType<typeof useKeybindingService>
   let canvasContainer: HTMLDivElement
@@ -59,11 +53,7 @@ describe('keybindingService - Canvas Keybindings', () => {
     const commandStore = useCommandStore()
     commandStore.execute = vi.fn()
 
-    vi.mocked(useDialogStore).mockReturnValue({
-      dialogStack: []
-    } as Partial<ReturnType<typeof useDialogStore>> as ReturnType<
-      typeof useDialogStore
-    >)
+    Object.assign(useDialogStore(), { dialogStack: [] })
 
     canvasContainer = document.createElement('div')
     canvasContainer.id = 'graph-canvas-container'

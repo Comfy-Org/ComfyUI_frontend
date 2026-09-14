@@ -1,18 +1,22 @@
 import { render } from '@testing-library/vue'
-import { defineComponent, nextTick, ref } from 'vue'
+import { defineComponent, nextTick, ref, toRef } from 'vue'
+import type { Ref } from 'vue'
+import { useSettingStore } from '@/platform/settings/settingStore'
+import { useExtensionStore } from '@/stores/extensionStore'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import { fromPartial } from '@total-typescript/shoehorn'
+import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
+import { NodeBadgeMode } from '@/types/nodeSource'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type { ComfyExtension } from '@/types/comfy'
 import { app } from '@/scripts/app'
 
 const mocks = vi.hoisted(() => ({
-  extensionInstalled: false,
-  installNodeBadges: vi.fn(),
-  registerExtension: vi.fn()
+  installNodeBadges: vi.fn()
 }))
 
-const badgeMode = ref(false)
-const showApiPricingBadge = ref(false)
+let badgeMode: Ref<string | undefined>
+let showApiPricingBadge: Ref<boolean | undefined>
 const pricingRevision = ref(0)
 const canvasEventListeners = new Map<string, EventListener>()
 const canvas = {
@@ -23,42 +27,18 @@ const canvas = {
   },
   setDirty: vi.fn()
 }
-let canvasReady = true
+let canvasStore: ReturnType<typeof useCanvasStore>
 
 vi.mock(import('@/systems/badgeSystem'), () => ({
   installNodeBadges: mocks.installNodeBadges
 }))
-vi.mock<unknown>(import('@/stores/extensionStore'), () => ({
-  useExtensionStore: () => ({
-    isExtensionInstalled: () => mocks.extensionInstalled,
-    registerExtension: (extension: ComfyExtension) => {
-      mocks.extensionInstalled = true
-      mocks.registerExtension(extension)
-    }
-  })
-}))
-vi.mock<unknown>(import('@/platform/settings/settingStore'), () => ({
-  useSettingStore: () => ({
-    get: (key: string) =>
-      key === 'Comfy.NodeBadge.ShowApiPricing'
-        ? showApiPricingBadge.value
-        : badgeMode.value
-  })
-}))
 vi.mock<unknown>(import('@/composables/node/useNodePricing'), () => ({
   useNodePricing: () => ({ pricingRevision })
-}))
-vi.mock<unknown>(import('@/renderer/core/canvas/canvasStore'), () => ({
-  useCanvasStore: () => ({
-    get canvas() {
-      return canvasReady ? canvas : undefined
-    }
-  })
 }))
 vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: {
     get canvas() {
-      return canvasReady ? canvas : undefined
+      return canvasStore.canvas
     }
   }
 }))
@@ -78,40 +58,44 @@ function renderComposable() {
 
 describe('useNodeBadge', () => {
   beforeEach(() => {
-    mocks.extensionInstalled = false
-    badgeMode.value = false
+    const settings = useSettingStore().settingValues
+    badgeMode = toRef(settings, 'Comfy.NodeBadge.NodeIdBadgeMode')
+    showApiPricingBadge = toRef(settings, 'Comfy.NodeBadge.ShowApiPricing')
+    canvasStore = useCanvasStore()
+    badgeMode.value = NodeBadgeMode.None
     showApiPricingBadge.value = false
     pricingRevision.value = 0
     canvasEventListeners.clear()
-    canvasReady = true
+    canvasStore.canvas = fromPartial<LGraphCanvas>(canvas)
   })
 
   it('keeps the extension-owned provider installed across canvas remounts', async () => {
     const firstMount = renderComposable()
-    const extension = mocks.registerExtension.mock.calls[0][0] as ComfyExtension
+    const extension = vi.mocked(useExtensionStore().registerExtension).mock
+      .calls[0][0]
     await extension.init?.(app)
 
     firstMount.unmount()
 
     const secondMount = renderComposable()
 
-    expect(mocks.registerExtension).toHaveBeenCalledOnce()
+    expect(useExtensionStore().registerExtension).toHaveBeenCalledOnce()
     expect(mocks.installNodeBadges).toHaveBeenCalledOnce()
 
     secondMount.unmount()
   })
 
   it('allows badge settings to change before the canvas is ready', async () => {
-    canvasReady = false
+    canvasStore.canvas = null
     const component = renderComposable()
 
-    badgeMode.value = true
+    badgeMode.value = NodeBadgeMode.ShowAll
     await nextTick()
 
     expect(canvas.setDirty).not.toHaveBeenCalled()
 
-    canvasReady = true
-    badgeMode.value = false
+    canvasStore.canvas = fromPartial<LGraphCanvas>(canvas)
+    badgeMode.value = NodeBadgeMode.None
     await nextTick()
 
     expect(canvas.setDirty).toHaveBeenCalledWith(true, true)
@@ -120,7 +104,7 @@ describe('useNodeBadge', () => {
 
   it('allows pricing to update before the canvas is ready', async () => {
     showApiPricingBadge.value = true
-    canvasReady = false
+    canvasStore.canvas = null
     const component = renderComposable()
 
     pricingRevision.value++
@@ -128,7 +112,7 @@ describe('useNodeBadge', () => {
 
     expect(canvas.setDirty).not.toHaveBeenCalled()
 
-    canvasReady = true
+    canvasStore.canvas = fromPartial<LGraphCanvas>(canvas)
     pricingRevision.value++
     await nextTick()
 
@@ -138,9 +122,10 @@ describe('useNodeBadge', () => {
 
   it('allows the canvas to be removed before a graph event arrives', async () => {
     const component = renderComposable()
-    const extension = mocks.registerExtension.mock.calls[0][0] as ComfyExtension
+    const extension = vi.mocked(useExtensionStore().registerExtension).mock
+      .calls[0][0]
     await extension.init?.(app)
-    canvasReady = false
+    canvasStore.canvas = null
 
     canvasEventListeners.get('litegraph:set-graph')?.(
       new Event('litegraph:set-graph')
@@ -148,7 +133,7 @@ describe('useNodeBadge', () => {
 
     expect(canvas.setDirty).not.toHaveBeenCalled()
 
-    canvasReady = true
+    canvasStore.canvas = fromPartial<LGraphCanvas>(canvas)
     canvasEventListeners.get('litegraph:set-graph')?.(
       new Event('litegraph:set-graph')
     )

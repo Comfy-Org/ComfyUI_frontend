@@ -1,4 +1,5 @@
-import { describe, expect, it, vi } from 'vitest'
+import { useSettingStore } from '@/platform/settings/settingStore'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { MissingNodeType } from '@/types/comfy'
 
@@ -12,13 +13,13 @@ vi.mock(import('@/platform/distribution/types'), () => ({
 
 const mockShowErrorsTab = vi.hoisted(() => ({ value: false }))
 
-vi.mock<unknown>(import('@/platform/settings/settingStore'), () => ({
-  useSettingStore: vi.fn(() => ({
-    get: vi.fn(() => mockShowErrorsTab.value)
-  }))
-}))
-
 import { useMissingNodesErrorStore } from './missingNodesErrorStore'
+
+beforeEach(() => {
+  vi.mocked(useSettingStore().get).mockImplementation(
+    () => mockShowErrorsTab.value
+  )
+})
 
 describe('missingNodesErrorStore', () => {
   describe('setMissingNodeTypes', () => {

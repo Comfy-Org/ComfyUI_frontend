@@ -1,28 +1,33 @@
 // @vitest-environment jsdom
 import userEvent from '@testing-library/user-event'
 import { render, screen, within } from '@testing-library/vue'
-import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { i18n } from '@/i18n'
 import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import type { LoadedComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
+import { createMockLoadedWorkflow } from '@/utils/__tests__/litegraphTestUtils'
 
 import TabLinkCard from './TabLinkCard.vue'
 import { AgentTargetNavigationError } from '../../../services/agent/targetAwareAgentNavigation'
 
-interface FakeTab {
-  path: string
-  filename: string
-  activeState?: { nodes: unknown[] }
-}
+vi.hoisted(() => {
+  vi.stubGlobal(
+    'ResizeObserver',
+    class {
+      observe() {}
+      unobserve() {}
+      disconnect() {}
+    }
+  )
+})
 
 const mocks = vi.hoisted(() => ({
   api: new EventTarget(),
-  activeWorkflow: undefined as FakeTab | undefined,
   openWorkflow: vi.fn(),
   navigate: vi.fn(),
-  reportError: vi.fn(),
-  openWorkflows: [] as unknown[]
+  reportError: vi.fn()
 }))
 
 vi.mock(import('../../../composables/agent/useAgentTargetNavigation'), () => ({
@@ -42,20 +47,6 @@ vi.mock<unknown>(
   })
 )
 
-vi.mock<unknown>(
-  import('@/platform/workflow/management/stores/workflowStore'),
-  () => ({
-    useWorkflowStore: () => ({
-      get openWorkflows() {
-        return mocks.openWorkflows
-      },
-      get activeWorkflow() {
-        return mocks.activeWorkflow
-      }
-    })
-  })
-)
-
 const { useAgentWorkflowTabBindingStore } =
   await import('../../../stores/agent/agentWorkflowTabBindingStore')
 const { useAgentPanelStore } =
@@ -68,24 +59,30 @@ function mount(workflowId: string, name?: string) {
   })
 }
 
-function openTabs(...tabs: FakeTab[]): void {
-  mocks.openWorkflows = tabs
+function openTabs(...tabs: LoadedComfyWorkflow[]): void {
+  for (const tab of tabs) {
+    useWorkflowStore().attachWorkflow(
+      tab,
+      useWorkflowStore().openWorkflows.length
+    )
+  }
 }
 
 describe('TabLinkCard', () => {
   beforeEach(() => {
     localStorage.clear()
-    setActivePinia(createPinia())
     mocks.openWorkflow.mockClear()
     mocks.navigate.mockClear()
     mocks.reportError.mockClear()
-    mocks.activeWorkflow = undefined
     openTabs()
     useAgentPanelStore().enabled = true
   })
 
   it('T-14 / PM-676 / FE-1310 renders the backend tab name and focuses its workflow on click', async () => {
-    const tab = { path: 'flows/portrait.json', filename: 'portrait' }
+    const tab = createMockLoadedWorkflow({
+      path: 'flows/portrait.json',
+      filename: 'portrait'
+    })
     openTabs(tab)
     useAgentWorkflowTabBindingStore().bind('wf-1', tab.path)
 
@@ -99,7 +96,10 @@ describe('TabLinkCard', () => {
   })
 
   it('falls back to the local tab name when no backend name is present', () => {
-    const tab = { path: 'flows/portrait.json', filename: 'portrait' }
+    const tab = createMockLoadedWorkflow({
+      path: 'flows/portrait.json',
+      filename: 'portrait'
+    })
     openTabs(tab)
     useAgentWorkflowTabBindingStore().bind('wf-1', tab.path)
 
@@ -109,11 +109,11 @@ describe('TabLinkCard', () => {
   })
 
   it('renders one action with media, title and node-count content, then navigation affordance', () => {
-    const tab = {
+    const tab = createMockLoadedWorkflow({
       path: 'flows/portrait.json',
       filename: 'portrait',
       activeState: { nodes: [{}, {}] }
-    }
+    })
     openTabs(tab)
     useAgentWorkflowTabBindingStore().bind('wf-1', tab.path)
 
@@ -134,13 +134,13 @@ describe('TabLinkCard', () => {
   })
 
   it('keeps the active workflow node count current and accessible', async () => {
-    const tab = {
+    const tab = createMockLoadedWorkflow({
       path: 'flows/portrait.json',
       filename: 'portrait',
       activeState: { nodes: [{}] }
-    }
+    })
     openTabs(tab)
-    mocks.activeWorkflow = tab
+    useWorkflowStore().activeWorkflow = tab
     useAgentWorkflowTabBindingStore().bind('wf-1', tab.path)
 
     mount('wf-1')
@@ -156,18 +156,18 @@ describe('TabLinkCard', () => {
   })
 
   it('ignores graph changes while the linked workflow is inactive', async () => {
-    const linkedTab = {
+    const linkedTab = createMockLoadedWorkflow({
       path: 'flows/portrait.json',
       filename: 'portrait',
       activeState: { nodes: [{}] }
-    }
-    const activeTab = {
+    })
+    const activeTab = createMockLoadedWorkflow({
       path: 'flows/landscape.json',
       filename: 'landscape',
       activeState: { nodes: [{}, {}] }
-    }
+    })
     openTabs(linkedTab, activeTab)
-    mocks.activeWorkflow = activeTab
+    useWorkflowStore().activeWorkflow = activeTab
     useAgentWorkflowTabBindingStore().bind('wf-1', linkedTab.path)
 
     mount('wf-1')
@@ -182,13 +182,13 @@ describe('TabLinkCard', () => {
 
   it('removes its graph listener when unmounted', () => {
     const removeListener = vi.spyOn(mocks.api, 'removeEventListener')
-    const tab = {
+    const tab = createMockLoadedWorkflow({
       path: 'flows/portrait.json',
       filename: 'portrait',
       activeState: { nodes: [{}] }
-    }
+    })
     openTabs(tab)
-    mocks.activeWorkflow = tab
+    useWorkflowStore().activeWorkflow = tab
     useAgentWorkflowTabBindingStore().bind('wf-1', tab.path)
 
     const view = mount('wf-1')
@@ -207,7 +207,10 @@ describe('TabLinkCard', () => {
   })
 
   it('renders no reference and performs no action while the flag is off', () => {
-    const tab = { path: 'flows/portrait.json', filename: 'portrait' }
+    const tab = createMockLoadedWorkflow({
+      path: 'flows/portrait.json',
+      filename: 'portrait'
+    })
     openTabs(tab)
     useAgentWorkflowTabBindingStore().bind('wf-1', tab.path)
     useAgentPanelStore().enabled = false
@@ -219,7 +222,10 @@ describe('TabLinkCard', () => {
   })
 
   it('navigates an explicit node reference through its target workflow', async () => {
-    const tab = { path: 'flows/portrait.json', filename: 'portrait' }
+    const tab = createMockLoadedWorkflow({
+      path: 'flows/portrait.json',
+      filename: 'portrait'
+    })
     openTabs(tab)
     useAgentWorkflowTabBindingStore().bind('wf-1', tab.path)
 
@@ -241,7 +247,10 @@ describe('TabLinkCard', () => {
   })
 
   it('shows recovery feedback when a node target is no longer available', async () => {
-    const tab = { path: 'flows/portrait.json', filename: 'portrait' }
+    const tab = createMockLoadedWorkflow({
+      path: 'flows/portrait.json',
+      filename: 'portrait'
+    })
     openTabs(tab)
     useAgentWorkflowTabBindingStore().bind('wf-1', tab.path)
     mocks.navigate.mockRejectedValueOnce(
@@ -263,7 +272,10 @@ describe('TabLinkCard', () => {
   })
 
   it('reports unexpected navigation failures', async () => {
-    const tab = { path: 'flows/portrait.json', filename: 'portrait' }
+    const tab = createMockLoadedWorkflow({
+      path: 'flows/portrait.json',
+      filename: 'portrait'
+    })
     const error = new Error('focus failed')
     openTabs(tab)
     useAgentWorkflowTabBindingStore().bind('wf-1', tab.path)

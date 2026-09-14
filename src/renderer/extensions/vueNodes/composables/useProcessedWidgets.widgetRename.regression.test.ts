@@ -1,6 +1,4 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it } from 'vitest'
 
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { computeProcessedWidgets } from '@/renderer/extensions/vueNodes/composables/useProcessedWidgets'
@@ -9,10 +7,6 @@ import { toNodeId } from '@/types/nodeId'
 import { widgetId } from '@/types/widgetId'
 
 const GRAPH_ID = 'graph-widget-rename'
-
-vi.mock<unknown>(import('@/renderer/core/canvas/canvasStore'), () => ({
-  useCanvasStore: () => ({ rootGraphId: GRAPH_ID })
-}))
 
 const noopUi = {
   getTooltipConfig: () => ({}),
@@ -52,9 +46,7 @@ function renderedWidgetNames(graph: LGraph, node: LGraphNode): string[] {
 }
 
 describe('widget rename after registration (#15600)', () => {
-  beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-  })
+  beforeEach(() => {})
 
   it('control: a widget that is never renamed renders', () => {
     const { graph, node } = setup('Original')

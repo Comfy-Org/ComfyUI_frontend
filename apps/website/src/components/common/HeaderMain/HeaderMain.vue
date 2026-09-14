@@ -1,17 +1,60 @@
 <script setup lang="ts">
+import {
+  defineAsyncComponent,
+  onBeforeUnmount,
+  onMounted,
+  ref,
+  watch
+} from 'vue'
+
 import type { Locale } from '../../../i18n/translations.ts'
 import { t } from '../../../i18n/translations.ts'
 import { externalLinks, getRoutes } from '../../../config/routes.ts'
+import { subscribeToWorkshopBuyCredits } from '../../../config/workshop-buy-credits.ts'
+import { announceTopUpReturnFromLocation } from '../../../lib/workshop/topup-return.ts'
+import { useWorkshopAuthFlag } from '../../../scripts/posthog.ts'
 import GitHubStarBadge from '../GitHubStarBadge.vue'
 import HeaderMainDesktop from './HeaderMainDesktop.vue'
 import HeaderMainMobile from './HeaderMainMobile.vue'
 import Button from '@/components/ui/button/Button.vue'
 
-const { locale = 'en', githubStars = '' } = defineProps<{
+const {
+  locale = 'en',
+  githubStars = '',
+  workshopInBuild = false
+} = defineProps<{
   locale?: Locale
   githubStars?: string
+  workshopInBuild?: boolean
 }>()
 const routes = getRoutes(locale)
+const workshopAuthEnabled = useWorkshopAuthFlag()
+const HeaderAccount = defineAsyncComponent(
+  () => import('../../workshop/HeaderAccount.vue')
+)
+const BuyCreditsDialog = defineAsyncComponent(
+  () => import('../../workshop/BuyCreditsDialog.vue')
+)
+const buyingCredits = ref(false)
+const buyCreditsDialogMounted = ref(false)
+let stopBuyCreditsRequests: (() => void) | undefined
+
+onMounted(() => {
+  announceTopUpReturnFromLocation()
+  stopBuyCreditsRequests = subscribeToWorkshopBuyCredits(() => {
+    if (workshopAuthEnabled.value) buyingCredits.value = true
+  })
+})
+onBeforeUnmount(() => stopBuyCreditsRequests?.())
+watch(
+  workshopAuthEnabled,
+  (enabled) => {
+    // Once a checkout has started, a later flag refresh must not unmount its
+    // return listener or close the tab it owns.
+    if (enabled) buyCreditsDialogMounted.value = true
+  },
+  { immediate: true }
+)
 
 const ctaButtons = [
   {
@@ -47,7 +90,7 @@ const ctaButtons = [
         class="col-span-full row-span-full h-8"
       />
       <div
-        class="relative col-span-full row-span-full h-10 w-0 overflow-clip transition-[width] xl:w-36"
+        class="relative col-span-full row-span-full h-10 w-0 overflow-clip transition-[width] 2xl:w-36"
       >
         <img
           src="/icons/logo.svg"
@@ -58,13 +101,25 @@ const ctaButtons = [
     </a>
 
     <!-- Desktop nav links -->
-    <HeaderMainDesktop :locale class="hidden lg:block" />
-    <HeaderMainMobile :locale class="lg:hidden" />
+    <HeaderMainDesktop
+      :locale
+      :workshop-in-build
+      :class="workshopInBuild ? 'hidden xl:block' : 'hidden lg:block'"
+    />
+    <div
+      data-testid="mobile-nav-cta"
+      class="flex shrink-0 items-center gap-2"
+      :class="workshopInBuild ? 'xl:hidden' : 'lg:hidden'"
+    >
+      <HeaderAccount v-if="workshopAuthEnabled" :locale="locale" />
+      <HeaderMainMobile :locale :workshop-in-build />
+    </div>
 
     <!-- Desktop CTA buttons -->
     <div
       data-testid="desktop-nav-cta"
-      class="hidden shrink-0 items-center gap-2 lg:flex"
+      class="hidden shrink-0 items-center gap-2"
+      :class="workshopInBuild ? 'xl:flex' : 'lg:flex'"
     >
       <!-- Get Yoland to sign a contract of permission before killing this -->
       <GitHubStarBadge v-if="githubStars" :stars="githubStars" />
@@ -77,10 +132,16 @@ const ctaButtons = [
         :aria-label="cta.ariaLabel"
       >
         <span>
-          <span class="hidden 2xl:inline-block">{{ cta.full }}</span>
-          <span class="2xl:hidden">{{ cta.short }}</span>
+          <span class="hidden min-[1800px]:inline-block">{{ cta.full }}</span>
+          <span class="min-[1800px]:hidden">{{ cta.short }}</span>
         </span>
       </Button>
+      <HeaderAccount v-if="workshopAuthEnabled" :locale="locale" />
     </div>
   </nav>
+  <BuyCreditsDialog
+    v-if="buyCreditsDialogMounted"
+    v-model:open="buyingCredits"
+    :locale
+  />
 </template>

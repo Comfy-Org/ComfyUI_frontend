@@ -3,6 +3,7 @@ import type { Ref } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import { useToastStore } from '@/platform/updates/common/toastStore'
 
 interface ViewportInstance {
   ctorArgs: unknown[]
@@ -18,7 +19,7 @@ interface ViewportInstance {
   }
 }
 
-const { ViewportMock, instances, addAlert } = vi.hoisted(() => {
+const { ViewportMock, instances } = vi.hoisted(() => {
   const instances: ViewportInstance[] = []
   const ViewportMock = vi.fn(function (...ctorArgs: unknown[]) {
     const instance: ViewportInstance = {
@@ -37,7 +38,7 @@ const { ViewportMock, instances, addAlert } = vi.hoisted(() => {
     instances.push(instance)
     return instance
   })
-  return { ViewportMock, instances, addAlert: vi.fn() }
+  return { ViewportMock, instances }
 })
 
 vi.mock<unknown>(
@@ -46,9 +47,6 @@ vi.mock<unknown>(
     CameraInfoViewport: ViewportMock
   })
 )
-vi.mock<unknown>(import('@/platform/updates/common/toastStore'), () => ({
-  useToastStore: () => ({ addAlert })
-}))
 
 import { useCameraInfo } from './useCameraInfo'
 
@@ -83,7 +81,6 @@ function nodeRef(node: FakeNode) {
 beforeEach(() => {
   instances.length = 0
   ViewportMock.mockClear()
-  addAlert.mockClear()
 })
 
 describe('useCameraInfo', () => {
@@ -120,7 +117,7 @@ describe('useCameraInfo', () => {
     const camera = useCameraInfo(nodeRef(makeNode({ mode: 'orbit' })))
 
     expect(() => camera.initialize(document.createElement('div'))).not.toThrow()
-    expect(addAlert).toHaveBeenCalledOnce()
+    expect(useToastStore().addAlert).toHaveBeenCalledOnce()
 
     consoleError.mockRestore()
   })

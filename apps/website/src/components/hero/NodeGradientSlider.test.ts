@@ -2,6 +2,7 @@
 import { render, screen } from '@testing-library/vue'
 import { describe, expect, it, vi } from 'vitest'
 
+import { lastNumberEmitted } from '../../test/emitted'
 import NodeGradientSlider from './NodeGradientSlider.vue'
 
 const defaultProps = {
@@ -31,7 +32,7 @@ function renderSlider(props: Partial<typeof defaultProps> = {}) {
     toJSON: () => ({})
   })
   const lastEmitted = () =>
-    (utils.emitted('update:modelValue')?.at(-1) as [number] | undefined)?.[0]
+    lastNumberEmitted(utils.emitted('update:modelValue'))
   return { ...utils, slider, lastEmitted }
 }
 

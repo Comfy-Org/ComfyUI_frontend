@@ -6,33 +6,24 @@ import PrimeVue from 'primevue/config'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, nextTick, ref } from 'vue'
 
+import type * as NodePreviewModule from '@/renderer/extensions/vueNodes/components/LGraphNodePreview.vue'
+import type { ComfyApp } from '@/scripts/app'
+import { useExecutionStore } from '@/stores/executionStore'
 import { toNodeId } from '@/types/nodeId'
 import type { NodeId } from '@/types/nodeId'
 
-const execHolder = vi.hoisted(() => ({
-  state: null as {
-    executingNodeIds: Array<string | number>
-    isIdle: boolean
-  } | null
-}))
-
-vi.mock<unknown>(import('@/stores/executionStore'), async () => {
-  const { reactive } = await import('vue')
-  execHolder.state = reactive({
-    executingNodeIds: [] as Array<string | number>,
-    isIdle: true
-  })
-  return {
-    useExecutionStore: () => execHolder.state
-  }
-})
-
-const execState = (): {
-  executingNodeIds: Array<string | number>
-  isIdle: boolean
-} => execHolder.state!
-
 import TextPreviewWidget from './TextPreviewWidget.vue'
+vi.mock(import('@/scripts/app'), async () => {
+  const { fromPartial } = await import('@total-typescript/shoehorn')
+  return { app: fromPartial<ComfyApp>({}) }
+})
+vi.mock(
+  import('@/renderer/extensions/vueNodes/components/LGraphNodePreview.vue'),
+  async () => {
+    const { fromPartial } = await import('@total-typescript/shoehorn')
+    return fromPartial<typeof NodePreviewModule>({ default: {} })
+  }
+)
 
 const SkeletonStub = defineComponent({
   name: 'Skeleton',
@@ -59,8 +50,8 @@ function renderPreview(
 
 describe('TextPreviewWidget', () => {
   beforeEach(() => {
-    execState().executingNodeIds = []
-    execState().isIdle = true
+    Object.assign(useExecutionStore(), { executingNodeIds: [] })
+    Object.assign(useExecutionStore(), { isIdle: true })
   })
 
   describe('Text formatting', () => {
@@ -170,38 +161,38 @@ describe('TextPreviewWidget', () => {
 
   describe('Execution state', () => {
     it('hides the Skeleton on mount when execution is already idle', () => {
-      execState().executingNodeIds = []
-      execState().isIdle = true
+      Object.assign(useExecutionStore(), { executingNodeIds: [] })
+      Object.assign(useExecutionStore(), { isIdle: true })
       renderPreview('text', { nodeId: toNodeId('n1') })
       expect(screen.queryByTestId('skeleton')).toBeNull()
     })
 
     it('shows a Skeleton on mount when the parent node is executing', () => {
-      execState().executingNodeIds = ['n1']
-      execState().isIdle = false
+      Object.assign(useExecutionStore(), { executingNodeIds: ['n1'] })
+      Object.assign(useExecutionStore(), { isIdle: false })
       renderPreview('text', { nodeId: toNodeId('n1') })
       expect(screen.getByTestId('skeleton')).toBeInTheDocument()
     })
 
     it('hides the Skeleton when execution transitions to idle', async () => {
-      execState().executingNodeIds = ['n1']
-      execState().isIdle = false
+      Object.assign(useExecutionStore(), { executingNodeIds: ['n1'] })
+      Object.assign(useExecutionStore(), { isIdle: false })
       renderPreview('text', { nodeId: toNodeId('n1') })
       expect(screen.getByTestId('skeleton')).toBeInTheDocument()
 
-      execState().executingNodeIds = []
-      execState().isIdle = true
+      Object.assign(useExecutionStore(), { executingNodeIds: [] })
+      Object.assign(useExecutionStore(), { isIdle: true })
       await nextTick()
 
       expect(screen.queryByTestId('skeleton')).toBeNull()
     })
 
     it('hides the Skeleton when the parent node leaves executingNodeIds', async () => {
-      execState().executingNodeIds = ['n1']
-      execState().isIdle = false
+      Object.assign(useExecutionStore(), { executingNodeIds: ['n1'] })
+      Object.assign(useExecutionStore(), { isIdle: false })
       renderPreview('text', { nodeId: toNodeId('n1') })
 
-      execState().executingNodeIds = ['other']
+      Object.assign(useExecutionStore(), { executingNodeIds: ['other'] })
       await nextTick()
 
       expect(screen.queryByTestId('skeleton')).toBeNull()
