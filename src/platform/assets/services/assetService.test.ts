@@ -49,7 +49,8 @@ vi.mock<unknown>(import('@/scripts/api'), () => ({
 }))
 
 vi.mock<unknown>(import('@/i18n'), () => ({
-  st: vi.fn((_key: string, fallback: string) => fallback)
+  st: vi.fn((_key: string, fallback: string) => fallback),
+  t: vi.fn((key: string) => key)
 }))
 
 const fetchApiMock = vi.mocked(api.fetchApi)
