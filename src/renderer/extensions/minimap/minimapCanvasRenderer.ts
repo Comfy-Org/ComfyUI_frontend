@@ -108,7 +108,8 @@ interface AgentHighlightEntry {
 
 /**
  * Draw the agent treatment over the ordinary fill: a gold block that scales up
- * behind an expanding halo, then holds and fades back to the node's own color.
+ * behind an expanding halo and then holds, marking the node as the agent's for
+ * as long as it exists.
  */
 function renderAgentHighlights(
   ctx: CanvasRenderingContext2D,
@@ -127,22 +128,20 @@ function renderAgentHighlights(
     const grown = markerW * (0.35 + 0.65 * highlight.pop)
     const grownH = markerH * (0.35 + 0.65 * highlight.pop)
 
-    ctx.globalAlpha = highlight.strength
     ctx.fillRect(centerX - grown / 2, centerY - grownH / 2, grown, grownH)
 
     if (highlight.pop < 1) {
       const halo = AGENT_HALO_PX * highlight.pop
-      ctx.globalAlpha = (1 - highlight.pop) * highlight.strength
+      ctx.globalAlpha = 1 - highlight.pop
       ctx.strokeRect(
         centerX - grown / 2 - halo,
         centerY - grownH / 2 - halo,
         grown + halo * 2,
         grownH + halo * 2
       )
+      ctx.globalAlpha = 1
     }
   }
-
-  ctx.globalAlpha = 1
 }
 
 /**
@@ -198,11 +197,15 @@ function renderNodes(
       executionState: node.executionState
     })
 
-    const highlight =
-      node.agentGeneratedAt === undefined
-        ? null
-        : agentHighlightAt(node.agentGeneratedAt, now)
-    if (highlight) agentEntries.push({ x, y, w, h, highlight })
+    if (node.agentGeneratedAt !== undefined) {
+      agentEntries.push({
+        x,
+        y,
+        w,
+        h,
+        highlight: agentHighlightAt(node.agentGeneratedAt, now)
+      })
+    }
   }
 
   // Batch render nodes by color

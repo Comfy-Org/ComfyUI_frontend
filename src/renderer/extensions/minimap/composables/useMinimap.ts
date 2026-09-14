@@ -8,7 +8,7 @@ import { useWorkflowStore } from '@/platform/workflow/management/stores/workflow
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useAgentGeneratedNodesStore } from '@/stores/agentGeneratedNodesStore'
 
-import { AGENT_HIGHLIGHT_LIFETIME_MS } from '../agentHighlight'
+import { AGENT_POP_MS } from '../agentHighlight'
 import type { MinimapCanvas, MinimapSettingsKey } from '../types'
 import { useMinimapGraph } from './useMinimapGraph'
 import { useMinimapInteraction } from './useMinimapInteraction'
@@ -149,25 +149,25 @@ export function useMinimap({
     { immediate: true }
   )
 
-  // Agent nodes animate on wall-clock time, which no digest can report: the
-  // graph is unchanged between the frame a node pops in and the frame it
-  // settles. Frames run only while a mark is live, and dropping the expired
-  // marks is what ends the loop.
-  const { pause: pauseAgentFrames, resume: resumeAgentFrames } = useRafFn(
+  // A node pops in on wall-clock time, which no digest can report: the graph is
+  // unchanged between the frame the node lands and the frame it settles. Once
+  // the newest mark has finished popping the treatment is static again, and the
+  // ordinary change detection is enough to keep drawing it.
+  const agentFrames = useRafFn(
     () => {
-      agentGeneratedNodes.forgetMarksBefore(
-        Date.now() - AGENT_HIGHLIGHT_LIFETIME_MS
-      )
       renderer.renderFrame()
+      if (Date.now() - agentGeneratedNodes.latestMarkAt >= AGENT_POP_MS) {
+        agentFrames.pause()
+      }
     },
     { immediate: false }
   )
 
   watch(
-    () => shouldPoll.value && agentGeneratedNodes.hasMarks,
-    (animating) => {
-      if (animating) resumeAgentFrames()
-      else pauseAgentFrames()
+    () => (shouldPoll.value ? agentGeneratedNodes.latestMarkAt : 0),
+    (latestMarkAt) => {
+      if (latestMarkAt > 0) agentFrames.resume()
+      else agentFrames.pause()
     },
     { immediate: true }
   )
@@ -200,7 +200,7 @@ export function useMinimap({
 
   const destroy = () => {
     pauseChangeDetection()
-    pauseAgentFrames()
+    agentFrames.pause()
     viewport.stopViewportSync()
     graphManager.destroy()
 
