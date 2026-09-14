@@ -49,6 +49,7 @@ const SNAPSHOT: CrdtDebugSnapshot = {
       received: 3,
       applied: 3,
       skipped: 0,
+      pending: 0,
       errored: 0,
       gap: 0,
       reset: 0,

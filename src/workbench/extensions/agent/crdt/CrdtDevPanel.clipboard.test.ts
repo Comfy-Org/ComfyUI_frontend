@@ -45,6 +45,7 @@ const status: AgentCrdtStatus = {
     received: 1,
     applied: 1,
     skipped: 0,
+    pending: 0,
     errored: 0,
     gap: 0,
     reset: 0,

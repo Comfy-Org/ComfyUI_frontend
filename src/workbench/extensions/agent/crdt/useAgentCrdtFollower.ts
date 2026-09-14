@@ -28,7 +28,7 @@ export { apiTransport, STALE_AFTER_MS }
  * observable. Each counter increments exactly once, at the boundary where
  * that outcome is decided — never inferred after the fact. `received` counts
  * only frames the bridge re-dispatched as `doc_update`, so
- * `received === applied + skipped` always holds; `errored`, `gap` and
+ * `received === applied + skipped + pending` always holds; `errored`, `gap` and
  * `dropped` are disjoint from it because the bridge returns before
  * re-dispatching in each of those cases (schema gate, FEB-2 seq jump,
  * stale/duplicate discard). Frames the bridge drops for a workflowId other
@@ -46,6 +46,8 @@ export interface AgentCrdtOutcomeCounters {
   applied: number
   /** Received but not applied: inactive target, workflow mismatch, or no bound adapter session. */
   skipped: number
+  /** Frames accepted by the adapter but awaiting a projection verdict. */
+  pending: number
   /** The merged doc failed the KA-11 read gate (`schema_error`). */
   errored: number
   /** A seq jump was detected upstream; the frame was withheld and a resubscribe forced (`doc_gap`). */
@@ -91,6 +93,7 @@ export function useAgentCrdtFollower(
     received: 0,
     applied: 0,
     skipped: 0,
+    pending: 0,
     errored: 0,
     gap: 0,
     reset: 0,
@@ -108,6 +111,26 @@ export function useAgentCrdtFollower(
     () => subscribedWorkflowId.value,
     () => bridge.resubscribe()
   )
+  const projectedSequence = ref(0)
+  const settleFrames = (
+    workflowId: string,
+    bucket: 'applied' | 'skipped'
+  ): void => {
+    const current = outcomes.value
+    const pending = projection.pendingFrameCount(workflowId)
+    const settled =
+      current.received - current.applied - current.skipped - pending
+    outcomes.value = {
+      ...current,
+      applied: current.applied + (bucket === 'applied' ? settled : 0),
+      skipped: current.skipped + (bucket === 'skipped' ? settled : 0),
+      pending
+    }
+  }
+  const settleAndUnbind = (workflowId: string): void => {
+    projection.unbind(workflowId)
+    settleFrames(workflowId, 'skipped')
+  }
   const tabId = createUuidv4()
   const sender = createOpSender({
     sendOps: (target, tab, ops) => client.sendOps(target, tab, ops),
@@ -133,7 +156,7 @@ export function useAgentCrdtFollower(
     workflowId: () => bridge.subscribedWorkflowId,
     tab: tabId,
     actor: () => `human:${userId() ?? 'anonymous'}:${tabId}`,
-    baseVersion: () => bridge.lastSequence,
+    baseVersion: () => projectedSequence.value,
     onBatchSettled: (outcome) => recordDevEvent('human_ops_settled', outcome)
   })
 
@@ -161,6 +184,44 @@ export function useAgentCrdtFollower(
     recordDevEvent('doc_subscribed', event.detail ?? null)
     if (ok) {
       lifecycle.onSubscribeConfirmed()
+      const target = subscribedWorkflowId.value
+      if (target !== null) {
+        const result = projection.retryPending(target)
+        switch (result.status) {
+          case 'projected':
+            settleFrames(target, 'applied')
+            projectedSequence.value = result.sequence
+            projection.reconcileLiveGraph(target)
+            updatesApplied.value = bridge.follower.updatesApplied
+            break
+          case 'retrying':
+            settleFrames(target, 'applied')
+            lastFrameType.value = 'projection_retry'
+            recordDevEvent('projection_error', {
+              workflowId: target,
+              seq: result.sequence,
+              attempt: result.attempt
+            })
+            break
+          case 'failed':
+            settleFrames(target, 'skipped')
+            connected.value = false
+            lastFrameType.value = 'projection_error'
+            lifecycle.clearStaleProbe()
+            recordDevEvent('projection_error', {
+              workflowId: target,
+              seq: result.sequence,
+              reason: result.reason
+            })
+            break
+          case 'unbound':
+            settleFrames(target, 'skipped')
+            break
+          case 'idle':
+          case 'queued':
+            break
+        }
+      }
     } else {
       lifecycle.onSubscribeRefused()
       // FE #16637 residual: a refusal is the earliest signal the sender can
@@ -187,13 +248,43 @@ export function useAgentCrdtFollower(
       return
     }
     lifecycle.onDocumentUpdate()
-    updatesApplied.value = bridge.follower.updatesApplied
     lastFrameType.value = event.type
-    const applied = projection.applyFrame(update)
-    outcomes.value = applied
-      ? { ...outcomes.value, applied: outcomes.value.applied + 1 }
-      : { ...outcomes.value, skipped: outcomes.value.skipped + 1 }
-    if (applied) projection.reconcileLiveGraph(update.workflowId)
+    const result = projection.applyFrame(update)
+    switch (result.status) {
+      case 'queued':
+      case 'idle':
+      case 'unbound':
+        settleFrames(update.workflowId, 'skipped')
+        return
+      case 'retrying':
+        settleFrames(update.workflowId, 'applied')
+        lastFrameType.value = 'projection_retry'
+        recordDevEvent('projection_error', {
+          workflowId: update.workflowId,
+          seq: result.sequence,
+          actor: update.actor,
+          attempt: result.attempt
+        })
+        return
+      case 'failed':
+        settleFrames(update.workflowId, 'skipped')
+        connected.value = false
+        lastFrameType.value = 'projection_error'
+        lifecycle.clearStaleProbe()
+        recordDevEvent('projection_error', {
+          workflowId: update.workflowId,
+          seq: result.sequence,
+          actor: update.actor,
+          reason: result.reason
+        })
+        return
+      case 'projected':
+        settleFrames(update.workflowId, 'applied')
+        connected.value = true
+        projectedSequence.value = result.sequence
+        updatesApplied.value = bridge.follower.updatesApplied
+    }
+    projection.reconcileLiveGraph(update.workflowId)
     recordDevEvent('doc_update', {
       workflowId: update.workflowId,
       seq: update.seq,
@@ -240,8 +331,10 @@ export function useAgentCrdtFollower(
       opId: `doc-reset:${detail.seq ?? 'unknown'}`
     }
     projection.clearForReset(detail.workflowId, context)
+    settleFrames(detail.workflowId, 'skipped')
     connected.value = false
     updatesApplied.value = 0
+    projectedSequence.value = 0
     lastFrameType.value = event.type
     lifecycle.clearStaleProbe()
     knownDocNodeIds = new Set()
@@ -270,6 +363,7 @@ export function useAgentCrdtFollower(
         actor: 'agent-lineage',
         opId: `follower-replaced:${workflowId}`
       })
+      settleFrames(workflowId, 'skipped')
       projection.bind(workflowId, bridge.follower)
     }
   }
@@ -284,8 +378,10 @@ export function useAgentCrdtFollower(
       event instanceof CustomEvent
         ? (event.detail as { workflowId?: string } | null)
         : null
-    if (detail?.workflowId !== undefined)
+    if (detail?.workflowId !== undefined) {
       projection.discardPending(detail.workflowId)
+      settleFrames(detail.workflowId, 'skipped')
+    }
     outcomes.value = { ...outcomes.value, errored: outcomes.value.errored + 1 }
     recordDevEvent(
       'schema_error',
@@ -379,11 +475,12 @@ export function useAgentCrdtFollower(
       const justActivated = active && previous?.[1] === false
       lifecycle.clearForRetarget()
       connected.value = false
+      projectedSequence.value = 0
       knownDocNodeIds = new Set()
       if (!active) {
         if (next !== null) initialBind = false
         if (boundWorkflowId !== null) {
-          projection.unbind(boundWorkflowId)
+          settleAndUnbind(boundWorkflowId)
           boundWorkflowId = null
         }
         subscribedWorkflowId.value = null
@@ -396,7 +493,7 @@ export function useAgentCrdtFollower(
         if (persisted !== null) {
           recordDevEvent('rebind', { workflowId: persisted })
           if (boundWorkflowId !== persisted) {
-            if (boundWorkflowId !== null) projection.unbind(boundWorkflowId)
+            if (boundWorkflowId !== null) settleAndUnbind(boundWorkflowId)
             projection.bind(persisted, bridge.follower)
             boundWorkflowId = persisted
           }
@@ -407,7 +504,7 @@ export function useAgentCrdtFollower(
         }
         lifecycle.clearPersistedDocId()
         if (boundWorkflowId !== null) {
-          projection.unbind(boundWorkflowId)
+          settleAndUnbind(boundWorkflowId)
           boundWorkflowId = null
         }
         subscribedWorkflowId.value = null
@@ -416,7 +513,7 @@ export function useAgentCrdtFollower(
       }
       initialBind = false
       if (boundWorkflowId !== next) {
-        if (boundWorkflowId !== null) projection.unbind(boundWorkflowId)
+        if (boundWorkflowId !== null) settleAndUnbind(boundWorkflowId)
         projection.bind(next, bridge.follower)
         boundWorkflowId = next
       }
@@ -443,6 +540,7 @@ export function useAgentCrdtFollower(
       bridge.removeEventListener('doc_gap', onGap)
       bridge.removeEventListener('doc_stale', onStale)
       sender.detach()
+      if (boundWorkflowId !== null) settleAndUnbind(boundWorkflowId)
       projection.destroy()
       bridge.destroy()
     } finally {
