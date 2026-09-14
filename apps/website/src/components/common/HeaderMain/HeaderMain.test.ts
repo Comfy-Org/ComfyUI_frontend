@@ -182,6 +182,25 @@ describe('HeaderMain workshop gating', () => {
     expect(screen.getByTestId('buy-credits-dialog')).toBeTruthy()
   })
 
+  it('ignores credits requests while Models is hidden', async () => {
+    hoisted.flag!.value = true
+    render(HeaderMain, { props: { workshopInBuild: true } })
+    await nextTick()
+
+    requestWorkshopBuyCredits()
+    await nextTick()
+    expect(screen.queryByTestId('buy-credits-dialog')).toBeNull()
+
+    hoisted.visibility!.value = true
+    await waitFor(() =>
+      expect(screen.getAllByTestId('header-account')).toHaveLength(2)
+    )
+    expect(screen.queryByTestId('buy-credits-dialog')).toBeNull()
+
+    requestWorkshopBuyCredits()
+    expect(await screen.findByTestId('buy-credits-dialog')).toBeTruthy()
+  })
+
   it('updates navigation and removes the account controls when access is revoked', async () => {
     hoisted.flag!.value = true
     render(HeaderMain, { props: { workshopInBuild: true } })

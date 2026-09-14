@@ -39,6 +39,9 @@ const mounted = useMounted()
 const showWorkshop = computed(
   () => mounted.value && workshopInBuild && workshopEnabled.value
 )
+const showAccount = computed(
+  () => showWorkshop.value && workshopAuthEnabled.value
+)
 const HeaderAccount = defineAsyncComponent(
   () => import('../../workshop/HeaderAccount.vue')
 )
@@ -52,12 +55,12 @@ let stopBuyCreditsRequests: (() => void) | undefined
 onMounted(() => {
   announceTopUpReturnFromLocation()
   stopBuyCreditsRequests = subscribeToWorkshopBuyCredits(() => {
-    if (workshopAuthEnabled.value) buyingCredits.value = true
+    if (showAccount.value) buyingCredits.value = true
   })
 })
 onBeforeUnmount(() => stopBuyCreditsRequests?.())
 watch(
-  workshopAuthEnabled,
+  showAccount,
   (enabled) => {
     // Once a checkout has started, a later flag refresh must not unmount its
     // return listener or close the tab it owns.
@@ -121,10 +124,7 @@ const ctaButtons = [
       class="flex shrink-0 items-center gap-2"
       :class="showWorkshop ? 'xl:hidden' : 'lg:hidden'"
     >
-      <HeaderAccount
-        v-if="showWorkshop && workshopAuthEnabled"
-        :locale="locale"
-      />
+      <HeaderAccount v-if="showAccount" :locale="locale" />
       <HeaderMainMobile :locale :workshop-in-build="showWorkshop" />
     </div>
 
@@ -149,10 +149,7 @@ const ctaButtons = [
           <span class="min-[1800px]:hidden">{{ cta.short }}</span>
         </span>
       </Button>
-      <HeaderAccount
-        v-if="showWorkshop && workshopAuthEnabled"
-        :locale="locale"
-      />
+      <HeaderAccount v-if="showAccount" :locale="locale" />
     </div>
   </nav>
   <BuyCreditsDialog
