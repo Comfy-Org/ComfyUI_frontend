@@ -90,6 +90,10 @@
       class="ml-auto flex shrink-0 items-center gap-2 px-2"
     >
       <slot name="actions-leading" />
+      <div
+        v-if="topbarBadgeStore.badges.length"
+        class="h-5 w-px shrink-0 bg-border-default"
+      />
       <Button
         v-if="isCloud || isNightly"
         v-tooltip="{ value: $t('actionbar.feedbackTooltip'), showDelay: 300 }"
@@ -103,24 +107,26 @@
       </Button>
       <CurrentUserButton v-if="showCurrentUser" compact class="shrink-0 p-1" />
       <LoginButton v-else class="p-1" />
-      <Button
-        v-if="showAgentEntry"
-        variant="muted-textonly"
-        size="sm"
-        :class="
-          cn(
-            'no-drag shrink-0 gap-1 rounded-lg hover:text-base-foreground',
-            agentPanelStore.isVisible
-              ? 'text-base-foreground'
-              : 'bg-secondary-background'
-          )
-        "
-        :aria-pressed="agentPanelStore.isVisible"
-        @click="onAgentEntryClick"
-      >
-        <i class="icon-[lucide--mouse-pointer-2] size-3" />
-        <span>{{ $t('agent.entryButton') }}</span>
-      </Button>
+      <template v-if="showAgentEntry">
+        <div class="h-5 w-px shrink-0 bg-border-default" />
+        <Button
+          variant="muted-textonly"
+          size="sm"
+          :class="
+            cn(
+              'no-drag shrink-0 gap-1 rounded-lg hover:text-base-foreground',
+              agentPanelStore.isVisible
+                ? 'bg-secondary-background-hover text-base-foreground'
+                : 'bg-secondary-background'
+            )
+          "
+          :aria-pressed="agentPanelStore.isVisible"
+          @click="onAgentEntryClick"
+        >
+          <i class="icon-[lucide--mouse-pointer-2] size-3" />
+          <span>{{ $t('agent.entryButton') }}</span>
+        </Button>
+      </template>
     </div>
     <div v-else class="ml-auto flex h-full shrink-0 items-center">
       <slot name="actions-leading" />
@@ -150,6 +156,7 @@ import { useWorkflowService } from '@/platform/workflow/core/services/workflowSe
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useCommandStore } from '@/stores/commandStore'
+import { useTopbarBadgeStore } from '@/stores/topbarBadgeStore'
 import { useWorkflowTabActivityStore } from '@/stores/workflowTabActivityStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import { useAgentConsent } from '@/workbench/extensions/agent/composables/agent/useAgentConsent'
@@ -174,6 +181,7 @@ const workflowStore = useWorkflowStore()
 const workflowService = useWorkflowService()
 const commandStore = useCommandStore()
 const agentPanelStore = useAgentPanelStore()
+const topbarBadgeStore = useTopbarBadgeStore()
 const { withConsent, isChecking } = useAgentConsent()
 const tabActivity = useWorkflowTabActivityStore()
 const isOpeningAgent = ref(false)
