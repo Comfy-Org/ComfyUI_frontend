@@ -167,6 +167,23 @@ describe('CrdtDevPanel clipboard controls', () => {
     }
   })
 
+  it('clears a pending copy feedback timer on unmount', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true })
+    try {
+      const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
+      const panel = renderPanel()
+      const copyLogButton = screen.getByRole('button', { name: 'Copy log' })
+
+      await user.click(copyLogButton)
+      expect(copyLogButton).toHaveTextContent('Copied')
+
+      panel.unmount()
+      expect(vi.getTimerCount()).toBe(0)
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
   it('shows transient Copy failed feedback when the clipboard write fails', async () => {
     vi.useFakeTimers({ shouldAdvanceTime: true })
     try {
