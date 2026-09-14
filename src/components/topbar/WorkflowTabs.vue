@@ -95,19 +95,24 @@
         v-tooltip="{ value: $t('actionbar.feedbackTooltip'), showDelay: 300 }"
         variant="muted-textonly"
         size="icon"
-        class="shrink-0 text-base-foreground"
+        class="size-6 shrink-0 rounded-sm p-0"
         :aria-label="$t('actionbar.feedback')"
         @click="openFeedback"
       >
-        <i class="icon-[lucide--megaphone]" />
+        <i class="icon-[lucide--megaphone] size-4" />
       </Button>
       <CurrentUserButton v-if="showCurrentUser" compact class="shrink-0 p-1" />
       <LoginButton v-else class="p-1" />
       <Button
         v-if="showAgentEntry"
-        :variant="agentPanelStore.isVisible ? 'textonly' : 'secondary'"
+        variant="muted-textonly"
         size="sm"
-        class="no-drag shrink-0 gap-1"
+        :class="
+          cn(
+            'no-drag shrink-0 gap-1 rounded-lg',
+            !agentPanelStore.isVisible && 'bg-secondary-background'
+          )
+        "
         :aria-pressed="agentPanelStore.isVisible"
         @click="onAgentEntryClick"
       >
