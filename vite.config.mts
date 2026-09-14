@@ -511,15 +511,6 @@ export default defineConfig({
                 href: 'user.css'
               },
               injectTo: 'head-prepend'
-            },
-            {
-              tag: 'link',
-              attrs: {
-                rel: 'stylesheet',
-                type: 'text/css',
-                href: 'api/userdata/user.css'
-              },
-              injectTo: 'head-prepend'
             }
           ]
         }

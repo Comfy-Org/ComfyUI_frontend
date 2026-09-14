@@ -1,16 +1,33 @@
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useUserStore } from './userStore'
 
-const getUserConfig = vi.fn()
+const { api, fetchApi, getUserConfig } = vi.hoisted(() => {
+  const getUserConfig = vi.fn()
+  const fetchApi = vi.fn()
+  return {
+    getUserConfig,
+    fetchApi,
+    api: {
+      getUserConfig: (...args: unknown[]) => getUserConfig(...args),
+      fetchApi: (...args: unknown[]) => fetchApi(...args),
+      apiURL: (route: string) => `/api${route}`,
+      user: ''
+    }
+  }
+})
 
 vi.mock<unknown>(import('@/scripts/api'), () => ({
-  api: {
-    getUserConfig: (...args: unknown[]) => getUserConfig(...args)
-  }
+  api
 }))
 
 describe('userStore', () => {
+  beforeEach(() => {
+    api.user = ''
+    fetchApi.mockResolvedValue(new Response(null, { status: 404 }))
+    document.querySelector('#user-stylesheet')?.remove()
+  })
+
   describe('initialize', () => {
     it('fetches user config on first call', async () => {
       getUserConfig.mockResolvedValue({})
@@ -63,5 +80,60 @@ describe('userStore', () => {
 
       expect(getUserConfig).toHaveBeenCalledTimes(1)
     })
+
+    it('loads CSS with the selected multi-user identity', async () => {
+      localStorage['Comfy.userId'] = 'alice-id'
+      getUserConfig.mockResolvedValue({ users: { 'alice-id': 'Alice' } })
+      fetchApi.mockImplementation(async () => {
+        expect(api.user).toBe('alice-id')
+        return new Response(
+          'body { background: url("./background.png"); color: red; }',
+          {
+            status: 200
+          }
+        )
+      })
+      const store = useUserStore()
+
+      await store.initialize()
+
+      expect(fetchApi).toHaveBeenCalledWith('/userdata/user.css')
+      expect(document.querySelector('#user-stylesheet')?.textContent).toBe(
+        'body { background: url("/api/userdata/background.png"); color: red; }'
+      )
+    })
+
+    it('loads CSS for a single-user server without a selected identity', async () => {
+      getUserConfig.mockResolvedValue({})
+      fetchApi.mockResolvedValue(new Response('body { color: red; }'))
+      const store = useUserStore()
+
+      await store.initialize()
+
+      expect(api.user).toBe('')
+      expect(fetchApi).toHaveBeenCalledWith('/userdata/user.css')
+      expect(document.querySelector('#user-stylesheet')?.textContent).toBe(
+        'body { color: red; }'
+      )
+    })
+  })
+
+  it('reloads CSS after selecting a user', async () => {
+    getUserConfig.mockResolvedValue({ users: { 'alice-id': 'Alice' } })
+    fetchApi
+      .mockResolvedValueOnce(new Response(null, { status: 500 }))
+      .mockImplementationOnce(async () => {
+        expect(api.user).toBe('alice-id')
+        return new Response('body { color: red; }')
+      })
+    const store = useUserStore()
+    await store.initialize()
+
+    await store.login({ userId: 'alice-id', username: 'Alice' })
+
+    expect(fetchApi).toHaveBeenCalledTimes(2)
+    expect(document.querySelector('#user-stylesheet')?.textContent).toBe(
+      'body { color: red; }'
+    )
   })
 })

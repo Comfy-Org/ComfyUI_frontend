@@ -1,12 +1,27 @@
 import { defineStore } from 'pinia'
 import { computed, ref, watchEffect } from 'vue'
 
+import { isCloud } from '@/platform/distribution/types'
 import type { User as UserConfig } from '@/schemas/apiSchema'
 import { api } from '@/scripts/api'
 
 export interface User {
   userId: string
   username: string
+}
+
+const USER_STYLESHEET_ID = 'user-stylesheet'
+const USER_STYLESHEET_ROUTE = '/userdata/user.css'
+
+function resolveStylesheetUrls(css: string, stylesheetUrl: string) {
+  const baseUrl = new URL(stylesheetUrl, location.href)
+  return css.replace(
+    /url\(\s*(["']?)(?!data:|blob:|https?:|\/\/|\/|#)([^"')]+)\1\s*\)/gi,
+    (_match, quote: string, url: string) => {
+      const resolved = new URL(url.trim(), baseUrl)
+      return `url(${quote}${resolved.pathname}${resolved.search}${resolved.hash}${quote})`
+    }
+  )
 }
 
 export const useUserStore = defineStore('user', () => {
@@ -38,6 +53,27 @@ export const useUserStore = defineStore('user', () => {
 
   let initializePromise: Promise<void> | null = null
 
+  async function loadUserStylesheet() {
+    if (isCloud) return
+
+    try {
+      const response = await api.fetchApi(USER_STYLESHEET_ROUTE)
+      if (!response.ok) return
+
+      const style =
+        document.querySelector<HTMLStyleElement>(`#${USER_STYLESHEET_ID}`) ??
+        document.createElement('style')
+      style.id = USER_STYLESHEET_ID
+      style.textContent = resolveStylesheetUrls(
+        await response.text(),
+        api.apiURL(USER_STYLESHEET_ROUTE)
+      )
+      if (!style.isConnected) document.head.append(style)
+    } catch {
+      return
+    }
+  }
+
   /**
    * Initialize the user store.
    */
@@ -46,6 +82,10 @@ export const useUserStore = defineStore('user', () => {
       try {
         userConfig.value = await api.getUserConfig()
         currentUserId.value = localStorage['Comfy.userId']
+        if (isMultiUserServer.value && currentUserId.value) {
+          api.user = currentUserId.value
+        }
+        await loadUserStylesheet()
       } catch (err) {
         initializePromise = null
         throw err
@@ -90,6 +130,8 @@ export const useUserStore = defineStore('user', () => {
     currentUserId.value = userId
     localStorage['Comfy.userId'] = userId
     localStorage['Comfy.userName'] = username
+    api.user = userId
+    await loadUserStylesheet()
   }
 
   watchEffect(() => {
