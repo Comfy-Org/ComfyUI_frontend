@@ -66,8 +66,8 @@ test.describe('Models catalog', () => {
     )
     expect(recommended).toEqual([
       '/models/byteplus--seedream-5-pro--generate-images/',
-      '/models/byteplus--seedream-4--generate-images/',
-      '/models/xai--grok-imagine-image--generate-images/'
+      '/models/openai--gpt-image-2--edit-images/',
+      '/models/byteplus--seedream-4--generate-images/'
     ])
 
     await sort.click()
