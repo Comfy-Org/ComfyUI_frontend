@@ -13,9 +13,11 @@
 import { readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 
-import { workshopModels } from '../src/config/models-catalogue'
+import {
+  workshopModels,
+  routerModelSlugAliases
+} from '../src/config/workshop-browse-content'
 import type { WorkshopModel } from '../src/config/models-catalogue'
-import { routerModelSlugAliases } from '../src/config/workshop-browse-content'
 import { hubTemplatesSchema } from '../src/lib/hub/types'
 import { modelNamedBy, partnerModelFor } from '../src/lib/hub/template-use-case'
 import { API_PROVIDER_MAP } from './generate-models'

@@ -1,4 +1,8 @@
 <script setup lang="ts">
+import { computed } from 'vue'
+import { useMounted } from '@vueuse/core'
+
+import { useWorkshopEnabled } from '../../scripts/posthog'
 import { getRoutes } from '../../config/routes'
 import { modelReleaseSlides } from '../../data/modelRelease'
 import type { Locale } from '../../i18n/translations'
@@ -12,32 +16,37 @@ const { locale = 'en', modelLinks = {} } = defineProps<{
 }>()
 const routes = getRoutes(locale)
 
-const slides: FeaturedSplitSlide[] = modelReleaseSlides.map((slide) => {
-  const workshopUrl = modelLinks[slide.id]
-  return {
-    id: slide.id,
-    media: {
-      type: slide.media.type,
-      src: slide.media.src,
-      poster: slide.media.poster,
-      alt: t(slide.media.ariaLabelKey, locale)
-    },
-    eyebrow: t('modelRelease.eyebrow', locale),
-    title: t(slide.titleKey, locale),
-    body: t(slide.bodyKey, locale),
-    primaryCta: {
-      label: t(slide.exploreLabelKey, locale),
-      href: workshopUrl ?? routes[slide.exploreRoute]
-    },
-    secondaryCta: {
-      label: t(slide.tryCta.labelKey, locale),
-      href: workshopUrl ?? slide.tryCta.href,
-      newTab: !workshopUrl
-    },
-    tags: slide.tagKeys.map((key) => t(key, locale)),
-    autoplayMs: slide.autoplayMs
-  }
-})
+const enabled = useWorkshopEnabled()
+const mounted = useMounted()
+const slides = computed<FeaturedSplitSlide[]>(() =>
+  modelReleaseSlides.map((slide) => {
+    const workshopUrl =
+      mounted.value && enabled.value ? modelLinks[slide.id] : undefined
+    return {
+      id: slide.id,
+      media: {
+        type: slide.media.type,
+        src: slide.media.src,
+        poster: slide.media.poster,
+        alt: t(slide.media.ariaLabelKey, locale)
+      },
+      eyebrow: t('modelRelease.eyebrow', locale),
+      title: t(slide.titleKey, locale),
+      body: t(slide.bodyKey, locale),
+      primaryCta: {
+        label: t(slide.exploreLabelKey, locale),
+        href: workshopUrl ?? routes[slide.exploreRoute]
+      },
+      secondaryCta: {
+        label: t(slide.tryCta.labelKey, locale),
+        href: workshopUrl ?? slide.tryCta.href,
+        newTab: !workshopUrl
+      },
+      tags: slide.tagKeys.map((key) => t(key, locale)),
+      autoplayMs: slide.autoplayMs
+    }
+  })
+)
 </script>
 
 <template>

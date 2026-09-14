@@ -275,6 +275,7 @@ export default defineConfig([
       '@typescript-eslint/consistent-type-imports': 'error',
       'import-x/no-useless-path-segments': 'error',
       'import-x/no-relative-packages': 'error',
+      'import-x/no-named-as-default': 'error',
       'unused-imports/no-unused-imports': 'error',
       'vue/no-v-html': 'off',
       // Prohibit dark-theme: and dark: prefixes

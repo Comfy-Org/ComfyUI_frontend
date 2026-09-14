@@ -17,6 +17,7 @@ import {
   LGraphEventMode,
   TitleMode
 } from '@/lib/litegraph/src/types/globalEnums'
+import type { LGraphNode as LiteGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { NodeState } from '@/types/nodeState'
 import LGraphNode from '@/renderer/extensions/vueNodes/components/LGraphNode.vue'
 import { useVueElementTracking } from '@/renderer/extensions/vueNodes/composables/useVueNodeResizeTracking'
@@ -24,23 +25,18 @@ import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { app } from '@/scripts/app'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
+import { getNodeByLocatorId } from '@/utils/graphTraversalUtil'
 
 const mockData = vi.hoisted(() => ({
   mockExecuting: false,
   mockLgraphNode: null as Record<string, unknown> | null
 }))
 
-vi.mock<unknown>(
-  import('@/utils/graphTraversalUtil'),
-  async (importOriginal) => {
-    const actual = (await importOriginal()) as Record<string, unknown>
-    return {
-      ...actual,
-      getNodeByLocatorId: vi.fn(
-        () => mockData.mockLgraphNode ?? { isSubgraphNode: () => false }
-      )
-    }
-  }
+vi.mock(import('@/utils/graphTraversalUtil'), { spy: true })
+vi.mocked(getNodeByLocatorId).mockImplementation(() =>
+  fromAny<LiteGraphNode, unknown>(
+    mockData.mockLgraphNode ?? { isSubgraphNode: () => false }
+  )
 )
 
 vi.mock<unknown>(
@@ -199,6 +195,11 @@ const mockRerouteNodeData: NodeState = {
 
 describe('LGraphNode', () => {
   beforeEach(() => {
+    vi.mocked(getNodeByLocatorId).mockImplementation(() =>
+      fromAny<LiteGraphNode, unknown>(
+        mockData.mockLgraphNode ?? { isSubgraphNode: () => false }
+      )
+    )
     mockData.mockExecuting = false
     mockData.mockLgraphNode = null
 

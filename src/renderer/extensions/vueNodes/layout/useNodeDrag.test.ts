@@ -1,9 +1,10 @@
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { fromPartial } from '@total-typescript/shoehorn'
-import type * as VueUse from '@vueuse/core'
+import * as VueUse from '@vueuse/core'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { LGraphGroup, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { AutoPanController } from '@/renderer/core/canvas/useAutoPan'
 import { LayoutSource } from '@/renderer/core/layout/types'
 import type { NodeLayout } from '@/renderer/core/layout/types'
 import { toNodeId } from '@/types/nodeId'
@@ -42,15 +43,7 @@ const testState = vi.hoisted(() => {
 })
 
 vi.mock<unknown>(import('@/renderer/core/canvas/useAutoPan'), () => ({
-  AutoPanController: class {
-    updatePointer = vi.fn()
-    start = vi.fn()
-    stop = vi.fn()
-    constructor(opts: { onPan: (dx: number, dy: number) => void }) {
-      testState.capturedOnPan.current = opts.onPan
-      testState.capturedAutoPanInstance.current = this
-    }
-  }
+  AutoPanController: vi.fn()
 }))
 
 vi.mock<unknown>(
@@ -96,13 +89,13 @@ vi.mock<unknown>(
   })
 )
 
-vi.mock<unknown>(import('@vueuse/core'), async (importOriginal) => ({
-  ...(await importOriginal<typeof VueUse>()),
-  createSharedComposable: (fn: () => unknown) => fn,
-  whenever: vi.fn()
-}))
+vi.mock(import('@vueuse/core'), { spy: true })
+vi.mocked(VueUse.createSharedComposable).mockImplementation(
+  (composable) => composable
+)
 
-import { useNodeDrag } from '@/renderer/extensions/vueNodes/layout/useNodeDrag'
+const { useNodeDrag } =
+  await import('@/renderer/extensions/vueNodes/layout/useNodeDrag')
 
 const node1 = toNodeId('1')
 
@@ -114,6 +107,23 @@ function pointerEvent(clientX: number, clientY: number): PointerEvent {
 }
 
 beforeEach(() => {
+  vi.mocked(VueUse.whenever).mockImplementation(() =>
+    Object.assign(vi.fn(), {
+      pause: vi.fn(),
+      resume: vi.fn(),
+      stop: vi.fn()
+    })
+  )
+  vi.mocked(AutoPanController).mockImplementation(function (opts) {
+    const controller = {
+      updatePointer: vi.fn(),
+      start: vi.fn(),
+      stop: vi.fn()
+    }
+    testState.capturedOnPan.current = opts.onPan
+    testState.capturedAutoPanInstance.current = controller
+    return fromPartial<AutoPanController>(controller)
+  })
   Object.assign(useCanvasStore(), { selectedNodeIds: new Set() })
   useCanvasStore().selectedItems = []
   testState.nodeLayouts.clear()

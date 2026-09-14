@@ -1,16 +1,16 @@
 import type { SplitterResizeEndEvent } from 'primevue/splitter'
+import { useStorage } from '@vueuse/core'
 
 import { nextTick, ref } from 'vue'
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useStablePrimeVueSplitterSizer } from './useStablePrimeVueSplitterSizer'
 
-vi.mock<unknown>(import('@vueuse/core'), async (importOriginal) => {
-  const actual = await importOriginal()
-  return {
-    ...(actual as object),
-    useStorage: <T>(_key: string, defaultValue: T) => ref(defaultValue)
-  }
+vi.mock(import('@vueuse/core'), { spy: true })
+beforeEach(() => {
+  vi.mocked(useStorage).mockImplementation((_key, defaultValue) =>
+    ref(defaultValue)
+  )
 })
 
 function createPanel(width: number) {

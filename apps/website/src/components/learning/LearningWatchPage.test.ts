@@ -1,4 +1,3 @@
-// @vitest-environment happy-dom
 import { render, screen } from '@testing-library/vue'
 import { describe, expect, it } from 'vitest'
 
@@ -53,7 +52,7 @@ describe('LearningWatchPage', () => {
     renderWatchPage(hostedTutorial)
 
     expect(screen.getByTestId('hosted-video')).toBeTruthy()
-    expect(screen.queryByTestId('youtube-embed')).toBeNull()
+    expect(screen.queryByTitle(hostedTutorial.title.en)).toBeNull()
   })
 
   /**
@@ -81,5 +80,14 @@ describe('LearningWatchPage', () => {
     )
 
     expect(embed('Node graph basics')).toBeTruthy()
+  })
+
+  it('titles the embed in English when the localized title is empty', () => {
+    renderWatchPage(
+      { ...youtubeTutorial, title: { en: 'Node graph basics', 'zh-CN': '' } },
+      'zh-CN'
+    )
+
+    expect(screen.getByTitle('Node graph basics')).toBeTruthy()
   })
 })
