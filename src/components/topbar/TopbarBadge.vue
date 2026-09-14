@@ -23,7 +23,7 @@
       :pt="popoverPt"
     >
       <div class="flex max-w-xs min-w-40 flex-col gap-2 p-3">
-        <div v-if="badge.label" :class="cn(labelClasses, 'w-fit')">
+        <div v-if="showLabel" :class="cn(labelClasses, 'w-fit')">
           {{ badge.label }}
         </div>
         <div class="font-inter text-sm">{{ badge.text }}</div>
@@ -65,7 +65,7 @@
       :pt="popoverPt"
     >
       <div class="flex max-w-xs min-w-40 flex-col gap-2 p-3">
-        <div v-if="badge.label" :class="cn(labelClasses, 'w-fit')">
+        <div v-if="showLabel" :class="cn(labelClasses, 'w-fit')">
           {{ badge.label }}
         </div>
         <div class="font-inter text-sm">{{ badge.text }}</div>
@@ -88,7 +88,7 @@
     <div class="font-inter text-xs font-medium" :class="textClasses">
       {{ badge.text }}
     </div>
-    <div v-if="badge.label" :class="labelClasses">
+    <div v-if="showLabel" :class="labelClasses">
       {{ badge.label }}
     </div>
   </div>
@@ -125,6 +125,20 @@ const variant = computed(() => badge.variant ?? 'info')
 const menuBackgroundStyle = computed(() => ({
   backgroundColor: backgroundColor
 }))
+
+/**
+ * A badge the text already carries is dropped, so "Warning Message" is not
+ * followed by "WARN". Matched on word prefix, and only where the text is
+ * shown beside it.
+ */
+const showLabel = computed(() => {
+  if (!badge.label) return false
+  const needle = badge.label.toLowerCase()
+  return !badge.text
+    .toLowerCase()
+    .split(/\s+/)
+    .some((word) => word.startsWith(needle))
+})
 
 /** Matches the ALPHA badge in the agent panel header. */
 const labelClasses =
