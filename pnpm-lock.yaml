@@ -27,6 +27,9 @@ catalogs:
     '@comfyorg/comfyui-electron-types':
       specifier: 0.6.2
       version: 0.6.2
+    '@comfyorg/sdk':
+      specifier: 0.2.0
+      version: 0.2.0
     '@customerio/cdp-analytics-browser':
       specifier: ^0.5.3
       version: 0.5.6
@@ -240,6 +243,9 @@ catalogs:
     eslint-plugin-vue:
       specifier: ^10.10.0
       version: 10.10.0
+    fake-indexeddb:
+      specifier: 6.2.5
+      version: 6.2.5
     fallow:
       specifier: 3.24.1
       version: 3.24.1
@@ -294,6 +300,9 @@ catalogs:
     mediabunny:
       specifier: ^1.53.1
       version: 1.53.1
+    mime-types:
+      specifier: 3.0.2
+      version: 3.0.2
     minisearch:
       specifier: ^7.2.0
       version: 7.2.0
@@ -1026,6 +1035,9 @@ importers:
       '@astrojs/vue':
         specifier: 'catalog:'
         version: 7.0.2(@types/node@25.9.5)(astro@7.2.1(@astrojs/markdown-remark@7.2.2)(@emnapi/core@1.11.2)(@emnapi/runtime@1.11.2)(@types/node@25.9.5)(jiti@2.7.0)(terser@5.49.0)(tsx@4.23.1)(yaml@2.9.0))(esbuild@0.28.1)(jiti@2.7.0)(terser@5.49.0)(tsx@4.23.1)(vue@3.5.42(typescript@6.0.3))(yaml@2.9.0)
+      '@comfyorg/sdk':
+        specifier: 'catalog:'
+        version: 0.2.0
       '@playwright/test':
         specifier: 'catalog:'
         version: 1.61.1
@@ -1056,9 +1068,15 @@ importers:
       astro:
         specifier: 'catalog:'
         version: 7.2.1(@astrojs/markdown-remark@7.2.2)(@emnapi/core@1.11.2)(@emnapi/runtime@1.11.2)(@types/node@25.9.5)(jiti@2.7.0)(terser@5.49.0)(tsx@4.23.1)(yaml@2.9.0)
+      fake-indexeddb:
+        specifier: 'catalog:'
+        version: 6.2.5
       happy-dom:
         specifier: 'catalog:'
         version: 20.9.0
+      mime-types:
+        specifier: 'catalog:'
+        version: 3.0.2
       tailwindcss:
         specifier: 'catalog:'
         version: 4.3.2
@@ -1705,6 +1723,10 @@ packages:
     peerDependenciesMeta:
       '@types/three':
         optional: true
+
+  '@comfyorg/sdk@0.2.0':
+    resolution: {integrity: sha512-x2a9mat9+s6xOACYFnlsAri7ovNaFD2VjwKohsNWJ65RodnLU5Rviq2fd7feQyfQS2C6XKZRjXj81AfypHonTQ==}
+    engines: {node: '>=22'}
 
   '@csstools/color-helpers@6.1.0':
     resolution: {integrity: sha512-064IFJdjTfUqnjpCVpMOdbr8FLQBhinbZj6yRv2An2E41O/pLEXqfFRWqGq/SxlE5PEUYTlvWsG2r8MswAVvkg==}
@@ -6080,6 +6102,10 @@ packages:
   eventemitter3@5.0.4:
     resolution: {integrity: sha512-mlsTRyGaPBjPedk6Bvw+aqbsXDtoAyAzm5MO7JgU+yVRyMQ5O8bD4Kcci7BS85f93veegeCPkL8R4GLClnjLFw==}
 
+  eventsource-parser@4.1.0:
+    resolution: {integrity: sha512-+DHvQ1wLO//MK+1OZgcuXCbZFKgu3YjKPJt7n98rxX8vezL0ni+7s3ZQiM8bJkUEOk7MsuCycrPLj0FzUNf7Og==}
+    engines: {node: '>=22.12'}
+
   execa@5.1.1:
     resolution: {integrity: sha512-8uSpZZocAZRBAPIEINJj3Lo9HyGitllczc27Eh5YYojjMFMn8yHMDMaUHE2Jqfq05D/wucwI4JGURyXt1vchyg==}
     engines: {node: '>=10'}
@@ -6105,6 +6131,10 @@ packages:
 
   extendable-media-recorder@9.2.38:
     resolution: {integrity: sha512-HD5IqjYtSmwr6p0pTd6AG3fEYmILOrURguEqyoSCQvTtS426OwijJqnbCOtg7/UzgN9Rrdin24rziEkz+OX8cQ==}
+
+  fake-indexeddb@6.2.5:
+    resolution: {integrity: sha512-CGnyrvbhPlWYMngksqrSSUT1BAVP49dZocrHuK0SvtR0D5TMs5wP0o3j7jexDJW01KSadjBp1M/71o/KR3nD1w==}
+    engines: {node: '>=18'}
 
   fallow-type-aware@3.24.1:
     resolution: {integrity: sha512-4Pw/58d3WYNcGAMio8+b1WYy566t1VqAxr1hKrha0G3fwpr0bHecsdzgFFC+wojz9z+Ix/p85ecFs9Mf4uwiJA==}
@@ -6397,6 +6427,9 @@ packages:
 
   hash-sum@2.0.0:
     resolution: {integrity: sha512-WdZTbAByD+pHfl/g9QSsBIIwy8IT+EsPiKDs0KNX+zSHhdDLFKdZu0BQHljvO+0QI/BasbMSUa8wYNCZTvhslg==}
+
+  hash-wasm@4.12.0:
+    resolution: {integrity: sha512-+/2B2rYLb48I/evdOIhP+K/DD2ca2fgBjp6O+GBEnCDk2e4rpeXIK8GvIyRPjTezgmWn9gmKwkQjjx6BtqDHVQ==}
 
   hashery@1.5.1:
     resolution: {integrity: sha512-iZyKG96/JwPz1N55vj2Ie2vXbhu440zfUfJvSwEqEbeLluk7NnapfGqa7LH0mOsnDxTF85Mx8/dyR6HfqcbmbQ==}
@@ -7376,9 +7409,17 @@ packages:
     resolution: {integrity: sha512-sPU4uV7dYlvtWJxwwxHD0PuihVNiE7TyAbQ5SWxDCB9mUYvOgroQOwYQQOKPJ8CIbE+1ETVlOoK1UC2nU3gYvg==}
     engines: {node: '>= 0.6'}
 
+  mime-db@1.54.0:
+    resolution: {integrity: sha512-aU5EJuIN2WDemCcAp2vFBfp/m4EAhWJnUNSSw0ixs7/kXbd6Pg64EmwJkNdFhB8aWt1sH2CTXrLxo/iAGV3oPQ==}
+    engines: {node: '>= 0.6'}
+
   mime-types@2.1.35:
     resolution: {integrity: sha512-ZDY+bPm5zTTF+YpCrAU9nK0UgICYPT0QtT1NZWFv4s++TNkcgVaT0g6+4R2uI4MjQjzysHB1zxuWL50hzaeXiw==}
     engines: {node: '>= 0.6'}
+
+  mime-types@3.0.2:
+    resolution: {integrity: sha512-Lbgzdk0h4juoQ9fCKXW4by0UJqj+nOOrI9MJ1sSj4nI8aI2eo1qmvQEie4VD1glsS250n15LsWsYtCugiStS5A==}
+    engines: {node: '>=18'}
 
   mimic-fn@2.1.0:
     resolution: {integrity: sha512-OqbOk5oEQeAZ8WXWydlu9HJjz9WVdEIvamMCcXmuqUYjTknH/sqsWvhQ3vgwKFRR1HpjvNBKQ37nbJgYzGqGcg==}
@@ -10248,6 +10289,12 @@ snapshots:
       three: 0.184.0
     optionalDependencies:
       '@types/three': 0.184.1
+
+  '@comfyorg/sdk@0.2.0':
+    dependencies:
+      eventsource-parser: 4.1.0
+      hash-wasm: 4.12.0
+      zod: 4.4.3
 
   '@csstools/color-helpers@6.1.0': {}
 
@@ -14561,6 +14608,8 @@ snapshots:
 
   eventemitter3@5.0.4: {}
 
+  eventsource-parser@4.1.0: {}
+
   execa@5.1.1:
     dependencies:
       cross-spawn: 7.0.6
@@ -14608,6 +14657,8 @@ snapshots:
       standardized-audio-context: 25.3.77
       subscribable-things: 2.1.60
       tslib: 2.8.1
+
+  fake-indexeddb@6.2.5: {}
 
   fallow-type-aware@3.24.1:
     dependencies:
@@ -14955,6 +15006,8 @@ snapshots:
       has-symbols: 1.1.0
 
   hash-sum@2.0.0: {}
+
+  hash-wasm@4.12.0: {}
 
   hashery@1.5.1:
     dependencies:
@@ -16231,9 +16284,15 @@ snapshots:
 
   mime-db@1.52.0: {}
 
+  mime-db@1.54.0: {}
+
   mime-types@2.1.35:
     dependencies:
       mime-db: 1.52.0
+
+  mime-types@3.0.2:
+    dependencies:
+      mime-db: 1.54.0
 
   mimic-fn@2.1.0: {}
 

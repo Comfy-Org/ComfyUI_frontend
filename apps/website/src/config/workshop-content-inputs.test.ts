@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from 'vitest'
 
 import content from '../content/workshop-display.json'
 import { workshopContentInputs } from './workshop-content-inputs'
-import { routerWorkshopModels } from './workshop-browse-content'
+import { workshopModels } from './workshop-browse-content'
 import { isWorkshopModelDisabled } from './workshop-model-availability'
 import { getRouterWorkshopModelDetail } from './workshop-router-content'
 import {
@@ -48,7 +48,7 @@ async function request(
 describe('use-case input contracts', () => {
   it('uses dropdowns for every exposed resolution and aspect-ratio control', () => {
     let checked = 0
-    for (const model of routerWorkshopModels) {
+    for (const model of workshopModels) {
       for (const field of schemaForModel(detail(model.slug))) {
         if (
           /^(?:param_|setting_|image_)?(?:resolution|aspect_ratio|ratio|aspectRatio)$/.test(
@@ -75,7 +75,7 @@ describe('use-case input contracts', () => {
   })
 
   it('keeps a valid prompt on every applicable worked example, including rejected legacy prompts', () => {
-    for (const model of routerWorkshopModels) {
+    for (const model of workshopModels) {
       const page = detail(model.slug)
       const prompt = schemaForModel(page).find(
         (field) => field.label === 'Prompt'
@@ -107,7 +107,7 @@ describe('use-case input contracts', () => {
   })
 
   it('offers image uploads on every Animate images page and video uploads on every file-based Edit videos page', () => {
-    for (const model of routerWorkshopModels) {
+    for (const model of workshopModels) {
       if (
         !model.useCases?.some((value) =>
           ['animate-images', 'edit-videos'].includes(value)
