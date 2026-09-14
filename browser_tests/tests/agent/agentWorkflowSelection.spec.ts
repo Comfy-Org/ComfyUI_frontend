@@ -156,7 +156,7 @@ test.describe(
       })
       await open.click()
       await expect(
-        page.locator('.workflow-tabs .p-togglebutton-checked')
+        page.locator('.workflow-tab-button[data-state="on"]')
       ).toHaveText('Unsaved Workflow')
       await expect(targetPicker).toHaveText('Unsaved Workflow (2)')
       await expect(composer).toHaveText(
@@ -174,7 +174,7 @@ test.describe(
       await expect(composer).toHaveText('Use this workflow as inspiration')
       await expect(targetPicker).toHaveText('Unsaved Workflow (2)')
       await expect(
-        page.locator('.workflow-tabs .p-togglebutton-checked')
+        page.locator('.workflow-tab-button[data-state="on"]')
       ).toHaveText('Unsaved Workflow')
       expect(workflowSelection.postedMessages).toHaveLength(0)
     })
@@ -270,7 +270,7 @@ test.describe(
           exact: true
         })
         .click()
-      const editorTabs = page.locator('.workflow-tabs .p-togglebutton')
+      const editorTabs = page.getByTestId('workflow-tab')
       await expect(editorTabs).toHaveCount(2)
       await editorTabs.first().click()
       await page
@@ -465,7 +465,7 @@ test.describe(
       await targetMenuItem.click()
       await expect(targetMarker).toBeVisible()
       await expect(
-        page.locator('.workflow-tabs .p-togglebutton-checked')
+        page.locator('.workflow-tab-button[data-state="on"]')
       ).toHaveText('Unsaved Workflow')
       await panel
         .getByRole('button', { name: enMessages.agent.newChat })
