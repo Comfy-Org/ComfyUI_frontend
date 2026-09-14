@@ -27,7 +27,7 @@ describe('api.getShareableAssets', () => {
     })
   })
 
-  it.each([
+  it.for([
     { assets: [{ ...asset, public: 'false' }] },
     { assets: [{ ...asset, in_library: undefined }] },
     { assets: null }
