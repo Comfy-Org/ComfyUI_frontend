@@ -11,6 +11,7 @@ import type {
 } from '@comfyorg/account/session'
 
 import type { WorkshopModelDetail } from '../../config/models-catalogue'
+import { subscribeToWorkshopBuyCredits } from '../../config/workshop-buy-credits'
 import { runWorkshopRouter } from '../../config/workshop-router'
 import { WorkshopRouterError } from '../../config/workshop-router-errors'
 import { workshopContract } from '../../config/workshop-contract-catalog'
@@ -86,6 +87,13 @@ const prompt = {
   multiline: true,
   required: true
 } as const
+
+function captureBuyCreditsRequest() {
+  const requested = vi.fn()
+  const stop = subscribeToWorkshopBuyCredits(requested)
+  onTestFinished(stop)
+  return requested
+}
 
 const model: WorkshopModelDetail = {
   slug: 'demo',
@@ -521,6 +529,7 @@ describe('ModelDetail', () => {
   })
 
   it('opens the shared credits dialog after insufficient balance without losing the prompt', async () => {
+    const requested = captureBuyCreditsRequest()
     auth.session.value = credential
     vi.mocked(runWorkshopRouter).mockRejectedValue(
       new WorkshopRouterError('noCredits')
@@ -538,7 +547,7 @@ describe('ModelDetail', () => {
     expect(screen.queryByRole('button', { name: 'Try again' })).toBeNull()
     expect(runWorkshopRouter).toHaveBeenCalledTimes(1)
     await user().click(screen.getByRole('button', { name: 'Add credits' }))
-    expect(screen.getByTestId('buy-credits-dialog')).toBeTruthy()
+    expect(requested).toHaveBeenCalledOnce()
   })
 
   it('offers billing immediately at zero credits and enables Run when the balance refreshes', async () => {
@@ -568,6 +577,7 @@ describe('ModelDetail', () => {
   })
 
   it('opens the amount picker from the gate', async () => {
+    const requested = captureBuyCreditsRequest()
     auth.session.value = credential
     credits.balance.value = { status: 'ok', credits: 0 }
     mountDetail({ model: runnable })
@@ -576,8 +586,7 @@ describe('ModelDetail', () => {
     expect(screen.queryByTestId('buy-credits-dialog')).toBeNull()
     await user().click(screen.getByRole('button', { name: /Add credits/ }))
 
-    expect(screen.getByTestId('buy-credits-dialog')).toBeTruthy()
-    expect(screen.getByTestId('buy-credits-pack-25')).toBeTruthy()
+    expect(requested).toHaveBeenCalledOnce()
   })
 
   it.for(['unknown', 'error'] as const)(

@@ -1,8 +1,9 @@
 // @vitest-environment jsdom
+import '@testing-library/jest-dom/vitest'
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
-import { defineComponent, h } from 'vue'
+import { defineComponent, h, nextTick, ref } from 'vue'
 import type { Ref } from 'vue'
 
 import {
@@ -124,7 +125,7 @@ function stubCheckout(
   status = 200
 ) {
   const fetchCheckout = vi
-    .fn()
+    .fn<typeof fetch>()
     .mockResolvedValue(new Response(JSON.stringify(body), { status }))
   vi.stubGlobal('fetch', fetchCheckout)
   return fetchCheckout
@@ -138,6 +139,22 @@ function renderOpenDialog() {
   )
 }
 
+function renderControlledDialog() {
+  const isOpen = ref(true)
+  const view = render(
+    defineComponent({
+      setup: () => () =>
+        h(BuyCreditsDialog, {
+          open: isOpen.value,
+          'onUpdate:open': (value: boolean) => {
+            isOpen.value = value
+          }
+        })
+    })
+  )
+  return { ...view, isOpen }
+}
+
 describe('BuyCreditsDialog', () => {
   beforeEach(() => {
     auth.session!.value = credential
@@ -149,7 +166,9 @@ describe('BuyCreditsDialog', () => {
     credits.balance!.value = { status: 'ok', credits: 100 }
     credits.topUp!.value = { status: 'idle' }
     credits.watchForTopUp.mockReset()
-    credits.clearTopUpWatch.mockReset()
+    credits.clearTopUpWatch.mockReset().mockImplementation(() => {
+      credits.topUp!.value = { status: 'idle' }
+    })
     credits.refresh.mockReset().mockResolvedValue(undefined)
     vi.spyOn(crypto, 'randomUUID').mockReturnValue(attemptId)
   })
@@ -180,7 +199,50 @@ describe('BuyCreditsDialog', () => {
     expect(screen.getByRole('dialog').textContent).not.toContain('Team B')
 
     await user.click(screen.getByTestId('buy-credits-resume'))
-    expect(credits.clearTopUpWatch).toHaveBeenCalled()
+    expect(credits.topUp!.value).toEqual({ status: 'idle' })
+  })
+
+  it('keeps the payment receipt open until the user resumes', async () => {
+    renderOpenDialog()
+    vi.useFakeTimers()
+    onTestFinished(() => {
+      vi.useRealTimers()
+    })
+
+    credits.topUp!.value = {
+      status: 'landed',
+      ...topUpScope,
+      newCredits: 5_375,
+      landedAt: Date.now()
+    }
+    await nextTick()
+    expect(screen.getByTestId('buy-credits-done')).toBeTruthy()
+
+    await vi.advanceTimersByTimeAsync(60_000)
+
+    expect(screen.getByTestId('buy-credits-done')).toBeTruthy()
+    expect(credits.topUp!.value.status).toBe('landed')
+  })
+
+  it('acknowledges a displayed receipt when the dialog is dismissed', async () => {
+    const user = userEvent.setup()
+    const { isOpen } = renderControlledDialog()
+    credits.topUp!.value = {
+      status: 'landed',
+      ...topUpScope,
+      newCredits: 5_375,
+      landedAt: Date.now()
+    }
+    await screen.findByTestId('buy-credits-done')
+
+    await user.click(screen.getByRole('button', { name: 'Close' }))
+
+    await vi.waitFor(() => expect(isOpen.value).toBe(false))
+    expect(credits.topUp!.value).toEqual({ status: 'idle' })
+    isOpen.value = true
+    await nextTick()
+    expect(screen.queryByTestId('buy-credits-done')).toBeNull()
+    expect(screen.getByTestId('buy-credits-packs')).toBeTruthy()
   })
 
   it('describes an unresolved return without claiming payment succeeded', async () => {
@@ -215,6 +277,51 @@ describe('BuyCreditsDialog', () => {
     expect(
       screen.getByTestId('buy-credits-less').hasAttribute('disabled')
     ).toBe(true)
+  })
+
+  it('locks and snapshots the selected amount while checkout is prepared', async () => {
+    const user = userEvent.setup()
+    claimTab()
+    const fetchCheckout = stubCheckout()
+    let releaseRefresh: (() => void) | undefined
+    credits.refresh.mockImplementation(
+      () =>
+        new Promise<void>((resolve) => {
+          releaseRefresh = resolve
+        })
+    )
+    renderOpenDialog()
+
+    await user.click(await screen.findByTestId('buy-credits-pack-50'))
+    await user.click(screen.getByTestId('buy-credits-continue'))
+    await vi.waitFor(() => expect(credits.refresh).toHaveBeenCalledOnce())
+
+    const pack10 = screen.getByTestId('buy-credits-pack-10')
+    expect(pack10).toBeDisabled()
+    expect(screen.getByTestId('buy-credits-less')).toBeDisabled()
+    expect(screen.getByTestId('buy-credits-more')).toBeDisabled()
+    const fieldset = screen.getByTestId('buy-credits-controls')
+    if (!(fieldset instanceof HTMLFieldSetElement))
+      throw new Error('Expected amount controls inside a fieldset')
+    // Bypass the UI lock to prove the request still uses the amount captured
+    // before the asynchronous balance/session refresh.
+    fieldset.disabled = false
+    await user.click(pack10)
+    expect(screen.getByTestId('buy-credits-custom').textContent).toContain(
+      '$10 · 2,110'
+    )
+    releaseRefresh?.()
+
+    await vi.waitFor(() => expect(fetchCheckout).toHaveBeenCalledOnce())
+    const call = fetchCheckout.mock.calls.at(0)
+    if (!call) throw new Error('Expected checkout request')
+    const [, init] = call
+    if (typeof init?.body !== 'string')
+      throw new Error('Expected JSON checkout body')
+    const payload: unknown = JSON.parse(init.body)
+    expect(payload).toMatchObject({
+      amount_cents: 5_000
+    })
   })
 
   it('creates checkout with a fresh scoped token and a known balance baseline', async () => {

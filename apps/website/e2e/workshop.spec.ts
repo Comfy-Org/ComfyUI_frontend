@@ -429,6 +429,30 @@ test.describe('Model playground', () => {
       page.getByRole('textbox', { name: 'Prompt', exact: true })
     ).not.toHaveValue('')
   })
+
+  test('three examples fill the available desktop row', async ({ page }) => {
+    await page.goto('/models/krea--krea-2-medium-turbo--generate-images/')
+    const list = page.getByTestId('examples-tab').locator('ul')
+    const cards = page.getByTestId('example-card')
+    await expect(cards).toHaveCount(3)
+
+    await expect
+      .poll(async () => {
+        const [listBox, firstCardBox, lastCardBox] = await Promise.all([
+          list.boundingBox(),
+          cards.first().boundingBox(),
+          cards.last().boundingBox()
+        ])
+        if (!listBox || !firstCardBox || !lastCardBox) return false
+        return (
+          Math.abs(firstCardBox.y - lastCardBox.y) < 2 &&
+          Math.abs(
+            listBox.x + listBox.width - (lastCardBox.x + lastCardBox.width)
+          ) < 2
+        )
+      })
+      .toBe(true)
+  })
 })
 
 test.describe('Filter sheet @mobile', () => {
