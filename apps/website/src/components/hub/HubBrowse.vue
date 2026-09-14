@@ -15,9 +15,7 @@ import { workshopModels } from '../../config/workshop-browse-content'
 import { groupModels } from '../../config/model-family'
 import hubTemplates from '../../data/hubTemplates.json'
 import { templatePath } from '../../lib/hub/workflow-detail'
-import {
-  useCaseForTemplate
-} from '../../lib/hub/template-use-case'
+import { useCaseForTemplate } from '../../lib/hub/template-use-case'
 import { tagDisplayName } from '../../lib/hub/tag-aliases'
 import { withFacetFields } from '../../lib/hub/facet-fields'
 import type { HubTemplate } from '../../lib/hub/types'
