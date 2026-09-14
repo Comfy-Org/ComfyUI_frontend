@@ -421,6 +421,11 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
     expect(screen.getByText('$50.00')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Pay $50.00' })).toBeEnabled()
     expect(mockBillingContext().topup).not.toHaveBeenCalled()
+    expect(mockTrackBillingEvent).toHaveBeenCalledExactlyOnceWith({
+      operation: 'topup',
+      stage: 'intent',
+      outcome: 'pending'
+    })
   })
 
   it('shows the saved-card note when a payment method is on file', async () => {
@@ -964,8 +969,8 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
     await clickAddCredits()
     await userEvent.click(screen.getByRole('button', { name: 'Pay $50.00' }))
 
-    expect(useTelemetry()?.trackBillingEvent).toHaveBeenCalledTimes(4)
-    expect(useTelemetry()?.trackBillingEvent).toHaveBeenCalledWith({
+    expect(mockTrackBillingEvent).toHaveBeenCalledTimes(5)
+    expect(mockTrackBillingEvent).toHaveBeenCalledWith({
       operation: 'topup',
       stage: 'succeeded',
       outcome: 'success',
