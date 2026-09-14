@@ -1,0 +1,618 @@
+// @vitest-environment jsdom
+import { render, screen, within } from '@testing-library/vue'
+import userEvent from '@testing-library/user-event'
+import { describe, expect, it, vi } from 'vitest'
+// jsdom lacks ResizeObserver, which the asset-preview import chain references.
+vi.hoisted(() => {
+  globalThis.ResizeObserver = class {
+    observe(): void {}
+    unobserve(): void {}
+    disconnect(): void {}
+  }
+})
+
+import { i18n } from '@/i18n'
+import type { TurnId } from '../../../schemas/agentApiSchema'
+import { createAgentEventTransport } from '../../../services/agent/agentEventTransport'
+import type {
+  AssistantMessage,
+  RunApprovalPart
+} from '../../../services/agent/agentMessageParts'
+import { createAssistantMessage } from '../../../services/agent/agentMessageParts'
+
+import AgentMessage from './AgentMessage.vue'
+
+function thinkingMessage(thinkingText?: string): AssistantMessage {
+  return {
+    id: 'msg-0' as TurnId,
+    role: 'assistant',
+    parts: [],
+    streaming: true,
+    thinking: true,
+    thinkingText
+  }
+}
+
+function paywallMessage(): AssistantMessage {
+  return {
+    id: 'msg-paywall' as TurnId,
+    role: 'assistant',
+    parts: [{ type: 'paywall' }],
+    streaming: false,
+    thinking: false
+  }
+}
+
+describe('AgentMessage paywall reply', () => {
+  it('renders the usage-limit card as an inline assistant reply', () => {
+    render(AgentMessage, {
+      props: { message: paywallMessage() },
+      global: { plugins: [i18n] }
+    })
+
+    expect(screen.getByText('Out of credits')).toBeInTheDocument()
+    expect(
+      screen.getByText(
+        'This workspace has spent its monthly credits and its top-up balance. Add credits to keep the agent running.'
+      )
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: 'Add credits' })
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: 'Upgrade plan' })
+    ).toBeInTheDocument()
+  })
+
+  it('exposes distinct actions for adding credits and upgrading', async () => {
+    const user = userEvent.setup()
+    const onPaywallAction = vi.fn()
+    render(AgentMessage, {
+      props: { message: paywallMessage() },
+      attrs: { onPaywallAction },
+      global: { plugins: [i18n] }
+    })
+
+    await user.click(screen.getByRole('button', { name: 'Add credits' }))
+    await user.click(screen.getByRole('button', { name: 'Upgrade plan' }))
+
+    expect(onPaywallAction.mock.calls).toEqual([['addCredits'], ['upgrade']])
+  })
+})
+
+describe('AgentMessage thinking narration', () => {
+  it('T-10 / PM-656 / FE-1328 renders complete asset URLs as hyperlinks', () => {
+    const message: AssistantMessage = {
+      ...createAssistantMessage('msg-link' as TurnId),
+      streaming: false,
+      parts: [
+        {
+          type: 'text',
+          text: '[Download result](https://assets.example/result.png)',
+          state: 'done'
+        }
+      ]
+    }
+    render(AgentMessage, {
+      props: { message },
+      global: { plugins: [i18n] }
+    })
+
+    expect(
+      screen.getByRole('link', { name: 'Download result' })
+    ).toHaveAttribute('href', 'https://assets.example/result.png')
+  })
+
+  it('T-32 / PM-663 / FE-1292 opens the Markdown copy action menu', async () => {
+    const message: AssistantMessage = {
+      ...createAssistantMessage('msg-actions' as TurnId),
+      streaming: false,
+      parts: [{ type: 'text', text: '**Ready**', state: 'done' }]
+    }
+    render(AgentMessage, {
+      props: { message },
+      global: { plugins: [i18n] }
+    })
+
+    await userEvent.click(
+      screen.getByRole('button', { name: /copy as markdown/i })
+    )
+
+    expect(
+      await screen.findByRole('menuitem', { name: /copy as markdown/i })
+    ).toBeVisible()
+  })
+
+  it('shows the live narration text while thinking', () => {
+    render(AgentMessage, {
+      props: { message: thinkingMessage('Reading the graph') },
+      global: { plugins: [i18n] }
+    })
+
+    expect(screen.getByText('Reading the graph')).toBeInTheDocument()
+    expect(screen.queryByText('Thinking...')).not.toBeInTheDocument()
+  })
+
+  it('falls back to the static label without narration', () => {
+    render(AgentMessage, {
+      props: { message: thinkingMessage() },
+      global: { plugins: [i18n] }
+    })
+
+    expect(screen.getByText('Thinking...')).toBeInTheDocument()
+  })
+
+  it('retains a thinking-only trace after the reply finishes', async () => {
+    let message = createAssistantMessage('msg-0' as TurnId)
+    const transport = createAgentEventTransport(message, (next) => {
+      message = next
+    })
+    transport.ingest({
+      type: 'agent_thinking',
+      data: {
+        delta: 'Considering the request',
+        message_id: 'msg-0',
+        thread_id: 'thread-0'
+      }
+    })
+
+    const { rerender } = render(AgentMessage, {
+      props: { message },
+      global: { plugins: [i18n] }
+    })
+
+    expect(screen.getByRole('listitem')).toHaveTextContent(
+      'Considering the request'
+    )
+    expect(screen.getAllByText('Considering the request')).toHaveLength(1)
+
+    transport.ingest({
+      type: 'agent_message_delta',
+      data: {
+        delta: 'No graph edits are needed.',
+        message_id: 'msg-0',
+        thread_id: 'thread-0'
+      }
+    })
+    await rerender({ message })
+
+    expect(screen.getByText('No graph edits are needed.')).toBeInTheDocument()
+    expect(screen.getByRole('listitem')).toHaveTextContent(
+      'Considering the request'
+    )
+    expect(
+      screen.queryByRole('button', { name: /^worked/i })
+    ).not.toBeInTheDocument()
+
+    transport.ingest({
+      type: 'agent_message_done',
+      data: { message_id: 'msg-0', thread_id: 'thread-0' }
+    })
+    await rerender({ message })
+
+    const summary = screen.getByRole('button', { name: /^worked/i })
+    expect(summary).toHaveAttribute('aria-expanded', 'false')
+    expect(
+      screen.queryByText('Considering the request')
+    ).not.toBeInTheDocument()
+    expect(screen.getByText('No graph edits are needed.')).toBeInTheDocument()
+
+    await userEvent.click(summary)
+    expect(screen.getByRole('listitem')).toHaveTextContent(
+      'Considering the request'
+    )
+  })
+
+  it('streams every step flat, then folds the finished turn into one summary', async () => {
+    const clock = vi.spyOn(Date, 'now').mockReturnValue(1000)
+    let message = createAssistantMessage('msg-0' as TurnId)
+    const transport = createAgentEventTransport(message, (next) => {
+      message = next
+    })
+    transport.ingest({
+      type: 'agent_thinking',
+      data: {
+        delta: 'Inspecting the graph',
+        message_id: 'msg-0',
+        thread_id: 'thread-0'
+      }
+    })
+
+    const { rerender } = render(AgentMessage, {
+      props: { message },
+      global: { plugins: [i18n] }
+    })
+
+    expect(screen.getByText('Inspecting the graph')).toBeInTheDocument()
+
+    clock.mockReturnValue(2400)
+    transport.ingest({
+      type: 'agent_tool_call',
+      data: {
+        tool_call_id: 'call-set-widget',
+        tool_name: 'set_widget',
+        status: 'success',
+        duration_ms: 900,
+        message_id: 'msg-0',
+        thread_id: 'thread-0'
+      }
+    })
+    await rerender({ message })
+
+    expect(
+      screen
+        .getAllByRole('listitem')
+        .map((row) => row.textContent.replace(/\s+/g, ' ').trim())
+    ).toEqual(['Inspecting the graph1.4s', 'Set widget0.9s'])
+    expect(
+      screen.queryByRole('button', { name: /worked/i })
+    ).not.toBeInTheDocument()
+
+    transport.ingest({
+      type: 'agent_message_done',
+      data: { message_id: 'msg-0', thread_id: 'thread-0' }
+    })
+    await rerender({ message })
+
+    const summary = screen.getByRole('button', { name: /^worked for/i })
+    expect(summary).toHaveAttribute('aria-expanded', 'false')
+    expect(screen.queryByText('Set widget')).not.toBeInTheDocument()
+
+    await userEvent.click(summary)
+    expect(screen.getByText('Set widget')).toBeInTheDocument()
+    expect(screen.getByText('Inspecting the graph')).toBeInTheDocument()
+  })
+
+  it('marks the turn as still working between the last tool and the first reply token', async () => {
+    let message = createAssistantMessage('msg-0' as TurnId)
+    const transport = createAgentEventTransport(message, (next) => {
+      message = next
+    })
+    transport.ingest({
+      type: 'agent_tool_call',
+      data: {
+        tool_call_id: 'call-ls-nodes',
+        tool_name: 'ls_nodes',
+        status: 'running',
+        message_id: 'msg-0',
+        thread_id: 'thread-0'
+      }
+    })
+
+    const { rerender } = render(AgentMessage, {
+      props: { message },
+      global: { plugins: [i18n] }
+    })
+
+    expect(screen.queryByText('Working...')).not.toBeInTheDocument()
+
+    transport.ingest({
+      type: 'agent_tool_call',
+      data: {
+        tool_call_id: 'call-ls-nodes',
+        tool_name: 'ls_nodes',
+        status: 'success',
+        message_id: 'msg-0',
+        thread_id: 'thread-0'
+      }
+    })
+    await rerender({ message })
+
+    expect(screen.getByText('Working...')).toBeInTheDocument()
+
+    transport.ingest({
+      type: 'agent_message_delta',
+      data: {
+        delta: 'Here is what I found.',
+        message_id: 'msg-0',
+        thread_id: 'thread-0'
+      }
+    })
+    await rerender({ message })
+
+    expect(screen.queryByText('Working...')).not.toBeInTheDocument()
+
+    transport.ingest({
+      type: 'agent_message_done',
+      data: { message_id: 'msg-0', thread_id: 'thread-0' }
+    })
+    await rerender({ message })
+
+    expect(screen.queryByText('Working...')).not.toBeInTheDocument()
+  })
+
+  it('keeps resumed thinking in the open trace alongside the earlier call', () => {
+    const message = thinkingMessage('Planning the next step')
+    message.parts = [
+      { type: 'tool', callId: 'tool_0', name: 'set_widget', state: 'done' },
+      { type: 'text', text: 'The first edit is complete.', state: 'done' },
+      {
+        type: 'thinking',
+        text: 'Planning the next step',
+        state: 'streaming'
+      }
+    ]
+    render(AgentMessage, {
+      props: { message },
+      global: { plugins: [i18n] }
+    })
+
+    expect(
+      screen
+        .getAllByRole('listitem')
+        .map((row) => row.textContent.replace(/\s+/g, ' ').trim())
+    ).toEqual(['Set widget', 'Planning the next step'])
+    expect(screen.getByText('The first edit is complete.')).toBeInTheDocument()
+    expect(
+      screen.queryByRole('button', { name: /^worked/i })
+    ).not.toBeInTheDocument()
+  })
+
+  it('gathers text-separated tool runs into the one summary', async () => {
+    const message = thinkingMessage()
+    message.thinking = false
+    message.streaming = false
+    message.parts = [
+      { type: 'tool', callId: 'tool_0', name: 'set_widget', state: 'done' },
+      { type: 'text', text: 'Between calls', state: 'done' },
+      { type: 'tool', callId: 'tool_1', name: 'add_node', state: 'done' }
+    ]
+    render(AgentMessage, {
+      props: { message },
+      global: { plugins: [i18n] }
+    })
+
+    const summary = screen.getByRole('button', { name: /^worked/i })
+    const narration = screen.getByText('Between calls')
+    expect(
+      summary.compareDocumentPosition(narration) &
+        Node.DOCUMENT_POSITION_FOLLOWING
+    ).toBeTruthy()
+
+    await userEvent.click(summary)
+    expect(
+      screen
+        .getAllByRole('listitem')
+        .map((row) => row.textContent.replace(/\s+/g, ' ').trim())
+    ).toEqual(['Set widget', 'Add node'])
+  })
+
+  it('sums the whole turn into one accordion labelled with its duration', async () => {
+    const message = thinkingMessage()
+    message.thinking = false
+    message.streaming = false
+    message.parts = [
+      {
+        type: 'thinking',
+        text: 'Inspecting the graph',
+        state: 'done',
+        durationMs: 1300
+      },
+      {
+        type: 'tool',
+        callId: 'tool_0',
+        name: 'list_slots',
+        state: 'done',
+        durationMs: 500
+      },
+      {
+        type: 'tool',
+        callId: 'tool_1',
+        name: 'set_widget',
+        state: 'done',
+        durationMs: 800
+      },
+      {
+        type: 'thinking',
+        text: 'Checking the result',
+        state: 'done',
+        durationMs: 700
+      },
+      { type: 'text', text: 'The workflow is ready.', state: 'done' }
+    ]
+    render(AgentMessage, {
+      props: { message },
+      global: { plugins: [i18n] }
+    })
+
+    const summary = screen.getByRole('button', { name: /^worked/i })
+    expect(summary.textContent).toContain('Worked for 3.3 seconds')
+    expect(summary).toHaveAttribute('aria-expanded', 'false')
+    expect(screen.getByText('The workflow is ready.')).toBeInTheDocument()
+
+    await userEvent.click(summary)
+    expect(
+      screen
+        .getAllByRole('listitem')
+        .map((row) => row.textContent.replace(/\s+/g, ' ').trim())
+    ).toEqual([
+      'Inspecting the graph1.3s',
+      'List slots0.5s',
+      'Set widget0.8s',
+      'Checking the result0.7s'
+    ])
+  })
+})
+
+describe('AgentMessage fallback content', () => {
+  it('groups adjacent workflow links and renders notice severities', () => {
+    const message: AssistantMessage = {
+      ...thinkingMessage(),
+      streaming: false,
+      thinking: false,
+      parts: [
+        { type: 'tabLink', workflowId: 'workflow-1', name: 'First workflow' },
+        { type: 'tabLink', workflowId: 'workflow-2', name: 'Second workflow' },
+        { type: 'notice', level: 'info', text: 'Saved locally' },
+        { type: 'notice', level: 'error', text: 'Could not publish' }
+      ]
+    }
+
+    render(AgentMessage, {
+      props: { message },
+      global: {
+        plugins: [i18n],
+        stubs: {
+          TabLinkCard: {
+            props: ['workflowId', 'name'],
+            template:
+              '<span data-testid="tab-link">{{ workflowId }}:{{ name }}</span>'
+          }
+        }
+      }
+    })
+
+    expect(
+      within(screen.getByRole('group')).getAllByTestId('tab-link')
+    ).toHaveLength(2)
+    expect(screen.getByRole('status')).toHaveTextContent('Saved locally')
+    expect(screen.getByRole('alert')).toHaveTextContent('Could not publish')
+  })
+
+  it('hides completed thinking when the response did not use tools', () => {
+    const message: AssistantMessage = {
+      ...thinkingMessage(),
+      streaming: false,
+      thinking: false,
+      parts: [
+        {
+          type: 'thinking',
+          text: 'Reasoning before the answer',
+          state: 'done'
+        },
+        { type: 'text', text: 'Finished without tools', state: 'done' }
+      ]
+    }
+
+    render(AgentMessage, {
+      props: { message },
+      global: { plugins: [i18n] }
+    })
+
+    expect(
+      screen.queryByText('Reasoning before the answer')
+    ).not.toBeInTheDocument()
+    expect(screen.getByText('Finished without tools')).toBeInTheDocument()
+  })
+
+  it('forwards feedback from a completed text response', async () => {
+    const message: AssistantMessage = {
+      ...thinkingMessage(),
+      streaming: false,
+      thinking: false,
+      parts: [{ type: 'text', text: 'Finished', state: 'done' }]
+    }
+
+    const { emitted } = render(AgentMessage, {
+      props: { message },
+      global: {
+        plugins: [i18n],
+        stubs: {
+          MessageFeedback: {
+            emits: ['feedback'],
+            template:
+              '<button type="button" @click="$emit(\'feedback\', \'up\')">Vote up</button>'
+          }
+        }
+      }
+    })
+
+    await userEvent.click(screen.getByRole('button', { name: 'Vote up' }))
+
+    expect(emitted().feedback).toEqual([['up']])
+  })
+})
+
+describe('AgentMessage run approval', () => {
+  const approvalMessage = (
+    approval: Partial<RunApprovalPart> = {}
+  ): AssistantMessage => ({
+    id: 'msg-approval' as TurnId,
+    role: 'assistant',
+    parts: [
+      {
+        type: 'runApproval',
+        askId: 'turn-1:call-1',
+        workflowId: 'workflow-1',
+        workflowName: 'Portrait workflow',
+        ...approval
+      }
+    ],
+    streaming: true,
+    thinking: false
+  })
+
+  it('renders the Figma copy and emits workflow, cancel, and run actions', async () => {
+    const { emitted } = render(AgentMessage, {
+      props: { message: approvalMessage() },
+      global: { plugins: [i18n] }
+    })
+
+    expect(
+      screen.getByText('This tool wants to run the workflow:')
+    ).toBeInTheDocument()
+    expect(screen.getByText('Do you approve?')).toBeInTheDocument()
+
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Portrait workflow' })
+    )
+    await userEvent.click(screen.getByRole('button', { name: 'Cancel' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Run' }))
+
+    expect(emitted().openWorkflow).toEqual([
+      ['workflow-1', 'Portrait workflow']
+    ])
+    expect(emitted().answerAsk).toEqual([
+      ['turn-1:call-1', 'cancel'],
+      ['turn-1:call-1', 'run']
+    ])
+  })
+
+  it('keeps both labels in place while disabling an in-flight answer', () => {
+    render(AgentMessage, {
+      props: {
+        message: approvalMessage(),
+        answeringAskIds: new Set(['turn-1:call-1'])
+      },
+      global: { plugins: [i18n] }
+    })
+
+    for (const name of ['Cancel', 'Run']) {
+      const button = screen.getByRole('button', { name })
+      expect(button).toBeDisabled()
+      expect(button).toHaveAttribute('aria-busy', 'true')
+    }
+  })
+
+  it.for([
+    {
+      approval: { workflowName: '  ' },
+      expectedLabel: 'workflow-1',
+      interactive: true
+    },
+    {
+      approval: { workflowId: undefined, workflowName: undefined },
+      expectedLabel: 'this workflow',
+      interactive: false
+    }
+  ] as const)(
+    'falls back to “$expectedLabel” when backend naming data is unavailable',
+    ({ approval, expectedLabel, interactive }) => {
+      render(AgentMessage, {
+        props: { message: approvalMessage(approval) },
+        global: { plugins: [i18n] }
+      })
+
+      if (interactive) {
+        expect(
+          screen.getByRole('button', { name: expectedLabel })
+        ).toBeInTheDocument()
+      } else {
+        expect(
+          screen.queryByRole('button', { name: expectedLabel })
+        ).not.toBeInTheDocument()
+        expect(screen.getByText(expectedLabel)).toBeInTheDocument()
+      }
+    }
+  )
+})
