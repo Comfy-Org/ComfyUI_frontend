@@ -209,6 +209,28 @@ describe('PlaygroundOutput', () => {
     ).toContain('latest')
   })
 
+  it('does not show raw response metadata beside a generated asset', () => {
+    render(PlaygroundOutput, {
+      props: {
+        state: succeeded(output('latest')),
+        attachments: [
+          {
+            kind: 'text',
+            url: 'blob:metadata',
+            text: '{"id":"run"}',
+            fileName: 'fixture-native-metadata.json'
+          }
+        ],
+        now: 2_000
+      }
+    })
+
+    expect(screen.queryByText('fixture-native-metadata.json')).toBeNull()
+    expect(
+      screen.getByRole('img', { name: 'Output' }).getAttribute('src')
+    ).toBe(output('latest').url)
+  })
+
   it('lines the session up in the order it was generated, newest last', async () => {
     const user = userEvent.setup()
     render(PlaygroundOutput, {
