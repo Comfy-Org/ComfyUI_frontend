@@ -4,6 +4,8 @@ These opt-in Playwright projects run the local frontend against a matching
 Cloud sandbox and Stripe test mode. They reject production targets and
 serialize billing mutations per workspace.
 
+![Billing E2E flow: test accounts drive the frontend against Cloud and Stripe test mode; UI and API assertions catch payment, credit, and recovery issues.](cloud-billing-e2e-overview.png)
+
 ## Accounts
 
 | Account            | Reserved state                                    | Project                 |
