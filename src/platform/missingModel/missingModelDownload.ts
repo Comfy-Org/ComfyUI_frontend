@@ -235,6 +235,48 @@ async function fetchCivitaiMetadata(
 const GATED_STATUS_CODES = new Set([401, 403, 451])
 const HUGGING_FACE_GATED_ERROR_CODE = 'GatedRepo'
 
+function failedMetadataResult(): MetadataFetchResult {
+  return {
+    metadata: { fileSize: null, gatedRepoUrl: null },
+    resolution: 'failed',
+    cacheable: false
+  }
+}
+
+function getGatedRepoUrl(url: string, response: Response): string | null {
+  if (!isTrustedHuggingFaceUrl(url)) return null
+  if (!GATED_STATUS_CODES.has(response.status)) return null
+  if (response.headers.get('x-error-code') !== HUGGING_FACE_GATED_ERROR_CODE) {
+    return null
+  }
+  return downloadUrlToHfRepoUrl(url)
+}
+
+function getResolvedHeadMetadata(response: Response): MetadataFetchResult {
+  const contentLength = response.headers.get('content-length')
+  const parsedSize = contentLength ? parseInt(contentLength, 10) : null
+  const fileSize =
+    parsedSize !== null && !Number.isNaN(parsedSize) ? parsedSize : null
+  return {
+    metadata: { fileSize, gatedRepoUrl: null },
+    resolution: 'resolved',
+    cacheable: true
+  }
+}
+
+function getFailedHeadMetadata(
+  url: string,
+  response: Response
+): MetadataFetchResult {
+  const gatedRepoUrl = getGatedRepoUrl(url, response)
+  if (!gatedRepoUrl) return failedMetadataResult()
+  return {
+    metadata: { fileSize: null, gatedRepoUrl },
+    resolution: 'resolved',
+    cacheable: true
+  }
+}
+
 async function fetchHeadMetadata(
   url: string,
   signal?: AbortSignal
@@ -245,44 +287,11 @@ async function fetchHeadMetadata(
       method: 'HEAD',
       ...(signal && { signal })
     })
-    if (!response.ok) {
-      if (
-        isTrustedHuggingFaceUrl(url) &&
-        GATED_STATUS_CODES.has(response.status) &&
-        response.headers.get('x-error-code') === HUGGING_FACE_GATED_ERROR_CODE
-      ) {
-        return {
-          metadata: {
-            fileSize: null,
-            gatedRepoUrl: downloadUrlToHfRepoUrl(url)
-          },
-          resolution: 'resolved',
-          cacheable: true
-        }
-      }
-      return {
-        metadata: { fileSize: null, gatedRepoUrl: null },
-        resolution: 'failed',
-        cacheable: false
-      }
-    }
-    const size = response.headers.get('content-length')
-    const parsedSize = size ? parseInt(size, 10) : null
-    return {
-      metadata: {
-        fileSize:
-          parsedSize !== null && !Number.isNaN(parsedSize) ? parsedSize : null,
-        gatedRepoUrl: null
-      },
-      resolution: 'resolved',
-      cacheable: true
-    }
+    return response.ok
+      ? getResolvedHeadMetadata(response)
+      : getFailedHeadMetadata(url, response)
   } catch {
-    return {
-      metadata: { fileSize: null, gatedRepoUrl: null },
-      resolution: 'failed',
-      cacheable: false
-    }
+    return failedMetadataResult()
   }
 }
 
