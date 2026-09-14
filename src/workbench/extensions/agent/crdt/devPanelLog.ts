@@ -27,6 +27,8 @@ export type DevEventKind =
   | 'doc_update'
   | 'doc_ops_result'
   | 'human_ops_settled'
+  | 'op_nack'
+  | 'projection_error'
   | 'doc_reset'
   | 'schema_error'
   | 'reconnected'

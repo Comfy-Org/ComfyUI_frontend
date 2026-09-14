@@ -1,6 +1,7 @@
 import { computed, onBeforeUnmount, readonly, ref, watch } from 'vue'
 import type { Ref } from 'vue'
 
+import { reportError } from '@/platform/telemetry/reportError'
 import { api } from '@/scripts/api'
 import type { RemoteMutationContext } from '@/types/graphMutationContext'
 import { createUuidv4 } from '@/utils/uuid'
@@ -12,7 +13,7 @@ import { apiTransport, createLoggedTransport } from './agentCrdtTransport'
 import { recordDevEvent } from './devPanelLog'
 import type { CrdtDebugSnapshot } from './crdtSnapshot'
 import { readCrdtSnapshot } from './crdtSnapshot'
-import type { DocUpdate } from './docFrameClient'
+import type { DocOpsResult, DocUpdate } from './docFrameClient'
 import { DocFrameClient } from './docFrameClient'
 import type { MutationsForTarget } from './ecsFollowerAdapter'
 import type { GraphOperation } from './graphOperations'
@@ -22,16 +23,40 @@ import { createOpSender } from './opSender'
 
 export { apiTransport, STALE_AFTER_MS }
 
+function failureView(failed: unknown): OpsResultView['failure'] | undefined {
+  if (typeof failed !== 'object' || failed === null) return undefined
+  const view = {
+    ...('op_id' in failed && typeof failed.op_id === 'string'
+      ? { op_id: failed.op_id }
+      : {}),
+    ...('code' in failed && typeof failed.code === 'string'
+      ? { code: failed.code }
+      : {}),
+    ...('message' in failed && typeof failed.message === 'string'
+      ? { message: failed.message }
+      : {})
+  }
+  return Object.keys(view).length > 0 ? view : undefined
+}
+
+export interface OpNack {
+  workflowId: string
+  code: string | null
+  message: string | null
+  failed: OpsResultView['failure'] | null
+  applied: number
+  skipped: number
+}
+
 /**
  * s5-metrics-1: per-outcome counters for every `doc_update` the composable's
  * listeners observe, replacing the single overloaded `updatesApplied`
  * observable. Each counter increments exactly once, at the boundary where
  * that outcome is decided — never inferred after the fact. `received` counts
- * only frames the bridge re-dispatched as `doc_update`, so
- * `received === applied + skipped` always holds; `errored`, `gap` and
- * `dropped` are disjoint from it because the bridge returns before
- * re-dispatching in each of those cases (schema gate, FEB-2 seq jump,
- * stale/duplicate discard). Frames the bridge drops for a workflowId other
+ * only frames the bridge re-dispatched as `doc_update`. Projection failures
+ * are counted as received errors and leave the sequence retryable; schema,
+ * gap, and stale failures are rejected by the bridge before re-dispatch.
+ * Frames the bridge drops for a workflowId other
  * than its `sentWorkflowId` emit no event and are not counted anywhere.
  * `applied` is tracked independently of `bridge.follower.updatesApplied`
  * (which counts Yjs merges, including frames this composable skips) so a
@@ -46,7 +71,7 @@ export interface AgentCrdtOutcomeCounters {
   applied: number
   /** Received but not applied: inactive target, workflow mismatch, or no bound adapter session. */
   skipped: number
-  /** The merged doc failed the KA-11 read gate (`schema_error`). */
+  /** A projected frame failed; schema read-gate errors also increment this. */
   errored: number
   /** A seq jump was detected upstream; the frame was withheld and a resubscribe forced (`doc_gap`). */
   gap: number
@@ -60,14 +85,19 @@ export interface AgentCrdtStatus {
   enabled: boolean
   connected: boolean
   workflowId: string | null
+  updatesReceived: number
   /**
-   * Mirror of `bridge.follower.updatesApplied` (Yjs merges, reset to 0 on
-   * `doc_reset` / `follower_replaced`). Not interchangeable with
-   * `outcomes.applied`, which is monotonic and counts only frames that passed
-   * this composable's filter. Kept for AgentPanelRoot.vue and CrdtDevPanel.vue.
+   * Successful projection commits for the current follower lineage. Reset to
+   * 0 on `doc_reset` / `follower_replaced`; unlike `outcomes.applied`, it does
+   * not remain monotonic across those resets.
    */
   updatesApplied: number
+  updatesSkipped: number
+  updatesErrored: number
   lastFrameType: string | null
+  opNacks: number
+  lastOpNack: OpNack | null
+  projectionErrors: number
   outcomes: AgentCrdtOutcomeCounters
 }
 
@@ -81,12 +111,37 @@ export function useAgentCrdtFollower(
    * reads inside the getter are tracked, so a `null` → graph flip triggers a
    * reconcile without waiting for the next remote frame.
    */
-  getGraph: () => MaterializableGraph | null = () => null
+  getGraph: () => MaterializableGraph | null = () => null,
+  onFailure: (
+    type: 'op_rejected' | 'apply_failed',
+    details: string
+  ) => void = () => {}
 ) {
   const connected = ref(false)
+  const updatesReceived = ref(0)
   const updatesApplied = ref(0)
+  const updatesSkipped = ref(0)
+  const updatesErrored = ref(0)
   const lastFrameType = ref<string | null>(null)
   const subscribedWorkflowId = ref<string | null>(null)
+  const opNacks = ref(0)
+  const lastOpNack = ref<OpNack | null>(null)
+  const projectionErrors = ref(0)
+  let projectionFailureReported = false
+  let opNackReported = false
+
+  function resetWorkflowDiagnostics(): void {
+    lastOpNack.value = null
+    projectionFailureReported = false
+    opNackReported = false
+  }
+
+  function resetUpdateCounters(): void {
+    updatesReceived.value = 0
+    updatesApplied.value = 0
+    updatesSkipped.value = 0
+    updatesErrored.value = 0
+  }
   const outcomes = ref<AgentCrdtOutcomeCounters>({
     received: 0,
     applied: 0,
@@ -114,15 +169,20 @@ export function useAgentCrdtFollower(
     onOpsResult(listener) {
       const handler: EventListener = (event) => {
         if (!(event instanceof CustomEvent)) return
-        const detail = event.detail as OpsResultView & { failed?: unknown }
+        const detail = event.detail as Partial<DocOpsResult> | null
+        if (
+          detail === null ||
+          typeof detail.workflowId !== 'string' ||
+          typeof detail.ok !== 'boolean'
+        )
+          return
+        const failure = failureView(detail.failed)
         listener({
           workflowId: detail.workflowId,
           ok: detail.ok,
-          applied: detail.applied,
-          skipped: detail.skipped,
-          ...(detail.failed && typeof detail.failed === 'object'
-            ? { failure: detail.failed }
-            : {})
+          applied: detail.applied ?? [],
+          skipped: detail.skipped ?? [],
+          ...(failure && { failure })
         })
       }
       bridge.addEventListener('doc_ops_result', handler)
@@ -169,6 +229,24 @@ export function useAgentCrdtFollower(
       sender.abortIfUnbound()
     }
   }
+  function handleProjectionFailure(error: unknown, update: DocUpdate): void {
+    projectionErrors.value += 1
+    const failure = {
+      workflowId: update.workflowId,
+      seq: update.seq,
+      message: error instanceof Error ? error.message : String(error)
+    }
+    recordDevEvent('projection_error', failure)
+    onFailure('apply_failed', failure.message)
+    if (!projectionFailureReported) {
+      projectionFailureReported = true
+      reportError(error, {
+        errorType: 'agent_crdt_projection_failure',
+        tags: { workflow_id: update.workflowId },
+        context: { sequence: update.seq }
+      })
+    }
+  }
   const onUpdate: EventListener = (event) => {
     if (!(event instanceof CustomEvent)) return
     const update = event.detail as DocUpdate
@@ -184,16 +262,41 @@ export function useAgentCrdtFollower(
         ...outcomes.value,
         skipped: outcomes.value.skipped + 1
       }
+      event.preventDefault()
       return
     }
     lifecycle.onDocumentUpdate()
-    updatesApplied.value = bridge.follower.updatesApplied
     lastFrameType.value = event.type
-    const applied = projection.applyFrame(update)
-    outcomes.value = applied
-      ? { ...outcomes.value, applied: outcomes.value.applied + 1 }
-      : { ...outcomes.value, skipped: outcomes.value.skipped + 1 }
-    if (applied) projection.reconcileLiveGraph(update.workflowId)
+    try {
+      if (!projection.applyFrame(update)) {
+        updatesSkipped.value += 1
+        outcomes.value = {
+          ...outcomes.value,
+          skipped: outcomes.value.skipped + 1
+        }
+        event.preventDefault()
+        handleProjectionFailure(
+          new Error('ECS mutation batch rejected the authoritative update'),
+          update
+        )
+        return
+      }
+      projection.reconcileLiveGraph(update.workflowId)
+      updatesApplied.value += 1
+      outcomes.value = {
+        ...outcomes.value,
+        applied: outcomes.value.applied + 1
+      }
+    } catch (error) {
+      updatesErrored.value += 1
+      outcomes.value = {
+        ...outcomes.value,
+        errored: outcomes.value.errored + 1
+      }
+      event.preventDefault()
+      handleProjectionFailure(error, update)
+      return
+    }
     recordDevEvent('doc_update', {
       workflowId: update.workflowId,
       seq: update.seq,
@@ -207,17 +310,76 @@ export function useAgentCrdtFollower(
       recordDevEvent('doc_nodes_changed', { added, removed })
     knownDocNodeIds = ids
   }
+  const onUpdateReceived = (): void => {
+    updatesReceived.value += 1
+  }
+  const onUpdateSkipped = (): void => {
+    updatesSkipped.value += 1
+  }
+  const onUpdateError = (): void => {
+    updatesErrored.value += 1
+  }
   const onOpsResult: EventListener = (event) => {
     if (!(event instanceof CustomEvent)) return
-    const detail = event.detail as { workflowId?: unknown } | null
+    const detail = event.detail as Partial<DocOpsResult> | null
+    if (detail === null) return
+    const resultWorkflowId = detail.workflowId
     if (
       !isTargetActive.value ||
-      detail?.workflowId !== subscribedWorkflowId.value
+      typeof resultWorkflowId !== 'string' ||
+      resultWorkflowId !== subscribedWorkflowId.value
     )
       return
     lifecycle.onDocumentResult()
     lastFrameType.value = event.type
-    recordDevEvent('doc_ops_result', event.detail ?? null)
+    const failed = failureView(detail.failed)
+    recordDevEvent('doc_ops_result', {
+      workflowId: resultWorkflowId,
+      ok: detail.ok,
+      seq: detail.seq,
+      applied: detail.applied ?? [],
+      skipped: detail.skipped ?? [],
+      code: detail.code,
+      message: detail.message,
+      failed: failed ?? null
+    })
+    if (detail.ok !== false) return
+
+    const nack: OpNack = {
+      workflowId: resultWorkflowId,
+      code: detail.code ?? null,
+      message: detail.message ?? null,
+      failed: failed ?? null,
+      applied: detail.applied?.length ?? 0,
+      skipped: detail.skipped?.length ?? 0
+    }
+    opNacks.value += 1
+    lastOpNack.value = nack
+    recordDevEvent('op_nack', nack)
+    onFailure(
+      'op_rejected',
+      nack.message ??
+        nack.failed?.message ??
+        nack.code ??
+        nack.failed?.code ??
+        'The host rejected the workflow edit.'
+    )
+    if (!opNackReported) {
+      opNackReported = true
+      reportError(new Error('Host rejected CRDT operations'), {
+        errorType: 'agent_crdt_host_operation_rejected',
+        tags: {
+          workflow_id: nack.workflowId,
+          applied_ops: nack.applied,
+          skipped_ops: nack.skipped
+        },
+        context: {
+          failed: nack.failed,
+          host_code: nack.code,
+          host_message: nack.message
+        }
+      })
+    }
   }
   const onDocReset: EventListener = (event) => {
     const detail =
@@ -241,7 +403,8 @@ export function useAgentCrdtFollower(
     }
     projection.clearForReset(detail.workflowId, context)
     connected.value = false
-    updatesApplied.value = 0
+    resetUpdateCounters()
+    resetWorkflowDiagnostics()
     lastFrameType.value = event.type
     lifecycle.clearStaleProbe()
     knownDocNodeIds = new Set()
@@ -264,7 +427,7 @@ export function useAgentCrdtFollower(
       typeof workflowId === 'string' &&
       workflowId === subscribedWorkflowId.value
     ) {
-      updatesApplied.value = 0
+      resetUpdateCounters()
       projection.clearForReset(workflowId, {
         source: 'agent-remote',
         actor: 'agent-lineage',
@@ -278,6 +441,7 @@ export function useAgentCrdtFollower(
     // nothing was projected. Surface it as its own status rather than as a
     // generic "disconnected", which is indistinguishable from "never connected".
     connected.value = false
+    updatesErrored.value += 1
     lastFrameType.value = event.type
     lifecycle.clearStaleProbe()
     const detail =
@@ -332,7 +496,10 @@ export function useAgentCrdtFollower(
   }
 
   bridge.addEventListener('doc_subscribed', onSubscribed)
+  bridge.addEventListener('doc_update_received', onUpdateReceived)
   bridge.addEventListener('doc_update', onUpdate)
+  bridge.addEventListener('doc_update_skipped', onUpdateSkipped)
+  bridge.addEventListener('doc_update_error', onUpdateError)
   bridge.addEventListener('doc_ops_result', onOpsResult)
   bridge.addEventListener('doc_reset', onDocReset)
   bridge.addEventListener('follower_replaced', onFollowerReplaced)
@@ -396,6 +563,7 @@ export function useAgentCrdtFollower(
         if (persisted !== null) {
           recordDevEvent('rebind', { workflowId: persisted })
           if (boundWorkflowId !== persisted) {
+            resetWorkflowDiagnostics()
             if (boundWorkflowId !== null) projection.unbind(boundWorkflowId)
             projection.bind(persisted, bridge.follower)
             boundWorkflowId = persisted
@@ -416,6 +584,7 @@ export function useAgentCrdtFollower(
       }
       initialBind = false
       if (boundWorkflowId !== next) {
+        resetWorkflowDiagnostics()
         if (boundWorkflowId !== null) projection.unbind(boundWorkflowId)
         projection.bind(next, bridge.follower)
         boundWorkflowId = next
@@ -435,7 +604,10 @@ export function useAgentCrdtFollower(
       api.removeEventListener('reconnected', onReconnected)
       api.removeEventListener('status', onSocketActivity)
       bridge.removeEventListener('doc_subscribed', onSubscribed)
+      bridge.removeEventListener('doc_update_received', onUpdateReceived)
       bridge.removeEventListener('doc_update', onUpdate)
+      bridge.removeEventListener('doc_update_skipped', onUpdateSkipped)
+      bridge.removeEventListener('doc_update_error', onUpdateError)
       bridge.removeEventListener('doc_ops_result', onOpsResult)
       bridge.removeEventListener('doc_reset', onDocReset)
       bridge.removeEventListener('follower_replaced', onFollowerReplaced)
@@ -454,8 +626,14 @@ export function useAgentCrdtFollower(
     enabled: true,
     connected: connected.value,
     workflowId: subscribedWorkflowId.value,
+    updatesReceived: updatesReceived.value,
     updatesApplied: updatesApplied.value,
+    updatesSkipped: updatesSkipped.value,
+    updatesErrored: updatesErrored.value,
     lastFrameType: lastFrameType.value,
+    opNacks: opNacks.value,
+    lastOpNack: lastOpNack.value,
+    projectionErrors: projectionErrors.value,
     outcomes: outcomes.value
   }))
 

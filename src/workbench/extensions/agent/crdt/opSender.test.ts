@@ -312,57 +312,26 @@ describe('createOpSender', () => {
     expect(settled).toHaveLength(0)
   })
 
-  it('ignores an anonymous result for another workflow', () => {
+  it('ignores a result attributed to a different workflow than the in-flight batch', () => {
     sender.enqueue([addNode(1)])
-    boundWorkflow = 'wf-2'
-    sender.abortIfUnbound()
-    sender.enqueue([addNode(2)])
+    const inFlight = sent[0].ops.map((op) => op.op_id)
 
     resultListener?.({
-      workflowId: WORKFLOW,
-      ok: false,
-      applied: [],
+      ok: true,
+      workflowId: 'other-wf',
+      applied: inFlight,
       skipped: []
     })
-
-    expect(settled).toHaveLength(1)
-    expect(sender.pending()).toBe(1)
-  })
-
-  it('late results addressed to the old workflow drain the stale credits', () => {
-    sender.enqueue([addNode(1)])
-    vi.advanceTimersByTime(10_000)
-    vi.advanceTimersByTime(10_000)
-    expect(settled.map((outcome) => outcome.state)).toEqual(['unacknowledged'])
-
-    boundWorkflow = 'wf-2'
-    sender.enqueue([addNode(2)])
+    expect(settled).toHaveLength(0)
 
     resultListener?.({
+      ok: true,
       workflowId: WORKFLOW,
-      ok: false,
-      applied: [],
-      skipped: []
-    })
-    resultListener?.({
-      workflowId: WORKFLOW,
-      ok: false,
-      applied: [],
+      applied: inFlight,
       skipped: []
     })
     expect(settled).toHaveLength(1)
-
-    resultListener?.({
-      workflowId: 'wf-2',
-      ok: false,
-      applied: [],
-      skipped: []
-    })
-
-    expect(settled.map((outcome) => outcome.state)).toEqual([
-      'unacknowledged',
-      'acknowledged'
-    ])
+    expect(settled[0].state).toBe('acknowledged')
   })
 
   it('a late anonymous failure from an unacknowledged batch never settles the next batch', () => {
@@ -380,6 +349,37 @@ describe('createOpSender', () => {
     expect(settled).toHaveLength(1)
 
     ackInFlight()
+    expect(settled).toHaveLength(2)
+    expect(settled[1].state).toBe('acknowledged')
+  })
+
+  it('mismatched anonymous results drain stale credits after a workflow switch', () => {
+    sender.enqueue([addNode(1)])
+    vi.advanceTimersByTime(10_000)
+    vi.advanceTimersByTime(10_000)
+
+    boundWorkflow = 'wf-2'
+    sender.enqueue([addNode(2)])
+
+    resultListener?.({
+      ok: false,
+      workflowId: WORKFLOW,
+      applied: [],
+      skipped: []
+    })
+    resultListener?.({
+      ok: false,
+      workflowId: WORKFLOW,
+      applied: [],
+      skipped: []
+    })
+    resultListener?.({
+      ok: false,
+      workflowId: 'wf-2',
+      applied: [],
+      skipped: []
+    })
+
     expect(settled).toHaveLength(2)
     expect(settled[1].state).toBe('acknowledged')
   })
