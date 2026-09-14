@@ -120,38 +120,25 @@ describe('native Router output handling', () => {
         'image',
         'video',
         'audio',
-        '3d',
-        'text'
+        '3d'
       ])
       const image = await fetch(outputs[0].url)
       expect(image.headers.get('Content-Type')).toBe('image/png')
       expect(new Uint8Array(await image.arrayBuffer())).toEqual(
         Uint8Array.from(atob(png), (char) => char.charCodeAt(0))
       )
-      const metadata = {
-        ...response,
-        data: [{ b64_json: `[media saved as ${outputs[0].fileName}]` }]
-      }
-      expect(outputs.at(-1)?.fileName).toBe('fixture-native-metadata.json')
-      expect(outputs.at(-1)?.purpose).toBe('response-metadata')
-      expect(outputs.at(-1)?.text).not.toContain(png)
-      expect(JSON.parse(outputs.at(-1)?.text ?? '')).toEqual(metadata)
-      expect(await (await fetch(outputs.at(-1)?.url ?? '')).json()).toEqual(
-        metadata
-      )
     } finally {
       releaseRouterOutputs(outputs)
     }
   })
 
-  it('marks the response document as metadata beside remote media', async () => {
+  it('does not expose response metadata beside remote media', async () => {
     const outputs = await parseRouterResponse(
       contract,
       Response.json({ image: 'https://assets.example/generated.png' })
     )
     try {
-      expect(outputs.map(({ kind }) => kind)).toEqual(['image', 'text'])
-      expect(outputs[1].purpose).toBe('response-metadata')
+      expect(outputs.map(({ kind }) => kind)).toEqual(['image'])
     } finally {
       releaseRouterOutputs(outputs)
     }
@@ -181,7 +168,7 @@ describe('native Router output handling', () => {
     try {
       expect(outputs.map(({ kind }) => kind)).toEqual(['image', 'text'])
       expect(outputs[1].text).toBe('A generated caption')
-      expect(outputs[1].purpose).toBeUndefined()
+      expect(outputs[1].fileName).toBe('fixture-native-2.txt')
     } finally {
       releaseRouterOutputs(outputs)
     }

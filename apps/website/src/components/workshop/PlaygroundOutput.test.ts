@@ -209,32 +209,6 @@ describe('PlaygroundOutput', () => {
     ).toContain('latest')
   })
 
-  it('does not show raw response metadata beside a generated asset', () => {
-    const alternate = output('alternate')
-    render(PlaygroundOutput, {
-      props: {
-        state: succeeded(output('latest')),
-        attachments: [
-          alternate,
-          {
-            kind: 'text',
-            purpose: 'response-metadata',
-            url: 'blob:metadata',
-            text: '{"id":"run"}',
-            fileName: 'response.json'
-          }
-        ],
-        now: 2_000
-      }
-    })
-
-    expect(screen.queryByText('response.json')).toBeNull()
-    expect(screen.getByRole('button', { name: 'alternate.webp' })).toBeTruthy()
-    expect(
-      screen.getByRole('img', { name: 'Output' }).getAttribute('src')
-    ).toBe(output('latest').url)
-  })
-
   it('lines the session up in the order it was generated, newest last', async () => {
     const user = userEvent.setup()
     render(PlaygroundOutput, {

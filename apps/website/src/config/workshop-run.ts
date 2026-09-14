@@ -14,7 +14,6 @@ export type RunFailure =
 
 export interface RunOutput {
   readonly kind: Modality | 'other'
-  readonly purpose?: 'response-metadata'
   readonly url: string
   readonly byteLength?: number
   readonly text?: string
