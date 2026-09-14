@@ -17,6 +17,19 @@ import { useAuthStore } from '@/stores/authStore'
 
 const MAX_RETRIES = 5
 const TIMEOUT = 4096
+type RemoteWidgetValue = string | number
+type RemoteWidgetData = RemoteWidgetValue | RemoteWidgetValue[]
+
+function isRemoteWidgetValue(value: unknown): value is RemoteWidgetValue {
+  return typeof value === 'string' || typeof value === 'number'
+}
+
+function isRemoteWidgetData(value: unknown): value is RemoteWidgetData {
+  return (
+    isRemoteWidgetValue(value) ||
+    (Array.isArray(value) && value.every(isRemoteWidgetValue))
+  )
+}
 
 async function getAuthHeaders() {
   if (isCloud) {
@@ -57,11 +70,9 @@ async function fetchRemoteWidgetData(
     : res.data
 }
 
-export function useRemoteWidget<
-  T extends string | number | boolean | object
->(options: {
+export function useRemoteWidget(options: {
   remoteConfig: RemoteWidgetConfig
-  defaultValue: T
+  defaultValue: RemoteWidgetData
   node: LGraphNode
   widget: IWidget
 }) {
@@ -87,12 +98,13 @@ export function useRemoteWidget<
   let refreshQueued = false
 
   const fetchValue = async (): Promise<{
-    data: T
+    data: RemoteWidgetData
     scope: RemoteAuthScope
   }> => {
     const scope = getAuthScope()
     const queryKey = createQueryKey(scope)
-    const fallback = () => queryClient.getQueryData<T>(queryKey) ?? defaultValue
+    const fallback = () =>
+      queryClient.getQueryData<RemoteWidgetData>(queryKey) ?? defaultValue
     try {
       const authHeaders = await getAuthHeaders()
       if (!scopesMatch(scope, getAuthScope())) {
@@ -100,14 +112,20 @@ export function useRemoteWidget<
       }
       const data = await queryClient.fetchQuery({
         queryKey,
-        queryFn: ({ signal }) =>
-          fetchRemoteWidgetData(descriptor, signal, authHeaders),
+        queryFn: async ({ signal }) => {
+          const data = await fetchRemoteWidgetData(
+            descriptor,
+            signal,
+            authHeaders
+          )
+          return isRemoteWidgetData(data) ? data : fallback()
+        },
         staleTime: remoteConfig.refresh,
         retry: (failureCount, error) =>
           failureCount < (remoteConfig.max_retries ?? MAX_RETRIES) &&
           isRetriableError(error)
       })
-      return { data: (data ?? defaultValue) as T, scope }
+      return { data, scope }
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Unknown error'
       console.warn('Remote widget fetch failed:', message)
@@ -115,7 +133,7 @@ export function useRemoteWidget<
     }
   }
 
-  const onFirstLoad = (data: T | T[]) => {
+  const onFirstLoad = (data: RemoteWidgetData) => {
     isLoaded = true
     const nextValue =
       Array.isArray(data) && data.length > 0 ? data[0] : undefined
@@ -124,7 +142,7 @@ export function useRemoteWidget<
     node.graph?.setDirtyCanvas(true)
   }
 
-  const onRefresh = (data: T) => {
+  const onRefresh = (data: RemoteWidgetData) => {
     if (!remoteConfig.control_after_refresh) return
     if (!Array.isArray(data)) return
 
@@ -140,8 +158,10 @@ export function useRemoteWidget<
     node.graph?.setDirtyCanvas(true)
   }
 
-  function getCachedValue(): T {
-    return queryClient.getQueryData<T>(getQueryKey()) ?? defaultValue
+  function getCachedValue(): RemoteWidgetData {
+    return (
+      queryClient.getQueryData<RemoteWidgetData>(getQueryKey()) ?? defaultValue
+    )
   }
 
   function getValue(onFulfilled?: () => void) {

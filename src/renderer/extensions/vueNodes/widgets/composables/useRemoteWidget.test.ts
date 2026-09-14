@@ -48,7 +48,7 @@ describe('useRemoteWidget', () => {
       value: undefined,
       options: {}
     })
-    const remote = useRemoteWidget<string[]>({
+    const remote = useRemoteWidget({
       remoteConfig: { route: '/options' },
       defaultValue: [],
       node,
@@ -84,7 +84,7 @@ describe('useRemoteWidget', () => {
           resolveRequest = resolve
         })
     )
-    const remote = useRemoteWidget<string[]>({
+    const remote = useRemoteWidget({
       remoteConfig: { route: '/options' },
       defaultValue: [],
       node,
@@ -105,4 +105,38 @@ describe('useRemoteWidget', () => {
     expect(widget.value).toBeUndefined()
     expect(callback).not.toHaveBeenCalled()
   })
+
+  it.for([
+    { response: ['voice-a', 7], expectedValue: 'voice-a' },
+    { response: { value: 'voice-a' }, expectedValue: 'default' },
+    { response: ['voice-a', { value: 7 }], expectedValue: 'default' }
+  ])(
+    'accepts combo values and replaces invalid response $response with the default',
+    async ({ response, expectedValue }) => {
+      const node = new LGraphNode('Test')
+      vi.spyOn(node, 'addWidget').mockReturnValue(
+        fromPartial<IWidget>({ type: 'toggle', options: {} })
+      )
+      const widget = fromPartial<IWidget>({
+        type: 'combo',
+        value: undefined,
+        options: {}
+      })
+      vi.mocked(useAuthStore().getAuthHeader).mockResolvedValue(null)
+      vi.spyOn(axios, 'get').mockResolvedValueOnce({ data: response })
+      const remote = useRemoteWidget({
+        remoteConfig: { route: '/options' },
+        defaultValue: ['default'],
+        node,
+        widget
+      })
+
+      await new Promise<void>((resolve) => remote.getValue(resolve))
+
+      expect(widget.value).toBe(expectedValue)
+      expect(queryClient.getQueryData(remote.getQueryKey())).toEqual(
+        expectedValue === 'voice-a' ? response : ['default']
+      )
+    }
+  )
 })
