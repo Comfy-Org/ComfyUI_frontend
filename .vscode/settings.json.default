@@ -2,5 +2,6 @@
   "css.customData": [
     ".vscode/tailwind.json",
     ".vscode/custom-css.json"
-  ]
+  ],
+  "eslint.bulkSuppression.enable": true
 }

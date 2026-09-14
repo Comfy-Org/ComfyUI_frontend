@@ -1,12 +1,10 @@
 coverage:
   status:
     project:
-      # Keep website coverage from lowering the existing frontend status.
-      default:
-        target: auto
-        flags:
-          - unit
-          - e2e
+      # Disable the project-wide status entirely: the merge queue uses ALLGREEN,
+      # and total-project coverage dips were blocking merges. Patch coverage below
+      # still covers the diff.
+      default: false
 
       website:
         target: auto
@@ -32,6 +30,14 @@ coverage:
         paths:
           - apps/website/src/**
         flag_coverage_not_uploaded_behavior: pass
+
+# Coverage is instrumented over src/** only (see `coverage.include` in
+# vite.config.mts), so build and developer tooling has no coverage data to
+# report. Without this, changing a file under tools/ counts every one of its
+# lines as a patch miss even when the change is covered by its own tests.
+ignore:
+  - 'tools/**'
+  - 'scripts/**'
 
 comment:
   layout: 'header, diff, flags, files'

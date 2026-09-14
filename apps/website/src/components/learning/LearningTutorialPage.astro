@@ -9,7 +9,9 @@ import { externalLinks, localizeHref } from '../../config/routes'
 import type { LearningTutorial } from '../../data/learningTutorials'
 import {
   learningCrumbs,
-  tutorialDescription
+  tutorialDescription,
+  tutorialMetaTitle,
+  youtubeEmbedUrl
 } from '../../data/learningTutorials'
 import type { JsonLdNode } from '../../utils/jsonLd'
 import {
@@ -31,7 +33,7 @@ const { siteUrl, locale, url } = pageContext(
   Astro.currentLocale
 )
 
-const title = tutorial.title[locale]
+const title = tutorial.title[locale] || tutorial.title.en
 const description = tutorialDescription(tutorial, locale)
 const videoId = jsonLdId(url, 'video')
 
@@ -43,6 +45,9 @@ const video: JsonLdNode = videoObjectNode({
   description,
   thumbnailUrl: tutorial.poster,
   contentUrl: tutorial.videoSrc,
+  embedUrl: tutorial.youtubeId
+    ? youtubeEmbedUrl(tutorial.youtubeId)
+    : undefined,
   uploadDate: tutorial.publishedDate,
   locale
 })
@@ -58,7 +63,7 @@ const breadcrumbs = [
 ---
 
 <BaseLayout
-  title={`${title} - Comfy`}
+  title={tutorialMetaTitle(tutorial, locale)}
   description={description}
   ogImage={tutorial.poster}
   mainEntityId={videoId}
