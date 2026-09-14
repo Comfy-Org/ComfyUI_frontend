@@ -40,6 +40,17 @@
             {{ displayCredits }} {{ creditsUnitLabel }}
           </span>
         </div>
+        <div
+          v-if="paidToday"
+          class="mt-2 flex items-baseline justify-between border-t border-border-subtle pt-2"
+        >
+          <span class="text-sm text-muted-foreground">
+            {{ $t('subscription.success.paidToday') }}
+          </span>
+          <span class="text-sm font-bold text-base-foreground tabular-nums">
+            {{ paidToday }}
+          </span>
+        </div>
       </div>
 
       <p
@@ -141,6 +152,8 @@ import type { TeamPlanSelection } from '@/platform/cloud/subscription/constants/
 import { getTierCredits } from '@/platform/cloud/subscription/constants/tierPricing'
 import type { TierKey } from '@/platform/cloud/subscription/constants/tierPricing'
 import { isYearlyCheckout } from '@/platform/cloud/subscription/utils/planDuration'
+import { formatQuoteMoney } from '@/platform/cloud/subscription/utils/subscriptionQuoteFormatting'
+import { formatSubscriptionDate } from '@/platform/workspace/components/subscriptionPanelWorkspace.logic'
 import type { BillingCycle } from '@/platform/cloud/subscription/utils/subscriptionTierRank'
 import type { PreviewSubscribeResponse } from '@/platform/workspace/api/workspaceApi'
 
@@ -151,8 +164,7 @@ const {
   previewData = null,
   teamPlan = null,
   billingCycle = 'monthly',
-  darkSurface = false,
-  promoApplied = null
+  darkSurface = false
 } = defineProps<{
   tierKey?: Exclude<TierKey, 'free' | 'founder'> | null
   previewData?: PreviewSubscribeResponse | null
@@ -160,20 +172,13 @@ const {
   billingCycle?: BillingCycle
   /** Dialog paints base-background; the plan card elevates to stay visible. */
   darkSurface?: boolean
-  /** Applied promotion feedback (Figma 5379-30077 S3). Display-ready strings;
-   *  the backend does not supply this yet — see the promo validation ask. */
-  promoApplied?: {
-    code: string
-    renewalAmount: string
-    renewalDate: string
-  } | null
 }>()
 
 defineEmits<{
   close: []
 }>()
 
-const { t, n } = useI18n()
+const { locale, n, t } = useI18n()
 const { maxSeats, occupiedSeats } = useBillingContext()
 
 const tierName = computed(() =>
@@ -197,6 +202,36 @@ const displayPrice = computed(() => {
     return String(usd)
   }
   return '0'
+})
+
+const paidToday = computed(() =>
+  previewData?.amount_due_cents === undefined
+    ? null
+    : formatQuoteMoney(
+        previewData.amount_due_cents,
+        previewData.currency,
+        locale.value
+      )
+)
+
+const promoApplied = computed(() => {
+  const code = previewData?.promotion_code
+  if (
+    !code ||
+    previewData?.renewal_amount_cents === undefined ||
+    !previewData.renewal_at
+  ) {
+    return null
+  }
+  return {
+    code,
+    renewalAmount: formatQuoteMoney(
+      previewData.renewal_amount_cents,
+      previewData.currency,
+      locale.value
+    ),
+    renewalDate: formatSubscriptionDate(previewData.renewal_at, locale.value)
+  }
 })
 
 const priceUnitLabel = computed(() =>
