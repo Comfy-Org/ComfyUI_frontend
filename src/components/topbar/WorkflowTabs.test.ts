@@ -248,6 +248,23 @@ describe('WorkflowTabs agent entry button', () => {
     ).toBeNull()
   })
 
+  // The separator divides the button off from the avatar, so it must leave
+  // with it rather than trailing the icon group.
+  it('takes the separator away with the button when the flag is off', () => {
+    useAgentPanelStore().enabled = false
+    renderComponent()
+
+    expect(
+      screen.queryByTestId('agent-entry-separator')
+    ).not.toBeInTheDocument()
+  })
+
+  it('divides the button from the avatar while the flag is on', () => {
+    renderComponent()
+
+    expect(screen.getByTestId('agent-entry-separator')).toBeInTheDocument()
+  })
+
   // Two entry controls once shipped side by side after a merge, which broke
   // every role-based lookup of the button in the Playwright suite.
   it('renders exactly one agent entry control', () => {
