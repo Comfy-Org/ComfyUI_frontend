@@ -44,6 +44,52 @@ function isSampleFilename(file: string): boolean {
   )
 }
 
+async function uploadTemplateInput(
+  file: string,
+  signal: AbortSignal
+): Promise<{ ok: true; path: string } | { ok: false; error: unknown }> {
+  if (!isSampleFilename(file)) {
+    return {
+      ok: false,
+      error: new Error(`Invalid template input filename: ${file}`)
+    }
+  }
+  const requestSignal = AbortSignal.any([signal, AbortSignal.timeout(120_000)])
+  const response = await fetch(`${INPUT_BASE}${encodeURIComponent(file)}`, {
+    signal: requestSignal
+  })
+  if (!response.ok)
+    return {
+      ok: false,
+      error: new Error(`Sample download failed: ${response.status}`)
+    }
+  const bytes = await response.arrayBuffer()
+  requestSignal.throwIfAborted()
+  const body = new FormData()
+  body.append('image', new File([bytes], file))
+  body.append('type', 'input')
+  const uploaded = await api.fetchApi('/upload/image', {
+    method: 'POST',
+    body,
+    signal: requestSignal
+  })
+  if (!uploaded.ok)
+    return {
+      ok: false,
+      error: new Error(`Sample upload failed: ${uploaded.status}`)
+    }
+  const result = zUploadImageResponse.parse(await uploaded.json())
+  if (!result.name)
+    return {
+      ok: false,
+      error: new Error('Sample upload returned no filename')
+    }
+  const path = result.subfolder
+    ? `${result.subfolder}/${result.name}`
+    : result.name
+  return { ok: true, path }
+}
+
 export async function prepareTemplateInputs(
   workflow: ComfyWorkflowJSON,
   inputs: unknown,
@@ -69,48 +115,9 @@ export async function prepareTemplateInputs(
     if (!files.size) return { ok: true, workflow }
     for (const file of files) {
       signal.throwIfAborted()
-      if (!isSampleFilename(file)) {
-        return {
-          ok: false,
-          error: new Error(`Invalid template input filename: ${file}`)
-        }
-      }
-      const requestSignal = AbortSignal.any([
-        signal,
-        AbortSignal.timeout(120_000)
-      ])
-      const response = await fetch(`${INPUT_BASE}${encodeURIComponent(file)}`, {
-        signal: requestSignal
-      })
-      if (!response.ok)
-        return {
-          ok: false,
-          error: new Error(`Sample download failed: ${response.status}`)
-        }
-      const bytes = await response.arrayBuffer()
-      requestSignal.throwIfAborted()
-      const body = new FormData()
-      body.append('image', new File([bytes], file))
-      body.append('type', 'input')
-      const uploaded = await api.fetchApi('/upload/image', {
-        method: 'POST',
-        body,
-        signal: requestSignal
-      })
-      if (!uploaded.ok)
-        return {
-          ok: false,
-          error: new Error(`Sample upload failed: ${uploaded.status}`)
-        }
-      const result = zUploadImageResponse.parse(await uploaded.json())
-      if (!result.name)
-        return {
-          ok: false,
-          error: new Error('Sample upload returned no filename')
-        }
-      const path = result.subfolder
-        ? `${result.subfolder}/${result.name}`
-        : result.name
+      const uploaded = await uploadTemplateInput(file, signal)
+      if (!uploaded.ok) return uploaded
+      const path = uploaded.path
       for (const { node, widget, values, named } of bindings.filter(
         (binding) => binding.file === file
       )) {

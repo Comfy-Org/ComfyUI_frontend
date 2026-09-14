@@ -20,6 +20,18 @@ import { useDialogStore } from '@/stores/dialogStore'
 
 import { prepareTemplateInputs } from '../services/templateInputService'
 
+function updateTemplateEducation(
+  isPartnerNode: boolean | undefined,
+  loadedWorkflow: Awaited<ReturnType<typeof app.loadGraphData>>
+) {
+  const educationStore = usePartnerNodesEducationStore()
+  if (isPartnerNode && typeof loadedWorkflow === 'object') {
+    educationStore.requestCard(loadedWorkflow.key)
+  } else {
+    educationStore.dismissCard()
+  }
+}
+
 export function useTemplateWorkflows() {
   const { t } = useI18n()
   const workflowTemplatesStore = useWorkflowTemplatesStore()
@@ -104,139 +116,117 @@ export function useTemplateWorkflows() {
       .trim()
   }
 
-  /**
-   * Loads a workflow template
-   */
-  const loadWorkflowTemplate = async (id: string, sourceModule: string) => {
-    if (!isTemplatesLoaded.value) return false
+  function resolveTemplateSource(id: string, sourceModule: string) {
+    if (sourceModule !== 'all') return sourceModule
 
-    const controller = workflowTemplatesStore.startTemplateLoad()
-    const request = { id, controller }
-    pendingLoad.value = request
+    const group = allTemplateGroups.value.find(
+      (group) =>
+        group.label ===
+        t('templateWorkflows.category.ComfyUI Examples', 'ComfyUI Examples')
+    )
+    const category = group?.modules.find(
+      (module) => module.moduleName === 'all'
+    )
+    const template = category?.templates.find(
+      (template) => template.name === id
+    )
+    if (template?.sourceModule) return template.sourceModule
+
+    showTemplateError(
+      t('templateWorkflows.error.templateNotFound', { templateName: id })
+    )
+  }
+
+  function showTemplateError(detail: string) {
+    useToastStore().add({ severity: 'error', summary: t('g.error'), detail })
+  }
+
+  async function loadTemplateData(
+    id: string,
+    sourceModule: string,
+    signal: AbortSignal
+  ) {
+    const json = await fetchTemplateJson(id, sourceModule)
+    signal.throwIfAborted()
+    const template = workflowTemplatesStore.enhancedTemplates.find(
+      (template) =>
+        template.name === id && template.sourceModule === sourceModule
+    )
+    if (isCloud || sourceModule !== 'default' || !template?.io?.inputs?.length)
+      return { json, template }
+
     const toast = useToastStore()
     const progress = {
       severity: 'info' as const,
       summary: t('templateWorkflows.preparingMedia')
     }
-    let json
-
+    toast.add(progress)
     try {
-      // Handle "All" category as a special case
-      if (sourceModule === 'all') {
-        // Find "All" category in the ComfyUI Examples group
-        const comfyExamplesGroup = allTemplateGroups.value.find(
-          (g) =>
-            g.label ===
-            t('templateWorkflows.category.ComfyUI Examples', 'ComfyUI Examples')
-        )
-        const allCategory = comfyExamplesGroup?.modules.find(
-          (m) => m.moduleName === 'all'
-        )
-        const template = allCategory?.templates.find((t) => t.name === id)
-
-        if (!template || !template.sourceModule) {
-          toast.add({
-            severity: 'error',
-            summary: t('g.error'),
-            detail: t('templateWorkflows.error.templateNotFound', {
-              templateName: id
-            })
-          })
-          return false
-        }
-
-        // Use the stored source module for loading
-        sourceModule = template.sourceModule
+      const workflow = await validateComfyWorkflow(json)
+      if (!workflow) {
+        showTemplateError(t('templateWorkflows.error.loading'))
+        return null
       }
+      const result = await prepareTemplateInputs(
+        workflow,
+        template.io.inputs,
+        signal
+      )
+      if (!result.ok) {
+        reportError(result.error, { errorType: 'error_loading_template_media' })
+        showTemplateError(t('templateWorkflows.error.preparingMedia'))
+        return null
+      }
+      if (result.workflow !== workflow) {
+        await useAssetsStore().inputAssets.invalidate()
+        await app.reloadNodeDefs()
+      }
+      signal.throwIfAborted()
+      return { json: result.workflow, template }
+    } finally {
+      toast.remove(progress)
+    }
+  }
 
-      // Regular case for normal categories
-      json = await fetchTemplateJson(id, sourceModule)
+  async function loadWorkflowTemplate(id: string, sourceModule: string) {
+    if (!isTemplatesLoaded.value) return false
+
+    const controller = workflowTemplatesStore.startTemplateLoad()
+    const request = { id, controller }
+    pendingLoad.value = request
+    try {
+      const source = resolveTemplateSource(id, sourceModule)
+      if (!source) return false
+      const data = await loadTemplateData(id, source, controller.signal)
+      if (!data) return false
       controller.signal.throwIfAborted()
 
-      const template = workflowTemplatesStore.enhancedTemplates.find(
-        (tpl) => tpl.name === id && tpl.sourceModule === sourceModule
-      )
-      if (
-        !isCloud &&
-        sourceModule === 'default' &&
-        template?.io?.inputs?.length
-      ) {
-        toast.add(progress)
-        const workflow = await validateComfyWorkflow(json)
-        if (!workflow) {
-          toast.add({
-            severity: 'error',
-            summary: t('g.error'),
-            detail: t('templateWorkflows.error.loading')
-          })
-          return false
-        }
-        const result = await prepareTemplateInputs(
-          workflow,
-          template.io.inputs,
-          controller.signal
-        )
-        if (!result.ok) {
-          reportError(result.error, {
-            errorType: 'error_loading_template_media'
-          })
-          toast.add({
-            severity: 'error',
-            summary: t('g.error'),
-            detail: t('templateWorkflows.error.preparingMedia')
-          })
-          return false
-        }
-        json = result.workflow
-        if (json !== workflow) {
-          await useAssetsStore().inputAssets.invalidate()
-          await app.reloadNodeDefs()
-        }
-        controller.signal.throwIfAborted()
-      }
-
       const workflowName =
-        sourceModule === 'default'
-          ? t(`templateWorkflows.template.${id}`, id)
-          : id
-
+        source === 'default' ? t(`templateWorkflows.template.${id}`, id) : id
       useTelemetry()?.trackTemplate({
         workflow_name: id,
-        template_source: sourceModule
+        template_source: source
       })
 
       pendingLoad.value = null
       dialogStore.closeDialog()
-      // Bind the card to the workflow THIS load activated, not the global
-      // active one: asset scans keep loadGraphData pending, and the user can
-      // switch workflows in that window.
       const loadedWorkflow = await app.loadGraphData(
-        json,
+        data.json,
         true,
         true,
         workflowName,
         { openSource: 'template' }
       )
 
-      const educationStore = usePartnerNodesEducationStore()
-      if (template?.isPartnerNode && typeof loadedWorkflow === 'object') {
-        educationStore.requestCard(loadedWorkflow.key)
-      } else {
-        educationStore.dismissCard()
-      }
+      updateTemplateEducation(data.template?.isPartnerNode, loadedWorkflow)
 
       return true
     } catch (error) {
       if (controller.signal.aborted) return false
       reportError(error, { errorType: 'error_loading_template' })
-      toast.add({
-        severity: 'error',
-        summary: t('g.error'),
-        detail: t('templateWorkflows.error.loading')
-      })
+      showTemplateError(t('templateWorkflows.error.loading'))
       return false
     } finally {
-      toast.remove(progress)
       if (pendingLoad.value === request) pendingLoad.value = null
     }
   }
