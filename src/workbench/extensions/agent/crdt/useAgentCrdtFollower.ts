@@ -56,10 +56,22 @@ export interface AgentCrdtOutcomeCounters {
   dropped: number
 }
 
+/**
+ * Why the follower can no longer deliver the document it intends to follow.
+ * `refused`: the host refused the subscribe and the FE-1901 retry budget is
+ * spent. `schema_error`: the KA-11 read gate closed on an unreadable doc.
+ * Either way `workflowId` (intent) is still set, but nothing will ever arrive
+ * for it until a confirmed subscribe or a retarget clears this. Distinct from
+ * a plain `connected: false`, which a reconnect produces for a moment and
+ * which the subscribe machinery repairs on its own.
+ */
+export type AgentCrdtTerminalState = 'refused' | 'schema_error' | null
+
 export interface AgentCrdtStatus {
   enabled: boolean
   connected: boolean
   workflowId: string | null
+  terminal: AgentCrdtTerminalState
   /**
    * Mirror of `bridge.follower.updatesApplied` (Yjs merges, reset to 0 on
    * `doc_reset` / `follower_replaced`). Not interchangeable with
@@ -92,6 +104,7 @@ export function useAgentCrdtFollower(
   baseTransport: DocFrameTransport = apiTransport
 ) {
   const connected = ref(false)
+  const terminal = ref<AgentCrdtTerminalState>(null)
   const updatesApplied = ref(0)
   const lastFrameType = ref<string | null>(null)
   const subscribedWorkflowId = ref<string | null>(null)
@@ -168,9 +181,14 @@ export function useAgentCrdtFollower(
     lastFrameType.value = event.type
     recordDevEvent('doc_subscribed', event.detail ?? null)
     if (ok) {
+      terminal.value = null
       lifecycle.onSubscribeConfirmed()
     } else {
-      lifecycle.onSubscribeRefused()
+      // Only the refusal nothing will retry is terminal: while a retry is
+      // scheduled the subscribe machinery still owns the outcome, and the
+      // panel must keep withholding the draft seed exactly as on a reconnect.
+      if (lifecycle.onSubscribeRefused() === 'exhausted')
+        terminal.value = 'refused'
       // FE #16637 residual: a refusal is the earliest signal the sender can
       // get that its in-flight batch's doc is gone — don't make it wait out
       // the 10 s result-silence window to notice on its own.
@@ -286,6 +304,7 @@ export function useAgentCrdtFollower(
     // nothing was projected. Surface it as its own status rather than as a
     // generic "disconnected", which is indistinguishable from "never connected".
     connected.value = false
+    terminal.value = 'schema_error'
     lastFrameType.value = event.type
     lifecycle.clearStaleProbe()
     const detail =
@@ -396,6 +415,7 @@ export function useAgentCrdtFollower(
       const justActivated = active && previous?.[1] === false
       lifecycle.clearForRetarget()
       connected.value = false
+      terminal.value = null
       knownDocNodeIds = new Set()
       if (!active) {
         if (next !== null) initialBind = false
@@ -472,6 +492,7 @@ export function useAgentCrdtFollower(
     enabled: true,
     connected: connected.value,
     workflowId: subscribedWorkflowId.value,
+    terminal: terminal.value,
     updatesApplied: updatesApplied.value,
     lastFrameType: lastFrameType.value,
     outcomes: outcomes.value
