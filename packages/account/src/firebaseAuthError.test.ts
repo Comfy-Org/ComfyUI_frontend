@@ -106,7 +106,7 @@ describe('authErrorMessage resolves a classification against host copy', () => {
         classifyAuthError(firebaseError('auth/popup-blocked')),
         hostCopy
       )
-    ).toBe('Pop-up blocked.')
+    ).toBe(hostCopy['auth/popup-blocked'])
   })
 
   it('falls back to the host generic line for an unknown auth code', () => {

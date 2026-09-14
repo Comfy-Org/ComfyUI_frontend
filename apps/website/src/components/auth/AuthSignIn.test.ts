@@ -909,7 +909,7 @@ describe('AuthSignIn', () => {
     expect(alert.getAttribute('data-severity')).toBe('error')
     expect(
       alert.textContent,
-      'the cloud app names the code; the website reads the same line'
+      'the website renders its own i18n line for the failure, not a package-shipped string'
     ).toContain(t('auth.errors.auth/user-not-found', 'en'))
     expect(toasts.value[0].life).toBeUndefined()
     expect(replace).not.toHaveBeenCalled()

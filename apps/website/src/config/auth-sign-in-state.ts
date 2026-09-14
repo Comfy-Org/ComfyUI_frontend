@@ -52,15 +52,18 @@ export type AuthSignInEvent =
 const SUPPORT_EMAIL = 'support@comfy.org'
 
 const AUTH_ERROR_PREFIX = 'auth.errors.'
-const authErrorKeys = translationKeys.filter((key) =>
-  key.startsWith(AUTH_ERROR_PREFIX)
+const authErrorCodeKeys = translationKeys.filter(
+  (key) =>
+    key.startsWith(AUTH_ERROR_PREFIX) &&
+    key !== 'auth.errors.generic' &&
+    key !== 'auth.errors.signupBlocked'
 )
 
 /** This host's own auth-error table, keyed the way the package resolver reads it. */
 function localizedAuthErrorCopy(locale: Locale): AuthErrorCopy {
   return {
     ...Object.fromEntries(
-      authErrorKeys.map((key) => [
+      authErrorCodeKeys.map((key) => [
         key.slice(AUTH_ERROR_PREFIX.length),
         t(key, locale)
       ])

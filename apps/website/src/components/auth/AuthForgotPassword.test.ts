@@ -133,6 +133,7 @@ describe('AuthForgotPassword', () => {
       await waitFor(() =>
         expect(toasts.value[0]).toMatchObject({
           severity: 'error',
+          summary: 'Error',
           detail: expect.stringContaining(detail)
         })
       )
@@ -151,6 +152,23 @@ describe('AuthForgotPassword', () => {
       ).toBe(false)
     }
   )
+
+  it('surfaces a dismissed-popup failure as a warning, not an error', async () => {
+    h.sendReset.mockRejectedValue({
+      code: 'auth/popup-closed-by-user',
+      message: 'x'
+    })
+    render(AuthForgotPassword)
+    await typeEmail('user@example.com')
+    await clickSend()
+
+    await waitFor(() =>
+      expect(toasts.value[0]).toMatchObject({
+        severity: 'warn',
+        summary: 'Warning'
+      })
+    )
+  })
 
   it('rejects a malformed address before asking Firebase', async () => {
     render(AuthForgotPassword)
