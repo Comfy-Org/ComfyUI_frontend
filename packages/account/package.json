@@ -24,6 +24,7 @@
   },
   "scripts": {
     "lint": "oxlint src --type-aware && eslint src",
+    "test": "vitest run",
     "typecheck": "vue-tsc --noEmit"
   },
   "dependencies": {

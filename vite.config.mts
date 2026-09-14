@@ -907,7 +907,6 @@ export default defineConfig({
     retry: process.env.CI ? 2 : 0,
     include: [
       'src/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}',
-      'packages/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}',
       'scripts/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}',
       'browser_tests/**/*.test.{js,mjs,cjs,ts,mts,cts,jsx,tsx}',
       'tools/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}',

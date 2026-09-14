@@ -39,6 +39,9 @@ jobs:
       - name: Run Vitest tests with coverage
         run: pnpm test:coverage
 
+      - name: Run account package unit tests
+        run: pnpm --filter @comfyorg/account test
+
       - name: Upload unit coverage artifact
         if: always() && github.event_name == 'push'
         uses: actions/upload-artifact@v6
