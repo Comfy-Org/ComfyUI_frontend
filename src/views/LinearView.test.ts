@@ -226,12 +226,16 @@ describe('LinearView', () => {
     expect(screen.queryByTestId('side-toolbar')).not.toBeInTheDocument()
   })
 
-  it('docks the agent panel beside the workspace column, not inside it', () => {
+  it('docks the agent panel beside the workspace column, below the full-width tab bar', () => {
     renderView()
 
+    // The tab bar spans above both, so neither it nor the panel sits inside
+    // the workspace column any more.
     const column = within(screen.getByTestId('linear-workspace-column'))
-    expect(column.getByTestId('workflow-tabs')).toBeInTheDocument()
+    expect(column.queryByTestId('workflow-tabs')).toBeNull()
     expect(column.queryByTestId('docked-agent-panel')).toBeNull()
+
+    expect(screen.getByTestId('workflow-tabs')).toBeInTheDocument()
     expect(screen.getByTestId('docked-agent-panel')).toBeInTheDocument()
   })
 })

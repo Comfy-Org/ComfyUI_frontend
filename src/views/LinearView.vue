@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
 import { breakpointsTailwind, unrefElement, useBreakpoints } from '@vueuse/core'
 import type { MaybeElement } from '@vueuse/core'
 import Splitter from 'primevue/splitter'
@@ -103,26 +104,28 @@ function dragDrop(e: DragEvent) {
 </script>
 <template>
   <MobileDisplay v-if="mobileDisplay" />
-  <div v-else class="absolute flex size-full flex-row" @dragover.prevent>
+  <div v-else class="absolute flex size-full flex-col" @dragover.prevent>
     <div
-      data-testid="linear-workspace-column"
-      class="flex min-w-0 flex-1 flex-col overflow-hidden"
+      class="workflow-tabs-container pointer-events-auto h-(--workflow-tabs-height) w-full border-b border-interface-stroke shadow-interface"
     >
-      <div
-        class="workflow-tabs-container pointer-events-auto h-(--workflow-tabs-height) w-full border-b border-interface-stroke shadow-interface"
-      >
-        <div class="flex h-full items-center">
-          <WorkflowTabs>
-            <template #actions-leading>
-              <TopbarBadges />
-              <TopbarSubscribeButton />
-            </template>
-          </WorkflowTabs>
-        </div>
+      <div class="flex h-full items-center">
+        <WorkflowTabs>
+          <template #actions-leading>
+            <TopbarBadges />
+            <TopbarSubscribeButton />
+          </template>
+        </WorkflowTabs>
       </div>
+    </div>
+    <div class="flex min-h-0 flex-1 flex-row bg-secondary-background">
       <div
-        class="flex flex-1 overflow-hidden bg-secondary-background"
-        :class="sidebarOnLeft ? 'flex-row' : 'flex-row-reverse'"
+        data-testid="linear-workspace-column"
+        :class="
+          cn(
+            'flex min-w-0 flex-1 overflow-hidden',
+            sidebarOnLeft ? 'flex-row' : 'flex-row-reverse'
+          )
+        "
       >
         <SideToolbar
           v-if="!isBuilderMode"
@@ -211,8 +214,8 @@ function dragDrop(e: DragEvent) {
           </SplitterPanel>
         </Splitter>
       </div>
+      <component :is="DockedAgentPanel" v-if="agentDocked" />
     </div>
-    <component :is="DockedAgentPanel" v-if="agentDocked" />
   </div>
 </template>
 
