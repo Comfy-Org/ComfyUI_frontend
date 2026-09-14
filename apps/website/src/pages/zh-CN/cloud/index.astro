@@ -7,12 +7,27 @@ import AudienceSection from '../../../components/product/cloud/AudienceSection.v
 import PricingSection from '../../../components/product/cloud/PricingSection.vue'
 import ProductCardsSection from '../../../components/product/cloud/ProductCardsSection.vue'
 import FAQSection from '../../../components/product/cloud/FAQSection.vue'
+import { productFaqItems } from '../../../data/productFaq'
 import { t } from '../../../i18n/translations'
+import { absoluteUrl, faqPageNode, pageContext } from '../../../utils/jsonLd'
+
+const { locale, url } = pageContext(
+  Astro.site,
+  Astro.url.pathname,
+  Astro.currentLocale,
+)
+// Mirrors product/cloud/FAQSection.vue (cloud.faq.*, 12 entries).
+const faqPage = faqPageNode(url, productFaqItems('cloud.faq', 12, locale))
 ---
 
 <BaseLayout
   title="Comfy Cloud - 云端 AI"
-  description={t('cloud.hero.subtitle', 'zh-CN')}
+  description={t('cloud.meta.description', 'zh-CN')}
+  breadcrumbs={[
+    { name: t('breadcrumb.home', locale), url: absoluteUrl(Astro.site, '/zh-CN') },
+    { name: 'Comfy Cloud' },
+  ]}
+  extraJsonLd={[faqPage]}
   keywords={['comfyui web app', 'comfyui app', 'comfyui online', 'comfyui cloud', 'ComfyUI 网页版', 'ComfyUI 云端', 'ComfyUI 应用', 'Comfy Cloud', '云端 ComfyUI']}
 >
   <HeroSection locale="zh-CN" />
