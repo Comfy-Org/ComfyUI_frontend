@@ -318,6 +318,7 @@ const filteredTemplates = computed(() => {
             <WorkshopSearchField
               v-model="store.searchQuery.value"
               v-model:capabilities="capabilities"
+              v-model:providers="providers"
               :models="workshopModels"
               :locale
               compact

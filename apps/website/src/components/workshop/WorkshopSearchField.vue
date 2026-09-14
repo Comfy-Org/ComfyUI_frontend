@@ -32,6 +32,7 @@ const {
 const query = defineModel<string>({ required: true })
 const mounted = useMounted()
 const capabilities = defineModel<string[]>('capabilities', { required: true })
+const providers = defineModel<string[]>('providers', { default: () => [] })
 
 const open = ref(false)
 const sheetOpen = ref(false)
@@ -72,6 +73,7 @@ const matches = computed(
   () =>
     filterWorkshopModels(models, {
       query: query.value,
+      providers: providers.value,
       capabilities: capabilities.value
     }).length
 )
@@ -79,6 +81,7 @@ const matches = computed(
 function clearSheet() {
   query.value = ''
   capabilities.value = []
+  providers.value = []
 }
 
 const toggled = (list: readonly string[], value: string) =>
@@ -238,7 +241,7 @@ const clearButtonClass =
             class="flex items-center gap-3 border-t border-transparency-white-t8 p-3"
           >
             <button
-              v-if="query || capabilities.length"
+              v-if="query || capabilities.length || providers.length"
               type="button"
               class="shrink-0 cursor-pointer px-2 text-sm text-primary-warm-gray hover:text-primary-warm-white"
               data-testid="workshop-search-sheet-clear"

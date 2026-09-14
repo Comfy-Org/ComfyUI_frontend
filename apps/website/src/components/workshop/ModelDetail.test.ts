@@ -658,6 +658,16 @@ describe('ModelDetail', () => {
     expect(screen.getByTestId('router-request-id').textContent).toContain(
       'request-123'
     )
+    expect(screen.getByTestId('output-expires').textContent).toContain(
+      'expire 24 hours'
+    )
+    const copyRequestId = screen.getByRole('button', {
+      name: 'Copy request ID'
+    })
+    await user().click(copyRequestId)
+    await vi.waitFor(() =>
+      expect(copyRequestId.textContent).toContain('Copied')
+    )
     expect(refreshWorkshopCredits).toHaveBeenCalledWith({ force: true })
   })
 

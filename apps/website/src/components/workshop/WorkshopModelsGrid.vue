@@ -272,6 +272,7 @@ const menuItemClass =
         <WorkshopSearchField
           v-model="query"
           v-model:capabilities="capabilities"
+          v-model:providers="providers"
           :models
           :locale
           compact

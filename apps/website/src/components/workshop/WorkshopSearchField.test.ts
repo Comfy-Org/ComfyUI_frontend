@@ -2,7 +2,7 @@ import '@testing-library/jest-dom/vitest'
 import userEvent from '@testing-library/user-event'
 import { render, screen, waitFor, within } from '@testing-library/vue'
 import { describe, expect, it } from 'vitest'
-import { defineComponent, h } from 'vue'
+import { defineComponent, h, ref } from 'vue'
 import { renderToString } from 'vue/server-renderer'
 
 import WorkshopSearchField from './WorkshopSearchField.vue'
@@ -54,6 +54,34 @@ describe('WorkshopSearchField', () => {
 
     expect(field.value).toBe('flux')
     expect(field.getAttribute('aria-expanded')).toBe('false')
+  })
+
+  it('lets a provider deep link out of the phone sheet that cannot set one', async () => {
+    const user = userEvent.setup()
+    const providers = ref(['Kling'])
+    render(
+      defineComponent({
+        setup: () => () =>
+          h(WorkshopSearchField, {
+            models: [],
+            modelValue: '',
+            capabilities: [],
+            compact: true,
+            providers: providers.value,
+            'onUpdate:providers': (value: string[]) => {
+              providers.value = value
+            }
+          })
+      })
+    )
+
+    const trigger = screen.getByRole('button', {
+      name: 'Search models, providers, and capabilities'
+    })
+    await waitFor(() => expect(trigger).toBeEnabled())
+    await user.click(trigger)
+    await user.click(await screen.findByTestId('workshop-search-sheet-clear'))
+    expect(providers.value).toEqual([])
   })
 
   it('contains keyboard focus in mobile search and restores it when Escape is pressed from a button', async () => {

@@ -77,7 +77,7 @@ describe('WorkshopSections', () => {
     }
   )
 
-  it('deduplicates and limits the combined formats shelf while showing its full count', () => {
+  it('deduplicates and limits the combined formats shelf, naming the count as the way in', () => {
     const entries = Array.from({ length: 10 }, (_, index) => ({
       ...model(
         `audio-${String(index).padStart(2, '0')}`,
@@ -90,7 +90,9 @@ describe('WorkshopSections', () => {
       props: { models: entries, labelKey, sort: 'name' }
     })
     const shelf = within(screen.getByTestId('section-other-formats'))
-    expect(shelf.getByRole('button', { name: 'Other formats 10' })).toBeTruthy()
+    expect(
+      shelf.getByRole('button', { name: 'Other formats See all 10' })
+    ).toBeTruthy()
     expect(
       shelf
         .getAllByRole('heading', { level: 3 })
