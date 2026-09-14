@@ -13,7 +13,7 @@ import enMessages from '@/locales/en/main.json' with { type: 'json' }
 // chat input and swallows clicks and keystrokes aimed at it."
 const test = mergeTests(agentTest, webSocketFixture)
 
-const OPEN_AGENT_LABEL = enMessages.agent.askComfyAgent
+const OPEN_AGENT_LABEL = enMessages.agent.entryButton
 
 test.describe('Agent run permissions popover', { tag: '@cloud' }, () => {
   test.use({ connectWebSocketToServer: false })
