@@ -9,12 +9,14 @@ const {
   locale = 'en',
   heading,
   subtitle,
-  note
+  note,
+  headingSize = 'compact'
 } = defineProps<{
   locale?: Locale
   heading?: string
   subtitle?: string
   note?: string
+  headingSize?: 'compact' | 'subsection'
 }>()
 
 // Rates from the Limited Beta PRFAQ (USD and Comfy Credits).
@@ -70,7 +72,7 @@ const mobileStorageRows = storageRates.map((rate) => ({
     id="pricing"
     class="mx-auto max-w-9xl scroll-mt-24 px-6 py-10 lg:scroll-mt-36 lg:py-14"
   >
-    <SectionHeader max-width="xl" heading-size="compact">
+    <SectionHeader max-width="xl" :heading-size="headingSize">
       {{ heading ?? t('platform.pricing.heading', locale) }}
       <template #subtitle>
         <p class="mt-4 text-sm text-smoke-700">

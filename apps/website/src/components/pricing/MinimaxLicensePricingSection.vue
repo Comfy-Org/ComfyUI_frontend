@@ -10,12 +10,13 @@ import { t } from '../../i18n/translations'
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 
 const licenseHref = computed(() => getRoutes(locale).minimaxLicense)
+const contactHref = computed(() => getRoutes(locale).contact)
 const { columns, rows } = minimaxLicenseComparison
 </script>
 
 <template>
   <section class="mx-auto max-w-9xl px-6 py-10 lg:py-14">
-    <SectionHeader max-width="xl" heading-size="compact">
+    <SectionHeader max-width="xl" heading-size="subsection">
       {{ t('pricing.minimaxLicense.heading', locale) }}
       <template #subtitle>
         <p class="mt-4 text-sm text-smoke-700">
@@ -57,7 +58,14 @@ const { columns, rows } = minimaxLicenseComparison
                 :key="columns[index]?.id ?? index"
                 class="px-4 py-3.5 text-sm text-primary-warm-gray"
               >
-                {{ cell[locale] || cell.en }}
+                <a
+                  v-if="cell.en === 'Contact sales'"
+                  :href="contactHref"
+                  class="rounded-sm underline underline-offset-4 focus-visible:ring-2 focus-visible:ring-primary-comfy-yellow/50 focus-visible:outline-none"
+                >
+                  {{ cell[locale] || cell.en }}
+                </a>
+                <template v-else>{{ cell[locale] || cell.en }}</template>
               </td>
             </tr>
           </tbody>

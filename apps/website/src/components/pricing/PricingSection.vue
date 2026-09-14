@@ -27,6 +27,9 @@ const {
   locale?: Locale
   headingLevel?: 'h1' | 'h2'
   defaultBillingCycle?: BillingCycle
+  teamInviteMembersKey?: TranslationKey
+  enterpriseCtaKey?: TranslationKey
+  enterpriseCtaHref?: string
 }>()
 
 const slots = useSlots()
@@ -202,11 +205,17 @@ const planCards = computed(() =>
         </div>
       </PricingCard>
 
-      <PricingTeamCard :billing-period="billingPeriod" :locale />
+      <PricingTeamCard
+        :billing-period="billingPeriod"
+        :invite-members-key="teamInviteMembersKey"
+        :locale
+      />
 
       <PricingContactBand
         label-key="pricing.enterprise.label"
         description-key="pricing.enterprise.description"
+        :cta-key="enterpriseCtaKey"
+        :href="enterpriseCtaHref"
         :locale
       />
     </div>
