@@ -2,8 +2,8 @@
  * Shiki highlighting for the code blocks on the model pages, matching the
  * treatment the workflow pages use.
  *
- * `kanagawa-dragon` keeps the palette restrained against Comfy ink: sage and
- * slate carry structure, while clay, sand, and mauve add warm contrast.
+ * `everforest-dark` keeps the palette earthy and restrained against Comfy ink,
+ * while every token color meets normal-text contrast on that background.
  *
  * Runs at build time for the static snippets and in the browser for the live
  * payload, so it loads through dynamic imports and the JavaScript regex engine
@@ -12,7 +12,7 @@
  */
 import type { HighlighterCore } from 'shiki/core'
 
-const CODE_THEME = 'kanagawa-dragon'
+const CODE_THEME = 'everforest-dark'
 
 export type CodeLang = 'javascript' | 'json' | 'python' | 'shell' | 'typescript'
 
@@ -42,7 +42,7 @@ function highlighter(): Promise<HighlighterCore> {
     import('shiki/engine/javascript')
   ]).then(([{ createHighlighterCore }, { createJavaScriptRegexEngine }]) =>
     createHighlighterCore({
-      themes: [import('shiki/themes/kanagawa-dragon.mjs')],
+      themes: [import('shiki/themes/everforest-dark.mjs')],
       langs: [],
       engine: createJavaScriptRegexEngine()
     })

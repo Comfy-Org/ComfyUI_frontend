@@ -71,11 +71,9 @@ const unavailable = ref(false)
 
 function previewValues(
   values: FormValues,
-  sources: WeakMap<File, Pick<FileValue, 'sourceUrl' | 'sourceDataUrl'>>
+  sources: WeakMap<File, Pick<FileValue, 'sourceUrl'>>
 ): FormValues {
   function preview(value: FileValue): FileValue {
-    if (value.file && value.sourceDataUrl)
-      sources.set(value.file, { sourceDataUrl: value.sourceDataUrl })
     if (value.file || !value.sourceUrl) return value
     const file = new File([], value.name, { type: value.type })
     sources.set(file, { sourceUrl: value.sourceUrl })
@@ -111,10 +109,7 @@ watch(
     unavailable.value = false
     try {
       const files: SnippetFile[] = []
-      const sources = new WeakMap<
-        File,
-        Pick<FileValue, 'sourceUrl' | 'sourceDataUrl'>
-      >()
+      const sources = new WeakMap<File, Pick<FileValue, 'sourceUrl'>>()
       function addReference(file: File, encoding: 'base64' | 'url') {
         const reference = referenceFor(file, encoding)
         if (!files.some((entry) => entry.token === reference.token))
@@ -175,7 +170,7 @@ const showFileNotice = computed(() => {
   const { body, files } = request.value
   return language.value === 'curl'
     ? hasOmittedCurlFiles(body, files)
-    : files.some((file) => !file.sourceUrl && !file.sourceDataUrl)
+    : files.some((file) => !file.sourceUrl)
 })
 
 const languageLabel: Record<SnippetLanguage, string> = {
