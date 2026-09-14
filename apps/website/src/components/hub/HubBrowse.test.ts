@@ -3,6 +3,8 @@ import { render, screen } from '@testing-library/vue'
 import { afterEach, describe, expect, it } from 'vitest'
 
 import { useHubStore } from '../../composables/useHubStore'
+import { groupModels } from '../../config/model-family'
+import { sortWorkshopModels, useCaseFor } from '../../config/models-catalogue'
 import { workshopModels } from '../../config/workshop-browse-content'
 import HubBrowse from './HubBrowse.vue'
 
@@ -79,25 +81,31 @@ describe('HubBrowse', () => {
     const lead = screen.getAllByTestId('hub-models-lead')
     // The lead card is whichever audio model the curated order puts first;
     // the scoping is what matters here, not that order.
-    const audioModels = workshopModels
-      .filter((model) => model.useCases?.includes('audio'))
-      .map((model) => model.name)
-    expect(audioModels.length).toBeGreaterThan(0)
-    expect(audioModels.some((name) => lead[0].textContent.includes(name))).toBe(
-      true
-    )
+    const audioModelHrefs = groupModels(
+      sortWorkshopModels(
+        workshopModels.filter((model) => useCaseFor(model) === 'audio'),
+        'popular'
+      )
+    ).map((family) => family.latest.href)
+    expect(audioModelHrefs.length).toBeGreaterThan(0)
+    expect(audioModelHrefs).toContain(lead[0].getAttribute('href'))
     expect(screen.getByTestId('hub-showing').textContent).toMatch(
       /of [1-9]\d*\b/
     )
 
     await user.click(screen.getByTestId('hub-tab-models'))
     const modelCards = screen.getAllByTestId('workshop-model-card')
-    expect(modelCards.length).toBeGreaterThan(0)
-    expect(
-      modelCards.every((card) =>
-        audioModels.some((name) => card.textContent.includes(name))
+    const renderedModelHrefs = modelCards.map((card) =>
+      card.getAttribute('href')
+    )
+    expect(new Set(renderedModelHrefs)).toEqual(
+      new Set(
+        workshopModels
+          .filter((model) => model.modality === 'audio')
+          .map((model) => model.href)
       )
-    ).toBe(true)
+    )
+    expect(renderedModelHrefs).toEqual(audioModelHrefs)
     expect(screen.queryByTestId('model-card-versions')).toBeNull()
   })
 
