@@ -386,14 +386,14 @@ describe('WorkflowTemplateSelectorDialog detail routing', () => {
       ].map((model) => ({ model, status: 'missing' as const }))
     )
     mocks.rowDownloadStateFor.mockImplementation((model) => {
-      if (model === fixtures.failedModel) {
+      if (model.name === fixtures.failedModel.name) {
         return {
           status: 'failed' as const,
           attempt: 1,
           reason: 'error' as const
         }
       }
-      if (model === fixtures.activeDownloadModel) {
+      if (model.name === fixtures.activeDownloadModel.name) {
         return {
           status: 'downloading' as const,
           attempt: 1,
@@ -403,7 +403,7 @@ describe('WorkflowTemplateSelectorDialog detail routing', () => {
           fraction: 0.5
         }
       }
-      if (model === fixtures.doneModel) {
+      if (model.name === fixtures.doneModel.name) {
         return { status: 'done' as const, attempt: 1 }
       }
       return { status: 'idle' as const, attempt: 0 }
