@@ -1,6 +1,7 @@
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import { isDesktop } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
 import { reportError } from '@/platform/telemetry/reportError'
 import { useToastStore } from '@/platform/updates/common/toastStore'
@@ -12,6 +13,10 @@ import type {
   TemplateInfo,
   WorkflowTemplates
 } from '@/platform/workflow/templates/types/template'
+import {
+  resolveTemplateInputAssets,
+  startMissingTemplateInputDownloads
+} from '@/platform/workflow/templates/utils/templateInputAssets'
 import type {
   ComfyWorkflowJSON,
   LegacyLoadableWorkflow
@@ -190,6 +195,21 @@ export function useTemplateWorkflows() {
       })
 
       if (closeDialog) dialogStore.closeDialog()
+      if (isDesktop && sourceModule === 'default') {
+        void resolveTemplateInputAssets(id, () => window.__comfyDesktop2).then(
+          (assets) => {
+            startMissingTemplateInputDownloads(id, assets, {
+              getBridge: () => window.__comfyDesktop2,
+              reportError: (error) => {
+                reportError(error, {
+                  errorType: 'workflow_template_input_download_failed',
+                  level: 'warning'
+                })
+              }
+            })
+          }
+        )
+      }
       const loadedWorkflow = await app.loadGraphData(
         workflow as ComfyWorkflowJSON,
         true,

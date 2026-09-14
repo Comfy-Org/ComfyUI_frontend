@@ -345,6 +345,10 @@ describe('WorkflowTemplateSelectorDialog detail routing', () => {
     mocks.resolveAvailability.mockResolvedValue([
       { model: fixtures.activeModel, status: 'missing' }
     ])
+    mocks.rowDownloadStateFor.mockImplementation(() => ({
+      status: 'idle',
+      attempt: 0
+    }))
     Object.defineProperty(window, '__comfyDesktop2', {
       configurable: true,
       value: {
@@ -412,15 +416,6 @@ describe('WorkflowTemplateSelectorDialog detail routing', () => {
     await waitFor(() => {
       expect(mocks.openPreparedWorkflowTemplate).toHaveBeenCalledOnce()
     })
-    expect(mocks.downloadTemplateInputAsset).toHaveBeenCalledWith(
-      fixtures.template.name,
-      fixtures.inputAsset.assetId
-    )
-    expect(
-      mocks.downloadTemplateInputAsset.mock.invocationCallOrder[0]
-    ).toBeLessThan(
-      mocks.openPreparedWorkflowTemplate.mock.invocationCallOrder[0]
-    )
   })
 
   it('does not grant custom templates access to trusted input assets', async () => {
@@ -455,10 +450,6 @@ describe('WorkflowTemplateSelectorDialog detail routing', () => {
       { closeDialog: false }
     )
     expect(mocks.rowDownloadRequest).not.toHaveBeenCalled()
-    expect(mocks.downloadTemplateInputAsset).toHaveBeenCalledWith(
-      fixtures.template.name,
-      fixtures.inputAsset.assetId
-    )
   })
 
   it('starts eligible rows before Download models & open opens the workflow', async () => {
@@ -513,10 +504,6 @@ describe('WorkflowTemplateSelectorDialog detail routing', () => {
     expect(mocks.rowDownloadRequest.mock.invocationCallOrder[1]).toBeLessThan(
       mocks.openPreparedWorkflowTemplate.mock.invocationCallOrder[0]
     )
-    expect(mocks.downloadTemplateInputAsset).toHaveBeenCalledWith(
-      fixtures.template.name,
-      fixtures.inputAsset.assetId
-    )
   })
 
   it('opens directly outside Desktop without resolving model inventory', async () => {
@@ -543,10 +530,6 @@ describe('WorkflowTemplateSelectorDialog detail routing', () => {
       expect(mocks.openPreparedWorkflowTemplate).toHaveBeenCalledOnce()
     })
     expect(screen.queryByRole('article')).not.toBeInTheDocument()
-    expect(mocks.downloadTemplateInputAsset).toHaveBeenCalledWith(
-      fixtures.template.name,
-      fixtures.inputAsset.assetId
-    )
   })
 
   it('opens directly when inventory cannot confirm a missing model', async () => {

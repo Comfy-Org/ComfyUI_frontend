@@ -5,7 +5,7 @@ import type {
 import { defineStore } from 'pinia'
 import { computed, shallowReactive } from 'vue'
 
-export interface TrackedTemplateInputDownload {
+interface TrackedTemplateInputDownload {
   downloadId: string
   filename: string
   progress: number | null
@@ -40,7 +40,8 @@ export const useTemplateInputDownloadStore = defineStore(
         return
       }
 
-      if (status === 'completed' && !completedIds.has(downloadId)) {
+      if (status === 'completed') {
+        if (completedIds.has(downloadId)) return
         completedIds.add(downloadId)
         previewRevisions.set(
           filename,
