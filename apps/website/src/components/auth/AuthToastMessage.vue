@@ -115,7 +115,6 @@ onBeforeUnmount(clearCloseTimeout)
       <div>
         <button
           type="button"
-          autofocus
           :aria-label="closeLabel"
           class="relative right-[-25%] mt-[-25%] flex size-7 cursor-pointer items-center justify-center overflow-hidden rounded-full border-none bg-transparent p-0 text-inherit outline-1 outline-offset-2 outline-transparent transition-[background,color,outline-color,box-shadow] duration-200 select-none hover:bg-[rgba(255,255,255,0.05)] focus-visible:outline focus-visible:outline-current"
           @click="close"
