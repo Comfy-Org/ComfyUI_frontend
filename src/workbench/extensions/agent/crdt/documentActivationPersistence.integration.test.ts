@@ -17,6 +17,7 @@ import { serializeDocumentScope } from '@/core/graph/document/documentSerializer
 import { createGraphMutations } from '@/core/graph/graphMutations'
 import type { GraphMutations } from '@/core/graph/graphMutations'
 import { useGraphDocumentStore } from '@/stores/graphDocumentStore'
+import { useNodeDataStore } from '@/stores/nodeDataStore'
 import type { DocumentId } from '@/types/documentId'
 import type { GraphScope } from '@/types/graphScopeId'
 import { toOwningGraphId, toRootGraphId } from '@/types/graphScopeId'
@@ -155,10 +156,10 @@ describe('document activation persistence (ADR-GRAPH-DOCUMENT-0024 seam)', () =>
 
     expect(registry.markMutated(documentId)).toBe(true)
     const ticket = registry.beginSave(documentId)
-    expect(ticket).not.toBeNull()
+    if (ticket === null) throw new Error('beginSave returned no ticket')
     const savedBytes = serializeDocumentScope(scope)
     expect(registry.markMutated(documentId)).toBe(true)
-    expect(registry.completeSave(ticket!)).toBe(true)
+    expect(registry.completeSave(ticket)).toBe(true)
     expect(registry.persistenceStateOf(documentId)).toBe('dirty')
 
     const reloadSession = createDetachedTargetSession('wf')
@@ -268,6 +269,11 @@ describe('document activation persistence (ADR-GRAPH-DOCUMENT-0024 seam)', () =>
     commitHostState(sessionB, 'wf-b', hostB, mutationsB)
 
     expect(serializeDocumentScope(scopeA)).toEqual(bytesA)
+    expect(
+      useNodeDataStore()
+        .getGraphNodesFor(scopeB.rootGraphId, scopeB.owningGraphId)
+        .map(({ id, type }) => ({ id, type }))
+    ).toEqual([{ id: '2', type: 'Sink' }])
     expect(serializeDocumentScope(scopeB)).not.toEqual(bytesA)
 
     sessionA.destroy()
