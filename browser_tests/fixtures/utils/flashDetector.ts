@@ -39,7 +39,16 @@ export async function trackElementFlash(
   )
 
   return {
-    hasFlashed: async () =>
-      (await page.locator('html').getAttribute(flagAttribute)) === 'true'
+    hasFlashed: () => hasElementFlashed(page, testId)
   }
+}
+
+export async function hasElementFlashed(
+  page: Page,
+  testId: string
+): Promise<boolean> {
+  return (
+    (await page.locator('html').getAttribute(flagAttributeFor(testId))) ===
+    'true'
+  )
 }
