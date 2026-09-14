@@ -49,6 +49,7 @@ describe('remote_combo route validation', () => {
   it.for([
     'http://api.example.com/voices',
     'https://api.example.com/voices',
+    '//api.example.com/voices',
     'voices'
   ])('rejects a non-relative route: %s', (route) => {
     expect(validateComfyNodeDef(buildNodeDef(route), () => {})).toBeNull()

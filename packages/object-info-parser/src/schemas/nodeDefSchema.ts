@@ -29,7 +29,10 @@ const zRemoteItemSchema = z.object({
   search_fields: z.array(z.string()).optional()
 })
 const zRemoteComboConfig = z.object({
-  route: z.string().startsWith('/'),
+  route: z
+    .string()
+    .startsWith('/')
+    .refine((route) => !route.startsWith('//')),
   item_schema: zRemoteItemSchema,
   refresh_button: z.boolean().optional(),
   auto_select: z.enum(['first', 'last']).optional(),
