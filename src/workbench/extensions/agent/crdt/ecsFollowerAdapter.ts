@@ -178,27 +178,34 @@ function hostTarget(
   const name = docInputs?.[docSlot]?.name
   const slot = name == null ? -1 : hostSlotIndex(definition, name)
   if (slot < 0) {
-    // The doc keeps the link while the live graph drops it, so surface the
-    // drift instead of leaving the two silently diverged.
-    reportOnce(
-      reported,
-      `slot:${targetId}:${docSlot}:${name ?? ''}`,
-      new Error(
-        `Subgraph host ${targetId} (${type}) link targets doc slot ${docSlot} (${
-          name == null ? 'unnamed' : `'${name}'`
-        }), which its definition does not declare unambiguously`
-      ),
-      {
-        errorType: 'error_reconciling_agent_subgraph_host_slot',
-        context: { nodeId: targetId, type, slot: docSlot, name: name ?? null }
-      }
-    )
+    reportInvalidHostTarget(reported, targetId, type, docSlot, name)
     return null
   }
   return {
     targetSlot: slot,
     targetInputs: hostInputs(definition, docInputs ?? [])
   }
+}
+
+function reportInvalidHostTarget(
+  reported: Set<string>,
+  targetId: string,
+  type: unknown,
+  docSlot: number,
+  name: string | undefined
+): void {
+  const displayName = name == null ? 'unnamed' : `'${name}'`
+  reportOnce(
+    reported,
+    `slot:${targetId}:${docSlot}:${name ?? ''}`,
+    new Error(
+      `Subgraph host ${targetId} (${String(type)}) link targets doc slot ${docSlot} (${displayName}), which its definition does not declare unambiguously`
+    ),
+    {
+      errorType: 'error_reconciling_agent_subgraph_host_slot',
+      context: { nodeId: targetId, type, slot: docSlot, name: name ?? null }
+    }
+  )
 }
 
 function readSemanticLink(
