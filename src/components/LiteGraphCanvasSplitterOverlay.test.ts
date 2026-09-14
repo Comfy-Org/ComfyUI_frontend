@@ -37,7 +37,7 @@ describe('LiteGraphCanvasSplitterOverlay', () => {
       },
       global: {
         plugins: [getActivePinia()!, i18n],
-        stubs: { Splitter: true, SplitterPanel: true }
+        stubs: { SplitterGroup: true, SplitterPanel: true }
       }
     })
 
@@ -74,8 +74,9 @@ describe('LiteGraphCanvasSplitterOverlay', () => {
       global: {
         plugins: [pinia, i18n],
         stubs: {
-          Splitter: { template: '<div><slot /></div>' },
-          SplitterPanel: { template: '<div><slot /></div>' }
+          SplitterGroup: { template: '<div><slot /></div>' },
+          SplitterPanel: { template: '<div><slot /></div>' },
+          SplitterResizeHandle: true
         }
       }
     })
@@ -119,11 +120,12 @@ describe('LiteGraphCanvasSplitterOverlay', () => {
       global: {
         plugins: [i18n],
         stubs: {
-          Splitter: {
+          SplitterGroup: {
             setup: splitterMounts,
             template: '<div><slot /></div>'
           },
-          SplitterPanel: { template: '<div><slot /></div>' }
+          SplitterPanel: { template: '<div><slot /></div>' },
+          SplitterResizeHandle: true
         }
       }
     })
