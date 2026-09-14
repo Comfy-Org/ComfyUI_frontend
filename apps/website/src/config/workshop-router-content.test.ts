@@ -151,7 +151,7 @@ describe('Router catalog form projection', () => {
     expect(edit.examples.map((example) => example.name)).not.toEqual(
       create.examples.map((example) => example.name)
     )
-    expect(getRouterWorkshopModelDetail('byteplus--seedream-4-5')).toBe(edit)
+    expect(getRouterWorkshopModelDetail('byteplus--seedream-4-5')).toBe(create)
     for (const model of [create, edit])
       expect(routerContentBySlug.get(model.slug)?.overlay.slug).toBe(model.slug)
   })

@@ -12,6 +12,30 @@ import {
 import { getRouterWorkshopModelDetail } from './workshop-router-content'
 
 describe('canonical model display names', () => {
+  it.for<[alias: string, target: string]>([
+    ['byteplus--seedream-4-5', 'byteplus--seedream-4-5--generate-images'],
+    [
+      'byteplus--seedream-4-5-251128',
+      'byteplus--seedream-4-5--generate-images'
+    ],
+    ['byteplus--seedream-5-lite', 'byteplus--seedream-5-lite--generate-images'],
+    [
+      'byteplus--seedream-5-0-260128',
+      'byteplus--seedream-5-lite--generate-images'
+    ],
+    ['byteplus--seedream-5-pro', 'byteplus--seedream-5-pro--generate-images'],
+    [
+      'byteplus--seedream-5-0-pro-260628',
+      'byteplus--seedream-5-pro--generate-images'
+    ],
+    [
+      'xai--grok-imagine-video-1.5',
+      'xai--grok-imagine-video-1.5--generate-videos'
+    ]
+  ])('keeps the public %s alias on %s', ([alias, target]) => {
+    expect(routerModelSlugAliases.get(alias)).toBe(target)
+  })
+
   it('does not publish editorial prices as exact Router charges', () => {
     expect(workshopModels.length).toBeGreaterThan(0)
     for (const model of workshopModels) {
