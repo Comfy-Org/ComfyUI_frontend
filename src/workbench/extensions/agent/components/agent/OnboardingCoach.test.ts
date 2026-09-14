@@ -215,22 +215,6 @@ describe('OnboardingCoach', () => {
     })
   })
 
-  it('has no media area unless a real preview URL is supplied', async () => {
-    const { unmount } = mount()
-    await screen.findByRole('dialog', { name: STEPS[0].title })
-    expect(
-      screen.queryByLabelText(STEPS[0].title, { selector: 'video' })
-    ).toBeNull()
-    unmount()
-    mount([{ ...STEPS[0], videoUrl: '/onboarding-preview.mp4' }])
-    const video = await screen.findByLabelText(STEPS[0].title, {
-      selector: 'video'
-    })
-    expect(video).toHaveAttribute('src', '/onboarding-preview.mp4')
-    expect(video).toHaveAttribute('controls')
-    expect(video).not.toHaveAttribute('autoplay')
-  })
-
   it('does not mark the tour complete when its target is absent', async () => {
     render(OnboardingCoach, {
       props: { steps: STEPS, storageKey: KEY },

@@ -8,7 +8,6 @@ export interface CoachStep {
   body: string
   placement: 'left-center' | 'left-end' | 'graph-bottom' | 'left-start'
   toolbarTarget?: string
-  videoUrl?: string
 }
 
 export function useOnboarding(
