@@ -142,12 +142,16 @@ test.describe('Performance', { tag: ['@perf'] }, () => {
       .toEqual({ nodeCount: 247, groupCount: 3 })
     const canvasBox = await comfyPage.canvas.boundingBox()
     if (!canvasBox) throw new Error('Canvas bounding box not available')
+    const initialScale = await comfyPage.canvasOps.getScale()
     await comfyPage.page.mouse.move(
       canvasBox.x + canvasBox.width / 2,
       canvasBox.y + canvasBox.height / 2
     )
     await comfyPage.page.mouse.wheel(0, -100)
     await comfyPage.nextFrame()
+    await expect
+      .poll(() => comfyPage.canvasOps.getScale())
+      .toBeGreaterThan(initialScale)
 
     const m = await comfyPage.perf.stopMeasuring(
       'large-workflow-load-responsive'
