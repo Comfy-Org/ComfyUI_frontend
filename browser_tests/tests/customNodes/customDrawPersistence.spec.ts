@@ -105,25 +105,16 @@ test.describe(
           (candidate) => String(candidate.id) === id
         )!
         const widget = node.widgets![0]
-        if (
-          !('hitAreas' in widget) ||
-          typeof widget.hitAreas !== 'object' ||
-          widget.hitAreas === null ||
-          !('B2' in widget.hitAreas) ||
-          typeof widget.hitAreas.B2 !== 'object' ||
-          widget.hitAreas.B2 === null ||
-          !('bounds' in widget.hitAreas.B2) ||
-          !Array.isArray(widget.hitAreas.B2.bounds)
-        )
+        const hitAreas = Reflect.get(widget, 'hitAreas')
+        if (typeof hitAreas !== 'object' || hitAreas === null)
           throw new Error('rgthree comparer hit areas are unavailable')
-        const [x, y, width, height] = widget.hitAreas.B2.bounds
-        if (
-          typeof x !== 'number' ||
-          typeof y !== 'number' ||
-          typeof width !== 'number' ||
-          typeof height !== 'number'
-        )
+        const b2HitArea = Reflect.get(hitAreas, 'B2')
+        if (typeof b2HitArea !== 'object' || b2HitArea === null)
+          throw new Error('B2 hit area is unavailable')
+        const bounds = Reflect.get(b2HitArea, 'bounds')
+        if (!Array.isArray(bounds) || !bounds.every(Number.isFinite))
           throw new Error('B2 hit area bounds are invalid')
+        const [x, y, width, height] = bounds
         return [x, y, width, height]
       }, nodeId)
       await canvas.click({
