@@ -127,9 +127,7 @@ describe('useWorkshopSession', () => {
 
     await vi.waitFor(() => expect(s.session.value).toEqual(okSession))
 
-    expect(h.identifyWorkshopUser).toHaveBeenLastCalledWith(
-      expect.objectContaining({ uid: 'user-1' })
-    )
+    expect(h.identifyWorkshopUser).toHaveBeenLastCalledWith('user-1')
     expect(s.signedIn.value).toBe(true)
   })
 
@@ -208,9 +206,7 @@ describe('useWorkshopSession', () => {
 
     await vi.waitFor(() => expect(h.remint).toHaveBeenCalledOnce())
     expect(s.session.value, 'the personal boot must not flash').toBeUndefined()
-    expect(h.identifyWorkshopUser).toHaveBeenLastCalledWith(
-      expect.objectContaining({ uid: 'user-1' })
-    )
+    expect(h.identifyWorkshopUser).toHaveBeenLastCalledWith('user-1')
 
     const restored = {
       ...okSession,

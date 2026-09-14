@@ -222,7 +222,7 @@ async function begin(expectedGeneration: number): Promise<void> {
   running = true
   stopSnapshot = workshopSessionClient.subscribe((next) => {
     if (next.phase !== 'pending') {
-      identifyWorkshopUser(next.user ?? null)
+      identifyWorkshopUser(next.user?.uid ?? null)
     }
     if (holdsForRestore(next)) return
     snapshot.value = next
