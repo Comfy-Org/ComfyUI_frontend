@@ -3,6 +3,9 @@ import { render, screen } from '@testing-library/vue'
 import { afterEach, describe, expect, it } from 'vitest'
 
 import { useHubStore } from '../../composables/useHubStore'
+import { groupModels } from '../../config/model-family'
+import { sortWorkshopModels, useCaseFor } from '../../config/models-catalogue'
+import { workshopModels } from '../../config/workshop-browse-content'
 import HubBrowse from './HubBrowse.vue'
 
 afterEach(() => {
@@ -76,19 +79,33 @@ describe('HubBrowse', () => {
 
     await user.click(screen.getByTestId('hub-use-case-audio'))
     const lead = screen.getAllByTestId('hub-models-lead')
-    expect(lead[0].textContent).toContain('ElevenLabs')
+    // The lead card is whichever audio model the curated order puts first;
+    // the scoping is what matters here, not that order.
+    const audioModelHrefs = groupModels(
+      sortWorkshopModels(
+        workshopModels.filter((model) => useCaseFor(model) === 'audio'),
+        'popular'
+      )
+    ).map((family) => family.latest.href)
+    expect(audioModelHrefs.length).toBeGreaterThan(0)
+    expect(audioModelHrefs).toContain(lead[0].getAttribute('href'))
     expect(screen.getByTestId('hub-showing').textContent).toMatch(
       /of [1-9]\d*\b/
     )
 
     await user.click(screen.getByTestId('hub-tab-models'))
-    expect(
-      screen.queryAllByRole('link', { name: /Seed Audio/i }).length
-    ).toBeGreaterThan(0)
-    expect(
-      screen.queryAllByRole('link', { name: /HeyGen/i }).length
-    ).toBeGreaterThan(0)
-    expect(screen.queryByRole('link', { name: /FLUX 2 Max/i })).toBeNull()
+    const modelCards = screen.getAllByTestId('workshop-model-card')
+    const renderedModelHrefs = modelCards.map((card) =>
+      card.getAttribute('href')
+    )
+    expect(new Set(renderedModelHrefs)).toEqual(
+      new Set(
+        workshopModels
+          .filter((model) => model.modality === 'audio')
+          .map((model) => model.href)
+      )
+    )
+    expect(renderedModelHrefs).toEqual(audioModelHrefs)
     expect(screen.queryByTestId('model-card-versions')).toBeNull()
   })
 
