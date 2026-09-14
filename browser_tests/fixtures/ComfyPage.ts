@@ -92,6 +92,43 @@ class ComfyPropertiesPanel {
       name: 'Toggle properties panel'
     })
   }
+
+  async open(): Promise<void> {
+    if (!(await this.root.isVisible())) await this.toggleButton.click()
+    await comfyExpect(this.root).toBeVisible()
+  }
+
+  async renameParameterLabel(
+    currentLabel: string,
+    nextLabel: string
+  ): Promise<void> {
+    await this.root
+      .getByRole('tab', { name: 'Parameters', exact: true })
+      .click()
+    await this.root.getByText(currentLabel, { exact: true }).click()
+    const labelInput = this.root.getByPlaceholder(currentLabel, { exact: true })
+    await labelInput.fill(nextLabel)
+    await labelInput.press('Enter')
+    await comfyExpect(
+      this.root.getByText(nextLabel, { exact: true })
+    ).toBeVisible()
+  }
+
+  async clearParameterLabel(
+    currentLabel: string,
+    defaultLabel: string
+  ): Promise<void> {
+    await this.root.getByText(currentLabel, { exact: true }).click()
+    const labelInput = this.root.getByPlaceholder(defaultLabel, { exact: true })
+    await labelInput.clear()
+    await labelInput.press('Enter')
+    await comfyExpect(
+      this.root.getByText(defaultLabel, { exact: true })
+    ).toBeVisible()
+    await comfyExpect(
+      this.root.getByText(currentLabel, { exact: true })
+    ).toHaveCount(0)
+  }
 }
 
 class ComfyMenu {

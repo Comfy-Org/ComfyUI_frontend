@@ -4,6 +4,8 @@ import { comfyExpect as expect } from '@e2e/fixtures/ComfyPage'
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { TestIds } from '@e2e/fixtures/selectors'
 import { dragByIndex } from '@e2e/fixtures/utils/dragAndDrop'
+import { fitToViewInstant } from '@e2e/fixtures/utils/fitToView'
+import type { NodeReference } from '@e2e/fixtures/utils/litegraphUtils'
 import { VueNodeFixture } from '@e2e/fixtures/utils/vueNodeFixtures'
 
 export class SubgraphEditor {
@@ -86,6 +88,30 @@ export class SubgraphEditor {
     const item = this.resolveItem(options)
     await this.togglePromotionOnItem(item, options.toState)
   }
+
+  async promoteWidget(
+    host: NodeReference,
+    options: {
+      nodeName?: string
+      nodeId?: string
+      widgetName: string
+    }
+  ): Promise<void> {
+    await fitToViewInstant(this.comfyPage, { zoom: 1 })
+    if (this.comfyPage.isVueNodes) {
+      await this.ensureOpen(
+        this.comfyPage.vueNodes.getNodeLocator(String(host.id))
+      )
+    } else {
+      await host.clickContextMenuOption('Edit Subgraph Widgets')
+      await expect(this.root).toBeVisible()
+    }
+    await this.togglePromotionOnItem(this.resolveItem(options), true)
+    await this.comfyPage.menu.propertiesPanel.toggleButton.click()
+    await expect(this.root).toBeHidden()
+    await fitToViewInstant(this.comfyPage, { zoom: 1 })
+  }
+
   async dragItem(fromIndex: number, toIndex: number) {
     await dragByIndex(this.promotionItems, fromIndex, toIndex)
     await this.comfyPage.nextFrame()
