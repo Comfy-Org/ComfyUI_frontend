@@ -9,3 +9,17 @@ export function toTitleCase(text: string): string {
     .toLowerCase()
     .replace(/(?<=^|\s)\p{L}/gu, (letter) => letter.toUpperCase())
 }
+
+/**
+ * Some deployments send a badge that the message already says, such as
+ * "PREVIEW" beside "Preview Environment". Dropping it leaves the message to
+ * carry the meaning on its own.
+ */
+export function labelRepeatsMessage(
+  label: string | undefined,
+  message: string
+): boolean {
+  if (!label) return false
+  const words = message.toLowerCase().split(/\s+/)
+  return words.includes(label.toLowerCase())
+}
