@@ -46,7 +46,7 @@ const showAddCredits = computed(
     <div class="flex w-full items-start gap-2">
       <span
         aria-hidden="true"
-        class="text-agent-danger mt-0.5 icon-[lucide--gauge] size-5 shrink-0"
+        class="text-agent-danger mt-0.5 icon-[lucide--circle-alert] size-5 shrink-0"
       />
       <div class="min-w-0 flex-1 text-sm/5">
         <p class="text-agent-fg m-0 font-medium">
