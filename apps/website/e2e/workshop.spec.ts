@@ -394,20 +394,64 @@ test.describe('Model playground', () => {
     ).toBeVisible()
   })
 
-  test('API tab mirrors the form values', async ({ page }) => {
+  test('API tab highlights snippets and mirrors the form values', async ({
+    page
+  }) => {
     await page.goto(MODEL_PATH)
     await page
       .getByRole('textbox', { name: 'Prompt', exact: true })
       .fill('neon street at night')
-    await page.getByRole('tab', { name: 'API', exact: true }).click()
-    await expect(page.getByTestId('snippet')).toContainText(
-      'neon street at night'
+    const firstSnippetRender = page.evaluate(
+      () =>
+        new Promise<boolean>((resolve) => {
+          const observer = new MutationObserver(() => {
+            const code = document.querySelector(
+              '[data-testid="highlighted-code"]'
+            )
+            if (!code) return
+            observer.disconnect()
+            resolve(code.querySelector('span') !== null)
+          })
+          observer.observe(document.body, { childList: true, subtree: true })
+        })
     )
-    await expect(page.getByTestId('snippet')).toContainText('bfl/flux-2-max')
+    await page.getByRole('tab', { name: 'API', exact: true }).click()
+    const snippet = page.getByTestId('snippet')
+    const highlighted = page.getByTestId('highlighted-code')
+    expect(await firstSnippetRender).toBe(true)
+    await expect(snippet).toContainText('neon street at night')
+    await expect(snippet).toContainText('bfl/flux-2-max')
     await page.getByTestId('snippet-curl').click()
-    await expect(page.getByTestId('snippet')).toContainText(
+    await expect(snippet).toContainText(
       "--request POST 'https://testapi.comfy.org/v2/models/bfl/flux-2-max'"
     )
+    await expect(highlighted.locator('span').first()).toBeVisible()
+  })
+
+  test('API snippets keep uploaded media local', async ({ page }) => {
+    await page.goto('/models/byteplus--seedream-4-5--edit-images/')
+    const [chooser] = await Promise.all([
+      page.waitForEvent('filechooser'),
+      page.getByText('Choose images or drop them here', { exact: true }).click()
+    ])
+    await chooser.setFiles('e2e/assets/placeholder-1x1.webp')
+    await page.getByRole('tab', { name: 'API', exact: true }).click()
+    const snippet = page.getByTestId('snippet')
+    await expect(snippet).toContainText(
+      'client.assets.from_file("placeholder-1x1.webp")'
+    )
+    await expect(snippet).not.toContainText('base64.b64decode')
+    await expect(snippet).not.toContainText('data:image')
+    await expect(page.getByRole('note')).toContainText(
+      'Set the paths to your local files.'
+    )
+
+    await page.getByTestId('snippet-curl').click()
+    await expect(page.getByRole('note')).toContainText(
+      'cURL cannot carry your uploaded files'
+    )
+    await expect(snippet).not.toContainText('data:image')
+    await expect(snippet).not.toContainText('"image"')
   })
 
   test('examples are initially visible and refill the playground', async ({
