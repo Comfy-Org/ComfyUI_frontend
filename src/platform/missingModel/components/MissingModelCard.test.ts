@@ -7,6 +7,7 @@ import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
+import type * as DistributionTypes from '@/platform/distribution/types'
 import type {
   MissingModelGroup,
   MissingModelViewModel
@@ -44,14 +45,17 @@ vi.mock<unknown>(import('./MissingModelRow.vue'), () => ({
 }))
 
 const mockIsCloud = vi.hoisted(() => ({ value: true }))
-vi.mock<unknown>(import('@/platform/distribution/types'), () => ({
-  DISTRIBUTION: 'cloud',
-  get isCloud() {
-    return mockIsCloud.value
-  },
-  isDesktop: false,
-  isNightly: false
-}))
+vi.mock(
+  import('@/platform/distribution/types'),
+  (): Partial<typeof DistributionTypes> => ({
+    DISTRIBUTION: 'cloud',
+    get isCloud() {
+      return mockIsCloud.value
+    },
+    isDesktop: false,
+    isNightly: false
+  })
+)
 
 import MissingModelCard from './MissingModelCard.vue'
 

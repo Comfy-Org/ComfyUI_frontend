@@ -2,6 +2,8 @@ import { useElectronDownloadStore } from '@/stores/electronDownloadStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import type * as DistributionTypes from '@/platform/distribution/types'
+
 import {
   clearMetadataCache,
   downloadModel,
@@ -18,14 +20,17 @@ const { fetchMock, mockIsDesktop, mockStartDownload } = vi.hoisted(() => ({
   mockStartDownload: vi.fn()
 }))
 
-vi.mock<unknown>(import('@/platform/distribution/types'), () => ({
-  DISTRIBUTION: 'localhost',
-  isCloud: false,
-  get isDesktop() {
-    return mockIsDesktop.value
-  },
-  isNightly: false
-}))
+vi.mock(
+  import('@/platform/distribution/types'),
+  (): Partial<typeof DistributionTypes> => ({
+    DISTRIBUTION: 'localhost',
+    isCloud: false,
+    get isDesktop() {
+      return mockIsDesktop.value
+    },
+    isNightly: false
+  })
+)
 
 beforeEach(() => {
   mockIsDesktop.value = false

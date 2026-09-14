@@ -2,6 +2,7 @@ import { render } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import type * as DistributionTypes from '@/platform/distribution/types'
 
 import DesktopCloudNotificationController from './DesktopCloudNotificationController.vue'
 
@@ -17,12 +18,15 @@ const electron = {
 
 const errorReporter = vi.hoisted(() => vi.fn())
 
-vi.mock<unknown>(import('@/platform/distribution/types'), () => ({
-  DISTRIBUTION: 'desktop',
-  isCloud: false,
-  isDesktop: true,
-  isNightly: false
-}))
+vi.mock(
+  import('@/platform/distribution/types'),
+  (): Partial<typeof DistributionTypes> => ({
+    DISTRIBUTION: 'desktop',
+    isCloud: false,
+    isDesktop: true,
+    isNightly: false
+  })
+)
 
 vi.mock(import('@/platform/telemetry/reportError'), () => ({
   reportError: errorReporter
