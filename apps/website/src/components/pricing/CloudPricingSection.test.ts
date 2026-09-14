@@ -2,6 +2,8 @@
 import { render, screen } from '@testing-library/vue'
 import { describe, expect, it } from 'vitest'
 
+import { getRoutes } from '../../config/routes'
+import type { Locale } from '../../i18n/translations'
 import CloudPricingSection from './CloudPricingSection.vue'
 
 function isBefore(first: Element, second: Element) {
@@ -41,4 +43,31 @@ describe('CloudPricingSection', () => {
     expect(screen.getByRole('link', { name: '免费试用' })).toBeTruthy()
     expect(screen.queryByText(/Start Comfy Cloud for free/)).toBeNull()
   })
+
+  it.for([
+    {
+      locale: 'en',
+      teamFeature: 'Invite members up to 50',
+      enterpriseCta: 'Learn More'
+    },
+    {
+      locale: 'zh-CN',
+      teamFeature: '最多可邀请 50 名成员',
+      enterpriseCta: '了解更多'
+    }
+  ] satisfies {
+    locale: Locale
+    teamFeature: string
+    enterpriseCta: string
+  }[])(
+    'configures the Team feature and Enterprise CTA for $locale',
+    ({ locale, teamFeature, enterpriseCta }) => {
+      render(CloudPricingSection, { props: { locale } })
+
+      expect(screen.getByText(teamFeature)).toBeTruthy()
+      expect(
+        screen.getByRole('link', { name: enterpriseCta }).getAttribute('href')
+      ).toBe(getRoutes(locale).enterprise)
+    }
+  )
 })

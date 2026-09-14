@@ -45,4 +45,17 @@ test.describe('Customer-story internal links @smoke', () => {
         .getByRole('link', { name: t('nav.customerStories', 'en') })
     ).toHaveAttribute('href', '/customers')
   })
+
+  test('pricing page enterprise CTA links to the Enterprise page', async ({
+    page
+  }) => {
+    await page.goto('/pricing')
+
+    await expect(
+      page.getByRole('link', {
+        name: t('pricing.enterprise.learnMore', 'en'),
+        exact: true
+      })
+    ).toHaveAttribute('href', '/enterprise')
+  })
 })
