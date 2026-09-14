@@ -767,6 +767,50 @@ describe('ModelDetail', () => {
     expect(softLeaving()).toBe(true)
   })
 
+  it('answers an in-site link in its own words, and lets the link go when told to', async () => {
+    auth.session.value = credential
+    const pending = Promise.withResolvers<typeof routerResult>()
+    vi.mocked(runWorkshopRouter).mockReturnValue(pending.promise)
+    const assign = vi.spyOn(location, 'assign').mockImplementation(() => {})
+    onTestFinished(() => assign.mockRestore())
+    mountDetail({ model: runnable })
+
+    const linkTo = (path: string) => {
+      const link = document.createElement('a')
+      link.href = `${location.origin}${path}`
+      document.body.append(link)
+      onTestFinished(() => link.remove())
+      return () =>
+        link.dispatchEvent(
+          new MouseEvent('click', { bubbles: true, cancelable: true })
+        )
+    }
+
+    expect(linkTo('/models/idle-model/')()).toBe(true)
+    expect(screen.queryByTestId('run-leave-dialog')).toBeNull()
+
+    await user().type(screen.getByTestId('field-prompt'), 'A teapot')
+    await user().click(screen.getByTestId('run-button'))
+    await vi.waitFor(() => expect(runWorkshopRouter).toHaveBeenCalledOnce())
+
+    const follow = linkTo('/models/another-model/')
+    expect(follow()).toBe(false)
+    await screen.findByTestId('run-leave-dialog')
+    expect(assign).not.toHaveBeenCalled()
+
+    await user().click(screen.getByTestId('run-leave-stay'))
+    await vi.waitFor(() =>
+      expect(screen.queryByTestId('run-leave-dialog')).toBeNull()
+    )
+    expect(assign).not.toHaveBeenCalled()
+
+    follow()
+    await user().click(await screen.findByTestId('run-leave-confirm'))
+    expect(assign).toHaveBeenCalledWith(
+      `${location.origin}/models/another-model/`
+    )
+  })
+
   it('restores a declined history traversal without letting Astro unmount the run', async () => {
     history.replaceState({ index: 7 }, '', location.href)
     auth.session.value = credential

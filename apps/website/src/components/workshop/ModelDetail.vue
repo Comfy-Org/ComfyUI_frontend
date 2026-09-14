@@ -51,6 +51,7 @@ import ApiTab from './ApiTab.vue'
 import ExamplesTab from './ExamplesTab.vue'
 import PlaygroundForm from './PlaygroundForm.vue'
 import PlaygroundOutput from './PlaygroundOutput.vue'
+import RunLeaveDialog from './RunLeaveDialog.vue'
 import ModelSupport from './ModelSupport.vue'
 
 const {
@@ -260,6 +261,33 @@ useEventListener(
   },
   { capture: true }
 )
+
+// Caught before the client router sees the click, nothing has moved yet, so
+// this one route off the page can be asked in our own words. The rest still
+// reach the guards above.
+const leavingTo = ref<string>()
+function askBeforeFollowing(event: MouseEvent) {
+  if (event.defaultPrevented || event.button !== 0) return
+  if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return
+  const link = (event.target as Element | null)?.closest?.('a[href]')
+  if (!(link instanceof HTMLAnchorElement)) return
+  if (link.hasAttribute('download') || (link.target && link.target !== '_self'))
+    return
+  if (link.origin !== location.origin || link.href === location.href) return
+  event.preventDefault()
+  leavingTo.value = link.href
+}
+useEventListener(
+  () => (isRunning.value ? globalThis.document : undefined),
+  'click',
+  askBeforeFollowing,
+  { capture: true }
+)
+function leaveForLink() {
+  const href = leavingTo.value
+  leavingTo.value = undefined
+  if (href) location.assign(href)
+}
 
 // A push/replace has not moved history yet, so native fallback is safe and the
 // beforeunload guard owns its confirmation. An approved traversal is the one
@@ -759,5 +787,12 @@ function useInCode() {
     >
       <ApiTab :contract="model.execution" :values :locale />
     </section>
+
+    <RunLeaveDialog
+      :open="leavingTo !== undefined"
+      :locale
+      @update:open="(value: boolean) => !value && (leavingTo = undefined)"
+      @leave="leaveForLink"
+    />
   </div>
 </template>

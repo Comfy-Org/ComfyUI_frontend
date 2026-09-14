@@ -9822,6 +9822,16 @@ Enterprise`
     en: 'A model is still running. Leaving now will cancel it. Leave this page?',
     'zh-CN': '模型仍在运行。现在离开将取消生成。要离开此页面吗？'
   },
+  'workshop.run.leaveTitle': {
+    en: 'A run is still going',
+    'zh-CN': '仍有生成在进行中'
+  },
+  'workshop.run.leaveBody': {
+    en: 'Leaving this page cancels it, and the credits it has already spent do not come back.',
+    'zh-CN': '离开此页面会取消生成，已消耗的积分不会退回。'
+  },
+  'workshop.run.leaveStay': { en: 'Stay on this page', 'zh-CN': '留在此页面' },
+  'workshop.run.leaveAnyway': { en: 'Leave and cancel', 'zh-CN': '离开并取消' },
   'workshop.run.policy': {
     en: 'Disabled by your workspace policy',
     'zh-CN': '已被工作区策略禁用'
