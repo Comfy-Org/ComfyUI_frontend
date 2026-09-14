@@ -91,7 +91,7 @@ const isVideo = (media: GalleryMedia) => media.src.endsWith('.webm')
         </div>
 
         <p
-          class="text-primary-warm-white absolute bottom-3 left-4 text-base/tight font-medium whitespace-pre-line drop-shadow-[0_2px_8px_rgba(0,0,0,0.9)] lg:bottom-4 lg:text-lg"
+          class="absolute bottom-3 left-4 text-base/tight font-medium whitespace-pre-line text-primary-warm-white drop-shadow-[0_2px_8px_rgba(0,0,0,0.9)] lg:bottom-4 lg:text-lg"
         >
           {{ t(card.titleKey, locale) }}
         </p>

@@ -39,8 +39,6 @@ vi.mock(import('@/platform/settings/composables/useSettingsDialog'), () => ({
   }))
 }))
 
-let toastAddMock: ReturnType<typeof useToastStore>['add']
-
 vi.mock(
   import('@/workbench/extensions/manager/composables/useManagerDialog'),
 
@@ -95,7 +93,6 @@ describe('useManagerState', () => {
   let systemStatsStore: ReturnType<typeof useSystemStatsStore>
 
   beforeEach(() => {
-    toastAddMock = useToastStore().add
     vi.mocked(useCommandStore().execute).mockResolvedValue(undefined)
     systemStatsStore = useSystemStatsStore()
 
@@ -302,8 +299,8 @@ describe('useManagerState', () => {
       useManagerState()
       useManagerState()
 
-      expect(toastAddMock).toHaveBeenCalledTimes(1)
-      expect(toastAddMock).toHaveBeenCalledWith({
+      expect(useToastStore().add).toHaveBeenCalledTimes(1)
+      expect(useToastStore().add).toHaveBeenCalledWith({
         severity: 'warn',
         summary: 'manager.incompatibleVersion.title',
         detail: 'manager.incompatibleVersion.message',
@@ -322,12 +319,12 @@ describe('useManagerState', () => {
       mockServerFeatures({ supports_v4: true, supports_csrf_post: false })
 
       const managerState = useManagerState()
-      expect(toastAddMock).toHaveBeenCalledTimes(1)
+      expect(useToastStore().add).toHaveBeenCalledTimes(1)
 
       await managerState.openManager()
-      expect(toastAddMock).toHaveBeenCalledTimes(2)
+      expect(useToastStore().add).toHaveBeenCalledTimes(2)
       // second call must still be the upgrade toast, not an error toast
-      expect(toastAddMock).toHaveBeenLastCalledWith({
+      expect(useToastStore().add).toHaveBeenLastCalledWith({
         severity: 'warn',
         summary: 'manager.incompatibleVersion.title',
         detail: 'manager.incompatibleVersion.message',
@@ -346,7 +343,7 @@ describe('useManagerState', () => {
       mockServerFeatures({ supports_v4: true, supports_csrf_post: true })
 
       useManagerState()
-      expect(toastAddMock).not.toHaveBeenCalled()
+      expect(useToastStore().add).not.toHaveBeenCalled()
     })
   })
 

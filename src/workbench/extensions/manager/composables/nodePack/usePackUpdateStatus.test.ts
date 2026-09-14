@@ -6,17 +6,6 @@ import { usePackUpdateStatus } from '@/workbench/extensions/manager/composables/
 import { useComfyManagerStore } from '@/workbench/extensions/manager/stores/comfyManagerStore'
 
 type NodePack = components['schemas']['Node']
-type ManagerStoreReturn = ReturnType<typeof useComfyManagerStore>
-
-let mockIsPackInstalled: ReturnType<
-  typeof vi.mocked<ManagerStoreReturn['isPackInstalled']>
->
-let mockIsPackEnabled: ReturnType<
-  typeof vi.mocked<ManagerStoreReturn['isPackEnabled']>
->
-let mockGetInstalledPackVersion: ReturnType<
-  typeof vi.mocked<ManagerStoreReturn['getInstalledPackVersion']>
->
 
 function makePack(overrides: Partial<NodePack> = {}): NodePack {
   return {
@@ -28,13 +17,11 @@ function makePack(overrides: Partial<NodePack> = {}): NodePack {
 }
 
 beforeEach(() => {
-  const store = useComfyManagerStore()
-  mockIsPackInstalled = vi.mocked(store.isPackInstalled)
-  mockIsPackEnabled = vi.mocked(store.isPackEnabled)
-  mockGetInstalledPackVersion = vi.mocked(store.getInstalledPackVersion)
-  mockIsPackInstalled.mockReturnValue(true)
-  mockIsPackEnabled.mockReturnValue(true)
-  mockGetInstalledPackVersion.mockReturnValue('1.0.0')
+  vi.mocked(useComfyManagerStore().isPackInstalled).mockReturnValue(true)
+  vi.mocked(useComfyManagerStore().isPackEnabled).mockReturnValue(true)
+  vi.mocked(useComfyManagerStore().getInstalledPackVersion).mockReturnValue(
+    '1.0.0'
+  )
 })
 
 describe('usePackUpdateStatus', () => {
@@ -48,7 +35,9 @@ describe('usePackUpdateStatus', () => {
   })
 
   it('reports no update when installed matches latest', () => {
-    mockGetInstalledPackVersion.mockReturnValue('2.0.0')
+    vi.mocked(useComfyManagerStore().getInstalledPackVersion).mockReturnValue(
+      '2.0.0'
+    )
 
     const { isUpdateAvailable } = usePackUpdateStatus(makePack())
 
@@ -56,7 +45,7 @@ describe('usePackUpdateStatus', () => {
   })
 
   it('reports no update when the pack is not installed', () => {
-    mockIsPackInstalled.mockReturnValue(false)
+    vi.mocked(useComfyManagerStore().isPackInstalled).mockReturnValue(false)
 
     const { isUpdateAvailable } = usePackUpdateStatus(makePack())
 
@@ -64,7 +53,9 @@ describe('usePackUpdateStatus', () => {
   })
 
   it('treats a non-semver installed version as a nightly build', () => {
-    mockGetInstalledPackVersion.mockReturnValue('abc1234')
+    vi.mocked(useComfyManagerStore().getInstalledPackVersion).mockReturnValue(
+      'abc1234'
+    )
 
     const { isNightlyPack, isUpdateAvailable, canTryNightlyUpdate } =
       usePackUpdateStatus(makePack())
@@ -75,8 +66,10 @@ describe('usePackUpdateStatus', () => {
   })
 
   it('only allows a nightly update when installed and enabled', () => {
-    mockGetInstalledPackVersion.mockReturnValue('abc1234')
-    mockIsPackEnabled.mockReturnValue(false)
+    vi.mocked(useComfyManagerStore().getInstalledPackVersion).mockReturnValue(
+      'abc1234'
+    )
+    vi.mocked(useComfyManagerStore().isPackEnabled).mockReturnValue(false)
 
     const { canTryNightlyUpdate } = usePackUpdateStatus(makePack())
 

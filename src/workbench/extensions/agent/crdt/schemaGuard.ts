@@ -61,7 +61,8 @@ export function assertReadableSchema(doc: Y.Doc): void {
     // every environment, Sentry reporter in production.
     assert(
       false,
-      'CRDT follower: doc meta.schema_version is not the layout this build reads — refusing to project it (fail-closed, keep-alive invariant KA-11)'
+      'CRDT follower: doc meta.schema_version is not the layout this build reads — refusing to project it (fail-closed, keep-alive invariant KA-11)',
+      { found }
     )
   } catch {
     // Swallowed on purpose. `assert` throws only under DEV, so it is NOT a

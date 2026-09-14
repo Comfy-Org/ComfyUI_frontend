@@ -15,7 +15,7 @@ const hoisted = vi.hoisted(() => ({
   submit: vi.fn().mockResolvedValue(undefined)
 }))
 
-vi.mock('../../scripts/customerio', () => ({
+vi.mock(import('../../scripts/customerio'), () => ({
   get isDownloadLinkRequestEnabled() {
     return hoisted.isEnabled
   },

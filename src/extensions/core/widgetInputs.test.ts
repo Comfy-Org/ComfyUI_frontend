@@ -22,6 +22,12 @@ import { graphScopeOf } from '@/types/graphScopeId'
 import { toLinkId } from '@/types/linkId'
 import { serializeNodeId, toNodeId } from '@/types/nodeId'
 
+const extensions = await vi.hoisted(async () => {
+  const { createExtensionCapture } =
+    await import('@/utils/__tests__/extensionTestUtils')
+  return createExtensionCapture()
+})
+
 /** `app.configuringGraph` is a getter on the real app, so route it via a ref. */
 const appState = vi.hoisted(() => ({ configuringGraph: false }))
 
@@ -31,7 +37,7 @@ vi.mock('@/scripts/app', () => ({
     get configuringGraph() {
       return appState.configuringGraph
     },
-    registerExtension: vi.fn()
+    registerExtension: extensions.registerExtension
   }
 }))
 
@@ -50,21 +56,10 @@ beforeEach(() => {
   app.canvas.graph = null
 })
 
-/**
- * `registerExtension` is a mock, and `mockReset: true` clears its calls before
- * the first test runs — so the registered extension is captured at collection.
- */
-const widgetInputsExtension = vi.mocked(app.registerExtension).mock
-  .calls[0]?.[0]
-if (!widgetInputsExtension)
-  throw new Error('Comfy.WidgetInputs was not registered on import')
+const widgetInputsExtension = extensions.getExtension('Comfy.WidgetInputs')
 
 await import('./rerouteNode')
-const rerouteNodeExtension = vi
-  .mocked(app.registerExtension)
-  .mock.calls.find(([extension]) => extension.name === 'Comfy.RerouteNode')?.[0]
-if (!rerouteNodeExtension)
-  throw new Error('Comfy.RerouteNode was not registered on import')
+const rerouteNodeExtension = extensions.getExtension('Comfy.RerouteNode')
 
 /**
  * Applies the extension's `beforeRegisterNodeDef` to a throwaway node class.
