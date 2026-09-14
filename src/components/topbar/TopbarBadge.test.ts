@@ -185,7 +185,8 @@ describe('TopbarBadge', () => {
   describe('a label the text already carries', () => {
     it.for([
       ['WARN', 'Warning Message'],
-      ['PREVIEW', 'Preview Environment']
+      ['PREVIEW', 'Preview Environment'],
+      ['PREVIEW', '(PREVIEW) Environment']
     ])('drops %s beside its own text', ([label, text]) => {
       renderTopbarBadge({ text, label }, 'full')
 

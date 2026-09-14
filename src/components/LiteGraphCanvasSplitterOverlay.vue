@@ -193,13 +193,15 @@ const showOffsideSplitter = computed(
 
 /**
  * The agent panel docks to the right of this row. It only meets the bare
- * canvas when no offside panel is drawn between the two.
+ * canvas when nothing opaque is drawn between the two: a right-hand sidebar
+ * always is, and an offside panel is when it is drawn at all.
  */
 const agentPanelHasOpaqueNeighbor = computed(
   () =>
-    showOffsideSplitter.value &&
-    !agentNodeSelectionActive.value &&
-    !focusMode.value
+    sidebarLocation.value === 'right' ||
+    (showOffsideSplitter.value &&
+      !agentNodeSelectionActive.value &&
+      !focusMode.value)
 )
 
 const sidebarPanelVisible = computed(

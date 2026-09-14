@@ -137,7 +137,9 @@ const showLabel = computed(() => {
   return !badge.text
     .toLowerCase()
     .split(/\s+/)
-    .some((word) => word.startsWith(needle))
+    .some((word) =>
+      word.replace(/^[^\p{L}\p{N}]+|[^\p{L}\p{N}]+$/gu, '').startsWith(needle)
+    )
 })
 
 /** Matches the ALPHA badge in the agent panel header. */
