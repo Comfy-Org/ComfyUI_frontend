@@ -103,21 +103,15 @@ test.describe('Renamed converted widget values', { tag: ['@node'] }, () => {
   test('keeps each widget value on its own widget', async ({ comfyPage }) => {
     await comfyPage.workflow.loadWorkflow('inputs/renamed_converted_widget')
 
-    const widgets = await comfyPage.page.evaluate(
-      (nodeId) =>
-        window.app!.graph.getNodeById(nodeId)!.widgets?.map((w) => ({
-          name: w.name,
-          value: w.value
-        })) ?? [],
-      toNodeId(3)
-    )
+    const node = await comfyPage.nodeOps.getNodeRefById(toNodeId(3))
+    const [width, height, batchSize] = await Promise.all([
+      node.getWidgetByName('width'),
+      node.getWidgetByName('height'),
+      node.getWidgetByName('batch_size')
+    ])
 
-    // Guard the whole claim: without the widgets, every pair below is vacuous.
-    expect(widgets.map((w) => w.name)).toEqual(
-      expect.arrayContaining(['height', 'batch_size'])
-    )
-
-    const byName = Object.fromEntries(widgets.map((w) => [w.name, w.value]))
-    expect(byName).toMatchObject({ height: 768, batch_size: 3 })
+    expect.soft(await width.getValue()).toBe(640)
+    expect.soft(await height.getValue()).toBe(768)
+    expect.soft(await batchSize.getValue()).toBe(3)
   })
 })
