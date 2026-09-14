@@ -81,7 +81,61 @@ function readInteriorNode(source: unknown): Record<string, unknown> | null {
   return node
 }
 
-function readDefinition(source: Y.Map<unknown>): ExportedSubgraph {
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value)
+}
+
+function hasSafeInputs(value: unknown): boolean {
+  return (
+    value === undefined ||
+    (Array.isArray(value) &&
+      value.every(
+        (input) =>
+          isRecord(input) &&
+          typeof input.name === 'string' &&
+          (input.linkIds === undefined || Array.isArray(input.linkIds))
+      ))
+  )
+}
+
+function hasSafeNodes(value: unknown): boolean {
+  return (
+    value === undefined ||
+    (Array.isArray(value) &&
+      value.every(
+        (node) =>
+          isRecord(node) &&
+          (node.inputs === undefined ||
+            (Array.isArray(node.inputs) && node.inputs.every(isRecord)))
+      ))
+  )
+}
+
+function hasSafeLinks(value: unknown): boolean {
+  return value === undefined || (Array.isArray(value) && value.every(isRecord))
+}
+
+function hasSafeNestedDefinitions(value: unknown): boolean {
+  if (value === undefined) return true
+  if (!isRecord(value)) return false
+  const nested = value.subgraphs
+  return (
+    nested === undefined ||
+    (Array.isArray(nested) && nested.every(isSafeDefinition))
+  )
+}
+
+function isSafeDefinition(value: unknown): boolean {
+  return (
+    isRecord(value) &&
+    hasSafeInputs(value.inputs) &&
+    hasSafeNodes(value.nodes) &&
+    hasSafeLinks(value.links) &&
+    hasSafeNestedDefinitions(value.definitions)
+  )
+}
+
+function readDefinition(source: Y.Map<unknown>): ExportedSubgraph | null {
   const definition: Record<string, unknown> = {}
   source.forEach((value, key) => {
     if (key === NODE_ORDER || key === LINK_ORDER || !isReadableKey(key)) return
@@ -100,7 +154,9 @@ function readDefinition(source: Y.Map<unknown>): ExportedSubgraph {
       definition[key] = plain(value)
     }
   })
-  return definition as unknown as ExportedSubgraph
+  return isSafeDefinition(definition)
+    ? (definition as unknown as ExportedSubgraph)
+    : null
 }
 
 function readField(source: unknown, key: string): unknown {
@@ -161,7 +217,9 @@ export function readSubgraphDefinitions(doc: Y.Doc): ExportedSubgraph[] {
   // shared type in place; that is a read-side view, not new content.)
   if (!doc.share.has(DEFINITIONS_ROOT)) return definitions
   doc.getMap<unknown>(DEFINITIONS_ROOT).forEach((value) => {
-    if (value instanceof Y.Map) definitions.push(readDefinition(value))
+    if (!(value instanceof Y.Map)) return
+    const definition = readDefinition(value)
+    if (definition) definitions.push(definition)
   })
   return definitions
 }

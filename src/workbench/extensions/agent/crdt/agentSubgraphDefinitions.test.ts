@@ -173,6 +173,40 @@ describe('readSubgraphDefinitions', () => {
     expect(projected[0]?.nodes?.map((node) => node.id)).toEqual([1])
   })
 
+  it.for<[string, (definition: Y.Map<unknown>) => void]>([
+    ['inputs', (stored) => stored.set('inputs', 'invalid')],
+    [
+      'input entry',
+      (stored) => {
+        const inputs = new Y.Array<unknown>()
+        stored.set('inputs', inputs)
+        inputs.push([null])
+      }
+    ],
+    ['nodes', (stored) => stored.set('nodes', 'invalid')],
+    ['links', (stored) => stored.set('links', 'invalid')],
+    ['definitions', (stored) => stored.set('definitions', 'invalid')],
+    [
+      'nested definition',
+      (stored) => {
+        const definitions = new Y.Map<unknown>()
+        const subgraphs = new Y.Array<unknown>()
+        stored.set('definitions', definitions)
+        definitions.set('subgraphs', subgraphs)
+        subgraphs.push([null])
+      }
+    ]
+  ])('skips a definition with invalid %s', ([_label, mutate]) => {
+    const definition = createTestSubgraphData()
+    const doc = seed(definition)
+    const stored = doc
+      .getMap<unknown>('definitions')
+      .get(definition.id) as Y.Map<unknown>
+    mutate(stored)
+
+    expect(readSubgraphDefinitions(doc)).toEqual([])
+  })
+
   it('reads a node named twice in the order register once', () => {
     // mintDefinition pushes one register entry per input node, so two interior
     // nodes sharing an id leave a two-entry register over a one-key map.
