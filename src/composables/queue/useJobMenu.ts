@@ -17,7 +17,10 @@ import { useLitegraphService } from '@/services/litegraphService'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useQueueStore } from '@/stores/queueStore'
-import type { ResultItemImpl, TaskItemImpl } from '@/stores/queueStore'
+import type { TaskItemImpl } from '@/stores/queueStore'
+import type { AugmentedResultItem } from '@/utils/resultItem'
+import { resultItemUrl } from '@/utils/resultItemUrl'
+import { isAudioResult, isImageResult, isVideoResult } from '@/utils/resultItem'
 import { createAnnotatedPath } from '@/utils/createAnnotatedPath'
 import { appendJsonExt } from '@/utils/formatUtil'
 import { isResultItemType } from '@/utils/typeGuardUtil'
@@ -124,24 +127,26 @@ export function useJobMenu(
   const addOutputLoaderNode = async () => {
     const item = currentMenuItem()
     if (!item) return
-    const result: ResultItemImpl | undefined = item.taskRef?.previewOutput
+    const result: AugmentedResultItem | undefined = item.taskRef?.previewOutput
     if (!result) return
 
     let nodeType: 'LoadImage' | 'LoadVideo' | 'LoadAudio' | null = null
     let widgetName: 'image' | 'file' | 'audio' | null = null
-    if (result.isImage) {
+    if (isImageResult(result)) {
       nodeType = 'LoadImage'
       widgetName = 'image'
-    } else if (result.isVideo) {
+    } else if (isVideoResult(result)) {
       nodeType = 'LoadVideo'
       widgetName = 'file'
-    } else if (result.isAudio) {
+    } else if (isAudioResult(result)) {
       nodeType = 'LoadAudio'
       widgetName = 'audio'
     }
     if (!nodeType || !widgetName) return
 
-    const nodeDef = nodeDefStore.nodeDefsByName[nodeType]
+    const nodeDef = Object.hasOwn(nodeDefStore.nodeDefsByName, nodeType)
+      ? nodeDefStore.nodeDefsByName[nodeType]
+      : undefined
     if (!nodeDef) return
     const node = withNodeAddSource('programmatic', () =>
       litegraphService.addNodeOnGraph(nodeDef, {
@@ -172,9 +177,9 @@ export function useJobMenu(
   const downloadPreviewAsset = () => {
     const item = currentMenuItem()
     if (!item) return
-    const result: ResultItemImpl | undefined = item.taskRef?.previewOutput
+    const result: AugmentedResultItem | undefined = item.taskRef?.previewOutput
     if (!result) return
-    downloadFile(result.url)
+    downloadFile(resultItemUrl(result))
   }
 
   /**
@@ -205,8 +210,7 @@ export function useJobMenu(
   }
 
   const removeFailedJob = async (task?: TaskItemImpl | null) => {
-    const target =
-      task ?? (currentMenuItem()?.taskRef as TaskItemImpl | undefined)
+    const target = task ?? currentMenuItem()?.taskRef
     if (!target) return
     await queueStore.delete(target)
   }
@@ -228,7 +232,7 @@ export function useJobMenu(
     const item = currentMenuItem()
     const state = item?.state
     if (!state) return []
-    const hasPreviewAsset = !!item?.taskRef?.previewOutput
+    const hasPreviewAsset = !!item.taskRef?.previewOutput
     if (state === 'completed') {
       return [
         {

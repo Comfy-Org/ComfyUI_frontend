@@ -111,9 +111,7 @@ export async function runMissingModelPipeline({
 
   const getDirectory = (nodeType: string) =>
     useModelToNodeStore().getCategoryForNodeType(nodeType)
-  const isAssetBrowserWidget = isCloud
-    ? assetService.shouldUseAssetBrowser
-    : () => false
+  const isAssetBrowserWidget = assetService.shouldUseWidgetAssetPicker
 
   const candidates = scanAllModelCandidates(
     graph,

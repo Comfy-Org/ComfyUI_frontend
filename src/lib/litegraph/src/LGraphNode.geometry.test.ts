@@ -1,5 +1,3 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, test, vi } from 'vitest'
 
 import type { Rect } from './interfaces'
@@ -11,7 +9,6 @@ import { toNodeId } from '@/types/nodeId'
 
 describe('layout geometry projection', () => {
   beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
     layoutStore.resetForTests()
   })
 
@@ -98,7 +95,7 @@ describe('layout geometry projection', () => {
     expect([...node.pos]).toEqual([70, 90])
     expect([...node.size]).toEqual([320, 180])
     expect(layoutStore.getNodeLayout(graphId, nodeId)).toBeNull()
-    expect(graph.getNodeById(nodeId)).toBeUndefined()
+    expect(graph.getNodeById(nodeId)).toBeNull()
   })
 
   test('refreshes stable views before indexed mutations', () => {

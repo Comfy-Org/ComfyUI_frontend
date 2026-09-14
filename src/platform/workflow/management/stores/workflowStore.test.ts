@@ -29,7 +29,7 @@ import {
 } from '@/utils/__tests__/litegraphTestUtils'
 
 // Add mock for api at the top of the file
-vi.mock('@/scripts/api', () => ({
+vi.mock<unknown>(import('@/scripts/api'), () => ({
   api: {
     getUserData: vi.fn(),
     storeUserData: vi.fn(),
@@ -40,14 +40,14 @@ vi.mock('@/scripts/api', () => ({
 }))
 
 // Mock comfyApp globally for the store setup
-vi.mock('@/scripts/app', () => ({
+vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: {
     canvas: {} // Start with empty canvas object
   }
 }))
 
 // Mock isSubgraph
-vi.mock('@/utils/typeGuardUtil', () => ({
+vi.mock<unknown>(import('@/utils/typeGuardUtil'), () => ({
   isSubgraph: vi.fn(() => false)
 }))
 
@@ -723,9 +723,9 @@ describe('useWorkflowStore', () => {
 
       // Verify the content was updated
       expect(workflow.content).toBe(
-        JSON.stringify(workflow.changeTracker!.activeState)
+        JSON.stringify(workflow.changeTracker.activeState)
       )
-      expect(workflow.changeTracker!.reset).toHaveBeenCalled()
+      expect(workflow.changeTracker.reset).toHaveBeenCalled()
       expect(workflow.isModified).toBe(false)
     })
 
@@ -754,7 +754,7 @@ describe('useWorkflowStore', () => {
       expect(api.storeUserData).toHaveBeenCalled()
 
       // Verify the content was updated
-      expect(workflow.changeTracker!.reset).toHaveBeenCalled()
+      expect(workflow.changeTracker.reset).toHaveBeenCalled()
       expect(workflow.isModified).toBe(false)
     })
   })
@@ -787,7 +787,7 @@ describe('useWorkflowStore', () => {
 
       expect(newWorkflow.path).toBe('workflows/new-test.json')
       expect(newWorkflow.content).toBe(
-        JSON.stringify(workflow.changeTracker!.activeState)
+        JSON.stringify(workflow.changeTracker.activeState)
       )
       expect(newWorkflow.isModified).toBe(false)
     })

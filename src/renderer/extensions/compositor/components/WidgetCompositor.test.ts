@@ -16,24 +16,18 @@ const { getNodeById } = vi.hoisted(() => ({
   getNodeById: vi.fn<() => unknown>(() => undefined)
 }))
 
-vi.mock('@/scripts/app', () => ({
-  app: { canvas: { graph: { getNodeById } } }
+vi.mock<unknown>(import('@/scripts/app'), () => ({
+  app: { canvas: { graph: { getNodeById } }, nodePreviewImages: {} }
 }))
-vi.mock('@/stores/nodeOutputStore', () => ({
-  useNodeOutputStore: () => ({
-    getNodeImageUrls: () => undefined,
-    nodeOutputs: {},
-    nodePreviewImages: {}
-  })
-}))
+
 vi.mock(
-  '@/renderer/extensions/compositor/composables/useCompositorEditor',
+  import('@/renderer/extensions/compositor/composables/useCompositorEditor'),
   () => ({
     useCompositorEditor: () => ({ openCompositorEditor: vi.fn() })
   })
 )
 vi.mock(
-  '@/renderer/extensions/compositor/composables/useCompositorPsdDownload',
+  import('@/renderer/extensions/compositor/composables/useCompositorPsdDownload'),
   () => ({
     useCompositorPsdDownload: () => ({
       exporting: ref(false),

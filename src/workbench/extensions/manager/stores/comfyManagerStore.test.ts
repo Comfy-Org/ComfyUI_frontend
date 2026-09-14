@@ -7,50 +7,44 @@ import type { components as ManagerComponents } from '@/workbench/extensions/man
 
 type InstalledPacksResponse =
   ManagerComponents['schemas']['InstalledPacksResponse']
-type ManagerChannel = ManagerComponents['schemas']['ManagerChannel']
-type ManagerDatabaseSource =
-  ManagerComponents['schemas']['ManagerDatabaseSource']
 type ManagerPackInstalled = ManagerComponents['schemas']['ManagerPackInstalled']
 
-vi.mock('@/workbench/extensions/manager/services/comfyManagerService', () => ({
-  useComfyManagerService: vi.fn()
-}))
+vi.mock(
+  import('@/workbench/extensions/manager/services/comfyManagerService'),
 
-vi.mock('@/workbench/extensions/manager/composables/useManagerQueue', () => {
-  const enqueueTaskMock = vi.fn()
+  () => ({
+    useComfyManagerService: vi.fn()
+  })
+)
 
-  return {
-    useManagerQueue: () => {
-      const isProcessing = ref(false)
-      return {
-        statusMessage: ref(''),
-        allTasksDone: ref(false),
-        enqueueTask: enqueueTaskMock,
-        isProcessing,
-        isProcessingTasks: isProcessing
-      }
-    },
-    enqueueTask: enqueueTaskMock
+vi.mock<unknown>(
+  import('@/workbench/extensions/manager/composables/useManagerQueue'),
+
+  () => {
+    const enqueueTaskMock = vi.fn()
+
+    return {
+      useManagerQueue: () => {
+        const isProcessing = ref(false)
+        return {
+          statusMessage: ref(''),
+          allTasksDone: ref(false),
+          enqueueTask: enqueueTaskMock,
+          isProcessing,
+          isProcessingTasks: isProcessing
+        }
+      },
+      enqueueTask: enqueueTaskMock
+    }
   }
-})
+)
 
-vi.mock('@/composables/useServerLogs', () => ({
+vi.mock(import('@/composables/useServerLogs'), () => ({
   useServerLogs: () => ({
     startListening: vi.fn(),
     stopListening: vi.fn(),
     logs: ref([])
   })
-}))
-
-vi.mock('vue-i18n', () => ({
-  useI18n: () => ({
-    t: vi.fn((key) => key)
-  }),
-  createI18n: vi.fn(() => ({
-    global: {
-      t: vi.fn((key) => key)
-    }
-  }))
 }))
 
 interface EnabledDisabledTestCase {
@@ -365,8 +359,8 @@ describe('useComfyManagerStore', () => {
       await store.installPack.call({
         id: 'test-pack',
         repository: 'https://github.com/test/test-pack',
-        channel: 'dev' as ManagerChannel,
-        mode: 'cache' as ManagerDatabaseSource,
+        channel: 'dev',
+        mode: 'cache',
         selected_version: 'latest',
         version: 'latest'
       })
@@ -382,8 +376,8 @@ describe('useComfyManagerStore', () => {
       await store.installPack.call({
         id: 'pack-1',
         repository: 'https://github.com/test/pack-1',
-        channel: 'dev' as ManagerChannel,
-        mode: 'cache' as ManagerDatabaseSource,
+        channel: 'dev',
+        mode: 'cache',
         selected_version: 'latest',
         version: 'latest'
       })
@@ -392,8 +386,8 @@ describe('useComfyManagerStore', () => {
       await store.installPack.call({
         id: 'pack-2',
         repository: 'https://github.com/test/pack-2',
-        channel: 'dev' as ManagerChannel,
-        mode: 'cache' as ManagerDatabaseSource,
+        channel: 'dev',
+        mode: 'cache',
         selected_version: 'latest',
         version: 'latest'
       })

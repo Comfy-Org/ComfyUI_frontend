@@ -1,28 +1,29 @@
-import { createTestingPinia } from '@pinia/testing'
+import { getActivePinia } from 'pinia'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
 import { render, screen } from '@testing-library/vue'
 
 import type { AssetDisplayItem } from '@/platform/assets/composables/useAssetBrowser'
+import type * as DistributionTypes from '@/platform/distribution/types'
 
 import ModelInfoPanel from './ModelInfoPanel.vue'
 
-vi.mock('@/composables/useCopyToClipboard', () => ({
+vi.mock(import('@/composables/useCopyToClipboard'), () => ({
   useCopyToClipboard: () => ({
     copyToClipboard: vi.fn()
   })
 }))
 
-const mockDistribution = vi.hoisted(() => ({ isCloud: false }))
-vi.mock('@/platform/distribution/types', async (importOriginal) => ({
-  ...(await importOriginal<object>()),
-  get isCloud() {
-    return mockDistribution.isCloud
-  }
-}))
+const mockDistribution = vi.hoisted(
+  (): { isCloud: typeof DistributionTypes.isCloud } => ({ isCloud: false })
+)
+vi.mock<unknown>(
+  import('@/platform/distribution/types'),
+  () => mockDistribution
+)
 
-vi.mock('@/platform/assets/composables/useModelTypes', async () => {
+vi.mock(import('@/platform/assets/composables/useModelTypes'), async () => {
   const { ref } = await import('vue')
   return {
     useModelTypes: () => ({
@@ -69,7 +70,7 @@ describe('ModelInfoPanel', () => {
     return render(ModelInfoPanel, {
       props: { asset },
       global: {
-        plugins: [createTestingPinia({ stubActions: false }), i18n]
+        plugins: [getActivePinia()!, i18n]
       }
     })
   }

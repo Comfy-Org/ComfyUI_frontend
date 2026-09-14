@@ -28,7 +28,7 @@ export function useTreeFolderOperations<T>(
 
     try {
       // Call the handleAddFolder method with the new folder name
-      await addFolderTargetNode.value?.handleAddFolder?.(newName)
+      await addFolderTargetNode.value.handleAddFolder?.(newName)
     } finally {
       newFolderNode.value = null
       addFolderTargetNode.value = null
@@ -51,7 +51,7 @@ export function useTreeFolderOperations<T>(
       totalLeaves: 0,
       badgeText: '',
       isEditingLabel: true
-    } as RenderedTreeExplorerNode<T>
+    }
     addFolderTargetNode.value = targetNode
   }
 

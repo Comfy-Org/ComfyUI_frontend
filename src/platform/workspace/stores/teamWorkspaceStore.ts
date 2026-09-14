@@ -60,7 +60,7 @@ function mapApiMemberToWorkspaceMember(member: Member): WorkspaceMember {
     email: member.email,
     joinDate: new Date(member.joined_at),
     role: member.role,
-    isOriginalOwner: member.is_original_owner ?? false,
+    isOriginalOwner: member.is_original_owner,
     creditsUsedThisMonth: member.credits_used_this_month,
     monthlyCreditLimit: member.monthly_credit_limit
   }

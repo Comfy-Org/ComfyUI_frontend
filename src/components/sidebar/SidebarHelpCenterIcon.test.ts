@@ -1,9 +1,16 @@
-import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
+import { render, screen } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
+import { useSettingStore } from '@/platform/settings/settingStore'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+
 import SidebarHelpCenterIcon from './SidebarHelpCenterIcon.vue'
+
+beforeEach(() => {
+  useSettingStore().settingValues['Comfy.Sidebar.Location'] = 'left'
+})
 
 const typeformState = vi.hoisted(() => ({
   typeformError: false,
@@ -12,11 +19,9 @@ const typeformState = vi.hoisted(() => ({
 
 const embedSpy = vi.hoisted(() => vi.fn())
 
-const canvasState = vi.hoisted(() => ({ linearMode: true }))
-
 const helpCenterSpies = vi.hoisted(() => ({ toggleHelpCenter: vi.fn() }))
 
-vi.mock('@/platform/surveys/useTypeformEmbed', async () => {
+vi.mock<unknown>(import('@/platform/surveys/useTypeformEmbed'), async () => {
   const { computed } = await import('vue')
   return {
     useTypeformEmbed: (containerRef: unknown, formId: string) => {
@@ -31,25 +36,13 @@ vi.mock('@/platform/surveys/useTypeformEmbed', async () => {
   }
 })
 
-vi.mock('@/composables/useHelpCenter', async () => {
+vi.mock<unknown>(import('@/composables/useHelpCenter'), async () => {
   const { ref } = await import('vue')
   return {
     useHelpCenter: () => ({
       shouldShowRedDot: ref(false),
       toggleHelpCenter: helpCenterSpies.toggleHelpCenter
     })
-  }
-})
-
-vi.mock('@/platform/settings/settingStore', () => ({
-  useSettingStore: () => ({ get: () => 'left' })
-}))
-
-vi.mock('@/renderer/core/canvas/canvasStore', async () => {
-  const { computed, reactive } = await import('vue')
-  return {
-    useCanvasStore: () =>
-      reactive({ linearMode: computed(() => canvasState.linearMode) })
   }
 })
 
@@ -92,7 +85,7 @@ describe('SidebarHelpCenterIcon', () => {
   beforeEach(() => {
     typeformState.typeformError = false
     typeformState.isValidTypeformId = true
-    canvasState.linearMode = true
+    useCanvasStore().linearMode = true
   })
 
   it('mounts the Typeform embed container wired to the feedback form', () => {
@@ -129,7 +122,7 @@ describe('SidebarHelpCenterIcon', () => {
   })
 
   it('shows the help center button instead of the feedback popover in graph mode', () => {
-    canvasState.linearMode = false
+    useCanvasStore().linearMode = false
     renderIcon()
 
     expect(
@@ -142,7 +135,7 @@ describe('SidebarHelpCenterIcon', () => {
   })
 
   it('toggles the help center on click in graph mode', async () => {
-    canvasState.linearMode = false
+    useCanvasStore().linearMode = false
     const { user } = renderIcon()
 
     await user.click(screen.getByRole('button', { name: 'Help Center' }))

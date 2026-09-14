@@ -23,5 +23,5 @@ export function getAssetType(
   const urlType = new URLSearchParams(
     (asset.preview_url ?? '').split('?')[1] ?? ''
   ).get('type')
-  return urlType || asset.tags?.[0] || defaultType
+  return urlType || asset.tags[0] || defaultType
 }

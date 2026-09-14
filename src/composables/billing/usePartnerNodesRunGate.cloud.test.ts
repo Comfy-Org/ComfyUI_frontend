@@ -6,11 +6,11 @@ import {
   usePartnerNodesRunGate
 } from './usePartnerNodesRunGate'
 
-vi.mock('@/platform/distribution/types', () => ({ isCloud: true }))
+vi.mock(import('@/platform/distribution/types'), () => ({ isCloud: true }))
 
 const partnerNodesInGraph = vi.fn()
 const scanPartnerNodes = vi.fn(() => [])
-vi.mock('@/composables/node/usePartnerNodesInGraph', () => ({
+vi.mock(import('@/composables/node/usePartnerNodesInGraph'), () => ({
   usePartnerNodesInGraph: () => partnerNodesInGraph(),
   scanPartnerNodesInGraph: () => scanPartnerNodes()
 }))

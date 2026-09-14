@@ -315,6 +315,24 @@ test.describe('Default Keybindings', { tag: '@keyboard' }, () => {
         .toBeLessThan(initialCount)
     })
 
+    test('Select-all still reaches the canvas after the settings dialog closes', async ({
+      comfyPage
+    }) => {
+      const nodeCount = await comfyPage.nodeOps.getGraphNodesCount()
+      expect(nodeCount).toBeGreaterThan(1)
+
+      await comfyPage.settingDialog.open()
+      await comfyPage.settingDialog.close()
+
+      await comfyPage.keyboard.press('Control+a')
+
+      await expect
+        .poll(() =>
+          comfyPage.page.evaluate(() => window.app!.canvas.selectedItems.size)
+        )
+        .toBe(nodeCount)
+    })
+
     test("'r' refreshes node definitions", async ({ comfyPage }) => {
       const request = await pressKeyAndExpectRequest(
         comfyPage,

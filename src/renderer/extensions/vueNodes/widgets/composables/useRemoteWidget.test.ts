@@ -1,5 +1,11 @@
+import { useAuthStore } from '@/stores/authStore'
 import axios from 'axios'
-import { describe, expect, it, vi } from 'vitest'
+import {
+  onAuthStateChanged,
+  onIdTokenChanged,
+  setPersistence
+} from 'firebase/auth'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { IWidget } from '@/lib/litegraph/src/litegraph'
 import { api } from '@/scripts/api'
@@ -19,40 +25,20 @@ function createMockWidget(overrides: Partial<IWidget> = {}): IWidget {
 
 const mockCloudAuth = vi.hoisted(() => ({
   isCloud: false,
-  authHeader: null as { Authorization: string } | null
+  authHeader: null as { Authorization: `Bearer ${string}` } | null
 }))
 
-vi.mock('axios', async (importOriginal) => {
-  const actual = await importOriginal<typeof axios>()
-  return {
-    default: {
-      ...actual,
-      get: vi.fn()
-    }
-  }
-})
+vi.mock(import('axios'), { spy: true })
+vi.mock(import('firebase/auth'), { spy: true })
+vi.mocked(setPersistence).mockResolvedValue(undefined)
+vi.mocked(onAuthStateChanged).mockReturnValue(vi.fn())
+vi.mocked(onIdTokenChanged).mockReturnValue(vi.fn())
 
-vi.mock('@/platform/distribution/types', () => ({
+vi.mock(import('@/platform/distribution/types'), () => ({
   get isCloud() {
     return mockCloudAuth.isCloud
   }
 }))
-
-vi.mock('@/stores/authStore', async () => {
-  return {
-    useAuthStore: vi.fn(() => ({
-      getAuthHeader: vi.fn(() => Promise.resolve(mockCloudAuth.authHeader))
-    }))
-  }
-})
-
-vi.mock('@/platform/settings/settingStore', async () => {
-  return {
-    useSettingStore: () => ({
-      settings: {}
-    })
-  }
-})
 
 const FIRST_BACKOFF = 1000 // backoff is 1s on first retry
 const DEFAULT_VALUE = 'Loading...'
@@ -104,6 +90,15 @@ async function getResolvedValue(hook: ReturnType<typeof useRemoteWidget>) {
   await responsePromise
   return hook.getCachedValue()
 }
+
+beforeEach(() => {
+  vi.mocked(setPersistence).mockResolvedValue(undefined)
+  vi.mocked(onAuthStateChanged).mockReturnValue(vi.fn())
+  vi.mocked(onIdTokenChanged).mockReturnValue(vi.fn())
+  vi.mocked(useAuthStore().getAuthHeader).mockImplementation(
+    async () => mockCloudAuth.authHeader
+  )
+})
 
 describe('useRemoteWidget', () => {
   describe('initialization', () => {

@@ -50,6 +50,8 @@ jobs:
         with:
           workflow-id: ci-perf-report.yaml
           head-sha: ${{ steps.pr-meta.outputs.head-sha }}
+          artifact-name: perf-metrics
+          not-found-status: skip
           token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Download size data (current)
@@ -99,6 +101,7 @@ jobs:
           name: perf-metrics
           run_id: ${{ steps.find-perf.outputs.run-id }}
           path: test-results/
+          if_no_artifact_found: warn
 
       - name: Download perf baseline
         if: steps.pr-meta.outputs.skip != 'true' && steps.find-perf.outputs.status == 'ready'
@@ -165,19 +168,12 @@ jobs:
               }
             }
 
-      - name: Read PR report
-        id: report
-        if: steps.pr-meta.outputs.skip != 'true'
-        uses: juliangruber/read-file-action@271ff311a4947af354c6abcd696a306553b9ec18 # v1.1.8
-        with:
-          path: ./pr-report.md
-
       - name: Upsert bundle/perf/coverage section into unified report
         if: steps.pr-meta.outputs.skip != 'true'
         uses: ./.github/actions/upsert-comment-section
         with:
           pr-number: ${{ steps.pr-meta.outputs.number }}
           section-name: ci-metrics
-          section-content: ${{ steps.report.outputs.content }}
+          section-content-file: ./pr-report.md
           comment-marker: '<!-- COMFYUI_FRONTEND_PR_REPORT -->'
           token: ${{ secrets.GITHUB_TOKEN }}

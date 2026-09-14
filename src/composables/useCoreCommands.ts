@@ -3,7 +3,6 @@ import { useAuthActions } from '@/composables/auth/useAuthActions'
 import { useSelectedLiteGraphItems } from '@/composables/canvas/useSelectedLiteGraphItems'
 import { visibleCanvasViewport } from '@/composables/canvas/visibleCanvasViewport'
 import { useSubgraphOperations } from '@/composables/graph/useSubgraphOperations'
-import { startModelNodeDragFromAsset } from '@/composables/node/startModelNodeDragFromAsset'
 import { useExternalLink } from '@/composables/useExternalLink'
 import { useModelSelectorDialog } from '@/composables/useModelSelectorDialog'
 import { useRunButtonTelemetry } from '@/composables/useRunButtonTelemetry'
@@ -22,7 +21,7 @@ import {
 } from '@/lib/litegraph/src/litegraph'
 import type { Point } from '@/lib/litegraph/src/litegraph'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
-import { useAssetBrowserDialog } from '@/platform/assets/composables/useAssetBrowserDialog'
+import { openModelLibraryBrowser } from '@/platform/assets/composables/openModelLibraryBrowser'
 import { isSalesManagedTier } from '@/platform/cloud/subscription/constants/tierPricing'
 import { isCloud } from '@/platform/distribution/types'
 import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
@@ -191,8 +190,6 @@ export function useCoreCommands(): ComfyCommand[] {
       category: 'essentials' as const,
       function: async () => {
         const workflow = useWorkflowStore().activeWorkflow as ComfyWorkflow
-        if (!workflow) return
-
         await workflowService.saveWorkflow(workflow)
       }
     },
@@ -214,8 +211,6 @@ export function useCoreCommands(): ComfyCommand[] {
       category: 'essentials' as const,
       function: async () => {
         const workflow = useWorkflowStore().activeWorkflow as ComfyWorkflow
-        if (!workflow) return
-
         await workflowService.saveWorkflowAs(workflow)
       }
     },
@@ -270,7 +265,7 @@ export function useCoreCommands(): ComfyCommand[] {
         if (dialogStore.isDialogOpen('global-mask-editor')) {
           maskEditorStore.canvasHistory.undo()
         } else {
-          await getTracker()?.undo?.()
+          await getTracker()?.undo()
         }
       }
     },
@@ -283,7 +278,7 @@ export function useCoreCommands(): ComfyCommand[] {
         if (dialogStore.isDialogOpen('global-mask-editor')) {
           maskEditorStore.canvasHistory.redo()
         } else {
-          await getTracker()?.redo?.()
+          await getTracker()?.redo()
         }
       }
     },
@@ -386,10 +381,10 @@ export function useCoreCommands(): ComfyCommand[] {
       category: 'view-controls' as const,
       function: () => {
         const ds = app.canvas.ds
-        ds.changeScale(
-          ds.scale * 1.1,
-          ds.element ? [ds.element.width / 2, ds.element.height / 2] : undefined
-        )
+        ds.changeScale(ds.scale * 1.1, [
+          ds.element.width / 2,
+          ds.element.height / 2
+        ])
         app.canvas.setDirty(true, true)
       }
     },
@@ -400,10 +395,10 @@ export function useCoreCommands(): ComfyCommand[] {
       category: 'view-controls' as const,
       function: () => {
         const ds = app.canvas.ds
-        ds.changeScale(
-          ds.scale / 1.1,
-          ds.element ? [ds.element.width / 2, ds.element.height / 2] : undefined
-        )
+        ds.changeScale(ds.scale / 1.1, [
+          ds.element.width / 2,
+          ds.element.height / 2
+        ])
         app.canvas.setDirty(true, true)
       }
     },
@@ -415,7 +410,7 @@ export function useCoreCommands(): ComfyCommand[] {
         } Nodes 2.0`,
       function: async () => {
         const settingStore = useSettingStore()
-        const current = settingStore.get('Comfy.VueNodes.Enabled') ?? false
+        const current = settingStore.get('Comfy.VueNodes.Enabled')
         await settingStore.set('Comfy.VueNodes.Enabled', !current)
       }
     },
@@ -623,7 +618,7 @@ export function useCoreCommands(): ComfyCommand[] {
       category: 'essentials' as const,
       function: () => {
         const { canvas } = app
-        if (!canvas.selectedItems?.size) {
+        if (!canvas.selectedItems.size) {
           toastStore.add({
             severity: 'error',
             summary: t('toastMessages.nothingToGroup'),
@@ -916,7 +911,7 @@ export function useCoreCommands(): ComfyCommand[] {
       icon: 'icon-[lucide--copy]',
       label: 'Copy',
       function: () => {
-        if (app.canvas.selectedItems?.size) {
+        if (app.canvas.selectedItems.size) {
           app.canvas.copyToClipboard()
         }
       }
@@ -1068,15 +1063,6 @@ export function useCoreCommands(): ComfyCommand[] {
         if (!graph) throw new TypeError('Canvas has no graph or subgraph set.')
 
         const res = graph.convertToSubgraph(canvas.selectedItems)
-        if (!res) {
-          toastStore.add({
-            severity: 'error',
-            summary: t('toastMessages.cannotCreateSubgraph'),
-            detail: t('toastMessages.failedToConvertToSubgraph')
-          })
-          return
-        }
-
         const { node } = res
         canvas.select(node)
         canvasStore.updateSelectedItems()
@@ -1174,8 +1160,8 @@ export function useCoreCommands(): ComfyCommand[] {
         const subgraph = canvas.subgraph
         if (!subgraph) return
 
-        const extra = (subgraph.extra ??= {}) as Record<string, unknown>
-        const currentDescription = (extra.BlueprintDescription as string) ?? ''
+        const extra = subgraph.extra as Record<string, unknown>
+        const currentDescription = extra.BlueprintDescription as string
 
         let description: string | null | undefined
         const rawDescription = metadata?.description
@@ -1193,7 +1179,7 @@ export function useCoreCommands(): ComfyCommand[] {
         if (description === null) return
 
         extra.BlueprintDescription = description.trim() || undefined
-        workflowStore.activeWorkflow?.changeTracker?.captureCanvasState()
+        workflowStore.activeWorkflow?.changeTracker.captureCanvasState()
       }
     },
     {
@@ -1211,7 +1197,7 @@ export function useCoreCommands(): ComfyCommand[] {
             .map((s) => s.trim())
             .filter(Boolean)
 
-        const extra = (subgraph.extra ??= {}) as Record<string, unknown>
+        const extra = subgraph.extra as Record<string, unknown>
 
         let aliases: string[]
         const rawAliases = metadata?.aliases
@@ -1230,7 +1216,7 @@ export function useCoreCommands(): ComfyCommand[] {
         }
 
         extra.BlueprintSearchAliases = aliases.length > 0 ? aliases : undefined
-        workflowStore.activeWorkflow?.changeTracker?.captureCanvasState()
+        workflowStore.activeWorkflow?.changeTracker.captureCanvasState()
       }
     },
     {
@@ -1313,52 +1299,7 @@ export function useCoreCommands(): ComfyCommand[] {
       label: 'Experimental: Browse Model Assets',
       versionAdded: '1.28.3',
       function: async () => {
-        if (!useSettingStore().get('Comfy.Assets.UseAssetAPI')) {
-          const confirmed = await dialogService.confirm({
-            title: 'Enable Asset API',
-            message:
-              'The Asset API is currently disabled. Would you like to enable it?',
-            type: 'default'
-          })
-
-          if (!confirmed) return
-
-          const settingStore = useSettingStore()
-          await settingStore.set('Comfy.Assets.UseAssetAPI', true)
-          await workflowService.reloadCurrentWorkflow()
-        }
-        const assetBrowserDialog = useAssetBrowserDialog()
-        await assetBrowserDialog.browse({
-          assetType: 'models',
-          title: t('sideToolbar.modelLibrary'),
-          onAssetSelected: (asset) => {
-            const error = startModelNodeDragFromAsset(asset, 'asset_browser')
-            if (error) {
-              toastStore.add({
-                severity: 'error',
-                summary: t('g.error'),
-                detail: t('assetBrowser.failedToCreateNode')
-              })
-              console.error('Node creation failed:', error)
-            }
-          }
-        })
-      }
-    },
-    {
-      id: 'Comfy.ToggleAssetAPI',
-      icon: 'pi pi-database',
-      label: () =>
-        `Experimental: ${
-          useSettingStore().get('Comfy.Assets.UseAssetAPI')
-            ? 'Disable'
-            : 'Enable'
-        } AssetAPI`,
-      function: async () => {
-        const settingStore = useSettingStore()
-        const current = settingStore.get('Comfy.Assets.UseAssetAPI') ?? false
-        await settingStore.set('Comfy.Assets.UseAssetAPI', !current)
-        await useWorkflowService().reloadCurrentWorkflow() // ensure changes take effect immediately
+        await openModelLibraryBrowser()
       }
     },
     {

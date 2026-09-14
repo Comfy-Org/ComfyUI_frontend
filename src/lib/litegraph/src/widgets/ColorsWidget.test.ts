@@ -1,7 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import type { DrawWidgetOptions } from '@/lib/litegraph/src/widgets/BaseWidget'
 
 import { ColorsWidget } from './ColorsWidget'
 
@@ -29,7 +28,7 @@ describe('ColorsWidget', () => {
     )
     expect(widget.type).toBe('colors')
     const ctx = fakeCtx()
-    widget.drawWidget(ctx, { width: 200 } as DrawWidgetOptions)
+    widget.drawWidget(ctx, { width: 200 })
     expect(ctx.fillText).toHaveBeenCalled()
     expect(() => widget.onClick({} as never)).not.toThrow()
   })

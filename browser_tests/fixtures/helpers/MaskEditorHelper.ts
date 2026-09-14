@@ -10,7 +10,11 @@ const RGB_CANVAS_INDEX = 1
 type BrushSliderLabel = 'thickness'
 
 class MaskEditorHelper {
-  constructor(private comfyPage: ComfyPage) {}
+  public readonly previewImage: Locator
+
+  constructor(private comfyPage: ComfyPage) {
+    this.previewImage = comfyPage.page.locator('.image-preview img').first()
+  }
 
   private get page() {
     return this.comfyPage.page
@@ -30,7 +34,7 @@ class MaskEditorHelper {
 
     const imagePreview = this.page.locator('.image-preview')
     await expect(imagePreview).toBeVisible()
-    await expect(imagePreview.locator('img')).toBeVisible()
+    await expect(this.previewImage).toBeVisible()
     await expect(imagePreview).toContainText('x')
 
     return {

@@ -23,7 +23,10 @@ export function useKeybindingService() {
 
     const target = event.composedPath()[0] as HTMLElement
     // Let the active menu own Escape without also triggering the global shortcut.
-    if (event.key === 'Escape' && target.closest?.('[role="menu"]')) {
+    if (
+      event.key === 'Escape' &&
+      target.closest('[role="menu"], [role="menubar"]')
+    ) {
       return
     }
 
@@ -131,12 +134,9 @@ export function useKeybindingService() {
 
   async function persistUserKeybindings() {
     await settingStore.setMany({
-      'Comfy.Keybinding.NewBindings': Object.values(
-        keybindingStore.getUserKeybindings()
-      ),
-      'Comfy.Keybinding.UnsetBindings': Object.values(
-        keybindingStore.getUserUnsetKeybindings()
-      )
+      'Comfy.Keybinding.NewBindings': keybindingStore.getUserKeybindingValues(),
+      'Comfy.Keybinding.UnsetBindings':
+        keybindingStore.getUserUnsetKeybindingValues()
     })
   }
 

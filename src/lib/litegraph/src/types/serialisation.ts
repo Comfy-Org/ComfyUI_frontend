@@ -1,4 +1,5 @@
 import type { UUID } from '@/utils/uuid'
+import type { LinkPresentation } from '@/types/linkPresentation'
 
 import type { LGraphConfig, LGraphExtra, SubgraphId } from '../LGraph'
 import type { IGraphGroupFlags } from '../LGraphGroup'
@@ -218,7 +219,7 @@ export interface SerialisableReroute {
   floating?: FloatingRerouteSlot
 }
 
-export interface SerialisableLLink {
+export interface SerialisableLLink extends LinkPresentation {
   /** Link ID */
   id: number
   /** Output node ID */
