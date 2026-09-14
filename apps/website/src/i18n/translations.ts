@@ -9951,8 +9951,9 @@ Enterprise`
   },
   'workshop.error.retry': { en: 'Try again', 'zh-CN': '重试' },
   'workshop.error.timeout': {
-    en: 'The provider took too long to answer. You were not charged.',
-    'zh-CN': '提供方响应超时。未扣费。'
+    en: 'The provider took too long to answer. A run that finishes later is still billed, so retry the unchanged request rather than starting a new one.',
+    'zh-CN':
+      '提供方响应超时。若该运行随后完成仍会扣费，请重试未更改的请求，而不要开始新的运行。'
   },
   'workshop.error.lowCredits': {
     en: 'You have {credits} credits and this run needs {n}. Add credits to continue; your inputs stay here.',
