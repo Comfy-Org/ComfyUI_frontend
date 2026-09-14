@@ -152,17 +152,19 @@ describe('billingOperationStore', () => {
       return store
     }
 
-    it('carries a parked-on-checkout phase onto the operation', async () => {
+    it('exposes checkout recovery after polling without an action URL', async () => {
       const store = await pollPhase('awaiting_payment_method')
 
       await vi.waitFor(() =>
-        expect(store.getOperation('op-phase')?.phase).toBe(
-          'awaiting_payment_method'
-        )
+        expect(store.subscriptionActionOperation).toMatchObject({
+          opId: 'op-phase',
+          phase: 'awaiting_payment_method',
+          actionUrl: null
+        })
       )
     })
 
-    it('carries a parked-on-invoice phase onto the operation', async () => {
+    it('does not expose checkout recovery while awaiting invoice payment', async () => {
       const store = await pollPhase('awaiting_invoice_payment')
 
       await vi.waitFor(() =>
@@ -170,6 +172,7 @@ describe('billingOperationStore', () => {
           'awaiting_invoice_payment'
         )
       )
+      expect(store.subscriptionActionOperation).toBeUndefined()
     })
 
     it('leaves the phase null when the server reports none', async () => {
