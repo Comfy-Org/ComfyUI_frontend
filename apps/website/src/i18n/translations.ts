@@ -9904,6 +9904,10 @@ Enterprise`
     en: 'Use these settings in code',
     'zh-CN': '在代码中使用这些设置'
   },
+  'workshop.run.copyRequestId': {
+    en: 'Copy request ID',
+    'zh-CN': '复制请求 ID'
+  },
   'workshop.output.expires': {
     en: 'Output links expire 24 hours after a run. Download anything you want to keep.',
     'zh-CN': '输出链接在运行后 24 小时失效。请下载保存。'
