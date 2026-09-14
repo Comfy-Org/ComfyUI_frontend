@@ -105,12 +105,14 @@ jobs:
           echo '🔍 Checking production dependency licenses...'
 
           # Use license-checker-rseidelsohn (actively maintained fork, handles monorepos)
-          # Exclude internal @comfyorg packages from license check
-          # NOTE: @comfyorg/comfy-multi-player is first-party and excluded on the same
-          # basis as the rest, but unlike them it currently ships NO license field and
-          # NO LICENSE file (Comfy-Org/comfy-multi-player has neither in-repo). This
-          # exclusion is therefore load-bearing, not cosmetic — remove it once the
-          # package declares a license and a version carrying it is published.
+          # Exclude internal @comfyorg packages from license check.
+          # NOTE on @comfyorg/account: it is `private: true`, and license-checker
+          # reports a private package as UNLICENSED regardless of its `license`
+          # field, so it must stay in this exclusion list. The `license: MIT`
+          # metadata is added ahead of the FE-2171 publish work, which unsets
+          # `private` and removes this exclusion — at which point validate-licenses
+          # will validate the account license directly. This note covers account
+          # only; the other entries here are excluded for their own reasons.
           # Run in if condition to capture exit code
           if pnpx license-checker-rseidelsohn@4 \
             --production \
