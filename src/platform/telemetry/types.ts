@@ -846,6 +846,11 @@ export interface BillingFailure {
   error_code?: BillingErrorCode
 }
 
+type BillingIntent = {
+  stage: 'intent'
+  outcome: 'pending'
+}
+
 type BillingStarted = {
   stage: 'started'
   outcome: 'pending'
@@ -879,7 +884,7 @@ type SubscriptionCheckoutBillingEvent = {
    * `started` event through to this terminal event.
    */
   duration_ms?: number
-} & (BillingStarted | BillingSucceeded | BillingFailed)
+} & (BillingIntent | BillingStarted | BillingSucceeded | BillingFailed)
 
 type BillingOperationBillingEvent = {
   operation: 'operation'
@@ -914,7 +919,7 @@ type TopupBillingEvent = {
    * `started` event through to this terminal event.
    */
   duration_ms?: number
-} & (BillingStarted | BillingSucceeded | BillingFailed)
+} & (BillingIntent | BillingStarted | BillingSucceeded | BillingFailed)
 
 type DowngradeToPersonalBillingEvent = {
   operation: 'downgrade_to_personal'
@@ -1193,6 +1198,8 @@ export const TelemetryEvents = {
   BEGIN_CHECKOUT: 'begin_checkout',
 
   // Canonical Billing Lifecycle
+  BILLING_SUBSCRIPTION_CHECKOUT_INTENT: 'billing.subscription_checkout.intent',
+  BILLING_TOPUP_INTENT: 'billing.topup.intent',
   BILLING_SUBSCRIPTION_CHECKOUT_STARTED:
     'billing.subscription_checkout.started',
   BILLING_SUBSCRIPTION_CHECKOUT_SUCCEEDED:
