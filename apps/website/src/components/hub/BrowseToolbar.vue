@@ -25,13 +25,14 @@ import {
 import type { Component } from 'vue'
 import { computed, ref, useTemplateRef, watchEffect } from 'vue'
 
-import { onClickOutside, useMediaQuery } from '@vueuse/core'
+import { onClickOutside, useMediaQuery, useWindowSize } from '@vueuse/core'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
 import type { FacetTemplate, FacetValue } from '../../composables/useFacets'
 import { useFacets } from '../../composables/useFacets'
 import { useSlidingUnderline } from '../../composables/useSlidingUnderline'
+import { useVisualViewport } from '../../composables/useVisualViewport'
 import type {
   FilterBadge,
   HubSort,
@@ -75,6 +76,7 @@ export interface ToolbarLabels {
   readonly typeAll: string
   readonly showResults: string
   readonly showModels: string
+  readonly resize: string
 }
 
 const {
@@ -128,7 +130,16 @@ const pill = useSlidingUnderline(
 const filterOpen = ref(false)
 // A sheet has to escape the toolbar to reach the bottom of the screen: an
 // ancestor that blurs its backdrop would otherwise anchor it.
-const isPhone = useMediaQuery('(max-width: 639px)')
+const isPhone = useMediaQuery('(width < 40rem)')
+const { height: windowHeight } = useWindowSize()
+const { height: visualHeight, offsetTop: visualOffsetTop } = useVisualViewport()
+const phoneBottom = computed(() => {
+  if (!isPhone.value || visualHeight.value === null) return undefined
+  return Math.max(
+    0,
+    windowHeight.value - (visualOffsetTop.value + visualHeight.value)
+  )
+})
 
 // On a phone the panel is a sheet over the page, so the grid behind it stays
 // where it was left.
@@ -270,7 +281,8 @@ const sheetLabels = computed(() => ({
   applied: labels.selected,
   clearAll: labels.clearAll,
   show: showLabel.value,
-  close: labels.filter
+  close: labels.filter,
+  resize: labels.resize
 }))
 
 function phoneToggle(key: string, value: string) {
@@ -299,7 +311,7 @@ function phoneToggle(key: string, value: string) {
         >
           <span
             aria-hidden="true"
-            class="pointer-events-none absolute inset-y-1 left-0 rounded-lg bg-primary-warm-white transition-[translate,width] duration-300 ease-out"
+            class="pointer-events-none absolute inset-y-1 left-0 rounded-lg bg-primary-warm-white transition-all duration-300 ease-out"
             :style="{
               width: `${pill.width}px`,
               translate: `${pill.left}px 0`
@@ -427,7 +439,10 @@ function phoneToggle(key: string, value: string) {
       <div
         v-if="filterOpen"
         ref="panel"
-        class="bg-site-dropdown z-40 flex scrollbar-thin flex-col gap-7 overflow-y-auto border border-white/10 shadow-2xl max-sm:fixed max-sm:inset-x-0 max-sm:bottom-0 max-sm:max-h-[85vh] max-sm:gap-4 max-sm:rounded-t-3xl max-sm:p-5 sm:absolute sm:top-full sm:right-0 sm:mt-3 sm:max-h-[75vh] sm:w-full sm:max-w-4xl sm:rounded-3xl sm:p-8"
+        :style="{
+          bottom: phoneBottom !== undefined ? `${phoneBottom}px` : undefined
+        }"
+        class="bg-site-dropdown z-40 flex scrollbar-thin flex-col gap-7 overflow-y-auto border border-white/10 shadow-2xl max-sm:fixed max-sm:inset-x-0 max-sm:bottom-0 max-sm:max-h-dvh max-sm:gap-4 max-sm:rounded-t-3xl sm:absolute sm:top-full sm:right-0 sm:mt-3 sm:max-h-[75vh] sm:w-full sm:max-w-4xl sm:rounded-3xl sm:p-8"
         data-testid="hub-filter-menu"
       >
         <FacetSheet

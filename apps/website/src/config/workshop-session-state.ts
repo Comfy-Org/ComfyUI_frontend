@@ -14,13 +14,19 @@
  * before use — freshness is valid-on-read, guaranteed by the client, not by
  * these warm-ups.
  */
+import { z } from 'zod'
+
 import type { User } from 'firebase/auth'
 import { computed, effectScope, shallowRef, watch } from 'vue'
 import type { EffectScope } from 'vue'
 
 import type { SessionSnapshot } from '@comfyorg/account/session'
+import { isPermanentSessionError } from '@comfyorg/account/session'
 
-import { useWorkshopAuthFlag } from '../scripts/posthog'
+import {
+  useWorkshopAuthFlag,
+  useWorkshopAuthFlagSettled
+} from '../scripts/posthog'
 import {
   subscribeAuthRefreshTelemetry,
   workshopSessionClient
@@ -39,6 +45,7 @@ const PENDING: SessionSnapshot<User> = {
 
 const snapshot = shallowRef<SessionSnapshot<User>>(PENDING)
 let started = false
+let running = false
 let lifecycle: EffectScope | undefined
 let generation = 0
 let detachIdentity: (() => void) | undefined
@@ -47,6 +54,7 @@ let stopTelemetry: (() => void) | undefined
 let stopFocusListener: (() => void) | undefined
 
 function stopListeners(): void {
+  running = false
   detachIdentity?.()
   detachIdentity = undefined
   stopSnapshot?.()
@@ -57,12 +65,166 @@ function stopListeners(): void {
   stopFocusListener = undefined
 }
 
+// A refresh that means "keep my session fresh" must keep the workspace the
+// session is in: a target-less mint resolves the personal workspace, which
+// reads as the account silently switching itself.
+function currentWorkspaceId(): string | undefined {
+  const current = snapshot.value
+  return current.phase === 'authenticated'
+    ? current.session.workspace.id
+    : current.user
+      ? rememberedWorkspace(current.user.uid)
+      : undefined
+}
+
+const ensureFreshHere: typeof workshopSessionClient.ensureFresh = (
+  user,
+  options
+) =>
+  workshopSessionClient.ensureFresh(user, {
+    workspaceId: currentWorkspaceId(),
+    ...options
+  })
+
+/**
+ * The exchange resolves a target-less boot mint to the personal workspace
+ * by design, so the chosen workspace must be the site's memory: written on
+ * every authenticated snapshot, restored with one targeted re-mint on the
+ * first snapshot after a reload, and dropped if that restore is refused.
+ */
+const REMEMBERED_WORKSPACE_KEY = 'workshop:workspace'
+
+const zRememberedWorkspace = z.object({
+  uid: z.string(),
+  workspaceId: z.string()
+})
+
+function rememberedWorkspace(uid: string): string | undefined {
+  try {
+    const raw = window.localStorage.getItem(REMEMBERED_WORKSPACE_KEY)
+    if (!raw) return undefined
+    const parsed = zRememberedWorkspace.safeParse(JSON.parse(raw))
+    return parsed.success && parsed.data.uid === uid
+      ? parsed.data.workspaceId
+      : undefined
+  } catch {
+    return undefined
+  }
+}
+
+function rememberWorkspace(uid: string, workspaceId: string | undefined): void {
+  try {
+    if (workspaceId)
+      window.localStorage.setItem(
+        REMEMBERED_WORKSPACE_KEY,
+        JSON.stringify({ uid, workspaceId })
+      )
+    else window.localStorage.removeItem(REMEMBERED_WORKSPACE_KEY)
+  } catch {
+    /* storage may be unavailable; the workspace just does not persist */
+  }
+}
+
+let restoredForUid: string | undefined
+
+type AuthenticatedSnapshot = Extract<
+  SessionSnapshot<User>,
+  { phase: 'authenticated' }
+>
+
+function publishTransientWorkspaceRestore(
+  next: AuthenticatedSnapshot,
+  live: SessionSnapshot<User>
+): void {
+  if (live.phase !== 'authenticated') return
+  if (live.session.workspace.id === next.session.workspace.id)
+    snapshot.value = live
+}
+
+async function recoverPersonalWorkspace(
+  next: AuthenticatedSnapshot,
+  live: SessionSnapshot<User>
+): Promise<void> {
+  rememberWorkspace(next.session.uid, undefined)
+  if (live.phase !== 'error') return
+  try {
+    await workshopSessionClient.remint(undefined, {
+      workspaceId: next.session.workspace.id,
+      preserveCredentialOnTransientFailure: true
+    })
+  } catch {
+    // The client remains authoritative in its published error state.
+  }
+}
+
+async function settleFailedWorkspaceRestore(
+  next: AuthenticatedSnapshot,
+  permanent: boolean
+): Promise<void> {
+  const live = workshopSessionClient.getSnapshot()
+  if (live.user?.uid !== next.session.uid) return
+  if (!permanent) {
+    publishTransientWorkspaceRestore(next, live)
+    return
+  }
+  await recoverPersonalWorkspace(next, live)
+}
+
+async function restoreRememberedWorkspace(
+  next: AuthenticatedSnapshot,
+  remembered: string,
+  restoreGeneration: number
+): Promise<void> {
+  let result: Awaited<ReturnType<typeof workshopSessionClient.remint>>
+  try {
+    result = await workshopSessionClient.remint(undefined, {
+      workspaceId: remembered,
+      preserveCredentialOnTransientFailure: true
+    })
+  } catch {
+    return
+  }
+  if (result?.status !== 'error' || generation !== restoreGeneration) return
+  await settleFailedWorkspaceRestore(next, isPermanentSessionError(result.code))
+}
+
+function keepWorkspaceRemembered(): void {
+  const current = snapshot.value
+  if (current.phase !== 'authenticated') return
+  rememberWorkspace(current.session.uid, current.session.workspace.id)
+}
+
+/**
+ * The restore is one extra mint, and publishing the boot's personal
+ * credential first would flash the wrong workspace for its duration. Hold
+ * that first snapshot back - the page stays on its signing-in state - and
+ * publish either the restored workspace or, if the restore is refused, the
+ * held personal one so sign-in still completes.
+ */
+function holdsForRestore(next: SessionSnapshot<User>): boolean {
+  if (next.phase !== 'authenticated') {
+    if (next.phase === 'signed-out') restoredForUid = undefined
+    return false
+  }
+  const { uid, workspace } = next.session
+  if (restoredForUid === uid) return false
+  restoredForUid = uid
+  const remembered = rememberedWorkspace(uid)
+  if (!remembered || remembered === workspace.id) return false
+  const restoreGeneration = generation
+  void restoreRememberedWorkspace(next, remembered, restoreGeneration)
+  return true
+}
+
 async function begin(expectedGeneration: number): Promise<void> {
   const firebase = await import('./workshop-firebase')
   if (generation !== expectedGeneration) return
 
+  running = true
   stopSnapshot = workshopSessionClient.subscribe((next) => {
+    if (holdsForRestore(next)) return
     snapshot.value = next
+    keepWorkspaceRemembered()
   })
   detachIdentity = workshopSessionClient.attachIdentity(
     firebase.workshopIdentity
@@ -71,7 +233,7 @@ async function begin(expectedGeneration: number): Promise<void> {
   // billing stay a separate consumer.
   stopTelemetry = subscribeAuthRefreshTelemetry()
 
-  const onFocus = () => void workshopSessionClient.ensureFresh()
+  const onFocus = () => void ensureFreshHere()
   window.addEventListener('focus', onFocus)
   stopFocusListener = () => window.removeEventListener('focus', onFocus)
 }
@@ -83,17 +245,24 @@ function start(): void {
   // of binding its watcher to whichever component calls this first.
   lifecycle = effectScope(true)
   const enabled = useWorkshopAuthFlag()
+  const settled = useWorkshopAuthFlagSettled()
   lifecycle.run(() => {
     watch(
-      enabled,
-      (on, wasOn) => {
+      [enabled, settled],
+      ([on, isSettled]) => {
+        // A settlement-only change while a session is already live must not
+        // tear it down; only enabling from a stopped state begins a lifecycle.
+        if (on && running) return
         const expectedGeneration = ++generation
         stopListeners()
         snapshot.value = PENDING
         if (!on) {
-          // The flag starts false on every cold load until PostHog answers;
-          // only a real on->off transition means the credential must go.
-          if (wasOn) workshopSessionClient.clearStoredCredential()
+          // Retain the cached credential while the flag is unresolved; only a
+          // settled-off answer means Workshop is disabled and it must go.
+          if (isSettled) {
+            restoredForUid = undefined
+            workshopSessionClient.clearStoredCredential()
+          }
           return
         }
         void begin(expectedGeneration).catch((error: unknown) => {
@@ -133,7 +302,7 @@ export function useWorkshopSession() {
     ),
     settled: computed(() => snapshot.value.phase !== 'pending'),
     signedIn: computed(() => snapshot.value.phase === 'authenticated'),
-    ensureFresh: workshopSessionClient.ensureFresh,
+    ensureFresh: ensureFreshHere,
     remint: workshopSessionClient.remint,
     signOut
   }

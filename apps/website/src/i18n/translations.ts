@@ -69,6 +69,11 @@ const translations = {
     'zh-CN': '显示更多模型'
   },
   'workshop.model.breadcrumb': { en: 'Models', 'zh-CN': '模型' },
+  'workshop.model.back': { en: 'Back to all models', 'zh-CN': '返回全部模型' },
+  'workshop.model.backTo': {
+    en: 'Back to {category}',
+    'zh-CN': '返回{category}'
+  },
   'workshop.model.inputs': { en: 'Model inputs', 'zh-CN': '模型输入' },
   'workshop.model.select': { en: 'Select an option', 'zh-CN': '选择一个选项' },
   'workshop.model.maxFiles': {
@@ -7003,12 +7008,13 @@ Enterprise`
   },
   'events.hero.eyebrow': { en: 'EVENTS', 'zh-CN': '活动' },
   'events.hero.title': {
-    en: 'Creators, all in one place',
+    en: 'Creatives, all in one place',
     'zh-CN': '创作者，齐聚一堂'
   },
   'events.hero.subtitle': {
-    en: 'Upcoming livestreams, hackathons, and events worldwide',
-    'zh-CN': '即将举行的直播、黑客松以及遍布全球的活动'
+    en: "Livestreams, hackathons, and community meetups. Here's how to take part: bring builders together, anywhere in the world, and apply to host a community event.",
+    'zh-CN':
+      '直播、黑客松与社区聚会。参与方式很简单：把创作者聚到一起，无论身在世界何处，申请主办一场社区活动。'
   },
   'events.hero.prevSlide': {
     en: 'Previous featured event',
@@ -7018,24 +7024,189 @@ Enterprise`
     en: 'Next featured event',
     'zh-CN': '下一个精选活动'
   },
-  'events.upcoming.title': {
-    en: 'Upcoming events',
-    'zh-CN': '即将举行的活动'
+  'events.hero.browseEvents': { en: 'Browse events', 'zh-CN': '浏览活动' },
+  'events.hero.hostAnEvent': { en: 'Host an event', 'zh-CN': '主办活动' },
+  'events.directory.title': {
+    en: 'Events around the world',
+    'zh-CN': '世界各地的活动'
   },
-  'events.upcoming.livestream': { en: 'Livestream', 'zh-CN': '直播' },
-  'events.upcoming.addToCalendar': {
+  'events.directory.lead': {
+    en: "Every event shares the same energy: people building with ComfyUI. If you've got an audience and a vision, we want to hear from you.",
+    'zh-CN':
+      '每场活动都洋溢着同样的能量：一群用 ComfyUI 创作的人。如果你有观众、有想法，我们期待听到你的声音。'
+  },
+  'events.directory.count': { en: '{count} events', 'zh-CN': '{count} 场活动' },
+  // zh-CN has no plural form; the key exists so English can say "1 event".
+  'events.directory.countOne': {
+    en: '{count} event',
+    'zh-CN': '{count} 场活动'
+  },
+  'events.directory.searchLabel': {
+    en: 'Search events',
+    'zh-CN': '搜索活动'
+  },
+  'events.directory.searchPlaceholder': {
+    en: 'Search by location, title, or description…',
+    'zh-CN': '按地点、标题或描述搜索…'
+  },
+  'events.directory.typeLabel': { en: 'Event type', 'zh-CN': '活动类型' },
+  'events.directory.allTypes': { en: 'All types', 'zh-CN': '所有类型' },
+  'events.directory.organizerLabel': { en: 'Organizer', 'zh-CN': '主办方' },
+  'events.directory.allOrganizers': {
+    en: 'All organizers',
+    'zh-CN': '所有主办方'
+  },
+  'events.directory.viewLabel': { en: 'View', 'zh-CN': '视图' },
+  'events.directory.view.map': { en: 'Map', 'zh-CN': '地图' },
+  'events.directory.view.cards': { en: 'Cards', 'zh-CN': '卡片' },
+  'events.directory.view.calendar': { en: 'Calendar', 'zh-CN': '日历' },
+  'events.directory.allEvents': { en: 'All events', 'zh-CN': '所有活动' },
+  'events.directory.mapLabel': {
+    en: 'Map of events around the world',
+    'zh-CN': '世界各地活动地图'
+  },
+  'events.directory.clusterLabel': {
+    en: 'Zoom to {count} events here',
+    'zh-CN': '放大查看此处的 {count} 场活动'
+  },
+  'events.directory.saveTheDate': {
+    en: 'Save the date',
+    'zh-CN': '标记日期'
+  },
+  'events.directory.pastBadge': { en: 'Past', 'zh-CN': '已结束' },
+  'events.directory.readMore': { en: 'Read more', 'zh-CN': '展开' },
+  'events.directory.readLess': { en: 'Read less', 'zh-CN': '收起' },
+  'events.directory.learnMore': { en: 'LEARN MORE', 'zh-CN': '了解更多' },
+  'events.directory.sortLabel': { en: 'Sort events', 'zh-CN': '活动排序' },
+  'events.directory.sortLatest': { en: 'Latest', 'zh-CN': '最新' },
+  'events.directory.sortOldest': { en: 'Oldest', 'zh-CN': '最早' },
+  'events.directory.virtual': { en: 'Virtual event', 'zh-CN': '线上活动' },
+  'events.directory.empty': {
+    en: 'No events match those filters yet. Try a broader search.',
+    'zh-CN': '没有符合筛选条件的活动。请尝试放宽搜索条件。'
+  },
+  // Mirrors the community team's Notion taxonomy for who ran an event.
+  'events.organizer.comfy': { en: 'Comfy', 'zh-CN': 'Comfy 官方' },
+  'events.organizer.community': { en: 'Community', 'zh-CN': '社区' },
+  'events.organizer.partner': { en: 'Partner', 'zh-CN': '合作伙伴' },
+  // Transcribed from the community team's Notion copy for this section.
+  'events.host.title': {
+    en: 'Host a Comfy event!',
+    'zh-CN': '主办一场 Comfy 活动！'
+  },
+  'events.host.lead': {
+    en: 'Got an event coming up, or an idea in the works? Submit it for review to get support from Comfy.',
+    'zh-CN':
+      '有活动即将举办，或者有想法正在酝酿？提交给我们审核，获得 Comfy 的支持。'
+  },
+  'events.host.applyToHost': { en: 'Apply to host', 'zh-CN': '申请主办' },
+  'events.host.step1.title': {
+    en: 'Is your event eligible?',
+    'zh-CN': '你的活动符合条件吗？'
+  },
+  'events.host.step1.intro': {
+    en: 'Run through this before you spend time on an application.',
+    'zh-CN': '在花时间准备申请之前，先过一遍下面几条。'
+  },
+  'events.host.step1.checklistLead': {
+    en: 'Make sure your event:',
+    'zh-CN': '请确认你的活动：'
+  },
+  'events.host.step1.check1': {
+    en: 'Centers on using Comfy',
+    'zh-CN': '以使用 Comfy 为主要内容'
+  },
+  'events.host.step1.check2': {
+    en: 'Is at least 3 weeks away (so we have time to review your application and get you set up)',
+    'zh-CN': '距离举办至少还有 3 周（这样我们才有时间审核申请并帮你做好准备）'
+  },
+  'events.host.step1.check3': {
+    en: 'Expects 20 or more participants',
+    'zh-CN': '预计有 20 人或以上参与'
+  },
+  'events.host.step1.whoTitle': {
+    en: 'Who can host?',
+    'zh-CN': '谁可以主办？'
+  },
+  'events.host.step1.whoBody': {
+    en: "Anyone passionate about bringing the Comfy community together. Our hosts include student organizers, studio leads, custom node authors, community organizers, and people who just love Comfy. You don't need event planning experience or a large following, just an idea and a will to make it happen.",
+    'zh-CN':
+      '任何有热情把 Comfy 社区聚到一起的人都可以。我们的主办方里有学生组织者、工作室负责人、自定义节点作者、社区组织者，也有单纯喜欢 Comfy 的人。你不需要办活动的经验，也不需要很多粉丝，有一个想法和把它做成的决心就够了。'
+  },
+  'events.host.step2.title': {
+    en: 'Get planning!',
+    'zh-CN': '开始筹备吧！'
+  },
+  'events.host.step2.body': {
+    en: 'Lock in your concept, venue, and ideal headcount, and get your event page up. If you want a reference, look at what other hosts have run.',
+    'zh-CN':
+      '确定活动主题、场地和理想的参与人数，然后把活动页面做出来。如果想找些参考，可以看看其他主办方办过什么。'
+  },
+  'events.host.step2.browseLink': {
+    en: 'Browse events',
+    'zh-CN': '浏览活动'
+  },
+  'events.host.step3.title': {
+    en: 'Apply',
+    'zh-CN': '提交申请'
+  },
+  'events.host.step3.body': {
+    en: "Whether you're starting from scratch or already deep in planning, send us your details. Approved hosts get our organizer toolkit and a chance to be featured on our official channels.",
+    'zh-CN':
+      '无论你是从零开始，还是已经在筹备中，把活动详情发给我们。通过审核的主办方将获得我们的主办方工具包，并有机会登上我们的官方渠道。'
+  },
+  'events.host.step4.title': {
+    en: 'Receive your organizer toolkit',
+    'zh-CN': '领取你的主办方工具包'
+  },
+  'events.host.step4.body': {
+    en: "We review every application and reply by email within 5 business days. If your event is eligible, you'll receive:",
+    'zh-CN':
+      '我们会审核每一份申请，并在 5 个工作日内通过邮件回复。如果你的活动符合条件，你将获得：'
+  },
+  'events.host.step4.item1.title': {
+    en: 'Comfy Event Organizer Playbook',
+    'zh-CN': 'Comfy 活动主办方手册'
+  },
+  'events.host.step4.item1.body': {
+    en: 'It covers everything you need to know about putting on a Comfy event, at any stage of planning.',
+    'zh-CN':
+      '这份指南涵盖了主办一场 Comfy 活动需要知道的一切，无论筹备到哪个阶段都用得上。'
+  },
+  'events.host.step4.item2.title': {
+    en: 'Brand assets and Comfy media',
+    'zh-CN': '品牌素材和 Comfy 影音素材'
+  },
+  'events.host.step4.item2.body': {
+    en: 'Use them in your promotional materials and play them at your event.',
+    'zh-CN': '可用于你的宣传物料，也可以在活动现场播放。'
+  },
+  'events.host.step4.item3.title': {
+    en: 'Your event listed on our event page',
+    'zh-CN': '你的活动登上我们的活动页面'
+  },
+  'events.host.step5.title': {
+    en: 'Host!',
+    'zh-CN': '举办活动！'
+  },
+  'events.host.step5.body': {
+    en: "Have fun. Share what happened, and we'll help get it in front of the wider Comfy community.",
+    'zh-CN':
+      '好好享受。活动结束后把现场情况分享给我们，我们会帮你把它传播给更广泛的 Comfy 社区。'
+  },
+  'events.calendar.addToCalendar': {
     en: 'Add to calendar',
     'zh-CN': '添加到日历'
   },
-  'events.upcoming.calendarGoogle': {
+  'events.calendar.google': {
     en: 'Google Calendar',
     'zh-CN': 'Google 日历'
   },
-  'events.upcoming.calendarApple': {
+  'events.calendar.apple': {
     en: 'Apple Calendar',
     'zh-CN': 'Apple 日历'
   },
-  'events.upcoming.calendarOutlook': {
+  'events.calendar.outlook': {
     en: 'Outlook',
     'zh-CN': 'Outlook'
   },
@@ -7045,11 +7216,14 @@ Enterprise`
   },
   'events.past.filterAll': { en: 'ALL', 'zh-CN': '全部' },
   'events.past.watchNow': { en: 'WATCH NOW', 'zh-CN': '立即观看' },
+  'events.past.learnMore': { en: 'LEARN MORE', 'zh-CN': '了解更多' },
   'events.past.loadMore': { en: 'LOAD MORE', 'zh-CN': '加载更多' },
   'events.videoDialog.close': { en: 'Close', 'zh-CN': '关闭' },
   'events.category.livestream': { en: 'Livestream', 'zh-CN': '直播' },
   'events.category.hackathon': { en: 'Hackathon', 'zh-CN': '黑客松' },
-  'events.category.community': { en: 'Community', 'zh-CN': '社区' },
+  'events.category.workshop': { en: 'Workshop', 'zh-CN': '工作坊' },
+  'events.category.meetup': { en: 'Meetup', 'zh-CN': '见面会' },
+  'events.category.conference': { en: 'Conference', 'zh-CN': '大会' },
 
   // Brand Portal page (/brand)
   'brand.page.title': {
@@ -9088,15 +9262,34 @@ Enterprise`
   'nav.accountMenu': { en: 'Account menu', 'zh-CN': '账户菜单' },
   'nav.credits': { en: 'credits', 'zh-CN': '积分' },
   'nav.noCredits': { en: 'No credits', 'zh-CN': '无积分' },
-  'nav.buyCredits': { en: 'Buy credits', 'zh-CN': '购买积分' },
+  'nav.buyCredits': { en: 'Add credits', 'zh-CN': '添加积分' },
   'nav.creditsLabel': { en: 'Credits', 'zh-CN': '积分' },
   'nav.workspaces': { en: 'Workspaces', 'zh-CN': '工作区' },
+  'nav.workspacesError': {
+    en: 'Could not load workspaces.',
+    'zh-CN': '无法加载工作区。'
+  },
+  'nav.workspacesLoading': {
+    en: 'Loading workspaces…',
+    'zh-CN': '正在加载工作区…'
+  },
+  'nav.workspacesEmpty': {
+    en: 'No workspaces found.',
+    'zh-CN': '未找到工作区。'
+  },
+  'nav.workspaceSwitchError': {
+    en: 'Could not switch workspaces. Check your connection and try again.',
+    'zh-CN': '无法切换工作区。请检查网络连接后重试。'
+  },
+  'nav.switchWorkspace': {
+    en: 'Switch workspace',
+    'zh-CN': '切换工作区'
+  },
   'nav.planAndCredits': { en: 'Plan & credits', 'zh-CN': '套餐与积分' },
   'nav.workspaceSettings': {
     en: 'Workspace settings',
     'zh-CN': '工作区设置'
   },
-  'nav.switchWorkspace': { en: 'Switch workspace', 'zh-CN': '切换工作区' },
   'nav.planFree': { en: 'Free', 'zh-CN': '免费' },
   'nav.roleOwner': { en: 'Owner', 'zh-CN': '所有者' },
   'nav.roleMember': { en: 'Member', 'zh-CN': '成员' },
@@ -9145,6 +9338,14 @@ Enterprise`
     en: 'Back to all categories',
     'zh-CN': '返回所有类别'
   },
+  'workshop.sections.browseAll': {
+    en: 'Browse all models',
+    'zh-CN': '浏览所有模型'
+  },
+  'workshop.sections.allModels': {
+    en: 'All models',
+    'zh-CN': '所有模型'
+  },
   'workshop.sections.scrollBack': {
     en: 'Scroll back',
     'zh-CN': '向前滚动'
@@ -9172,8 +9373,8 @@ Enterprise`
     'zh-CN': '生成视频'
   },
   'workshop.useCase.animateImages': {
-    en: 'Animate images',
-    'zh-CN': '让图像动起来'
+    en: 'Image to video',
+    'zh-CN': '图像生成视频'
   },
   'workshop.useCase.editVideos': { en: 'Edit videos', 'zh-CN': '编辑视频' },
   'workshop.useCase.3d': { en: '3D', 'zh-CN': '3D' },
@@ -9183,6 +9384,10 @@ Enterprise`
   'workshop.search.clear': { en: 'Clear search', 'zh-CN': '清除搜索' },
   'workshop.search.done': { en: 'Done', 'zh-CN': '完成' },
   'workshop.search.close': { en: 'Close search', 'zh-CN': '关闭搜索' },
+  'workshop.filter.resize': {
+    en: 'Drag to resize the filters',
+    'zh-CN': '拖动调整筛选器高度'
+  },
   'workshop.search.show': {
     en: 'Show {n} models',
     'zh-CN': '显示 {n} 个模型'
@@ -9213,7 +9418,7 @@ Enterprise`
   },
   'workshop.filter.search': { en: 'Search…', 'zh-CN': '搜索…' },
   'workshop.sort.label': { en: 'Sort', 'zh-CN': '排序' },
-  'workshop.sort.popular': { en: 'Most examples', 'zh-CN': '示例最多' },
+  'workshop.sort.popular': { en: 'Recommended', 'zh-CN': '推荐' },
   'workshop.sort.name': { en: 'Name A to Z', 'zh-CN': '名称 A 到 Z' },
   'workshop.sort.priceAsc': {
     en: 'Price: low to high',
@@ -9339,42 +9544,92 @@ Enterprise`
     'zh-CN': '浏览全部'
   },
   'workshop.credits.title': {
-    en: 'Payment happens on Stripe',
-    'zh-CN': '支付在 Stripe 完成'
+    en: 'Add credits',
+    'zh-CN': '添加积分'
   },
   'workshop.credits.body': {
-    en: 'Pick a top-up here and finish the purchase on Stripe Checkout. We send the page you are on as the return address, so you land back here with your inputs as you left them:',
-    'zh-CN':
-      '在此选择充值额度，然后在 Stripe Checkout 完成支付。我们会带上当前页面作为返回地址，付款后你会回到这里，输入内容保持原样：'
+    en: 'Pick a bundle, or choose a custom amount.',
+    'zh-CN': '选择一个额度，或自定义金额。'
   },
-  'workshop.credits.continue': {
-    en: 'Continue to Stripe',
-    'zh-CN': '前往 Stripe'
+  'workshop.credits.continue': { en: 'Continue', 'zh-CN': '继续' },
+  'workshop.credits.custom': {
+    en: 'Custom · $5 – $4,739',
+    'zh-CN': '自定义 · $5 – $4,739'
   },
-  'workshop.credits.cancel': { en: 'Stay here', 'zh-CN': '留在此页' },
-  'workshop.credits.checkout': {
-    en: 'Checkout',
-    'zh-CN': '结账'
-  },
-  'workshop.credits.checkoutNote': {
-    en: 'Stripe hosts this page. It stands in here so the round trip can be reviewed end to end.',
-    'zh-CN': '此页面由 Stripe 托管。这里以模拟代替，以便完整体验整个流程。'
-  },
-  'workshop.credits.pay': { en: 'Pay {usd}', 'zh-CN': '支付 {usd}' },
-  'workshop.credits.back': { en: 'Back', 'zh-CN': '返回' },
+  'workshop.credits.less': { en: 'Less', 'zh-CN': '减少' },
+  'workshop.credits.more': { en: 'More', 'zh-CN': '增加' },
+  'workshop.credits.cancel': { en: 'Cancel', 'zh-CN': '取消' },
   'workshop.credits.done': {
     en: '{n} credits added',
     'zh-CN': '已添加 {n} 积分'
-  },
-  'workshop.credits.doneBody': {
-    en: 'You are back on the model page, with your inputs exactly as you left them.',
-    'zh-CN': '你已回到模型页面，输入内容与离开时完全一致。'
   },
   'workshop.credits.resume': {
     en: 'Back to the model',
     'zh-CN': '返回模型'
   },
   'workshop.credits.close': { en: 'Close', 'zh-CN': '关闭' },
+  'workshop.credits.waitingTitle': {
+    en: 'Checking your credit balance',
+    'zh-CN': '正在检查积分余额'
+  },
+  'workshop.credits.waitingBody': {
+    en: 'You returned from checkout. This page will update if new credits arrive.',
+    'zh-CN': '你已从结账页返回。新积分到账后，此页面会自动更新。'
+  },
+  'workshop.credits.waitingPolling': {
+    en: 'Checking for credits…',
+    'zh-CN': '正在查询积分…'
+  },
+  'workshop.credits.reopenPrompt': {
+    en: 'Lost the tab?',
+    'zh-CN': '不小心关闭了？'
+  },
+  'workshop.credits.reopen': {
+    en: 'Reopen checkout',
+    'zh-CN': '重新打开结账页'
+  },
+  'workshop.credits.closingIsSafe': {
+    en: 'Closing this won’t affect your payment.',
+    'zh-CN': '关闭此窗口不会影响你的付款。'
+  },
+  'workshop.credits.addedTo': {
+    en: 'Added to {workspace}. Your inputs are as you left them.',
+    'zh-CN': '已添加到 {workspace}。你的输入保持原样。'
+  },
+  'workshop.credits.previousBalance': {
+    en: 'Previous balance',
+    'zh-CN': '原有余额'
+  },
+  'workshop.credits.added': { en: 'Added', 'zh-CN': '新增' },
+  'workshop.credits.newBalance': { en: 'New balance', 'zh-CN': '当前余额' },
+  'workshop.credits.heldTitle': {
+    en: 'No new credits detected',
+    'zh-CN': '未检测到新积分'
+  },
+  'workshop.credits.heldBody': {
+    en: 'The checkout may have been cancelled, or its credits may still be processing. Check your balance before trying again.',
+    'zh-CN': '结账可能已取消，或积分仍在处理中。再次尝试前请先检查余额。'
+  },
+  'workshop.credits.heldSupport': {
+    en: 'Checkout reference',
+    'zh-CN': '结账参考编号'
+  },
+  'workshop.credits.checkoutOpenedTitle': {
+    en: 'Continue to checkout',
+    'zh-CN': '继续结账'
+  },
+  'workshop.credits.checkoutOpenedBody': {
+    en: 'Open secure checkout in a new tab. Your model inputs will stay here.',
+    'zh-CN': '请在新标签页中打开安全结账。你的模型输入会保留在这里。'
+  },
+  'workshop.credits.openCheckout': {
+    en: 'Open checkout',
+    'zh-CN': '打开结账页'
+  },
+  'workshop.credits.contactSupport': {
+    en: 'Contact support',
+    'zh-CN': '联系客服'
+  },
   'workshop.media.label': {
     en: 'Browse by output',
     'zh-CN': '按输出浏览'
@@ -9503,14 +9758,14 @@ Enterprise`
     en: 'Upload failed. Try again or paste a reachable URL.',
     'zh-CN': '上传失败。请重试或粘贴可访问的网址。'
   },
-  'workshop.form.signInBeforeUpload': {
-    en: 'Sign in before uploading files. Your prompt and settings will be kept.',
-    'zh-CN': '请先登录再上传文件。你的提示词和设置会保留。'
+  'workshop.form.draftRestoreFailed': {
+    en: 'Some saved inputs could not be restored. Check your inputs and select your files again.',
+    'zh-CN': '部分已保存的输入无法恢复。请检查输入并重新选择文件。'
   },
   'workshop.form.requestTooLarge': {
-    en: 'The combined images and prompt exceed Router’s 10 MiB request limit. Use smaller images or a shorter prompt.',
+    en: 'The combined images and prompt exceed Comfy Router’s 10 MiB request limit. Use smaller images or a shorter prompt.',
     'zh-CN':
-      '图片和提示词的总大小超过 Router 的 10 MiB 请求限制。请使用更小的图片或缩短提示词。'
+      '图片和提示词的总大小超过 Comfy Router 的 10 MiB 请求限制。请使用更小的图片或缩短提示词。'
   },
   'workshop.form.badType': {
     en: 'File type not supported',
@@ -9542,8 +9797,8 @@ Enterprise`
   'workshop.dialogue.add': { en: 'Add turn', 'zh-CN': '添加一段' },
   'workshop.dialogue.remove': { en: 'Remove turn', 'zh-CN': '移除此段' },
   'workshop.run.mappingUnavailable': {
-    en: 'Router execution is not enabled for this model yet.',
-    'zh-CN': '此模型尚未启用 Router 执行。'
+    en: 'Comfy Router execution is not enabled for this model yet.',
+    'zh-CN': '此模型尚未启用 Comfy Router 执行。'
   },
   'workshop.model.incomplete': { en: 'Incomplete', 'zh-CN': '尚未完善' },
   'workshop.model.viewDetails': { en: 'View details', 'zh-CN': '查看详情' },
@@ -9552,13 +9807,17 @@ Enterprise`
     'zh-CN': '暂不支持运行'
   },
   'workshop.model.missingInputSchema': {
-    en: 'This model is listed by Router, but its input schema is not available yet. You can browse its known details; Run and API snippets will be enabled when the schema is added.',
+    en: 'This model is listed by Comfy Router, but its input schema is not available yet. You can browse its known details; Run and API snippets will be enabled when the schema is added.',
     'zh-CN':
-      'Router 已列出此模型，但其输入架构尚未提供。你可以查看已有信息；添加架构后将启用运行和 API 代码示例。'
+      'Comfy Router 已列出此模型，但其输入架构尚未提供。你可以查看已有信息；添加架构后将启用运行和 API 代码示例。'
   },
   'workshop.run.requestId': { en: 'Request ID:', 'zh-CN': '请求 ID：' },
   'workshop.run.cancel': { en: 'Cancel', 'zh-CN': '取消' },
   'workshop.run.running': { en: 'Generating…', 'zh-CN': '生成中…' },
+  'workshop.run.leavePage': {
+    en: 'A model is still running. Leaving now will cancel it. Leave this page?',
+    'zh-CN': '模型仍在运行。现在离开将取消生成。要离开此页面吗？'
+  },
   'workshop.run.policy': {
     en: 'Disabled by your workspace policy',
     'zh-CN': '已被工作区策略禁用'
@@ -9600,6 +9859,10 @@ Enterprise`
   'workshop.output.earlier': {
     en: 'Earlier runs this session',
     'zh-CN': '本次会话的早前运行'
+  },
+  'workshop.output.earlierRun': {
+    en: 'Earlier run {number}',
+    'zh-CN': '早前运行 {number}'
   },
   'workshop.output.latest': { en: 'Latest', 'zh-CN': '最新' },
   'workshop.output.placeholder': {
@@ -9649,8 +9912,8 @@ Enterprise`
     'zh-CN': '内容或工作区策略阻止了此请求。'
   },
   'workshop.error.noCredits': {
-    en: 'Not enough credits. Buy credits to continue.',
-    'zh-CN': '积分不足。请购买积分后继续。'
+    en: 'Not enough credits. Add credits to continue.',
+    'zh-CN': '积分不足。请添加积分后继续。'
   },
   'workshop.error.unavailable': {
     en: 'This model is temporarily unavailable.',
@@ -9666,14 +9929,14 @@ Enterprise`
     'zh-CN': '提供方响应超时。未扣费。'
   },
   'workshop.error.lowCredits': {
-    en: 'You have {credits} credits and this run needs {n}. Buy credits to continue; your inputs stay here.',
+    en: 'You have {credits} credits and this run needs {n}. Add credits to continue; your inputs stay here.',
     'zh-CN':
-      '你有 {credits} 积分，本次运行需要 {n}。购买积分后继续，你的输入会保留。'
+      '你有 {credits} 积分，本次运行需要 {n}。添加积分后继续，你的输入会保留。'
   },
   'workshop.error.memberNoCredits': {
-    en: '{workspace} has no credits left. Only the workspace owner can buy more; you can run this on your personal workspace instead.',
+    en: '{workspace} has used all its credits. Ask the workspace owner to add more, or run this on your personal workspace.',
     'zh-CN':
-      '{workspace} 的积分已用完。只有工作区所有者可以购买；你可以改用个人工作区运行。'
+      '{workspace} 的积分已用完。请工作区所有者添加积分，或在个人工作区运行。'
   },
   'workshop.run.memberNoCredits': {
     en: 'Ask the owner for credits',
@@ -9764,8 +10027,9 @@ Enterprise`
     'zh-CN': '输出样例'
   },
   'workshop.examples.samplesSubtitle': {
-    en: 'View a sample without changing your inputs. Verified Router presets are not available for these samples yet.',
-    'zh-CN': '查看样例不会更改你的输入。这些样例尚无已验证的 Router 参数预设。'
+    en: 'View a sample without changing your inputs. Verified Comfy Router presets are not available for these samples yet.',
+    'zh-CN':
+      '查看样例不会更改你的输入。这些样例尚无已验证的 Comfy Router 参数预设。'
   },
   'workshop.examples.view': {
     en: 'View sample',
@@ -9903,6 +10167,23 @@ Enterprise`
   'workshop.hub.facets.noResults': { en: 'No matches', 'zh-CN': '无匹配' },
   'workshop.hub.models': { en: 'Model', 'zh-CN': '模型' },
   'workshop.hub.categories': { en: 'CATEGORIES', 'zh-CN': '分类' },
+  'workshop.hub.docs': { en: 'Read docs', 'zh-CN': '阅读文档' },
+  'workshop.error.creditsTitle': {
+    en: 'Not enough credits',
+    'zh-CN': '积分不足'
+  },
+  'workshop.error.checkoutFailed': {
+    en: 'Checkout could not start. Try again.',
+    'zh-CN': '无法启动结账，请重试。'
+  },
+  'workshop.error.noCreditsCloud': {
+    en: 'Add credits to {workspace} to keep running models.',
+    'zh-CN': '为 {workspace} 添加积分以继续运行模型。'
+  },
+  'workshop.error.noCreditsPlatform': {
+    en: 'Add credits to {workspace} on platform.comfy.org',
+    'zh-CN': '在 platform.comfy.org 上为 {workspace} 添加积分'
+  },
   'workshop.hub.tryNow': { en: 'Try now', 'zh-CN': '立即试用' },
   'workshop.hub.tag.partnerNodes': {
     en: 'Partner Nodes',

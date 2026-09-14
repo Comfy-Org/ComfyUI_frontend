@@ -8,9 +8,7 @@ test.describe(
   'Workflow state round trips',
   { tag: ['@vue-nodes', '@canvas'] },
   () => {
-    test.beforeEach(async ({ comfyPage }) => {
-      await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Disabled')
-    })
+    test.use({ initialSettings: { 'Comfy.UseNewMenu': 'Disabled' } })
 
     test('undo and redo a connected node deletion', async ({ comfyPage }) => {
       const { sampler, samplerId, cfgWidget, originalBounds, originalCfg } =

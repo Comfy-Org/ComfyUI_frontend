@@ -123,6 +123,31 @@ describe('useVideoCarousel', () => {
     expect(carousel.activeIndex.value).toBe(0)
   })
 
+  it('does not fill the progress bar while steady reports hold an unknown-duration slide', async () => {
+    const { carousel, videos } = await mountCarousel(3)
+    Object.defineProperty(videos[0], 'duration', {
+      value: Number.NaN,
+      configurable: true
+    })
+
+    carousel.onPlaying(0)
+    await nextTick()
+
+    for (let tick = 0; tick < 4; tick++) {
+      await vi.advanceTimersByTimeAsync(FALLBACK_MS / 2)
+      carousel.onProgress(0)
+    }
+
+    expect(
+      carousel.activeIndex.value,
+      'steady reports still hold the slide on the watchdog'
+    ).toBe(0)
+    expect(
+      carousel.progress(),
+      'a fresh report resets the shared deadline, so the bar tracks it instead of pinning full'
+    ).toBeLessThan(0.5)
+  })
+
   it('advances when a playing video silently stops reporting progress', async () => {
     const { carousel } = await mountCarousel(3)
 

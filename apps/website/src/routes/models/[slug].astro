@@ -2,6 +2,7 @@
 import { ArrowRight } from '@lucide/vue'
 import type { GetStaticPaths } from 'astro'
 import BaseLayout from '../../layouts/BaseLayout.astro'
+import CatalogueBackLink from '../../components/workshop/CatalogueBackLink.vue'
 import ModelDetail from '../../components/workshop/ModelDetail.vue'
 import ModelStatus from '../../components/workshop/ModelStatus.vue'
 import ModelSupport from '../../components/workshop/ModelSupport.vue'
@@ -10,6 +11,7 @@ import WorkshopModelCard from '../../components/workshop/WorkshopModelCard.vue'
 import { getRoutes } from '../../config/routes'
 import { catalogSearch } from '../../config/models-catalogue'
 import { routerWorkshopModelPaths } from '../../config/workshop-browse-content'
+import TagOverflow from '../../components/workshop/TagOverflow.vue'
 import { t } from '../../i18n/translations'
 import { prepareModelPage } from './model-page'
 
@@ -21,7 +23,18 @@ const page = await prepareModelPage(Astro.params.slug)
 // Pre-launch aliases stay noindex; hosting-level permanent redirects are a
 // separate deployment decision, not a reason to switch this site to SSR.
 if (page.kind === 'redirect') return Astro.redirect(page.href, 301)
-const { model, related, relatedHeading, relatedHeadingShort, successor, priceEstimate, modalityLabel, tags } = page
+const {
+  model,
+  related,
+  relatedHeading,
+  relatedHeadingShort,
+  successor,
+  priceEstimate,
+  modalityLabel,
+  shownTags,
+  restTags,
+  restTagCount
+} = page
 const routes = getRoutes()
 const pillClass =
   'inline-flex h-7 items-center rounded-full border border-transparency-white-t20 px-3 text-xs leading-none text-primary-comfy-canvas transition-colors hover:border-primary-comfy-yellow hover:text-primary-comfy-yellow'
@@ -34,25 +47,11 @@ const pillClass =
   noindex
 >
   <div class="mx-auto max-w-10xl px-6 py-10 lg:px-8 lg:py-14">
-    <nav aria-label="Breadcrumb" class="mb-8 text-xs text-primary-warm-gray sm:px-8 lg:px-10">
-      <ol class="flex flex-wrap items-center gap-2">
-        <li>
-          <a href={routes.home} class="hover:text-primary-warm-white">
-            {t('breadcrumb.home')}
-          </a>
-        </li>
-        <li aria-hidden="true">›</li>
-        <li>
-          <a href={`${routes.workshop}?tab=models`} class="hover:text-primary-warm-white">
-            {t('workshop.title')}
-          </a>
-        </li>
-        <li aria-hidden="true">›</li>
-        <li class="text-primary-warm-white" aria-current="page">{model.name}</li>
-      </ol>
-    </nav>
+    <div class="mb-8 sm:px-8 lg:px-10">
+      <CatalogueBackLink client:load />
+    </div>
     <header class="mb-12 sm:mx-8 lg:mx-10" data-testid="model-hero">
-      <div class="flex flex-col gap-6 pr-8 lg:flex-row lg:items-end lg:justify-between lg:pr-10">
+      <div class="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
         <div class="flex max-w-2xl flex-col gap-4">
           <div class="flex flex-wrap items-center gap-3">
             <p
@@ -82,21 +81,6 @@ const pillClass =
         </div>
 
         <div class="flex flex-col gap-4 lg:items-end">
-          <ul
-            class="flex scrollbar-hide items-center gap-2 max-sm:overflow-x-auto sm:flex-wrap lg:justify-end"
-            data-testid="model-tags"
-          >
-            {tags.map((tag) => (
-              <li>
-                <a
-                  href={`${routes.workshop}${tag.search}`}
-                  class="inline-flex h-7 shrink-0 items-center rounded-full bg-transparency-white-t8 px-3 text-xs leading-none whitespace-nowrap text-primary-comfy-canvas transition-colors hover:bg-transparency-white-t20 hover:text-primary-comfy-yellow"
-                >
-                  {tag.label}
-                </a>
-              </li>
-            ))}
-          </ul>
           <p
             class="flex items-baseline gap-2 text-sm text-primary-comfy-canvas/60"
             data-testid="model-price"
@@ -110,6 +94,34 @@ const pillClass =
               {t('workshop.model.nodePriceDefaults')}
             </p>
           )}
+          {shownTags.length > 0 && (
+            <ul
+              class="flex scrollbar-hide items-center gap-2 max-sm:overflow-x-auto sm:flex-wrap lg:justify-end"
+              data-testid="model-tags"
+            >
+              {shownTags.map((tag) => (
+                <li>
+                  <a
+                    href={`${routes.workshop}${tag.search}`}
+                    class="inline-flex h-7 shrink-0 items-center rounded-full bg-transparency-white-t8 px-3 text-xs leading-none whitespace-nowrap text-primary-comfy-canvas transition-colors hover:bg-transparency-white-t20 hover:text-primary-comfy-yellow"
+                  >
+                    {tag.label}
+                  </a>
+                </li>
+              ))}
+              {restTagCount > 0 && (
+                <li>
+                  <TagOverflow
+                    client:visible
+                    tags={restTags.map((tag) => ({
+                      label: tag.label,
+                      href: `${routes.workshop}${tag.search}`
+                    }))}
+                  />
+                </li>
+              )}
+            </ul>
+          )}
         </div>
       </div>
 
@@ -121,7 +133,7 @@ const pillClass =
     </header>
 
     <div class="sm:px-8 lg:px-10">
-    <ModelDetail model={model} client:load />
+      <ModelDetail model={model} client:load />
 
     <section
       class="mt-24 border-t border-transparency-white-t8 pt-12"
