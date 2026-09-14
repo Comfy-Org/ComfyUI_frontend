@@ -24,9 +24,8 @@ export function useTopupOperation() {
   )
 
   function retryPaymentAuthentication(operationId: string): Promise<boolean> {
-    return sdkStore
-      ? sdkStore.retryPaymentAuthentication(operationId)
-      : operationStore.retryPaymentAuthentication(operationId)
+    if (sdkStore) return sdkStore.retryPaymentAuthentication(operationId)
+    return operationStore.retryPaymentAuthentication(operationId)
   }
 
   function dismissOperation(operationId: string): void {

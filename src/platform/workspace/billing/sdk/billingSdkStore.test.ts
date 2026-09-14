@@ -53,12 +53,24 @@ vi.mock<unknown>(import('@/platform/telemetry'), () => ({
   useTelemetry: () => ({ trackBillingEvent: mockTrackBillingEvent })
 }))
 
+const flagState = vi.hoisted(() => ({ embeddedCheckoutEnabled: false }))
+vi.mock<unknown>(import('@/composables/useFeatureFlags'), () => ({
+  useFeatureFlags: () => ({
+    flags: {
+      get embeddedCheckoutEnabled() {
+        return flagState.embeddedCheckoutEnabled
+      }
+    }
+  })
+}))
+
 vi.mock(import('@/platform/distribution/types'), () => ({ isCloud: true }))
 
 let harness: ReturnType<typeof fakeBillingSdk>
 let options: BillingSdkOptions
 
 beforeEach(() => {
+  flagState.embeddedCheckoutEnabled = false
   harness = fakeBillingSdk()
   mockCreateBillingSdk.mockImplementation((sdkOptions) => {
     options = sdkOptions
@@ -183,6 +195,31 @@ describe('useBillingSdkStore', () => {
     harness.publish(challenged)
 
     expect(harness.sdk.driveChallenge).toHaveBeenCalledExactlyOnceWith('op-1')
+  })
+
+  it('refuses to retry a challenge while embedded checkout is off', async () => {
+    await expect(
+      useBillingSdkStore().retryPaymentAuthentication('op-1')
+    ).resolves.toBe(false)
+    expect(harness.sdk.driveChallenge).not.toHaveBeenCalled()
+  })
+
+  it('retries the in-page challenge on request and reports whether it completed', async () => {
+    flagState.embeddedCheckoutEnabled = true
+    const store = useBillingSdkStore()
+    vi.mocked(harness.sdk.driveChallenge).mockResolvedValueOnce('failed')
+
+    await expect(store.retryPaymentAuthentication('op-1')).resolves.toBe(false)
+    await expect(store.retryPaymentAuthentication('op-1')).resolves.toBe(true)
+    expect(harness.sdk.driveChallenge).toHaveBeenCalledTimes(2)
+
+    harness.publish(
+      pendingTopup({
+        presentation: 'embedded',
+        challenge: { clientSecret: 'pi_secret', status: 'required' }
+      })
+    )
+    expect(harness.sdk.driveChallenge).toHaveBeenCalledTimes(2)
   })
 
   it('finishes a reattached top-up the way the poller did', async () => {
