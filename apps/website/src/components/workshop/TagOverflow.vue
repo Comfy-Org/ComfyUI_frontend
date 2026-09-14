@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
 import {
-  PopoverContent,
-  PopoverPortal,
-  PopoverRoot,
-  PopoverTrigger
+  HoverCardContent,
+  HoverCardPortal,
+  HoverCardRoot,
+  HoverCardTrigger
 } from 'reka-ui'
 
 const { tags } = defineProps<{
@@ -16,8 +16,8 @@ const pill =
 </script>
 
 <template>
-  <PopoverRoot>
-    <PopoverTrigger
+  <HoverCardRoot :open-delay="120">
+    <HoverCardTrigger
       :aria-label="tags.map((tag) => tag.label).join(', ')"
       :title="tags.map((tag) => tag.label).join(', ')"
       :class="
@@ -26,9 +26,9 @@ const pill =
       data-testid="model-tags-rest"
     >
       +{{ tags.length }}
-    </PopoverTrigger>
-    <PopoverPortal>
-      <PopoverContent
+    </HoverCardTrigger>
+    <HoverCardPortal>
+      <HoverCardContent
         side="top"
         align="end"
         :side-offset="6"
@@ -48,7 +48,7 @@ const pill =
         >
           {{ tag.label }}
         </a>
-      </PopoverContent>
-    </PopoverPortal>
-  </PopoverRoot>
+      </HoverCardContent>
+    </HoverCardPortal>
+  </HoverCardRoot>
 </template>

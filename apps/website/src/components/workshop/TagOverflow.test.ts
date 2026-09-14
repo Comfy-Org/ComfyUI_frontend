@@ -10,7 +10,7 @@ const tags = [
 ]
 
 describe('TagOverflow', () => {
-  it('opens from the trigger and links every overflow tag', async () => {
+  it('opens on focus and links every overflow tag', async () => {
     render(TagOverflow, { props: { tags } })
 
     const trigger = screen.getByTestId('model-tags-rest')
@@ -18,10 +18,11 @@ describe('TagOverflow', () => {
     expect(trigger.getAttribute('title')).toBe('Upscale, Inpainting')
     expect(screen.queryByTestId('model-tags-rest-list')).toBeNull()
 
-    // Reka's full pointer sequence closes in happy-dom; the browser interaction
-    // is covered by Playwright, while this test owns the rendered link contract.
-    // eslint-disable-next-line testing-library/prefer-user-event
-    await fireEvent.click(trigger)
+    // The hover card opens on pointer or focus; happy-dom cannot drive Reka's
+    // full pointer sequence, so this drives the keyboard path and owns the
+    // rendered link contract.
+     
+    await fireEvent.focus(trigger)
 
     const links = await screen.findAllByRole('link')
     expect(links.map((link) => link.getAttribute('href'))).toEqual(
@@ -33,8 +34,8 @@ describe('TagOverflow', () => {
     render(TagOverflow, { props: { tags } })
 
     // See the happy-dom limitation above.
-    // eslint-disable-next-line testing-library/prefer-user-event
-    await fireEvent.click(screen.getByTestId('model-tags-rest'))
+     
+    await fireEvent.focus(screen.getByTestId('model-tags-rest'))
     const list = await screen.findByTestId('model-tags-rest-list')
 
     // Reka listens on the portalled content; userEvent cannot target it here.

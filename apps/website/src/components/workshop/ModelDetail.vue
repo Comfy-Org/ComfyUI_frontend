@@ -517,7 +517,7 @@ function useInCode() {
         :href="docsHref"
         target="_blank"
         rel="noopener noreferrer"
-        class="hover:text-primary-comfy-yellow ml-auto inline-flex shrink-0 items-center gap-1.5 pb-3 text-sm font-bold tracking-wider whitespace-nowrap text-primary-warm-white uppercase transition-colors"
+        class="hover:text-primary-comfy-yellow ml-auto inline-flex shrink-0 items-center gap-1.5 pb-3 text-sm leading-none font-bold tracking-wider whitespace-nowrap text-primary-warm-white uppercase transition-colors"
         data-testid="model-docs-link"
       >
         {{ t('workshop.hub.docs', locale) }}
