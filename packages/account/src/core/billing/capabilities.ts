@@ -19,8 +19,11 @@ import {
 } from '@comfyorg/ingest-types/zod'
 import { z } from 'zod'
 
-import type { SessionClient } from '../session.js'
-import type { BillingResult, BillingTransport } from './billingContracts.js'
+import type {
+  BillingResult,
+  BillingSession,
+  BillingTransport
+} from './billingContracts.js'
 import type { BillingScope, BillingScopeContext } from './billingScope.js'
 import { createBillingScopeTracker, sameBillingScope } from './billingScope.js'
 import type { CapabilityDenials } from './capabilityDenials.js'
@@ -110,7 +113,7 @@ export interface CapabilitiesReader {
 
 export interface CapabilitiesReaderOptions {
   readonly transport: BillingTransport
-  readonly session: SessionClient
+  readonly session: BillingSession
   readonly now?: () => number
 }
 

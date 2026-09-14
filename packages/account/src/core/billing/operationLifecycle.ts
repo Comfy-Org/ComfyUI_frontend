@@ -19,10 +19,10 @@
 import { zBillingOpStatusResponse } from '@comfyorg/ingest-types/zod'
 
 import { BILLING_OPERATION_TELEMETRY_EVENT } from '../../telemetry.js'
-import type { SessionClient } from '../session.js'
 import type {
   BillingFailure,
   BillingResult,
+  BillingSession,
   BillingTransport
 } from './billingContracts.js'
 import type { BillingScope, BillingScopeContext } from './billingScope.js'
@@ -100,7 +100,7 @@ export type PresentationSwitchOutcome =
 
 export interface BillingOperationLifecycleOptions {
   readonly transport: BillingTransport
-  readonly session: SessionClient
+  readonly session: BillingSession
   /** The Phase 2 status reader; consulted before every start and recovery. */
   readonly statusReader: BillingStatusReader
   /** Tab-local storage for the operation pointer; absent means nothing survives a reload. */
