@@ -1006,6 +1006,39 @@ const activeDetailGroups = computed<readonly TemplateDetailGroup[]>(() => {
   return setup ? buildTemplateDetailGroups(setup) : []
 })
 
+function applyTemplateModelMetadata(
+  generation: number,
+  requirements: readonly TemplateModelRequirementDetail[],
+  availability: readonly ResolvedTemplateModelAvailability[],
+  metadata: Awaited<ReturnType<typeof resolveTemplateModelMetadata>>
+) {
+  if (metadata.status === 'aborted' || generation !== detailGeneration) return
+  const setup = activeDetail.value?.modelSetup
+  if (!setup) return
+
+  setup.result = deriveTemplateModelSetup(
+    requirements,
+    availability,
+    metadata,
+    { isDownloadable: isModelDownloadable }
+  )
+  setup.pending = false
+}
+
+function handleTemplateModelMetadataError(
+  error: unknown,
+  generation: number,
+  controller: AbortController
+) {
+  if (controller.signal.aborted || generation !== detailGeneration) return
+  const setup = activeDetail.value?.modelSetup
+  if (setup) setup.pending = false
+  reportError(error, {
+    errorType: 'workflow_template_model_metadata_failed',
+    level: 'warning'
+  })
+}
+
 async function updateTemplateModelMetadata(
   generation: number,
   controller: AbortController,
@@ -1017,27 +1050,9 @@ async function updateTemplateModelMetadata(
       requirements.map(({ model }) => model),
       { signal: controller.signal }
     )
-    if (metadata.status === 'aborted' || generation !== detailGeneration) return
-
-    const setup = activeDetail.value?.modelSetup
-    if (!setup) return
-
-    setup.result = deriveTemplateModelSetup(
-      requirements,
-      availability,
-      metadata,
-      { isDownloadable: isModelDownloadable }
-    )
-    setup.pending = false
+    applyTemplateModelMetadata(generation, requirements, availability, metadata)
   } catch (error) {
-    if (!controller.signal.aborted && generation === detailGeneration) {
-      const setup = activeDetail.value?.modelSetup
-      if (setup) setup.pending = false
-      reportError(error, {
-        errorType: 'workflow_template_model_metadata_failed',
-        level: 'warning'
-      })
-    }
+    handleTemplateModelMetadataError(error, generation, controller)
   } finally {
     if (modelMetadataController === controller) {
       modelMetadataController = undefined
@@ -1062,6 +1077,49 @@ async function openPreparedTemplate(
   }
 }
 
+async function showModelSetupIfNeeded(
+  template: TemplateInfo,
+  prepared: PreparedWorkflowTemplate,
+  generation: number
+): Promise<boolean> {
+  if (!isDesktop) return false
+
+  const requirements = extractTemplateModelRequirementDetails(prepared.workflow)
+  if (requirements.length === 0) return false
+
+  const availability = await resolveModelAvailability(
+    requirements.map(({ model }) => model)
+  )
+  if (generation !== detailGeneration) return true
+  if (!availability.some(({ status }) => status === 'missing')) return false
+
+  activeDetail.value = {
+    template,
+    prepared: markRaw(prepared),
+    modelSetup: {
+      result: deriveTemplateModelSetup(
+        requirements,
+        availability,
+        { status: 'aborted' },
+        { isDownloadable: isModelDownloadable }
+      ),
+      pending: true
+    }
+  }
+  await nextTick()
+  detailView.value?.focus()
+
+  const controller = new AbortController()
+  modelMetadataController = controller
+  void updateTemplateModelMetadata(
+    generation,
+    controller,
+    requirements,
+    availability
+  )
+  return true
+}
+
 const onLoadWorkflow = async (template: TemplateInfo, event: MouseEvent) => {
   if (openPending.value) return
 
@@ -1079,52 +1137,12 @@ const onLoadWorkflow = async (template: TemplateInfo, event: MouseEvent) => {
     )
     if (!prepared || generation !== detailGeneration) return
 
-    if (!isDesktop) {
-      await openPreparedTemplate(prepared, generation)
-      return
-    }
-
-    const requirements = extractTemplateModelRequirementDetails(
-      prepared.workflow
-    )
-    if (requirements.length === 0) {
-      await openPreparedTemplate(prepared, generation)
-      return
-    }
-
-    const availability = await resolveModelAvailability(
-      requirements.map(({ model }) => model)
-    )
-    if (generation !== detailGeneration) return
-    if (!availability.some(({ status }) => status === 'missing')) {
-      await openPreparedTemplate(prepared, generation)
-      return
-    }
-
-    activeDetail.value = {
+    const didShowModelSetup = await showModelSetupIfNeeded(
       template,
-      prepared: markRaw(prepared),
-      modelSetup: {
-        result: deriveTemplateModelSetup(
-          requirements,
-          availability,
-          { status: 'aborted' },
-          { isDownloadable: isModelDownloadable }
-        ),
-        pending: true
-      }
-    }
-    await nextTick()
-    detailView.value?.focus()
-
-    const controller = new AbortController()
-    modelMetadataController = controller
-    void updateTemplateModelMetadata(
-      generation,
-      controller,
-      requirements,
-      availability
+      prepared,
+      generation
     )
+    if (!didShowModelSetup) await openPreparedTemplate(prepared, generation)
   } finally {
     if (generation === detailGeneration) loadingTemplate.value = null
   }
