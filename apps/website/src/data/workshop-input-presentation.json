@@ -1743,8 +1743,7 @@
       },
       "voice_id": {
         "label": "Voice ID",
-        "help": "Defaults to Chill Brian (English, male). To use another voice, enter its Starfish-compatible HeyGen voice ID.",
-        "advanced": true
+        "fixed": "d2f4f24783d04e22ab49ee8fdc3715e0"
       }
     },
     "ideogram/ideogram-v3": {
