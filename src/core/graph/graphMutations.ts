@@ -3,6 +3,7 @@ import type {
   ISerialisableNodeOutput,
   ISerialisedNode
 } from '@/lib/litegraph/src/types/serialisation'
+import { useAgentGeneratedNodesStore } from '@/stores/agentGeneratedNodesStore'
 import { useLinkPresentationStore } from '@/stores/linkPresentationStore'
 import { useLinkStore } from '@/stores/linkStore'
 import { useNodeDataStore } from '@/stores/nodeDataStore'
@@ -14,6 +15,7 @@ import { toLinkId } from '@/types/linkId'
 import type { LinkTopology } from '@/types/linkTopology'
 import type { NodeId } from '@/types/nodeId'
 import { toNodeId } from '@/types/nodeId'
+import { createNodeLocatorId } from '@/types/nodeIdentification'
 import type { NodeState } from '@/types/nodeState'
 import type { WidgetValue } from '@/types/simplifiedWidget'
 import { isWidgetId, widgetId } from '@/types/widgetId'
@@ -309,6 +311,27 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
   const linkStore = useLinkStore()
   const linkPresentationStore = useLinkPresentationStore()
   const widgetStore = useWidgetValueStore()
+  const agentGeneratedNodes = useAgentGeneratedNodesStore()
+
+  /**
+   * Frames a human authored are mirrored back through this same stream, and a
+   * catch-up frame replays nodes that landed long before this tab opened, so
+   * neither counts as the agent generating something now.
+   */
+  function markAgentGenerated(
+    scope: GraphScope,
+    nodeId: NodeId,
+    context: RemoteMutationContext
+  ): void {
+    if (context.opId === 'replay' || context.actor.startsWith('human:')) return
+
+    const subgraphUuid =
+      scope.owningGraphId === String(scope.rootGraphId)
+        ? null
+        : scope.owningGraphId
+    const locatorId = createNodeLocatorId(subgraphUuid, nodeId)
+    if (locatorId) agentGeneratedNodes.markGenerated(locatorId)
+  }
 
   function fail(message: string): false {
     console.error(`[agent-crdt] graph mutation rejected: ${message}`)
@@ -672,6 +695,7 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
               mutation.node.layout,
               context
             )
+            markAgentGenerated(scope, mutation.node.state.id, context)
           }
           break
         }

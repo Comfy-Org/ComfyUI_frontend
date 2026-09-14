@@ -1,4 +1,4 @@
-import { useDocumentVisibility, useIntervalFn } from '@vueuse/core'
+import { useDocumentVisibility, useIntervalFn, useRafFn } from '@vueuse/core'
 import { computed, nextTick, ref, shallowRef, watch } from 'vue'
 import type { ShallowRef } from 'vue'
 
@@ -6,7 +6,9 @@ import type { LGraph } from '@/lib/litegraph/src/litegraph'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import { useAgentGeneratedNodesStore } from '@/stores/agentGeneratedNodesStore'
 
+import { AGENT_HIGHLIGHT_LIFETIME_MS } from '../agentHighlight'
 import type { MinimapCanvas, MinimapSettingsKey } from '../types'
 import { useMinimapGraph } from './useMinimapGraph'
 import { useMinimapInteraction } from './useMinimapInteraction'
@@ -27,6 +29,7 @@ export function useMinimap({
   const canvasStore = useCanvasStore()
   const workflowStore = useWorkflowStore()
   const settingStore = useSettingStore()
+  const agentGeneratedNodes = useAgentGeneratedNodesStore()
 
   const minimapRef = ref<HTMLElement | null>(null)
   const canvasRef = canvasRefMaybe ?? shallowRef(null)
@@ -146,6 +149,29 @@ export function useMinimap({
     { immediate: true }
   )
 
+  // Agent nodes animate on wall-clock time, which no digest can report: the
+  // graph is unchanged between the frame a node pops in and the frame it
+  // settles. Frames run only while a mark is live, and dropping the expired
+  // marks is what ends the loop.
+  const { pause: pauseAgentFrames, resume: resumeAgentFrames } = useRafFn(
+    () => {
+      agentGeneratedNodes.forgetMarksBefore(
+        Date.now() - AGENT_HIGHLIGHT_LIFETIME_MS
+      )
+      renderer.renderFrame()
+    },
+    { immediate: false }
+  )
+
+  watch(
+    () => shouldPoll.value && agentGeneratedNodes.hasMarks,
+    (animating) => {
+      if (animating) resumeAgentFrames()
+      else pauseAgentFrames()
+    },
+    { immediate: true }
+  )
+
   const init = async () => {
     if (initialized.value) return
 
@@ -174,6 +200,7 @@ export function useMinimap({
 
   const destroy = () => {
     pauseChangeDetection()
+    pauseAgentFrames()
     viewport.stopViewportSync()
     graphManager.destroy()
 

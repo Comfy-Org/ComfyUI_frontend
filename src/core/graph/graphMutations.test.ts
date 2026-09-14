@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { useAgentGeneratedNodesStore } from '@/stores/agentGeneratedNodesStore'
 import { useLinkPresentationStore } from '@/stores/linkPresentationStore'
 import { useLinkStore } from '@/stores/linkStore'
 import { useNodeDataStore } from '@/stores/nodeDataStore'
@@ -8,6 +9,7 @@ import { toOwningGraphId, toRootGraphId } from '@/types/graphScopeId'
 import type { RemoteMutationContext } from '@/types/graphMutationContext'
 import { toLinkId } from '@/types/linkId'
 import { toNodeId } from '@/types/nodeId'
+import { createNodeLocatorId } from '@/types/nodeIdentification'
 import { widgetId } from '@/types/widgetId'
 
 import { createGraphMutations } from './graphMutations'
@@ -77,6 +79,29 @@ describe('graphMutations', () => {
       },
       context
     )
+  })
+
+  it('records agent-authored nodes so the minimap can mark them as new', () => {
+    mutations().addNode(node(7), context)
+
+    expect(
+      useAgentGeneratedNodesStore().generatedAtFor(
+        createNodeLocatorId(null, toNodeId(7))
+      )
+    ).toBeTypeOf('number')
+  })
+
+  it('leaves human edits and catch-up frames unmarked', () => {
+    mutations().addNode(node(8), { ...context, actor: 'human:someone:tab-1' })
+    mutations().addNode(node(9), { ...context, opId: 'replay' })
+
+    const agentNodes = useAgentGeneratedNodesStore()
+    expect(
+      agentNodes.generatedAtFor(createNodeLocatorId(null, toNodeId(8)))
+    ).toBeUndefined()
+    expect(
+      agentNodes.generatedAtFor(createNodeLocatorId(null, toNodeId(9)))
+    ).toBeUndefined()
   })
 
   it('retains supplied link ids and atomically displaces the target occupant', () => {

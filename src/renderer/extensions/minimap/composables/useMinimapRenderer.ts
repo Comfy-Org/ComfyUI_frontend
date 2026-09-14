@@ -25,43 +25,56 @@ export function useMinimapRenderer(
   const needsFullRedraw = ref(true)
   const needsBoundsUpdate = ref(true)
 
-  const renderMinimap = () => {
+  const draw = () => {
     const g = graph.value
-    if (!canvasRef.value || !g) return
+    if (!canvasRef.value || !g) return false
 
     const ctx = canvasRef.value.getContext('2d')
-    if (!ctx) return
+    if (!ctx) return false
 
     // Fast path for 0 nodes - just show background
     if (g._nodes.length === 0) {
       ctx.clearRect(0, 0, width, height)
-      return
+      return false
     }
 
+    renderMinimapToCanvas(canvasRef.value, g, {
+      bounds: bounds.value,
+      scale: scale.value,
+      settings: {
+        nodeColors: settings.nodeColors.value,
+        showLinks: settings.showLinks.value,
+        showGroups: settings.showGroups.value,
+        renderBypass: settings.renderBypass.value,
+        renderError: settings.renderError.value
+      },
+      width,
+      height
+    })
+
+    return true
+  }
+
+  const renderMinimap = () => {
     const needsRedraw =
       needsFullRedraw.value ||
       updateFlags.value.nodes ||
       updateFlags.value.connections
+    if (!needsRedraw) return
 
-    if (needsRedraw) {
-      renderMinimapToCanvas(canvasRef.value, g, {
-        bounds: bounds.value,
-        scale: scale.value,
-        settings: {
-          nodeColors: settings.nodeColors.value,
-          showLinks: settings.showLinks.value,
-          showGroups: settings.showGroups.value,
-          renderBypass: settings.renderBypass.value,
-          renderError: settings.renderError.value
-        },
-        width,
-        height
-      })
+    if (!draw()) return
 
-      needsFullRedraw.value = false
-      updateFlags.value.nodes = false
-      updateFlags.value.connections = false
-    }
+    needsFullRedraw.value = false
+    updateFlags.value.nodes = false
+    updateFlags.value.connections = false
+  }
+
+  /**
+   * Repaint regardless of the change digests, for state that animates on its
+   * own clock rather than on an edit to the graph.
+   */
+  const renderFrame = () => {
+    draw()
   }
 
   const updateMinimap = (
@@ -104,6 +117,7 @@ export function useMinimapRenderer(
     needsFullRedraw,
     needsBoundsUpdate,
     renderMinimap,
+    renderFrame,
     updateMinimap,
     forceFullRedraw
   }
