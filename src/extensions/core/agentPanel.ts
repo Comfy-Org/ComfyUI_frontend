@@ -121,7 +121,11 @@ async function setupFlagGate(loadConsentIfEligible: () => void): Promise<void> {
     // cloud identity for PostHog to evaluate the flag against, so gating it on
     // the flag left it permanently off in a production bundle — the harness
     // itself is the opt-in, since the panel is tree-shaken out of every other
-    // non-cloud build (see extensions/core/index.ts).
+    // non-cloud build (see extensions/core/index.ts). VITE_AGENT_STANDALONE
+    // is independent of the distribution, so a cloud bundle carrying it
+    // would force the panel on for every user: vite.config.mts refuses that
+    // combination at build time (the standalone harness is never a cloud
+    // distribution), which is what keeps this `forcedOn` safe.
     const forcedOn =
       import.meta.env.MODE === 'development' ||
       import.meta.env.VITE_AGENT_STANDALONE === 'true'

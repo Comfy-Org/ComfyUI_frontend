@@ -6,7 +6,10 @@ import { describe, expect, it } from 'vitest'
 
 const execFileAsync = promisify(execFile)
 
-async function importConfig(devAgentUrl: string) {
+async function importConfig(
+  devAgentUrl: string,
+  overrides: Record<string, string | undefined> = {}
+) {
   return await execFileAsync(
     process.execPath,
     ['--import', 'tsx', '--eval', "import('./vite.config.mts')"],
@@ -16,7 +19,9 @@ async function importConfig(devAgentUrl: string) {
         ...process.env,
         DEV_AGENT_SESSION_TOKEN: 'test-session-token',
         DEV_AGENT_URL: devAgentUrl,
-        VITE_AGENT_STANDALONE: undefined
+        VITE_AGENT_STANDALONE: undefined,
+        DISTRIBUTION: undefined,
+        ...overrides
       }
     }
   )
@@ -41,4 +46,33 @@ describe('dev agent proxy transport', () => {
       )
     })
   })
+})
+
+describe('standalone agent harness distribution guard', () => {
+  // VITE_AGENT_STANDALONE forces the agent panel on for every user of the
+  // bundle it is baked into (extensions/core/agentPanel.ts), independent of
+  // the distribution. A cloud bundle built with it would ship that to
+  // production, so the build refuses the combination outright.
+  it('refuses to bake the standalone harness into a cloud distribution', async () => {
+    await expect(
+      importConfig('http://127.0.0.1:8095', {
+        DISTRIBUTION: 'cloud',
+        VITE_AGENT_STANDALONE: 'true'
+      })
+    ).rejects.toMatchObject({
+      stderr: expect.stringContaining('never a cloud distribution')
+    })
+  })
+
+  it.for(['localhost', 'desktop', undefined])(
+    'accepts the standalone harness for the %s distribution',
+    async (distribution) => {
+      await expect(
+        importConfig('http://127.0.0.1:8095', {
+          DISTRIBUTION: distribution,
+          VITE_AGENT_STANDALONE: 'true'
+        })
+      ).resolves.toBeDefined()
+    }
+  )
 })
