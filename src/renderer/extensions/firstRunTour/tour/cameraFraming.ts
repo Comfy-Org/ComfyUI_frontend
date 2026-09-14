@@ -4,7 +4,8 @@ import type { ReadOnlyRect } from '@/lib/litegraph/src/interfaces'
 import {
   CARD_GLIDE_MS,
   CARD_WIDTH,
-  CURSOR_GAP
+  CURSOR_GAP,
+  topSafeInset
 } from '@/platform/onboarding/coachmarkLayout'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import type { NodeId } from '@/types/nodeId'
@@ -21,18 +22,22 @@ interface Viewport {
 
 /**
  * Fill fraction that frames `bounds` beside the card. The fit centres the node
- * and so splits the free width evenly, hence room for a card column on each
- * side. Inverts litegraph's fit, which solves each axis as
- * `(fill * side) / max(bound, 300)` and takes the smaller, so the binding axis
- * has to be handed the larger fill.
+ * and so splits the free space evenly, hence room for a card column on each
+ * side, and for the top bar on each end — the canvas runs the full height of
+ * the window, underneath that bar, so a node fitted to the whole of it hides
+ * its own title behind the workflow tabs. Inverts litegraph's fit, which
+ * solves each axis as `(fill * side) / max(bound, 300)` and takes the smaller,
+ * so the binding axis has to be handed the larger fill.
  */
 export function focusFill(bounds: ReadOnlyRect, viewport: Viewport): number {
   const [, , width, height] = bounds
   const sideRoom = viewport.width - CARD_COLUMN * 2
   const usableWidth = sideRoom > 0 ? sideRoom : viewport.width
+  const endRoom = viewport.height - topSafeInset() * 2
+  const usableHeight = endRoom > 0 ? endRoom : viewport.height
   const scale = Math.min(
     usableWidth / Math.max(width, 1),
-    viewport.height / Math.max(height, 1),
+    usableHeight / Math.max(height, 1),
     MAX_FOCUS_SCALE
   )
   return Math.max(
