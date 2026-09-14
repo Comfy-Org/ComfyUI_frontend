@@ -25,6 +25,7 @@ vi.mock<unknown>(
     return {
       useAgentDockMount: () => ({
         docked: computed(() => agentDocked.value),
+        everDocked: computed(() => agentDocked.value),
         DockedAgentPanel: defineComponent({
           name: 'DockedAgentPanel',
           setup: () => () => h('div')
@@ -490,5 +491,30 @@ describe('GraphCanvas agent dock', () => {
     await mountGraphCanvas(dockStubs)
 
     expect(screen.queryByTestId('docked-agent-panel')).not.toBeInTheDocument()
+  })
+})
+
+describe('GraphCanvas agent entry orb', () => {
+  // The orb floats over the canvas rather than sitting in the topbar, so linear
+  // mode has to fall back to the topbar button LinearView renders.
+  const entryStubs = {
+    LiteGraphCanvasSplitterOverlay: {
+      template: '<div><slot name="graph-canvas-panel" /></div>'
+    },
+    AgentEntryOrb: { template: '<button data-testid="agent-entry" />' }
+  }
+
+  it('floats the orb over the canvas in graph mode', async () => {
+    useCanvasStore().linearMode = false
+    await mountGraphCanvas(entryStubs)
+
+    expect(screen.getByTestId('agent-entry')).toBeInTheDocument()
+  })
+
+  it('leaves the entry to the topbar in linear mode', async () => {
+    useCanvasStore().linearMode = true
+    await mountGraphCanvas(entryStubs)
+
+    expect(screen.queryByTestId('agent-entry')).not.toBeInTheDocument()
   })
 })

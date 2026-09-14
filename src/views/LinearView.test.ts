@@ -49,6 +49,7 @@ vi.mock(
     return {
       useAgentDockMount: () => ({
         docked: computed(() => true),
+        everDocked: computed(() => true),
         DockedAgentPanel: defineComponent({
           name: 'DockedAgentPanel',
           setup: () => () => h('div', { 'data-testid': 'docked-agent-panel' })
@@ -88,6 +89,7 @@ const baseStubs = {
     template:
       '<div data-testid="docked-agent-panel" :data-has-opaque-neighbor="String(hasOpaqueNeighbor)" />'
   },
+  AgentEntryOrb: leafStub('agent-entry-orb'),
   MobileDisplay: leafStub('mobile-display'),
   AppBuilder: leafStub('app-builder'),
   AppModeToolbar: leafStub('app-mode-toolbar'),
@@ -169,6 +171,12 @@ describe('LinearView', () => {
       screen.getByTestId('linear-preview'),
       screen.getByTestId('docked-agent-panel')
     )
+  })
+
+  it('floats the agent entry orb over the app view', () => {
+    renderView()
+
+    expect(screen.getByTestId('agent-entry-orb')).toBeInTheDocument()
   })
 
   it('shows the toolbar and puts the active tab before the controls for a left sidebar', () => {

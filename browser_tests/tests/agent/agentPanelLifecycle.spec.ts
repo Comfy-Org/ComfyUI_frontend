@@ -37,7 +37,7 @@ test.describe(
         .toBe('true')
     })
 
-    test('persists open and closed state and keeps the entry button pressed while open', async ({
+    test('persists open and closed state and withdraws the entry orb while open', async ({
       page
     }) => {
       await bootAgentApp(page, true)
@@ -53,7 +53,7 @@ test.describe(
       await expect(panel).toBeVisible()
       await expect(
         page.getByRole('button', { name: OPEN_AGENT_LABEL, exact: true })
-      ).toHaveAttribute('aria-pressed', 'true')
+      ).toHaveCount(0)
       await expect
         .poll(() =>
           page.evaluate((key) => localStorage.getItem(key), OPEN_STORAGE_KEY)
@@ -147,7 +147,7 @@ test.describe(
       await expect(page.getByTestId('docked-agent-panel')).toBeVisible()
       await expect(
         page.getByRole('button', { name: OPEN_AGENT_LABEL, exact: true })
-      ).toHaveAttribute('aria-pressed', 'true')
+      ).toHaveCount(0)
     })
 
     test('keeps one Agent panel mounted while switching workflow tabs', async ({

@@ -12,6 +12,7 @@ import AppModeToolbar from '@/components/appMode/AppModeToolbar.vue'
 import ExtensionSlot from '@/components/common/ExtensionSlot.vue'
 import SideToolbar from '@/components/sidebar/SideToolbar.vue'
 import WorkflowTabs from '@/components/topbar/WorkflowTabs.vue'
+import AgentEntryOrb from '@/workbench/extensions/agent/components/agent/AgentEntryOrb.vue'
 import { COACH_IDS } from '@/platform/onboarding/onboardingTours'
 import { vCoachmark } from '@/platform/onboarding/vCoachmark'
 import { useSettingStore } from '@/platform/settings/settingStore'
@@ -32,7 +33,7 @@ import { useAppModeStore } from '@/stores/appModeStore'
 import { useAgentDockMount } from '@/workbench/extensions/agent/composables/useAgentDockMount'
 
 const settingStore = useSettingStore()
-const { docked: agentDocked, DockedAgentPanel } = useAgentDockMount()
+const { everDocked: agentPanelMounted, DockedAgentPanel } = useAgentDockMount()
 const workspaceStore = useWorkspaceStore()
 const { isBuilderMode, isArrangeMode } = useAppMode()
 const appModeStore = useAppModeStore()
@@ -108,7 +109,7 @@ function dragDrop(e: DragEvent) {
     >
       <WorkflowTabs />
     </div>
-    <div class="flex min-h-0 flex-1 flex-row bg-secondary-background">
+    <div class="relative flex min-h-0 flex-1 flex-row bg-secondary-background">
       <div
         data-testid="linear-workspace-column"
         :class="
@@ -205,10 +206,11 @@ function dragDrop(e: DragEvent) {
           </SplitterPanel>
         </Splitter>
       </div>
+      <AgentEntryOrb class="absolute right-0 bottom-0 z-20" />
       <!-- App mode hides the canvas, so the panel never meets bare graph. -->
       <component
         :is="DockedAgentPanel"
-        v-if="agentDocked"
+        v-if="agentPanelMounted"
         :has-opaque-neighbor="true"
       />
     </div>
