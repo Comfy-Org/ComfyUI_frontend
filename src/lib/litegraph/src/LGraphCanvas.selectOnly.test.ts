@@ -72,11 +72,11 @@ describe('LGraphCanvas selectOnly', () => {
     canvas.processSelect(firstNode, undefined)
     canvas.processSelect(secondNode, undefined)
 
-    expect(canvas.selectedItems).toEqual(new Set([firstNode, secondNode]))
+    expect([...canvas.selectedItems]).toEqual([firstNode, secondNode])
 
     canvas.processSelect(firstNode, undefined)
 
-    expect(canvas.selectedItems).toEqual(new Set([secondNode]))
+    expect([...canvas.selectedItems]).toEqual([secondNode])
     expect(firstNode.selected).toBe(false)
     expect(secondNode.selected).toBe(true)
   })
@@ -88,7 +88,7 @@ describe('LGraphCanvas selectOnly', () => {
 
     canvas.processSelect(null, undefined)
 
-    expect(canvas.selectedItems).toEqual(new Set([firstNode]))
+    expect([...canvas.selectedItems]).toEqual([firstNode])
     expect(firstNode.selected).toBe(true)
   })
 
@@ -114,7 +114,7 @@ describe('LGraphCanvas selectOnly', () => {
     canvas.pointer.onClick?.(event)
 
     expect(collapseSpy).not.toHaveBeenCalled()
-    expect(canvas.selectedItems).toEqual(new Set([firstNode]))
+    expect([...canvas.selectedItems]).toEqual([firstNode])
   })
 
   it('does not open a context menu on right click', () => {
@@ -193,7 +193,7 @@ describe('LGraphCanvas selectOnly', () => {
 
     canvas['_startDraggingItems'](firstNode, canvas.pointer, true)
 
-    expect(canvas.selectedItems).toEqual(new Set([firstNode]))
+    expect([...canvas.selectedItems]).toEqual([firstNode])
     expect(canvas.isDragging).toBe(false)
   })
 
@@ -224,7 +224,7 @@ describe('LGraphCanvas selectOnly', () => {
     canvas.processSelect(firstNode, event)
     canvas.processSelect(secondNode, event)
 
-    expect(canvas.selectedItems).toEqual(new Set([secondNode]))
+    expect([...canvas.selectedItems]).toEqual([secondNode])
 
     canvas.processSelect(null, event)
 
