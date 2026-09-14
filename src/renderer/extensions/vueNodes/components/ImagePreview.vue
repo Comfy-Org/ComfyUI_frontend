@@ -214,6 +214,7 @@ import { downloadFile } from '@/base/common/downloadUtil'
 import Button from '@/components/ui/button/Button.vue'
 import Skeleton from '@/components/ui/skeleton/Skeleton.vue'
 import { useMaskEditor } from '@/composables/maskeditor/useMaskEditor'
+import { useTelemetry } from '@/platform/telemetry'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { openHdrViewer } from '@/services/hdrViewerService'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
@@ -335,6 +336,7 @@ function handleImageError() {
   stopDelayedLoader()
   showLoader.value = false
   imageError.value = true
+  useTelemetry()?.trackImageLoadFailed({ source: 'node_image_preview' })
   actualDimensions.value = null
 }
 

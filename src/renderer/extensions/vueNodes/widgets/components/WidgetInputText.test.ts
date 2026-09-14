@@ -17,7 +17,7 @@ describe('WidgetInputText Value Binding', () => {
     options: Partial<InputTextProps> & IWidgetOptions = {},
     callback?: (value: string) => void
   ) =>
-    createMockWidget<string>({
+    createMockWidget({
       value,
       name: 'test_input',
       options,
@@ -167,6 +167,57 @@ describe('WidgetInputText Value Binding', () => {
       // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
       const textarea = container.querySelector('textarea')
       expect(textarea).not.toBeInTheDocument()
+    })
+
+    it('marks the text input as invalid', () => {
+      const widget = createInputTextWidget('invalid value')
+      renderComponent(widget, 'invalid value', { invalid: true })
+
+      expect(screen.getByRole('textbox')).toHaveAttribute(
+        'aria-invalid',
+        'true'
+      )
+    })
+
+    it('does not mark a valid text input as invalid', () => {
+      const widget = createInputTextWidget('valid value')
+      renderComponent(widget, 'valid value', { invalid: false })
+
+      expect(screen.getByRole('textbox')).not.toHaveAttribute('aria-invalid')
+    })
+  })
+
+  describe('Locked Field Hover Styling', () => {
+    // Tests assert on the Tailwind class name directly because that's the
+    // mechanism being guarded — a rename would need a baseline update anyway.
+    const HOVER_CLASS = 'hover:bg-component-node-widget-background-hovered'
+
+    it('omits the generic hover background class when the field is locked (read-only)', () => {
+      const widget = createInputTextWidget('locked value', {
+        read_only: true
+      })
+      renderComponent(widget, 'locked value')
+
+      const input = screen.getByRole('textbox')
+      expect(input.className).not.toContain(HOVER_CLASS)
+    })
+
+    it('omits the generic hover background class when the field is disabled by a link', () => {
+      const widget = createInputTextWidget('linked value', {
+        disabled: true
+      })
+      renderComponent(widget, 'linked value')
+
+      const input = screen.getByRole('textbox')
+      expect(input.className).not.toContain(HOVER_CLASS)
+    })
+
+    it('applies the generic hover background class when the field is editable', () => {
+      const widget = createInputTextWidget('editable value')
+      renderComponent(widget, 'editable value')
+
+      const input = screen.getByRole('textbox')
+      expect(input.className).toContain(HOVER_CLASS)
     })
   })
 
