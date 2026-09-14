@@ -157,11 +157,12 @@ export class WorkflowHelper {
     return zComfyWorkflow.parse(response.request().postDataJSON())
   }
 
-  async openPersistedWorkflow(workflowName: string): Promise<void> {
+  async reloadAndOpenPersistedWorkflow(workflowName: string): Promise<void> {
     await this.reloadAndWaitForApp()
     const { workflowsTab } = this.comfyPage.menu
     await workflowsTab.open()
     await workflowsTab.getPersistedItem(workflowName).click()
+    await this.waitForWorkflowIdle()
     await workflowsTab.close()
   }
 

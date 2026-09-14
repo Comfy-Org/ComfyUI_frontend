@@ -364,7 +364,9 @@ test.describe('Subgraph Lifecycle', { tag: ['@subgraph'] }, () => {
               await comfyPage.subgraph.expectPersistedHostIds(workflowName, [
                 String(survivor.id)
               ])
-              await comfyPage.workflow.openPersistedWorkflow(workflowName)
+              await comfyPage.workflow.reloadAndOpenPersistedWorkflow(
+                workflowName
+              )
               await survivor.expectExists()
             })
 

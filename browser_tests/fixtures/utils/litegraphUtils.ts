@@ -411,7 +411,7 @@ export class NodeReference {
   }
   async getPromotedTextWidget(name: string) {
     const vueNode = this.comfyPage.vueNodes.getNodeLocator(String(this.id))
-    if ((await vueNode.count()) > 0) {
+    if (this.comfyPage.isVueNodes) {
       return vueNode.getByRole('textbox', { name, exact: true })
     }
 

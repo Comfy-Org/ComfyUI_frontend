@@ -53,7 +53,7 @@ for (const renderer of [
         await test.step('Save and reopen the workflow', async () => {
           await comfyPage.workflow.saveWorkflow(workflowName)
           await expect(comfyPage.toast.toastErrors).toHaveCount(0)
-          await comfyPage.workflow.openPersistedWorkflow(workflowName)
+          await comfyPage.workflow.reloadAndOpenPersistedWorkflow(workflowName)
         })
 
         await test.step('The host keeps its value without a custom label', async () => {
