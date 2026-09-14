@@ -1,4 +1,3 @@
-import type * as DistributionModule from '@/platform/distribution/types'
 import { render } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
@@ -18,9 +17,11 @@ const electron = {
 
 const errorReporter = vi.hoisted(() => vi.fn())
 
-vi.mock(import('@/platform/distribution/types'), async (importOriginal) => ({
-  ...(await importOriginal<typeof DistributionModule>()),
-  isDesktop: true
+vi.mock<unknown>(import('@/platform/distribution/types'), () => ({
+  DISTRIBUTION: 'desktop',
+  isCloud: false,
+  isDesktop: true,
+  isNightly: false
 }))
 
 vi.mock(import('@/platform/telemetry/reportError'), () => ({

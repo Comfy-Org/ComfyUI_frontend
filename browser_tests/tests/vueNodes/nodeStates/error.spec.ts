@@ -8,8 +8,7 @@ import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { toNodeId } from '@/types/nodeId'
 import {
   cleanupFakeModel,
-  dismissErrorOverlay,
-  enableErrorsOverlay
+  dismissErrorOverlay
 } from '@e2e/fixtures/helpers/ErrorsTabHelper'
 import {
   ExecutionHelper,
@@ -128,8 +127,11 @@ test.describe('Vue Node Error', { tag: '@vue-nodes' }, () => {
   })
 
   test.describe('validation errors', () => {
+    test.use({
+      initialSettings: { 'Comfy.RightSidePanel.ShowErrorsTab': true }
+    })
+
     test.beforeEach(async ({ comfyPage }) => {
-      await enableErrorsOverlay(comfyPage)
       await comfyPage.workflow.loadWorkflow('nodes/single_ksampler')
     })
 
@@ -335,8 +337,11 @@ test.describe('Vue Node Error', { tag: '@vue-nodes' }, () => {
   })
 
   test.describe('subgraph propagation', { tag: '@subgraph' }, () => {
+    test.use({
+      initialSettings: { 'Comfy.RightSidePanel.ShowErrorsTab': true }
+    })
+
     test.beforeEach(async ({ comfyPage }) => {
-      await enableErrorsOverlay(comfyPage)
       await cleanupFakeModel(comfyPage)
     })
 

@@ -13,8 +13,9 @@ test.describe(
   'Vue Node Resizing',
   { tag: ['@vue-nodes', '@canvas', '@node'] },
   () => {
+    test.use({ initialSettings: { 'Comfy.Minimap.Visible': false } })
+
     test.beforeEach(async ({ comfyPage }) => {
-      await comfyPage.settings.setSetting('Comfy.Minimap.Visible', false)
       await comfyPage.canvasOps.resetView()
     })
 
