@@ -961,7 +961,12 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
       flushLayout(scope, layoutOps, context)
     } catch (error) {
       if (restoreLayout) restoreLayout.restore(context)
-      else deps.layout.deleteNodes(scope, touched, context)
+      else {
+        const created = layoutOps.flatMap((op) =>
+          op.kind === 'create' ? [op.nodeId] : []
+        )
+        deps.layout.deleteNodes(scope, created, context)
+      }
       restoreSemantic(context)
       throw error
     }
