@@ -692,6 +692,54 @@ describe('reconcileAgentAdapters', () => {
       }
     })
 
+    it('rebinds a placeholder in place and keeps its canonical link', () => {
+      const graph = new LGraph()
+      const scope = graphScopeOf(graph)
+      graph.configure({
+        ...graph.asSerialisable(),
+        nodes: [
+          {
+            ...new LGraphNode('Missing').serialize(),
+            id: 1,
+            type: 'late-two-widget-node',
+            inputs: [{ name: 'in', type: '*', link: null }],
+            widgets_values: [20, 4],
+            widgets_values_named: { seed: 4, steps: 20 }
+          }
+        ]
+      })
+      const upstream = new LGraphNode('Upstream')
+      upstream.addOutput('out', '*')
+      graph.add(upstream)
+      expect(
+        remoteMutations(scope).connect(
+          {
+            id: 9,
+            originNodeId: upstream.id,
+            originSlot: 0,
+            targetNodeId: 1,
+            targetSlot: 0,
+            type: '*',
+            targetInputs: [{ name: 'in', type: '*', link: 9 }]
+          },
+          REMOTE
+        )
+      ).toBe(true)
+
+      LiteGraph.registerNodeType('late-two-widget-node', LateTwoWidgetNode)
+      try {
+        reconcileAgentAdapters(graph)
+        const node = graph.getNodeById(toNodeId(1))
+        expect(node).toBeInstanceOf(LateTwoWidgetNode)
+        expect(useLinkStore().getInputSlotLink(scope, toNodeId(1), 0)?.id).toBe(
+          toLinkId(9)
+        )
+        expect(node?.widgets?.map((widget) => widget.value)).toEqual([20, 4])
+      } finally {
+        LiteGraph.unregisterNodeType('late-two-widget-node')
+      }
+    })
+
     it('never rewrites a sibling slot after an ambiguous write', () => {
       const graph = new LGraph()
       const mutations = remoteMutations(graphScopeOf(graph))

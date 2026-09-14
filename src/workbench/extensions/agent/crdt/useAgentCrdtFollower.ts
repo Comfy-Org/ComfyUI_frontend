@@ -1,6 +1,8 @@
 import { computed, onBeforeUnmount, readonly, ref, watch } from 'vue'
 import type { Ref } from 'vue'
 
+import { LiteGraph } from '@/lib/litegraph/src/litegraph'
+import { reportError } from '@/platform/telemetry/reportError'
 import { api } from '@/scripts/api'
 import type { RemoteMutationContext } from '@/types/graphMutationContext'
 import { createUuidv4 } from '@/utils/uuid'
@@ -18,7 +20,6 @@ import type { MutationsForTarget } from './ecsFollowerAdapter'
 import type { GraphOperation } from './graphOperations'
 import { LayoutFollowerBridge } from './layoutFollowerBridge'
 import type { OpsResultView } from './opSender'
-import { onNodeTypeRegistered } from './nodeTypeRegistrations'
 import { createOpSender } from './opSender'
 
 export { apiTransport, STALE_AFTER_MS }
@@ -345,9 +346,16 @@ export function useAgentCrdtFollower(
   let boundWorkflowId: string | null = null
   // A placeholder for a type that registers later (definitions refreshed, a
   // custom node installed) rebinds without a workflow reload.
-  const stopRebinding = onNodeTypeRegistered((type) => {
-    if (boundWorkflowId !== null && isTargetActive.value)
+  const stopRebinding = LiteGraph.subscribeNodeTypeRegistered((type) => {
+    if (boundWorkflowId === null || !isTargetActive.value) return
+    try {
       projection.rebindPlaceholders(boundWorkflowId, type)
+    } catch (error) {
+      reportError(error, {
+        errorType: 'agent_placeholder_rebind_failed',
+        context: { workflowId: boundWorkflowId, type }
+      })
+    }
   })
   // Readiness only. The other ordering -- graph ready first, target activated
   // second -- cannot be caught here: `getGraph` does not change when activity

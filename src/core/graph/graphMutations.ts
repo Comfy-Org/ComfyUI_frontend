@@ -166,6 +166,27 @@ interface PrepareDraft {
   widgets: Map<string, Set<string>>
 }
 
+/**
+ * `ISerialisedNode.widgets_values` is declared as an array, but some custom
+ * nodes override it with a record (see its docs) and op-layer payloads carry
+ * values keyed by widget name. These two accessors are the only place the
+ * wider shape crosses that boundary; everything else narrows normally.
+ */
+type StoredWidgetValues = WidgetValue[] | Record<string, WidgetValue>
+
+function storedWidgetValues(
+  serialised: ISerialisedNode | undefined
+): StoredWidgetValues | undefined {
+  return serialised?.widgets_values
+}
+
+function setStoredWidgetValues(
+  serialised: ISerialisedNode,
+  values: StoredWidgetValues | undefined
+): void {
+  serialised.widgets_values = values as ISerialisedNode['widgets_values']
+}
+
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value)
 }
@@ -254,11 +275,11 @@ function syncSerializedWidgetValue(
 ): void {
   const serialised = state.lastSerialization
   if (!serialised) return
-  const values: unknown = serialised.widgets_values
-  const named: unknown = serialised.widgets_values_named
-  const clone = structuredClone(value)
+  const values = storedWidgetValues(serialised)
+  const named = serialised.widgets_values_named
+  const clone = structuredClone(value) as WidgetValue
   if (isRecord(values)) values[name] = clone
-  if (isRecord(named)) named[name] = clone
+  if (named) named[name] = clone
 }
 
 function reconcileInputSlots(
@@ -904,12 +925,12 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
   }
 
   /**
-   * existing.lastSerialization can predate incremental setWidget calls, which
-   * only update the widget store and never touch lastSerialization. Overlay
-   * the live widget-store values so a layout-only reconcile can't resurrect a
-   * value that was already superseded. Only overlay widgets already present in
-   * the stale snapshot: a node with no prior snapshot (or one already cleared
-   * to empty) must stay untouched here.
+   * setWidget writes through to record-shaped values and the named record, but
+   * a saved positional array and direct widget-store writes do not follow.
+   * Overlay the live store values so a layout-only reconcile can't resurrect a
+   * superseded value. Only widgets already present in the stale snapshot take
+   * part, so a node with no prior snapshot (or one cleared to empty) stays
+   * untouched.
    */
   function overlayStaleSnapshot(
     scope: GraphScope,
@@ -918,7 +939,7 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
     serialised: ISerialisedNode
   ): void {
     const stale = staleWidgetOverlay(scope, existing, nodeId)
-    serialised.widgets_values = overlaidPositional(stale)
+    setStoredWidgetValues(serialised, overlaidPositional(stale))
     serialised.widgets_values_named =
       stale.staleNamed === undefined ? stale.staleNamed : stale.named
   }
@@ -931,12 +952,9 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
     const staleNamed = cloneDeep(
       existing.lastSerialization?.widgets_values_named
     )
-    // widgets_values is typed as an array, but this reconciler also handles
-    // legacy/record-shaped payloads (see widgetEntries above), so treat it as
-    // unknown here.
     const stalePositional = cloneDeep(
-      existing.lastSerialization?.widgets_values
-    ) as unknown
+      storedWidgetValues(existing.lastSerialization)
+    )
     const serializableWidgets = widgetStore
       .getNodeWidgets(scope.rootGraphId, nodeId)
       .filter(
@@ -955,7 +973,7 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
       ...(isRecord(stalePositional) ? Object.keys(stalePositional) : [])
     ])
     const named = { ...staleNamed }
-    const overlay: Record<string, unknown> = {}
+    const overlay: Record<string, WidgetValue> = {}
     for (const widget of serializableWidgets) {
       if (!staleNames.has(widget.name)) continue
       overlay[widget.name] = widget.value
@@ -991,25 +1009,16 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
     namedKeys,
     positionalNames,
     overlay
-  }: ReturnType<typeof staleWidgetOverlay>): ISerialisedNode['widgets_values'] {
+  }: ReturnType<typeof staleWidgetOverlay>): StoredWidgetValues | undefined {
     if (Array.isArray(stalePositional)) {
-      const positional = stalePositional as unknown[]
-      return (
-        namedKeys.length > 0
-          ? positional
-          : positional.map((value, index) => {
-              const name = positionalNames[index]
-              return name && name in overlay ? overlay[name] : value
-            })
-      ) as ISerialisedNode['widgets_values']
+      if (namedKeys.length > 0) return stalePositional
+      return stalePositional.map((value, index) => {
+        const name = positionalNames[index]
+        return name && name in overlay ? overlay[name] : value
+      })
     }
-    if (isRecord(stalePositional)) {
-      return {
-        ...stalePositional,
-        ...overlay
-      } as unknown as ISerialisedNode['widgets_values']
-    }
-    return stalePositional as ISerialisedNode['widgets_values']
+    if (isRecord(stalePositional)) return { ...stalePositional, ...overlay }
+    return stalePositional
   }
 
   function registerPreparedWidgets(

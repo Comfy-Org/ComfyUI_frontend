@@ -233,6 +233,12 @@ export interface GraphRemoveOptions {
    * Same-id replacement state is left intact.
    */
   preserveCanonicalState?: boolean
+  /**
+   * The caller replaces this node's adapter for the same canonical record:
+   * links, widget values and execution order stay untouched for the
+   * successor, whether or not this node still owns the record.
+   */
+  replacement?: boolean
 }
 
 export interface LGraphExtra extends Dictionary<unknown> {
@@ -1477,6 +1483,7 @@ export class LGraph
     const nodeStore = useNodeDataStore()
     const canonical = nodeStore.getNode(this.rootGraph.id, node.id)
     const preserveReplacement =
+      options.replacement ||
       successor ||
       (options.preserveCanonicalState &&
         canonical?.graphId === this.id &&

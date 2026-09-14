@@ -251,10 +251,10 @@ function reconcile(
 }
 
 /**
- * A placeholder whose type registered since it was built is replaced the way
- * any stale adapter is: its record moves to a fresh state object so the live
- * node stops owning it, and the orphan path swaps the class with the
- * canonical links and widget values kept.
+ * Selects the adapter work for one record: nothing for a live owner, a swap
+ * for a placeholder whose type registered since it was built, a fresh adapter
+ * otherwise. Ownership is never rewritten here; `materialize` performs the
+ * replacement as one transaction.
  */
 function materializeRecord(
   graph: MaterializableGraph,
@@ -272,10 +272,8 @@ function materializeRecord(
   }
   const serialised = state.lastSerialization
   if (!serialised || pendingDefinitions.has(state.type)) return false
-  const record = rebindRecord(scope, state, owned)
-  if (!record) return false
   const orphan = owned ? live : orphansById.get(state.id)
-  return materialize(graph, scope, record, serialised, orphan)
+  return materialize(graph, scope, state, serialised, orphan)
 }
 
 /** `LGraph.configure()` builds a bare `LGraphNode` for a type it cannot find. */
@@ -284,17 +282,6 @@ function isRebindablePlaceholder(node: LGraphNode, state: NodeState): boolean {
     node.constructor === LGraphNode &&
     Object.hasOwn(LiteGraph.registered_node_types, state.type)
   )
-}
-
-function rebindRecord(
-  scope: GraphScope,
-  state: NodeState,
-  owned: boolean
-): NodeState | undefined {
-  if (!owned) return state
-  const nodeStore = useNodeDataStore()
-  if (!nodeStore.deleteNode(scope, state)) return undefined
-  return nodeStore.registerNode(scope, { ...state })
 }
 
 function materialize(
@@ -321,7 +308,7 @@ function materialize(
 
   if (orphan) {
     try {
-      graph.remove(orphan, { preserveCanonicalState: true })
+      graph.remove(orphan, { preserveCanonicalState: true, replacement: true })
     } catch (cause) {
       return rollback(cause, 'agent_node_materialize_remove_failed')
     }

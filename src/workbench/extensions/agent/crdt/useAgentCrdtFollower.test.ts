@@ -115,6 +115,13 @@ vi.mock<unknown>(import('./ecsFollowerAdapter'), () => ({
   }
 }))
 
+const { reportErrorMock } = vi.hoisted(() => ({
+  reportErrorMock: vi.fn()
+}))
+vi.mock(import('@/platform/telemetry/reportError'), () => ({
+  reportError: reportErrorMock
+}))
+
 vi.mock(import('./agentNodeMaterializer'), () => ({
   reconcileAgentAdapters: materializerState.reconcileAgentAdapters
 }))
@@ -756,6 +763,48 @@ describe('useAgentCrdtFollower', () => {
       } finally {
         LiteGraph.unregisterNodeType('late-registered')
         LiteGraph.unregisterNodeType('other-type')
+      }
+    })
+
+    it('keeps rebinding after another consumer assigns the legacy callback, and reports a rebind that throws', () => {
+      const placeholder = new LGraphNode('Missing', 'late-assigned')
+      const graphWithPlaceholder = {
+        ...fakeGraph,
+        _nodes: [placeholder]
+      } as unknown as MaterializableGraph
+      const { unmount } = mountFollower(
+        'wf-1',
+        true,
+        () => graphWithPlaceholder
+      )
+      const previous = LiteGraph.onNodeTypeRegistered
+      const legacy = vi.fn()
+      class LateNode extends LGraphNode {}
+      try {
+        LiteGraph.onNodeTypeRegistered = legacy
+        materializerState.reconcileAgentAdapters.mockClear()
+        LiteGraph.registerNodeType('late-assigned', LateNode)
+        expect(legacy).toHaveBeenCalledOnce()
+        expect(materializerState.reconcileAgentAdapters).toHaveBeenCalledTimes(
+          1
+        )
+
+        materializerState.reconcileAgentAdapters.mockImplementationOnce(() => {
+          throw new Error('onRemoved threw')
+        })
+        expect(() =>
+          LiteGraph.registerNodeType('late-assigned', LateNode)
+        ).not.toThrow()
+        expect(reportErrorMock).toHaveBeenCalledWith(
+          expect.any(Error),
+          expect.objectContaining({
+            errorType: 'agent_placeholder_rebind_failed'
+          })
+        )
+      } finally {
+        LiteGraph.onNodeTypeRegistered = previous
+        unmount()
+        LiteGraph.unregisterNodeType('late-assigned')
       }
     })
 
