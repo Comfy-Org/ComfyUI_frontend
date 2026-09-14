@@ -109,3 +109,9 @@ export {
   operationRoute
 } from './operationLifecycle.js'
 export { BILLING_OPERATION_TELEMETRY_EVENT } from '../../telemetry.js'
+export type {
+  EmbeddedChallengeOutcome,
+  EmbeddedChallengePort
+} from './challengeDriver.js'
+export { driveEmbeddedChallenge } from './challengeDriver.js'
+export { readBillingErrorCode } from './billingErrorBody.js'

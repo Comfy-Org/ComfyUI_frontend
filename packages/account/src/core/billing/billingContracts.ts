@@ -35,6 +35,12 @@ export type BillingFailure = {
   readonly code: BillingErrorCode
   /** Set only when the failure came from an HTTP response. */
   readonly httpStatus?: number
+  /**
+   * The coded `code` of a generated `ErrorResponse` body, when the server
+   * sent one. Its `message` is dropped on purpose: a command acts on codes
+   * it names, never on server text.
+   */
+  readonly serverCode?: string
 }
 
 export type BillingResult<T> =
