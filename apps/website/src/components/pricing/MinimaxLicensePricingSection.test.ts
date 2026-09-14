@@ -6,6 +6,9 @@ import { minimaxLicenseComparison } from '../../data/minimaxLicense'
 import MinimaxLicensePricingSection from './MinimaxLicensePricingSection.vue'
 
 const { columns, rows } = minimaxLicenseComparison
+const contactSalesCount = rows.flatMap((row) =>
+  row.cells.filter((cell) => cell.en === 'Contact sales')
+).length
 
 describe('MinimaxLicensePricingSection', () => {
   it('renders the English heading, description and CTA by default', () => {
@@ -54,10 +57,7 @@ describe('MinimaxLicensePricingSection', () => {
     render(MinimaxLicensePricingSection, { props: { locale: 'en' } })
 
     const contactLinks = screen.getAllByRole('link', { name: 'Contact sales' })
-    const expectedCount = rows.flatMap((row) =>
-      row.cells.filter((cell) => cell.en === 'Contact sales')
-    ).length
-    expect(contactLinks).toHaveLength(expectedCount)
+    expect(contactLinks).toHaveLength(contactSalesCount)
     for (const link of contactLinks) {
       expect(link.getAttribute('href')).toBe('/contact')
     }
@@ -69,7 +69,9 @@ describe('MinimaxLicensePricingSection', () => {
   it('localizes the Contact sales links for zh-CN', () => {
     render(MinimaxLicensePricingSection, { props: { locale: 'zh-CN' } })
 
-    for (const link of screen.getAllByRole('link', { name: '联系销售' })) {
+    const contactLinks = screen.getAllByRole('link', { name: '联系销售' })
+    expect(contactLinks).toHaveLength(contactSalesCount)
+    for (const link of contactLinks) {
       expect(link.getAttribute('href')).toBe('/zh-CN/contact')
     }
   })
