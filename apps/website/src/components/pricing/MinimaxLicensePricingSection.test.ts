@@ -11,8 +11,10 @@ describe('MinimaxLicensePricingSection', () => {
   it('renders the English heading, description and CTA by default', () => {
     render(MinimaxLicensePricingSection)
 
-    expect(screen.getByText('License pricing')).toBeTruthy()
-    expect(screen.getByText(/Professional from \$5,000 a month/)).toBeTruthy()
+    expect(screen.getByText('MiniMax license pricing')).toBeTruthy()
+    expect(
+      screen.getByText(/Comfy Cloud already includes commercial use/)
+    ).toBeTruthy()
     expect(screen.getByRole('link', { name: 'See license tiers' })).toBeTruthy()
   })
 
@@ -75,8 +77,8 @@ describe('MinimaxLicensePricingSection', () => {
   it('localizes the copy, the table and the CTA route for zh-CN', () => {
     render(MinimaxLicensePricingSection, { props: { locale: 'zh-CN' } })
 
-    expect(screen.getByText('许可定价')).toBeTruthy()
-    expect(screen.getByText(/专业版每月 5,000 美元起/)).toBeTruthy()
+    expect(screen.getByText('MiniMax 许可定价')).toBeTruthy()
+    expect(screen.getByText(/Comfy Cloud 已包含商业使用权/)).toBeTruthy()
 
     const cta = screen.getByRole('link', { name: '查看许可级别' })
     expect(cta.getAttribute('href')).toBe('/zh-CN/minimax/license')
@@ -92,7 +94,7 @@ describe('MinimaxLicensePricingSection', () => {
       ).toBeTruthy()
     }
 
-    expect(screen.queryByText('License pricing')).toBeNull()
+    expect(screen.queryByText('MiniMax license pricing')).toBeNull()
     expect(screen.queryByRole('link', { name: 'See license tiers' })).toBeNull()
   })
 })

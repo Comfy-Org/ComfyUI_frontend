@@ -15,7 +15,9 @@ describe('CloudPricingSection', () => {
     render(CloudPricingSection)
 
     const billingToggle = screen.getByText('Monthly')
-    const banner = screen.getByText("Start free. Upgrade when you're ready.")
+    const banner = screen.getByText(
+      'Start Comfy Cloud for free. Upgrade when ready.'
+    )
     const planCards = screen.getByText('MOST POPULAR')
 
     expect(isBefore(billingToggle, banner)).toBe(true)
@@ -33,8 +35,10 @@ describe('CloudPricingSection', () => {
   it('localizes the banner for the zh-CN page', () => {
     render(CloudPricingSection, { props: { locale: 'zh-CN' } })
 
-    expect(screen.getByText('免费开始，准备好了再升级。')).toBeTruthy()
+    expect(
+      screen.getByText('免费开始使用 Comfy Cloud，准备好了再升级。')
+    ).toBeTruthy()
     expect(screen.getByRole('link', { name: '免费试用' })).toBeTruthy()
-    expect(screen.queryByText(/Start free/)).toBeNull()
+    expect(screen.queryByText(/Start Comfy Cloud for free/)).toBeNull()
   })
 })
