@@ -15,26 +15,26 @@ const { mockApp } = vi.hoisted(() => ({
   }
 }))
 
-vi.mock('./app', () => ({
+vi.mock<unknown>(import('./app'), () => ({
   ComfyApp: class {},
   app: mockApp
 }))
 
-vi.mock('./api', () => ({
+vi.mock<unknown>(import('./api'), () => ({
   api: {
     addEventListener: vi.fn()
   }
 }))
 
-vi.mock('./ui/dialog', () => ({
+vi.mock<unknown>(import('./ui/dialog'), () => ({
   ComfyDialog: class {}
 }))
 
-vi.mock('./ui/settings', () => ({
+vi.mock<unknown>(import('./ui/settings'), () => ({
   ComfySettingsDialog: class {}
 }))
 
-vi.mock('./ui/toggleSwitch', () => ({
+vi.mock(import('./ui/toggleSwitch'), () => ({
   toggleSwitch: vi.fn(() => document.createElement('div'))
 }))
 

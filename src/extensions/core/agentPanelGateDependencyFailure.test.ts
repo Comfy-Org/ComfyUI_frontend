@@ -11,30 +11,30 @@ const registered = vi.hoisted(() => ({
 
 const reportErrorMock = vi.hoisted(() => vi.fn())
 
-vi.mock('@/platform/telemetry/reportError', () => ({
+vi.mock(import('@/platform/telemetry/reportError'), () => ({
   reportError: reportErrorMock
 }))
 
 // The throwing factory rejects the gate's guarded dynamic import - the
 // dependency-chunk failure an ad blocker produces.
-vi.mock('@/workbench/extensions/agent/utils/postHogFlagSource', () => {
+vi.mock(import('@/workbench/extensions/agent/utils/postHogFlagSource'), () => {
   throw new Error('flag source chunk failed to load')
 })
 
-vi.mock('@/utils/graphTraversalUtil', () => ({
+vi.mock(import('@/utils/graphTraversalUtil'), () => ({
   getNodeByLocatorId: vi.fn()
 }))
 
-vi.mock('@/utils/litegraphUtil', () => ({
+vi.mock<unknown>(import('@/utils/litegraphUtil'), () => ({
   isLGraphNode: () => false
 }))
 
 vi.mock(
-  '@/workbench/extensions/agent/services/agent/workflowTabActivityTracker',
+  import('@/workbench/extensions/agent/services/agent/workflowTabActivityTracker'),
   () => ({ registerWorkflowTabActivityTracker: vi.fn() })
 )
 
-vi.mock('@/services/extensionService', () => ({
+vi.mock<unknown>(import('@/services/extensionService'), () => ({
   useExtensionService: () => ({
     registerExtension: (extension: { setup?: () => Promise<void> | void }) => {
       registered.setup = extension.setup ?? null

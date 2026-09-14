@@ -21,7 +21,7 @@ const { viewHelperInstances, mockHandleClick } = vi.hoisted(() => ({
   mockHandleClick: vi.fn()
 }))
 
-vi.mock('three/examples/jsm/helpers/ViewHelper', () => {
+vi.mock<unknown>(import('three/examples/jsm/helpers/ViewHelper'), () => {
   class ViewHelper {
     animating = false
     visible = true
@@ -33,7 +33,7 @@ vi.mock('three/examples/jsm/helpers/ViewHelper', () => {
       public camera: THREE.Camera,
       public domElement: HTMLElement
     ) {
-      viewHelperInstances.push(this as unknown as MockViewHelperInstance)
+      viewHelperInstances.push(this)
     }
   }
   return { ViewHelper }

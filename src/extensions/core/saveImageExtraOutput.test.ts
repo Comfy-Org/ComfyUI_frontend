@@ -11,7 +11,7 @@ const { app } = vi.hoisted(() => ({
   }
 }))
 
-vi.mock('@/scripts/app', () => ({ app }))
+vi.mock<unknown>(import('@/scripts/app'), () => ({ app }))
 
 type BeforeRegisterNodeDef = NonNullable<
   ComfyExtension['beforeRegisterNodeDef']

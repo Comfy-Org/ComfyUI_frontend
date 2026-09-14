@@ -31,7 +31,7 @@ const extensions = await vi.hoisted(async () => {
 /** `app.configuringGraph` is a getter on the real app, so route it via a ref. */
 const appState = vi.hoisted(() => ({ configuringGraph: false }))
 
-vi.mock('@/scripts/app', () => ({
+vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: {
     canvas: { graph_mouse: [0, 0], graph: null },
     get configuringGraph() {
@@ -583,7 +583,7 @@ describe('Comfy.WidgetInputs node-def hooks', () => {
       node.onGraphConfigured?.()
 
       expect(original).toHaveBeenCalled()
-      expect(node.inputs[0].widget![GET_CONFIG]!()).toEqual([
+      expect(node.inputs[0].widget[GET_CONFIG]!()).toEqual([
         'INT',
         { min: 0, max: 8 }
       ])
@@ -613,10 +613,7 @@ describe('Comfy.WidgetInputs node-def hooks', () => {
 
       node.onConfigure?.(fromPartial({}))
 
-      expect(node.inputs[0].widget![GET_CONFIG]!()).toEqual([
-        'INT',
-        { max: 50 }
-      ])
+      expect(node.inputs[0].widget[GET_CONFIG]!()).toEqual(['INT', { max: 50 }])
     })
 
     it('defers to onGraphConfigured while a whole graph is loading', async () => {
@@ -628,7 +625,7 @@ describe('Comfy.WidgetInputs node-def hooks', () => {
 
       node.onConfigure?.(fromPartial({}))
 
-      expect(node.inputs[0].widget![GET_CONFIG]).toBeUndefined()
+      expect(node.inputs[0].widget[GET_CONFIG]).toBeUndefined()
     })
   })
 

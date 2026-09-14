@@ -17,48 +17,53 @@ const {
   getNodeByLocatorIdMock: vi.fn()
 }))
 
-vi.mock('@/services/extensionService', () => ({
+vi.mock<unknown>(import('@/services/extensionService'), () => ({
   useExtensionService: () => ({ registerExtension: registerExtensionMock })
 }))
 
-vi.mock('@/services/load3dService', () => ({
+vi.mock<unknown>(import('@/services/load3dService'), () => ({
   useLoad3dService: () => ({ getLoad3d: vi.fn() })
 }))
 
-vi.mock('@/composables/useLoad3d', () => ({
+vi.mock<unknown>(import('@/composables/useLoad3d'), () => ({
   useLoad3d: () => ({
     waitForLoad3d: waitForLoad3dMock,
     onLoad3dReady: onLoad3dReadyMock
   })
 }))
 
-vi.mock('@/extensions/core/load3d/Load3DConfiguration', () => ({
-  default: class {
-    configureForSaveMesh = configureForSaveMeshMock
-  }
-}))
+vi.mock<unknown>(
+  import('@/extensions/core/load3d/Load3DConfiguration'),
+  () => ({
+    default: class {
+      configureForSaveMesh = configureForSaveMeshMock
+    }
+  })
+)
 
-vi.mock('@/extensions/core/load3d/exportMenuHelper', () => ({
+vi.mock(import('@/extensions/core/load3d/exportMenuHelper'), () => ({
   createExportMenuItems: vi.fn(() => [])
 }))
 
-vi.mock('@/components/load3d/Load3D.vue', () => ({ default: {} }))
+vi.mock<unknown>(import('@/components/load3d/Load3D.vue'), () => ({
+  default: {}
+}))
 
-vi.mock('@/scripts/domWidget', () => ({
+vi.mock<unknown>(import('@/scripts/domWidget'), () => ({
   ComponentWidgetImpl: vi.fn(),
   addWidget: vi.fn()
 }))
 
-vi.mock('@/platform/assets/utils/assetPreviewUtil', () => ({
+vi.mock(import('@/platform/assets/utils/assetPreviewUtil'), () => ({
   isAssetPreviewSupported: vi.fn(() => false),
   persistThumbnail: vi.fn()
 }))
 
-vi.mock('@/scripts/app', () => ({
+vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: { rootGraph: {} }
 }))
 
-vi.mock('@/utils/graphTraversalUtil', () => ({
+vi.mock(import('@/utils/graphTraversalUtil'), () => ({
   getNodeByLocatorId: getNodeByLocatorIdMock
 }))
 
@@ -262,7 +267,7 @@ describe('Comfy.SaveGLB.onNodeOutputsUpdated', () => {
     const node = makeNode()
     getNodeByLocatorIdMock.mockReturnValue(node)
 
-    ext.onNodeOutputsUpdated!({
+    ext.onNodeOutputsUpdated({
       '7': {
         '3d': [{ filename: 'mesh.glb', subfolder: 'sub', type: 'output' }]
       }
@@ -284,7 +289,7 @@ describe('Comfy.SaveGLB.onNodeOutputsUpdated', () => {
     const node = makeNode()
     getNodeByLocatorIdMock.mockReturnValue(node)
 
-    ext.onNodeOutputsUpdated!({ '7': {} } as never)
+    ext.onNodeOutputsUpdated({ '7': {} } as never)
 
     expect(getNodeByLocatorIdMock).not.toHaveBeenCalled()
     expect(configureForSaveMeshMock).not.toHaveBeenCalled()
@@ -294,7 +299,7 @@ describe('Comfy.SaveGLB.onNodeOutputsUpdated', () => {
     const ext = await loadSaveMeshExtensionFresh()
     getNodeByLocatorIdMock.mockReturnValue(null)
 
-    ext.onNodeOutputsUpdated!({
+    ext.onNodeOutputsUpdated({
       '7': {
         '3d': [{ filename: 'mesh.glb', subfolder: 'sub', type: 'output' }]
       }
@@ -308,7 +313,7 @@ describe('Comfy.SaveGLB.onNodeOutputsUpdated', () => {
     const node = makeNode({ comfyClass: 'Preview3D' })
     getNodeByLocatorIdMock.mockReturnValue(node)
 
-    ext.onNodeOutputsUpdated!({
+    ext.onNodeOutputsUpdated({
       '7': {
         '3d': [{ filename: 'mesh.glb', subfolder: 'sub', type: 'output' }]
       }
@@ -330,7 +335,7 @@ describe('Comfy.SaveGLB.onNodeOutputsUpdated', () => {
     ).value = 'sub/mesh.glb'
     getNodeByLocatorIdMock.mockReturnValue(node)
 
-    ext.onNodeOutputsUpdated!({
+    ext.onNodeOutputsUpdated({
       '7': {
         '3d': [{ filename: 'mesh.glb', subfolder: 'sub', type: 'output' }]
       }

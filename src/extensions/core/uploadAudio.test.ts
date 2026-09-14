@@ -34,7 +34,7 @@ let capturedFileSelect:
   | undefined
 let capturedPaste: ((files: File[]) => Promise<File[] | never[]>) | undefined
 
-vi.mock('extendable-media-recorder', () => ({
+vi.mock<unknown>(import('extendable-media-recorder'), () => ({
   MediaRecorder: class MockMediaRecorder {
     start = mockMediaRecorderStart
     stop = mockMediaRecorderStop
@@ -45,11 +45,11 @@ vi.mock('extendable-media-recorder', () => ({
   }
 }))
 
-vi.mock('@/platform/telemetry/reportError', () => ({
+vi.mock(import('@/platform/telemetry/reportError'), () => ({
   reportError: mockReportError
 }))
 
-vi.mock('@/composables/node/useNodeDragAndDrop', () => ({
+vi.mock<unknown>(import('@/composables/node/useNodeDragAndDrop'), () => ({
   useNodeDragAndDrop: (
     _node: LGraphNode,
     options: { onDrop: typeof capturedDragDrop }
@@ -58,7 +58,7 @@ vi.mock('@/composables/node/useNodeDragAndDrop', () => ({
   }
 }))
 
-vi.mock('@/composables/node/useNodeFileInput', () => ({
+vi.mock<unknown>(import('@/composables/node/useNodeFileInput'), () => ({
   useNodeFileInput: (
     _node: LGraphNode,
     options: { onSelect: typeof capturedFileSelect }
@@ -68,7 +68,7 @@ vi.mock('@/composables/node/useNodeFileInput', () => ({
   }
 }))
 
-vi.mock('@/composables/node/useNodePaste', () => ({
+vi.mock<unknown>(import('@/composables/node/useNodePaste'), () => ({
   useNodePaste: (
     _node: LGraphNode,
     options: { onPaste: typeof capturedPaste }
@@ -77,7 +77,7 @@ vi.mock('@/composables/node/useNodePaste', () => ({
   }
 }))
 
-vi.mock('@/i18n', () => ({
+vi.mock(import('@/i18n'), () => ({
   t: (key: string) => key
 }))
 
@@ -86,31 +86,34 @@ beforeEach(() => {
   mockAddAlert = useToastStore().addAlert
 })
 
-vi.mock('@/renderer/extensions/vueNodes/widgets/utils/audioUtils', () => ({
-  getResourceURL: (subfolder = '', filename = '', type = 'input') =>
-    `/view?filename=${filename}&subfolder=${subfolder}&type=${type}`,
-  splitFilePath: (path: string) => ['', path, 'input']
-}))
+vi.mock<unknown>(
+  import('@/renderer/extensions/vueNodes/widgets/utils/audioUtils'),
+  () => ({
+    getResourceURL: (subfolder = '', filename = '', type = 'input') =>
+      `/view?filename=${filename}&subfolder=${subfolder}&type=${type}`,
+    splitFilePath: (path: string) => ['', path, 'input']
+  })
+)
 
-vi.mock('@/scripts/api', () => ({
+vi.mock<unknown>(import('@/scripts/api'), () => ({
   api: {
     apiURL: mockApiURL,
     fetchApi: mockFetchApi
   }
 }))
 
-vi.mock('@/scripts/app', () => ({
+vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: {
     registerExtension: extensions.registerExtension,
     rootGraph: { id: 'root' }
   }
 }))
 
-vi.mock('@/utils/graphTraversalUtil', () => ({
+vi.mock(import('@/utils/graphTraversalUtil'), () => ({
   getNodeByLocatorId: vi.fn()
 }))
 
-vi.mock('@/services/audioService', () => ({
+vi.mock<unknown>(import('@/services/audioService'), () => ({
   useAudioService: () => ({ stopAllTracks: mockStopAllTracks })
 }))
 

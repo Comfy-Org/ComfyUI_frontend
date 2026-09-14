@@ -4,7 +4,7 @@ import { api } from '@/scripts/api'
 
 import { DEFAULT_MODEL_CAPABILITIES, fetchModelData } from './ModelAdapter'
 
-vi.mock('@/scripts/api', () => ({
+vi.mock<unknown>(import('@/scripts/api'), () => ({
   api: {
     fetchApi: vi.fn()
   }

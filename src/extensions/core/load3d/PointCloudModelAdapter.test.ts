@@ -7,21 +7,21 @@ import type { ModelLoadContext } from './ModelAdapter'
 import * as ModelAdapterModule from './ModelAdapter'
 import { PointCloudModelAdapter } from './PointCloudModelAdapter'
 
-vi.mock('@/scripts/metadata/ply', () => ({
+vi.mock(import('@/scripts/metadata/ply'), () => ({
   isPLYAsciiFormat: vi.fn().mockReturnValue(false)
 }))
 
 const plyLoaderParse = vi.fn(() => makePLYGeometry({ withFaces: true }))
 const fastPlyLoaderParse = vi.fn(() => makePLYGeometry({ withFaces: true }))
 
-vi.mock('three/examples/jsm/loaders/PLYLoader', () => ({
+vi.mock<unknown>(import('three/examples/jsm/loaders/PLYLoader'), () => ({
   PLYLoader: class {
     setPath = vi.fn()
     parse = plyLoaderParse
   }
 }))
 
-vi.mock('./loader/FastPLYLoader', () => ({
+vi.mock(import('./loader/FastPLYLoader'), () => ({
   FastPLYLoader: class {
     parse = fastPlyLoaderParse
   }

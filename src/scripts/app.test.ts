@@ -29,7 +29,7 @@ import { useWorkflowService } from '@/platform/workflow/core/services/workflowSe
 import { createMockChangeTracker } from '@/utils/__tests__/litegraphTestUtils'
 import { useNodeReplacementStore } from '@/platform/nodeReplacement/nodeReplacementStore'
 import type { NodeReplacement } from '@/platform/nodeReplacement/types'
-import type { NodeExecutionOutput } from '@/schemas/apiSchema'
+import type { NodeExecutionOutput, NodeError } from '@/schemas/apiSchema'
 import { ComfyApp, app as singletonApp } from './app'
 import { createNode } from '@/utils/litegraphUtil'
 import {
@@ -54,7 +54,6 @@ import { PromptExecutionError, api } from '@/scripts/api'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useDialogStore } from '@/stores/dialogStore'
-import type { NodeError } from '@/schemas/apiSchema'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 import { createNodeExecutionId } from '@/types/nodeIdentification'
 import { toNodeId } from '@/types/nodeId'
@@ -91,7 +90,7 @@ const {
   }
 }))
 
-vi.mock('@/utils/litegraphUtil', () => ({
+vi.mock<unknown>(import('@/utils/litegraphUtil'), () => ({
   createNode: vi.fn(),
   isImageNode: vi.fn(),
   isVideoNode: vi.fn(),
@@ -99,7 +98,7 @@ vi.mock('@/utils/litegraphUtil', () => ({
   executeWidgetsCallback: vi.fn()
 }))
 
-vi.mock('@/composables/usePaste', () => ({
+vi.mock(import('@/composables/usePaste'), () => ({
   pasteAudioNode: vi.fn(),
   pasteAudioNodes: vi.fn(),
   pasteImageNode: vi.fn(),
@@ -108,13 +107,13 @@ vi.mock('@/composables/usePaste', () => ({
   pasteVideoNodes: vi.fn()
 }))
 
-vi.mock('@/scripts/metadata/parser', () => ({
+vi.mock(import('@/scripts/metadata/parser'), () => ({
   getWorkflowDataFromFile: vi.fn()
 }))
 
 vi.mock(import('@/utils/eventUtils'), { spy: true })
 
-vi.mock('./pnginfo', () => ({
+vi.mock(import('./pnginfo'), () => ({
   importA1111: mockImportA1111
 }))
 
@@ -122,17 +121,17 @@ vi.mock(import('@/platform/workflow/core/services/workflowService'), {
   spy: true
 })
 
-vi.mock('@/extensions/core/load3d/Load3dUtils', () => ({
+vi.mock<unknown>(import('@/extensions/core/load3d/Load3dUtils'), () => ({
   default: {
     uploadFile: vi.fn()
   }
 }))
 
-vi.mock('@/services/extensionService', () => ({
+vi.mock<unknown>(import('@/services/extensionService'), () => ({
   useExtensionService: vi.fn(() => mockExtensionService)
 }))
 
-vi.mock('@/platform/missingModel/missingModelPipeline', () => ({
+vi.mock(import('@/platform/missingModel/missingModelPipeline'), () => ({
   refreshMissingModelPipeline: mockRefreshMissingModelPipeline,
   runMissingModelPipeline: vi.fn()
 }))
@@ -219,7 +218,7 @@ describe('ComfyApp', () => {
     )
     app = new ComfyApp()
     mockCanvas = createMockCanvas() as LGraphCanvas
-    app.canvas = mockCanvas as LGraphCanvas
+    app.canvas = mockCanvas
     useWorkflowStore().activeWorkflow = null
     const temporaryWorkflow = new ComfyWorkflow({
       path: 'workflows/temporary.json',

@@ -5,7 +5,7 @@ import type { StatusWsMessageStatus } from '@/schemas/apiSchema'
 import { app } from './app'
 import { ComfyUI } from './ui'
 
-vi.mock('./app', () => ({
+vi.mock<unknown>(import('./app'), () => ({
   app: { lastExecutionError: null, queuePrompt: vi.fn() },
   ComfyApp: class {}
 }))

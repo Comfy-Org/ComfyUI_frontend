@@ -68,7 +68,7 @@ const {
   isGaussianSplatPLYMock: vi.fn<(b: ArrayBuffer) => Promise<boolean>>()
 }))
 
-vi.mock('./MeshModelAdapter', () => ({
+vi.mock<unknown>(import('./MeshModelAdapter'), () => ({
   MeshModelAdapter: class {
     readonly kind = 'mesh' as const
     readonly extensions = ['stl', 'fbx', 'obj', 'gltf', 'glb'] as const
@@ -77,7 +77,7 @@ vi.mock('./MeshModelAdapter', () => ({
   }
 }))
 
-vi.mock('./PointCloudModelAdapter', () => ({
+vi.mock<unknown>(import('./PointCloudModelAdapter'), () => ({
   PointCloudModelAdapter: class {
     readonly kind = 'pointCloud' as const
     readonly extensions = ['ply'] as const
@@ -86,7 +86,7 @@ vi.mock('./PointCloudModelAdapter', () => ({
   }
 }))
 
-vi.mock('./SplatModelAdapter', () => ({
+vi.mock<unknown>(import('./SplatModelAdapter'), () => ({
   SplatModelAdapter: class {
     readonly kind = 'splat' as const
     readonly extensions = ['spz', 'splat', 'ksplat', 'ply'] as const
@@ -102,13 +102,13 @@ vi.mock('./SplatModelAdapter', () => ({
   }
 }))
 
-vi.mock('./ModelAdapter', { spy: true })
+vi.mock(import('./ModelAdapter'), { spy: true })
 
-vi.mock('@/scripts/metadata/ply', () => ({
+vi.mock(import('@/scripts/metadata/ply'), () => ({
   isGaussianSplatPLY: isGaussianSplatPLYMock
 }))
 
-vi.mock('@/i18n', () => ({
+vi.mock(import('@/i18n'), () => ({
   t: (key: string) => key
 }))
 
@@ -128,9 +128,7 @@ function makeLoaderManager() {
   )
   const internals = lm as unknown as LoaderManagerInternals
   const pick = (ext: string) =>
-    internals.pickAdapter.call(lm, ext, () =>
-      fetchModelDataMock()
-    ) as Promise<ModelAdapter | null>
+    internals.pickAdapter.call(lm, ext, () => fetchModelDataMock())
   return { lm, modelManager, eventManager, pick }
 }
 

@@ -14,14 +14,14 @@ const { mockTextureLoad } = vi.hoisted(() => ({
   mockTextureLoad: vi.fn()
 }))
 
-vi.mock('./Load3dUtils', () => ({
+vi.mock<unknown>(import('./Load3dUtils'), () => ({
   default: {
     splitFilePath: vi.fn(),
     getResourceURL: vi.fn()
   }
 }))
 
-vi.mock('three', { spy: true })
+vi.mock(import('three'), { spy: true })
 
 beforeEach(() => {
   function MockTextureLoader() {
@@ -30,7 +30,7 @@ beforeEach(() => {
   vi.spyOn(THREE, 'TextureLoader').mockImplementation(MockTextureLoader)
 })
 
-vi.mock('three/examples/jsm/controls/OrbitControls', () => {
+vi.mock<unknown>(import('three/examples/jsm/controls/OrbitControls'), () => {
   class OrbitControls {}
   return { OrbitControls }
 })
@@ -624,14 +624,7 @@ function makeSceneManager(
   const view = makeView(renderer, viewSize?.width, viewSize?.height)
   const camera = cameraOverride ?? new THREE.PerspectiveCamera()
   const eventManager = makeMockEventManager()
-  const manager = new SceneManager(
-    view,
-    () => camera,
-    vi.fn() as unknown as () => InstanceType<
-      typeof import('three/examples/jsm/controls/OrbitControls').OrbitControls
-    >,
-    eventManager
-  )
+  const manager = new SceneManager(view, () => camera, vi.fn(), eventManager)
   return { manager, renderer, view, camera, eventManager }
 }
 

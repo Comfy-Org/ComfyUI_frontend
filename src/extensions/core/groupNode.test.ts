@@ -19,14 +19,14 @@ const extensionState = vi.hoisted(() => ({
   ext: undefined as ComfyExtension | undefined,
   configuringGraph: false,
   rootGraph: {
-    extra: {} as Record<string, unknown>,
+    extra: {},
     nodes: [] as { id: string | number }[]
   },
   registerNodeDef:
     vi.fn<(typeName: string, nodeDef: ComfyNodeDef) => Promise<void>>()
 }))
 
-vi.mock('@/scripts/app', () => ({
+vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: {
     get configuringGraph() {
       return extensionState.configuringGraph

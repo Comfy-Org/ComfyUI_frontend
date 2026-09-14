@@ -31,15 +31,15 @@ const {
   }
 })
 
-vi.mock('@/services/extensionService', () => ({
+vi.mock<unknown>(import('@/services/extensionService'), () => ({
   useExtensionService: () => ({ registerExtension: registerExtensionMock })
 }))
 
-vi.mock('@/services/load3dService', () => ({
+vi.mock<unknown>(import('@/services/load3dService'), () => ({
   useLoad3dService: () => ({ getLoad3d: getLoad3dMock })
 }))
 
-vi.mock('@/composables/useLoad3d', () => ({
+vi.mock<unknown>(import('@/composables/useLoad3d'), () => ({
   useLoad3d: () => ({
     waitForLoad3d: waitForLoad3dMock,
     onLoad3dReady: onLoad3dReadyMock
@@ -47,25 +47,28 @@ vi.mock('@/composables/useLoad3d', () => ({
   nodeToLoad3dMap: nodeToLoad3dMapMock
 }))
 
-vi.mock('@/extensions/core/load3d/Load3DConfiguration', () => ({
-  default: class {
-    configureForSaveMesh = configureForSaveMeshMock
-  }
-}))
+vi.mock<unknown>(
+  import('@/extensions/core/load3d/Load3DConfiguration'),
+  () => ({
+    default: class {
+      configureForSaveMesh = configureForSaveMeshMock
+    }
+  })
+)
 
-vi.mock('@/extensions/core/load3d/exportMenuHelper', () => ({
+vi.mock(import('@/extensions/core/load3d/exportMenuHelper'), () => ({
   createExportMenuItems: vi.fn(() => [{ content: 'Export' }])
 }))
 
-vi.mock('@/scripts/app', () => ({
+vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: { rootGraph: {} }
 }))
 
-vi.mock('@/utils/graphTraversalUtil', () => ({
+vi.mock(import('@/utils/graphTraversalUtil'), () => ({
   getNodeByLocatorId: getNodeByLocatorIdMock
 }))
 
-vi.mock('@/i18n', () => ({
+vi.mock(import('@/i18n'), () => ({
   t: (key: string) => key
 }))
 

@@ -22,11 +22,11 @@ import { useQueueSettingsStore } from '@/stores/queueSettingsStore'
 
 const mockAssert = vi.hoisted(() => vi.fn())
 
-vi.mock('@/base/assert', () => ({
+vi.mock(import('@/base/assert'), () => ({
   assert: mockAssert
 }))
 
-vi.mock('@/scripts/app', () => ({
+vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: {
     nodeOutputs: {},
     nodePreviewImages: {},
@@ -54,7 +54,7 @@ vi.mock('@/scripts/app', () => ({
   }
 }))
 
-vi.mock('@/scripts/api', () => ({
+vi.mock<unknown>(import('@/scripts/api'), () => ({
   api: {
     dispatchCustomEvent: vi.fn(),
     addEventListener: vi.fn(),

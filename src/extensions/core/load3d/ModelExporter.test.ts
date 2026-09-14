@@ -19,34 +19,34 @@ const {
   fbxParseAsyncMock: vi.fn()
 }))
 
-vi.mock('@/base/common/downloadUtil', () => ({
+vi.mock(import('@/base/common/downloadUtil'), () => ({
   downloadBlob: downloadBlobMock
 }))
 
-vi.mock('@/i18n', () => ({
+vi.mock<unknown>(import('@/i18n'), () => ({
   t: (key: string, vars?: Record<string, unknown>) =>
     vars ? `${key}:${JSON.stringify(vars)}` : key
 }))
 
-vi.mock('three/examples/jsm/exporters/GLTFExporter', () => ({
+vi.mock<unknown>(import('three/examples/jsm/exporters/GLTFExporter'), () => ({
   GLTFExporter: class {
     parse = gltfParseMock
   }
 }))
 
-vi.mock('three/examples/jsm/exporters/OBJExporter', () => ({
+vi.mock(import('three/examples/jsm/exporters/OBJExporter'), () => ({
   OBJExporter: class {
     parse = objParseMock
   }
 }))
 
-vi.mock('three/examples/jsm/exporters/STLExporter', () => ({
+vi.mock(import('three/examples/jsm/exporters/STLExporter'), () => ({
   STLExporter: class {
     parse = stlParseMock
   }
 }))
 
-vi.mock('@comfyorg/fbx-exporter-three', () => ({
+vi.mock<unknown>(import('@comfyorg/fbx-exporter-three'), () => ({
   FBXExporter: class {
     parseAsync = fbxParseAsyncMock
   }

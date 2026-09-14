@@ -20,7 +20,7 @@ const { registerExtension } = vi.hoisted(() => ({
   registerExtension: vi.fn()
 }))
 
-vi.mock('@/scripts/app', () => ({
+vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: { registerExtension }
 }))
 

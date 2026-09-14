@@ -46,7 +46,7 @@ const mocks = vi.hoisted(() => ({
   registerTracker: vi.fn(() => () => {})
 }))
 
-vi.mock('@/services/extensionService', () => ({
+vi.mock<unknown>(import('@/services/extensionService'), () => ({
   useExtensionService: () => ({
     registerExtension: (ext: ComfyExtension) => {
       mocks.capturedExtensions.push(ext)
@@ -54,7 +54,7 @@ vi.mock('@/services/extensionService', () => ({
   })
 }))
 
-vi.mock('@/workbench/extensions/agent/crdt/mintPortWiring', () => ({
+vi.mock(import('@/workbench/extensions/agent/crdt/mintPortWiring'), () => ({
   notifyMintPortsAfterGraphConfigure: mocks.notifyAfterGraphConfigure,
   notifyMintPortsBeforeGraphLoad: mocks.notifyBeforeGraphLoad
 }))
@@ -63,13 +63,13 @@ vi.mock(import('@/utils/litegraphUtil'), { spy: true })
 vi.mock(import('@/utils/graphTraversalUtil'), { spy: true })
 
 vi.mock(
-  '@/workbench/extensions/agent/services/agent/workflowTabActivityTracker',
+  import('@/workbench/extensions/agent/services/agent/workflowTabActivityTracker'),
   () => ({
     registerWorkflowTabActivityTracker: mocks.registerTracker
   })
 )
 
-vi.mock('posthog-js', () => ({
+vi.mock<unknown>(import('posthog-js'), () => ({
   default: {
     isFeatureEnabled: () => mocks.flagEnabled,
     onFeatureFlags: (listener: () => void) => {

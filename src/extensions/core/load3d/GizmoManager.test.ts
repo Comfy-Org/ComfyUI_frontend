@@ -21,45 +21,48 @@ const {
   omitGetPointer: { value: false }
 }))
 
-vi.mock('three/examples/jsm/controls/TransformControls', () => {
-  class TransformControls {
-    enabled = true
-    dragging = false
-    camera: THREE.Camera
-    _getPointer?: (event: PointerEvent) => {
-      x: number
-      y: number
-      button: number
-    }
-    private listeners = new Map<string, ((e: unknown) => void)[]>()
-
-    constructor(camera: THREE.Camera) {
-      this.camera = camera
-      if (!omitGetPointer.value) {
-        this._getPointer = (event) => ({ x: 0, y: 0, button: event.button })
+vi.mock<unknown>(
+  import('three/examples/jsm/controls/TransformControls'),
+  () => {
+    class TransformControls {
+      enabled = true
+      dragging = false
+      camera: THREE.Camera
+      _getPointer?: (event: PointerEvent) => {
+        x: number
+        y: number
+        button: number
       }
-      transformControlsInstances.push(this)
-    }
+      private listeners = new Map<string, ((e: unknown) => void)[]>()
 
-    addEventListener(event: string, cb: (e: unknown) => void) {
-      if (!this.listeners.has(event)) this.listeners.set(event, [])
-      this.listeners.get(event)!.push(cb)
-    }
+      constructor(camera: THREE.Camera) {
+        this.camera = camera
+        if (!omitGetPointer.value) {
+          this._getPointer = (event) => ({ x: 0, y: 0, button: event.button })
+        }
+        transformControlsInstances.push(this)
+      }
 
-    setMode = mockSetMode
-    attach = mockAttach
-    detach = mockDetach
-    getHelper = mockGetHelper
-    dispose = mockDispose
+      addEventListener(event: string, cb: (e: unknown) => void) {
+        if (!this.listeners.has(event)) this.listeners.set(event, [])
+        this.listeners.get(event)!.push(cb)
+      }
 
-    emit(event: string, data: unknown) {
-      for (const cb of this.listeners.get(event) ?? []) cb(data)
+      setMode = mockSetMode
+      attach = mockAttach
+      detach = mockDetach
+      getHelper = mockGetHelper
+      dispose = mockDispose
+
+      emit(event: string, data: unknown) {
+        for (const cb of this.listeners.get(event) ?? []) cb(data)
+      }
     }
+    return { TransformControls }
   }
-  return { TransformControls }
-})
+)
 
-vi.mock('three/examples/jsm/controls/OrbitControls', () => {
+vi.mock<unknown>(import('three/examples/jsm/controls/OrbitControls'), () => {
   class OrbitControls {
     enabled = true
   }

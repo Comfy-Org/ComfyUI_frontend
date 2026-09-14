@@ -17,7 +17,7 @@ import type { Dictionary } from '@/lib/litegraph/src/interfaces'
 import type { NodeProperty } from '@/lib/litegraph/src/LGraphNode'
 import { useSettingStore } from '@/platform/settings/settingStore'
 
-vi.mock('@/scripts/api', () => ({
+vi.mock<unknown>(import('@/scripts/api'), () => ({
   api: {
     apiURL: (p: string) => p,
     addEventListener: vi.fn(),
@@ -28,13 +28,15 @@ vi.mock('@/scripts/api', () => ({
   }
 }))
 
-vi.mock('@/scripts/app', () => ({
+vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: { rootGraph: { extra: {} } }
 }))
 
-vi.mock('@/extensions/core/load3d/Load3d', () => ({ default: class {} }))
+vi.mock<unknown>(import('@/extensions/core/load3d/Load3d'), () => ({
+  default: class {}
+}))
 
-vi.mock('@/extensions/core/load3d/Load3dUtils', () => ({
+vi.mock<unknown>(import('@/extensions/core/load3d/Load3dUtils'), () => ({
   default: {
     splitFilePath: vi.fn(),
     getResourceURL: vi.fn()

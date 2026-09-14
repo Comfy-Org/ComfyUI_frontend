@@ -9,7 +9,7 @@ const { rendererCtor } = vi.hoisted(() => ({
   rendererCtor: vi.fn()
 }))
 
-vi.mock('three', { spy: true })
+vi.mock(import('three'), { spy: true })
 
 beforeEach(() => {
   function MockWebGLRenderer(opts: unknown) {
@@ -32,13 +32,13 @@ beforeEach(() => {
   vi.spyOn(THREE, 'WebGLRenderer').mockImplementation(MockWebGLRenderer)
 })
 
-vi.mock('./SceneManager', () => ({
+vi.mock<unknown>(import('./SceneManager'), () => ({
   SceneManager: class {
     scene = { __scene: true }
   }
 }))
 
-vi.mock('./CameraManager', () => ({
+vi.mock<unknown>(import('./CameraManager'), () => ({
   CameraManager: class {
     activeCamera = { __camera: true }
     setControls = vi.fn()
@@ -46,25 +46,25 @@ vi.mock('./CameraManager', () => ({
   }
 }))
 
-vi.mock('./ControlsManager', () => ({
+vi.mock<unknown>(import('./ControlsManager'), () => ({
   ControlsManager: class {
     controls = { __controls: true }
   }
 }))
 
-vi.mock('./LightingManager', () => ({
+vi.mock<unknown>(import('./LightingManager'), () => ({
   LightingManager: class {}
 }))
 
-vi.mock('./HDRIManager', () => ({
+vi.mock<unknown>(import('./HDRIManager'), () => ({
   HDRIManager: class {}
 }))
 
-vi.mock('./ViewHelperManager', () => ({
+vi.mock<unknown>(import('./ViewHelperManager'), () => ({
   ViewHelperManager: class {}
 }))
 
-vi.mock('./SceneModelManager', () => ({
+vi.mock<unknown>(import('./SceneModelManager'), () => ({
   SceneModelManager: class {
     getCurrentCapabilities: () => unknown
     getBoundsFromAdapter: (model: unknown) => unknown
@@ -90,7 +90,7 @@ vi.mock('./SceneModelManager', () => ({
   }
 }))
 
-vi.mock('./LoaderManager', () => ({
+vi.mock<unknown>(import('./LoaderManager'), () => ({
   LoaderManager: class {
     adapterRefArg: unknown
     constructor(
@@ -104,15 +104,15 @@ vi.mock('./LoaderManager', () => ({
   }
 }))
 
-vi.mock('./RecordingManager', () => ({
+vi.mock<unknown>(import('./RecordingManager'), () => ({
   RecordingManager: class {}
 }))
 
-vi.mock('./AnimationManager', () => ({
+vi.mock<unknown>(import('./AnimationManager'), () => ({
   AnimationManager: class {}
 }))
 
-vi.mock('./GizmoManager', () => ({
+vi.mock<unknown>(import('./GizmoManager'), () => ({
   GizmoManager: class {
     setupForModel = vi.fn()
     getTransform = vi.fn(() => ({}))
@@ -121,7 +121,7 @@ vi.mock('./GizmoManager', () => ({
   }
 }))
 
-vi.mock('./Load3d', () => ({
+vi.mock<unknown>(import('./Load3d'), () => ({
   default: class {
     deps: unknown
     options: unknown
@@ -217,15 +217,13 @@ describe('createLoad3d', () => {
 
     it('getBoundsFromAdapter returns null', () => {
       const instance = createLoad3d(createContainer()) as unknown as FakeLoad3d
-      expect(
-        instance.deps.modelManager.getBoundsFromAdapter({} as never)
-      ).toBeNull()
+      expect(instance.deps.modelManager.getBoundsFromAdapter({})).toBeNull()
     })
 
     it('disposeModelViaAdapter is a no-op', () => {
       const instance = createLoad3d(createContainer()) as unknown as FakeLoad3d
       expect(() =>
-        instance.deps.modelManager.disposeModelViaAdapter({} as never)
+        instance.deps.modelManager.disposeModelViaAdapter({})
       ).not.toThrow()
     })
 
@@ -259,9 +257,7 @@ describe('createLoad3d', () => {
       const instance = withAdapter(makeAdapter({ computeBounds }))
       const model = { fake: 'model' }
 
-      const result = instance.deps.modelManager.getBoundsFromAdapter(
-        model as never
-      )
+      const result = instance.deps.modelManager.getBoundsFromAdapter(model)
 
       expect(computeBounds).toHaveBeenCalledWith(model)
       expect(result).toBe('bbox-result')
@@ -269,9 +265,7 @@ describe('createLoad3d', () => {
 
     it('getBoundsFromAdapter returns null when adapter has no computeBounds', () => {
       const instance = withAdapter(makeAdapter())
-      expect(
-        instance.deps.modelManager.getBoundsFromAdapter({} as never)
-      ).toBeNull()
+      expect(instance.deps.modelManager.getBoundsFromAdapter({})).toBeNull()
     })
 
     it('disposeModelViaAdapter delegates to adapter.disposeModel', () => {
@@ -279,7 +273,7 @@ describe('createLoad3d', () => {
       const instance = withAdapter(makeAdapter({ disposeModel }))
       const model = { fake: 'model' }
 
-      instance.deps.modelManager.disposeModelViaAdapter(model as never)
+      instance.deps.modelManager.disposeModelViaAdapter(model)
 
       expect(disposeModel).toHaveBeenCalledWith(model)
     })

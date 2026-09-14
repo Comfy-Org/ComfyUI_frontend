@@ -6,7 +6,7 @@ const { state } = vi.hoisted(() => ({
   }
 }))
 
-vi.mock('@/services/extensionService', () => ({
+vi.mock<unknown>(import('@/services/extensionService'), () => ({
   useExtensionService: () => ({
     registerExtension: (ext: { nodeCreated: (node: unknown) => void }) => {
       state.extension = ext

@@ -12,13 +12,13 @@ const { mockFromEquirectangular, mockDisposePMREM } = vi.hoisted(() => ({
   mockDisposePMREM: vi.fn()
 }))
 
-vi.mock('./Load3dUtils', () => ({
+vi.mock<unknown>(import('./Load3dUtils'), () => ({
   default: {
     getFilenameExtension: vi.fn()
   }
 }))
 
-vi.mock('three', { spy: true })
+vi.mock(import('three'), { spy: true })
 
 beforeEach(() => {
   vi.spyOn(THREE, 'PMREMGenerator').mockImplementation(function () {
@@ -30,7 +30,7 @@ beforeEach(() => {
   })
 })
 
-vi.mock('three/examples/jsm/loaders/EXRLoader', () => {
+vi.mock<unknown>(import('three/examples/jsm/loaders/EXRLoader'), () => {
   class EXRLoader {
     load(
       _url: string,
@@ -44,7 +44,7 @@ vi.mock('three/examples/jsm/loaders/EXRLoader', () => {
   return { EXRLoader }
 })
 
-vi.mock('three/examples/jsm/loaders/RGBELoader', () => {
+vi.mock<unknown>(import('three/examples/jsm/loaders/RGBELoader'), () => {
   class RGBELoader {
     load(
       _url: string,

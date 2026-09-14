@@ -11,20 +11,22 @@ interface MockWidget {
   serialize?: boolean
 }
 
-vi.mock('@/scripts/app', () => ({ app: { rootGraph: { id: 'graph-1' } } }))
+vi.mock<unknown>(import('@/scripts/app'), () => ({
+  app: { rootGraph: { id: 'graph-1' } }
+}))
 
-vi.mock('@/lib/litegraph/src/litegraph', () => ({
+vi.mock(import('@/lib/litegraph/src/litegraph'), () => ({
   resolveNodeRootGraphId: () => 'graph-1'
 }))
 
-vi.mock(
-  '@/renderer/extensions/vueNodes/widgets/components/WidgetTextPreview.vue',
+vi.mock<unknown>(
+  import('@/renderer/extensions/vueNodes/widgets/components/WidgetTextPreview.vue'),
   () => ({
     default: {}
   })
 )
 
-vi.mock('@/scripts/domWidget', () => ({
+vi.mock<unknown>(import('@/scripts/domWidget'), () => ({
   ComponentWidgetImpl: class {
     name: string
     options: Record<string, unknown>
@@ -46,7 +48,7 @@ vi.mock('@/scripts/domWidget', () => ({
   }
 }))
 
-vi.mock('@/scripts/widgets', () => ({
+vi.mock<unknown>(import('@/scripts/widgets'), () => ({
   ComfyWidgets: {
     BOOLEAN: (node: { widgets?: MockWidget[] }, name: string) => {
       const widget: MockWidget = { name, options: {}, value: false }

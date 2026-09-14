@@ -6,17 +6,17 @@ import type { ActionBarButton } from '@/types/comfy'
 const registerExtension = vi.hoisted(() => vi.fn())
 const openFeedbackDialog = vi.hoisted(() => vi.fn())
 
-vi.mock('@/i18n', () => ({
+vi.mock(import('@/i18n'), () => ({
   t: (key: string) => key
 }))
 
-vi.mock('@/services/extensionService', () => ({
+vi.mock<unknown>(import('@/services/extensionService'), () => ({
   useExtensionService: () => ({
     registerExtension
   })
 }))
 
-vi.mock('@/platform/support/feedbackDialog', () => ({
+vi.mock(import('@/platform/support/feedbackDialog'), () => ({
   openFeedbackDialog
 }))
 

@@ -8,18 +8,18 @@ const { addTextPreviewWidgets, updateTextPreviewWidgets } = vi.hoisted(() => ({
   updateTextPreviewWidgets: vi.fn()
 }))
 
-vi.mock('@/extensions/core/textPreviewWidgets', () => ({
+vi.mock(import('@/extensions/core/textPreviewWidgets'), () => ({
   addTextPreviewWidgets,
   updateTextPreviewWidgets
 }))
 
-vi.mock('@/scripts/app', () => ({
+vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: { rootGraph: {} }
 }))
 
 const capturedExtensions: ComfyExtension[] = []
 
-vi.mock('@/services/extensionService', () => ({
+vi.mock<unknown>(import('@/services/extensionService'), () => ({
   useExtensionService: () => ({
     registerExtension: (ext: ComfyExtension) => {
       capturedExtensions.push(ext)

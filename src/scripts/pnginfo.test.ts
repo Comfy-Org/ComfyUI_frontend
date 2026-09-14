@@ -17,19 +17,19 @@ import {
   importA1111
 } from './pnginfo'
 
-vi.mock('./api', () => ({
+vi.mock<unknown>(import('./api'), () => ({
   api: {
     getEmbeddings: vi.fn()
   }
 }))
 
-vi.mock('./metadata/png', () => ({
+vi.mock(import('./metadata/png'), () => ({
   getFromPngFile: vi.fn()
 }))
-vi.mock('./metadata/flac', () => ({
+vi.mock(import('./metadata/flac'), () => ({
   getFromFlacFile: vi.fn()
 }))
-vi.mock('./metadata/avif', () => ({
+vi.mock(import('./metadata/avif'), () => ({
   getFromAvifFile: vi.fn()
 }))
 

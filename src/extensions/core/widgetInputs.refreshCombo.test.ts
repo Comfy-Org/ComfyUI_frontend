@@ -18,7 +18,7 @@ import {
 } from '@/utils/__tests__/litegraphTestUtils'
 import { createUuidv4 } from '@/utils/uuid'
 
-vi.mock('@/scripts/app', () => ({
+vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: {
     canvas: { graph_mouse: [0, 0] },
     configuringGraph: false,

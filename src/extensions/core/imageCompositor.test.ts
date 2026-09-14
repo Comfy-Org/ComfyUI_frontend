@@ -17,7 +17,7 @@ import './imageCompositor'
 
 const capturedExtensions = vi.hoisted<ComfyExtension[]>(() => [])
 
-vi.mock('@/services/extensionService', () => ({
+vi.mock<unknown>(import('@/services/extensionService'), () => ({
   useExtensionService: () => ({
     registerExtension: (ext: ComfyExtension) => {
       capturedExtensions.push(ext)

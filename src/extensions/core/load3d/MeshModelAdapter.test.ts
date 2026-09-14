@@ -27,35 +27,35 @@ const objLoaderStub = {
   loadAsync: vi.fn<(url: string) => Promise<THREE.Object3D>>()
 }
 
-vi.mock('three/examples/jsm/loaders/STLLoader', () => ({
+vi.mock<unknown>(import('three/examples/jsm/loaders/STLLoader'), () => ({
   STLLoader: class {
     setPath = stlLoaderStub.setPath
     loadAsync = stlLoaderStub.loadAsync
   }
 }))
 
-vi.mock('three/examples/jsm/loaders/FBXLoader', () => ({
+vi.mock<unknown>(import('three/examples/jsm/loaders/FBXLoader'), () => ({
   FBXLoader: class {
     setPath = fbxLoaderStub.setPath
     loadAsync = fbxLoaderStub.loadAsync
   }
 }))
 
-vi.mock('three/examples/jsm/loaders/GLTFLoader', () => ({
+vi.mock<unknown>(import('three/examples/jsm/loaders/GLTFLoader'), () => ({
   GLTFLoader: class {
     setPath = gltfLoaderStub.setPath
     loadAsync = gltfLoaderStub.loadAsync
   }
 }))
 
-vi.mock('three/examples/jsm/loaders/MTLLoader', () => ({
+vi.mock<unknown>(import('three/examples/jsm/loaders/MTLLoader'), () => ({
   MTLLoader: class {
     setPath = mtlLoaderStub.setPath
     loadAsync = mtlLoaderStub.loadAsync
   }
 }))
 
-vi.mock('wwobjloader2', () => ({
+vi.mock<unknown>(import('wwobjloader2'), () => ({
   OBJLoader2Parallel: class {
     setWorkerUrl = objLoaderStub.setWorkerUrl
     setMaterials = objLoaderStub.setMaterials
@@ -67,7 +67,7 @@ vi.mock('wwobjloader2', () => ({
   }
 }))
 
-vi.mock('wwobjloader2/bundle/worker/module?url', () => ({
+vi.mock(import('wwobjloader2/bundle/worker/module?url'), () => ({
   default: 'mock-worker-url'
 }))
 

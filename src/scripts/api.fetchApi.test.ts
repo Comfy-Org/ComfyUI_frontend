@@ -5,9 +5,9 @@ const { addBreadcrumb, trackFetchTimeout } = vi.hoisted(() => ({
   trackFetchTimeout: vi.fn()
 }))
 
-vi.mock('@sentry/vue', () => ({ addBreadcrumb }))
+vi.mock(import('@sentry/vue'), () => ({ addBreadcrumb }))
 
-vi.mock('@/platform/telemetry', () => ({
+vi.mock<unknown>(import('@/platform/telemetry'), () => ({
   useTelemetry: () => ({ trackFetchTimeout })
 }))
 

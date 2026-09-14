@@ -35,7 +35,7 @@ const {
   }
 })
 
-vi.mock('@sparkjsdev/spark', () => ({
+vi.mock<unknown>(import('@sparkjsdev/spark'), () => ({
   PlyReader: class {
     elements: Record<string, StubElement> = {}
     constructor(_: unknown) {}

@@ -33,18 +33,18 @@ const {
   }
 })
 
-vi.mock('@/services/extensionService', () => ({
+vi.mock<unknown>(import('@/services/extensionService'), () => ({
   useExtensionService: () => ({ registerExtension: registerExtensionMock })
 }))
 
-vi.mock('@/services/load3dService', () => ({
+vi.mock<unknown>(import('@/services/load3dService'), () => ({
   useLoad3dService: () => ({
     getLoad3d: getLoad3dMock,
     handleViewerClose: vi.fn()
   })
 }))
 
-vi.mock('@/composables/useLoad3d', () => {
+vi.mock<unknown>(import('@/composables/useLoad3d'), () => {
   const sceneDirty = new WeakMap<LGraphNode, boolean>()
   const outputCache = new WeakMap<LGraphNode, unknown>()
   return {
@@ -66,18 +66,21 @@ vi.mock('@/composables/useLoad3d', () => {
   }
 })
 
-vi.mock('@/extensions/core/load3d/Load3DConfiguration', () => ({
-  default: class {
-    configure = configureMock
-    configureForSaveMesh = configureForSaveMeshMock
-  }
-}))
+vi.mock<unknown>(
+  import('@/extensions/core/load3d/Load3DConfiguration'),
+  () => ({
+    default: class {
+      configure = configureMock
+      configureForSaveMesh = configureForSaveMeshMock
+    }
+  })
+)
 
-vi.mock('@/extensions/core/load3d/exportMenuHelper', () => ({
+vi.mock(import('@/extensions/core/load3d/exportMenuHelper'), () => ({
   createExportMenuItems: vi.fn(() => [{ content: 'Export' }])
 }))
 
-vi.mock('@/extensions/core/load3d/Load3dUtils', () => ({
+vi.mock<unknown>(import('@/extensions/core/load3d/Load3dUtils'), () => ({
   default: {
     splitFilePath: vi.fn((p: string) => ['', p]),
     getResourceURL: vi.fn(() => '/view'),
@@ -87,40 +90,44 @@ vi.mock('@/extensions/core/load3d/Load3dUtils', () => ({
   }
 }))
 
-vi.mock('@/extensions/core/load3d/constants', () => ({
+vi.mock(import('@/extensions/core/load3d/constants'), () => ({
   SUPPORTED_EXTENSIONS_ACCEPT: '.glb,.gltf'
 }))
 
-vi.mock('@/components/load3d/Load3D.vue', () => ({ default: {} }))
-vi.mock('@/components/load3d/Load3dViewerContent.vue', () => ({ default: {} }))
+vi.mock<unknown>(import('@/components/load3d/Load3D.vue'), () => ({
+  default: {}
+}))
+vi.mock<unknown>(import('@/components/load3d/Load3dViewerContent.vue'), () => ({
+  default: {}
+}))
 
-vi.mock('@/scripts/domWidget', () => ({
+vi.mock<unknown>(import('@/scripts/domWidget'), () => ({
   ComponentWidgetImpl: vi.fn(),
   addWidget: vi.fn()
 }))
 
-vi.mock('@/scripts/api', () => ({
+vi.mock<unknown>(import('@/scripts/api'), () => ({
   api: { apiURL: (p: string) => p }
 }))
 
-vi.mock('@/scripts/app', () => ({
+vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: { canvas: { selected_nodes: {} }, rootGraph: {} },
   ComfyApp: { copyToClipspace: vi.fn(), clipspace_return_node: null }
 }))
 
-vi.mock('@/utils/graphTraversalUtil', () => ({
+vi.mock(import('@/utils/graphTraversalUtil'), () => ({
   getNodeByLocatorId: getNodeByLocatorIdMock
 }))
 
-vi.mock('@/i18n', () => ({
+vi.mock(import('@/i18n'), () => ({
   t: (key: string) => key
 }))
 
-vi.mock('@/utils/litegraphUtil', () => ({
+vi.mock(import('@/utils/litegraphUtil'), () => ({
   isLoad3dNode: vi.fn(() => true)
 }))
 
-vi.mock('@/lib/litegraph/src/litegraph', () => ({
+vi.mock<unknown>(import('@/lib/litegraph/src/litegraph'), () => ({
   LiteGraph: { ContextMenu: vi.fn() }
 }))
 

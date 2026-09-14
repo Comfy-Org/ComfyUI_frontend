@@ -15,32 +15,32 @@ const { extensions, getUserData, reportErrorMock } = await vi.hoisted(
   }
 )
 
-vi.mock('@/base/common/downloadUtil', () => ({ downloadBlob: vi.fn() }))
+vi.mock(import('@/base/common/downloadUtil'), () => ({ downloadBlob: vi.fn() }))
 
-vi.mock('@/platform/telemetry/reportError', () => ({
+vi.mock(import('@/platform/telemetry/reportError'), () => ({
   reportError: reportErrorMock
 }))
 
-vi.mock('@/services/dialogService', () => ({
+vi.mock<unknown>(import('@/services/dialogService'), () => ({
   useDialogService: () => ({ prompt: vi.fn() })
 }))
 
-vi.mock('@/utils/vintageClipboard', () => ({
+vi.mock(import('@/utils/vintageClipboard'), () => ({
   deserialiseAndCreate: vi.fn()
 }))
 
-vi.mock('@/scripts/api', () => ({
+vi.mock<unknown>(import('@/scripts/api'), () => ({
   api: { getUserData, storeUserData: vi.fn() }
 }))
 
-vi.mock('@/scripts/app', () => ({
+vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: {
     registerExtension: extensions.registerExtension,
     canvas: { selected_nodes: {} }
   }
 }))
 
-vi.mock('@/scripts/ui', () => ({
+vi.mock<unknown>(import('@/scripts/ui'), () => ({
   ComfyDialog: class {
     element = document.createElement('div')
   },

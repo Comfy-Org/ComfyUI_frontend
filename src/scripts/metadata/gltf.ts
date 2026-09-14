@@ -1,15 +1,13 @@
-import {
-  type ComfyApiWorkflow,
-  type ComfyWorkflowJSON
+import type {
+  ComfyApiWorkflow,
+  ComfyWorkflowJSON
 } from '@/platform/workflow/validation/schemas/workflowSchema'
-import {
-  ASCII,
-  type ComfyMetadata,
-  ComfyMetadataTags,
-  type GltfChunkHeader,
-  type GltfHeader,
-  type GltfJsonData,
-  GltfSizeBytes
+import { ASCII, ComfyMetadataTags, GltfSizeBytes } from '@/types/metadataTypes'
+import type {
+  ComfyMetadata,
+  GltfChunkHeader,
+  GltfHeader,
+  GltfJsonData
 } from '@/types/metadataTypes'
 import { readFileAsArrayBuffer } from '@/utils/fileUtil'
 import { parseJsonWithNonFinite } from '@/utils/jsonUtil'

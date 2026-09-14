@@ -6,12 +6,12 @@ const mockDistribution = vi.hoisted(() => ({
   isCloud: true,
   isNightly: false
 }))
-vi.mock('@/platform/distribution/types', () => mockDistribution)
+vi.mock(import('@/platform/distribution/types'), () => mockDistribution)
 
 const mockCurrentUser = vi.hoisted(() => ({
   value: null as { email: string | null; emailVerified: boolean } | null
 }))
-vi.mock('vuefire', () => ({
+vi.mock<unknown>(import('vuefire'), () => ({
   useCurrentUser: vi.fn(() => mockCurrentUser)
 }))
 
