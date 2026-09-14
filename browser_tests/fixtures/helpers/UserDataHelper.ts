@@ -13,6 +13,21 @@ export class UserDataHelper {
     private readonly baseUrl: string
   ) {}
 
+  async store(file: string, data: string): Promise<void> {
+    const res = await this.request.fetch(
+      `${this.baseUrl}/api/userdata/${encodeURIComponent(file)}`,
+      {
+        method: 'POST',
+        headers: { 'Comfy-User': this.userId },
+        data
+      }
+    )
+    if (!res.ok())
+      throw new Error(
+        `Failed to store userdata file "${file}": HTTP ${res.status()}`
+      )
+  }
+
   async delete(file: string): Promise<void> {
     const res = await this.request.fetch(
       `${this.baseUrl}/api/userdata/${encodeURIComponent(file)}`,

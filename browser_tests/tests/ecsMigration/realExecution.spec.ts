@@ -3,6 +3,7 @@ import {
   comfyPageFixture as test
 } from '@e2e/fixtures/ComfyPage'
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
+import { UserDataHelper } from '@e2e/fixtures/helpers/UserDataHelper'
 import { zPromptResponse } from '@comfyorg/ingest-types/zod'
 import { collectConsoleErrors } from '@e2e/fixtures/utils/consoleErrorCollector'
 import {
@@ -402,6 +403,15 @@ test.describe(
       comfyPage
     }) => {
       test.setTimeout(90_000)
+      const userData = new UserDataHelper(
+        comfyPage.request,
+        comfyPage.id,
+        comfyPage.url
+      )
+      await userData.store('user.css', '')
+      await userData.store('comfy.templates.json', '[]')
+      await userData.store('subgraphs/.keep', '')
+      await userData.delete('subgraphs/.keep')
       const runtimeErrors = collectConsoleErrors(comfyPage.page)
       await trackVisibleErrors(comfyPage.page)
       await comfyPage.settings.setSetting(
