@@ -10,6 +10,14 @@ import Composer from '../Composer.vue'
 import { setupInlinePromptEditorDom } from '../composer/inlinePromptEditorTestSetup'
 import UserMessage from './UserMessage.vue'
 
+vi.hoisted(() => {
+  globalThis.ResizeObserver = class {
+    observe() {}
+    unobserve() {}
+    disconnect() {}
+  }
+})
+
 vi.mock(import('./ReplyAssetGroup.vue'), () => ({
   default: defineComponent<{ assets: ReplyAsset[] }>({
     setup: () => () => null
