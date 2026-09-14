@@ -279,6 +279,27 @@ describe('LGraphCanvas selection', () => {
       expect(graph.nodes).toHaveLength(0)
     })
 
+    it('highlights a link connected after the node was selected', () => {
+      a.addOutput('out', 'number')
+      b.addInput('in', 'number')
+      canvas.select(a)
+      expect(Object.keys(canvas.highlighted_links)).toHaveLength(0)
+
+      a.connect(0, b, 0)
+
+      expect(Object.keys(canvas.highlighted_links)).toHaveLength(1)
+    })
+
+    it('assigning selected_nodes replaces the selection', () => {
+      canvas.select(a)
+
+      canvas.selected_nodes = { [b.id]: b }
+
+      expect(selectedTitles(canvas)).toEqual(['B'])
+      expect(a.selected).toBe(false)
+      expect(b.selected).toBe(true)
+    })
+
     it('records and removes every selectable kind', () => {
       const group = addGroup(graph, 'G', [400, 200, 100, 100])
       const reroute = graph.setReroute({ pos: [500, 500], linkIds: [] })!
