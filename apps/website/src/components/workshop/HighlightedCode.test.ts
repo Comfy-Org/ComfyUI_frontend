@@ -1,79 +1,56 @@
 // @vitest-environment happy-dom
-import { render, screen, waitFor } from '@testing-library/vue'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { render, screen } from '@testing-library/vue'
+import { describe, expect, it } from 'vitest'
+import { createSSRApp, h } from 'vue'
+import { renderToString } from 'vue/server-renderer'
 
-import type { CodeLang, HighlightToken } from '../../lib/highlight'
 import HighlightedCode from './HighlightedCode.vue'
 
-const { highlightTokens } = vi.hoisted(() => ({
-  highlightTokens:
-    vi.fn<
-      (
-        code: string,
-        language: CodeLang
-      ) => Promise<readonly HighlightToken[] | null>
-    >()
-}))
-
-vi.mock(import('../../lib/highlight'), () => ({ highlightTokens }))
-
-beforeEach(() => {
-  highlightTokens.mockReset()
-})
-
 describe('HighlightedCode', () => {
-  it('keeps plain text when highlighting is unavailable', async () => {
-    const pending = Promise.withResolvers<readonly HighlightToken[] | null>()
-    highlightTokens.mockReturnValue(pending.promise)
-    const code = 'print("plain text")'
-    render(HighlightedCode, {
-      props: { code, language: 'python' }
-    })
+  it('server-renders highlighted tokens before hydration', async () => {
+    const html = await renderToString(
+      createSSRApp({
+        render: () =>
+          h(HighlightedCode, {
+            code: 'const answer: number = 42',
+            language: 'typescript'
+          })
+      })
+    )
 
-    expect(screen.getByTestId('highlighted-code').textContent).toBe(code)
-
-    pending.resolve(null)
-    await pending.promise
-
-    expect(screen.getByTestId('highlighted-code').textContent).toBe(code)
+    expect(html).toContain('<span style="color:')
+    expect(html).toContain('const')
+    expect(html).toContain('answer')
   })
 
-  it('renders an empty source without placeholder content', async () => {
-    highlightTokens.mockResolvedValue([])
+  it('renders highlighted tokens on its first browser render', () => {
+    render(HighlightedCode, {
+      props: {
+        code: 'const answer: number = 42',
+        language: 'typescript'
+      }
+    })
+
+    expect(screen.getByText('const').getAttribute('style')).toContain('color:')
+  })
+
+  it('renders an empty source without placeholder content', () => {
     render(HighlightedCode, {
       props: { code: '', language: 'typescript' }
     })
 
-    await waitFor(() =>
-      expect(screen.getByTestId('highlighted-code').textContent).toBe('')
-    )
+    expect(screen.getByTestId('highlighted-code').textContent).toBe('')
   })
 
-  it('discards a stale highlight result after the source changes', async () => {
-    const first = Promise.withResolvers<readonly HighlightToken[] | null>()
-    const second = Promise.withResolvers<readonly HighlightToken[] | null>()
-    highlightTokens
-      .mockReturnValueOnce(first.promise)
-      .mockReturnValueOnce(second.promise)
+  it('updates highlighted tokens with the source', async () => {
     const { rerender } = render(HighlightedCode, {
-      props: { code: 'first', language: 'python' }
+      props: { code: 'print("first")', language: 'python' }
     })
 
-    await rerender({ code: 'second' })
-    expect(screen.getByTestId('highlighted-code').textContent).toBe('second')
-
-    second.resolve([{ content: 'highlighted second', color: '#fff' }])
-    await waitFor(() =>
-      expect(screen.getByTestId('highlighted-code').textContent).toBe(
-        'highlighted second'
-      )
-    )
-
-    first.resolve([{ content: 'stale first', color: '#fff' }])
-    await first.promise
+    await rerender({ code: 'print("second")', language: 'python' })
 
     expect(screen.getByTestId('highlighted-code').textContent).toBe(
-      'highlighted second'
+      'print("second")'
     )
   })
 })

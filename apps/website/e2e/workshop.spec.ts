@@ -401,12 +401,26 @@ test.describe('Model playground', () => {
     await page
       .getByRole('textbox', { name: 'Prompt', exact: true })
       .fill('neon street at night')
+    const firstSnippetRender = page.evaluate(
+      () =>
+        new Promise<boolean>((resolve) => {
+          const observer = new MutationObserver(() => {
+            const code = document.querySelector(
+              '[data-testid="highlighted-code"]'
+            )
+            if (!code) return
+            observer.disconnect()
+            resolve(code.querySelector('span') !== null)
+          })
+          observer.observe(document.body, { childList: true, subtree: true })
+        })
+    )
     await page.getByRole('tab', { name: 'API', exact: true }).click()
     const snippet = page.getByTestId('snippet')
     const highlighted = page.getByTestId('highlighted-code')
+    expect(await firstSnippetRender).toBe(true)
     await expect(snippet).toContainText('neon street at night')
     await expect(snippet).toContainText('bfl/flux-2-max')
-    await expect(highlighted.locator('span').first()).toBeVisible()
     await page.getByTestId('snippet-curl').click()
     await expect(snippet).toContainText(
       "--request POST 'https://testapi.comfy.org/v2/models/bfl/flux-2-max'"

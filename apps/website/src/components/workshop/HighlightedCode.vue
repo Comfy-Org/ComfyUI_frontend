@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { shallowRef, watch } from 'vue'
+import { computed } from 'vue'
 
-import type { CodeLang, HighlightToken } from '../../lib/highlight'
+import type { CodeLang } from '../../lib/highlight'
 import { highlightTokens } from '../../lib/highlight'
 
 const { code, language } = defineProps<{
@@ -9,21 +9,7 @@ const { code, language } = defineProps<{
   language: CodeLang
 }>()
 
-const tokens = shallowRef<readonly HighlightToken[] | null>(null)
-
-watch(
-  () => [code, language] as const,
-  async ([nextCode, nextLanguage], _, onCleanup) => {
-    let active = true
-    onCleanup(() => {
-      active = false
-    })
-    tokens.value = null
-    const nextTokens = await highlightTokens(nextCode, nextLanguage)
-    if (active) tokens.value = nextTokens
-  },
-  { immediate: !import.meta.env.SSR }
-)
+const tokens = computed(() => highlightTokens(code, language))
 </script>
 
 <template>

@@ -23,28 +23,28 @@ function contrastRatio(foreground: string, background: string): number {
 }
 
 describe('highlightInline', () => {
-  it('returns tokenized spans without a wrapper element', async () => {
-    const html = await highlightInline('{ "gpu": "H100" }', 'json')
+  it('returns tokenized spans without a wrapper element', () => {
+    const html = highlightInline('{ "gpu": "H100" }', 'json')
 
     expect(html).toContain('<span')
     expect(html).not.toContain('<pre')
     expect(html).toContain('H100')
   })
 
-  it('loads each supported grammar on demand', async () => {
+  it('supports every bundled grammar', () => {
     for (const lang of [
       'javascript',
       'python',
       'shell',
       'typescript'
     ] as const) {
-      expect(await highlightInline('echo hi', lang)).toContain('<span')
+      expect(highlightInline('echo hi', lang)).toContain('<span')
     }
   })
 
-  it('returns colored tokens without changing the source text', async () => {
+  it('returns colored tokens without changing the source text', () => {
     const code = 'const answer: number = 42\nconsole.log(answer)'
-    const tokens = await highlightTokens(code, 'typescript')
+    const tokens = highlightTokens(code, 'typescript')
     const colors = tokens
       ?.map((token) => token.color)
       .filter((color) => color !== undefined)
@@ -53,9 +53,9 @@ describe('highlightInline', () => {
     expect(new Set(colors).size).toBeGreaterThan(1)
   })
 
-  it('skips highlighting for oversized payloads', async () => {
-    expect(await highlightInline('x'.repeat(129 * 1024), 'json')).toBeNull()
-    expect(await highlightTokens('界'.repeat(44 * 1024), 'json')).toBeNull()
+  it('skips highlighting for oversized payloads', () => {
+    expect(highlightInline('x'.repeat(129 * 1024), 'json')).toBeNull()
+    expect(highlightTokens('界'.repeat(44 * 1024), 'json')).toBeNull()
   })
 
   it('keeps every token color readable against Comfy ink', () => {
