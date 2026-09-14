@@ -23,7 +23,10 @@ test.describe('Agent run permissions popover', { tag: '@cloud' }, () => {
   }) => {
     const page = comfyPage.page
 
-    const openButton = page.getByRole('button', { name: OPEN_AGENT_LABEL })
+    const openButton = page.getByRole('button', {
+      name: OPEN_AGENT_LABEL,
+      exact: true
+    })
     await expect(openButton).toBeVisible()
     await openButton.click()
 

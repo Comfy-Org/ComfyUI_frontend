@@ -26,7 +26,10 @@ test.describe('In-App Agent panel across view modes', { tag: '@cloud' }, () => {
 
     expect(selectedWorkflowPath).toBeTruthy()
 
-    const openButton = page.getByRole('button', { name: OPEN_AGENT_LABEL })
+    const openButton = page.getByRole('button', {
+      name: OPEN_AGENT_LABEL,
+      exact: true
+    })
     await expect(openButton).toBeVisible()
     await openButton.click()
 

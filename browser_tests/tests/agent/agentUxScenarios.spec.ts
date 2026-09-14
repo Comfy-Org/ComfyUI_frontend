@@ -12,7 +12,9 @@ test.describe('Linear Agent UX scenarios', { tag: '@cloud' }, () => {
       comfyPage
     }) => {
       const page = comfyPage.page
-      await page.getByRole('button', { name: OPEN_AGENT_LABEL }).click()
+      await page
+        .getByRole('button', { name: OPEN_AGENT_LABEL, exact: true })
+        .click()
       const panel = page.locator('#agent-panel-root')
 
       const dock = page.getByTestId('docked-agent-panel')
