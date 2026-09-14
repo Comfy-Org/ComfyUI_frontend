@@ -13,6 +13,8 @@ const DEFINITIONS_ROOT = 'definitions'
 /** Mint-order registers kept beside the interior `nodes`/`links` maps. */
 const NODE_ORDER = 'node_order'
 const LINK_ORDER = 'link_order'
+const SUBGRAPH_ORDER = 'subgraph_order'
+const DEFINITION_DIGEST = '__definition_digest'
 
 /**
  * Per-node bookkeeping the op layer's applier stamps on every node record
@@ -84,7 +86,13 @@ function readInteriorNode(source: unknown): Record<string, unknown> | null {
 function readDefinition(source: Y.Map<unknown>): ExportedSubgraph {
   const definition: Record<string, unknown> = {}
   source.forEach((value, key) => {
-    if (key === NODE_ORDER || key === LINK_ORDER || !isReadableKey(key)) return
+    if (
+      key === NODE_ORDER ||
+      key === LINK_ORDER ||
+      key === DEFINITION_DIGEST ||
+      !isReadableKey(key)
+    )
+      return
     if (key === 'nodes' && value instanceof Y.Map) {
       definition.nodes = orderedKeys(source.get(NODE_ORDER), value).flatMap(
         (id) => {
@@ -96,6 +104,23 @@ function readDefinition(source: Y.Map<unknown>): ExportedSubgraph {
       definition.links = orderedKeys(source.get(LINK_ORDER), value).map((id) =>
         plain(value.get(id))
       )
+    } else if (key === 'definitions' && value instanceof Y.Map) {
+      const nested: Record<string, unknown> = {}
+      value.forEach((nestedValue, nestedKey) => {
+        if (nestedKey === SUBGRAPH_ORDER || !isReadableKey(nestedKey)) return
+        if (nestedKey === 'subgraphs' && nestedValue instanceof Y.Map) {
+          nested.subgraphs = orderedKeys(
+            value.get(SUBGRAPH_ORDER),
+            nestedValue
+          ).flatMap((id) => {
+            const child = nestedValue.get(id)
+            return child instanceof Y.Map ? [readDefinition(child)] : []
+          })
+        } else {
+          nested[nestedKey] = plain(nestedValue)
+        }
+      })
+      definition.definitions = nested
     } else {
       definition[key] = plain(value)
     }

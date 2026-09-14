@@ -119,6 +119,8 @@ export function writeTarget(op: WireOp): unknown[] {
       // made the arm look like a catch-all for future kinds as well; they are
       // now named, and the arm below is a guard rather than a fallback.
       return [op.op];
+    case "define_subgraph":
+      return ["definition", op.subgraph_id];
     default:
       // Exhaustiveness guard (issue #21): with every `WireOp` member cased
       // above — the five `Op` kinds plus the deferred `reset_doc` — `op` is
