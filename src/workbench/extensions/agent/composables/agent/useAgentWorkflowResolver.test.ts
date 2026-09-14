@@ -311,6 +311,28 @@ describe('Agent workflow resolution', () => {
     ])
   })
 
+  it('shares one cloud listing between concurrent forced refreshes', async () => {
+    const { resolver, listCloudWorkflows } = setup([
+      workflow('workflows/current.json', 'Current')
+    ])
+    let resolveListing: (entries: CloudWorkflowEntry[]) => void = () => {}
+    listCloudWorkflows.mockReturnValueOnce(
+      new Promise((resolve) => {
+        resolveListing = resolve
+      })
+    )
+
+    const first = resolver.refreshCloudWorkflowIds({ force: true })
+    const second = resolver.refreshCloudWorkflowIds({ force: true })
+    resolveListing([{ id: 'current', name: 'Current' }])
+
+    expect(await Promise.all([first, second])).toEqual([true, true])
+    expect(listCloudWorkflows).toHaveBeenCalledTimes(1)
+    expect(resolver.availableWorkflowReferences.value).toEqual([
+      { id: 'current', name: 'Current' }
+    ])
+  })
+
   it('reuses a fresh cloud index until forced or expired', async () => {
     vi.useFakeTimers()
     const { resolver, listCloudWorkflows } = setup(
