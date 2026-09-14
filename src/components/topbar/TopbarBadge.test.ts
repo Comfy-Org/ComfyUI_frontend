@@ -182,6 +182,30 @@ describe('TopbarBadge', () => {
     })
   })
 
+  describe('a label the text already carries', () => {
+    it.for([
+      ['WARN', 'Warning Message'],
+      ['PREVIEW', 'Preview Environment']
+    ])('drops %s beside its own text', ([label, text]) => {
+      renderTopbarBadge({ text, label }, 'full')
+
+      expect(screen.queryByText(label)).not.toBeInTheDocument()
+      expect(screen.getByText(text)).toBeInTheDocument()
+    })
+
+    it('keeps a label that adds something the text does not say', () => {
+      renderTopbarBadge({ text: 'Comfy Cloud', label: 'BETA' }, 'full')
+
+      expect(screen.getByText('BETA')).toBeInTheDocument()
+    })
+
+    it('keeps the label in compact mode, where it stands in for the text', () => {
+      renderTopbarBadge({ text: 'Warning Message', label: 'WARN' }, 'compact')
+
+      expect(screen.getByText('WARN')).toBeInTheDocument()
+    })
+  })
+
   describe('edge cases', () => {
     it('handles badge with only text', () => {
       renderTopbarBadge(

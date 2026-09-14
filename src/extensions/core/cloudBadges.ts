@@ -3,7 +3,6 @@ import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
 import { t } from '@/i18n'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useExtensionService } from '@/services/extensionService'
-import { labelRepeatsMessage } from '@/extensions/core/serverHealthAlertText'
 import { toTitleCase } from '@/utils/textCaseUtil'
 import type { TopbarBadge } from '@/types/comfy'
 
@@ -16,9 +15,7 @@ const badges = computed<TopbarBadge[]>(() => {
     const message = toTitleCase(alert.message)
     result.push({
       text: message,
-      label: labelRepeatsMessage(alert.badge, message)
-        ? undefined
-        : alert.badge,
+      label: alert.badge,
       variant: alert.severity ?? 'error',
       tooltip: alert.tooltip
     })
