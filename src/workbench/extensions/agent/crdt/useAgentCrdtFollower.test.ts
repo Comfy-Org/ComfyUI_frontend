@@ -141,6 +141,7 @@ vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: { graph: null, canvas: null }
 }))
 
+import { recordDevEvent } from './devPanelLog'
 import { STALE_AFTER_MS, useAgentCrdtFollower } from './useAgentCrdtFollower'
 import type { AgentCrdtStatus } from './useAgentCrdtFollower'
 
@@ -428,9 +429,9 @@ describe('useAgentCrdtFollower', () => {
     unmount()
   })
 
-  it('FEC-5: only active-workflow op results slide the persisted expiry', () => {
+  it('FEC-5: only active-workflow op results slide the persisted expiry', async () => {
     vi.useFakeTimers()
-    const { isTargetActive, unmount } = mountFollower('wf-1')
+    const { workflowId, isTargetActive, unmount } = mountFollower('wf-1')
     dispatchFrame('doc_subscribed', { ok: true })
     const stampedAt = persistedRecord()?.expiresAt
     expect(stampedAt).toBeTypeOf('number')
@@ -438,13 +439,35 @@ describe('useAgentCrdtFollower', () => {
     vi.advanceTimersByTime(3 * 60 * 1000)
     dispatchFrame('doc_ops_result', { workflowId: 'wf-2', ok: true })
     expect(persistedRecord()?.expiresAt).toBe(stampedAt)
+    expect(recordDevEvent).toHaveBeenCalledWith('doc_ops_result_dropped', {
+      reason: 'workflow_mismatch',
+      subscribedWorkflowId: 'wf-2',
+      frame: { workflowId: 'wf-2', ok: true }
+    })
+
+    workflowId.value = 'wf-2'
+    await nextTick()
+    dispatchFrame('doc_ops_result', { workflowId: 'wf-1', ok: true })
+    expect(recordDevEvent).toHaveBeenCalledWith('doc_ops_result_dropped', {
+      reason: 'workflow_mismatch',
+      subscribedWorkflowId: 'wf-1',
+      frame: { workflowId: 'wf-1', ok: true }
+    })
 
     isTargetActive.value = false
+    await nextTick()
     dispatchFrame('doc_ops_result', { workflowId: 'wf-1', ok: true })
     expect(persistedRecord()?.expiresAt).toBe(stampedAt)
+    expect(recordDevEvent).toHaveBeenCalledWith('doc_ops_result_dropped', {
+      reason: 'inactive_target',
+      subscribedWorkflowId: 'wf-1',
+      frame: { workflowId: 'wf-1', ok: true }
+    })
 
     isTargetActive.value = true
-    dispatchFrame('doc_ops_result', { workflowId: 'wf-1', ok: true })
+    await nextTick()
+    dispatchFrame('doc_subscribed', { ok: true })
+    dispatchFrame('doc_ops_result', { workflowId: 'wf-2', ok: true })
     expect(persistedRecord()?.expiresAt).toBeGreaterThan(stampedAt ?? 0)
     unmount()
   })
