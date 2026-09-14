@@ -179,21 +179,12 @@ export const workshopModels = labelSharedThumbnails(browseModels)
 function primarySlug(sources: typeof contentSources): string {
   const primary = sources.filter(({ alias }) => alias.displayPrimary)
   const candidates = primary.length ? primary : sources
-  // Prefer fully authored pages so adding a thumbnail cannot redirect a
-  // public alias. Recommendation order breaks ties between authored pages.
   const withExamples = candidates.filter(({ overlay }) =>
     Boolean(overlay.examples.length)
   )
   const withMedia = candidates.filter(({ overlay }) => overlay.media.thumbnail)
-  const source = withExamples.length
-    ? [...withExamples]
-        .sort(
-          (a, b) =>
-            (modelOrderRank.get(a.overlay.slug) ?? Number.MAX_SAFE_INTEGER) -
-            (modelOrderRank.get(b.overlay.slug) ?? Number.MAX_SAFE_INTEGER)
-        )
-        .at(0)
-    : (withMedia.length ? withMedia : candidates).at(0)
+  const preferred = withExamples.length ? withExamples : withMedia
+  const source = (preferred.length ? preferred : candidates).at(0)
   if (!source) throw new Error('Missing content redirect target')
   return source.overlay.slug
 }
