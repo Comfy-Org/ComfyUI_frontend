@@ -447,57 +447,13 @@ export function demoteWidget(
   parents: SubgraphNode[]
 ) {
   const source = toPromotionSource(node, widget)
-  const promotedInputs = parents.flatMap((parent) => {
-    const input = findHostInputForPromotion(
-      parent,
-      source.sourceNodeId,
-      source.sourceWidgetName
-    )
-    return input ? [{ parent, input }] : []
-  })
-  for (const { parent, input } of promotedInputs) {
-    const inputIndex = parent.inputs.indexOf(input)
-    if (parent.isInputConnected(inputIndex)) {
-      input._widget?.onRemove?.()
-      if (input.widgetId) useWidgetValueStore().deleteWidget(input.widgetId)
-      input.widget = undefined
-      input.widgetId = undefined
-      input._widget = undefined
-    }
-  }
-  const unconnectedPromotion = promotedInputs.find(
-    ({ parent, input }) =>
-      !parent.isInputConnected(parent.inputs.indexOf(input))
-  )
-  const linkedInput = unconnectedPromotion?.input._subgraphSlot
-  if (linkedInput) unconnectedPromotion.parent.subgraph.removeInput(linkedInput)
-  for (const { input } of promotedInputs) {
-    if (input.widgetId) useWidgetValueStore().deleteWidget(input.widgetId)
-  }
-
+  const promotedInputs = findPromotedInputs(parents, source)
+  clearConnectedPromotedWidgets(promotedInputs)
+  removeUnconnectedPromotedInput(promotedInputs)
+  deletePromotedWidgetValues(promotedInputs)
   for (const parent of parents) {
     if (promotedInputs.some((entry) => entry.parent === parent)) continue
-
-    if (isPreviewPseudoWidget(widget)) {
-      const previewStore = usePreviewExposureStore()
-      const hostLocator = getPreviewExposureHostLocator(parent)
-      if (!hostLocator) continue
-      const exposure = previewStore
-        .getExposures(parent.rootGraph.id, hostLocator)
-        .find(
-          (entry) =>
-            entry.sourceNodeId === source.sourceNodeId &&
-            entry.sourcePreviewName === source.sourceWidgetName
-        )
-      if (exposure) {
-        previewStore.removeExposure(
-          parent.rootGraph.id,
-          hostLocator,
-          exposure.name
-        )
-        continue
-      }
-    }
+    if (isPreviewPseudoWidget(widget)) removePreviewExposure(parent, source)
   }
   refreshPromotedWidgetRendering(parents)
   addBreadcrumb({
@@ -505,6 +461,72 @@ export function demoteWidget(
     message: `Demoted widget "${source.sourceWidgetName}" on node ${node.id}`,
     level: 'info'
   })
+}
+
+type PromotedInput = NonNullable<ReturnType<typeof findHostInputForPromotion>>
+
+interface PromotedHostInput {
+  parent: SubgraphNode
+  input: PromotedInput
+}
+
+function findPromotedInputs(
+  parents: SubgraphNode[],
+  source: PromotedWidgetSource
+): PromotedHostInput[] {
+  return parents.flatMap((parent) => {
+    const input = findHostInputForPromotion(
+      parent,
+      source.sourceNodeId,
+      source.sourceWidgetName
+    )
+    return input ? [{ parent, input }] : []
+  })
+}
+
+function clearConnectedPromotedWidgets(inputs: PromotedHostInput[]): void {
+  for (const { parent, input } of inputs) {
+    if (!parent.isInputConnected(parent.inputs.indexOf(input))) continue
+    input._widget?.onRemove?.()
+    if (input.widgetId) useWidgetValueStore().deleteWidget(input.widgetId)
+    input.widget = undefined
+    input.widgetId = undefined
+    input._widget = undefined
+  }
+}
+
+function removeUnconnectedPromotedInput(inputs: PromotedHostInput[]): void {
+  const promotion = inputs.find(
+    ({ parent, input }) =>
+      !parent.isInputConnected(parent.inputs.indexOf(input))
+  )
+  const linkedInput = promotion?.input._subgraphSlot
+  if (linkedInput) promotion.parent.subgraph.removeInput(linkedInput)
+}
+
+function deletePromotedWidgetValues(inputs: PromotedHostInput[]): void {
+  const store = useWidgetValueStore()
+  for (const { input } of inputs) {
+    if (input.widgetId) store.deleteWidget(input.widgetId)
+  }
+}
+
+function removePreviewExposure(
+  parent: SubgraphNode,
+  source: PromotedWidgetSource
+): void {
+  const hostLocator = getPreviewExposureHostLocator(parent)
+  if (!hostLocator) return
+  const store = usePreviewExposureStore()
+  const exposure = store
+    .getExposures(parent.rootGraph.id, hostLocator)
+    .find(
+      (entry) =>
+        entry.sourceNodeId === source.sourceNodeId &&
+        entry.sourcePreviewName === source.sourceWidgetName
+    )
+  if (exposure)
+    store.removeExposure(parent.rootGraph.id, hostLocator, exposure.name)
 }
 
 function getParentNodes(): SubgraphNode[] {
