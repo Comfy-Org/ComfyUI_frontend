@@ -1,0 +1,43 @@
+/**
+ * The core objects a host builds once — the lifecycle, the readers, the
+ * commands — handed to every composable here either explicitly or through
+ * the injection key, so one component tree shares one client.
+ */
+import { inject, provide } from 'vue'
+import type { InjectionKey } from 'vue'
+
+import type {
+  BillingCommands,
+  BillingOperationLifecycle,
+  CapabilitiesReader,
+  CreditsReader,
+  TopupCommand
+} from '@comfyorg/account/billing'
+
+export interface BillingClient {
+  readonly lifecycle: BillingOperationLifecycle
+  readonly capabilities: CapabilitiesReader
+  readonly credits: CreditsReader
+  readonly topup: TopupCommand
+  readonly commands: BillingCommands
+}
+
+export const BILLING_CLIENT_KEY: InjectionKey<BillingClient> = Symbol(
+  'comfy:account-ui:billing-client'
+)
+
+export function provideBillingClient(client: BillingClient): void {
+  provide(BILLING_CLIENT_KEY, client)
+}
+
+export function useBillingClient<K extends keyof BillingClient>(
+  explicit: Pick<BillingClient, K> | undefined
+): Pick<BillingClient, K> {
+  const client = explicit ?? inject(BILLING_CLIENT_KEY)
+  if (client === undefined) {
+    throw new Error(
+      'No billing client: pass one to the composable or call provideBillingClient() in an ancestor'
+    )
+  }
+  return client
+}
