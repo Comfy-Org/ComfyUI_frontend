@@ -8,7 +8,7 @@ import type {
 } from '@comfyorg/ingest-types'
 import { render, screen, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { Mocked } from 'vitest'
 import { computed, defineComponent, h, nextTick, ref } from 'vue'
 import { useClipboard } from '@vueuse/core'
@@ -259,6 +259,10 @@ const paywallBilling = vi.hoisted(() => ({
 vi.mock(import('@/platform/workspace/composables/useWorkspaceUI'), {
   spy: true
 })
+// Standalone (#17469): the panel's local-agent socket and its identity lookup
+// are exercised for real below, with only the socket itself faked.
+vi.mock(import('./services/agent/standaloneAgentEventSource'), { spy: true })
+vi.mock(import('@/platform/telemetry/reportError'), { spy: true })
 vi.mock(import('@/composables/billing/useBillingContext'), { spy: true })
 vi.mock(import('@/platform/workspace/composables/useBillingCapabilities'), {
   spy: true
@@ -274,6 +278,10 @@ import { useAgentPanelStore } from './stores/agent/agentPanelStore'
 import { useAgentComposerStore } from './stores/agent/agentComposerStore'
 import { useAgentWorkflowTabBindingStore } from './stores/agent/agentWorkflowTabBindingStore'
 import { SUBSCRIBE_RETRY_MAX_ATTEMPTS } from './crdt/agentCrdtDocLifecycle'
+import { createStandaloneAgentEventSource } from './services/agent/standaloneAgentEventSource'
+import type { StandaloneAgentEventSource } from './services/agent/standaloneAgentEventSource'
+import { STANDALONE_IDENTITY_RETRY_BASE_MS } from './services/agent/standaloneIdentity'
+import { reportError } from '@/platform/telemetry/reportError'
 
 import AgentPanelRoot from './AgentPanelRoot.vue'
 
@@ -6288,5 +6296,132 @@ describe('AgentPanelRoot workflow binding', () => {
     await nextTick()
     await nextTick()
     expect(app.loadGraphData).not.toHaveBeenCalled()
+  })
+})
+
+describe('AgentPanelRoot standalone agent (#17469)', () => {
+  // The standalone agent's ONE socket, faked at the seam the panel builds the
+  // document transport on: chat frames and document frames both ride it.
+  function fakeStandaloneSocket() {
+    const listeners = new Set<(raw: unknown) => void>()
+    const statusListeners = new Set<(live: boolean) => void>()
+    const send = vi.fn((_frame: string) => true)
+    const source: StandaloneAgentEventSource = {
+      send,
+      subscribe(listener) {
+        listeners.add(listener)
+        return () => {
+          listeners.delete(listener)
+        }
+      },
+      onStatus(listener) {
+        statusListeners.add(listener)
+        return () => {
+          statusListeners.delete(listener)
+        }
+      }
+    }
+    return {
+      source,
+      send,
+      /** A frame from the agent, chat or document alike. */
+      emit: (frame: unknown) =>
+        listeners.forEach((listener) => listener(frame)),
+      /** The socket (re)opened: the same edge the follower resubscribes on. */
+      connect: () => statusListeners.forEach((listener) => listener(true))
+    }
+  }
+
+  let socket: ReturnType<typeof fakeStandaloneSocket>
+
+  beforeEach(() => {
+    vi.stubEnv('VITE_AGENT_STANDALONE', 'true')
+    ws.clear()
+    socket = fakeStandaloneSocket()
+    vi.mocked(createStandaloneAgentEventSource).mockReturnValue(socket.source)
+    vi.mocked(reportError).mockImplementation(() => {})
+  })
+
+  afterEach(() => {
+    vi.mocked(createStandaloneAgentEventSource).mockReset()
+    vi.mocked(reportError).mockReset()
+    useAgentPanelStore().enabled = false
+    Object.assign(appMock, { isGraphReady: undefined })
+  })
+
+  function bindActiveTab(id: string): LoadedComfyWorkflow {
+    const tab = addTab('workflows/current.json', {
+      activeState: fromPartial<ComfyWorkflowJSON>({ id })
+    })
+    workflowStore.activeWorkflow = tab
+    useAgentWorkflowTabBindingStore().bind(id, tab.path)
+    return tab
+  }
+
+  function stubStandaloneFetch(
+    identity: () => Response | Promise<Response>
+  ): unknown[] {
+    const bodies: unknown[] = []
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url: string, init?: RequestInit) => {
+        if (url.endsWith('/agent/identity')) return await identity()
+        if (url.includes('/messages') && init?.method === 'POST') {
+          bodies.push(JSON.parse(String(init.body)))
+          return json(202, ack('wf-42', `m-${bodies.length}`))
+        }
+        if (url.includes('/messages')) return json(200, [])
+        if (url.includes('/agent/threads')) return json(200, agentThreadList())
+        return new Response('{}', { status: 200 })
+      })
+    )
+    return bodies
+  }
+
+  function identityResponse(): Response {
+    return json(200, { workspace_id: 'ws-local', user_id: 'local-user' })
+  }
+
+  /** Workflow ids of every doc_subscribe the follower put on the socket. */
+  function subscribedWorkflowIds(): string[] {
+    return socket.send.mock.calls
+      .map(
+        ([frame]) =>
+          JSON.parse(frame) as {
+            type: string
+            data?: { workflow_id?: string }
+          }
+      )
+      .filter((frame) => frame.type === 'doc_subscribe')
+      .map((frame) => frame.data?.workflow_id ?? '')
+  }
+
+  it("retries the identity lookup on the socket's next connected edge and activates the follower once it resolves", async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true })
+    const identity = vi
+      .fn<() => Response>()
+      .mockImplementationOnce(() => {
+        throw new Error('identity route down')
+      })
+      .mockImplementation(identityResponse)
+    stubStandaloneFetch(identity)
+    bindActiveTab('wf-42')
+
+    await renderAndSend('first message')
+    await vi.advanceTimersByTimeAsync(0)
+
+    expect(identity).toHaveBeenCalledTimes(1)
+    expect(reportError).toHaveBeenCalledWith(
+      expect.any(Error),
+      expect.objectContaining({ errorType: 'agent_standalone_identity_failed' })
+    )
+    // Bound and active, but unattributable: the follower must not subscribe.
+    expect(subscribedWorkflowIds()).toEqual([])
+
+    socket.connect()
+    await vi.advanceTimersByTimeAsync(STANDALONE_IDENTITY_RETRY_BASE_MS)
+
+    expect(identity).toHaveBeenCalledTimes(2)
+    expect(subscribedWorkflowIds()).toEqual(['wf-42'])
   })
 })
