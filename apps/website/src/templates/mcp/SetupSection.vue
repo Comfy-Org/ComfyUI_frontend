@@ -4,8 +4,20 @@ import { TabsContent, TabsList, TabsRoot, TabsTrigger } from 'reka-ui'
 import { ref } from 'vue'
 
 import SectionHeader from '../../components/common/SectionHeader.vue'
+import SurfaceToggle from '../../components/common/SurfaceToggle.vue'
 import VideoPlayer from '../../components/common/VideoPlayer.vue'
 import CopyableField from '../../components/ui/copyable-field/CopyableField.vue'
+import type {
+  ConnectionId,
+  McpClient,
+  McpClientId,
+  McpConnections
+} from '../../config/mcpClients'
+import {
+  createMcpConnections,
+  isConnectionId,
+  isMcpClientId
+} from '../../config/mcpClients'
 import { externalLinks, getRoutes } from '../../config/routes'
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
@@ -16,164 +28,21 @@ import {
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 
-type ConnectionId = 'cloud' | 'local'
+const connections: McpConnections = createMcpConnections(locale)
 
-interface McpClient {
-  name: string
-  step: string
-  command?: string
-  link?: { label: string; href: string }
-  manualTitle?: string
-  showAgentCard: boolean
-  // Walkthrough clip shown in place of the agent card (source: docs.comfy.org/agent-tools/mcp)
-  video?: string
-}
-
-interface McpConnection {
-  name: string
-  tagline: string
-  /** Value surfaced in the manual card's copy field (server URL or install command). */
-  copyValue: string
-  manualTitle: string
-  manualDescription: string
-  agentCommand: string
-  /** Badge the agent card as the recommended path (local setup is fiddlier by hand). */
-  agentRecommended: boolean
-  /** The comfy-skills plugin ships cloud slash commands only. */
-  showSkillsNote: boolean
-  /** Client id → client; insertion order is the tab order. */
-  clients: Record<string, McpClient>
-}
-
-const cloudClients: Record<string, McpClient> = {
-  'claude-desktop': {
-    name: 'Claude Desktop',
-    step: t('mcp.setup.clients.claudeDesktop.step', locale),
-    manualTitle: t('mcp.setup.clients.claudeDesktop.manualTitle', locale),
-    showAgentCard: false,
-    video: 'https://media.comfy.org/website/mcp/setup-claude-desktop-v2.mp4'
-  },
-  'claude-code': {
-    name: 'Claude Code Terminal',
-    step: t('mcp.setup.clients.claudeCode.step', locale),
-    command: `claude mcp add --transport http comfy-cloud ${externalLinks.mcpEndpoint}`,
-    showAgentCard: true
-  },
-  codex: {
-    name: 'Codex',
-    step: t('mcp.setup.clients.codex.step', locale),
-    command: `codex mcp add comfy-cloud --url ${externalLinks.mcpEndpoint}`,
-    showAgentCard: false,
-    video: 'https://media.comfy.org/website/mcp/setup-codex-oauth-v2.mp4'
-  },
-  cursor: {
-    name: 'Cursor',
-    step: t('mcp.setup.clients.cursor.step', locale),
-    link: {
-      label: t('mcp.setup.clients.cursor.linkLabel', locale),
-      href: externalLinks.apiKeys
-    },
-    showAgentCard: true
-  },
-  openclaw: {
-    name: 'OpenClaw',
-    step: t('mcp.setup.clients.openclaw.step', locale),
-    command: `openclaw skills install @comfy-org/comfy\nopenclaw mcp set comfy '{"url":"${externalLinks.mcpEndpoint}","transport":"streamable-http","auth":"oauth"}'`,
-    showAgentCard: true
-  },
-  other: {
-    name: t('mcp.setup.clients.other.name', locale),
-    step: t('mcp.setup.clients.other.step', locale),
-    link: {
-      label: t('mcp.setup.clients.other.linkLabel', locale),
-      href: externalLinks.docsMcp
-    },
-    showAgentCard: true
-  }
-}
-
-// Same stdio registration for every JSON-config client (source:
-// docs.comfy.org/agent-tools/mcp#manual-configuration).
-const LOCAL_CONFIG_SNIPPET =
-  '{ "mcpServers": { "comfy-mcp": { "command": "comfy-mcp" } } }'
-
-const localClients: Record<string, McpClient> = {
-  'local-claude-code': {
-    name: 'Claude Code Terminal',
-    step: t('mcp.setup.local.clients.claudeCode.step', locale),
-    command: 'claude mcp add comfy-mcp -- comfy-mcp',
-    showAgentCard: true
-  },
-  'local-claude-desktop': {
-    name: 'Claude Desktop',
-    step: t('mcp.setup.local.clients.claudeDesktop.step', locale),
-    command: LOCAL_CONFIG_SNIPPET,
-    showAgentCard: true
-  },
-  'local-cursor': {
-    name: 'Cursor',
-    step: t('mcp.setup.local.clients.cursor.step', locale),
-    command: LOCAL_CONFIG_SNIPPET,
-    showAgentCard: true
-  },
-  'local-other': {
-    name: t('mcp.setup.clients.other.name', locale),
-    step: t('mcp.setup.local.clients.other.step', locale),
-    link: {
-      label: t('mcp.setup.clients.other.linkLabel', locale),
-      href: externalLinks.docsMcpLocal
-    },
-    showAgentCard: true
-  }
-}
-
-const connections: Record<ConnectionId, McpConnection> = {
-  cloud: {
-    name: t('mcp.setup.connections.cloud.name', locale),
-    tagline: t('mcp.setup.connections.cloud.tagline', locale),
-    copyValue: externalLinks.mcpEndpoint,
-    manualTitle: t('mcp.setup.manual.title', locale),
-    manualDescription: t('mcp.setup.manual.description', locale),
-    agentCommand: t('mcp.setup.agent.command', locale).replace(
-      '{url}',
-      externalLinks.docsMcpMd
-    ),
-    agentRecommended: false,
-    showSkillsNote: true,
-    clients: cloudClients
-  },
-  local: {
-    name: t('mcp.setup.connections.local.name', locale),
-    tagline: t('mcp.setup.connections.local.tagline', locale),
-    copyValue: 'pip install comfy-mcp',
-    manualTitle: t('mcp.setup.local.manual.title', locale),
-    manualDescription: t('mcp.setup.local.manual.description', locale),
-    agentCommand: t('mcp.setup.local.agent.command', locale).replace(
-      '{url}',
-      externalLinks.docsMcpLocalMd
-    ),
-    agentRecommended: true,
-    showSkillsNote: false,
-    clients: localClients
-  }
-}
-
-const DEFAULT_CLIENT_IDS: Record<ConnectionId, string> = {
+const DEFAULT_CLIENT_IDS: Record<ConnectionId, McpClientId> = {
   cloud: 'claude-desktop',
   local: 'local-claude-code'
 }
 
 const activeConnectionId = ref<ConnectionId>('cloud')
-const activeClientIds = ref<Record<ConnectionId, string>>({
+const activeClientIds = ref<Record<ConnectionId, McpClientId>>({
   ...DEFAULT_CLIENT_IDS
 })
 
 function activeClientFor(connId: ConnectionId): McpClient {
   const conn = connections[connId]
-  return (
-    conn.clients[activeClientIds.value[connId]] ??
-    conn.clients[DEFAULT_CLIENT_IDS[connId]]
-  )
+  return conn.clients[activeClientIds.value[connId]]!
 }
 
 function manualTitleFor(connId: ConnectionId): string {
@@ -182,22 +51,20 @@ function manualTitleFor(connId: ConnectionId): string {
 
 // reka-ui re-emits update:modelValue even when the value is unchanged
 // (re-clicking the active tab), so dedupe before capturing.
-let lastTrackedConnectionId: string | undefined
+let lastTrackedConnectionId: ConnectionId | undefined
 function onConnectionTabChange(value: string | number | undefined) {
-  if (!value) return
-  const id = String(value)
-  if (id === lastTrackedConnectionId) return
-  lastTrackedConnectionId = id
-  captureMcpConnectionTabClick(id)
+  if (!isConnectionId(value, connections) || value === lastTrackedConnectionId)
+    return
+  lastTrackedConnectionId = value
+  captureMcpConnectionTabClick(value)
 }
 
-let lastTrackedClientId: string | undefined
+let lastTrackedClientId: McpClientId | undefined
 function onClientTabChange(value: string | number | undefined) {
-  if (!value) return
-  const id = String(value)
-  if (id === lastTrackedClientId) return
-  lastTrackedClientId = id
-  captureMcpClientTabClick(id)
+  if (!isMcpClientId(value, connections) || value === lastTrackedClientId)
+    return
+  lastTrackedClientId = value
+  captureMcpClientTabClick(value)
 }
 
 function walkthroughLabelFor(connId: ConnectionId): string {
@@ -234,7 +101,7 @@ const copiedLabel = t('ui.copied', locale)
         >
           {{ t('mcp.setup.requirementPrefix', locale)
           }}<a
-            :href="getRoutes(locale).cloudPricing"
+            :href="getRoutes(locale).pricing"
             class="focus-visible:ring-primary-comfy-yellow/50 rounded-sm text-primary-comfy-canvas underline underline-offset-4 focus-visible:ring-2 focus-visible:outline-none"
             >{{ t('mcp.setup.requirementLinkLabel', locale) }}</a
           >{{ t('mcp.setup.requirementSuffix', locale)
@@ -253,10 +120,12 @@ const copiedLabel = t('ui.copied', locale)
       </template>
     </SectionHeader>
 
+    <SurfaceToggle :locale="locale" active="mcp" class="mt-10" />
+
     <TabsRoot
       v-model="activeConnectionId"
       activation-mode="manual"
-      class="mt-10 block"
+      class="mt-6 block"
       @update:model-value="onConnectionTabChange"
     >
       <TabsList

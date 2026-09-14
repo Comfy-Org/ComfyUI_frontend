@@ -18,12 +18,12 @@ const { locale = 'en', card } = defineProps<{
       :locale
       :sources="card.audioSources"
       :poster="card.posterSrc"
-      :aria-label="card.description[locale]"
+      :aria-label="card.description[locale] || card.description.en"
       class="rounded-4.5xl aspect-19/10 border-0"
     />
 
     <p class="mt-6 text-base font-semibold text-primary-comfy-canvas">
-      {{ card.description[locale] }}
+      {{ card.description[locale] || card.description.en }}
     </p>
 
     <div
@@ -32,11 +32,11 @@ const { locale = 'en', card } = defineProps<{
       <p
         class="line-clamp-5 flex-1 text-sm/relaxed font-light whitespace-pre-line text-primary-warm-gray"
       >
-        {{ card.prompt[locale] }}
+        {{ card.prompt[locale] || card.prompt.en }}
       </p>
       <CopyTextButton
         class="-mr-2 -mb-2"
-        :value="card.prompt[locale]"
+        :value="card.prompt[locale] || card.prompt.en"
         :label="t('modelLaunch.copyPrompt', locale)"
         :copied-label="t('ui.copied', locale)"
       />

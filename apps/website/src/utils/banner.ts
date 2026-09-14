@@ -7,6 +7,20 @@
 export const BANNER_STORAGE_KEY = 'closedBanners'
 export const BANNER_DISMISS_ATTR = 'data-banner-dismissed'
 
+export type ClosedBanners = Record<string, boolean>
+
+/** Narrows untrusted `JSON.parse` output from localStorage. */
+export function toClosedBanners(parsed: unknown): ClosedBanners {
+  if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) {
+    return {}
+  }
+  const closed: ClosedBanners = {}
+  for (const [key, value] of Object.entries(parsed)) {
+    if (typeof value === 'boolean') closed[key] = value
+  }
+  return closed
+}
+
 export interface BannerVisibilityContext {
   currentLocale: string
   currentSection: string

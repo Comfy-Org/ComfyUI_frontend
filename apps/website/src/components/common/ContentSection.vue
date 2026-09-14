@@ -14,6 +14,7 @@ import { scrollTo } from '../../scripts/smoothScroll'
 import { prefersReducedMotion } from '../../composables/useReducedMotion'
 import BrandButton from './BrandButton.vue'
 import CategoryNav from './CategoryNav.vue'
+import SafeRichText from './SafeRichTextContent'
 import SectionLabel from './SectionLabel.vue'
 import { deriveSections } from '../../config/contentSections'
 
@@ -88,7 +89,13 @@ function activateLastIfAtBottom() {
   if (lastId) activeSection.value = lastId
 }
 
-onMounted(activateLastIfAtBottom)
+onMounted(() => {
+  const hashSection = sections.find(
+    ({ id }) => `#${id}` === window.location.hash
+  )
+  if (hashSection) activeSection.value = hashSection.id
+  activateLastIfAtBottom()
+})
 useEventListener('scroll', activateLastIfAtBottom, { passive: true })
 
 function scrollToSection(id: string) {
@@ -142,10 +149,11 @@ function scrollToSection(id: string) {
 
           <template v-for="(block, i) in section.blocks" :key="i">
             <!-- Paragraph -->
-            <p
+            <SafeRichText
               v-if="block.type === 'paragraph'"
+              as="p"
               class="mt-4 text-sm/relaxed text-primary-comfy-canvas"
-              v-html="t(key(section.id, `block.${i}`), locale)"
+              :html="t(key(section.id, `block.${i}`), locale)"
             />
 
             <!-- Heading (h3) -->
@@ -203,7 +211,9 @@ function scrollToSection(id: string) {
               <img
                 :src="t(key(section.id, `block.${i}.src`), locale)"
                 :alt="t(key(section.id, `block.${i}.alt`), locale)"
-                class="w-full rounded-2xl object-cover"
+                loading="lazy"
+                decoding="async"
+                class="aspect-video w-full rounded-2xl object-cover"
               />
               <figcaption class="mt-3 text-xs text-primary-comfy-canvas">
                 {{ t(key(section.id, `block.${i}.caption`), locale) }}
