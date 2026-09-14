@@ -371,7 +371,8 @@ describe('LGraphCanvas selection', () => {
       canvas.deselect(foreignNode)
       canvas.selectItems([foreignNode])
 
-      expect(canvas.selectedItems).toEqual(new Set([a]))
+      expect(canvas.selectedItems.size).toBe(1)
+      expect(canvas.selectedItems.has(a)).toBe(true)
       expect(foreignNode.selected).toBeFalsy()
       expect(a.selected).toBe(true)
     })
