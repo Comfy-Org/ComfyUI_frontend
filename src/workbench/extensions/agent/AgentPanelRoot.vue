@@ -602,7 +602,12 @@ if (standaloneDocTransport) {
 
 const mintPortWiring = attachMintPortWiring({
   isEnabled: () => agentPanelStore.enabled,
-  isDocBound: () => isBoundWorkflowActive.value,
+  // The follower's activity, not merely the tab binding: a mint accepted
+  // while the follower is still waiting on the standalone identity has no
+  // subscription to ride and settles undeliverable, silently. Gating on the
+  // same condition the follower subscribes on means a human edit is minted
+  // only once there is a document to deliver it to.
+  isDocBound: () => isFollowerActive.value,
   enqueue: enqueueHumanOperations,
   layoutChanges: (listener) => layoutStore.onChange(listener),
   localActorPrefix: ACTOR_CONFIG.USER_PREFIX,
