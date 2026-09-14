@@ -131,19 +131,11 @@ function cloneNodesForUnpack(
   return clonedNodes
 }
 
-function createNodeForUnpack(
-  nodeInfo: ISerialisedNode,
-  skipMissingNodes: boolean
-) {
+function createNodeForUnpack(nodeInfo: ISerialisedNode) {
   const node = LiteGraph.createNode(nodeInfo.type, nodeInfo.title)
   if (node) return node
-  if (!skipMissingNodes) {
-    throw new Error(
-      `Cannot unpack: node type "${nodeInfo.type}" is not registered`
-    )
-  }
   console.warn(
-    `Cannot unpack node of type "${nodeInfo.type}" - node type not found. Creating placeholder node.`
+    `Cannot unpack node of type "${nodeInfo.type}" - node creation failed. Creating placeholder node.`
   )
   const placeholder = new LGraphNode(
     nodeInfo.title || nodeInfo.type || 'Missing Node',
@@ -152,6 +144,16 @@ function createNodeForUnpack(
   placeholder.last_serialization = nodeInfo
   placeholder.has_errors = true
   return placeholder
+}
+
+export function findUnavailableSubgraphNodeType(
+  nodes: Iterable<LGraphNode>
+): string | undefined {
+  for (const node of nodes) {
+    if (!Object.hasOwn(LiteGraph.registered_node_types, node.type)) {
+      return node.type
+    }
+  }
 }
 
 function stripSerializedLinks(nodeInfo: ISerialisedNode) {
@@ -184,13 +186,11 @@ function configuredInputSlots(
 export function materializeSubgraphNodes({
   graph,
   nodes,
-  offset,
-  skipMissingNodes
+  offset
 }: {
   graph: LGraph
   nodes: Iterable<LGraphNode>
   offset: Point
-  skipMissingNodes: boolean
 }) {
   const inputSlotMarker = `__unpackInputSlot_${createUuidv4()}`
   const nodeInfos = cloneNodesForUnpack(nodes, inputSlotMarker)
@@ -199,7 +199,7 @@ export function materializeSubgraphNodes({
   const materializedNodes: LGraphNode[] = []
 
   for (const nodeInfo of nodeInfos) {
-    const node = createNodeForUnpack(nodeInfo, skipMissingNodes)
+    const node = createNodeForUnpack(nodeInfo)
     const newNodeId = mintNodeId(graph.state)
     nodeIdMap.set(toNodeId(nodeInfo.id), newNodeId)
     node.id = newNodeId

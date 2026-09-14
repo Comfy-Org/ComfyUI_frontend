@@ -139,6 +139,7 @@ import { SubgraphOutput } from './subgraph/SubgraphOutput'
 import { SubgraphOutputNode } from './subgraph/SubgraphOutputNode'
 import {
   captureUnpackedTargetInput,
+  findUnavailableSubgraphNodeType,
   materializeSubgraphNodes,
   resolveUnpackedTargetInput
 } from './subgraph/unpackSubgraph'
@@ -2441,6 +2442,26 @@ export class LGraph
     if (!(subgraphNode instanceof SubgraphNode))
       throw new Error('Can only unpack Subgraph Nodes')
 
+    const skipMissingNodes = options?.skipMissingNodes ?? false
+    const unavailableNodeType = skipMissingNodes
+      ? undefined
+      : findUnavailableSubgraphNodeType(subgraphNode.subgraph.nodes)
+    if (unavailableNodeType) {
+      reportError(
+        new Error(
+          `Cannot unpack: node type "${unavailableNodeType}" is not registered`
+        ),
+        {
+          errorType: 'error_unpacking_subgraph_node_type',
+          context: {
+            subgraphNodeId: subgraphNode.id,
+            nodeType: unavailableNodeType
+          }
+        }
+      )
+      return false
+    }
+
     const malformedLink = findUnresolvableSubgraphLink(subgraphNode)
     if (malformedLink) {
       reportError(
@@ -2464,7 +2485,7 @@ export class LGraph
     this.beforeChange()
 
     try {
-      this._unpackSubgraphImpl(subgraphNode, options)
+      this._unpackSubgraphImpl(subgraphNode)
     } finally {
       // Mark state change complete for proper undo support
       this.afterChange()
@@ -2472,12 +2493,7 @@ export class LGraph
     return true
   }
 
-  private _unpackSubgraphImpl(
-    subgraphNode: SubgraphNode,
-    options?: { skipMissingNodes?: boolean }
-  ) {
-    const skipMissingNodes = options?.skipMissingNodes ?? false
-
+  private _unpackSubgraphImpl(subgraphNode: SubgraphNode) {
     //NOTE: Create bounds can not be called on positionables directly as the subgraph is not being displayed and boundingRect is not initialized.
     //NOTE: NODE_TITLE_HEIGHT is explicitly excluded here
     const positionables = [
@@ -2502,8 +2518,7 @@ export class LGraph
     } = materializeSubgraphNodes({
       graph: this,
       nodes: subgraphNode.subgraph.nodes,
-      offset: [offsetX, offsetY],
-      skipMissingNodes
+      offset: [offsetX, offsetY]
     })
     toSelect.push(...materializedNodes)
     const groups = structuredClone(

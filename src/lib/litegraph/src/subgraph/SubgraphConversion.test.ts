@@ -9,10 +9,13 @@ import {
 } from 'vitest'
 
 import { SUBGRAPH_INPUT_ID } from '@/lib/litegraph/src/constants'
-import { LGraphGroup, LiteGraph } from '@/lib/litegraph/src/litegraph'
+import {
+  LGraphGroup,
+  LGraphNode,
+  LiteGraph
+} from '@/lib/litegraph/src/litegraph'
 import type {
   LGraph,
-  LGraphNode,
   Positionable,
   SubgraphNode
 } from '@/lib/litegraph/src/litegraph'
@@ -458,6 +461,22 @@ describe('SubgraphConversion', () => {
       expect(
         Object.keys(placeholder.serialize().inputs?.[0] ?? {})
       ).not.toEqual(expect.arrayContaining([markerKey]))
+    })
+    it('refuses to unpack an unavailable node type before mutation', () => {
+      const nodeType = 'test/unavailable-during-unpack'
+      class UnavailableNode extends LGraphNode {}
+      LiteGraph.registerNodeType(nodeType, UnavailableNode)
+      const graph = createTestRootGraph()
+      onTestFinished(enableSubgraphNodeCreation(graph))
+      const missing = LiteGraph.createNode(nodeType)
+      assert(missing)
+      graph.add(missing)
+      const { node: wrapper } = graph.convertToSubgraph(
+        new Set<Positionable>([missing])
+      )
+      LiteGraph.unregisterNodeType(nodeType)
+
+      expectUnpackRejected(graph, wrapper)
     })
     it('reconnects nested subgraph inputs by name after dynamic slots shift', () => {
       const graph = createTestRootGraph()
