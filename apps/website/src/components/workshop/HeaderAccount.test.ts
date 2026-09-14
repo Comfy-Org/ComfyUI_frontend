@@ -1,10 +1,9 @@
-// @vitest-environment happy-dom
-import { fireEvent, render, screen, waitFor } from '@testing-library/vue'
+// @vitest-environment jsdom
+import { render, screen, waitFor } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 
-import { onBeforeSignInLeave } from '../../config/workshop-return'
-import { WORKSHOP_CLOUD_BASE_URL } from '../../config/workshop-env'
+import { subscribeToWorkshopBuyCredits } from '../../config/workshop-buy-credits'
 import HeaderAccount from './HeaderAccount.vue'
 
 const h = vi.hoisted(() => ({
@@ -14,6 +13,7 @@ const h = vi.hoisted(() => ({
   sessionFailure: undefined as { value: unknown } | undefined,
   balance: undefined as { value: unknown } | undefined,
   ensureFresh: vi.fn(),
+  remint: vi.fn(),
   signOut: vi.fn()
 }))
 
@@ -38,6 +38,7 @@ vi.mock<unknown>(import('../../config/workshop-session-state'), async () => {
       session,
       sessionFailure,
       ensureFresh: h.ensureFresh,
+      remint: h.remint,
       signOut: h.signOut
     })
   }
@@ -47,12 +48,27 @@ vi.mock<unknown>(import('../../config/workshop-credits'), async () => {
   const { ref } = await import('vue')
   const balance = ref<unknown>({ status: 'unknown' })
   h.balance = balance
-  return { useWorkshopCredits: () => ({ balance }) }
+  const { computed } = await import('vue')
+  return {
+    useWorkshopCredits: () => ({ balance }),
+    refreshWorkshopCredits: vi.fn().mockResolvedValue(undefined),
+    watchForTopUp: vi.fn(),
+    clearTopUpWatch: vi.fn(),
+    useTopUpWatch: () => computed(() => ({ status: 'idle' }))
+  }
 })
 
 const workspace = { id: 'ws', name: 'Personal', type: 'personal' as const }
 
+function captureBuyCreditsRequest() {
+  const requested = vi.fn()
+  const stop = subscribeToWorkshopBuyCredits(requested)
+  onTestFinished(stop)
+  return requested
+}
+
 beforeEach(() => {
+  h.remint.mockReset()
   h.flag!.value = true
   h.user!.value = null
   h.session!.value = undefined
@@ -132,17 +148,18 @@ describe('HeaderAccount', () => {
         role: 'owner'
       }
       h.balance!.value = { status: 'ok', credits }
+      const requested = captureBuyCreditsRequest()
       render(HeaderAccount)
 
-      await userEvent
-        .setup()
-        .click(screen.getByRole('button', { name: /account/i }))
-      const buy = screen.getByRole('menuitem', { name: 'Buy credits' })
-      expect(buy.getAttribute('href')).toBe(
-        `${WORKSHOP_CLOUD_BASE_URL}/?settings=plan-credits`
-      )
-      expect(buy.getAttribute('target')).toBe('_blank')
-      expect(screen.getByRole('menuitem', { name: /sign out/i })).toBeTruthy()
+      const user = userEvent.setup()
+      await user.click(screen.getByRole('button', { name: /account/i }))
+      const buy = await screen.findByRole('menuitem', {
+        name: /add credits/i
+      })
+      expect(screen.getByRole('menuitem', { name: /log out/i })).toBeTruthy()
+
+      await user.click(buy)
+      expect(requested).toHaveBeenCalledOnce()
     }
   )
 
@@ -199,102 +216,409 @@ describe('HeaderAccount', () => {
   })
 })
 
-describe('HeaderAccount sign-in link', () => {
-  it('runs the registered stashes before leaving for sign-in', async () => {
-    const assign = vi.fn()
-    vi.spyOn(window.location, 'assign').mockImplementation(assign)
-    const stash = vi.fn()
-    const stop = onBeforeSignInLeave(stash)
-    onTestFinished(stop)
+describe('HeaderAccount menu', () => {
+  function signIn() {
+    h.user!.value = { uid: 'user-1', email: 'a@b.co', displayName: 'Ada' }
+    h.session!.value = { token: 'jwt', uid: 'user-1', workspace, role: 'owner' }
+    h.balance!.value = { status: 'ok', credits: 42 }
+  }
+
+  it('opens the amount picker from Add credits without inventing a settings destination', async () => {
+    signIn()
+    const requested = captureBuyCreditsRequest()
+    const user = userEvent.setup()
     render(HeaderAccount)
 
-    await userEvent
-      .setup()
-      .click(screen.getByRole('link', { name: /sign in/i }))
+    await user.click(screen.getByTestId('header-account'))
 
-    expect(stash.mock.invocationCallOrder[0]).toBeLessThan(
-      assign.mock.invocationCallOrder[0]
-    )
+    await screen.findByTestId('account-workspace')
+    expect(screen.queryByTestId('account-workspace-settings')).toBeNull()
+    expect(screen.queryByTestId('buy-credits-dialog')).toBeNull()
+
+    await user.click(screen.getByTestId('account-add-credits'))
+
+    expect(requested).toHaveBeenCalledOnce()
   })
 
-  it('sends the visitor to sign in with the current page as the return destination', async () => {
-    const assign = vi.fn()
-    vi.spyOn(window.location, 'assign').mockImplementation(assign)
-    window.history.replaceState({}, '', '/workshop/models/example/?tab=api')
+  it('hides the top-up row from a member', async () => {
+    signIn()
+    h.session!.value = {
+      token: 'jwt',
+      uid: 'user-1',
+      workspace,
+      role: 'member'
+    }
+    const user = userEvent.setup()
     render(HeaderAccount)
 
-    await userEvent
-      .setup()
-      .click(screen.getByRole('link', { name: /sign in/i }))
+    await user.click(screen.getByTestId('header-account'))
 
-    expect(assign).toHaveBeenCalledWith(
-      '/login/?returnTo=%2Fworkshop%2Fmodels%2Fexample%2F%3Ftab%3Dapi'
-    )
+    await screen.findByTestId('account-workspace')
+    expect(screen.queryByTestId('account-add-credits')).toBeNull()
   })
 
-  it('leaves a modified click to the browser with the return destination already on the link', async () => {
-    const assign = vi.fn()
-    vi.spyOn(window.location, 'assign').mockImplementation(assign)
-    window.history.replaceState({}, '', '/workshop/models/example/?tab=api')
+  it('closes on Escape and hands focus back to the trigger', async () => {
+    signIn()
+    const user = userEvent.setup()
     render(HeaderAccount)
 
-    const link = screen.getByRole('link', { name: /sign in/i })
+    const trigger = screen.getByTestId('header-account')
+    await user.click(trigger)
+    await screen.findByRole('menu')
+
+    await user.keyboard('{Escape}')
+    await waitFor(() => expect(screen.queryByRole('menu')).toBeNull())
+    // eslint-disable-next-line testing-library/no-node-access
+    expect(document.activeElement).toBe(trigger)
+  })
+})
+
+describe('HeaderAccount workspace switcher', () => {
+  function signIn() {
+    h.user!.value = { uid: 'user-1', email: 'a@b.co', displayName: 'Ada' }
+    h.session!.value = { token: 'jwt', uid: 'user-1', workspace, role: 'owner' }
+    h.balance!.value = { status: 'ok', credits: 42 }
+    h.ensureFresh.mockImplementation(async () => ({
+      status: 'ok',
+      session: h.session!.value
+    }))
+  }
+
+  const listing = {
+    workspaces: [
+      {
+        id: 'ws',
+        name: 'Personal',
+        role: 'owner',
+        type: 'personal',
+        subscription_tier: 'PRO',
+        created_at: '2026-01-01T00:00:00Z',
+        joined_at: '2026-01-01T00:00:00Z'
+      },
+      {
+        id: 'team-1',
+        name: 'Comfy team',
+        role: 'member',
+        type: 'team',
+        created_at: '2026-02-01T00:00:00Z',
+        joined_at: '2026-02-01T00:00:00Z'
+      }
+    ]
+  }
+
+  async function openSwitcher(user: ReturnType<typeof userEvent.setup>) {
+    await user.click(screen.getByTestId('header-account'))
+    await screen.findByTestId('account-workspace')
+    await user.keyboard('{ArrowDown}')
+    await user.keyboard('{Enter}')
+  }
+
+  it('lists the account workspaces with the current one checked', async () => {
+    signIn()
+    vi.stubGlobal(
+      'fetch',
+      vi
+        .fn()
+        .mockResolvedValue(
+          new Response(JSON.stringify(listing), { status: 200 })
+        )
+    )
+    const user = userEvent.setup()
+    render(HeaderAccount, { props: { locale: 'zh-CN' } })
+
+    await openSwitcher(user)
+
+    expect(await screen.findByTestId('account-workspace-team-1')).toBeTruthy()
+    const current = screen.getByTestId('account-workspace-ws')
+    expect(current.textContent).toContain('Personal')
+    expect(current.textContent).toContain('PRO')
     expect(
-      link.getAttribute('href'),
-      'the first render must match the server output'
-    ).toBe('/login/')
+      screen.getByTestId('account-workspace-team-1').textContent
+    ).toContain('成员')
+    expect(h.ensureFresh).toHaveBeenCalledWith(undefined, {
+      workspaceId: 'ws',
+      signal: expect.any(AbortSignal),
+      timeoutMs: 15_000
+    })
+  })
 
-    await fireEvent(link, new Event('pointerdown', { bubbles: true }))
-    link.dispatchEvent(
-      new MouseEvent('click', {
-        bubbles: true,
-        cancelable: true,
-        metaKey: true
+  it('switches by reminting for the picked workspace', async () => {
+    signIn()
+    vi.stubGlobal(
+      'fetch',
+      vi
+        .fn()
+        .mockResolvedValue(
+          new Response(JSON.stringify(listing), { status: 200 })
+        )
+    )
+    const team = {
+      token: 'team-jwt',
+      uid: 'user-1',
+      workspace: { id: 'team-1', name: 'Comfy team', type: 'team' as const },
+      role: 'member'
+    }
+    h.remint.mockImplementationOnce(async () => {
+      h.session!.value = team
+      return { status: 'ok', session: team }
+    })
+    const user = userEvent.setup()
+    render(HeaderAccount)
+
+    await openSwitcher(user)
+    await user.click(await screen.findByTestId('account-workspace-team-1'))
+
+    await waitFor(() =>
+      expect(h.remint).toHaveBeenCalledWith(undefined, {
+        workspaceId: 'team-1',
+        preserveCredentialOnTransientFailure: true
       })
     )
-
-    expect(assign).not.toHaveBeenCalled()
-    expect(
-      link.getAttribute('href'),
-      'open-in-new-tab must land on the model page after sign-in, not the Workshop home'
-    ).toBe('/login/?returnTo=%2Fworkshop%2Fmodels%2Fexample%2F%3Ftab%3Dapi')
+    await waitFor(() => expect(screen.queryByRole('menu')).toBeNull())
+    await user.click(screen.getByTestId('header-account'))
+    expect(await screen.findByText('Comfy team')).toBeTruthy()
   })
 
-  it('stashes unsaved work even when a modified click opens sign-in in a new tab', async () => {
-    const stash = vi.fn()
-    const stop = onBeforeSignInLeave(stash)
-    onTestFinished(stop)
+  it('keeps the switch pending until its remint settles', async () => {
+    signIn()
+    vi.stubGlobal(
+      'fetch',
+      vi
+        .fn()
+        .mockResolvedValue(
+          new Response(JSON.stringify(listing), { status: 200 })
+        )
+    )
+    h.remint.mockImplementationOnce(() => new Promise(() => {}))
+    const user = userEvent.setup()
     render(HeaderAccount)
 
-    const link = screen.getByRole('link', { name: /sign in/i })
-    await fireEvent(link, new Event('pointerdown', { bubbles: true }))
-    const notPrevented = link.dispatchEvent(
-      new MouseEvent('click', {
-        bubbles: true,
-        cancelable: true,
-        metaKey: true
+    await openSwitcher(user)
+    const target = await screen.findByTestId('account-workspace-team-1')
+    await user.click(target)
+
+    await vi.waitFor(() => expect(h.remint).toHaveBeenCalledOnce())
+    expect(target.getAttribute('data-disabled')).not.toBeNull()
+    expect(screen.queryByTestId('account-workspace-switch-error')).toBeNull()
+  })
+
+  it('contains a rejected switch and shows its recovery error', async () => {
+    signIn()
+    vi.stubGlobal(
+      'fetch',
+      vi
+        .fn()
+        .mockResolvedValue(
+          new Response(JSON.stringify(listing), { status: 200 })
+        )
+    )
+    h.remint.mockRejectedValueOnce(new Error('offline'))
+    const user = userEvent.setup()
+    render(HeaderAccount)
+
+    await openSwitcher(user)
+    await user.click(await screen.findByTestId('account-workspace-team-1'))
+
+    expect(
+      await screen.findByTestId('account-workspace-switch-error')
+    ).toBeTruthy()
+    expect(h.remint).toHaveBeenCalledOnce()
+  })
+
+  it('shows the failure line when the list cannot load', async () => {
+    signIn()
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue(new Response('', { status: 500 }))
+    )
+    const user = userEvent.setup()
+    render(HeaderAccount)
+
+    await openSwitcher(user)
+
+    expect(await screen.findByText('Could not load workspaces.')).toBeTruthy()
+  })
+
+  it('shows an intentional empty state', async () => {
+    signIn()
+    vi.stubGlobal(
+      'fetch',
+      vi
+        .fn()
+        .mockResolvedValue(
+          new Response(JSON.stringify({ workspaces: [] }), { status: 200 })
+        )
+    )
+    const user = userEvent.setup()
+    render(HeaderAccount)
+
+    await openSwitcher(user)
+
+    expect(await screen.findByTestId('account-workspaces-empty')).toBeTruthy()
+  })
+
+  it('retries a failed workspace list without closing the submenu', async () => {
+    signIn()
+    const fetchWorkspaces = vi
+      .fn()
+      .mockResolvedValueOnce(new Response('', { status: 500 }))
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify(listing), { status: 200 })
+      )
+    vi.stubGlobal('fetch', fetchWorkspaces)
+    const user = userEvent.setup()
+    render(HeaderAccount)
+
+    await openSwitcher(user)
+    const retry = await screen.findByTestId('account-workspaces-retry')
+    await user.keyboard('{ArrowDown}')
+    await waitFor(() => {
+      // eslint-disable-next-line testing-library/no-node-access
+      expect(document.activeElement).toBe(retry)
+    })
+    await user.keyboard('{Enter}')
+
+    expect(await screen.findByTestId('account-workspace-team-1')).toBeTruthy()
+    expect(fetchWorkspaces).toHaveBeenCalledTimes(2)
+  })
+
+  it('reloads the workspace list when the session scope changes', async () => {
+    signIn()
+    let resolveList!: (response: Response) => void
+    const replacement = {
+      workspaces: [
+        {
+          id: 'other',
+          name: 'Other',
+          role: 'owner',
+          type: 'personal',
+          created_at: '2026-03-01T00:00:00Z',
+          joined_at: '2026-03-01T00:00:00Z'
+        }
+      ]
+    }
+    const fetchWorkspaces = vi
+      .fn()
+      .mockImplementationOnce(
+        () =>
+          new Promise<Response>((resolve) => {
+            resolveList = resolve
+          })
+      )
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify(replacement), { status: 200 })
+      )
+    vi.stubGlobal('fetch', fetchWorkspaces)
+    const user = userEvent.setup()
+    render(HeaderAccount)
+
+    await openSwitcher(user)
+    await vi.waitFor(() => expect(h.ensureFresh).toHaveBeenCalled())
+    h.session!.value = {
+      token: 'other-jwt',
+      uid: 'user-2',
+      workspace: { id: 'other', name: 'Other', type: 'personal' },
+      role: 'owner'
+    }
+    h.user!.value = { uid: 'user-2', email: 'other@b.co', displayName: 'Other' }
+    await vi.waitFor(() => expect(fetchWorkspaces).toHaveBeenCalledTimes(2))
+    resolveList(new Response(JSON.stringify(listing), { status: 200 }))
+
+    expect(await screen.findByTestId('account-workspace-other')).toBeTruthy()
+    expect(screen.queryByTestId('account-workspace-team-1')).toBeNull()
+  })
+
+  it('does not roll a superseded switch back over the newer workspace', async () => {
+    signIn()
+    vi.stubGlobal(
+      'fetch',
+      vi
+        .fn()
+        .mockResolvedValue(
+          new Response(JSON.stringify(listing), { status: 200 })
+        )
+    )
+    const newer = {
+      token: 'newer-jwt',
+      uid: 'user-1',
+      workspace: { id: 'team-2', name: 'Newer team', type: 'team' as const },
+      role: 'owner'
+    }
+    h.remint.mockImplementationOnce(async () => {
+      h.session!.value = newer
+      return undefined
+    })
+    const user = userEvent.setup()
+    render(HeaderAccount)
+
+    await openSwitcher(user)
+    await user.click(await screen.findByTestId('account-workspace-team-1'))
+
+    await vi.waitFor(() => expect(h.session!.value).toEqual(newer))
+    expect(h.remint).toHaveBeenCalledOnce()
+    expect(screen.queryByTestId('account-workspace-switch-error')).toBeNull()
+  })
+
+  it('reports a superseded switch that leaves the previous workspace active', async () => {
+    signIn()
+    vi.stubGlobal(
+      'fetch',
+      vi
+        .fn()
+        .mockResolvedValue(
+          new Response(JSON.stringify(listing), { status: 200 })
+        )
+    )
+    h.remint.mockResolvedValueOnce(undefined)
+    const user = userEvent.setup()
+    render(HeaderAccount)
+
+    await openSwitcher(user)
+    await user.click(await screen.findByTestId('account-workspace-team-1'))
+
+    expect(
+      await screen.findByTestId('account-workspace-switch-error')
+    ).toBeTruthy()
+    expect(h.remint).toHaveBeenCalledOnce()
+  })
+
+  it('restores the previous workspace after a failed switch', async () => {
+    signIn()
+    vi.stubGlobal(
+      'fetch',
+      vi
+        .fn()
+        .mockResolvedValue(
+          new Response(JSON.stringify(listing), { status: 200 })
+        )
+    )
+    const previous = h.session!.value
+    h.remint
+      .mockImplementationOnce(async () => {
+        h.session!.value = undefined
+        return { status: 'error', code: 'ACCESS_DENIED' }
       })
-    )
-
-    expect(
-      stash,
-      'a new tab must carry the latest form, so the stash runs even when the click is not the primary navigation'
-    ).toHaveBeenCalledOnce()
-    expect(
-      notPrevented,
-      'the modified click must reach the browser, so its default new-tab navigation is never prevented'
-    ).toBe(true)
-  })
-
-  it('prepares the destination on focus, so a keyboard open-in-new-tab keeps it too', async () => {
-    window.history.replaceState({}, '', '/workshop/models/example/')
+      .mockImplementationOnce(async () => {
+        h.session!.value = previous
+        return { status: 'ok', session: previous }
+      })
+    const user = userEvent.setup()
     render(HeaderAccount)
-    const link = screen.getByRole('link', { name: /sign in/i })
 
-    await fireEvent.focus(link)
+    await openSwitcher(user)
+    await user.click(await screen.findByTestId('account-workspace-team-1'))
 
-    expect(link.getAttribute('href')).toBe(
-      '/login/?returnTo=%2Fworkshop%2Fmodels%2Fexample%2F'
-    )
+    expect(
+      await screen.findByTestId('account-workspace-switch-error')
+    ).toBeTruthy()
+    expect(h.remint).toHaveBeenNthCalledWith(1, undefined, {
+      workspaceId: 'team-1',
+      preserveCredentialOnTransientFailure: true
+    })
+    expect(h.remint).toHaveBeenNthCalledWith(2, undefined, {
+      workspaceId: 'ws',
+      preserveCredentialOnTransientFailure: true
+    })
+    expect(h.session!.value).toBe(previous)
   })
 })

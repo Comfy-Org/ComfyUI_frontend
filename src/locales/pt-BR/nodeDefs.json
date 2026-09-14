@@ -6216,6 +6216,40 @@
       }
     }
   },
+  "FluxVideoEditNode": {
+    "description": "Edita um clip a partir de uma instrução escrita: remove, adiciona ou substitui objetos, altera o cenário, muda o estilo da filmagem, altera o texto na tela ou substitui o diálogo falado. A duração, o enquadramento, o movimento da câmera e o áudio vêm do clip de origem.",
+    "display_name": "Edição de Vídeo Flux",
+    "inputs": {
+      "auto_downscale": {
+        "name": "auto_downscale",
+        "tooltip": "Reduz automaticamente a resolução de origens maiores que 1280x704 pixels em área antes do envio. A proporção é preservada; vídeos menores não são alterados."
+      },
+      "control_after_generate": {
+        "name": "controlar após gerar"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "O que alterar, em linguagem simples, com até 4096 caracteres. Tudo o que você não mencionar deve permanecer como estava. O diálogo substituto deve caber no tempo da fala original, e um clip silencioso permanece silencioso."
+      },
+      "safety_tolerance": {
+        "name": "safety_tolerance",
+        "tooltip": "Tolerância da moderação; 0 é o mais rigoroso."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed para determinar se o nó deve ser executado novamente; o FLUX escolhe sua própria seed, portanto os resultados reais não são determinísticos, independentemente deste valor."
+      },
+      "video": {
+        "name": "vídeo",
+        "tooltip": "Clip de origem de 0,7 a 15 segundos, com pelo menos 160x160 pixels. A saída é renderizada a 24 fps e limitada a cerca de 0,9 megapixel por quadro, portanto uma origem maior retorna menor."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "FluxVideoUpscaleNode": {
     "description": "Aumenta a resolução de um vídeo em 1,5 a 3 vezes com super-resolução FLUX, preservando precisamente a fonte ou aprimorando criativamente seus detalhes.",
     "display_name": "Ampliação de Vídeo Flux",

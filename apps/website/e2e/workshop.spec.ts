@@ -31,6 +31,75 @@ test.describe('Retired prototype routes', () => {
 })
 
 test.describe('Models catalog', () => {
+  test('opens the featured model from the full banner surface', async ({
+    page
+  }) => {
+    await page.goto('/models/')
+    const slide = page.getByTestId('featured-slide')
+    const href = await page
+      .getByTestId('featured-slide-link')
+      .getAttribute('href')
+    const bounds = await slide.boundingBox()
+    if (!href || !bounds) throw new Error('Featured slide is not clickable')
+
+    await slide.click({ position: { x: bounds.width - 24, y: 24 } })
+
+    await expect(page).toHaveURL(new URL(href, page.url()).href)
+  })
+
+  test('switches between the curated recommendation and alphabetical order', async ({
+    page
+  }) => {
+    await page.goto('/models/')
+    const sections = page.getByTestId('workshop-sections')
+    await expect(sections).toBeVisible()
+    const sort = page.getByTestId('workshop-sort')
+    await expect(sort).toContainText('Recommended')
+    const leading = page
+      .getByTestId('section-generate-images')
+      .getByTestId('workshop-model-card')
+    await expect(leading.first()).toBeVisible()
+    const rowCount = await leading.count()
+    expect(rowCount).toBeGreaterThanOrEqual(3)
+    const recommended = await leading.evaluateAll((cards) =>
+      cards.slice(0, 3).map((card) => card.getAttribute('href') ?? '')
+    )
+    expect(recommended).toEqual([
+      '/models/byteplus--seedream-5-pro--generate-images/',
+      '/models/byteplus--seedream-4--generate-images/',
+      '/models/xai--grok-imagine-image--generate-images/'
+    ])
+
+    await sort.click()
+    await page.getByTestId('sort-name').click()
+    await expect(sort).toContainText('Name A to Z')
+    await expect
+      .poll(async () => {
+        const names = await leading
+          .getByTestId('model-card-name')
+          .allTextContents()
+        return (
+          names.length === rowCount &&
+          names.every(
+            (name, index) =>
+              index === 0 || names[index - 1].localeCompare(name) <= 0
+          )
+        )
+      })
+      .toBe(true)
+
+    await sort.click()
+    await page.getByTestId('sort-popular').click()
+    await expect(sort).toContainText('Recommended')
+    await expect
+      .poll(() =>
+        leading.evaluateAll((cards) =>
+          cards.slice(0, 3).map((card) => card.getAttribute('href') ?? '')
+        )
+      )
+      .toEqual(recommended)
+  })
+
   test('searches the approved catalog and recovers from empty results', async ({
     page
   }) => {
@@ -67,6 +136,7 @@ test.describe('Models catalog', () => {
       .getByRole('heading', { level: 2 })
       .innerText()
     const promisedCount = Number(rowHeading.match(/(\d+)\s*$/)?.[1])
+    const rowLabel = rowHeading.replace(/\s*\d+\s*$/, '').trim()
     expect(promisedCount).toBeGreaterThan(0)
     await videos.getByTestId('section-generate-videos-open').click()
     const cards = page
@@ -76,13 +146,85 @@ test.describe('Models catalog', () => {
     await expect(cards).toHaveCount(promisedCount)
     await expect(page.getByTestId('workshop-hero')).toHaveCount(0)
     await expect(page.getByRole('heading', { level: 1 })).toContainText(
-      'Generate videos'
+      rowLabel
     )
     await page
       .getByRole('button', { name: 'Back to all categories', exact: true })
       .click()
     await expect(sections).toBeVisible()
     await expect(page.getByTestId('workshop-hero')).toBeVisible()
+  })
+
+  test('the rows listing opens the whole catalogue', async ({ page }) => {
+    await page.goto('/models/')
+    await page.getByTestId('browse-all').click()
+
+    await expect(page.getByTestId('workshop-sections')).toHaveCount(0)
+    const heading = page.getByRole('heading', { level: 1 })
+    await expect(heading).toContainText('All models')
+    const promisedCount = Number(
+      (await heading.innerText()).match(/(\d+)\s*$/)?.[1]
+    )
+    expect(promisedCount).toBeGreaterThan(0)
+    await expect(
+      page
+        .getByTestId('workshop-models-grid')
+        .getByTestId('workshop-model-card')
+    ).toHaveCount(promisedCount)
+
+    await page.getByTestId('section-back').click()
+    await expect(page.getByTestId('workshop-sections')).toBeVisible()
+  })
+
+  test('a model page returns to the shelf it was opened from', async ({
+    page
+  }) => {
+    await page.goto('/models/')
+    await page.getByTestId('section-generate-videos-open').click()
+    await expect(page.getByRole('heading', { level: 1 })).toContainText(
+      'Generate videos'
+    )
+    await page
+      .getByTestId('workshop-models-grid')
+      .getByTestId('workshop-model-card')
+      .first()
+      .click()
+
+    const back = page.getByTestId('model-back')
+    await expect(back).toHaveText('Back to Generate videos')
+    await back.click()
+    await expect(page.getByRole('heading', { level: 1 })).toContainText(
+      'Generate videos'
+    )
+    await expect(page.getByTestId('workshop-sections')).toHaveCount(0)
+  })
+
+  test('the search field stays put as the results swap under it', async ({
+    page
+  }) => {
+    await page.goto('/models/')
+    await expect(page.getByTestId('workshop-sections')).toBeVisible()
+    await page.evaluate(() => window.scrollTo(0, 700))
+    const search = page.getByTestId('workshop-search')
+
+    // Nothing else is clicked between the two measurements: a click scrolls its
+    // own target into view first, which would move the page under the field.
+    await search.fill('kling')
+    await expect(
+      page
+        .getByTestId('workshop-models-grid')
+        .getByTestId('workshop-model-card')
+        .first()
+    ).toContainText('Kling')
+    const searching = await search.boundingBox()
+
+    await search.fill('')
+    await expect(page.getByTestId('workshop-sections')).toBeVisible()
+    if (!searching)
+      throw new Error('the search field was never on screen to measure')
+    await expect
+      .poll(async () => (await search.boundingBox())?.y)
+      .toBeCloseTo(searching.y, 0)
   })
 
   test('cards open canonical model pages with related models', async ({
@@ -222,9 +364,7 @@ test.describe('Model playground', () => {
       .fill(modelsAccount.password)
     await page.getByRole('button', { name: 'Sign in', exact: true }).click()
     await expect(page).toHaveURL(new RegExp(`${MODEL_PATH}$`))
-    await expect(
-      page.getByRole('button', { name: 'Run', exact: true })
-    ).toBeEnabled()
+    await expect(page.getByTestId('run-button')).toBeEnabled()
     await expect(
       page.getByRole('textbox', { name: 'Prompt', exact: true })
     ).toHaveValue(prompt)
@@ -240,9 +380,7 @@ test.describe('Model playground', () => {
     await expect(page.getByRole('heading', { level: 1 })).toHaveText(
       'Seedream 4.5'
     )
-    await expect(
-      page.getByRole('button', { name: 'Run', exact: true })
-    ).toBeEnabled()
+    await expect(page.getByTestId('run-button')).toBeEnabled()
     const [chooser] = await Promise.all([
       page.waitForEvent('filechooser'),
       page.getByText('Choose images or drop them here', { exact: true }).click()
@@ -280,11 +418,78 @@ test.describe('Model playground', () => {
     await expect(
       page.getByRole('textbox', { name: 'Prompt', exact: true })
     ).not.toHaveValue('')
+    const example = page.getByTestId('example-card').first()
+    await expect
+      .poll(async () => (await example.boundingBox())?.width ?? Infinity)
+      .toBeLessThan(320)
     await page.getByRole('textbox', { name: 'Prompt', exact: true }).fill('')
-    await page.getByTestId('example-card').first().click()
+    await example.click()
     await expect(page.getByTestId('playground-tab')).toBeVisible()
     await expect(
       page.getByRole('textbox', { name: 'Prompt', exact: true })
     ).not.toHaveValue('')
+  })
+
+  test('three examples fill the available desktop row', async ({ page }) => {
+    await page.goto('/models/krea--krea-2-medium-turbo--generate-images/')
+    const list = page.getByTestId('examples-tab').locator('ul')
+    const cards = page.getByTestId('example-card')
+    await expect(cards).toHaveCount(3)
+
+    await expect
+      .poll(async () => {
+        const [listBox, firstCardBox, lastCardBox] = await Promise.all([
+          list.boundingBox(),
+          cards.first().boundingBox(),
+          cards.last().boundingBox()
+        ])
+        if (!listBox || !firstCardBox || !lastCardBox) return false
+        return (
+          Math.abs(firstCardBox.y - lastCardBox.y) < 2 &&
+          Math.abs(
+            listBox.x + listBox.width - (lastCardBox.x + lastCardBox.width)
+          ) < 2
+        )
+      })
+      .toBe(true)
+  })
+})
+
+test.describe('Filter sheet @mobile', () => {
+  test('the handle pulls the sheet up and lets it go', async ({ page }) => {
+    await page.goto('/models/')
+    await page.getByTestId('workshop-filter').click()
+
+    const sheet = page.getByTestId('workshop-filter-menu')
+    await expect(sheet).toBeVisible()
+    const resting = await sheet.boundingBox()
+    if (!resting) throw new Error('Filter sheet has no visible bounds')
+
+    const handle = page.getByTestId('workshop-filter-grabber')
+    const grip = await handle.boundingBox()
+    if (!grip) throw new Error('Filter handle has no visible bounds')
+    const from = { x: grip.x + grip.width / 2, y: grip.y + grip.height / 2 }
+
+    await page.mouse.move(from.x, from.y)
+    await page.mouse.down()
+    await page.mouse.move(from.x, from.y - 260, { steps: 8 })
+    await page.mouse.up()
+
+    await expect
+      .poll(async () => (await sheet.boundingBox())?.height ?? 0)
+      .toBeGreaterThan(resting.height)
+
+    const grown = await handle.boundingBox()
+    if (!grown) throw new Error('Expanded filter handle has no visible bounds')
+    await page.mouse.move(grown.x + grown.width / 2, grown.y + grown.height / 2)
+    await page.mouse.down()
+    await page.mouse.move(
+      grown.x + grown.width / 2,
+      grown.y + grown.height / 2 + 500,
+      { steps: 8 }
+    )
+    await page.mouse.up()
+
+    await expect(sheet).toHaveCount(0)
   })
 })

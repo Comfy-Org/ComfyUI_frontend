@@ -4,18 +4,19 @@ import generatedModels from './workshop-models.generated.json'
 import catalog from '../content/workshop-models.json'
 import display from '../content/workshop-display.json'
 import availability from '../data/workshop-router-availability.json'
-import { routerAliasById } from './workshop-browse-content'
+import { routerAliasById, workshopModels } from './workshop-browse-content'
 import { workshopContract } from './workshop-contract-catalog'
 import { workshopContentInputs } from './workshop-content-inputs'
 import { isWorkshopModelDisabled } from './workshop-model-availability'
+import { modelOrderRank } from './workshop-model-order'
 import { getRouterWorkshopModelDetail as getWorkshopModelDetail } from './workshop-router-content'
 import { schemaForModel } from './workshop-playground'
 import type { GeneratedField, WorkshopModel } from './models-catalogue'
+import { decodeGeneratedModels } from './workshop-generated-models'
 import {
   USE_CASES,
   countByFacet,
   countByUseCase,
-  decodeGeneratedModels,
   catalogSearch,
   filterWorkshopModels,
   parseCatalogSearch,
@@ -26,8 +27,7 @@ import {
   capabilitiesFor,
   taskFor,
   useCaseFor,
-  useCasesFor,
-  workshopModels
+  useCasesFor
 } from './models-catalogue'
 
 const fixture: WorkshopModel[] = [
@@ -62,6 +62,12 @@ const fixture: WorkshopModel[] = [
     capabilities: []
   }
 ]
+
+it('keeps generated video ahead of animated-image use cases', () => {
+  expect(USE_CASES.indexOf('generate-videos')).toBeLessThan(
+    USE_CASES.indexOf('animate-images')
+  )
+})
 
 describe('filterWorkshopModels', () => {
   it('matches name or provider, case-insensitively', () => {
@@ -187,6 +193,18 @@ describe('sortWorkshopModels', () => {
       'Mystery'
     ])
     expect(names(priced)).toEqual(['Kling AI', 'Flux', 'Mystery'])
+  })
+
+  it('leads with the models people run, whatever their example count', () => {
+    const [first, second] = [...modelOrderRank.keys()]
+    const list = [
+      { ...fixture[0], slug: second, recommendedRank: 1, workflowCount: 6 },
+      { ...fixture[1], slug: first, recommendedRank: 0, workflowCount: 0 },
+      { ...fixture[2], slug: 'never-run', workflowCount: 6 }
+    ]
+    expect(
+      sortWorkshopModels(list, 'popular').map((model) => model.slug)
+    ).toEqual([first, second, 'never-run'])
   })
 })
 
