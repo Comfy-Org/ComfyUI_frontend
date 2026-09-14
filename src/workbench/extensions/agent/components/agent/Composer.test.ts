@@ -302,6 +302,18 @@ describe('Composer', () => {
     await userEvent.type(box, 'hello{Enter}')
     expect(emitted().stop).toBeUndefined()
     expect(emitted().send).toBeUndefined()
+
+    const repeatedEscape = box.dispatchEvent(
+      new KeyboardEvent('keydown', {
+        key: 'Escape',
+        repeat: true,
+        bubbles: true,
+        cancelable: true
+      })
+    )
+    expect(repeatedEscape).toBe(true)
+    expect(emitted().stop).toBeUndefined()
+
     await userEvent.type(box, '{Escape}')
     expect(emitted().stop).toHaveLength(1)
   })

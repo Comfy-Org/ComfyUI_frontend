@@ -198,7 +198,12 @@ function onEditorSelectionChange(): void {
 function onComposerKeydown(event: KeyboardEvent): void {
   if (handleMentionKeydown(event)) return
   if (event.key === 'Enter') onEnter(event)
-  if (event.key === 'Escape' && running.value && !event.isComposing) {
+  if (
+    event.key === 'Escape' &&
+    running.value &&
+    !event.isComposing &&
+    !event.repeat
+  ) {
     event.preventDefault()
     event.stopPropagation()
     emit('stop')

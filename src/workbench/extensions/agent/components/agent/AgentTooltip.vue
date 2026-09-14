@@ -20,7 +20,6 @@ const {
   sideOffset = 6
 } = defineProps<{
   label: string
-  /** Key hint rendered after the label in a muted tone, e.g. "Esc". */
   shortcut?: string
   disabled?: boolean
   side?: 'top' | 'right' | 'bottom' | 'left'
