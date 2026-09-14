@@ -163,7 +163,7 @@
     "defaultBanner": "default banner",
     "enableOrDisablePack": "Enable or disable pack",
     "openManager": "Open Manager",
-    "manageExtensions": "Manage extensions",
+    "manageExtensions": "Manage Custom Nodes",
     "gallery": "Gallery",
     "graphNavigation": "Graph navigation",
     "dropYourFileOr": "Drop your file or",
@@ -440,7 +440,7 @@
     "inf": "Inf"
   },
   "manager": {
-    "title": "Nodes Manager",
+    "title": "Custom Nodes",
     "survey": {
       "title": "Join the waitlist",
       "intro": "Installing custom nodes is coming soon to Comfy Cloud. Answer a few quick questions to join the waitlist and help shape this feature.",
@@ -469,7 +469,7 @@
     "dependencies": "Dependencies",
     "inWorkflow": "In Workflow",
     "nav": {
-      "allExtensions": "All Extensions",
+      "allExtensions": "All Custom Nodes",
       "notInstalled": "Not Installed",
       "installedSection": "INSTALLED",
       "allInstalled": "All installed",
@@ -486,7 +486,7 @@
     "clickToFinishSetup": "Click",
     "toFinishSetup": "to finish setup",
     "restartingBackend": "Restarting backend to apply changes...",
-    "extensionsSuccessfullyInstalled": "Extension(s) successfully installed and are ready to use!",
+    "extensionsSuccessfullyInstalled": "Custom node(s) successfully installed and are ready to use!",
     "installingDependencies": "Installing dependencies...",
     "loadingVersions": "Loading versions...",
     "selectVersion": "Select Version",
@@ -514,20 +514,20 @@
     "tryDifferentSearch": "Please try a different search query.",
     "emptyState": {
       "allInstalled": {
-        "title": "No Extensions Installed",
-        "message": "You haven't installed any extensions yet."
+        "title": "No Custom Nodes Installed",
+        "message": "You haven't installed any custom nodes yet."
       },
       "updateAvailable": {
         "title": "All Up to Date",
-        "message": "All your extensions are up to date."
+        "message": "All your custom nodes are up to date."
       },
       "conflicting": {
         "title": "No Conflicts Detected",
-        "message": "All your extensions are compatible."
+        "message": "All your custom nodes are compatible."
       },
       "workflow": {
-        "title": "No Extensions in Workflow",
-        "message": "This workflow doesn't use any extension nodes."
+        "title": "No Custom Nodes in Workflow",
+        "message": "This workflow doesn't use any custom nodes."
       },
       "missing": {
         "title": "No Missing Nodes",
@@ -574,18 +574,18 @@
     },
     "conflicts": {
       "title": "Node Pack Issues Detected!",
-      "description": "We've detected conflicts between some of your extensions and the new version of ComfyUI. By updating you risk breaking workflows that rely on those extensions.",
-      "info": "If you continue with the update, the conflicting extensions will be disabled automatically. You can review and manage them anytime in the ComfyUI Manager.",
-      "extensionAtRisk": "Extension at Risk",
+      "description": "We've detected conflicts between some of your custom nodes and the new version of ComfyUI. By updating you risk breaking workflows that rely on those custom nodes.",
+      "info": "If you continue with the update, the conflicting custom nodes will be disabled automatically. You can review and manage them anytime under Custom Nodes.",
+      "extensionAtRisk": "Custom Node at Risk",
       "conflicts": "Conflicts",
-      "importFailedExtensions": "Import Failed Extensions",
+      "importFailedExtensions": "Import Failed Custom Nodes",
       "conflictInfoTitle": "Why is this happening?",
       "installAnyway": "Install Anyway",
       "enableAnyway": "Enable Anyway",
       "understood": "Understood",
       "warningBanner": {
-        "title": "Some extensions are disabled due to incompatibility with your current setup",
-        "message": "These extensions require versions of system packages  that differ from your current setup. Installing them may override core dependencies and affect other extensions or workflows.",
+        "title": "Some custom nodes are disabled due to incompatibility with your current setup",
+        "message": "These custom nodes require versions of system packages  that differ from your current setup. Installing them may override core dependencies and affect other custom nodes or workflows.",
         "button": "Learn More..."
       },
       "conflictMessages": {
@@ -1082,7 +1082,7 @@
     "github": "Github",
     "help": "Help & Support",
     "systemStatus": "System Status",
-    "managerExtension": "Manager Extension",
+    "managerExtension": "Custom Nodes",
     "more": "More...",
     "whatsNew": "What's New?",
     "clickToLearnMore": "Click to learn more →",
@@ -1136,7 +1136,7 @@
     "theme": "Theme",
     "dark": "Dark",
     "light": "Light",
-    "manageExtensions": "Extensions",
+    "manageExtensions": "Custom Nodes",
     "customNodesManager": "Custom Nodes Manager",
     "settings": "Settings",
     "help": "Help",
@@ -1551,7 +1551,7 @@
     "Interrupt": "Interrupt",
     "Open Layer Editor for Selected Node": "Open Layer Editor for Selected Node",
     "Load Default Workflow": "Load Default Workflow",
-    "Custom Nodes Manager": "Custom Nodes Manager",
+    "Show Custom Nodes": "Show Custom Nodes",
     "Custom Nodes (Legacy)": "Custom Nodes (Legacy)",
     "Manager Menu (Legacy)": "Manager Menu (Legacy)",
     "Install Missing Custom Nodes": "Install Missing Custom Nodes",
@@ -1568,7 +1568,7 @@
     "Unload Models and Execution Cache": "Unload Models and Execution Cache",
     "New": "New",
     "Clipspace": "Clipspace",
-    "Manager": "Manager",
+    "Open Custom Nodes": "Open Custom Nodes",
     "Open": "Open",
     "Publish": "Publish",
     "Job History": "Job History",
