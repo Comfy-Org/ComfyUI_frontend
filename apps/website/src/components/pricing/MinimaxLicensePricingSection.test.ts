@@ -74,6 +74,9 @@ describe('MinimaxLicensePricingSection', () => {
     for (const link of contactLinks) {
       expect(link.getAttribute('href')).toBe('/zh-CN/contact')
     }
+
+    const priceCell = screen.getByRole('cell', { name: '5,000 美元 / 月起' })
+    expect(within(priceCell).queryByRole('link')).toBeNull()
   })
 
   it('points the CTA at the license page', () => {
