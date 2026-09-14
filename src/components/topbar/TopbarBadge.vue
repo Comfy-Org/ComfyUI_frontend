@@ -154,16 +154,19 @@ const togglePopover = (event: Event) => {
 
 /**
  * Some backends shout their alert message ("STAGING ENVIRONMENT"). Only those
- * are recased, so messages that already carry their own casing keep their
- * proper nouns intact.
+ * are recased, so messages that already carry their own casing keep both their
+ * proper nouns and their sentence punctuation.
  */
-function toSentenceCase(text: string): string {
+function toTitleCase(text: string): string {
   if (text !== text.toUpperCase()) return text
-  const lowered = text.toLowerCase()
-  return lowered.charAt(0).toUpperCase() + lowered.slice(1)
+  return text
+    .toLowerCase()
+    .replace(/(^|\s)(\p{L})/gu, (_, lead: string, letter: string) =>
+      lead.concat(letter.toUpperCase())
+    )
 }
 
-const displayText = computed(() => toSentenceCase(badge.text))
+const displayText = computed(() => toTitleCase(badge.text))
 
 const variant = computed(() => badge.variant ?? 'info')
 
