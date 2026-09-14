@@ -1,8 +1,9 @@
 ---
-import { ArrowRight, Info } from '@lucide/vue'
+import { ArrowRight } from '@lucide/vue'
 import type { GetStaticPaths } from 'astro'
 import BaseLayout from '../../layouts/BaseLayout.astro'
 import CatalogueBackLink from '../../components/workshop/CatalogueBackLink.vue'
+import InfoTooltip from '../../components/ui/tooltip/InfoTooltip.vue'
 import ModelDetail from '../../components/workshop/ModelDetail.vue'
 import ModelStatus from '../../components/workshop/ModelStatus.vue'
 import ModelSupport from '../../components/workshop/ModelSupport.vue'
@@ -89,14 +90,11 @@ const pillClass =
               ? t('workshop.model.estimatedPrice').replace('{price}', priceEstimate)
               : t('workshop.model.variablePrice')}
             {priceEstimate && (
-              <span
-                class="inline-flex text-primary-warm-gray"
-                title={t('workshop.model.nodePriceDefaults')}
-                data-testid="model-price-note"
-              >
-                <Info class="size-4" aria-hidden="true" />
-                <span class="sr-only">{t('workshop.model.nodePriceDefaults')}</span>
-              </span>
+              <InfoTooltip
+                text={t('workshop.model.nodePriceDefaults')}
+                label={t('workshop.model.priceNoteLabel')}
+                client:visible
+              />
             )}
           </p>
           {shownTags.length > 0 && (
