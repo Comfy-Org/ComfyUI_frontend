@@ -40,6 +40,25 @@ type TemplateModelRowDownloadDependencies = {
   subscribeLegacyProgress?: SubscribeLegacyProgress
 }
 
+function modelMatchesProgress(
+  model: ModelWithUrl,
+  progress: { url: string; filename: string; directory?: string }
+): boolean {
+  return (
+    model.url === progress.url &&
+    model.name === progress.filename &&
+    (progress.directory === undefined || model.directory === progress.directory)
+  )
+}
+
+function activeAttempt(
+  state: TemplateModelDownloadState | undefined
+): number | undefined {
+  if (!state) return undefined
+  if (!['queued', 'starting', 'downloading'].includes(state.status)) return
+  return state.attempt
+}
+
 function subscribeToDesktopProgress(
   listener: (progress: ComfyDownloadProgress) => void
 ): () => void {
@@ -58,6 +77,25 @@ function validByteCount(value: number | undefined): number | null {
     : null
 }
 
+function downloadFraction(
+  receivedBytes: number | null,
+  totalBytes: number | null
+): number | null {
+  if (receivedBytes === null || totalBytes === null) return null
+  if (totalBytes <= 0 || receivedBytes > totalBytes) return null
+  return receivedBytes / totalBytes
+}
+
+function terminalDesktopEvent(
+  status: 'completed' | 'error' | 'cancelled',
+  attempt: number
+): TemplateModelDownloadEvent {
+  return {
+    type: status === 'completed' ? 'completed' : status,
+    attempt
+  }
+}
+
 function desktopProgressEvent(
   progress: ComfyDownloadProgress,
   attempt: number
@@ -69,27 +107,19 @@ function desktopProgressEvent(
     case 'paused': {
       const receivedBytes = validByteCount(progress.receivedBytes)
       const totalBytes = validByteCount(progress.totalBytes)
-      const fraction =
-        receivedBytes !== null &&
-        totalBytes !== null &&
-        totalBytes > 0 &&
-        receivedBytes <= totalBytes
-          ? receivedBytes / totalBytes
-          : null
       return {
         type: 'progress',
         attempt,
         activity: progress.status === 'paused' ? 'paused' : 'active',
         receivedBytes,
         totalBytes,
-        fraction
+        fraction: downloadFraction(receivedBytes, totalBytes)
       }
     }
     case 'completed':
-      return { type: 'completed', attempt }
     case 'error':
     case 'cancelled':
-      return { type: progress.status, attempt }
+      return terminalDesktopEvent(progress.status, attempt)
     default:
       return progress.status satisfies never
   }
@@ -224,24 +254,10 @@ export function useTemplateModelRowDownloads({
   ): void {
     const matches: { model: ModelWithUrl; attempt: number }[] = []
     for (const [identity, model] of models) {
-      if (
-        model.url !== progress.url ||
-        model.name !== progress.filename ||
-        (progress.directory !== undefined &&
-          model.directory !== progress.directory)
-      ) {
-        continue
-      }
-      const state = states.get(identity)
-      if (
-        !state ||
-        state.status === 'idle' ||
-        state.status === 'done' ||
-        state.status === 'failed'
-      ) {
-        continue
-      }
-      matches.push({ model, attempt: state.attempt })
+      if (!modelMatchesProgress(model, progress)) continue
+      const attempt = activeAttempt(states.get(identity))
+      if (attempt === undefined) continue
+      matches.push({ model, attempt })
     }
 
     if (progress.directory === undefined && matches.length !== 1) return
