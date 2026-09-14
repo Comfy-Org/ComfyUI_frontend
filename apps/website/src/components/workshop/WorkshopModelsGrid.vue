@@ -1,5 +1,10 @@
 <script setup lang="ts">
-import { ArrowUpDown, ChevronDown, ChevronLeft } from '@lucide/vue'
+import {
+  ArrowUpDown,
+  ChevronDown,
+  ChevronLeft,
+  ChevronRight
+} from '@lucide/vue'
 import {
   DropdownMenuContent,
   DropdownMenuPortal,
@@ -8,7 +13,7 @@ import {
   DropdownMenuRoot,
   DropdownMenuTrigger
 } from 'reka-ui'
-import { computed, nextTick, onMounted, ref, watch } from 'vue'
+import { computed, nextTick, onMounted, ref, useTemplateRef, watch } from 'vue'
 
 import Button from '@/components/ui/button/Button.vue'
 import { groupModels } from '../../config/model-family'
@@ -31,6 +36,8 @@ import {
 } from '../../config/models-catalogue'
 import type { Locale, TranslationKey } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
+import { rememberShelf } from '../../lib/workshop/shelf-memory'
+import { useCaseLabelKey } from '../../lib/workshop/use-case-label'
 import type { FacetMenuOption } from './WorkshopFilterMenu.vue'
 import WorkshopFilterMenu from './WorkshopFilterMenu.vue'
 import WorkshopModelCard from './WorkshopModelCard.vue'
@@ -50,6 +57,7 @@ const modalities = ref<string[]>([])
 const capabilities = ref<string[]>([])
 const providers = ref<string[]>([])
 const sort = ref<SortOrder>('popular')
+let scrollReady = false
 
 onMounted(() => {
   const initial = parseCatalogSearch(location.search)
@@ -58,33 +66,17 @@ onMounted(() => {
   capabilities.value = [...(initial.capabilities ?? [])]
   providers.value = [...(initial.providers ?? [])]
   modalities.value = [...(initial.modalities ?? [])]
+  void nextTick(() => {
+    scrollReady = true
+  })
 })
 
-// A row title clicked far down the page opens a much shorter screen, which
-// would otherwise leave the viewport parked on the footer.
-watch(useCase, () => void nextTick(() => window.scrollTo({ top: 0 })))
-
-const useCaseLabelKey: Record<UseCase | 'all' | 'other', TranslationKey> = {
-  all: 'workshop.useCase.all',
-  other: 'workshop.sections.otherFormats',
-  'generate-images': 'workshop.useCase.generateImages',
-  'edit-images': 'workshop.useCase.editImages',
-  'generate-videos': 'workshop.useCase.generateVideos',
-  'animate-images': 'workshop.useCase.animateImages',
-  'edit-videos': 'workshop.useCase.editVideos',
-  '3d': 'workshop.useCase.3d',
-  audio: 'workshop.useCase.audio',
-  text: 'workshop.useCase.text'
-}
+const toolbar = useTemplateRef<HTMLElement>('toolbar')
 const sortLabelKey: Record<SortOrder, TranslationKey> = {
   popular: 'workshop.sort.popular',
   name: 'workshop.sort.name',
   priceAsc: 'workshop.sort.priceAsc',
   priceDesc: 'workshop.sort.priceDesc'
-}
-
-function selectRail(value: UseCase | 'all' | 'other') {
-  useCase.value = value
 }
 
 // A facet answers "what else is in here", so it counts what the category
@@ -152,15 +144,27 @@ const isFiltered = computed(
 
 // Willie's browseable listing: rows per use case until the visitor narrows
 // down, then the flat grid takes over.
-const browsing = computed(() => !isFiltered.value)
-// The browsing rows are the use cases, each with its name and its count, so a
-// row of chips saying the same six words would be the same list twice. V1.1
-// leaves a category the way it entered one, through its own header.
-const inSection = computed(() => useCase.value !== 'all')
+const browseAll = defineModel<boolean>('browseAll', { default: false })
+watch(
+  [useCase, browseAll, () => query.value.trim() !== ''],
+  ([nextShelf, nextBrowse], [previousShelf, previousBrowse]) => {
+    if (!scrollReady) return
+    const sectionChanged =
+      nextShelf !== previousShelf || nextBrowse !== previousBrowse
+    void nextTick(() => {
+      if (sectionChanged) window.scrollTo({ top: 0 })
+      else toolbar.value?.scrollIntoView({ block: 'start' })
+    })
+  }
+)
+const browsing = computed(() => !isFiltered.value && !browseAll.value)
+const inSection = computed(() => useCase.value !== 'all' || browseAll.value)
 const sectionTitleKey = computed<TranslationKey>(() =>
-  useCase.value === 'other'
-    ? 'workshop.sections.otherFormats'
-    : useCaseLabelKey[useCase.value]
+  useCase.value === 'all'
+    ? 'workshop.sections.allModels'
+    : useCase.value === 'other'
+      ? 'workshop.sections.otherFormats'
+      : useCaseLabelKey[useCase.value]
 )
 
 // A category names the screen it opens, so the page heading above it would say
@@ -168,9 +172,8 @@ const sectionTitleKey = computed<TranslationKey>(() =>
 const emit = defineEmits<{ section: [boolean] }>()
 watch(inSection, (value) => emit('section', value), { immediate: true })
 
-// Router reports no curated set yet, so the banner that opens the listing
-// carries the catalogue's own most-run models and costs nothing to keep true
-// as the catalogue grows.
+// Keep the launch-requested video models in the set, then let the same curated
+// order used by the rows decide where every selected model appears.
 const FEATURED_LIMIT = 6
 const FEATURED_SLUGS = [
   'byteplus--seedance-2-fast-text-to-video--generate-videos',
@@ -183,17 +186,24 @@ const featured = computed(() => {
   const selected = FEATURED_SLUGS.flatMap((slug) =>
     available.filter((model) => model.slug === slug)
   )
-  return [
-    ...selected,
-    ...available.filter((model) => !FEATURED_SLUGS.includes(model.slug))
-  ].slice(0, FEATURED_LIMIT)
+  return sortWorkshopModels(
+    [
+      ...selected,
+      ...available.filter((model) => !FEATURED_SLUGS.includes(model.slug))
+    ].slice(0, FEATURED_LIMIT),
+    'popular'
+  )
 })
 
 function openSection(value: UseCase | 'other') {
   useCase.value = value
 }
 
-function clearFilters() {
+function leaveSection() {
+  clearFilters()
+}
+
+function resetFilters() {
   query.value = ''
   useCase.value = 'all'
   modalities.value = []
@@ -201,6 +211,28 @@ function clearFilters() {
   providers.value = []
 }
 
+function clearFilters() {
+  browseAll.value = false
+  resetFilters()
+}
+
+function rememberModel(
+  model: WorkshopModel,
+  event: MouseEvent,
+  shelf = useCase.value
+) {
+  if (
+    event.button !== 0 ||
+    event.metaKey ||
+    event.ctrlKey ||
+    event.shiftKey ||
+    event.altKey
+  )
+    return
+  rememberShelf(shelf, model.href)
+}
+
+watch(browseAll, (on) => on && resetFilters())
 const menuItemClass =
   'flex cursor-pointer items-center gap-3 rounded-lg px-3 py-2 text-sm text-primary-comfy-canvas outline-none select-none data-[highlighted]:bg-transparency-white-t4'
 </script>
@@ -211,7 +243,7 @@ const menuItemClass =
       v-if="browsing && featured.length"
       :models="featured"
       :locale
-      class="mb-10"
+      class="short:mb-6 mb-10"
     />
 
     <div class="min-w-0">
@@ -220,14 +252,15 @@ const menuItemClass =
         type="button"
         class="hover:text-primary-comfy-yellow focus-visible:ring-primary-comfy-yellow/50 -ml-1 inline-flex cursor-pointer items-center gap-1 rounded-lg px-1 text-sm font-medium text-primary-warm-gray opacity-60 transition hover:opacity-100 focus-visible:opacity-100 focus-visible:ring-3"
         data-testid="section-back"
-        @click="selectRail('all')"
+        @click="leaveSection"
       >
         <ChevronLeft class="size-4" aria-hidden="true" />
         {{ t('workshop.sections.back', locale) }}
       </button>
 
       <div
-        class="bg-page sticky top-20 z-30 mb-8 flex flex-wrap items-center justify-end gap-3 py-4 max-sm:mb-4 max-sm:py-2 lg:top-26"
+        ref="toolbar"
+        class="bg-page sticky top-20 z-30 mb-8 flex scroll-mt-20 flex-wrap items-center justify-end gap-3 py-4 max-sm:mb-4 max-sm:py-2 lg:top-26 lg:scroll-mt-26"
       >
         <h1
           v-if="inSection"
@@ -314,14 +347,28 @@ const menuItemClass =
         </div>
       </div>
 
-      <WorkshopSections
-        v-if="browsing"
-        :models
-        :label-key="useCaseLabelKey"
-        :sort
-        :locale
-        @open="openSection"
-      />
+      <template v-if="browsing">
+        <WorkshopSections
+          :models
+          :label-key="useCaseLabelKey"
+          :sort
+          :locale
+          @open="openSection"
+        />
+
+        <button
+          type="button"
+          class="group hover:border-primary-comfy-yellow hover:text-primary-comfy-yellow focus-visible:ring-primary-comfy-yellow/50 mx-auto mt-12 flex w-fit cursor-pointer items-center justify-center gap-2 rounded-2xl border border-transparency-white-t8 px-8 py-4 text-sm font-medium text-primary-comfy-canvas transition-colors outline-none focus-visible:ring-3 max-sm:w-full"
+          data-testid="browse-all-end"
+          @click="browseAll = true"
+        >
+          {{ t('workshop.sections.browseAll', locale) }}
+          <ChevronRight
+            class="size-4 transition-transform group-hover:translate-x-0.5"
+            aria-hidden="true"
+          />
+        </button>
+      </template>
 
       <template v-else>
         <div v-if="visible.length">
@@ -334,7 +381,11 @@ const menuItemClass =
             data-testid="workshop-models-grid"
           >
             <li v-for="family in visible" :key="family.key">
-              <WorkshopModelCard :model="family.latest" :locale />
+              <WorkshopModelCard
+                :model="family.latest"
+                :locale
+                @click="rememberModel(family.latest, $event)"
+              />
             </li>
           </ul>
         </div>

@@ -1,351 +1,318 @@
 import { execFileSync, spawnSync } from 'node:child_process'
-import { mkdtempSync, rmSync, writeFileSync } from 'node:fs'
+import {
+  mkdtempSync,
+  readFileSync,
+  rmSync,
+  symlinkSync,
+  writeFileSync
+} from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
+import { fileURLToPath } from 'node:url'
+import type { Asset } from '@comfyorg/sdk/low'
 import { afterEach, describe, expect, it } from 'vitest'
 
 import { buildSnippet } from './models-snippets'
 import type { SnippetFile } from './models-snippets'
-import { workshopContract } from './workshop-contract-catalog'
 
 const id = 'bfl/flux-2-pro'
-const key = 'one-intent-one-key'
 const body = {
-  prompt:
-    "It's a 🌻; $(exit 1) " +
-    String.fromCharCode(96) +
-    'exit 1' +
-    String.fromCharCode(96),
-  prompt_upsampling: false,
+  prompt: 'A 🌻; $(exit 1) `exit 1`',
   nested: [true, null, { quote: '\\n' }]
 }
+const directories: string[] = []
+const image = readFileSync(
+  fileURLToPath(
+    new URL('../../e2e/assets/placeholder-1x1.webp', import.meta.url)
+  )
+)
 
-describe('buildSnippet', () => {
-  it('round-trips the exact Python request body without confusing JSON and Python literals', () => {
-    const snippet = buildSnippet('python', id, body, key)
-    const result = execFileSync(
+function directory() {
+  const path = mkdtempSync(join(tmpdir(), 'models-sdk-snippets-'))
+  directories.push(path)
+  symlinkSync(
+    fileURLToPath(new URL('../../node_modules', import.meta.url)),
+    join(path, 'node_modules'),
+    'dir'
+  )
+  return path
+}
+
+afterEach(() => {
+  for (const path of directories.splice(0))
+    rmSync(path, { recursive: true, force: true })
+})
+
+const asset: Asset = {
+  id: 'asset-1',
+  hash: null,
+  size_bytes: 0,
+  content_type: 'image/webp',
+  created_at: '2026-09-13T00:00:00Z',
+  url: 'https://storage.example/unused',
+  url_expires_at: '2026-09-14T00:00:00Z'
+}
+
+const transport = `
+const runs = [], uploads = []
+globalThis.fetch = async (target, init = {}) => {
+  const url = new URL(target)
+  const headers = new Headers(init.headers)
+  if (url.pathname.startsWith('/v2/models/')) {
+    runs.push({ body: JSON.parse(init.body), key: headers.get('Idempotency-Key'), url: url.href })
+    if (process.env.RETRY && runs.length === 1) return Response.json({ detail: 'Provider temporarily unavailable', error_type: 'provider_error' }, { status: 503, headers: { 'X-Comfy-Error-Type': 'provider_error' } })
+    if (process.env.BINARY) return new Response(new Uint8Array([0, 255, 1]), { headers: { 'Content-Type': 'audio/mpeg' } })
+    return Response.json({ images: [{ url: 'https://result.example/output.webp' }] }, { headers: { 'X-Comfy-Request-Id': 'request-1' } })
+  }
+  if (url.pathname.startsWith('/api/v2/assets/by-hash/')) return new Response(null, { status: 404 })
+  if (url.pathname === '/api/v2/assets' && init.method === 'POST') {
+    if (process.env.FAIL_UPLOAD) return Response.json({ error: 'forbidden' }, { status: 403 })
+    const file = init.body.get('file')
+    if (!(file instanceof Blob)) throw new Error('Missing SDK multipart file')
+    uploads.push({ bytes: [...new Uint8Array(await file.arrayBuffer())], type: init.body.get('content_type'), path: init.body.get('file_path') })
+    return Response.json({ ...${JSON.stringify(asset)}, id: 'asset-' + uploads.length, hash: init.body.get('expected_hash'), size_bytes: file.size, content_type: file.type }, { status: 201 })
+  }
+  if (url.pathname.endsWith('/content')) return new Response(null, { status: 302, headers: { Location: 'https://storage.example/' + url.pathname.split('/').at(-2) } })
+  if (url.href === 'https://source.example/input.png') {
+    if (headers.has('Authorization') || headers.has('X-API-Key')) throw new Error('Credential leaked to input host')
+    return new Response(new Uint8Array([0, 42, 255]), { headers: { 'Content-Type': 'image/webp' } })
+  }
+  throw new Error('Unexpected network request: ' + url.href)
+}
+console.log = () => process.stdout.write(JSON.stringify({ runs, uploads }))
+`
+
+function execute(
+  snippet: string,
+  cwd = directory(),
+  env: Record<string, string> = {}
+) {
+  return execFileSync(process.execPath, ['--input-type=module', '-'], {
+    cwd,
+    input: transport + snippet,
+    encoding: 'utf8',
+    stdio: ['pipe', 'pipe', 'pipe'],
+    timeout: 8000,
+    env: { PATH: process.env.PATH, COMFY_API_KEY: 'test-key', ...env }
+  })
+}
+
+describe('SDK snippets', () => {
+  it('uses embedded media bytes directly and through SDK assets without requiring a local file', () => {
+    const sourceDataUrl = 'data:image/webp;base64,' + image.toString('base64')
+    const files: SnippetFile[] = [
+      {
+        token: 'inline',
+        name: 'image.webp',
+        mimeType: 'image/webp',
+        sourceDataUrl
+      },
+      {
+        token: 'upload',
+        name: 'mask.webp',
+        mimeType: 'image/webp',
+        sourceDataUrl,
+        encoding: 'url'
+      }
+    ]
+    const result = JSON.parse(
+      execute(
+        buildSnippet(
+          'typescript',
+          id,
+          {
+            inline: 'data:image/webp;base64,inline',
+            image: 'upload'
+          },
+          { files }
+        )
+      )
+    )
+    expect(result.runs[0].body).toEqual({
+      inline: sourceDataUrl,
+      image: 'https://storage.example/asset-1'
+    })
+    expect(result.uploads).toEqual([
+      { path: 'mask.webp', bytes: [...image], type: 'image/webp' }
+    ])
+  })
+
+  it('executes through the released SDK, preserving native JSON and minting a fresh key per execution', () => {
+    const snippet = buildSnippet('typescript', id, body)
+    const first = JSON.parse(execute(snippet))
+    const second = JSON.parse(execute(snippet))
+    expect(first.runs[0].body).toEqual(body)
+    expect(first.runs[0].url).toBe(
+      'https://stagingapi.comfy.org/v2/models/' + id
+    )
+    expect(first.runs[0].key).toMatch(/^[\da-f-]{36}$/i)
+    expect(second.runs[0].key).not.toBe(first.runs[0].key)
+    const retry = JSON.parse(execute(snippet, directory(), { RETRY: '1' }))
+    expect(retry.runs).toHaveLength(2)
+    expect(retry.runs[1]).toEqual(retry.runs[0])
+  })
+
+  it('uploads URL-capable inputs through SDK assets, retaining bytes and deriving inline MIME from the supplied path', () => {
+    const cwd = directory()
+    const files: SnippetFile[] = [
+      {
+        token: 'first',
+        name: 'first.webp',
+        mimeType: 'image/webp',
+        encoding: 'base64',
+        urlAlternative: true
+      },
+      {
+        token: 'https://upload.invalid/second',
+        name: 'second.webp',
+        mimeType: 'image/webp',
+        encoding: 'url'
+      },
+      {
+        token: 'third',
+        name: 'third.webp',
+        mimeType: 'image/png',
+        encoding: 'base64'
+      }
+    ]
+    for (const file of files) writeFileSync(join(cwd, file.name), image)
+    const payload = {
+      image: ['data:image/webp;base64,first', files[1].token],
+      nested: { data: 'third', mimeType: 'image/png' },
+      prompt: body.prompt
+    }
+    const snippet = buildSnippet('typescript', id, payload, { files })
+    const result = JSON.parse(execute(snippet, cwd))
+    expect(result.runs[0].body).toEqual({
+      image: [
+        'https://storage.example/asset-1',
+        'https://storage.example/asset-2'
+      ],
+      nested: { data: image.toString('base64'), mimeType: 'image/webp' },
+      prompt: body.prompt
+    })
+    expect(result.uploads).toEqual([
+      { path: 'first.webp', bytes: [...image], type: 'image/webp' },
+      { path: 'second.webp', bytes: [...image], type: 'image/webp' }
+    ])
+    const failed = spawnSync(process.execPath, ['--input-type=module', '-'], {
+      cwd,
+      input: transport + snippet,
+      encoding: 'utf8',
+      timeout: 8000,
+      env: {
+        PATH: process.env.PATH,
+        COMFY_API_KEY: 'test-key',
+        FAIL_UPLOAD: '1'
+      }
+    })
+    expect(failed.status).not.toBe(0)
+    expect(failed.stdout).toBe('')
+    expect(failed.stderr).not.toContain('test-key')
+  })
+
+  it('keeps default reference URLs runnable without local files and downloads only native inline inputs', () => {
+    const files: SnippetFile[] = [
+      {
+        token: 'reference',
+        name: 'absent.webp',
+        mimeType: 'image/webp',
+        sourceUrl: 'https://source.example/reference.webp',
+        urlAlternative: true
+      },
+      {
+        token: 'inline',
+        name: 'input.png',
+        mimeType: 'image/png',
+        sourceUrl: 'https://source.example/input.png'
+      }
+    ]
+    const snippet = buildSnippet(
+      'typescript',
+      id,
+      {
+        image: 'data:image/webp;base64,reference',
+        inline: { data: 'inline', mimeType: 'image/png' }
+      },
+      { files }
+    )
+    const result = JSON.parse(execute(snippet))
+    expect(result.runs[0].body).toEqual({
+      image: 'https://source.example/reference.webp',
+      inline: {
+        data: Buffer.from([0, 42, 255]).toString('base64'),
+        mimeType: 'image/webp'
+      }
+    })
+    expect(result.uploads).toEqual([])
+  })
+
+  it('rehosts a default URL through SDK assets when the native mapping requires a new URL', () => {
+    const files: SnippetFile[] = [
+      {
+        token: 'url',
+        name: 'input.png',
+        mimeType: 'image/png',
+        encoding: 'url',
+        sourceUrl: 'https://source.example/input.png',
+        rehost: true
+      }
+    ]
+    const result = JSON.parse(
+      execute(buildSnippet('typescript', id, { image: 'url' }, { files }))
+    )
+    expect(result.runs[0].body).toEqual({
+      image: 'https://storage.example/asset-1'
+    })
+    expect(result.uploads[0]).toMatchObject({
+      bytes: [0, 42, 255],
+      type: 'image/webp'
+    })
+  })
+
+  it('fails on a missing key before accessing local inputs or sending requests', () => {
+    const files: SnippetFile[] = [
+      {
+        token: 'image',
+        name: 'missing.png',
+        mimeType: 'image/png',
+        encoding: 'url'
+      }
+    ]
+    expect(() =>
+      execute(
+        buildSnippet('typescript', id, { image: 'image' }, { files }),
+        directory(),
+        { COMFY_API_KEY: '  ' }
+      )
+    ).toThrow('Set COMFY_API_KEY')
+  })
+
+  it('preserves binary output for endpoints unsupported by models.run', () => {
+    const cwd = directory()
+    const snippet = buildSnippet(
+      'typescript',
+      'elevenlabs/eleven_v3',
+      { text: 'Hello' },
+      { output: 'binary' }
+    )
+    expect(snippet).not.toContain('npm install')
+    execute(snippet, cwd, { BINARY: '1' })
+    expect(readFileSync(join(cwd, 'output.bin'))).toEqual(
+      Buffer.from([0, 255, 1])
+    )
+  })
+
+  it('renders valid Python literals and passes the exact native arguments to the asynchronous SDK call', () => {
+    const snippet = buildSnippet('python', id, body)
+    const parsed = execFileSync(
       'python3',
       [
         '-c',
-        'import ast,json,sys\nm=ast.parse(sys.stdin.read())\nc=next(n for n in ast.walk(m) if isinstance(n,ast.Call) and isinstance(n.func,ast.Attribute) and n.func.attr=="loads")\nprint(json.dumps(json.loads(ast.literal_eval(c.args[0]))))'
+        'import ast,json,sys\nm=ast.parse(sys.stdin.read())\na=next(n for n in ast.walk(m) if isinstance(n,ast.Assign) and any(isinstance(t,ast.Name) and t.id=="parameters" for t in n.targets))\nc=next(n for n in ast.walk(m) if isinstance(n,ast.Await) and isinstance(n.value,ast.Call) and isinstance(n.value.func,ast.Attribute) and n.value.func.attr=="run")\nprint(json.dumps([ast.literal_eval(a.value),ast.literal_eval(c.value.args[0]),c.value.args[1].id]))'
       ],
       { input: snippet, encoding: 'utf8' }
     )
-    expect(JSON.parse(result)).toEqual(body)
-    expect(snippet).toContain(key)
-    expect(snippet).toContain('timeout=660')
+    expect(JSON.parse(parsed)).toEqual([body, id, 'parameters'])
   })
-
-  it('sends the exact cURL payload and a stable nonempty key on repeated execution', () => {
-    const snippet = buildSnippet('curl', id, body, key)
-    const capture = 'curl() { printf \'%s\\0\' "$@"; }\n'
-    for (let attempt = 0; attempt < 2; attempt++) {
-      const args = execFileSync('bash', ['-c', capture + snippet], {
-        encoding: 'utf8'
-      }).split('\0')
-      expect(JSON.parse(args[args.indexOf('--data') + 1])).toEqual(body)
-      expect(args).toContain('Idempotency-Key: ' + key)
-      expect(args).toContain('https://stagingapi.comfy.org/v2/models/' + id)
-    }
-  })
-
-  it('prints responses and error bodies for an actual JSON contract', () => {
-    const contract = workshopContract('bfl/flux-2-pro')
-    if (!contract) throw new Error('Missing JSON contract')
-    expect(contract.output.format).toBe('json')
-
-    const snippet = buildSnippet('curl', contract.id, body, key)
-    const args = execFileSync(
-      'bash',
-      ['-c', 'curl() { printf \'%s\\0\' "$@"; }\n' + snippet],
-      { encoding: 'utf8' }
-    ).split('\0')
-
-    expect(args).not.toContain('--output')
-    expect(snippet).toContain('save a binary response')
-  })
-
-  it('keeps a binary-capable contract visible and explains how to save it', () => {
-    const contract = workshopContract('elevenlabs/eleven_sfx_v2')
-    if (!contract) throw new Error('Missing binary-capable contract')
-    expect(contract.output).toMatchObject({
-      format: 'auto',
-      contentTypes: ['*/*']
-    })
-
-    const snippet = buildSnippet('curl', contract.id, body, key)
-    const args = execFileSync(
-      'bash',
-      ['-c', 'curl() { printf \'%s\\0\' "$@"; }\n' + snippet],
-      { encoding: 'utf8' }
-    ).split('\0')
-
-    expect(args).not.toContain('--output')
-    expect(snippet).toContain('save a binary response')
-  })
-
-  it('executes TypeScript with the same body and no invented model or output envelope', () => {
-    const snippet = buildSnippet('typescript', id, body, key)
-    const capture =
-      'globalThis.fetch = async (url, init) => { process.stdout.write(init.body); return Response.json({}) }; console.log=()=>{};\n'
-    const result = execFileSync(
-      process.execPath,
-      ['--input-type=module', '-'],
-      {
-        input: capture + snippet,
-        encoding: 'utf8',
-        env: { COMFY_API_KEY: 'test-key', PATH: process.env.PATH }
-      }
-    )
-    expect(JSON.parse(result)).toEqual(body)
-    expect(snippet).toContain(key)
-  })
-})
-
-describe('local files in snippets', () => {
-  const temporaryDirectories: string[] = []
-  afterEach(() => {
-    for (const directory of temporaryDirectories.splice(0))
-      rmSync(directory, { recursive: true, force: true })
-  })
-  const files: SnippetFile[] = [
-    { token: 'file-token-1', name: 'input.png', mimeType: 'image/png' },
-    { token: 'file-token-2', name: 'input.png', mimeType: 'image/jpeg' }
-  ]
-  const bytes = [Buffer.from([0, 255, 34, 92]), Buffer.from([255, 0, 13, 10])]
-  const payload = {
-    ...body,
-    unchanged: bytes[0].toString('base64'),
-    input_image: files[0].token,
-    contents: [
-      {
-        role: 'user',
-        parts: [
-          { text: body.prompt },
-          { inlineData: { data: files[0].token, mimeType: 'image/png' } }
-        ]
-      }
-    ],
-    content: [
-      { type: 'text', text: body.prompt },
-      {
-        type: 'image_url',
-        role: 'first_frame',
-        image_url: { url: `data:image/jpeg;base64,${files[1].token}` }
-      }
-    ],
-    instances: [
-      {
-        prompt: body.prompt,
-        image: { bytesBase64Encoded: files[0].token, mimeType: 'image/png' }
-      }
-    ]
-  }
-
-  it.for(['python', 'typescript'] as const)(
-    '%s reads distinct local files and reproduces the native body, including raw Base64 and data URLs',
-    (language) => {
-      const directory = mkdtempSync(join(tmpdir(), 'models-snippets-'))
-      temporaryDirectories.push(directory)
-      writeFileSync(join(directory, 'input_1-input.png'), bytes[0])
-      writeFileSync(join(directory, 'input_2-input.png'), bytes[1])
-      const snippet = buildSnippet(language, id, payload, key, files)
-      const capture =
-        language === 'python'
-          ? 'import json,sys,types\ndef post(url, **kwargs):\n print(json.dumps(kwargs["json"]))\n raise SystemExit(0)\nsys.modules["requests"]=types.SimpleNamespace(post=post)\n'
-          : 'globalThis.fetch = async (url, init) => { process.stdout.write(init.body); return Response.json({}) }; console.log=()=>{};\n'
-      const result = execFileSync(
-        language === 'python' ? 'python3' : process.execPath,
-        language === 'python' ? ['-'] : ['--input-type=module', '-'],
-        {
-          cwd: directory,
-          input: capture + snippet,
-          encoding: 'utf8',
-          env: { COMFY_API_KEY: 'test-key', PATH: process.env.PATH }
-        }
-      )
-      const expected = JSON.parse(
-        JSON.stringify(payload)
-          .replaceAll(files[0].token, bytes[0].toString('base64'))
-          .replaceAll(files[1].token, bytes[1].toString('base64'))
-      )
-      expect(JSON.parse(result)).toEqual(expected)
-      expect(snippet).not.toContain(files[0].token)
-      expect(snippet).not.toContain(files[1].token)
-      expect(snippet).toContain(key)
-    }
-  )
-
-  it('removes whole nested image parts from cURL, preserves ordinary fields and URLs, and copies the warning', () => {
-    const snippet = buildSnippet(
-      'curl',
-      id,
-      {
-        ...payload,
-        source_url: 'https://example.com/image.png',
-        images: [files[0].token, files[1].token],
-        empty: []
-      },
-      key,
-      files
-    )
-    const args = execFileSync(
-      'bash',
-      ['-c', 'curl() { printf \'%s\\0\' "$@"; }\n' + snippet],
-      {
-        encoding: 'utf8'
-      }
-    ).split('\0')
-    expect(JSON.parse(args[args.indexOf('--data') + 1])).toEqual({
-      ...body,
-      unchanged: bytes[0].toString('base64'),
-      contents: [{ role: 'user', parts: [{ text: body.prompt }] }],
-      content: [{ type: 'text', text: body.prompt }],
-      instances: [{ prompt: body.prompt }],
-      source_url: 'https://example.com/image.png',
-      empty: []
-    })
-    expect(snippet).not.toContain(files[0].token)
-    expect(snippet).not.toContain('base64,')
-    expect(snippet).toContain('This request may be incomplete')
-  })
-
-  it('keeps a root-level model type when the uploaded image is its only other input', () => {
-    const snippet = buildSnippet(
-      'curl',
-      id,
-      {
-        type: 'image-edit',
-        input_image: files[0].token
-      },
-      key,
-      files
-    )
-    const args = execFileSync(
-      'bash',
-      ['-c', 'curl() { printf \'%s\\0\' "$@"; }\n' + snippet],
-      {
-        encoding: 'utf8'
-      }
-    ).split('\0')
-    expect(JSON.parse(args[args.indexOf('--data') + 1])).toEqual({
-      type: 'image-edit'
-    })
-  })
-
-  it.for(['python', 'typescript'] as const)(
-    '%s uploads distinct URL files, keeps Base64 separate and stops before generation on a failed upload',
-    (language) => {
-      const directory = mkdtempSync(join(tmpdir(), 'models-url-snippets-'))
-      temporaryDirectories.push(directory)
-      const references: SnippetFile[] = [
-        {
-          token: 'https://upload.invalid/first',
-          name: 'first.png',
-          mimeType: 'image/png',
-          encoding: 'url'
-        },
-        {
-          token: 'https://upload.invalid/second',
-          name: 'second.jpg',
-          mimeType: 'image/jpeg',
-          encoding: 'url'
-        },
-        {
-          token: 'BASE64_TOKEN',
-          name: 'third.png',
-          mimeType: 'image/png',
-          encoding: 'base64'
-        }
-      ]
-      writeFileSync(join(directory, 'first.png'), bytes[0])
-      writeFileSync(join(directory, 'second.jpg'), bytes[1])
-      writeFileSync(join(directory, 'third.png'), bytes[0])
-      const request = {
-        images: [references[0].token, references[1].token],
-        nested: { data: references[2].token },
-        prompt: body.prompt
-      }
-      const snippet = buildSnippet(language, id, request, key, references)
-      const capture =
-        language === 'python'
-          ? [
-              'import json, sys, types, os',
-              'grants, uploads = [], []',
-              'def post(url, **kwargs):',
-              '    if url.endswith("/customers/storage"):',
-              '        assert kwargs["headers"]["Authorization"] == "Bearer test-key"',
-              '        assert kwargs["allow_redirects"] is False',
-              '        grants.append(kwargs["json"])',
-              '        i = len(grants)',
-              '        return types.SimpleNamespace(status_code=200, json=lambda: {"upload_url": "https://storage.example/upload/"+str(i), "download_url": "https://storage.example/download/"+str(i)})',
-              '    print(json.dumps({"body": kwargs["json"], "key": kwargs["headers"]["Idempotency-Key"], "grants": grants, "uploads": uploads}))',
-              '    raise SystemExit(0)',
-              'def put(url, **kwargs):',
-              '    assert "Authorization" not in kwargs["headers"]',
-              '    assert kwargs["allow_redirects"] is False',
-              '    uploads.append({"url": url, "bytes": list(kwargs["data"].read()), "type": kwargs["headers"]["Content-Type"]})',
-              '    return types.SimpleNamespace(status_code=403 if os.environ.get("FAIL_UPLOAD") else 200)',
-              'sys.modules["requests"] = types.SimpleNamespace(post=post, put=put)',
-              ''
-            ].join('\n')
-          : [
-              'const grants = [], uploads = []; console.log = () => {}',
-              'globalThis.fetch = async (url, init) => {',
-              '  if (url.endsWith("/customers/storage")) {',
-              '    if (init.headers.Authorization !== "Bearer test-key" || init.redirect !== "error") throw new Error("Invalid grant headers")',
-              '    grants.push(JSON.parse(init.body))',
-              '    return Response.json({ upload_url: `https://storage.example/upload/${grants.length}`, download_url: `https://storage.example/download/${grants.length}` })',
-              '  }',
-              '  if (init.method === "PUT") {',
-              '    if (init.headers.Authorization || init.credentials !== "omit" || init.redirect !== "error") throw new Error("Leaked credential")',
-              '    uploads.push({url, bytes: [...init.body], type: init.headers["Content-Type"]})',
-              '    return new Response(null, {status: process.env.FAIL_UPLOAD ? 403 : 200})',
-              '  }',
-              '  process.stdout.write(JSON.stringify({body: JSON.parse(init.body), key: init.headers["Idempotency-Key"], grants, uploads}))',
-              '  return Response.json({})',
-              '}',
-              ''
-            ].join('\n')
-      const program = language === 'python' ? 'python3' : process.execPath
-      const args =
-        language === 'python' ? ['-'] : ['--input-type=module-typescript', '-']
-      const options = {
-        cwd: directory,
-        input: capture + snippet,
-        encoding: 'utf8' as const,
-        env: { COMFY_API_KEY: 'test-key', PATH: process.env.PATH }
-      }
-      const result = JSON.parse(execFileSync(program, args, options))
-      expect(result.body).toEqual({
-        ...request,
-        images: [
-          'https://storage.example/download/1',
-          'https://storage.example/download/2'
-        ],
-        nested: { data: bytes[0].toString('base64') }
-      })
-      expect(result.key).toBe(key)
-      expect(result.uploads).toEqual([
-        {
-          url: 'https://storage.example/upload/1',
-          bytes: [...bytes[0]],
-          type: 'image/png'
-        },
-        {
-          url: 'https://storage.example/upload/2',
-          bytes: [...bytes[1]],
-          type: 'image/jpeg'
-        }
-      ])
-      expect(result.grants[0].file_name).not.toBe(result.grants[1].file_name)
-      const failed = spawnSync(program, args, {
-        ...options,
-        env: { ...options.env, FAIL_UPLOAD: '1' }
-      })
-      expect(failed.status).not.toBe(0)
-      expect(failed.stdout).toBe('')
-      expect(failed.stderr).toContain('Upload failed')
-    }
-  )
 })

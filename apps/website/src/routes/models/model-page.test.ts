@@ -1,9 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type {
-  WorkshopFilter,
-  WorkshopModelDetail
-} from '../../config/models-catalogue'
+import type { WorkshopModelDetail } from '../../config/models-catalogue'
 import { prepareModelPage } from './model-page'
 
 const mocks = vi.hoisted(() => ({
@@ -21,11 +18,7 @@ vi.mock(import('../../config/workshop-related'), () => ({
 vi.mock(import('../../config/workshop-node-pricing'), () => ({
   estimateWorkshopNodePrice: mocks.price
 }))
-vi.mock(import('../../config/models-catalogue'), () => ({
-  catalogSearch: ({ capabilities = [] }: Partial<WorkshopFilter>) =>
-    new URLSearchParams(
-      capabilities.map((capability) => ['capability', capability])
-    ).toString(),
+vi.mock(import('../../config/workshop-browse-content'), () => ({
   getWorkshopModel: mocks.successor,
   workshopModels: []
 }))
@@ -74,6 +67,36 @@ describe('Models route preparation', () => {
       new URLSearchParams(page.tags[0].search).getAll('capability')
     ).toEqual(['Image & text'])
   })
+
+  it.for([
+    ['zero tags', [], [], [], 0],
+    [
+      'exactly three tags',
+      ['One', 'Two', 'Three'],
+      ['One', 'Two', 'Three'],
+      [],
+      0
+    ],
+    [
+      'more than three tags',
+      ['One', 'Two', 'Three', 'Four'],
+      ['One', 'Two', 'Three'],
+      ['Four'],
+      1
+    ]
+  ] as const)(
+    'splits %s for the visible row and overflow control',
+    async ([, capabilities, shown, rest, restTagCount]) => {
+      mocks.lookup.mockReturnValue({ ...model, capabilities })
+
+      const page = await prepareModelPage(model.slug)
+
+      if (page.kind !== 'page') throw new Error('Expected canonical page')
+      expect(page.shownTags.map((tag) => tag.label)).toEqual(shown)
+      expect(page.restTags.map((tag) => tag.label)).toEqual(rest)
+      expect(page.restTagCount).toBe(restTagCount)
+    }
+  )
 
   it('uses a provider heading only when every related card has that provider', async () => {
     mocks.related.mockReturnValue([{ ...model, slug: 'related' }])

@@ -6216,6 +6216,40 @@
       }
     }
   },
+  "FluxVideoEditNode": {
+    "description": "Bearbeitet einen clip anhand einer schriftlichen Anweisung: Objekte entfernen, hinzufügen oder ersetzen, die Umgebung ändern, das Material neu gestalten, Bildschirmtext ändern oder den gesprochenen Dialog ersetzen. Länge, Bildausschnitt, Kamerabewegung und Audio stammen aus dem Quell-clip.",
+    "display_name": "Flux Video Edit",
+    "inputs": {
+      "auto_downscale": {
+        "name": "auto_downscale",
+        "tooltip": "Skaliert Quellen mit einer Fläche von mehr als 1280x704 Pixeln vor dem Upload automatisch herunter. Das Seitenverhältnis bleibt erhalten; kleinere Videos bleiben unverändert."
+      },
+      "control_after_generate": {
+        "name": "Steuerung nach der Generierung"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Was in einfacher Sprache geändert werden soll, bis zu 4096 Zeichen. Alles, was Sie nicht erwähnen, soll unverändert bleiben. Ersatzdialoge müssen in die Dauer der ursprünglichen Sprache passen, und ein stummer clip bleibt stumm."
+      },
+      "safety_tolerance": {
+        "name": "safety_tolerance",
+        "tooltip": "Moderationstoleranz, 0 ist am strengsten."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed zur Bestimmung, ob der Node erneut ausgeführt werden soll; FLUX wählt seinen eigenen Seed, daher sind die tatsächlichen Ergebnisse unabhängig von diesem Wert nicht deterministisch."
+      },
+      "video": {
+        "name": "video",
+        "tooltip": "Quell-clip mit 0,7 bis 15 Sekunden und mindestens 160x160 Pixeln. Die Ausgabe wird mit 24 fps gerendert und auf etwa 0,9 Megapixel pro Frame begrenzt, daher wird eine größere Quelle kleiner zurückgegeben."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "FluxVideoUpscaleNode": {
     "description": "Skaliert ein Video mit FLUX-Super-Resolution um das 1,5- bis 3-Fache hoch und bewahrt dabei entweder die Quelle präzise oder verbessert ihre Details kreativ.",
     "display_name": "Flux Video Upscale",
