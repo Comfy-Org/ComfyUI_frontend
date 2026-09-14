@@ -405,7 +405,7 @@
     "errors": {
       "auth/account-exists-with-different-credential": "无法使用此方式登录。请尝试其他登录方式，或重置密码后继续。",
       "auth/cancelled-popup-request": "另一个登录窗口已打开，因此此窗口已取消。请重试。",
-      "auth/email-already-in-use": "无法使用此电子邮件创建账户。如果您已有账户，请尝试登录或重置密码。",
+      "auth/email-already-in-use": "无法使用此电子邮件创建账户。请尝试登录或重置密码。",
       "auth/invalid-credential": "登录凭据无效。请检查您的邮箱和密码。",
       "auth/invalid-email": "请输入有效的电子邮件地址。",
       "auth/network-request-failed": "网络错误。请检查您的连接并重试。",

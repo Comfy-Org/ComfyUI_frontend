@@ -405,7 +405,7 @@
     "errors": {
       "auth/account-exists-with-different-credential": "Wir konnten Sie mit dieser Methode nicht anmelden. Versuchen Sie eine andere Anmeldemethode oder setzen Sie Ihr Passwort zurück, um fortzufahren.",
       "auth/cancelled-popup-request": "Ein anderes Anmeldefenster war bereits geöffnet, daher wurde dieses abgebrochen. Bitte versuchen Sie es erneut.",
-      "auth/email-already-in-use": "Wir konnten mit dieser E-Mail-Adresse kein Konto erstellen. Falls Sie bereits eines haben, versuchen Sie, sich anzumelden oder Ihr Passwort zurückzusetzen.",
+      "auth/email-already-in-use": "Wir konnten mit dieser E-Mail-Adresse kein Konto erstellen. Versuchen Sie stattdessen, sich anzumelden oder Ihr Passwort zurückzusetzen.",
       "auth/invalid-credential": "Ungültige Anmeldedaten. Bitte überprüfen Sie Ihre E-Mail-Adresse und Ihr Passwort.",
       "auth/invalid-email": "Bitte geben Sie eine gültige E-Mail-Adresse ein.",
       "auth/network-request-failed": "Netzwerkfehler. Bitte überprüfen Sie Ihre Verbindung und versuchen Sie es erneut.",

@@ -374,10 +374,9 @@ const translations = {
     ja: 'ログイン認証情報が無効です。メールアドレスとパスワードを確認してください。'
   },
   'auth.errors.auth/email-already-in-use': {
-    en: "We couldn't create an account with this email. If you already have one, try signing in or resetting your password.",
-    'zh-CN':
-      '无法使用此电子邮件创建账户。如果您已有账户，请尝试登录或重置密码。',
-    ja: 'このメールアドレスではアカウントを作成できませんでした。すでにアカウントをお持ちの場合は、サインインするかパスワードをリセットしてください。'
+    en: "We couldn't create an account with this email. Try signing in or resetting your password instead.",
+    'zh-CN': '无法使用此电子邮件创建账户。请尝试登录或重置密码。',
+    ja: 'このメールアドレスではアカウントを作成できませんでした。代わりにサインインするか、パスワードをリセットしてください。'
   },
   'auth.errors.auth/weak-password': {
     en: 'Password is too weak. Please use a stronger password with at least 6 characters.',

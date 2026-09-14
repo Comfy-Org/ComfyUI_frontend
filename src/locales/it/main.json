@@ -405,7 +405,7 @@
     "errors": {
       "auth/account-exists-with-different-credential": "Non è stato possibile accedere con questo metodo. Prova un altro metodo di accesso oppure reimposta la password per continuare.",
       "auth/cancelled-popup-request": "Un'altra finestra di accesso era già aperta, quindi questa è stata annullata. Riprova.",
-      "auth/email-already-in-use": "Non è stato possibile creare un account con questa email. Se ne hai già uno, prova ad accedere o a reimpostare la password.",
+      "auth/email-already-in-use": "Non è stato possibile creare un account con questa email. Prova invece ad accedere o a reimpostare la password.",
       "auth/invalid-credential": "Credenziali di accesso non valide. Controlla email e password.",
       "auth/invalid-email": "Per favore inserisci un indirizzo email valido.",
       "auth/network-request-failed": "Errore di rete. Controlla la connessione e riprova.",
