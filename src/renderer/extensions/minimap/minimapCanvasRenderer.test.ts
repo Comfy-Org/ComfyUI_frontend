@@ -350,7 +350,7 @@ describe('minimapCanvasRenderer', () => {
   })
 
   describe('agent-generated nodes', () => {
-    const AGENT_COLOR_DARK = '#FDAB34'
+    const AGENT_COLOR_DARK = '#0B8CE9'
 
     /** Fill colors in the order they were painted, one entry per fillRect. */
     function recordFills(): string[] {
