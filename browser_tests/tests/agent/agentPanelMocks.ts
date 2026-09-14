@@ -160,6 +160,7 @@ async function mockAgentBoot(
       if (localStorage.getItem('Comfy.AgentPanel.open') === null) {
         localStorage.setItem('Comfy.AgentPanel.open', String(initiallyOpen))
       }
+      localStorage.setItem('Comfy.AgentPanel.onboarded', 'true')
       if (debugEnabled) {
         localStorage.setItem('Comfy.Agent.CrdtDebug.enabled', 'true')
         localStorage.setItem('Comfy.Agent.CrdtDevPanel.open', 'true')
