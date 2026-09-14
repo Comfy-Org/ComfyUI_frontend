@@ -1,5 +1,5 @@
 ---
-import { ArrowRight } from '@lucide/vue'
+import { ArrowRight, Info } from '@lucide/vue'
 import type { GetStaticPaths } from 'astro'
 import BaseLayout from '../../layouts/BaseLayout.astro'
 import CatalogueBackLink from '../../components/workshop/CatalogueBackLink.vue'
@@ -82,18 +82,23 @@ const pillClass =
 
         <div class="flex flex-col gap-4 lg:items-end">
           <p
-            class="flex items-baseline gap-2 text-sm text-primary-comfy-canvas/60"
+            class="flex items-center gap-2 text-lg font-medium text-primary-warm-white"
             data-testid="model-price"
           >
             {priceEstimate
               ? t('workshop.model.estimatedPrice').replace('{price}', priceEstimate)
               : t('workshop.model.variablePrice')}
+            {priceEstimate && (
+              <span
+                class="inline-flex text-primary-warm-gray"
+                title={t('workshop.model.nodePriceDefaults')}
+                data-testid="model-price-note"
+              >
+                <Info class="size-4" aria-hidden="true" />
+                <span class="sr-only">{t('workshop.model.nodePriceDefaults')}</span>
+              </span>
+            )}
           </p>
-          {priceEstimate && (
-            <p class="text-xs text-primary-warm-gray">
-              {t('workshop.model.nodePriceDefaults')}
-            </p>
-          )}
           {shownTags.length > 0 && (
             <ul
               class="flex scrollbar-hide items-center gap-2 max-sm:overflow-x-auto sm:flex-wrap lg:justify-end"
