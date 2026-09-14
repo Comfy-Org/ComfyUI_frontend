@@ -8,11 +8,7 @@
     @click="togglePopover"
   >
     <i v-if="iconClass" data-testid="badge-icon" :class="badgeIconClass" />
-    <div
-      v-else-if="badge.label"
-      class="shrink-0 rounded-full px-1.5 py-0.5 text-3xs font-semibold"
-      :class="labelClasses"
-    >
+    <div v-else-if="badge.label" :class="labelClasses">
       {{ badge.label }}
     </div>
     <div v-else class="size-2 shrink-0 rounded-full" :class="dotClasses" />
@@ -27,11 +23,7 @@
       :pt="popoverPt"
     >
       <div class="flex max-w-xs min-w-40 flex-col gap-2 p-3">
-        <div
-          v-if="badge.label"
-          class="w-fit rounded-full px-1.5 py-0.5 text-3xs font-semibold"
-          :class="labelClasses"
-        >
+        <div v-if="badge.label" :class="cn(labelClasses, 'w-fit')">
           {{ badge.label }}
         </div>
         <div class="font-inter text-sm">{{ badge.text }}</div>
@@ -58,11 +50,7 @@
       @click="togglePopover"
     >
       <i v-if="iconClass" data-testid="badge-icon" :class="badgeIconClass" />
-      <div
-        v-if="badge.label"
-        class="shrink-0 rounded-full px-1.5 py-0.5 text-3xs font-semibold"
-        :class="labelClasses"
-      >
+      <div v-if="badge.label" :class="labelClasses">
         {{ badge.label }}
       </div>
     </div>
@@ -77,11 +65,7 @@
       :pt="popoverPt"
     >
       <div class="flex max-w-xs min-w-40 flex-col gap-2 p-3">
-        <div
-          v-if="badge.label"
-          class="w-fit rounded-full px-1.5 py-0.5 text-3xs font-semibold"
-          :class="labelClasses"
-        >
+        <div v-if="badge.label" :class="cn(labelClasses, 'w-fit')">
           {{ badge.label }}
         </div>
         <div class="font-inter text-sm">{{ badge.text }}</div>
@@ -101,15 +85,11 @@
     :style="menuBackgroundStyle"
   >
     <i v-if="iconClass" data-testid="badge-icon" :class="badgeIconClass" />
-    <div
-      v-if="badge.label"
-      class="shrink-0 rounded-full px-1.5 py-0.5 text-3xs font-semibold"
-      :class="labelClasses"
-    >
-      {{ badge.label }}
-    </div>
     <div class="font-inter text-xs font-medium" :class="textClasses">
       {{ badge.text }}
+    </div>
+    <div v-if="badge.label" :class="labelClasses">
+      {{ badge.label }}
     </div>
   </div>
 </template>
@@ -146,17 +126,9 @@ const menuBackgroundStyle = computed(() => ({
   backgroundColor: backgroundColor
 }))
 
-const labelClasses = computed(() => {
-  switch (variant.value) {
-    case 'error':
-      return 'bg-danger-100 text-white'
-    case 'warning':
-      return 'bg-gold-600 text-black'
-    case 'info':
-    default:
-      return 'bg-white text-black'
-  }
-})
+/** Matches the ALPHA badge in the agent panel header. */
+const labelClasses =
+  'shrink-0 rounded-full border border-border-default px-2 py-0.5 text-xs text-muted-foreground'
 
 const textClasses = computed(() => {
   switch (variant.value) {

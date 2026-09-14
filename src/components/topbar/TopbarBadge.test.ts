@@ -138,7 +138,6 @@ describe('TopbarBadge', () => {
         },
         'full'
       )
-      expect(screen.getByText('ERROR')).toHaveClass('bg-danger-100')
       expect(screen.getByText('Error Message')).toHaveClass('text-danger-100')
     })
 
@@ -151,7 +150,6 @@ describe('TopbarBadge', () => {
         },
         'full'
       )
-      expect(screen.getByText('WARN')).toHaveClass('bg-gold-600')
       expect(screen.getByText('Warning Message')).toHaveClass(
         'text-warning-background'
       )
