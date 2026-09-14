@@ -427,9 +427,14 @@ describe('opt-in refresh scheduler', () => {
       failure: { status: 'error', code: 'ACCESS_DENIED' }
     }
 
-    expect(permanentFailure.failure.code).toBe('ACCESS_DENIED')
-    expect(missingFailure.outcome).toBe('permanent_failure')
-    expect(successWithFailure.outcome).toBe('succeeded')
+    expect(
+      [
+        permanentFailure.failure.code,
+        missingFailure.outcome,
+        successWithFailure.outcome
+      ],
+      'the two @ts-expect-error directives above are the real coverage; this only keeps the constructed values referenced'
+    ).toEqual(['ACCESS_DENIED', 'permanent_failure', 'succeeded'])
   })
 
   it('reports a permanent scheduled failure to the host hook', async () => {
