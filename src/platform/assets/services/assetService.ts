@@ -46,7 +46,7 @@ export interface AssetPaginationOptions extends PaginationOptions {
   signal?: AbortSignal
 }
 
-export type AssetUpdateResult =
+type AssetUpdateResult =
   | { kind: 'updated'; asset: AssetItem }
   | { kind: 'failed'; serverState: 'unchanged' | 'unknown' }
 
