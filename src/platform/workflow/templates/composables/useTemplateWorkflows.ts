@@ -23,7 +23,7 @@ import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import { useDialogStore } from '@/stores/dialogStore'
 
-type PreparedWorkflowTemplate = {
+export type PreparedWorkflowTemplate = {
   id: string
   sourceModule: string
   workflowName: string
@@ -177,7 +177,8 @@ export function useTemplateWorkflows() {
   }
 
   const openPreparedWorkflowTemplate = async (
-    prepared: PreparedWorkflowTemplate
+    prepared: PreparedWorkflowTemplate,
+    { closeDialog = true }: { closeDialog?: boolean } = {}
   ) => {
     try {
       const { id, sourceModule, workflow, workflowName } = prepared
@@ -187,7 +188,7 @@ export function useTemplateWorkflows() {
         template_source: sourceModule
       })
 
-      dialogStore.closeDialog()
+      if (closeDialog) dialogStore.closeDialog()
       const loadedWorkflow = await app.loadGraphData(
         workflow as ComfyWorkflowJSON,
         true,
