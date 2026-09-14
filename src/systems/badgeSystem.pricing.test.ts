@@ -1,6 +1,5 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { useSettingStore } from '@/platform/settings/settingStore'
 
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useLinkStore } from '@/stores/linkStore'
@@ -27,13 +26,6 @@ vi.mock<unknown>(import('@/composables/node/useNodePricing'), () => {
   }
 })
 
-vi.mock<unknown>(import('@/platform/settings/settingStore'), () => ({
-  useSettingStore: () => ({
-    get: (key: string) =>
-      key === 'Comfy.NodeBadge.ShowApiPricing' ? true : undefined
-  })
-}))
-
 class ApiNode extends LGraphNode {
   static override nodeData = { name: 'ApiNode', api_node: true }
 }
@@ -46,7 +38,7 @@ function scopeOf(id: string) {
 
 describe('badge derivation pricing input connectivity', () => {
   beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
+    useSettingStore().settingValues['Comfy.NodeBadge.ShowApiPricing'] = true
     displayPrice = '$disconnected'
     getNodeDisplayPrice.mockClear()
   })

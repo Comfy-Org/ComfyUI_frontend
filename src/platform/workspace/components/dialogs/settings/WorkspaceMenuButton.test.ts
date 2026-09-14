@@ -1,3 +1,4 @@
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -28,7 +29,6 @@ const personalConfig = {
 const mockUiConfig = ref<Record<string, unknown>>(ownerConfig)
 const mockCanLeaveWorkspace = ref(false)
 const mockCanManageSubscription = ref(true)
-const mockIsWorkspaceSubscribed = ref(false)
 
 const mockShowLeaveWorkspaceDialog = vi.fn()
 const mockShowDeleteWorkspaceDialog = vi.fn()
@@ -43,15 +43,6 @@ vi.mock<unknown>(
         canManageSubscription: mockCanManageSubscription.value
       })),
       uiConfig: mockUiConfig
-    })
-  })
-)
-
-vi.mock<unknown>(
-  import('@/platform/workspace/stores/teamWorkspaceStore'),
-  () => ({
-    useTeamWorkspaceStore: () => ({
-      isWorkspaceSubscribed: mockIsWorkspaceSubscribed
     })
   })
 )
@@ -91,7 +82,7 @@ describe('WorkspaceMenuButton', () => {
     mockUiConfig.value = ownerConfig
     mockCanLeaveWorkspace.value = false
     mockCanManageSubscription.value = true
-    mockIsWorkspaceSubscribed.value = false
+    Object.assign(useTeamWorkspaceStore(), { isWorkspaceSubscribed: false })
   })
 
   it('lets a member leave and offers no destructive workspace actions', () => {
@@ -133,7 +124,7 @@ describe('WorkspaceMenuButton', () => {
   })
 
   it('disables Delete while the additional workspace is subscribed', () => {
-    mockIsWorkspaceSubscribed.value = true
+    Object.assign(useTeamWorkspaceStore(), { isWorkspaceSubscribed: true })
     renderComponent()
 
     expect(
@@ -187,7 +178,7 @@ describe('WorkspaceMenuButton', () => {
     const deleteWorkspace = screen.getByRole('button', {
       name: 'Delete Workspace'
     })
-    mockIsWorkspaceSubscribed.value = true
+    Object.assign(useTeamWorkspaceStore(), { isWorkspaceSubscribed: true })
     deleteWorkspace.click()
 
     expect(mockShowDeleteWorkspaceDialog).not.toHaveBeenCalled()

@@ -1,20 +1,25 @@
-import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
+import { render, screen } from '@testing-library/vue'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, h } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
+import { useReleaseStore } from '@/platform/updates/common/releaseStore'
+import { useCommandStore } from '@/stores/commandStore'
 
 import HelpCenterMenuContent from './HelpCenterMenuContent.vue'
+
+beforeEach(() => {
+  vi.mocked(useCommandStore().execute).mockResolvedValue(undefined)
+  vi.mocked(useReleaseStore().fetchReleases).mockResolvedValue(undefined)
+})
 
 const distribution = vi.hoisted(() => ({
   isCloud: false,
   isDesktop: false,
   isNightly: false
 }))
-
-const commandStoreExecute = vi.hoisted(() => vi.fn())
 
 vi.mock(import('@/platform/distribution/types'), () => ({
   get isCloud() {
@@ -39,31 +44,12 @@ vi.mock<unknown>(import('@/composables/useExternalLink'), () => ({
   })
 }))
 
-vi.mock<unknown>(import('@/platform/settings/settingStore'), () => ({
-  useSettingStore: () => ({
-    get: () => false
-  })
-}))
-
 vi.mock<unknown>(import('@/platform/telemetry'), () => ({
   useTelemetry: () => ({
     trackHelpResourceClicked: vi.fn(),
     trackHelpCenterOpened: vi.fn(),
     trackHelpCenterClosed: vi.fn()
   })
-}))
-
-vi.mock<unknown>(import('@/platform/updates/common/releaseStore'), () => ({
-  useReleaseStore: () => ({
-    releases: [],
-    recentReleases: [],
-    isLoading: false,
-    fetchReleases: vi.fn().mockResolvedValue(undefined)
-  })
-}))
-
-vi.mock<unknown>(import('@/stores/commandStore'), () => ({
-  useCommandStore: () => ({ execute: commandStoreExecute })
 }))
 
 vi.mock<unknown>(import('@/utils/envUtil'), () => ({
@@ -151,7 +137,7 @@ describe('HelpCenterMenuContent feedback item', () => {
       '_blank',
       'noopener,noreferrer'
     )
-    expect(commandStoreExecute).not.toHaveBeenCalled()
+    expect(useCommandStore().execute).not.toHaveBeenCalled()
   })
 
   it('opens the Typeform survey tagged with help-center source on Nightly', async () => {
@@ -165,7 +151,7 @@ describe('HelpCenterMenuContent feedback item', () => {
       '_blank',
       'noopener,noreferrer'
     )
-    expect(commandStoreExecute).not.toHaveBeenCalled()
+    expect(useCommandStore().execute).not.toHaveBeenCalled()
   })
 
   it('falls back to Comfy.ContactSupport on OSS builds', async () => {
@@ -174,7 +160,9 @@ describe('HelpCenterMenuContent feedback item', () => {
     await user.click(screen.getByRole('menuitem', { name: 'Give Feedback' }))
 
     expect(openSpy).not.toHaveBeenCalled()
-    expect(commandStoreExecute).toHaveBeenCalledWith('Comfy.ContactSupport')
+    expect(useCommandStore().execute).toHaveBeenCalledWith(
+      'Comfy.ContactSupport'
+    )
   })
 })
 

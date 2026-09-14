@@ -58,9 +58,7 @@ export async function highlightInline(
   try {
     const hl = await highlighter()
     if (!hl.getLoadedLanguages().includes(lang)) {
-      await hl.loadLanguage(
-        (await GRAMMARS[lang]()) as Parameters<typeof hl.loadLanguage>[0]
-      )
+      await hl.loadLanguage(await GRAMMARS[lang]())
     }
     return hl.codeToHtml(code, { lang, theme: CODE_THEME, structure: 'inline' })
   } catch {

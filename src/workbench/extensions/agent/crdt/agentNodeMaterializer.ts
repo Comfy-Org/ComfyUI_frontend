@@ -22,7 +22,13 @@ import { runMintPortsSuppressed } from './mintPortWiring'
 
 export type MaterializableGraph = Pick<
   LGraph,
-  'id' | 'rootGraph' | '_nodes' | '_nodes_by_id' | 'add' | 'remove'
+  | 'id'
+  | 'rootGraph'
+  | '_nodes'
+  | '_nodes_by_id'
+  | 'add'
+  | 'remove'
+  | 'setDirtyCanvas'
 >
 
 /**

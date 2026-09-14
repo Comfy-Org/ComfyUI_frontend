@@ -17,9 +17,6 @@ const { canvasMock } = vi.hoisted(() => ({
 vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: { rootGraph: { id: 'root' }, canvas: canvasMock }
 }))
-vi.mock<unknown>(import('@/stores/widgetValueStore'), () => ({
-  useWidgetValueStore: () => ({ getWidget: () => undefined })
-}))
 
 function createMarkdownWidget(node: LGraphNode, defaultValue = '') {
   const inputSpec: InputSpec = {

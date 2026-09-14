@@ -1,6 +1,8 @@
 import { fromPartial } from '@total-typescript/shoehorn'
 import { describe, expect, it, vi } from 'vitest'
 
+import type { LGraph } from '@/lib/litegraph/src/litegraph'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
 import { LayoutSource } from '@/renderer/core/layout/types'
 import { useNodeZIndex } from '@/renderer/extensions/vueNodes/composables/useNodeZIndex'
@@ -12,16 +14,14 @@ vi.mock(import('@/renderer/core/layout/operations/layoutMutations'), () => ({
   useLayoutMutations: vi.fn()
 }))
 
-const CURRENT_GRAPH = fromPartial({ id: createUuidv4() })
-vi.mock<unknown>(import('@/renderer/core/canvas/canvasStore'), () => ({
-  useCanvasStore: () => ({ currentGraph: CURRENT_GRAPH })
-}))
+const CURRENT_GRAPH = fromPartial<LGraph>({ id: createUuidv4() })
 
 const mockedUseLayoutMutations = vi.mocked(useLayoutMutations)
 
 describe('useNodeZIndex', () => {
   it('scopes the mutation to the viewed root graph, attributed to Vue', () => {
     const mockSetNodeOrder = vi.fn()
+    useCanvasStore().currentGraph = CURRENT_GRAPH
 
     mockedUseLayoutMutations.mockReturnValue(
       fromPartial({

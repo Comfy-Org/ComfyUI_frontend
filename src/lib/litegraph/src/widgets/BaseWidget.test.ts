@@ -20,6 +20,7 @@ import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { toNodeId } from '@/types/nodeId'
 import { widgetId } from '@/types/widgetId'
 import { isWidgetHidden } from '@/types/widgetVisibility'
+import { createMockCanvasRenderingContext2D } from '@/utils/__tests__/litegraphTestUtils'
 
 function createTestWidget(
   node: LGraphNode,
@@ -74,6 +75,20 @@ describe('BaseWidget store integration', () => {
     node = new LGraphNode('TestNode')
     node.id = toNodeId(1)
     graph.add(node)
+  })
+
+  it('draws only the label for a connection-suppressed row', () => {
+    const widget = createTestWidget(node, {
+      label: 'Input label',
+      value: 73
+    })
+    const ctx = createMockCanvasRenderingContext2D()
+
+    widget.drawSuppressedRowLabel(ctx, { width: 200 })
+
+    expect(vi.mocked(ctx.fillText).mock.calls.map(([text]) => text)).toEqual([
+      'Input label'
+    ])
   })
 
   it('preserves name in keys, spread copies, and JSON', () => {
@@ -288,6 +303,20 @@ describe('BaseWidget store integration', () => {
       })
     })
 
+    it('applies explicit surfaces when options are replaced', () => {
+      const widget = createTestWidget(node)
+
+      widget.options = {
+        surfaces: { canvas: 'shown', vueNode: 'shown', panel: 'never' }
+      }
+
+      expect(widget.visibility.surfaces).toEqual({
+        canvas: 'shown',
+        vueNode: 'shown',
+        panel: 'never'
+      })
+    })
+
     it('supplies shimmed options when constructed without them', () => {
       const widget = new MutableTypeWidget(
         fromPartial({
@@ -329,6 +358,20 @@ describe('BaseWidget store integration', () => {
 
       delete widget.options.hidden
       expect(widget.options.hidden).toBe(false)
+    })
+
+    it('facades canvasOnly reads from declared surfaces', () => {
+      const canvasOnlyWidget = createTestWidget(node, {
+        options: {
+          min: 0,
+          max: 100,
+          surfaces: { canvas: 'shown', vueNode: 'never', panel: 'never' }
+        }
+      })
+      const plainWidget = createTestWidget(node)
+
+      expect(canvasOnlyWidget.options.canvasOnly).toBe(true)
+      expect(plainWidget.options.canvasOnly).toBe(false)
     })
 
     it('keeps options.hidden scoped to extension writes under connection suppression', () => {

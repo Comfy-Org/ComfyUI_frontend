@@ -4,6 +4,7 @@ import { expect } from '@playwright/test'
 
 import { test } from './fixtures/blockExternalMedia'
 import { waitForIsland } from './fixtures/islands'
+import { waitForPpFormulaLight } from './fixtures/visualFonts'
 import { VIEWPORTS } from './viewports'
 
 test.describe.configure({ timeout: 60_000 })
@@ -29,6 +30,7 @@ async function assertNoOverflow(page: Page) {
 async function navigateAndSettle(page: Page, url: string) {
   await page.goto(url, { waitUntil: 'domcontentloaded' })
   await page.waitForLoadState('load')
+  await waitForPpFormulaLight(page)
 }
 
 test.describe('Home', { tag: '@visual' }, () => {

@@ -1,7 +1,6 @@
 /* eslint-disable testing-library/no-node-access */
 /* eslint-disable testing-library/no-container */
 /* eslint-disable testing-library/prefer-user-event */
-import { createTestingPinia } from '@pinia/testing'
 import { fireEvent, render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import PrimeVue from 'primevue/config'
@@ -11,6 +10,7 @@ import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
+import { useComfyManagerStore } from '@/workbench/extensions/manager/stores/comfyManagerStore'
 
 import PackVersionBadge from './PackVersionBadge.vue'
 
@@ -31,26 +31,9 @@ const mockNodePack = {
 }
 
 const mockInstalledPacks = {
-  'test-pack': { ver: '1.5.0' },
-  'installed-pack': { ver: '2.0.0' }
+  'test-pack': { ver: '1.5.0', cnr_id: 'test-pack', enabled: true },
+  'installed-pack': { ver: '2.0.0', cnr_id: 'installed-pack', enabled: true }
 }
-
-const mockIsPackEnabled = vi.fn(() => true)
-
-vi.mock<unknown>(
-  import('@/workbench/extensions/manager/stores/comfyManagerStore'),
-
-  () => ({
-    useComfyManagerStore: vi.fn(() => ({
-      installedPacks: mockInstalledPacks,
-      isPackInstalled: (id: string) =>
-        !!mockInstalledPacks[id as keyof typeof mockInstalledPacks],
-      isPackEnabled: mockIsPackEnabled,
-      getInstalledPackVersion: (id: string) =>
-        mockInstalledPacks[id as keyof typeof mockInstalledPacks]?.ver
-    }))
-  })
-)
 
 vi.mock<unknown>(
   import('@/workbench/extensions/manager/composables/nodePack/usePackUpdateStatus'),
@@ -81,8 +64,11 @@ const PackVersionSelectorPopoverStub = {
 }
 
 describe('PackVersionBadge', () => {
-  beforeEach(() => {
-    mockIsPackEnabled.mockReturnValue(true)
+  beforeEach(async () => {
+    const store = useComfyManagerStore()
+    store.installedPacks = mockInstalledPacks
+    await nextTick()
+    vi.mocked(useComfyManagerStore().isPackEnabled).mockReturnValue(true)
   })
 
   function renderComponent({
@@ -101,7 +87,7 @@ describe('PackVersionBadge', () => {
         ...props
       },
       global: {
-        plugins: [PrimeVue, createTestingPinia({ stubActions: false }), i18n],
+        plugins: [PrimeVue, i18n],
         directives: {
           tooltip: Tooltip
         },
@@ -237,7 +223,7 @@ describe('PackVersionBadge', () => {
 
   describe('disabled state', () => {
     beforeEach(() => {
-      mockIsPackEnabled.mockReturnValue(false)
+      vi.mocked(useComfyManagerStore().isPackEnabled).mockReturnValue(false)
     })
 
     it('adds disabled styles when pack is disabled', () => {

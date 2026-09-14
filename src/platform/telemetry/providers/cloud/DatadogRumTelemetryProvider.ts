@@ -3,7 +3,6 @@ import { datadogRum } from '@datadog/browser-rum'
 
 import type {
   BillingTelemetryEvent,
-  BootstrapCompleteMetadata,
   ExecutionOutcomeMetadata,
   FetchTimeoutMetadata,
   ImageLoadFailureMetadata,
@@ -42,17 +41,6 @@ export class DatadogRumTelemetryProvider implements TelemetryProvider {
 
   trackImageLoadFailed(metadata: ImageLoadFailureMetadata): void {
     datadogRum.addAction(TelemetryEvents.IMAGE_LOAD_FAILED, metadata)
-  }
-
-  trackBootstrapComplete(metadata: BootstrapCompleteMetadata): void {
-    datadogRum.addAction(TelemetryEvents.BOOTSTRAP_COMPLETE, metadata)
-    if (metadata.outcome === 'timed_out') return
-
-    datadogRum.addDurationVital('bootstrap', {
-      startTime: performance.timeOrigin,
-      duration: metadata.total_ms,
-      context: { outcome: metadata.outcome }
-    })
   }
 
   trackFeatureFlagEvaluation(key: string, value: unknown): void {
