@@ -166,6 +166,7 @@ interface OperationRecord {
   readonly resumed: boolean
   delayMs: number | undefined
   timer: ReturnType<typeof setTimeout> | undefined
+  inFlightPoll: Promise<void> | undefined
   readonly settled: Promise<BillingOperationState>
   resolveSettled: (state: BillingOperationState) => void
 }
@@ -248,7 +249,6 @@ export function createBillingOperationLifecycle(
       : createOperationPointerStore(options.pointerStorage, now)
 
   const operations = new Map<string, OperationRecord>()
-  const inFlightPolls = new Map<string, Promise<void>>()
   const inFlightCommands = new Map<
     BillingOperationKind,
     Promise<BillingResult<BillingOperationState>>
@@ -320,16 +320,27 @@ export function createBillingOperationLifecycle(
     record.timer = setTimeout(() => void poll(record), delayMs)
   }
 
-  // One request per operation at a time: a wake arriving mid-poll joins
-  // the poll in flight instead of doubling the request rate.
+  // One request per record at a time: a wake arriving mid-poll joins the
+  // poll in flight instead of doubling the request rate. The request is
+  // bound to the record, not the id, so an id re-adopted after supersession
+  // starts its own observation instead of joining a poll that can no longer
+  // schedule it.
   function poll(record: OperationRecord): Promise<void> {
-    const inFlight = inFlightPolls.get(record.state.id)
-    if (inFlight !== undefined) return inFlight
+    if (record.inFlightPoll !== undefined) return record.inFlightPoll
     const request = pollOnce(record).finally(() => {
-      inFlightPolls.delete(record.state.id)
+      record.inFlightPoll = undefined
     })
-    inFlightPolls.set(record.state.id, request)
+    record.inFlightPoll = request
     return request
+  }
+
+  function writePointer(scope: BillingScope, state: BillingOperationState) {
+    pointers.write(scope, {
+      operationId: state.id,
+      kind: state.kind,
+      presentation: state.presentation,
+      attemptStartedAt: state.attemptStartedAt
+    })
   }
 
   function readOperation(operationId: string) {
@@ -415,7 +426,8 @@ export function createBillingOperationLifecycle(
         : {
             challenge: { clientSecret: input.clientSecret, status: 'required' }
           }),
-      customerActionSeen: actionUrl !== undefined
+      customerActionSeen:
+        actionUrl !== undefined || input.clientSecret !== undefined
     }
 
     let resolveSettled: (state: BillingOperationState) => void = () => {}
@@ -428,16 +440,12 @@ export function createBillingOperationLifecycle(
       resumed: input.resumed,
       delayMs: undefined,
       timer: undefined,
+      inFlightPoll: undefined,
       settled,
       resolveSettled
     }
     operations.set(input.id, record)
-    pointers.write(input.context.scope, {
-      operationId: input.id,
-      kind: input.kind,
-      presentation: input.presentation,
-      attemptStartedAt: input.attemptStartedAt
-    })
+    writePointer(input.context.scope, state)
     onTelemetry?.({
       name: BILLING_OPERATION_TELEMETRY_EVENT.started,
       billing_op_id: input.id,
@@ -644,6 +652,7 @@ export function createBillingOperationLifecycle(
       return 'embedded_unavailable'
     }
     dispatch(record, { type: 'presentation_switched', presentation })
+    writePointer(record.context.scope, record.state)
     record.delayMs = undefined
     schedule(record)
     return 'switched'
@@ -689,7 +698,17 @@ export function createBillingOperationLifecycle(
     settled: (operationId) => operations.get(operationId)?.settled,
     dispose: () => {
       lifetime.disposed = true
-      for (const record of operations.values()) stopTimer(record)
+      // Every pending settlement resolves so no awaiting host hangs; this is
+      // the tab giving up observation, not an outcome, so no telemetry.
+      for (const record of operations.values()) {
+        stopTimer(record)
+        const next = reduceBillingOperation(record.state, {
+          type: 'superseded'
+        })
+        if (next === record.state) continue
+        record.state = next
+        record.resolveSettled(next)
+      }
       operations.clear()
       inFlightCommands.clear()
       listeners.clear()

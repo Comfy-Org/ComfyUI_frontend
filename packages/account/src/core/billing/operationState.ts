@@ -185,6 +185,7 @@ function reducePending(
   state: PendingBillingOperation,
   status: BillingOpStatus
 ): BillingOperationState {
+  if (status.id !== state.id) return state
   if (status.status === 'succeeded') return withPhase(state, 'succeeded')
   if (status.status === 'failed') {
     return {

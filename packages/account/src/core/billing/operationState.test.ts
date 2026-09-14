@@ -70,6 +70,13 @@ describe('reduceBillingOperation', () => {
     expect(polled(pending(), { status: 'succeeded' }).phase).toBe('succeeded')
   })
 
+  it('ignores a status that names another operation', () => {
+    const state = pending()
+
+    expect(polled(state, { id: 'op-2', status: 'succeeded' })).toBe(state)
+    expect(polled(state, { id: 'op-2', status: 'failed' })).toBe(state)
+  })
+
   it('treats a reconciliation authentication state as terminal like the status', () => {
     expect(
       polled(pending(), { authentication_state: 'reconciliation_needed' }).phase

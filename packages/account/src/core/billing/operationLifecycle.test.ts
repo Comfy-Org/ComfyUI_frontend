@@ -421,6 +421,23 @@ describe('createBillingOperationLifecycle', () => {
       })
     })
 
+    it('widens the budget for an issued embedded challenge before any status echoes it', async () => {
+      const { lifecycle } = harness({ embedded: true })
+      await lifecycle.begin(
+        'topup',
+        issued({ operationId: 'op-1', clientSecret: 'pi_secret' })
+      )
+
+      await vi.advanceTimersByTimeAsync(
+        OPERATION_POLL_BUDGET.defaultMs + OPERATION_POLL_TIMING.maxMs
+      )
+
+      expect(lifecycle.get('op-1')).toMatchObject({
+        phase: 'pending',
+        customerActionSeen: true
+      })
+    })
+
     it('widens the budget once the customer is involved', async () => {
       const { lifecycle } = harness({
         answers: [httpOk(opStatus({ authentication_state: 'requires_action' }))]
@@ -522,6 +539,46 @@ describe('createBillingOperationLifecycle', () => {
         name: 'billing.operation.failed',
         failure_category: 'stale_operation'
       })
+    })
+
+    it('gives an id re-adopted after supersession its own poll', async () => {
+      const session = fakeSession()
+      const gate = deferred<BillingResult<BillingHttpResponse>>()
+      const { lifecycle, calls, status } = harness({
+        session,
+        answers: [gate.promise, httpOk(opStatus()), httpOk(opStatus())]
+      })
+      await lifecycle.begin('topup', issued())
+      await flush()
+      expect(calls).toHaveLength(1)
+
+      session.moveTo(
+        authenticated(
+          credential({
+            workspace: { id: 'ws-2', name: 'Team', type: 'team' }
+          })
+        )
+      )
+      status.answer(
+        statusSnapshot({
+          pending_billing_op_id: 'op-1',
+          pending_billing_op_type: 'topup'
+        })
+      )
+      const readopted = await lifecycle.begin('topup', issued())
+      await flush()
+
+      expect(readopted).toMatchObject({
+        status: 'ok',
+        value: { id: 'op-1', phase: 'pending' }
+      })
+      expect(calls).toHaveLength(2)
+
+      gate.resolve(httpOk(opStatus({ status: 'succeeded' })))
+      await flush()
+      expect(lifecycle.get('op-1')).toMatchObject({ phase: 'pending' })
+      await vi.advanceTimersByTimeAsync(OPERATION_POLL_TIMING.initialMs * 1.5)
+      expect(calls).toHaveLength(3)
     })
 
     it('supersedes on sign-out and refuses commands without a scope', async () => {
@@ -682,7 +739,7 @@ describe('createBillingOperationLifecycle', () => {
     })
 
     it('moves a failed embedded challenge to the hosted page under the same id, and back', async () => {
-      const { lifecycle, calls, telemetry } = harness({
+      const { lifecycle, calls, storage, telemetry } = harness({
         embedded: true,
         answers: [
           httpOk(
@@ -731,12 +788,16 @@ describe('createBillingOperationLifecycle', () => {
         presentation: 'hosted',
         actionUrl: 'https://billing.example/continue'
       })
+      expect(storedPointer(storage)).toMatchObject({ presentation: 'hosted' })
 
       expect(lifecycle.switchPresentation('op-1', 'embedded')).toBe('switched')
       expect(lifecycle.get('op-1')).toMatchObject({
         id: 'op-1',
         presentation: 'embedded',
         challenge: { clientSecret: 'pi_secret', status: 'required' }
+      })
+      expect(storedPointer(storage)).toMatchObject({
+        presentation: 'embedded'
       })
       expect(issue).toHaveBeenCalledTimes(1)
       expect(
@@ -788,15 +849,20 @@ describe('createBillingOperationLifecycle', () => {
     })
   })
 
-  it('stops observing and refuses commands after dispose', async () => {
-    const { lifecycle, calls } = harness({})
+  it('stops observing, settles what was pending, and refuses commands after dispose', async () => {
+    const { lifecycle, calls, telemetry } = harness({})
     await lifecycle.begin('topup', issued())
     await flush()
+    const settled = lifecycle.settled('op-1')
 
     lifecycle.dispose()
     await vi.advanceTimersByTimeAsync(60_000)
 
     expect(calls).toHaveLength(1)
+    await expect(settled).resolves.toMatchObject({ phase: 'superseded' })
+    expect(telemetry.map((event) => event.name)).toEqual([
+      'billing.operation.started'
+    ])
     await expect(lifecycle.begin('topup', issued())).resolves.toEqual({
       status: 'error',
       code: 'SUPERSEDED'
