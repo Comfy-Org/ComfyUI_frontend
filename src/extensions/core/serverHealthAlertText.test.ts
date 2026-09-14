@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { toTitleCase } from './serverHealthAlertText'
+import { labelRepeatsMessage, toTitleCase } from './serverHealthAlertText'
 
 describe('toTitleCase', () => {
   it.for([
@@ -19,5 +19,23 @@ describe('toTitleCase', () => {
     expect(toTitleCase('STAGING ENVIRONMENT (US-EAST-1)')).toBe(
       'Staging Environment (us-east-1)'
     )
+  })
+})
+
+describe('labelRepeatsMessage', () => {
+  it('reports a badge the message already says', () => {
+    expect(labelRepeatsMessage('PREVIEW', 'Preview Environment')).toBe(true)
+  })
+
+  it('keeps a badge that adds something the message does not say', () => {
+    expect(labelRepeatsMessage('BETA', 'Comfy Cloud')).toBe(false)
+  })
+
+  it('matches whole words, so a shared prefix is not a repeat', () => {
+    expect(labelRepeatsMessage('WARN', 'Warning Message')).toBe(false)
+  })
+
+  it('reports nothing when there is no badge', () => {
+    expect(labelRepeatsMessage(undefined, 'Preview Environment')).toBe(false)
   })
 })
