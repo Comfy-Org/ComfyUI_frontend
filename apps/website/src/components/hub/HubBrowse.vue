@@ -15,10 +15,7 @@ import { workshopModels } from '../../config/workshop-browse-content'
 import { groupModels } from '../../config/model-family'
 import hubTemplates from '../../data/hubTemplates.json'
 import { hubWorkflowPath } from '../../lib/hub/workflow-detail'
-import {
-  partnerModelFor,
-  useCaseForTemplate
-} from '../../lib/hub/template-use-case'
+import { partnerModelFor } from '../../lib/hub/template-use-case'
 import { tagDisplayName } from '../../lib/hub/tag-aliases'
 import { withFacetFields } from '../../lib/hub/facet-fields'
 import type { HubTemplate } from '../../lib/hub/types'
@@ -114,8 +111,7 @@ const inUseCase = (value: UseCase | 'all') => ({
   ),
   templates: templates.filter(
     (tmpl) =>
-      (value === 'all' || useCaseForTemplate(tmpl, workshopModels) === value) &&
-      runsMatchingModel(tmpl)
+      (value === 'all' || tmpl.useCase === value) && runsMatchingModel(tmpl)
   )
 })
 

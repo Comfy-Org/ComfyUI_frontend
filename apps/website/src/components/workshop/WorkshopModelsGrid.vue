@@ -26,12 +26,12 @@ import type {
   WorkshopModel
 } from '../../config/models-catalogue'
 import {
-  SORT_ORDERS,
   parseCatalogSearch,
   MODALITIES,
   countByFacet,
   countByModality,
   filterWorkshopModels,
+  sortOrdersFor,
   sortWorkshopModels
 } from '../../config/models-catalogue'
 import type { Locale, TranslationKey } from '../../i18n/translations'
@@ -72,6 +72,7 @@ onMounted(() => {
 })
 
 const toolbar = useTemplateRef<HTMLElement>('toolbar')
+const sortOrders = sortOrdersFor(models)
 const sortLabelKey: Record<SortOrder, TranslationKey> = {
   popular: 'workshop.sort.popular',
   name: 'workshop.sort.name',
@@ -260,7 +261,7 @@ const menuItemClass =
 
       <div
         ref="toolbar"
-        class="bg-page sticky top-20 z-30 mb-8 flex scroll-mt-20 flex-wrap items-center justify-end gap-3 py-4 max-sm:mb-4 max-sm:py-2 lg:top-26 lg:scroll-mt-26"
+        class="bg-page sticky top-20 z-30 -mx-1 mb-8 flex scroll-mt-20 flex-wrap items-center justify-end gap-3 px-1 py-4 max-sm:mb-4 max-sm:py-2 lg:top-26 lg:scroll-mt-26"
       >
         <h1
           v-if="inSection"
@@ -324,7 +325,7 @@ const menuItemClass =
               >
                 <DropdownMenuRadioGroup v-model="sort">
                   <DropdownMenuRadioItem
-                    v-for="order in SORT_ORDERS"
+                    v-for="order in sortOrders"
                     :key="order"
                     :value="order"
                     :data-testid="`sort-${order}`"

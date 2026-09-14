@@ -54,7 +54,7 @@ test.describe('Models catalog', () => {
     const sections = page.getByTestId('workshop-sections')
     await expect(sections).toBeVisible()
     const sort = page.getByTestId('workshop-sort')
-    await expect(sort).toContainText('Recommended')
+    await expect(sort).toContainText('Most popular')
     const leading = page
       .getByTestId('section-generate-images')
       .getByTestId('workshop-model-card')
@@ -90,7 +90,7 @@ test.describe('Models catalog', () => {
 
     await sort.click()
     await page.getByTestId('sort-popular').click()
-    await expect(sort).toContainText('Recommended')
+    await expect(sort).toContainText('Most popular')
     await expect
       .poll(() =>
         leading.evaluateAll((cards) =>
@@ -319,6 +319,9 @@ test.describe('Models catalog', () => {
     page
   }) => {
     await page.goto('/')
+    await page
+      .getByRole('link', { name: /Explore Seedance/i })
+      .scrollIntoViewIfNeeded()
     await expect(
       page.getByRole('link', { name: /Explore Seedance/i })
     ).toHaveAttribute(

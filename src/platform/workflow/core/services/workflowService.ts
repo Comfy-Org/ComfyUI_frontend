@@ -782,8 +782,23 @@ export const useWorkflowService = () => {
     const graph = canvas.graph
     const loadedWorkflow = await workflow.load()
     if (app.canvas !== canvas || canvas.graph !== graph) {
-      console.warn(
-        '[workflowService] insertWorkflow aborted: canvas or graph was replaced while the workflow loaded'
+      const replacementKind = app.canvas !== canvas ? 'canvas' : 'graph'
+      reportError(
+        new Error(
+          'insertWorkflow aborted: canvas or graph was replaced while the workflow loaded'
+        ),
+        {
+          errorType: 'workflow_insert_aborted_canvas_changed',
+          level: 'warning',
+          tags: {
+            failure_kind: 'degraded',
+            feature_area: 'workflow',
+            operation: 'insert',
+            outcome: 'degraded',
+            assert_mode: 'soft'
+          },
+          context: { replacement_kind: replacementKind }
+        }
       )
       return
     }
