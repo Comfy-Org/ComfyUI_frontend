@@ -69,6 +69,11 @@ const translations = {
     'zh-CN': '显示更多模型'
   },
   'workshop.model.breadcrumb': { en: 'Models', 'zh-CN': '模型' },
+  'workshop.model.back': { en: 'Back to all models', 'zh-CN': '返回全部模型' },
+  'workshop.model.backTo': {
+    en: 'Back to {category}',
+    'zh-CN': '返回{category}'
+  },
   'workshop.model.inputs': { en: 'Model inputs', 'zh-CN': '模型输入' },
   'workshop.model.select': { en: 'Select an option', 'zh-CN': '选择一个选项' },
   'workshop.model.maxFiles': {
@@ -9257,15 +9262,34 @@ Enterprise`
   'nav.accountMenu': { en: 'Account menu', 'zh-CN': '账户菜单' },
   'nav.credits': { en: 'credits', 'zh-CN': '积分' },
   'nav.noCredits': { en: 'No credits', 'zh-CN': '无积分' },
-  'nav.buyCredits': { en: 'Buy credits', 'zh-CN': '购买积分' },
+  'nav.buyCredits': { en: 'Add credits', 'zh-CN': '添加积分' },
   'nav.creditsLabel': { en: 'Credits', 'zh-CN': '积分' },
   'nav.workspaces': { en: 'Workspaces', 'zh-CN': '工作区' },
+  'nav.workspacesError': {
+    en: 'Could not load workspaces.',
+    'zh-CN': '无法加载工作区。'
+  },
+  'nav.workspacesLoading': {
+    en: 'Loading workspaces…',
+    'zh-CN': '正在加载工作区…'
+  },
+  'nav.workspacesEmpty': {
+    en: 'No workspaces found.',
+    'zh-CN': '未找到工作区。'
+  },
+  'nav.workspaceSwitchError': {
+    en: 'Could not switch workspaces. Check your connection and try again.',
+    'zh-CN': '无法切换工作区。请检查网络连接后重试。'
+  },
+  'nav.switchWorkspace': {
+    en: 'Switch workspace',
+    'zh-CN': '切换工作区'
+  },
   'nav.planAndCredits': { en: 'Plan & credits', 'zh-CN': '套餐与积分' },
   'nav.workspaceSettings': {
     en: 'Workspace settings',
     'zh-CN': '工作区设置'
   },
-  'nav.switchWorkspace': { en: 'Switch workspace', 'zh-CN': '切换工作区' },
   'nav.planFree': { en: 'Free', 'zh-CN': '免费' },
   'nav.roleOwner': { en: 'Owner', 'zh-CN': '所有者' },
   'nav.roleMember': { en: 'Member', 'zh-CN': '成员' },
@@ -9314,6 +9338,14 @@ Enterprise`
     en: 'Back to all categories',
     'zh-CN': '返回所有类别'
   },
+  'workshop.sections.browseAll': {
+    en: 'Browse all models',
+    'zh-CN': '浏览所有模型'
+  },
+  'workshop.sections.allModels': {
+    en: 'All models',
+    'zh-CN': '所有模型'
+  },
   'workshop.sections.scrollBack': {
     en: 'Scroll back',
     'zh-CN': '向前滚动'
@@ -9341,8 +9373,8 @@ Enterprise`
     'zh-CN': '生成视频'
   },
   'workshop.useCase.animateImages': {
-    en: 'Animate images',
-    'zh-CN': '让图像动起来'
+    en: 'Image to video',
+    'zh-CN': '图像生成视频'
   },
   'workshop.useCase.editVideos': { en: 'Edit videos', 'zh-CN': '编辑视频' },
   'workshop.useCase.3d': { en: '3D', 'zh-CN': '3D' },
@@ -9352,6 +9384,10 @@ Enterprise`
   'workshop.search.clear': { en: 'Clear search', 'zh-CN': '清除搜索' },
   'workshop.search.done': { en: 'Done', 'zh-CN': '完成' },
   'workshop.search.close': { en: 'Close search', 'zh-CN': '关闭搜索' },
+  'workshop.filter.resize': {
+    en: 'Drag to resize the filters',
+    'zh-CN': '拖动调整筛选器高度'
+  },
   'workshop.search.show': {
     en: 'Show {n} models',
     'zh-CN': '显示 {n} 个模型'
@@ -9382,7 +9418,7 @@ Enterprise`
   },
   'workshop.filter.search': { en: 'Search…', 'zh-CN': '搜索…' },
   'workshop.sort.label': { en: 'Sort', 'zh-CN': '排序' },
-  'workshop.sort.popular': { en: 'Most examples', 'zh-CN': '示例最多' },
+  'workshop.sort.popular': { en: 'Recommended', 'zh-CN': '推荐' },
   'workshop.sort.name': { en: 'Name A to Z', 'zh-CN': '名称 A 到 Z' },
   'workshop.sort.priceAsc': {
     en: 'Price: low to high',
@@ -9508,42 +9544,92 @@ Enterprise`
     'zh-CN': '浏览全部'
   },
   'workshop.credits.title': {
-    en: 'Payment happens on Stripe',
-    'zh-CN': '支付在 Stripe 完成'
+    en: 'Add credits',
+    'zh-CN': '添加积分'
   },
   'workshop.credits.body': {
-    en: 'Pick a top-up here and finish the purchase on Stripe Checkout. We send the page you are on as the return address, so you land back here with your inputs as you left them:',
-    'zh-CN':
-      '在此选择充值额度，然后在 Stripe Checkout 完成支付。我们会带上当前页面作为返回地址，付款后你会回到这里，输入内容保持原样：'
+    en: 'Pick a bundle, or choose a custom amount.',
+    'zh-CN': '选择一个额度，或自定义金额。'
   },
-  'workshop.credits.continue': {
-    en: 'Continue to Stripe',
-    'zh-CN': '前往 Stripe'
+  'workshop.credits.continue': { en: 'Continue', 'zh-CN': '继续' },
+  'workshop.credits.custom': {
+    en: 'Custom · $5 – $4,739',
+    'zh-CN': '自定义 · $5 – $4,739'
   },
-  'workshop.credits.cancel': { en: 'Stay here', 'zh-CN': '留在此页' },
-  'workshop.credits.checkout': {
-    en: 'Checkout',
-    'zh-CN': '结账'
-  },
-  'workshop.credits.checkoutNote': {
-    en: 'Stripe hosts this page. It stands in here so the round trip can be reviewed end to end.',
-    'zh-CN': '此页面由 Stripe 托管。这里以模拟代替，以便完整体验整个流程。'
-  },
-  'workshop.credits.pay': { en: 'Pay {usd}', 'zh-CN': '支付 {usd}' },
-  'workshop.credits.back': { en: 'Back', 'zh-CN': '返回' },
+  'workshop.credits.less': { en: 'Less', 'zh-CN': '减少' },
+  'workshop.credits.more': { en: 'More', 'zh-CN': '增加' },
+  'workshop.credits.cancel': { en: 'Cancel', 'zh-CN': '取消' },
   'workshop.credits.done': {
     en: '{n} credits added',
     'zh-CN': '已添加 {n} 积分'
-  },
-  'workshop.credits.doneBody': {
-    en: 'You are back on the model page, with your inputs exactly as you left them.',
-    'zh-CN': '你已回到模型页面，输入内容与离开时完全一致。'
   },
   'workshop.credits.resume': {
     en: 'Back to the model',
     'zh-CN': '返回模型'
   },
   'workshop.credits.close': { en: 'Close', 'zh-CN': '关闭' },
+  'workshop.credits.waitingTitle': {
+    en: 'Checking your credit balance',
+    'zh-CN': '正在检查积分余额'
+  },
+  'workshop.credits.waitingBody': {
+    en: 'You returned from checkout. This page will update if new credits arrive.',
+    'zh-CN': '你已从结账页返回。新积分到账后，此页面会自动更新。'
+  },
+  'workshop.credits.waitingPolling': {
+    en: 'Checking for credits…',
+    'zh-CN': '正在查询积分…'
+  },
+  'workshop.credits.reopenPrompt': {
+    en: 'Lost the tab?',
+    'zh-CN': '不小心关闭了？'
+  },
+  'workshop.credits.reopen': {
+    en: 'Reopen checkout',
+    'zh-CN': '重新打开结账页'
+  },
+  'workshop.credits.closingIsSafe': {
+    en: 'Closing this won’t affect your payment.',
+    'zh-CN': '关闭此窗口不会影响你的付款。'
+  },
+  'workshop.credits.addedTo': {
+    en: 'Added to {workspace}. Your inputs are as you left them.',
+    'zh-CN': '已添加到 {workspace}。你的输入保持原样。'
+  },
+  'workshop.credits.previousBalance': {
+    en: 'Previous balance',
+    'zh-CN': '原有余额'
+  },
+  'workshop.credits.added': { en: 'Added', 'zh-CN': '新增' },
+  'workshop.credits.newBalance': { en: 'New balance', 'zh-CN': '当前余额' },
+  'workshop.credits.heldTitle': {
+    en: 'No new credits detected',
+    'zh-CN': '未检测到新积分'
+  },
+  'workshop.credits.heldBody': {
+    en: 'The checkout may have been cancelled, or its credits may still be processing. Check your balance before trying again.',
+    'zh-CN': '结账可能已取消，或积分仍在处理中。再次尝试前请先检查余额。'
+  },
+  'workshop.credits.heldSupport': {
+    en: 'Checkout reference',
+    'zh-CN': '结账参考编号'
+  },
+  'workshop.credits.checkoutOpenedTitle': {
+    en: 'Continue to checkout',
+    'zh-CN': '继续结账'
+  },
+  'workshop.credits.checkoutOpenedBody': {
+    en: 'Open secure checkout in a new tab. Your model inputs will stay here.',
+    'zh-CN': '请在新标签页中打开安全结账。你的模型输入会保留在这里。'
+  },
+  'workshop.credits.openCheckout': {
+    en: 'Open checkout',
+    'zh-CN': '打开结账页'
+  },
+  'workshop.credits.contactSupport': {
+    en: 'Contact support',
+    'zh-CN': '联系客服'
+  },
   'workshop.media.label': {
     en: 'Browse by output',
     'zh-CN': '按输出浏览'
@@ -9672,14 +9758,14 @@ Enterprise`
     en: 'Upload failed. Try again or paste a reachable URL.',
     'zh-CN': '上传失败。请重试或粘贴可访问的网址。'
   },
-  'workshop.form.signInBeforeUpload': {
-    en: 'Sign in before uploading files. Your prompt and settings will be kept.',
-    'zh-CN': '请先登录再上传文件。你的提示词和设置会保留。'
+  'workshop.form.draftRestoreFailed': {
+    en: 'Some saved inputs could not be restored. Check your inputs and select your files again.',
+    'zh-CN': '部分已保存的输入无法恢复。请检查输入并重新选择文件。'
   },
   'workshop.form.requestTooLarge': {
-    en: 'The combined images and prompt exceed Router’s 10 MiB request limit. Use smaller images or a shorter prompt.',
+    en: 'The combined images and prompt exceed Comfy Router’s 10 MiB request limit. Use smaller images or a shorter prompt.',
     'zh-CN':
-      '图片和提示词的总大小超过 Router 的 10 MiB 请求限制。请使用更小的图片或缩短提示词。'
+      '图片和提示词的总大小超过 Comfy Router 的 10 MiB 请求限制。请使用更小的图片或缩短提示词。'
   },
   'workshop.form.badType': {
     en: 'File type not supported',
@@ -9711,8 +9797,8 @@ Enterprise`
   'workshop.dialogue.add': { en: 'Add turn', 'zh-CN': '添加一段' },
   'workshop.dialogue.remove': { en: 'Remove turn', 'zh-CN': '移除此段' },
   'workshop.run.mappingUnavailable': {
-    en: 'Router execution is not enabled for this model yet.',
-    'zh-CN': '此模型尚未启用 Router 执行。'
+    en: 'Comfy Router execution is not enabled for this model yet.',
+    'zh-CN': '此模型尚未启用 Comfy Router 执行。'
   },
   'workshop.model.incomplete': { en: 'Incomplete', 'zh-CN': '尚未完善' },
   'workshop.model.viewDetails': { en: 'View details', 'zh-CN': '查看详情' },
@@ -9721,13 +9807,17 @@ Enterprise`
     'zh-CN': '暂不支持运行'
   },
   'workshop.model.missingInputSchema': {
-    en: 'This model is listed by Router, but its input schema is not available yet. You can browse its known details; Run and API snippets will be enabled when the schema is added.',
+    en: 'This model is listed by Comfy Router, but its input schema is not available yet. You can browse its known details; Run and API snippets will be enabled when the schema is added.',
     'zh-CN':
-      'Router 已列出此模型，但其输入架构尚未提供。你可以查看已有信息；添加架构后将启用运行和 API 代码示例。'
+      'Comfy Router 已列出此模型，但其输入架构尚未提供。你可以查看已有信息；添加架构后将启用运行和 API 代码示例。'
   },
   'workshop.run.requestId': { en: 'Request ID:', 'zh-CN': '请求 ID：' },
   'workshop.run.cancel': { en: 'Cancel', 'zh-CN': '取消' },
   'workshop.run.running': { en: 'Generating…', 'zh-CN': '生成中…' },
+  'workshop.run.leavePage': {
+    en: 'A model is still running. Leaving now will cancel it. Leave this page?',
+    'zh-CN': '模型仍在运行。现在离开将取消生成。要离开此页面吗？'
+  },
   'workshop.run.policy': {
     en: 'Disabled by your workspace policy',
     'zh-CN': '已被工作区策略禁用'
@@ -9769,6 +9859,10 @@ Enterprise`
   'workshop.output.earlier': {
     en: 'Earlier runs this session',
     'zh-CN': '本次会话的早前运行'
+  },
+  'workshop.output.earlierRun': {
+    en: 'Earlier run {number}',
+    'zh-CN': '早前运行 {number}'
   },
   'workshop.output.latest': { en: 'Latest', 'zh-CN': '最新' },
   'workshop.output.placeholder': {
@@ -9818,8 +9912,8 @@ Enterprise`
     'zh-CN': '内容或工作区策略阻止了此请求。'
   },
   'workshop.error.noCredits': {
-    en: 'Not enough credits. Buy credits to continue.',
-    'zh-CN': '积分不足。请购买积分后继续。'
+    en: 'Not enough credits. Add credits to continue.',
+    'zh-CN': '积分不足。请添加积分后继续。'
   },
   'workshop.error.unavailable': {
     en: 'This model is temporarily unavailable.',
@@ -9835,14 +9929,14 @@ Enterprise`
     'zh-CN': '提供方响应超时。未扣费。'
   },
   'workshop.error.lowCredits': {
-    en: 'You have {credits} credits and this run needs {n}. Buy credits to continue; your inputs stay here.',
+    en: 'You have {credits} credits and this run needs {n}. Add credits to continue; your inputs stay here.',
     'zh-CN':
-      '你有 {credits} 积分，本次运行需要 {n}。购买积分后继续，你的输入会保留。'
+      '你有 {credits} 积分，本次运行需要 {n}。添加积分后继续，你的输入会保留。'
   },
   'workshop.error.memberNoCredits': {
-    en: '{workspace} has no credits left. Only the workspace owner can buy more; you can run this on your personal workspace instead.',
+    en: '{workspace} has used all its credits. Ask the workspace owner to add more, or run this on your personal workspace.',
     'zh-CN':
-      '{workspace} 的积分已用完。只有工作区所有者可以购买；你可以改用个人工作区运行。'
+      '{workspace} 的积分已用完。请工作区所有者添加积分，或在个人工作区运行。'
   },
   'workshop.run.memberNoCredits': {
     en: 'Ask the owner for credits',
@@ -9933,8 +10027,9 @@ Enterprise`
     'zh-CN': '输出样例'
   },
   'workshop.examples.samplesSubtitle': {
-    en: 'View a sample without changing your inputs. Verified Router presets are not available for these samples yet.',
-    'zh-CN': '查看样例不会更改你的输入。这些样例尚无已验证的 Router 参数预设。'
+    en: 'View a sample without changing your inputs. Verified Comfy Router presets are not available for these samples yet.',
+    'zh-CN':
+      '查看样例不会更改你的输入。这些样例尚无已验证的 Comfy Router 参数预设。'
   },
   'workshop.examples.view': {
     en: 'View sample',
@@ -10072,6 +10167,23 @@ Enterprise`
   'workshop.hub.facets.noResults': { en: 'No matches', 'zh-CN': '无匹配' },
   'workshop.hub.models': { en: 'Model', 'zh-CN': '模型' },
   'workshop.hub.categories': { en: 'CATEGORIES', 'zh-CN': '分类' },
+  'workshop.hub.docs': { en: 'Read docs', 'zh-CN': '阅读文档' },
+  'workshop.error.creditsTitle': {
+    en: 'Not enough credits',
+    'zh-CN': '积分不足'
+  },
+  'workshop.error.checkoutFailed': {
+    en: 'Checkout could not start. Try again.',
+    'zh-CN': '无法启动结账，请重试。'
+  },
+  'workshop.error.noCreditsCloud': {
+    en: 'Add credits to {workspace} to keep running models.',
+    'zh-CN': '为 {workspace} 添加积分以继续运行模型。'
+  },
+  'workshop.error.noCreditsPlatform': {
+    en: 'Add credits to {workspace} on platform.comfy.org',
+    'zh-CN': '在 platform.comfy.org 上为 {workspace} 添加积分'
+  },
   'workshop.hub.tryNow': { en: 'Try now', 'zh-CN': '立即试用' },
   'workshop.hub.tag.partnerNodes': {
     en: 'Partner Nodes',

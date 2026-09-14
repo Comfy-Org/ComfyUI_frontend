@@ -39,6 +39,10 @@ export interface RouterRenderOptions {
   readonly onPrepared?: (prepared: PreparedRouterRender) => void | Promise<void>
 }
 
+export type BoundRouterRenderOptions = RouterRenderOptions & {
+  readonly model: WorkshopModelDetail
+}
+
 export interface ResolvedRouterRender {
   readonly slug: string
   readonly routerId: string
@@ -122,17 +126,12 @@ export async function prepareModelRouterRender(
 export async function router_render(
   slug: string,
   parameters: RouterRenderParameters = {},
-  options: RouterRenderOptions = {}
+  options: BoundRouterRenderOptions
 ): Promise<RouterRenderResult> {
   const signal = options.signal ?? new AbortController().signal
   signal.throwIfAborted()
-  const model =
-    options.model ??
-    (await import('./workshop-router-content')).getRouterWorkshopModelDetail(
-      slug
-    )
-  if (!model || (options.model && model.slug !== slug))
-    throw new WorkshopRouterError('unavailable')
+  const { model } = options
+  if (model.slug !== slug) throw new WorkshopRouterError('unavailable')
   const prepared = await prepareModelRouterRender(model, parameters, {
     ...options,
     signal

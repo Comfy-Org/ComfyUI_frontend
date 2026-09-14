@@ -6,7 +6,6 @@ import { nextTick } from 'vue'
 import { describe, expect, it, vi } from 'vitest'
 
 import type { RunOutput, RunState } from '../../config/workshop-run'
-import { WORKSHOP_CLOUD_BASE_URL } from '../../config/workshop-env'
 import PlaygroundOutput from './PlaygroundOutput.vue'
 import { downloadOutput } from '../../config/workshop-output-download'
 
@@ -46,6 +45,25 @@ describe('PlaygroundOutput', () => {
     await waitFor(() => expect(trigger).toHaveFocus())
   })
 
+  it('leaves video fullscreen to the shared video player', () => {
+    render(PlaygroundOutput, {
+      props: {
+        state: succeeded({
+          kind: 'video',
+          url: 'https://example.com/run.mp4',
+          fileName: 'run.mp4'
+        }),
+        modality: 'video',
+        now: 2_000
+      }
+    })
+
+    expect(screen.queryByTestId('output-expand')).toBeNull()
+    expect(
+      screen.getByLabelText('Output', { selector: 'video' })
+    ).toHaveAttribute('src', 'https://example.com/run.mp4')
+  })
+
   it('announces expiration when a completed output is no longer available', async () => {
     const { rerender } = render(PlaygroundOutput, {
       props: { state: succeeded(output('latest')), now: 2_000 }
@@ -58,24 +76,21 @@ describe('PlaygroundOutput', () => {
   })
 
   it.for([
-    { locale: 'en' as const, label: 'Buy credits' },
-    { locale: 'zh-CN' as const, label: '购买积分' }
+    { locale: 'en' as const, label: 'Add credits' },
+    { locale: 'zh-CN' as const, label: '添加积分' }
   ])(
-    'takes an insufficient-credit failure to billing in $locale',
-    ({ locale, label }) => {
-      render(PlaygroundOutput, {
+    'opens the shared credits dialog after an insufficient-credit failure in $locale',
+    async ({ locale, label }) => {
+      const user = userEvent.setup()
+      const view = render(PlaygroundOutput, {
         props: {
           state: { status: 'failed', reason: 'noCredits', fieldErrors: {} },
           now: 0,
           locale
         }
       })
-      const link = screen.getByRole('link', { name: label })
-      expect(link.getAttribute('href')).toBe(
-        `${WORKSHOP_CLOUD_BASE_URL}/?settings=plan-credits`
-      )
-      expect(link.getAttribute('target')).toBe('_blank')
-      expect(screen.queryByRole('button')).toBeNull()
+      await user.click(screen.getByRole('button', { name: label }))
+      expect(view.emitted().buyCredits).toHaveLength(1)
     }
   )
 
@@ -163,6 +178,33 @@ describe('PlaygroundOutput', () => {
     expect(
       screen.getByTestId('output-download').getAttribute('href')
     ).toContain('latest')
+  })
+
+  it('lines the session up in the order it was generated, newest last', async () => {
+    const user = userEvent.setup()
+    render(PlaygroundOutput, {
+      props: {
+        state: succeeded(output('third')),
+        earlier: [
+          { output: output('second'), attachments: [] },
+          { output: output('first'), attachments: [] }
+        ],
+        now: 2_000
+      }
+    })
+    const strip = within(screen.getByTestId('earlier-runs'))
+    expect(
+      strip
+        .getAllByRole('button')
+        .map((button) => button.getAttribute('aria-label'))
+    ).toEqual(['Earlier run 1', 'Earlier run 2', 'Latest'])
+    expect(
+      strip.getByRole('button', { name: 'Latest', pressed: true })
+    ).toBeTruthy()
+    await user.click(strip.getByRole('button', { name: 'Earlier run 1' }))
+    expect(
+      screen.getByTestId('output-download').getAttribute('href')
+    ).toContain('first')
   })
 
   it('downloads the selected batch item and the selected earlier run', async () => {

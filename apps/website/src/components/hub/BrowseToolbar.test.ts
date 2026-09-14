@@ -18,7 +18,8 @@ const labels = {
   selected: '{n} selected',
   typeAll: 'All types',
   showResults: 'Show results',
-  showModels: 'Show models'
+  showModels: 'Show models',
+  resize: 'Resize filters'
 }
 
 describe('BrowseToolbar', () => {
