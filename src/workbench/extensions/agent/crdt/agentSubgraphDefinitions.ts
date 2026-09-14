@@ -181,6 +181,14 @@ function collectDefinitionIds(source: unknown, ids: string[]): void {
   }
 }
 
+function definitionsMap(doc: Y.Doc): Y.Map<unknown> | null {
+  const root = doc.share.get(DEFINITIONS_ROOT)
+  if (!root) return null
+  if (root instanceof Y.Map) return root
+  if (root.constructor !== Y.AbstractType) return null
+  return doc.getMap<unknown>(DEFINITIONS_ROOT)
+}
+
 export function allSubgraphDefinitions(
   definitions: readonly ExportedSubgraph[]
 ): ExportedSubgraph[] {
@@ -194,8 +202,9 @@ export function allSubgraphDefinitions(
 
 export function readSubgraphDefinitionIds(doc: Y.Doc): string[] {
   const ids: string[] = []
-  if (!doc.share.has(DEFINITIONS_ROOT)) return ids
-  doc.getMap<unknown>(DEFINITIONS_ROOT).forEach((value) => {
+  const root = definitionsMap(doc)
+  if (!root) return ids
+  root.forEach((value) => {
     if (value instanceof Y.Map) collectDefinitionIds(value, ids)
   })
   return ids
@@ -211,12 +220,9 @@ export function readSubgraphDefinitionIds(doc: Y.Doc): string[] {
  */
 export function readSubgraphDefinitions(doc: Y.Doc): ExportedSubgraph[] {
   const definitions: ExportedSubgraph[] = []
-  // `doc.getMap` defines the root when it is absent. A document that never
-  // seeded definitions must keep its shape, so only read a root that exists.
-  // (For a root that arrived over the wire, `getMap` upgrades the untyped
-  // shared type in place; that is a read-side view, not new content.)
-  if (!doc.share.has(DEFINITIONS_ROOT)) return definitions
-  doc.getMap<unknown>(DEFINITIONS_ROOT).forEach((value) => {
+  const root = definitionsMap(doc)
+  if (!root) return definitions
+  root.forEach((value) => {
     if (!(value instanceof Y.Map)) return
     const definition = readDefinition(value)
     if (definition) definitions.push(definition)

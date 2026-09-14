@@ -386,12 +386,14 @@ describe('agent CRDT follower on a SubgraphNode with promoted widgets', () => {
         for (const [key, value] of Object.entries(host)) {
           replacement.set(key, value)
         }
-        replacement.set('inputs', [
+        const inputs = new Y.Array<unknown>()
+        replacement.set('inputs', inputs)
+        nodes.set('1', replacement)
+        inputs.push([
           null,
           { name: 42 },
           { name: 'value', type: 'NUMBER', link: null }
         ])
-        nodes.set('1', replacement)
       },
       1
     )

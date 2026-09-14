@@ -68,6 +68,14 @@ describe('readSubgraphDefinitions', () => {
     expect(doc.share.has('definitions')).toBe(false)
   })
 
+  it('ignores a definitions root with the wrong shared type', () => {
+    const doc = new Y.Doc()
+    doc.getArray('definitions')
+
+    expect(readSubgraphDefinitionIds(doc)).toEqual([])
+    expect(readSubgraphDefinitions(doc)).toEqual([])
+  })
+
   it('projects a definition back to the shape it was minted from', () => {
     const definition = createTestSubgraphData({
       nodes: [interiorNode(3), interiorNode(1)] as never,
