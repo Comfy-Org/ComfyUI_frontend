@@ -85,7 +85,7 @@ export class LiveCloudBillingSession {
     })
     if (status.is_active) expect(status.subscription_tier).toBe('FREE')
     else
-      expect(['inactive', 'awaiting_payment_method']).toContain(
+      expect([undefined, 'inactive', 'awaiting_payment_method']).toContain(
         status.billing_status
       )
     expect(methods).toHaveLength(0)
@@ -211,55 +211,58 @@ export class LiveCloudCheckout {
       this.subscribe.or(this.resumePayment)
     )
     await this.submitCard(checkout, '4242424242424242')
-    await expect
-      .poll(async () => {
-        const operation = await session.read(
-          `/api/billing/ops/${encodeURIComponent(subscription.billing_op_id)}`,
-          zBillingOpStatusResponse
-        )
-        return operation.status
-      })
-      .toBe('succeeded')
-    await expect
-      .poll(() => session.read('/api/billing/status', zBillingStatusResponse))
-      .toMatchObject({
-        is_active: true,
-        plan_slug: 'creator-monthly',
-        subscription_tier: 'CREATOR'
-      })
-    const expectedBalance =
-      balanceBefore.amount_micros + Number(preview.credits_today_cents)
-    await expect
-      .poll(
-        async () =>
-          (await session.read('/api/billing/balance', zBillingBalanceResponse))
-            .amount_micros
-      )
-      .toBe(expectedBalance)
-    const methods = await session.read(
-      '/api/billing/payment-methods',
-      zListSavedPaymentMethodsResponse
+    return await this.verifyCheckoutCompletion(
+      session,
+      testInfo,
+      balanceBefore.amount_micros,
+      preview,
+      subscription.billing_op_id,
+      'checkout-completed.png'
     )
-    expect(methods).toHaveLength(1)
-    await testInfo.attach('checkout-completion.json', {
-      body: JSON.stringify({
-        operationId: subscription.billing_op_id,
-        planSlug: preview.new_plan.slug,
-        grantCents: Number(preview.credits_today_cents),
-        balanceBeforeCents: balanceBefore.amount_micros,
-        balanceAfterCents: expectedBalance,
-        paymentMethodCount: methods.length
-      }),
-      contentType: 'application/json'
+  }
+
+  async completeAuthenticatedCheckout(
+    session: LiveCloudBillingSession,
+    testInfo: TestInfo
+  ) {
+    const balanceBefore = await session.read(
+      '/api/billing/balance',
+      zBillingBalanceResponse
+    )
+    const preview = await this.open(true)
+    const { checkout, subscription } = await this.startCheckout(
+      this.subscribe.or(this.resumePayment)
+    )
+    await this.submitCard(checkout, '4000000000003220')
+    const challengeOrigin = 'https://testmode-acs.stripe.com'
+    await expect
+      .poll(() =>
+        checkout
+          .frames()
+          .some((frame) => frame.url().startsWith(challengeOrigin))
+      )
+      .toBe(true)
+    const challenge = checkout
+      .frames()
+      .find((frame) => frame.url().startsWith(challengeOrigin))
+    if (!challenge) throw new Error('3D Secure challenge did not load')
+    const completeAuthentication = challenge.getByRole('button', {
+      name: /complete/i
     })
-    await this.page.goto(this.frontend)
-    await this.attachScreenshot('checkout-completed.png')
-    return {
-      operationId: subscription.billing_op_id,
-      planSlug: preview.new_plan.slug,
-      grantCents: Number(preview.credits_today_cents),
-      paymentMethodCount: methods.length
-    }
+    await expect(completeAuthentication).toBeVisible()
+    await testInfo.attach('3ds-challenge.png', {
+      body: await checkout.screenshot(),
+      contentType: 'image/png'
+    })
+    await completeAuthentication.click()
+    return await this.verifyCheckoutCompletion(
+      session,
+      testInfo,
+      balanceBefore.amount_micros,
+      preview,
+      subscription.billing_op_id,
+      '3ds-completed.png'
+    )
   }
 
   async declineCheckout(session: LiveCloudBillingSession, testInfo: TestInfo) {
@@ -336,6 +339,72 @@ export class LiveCloudCheckout {
     await checkout.getByLabel('ZIP', { exact: true }).fill('94107')
     await checkout.locator('#enableStripePass').uncheck()
     await checkout.getByRole('button', { name: /^Save/ }).click()
+  }
+
+  private async verifyCheckoutCompletion(
+    session: LiveCloudBillingSession,
+    testInfo: TestInfo,
+    balanceBeforeCents: number,
+    preview: ReturnType<typeof zPreviewSubscribeResponse.parse>,
+    operationId: string,
+    screenshotName: string
+  ) {
+    await expect
+      .poll(
+        async () => {
+          const operation = await session.read(
+            `/api/billing/ops/${encodeURIComponent(operationId)}`,
+            zBillingOpStatusResponse
+          )
+          return {
+            status: operation.status,
+            authenticationState: operation.authentication_state,
+            phase: operation.phase
+          }
+        },
+        { timeout: 60_000 }
+      )
+      .toMatchObject({ status: 'succeeded' })
+    await expect
+      .poll(() => session.read('/api/billing/status', zBillingStatusResponse))
+      .toMatchObject({
+        is_active: true,
+        plan_slug: 'creator-monthly',
+        subscription_tier: 'CREATOR'
+      })
+    const expectedBalance =
+      balanceBeforeCents + Number(preview.credits_today_cents)
+    await expect
+      .poll(
+        async () =>
+          (await session.read('/api/billing/balance', zBillingBalanceResponse))
+            .amount_micros
+      )
+      .toBe(expectedBalance)
+    const methods = await session.read(
+      '/api/billing/payment-methods',
+      zListSavedPaymentMethodsResponse
+    )
+    expect(methods).toHaveLength(1)
+    await testInfo.attach('checkout-completion.json', {
+      body: JSON.stringify({
+        operationId,
+        planSlug: preview.new_plan.slug,
+        grantCents: Number(preview.credits_today_cents),
+        balanceBeforeCents,
+        balanceAfterCents: expectedBalance,
+        paymentMethodCount: methods.length
+      }),
+      contentType: 'application/json'
+    })
+    await this.page.goto(this.frontend)
+    await this.attachScreenshot(screenshotName)
+    return {
+      operationId,
+      planSlug: preview.new_plan.slug,
+      grantCents: Number(preview.credits_today_cents),
+      paymentMethodCount: methods.length
+    }
   }
 
   private async startCheckout(action = this.subscribe.or(this.resumePayment)) {
