@@ -216,6 +216,31 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
     )
   })
 
+  it('enables purchase after capabilities resolve and blocks a revoked capability', async () => {
+    setCanTopUp(false)
+    renderDialog()
+    const addCredits = screen.getByRole('button', { name: 'Add credits' })
+    expect(addCredits).toBeDisabled()
+    await userEvent.click(addCredits)
+    expect(
+      screen.queryByRole('button', { name: 'Pay $50.00' })
+    ).not.toBeInTheDocument()
+    expect(mockTopup).not.toHaveBeenCalled()
+
+    setCanTopUp(true)
+    await nextTick()
+    expect(addCredits).toBeEnabled()
+    await userEvent.click(addCredits)
+    const pay = screen.getByRole('button', { name: 'Pay $50.00' })
+    expect(pay).toBeEnabled()
+
+    setCanTopUp(false)
+    await nextTick()
+    expect(pay).toBeDisabled()
+    await userEvent.click(pay)
+    expect(mockTopup).not.toHaveBeenCalled()
+  })
+
   it('fires a started event before the purchase resolves', async () => {
     mockTopup.mockResolvedValue(topupResponse('pending'))
 
