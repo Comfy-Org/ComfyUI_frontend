@@ -105,12 +105,7 @@ export function entriesFromFaq(
     if (!english) continue
 
     for (const field of ['question', 'body'] as const) {
-      const approved: Partial<Record<Locale, string>> = {}
-      for (const [locale, document] of locales) {
-        if (locale === DEFAULT_LOCALE || !isLocale(locale)) continue
-        if (document.machineWritten) continue
-        approved[locale] = document[field].trim()
-      }
+      const approved = approvedFaqField(locales, field)
       entries.push({
         key: `faq.${id.replace('/', '.')}.${field}`,
         english: english[field].trim(),
@@ -253,4 +248,17 @@ export const faqAdapter: SourceAdapter = {
   read(): SourceEntry[] {
     return entriesFromFaq(readFaqDocuments())
   }
+}
+
+function approvedFaqField(
+  locales: Map<string, FaqDocument>,
+  field: 'question' | 'body'
+): Partial<Record<Locale, string>> {
+  const approved: Partial<Record<Locale, string>> = {}
+  for (const [locale, document] of locales) {
+    if (locale === DEFAULT_LOCALE || !isLocale(locale)) continue
+    if (document.machineWritten) continue
+    approved[locale] = document[field].trim()
+  }
+  return approved
 }

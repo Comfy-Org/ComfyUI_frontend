@@ -349,9 +349,7 @@ export function buildStory(
       // against the English. The whitespace around it is structure, and comes
       // back from the English piece — without it a translated <AuthorBio> ends
       // up glued to the </Section> above it.
-      const leading = /^\s*/.exec(piece.text)?.[0] ?? ''
-      const trailing = /\s*$/.exec(piece.text)?.[0] ?? ''
-      return `${leading}${translated.trim()}${trailing}`
+      return translatedWithWhitespace(piece.text, translated)
     })
     .join('')
 
@@ -468,4 +466,13 @@ export function sectionsRequiringTranslation(story: Story): string[] {
       ? [piece.id]
       : []
   )
+}
+
+function translatedWithWhitespace(
+  original: string,
+  translated: string
+): string {
+  const leading = /^\s*/.exec(original)?.[0] ?? ''
+  const trailing = /\s*$/.exec(original)?.[0] ?? ''
+  return `${leading}${translated.trim()}${trailing}`
 }

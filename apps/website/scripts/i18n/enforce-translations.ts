@@ -35,6 +35,7 @@ import {
   loadReviewState,
   reviewViolations
 } from '../../src/i18n/pipeline/review'
+import type { Violation } from '../../src/i18n/pipeline/validate'
 import type { EnglishSource } from '../../src/i18n/pipeline/types'
 import { collectViolations } from '../../src/i18n/pipeline/validate'
 import { localeRubric, OUTPUT_LOCALES, preserveTerms } from './config'
@@ -61,7 +62,66 @@ function writeJson(file: string, value: Record<string, string>): void {
   fs.writeFileSync(file, `${JSON.stringify(sorted, null, 2)}\n`, 'utf8')
 }
 
-function main(): void {
+function reportDeterministicResult(
+  locale: string,
+  incoming: EnglishSource,
+  violations: Violation[],
+  dropped: string[],
+  droppedShare: number
+): void {
+  for (const key of dropped) {
+    const why = violations
+      .filter((violation) => violation.key === key)
+      .map((violation) => violation.kind)
+    process.stdout.write(`  dropped ${key} (${[...new Set(why)].join(', ')})\n`)
+  }
+
+  const staged = Object.keys(incoming).length
+  if (isSystemicFailure({ dropped: dropped.length, total: staged })) {
+    console.error(
+      `[i18n] ${locale}: dropped ${Math.round(droppedShare * 100)}% of the run ` +
+        `(${dropped.length} of ${staged}). That is a broken ` +
+        `model or config, not a weak tail. Publishing this would revert the ` +
+        `locale to English.`
+    )
+    process.exit(1)
+  }
+}
+
+function reportReviewResult(
+  locale: string,
+  merged: EnglishSource,
+  findings: Violation[],
+  rejected: string[],
+  rejectedShare: number
+): void {
+  process.stdout.write(
+    rejected
+      .map((key) => {
+        const why =
+          findings.find((finding) => finding.key === key)?.detail ?? ''
+        return `  rejected ${key} (${why})\n`
+      })
+      .join('')
+  )
+
+  if (
+    isSystemicFailure({
+      dropped: rejected.length,
+      total: Object.keys(merged).length
+    })
+  ) {
+    console.error(
+      `[i18n] ${locale}: the reviewer rejected ${Math.round(rejectedShare * 100)}% ` +
+        `of the locale (${rejected.length} of ${Object.keys(merged).length}). ` +
+        `That is a broken rubric or reviewer, not a weak tail. Publishing this ` +
+        `would revert the locale to English.`
+    )
+    process.exit(1)
+  }
+}
+
+function configuredLocale() {
   const locale = process.env.WEBSITE_I18N_LOCALE
   const output = isLocale(locale) ? OUTPUT_LOCALES[locale] : undefined
   if (!isLocale(locale) || !output) {
@@ -70,6 +130,11 @@ function main(): void {
     )
     process.exit(1)
   }
+  return { locale, output }
+}
+
+function main(): void {
+  const { locale } = configuredLocale()
 
   const incomingFile = path.join(I18N_DIR, 'incoming', `${locale}.json`)
   const incoming = readTranslationLayer(incomingFile)
@@ -92,23 +157,7 @@ function main(): void {
     violations
   )
 
-  for (const key of dropped) {
-    const why = violations
-      .filter((violation) => violation.key === key)
-      .map((violation) => violation.kind)
-    process.stdout.write(`  dropped ${key} (${[...new Set(why)].join(', ')})\n`)
-  }
-
-  const staged = Object.keys(incoming).length
-  if (isSystemicFailure({ dropped: dropped.length, total: staged })) {
-    console.error(
-      `[i18n] ${locale}: dropped ${Math.round(droppedShare * 100)}% of the run ` +
-        `(${dropped.length} of ${staged}). That is a broken ` +
-        `model or config, not a weak tail. Publishing this would revert the ` +
-        `locale to English.`
-    )
-    process.exit(1)
-  }
+  reportDeterministicResult(locale, incoming, violations, dropped, droppedShare)
 
   // The AI reviewer's critical and major findings prune through this same path,
   // so a key dropped for bad grammar behaves exactly like one dropped for a lost
@@ -146,25 +195,7 @@ function main(): void {
     droppedShare: rejectedShare
   } = enforceTranslations(merged, findings)
 
-  for (const key of rejected) {
-    const why = findings.find((finding) => finding.key === key)?.detail ?? ''
-    process.stdout.write(`  rejected ${key} (${why})\n`)
-  }
-
-  if (
-    isSystemicFailure({
-      dropped: rejected.length,
-      total: Object.keys(merged).length
-    })
-  ) {
-    console.error(
-      `[i18n] ${locale}: the reviewer rejected ${Math.round(rejectedShare * 100)}% ` +
-        `of the locale (${rejected.length} of ${Object.keys(merged).length}). ` +
-        `That is a broken rubric or reviewer, not a weak tail. Publishing this ` +
-        `would revert the locale to English.`
-    )
-    process.exit(1)
-  }
+  reportReviewResult(locale, merged, findings, rejected, rejectedShare)
 
   writeJson(contentFile, published)
 

@@ -11629,7 +11629,9 @@ export function resolveTranslation(
   return resolveValue(entry.en, entry[locale], MACHINE_LAYERS[locale][key])
 }
 
-export const translationKeys = Object.keys(translations) as TranslationKey[]
+export const sourceTranslationKeys = Object.keys(
+  translations
+) as TranslationKey[]
 
 /**
  * The raw entry for a key, every locale it carries, with no English fallback.

@@ -28,15 +28,16 @@
  * something unrelated to translation. Missing CONTENT is failed on by
  * `pnpm check:localized-pages`, which runs after the build in CI.
  */
-import { existsSync, readFileSync, readdirSync } from 'node:fs'
-import { join, relative, sep } from 'node:path'
+import { existsSync, readFileSync } from 'node:fs'
+import { join } from 'node:path'
 
-import { LOCALIZED_CODES, localePrefix } from '../../src/config/locales'
+import { LOCALIZED_CODES } from '../../src/config/locales'
 import { comparePage } from '../../src/utils/pageCoverage'
 import { translatableEntries } from '../../src/i18n/pipeline/source'
 import { translationsAdapter } from '../../src/i18n/pipeline/adapters/translations'
 import { resolveTranslation } from '../../src/i18n/source'
 import type { TranslationKey } from '../../src/i18n/source'
+import { localizedBuildPages } from '../lib/built-pages'
 
 interface Coverage {
   total: number
@@ -47,6 +48,46 @@ interface Coverage {
 
 function empty(): Coverage {
   return { total: 0, approved: 0, machine: 0, english: 0 }
+}
+
+function reportNamespace(
+  locale: string,
+  byNamespace: Map<string, Coverage>,
+  overall: Coverage
+): void {
+  const done = overall.approved + overall.machine
+  const pct = (n: number, of: number) =>
+    of === 0 ? '  0%' : `${String(Math.round((100 * n) / of)).padStart(3)}%`
+
+  process.stdout.write(
+    `\n${locale}: ${pct(done, overall.total)} translated ` +
+      `(${overall.approved} approved, ${overall.machine} machine, ` +
+      `${overall.english} still English of ${overall.total})\n`
+  )
+
+  // Only the incomplete ones are worth a human's attention; a namespace at
+  // 100% is ready to add to the allowlist and needs no discussion.
+  const incomplete = [...byNamespace.entries()]
+    .filter(([, c]) => c.english > 0)
+    .sort((a, b) => b[1].english - a[1].english)
+
+  if (incomplete.length === 0) {
+    process.stdout.write('  every namespace is complete.\n')
+    return
+  }
+  process.stdout.write(
+    `  ${byNamespace.size - incomplete.length} of ${byNamespace.size} ` +
+      `namespaces complete. Still incomplete:\n`
+  )
+  for (const [namespace, c] of incomplete.slice(0, 15)) {
+    process.stdout.write(
+      `    ${pct(c.approved + c.machine, c.total)}  ${namespace.padEnd(22)} ` +
+        `${c.english} of ${c.total} still English\n`
+    )
+  }
+  if (incomplete.length > 15) {
+    process.stdout.write(`    ... and ${incomplete.length - 15} more\n`)
+  }
 }
 
 function main(): void {
@@ -70,67 +111,13 @@ function main(): void {
       byNamespace.set(namespace, coverage)
     }
 
-    const done = overall.approved + overall.machine
-    const pct = (n: number, of: number) =>
-      of === 0 ? '  0%' : `${String(Math.round((100 * n) / of)).padStart(3)}%`
-
-    process.stdout.write(
-      `\n${locale}: ${pct(done, overall.total)} translated ` +
-        `(${overall.approved} approved, ${overall.machine} machine, ` +
-        `${overall.english} still English of ${overall.total})\n`
-    )
-
-    // Only the incomplete ones are worth a human's attention; a namespace at
-    // 100% is ready to add to the allowlist and needs no discussion.
-    const incomplete = [...byNamespace.entries()]
-      .filter(([, c]) => c.english > 0)
-      .sort((a, b) => b[1].english - a[1].english)
-
-    if (incomplete.length === 0) {
-      process.stdout.write('  every namespace is complete.\n')
-      continue
-    }
-    process.stdout.write(
-      `  ${byNamespace.size - incomplete.length} of ${byNamespace.size} ` +
-        `namespaces complete. Still incomplete:\n`
-    )
-    for (const [namespace, c] of incomplete.slice(0, 15)) {
-      process.stdout.write(
-        `    ${pct(c.approved + c.machine, c.total)}  ${namespace.padEnd(22)} ` +
-          `${c.english} of ${c.total} still English\n`
-      )
-    }
-    if (incomplete.length > 15) {
-      process.stdout.write(`    ... and ${incomplete.length - 15} more\n`)
-    }
+    reportNamespace(locale, byNamespace, overall)
   }
 
   reportPages()
 }
 
 const DIST = join(process.cwd(), 'dist')
-
-/** Every English route in the build, as a dist-relative directory. */
-function englishRoutes(dir: string = DIST, acc: string[] = []): string[] {
-  const skip = new Set(
-    LOCALIZED_CODES.map((locale) => localePrefix(locale).replace(/^\//, ''))
-  )
-  for (const entry of readdirSync(dir, { withFileTypes: true })) {
-    const full = join(dir, entry.name)
-    if (entry.isDirectory()) {
-      if (
-        dir === DIST &&
-        (skip.has(entry.name) || entry.name.startsWith('_'))
-      ) {
-        continue
-      }
-      englishRoutes(full, acc)
-    } else if (entry.name === 'index.html') {
-      acc.push(relative(DIST, dir).split(sep).join('/'))
-    }
-  }
-  return acc
-}
 
 /**
  * Per-page coverage, scored against what is actually achievable on that page.
@@ -161,26 +148,17 @@ function reportPages(): void {
     )
   ) as string[]
 
-  const routes = englishRoutes()
   const scores = new Map<string, Map<string, number>>()
-
-  for (const locale of LOCALIZED_CODES) {
-    const prefix = localePrefix(locale).replace(/^\//, '')
-    for (const route of routes) {
-      const localized = join(DIST, prefix, route, 'index.html')
-      if (!existsSync(localized)) continue
-      const { translated, total } = comparePage({
-        english: readFileSync(join(DIST, route, 'index.html'), 'utf8'),
-        localized: readFileSync(localized, 'utf8'),
-        preserveTerms
-      })
-      if (total === 0) continue
-      const byLocale = scores.get(route) ?? new Map<string, number>()
-      byLocale.set(locale, translated)
-      scores.set(route, byLocale)
-    }
+  for (const page of localizedBuildPages(DIST)) {
+    const { translated, total } = comparePage({ ...page, preserveTerms })
+    if (total === 0) continue
+    recordPageScore(scores, page.route, page.locale, translated)
   }
 
+  reportPageScores(scores)
+}
+
+function reportPageScores(scores: Map<string, Map<string, number>>): void {
   const best = (route: string) =>
     Math.max(...(scores.get(route)?.values() ?? [0]))
 
@@ -211,6 +189,17 @@ function reportPages(): void {
       )
     }
   }
+}
+
+function recordPageScore(
+  scores: Map<string, Map<string, number>>,
+  route: string,
+  locale: string,
+  translated: number
+): void {
+  const byLocale = scores.get(route) ?? new Map<string, number>()
+  byLocale.set(locale, translated)
+  scores.set(route, byLocale)
 }
 
 main()

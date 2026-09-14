@@ -13,12 +13,13 @@
  * The rules live in `src/utils/pageCoverage.ts` so they can be tested against
  * fixtures rather than a full build.
  */
-import { existsSync, readFileSync, readdirSync } from 'node:fs'
-import { join, relative, sep } from 'node:path'
+import { existsSync } from 'node:fs'
+import { join } from 'node:path'
 
 import { LOCALIZED_CODES, localePrefix } from '../src/config/locales'
 import { comparePage } from '../src/utils/pageCoverage'
 import { preserveTerms } from './i18n/config'
+import { localizedBuildPages } from './lib/built-pages'
 
 const DIST = join(process.cwd(), 'dist')
 
@@ -32,32 +33,6 @@ const DIST = join(process.cwd(), 'dist')
  */
 const MINIMUM_TAG_RATIO = 0.9
 
-function localePrefixes(): string[] {
-  return LOCALIZED_CODES.map((locale) =>
-    localePrefix(locale).replace(/^\//, '')
-  )
-}
-
-/** Every English route that was built, as a dist-relative directory. */
-function englishRoutes(dir: string = DIST, acc: string[] = []): string[] {
-  const skip = new Set(localePrefixes())
-  for (const entry of readdirSync(dir, { withFileTypes: true })) {
-    const full = join(dir, entry.name)
-    if (entry.isDirectory()) {
-      if (
-        dir === DIST &&
-        (skip.has(entry.name) || entry.name.startsWith('_'))
-      ) {
-        continue
-      }
-      englishRoutes(full, acc)
-    } else if (entry.name === 'index.html') {
-      acc.push(relative(DIST, dir).split(sep).join('/'))
-    }
-  }
-  return acc
-}
-
 function main(): void {
   if (!existsSync(DIST)) {
     process.stderr.write(
@@ -68,30 +43,17 @@ function main(): void {
 
   const preserved = preserveTerms()
 
-  const routes = englishRoutes()
-  const failures: string[] = []
-  let compared = 0
-
-  for (const locale of LOCALIZED_CODES) {
-    const prefix = localePrefix(locale).replace(/^\//, '')
-    for (const route of routes) {
-      const localizedFile = join(DIST, prefix, route, 'index.html')
-      if (!existsSync(localizedFile)) continue
-
-      compared++
-      const { tagRatio } = comparePage({
-        english: readFileSync(join(DIST, route, 'index.html'), 'utf8'),
-        localized: readFileSync(localizedFile, 'utf8'),
-        preserveTerms: preserved
-      })
-      if (tagRatio < MINIMUM_TAG_RATIO) {
-        failures.push(
-          `/${prefix}/${route} renders ${Math.round(100 * tagRatio)}% of the ` +
-            `elements /${route} does — a section is missing, not untranslated`
-        )
-      }
-    }
-  }
+  const pages = localizedBuildPages(DIST)
+  const compared = pages.length
+  const failures = pages.flatMap((page) => {
+    const { tagRatio } = comparePage({ ...page, preserveTerms: preserved })
+    return tagRatio < MINIMUM_TAG_RATIO
+      ? [
+          `/${page.prefix}/${page.route} renders ${Math.round(100 * tagRatio)}% of the ` +
+            `elements /${page.route} does — a section is missing, not untranslated`
+        ]
+      : []
+  })
 
   process.stdout.write(
     `[localized-pages] ${compared} localized pages compared against their ` +
@@ -112,9 +74,9 @@ function main(): void {
   }
 
   if (failures.length > 0) {
-    for (const failure of failures) {
-      process.stderr.write(`[localized-pages] ${failure}\n`)
-    }
+    process.stderr.write(
+      failures.map((failure) => `[localized-pages] ${failure}\n`).join('')
+    )
     process.exit(1)
   }
 

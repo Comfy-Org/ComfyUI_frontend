@@ -65,6 +65,34 @@ function writeJson(file: string, value: Record<string, string>): void {
   fs.writeFileSync(file, `${JSON.stringify(sorted, null, 2)}\n`, 'utf8')
 }
 
+function updateMachineLayers(
+  entriesToTranslate: ReturnType<typeof translatableEntries>,
+  currentKeys: Set<string>,
+  stale: string[],
+  summary: string[]
+): void {
+  for (const locale of LOCALIZED_CODES) {
+    const machineFile = path.join(CONTENT_DIR, `${locale}.json`)
+    const before = readTranslationLayer(machineFile)
+    const machine = pruneApprovedKeys(
+      pruneStaleKeys(pruneOrphanKeys(before, currentKeys), stale),
+      entriesToTranslate,
+      locale
+    )
+    writeJson(machineFile, machine)
+
+    const pending = pendingSource(entriesToTranslate, locale, machine)
+    writeJson(path.join(PENDING_DIR, `${locale}.json`), pending)
+
+    const dropped = Object.keys(before).length - Object.keys(machine).length
+    summary.push(
+      `  ${locale}: ${Object.keys(machine).length} translated, ` +
+        `${Object.keys(pending).length} pending` +
+        (dropped > 0 ? `, ${dropped} dropped as stale or orphaned` : '')
+    )
+  }
+}
+
 function main(): void {
   const entries = ADAPTERS.flatMap((adapter) => adapter.read())
 
@@ -94,26 +122,7 @@ function main(): void {
   const currentKeys = new Set(Object.keys(english))
   const summary: string[] = []
 
-  for (const locale of LOCALIZED_CODES) {
-    const machineFile = path.join(CONTENT_DIR, `${locale}.json`)
-    const before = readTranslationLayer(machineFile)
-    const machine = pruneApprovedKeys(
-      pruneStaleKeys(pruneOrphanKeys(before, currentKeys), stale),
-      entriesToTranslate,
-      locale
-    )
-    writeJson(machineFile, machine)
-
-    const pending = pendingSource(entriesToTranslate, locale, machine)
-    writeJson(path.join(PENDING_DIR, `${locale}.json`), pending)
-
-    const dropped = Object.keys(before).length - Object.keys(machine).length
-    summary.push(
-      `  ${locale}: ${Object.keys(machine).length} translated, ` +
-        `${Object.keys(pending).length} pending` +
-        (dropped > 0 ? `, ${dropped} dropped as stale or orphaned` : '')
-    )
-  }
+  updateMachineLayers(entriesToTranslate, currentKeys, stale, summary)
 
   writeJson(MANIFEST_FILE, nextManifest)
 
@@ -126,7 +135,7 @@ function main(): void {
       (stale.length > 0 ? `; ${stale.length} changed since last run` : '') +
       '\n'
   )
-  for (const line of summary) process.stdout.write(`${line}\n`)
+  process.stdout.write(summary.map((line) => `${line}\n`).join(''))
 }
 
 main()

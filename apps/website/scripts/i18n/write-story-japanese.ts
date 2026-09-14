@@ -28,6 +28,7 @@
  * person and is never touched.
  */
 import fs from 'node:fs'
+import { assertValidPlan } from './assert-valid-plan'
 import path from 'node:path'
 
 import { DEFAULT_LOCALE } from '../../src/config/locales'
@@ -70,11 +71,135 @@ interface Planned {
   problems: string[]
 }
 
-function main(): void {
-  const dryRun = process.argv.includes('--dry-run')
-  // A lookup can miss, and the type has to say so or every guard below reads
-  // as dead code to a type-aware linter.
-  const machine: Readonly<Partial<Record<string, string>>> = readMachineLayer()
+interface StoryWritePlan {
+  planned: Planned[]
+  untranslated: string[]
+  skipped: string[]
+  withdrawn: { slug: string; file: string }[]
+}
+
+function storyBetween(
+  prefix: string,
+  machine: Readonly<Partial<TranslationLayer>>
+): string[] {
+  const between: string[] = []
+  for (let index = 0; ; index += 1) {
+    const piece = machine[`${prefix}.between.${index}`]
+    if (piece === undefined) break
+    between.push(piece)
+  }
+
+  return between
+}
+
+function storySections(
+  story: Story,
+  machine: Readonly<Partial<TranslationLayer>>
+) {
+  const prefix = `story.${story.slug}`
+  const sections: Record<string, string> = {}
+  const sectionBodies: Record<string, string> = {}
+  for (const section of story.sections) {
+    const label = machine[`${prefix}.section.${section.id}.label`]
+    if (label !== undefined) sections[section.id] = label
+    const sectionBody = machine[`${prefix}.section.${section.id}.body`]
+    if (sectionBody !== undefined) sectionBodies[section.id] = sectionBody
+  }
+
+  const between = storyBetween(prefix, machine)
+  return { sections, sectionBodies, between }
+}
+
+function storyMetadata(
+  prefix: string,
+  machine: Readonly<Partial<TranslationLayer>>
+) {
+  const title = machine[`${prefix}.title`]
+  const category = machine[`${prefix}.category`]
+  const description = machine[`${prefix}.description`]
+
+  if (
+    title === undefined ||
+    category === undefined ||
+    description === undefined
+  )
+    return undefined
+  return { title, category, description }
+}
+
+function storyTranslation(
+  story: Story,
+  machine: Readonly<Partial<TranslationLayer>>
+) {
+  const prefix = `story.${story.slug}`
+  const metadata = storyMetadata(prefix, machine)
+  if (!metadata) return undefined
+
+  // Every section must have a translation. A missing one would fall back to
+  // English inside an otherwise Japanese story, which reads worse than the
+  // whole page falling back.
+  const { sections, sectionBodies, between } = storySections(story, machine)
+
+  // A section without a translation would leave English inside an otherwise
+  // Japanese story, which reads worse than the page falling back whole.
+  //
+  // Asked of the body rather than the frontmatter list: a section declared in
+  // frontmatter but never opened in the body has no text to translate, so
+  // requiring one held the story back forever.
+  const missing = sectionsRequiringTranslation(story).filter(
+    (id) => !Object.hasOwn(sectionBodies, id)
+  )
+
+  return missing.length > 0
+    ? undefined
+    : { ...metadata, sections, sectionBodies, between }
+}
+
+function withdrawStory(
+  slug: string,
+  file: string,
+  already: Story | undefined,
+  { untranslated, withdrawn }: StoryWritePlan
+): void {
+  untranslated.push(slug)
+  // The machine wrote this file from a translation that is now gone, so it
+  // is no longer justified. The story falls back to English on the page.
+  if (already) withdrawn.push({ slug, file })
+}
+
+function planStory(
+  story: Story,
+  already: Story | undefined,
+  machine: Readonly<Partial<TranslationLayer>>,
+  plan: StoryWritePlan
+): void {
+  const { planned, skipped } = plan
+
+  // Asked first, so a person's story is left alone whatever the machine
+  // layer holds — it is never overwritten, and never withdrawn.
+  if (already?.machineWritten === false) {
+    skipped.push(story.slug)
+    return
+  }
+
+  const translation = storyTranslation(story, machine)
+
+  const file = path.join(CUSTOMERS_DIR, TARGET, `${story.slug}.mdx`)
+  if (!translation) {
+    withdrawStory(story.slug, file, already, plan)
+    return
+  }
+
+  const contents = buildStory(story, translation)
+  planned.push({
+    slug: story.slug,
+    file,
+    contents,
+    problems: verifyStory(story, contents)
+  })
+}
+
+function planStoryWrites(machine: Readonly<Partial<TranslationLayer>>) {
   const stories = readStories()
 
   const english = stories.filter((story) => story.locale === DEFAULT_LOCALE)
@@ -89,89 +214,22 @@ function main(): void {
   const withdrawn: { slug: string; file: string }[] = []
 
   for (const story of english) {
-    const prefix = `story.${story.slug}`
-
-    // Asked first, so a person's story is left alone whatever the machine
-    // layer holds — it is never overwritten, and never withdrawn.
-    const already = existing.get(story.slug)
-    if (already && !already.machineWritten) {
-      skipped.push(story.slug)
-      continue
-    }
-
-    const title = machine[`${prefix}.title`]
-    const category = machine[`${prefix}.category`]
-    const description = machine[`${prefix}.description`]
-
-    // Every section must have a translation. A missing one would fall back to
-    // English inside an otherwise Japanese story, which reads worse than the
-    // whole page falling back.
-    const sections: Record<string, string> = {}
-    const sectionBodies: Record<string, string> = {}
-    for (const section of story.sections) {
-      const label = machine[`${prefix}.section.${section.id}.label`]
-      if (label !== undefined) sections[section.id] = label
-      const sectionBody = machine[`${prefix}.section.${section.id}.body`]
-      if (sectionBody !== undefined) sectionBodies[section.id] = sectionBody
-    }
-
-    const between: string[] = []
-    for (let index = 0; ; index += 1) {
-      const piece = machine[`${prefix}.between.${index}`]
-      if (piece === undefined) break
-      between.push(piece)
-    }
-
-    // A section without a translation would leave English inside an otherwise
-    // Japanese story, which reads worse than the page falling back whole.
-    //
-    // Asked of the body rather than the frontmatter list: a section declared in
-    // frontmatter but never opened in the body has no text to translate, so
-    // requiring one held the story back forever.
-    const missing = sectionsRequiringTranslation(story).filter(
-      (id) => !Object.hasOwn(sectionBodies, id)
-    )
-
-    const file = path.join(CUSTOMERS_DIR, TARGET, `${story.slug}.mdx`)
-    if (
-      title === undefined ||
-      category === undefined ||
-      description === undefined ||
-      missing.length > 0
-    ) {
-      untranslated.push(story.slug)
-      // The machine wrote this file from a translation that is now gone, so it
-      // is no longer justified. The story falls back to English on the page.
-      if (already) withdrawn.push({ slug: story.slug, file })
-      continue
-    }
-
-    const contents = buildStory(story, {
-      title,
-      category,
-      description,
-      sections,
-      sectionBodies,
-      between
-    })
-    planned.push({
-      slug: story.slug,
-      file,
-      contents,
-      problems: verifyStory(story, contents)
+    planStory(story, existing.get(story.slug), machine, {
+      planned,
+      untranslated,
+      skipped,
+      withdrawn
     })
   }
 
-  if (planned.length === 0 && withdrawn.length === 0) {
-    process.stdout.write(
-      '[i18n] no Japanese for any story yet — run `pnpm i18n:translate` first.\n'
-    )
-    return
-  }
+  return { planned, untranslated, skipped, withdrawn, english }
+}
 
+function reportStoryPlan(plan: StoryWritePlan, total: number): void {
+  const { planned, untranslated, skipped, withdrawn } = plan
   if (untranslated.length > 0) {
     process.stdout.write(
-      `[i18n] ${untranslated.length} of ${english.length - skipped.length} ` +
+      `[i18n] ${untranslated.length} of ${total - skipped.length} ` +
         `stories have no complete Japanese: ${untranslated.join(', ')}\n`
     )
     process.stdout.write(
@@ -179,19 +237,10 @@ function main(): void {
     )
   }
 
-  const broken = planned.filter((entry) => entry.problems.length > 0)
-  if (broken.length > 0) {
-    for (const entry of broken) {
-      process.stderr.write(`[i18n] ${entry.slug}\n`)
-      for (const problem of entry.problems) {
-        process.stderr.write(`         ${problem}\n`)
-      }
-    }
-    process.stderr.write(
-      `[i18n] ${broken.length} story/stories failed verification. Nothing written.\n`
-    )
-    process.exit(1)
-  }
+  assertValidPlan(
+    planned.map((entry) => ({ label: entry.slug, problems: entry.problems })),
+    'story/stories'
+  )
 
   for (const slug of skipped) {
     process.stdout.write(`[i18n] ${slug}: left alone, a person wrote it\n`)
@@ -201,15 +250,12 @@ function main(): void {
       `[i18n] ${entry.slug}: withdrawn, its translation is gone\n`
     )
   }
+}
 
-  if (dryRun) {
-    process.stdout.write(
-      `[i18n] dry run: ${planned.length} story/stories to write, ` +
-        `${withdrawn.length} to withdraw. Nothing written.\n`
-    )
-    return
-  }
-
+function commitPlannedDocuments(
+  planned: Planned[],
+  withdrawn: { file: string }[]
+): void {
   // `original` absent means the file is new, so rolling back removes it rather
   // than leaving an empty `.mdx` the site would render as a story with no text.
   commitAll(
@@ -232,6 +278,35 @@ function main(): void {
   // After the writes, so a failed commit rolls back to a page that still has
   // every story it had before this run.
   for (const entry of withdrawn) fs.rmSync(entry.file, { force: true })
+}
+
+function main(): void {
+  const dryRun = process.argv.includes('--dry-run')
+  // A lookup can miss, and the type has to say so or every guard below reads
+  // as dead code to a type-aware linter.
+  const machine: Readonly<Partial<Record<string, string>>> = readMachineLayer()
+  const { planned, untranslated, skipped, withdrawn, english } =
+    planStoryWrites(machine)
+
+  const changes = planned.length + withdrawn.length
+  if (changes === 0) {
+    process.stdout.write(
+      '[i18n] no Japanese for any story yet — run `pnpm i18n:translate` first.\n'
+    )
+    return
+  }
+
+  reportStoryPlan({ planned, untranslated, skipped, withdrawn }, english.length)
+
+  if (dryRun) {
+    process.stdout.write(
+      `[i18n] dry run: ${planned.length} story/stories to write, ` +
+        `${withdrawn.length} to withdraw. Nothing written.\n`
+    )
+    return
+  }
+
+  commitPlannedDocuments(planned, withdrawn)
 
   process.stdout.write(
     `[i18n] wrote ${planned.length} Japanese story/stories` +

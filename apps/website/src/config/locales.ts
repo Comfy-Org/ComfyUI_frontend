@@ -11,7 +11,7 @@
  * which depend on it.
  */
 
-export interface LocaleConfig {
+interface LocaleConfig {
   /** BCP 47 tag. Also the key this locale is stored under. */
   code: string
   /**

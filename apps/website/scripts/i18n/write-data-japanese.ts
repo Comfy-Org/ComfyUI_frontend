@@ -24,6 +24,7 @@
  * functions; this file only does IO, like the rest of the pipeline.
  */
 import fs from 'node:fs'
+import { assertValidPlan } from './assert-valid-plan'
 import path from 'node:path'
 
 import {
@@ -68,24 +69,7 @@ interface Planned {
   problems: string[]
 }
 
-function main(): void {
-  const dryRun = process.argv.includes('--dry-run')
-
-  const machine = readMachineLayer()
-  const ownedKeys = new Set(dataAdapter.read().map((entry) => entry.key))
-
-  const japanese: Record<string, string> = {}
-  for (const [key, value] of Object.entries(machine)) {
-    if (ownedKeys.has(key)) japanese[key] = value
-  }
-
-  if (Object.keys(japanese).length === 0) {
-    process.stdout.write(
-      '[i18n] no Japanese for any data key yet — run `pnpm i18n:translate` first.\n'
-    )
-    return
-  }
-
+function planDataWrites(japanese: Record<string, string>): Planned[] {
   const files = fs
     .readdirSync(DATA_DIR)
     .filter((file) => file.endsWith('.ts') && !file.endsWith('.test.ts'))
@@ -108,19 +92,32 @@ function main(): void {
     })
   }
 
-  const broken = planned.filter((entry) => entry.problems.length > 0)
-  if (broken.length > 0) {
-    for (const entry of broken) {
-      process.stderr.write(`[i18n] ${entry.file}\n`)
-      for (const problem of entry.problems) {
-        process.stderr.write(`         ${problem}\n`)
-      }
-    }
-    process.stderr.write(
-      `[i18n] ${broken.length} file(s) failed verification. Nothing written.\n`
+  return planned
+}
+
+function main(): void {
+  const dryRun = process.argv.includes('--dry-run')
+
+  const machine = readMachineLayer()
+  const ownedKeys = new Set(dataAdapter.read().map((entry) => entry.key))
+
+  const japanese = Object.fromEntries(
+    Object.entries(machine).filter(([key]) => ownedKeys.has(key))
+  )
+
+  if (Object.keys(japanese).length === 0) {
+    process.stdout.write(
+      '[i18n] no Japanese for any data key yet — run `pnpm i18n:translate` first.\n'
     )
-    process.exit(1)
+    return
   }
+
+  const planned = planDataWrites(japanese)
+
+  assertValidPlan(
+    planned.map((entry) => ({ label: entry.file, problems: entry.problems })),
+    'file(s)'
+  )
 
   const inserted = planned.reduce((n, entry) => n + entry.inserted, 0)
   const replaced = planned.reduce((n, entry) => n + entry.replaced, 0)

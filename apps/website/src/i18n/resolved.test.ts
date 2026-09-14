@@ -6,7 +6,7 @@ import { describe, expect, it } from 'vitest'
 
 import { LOCALE_CODES } from '../config/locales'
 import type { Locale } from '../config/locales'
-import { resolveTranslation, translationKeys } from './source'
+import { resolveTranslation, sourceTranslationKeys } from './source'
 
 const i18nDir = dirname(fileURLToPath(import.meta.url))
 const srcDir = dirname(i18nDir)
@@ -36,7 +36,7 @@ function walk(dir: string, suffix: string, acc: string[] = []): string[] {
 describe('resolved dictionaries match the source they came from', () => {
   it.for(LOCALE_CODES)('%s reproduces the resolver exactly', (locale) => {
     const resolved = readResolved(locale)
-    const wrong = translationKeys.filter(
+    const wrong = sourceTranslationKeys.filter(
       (key) => resolved[key] !== resolveTranslation(key, locale).value
     )
 
@@ -48,9 +48,9 @@ describe('resolved dictionaries match the source they came from', () => {
   })
 
   it.for(LOCALE_CODES)('%s carries every key in source order', (locale) => {
-    // Order is load-bearing: LegalContentSection.vue walks translationKeys to
+    // Order is load-bearing: LegalContentSection.vue walks sourceTranslationKeys to
     // order its sections, and in the browser that list is these keys.
-    expect(Object.keys(readResolved(locale))).toEqual(translationKeys)
+    expect(Object.keys(readResolved(locale))).toEqual(sourceTranslationKeys)
   })
 })
 

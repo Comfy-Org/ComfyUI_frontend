@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import machineJa from './content/ja.json'
-import { resolveTranslation, translationKeys } from './source'
+import { resolveTranslation, sourceTranslationKeys } from './source'
 import { t } from './translations'
 
 describe('t() fallback semantics', () => {
@@ -73,7 +73,7 @@ describe('resolveTranslation provenance', () => {
    * key sitting there can never resolve as English.
    */
   it('reports machine-filled Japanese as machine, not as approved', () => {
-    const inMachineLayer = translationKeys.filter((key) =>
+    const inMachineLayer = sourceTranslationKeys.filter((key) =>
       Object.hasOwn(machineJa, key)
     )
     const provenances = inMachineLayer.map(

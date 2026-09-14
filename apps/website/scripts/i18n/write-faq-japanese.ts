@@ -21,6 +21,7 @@
  * functions; this file only does IO.
  */
 import fs from 'node:fs'
+import { assertValidPlan } from './assert-valid-plan'
 import path from 'node:path'
 
 import { DEFAULT_LOCALE } from '../../src/config/locales'
@@ -62,11 +63,75 @@ interface Planned {
   problems: string[]
 }
 
-function main(): void {
-  const dryRun = process.argv.includes('--dry-run')
-  // A lookup can miss, and the type has to say so or the guards below read as
-  // dead code to a type-aware linter.
-  const machine: Readonly<Partial<Record<string, string>>> = readMachineLayer()
+interface FaqWritePlan {
+  planned: Planned[]
+  skipped: string[]
+  withdrawn: { slug: string; file: string }[]
+}
+
+function faqTranslation(
+  question: string | undefined,
+  body: string | undefined
+) {
+  return question === undefined || body === undefined
+    ? undefined
+    : { question, body }
+}
+
+function withdrawFaq(
+  english: FaqDocument,
+  already: FaqDocument | undefined,
+  id: string,
+  withdrawn: FaqWritePlan['withdrawn']
+): void {
+  if (already)
+    withdrawn.push({
+      slug: id,
+      file: path.join(FAQ_DIR, english.category, TARGET, `${english.slug}.mdx`)
+    })
+}
+
+function planFaq(
+  english: FaqDocument,
+  existing: Map<string, FaqDocument>,
+  machine: Readonly<Partial<TranslationLayer>>,
+  plan: FaqWritePlan
+): void {
+  const { planned, skipped, withdrawn } = plan
+  const id = `${english.category}/${english.slug}`
+  const key = `faq.${english.category}.${english.slug}`
+  const question = machine[`${key}.question`]
+  const body = machine[`${key}.body`]
+
+  // A person's translation is never overwritten, and never withdrawn.
+  const already = existing.get(id)
+  if (already && !already.machineWritten) {
+    skipped.push(id)
+    return
+  }
+
+  // Withdrawn: `enforce` dropped this answer, so the machine-written file on
+  // disk is no longer justified. Skipping it left the rejected Japanese
+  // published — `/ja/pricing` went on selecting the `.mdx` this pipeline had
+  // written, which made enforcement cosmetic for anything already generated.
+  const translation = faqTranslation(question, body)
+  if (!translation) {
+    withdrawFaq(english, already, id, withdrawn)
+    return
+  }
+
+  const contents = buildFaqDocument(english, translation)
+  planned.push({
+    slug: id,
+    file: path.join(FAQ_DIR, english.category, TARGET, `${english.slug}.mdx`),
+    contents,
+    problems: verifyFaqDocument(english, contents)
+  })
+}
+
+function planFaqWrites(
+  machine: Readonly<Partial<TranslationLayer>>
+): FaqWritePlan {
   const documents = readFaqDocuments()
 
   const existing = new Map<string, FaqDocument>()
@@ -80,70 +145,16 @@ function main(): void {
   const skipped: string[] = []
   const withdrawn: { slug: string; file: string }[] = []
 
-  for (const english of documents) {
-    if (english.locale !== DEFAULT_LOCALE) continue
-
-    const id = `${english.category}/${english.slug}`
-    const key = `faq.${english.category}.${english.slug}`
-    const question = machine[`${key}.question`]
-    const body = machine[`${key}.body`]
-
-    // A person's translation is never overwritten, and never withdrawn.
-    const already = existing.get(id)
-    if (already && !already.machineWritten) {
-      skipped.push(id)
-      continue
-    }
-
-    // Withdrawn: `enforce` dropped this answer, so the machine-written file on
-    // disk is no longer justified. Skipping it left the rejected Japanese
-    // published — `/ja/pricing` went on selecting the `.mdx` this pipeline had
-    // written, which made enforcement cosmetic for anything already generated.
-    if (question === undefined || body === undefined) {
-      if (already) {
-        withdrawn.push({
-          slug: id,
-          file: path.join(
-            FAQ_DIR,
-            english.category,
-            TARGET,
-            `${english.slug}.mdx`
-          )
-        })
-      }
-      continue
-    }
-
-    const contents = buildFaqDocument(english, { question, body })
-    planned.push({
-      slug: id,
-      file: path.join(FAQ_DIR, english.category, TARGET, `${english.slug}.mdx`),
-      contents,
-      problems: verifyFaqDocument(english, contents)
-    })
+  for (const english of documents.filter(
+    (document) => document.locale === DEFAULT_LOCALE
+  )) {
+    planFaq(english, existing, machine, { planned, skipped, withdrawn })
   }
 
-  if (planned.length === 0 && withdrawn.length === 0) {
-    process.stdout.write(
-      '[i18n] no Japanese for any FAQ answer yet — run `pnpm i18n:translate` first.\n'
-    )
-    return
-  }
+  return { planned, skipped, withdrawn }
+}
 
-  const broken = planned.filter((entry) => entry.problems.length > 0)
-  if (broken.length > 0) {
-    for (const entry of broken) {
-      process.stderr.write(`[i18n] ${entry.slug}\n`)
-      for (const problem of entry.problems) {
-        process.stderr.write(`         ${problem}\n`)
-      }
-    }
-    process.stderr.write(
-      `[i18n] ${broken.length} answer(s) failed verification. Nothing written.\n`
-    )
-    process.exit(1)
-  }
-
+function reportFaqPlan({ skipped, withdrawn }: FaqWritePlan): void {
   for (const id of skipped) {
     process.stdout.write(`[i18n] ${id}: left alone, a person wrote it\n`)
   }
@@ -153,15 +164,12 @@ function main(): void {
       `[i18n] ${entry.slug}: withdrawn, its translation was rejected\n`
     )
   }
+}
 
-  if (dryRun) {
-    process.stdout.write(
-      `[i18n] dry run: ${planned.length} answer(s) to write, ` +
-        `${withdrawn.length} to withdraw. Nothing written.\n`
-    )
-    return
-  }
-
+function commitPlannedDocuments(
+  planned: Planned[],
+  withdrawn: { file: string }[]
+): void {
   // `original` absent means the file is new, so rolling back removes it rather
   // than leaving an empty `.mdx` the site would render as an answer with no text.
   commitAll(
@@ -184,6 +192,39 @@ function main(): void {
   // Removed after the writes, so a failure mid-write rolls back with every file
   // still on disk rather than half of them already deleted.
   for (const entry of withdrawn) fs.rmSync(entry.file, { force: true })
+}
+
+function main(): void {
+  const dryRun = process.argv.includes('--dry-run')
+  // A lookup can miss, and the type has to say so or the guards below read as
+  // dead code to a type-aware linter.
+  const machine: Readonly<Partial<Record<string, string>>> = readMachineLayer()
+  const { planned, skipped, withdrawn } = planFaqWrites(machine)
+
+  const changes = planned.length + withdrawn.length
+  if (changes === 0) {
+    process.stdout.write(
+      '[i18n] no Japanese for any FAQ answer yet — run `pnpm i18n:translate` first.\n'
+    )
+    return
+  }
+
+  assertValidPlan(
+    planned.map((entry) => ({ label: entry.slug, problems: entry.problems })),
+    'answer(s)'
+  )
+
+  reportFaqPlan({ planned, skipped, withdrawn })
+
+  if (dryRun) {
+    process.stdout.write(
+      `[i18n] dry run: ${planned.length} answer(s) to write, ` +
+        `${withdrawn.length} to withdraw. Nothing written.\n`
+    )
+    return
+  }
+
+  commitPlannedDocuments(planned, withdrawn)
 
   process.stdout.write(
     `[i18n] wrote ${planned.length} Japanese FAQ answer(s)` +

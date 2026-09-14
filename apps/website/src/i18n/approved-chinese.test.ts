@@ -1,7 +1,11 @@
 import { describe, expect, it } from 'vitest'
 
 import machineZhCN from './content/zh-CN.json'
-import { localizedEntry, resolveTranslation, translationKeys } from './source'
+import {
+  localizedEntry,
+  resolveTranslation,
+  sourceTranslationKeys
+} from './source'
 import { t } from './translations'
 
 /**
@@ -19,7 +23,7 @@ import { t } from './translations'
 describe('approved Chinese is never overwritten', () => {
   it('serves the approved string for every key that has one', () => {
     const shadowed: string[] = []
-    for (const key of translationKeys) {
+    for (const key of sourceTranslationKeys) {
       const approved = localizedEntry(key)['zh-CN']
       if (approved === undefined) continue
       if (t(key, 'zh-CN') !== approved) shadowed.push(key)
@@ -31,7 +35,7 @@ describe('approved Chinese is never overwritten', () => {
   })
 
   it('reports every one of them as approved, never as machine', () => {
-    const wrong = translationKeys.filter(
+    const wrong = sourceTranslationKeys.filter(
       (key) =>
         localizedEntry(key)['zh-CN'] !== undefined &&
         resolveTranslation(key, 'zh-CN').provenance !== 'approved'
@@ -58,7 +62,7 @@ describe('approved Chinese is never overwritten', () => {
     // been typed into zh-CN page files where no pipeline could see them. No
     // zh-CN page file holds a Chinese character any more.
     const APPROVED_CHINESE_FLOOR = 2167
-    const covered = translationKeys.filter(
+    const covered = sourceTranslationKeys.filter(
       (key) => localizedEntry(key)['zh-CN'] !== undefined
     ).length
     expect(
@@ -78,7 +82,7 @@ describe('approved Chinese is never overwritten', () => {
   it('never holds a machine translation for a key Chinese already has', () => {
     const shadowing = Object.keys(machineZhCN).filter(
       (key) =>
-        translationKeys.includes(key as never) &&
+        sourceTranslationKeys.includes(key as never) &&
         localizedEntry(key as never)['zh-CN'] !== undefined
     )
     expect(

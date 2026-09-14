@@ -47,7 +47,18 @@ function writeJson(file: string, value: Record<string, string>): void {
   fs.writeFileSync(file, `${JSON.stringify(sorted, null, 2)}\n`, 'utf8')
 }
 
-async function main(): Promise<void> {
+function requireApiKey(): string {
+  const apiKey = process.env.OPENAI_API_KEY
+  if (!apiKey) {
+    // Fail loudly. A silent skip here would let a scheduled run report success
+    // having translated nothing at all.
+    console.error('[i18n] OPENAI_API_KEY is not set')
+    process.exit(1)
+  }
+  return apiKey
+}
+
+function configuredLocale() {
   const locale = process.env.WEBSITE_I18N_LOCALE
   const outputLocale = isLocale(locale) ? OUTPUT_LOCALES[locale] : undefined
   if (!isLocale(locale) || !outputLocale) {
@@ -56,14 +67,13 @@ async function main(): Promise<void> {
     )
     process.exit(1)
   }
+  return { locale, outputLocale }
+}
 
-  const apiKey = process.env.OPENAI_API_KEY
-  if (!apiKey) {
-    // Fail loudly. A silent skip here would let a scheduled run report success
-    // having translated nothing at all.
-    console.error('[i18n] OPENAI_API_KEY is not set')
-    process.exit(1)
-  }
+async function main(): Promise<void> {
+  const { locale, outputLocale } = configuredLocale()
+
+  const apiKey = requireApiKey()
 
   // Absent means the source build found nothing to translate, which is normal.
   // Malformed must not read as absent: it would print "nothing pending", exit 0,

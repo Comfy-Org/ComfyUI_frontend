@@ -120,31 +120,48 @@ function forEachLocalizedText(
   )
   const fileKey = fileName.replace(/\.ts$/, '')
 
+  function visitEnglish(
+    node: ObjectLiteralExpression,
+    path: string[],
+    scope: string,
+    englishText: string
+  ): void {
+    // `.at()` rather than an index, so the empty case is in the type and
+    // the guard below is not dead code to a type-aware reader.
+    const field = path.at(-1)
+    if (field !== undefined && NEVER_PROSE.has(field)) return
+    visit({
+      key: [scope, ...path].filter(Boolean).join('.'),
+      english: englishText,
+      node
+    })
+  }
+
+  function walkObject(
+    node: ObjectLiteralExpression,
+    path: string[],
+    scope: string
+  ): void {
+    const english = findProperty(node, DEFAULT_LOCALE)
+    const englishText = english && literalText(english.initializer)
+
+    if (englishText !== undefined) {
+      visitEnglish(node, path, scope, englishText)
+      return
+    }
+
+    const ownId = ownIdentifier(node)
+    const nextScope = ownId ? `${scope}.${ownId}` : scope
+    for (const property of node.properties) {
+      const name = propertyName(property)
+      if (!name || !isPropertyAssignment(property)) continue
+      walk(property.initializer, ownId ? [name] : [...path, name], nextScope)
+    }
+  }
+
   const walk = (node: Node, path: string[], scope: string): void => {
     if (isObjectLiteralExpression(node)) {
-      const english = findProperty(node, DEFAULT_LOCALE)
-      const englishText = english && literalText(english.initializer)
-
-      if (englishText !== undefined) {
-        // `.at()` rather than an index, so the empty case is in the type and
-        // the guard below is not dead code to a type-aware reader.
-        const field = path.at(-1)
-        if (field !== undefined && NEVER_PROSE.has(field)) return
-        visit({
-          key: [scope, ...path].filter(Boolean).join('.'),
-          english: englishText,
-          node
-        })
-        return
-      }
-
-      const ownId = ownIdentifier(node)
-      const nextScope = ownId ? `${scope}.${ownId}` : scope
-      for (const property of node.properties) {
-        const name = propertyName(property)
-        if (!name || !isPropertyAssignment(property)) continue
-        walk(property.initializer, ownId ? [name] : [...path, name], nextScope)
-      }
+      walkObject(node, path, scope)
       return
     }
 
@@ -478,28 +495,33 @@ export function verifyWrite(
   }
 
   for (const [index, entry] of before.entries()) {
-    const now = after[index]
-    if (now.key !== entry.key) problems.push(`key moved: ${entry.key}`)
-    if (now.english !== entry.english) {
-      problems.push(`English changed: ${entry.key}`)
-    }
-    if (now.approved['zh-CN'] !== entry.approved['zh-CN']) {
-      problems.push(`Chinese changed: ${entry.key}`)
-    }
-    // Unchanged, not absent. Two different faults hide behind one comparison:
-    // a value the writer produced must carry the marker, or it reads as human
-    // work and is never refreshed again; a value a person already wrote must
-    // survive untouched. Demanding absence conflated them and turned the second
-    // into a reported fault, refusing the run over a translation it preserved
-    // correctly.
-    if (now.approved.ja !== entry.approved.ja) {
-      problems.push(
-        entry.approved.ja === undefined
-          ? `Japanese reads back as approved: ${entry.key}`
-          : `Japanese changed: ${entry.key}`
-      )
-    }
+    problems.push(...changedEntryProblems(entry, after[index]))
   }
 
+  return problems
+}
+
+function changedEntryProblems(entry: SourceEntry, now: SourceEntry): string[] {
+  const problems: string[] = []
+  if (now.key !== entry.key) problems.push(`key moved: ${entry.key}`)
+  if (now.english !== entry.english) {
+    problems.push(`English changed: ${entry.key}`)
+  }
+  if (now.approved['zh-CN'] !== entry.approved['zh-CN']) {
+    problems.push(`Chinese changed: ${entry.key}`)
+  }
+  // Unchanged, not absent. Two different faults hide behind one comparison:
+  // a value the writer produced must carry the marker, or it reads as human
+  // work and is never refreshed again; a value a person already wrote must
+  // survive untouched. Demanding absence conflated them and turned the second
+  // into a reported fault, refusing the run over a translation it preserved
+  // correctly.
+  if (now.approved.ja !== entry.approved.ja) {
+    problems.push(
+      entry.approved.ja === undefined
+        ? `Japanese reads back as approved: ${entry.key}`
+        : `Japanese changed: ${entry.key}`
+    )
+  }
   return problems
 }

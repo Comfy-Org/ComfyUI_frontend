@@ -424,25 +424,10 @@ function sanitizeFindings(
   list: readonly unknown[],
   allowed?: ReadonlySet<string>
 ): Finding[] {
-  const findings: Finding[] = []
-  for (const item of list) {
-    if (!item || typeof item !== 'object') continue
-    const raw = item as Record<string, unknown>
-    const key = raw.key
-    if (typeof key !== 'string') continue
-    if (allowed && !allowed.has(key)) continue
-    if (!CATEGORIES.includes(raw.category as FindingCategory)) continue
-    if (!SEVERITIES.includes(raw.severity as FindingSeverity)) continue
-    findings.push({
-      key,
-      category: raw.category as FindingCategory,
-      severity: raw.severity as FindingSeverity,
-      span: typeof raw.span === 'string' ? raw.span : '',
-      suggestion: typeof raw.suggestion === 'string' ? raw.suggestion : '',
-      reason: typeof raw.reason === 'string' ? raw.reason : ''
-    })
-  }
-  return findings
+  return list.flatMap((item) => {
+    const finding = sanitizeFinding(item, allowed)
+    return finding ? [finding] : []
+  })
 }
 
 export function parseFindings(
@@ -531,20 +516,8 @@ export function loadReviewState(
 
   const entries: Record<string, KeyVerdict> = {}
   for (const [key, raw] of Object.entries(state.entries ?? {})) {
-    // The long form is still read, because the committed files predate the
-    // compact one and a locale must not lose its whole cache to a format change.
-    if (typeof raw === 'string') {
-      if (raw !== '') entries[key] = { hash: raw, findings: [] }
-      continue
-    }
-    if (!raw || typeof raw !== 'object') continue
-    const verdict = raw as { hash?: unknown; findings?: unknown }
-    if (typeof verdict.hash !== 'string') continue
-    if (!Array.isArray(verdict.findings)) continue
-    entries[key] = {
-      hash: verdict.hash,
-      findings: sanitizeFindings(verdict.findings)
-    }
+    const verdict = storedVerdict(raw)
+    if (verdict) entries[key] = verdict
   }
   // A caller with no rubric to declare (a report, an ad-hoc read) must not erase
   // the fingerprint the last real run recorded.
@@ -749,4 +722,43 @@ export async function reviewAll(
   })
 
   return { state, reviewed, failures }
+}
+
+function findingText(value: unknown): string {
+  return typeof value === 'string' ? value : ''
+}
+
+function sanitizeFinding(
+  item: unknown,
+  allowed?: ReadonlySet<string>
+): Finding | undefined {
+  if (!item || typeof item !== 'object') return undefined
+  const raw = item as Record<string, unknown>
+  const key = raw.key
+  if (typeof key !== 'string') return undefined
+  if (allowed && !allowed.has(key)) return undefined
+  if (!CATEGORIES.includes(raw.category as FindingCategory)) return undefined
+  if (!SEVERITIES.includes(raw.severity as FindingSeverity)) return undefined
+  return {
+    key,
+    category: raw.category as FindingCategory,
+    severity: raw.severity as FindingSeverity,
+    span: findingText(raw.span),
+    suggestion: findingText(raw.suggestion),
+    reason: findingText(raw.reason)
+  }
+}
+
+function storedVerdict(raw: unknown): KeyVerdict | undefined {
+  if (typeof raw === 'string') {
+    return raw !== '' ? { hash: raw, findings: [] } : undefined
+  }
+  if (!raw || typeof raw !== 'object') return undefined
+  const verdict = raw as { hash?: unknown; findings?: unknown }
+  if (typeof verdict.hash !== 'string') return undefined
+  if (!Array.isArray(verdict.findings)) return undefined
+  return {
+    hash: verdict.hash,
+    findings: sanitizeFindings(verdict.findings)
+  }
 }

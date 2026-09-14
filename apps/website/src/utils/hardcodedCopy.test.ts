@@ -124,3 +124,14 @@ const b = 'Get early access to the Comfy Agent'`)
     ])
   })
 })
+
+it('ignores diagnostic errors while retaining the same text in page data', () => {
+  const message = 'Credit balance is unavailable'
+  expect(hardcodedProse(page(`throw new Error('${message}')`))).toEqual([])
+  expect(
+    hardcodedProse(
+      page(`check(scope, new Error('${message}'))
+const label = '${message}'`)
+    )
+  ).toEqual([message])
+})

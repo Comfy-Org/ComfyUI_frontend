@@ -4,7 +4,7 @@ import { LOCALIZED_CODES } from '../config/locales'
 import machineJa from './content/ja.json'
 import machineZhCn from './content/zh-CN.json'
 import { translatableEntries } from './pipeline/source'
-import { resolveTranslation, translationKeys } from './source'
+import { resolveTranslation, sourceTranslationKeys } from './source'
 
 /**
  * Contracts are never machine-translated.
@@ -23,7 +23,7 @@ import { resolveTranslation, translationKeys } from './source'
  * policy is fully translated and stays that way. The rule is about generated
  * text, not about language.
  */
-const excludedKeys = translationKeys.filter(
+const excludedKeys = sourceTranslationKeys.filter(
   (key) =>
     translatableEntries([{ key, english: 'x', approved: {} }]).length === 0
 )

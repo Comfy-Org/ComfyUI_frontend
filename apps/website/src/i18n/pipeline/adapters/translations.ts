@@ -7,14 +7,14 @@
  */
 import { DEFAULT_LOCALE, LOCALE_CODES } from '../../../config/locales'
 import type { Locale } from '../../../config/locales'
-import { localizedEntry, translationKeys } from '../../source'
+import { localizedEntry, sourceTranslationKeys } from '../../source'
 import type { SourceAdapter, SourceEntry } from '../types'
 
 export const translationsAdapter: SourceAdapter = {
   name: 'translations',
 
   read(): SourceEntry[] {
-    return translationKeys.map((key) => {
+    return sourceTranslationKeys.map((key) => {
       const entry = localizedEntry(key)
       const approved: Partial<Record<Locale, string>> = {}
       for (const locale of LOCALE_CODES) {

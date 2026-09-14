@@ -40,30 +40,14 @@ function pageFiles(dir: string, found: string[] = []): string[] {
   for (const entry of readdirSync(dir)) {
     const full = join(dir, entry)
     if (statSync(full).isDirectory()) pageFiles(full, found)
-    else if (entry.endsWith('.astro') || entry.endsWith('.vue'))
-      found.push(full)
+    else if (/\.(astro|vue)$/.test(entry)) found.push(full)
   }
   return found
 }
 
-function main(): void {
-  const offenders: { file: string; phrases: string[] }[] = []
-
-  for (const file of pageFiles(SRC).sort()) {
-    const name = relative(SRC, file)
-    if (EXEMPT.includes(name)) continue
-
-    const phrases = hardcodedProse(readFileSync(file, 'utf8'))
-    if (phrases.length > 0) offenders.push({ file: name, phrases })
-  }
-
-  if (offenders.length === 0) {
-    process.stdout.write(
-      '[hardcoded-copy] no page carries copy the pipeline cannot see.\n'
-    )
-    return
-  }
-
+function reportOffenders(
+  offenders: { file: string; phrases: string[] }[]
+): void {
   const total = offenders.reduce((n, entry) => n + entry.phrases.length, 0)
   for (const { file, phrases } of offenders) {
     process.stderr.write(`[hardcoded-copy] ${file}\n`)
@@ -79,6 +63,26 @@ function main(): void {
       'translation key, so they render English in every locale.\n' +
       '[hardcoded-copy] Move them into src/i18n/source.ts and read them with t().\n'
   )
+}
+
+function main(): void {
+  const offenders = pageFiles(SRC)
+    .sort()
+    .flatMap((file) => {
+      const name = relative(SRC, file)
+      if (EXEMPT.includes(name)) return []
+      const phrases = hardcodedProse(readFileSync(file, 'utf8'))
+      return phrases.length > 0 ? [{ file: name, phrases }] : []
+    })
+
+  if (offenders.length === 0) {
+    process.stdout.write(
+      '[hardcoded-copy] no page carries copy the pipeline cannot see.\n'
+    )
+    return
+  }
+
+  reportOffenders(offenders)
   process.exit(1)
 }
 

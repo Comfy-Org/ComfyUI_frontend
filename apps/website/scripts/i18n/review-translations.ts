@@ -1,3 +1,5 @@
+import type { Usage } from '@anthropic-ai/sdk/resources/messages'
+
 /**
  * review-translations — the judgement layer for the marketing pipeline.
  *
@@ -25,6 +27,7 @@
 import fs from 'node:fs'
 import path from 'node:path'
 
+import type { Locale } from '../../src/config/locales'
 import { isLocale } from '../../src/config/locales'
 import { readTranslationLayer } from '../../src/i18n/pipeline/artifacts'
 import { enforceTranslations } from '../../src/i18n/pipeline/enforce'
@@ -104,91 +107,30 @@ function writeState(locale: string, state: ReviewState): void {
   )
 }
 
-async function main(): Promise<void> {
-  const locale = process.env.WEBSITE_I18N_LOCALE
-  const output = isLocale(locale) ? OUTPUT_LOCALES[locale] : undefined
-  if (!isLocale(locale) || !output) {
-    console.error(
-      `[i18n] set WEBSITE_I18N_LOCALE to one of: ${Object.keys(OUTPUT_LOCALES).join(', ')}`
-    )
-    process.exit(1)
-  }
+function recordUsage(
+  spend: {
+    input: number
+    output: number
+    cacheRead: number
+    cacheWrite: number
+  },
+  usage: Usage
+): void {
+  spend.input += usage.input_tokens
+  spend.output += usage.output_tokens
+  spend.cacheRead += usage.cache_read_input_tokens ?? 0
+  spend.cacheWrite += usage.cache_creation_input_tokens ?? 0
+}
 
-  const english: EnglishSource = readTranslationLayer(
-    path.join(I18N_DIR, 'content', 'en.json')
-  )
-  if (Object.keys(english).length === 0) {
-    console.error(
-      '[i18n] review: no English content-of-record. Run `pnpm i18n:build-source` first.'
-    )
-    process.exit(1)
-  }
-
-  const terms = preserveTerms()
-  const voice = localeRubric(locale)
-
-  // Exactly the layer enforce is about to write: what is published, overlaid
-  // with the staged translations that pass the deterministic gate.
-  //
-  // The overlay is the point — a key translated tonight is judged tonight,
-  // rather than going live unreviewed until tomorrow's run. Applying the gate
-  // first matters too: a staged translation that has already lost a brand name
-  // is going to be dropped whatever the reviewer says, so paying to judge it
-  // wastes a call, and storing a verdict for text that never publishes would
-  // shadow the published translation it never replaced.
-  const incoming = readTranslationLayer(
-    path.join(I18N_DIR, 'incoming', `${locale}.json`)
-  )
-  const { kept } = enforceTranslations(
-    incoming,
-    collectViolations(english, incoming, locale, terms)
-  )
-  const translated: TranslationLayer = {
-    ...readTranslationLayer(path.join(I18N_DIR, 'content', `${locale}.json`)),
-    ...kept
-  }
-  if (Object.keys(translated).length === 0) {
-    process.stdout.write(`[i18n] review: ${locale} has nothing to review.\n`)
-    return
-  }
-
-  const rubric = glossaryFingerprint(terms, voice.guidance)
-  const statePath = path.join(REVIEW_DIR, `${locale}.json`)
-  const priorState = loadReviewState(readReviewState(statePath), rubric)
-
-  const pending = selectKeysForReview(
-    english,
-    translated,
-    pruneOrphanedVerdicts(priorState, translated)
-  ).length
-  if (pending === 0) {
-    process.stdout.write(
-      `[i18n] review: ${locale} up to date (${Object.keys(priorState.entries).length} key(s)).\n`
-    )
-    return
-  }
-
-  // An ADDITIONAL gate on top of the deterministic floor, never a dependency of
-  // it. With no key configured, skip cleanly rather than failing the run: the
-  // pipeline then behaves exactly as it did before this step existed, which is
-  // what lets it ship before the org secret is provisioned.
-  if (!process.env.ANTHROPIC_API_KEY) {
-    console.warn(
-      '[i18n] review: ANTHROPIC_API_KEY is not set — skipping AI review. ' +
-        'The deterministic checks still apply.'
-    )
-    return
-  }
-
-  if (pending > MAX_KEYS_PER_RUN) {
-    console.error(
-      `[i18n] review: ${locale} would review ${pending} key(s), over the ` +
-        `${MAX_KEYS_PER_RUN} ceiling. Raise WEBSITE_I18N_REVIEW_MAX_KEYS ` +
-        `deliberately if that is expected.`
-    )
-    process.exit(1)
-  }
-
+async function runReview(
+  locale: Locale,
+  english: EnglishSource,
+  translated: TranslationLayer,
+  priorState: ReviewState,
+  pending: number,
+  terms: string[],
+  voice: ReturnType<typeof localeRubric>
+): Promise<void> {
   const { default: Anthropic } = await import('@anthropic-ai/sdk')
   const client = new Anthropic()
   const system = buildSystemPrompt({
@@ -244,10 +186,7 @@ async function main(): Promise<void> {
         })
         .finalMessage()
 
-      spend.input += response.usage.input_tokens
-      spend.output += response.usage.output_tokens
-      spend.cacheRead += response.usage.cache_read_input_tokens ?? 0
-      spend.cacheWrite += response.usage.cache_creation_input_tokens ?? 0
+      recordUsage(spend, response.usage)
 
       // A refusal or a truncated answer is not a verdict, so return null and let
       // the batch stay unreviewed rather than be recorded as clean. Logged with
@@ -309,6 +248,119 @@ async function main(): Promise<void> {
         `reviewed: ${failures.slice(0, 10).join(', ')}`
     )
   }
+}
+
+function configuredLocale() {
+  const locale = process.env.WEBSITE_I18N_LOCALE
+  const output = isLocale(locale) ? OUTPUT_LOCALES[locale] : undefined
+  if (!isLocale(locale) || !output) {
+    console.error(
+      `[i18n] set WEBSITE_I18N_LOCALE to one of: ${Object.keys(OUTPUT_LOCALES).join(', ')}`
+    )
+    process.exit(1)
+  }
+  return { locale, output }
+}
+
+function requireEnglishSource(): EnglishSource {
+  const english: EnglishSource = readTranslationLayer(
+    path.join(I18N_DIR, 'content', 'en.json')
+  )
+  if (Object.keys(english).length === 0) {
+    console.error(
+      '[i18n] review: no English content-of-record. Run `pnpm i18n:build-source` first.'
+    )
+    process.exit(1)
+  }
+
+  return english
+}
+
+function canRunReview(locale: Locale, pending: number): boolean {
+  // An ADDITIONAL gate on top of the deterministic floor, never a dependency of
+  // it. With no key configured, skip cleanly rather than failing the run: the
+  // pipeline then behaves exactly as it did before this step existed, which is
+  // what lets it ship before the org secret is provisioned.
+  if (!process.env.ANTHROPIC_API_KEY) {
+    console.warn(
+      '[i18n] review: ANTHROPIC_API_KEY is not set — skipping AI review. ' +
+        'The deterministic checks still apply.'
+    )
+    return false
+  }
+
+  if (pending > MAX_KEYS_PER_RUN) {
+    console.error(
+      `[i18n] review: ${locale} would review ${pending} key(s), over the ` +
+        `${MAX_KEYS_PER_RUN} ceiling. Raise WEBSITE_I18N_REVIEW_MAX_KEYS ` +
+        `deliberately if that is expected.`
+    )
+    process.exit(1)
+  }
+
+  return true
+}
+
+async function main(): Promise<void> {
+  const { locale } = configuredLocale()
+
+  const english = requireEnglishSource()
+
+  const terms = preserveTerms()
+  const voice = localeRubric(locale)
+
+  // Exactly the layer enforce is about to write: what is published, overlaid
+  // with the staged translations that pass the deterministic gate.
+  //
+  // The overlay is the point — a key translated tonight is judged tonight,
+  // rather than going live unreviewed until tomorrow's run. Applying the gate
+  // first matters too: a staged translation that has already lost a brand name
+  // is going to be dropped whatever the reviewer says, so paying to judge it
+  // wastes a call, and storing a verdict for text that never publishes would
+  // shadow the published translation it never replaced.
+  const incoming = readTranslationLayer(
+    path.join(I18N_DIR, 'incoming', `${locale}.json`)
+  )
+  const { kept } = enforceTranslations(
+    incoming,
+    collectViolations(english, incoming, locale, terms)
+  )
+  const translated: TranslationLayer = {
+    ...readTranslationLayer(path.join(I18N_DIR, 'content', `${locale}.json`)),
+    ...kept
+  }
+  if (Object.keys(translated).length === 0) {
+    process.stdout.write(`[i18n] review: ${locale} has nothing to review.\n`)
+    return
+  }
+
+  const rubric = glossaryFingerprint(terms, voice.guidance)
+  const statePath = path.join(REVIEW_DIR, `${locale}.json`)
+  const priorState = loadReviewState(readReviewState(statePath), rubric)
+
+  const pending = selectKeysForReview(
+    english,
+    translated,
+    pruneOrphanedVerdicts(priorState, translated)
+  ).length
+  if (pending === 0) {
+    process.stdout.write(
+      `[i18n] review: ${locale} up to date (${Object.keys(priorState.entries).length} key(s)).\n`
+    )
+    return
+  }
+
+  if (!canRunReview(locale, pending)) return
+
+  await runReview(
+    locale,
+    english,
+    translated,
+    priorState,
+    pending,
+    terms,
+    voice
+  )
 }
 
 main().catch((error: unknown) => {

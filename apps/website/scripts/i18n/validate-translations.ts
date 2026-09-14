@@ -24,6 +24,19 @@ const I18N_DIR = path.join(process.cwd(), 'src', 'i18n')
 const CONTENT_DIR = path.join(I18N_DIR, 'content')
 const TERMS_FILE = path.join(I18N_DIR, 'glossary', 'preserve-terms.json')
 
+function reportViolations(all: Violation[]): void {
+  const byKind = new Map<string, number>()
+  for (const v of all) byKind.set(v.kind, (byKind.get(v.kind) ?? 0) + 1)
+
+  console.error(`[i18n] ${all.length} violation(s):`)
+  for (const v of all) {
+    console.error(`  ${v.locale}  ${v.kind.padEnd(12)} ${v.key}: ${v.detail}`)
+  }
+  console.error(
+    `\n[i18n] by kind: ${[...byKind].map(([k, n]) => `${k}=${n}`).join(', ')}`
+  )
+}
+
 function main(): void {
   const english: EnglishSource = readTranslationLayer(
     path.join(CONTENT_DIR, 'en.json')
@@ -46,16 +59,12 @@ function main(): void {
     process.exit(1)
   }
 
-  const all: Violation[] = []
-  for (const locale of LOCALIZED_CODES) {
-    // Absent is normal for a locale with nothing translated yet. Malformed
-    // is not, and reading it as empty would pass the gate over a locale whose
-    // artifact could not be read at all.
+  const all = LOCALIZED_CODES.flatMap((locale) => {
     const translated = readTranslationLayer(
       path.join(CONTENT_DIR, `${locale}.json`)
     )
-    all.push(...collectViolations(english, translated, locale, preserveTerms))
-  }
+    return collectViolations(english, translated, locale, preserveTerms)
+  })
 
   if (all.length === 0) {
     process.stdout.write(
@@ -66,16 +75,7 @@ function main(): void {
     return
   }
 
-  const byKind = new Map<string, number>()
-  for (const v of all) byKind.set(v.kind, (byKind.get(v.kind) ?? 0) + 1)
-
-  console.error(`[i18n] ${all.length} violation(s):`)
-  for (const v of all) {
-    console.error(`  ${v.locale}  ${v.kind.padEnd(12)} ${v.key}: ${v.detail}`)
-  }
-  console.error(
-    `\n[i18n] by kind: ${[...byKind].map(([k, n]) => `${k}=${n}`).join(', ')}`
-  )
+  reportViolations(all)
   process.exit(1)
 }
 

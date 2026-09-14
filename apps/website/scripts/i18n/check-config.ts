@@ -14,30 +14,7 @@ import { localeRubric, OUTPUT_LOCALES, preserveTerms } from './config'
 
 const I18N_DIR = path.join(process.cwd(), 'src', 'i18n')
 
-function main(): void {
-  const problems: string[] = []
-
-  // 1. Every locale the site serves must be translatable, or the pipeline
-  //    silently skips it and the locale stays English forever.
-  for (const locale of LOCALIZED_CODES) {
-    if (!OUTPUT_LOCALES[locale]) {
-      problems.push(
-        `locale "${locale}" is served by the site but has no entry in OUTPUT_LOCALES, ` +
-          `so the pipeline will never translate it`
-      )
-    }
-  }
-
-  // 2. And nothing may be configured for translation that the site does not
-  //    serve, which would spend money producing text no page can display.
-  for (const code of Object.keys(OUTPUT_LOCALES)) {
-    if (!(code in LOCALES)) {
-      problems.push(
-        `OUTPUT_LOCALES has "${code}", which is not a locale this site serves`
-      )
-    }
-  }
-
+function checkRubrics(problems: string[]): void {
   // 3. Voice guidance is optional in the shared `OutputLocale` type, because the
   //    app UI's locales have none. Here it is half of what the translator is
   //    told and half of the rubric the reviewer's verdicts are fingerprinted
@@ -51,6 +28,61 @@ function main(): void {
       problems.push((error as Error).message)
     }
   }
+}
+
+function checkOutputLocales(problems: string[]): void {
+  // 2. And nothing may be configured for translation that the site does not
+  //    serve, which would spend money producing text no page can display.
+  for (const code of Object.keys(OUTPUT_LOCALES)) {
+    if (!(code in LOCALES)) {
+      problems.push(
+        `OUTPUT_LOCALES has "${code}", which is not a locale this site serves`
+      )
+    }
+  }
+}
+
+function checkLocales(problems: string[]): void {
+  // 1. Every locale the site serves must be translatable, or the pipeline
+  //    silently skips it and the locale stays English forever.
+  for (const locale of LOCALIZED_CODES) {
+    if (!OUTPUT_LOCALES[locale]) {
+      problems.push(
+        `locale "${locale}" is served by the site but has no entry in OUTPUT_LOCALES, ` +
+          `so the pipeline will never translate it`
+      )
+    }
+  }
+
+  checkOutputLocales(problems)
+
+  checkRubrics(problems)
+}
+
+function checkContentFiles(problems: string[]): void {
+  // 5. A machine layer file must exist for every locale, because `translations.ts`
+  //    imports them statically and a missing file is a build error rather than an
+  //    empty layer.
+  for (const locale of LOCALIZED_CODES) {
+    const file = path.join(I18N_DIR, 'content', `${locale}.json`)
+    if (!fs.existsSync(file)) {
+      problems.push(`missing machine layer ${file}`)
+    }
+  }
+
+  // 6. The content-of-record must exist, or every other step is a green tick
+  //    over nothing.
+  if (!fs.existsSync(path.join(I18N_DIR, 'content', 'en.json'))) {
+    problems.push(
+      'no content/en.json; run `pnpm i18n:build-source` before anything else'
+    )
+  }
+}
+
+function main(): void {
+  const problems: string[] = []
+
+  checkLocales(problems)
 
   // 4. A short preserve term used to match inside ordinary words. `Wan` is a
   //    video model and also the first three letters of `Want`, which made 51
@@ -73,27 +105,11 @@ function main(): void {
     )
   }
 
-  // 5. A machine layer file must exist for every locale, because `translations.ts`
-  //    imports them statically and a missing file is a build error rather than an
-  //    empty layer.
-  for (const locale of LOCALIZED_CODES) {
-    const file = path.join(I18N_DIR, 'content', `${locale}.json`)
-    if (!fs.existsSync(file)) {
-      problems.push(`missing machine layer ${file}`)
-    }
-  }
-
-  // 6. The content-of-record must exist, or every other step is a green tick
-  //    over nothing.
-  if (!fs.existsSync(path.join(I18N_DIR, 'content', 'en.json'))) {
-    problems.push(
-      'no content/en.json; run `pnpm i18n:build-source` before anything else'
-    )
-  }
+  checkContentFiles(problems)
 
   if (problems.length > 0) {
     console.error('[i18n] configuration problems:')
-    for (const problem of problems) console.error(`  - ${problem}`)
+    problems.forEach((problem) => console.error(`  - ${problem}`))
     process.exit(1)
   }
 

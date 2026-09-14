@@ -93,6 +93,7 @@
     "@types/leaflet": "catalog:",
     "@vitejs/plugin-vue": "catalog:",
     "astro": "catalog:",
+    "dotenv": "catalog:",
     "fake-indexeddb": "catalog:",
     "happy-dom": "catalog:",
     "mime-types": "catalog:",

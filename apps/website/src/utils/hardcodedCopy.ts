@@ -1,3 +1,5 @@
+import ts from 'typescript'
+
 /**
  * Finds copy typed straight into a page file, where the translation pipeline
  * cannot see it.
@@ -59,7 +61,7 @@ export function hardcodedProse(source: string): string[] {
   if (logic === undefined) return []
 
   const found = new Set<string>()
-  for (const [, , phrase] of logic.matchAll(SENTENCE)) {
+  for (const phrase of proseLiterals(logic)) {
     const text = phrase.trim()
     // A Tailwind class list is long, space-separated and entirely lowercase.
     if (text === text.toLowerCase()) continue
@@ -68,4 +70,26 @@ export function hardcodedProse(source: string): string[] {
   }
 
   return [...found]
+}
+
+function proseLiterals(logic: string): string[] {
+  const file = ts.createSourceFile(
+    'copy.ts',
+    logic,
+    ts.ScriptTarget.Latest,
+    true
+  )
+  const phrases: string[] = []
+  function visit(node: ts.Node): void {
+    if (ts.isNewExpression(node) && node.expression.getText(file) === 'Error')
+      return
+    if (ts.isStringLiteral(node) || ts.isNoSubstitutionTemplateLiteral(node)) {
+      phrases.push(
+        ...[...node.getText(file).matchAll(SENTENCE)].map((match) => match[2])
+      )
+    }
+    ts.forEachChild(node, visit)
+  }
+  visit(file)
+  return phrases
 }

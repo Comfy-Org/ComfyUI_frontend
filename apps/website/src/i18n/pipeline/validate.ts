@@ -174,84 +174,109 @@ export function collectViolations(
     if (!Object.hasOwn(translated, key)) continue
     const value = translated[key]
 
-    const sourceTokens = matches(source, PLACEHOLDER)
-    const valueTokens = matches(value, PLACEHOLDER)
-    if (sourceTokens.join('\0') !== valueTokens.join('\0')) {
-      add(
-        key,
-        'placeholder',
-        `expected ${sourceTokens.join(', ') || '(none)'}, got ${valueTokens.join(', ') || '(none)'}`
-      )
-    }
-
-    for (const url of matches(source, URL)) {
-      if (!value.includes(url)) add(key, 'url', `lost or altered ${url}`)
-    }
-
-    for (const term of preserveTerms) {
-      if (containsTerm(source, term) && !containsTerm(value, term)) {
-        add(key, 'glossary', `"${term}" was translated away`)
-      }
-    }
-
-    // `tPlural` chooses between `singular | plural` using English rules,
-    // because the flattened dictionary no longer records which language a
-    // message came from. That is only safe while no other locale supplies forms
-    // of its own — true of Japanese and Chinese, whose plural category set is
-    // the single value 'other'. A translation that supplies them anyway would
-    // be pluralised by the wrong language's rules, and silently, so it fails
-    // here instead.
-    // `{count}` as well as the pipe, because a pipe on its own is just a
-    // character: it appears inside JSX props in the story bodies, and matching
-    // on it alone failed twelve keys that have no plural forms at all.
-    const pluralForms = (text: string) =>
-      text.includes('{count}') && text.includes('|')
-    if (pluralForms(source) && pluralForms(value)) {
-      add(
-        key,
-        'structure',
-        'supplies its own plural forms, which tPlural would choose between ' +
-          'using English rules'
-      )
-    }
-
-    // A bolded Japanese clause ends in 。 or ）with the next word running
-    // straight on, and CommonMark will not let a delimiter close when it sits
-    // between punctuation and a word. Two of these reached `/ja/pricing`: one
-    // printed its asterisks on the page, the other was read as a second opening
-    // delimiter, so a paragraph meant to be plain rendered bold with the
-    // `<strong>` tags still balanced — which is why no structural check saw it.
-    for (const span of emphasisThatCannotClose(value)) {
-      add(key, 'structure', `emphasis cannot close: ${span}`)
-    }
-
-    const sourceLines = source.split('\n').length
-    const valueLines = value.split('\n').length
-    if (sourceLines !== valueLines) {
-      add(
-        key,
-        'structure',
-        `English has ${sourceLines} line(s), translation has ${valueLines}`
-      )
-    }
-
-    const script = SCRIPT_RANGES[locale]
-    if (
-      script &&
-      hasTranslatableProse(source, preserveTerms) &&
-      !script.test(value)
-    ) {
-      add(key, 'script', 'no target-script characters, left in English')
-    }
-
-    const lowerSource = source.toLowerCase()
-    const lowerValue = value.toLowerCase()
-    for (const word of BANNED_HYPE) {
-      if (lowerValue.includes(word) && !lowerSource.includes(word)) {
-        add(key, 'brand-voice', `introduced "${word}", absent from the English`)
-      }
-    }
+    const addForKey: AddViolation = (kind, detail) => add(key, kind, detail)
+    validatePreservedContent(source, value, addForKey, preserveTerms)
+    validateStructure(source, value, addForKey)
+    validateVoice(source, value, addForKey, locale, preserveTerms)
   }
 
   return violations
+}
+
+type AddViolation = (kind: Violation['kind'], detail: string) => void
+
+function validatePreservedContent(
+  source: string,
+  value: string,
+  add: AddViolation,
+  preserveTerms: readonly string[]
+): void {
+  const sourceTokens = matches(source, PLACEHOLDER)
+  const valueTokens = matches(value, PLACEHOLDER)
+  if (sourceTokens.join('\0') !== valueTokens.join('\0')) {
+    add(
+      'placeholder',
+      `expected ${sourceTokens.join(', ') || '(none)'}, got ${valueTokens.join(', ') || '(none)'}`
+    )
+  }
+
+  for (const url of matches(source, URL)) {
+    if (!value.includes(url)) add('url', `lost or altered ${url}`)
+  }
+
+  for (const term of preserveTerms) {
+    if (containsTerm(source, term) && !containsTerm(value, term)) {
+      add('glossary', `"${term}" was translated away`)
+    }
+  }
+}
+
+function validateStructure(
+  source: string,
+  value: string,
+  add: AddViolation
+): void {
+  // `tPlural` chooses between `singular | plural` using English rules,
+  // because the flattened dictionary no longer records which language a
+  // message came from. That is only safe while no other locale supplies forms
+  // of its own — true of Japanese and Chinese, whose plural category set is
+  // the single value 'other'. A translation that supplies them anyway would
+  // be pluralised by the wrong language's rules, and silently, so it fails
+  // here instead.
+  // `{count}` as well as the pipe, because a pipe on its own is just a
+  // character: it appears inside JSX props in the story bodies, and matching
+  // on it alone failed twelve keys that have no plural forms at all.
+  const pluralForms = (text: string) =>
+    text.includes('{count}') && text.includes('|')
+  if (pluralForms(source) && pluralForms(value)) {
+    add(
+      'structure',
+      'supplies its own plural forms, which tPlural would choose between ' +
+        'using English rules'
+    )
+  }
+
+  // A bolded Japanese clause ends in 。 or ）with the next word running
+  // straight on, and CommonMark will not let a delimiter close when it sits
+  // between punctuation and a word. Two of these reached `/ja/pricing`: one
+  // printed its asterisks on the page, the other was read as a second opening
+  // delimiter, so a paragraph meant to be plain rendered bold with the
+  // `<strong>` tags still balanced — which is why no structural check saw it.
+  for (const span of emphasisThatCannotClose(value)) {
+    add('structure', `emphasis cannot close: ${span}`)
+  }
+
+  const sourceLines = source.split('\n').length
+  const valueLines = value.split('\n').length
+  if (sourceLines !== valueLines) {
+    add(
+      'structure',
+      `English has ${sourceLines} line(s), translation has ${valueLines}`
+    )
+  }
+}
+
+function validateVoice(
+  source: string,
+  value: string,
+  add: AddViolation,
+  locale: Locale,
+  preserveTerms: readonly string[]
+): void {
+  const script = SCRIPT_RANGES[locale]
+  if (
+    script &&
+    hasTranslatableProse(source, preserveTerms) &&
+    !script.test(value)
+  ) {
+    add('script', 'no target-script characters, left in English')
+  }
+
+  const lowerSource = source.toLowerCase()
+  const lowerValue = value.toLowerCase()
+  for (const word of BANNED_HYPE) {
+    if (lowerValue.includes(word) && !lowerSource.includes(word)) {
+      add('brand-voice', `introduced "${word}", absent from the English`)
+    }
+  }
 }
