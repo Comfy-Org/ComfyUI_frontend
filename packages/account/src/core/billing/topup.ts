@@ -219,6 +219,22 @@ export function createTopupCommand(options: TopupCommandOptions): TopupCommand {
     }
   }
 
+  async function readTopupEligibility(
+    signal: AbortSignal | undefined
+  ): Promise<TopupFailure | undefined> {
+    const allowed = await capabilities.read(
+      signal === undefined ? {} : { signal }
+    )
+    if (allowed.status === 'error') return allowed
+    if (allowed.value.capabilities.can_top_up) return undefined
+    const denial = allowed.value.denials.can_top_up
+    return {
+      status: 'error',
+      code: 'ACCESS_DENIED',
+      ...(denial === undefined ? {} : { denial })
+    }
+  }
+
   async function createTopupCheckout(
     input: CreateTopupCheckoutInput
   ): Promise<TopupResult> {
@@ -227,18 +243,8 @@ export function createTopupCommand(options: TopupCommandOptions): TopupCommand {
       return INVALID_AMOUNT
     }
 
-    const allowed = await capabilities.read(
-      signal === undefined ? {} : { signal }
-    )
-    if (allowed.status === 'error') return allowed
-    if (!allowed.value.capabilities.can_top_up) {
-      const denial = allowed.value.denials.can_top_up
-      return {
-        status: 'error',
-        code: 'ACCESS_DENIED',
-        ...(denial === undefined ? {} : { denial })
-      }
-    }
+    const refused = await readTopupEligibility(signal)
+    if (refused) return refused
 
     const baseline = await credits.read()
     const baselineMicros =
