@@ -185,10 +185,14 @@ describe('TopbarBadge', () => {
   })
 
   describe('message casing', () => {
-    it('recases a shouted server message to sentence case', () => {
-      renderTopbarBadge({ text: 'STAGING ENVIRONMENT' }, 'full')
+    it.for([
+      ['STAGING ENVIRONMENT', 'Staging Environment'],
+      ['DEV ENVIRONMENT', 'Dev Environment'],
+      ['PREVIEW ENVIRONMENT', 'Preview Environment']
+    ])('recases the shouted %s to title case', ([shouted, expected]) => {
+      renderTopbarBadge({ text: shouted }, 'full')
 
-      expect(screen.getByText('Staging environment')).toBeInTheDocument()
+      expect(screen.getByText(expected)).toBeInTheDocument()
     })
 
     it('leaves a message that carries its own casing alone', () => {
