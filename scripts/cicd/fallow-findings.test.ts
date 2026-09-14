@@ -172,6 +172,19 @@ describe('fallow findings renderer', () => {
     expect(row.match(/(?<!\\)\|/g)).toHaveLength(5)
   })
 
+  it('survives a section whose shape changed upstream', () => {
+    // Syntactically valid JSON, wrong type. Crashing here would leave the
+    // explainer empty, which is the failure the error envelope exists to stop.
+    expect(() =>
+      renderReport({
+        verdict: 'fail',
+        duplication: { clone_groups: {} as never },
+        complexity: { findings: 'nope' as never },
+        dead_code: { unused_files: 7 as never }
+      })
+    ).not.toThrow()
+  })
+
   it('tolerates a report with no sections at all', () => {
     expect(renderCloneGroups({})).toEqual([])
     expect(renderComplexity({})).toEqual([])

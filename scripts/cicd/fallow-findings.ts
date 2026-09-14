@@ -60,10 +60,19 @@ function cell(value: string | number): string {
     .replace(/\r?\n/g, ' ')
 }
 
+/**
+ * Sections arrive from a tool's stdout, so a shape change upstream must not
+ * crash the renderer — a crash leaves the explainer empty, which is the exact
+ * failure the error-envelope handling above exists to prevent.
+ */
+function asArray<T>(value: T[] | undefined): T[] {
+  return Array.isArray(value) ? value : []
+}
+
 export function renderCloneGroups(report: FallowReport): string[] {
-  const groups = report.duplication?.clone_groups ?? []
+  const groups = asArray(report.duplication?.clone_groups)
   return groups.flatMap((group) => {
-    const instances = group.instances ?? []
+    const instances = asArray(group.instances)
     if (instances.length < 2) return []
     const sites = instances
       .map(
@@ -77,7 +86,7 @@ export function renderCloneGroups(report: FallowReport): string[] {
 }
 
 export function renderComplexity(report: FallowReport): string[] {
-  const findings = report.complexity?.findings ?? []
+  const findings = asArray(report.complexity?.findings)
   return findings.map(
     (f) =>
       `| Complexity | \`${cell(f.name)}()\` — cyclomatic ${cell(f.cyclomatic)}, CRAP ${cell(f.crap)} | \`${cell(f.path)}:${cell(f.line)}\` | Extract a branch, or raise branch coverage — CRAP is \`CC² × (1−cov)³ + CC\`, so either moves it. |`
@@ -87,14 +96,14 @@ export function renderComplexity(report: FallowReport): string[] {
 export function renderDeadCode(report: FallowReport): string[] {
   const dc = report.dead_code
   const rows: string[] = []
-  for (const file of dc?.unused_files ?? []) {
+  for (const file of asArray(dc?.unused_files)) {
     if (file.path) {
       rows.push(
         `| Dead code | unused file | \`${cell(file.path)}\` | Delete it, or declare it an entry point in \`.fallowrc.jsonc\`. |`
       )
     }
   }
-  for (const exp of dc?.unused_exports ?? []) {
+  for (const exp of asArray(dc?.unused_exports)) {
     if (exp.file && exp.name) {
       rows.push(
         `| Dead code | unused export \`${cell(exp.name)}\` | \`${cell(exp.file)}${exp.line ? `:${cell(exp.line)}` : ''}\` | Remove the export, or declare it in \`.fallowrc.jsonc\` if it is public API. |`
