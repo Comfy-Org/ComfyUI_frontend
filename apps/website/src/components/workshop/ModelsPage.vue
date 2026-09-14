@@ -6,21 +6,19 @@ import {
   fetchModelsCatalogue,
   fetchModelsPage
 } from '../../config/models-page-data'
-import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 
 import WorkshopGate from './WorkshopGate.vue'
 
-const { slug, locale = 'en' } = defineProps<{
+const { slug } = defineProps<{
   slug?: string
-  locale?: Locale
 }>()
 
 const Loading: FunctionalComponent = () =>
   h('div', {
     role: 'status',
     'aria-busy': 'true',
-    'aria-label': t('workshop.load.pending', locale),
+    'aria-label': t('workshop.load.pending', 'en'),
     class: 'min-h-svh',
     'data-testid': 'models-loading'
   })
@@ -35,7 +33,7 @@ const LoadError: FunctionalComponent<{ error?: unknown }> = () =>
       'data-testid': 'models-load-error'
     },
     [
-      h('p', { class: 'text-lg' }, t('workshop.load.failed', locale)),
+      h('p', { class: 'text-lg' }, t('workshop.load.failed', 'en')),
       h(
         'button',
         {
@@ -47,7 +45,7 @@ const LoadError: FunctionalComponent<{ error?: unknown }> = () =>
             Content.value = createContent()
           }
         },
-        t('workshop.load.retry', locale)
+        t('workshop.error.retry', 'en')
       )
     ]
   )

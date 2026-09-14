@@ -9819,7 +9819,6 @@ Enterprise`
     en: 'Models did not load.',
     'zh-CN': '模型未能加载。'
   },
-  'workshop.load.retry': { en: 'Try again', 'zh-CN': '重试' },
   'workshop.run.leavePage': {
     en: 'A model is still running. Leaving now will cancel it. Leave this page?',
     'zh-CN': '模型仍在运行。现在离开将取消生成。要离开此页面吗？'

@@ -161,7 +161,8 @@ describe('Workshop visibility', () => {
     expect(hoisted.mockIdentify).toHaveBeenCalledExactlyOnceWith(user.uid)
   })
 
-  it('seeds visibility from the persisted answer before flags reload', async () => {
+  it('seeds cached access before Firebase resolves so a returning user can bootstrap the session', async () => {
+    hoisted.mockGetProperty.mockReturnValue('staff-uid')
     hoisted.mockIsFeatureEnabled.mockReturnValue(true)
     const { initPostHog, useWorkshopEnabled, useWorkshopEnabledSettled } =
       await import('./posthog')
@@ -209,11 +210,27 @@ describe('Workshop visibility', () => {
       email: 'someone@example.com',
       emailVerified: true
     })
-    expect(useWorkshopEnabledSettled().value).toBe(true)
+    expect(useWorkshopEnabledSettled().value).toBe(false)
 
     hoisted.mockIsFeatureEnabled.mockReturnValue(true)
     emitFeatureFlags()
     expect(useWorkshopEnabled().value).toBe(true)
+    expect(useWorkshopEnabledSettled().value).toBe(true)
+  })
+
+  it('waits for a fresh answer when the persisted identity has no cached flag', async () => {
+    hoisted.mockGetProperty.mockReturnValue('external-uid')
+    const { initPostHog, identifyWorkshopUser, useWorkshopEnabledSettled } =
+      await import('./posthog')
+    initPostHog()
+    identifyWorkshopUser({ uid: 'external-uid' })
+
+    expect(useWorkshopEnabledSettled().value).toBe(false)
+    expect(hoisted.mockReloadFeatureFlags).toHaveBeenCalledOnce()
+
+    hoisted.mockIsFeatureEnabled.mockReturnValue(true)
+    emitFeatureFlags()
+    expect(useWorkshopEnabledSettled().value).toBe(true)
   })
 
   it('never carries a grant across identities, even when the reload fails', async () => {
@@ -508,18 +525,12 @@ describe('useWorkshopAuthFlag', () => {
     expect(enabled.value).toBe(true)
   })
 
-  it('does not hold authentication pending when PostHog is unavailable', async () => {
-    const {
-      initPostHog,
-      useWorkshopAuthFlag,
-      useWorkshopAuthFlagSettled,
-      useWorkshopEnabled
-    } = await import('./posthog')
+  it('keeps authentication available when PostHog is unavailable', async () => {
+    const { initPostHog, useWorkshopAuthFlag, useWorkshopEnabled } =
+      await import('./posthog')
 
     initPostHog()
-    expect(useWorkshopAuthFlagSettled().value).toBe(true)
     emitFeatureFlags(true)
-    expect(useWorkshopAuthFlagSettled().value).toBe(true)
     expect(useWorkshopAuthFlag().value).toBe(true)
     expect(useWorkshopEnabled().value).toBe(false)
   })
@@ -529,12 +540,10 @@ describe('useWorkshopAuthFlag', () => {
       throw new Error('Analytics unavailable')
     })
     vi.spyOn(console, 'error').mockImplementation(() => undefined)
-    const { initPostHog, useWorkshopAuthFlag, useWorkshopAuthFlagSettled } =
-      await import('./posthog')
+    const { initPostHog, useWorkshopAuthFlag } = await import('./posthog')
 
     initPostHog()
     expect(useWorkshopAuthFlag().value).toBe(true)
-    expect(useWorkshopAuthFlagSettled().value).toBe(true)
   })
 
   it('keeps the production auth kill switch despite a configured override', async () => {

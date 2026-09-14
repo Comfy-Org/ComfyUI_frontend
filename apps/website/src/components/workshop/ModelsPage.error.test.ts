@@ -18,7 +18,6 @@ vi.mock(import('../../scripts/posthog'), async () => {
     useWorkshopEnabled: () => ref(true),
     useWorkshopEnabledSettled: () => ref(true),
     useWorkshopAuthFlag: () => ref(false),
-    useWorkshopAuthFlagSettled: () => ref(true),
     captureWorkshopEvent: vi.fn(),
     identifyWorkshopUser: vi.fn()
   }

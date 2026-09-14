@@ -46,8 +46,7 @@ import { t } from '../../i18n/translations'
 import {
   captureWorkshopEvent,
   useWorkshopEnabled,
-  useWorkshopAuthFlag,
-  useWorkshopAuthFlagSettled
+  useWorkshopAuthFlag
 } from '../../scripts/posthog'
 import { workshopModelAnalytics } from '../../scripts/workshop-analytics'
 import type { WorkshopRunAnalytics } from '../../scripts/workshop-analytics'
@@ -171,7 +170,6 @@ const { user, session, sessionFailure, settled, ensureFresh, remint } =
 const { balance } = useWorkshopCredits()
 const workshopEnabled = useWorkshopEnabled()
 const authEnabled = useWorkshopAuthFlag()
-const authFlagSettled = useWorkshopAuthFlagSettled()
 const mounted = useMounted()
 const signInHref = useSignInHref(locale)
 const docsHref = modelDocsHref(model)
@@ -200,8 +198,7 @@ const canRunModel = computed(
 )
 const gate = computed(() => {
   if (!workshopEnabled.value || !canRunModel.value) return 'unavailable'
-  if (!mounted.value || draftPending.value || !authFlagSettled.value)
-    return 'pending'
+  if (!mounted.value || draftPending.value) return 'pending'
   if (!authEnabled.value || sessionFailure.value) return 'unavailable'
   if (!settled.value || (user.value && !session.value)) return 'pending'
   if (!session.value) return 'signedOut'

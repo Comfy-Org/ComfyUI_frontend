@@ -145,18 +145,28 @@ export function identifyWorkshopUser(user: WorkshopIdentity | null): void {
   if (workshopUser !== undefined && workshopUser?.uid === user?.uid) return
   const previous = workshopUser
   workshopUser = user
-  const waitForStaffAnswer =
-    !VISIBILITY_OVERRIDE && user !== null && isStaff(user)
+  const waitForIdentityAnswer = !VISIBILITY_OVERRIDE && user !== null
   if (!initialized) {
-    workshopEnabledSettled.value = !waitForStaffAnswer
+    workshopEnabledSettled.value = !waitForIdentityAnswer
     return
   }
   try {
     const uid = user?.uid ?? null
     const persistedUid = posthog.get_property('$user_id') ?? previous?.uid
-    if (uid === persistedUid || (!uid && !persistedUid)) return
+    if (uid === persistedUid || (!uid && !persistedUid)) {
+      if (
+        user &&
+        posthog.isFeatureEnabled(WORKSHOP_ENABLED_FLAG, {
+          send_event: false
+        }) === undefined
+      ) {
+        workshopEnabledSettled.value = false
+        posthog.reloadFeatureFlags()
+      }
+      return
+    }
     workshopEnabled.value = VISIBILITY_OVERRIDE
-    workshopEnabledSettled.value = !waitForStaffAnswer
+    workshopEnabledSettled.value = !waitForIdentityAnswer
     if (persistedUid) posthog.reset()
     if (user) identifyInPostHog(user)
     posthog.reloadFeatureFlags()
@@ -172,7 +182,6 @@ const OVERRIDDEN_ON =
   WORKSHOP_DEPLOY_ENV !== 'production' &&
   import.meta.env.PUBLIC_WORKSHOP_AUTH_FLAG === '1'
 const workshopAuthEnabled = ref(true)
-const workshopAuthFlagSettled = ref(true)
 const TURNSTILE_OVERRIDE = import.meta.env.PUBLIC_WORKSHOP_TURNSTILE_MODE
 const TURNSTILE_OVERRIDDEN = Boolean(TURNSTILE_OVERRIDE)
 const workshopTurnstileMode = ref<TurnstileMode>(
@@ -181,10 +190,6 @@ const workshopTurnstileMode = ref<TurnstileMode>(
 
 export function useWorkshopAuthFlag(): Readonly<Ref<boolean>> {
   return readonly(workshopAuthEnabled)
-}
-
-export function useWorkshopAuthFlagSettled(): Readonly<Ref<boolean>> {
-  return readonly(workshopAuthFlagSettled)
 }
 
 export function useWorkshopTurnstileMode(): Readonly<Ref<TurnstileMode>> {

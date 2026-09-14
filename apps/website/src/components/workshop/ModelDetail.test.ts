@@ -29,7 +29,6 @@ const auth = vi.hoisted(() => ({
   enabled: { value: true },
   workshopEnabled: { value: true },
   workshopEnabledSettled: { value: true },
-  flagSettled: { value: true },
   ensureFresh: vi.fn()
 }))
 
@@ -60,8 +59,7 @@ vi.mock(import('../../scripts/posthog'), () => ({
   useWorkshopEnabled: () => computed(() => auth.workshopEnabled.value),
   useWorkshopEnabledSettled: () =>
     computed(() => auth.workshopEnabledSettled.value),
-  useWorkshopAuthFlag: () => computed(() => auth.enabled.value),
-  useWorkshopAuthFlagSettled: () => computed(() => auth.flagSettled.value)
+  useWorkshopAuthFlag: () => computed(() => auth.enabled.value)
 }))
 
 vi.mock(import('../../config/workshop-router'), () => ({
@@ -212,7 +210,6 @@ describe('ModelDetail', () => {
     auth.enabled = ref(true)
     auth.workshopEnabled = ref(true)
     auth.workshopEnabledSettled = ref(true)
-    auth.flagSettled = ref(true)
     credits.balance = ref<
       ReturnType<typeof useWorkshopCredits>['balance']['value']
     >({ status: 'unknown' })
@@ -1359,26 +1356,22 @@ describe('ModelDetail', () => {
     }
   )
 
-  it.for(['session', 'flag'] as const)(
-    'waits for %s initialization before offering sign-in',
-    async (pending) => {
-      const readiness = pending === 'session' ? auth.settled : auth.flagSettled
-      readiness.value = false
-      mountDetail({ model: runnable })
-      expect(
-        screen
-          .getByRole('button', { name: 'Checking your session…' })
-          .hasAttribute('disabled')
-      ).toBe(true)
-      expect(screen.queryByRole('link', { name: 'Sign in to run' })).toBeNull()
-      auth.session.value = credential
-      readiness.value = true
-      await nextTick()
-      expect(
-        screen.getByRole('button', { name: 'Run' }).hasAttribute('disabled')
-      ).toBe(false)
-    }
-  )
+  it('waits for session initialization before offering sign-in', async () => {
+    auth.settled.value = false
+    mountDetail({ model: runnable })
+    expect(
+      screen
+        .getByRole('button', { name: 'Checking your session…' })
+        .hasAttribute('disabled')
+    ).toBe(true)
+    expect(screen.queryByRole('link', { name: 'Sign in to run' })).toBeNull()
+    auth.session.value = credential
+    auth.settled.value = true
+    await nextTick()
+    expect(
+      screen.getByRole('button', { name: 'Run' }).hasAttribute('disabled')
+    ).toBe(false)
+  })
 
   it('keeps media and raw JSON in one run, then retains both in request history', async () => {
     auth.session.value = credential
