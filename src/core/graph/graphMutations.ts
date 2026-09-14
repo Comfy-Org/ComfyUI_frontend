@@ -97,6 +97,7 @@ export interface GraphMutations {
 
 export interface GraphMutationsDeps {
   getScope(): GraphScope | null
+  isSubgraphType?(type: string): boolean
   layout: SemanticLayoutMutationPort
 }
 
@@ -247,7 +248,10 @@ function prepareNode(
     outputs: prepareOutputSlots(payload.outputs),
     mode: Number.isInteger(mode) ? mode : 0,
     properties: cloneRecord(payload.properties) as NodeState['properties'],
-    lastSerialization: structuredClone(payload) as unknown as ISerialisedNode,
+    lastSerialization: {
+      ...structuredClone(payload),
+      title: hasTitle(payload) ? payload.title : payload.type
+    } as unknown as ISerialisedNode,
     ...(typeof payload.bgcolor === 'string' && { bgcolor: payload.bgcolor }),
     ...(typeof payload.boxcolor === 'string' && { boxcolor: payload.boxcolor }),
     ...(typeof payload.color === 'string' && { color: payload.color }),
@@ -369,7 +373,8 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
           if (
             mutation.kind === 'reconcileNode' &&
             incumbent &&
-            !hasTitle(mutation.payload)
+            !hasTitle(mutation.payload) &&
+            deps.isSubgraphType?.(mutation.payload.type)
           ) {
             node.state.title = incumbent.title
             if (node.state.lastSerialization) {

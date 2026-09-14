@@ -290,7 +290,7 @@ describe('graphMutations', () => {
     expect(createLayout).not.toHaveBeenCalled()
   })
 
-  it('keeps the incumbent title when a reconcile payload carries none', () => {
+  it('uses the node type when a regular-node reconcile carries no title', () => {
     const graph = mutations()
     graph.addNode({ ...node(1), title: 'Load Checkpoint' }, context)
     const [existing] = useNodeDataStore().getGraphNodesFor('root', 'root')
@@ -305,16 +305,40 @@ describe('graphMutations', () => {
 
     const [reconciled] = useNodeDataStore().getGraphNodesFor('root', 'root')
     expect(reconciled).toBe(existing)
-    expect(reconciled.title).toBe('Load Checkpoint')
-    expect(reconciled.lastSerialization?.title).toBe('Load Checkpoint')
+    expect(reconciled.title).toBe('Type1')
+    expect(reconciled.lastSerialization?.title).toBe('Type1')
     expect(
       useWidgetValueStore().getWidget(widgetId('root', toNodeId(1), 'seed'))
         ?.value
     ).toBe(7)
   })
 
+  it('keeps the incumbent title for an untitled subgraph reconcile', () => {
+    const graph = createGraphMutations({
+      getScope: () => scope,
+      isSubgraphType: (type) => type === 'Type1',
+      layout: { createNode: createLayout, deleteNodes: deleteLayouts }
+    })
+    graph.addNode({ ...node(1), title: 'Configured subgraph' }, context)
+
+    expect(
+      graph.batch({ ...context, opId: 'bootstrap' }, (batch) => {
+        const { title: _title, ...untitled } = node(1, { seed: 7 })
+        batch.reconcileNode(untitled)
+      })
+    ).toBe(true)
+
+    const [reconciled] = useNodeDataStore().getGraphNodesFor('root', 'root')
+    expect(reconciled.title).toBe('Configured subgraph')
+    expect(reconciled.lastSerialization?.title).toBe('Configured subgraph')
+  })
+
   it('keeps a title introduced earlier in the same batch', () => {
-    const graph = mutations()
+    const graph = createGraphMutations({
+      getScope: () => scope,
+      isSubgraphType: (type) => type === 'Type1',
+      layout: { createNode: createLayout, deleteNodes: deleteLayouts }
+    })
 
     expect(
       graph.batch(context, (batch) => {
