@@ -3,12 +3,7 @@ import { describe, expect, it } from 'vitest'
 import type { WorkshopModel } from '../../config/models-catalogue'
 import { workshopModels } from '../../config/workshop-browse-content'
 import hubTemplates from '../../data/hubTemplates.json'
-import {
-  modelNamesMatching,
-  partnerModelFor,
-  templatesUsingModel,
-  useCaseForTemplate
-} from './template-use-case'
+import { partnerModelFor, useCaseForTemplate } from './template-use-case'
 import type { HubTemplate } from './types'
 
 const templates = hubTemplates as HubTemplate[]
@@ -170,48 +165,5 @@ describe('useCaseForTemplate', () => {
       (tmpl) => useCaseForTemplate(tmpl, workshopModels) === undefined
     )
     expect(unplaced).toEqual([])
-  })
-})
-
-describe('templatesUsingModel', () => {
-  it('answers with the workflows that name the model, not the ones that rhyme', () => {
-    const using = templatesUsingModel(model('Nano Banana Pro'), [
-      template([], ['Nano Banana Pro']),
-      template([], ['nano-banana-pro']),
-      template([], ['Nano Banana 2']),
-      template([], [])
-    ])
-    expect(using).toHaveLength(2)
-  })
-
-  it('finds the model the catalogue page would link to', () => {
-    const pro = workshopModels.find((m) => m.name === 'Nano Banana Pro')
-    expect(pro && templatesUsingModel(pro, templates).length).toBeGreaterThan(1)
-  })
-})
-
-describe('modelNamesMatching', () => {
-  it('answers with the spellings the grid can filter by, not the one asked for', () => {
-    expect(
-      modelNamesMatching('FLUX 3 Video', [
-        template([], ['Flux.3 Video']),
-        template([], ['Flux.3 Video']),
-        template([], ['Flux 3 Image'])
-      ])
-    ).toEqual(['Flux.3 Video'])
-  })
-
-  it('leaves the grid unfiltered when no workflow names the model', () => {
-    expect(modelNamesMatching('Unlisted', [template([], ['Flux'])])).toEqual([])
-  })
-
-  it('reaches every workflow the model page counted', () => {
-    const pro = workshopModels.find((m) => m.name === 'Nano Banana Pro')
-    if (!pro) throw new Error('Nano Banana Pro left the catalogue')
-    const names = new Set(modelNamesMatching(pro.name, templates))
-    const reached = templates.filter((tmpl) =>
-      tmpl.models.some((named) => names.has(named))
-    )
-    expect(reached).toEqual([...templatesUsingModel(pro, templates)])
   })
 })

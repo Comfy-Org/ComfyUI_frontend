@@ -152,36 +152,3 @@ export function useCaseForTemplate(
     GENERATED_MEDIUM[template.mediaType]
   )
 }
-
-// The catalogue's own relationship, read the other way: the workflows that
-// name this model. It is what makes the two screens one product without
-// listing a model beside the recipes that use it.
-export function templatesUsingModel(
-  model: WorkshopModel,
-  templates: readonly HubTemplate[]
-): readonly HubTemplate[] {
-  const wanted = normalize(model.name)
-  return templates.filter((template) =>
-    template.models.some((named) => normalize(named) === wanted)
-  )
-}
-
-/**
- * The catalogue and the workflow registry name the same model differently
- * ("FLUX 3 Video" against "Flux.3 Video"), so a link that carries the
- * catalogue spelling has to arrive as the spellings the grid can filter by,
- * or the page a model page counts opens empty.
- */
-export function modelNamesMatching(
-  asked: string,
-  templates: readonly HubTemplate[]
-): string[] {
-  const wanted = normalize(asked)
-  return [
-    ...new Set(
-      templates.flatMap((template) =>
-        template.models.filter((named) => normalize(named) === wanted)
-      )
-    )
-  ]
-}

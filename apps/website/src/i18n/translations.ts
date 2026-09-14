@@ -10097,34 +10097,6 @@ Enterprise`
     'zh-CN': '打开此页面时会自动应用上面的控制项。'
   },
   'workshop.hub.title': { en: 'Browse models', 'zh-CN': '浏览模型' },
-  'templates.meta.title': {
-    en: 'Workflow templates - Comfy',
-    'zh-CN': '工作流模板 - Comfy'
-  },
-  'templates.meta.description': {
-    en: 'Ready-made ComfyUI workflows and apps, by what they make.',
-    'zh-CN': '按用途浏览现成的 ComfyUI 工作流和应用。'
-  },
-  'templates.hero.title': { en: 'Templates', 'zh-CN': '模板' },
-  'templates.runsOn': { en: 'Runs on', 'zh-CN': '运行于' },
-  'workshop.model.usedByTemplates': {
-    en: '{count} workflow templates use this model',
-    'zh-CN': '有 {count} 个工作流模板使用此模型'
-  },
-  'templates.runsOnNote': {
-    en: 'This workflow is one operation of a model in the catalogue. You can try that model here in the browser, no install needed.',
-    'zh-CN':
-      '此工作流是目录中某个模型的一种用法。你可以直接在浏览器中试用该模型，无需安装。'
-  },
-  'templates.tryModel': {
-    en: 'Try {model} on the web',
-    'zh-CN': '在网页上试用 {model}'
-  },
-  'templates.hero.subtitle': {
-    en: 'Workflows and apps you open in ComfyUI. Looking for something to run right here? Browse models.',
-    'zh-CN':
-      '可在 ComfyUI 中打开的工作流和应用。想直接在网页上运行？请浏览模型。'
-  },
   'workshop.hub.workflows': { en: 'Workflows', 'zh-CN': '工作流' },
   'workshop.hub.search': {
     en: 'Search workflows, models, creators...',

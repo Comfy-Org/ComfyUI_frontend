@@ -107,9 +107,8 @@ const LOCALE_INVARIANT_ROUTE_KEYS = new Set<keyof Routes>([
 // /platform/ each have a zh-CN twin and it does not, so without this the
 // emitter advertises a Chinese page that 404s.
 //
-// workshop and templates: the two catalogues are English-only. Both are also
-// build-gated until launch, but enabled previews must not advertise a localized
-// page that does not exist.
+// workshop: the catalog is English-only. It is also build-gated until launch,
+// but enabled previews must not advertise a localized page that does not exist.
 const LOCALE_INVARIANT_EXTRA_PATHS = [
   // Auth surfaces render one page for every locale (copy localizes in the
   // island); a /zh-CN twin does not exist and must not be advertised.
@@ -118,7 +117,6 @@ const LOCALE_INVARIANT_EXTRA_PATHS = [
   '/pixal3d-trellis2',
   '/platform/serverless-animation',
   '/signup',
-  '/templates',
   '/workshop'
 ]
 
