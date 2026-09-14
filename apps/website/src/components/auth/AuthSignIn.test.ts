@@ -4,6 +4,10 @@ import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { AUTH_ERROR_MESSAGES } from '@comfyorg/account/firebaseAuthError'
+import type {
+  TurnstileApi,
+  TurnstileRenderOptions
+} from '@comfyorg/account/turnstileScript'
 
 import { removeAllToasts, useAuthToasts } from '../../config/auth-toast-state'
 import AuthSignIn from './AuthSignIn.vue'
@@ -11,7 +15,6 @@ import AuthToast from './AuthToast.vue'
 
 const handles = vi.hoisted(() => ({
   flag: undefined as { value: boolean } | undefined,
-  settled: undefined as { value: boolean } | undefined,
   user: undefined as { value: unknown } | undefined,
   session: undefined as { value: unknown } | undefined,
   identitySettled: undefined as { value: boolean } | undefined,
@@ -34,12 +37,9 @@ const handles = vi.hoisted(() => ({
 vi.mock<unknown>(import('../../scripts/posthog'), async () => {
   const { ref } = await import('vue')
   const flag = ref(true)
-  const settled = ref(true)
   handles.flag = flag
-  handles.settled = settled
   return {
     useWorkshopAuthFlag: () => flag,
-    useWorkshopAuthFlagSettled: () => settled,
     useWorkshopTurnstileMode: () => ref('shadow'),
     captureAuthCompleted: handles.captureAuthCompleted,
     captureAuthFailed: handles.captureAuthFailed,
@@ -47,20 +47,18 @@ vi.mock<unknown>(import('../../scripts/posthog'), async () => {
   }
 })
 
-vi.mock<unknown>(import('@comfyorg/account/vue'), async (importOriginal) => {
-  const { defineComponent, h, onMounted } = await import('vue')
-  return {
-    ...(await (importOriginal as () => Promise<object>)()),
-    TurnstileWidget: defineComponent({
-      emits: ['update:token', 'update:unavailable'],
-      setup(_, { emit, expose }) {
-        expose({ reset: handles.turnstileReset })
-        onMounted(() => emit('update:token', 'cf-token'))
-        return () => h('div', { 'data-testid': 'turnstile' })
-      }
-    })
-  }
-})
+const turnstileApi = vi.hoisted(
+  () =>
+    ({
+      render: vi.fn(),
+      reset: handles.turnstileReset,
+      remove: vi.fn()
+    }) satisfies TurnstileApi
+)
+
+vi.mock(import('@comfyorg/account/turnstileScript'), () => ({
+  loadTurnstile: () => Promise.resolve(turnstileApi)
+}))
 
 vi.mock<unknown>(import('@comfyorg/account/webviewDetection'), () => ({
   isEmbeddedWebView: () => handles.embedded
@@ -127,7 +125,6 @@ const assign = vi.fn<(url: string | URL) => void>()
 
 beforeEach(() => {
   handles.flag!.value = true
-  handles.settled!.value = true
   handles.user!.value = null
   handles.session!.value = undefined
   handles.identitySettled!.value = true
@@ -142,6 +139,12 @@ beforeEach(() => {
   handles.emailSignUp.mockReset()
   handles.provision.mockReset().mockResolvedValue(undefined)
   handles.turnstileReset.mockReset()
+  turnstileApi.render.mockImplementation(
+    (_container: string | HTMLElement, options: TurnstileRenderOptions) => {
+      options.callback?.('cf-token')
+      return 'widget-id'
+    }
+  )
   handles.isProvisioningError.mockReset().mockReturnValue(false)
   handles.isNewUser.mockReset().mockReturnValue(false)
   handles.captureAuthCompleted.mockClear()
@@ -704,23 +707,6 @@ describe('AuthSignIn', () => {
   })
 
   describe('when auth never initializes', () => {
-    it("shows the cloud app's timeout copy after its 16 s bound when the flag never answers", async () => {
-      handles.flag!.value = false
-      handles.settled!.value = false
-      render(AuthSignIn)
-
-      await vi.advanceTimersByTimeAsync(15_999)
-      expect(screen.queryByRole('alert')).toBeNull()
-
-      await vi.advanceTimersByTimeAsync(1)
-      expect((await screen.findByRole('alert')).textContent).toContain(
-        'Connection Taking Too Long'
-      )
-      expect(
-        screen.getByRole('link', { name: 'support' }).getAttribute('href')
-      ).toBe('https://support.comfy.org')
-    })
-
     it('shows the same copy when Firebase never settles', async () => {
       handles.identitySettled!.value = false
       render(AuthSignIn)
@@ -739,40 +725,6 @@ describe('AuthSignIn', () => {
 
       await vi.advanceTimersByTimeAsync(16_000)
       expect(screen.queryByRole('alert')).toBeNull()
-    })
-
-    it('drops the timeout screen when a late answer says the flag is off', async () => {
-      handles.flag!.value = false
-      handles.settled!.value = false
-      render(AuthSignIn)
-      await vi.advanceTimersByTimeAsync(16_000)
-      await screen.findByRole('alert')
-
-      handles.settled!.value = true
-
-      await waitFor(() =>
-        expect(
-          screen.queryByText('Connection Taking Too Long'),
-          'a flag that answered off renders nothing, not a troubleshooting screen'
-        ).toBeNull()
-      )
-      expect(screen.queryByRole('alert')).toBeNull()
-    })
-
-    it('gives way to the page once a late answer turns the flag on', async () => {
-      handles.flag!.value = false
-      handles.settled!.value = false
-      render(AuthSignIn)
-      await vi.advanceTimersByTimeAsync(16_000)
-      await screen.findByRole('alert')
-
-      handles.settled!.value = true
-      handles.flag!.value = true
-
-      expect(
-        await screen.findByRole('button', { name: /log in with google/i })
-      ).toBeTruthy()
-      expect(screen.queryByText('Connection Taking Too Long')).toBeNull()
     })
   })
 

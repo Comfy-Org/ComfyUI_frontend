@@ -2,7 +2,7 @@ import type { Page } from '@playwright/test'
 
 import { expect } from '@playwright/test'
 
-import { test } from './fixtures/blockExternalMedia'
+import { test } from './fixtures/workshopVisibility'
 import { waitForIsland } from './fixtures/islands'
 import { waitForPpFormulaLight } from './fixtures/visualFonts'
 import { VIEWPORTS } from './viewports'
@@ -30,6 +30,11 @@ async function assertNoOverflow(page: Page) {
 async function navigateAndSettle(page: Page, url: string) {
   await page.goto(url, { waitUntil: 'domcontentloaded' })
   await page.waitForLoadState('load')
+  await expect(
+    page
+      .getByTestId('desktop-nav-links')
+      .getByRole('link', { name: 'Models', includeHidden: true })
+  ).toBeAttached()
   await waitForPpFormulaLight(page)
 }
 

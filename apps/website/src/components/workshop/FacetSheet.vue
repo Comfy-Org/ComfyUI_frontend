@@ -1,9 +1,15 @@
 <script setup lang="ts">
 import { Check, X } from '@lucide/vue'
+import { useMediaQuery, useWindowSize } from '@vueuse/core'
 import { TabsContent, TabsList, TabsRoot, TabsTrigger } from 'reka-ui'
 import { computed, ref, watch } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
+
+import type { SheetRest } from '../../composables/useBottomSheet'
+import { heightAt, restAt } from '../../composables/useBottomSheet'
+import { prefersReducedMotion } from '../../composables/useReducedMotion'
+import { useVisualViewport } from '../../composables/useVisualViewport'
 
 interface FacetSheetOption {
   readonly value: string
@@ -28,6 +34,7 @@ interface FacetSheetLabels {
   /** Carries {n}. */
   readonly show: string
   readonly close: string
+  readonly resize: string
 }
 
 // One facet picker for the whole prototype. Both catalogues narrow the same
@@ -62,6 +69,92 @@ const selectedCount = computed(() =>
   groups.reduce((total, group) => total + group.selected.length, 0)
 )
 
+// The handle is the only way to make the sheet taller, so it drags rather than
+// decorates: a pull settles at the nearest rest, and a pull past the bottom
+// puts the sheet away.
+const onPhone = useMediaQuery('(width < 40rem)')
+const { height: windowHeight } = useWindowSize()
+const { height: visualHeight } = useVisualViewport()
+const viewport = computed(() => visualHeight.value ?? windowHeight.value)
+const rest = ref<Exclude<SheetRest, 'closed'>>('collapsed')
+const dragged = ref<number | null>(null)
+const grab = ref<{
+  pointerId: number
+  y: number
+  height: number
+  moved: boolean
+} | null>(null)
+const suppressClick = ref(false)
+
+const sheetHeight = computed(() =>
+  onPhone.value
+    ? (dragged.value ?? heightAt(rest.value, viewport.value))
+    : undefined
+)
+
+function startDrag(event: PointerEvent) {
+  if (grab.value || !event.isPrimary) return
+  if (event.currentTarget instanceof HTMLElement)
+    event.currentTarget.setPointerCapture(event.pointerId)
+  grab.value = {
+    pointerId: event.pointerId,
+    y: event.clientY,
+    height: sheetHeight.value ?? 0,
+    moved: false
+  }
+}
+
+function drag(event: PointerEvent) {
+  const from = grab.value
+  if (!from || event.pointerId !== from.pointerId) return
+  const travelled = from.y - event.clientY
+  if (Math.abs(travelled) > 4) from.moved = true
+  dragged.value = Math.min(Math.max(from.height + travelled, 0), viewport.value)
+}
+
+function toggleRest() {
+  rest.value = rest.value === 'expanded' ? 'collapsed' : 'expanded'
+}
+
+function toggleFromClick() {
+  if (suppressClick.value) {
+    suppressClick.value = false
+    return
+  }
+  toggleRest()
+}
+
+function releasePointer(event: PointerEvent) {
+  if (
+    event.currentTarget instanceof HTMLElement &&
+    event.currentTarget.hasPointerCapture(event.pointerId)
+  )
+    event.currentTarget.releasePointerCapture(event.pointerId)
+}
+
+function endDrag(event: PointerEvent) {
+  const from = grab.value
+  if (!from || event.pointerId !== from.pointerId) return
+  releasePointer(event)
+  grab.value = null
+  const reached = dragged.value ?? 0
+  dragged.value = null
+  if (!from.moved) return
+  suppressClick.value = true
+  const settled = restAt(reached / viewport.value)
+  if (settled === 'closed') emit('close')
+  else rest.value = settled
+}
+
+function cancelDrag(event: PointerEvent) {
+  const from = grab.value
+  if (!from || event.pointerId !== from.pointerId) return
+  releasePointer(event)
+  grab.value = null
+  dragged.value = null
+  suppressClick.value = false
+}
+
 function visibleOptions(group: FacetSheetGroup) {
   const needle = (search.value[group.key] ?? '').trim().toLowerCase()
   return needle
@@ -73,28 +166,50 @@ function visibleOptions(group: FacetSheetGroup) {
 </script>
 
 <template>
-  <div class="flex min-h-0 flex-col">
-    <span
-      class="mx-auto mt-2 h-1 w-10 shrink-0 rounded-full bg-white/20 sm:hidden"
-      aria-hidden="true"
-    />
-
-    <div class="flex items-center justify-between p-3 pb-1 sm:hidden">
-      <h2 class="text-content text-base font-bold">{{ labels.title }}</h2>
+  <div
+    :class="
+      cn(
+        'flex min-h-0 flex-col',
+        !grab && !prefersReducedMotion() && 'max-sm:transition-all'
+      )
+    "
+    :style="{
+      height: sheetHeight !== undefined ? `${sheetHeight}px` : undefined
+    }"
+  >
+    <div class="shrink-0 sm:hidden" data-testid="workshop-filter-grip">
       <button
         type="button"
-        :aria-label="labels.close"
-        class="text-content-secondary hover:text-content grid size-9 cursor-pointer place-items-center rounded-xl bg-white/8"
-        data-testid="workshop-filter-close"
-        @click="emit('close')"
+        :aria-label="labels.resize"
+        :aria-expanded="rest === 'expanded'"
+        class="mx-auto flex h-6 w-16 cursor-grab touch-none items-center justify-center"
+        data-testid="workshop-filter-grabber"
+        @click="toggleFromClick"
+        @pointerdown="startDrag"
+        @pointermove="drag"
+        @pointerup="endDrag"
+        @pointercancel="cancelDrag"
       >
-        <X class="size-4" aria-hidden="true" />
+        <span class="h-1 w-10 rounded-full bg-white/20" aria-hidden="true" />
       </button>
+
+      <div class="flex items-center justify-between px-4 pt-1 pb-5">
+        <h2 class="text-content text-base font-bold">{{ labels.title }}</h2>
+        <button
+          type="button"
+          :aria-label="labels.close"
+          class="text-content-secondary hover:text-content grid size-9 cursor-pointer place-items-center rounded-xl bg-white/8"
+          data-testid="workshop-filter-close"
+          @click="emit('close')"
+        >
+          <X class="size-4" aria-hidden="true" />
+        </button>
+      </div>
     </div>
 
-    <TabsRoot v-model="activeKey" class="flex min-h-0 flex-col">
+    <TabsRoot v-model="activeKey" class="flex min-h-0 flex-col max-sm:flex-1">
       <TabsList
-        class="flex scrollbar-hide items-center gap-1 overflow-x-auto border-b border-white/10 p-2"
+        class="flex scrollbar-hide items-center gap-1 overflow-x-auto border-b border-white/10 p-2 max-sm:px-4 max-sm:pb-3"
       >
         <TabsTrigger
           v-for="group in groups"
@@ -118,9 +233,9 @@ function visibleOptions(group: FacetSheetGroup) {
         v-for="group in groups"
         :key="group.key"
         :value="group.key"
-        class="flex min-h-0 flex-col outline-none"
+        class="flex min-h-0 flex-col outline-none max-sm:flex-1"
       >
-        <div class="border-b border-white/10 p-2">
+        <div class="border-b border-white/10 p-2 max-sm:px-4 max-sm:py-3">
           <input
             v-model="search[group.key]"
             type="search"
@@ -131,10 +246,11 @@ function visibleOptions(group: FacetSheetGroup) {
           />
         </div>
 
-        <!-- One height whatever the facet holds, so switching tab does not
-          resize the sheet under the thumb. -->
+        <!-- On a phone the list takes whatever the sheet's own height leaves,
+          so switching tab does not resize it under the thumb. On a pointer the
+          popover hugs its list instead of standing half empty. -->
         <ul
-          class="h-72 scrollbar-thin overflow-y-auto py-1"
+          class="scrollbar-thin overflow-y-auto py-1 max-sm:min-h-0 max-sm:flex-1 sm:max-h-72 sm:min-h-32"
           :aria-label="group.label"
         >
           <li v-for="option in visibleOptions(group)" :key="option.value">

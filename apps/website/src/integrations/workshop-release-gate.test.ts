@@ -117,7 +117,9 @@ describe('Workshop release output', () => {
     expect(enabled.map((route) => route.pattern)).toEqual([
       '/models',
       '/models/[slug]',
-      '/models/showcase'
+      '/models/showcase',
+      '/models/[slug]/page.json',
+      '/models/catalogue.json'
     ])
     expect(enabled[0].entrypoint).toContain('/routes/models/index.astro')
     for (const route of enabled) expect(existsSync(route.entrypoint)).toBe(true)
