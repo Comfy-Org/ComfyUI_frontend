@@ -65,10 +65,7 @@ export class AgentCrdtProjection {
     if (!graph) return
     const followerDoc = this.getFollowerDoc()
     const definitionIds = readSubgraphDefinitionIds(followerDoc)
-    const hasMissingDefinition = definitionIds.some(
-      (id) => !graph.rootGraph.subgraphs.has(id)
-    )
-    const definitions = hasMissingDefinition
+    const definitions = definitionIds.length
       ? readSubgraphDefinitions(followerDoc)
       : []
     const nodeIds = reconcileAgentAdapters(graph, definitions)
