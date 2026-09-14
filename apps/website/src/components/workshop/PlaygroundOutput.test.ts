@@ -334,4 +334,18 @@ describe('PlaygroundOutput', () => {
       screen.getByTestId('output-download').getAttribute('href')
     ).toContain('b.webp')
   })
+
+  it('blurs the latest run in the strip when the run, not its output, is rated sensitive', () => {
+    render(PlaygroundOutput, {
+      props: {
+        state: succeeded(output('latest'), true),
+        earlier: [{ output: output('first'), attachments: [] }],
+        now: 2_000
+      }
+    })
+    const thumbnail = (testId: string) =>
+      within(screen.getByTestId(testId)).getByRole('img')
+    expect(thumbnail('earlier-latest')).toHaveClass('blur-md')
+    expect(thumbnail('earlier-run-0')).not.toHaveClass('blur-md')
+  })
 })

@@ -151,12 +151,18 @@ watch(primary, () => {
   selectedAttachment.value = undefined
 })
 
+// The router reports the latest run's rating on the run, not always on the
+// output, so anything showing that run has to consult both.
+const latestIsSensitive = computed(
+  () =>
+    (state.status === 'succeeded' && state.nsfw) || latest.value?.nsfw === true
+)
 // Earlier runs carry their own flag, so switching away from the latest output
 // must not drop the gate.
 const shownIsSensitive = computed(() =>
   viewing.value
     ? viewing.value.output.nsfw === true || shown.value?.nsfw === true
-    : (state.status === 'succeeded' && state.nsfw) || shown.value?.nsfw === true
+    : latestIsSensitive.value || shown.value?.nsfw === true
 )
 const blurred = computed(() => shownIsSensitive.value && !revealed.value)
 watch(shown, () => {
@@ -170,6 +176,7 @@ watch(shown, () => {
 interface RunStop {
   readonly record?: RunRecord
   readonly output: RunOutput
+  readonly nsfw: boolean
   readonly name: string
   readonly testId: string
 }
@@ -181,6 +188,7 @@ const runStops = computed<RunStop[]>(() =>
         ...[...earlier].reverse().map((record, index) => ({
           record,
           output: record.output,
+          nsfw: record.output.nsfw === true,
           name: t('workshop.output.earlierRun', locale).replace(
             '{number}',
             String(index + 1)
@@ -190,6 +198,7 @@ const runStops = computed<RunStop[]>(() =>
         {
           record: undefined,
           output: latest.value,
+          nsfw: latestIsSensitive.value,
           name: t('workshop.output.latest', locale),
           testId: 'earlier-latest'
         }
@@ -510,7 +519,7 @@ const earlierClass = (active: boolean) =>
           <video
             v-if="stop.output.kind === 'video'"
             :src="stop.output.url"
-            :class="cn('size-full object-cover', stop.output.nsfw && 'blur-md')"
+            :class="cn('size-full object-cover', stop.nsfw && 'blur-md')"
             muted
             playsinline
             preload="metadata"
@@ -519,7 +528,7 @@ const earlierClass = (active: boolean) =>
             v-else-if="stop.output.kind === 'image'"
             :src="stop.output.url"
             alt=""
-            :class="cn('size-full object-cover', stop.output.nsfw && 'blur-md')"
+            :class="cn('size-full object-cover', stop.nsfw && 'blur-md')"
           />
           <FileIcon
             v-else
