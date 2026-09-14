@@ -30,7 +30,7 @@
       "properties": {
         "Node name for S&R": "EmptyLatentImage"
       },
-      "widgets_values": [512, 512, 1]
+      "widgets_values": [512, 768, 3]
     },
     {
       "id": 4,

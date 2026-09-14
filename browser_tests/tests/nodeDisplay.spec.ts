@@ -98,3 +98,26 @@ test.describe('Optional input', { tag: ['@screenshot', '@node'] }, () => {
     )
   })
 })
+
+test.describe('Renamed converted widget values', { tag: ['@node'] }, () => {
+  test('keeps each widget value on its own widget', async ({ comfyPage }) => {
+    await comfyPage.workflow.loadWorkflow('inputs/renamed_converted_widget')
+
+    const widgets = await comfyPage.page.evaluate(
+      (nodeId) =>
+        window.app!.graph.getNodeById(nodeId)!.widgets?.map((w) => ({
+          name: w.name,
+          value: w.value
+        })) ?? [],
+      toNodeId(3)
+    )
+
+    // Guard the whole claim: without the widgets, every pair below is vacuous.
+    expect(widgets.map((w) => w.name)).toEqual(
+      expect.arrayContaining(['height', 'batch_size'])
+    )
+
+    const byName = Object.fromEntries(widgets.map((w) => [w.name, w.value]))
+    expect(byName).toMatchObject({ height: 768, batch_size: 3 })
+  })
+})
