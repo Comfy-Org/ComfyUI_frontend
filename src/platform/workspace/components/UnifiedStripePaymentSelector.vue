@@ -123,24 +123,89 @@ let stripe: Stripe | null = null
 let paymentElement: StripePaymentElement | undefined
 let addressElement: StripeAddressElement | undefined
 
+function failElementInit(): void {
+  configurationError.value = t('subscription.preview.stripeUnavailable')
+  if (isUnmounted) return
+  emitPaymentJourneyPhase({
+    phase: 'payment_element_failed',
+    element: 'payment',
+    element_phase: 'init'
+  })
+}
+
+function mountPaymentElement(
+  elements: StripeElements,
+  target: HTMLDivElement
+): void {
+  paymentElement = elements.create('payment', {
+    layout: {
+      type: 'accordion',
+      defaultCollapsed: false,
+      radios: 'always',
+      spacedAccordionItems: true
+    },
+    // Our terms note carries the recurring-charge authorization; Stripe's
+    // card mandate text would say it twice.
+    terms: { card: 'never' }
+  })
+  paymentElement.mount(target)
+  paymentElement.on('ready', () => {
+    if (isUnmounted) return
+    emitPaymentJourneyPhase({
+      phase: 'payment_element_ready',
+      element: 'payment'
+    })
+  })
+  paymentElement.on('loaderror', (event) => {
+    if (isUnmounted) return
+    emitPaymentJourneyPhase({
+      phase: 'payment_element_failed',
+      element: 'payment',
+      element_phase: 'mount',
+      ...(event.error?.code && { error_code: event.error.code })
+    })
+  })
+  // Method-specific notes (e.g. the Alipay auto-renewal disclosure) key off
+  // whichever payment method the user has selected inside the element.
+  paymentElement.on('change', (event) => {
+    selectedMethodType.value = event.value?.type ?? ''
+  })
+}
+
+/**
+ * A full billing address feeds AVS to the issuer and Radar. In billing mode
+ * every field is required, and because the address shares the Payment
+ * Element's group, createConfirmationToken folds it into the token's
+ * billing_details.
+ */
+function mountAddressElement(
+  elements: StripeElements,
+  target: HTMLDivElement
+): void {
+  addressElement = elements.create('address', { mode: 'billing' })
+  addressElement.mount(target)
+  addressElement.on('ready', () => {
+    if (isUnmounted) return
+    emitPaymentJourneyPhase({
+      phase: 'payment_element_ready',
+      element: 'address'
+    })
+  })
+  addressElement.on('loaderror', (event) => {
+    if (isUnmounted) return
+    emitPaymentJourneyPhase({
+      phase: 'payment_element_failed',
+      element: 'address',
+      element_phase: 'mount',
+      ...(event.error?.code && { error_code: event.error.code })
+    })
+  })
+}
+
 onMounted(async () => {
   const publishableKey = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY
-  if (!publishableKey) {
-    configurationError.value = t('subscription.preview.stripeUnavailable')
-    emitPaymentJourneyPhase({
-      phase: 'payment_element_failed',
-      element: 'payment',
-      element_phase: 'init'
-    })
-    return
-  }
-  if (!paymentMethodConfigurationId) {
-    configurationError.value = t('subscription.preview.stripeUnavailable')
-    emitPaymentJourneyPhase({
-      phase: 'payment_element_failed',
-      element: 'payment',
-      element_phase: 'init'
-    })
+  if (!publishableKey || !paymentMethodConfigurationId) {
+    failElementInit()
     return
   }
   // A non-positive amount means the caller mounted this before its quote
@@ -152,23 +217,11 @@ onMounted(async () => {
   try {
     stripe = await loadStripe(publishableKey)
   } catch {
-    configurationError.value = t('subscription.preview.stripeUnavailable')
-    emitPaymentJourneyPhase({
-      phase: 'payment_element_failed',
-      element: 'payment',
-      element_phase: 'init'
-    })
+    failElementInit()
     return
   }
   if (!stripe || !paymentElementTarget.value || isUnmounted) {
-    configurationError.value = t('subscription.preview.stripeUnavailable')
-    if (!isUnmounted) {
-      emitPaymentJourneyPhase({
-        phase: 'payment_element_failed',
-        element: 'payment',
-        element_phase: 'init'
-      })
-    }
+    failElementInit()
     return
   }
 
@@ -224,62 +277,10 @@ onMounted(async () => {
       }
     }
   })
-  paymentElement = stripeElements.value.create('payment', {
-    layout: {
-      type: 'accordion',
-      defaultCollapsed: false,
-      radios: 'always',
-      spacedAccordionItems: true
-    },
-    // Our terms note carries the recurring-charge authorization; Stripe's
-    // card mandate text would say it twice.
-    terms: { card: 'never' }
-  })
-  paymentElement.mount(paymentElementTarget.value)
-  paymentElement.on('ready', () => {
-    if (isUnmounted) return
-    emitPaymentJourneyPhase({
-      phase: 'payment_element_ready',
-      element: 'payment'
-    })
-  })
-  paymentElement.on('loaderror', (event) => {
-    if (isUnmounted) return
-    emitPaymentJourneyPhase({
-      phase: 'payment_element_failed',
-      element: 'payment',
-      element_phase: 'mount',
-      ...(event.error?.code && { error_code: event.error.code })
-    })
-  })
-  // Method-specific notes (e.g. the Alipay auto-renewal disclosure) key off
-  // whichever payment method the user has selected inside the element.
-  paymentElement.on('change', (event) => {
-    selectedMethodType.value = event.value?.type ?? ''
-  })
-
-  if (!addressElementTarget.value) return
-  // A full billing address feeds AVS to the issuer and Radar. In billing mode
-  // every field is required, and because the address shares this Elements
-  // group, createConfirmationToken folds it into the token's billing_details.
-  addressElement = stripeElements.value.create('address', { mode: 'billing' })
-  addressElement.mount(addressElementTarget.value)
-  addressElement.on('ready', () => {
-    if (isUnmounted) return
-    emitPaymentJourneyPhase({
-      phase: 'payment_element_ready',
-      element: 'address'
-    })
-  })
-  addressElement.on('loaderror', (event) => {
-    if (isUnmounted) return
-    emitPaymentJourneyPhase({
-      phase: 'payment_element_failed',
-      element: 'address',
-      element_phase: 'mount',
-      ...(event.error?.code && { error_code: event.error.code })
-    })
-  })
+  mountPaymentElement(stripeElements.value, paymentElementTarget.value)
+  if (addressElementTarget.value) {
+    mountAddressElement(stripeElements.value, addressElementTarget.value)
+  }
 })
 
 watch([() => amountCents, () => currency], ([amount, nextCurrency]) => {
