@@ -88,7 +88,7 @@ describe('comfyCredits helpers', () => {
     expect(formatCreditsCompact(999)).toBe('999')
   })
 
-  test('formatCreditsCompact still truncates where NumberFormat V3 is missing', () => {
+  test('formatCreditsCompact does not depend on Intl honouring roundingMode', () => {
     const NativeNumberFormat = Intl.NumberFormat
     vi.spyOn(Intl, 'NumberFormat').mockImplementation(function (
       locales?: Intl.LocalesArgument,
@@ -99,6 +99,7 @@ describe('comfyCredits helpers', () => {
     })
 
     expect(formatCreditsCompact(1_772_400)).toBe('1.7M')
-    expect(formatCreditsCompact(10_550)).toBe('10.5K')
+    expect(formatCreditsCompact(2_899_999)).toBe('2.8M')
+    expect(formatCreditsCompact(31_650)).toBe('31.6K')
   })
 })

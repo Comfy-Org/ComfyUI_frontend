@@ -95,14 +95,15 @@ export const formatCreditsFromUsd = ({
 const COMPACT_UNITS = [1e12, 1e9, 1e6, 1e3] as const
 
 /**
- * Abbreviates a credit amount to one fraction digit ("42.2K", "1.7M"),
- * truncating rather than rounding so the short form never claims more credits
- * than the amount it stands for.
+ * Abbreviates a credit amount to one fraction digit of its unit ("42.2K",
+ * "1.7M"), or to whole credits below a thousand ("999"). Truncates rather than
+ * rounds, so the short form never claims more credits than the amount it
+ * stands for.
  *
- * The amount is floored onto a tenth of its own compact unit before
- * formatting, which leaves nothing for the formatter to round: `Intl`'s
- * `roundingMode` is NumberFormat V3 and engines predating it ignore it
- * silently, which would turn 1,772,400 back into "1.8M".
+ * The amount is truncated onto that grid before formatting, which leaves
+ * nothing for the formatter to round: `Intl`'s `roundingMode` is NumberFormat
+ * V3 and engines predating it ignore it silently, which would turn 1,772,400
+ * back into "1.8M".
  *
  * Formatted in English regardless of the active locale.
  */
