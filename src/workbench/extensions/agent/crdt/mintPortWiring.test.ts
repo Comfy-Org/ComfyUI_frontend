@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { applyOps, mint, project } from '@comfyorg/comfy-multi-player'
 
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { GraphScope } from '@/types/graphScopeId'
@@ -25,6 +26,7 @@ const ROOT_ID = 'root-uuid'
 /** Structural stand-in for the two LGraphNode members the wiring reads. */
 interface FakeGraphNode {
   id?: unknown
+  isVirtualNode?: boolean
   serialize?: () => unknown
   widgets?: { name: string; type: string; serialize?: boolean }[]
 }
@@ -308,6 +310,56 @@ describe('attachMintPortWiring', () => {
         }
       }
     ])
+  })
+
+  it('preserves frontend-only note values through the real document applier', () => {
+    graphNodes.set('5', {
+      isVirtualNode: true,
+      serialize: () => ({
+        id: 5,
+        type: 'MarkdownNote',
+        pos: [10, 20],
+        widgets_values: ['Preserve this note'],
+        widgets_values_named: { text: 'Preserve this note' }
+      }),
+      widgets: [{ name: 'text', type: 'customtext' }]
+    })
+    deliverLayoutChange({
+      operation: {
+        type: 'createNode',
+        actor: 'user-abc',
+        nodeId: toNodeId(5),
+        layout: { position: { x: 10, y: 20 } }
+      }
+    })
+
+    expect(minted).toHaveLength(1)
+    const catalog = { types: {} }
+    const doc = mint({ nodes: [], links: [] }, catalog)
+    const actor = 'human:test:tab'
+    const result = applyOps(
+      doc,
+      minted.map((op) => ({
+        ...op,
+        op_id: 'add-note',
+        actor,
+        base_version: 1,
+        stamp: [1, actor] as [number, string]
+      })),
+      catalog
+    )
+
+    expect(result.outcomes).toEqual([{ op_id: 'add-note', outcome: 'applied' }])
+    expect(project(doc, catalog).nodes).toEqual([
+      expect.objectContaining({
+        id: 5,
+        type: 'MarkdownNote',
+        widgets_values: ['Preserve this note']
+      })
+    ])
+    expect(project(doc, catalog).nodes[0]).not.toHaveProperty(
+      'widgets_values_named'
+    )
   })
 
   it('positive control: an unbound workflow runs normally, zero mint and zero blockage', () => {

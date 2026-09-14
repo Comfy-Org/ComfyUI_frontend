@@ -14,6 +14,7 @@ import { useNodeEventHandlers } from '@/renderer/extensions/vueNodes/composables
 import { useNodeTooltips } from '@/renderer/extensions/vueNodes/composables/useNodeTooltips'
 import { nodeHasError } from '@/renderer/extensions/vueNodes/utils/nodeErrorState'
 import { app } from '@/scripts/app'
+import { useAgentNodeSelectionStore } from '@/stores/agentNodeSelectionStore'
 import { nodeTypeValidForApp } from '@/stores/appModeStore'
 import type { NodeState } from '@/types/nodeState'
 import type { WidgetId } from '@/types/widgetId'
@@ -39,6 +40,7 @@ export function useProcessedWidgets(
   const settingStore = useSettingStore()
   const { isSelectInputsMode } = useAppMode()
   const { handleNodeRightClick } = useNodeEventHandlers()
+  const agentNodeSelectionStore = useAgentNodeSelectionStore()
 
   const nodeType = computed(() => nodeDataGetter()?.type || '')
   const { getWidgetTooltip, createTooltipConfig } = useNodeTooltips(nodeType)
@@ -76,7 +78,8 @@ export function useProcessedWidgets(
       showAdvanced: showAdvanced.value,
       isGraphReady: app.isGraphReady,
       rootGraph: app.isGraphReady ? app.rootGraph : null,
-      ui
+      ui,
+      forceDisabled: agentNodeSelectionStore.isActive
     })
   )
 

@@ -109,6 +109,11 @@ function serializeForMint(node: LGraphNode): WorkflowNode | null {
   } catch {
     return null
   }
+  // Frontend-only nodes are absent from the host catalog and stay positional.
+  if (node.isVirtualNode) {
+    delete serialized.widgets_values_named
+    return serialized as unknown as WorkflowNode
+  }
   const named = serialized.widgets_values_named
   if (named != null && typeof named === 'object') {
     const filtered: Record<string, unknown> = {}

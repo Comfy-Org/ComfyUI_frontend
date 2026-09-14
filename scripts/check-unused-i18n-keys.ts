@@ -1,5 +1,6 @@
 #!/usr/bin/env tsx
 import { execSync } from 'child_process'
+import { memoize } from 'es-toolkit'
 import * as fs from 'fs'
 import { globSync } from 'glob'
 import type { LocaleData } from './i18n-types'
@@ -101,6 +102,8 @@ function shouldIgnoreKey(key: string): boolean {
   return IGNORE_PATTERNS.some((pattern) => pattern.test(key))
 }
 
+const readSourceFile = memoize((file: string) => fs.readFileSync(file, 'utf-8'))
+
 // Search for key usage in source files
 function isKeyUsed(key: string, sourceFiles: string[]): boolean {
   // Escape special regex characters
@@ -121,7 +124,7 @@ function isKeyUsed(key: string, sourceFiles: string[]): boolean {
   ]
 
   for (const file of sourceFiles) {
-    const content = fs.readFileSync(file, 'utf-8')
+    const content = readSourceFile(file)
 
     for (const pattern of patterns) {
       if (pattern.test(content)) {
