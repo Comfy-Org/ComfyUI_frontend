@@ -5,12 +5,12 @@ import { describe, expect, it } from 'vitest'
 import { getRouterWorkshopModelDetail } from '../config/workshop-router-content'
 import { workshopContract } from '../config/workshop-contract-catalog'
 import { schemaForModel } from '../config/workshop-playground'
-import { workshopModels } from '../config/models-catalogue'
-import { fieldsForDefinition } from '../config/workshop-form-definition'
 import {
+  workshopModels,
   routerAliasById,
   routerContentById
 } from '../config/workshop-browse-content'
+import { fieldsForDefinition } from '../config/workshop-form-definition'
 import {
   WORKSHOP_USE_CASES,
   workshopDisplayEntriesSchema
@@ -32,8 +32,11 @@ function contentFor(modelId: string) {
   return display.find((entry) => entry.modelId === modelId)
 }
 const catalogById = new Map(catalog.map((entry) => [entry.id, entry]))
-/** Outputs that are a single still frame. */
-const STILL = new Set(['image', 'svg', '3d'])
+/**
+ * Outputs represented by a single still frame in Workshop media. 3D outputs
+ * use turntable videos because the display schema has no 3D media kind.
+ */
+const STILL = new Set(['image', 'svg'])
 
 describe('the display overlay against the catalog', () => {
   it.for([
@@ -139,14 +142,11 @@ describe('the display overlay against the catalog', () => {
       'generate-images'
     ])
     expect(new Set(entries.map((entry) => entry.slug)).size).toBe(2)
-    expect(
-      entries.find((entry) => entry.useCase === 'edit-images')?.withheldContent
-        ?.media.thumbnail
-    ).toBeDefined()
-    expect(
-      entries.find((entry) => entry.useCase === 'generate-images')?.media
-        .thumbnail
-    ).toBeUndefined()
+    const edit = entries.find((entry) => entry.useCase === 'edit-images')
+    const create = entries.find((entry) => entry.useCase === 'generate-images')
+    expect(edit?.media.thumbnail).toBeDefined()
+    expect(create?.media.thumbnail).toBeDefined()
+    expect(edit?.media.thumbnail).not.toEqual(create?.media.thumbnail)
   })
 
   it('classifies required media by what the model does with it', () => {

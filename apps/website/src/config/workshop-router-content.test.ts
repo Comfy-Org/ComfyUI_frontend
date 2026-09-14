@@ -1,6 +1,10 @@
 import { describe, expect, it, vi } from 'vitest'
 
-import { workshopModels } from './models-catalogue'
+import {
+  workshopModels,
+  routerContentById,
+  routerContentBySlug
+} from './workshop-browse-content'
 import { deriveWorkshopFields } from './workshop-fields'
 import { getRouterWorkshopModelDetail } from './workshop-router-content'
 import {
@@ -10,10 +14,6 @@ import {
   validateForm
 } from './workshop-playground'
 import { prepareWorkshopRouterInput } from './workshop-request'
-import {
-  routerContentById,
-  routerContentBySlug
-} from './workshop-browse-content'
 import {
   fieldsForDefinition,
   usesRequestBodyEditor
@@ -141,11 +141,16 @@ describe('Router catalog form projection', () => {
     expect(create.href).not.toBe(edit.href)
     expect(create.useCases).toEqual(['generate-images'])
     expect(edit.useCases).toEqual(['edit-images'])
-    expect(edit.examples).toEqual([])
-    expect(create.examples).not.toEqual([])
-    expect(
-      create.examples.every((example) => example.name.startsWith(create.slug))
-    ).toBe(true)
+    for (const model of [create, edit]) {
+      expect(model.examples).not.toEqual([])
+      expect(
+        model.examples.every((example) => example.name.startsWith(model.slug))
+      ).toBe(true)
+    }
+    expect(edit.examples.every((example) => example.sampleOnly)).toBe(true)
+    expect(edit.examples.map((example) => example.name)).not.toEqual(
+      create.examples.map((example) => example.name)
+    )
     expect(getRouterWorkshopModelDetail('byteplus--seedream-4-5')).toBe(create)
     for (const model of [create, edit])
       expect(routerContentBySlug.get(model.slug)?.overlay.slug).toBe(model.slug)

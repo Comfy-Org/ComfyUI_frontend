@@ -1,7 +1,7 @@
 import type { Page } from '@playwright/test'
 import { expect } from '@playwright/test'
 
-import { test } from './fixtures/blockExternalMedia'
+import { test } from './fixtures/modelsAccount'
 
 const viewports = [
   { name: 'mobile', width: 390, desktopNavigation: false },
