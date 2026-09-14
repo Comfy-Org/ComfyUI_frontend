@@ -1,4 +1,3 @@
-// @vitest-environment happy-dom
 import { fireEvent, render, screen, waitFor } from '@testing-library/vue'
 import { describe, expect, it } from 'vitest'
 

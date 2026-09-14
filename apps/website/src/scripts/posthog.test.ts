@@ -1,4 +1,3 @@
-// @vitest-environment happy-dom
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type * as PostHogModule from 'posthog-js'
@@ -64,7 +63,7 @@ const postHogMock = {
 // The real default export carries 130+ members, so only the boundary handoff
 // is asserted; the shape itself is checked against PostHogMock above.
 vi.mock(import('posthog-js'), () => ({
-  default: postHogMock as unknown as typeof PostHogModule.default
+  posthog: postHogMock as unknown as typeof PostHogModule.posthog
 }))
 
 /** Fire the callback PostHog registered with onFeatureFlags. */

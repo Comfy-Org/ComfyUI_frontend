@@ -1,4 +1,3 @@
-// @vitest-environment happy-dom
 import { render, screen } from '@testing-library/vue'
 import type * as Leaflet from 'leaflet'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
