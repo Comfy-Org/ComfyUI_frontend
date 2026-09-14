@@ -91,6 +91,7 @@ import type { AgentPaywallAction } from './services/agent/agentPaywallPresentati
 import { resolveAgentPaywallPresentation } from './services/agent/agentPaywallPresentation'
 import { createAgentEventSource } from './services/agent/agentEventSource'
 import { createStandaloneAgentEventSource } from './services/agent/standaloneAgentEventSource'
+import { resolveStandaloneIdentity } from './services/agent/standaloneIdentity'
 import { useAgentChatHistoryStore } from './stores/agent/agentChatHistoryStore'
 import { agentMessageText } from './utils/agentMessageText'
 import { useAgentComposerStore } from './stores/agent/agentComposerStore'
@@ -141,36 +142,7 @@ const isStandaloneAgent = import.meta.env.VITE_AGENT_STANDALONE === 'true'
 
 const { resolvedUserInfo, userDisplayName } = useCurrentUser()
 
-/**
- * Standalone only: the identity the AGENT authenticated this client as.
- *
- * Attribution on `POST /doc/ops` is server-derived, and a batch whose ops claim
- * a different actor is refused with 403. In the cloud the panel's session user
- * matches what ingest forwards, so the claim agrees. Standalone bootstraps a
- * fixed local user that the panel cannot see, so it fell back to "anonymous"
- * and EVERY canvas edit was rejected — silently, which is why the agent kept
- * reporting an empty canvas no matter what was on screen.
- *
- * Asking the agent avoids hardcoding its bootstrap constant here. Null until it
- * answers; the follower simply attributes nothing until then.
- */
 const rest = createAgentRestClient()
-
-const standaloneUserId = ref<string | null>(null)
-if (isStandaloneAgent) {
-  void (async () => {
-    try {
-      standaloneUserId.value = (await rest.getIdentity()).userId
-    } catch (error) {
-      // Surfaced, not swallowed: until this resolves the follower below stays
-      // inactive, so a broken identity route reads as "canvas never syncs".
-      reportError(error, {
-        errorType: 'agent_standalone_identity_failed',
-        level: 'warning'
-      })
-    }
-  })()
-}
 
 const userName = computed(
   () => userDisplayName.value?.trim().split(/\s+/)[0] || undefined
@@ -192,6 +164,35 @@ const events = standaloneEvents ?? createAgentEventSource(api)
 const standaloneDocTransport = standaloneEvents
   ? createStandaloneDocFrameTransport(standaloneEvents)
   : null
+
+/**
+ * Standalone only: the identity the AGENT authenticated this client as, which
+ * every canvas op must carry or the writer refuses it (see
+ * resolveStandaloneIdentity). Null until the agent answers; the follower
+ * below stays inactive until then. The lookup rides the same socket-connected
+ * edge the follower resubscribes on, so a transient failure at mount no
+ * longer reads as "canvas never syncs" for the page's life.
+ */
+const standaloneIdentity = standaloneDocTransport
+  ? resolveStandaloneIdentity({
+      getIdentity: () => rest.getIdentity(),
+      onConnected: (listener) => standaloneDocTransport.onConnected(listener),
+      onFailure: (error) => {
+        // Surfaced, not swallowed: every failed attempt is a broken identity
+        // route until the next connected edge proves otherwise.
+        reportError(error, {
+          errorType: 'agent_standalone_identity_failed',
+          level: 'warning'
+        })
+      }
+    })
+  : null
+const standaloneUserId = computed(
+  () => standaloneIdentity?.userId.value ?? null
+)
+if (standaloneIdentity) {
+  onBeforeUnmount(() => standaloneIdentity.stop())
+}
 
 function onPaywallAction(action: AgentPaywallAction): void {
   openAccountPrecondition(action === 'addCredits' ? 'credits' : 'subscription')
