@@ -92,7 +92,7 @@ for (const vueNodesEnabled of [false, true]) {
         await comfyPage.workflow.loadWorkflow('legacy-v1.52.5-entity-roundtrip')
         expect(await exportedProjection(comfyPage)).toEqual(expected)
 
-        await comfyPage.menu.topbar.saveWorkflow('legacy-v1.52.5-resaved')
+        await comfyPage.menu.topbar.saveWorkflowAs('legacy-v1.52.5-resaved')
         await comfyPage.workflow.reloadAndWaitForApp()
 
         await expect.poll(() => exportedProjection(comfyPage)).toEqual(expected)
