@@ -557,8 +557,13 @@ jobs:
       - matrix-detection-proof
     runs-on: ubuntu-latest
     timeout-minutes: 5
+    permissions:
+      contents: read
+      # For the explainer section; a fork PR degrades to the job summary.
+      pull-requests: write
     steps:
       - name: Enforce complete matrix result
+        id: gate
         shell: bash
         env:
           CHANGES_RESULT: ${{ needs.changes.result }}
@@ -605,3 +610,68 @@ jobs:
             exit 1
           fi
           echo 'ecosystem matrix passed in both renderers with both detection proofs'
+
+      # Eight shard checks, three exit codes and a stage-dependent meaning are
+      # not readable from a red X in the PR sidebar, and the answers live in a
+      # workflow header and scripts/registry-census/README.md that a red check
+      # does not link to.
+      - name: Checkout repository
+        if: ${{ !cancelled() }}
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Describe which stage decided the verdict
+        if: ${{ !cancelled() }}
+        shell: bash
+        env:
+          SHOULD_RUN: ${{ needs.changes.outputs.should-run }}
+          PIN_STATUS_RESULT: ${{ needs.pin-status.result }}
+          CORPUS_RESULT: ${{ needs.corpus.result }}
+          SHARDS_RESULT: ${{ needs.ecosystem-matrix.result }}
+          VERDICTS_RESULT: ${{ needs.matrix-verdict.result }}
+          PROOFS_RESULT: ${{ needs.matrix-detection-proof.result }}
+        run: |
+          set -euo pipefail
+          if [ "$SHOULD_RUN" = false ]; then
+            echo 'This candidate changes nothing the matrix measures, so every expensive stage was skipped.' > matrix-explainer.md
+            cat matrix-explainer.md
+            exit 0
+          fi
+          {
+            echo '| Stage | Result | What a failure here means |'
+            echo '| --- | --- | --- |'
+            echo "| pin-status | $PIN_STATUS_RESULT | Informational. It never fails the build; it warns when the corpus snapshot is over 30 days old. |"
+            echo "| corpus | $CORPUS_RESULT | Infrastructure: the pack mirror could not be fetched, validated or cached. Not your diff. |"
+            echo "| shards | $SHARDS_RESULT | **Harness integrity, not pack breakage.** A shard only checks that every built spec wrote its row; vitest's own exit code is deliberately ignored because pack code leaks unhandled rejections. |"
+            echo "| verdicts | $VERDICTS_RESULT | The population verdict per renderer. **This is the stage that judges packs.** Exit 1 is FAIL; exit 2 is *withheld* — rows were missing, so nothing was measured, which is not the same as your change breaking packs. |"
+            echo "| detection-proofs | $PROOFS_RESULT | The instrument self-test: the matrix must FAIL on a deliberately poisoned corpus. A failure here means the gate cannot be trusted this run, in either direction. |"
+            echo
+            echo '**On a pin-bump PR, a red gate means the ecosystem moved — not that your diff broke something.** That is what the bump PR is for. Outside a pin bump or a cold rebuild of the unpinned tail, a red means the diff.'
+            echo
+            echo 'Note the corpus size and the executed count are different numbers, and the verdict is against the executed count: roughly 3,100 of ~5,100 packs ship no extension-shaped JS and are skipped.'
+          } > matrix-explainer.md
+          cat matrix-explainer.md
+
+      - name: Explain the verdict
+        if: ${{ !cancelled() }}
+        uses: ./.github/actions/explain-check
+        with:
+          slug: custom-nodes-matrix
+          title: Custom Nodes Ecosystem Matrix
+          icon: '🧩'
+          status: ${{ steps.gate.outcome == 'success' && 'pass' || 'fail' }}
+          headline: >-
+            Executes the frontend JS of every registry pack that ships any,
+            against this change, in both renderers. The eight `ecosystem-matrix`
+            shard checks are a harness self-test; the pack verdict is
+            `matrix-verdict`.
+          details-file: matrix-explainer.md
+          reproduce: |
+            # build one shard's fixture, then run it
+            python3 scripts/registry-census/build_matrix.py --shard 1/4
+            MATRIX_RENDERER=vue MATRIX_VUE=1 \
+              npx vitest run --config vitest.matrix.config.mts
+          docs: '[scripts/registry-census/README.md](scripts/registry-census/README.md)'
+          pr-number: ${{ github.event.pull_request.number }}
+          token: ${{ github.token }}
