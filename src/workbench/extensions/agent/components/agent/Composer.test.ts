@@ -1027,7 +1027,7 @@ describe('Composer', () => {
 
     const textarea = screen.getByRole('textbox')
     await userEvent.click(textarea)
-    await userEvent.keyboard('{Backspace}')
+    await userEvent.keyboard('{ArrowRight>4/}{Backspace}')
 
     expect(emitted().removeWorkflowReference).toBeUndefined()
     expect(useAgentComposerStore().draft).toBe('tex')
