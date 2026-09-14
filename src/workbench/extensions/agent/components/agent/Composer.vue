@@ -213,6 +213,7 @@ const placeholderHint = computed(() => {
 function onEnter(event: KeyboardEvent): void {
   if (event.isComposing || event.shiftKey) return
   event.preventDefault()
+  if (running.value) return
   composer.submit()
 }
 
