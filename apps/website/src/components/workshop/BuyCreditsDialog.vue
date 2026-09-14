@@ -123,6 +123,12 @@ watch(open, (value) => {
     cancelPendingCheckout()
     usd.value = 25
     state.value = 'amount'
+    if (
+      latchedReturn.value === 'landed' ||
+      latchedReturn.value === 'unresolved'
+    ) {
+      clearReturnReceipt()
+    }
     return
   }
   if (
@@ -136,12 +142,16 @@ watch(open, (value) => {
   }
 })
 
-function finish() {
-  cancelPendingCheckout()
-  clearTopUpWatch()
+function clearReturnReceipt(): void {
   latchedReturn.value = undefined
   lastCheckout.value = undefined
   checkoutAttempt.value = undefined
+  if (topUp.value.status !== 'idle') clearTopUpWatch()
+}
+
+function finish() {
+  cancelPendingCheckout()
+  clearReturnReceipt()
   open.value = false
 }
 
@@ -569,7 +579,10 @@ const stepperClass =
           {{ t('workshop.credits.body', locale) }}
         </DialogDescription>
 
-        <fieldset :disabled="state === 'pending'" class="contents">
+        <fieldset
+          :disabled="state === 'pending'"
+          class="m-0 flex min-w-0 flex-col gap-6 border-0 p-0"
+        >
           <div
             class="grid grid-cols-2 gap-2 sm:grid-cols-4"
             data-testid="buy-credits-packs"

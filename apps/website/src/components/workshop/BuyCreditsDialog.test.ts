@@ -3,7 +3,7 @@ import '@testing-library/jest-dom/vitest'
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
-import { defineComponent, h, nextTick } from 'vue'
+import { defineComponent, h, nextTick, ref } from 'vue'
 import type { Ref } from 'vue'
 
 import {
@@ -125,7 +125,7 @@ function stubCheckout(
   status = 200
 ) {
   const fetchCheckout = vi
-    .fn()
+    .fn<typeof fetch>()
     .mockResolvedValue(new Response(JSON.stringify(body), { status }))
   vi.stubGlobal('fetch', fetchCheckout)
   return fetchCheckout
@@ -137,6 +137,22 @@ function renderOpenDialog() {
       setup: () => () => h(BuyCreditsDialog, { open: true })
     })
   )
+}
+
+function renderControlledDialog() {
+  const isOpen = ref(true)
+  const view = render(
+    defineComponent({
+      setup: () => () =>
+        h(BuyCreditsDialog, {
+          open: isOpen.value,
+          'onUpdate:open': (value: boolean) => {
+            isOpen.value = value
+          }
+        })
+    })
+  )
+  return { ...view, isOpen }
 }
 
 describe('BuyCreditsDialog', () => {
@@ -206,6 +222,27 @@ describe('BuyCreditsDialog', () => {
     expect(credits.clearTopUpWatch).not.toHaveBeenCalled()
   })
 
+  it('acknowledges a displayed receipt when the dialog is dismissed', async () => {
+    const user = userEvent.setup()
+    const { isOpen } = renderControlledDialog()
+    credits.topUp!.value = {
+      status: 'landed',
+      ...topUpScope,
+      newCredits: 5_375,
+      landedAt: Date.now()
+    }
+    await screen.findByTestId('buy-credits-done')
+
+    await user.click(screen.getByRole('button', { name: 'Close' }))
+
+    await vi.waitFor(() => expect(isOpen.value).toBe(false))
+    expect(credits.clearTopUpWatch).toHaveBeenCalledOnce()
+    isOpen.value = true
+    await nextTick()
+    expect(screen.queryByTestId('buy-credits-done')).toBeNull()
+    expect(screen.getByTestId('buy-credits-packs')).toBeTruthy()
+  })
+
   it('describes an unresolved return without claiming payment succeeded', async () => {
     renderOpenDialog()
 
@@ -265,8 +302,13 @@ describe('BuyCreditsDialog', () => {
     releaseRefresh?.()
 
     await vi.waitFor(() => expect(fetchCheckout).toHaveBeenCalledOnce())
-    const [, init] = fetchCheckout.mock.calls[0] as [URL, RequestInit]
-    expect(JSON.parse(String(init.body))).toMatchObject({
+    const call = fetchCheckout.mock.calls.at(0)
+    if (!call) throw new Error('Expected checkout request')
+    const [, init] = call
+    if (typeof init?.body !== 'string')
+      throw new Error('Expected JSON checkout body')
+    const payload: unknown = JSON.parse(init.body)
+    expect(payload).toMatchObject({
       amount_cents: 5_000
     })
   })

@@ -1,5 +1,11 @@
 <script setup lang="ts">
-import { defineAsyncComponent, onBeforeUnmount, onMounted, ref } from 'vue'
+import {
+  defineAsyncComponent,
+  onBeforeUnmount,
+  onMounted,
+  ref,
+  watch
+} from 'vue'
 
 import type { Locale } from '../../../i18n/translations.ts'
 import { t } from '../../../i18n/translations.ts'
@@ -33,10 +39,13 @@ let stopBuyCreditsRequests: (() => void) | undefined
 
 onMounted(() => {
   stopBuyCreditsRequests = subscribeToWorkshopBuyCredits(() => {
-    buyingCredits.value = true
+    if (workshopAuthEnabled.value) buyingCredits.value = true
   })
 })
 onBeforeUnmount(() => stopBuyCreditsRequests?.())
+watch(workshopAuthEnabled, (enabled) => {
+  if (!enabled) buyingCredits.value = false
+})
 
 const ctaButtons = [
   {

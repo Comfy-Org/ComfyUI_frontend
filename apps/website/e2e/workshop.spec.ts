@@ -438,16 +438,20 @@ test.describe('Model playground', () => {
 
     await expect
       .poll(async () => {
-        const [listBox, lastCardBox] = await Promise.all([
+        const [listBox, firstCardBox, lastCardBox] = await Promise.all([
           list.boundingBox(),
+          cards.first().boundingBox(),
           cards.last().boundingBox()
         ])
-        if (!listBox || !lastCardBox) return Infinity
-        return Math.abs(
-          listBox.x + listBox.width - (lastCardBox.x + lastCardBox.width)
+        if (!listBox || !firstCardBox || !lastCardBox) return false
+        return (
+          Math.abs(firstCardBox.y - lastCardBox.y) < 2 &&
+          Math.abs(
+            listBox.x + listBox.width - (lastCardBox.x + lastCardBox.width)
+          ) < 2
         )
       })
-      .toBeLessThan(2)
+      .toBe(true)
   })
 })
 

@@ -111,4 +111,43 @@ describe('HeaderMain workshop gating', () => {
       expect(screen.getAllByTestId('buy-credits-dialog')).toHaveLength(1)
     )
   })
+
+  it('replays a request made before the header island mounts', async () => {
+    hoisted.flag!.value = true
+    requestWorkshopBuyCredits()
+
+    render(HeaderMain)
+
+    expect(await screen.findByTestId('buy-credits-dialog')).toBeTruthy()
+  })
+
+  it('does not latch requests while auth is disabled', async () => {
+    render(HeaderMain)
+
+    requestWorkshopBuyCredits()
+    hoisted.flag!.value = true
+
+    await waitFor(() =>
+      expect(screen.getAllByTestId('header-account')).toHaveLength(2)
+    )
+    expect(screen.queryByTestId('buy-credits-dialog')).toBeNull()
+  })
+
+  it('closes without reopening when auth is disabled and restored', async () => {
+    hoisted.flag!.value = true
+    render(HeaderMain)
+    requestWorkshopBuyCredits()
+    expect(await screen.findByTestId('buy-credits-dialog')).toBeTruthy()
+
+    hoisted.flag!.value = false
+    await waitFor(() =>
+      expect(screen.queryByTestId('buy-credits-dialog')).toBeNull()
+    )
+    hoisted.flag!.value = true
+    await waitFor(() =>
+      expect(screen.getAllByTestId('header-account')).toHaveLength(2)
+    )
+
+    expect(screen.queryByTestId('buy-credits-dialog')).toBeNull()
+  })
 })
