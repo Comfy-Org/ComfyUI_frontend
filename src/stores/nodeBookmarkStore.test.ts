@@ -29,6 +29,7 @@ describe('node bookmark folder commands', () => {
       'Existing/'
     ]
     settingStore.settingValues['Comfy.NodeLibrary.BookmarksCustomization'] = {}
+    vi.spyOn(settingStore, 'set').mockResolvedValue()
     vi.spyOn(console, 'warn').mockImplementation(() => {})
     vi.spyOn(console, 'error').mockImplementation(() => {})
   })
