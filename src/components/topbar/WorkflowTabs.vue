@@ -89,20 +89,7 @@
       :data-agent-gate-settled="agentPanelStore.gateSettled || undefined"
       class="ml-auto flex shrink-0 items-center gap-2 px-2"
     >
-      <Button
-        v-if="
-          agentPanelStore.enabled &&
-          !agentPanelStore.isVisible &&
-          !(agentPanelStore.isOpen && isChecking)
-        "
-        variant="link"
-        size="sm"
-        class="no-drag shrink-0 border border-solid border-plum-600 bg-ink-700 text-base-foreground hover:border-plum-500"
-        @click="onAgentEntryClick"
-      >
-        <i class="icon-[comfy--comfy-c] size-3 text-brand-yellow" />
-        <span>{{ $t('agent.askComfyAgent') }}</span>
-      </Button>
+      <slot name="actions-leading" />
       <Button
         v-if="isCloud || isNightly"
         v-tooltip="{ value: $t('actionbar.feedbackTooltip'), showDelay: 300 }"
@@ -116,6 +103,20 @@
       </Button>
       <CurrentUserButton v-if="showCurrentUser" compact class="shrink-0 p-1" />
       <LoginButton v-else class="p-1" />
+      <Button
+        v-if="showAgentEntry"
+        :variant="agentPanelStore.isVisible ? 'textonly' : 'secondary'"
+        size="sm"
+        class="no-drag shrink-0 gap-1"
+        :aria-pressed="agentPanelStore.isVisible"
+        @click="onAgentEntryClick"
+      >
+        <i class="icon-[lucide--mouse-pointer-2] size-3" />
+        <span>{{ $t('agent.entryButton') }}</span>
+      </Button>
+    </div>
+    <div v-else class="ml-auto flex h-full shrink-0 items-center">
+      <slot name="actions-leading" />
     </div>
     <div v-if="isDesktop" class="window-actions-spacer app-drag shrink-0" />
   </div>
@@ -170,6 +171,10 @@ const { withConsent, isChecking } = useAgentConsent()
 const tabActivity = useWorkflowTabActivityStore()
 const isOpeningAgent = ref(false)
 const { isLoggedIn } = useCurrentUser()
+
+const showAgentEntry = computed(
+  () => agentPanelStore.enabled && !(agentPanelStore.isOpen && isChecking.value)
+)
 
 async function onAgentEntryClick(): Promise<void> {
   if (isOpeningAgent.value) return

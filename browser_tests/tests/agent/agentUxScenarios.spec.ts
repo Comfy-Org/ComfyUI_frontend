@@ -4,7 +4,7 @@ import enMessages from '@/locales/en/main.json' with { type: 'json' }
 
 import { agentTest as test } from '@e2e/tests/agent/agentPanelMocks'
 
-const OPEN_AGENT_LABEL = enMessages.agent.askComfyAgent
+const OPEN_AGENT_LABEL = enMessages.agent.entryButton
 
 test.describe('Linear Agent UX scenarios', { tag: '@cloud' }, () => {
   for (const width of [480, 640]) {

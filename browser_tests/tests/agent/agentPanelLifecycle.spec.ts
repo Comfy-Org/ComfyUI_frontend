@@ -7,7 +7,7 @@ import {
   bootAgentApp
 } from '@e2e/fixtures/agentPanelFixture'
 
-const OPEN_AGENT_LABEL = enMessages.agent.askComfyAgent
+const OPEN_AGENT_LABEL = enMessages.agent.entryButton
 const OPEN_STORAGE_KEY = 'Comfy.AgentPanel.open'
 
 test.describe(

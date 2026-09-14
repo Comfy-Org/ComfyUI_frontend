@@ -9,7 +9,7 @@ import {
 } from '@e2e/fixtures/agentPanelFixture'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 
-const OPEN_AGENT_LABEL = enMessages.agent.askComfyAgent
+const OPEN_AGENT_LABEL = enMessages.agent.entryButton
 const SHOW_HISTORY_LABEL = enMessages.agent.showChatHistory
 const CHAT_OPTIONS_LABEL = enMessages.agent.chatOptions
 const RENAME_LABEL = enMessages.g.rename

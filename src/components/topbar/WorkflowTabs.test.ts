@@ -234,7 +234,7 @@ describe('WorkflowTabs agent entry button', () => {
     renderComponent()
 
     expect(
-      screen.queryByRole('button', { name: enMessages.agent.askComfyAgent })
+      screen.queryByRole('button', { name: enMessages.agent.entryButton })
     ).toBeNull()
   })
 
@@ -243,7 +243,7 @@ describe('WorkflowTabs agent entry button', () => {
     renderComponent()
 
     expect(
-      screen.queryByRole('button', { name: enMessages.agent.askComfyAgent })
+      screen.queryByRole('button', { name: enMessages.agent.entryButton })
     ).toBeNull()
   })
 
@@ -253,41 +253,37 @@ describe('WorkflowTabs agent entry button', () => {
     renderComponent()
 
     expect(
-      screen.getAllByRole('button', { name: enMessages.agent.askComfyAgent })
+      screen.getAllByRole('button', { name: enMessages.agent.entryButton })
     ).toHaveLength(1)
   })
 
-  it('waits for consent and hides the entry button once the panel is visible', async () => {
+  it('waits for consent and marks the entry button pressed once the panel is visible', async () => {
     const { user } = renderComponent()
 
     const button = screen.getByRole('button', {
-      name: enMessages.agent.askComfyAgent
+      name: enMessages.agent.entryButton
     })
 
     await user.click(button)
 
     expect(withConsent).toHaveBeenCalledOnce()
     expect(useAgentPanelStore().isVisible).toBe(true)
-    expect(
-      screen.queryByRole('button', { name: enMessages.agent.askComfyAgent })
-    ).toBeNull()
+    expect(button).toHaveAttribute('aria-pressed', 'true')
   })
 
-  it('re-renders the entry button once the panel closes', async () => {
+  it('closes the visible panel when the entry button is clicked again', async () => {
     useAgentPanelStore().consentAccepted = true
     useAgentPanelStore().open()
-    renderComponent()
+    const { user } = renderComponent()
 
+    await user.click(
+      screen.getByRole('button', { name: enMessages.agent.entryButton })
+    )
+
+    expect(useAgentPanelStore().isVisible).toBe(false)
     expect(
-      screen.queryByRole('button', { name: enMessages.agent.askComfyAgent })
-    ).toBeNull()
-
-    useAgentPanelStore().close('close_button')
-    await nextTick()
-
-    expect(
-      screen.getByRole('button', { name: enMessages.agent.askComfyAgent })
-    ).toBeInTheDocument()
+      screen.getByRole('button', { name: enMessages.agent.entryButton })
+    ).toHaveAttribute('aria-pressed', 'false')
   })
 
   it('does not activate or report an opening when the flag turns off during consent', async () => {
@@ -305,7 +301,7 @@ describe('WorkflowTabs agent entry button', () => {
     )
     const { user } = renderComponent()
     await user.click(
-      screen.getByRole('button', { name: enMessages.agent.askComfyAgent })
+      screen.getByRole('button', { name: enMessages.agent.entryButton })
     )
     expect(withConsent).toHaveBeenCalledOnce()
 
@@ -322,7 +318,7 @@ describe('WorkflowTabs agent entry button', () => {
     store.enabled = true
     await nextTick()
     expect(
-      screen.getByRole('button', { name: enMessages.agent.askComfyAgent })
+      screen.getByRole('button', { name: enMessages.agent.entryButton })
     ).toBeEnabled()
   })
 
@@ -336,7 +332,7 @@ describe('WorkflowTabs agent entry button', () => {
     )
     const { user } = renderComponent()
     const button = screen.getByRole('button', {
-      name: enMessages.agent.askComfyAgent
+      name: enMessages.agent.entryButton
     })
 
     await user.click(button)
@@ -353,20 +349,20 @@ describe('WorkflowTabs agent entry button', () => {
     expect(useAgentPanelStore().isVisible).toBe(true)
   })
 
-  it('hides the restored panel entry while consent is checked and accepted', async () => {
+  it('hides the restored panel entry while consent is checked, then shows it pressed', async () => {
     useAgentPanelStore().isOpen = true
     consentChecking.value = true
     renderComponent()
     expect(
-      screen.queryByRole('button', { name: enMessages.agent.askComfyAgent })
+      screen.queryByRole('button', { name: enMessages.agent.entryButton })
     ).not.toBeInTheDocument()
 
     useAgentPanelStore().consentAccepted = true
     consentChecking.value = false
     await nextTick()
     expect(
-      screen.queryByRole('button', { name: enMessages.agent.askComfyAgent })
-    ).not.toBeInTheDocument()
+      screen.getByRole('button', { name: enMessages.agent.entryButton })
+    ).toHaveAttribute('aria-pressed', 'true')
   })
 
   it('offers the entry after the restored consent check finishes without acceptance', async () => {
@@ -374,13 +370,13 @@ describe('WorkflowTabs agent entry button', () => {
     consentChecking.value = true
     renderComponent()
     expect(
-      screen.queryByRole('button', { name: enMessages.agent.askComfyAgent })
+      screen.queryByRole('button', { name: enMessages.agent.entryButton })
     ).not.toBeInTheDocument()
 
     consentChecking.value = false
     await nextTick()
     expect(
-      screen.getByRole('button', { name: enMessages.agent.askComfyAgent })
+      screen.getByRole('button', { name: enMessages.agent.entryButton })
     ).toBeInTheDocument()
   })
 
@@ -394,7 +390,7 @@ describe('WorkflowTabs agent entry button', () => {
     const { user } = renderComponent()
 
     await user.click(
-      screen.getByRole('button', { name: enMessages.agent.askComfyAgent })
+      screen.getByRole('button', { name: enMessages.agent.entryButton })
     )
 
     expect(withConsent).toHaveBeenCalledOnce()
