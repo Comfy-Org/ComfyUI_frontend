@@ -14,15 +14,14 @@
       @pointerdown="onResizeStart"
       @lostpointercapture="isResizing = false"
     />
-    <!-- Against the canvas the panel floats as a card, so the graph shows
-         through its gutter. Butted against the workflow overview panel it
-         needs its own surface and a seam to read as a separate column. -->
+    <!-- Against the canvas the panel floats as a card and the graph shows
+         through its gutter. An opaque neighbour needs a surface and a seam. -->
     <div
       data-testid="docked-agent-panel-shell"
       :class="
         cn(
           'size-full p-2',
-          rightSidePanelOpen &&
+          hasOpaqueNeighbor &&
             'bg-agent-surface border-l border-interface-stroke'
         )
       "
@@ -44,7 +43,6 @@ import { defineAsyncComponent, defineComponent, h, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { reportError } from '@/platform/telemetry/reportError'
-import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 import { useAgentRunModeStore } from '@/workbench/extensions/agent/stores/agent/agentRunModeStore'
 
@@ -75,9 +73,13 @@ const AgentPanelRoot = defineAsyncComponent({
   }
 })
 
+/** Set by the parent that lays out both this panel and its left neighbour. */
+const { hasOpaqueNeighbor = false } = defineProps<{
+  hasOpaqueNeighbor?: boolean
+}>()
+
 const agentPanelStore = useAgentPanelStore()
 const { isVisible: docked, width } = storeToRefs(agentPanelStore)
-const { isOpen: rightSidePanelOpen } = storeToRefs(useRightSidePanelStore())
 const agentRunModeStore = useAgentRunModeStore()
 
 void agentRunModeStore.load().catch((error: unknown) => {

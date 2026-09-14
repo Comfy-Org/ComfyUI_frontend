@@ -129,7 +129,10 @@
         </Splitter>
       </div>
 
-      <slot name="agent-panel" />
+      <slot
+        name="agent-panel"
+        :has-opaque-neighbor="agentPanelHasOpaqueNeighbor"
+      />
     </div>
   </div>
 </template>
@@ -186,6 +189,17 @@ const { isVisible: agentPanelOpen } = storeToRefs(agentPanelStore)
 // not an offside trigger; it only discriminates the saved layout key below.
 const showOffsideSplitter = computed(
   () => rightSidePanelVisible.value || isSelectMode.value
+)
+
+/**
+ * The agent panel docks to the right of this row. It only meets the bare
+ * canvas when no offside panel is drawn between the two.
+ */
+const agentPanelHasOpaqueNeighbor = computed(
+  () =>
+    showOffsideSplitter.value &&
+    !agentNodeSelectionActive.value &&
+    !focusMode.value
 )
 
 const sidebarPanelVisible = computed(

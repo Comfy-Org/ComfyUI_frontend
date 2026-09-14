@@ -3,6 +3,7 @@ import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
 import { t } from '@/i18n'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useExtensionService } from '@/services/extensionService'
+import { toTitleCase } from '@/extensions/core/serverHealthAlertText'
 import type { TopbarBadge } from '@/types/comfy'
 
 const badges = computed<TopbarBadge[]>(() => {
@@ -12,7 +13,7 @@ const badges = computed<TopbarBadge[]>(() => {
   const alert = remoteConfig.value.server_health_alert
   if (alert) {
     result.push({
-      text: alert.message,
+      text: toTitleCase(alert.message),
       label: alert.badge,
       variant: alert.severity ?? 'error',
       tooltip: alert.tooltip
