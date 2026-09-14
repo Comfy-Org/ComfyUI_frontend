@@ -10,7 +10,7 @@
     <i
       v-if="iconClass"
       data-testid="badge-icon"
-      :class="['shrink-0 text-base', iconClass, iconColorClass]"
+      :class="['size-4 shrink-0 text-base', iconClass, iconColorClass]"
     />
     <div
       v-else-if="badge.label"
@@ -64,7 +64,7 @@
       <i
         v-if="iconClass"
         data-testid="badge-icon"
-        :class="['shrink-0 text-base', iconClass, iconColorClass]"
+        :class="['size-4 shrink-0 text-base', iconClass, iconColorClass]"
       />
       <div
         v-if="badge.label"
@@ -111,7 +111,7 @@
     <i
       v-if="iconClass"
       data-testid="badge-icon"
-      :class="['size-3 shrink-0 text-xs', iconClass, iconColorClass]"
+      :class="['size-4 shrink-0 text-base', iconClass, iconColorClass]"
     />
     <div
       v-if="badge.label"
