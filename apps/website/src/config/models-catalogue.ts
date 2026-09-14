@@ -329,33 +329,26 @@ function matchesFacet(
   )
 }
 
-// Deep links into the catalog: `?useCase=edit-images&capability=Upscale&provider=Kling`.
-export function catalogSearch(filter: Partial<WorkshopFilter>): string {
+type CatalogLocation = Pick<WorkshopFilter, 'query' | 'useCase'>
+
+// Deep links into the catalog: `?useCase=edit-images&q=upscale`.
+export function catalogSearch(filter: CatalogLocation): string {
   const params = new URLSearchParams()
   if (filter.query) params.set('q', filter.query)
   if (filter.useCase && filter.useCase !== 'all')
     params.set('useCase', filter.useCase)
-  for (const capability of filter.capabilities ?? [])
-    params.append('capability', capability)
-  for (const provider of filter.providers ?? [])
-    params.append('provider', provider)
-  for (const modality of filter.modalities ?? [])
-    params.append('modality', modality)
   const search = params.toString()
   return search ? `?${search}` : ''
 }
 
-export function parseCatalogSearch(search: string): WorkshopFilter {
+export function parseCatalogSearch(search: string): CatalogLocation {
   const params = new URLSearchParams(search)
   const useCase = params.get('useCase')
   return {
     query: params.get('q') ?? '',
     useCase:
       USE_CASES.find((value) => value === useCase) ??
-      (useCase === 'other' ? 'other' : 'all'),
-    capabilities: params.getAll('capability'),
-    providers: params.getAll('provider'),
-    modalities: params.getAll('modality')
+      (useCase === 'other' ? 'other' : 'all')
   }
 }
 

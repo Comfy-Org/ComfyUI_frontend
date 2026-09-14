@@ -22,13 +22,15 @@ describe('WorkshopSearchField', () => {
 
     const field = screen.getByRole('combobox')
     await user.click(field)
-    expect(field.getAttribute('aria-expanded')).toBe('true')
+    expect(field.getAttribute('aria-expanded')).toBe('false')
+    expect(field.hasAttribute('aria-controls')).toBe(false)
 
     await user.keyboard('{Escape}')
     expect(field.getAttribute('aria-expanded')).toBe('false')
 
     await user.keyboard('flux')
     expect(field.getAttribute('aria-expanded')).toBe('true')
+    expect(field.hasAttribute('aria-controls')).toBe(true)
   })
 
   it('dismisses a nonempty native search without clearing or reopening it', async () => {
@@ -68,24 +70,26 @@ describe('WorkshopSearchField', () => {
     )
     expect(
       within(server.body).getByRole('button', {
-        name: 'Search models, providers, and capabilities'
+        name: 'Search models, providers, categories...'
       })
     ).toBeDisabled()
     render(search)
     const trigger = screen.getByRole('button', {
-      name: 'Search models, providers, and capabilities'
+      name: 'Search models, providers, categories...'
     })
-    await waitFor(() => expect(trigger).toBeEnabled())
+    await waitFor(() => expect(trigger.hasAttribute('disabled')).toBe(false))
     await user.click(trigger)
     const dialog = await screen.findByRole('dialog')
     const input = within(dialog).getByRole('searchbox')
-    await waitFor(() => expect(input).toHaveFocus())
+    await waitFor(() => expect(input.matches(':focus')).toBe(true))
     await user.tab({ shift: true })
     expect(
-      within(dialog).getByRole('button', { name: 'Show 0 models' })
-    ).toHaveFocus()
+      within(dialog)
+        .getByRole('button', { name: 'Show 0 models' })
+        .matches(':focus')
+    ).toBe(true)
     await user.keyboard('{Escape}')
     await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull())
-    await waitFor(() => expect(trigger).toHaveFocus())
+    await waitFor(() => expect(trigger.matches(':focus')).toBe(true))
   })
 })

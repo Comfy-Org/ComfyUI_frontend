@@ -44,7 +44,7 @@ const {
   balanceError: boolean
   canTopUp: boolean
   accountLabel: string
-  accountName?: string | null
+  accountName: string
   accountPhotoUrl?: string | null
   accountIdentity?: string | null
   locale?: Locale
@@ -80,20 +80,7 @@ function workspaceTier(workspace: WorkspaceWithRole): string {
   )
 }
 
-const accountInitials = computed(() =>
-  initialsOf(accountName || accountIdentity || session.workspace.name)
-)
-const accountDisplayName = computed(
-  () => accountName || accountIdentity || session.workspace.name
-)
-const roleLabel = computed(() =>
-  t(session.role === 'member' ? 'nav.roleMember' : 'nav.roleOwner', locale)
-)
-const accountDetail = computed(() =>
-  accountName && accountIdentity && accountName !== accountIdentity
-    ? accountIdentity
-    : roleLabel.value
-)
+const accountInitials = computed(() => initialsOf(accountName))
 const avatarFailed = ref(false)
 watch(
   () => accountPhotoUrl,
@@ -162,45 +149,51 @@ const surfaceClass =
         "
         data-testid="header-account-menu"
       >
+        <div
+          class="flex w-full items-center gap-3 rounded-xl p-2 text-left"
+          data-testid="account-identity"
+        >
+          <img
+            v-if="accountPhotoUrl && !avatarFailed"
+            :src="accountPhotoUrl"
+            alt=""
+            :class="cn(avatarClass, 'rounded-xl object-cover')"
+            data-testid="account-menu-avatar"
+            referrerpolicy="no-referrer"
+            @error="avatarFailed = true"
+          />
+          <span
+            v-else
+            :class="cn(avatarClass, 'rounded-xl bg-transparency-white-t8')"
+            aria-hidden="true"
+          >
+            {{ accountInitials }}
+          </span>
+          <span class="min-w-0 flex-1">
+            <span
+              class="block truncate text-base font-bold text-primary-warm-white"
+            >
+              {{ accountName }}
+            </span>
+            <span
+              v-if="accountIdentity && accountIdentity !== accountName"
+              class="block truncate text-xs text-primary-warm-gray"
+            >
+              {{ accountIdentity }}
+            </span>
+          </span>
+        </div>
+
         <DropdownMenuSub v-model:open="workspacesOpen">
           <DropdownMenuSubTrigger
             data-testid="account-workspace"
-            class="hover:bg-transparency-white-t4 data-[state=open]:bg-transparency-white-t4 focus-visible:bg-transparency-white-t4 flex w-full cursor-pointer items-center gap-3 rounded-xl p-2 text-left outline-none"
+            :class="itemClass"
           >
-            <img
-              v-if="accountPhotoUrl && !avatarFailed"
-              :src="accountPhotoUrl"
-              alt=""
-              :class="cn(avatarClass, 'rounded-xl object-cover')"
-              data-testid="account-menu-avatar"
-              referrerpolicy="no-referrer"
-              @error="avatarFailed = true"
+            <ArrowLeftRight
+              class="size-5 text-primary-warm-gray"
+              aria-hidden="true"
             />
-            <span
-              v-else
-              :class="cn(avatarClass, 'rounded-xl bg-transparency-white-t8')"
-              aria-hidden="true"
-            >
-              {{ accountInitials }}
-            </span>
-            <span class="min-w-0 flex-1">
-              <span
-                class="block truncate text-base font-bold text-primary-warm-white"
-              >
-                {{ accountDisplayName }}
-              </span>
-              <span
-                class="block truncate text-[11px] font-bold tracking-wider text-primary-warm-gray uppercase"
-              >
-                {{ accountDetail }}
-              </span>
-            </span>
-            <span
-              class="grid size-8 shrink-0 place-items-center rounded-lg text-primary-warm-gray"
-              aria-hidden="true"
-            >
-              <ArrowLeftRight class="size-4" />
-            </span>
+            <span class="flex-1">{{ t('nav.workspaces', locale) }}</span>
           </DropdownMenuSubTrigger>
           <DropdownMenuPortal>
             <DropdownMenuSubContent

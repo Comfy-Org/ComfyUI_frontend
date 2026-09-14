@@ -167,6 +167,11 @@ function resetFilters() {
   selectedUseCases.value = []
 }
 
+function applyUseCases(values: UseCase[]) {
+  selectedUseCases.value = values
+  if (values.length) useCase.value = 'all'
+}
+
 function clearFilters() {
   browseAll.value = false
   resetFilters()
@@ -245,10 +250,11 @@ const menuItemClass =
 
         <div class="flex items-center gap-2" data-testid="workshop-filters">
           <WorkshopFilterMenu
-            v-model:use-cases="selectedUseCases"
+            :use-cases="selectedUseCases"
             :use-case-options="useCaseOptions"
             :result-count="visible.length"
             :locale
+            @update:use-cases="applyUseCases"
           />
 
           <DropdownMenuRoot>

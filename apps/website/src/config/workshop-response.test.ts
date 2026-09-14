@@ -133,11 +133,55 @@ describe('native Router output handling', () => {
         data: [{ b64_json: `[media saved as ${outputs[0].fileName}]` }]
       }
       expect(outputs.at(-1)?.fileName).toBe('fixture-native-metadata.json')
+      expect(outputs.at(-1)?.purpose).toBe('response-metadata')
       expect(outputs.at(-1)?.text).not.toContain(png)
       expect(JSON.parse(outputs.at(-1)?.text ?? '')).toEqual(metadata)
       expect(await (await fetch(outputs.at(-1)?.url ?? '')).json()).toEqual(
         metadata
       )
+    } finally {
+      releaseRouterOutputs(outputs)
+    }
+  })
+
+  it('marks the response document as metadata beside remote media', async () => {
+    const outputs = await parseRouterResponse(
+      contract,
+      Response.json({ image: 'https://assets.example/generated.png' })
+    )
+    try {
+      expect(outputs.map(({ kind }) => kind)).toEqual(['image', 'text'])
+      expect(outputs[1].purpose).toBe('response-metadata')
+    } finally {
+      releaseRouterOutputs(outputs)
+    }
+  })
+
+  it('keeps declared text outputs visible beside media', async () => {
+    const selected = workshopContractSchema.parse({
+      ...contract,
+      output: {
+        format: 'json',
+        schema: { type: 'object' },
+        selectors: [
+          {
+            path: '/image',
+            kind: 'image',
+            encoding: 'base64',
+            mimeType: 'image/png'
+          },
+          { path: '/caption', kind: 'text', encoding: 'text' }
+        ]
+      }
+    })
+    const outputs = await parseRouterResponse(
+      selected,
+      Response.json({ image: png, caption: 'A generated caption' })
+    )
+    try {
+      expect(outputs.map(({ kind }) => kind)).toEqual(['image', 'text'])
+      expect(outputs[1].text).toBe('A generated caption')
+      expect(outputs[1].purpose).toBeUndefined()
     } finally {
       releaseRouterOutputs(outputs)
     }

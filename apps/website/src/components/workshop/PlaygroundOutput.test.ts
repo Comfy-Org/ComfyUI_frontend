@@ -210,22 +210,26 @@ describe('PlaygroundOutput', () => {
   })
 
   it('does not show raw response metadata beside a generated asset', () => {
+    const alternate = output('alternate')
     render(PlaygroundOutput, {
       props: {
         state: succeeded(output('latest')),
         attachments: [
+          alternate,
           {
             kind: 'text',
+            purpose: 'response-metadata',
             url: 'blob:metadata',
             text: '{"id":"run"}',
-            fileName: 'fixture-native-metadata.json'
+            fileName: 'response.json'
           }
         ],
         now: 2_000
       }
     })
 
-    expect(screen.queryByText('fixture-native-metadata.json')).toBeNull()
+    expect(screen.queryByText('response.json')).toBeNull()
+    expect(screen.getByRole('button', { name: 'alternate.webp' })).toBeTruthy()
     expect(
       screen.getByRole('img', { name: 'Output' }).getAttribute('src')
     ).toBe(output('latest').url)

@@ -263,26 +263,23 @@ test.describe('Models catalog', () => {
     )
   })
 
-  test('the capability filter actually narrows the catalog', async ({
-    page
-  }) => {
+  test('the use-case filter actually narrows the catalog', async ({ page }) => {
     await page.goto('/models/')
     await expect(page.getByTestId('workshop-sections')).toBeVisible()
     const all = await page.getByTestId('workshop-model-card').count()
     expect(all).toBeGreaterThan(0)
     await page.getByTestId('workshop-filter').click()
-    await page.getByTestId('workshop-facet-capability').click()
-    await page.getByTestId('filter-capability-upscale').click()
+    await page.getByTestId('filter-useCase-edit-images').click()
     const cards = page
       .getByTestId('workshop-models-grid')
       .getByTestId('workshop-model-card')
     await expect(cards.first()).toBeVisible()
     expect(await cards.count()).toBeLessThan(all)
     for (const card of await cards.all())
-      await expect(card).toContainText(/upscal/i)
-    await expect(
-      page.getByTestId('workshop-facet-capability-count')
-    ).toHaveText('1')
+      await expect(card).toContainText(/image/i)
+    await expect(page.getByTestId('workshop-facet-useCase-count')).toHaveText(
+      '1'
+    )
     await expect(page.getByTestId('workshop-filter-count')).toHaveText('1')
     await page.getByTestId('workshop-filter-clear').click()
     await expect(page.getByTestId('workshop-sections')).toBeVisible()
@@ -293,10 +290,10 @@ test.describe('Models catalog', () => {
     const tag = page
       .getByTestId('model-tags')
       .getByRole('link', { name: 'flux', exact: true })
-    await expect(tag).toHaveAttribute('href', '/models?capability=flux')
+    await expect(tag).toHaveAttribute('href', '/models?q=flux')
     await tag.click()
-    await expect(page).toHaveURL(/\/models\/?\?capability=flux$/)
-    await expect(page.getByTestId('workshop-filter-count')).toHaveText('1')
+    await expect(page).toHaveURL(/\/models\/?\?q=flux$/)
+    await expect(page.getByTestId('workshop-search')).toHaveValue('flux')
     const cards = page
       .getByTestId('workshop-models-grid')
       .getByTestId('workshop-model-card')
@@ -309,10 +306,12 @@ test.describe('Models catalog', () => {
     await page.goto('/models/kling--avatar--animate-images/')
     await page
       .getByTestId('model-hero')
-      .getByRole('link', { name: 'Video', exact: true })
+      .getByRole('link', { name: 'Image to video', exact: true })
       .click()
-    await expect(page).toHaveURL(/\/models\/?\?modality=video$/)
-    await expect(page.getByTestId('workshop-filter-count')).toHaveText('1')
+    await expect(page).toHaveURL(/\/models\/?\?useCase=animate-images$/)
+    await expect(
+      page.getByRole('heading', { level: 1, name: /Image to video/ })
+    ).toBeVisible()
   })
 
   test('homepage model releases use the published canonical URL', async ({

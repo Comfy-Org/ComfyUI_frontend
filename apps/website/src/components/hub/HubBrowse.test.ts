@@ -40,10 +40,10 @@ describe('HubBrowse', () => {
     expect(screen.getAllByTestId('workshop-model-card').length).toBeGreaterThan(
       10
     )
-    await user.type(screen.getByTestId('workshop-search'), 'kling')
+    await user.type(screen.getByTestId('workshop-search'), 'upscale')
     const cards = screen.getAllByTestId('workshop-model-card')
     expect(cards.length).toBeGreaterThan(0)
-    cards.forEach((card) => expect(card.textContent).toMatch(/Kling/i))
+    cards.forEach((card) => expect(card.textContent).toMatch(/Upscale/i))
   })
 
   it('shows model results in the shared search panel only after typing', async () => {

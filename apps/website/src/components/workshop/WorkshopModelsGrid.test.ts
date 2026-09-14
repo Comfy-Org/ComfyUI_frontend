@@ -143,6 +143,20 @@ describe('WorkshopModelsGrid', () => {
     expect(cardNames()).toHaveLength(3)
   })
 
+  it('replaces a browsed section with a use-case filter', async () => {
+    const user = userEvent.setup()
+    render(WorkshopModelsGrid, { props: { models } })
+
+    await user.click(screen.getByRole('button', { name: 'Edit images 1' }))
+    await user.click(screen.getByRole('button', { name: 'Filter' }))
+    const dialog = await screen.findByRole('dialog', { name: 'Filter' })
+    await user.click(
+      within(dialog).getByRole('button', { name: 'Generate videos 1' })
+    )
+
+    expect(cardNames()).toEqual([expect.stringContaining('Kling AI')])
+  })
+
   it('narrows the use-case menu with its search box', async () => {
     const user = userEvent.setup()
     render(WorkshopModelsGrid, { props: { models } })

@@ -458,22 +458,19 @@ describe('catalog deep links', () => {
   it('round-trips a filter through the query string', () => {
     const search = catalogSearch({
       useCase: 'edit-images',
-      capabilities: ['Upscale', 'Image editing'],
-      providers: ['Kling'],
-      modalities: ['video']
+      query: 'upscale'
     })
     expect(parseCatalogSearch(search)).toEqual({
-      query: '',
-      useCase: 'edit-images',
-      capabilities: ['Upscale', 'Image editing'],
-      providers: ['Kling'],
-      modalities: ['video']
+      query: 'upscale',
+      useCase: 'edit-images'
     })
   })
 
-  it('ignores unknown use cases and yields no query string when empty', () => {
-    expect(parseCatalogSearch('?useCase=nonsense').useCase).toBe('all')
-    expect(catalogSearch({ useCase: 'all', capabilities: [] })).toBe('')
+  it('ignores retired facets and yields no query string when empty', () => {
+    expect(
+      parseCatalogSearch('?useCase=nonsense&provider=Kling&capability=Upscale')
+    ).toEqual({ query: '', useCase: 'all' })
+    expect(catalogSearch({ useCase: 'all' })).toBe('')
   })
 })
 

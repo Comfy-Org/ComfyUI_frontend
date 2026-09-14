@@ -31,6 +31,7 @@ const query = defineModel<string>({ required: true })
 const mounted = useMounted()
 
 const open = ref(false)
+const panelOpen = computed(() => open.value && query.value.trim() !== '')
 const sheetOpen = ref(false)
 const sheetInput = useTemplateRef<HTMLInputElement>('sheetInput')
 const sheetTrigger = useTemplateRef<HTMLButtonElement>('sheetTrigger')
@@ -123,8 +124,8 @@ const clearButtonClass =
         data-testid="workshop-search"
         :class="fieldClass"
         role="combobox"
-        :aria-controls="`${inputId}-panel`"
-        :aria-expanded="open"
+        :aria-controls="panelOpen ? `${inputId}-panel` : undefined"
+        :aria-expanded="panelOpen"
         @focus="open = true"
         @input="open = true"
         @keydown.escape.prevent="open = false"
@@ -141,7 +142,7 @@ const clearButtonClass =
       </button>
 
       <WorkshopSearchPanel
-        v-if="open && query.trim()"
+        v-if="panelOpen"
         :id="`${inputId}-panel`"
         :models
         :query

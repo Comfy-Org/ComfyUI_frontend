@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/vue'
+import { fireEvent, render, screen, waitFor } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 
@@ -242,13 +242,58 @@ describe('HeaderAccount menu', () => {
     render(HeaderAccount)
 
     await user.click(screen.getByTestId('header-account'))
-    const card = await screen.findByTestId('account-workspace')
+    const card = await screen.findByTestId('account-identity')
 
     expect(card.textContent).toContain('Ada')
     expect(card.textContent).toContain('a@b.co')
     expect(card.textContent).not.toContain('Personal')
     expect(screen.getByTestId('account-menu-avatar').getAttribute('src')).toBe(
       'https://example.com/ada.jpg'
+    )
+  })
+
+  it('uses the user ID when profile fields are empty', async () => {
+    signIn()
+    h.user!.value = {
+      uid: 'user-1',
+      email: null,
+      displayName: null,
+      photoURL: null
+    }
+    const user = userEvent.setup()
+    render(HeaderAccount)
+
+    await user.click(screen.getByTestId('header-account'))
+    const identity = await screen.findByTestId('account-identity')
+
+    expect(identity.textContent).toContain('user-1')
+    expect(identity.textContent).not.toContain('Personal')
+  })
+
+  it('falls back to initials and retries when the profile image changes', async () => {
+    signIn()
+    h.user!.value = {
+      uid: 'user-1',
+      email: 'a@b.co',
+      displayName: 'Ada',
+      photoURL: 'https://example.com/broken.jpg'
+    }
+    render(HeaderAccount)
+
+    await fireEvent.error(screen.getByTestId('header-account-avatar'))
+    expect(screen.queryByTestId('header-account-avatar')).toBeNull()
+    expect(screen.getByTestId('header-account').textContent).toContain('A')
+
+    h.user!.value = {
+      uid: 'user-1',
+      email: 'a@b.co',
+      displayName: 'Ada',
+      photoURL: 'https://example.com/ada.jpg'
+    }
+    await waitFor(() =>
+      expect(
+        screen.getByTestId('header-account-avatar').getAttribute('src')
+      ).toBe('https://example.com/ada.jpg')
     )
   })
 
@@ -405,7 +450,7 @@ describe('HeaderAccount workspace switcher', () => {
     )
     await waitFor(() => expect(screen.queryByRole('menu')).toBeNull())
     await user.click(screen.getByTestId('header-account'))
-    const account = await screen.findByTestId('account-workspace')
+    const account = await screen.findByTestId('account-identity')
     expect(account.textContent).toContain('Ada')
     expect(account.textContent).not.toContain('Comfy team')
   })

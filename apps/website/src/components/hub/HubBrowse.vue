@@ -8,6 +8,7 @@ import { useHubStore } from '../../composables/useHubStore'
 import type { UseCase } from '../../config/models-catalogue'
 import {
   USE_CASES,
+  filterWorkshopModels,
   sortWorkshopModels,
   useCaseFor
 } from '../../config/models-catalogue'
@@ -191,13 +192,9 @@ const hrefFor = (template: HubTemplate) =>
   hubWorkflowPath(template.name)
 
 const filteredModels = computed(() => {
-  const query = store.searchQuery.value.trim().toLowerCase()
-  const matches = scoped.value.models.filter(
-    (model) =>
-      query === '' ||
-      model.name.toLowerCase().includes(query) ||
-      (model.provider ?? '').toLowerCase().includes(query)
-  )
+  const matches = filterWorkshopModels(scoped.value.models, {
+    query: store.searchQuery.value
+  })
   const order = store.sortBy.value
   return sortWorkshopModels(matches, order === 'newest' ? 'popular' : order)
 })

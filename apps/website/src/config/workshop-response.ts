@@ -132,10 +132,12 @@ async function automaticOutputs(
       2
     )
     const document = responseDocument(id, text)
+    const hasMedia = outputs.length > 0
     outputs.push(
-      extracted.size
+      hasMedia
         ? {
             ...document,
+            purpose: 'response-metadata',
             fileName: `${id.replaceAll('/', '-')}-metadata.json`
           }
         : document
