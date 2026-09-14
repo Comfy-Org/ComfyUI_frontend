@@ -11,6 +11,7 @@ import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@/platform/telemetry'
 import type { LoadedComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import { useExtensionStore } from '@/stores/extensionStore'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 
 import WorkflowTabs from './WorkflowTabs.vue'
@@ -407,6 +408,32 @@ describe('WorkflowTabs agent entry button', () => {
     await nextTick()
 
     expect(actions).toHaveAttribute('data-agent-gate-settled', 'true')
+  })
+})
+
+describe('WorkflowTabs environment badge separator', () => {
+  // Production serves no environment badge, and a separator with nothing on
+  // its left reads as a stray line against the tab strip.
+  it('omits the separator when no badge is present', () => {
+    renderComponent()
+
+    expect(
+      screen.queryByTestId('environment-badge-separator')
+    ).not.toBeInTheDocument()
+  })
+
+  it('divides the badge from the icon buttons once a badge appears', async () => {
+    renderComponent()
+
+    useExtensionStore().registerExtension({
+      name: 'Test.Environment.Badge',
+      topbarBadges: [{ text: 'Staging Environment', variant: 'warning' }]
+    })
+    await nextTick()
+
+    expect(
+      screen.getByTestId('environment-badge-separator')
+    ).toBeInTheDocument()
   })
 })
 
