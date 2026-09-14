@@ -21,7 +21,7 @@ describe('TagOverflow', () => {
     // The hover card opens on pointer or focus; happy-dom cannot drive Reka's
     // full pointer sequence, so this drives the keyboard path and owns the
     // rendered link contract.
-     
+
     await fireEvent.focus(trigger)
 
     const links = await screen.findAllByRole('link')
@@ -34,7 +34,7 @@ describe('TagOverflow', () => {
     render(TagOverflow, { props: { tags } })
 
     // See the happy-dom limitation above.
-     
+
     await fireEvent.focus(screen.getByTestId('model-tags-rest'))
     const list = await screen.findByTestId('model-tags-rest-list')
 
