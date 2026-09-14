@@ -1,6 +1,7 @@
 import { computed, onBeforeUnmount, readonly, ref, watch } from 'vue'
 import type { Ref } from 'vue'
 
+import { reportError } from '@/platform/telemetry/reportError'
 import { api } from '@/scripts/api'
 import type { RemoteMutationContext } from '@/types/graphMutationContext'
 import { createUuidv4 } from '@/utils/uuid'
@@ -190,6 +191,21 @@ export const apiTransport: DocFrameTransport = {
   },
   removeEventListener(type, listener) {
     api.removeCustomEventListener(type, listener)
+  }
+}
+
+// Nothing is re-thrown: an error escaping onBeforeUnmount reaches Vue's
+// logError, which re-throws in dev/test builds and aborts the rest of
+// unmountComponent, leaving this composable's watchers alive.
+function runFollowerTeardown(cleanups: readonly (() => void)[]): void {
+  for (const cleanup of cleanups) {
+    try {
+      cleanup()
+    } catch (error) {
+      reportError(error, {
+        errorType: 'failure_tearing_down_agent_crdt_follower'
+      })
+    }
   }
 }
 
@@ -685,25 +701,24 @@ export function useAgentCrdtFollower(
   onBeforeUnmount(() => {
     // Teardown must be total. Anything that survives would apply every later
     // update twice after a remount.
-    try {
-      clearSubscribeRetry()
-      clearStaleProbe()
-      api.removeEventListener('reconnected', onReconnected)
-      api.removeEventListener('status', onSocketActivity)
-      bridge.removeEventListener('doc_subscribed', onSubscribed)
-      bridge.removeEventListener('doc_update', onUpdate)
-      bridge.removeEventListener('doc_ops_result', onOpsResult)
-      bridge.removeEventListener('doc_reset', onDocReset)
-      bridge.removeEventListener('follower_replaced', onFollowerReplaced)
-      bridge.removeEventListener('schema_error', onSchemaError)
-      bridge.removeEventListener('doc_gap', onGap)
-      bridge.removeEventListener('doc_stale', onStale)
-      sender.detach()
-      adapter.destroy()
-      bridge.destroy()
-    } finally {
-      client.destroy()
-    }
+    runFollowerTeardown([
+      clearSubscribeRetry,
+      clearStaleProbe,
+      () => api.removeEventListener('reconnected', onReconnected),
+      () => api.removeEventListener('status', onSocketActivity),
+      () => bridge.removeEventListener('doc_subscribed', onSubscribed),
+      () => bridge.removeEventListener('doc_update', onUpdate),
+      () => bridge.removeEventListener('doc_ops_result', onOpsResult),
+      () => bridge.removeEventListener('doc_reset', onDocReset),
+      () => bridge.removeEventListener('follower_replaced', onFollowerReplaced),
+      () => bridge.removeEventListener('schema_error', onSchemaError),
+      () => bridge.removeEventListener('doc_gap', onGap),
+      () => bridge.removeEventListener('doc_stale', onStale),
+      () => sender.detach(),
+      () => adapter.destroy(),
+      () => bridge.destroy(),
+      () => client.destroy()
+    ])
   })
 
   const status = computed<AgentCrdtStatus>(() => ({
