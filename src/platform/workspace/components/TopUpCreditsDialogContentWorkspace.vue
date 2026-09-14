@@ -304,6 +304,7 @@ import { reportError } from '@/platform/telemetry/reportError'
 import { WorkspaceApiError } from '@/platform/workspace/api/workspaceApi'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 import { useHasSavedPaymentMethod } from '@/platform/workspace/composables/useHasSavedPaymentMethod'
+import { useTopupOperation } from '@/platform/workspace/composables/useTopupOperation'
 import { useBillingOperationStore } from '@/platform/workspace/stores/billingOperationStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import {
@@ -336,7 +337,6 @@ const { canTopUp } = useBillingCapabilities()
 
 const billingOperationStore = useBillingOperationStore()
 const workspaceStore = useTeamWorkspaceStore()
-const isAddingCredits = computed(() => billingOperationStore.isAddingCredits)
 
 function emitTopupJourneyPhase(
   record: CheckoutJourneyRecord,
@@ -366,9 +366,12 @@ function enterTopupJourney(): void {
 }
 
 onMounted(enterTopupJourney)
-const topupOperation = computed(
-  () => billingOperationStore.topupActionOperation
-)
+const {
+  isAddingCredits,
+  topupOperation,
+  retryPaymentAuthentication,
+  dismissOperation
+} = useTopupOperation()
 const topupActionUrl = computed(() => topupOperation.value?.actionUrl ?? null)
 const topupAuthenticationError = computed(
   () => topupOperation.value?.errorMessage ?? null
@@ -517,12 +520,12 @@ function openTopupVerification() {
 function resumeTopupAuthentication() {
   const operation = topupOperation.value
   if (!operation || !canTopUp.value) return
-  void billingOperationStore.retryPaymentAuthentication(operation.opId)
+  void retryPaymentAuthentication(operation.opId)
 }
 
 function startOverTopup() {
   const operation = topupOperation.value
-  if (operation) billingOperationStore.dismissOperation(operation.opId)
+  if (operation) dismissOperation(operation.opId)
   paymentSubmitted.value = false
   step.value = 'amount'
 }

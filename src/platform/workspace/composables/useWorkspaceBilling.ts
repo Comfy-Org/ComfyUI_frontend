@@ -7,6 +7,7 @@ import {
   watch
 } from 'vue'
 
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useBillingPlans } from '@/platform/cloud/subscription/composables/useBillingPlans'
 import { useSubscriptionDialog } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
 import type { SubscriptionDialogOptions } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
@@ -26,6 +27,7 @@ import {
   WorkspaceApiError,
   workspaceApi
 } from '@/platform/workspace/api/workspaceApi'
+import { useBillingSdkStore } from '@/platform/workspace/billing/sdk/billingSdkStore'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 import { useBillingOperationStore } from '@/platform/workspace/stores/billingOperationStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
@@ -118,6 +120,7 @@ export function useWorkspaceBilling(): BillingState & BillingActions {
   const billingOperationStore = useBillingOperationStore()
   const workspaceStore = useTeamWorkspaceStore()
   const telemetry = useTelemetry()
+  const { flags } = useFeatureFlags()
 
   const isInitialized = ref(false)
   const isLoading = ref(false)
@@ -256,12 +259,19 @@ export function useWorkspaceBilling(): BillingState & BillingActions {
         status.pending_billing_op_id &&
         !billingOperationStore.getOperation(status.pending_billing_op_id)
       ) {
-        void billingOperationStore.startOperation(
-          status.pending_billing_op_id,
-          resumeModeFor(status.pending_billing_op_type),
-          undefined,
-          status.action_url
-        )
+        if (
+          flags.billingSdkTopupEnabled &&
+          status.pending_billing_op_type === 'topup'
+        ) {
+          useBillingSdkStore().recover()
+        } else {
+          void billingOperationStore.startOperation(
+            status.pending_billing_op_id,
+            resumeModeFor(status.pending_billing_op_type),
+            undefined,
+            status.action_url
+          )
+        }
       }
     } catch (err) {
       if (requestId === latestBillingReadIds.status) {
@@ -535,7 +545,25 @@ export function useWorkspaceBilling(): BillingState & BillingActions {
     }
   }
 
-  async function topup(amountCents: number): Promise<CreateTopupResponse> {
+  // The SDK path resolves once the operation settles, so it must not hold
+  // `isLoading` the way the issuing call does; the dialog locks itself.
+  async function topupThroughSdk(
+    amountCents: number
+  ): Promise<CreateTopupResponse | undefined> {
+    error.value = null
+    try {
+      return await useBillingSdkStore().createTopup(amountCents)
+    } catch (err) {
+      error.value =
+        err instanceof Error ? err.message : 'Failed to top up credits'
+      throw err
+    }
+  }
+
+  async function topup(
+    amountCents: number
+  ): Promise<CreateTopupResponse | undefined> {
+    if (flags.billingSdkTopupEnabled) return topupThroughSdk(amountCents)
     isLoading.value = true
     error.value = null
     try {

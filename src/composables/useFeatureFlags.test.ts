@@ -213,6 +213,30 @@ describe('useFeatureFlags', () => {
     })
   })
 
+  describe('billingSdkTopupEnabled', () => {
+    it.for([
+      ['missing', undefined, false],
+      ['malformed', 'true', false],
+      ['true', true, true]
+    ] as const)('is fail-closed for %s values', ([, value, expected]) => {
+      vi.mocked(api.getServerFeature).mockReturnValue(value)
+
+      expect(useFeatureFlags().flags.billingSdkTopupEnabled).toBe(expected)
+      expect(api.getServerFeature).toHaveBeenCalledWith(
+        ServerFeatureFlag.BILLING_SDK_TOPUP_ENABLED,
+        false
+      )
+    })
+
+    it('is false when feature lookup throws', () => {
+      vi.mocked(api.getServerFeature).mockImplementation(() => {
+        throw new Error('feature service unavailable')
+      })
+
+      expect(useFeatureFlags().flags.billingSdkTopupEnabled).toBe(false)
+    })
+  })
+
   describe('linearToggleEnabled', () => {
     afterEach(() => {
       vi.mocked(distributionTypes).isNightly = false
