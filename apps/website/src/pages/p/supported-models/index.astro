@@ -8,6 +8,7 @@ import {
   jsonLdId,
   pageContext,
 } from '../../../utils/jsonLd'
+import { directoryLabel, modelSearchText } from './_search'
 
 const title = t('models.index.title')
 const subtitle = t('models.index.subtitle')
@@ -25,21 +26,6 @@ const modelList = itemListNode(
   })),
 )
 
-const dirLabel: Record<string, string> = {
-  diffusion_models: 'Diffusion',
-  checkpoints: 'Checkpoint',
-  loras: 'LoRA',
-  controlnet: 'ControlNet',
-  clip_vision: 'CLIP Vision',
-  model_patches: 'Patch',
-  vae: 'VAE',
-  text_encoders: 'Text Encoder',
-  audio_encoders: 'Audio Encoder',
-  latent_upscale_models: 'Latent Upscale',
-  upscale_models: 'Upscale',
-  style_models: 'Style',
-  partner_nodes: 'Partner Node'
-}
 ---
 
 <BaseLayout
@@ -114,7 +100,7 @@ const dirLabel: Record<string, string> = {
     >
       {models.map((model) => (
         <li
-          data-search={`${model.displayName} ${model.name} ${model.slug} ${dirLabel[model.directory] ?? model.directory}`.toLowerCase()}
+          data-search={modelSearchText(model)}
         >
           <a
             href={`/p/supported-models/${model.slug}/`}
@@ -125,7 +111,7 @@ const dirLabel: Record<string, string> = {
                 {model.displayName}
               </span>
               <span class="shrink-0 rounded-full bg-white/10 px-2 py-0.5 text-xs font-medium text-primary-comfy-canvas/70">
-                {dirLabel[model.directory] ?? model.directory}
+                {directoryLabel[model.directory] ?? model.directory}
               </span>
             </div>
             <p class="mt-auto text-xs text-primary-comfy-canvas/50">
