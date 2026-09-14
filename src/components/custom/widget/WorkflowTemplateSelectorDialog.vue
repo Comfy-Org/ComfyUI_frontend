@@ -443,6 +443,7 @@ import {
   watch
 } from 'vue'
 import { useI18n } from 'vue-i18n'
+import type { ComfyTemplateInputAsset } from '@comfyorg/comfyui-desktop-bridge-types'
 
 import CardBottom from '@/components/card/CardBottom.vue'
 import CardContainer from '@/components/card/CardContainer.vue'
@@ -498,6 +499,7 @@ import type {
   TemplateModelSetupResult,
   TemplateModelSetupRow
 } from '@/platform/workflow/templates/utils/templateModelSetup'
+import { resolveTemplateInputAssets } from '@/platform/workflow/templates/utils/templateInputAssets'
 import { api } from '@/scripts/api'
 import type { NavGroupData, NavItemData } from '@/types/navTypes'
 import { OnCloseKey } from '@/types/widgetTypes'
@@ -770,6 +772,7 @@ const activeDetail = ref<{
   template: TemplateInfo
   prepared: PreparedWorkflowTemplate
   modelSetup: ActiveTemplateModelSetup
+  inputAssets: readonly ComfyTemplateInputAsset[]
 } | null>(null)
 const openPending = ref(false)
 let detailGeneration = 0
@@ -1003,6 +1006,7 @@ function toModelDetailRow(
 ): TemplateDetailRow {
   const detailRow: TemplateDetailRow = {
     id: `model:${getModelFileKey(row.model)}`,
+    kind: 'model',
     name: row.model.name,
     description: getModelDetailDescription(row)
   }
@@ -1055,29 +1059,56 @@ function toModelDetailRow(
   }
 }
 
+function toInputDetailRow(asset: ComfyTemplateInputAsset): TemplateDetailRow {
+  return {
+    id: `input:${asset.assetId}`,
+    kind: 'input',
+    name: t(`templateWorkflows.detail.inputMediaTypes.${asset.mediaType}`),
+    description: asset.filename,
+    ...(asset.previewUrl && {
+      preview: { src: asset.previewUrl, mediaType: asset.mediaType }
+    })
+  }
+}
+
 function buildTemplateDetailGroups(
   setup: TemplateModelSetupResult,
-  rowDownloads: TemplateModelRowDownloads
+  rowDownloads: TemplateModelRowDownloads,
+  inputAssets: readonly ComfyTemplateInputAsset[]
 ): readonly TemplateDetailGroup[] {
-  if (setup.rows.length === 0) return []
+  const groups: TemplateDetailGroup[] = []
 
-  return [
-    {
+  if (setup.rows.length > 0) {
+    groups.push({
       id: 'models',
       label: t('templateWorkflows.detail.models'),
       ...(setup.declarationTotal.isComplete && {
         total: formatSize(setup.declarationTotal.bytes)
       }),
       rows: setup.rows.map((row) => toModelDetailRow(row, rowDownloads))
-    }
-  ]
+    })
+  }
+
+  if (inputAssets.length > 0) {
+    groups.push({
+      id: 'input-assets',
+      label: t('templateWorkflows.detail.inputAssets'),
+      rows: inputAssets.map(toInputDetailRow)
+    })
+  }
+
+  return groups
 }
 
 const activeDetailGroups = computed<readonly TemplateDetailGroup[]>(() => {
-  const setup = activeDetail.value?.modelSetup
-  return setup
-    ? buildTemplateDetailGroups(setup.result, setup.rowDownloads)
-    : []
+  const detail = activeDetail.value
+  if (!detail) return []
+
+  return buildTemplateDetailGroups(
+    detail.modelSetup.result,
+    detail.modelSetup.rowDownloads,
+    detail.inputAssets
+  )
 })
 
 function isModelDownloadCandidate(
@@ -1183,6 +1214,13 @@ const onLoadWorkflow = async (template: TemplateInfo, event: MouseEvent) => {
     const requirements = extractTemplateModelRequirementDetails(
       prepared.workflow
     )
+    const inputAssetsPromise =
+      prepared.sourceModule === 'default'
+        ? resolveTemplateInputAssets(
+            template.name,
+            () => window.__comfyDesktop2
+          )
+        : Promise.resolve<readonly ComfyTemplateInputAsset[]>([])
     if (requirements.length === 0) {
       await openPreparedTemplate(prepared, generation)
       return
@@ -1197,12 +1235,16 @@ const onLoadWorkflow = async (template: TemplateInfo, event: MouseEvent) => {
       return
     }
 
+    const inputAssets = await inputAssetsPromise
+    if (generation !== detailGeneration) return
+
     const rowDownloads = useTemplateModelRowDownloads({
       loadFolderPaths: () => api.getFolderPaths()
     })
     activeDetail.value = {
       template,
       prepared: markRaw(prepared),
+      inputAssets,
       modelSetup: {
         result: deriveTemplateModelSetup(
           requirements,
@@ -1274,8 +1316,9 @@ function onDownloadModel(rowId: string) {
 }
 
 async function onDownloadModelsAndOpen() {
-  const setup = activeDetail.value?.modelSetup
-  if (!setup || setup.pending || openPending.value) return
+  const detail = activeDetail.value
+  const setup = detail?.modelSetup
+  if (!detail || !setup || setup.pending || openPending.value) return
 
   for (const row of setup.result.rows) {
     if (isModelDownloadCandidate(row, setup.rowDownloads)) {

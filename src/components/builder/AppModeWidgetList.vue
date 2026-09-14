@@ -24,6 +24,7 @@ import { useLinkStore } from '@/stores/linkStore'
 import { graphScopeOf } from '@/types/graphScopeId'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { useAppModeStore } from '@/stores/appModeStore'
+import { useTemplateInputDownloadStore } from '@/stores/templateInputDownloadStore'
 import { parseImageWidgetValue } from '@/utils/imageUtil'
 import { cn } from '@comfyorg/tailwind-utils'
 import { HideLayoutFieldKey, WidgetHeightKey } from '@/types/widgetTypes'
@@ -47,6 +48,7 @@ const { mobile = false, builderMode = false } = defineProps<{
 const { t } = useI18n()
 const executionErrorStore = useExecutionErrorStore()
 const appModeStore = useAppModeStore()
+const templateInputDownloadStore = useTemplateInputDownloadStore()
 const widgetValueStore = useWidgetValueStore()
 const linkStore = useLinkStore()
 const maskEditor = useMaskEditor()
@@ -132,6 +134,11 @@ function getDropIndicator(node: LGraphNode, id: WidgetId) {
     if (!filename) return undefined
     const params = new URLSearchParams({ filename, subfolder, type })
     appendCloudResParam(params, filename)
+    const downloadRevision =
+      templateInputDownloadStore.previewRevision(filename)
+    if (downloadRevision) {
+      params.set('template_input_revision', String(downloadRevision))
+    }
     return api.apiURL(`/view?${params}${app.getPreviewFormatParam()}`)
   }
 
