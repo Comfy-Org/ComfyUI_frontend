@@ -150,6 +150,22 @@ type PreparedMutation =
     }
   | { kind: 'clearSemanticGraph'; nodeIds: readonly NodeId[] }
 
+type QueuedOf<K extends QueuedMutation['kind']> = Extract<
+  QueuedMutation,
+  { kind: K }
+>
+type PreparedOf<K extends PreparedMutation['kind']> = Extract<
+  PreparedMutation,
+  { kind: K }
+>
+
+interface PrepareDraft {
+  scope: GraphScope
+  nodes: Map<string, NodeState>
+  links: Map<LinkId, LinkTopology>
+  widgets: Map<string, Set<string>>
+}
+
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value)
 }
@@ -267,6 +283,28 @@ function reconcileInputSlots(
     : inputs
 }
 
+function nodeAppearance(
+  payload: SemanticNodePayload
+): Partial<
+  Pick<
+    NodeState,
+    'bgcolor' | 'boxcolor' | 'color' | 'resizable' | 'shape' | 'showAdvanced'
+  >
+> {
+  return {
+    ...(typeof payload.bgcolor === 'string' && { bgcolor: payload.bgcolor }),
+    ...(typeof payload.boxcolor === 'string' && { boxcolor: payload.boxcolor }),
+    ...(typeof payload.color === 'string' && { color: payload.color }),
+    ...(typeof payload.resizable === 'boolean' && {
+      resizable: payload.resizable
+    }),
+    ...(typeof payload.shape === 'number' && { shape: payload.shape }),
+    ...(typeof payload.showAdvanced === 'boolean' && {
+      showAdvanced: payload.showAdvanced
+    })
+  }
+}
+
 function prepareNode(
   payload: SemanticNodePayload,
   scope: GraphScope
@@ -289,18 +327,7 @@ function prepareNode(
     mode: Number.isInteger(mode) ? mode : 0,
     properties: cloneRecord(payload.properties) as NodeState['properties'],
     lastSerialization: structuredClone(payload) as unknown as ISerialisedNode,
-    ...(typeof payload.bgcolor === 'string' && { bgcolor: payload.bgcolor }),
-    ...(typeof payload.boxcolor === 'string' && { boxcolor: payload.boxcolor }),
-    ...(typeof payload.color === 'string' && { color: payload.color }),
-    ...(typeof payload.resizable === 'boolean' && {
-      resizable: payload.resizable
-    }),
-    ...(typeof payload.shape === 'number' && {
-      shape: payload.shape
-    }),
-    ...(typeof payload.showAdvanced === 'boolean' && {
-      showAdvanced: payload.showAdvanced
-    })
+    ...nodeAppearance(payload)
   }
   return {
     state,
@@ -365,6 +392,17 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
     scope: GraphScope,
     queued: readonly QueuedMutation[]
   ): PreparedMutation[] | string {
+    const draft = snapshotDraft(scope)
+    const prepared: PreparedMutation[] = []
+    for (const mutation of queued) {
+      const result = prepareMutation(draft, mutation)
+      if (typeof result === 'string') return result
+      prepared.push(result)
+    }
+    return prepared
+  }
+
+  function snapshotDraft(scope: GraphScope): PrepareDraft {
     const nodes = new Map(
       nodeStore
         .getGraphNodesFor(scope.rootGraphId, scope.owningGraphId)
@@ -384,247 +422,301 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
         )
       )
     }
+    return { scope, nodes, links, widgets }
+  }
 
-    const prepared: PreparedMutation[] = []
-    for (const mutation of queued) {
-      switch (mutation.kind) {
-        case 'addNode':
-        case 'reconcileNode': {
-          if (
-            (typeof mutation.payload.id !== 'string' &&
-              typeof mutation.payload.id !== 'number') ||
-            typeof mutation.payload.type !== 'string' ||
-            mutation.payload.type.length === 0
-          ) {
-            return 'addNode requires a payload id and type'
-          }
-          const node = prepareNode(mutation.payload, scope)
-          const key = nodeKey(node.state.id)
-          const incumbent = nodeStore.getNode(scope.rootGraphId, node.state.id)
-          if (incumbent && incumbent.graphId !== scope.owningGraphId) {
-            return `node id ${key} belongs to graph ${incumbent.graphId}`
-          }
-          if (
-            mutation.kind === 'reconcileNode' &&
-            incumbent?.type === node.state.type
-          ) {
-            const { title, widgets_values, widgets_values_named } =
-              mutation.payload
-            if (Array.isArray(widgets_values)) {
-              const serializable = widgetStore
-                .getNodeWidgets(scope.rootGraphId, node.state.id)
-                .filter(
-                  (widget) =>
-                    widget.serialize !== false && widget.type !== 'button'
-                )
-              const named = isRecord(widgets_values_named)
-                ? widgets_values_named
-                : {}
-              // The incumbent's widget order is the authoritative slot
-              // binding: a slot whose name the record carries takes the named
-              // value, every other slot keeps its positional value.
-              node.widgets.forEach((widget, index) => {
-                const slot = serializable.at(index)
-                if (!slot) return
-                widget.name = slot.name
-                if (!(slot.name in named)) return
-                widget.value = structuredClone(named[slot.name]) as WidgetValue
-                widget.type = widgetType(named[slot.name])
-              })
-            }
-            if (typeof title !== 'string' || !title)
-              node.state.title = incumbent.title
-            node.state.inputs = reconcileInputSlots(
-              {
-                ...incumbent,
-                inputs: incumbent.inputs.map((input) => ({ ...input }))
-              },
-              node.state
-            )
-          }
-          if (mutation.kind === 'addNode' && nodes.has(key)) {
-            return `node id ${key} is already registered`
-          }
-          if (
-            node.widgets.some(
-              ({ name }) =>
-                !isWidgetId(widgetId(scope.rootGraphId, node.state.id, name))
-            )
-          ) {
-            return `node ${key} has an invalid widget name`
-          }
-          nodes.set(key, node.state)
-          widgets.set(key, new Set(node.widgets.map(({ name }) => name)))
-          prepared.push({ kind: mutation.kind, node })
-          break
-        }
-        case 'setWidget': {
-          const key = nodeKey(mutation.nodeId)
-          if (!nodes.has(key)) return `node ${key} does not exist`
-          if (
-            !isWidgetId(
-              widgetId(scope.rootGraphId, mutation.nodeId, mutation.name)
-            )
-          ) {
-            return `node ${key} has an invalid widget name`
-          }
-          widgets.get(key)?.add(mutation.name)
-          prepared.push({
-            kind: mutation.kind,
-            nodeId: mutation.nodeId,
-            name: mutation.name,
-            value: structuredClone(mutation.value) as WidgetValue
-          })
-          break
-        }
-        case 'connect': {
-          if (
-            !Number.isInteger(mutation.link.id) ||
-            mutation.link.id < 0 ||
-            !Number.isInteger(mutation.link.originSlot) ||
-            mutation.link.originSlot < 0 ||
-            !Number.isInteger(mutation.link.targetSlot) ||
-            mutation.link.targetSlot < 0
-          ) {
-            return 'connect requires non-negative integer ids and slots'
-          }
-          const topology = prepareTopology(mutation.link, scope)
-          const incumbent = linkStore.getTopology(
-            scope.rootGraphId,
-            topology.id
-          )
-          if (incumbent && incumbent.graphId !== scope.owningGraphId) {
-            return `link id ${topology.id} belongs to graph ${incumbent.graphId}`
-          }
-          const origin = nodes.get(nodeKey(topology.originNodeId))
-          if (!origin) {
-            return `connect origin node ${topology.originNodeId} does not exist`
-          }
-          const target = nodes.get(nodeKey(topology.targetNodeId))
-          if (!target) {
-            return `connect target node ${topology.targetNodeId} does not exist`
-          }
-          const originOutputs = mutation.link.originOutputs
-            ? prepareOutputSlots(mutation.link.originOutputs)
-            : origin.outputs
-          const targetInputs = mutation.link.targetInputs
-            ? prepareInputSlots(mutation.link.targetInputs)
-            : target.inputs
-          if (topology.originSlot >= originOutputs.length) {
-            return `connect origin slot ${topology.originSlot} does not exist`
-          }
-          if (topology.targetSlot >= targetInputs.length) {
-            return `connect target slot ${topology.targetSlot} does not exist`
-          }
-          links.delete(topology.id)
-          for (const [id, incumbent] of links) {
-            if (
-              incumbent.targetNodeId === topology.targetNodeId &&
-              incumbent.targetSlot === topology.targetSlot
-            ) {
-              links.delete(id)
-            }
-          }
-          links.set(topology.id, topology)
-          prepared.push({
-            kind: mutation.kind,
-            topology,
-            ...(mutation.link.originOutputs && {
-              originOutputs
-            }),
-            ...(mutation.link.targetInputs && {
-              targetInputs
-            })
-          })
-          break
-        }
-        case 'removeMissing': {
-          const retainedNodeIds = new Set(mutation.retainedNodeIds.map(nodeKey))
-          const retainedLinkIds = new Set<LinkId>()
-          for (const value of mutation.retainedLinkIds) {
-            if (!Number.isInteger(value) || value < 0) {
-              return 'removeMissing requires non-negative integer link ids'
-            }
-            retainedLinkIds.add(toLinkId(value))
-          }
+  function prepareMutation(
+    draft: PrepareDraft,
+    mutation: QueuedMutation
+  ): PreparedMutation | string {
+    switch (mutation.kind) {
+      case 'addNode':
+      case 'reconcileNode':
+        return prepareNodeMutation(draft, mutation)
+      case 'setWidget':
+        return prepareSetWidget(draft, mutation)
+      case 'connect':
+        return prepareConnect(draft, mutation)
+      case 'removeMissing':
+        return prepareRemoveMissing(draft, mutation)
+      case 'removeLinks':
+        return prepareRemoveLinks(draft, mutation)
+      case 'deleteNode':
+        return prepareDeleteNode(draft, mutation)
+      case 'clearSemanticGraph':
+        return prepareClear(draft)
+    }
+  }
 
-          const nodeIds = [...nodes.values()]
-            .map(({ id }) => id)
-            .filter((id) => !retainedNodeIds.has(nodeKey(id)))
-          for (const id of nodeIds) {
-            nodes.delete(nodeKey(id))
-            widgets.delete(nodeKey(id))
-            removeIncidentLinks(links, id)
-          }
-          const linkIds = [...links.keys()].filter(
-            (id) => !retainedLinkIds.has(id)
-          )
-          for (const id of linkIds) links.delete(id)
-          prepared.push({ kind: mutation.kind, nodeIds, linkIds })
-          break
-        }
-        case 'removeLinks': {
-          const linkIds: LinkId[] = []
-          for (const value of mutation.linkIds) {
-            if (!Number.isInteger(value) || value < 0) {
-              return 'removeLinks requires non-negative integer ids'
-            }
-            const id = toLinkId(value)
-            const incumbent = linkStore.getTopology(scope.rootGraphId, id)
-            if (incumbent && incumbent.graphId !== scope.owningGraphId) {
-              return `link id ${id} belongs to graph ${incumbent.graphId}`
-            }
-            links.delete(id)
-            linkIds.push(id)
-          }
-          prepared.push({
-            kind: mutation.kind,
-            linkIds
-          })
-          break
-        }
-        case 'deleteNode': {
-          const incumbent = nodeStore.getNode(
-            scope.rootGraphId,
-            mutation.nodeId
-          )
-          if (incumbent && incumbent.graphId !== scope.owningGraphId) {
-            return `node id ${mutation.nodeId} belongs to graph ${incumbent.graphId}`
-          }
-          const removedLinkIds: LinkId[] = []
-          for (const value of mutation.removedLinkIds) {
-            if (!Number.isInteger(value) || value < 0) {
-              return 'deleteNode requires non-negative integer link ids'
-            }
-            const id = toLinkId(value)
-            const link = linkStore.getTopology(scope.rootGraphId, id)
-            if (link && link.graphId !== scope.owningGraphId) {
-              return `link id ${id} belongs to graph ${link.graphId}`
-            }
-            removedLinkIds.push(id)
-          }
-          nodes.delete(nodeKey(mutation.nodeId))
-          widgets.delete(nodeKey(mutation.nodeId))
-          removeIncidentLinks(links, mutation.nodeId)
-          for (const id of removedLinkIds) links.delete(id)
-          prepared.push({
-            kind: mutation.kind,
-            nodeId: mutation.nodeId,
-            removedLinkIds
-          })
-          break
-        }
-        case 'clearSemanticGraph': {
-          const nodeIds = [...nodes.values()].map(({ id }) => id)
-          nodes.clear()
-          widgets.clear()
-          links.clear()
-          prepared.push({ kind: mutation.kind, nodeIds })
-          break
-        }
+  function nodePayloadError(payload: SemanticNodePayload): string | undefined {
+    const { id, type } = payload
+    const valid =
+      (typeof id === 'string' || typeof id === 'number') &&
+      typeof type === 'string' &&
+      type.length > 0
+    return valid ? undefined : 'addNode requires a payload id and type'
+  }
+
+  function prepareNodeMutation(
+    draft: PrepareDraft,
+    mutation: QueuedOf<'addNode' | 'reconcileNode'>
+  ): PreparedMutation | string {
+    const payloadError = nodePayloadError(mutation.payload)
+    if (payloadError) return payloadError
+    const { scope, nodes, widgets } = draft
+    const node = prepareNode(mutation.payload, scope)
+    const key = nodeKey(node.state.id)
+    const incumbent = nodeStore.getNode(scope.rootGraphId, node.state.id)
+    if (incumbent && incumbent.graphId !== scope.owningGraphId) {
+      return `node id ${key} belongs to graph ${incumbent.graphId}`
+    }
+    bindReconciledNode(scope, node, incumbent, mutation)
+    if (mutation.kind === 'addNode' && nodes.has(key)) {
+      return `node id ${key} is already registered`
+    }
+    const invalidWidget = node.widgets.some(
+      ({ name }) =>
+        !isWidgetId(widgetId(scope.rootGraphId, node.state.id, name))
+    )
+    if (invalidWidget) return `node ${key} has an invalid widget name`
+    nodes.set(key, node.state)
+    widgets.set(key, new Set(node.widgets.map(({ name }) => name)))
+    return { kind: mutation.kind, node }
+  }
+
+  function bindReconciledNode(
+    scope: GraphScope,
+    node: PreparedNode,
+    incumbent: NodeState | undefined,
+    mutation: QueuedOf<'addNode' | 'reconcileNode'>
+  ): void {
+    if (
+      mutation.kind !== 'reconcileNode' ||
+      !incumbent ||
+      incumbent.type !== node.state.type
+    )
+      return
+    const { title, widgets_values, widgets_values_named } = mutation.payload
+    if (Array.isArray(widgets_values)) {
+      bindWidgetsBySlot(scope, node, widgets_values_named)
+    }
+    if (typeof title !== 'string' || !title) node.state.title = incumbent.title
+    node.state.inputs = reconcileInputSlots(
+      { ...incumbent, inputs: incumbent.inputs.map((input) => ({ ...input })) },
+      node.state
+    )
+  }
+
+  /**
+   * The incumbent's widget order is the authoritative slot binding: a slot
+   * whose name the record carries takes the named value, every other slot
+   * keeps its positional value.
+   */
+  function bindWidgetsBySlot(
+    scope: GraphScope,
+    node: PreparedNode,
+    widgetsValuesNamed: unknown
+  ): void {
+    const serializable = widgetStore
+      .getNodeWidgets(scope.rootGraphId, node.state.id)
+      .filter(
+        (widget) => widget.serialize !== false && widget.type !== 'button'
+      )
+    const named = isRecord(widgetsValuesNamed) ? widgetsValuesNamed : {}
+    node.widgets.forEach((widget, index) => {
+      const slot = serializable.at(index)
+      if (!slot) return
+      widget.name = slot.name
+      if (!(slot.name in named)) return
+      widget.value = structuredClone(named[slot.name]) as WidgetValue
+      widget.type = widgetType(named[slot.name])
+    })
+  }
+
+  function prepareSetWidget(
+    draft: PrepareDraft,
+    mutation: QueuedOf<'setWidget'>
+  ): PreparedMutation | string {
+    const { scope, nodes, widgets } = draft
+    const key = nodeKey(mutation.nodeId)
+    if (!nodes.has(key)) return `node ${key} does not exist`
+    if (
+      !isWidgetId(widgetId(scope.rootGraphId, mutation.nodeId, mutation.name))
+    ) {
+      return `node ${key} has an invalid widget name`
+    }
+    widgets.get(key)?.add(mutation.name)
+    return {
+      kind: mutation.kind,
+      nodeId: mutation.nodeId,
+      name: mutation.name,
+      value: structuredClone(mutation.value) as WidgetValue
+    }
+  }
+
+  function foreignLinkError(scope: GraphScope, id: LinkId): string | undefined {
+    const incumbent = linkStore.getTopology(scope.rootGraphId, id)
+    return incumbent && incumbent.graphId !== scope.owningGraphId
+      ? `link id ${id} belongs to graph ${incumbent.graphId}`
+      : undefined
+  }
+
+  function prepareConnect(
+    draft: PrepareDraft,
+    mutation: QueuedOf<'connect'>
+  ): PreparedMutation | string {
+    const { link } = mutation
+    const wellFormed = [link.id, link.originSlot, link.targetSlot].every(
+      (value) => Number.isInteger(value) && value >= 0
+    )
+    if (!wellFormed)
+      return 'connect requires non-negative integer ids and slots'
+    const { scope, nodes, links } = draft
+    const topology = prepareTopology(link, scope)
+    const foreign = foreignLinkError(scope, topology.id)
+    if (foreign) return foreign
+    const origin = nodes.get(nodeKey(topology.originNodeId))
+    if (!origin) {
+      return `connect origin node ${topology.originNodeId} does not exist`
+    }
+    const target = nodes.get(nodeKey(topology.targetNodeId))
+    if (!target) {
+      return `connect target node ${topology.targetNodeId} does not exist`
+    }
+    const slots = connectEndpointSlots(link, topology, origin, target)
+    if (typeof slots === 'string') return slots
+    replaceDraftLink(links, topology)
+    return {
+      kind: mutation.kind,
+      topology,
+      ...(link.originOutputs && { originOutputs: slots.originOutputs }),
+      ...(link.targetInputs && { targetInputs: slots.targetInputs })
+    }
+  }
+
+  function connectEndpointSlots(
+    link: SemanticLinkPayload,
+    topology: LinkTopology,
+    origin: NodeState,
+    target: NodeState
+  ):
+    | { originOutputs: NodeState['outputs']; targetInputs: NodeState['inputs'] }
+    | string {
+    const originOutputs = link.originOutputs
+      ? prepareOutputSlots(link.originOutputs)
+      : origin.outputs
+    const targetInputs = link.targetInputs
+      ? prepareInputSlots(link.targetInputs)
+      : target.inputs
+    if (topology.originSlot >= originOutputs.length) {
+      return `connect origin slot ${topology.originSlot} does not exist`
+    }
+    if (topology.targetSlot >= targetInputs.length) {
+      return `connect target slot ${topology.targetSlot} does not exist`
+    }
+    return { originOutputs, targetInputs }
+  }
+
+  function replaceDraftLink(
+    links: Map<LinkId, LinkTopology>,
+    topology: LinkTopology
+  ): void {
+    links.delete(topology.id)
+    for (const [id, incumbent] of links) {
+      if (
+        incumbent.targetNodeId === topology.targetNodeId &&
+        incumbent.targetSlot === topology.targetSlot
+      ) {
+        links.delete(id)
       }
     }
-    return prepared
+    links.set(topology.id, topology)
+  }
+
+  function prepareRemoveMissing(
+    draft: PrepareDraft,
+    mutation: QueuedOf<'removeMissing'>
+  ): PreparedMutation | string {
+    const { nodes, links, widgets } = draft
+    const retainedNodeIds = new Set(mutation.retainedNodeIds.map(nodeKey))
+    const retainedLinkIds = new Set<LinkId>()
+    for (const value of mutation.retainedLinkIds) {
+      if (!Number.isInteger(value) || value < 0) {
+        return 'removeMissing requires non-negative integer link ids'
+      }
+      retainedLinkIds.add(toLinkId(value))
+    }
+    const nodeIds = [...nodes.values()]
+      .map(({ id }) => id)
+      .filter((id) => !retainedNodeIds.has(nodeKey(id)))
+    for (const id of nodeIds) {
+      nodes.delete(nodeKey(id))
+      widgets.delete(nodeKey(id))
+      removeIncidentLinks(links, id)
+    }
+    const linkIds = [...links.keys()].filter((id) => !retainedLinkIds.has(id))
+    for (const id of linkIds) links.delete(id)
+    return { kind: mutation.kind, nodeIds, linkIds }
+  }
+
+  function resolveOwnedLinkIds(
+    scope: GraphScope,
+    values: readonly number[],
+    message: string
+  ): LinkId[] | string {
+    const linkIds: LinkId[] = []
+    for (const value of values) {
+      if (!Number.isInteger(value) || value < 0) return message
+      const id = toLinkId(value)
+      const foreign = foreignLinkError(scope, id)
+      if (foreign) return foreign
+      linkIds.push(id)
+    }
+    return linkIds
+  }
+
+  function prepareRemoveLinks(
+    draft: PrepareDraft,
+    mutation: QueuedOf<'removeLinks'>
+  ): PreparedMutation | string {
+    const linkIds = resolveOwnedLinkIds(
+      draft.scope,
+      mutation.linkIds,
+      'removeLinks requires non-negative integer ids'
+    )
+    if (typeof linkIds === 'string') return linkIds
+    for (const id of linkIds) draft.links.delete(id)
+    return { kind: mutation.kind, linkIds }
+  }
+
+  function prepareDeleteNode(
+    draft: PrepareDraft,
+    mutation: QueuedOf<'deleteNode'>
+  ): PreparedMutation | string {
+    const { scope, nodes, links, widgets } = draft
+    const incumbent = nodeStore.getNode(scope.rootGraphId, mutation.nodeId)
+    if (incumbent && incumbent.graphId !== scope.owningGraphId) {
+      return `node id ${mutation.nodeId} belongs to graph ${incumbent.graphId}`
+    }
+    const removedLinkIds = resolveOwnedLinkIds(
+      scope,
+      mutation.removedLinkIds,
+      'deleteNode requires non-negative integer link ids'
+    )
+    if (typeof removedLinkIds === 'string') return removedLinkIds
+    nodes.delete(nodeKey(mutation.nodeId))
+    widgets.delete(nodeKey(mutation.nodeId))
+    removeIncidentLinks(links, mutation.nodeId)
+    for (const id of removedLinkIds) links.delete(id)
+    return { kind: mutation.kind, nodeId: mutation.nodeId, removedLinkIds }
+  }
+
+  function prepareClear(draft: PrepareDraft): PreparedMutation {
+    const nodeIds = [...draft.nodes.values()].map(({ id }) => id)
+    draft.nodes.clear()
+    draft.widgets.clear()
+    draft.links.clear()
+    return { kind: 'clearSemanticGraph', nodeIds }
   }
 
   function detachLinkSlots(
@@ -711,268 +803,375 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
     prepared: readonly PreparedMutation[],
     context: RemoteMutationContext
   ): void {
-    for (const mutation of prepared) {
-      switch (mutation.kind) {
-        case 'addNode':
-        case 'reconcileNode': {
-          const { state, widgets, widgetsAuthoritative } = mutation.node
-          const existing = nodeStore.getNode(scope.rootGraphId, state.id)
-          if (mutation.kind === 'reconcileNode' && existing) {
-            if (existing.type === state.type) {
-              state.inputs = reconcileInputSlots(existing, state)
-              if (!widgetsAuthoritative && state.lastSerialization) {
-                const staleNamed = cloneDeep(
-                  existing.lastSerialization?.widgets_values_named
-                )
-                // widgets_values is typed as an array, but this reconciler
-                // also handles legacy/record-shaped payloads (see
-                // widgetEntries above), so treat it as unknown here.
-                const stalePositional = cloneDeep(
-                  existing.lastSerialization?.widgets_values
-                ) as unknown
-                const serializableWidgets = widgetStore
-                  .getNodeWidgets(scope.rootGraphId, state.id)
-                  .filter(
-                    (widget) =>
-                      widget.serialize !== false && widget.type !== 'button'
-                  )
-                const namedKeys = Object.keys(staleNamed ?? {})
-                // A positional-only snapshot carries no names: its slots follow
-                // the serializable-widget order, like the positional remap above.
-                // With a named record the array is left as saved; the record
-                // carries the live values.
-                const stalePositionalNames =
-                  namedKeys.length > 0 || !Array.isArray(stalePositional)
-                    ? namedKeys
-                    : serializableWidgets.map((widget) => widget.name)
-                // Names known from either the stale named snapshot or a
-                // record-shaped stale positional value — used only to scope
-                // which widgets are eligible for the live-value overlay
-                // below, so a node with no prior snapshot for a widget
-                // isn't given one here.
-                const staleNames = new Set([
-                  ...stalePositionalNames,
-                  ...(isRecord(stalePositional)
-                    ? Object.keys(stalePositional)
-                    : [])
-                ])
-                const named = { ...staleNamed }
-                const overlay: Record<string, unknown> = {}
-                // existing.lastSerialization can predate incremental
-                // setWidget calls, which only update the widget store and
-                // never touch lastSerialization. Overlay the live
-                // widget-store values so a layout-only reconcile can't
-                // resurrect a value that was already superseded. Only
-                // overlay widgets already present in the stale snapshot —
-                // a node with no prior snapshot (or one already cleared to
-                // empty) must stay untouched here.
-                for (const widget of serializableWidgets) {
-                  if (staleNames.has(widget.name)) {
-                    overlay[widget.name] = widget.value
-                    if (widget.name in named) named[widget.name] = widget.value
-                  }
-                }
-                if (Array.isArray(stalePositional)) {
-                  const positional = stalePositional as unknown[]
-                  state.lastSerialization.widgets_values = (
-                    namedKeys.length > 0
-                      ? positional
-                      : positional.map((value, index) => {
-                          const name = stalePositionalNames[index]
-                          return name && name in overlay ? overlay[name] : value
-                        })
-                  ) as ISerialisedNode['widgets_values']
-                } else if (isRecord(stalePositional)) {
-                  state.lastSerialization.widgets_values = {
-                    ...stalePositional,
-                    ...overlay
-                  } as unknown as ISerialisedNode['widgets_values']
-                } else {
-                  state.lastSerialization.widgets_values =
-                    stalePositional as ISerialisedNode['widgets_values']
-                }
-                state.lastSerialization.widgets_values_named =
-                  staleNamed === undefined ? staleNamed : named
-              }
-              nodeStore.updateNode(scope, state.id, state, context)
-            } else {
-              nodeStore.deleteNode(scope, existing, context)
-              nodeStore.registerNode(scope, state, context)
-              widgetStore.clearNode(scope.rootGraphId, state.id, context)
-            }
-            const names = new Set([
-              ...widgets.map(({ name }) => name),
-              ...state.inputs
-                .filter((input) => input.widgetId)
-                .map((input) => input.name)
-            ])
-            for (const widget of widgetStore.getNodeWidgets(
-              scope.rootGraphId,
-              state.id
-            )) {
-              if (
-                widgetsAuthoritative &&
-                widget.serialize !== false &&
-                widget.type !== 'button' &&
-                !names.has(widget.name)
-              ) {
-                widgetStore.deleteWidget(
-                  widgetId(scope.rootGraphId, state.id, widget.name)
-                )
-              }
-            }
-          } else {
-            nodeStore.registerNode(scope, state, context)
-          }
-          for (const widget of widgets) {
-            const id = widgetId(scope.rootGraphId, state.id, widget.name)
-            if (
-              mutation.kind === 'reconcileNode' &&
-              widgetStore.setValue(id, widget.value, context)
-            )
-              continue
-            widgetStore.registerWidget(
-              id,
-              {
-                name: widget.name,
-                type: widget.type,
-                value: widget.value,
-                options: {},
-                label: widget.name
-              },
-              {},
-              undefined,
-              context
-            )
-          }
-          if (!existing) {
-            deps.layout.createNode(
-              scope,
-              state.id,
-              mutation.node.layout,
-              context
-            )
-          }
-          break
-        }
-        case 'setWidget': {
-          const id = widgetId(scope.rootGraphId, mutation.nodeId, mutation.name)
-          if (!widgetStore.getWidget(id)) {
-            widgetStore.registerWidget(
-              id,
-              {
-                name: mutation.name,
-                type: widgetType(mutation.value),
-                value: mutation.value,
-                options: {},
-                label: mutation.name
-              },
-              {},
-              undefined,
-              context
-            )
-          } else {
-            widgetStore.setValue(id, mutation.value, context)
-          }
-          const node = nodeStore.getNode(scope.rootGraphId, mutation.nodeId)
-          if (node)
-            syncSerializedWidgetValue(node, mutation.name, mutation.value)
-          break
-        }
-        case 'connect': {
-          const existing = linkStore.getTopology(
-            scope.rootGraphId,
-            mutation.topology.id
-          )
-          const presentation = existing
-            ? linkPresentationStore.getPresentation(scope, existing.id)
-            : undefined
-          if (existing) removeLink(scope, existing, context)
-          const occupant = linkStore.getInputSlotLink(
-            scope,
-            mutation.topology.targetNodeId,
-            mutation.topology.targetSlot
-          )
-          const replacement = linkStore.replaceLink(
-            scope,
-            occupant,
-            mutation.topology,
-            context
-          )
-          if (!replacement) break
-          if (occupant) {
-            detachLinkSlots(scope, occupant, context)
-            linkPresentationStore.take(scope, occupant.id)
-          }
-          if (presentation) {
-            linkPresentationStore.patch(scope, replacement.id, presentation)
-          }
+    for (const mutation of prepared) commitMutation(scope, mutation, context)
+  }
 
-          const endpointNodes = new Map(
-            nodeStore
-              .getGraphNodesFor(scope.rootGraphId, scope.owningGraphId)
-              .map((node) => [nodeKey(node.id), node])
-          )
-          const origin = endpointNodes.get(
-            nodeKey(mutation.topology.originNodeId)
-          )
-          const target = endpointNodes.get(
-            nodeKey(mutation.topology.targetNodeId)
-          )
-          if (origin && mutation.originOutputs) {
-            nodeStore.updateNodeSlots(
-              scope,
-              origin.id,
-              {
-                inputs: origin.inputs,
-                outputs: mutation.originOutputs
-              },
-              context
-            )
-          }
-          if (target && mutation.targetInputs) {
-            nodeStore.updateNodeSlots(
-              scope,
-              target.id,
-              {
-                inputs: reconcileInputSlots(target, {
-                  inputs: mutation.targetInputs,
-                  properties: target.properties
-                }),
-                outputs: target.outputs
-              },
-              context
-            )
-          }
-          break
-        }
-        case 'removeMissing':
-          for (const id of mutation.linkIds) {
-            const topology = linkStore.getTopology(scope.rootGraphId, id)
-            if (topology) removeLink(scope, topology, context)
-          }
-          for (const id of mutation.nodeIds) deleteNode(scope, id, [], context)
-          break
-        case 'removeLinks':
-          for (const id of mutation.linkIds) {
-            const topology = linkStore.getTopology(scope.rootGraphId, id)
-            if (topology) removeLink(scope, topology, context)
-          }
-          break
-        case 'deleteNode':
-          deleteNode(scope, mutation.nodeId, mutation.removedLinkIds, context)
-          break
-        case 'clearSemanticGraph':
-          for (const nodeId of mutation.nodeIds) {
-            widgetStore.clearNode(scope.rootGraphId, nodeId, context)
-          }
-          deps.layout.deleteNodes(scope, mutation.nodeIds, context)
-          linkStore.clearOwner(scope, context)
-          linkPresentationStore.clearOwner(scope)
-          nodeStore.clearOwner(scope, context)
-          break
-      }
+  function commitMutation(
+    scope: GraphScope,
+    mutation: PreparedMutation,
+    context: RemoteMutationContext
+  ): void {
+    switch (mutation.kind) {
+      case 'addNode':
+      case 'reconcileNode':
+        commitNode(scope, mutation, context)
+        break
+      case 'setWidget':
+        commitSetWidget(scope, mutation, context)
+        break
+      case 'connect':
+        commitConnect(scope, mutation, context)
+        break
+      case 'removeMissing':
+        commitRemoveMissing(scope, mutation, context)
+        break
+      case 'removeLinks':
+        commitRemoveLinks(scope, mutation.linkIds, context)
+        break
+      case 'deleteNode':
+        deleteNode(scope, mutation.nodeId, mutation.removedLinkIds, context)
+        break
+      case 'clearSemanticGraph':
+        commitClear(scope, mutation.nodeIds, context)
+        break
     }
+  }
+
+  function commitNode(
+    scope: GraphScope,
+    mutation: PreparedOf<'addNode' | 'reconcileNode'>,
+    context: RemoteMutationContext
+  ): void {
+    const { state, widgets } = mutation.node
+    const existing = nodeStore.getNode(scope.rootGraphId, state.id)
+    if (mutation.kind === 'reconcileNode' && existing) {
+      reconcileExistingNode(scope, existing, mutation.node, context)
+    } else {
+      nodeStore.registerNode(scope, state, context)
+    }
+    registerPreparedWidgets(scope, mutation.kind, state, widgets, context)
+    if (!existing) {
+      deps.layout.createNode(scope, state.id, mutation.node.layout, context)
+    }
+  }
+
+  function reconcileExistingNode(
+    scope: GraphScope,
+    existing: NodeState,
+    node: PreparedNode,
+    context: RemoteMutationContext
+  ): void {
+    const { state, widgets, widgetsAuthoritative } = node
+    if (existing.type === state.type) {
+      state.inputs = reconcileInputSlots(existing, state)
+      if (!widgetsAuthoritative && state.lastSerialization) {
+        overlayStaleSnapshot(scope, existing, state.id, state.lastSerialization)
+      }
+      nodeStore.updateNode(scope, state.id, state, context)
+    } else {
+      nodeStore.deleteNode(scope, existing, context)
+      nodeStore.registerNode(scope, state, context)
+      widgetStore.clearNode(scope.rootGraphId, state.id, context)
+    }
+    if (widgetsAuthoritative) pruneUnlistedWidgets(scope, state, widgets)
+  }
+
+  function pruneUnlistedWidgets(
+    scope: GraphScope,
+    state: NodeState,
+    widgets: PreparedNode['widgets']
+  ): void {
+    const names = new Set([
+      ...widgets.map(({ name }) => name),
+      ...state.inputs
+        .filter((input) => input.widgetId)
+        .map((input) => input.name)
+    ])
+    for (const widget of widgetStore.getNodeWidgets(
+      scope.rootGraphId,
+      state.id
+    )) {
+      if (
+        widget.serialize === false ||
+        widget.type === 'button' ||
+        names.has(widget.name)
+      )
+        continue
+      widgetStore.deleteWidget(
+        widgetId(scope.rootGraphId, state.id, widget.name)
+      )
+    }
+  }
+
+  /**
+   * existing.lastSerialization can predate incremental setWidget calls, which
+   * only update the widget store and never touch lastSerialization. Overlay
+   * the live widget-store values so a layout-only reconcile can't resurrect a
+   * value that was already superseded. Only overlay widgets already present in
+   * the stale snapshot: a node with no prior snapshot (or one already cleared
+   * to empty) must stay untouched here.
+   */
+  function overlayStaleSnapshot(
+    scope: GraphScope,
+    existing: NodeState,
+    nodeId: NodeId,
+    serialised: ISerialisedNode
+  ): void {
+    const stale = staleWidgetOverlay(scope, existing, nodeId)
+    serialised.widgets_values = overlaidPositional(stale)
+    serialised.widgets_values_named =
+      stale.staleNamed === undefined ? stale.staleNamed : stale.named
+  }
+
+  function staleWidgetOverlay(
+    scope: GraphScope,
+    existing: NodeState,
+    nodeId: NodeId
+  ) {
+    const staleNamed = cloneDeep(
+      existing.lastSerialization?.widgets_values_named
+    )
+    // widgets_values is typed as an array, but this reconciler also handles
+    // legacy/record-shaped payloads (see widgetEntries above), so treat it as
+    // unknown here.
+    const stalePositional = cloneDeep(
+      existing.lastSerialization?.widgets_values
+    ) as unknown
+    const serializableWidgets = widgetStore
+      .getNodeWidgets(scope.rootGraphId, nodeId)
+      .filter(
+        (widget) => widget.serialize !== false && widget.type !== 'button'
+      )
+    const namedKeys = Object.keys(staleNamed ?? {})
+    const positionalNames = stalePositionalNames(
+      namedKeys,
+      stalePositional,
+      serializableWidgets.map((widget) => widget.name)
+    )
+    // Names known from either the stale named snapshot or a record-shaped
+    // stale positional value scope which widgets are eligible for the overlay.
+    const staleNames = new Set([
+      ...positionalNames,
+      ...(isRecord(stalePositional) ? Object.keys(stalePositional) : [])
+    ])
+    const named = { ...staleNamed }
+    const overlay: Record<string, unknown> = {}
+    for (const widget of serializableWidgets) {
+      if (!staleNames.has(widget.name)) continue
+      overlay[widget.name] = widget.value
+      if (widget.name in named) named[widget.name] = widget.value
+    }
+    return {
+      staleNamed,
+      stalePositional,
+      namedKeys,
+      positionalNames,
+      overlay,
+      named
+    }
+  }
+
+  /**
+   * A positional-only snapshot carries no names: its slots follow the
+   * serializable-widget order, like the positional remap in prepare. With a
+   * named record the array is left as saved; the record carries the values.
+   */
+  function stalePositionalNames(
+    namedKeys: string[],
+    stalePositional: unknown,
+    serializableNames: string[]
+  ): string[] {
+    return namedKeys.length > 0 || !Array.isArray(stalePositional)
+      ? namedKeys
+      : serializableNames
+  }
+
+  function overlaidPositional({
+    stalePositional,
+    namedKeys,
+    positionalNames,
+    overlay
+  }: ReturnType<typeof staleWidgetOverlay>): ISerialisedNode['widgets_values'] {
+    if (Array.isArray(stalePositional)) {
+      const positional = stalePositional as unknown[]
+      return (
+        namedKeys.length > 0
+          ? positional
+          : positional.map((value, index) => {
+              const name = positionalNames[index]
+              return name && name in overlay ? overlay[name] : value
+            })
+      ) as ISerialisedNode['widgets_values']
+    }
+    if (isRecord(stalePositional)) {
+      return {
+        ...stalePositional,
+        ...overlay
+      } as unknown as ISerialisedNode['widgets_values']
+    }
+    return stalePositional as ISerialisedNode['widgets_values']
+  }
+
+  function registerPreparedWidgets(
+    scope: GraphScope,
+    kind: 'addNode' | 'reconcileNode',
+    state: NodeState,
+    widgets: PreparedNode['widgets'],
+    context: RemoteMutationContext
+  ): void {
+    for (const widget of widgets) {
+      const id = widgetId(scope.rootGraphId, state.id, widget.name)
+      if (
+        kind === 'reconcileNode' &&
+        widgetStore.setValue(id, widget.value, context)
+      )
+        continue
+      widgetStore.registerWidget(
+        id,
+        {
+          name: widget.name,
+          type: widget.type,
+          value: widget.value,
+          options: {},
+          label: widget.name
+        },
+        {},
+        undefined,
+        context
+      )
+    }
+  }
+
+  function commitSetWidget(
+    scope: GraphScope,
+    mutation: PreparedOf<'setWidget'>,
+    context: RemoteMutationContext
+  ): void {
+    const id = widgetId(scope.rootGraphId, mutation.nodeId, mutation.name)
+    if (!widgetStore.getWidget(id)) {
+      widgetStore.registerWidget(
+        id,
+        {
+          name: mutation.name,
+          type: widgetType(mutation.value),
+          value: mutation.value,
+          options: {},
+          label: mutation.name
+        },
+        {},
+        undefined,
+        context
+      )
+    } else {
+      widgetStore.setValue(id, mutation.value, context)
+    }
+    const node = nodeStore.getNode(scope.rootGraphId, mutation.nodeId)
+    if (node) syncSerializedWidgetValue(node, mutation.name, mutation.value)
+  }
+
+  function commitConnect(
+    scope: GraphScope,
+    mutation: PreparedOf<'connect'>,
+    context: RemoteMutationContext
+  ): void {
+    const existing = linkStore.getTopology(
+      scope.rootGraphId,
+      mutation.topology.id
+    )
+    const presentation = existing
+      ? linkPresentationStore.getPresentation(scope, existing.id)
+      : undefined
+    if (existing) removeLink(scope, existing, context)
+    const occupant = linkStore.getInputSlotLink(
+      scope,
+      mutation.topology.targetNodeId,
+      mutation.topology.targetSlot
+    )
+    const replacement = linkStore.replaceLink(
+      scope,
+      occupant,
+      mutation.topology,
+      context
+    )
+    if (!replacement) return
+    if (occupant) {
+      detachLinkSlots(scope, occupant, context)
+      linkPresentationStore.take(scope, occupant.id)
+    }
+    if (presentation) {
+      linkPresentationStore.patch(scope, replacement.id, presentation)
+    }
+    applyConnectSlots(scope, mutation, context)
+  }
+
+  function applyConnectSlots(
+    scope: GraphScope,
+    mutation: PreparedOf<'connect'>,
+    context: RemoteMutationContext
+  ): void {
+    const endpointNodes = new Map(
+      nodeStore
+        .getGraphNodesFor(scope.rootGraphId, scope.owningGraphId)
+        .map((node) => [nodeKey(node.id), node])
+    )
+    const origin = endpointNodes.get(nodeKey(mutation.topology.originNodeId))
+    const target = endpointNodes.get(nodeKey(mutation.topology.targetNodeId))
+    if (origin && mutation.originOutputs) {
+      nodeStore.updateNodeSlots(
+        scope,
+        origin.id,
+        { inputs: origin.inputs, outputs: mutation.originOutputs },
+        context
+      )
+    }
+    if (target && mutation.targetInputs) {
+      nodeStore.updateNodeSlots(
+        scope,
+        target.id,
+        {
+          inputs: reconcileInputSlots(target, {
+            inputs: mutation.targetInputs,
+            properties: target.properties
+          }),
+          outputs: target.outputs
+        },
+        context
+      )
+    }
+  }
+
+  function commitRemoveLinks(
+    scope: GraphScope,
+    linkIds: readonly LinkId[],
+    context: RemoteMutationContext
+  ): void {
+    for (const id of linkIds) {
+      const topology = linkStore.getTopology(scope.rootGraphId, id)
+      if (topology) removeLink(scope, topology, context)
+    }
+  }
+
+  function commitRemoveMissing(
+    scope: GraphScope,
+    mutation: PreparedOf<'removeMissing'>,
+    context: RemoteMutationContext
+  ): void {
+    commitRemoveLinks(scope, mutation.linkIds, context)
+    for (const id of mutation.nodeIds) deleteNode(scope, id, [], context)
+  }
+
+  function commitClear(
+    scope: GraphScope,
+    nodeIds: readonly NodeId[],
+    context: RemoteMutationContext
+  ): void {
+    for (const nodeId of nodeIds) {
+      widgetStore.clearNode(scope.rootGraphId, nodeId, context)
+    }
+    deps.layout.deleteNodes(scope, nodeIds, context)
+    linkStore.clearOwner(scope, context)
+    linkPresentationStore.clearOwner(scope)
+    nodeStore.clearOwner(scope, context)
   }
 
   const graphMutations: GraphMutations = {

@@ -16,6 +16,7 @@ import type { GraphScope } from '@/types/graphScopeId'
 import { graphScopeOf } from '@/types/graphScopeId'
 import type { NodeId } from '@/types/nodeId'
 import type { NodeState } from '@/types/nodeState'
+import type { WidgetValue } from '@/types/simplifiedWidget'
 import { widgetId } from '@/types/widgetId'
 import type { WidgetStateInit } from '@/types/widgetState'
 
@@ -233,24 +234,8 @@ function reconcile(
 
   const materialized: NodeId[] = []
   for (const state of records) {
-    const live = graph._nodes_by_id[state.id]
-    const owned = !!live && nodeStore.ownsNode(scope, live._state)
-    if (owned && !isRebindablePlaceholder(live, state)) {
-      reconcileAutogrowInputs(live)
-      continue
-    }
-    const serialised = state.lastSerialization
-    if (!serialised) continue
-    if (pendingDefinitions.has(state.type)) continue
-    // A placeholder whose type registered since it was built is replaced the
-    // way any stale adapter is: its record moves to a fresh state object so
-    // the live node stops owning it, and the orphan path swaps the class with
-    // the canonical links and widget values kept.
-    const record = owned ? rebindRecord(scope, state) : state
-    const orphan = owned ? live : orphansById.get(state.id)
-    if (record && materialize(graph, scope, record, serialised, orphan)) {
+    if (materializeRecord(graph, scope, state, orphansById, pendingDefinitions))
       materialized.push(state.id)
-    }
   }
 
   const recordIds = new Set(records.map((state) => state.id))
@@ -265,6 +250,34 @@ function reconcile(
   return materialized
 }
 
+/**
+ * A placeholder whose type registered since it was built is replaced the way
+ * any stale adapter is: its record moves to a fresh state object so the live
+ * node stops owning it, and the orphan path swaps the class with the
+ * canonical links and widget values kept.
+ */
+function materializeRecord(
+  graph: MaterializableGraph,
+  scope: GraphScope,
+  state: NodeState,
+  orphansById: Map<NodeId, LGraphNode>,
+  pendingDefinitions: Set<string>
+): boolean {
+  const nodeStore = useNodeDataStore()
+  const live = graph._nodes_by_id[state.id]
+  const owned = !!live && nodeStore.ownsNode(scope, live._state)
+  if (owned && !isRebindablePlaceholder(live, state)) {
+    reconcileAutogrowInputs(live)
+    return false
+  }
+  const serialised = state.lastSerialization
+  if (!serialised || pendingDefinitions.has(state.type)) return false
+  const record = rebindRecord(scope, state, owned)
+  if (!record) return false
+  const orphan = owned ? live : orphansById.get(state.id)
+  return materialize(graph, scope, record, serialised, orphan)
+}
+
 /** `LGraph.configure()` builds a bare `LGraphNode` for a type it cannot find. */
 function isRebindablePlaceholder(node: LGraphNode, state: NodeState): boolean {
   return (
@@ -275,8 +288,10 @@ function isRebindablePlaceholder(node: LGraphNode, state: NodeState): boolean {
 
 function rebindRecord(
   scope: GraphScope,
-  state: NodeState
+  state: NodeState,
+  owned: boolean
 ): NodeState | undefined {
+  if (!owned) return state
   const nodeStore = useNodeDataStore()
   if (!nodeStore.deleteNode(scope, state)) return undefined
   return nodeStore.registerNode(scope, { ...state })
@@ -289,78 +304,20 @@ function materialize(
   serialised: ISerialisedNode,
   orphan: LGraphNode | undefined
 ): boolean {
-  let node: LGraphNode
-  try {
-    node = LiteGraph.createNode(state.type, state.title) ?? missingNode(state)
-  } catch (cause) {
-    reportError(cause, {
-      errorType: 'agent_node_materialize_create_failed',
-      context: { graphId: graph.id, nodeId: String(state.id) }
-    })
-    return false
-  }
-  const nodeStore = useNodeDataStore()
-  const widgetStore = useWidgetValueStore()
-
-  const storedValues = new Map(
-    widgetStore
-      .getNodeWidgets(scope.rootGraphId, state.id)
-      .map((widget) => [widget.name, widget.value])
-  )
-  const placeholderWidgetNames =
-    orphan?.constructor === LGraphNode
-      ? (orphan.widgets ?? []).map((widget) => widget.name)
-      : []
-  const widgets = widgetStore.getNodeWidgets(scope.rootGraphId, state.id).map(
-    (widget): WidgetStateInit => ({
-      disabled: widget.disabled,
-      label: widget.label,
-      name: widget.name,
-      options: widget.options,
-      serialize: widget.serialize,
-      type: widget.type,
-      value: widget.value,
-      y: widget.y
-    })
-  )
-  const restore = () => {
-    nodeStore.registerNode(scope, state)
-    for (const widget of widgets) {
-      widgetStore.registerWidget(
-        widgetId(scope.rootGraphId, state.id, widget.name ?? ''),
-        widget
-      )
-    }
-    if (orphan?.graph === graph) graph._nodes_by_id[orphan.id] = orphan
-  }
-
-  const rollback = (
-    cause: unknown,
-    errorType = 'agent_node_materialize_add_failed'
-  ) => {
-    let cleanupCause: unknown
-    let cleanupFailed = false
-    try {
-      if (graph._nodes_by_id[node.id] === node) graph.remove(node)
-      else node.onRemoved?.()
-    } catch (error) {
-      cleanupCause = error
-      cleanupFailed = true
-    }
-    nodeStore.deleteNode(scope, node._state)
-    restore()
-    reportError(cause, {
-      errorType,
-      context: { graphId: graph.id, nodeId: String(state.id) }
-    })
-    if (cleanupFailed) {
-      reportError(cleanupCause, {
-        errorType: 'agent_node_materialize_rollback_failed',
-        context: { graphId: graph.id, nodeId: String(state.id) }
-      })
-    }
-    return false
-  }
+  const node = createAdapterNode(graph, state)
+  if (!node) return false
+  const snapshot = snapshotStoreWidgets(scope, state, orphan)
+  const rollback = (cause: unknown, errorType?: string) =>
+    rollbackMaterialize(
+      graph,
+      scope,
+      state,
+      node,
+      snapshot,
+      orphan,
+      cause,
+      errorType
+    )
 
   if (orphan) {
     try {
@@ -379,7 +336,7 @@ function materialize(
   // delivers changes on a microtask, after the mint-suppression bracket has
   // ended. Provenance on the operation, not the bracket, is what keeps the
   // layout port quiet here.
-  nodeStore.deleteNode(scope, state)
+  useNodeDataStore().deleteNode(scope, state)
   let added: LGraphNode | null | undefined
   try {
     added = graph.add(node)
@@ -388,22 +345,127 @@ function materialize(
   }
   if (!added) return rollback('LGraph.add returned no node')
 
+  configureAdapter(graph, scope, state, serialised, node, snapshot)
+  return true
+}
+
+function createAdapterNode(
+  graph: MaterializableGraph,
+  state: NodeState
+): LGraphNode | undefined {
+  try {
+    return LiteGraph.createNode(state.type, state.title) ?? missingNode(state)
+  } catch (cause) {
+    reportError(cause, {
+      errorType: 'agent_node_materialize_create_failed',
+      context: { graphId: graph.id, nodeId: String(state.id) }
+    })
+    return undefined
+  }
+}
+
+interface StoreWidgetSnapshot {
+  storedValues: Map<string, WidgetValue>
+  widgets: WidgetStateInit[]
+  placeholderWidgetNames: string[]
+}
+
+function snapshotStoreWidgets(
+  scope: GraphScope,
+  state: NodeState,
+  orphan: LGraphNode | undefined
+): StoreWidgetSnapshot {
+  const stored = useWidgetValueStore().getNodeWidgets(
+    scope.rootGraphId,
+    state.id
+  )
+  return {
+    storedValues: new Map(stored.map((widget) => [widget.name, widget.value])),
+    widgets: stored.map(
+      (widget): WidgetStateInit => ({
+        disabled: widget.disabled,
+        label: widget.label,
+        name: widget.name,
+        options: widget.options,
+        serialize: widget.serialize,
+        type: widget.type,
+        value: widget.value,
+        y: widget.y
+      })
+    ),
+    placeholderWidgetNames:
+      orphan?.constructor === LGraphNode
+        ? (orphan.widgets ?? []).map((widget) => widget.name)
+        : []
+  }
+}
+
+function restoreCanonical(
+  graph: MaterializableGraph,
+  scope: GraphScope,
+  state: NodeState,
+  widgets: WidgetStateInit[],
+  orphan: LGraphNode | undefined
+): void {
+  useNodeDataStore().registerNode(scope, state)
+  const widgetStore = useWidgetValueStore()
+  for (const widget of widgets) {
+    widgetStore.registerWidget(
+      widgetId(scope.rootGraphId, state.id, widget.name ?? ''),
+      widget
+    )
+  }
+  if (orphan?.graph === graph) graph._nodes_by_id[orphan.id] = orphan
+}
+
+function rollbackMaterialize(
+  graph: MaterializableGraph,
+  scope: GraphScope,
+  state: NodeState,
+  node: LGraphNode,
+  snapshot: StoreWidgetSnapshot,
+  orphan: LGraphNode | undefined,
+  cause: unknown,
+  errorType = 'agent_node_materialize_add_failed'
+): false {
+  let cleanupCause: unknown
+  let cleanupFailed = false
+  try {
+    if (graph._nodes_by_id[node.id] === node) graph.remove(node)
+    else node.onRemoved?.()
+  } catch (error) {
+    cleanupCause = error
+    cleanupFailed = true
+  }
+  useNodeDataStore().deleteNode(scope, node._state)
+  restoreCanonical(graph, scope, state, snapshot.widgets, orphan)
+  reportError(cause, {
+    errorType,
+    context: { graphId: graph.id, nodeId: String(state.id) }
+  })
+  if (cleanupFailed) {
+    reportError(cleanupCause, {
+      errorType: 'agent_node_materialize_rollback_failed',
+      context: { graphId: graph.id, nodeId: String(state.id) }
+    })
+  }
+  return false
+}
+
+function configureAdapter(
+  graph: MaterializableGraph,
+  scope: GraphScope,
+  state: NodeState,
+  serialised: ISerialisedNode,
+  node: LGraphNode,
+  snapshot: StoreWidgetSnapshot
+): void {
   try {
     withNamedValuesRestore(() =>
       node.configure(withNamedWidgetValues(serialised, node))
     )
-    // The store owns widget values: a value written before this adapter
-    // existed outranks whatever the definition restored from the snapshot.
-    for (const widget of node.widgets ?? []) {
-      if (widget.serialize === false || widget.type === 'button') continue
-      const stored = storedValues.get(widget.name)
-      if (stored !== undefined) widget.value = stored
-    }
-    // A placeholder's slot mirrors have no widget on the real class.
-    for (const name of placeholderWidgetNames) {
-      if (node.widgets?.some((widget) => widget.name === name)) continue
-      widgetStore.deleteWidget(widgetId(scope.rootGraphId, state.id, name))
-    }
+    applyStoredValues(node, snapshot.storedValues)
+    dropPlaceholderMirrors(scope, state, node, snapshot.placeholderWidgetNames)
   } catch (cause) {
     // The node is attached and consistent with the stores; removing it here
     // would also drop the layout entry it adopted. Keep it and report.
@@ -412,7 +474,35 @@ function materialize(
       context: { graphId: graph.id, nodeId: String(state.id) }
     })
   }
-  return true
+}
+
+/**
+ * The store owns widget values: a value written before this adapter existed
+ * outranks whatever the definition restored from the snapshot.
+ */
+function applyStoredValues(
+  node: LGraphNode,
+  storedValues: Map<string, WidgetValue>
+): void {
+  for (const widget of node.widgets ?? []) {
+    if (widget.serialize === false || widget.type === 'button') continue
+    const stored = storedValues.get(widget.name)
+    if (stored !== undefined) widget.value = stored
+  }
+}
+
+/** A placeholder's slot mirrors have no widget on the real class. */
+function dropPlaceholderMirrors(
+  scope: GraphScope,
+  state: NodeState,
+  node: LGraphNode,
+  names: string[]
+): void {
+  const widgetStore = useWidgetValueStore()
+  for (const name of names) {
+    if (node.widgets?.some((widget) => widget.name === name)) continue
+    widgetStore.deleteWidget(widgetId(scope.rootGraphId, state.id, name))
+  }
 }
 
 /** Same placeholder `LGraph.configure()` builds for an unregistered type. */
