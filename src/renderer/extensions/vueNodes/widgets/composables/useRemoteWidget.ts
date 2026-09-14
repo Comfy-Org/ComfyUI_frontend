@@ -6,7 +6,10 @@ import type { IWidget, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { isCloud } from '@/platform/distribution/types'
 import { getAppQueryClient } from '@/platform/remote/queryClient'
 import { remoteOptionKeys } from '@/platform/remote/queryKeys'
-import type { RemoteRequestDescriptor } from '@/platform/remote/schema/remoteRequestSchema'
+import type {
+  RemoteAuthScope,
+  RemoteRequestDescriptor
+} from '@/platform/remote/schema/remoteRequestSchema'
 import type { RemoteWidgetConfig } from '@/schemas/nodeDefSchema'
 import { api } from '@/scripts/api'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
@@ -40,9 +43,9 @@ const createDescriptor = (
 
 async function fetchRemoteWidgetData(
   descriptor: RemoteRequestDescriptor,
-  signal: AbortSignal
+  signal: AbortSignal,
+  authHeaders: Awaited<ReturnType<typeof getAuthHeaders>>
 ): Promise<unknown> {
-  const authHeaders = await getAuthHeaders()
   const res = await axios.get(descriptor.route, {
     params: descriptor.params,
     signal,
@@ -65,33 +68,50 @@ export function useRemoteWidget<
   const { remoteConfig, defaultValue, node, widget } = options
   const descriptor = createDescriptor(remoteConfig)
   const queryClient = getAppQueryClient()
-  const getQueryKey = () =>
-    remoteOptionKeys.byRoute(descriptor, {
-      userId: useAuthStore().userId ?? null,
-      workspaceId: null,
-      apiKeyBucket: useApiKeyAuthStore().getApiKey() ? 'apikey' : 'anon',
-      apiKeySessionId: useApiKeyAuthStore().apiKeySessionId
-    })
+  const getAuthScope = (): RemoteAuthScope => ({
+    userId: useAuthStore().userId ?? null,
+    workspaceId: null,
+    apiKeyBucket: useApiKeyAuthStore().getApiKey() ? 'apikey' : 'anon',
+    apiKeySessionId: useApiKeyAuthStore().apiKeySessionId
+  })
+  const scopesMatch = (left: RemoteAuthScope, right: RemoteAuthScope) =>
+    left.userId === right.userId &&
+    left.workspaceId === right.workspaceId &&
+    left.apiKeyBucket === right.apiKeyBucket &&
+    left.apiKeySessionId === right.apiKeySessionId
+  const createQueryKey = (scope: RemoteAuthScope) =>
+    remoteOptionKeys.byRoute(descriptor, scope)
+  const getQueryKey = () => createQueryKey(getAuthScope())
 
   let isLoaded = false
   let refreshQueued = false
 
-  const fetchValue = async (): Promise<T> => {
-    const queryKey = getQueryKey()
+  const fetchValue = async (): Promise<{
+    data: T
+    scope: RemoteAuthScope
+  }> => {
+    const scope = getAuthScope()
+    const queryKey = createQueryKey(scope)
+    const fallback = () => queryClient.getQueryData<T>(queryKey) ?? defaultValue
     try {
+      const authHeaders = await getAuthHeaders()
+      if (!scopesMatch(scope, getAuthScope())) {
+        return { data: fallback(), scope }
+      }
       const data = await queryClient.fetchQuery({
         queryKey,
-        queryFn: ({ signal }) => fetchRemoteWidgetData(descriptor, signal),
+        queryFn: ({ signal }) =>
+          fetchRemoteWidgetData(descriptor, signal, authHeaders),
         staleTime: remoteConfig.refresh,
         retry: (failureCount, error) =>
           failureCount < (remoteConfig.max_retries ?? MAX_RETRIES) &&
           isRetriableError(error)
       })
-      return (data ?? defaultValue) as T
+      return { data: (data ?? defaultValue) as T, scope }
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Unknown error'
       console.warn('Remote widget fetch failed:', message)
-      return queryClient.getQueryData<T>(queryKey) ?? defaultValue
+      return { data: fallback(), scope }
     }
   }
 
@@ -126,7 +146,12 @@ export function useRemoteWidget<
 
   function getValue(onFulfilled?: () => void) {
     void fetchValue()
-      .then((data) => {
+      .then(async ({ data, scope }) => {
+        if (!scopesMatch(scope, getAuthScope())) {
+          await queryClient.cancelQueries({ queryKey: createQueryKey(scope) })
+          onFulfilled?.()
+          return
+        }
         if (!isLoaded) onFirstLoad(data)
         if (refreshQueued && data !== defaultValue) {
           onRefresh(data)
