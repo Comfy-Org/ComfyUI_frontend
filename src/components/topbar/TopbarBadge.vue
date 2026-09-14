@@ -7,11 +7,7 @@
     :style="menuBackgroundStyle"
     @click="togglePopover"
   >
-    <i
-      v-if="iconClass"
-      data-testid="badge-icon"
-      :class="['size-4 shrink-0 text-base', iconClass, iconColorClass]"
-    />
+    <i v-if="iconClass" data-testid="badge-icon" :class="badgeIconClass" />
     <div
       v-else-if="badge.label"
       class="shrink-0 rounded-full px-1.5 py-0.5 text-3xs font-semibold"
@@ -38,7 +34,7 @@
         >
           {{ badge.label }}
         </div>
-        <div class="font-inter text-sm">{{ displayText }}</div>
+        <div class="font-inter text-sm">{{ badge.text }}</div>
         <div v-if="badge.tooltip" class="text-xs">
           {{ badge.tooltip }}
         </div>
@@ -61,11 +57,7 @@
       ]"
       @click="togglePopover"
     >
-      <i
-        v-if="iconClass"
-        data-testid="badge-icon"
-        :class="['size-4 shrink-0 text-base', iconClass, iconColorClass]"
-      />
+      <i v-if="iconClass" data-testid="badge-icon" :class="badgeIconClass" />
       <div
         v-if="badge.label"
         class="shrink-0 rounded-full px-1.5 py-0.5 text-3xs font-semibold"
@@ -92,7 +84,7 @@
         >
           {{ badge.label }}
         </div>
-        <div class="font-inter text-sm">{{ displayText }}</div>
+        <div class="font-inter text-sm">{{ badge.text }}</div>
         <div v-if="badge.tooltip" class="text-xs">
           {{ badge.tooltip }}
         </div>
@@ -108,11 +100,7 @@
     :class="[{ 'flex-row-reverse': reverseOrder }, noPadding ? '' : 'px-2']"
     :style="menuBackgroundStyle"
   >
-    <i
-      v-if="iconClass"
-      data-testid="badge-icon"
-      :class="['size-4 shrink-0 text-base', iconClass, iconColorClass]"
-    />
+    <i v-if="iconClass" data-testid="badge-icon" :class="badgeIconClass" />
     <div
       v-if="badge.label"
       class="shrink-0 rounded-full px-1.5 py-0.5 text-3xs font-semibold"
@@ -121,7 +109,7 @@
       {{ badge.label }}
     </div>
     <div class="font-inter text-xs font-medium" :class="textClasses">
-      {{ displayText }}
+      {{ badge.text }}
     </div>
   </div>
 </template>
@@ -151,22 +139,6 @@ const popover = ref<InstanceType<typeof Popover>>()
 const togglePopover = (event: Event) => {
   popover.value?.toggle(event)
 }
-
-/**
- * Some backends shout their alert message ("STAGING ENVIRONMENT"). Only those
- * are recased, so messages that already carry their own casing keep both their
- * proper nouns and their sentence punctuation.
- */
-function toTitleCase(text: string): string {
-  if (text !== text.toUpperCase()) return text
-  return text
-    .toLowerCase()
-    .replace(/(^|\s)(\p{L})/gu, (_, lead: string, letter: string) =>
-      lead.concat(letter.toUpperCase())
-    )
-}
-
-const displayText = computed(() => toTitleCase(badge.text))
 
 const variant = computed(() => badge.variant ?? 'info')
 
@@ -198,8 +170,6 @@ const textClasses = computed(() => {
   }
 })
 
-const iconColorClass = computed(() => textClasses.value)
-
 const iconClass = computed(() => {
   if (badge.icon) {
     return badge.icon
@@ -214,6 +184,10 @@ const iconClass = computed(() => {
       return undefined
   }
 })
+
+const badgeIconClass = computed(() =>
+  cn('size-4 shrink-0 text-base', iconClass.value, textClasses.value)
+)
 
 const clickableClasses = 'cursor-pointer transition-opacity hover:opacity-80'
 

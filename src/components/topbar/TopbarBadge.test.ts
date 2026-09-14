@@ -184,24 +184,6 @@ describe('TopbarBadge', () => {
     })
   })
 
-  describe('message casing', () => {
-    it.for([
-      ['STAGING ENVIRONMENT', 'Staging Environment'],
-      ['DEV ENVIRONMENT', 'Dev Environment'],
-      ['PREVIEW ENVIRONMENT', 'Preview Environment']
-    ])('recases the shouted %s to title case', ([shouted, expected]) => {
-      renderTopbarBadge({ text: shouted }, 'full')
-
-      expect(screen.getByText(expected)).toBeInTheDocument()
-    })
-
-    it('leaves a message that carries its own casing alone', () => {
-      renderTopbarBadge({ text: 'ComfyUI is degraded' }, 'full')
-
-      expect(screen.getByText('ComfyUI is degraded')).toBeInTheDocument()
-    })
-  })
-
   describe('edge cases', () => {
     it('handles badge with only text', () => {
       renderTopbarBadge(

@@ -89,7 +89,8 @@
       :data-agent-gate-settled="agentPanelStore.gateSettled || undefined"
       class="ml-auto flex shrink-0 items-center gap-2 px-2"
     >
-      <slot name="actions-leading" />
+      <TopbarBadges />
+      <TopbarSubscribeButton />
       <div
         v-if="topbarBadgeStore.badges.length"
         data-testid="environment-badge-separator"
@@ -133,7 +134,8 @@
       </template>
     </div>
     <div v-else class="ml-auto flex h-full shrink-0 items-center">
-      <slot name="actions-leading" />
+      <TopbarBadges />
+      <TopbarSubscribeButton />
     </div>
     <div v-if="isDesktop" class="window-actions-spacer app-drag shrink-0" />
   </div>
@@ -146,6 +148,8 @@ import SelectButton from 'primevue/selectbutton'
 import { computed, nextTick, onUpdated, ref, watch } from 'vue'
 import CurrentUserButton from '@/components/topbar/CurrentUserButton.vue'
 import LoginButton from '@/components/topbar/LoginButton.vue'
+import TopbarBadges from '@/components/topbar/TopbarBadges.vue'
+import TopbarSubscribeButton from '@/components/topbar/TopbarSubscribeButton.vue'
 import WorkflowTab from '@/components/topbar/WorkflowTab.vue'
 
 import Button from '@/components/ui/button/Button.vue'
