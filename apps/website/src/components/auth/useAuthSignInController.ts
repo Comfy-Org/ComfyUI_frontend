@@ -154,6 +154,15 @@ export function useAuthSignInController(options: AuthSignInControllerOptions) {
     attempt === signInGeneration && enabled.value
   const abandonAttempt = () => dispatch({ type: 'signInAbandoned' })
 
+  // Held from a successful provisioning until the mint actually commits, so an
+  // attempt abandoned mid-mint reports no completion. Fired at the same
+  // minting -> signedIn choke as the redirect, before navigation begins.
+  let reportAuthCompleted: (() => void) | undefined
+  // A rollback sign-out that outran its deadline is still clearing the global
+  // identity after the controls recover; the next attempt waits on this before
+  // authenticating so the stale sign-out cannot clear the newer identity.
+  let pendingRollback: Promise<unknown> | undefined
+
   function dispatch(event: AuthSignInEvent) {
     const before = state.value
     state.value = authSignInTransition(before, event)
@@ -164,6 +173,8 @@ export function useAuthSignInController(options: AuthSignInControllerOptions) {
       state.value.step === 'signedIn' &&
       !state.value.messageKey
     ) {
+      reportAuthCompleted?.()
+      reportAuthCompleted = undefined
       leaveSignInPage()
     }
   }
@@ -261,23 +272,59 @@ export function useAuthSignInController(options: AuthSignInControllerOptions) {
     // identity a newer attempt just accepted. Bounded so a hung sign-out still
     // frees the controls, and best-effort so a rejection stays handled.
     const abandon = async () => {
-      if (authenticated)
-        await withinOperationDeadline(
-          firebase!.signOutWorkshop().catch(() => {})
-        )
+      reportAuthCompleted = undefined
+      if (authenticated) {
+        const rollback = firebase!.signOutWorkshop().catch(() => {})
+        pendingRollback = rollback
+        void rollback.finally(() => {
+          if (pendingRollback === rollback) pendingRollback = undefined
+        })
+        await withinOperationDeadline(rollback)
+      }
       abandonAttempt()
     }
+    // A non-interactive step that outran its deadline resets to idle like a
+    // silent abandonment, but the user clicked, so surface the generic failure
+    // copy the failure paths show rather than leave the controls silently live.
+    const recoverFromTimeout = async () => {
+      await abandon()
+      toastSignInFailure({ kind: 'unknown' })
+    }
     try {
+      // Wait out a prior attempt's rollback whose sign-out outran its deadline:
+      // authenticating into an in-flight global sign-out would let it clear this
+      // attempt's credential.
+      if (pendingRollback) await pendingRollback
       const loaded = await withinOperationDeadline(loadWorkshopFirebase())
       // The rollout flag turning off (or flickering) mid-flight must halt the
       // in-flight auth, not merely hide the UI: no sign-in, provisioning,
-      // telemetry, or session.
-      if (!live() || loaded === OPERATION_TIMED_OUT) {
+      // telemetry, or session. A live step that outran its deadline instead
+      // recovers with a message.
+      if (loaded === OPERATION_TIMED_OUT) {
+        if (!live()) await abandon()
+        else await recoverFromTimeout()
+        return
+      }
+      if (!live()) {
         await abandon()
         return
       }
       firebase = loaded
-      const credential = await authenticate(firebase)
+      // The user-driven popup is left unbounded and cancellable; email is a
+      // non-interactive round-trip, so it is bounded like the other steps.
+      const authResult =
+        provider === 'email'
+          ? await withinOperationDeadline(authenticate(firebase))
+          : await authenticate(firebase)
+      // No identity is persisted when the email round-trip outran its deadline.
+      if (authResult === OPERATION_TIMED_OUT) {
+        if (!live()) await abandon()
+        else await recoverFromTimeout()
+        return
+      }
+      const credential = authResult
+      // The identity is persisted the moment the credential resolves, so an
+      // abandon from here on must roll it back even if the flag has since flipped.
       authenticated = true
       if (!live()) {
         await abandon()
@@ -289,18 +336,29 @@ export function useAuthSignInController(options: AuthSignInControllerOptions) {
         const provisioned = await withinOperationDeadline(
           firebase.provisionWorkshopCustomer(credential)
         )
-        if (!live() || provisioned === OPERATION_TIMED_OUT) {
+        if (!live()) {
           await abandon()
           return
         }
+        // A slow-but-valid provider is kept signed in with a retry, the same as
+        // a provisioning error: a timeout must not be more destructive than a
+        // hard failure and tear the fresh identity down.
+        if (provisioned === OPERATION_TIMED_OUT) {
+          dispatch({
+            type: 'provisioningFailed',
+            email: credential.user.email ?? credential.user.displayName ?? ''
+          })
+          return
+        }
       }
-      captureAuthCompleted({
-        method: provider,
-        is_new_user:
-          mode === 'signUp' ||
-          (provider !== 'email' && firebase.isNewWorkshopUser(credential)),
-        user_id: credential.user.uid
-      })
+      reportAuthCompleted = () =>
+        captureAuthCompleted({
+          method: provider,
+          is_new_user:
+            mode === 'signUp' ||
+            (provider !== 'email' && firebase!.isNewWorkshopUser(credential)),
+          user_id: credential.user.uid
+        })
       dispatch({
         type: 'credentialSucceeded',
         email: credential.user.email ?? credential.user.displayName ?? ''
@@ -390,9 +448,11 @@ export function useAuthSignInController(options: AuthSignInControllerOptions) {
   onBeforeUnmount(stopUserWatch)
 
   // A focus refresh can mint successfully after a failed attempt; the banner
-  // and its Retry must not outlive the recovery.
+  // and its Retry must not outlive the recovery. Gated on the flag: a disable
+  // mid-mint has abandoned the attempt, and the published credential must not
+  // redirect it past the mint-promise guard at this watch layer.
   const stopSessionWatch = watch(session, (active) => {
-    if (active) dispatch({ type: 'mintSucceeded' })
+    if (active && enabled.value) dispatch({ type: 'mintSucceeded' })
   })
   onBeforeUnmount(stopSessionWatch)
 
