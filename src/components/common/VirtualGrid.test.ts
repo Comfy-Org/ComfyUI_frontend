@@ -1,9 +1,10 @@
 import { render, screen } from '@testing-library/vue'
 import { fromPartial } from '@total-typescript/shoehorn'
-import { useElementSize, useScroll } from '@vueuse/core'
+import { unrefElement, useElementSize, useScroll } from '@vueuse/core'
+import type { MaybeComputedElementRef } from '@vueuse/core'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { Ref } from 'vue'
-import { nextTick, ref } from 'vue'
+import { nextTick, ref, watchEffect } from 'vue'
 
 import VirtualGrid from './VirtualGrid.vue'
 
@@ -283,14 +284,45 @@ describe('VirtualGrid scrolled deep into a large library', () => {
     })
   }
 
+  let scrollContainer: HTMLElement | null = null
+
   const renderedNames = () =>
     screen.queryAllByText(/^asset-\d+$/).map((el) => el.textContent)
 
+  // The file-level mock returns a bare ref and ignores the element it was
+  // handed, so nothing here would notice a fix that resets the container's
+  // own scrollTop — these pins would keep failing, keep reading as green
+  // under `it.fails`, and never announce that the bug was fixed. Drive the
+  // real property and the real scroll event instead.
   beforeEach(() => {
     mockedWidth.value = PANEL_WIDTH
     mockedHeight.value = PANEL_HEIGHT
     mockedScrollY.value = 0
+    scrollContainer = null
+    vi.mocked(useScroll).mockImplementation((target) => {
+      const y = ref(0)
+      watchEffect((onCleanup) => {
+        const element = unrefElement(target as MaybeComputedElementRef)
+        if (!(element instanceof HTMLElement)) return
+        scrollContainer = element
+        const sync = () => {
+          y.value = element.scrollTop
+        }
+        sync()
+        element.addEventListener('scroll', sync)
+        onCleanup(() => {
+          element.removeEventListener('scroll', sync)
+        })
+      })
+      return fromPartial({ y })
+    })
   })
+
+  function scrollTo(offset: number) {
+    if (!scrollContainer) throw new Error('no scroll container rendered')
+    scrollContainer.scrollTop = offset
+    scrollContainer.dispatchEvent(new Event('scroll'))
+  }
 
   // Guards the two `it.fails` pins below from going vacuous: if this setup
   // ever stops producing a deep, virtualized window, this test goes red
@@ -301,7 +333,7 @@ describe('VirtualGrid scrolled deep into a large library', () => {
 
     expect(renderedNames().length).toBeLessThan(LIBRARY_SIZE)
 
-    mockedScrollY.value = 20_000
+    scrollTo(20_000)
     await nextTick()
 
     expect(renderedNames()).toContain('asset-312')
@@ -326,7 +358,7 @@ describe('VirtualGrid scrolled deep into a large library', () => {
     const { rerender } = renderLibrary(createLibrary())
     await nextTick()
 
-    mockedScrollY.value = 20_000
+    scrollTo(20_000)
     await nextTick()
 
     const audioOnly = createLibrary().filter((_, i) => isAudio(i))
@@ -348,7 +380,7 @@ describe('VirtualGrid scrolled deep into a large library', () => {
     renderLibrary(createLibrary())
     await nextTick()
 
-    mockedScrollY.value = 100_000
+    scrollTo(100_000)
     await nextTick()
 
     mockedWidth.value = PANEL_WIDTH * 2
