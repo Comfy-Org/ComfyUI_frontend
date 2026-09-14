@@ -1,6 +1,7 @@
 import { computed, onBeforeUnmount, readonly, ref, watch } from 'vue'
 import type { Ref } from 'vue'
 
+import { reportError } from '@/platform/telemetry/reportError'
 import { api } from '@/scripts/api'
 import type { RemoteMutationContext } from '@/types/graphMutationContext'
 import { createUuidv4 } from '@/utils/uuid'
@@ -141,14 +142,28 @@ export function useAgentCrdtFollower(
   // exactly which nodes each doc_update added/removed. Rebuilt from zero on
   // doc_reset (remint) because the lineage broke.
   let knownDocNodeIds: Set<string> = new Set()
-  const currentDocNodeIds = (): Set<string> => {
+  let reportedUnreadableNodesRoot = false
+  // `getMap` defines the root when it is absent; only read a root that exists.
+  // A root that exists but cannot be read is `null`, not an empty set: "no
+  // node ids were readable" is not the claim "the document has no nodes", and
+  // answering the second would retract every tracked node as removed. Reported
+  // once per episode -- the condition persists across frames, so reporting per
+  // frame would bury the first occurrence.
+  const currentDocNodeIds = (): Set<string> | null => {
+    const doc = bridge.follower.doc
+    if (!doc.share.has('nodes')) return new Set()
     try {
-      const doc = bridge.follower.doc as unknown as {
-        getMap: (k: string) => { toJSON: () => Record<string, unknown> }
+      const ids = new Set(doc.getMap('nodes').keys())
+      reportedUnreadableNodesRoot = false
+      return ids
+    } catch (error) {
+      if (!reportedUnreadableNodesRoot) {
+        reportedUnreadableNodesRoot = true
+        reportError(error, {
+          errorType: 'agent_crdt_follower_doc_nodes_read_failed'
+        })
       }
-      return new Set(Object.keys(doc.getMap('nodes').toJSON()))
-    } catch {
-      return new Set()
+      return null
     }
   }
 
@@ -201,6 +216,7 @@ export function useAgentCrdtFollower(
       bytes: update.update instanceof Uint8Array ? update.update.length : null
     })
     const ids = currentDocNodeIds()
+    if (ids === null) return
     const added = [...ids].filter((id) => !knownDocNodeIds.has(id))
     const removed = [...knownDocNodeIds].filter((id) => !ids.has(id))
     if (added.length > 0 || removed.length > 0)

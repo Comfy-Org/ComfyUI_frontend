@@ -1,10 +1,14 @@
 import type { WebSocketRoute } from '@playwright/test'
 import { expect, mergeTests } from '@playwright/test'
+import { mint } from '@comfyorg/comfy-multi-player'
+import * as Y from 'yjs'
 
 import { webSocketFixture } from '@e2e/fixtures/ws'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import type { AgentWsEvent } from '@/workbench/extensions/agent/schemas/agentApiSchema'
+import type { RawServerDocFrame } from '@/workbench/extensions/agent/crdt/docFrameClient'
+import { encodeBase64 } from '@/workbench/extensions/agent/crdt/docFrameClient'
 
 import {
   INTERMEDIATE_MESSAGE_EVENT,
@@ -16,6 +20,7 @@ import {
   THINKING_EVENT,
   THINKING_TEXT,
   TOOL_CALL_EVENT,
+  WORKFLOW_ID,
   agentTest,
   selectAgentWorkflow
 } from '@e2e/tests/agent/agentPanelMocks'
@@ -26,6 +31,70 @@ const OPEN_AGENT_LABEL = enMessages.agent.askComfyAgent
 
 function pushEvent(ws: WebSocketRoute, event: AgentWsEvent): void {
   ws.send(JSON.stringify(event))
+}
+
+function pushFrame(ws: WebSocketRoute, frame: RawServerDocFrame): void {
+  ws.send(JSON.stringify(frame))
+}
+
+const SUBGRAPH_DEFINITION_ID = '9e34a561-452d-4376-bd74-26f5b3e18ef4'
+
+function agentSubgraphUpdate(): Uint8Array {
+  return Y.encodeStateAsUpdate(
+    mint(
+      {
+        nodes: [
+          {
+            id: 1,
+            type: SUBGRAPH_DEFINITION_ID,
+            pos: [0, 0],
+            size: [100, 80],
+            flags: {},
+            order: 0,
+            mode: 0,
+            inputs: [],
+            outputs: []
+          }
+        ],
+        links: [],
+        definitions: {
+          subgraphs: [
+            {
+              version: 1,
+              revision: 0,
+              state: {
+                lastNodeId: 0,
+                lastLinkId: 0,
+                lastGroupId: 0,
+                lastRerouteId: 0
+              },
+              nodes: [],
+              links: [],
+              groups: [],
+              config: {},
+              definitions: { subgraphs: [] },
+              id: SUBGRAPH_DEFINITION_ID,
+              name: 'Agent-created subgraph',
+              inputNode: {
+                id: -10,
+                bounding: [10, 100, 150, 126],
+                pinned: false
+              },
+              outputNode: {
+                id: -20,
+                bounding: [400, 100, 140, 126],
+                pinned: false
+              },
+              inputs: [],
+              outputs: [],
+              widgets: []
+            }
+          ]
+        }
+      },
+      { types: {} }
+    )
+  )
 }
 
 test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
@@ -172,6 +241,85 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
     await expect(panel.getByText('Set widget')).toBeVisible()
     await expect(panel.getByText('Opened a new tab')).toBeVisible()
     await expect(panel.getByText('Resize image node')).toBeVisible()
+  })
+
+  test('applies a subscribed document update as a real root SubgraphNode', async ({
+    comfyPage,
+    postedMessages,
+    getWebSocket
+  }) => {
+    const page = comfyPage.page
+    await page.getByRole('button', { name: OPEN_AGENT_LABEL }).click()
+    await selectAgentWorkflow(page)
+
+    const panel = page.locator('#agent-panel-root')
+    const ws = await getWebSocket()
+    const clientFrames: Array<{
+      type?: unknown
+      data?: { workflow_id?: unknown }
+    }> = []
+    ws.onMessage((message) => {
+      clientFrames.push(JSON.parse(message.toString()))
+    })
+
+    await panel
+      .getByRole('textbox', { name: /^Describe ideas/ })
+      .fill('Build a reusable image-processing step')
+    await panel.getByRole('button', { name: 'Send' }).click()
+    await expect.poll(() => postedMessages.length).toBe(1)
+
+    pushEvent(ws, {
+      type: 'agent_active_tab',
+      data: {
+        workflow_id: WORKFLOW_ID,
+        name: 'Agent subgraph regression'
+      }
+    })
+    await expect
+      .poll(() =>
+        clientFrames.some(
+          (frame) =>
+            frame.type === 'doc_subscribe' &&
+            frame.data?.workflow_id === WORKFLOW_ID
+        )
+      )
+      .toBe(true)
+
+    pushFrame(ws, {
+      type: 'doc_subscribed',
+      data: { v: 1, workflow_id: WORKFLOW_ID, ok: true, seq: 0 }
+    })
+    pushFrame(ws, {
+      type: 'doc_update',
+      data: {
+        v: 1,
+        workflow_id: WORKFLOW_ID,
+        seq: 1,
+        update_b64: encodeBase64(agentSubgraphUpdate())
+      }
+    })
+
+    await expect
+      .poll(() =>
+        page.evaluate((definitionId) => {
+          const rootGraph = window.app!.rootGraph
+          const node = rootGraph.nodes.find((item) => String(item.id) === '1')
+          return {
+            definitionRegistered: rootGraph.subgraphs.has(definitionId),
+            isSubgraphNode: node?.isSubgraphNode() ?? false,
+            type: node?.type,
+            hasErrors: node?.has_errors === true,
+            rootNodeCount: rootGraph.nodes.length
+          }
+        }, SUBGRAPH_DEFINITION_ID)
+      )
+      .toEqual({
+        definitionRegistered: true,
+        isSubgraphNode: true,
+        type: SUBGRAPH_DEFINITION_ID,
+        hasErrors: false,
+        rootNodeCount: 1
+      })
   })
 
   test.describe('composer sizing', () => {

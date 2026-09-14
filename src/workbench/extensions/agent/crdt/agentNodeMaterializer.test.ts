@@ -4,7 +4,7 @@ import {
   mint,
   nodesMap
 } from '@comfyorg/comfy-multi-player'
-import type { WidgetCatalog } from '@comfyorg/comfy-multi-player'
+import type { WidgetCatalog, WorkflowNode } from '@comfyorg/comfy-multi-player'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import * as Y from 'yjs'
 
@@ -21,6 +21,7 @@ import {
   createTestSubgraphNode,
   enableSubgraphNodeCreation
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
+import type { ISerialisedNode } from '@/lib/litegraph/src/types/serialisation'
 import { reportError } from '@/platform/telemetry/reportError'
 // Mirrors the production bridge in AgentPanelRoot.vue, which takes the same
 // exemption to drive the real layout store.
@@ -123,7 +124,7 @@ function agentOperation(id: string, version: number, payload: object) {
     op_id: id,
     actor: 'agent:test',
     base_version: version,
-    stamp: [version, 'agent:test', id],
+    stamp: [version, 'agent:test'],
     ...payload
   }
 }
@@ -177,12 +178,18 @@ function remoteMutations(scope: GraphScope) {
   })
 }
 
-function nodePayload(id: number, type = 'dummy') {
+function nodePayload(
+  id: number,
+  type = 'dummy'
+): ISerialisedNode & WorkflowNode {
   return {
     id,
     type,
     pos: [0, 0],
     size: [100, 80],
+    flags: {},
+    order: 0,
+    mode: 0,
     inputs: [],
     outputs: []
   }
@@ -896,7 +903,7 @@ describe('reconcileAgentAdapters', () => {
      */
     it('regression: materializes an agent-added subgraph instance as a SubgraphNode via the subgraph-created lifecycle', () => {
       const definition = createTestSubgraphData({
-        nodes: [nodePayload(7)] as never
+        nodes: [nodePayload(7)]
       })
       const { follower } = seedDocument(graph, {
         nodes: [nodePayload(1, definition.id)],
@@ -921,7 +928,7 @@ describe('reconcileAgentAdapters', () => {
 
     it('registers a definition once across repeated reconciles', () => {
       const definition = createTestSubgraphData({
-        nodes: [nodePayload(7)] as never
+        nodes: [nodePayload(7)]
       })
       const { follower } = seedDocument(graph, {
         nodes: [nodePayload(1, definition.id)],
@@ -943,9 +950,33 @@ describe('reconcileAgentAdapters', () => {
       expect(reportError).not.toHaveBeenCalled()
     })
 
+    it('replaces a missing-node placeholder when its definition completes', () => {
+      const definition = createTestSubgraphData({
+        nodes: [nodePayload(7)]
+      })
+      const { follower } = seedDocument(graph, {
+        nodes: [nodePayload(1, definition.id)],
+        links: [],
+        definitions: { subgraphs: [definition] }
+      })
+      const stored = follower.doc
+        .getMap<Y.Map<unknown>>('definitions')
+        .get(definition.id)
+      if (!stored) throw new Error('Expected stored definition')
+      stored.delete('state')
+
+      reconcileAgentAdapters(graph, readSubgraphDefinitions(follower.doc))
+      expect(graph.getNodeById(toNodeId(1))?.has_errors).toBe(true)
+
+      reconcileAgentAdapters(graph, [definition])
+
+      expect(graph.getNodeById(toNodeId(1))).toBeInstanceOf(SubgraphNode)
+      expect(graph.getNodeById(toNodeId(1))?.has_errors).toBeFalsy()
+    })
+
     it('does not treat a definition payload as an edit to an existing subgraph', () => {
       const definition = createTestSubgraphData({
-        nodes: [nodePayload(7)] as never
+        nodes: [nodePayload(7)]
       })
       const { follower } = seedDocument(graph, {
         nodes: [nodePayload(1, definition.id)],
@@ -960,7 +991,7 @@ describe('reconcileAgentAdapters', () => {
         {
           ...definition,
           name: 'replacement must not apply',
-          nodes: [nodePayload(8)] as never
+          nodes: [nodePayload(8)]
         }
       ])
 
@@ -972,9 +1003,7 @@ describe('reconcileAgentAdapters', () => {
 
     it('carries interior widget values into the instantiated subgraph', () => {
       const definition = createTestSubgraphData({
-        nodes: [
-          { ...nodePayload(7, 'widget-node'), widgets_values: [42] }
-        ] as never
+        nodes: [{ ...nodePayload(7, 'widget-node'), widgets_values: [42] }]
       })
       const { follower } = seedDocument(graph, {
         nodes: [nodePayload(1, definition.id)],
@@ -993,21 +1022,17 @@ describe('reconcileAgentAdapters', () => {
       // createSubgraphs hoists nested definitions into its return value, so
       // the created subgraphs outnumber the definitions handed in.
       const inner = createTestSubgraphData({
-        nodes: [
-          { ...nodePayload(30, 'widget-node'), widgets_values: [1] }
-        ] as never
+        nodes: [{ ...nodePayload(30, 'widget-node'), widgets_values: [1] }]
       })
       const outer = createTestSubgraphData({
         nodes: [
           { ...nodePayload(20, 'widget-node'), widgets_values: [2] },
           nodePayload(21, inner.id)
-        ] as never,
+        ],
         definitions: { subgraphs: [inner] }
       })
       const sibling = createTestSubgraphData({
-        nodes: [
-          { ...nodePayload(10, 'widget-node'), widgets_values: [3] }
-        ] as never
+        nodes: [{ ...nodePayload(10, 'widget-node'), widgets_values: [3] }]
       })
       const { follower } = seedDocument(graph, {
         nodes: [nodePayload(1, outer.id), nodePayload(2, sibling.id)],
@@ -1026,12 +1051,63 @@ describe('reconcileAgentAdapters', () => {
       expect(reportError).not.toHaveBeenCalled()
     })
 
-    it('keeps a registered definition when a later frame nests a copy of it', () => {
-      const inner = createTestSubgraphData({
-        nodes: [nodePayload(30, 'widget-node')] as never
+    it('registers one subgraph when the same definition is root-level and nested', () => {
+      const shared = createTestSubgraphData({ nodes: [nodePayload(30)] })
+      const outer = createTestSubgraphData({
+        nodes: [nodePayload(20, shared.id)],
+        definitions: { subgraphs: [shared] }
+      })
+      const { follower } = seedDocument(graph, {
+        nodes: [nodePayload(1, shared.id), nodePayload(2, outer.id)],
+        links: [],
+        definitions: { subgraphs: [shared, outer] }
+      })
+
+      reconcileAgentAdapters(graph, readSubgraphDefinitions(follower.doc))
+
+      const registered = graph.subgraphs.get(shared.id)
+      expect(registered?.id).toBe(shared.id)
+      const createdIds = created.mock.calls.map(
+        ([event]) => (event as CustomEvent).detail.subgraph.id
+      )
+      expect(createdIds.filter((id) => id === shared.id)).toHaveLength(1)
+      expect((LiteGraph.createNode(shared.id) as SubgraphNode).subgraph).toBe(
+        registered
+      )
+      expect(reportError).not.toHaveBeenCalled()
+    })
+
+    it('prefers the top-level copy of a definition over a nested one', () => {
+      const shared = createTestSubgraphData({
+        nodes: [nodePayload(30), nodePayload(31)]
       })
       const outer = createTestSubgraphData({
-        nodes: [nodePayload(21, inner.id)] as never,
+        nodes: [nodePayload(20, shared.id)],
+        definitions: {
+          subgraphs: [{ ...shared, nodes: [nodePayload(30)] }]
+        }
+      })
+      // `outer` first, so a depth-first flatten reaches the nested copy of
+      // `shared` before the top-level one. Which copy wins must not depend on
+      // the order the CRDT happens to hand the definitions root back in.
+      const { follower } = seedDocument(graph, {
+        nodes: [nodePayload(1, shared.id)],
+        links: [],
+        definitions: { subgraphs: [outer, shared] }
+      })
+
+      reconcileAgentAdapters(graph, readSubgraphDefinitions(follower.doc))
+
+      expect(graph.subgraphs.get(shared.id)?.nodes).toHaveLength(2)
+      expect(reportError).not.toHaveBeenCalled()
+    })
+
+    it('keeps a registered definition when a later frame nests a copy of it', () => {
+      const inner = createTestSubgraphData({
+        nodes: [nodePayload(30, 'widget-node')]
+      })
+      const outer = createTestSubgraphData({
+        nodes: [nodePayload(21, inner.id)],
         definitions: { subgraphs: [inner] }
       })
       const first = seedDocument(graph, {
@@ -1063,10 +1139,10 @@ describe('reconcileAgentAdapters', () => {
 
     it('registers the missing child of an already registered parent', () => {
       const inner = createTestSubgraphData({
-        nodes: [nodePayload(30, 'widget-node')] as never
+        nodes: [nodePayload(30, 'widget-node')]
       })
       const outer = createTestSubgraphData({
-        nodes: [nodePayload(21, 'widget-node')] as never
+        nodes: [nodePayload(21, 'widget-node')]
       })
       const first = seedDocument(graph, {
         nodes: [nodePayload(1, outer.id)],
@@ -1099,7 +1175,7 @@ describe('reconcileAgentAdapters', () => {
       const definition = createTestSubgraphData({
         nodes: [
           { ...nodePayload(7, 'configure-capture'), widgets_values: [42] }
-        ] as never
+        ]
       })
       const { follower } = seedDocument(graph, {
         nodes: [nodePayload(1, definition.id)],
@@ -1120,7 +1196,7 @@ describe('reconcileAgentAdapters', () => {
     it('leaves the named-restore switch as it found it when registration throws', () => {
       configureShouldThrow = true
       const definition = createTestSubgraphData({
-        nodes: [nodePayload(7, 'throws-on-configure')] as never
+        nodes: [nodePayload(7, 'throws-on-configure')]
       })
       const { follower } = seedDocument(graph, {
         nodes: [nodePayload(1, definition.id)],
@@ -1137,7 +1213,7 @@ describe('reconcileAgentAdapters', () => {
     it('reports a definition that fails to register and still reconciles the other root nodes', () => {
       configureShouldThrow = true
       const definition = createTestSubgraphData({
-        nodes: [nodePayload(7, 'throws-on-configure')] as never
+        nodes: [nodePayload(7, 'throws-on-configure')]
       })
       const { follower } = seedDocument(graph, {
         nodes: [nodePayload(1, definition.id), nodePayload(2)],
@@ -1157,10 +1233,11 @@ describe('reconcileAgentAdapters', () => {
           context: { graphId: graph.id, definitionId: definition.id }
         }
       )
-      // createSubgraphs registers a definition before configuring it. A
-      // failed one is rolled back so the map only holds definitions that
-      // finished the lifecycle.
+      // A failed definition is rolled back before it is published, so neither
+      // the graph map nor the global node registry exposes it.
       expect(graph.subgraphs.has(definition.id)).toBe(false)
+      expect(created).not.toHaveBeenCalled()
+      expect(LiteGraph.registered_node_types[definition.id]).toBeUndefined()
       // The plain node still materializes. The instance waits for its
       // definition instead of binding to the half-configured attempt.
       expect(materialized).toEqual([toNodeId(2)])
@@ -1176,7 +1253,7 @@ describe('reconcileAgentAdapters', () => {
         }
       )
       const definition = createTestSubgraphData({
-        nodes: [nodePayload(7, 'throws-on-configure')] as never
+        nodes: [nodePayload(7, 'throws-on-configure')]
       })
       const { follower } = seedDocument(graph, {
         nodes: [nodePayload(1, definition.id), nodePayload(2)],
@@ -1201,7 +1278,7 @@ describe('reconcileAgentAdapters', () => {
     it('retries a failed definition on the next reconcile and reports it once', () => {
       configureShouldThrow = true
       const definition = createTestSubgraphData({
-        nodes: [nodePayload(7, 'throws-on-configure')] as never
+        nodes: [nodePayload(7, 'throws-on-configure')]
       })
       const { follower } = seedDocument(graph, {
         nodes: [nodePayload(1, definition.id)],
@@ -1230,10 +1307,10 @@ describe('reconcileAgentAdapters', () => {
     it('registers a valid sibling when another definition in the same frame fails', () => {
       configureShouldThrow = true
       const bad = createTestSubgraphData({
-        nodes: [nodePayload(7, 'throws-on-configure')] as never
+        nodes: [nodePayload(7, 'throws-on-configure')]
       })
       const good = createTestSubgraphData({
-        nodes: [nodePayload(8)] as never
+        nodes: [nodePayload(8)]
       })
       const { follower } = seedDocument(graph, {
         nodes: [nodePayload(1, bad.id), nodePayload(2, good.id)],
@@ -1258,10 +1335,10 @@ describe('reconcileAgentAdapters', () => {
 
     it('keeps a live nested definition and registers a missing one under an existing outer', () => {
       const inner = createTestSubgraphData({
-        nodes: [nodePayload(30)] as never
+        nodes: [nodePayload(30)]
       })
       const outer = createTestSubgraphData({
-        nodes: [nodePayload(21, inner.id)] as never,
+        nodes: [nodePayload(21, inner.id)],
         definitions: { subgraphs: [inner] }
       })
       const { follower } = seedDocument(graph, {
@@ -1293,7 +1370,7 @@ describe('reconcileAgentAdapters', () => {
 
     it('reports and skips a definition whose id is not a UUID instead of remapping it', () => {
       const definition = {
-        ...createTestSubgraphData({ nodes: [nodePayload(7)] as never }),
+        ...createTestSubgraphData({ nodes: [nodePayload(7)] }),
         id: 'legacy-subgraph'
       }
       const { follower } = seedDocument(graph, {

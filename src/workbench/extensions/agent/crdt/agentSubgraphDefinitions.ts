@@ -2,6 +2,8 @@ import { OPAQUE_WIDGETS_KEY } from '@comfyorg/comfy-multi-player'
 import * as Y from 'yjs'
 
 import type { ExportedSubgraph } from '@/lib/litegraph/src/types/serialisation'
+import { reportError } from '@/platform/telemetry/reportError'
+import { zProjectedSubgraphDefinition } from '@/platform/workflow/validation/schemas/workflowSchema'
 
 /**
  * Root map the op layer mints `definitions.subgraphs` into, keyed by
@@ -81,7 +83,34 @@ function readInteriorNode(source: unknown): Record<string, unknown> | null {
   return node
 }
 
-function readDefinition(source: Y.Map<unknown>): ExportedSubgraph {
+/**
+ * Validate a projected definition and hand back what the schema produced, not
+ * what went in: `zProjectedSubgraphDefinition` coerces string slot indices to
+ * numbers, and it is the coerced value that has to reach
+ * `LGraph.createSubgraph()`. The schema leaves `definitions.subgraphs` opaque,
+ * so each nested definition is parsed here and its own parsed value kept.
+ */
+function parseDefinition(value: unknown): ExportedSubgraph | null {
+  const result = zProjectedSubgraphDefinition.safeParse(value)
+  if (!result.success) return null
+  const nesting = result.data.definitions
+  // The schema stays wider than `ExportedSubgraph` by one union member:
+  // `zDataType` admits a `string[]` slot type for the custom nodes that ship
+  // one (rgthree's Context Big), and `ISlotType` does not model it. Narrowing
+  // it here would reject those documents outright, so the widening is asserted
+  // rather than validated away.
+  const definition = result.data as unknown as ExportedSubgraph
+  if (nesting === undefined) return definition
+  const subgraphs: ExportedSubgraph[] = []
+  for (const nested of nesting.subgraphs) {
+    const parsed = parseDefinition(nested)
+    if (parsed === null) return null
+    subgraphs.push(parsed)
+  }
+  return { ...definition, definitions: { subgraphs } }
+}
+
+function readDefinition(source: Y.Map<unknown>): ExportedSubgraph | null {
   const definition: Record<string, unknown> = {}
   source.forEach((value, key) => {
     if (key === NODE_ORDER || key === LINK_ORDER || !isReadableKey(key)) return
@@ -100,7 +129,7 @@ function readDefinition(source: Y.Map<unknown>): ExportedSubgraph {
       definition[key] = plain(value)
     }
   })
-  return definition as unknown as ExportedSubgraph
+  return parseDefinition(definition)
 }
 
 function readField(source: unknown, key: string): unknown {
@@ -135,6 +164,14 @@ export function readSubgraphDefinitionIds(doc: Y.Doc): string[] {
 }
 
 /**
+ * Ids already reported as failing to validate, per document. The follower
+ * reads the definitions root on every applied frame, and a definition minted
+ * in a broken shape stays broken, so without this the first report would be
+ * buried under one per frame for the rest of the session.
+ */
+const reportedUnreadableDefinitions = new WeakMap<Y.Doc, Set<string>>()
+
+/**
  * Project the subgraph definitions the op layer minted into the follower doc
  * back to the `ExportedSubgraph` shape `LGraph.createSubgraphs()` consumes,
  * interior nodes and links in mint order.
@@ -149,8 +186,23 @@ export function readSubgraphDefinitions(doc: Y.Doc): ExportedSubgraph[] {
   // (For a root that arrived over the wire, `getMap` upgrades the untyped
   // shared type in place; that is a read-side view, not new content.)
   if (!doc.share.has(DEFINITIONS_ROOT)) return definitions
-  doc.getMap<unknown>(DEFINITIONS_ROOT).forEach((value) => {
-    if (value instanceof Y.Map) definitions.push(readDefinition(value))
+  const reported =
+    reportedUnreadableDefinitions.get(doc) ??
+    reportedUnreadableDefinitions.set(doc, new Set()).get(doc)!
+  doc.getMap<unknown>(DEFINITIONS_ROOT).forEach((value, id) => {
+    if (!(value instanceof Y.Map)) return
+    const definition = readDefinition(value)
+    if (definition) {
+      definitions.push(definition)
+      reported.delete(id)
+      return
+    }
+    if (reported.has(id)) return
+    reported.add(id)
+    reportError(
+      new Error(`Agent subgraph definition ${id} does not validate`),
+      { errorType: 'agent_crdt_unreadable_subgraph_definition' }
+    )
   })
   return definitions
 }
