@@ -50,7 +50,14 @@ export function createNodeState(overrides: Partial<NodeState> = {}): NodeState {
   }
 }
 
-export class StubPath2D {
+interface StubPathMethods {
+  moveTo: Path2D['moveTo']
+  lineTo: Path2D['lineTo']
+  bezierCurveTo: Path2D['bezierCurveTo']
+  quadraticCurveTo: Path2D['quadraticCurveTo']
+}
+
+export class StubPath2D implements StubPathMethods {
   calls: Array<{ method: string; args: unknown[] }> = []
 
   moveTo(...args: unknown[]): void {
@@ -67,10 +74,6 @@ export class StubPath2D {
 
   quadraticCurveTo(...args: unknown[]): void {
     this.calls.push({ method: 'quadraticCurveTo', args })
-  }
-
-  arc(...args: unknown[]): void {
-    this.calls.push({ method: 'arc', args })
   }
 }
 
