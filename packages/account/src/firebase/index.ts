@@ -33,32 +33,25 @@ import type { AccountIdentity } from '../core/identity.js'
 import { identityBrand } from '../core/identity.js'
 import { isFirebaseAuthErrorLike } from '../firebaseAuthError.js'
 
-interface ActionCeiling {
-  /**
-   * Optional ceiling on email sign-in and password reset, which leave no
-   * state behind when abandoned. None by default, as the cloud app runs
-   * them. Never applied to account creation: a ceiling rejects the caller
-   * while the SDK call may still succeed, leaving an orphaned account whose
-   * every retry fails with email-already-in-use. Popup sign-in is never
-   * bounded either; the SDK raises its own cancellation errors.
-   */
-  readonly actionTimeoutMs?: number
-}
-
-export interface FirebaseIdentityAppConfig extends ActionCeiling {
+export interface FirebaseIdentityAppConfig {
   readonly options: FirebaseOptions
   /** Named app: never contend with a default app another script creates. */
   readonly appName?: string
   /** Host-selected persistence; Firebase's default when omitted. */
   readonly persistence?: Persistence
+  /** A host-owned `Auth` and package-owned app options are exclusive. */
+  readonly auth?: never
 }
 
 /**
  * A host that already holds an `Auth` (the cloud app's vuefire instance)
  * binds the entry to it: no second app, no second persistence store.
  */
-export interface FirebaseIdentityAuthConfig extends ActionCeiling {
+export interface FirebaseIdentityAuthConfig {
   readonly auth: Auth
+  readonly options?: never
+  readonly appName?: never
+  readonly persistence?: never
 }
 
 export type FirebaseIdentityConfig =
@@ -98,25 +91,6 @@ function githubProvider(): GithubAuthProvider {
   return provider
 }
 
-function withCeiling<T>(run: Promise<T>, timeoutMs: number): Promise<T> {
-  return new Promise<T>((resolve, reject) => {
-    const timer = setTimeout(
-      () => reject(new Error('Firebase auth action timed out')),
-      timeoutMs
-    )
-    run.then(
-      (value) => {
-        clearTimeout(timer)
-        resolve(value)
-      },
-      (error: unknown) => {
-        clearTimeout(timer)
-        reject(error)
-      }
-    )
-  })
-}
-
 /**
  * An unknown email must look exactly like a sent reset, which is how Firebase
  * itself answers with email enumeration protection on; a distinct failure
@@ -136,7 +110,10 @@ function resolveUnknownEmailAsSent(error: unknown): void {
  * Auth per app.
  */
 function authResolver(config: FirebaseIdentityConfig): () => Auth {
-  if ('auth' in config) return () => config.auth
+  if (config.auth) {
+    const { auth } = config
+    return () => auth
+  }
   const appName = config.appName ?? 'comfy-account'
   let resolved: Auth | undefined
   return () => {
@@ -157,10 +134,7 @@ function authResolver(config: FirebaseIdentityConfig): () => Auth {
 export function createFirebaseIdentity(
   config: FirebaseIdentityConfig
 ): FirebaseIdentity {
-  const { actionTimeoutMs } = config
   const auth = authResolver(config)
-  const bounded = <T>(run: Promise<T>): Promise<T> =>
-    actionTimeoutMs === undefined ? run : withCeiling(run, actionTimeoutMs)
 
   return {
     [identityBrand]: true,
@@ -168,13 +142,11 @@ export function createFirebaseIdentity(
     signInWithGoogle: () => signInWithPopup(auth(), googleProvider()),
     signInWithGitHub: () => signInWithPopup(auth(), githubProvider()),
     signInWithEmail: (email, password) =>
-      bounded(signInWithEmailAndPassword(auth(), email, password)),
+      signInWithEmailAndPassword(auth(), email, password),
     createUserWithEmail: (email, password) =>
       createUserWithEmailAndPassword(auth(), email, password),
     sendPasswordReset: (email) =>
-      bounded(sendPasswordResetEmail(auth(), email)).catch(
-        resolveUnknownEmailAsSent
-      ),
+      sendPasswordResetEmail(auth(), email).catch(resolveUnknownEmailAsSent),
     updatePassword: (newPassword) => {
       const user = auth().currentUser
       return user

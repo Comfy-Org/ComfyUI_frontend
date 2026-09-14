@@ -11,12 +11,16 @@ test('GPT Image generation pages are discoverable as text-to-image while publish
   )
   await page.route('**/_website/ModelsCatalogue.*.js', async (route) => {
     await hydrated.promise
-    await route.continue()
+    await route.fallback()
   })
   try {
     await page.goto('/models/?useCase=generate-images', { waitUntil: 'commit' })
     await moduleRequested
-    await expect(page.getByTestId('workshop-search')).toBeDisabled()
+    await expect(page.getByTestId('workshop-search')).toHaveCount(0)
+    await expect(page.getByTestId('models-loading')).toBeVisible()
+    await expect(
+      page.getByRole('heading', { level: 1, name: /Grok Imagine/ })
+    ).toHaveCount(0)
   } finally {
     hydrated.resolve()
   }

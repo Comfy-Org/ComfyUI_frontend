@@ -2,7 +2,7 @@ import { fileURLToPath } from 'node:url'
 
 import { expect } from '@playwright/test'
 
-import { test } from './fixtures/blockExternalMedia'
+import { test } from './fixtures/workshopVisibility'
 
 const caseStudyVideoPath = fileURLToPath(
   new URL(
@@ -40,6 +40,7 @@ test.describe('Homepage @smoke', () => {
     })
     await expect(activeSlide.getByText('New Model Release')).toBeVisible()
     const cta = activeSlide.getByRole('link', { name: 'Explore Seedance 2.5' })
+    await cta.scrollIntoViewIfNeeded()
     await expect(cta).toBeVisible()
     await expect(cta).toHaveAttribute(
       'href',
