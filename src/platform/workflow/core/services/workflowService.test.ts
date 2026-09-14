@@ -1638,9 +1638,7 @@ describe('useWorkflowService', () => {
       const deserialize = vi.fn()
       Reflect.set(canvas, 'graph', originalGraph)
       Reflect.set(canvas, '_deserializeItems', deserialize)
-      const workflow = {
-        load: vi.fn(async () => ({ initialState: { nodes: [], links: [] } }))
-      } as unknown as ComfyWorkflow
+      const workflow = createModeTestWorkflow()
 
       try {
         const options = { position: [120, 240] as [number, number] }
@@ -1665,17 +1663,16 @@ describe('useWorkflowService', () => {
       const deserialize = vi.fn()
       Reflect.set(originalCanvas, 'graph', originalGraph)
       Reflect.set(originalCanvas, '_deserializeItems', deserialize)
-      let finishLoad: (value: unknown) => void = () => {}
-      const workflow = {
-        load: vi.fn(
-          () =>
-            new Promise((resolve) => {
-              finishLoad = resolve
-            })
-        )
-      } as unknown as ComfyWorkflow
+      const workflow = createModeTestWorkflow()
+      let finishLoad: (value: LoadedComfyWorkflow) => void = () => {}
+      vi.spyOn(workflow, 'load').mockImplementation(
+        () =>
+          new Promise((resolve) => {
+            finishLoad = resolve
+          })
+      )
 
-      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+      reportErrorMock.mockClear()
 
       try {
         const pending = useWorkflowService().insertWorkflow(workflow)
@@ -1683,18 +1680,25 @@ describe('useWorkflowService', () => {
           graph: originalGraph,
           _deserializeItems: vi.fn()
         })
-        finishLoad({ initialState: { nodes: [], links: [] } })
+        finishLoad(workflow)
         await pending
 
         expect(deserialize).not.toHaveBeenCalled()
         expect(app.canvas._deserializeItems).not.toHaveBeenCalled()
-        expect(warnSpy).toHaveBeenCalledWith(
-          expect.stringContaining(
-            'insertWorkflow aborted: canvas or graph was replaced'
-          )
-        )
+        expect(reportErrorMock).toHaveBeenCalledTimes(1)
+        expect(reportErrorMock).toHaveBeenCalledWith(expect.any(Error), {
+          errorType: 'workflow_insert_aborted_canvas_changed',
+          level: 'warning',
+          tags: {
+            failure_kind: 'degraded',
+            feature_area: 'workflow',
+            operation: 'insert',
+            outcome: 'degraded',
+            assert_mode: 'soft'
+          },
+          context: { replacement_kind: 'canvas' }
+        })
       } finally {
-        warnSpy.mockRestore()
         Reflect.set(app, 'canvas', originalCanvas)
         Reflect.set(originalCanvas, 'graph', priorGraph)
         Reflect.set(originalCanvas, '_deserializeItems', priorDeserialize)
@@ -1709,32 +1713,38 @@ describe('useWorkflowService', () => {
       const deserialize = vi.fn()
       Reflect.set(canvas, 'graph', originalGraph)
       Reflect.set(canvas, '_deserializeItems', deserialize)
-      let finishLoad: (value: unknown) => void = () => {}
-      const workflow = {
-        load: vi.fn(
-          () =>
-            new Promise((resolve) => {
-              finishLoad = resolve
-            })
-        )
-      } as unknown as ComfyWorkflow
+      const workflow = createModeTestWorkflow()
+      let finishLoad: (value: LoadedComfyWorkflow) => void = () => {}
+      vi.spyOn(workflow, 'load').mockImplementation(
+        () =>
+          new Promise((resolve) => {
+            finishLoad = resolve
+          })
+      )
 
-      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+      reportErrorMock.mockClear()
 
       try {
         const pending = useWorkflowService().insertWorkflow(workflow)
         Reflect.set(canvas, 'graph', {})
-        finishLoad({ initialState: { nodes: [], links: [] } })
+        finishLoad(workflow)
         await pending
 
         expect(deserialize).not.toHaveBeenCalled()
-        expect(warnSpy).toHaveBeenCalledWith(
-          expect.stringContaining(
-            'insertWorkflow aborted: canvas or graph was replaced'
-          )
-        )
+        expect(reportErrorMock).toHaveBeenCalledTimes(1)
+        expect(reportErrorMock).toHaveBeenCalledWith(expect.any(Error), {
+          errorType: 'workflow_insert_aborted_canvas_changed',
+          level: 'warning',
+          tags: {
+            failure_kind: 'degraded',
+            feature_area: 'workflow',
+            operation: 'insert',
+            outcome: 'degraded',
+            assert_mode: 'soft'
+          },
+          context: { replacement_kind: 'graph' }
+        })
       } finally {
-        warnSpy.mockRestore()
         Reflect.set(canvas, 'graph', priorGraph)
         Reflect.set(canvas, '_deserializeItems', priorDeserialize)
       }

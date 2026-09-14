@@ -2108,8 +2108,8 @@ Enterprise`
     'zh-CN': '年度积分'
   },
   'pricing.banner.title': {
-    en: "Start free. Upgrade when you're ready.",
-    'zh-CN': '免费开始，准备好了再升级。'
+    en: 'Start Comfy Cloud for free. Upgrade when ready.',
+    'zh-CN': '免费开始使用 Comfy Cloud，准备好了再升级。'
   },
   'pricing.banner.subtitle': {
     en: '5 free runs on real GPUs — no credit card required.',
@@ -2144,6 +2144,10 @@ Enterprise`
   'pricing.feature.inviteMembers': {
     en: 'Invite members',
     'zh-CN': '邀请成员'
+  },
+  'pricing.feature.inviteMembersUpTo50': {
+    en: 'Invite members up to 50',
+    'zh-CN': '最多可邀请 50 名成员'
   },
   'pricing.feature.concurrentWorkflows': {
     en: 'Members can run workflows concurrently',
@@ -2286,6 +2290,7 @@ Enterprise`
     'zh-CN': '需要更多成员？想要更多灵活性或定制功能？'
   },
   'pricing.enterprise.cta': { en: 'Contact Us', 'zh-CN': '联系我们' },
+  'pricing.enterprise.learnMore': { en: 'Learn More', 'zh-CN': '了解更多' },
   'pricing.enterprise.feature1': {
     en: 'Annual commitments with bulk pricing and custom compute packages',
     'zh-CN': '支持年度承诺、批量定价与定制算力套餐'
@@ -5963,10 +5968,6 @@ Enterprise`
     en: 'BROWSE ALL CUSTOMER STORIES',
     'zh-CN': '浏览全部客户故事'
   },
-  'pricing.customerProof.heading': {
-    en: 'Built with ComfyUI',
-    'zh-CN': '使用 ComfyUI 构建'
-  },
   'customers.article.watchVideo': {
     en: 'WATCH THE VIDEO',
     'zh-CN': '观看视频'
@@ -8925,22 +8926,22 @@ Enterprise`
     en: 'Contact sales',
     'zh-CN': '联系销售'
   },
-  'pricing.resourceCosts.note': {
-    en: 'Applies to the Comfy API on the Developer Platform.',
-    'zh-CN': '仅适用于开发者平台上的 Comfy API。'
+  'pricing.resourceCosts.subtitle': {
+    en: 'Only pay for what you use. Rates below apply to the Comfy API, billed by the GPU second.',
+    'zh-CN': '按实际用量付费。以下费率适用于 Comfy API，按 GPU 秒计费。'
   },
   'pricing.resourceCosts.heading': {
-    en: 'Resource costs',
-    'zh-CN': '资源成本'
+    en: 'Developer Platform pricing',
+    'zh-CN': '开发者平台定价'
   },
   'pricing.minimaxLicense.heading': {
-    en: 'License pricing',
-    'zh-CN': '许可定价'
+    en: 'MiniMax license pricing',
+    'zh-CN': 'MiniMax 许可定价'
   },
   'pricing.minimaxLicense.description': {
-    en: 'Professional from $5,000 a month. Enterprise on an annual agreement, priced to your volume. Video, audio, and music under one license.',
+    en: 'For running MiniMax models locally. Comfy Cloud already includes commercial use. Enterprise on an annual agreement, priced to your volume. Video, audio, and music under one license.',
     'zh-CN':
-      '专业版每月 5,000 美元起。企业版为年度协议，按用量定价。视频、音频与音乐涵盖于同一份许可。'
+      '适用于本地运行 MiniMax 模型。Comfy Cloud 已包含商业使用权。企业版为年度协议，按用量定价。视频、音频与音乐涵盖于同一份许可。'
   },
   'pricing.minimaxLicense.cta': {
     en: 'See license tiers',
