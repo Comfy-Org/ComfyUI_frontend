@@ -464,6 +464,36 @@ describe('useSubscriptionCheckout', () => {
     return checkout
   }
 
+  it('records selection intent even when the preview fails before payment', async () => {
+    const checkout = await setup()
+    mockPreviewSubscribe.mockRejectedValueOnce(new Error('preview unavailable'))
+    await checkout.handleSubscribeClick({
+      tierKey: 'standard',
+      billingCycle: 'yearly'
+    })
+    expect(mockTrackBillingEvent).toHaveBeenCalledExactlyOnceWith({
+      operation: 'subscription_checkout',
+      stage: 'intent',
+      outcome: 'pending',
+      tier: 'standard',
+      cycle: 'yearly',
+      payment_intent_source: undefined
+    })
+    expect(mockSubscribe).not.toHaveBeenCalled()
+  })
+
+  it('does not record selection intent when capabilities block checkout', async () => {
+    const checkout = await setup()
+    mockCapabilities.value.canSubscribeSelfServe = false
+    mockCapabilities.value.canChangeSeats = false
+    await checkout.handleSubscribeClick({
+      tierKey: 'standard',
+      billingCycle: 'yearly'
+    })
+    expect(mockTrackBillingEvent).not.toHaveBeenCalled()
+    expect(mockPreviewSubscribe).not.toHaveBeenCalled()
+  })
+
   async function submitRejectedPreview(code: string, message = 'error') {
     const checkout = await setup()
     mockPreviewSubscribe.mockRejectedValueOnce(errorWithCode(code, message))
@@ -1289,7 +1319,9 @@ describe('useSubscriptionCheckout', () => {
 
       expect(checkout.previewData.value).toStrictEqual(preview)
       expect(checkout.checkoutStep.value).toBe('success')
-      expect(mockTrackBillingEvent).not.toHaveBeenCalled()
+      expect(mockTrackBillingEvent).toHaveBeenCalledExactlyOnceWith(
+        expect.objectContaining({ stage: 'intent', outcome: 'pending' })
+      )
       expect(mockToastAdd).not.toHaveBeenCalled()
       expect(mockTrackBeginCheckout).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -1318,7 +1350,9 @@ describe('useSubscriptionCheckout', () => {
       })
 
       expect(checkout.checkoutStep.value).toBe('success')
-      expect(mockTrackBillingEvent).not.toHaveBeenCalled()
+      expect(mockTrackBillingEvent).toHaveBeenCalledExactlyOnceWith(
+        expect.objectContaining({ stage: 'intent', outcome: 'pending' })
+      )
     })
   })
 
@@ -2291,7 +2325,9 @@ describe('useSubscriptionCheckout', () => {
       expect(mockToastAdd).toHaveBeenCalledWith(
         expect.objectContaining({ severity: 'error' })
       )
-      expect(mockTrackBillingEvent).not.toHaveBeenCalled()
+      expect(mockTrackBillingEvent).toHaveBeenCalledExactlyOnceWith(
+        expect.objectContaining({ stage: 'intent', outcome: 'pending' })
+      )
     })
 
     it('refuses to bill a team reactivation when a fresh preview no longer matches the confirmed charge', async () => {
@@ -2379,7 +2415,9 @@ describe('useSubscriptionCheckout', () => {
           detail: 'status unavailable'
         })
       )
-      expect(mockTrackBillingEvent).not.toHaveBeenCalled()
+      expect(mockTrackBillingEvent).toHaveBeenCalledExactlyOnceWith(
+        expect.objectContaining({ stage: 'intent', outcome: 'pending' })
+      )
     })
 
     it('bounces to pricing when a required reactivation refresh cannot collect consent', async () => {

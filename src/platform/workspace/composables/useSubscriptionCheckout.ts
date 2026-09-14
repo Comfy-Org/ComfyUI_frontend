@@ -706,6 +706,14 @@ export function useSubscriptionCheckout(
       return
     }
 
+    telemetry?.trackBillingEvent({
+      operation: 'subscription_checkout',
+      stage: 'intent',
+      outcome: 'pending',
+      tier: payload.tierKey,
+      cycle: payload.billingCycle,
+      payment_intent_source: paymentIntentSource
+    })
     const { tierKey, billingCycle } = payload
     promotionPreviewRequestId += 1
 
@@ -785,6 +793,15 @@ export function useSubscriptionCheckout(
     const checkoutType = payload.isChange ? 'change' : 'new'
     if (isSubscribing.value || !canPerformCheckout(checkoutType)) return
 
+    telemetry?.trackBillingEvent({
+      operation: 'subscription_checkout',
+      stage: 'intent',
+      outcome: 'pending',
+      tier: 'team',
+      cycle: payload.billingCycle,
+      checkout_type: checkoutType,
+      payment_intent_source: paymentIntentSource
+    })
     const previewRequestId = ++teamPreviewRequestId
     promotionPreviewRequestId += 1
     reactivationRequired.value = false

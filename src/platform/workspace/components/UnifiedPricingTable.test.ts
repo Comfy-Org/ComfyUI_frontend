@@ -834,6 +834,32 @@ describe('UnifiedPricingTable capability gating', () => {
     mockDistributionTypes.isCloud = true
   })
 
+  it('enables subscription when the server grants it without change-seats permission', async () => {
+    mockCanDowngradeToPersonal.value = false
+    mockCanManageSubscription.value = false
+    mockCanChangeSeats.value = false
+    mockRawCanReactivate.value = false
+    const { emitted } = renderComponent()
+    const subscribe = screen.getByRole('button', {
+      name: 'Subscribe to Standard Yearly'
+    })
+    expect(subscribe).toBeDisabled()
+
+    mockCanManageSubscription.value = true
+    await nextTick()
+    expect(subscribe).toBeEnabled()
+    await userEvent.click(subscribe)
+    expect(emitted().subscribe).toEqual([
+      [{ tierKey: 'standard', billingCycle: 'yearly' }]
+    ])
+
+    mockCanManageSubscription.value = false
+    await nextTick()
+    expect(subscribe).toBeDisabled()
+    await userEvent.click(subscribe)
+    expect(emitted().subscribe).toHaveLength(1)
+  })
+
   it('keeps a paid plan actionable when only change-seats is withheld', async () => {
     const user = userEvent.setup()
     mockSubscription.value = { tier: 'PRO', duration: 'ANNUAL' }

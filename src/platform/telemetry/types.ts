@@ -22,6 +22,10 @@ import type {
   AuthMethod
 } from '@comfyorg/account/telemetry'
 import type { SessionRefreshOutcome } from '@comfyorg/account/session'
+import type {
+  SubscribeResponse,
+  CreateTopupResponse
+} from '@comfyorg/ingest-types'
 
 import type { TierKey } from '@/platform/cloud/subscription/constants/tierPricing'
 import type { BillingCycle } from '@/platform/cloud/subscription/utils/subscriptionTierRank'
@@ -846,6 +850,23 @@ export interface BillingFailure {
   error_code?: BillingErrorCode
 }
 
+type BillingIntent = {
+  stage: 'intent'
+  outcome: 'pending'
+}
+
+type BillingRequestSent = {
+  stage: 'request_sent'
+  outcome: 'pending'
+}
+
+type BillingCheckoutReceived<Status extends string> = {
+  stage: 'checkout_received'
+  outcome: 'pending'
+  billing_op_id: string
+  checkout_status: Status
+}
+
 type BillingStarted = {
   stage: 'started'
   outcome: 'pending'
@@ -879,7 +900,14 @@ type SubscriptionCheckoutBillingEvent = {
    * `started` event through to this terminal event.
    */
   duration_ms?: number
-} & (BillingStarted | BillingSucceeded | BillingFailed)
+} & (
+  | BillingIntent
+  | BillingCheckoutReceived<SubscribeResponse['status']>
+  | BillingRequestSent
+  | BillingStarted
+  | BillingSucceeded
+  | BillingFailed
+)
 
 type BillingOperationBillingEvent = {
   operation: 'operation'
@@ -914,7 +942,14 @@ type TopupBillingEvent = {
    * `started` event through to this terminal event.
    */
   duration_ms?: number
-} & (BillingStarted | BillingSucceeded | BillingFailed)
+} & (
+  | BillingIntent
+  | BillingCheckoutReceived<CreateTopupResponse['status']>
+  | BillingRequestSent
+  | BillingStarted
+  | BillingSucceeded
+  | BillingFailed
+)
 
 type DowngradeToPersonalBillingEvent = {
   operation: 'downgrade_to_personal'
@@ -928,7 +963,12 @@ type DowngradeToPersonalBillingEvent = {
   duration_ms?: number
 } & (BillingStarted | BillingSucceeded | BillingFailed)
 
+type CapabilityReadBillingEvent = {
+  operation: 'capability_read'
+} & (BillingSucceeded | Pick<BillingFailed, 'stage' | 'outcome'>)
+
 export type BillingTelemetryEvent =
+  | CapabilityReadBillingEvent
   | SubscriptionCheckoutBillingEvent
   | BillingOperationBillingEvent
   | ResubscribeBillingEvent
@@ -958,6 +998,9 @@ export function getBillingTelemetryEventPayload(event: BillingTelemetryEvent) {
       event.billing_op_id !== undefined && {
         billing_op_id: event.billing_op_id
       }),
+    ...('checkout_status' in event && {
+      checkout_status: event.checkout_status
+    }),
     ...('operation_type' in event && {
       operation_type: event.operation_type
     }),
@@ -1188,12 +1231,22 @@ export const TelemetryEvents = {
   BEGIN_CHECKOUT: 'begin_checkout',
 
   // Canonical Billing Lifecycle
+  BILLING_SUBSCRIPTION_CHECKOUT_RECEIVED:
+    'billing.subscription_checkout.checkout_received',
+  BILLING_TOPUP_CHECKOUT_RECEIVED: 'billing.topup.checkout_received',
+  BILLING_SUBSCRIPTION_CHECKOUT_REQUEST_SENT:
+    'billing.subscription_checkout.request_sent',
+  BILLING_TOPUP_REQUEST_SENT: 'billing.topup.request_sent',
+  BILLING_SUBSCRIPTION_CHECKOUT_INTENT: 'billing.subscription_checkout.intent',
+  BILLING_TOPUP_INTENT: 'billing.topup.intent',
   BILLING_SUBSCRIPTION_CHECKOUT_STARTED:
     'billing.subscription_checkout.started',
   BILLING_SUBSCRIPTION_CHECKOUT_SUCCEEDED:
     'billing.subscription_checkout.succeeded',
   BILLING_SUBSCRIPTION_CHECKOUT_FAILED: 'billing.subscription_checkout.failed',
   BILLING_OPERATION_STARTED: 'billing.operation.started',
+  BILLING_CAPABILITY_READ_SUCCEEDED: 'billing.capability_read.succeeded',
+  BILLING_CAPABILITY_READ_FAILED: 'billing.capability_read.failed',
   BILLING_OPERATION_SUCCEEDED: 'billing.operation.succeeded',
   BILLING_OPERATION_FAILED: 'billing.operation.failed',
   BILLING_OPERATION_TIMEOUT: 'billing.operation.timeout',
