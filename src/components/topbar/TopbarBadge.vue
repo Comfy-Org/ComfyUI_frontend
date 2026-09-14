@@ -38,7 +38,7 @@
         >
           {{ badge.label }}
         </div>
-        <div class="font-inter text-sm">{{ badge.text }}</div>
+        <div class="font-inter text-sm">{{ displayText }}</div>
         <div v-if="badge.tooltip" class="text-xs">
           {{ badge.tooltip }}
         </div>
@@ -92,7 +92,7 @@
         >
           {{ badge.label }}
         </div>
-        <div class="font-inter text-sm">{{ badge.text }}</div>
+        <div class="font-inter text-sm">{{ displayText }}</div>
         <div v-if="badge.tooltip" class="text-xs">
           {{ badge.tooltip }}
         </div>
@@ -121,7 +121,7 @@
       {{ badge.label }}
     </div>
     <div class="font-inter text-xs font-medium" :class="textClasses">
-      {{ badge.text }}
+      {{ displayText }}
     </div>
   </div>
 </template>
@@ -151,6 +151,19 @@ const popover = ref<InstanceType<typeof Popover>>()
 const togglePopover = (event: Event) => {
   popover.value?.toggle(event)
 }
+
+/**
+ * Some backends shout their alert message ("STAGING ENVIRONMENT"). Only those
+ * are recased, so messages that already carry their own casing keep their
+ * proper nouns intact.
+ */
+function toSentenceCase(text: string): string {
+  if (text !== text.toUpperCase()) return text
+  const lowered = text.toLowerCase()
+  return lowered.charAt(0).toUpperCase() + lowered.slice(1)
+}
+
+const displayText = computed(() => toSentenceCase(badge.text))
 
 const variant = computed(() => badge.variant ?? 'info')
 
