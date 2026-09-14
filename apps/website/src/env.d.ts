@@ -14,8 +14,6 @@ interface ImportMetaEnv {
    * set an allowed family. See config/workshop-env.ts and workshop-release.ts.
    */
   readonly PUBLIC_WORKSHOP_CLOUD_ENV?: string
-  /** '1' forces the Workshop auth flag on — PostHog only runs in PROD builds. */
-  readonly PUBLIC_WORKSHOP_AUTH_FLAG?: string
   readonly PUBLIC_WORKSHOP_ENABLED?: string
   readonly PUBLIC_WORKSHOP_ROUTER_RUN?: string
   /** Optional Turnstile mode override: off, shadow, or enforce. */

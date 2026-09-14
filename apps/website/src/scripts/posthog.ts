@@ -1,4 +1,4 @@
-import { WORKSHOP_LOCAL_DEV, WORKSHOP_DEPLOY_ENV } from 'astro:env/client'
+import { WORKSHOP_LOCAL_DEV } from 'astro:env/client'
 import { posthog } from 'posthog-js'
 import { readonly, ref } from 'vue'
 import type { Ref } from 'vue'
@@ -101,7 +101,6 @@ type AnalyticsEvent =
 
 let initialized = false
 
-const WORKSHOP_AUTH_FLAG = 'workshop-auth'
 const WORKSHOP_ENABLED_FLAG = 'workshop-enabled'
 const WORKSHOP_TURNSTILE_FLAG = 'workshop-signup-turnstile'
 
@@ -209,9 +208,9 @@ export function identifyWorkshopUser(user: WorkshopIdentity | null): void {
   }
 }
 
-const OVERRIDDEN_ON =
-  WORKSHOP_DEPLOY_ENV !== 'production' &&
-  import.meta.env.PUBLIC_WORKSHOP_AUTH_FLAG === '1'
+// Authentication is a public website capability, not part of the Models
+// rollout. Keep the readonly ref API while existing consumers are migrated,
+// but never let analytics availability or a remote flag disable /login.
 const workshopAuthEnabled = ref(true)
 const TURNSTILE_OVERRIDE = import.meta.env.PUBLIC_WORKSHOP_TURNSTILE_MODE
 const TURNSTILE_OVERRIDDEN = Boolean(TURNSTILE_OVERRIDE)
@@ -266,10 +265,6 @@ export function initPostHog() {
         VISIBILITY_OVERRIDE ||
         posthog.isFeatureEnabled(WORKSHOP_ENABLED_FLAG) === true
       markFlagResolved()
-      if (!OVERRIDDEN_ON) {
-        workshopAuthEnabled.value =
-          posthog.isFeatureEnabled(WORKSHOP_AUTH_FLAG) !== false
-      }
       if (!TURNSTILE_OVERRIDDEN) {
         const value = posthog.getFeatureFlag(WORKSHOP_TURNSTILE_FLAG)
         workshopTurnstileMode.value = normalizeTurnstileMode(
