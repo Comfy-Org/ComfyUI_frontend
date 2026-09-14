@@ -258,4 +258,55 @@ Visit our [homepage](https://example.com) to learn more.
       expect(html).toContain('Release Notes')
     })
   })
+
+  describe('URL entity handling', () => {
+    const attrOf = (html: string, sel: string, attr: string) => {
+      const host = document.createElement('div')
+      host.innerHTML = html
+      return host.querySelector(sel)?.getAttribute(attr) ?? null
+    }
+
+    it('does not double-encode an entity a link URL already carries', () => {
+      const html = renderMarkdownToHtml('[x](https://e.com/?a=1&amp;b=2)')
+
+      // The browser-visible value is the claim; the raw string is not.
+      expect(attrOf(html, 'a', 'href')).toBe('https://e.com/?a=1&b=2')
+    })
+
+    it('does not double-encode an entity an image URL already carries', () => {
+      const html = renderMarkdownToHtml('![x](https://e.com/i.png?a=1&amp;b=2)')
+
+      expect(attrOf(html, 'img', 'src')).toBe('https://e.com/i.png?a=1&b=2')
+    })
+
+    it('leaves a bare ampersand in a URL intact', () => {
+      const html = renderMarkdownToHtml('[x](https://e.com/?a=1&b=2)')
+
+      expect(attrOf(html, 'a', 'href')).toBe('https://e.com/?a=1&b=2')
+    })
+
+    it('decodes one entity layer only, keeping deeper ones literal', () => {
+      const html = renderMarkdownToHtml('[x](https://e.com/?a=1&amp;amp;b=2)')
+
+      expect(attrOf(html, 'a', 'href')).toBe('https://e.com/?a=1&amp;b=2')
+    })
+
+    it('still traps a quote that would break out of the attribute', () => {
+      const html = renderMarkdownToHtml(
+        '[x](https://e.com/?a="onload=alert(1))'
+      )
+      const host = document.createElement('div')
+      host.innerHTML = html
+      const anchor = host.querySelector('a')!
+
+      // The payload stays inside the href value instead of becoming an
+      // attribute of its own — that is what decoding one layer must not undo.
+      expect(anchor.getAttribute('href')).toContain('"onload=alert(1)')
+      expect(
+        Array.from(anchor.attributes)
+          .map((a) => a.name)
+          .sort()
+      ).toEqual(['href', 'rel', 'target'])
+    })
+  })
 })

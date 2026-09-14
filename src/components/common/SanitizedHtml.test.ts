@@ -78,7 +78,18 @@ describe('SanitizedHtml', () => {
 
       renderHtml(taskList)
 
-      expect(screen.getByRole('checkbox')).toBeInTheDocument()
+      // Disabled is the whole reason this one input is allowed through, so
+      // assert it — otherwise dropping that condition keeps this test green.
+      expect(screen.getByRole('checkbox')).toBeDisabled()
+    })
+
+    it('drops an enabled checkbox, which no task list emits', () => {
+      const impostor = '<ul><li><input type="checkbox"> pick me</li></ul>'
+      expect(impostor).toContain('type="checkbox"')
+
+      renderHtml(impostor)
+
+      expect(screen.queryByRole('checkbox')).toBeNull()
     })
   })
 
