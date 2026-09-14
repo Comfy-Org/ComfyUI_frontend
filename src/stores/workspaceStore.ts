@@ -39,6 +39,7 @@ function workspaceStoreSetup() {
     settings: useSettingStore().settingsById,
     // Allow generic key access to settings as custom nodes may add their
     // own settings which is not tracked by the `Setting` schema.
+    // oxlint-disable-next-line typescript/no-unnecessary-type-parameters
     get: <T = unknown>(key: string): T | undefined =>
       useSettingStore().get(key as keyof Settings) as T | undefined,
     set: (key: string, value: unknown) =>
@@ -55,7 +56,7 @@ function workspaceStoreSetup() {
   const firebaseUser = computed(() => authStore.currentUser)
   const isApiKeyLogin = computed(() => apiKeyStore.isAuthenticated)
   const isLoggedIn = computed(
-    () => !!isApiKeyLogin.value || firebaseUser.value !== null
+    () => isApiKeyLogin.value || firebaseUser.value !== null
   )
   const partialUserStore = {
     isLoggedIn

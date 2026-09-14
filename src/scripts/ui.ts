@@ -3,11 +3,13 @@ import { extractWorkflow } from '@/platform/remote/comfyui/jobs/fetchJobs'
 import type { JobListItem } from '@/platform/remote/comfyui/jobs/jobTypes'
 import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import { runMintPortsIntentionalClear } from '@/workbench/extensions/agent/crdt/mintPortWiring'
 import { useTelemetry } from '@/platform/telemetry'
 import { WORKFLOW_ACCEPT_STRING } from '@/platform/workflow/core/types/formats'
 import { type StatusWsMessageStatus } from '@/schemas/apiSchema'
 import { useLitegraphService } from '@/services/litegraphService'
 import { useCommandStore } from '@/stores/commandStore'
+import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 
 import { api } from './api'
@@ -308,10 +310,7 @@ class ComfyList {
                     const workflow = await extractWorkflow(job)
                     await app.loadGraphData(workflow, true, false)
                     if ('outputs' in job && job.outputs) {
-                      app.nodeOutputs = {}
-                      for (const [key, value] of Object.entries(job.outputs)) {
-                        app.nodeOutputs[key] = value
-                      }
+                      useNodeOutputStore().restoreOutputs(job.outputs)
                     }
                   }
                 }),
@@ -693,7 +692,7 @@ export class ComfyUI {
               !useSettingStore().get('Comfy.ConfirmClear') ||
               confirm('Clear workflow?')
             ) {
-              app.clean()
+              runMintPortsIntentionalClear(() => app.clean())
               useLitegraphService().resetView()
               api.dispatchCustomEvent('graphCleared')
             }

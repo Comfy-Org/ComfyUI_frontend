@@ -4,7 +4,6 @@ import { isDesktop } from '@/platform/distribution/types'
 
 /**
  * Extend Window interface to include electronAPI
- * Used by desktop-ui app storybook stories
  * @public
  */
 export type ElectronWindow = typeof window & {
@@ -16,7 +15,7 @@ export function electronAPI() {
 }
 
 export function showNativeSystemMenu() {
-  electronAPI()?.showContextMenu()
+  electronAPI().showContextMenu()
 }
 
 export function isNativeWindow() {
