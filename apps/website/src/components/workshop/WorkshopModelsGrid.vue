@@ -146,12 +146,11 @@ watch(inSection, (value) => emit('section', value), { immediate: true })
 // order used by the rows decide where every selected model appears.
 const FEATURED_LIMIT = 6
 const FEATURED_SLUGS = [
-  'byteplus--seedance-2-fast-text-to-video--generate-videos',
-  'bfl--flux-3-text-to-video--generate-videos'
+  'byteplus--seedance-2-fast-text-to-video--generate-videos'
 ]
 const featured = computed(() => {
   const available = sortWorkshopModels(models, 'popular').filter(
-    (model) => model.thumbnailUrl
+    (model) => model.thumbnailUrl && !model.slug.startsWith('bfl--flux-3-')
   )
   const selected = FEATURED_SLUGS.flatMap((slug) =>
     available.filter((model) => model.slug === slug)

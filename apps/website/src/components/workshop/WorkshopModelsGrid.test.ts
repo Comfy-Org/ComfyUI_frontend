@@ -200,7 +200,7 @@ describe('WorkshopModelsGrid', () => {
     expect(cardNames()[0]).toContain('Flux')
   })
 
-  it('orders the required featured models by the catalogue recommendation', () => {
+  it('keeps Flux 3 out of the featured models', () => {
     const featured = [
       {
         slug: 'byteplus--seedance-2-fast-text-to-video--generate-videos',
@@ -233,7 +233,7 @@ describe('WorkshopModelsGrid', () => {
       within(pagination)
         .getAllByRole('button')
         .map((button) => button.getAttribute('aria-label'))
-    ).toEqual(['Seedream 5 Pro', 'Seedance 2 Fast', 'FLUX.3 Video'])
+    ).toEqual(['Seedream 5 Pro', 'Seedance 2 Fast'])
   })
 
   it('does not manufacture a return shelf before a model is opened', () => {
