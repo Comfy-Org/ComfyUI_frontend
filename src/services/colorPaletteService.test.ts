@@ -45,6 +45,30 @@ describe('color palette missing-palette contracts', () => {
     )
   })
 
+  it('distinguishes an infrastructure failure from a missing palette', async () => {
+    const store = useColorPaletteStore()
+    const initialPaletteId = store.activePaletteId
+    const paletteId = store.palettes[0].id
+    const error = new Error('Failed to complete palette')
+    vi.spyOn(store, 'completePalette').mockImplementation(() => {
+      throw error
+    })
+
+    await expect(
+      useColorPaletteService().loadColorPalette(paletteId)
+    ).resolves.toBeUndefined()
+
+    expect(store.activePaletteId).toBe(initialPaletteId)
+    expect(app.canvas.setDirty).not.toHaveBeenCalled()
+    expect(useToastStore().messagesToAdd).toContainEqual(
+      expect.objectContaining({
+        severity: 'error',
+        detail: error.message
+      })
+    )
+    expect(console.error).toHaveBeenCalledWith(error)
+  })
+
   it('does not download a missing palette', () => {
     const exported = useColorPaletteService().exportColorPalette('missing')
 

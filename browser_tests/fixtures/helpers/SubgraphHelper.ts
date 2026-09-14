@@ -660,7 +660,10 @@ export class SubgraphHelper {
       const result = canvas.graph!.convertToSubgraph(canvas.selectedItems)
       return result.kind
     })
-    expect(conversionKind).not.toBe('empty-selection')
+    expect(
+      conversionKind,
+      'Expected interior nodes to be selected before packing'
+    ).toBe('success')
     await this.comfyPage.nextFrame()
     await this.exitViaBreadcrumb()
     await this.comfyPage.canvas.dispatchEvent('pointerdown', {
