@@ -26,17 +26,22 @@ function projectWorkflow(workflow: ComfyWorkflowJSON) {
       order: node.order,
       mode: node.mode,
       flags: node.flags,
+      properties: node.properties,
       widgetsValues: node.widgets_values,
+      widgetsValuesNamed: node.widgets_values_named,
       inputs: node.inputs?.map(({ name, type, link }) => ({
         name,
         type,
         link
       })),
-      outputs: node.outputs?.map(({ name, type, links }) => ({
-        name,
-        type,
-        links
-      }))
+      outputs: node.outputs?.map(
+        ({ name, type, links, slot_index: slotIndex }) => ({
+          name,
+          type,
+          links,
+          slotIndex
+        })
+      )
     })),
     links: workflow.links,
     groups: workflow.groups,
