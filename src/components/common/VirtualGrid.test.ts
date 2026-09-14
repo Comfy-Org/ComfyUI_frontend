@@ -233,3 +233,127 @@ describe('VirtualGrid', () => {
     }
   })
 })
+
+// Geometry below is what Chromium actually reports for the assets sidebar
+// grid: 190px-tall / 129px-wide tiles in a 414px-wide panel, so three
+// columns. The library is 2000 assets because the defect only appears once
+// the scrolled-to item index can exceed the post-change item count — a
+// 120-asset fixture is too short for a realistic scroll depth to overshoot,
+// which is why an earlier automated sweep reported these cases as passing.
+const TILE_HEIGHT = 190
+const TILE_WIDTH = 129
+const PANEL_WIDTH = 414
+const PANEL_HEIGHT = 700
+const LIBRARY_SIZE = 2000
+
+type Asset = { key: string; name: string }
+
+// One audio asset per 100, mirroring a library that is mostly images.
+const isAudio = (index: number) => index % 100 === 0
+
+function createLibrary(): Asset[] {
+  return Array.from({ length: LIBRARY_SIZE }, (_, i) => ({
+    key: `asset-${i}`,
+    name: `asset-${i}`
+  }))
+}
+
+describe('VirtualGrid scrolled deep into a large library', () => {
+  const gridStyle = {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(auto-fill, minmax(120px, 1fr))',
+    gap: '0.5rem'
+  }
+
+  function renderLibrary(items: Asset[]) {
+    return render(VirtualGrid, {
+      props: {
+        items,
+        gridStyle,
+        defaultItemHeight: TILE_HEIGHT,
+        defaultItemWidth: TILE_WIDTH,
+        bufferRows: 1
+      },
+      slots: {
+        item: `<template #item="{ item }">
+          <div>{{ item.name }}</div>
+        </template>`
+      },
+      container: document.body.appendChild(document.createElement('div'))
+    })
+  }
+
+  const renderedNames = () =>
+    screen.queryAllByText(/^asset-\d+$/).map((el) => el.textContent)
+
+  beforeEach(() => {
+    mockedWidth.value = PANEL_WIDTH
+    mockedHeight.value = PANEL_HEIGHT
+    mockedScrollY.value = 0
+  })
+
+  // Guards the two `it.fails` pins below from going vacuous: if this setup
+  // ever stops producing a deep, virtualized window, this test goes red
+  // before the pins can start "passing" for the wrong reason.
+  it('windows onto the scrolled-to rows rather than the whole library', async () => {
+    renderLibrary(createLibrary())
+    await nextTick()
+
+    expect(renderedNames().length).toBeLessThan(LIBRARY_SIZE)
+
+    mockedScrollY.value = 20_000
+    await nextTick()
+
+    expect(renderedNames()).toContain('asset-312')
+    expect(renderedNames()).not.toContain('asset-0')
+  })
+
+  // KNOWN BUG — pin, not coverage. Reported by manual QA against the
+  // virtual-grid work: scroll deep into a mostly-image library, filter to
+  // Audio, and the viewport shows nothing while the scrollbar keeps the
+  // unfiltered length.
+  //
+  // `state.end` is `clamp(toCol, fromCol, items.length)` (VirtualGrid.vue),
+  // and es-toolkit/compat `clamp` applies the lower bound last, so once
+  // `fromCol` exceeds the new item count the lower bound wins and `end` is
+  // left far past the end of the list. `renderedItems` slices an empty
+  // range, and `bottomSpacerStyle` computes a negative height that the CSSOM
+  // rejects, so the spacer keeps its pre-filter height and the container
+  // never shrinks enough for the browser to clamp scrollTop. Nothing in
+  // VirtualGrid, AssetGrid or AssetsSidebarGridView resets scroll position
+  // when the item list changes.
+  it.fails('KNOWN BUG: goes blank when the filtered list shrinks below the scrolled-to index', async () => {
+    const { rerender } = renderLibrary(createLibrary())
+    await nextTick()
+
+    mockedScrollY.value = 20_000
+    await nextTick()
+
+    const audioOnly = createLibrary().filter((_, i) => isAudio(i))
+    await rerender({ items: audioOnly })
+    await nextTick()
+
+    expect(renderedNames().length).toBeGreaterThan(0)
+  })
+
+  // KNOWN BUG — pin, not coverage. Reported by manual QA as "grid renders
+  // completely empty after a browser zoom change". Zooming out does not
+  // resize the tiles, it widens the panel in CSS pixels, so `cols` grows
+  // while `offsetRows` is unchanged and `fromRow * cols` overshoots the item
+  // count. That is the same `state.end` clamp defect as above, and it is
+  // self-locking: `updateItemSize()` bails out when no
+  // `[data-virtual-grid-item]` is rendered, so the stale `itemWidth` that
+  // produced the bad column count can never be re-measured.
+  it.fails('KNOWN BUG: goes blank when the column count grows while scrolled deep', async () => {
+    renderLibrary(createLibrary())
+    await nextTick()
+
+    mockedScrollY.value = 100_000
+    await nextTick()
+
+    mockedWidth.value = PANEL_WIDTH * 2
+    await nextTick()
+
+    expect(renderedNames().length).toBeGreaterThan(0)
+  })
+})
