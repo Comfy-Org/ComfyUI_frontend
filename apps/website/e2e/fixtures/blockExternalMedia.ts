@@ -23,6 +23,7 @@ const ANALYTICS_HOSTS = new Set([
   'cdp.customer.io'
 ])
 const EMBED_HOSTS = new Set([
+  'www.youtube.com',
   'www.youtube-nocookie.com',
   'demo.arcade.software'
 ])

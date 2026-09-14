@@ -15,7 +15,6 @@ import AuthToast from './AuthToast.vue'
 
 const handles = vi.hoisted(() => ({
   flag: undefined as { value: boolean } | undefined,
-  settled: undefined as { value: boolean } | undefined,
   user: undefined as { value: unknown } | undefined,
   session: undefined as { value: unknown } | undefined,
   identitySettled: undefined as { value: boolean } | undefined,
@@ -39,12 +38,9 @@ const handles = vi.hoisted(() => ({
 vi.mock<unknown>(import('../../scripts/posthog'), async () => {
   const { ref } = await import('vue')
   const flag = ref(true)
-  const settled = ref(true)
   handles.flag = flag
-  handles.settled = settled
   return {
     useWorkshopAuthFlag: () => flag,
-    useWorkshopAuthFlagSettled: () => settled,
     useWorkshopTurnstileMode: () => ref('shadow'),
     captureAuthCompleted: handles.captureAuthCompleted,
     captureAuthFailed: handles.captureAuthFailed,
@@ -131,7 +127,6 @@ const assign = vi.fn<(url: string | URL) => void>()
 
 beforeEach(() => {
   handles.flag!.value = true
-  handles.settled!.value = true
   handles.user!.value = null
   handles.session!.value = undefined
   handles.identitySettled!.value = true
@@ -715,23 +710,6 @@ describe('AuthSignIn', () => {
   })
 
   describe('when auth never initializes', () => {
-    it("shows the cloud app's timeout copy after its 16 s bound when the flag never answers", async () => {
-      handles.flag!.value = false
-      handles.settled!.value = false
-      render(AuthSignIn)
-
-      await vi.advanceTimersByTimeAsync(15_999)
-      expect(screen.queryByRole('alert')).toBeNull()
-
-      await vi.advanceTimersByTimeAsync(1)
-      expect((await screen.findByRole('alert')).textContent).toContain(
-        'Connection Taking Too Long'
-      )
-      expect(
-        screen.getByRole('link', { name: 'support' }).getAttribute('href')
-      ).toBe('https://support.comfy.org')
-    })
-
     it('shows the same copy when Firebase never settles', async () => {
       handles.identitySettled!.value = false
       render(AuthSignIn)
@@ -750,40 +728,6 @@ describe('AuthSignIn', () => {
 
       await vi.advanceTimersByTimeAsync(16_000)
       expect(screen.queryByRole('alert')).toBeNull()
-    })
-
-    it('drops the timeout screen when a late answer says the flag is off', async () => {
-      handles.flag!.value = false
-      handles.settled!.value = false
-      render(AuthSignIn)
-      await vi.advanceTimersByTimeAsync(16_000)
-      await screen.findByRole('alert')
-
-      handles.settled!.value = true
-
-      await waitFor(() =>
-        expect(
-          screen.queryByText('Connection Taking Too Long'),
-          'a flag that answered off renders nothing, not a troubleshooting screen'
-        ).toBeNull()
-      )
-      expect(screen.queryByRole('alert')).toBeNull()
-    })
-
-    it('gives way to the page once a late answer turns the flag on', async () => {
-      handles.flag!.value = false
-      handles.settled!.value = false
-      render(AuthSignIn)
-      await vi.advanceTimersByTimeAsync(16_000)
-      await screen.findByRole('alert')
-
-      handles.settled!.value = true
-      handles.flag!.value = true
-
-      expect(
-        await screen.findByRole('button', { name: /log in with google/i })
-      ).toBeTruthy()
-      expect(screen.queryByText('Connection Taking Too Long')).toBeNull()
     })
   })
 
