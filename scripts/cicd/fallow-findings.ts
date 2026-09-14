@@ -37,11 +37,6 @@ export interface FallowReport {
   }
 }
 
-/** `a/b/c.ts` -> `c.ts`, for table cells that would otherwise wrap. */
-function short(path: string): string {
-  return path.split('/').pop() ?? path
-}
-
 export function renderCloneGroups(report: FallowReport): string[] {
   const groups = report.duplication?.clone_groups ?? []
   return groups.flatMap((group) => {
