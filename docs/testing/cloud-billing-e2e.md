@@ -55,3 +55,18 @@ The no-card tests cover checkout handoff, retry, page reload, and signing in
 from an empty browser context. Payment completion, the 24-hour timeout, and
 CI integration remain follow-up work. A
 successful sign-in alone does not establish billing coverage.
+
+## Saved-card billing
+
+Run the separate `cloud-live-paid` project with:
+
+```sh
+pnpm exec cross-env DISTRIBUTION=cloud PLAYWRIGHT_CLOUD_LIVE=1 pnpm exec playwright test --project=cloud-live-paid --workers=1
+```
+
+Inject the saved-card account credentials into `CLOUD_ACCOUNT_EMAIL`
+and `CLOUD_ACCOUNT_PASSWORD`. This project requires an active Creator plan and
+at least one saved sandbox payment method. It purchases $10 of test credits and
+checks the completed billing operation, exact balance increase, and success UI.
+The balance API returns cents despite its `amount_micros` field name. Never
+point this command at the no-card account.
