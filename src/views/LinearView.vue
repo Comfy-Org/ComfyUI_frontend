@@ -205,7 +205,12 @@ function dragDrop(e: DragEvent) {
           </SplitterPanel>
         </Splitter>
       </div>
-      <component :is="DockedAgentPanel" v-if="agentDocked" />
+      <!-- App mode hides the canvas, so the panel never meets bare graph. -->
+      <component
+        :is="DockedAgentPanel"
+        v-if="agentDocked"
+        :has-opaque-neighbor="true"
+      />
     </div>
   </div>
 </template>
