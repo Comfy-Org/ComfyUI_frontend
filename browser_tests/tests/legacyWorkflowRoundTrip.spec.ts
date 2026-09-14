@@ -112,7 +112,8 @@ for (const vueNodesEnabled of [false, true]) {
         expect(await exportedProjection(comfyPage)).toEqual(expected)
 
         const savedName = 'legacy-v1.52.5-resaved'
-        const savedPath = `workflows/${savedName}.json`
+        const savedFilename = `${savedName}.json`
+        const savedPath = `workflows/${savedFilename}`
         await comfyPage.menu.topbar.saveWorkflowAs(savedName)
 
         await expect
@@ -120,7 +121,7 @@ for (const vueNodesEnabled of [false, true]) {
           .toBe(savedPath)
         await expect
           .poll(() => persistedWorkflowPaths(comfyPage))
-          .toContain(savedPath)
+          .toContain(savedFilename)
         expect(await persistedProjection(comfyPage, savedPath)).toEqual(
           expected
         )
@@ -132,7 +133,7 @@ for (const vueNodesEnabled of [false, true]) {
           .toBe(savedPath)
         await expect
           .poll(() => persistedWorkflowPaths(comfyPage))
-          .toContain(savedPath)
+          .toContain(savedFilename)
         expect(await persistedProjection(comfyPage, savedPath)).toEqual(
           expected
         )
