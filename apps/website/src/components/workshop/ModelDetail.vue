@@ -39,6 +39,7 @@ import { WorkshopRouterError } from '../../config/workshop-router-errors'
 import { releaseRouterOutputs } from '../../config/workshop-response'
 import { retainRunHistory } from '../../config/workshop-run-history'
 import { modelDocsHref } from '../../lib/workshop/model-docs'
+import { linkLeavingPage } from '../../lib/workshop/leaving-link'
 import { useWorkshopSession } from '../../config/workshop-session-state'
 import { workshopIdempotencyKey } from '../../config/workshop-snippets'
 import type { Locale, TranslationKey } from '../../i18n/translations'
@@ -266,21 +267,15 @@ useEventListener(
 // this one route off the page can be asked in our own words. The rest still
 // reach the guards above.
 const leavingTo = ref<string>()
-function askBeforeFollowing(event: MouseEvent) {
-  if (event.defaultPrevented || event.button !== 0) return
-  if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return
-  const link = (event.target as Element | null)?.closest?.('a[href]')
-  if (!(link instanceof HTMLAnchorElement)) return
-  if (link.hasAttribute('download') || (link.target && link.target !== '_self'))
-    return
-  if (link.origin !== location.origin || link.href === location.href) return
-  event.preventDefault()
-  leavingTo.value = link.href
-}
 useEventListener(
   () => (isRunning.value ? globalThis.document : undefined),
   'click',
-  askBeforeFollowing,
+  (event: MouseEvent) => {
+    const href = linkLeavingPage(event, location)
+    if (!href) return
+    event.preventDefault()
+    leavingTo.value = href
+  },
   { capture: true }
 )
 function leaveForLink() {
