@@ -134,8 +134,15 @@ async function mockAgentBoot(
   page: Page,
   {
     agentFlag,
-    postedMessages
-  }: { agentFlag: boolean; postedMessages: string[] }
+    postedMessages,
+    objectInfo,
+    settings
+  }: {
+    agentFlag: boolean
+    postedMessages: string[]
+    objectInfo: Record<string, unknown>
+    settings: Record<string, unknown>
+  }
 ): Promise<void> {
   await page.addInitScript(() => {
     localStorage.setItem('Comfy.AgentPanel.onboarded', 'true')
@@ -165,13 +172,16 @@ async function mockAgentBoot(
     r.fulfill(
       jsonRoute({
         'Comfy.TutorialCompleted': true,
-        'Comfy.RightSidePanel.ShowErrorsTab': false
+        'Comfy.RightSidePanel.ShowErrorsTab': false,
+        ...settings
       })
     )
   )
   await page.route('**/api/userdata**', (r) => r.fulfill(jsonRoute([])))
   await page.route('**/api/extensions', (r) => r.fulfill(jsonRoute([])))
-  await page.route('**/api/object_info', (r) => r.fulfill(jsonRoute({})))
+  await page.route('**/api/object_info', (r) =>
+    r.fulfill(jsonRoute(objectInfo))
+  )
   await page.route('**/api/global_subgraphs', (r) => r.fulfill(jsonRoute({})))
   await page.route('**/api/i18n', (r) => r.fulfill(jsonRoute({})))
   await page.route('**/api/auth/session', (r) =>
@@ -231,17 +241,29 @@ async function mockAgentBoot(
 
 type AgentFixtures = {
   agentFlagEnabled: boolean
+  agentObjectInfo: Record<string, unknown>
+  agentSettings: Record<string, unknown>
   postedMessages: string[]
 }
 
 export const agentTest = comfyPageFixture.extend<AgentFixtures>({
   agentFlagEnabled: [true, { option: true }],
+  agentObjectInfo: [{}, { option: true }],
+  agentSettings: [{}, { option: true }],
   // oxlint-disable-next-line no-empty-pattern -- Playwright requires an object pattern.
   postedMessages: async ({}, use) => {
     await use([])
   },
-  page: async ({ page, agentFlagEnabled, postedMessages }, use) => {
-    await mockAgentBoot(page, { agentFlag: agentFlagEnabled, postedMessages })
+  page: async (
+    { page, agentFlagEnabled, agentObjectInfo, agentSettings, postedMessages },
+    use
+  ) => {
+    await mockAgentBoot(page, {
+      agentFlag: agentFlagEnabled,
+      postedMessages,
+      objectInfo: agentObjectInfo,
+      settings: agentSettings
+    })
     await use(page)
   }
 })
