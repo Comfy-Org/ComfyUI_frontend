@@ -92,20 +92,28 @@ export const formatCreditsFromUsd = ({
     numberOptions
   })
 
+const COMPACT_UNITS = [1e12, 1e9, 1e6, 1e3] as const
+
 /**
  * Abbreviates a credit amount to one fraction digit ("42.2K", "1.7M"),
  * truncating rather than rounding so the short form never claims more credits
- * than the amount it stands for. Engines without Intl NumberFormat V3 ignore
- * `roundingMode` and round to nearest instead.
+ * than the amount it stands for.
+ *
+ * The amount is floored onto a tenth of its own compact unit before
+ * formatting, which leaves nothing for the formatter to round: `Intl`'s
+ * `roundingMode` is NumberFormat V3 and engines predating it ignore it
+ * silently, which would turn 1,772,400 back into "1.8M".
  *
  * Formatted in English regardless of the active locale.
  */
-export const formatCreditsCompact = (credits: number): string =>
-  new Intl.NumberFormat('en-US', {
+export const formatCreditsCompact = (credits: number): string => {
+  const unit = COMPACT_UNITS.find((magnitude) => Math.abs(credits) >= magnitude)
+  const step = unit === undefined ? 1 : unit / 10
+  return new Intl.NumberFormat('en-US', {
     notation: 'compact',
-    maximumFractionDigits: 1,
-    roundingMode: 'trunc'
-  }).format(credits)
+    maximumFractionDigits: 1
+  }).format(Math.trunc(credits / step) * step)
+}
 
 export const formatUsd = ({
   value,

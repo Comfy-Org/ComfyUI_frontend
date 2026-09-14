@@ -1,4 +1,4 @@
-import { describe, expect, test } from 'vitest'
+import { describe, expect, test, vi } from 'vitest'
 
 import {
   CREDITS_PER_USD,
@@ -86,5 +86,19 @@ describe('comfyCredits helpers', () => {
   test('formatCreditsCompact leaves amounts below a thousand unabbreviated', () => {
     expect(formatCreditsCompact(0)).toBe('0')
     expect(formatCreditsCompact(999)).toBe('999')
+  })
+
+  test('formatCreditsCompact still truncates where NumberFormat V3 is missing', () => {
+    const NativeNumberFormat = Intl.NumberFormat
+    vi.spyOn(Intl, 'NumberFormat').mockImplementation(function (
+      locales?: Intl.LocalesArgument,
+      options?: Intl.NumberFormatOptions
+    ) {
+      const { roundingMode: _unsupported, ...preV3 } = options ?? {}
+      return new NativeNumberFormat(locales, preV3)
+    })
+
+    expect(formatCreditsCompact(1_772_400)).toBe('1.7M')
+    expect(formatCreditsCompact(10_550)).toBe('10.5K')
   })
 })
