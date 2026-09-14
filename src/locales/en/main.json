@@ -2357,6 +2357,7 @@
   },
   "palette": {
     "addColor": "Add a color",
+    "notFound": "Color palette {colorPaletteId} not found",
     "swatchTitle": "Click edit · drag reorder · right-click remove"
   },
   "partnerNodesEducation": {
@@ -3551,7 +3552,8 @@
     "type": "Type",
     "moreHelp": "For more help, visit the",
     "documentationPage": "documentation page",
-    "loadError": "Failed to load help: {error}"
+    "loadError": "Failed to load help: {error}",
+    "notFound": "Help not found"
   },
   "whatsNewPopup": {
     "learnMore": "Learn more",

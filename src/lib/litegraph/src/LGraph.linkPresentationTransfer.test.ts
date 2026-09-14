@@ -16,13 +16,23 @@ import { LinkConnector } from '@/lib/litegraph/src/canvas/LinkConnector'
 import { toRerouteId } from '@/types/rerouteId'
 import { CustomEventTarget } from '@/lib/litegraph/src/infrastructure/CustomEventTarget'
 import type { LinkConnectorEventMap } from '@/lib/litegraph/src/infrastructure/LinkConnectorEventMap'
-import type { Positionable } from '@/lib/litegraph/src/litegraph'
+import type { LGraph, Positionable } from '@/lib/litegraph/src/litegraph'
 import {
   createTestRootGraph,
   createTestSubgraph,
   enableSubgraphNodeCreation
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import { createMockCanvasPointerEvent } from '@/utils/__tests__/litegraphTestUtils'
+
+function convertSelectionToSubgraph(
+  graph: LGraph,
+  selection: Set<Positionable>
+) {
+  const result = graph.convertToSubgraph(selection)
+  if (result.kind !== 'success')
+    throw new Error('Expected successful conversion')
+  return result.value
+}
 
 describe('link presentation transfer across recreation flows', () => {
   it('keeps interior presentation through a convert and unpack round-trip', () => {
@@ -37,7 +47,8 @@ describe('link presentation transfer across recreation flows', () => {
       label: 'Interior'
     })
 
-    const { subgraph, node: subgraphNode } = rootGraph.convertToSubgraph(
+    const { subgraph, node: subgraphNode } = convertSelectionToSubgraph(
+      rootGraph,
       new Set<Positionable>([origin, target])
     )
 
@@ -79,7 +90,8 @@ describe('link presentation transfer across recreation flows', () => {
       label: 'Boundary'
     })
 
-    const { node: subgraphNode } = rootGraph.convertToSubgraph(
+    const { node: subgraphNode } = convertSelectionToSubgraph(
+      rootGraph,
       new Set<Positionable>([origin, target])
     )
 
@@ -158,7 +170,8 @@ describe('link presentation transfer across recreation flows', () => {
       source.connect(0, interior, 0)
       interior.connect(0, firstTarget, 0)
       interior.connect(0, secondTarget, 0)
-      const { subgraph, node: host } = rootGraph.convertToSubgraph(
+      const { subgraph, node: host } = convertSelectionToSubgraph(
+        rootGraph,
         new Set<Positionable>([interior])
       )
       const store = useLinkPresentationStore()
@@ -188,7 +201,8 @@ describe('link presentation transfer across recreation flows', () => {
     exterior.connect(0, origin, 0)
     origin.connect(0, target, 0)
 
-    const { subgraph } = rootGraph.convertToSubgraph(
+    const { subgraph } = convertSelectionToSubgraph(
+      rootGraph,
       new Set<Positionable>([origin, target])
     )
     const boundary = [...subgraph.links.values()].find(
@@ -273,7 +287,8 @@ describe('link presentation transfer across recreation flows', () => {
       label: 'Shared'
     })
 
-    const { node: host } = rootGraph.convertToSubgraph(
+    const { node: host } = convertSelectionToSubgraph(
+      rootGraph,
       new Set<Positionable>([first, second])
     )
 
@@ -339,7 +354,7 @@ describe('link presentation transfer across recreation flows', () => {
       store.patch(scope, firstLink.id, first)
       store.patch(scope, secondLink.id, second)
 
-      const { subgraph } = root.convertToSubgraph(new Set([source]))
+      const { subgraph } = convertSelectionToSubgraph(root, new Set([source]))
 
       const boundaryLinks = subgraph.outputs[0].getLinks()
       expect(boundaryLinks).toHaveLength(1)
@@ -429,7 +444,8 @@ describe('link presentation transfer across recreation flows', () => {
     const second = createTestNode(root, ['number'])
     exterior.connect(0, first, 0)
     first.connect(0, second, 0)
-    const { subgraph } = root.convertToSubgraph(
+    const { subgraph } = convertSelectionToSubgraph(
+      root,
       new Set<Positionable>([first, second])
     )
     const boundary = [...subgraph.links.values()].find(
@@ -440,7 +456,10 @@ describe('link presentation transfer across recreation flows', () => {
     const scope = graphScopeOf(subgraph)
     store.patch(scope, boundary.id, { hidden: true, label: 'Nested' })
 
-    const { node: host } = subgraph.convertToSubgraph(new Set(subgraph.nodes))
+    const { node: host } = convertSelectionToSubgraph(
+      subgraph,
+      new Set(subgraph.nodes)
+    )
 
     const replacement = [...subgraph.links.values()].find(
       (link) =>

@@ -2,7 +2,10 @@ import { useIntervalFn } from '@vueuse/core'
 import { defineStore } from 'pinia'
 import { computed, ref, watch } from 'vue'
 
-import type { TaskId } from '@/platform/tasks/services/taskService'
+import type {
+  TaskId,
+  TaskResponse
+} from '@/platform/tasks/services/taskService'
 import { taskService } from '@/platform/tasks/services/taskService'
 import type { AssetDownloadWsMessage } from '@/schemas/apiSchema'
 import { api } from '@/scripts/api'
@@ -44,6 +47,41 @@ function generateDownloadTrackingPlaceholder(
     status: 'created',
     lastUpdate: Date.now()
   }
+}
+
+function createMissingTaskEvent(
+  download: AssetDownload
+): CustomEvent<AssetDownloadWsMessage> {
+  return new CustomEvent('asset_download', {
+    detail: {
+      task_id: download.taskId,
+      asset_id: download.assetId,
+      asset_name: download.assetName,
+      bytes_total: download.bytesTotal,
+      bytes_downloaded: download.bytesDownloaded,
+      progress: download.progress,
+      status: 'failed'
+    }
+  })
+}
+
+function createTerminalTaskEvent(
+  download: AssetDownload,
+  task: TaskResponse
+): CustomEvent<AssetDownloadWsMessage> {
+  const result = task.result
+  return new CustomEvent('asset_download', {
+    detail: {
+      task_id: download.taskId,
+      asset_id: result?.asset_id ?? download.assetId,
+      asset_name: result?.filename ?? download.assetName,
+      bytes_total: download.bytesTotal,
+      bytes_downloaded: result?.bytes_downloaded ?? download.bytesTotal,
+      progress: task.status === 'completed' ? 100 : download.progress,
+      status: task.status,
+      error: task.error_message ?? result?.error
+    }
+  })
 }
 
 export const useAssetDownloadStore = defineStore('assetDownload', () => {
@@ -138,26 +176,16 @@ export const useAssetDownloadStore = defineStore('assetDownload', () => {
       try {
         const task = await taskService.getTask(download.taskId)
 
+        if (!task) {
+          handleAssetDownload(createMissingTaskEvent(download))
+          return
+        }
+
         if (task.status === 'completed' || task.status === 'failed') {
-          const result = task.result
-          handleAssetDownload(
-            new CustomEvent('asset_download', {
-              detail: {
-                task_id: download.taskId,
-                asset_id: result?.asset_id ?? download.assetId,
-                asset_name: result?.filename ?? download.assetName,
-                bytes_total: download.bytesTotal,
-                bytes_downloaded:
-                  result?.bytes_downloaded ?? download.bytesTotal,
-                progress: task.status === 'completed' ? 100 : download.progress,
-                status: task.status,
-                error: task.error_message ?? result?.error
-              }
-            })
-          )
+          handleAssetDownload(createTerminalTaskEvent(download, task))
         }
       } catch {
-        // Task not ready or not found
+        return
       }
     }
 

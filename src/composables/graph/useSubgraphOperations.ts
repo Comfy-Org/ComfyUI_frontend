@@ -23,7 +23,9 @@ export function useSubgraphOperations() {
     }
 
     const res = graph.convertToSubgraph(canvas.selectedItems)
-    const { node } = res
+    if (res.kind === 'empty-selection') return
+
+    const { node } = res.value
     canvas.select(node)
     canvasStore.updateSelectedItems()
     // Trigger change tracking
