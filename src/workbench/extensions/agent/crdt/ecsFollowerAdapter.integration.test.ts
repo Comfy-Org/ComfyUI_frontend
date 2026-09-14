@@ -5,6 +5,7 @@ import * as Y from 'yjs'
 
 import { createGraphMutations } from '@/core/graph/graphMutations'
 import type { GraphMutations } from '@/core/graph/graphMutations'
+import { useAgentGeneratedNodesStore } from '@/stores/agentGeneratedNodesStore'
 import { useLinkStore } from '@/stores/linkStore'
 import { useNodeDataStore } from '@/stores/nodeDataStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
@@ -12,6 +13,7 @@ import { toOwningGraphId, toRootGraphId } from '@/types/graphScopeId'
 import { toLinkId } from '@/types/linkId'
 import type { NodeId } from '@/types/nodeId'
 import { toNodeId } from '@/types/nodeId'
+import { createNodeLocatorId } from '@/types/nodeIdentification'
 import { widgetId } from '@/types/widgetId'
 
 import type { DocUpdate } from './docFrameClient'
@@ -1101,5 +1103,65 @@ describe('EcsFollowerAdapter integration', () => {
     expect(combined.targetLink).toEqual(singleton.targetLink)
     expect(combined.originLinks).toEqual([toLinkId(9)])
     expect(combined.targetLink).toEqual(toLinkId(9))
+  })
+
+  it('marks only the nodes the agent adds after the catch-up frame', () => {
+    const host = mint(
+      { nodes: [{ id: 1, type: 'Source', pos: [0, 0] }], links: [] },
+      catalog
+    )
+    const follower = new FollowerDoc()
+    const mutations = createGraphMutations({
+      getScope: () => scope,
+      layout: { createNode: vi.fn(), deleteNodes: vi.fn() }
+    })
+    const adapter = new EcsFollowerAdapter(mutations)
+    adapter.bind('wf', follower)
+
+    // The relay sends no op ids on either frame, so nothing but the session's
+    // own hydration state separates the catch-up from live agent work.
+    const catchUp = Y.encodeStateAsUpdate(host)
+    follower.applyRemoteUpdate(catchUp)
+    adapter.applyFrame({
+      workflowId: 'wf',
+      seq: 1,
+      update: catchUp,
+      actor: 'agent:relay:session'
+    })
+
+    const before = Y.encodeStateVector(host)
+    applyOps(
+      host,
+      [
+        op('add-2', 2, {
+          op: 'add_node',
+          node_id: 2,
+          class_type: 'Sink',
+          pos: [300, 20],
+          node: { id: 2, type: 'Sink', pos: [300, 20] }
+        })
+      ] as Parameters<typeof applyOps>[1],
+      catalog
+    )
+    const live = Y.encodeStateAsUpdate(host, before)
+    follower.applyRemoteUpdate(live)
+    adapter.applyFrame({
+      workflowId: 'wf',
+      seq: 2,
+      update: live,
+      actor: 'agent:relay:session'
+    })
+
+    const agentNodes = useAgentGeneratedNodesStore()
+    expect(
+      agentNodes.generatedAtFor(createNodeLocatorId(null, toNodeId(1)))
+    ).toBeUndefined()
+    expect(
+      agentNodes.generatedAtFor(createNodeLocatorId(null, toNodeId(2)))
+    ).toBeTypeOf('number')
+
+    adapter.destroy()
+    follower.destroy()
+    host.destroy()
   })
 })

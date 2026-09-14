@@ -93,7 +93,7 @@ describe('graphMutations', () => {
 
   it('leaves human edits and catch-up frames unmarked', () => {
     mutations().addNode(node(8), { ...context, actor: 'human:someone:tab-1' })
-    mutations().addNode(node(9), { ...context, opId: 'replay' })
+    mutations().addNode(node(9), { ...context, hydration: true })
 
     const agentNodes = useAgentGeneratedNodesStore()
     expect(
@@ -102,6 +102,16 @@ describe('graphMutations', () => {
     expect(
       agentNodes.generatedAtFor(createNodeLocatorId(null, toNodeId(9)))
     ).toBeUndefined()
+  })
+
+  it('marks a node whose frame carried no op ids', () => {
+    mutations().addNode(node(10), { ...context, opId: 'replay' })
+
+    expect(
+      useAgentGeneratedNodesStore().generatedAtFor(
+        createNodeLocatorId(null, toNodeId(10))
+      )
+    ).toBeTypeOf('number')
   })
 
   it('retains supplied link ids and atomically displaces the target occupant', () => {

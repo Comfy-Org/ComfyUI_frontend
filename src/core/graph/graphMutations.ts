@@ -315,15 +315,15 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
 
   /**
    * Frames a human authored are mirrored back through this same stream, and a
-   * catch-up frame replays nodes that landed long before this tab opened, so
-   * neither counts as the agent generating something now.
+   * subscription's catch-up replays nodes that landed long before this tab
+   * opened, so neither counts as the agent generating something now.
    */
   function markAgentGenerated(
     scope: GraphScope,
     nodeId: NodeId,
     context: RemoteMutationContext
   ): void {
-    if (context.opId === 'replay' || context.actor.startsWith('human:')) return
+    if (context.hydration || context.actor.startsWith('human:')) return
 
     const subgraphUuid =
       scope.owningGraphId === String(scope.rootGraphId)
