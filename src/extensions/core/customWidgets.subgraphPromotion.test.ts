@@ -17,11 +17,7 @@ const extensions = await vi.hoisted(async () => {
     await import('@/utils/__tests__/extensionTestUtils')
   return createExtensionCapture()
 })
-vi.mock(import('@/scripts/app'), async (importOriginal) => {
-  const original = await importOriginal()
-  original.app.registerExtension = extensions.registerExtension
-  return original
-})
+app.registerExtension = extensions.registerExtension
 await import('./customWidgets')
 const extension = extensions.getExtension('Comfy.CustomWidgets')
 // Regression coverage for https://github.com/Comfy-Org/ComfyUI/issues/15060

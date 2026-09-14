@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { useObjectUrl } from '@vueuse/core'
+import { ImageOff } from '@lucide/vue'
+import { useMounted, useObjectUrl } from '@vueuse/core'
 import { computed, ref } from 'vue'
 
 import type { Locale } from '../../i18n/translations'
@@ -16,7 +17,8 @@ const {
   name: string
   locale?: Locale
 }>()
-const objectUrl = useObjectUrl(() => file)
+const mounted = useMounted()
+const objectUrl = useObjectUrl(() => (mounted.value ? file : undefined))
 const source = computed(() => objectUrl.value ?? src)
 const failedSource = ref<string>()
 </script>
@@ -28,10 +30,17 @@ const failedSource = ref<string>()
     :src="source"
     :alt="name"
     referrerpolicy="no-referrer"
-    class="bg-transparency-white-t4 h-32 w-full rounded-xl object-contain"
+    class="size-12 shrink-0 rounded-lg bg-transparency-white-t8 object-cover"
     @error="failedSource = source"
   />
-  <p v-else-if="source" role="status" class="text-xs text-primary-warm-gray">
-    {{ t('workshop.field.imagePreviewUnavailable', locale) }}
-  </p>
+  <span
+    v-else-if="source"
+    role="status"
+    class="flex size-12 shrink-0 items-center justify-center rounded-lg bg-transparency-white-t8"
+  >
+    <ImageOff class="size-5 text-primary-warm-gray" aria-hidden="true" />
+    <span class="sr-only">{{
+      t('workshop.field.imagePreviewUnavailable', locale)
+    }}</span>
+  </span>
 </template>

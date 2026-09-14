@@ -8,7 +8,7 @@ import { workshopExampleValues } from './workshop-example-values'
 import {
   routerContentBySlug,
   routerModelSlugAliases,
-  routerWorkshopModels
+  workshopModels
 } from './workshop-browse-content'
 
 function examplesFor(
@@ -21,6 +21,7 @@ function examplesFor(
     const values =
       model.execution && example
         ? {
+            ...model.defaults,
             ...workshopPromptDefaults(model, [
               {
                 ...display,
@@ -56,7 +57,7 @@ function executionFor(
 }
 
 const detailBySlug = new Map(
-  routerWorkshopModels.map((model) => {
+  workshopModels.map((model) => {
     const source = routerContentBySlug.get(model.slug)
     if (!source) throw new Error(`Missing content record: ${model.slug}`)
     const execution = model.incompleteReason
@@ -68,7 +69,9 @@ const detailBySlug = new Map(
       ...model,
       ...(execution ? { execution, form: formForContract(execution) } : {}),
       fields: [],
-      defaults: {},
+      defaults: execution
+        ? workshopExampleValues(execution, source.alias.nativeDefaults ?? {})
+        : {},
       examples: []
     }
     return [
@@ -79,6 +82,7 @@ const detailBySlug = new Map(
           ? []
           : examplesFor(detail, source.overlay),
         defaults: {
+          ...detail.defaults,
           ...workshopPromptDefaults(
             detail,
             source.alias.contentIssue ? [] : [source.overlay]

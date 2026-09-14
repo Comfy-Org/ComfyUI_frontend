@@ -1,4 +1,3 @@
-// @vitest-environment jsdom
 import { fromPartial } from '@total-typescript/shoehorn'
 
 import type {
@@ -10,19 +9,14 @@ import { render, screen, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { Mocked } from 'vitest'
-import { defineComponent, h, nextTick } from 'vue'
+import { computed, defineComponent, h, nextTick, ref } from 'vue'
+import { useClipboard } from '@vueuse/core'
 
-// jsdom does not implement ResizeObserver (happy-dom does); stub it before the
-// Vue node preview chain constructs its module-level observer at import time.
-vi.hoisted(() => {
-  globalThis.ResizeObserver = class {
-    observe() {}
-    unobserve() {}
-    disconnect() {}
-  }
-})
+vi.mock(import('firebase/auth'))
+vi.mock<unknown>(import('vuefire'), () => ({ useFirebaseAuth: vi.fn() }))
 
 import { i18n } from '@/i18n'
+import { useAgentConsentStore } from '@/workbench/extensions/agent/stores/agent/agentConsentStore'
 import { setupInlinePromptEditorDom } from './components/agent/composer/inlinePromptEditorTestSetup'
 
 setupInlinePromptEditorDom()
@@ -34,6 +28,9 @@ import { toNodeId } from '@/types/nodeId'
 
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { validateComfyWorkflow } from '@/platform/workflow/validation/schemas/workflowSchema'
+import { useBillingContext } from '@/composables/billing/useBillingContext'
+import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
+import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import { app } from '@/scripts/app'
 import { useAgentNodeSelectionStore } from '@/stores/agentNodeSelectionStore'
 import { useWorkflowTabActivityStore } from '@/stores/workflowTabActivityStore'
@@ -132,13 +129,9 @@ const appMock = vi.hoisted(() => {
 
 vi.mock<unknown>(import('@/scripts/app'), () => ({ app: appMock }))
 
-vi.mock<unknown>(
-  import('@/platform/workflow/validation/schemas/workflowSchema'),
-  async (importOriginal) => ({
-    ...(await importOriginal<object>()),
-    validateComfyWorkflow: vi.fn(async (content: unknown) => content)
-  })
-)
+vi.mock(import('@/platform/workflow/validation/schemas/workflowSchema'), {
+  spy: true
+})
 
 let workflowStore: ReturnType<typeof useWorkflowStore>
 let canvasStore: ReturnType<typeof useCanvasStore>
@@ -191,30 +184,22 @@ vi.mock<unknown>(
   })
 )
 
-vi.mock<unknown>(import('@/utils/litegraphUtil'), async (importOriginal) => ({
-  ...(await importOriginal<object>()),
+vi.mock<unknown>(import('@/utils/litegraphUtil'), () => ({
   isLGraphNode: (item: unknown) =>
     (item as { isNodeFake?: boolean } | null)?.isNodeFake === true
 }))
 
 vi.mock<unknown>(import('@/composables/auth/useCurrentUser'), () => ({
-  useCurrentUser: () => ({ userDisplayName: { value: 'Jo Rivera' } })
+  useCurrentUser: () => ({
+    isLoggedIn: { value: true },
+    userDisplayName: { value: 'Jo Rivera' },
+    resolvedUserInfo: { value: { id: 'account-a' } }
+  })
 }))
 
 const clipboard = vi.hoisted(() => ({ copy: vi.fn() }))
 
-vi.mock<unknown>(import('@vueuse/core'), async (importOriginal) => {
-  const { ref } = await import('vue')
-  return {
-    ...(await importOriginal<object>()),
-    useClipboard: () => ({
-      copy: clipboard.copy,
-      copied: ref(false),
-      isSupported: ref(true),
-      text: ref('')
-    })
-  }
-})
+vi.mock(import('@vueuse/core'), { spy: true })
 
 const telemetry = vi.hoisted(() => ({
   trackAgentMessageFeedback: vi.fn(),
@@ -230,13 +215,9 @@ vi.mock<unknown>(import('@/platform/telemetry'), () => ({
   useTelemetry: () => telemetry
 }))
 
-vi.mock<unknown>(
-  import('@/platform/distribution/types'),
-  async (importOriginal) => ({
-    ...(await importOriginal<object>()),
-    isCloud: true
-  })
-)
+vi.mock<unknown>(import('@/platform/distribution/types'), () => ({
+  isCloud: true
+}))
 
 const openAccountPrecondition = vi.hoisted(() => vi.fn())
 vi.mock(
@@ -258,43 +239,13 @@ const paywallBilling = vi.hoisted(() => ({
   tier: 'STANDARD' as SubscriptionTier | null
 }))
 
-vi.mock<unknown>(
-  import('@/platform/workspace/composables/useWorkspaceUI'),
-  async () => {
-    const { computed } = await import('vue')
-    return {
-      useWorkspaceUI: () => ({
-        workspaceRole: computed(() => paywallWorkspace.role)
-      })
-    }
-  }
-)
-
-vi.mock<unknown>(
-  import('@/composables/billing/useBillingContext'),
-  async () => {
-    const { computed } = await import('vue')
-    return {
-      useBillingContext: () => ({ tier: computed(() => paywallBilling.tier) })
-    }
-  }
-)
-
-vi.mock<unknown>(
-  import('@/platform/workspace/composables/useBillingCapabilities'),
-  async () => {
-    const { computed } = await import('vue')
-    return {
-      useBillingCapabilities: () => ({
-        canTopUp: computed(() => paywallCapabilities.canTopUp),
-        canSubscribeSelfServe: computed(
-          () => paywallCapabilities.canSubscribeSelfServe
-        ),
-        isReady: computed(() => paywallCapabilities.isReady)
-      })
-    }
-  }
-)
+vi.mock(import('@/platform/workspace/composables/useWorkspaceUI'), {
+  spy: true
+})
+vi.mock(import('@/composables/billing/useBillingContext'), { spy: true })
+vi.mock(import('@/platform/workspace/composables/useBillingCapabilities'), {
+  spy: true
+})
 
 import type { AgentMessages, TurnId } from './schemas/agentApiSchema'
 import { zAgentWsEvent } from './schemas/agentApiSchema'
@@ -309,6 +260,39 @@ import { useAgentWorkflowTabBindingStore } from './stores/agent/agentWorkflowTab
 import AgentPanelRoot from './AgentPanelRoot.vue'
 
 beforeEach(() => {
+  Object.assign(useAgentConsentStore(), { accepted: true })
+  vi.mocked(validateComfyWorkflow).mockImplementation(async (content) =>
+    fromPartial<ComfyWorkflowJSON>(
+      typeof content === 'object' && content !== null ? content : {}
+    )
+  )
+  vi.mocked(useClipboard).mockReturnValue(
+    fromPartial({
+      copy: clipboard.copy,
+      copied: computed(() => false),
+      isSupported: ref(true),
+      text: ref('')
+    })
+  )
+  vi.mocked(useWorkspaceUI).mockReturnValue(
+    fromPartial({
+      workspaceRole: computed(() => paywallWorkspace.role)
+    })
+  )
+  vi.mocked(useBillingContext).mockReturnValue(
+    fromPartial({
+      tier: computed(() => paywallBilling.tier)
+    })
+  )
+  vi.mocked(useBillingCapabilities).mockReturnValue(
+    fromPartial({
+      canTopUp: computed(() => paywallCapabilities.canTopUp),
+      canSubscribeSelfServe: computed(
+        () => paywallCapabilities.canSubscribeSelfServe
+      ),
+      isReady: computed(() => paywallCapabilities.isReady)
+    })
+  )
   workflowStore = useWorkflowStore()
   canvasStore = useCanvasStore()
   executionErrors = vi.mocked(useExecutionErrorStore())
@@ -404,7 +388,7 @@ async function sendFromComposer(text: string): Promise<void> {
   const textbox = screen.getByRole('textbox')
   await userEvent.click(textbox)
   await userEvent.keyboard('{ArrowRight}')
-  await userEvent.keyboard(text)
+  await userEvent.paste(text)
   await userEvent.click(screen.getByRole('button', { name: 'Send' }))
   await screen.findByRole('button', { name: 'Stop' })
 }
@@ -443,6 +427,27 @@ function addTab(
   workflowStore.openWorkflowsInBackground({ right: [tab.path] })
   return tab
 }
+
+describe('AgentPanelRoot first-use experience', () => {
+  beforeEach(() => {
+    ws.clear()
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => json(200, agentThreadList()))
+    )
+  })
+
+  it('opens directly to the composer without another dialog', async () => {
+    const history = useAgentChatHistoryStore()
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+
+    expect(await screen.findByRole('textbox')).toBeInTheDocument()
+    await vi.waitFor(() => expect(history.replaceAll).toHaveBeenCalledWith([]))
+
+    expect(executionErrors.showErrorOverlay).not.toHaveBeenCalled()
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+  })
+})
 
 describe('AgentPanelRoot paywall actions', () => {
   beforeEach(() => {
@@ -672,7 +677,8 @@ async function openAddMenu(): Promise<void> {
 }
 
 async function openMentionPicker(): Promise<void> {
-  await userEvent.type(screen.getByRole('textbox'), '@')
+  await userEvent.click(screen.getByRole('textbox'))
+  await userEvent.paste('@')
   await userEvent.click(screen.getByRole('menuitem', { name: 'Nodes' }))
 }
 
@@ -896,14 +902,19 @@ describe('AgentPanelRoot attach flow', () => {
     const input = screen.getByTestId<HTMLInputElement>('agent-file-input')
     await userEvent.upload(input, file)
 
-    expect(await screen.findByText('cat.png')).toBeInTheDocument()
+    expect(
+      within(await screen.findByTestId('composer-asset-section')).getByText(
+        'cat.png'
+      )
+    ).toBeInTheDocument()
 
-    await userEvent.type(screen.getByRole('textbox'), 'make it pop')
+    await userEvent.click(screen.getByRole('textbox'))
+    await userEvent.paste('make it pop')
     await userEvent.click(screen.getByRole('button', { name: 'Send' }))
 
     expect(messageBodies).toHaveLength(1)
     expect(messageBodies[0]).toMatchObject({
-      content: 'make it pop',
+      content: '@[Image: cat.png] make it pop',
       attachments: ['uploaded_cat.png']
     })
     expect(telemetry.trackAgentMessageSent).toHaveBeenCalledWith({
@@ -932,7 +943,11 @@ describe('AgentPanelRoot attach flow', () => {
       movie
     )
 
-    expect(await screen.findByText('movie.mp4')).toBeInTheDocument()
+    expect(
+      within(await screen.findByTestId('composer-asset-section')).getByText(
+        'movie.mp4'
+      )
+    ).toBeInTheDocument()
     await vi.waitFor(() => expect(uploaded).toEqual(['movie.mp4']))
   })
 
@@ -1044,7 +1059,11 @@ describe('AgentPanelRoot attach flow', () => {
       dispatchDrag(screen.getByRole('textbox'), 'drop', { files: [movie] })
     ).toBe(true)
 
-    expect(await screen.findByText('movie.mp4')).toBeInTheDocument()
+    expect(
+      within(await screen.findByTestId('composer-asset-section')).getByText(
+        'movie.mp4'
+      )
+    ).toBeInTheDocument()
     await vi.waitFor(() => expect(uploaded).toEqual(['movie.mp4']))
   })
 
@@ -1071,7 +1090,11 @@ describe('AgentPanelRoot attach flow', () => {
       })
     ).toBe(true)
 
-    expect(await screen.findByText(name)).toBeInTheDocument()
+    expect(
+      within(await screen.findByTestId('composer-asset-section')).getByText(
+        name
+      )
+    ).toBeInTheDocument()
     await vi.waitFor(() => expect(uploaded).toEqual([name]))
   })
 
@@ -1246,14 +1269,19 @@ describe('AgentPanelRoot attach flow', () => {
       await nextTick()
       expect(screen.queryByRole('status')).not.toBeInTheDocument()
 
-      expect(await screen.findByText(filename)).toBeInTheDocument()
+      expect(
+        within(await screen.findByTestId('composer-asset-section')).getByText(
+          filename
+        )
+      ).toBeInTheDocument()
 
-      await userEvent.type(screen.getByRole('textbox'), 'describe this')
+      await userEvent.click(screen.getByRole('textbox'))
+      await userEvent.paste('describe this')
       await userEvent.click(screen.getByRole('button', { name: 'Send' }))
 
       expect(messageBodies).toHaveLength(1)
       expect(messageBodies[0]).toMatchObject({
-        content: 'describe this',
+        content: `@[${mime === 'image/png' ? 'Image' : 'Video'}: ${filename}] describe this`,
         attachments: [`uploaded_${filename}`]
       })
     }
@@ -1301,8 +1329,16 @@ describe('AgentPanelRoot attach flow', () => {
 
       expect(dispatchDrag(target, 'drop', dragData)).toBe(true)
       expect(dispatchDrag(target, 'drop', dragData)).toBe(true)
-      expect(await screen.findByText(filename)).toBeInTheDocument()
-      expect(screen.getAllByText(filename)).toHaveLength(1)
+      expect(
+        within(await screen.findByTestId('composer-asset-section')).getByText(
+          filename
+        )
+      ).toBeInTheDocument()
+      expect(
+        within(screen.getByTestId('composer-asset-section')).getAllByText(
+          filename
+        )
+      ).toHaveLength(1)
       expect(
         screen.queryByLabelText(i18n.global.t('agent.uploading'))
       ).not.toBeInTheDocument()
@@ -1356,7 +1392,11 @@ describe('AgentPanelRoot attach flow', () => {
     }
 
     expect(dispatchDrag(target, 'drop', dragData)).toBe(true)
-    expect(await screen.findByText('gen.png')).toBeInTheDocument()
+    expect(
+      within(await screen.findByTestId('composer-asset-section')).getByText(
+        'gen.png'
+      )
+    ).toBeInTheDocument()
     expect(
       screen.getByLabelText(i18n.global.t('agent.uploading'))
     ).toBeInTheDocument()
@@ -1385,7 +1425,11 @@ describe('AgentPanelRoot attach flow', () => {
 
     const asset = new File(['x'], 'cat.png', { type: 'image/png' })
     expect(dispatchDrag(target, 'drop', { files: [asset] })).toBe(true)
-    expect(await screen.findByText('cat.png')).toBeInTheDocument()
+    expect(
+      within(await screen.findByTestId('composer-asset-section')).getByText(
+        'cat.png'
+      )
+    ).toBeInTheDocument()
   })
 
   it('attaches only the assets out of a mixed drop', async () => {
@@ -1403,7 +1447,11 @@ describe('AgentPanelRoot attach flow', () => {
     ]
     dispatchDrag(screen.getByRole('textbox'), 'drop', { files })
 
-    expect(await screen.findByText('cat.png')).toBeInTheDocument()
+    expect(
+      within(await screen.findByTestId('composer-asset-section')).getByText(
+        'cat.png'
+      )
+    ).toBeInTheDocument()
     await vi.waitFor(() => expect(uploaded).toEqual(['cat.png']))
   })
 
@@ -1435,11 +1483,16 @@ describe('AgentPanelRoot attach flow', () => {
       file
     )
 
-    expect(await screen.findByText('cat.png')).toBeInTheDocument()
+    expect(
+      within(await screen.findByTestId('composer-asset-section')).getByText(
+        'cat.png'
+      )
+    ).toBeInTheDocument()
     expect(
       screen.getByLabelText(i18n.global.t('agent.uploading'))
     ).toBeInTheDocument()
-    await userEvent.type(screen.getByRole('textbox'), 'make it pop')
+    await userEvent.click(screen.getByRole('textbox'))
+    await userEvent.paste('make it pop')
     expect(screen.getByRole('button', { name: 'Send' })).toBeDisabled()
 
     settleUpload()
@@ -1483,7 +1536,9 @@ describe('AgentPanelRoot attach flow', () => {
       screen.getByTestId<HTMLInputElement>('agent-file-input'),
       file
     )
-    await screen.findByText('cat.png')
+    within(await screen.findByTestId('composer-asset-section')).getByText(
+      'cat.png'
+    )
     await sendFromComposer('second message')
 
     const thumbs = screen.getAllByAltText('cat.png')
@@ -1525,7 +1580,11 @@ describe('AgentPanelRoot attach flow', () => {
       screen.getByTestId<HTMLInputElement>('agent-file-input'),
       file
     )
-    expect(await screen.findByText('cat.png')).toBeInTheDocument()
+    expect(
+      within(await screen.findByTestId('composer-asset-section')).getByText(
+        'cat.png'
+      )
+    ).toBeInTheDocument()
 
     executionErrors.showErrorOverlay.mockClear()
     failUpload()
@@ -1545,7 +1604,7 @@ describe('AgentPanelRoot attach flow', () => {
     revoke.mockRestore()
   })
 
-  it('dismissing a staged chip removes it and releases its preview', async () => {
+  it('keeps a dismissed preview available for Undo until the editor unmounts', async () => {
     const revoke = vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {})
     vi.stubGlobal(
       'fetch',
@@ -1567,19 +1626,25 @@ describe('AgentPanelRoot attach flow', () => {
       })
     )
 
-    renderWithSelectedTarget()
+    const view = renderWithSelectedTarget()
 
     const file = new File(['x'], 'cat.png', { type: 'image/png' })
     await userEvent.upload(
       screen.getByTestId<HTMLInputElement>('agent-file-input'),
       file
     )
-    expect(await screen.findByText('cat.png')).toBeInTheDocument()
+    expect(
+      within(await screen.findByTestId('composer-asset-section')).getByText(
+        'cat.png'
+      )
+    ).toBeInTheDocument()
 
     await userEvent.click(
       screen.getByRole('button', { name: i18n.global.t('agent.remove') })
     )
     expect(screen.queryByText('cat.png')).not.toBeInTheDocument()
+    expect(revoke).not.toHaveBeenCalled()
+    view.unmount()
     expect(revoke).toHaveBeenCalledTimes(1)
     revoke.mockRestore()
   })
@@ -1617,7 +1682,8 @@ describe('AgentPanelRoot canvas draft on send', () => {
 
     renderWithSelectedTarget()
 
-    await userEvent.type(screen.getByRole('textbox'), "what's on my canvas")
+    await userEvent.click(screen.getByRole('textbox'))
+    await userEvent.paste("what's on my canvas")
     await userEvent.click(screen.getByRole('button', { name: 'Send' }))
 
     expect(messageBodies).toHaveLength(1)
@@ -1644,7 +1710,8 @@ describe('AgentPanelRoot canvas draft on send', () => {
     renderWithSelectedTarget()
 
     const textbox = screen.getByRole('textbox')
-    await userEvent.type(textbox, 'hello')
+    await userEvent.click(textbox)
+    await userEvent.paste('hello')
     await userEvent.click(screen.getByRole('button', { name: 'Send' }))
 
     expect(messageBodies).toHaveLength(0)
@@ -1988,7 +2055,13 @@ describe('AgentPanelRoot transcript copy', () => {
     const convo = useAgentConversationStore()
     const turnId = 'turn-1' as TurnId
     convo.setThreadId('th-1')
-    convo.recordUser(turnId, 'make a cat')
+    convo.recordUser(
+      turnId,
+      'make a cat with ',
+      [{ name: 'brief.txt', ref: 'brief.txt' }],
+      ['KSampler #12'],
+      [{ id: 'reference', name: 'Portrait', textOffset: 16 }]
+    )
     convo.startTurn(turnId)
     convo.ingest(
       zAgentWsEventForTest({
@@ -2034,7 +2107,7 @@ describe('AgentPanelRoot transcript copy', () => {
     )
 
     expect(clipboard.copy).toHaveBeenCalledWith(
-      '**You:** make a cat\n\n**Agent:** Here is a cat.'
+      '**You:** make a cat with @[Workflow: Portrait]\n@[Node: KSampler #12]\n@[File: brief.txt]\n\n**Agent:** Here is a cat.'
     )
   })
 })
@@ -2266,7 +2339,9 @@ describe('AgentPanelRoot workflow binding', () => {
     const bodies = mockMessagesEndpoint('wf-new')
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
     const textbox = screen.getByRole('textbox')
-    await userEvent.type(textbox, 'build here{Enter}')
+    await userEvent.click(textbox)
+    await userEvent.paste('build here')
+    await userEvent.keyboard('{Enter}')
     expect(
       await screen.findByPlaceholderText(i18n.global.t('agent.searchWorkflows'))
     ).toHaveFocus()
@@ -2293,7 +2368,8 @@ describe('AgentPanelRoot workflow binding', () => {
     })
     renderWithSelectedTarget()
     const textbox = screen.getByRole('textbox')
-    await userEvent.type(textbox, 'keep this prompt')
+    await userEvent.click(textbox)
+    await userEvent.paste('keep this prompt')
     await userEvent.click(
       screen.getByRole('button', {
         name: i18n.global.t('agent.switchWorkflow')
@@ -2339,7 +2415,8 @@ describe('AgentPanelRoot workflow binding', () => {
     })
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
     const textbox = screen.getByRole('textbox')
-    await userEvent.type(textbox, 'keep draft')
+    await userEvent.click(textbox)
+    await userEvent.paste('keep draft')
     await userEvent.click(
       screen.getByRole('button', {
         name: i18n.global.t('agent.switchWorkflow')
@@ -2584,7 +2661,8 @@ describe('AgentPanelRoot workflow binding', () => {
         await screen.findByRole('menuitemradio', { name: 'current' })
       )
       await vi.waitFor(() => expect(selector()).toHaveTextContent('current'))
-      await userEvent.type(screen.getByRole('textbox'), 'Keep this draft')
+      await userEvent.click(screen.getByRole('textbox'))
+      await userEvent.paste('Keep this draft')
       workflowStore.activeWorkflow = viewed
       first.unmount()
       if (panelState === 'hidden') await workflowStore.closeWorkflow(target)
@@ -2749,7 +2827,8 @@ describe('AgentPanelRoot workflow binding', () => {
       data: { message_id: oldTurn, thread_id: 'th-1' }
     })
     for (const name of ['reference-b', 'reference-c']) {
-      await userEvent.type(screen.getByRole('textbox'), '@')
+      await userEvent.click(screen.getByRole('textbox'))
+      await userEvent.paste('@')
       await userEvent.click(screen.getByRole('menuitem', { name: 'Workflows' }))
       await userEvent.click(await screen.findByRole('menuitem', { name }))
     }
@@ -3093,7 +3172,8 @@ describe('AgentPanelRoot workflow binding', () => {
 
     renderWithSelectedTarget()
     const textbox = screen.getByRole('textbox')
-    await userEvent.type(textbox, 'keep this draft')
+    await userEvent.click(textbox)
+    await userEvent.paste('keep this draft')
     await userEvent.click(
       screen.getByRole('button', {
         name: i18n.global.t('agent.switchWorkflow')
@@ -3384,7 +3464,8 @@ describe('AgentPanelRoot workflow binding', () => {
 
     renderWithSelectedTarget()
     const textbox = screen.getByRole('textbox')
-    await userEvent.type(textbox, 'do not lose this')
+    await userEvent.click(textbox)
+    await userEvent.paste('do not lose this')
     await userEvent.click(screen.getByRole('button', { name: 'Send' }))
 
     expect(bodies).toHaveLength(0)
@@ -4055,7 +4136,8 @@ describe('AgentPanelRoot workflow binding', () => {
 
     renderWithSelectedTarget()
     await vi.waitFor(() => expect(workflowRequests).toBe(1))
-    await userEvent.type(screen.getByRole('textbox'), 'first message')
+    await userEvent.click(screen.getByRole('textbox'))
+    await userEvent.paste('first message')
     await userEvent.click(screen.getByRole('button', { name: 'Send' }))
     await vi.waitFor(() => expect(workflowRequests).toBe(2))
     await vi.advanceTimersByTimeAsync(3000)
@@ -4191,12 +4273,13 @@ describe('AgentPanelRoot workflow binding', () => {
       )
       renderWithSelectedTarget()
       const textbox = screen.getByRole('textbox')
-      await userEvent.type(textbox, '@')
+      await userEvent.click(textbox)
+      await userEvent.paste('@')
       await userEvent.click(screen.getByRole('menuitem', { name: 'Workflows' }))
       await userEvent.click(
         await screen.findByRole('menuitem', { name: 'reference' })
       )
-      await userEvent.keyboard('Keep this draft')
+      await userEvent.paste('Keep this draft')
       const workflowLookups = () =>
         vi
           .mocked(fetch)
@@ -4226,7 +4309,8 @@ describe('AgentPanelRoot workflow binding', () => {
       ])
       renderWithSelectedTarget()
       if (picker === 'mention') {
-        await userEvent.type(screen.getByRole('textbox'), '@')
+        await userEvent.click(screen.getByRole('textbox'))
+        await userEvent.paste('@')
       } else {
         await userEvent.click(
           screen.getByRole('button', { name: 'Add to prompt' })
@@ -4270,7 +4354,8 @@ describe('AgentPanelRoot workflow binding', () => {
       }
     )
     renderWithSelectedTarget()
-    await userEvent.type(screen.getByRole('textbox'), 'Compare @')
+    await userEvent.click(screen.getByRole('textbox'))
+    await userEvent.paste('Compare @')
     await userEvent.click(screen.getByRole('menuitem', { name: 'Workflows' }))
     await userEvent.click(
       await screen.findByRole('menuitem', { name: /scratch\s*Unsaved/ })
@@ -4311,10 +4396,8 @@ describe('AgentPanelRoot workflow binding', () => {
       })
       renderWithSelectedTarget()
       const textbox = screen.getByRole('textbox')
-      await userEvent.type(
-        textbox,
-        picker === 'mention' ? 'Compare @' : 'Compare'
-      )
+      await userEvent.click(textbox)
+      await userEvent.paste(picker === 'mention' ? 'Compare @' : 'Compare')
       if (picker === 'plus')
         await userEvent.click(
           screen.getByRole('button', { name: 'Add to prompt' })
@@ -4372,7 +4455,8 @@ describe('AgentPanelRoot workflow binding', () => {
       })
       const view = renderWithSelectedTarget()
       const textbox = screen.getByRole('textbox')
-      await userEvent.type(textbox, 'Compare @')
+      await userEvent.click(textbox)
+      await userEvent.paste('Compare @')
       await userEvent.click(screen.getByRole('menuitem', { name: 'Workflows' }))
       await userEvent.click(
         await screen.findByRole('menuitem', { name: /scratch\s*Unsaved/ })
@@ -4438,7 +4522,8 @@ describe('AgentPanelRoot workflow binding', () => {
       useAgentWorkflowTabBindingStore().bind('wf-reference', reference.path)
       mockMessagesEndpoint('wf-current')
       renderWithSelectedTarget()
-      await userEvent.type(screen.getByRole('textbox'), '@')
+      await userEvent.click(screen.getByRole('textbox'))
+      await userEvent.paste('@')
       await userEvent.click(screen.getByRole('menuitem', { name: 'Workflows' }))
       await userEvent.click(
         await screen.findByRole('menuitem', { name: 'reference' })
@@ -4466,12 +4551,13 @@ describe('AgentPanelRoot workflow binding', () => {
       ])
       const first = renderWithSelectedTarget()
       useAgentPanelStore().isOpen = true
-      await userEvent.type(screen.getByRole('textbox'), '@')
+      await userEvent.click(screen.getByRole('textbox'))
+      await userEvent.paste('@')
       await userEvent.click(screen.getByRole('menuitem', { name: 'Workflows' }))
       await userEvent.click(
         await screen.findByRole('menuitem', { name: 'reference' })
       )
-      await userEvent.keyboard('Keep this draft')
+      await userEvent.paste('Keep this draft')
       expect(
         screen.getByRole('button', { name: 'Open reference' })
       ).toBeVisible()
@@ -4535,12 +4621,13 @@ describe('AgentPanelRoot workflow binding', () => {
       await openMentionPicker()
       await userEvent.click(await screen.findByText('KSampler'))
       const textbox = screen.getByRole('textbox')
-      await userEvent.type(textbox, '@')
+      await userEvent.click(textbox)
+      await userEvent.paste('@')
       await userEvent.click(screen.getByRole('menuitem', { name: 'Workflows' }))
       await userEvent.click(
         await screen.findByRole('menuitem', { name: 'reference' })
       )
-      await userEvent.keyboard('Keep this draft')
+      await userEvent.paste('Keep this draft')
       if (tabState === 'closed') await workflowStore.closeWorkflow(reference)
 
       await userEvent.click(
@@ -4553,7 +4640,7 @@ describe('AgentPanelRoot workflow binding', () => {
         workflowStore.openWorkflows.some((tab) => tab.path === reference.path)
       ).toBe(true)
       expect(useAgentPanelStore().selectedWorkflow?.path).toBe(current.path)
-      expect(useAgentComposerStore().draft).toBe(' Keep this draft')
+      expect(useAgentComposerStore().draft).toBe('  Keep this draft')
       expect(
         screen.getByRole('button', { name: 'Open reference' })
       ).toBeVisible()
@@ -4573,7 +4660,7 @@ describe('AgentPanelRoot workflow binding', () => {
       await userEvent.click(screen.getByRole('button', { name: 'Send' }))
       await vi.waitFor(() => expect(bodies).toHaveLength(1))
       expect(bodies[0]).toMatchObject({
-        content: 'Keep this draft',
+        content: '@[Node: KSampler #12]  Keep this draft',
         workflow_id: 'wf-cloud-current',
         selection: { node_ids: ['12'] },
         workflow_references: []
@@ -4595,12 +4682,13 @@ describe('AgentPanelRoot workflow binding', () => {
       ])
       renderWithSelectedTarget()
       const textbox = screen.getByRole('textbox')
-      await userEvent.type(textbox, '@')
+      await userEvent.click(textbox)
+      await userEvent.paste('@')
       await userEvent.click(screen.getByRole('menuitem', { name: 'Workflows' }))
       await userEvent.click(
         await screen.findByRole('menuitem', { name: 'reference' })
       )
-      await userEvent.keyboard('Keep this draft')
+      await userEvent.paste('Keep this draft')
       if (failure === 'false')
         workflowService.openWorkflow.mockResolvedValueOnce(false)
       else
@@ -4711,7 +4799,8 @@ describe('AgentPanelRoot workflow binding', () => {
     const bodies = mockMessagesEndpoint('wf-42')
 
     renderWithSelectedTarget()
-    await userEvent.type(screen.getByRole('textbox'), '@')
+    await userEvent.click(screen.getByRole('textbox'))
+    await userEvent.paste('@')
     await userEvent.click(screen.getByRole('menuitem', { name: 'Workflows' }))
     await userEvent.click(
       await screen.findByRole('menuitem', { name: 'reference' })
@@ -4866,20 +4955,21 @@ describe('AgentPanelRoot workflow binding', () => {
     renderWithSelectedTarget()
 
     const textbox = screen.getByRole('textbox')
-    await userEvent.type(textbox, '@')
+    await userEvent.click(textbox)
+    await userEvent.paste('@')
     await userEvent.keyboard('{Enter}')
     expect(screen.getByText('#5')).toBeInTheDocument()
     expect(screen.getByText('#7')).toBeInTheDocument()
     await userEvent.keyboard('{ArrowDown}{ArrowDown}{Tab}')
 
-    expect(useAgentComposerStore().draft).toBe('')
+    expect(useAgentComposerStore().draft).toBe(' ')
     expect(screen.queryByRole('menu')).not.toBeInTheDocument()
     expect(screen.getAllByText('KSampler')).toHaveLength(1)
     expect(screen.getByText('#7')).toBeInTheDocument()
     await sendFromComposer('tune it')
 
     expect(bodies[0]).toMatchObject({
-      content: 'tune it',
+      content: '@[Node: KSampler #7] tune it',
       selection: { node_ids: ['7'] }
     })
   })
@@ -4889,7 +4979,8 @@ describe('AgentPanelRoot workflow binding', () => {
 
     renderWithSelectedTarget()
     const textbox = screen.getByRole('textbox')
-    await userEvent.type(textbox, '@')
+    await userEvent.click(textbox)
+    await userEvent.paste('@')
 
     expect(screen.getByRole('menuitem', { name: 'Nodes' })).toBeVisible()
     expect(screen.getByRole('menuitem', { name: 'Workflows' })).toBeVisible()
@@ -4906,7 +4997,8 @@ describe('AgentPanelRoot workflow binding', () => {
     ])
 
     renderWithSelectedTarget()
-    await userEvent.type(screen.getByRole('textbox'), '@')
+    await userEvent.click(screen.getByRole('textbox'))
+    await userEvent.paste('@')
     await userEvent.click(screen.getByRole('menuitem', { name: 'Workflows' }))
 
     expect(await screen.findByRole('menuitem', { name: 'other' })).toBeVisible()
@@ -4925,7 +5017,8 @@ describe('AgentPanelRoot workflow binding', () => {
 
     renderWithSelectedTarget()
     const textbox = screen.getByRole('textbox')
-    await userEvent.type(textbox, '@')
+    await userEvent.click(textbox)
+    await userEvent.paste('@')
     await userEvent.click(screen.getByRole('menuitem', { name: 'Workflows' }))
     expect(
       screen.getByRole('menuitem', { name: /video_minimax_h3_i2v\s*Unsaved/ })
@@ -4941,7 +5034,8 @@ describe('AgentPanelRoot workflow binding', () => {
       name: 'video_minimax_h3_i2v'
     })
 
-    await userEvent.type(textbox, '@')
+    await userEvent.click(textbox)
+    await userEvent.paste('@')
     await userEvent.click(screen.getByRole('menuitem', { name: 'Workflows' }))
 
     expect(
@@ -4982,7 +5076,8 @@ describe('AgentPanelRoot workflow binding', () => {
     )
 
     renderWithSelectedTarget()
-    await userEvent.type(screen.getByRole('textbox'), '@')
+    await userEvent.click(screen.getByRole('textbox'))
+    await userEvent.paste('@')
     await userEvent.click(screen.getByRole('menuitem', { name: 'Workflows' }))
     expect(
       await screen.findByRole('menuitem', { name: 'video_minimax_h3_i2v' })
@@ -5196,21 +5291,23 @@ describe('AgentPanelRoot workflow binding', () => {
       setupNodeSelectionCanvas()
       const first = renderWithSelectedTarget()
       useAgentPanelStore().isOpen = true
-      await openMentionPicker()
-      await userEvent.click(await screen.findByText('KSampler'))
       let textbox = screen.getByRole('textbox')
-      await userEvent.type(textbox, '  Compare @')
-      await userEvent.click(screen.getByRole('menuitem', { name: 'Workflows' }))
-      await userEvent.click(
-        await screen.findByRole('menuitem', { name: 'reference' })
-      )
       const composer = useAgentComposerStore()
-      composer.addAttachment({
-        id: 'upload-1',
-        name: 'cat.png',
-        ref: 'uploaded_cat.png'
+      composer.replaceDraft({
+        text: 'Compare  Keep this draft ',
+        workflowReferences: [
+          { id: 'wf-reference', name: 'reference', textOffset: 8 }
+        ],
+        attachments: [
+          {
+            id: 'upload-1',
+            name: 'cat.png',
+            ref: 'uploaded_cat.png'
+          }
+        ]
       })
-      await userEvent.keyboard('  Keep this draft  ')
+      composer.setNodes([{ id: '12', title: 'KSampler' }])
+      const originalDraft = composer.draft
       const originalReferences = [...composer.workflowReferences]
       await userEvent.click(screen.getByRole('button', { name: 'Send' }))
       await vi.waitFor(() => expect(bodies).toHaveLength(1))
@@ -5230,7 +5327,8 @@ describe('AgentPanelRoot workflow binding', () => {
         expect(screen.getByRole('button', { name: 'Stop' })).toBeVisible()
       }
       if (nextAction === 'new-draft' || nextAction === 'cleared-draft')
-        await userEvent.type(textbox, 'New input')
+        await userEvent.click(textbox)
+      await userEvent.paste('New input')
       if (nextAction === 'cleared-draft') await userEvent.clear(textbox)
       if (nextAction === 'removed-reference') {
         await userEvent.click(
@@ -5298,9 +5396,7 @@ describe('AgentPanelRoot workflow binding', () => {
         expect(screen.queryByRole('button', { name: 'Stop' })).toBeNull()
       )
       if (nextAction === 'untouched') {
-        expect(useAgentComposerStore().draft).toBe(
-          '  Compare    Keep this draft  '
-        )
+        expect(useAgentComposerStore().draft).toBe(originalDraft)
         expect(composer.workflowReferences).toEqual(originalReferences)
         expect(composer.attachments).toMatchObject([
           { ref: 'uploaded_cat.png' }
@@ -5316,7 +5412,7 @@ describe('AgentPanelRoot workflow binding', () => {
         expect(bodies[1]).toMatchObject({
           workflow_id: 'wf-42',
           content:
-            'Compare [reference](workflow://wf-reference)   Keep this draft',
+            '@[Node: KSampler #12] Compare [reference](workflow://wf-reference) Keep this draft @[Image: cat.png]',
           selection: { node_ids: ['12'] },
           attachments: ['uploaded_cat.png'],
           workflow_references: [
@@ -5327,7 +5423,8 @@ describe('AgentPanelRoot workflow binding', () => {
         expect(useAgentComposerStore().draft).toBe(
           nextAction === 'new-draft'
             ? 'New input'
-            : nextAction === 'removed-reference'
+            : nextAction === 'removed-reference' ||
+                nextAction === 'removed-attachment'
               ? ' '
               : ''
         )
@@ -5377,7 +5474,8 @@ describe('AgentPanelRoot workflow binding', () => {
 
     renderWithSelectedTarget()
     await vi.waitFor(() => expect(workflowRequests).toBe(1))
-    await userEvent.type(screen.getByRole('textbox'), 'build a graph')
+    await userEvent.click(screen.getByRole('textbox'))
+    await userEvent.paste('build a graph')
     await userEvent.click(screen.getByRole('button', { name: 'Send' }))
     await vi.waitFor(() => expect(workflowRequests).toBe(2))
     await workflowStore.closeWorkflow(

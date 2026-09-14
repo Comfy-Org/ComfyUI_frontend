@@ -58,7 +58,14 @@ export function creatorFormFor(
         url('last_frame_url', 'Last frame')
       }
       if (model.options.mode === 'edit')
-        url('video_url', 'Source video', true, 'video')
+        file(
+          'video',
+          'Source video',
+          1,
+          true,
+          ['video/mp4', 'video/webm'],
+          'video'
+        )
       request = {
         kind: 'callback',
         callback: 'gemini-video',

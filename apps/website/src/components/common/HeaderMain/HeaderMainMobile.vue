@@ -23,13 +23,15 @@ const { locale = 'en', workshopInBuild = false } = defineProps<{
   workshopInBuild?: boolean
 }>()
 const routes = getRoutes(locale)
-const mainNavigation = getMainNavigation(locale, workshopInBuild)
+const mainNavigation = computed(() =>
+  getMainNavigation(locale, workshopInBuild)
+)
 
 const isOpen = ref(false)
 const activeSection = ref<string | null>(null)
 
 const activeItem = computed(() =>
-  mainNavigation.find(
+  mainNavigation.value.find(
     (item) => item.label === activeSection.value && item.columns
   )
 )

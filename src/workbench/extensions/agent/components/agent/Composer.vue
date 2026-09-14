@@ -19,6 +19,7 @@ import AccessibleTooltip from '@/components/ui/tooltip/AccessibleTooltip.vue'
 import { buildTooltipConfig } from '@/composables/useTooltipConfig'
 
 import InlinePromptEditor from './composer/InlinePromptEditor.vue'
+import { composerPromptForSend } from '../../utils/composerPrompt'
 import { useAgentMentionPicker } from '../../composables/agent/useAgentMentionPicker'
 import { useWorkflowReferencePicker } from '../../composables/agent/useWorkflowReferencePicker'
 import type { ComposerAttachment } from '../../composables/agent/useComposer'
@@ -100,10 +101,9 @@ const composer = useComposer({
       return
     }
     if (workflowReferences.value.length > 0) {
-      const draft = composer.draft.value
-      const offsets = workflowReferences.value.map(
-        (reference) => reference.textOffset
-      )
+      const { text: draft, workflowReferences: references } =
+        composerPromptForSend(composer.prompt.value)
+      const offsets = references.map((reference) => reference.textOffset)
       const start = Math.min(
         draft.length - draft.trimStart().length,
         ...offsets
@@ -113,7 +113,7 @@ const composer = useComposer({
         'send',
         draft.slice(start, end),
         attachments,
-        workflowReferences.value.map((reference) => ({
+        references.map((reference) => ({
           ...reference,
           textOffset: Math.min(
             end - start,
@@ -186,6 +186,12 @@ function onWorkflowSubmenuOpenChange(open: boolean): void {
 
 async function pickWorkflow(workflow: WorkflowReferenceOption): Promise<void> {
   if (await selectWorkflow(workflow)) addMenuOpen.value = false
+}
+
+function onEditorSelectionChange(): void {
+  const point = editorRef.value?.insertionPoint()
+  if (point) composer.setInsertionPoint(point)
+  syncMention()
 }
 
 function onComposerKeydown(event: KeyboardEvent): void {
@@ -409,7 +415,7 @@ defineExpose({
           :name="item.name"
           :preview-url="item.previewUrl"
           :uploading="item.uploading"
-          @remove="composer.removeAttachment(item.id)"
+          @remove="composer.removeReference(`asset:${item.id}`)"
         />
       </div>
 
@@ -436,21 +442,26 @@ defineExpose({
                 ? `agent-reference-item-${mentionActive}`
                 : undefined
             "
+            :history-epoch="composer.promptEpoch.value"
+            :editable-workflow-id
             @keydown="onComposerKeydown"
-            @update:model-value="composer.replacePrompt"
+            @update:model-value="composer.applyEditorPrompt"
             @keyup="onComposerKeyup"
             @input="syncMention"
-            @selection-change="syncMention"
+            @selection-change="onEditorSelectionChange"
             @click="syncMention"
             @blur="closeMention()"
             @open-reference-workflow="
               (id, name) => emit('openReferenceWorkflow', id, name)
             "
+            @remove-node-reference="emit('removeTag', $event)"
             @remove-workflow-reference="emit('removeWorkflowReference', $event)"
           />
 
           <div
-            v-if="!composer.draft.value && !workflowReferences.length"
+            v-if="
+              !composer.draft.value && !composer.prompt.value.references.length
+            "
             class="pointer-events-none relative z-10 -mt-7 font-inter text-[14px]/[20px] font-normal text-muted-foreground"
           >
             <span>{{ placeholderHint.text }} </span>

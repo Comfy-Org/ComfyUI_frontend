@@ -21,6 +21,7 @@ import { curateWorkshopInputs } from './workshop-input-presentation'
 import { creatorFormFor, creatorVariantsFor } from './workshop-creator-forms'
 import availabilityOverrides from '../src/data/workshop-router-availability.json'
 import { isDirectExecution } from './script-entry-point'
+import { adaptRouterModel } from './router-model-adapters'
 
 const jsonSchema = z.record(z.string(), z.json())
 const packedRecordsSchema = z.array(z.unknown())
@@ -107,7 +108,7 @@ export function compileWorkshopContracts(
               contentTypes: [...contentTypes]
             })
       const creatorVariants = creatorVariantsFor(snapshot.id, curated)
-      const record = workshopContractRecordSchema.parse({
+      const parsedRecord = workshopContractRecordSchema.parse({
         catalogId: binding?.id ?? snapshot.id,
         id: snapshot.id,
         sourceCommit: snapshot.sourceCommit,
@@ -118,6 +119,9 @@ export function compileWorkshopContracts(
         advancedFields: [],
         output
       })
+      const record = workshopContractRecordSchema.parse(
+        adaptRouterModel(parsedRecord)
+      )
       validatorFor(record.inputSchema)
       if (record.output.format !== 'binary' && record.output.schema)
         validatorFor(record.output.schema)

@@ -463,6 +463,397 @@ describe('native Router requests', () => {
     expect(fetch).toHaveBeenCalledTimes(1)
   })
 
+  it('collects a generation Router parked at its deadline with the same key and body', async () => {
+    const requests: Request[] = []
+    const responses = [
+      new Response('{"error_type":"deadline_exceeded"}', {
+        status: 504,
+        headers: {
+          'X-Comfy-Error-Type': 'deadline_exceeded',
+          'X-Comfy-Request-Id': 'parked'
+        }
+      }),
+      Response.json(
+        {
+          id: 'provider-job',
+          status: 'Ready',
+          result: { sample: 'https://assets.example/a.jpg' }
+        },
+        { headers: { 'X-Comfy-Request-Id': 'collected' } }
+      )
+    ]
+    vi.stubGlobal('fetch', async (url: string, init: RequestInit) => {
+      requests.push(new Request(url, init))
+      const response = responses.shift()
+      if (!response) throw new Error('Unexpected Router request')
+      return response
+    })
+    const result = await runWorkshopRouter({
+      contract: contractFor('bfl/flux-2-pro'),
+      body: { prompt: 'Test', seed: 42 },
+      token: 'test-token',
+      idempotencyKey: 'parked-run',
+      signal: new AbortController().signal
+    })
+    expect(requests).toHaveLength(2)
+    expect(
+      requests.map((request) => request.headers.get('Idempotency-Key'))
+    ).toEqual(['parked-run', 'parked-run'])
+    const [first, second] = await Promise.all(
+      requests.map((request) => request.text())
+    )
+    expect(second).toBe(first)
+    expect(result).toMatchObject({
+      requestId: 'collected',
+      deadlineCollections: 1,
+      outputs: [{ url: 'https://assets.example/a.jpg' }]
+    })
+  })
+
+  it('stops collecting after the deadline budget and reports a timeout', async () => {
+    const fetch = vi.fn<typeof globalThis.fetch>(
+      async () =>
+        new Response(null, {
+          status: 504,
+          headers: {
+            'X-Comfy-Error-Type': 'deadline_exceeded',
+            'X-Comfy-Request-Id': 'still-parked'
+          }
+        })
+    )
+    vi.stubGlobal('fetch', fetch)
+    await expect(
+      runWorkshopRouter({
+        contract: contractFor('bfl/flux-2-pro'),
+        body: { prompt: 'Test' },
+        token: 'test-token',
+        idempotencyKey: 'one-key',
+        signal: new AbortController().signal
+      })
+    ).rejects.toMatchObject({ reason: 'timeout', requestId: 'still-parked' })
+    expect(fetch).toHaveBeenCalledTimes(4)
+  })
+
+  it('does not resend a provider timeout, which Router does not park', async () => {
+    const fetch = vi.fn<typeof globalThis.fetch>(
+      async () =>
+        new Response(null, {
+          status: 504,
+          headers: { 'X-Comfy-Error-Type': 'provider_timeout' }
+        })
+    )
+    vi.stubGlobal('fetch', fetch)
+    await expect(
+      runWorkshopRouter({
+        contract: contractFor('bfl/flux-2-pro'),
+        body: { prompt: 'Test' },
+        token: 'test-token',
+        idempotencyKey: 'one-key',
+        signal: new AbortController().signal
+      })
+    ).rejects.toMatchObject({ reason: 'timeout' })
+    expect(fetch).toHaveBeenCalledOnce()
+  })
+
+  it('waits out an in-flight conflict before asking for the same generation again', async () => {
+    vi.useFakeTimers()
+    const fetch = vi
+      .fn<typeof globalThis.fetch>()
+      .mockResolvedValueOnce(
+        new Response(null, { status: 409, headers: { 'Retry-After': '2' } })
+      )
+      .mockResolvedValueOnce(
+        Response.json({
+          id: 'provider-job',
+          status: 'Ready',
+          result: { sample: 'https://assets.example/b.jpg' }
+        })
+      )
+    vi.stubGlobal('fetch', fetch)
+    const request = runWorkshopRouter({
+      contract: contractFor('bfl/flux-2-pro'),
+      body: { prompt: 'Test' },
+      token: 'test-token',
+      idempotencyKey: 'one-key',
+      signal: new AbortController().signal
+    })
+    await vi.advanceTimersByTimeAsync(1_000)
+    expect(fetch).toHaveBeenCalledOnce()
+    await vi.advanceTimersByTimeAsync(1_000)
+    await expect(request).resolves.toMatchObject({
+      outputs: [{ url: 'https://assets.example/b.jpg' }]
+    })
+    expect(fetch).toHaveBeenCalledTimes(2)
+  })
+
+  it('finishes a Retry-After wait after a slow request exhausts its attempt window', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: false })
+    const fetch = vi
+      .fn<typeof globalThis.fetch>()
+      .mockImplementationOnce(
+        () =>
+          new Promise<Response>((resolve) =>
+            setTimeout(
+              () =>
+                resolve(
+                  new Response(null, {
+                    status: 409,
+                    headers: { 'Retry-After': '2' }
+                  })
+                ),
+              659_000
+            )
+          )
+      )
+      .mockResolvedValueOnce(
+        Response.json({
+          id: 'provider-job',
+          status: 'Ready',
+          result: { sample: 'https://assets.example/late.jpg' }
+        })
+      )
+    vi.stubGlobal('fetch', fetch)
+    const request = runWorkshopRouter({
+      contract: contractFor('bfl/flux-2-pro'),
+      body: { prompt: 'Test' },
+      token: 'token',
+      idempotencyKey: 'same-key',
+      signal: new AbortController().signal
+    })
+    await Promise.all([
+      expect(request).resolves.toMatchObject({
+        outputs: [{ url: 'https://assets.example/late.jpg' }]
+      }),
+      (async () => {
+        await vi.advanceTimersByTimeAsync(660_999)
+        expect(fetch).toHaveBeenCalledOnce()
+        expect(fetch.mock.lastCall?.[1]?.signal?.aborted).toBe(false)
+        await vi.advanceTimersByTimeAsync(1)
+      })()
+    ])
+    expect(fetch).toHaveBeenCalledTimes(2)
+    expect(fetch.mock.calls[1]).toEqual(fetch.mock.calls[0])
+  })
+
+  it('still stops a Retry-After wait at the total run deadline', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: false })
+    const responses = [
+      { delay: 659_000, status: 504 },
+      { delay: 659_000, status: 504 },
+      { delay: 659_000, status: 504 },
+      { delay: 659_000, status: 409 },
+      { delay: 53_000, status: 409 }
+    ]
+    const fetch = vi.fn<typeof globalThis.fetch>(() => {
+      const response = responses.shift()
+      if (!response) throw new Error('Unexpected Router request')
+      return new Promise<Response>((resolve) =>
+        setTimeout(
+          () =>
+            resolve(
+              new Response(null, {
+                status: response.status,
+                headers: {
+                  'Retry-After': '10',
+                  'X-Comfy-Error-Type':
+                    response.status === 504 ? 'deadline_exceeded' : 'in_flight'
+                }
+              })
+            ),
+          response.delay
+        )
+      )
+    })
+    vi.stubGlobal('fetch', fetch)
+    const request = runWorkshopRouter({
+      contract: contractFor('bfl/flux-2-pro'),
+      body: { prompt: 'Test' },
+      token: 'token',
+      idempotencyKey: 'same-key',
+      signal: new AbortController().signal
+    })
+    await Promise.all([
+      expect(request).rejects.toMatchObject({ reason: 'timeout' }),
+      (async () => {
+        await vi.advanceTimersByTimeAsync(2_699_999)
+        expect(fetch).toHaveBeenCalledTimes(5)
+        expect(fetch.mock.lastCall?.[1]?.signal?.aborted).toBe(false)
+        await vi.advanceTimersByTimeAsync(1)
+      })()
+    ])
+    await vi.advanceTimersByTimeAsync(10_000)
+    expect(fetch).toHaveBeenCalledTimes(5)
+  })
+
+  it.for([
+    { advice: 'Wed, 21 Oct 2026 07:28:02 GMT', wait: 2_000 },
+    { advice: 'Wed, 21 Oct 2026 07:29:00 GMT', wait: 10_000 }
+  ])(
+    'honors and bounds an HTTP-date Retry-After: $advice',
+    async ({ advice, wait }) => {
+      vi.useFakeTimers({ shouldAdvanceTime: false })
+      vi.setSystemTime(new Date('2026-10-21T07:28:00Z'))
+      const fetch = vi
+        .fn<typeof globalThis.fetch>()
+        .mockResolvedValueOnce(
+          new Response(null, {
+            status: 409,
+            headers: { 'Retry-After': advice }
+          })
+        )
+        .mockResolvedValueOnce(
+          Response.json({
+            id: 'provider-job',
+            status: 'Ready',
+            result: { sample: 'https://assets.example/b.jpg' }
+          })
+        )
+      vi.stubGlobal('fetch', fetch)
+      const request = runWorkshopRouter({
+        contract: contractFor('bfl/flux-2-pro'),
+        body: { prompt: 'Test' },
+        token: 'token',
+        idempotencyKey: 'same-key',
+        signal: new AbortController().signal
+      })
+      await Promise.all([
+        expect(request).resolves.toMatchObject({
+          outputs: [{ url: 'https://assets.example/b.jpg' }]
+        }),
+        (async () => {
+          await vi.advanceTimersByTimeAsync(wait - 1)
+          expect(fetch).toHaveBeenCalledOnce()
+          await vi.advanceTimersByTimeAsync(1)
+        })()
+      ])
+      expect(fetch).toHaveBeenCalledTimes(2)
+      expect(fetch.mock.calls[1]).toEqual(fetch.mock.calls[0])
+    }
+  )
+
+  it.for(['', '-1', 'not-a-date', 'Wed, 21 Oct 2020 07:28:00 GMT'])(
+    'does not retry invalid or expired retry advice: %s',
+    async (advice) => {
+      const fetch = vi.fn<typeof globalThis.fetch>().mockResolvedValue(
+        new Response(null, {
+          status: 409,
+          headers: { 'Retry-After': advice }
+        })
+      )
+      vi.stubGlobal('fetch', fetch)
+      await expect(
+        runWorkshopRouter({
+          contract: contractFor('bfl/flux-2-pro'),
+          body: { prompt: 'Test' },
+          token: 'token',
+          idempotencyKey: 'same-key',
+          signal: new AbortController().signal
+        })
+      ).rejects.toMatchObject({ reason: 'provider' })
+      expect(fetch).toHaveBeenCalledOnce()
+    }
+  )
+
+  it('cancels during a retry wait without submitting again', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: false })
+    const fetch = vi
+      .fn<typeof globalThis.fetch>()
+      .mockResolvedValue(
+        new Response(null, { status: 409, headers: { 'Retry-After': '10' } })
+      )
+    vi.stubGlobal('fetch', fetch)
+    const controller = new AbortController()
+    const request = runWorkshopRouter({
+      contract: contractFor('bfl/flux-2-pro'),
+      body: { prompt: 'Test' },
+      token: 'token',
+      idempotencyKey: 'same-key',
+      signal: controller.signal
+    })
+    const reason = new DOMException('Stopped', 'AbortError')
+    await Promise.all([
+      expect(request).rejects.toBe(reason),
+      (async () => {
+        await vi.advanceTimersByTimeAsync(1)
+        controller.abort(reason)
+      })()
+    ])
+    await vi.advanceTimersByTimeAsync(10_000)
+    expect(fetch).toHaveBeenCalledOnce()
+  })
+
+  it('bounds slow collections and in-flight waits by one total deadline', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: false })
+    const responses = [504, 409, 504, 409, 504]
+    const fetch = vi.fn<typeof globalThis.fetch>(
+      (_url, init) =>
+        new Promise<Response>((resolve, reject) => {
+          const status = responses.shift() ?? 409
+          const timer = setTimeout(() => {
+            init?.signal?.removeEventListener('abort', abort)
+            resolve(
+              new Response(null, {
+                status,
+                headers: {
+                  'Retry-After': '10',
+                  'X-Comfy-Error-Type':
+                    status === 504 ? 'deadline_exceeded' : 'in_flight'
+                }
+              })
+            )
+          }, 600_000)
+          function abort() {
+            clearTimeout(timer)
+            reject(init?.signal?.reason)
+          }
+          init?.signal?.addEventListener('abort', abort, { once: true })
+        })
+    )
+    vi.stubGlobal('fetch', fetch)
+    const request = runWorkshopRouter({
+      contract: contractFor('bfl/flux-2-pro'),
+      body: { prompt: 'Test' },
+      token: 'token',
+      idempotencyKey: 'same-key',
+      signal: new AbortController().signal
+    })
+    await Promise.all([
+      expect(request).rejects.toMatchObject({ reason: 'timeout' }),
+      (async () => {
+        await vi.advanceTimersByTimeAsync(2_699_999)
+        expect(fetch).toHaveBeenCalledTimes(5)
+        expect(fetch.mock.lastCall?.[1]?.signal?.aborted).toBe(false)
+        await vi.advanceTimersByTimeAsync(1)
+      })()
+    ])
+    expect(
+      fetch.mock.calls.every(
+        ([, init]) =>
+          init?.body === '{"prompt":"Test"}' &&
+          new Headers(init.headers).get('Idempotency-Key') === 'same-key'
+      )
+    ).toBe(true)
+    await vi.advanceTimersByTimeAsync(600_000)
+    expect(fetch).toHaveBeenCalledTimes(5)
+  })
+
+  it('does not resend a conflict that carries no retry advice', async () => {
+    const fetch = vi
+      .fn<typeof globalThis.fetch>()
+      .mockResolvedValue(new Response(null, { status: 409 }))
+    vi.stubGlobal('fetch', fetch)
+    await expect(
+      runWorkshopRouter({
+        contract: contractFor('bfl/flux-2-pro'),
+        body: { prompt: 'Test' },
+        token: 'test-token',
+        idempotencyKey: 'one-key',
+        signal: new AbortController().signal
+      })
+    ).rejects.toMatchObject({ reason: 'provider' })
+    expect(fetch).toHaveBeenCalledOnce()
+  })
+
   it('does not treat a provider error document or an unsafe output URL as a successful result', async () => {
     for (const data of [
       { status: 'Error' },

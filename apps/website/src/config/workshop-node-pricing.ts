@@ -4,10 +4,19 @@ import {
 } from '@comfyorg/shared-frontend-utils/nodePricing'
 
 import pricingJson from '../data/workshop-node-pricing.json'
+import publishedPricingJson from '../data/workshop-published-pricing.json'
 import type { UseCase, WorkshopModel } from './models-catalogue'
-import { workshopNodePricingSchema } from './workshop-node-pricing.schema'
+import {
+  workshopNodePricingSchema,
+  workshopPublishedPricingSchema
+} from './workshop-node-pricing.schema'
 
 const rules = workshopNodePricingSchema.parse(pricingJson)
+const published = new Map(
+  Object.entries(
+    workshopPublishedPricingSchema.parse(publishedPricingJson).models
+  )
+)
 
 export async function estimateWorkshopNodePrice(
   model: Pick<WorkshopModel, 'routerId'>,
@@ -19,7 +28,12 @@ export async function estimateWorkshopNodePrice(
       row.routerId === model.routerId &&
       (!row.useCases || row.useCases.includes(useCase))
   )
-  if (!rule) return
+  if (!rule) {
+    const rate = published.get(model.routerId)
+    if (rate?.useCases.some((operation) => operation === useCase))
+      return `${rate.creditsPerRun} credits/Run`
+    return
+  }
   const { priceBadge } = rule
   const withImage = useCase === 'edit-images' || useCase === 'animate-images'
   const widgets = Object.fromEntries(

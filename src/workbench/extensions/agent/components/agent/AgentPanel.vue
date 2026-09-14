@@ -30,6 +30,7 @@ import type {
 import type { ConversationEntry } from '../../stores/agent/agentConversationStore'
 import type { HistoryGroups } from '../../stores/agent/agentChatHistoryStore'
 
+import AgentFeedbackCaption from './AgentFeedbackCaption.vue'
 import ChatHistoryScreen from './ChatHistoryScreen.vue'
 import Composer from './Composer.vue'
 import ConversationView from './ConversationView.vue'
@@ -407,9 +408,7 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
               />
             </template>
           </Composer>
-          <p class="-mt-1.5 mb-0 text-center text-xs text-muted-foreground">
-            {{ t(isMaximized ? 'agent.captionExpanded' : 'agent.caption') }}
-          </p>
+          <AgentFeedbackCaption />
         </div>
       </footer>
     </template>

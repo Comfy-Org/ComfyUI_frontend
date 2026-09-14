@@ -1,4 +1,3 @@
-import type * as I18nModule from '@/i18n'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -32,8 +31,7 @@ vi.mock<unknown>(import('@/composables/billing/useBillingContext'), () => ({
   })
 }))
 
-vi.mock(import('@/i18n'), async (importOriginal) => ({
-  ...(await importOriginal<typeof I18nModule>()),
+vi.mock<unknown>(import('@/i18n'), () => ({
   t: (key: string) => key
 }))
 

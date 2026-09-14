@@ -1,4 +1,3 @@
-// @vitest-environment happy-dom
 import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 
 import type { User } from 'firebase/auth'
