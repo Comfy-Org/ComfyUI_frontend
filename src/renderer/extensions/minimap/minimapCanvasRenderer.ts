@@ -24,7 +24,7 @@ function getMinimapColors() {
   const isLightTheme = colorPaletteStore.completedActivePalette.light_theme
 
   return {
-    nodeColor: isLightTheme ? '#3DA8E099' : '#0B8CE999',
+    nodeColor: isLightTheme ? '#31B9F4' : '#0B8CE9',
     nodeColorDefault: isLightTheme ? '#D9D9D9' : '#353535',
     linkColor: isLightTheme ? '#616161' : '#B3B3B3',
     slotColor: isLightTheme ? '#616161' : '#B3B3B3',
