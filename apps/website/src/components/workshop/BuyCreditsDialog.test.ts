@@ -298,7 +298,16 @@ describe('BuyCreditsDialog', () => {
     expect(pack10).toBeDisabled()
     expect(screen.getByTestId('buy-credits-less')).toBeDisabled()
     expect(screen.getByTestId('buy-credits-more')).toBeDisabled()
+    const fieldset = screen.getByTestId('buy-credits-controls')
+    if (!(fieldset instanceof HTMLFieldSetElement))
+      throw new Error('Expected amount controls inside a fieldset')
+    // Bypass the UI lock to prove the request still uses the amount captured
+    // before the asynchronous balance/session refresh.
+    fieldset.disabled = false
     await user.click(pack10)
+    expect(screen.getByTestId('buy-credits-custom').textContent).toContain(
+      '$10 · 2,110'
+    )
     releaseRefresh?.()
 
     await vi.waitFor(() => expect(fetchCheckout).toHaveBeenCalledOnce())

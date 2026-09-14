@@ -124,7 +124,13 @@ const surfaceClass =
       <DropdownMenuContent
         align="end"
         :side-offset="10"
-        :class="cn(surfaceClass, 'w-96 max-w-[calc(100vw-1rem)]')"
+        :collision-padding="8"
+        :class="
+          cn(
+            surfaceClass,
+            'w-96 max-w-(--reka-dropdown-menu-content-available-width)'
+          )
+        "
         data-testid="header-account-menu"
       >
         <DropdownMenuSub v-model:open="workspacesOpen">

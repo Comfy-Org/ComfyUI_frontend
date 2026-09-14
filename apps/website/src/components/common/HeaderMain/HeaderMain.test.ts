@@ -6,7 +6,8 @@ import { requestWorkshopBuyCredits } from '../../../config/workshop-buy-credits'
 import HeaderMain from './HeaderMain.vue'
 
 const hoisted = vi.hoisted(() => ({
-  flag: undefined as { value: boolean } | undefined
+  flag: undefined as { value: boolean } | undefined,
+  announceReturn: vi.fn()
 }))
 
 vi.mock(import('../../../scripts/posthog.ts'), async () => {
@@ -15,6 +16,10 @@ vi.mock(import('../../../scripts/posthog.ts'), async () => {
   hoisted.flag = flag
   return { useWorkshopAuthFlag: () => flag }
 })
+
+vi.mock(import('../../../lib/workshop/topup-return.ts'), () => ({
+  announceTopUpReturnFromLocation: hoisted.announceReturn
+}))
 
 vi.mock<unknown>(import('../../workshop/HeaderAccount.vue'), async () => {
   const { defineComponent, h } = await import('vue')
@@ -42,6 +47,7 @@ vi.mock<unknown>(import('../../workshop/BuyCreditsDialog.vue'), async () => {
 
 beforeEach(() => {
   hoisted.flag!.value = false
+  hoisted.announceReturn.mockReset()
 })
 
 describe('HeaderMain workshop gating', () => {
@@ -63,6 +69,13 @@ describe('HeaderMain workshop gating', () => {
     render(HeaderMain)
 
     expect(screen.queryByTestId('header-account')).toBeNull()
+  })
+
+  it('relays a top-up return before the auth flag settles', () => {
+    render(HeaderMain)
+
+    expect(hoisted.announceReturn).toHaveBeenCalledOnce()
+    expect(screen.queryByTestId('buy-credits-dialog')).toBeNull()
   })
 
   it('mounts the account island when the flag turns on after mount', async () => {
@@ -133,7 +146,7 @@ describe('HeaderMain workshop gating', () => {
     expect(screen.queryByTestId('buy-credits-dialog')).toBeNull()
   })
 
-  it('closes without reopening when auth is disabled and restored', async () => {
+  it('keeps an active checkout mounted through a flag refresh', async () => {
     hoisted.flag!.value = true
     render(HeaderMain)
     requestWorkshopBuyCredits()
@@ -141,13 +154,14 @@ describe('HeaderMain workshop gating', () => {
 
     hoisted.flag!.value = false
     await waitFor(() =>
-      expect(screen.queryByTestId('buy-credits-dialog')).toBeNull()
+      expect(screen.queryByTestId('header-account')).toBeNull()
     )
+    expect(screen.getByTestId('buy-credits-dialog')).toBeTruthy()
     hoisted.flag!.value = true
     await waitFor(() =>
       expect(screen.getAllByTestId('header-account')).toHaveLength(2)
     )
 
-    expect(screen.queryByTestId('buy-credits-dialog')).toBeNull()
+    expect(screen.getByTestId('buy-credits-dialog')).toBeTruthy()
   })
 })

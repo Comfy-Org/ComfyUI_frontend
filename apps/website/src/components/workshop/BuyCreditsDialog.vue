@@ -38,7 +38,6 @@ import {
   createTopUpCheckout
 } from '../../lib/workshop/buy-credits'
 import {
-  announceTopUpReturnFromLocation,
   subscribeToTopUpReturns,
   topUpReturnUrl
 } from '../../lib/workshop/topup-return'
@@ -157,7 +156,6 @@ function finish() {
 
 onMounted(() => {
   unsubscribeFromTopUpReturns = subscribeToTopUpReturns(onTopUpReturn)
-  announceTopUpReturnFromLocation()
 })
 
 onBeforeUnmount(() => {
@@ -582,6 +580,7 @@ const stepperClass =
         <fieldset
           :disabled="state === 'pending'"
           class="m-0 flex min-w-0 flex-col gap-6 border-0 p-0"
+          data-testid="buy-credits-controls"
         >
           <div
             class="grid grid-cols-2 gap-2 sm:grid-cols-4"
