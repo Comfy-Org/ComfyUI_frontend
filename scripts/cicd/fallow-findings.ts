@@ -27,6 +27,16 @@ export interface ComplexityFinding {
 }
 
 export interface FallowReport {
+  /**
+   * Fallow writes `{error, message, exit_code}` to stdout instead of a report
+   * when the run itself fails — an unresolvable `--changed-since` ref is the
+   * one you hit in practice. The action saves that envelope as
+   * `fallow-results.json`, so the renderer sees it and must not mistake an
+   * absence of findings for an absence of problems.
+   */
+  error?: boolean
+  message?: string
+  exit_code?: number
   verdict?: string
   changed_files_count?: number
   duplication?: { clone_groups?: { instances?: CloneInstance[] }[] }
@@ -95,6 +105,20 @@ export function renderDeadCode(report: FallowReport): string[] {
 }
 
 export function renderReport(report: FallowReport): string {
+  // Checked before the rows, because an errored run has no findings and would
+  // otherwise render as "no new findings" underneath a red check.
+  if (report.error === true) {
+    return [
+      'Fallow did not complete, so this PR was never actually audited — the',
+      'red check is the tool failing, not a finding against your change.',
+      '',
+      `> ${cell(report.message ?? 'no message reported')}`,
+      '',
+      'That is a CI problem rather than yours. Re-run the job; if it persists,',
+      'the audit step in `.github/workflows/ci-fallow.yaml` needs a look.'
+    ].join('\n')
+  }
+
   const rows = [
     ...renderCloneGroups(report),
     ...renderComplexity(report),
@@ -132,7 +156,22 @@ export function readReport(path: string): FallowReport {
   if (!existsSync(path)) {
     throw new Error(`fallow results file not found: ${path}`)
   }
-  return JSON.parse(readFileSync(path, 'utf8')) as FallowReport
+  let parsed: unknown
+  try {
+    parsed = JSON.parse(readFileSync(path, 'utf8'))
+  } catch (cause) {
+    // Reported as an errored run rather than thrown: a renderer crash would
+    // replace the explainer with nothing at all, which is strictly worse than
+    // saying the audit output was unreadable.
+    return {
+      error: true,
+      message: `could not parse ${path}: ${(cause as Error).message}`
+    }
+  }
+  if (parsed === null || typeof parsed !== 'object') {
+    return { error: true, message: `unexpected fallow output in ${path}` }
+  }
+  return parsed as FallowReport
 }
 
 /* c8 ignore start -- CLI entry, exercised by the workflow rather than a unit test */

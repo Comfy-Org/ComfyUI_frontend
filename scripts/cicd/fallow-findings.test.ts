@@ -1,7 +1,11 @@
+import { rmSync, writeFileSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 
 import {
   type FallowReport,
+  readReport,
   renderCloneGroups,
   renderComplexity,
   renderDeadCode,
@@ -114,6 +118,32 @@ describe('fallow findings renderer', () => {
     expect(rows[0]).toContain('src/gone.ts')
     expect(rows[1]).toContain('publicThing')
     expect(rows[1]).toContain('.fallowrc.jsonc')
+  })
+
+  it('never reports a clean audit when fallow itself errored', () => {
+    // The real envelope, from an unresolvable --changed-since ref.
+    const md = renderReport({
+      error: true,
+      message:
+        "could not determine changed files for base ref '7452fd7e'. Verify the ref exists in this git repository",
+      exit_code: 2
+    })
+
+    expect(md).not.toContain('No new findings')
+    expect(md).toContain('never actually audited')
+    expect(md).toContain('7452fd7e')
+  })
+
+  it('turns unreadable fallow output into an errored run, not a crash', () => {
+    const bad = join(tmpdir(), `fallow-bad-${process.pid}.json`)
+    writeFileSync(bad, 'not json at all')
+    try {
+      const report = readReport(bad)
+      expect(report.error).toBe(true)
+      expect(renderReport(report)).toContain('never actually audited')
+    } finally {
+      rmSync(bad, { force: true })
+    }
   })
 
   it('escapes values that would otherwise break the table', () => {
