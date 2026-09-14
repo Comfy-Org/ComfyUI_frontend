@@ -398,7 +398,7 @@ function searchText(model: WorkshopModel): string {
     .toLowerCase()
 }
 
-export const SORT_ORDERS = ['popular', 'name', 'priceAsc', 'priceDesc'] as const
+const SORT_ORDERS = ['popular', 'name', 'priceAsc', 'priceDesc'] as const
 export type SortOrder = (typeof SORT_ORDERS)[number]
 
 /**
