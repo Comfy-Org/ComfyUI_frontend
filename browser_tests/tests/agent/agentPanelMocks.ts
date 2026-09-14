@@ -147,6 +147,8 @@ async function mockAgentBoot(
   {
     agentFlagEnabled,
     postedMessages,
+    agentObjectInfo,
+    agentSettings,
     agentConsentAccepted,
     agentPanelInitiallyOpen,
     agentConsentSave,
@@ -178,9 +180,13 @@ async function mockAgentBoot(
     features: agentFeatures(agentFlagEnabled),
     settings: {
       'Comfy.TutorialCompleted': true,
-      'Comfy.RightSidePanel.ShowErrorsTab': false
+      'Comfy.RightSidePanel.ShowErrorsTab': false,
+      ...agentSettings
     }
   })
+  await page.route('**/api/object_info', (route) =>
+    route.fulfill(jsonRoute(agentObjectInfo))
+  )
   let savedWorkflow: UserDataFullInfo | undefined
   let savedContent: string | undefined
   await page.route('**/api/userdata**', (route) => {
@@ -333,6 +339,8 @@ async function mockAgentBoot(
 
 type AgentFixtures = {
   agentFlagEnabled: boolean
+  agentObjectInfo: Record<string, unknown>
+  agentSettings: Record<string, unknown>
   agentConsentAccepted: boolean
   agentPanelInitiallyOpen: boolean
   agentConsentSave: { status: number; pending?: Promise<void> }
@@ -342,6 +350,8 @@ type AgentFixtures = {
 
 export const agentTest = comfyPageFixture.extend<AgentFixtures>({
   agentFlagEnabled: [true, { option: true }],
+  agentObjectInfo: [{}, { option: true }],
+  agentSettings: [{}, { option: true }],
   agentConsentAccepted: [true, { option: true }],
   agentPanelInitiallyOpen: [false, { option: true }],
   agentConsentSave: async ({ agentFlagEnabled: _agentFlagEnabled }, use) => {
@@ -358,6 +368,8 @@ export const agentTest = comfyPageFixture.extend<AgentFixtures>({
       page,
       agentFlagEnabled,
       postedMessages,
+      agentObjectInfo,
+      agentSettings,
       agentConsentAccepted,
       agentPanelInitiallyOpen,
       agentConsentSave,
@@ -368,6 +380,8 @@ export const agentTest = comfyPageFixture.extend<AgentFixtures>({
     await mockAgentBoot(page, {
       agentFlagEnabled,
       postedMessages,
+      agentObjectInfo,
+      agentSettings,
       agentConsentAccepted,
       agentPanelInitiallyOpen,
       agentConsentSave,
