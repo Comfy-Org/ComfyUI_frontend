@@ -217,16 +217,18 @@ describe('LGraphCanvas link visibility interactions', () => {
       useLinkPresentationStore().patch(graphScopeOf(graph), link.id, {
         hidden: true
       })
-      const layout = layoutHiddenLinkBadges(
-        canvas,
-        canvas.ctx,
-        link,
-        { hidden: true },
-        [400, 300],
-        [700, 300],
-        '#89A'
-      )
-      drawHiddenLinkBadges(canvas.ctx, layout, [0, 0, 800, 600])
+      const layouts = layoutHiddenLinkBadges(canvas, canvas.ctx, [
+        {
+          link,
+          presentation: { hidden: true },
+          startPos: [400, 300],
+          endPos: [700, 300],
+          color: '#89A'
+        }
+      ])
+      for (const layout of layouts.values()) {
+        drawHiddenLinkBadges(canvas.ctx, layout, [0, 0, 800, 600])
+      }
       const prompt = vi
         .spyOn(canvas, 'prompt')
         .mockReturnValue(document.createElement('div'))
