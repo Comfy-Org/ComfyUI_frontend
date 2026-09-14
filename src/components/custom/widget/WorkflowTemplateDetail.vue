@@ -13,9 +13,7 @@ const {
   cloudUrl,
   isPartnerNode = false,
   openPending = false,
-  modelSetupEnabled = false,
   setupPending = false,
-  requirementsMet = false,
   modelDownloadsAvailable = false
 } = defineProps<{
   title: string
@@ -24,9 +22,7 @@ const {
   cloudUrl?: string
   isPartnerNode?: boolean
   openPending?: boolean
-  modelSetupEnabled?: boolean
   setupPending?: boolean
-  requirementsMet?: boolean
   modelDownloadsAvailable?: boolean
 }>()
 
@@ -42,10 +38,7 @@ const detailId = useId()
 const cloudTitleId = `${detailId}-cloud-title`
 const groupTitleId = (groupId: string) => `${detailId}-group-${groupId}`
 const offerDownloadAndOpen = computed(
-  () =>
-    modelSetupEnabled &&
-    !requirementsMet &&
-    (setupPending || modelDownloadsAvailable)
+  () => setupPending || modelDownloadsAvailable
 )
 
 defineExpose({
@@ -56,6 +49,7 @@ defineExpose({
 <template>
   <article
     ref="detailRoot"
+    data-testid="template-workflow-detail"
     :aria-label="title"
     tabindex="-1"
     class="@container/template-detail flex size-full min-h-0 flex-1 flex-col overflow-hidden bg-base-background text-base-foreground"
