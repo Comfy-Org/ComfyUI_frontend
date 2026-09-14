@@ -138,12 +138,12 @@ test.describe(
   'Errors tab - Cloud missing models',
   { tag: ['@cloud', '@vue-nodes'] },
   () => {
+    test.use({
+      initialSettings: { 'Comfy.RightSidePanel.ShowErrorsTab': true }
+    })
+
     test.beforeEach(async ({ comfyPage }) => {
       await enableMissingModelImportFeatures(comfyPage.page)
-      await comfyPage.settings.setSetting(
-        'Comfy.RightSidePanel.ShowErrorsTab',
-        true
-      )
     })
 
     test('keeps installed models resolved after returning from a nested subgraph', async ({
@@ -464,12 +464,12 @@ promotedModelTest.describe(
   'Errors tab - Cloud promoted subgraph missing models',
   { tag: '@cloud' },
   () => {
+    promotedModelTest.use({
+      initialSettings: { 'Comfy.RightSidePanel.ShowErrorsTab': true }
+    })
+
     promotedModelTest.beforeEach(async ({ comfyPage }) => {
       await cleanupFakeModel(comfyPage)
-      await comfyPage.settings.setSetting(
-        'Comfy.RightSidePanel.ShowErrorsTab',
-        true
-      )
     })
 
     promotedModelTest.afterEach(async ({ comfyPage }) => {

@@ -158,7 +158,6 @@ test.describe('Performance', { tag: ['@perf'] }, () => {
   })
 
   test('large graph legacy node drag', async ({ comfyPage }) => {
-    await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', false)
     await comfyPage.workflow.loadWorkflow('large-graph-workflow')
 
     // Legacy drags write to layoutStore every frame because registration is
@@ -323,11 +322,9 @@ test.describe('Performance', { tag: ['@perf'] }, () => {
     )
   })
 
-  test.describe('vue renderer large graph', () => {
+  test.describe('vue renderer large graph', { tag: '@vue-nodes' }, () => {
     test.beforeEach(async ({ comfyPage }) => {
-      await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', true)
       await comfyPage.workflow.loadWorkflow('large-graph-workflow')
-      await comfyPage.vueNodes.waitForNodes()
     })
 
     test('idle', async ({ comfyPage }) => {
@@ -482,7 +479,7 @@ test.describe('Performance', { tag: ['@perf'] }, () => {
       await comfyPage.idleFrames(30)
 
       await comfyPage.vueNodes.enterSubgraph()
-      await comfyPage.vueNodes.waitForNodes(80)
+      await expect(comfyPage.vueNodes.nodes).toHaveCount(80)
       await comfyPage.idleFrames(30)
 
       // Exit back to root graph before measuring a fresh enter/exit cycle
@@ -493,7 +490,7 @@ test.describe('Performance', { tag: ['@perf'] }, () => {
       await comfyPage.perf.startMeasuring()
 
       await comfyPage.vueNodes.enterSubgraph()
-      await comfyPage.vueNodes.waitForNodes(80)
+      await expect(comfyPage.vueNodes.nodes).toHaveCount(80)
       await comfyPage.idleFrames(30)
 
       const m = await comfyPage.perf.stopMeasuring('subgraph-transition-enter')

@@ -9,7 +9,11 @@ const h = vi.hoisted(() => ({
 vi.mock<unknown>(import('../scripts/posthog'), async () => {
   const { ref } = await import('vue')
   const flag = ref(true)
-  return { useWorkshopAuthFlag: () => flag }
+  const settled = ref(true)
+  return {
+    useWorkshopAuthFlag: () => flag,
+    useWorkshopAuthFlagSettled: () => settled
+  }
 })
 
 vi.mock<unknown>(import('./workshop-firebase'), async () => {

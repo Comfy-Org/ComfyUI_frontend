@@ -114,21 +114,15 @@ vi.mock('@/scripts/metadata/parser', () => ({
   getWorkflowDataFromFile: vi.fn()
 }))
 
-vi.mock('@/utils/eventUtils', async (importOriginal) => {
-  const eventUtils = await importOriginal<typeof import('@/utils/eventUtils')>()
-  return {
-    ...eventUtils,
-    extractFilesFromDragEvent: vi.fn()
-  }
-})
+vi.mock(import('@/utils/eventUtils'), { spy: true })
 
 vi.mock('./pnginfo', () => ({
   importA1111: mockImportA1111
 }))
 
-vi.mock('@/platform/workflow/core/services/workflowService', () => ({
-  useWorkflowService: vi.fn(() => mockWorkflowService)
-}))
+vi.mock(import('@/platform/workflow/core/services/workflowService'), {
+  spy: true
+})
 
 vi.mock('@/extensions/core/load3d/Load3dUtils', () => ({
   default: {
@@ -179,12 +173,12 @@ function createTestFile(name: string, type: string): File {
  * Point the workflowService mock at the real implementation for tests that
  * exercise the load lifecycle itself rather than app.ts's calls into it.
  */
-const actualWorkflowService = await vi.importActual<
-  typeof import('@/platform/workflow/core/services/workflowService')
->('@/platform/workflow/core/services/workflowService')
-
 async function useRealWorkflowService(): Promise<WorkflowService> {
-  const real = actualWorkflowService.useWorkflowService()
+  vi.mocked(useWorkflowService).mockRestore()
+  const real = useWorkflowService()
+  vi.mocked(useWorkflowService).mockReturnValue(
+    fromPartial<WorkflowService>(mockWorkflowService)
+  )
   mockWorkflowService.beforeLoadNewGraph.mockImplementation(
     real.beforeLoadNewGraph
   )
@@ -222,6 +216,9 @@ describe('ComfyApp', () => {
   let mockCanvas: LGraphCanvas
 
   beforeEach(() => {
+    vi.mocked(useWorkflowService).mockReturnValue(
+      fromPartial<WorkflowService>(mockWorkflowService)
+    )
     app = new ComfyApp()
     mockCanvas = createMockCanvas() as LGraphCanvas
     app.canvas = mockCanvas as LGraphCanvas

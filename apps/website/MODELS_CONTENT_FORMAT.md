@@ -25,6 +25,13 @@ preserved in the packed file, not added to the UI.
 Old model-only URLs redirect to a deterministic current record. Detail lookup,
 sample ownership and saved drafts use the content slug, not only the Router ID.
 
+Corrections to a published page's catalogue category live in
+`src/data/workshop-use-case-overrides.json`, keyed by verified Router ID. They
+change its search/category/task labels while preserving the published URL,
+example ownership and production-test ledger. The OpenAI GPT Image routes
+accept text-to-image generation, so their imported `edit-images` categorization
+is corrected to `generate-images`. The build rejects unknown IDs or categories.
+
 ## Media policy
 
 A thumbnail or output sample URL may not be published in two different use
