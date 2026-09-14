@@ -54,7 +54,7 @@ describe('disabled Workshop client boundary', () => {
     'import models from "./src/content/workshop-models.json"; console.log(models)'
   ])('rejects catalogue data in emitted client chunks: %s', async (entry) => {
     await expect(compile(entry)).rejects.toThrow(
-      /Workshop is disabled, but .*\.js contains .*\/src\/(config|content)\//
+      /.*\.js contains server-only Workshop catalogue data from .*\/src\/(config|content)\//
     )
   })
 
@@ -78,7 +78,7 @@ describe('disabled Workshop client boundary', () => {
     await writeFile(join(root, 'src', path), '[{"name":"Unreleased model"}]')
     await expect(
       compile(`import data from "./src/${path}"; console.log(data)`)
-    ).rejects.toThrow(/Workshop is disabled, but .* contains .*\/workshop-/)
+    ).rejects.toThrow(/.* contains server-only Workshop .*\/workshop-/)
   })
 
   it('rejects sibling catalogue data in a lazy chunk', async () => {
@@ -90,7 +90,7 @@ describe('disabled Workshop client boundary', () => {
       compile(
         'import("./src/data/workshop-thumbnail-labels.json").then(({default: labels}) => console.log(labels))'
       )
-    ).rejects.toThrow(/Workshop is disabled, but .* contains .*\/workshop-/)
+    ).rejects.toThrow(/.* contains server-only Workshop .*\/workshop-/)
   })
 
   it('allows ordinary site JSON outside the catalogue boundary', async () => {
@@ -107,6 +107,15 @@ describe('disabled Workshop client boundary', () => {
         'import { models } from "./src/config/models-catalogue"; console.log(models)'
       )
     ).resolves.toBeDefined()
+  })
+
+  it('rejects server-only catalogue data even in an enabled client build', async () => {
+    vi.stubEnv('WORKSHOP_IN_BUILD', '1')
+    await expect(
+      compile(
+        'import models from "./src/content/workshop-models.json"; console.log(models)'
+      )
+    ).rejects.toThrow(/server-only Workshop catalogue data/)
   })
 
   it('does not reject ordinary marketing copy or erased type-only imports', async () => {

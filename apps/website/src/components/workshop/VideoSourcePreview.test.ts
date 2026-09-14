@@ -1,24 +1,25 @@
 // @vitest-environment happy-dom
-import { render, screen, waitFor } from '@testing-library/vue'
+import { render, screen, waitFor, within } from '@testing-library/vue'
+import userEvent from '@testing-library/user-event'
 import { expect, it, vi } from 'vitest'
 import { createSSRApp, h } from 'vue'
 import { renderToString } from 'vue/server-renderer'
 
-import MediaSourcePreview from './MediaSourcePreview.vue'
+import VideoSourcePreview from './VideoSourcePreview.vue'
 
 it('waits until mounting before creating a local media URL', async () => {
   const create = vi.spyOn(URL, 'createObjectURL')
   const file = new File(['video'], 'source.mp4', { type: 'video/mp4' })
-  const props = { file, name: 'Source video', kind: 'video' as const }
+  const props = { file, name: 'Source video' }
   const html = await renderToString(
     createSSRApp({
-      render: () => h(MediaSourcePreview, props)
+      render: () => h(VideoSourcePreview, props)
     })
   )
   expect(create).not.toHaveBeenCalled()
   expect(html).not.toContain('blob:')
-  render(MediaSourcePreview, { props })
-  const video = await screen.findByLabelText('Source video')
+  render(VideoSourcePreview, { props })
+  const video = await screen.findByTestId('video-source-thumbnail')
   expect(video.getAttribute('src')).toMatch(/^blob:/)
   expect(create).toHaveBeenCalledWith(file)
 })
@@ -30,13 +31,12 @@ it('switches between remote examples and local uploads, revoking only its owned 
     .mockReturnValueOnce('blob:second')
   const revoke = vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {})
   const props = {
-    kind: 'video' as const,
     name: 'Input video',
     src: 'https://assets.example/source.mp4'
   }
-  const { rerender, unmount } = render(MediaSourcePreview, { props })
+  const { rerender, unmount } = render(VideoSourcePreview, { props })
   function video() {
-    const element = screen.getByLabelText('Input video')
+    const element = screen.getByTestId('video-source-thumbnail')
     if (!(element instanceof HTMLVideoElement))
       throw new Error('Expected video')
     return element
@@ -60,15 +60,40 @@ it('switches between remote examples and local uploads, revoking only its owned 
   expect(revoke).not.toHaveBeenCalledWith(props.src)
 })
 
-it('renders an audio source as an accessible audio element', () => {
-  render(MediaSourcePreview, {
+it('opens a full video player with playback and scrubbing controls', async () => {
+  render(VideoSourcePreview, {
     props: {
-      kind: 'audio',
-      name: 'Input audio',
-      src: 'https://assets.example/source.mp3'
+      name: 'Input video',
+      src: 'https://assets.example/source.mp4'
     }
   })
-  const element = screen.getByLabelText('Input audio')
-  expect(element).toBeInstanceOf(HTMLAudioElement)
-  expect(element.getAttribute('src')).toBe('https://assets.example/source.mp3')
+
+  await userEvent
+    .setup()
+    .click(screen.getByRole('button', { name: 'Expand Input video' }))
+
+  const dialog = await screen.findByTestId('video-source-dialog')
+  const player = within(dialog).getByLabelText('Input video')
+  if (!(player instanceof HTMLVideoElement))
+    throw new Error('Expected video player')
+  expect(player.controls).toBe(true)
+  expect(player.muted).toBe(false)
+  expect(player.src).toBe('https://assets.example/source.mp4')
+})
+
+it('localizes the expand and close controls', async () => {
+  render(VideoSourcePreview, {
+    props: {
+      name: '输入视频',
+      src: 'https://assets.example/source.mp4',
+      locale: 'zh-CN'
+    }
+  })
+
+  await userEvent
+    .setup()
+    .click(screen.getByRole('button', { name: '放大 输入视频' }))
+
+  const dialog = await screen.findByTestId('video-source-dialog')
+  expect(within(dialog).getByRole('button', { name: '关闭' })).toBeTruthy()
 })
