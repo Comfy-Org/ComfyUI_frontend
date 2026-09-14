@@ -85,8 +85,7 @@ const {
   labels,
   sortOptions,
   resultCount,
-  extraFilters = 0,
-  withModels = true
+  extraFilters = 0
 } = defineProps<{
   templates: readonly FacetTemplate[]
   facetsConfig: readonly FacetGroupConfig[]
@@ -97,9 +96,6 @@ const {
   /** Narrowing chosen elsewhere, such as the search panel, so the filter
    * button still says how much is on. */
   extraFilters?: number
-  /** Models browse on their own screen, so a workflows-only toolbar drops the
-   * tab rather than offering one that leaves. */
-  withModels?: boolean
 }>()
 
 const emit = defineEmits<{ clearExtra: [] }>()
@@ -115,20 +111,13 @@ const { facetsByType, isBadgeActive, activeCountForType } =
 const CHIP_LIMIT = 6
 const SEARCH_THRESHOLD = 12
 
-const ALL_TABS: {
-  key: HubTab
-  labelKey: keyof ToolbarLabels
-  icon: Component
-}[] = [
-  { key: 'all', labelKey: 'all', icon: LayoutGrid },
-  { key: 'nodeGraphs', labelKey: 'nodeGraphs', icon: IconWorkflow },
-  { key: 'comfyApps', labelKey: 'comfyApps', icon: IconApps },
-  { key: 'models', labelKey: 'models', icon: IconModel }
-]
-
-const TABS = computed(() =>
-  withModels ? ALL_TABS : ALL_TABS.filter((tab) => tab.key !== 'models')
-)
+const TABS: { key: HubTab; labelKey: keyof ToolbarLabels; icon: Component }[] =
+  [
+    { key: 'all', labelKey: 'all', icon: LayoutGrid },
+    { key: 'nodeGraphs', labelKey: 'nodeGraphs', icon: IconWorkflow },
+    { key: 'comfyApps', labelKey: 'comfyApps', icon: IconApps },
+    { key: 'models', labelKey: 'models', icon: IconModel }
+  ]
 
 const tabsRef = useTemplateRef<{ $el: HTMLElement }>('tabs')
 const tabsEl = computed(() => tabsRef.value?.$el ?? null)

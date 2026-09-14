@@ -4,10 +4,7 @@ import { render, screen } from '@testing-library/vue'
 import { afterEach, describe, expect, it } from 'vitest'
 
 import { useHubStore } from '../../composables/useHubStore'
-import { workshopModels } from '../../config/workshop-browse-content'
 import HubBrowse from './HubBrowse.vue'
-
-const props = { models: workshopModels }
 
 afterEach(() => {
   useHubStore().reset()
@@ -16,7 +13,7 @@ afterEach(() => {
 describe('HubBrowse', () => {
   it('scopes the grid to Comfy Apps and narrows it by search', async () => {
     const user = userEvent.setup()
-    render(HubBrowse, { props })
+    render(HubBrowse)
     expect(screen.getAllByTestId('hub-card')).toHaveLength(30)
 
     await user.click(screen.getByTestId('hub-tab-comfyApps'))
@@ -35,7 +32,7 @@ describe('HubBrowse', () => {
 
   it('shows the Workshop model cards under the Models tab', async () => {
     const user = userEvent.setup()
-    render(HubBrowse, { props })
+    render(HubBrowse)
     await user.click(screen.getByTestId('hub-tab-models'))
     expect(screen.queryByTestId('hub-grid')).toBeNull()
     expect(screen.getAllByTestId('workshop-model-card').length).toBeGreaterThan(
@@ -49,7 +46,7 @@ describe('HubBrowse', () => {
 
   it('narrows the hub from the shared search panel', async () => {
     const user = userEvent.setup()
-    render(HubBrowse, { props })
+    render(HubBrowse)
     expect(screen.queryByTestId('workshop-search-panel')).toBeNull()
 
     await user.click(screen.getByTestId('workshop-search'))
@@ -66,7 +63,7 @@ describe('HubBrowse', () => {
 
   it('filters by a model facet from the Filter popover', async () => {
     const user = userEvent.setup()
-    render(HubBrowse, { props })
+    render(HubBrowse)
     await user.click(screen.getByTestId('hub-filter'))
     await user.click(screen.getByTestId('hub-facet-models'))
     await user.click(await screen.findByRole('option', { name: 'Wan' }))
@@ -76,7 +73,7 @@ describe('HubBrowse', () => {
 
   it('scopes both the models and the workflows to the chosen use case', async () => {
     const user = userEvent.setup()
-    render(HubBrowse, { props })
+    render(HubBrowse)
 
     await user.click(screen.getByTestId('hub-use-case-audio'))
     const lead = screen.getAllByTestId('hub-models-lead')
@@ -98,7 +95,7 @@ describe('HubBrowse', () => {
 
   it('counts the applied filters in the popover and clears them', async () => {
     const user = userEvent.setup()
-    render(HubBrowse, { props })
+    render(HubBrowse)
     await user.click(screen.getByTestId('hub-filter'))
     await user.click(screen.getByTestId('hub-facet-models'))
     await user.click(await screen.findByRole('option', { name: 'Wan' }))
@@ -112,7 +109,7 @@ describe('HubBrowse', () => {
 
   it('offers the orders each tab can honour, and orders by the one chosen', async () => {
     const user = userEvent.setup()
-    render(HubBrowse, { props })
+    render(HubBrowse)
 
     await user.click(screen.getByTestId('hub-tab-nodeGraphs'))
     await user.click(screen.getByTestId('hub-sort'))
@@ -131,24 +128,12 @@ describe('HubBrowse', () => {
 
   it('filters from the phone panel, one facet at a time', async () => {
     const user = userEvent.setup()
-    render(HubBrowse, { props })
+    render(HubBrowse)
     await user.click(screen.getByTestId('hub-filter'))
 
     await user.click(screen.getByTestId('workshop-facet-media'))
     await user.click(await screen.findByTestId('filter-media-video'))
 
     expect(screen.getByTestId('hub-filter-count').textContent.trim()).toBe('1')
-  })
-
-  it('drops the Models tab and the model cards on a templates-only browse', async () => {
-    const user = userEvent.setup()
-    render(HubBrowse, { props: { ...props, withModels: false } })
-
-    expect(screen.queryByTestId('hub-tab-models')).toBeNull()
-    expect(screen.queryByTestId('workshop-model-card')).toBeNull()
-
-    expect(screen.getByTestId('hub-tab-comfyApps')).toBeTruthy()
-    await user.click(screen.getByTestId('hub-tab-comfyApps'))
-    expect(screen.getAllByTestId('hub-card').length).toBeGreaterThan(0)
   })
 })

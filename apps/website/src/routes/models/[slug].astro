@@ -5,9 +5,6 @@ import BaseLayout from '../../layouts/BaseLayout.astro'
 import CatalogueBackLink from '../../components/workshop/CatalogueBackLink.vue'
 import InfoTooltip from '../../components/ui/tooltip/InfoTooltip.vue'
 import ModelDetail from '../../components/workshop/ModelDetail.vue'
-import hubTemplates from '../../data/hubTemplates.json'
-import type { HubTemplate } from '../../lib/hub/types'
-import { templatesUsingModel } from '../../lib/hub/template-use-case'
 import ModelStatus from '../../components/workshop/ModelStatus.vue'
 import ModelSupport from '../../components/workshop/ModelSupport.vue'
 import SplitReveal from '../../components/workshop/SplitReveal.vue'
@@ -42,9 +39,6 @@ const {
 const routes = getRoutes()
 const pillClass =
   'inline-flex h-7 items-center rounded-full border border-transparency-white-t20 px-3 text-xs leading-none text-primary-comfy-canvas transition-colors hover:border-primary-comfy-yellow hover:text-primary-comfy-yellow'
-const usedBy = templatesUsingModel(model, hubTemplates as HubTemplate[])
-const templatesHref = `/templates/?model=${encodeURIComponent(model.name)}`
-
 ---
 
 <BaseLayout
@@ -139,21 +133,6 @@ const templatesHref = `/templates/?model=${encodeURIComponent(model.name)}`
         status={model.status}
         successor={successor ? { name: successor.name, href: successor.href } : undefined}
       />
-
-      {
-        usedBy.length > 0 && (
-          <a
-            href={templatesHref}
-            class="hover:text-primary-comfy-yellow focus-visible:ring-primary-comfy-yellow/50 mt-6 inline-flex items-center gap-1.5 rounded-lg px-1 text-sm text-primary-warm-gray transition-colors outline-none focus-visible:ring-3"
-            data-testid="model-templates-link"
-          >
-            {t('workshop.model.usedByTemplates').replace(
-              '{count}',
-              String(usedBy.length)
-            )}
-          </a>
-        )
-      }
     </header>
 
     <div class="sm:px-8 lg:px-10">

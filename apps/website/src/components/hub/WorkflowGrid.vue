@@ -31,7 +31,6 @@ const {
   hrefFor,
   extraFilters = 0,
   modelCount = 0,
-  withModels = true,
   locale = 'en'
 } = defineProps<{
   templates: readonly HubTemplate[]
@@ -43,8 +42,6 @@ const {
   /** The Models tab lists what the parent passes in, so its tally comes from
    * there rather than from the workflows this grid holds. */
   modelCount?: number
-  /** Off on a workflows-only screen, where the Models tab has no place. */
-  withModels?: boolean
   labels: GridLabels
   hrefFor: (template: HubTemplate) => string
   locale?: Locale
@@ -125,7 +122,6 @@ const showingText = computed(() =>
             : sortedTemplates.length
         "
         :extra-filters="extraFilters"
-        :with-models="withModels"
         @clear-extra="emit('clearExtra')"
       >
         <template #search><slot name="search" /></template>

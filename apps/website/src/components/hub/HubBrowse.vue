@@ -11,11 +11,12 @@ import {
   sortWorkshopModels,
   useCaseFor
 } from '../../config/models-catalogue'
+import { workshopModels } from '../../config/workshop-browse-content'
 import { groupModels } from '../../config/model-family'
 import hubTemplates from '../../data/hubTemplates.json'
-import { templatePath } from '../../lib/hub/workflow-detail'
+import { hubWorkflowPath } from '../../lib/hub/workflow-detail'
 import {
-  modelNamesMatching,
+  partnerModelFor,
   useCaseForTemplate
 } from '../../lib/hub/template-use-case'
 import { tagDisplayName } from '../../lib/hub/tag-aliases'
@@ -35,25 +36,13 @@ import WorkshopHero from '../workshop/WorkshopHero.vue'
 import WorkshopModelCard from '../workshop/WorkshopModelCard.vue'
 import WorkshopSearchField from '../workshop/WorkshopSearchField.vue'
 
-const {
-  models,
-  locale = 'en',
-  embedded = false,
-  withModels = true
-} = defineProps<{
-  /** Resolved on the server: the catalogue JSON must not reach a client
-   * bundle, so the page hands the island the models it needs. */
-  models: readonly WorkshopModel[]
+const { locale = 'en', embedded = false } = defineProps<{
   locale?: Locale
   embedded?: boolean
-  /** Models have their own screen. A workflows-only browse drops the Models
-   * tab and the model cards, and keeps everything else: the same use cases,
-   * the same toolbar, the same search. */
-  withModels?: boolean
 }>()
 
 const templates = (hubTemplates as HubTemplate[]).map((template) =>
-  withFacetFields(template, models)
+  withFacetFields(template, workshopModels)
 )
 const store = useHubStore()
 
@@ -62,12 +51,7 @@ const store = useHubStore()
 const railBeside = computed(() => !embedded)
 onUnmounted(() => store.reset())
 
-const ALL_TABS = ['all', 'nodeGraphs', 'comfyApps', 'models'] as const
-const TABS = withModels
-  ? ALL_TABS
-  : (ALL_TABS.filter(
-      (tab) => tab !== 'models'
-    ) as readonly (typeof ALL_TABS)[number][])
+const TABS = ['all', 'nodeGraphs', 'comfyApps', 'models'] as const
 
 // The hub browses by what a thing makes, the same axis and the same vocabulary
 // as the models list, so a workflow and a model answer to the same use case.
@@ -113,7 +97,9 @@ const matchesModel = (model: WorkshopModel) =>
 const matchingModelNames = computed(
   () =>
     new Set(
-      models.filter(matchesModel).map((model) => model.name.toLowerCase())
+      workshopModels
+        .filter(matchesModel)
+        .map((model) => model.name.toLowerCase())
     )
 )
 
@@ -122,16 +108,13 @@ const runsMatchingModel = (tmpl: HubTemplate) =>
   tmpl.models.some((name) => matchingModelNames.value.has(name.toLowerCase()))
 
 const inUseCase = (value: UseCase | 'all') => ({
-  models: withModels
-    ? models.filter(
-        (model) =>
-          (value === 'all' || useCaseFor(model) === value) &&
-          matchesModel(model)
-      )
-    : [],
+  models: workshopModels.filter(
+    (model) =>
+      (value === 'all' || useCaseFor(model) === value) && matchesModel(model)
+  ),
   templates: templates.filter(
     (tmpl) =>
-      (value === 'all' || useCaseForTemplate(tmpl, models) === value) &&
+      (value === 'all' || useCaseForTemplate(tmpl, workshopModels) === value) &&
       runsMatchingModel(tmpl)
   )
 })
@@ -159,12 +142,10 @@ onMounted(() => {
   if (wanted) useCase.value = wanted
   const asked = params.get('provider')
   if (asked) providers.value = [asked]
-  const tag = params.get('tag')
-  if (tag) store.toggleBadge({ type: 'tag', value: tag })
-  const model = params.get('model')
-  if (model)
-    for (const value of modelNamesMatching(model, templates))
-      store.toggleBadge({ type: 'model', value })
+  for (const type of ['tag', 'model'] as const) {
+    const value = params.get(type)
+    if (value) store.toggleBadge({ type, value })
+  }
   const query = params.get('q')
   if (query) store.searchQuery.value = query
 })
@@ -199,9 +180,7 @@ const MODEL_SORTS: SortOption[] = [
   { value: 'priceDesc', label: t('workshop.sort.priceDesc', locale) }
 ]
 const sortOptions = computed(() =>
-  withModels && store.activeTab.value === 'models'
-    ? MODEL_SORTS
-    : WORKFLOW_SORTS
+  store.activeTab.value === 'models' ? MODEL_SORTS : WORKFLOW_SORTS
 )
 
 // An order the new tab cannot honour would otherwise linger in the button.
@@ -248,9 +227,11 @@ const gridLabels: GridLabels = {
   showing: t('workshop.hub.showing', locale)
 }
 
-// A card lands on the thing it names. A workflow that runs on a catalogue
-// model says so on its own page, and offers the way across from there.
-const hrefFor = (template: HubTemplate) => templatePath(template.name)
+// A Hub entry tagged as a partner node whose model matches a Workshop model
+// opens that model's playground; everything else stays on comfy.org.
+const hrefFor = (template: HubTemplate) =>
+  partnerModelFor(template, workshopModels)?.href ??
+  hubWorkflowPath(template.name)
 
 const filteredModels = computed(() => {
   const query = store.searchQuery.value.trim().toLowerCase()
@@ -301,8 +282,7 @@ const filteredTemplates = computed(() => {
   <section :class="cn(!embedded && 'pb-32')" data-testid="workshop-hub">
     <WorkshopHero
       v-if="!embedded"
-      :heading-key="withModels ? 'workshop.hub.title' : 'templates.hero.title'"
-      :subtitle-key="withModels ? undefined : 'templates.hero.subtitle'"
+      heading-key="workshop.hub.title"
       :locale
       data-testid="hub-heading"
     />
@@ -336,7 +316,6 @@ const filteredTemplates = computed(() => {
           :href-for="hrefFor"
           :extra-filters="providers.length + capabilities.length"
           :model-count="modelFamilies.length"
-          :with-models="withModels"
           @clear-extra="clearSearchFilters"
         >
           <template #search>
@@ -344,14 +323,14 @@ const filteredTemplates = computed(() => {
               v-model="store.searchQuery.value"
               v-model:providers="providers"
               v-model:capabilities="capabilities"
-              :models
+              :models="workshopModels"
               :locale
               compact
               class="max-sm:size-10 max-sm:flex-none sm:w-64 lg:w-80"
             />
           </template>
 
-          <template v-if="withModels && store.activeTab.value === 'all'" #lead>
+          <template v-if="store.activeTab.value === 'all'" #lead>
             <WorkshopModelCard
               v-for="family in modelFamilies.slice(0, LEAD_MODELS)"
               :key="family.key"
@@ -362,7 +341,7 @@ const filteredTemplates = computed(() => {
             />
           </template>
 
-          <template v-if="withModels" #models>
+          <template #models>
             <ul
               class="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3"
               data-testid="hub-models"

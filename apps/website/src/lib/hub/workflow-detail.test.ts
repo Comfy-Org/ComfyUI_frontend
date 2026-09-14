@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest'
 
-import { getHubWorkflowPage, listHubWorkflows } from './workflow-detail'
+import {
+  getHubWorkflowPage,
+  hubWorkflowPath,
+  listHubWorkflows
+} from './workflow-detail'
 
 describe('getHubWorkflowPage', () => {
   it('returns nothing for an unknown template', () => {
@@ -11,7 +15,7 @@ describe('getHubWorkflowPage', () => {
     const page = getHubWorkflowPage('video_minimax_h3_i2v')!
     expect(page.mediaType).toBe('video')
     expect(page.model.modality).toBe('video')
-    expect(page.model.href).toBe('/templates/video_minimax_h3_i2v/')
+    expect(page.model.href).toBe(hubWorkflowPath('video_minimax_h3_i2v'))
     expect(page.model.fields.map((field) => field.name)).toEqual([
       'prompt',
       'image',
