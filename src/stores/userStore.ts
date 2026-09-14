@@ -45,6 +45,15 @@ export const useUserStore = defineStore('user', () => {
   async function loadUserStylesheet() {
     if (isCloud) return
 
+    if (!isMultiUserServer.value) {
+      const link = document.createElement('link')
+      link.id = USER_STYLESHEET_ID
+      link.rel = 'stylesheet'
+      link.href = api.apiURL(USER_STYLESHEET_ROUTE)
+      document.head.append(link)
+      return
+    }
+
     try {
       const response = await api.fetchApi(USER_STYLESHEET_ROUTE)
       if (!response.ok) return

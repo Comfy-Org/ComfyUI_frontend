@@ -105,15 +105,18 @@ describe('userStore', () => {
 
     it('loads CSS for a single-user server without a selected identity', async () => {
       getUserConfig.mockResolvedValue({})
-      fetchApi.mockResolvedValue(new Response('body { color: red; }'))
       const store = useUserStore()
 
       await store.initialize()
 
       expect(api.user).toBe('')
-      expect(fetchApi).toHaveBeenCalledWith('/userdata/user.css')
-      expect(document.querySelector('#user-stylesheet')?.textContent).toBe(
-        'body { color: red; }'
+      expect(fetchApi).not.toHaveBeenCalled()
+      expect(document.querySelector('#user-stylesheet')).toEqual(
+        expect.objectContaining({
+          tagName: 'LINK',
+          rel: 'stylesheet',
+          href: 'http://localhost:3000/api/userdata/user.css'
+        })
       )
     })
   })
