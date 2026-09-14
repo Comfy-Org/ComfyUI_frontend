@@ -908,6 +908,8 @@ describe('ModelDetail', () => {
     const pending = Promise.withResolvers<typeof routerResult>()
     vi.mocked(runWorkshopRouter).mockReturnValue(pending.promise)
     const assign = vi.spyOn(location, 'assign').mockImplementation(() => {})
+    const leaving = () =>
+      window.dispatchEvent(new Event('beforeunload', { cancelable: true }))
     onTestFinished(() => assign.mockRestore())
     mountDetail({ model: runnable })
 
@@ -945,6 +947,10 @@ describe('ModelDetail', () => {
     expect(assign).toHaveBeenCalledWith(
       `${location.origin}/models/another-model/`
     )
+    expect(
+      screen.getByTestId('playground-output').getAttribute('data-state')
+    ).toBe('cancelled')
+    expect(leaving()).toBe(true)
   })
 
   it('restores a declined history traversal without letting Astro unmount the run', async () => {

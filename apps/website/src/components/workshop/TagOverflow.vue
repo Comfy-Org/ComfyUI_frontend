@@ -6,24 +6,29 @@ import {
   HoverCardRoot,
   HoverCardTrigger
 } from 'reka-ui'
+import { ref } from 'vue'
 
 const { tags } = defineProps<{
   tags: readonly { label: string; href: string }[]
 }>()
+const open = ref(false)
 
 const pill =
   'inline-flex h-7 shrink-0 items-center rounded-full bg-transparency-white-t8 px-3 text-xs leading-none whitespace-nowrap'
 </script>
 
 <template>
-  <HoverCardRoot :open-delay="120">
+  <HoverCardRoot v-model:open="open" :open-delay="120">
     <HoverCardTrigger
+      as="button"
+      type="button"
       :aria-label="tags.map((tag) => tag.label).join(', ')"
       :title="tags.map((tag) => tag.label).join(', ')"
       :class="
         cn(pill, 'cursor-pointer text-primary-comfy-canvas/70 tabular-nums')
       "
       data-testid="model-tags-rest"
+      @click="open = true"
     >
       +{{ tags.length }}
     </HoverCardTrigger>

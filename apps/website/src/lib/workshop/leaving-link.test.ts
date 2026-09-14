@@ -47,7 +47,8 @@ describe('linkLeavingPage', () => {
     ['a download', { href: elsewhere, download: '' }],
     ['a link opening elsewhere', { href: elsewhere, target: '_blank' }],
     ['a link off this origin', { href: 'https://example.com/models/b/' }],
-    ['a link back to this same page', { href: here.href }]
+    ['a link back to this same page', { href: here.href }],
+    ['a fragment on this same page', { href: `${here.href}#pricing` }]
   ] as const)('leaves %s to the browser', ([, attributes]) => {
     expect(linkLeavingPage(clickOn(attributes), here)).toBeUndefined()
   })
