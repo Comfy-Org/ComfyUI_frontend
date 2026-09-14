@@ -424,4 +424,31 @@ describe('useWorkshopSession', () => {
       })
     )
   })
+
+  it('does not resurrect a torn-down session when a restore resolves after the flag turns off', async () => {
+    window.localStorage.setItem(
+      'workshop:workspace',
+      JSON.stringify({ uid: 'user-1', workspaceId: 'team-9' })
+    )
+    let releaseRemint!: (value: unknown) => void
+    h.remint.mockImplementation(
+      () => new Promise((resolve) => (releaseRemint = resolve))
+    )
+    const s = await importFresh()
+
+    h.publish(authenticatedSnapshot())
+    await vi.waitFor(() => expect(h.remint).toHaveBeenCalledOnce())
+
+    h.flag!.value = false
+    await vi.waitFor(() => expect(s.settled.value).toBe(false))
+
+    releaseRemint({ status: 'error', code: 'TOKEN_EXCHANGE_FAILED' })
+    await Promise.resolve()
+    await Promise.resolve()
+
+    expect(
+      s.session.value,
+      'a restore the flag flip abandoned must not publish for a lifecycle that no longer owns the outcome'
+    ).toBeUndefined()
+  })
 })
