@@ -161,4 +161,75 @@ describe('DescriptionTabPanel', () => {
       expect(screen.getByText('No description available')).toBeInTheDocument()
     })
   })
+
+  // The registry is an open publishing surface, so every URL-shaped field on a
+  // node pack is attacker-controlled. Vue does not sanitize :href.
+  describe('hostile registry URLs', () => {
+    const EXECUTABLE_URL = 'javascript:alert(document.domain)'
+
+    // An anchor with no href carries no link role, so this returns only the
+    // anchors that are actually navigable.
+    function navigableHrefs() {
+      return screen
+        .queryAllByRole('link')
+        .map((link) => link.getAttribute('href') ?? '')
+    }
+
+    // The invariant, stated on the scheme rather than the whole string: the
+    // panel's markdown tokenizer truncates a URL at its first ')', so an
+    // exact-match assertion silently stops matching the payload.
+    function executableHrefs() {
+      return navigableHrefs().filter((href) => !/^https?:/i.test(href))
+    }
+
+    it('renders the repository field but refuses to make it navigable', () => {
+      renderComponent({
+        nodePack: createNodePack({ repository: EXECUTABLE_URL })
+      })
+
+      expect(screen.getByText(EXECUTABLE_URL)).toBeInTheDocument()
+      expect(executableHrefs()).toEqual([])
+    })
+
+    it('refuses to make a license URL built on a hostile repository navigable', () => {
+      renderComponent({
+        nodePack: createNodePack({
+          repository: EXECUTABLE_URL,
+          license: 'LICENSE'
+        })
+      })
+
+      expect(
+        screen.getByText(`${EXECUTABLE_URL}/blob/main/LICENSE`)
+      ).toBeInTheDocument()
+      expect(executableHrefs()).toEqual([])
+    })
+
+    it('refuses to make a description markdown link navigable', () => {
+      renderComponent({
+        nodePack: createNodePack({
+          description: `See [the docs](${EXECUTABLE_URL}) for details.`
+        })
+      })
+
+      expect(screen.getByText('the docs')).toBeInTheDocument()
+      expect(executableHrefs()).toEqual([])
+    })
+
+    it('still links an ordinary https repository and description link', () => {
+      renderComponent({
+        nodePack: createNodePack({
+          repository: 'https://github.com/user/repo',
+          description: 'See [the docs](https://example.com/docs) for details.'
+        })
+      })
+
+      expect(navigableHrefs()).toEqual(
+        expect.arrayContaining([
+          'https://github.com/user/repo',
+          'https://example.com/docs'
+        ])
+      )
+    })
+  })
 })
