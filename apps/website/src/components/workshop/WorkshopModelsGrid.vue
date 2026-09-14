@@ -260,7 +260,7 @@ const menuItemClass =
 
       <div
         ref="toolbar"
-        class="bg-page sticky top-20 z-30 mb-8 flex scroll-mt-20 flex-wrap items-center justify-end gap-3 py-4 max-sm:mb-4 max-sm:py-2 lg:top-26 lg:scroll-mt-26"
+        class="bg-page sticky top-20 z-30 -mx-1 mb-8 flex scroll-mt-20 flex-wrap items-center justify-end gap-3 px-1 py-4 max-sm:mb-4 max-sm:py-2 lg:top-26 lg:scroll-mt-26"
       >
         <h1
           v-if="inSection"
