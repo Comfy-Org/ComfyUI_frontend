@@ -345,7 +345,7 @@ describe('graphMutations', () => {
     expect(createLayout).not.toHaveBeenCalled()
   })
 
-  it('rejects reconcileNodeFields for a missing node or an incomplete payload', () => {
+  it('adds a missing field-reconciled node and rejects incomplete payloads', () => {
     const graph = mutations()
     graph.addNode(node(1, { seed: 1 }), context)
 
@@ -353,7 +353,10 @@ describe('graphMutations', () => {
       graph.batch(context, (batch) => {
         batch.reconcileNodeFields({ ...node(3), title: 'Ghost' })
       })
-    ).toBe(false)
+    ).toBe(true)
+    expect(
+      useNodeDataStore().getNode(scope.rootGraphId, toNodeId(3))?.title
+    ).toBe('Ghost')
     expect(
       graph.batch(context, (batch) => {
         batch.reconcileNodeFields({ ...node(1), type: '' })
@@ -362,12 +365,44 @@ describe('graphMutations', () => {
     expect(
       graph.batch(context, (batch) => {
         batch.reconcileNodeFields({ ...node(1), title: 'Live' })
-        batch.reconcileNodeFields({ ...node(3), title: 'Ghost' })
+        batch.reconcileNodeFields({ ...node(4), type: '' })
       })
     ).toBe(false)
 
-    const [untouched] = useNodeDataStore().getGraphNodesFor('root', 'root')
-    expect(untouched.title).toBe('Node 1')
+    expect(
+      useNodeDataStore().getNode(scope.rootGraphId, toNodeId(1))?.title
+    ).toBe('Node 1')
+  })
+
+  it('replaces a field-reconciled node when its type changes', () => {
+    const graph = mutations()
+    graph.addNode(node(1, { seed: 1 }), context)
+    const existing = useNodeDataStore().getNode(scope.rootGraphId, toNodeId(1))
+    createLayout.mockClear()
+    deleteLayouts.mockClear()
+
+    expect(
+      graph.batch(context, (batch) => {
+        batch.reconcileNodeFields({
+          ...node(1, { replacement: 2 }),
+          type: 'Replacement'
+        })
+      })
+    ).toBe(true)
+
+    const replacement = useNodeDataStore().getNode(
+      scope.rootGraphId,
+      toNodeId(1)
+    )
+    expect(replacement).not.toBe(existing)
+    expect(replacement?.type).toBe('Replacement')
+    expect(
+      useWidgetValueStore().getWidget(
+        widgetId(scope.rootGraphId, toNodeId(1), 'replacement')
+      )?.value
+    ).toBe(2)
+    expect(deleteLayouts).toHaveBeenCalledOnce()
+    expect(createLayout).toHaveBeenCalledOnce()
   })
 
   it('updates endpoint slot records while retaining the supplied link id', () => {

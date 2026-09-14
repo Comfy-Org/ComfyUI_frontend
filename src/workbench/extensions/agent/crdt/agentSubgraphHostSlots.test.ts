@@ -81,7 +81,7 @@ function definition(): DefinitionWithNodes {
     ],
     groups: [],
     extra: {}
-  } as unknown as DefinitionWithNodes
+  } satisfies DefinitionWithNodes
 }
 
 describe('agentSubgraphHostSlots', () => {
@@ -200,7 +200,6 @@ describe('agentSubgraphHostSlots', () => {
   it('does not count a nested-instance input the nested definition leaves unpromoted', () => {
     const outer = outerWithNestedInstance()
     const nested = definition()
-    // Point the nested link at `extra`, which lands on a plain slot inside.
     outer.nodes[0].inputs = [{ name: 'extra', type: 'NUMBER', link: 1 }]
     const index = indexSubgraphDefinitions([outer, nested])
     expect(promotedWidgetNames(outer, index)).toEqual(['value'])
@@ -308,7 +307,6 @@ describe('agentSubgraphHostSlots', () => {
     }
     const index = indexSubgraphDefinitions(chain)
     expect(promotedWidgetNames(chain[0], index)).toEqual([])
-    // A chain that fits under the cap still resolves to the leaf widget.
     expect(promotedWidgetNames(chain[depth - 32], index)).toEqual(['value'])
   })
 
@@ -356,7 +354,6 @@ describe('agentSubgraphHostSlots', () => {
       shape: RenderShape.GRID,
       localized_name: 'Extra'
     })
-    // definition-only bookkeeping never leaks onto a live host slot
     expect('id' in inputs[0]).toBe(false)
     expect('linkIds' in inputs[0]).toBe(false)
     expect(inputs[1]).toMatchObject({

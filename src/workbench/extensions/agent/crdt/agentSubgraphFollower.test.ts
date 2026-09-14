@@ -251,7 +251,6 @@ function forwardRaw(
 }
 
 beforeEach(() => {
-  vi.mocked(reportError).mockClear()
   LiteGraph.registerNodeType('promoted-widget', PromotedWidgetNode)
   LiteGraph.registerNodeType('source', SourceNode)
 })

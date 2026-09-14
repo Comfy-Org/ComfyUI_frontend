@@ -59,18 +59,12 @@ interface SemanticLayoutMutationPort {
 }
 
 interface GraphMutationBatch {
-  /**
-   * Registered type of the live node `nodeId` in the scoped graph, or
-   * `undefined` when absent. Lets a caller detect a doc entry whose type
-   * changed under the same id, which needs a rebuild rather than a resync.
-   */
-  getNodeType(nodeId: NodeId): string | undefined
   addNode(payload: SemanticNodePayload): void
   reconcileNode(payload: SemanticNodePayload): void
   /**
-   * Resyncs only the scalar fields (title, mode, flags, properties, colors,
-   * shape) of an existing node. Slots, registered widgets, and layout are
-   * left untouched, so a live subgraph host keeps its promoted-slot bindings.
+   * For a node of the same type, resyncs scalar fields while preserving slots,
+   * widgets, and layout. A missing node or type mismatch is added or replaced
+   * from the full payload.
    */
   reconcileNodeFields(payload: SemanticNodePayload): void
   setWidget(nodeId: NodeId, name: string, value: unknown): void
@@ -140,6 +134,7 @@ interface PreparedNode {
 type PreparedMutation =
   | { kind: 'addNode'; node: PreparedNode }
   | { kind: 'reconcileNode'; node: PreparedNode }
+  | { kind: 'replaceNode'; node: PreparedNode }
   | { kind: 'reconcileNodeFields'; state: NodeState }
   | { kind: 'setWidget'; nodeId: NodeId; name: string; value: WidgetValue }
   | {
@@ -312,14 +307,67 @@ function nodeKey(nodeId: NodeId): string {
   return String(nodeId)
 }
 
+function detachedLinkSlots(
+  nodes: Iterable<NodeState>,
+  topology: LinkTopology
+): Map<NodeId, Pick<NodeState, 'inputs' | 'outputs'>> {
+  const nodesById = new Map([...nodes].map((node) => [nodeKey(node.id), node]))
+  const changed = new Map<NodeId, Pick<NodeState, 'inputs' | 'outputs'>>()
+  const slotsFor = (node: NodeState) => {
+    const prior = changed.get(node.id)
+    if (prior) return prior
+    const slots = { inputs: node.inputs, outputs: node.outputs }
+    changed.set(node.id, slots)
+    return slots
+  }
+
+  const origin = nodesById.get(nodeKey(topology.originNodeId))
+  if (origin?.outputs[topology.originSlot]) {
+    const slots = slotsFor(origin)
+    slots.outputs = slots.outputs.map((output, index) =>
+      index === topology.originSlot
+        ? {
+            ...output,
+            links: output.links?.filter((id) => id !== topology.id) ?? null
+          }
+        : output
+    )
+  }
+
+  const target = nodesById.get(nodeKey(topology.targetNodeId))
+  if (target?.inputs[topology.targetSlot]?.link === topology.id) {
+    const slots = slotsFor(target)
+    slots.inputs = slots.inputs.map((input, index) =>
+      index === topology.targetSlot ? { ...input, link: null } : input
+    )
+  }
+
+  return changed
+}
+
 function removeIncidentLinks(
+  nodes: Map<string, NodeState>,
   links: Map<LinkId, LinkTopology>,
   nodeId: NodeId
 ): void {
-  for (const [id, topology] of links) {
+  for (const [id, topology] of [...links]) {
     if (topology.originNodeId === nodeId || topology.targetNodeId === nodeId) {
-      links.delete(id)
+      removeSimulatedLink(nodes, links, id)
     }
+  }
+}
+
+function removeSimulatedLink(
+  nodes: Map<string, NodeState>,
+  links: Map<LinkId, LinkTopology>,
+  linkId: LinkId
+): void {
+  const topology = links.get(linkId)
+  if (!topology) return
+  links.delete(linkId)
+  for (const [nodeId, slots] of detachedLinkSlots(nodes.values(), topology)) {
+    const node = nodes.get(nodeKey(nodeId))
+    if (node) nodes.set(nodeKey(nodeId), { ...node, ...slots })
   }
 }
 
@@ -364,6 +412,24 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
       )
     }
 
+    const validateNodeUpsert = (
+      node: PreparedNode,
+      key: string
+    ): string | undefined => {
+      const incumbent = nodeStore.getNode(scope.rootGraphId, node.state.id)
+      if (incumbent && incumbent.graphId !== scope.owningGraphId) {
+        return `node id ${key} belongs to graph ${incumbent.graphId}`
+      }
+      if (
+        node.widgets.some(
+          ({ name }) =>
+            !isWidgetId(widgetId(scope.rootGraphId, node.state.id, name))
+        )
+      ) {
+        return `node ${key} has an invalid widget name`
+      }
+    }
+
     const prepared: PreparedMutation[] = []
     for (const mutation of queued) {
       switch (mutation.kind) {
@@ -383,24 +449,23 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
             nodes.get(nodeKey(toNodeId(mutation.payload.id)))
           )
           const key = nodeKey(node.state.id)
-          const incumbent = nodeStore.getNode(scope.rootGraphId, node.state.id)
-          if (incumbent && incumbent.graphId !== scope.owningGraphId) {
-            return `node id ${key} belongs to graph ${incumbent.graphId}`
-          }
+          const existing = nodes.get(key)
+          const validationError = validateNodeUpsert(node, key)
+          if (validationError) return validationError
           if (mutation.kind === 'addNode' && nodes.has(key)) {
             return `node id ${key} is already registered`
           }
-          if (
-            node.widgets.some(
-              ({ name }) =>
-                !isWidgetId(widgetId(scope.rootGraphId, node.state.id, name))
-            )
-          ) {
-            return `node ${key} has an invalid widget name`
-          }
           nodes.set(key, node.state)
           widgets.set(key, new Set(node.widgets.map(({ name }) => name)))
-          prepared.push({ kind: mutation.kind, node })
+          prepared.push({
+            kind:
+              mutation.kind === 'reconcileNode' &&
+              existing &&
+              existing.type !== node.state.type
+                ? 'replaceNode'
+                : mutation.kind,
+            node
+          })
           break
         }
         case 'reconcileNodeFields': {
@@ -414,13 +479,22 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
           }
           const key = nodeKey(toNodeId(mutation.payload.id))
           const existing = nodes.get(key)
-          if (!existing) return `node ${key} does not exist`
-          // Slots come from the live node; only scalar fields are resynced.
-          const { state } = prepareNode(mutation.payload, scope, existing)
-          state.inputs = existing.inputs
-          state.outputs = existing.outputs
-          nodes.set(key, state)
-          prepared.push({ kind: mutation.kind, state })
+          const node = prepareNode(mutation.payload, scope, existing)
+          if (!existing || existing.type !== node.state.type) {
+            const validationError = validateNodeUpsert(node, key)
+            if (validationError) return validationError
+            nodes.set(key, node.state)
+            widgets.set(key, new Set(node.widgets.map(({ name }) => name)))
+            prepared.push({
+              kind: existing ? 'replaceNode' : 'addNode',
+              node
+            })
+          } else {
+            node.state.inputs = existing.inputs
+            node.state.outputs = existing.outputs
+            nodes.set(key, node.state)
+            prepared.push({ kind: mutation.kind, state: node.state })
+          }
           break
         }
         case 'setWidget': {
@@ -488,8 +562,10 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
             })
           }
           if (mutation.link.targetInputs) {
+            const currentTarget =
+              nodes.get(nodeKey(topology.targetNodeId)) ?? target
             nodes.set(nodeKey(topology.targetNodeId), {
-              ...target,
+              ...currentTarget,
               inputs: targetInputs
             })
           }
@@ -531,12 +607,12 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
           for (const id of nodeIds) {
             nodes.delete(nodeKey(id))
             widgets.delete(nodeKey(id))
-            removeIncidentLinks(links, id)
+            removeIncidentLinks(nodes, links, id)
           }
           const linkIds = [...links.keys()].filter(
             (id) => !retainedLinkIds.has(id)
           )
-          for (const id of linkIds) links.delete(id)
+          for (const id of linkIds) removeSimulatedLink(nodes, links, id)
           prepared.push({ kind: mutation.kind, nodeIds, linkIds })
           break
         }
@@ -551,7 +627,7 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
             if (incumbent && incumbent.graphId !== scope.owningGraphId) {
               return `link id ${id} belongs to graph ${incumbent.graphId}`
             }
-            links.delete(id)
+            removeSimulatedLink(nodes, links, id)
             linkIds.push(id)
           }
           prepared.push({
@@ -582,8 +658,10 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
           }
           nodes.delete(nodeKey(mutation.nodeId))
           widgets.delete(nodeKey(mutation.nodeId))
-          removeIncidentLinks(links, mutation.nodeId)
-          for (const id of removedLinkIds) links.delete(id)
+          removeIncidentLinks(nodes, links, mutation.nodeId)
+          for (const id of removedLinkIds) {
+            removeSimulatedLink(nodes, links, id)
+          }
           prepared.push({
             kind: mutation.kind,
             nodeId: mutation.nodeId,
@@ -609,42 +687,11 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
     topology: LinkTopology,
     context: RemoteMutationContext
   ): void {
-    const nodes = new Map(
-      nodeStore
-        .getGraphNodesFor(scope.rootGraphId, scope.owningGraphId)
-        .map((node) => [nodeKey(node.id), node])
+    const nodes = nodeStore.getGraphNodesFor(
+      scope.rootGraphId,
+      scope.owningGraphId
     )
-    const changed = new Map<NodeId, Pick<NodeState, 'inputs' | 'outputs'>>()
-    const slotsFor = (node: NodeState) => {
-      const prior = changed.get(node.id)
-      if (prior) return prior
-      const slots = { inputs: node.inputs, outputs: node.outputs }
-      changed.set(node.id, slots)
-      return slots
-    }
-
-    const origin = nodes.get(nodeKey(topology.originNodeId))
-    if (origin?.outputs[topology.originSlot]) {
-      const slots = slotsFor(origin)
-      slots.outputs = slots.outputs.map((output, index) =>
-        index === topology.originSlot
-          ? {
-              ...output,
-              links: output.links?.filter((id) => id !== topology.id) ?? null
-            }
-          : output
-      )
-    }
-
-    const target = nodes.get(nodeKey(topology.targetNodeId))
-    if (target?.inputs[topology.targetSlot]?.link === topology.id) {
-      const slots = slotsFor(target)
-      slots.inputs = slots.inputs.map((input, index) =>
-        index === topology.targetSlot ? { ...input, link: null } : input
-      )
-    }
-
-    for (const [nodeId, slots] of changed) {
+    for (const [nodeId, slots] of detachedLinkSlots(nodes, topology)) {
       nodeStore.updateNodeSlots(scope, nodeId, slots, context)
     }
   }
@@ -691,11 +738,16 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
     for (const mutation of prepared) {
       switch (mutation.kind) {
         case 'addNode':
-        case 'reconcileNode': {
-          const existing = nodeStore.getNode(
+        case 'reconcileNode':
+        case 'replaceNode': {
+          let existing = nodeStore.getNode(
             scope.rootGraphId,
             mutation.node.state.id
           )
+          if (mutation.kind === 'replaceNode' && existing) {
+            deleteNode(scope, existing.id, [], context)
+            existing = undefined
+          }
           if (mutation.kind === 'reconcileNode' && existing) {
             nodeStore.updateNode(
               scope,
@@ -865,10 +917,6 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
       if (!scope) return false
       const queued: QueuedMutation[] = []
       define({
-        getNodeType(nodeId) {
-          const node = nodeStore.getNode(scope.rootGraphId, nodeId)
-          return node?.graphId === scope.owningGraphId ? node.type : undefined
-        },
         addNode(payload) {
           queued.push({ kind: 'addNode', payload })
         },

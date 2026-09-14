@@ -125,6 +125,17 @@ function collectDefinitionIds(source: unknown, ids: string[]): void {
   }
 }
 
+export function allSubgraphDefinitions(
+  definitions: readonly ExportedSubgraph[]
+): ExportedSubgraph[] {
+  return [
+    ...definitions,
+    ...definitions.flatMap((definition) =>
+      allSubgraphDefinitions(definition.definitions?.subgraphs ?? [])
+    )
+  ]
+}
+
 export function readSubgraphDefinitionIds(doc: Y.Doc): string[] {
   const ids: string[] = []
   if (!doc.share.has(DEFINITIONS_ROOT)) return ids

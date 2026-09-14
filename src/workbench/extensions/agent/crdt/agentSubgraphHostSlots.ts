@@ -1,7 +1,10 @@
+import { hasPromotedWidgetTarget } from '@/core/graph/subgraph/hasPromotedWidgetTarget'
 import type {
   ExportedSubgraph,
   ISerialisableNodeInput
 } from '@/lib/litegraph/src/types/serialisation'
+
+import { allSubgraphDefinitions } from './agentSubgraphDefinitions'
 
 /**
  * Slot-level facts about a SubgraphNode host, derived from the subgraph
@@ -26,11 +29,9 @@ export function indexSubgraphDefinitions(
   definitions: readonly ExportedSubgraph[]
 ): SubgraphDefinitionIndex {
   const index = new Map<string, ExportedSubgraph>()
-  const visit = (definition: ExportedSubgraph) => {
+  for (const definition of allSubgraphDefinitions(definitions)) {
     if (!index.has(definition.id)) index.set(definition.id, definition)
-    for (const nested of definition.definitions?.subgraphs ?? []) visit(nested)
   }
-  for (const definition of definitions) visit(definition)
   return index
 }
 
@@ -79,19 +80,13 @@ export function promotedWidgetNames(
   definition: ExportedSubgraph,
   index: SubgraphDefinitionIndex
 ): string[] {
-  const traversal: PromotionTraversal = {
-    index,
-    active: new Set(),
-    resolved: new Map(),
-    capHits: 0,
-    lookups: new Map()
-  }
+  const lookups = new Map<ExportedSubgraph, DefinitionLookups>()
   // A name declared twice cannot be mapped to one host slot (`hostSlotIndex`
   // rejects it), so it must not be reported as a settable promoted widget.
   const ambiguous = ambiguousInputNames(definition)
   return (definition.inputs ?? []).flatMap((input, inputIndex) =>
     !ambiguous.has(input.name) &&
-    isPromoted(definition, inputIndex, traversal, 0)
+    isPromoted(definition, inputIndex, index, lookups)
       ? [input.name]
       : []
   )
@@ -102,22 +97,11 @@ interface DefinitionLookups {
   nodesById: ReadonlyMap<string, NonNullable<ExportedSubgraph['nodes']>[number]>
 }
 
-interface PromotionTraversal {
-  index: SubgraphDefinitionIndex
-  /** `${definition.id}#${inputIndex}` keys currently being resolved. */
-  active: Set<string>
-  /** Settled answers for keys whose resolution never touched the depth cap. */
-  resolved: Map<string, boolean>
-  /** How many times the depth cap has cut a chain short so far. */
-  capHits: number
-  lookups: Map<ExportedSubgraph, DefinitionLookups>
-}
-
 function lookupsFor(
   definition: ExportedSubgraph,
-  traversal: PromotionTraversal
+  lookupsByDefinition: Map<ExportedSubgraph, DefinitionLookups>
 ): DefinitionLookups {
-  const existing = traversal.lookups.get(definition)
+  const existing = lookupsByDefinition.get(definition)
   if (existing) return existing
   const lookups: DefinitionLookups = {
     linksById: new Map((definition.links ?? []).map((link) => [link.id, link])),
@@ -125,48 +109,52 @@ function lookupsFor(
       (definition.nodes ?? []).map((node) => [String(node.id), node])
     )
   }
-  traversal.lookups.set(definition, lookups)
+  lookupsByDefinition.set(definition, lookups)
   return lookups
 }
 
 function isPromoted(
   definition: ExportedSubgraph,
   inputIndex: number,
-  traversal: PromotionTraversal,
-  depth: number
+  index: SubgraphDefinitionIndex,
+  lookups: Map<ExportedSubgraph, DefinitionLookups>
 ): boolean {
-  const input = definition.inputs?.[inputIndex]
-  if (!input) return false
-  const key = `${definition.id}#${inputIndex}`
-  const settled = traversal.resolved.get(key)
-  if (settled !== undefined) return settled
-  if (traversal.active.has(key)) return false
-  traversal.active.add(key)
-  const capHitsBefore = traversal.capHits
-  const { linksById, nodesById } = lookupsFor(definition, traversal)
-  const promoted = (input.linkIds ?? []).some((linkId) => {
-    const link = linksById.get(linkId)
-    if (!link) return false
-    const target = nodesById.get(String(link.target_id))
-    const targetInput = target?.inputs?.[link.target_slot]
-    if (!target || !targetInput) return false
-    const nested = traversal.index.get(target.type)
-    if (!nested) return targetInput.widget != null
-    if (depth >= MAX_NESTED_PROMOTION_DEPTH) {
-      traversal.capHits++
-      return false
+  const root = { definition, inputIndex }
+  return hasPromotedWidgetTarget(
+    root,
+    MAX_NESTED_PROMOTION_DEPTH,
+    ({ definition, inputIndex }) => definition.inputs?.[inputIndex],
+    ({ definition, inputIndex }) => {
+      const input = definition.inputs?.[inputIndex]
+      if (!input) return { hasWidget: false, nested: [] }
+      const nested: Array<typeof root> = []
+      let hasWidget = false
+      const { linksById, nodesById } = lookupsFor(definition, lookups)
+      for (const linkId of input.linkIds ?? []) {
+        const link = linksById.get(linkId)
+        if (!link) continue
+        const target = nodesById.get(String(link.target_id))
+        const targetInput = target?.inputs?.[link.target_slot]
+        if (!target || !targetInput) continue
+        const nestedDefinition = index.get(target.type)
+        if (!nestedDefinition) {
+          hasWidget ||= targetInput.widget != null
+          continue
+        }
+        for (const [nestedIndex, nestedInput] of (
+          nestedDefinition.inputs ?? []
+        ).entries()) {
+          if (nestedInput.name === targetInput.name) {
+            nested.push({
+              definition: nestedDefinition,
+              inputIndex: nestedIndex
+            })
+          }
+        }
+      }
+      return { hasWidget, nested }
     }
-    return (nested.inputs ?? []).some(
-      (nestedInput, nestedIndex) =>
-        nestedInput.name === targetInput.name &&
-        isPromoted(nested, nestedIndex, traversal, depth + 1)
-    )
-  })
-  traversal.active.delete(key)
-  // An answer that was cut short by the depth cap depends on where in the
-  // chain this input was reached, so only depth-independent answers are kept.
-  if (traversal.capHits === capHitsBefore) traversal.resolved.set(key, promoted)
-  return promoted
+  )
 }
 
 /**

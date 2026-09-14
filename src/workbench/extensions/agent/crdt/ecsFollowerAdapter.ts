@@ -94,8 +94,9 @@ function readSemanticNode(
   const type = source.get('type')
   if (typeof type !== 'string' || type.length === 0) return null
 
-  const payload: Record<string, unknown> = {}
+  const payload: SemanticNodePayload = { id, type }
   source.forEach((value, key) => {
+    if (key === 'id' || key === 'type') return
     if (key === 'widgets' && value instanceof Y.Map) {
       payload.widgets_values = value.toJSON()
     } else if (key === OPAQUE_WIDGETS_KEY) {
@@ -104,8 +105,6 @@ function readSemanticNode(
       payload[key] = plain(value)
     }
   })
-  payload.id = id
-  payload.type = type
 
   const definition = definitions().get(type)
   if (definition) {
@@ -147,7 +146,7 @@ function readSemanticNode(
       docInputs instanceof Y.Array ? docInputs.toJSON() : []
     )
   }
-  return payload as SemanticNodePayload
+  return payload
 }
 
 /**
@@ -465,31 +464,18 @@ export class EcsFollowerAdapter {
       // instead; `readSemanticNode` has already keyed them from the
       // definition. A host whose stored values are not a record (malformed
       // opaque payload) keeps its widgets untouched rather than wiped.
-      // The live node must already carry the host type: a plain node whose doc
-      // entry is replaced by a host-typed map (or a host retyped to another
-      // definition) has no promoted widgets to preserve and must be rebuilt.
-      // On the reconcile path that rebuild has to be explicit: `reconcileNode`
-      // only updates the existing node's fields and never swaps its class, so
-      // a live node whose doc type changed is deleted and re-added instead.
-      const isLiveHost = (payload: SemanticNodePayload) =>
-        definitions().has(payload.type) &&
-        batch.getNodeType(toNodeId(payload.id)) === payload.type
+      const isHost = (payload: SemanticNodePayload) =>
+        definitions().has(payload.type)
       const upsertNode = (
         payload: SemanticNodePayload,
         mode: 'add' | 'reconcile'
       ) => {
-        if (!isLiveHost(payload)) {
-          if (mode === 'add') {
-            batch.addNode(payload)
-            return
-          }
-          const liveType = batch.getNodeType(toNodeId(payload.id))
-          if (liveType !== undefined && liveType !== payload.type) {
-            batch.deleteNode(toNodeId(payload.id))
-            batch.addNode(payload)
-          } else {
-            batch.reconcileNode(payload)
-          }
+        if (mode === 'add') {
+          batch.addNode(payload)
+          return
+        }
+        if (!isHost(payload)) {
+          batch.reconcileNode(payload)
           return
         }
         batch.reconcileNodeFields(payload)
@@ -529,8 +515,6 @@ export class EcsFollowerAdapter {
       }
 
       batch.removeLinks(removedLinkIds)
-      // A replaced (`update`) node is deleted and re-added, except a live host,
-      // whose promoted values are rewritten in place by `upsertNode` below.
       const payloads = new Map(
         [...nodeActions]
           .filter(([, action]) => action !== 'delete')
@@ -548,11 +532,12 @@ export class EcsFollowerAdapter {
           continue
         }
         const payload = payloads.get(id)
-        if (action === 'update' && !(payload && isLiveHost(payload)))
+        if (action === 'update' && !(payload && isHost(payload)))
           batch.deleteNode(toNodeId(id))
       }
-      for (const payload of payloads.values()) {
-        if (payload) upsertNode(payload, 'add')
+      for (const [id, payload] of payloads) {
+        if (!payload) continue
+        upsertNode(payload, nodeActions.get(id) === 'add' ? 'add' : 'reconcile')
       }
       // A node whose widget storage was replaced wholesale, either the named
       // `widgets` map or the positional `__widgets_opaque` array (cmp writes
@@ -664,8 +649,6 @@ export class EcsFollowerAdapter {
       if (event.keysChanged.has('widgets')) session.replacedWidgetMaps.add(id)
       if (event.keysChanged.has(OPAQUE_WIDGETS_KEY))
         session.replacedOpaqueWidgets.add(id)
-      // Scalar fields edited by key on the node map (rather than by replacing
-      // the whole node) would otherwise never reach the live node.
       for (const key of event.keysChanged) {
         if (RESYNCED_NODE_FIELDS.has(key)) {
           session.changedNodeFields.add(id)
