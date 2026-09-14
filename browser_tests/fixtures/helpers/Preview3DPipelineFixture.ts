@@ -155,7 +155,6 @@ export class Preview3DPipelineContext {
   }
 
   async alignPreview3dWorkflowUiSettings(): Promise<void> {
-    await this.comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', true)
     await this.comfyPage.settings.setSetting(
       'Comfy.Workflow.WorkflowTabsPosition',
       'Sidebar'
@@ -261,14 +260,12 @@ export const preview3dPipelineTest = comfyPageFixture.extend<{
   preview3dPipeline: Preview3DPipelineContext
 }>({
   preview3dPipeline: async ({ comfyPage }, use) => {
-    await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', true)
     await comfyPage.settings.setSetting(
       'Comfy.Workflow.WorkflowTabsPosition',
       'Sidebar'
     )
 
     await comfyPage.workflow.loadWorkflow('3d/preview3d_pipeline')
-    await comfyPage.vueNodes.waitForNodes()
 
     const pipeline = new Preview3DPipelineContext(comfyPage)
     await use(pipeline)

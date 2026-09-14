@@ -1,5 +1,10 @@
 import { useAuthStore } from '@/stores/authStore'
 import axios from 'axios'
+import {
+  onAuthStateChanged,
+  onIdTokenChanged,
+  setPersistence
+} from 'firebase/auth'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { IWidget } from '@/lib/litegraph/src/litegraph'
@@ -23,20 +28,11 @@ const mockCloudAuth = vi.hoisted(() => ({
   authHeader: null as { Authorization: `Bearer ${string}` } | null
 }))
 
-vi.mock(import('axios'), async (importOriginal) => {
-  const actual = await importOriginal()
-  return {
-    ...actual,
-    default: Object.assign(actual.default, { get: vi.fn() })
-  }
-})
-
-vi.mock(import('firebase/auth'), async (importOriginal) => ({
-  ...(await importOriginal()),
-  setPersistence: vi.fn().mockResolvedValue(undefined),
-  onAuthStateChanged: vi.fn(() => vi.fn()),
-  onIdTokenChanged: vi.fn(() => vi.fn())
-}))
+vi.mock(import('axios'), { spy: true })
+vi.mock(import('firebase/auth'), { spy: true })
+vi.mocked(setPersistence).mockResolvedValue(undefined)
+vi.mocked(onAuthStateChanged).mockReturnValue(vi.fn())
+vi.mocked(onIdTokenChanged).mockReturnValue(vi.fn())
 
 vi.mock(import('@/platform/distribution/types'), () => ({
   get isCloud() {
@@ -96,6 +92,9 @@ async function getResolvedValue(hook: ReturnType<typeof useRemoteWidget>) {
 }
 
 beforeEach(() => {
+  vi.mocked(setPersistence).mockResolvedValue(undefined)
+  vi.mocked(onAuthStateChanged).mockReturnValue(vi.fn())
+  vi.mocked(onIdTokenChanged).mockReturnValue(vi.fn())
   vi.mocked(useAuthStore().getAuthHeader).mockImplementation(
     async () => mockCloudAuth.authHeader
   )

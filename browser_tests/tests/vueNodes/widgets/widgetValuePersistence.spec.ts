@@ -40,7 +40,6 @@ test.describe(
       await expect
         .poll(() => comfyPage.workflow.getActiveWorkflowPath())
         .toContain('empty-widget-value')
-      await comfyPage.vueNodes.waitForNodes()
 
       await expect(
         comfyPage.vueNodes.getWidgetByName(
@@ -167,6 +166,38 @@ test.describe(
           .toBe(selectedValue)
         await expect(preview).toHaveJSProperty('naturalWidth', 64)
       })
+    })
+
+    test('an emptied promoted text widget stays empty across a round-trip', async ({
+      comfyPage
+    }) => {
+      await comfyPage.workflow.loadWorkflow(
+        'subgraphs/subgraph-with-promoted-text-widget'
+      )
+
+      const promotedTextbox = () =>
+        comfyPage.vueNodes
+          .getNodeLocator('11')
+          .getByRole('textbox', { name: 'text' })
+
+      async function roundTrip() {
+        const serialized = await comfyPage.workflow.getExportedWorkflow()
+        await comfyPage.workflow.loadGraphData(serialized)
+        await comfyPage.vueNodes.waitForNodes()
+      }
+
+      const baseline = 'promoted value that must be cleared'
+      await promotedTextbox().fill(baseline)
+      await expect(promotedTextbox()).toHaveValue(baseline)
+
+      await roundTrip()
+      await expect(promotedTextbox()).toHaveValue(baseline)
+
+      await promotedTextbox().fill('')
+      await expect(promotedTextbox()).toHaveValue('')
+
+      await roundTrip()
+      await expect(promotedTextbox()).toHaveValue('')
     })
   }
 )
