@@ -31,25 +31,10 @@ const MEDIA_SRC_REGEX =
 const NON_REBASEABLE_HREF = /^(?:[/#?]|[a-z][a-z0-9+.-]*:)/i
 const COMFY_ORG_HOST = /(?:^|\.)comfy\.org$/
 
-// marked hands URLs over exactly as the author wrote them, entities included,
-// so escaping alone turns `?a=1&amp;b=2` into a link whose query key is
-// `amp;b`. Strip one layer first. One pass, never recursive: `&amp;amp;`
-// becomes `&amp;` and stays literal text rather than collapsing to `&`.
-const ENTITY = /&(amp|lt|gt|quot|#0*39|#x0*27);/gi
-const ENTITY_CHAR: Record<string, string> = {
-  amp: '&',
-  lt: '<',
-  gt: '>',
-  quot: '"'
-}
-
 function escapeUrlOnce(url: string): string {
-  return escape(
-    url.replace(ENTITY, (_, name: string) => {
-      const key = name.toLowerCase()
-      return ENTITY_CHAR[key] ?? "'"
-    })
-  )
+  const decoder = document.createElement('textarea')
+  decoder.innerHTML = url
+  return escape(decoder.value)
 }
 
 export function resolveMarkdownUrl(href: string, baseUrl: string): string {

@@ -260,7 +260,7 @@ Visit our [homepage](https://example.com) to learn more.
   })
 
   describe('URL entity handling', () => {
-    const attrOf = (html: string, sel: string, attr: string) => {
+    function attrOf(html: string, sel: string, attr: string) {
       const host = document.createElement('div')
       host.innerHTML = html
       return host.querySelector(sel)?.getAttribute(attr) ?? null
@@ -328,13 +328,17 @@ Visit our [homepage](https://example.com) to learn more.
       expect(attrOf(html, 'a', 'href')).toBe('https://e.com/?a=1&amp;b=2')
     })
 
+    it('removes a scheme made executable by entity decoding', () => {
+      const html = renderMarkdownToHtml('[x](javascript&colon;alert(1))')
+
+      expect(attrOf(html, 'a', 'href')).toBeNull()
+    })
+
     it('still traps a quote that would break out of the attribute', () => {
       const html = renderMarkdownToHtml(
         '[x](https://e.com/?a="onload=alert(1))'
       )
-      const host = document.createElement('div')
-      host.innerHTML = html
-      const anchor = host.querySelector('a')!
+      const anchor = parseOne(html, 'a')
 
       // The payload stays inside the href value instead of becoming an
       // attribute of its own — that is what decoding one layer must not undo.
