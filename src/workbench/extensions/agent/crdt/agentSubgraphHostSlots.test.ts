@@ -115,6 +115,20 @@ describe('agentSubgraphHostSlots', () => {
     expect(index.get('sg-1')).toBe(first)
   })
 
+  it('prefers a top-level definition over an earlier nested copy', () => {
+    const nested = { ...definition(), name: 'nested copy' }
+    const outer = {
+      ...definition(),
+      id: 'sg-outer',
+      definitions: { subgraphs: [nested] }
+    }
+    const topLevel = { ...definition(), name: 'top-level authority' }
+
+    const index = indexSubgraphDefinitions([outer, topLevel])
+
+    expect(index.get('sg-1')).toBe(topLevel)
+  })
+
   it('treats duplicate declared input names as ambiguous', () => {
     const base = definition()
     const def: ExportedSubgraph = {

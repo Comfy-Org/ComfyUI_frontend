@@ -492,6 +492,96 @@ describe('graphMutations', () => {
     ])
   })
 
+  it('merges input and output updates for self-links within a batch', () => {
+    const graph = mutations()
+    expect(
+      graph.batch(context, (batch) => {
+        batch.addNode({
+          ...node(1),
+          inputs: [
+            { name: 'in-0', type: 'IMAGE', link: null },
+            { name: 'in-1', type: 'IMAGE', link: null }
+          ],
+          outputs: [{ name: 'out-0', type: 'IMAGE', links: [] }]
+        })
+        batch.connect({
+          id: 5,
+          originNodeId: 1,
+          originSlot: 0,
+          targetNodeId: 1,
+          targetSlot: 0,
+          type: 'IMAGE',
+          originOutputs: [
+            { name: 'out-0', type: 'IMAGE', links: [toLinkId(5)] },
+            { name: 'out-1', type: 'IMAGE', links: [] }
+          ],
+          targetInputs: [
+            { name: 'in-0', type: 'IMAGE', link: toLinkId(5) },
+            { name: 'in-1', type: 'IMAGE', link: null }
+          ]
+        })
+        batch.connect({
+          id: 9,
+          originNodeId: 1,
+          originSlot: 1,
+          targetNodeId: 1,
+          targetSlot: 1,
+          type: 'IMAGE',
+          targetInputs: [
+            { name: 'in-0', type: 'IMAGE', link: toLinkId(5) },
+            { name: 'in-1', type: 'IMAGE', link: toLinkId(9) }
+          ]
+        })
+      })
+    ).toBe(true)
+
+    const [state] = useNodeDataStore().getGraphNodesFor('root', 'root')
+    expect(state.inputs.map(({ link }) => link)).toEqual([
+      toLinkId(5),
+      toLinkId(9)
+    ])
+    expect(state.outputs.map(({ links }) => links)).toEqual([[toLinkId(5)], []])
+    expect(
+      useLinkStore().getTopology(scope.rootGraphId, toLinkId(9))
+    ).toBeDefined()
+  })
+
+  it('does not restore a removed link from an omitted reconciled slot field', () => {
+    const graph = mutations()
+    graph.batch(context, (batch) => {
+      batch.addNode(node(1))
+      batch.addNode(node(2))
+      batch.connect({
+        id: 5,
+        originNodeId: 1,
+        originSlot: 0,
+        targetNodeId: 2,
+        targetSlot: 0,
+        type: 'IMAGE',
+        originOutputs: [{ name: 'out', type: 'IMAGE', links: [toLinkId(5)] }],
+        targetInputs: [{ name: 'in', type: 'IMAGE', link: toLinkId(5) }]
+      })
+    })
+
+    expect(
+      graph.batch({ ...context, opId: 'reconcile' }, (batch) => {
+        batch.removeMissing([toNodeId(1), toNodeId(2)], [])
+        batch.reconcileNode({
+          ...node(2),
+          inputs: [{ name: 'in', type: 'IMAGE' }]
+        })
+      })
+    ).toBe(true)
+
+    const target = useNodeDataStore()
+      .getGraphNodesFor('root', 'root')
+      .find(({ id }) => id === toNodeId(2))
+    expect(target?.inputs[0].link).toBeNull()
+    expect(
+      useLinkStore().getTopology(scope.rootGraphId, toLinkId(5))
+    ).toBeUndefined()
+  })
+
   it('resolves omitted input links against the existing node on reconcile and to null on add', () => {
     const graph = mutations()
     graph.batch(context, (batch) => {
