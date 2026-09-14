@@ -116,6 +116,32 @@ describe('fallow findings renderer', () => {
     expect(rows[1]).toContain('.fallowrc.jsonc')
   })
 
+  it('escapes values that would otherwise break the table', () => {
+    // Paths and symbol names come from the audited tree, so they can carry
+    // characters that end a cell or a code span.
+    const md = renderReport({
+      verdict: 'fail',
+      complexity: {
+        findings: [
+          {
+            path: 'src/a|b.ts',
+            name: 'we`ird',
+            line: 1,
+            cyclomatic: 2,
+            crap: 3,
+            severity: 'moderate'
+          }
+        ]
+      }
+    })
+
+    expect(md).toContain('src/a\\|b.ts')
+    expect(md).toContain('we\\`ird')
+    // One row means one unescaped pipe count: 5 delimiters, no stray cell.
+    const row = md.split('\n').find((l) => l.includes('Complexity'))!
+    expect(row.match(/(?<!\\)\|/g)).toHaveLength(5)
+  })
+
   it('tolerates a report with no sections at all', () => {
     expect(renderCloneGroups({})).toEqual([])
     expect(renderComplexity({})).toEqual([])

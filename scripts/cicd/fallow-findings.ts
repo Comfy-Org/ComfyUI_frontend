@@ -37,13 +37,28 @@ export interface FallowReport {
   }
 }
 
+/**
+ * Values come from the audited tree, so a path or symbol can carry a `|`, a
+ * backtick or a newline — each of which would end its table cell or code span
+ * and corrupt every row after it.
+ */
+function cell(value: string | number): string {
+  return String(value)
+    .replace(/\\/g, '\\\\')
+    .replace(/\|/g, '\\|')
+    .replace(/`/g, '\\`')
+    .replace(/\r?\n/g, ' ')
+}
+
 export function renderCloneGroups(report: FallowReport): string[] {
   const groups = report.duplication?.clone_groups ?? []
   return groups.flatMap((group) => {
     const instances = group.instances ?? []
     if (instances.length < 2) return []
     const sites = instances
-      .map((i) => `\`${i.file}:${i.start_line}-${i.end_line}\``)
+      .map(
+        (i) => `\`${cell(i.file)}:${cell(i.start_line)}-${cell(i.end_line)}\``
+      )
       .join('<br>')
     return [
       `| Duplication | ${instances.length}-way clone | ${sites} | Extract the shared fragment into one function the sites call. |`
@@ -55,7 +70,7 @@ export function renderComplexity(report: FallowReport): string[] {
   const findings = report.complexity?.findings ?? []
   return findings.map(
     (f) =>
-      `| Complexity | \`${f.name}()\` — cyclomatic ${f.cyclomatic}, CRAP ${f.crap} | \`${f.path}:${f.line}\` | Extract a branch, or raise branch coverage — CRAP is \`CC² × (1−cov)³ + CC\`, so either moves it. |`
+      `| Complexity | \`${cell(f.name)}()\` — cyclomatic ${cell(f.cyclomatic)}, CRAP ${cell(f.crap)} | \`${cell(f.path)}:${cell(f.line)}\` | Extract a branch, or raise branch coverage — CRAP is \`CC² × (1−cov)³ + CC\`, so either moves it. |`
   )
 }
 
@@ -65,14 +80,14 @@ export function renderDeadCode(report: FallowReport): string[] {
   for (const file of dc?.unused_files ?? []) {
     if (file.path) {
       rows.push(
-        `| Dead code | unused file | \`${file.path}\` | Delete it, or declare it an entry point in \`.fallowrc.jsonc\`. |`
+        `| Dead code | unused file | \`${cell(file.path)}\` | Delete it, or declare it an entry point in \`.fallowrc.jsonc\`. |`
       )
     }
   }
   for (const exp of dc?.unused_exports ?? []) {
     if (exp.file && exp.name) {
       rows.push(
-        `| Dead code | unused export \`${exp.name}\` | \`${exp.file}${exp.line ? `:${exp.line}` : ''}\` | Remove the export, or declare it in \`.fallowrc.jsonc\` if it is public API. |`
+        `| Dead code | unused export \`${cell(exp.name)}\` | \`${cell(exp.file)}${exp.line ? `:${cell(exp.line)}` : ''}\` | Remove the export, or declare it in \`.fallowrc.jsonc\` if it is public API. |`
       )
     }
   }
