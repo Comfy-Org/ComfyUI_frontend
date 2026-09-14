@@ -35,6 +35,10 @@ test.describe(
           const second = window.LiteGraph!.createNode('EmptyImage')!
           const list = window.LiteGraph!.createNode('ImpactMakeImageList')!
           const preview = window.LiteGraph!.createNode('PreviewImage')!
+          first.widgets!.find((widget) => widget.name === 'color')!.value =
+            0xff0000
+          second.widgets!.find((widget) => widget.name === 'color')!.value =
+            0x0000ff
           graph.add(first)
           graph.add(second)
           graph.add(list)
