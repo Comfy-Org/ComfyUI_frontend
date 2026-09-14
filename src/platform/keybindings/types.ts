@@ -8,10 +8,23 @@ const zKeyCombo = z.object({
   meta: z.boolean().optional()
 })
 
+const zOptionalString = z
+  .string()
+  .nullish()
+  .transform((value) => value ?? undefined)
+
 export const zKeybinding = z.object({
   commandId: z.string(),
   combo: zKeyCombo,
-  targetElementId: z.string().optional()
+  targetElementId: zOptionalString,
+  /** Fires only while the dialog opened with this key is the active one. */
+  dialogKey: zOptionalString,
+  /**
+   * Context keys that must hold, as `key && !otherKey`. Extensions register
+   * keys through `contextKeys` and set them with
+   * `app.extensionManager.contextKey.set`.
+   */
+  when: zOptionalString
 })
 
 export const zKeybindingPreset = z.object({
