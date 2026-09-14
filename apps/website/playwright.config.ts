@@ -30,9 +30,11 @@ export default defineConfig({
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
   globalTimeout: process.env.CI ? 20 * 60_000 : 0,
-  reporter: process.env.CI
-    ? [['list'], ['html'], ['json', { outputFile: 'results.json' }]]
-    : 'html',
+  reporter: process.env.PLAYWRIGHT_BLOB_OUTPUT_DIR
+    ? 'blob'
+    : process.env.CI
+      ? [['list'], ['html'], ['json', { outputFile: 'results.json' }]]
+      : 'html',
   expect: {
     toHaveScreenshot: { maxDiffPixels: 100 }
   },
