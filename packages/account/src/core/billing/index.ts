@@ -133,3 +133,16 @@ export {
   SUBSCRIBE_ROUTE,
   createBillingCommands
 } from './subscriptionCommands.js'
+export type {
+  HostPaymentStep,
+  PaymentProjection,
+  PaymentReasonKey,
+  PaymentStep
+} from './paymentProjection.js'
+export { projectPaymentStep } from './paymentProjection.js'
+export type { PaymentCopyKey, PaymentCopyKeys } from './paymentCopy.js'
+export {
+  DEFAULT_PAYMENT_COPY,
+  createPaymentCopy,
+  paymentCopyKeys
+} from './paymentCopy.js'
