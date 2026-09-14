@@ -3,7 +3,12 @@ import { expect, mergeTests } from '@playwright/test'
 import { comfyPageFixture } from '@e2e/fixtures/ComfyPage'
 import { makeTemplate } from '@e2e/fixtures/data/templateFixtures'
 import { withTemplates } from '@e2e/fixtures/helpers/TemplateHelper'
+import { TestIds } from '@e2e/fixtures/selectors'
 import { templateApiFixture } from '@e2e/fixtures/templateApiFixture'
+import {
+  hasElementFlashed,
+  trackElementFlash
+} from '@e2e/fixtures/utils/flashDetector'
 
 const test = mergeTests(comfyPageFixture, templateApiFixture)
 
@@ -18,6 +23,7 @@ test.describe('Web template routing', { tag: '@workflow' }, () => {
       ])
     )
     await templateApi.mock()
+    await trackElementFlash(page, TestIds.templates.detail)
     await page.route('**/templates/web-direct.json', (route) =>
       route.fulfill({
         contentType: 'application/json',
@@ -35,13 +41,12 @@ test.describe('Web template routing', { tag: '@workflow' }, () => {
     await comfyPage.templates.selectTemplate('web-direct')
 
     await expect(comfyPage.templates.content).toBeHidden()
-    await expect
-      .poll(() => comfyPage.nodeOps.getGraphNodesCount())
-      .toBeGreaterThan(0)
-    await expect(
-      comfyPage.page.getByRole('article', {
-        name: 'Web Direct Template'
-      })
-    ).toHaveCount(0)
+    await comfyPage.nodeOps.waitForGraphNodes(1)
+    expect(await comfyPage.nodeOps.getNodeRefsByType('KSampler')).toHaveLength(
+      1
+    )
+    expect(
+      await hasElementFlashed(comfyPage.page, TestIds.templates.detail)
+    ).toBe(false)
   })
 })

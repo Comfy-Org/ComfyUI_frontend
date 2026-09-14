@@ -408,9 +408,7 @@
         :cloud-url="activeDetailCloudUrl"
         :is-partner-node="activeDetail.template.openSource === false"
         :open-pending="openPending"
-        model-setup-enabled
         :setup-pending="activeDetail.modelSetup.pending"
-        :requirements-met="activeDetailModelRequirementsMet"
         :model-downloads-available="activeDetailModelDownloadsAvailable"
         @open-template="onOpenTemplate"
         @download-models-and-open="onDownloadModelsAndOpen"
@@ -1082,17 +1080,6 @@ const activeDetailGroups = computed<readonly TemplateDetailGroup[]>(() => {
     : []
 })
 
-function isModelRowComplete(
-  row: TemplateModelSetupRow,
-  rowDownloads: TemplateModelRowDownloads
-): boolean {
-  return (
-    row.status === 'installed' ||
-    (row.status === 'downloadable' &&
-      rowDownloads.stateFor(row.model).status === 'done')
-  )
-}
-
 function isModelDownloadCandidate(
   row: TemplateModelSetupRow,
   rowDownloads: TemplateModelRowDownloads
@@ -1102,16 +1089,6 @@ function isModelDownloadCandidate(
   const state = rowDownloads.stateFor(row.model)
   return state.status === 'idle' || state.status === 'failed'
 }
-
-const activeDetailModelRequirementsMet = computed(() => {
-  const setup = activeDetail.value?.modelSetup
-  return Boolean(
-    setup &&
-    setup.result.rows.every((row) =>
-      isModelRowComplete(row, setup.rowDownloads)
-    )
-  )
-})
 
 const activeDetailModelDownloadsAvailable = computed(() => {
   const setup = activeDetail.value?.modelSetup
