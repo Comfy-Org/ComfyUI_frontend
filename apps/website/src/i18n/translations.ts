@@ -10051,11 +10051,6 @@ Enterprise`
     en: 'Sample outputs',
     'zh-CN': '输出样例'
   },
-  'workshop.examples.samplesSubtitle': {
-    en: 'See a sample without touching your inputs. These samples cannot be loaded into the form yet.',
-    'zh-CN':
-      '查看样例不会更改你的输入。这些样例尚无已验证的 Comfy Router 参数预设。'
-  },
   'workshop.examples.view': {
     en: 'View sample',
     'zh-CN': '查看样例'
