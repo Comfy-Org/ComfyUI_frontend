@@ -15,9 +15,7 @@ describe('WorkshopSearchField', () => {
         setup: () => () =>
           h(WorkshopSearchField, {
             models: [],
-            modelValue: '',
-            providers: [],
-            capabilities: []
+            modelValue: ''
           })
       })
     )
@@ -40,9 +38,7 @@ describe('WorkshopSearchField', () => {
         setup: () => () =>
           h(WorkshopSearchField, {
             models: [],
-            modelValue: '',
-            providers: [],
-            capabilities: []
+            modelValue: ''
           })
       })
     )
@@ -63,8 +59,6 @@ describe('WorkshopSearchField', () => {
         h(WorkshopSearchField, {
           models: [],
           modelValue: '',
-          providers: [],
-          capabilities: [],
           compact: true
         })
     })

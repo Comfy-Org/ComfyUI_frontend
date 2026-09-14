@@ -46,21 +46,18 @@ describe('HubBrowse', () => {
     cards.forEach((card) => expect(card.textContent).toMatch(/Kling/i))
   })
 
-  it('narrows the hub from the shared search panel', async () => {
+  it('shows model results in the shared search panel only after typing', async () => {
     const user = userEvent.setup()
     render(HubBrowse)
     expect(screen.queryByTestId('workshop-search-panel')).toBeNull()
 
     await user.click(screen.getByTestId('workshop-search'))
-    await user.click(screen.getByTestId('workshop-search-provider-more'))
-    const chip = screen.getByRole('button', { name: /^Kling\s+\d+$/ })
-    await user.click(chip)
-
-    expect(chip.getAttribute('aria-pressed')).toBe('true')
-    expect(screen.getByTestId('hub-filter-count').textContent.trim()).toBe('1')
-    const cards = screen.getAllByTestId('hub-card')
-    expect(cards.length).toBeGreaterThan(0)
-    expect(cards.length).toBeLessThan(30)
+    expect(screen.queryByTestId('workshop-search-panel')).toBeNull()
+    await user.type(screen.getByTestId('workshop-search'), 'kling')
+    expect(screen.getByTestId('workshop-search-panel')).toBeTruthy()
+    expect(
+      screen.getAllByTestId('workshop-search-model').length
+    ).toBeGreaterThan(0)
   })
 
   it('filters by a model facet from the Filter popover', async () => {

@@ -164,6 +164,15 @@ describe('filterWorkshopModels facets', () => {
       })
     ).toEqual([])
   })
+
+  it('filters by any selected use case', () => {
+    expect(
+      filterWorkshopModels(fixture, {
+        query: '',
+        useCases: ['generate-videos', 'edit-images']
+      }).map((model) => model.slug)
+    ).toEqual(['a', 'b'])
+  })
 })
 
 describe('sortWorkshopModels', () => {

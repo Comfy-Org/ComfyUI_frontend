@@ -20,16 +20,14 @@ import { groupModels } from '../../config/model-family'
 import { cn } from '@comfyorg/tailwind-utils'
 
 import type {
-  ModalityFilter,
   SortOrder,
   UseCase,
   WorkshopModel
 } from '../../config/models-catalogue'
 import {
   parseCatalogSearch,
-  MODALITIES,
-  countByFacet,
-  countByModality,
+  USE_CASES,
+  countByUseCase,
   filterWorkshopModels,
   sortOrdersFor,
   sortWorkshopModels
@@ -51,11 +49,8 @@ const { models, locale = 'en' } = defineProps<{
 }>()
 
 const query = ref('')
-// 'other' is the shelf the browsing rows show for text, 3D and audio at once.
 const useCase = ref<UseCase | 'all' | 'other'>('all')
-const modalities = ref<string[]>([])
-const capabilities = ref<string[]>([])
-const providers = ref<string[]>([])
+const selectedUseCases = ref<UseCase[]>([])
 const sort = ref<SortOrder>('popular')
 let scrollReady = false
 
@@ -63,9 +58,6 @@ onMounted(() => {
   const initial = parseCatalogSearch(location.search)
   query.value = initial.query ?? ''
   useCase.value = initial.useCase ?? 'all'
-  capabilities.value = [...(initial.capabilities ?? [])]
-  providers.value = [...(initial.providers ?? [])]
-  modalities.value = [...(initial.modalities ?? [])]
   void nextTick(() => {
     scrollReady = true
   })
@@ -80,44 +72,14 @@ const sortLabelKey: Record<SortOrder, TranslationKey> = {
   priceDesc: 'workshop.sort.priceDesc'
 }
 
-// A facet answers "what else is in here", so it counts what the category
-// holds rather than what the whole catalogue holds.
-const withinSection = computed(() =>
-  filterWorkshopModels(models, { useCase: useCase.value })
-)
-
-const capabilityOptions = computed<FacetMenuOption[]>(() =>
-  countByFacet(withinSection.value, 'capabilities').map((option) => ({
-    ...option,
-    label: option.value
-  }))
-)
-const providerOptions = computed<FacetMenuOption[]>(() =>
-  countByFacet(withinSection.value, 'provider').map((option) => ({
-    ...option,
-    label: option.value
-  }))
-)
-// What a model puts out stays reachable, one level below the tabs.
-const modalityOptions = computed<FacetMenuOption[]>(() => {
-  const counts = countByModality(withinSection.value)
-  return MODALITIES.filter((value) => counts[value] > 0).map((value) => ({
+const useCaseOptions = computed<FacetMenuOption[]>(() => {
+  const counts = countByUseCase(models)
+  return USE_CASES.filter((value) => counts[value] > 0).map((value) => ({
     value,
-    label: t(modalityLabelKey[value], locale),
+    label: t(useCaseLabelKey[value], locale),
     count: counts[value]
   }))
 })
-const modalityLabelKey: Record<
-  Exclude<ModalityFilter, 'all'>,
-  TranslationKey
-> = {
-  image: 'workshop.filter.image',
-  video: 'workshop.filter.video',
-  audio: 'workshop.filter.audio',
-  '3d': 'workshop.filter.3d',
-  text: 'workshop.filter.text',
-  other: 'workshop.filter.other'
-}
 
 const visible = computed(() =>
   groupModels(
@@ -125,9 +87,7 @@ const visible = computed(() =>
       filterWorkshopModels(models, {
         query: query.value,
         useCase: useCase.value,
-        providers: providers.value,
-        capabilities: capabilities.value,
-        modalities: modalities.value
+        useCases: selectedUseCases.value
       }),
       sort.value
     )
@@ -137,10 +97,7 @@ const isFiltered = computed(
   () =>
     query.value !== '' ||
     useCase.value !== 'all' ||
-    capabilities.value.length +
-      providers.value.length +
-      modalities.value.length >
-      0
+    selectedUseCases.value.length > 0
 )
 
 // Willie's browseable listing: rows per use case until the visitor narrows
@@ -207,9 +164,7 @@ function leaveSection() {
 function resetFilters() {
   query.value = ''
   useCase.value = 'all'
-  modalities.value = []
-  capabilities.value = []
-  providers.value = []
+  selectedUseCases.value = []
 }
 
 function clearFilters() {
@@ -277,8 +232,6 @@ const menuItemClass =
 
         <WorkshopSearchField
           v-model="query"
-          v-model:providers="providers"
-          v-model:capabilities="capabilities"
           :models
           :locale
           compact
@@ -292,12 +245,8 @@ const menuItemClass =
 
         <div class="flex items-center gap-2" data-testid="workshop-filters">
           <WorkshopFilterMenu
-            v-model:capabilities="capabilities"
-            v-model:providers="providers"
-            v-model:modalities="modalities"
-            :capability-options="capabilityOptions"
-            :provider-options="providerOptions"
-            :modality-options="modalityOptions"
+            v-model:use-cases="selectedUseCases"
+            :use-case-options="useCaseOptions"
             :result-count="visible.length"
             :locale
           />

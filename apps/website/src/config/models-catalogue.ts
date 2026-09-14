@@ -302,6 +302,7 @@ export function modalityOf(
 export interface WorkshopFilter {
   readonly query?: string
   readonly useCase?: UseCase | 'all' | 'other'
+  readonly useCases?: readonly UseCase[]
   readonly modalities?: readonly string[]
   readonly providers?: readonly string[]
   readonly capabilities?: readonly string[]
@@ -363,6 +364,7 @@ export function filterWorkshopModels(
   {
     query = '',
     useCase = 'all',
+    useCases = [],
     modalities = [],
     providers = [],
     capabilities = []
@@ -372,6 +374,8 @@ export function filterWorkshopModels(
   return list.filter(
     (model) =>
       matchesUseCase(useCase, model) &&
+      (useCases.length === 0 ||
+        useCases.some((value) => useCasesFor(model).includes(value))) &&
       (modalities.length === 0 ||
         (model.modalities ?? [modalityOf(model)]).some((modality) =>
           modalities.includes(modality)

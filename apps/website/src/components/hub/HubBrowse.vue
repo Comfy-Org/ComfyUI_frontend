@@ -5,7 +5,7 @@ import { cn } from '@comfyorg/tailwind-utils'
 
 import type { FilterBadgeType } from '../../composables/useHubStore'
 import { useHubStore } from '../../composables/useHubStore'
-import type { UseCase, WorkshopModel } from '../../config/models-catalogue'
+import type { UseCase } from '../../config/models-catalogue'
 import {
   USE_CASES,
   sortWorkshopModels,
@@ -15,7 +15,10 @@ import { workshopModels } from '../../config/workshop-browse-content'
 import { groupModels } from '../../config/model-family'
 import hubTemplates from '../../data/hubTemplates.json'
 import { hubWorkflowPath } from '../../lib/hub/workflow-detail'
-import { partnerModelFor } from '../../lib/hub/template-use-case'
+import {
+  partnerModelFor,
+  useCaseForTemplate
+} from '../../lib/hub/template-use-case'
 import { tagDisplayName } from '../../lib/hub/tag-aliases'
 import { withFacetFields } from '../../lib/hub/facet-fields'
 import type { HubTemplate } from '../../lib/hub/types'
@@ -66,52 +69,12 @@ const useCaseLabelKey: Record<UseCase | 'all', TranslationKey> = {
   text: 'workshop.useCase.text'
 }
 
-// Arriving from the home row means "show me this provider": the models it makes
-// and the workflows that run them. The search panel narrows the same two lists,
-// by provider and by what a model can do.
-const providers = ref<string[]>([])
-const capabilities = ref<string[]>([])
-
-const narrowed = computed(
-  () => providers.value.length + capabilities.value.length > 0
-)
-
-function clearSearchFilters() {
-  providers.value = []
-  capabilities.value = []
-}
-
-const matchesModel = (model: WorkshopModel) =>
-  (providers.value.length === 0 ||
-    (model.provider !== undefined &&
-      providers.value.includes(model.provider))) &&
-  (capabilities.value.length === 0 ||
-    capabilities.value.some((capability) =>
-      model.capabilities.includes(capability)
-    ))
-
-// A workflow answers to the same narrowing through the models it runs.
-const matchingModelNames = computed(
-  () =>
-    new Set(
-      workshopModels
-        .filter(matchesModel)
-        .map((model) => model.name.toLowerCase())
-    )
-)
-
-const runsMatchingModel = (tmpl: HubTemplate) =>
-  !narrowed.value ||
-  tmpl.models.some((name) => matchingModelNames.value.has(name.toLowerCase()))
-
 const inUseCase = (value: UseCase | 'all') => ({
   models: workshopModels.filter(
-    (model) =>
-      (value === 'all' || useCaseFor(model) === value) && matchesModel(model)
+    (model) => value === 'all' || useCaseFor(model) === value
   ),
   templates: templates.filter(
-    (tmpl) =>
-      (value === 'all' || tmpl.useCase === value) && runsMatchingModel(tmpl)
+    (tmpl) => value === 'all' || useCaseForTemplate(tmpl, workshopModels) === value
   )
 })
 
@@ -136,8 +99,6 @@ onMounted(() => {
   if (tab) store.setTab(tab)
   const wanted = USE_CASES.find((value) => value === params.get('useCase'))
   if (wanted) useCase.value = wanted
-  const asked = params.get('provider')
-  if (asked) providers.value = [asked]
   for (const type of ['tag', 'model'] as const) {
     const value = params.get(type)
     if (value) store.toggleBadge({ type, value })
@@ -310,15 +271,11 @@ const filteredTemplates = computed(() => {
           :sort-options="sortOptions"
           :labels="gridLabels"
           :href-for="hrefFor"
-          :extra-filters="providers.length + capabilities.length"
           :model-count="modelFamilies.length"
-          @clear-extra="clearSearchFilters"
         >
           <template #search>
             <WorkshopSearchField
               v-model="store.searchQuery.value"
-              v-model:providers="providers"
-              v-model:capabilities="capabilities"
               :models="workshopModels"
               :locale
               compact
