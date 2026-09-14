@@ -2,6 +2,8 @@ import type { Op } from '@comfyorg/comfy-multi-player'
 
 import { reportError } from '@/platform/telemetry/reportError'
 
+import { wireLog } from './crdtLog'
+
 export const DOC_PROTOCOL_VERSION = 1
 /** Keep this encoded-field cap aligned with cloud's `MaxDocFrameB64Len`. */
 const MAX_DOC_UPDATE_B64_LENGTH = 8 << 20
@@ -450,6 +452,14 @@ export class DocFrameClient extends EventTarget {
   }
 
   private send(type: string, data: Record<string, unknown>): boolean {
-    return this.transport.send(JSON.stringify({ type, data }))
+    const delivered = this.transport.send(JSON.stringify({ type, data }))
+    if (!delivered) {
+      wireLog.warn('frame_send_failed', 'outbound doc frame not sent', {
+        frameType: type,
+        workflowId: data.workflow_id,
+        reason: 'transport_unavailable'
+      })
+    }
+    return delivered
   }
 }

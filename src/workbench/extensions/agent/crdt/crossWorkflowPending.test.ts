@@ -232,7 +232,8 @@ describe('R-73 cross-workflow pending operation characterization', () => {
       {
         state: 'undeliverable',
         ops: [expect.objectContaining({ op_id: operationAId })]
-      }
+      },
+      { scope: 'doc', level: 'debug' }
     )
     enqueue([deleteNode('b-pending')])
     expect(clientState.sent).toHaveLength(2)
@@ -272,7 +273,8 @@ describe('R-73 cross-workflow pending operation characterization', () => {
         ok: true,
         applied: [operationAId],
         skipped: []
-      }
+      },
+      { scope: 'doc', level: 'debug' }
     )
     expect(operationBId).not.toBe(operationAId)
   })

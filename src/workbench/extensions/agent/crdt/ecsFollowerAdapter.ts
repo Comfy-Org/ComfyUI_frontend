@@ -13,6 +13,8 @@ import type {
 import type { RemoteMutationContext } from '@/types/graphMutationContext'
 import { toNodeId } from '@/types/nodeId'
 
+import { isCrdtDebugEnabled } from './crdtDebugGate'
+import { docLog } from './crdtLog'
 import type { DocUpdate } from './docFrameClient'
 import type { FollowerDoc } from './followerDoc'
 
@@ -307,6 +309,22 @@ export class EcsFollowerAdapter {
     // cleanup instead of falling through to incremental handling with
     // stale local-only graph state still present.
     if (committed) session.reconcileNextFrame = false
+    if (isCrdtDebugEnabled()) {
+      docLog.debug('doc_effects', 'document projection batch outcome', {
+        workflowId: session.workflowId,
+        seq: update.seq,
+        reconcile,
+        committed,
+        nodeActions: [...nodeActions],
+        changedWidgets: [...changedWidgets].map(([id, names]) => [
+          id,
+          [...names]
+        ]),
+        replacedWidgetMaps: [...replacedWidgetMaps],
+        changedLinkIds: [...changedLinkIds],
+        removedLinkIds
+      })
+    }
     return committed
   }
 

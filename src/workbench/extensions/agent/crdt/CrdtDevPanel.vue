@@ -162,6 +162,8 @@ const EVENT_KINDS: readonly DevEventKind[] = [
   'human_ops_settled',
   'doc_reset',
   'doc_nodes_changed',
+  'doc_effects',
+  'op_minted',
   'schema_error',
   'reconnected',
   'subscribe_retry',

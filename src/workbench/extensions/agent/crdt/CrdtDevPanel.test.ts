@@ -198,6 +198,31 @@ describe('CrdtDevPanel', () => {
     expect(log).not.toContain('ws_out')
   })
 
+  it('filters mint and projection diagnostics independently', async () => {
+    const user = userEvent.setup()
+    recordDevEvent('op_minted', { workflowId: 'mint-workflow' })
+    recordDevEvent('doc_effects', {
+      workflowId: 'effect-workflow',
+      committed: false
+    })
+    renderPanel()
+    await user.click(chip()!)
+    await user.click(screen.getByTestId('crdt-dev-panel-tab-log'))
+
+    for (const [kind, absent] of [
+      ['op_minted', 'doc_effects'],
+      ['doc_effects', 'op_minted']
+    ]) {
+      await user.selectOptions(
+        screen.getByTestId('crdt-dev-panel-filter'),
+        kind
+      )
+      const log = screen.getByTestId('crdt-dev-panel-log').textContent
+      expect(log).toContain(kind)
+      expect(log).not.toContain(absent)
+    }
+  })
+
   it('shows the sensitive-source opt-ins as off, and lets them be turned on', async () => {
     const user = userEvent.setup()
     renderPanel()

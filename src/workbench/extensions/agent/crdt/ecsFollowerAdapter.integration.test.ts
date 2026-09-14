@@ -14,6 +14,8 @@ import type { NodeId } from '@/types/nodeId'
 import { toNodeId } from '@/types/nodeId'
 import { widgetId } from '@/types/widgetId'
 
+import { setCrdtDebugEnabled } from './crdtDebugGate'
+import { clearDevEvents, devEvents } from './devPanelLog'
 import type { DocUpdate } from './docFrameClient'
 import { EcsFollowerAdapter } from './ecsFollowerAdapter'
 import { FollowerDoc } from './followerDoc'
@@ -45,6 +47,8 @@ function op(id: string, baseVersion: number, payload: object) {
 
 describe('EcsFollowerAdapter integration', () => {
   it('reconciles a full seeded snapshot with existing and server-ahead entities', () => {
+    setCrdtDebugEnabled(true)
+    clearDevEvents()
     const layouts = new Map<NodeId, TestLayout>()
     const createLayout = vi.fn(
       (_scope: typeof scope, nodeId: NodeId, layout: TestLayout) => {
@@ -144,6 +148,22 @@ describe('EcsFollowerAdapter integration', () => {
     })
     expect(deleteLayouts).not.toHaveBeenCalled()
     expect(createLayout).toHaveBeenCalledOnce()
+    expect(
+      devEvents.value.find(({ kind }) => kind === 'doc_effects')?.detail
+    ).toEqual({
+      workflowId: 'wf',
+      seq: 1,
+      reconcile: true,
+      committed: true,
+      nodeActions: [
+        ['1', 'add'],
+        ['2', 'add']
+      ],
+      changedWidgets: [],
+      replacedWidgetMaps: [],
+      changedLinkIds: ['9'],
+      removedLinkIds: []
+    })
 
     adapter.destroy()
     follower.destroy()
@@ -244,6 +264,8 @@ describe('EcsFollowerAdapter integration', () => {
   })
 
   it('retries authoritative reconciliation after a rejected first batch', () => {
+    setCrdtDebugEnabled(true)
+    clearDevEvents()
     const deleteLayouts = vi.fn()
     let scopeAvailable = false
     const mutations = createGraphMutations({
@@ -291,6 +313,14 @@ describe('EcsFollowerAdapter integration', () => {
     // incremental handling.
     scopeAvailable = true
     expect(adapter.applyFrame({ workflowId: 'wf', seq: 2, update })).toBe(true)
+    expect(
+      devEvents.value
+        .filter(({ kind }) => kind === 'doc_effects')
+        .map(({ detail }) => detail)
+    ).toEqual([
+      expect.objectContaining({ seq: 1, reconcile: true, committed: false }),
+      expect.objectContaining({ seq: 2, reconcile: true, committed: true })
+    ])
     expect(useNodeDataStore().getGraphNodesFor('root', 'root')).toEqual([])
     expect(deleteLayouts).toHaveBeenCalledWith(
       scope,
@@ -791,7 +821,9 @@ describe('EcsFollowerAdapter integration', () => {
     })
 
     it('keeps the targeted update path for value changes and same-frame re-adds', () => {
+      setCrdtDebugEnabled(true)
       const { widgets, deliver, widgetValue, destroy } = bindSeededHost()
+      clearDevEvents()
 
       deliver(2, () => widgets.set('seed', 5))
       deliver(3, () => {
@@ -802,6 +834,22 @@ describe('EcsFollowerAdapter integration', () => {
       expect(widgetValue('seed')).toBe(5)
       expect(widgetValue('stale')).toBe(11)
       expect(useWidgetValueStore().clearNode).not.toHaveBeenCalled()
+      expect(
+        devEvents.value
+          .filter(({ kind }) => kind === 'doc_effects')
+          .map(({ detail }) => detail)
+      ).toEqual([
+        expect.objectContaining({
+          seq: 2,
+          reconcile: false,
+          changedWidgets: [['1', ['seed']]]
+        }),
+        expect.objectContaining({
+          seq: 3,
+          reconcile: false,
+          changedWidgets: [['1', ['stale']]]
+        })
+      ])
       destroy()
     })
 

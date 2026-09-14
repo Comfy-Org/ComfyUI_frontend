@@ -9,7 +9,7 @@ import type { MaterializableGraph } from './agentNodeMaterializer'
 import { AgentCrdtDocLifecycle, STALE_AFTER_MS } from './agentCrdtDocLifecycle'
 import { AgentCrdtProjection } from './agentCrdtProjection'
 import { apiTransport, createLoggedTransport } from './agentCrdtTransport'
-import { recordDevEvent } from './devPanelLog'
+import { docLog } from './crdtLog'
 import type { CrdtDebugSnapshot } from './crdtSnapshot'
 import { readCrdtSnapshot } from './crdtSnapshot'
 import type { DocUpdate } from './docFrameClient'
@@ -37,7 +37,7 @@ export { apiTransport, STALE_AFTER_MS }
  * (which counts Yjs merges, including frames this composable skips) so a
  * divergence between the two is visible instead of hidden behind one number.
  * No payload bodies or actor identifiers are recorded here — see
- * `recordDevEvent` call sites for the (dev-only) frame detail surface.
+ * `docLog` call sites for the (dev-only) frame detail surface.
  */
 export interface AgentCrdtOutcomeCounters {
   /** Every `doc_update` event the composable's listener was invoked with. */
@@ -134,7 +134,12 @@ export function useAgentCrdtFollower(
     tab: tabId,
     actor: () => `human:${userId() ?? 'anonymous'}:${tabId}`,
     baseVersion: () => bridge.lastSequence,
-    onBatchSettled: (outcome) => recordDevEvent('human_ops_settled', outcome)
+    onBatchSettled: (outcome) =>
+      docLog.debug(
+        'human_ops_settled',
+        'human operation batch settled',
+        outcome
+      )
   })
 
   // Dev-panel tap (poc-4): track the doc's node-id set so the panel can show
@@ -158,7 +163,7 @@ export function useAgentCrdtFollower(
     const ok = event.detail?.ok === true
     connected.value = ok
     lastFrameType.value = event.type
-    recordDevEvent('doc_subscribed', event.detail ?? null)
+    docLog.info('doc_subscribed', 'subscription result', event.detail ?? null)
     if (ok) {
       lifecycle.onSubscribeConfirmed()
     } else {
@@ -194,7 +199,7 @@ export function useAgentCrdtFollower(
       ? { ...outcomes.value, applied: outcomes.value.applied + 1 }
       : { ...outcomes.value, skipped: outcomes.value.skipped + 1 }
     if (applied) projection.reconcileLiveGraph(update.workflowId)
-    recordDevEvent('doc_update', {
+    docLog.trace('doc_update', 'document update received', {
       workflowId: update.workflowId,
       seq: update.seq,
       actor: update.actor,
@@ -204,7 +209,10 @@ export function useAgentCrdtFollower(
     const added = [...ids].filter((id) => !knownDocNodeIds.has(id))
     const removed = [...knownDocNodeIds].filter((id) => !ids.has(id))
     if (added.length > 0 || removed.length > 0)
-      recordDevEvent('doc_nodes_changed', { added, removed })
+      docLog.debug('doc_nodes_changed', 'document node membership changed', {
+        added,
+        removed
+      })
     knownDocNodeIds = ids
   }
   const onOpsResult: EventListener = (event) => {
@@ -217,7 +225,11 @@ export function useAgentCrdtFollower(
       return
     lifecycle.onDocumentResult()
     lastFrameType.value = event.type
-    recordDevEvent('doc_ops_result', event.detail ?? null)
+    docLog.debug(
+      'doc_ops_result',
+      'host operation result',
+      event.detail ?? null
+    )
   }
   const onDocReset: EventListener = (event) => {
     const detail =
@@ -245,8 +257,9 @@ export function useAgentCrdtFollower(
     lastFrameType.value = event.type
     lifecycle.clearStaleProbe()
     knownDocNodeIds = new Set()
-    recordDevEvent(
+    docLog.info(
       'doc_reset',
+      'document lineage reset',
       event instanceof CustomEvent ? (event.detail ?? null) : null
     )
   }
@@ -287,29 +300,32 @@ export function useAgentCrdtFollower(
     if (detail?.workflowId !== undefined)
       projection.discardPending(detail.workflowId)
     outcomes.value = { ...outcomes.value, errored: outcomes.value.errored + 1 }
-    recordDevEvent(
+    docLog.warn(
       'schema_error',
+      'document schema rejected',
       event instanceof CustomEvent ? (event.detail ?? null) : null
     )
   }
   const onGap: EventListener = (event) => {
     outcomes.value = { ...outcomes.value, gap: outcomes.value.gap + 1 }
-    recordDevEvent(
+    docLog.info(
       'doc_gap',
+      'document sequence gap; requesting catch-up',
       event instanceof CustomEvent ? (event.detail ?? null) : null
     )
   }
   const onStale: EventListener = (event) => {
     outcomes.value = { ...outcomes.value, dropped: outcomes.value.dropped + 1 }
-    recordDevEvent(
+    docLog.trace(
       'doc_stale',
+      'stale document frame ignored',
       event instanceof CustomEvent ? (event.detail ?? null) : null
     )
   }
   const onReconnected: EventListener = () => {
     connected.value = false
     lifecycle.clearStaleProbe()
-    recordDevEvent('reconnected', null)
+    docLog.info('reconnected', 'transport reconnected', null)
     bridge.resubscribe()
   }
   /**
@@ -394,7 +410,9 @@ export function useAgentCrdtFollower(
         const persisted = initialBind ? lifecycle.readPersistedDocId() : null
         initialBind = false
         if (persisted !== null) {
-          recordDevEvent('rebind', { workflowId: persisted })
+          docLog.info('rebind', 'restoring page-session binding', {
+            workflowId: persisted
+          })
           if (boundWorkflowId !== persisted) {
             if (boundWorkflowId !== null) projection.unbind(boundWorkflowId)
             projection.bind(persisted, bridge.follower)
