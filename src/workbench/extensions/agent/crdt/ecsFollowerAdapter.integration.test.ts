@@ -1,4 +1,9 @@
-import { applyOps, mint, nodesMap } from '@comfyorg/comfy-multi-player'
+import {
+  applyOps,
+  linksMap,
+  mint,
+  nodesMap
+} from '@comfyorg/comfy-multi-player'
 import type { WidgetCatalog } from '@comfyorg/comfy-multi-player'
 import { describe, expect, it, vi } from 'vitest'
 import * as Y from 'yjs'
@@ -413,6 +418,355 @@ describe('EcsFollowerAdapter integration', () => {
     adapter.destroy()
     follower.destroy()
     host.destroy()
+  })
+
+  describe('drops an unrepresentable link instead of discarding the whole frame', () => {
+    const cases: {
+      name: string
+      reason: string
+      link: (string | number)[]
+      seedDoc?: (host: Y.Doc) => void
+    }[] = [
+      {
+        name: 'dangling endpoint (node never existed on the follower doc)',
+        reason: 'connect origin node 404 does not exist',
+        link: [999, 404, 0, 405, 0, 'IMAGE']
+      },
+      {
+        name: 'origin slot out of range',
+        reason: 'connect origin slot 7 does not exist',
+        link: [999, 1, 7, 1, 0, 'IMAGE']
+      },
+      {
+        name: 'negative link id',
+        reason: 'connect requires non-negative integer ids and slots',
+        link: [-5, 1, 0, 1, 0, 'IMAGE']
+      },
+      {
+        name: 'origin slot index addresses a non-record doc slot',
+        reason: 'connect origin slot 1 does not exist',
+        link: [999, 1, 1, 1, 0, 'IMAGE'],
+        seedDoc: (host) => {
+          nodesMap(host)
+            .get('1')
+            ?.set(
+              'outputs',
+              Y.Array.from([null, { name: 'out', type: 'IMAGE', links: [] }])
+            )
+        }
+      },
+      {
+        name: 'endpoint present in the doc but unreadable (no type)',
+        reason: 'connect origin node 404 does not exist',
+        link: [999, 404, 0, 1, 0, 'IMAGE'],
+        seedDoc: (host) => {
+          const ghost = new Y.Map<unknown>()
+          ghost.set('outputs', Y.Array.from([{ name: 'out', type: 'IMAGE' }]))
+          nodesMap(host).set('404', ghost)
+        }
+      }
+    ]
+
+    it.for(cases)('$name', ({ reason, link, seedDoc }) => {
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+      const host = mint({ nodes: [], links: [] }, catalog)
+      const follower = new FollowerDoc()
+      const mutations = createGraphMutations({
+        getScope: () => scope,
+        layout: { createNode: vi.fn(), deleteNodes: vi.fn() }
+      })
+      const adapter = new EcsFollowerAdapter(mutations)
+      adapter.bind('wf', follower)
+
+      host.transact(() => {
+        applyOps(
+          host,
+          [
+            op('valid-add', 1, {
+              op: 'add_node',
+              node_id: 1,
+              class_type: 'Source',
+              pos: [0, 0],
+              node: {
+                id: 1,
+                type: 'Source',
+                inputs: [{ name: 'in', type: 'IMAGE', link: null }],
+                outputs: [{ name: 'out', type: 'IMAGE', links: [] }]
+              }
+            })
+          ] as Parameters<typeof applyOps>[1],
+          catalog
+        )
+        seedDoc?.(host)
+        // Bypass applyOps so the invalid link reaches the adapter.
+        linksMap(host).set(String(link[0]), Y.Array.from(link))
+      })
+
+      const update = Y.encodeStateAsUpdate(host)
+      follower.applyRemoteUpdate(update)
+      expect(
+        adapter.applyFrame({
+          workflowId: 'wf',
+          seq: 1,
+          update,
+          actor: 'agent:test',
+          opIds: ['valid-add']
+        })
+      ).toBe(true)
+
+      expect(
+        useNodeDataStore()
+          .getGraphNodesFor('root', 'root')
+          .map(({ id }) => id)
+      ).toEqual([toNodeId(1)])
+      expect([...useLinkStore().graphTopologies(scope)]).toEqual([])
+
+      expect(warn).toHaveBeenCalledWith(
+        '[agent-crdt] follower frame dropped unrepresentable links',
+        expect.objectContaining({
+          workflowId: 'wf',
+          count: 1,
+          sample: [{ linkId: link[0], reason }]
+        })
+      )
+
+      adapter.destroy()
+      follower.destroy()
+      host.destroy()
+      warn.mockRestore()
+    })
+  })
+
+  describe('drops an unrepresentable link from an incremental frame', () => {
+    const source = {
+      id: 1,
+      type: 'Source',
+      pos: [0, 0],
+      inputs: [],
+      outputs: [{ name: 'out', type: 'IMAGE', links: [] }]
+    }
+    const sink = {
+      id: 2,
+      type: 'Sink',
+      pos: [200, 0],
+      inputs: [
+        { name: 'in', type: 'IMAGE', link: null },
+        { name: 'spare', type: 'IMAGE', link: null }
+      ],
+      outputs: []
+    }
+
+    function follow(links: (string | number)[][] = []) {
+      const host = mint({ nodes: [source, sink], links }, catalog)
+      const follower = new FollowerDoc()
+      const mutations = createGraphMutations({
+        getScope: () => scope,
+        layout: { createNode: vi.fn(), deleteNodes: vi.fn() }
+      })
+      const adapter = new EcsFollowerAdapter(mutations)
+      adapter.bind('wf', follower)
+
+      let seq = 0
+      let delivered = Y.encodeStateVector(new Y.Doc())
+      const deliver = (mutate: (doc: Y.Doc) => void = () => {}) => {
+        host.transact(() => mutate(host))
+        const update = Y.encodeStateAsUpdate(host, delivered)
+        delivered = Y.encodeStateVector(host)
+        follower.applyRemoteUpdate(update)
+        return adapter.applyFrame({
+          workflowId: 'wf',
+          seq: ++seq,
+          update,
+          actor: 'agent:test',
+          opIds: [`frame-${seq}`]
+        })
+      }
+      const dispose = () => {
+        adapter.destroy()
+        follower.destroy()
+        host.destroy()
+      }
+      return { deliver, dispose, mutations }
+    }
+
+    const danglingLink = (doc: Y.Doc) => {
+      linksMap(doc).set('999', Y.Array.from([999, 404, 0, 2, 1, 'IMAGE']))
+    }
+    const validConnect = (doc: Y.Doc) => {
+      applyOps(
+        doc,
+        [
+          op('valid-connect', 1, {
+            op: 'connect',
+            link_id: 7,
+            from_node: 1,
+            from_slot: 0,
+            to_node: 2,
+            to_slot: 0,
+            link_type: 'IMAGE'
+          })
+        ] as Parameters<typeof applyOps>[1],
+        catalog
+      )
+    }
+
+    it("commits the frame's other changes", () => {
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+      const { deliver, dispose, mutations } = follow()
+      expect(deliver()).toBe(true)
+
+      // Present in the store but never in the doc: an authoritative snapshot
+      // would reap it, so its survival proves the next frame ran incrementally.
+      mutations.addNode(
+        { id: 77, type: 'Sink', pos: [0, 400], inputs: [], outputs: [] },
+        { source: 'agent-remote', actor: 'bootstrap', opId: 'local-only' }
+      )
+
+      expect(
+        deliver((doc) => {
+          validConnect(doc)
+          danglingLink(doc)
+        })
+      ).toBe(true)
+
+      expect(
+        [...useLinkStore().graphTopologies(scope)].map(({ id }) => id)
+      ).toEqual([toLinkId(7)])
+      expect(
+        useNodeDataStore()
+          .getGraphNodesFor('root', 'root')
+          .map(({ id }) => id)
+      ).toContain(toNodeId(77))
+      expect(warn).toHaveBeenCalledWith(
+        '[agent-crdt] follower frame dropped unrepresentable links',
+        expect.objectContaining({
+          count: 1,
+          sample: [
+            { linkId: 999, reason: 'connect origin node 404 does not exist' }
+          ]
+        })
+      )
+
+      dispose()
+      warn.mockRestore()
+    })
+
+    it('connects the dropped link once its endpoint arrives', () => {
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+      const { deliver, dispose } = follow()
+      expect(deliver()).toBe(true)
+      expect(deliver(danglingLink)).toBe(true)
+      expect([...useLinkStore().graphTopologies(scope)]).toEqual([])
+      // Re-attempted, still unrepresentable: the warning must not repeat.
+      expect(deliver()).toBe(true)
+
+      expect(
+        deliver((doc) => {
+          applyOps(
+            doc,
+            [
+              op('late-endpoint', 2, {
+                op: 'add_node',
+                node_id: 404,
+                class_type: 'Source',
+                pos: [0, 200],
+                node: {
+                  id: 404,
+                  type: 'Source',
+                  inputs: [],
+                  outputs: [{ name: 'out', type: 'IMAGE', links: [999] }]
+                }
+              })
+            ] as Parameters<typeof applyOps>[1],
+            catalog
+          )
+        })
+      ).toBe(true)
+
+      expect([...useLinkStore().graphTopologies(scope)]).toMatchObject([
+        { id: toLinkId(999), originNodeId: toNodeId(404), targetSlot: 1 }
+      ])
+      expect(warn).toHaveBeenCalledTimes(1)
+
+      dispose()
+      warn.mockRestore()
+    })
+
+    it('removes the committed topology when a link is rewired to a dangling endpoint', () => {
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+      const { deliver, dispose } = follow([[7, 1, 0, 2, 0, 'IMAGE']])
+      expect(deliver()).toBe(true)
+      expect([...useLinkStore().graphTopologies(scope)]).toHaveLength(1)
+
+      expect(
+        deliver((doc) => {
+          linksMap(doc).set('7', Y.Array.from([7, 404, 0, 2, 0, 'IMAGE']))
+        })
+      ).toBe(true)
+
+      expect([...useLinkStore().graphTopologies(scope)]).toEqual([])
+      const nodes = useNodeDataStore().getGraphNodesFor('root', 'root')
+      expect(
+        nodes.find(({ id }) => id === toNodeId(1))?.outputs[0].links
+      ).toEqual([])
+      expect(
+        nodes.find(({ id }) => id === toNodeId(2))?.inputs[0].link
+      ).toBeNull()
+
+      dispose()
+      warn.mockRestore()
+    })
+
+    it('strips a dropped link from the endpoint slots it reconciles', () => {
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+      const host = mint(
+        {
+          nodes: [
+            { ...source, outputs: [{ name: 'out', type: 'IMAGE', links: [] }] },
+            {
+              ...sink,
+              inputs: [{ name: 'in', type: 'IMAGE', link: 999 }]
+            }
+          ],
+          links: []
+        },
+        catalog
+      )
+      const follower = new FollowerDoc()
+      const mutations = createGraphMutations({
+        getScope: () => scope,
+        layout: { createNode: vi.fn(), deleteNodes: vi.fn() }
+      })
+      const adapter = new EcsFollowerAdapter(mutations)
+      adapter.bind('wf', follower)
+      host.transact(() => {
+        linksMap(host).set('999', Y.Array.from([999, 404, 0, 2, 0, 'IMAGE']))
+      })
+
+      const update = Y.encodeStateAsUpdate(host)
+      follower.applyRemoteUpdate(update)
+      expect(
+        adapter.applyFrame({
+          workflowId: 'wf',
+          seq: 1,
+          update,
+          actor: 'agent:test',
+          opIds: ['snapshot']
+        })
+      ).toBe(true)
+
+      expect([...useLinkStore().graphTopologies(scope)]).toEqual([])
+      expect(
+        useNodeDataStore()
+          .getGraphNodesFor('root', 'root')
+          .find(({ id }) => id === toNodeId(2))?.inputs[0].link
+      ).toBeNull()
+
+      adapter.destroy()
+      follower.destroy()
+      host.destroy()
+      warn.mockRestore()
+    })
   })
 
   it('applies an implicit disconnect when delete-wins installs no replacement', () => {
@@ -935,6 +1289,7 @@ describe('EcsFollowerAdapter integration', () => {
         reconcileNode: () => undefined,
         setWidget: () => undefined,
         connect: () => undefined,
+        connectOrDrop: () => undefined,
         removeMissing: () => undefined,
         removeLinks: () => undefined,
         deleteNode: () => undefined,

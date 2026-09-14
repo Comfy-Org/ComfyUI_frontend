@@ -93,6 +93,13 @@ function readNodeSlots<TKey extends 'inputs' | 'outputs'>(
     : 'originOutputs']
 }
 
+const DROPPED_LINK_WARN_SAMPLE = 5
+
+interface DroppedLink {
+  readonly linkId: number
+  readonly reason: string
+}
+
 function frameContext(update: DocUpdate): RemoteMutationContext {
   const opIds = update.opIds?.filter((id) => id.length > 0)
   return {
@@ -113,6 +120,12 @@ interface TargetSession {
   readonly changedWidgets: Map<string, Set<string>>
   readonly replacedWidgetMaps: Set<string>
   readonly changedLinks: Set<string>
+  /**
+   * Doc ids of links the batch refused. Retried on every later frame so an
+   * endpoint that arrives afterwards heals the link, and deduplicated so a
+   * permanently unrepresentable link warns once rather than once per frame.
+   */
+  readonly droppedLinks: Set<string>
   readonly frameQueue: DocUpdate[]
   onNodesChanged: (events: Y.YEvent<Y.AbstractType<unknown>>[]) => void
   onLinksChanged: (event: Y.YMapEvent<unknown>) => void
@@ -174,6 +187,7 @@ export class EcsFollowerAdapter {
     const session = this.targets.get(workflowId)
     if (!session) return false
     this.discardSessionPending(session)
+    session.droppedLinks.clear()
     return session.mutations.clearSemanticGraph(context)
   }
 
@@ -203,6 +217,7 @@ export class EcsFollowerAdapter {
       changedWidgets: new Map<string, Set<string>>(),
       replacedWidgetMaps: new Set<string>(),
       changedLinks: new Set<string>(),
+      droppedLinks: new Set<string>(),
       frameQueue: [],
       reconcileNextFrame: true,
       applying: false,
@@ -246,7 +261,14 @@ export class EcsFollowerAdapter {
     const removedLinkIds = [...changedLinkIds].flatMap((id) =>
       session.links.has(id) ? [] : [Number(id)]
     )
+    const droppedLinks = new Map<string, DroppedLink>()
     const committed = session.mutations.batch(frameContext(update), (batch) => {
+      const connectOrDrop = (docId: string, link: SemanticLinkPayload) => {
+        batch.connectOrDrop(link, (reason) => {
+          droppedLinks.set(docId, { linkId: link.id, reason })
+        })
+      }
+
       if (reconcile) {
         const nodes = [...session.nodes.keys()].flatMap((id) => {
           const payload = readSemanticNode(session.follower.doc, id)
@@ -254,14 +276,16 @@ export class EcsFollowerAdapter {
         })
         const links = [...session.links.keys()].flatMap((id) => {
           const link = readSemanticLink(session.follower.doc, id)
-          return link ? [link] : []
+          return link ? [[id, link] as const] : []
         })
         batch.removeMissing(
           nodes.map(({ id }) => toNodeId(id)),
-          links.map(({ id }) => id)
+          links.flatMap(([, { id }]) =>
+            Number.isInteger(id) && id >= 0 ? [id] : []
+          )
         )
         for (const payload of nodes) batch.reconcileNode(payload)
-        for (const link of links) batch.connect(link)
+        for (const [docId, link] of links) connectOrDrop(docId, link)
         return
       }
 
@@ -295,9 +319,10 @@ export class EcsFollowerAdapter {
           batch.setWidget(toNodeId(id), name, plain(widgets.get(name)))
         }
       }
-      for (const id of changedLinkIds) {
+      for (const id of new Set([...changedLinkIds, ...session.droppedLinks])) {
         const link = readSemanticLink(session.follower.doc, id)
-        if (link) batch.connect(link)
+        if (!link) continue
+        connectOrDrop(id, link)
       }
     })
 
@@ -306,8 +331,33 @@ export class EcsFollowerAdapter {
     // reconcileNextFrame set so the next frame retries authoritative
     // cleanup instead of falling through to incremental handling with
     // stale local-only graph state still present.
-    if (committed) session.reconcileNextFrame = false
+    if (committed) {
+      session.reconcileNextFrame = false
+      this.recordDroppedLinks(session, droppedLinks)
+    }
     return committed
+  }
+
+  /**
+   * Every retained link id is retried each frame, so an id absent from this
+   * frame's drops has healed and leaves the retry set; a newly dropped id
+   * joins it and is warned about exactly once rather than once per frame.
+   */
+  private recordDroppedLinks(
+    session: TargetSession,
+    dropped: ReadonlyMap<string, DroppedLink>
+  ): void {
+    for (const id of session.droppedLinks) {
+      if (!dropped.has(id)) session.droppedLinks.delete(id)
+    }
+    const added = [...dropped].filter(([id]) => !session.droppedLinks.has(id))
+    for (const [id] of added) session.droppedLinks.add(id)
+    if (added.length === 0) return
+    console.warn('[agent-crdt] follower frame dropped unrepresentable links', {
+      workflowId: session.workflowId,
+      count: added.length,
+      sample: added.slice(0, DROPPED_LINK_WARN_SAMPLE).map(([, drop]) => drop)
+    })
   }
 
   private discardSessionPending(session: TargetSession): void {

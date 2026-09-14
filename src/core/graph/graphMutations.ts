@@ -63,6 +63,15 @@ interface GraphMutationBatch {
   reconcileNode(payload: SemanticNodePayload): void
   setWidget(nodeId: NodeId, name: string, value: unknown): void
   connect(link: SemanticLinkPayload): void
+  /**
+   * Connects when the link is representable against the batch's simulated
+   * final state, otherwise drops it — reporting the reason and removing any
+   * incumbent topology for the id — instead of failing the whole batch.
+   */
+  connectOrDrop(
+    link: SemanticLinkPayload,
+    onDrop: (reason: string) => void
+  ): void
   /** Derived cleanup for an authoritative snapshot; not a wire op. */
   removeMissing(
     retainedNodeIds: readonly NodeId[],
@@ -104,7 +113,11 @@ type QueuedMutation =
   | { kind: 'addNode'; payload: SemanticNodePayload }
   | { kind: 'reconcileNode'; payload: SemanticNodePayload }
   | { kind: 'setWidget'; nodeId: NodeId; name: string; value: unknown }
-  | { kind: 'connect'; link: SemanticLinkPayload }
+  | {
+      kind: 'connect'
+      link: SemanticLinkPayload
+      onDrop?: (reason: string) => void
+    }
   | {
       kind: 'removeMissing'
       retainedNodeIds: readonly NodeId[]
@@ -287,6 +300,33 @@ function nodeKey(nodeId: NodeId): string {
   return String(nodeId)
 }
 
+/**
+ * A dropped link is never installed, so `detachLinkSlots` can never reap the
+ * slot references the same frame's node payloads still carry for it. Scrub
+ * them here so `nodeDataStore` cannot advertise an edge `linkStore` refused.
+ */
+function stripDroppedLinkRefs(
+  prepared: readonly PreparedMutation[],
+  dropped: ReadonlySet<LinkId>
+): void {
+  if (dropped.size === 0) return
+  for (const mutation of prepared) {
+    if (mutation.kind !== 'addNode' && mutation.kind !== 'reconcileNode')
+      continue
+    const { state } = mutation.node
+    state.inputs = state.inputs.map((input) =>
+      input.link != null && dropped.has(input.link)
+        ? { ...input, link: null }
+        : input
+    )
+    state.outputs = state.outputs.map((output) =>
+      output.links?.some((id) => dropped.has(id))
+        ? { ...output, links: output.links.filter((id) => !dropped.has(id)) }
+        : output
+    )
+  }
+}
+
 function removeIncidentLinks(
   links: Map<LinkId, LinkTopology>,
   nodeId: NodeId
@@ -339,6 +379,77 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
       )
     }
 
+    /**
+     * `droppableId` is the id whose incumbent topology a caller opting into
+     * drops may reap: null when the id is unusable or owned by another graph,
+     * so a drop can never delete another graph's link.
+     */
+    function checkConnect(link: SemanticLinkPayload):
+      | { rejection: string; droppableId: LinkId | null }
+      | {
+          rejection: null
+          originOutputs: NodeState['outputs']
+          targetInputs: NodeState['inputs']
+        } {
+      if (
+        !Number.isInteger(link.id) ||
+        link.id < 0 ||
+        !Number.isInteger(link.originSlot) ||
+        link.originSlot < 0 ||
+        !Number.isInteger(link.targetSlot) ||
+        link.targetSlot < 0
+      ) {
+        return {
+          rejection: 'connect requires non-negative integer ids and slots',
+          droppableId: null
+        }
+      }
+      const id = toLinkId(link.id)
+      const incumbent = linkStore.getTopology(scope.rootGraphId, id)
+      if (incumbent && incumbent.graphId !== scope.owningGraphId) {
+        return {
+          rejection: `link id ${id} belongs to graph ${incumbent.graphId}`,
+          droppableId: null
+        }
+      }
+      const originNodeId = toNodeId(link.originNodeId)
+      const origin = nodes.get(nodeKey(originNodeId))
+      if (!origin) {
+        return {
+          rejection: `connect origin node ${originNodeId} does not exist`,
+          droppableId: id
+        }
+      }
+      const targetNodeId = toNodeId(link.targetNodeId)
+      const target = nodes.get(nodeKey(targetNodeId))
+      if (!target) {
+        return {
+          rejection: `connect target node ${targetNodeId} does not exist`,
+          droppableId: id
+        }
+      }
+      const originOutputs = link.originOutputs
+        ? prepareOutputSlots(link.originOutputs)
+        : origin.outputs
+      if (link.originSlot >= originOutputs.length) {
+        return {
+          rejection: `connect origin slot ${link.originSlot} does not exist`,
+          droppableId: id
+        }
+      }
+      const targetInputs = link.targetInputs
+        ? prepareInputSlots(link.targetInputs)
+        : target.inputs
+      if (link.targetSlot >= targetInputs.length) {
+        return {
+          rejection: `connect target slot ${link.targetSlot} does not exist`,
+          droppableId: id
+        }
+      }
+      return { rejection: null, originOutputs, targetInputs }
+    }
+
+    const droppedLinkIds = new Set<LinkId>()
     const prepared: PreparedMutation[] = []
     for (const mutation of queued) {
       switch (mutation.kind) {
@@ -394,44 +505,22 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
           break
         }
         case 'connect': {
-          if (
-            !Number.isInteger(mutation.link.id) ||
-            mutation.link.id < 0 ||
-            !Number.isInteger(mutation.link.originSlot) ||
-            mutation.link.originSlot < 0 ||
-            !Number.isInteger(mutation.link.targetSlot) ||
-            mutation.link.targetSlot < 0
-          ) {
-            return 'connect requires non-negative integer ids and slots'
+          const checked = checkConnect(mutation.link)
+          if (checked.rejection !== null) {
+            if (!mutation.onDrop) return checked.rejection
+            mutation.onDrop(checked.rejection)
+            if (checked.droppableId !== null) {
+              droppedLinkIds.add(checked.droppableId)
+              links.delete(checked.droppableId)
+              prepared.push({
+                kind: 'removeLinks',
+                linkIds: [checked.droppableId]
+              })
+            }
+            break
           }
+          const { originOutputs, targetInputs } = checked
           const topology = prepareTopology(mutation.link, scope)
-          const incumbent = linkStore.getTopology(
-            scope.rootGraphId,
-            topology.id
-          )
-          if (incumbent && incumbent.graphId !== scope.owningGraphId) {
-            return `link id ${topology.id} belongs to graph ${incumbent.graphId}`
-          }
-          const origin = nodes.get(nodeKey(topology.originNodeId))
-          if (!origin) {
-            return `connect origin node ${topology.originNodeId} does not exist`
-          }
-          const target = nodes.get(nodeKey(topology.targetNodeId))
-          if (!target) {
-            return `connect target node ${topology.targetNodeId} does not exist`
-          }
-          const originOutputs = mutation.link.originOutputs
-            ? prepareOutputSlots(mutation.link.originOutputs)
-            : origin.outputs
-          const targetInputs = mutation.link.targetInputs
-            ? prepareInputSlots(mutation.link.targetInputs)
-            : target.inputs
-          if (topology.originSlot >= originOutputs.length) {
-            return `connect origin slot ${topology.originSlot} does not exist`
-          }
-          if (topology.targetSlot >= targetInputs.length) {
-            return `connect target slot ${topology.targetSlot} does not exist`
-          }
           links.delete(topology.id)
           for (const [id, incumbent] of links) {
             if (
@@ -540,6 +629,7 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
         }
       }
     }
+    stripDroppedLinkRefs(prepared, droppedLinkIds)
     return prepared
   }
 
@@ -806,6 +896,9 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
         },
         connect(link) {
           queued.push({ kind: 'connect', link })
+        },
+        connectOrDrop(link, onDrop) {
+          queued.push({ kind: 'connect', link, onDrop })
         },
         removeMissing(retainedNodeIds, retainedLinkIds) {
           queued.push({
