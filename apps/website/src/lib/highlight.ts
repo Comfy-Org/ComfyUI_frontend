@@ -2,10 +2,8 @@
  * Shiki highlighting for the code blocks on the model pages, matching the
  * treatment the workflow pages use.
  *
- * `kanagawa-wave` is the closest bundled theme to the Comfy palette: its
- * background sits nearest `--color-primary-comfy-ink` of any dark theme, its
- * warm beige foreground tracks `--color-primary-comfy-canvas`, and its accent
- * lands 15° off `--color-primary-comfy-yellow` at a muted chroma.
+ * `kanagawa-dragon` keeps the palette restrained against Comfy ink: sage and
+ * slate carry structure, while clay, sand, and mauve add warm contrast.
  *
  * Runs at build time for the static snippets and in the browser for the live
  * payload, so it loads through dynamic imports and the JavaScript regex engine
@@ -14,7 +12,7 @@
  */
 import type { HighlighterCore } from 'shiki/core'
 
-const CODE_THEME = 'kanagawa-wave'
+const CODE_THEME = 'kanagawa-dragon'
 
 export type CodeLang = 'javascript' | 'json' | 'python' | 'shell' | 'typescript'
 
@@ -44,7 +42,7 @@ function highlighter(): Promise<HighlighterCore> {
     import('shiki/engine/javascript')
   ]).then(([{ createHighlighterCore }, { createJavaScriptRegexEngine }]) =>
     createHighlighterCore({
-      themes: [import('shiki/themes/kanagawa-wave.mjs')],
+      themes: [import('shiki/themes/kanagawa-dragon.mjs')],
       langs: [],
       engine: createJavaScriptRegexEngine()
     })
