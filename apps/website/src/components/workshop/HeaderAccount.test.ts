@@ -230,6 +230,28 @@ describe('HeaderAccount menu', () => {
     h.balance!.value = { status: 'ok', credits: 42 }
   }
 
+  it('shows the user identity instead of the personal workspace in its lead card', async () => {
+    signIn()
+    h.user!.value = {
+      uid: 'user-1',
+      email: 'a@b.co',
+      displayName: 'Ada',
+      photoURL: 'https://example.com/ada.jpg'
+    }
+    const user = userEvent.setup()
+    render(HeaderAccount)
+
+    await user.click(screen.getByTestId('header-account'))
+    const card = await screen.findByTestId('account-workspace')
+
+    expect(card.textContent).toContain('Ada')
+    expect(card.textContent).toContain('a@b.co')
+    expect(card.textContent).not.toContain('Personal')
+    expect(screen.getByTestId('account-menu-avatar').getAttribute('src')).toBe(
+      'https://example.com/ada.jpg'
+    )
+  })
+
   it('opens the amount picker from Add credits without inventing a settings destination', async () => {
     signIn()
     const requested = captureBuyCreditsRequest()
@@ -383,7 +405,9 @@ describe('HeaderAccount workspace switcher', () => {
     )
     await waitFor(() => expect(screen.queryByRole('menu')).toBeNull())
     await user.click(screen.getByTestId('header-account'))
-    expect(await screen.findByText('Comfy team')).toBeTruthy()
+    const account = await screen.findByTestId('account-workspace')
+    expect(account.textContent).toContain('Ada')
+    expect(account.textContent).not.toContain('Comfy team')
   })
 
   it('keeps the switch pending until its remint settles', async () => {

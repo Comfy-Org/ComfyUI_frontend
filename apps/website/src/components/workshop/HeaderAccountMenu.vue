@@ -80,17 +80,24 @@ function workspaceTier(workspace: WorkspaceWithRole): string {
   )
 }
 
-const workspaceInitials = computed(() => initialsOf(session.workspace.name))
 const accountInitials = computed(() =>
   initialsOf(accountName || accountIdentity || session.workspace.name)
+)
+const accountDisplayName = computed(
+  () => accountName || accountIdentity || session.workspace.name
+)
+const roleLabel = computed(() =>
+  t(session.role === 'member' ? 'nav.roleMember' : 'nav.roleOwner', locale)
+)
+const accountDetail = computed(() =>
+  accountName && accountIdentity && accountName !== accountIdentity
+    ? accountIdentity
+    : roleLabel.value
 )
 const avatarFailed = ref(false)
 watch(
   () => accountPhotoUrl,
   () => (avatarFailed.value = false)
-)
-const roleLabel = computed(() =>
-  t(session.role === 'member' ? 'nav.roleMember' : 'nav.roleOwner', locale)
 )
 
 const itemClass =
@@ -160,22 +167,32 @@ const surfaceClass =
             data-testid="account-workspace"
             class="hover:bg-transparency-white-t4 data-[state=open]:bg-transparency-white-t4 focus-visible:bg-transparency-white-t4 flex w-full cursor-pointer items-center gap-3 rounded-xl p-2 text-left outline-none"
           >
+            <img
+              v-if="accountPhotoUrl && !avatarFailed"
+              :src="accountPhotoUrl"
+              alt=""
+              :class="cn(avatarClass, 'rounded-xl object-cover')"
+              data-testid="account-menu-avatar"
+              referrerpolicy="no-referrer"
+              @error="avatarFailed = true"
+            />
             <span
+              v-else
               :class="cn(avatarClass, 'rounded-xl bg-transparency-white-t8')"
               aria-hidden="true"
             >
-              {{ workspaceInitials }}
+              {{ accountInitials }}
             </span>
             <span class="min-w-0 flex-1">
               <span
                 class="block truncate text-base font-bold text-primary-warm-white"
               >
-                {{ session.workspace.name }}
+                {{ accountDisplayName }}
               </span>
               <span
                 class="block truncate text-[11px] font-bold tracking-wider text-primary-warm-gray uppercase"
               >
-                {{ roleLabel }}
+                {{ accountDetail }}
               </span>
             </span>
             <span
