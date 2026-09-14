@@ -91,13 +91,13 @@ describe('HubBrowse', () => {
     )
 
     await user.click(screen.getByTestId('hub-tab-models'))
+    const modelCards = screen.getAllByTestId('workshop-model-card')
+    expect(modelCards.length).toBeGreaterThan(0)
     expect(
-      screen.queryAllByRole('link', { name: /Seed Audio/i }).length
-    ).toBeGreaterThan(0)
-    expect(
-      screen.queryAllByRole('link', { name: /HeyGen/i }).length
-    ).toBeGreaterThan(0)
-    expect(screen.queryByRole('link', { name: /FLUX 2 Max/i })).toBeNull()
+      modelCards.every((card) =>
+        audioModels.some((name) => card.textContent.includes(name))
+      )
+    ).toBe(true)
     expect(screen.queryByTestId('model-card-versions')).toBeNull()
   })
 
