@@ -318,6 +318,11 @@ const PAYMENT_METHOD_REQUIRED_RESPONSE = {
   payment_method_url: 'https://pay.test/method'
 } satisfies SubscribeResponse
 
+const PAYMENT_METHOD_URL_MISSING_RESPONSE = {
+  billing_op_id: 'creator-payment-method-url-missing',
+  status: 'needs_payment_method'
+} satisfies SubscribeResponse
+
 const RETRIED_SUBSCRIPTION_OPERATION_ID = 'retried-subscription'
 const RETRIED_SUBSCRIPTION_ACTION_URL =
   'https://verify.example/retried-subscription'
@@ -651,6 +656,70 @@ test.describe('Pricing table deep link', { tag: '@cloud' }, () => {
     ).toBeVisible()
     expect(subscribeRequests).toHaveLength(0)
     await expect(page).not.toHaveURL(/[?&](pricing|cycle)=/)
+  })
+
+  test.describe('when checkout has no payment method URL', () => {
+    let operationPollRequests: Request[]
+
+    test.beforeEach(async ({ page }) => {
+      operationPollRequests = []
+      await page.addInitScript(() => {
+        window.open = () => {
+          sessionStorage.setItem('unexpected-payment-popup', 'opened')
+          return null
+        }
+      })
+      await setupCloudApp(page, workspace('personal', 'owner'), [])
+      await page.route('**/api/billing/status', (route) =>
+        route.fulfill(jsonRoute(LEGACY_ACTIVE_STANDARD_STATUS))
+      )
+      await page.route('**/api/billing/plans', (route) =>
+        route.fulfill(
+          jsonRoute({
+            plans: [CREATOR_ANNUAL_PLAN]
+          } satisfies BillingPlansResponse)
+        )
+      )
+      await page.route('**/api/billing/preview-subscribe', (route) =>
+        route.fulfill(jsonRoute(NEW_CREATOR_SUBSCRIPTION))
+      )
+      await page.route('**/api/billing/subscribe', (route) =>
+        route.fulfill(jsonRoute(PAYMENT_METHOD_URL_MISSING_RESPONSE))
+      )
+      await page.route('**/api/billing/ops/**', (route) => {
+        operationPollRequests.push(route.request())
+        return route.fulfill(jsonRoute(UNEXPECTED_OPERATION_RESPONSE))
+      })
+    })
+
+    test('retains the operation and stops checkout', async ({ page }) => {
+      await page.goto(`${APP_URL}/?pricing=creator&cycle=yearly`)
+      const subscribeButton = page.getByRole('button', {
+        name: 'Subscribe to Creator'
+      })
+      await cloudAppExpect(subscribeButton).toBeVisible()
+      await subscribeButton.click()
+
+      await expect(
+        page.locator('.p-toast-message.p-toast-message-error').filter({
+          hasText:
+            'Payment options are unavailable. Please refresh and try again.'
+        })
+      ).toBeVisible()
+      await expect
+        .poll(() =>
+          page.evaluate(() =>
+            sessionStorage.getItem('comfy:pending-subscription-checkout')
+          )
+        )
+        .toContain(PAYMENT_METHOD_URL_MISSING_RESPONSE.billing_op_id)
+      expect(operationPollRequests).toHaveLength(0)
+      expect(
+        await page.evaluate(() =>
+          sessionStorage.getItem('unexpected-payment-popup')
+        )
+      ).toBeNull()
+    })
   })
 
   test('restores pending checkout when retrying a timed-out operation', async ({
