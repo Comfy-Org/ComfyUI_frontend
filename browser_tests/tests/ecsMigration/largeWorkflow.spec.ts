@@ -46,18 +46,48 @@ test.describe(
         const fillText = CanvasRenderingContext2D.prototype.fillText
         const initialScale = canvas.ds.scale
         const initialOffset = [...canvas.ds.offset]
-        const initialGeometry = JSON.stringify({
-          nodes: canvas.graph!.nodes.map((node) => [
-            node.id,
-            node.pos,
-            node.size
-          ]),
-          groups: canvas.graph!.groups.map((group) => [
-            group.title,
-            group.pos,
-            group.size
-          ])
-        })
+        const snapshotGeometry = () =>
+          JSON.stringify({
+            nodes: canvas.graph!.nodes.map((node) => [
+              node.id,
+              node.pos,
+              node.size
+            ]),
+            groups: canvas.graph!.groups.map((group) => [
+              group.title,
+              group.pos,
+              group.size
+            ])
+          })
+        const initialGeometry = snapshotGeometry()
+        const snapshotPixels = (context: CanvasRenderingContext2D) =>
+          context.getImageData(0, 0, canvas.canvas.width, canvas.canvas.height)
+            .data
+        const countChangedPixels = (
+          before: Uint8ClampedArray,
+          after: Uint8ClampedArray,
+          bounds: { left: number; top: number; right: number; bottom: number }
+        ) => {
+          const left = Math.max(0, Math.floor(bounds.left))
+          const top = Math.max(0, Math.floor(bounds.top))
+          const right = Math.min(canvas.canvas.width, Math.ceil(bounds.right))
+          const bottom = Math.min(
+            canvas.canvas.height,
+            Math.ceil(bounds.bottom)
+          )
+          let changedPixels = 0
+          const beforePixels = new Uint32Array(before.buffer)
+          const afterPixels = new Uint32Array(after.buffer)
+          for (let y = top; y < bottom; y++) {
+            for (let x = left; x < right; x++) {
+              const index = y * canvas.canvas.width + x
+              changedPixels += Number(
+                beforePixels[index] !== afterPixels[index]
+              )
+            }
+          }
+          return changedPixels
+        }
         const evidence: Array<{
           title: string
           changedPixels: number
@@ -87,64 +117,71 @@ test.describe(
             canvas.draw(true, true)
             const context = canvas.canvas.getContext('2d')
             if (!context) throw new Error('Canvas context not available')
-            const painted = context.getImageData(
-              0,
-              0,
-              canvas.canvas.width,
-              canvas.canvas.height
-            ).data
+            const painted = snapshotPixels(context)
             canvas.draw(true, true)
-            const unchanged = context.getImageData(
-              0,
-              0,
-              canvas.canvas.width,
-              canvas.canvas.height
-            ).data
+            const unchanged = snapshotPixels(context)
 
+            let labelBounds:
+              | { left: number; top: number; right: number; bottom: number }
+              | undefined
             CanvasRenderingContext2D.prototype.fillText = function (
               text,
-              ...args
+              x,
+              y,
+              maxWidth
             ) {
-              if (text !== title) fillText.call(this, text, ...args)
+              if (text !== title) {
+                fillText.call(this, text, x, y, maxWidth)
+                return
+              }
+              const metrics = this.measureText(text)
+              const transform = this.getTransform()
+              const corners = [
+                transform.transformPoint({
+                  x: x - metrics.actualBoundingBoxLeft,
+                  y: y - metrics.actualBoundingBoxAscent
+                }),
+                transform.transformPoint({
+                  x: x + metrics.actualBoundingBoxRight,
+                  y: y + metrics.actualBoundingBoxDescent
+                })
+              ]
+              labelBounds = {
+                left: Math.min(...corners.map(({ x }) => x)) - 1,
+                top: Math.min(...corners.map(({ y }) => y)) - 1,
+                right: Math.max(...corners.map(({ x }) => x)) + 1,
+                bottom: Math.max(...corners.map(({ y }) => y)) + 1
+              }
             }
             canvas.draw(true, true)
-            const suppressed = context.getImageData(
-              0,
-              0,
-              canvas.canvas.width,
-              canvas.canvas.height
-            ).data
+            const suppressed = snapshotPixels(context)
             CanvasRenderingContext2D.prototype.fillText = fillText
             canvas.draw(true, true)
-            const restored = context.getImageData(
-              0,
-              0,
-              canvas.canvas.width,
-              canvas.canvas.height
-            ).data
-
-            let changedPixels = 0
-            let unstablePixels = 0
-            for (let index = 0; index < painted.length; index += 4) {
-              for (let channel = 0; channel < 4; channel++) {
-                if (
-                  painted[index + channel] !== unchanged[index + channel] ||
-                  painted[index + channel] !== restored[index + channel]
-                ) {
-                  unstablePixels++
-                  break
-                }
-              }
-              if (
-                painted[index] !== suppressed[index] ||
-                painted[index + 1] !== suppressed[index + 1] ||
-                painted[index + 2] !== suppressed[index + 2] ||
-                painted[index + 3] !== suppressed[index + 3]
-              ) {
-                changedPixels++
-              }
+            const restored = snapshotPixels(context)
+            if (!labelBounds) {
+              throw new Error(`Landmark ${title} title was not painted`)
             }
-            evidence.push({ title, changedPixels, unstablePixels })
+            evidence.push({
+              title,
+              changedPixels: countChangedPixels(
+                painted,
+                suppressed,
+                labelBounds
+              ),
+              unstablePixels:
+                countChangedPixels(painted, unchanged, {
+                  left: 0,
+                  top: 0,
+                  right: canvas.canvas.width,
+                  bottom: canvas.canvas.height
+                }) +
+                countChangedPixels(painted, restored, {
+                  left: 0,
+                  top: 0,
+                  right: canvas.canvas.width,
+                  bottom: canvas.canvas.height
+                })
+            })
           }
         } finally {
           CanvasRenderingContext2D.prototype.fillText = fillText
@@ -154,20 +191,7 @@ test.describe(
           canvas.setDirty(true, true)
         }
 
-        if (
-          JSON.stringify({
-            nodes: canvas.graph!.nodes.map((node) => [
-              node.id,
-              node.pos,
-              node.size
-            ]),
-            groups: canvas.graph!.groups.map((group) => [
-              group.title,
-              group.pos,
-              group.size
-            ])
-          }) !== initialGeometry
-        ) {
+        if (snapshotGeometry() !== initialGeometry) {
           throw new Error(
             'Landmark paint proof changed graph geometry or identity'
           )
