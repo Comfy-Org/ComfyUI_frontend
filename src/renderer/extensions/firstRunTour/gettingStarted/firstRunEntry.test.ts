@@ -5,6 +5,10 @@ import * as VueUse from '@vueuse/core'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed } from 'vue'
 
+import {
+  isFirstRunReplayRequested,
+  requestOnboardingReplay
+} from '@/platform/onboarding/onboardingReplay'
 import type { StartupOutcome } from '@/platform/workflow/persistence/base/draftTypes'
 import type { SharedWorkflowUrlLoadStatus } from '@/platform/workflow/sharing/composables/useSharedWorkflowUrlLoader'
 
@@ -82,6 +86,9 @@ const { useFirstRunEntry } = await import('./firstRunEntry')
 type FirstRunEntry = ReturnType<typeof useFirstRunEntry>
 
 beforeEach(() => {
+  // Several replay tests deliberately leave a request armed, and it outlives a
+  // test the way it outlives a reload.
+  sessionStorage.clear()
   vi.mocked(VueUse.useBreakpoints).mockReturnValue(
     fromAny<ReturnType<typeof VueUse.useBreakpoints>, unknown>({
       greaterOrEqual: () => computed(() => mocks.isDesktopWidth)
@@ -308,6 +315,114 @@ describe('useFirstRunEntry', () => {
       useCommandStore().execute,
       'nor may the template browser cover their restored workflow'
     ).not.toHaveBeenCalled()
+  })
+
+  describe('a requested replay', () => {
+    beforeEach(() => {
+      // The account this feature exists for: onboarding already spent, and
+      // local work the new-user checks read and must not have cleared.
+      mocks.isNewUser = false
+      useSettingStore().settingValues['Comfy.TutorialCompleted'] = true
+    })
+
+    it('onboards over restored work, because this user asked for onboarding', async () => {
+      requestOnboardingReplay()
+      const entry = useFirstRunEntry()
+
+      await entry.handleStartupOutcome('restored')
+
+      expect(entry.gettingStartedVisible.value).toBe(true)
+    })
+
+    it('onboards a returning user whose tutorial is already complete', async () => {
+      requestOnboardingReplay()
+      const entry = useFirstRunEntry()
+
+      await entry.handleStartupOutcome('fresh')
+
+      expect(entry.gettingStartedVisible.value).toBe(true)
+    })
+
+    it('is spent by the boot that shows the screen', async () => {
+      requestOnboardingReplay()
+      const entry = useFirstRunEntry()
+
+      await entry.handleStartupOutcome('restored')
+
+      expect(isFirstRunReplayRequested()).toBe(false)
+    })
+
+    it('stands until a boot can show the screen, so eligibility this boot lacked is not lost', async () => {
+      requestOnboardingReplay()
+      mocks.subscriptionEnabled = false
+      const entry = useFirstRunEntry()
+
+      await entry.handleStartupOutcome('fresh')
+
+      expect(entry.gettingStartedVisible.value).toBe(false)
+      expect(isFirstRunReplayRequested()).toBe(true)
+    })
+
+    /**
+     * A replay may override the restored-work guard only to show the Getting
+     * Started screen. On a boot that cannot show it, overriding the guard
+     * anyway would fall through to the template browser and cover the very
+     * work the guard protects — and, being session-scoped, do it again on
+     * every reload for the life of the tab.
+     */
+    const cannotServe = [
+      ['not on cloud', () => void (mocks.isCloud = false)],
+      ['subscription disabled', () => void (mocks.subscriptionEnabled = false)],
+      ['below the md breakpoint', () => void (mocks.isDesktopWidth = false)],
+      ['the tour flag off', () => void (mocks.tourFlag = false)]
+    ] as const
+
+    it.for(cannotServe)(
+      'never covers restored work with the template browser when %s',
+      async ([, disqualify]) => {
+        requestOnboardingReplay()
+        disqualify()
+        const entry = useFirstRunEntry()
+
+        await entry.handleStartupOutcome('restored')
+
+        expect(entry.gettingStartedVisible.value).toBe(false)
+        expect(useCommandStore().execute).not.toHaveBeenCalled()
+      }
+    )
+
+    it('is spent by a link that delivers the tour instead of the screen', async () => {
+      requestOnboardingReplay()
+      const entry = useFirstRunEntry()
+
+      await entry.handleStartupOutcome('url-intent')
+      await entry.handleUrlWorkflow('url-intent', 'image_z_image_turbo')
+
+      expect(mocks.beginTour).toHaveBeenCalled()
+      expect(
+        isFirstRunReplayRequested(),
+        'the replay was served as a tour, so a later reload must not re-offer it'
+      ).toBe(false)
+    })
+
+    it('stands when the link refused to start a tour, which served nothing', async () => {
+      requestOnboardingReplay()
+      mocks.beginTour.mockResolvedValue(false)
+      const entry = useFirstRunEntry()
+
+      await entry.handleStartupOutcome('url-intent')
+      await entry.handleUrlWorkflow('url-intent', 'image_z_image_turbo')
+
+      expect(isFirstRunReplayRequested()).toBe(true)
+    })
+
+    it('leaves the invariant intact for everyone who did not ask', async () => {
+      const entry = useFirstRunEntry()
+
+      await entry.handleStartupOutcome('restored')
+
+      expect(entry.gettingStartedVisible.value).toBe(false)
+    })
   })
 
   /**

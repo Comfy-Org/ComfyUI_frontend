@@ -25,9 +25,11 @@ import { openModelLibraryBrowser } from '@/platform/assets/composables/openModel
 import { isSalesManagedTier } from '@/platform/cloud/subscription/constants/tierPricing'
 import { isCloud } from '@/platform/distribution/types'
 import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
+import { resetOnboardingState } from '@/platform/onboarding/onboardingReset'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { buildSupportUrl } from '@/platform/support/config'
 import { useTelemetry } from '@/platform/telemetry'
+import { reportError } from '@/platform/telemetry/reportError'
 import type { ExecutionTriggerSource } from '@/platform/telemetry/types'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
@@ -889,6 +891,48 @@ export function useCoreCommands(): ComfyCommand[] {
           userId: resolvedUserInfo.value?.id
         })
         window.open(supportUrl, '_blank', 'noopener,noreferrer')
+      }
+    },
+    {
+      id: 'Comfy.Onboarding.Replay',
+      icon: 'pi pi-refresh',
+      label: 'Replay Onboarding',
+      versionAdded: '1.55.10',
+      function: async () => {
+        // The help-center item hides itself the same way, but the command is
+        // also reachable from the keybinding panel, which lists every
+        // registered command regardless.
+        if (!settingStore.get('Comfy.DevMode')) return
+
+        const confirmed = await useDialogService().confirm({
+          title: t('onboardingReplay.confirmTitle'),
+          message: t('onboardingReplay.confirmMessage'),
+          type: 'default'
+        })
+        if (!confirmed) return
+
+        try {
+          await resetOnboardingState()
+        } catch (error) {
+          toastStore.add({
+            severity: 'error',
+            summary: t('onboardingReplay.failedSummary'),
+            detail: t('onboardingReplay.failedDetail'),
+            life: 5000
+          })
+          reportError(error, { errorType: 'error_resetting_onboarding_state' })
+          return
+        }
+
+        // Every gate is read during startup, so the reset needs a fresh boot.
+        // On cloud the survey's route guard only runs at the app root, so land
+        // there; off cloud there is no survey and no guarantee the app is
+        // served from the origin root, so reload where we already are.
+        if (isCloud) {
+          globalThis.location.assign(import.meta.env.BASE_URL || '/')
+        } else {
+          globalThis.location.reload()
+        }
       }
     },
     {
