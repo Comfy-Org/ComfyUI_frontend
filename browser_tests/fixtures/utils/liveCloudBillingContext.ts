@@ -1,6 +1,7 @@
 import { zBillingStatusResponse } from '@comfyorg/ingest-types/zod'
 import type { BrowserContext, Page } from '@playwright/test'
 
+import { LiveCloudBillingSession } from '@e2e/fixtures/helpers/LiveCloudBilling'
 import { FeatureFlagHelper } from '@e2e/fixtures/helpers/FeatureFlagHelper'
 import type { NetworkPolicy } from '@e2e/fixtures/networkIsolationFixture'
 import { loadLiveCloudBillingConfig } from '@e2e/fixtures/utils/liveCloudBillingConfig'
@@ -76,4 +77,11 @@ export async function signInToLiveCloud(page: Page) {
     page.getByRole('button', { name: 'Sign in', exact: true }).click()
   ])
   zBillingStatusResponse.parse(await response.json())
+  const authorization = await response.request().headerValue('authorization')
+  if (!authorization) throw new Error('Missing billing authorization')
+  return new LiveCloudBillingSession(
+    page.request,
+    config.PLAYWRIGHT_SETUP_API_URL,
+    { authorization }
+  )
 }
