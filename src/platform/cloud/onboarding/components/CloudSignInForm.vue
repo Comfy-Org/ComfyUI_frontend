@@ -1,12 +1,7 @@
 <template>
-  <Form
-    v-slot="$form"
-    class="flex flex-col gap-6"
-    :resolver="zodResolver(signInSchema)"
-    @submit="onSubmit"
-  >
+  <form class="flex flex-col gap-6" @submit.prevent="onSubmit">
     <!-- Email Field -->
-    <FormField v-slot="$field" name="email" class="flex flex-col gap-2">
+    <div class="flex flex-col gap-2">
       <label
         class="mb-1 text-base text-primary-comfy-canvas/70"
         :for="emailInputId"
@@ -14,21 +9,24 @@
         {{ t('auth.login.emailLabel') }}
       </label>
       <Input
-        v-bind="$field.props"
         :id="emailInputId"
+        :model-value="values.email"
+        name="email"
         autocomplete="email"
         :class="CLOUD_AUTH_FIELD_CLASS"
         type="text"
         :placeholder="t('auth.login.emailPlaceholder')"
-        :aria-invalid="$field.invalid"
+        :aria-invalid="Boolean(errors.email)"
+        :aria-describedby="errors.email ? emailErrorId : undefined"
+        @update:model-value="updateEmail"
       />
-      <small v-if="$field.invalid" class="text-red-500">{{
-        $field.error.message
-      }}</small>
-    </FormField>
+      <small v-if="errors.email" :id="emailErrorId" class="text-red-500">
+        {{ errors.email }}
+      </small>
+    </div>
 
     <!-- Password Field -->
-    <FormField v-slot="$field" name="password" class="flex flex-col gap-2">
+    <div class="flex flex-col gap-2">
       <label
         class="mb-1 text-base text-primary-comfy-canvas/70"
         for="cloud-sign-in-password"
@@ -37,13 +35,16 @@
       </label>
       <div class="relative">
         <Input
-          v-bind="$field.props"
           id="cloud-sign-in-password"
+          :model-value="values.password"
+          name="password"
           autocomplete="current-password"
           :type="passwordVisible ? 'text' : 'password'"
           :placeholder="t('auth.login.passwordPlaceholder')"
           :class="cn('pr-10', CLOUD_AUTH_FIELD_CLASS)"
-          :aria-invalid="$field.invalid"
+          :aria-invalid="Boolean(errors.password)"
+          :aria-describedby="errors.password ? passwordErrorId : undefined"
+          @update:model-value="updatePassword"
         />
         <button
           type="button"
@@ -62,9 +63,9 @@
           />
         </button>
       </div>
-      <small v-if="$field.invalid" class="text-red-500">{{
-        $field.error.message
-      }}</small>
+      <small v-if="errors.password" :id="passwordErrorId" class="text-red-500">
+        {{ errors.password }}
+      </small>
 
       <router-link
         :to="{ name: 'cloud-forgot-password' }"
@@ -72,7 +73,7 @@
       >
         {{ t('auth.login.forgotPassword') }}
       </router-link>
-    </FormField>
+    </div>
 
     <!-- Auth Error Message -->
     <Message v-if="authError" severity="error">
@@ -85,18 +86,15 @@
       size="brand"
       class="mt-2 w-full"
       :loading="loading"
-      :disabled="!$form.valid"
+      :disabled="!isValid"
     >
       {{ t('auth.login.loginButton') }}
     </Button>
-  </Form>
+  </form>
 </template>
 
 <script setup lang="ts">
-import type { FormSubmitEvent } from '@primevue/forms'
-import { Form, FormField } from '@primevue/forms'
-import { zodResolver } from '@primevue/forms/resolvers/zod'
-import { computed, ref } from 'vue'
+import { computed, reactive, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { cn } from '@comfyorg/tailwind-utils'
@@ -108,6 +106,7 @@ import { CLOUD_AUTH_FIELD_CLASS } from '@/platform/cloud/onboarding/constants/au
 import { signInSchema } from '@/schemas/signInSchema'
 import type { SignInData } from '@/schemas/signInSchema'
 import { useAuthStore } from '@/stores/authStore'
+import { getZodFieldErrors } from '@/utils/zodFieldErrors'
 
 const authStore = useAuthStore()
 const loading = computed(() => authStore.loading)
@@ -123,11 +122,40 @@ const emit = defineEmits<{
 }>()
 
 const emailInputId = 'cloud-sign-in-email'
+const emailErrorId = `${emailInputId}-error`
+const passwordErrorId = 'cloud-sign-in-password-error'
 const passwordVisible = ref(false)
+const values = reactive<SignInData>({ email: '', password: '' })
+const errors = reactive<Partial<Record<keyof SignInData, string>>>({})
+const isValid = computed(() => Object.keys(errors).length === 0)
 
-const onSubmit = (event: FormSubmitEvent) => {
-  if (event.valid) {
-    emit('submit', event.values as SignInData)
+function validateField(field: keyof SignInData) {
+  const result = signInSchema.safeParse(values)
+  const message = result.success
+    ? undefined
+    : getZodFieldErrors(result.error)[field]
+
+  if (message) errors[field] = message
+  else delete errors[field]
+}
+
+function updateEmail(value: string | number | undefined) {
+  values.email = String(value ?? '')
+  validateField('email')
+}
+
+function updatePassword(value: string | number | undefined) {
+  values.password = String(value ?? '')
+  validateField('password')
+}
+
+function onSubmit() {
+  const result = signInSchema.safeParse(values)
+  if (result.success) {
+    emit('submit', result.data)
+    return
   }
+
+  Object.assign(errors, getZodFieldErrors(result.error))
 }
 </script>
