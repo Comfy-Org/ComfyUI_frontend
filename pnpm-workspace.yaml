@@ -124,6 +124,8 @@ catalog:
   pinia: ^4.0.2
   postcss-html: ^1.8.0
   posthog-js: ^1.358.1
+  prettier: 3.9.5
+  prettier-plugin-astro: ^1.0.0
   pretty-bytes: ^7.1.0
   primeicons: ^7.0.0
   primevue: 4.2.5
@@ -185,6 +187,7 @@ allowBuilds:
 overrides:
   vite: 'catalog:'
   '@tiptap/pm': 3.31.0
+  prettier: 3.9.5
   # Security overrides
   lodash: ^4.18.0
   yaml: 'catalog:'
