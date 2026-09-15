@@ -406,10 +406,10 @@ describe('InviteMemberDialogContent', () => {
 
         await user.click(copyLinkButtons()[0])
         expect(
-            await screen.findByRole('button', {
-              name: 'workspacePanel.inviteLinks.copied'
-            })
-          ).toBeInTheDocument()
+          await screen.findByRole('button', {
+            name: 'workspacePanel.inviteLinks.copied'
+          })
+        ).toBeInTheDocument()
 
         await vi.advanceTimersByTimeAsync(2100)
         expect(
