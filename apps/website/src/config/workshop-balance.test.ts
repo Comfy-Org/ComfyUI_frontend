@@ -1,4 +1,3 @@
-// @vitest-environment happy-dom
 import { describe, expect, it, vi } from 'vitest'
 
 import type { User } from 'firebase/auth'
@@ -186,7 +185,8 @@ describe('createBalanceReader', () => {
     await refreshing
 
     expect(session.remint).toHaveBeenCalledWith(
-      expect.objectContaining({ uid: 'uid-1' })
+      expect.objectContaining({ uid: 'uid-1' }),
+      expect.objectContaining({ workspaceId: 'ws-1' })
     )
   })
 

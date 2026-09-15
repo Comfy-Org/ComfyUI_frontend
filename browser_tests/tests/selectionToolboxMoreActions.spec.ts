@@ -6,8 +6,9 @@ import { openMoreOptions } from '@e2e/fixtures/utils/selectionToolbox'
 
 test.describe('Selection Toolbox - More Options', { tag: '@ui' }, () => {
   test.describe('Single node actions', () => {
+    test.use({ initialSettings: { 'Comfy.Canvas.SelectionToolbox': true } })
+
     test.beforeEach(async ({ comfyPage }) => {
-      await comfyPage.settings.setSetting('Comfy.Canvas.SelectionToolbox', true)
       await comfyPage.workflow.loadWorkflow('nodes/single_ksampler')
       await comfyPage.nextFrame()
     })
@@ -141,8 +142,9 @@ test.describe('Selection Toolbox - More Options', { tag: '@ui' }, () => {
   })
 
   test.describe('Multiple node actions', () => {
+    test.use({ initialSettings: { 'Comfy.Canvas.SelectionToolbox': true } })
+
     test.beforeEach(async ({ comfyPage }) => {
-      await comfyPage.settings.setSetting('Comfy.Canvas.SelectionToolbox', true)
       await comfyPage.workflow.loadWorkflow('default')
       await comfyPage.nextFrame()
     })
