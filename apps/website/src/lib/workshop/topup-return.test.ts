@@ -40,6 +40,14 @@ describe('subscribeToTopUpReturns', () => {
         data: { type: 'workshop-topup-return', attemptId: '../invalid' }
       })
     )
+    for (const data of [null, {}, { type: 'workshop-topup-return' }]) {
+      window.dispatchEvent(
+        new MessageEvent('message', {
+          origin: window.location.origin,
+          data
+        })
+      )
+    }
     window.dispatchEvent(
       new MessageEvent('message', {
         origin: window.location.origin,
@@ -67,6 +75,12 @@ describe('subscribeToTopUpReturns', () => {
     const listener = vi.fn()
     const unsubscribe = subscribeToTopUpReturns(listener)
 
+    window.dispatchEvent(
+      new StorageEvent('storage', {
+        key: 'comfy-workshop-topup-return',
+        newValue: '{'
+      })
+    )
     window.dispatchEvent(
       new StorageEvent('storage', {
         key: 'comfy-workshop-topup-return',
@@ -109,5 +123,29 @@ describe('announceTopUpReturnFromLocation', () => {
       attemptId: 'attempt-1'
     })
     expect(closeChannel).toHaveBeenCalledOnce()
+  })
+
+  it('falls back to storage when direct messaging is unavailable', () => {
+    vi.stubGlobal('BroadcastChannel', undefined)
+    onTestFinished(() => {
+      vi.unstubAllGlobals()
+      vi.restoreAllMocks()
+    })
+    const setItem = vi.spyOn(Storage.prototype, 'setItem')
+    const removeItem = vi.spyOn(Storage.prototype, 'removeItem')
+    window.history.replaceState(
+      {},
+      '',
+      '/payment/success?workshopTopUpReturn=attempt-2'
+    )
+
+    announceTopUpReturnFromLocation()
+
+    const message = JSON.stringify({
+      type: 'workshop-topup-return',
+      attemptId: 'attempt-2'
+    })
+    expect(setItem).toHaveBeenCalledWith('comfy-workshop-topup-return', message)
+    expect(removeItem).toHaveBeenCalledWith('comfy-workshop-topup-return')
   })
 })
