@@ -224,18 +224,17 @@ while a render already in progress finishes and reports its outcome. Sign-out,
 workspace changes, and leaving the page still cancel the browser's wait.
 
 Vercel CI always builds Models and enables Router execution, selecting production
-Cloud for production or staging Cloud for previews. The auth build override
-applies only outside production. The `workshop` PR label is no longer needed.
+Cloud for production or staging Cloud for previews. Authentication remains
+available independently of the Models rollout. The `workshop` PR label is no longer needed.
 `workshop-test` only selects test Cloud; neither label bypasses the PostHog
 visibility flag.
 
 `WORKSHOP_IN_BUILD=0` remains an explicit build exclusion for diagnostics.
-`PUBLIC_WORKSHOP_AUTH_FLAG=1` overrides a remote auth disable outside production.
-`PUBLIC_WORKSHOP_ROUTER_RUN=1` enables execution; neither grants Models visibility.
+`PUBLIC_WORKSHOP_ROUTER_RUN=1` enables execution; it does not grant Models visibility.
 For local development without PostHog:
 
 ```sh
-PUBLIC_WORKSHOP_ENABLED=1 PUBLIC_WORKSHOP_AUTH_FLAG=1 PUBLIC_WORKSHOP_ROUTER_RUN=1 \
+PUBLIC_WORKSHOP_ENABLED=1 PUBLIC_WORKSHOP_ROUTER_RUN=1 \
   pnpm --filter @comfyorg/website dev
 ```
 
