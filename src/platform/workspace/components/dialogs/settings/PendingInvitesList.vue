@@ -99,6 +99,7 @@
 import { useI18n } from 'vue-i18n'
 
 import MoreButton from '@/components/button/MoreButton.vue'
+import { useToastStore } from '@/platform/updates/common/toastStore'
 import Button from '@/components/ui/button/Button.vue'
 import type { WorkspacePendingInvite } from '@/platform/workspace/stores/teamWorkspaceStore'
 import {
@@ -119,7 +120,7 @@ defineEmits<{
   revoke: [invite: WorkspacePendingInvite]
 }>()
 
-const { d } = useI18n()
+const { d, t } = useI18n()
 
 function getInviteDisplayName(email: string): string {
   return email.split('@')[0]
@@ -135,6 +136,13 @@ function formatDate(date: Date): string {
 
 async function copyInviteLink(invite: WorkspacePendingInvite) {
   if (!invite.token) return
-  await copyTextSilently(buildInviteLink(invite.token))
+  const copied = await copyTextSilently(buildInviteLink(invite.token))
+  useToastStore().add({
+    severity: copied ? 'success' : 'error',
+    summary: copied
+      ? t('workspacePanel.inviteLinks.copiedToast')
+      : t('workspacePanel.inviteLinks.copyFailedToast'),
+    life: 3000
+  })
 }
 </script>
