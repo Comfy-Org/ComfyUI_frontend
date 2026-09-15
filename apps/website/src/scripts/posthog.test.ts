@@ -369,7 +369,6 @@ describe('workshop-enabled settles only on an observed answer', () => {
       await import('./posthog')
     expect(useWorkshopEnabledSettled().value).toBe(true)
     expect(useWorkshopEnabled().value).toBe(true)
-    vi.unstubAllEnvs()
   })
 
   it('stays unsettled through init until a flag answer arrives', async () => {
@@ -436,6 +435,29 @@ describe('workshop-enabled settles only on an observed answer', () => {
     expect(useWorkshopEnabledSettled().value).toBe(false)
     await vi.advanceTimersByTimeAsync(3000)
     expect(useWorkshopEnabledSettled().value).toBe(true)
+    vi.useRealTimers()
+  })
+
+  it('drops a stale grant when a same-identity reload times out', async () => {
+    vi.useFakeTimers()
+    hoisted.mockGetProperty.mockReturnValue('staff-uid')
+    hoisted.mockIsFeatureEnabled.mockReturnValue(true)
+    const {
+      initPostHog,
+      identifyWorkshopUser,
+      useWorkshopEnabled,
+      useWorkshopEnabledSettled
+    } = await import('./posthog')
+    initPostHog()
+    emitFeatureFlags()
+    expect(useWorkshopEnabled().value).toBe(true)
+
+    hoisted.mockIsFeatureEnabled.mockReturnValue(undefined)
+    identifyWorkshopUser({ uid: 'staff-uid' })
+    expect(useWorkshopEnabled().value).toBe(false)
+    await vi.advanceTimersByTimeAsync(3000)
+    expect(useWorkshopEnabledSettled().value).toBe(true)
+    expect(useWorkshopEnabled().value).toBe(false)
     vi.useRealTimers()
   })
 })

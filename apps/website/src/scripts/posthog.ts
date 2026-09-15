@@ -165,6 +165,7 @@ function refreshFlagForSameIdentity(user: WorkshopIdentity | null): void {
     user &&
     posthog.isFeatureEnabled(WORKSHOP_ENABLED_FLAG, { send_event: false })
   if (cachedAnswer !== undefined) return
+  workshopEnabled.value = VISIBILITY_OVERRIDE
   awaitFlagAnswer()
   posthog.reloadFeatureFlags()
 }
