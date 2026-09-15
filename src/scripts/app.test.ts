@@ -44,6 +44,7 @@ import {
 } from '@/composables/usePaste'
 import Load3dUtils from '@/extensions/core/load3d/Load3dUtils'
 import { getWorkflowDataFromFile } from '@/scripts/metadata/parser'
+import { provideExtensionHost } from '@/services/extensionHostProvider'
 import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
 import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
 import { installErrorClearingHooks } from '@/composables/graph/useErrorClearingHooks'
@@ -2568,6 +2569,37 @@ describe('ComfyApp', () => {
   })
 
   describe('handleFile', () => {
+    it('lets an extension host supply workflow data before native parsing', async () => {
+      const workflow = createWorkflowGraphData()
+      const importFile = vi.fn(async () => ({ workflow }))
+      provideExtensionHost({
+        name: 'test-import-host',
+        canLoad: () => true,
+        load: vi.fn(async () => {}),
+        importFile
+      })
+      const loadGraphData = vi
+        .spyOn(app, 'loadGraphData')
+        .mockResolvedValue(false)
+
+      try {
+        const file = createTestFile('embedded.jpg', 'image/jpeg')
+        await app.handleFile(file)
+
+        expect(importFile).toHaveBeenCalledWith(file)
+        expect(getWorkflowDataFromFile).not.toHaveBeenCalled()
+        expect(loadGraphData).toHaveBeenCalledWith(
+          workflow,
+          true,
+          true,
+          'embedded',
+          expect.any(Object)
+        )
+      } finally {
+        provideExtensionHost(null)
+      }
+    })
+
     it('should handle image files by creating LoadImage node', async () => {
       vi.mocked(getWorkflowDataFromFile).mockResolvedValue({})
 
