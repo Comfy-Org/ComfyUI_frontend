@@ -1,4 +1,3 @@
-// @vitest-environment jsdom
 import { render, screen, waitFor } from '@testing-library/vue'
 import { codeToHtml } from 'shiki'
 import { describe, expect, it, vi } from 'vitest'

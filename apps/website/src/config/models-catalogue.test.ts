@@ -21,6 +21,7 @@ import {
   filterWorkshopModels,
   parseCatalogSearch,
   isRouterModel,
+  sortOrdersFor,
   sortWorkshopModels,
   splitTask,
   summaryFor,
@@ -205,6 +206,18 @@ describe('sortWorkshopModels', () => {
     expect(
       sortWorkshopModels(list, 'popular').map((model) => model.slug)
     ).toEqual([first, second, 'never-run'])
+  })
+})
+
+describe('sortOrdersFor', () => {
+  it('withholds the price orders while no model carries a price', () => {
+    expect(sortOrdersFor(fixture)).toEqual(['popular', 'name'])
+  })
+
+  it('offers them again as soon as one model does', () => {
+    expect(
+      sortOrdersFor([{ ...fixture[0], creditsPerRun: 10 }, ...fixture.slice(1)])
+    ).toEqual(['popular', 'name', 'priceAsc', 'priceDesc'])
   })
 })
 

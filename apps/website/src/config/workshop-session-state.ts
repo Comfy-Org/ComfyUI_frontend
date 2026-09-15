@@ -1,8 +1,6 @@
 /**
  * Shared signed-in state for the website's Vue islands, projected from the
- * @comfyorg/account session client. Firebase is loaded only after the
- * Workshop auth flag becomes true; a release-shape page does not download
- * or initialize it.
+ * @comfyorg/account session client.
  *
  * One `SessionSnapshot` ref is the single source of truth; the views below
  * derive from it, so the illegal combinations a set of parallel refs could
@@ -23,10 +21,7 @@ import type { EffectScope } from 'vue'
 import type { SessionSnapshot } from '@comfyorg/account/session'
 import { isPermanentSessionError } from '@comfyorg/account/session'
 
-import {
-  useWorkshopAuthFlag,
-  useWorkshopAuthFlagSettled
-} from '../scripts/posthog'
+import { identifyWorkshopUser, useWorkshopAuthFlag } from '../scripts/posthog'
 import {
   subscribeAuthRefreshTelemetry,
   workshopSessionClient
@@ -222,6 +217,9 @@ async function begin(expectedGeneration: number): Promise<void> {
 
   running = true
   stopSnapshot = workshopSessionClient.subscribe((next) => {
+    if (next.phase !== 'pending') {
+      identifyWorkshopUser(next.user ?? null)
+    }
     if (holdsForRestore(next)) return
     snapshot.value = next
     keepWorkspaceRemembered()
@@ -245,24 +243,17 @@ function start(): void {
   // of binding its watcher to whichever component calls this first.
   lifecycle = effectScope(true)
   const enabled = useWorkshopAuthFlag()
-  const settled = useWorkshopAuthFlagSettled()
   lifecycle.run(() => {
     watch(
-      [enabled, settled],
-      ([on, isSettled]) => {
-        // A settlement-only change while a session is already live must not
-        // tear it down; only enabling from a stopped state begins a lifecycle.
+      enabled,
+      (on) => {
         if (on && running) return
         const expectedGeneration = ++generation
         stopListeners()
         snapshot.value = PENDING
         if (!on) {
-          // Retain the cached credential while the flag is unresolved; only a
-          // settled-off answer means Workshop is disabled and it must go.
-          if (isSettled) {
-            restoredForUid = undefined
-            workshopSessionClient.clearStoredCredential()
-          }
+          restoredForUid = undefined
+          workshopSessionClient.clearStoredCredential()
           return
         }
         void begin(expectedGeneration).catch((error: unknown) => {

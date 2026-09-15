@@ -1,4 +1,3 @@
-// @vitest-environment jsdom
 import { describe, expect, it, onTestFinished, vi } from 'vitest'
 
 import {
