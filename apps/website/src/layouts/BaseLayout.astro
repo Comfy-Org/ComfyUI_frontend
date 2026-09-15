@@ -39,6 +39,7 @@ interface Props {
   mainEntityId?: string
   extraJsonLd?: (JsonLdNode | null | undefined)[]
   minimal?: boolean
+  clientRouter?: boolean
 }
 
 const {
@@ -52,6 +53,7 @@ const {
   mainEntityId,
   extraJsonLd,
   minimal = false,
+  clientRouter = true,
 } = Astro.props
 
 const keywordsContent = keywords && keywords.length > 0 ? keywords.join(', ') : undefined
@@ -202,7 +204,7 @@ const structuredData = shouldNoindex
 
     <GoogleTagManager part="head" />
 
-    <ClientRouter />
+    {clientRouter && <ClientRouter />}
 
     <!-- Chrome initializes a video's muted state from the `muted` attribute
          only during document parsing, not for the DOMParser-built pages the
@@ -278,6 +280,13 @@ const structuredData = shouldNoindex
       if (import.meta.env.PROD) {
         initPostHog()
         document.addEventListener('astro:page-load', capturePageview)
+      }
+
+      if (!document.querySelector('[name="astro-view-transitions-enabled"]')) {
+        window.addEventListener('pageshow', () => {
+          if (import.meta.env.PROD) capturePageview()
+          ScrollTrigger.refresh()
+        })
       }
 
       document.addEventListener('astro:page-load', () => {

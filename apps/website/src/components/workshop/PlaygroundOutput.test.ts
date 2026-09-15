@@ -184,6 +184,20 @@ describe('PlaygroundOutput', () => {
     expect(screen.getByRole('img').getAttribute('src')).toContain('example')
   })
 
+  it('tells visitors to download generated outputs before leaving', () => {
+    render(PlaygroundOutput, {
+      props: {
+        modelName: 'Seedream 4.5',
+        state: succeeded(output('latest')),
+        now: 2_000
+      }
+    })
+
+    expect(screen.getByTestId('output-save-reminder')).toHaveTextContent(
+      'Download every output you want to keep before leaving this page.'
+    )
+  })
+
   it('shows the latest run and switches to an earlier one on demand', async () => {
     const user = userEvent.setup()
     render(PlaygroundOutput, {
@@ -261,6 +275,36 @@ describe('PlaygroundOutput', () => {
       'https://example.com/first.webp',
       'first.webp'
     )
+  })
+
+  it('reports only completed downloads as saved', async () => {
+    const user = userEvent.setup()
+    vi.mocked(downloadOutput)
+      .mockResolvedValueOnce(false)
+      .mockResolvedValueOnce(true)
+    const first = render(PlaygroundOutput, {
+      props: {
+        modelName: 'Seedream 4.5',
+        state: succeeded(output('first')),
+        now: 2_000
+      }
+    })
+
+    await user.click(screen.getByTestId('output-download'))
+    expect(first.emitted().downloaded).toBeUndefined()
+
+    first.unmount()
+    const second = render(PlaygroundOutput, {
+      props: {
+        modelName: 'Seedream 4.5',
+        state: succeeded(output('second')),
+        now: 2_000
+      }
+    })
+    await user.click(screen.getByTestId('output-download'))
+    expect(second.emitted().downloaded).toEqual([
+      ['https://example.com/second.webp']
+    ])
   })
 
   it.for([

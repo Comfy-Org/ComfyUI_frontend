@@ -6,6 +6,7 @@ import type {
 import { test as base } from './blockExternalMedia'
 
 export const MODEL_PATH = '/models/bfl--flux-2-max--generate-images/'
+export const MODEL_NAVIGATION_PATH = '/models/bfl--flux-2-pro--generate-images/'
 
 function jsonRoute(body: unknown, status = 200) {
   return { status, contentType: 'application/json', body: JSON.stringify(body) }
@@ -17,6 +18,9 @@ export const test = base.extend<{
   modelsAccount: [
     async ({ context }, use) => {
       const email = 'models-e2e@test.comfy.org'
+      await context.route('https://apis.google.com/js/api.js*', (route) =>
+        route.abort('blockedbyclient')
+      )
       await context.route('**/cdn-cgi/trace', (route) =>
         route.fulfill({
           status: 200,

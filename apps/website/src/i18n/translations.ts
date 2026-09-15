@@ -9824,10 +9824,6 @@ Enterprise`
     en: 'Models did not load.',
     'zh-CN': '模型未能加载。'
   },
-  'workshop.run.leavePage': {
-    en: 'A model is still running. Leaving now will cancel it. Leave this page?',
-    'zh-CN': '模型仍在运行。现在离开将取消生成。要离开此页面吗？'
-  },
   'workshop.run.leaveTitle': {
     en: 'Your run is still going',
     'zh-CN': '仍有生成在进行中'
@@ -9901,6 +9897,18 @@ Enterprise`
   },
   'workshop.output.download': { en: 'Download', 'zh-CN': '下载' },
   'workshop.output.openOriginal': { en: 'Open output', 'zh-CN': '打开输出' },
+  'workshop.output.leaveTitle': {
+    en: 'Leave without downloading?',
+    'zh-CN': '未下载就离开吗？'
+  },
+  'workshop.output.leaveBody': {
+    en: 'Your generated output has not been downloaded. If you leave now, you may lose it.',
+    'zh-CN': '你生成的输出尚未下载。现在离开可能会丢失该输出。'
+  },
+  'workshop.output.leaveAnyway': {
+    en: 'Leave anyway',
+    'zh-CN': '仍然离开'
+  },
   'workshop.output.downloadFallback': {
     en: 'Automatic download failed. Open the output to save it.',
     'zh-CN': '自动下载失败。请打开输出文件后保存。'
@@ -9910,8 +9918,9 @@ Enterprise`
     'zh-CN': '在代码中使用这些设置'
   },
   'workshop.output.expires': {
-    en: 'Output links expire 24 hours after a run. Download anything you want to keep.',
-    'zh-CN': '输出链接在运行后 24 小时失效。请下载保存。'
+    en: 'Download every output you want to keep before leaving this page. Output links expire 24 hours after the run.',
+    'zh-CN':
+      '离开此页面前，请下载所有想要保留的输出。输出链接将在运行 24 小时后失效。'
   },
   'workshop.output.nsfw': {
     en: 'This output may be sensitive.',
