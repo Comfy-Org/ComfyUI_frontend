@@ -196,8 +196,12 @@ describe('useFeatureFlags', () => {
     })
   })
 
-  describe('hostedBillingWebEnabled', () => {
-    it('stays disabled when only the development URL is configured', () => {
+  describe('hostedBillingDestination', () => {
+    afterEach(() => {
+      remoteConfig.value = {}
+    })
+
+    it('stays on stripe when the server reports nothing, even with a development URL configured', () => {
       vi.stubEnv('VITE_BILLING_WEB_URL', 'http://localhost:5174')
       vi.mocked(api.getServerFeature).mockImplementation(
         (_path, defaultValue) => defaultValue
@@ -205,11 +209,24 @@ describe('useFeatureFlags', () => {
 
       const { flags } = useFeatureFlags()
 
+      expect(flags.hostedBillingDestination).toBe('stripe')
       expect(flags.hostedBillingWebEnabled).toBe(false)
       expect(api.getServerFeature).toHaveBeenCalledWith(
-        ServerFeatureFlag.HOSTED_BILLING_WEB_ENABLED,
-        false
+        ServerFeatureFlag.HOSTED_BILLING_DESTINATION,
+        'stripe'
       )
+    })
+
+    it('enables the hosted app only on the billing_web variant', () => {
+      const { flags } = useFeatureFlags()
+
+      remoteConfig.value = { hosted_billing_destination: 'billing_web' }
+      expect(flags.hostedBillingDestination).toBe('billing_web')
+      expect(flags.hostedBillingWebEnabled).toBe(true)
+
+      remoteConfig.value = { hosted_billing_destination: 'true' }
+      expect(flags.hostedBillingDestination).toBe('stripe')
+      expect(flags.hostedBillingWebEnabled).toBe(false)
     })
   })
 
