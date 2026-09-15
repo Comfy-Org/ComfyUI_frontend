@@ -47,6 +47,7 @@ export default defineConfig({
       include: ['leaflet']
     },
     server: {
+      allowedHosts: process.env.AMP_ORB ? true : undefined,
       watch: {
         ignored: ['**/playwright-report/**']
       }
