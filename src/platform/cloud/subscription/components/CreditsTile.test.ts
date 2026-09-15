@@ -2,7 +2,7 @@ import { useBillingCapabilities } from '@/platform/workspace/composables/useBill
 import { render, screen, waitFor } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import type { BalanceInfo, SubscriptionInfo } from '@/composables/billing/types'
@@ -29,8 +29,6 @@ const state = vi.hoisted(() => ({
   tier: null as SubscriptionInfo['tier'],
   currentTeamCreditStop: null as TeamStop | null,
   isLoading: false,
-  canTopUp: true,
-  canSubscribeSelfServe: false,
   type: 'workspace' as 'workspace' | 'legacy',
   fetchBalance: vi.fn(),
   fetchStatus: vi.fn(),
@@ -82,7 +80,8 @@ vi.mock<unknown>(import('@/composables/billing/useBillingContext'), () => ({
 
 vi.mock(import('@/platform/workspace/composables/useBillingCapabilities'))
 
-const capabilities = useBillingCapabilities()
+const mockCanTopUp = ref(true)
+const mockCanSubscribeSelfServe = ref(false)
 
 vi.mock<unknown>(
   import('@/platform/cloud/subscription/composables/useSubscriptionDialog'),
@@ -216,14 +215,11 @@ function createDeferred() {
 
 describe('CreditsTile', () => {
   beforeEach(() => {
-    vi.spyOn(capabilities.canTopUp, 'value', 'get').mockImplementation(
-      () => state.canTopUp
-    )
-    vi.spyOn(
-      capabilities.canSubscribeSelfServe,
-      'value',
-      'get'
-    ).mockImplementation(() => state.canSubscribeSelfServe)
+    vi.mocked(useBillingCapabilities).mockReturnValue({
+      ...useBillingCapabilities(),
+      canTopUp: computed(() => mockCanTopUp.value),
+      canSubscribeSelfServe: computed(() => mockCanSubscribeSelfServe.value)
+    })
 
     state.balance = null
     state.subscription = null
@@ -234,8 +230,8 @@ describe('CreditsTile', () => {
     state.tier = null
     state.currentTeamCreditStop = null
     state.isLoading = false
-    state.canTopUp = true
-    state.canSubscribeSelfServe = false
+    mockCanTopUp.value = true
+    mockCanSubscribeSelfServe.value = false
     state.type = 'workspace'
     state.customerEventsError = null
     state.telemetryUnavailable = false
@@ -484,7 +480,7 @@ describe('CreditsTile', () => {
     activeProSubscription()
     // canTopUp fails open for owners on an unreadable snapshot, so a lapsed
     // self-serve plan must keep this state on tier alone.
-    state.canTopUp = true
+    mockCanTopUp.value = true
     const { container } = renderTile({ inactivePlan: true })
 
     expect(container.textContent).toContain('0remaining')
@@ -499,7 +495,7 @@ describe('CreditsTile', () => {
     activeProSubscription()
     // A sales-managed plan has no self-serve reactivation to sell, so the
     // reactivate-to-use-credits treatment must not apply.
-    state.canTopUp = true
+    mockCanTopUp.value = true
     state.tier = 'ENTERPRISE'
     state.subscription = {
       tier: 'ENTERPRISE',
@@ -636,8 +632,8 @@ describe('CreditsTile', () => {
   it('offers the upgrade path when top-up is denied but self-serve subscribe is allowed', async () => {
     activeProSubscription()
     state.tier = 'FREE'
-    state.canTopUp = false
-    state.canSubscribeSelfServe = true
+    mockCanTopUp.value = false
+    mockCanSubscribeSelfServe.value = true
     renderTile()
     expect(screen.queryByText('Add credits')).toBeNull()
     await userEvent.click(screen.getByText('Upgrade to add credits'))
@@ -656,7 +652,7 @@ describe('CreditsTile', () => {
   it('uses the fail-open capability fallback on legacy billing', () => {
     activeProSubscription()
     state.type = 'legacy'
-    state.canTopUp = true
+    mockCanTopUp.value = true
     renderTile()
     expect(screen.getByText('Add credits')).toBeInTheDocument()
   })

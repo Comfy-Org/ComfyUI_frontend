@@ -2,7 +2,7 @@ import { useBillingCapabilities } from '@/platform/workspace/composables/useBill
 import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import type { SubscriptionInfo } from '@/composables/billing/types'
@@ -35,11 +35,8 @@ const state = vi.hoisted(() => ({
   workspaceType: 'team' as WorkspaceType,
   canManageSubscription: true,
   canManageSubscriptionLifecycle: true,
-  canReactivate: true,
   canReactivatePlan: true,
   shouldUseWorkspaceBilling: true,
-  canTopUp: true,
-  canSubscribeSelfServe: false,
   showTopUpCreditsDialog: vi.fn(),
   manageSubscription: vi.fn(),
   handleResubscribe: vi.fn()
@@ -100,7 +97,9 @@ vi.mock<unknown>(
 
 vi.mock(import('@/platform/workspace/composables/useBillingCapabilities'))
 
-const capabilities = useBillingCapabilities()
+const mockCanTopUp = ref(true)
+const mockCanSubscribeSelfServe = ref(false)
+const mockCanReactivate = ref(true)
 
 vi.mock(import('@/platform/workspace/composables/useResubscribe'), () => ({
   useResubscribe: () => ({
@@ -222,17 +221,12 @@ function paymentFailedState() {
 
 describe('BillingStatusBanner', () => {
   beforeEach(() => {
-    vi.spyOn(capabilities.canTopUp, 'value', 'get').mockImplementation(
-      () => state.canTopUp
-    )
-    vi.spyOn(
-      capabilities.canSubscribeSelfServe,
-      'value',
-      'get'
-    ).mockImplementation(() => state.canSubscribeSelfServe)
-    vi.spyOn(capabilities.canReactivate, 'value', 'get').mockImplementation(
-      () => state.canReactivate
-    )
+    vi.mocked(useBillingCapabilities).mockReturnValue({
+      ...useBillingCapabilities(),
+      canTopUp: computed(() => mockCanTopUp.value),
+      canSubscribeSelfServe: computed(() => mockCanSubscribeSelfServe.value),
+      canReactivate: computed(() => mockCanReactivate.value)
+    })
 
     state.billingControlEnabled = true
     state.v1PaymentRecovery = true
@@ -249,10 +243,10 @@ describe('BillingStatusBanner', () => {
     state.workspaceType = 'team'
     state.canManageSubscription = true
     state.canManageSubscriptionLifecycle = true
-    state.canReactivate = true
+    mockCanReactivate.value = true
     state.shouldUseWorkspaceBilling = true
-    state.canTopUp = true
-    state.canSubscribeSelfServe = false
+    mockCanTopUp.value = true
+    mockCanSubscribeSelfServe.value = false
   })
 
   it('renders nothing for a healthy funded team', () => {
@@ -288,8 +282,8 @@ describe('BillingStatusBanner', () => {
 
   it('offers an upgrade when self-serve subscription is available', () => {
     exhausted()
-    state.canTopUp = false
-    state.canSubscribeSelfServe = true
+    mockCanTopUp.value = false
+    mockCanSubscribeSelfServe.value = true
 
     renderBanner()
 
@@ -312,7 +306,7 @@ describe('BillingStatusBanner', () => {
       scheduledChange: null
     }
     state.canManageSubscription = false
-    state.canTopUp = false
+    mockCanTopUp.value = false
     renderBanner()
 
     expect(screen.getByRole('status')).toHaveTextContent(
@@ -364,7 +358,7 @@ describe('BillingStatusBanner', () => {
   it('shows the paused member notice without an action', () => {
     pausedState()
     state.canManageSubscription = false
-    state.canTopUp = false
+    mockCanTopUp.value = false
     renderBanner()
 
     expect(screen.getByRole('status')).toHaveTextContent(
@@ -449,7 +443,7 @@ describe('BillingStatusBanner', () => {
     // Cloud personal on legacy_stripe: handleResubscribe skips its capability
     // guard, so the affordance must follow the client permission instead.
     state.shouldUseWorkspaceBilling = false
-    state.canReactivate = false
+    mockCanReactivate.value = false
     state.canManageSubscriptionLifecycle = true
     state.subscription = {
       hasFunds: true,
@@ -474,7 +468,7 @@ describe('BillingStatusBanner', () => {
     }
     state.canManageSubscription = false
     state.canManageSubscriptionLifecycle = false
-    state.canReactivate = false
+    mockCanReactivate.value = false
     renderBanner()
 
     expect(screen.queryByRole('status')).not.toBeInTheDocument()

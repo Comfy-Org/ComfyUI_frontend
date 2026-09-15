@@ -1,3 +1,4 @@
+import { computed, ref } from 'vue'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 import { fromAny } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -39,12 +40,12 @@ vi.mock<unknown>(import('@/services/dialogService'), () => ({
   })
 }))
 
-const mockCanTopUp = vi.hoisted(() => ({ value: true }))
-const mockCanSubscribeSelfServe = vi.hoisted(() => ({ value: false }))
+const mockCanTopUp = ref(true)
+const mockCanSubscribeSelfServe = ref(false)
 
 vi.mock(import('@/platform/workspace/composables/useBillingCapabilities'))
 
-const capabilities = useBillingCapabilities()
+const { initialize } = vi.mocked(useBillingCapabilities(), true)
 
 const mockTrackAddApiCreditButtonClicked = vi.hoisted(() => vi.fn())
 
@@ -56,14 +57,11 @@ vi.mock<unknown>(import('@/platform/telemetry'), () => ({
 
 describe('useTopUpUrlLoader', () => {
   beforeEach(() => {
-    vi.spyOn(capabilities.canTopUp, 'value', 'get').mockImplementation(
-      () => mockCanTopUp.value
-    )
-    vi.spyOn(
-      capabilities.canSubscribeSelfServe,
-      'value',
-      'get'
-    ).mockImplementation(() => mockCanSubscribeSelfServe.value)
+    vi.mocked(useBillingCapabilities).mockReturnValue({
+      ...useBillingCapabilities(),
+      canTopUp: computed(() => mockCanTopUp.value),
+      canSubscribeSelfServe: computed(() => mockCanSubscribeSelfServe.value)
+    })
 
     mockRouteQuery.value = {}
     mockCanTopUp.value = true
@@ -108,7 +106,7 @@ describe('useTopUpUrlLoader', () => {
     let resolveCapabilities!: () => void
     mockRouteQuery.value = { topup: '1' }
     mockCanTopUp.value = false
-    vi.mocked(capabilities.initialize).mockImplementationOnce(
+    initialize.mockImplementationOnce(
       () =>
         new Promise<void>((resolve) => {
           resolveCapabilities = resolve
@@ -195,7 +193,7 @@ describe('useTopUpUrlLoader', () => {
     expect(preservedQueryMocks.clearPreservedQuery).toHaveBeenCalledWith(
       'topup'
     )
-    expect(capabilities.initialize).not.toHaveBeenCalled()
+    expect(initialize).not.toHaveBeenCalled()
   })
 
   it('strips but does not open for a non-string param', async () => {

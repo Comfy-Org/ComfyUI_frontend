@@ -84,14 +84,13 @@ const teamMemberWorkspace: WorkspaceWithRole = {
 async function loadComposable() {
   const { useBillingCapabilities } =
     await import('@/platform/workspace/composables/useBillingCapabilities')
-  const capabilities = useBillingCapabilities()
-  capabilities.canReactivate = computed(() => mockCanReactivate.value)
-  capabilities.canSubscribeSelfServe = computed(
-    () => mockCanSubscribeSelfServe.value
-  )
-  capabilities.snapshotAuthoritative = computed(
-    () => mockSnapshotAuthoritative.value
-  )
+  vi.mocked(useBillingCapabilities).mockReturnValue({
+    ...useBillingCapabilities(),
+    canReactivate: computed(() => mockCanReactivate.value),
+    canSubscribeSelfServe: computed(() => mockCanSubscribeSelfServe.value),
+    snapshotAuthoritative: computed(() => mockSnapshotAuthoritative.value)
+  })
+
   const module = await import('@/platform/workspace/composables/useWorkspaceUI')
   return module.useWorkspaceUI()
 }

@@ -28,11 +28,8 @@ const state = vi.hoisted(() => {
     canAccessSubscriptionFeatures: true,
     isCancelled: false,
     planSlug: initialPlanSlug(),
-    canTopUp: false,
-    canSubscribeSelfServe: false,
     canManageSubscription: false,
     canManageSubscriptionLifecycle: false,
-    canReactivate: false,
     canReactivatePlan: false,
     canOpenPricingSurface: false,
     shouldUseWorkspaceBilling: true,
@@ -86,7 +83,9 @@ vi.mock<unknown>(
 
 vi.mock(import('@/platform/workspace/composables/useBillingCapabilities'))
 
-const capabilities = useBillingCapabilities()
+const mockCanTopUp = ref(false)
+const mockCanSubscribeSelfServe = ref(false)
+const mockCanReactivate = ref(false)
 
 vi.mock<unknown>(import('@/composables/billing/useBillingRouting'), () => ({
   useBillingRouting: () => ({
@@ -201,29 +200,24 @@ function renderComponent(
 
 describe('CurrentUserPopoverWorkspace', () => {
   beforeEach(() => {
-    vi.spyOn(capabilities.canTopUp, 'value', 'get').mockImplementation(
-      () => state.canTopUp
-    )
-    vi.spyOn(
-      capabilities.canSubscribeSelfServe,
-      'value',
-      'get'
-    ).mockImplementation(() => state.canSubscribeSelfServe)
-    vi.spyOn(capabilities.canReactivate, 'value', 'get').mockImplementation(
-      () => state.canReactivate
-    )
+    vi.mocked(useBillingCapabilities).mockReturnValue({
+      ...useBillingCapabilities(),
+      canTopUp: computed(() => mockCanTopUp.value),
+      canSubscribeSelfServe: computed(() => mockCanSubscribeSelfServe.value),
+      canReactivate: computed(() => mockCanReactivate.value)
+    })
 
     state.isCloud = true
     state.billingStatus = 'paid'
     state.canAccessSubscriptionFeatures = true
     state.isCancelled = false
     state.planSlug = 'pro-monthly'
-    state.canTopUp = false
-    state.canSubscribeSelfServe = false
+    mockCanTopUp.value = false
+    mockCanSubscribeSelfServe.value = false
     state.canManageSubscription = false
     state.canManageSubscriptionLifecycle = false
     state.canOpenPricingSurface = false
-    state.canReactivate = false
+    mockCanReactivate.value = false
     state.shouldUseWorkspaceBilling = true
     state.hostedBillingWebEnabled = false
     state.billingWebUrl = new URL('http://localhost:5174')
@@ -395,7 +389,7 @@ describe('CurrentUserPopoverWorkspace', () => {
 
   it('offers subscription when top-up is denied but self-serve is allowed', async () => {
     const user = userEvent.setup()
-    state.canSubscribeSelfServe = true
+    mockCanSubscribeSelfServe.value = true
     renderComponent('team')
 
     await user.click(screen.getByTestId('upgrade-to-add-credits-button'))
@@ -425,7 +419,7 @@ describe('CurrentUserPopoverWorkspace', () => {
     state.billingStatus = 'payment_failed'
     state.canAccessSubscriptionFeatures = false
     state.canManageSubscription = true
-    state.canSubscribeSelfServe = true
+    mockCanSubscribeSelfServe.value = true
     state.planSlug = null
 
     renderComponent('team')
@@ -467,7 +461,7 @@ describe('CurrentUserPopoverWorkspace', () => {
     const user = userEvent.setup()
     state.isCloud = false
     state.canAccessSubscriptionFeatures = false
-    state.canTopUp = true
+    mockCanTopUp.value = true
 
     renderComponent('personal')
 
@@ -481,8 +475,8 @@ describe('CurrentUserPopoverWorkspace', () => {
 
   it('offers add-credits alongside Subscribe for an unsubscribed Cloud owner', () => {
     state.canAccessSubscriptionFeatures = false
-    state.canTopUp = true
-    state.canSubscribeSelfServe = true
+    mockCanTopUp.value = true
+    mockCanSubscribeSelfServe.value = true
     state.canManageSubscription = true
 
     renderComponent('personal')
@@ -498,7 +492,7 @@ describe('CurrentUserPopoverWorkspace', () => {
 
   it('offers add-credits instead of the upgrade upsell on the Local free tier', () => {
     state.isCloud = false
-    state.canTopUp = true
+    mockCanTopUp.value = true
 
     renderComponent('personal')
 
@@ -510,8 +504,8 @@ describe('CurrentUserPopoverWorkspace', () => {
 
   it('shows one subscription CTA on the Cloud free tier', () => {
     state.canAccessSubscriptionFeatures = false
-    state.canTopUp = false
-    state.canSubscribeSelfServe = true
+    mockCanTopUp.value = false
+    mockCanSubscribeSelfServe.value = true
 
     renderComponent('personal')
 
@@ -528,7 +522,7 @@ describe('CurrentUserPopoverWorkspace', () => {
     state.isCloud = false
     state.isCancelled = true
     state.canManageSubscriptionLifecycle = true
-    state.canReactivate = true
+    mockCanReactivate.value = true
 
     renderComponent('team')
 
@@ -616,8 +610,8 @@ describe('CurrentUserPopoverWorkspace', () => {
       state.canManageSubscription = canManageSubscription
       state.canManageSubscriptionLifecycle = canManageSubscriptionLifecycle
       state.canReactivatePlan = canReactivate
-      state.canSubscribeSelfServe = canSubscribeSelfServe
-      state.canTopUp = canTopUp
+      mockCanSubscribeSelfServe.value = canSubscribeSelfServe
+      mockCanTopUp.value = canTopUp
 
       renderComponent('team')
 
@@ -633,7 +627,7 @@ describe('CurrentUserPopoverWorkspace', () => {
   it('keeps billing controls and resubscribe available to a promoted owner', async () => {
     const user = userEvent.setup()
     state.isCancelled = true
-    state.canTopUp = true
+    mockCanTopUp.value = true
     state.canManageSubscription = true
     state.canManageSubscriptionLifecycle = true
     state.canReactivatePlan = true
@@ -668,7 +662,7 @@ describe('CurrentUserPopoverWorkspace', () => {
     state.isCancelled = true
     state.canManageSubscription = true
     state.canManageSubscriptionLifecycle = true
-    state.canReactivate = false
+    mockCanReactivate.value = false
     state.canReactivatePlan = false
     renderComponent('team')
 
@@ -683,7 +677,7 @@ describe('CurrentUserPopoverWorkspace', () => {
     // The legacy rail resolves can_reactivate false but still permits
     // reactivation, so the button must follow canReactivatePlan. Rail
     // selection itself is covered in useWorkspaceUI.test.ts.
-    state.canReactivate = false
+    mockCanReactivate.value = false
     state.canReactivatePlan = true
 
     renderComponent('personal')

@@ -1,3 +1,4 @@
+import { computed, ref } from 'vue'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 import userEvent from '@testing-library/user-event'
 import { render, screen, waitFor } from '@testing-library/vue'
@@ -56,7 +57,7 @@ const mockToastAdd = vi.hoisted(() => vi.fn())
 const mockTier = vi.hoisted(() => ({ value: 'STANDARD' as string | null }))
 const mockTrackCancellation = vi.hoisted(() => vi.fn())
 const mockShouldUseWorkspaceBilling = vi.hoisted(() => ({ value: false }))
-const mockCanCancel = vi.hoisted(() => ({ value: true }))
+const mockCanCancel = ref(true)
 const mockCanManageSubscriptionLifecycle = vi.hoisted(() => ({ value: true }))
 const mockDistributionTypes = vi.hoisted(() => ({ isCloud: true }))
 
@@ -78,8 +79,6 @@ vi.mock<unknown>(import('@/composables/billing/useBillingRouting'), () => ({
 vi.mock(import('@/platform/distribution/types'), () => mockDistributionTypes)
 
 vi.mock(import('@/platform/workspace/composables/useBillingCapabilities'))
-
-const capabilities = useBillingCapabilities()
 
 vi.mock<unknown>(
   import('@/platform/workspace/composables/useWorkspaceUI'),
@@ -138,9 +137,10 @@ function renderComponent(
 
 describe('CancelSubscriptionDialogContent', () => {
   beforeEach(() => {
-    vi.spyOn(capabilities.canCancel, 'value', 'get').mockImplementation(
-      () => mockCanCancel.value
-    )
+    vi.mocked(useBillingCapabilities).mockReturnValue({
+      ...useBillingCapabilities(),
+      canCancel: computed(() => mockCanCancel.value)
+    })
 
     mockTier.value = 'STANDARD'
     mockShouldUseWorkspaceBilling.value = false

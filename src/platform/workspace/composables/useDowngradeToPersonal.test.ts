@@ -2,7 +2,7 @@ import { useBillingCapabilities } from '@/platform/workspace/composables/useBill
 import { getActivePinia } from 'pinia'
 import { useBillingOperationStore } from '@/platform/workspace/stores/billingOperationStore'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 
 import { WorkspaceApiError } from '@/platform/workspace/api/workspaceApi'
 import type { ListMembersParams } from '@/platform/workspace/api/workspaceApi'
@@ -32,7 +32,7 @@ const mockPermissions = vi.hoisted(() => ({
     canDowngradeToPersonal: true
   }
 }))
-const mockCanDowngradeToPersonal = vi.hoisted(() => ({ value: true }))
+const mockCanDowngradeToPersonal = ref(true)
 
 let workspaceStore: ReturnType<typeof useTeamWorkspaceStore> & {
   activeWorkspaceId: string | null
@@ -72,8 +72,6 @@ vi.mock<unknown>(
 vi.mock(import('@/platform/distribution/types'), () => ({ isCloud: true }))
 
 vi.mock(import('@/platform/workspace/composables/useBillingCapabilities'))
-
-const capabilities = useBillingCapabilities()
 
 vi.mock<unknown>(import('@/composables/billing/useBillingContext'), () => ({
   useBillingContext: () => ({
@@ -142,11 +140,10 @@ describe('useDowngradeToPersonal', () => {
   let windowOpen: ReturnType<typeof vi.spyOn>
 
   beforeEach(() => {
-    vi.spyOn(
-      capabilities.canDowngradeToPersonal,
-      'value',
-      'get'
-    ).mockImplementation(() => mockCanDowngradeToPersonal.value)
+    vi.mocked(useBillingCapabilities).mockReturnValue({
+      ...useBillingCapabilities(),
+      canDowngradeToPersonal: computed(() => mockCanDowngradeToPersonal.value)
+    })
 
     const pinia = getActivePinia()!
     workspaceStore = useTeamWorkspaceStore(pinia)

@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { createApp, defineComponent } from 'vue'
+import { computed, createApp, defineComponent, ref } from 'vue'
 import type { App } from 'vue'
 import { createI18n } from 'vue-i18n'
 
@@ -11,7 +11,6 @@ import { useResubscribe as createResubscribe } from './useResubscribe'
 const state = vi.hoisted(() => ({
   shouldUseWorkspaceBilling: true,
   canManageSubscriptionLifecycle: true,
-  canReactivate: true,
   canReactivatePlan: true,
   resubscribe: vi.fn(),
   toastAdd: vi.fn(),
@@ -37,7 +36,7 @@ vi.mock(import('@/platform/distribution/types'), () => ({ isCloud: true }))
 
 vi.mock(import('@/platform/workspace/composables/useBillingCapabilities'))
 
-const capabilities = useBillingCapabilities()
+const mockCanReactivate = ref(true)
 
 vi.mock<unknown>(
   import('@/platform/workspace/composables/useWorkspaceUI'),
@@ -98,13 +97,14 @@ afterEach(() => {
 
 describe('useResubscribe', () => {
   beforeEach(() => {
-    vi.spyOn(capabilities.canReactivate, 'value', 'get').mockImplementation(
-      () => state.canReactivate
-    )
+    vi.mocked(useBillingCapabilities).mockReturnValue({
+      ...useBillingCapabilities(),
+      canReactivate: computed(() => mockCanReactivate.value)
+    })
 
     state.shouldUseWorkspaceBilling = true
     state.canManageSubscriptionLifecycle = true
-    state.canReactivate = true
+    mockCanReactivate.value = true
     state.canReactivatePlan = true
     state.resubscribe.mockResolvedValue(undefined)
   })
@@ -112,7 +112,7 @@ describe('useResubscribe', () => {
   it('does not resubscribe after the workspace role loses permission', async () => {
     const { handleResubscribe, isResubscribing } = useResubscribe()
     state.canManageSubscriptionLifecycle = false
-    state.canReactivate = false
+    mockCanReactivate.value = false
     state.canReactivatePlan = false
 
     await handleResubscribe()
@@ -125,7 +125,7 @@ describe('useResubscribe', () => {
 
   it('does not resubscribe when the server denies reactivation to a client-side owner', async () => {
     state.canManageSubscriptionLifecycle = true
-    state.canReactivate = false
+    mockCanReactivate.value = false
     state.canReactivatePlan = false
     const { handleResubscribe, isResubscribing } = useResubscribe()
 
@@ -141,7 +141,7 @@ describe('useResubscribe', () => {
     // The legacy rail resolves can_reactivate false while the workspace may
     // still reactivate; this composable must follow the derived policy. Which
     // rail produces which value is covered in useWorkspaceUI.test.ts.
-    state.canReactivate = false
+    mockCanReactivate.value = false
     state.canReactivatePlan = true
     const { handleResubscribe } = useResubscribe()
 
@@ -153,7 +153,7 @@ describe('useResubscribe', () => {
   it('refuses whenever the policy denies it', async () => {
     // Behaviour change: the old gate short-circuited on the legacy rail and ran
     // no membership check, so a denial there never reached this branch.
-    state.canReactivate = false
+    mockCanReactivate.value = false
     state.canReactivatePlan = false
     const { handleResubscribe } = useResubscribe()
 

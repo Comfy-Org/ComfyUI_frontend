@@ -16,7 +16,7 @@ import { useDialogStore } from '@/stores/dialogStore'
 import { render, screen, waitFor } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { nextTick, ref } from 'vue'
+import { computed, nextTick, ref } from 'vue'
 import type { Ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
@@ -79,8 +79,6 @@ vi.mock<unknown>(import('@/composables/billing/useBillingContext'), () => ({
 }))
 
 vi.mock(import('@/platform/workspace/composables/useBillingCapabilities'))
-
-const capabilities = useBillingCapabilities()
 
 vi.mock<unknown>(
   import('@/platform/settings/composables/useSettingsDialog'),
@@ -219,9 +217,10 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
   beforeEach(() => {
     canTopUp = ref(true)
 
-    vi.spyOn(capabilities.canTopUp, 'value', 'get').mockImplementation(
-      () => canTopUp.value
-    )
+    vi.mocked(useBillingCapabilities).mockReturnValue({
+      ...useBillingCapabilities(),
+      canTopUp: computed(() => canTopUp.value)
+    })
 
     mockDistributionTypes.isCloud = true
     setIsAddingCredits(false)

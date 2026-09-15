@@ -62,7 +62,7 @@ vi.mock<unknown>(import('@/composables/useFeatureFlags'), () => ({
 
 vi.mock(import('@/platform/workspace/composables/useBillingCapabilities'))
 
-const capabilities = useBillingCapabilities()
+const { initialize } = vi.mocked(useBillingCapabilities(), true)
 
 const mockIsCloud = vi.hoisted(() => ({ value: true }))
 vi.mock(import('@/platform/distribution/types'), () => ({
@@ -152,7 +152,7 @@ describe('WorkspaceAuthGate', () => {
 
       expect(screen.getByTestId('slot-content')).toBeInTheDocument()
       expect(useTeamWorkspaceStore().initialize).toHaveBeenCalledOnce()
-      expect(capabilities.initialize).not.toHaveBeenCalled()
+      expect(initialize).not.toHaveBeenCalled()
       expect(mockRefreshRemoteConfig).not.toHaveBeenCalled()
     })
 
@@ -316,19 +316,15 @@ describe('WorkspaceAuthGate', () => {
       await flushPromises()
 
       expect(useTeamWorkspaceStore().initialize).toHaveBeenCalled()
-      expect(capabilities.initialize).toHaveBeenCalled()
+      expect(initialize).toHaveBeenCalled()
       expect(screen.getByTestId('slot-content')).toBeInTheDocument()
     })
 
     it('does not block app rendering on billing capabilities', async () => {
-      vi.mocked(capabilities.initialize).mockImplementationOnce(
-        () => new Promise<void>(() => {})
-      )
+      initialize.mockImplementationOnce(() => new Promise<void>(() => {}))
 
       mountComponent()
-      await vi.waitFor(() =>
-        expect(capabilities.initialize).toHaveBeenCalledOnce()
-      )
+      await vi.waitFor(() => expect(initialize).toHaveBeenCalledOnce())
 
       await flushPromises()
 
@@ -336,7 +332,7 @@ describe('WorkspaceAuthGate', () => {
     })
 
     it('aborts capability initialization when unmounted', async () => {
-      vi.mocked(capabilities.initialize).mockImplementationOnce(
+      initialize.mockImplementationOnce(
         (signal) =>
           new Promise<void>((resolve) => {
             assert.exists(signal)
@@ -345,10 +341,8 @@ describe('WorkspaceAuthGate', () => {
       )
 
       const { unmount } = mountComponent()
-      await vi.waitFor(() =>
-        expect(capabilities.initialize).toHaveBeenCalledOnce()
-      )
-      const signal = vi.mocked(capabilities.initialize).mock.calls[0][0]
+      await vi.waitFor(() => expect(initialize).toHaveBeenCalledOnce())
+      const signal = initialize.mock.calls[0][0]
 
       unmount()
       await flushPromises()

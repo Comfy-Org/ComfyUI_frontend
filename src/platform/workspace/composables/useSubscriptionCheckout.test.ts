@@ -1,7 +1,7 @@
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 import { render } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { billingOperation } from './billingOperationTestUtils'
 import type { BillingOperation } from './billingOperationTestUtils'
 import { useBillingOperationStore } from '@/platform/workspace/stores/billingOperationStore'
@@ -197,7 +197,6 @@ const {
   mockIncompleteEmbeddedPreview,
   mockPermissions,
   mockCanReactivatePlan,
-  mockCapabilities,
   mockSubscription,
   mockBillingStatus
 } = vi.hoisted(() => {
@@ -229,14 +228,6 @@ const {
       }
     },
     mockCanReactivatePlan: { value: true },
-    mockCapabilities: {
-      value: {
-        canSubscribeSelfServe: true,
-        canReactivate: true,
-        canChangeSeats: true,
-        canDowngradeToPersonal: true
-      }
-    },
     mockSubscription: { value: null as { isCancelled: boolean } | null },
     mockBillingStatus: { value: null as BillingStatus | null }
   }
@@ -316,25 +307,25 @@ vi.mock(import('@/platform/distribution/types'), () => ({ isCloud: true }))
 
 vi.mock(import('@/platform/workspace/composables/useBillingCapabilities'))
 
-const capabilities = useBillingCapabilities()
+const mockCapabilities = ref({
+  canSubscribeSelfServe: true,
+  canReactivate: true,
+  canChangeSeats: true,
+  canDowngradeToPersonal: true
+})
 
 beforeEach(() => {
-  vi.spyOn(
-    capabilities.canSubscribeSelfServe,
-    'value',
-    'get'
-  ).mockImplementation(() => mockCapabilities.value.canSubscribeSelfServe)
-  vi.spyOn(capabilities.canReactivate, 'value', 'get').mockImplementation(
-    () => mockCapabilities.value.canReactivate
-  )
-  vi.spyOn(capabilities.canChangeSeats, 'value', 'get').mockImplementation(
-    () => mockCapabilities.value.canChangeSeats
-  )
-  vi.spyOn(
-    capabilities.canDowngradeToPersonal,
-    'value',
-    'get'
-  ).mockImplementation(() => mockCapabilities.value.canDowngradeToPersonal)
+  vi.mocked(useBillingCapabilities).mockReturnValue({
+    ...useBillingCapabilities(),
+    canSubscribeSelfServe: computed(
+      () => mockCapabilities.value.canSubscribeSelfServe
+    ),
+    canReactivate: computed(() => mockCapabilities.value.canReactivate),
+    canChangeSeats: computed(() => mockCapabilities.value.canChangeSeats),
+    canDowngradeToPersonal: computed(
+      () => mockCapabilities.value.canDowngradeToPersonal
+    )
+  })
 })
 
 vi.mock<unknown>(import('@/services/dialogService'), () => ({
