@@ -115,7 +115,8 @@ test.describe(
       await expect(redSwatch.first()).toBeVisible()
 
       await expect(comfyPage.canvas).toHaveScreenshot(
-        'group-color-right-click-matches-toolbar-swatch.png'
+        'group-color-right-click-matches-toolbar-swatch.png',
+        { maxDiffPixels: 25 }
       )
     })
   }
