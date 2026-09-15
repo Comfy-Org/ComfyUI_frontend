@@ -102,7 +102,7 @@ test.describe(
     test.describe('Image Node Actions', () => {
       test.beforeEach(async ({ comfyPage }) => {
         await comfyPage.workflow.loadWorkflow('widgets/load_image_widget')
-        await comfyPage.vueNodes.waitForNodes(1)
+        await comfyPage.vueNodes.waitForNodes()
         await comfyPage.page
           .getByTestId(TestIds.node.mainImage)
           .first()
