@@ -1,19 +1,19 @@
-import { fromPartial } from '@total-typescript/shoehorn'
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { useClipboard } from '@vueuse/core'
+import { ref } from 'vue'
 
 import { i18n } from '@/i18n'
 
-const { writeText } = vi.hoisted(() => ({
-  writeText: vi.fn<ReturnType<typeof useClipboard>['copy']>(() =>
-    Promise.resolve()
+const { copyToClipboard } = vi.hoisted(() => ({
+  copyToClipboard: vi.fn<(text: string) => Promise<boolean>>(() =>
+    Promise.resolve(true)
   )
 }))
 
-vi.mock(import('@vueuse/core'), { spy: true })
-vi.mocked(useClipboard).mockReturnValue(fromPartial({ copy: writeText }))
+vi.mock(import('@/composables/useCopyToClipboard'), () => ({
+  useCopyToClipboard: () => ({ copied: ref(false), copyToClipboard })
+}))
 
 import type { AgentCrdtStatus } from './agentCrdtStatus'
 import CrdtDevPanel from './CrdtDevPanel.vue'
@@ -70,15 +70,11 @@ function renderPanel(overrides: Partial<AgentCrdtStatus> = {}) {
 
 describe('CrdtDevPanel clipboard controls', () => {
   beforeEach(() => {
-    vi.mocked(useClipboard).mockReturnValue(fromPartial({ copy: writeText }))
     setCrdtDebugEnabled(true)
     clearDevEvents()
     localStorage.clear()
-    writeText.mockClear()
-    Object.defineProperty(window.navigator, 'clipboard', {
-      configurable: true,
-      value: { writeText }
-    })
+    copyToClipboard.mockClear()
+    copyToClipboard.mockResolvedValue(true)
   })
 
   it('copies the displayed document id', async () => {
@@ -88,7 +84,7 @@ describe('CrdtDevPanel clipboard controls', () => {
       screen.getByRole('button', { name: 'Copy document id' })
     )
 
-    expect(writeText).toHaveBeenCalledExactlyOnceWith('doc-123')
+    expect(copyToClipboard).toHaveBeenCalledExactlyOnceWith('doc-123')
   })
 
   it('keeps a report available for manual copy after clipboard failure and retries', async () => {
@@ -96,16 +92,8 @@ describe('CrdtDevPanel clipboard controls', () => {
     const collectReport = vi
       .spyOn(crdtDebugReport, 'collectCrdtDebugReport')
       .mockResolvedValue(report)
-    vi.mocked(useClipboard).mockReturnValue(
-      fromPartial({ copy: vi.fn(() => Promise.resolve()) })
-    )
+    copyToClipboard.mockResolvedValueOnce(false)
     const user = userEvent.setup()
-    const writeReport = vi
-      .spyOn(navigator.clipboard, 'writeText')
-      .mockResolvedValue(undefined)
-      .mockRejectedValueOnce(
-        new DOMException('Clipboard denied', 'NotAllowedError')
-      )
     renderPanel()
 
     await user.click(screen.getByRole('button', { name: 'Copy full report' }))
@@ -119,7 +107,7 @@ describe('CrdtDevPanel clipboard controls', () => {
 
     await user.click(screen.getByRole('button', { name: 'Retry copy report' }))
 
-    expect(writeReport).toHaveBeenLastCalledWith(report)
+    expect(copyToClipboard).toHaveBeenLastCalledWith(report)
     expect(collectReport).toHaveBeenCalledOnce()
     expect(screen.queryByRole('alert')).not.toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Copied' })).toBeInTheDocument()
@@ -141,8 +129,8 @@ describe('CrdtDevPanel clipboard controls', () => {
       screen.getByRole('button', { name: 'Copy node id node-removed' })
     )
 
-    expect(writeText).toHaveBeenNthCalledWith(1, 'node-added')
-    expect(writeText).toHaveBeenNthCalledWith(2, 'node-removed')
+    expect(copyToClipboard).toHaveBeenNthCalledWith(1, 'node-added')
+    expect(copyToClipboard).toHaveBeenNthCalledWith(2, 'node-removed')
   })
 
   it('copies the full log detail while displaying a truncated excerpt', async () => {
@@ -160,7 +148,7 @@ describe('CrdtDevPanel clipboard controls', () => {
 
     await user.click(screen.getByRole('button', { name: 'Copy log detail' }))
 
-    expect(writeText).toHaveBeenCalledExactlyOnceWith(full)
+    expect(copyToClipboard).toHaveBeenCalledExactlyOnceWith(full)
   })
 
   it('shows transient Copied feedback only on the button that succeeded', async () => {
@@ -189,7 +177,7 @@ describe('CrdtDevPanel clipboard controls', () => {
   it('shows transient Copy failed feedback when the clipboard write fails', async () => {
     vi.useFakeTimers({ shouldAdvanceTime: true })
     try {
-      writeText.mockRejectedValueOnce(new Error('NotAllowedError'))
+      copyToClipboard.mockResolvedValueOnce(false)
       renderPanel()
 
       const docButton = screen.getByRole('button', {
@@ -197,7 +185,7 @@ describe('CrdtDevPanel clipboard controls', () => {
       })
       await userEvent.click(docButton)
 
-      expect(writeText).toHaveBeenCalledOnce()
+      expect(copyToClipboard).toHaveBeenCalledOnce()
       expect(docButton).toHaveTextContent('Copy failed')
 
       await vi.advanceTimersByTimeAsync(1600)
@@ -219,7 +207,7 @@ describe('CrdtDevPanel clipboard controls', () => {
     await user.click(screen.getByRole('option', { name: 'doc_update' }))
     await user.click(screen.getByRole('button', { name: 'Copy log' }))
 
-    expect(writeText).toHaveBeenCalledExactlyOnceWith(
+    expect(copyToClipboard).toHaveBeenCalledExactlyOnceWith(
       stringifyDevEvents(devEvents.value.filter((e) => e.kind === 'doc_update'))
     )
   })
@@ -365,6 +353,6 @@ describe('CrdtDevPanel clipboard controls', () => {
     expect(
       screen.queryByRole('button', { name: 'Copy log detail' })
     ).not.toBeInTheDocument()
-    expect(writeText).not.toHaveBeenCalled()
+    expect(copyToClipboard).not.toHaveBeenCalled()
   })
 })

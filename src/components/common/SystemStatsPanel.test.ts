@@ -1,6 +1,7 @@
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
+import { ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import enMessages from '@/locales/en/main.json'
@@ -10,7 +11,7 @@ import SystemStatsPanel from './SystemStatsPanel.vue'
 
 const copyToClipboard = vi.fn()
 vi.mock(import('@/composables/useCopyToClipboard'), () => ({
-  useCopyToClipboard: () => ({ copyToClipboard })
+  useCopyToClipboard: () => ({ copied: ref(false), copyToClipboard })
 }))
 
 const i18n = createI18n({
