@@ -139,7 +139,7 @@ const surfaceClass =
       >
         <!-- The workspace the credits belong to sits above them, so the
           balance is never read as the reader's own. -->
-        <div class="bg-site-dropdown pb-2">
+        <div class="bg-site-dropdown pb-3">
           <div
             class="flex items-center gap-3 p-4"
             data-testid="account-workspace-current"
@@ -203,7 +203,7 @@ const surfaceClass =
         </div>
 
         <div
-          class="group/footer flex items-center gap-3 bg-transparency-white-t4 p-4"
+          class="group/footer flex items-center gap-3 bg-transparency-white-t4 px-4 py-2"
           data-testid="account-identity"
         >
           <span
