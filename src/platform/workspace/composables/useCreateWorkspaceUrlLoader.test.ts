@@ -1,5 +1,5 @@
 import { fromAny } from '@total-typescript/shoehorn'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useCreateWorkspaceUrlLoader } from './useCreateWorkspaceUrlLoader'
 
@@ -10,16 +10,16 @@ const preservedQueryMocks = vi.hoisted(() => ({
 }))
 
 vi.mock(
-  '@/platform/navigation/preservedQueryManager',
+  import('@/platform/navigation/preservedQueryManager'),
   () => preservedQueryMocks
 )
 
 const mockRouteQuery = vi.hoisted(() => ({
   value: {} as Record<string, string>
 }))
-const mockRouterReplace = vi.hoisted(() => vi.fn().mockResolvedValue(undefined))
+const mockRouterReplace = vi.hoisted(() => vi.fn(async () => undefined))
 
-vi.mock('vue-router', () => ({
+vi.mock<unknown>(import('vue-router'), () => ({
   useRoute: () => ({
     query: mockRouteQuery.value
   }),
@@ -29,10 +29,10 @@ vi.mock('vue-router', () => ({
 }))
 
 const mockShowTeamWorkspacesDialog = vi.hoisted(() =>
-  vi.fn().mockResolvedValue(undefined)
+  vi.fn(async () => undefined)
 )
 
-vi.mock('@/services/dialogService', () => ({
+vi.mock<unknown>(import('@/services/dialogService'), () => ({
   useDialogService: () => ({
     showTeamWorkspacesDialog: mockShowTeamWorkspacesDialog
   })
@@ -40,13 +40,8 @@ vi.mock('@/services/dialogService', () => ({
 
 describe('useCreateWorkspaceUrlLoader', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
     mockRouteQuery.value = {}
     preservedQueryMocks.mergePreservedQueryIntoQuery.mockReturnValue(null)
-  })
-
-  afterEach(() => {
-    vi.restoreAllMocks()
   })
 
   describe('loadCreateWorkspaceFromUrl', () => {

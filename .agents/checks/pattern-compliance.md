@@ -16,12 +16,21 @@ Steps:
 ### TypeScript
 
 - No `any` types or `as any` assertions
-- No `@ts-ignore` without explanatory comment
+- No new `@ts-ignore` or `@ts-nocheck`. Allow `@ts-expect-error` only in a test
+  that intentionally verifies a compiler error.
+- Treat all new `eslint-disable` and `oxlint-disable` directives as findings. Do
+  not accept a directive because its comment describes an inconvenience. Verify
+  the diagnostic, trace the value to its authoritative type or schema, search
+  for an existing typed pattern, and identify the external constraint before
+  accepting a narrow exception.
+- Flag double assertions and assertions that replace runtime narrowing at an
+  external boundary
 - Separate type imports (`import type { ... }`)
 - Use `import type { ... }` for type-only imports
 - Explicit return types on exported functions
 - Use `es-toolkit` for utility functions, NOT lodash. Flag any new `import ... from 'lodash'` or `import ... from 'lodash/*'`
 - Never use `z.any()` in Zod schemas — use `z.unknown()` and narrow
+- Never hand-declare or duplicate server/API response types locally — flag any local interface/type that reimplements a type already generated from an OpenAPI spec (e.g. `@comfyorg/ingest-types`, `@comfyorg/registry-types` in `packages/`) instead of importing it. This caused real bugs in PR #14771 (see `docs/guidance/typescript.md`)
 
 ### Vue (if applicable)
 
@@ -42,9 +51,10 @@ Steps:
 
 ### Testing
 
-- Behavioral tests, not change detectors
-- No mock-heavy tests that don't test real behavior
-- Test names describe behavior, not implementation
+- Read `docs/guidance/testing-principles.md` and flag any violation of it:
+  change detectors, mock-heavy tests, implementation-named tests, Testing
+  Library rule disables, timing sleeps, malformed fixtures cast to a domain
+  type, copied test bodies that should be a table
 
 ### General
 

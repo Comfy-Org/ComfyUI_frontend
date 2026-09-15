@@ -22,7 +22,7 @@ function categoryPathExtractor(nodeDef: ComfyNodeDefImpl): string[] {
 function isBlueprint(node: ComfyNodeDefImpl): boolean {
   return (
     node.nodeSource.type === NodeSourceType.Blueprint ||
-    !!node.python_module?.startsWith('blueprint')
+    node.python_module.startsWith('blueprint')
   )
 }
 
@@ -104,7 +104,7 @@ class NodeOrganizationService {
       icon: 'pi pi-sort-alpha-down',
       description: 'sideToolbar.nodeLibraryTab.sortBy.alphabeticalDesc',
       compare: (a: ComfyNodeDefImpl, b: ComfyNodeDefImpl) =>
-        (a.display_name ?? '').localeCompare(b.display_name ?? '')
+        a.display_name.localeCompare(b.display_name)
     }
   ]
 
@@ -191,7 +191,7 @@ class NodeOrganizationService {
       if (isBlueprint(node)) {
         if (node.isGlobal) comfyBlueprints.push(node)
         else myBlueprints.push(node)
-      } else if (node.api_node || node.category?.startsWith('api node')) {
+      } else if (node.api_node || node.category.startsWith('api node')) {
         partnerNodes.push(node)
       } else if (
         node.nodeSource.type === NodeSourceType.Core ||

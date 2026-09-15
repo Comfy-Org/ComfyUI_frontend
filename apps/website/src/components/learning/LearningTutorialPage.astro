@@ -4,13 +4,14 @@
 // VideoObject JSON-LD stay defined once. Locale comes from the page's URL.
 import BaseLayout from '../../layouts/BaseLayout.astro'
 import CallToActionSection from '../common/CallToActionSection.vue'
-import LearningDirectorySection from './LearningDirectorySection.vue'
-import TutorialDetailDialog from './TutorialDetailDialog.vue'
-import { getRoutes, externalLinks, localizeHref } from '../../config/routes'
+import LearningWatchPage from './LearningWatchPage.vue'
+import { externalLinks, localizeHref } from '../../config/routes'
 import type { LearningTutorial } from '../../data/learningTutorials'
 import {
   learningCrumbs,
-  tutorialDescription
+  tutorialDescription,
+  tutorialMetaTitle,
+  youtubeEmbedUrl
 } from '../../data/learningTutorials'
 import type { JsonLdNode } from '../../utils/jsonLd'
 import {
@@ -32,7 +33,7 @@ const { siteUrl, locale, url } = pageContext(
   Astro.currentLocale
 )
 
-const title = tutorial.title[locale]
+const title = tutorial.title[locale] || tutorial.title.en
 const description = tutorialDescription(tutorial, locale)
 const videoId = jsonLdId(url, 'video')
 
@@ -44,6 +45,9 @@ const video: JsonLdNode = videoObjectNode({
   description,
   thumbnailUrl: tutorial.poster,
   contentUrl: tutorial.videoSrc,
+  embedUrl: tutorial.youtubeId
+    ? youtubeEmbedUrl(tutorial.youtubeId)
+    : undefined,
   uploadDate: tutorial.publishedDate,
   locale
 })
@@ -56,30 +60,25 @@ const breadcrumbs = [
   { name: title }
 ]
 
-const routes = getRoutes(locale)
 ---
 
 <BaseLayout
-  title={`${title} - Comfy`}
+  title={tutorialMetaTitle(tutorial, locale)}
   description={description}
   ogImage={tutorial.poster}
   mainEntityId={videoId}
   breadcrumbs={breadcrumbs}
   extraJsonLd={[video]}
 >
-  <LearningDirectorySection
-    locale={locale}
-    category={tutorial.category}
-    headingTag="p"
-  />
-  <TutorialDetailDialog tutorial={tutorial} locale={locale} client:load />
+  <LearningWatchPage tutorial={tutorial} locale={locale} client:load />
   <CallToActionSection
     locale={locale}
     headingKey="learning.cta.heading"
-    primaryLabelKey="learning.cta.contactSales"
-    primaryHref={routes.contact}
-    secondaryLabelKey="cta.tryWorkflow"
-    secondaryHref={externalLinks.workflows}
+    primaryLabelKey="cta.tryWorkflow"
+    primaryHref={externalLinks.workflows}
+    secondaryLabelKey="learning.cta.runComfy"
+    secondaryHref={externalLinks.cloud}
+    secondaryTarget="_blank"
     client:visible
   />
 </BaseLayout>

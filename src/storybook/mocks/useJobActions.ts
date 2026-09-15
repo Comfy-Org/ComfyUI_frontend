@@ -5,7 +5,7 @@ import type { JobAction } from '../../composables/queue/useJobActions'
 import type { JobListItem } from '../../composables/queue/useJobList'
 import { isActiveJobState } from '../../utils/queueUtil'
 
-const actionsByJobId = ref<Record<string, JobAction[]>>({})
+const actionsByJobId = ref<Partial<Record<string, JobAction[]>>>({})
 const cancelAction: JobAction = {
   icon: 'icon-[lucide--x]',
   label: 'Cancel',

@@ -103,7 +103,7 @@ function createAssetWidgetOptions({
           )
         }
         if (oldValue !== validatedFilename.data) {
-          useWorkflowStore().activeWorkflow?.changeTracker?.captureCanvasState()
+          useWorkflowStore().activeWorkflow?.changeTracker.captureCanvasState()
         }
       }
     })

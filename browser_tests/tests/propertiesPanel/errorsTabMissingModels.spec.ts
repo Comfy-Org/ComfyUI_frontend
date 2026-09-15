@@ -26,11 +26,9 @@ async function expectReferenceBadge(group: Locator, count: number) {
 }
 
 test.describe('Errors tab - Missing models', { tag: '@ui' }, () => {
+  test.use({ initialSettings: { 'Comfy.RightSidePanel.ShowErrorsTab': true } })
+
   test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.settings.setSetting(
-      'Comfy.RightSidePanel.ShowErrorsTab',
-      true
-    )
     await cleanupFakeModel(comfyPage)
   })
 
@@ -107,10 +105,19 @@ test.describe('Errors tab - Missing models', { tag: '@ui' }, () => {
       await expect(copyUrlButton.first()).toBeVisible()
     })
 
-    test('Should show Download button for downloadable models', async ({
+    test('Should probe and show Download for the devtools model fixture', async ({
       comfyPage
     }) => {
-      await loadWorkflowAndOpenErrorsTab(comfyPage, 'missing/missing_models')
+      await Promise.all([
+        comfyPage.page.waitForResponse(
+          (response) =>
+            response.request().method() === 'HEAD' &&
+            response.url() ===
+              'http://localhost:8188/api/devtools/fake_model.safetensors' &&
+            response.ok()
+        ),
+        loadWorkflowAndOpenErrorsTab(comfyPage, 'missing/missing_models')
+      ])
 
       const downloadButton = comfyPage.page.getByTestId(
         TestIds.dialogs.missingModelDownload

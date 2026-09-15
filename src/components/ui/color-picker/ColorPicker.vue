@@ -115,7 +115,7 @@ const contentStyle = useModalLiftedZIndex(isOpen)
                 <span>{{ baseRgb.b }}</span>
               </div>
             </template>
-            <span>{{ hsva.a }}%</span>
+            <span v-if="alpha">{{ hsva.a }}%</span>
           </div>
         </button>
       </slot>

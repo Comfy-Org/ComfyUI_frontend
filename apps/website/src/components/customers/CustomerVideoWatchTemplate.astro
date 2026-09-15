@@ -1,0 +1,112 @@
+---
+// Shared body for both /customers/videos/<slug> watch pages: the two
+// locale-invariant page files are thin wrappers so meta, breadcrumbs, and
+// the VideoObject JSON-LD stay defined once. The visible layout mirrors the
+// written customer-story article pages (BreadcrumbBar + DetailHeroSection +
+// CustomerArticle body typography + WhatsNextSection, see
+// src/pages/customers/[slug].astro) with the video standing in for the
+// article's hero/body media, per explicit product direction to base these
+// pages on the article template rather than a bespoke video-page layout.
+import BreadcrumbBar from '../common/BreadcrumbBar.vue'
+import CustomerWatchPage from './CustomerWatchPage.vue'
+import WhatsNextSection from './WhatsNextSection.vue'
+import BaseLayout from '../../layouts/BaseLayout.astro'
+import { getRoutes } from '../../config/routes'
+import type { CustomerVideoStory } from '../../data/customerVideos'
+import {
+  customerVideoPath,
+  isoDuration,
+  otherCustomerVideoStories
+} from '../../data/customerVideos'
+import { fetchTranscript } from '../../lib/videoTranscript'
+import { t } from '../../i18n/translations'
+import {
+  absoluteUrl,
+  jsonLdId,
+  pageContext,
+  videoObjectNode
+} from '../../utils/jsonLd'
+
+interface Props {
+  story: CustomerVideoStory
+}
+
+const { story } = Astro.props
+
+const { siteUrl, locale, url } = pageContext(
+  Astro.site,
+  Astro.url.pathname,
+  Astro.currentLocale
+)
+const routes = getRoutes(locale)
+const videoId = jsonLdId(url, 'video')
+
+const video = videoObjectNode({
+  siteUrl,
+  id: videoId,
+  pageUrl: url,
+  name: story.title,
+  description: story.description,
+  thumbnailUrl: story.poster,
+  contentUrl: story.videoSrc,
+  uploadDate: story.uploadDate,
+  duration: isoDuration(story.durationSeconds),
+  locale
+})
+
+// Only two watch pages exist today, so "next" is always the other one.
+const [nextStory] = otherCustomerVideoStories(story.slug)
+const relatedStoryHref = story.relatedStorySlug
+  ? `/customers/${story.relatedStorySlug}`
+  : undefined
+
+// Caption fetch happens at build time, from wherever the site is built —
+// see lib/videoTranscript.ts for why a network failure degrades instead of
+// failing the build.
+const transcript = story.captions[0]
+  ? await fetchTranscript(story.captions[0].src)
+  : []
+
+const homeLabel = t('breadcrumb.home', locale)
+const collectionLabel = t('nav.customerStories', locale)
+---
+
+<BaseLayout
+  title={`${story.title} - Comfy`}
+  description={story.description}
+  ogImage={story.poster}
+  mainEntityId={videoId}
+  breadcrumbs={[
+    { name: homeLabel, url: absoluteUrl(Astro.site, '/') },
+    { name: collectionLabel, url: absoluteUrl(Astro.site, routes.customers) },
+    { name: story.title }
+  ]}
+  extraJsonLd={[video]}
+>
+  <BreadcrumbBar
+    crumbs={[
+      { label: homeLabel, href: '/' },
+      { label: collectionLabel, href: '/customers' },
+      { label: story.title }
+    ]}
+    label={t('ui.breadcrumb', locale)}
+  />
+  <CustomerWatchPage
+    story={story}
+    relatedStoryHref={relatedStoryHref}
+    transcript={transcript}
+    locale={locale}
+    client:load
+  />
+  {
+    nextStory && (
+      <WhatsNextSection
+        title={nextStory.title}
+        image={nextStory.poster}
+        href={customerVideoPath(nextStory.slug)}
+        locale={locale}
+        ctaLabel={t('customers.video.watchStory', locale)}
+      />
+    )
+  }
+</BaseLayout>

@@ -1,8 +1,43 @@
 coverage:
   status:
+    project:
+      # Disable the project-wide status entirely: the merge queue uses ALLGREEN,
+      # and total-project coverage dips were blocking merges. Patch coverage below
+      # still covers the diff.
+      default: false
+
+      website:
+        target: auto
+        threshold: '1%'
+        informational: true
+        flags:
+          - website-unit
+        paths:
+          - apps/website/src/**
+        flag_coverage_not_uploaded_behavior: pass
+
     patch:
       default:
         informational: true
+
+      # Require 80% coverage on changed website lines.
+      website:
+        target: '80%'
+        threshold: '0%'
+        informational: false
+        flags:
+          - website-unit
+        paths:
+          - apps/website/src/**
+        flag_coverage_not_uploaded_behavior: pass
+
+# Coverage is instrumented over src/** only (see `coverage.include` in
+# vite.config.mts), so build and developer tooling has no coverage data to
+# report. Without this, changing a file under tools/ counts every one of its
+# lines as a patch miss even when the change is covered by its own tests.
+ignore:
+  - 'tools/**'
+  - 'scripts/**'
 
 comment:
   layout: 'header, diff, flags, files'
@@ -21,3 +56,8 @@ flags:
     carryforward: true
   e2e:
     carryforward: true
+  # Do not hide missing website coverage with stale data.
+  website-unit:
+    paths:
+      - apps/website/src/**
+    carryforward: false

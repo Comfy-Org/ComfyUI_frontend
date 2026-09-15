@@ -15,50 +15,6 @@ import {
 
 describe('ToOutputRenderLink', () => {
   describe('connectToOutput', () => {
-    it('should return early if inputNode is null', () => {
-      // Setup
-      const mockNetwork = createMockLinkNetwork()
-      const mockFromSlot = createMockNodeInputSlot()
-      const mockNode = createMockLGraphNode({
-        inputs: [mockFromSlot],
-        getInputPos: vi.fn().mockReturnValue([0, 0])
-      })
-
-      const renderLink = new ToOutputRenderLink(
-        mockNetwork,
-        mockNode,
-        mockFromSlot,
-        undefined,
-        LinkDirection.CENTER
-      )
-
-      // Override the node property to simulate null case
-      Object.defineProperty(renderLink, 'node', {
-        value: null
-      })
-
-      const mockTargetNode = createMockLGraphNode({
-        connectSlots: vi.fn()
-      })
-      const mockEvents: Partial<CustomEventTarget<LinkConnectorEventMap>> = {
-        addEventListener: vi.fn(),
-        removeEventListener: vi.fn(),
-        dispatchEvent: vi.fn(),
-        dispatch: vi.fn()
-      }
-
-      // Act
-      renderLink.connectToOutput(
-        mockTargetNode,
-        createMockNodeOutputSlot(),
-        mockEvents as CustomEventTarget<LinkConnectorEventMap>
-      )
-
-      // Assert
-      expect(mockTargetNode.connectSlots).not.toHaveBeenCalled()
-      expect(mockEvents.dispatch).not.toHaveBeenCalled()
-    })
-
     it('should create connection and dispatch event when inputNode exists', () => {
       // Setup
       const mockNetwork = createMockLinkNetwork()

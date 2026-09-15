@@ -1,3 +1,4 @@
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { assetService } from '@/platform/assets/services/assetService'
 import { api } from '@/scripts/api'
 import { useAssetsStore } from '@/stores/assetsStore'
@@ -5,15 +6,16 @@ import { useAssetsStore } from '@/stores/assetsStore'
 interface AssetRecord {
   id: string
   name: string
-  hash?: string
+  hash?: string | null
   preview_url?: string
   preview_id?: string | null
 }
 
+/**
+ * Whether the backend can serve asset preview/thumbnail data.
+ */
 export function isAssetPreviewSupported(): boolean {
-  return (
-    assetService.isAssetAPIEnabled() || api.getServerFeature('assets', false)
-  )
+  return useFeatureFlags().flags.assetsEnabled
 }
 
 async function fetchAssets(
@@ -26,7 +28,7 @@ async function fetchAssets(
   return data.assets ?? []
 }
 
-function resolvePreviewUrl(asset: AssetRecord): string {
+export function resolvePreviewUrl(asset: AssetRecord): string {
   if (asset.preview_url) return api.apiURL(asset.preview_url)
 
   const contentId = asset.preview_id ?? asset.id
@@ -81,9 +83,7 @@ export async function persistThumbnail(
     await assetService.updateAsset(asset.id, {
       preview_id: uploaded.id
     })
-
-    const previewUrl = api.apiURL(`/assets/${uploaded.id}/content`)
-    useAssetsStore().setAssetPreview(asset.name, uploaded.id, previewUrl)
+    await useAssetsStore().outputAssets.invalidate()
   } catch {
     // Non-critical — client still shows the rendered thumbnail
   }

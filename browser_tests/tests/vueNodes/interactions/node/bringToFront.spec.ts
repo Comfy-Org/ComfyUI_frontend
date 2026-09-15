@@ -9,8 +9,9 @@ test.describe(
   'Vue Node Bring to Front',
   { tag: ['@screenshot', '@vue-nodes'] },
   () => {
+    test.use({ initialSettings: { 'Comfy.UseNewMenu': 'Disabled' } })
+
     test.beforeEach(async ({ comfyPage }) => {
-      await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Disabled')
       await comfyPage.workflow.loadWorkflow('vueNodes/simple-triple')
       await fitToViewInstant(comfyPage)
     })
@@ -90,6 +91,12 @@ test.describe(
           return clipZ - ksamplerZ
         })
         .toBeGreaterThan(0)
+
+      const clipZ = await getNodeZIndex(comfyPage, 'CLIP Text Encode')
+      const allZIndexes = await comfyPage.vueNodes.nodes.evaluateAll((nodes) =>
+        nodes.map((node) => Number(getComputedStyle(node).zIndex))
+      )
+      expect(clipZ).toBe(Math.max(...allZIndexes))
 
       // Screenshot showing CLIP now on top
       await expect(comfyPage.canvas).toHaveScreenshot(

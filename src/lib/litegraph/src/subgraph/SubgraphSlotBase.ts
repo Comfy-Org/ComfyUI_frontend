@@ -21,7 +21,6 @@ import type {
   Serialisable,
   SubgraphIO
 } from '@/lib/litegraph/src/types/serialisation'
-import { createUuidv4 } from '@/utils/uuid'
 import type { UUID } from '@/utils/uuid'
 
 import type { SubgraphInput } from './SubgraphInput'
@@ -71,8 +70,6 @@ export abstract class SubgraphSlot
   }
 
   override set pos(value) {
-    if (!value || value.length < 2) return
-
     this._pos[0] = value[0]
     this._pos[1] = value[1]
   }
@@ -96,7 +93,7 @@ export abstract class SubgraphSlot
     super(slot.name, slot.type)
 
     Object.assign(this, slot)
-    this.id = slot.id ?? createUuidv4()
+    this.id = slot.id
     this.type = slot.type
     this.parent = parent
   }

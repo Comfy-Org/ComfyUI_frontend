@@ -43,7 +43,7 @@ const openIn3DViewer = () => {
     dialogComponentProps: {
       renderer: 'reka',
       size: 'full',
-      contentClass: 'w-[80vw] h-[80vh] max-h-[80vh]',
+      contentClass: 'left-1/2 w-[80vw] sm:max-w-[80vw] h-[80vh] max-h-[80vh]',
       maximizable: true,
       onClose: async () => {
         await useLoad3dService().handleViewerClose(props.node)

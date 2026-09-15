@@ -19,6 +19,7 @@ test.describe('Settings dialog', { tag: '@ui' }, () => {
     await comfyPage.page.route('**/system_stats**', async (route) => {
       await route.fulfill({ json: stats })
     })
+    // oxlint-disable-next-line comfy/no-comfy-page-setup-call -- pre-existing call, tracked by evfail-23; not fixed in this pass
     await comfyPage.setup()
 
     const dialog = comfyPage.settingDialog

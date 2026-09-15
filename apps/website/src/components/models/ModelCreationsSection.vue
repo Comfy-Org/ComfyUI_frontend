@@ -127,7 +127,7 @@ const ctaLabel = t('models.list.creations.cta', locale)
     </div>
 
     <div
-      class="rounded-5xl bg-transparency-white-t4 mt-12 flex w-full flex-col gap-6 p-2 max-lg:pb-6 lg:hidden"
+      class="mt-12 flex w-full flex-col gap-6 rounded-5xl bg-transparency-white-t4 p-2 max-lg:pb-6 lg:hidden"
     >
       <GalleryCard
         v-for="(item, i) in items"

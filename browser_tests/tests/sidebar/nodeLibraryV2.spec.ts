@@ -4,8 +4,6 @@ import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 
 test.describe('Node library sidebar V2', () => {
   test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.settings.setSetting('Comfy.NodeLibrary.NewDesign', true)
-
     const tab = comfyPage.menu.nodeLibraryTabV2
     await tab.open()
   })
@@ -14,12 +12,13 @@ test.describe('Node library sidebar V2', () => {
     const tab = comfyPage.menu.nodeLibraryTabV2
 
     await expect(tab.allTab).toHaveAttribute('aria-selected', 'true')
-    await expect(tab.getFolder('sampling')).toBeVisible()
+    await expect(tab.getFolder('model')).toBeVisible()
   })
 
   test('Can expand folder and see nodes in All tab', async ({ comfyPage }) => {
     const tab = comfyPage.menu.nodeLibraryTabV2
 
+    await tab.expandFolder('model')
     await tab.expandFolder('sampling')
     await expect(tab.getNode('KSampler (Advanced)')).toBeVisible()
   })
@@ -37,6 +36,7 @@ test.describe('Node library sidebar V2', () => {
   test('Drag node to canvas adds it', async ({ comfyPage }) => {
     const tab = comfyPage.menu.nodeLibraryTabV2
 
+    await tab.expandFolder('model')
     await tab.expandFolder('sampling')
     await expect(tab.getNode('KSampler (Advanced)')).toBeVisible()
 
@@ -70,6 +70,7 @@ test.describe('Node library sidebar V2', () => {
   }) => {
     const tab = comfyPage.menu.nodeLibraryTabV2
 
+    await tab.expandFolder('model')
     await tab.expandFolder('sampling')
     const node = tab.getNode('KSampler (Advanced)')
     await expect(node).toBeVisible()
@@ -85,7 +86,7 @@ test.describe('Node library sidebar V2', () => {
   test('Search clear restores folder view', async ({ comfyPage }) => {
     const tab = comfyPage.menu.nodeLibraryTabV2
 
-    await expect(tab.getFolder('sampling')).toBeVisible()
+    await expect(tab.getFolder('model')).toBeVisible()
 
     await tab.searchInput.fill('KSampler')
     await expect(tab.getNode('KSampler (Advanced)')).toBeVisible()
@@ -93,7 +94,7 @@ test.describe('Node library sidebar V2', () => {
     await tab.searchInput.clear()
     await tab.searchInput.press('Enter')
 
-    await expect(tab.getFolder('sampling')).toBeVisible()
+    await expect(tab.getFolder('model')).toBeVisible()
   })
 
   test('Sort dropdown shows sorting options', async ({ comfyPage }) => {
@@ -122,6 +123,7 @@ test.describe('Node library sidebar V2', () => {
   }) => {
     const tab = comfyPage.menu.nodeLibraryTabV2
     await comfyPage.nodeOps.clearGraph()
+    await tab.expandFolder('model')
     await tab.expandFolder('sampling')
 
     const canvasBox = (await comfyPage.canvas.boundingBox())!

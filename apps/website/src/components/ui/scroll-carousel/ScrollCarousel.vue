@@ -38,13 +38,13 @@ const progressPercent = computed(() => `${progress.value * 100}%`)
 
 <template>
   <section
-    :class="cn('max-w-9xl mx-auto px-6 py-16 lg:px-16 lg:py-24', className)"
+    :class="cn('mx-auto max-w-9xl px-6 py-16 lg:px-16 lg:py-24', className)"
   >
     <div
       ref="trackRef"
       :class="
         cn(
-          'flex snap-x snap-mandatory scrollbar-none overflow-x-auto',
+          'scrollbar-none flex snap-x snap-mandatory overflow-x-auto',
           gapClass
         )
       "
@@ -55,7 +55,7 @@ const progressPercent = computed(() => `${progress.value * 100}%`)
     <div class="mt-10 flex items-center gap-4">
       <div class="h-1 flex-1 rounded-full bg-white/20" aria-hidden="true">
         <div
-          class="bg-primary-comfy-yellow h-full rounded-full"
+          class="h-full rounded-full bg-primary-comfy-yellow"
           :style="{ width: progressPercent }"
         />
       </div>
@@ -75,7 +75,7 @@ const progressPercent = computed(() => `${progress.value * 100}%`)
 
       <button
         type="button"
-        class="bg-primary-comfy-yellow flex size-10 items-center justify-center rounded-full transition-opacity hover:opacity-90"
+        class="flex size-10 items-center justify-center rounded-full bg-primary-comfy-yellow transition-opacity hover:opacity-90"
         :aria-label="t('carousel.next', locale)"
         @click="scroll(1)"
       >

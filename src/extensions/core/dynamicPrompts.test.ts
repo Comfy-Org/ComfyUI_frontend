@@ -1,12 +1,8 @@
-import { afterEach, describe, expect, it, test, vi } from 'vitest'
+import { describe, expect, it, test, vi } from 'vitest'
 
 import { processDynamicPrompt } from '@/utils/formatUtil'
 
 describe('dynamic prompts', () => {
-  afterEach(() => {
-    vi.restoreAllMocks()
-  })
-
   it('handles single and multiline comments', () => {
     const input =
       '/*\nStart\n*/Hello /* this is a comment */ world!\n// it\nEnd'

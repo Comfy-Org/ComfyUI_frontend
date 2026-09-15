@@ -33,7 +33,7 @@ function cardClass(i: number, total: number) {
   const fullSpan = isFullSpan(i, total)
   const rtl = isRtlRow(i)
   return cn(
-    'border-primary-comfy-yellow relative rounded-3xl border-2 p-8 lg:p-10',
+    'relative rounded-3xl border-2 border-primary-comfy-yellow p-8 lg:p-10',
     fullSpan && 'lg:col-span-2',
     !fullSpan && rtl && i % 2 === 0 && 'lg:col-start-2',
     !fullSpan && rtl && i % 2 === 1 && 'lg:col-start-1'
@@ -42,7 +42,7 @@ function cardClass(i: number, total: number) {
 </script>
 
 <template>
-  <section class="max-w-9xl mx-auto px-6 py-16 lg:py-24">
+  <section class="mx-auto max-w-9xl px-6 py-16 lg:py-24">
     <h2
       class="mb-12 text-center text-4xl font-light tracking-tight text-primary-comfy-canvas lg:mb-16 lg:text-6xl"
     >
@@ -58,7 +58,7 @@ function cardClass(i: number, total: number) {
         :class="cardClass(index, steps.length)"
       >
         <span
-          class="bg-primary-comfy-yellow font-formula-narrow inline-block -skew-x-12 rounded-sm px-3 py-1.5 text-sm font-bold tracking-wide text-primary-comfy-ink uppercase lg:text-base"
+          class="inline-block -skew-x-12 rounded-sm bg-primary-comfy-yellow px-3 py-1.5 font-formula-narrow text-sm font-bold tracking-wide text-primary-comfy-ink uppercase lg:text-base"
         >
           <span class="inline-block skew-x-12">
             {{ index + 1 }}. {{ step.label }}
@@ -70,7 +70,7 @@ function cardClass(i: number, total: number) {
 
         <NodeUnionIcon
           v-if="hasHorizontalConnector(index, steps.length)"
-          class="text-primary-comfy-yellow absolute top-1/2 right-0 hidden size-4 translate-x-[calc(100%+2px)] -translate-y-1/2 scale-x-150 rotate-90 lg:block"
+          class="absolute top-1/2 right-0 hidden size-4 translate-x-[calc(100%+2px)] -translate-y-1/2 scale-x-150 rotate-90 text-primary-comfy-yellow lg:block"
         />
         <NodeUnionIcon
           v-if="
@@ -79,7 +79,7 @@ function cardClass(i: number, total: number) {
           "
           :class="
             cn(
-              'text-primary-comfy-yellow absolute bottom-0 left-1/2 size-4 -translate-x-1/2 translate-y-[calc(100%+2px)] scale-x-150',
+              'absolute bottom-0 left-1/2 size-4 -translate-x-1/2 translate-y-[calc(100%+2px)] scale-x-150 text-primary-comfy-yellow',
               !hasMobileVertical(index, steps.length) && 'hidden lg:block',
               !hasLgVertical(index, steps.length) && 'lg:hidden'
             )

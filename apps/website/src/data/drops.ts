@@ -28,7 +28,6 @@ const MODELS_AND_NODES: LocalizedText = {
   'zh-CN': '模型与节点'
 }
 const NEW_BADGE: LocalizedText = { en: 'NEW', 'zh-CN': '新' }
-const FEATURED_BADGE: LocalizedText = { en: 'FEATURED', 'zh-CN': '精选' }
 
 function imageFor(fileName: string, alt: LocalizedText): DropMedia {
   return {
@@ -54,6 +53,25 @@ function videoFor(
 }
 
 export const drops: readonly Drop[] = [
+  {
+    id: 'comfy-cloud-nodes',
+    badge: NEW_BADGE,
+    category: MODELS_AND_NODES,
+    media: imageFor('Drops_2x2card_CloudNodes.jpg', {
+      en: 'Comfy Cloud Nodes',
+      'zh-CN': 'Comfy Cloud 节点'
+    }),
+    title: { en: 'Comfy Cloud Nodes', 'zh-CN': 'Comfy Cloud 节点' },
+    description: {
+      en: 'Run the newest open models on our GPUs from inside your own ComfyUI. No subscription, no downloads.',
+      'zh-CN':
+        '在你自己的 ComfyUI 中，用我们的 GPU 运行最新的开源模型。无需订阅，无需下载。'
+    },
+    cta: {
+      label: EXPLORE,
+      href: { en: '/cloud-nodes', 'zh-CN': '/zh-CN/cloud-nodes' }
+    }
+  },
   {
     id: 'desktop-client',
     badge: NEW_BADGE,
@@ -120,14 +138,14 @@ export const drops: readonly Drop[] = [
       en: 'Comfy API',
       'zh-CN': 'Comfy API'
     }),
-    title: { en: 'Comfy API', 'zh-CN': 'Comfy API' },
+    title: { en: 'Developer Platform', 'zh-CN': '开发者平台' },
     description: {
       en: 'Turn any workflow into a production endpoint. Automate generation and scale to thousands of outputs.',
       'zh-CN': '将任意工作流变成生产端点。自动化生成并扩展到数千个输出。'
     },
     cta: {
       label: EXPLORE,
-      href: { en: '/api', 'zh-CN': '/zh-CN/api' }
+      href: { en: '/platform', 'zh-CN': '/zh-CN/platform' }
     }
   },
   {
@@ -203,7 +221,7 @@ export const drops: readonly Drop[] = [
     },
     cta: {
       label: EXPLORE,
-      href: { en: '/cloud/enterprise', 'zh-CN': '/zh-CN/cloud/enterprise' }
+      href: { en: '/enterprise', 'zh-CN': '/zh-CN/enterprise' }
     }
   },
   {

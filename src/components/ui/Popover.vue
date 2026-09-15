@@ -54,7 +54,13 @@ const contentStyle = useModalLiftedZIndex(open)
       >
         <slot :close>
           <div class="flex flex-col p-1">
-            <template v-for="item in entries ?? []" :key="item.label">
+            <template
+              v-for="(item, index) in entries ?? []"
+              :key="
+                item.key ??
+                (typeof item.label === 'string' ? item.label : index)
+              "
+            >
               <div
                 v-if="item.separator"
                 class="w-full border-b border-border-subtle"

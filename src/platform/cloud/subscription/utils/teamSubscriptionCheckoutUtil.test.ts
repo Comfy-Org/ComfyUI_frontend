@@ -1,44 +1,53 @@
+import { useAuthStore } from '@/stores/authStore'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { computed, reactive } from 'vue'
 
-const { mockIsCloud, mockSubscribe, mockTrackBeginCheckout, mockUserId } =
-  vi.hoisted(() => ({
-    mockIsCloud: { value: true },
-    mockSubscribe: vi.fn(),
-    mockTrackBeginCheckout: vi.fn(),
-    mockUserId: { value: 'user-1' as string | null }
-  }))
+import { useTelemetry } from '@/platform/telemetry'
 
-vi.mock('@/platform/distribution/types', () => ({
+const { mockIsCloud, mockSubscribe } = vi.hoisted(() => ({
+  mockIsCloud: { value: true },
+  mockSubscribe: vi.fn()
+}))
+
+vi.mock(import('@/platform/distribution/types'), () => ({
   get isCloud() {
     return mockIsCloud.value
   }
 }))
-vi.mock('@/config/comfyApi', () => ({
+vi.mock(import('@/config/comfyApi'), () => ({
   getComfyPlatformBaseUrl: () => 'https://app.test'
 }))
-vi.mock('@/platform/workspace/api/workspaceApi', () => ({
-  workspaceApi: { subscribe: mockSubscribe }
+vi.mock<unknown>(import('@/platform/workspace/api/workspaceApi'), () => ({
+  workspaceApi: { subscribe: mockSubscribe },
+  WorkspaceApiError: class WorkspaceApiError extends Error {
+    constructor(
+      message: string,
+      public readonly status?: number,
+      public readonly code?: string
+    ) {
+      super(message)
+      this.name = 'WorkspaceApiError'
+    }
+  }
 }))
-vi.mock('@/platform/telemetry', () => ({
-  useTelemetry: () => ({ trackBeginCheckout: mockTrackBeginCheckout })
-}))
-vi.mock('@/stores/authStore', () => ({
-  useAuthStore: () => reactive({ userId: computed(() => mockUserId.value) })
-}))
+vi.mock(import('@/platform/telemetry'))
 
 import { performTeamSubscriptionCheckout } from './teamSubscriptionCheckoutUtil'
+
+beforeEach(() => {
+  Object.assign(useAuthStore(), { userId: 'user-1' })
+})
 
 describe('performTeamSubscriptionCheckout', () => {
   let assignedHref: string | undefined
 
   beforeEach(() => {
-    vi.clearAllMocks()
     mockIsCloud.value = true
     assignedHref = undefined
     Object.defineProperty(globalThis, 'location', {
       configurable: true,
       value: {
+        origin: 'https://app.test',
+        pathname: '/payment/success',
         set href(value: string) {
           assignedHref = value
         }
@@ -63,7 +72,7 @@ describe('performTeamSubscriptionCheckout', () => {
       teamCreditStopId: 'team_700'
     })
     expect(assignedHref).toBe('https://stripe.test/pay')
-    expect(mockTrackBeginCheckout).toHaveBeenCalledWith({
+    expect(useTelemetry()?.trackBeginCheckout).toHaveBeenCalledWith({
       user_id: 'user-1',
       tier: 'team',
       cycle: 'yearly',
@@ -100,16 +109,38 @@ describe('performTeamSubscriptionCheckout', () => {
     ).rejects.toThrow(/payment URL/)
 
     expect(assignedHref).toBeUndefined()
+    expect(useTelemetry()?.trackBillingEvent).toHaveBeenCalledWith({
+      operation: 'subscription_checkout',
+      stage: 'failed',
+      outcome: 'failure',
+      tier: 'team',
+      cycle: 'yearly',
+      checkout_type: 'new',
+      payment_intent_source: undefined,
+      failure_category: 'unknown'
+    })
   })
 
-  it('does not track begin_checkout when subscribe fails', async () => {
+  it('does not track begin_checkout when subscribe fails, but does track the failure', async () => {
     mockSubscribe.mockRejectedValueOnce(new Error('subscribe failed'))
 
     await expect(
-      performTeamSubscriptionCheckout('team_700', 'yearly')
+      performTeamSubscriptionCheckout('team_700', 'yearly', {
+        paymentIntentSource: 'deep_link'
+      })
     ).rejects.toThrow('subscribe failed')
 
-    expect(mockTrackBeginCheckout).not.toHaveBeenCalled()
+    expect(useTelemetry()?.trackBeginCheckout).not.toHaveBeenCalled()
+    expect(useTelemetry()?.trackBillingEvent).toHaveBeenCalledWith({
+      operation: 'subscription_checkout',
+      stage: 'failed',
+      outcome: 'failure',
+      tier: 'team',
+      cycle: 'yearly',
+      checkout_type: 'new',
+      payment_intent_source: 'deep_link',
+      failure_category: 'unknown'
+    })
   })
 
   it('does nothing off cloud', async () => {
@@ -121,3 +152,4 @@ describe('performTeamSubscriptionCheckout', () => {
     expect(assignedHref).toBeUndefined()
   })
 })
+vi.mock(import('firebase/auth'))

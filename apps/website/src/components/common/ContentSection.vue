@@ -14,6 +14,7 @@ import { scrollTo } from '../../scripts/smoothScroll'
 import { prefersReducedMotion } from '../../composables/useReducedMotion'
 import BrandButton from './BrandButton.vue'
 import CategoryNav from './CategoryNav.vue'
+import SafeRichText from './SafeRichTextContent'
 import SectionLabel from './SectionLabel.vue'
 import { deriveSections } from '../../config/contentSections'
 
@@ -88,7 +89,13 @@ function activateLastIfAtBottom() {
   if (lastId) activeSection.value = lastId
 }
 
-onMounted(activateLastIfAtBottom)
+onMounted(() => {
+  const hashSection = sections.find(
+    ({ id }) => `#${id}` === window.location.hash
+  )
+  if (hashSection) activeSection.value = hashSection.id
+  activateLastIfAtBottom()
+})
 useEventListener('scroll', activateLastIfAtBottom, { passive: true })
 
 function scrollToSection(id: string) {
@@ -114,7 +121,7 @@ function scrollToSection(id: string) {
   <section class="px-4 pt-8 pb-24 lg:px-20 lg:pt-24 lg:pb-40">
     <div class="lg:flex lg:gap-16">
       <!-- Desktop sticky nav -->
-      <aside class="hidden scrollbar-none lg:block lg:w-48 lg:shrink-0">
+      <aside class="scrollbar-none hidden lg:block lg:w-48 lg:shrink-0">
         <div class="sticky top-32">
           <CategoryNav
             :categories="categories"
@@ -142,16 +149,17 @@ function scrollToSection(id: string) {
 
           <template v-for="(block, i) in section.blocks" :key="i">
             <!-- Paragraph -->
-            <p
+            <SafeRichText
               v-if="block.type === 'paragraph'"
+              as="p"
               class="mt-4 text-sm/relaxed text-primary-comfy-canvas"
-              v-html="t(key(section.id, `block.${i}`), locale)"
+              :html="t(key(section.id, `block.${i}`), locale)"
             />
 
             <!-- Heading (h3) -->
             <h3
               v-else-if="block.type === 'heading'"
-              class="text-primary-comfy-yellow mt-6 mb-2 text-lg font-semibold italic"
+              class="mt-6 mb-2 text-lg font-semibold text-primary-comfy-yellow italic"
             >
               {{ t(key(section.id, `block.${i}.heading`), locale) }}
             </h3>
@@ -170,7 +178,7 @@ function scrollToSection(id: string) {
                 class="flex items-start gap-2 text-primary-comfy-canvas"
               >
                 <span
-                  class="bg-primary-comfy-yellow mt-1.5 size-1.5 shrink-0 rounded-full"
+                  class="mt-1.5 size-1.5 shrink-0 rounded-full bg-primary-comfy-yellow"
                 />
                 {{ item }}
               </li>
@@ -190,7 +198,7 @@ function scrollToSection(id: string) {
                 class="flex items-start gap-3 text-primary-comfy-canvas"
               >
                 <span
-                  class="text-primary-comfy-yellow shrink-0 font-semibold tabular-nums"
+                  class="shrink-0 font-semibold text-primary-comfy-yellow tabular-nums"
                 >
                   {{ String(j + 1).padStart(2, '0') }}
                 </span>
@@ -203,7 +211,9 @@ function scrollToSection(id: string) {
               <img
                 :src="t(key(section.id, `block.${i}.src`), locale)"
                 :alt="t(key(section.id, `block.${i}.alt`), locale)"
-                class="w-full rounded-2xl object-cover"
+                loading="lazy"
+                decoding="async"
+                class="aspect-video w-full rounded-2xl object-cover"
               />
               <figcaption class="mt-3 text-xs text-primary-comfy-canvas">
                 {{ t(key(section.id, `block.${i}.caption`), locale) }}
@@ -215,7 +225,7 @@ function scrollToSection(id: string) {
               v-else-if="block.type === 'blockquote'"
               :class="
                 cn(
-                  'border-primary-comfy-yellow my-8 rounded-2xl border-l-4 p-8',
+                  'my-8 rounded-2xl border-l-4 border-primary-comfy-yellow p-8',
                   'bg-(--site-bg-soft)'
                 )
               "
@@ -225,7 +235,7 @@ function scrollToSection(id: string) {
               >
                 "{{ t(key(section.id, `block.${i}.text`), locale) }}"
               </p>
-              <p class="text-primary-comfy-yellow mt-4 text-sm font-semibold">
+              <p class="mt-4 text-sm font-semibold text-primary-comfy-yellow">
                 {{ t(key(section.id, `block.${i}.name`), locale) }}
               </p>
             </blockquote>

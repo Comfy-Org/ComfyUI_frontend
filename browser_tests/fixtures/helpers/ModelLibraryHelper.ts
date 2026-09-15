@@ -32,7 +32,7 @@ export class ModelLibraryHelper {
   private metadataRouteHandler: ((route: Route) => Promise<void>) | null = null
   private folders: ModelFolderInfo[] = []
   private filesByFolder: Record<string, ModelFile[]> = {}
-  private metadataByModel: Record<string, MockModelMetadata> = {}
+  private metadataByModel: Partial<Record<string, MockModelMetadata>> = {}
 
   constructor(private readonly page: Page) {}
 

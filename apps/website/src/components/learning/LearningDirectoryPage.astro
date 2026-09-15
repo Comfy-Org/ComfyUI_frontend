@@ -5,13 +5,14 @@
 import BaseLayout from '../../layouts/BaseLayout.astro'
 import CallToActionSection from '../common/CallToActionSection.vue'
 import LearningDirectorySection from './LearningDirectorySection.vue'
-import { getRoutes, externalLinks, localizeHref } from '../../config/routes'
+import { externalLinks, localizeHref } from '../../config/routes'
 import type { LearningCategory } from '../../data/learningTutorials'
 import {
   categoryLabelKeys,
   filterByCategory,
   learningCrumbs,
-  learningDescription,
+  learningKeywords,
+  learningMetaDescription,
   learningMetaTitle,
   tutorialPath
 } from '../../data/learningTutorials'
@@ -38,13 +39,14 @@ const { locale, url } = pageContext(
 const learningTitle = t('learning.title', locale)
 const label = category ? t(categoryLabelKeys[category], locale) : undefined
 const title = learningMetaTitle(locale, category)
-const description = learningDescription(locale, category)
+const description = learningMetaDescription(locale, category)
+const keywords = learningKeywords(category)
 
 const tutorialList = itemListNode(
   url,
   label ?? learningTitle,
   filterByCategory(category).map((tutorial) => ({
-    name: tutorial.title[locale],
+    name: tutorial.title[locale] || tutorial.title.en,
     url: absoluteUrl(Astro.site, localizeHref(tutorialPath(tutorial), locale))
   }))
 )
@@ -55,12 +57,12 @@ const breadcrumbs = learningCrumbs(locale, category).map((crumb) => ({
   url: absoluteUrl(Astro.site, localizeHref(crumb.path, locale))
 }))
 
-const routes = getRoutes(locale)
 ---
 
 <BaseLayout
   title={title}
   description={description}
+  keywords={keywords}
   pageType="CollectionPage"
   mainEntityId={jsonLdId(url, 'itemlist')}
   breadcrumbs={breadcrumbs}
@@ -70,10 +72,11 @@ const routes = getRoutes(locale)
   <CallToActionSection
     locale={locale}
     headingKey="learning.cta.heading"
-    primaryLabelKey="learning.cta.contactSales"
-    primaryHref={routes.contact}
-    secondaryLabelKey="cta.tryWorkflow"
-    secondaryHref={externalLinks.workflows}
+    primaryLabelKey="cta.tryWorkflow"
+    primaryHref={externalLinks.workflows}
+    secondaryLabelKey="learning.cta.runComfy"
+    secondaryHref={externalLinks.cloud}
+    secondaryTarget="_blank"
     client:visible
   />
 </BaseLayout>

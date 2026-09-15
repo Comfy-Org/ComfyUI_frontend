@@ -5,9 +5,11 @@
     </template>
 
     <div class="flex flex-col gap-2">
-      <label :for="inputId" class="text-sm text-muted-foreground">
-        {{ $t('builderToolbar.filename') }}
-      </label>
+      <DialogDescription as-child>
+        <label :for="inputId" class="text-sm text-muted-foreground">
+          {{ $t('builderToolbar.filename') }}
+        </label>
+      </DialogDescription>
       <input
         :id="inputId"
         v-model="filename"
@@ -50,6 +52,7 @@
 import { ref, useId } from 'vue'
 
 import Button from '@/components/ui/button/Button.vue'
+import DialogDescription from '@/components/ui/dialog/DialogDescription.vue'
 
 import BuilderDialog from './BuilderDialog.vue'
 import ViewTypeRadioGroup from './ViewTypeRadioGroup.vue'

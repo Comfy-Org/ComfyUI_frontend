@@ -6,7 +6,7 @@ import { toNodeId } from '@/types/nodeId'
 
 const lastProps = ref<Record<string, unknown> | null>(null)
 
-vi.mock('@/components/load3d/Load3D.vue', () => ({
+vi.mock<unknown>(import('@/components/load3d/Load3D.vue'), () => ({
   default: defineComponent({
     name: 'Load3D',
     props: {

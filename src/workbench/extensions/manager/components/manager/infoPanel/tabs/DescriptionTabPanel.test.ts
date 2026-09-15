@@ -121,7 +121,7 @@ describe('DescriptionTabPanel', () => {
         if (test.expected.isUrl) {
           const links = screen.getAllByRole('link')
           const link = links.find((a) =>
-            a.textContent?.includes(test.expected.text)
+            a.textContent.includes(test.expected.text)
           )
           expect(link).toBeDefined()
           expect(link!).toHaveAttribute('href', test.expected.text)

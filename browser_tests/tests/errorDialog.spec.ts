@@ -35,8 +35,15 @@ async function waitForPopupNavigation(page: Page, action: () => Promise<void>) {
 }
 
 test.describe('Error dialog', () => {
-  test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Disabled')
+  test.use({ initialSettings: { 'Comfy.UseNewMenu': 'Disabled' } })
+
+  test.beforeEach(async ({ context }) => {
+    await context.route('https://github.com/**/issues**', (route) =>
+      route.fulfill({ contentType: 'text/html', body: '<!doctype html>' })
+    )
+    await context.route('https://support.comfy.org/**', (route) =>
+      route.fulfill({ contentType: 'text/html', body: '<!doctype html>' })
+    )
   })
 
   test('Should display an error dialog when graph configure fails', async ({

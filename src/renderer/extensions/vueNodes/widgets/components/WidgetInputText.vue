@@ -12,12 +12,14 @@
         :class="
           cn(
             WidgetInputBaseClass,
-            'w-full px-4 hover:bg-component-node-widget-background-hovered',
+            'w-full px-4',
+            !isReadOnly && 'hover:bg-component-node-widget-background-hovered',
             size === 'large' ? 'py-3 text-sm' : 'py-2 text-xs',
             loading && 'pl-9'
           )
         "
         :aria-label="widget.name"
+        :aria-invalid="invalid || undefined"
         :readonly="isReadOnly"
         size="small"
         :pt="{ root: 'truncate min-w-[4ch]' }"

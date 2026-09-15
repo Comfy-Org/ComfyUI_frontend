@@ -80,7 +80,7 @@ export const useComfyManagerService = () => {
         message = 'Could not connect to ComfyUI-Manager'
       } else {
         message =
-          axiosError.response?.data?.message ??
+          axiosError.response?.data.message ??
           `${context} failed with status ${status}`
       }
     }

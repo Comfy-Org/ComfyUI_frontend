@@ -26,31 +26,31 @@ const difficultyKey = `demos.difficulty.${difficulty}` as TranslationKey
   <section class="pt-16 lg:px-20 lg:pt-40 lg:pb-8">
     <div class="mx-auto flex max-w-4xl flex-col items-center text-center">
       <span
-        class="text-primary-comfy-yellow text-xs font-semibold tracking-widest uppercase"
+        class="text-xs font-semibold tracking-widest text-primary-comfy-yellow uppercase"
       >
         {{ label }}
       </span>
 
       <h1
-        class="text-primary-comfy-canvas mt-4 text-3xl/tight font-light lg:text-5xl/tight"
+        class="mt-4 text-3xl/tight font-light text-primary-comfy-canvas lg:text-5xl/tight"
       >
         {{ title }}
       </h1>
 
       <p
-        class="text-primary-warm-gray mt-6 max-w-xl text-sm/relaxed lg:text-base/relaxed"
+        class="mt-6 max-w-xl text-sm/relaxed text-primary-warm-gray lg:text-base/relaxed"
       >
         {{ description }}
       </p>
 
       <div class="mt-6 flex flex-wrap justify-center gap-3">
         <span
-          class="bg-transparency-white-t4 text-primary-comfy-canvas rounded-full px-3 py-1 text-xs font-semibold tracking-wide uppercase"
+          class="rounded-full bg-transparency-white-t4 px-3 py-1 text-xs font-semibold tracking-wide text-primary-comfy-canvas uppercase"
         >
           {{ t(difficultyKey, locale) }}
         </span>
         <span
-          class="bg-transparency-white-t4 text-primary-comfy-canvas rounded-full px-3 py-1 text-xs font-semibold"
+          class="rounded-full bg-transparency-white-t4 px-3 py-1 text-xs font-semibold text-primary-comfy-canvas"
         >
           {{ t(estimatedTime as TranslationKey, locale) }}
         </span>

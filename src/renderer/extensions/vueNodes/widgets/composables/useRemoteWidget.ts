@@ -50,7 +50,7 @@ const getBackoff = (retryCount: number) =>
 
 const isInitialized = (entry: CacheEntry<unknown> | undefined) =>
   entry?.data !== undefined &&
-  entry?.timestamp !== undefined &&
+  entry.timestamp !== undefined &&
   entry.timestamp > 0
 
 const isStale = (entry: CacheEntry<unknown> | undefined, ttl: number) =>
@@ -64,7 +64,7 @@ const isFailed = (entry: CacheEntry<unknown> | undefined) =>
 
 const isBackingOff = (entry: CacheEntry<unknown> | undefined) =>
   entry?.error &&
-  entry?.lastErrorTime &&
+  entry.lastErrorTime &&
   Date.now() - entry.lastErrorTime < getBackoff(entry.retryCount || 0)
 
 const fetchData = async (
@@ -105,14 +105,13 @@ export function useRemoteWidget<
     entry.lastErrorTime = 0
     entry.error = null
     entry.timestamp = Date.now()
-    entry.data = data ?? defaultValue
+    entry.data = data
   }
 
   const setError = (entry: CacheEntry<T>, error: Error | unknown) => {
     entry.retryCount = (entry.retryCount || 0) + 1
     entry.lastErrorTime = Date.now()
     entry.error = error instanceof Error ? error : new Error(String(error))
-    entry.data ??= defaultValue
     entry.fetchPromise = undefined
     if (entry.retryCount >= max_retries) {
       setFailed(entry)
@@ -121,7 +120,7 @@ export function useRemoteWidget<
 
   const setFailed = (entry: CacheEntry<T>) => {
     dataCache.set(cacheKey, {
-      data: entry.data ?? defaultValue,
+      data: entry.data,
       failed: true
     })
   }
@@ -227,7 +226,7 @@ export function useRemoteWidget<
       .catch((err) => {
         console.error(err)
       })
-    return getCachedValue() ?? defaultValue
+    return getCachedValue()
   }
 
   /**

@@ -1,12 +1,14 @@
+import { fromPartial } from '@total-typescript/shoehorn'
+
 import { describe, expect, it, vi } from 'vitest'
+import type { ComponentProps } from 'vue-component-type-helpers'
 
 import { useAssetBrowserDialog } from '@/platform/assets/composables/useAssetBrowserDialog'
+import type AssetBrowserModal from '@/platform/assets/components/AssetBrowserModal.vue'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { useDialogStore } from '@/stores/dialogStore'
 
-vi.mock('@/stores/dialogStore')
-
-vi.mock('@/i18n', () => ({
+vi.mock<unknown>(import('@/i18n'), () => ({
   t: (key: string, params?: Record<string, string>) => {
     if (params) {
       return `${key}:${JSON.stringify(params)}`
@@ -16,7 +18,7 @@ vi.mock('@/i18n', () => ({
 }))
 
 function createMockAsset(overrides: Partial<AssetItem> = {}): AssetItem {
-  return {
+  return fromPartial({
     id: 'asset-123',
     name: 'test-model.safetensors',
     size: 1024,
@@ -26,16 +28,19 @@ function createMockAsset(overrides: Partial<AssetItem> = {}): AssetItem {
       filename: 'models/checkpoints/test-model.safetensors'
     },
     ...overrides
-  }
+  })
 }
 
 function setupDialogMocks() {
-  const mockShowDialog = vi.fn()
-  const mockCloseDialog = vi.fn()
-  vi.mocked(useDialogStore, { partial: true }).mockReturnValue({
-    showDialog: mockShowDialog,
-    closeDialog: mockCloseDialog
-  })
+  const dialogStore = useDialogStore()
+  type BrowserProps = ComponentProps<typeof AssetBrowserModal>
+  const showDialog: (
+    options: Omit<Parameters<typeof dialogStore.showDialog>[0], 'props'> & {
+      props: BrowserProps & Required<Pick<BrowserProps, 'onSelect' | 'onClose'>>
+    }
+  ) => ReturnType<typeof dialogStore.showDialog> = dialogStore.showDialog
+  const mockShowDialog = vi.mocked(showDialog)
+  const mockCloseDialog = vi.mocked(dialogStore.closeDialog)
 
   return { mockShowDialog, mockCloseDialog }
 }
@@ -56,14 +61,14 @@ describe('useAssetBrowserDialog', () => {
       const dialogCall = mockShowDialog.mock.calls[0][0]
       const onSelectHandler = dialogCall.props.onSelect
 
-      const mockAsset = {
+      const mockAsset = fromPartial<AssetItem>({
         id: 'test-asset-id',
         name: 'test.safetensors',
         size: 1024,
         created_at: '2025-10-01T00:00:00Z',
         tags: ['models', 'checkpoints'],
         user_metadata: { filename: 'selected-asset-path' }
-      }
+      })
       onSelectHandler(mockAsset)
 
       expect(onAssetSelected).toHaveBeenCalledWith(mockAsset)

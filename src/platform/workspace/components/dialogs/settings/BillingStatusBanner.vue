@@ -38,7 +38,11 @@
           size="lg"
           @click="handleAddCredits"
         >
-          {{ $t('workspacePanel.billingStatus.outOfCredits.addCredits') }}
+          {{
+            canTopUp
+              ? $t('workspacePanel.billingStatus.outOfCredits.addCredits')
+              : $t('subscription.upgradeToAddCredits')
+          }}
         </Button>
         <Button
           v-else-if="banner.action === 'reactivate'"
@@ -70,7 +74,9 @@ import { useI18n } from 'vue-i18n'
 import Button from '@/components/ui/button/Button.vue'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useBillingBanner } from '@/platform/workspace/composables/useBillingBanner'
+import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 import { useResubscribe } from '@/platform/workspace/composables/useResubscribe'
+import { useScheduledPlanChange } from '@/platform/workspace/composables/useScheduledPlanChange'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import { useDialogService } from '@/services/dialogService'
 
@@ -78,17 +84,18 @@ type BannerAction = 'addCredits' | 'reactivate' | 'updatePayment'
 
 const { t, d } = useI18n()
 const { renewalDate, subscription, manageSubscription } = useBillingContext()
-const { permissions } = useWorkspaceUI()
+const { permissions, canReactivatePlan } = useWorkspaceUI()
+const { canTopUp, canSubscribeSelfServe } = useBillingCapabilities()
 const { kind, dismiss } = useBillingBanner()
 const { isResubscribing, handleResubscribe } = useResubscribe()
+const {
+  planName: scheduledPlanName,
+  formattedDate: scheduledChangeDate,
+  isDisplayable: canShowScheduledChange
+} = useScheduledPlanChange()
 const dialogService = useDialogService()
 
 const canManage = computed(() => permissions.value.canManageSubscription)
-const canManageLifecycle = computed(
-  () => permissions.value.canManageSubscriptionLifecycle
-)
-const canTopUp = computed(() => permissions.value.canTopUp)
-
 const cycleResetDate = computed(() => {
   const raw = renewalDate.value
   return raw ? d(new Date(raw), { month: 'short', day: 'numeric' }) : ''
@@ -125,9 +132,7 @@ const banner = computed<BannerView | null>(() => {
       return {
         muted: false,
         title: t(`${bs}.warning.title`),
-        body: cycleResetDate.value
-          ? t(`${bs}.warning.body`, { date: cycleResetDate.value })
-          : t(`${bs}.warning.bodyNoDate`),
+        body: t(`${bs}.warning.bodyNoDate`),
         action: 'updatePayment',
         dismissible: false
       }
@@ -139,8 +144,11 @@ const banner = computed<BannerView | null>(() => {
           ? cycleResetDate.value
             ? t(`${bs}.outOfCredits.body`, { date: cycleResetDate.value })
             : t(`${bs}.outOfCredits.bodyNoDate`)
-          : t(`${bs}.outOfCredits.memberBody`),
-        action: canTopUp.value ? 'addCredits' : null,
+          : canSubscribeSelfServe.value
+            ? t(`${bs}.outOfCredits.upgradeBody`)
+            : t(`${bs}.outOfCredits.memberBody`),
+        action:
+          canTopUp.value || canSubscribeSelfServe.value ? 'addCredits' : null,
         dismissible: true
       }
     case 'ending':
@@ -148,7 +156,19 @@ const banner = computed<BannerView | null>(() => {
         muted: true,
         title: t(`${bs}.ending.title`, { date: planEndDate.value }),
         body: t(`${bs}.ending.body`),
-        action: canManageLifecycle.value ? 'reactivate' : null,
+        action: canReactivatePlan.value ? 'reactivate' : null,
+        dismissible: false
+      }
+    case 'planChange':
+      if (!canShowScheduledChange.value) return null
+      return {
+        muted: true,
+        title: t(`${bs}.planChange.title`, {
+          plan: scheduledPlanName.value,
+          date: scheduledChangeDate.value
+        }),
+        body: t(`${bs}.planChange.body`),
+        action: null,
         dismissible: false
       }
     default:

@@ -4,15 +4,6 @@ import {
 } from '@e2e/fixtures/ComfyPage'
 
 test.describe('Topbar menu commands', { tag: '@ui' }, () => {
-  test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
-    await comfyPage.settings.setSetting(
-      'Comfy.Workflow.WorkflowTabsPosition',
-      'Topbar'
-    )
-    await comfyPage.setup()
-  })
-
   test('New command creates a new workflow tab', async ({ comfyPage }) => {
     const topbar = comfyPage.menu.topbar
     await expect.poll(() => topbar.getTabNames()).toHaveLength(1)
@@ -30,7 +21,7 @@ test.describe('Topbar menu commands', { tag: '@ui' }, () => {
     await test.step('Edit > Undo undoes the last action', async () => {
       await comfyPage.page.evaluate(() => {
         const node = window.LiteGraph!.createNode('Note')
-        window.app!.graph!.add(node)
+        window.app!.graph.add(node)
       })
       await comfyPage.nextFrame()
 

@@ -31,7 +31,6 @@ describe('AnimationManager', () => {
   let manager: AnimationManager
 
   beforeEach(() => {
-    vi.clearAllMocks()
     events = makeMockEventManager()
     manager = new AnimationManager(events)
   })

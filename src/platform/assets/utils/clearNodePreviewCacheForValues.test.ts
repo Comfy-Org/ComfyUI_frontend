@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 
-import type { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { LGraph } from '@/lib/litegraph/src/litegraph'
 
 import {
   clearNodePreviewCacheForValues,
@@ -36,7 +36,7 @@ describe('FE-230 clearNodePreviewCacheForValues', () => {
     clearNodePreviewCacheForValues(
       makeGraph([node]),
       new Set(['foo.png']),
-      remove as unknown as (node: LGraphNode) => void
+      remove
     )
 
     expect(node.imgs).toBeUndefined()
@@ -57,7 +57,7 @@ describe('FE-230 clearNodePreviewCacheForValues', () => {
     clearNodePreviewCacheForValues(
       makeGraph([node]),
       new Set(['foo.png']),
-      remove as unknown as (node: LGraphNode) => void
+      remove
     )
 
     expect(node.imgs).toEqual([{ src: 'blob:keep' }])
@@ -75,11 +75,7 @@ describe('FE-230 clearNodePreviewCacheForValues', () => {
       graph: { setDirtyCanvas: setDirty }
     }
 
-    clearNodePreviewCacheForValues(
-      makeGraph([node]),
-      new Set(),
-      remove as unknown as (node: LGraphNode) => void
-    )
+    clearNodePreviewCacheForValues(makeGraph([node]), new Set(), remove)
 
     expect(node.imgs).toEqual([{ src: 'blob:keep' }])
     expect(remove).not.toHaveBeenCalled()
@@ -98,7 +94,7 @@ describe('FE-230 clearNodePreviewCacheForValues', () => {
     clearNodePreviewCacheForValues(
       makeGraph([node]),
       new Set(['foo.png [output]']),
-      remove as unknown as (node: LGraphNode) => void
+      remove
     )
 
     expect(node.imgs).toBeUndefined()
@@ -117,7 +113,7 @@ describe('FE-230 clearNodePreviewCacheForValues', () => {
     clearNodePreviewCacheForValues(
       makeGraph([node]),
       new Set(['sub/foo.png [output]']),
-      remove as unknown as (node: LGraphNode) => void
+      remove
     )
 
     expect(node.imgs).toBeUndefined()
@@ -142,7 +138,7 @@ describe('FE-230 clearNodePreviewCacheForValues', () => {
     clearNodePreviewCacheForValues(
       makeGraph([inputNode, outputNode]),
       new Set(['foo.png']),
-      remove as unknown as (node: LGraphNode) => void
+      remove
     )
 
     expect(inputNode.imgs).toBeUndefined()
@@ -163,7 +159,7 @@ describe('FE-230 clearNodePreviewCacheForValues', () => {
     clearNodePreviewCacheForValues(
       makeGraph([node]),
       new Set(['clip.mp4']),
-      remove as unknown as (node: LGraphNode) => void
+      remove
     )
 
     expect(node.videoContainer).toBeUndefined()
@@ -185,7 +181,7 @@ describe('FE-230 clearNodePreviewCacheForValues', () => {
     clearNodePreviewCacheForValues(
       makeGraph([node]),
       new Set(['clip.mp4']),
-      remove as unknown as (node: LGraphNode) => void
+      remove
     )
 
     expect(node.imgs).toBeUndefined()
@@ -210,7 +206,7 @@ describe('FE-230 clearNodePreviewCacheForValues', () => {
     clearNodePreviewCacheForValues(
       makeGraph([wrapper]),
       new Set(['nested.png [output]']),
-      remove as unknown as (node: LGraphNode) => void
+      remove
     )
 
     expect(inner.imgs).toBeUndefined()

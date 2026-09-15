@@ -67,11 +67,11 @@ while (idx < items.length) {
 <template>
   <section
     data-testid="gallery-grid"
-    class="max-w-9xl mx-auto px-4 pb-20 lg:px-20"
+    class="mx-auto max-w-9xl px-4 pb-20 lg:px-20"
   >
     <!-- Desktop grid -->
     <div
-      class="rounded-5xl bg-transparency-white-t4 hidden flex-col gap-2 p-2 lg:flex"
+      class="hidden flex-col gap-2 rounded-5xl bg-transparency-white-t4 p-2 lg:flex"
     >
       <template v-for="(row, rowIdx) in rows" :key="rowIdx">
         <!-- Symmetric rows: full / 2-col / 3-col -->
@@ -157,7 +157,7 @@ while (idx < items.length) {
 
     <!-- Mobile list -->
     <div
-      class="rounded-5xl bg-transparency-white-t4 flex flex-col gap-6 p-2 lg:hidden"
+      class="flex flex-col gap-6 rounded-5xl bg-transparency-white-t4 p-2 lg:hidden"
     >
       <GalleryCard
         v-for="(item, i) in items"

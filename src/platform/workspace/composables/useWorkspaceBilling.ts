@@ -1,8 +1,19 @@
-import { computed, ref, shallowRef } from 'vue'
+import {
+  computed,
+  getCurrentScope,
+  onScopeDispose,
+  ref,
+  shallowRef,
+  watch
+} from 'vue'
 
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useBillingPlans } from '@/platform/cloud/subscription/composables/useBillingPlans'
 import { useSubscriptionDialog } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
 import type { SubscriptionDialogOptions } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
+import { useTelemetry } from '@/platform/telemetry'
+import { reportError } from '@/platform/telemetry/reportError'
+import { categorizeBillingApiError } from '@/platform/telemetry/utils/billingFailureCategory'
 import type {
   BillingBalanceResponse,
   BillingStatusResponse,
@@ -16,6 +27,8 @@ import {
   WorkspaceApiError,
   workspaceApi
 } from '@/platform/workspace/api/workspaceApi'
+import { useBillingSdkStore } from '@/platform/workspace/billing/sdk/billingSdkStore'
+import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 import { useBillingOperationStore } from '@/platform/workspace/stores/billingOperationStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 
@@ -25,6 +38,43 @@ import type {
   BillingState,
   SubscriptionInfo
 } from '../../../composables/billing/types'
+
+/**
+ * Which client path resumes a recovered operation. Exhaustive on purpose: the
+ * two-way check this replaces sent anything that was not `topup` down the
+ * subscription path, which covers the customer's real plan with a "setting up
+ * your subscription" spinner until the operation settles.
+ */
+function resumeModeFor(
+  type: BillingStatusResponse['pending_billing_op_type']
+): 'subscription' | 'topup' {
+  switch (type) {
+    case 'topup':
+      return 'topup'
+    case 'subscription':
+      return 'subscription'
+    // A server predating the field only ever had subscriptions to hand back.
+    case undefined:
+      return 'subscription'
+    default: {
+      const unexpected: never = type
+      // JSON.stringify, not String: the latter throws on a value with no
+      // callable toString/valueOf, and throwing out of the branch that exists
+      // to absorb a bad value would abort recovery entirely. The value came
+      // from a parsed response, so it cannot be circular.
+      reportError(
+        new Error(
+          `Unknown pending billing op type: ${JSON.stringify(unexpected)}`
+        ),
+        { errorType: 'billing_unknown_resume_mode' }
+      )
+      // Reachable only against a newer server. Dropping recovery strands a
+      // customer who cannot reach the payment page; a wrong panel clears on
+      // reload, so recovery wins.
+      return 'subscription'
+    }
+  }
+}
 
 /**
  * Whether a rejection means the subscription already holds the state the caller
@@ -60,6 +110,28 @@ async function resyncQuietly(refresh: () => Promise<unknown>): Promise<void> {
   }
 }
 
+interface SeatCapacity {
+  maxSeats: number
+  occupiedSeats: number
+}
+
+function seatCapacityFrom(status: BillingStatusResponse): SeatCapacity | null {
+  if (
+    typeof status.max_seats === 'number' &&
+    Number.isInteger(status.max_seats) &&
+    status.max_seats >= 0 &&
+    typeof status.occupied_seats === 'number' &&
+    Number.isInteger(status.occupied_seats) &&
+    status.occupied_seats >= 0
+  ) {
+    return {
+      maxSeats: status.max_seats,
+      occupiedSeats: status.occupied_seats
+    }
+  }
+  return null
+}
+
 /**
  * Adapter for workspace-scoped billing via /billing/* endpoints.
  * Used for team workspaces.
@@ -69,17 +141,20 @@ export function useWorkspaceBilling(): BillingState & BillingActions {
   const billingPlans = useBillingPlans()
   const billingOperationStore = useBillingOperationStore()
   const workspaceStore = useTeamWorkspaceStore()
+  const telemetry = useTelemetry()
+  const { flags } = useFeatureFlags()
 
   const isInitialized = ref(false)
   const isLoading = ref(false)
   const error = ref<string | null>(null)
 
   const statusData = shallowRef<BillingStatusResponse | null>(null)
+  const seatCapacity = shallowRef<SeatCapacity | null>(null)
   const balanceData = shallowRef<BillingBalanceResponse | null>(null)
   // Prevent older status and balance responses from overwriting newer state.
   const latestBillingReadIds = { status: 0, balance: 0 }
 
-  const isActiveSubscription = computed(
+  const canAccessSubscriptionFeatures = computed(
     () => statusData.value?.is_active ?? false
   )
   const isFreeTier = computed(
@@ -95,8 +170,7 @@ export function useWorkspaceBilling(): BillingState & BillingActions {
       tier: status.subscription_tier ?? null,
       duration: status.subscription_duration ?? null,
       planSlug: status.plan_slug ?? null,
-      scheduledPlanSlug: status.scheduled_plan_slug ?? null,
-      changeAt: status.change_at ?? null,
+      scheduledChange: status.scheduled_change ?? null,
       renewalDate: status.renewal_date ?? null,
       endDate: status.cancel_at ?? null,
       isCancelled: status.subscription_status === 'canceled',
@@ -133,6 +207,17 @@ export function useWorkspaceBilling(): BillingState & BillingActions {
   const currentTeamCreditStop = computed(
     () => statusData.value?.team_credit_stop ?? null
   )
+  const maxSeats = computed(() => seatCapacity.value?.maxSeats ?? null)
+  const occupiedSeats = computed(
+    () => seatCapacity.value?.occupiedSeats ?? null
+  )
+
+  watch(
+    () => workspaceStore.activeWorkspace?.id,
+    () => {
+      seatCapacity.value = null
+    }
+  )
 
   async function initialize(): Promise<void> {
     if (isInitialized.value) return
@@ -155,6 +240,38 @@ export function useWorkspaceBilling(): BillingState & BillingActions {
     }
   }
 
+  function resumePendingOperation(status: BillingStatusResponse): void {
+    if (
+      !status.pending_billing_op_id ||
+      billingOperationStore.getOperation(status.pending_billing_op_id)
+    ) {
+      return
+    }
+    if (
+      flags.billingSdkTopupRailEnabled &&
+      status.pending_billing_op_type === 'topup'
+    ) {
+      useBillingSdkStore().recover()
+      return
+    }
+    void billingOperationStore.startOperation(
+      status.pending_billing_op_id,
+      resumeModeFor(status.pending_billing_op_type),
+      undefined,
+      status.action_url
+    )
+  }
+
+  function isStaleStatusRead(
+    requestId: number,
+    workspaceId: string | undefined
+  ): boolean {
+    return (
+      requestId !== latestBillingReadIds.status ||
+      workspaceId !== workspaceStore.activeWorkspace?.id
+    )
+  }
+
   async function fetchStatus(): Promise<void> {
     const requestId = ++latestBillingReadIds.status
     const workspaceId = workspaceStore.activeWorkspace?.id
@@ -162,28 +279,14 @@ export function useWorkspaceBilling(): BillingState & BillingActions {
     error.value = null
     try {
       const status = await workspaceApi.getBillingStatus()
-      if (
-        requestId !== latestBillingReadIds.status ||
-        workspaceId !== workspaceStore.activeWorkspace?.id
-      ) {
-        return
-      }
+      if (isStaleStatusRead(requestId, workspaceId)) return
 
+      seatCapacity.value = seatCapacityFrom(status)
       statusData.value = status
       if (workspaceId && status.billing_rail) {
         workspaceStore.setWorkspaceBillingRail(workspaceId, status.billing_rail)
       }
-      if (
-        status.pending_billing_op_id &&
-        !billingOperationStore.getOperation(status.pending_billing_op_id)
-      ) {
-        void billingOperationStore.startOperation(
-          status.pending_billing_op_id,
-          'subscription',
-          undefined,
-          status.action_url
-        )
-      }
+      resumePendingOperation(status)
     } catch (err) {
       if (requestId === latestBillingReadIds.status) {
         error.value =
@@ -295,6 +398,44 @@ export function useWorkspaceBilling(): BillingState & BillingActions {
     }
   }
 
+  // A cancellation or card change made in the portal tab or window never
+  // pushes back to this one — status has no return refetch and capability
+  // reads are paced — so the next return to the app re-reads everything the
+  // portal could have changed.
+  let stopPortalReturnRefresh: (() => void) | null = null
+  function refreshOnPortalReturn() {
+    stopPortalReturnRefresh?.()
+
+    const stopListening = () => {
+      document.removeEventListener('visibilitychange', onReturn)
+      window.removeEventListener('focus', onReturn)
+      stopPortalReturnRefresh = null
+    }
+    const onReturn = (event: Event) => {
+      if (
+        event.type === 'visibilitychange' &&
+        document.visibilityState !== 'visible'
+      ) {
+        return
+      }
+      stopListening()
+      void Promise.allSettled([
+        fetchStatus(),
+        fetchBalance(),
+        useBillingCapabilities().refresh()
+      ])
+    }
+    stopPortalReturnRefresh = stopListening
+    document.addEventListener('visibilitychange', onReturn)
+    window.addEventListener('focus', onReturn)
+  }
+
+  if (getCurrentScope()) {
+    onScopeDispose(() => {
+      stopPortalReturnRefresh?.()
+    })
+  }
+
   async function manageSubscription(): Promise<void> {
     isLoading.value = true
     error.value = null
@@ -302,7 +443,8 @@ export function useWorkspaceBilling(): BillingState & BillingActions {
       const returnUrl = window.location.href
       const response = await workspaceApi.getPaymentPortalUrl(returnUrl)
       if (response.url) {
-        window.open(response.url, '_blank')
+        const portalWindow = window.open(response.url, '_blank')
+        if (portalWindow) refreshOnPortalReturn()
       }
     } catch (err) {
       error.value =
@@ -316,11 +458,22 @@ export function useWorkspaceBilling(): BillingState & BillingActions {
   async function cancelSubscription(): Promise<void> {
     isLoading.value = true
     error.value = null
+    const attemptStartedAt = Date.now()
+    telemetry?.trackBillingEvent({
+      operation: 'operation',
+      stage: 'started',
+      outcome: 'pending',
+      operation_type: 'cancel'
+    })
+    // Once set, the poller (billingOperationStore) owns failure telemetry; until then, this must report it.
+    let billingOpId: string | undefined
     try {
       const response = await workspaceApi.cancelSubscription()
+      billingOpId = response.billing_op_id
       const operation = await billingOperationStore.startOperation(
-        response.billing_op_id,
-        'cancel'
+        billingOpId,
+        'cancel',
+        { attemptStartedAt }
       )
 
       if (operation.status !== 'succeeded') {
@@ -334,7 +487,24 @@ export function useWorkspaceBilling(): BillingState & BillingActions {
         // fetchStatus records its own read failure; the cancellation still
         // holds, so the operation is not in error.
         error.value = null
+        telemetry?.trackBillingEvent({
+          operation: 'operation',
+          stage: 'succeeded',
+          outcome: 'success',
+          operation_type: 'cancel',
+          duration_ms: Date.now() - attemptStartedAt
+        })
         return
+      }
+      if (billingOpId === undefined) {
+        telemetry?.trackBillingEvent({
+          operation: 'operation',
+          stage: 'failed',
+          outcome: 'failure',
+          operation_type: 'cancel',
+          failure_category: categorizeBillingApiError(err),
+          duration_ms: Date.now() - attemptStartedAt
+        })
       }
       error.value =
         err instanceof Error ? err.message : 'Failed to cancel subscription'
@@ -344,12 +514,32 @@ export function useWorkspaceBilling(): BillingState & BillingActions {
     }
   }
 
-  async function resubscribe(): Promise<void> {
+  async function resubscribe(_options?: {
+    source?: 'pricing_dialog' | 'settings_billing_panel'
+  }): Promise<void> {
+    // Workspace's resubscribe() call is itself the terminal reactivation, so
+    // the click-time source isn't needed here the way the legacy adapter
+    // needs it for its pending-checkout-recovery terminal event.
     isLoading.value = true
     error.value = null
     try {
-      await workspaceApi.resubscribe()
+      const response = await workspaceApi.resubscribe()
       await Promise.allSettled([fetchStatus(), fetchBalance()])
+      // A pending resubscribe (e.g. SCA/3DS re-authentication) isn't done
+      // yet: wait for the tracked billing op to actually resolve instead of
+      // reporting success the instant the request was accepted. fetchStatus
+      // above may have already started tracking this op via
+      // pending_billing_op_id; startOperation dedupes by opId either way.
+      if (response.status === 'pending') {
+        const operation = await billingOperationStore.startOperation(
+          response.billing_op_id,
+          'subscription'
+        )
+        if (operation.status !== 'succeeded') {
+          throw new Error(operation.errorMessage ?? 'Failed to resubscribe')
+        }
+        await Promise.allSettled([fetchStatus(), fetchBalance()])
+      }
     } catch (err) {
       if (isAlreadyInRequestedState(err, 'NOT_SCHEDULED_FOR_CANCELLATION')) {
         // Mirrors the success path, which refreshes balance too. allSettled,
@@ -369,7 +559,9 @@ export function useWorkspaceBilling(): BillingState & BillingActions {
     }
   }
 
-  async function topup(amountCents: number): Promise<CreateTopupResponse> {
+  async function topup(
+    amountCents: number
+  ): Promise<CreateTopupResponse | undefined> {
     isLoading.value = true
     error.value = null
     try {
@@ -400,7 +592,7 @@ export function useWorkspaceBilling(): BillingState & BillingActions {
 
   async function requireActiveSubscription(): Promise<void> {
     await fetchStatus()
-    if (!isActiveSubscription.value) {
+    if (!canAccessSubscriptionFeatures.value) {
       subscriptionDialog.show({ reason: 'subscription_required' })
     }
   }
@@ -418,9 +610,11 @@ export function useWorkspaceBilling(): BillingState & BillingActions {
     currentPlanSlug,
     teamCreditStops,
     currentTeamCreditStop,
+    maxSeats,
+    occupiedSeats,
     isLoading,
     error,
-    isActiveSubscription,
+    canAccessSubscriptionFeatures,
     isFreeTier,
     billingStatus,
     subscriptionStatus,

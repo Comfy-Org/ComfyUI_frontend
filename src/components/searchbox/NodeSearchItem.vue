@@ -7,10 +7,14 @@
         <span v-if="isBookmarked">
           <i class="pi pi-bookmark-fill mr-1 text-sm" />
         </span>
-        <span v-html="highlightQuery(nodeDef.display_name, currentQuery)" />
+        <span>
+          <HighlightedText :text="nodeDef.display_name" :query="currentQuery" />
+        </span>
         <span>&nbsp;</span>
         <Tag v-if="showIdName" severity="secondary">
-          <span v-html="highlightQuery(nodeDef.name, currentQuery)" />
+          <span>
+            <HighlightedText :text="nodeDef.name" :query="currentQuery" />
+          </span>
         </Tag>
       </div>
       <div
@@ -52,12 +56,13 @@ import Chip from 'primevue/chip'
 import Tag from 'primevue/tag'
 import { computed } from 'vue'
 
+import HighlightedText from '@/components/searchbox/HighlightedText.vue'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useNodeBookmarkStore } from '@/stores/nodeBookmarkStore'
 import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 import { useNodeFrequencyStore } from '@/stores/nodeDefStore'
 import { NodeSourceType } from '@/types/nodeSource'
-import { formatNumberWithSuffix, highlightQuery } from '@/utils/formatUtil'
+import { formatNumberWithSuffix } from '@/utils/formatUtil'
 
 const settingStore = useSettingStore()
 const showCategory = computed(() =>

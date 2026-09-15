@@ -20,14 +20,14 @@ export function useNumberStepCalculation(
     const precision = toValue(precisionArg)
     // Use step2 (correct input spec value) if available
     if (options?.step2 !== undefined) {
-      return Number(options.step2)
+      return options.step2
     }
     // Use step / 10 for custom large step values (> 10) to match litegraph behavior
     // This is important for extensions like Impact Pack that use custom step values (e.g., 640)
     // We skip default step values (1, 10) to avoid affecting normal widgets
     const step = options?.step
     if (step !== undefined && step > 10) {
-      return Number(step) / 10
+      return step / 10
     }
 
     if (precision === undefined) {

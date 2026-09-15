@@ -1,7 +1,6 @@
-import { createTestingPinia } from '@pinia/testing'
+import { getActivePinia } from 'pinia'
 import { fireEvent, render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { setActivePinia } from 'pinia'
 import PrimeVue from 'primevue/config'
 import InputText from 'primevue/inputtext'
 import { describe, expect, it, vi } from 'vitest'
@@ -10,7 +9,7 @@ import { toNodeId } from '@/types/nodeId'
 import type { ComponentProps } from 'vue-component-type-helpers'
 import { createI18n } from 'vue-i18n'
 
-import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
+import type { NodeState } from '@/types/nodeState'
 import enMessages from '@/locales/en/main.json'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import type { Settings } from '@/schemas/apiSchema'
@@ -19,23 +18,21 @@ import { ComfyNodeDefImpl, useNodeDefStore } from '@/stores/nodeDefStore'
 
 import NodeHeader from './NodeHeader.vue'
 
-const makeNodeData = (overrides: Partial<VueNodeData> = {}): VueNodeData => ({
+const makeNodeData = (overrides: Partial<NodeState> = {}): NodeState => ({
+  inputs: [],
+  outputs: [],
   id: toNodeId('1'),
+  graphId: 'test-graph',
   title: 'KSampler',
   type: 'KSampler',
   mode: 0,
-  selected: false,
-  executing: false,
-  widgets: [],
-  inputs: [],
-  outputs: [],
   flags: { collapsed: false },
-  ...overrides
+  ...overrides,
+  properties: overrides.properties ?? {}
 })
 
 const setupMockStores = () => {
-  const pinia = createTestingPinia({ stubActions: false })
-  setActivePinia(pinia)
+  const pinia = getActivePinia()!
 
   const settingStore = useSettingStore()
   const nodeDefStore = useNodeDefStore()

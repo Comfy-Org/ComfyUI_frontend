@@ -122,6 +122,7 @@ export function useHeroLogo(
       container.appendChild(renderer.domElement)
 
       let disposed = false
+      const isDisposed = () => disposed
       const teardowns: Array<() => void> = []
       cleanup = () => {
         disposed = true
@@ -148,7 +149,7 @@ export function useHeroLogo(
       const bb = tempGeo.boundingBox
       if (!bb) {
         tempGeo.dispose()
-        cleanup?.()
+        cleanup()
         return
       }
       const cx = (bb.max.x + bb.min.x) / 2
@@ -157,7 +158,7 @@ export function useHeroLogo(
         cfg.fitAxis === 'width' ? bb.max.x - bb.min.x : bb.max.y - bb.min.y
       if (fitExtent <= 0) {
         tempGeo.dispose()
-        cleanup?.()
+        cleanup()
         return
       }
       const scaleFactor = cfg.targetSize / fitExtent
@@ -166,7 +167,7 @@ export function useHeroLogo(
       // Image sequence textures — load first frame eagerly, rest lazily
       const urls = buildImageUrls(cfg.baseUrl)
       const textures = await loadTextures(urls.slice(0, 1))
-      if (disposed) return
+      if (isDisposed()) return
 
       renderer.domElement.style.opacity = '1'
       loaded.value = true

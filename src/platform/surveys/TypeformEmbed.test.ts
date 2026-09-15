@@ -11,7 +11,7 @@ const embedState = vi.hoisted(() => ({
   isValidTypeformId: true
 }))
 
-vi.mock('./useTypeformEmbed', () => ({
+vi.mock<unknown>(import('./useTypeformEmbed'), () => ({
   useTypeformEmbed: vi.fn(() => ({
     typeformError: ref(embedState.typeformError),
     isValidTypeformId: ref(embedState.isValidTypeformId)

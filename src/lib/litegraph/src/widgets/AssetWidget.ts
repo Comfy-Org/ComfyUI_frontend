@@ -1,7 +1,7 @@
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { IAssetWidget } from '@/lib/litegraph/src/types/widgets'
 
-import { BaseWidget } from './BaseWidget'
+import { BaseWidget, extensionValue } from './BaseWidget'
 import type { DrawWidgetOptions } from './BaseWidget'
 
 export class AssetWidget
@@ -10,8 +10,8 @@ export class AssetWidget
 {
   constructor(widget: IAssetWidget, node: LGraphNode) {
     super(widget, node)
-    this.type ??= 'asset'
-    this.value = widget.value?.toString() ?? ''
+    this.type = extensionValue(this.type) ?? 'asset'
+    this.value = extensionValue(widget.value)?.toString() ?? ''
   }
 
   override set value(value: IAssetWidget['value']) {
@@ -31,7 +31,7 @@ export class AssetWidget
   }
 
   override get _displayValue(): string {
-    return String(this.value) //FIXME: Resolve asset name
+    return this.value //FIXME: Resolve asset name
   }
 
   override drawWidget(

@@ -3,6 +3,7 @@ export interface NavItemData {
   label: string
   icon: string
   badge?: string | number
+  suffixIcon?: string
 }
 
 export interface NavGroupData {

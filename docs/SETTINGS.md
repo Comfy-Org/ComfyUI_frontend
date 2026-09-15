@@ -12,21 +12,22 @@ ComfyUI frontend uses a comprehensive settings system for user preferences with 
 - If a value hasn't been set by the user, the store returns the computed default
 
 ```typescript
-// From src/platform/settings/settingStore.ts:105-122
+// From src/platform/settings/settingStore.ts
 function getDefaultValue<K extends keyof Settings>(
   key: K
 ): Settings[K] | undefined {
   const param = getSettingById(key)
+
   if (param === undefined) return
 
   const versionedDefault = getVersionedDefaultValue(key, param)
+
   if (versionedDefault) {
     return versionedDefault
   }
 
-  return typeof param.defaultValue === 'function'
-    ? param.defaultValue()
-    : param.defaultValue
+  const defaultValue = param.defaultValue
+  return resolveDefaultValue(defaultValue)
 }
 ```
 
@@ -35,12 +36,14 @@ function getDefaultValue<K extends keyof Settings>(
 Settings are registered after server values are loaded:
 
 ```typescript
-// From src/components/graph/GraphCanvas.vue:311-315
-CORE_SETTINGS.forEach((setting) => {
-  settingStore.addSetting(setting)
-})
+// From src/components/graph/GraphCanvas.vue
+// Register core settings immediately after settings are ready
+CORE_SETTINGS.forEach(settingStore.addSetting)
 
-await newUserService().initializeIfNewUser(settingStore)
+await Promise.all([
+  until(() => isI18nReady.value || !!i18nError.value).toBe(true),
+  useNewUserService().initializeIfNewUser()
+])
 ```
 
 ## Dynamic and Environment-Based Defaults
@@ -50,7 +53,7 @@ await newUserService().initializeIfNewUser(settingStore)
 You can compute defaults dynamically using function defaults that access runtime context:
 
 ```typescript
-// From src/platform/settings/constants/coreSettings.ts:94-101
+// From src/platform/settings/constants/coreSettings.ts
 {
   id: 'Comfy.Sidebar.Size',
   // Default to small if the window is less than 1536px(2xl) wide
@@ -58,11 +61,14 @@ You can compute defaults dynamically using function defaults that access runtime
 }
 ```
 
+A function default can also be a named import rather than an inline arrow:
+
 ```typescript
-// From src/platform/settings/constants/coreSettings.ts:306
+// From src/platform/settings/constants/coreSettings.ts
+// getDefaultLocale() is defined in src/locales/localeConfig.ts
 {
   id: 'Comfy.Locale',
-  defaultValue: () => navigator.language.split('-')[0] || 'en'
+  defaultValue: getDefaultLocale
 }
 ```
 
@@ -71,25 +77,32 @@ You can compute defaults dynamically using function defaults that access runtime
 You can vary defaults by installed frontend version using `defaultsByInstallVersion`:
 
 ```typescript
-// From src/platform/settings/settingStore.ts:129-150
+// From src/platform/settings/settingStore.ts
+// `compare` and `valid` come from semver
 function getVersionedDefaultValue<
   K extends keyof Settings,
   TValue = Settings[K]
 >(key: K, param: SettingParams<TValue> | undefined): TValue | null {
+  // skip 'Comfy.InstalledVersion' to prevent an infinite loop
   const defaultsByInstallVersion = param?.defaultsByInstallVersion
   if (defaultsByInstallVersion && key !== 'Comfy.InstalledVersion') {
     const installedVersion = get('Comfy.InstalledVersion')
+
     if (installedVersion) {
       const sortedVersions = Object.keys(defaultsByInstallVersion).sort(
-        (a, b) => compareVersions(b, a)
+        (a, b) => compare(b, a)
       )
+
       for (const version of sortedVersions) {
-        if (!isSemVer(version)) continue
-        if (compareVersions(installedVersion, version) >= 0) {
+        if (!valid(version)) continue
+
+        if (compare(installedVersion, version) >= 0) {
           const versionedDefault = defaultsByInstallVersion[version]
-          return typeof versionedDefault === 'function'
-            ? versionedDefault()
-            : versionedDefault
+          if (versionedDefault !== undefined) {
+            return typeof versionedDefault === 'function'
+              ? versionedDefault()
+              : versionedDefault
+          }
         }
       }
     }
@@ -101,9 +114,9 @@ function getVersionedDefaultValue<
 Example versioned defaults from codebase:
 
 ```typescript
-// From src/platform/settings/constants/coreSettings.ts:38-40
+// From src/platform/settings/constants/coreSettings.ts
 {
-  id: 'Comfy.Graph.LinkReleaseAction',
+  id: 'Comfy.LinkRelease.Action',
   defaultValue: LinkReleaseTriggerAction.CONTEXT_MENU,
   defaultsByInstallVersion: {
     '1.24.1': LinkReleaseTriggerAction.SEARCH_BOX
@@ -112,11 +125,18 @@ Example versioned defaults from codebase:
 
 // Another versioned default example
 {
-  id: 'Comfy.Graph.LinkReleaseAction.Shift',
+  id: 'Comfy.LinkRelease.ActionShift',
   defaultValue: LinkReleaseTriggerAction.SEARCH_BOX,
   defaultsByInstallVersion: {
     '1.24.1': LinkReleaseTriggerAction.CONTEXT_MENU
   }
+}
+
+// A versioned default can also be computed from the build distribution
+{
+  id: 'Comfy.VueNodes.Enabled',
+  defaultValue: false,
+  defaultsByInstallVersion: { '1.41.0': isCloud || isDesktop }
 }
 ```
 
@@ -148,18 +168,37 @@ Here are actual settings showing different patterns:
   versionAdded: '1.24.0'
 }
 
-// Slider with complex tooltip
+// Slider with a tooltip
+{
+  id: 'Comfy.Graph.AutoPanSpeed',
+  category: ['LiteGraph', 'Canvas', 'AutoPanSpeed'],
+  name: 'Auto-pan speed',
+  tooltip: 'Maximum speed when auto-panning by dragging to the canvas edge. Set to 0 to disable auto-panning.',
+  type: 'slider',
+  defaultValue: 15,
+  attrs: {
+    min: 0,
+    max: 30,
+    step: 1
+  }
+}
+```
+
+### Deprecating a Setting
+
+A setting that is no longer wired up is retired by marking it `deprecated` and
+switching its `type` to `'hidden'` so it disappears from the settings UI while
+existing persisted values stay readable:
+
+```typescript
+// From src/platform/settings/constants/coreSettings.ts
 {
   id: 'LiteGraph.Canvas.LowQualityRenderingZoomThreshold',
-  name: 'Low quality rendering zoom threshold',
-  tooltip: 'Zoom level threshold for performance mode. Lower values (0.1) = quality at all zoom levels. Higher values (1.0) = performance mode even when zoomed in.',
-  type: 'slider',
-  attrs: {
-    min: 0.1,
-    max: 1.0,
-    step: 0.05
-  },
-  defaultValue: 0.5
+  type: 'hidden',
+  deprecated: true,
+  name: 'Low quality rendering zoom threshold (deprecated)',
+  defaultValue: 0.6,
+  versionAdded: '1.9.1'
 }
 ```
 
@@ -219,11 +258,17 @@ await settingStore.set('Comfy.InstalledVersion', __COMFYUI_FRONTEND_VERSION__)
 
 Values are stored per user via the backend. The store writes through API and falls back to defaults when not set:
 
+The store is updated **before** `onChange` runs, so handlers that read the
+setting back observe the new value. Persistence happens last:
+
 ```typescript
-// From src/platform/settings/settingStore.ts:73-75
-onChange(settingsById.value[key], newValue, oldValue)
-settingValues.value[key] = newValue
-await api.storeSetting(key, newValue)
+// From src/platform/settings/settingStore.ts
+settingValues.value[key] = typedNewValue
+
+await onChange(settingsById.value[key], newValue, oldValue)
+
+// ... then, in set():
+await api.storeSetting(key, applied.newValue)
 ```
 
 ### Usage in Components
@@ -245,7 +290,7 @@ await settingStore.set('Comfy.SomeSetting', newValue)
 Settings support migration from deprecated values:
 
 ```typescript
-// From src/platform/settings/settingStore.ts:68-69, 172-175
+// From src/platform/settings/settingStore.ts
 const newValue = tryMigrateDeprecatedValue(settingsById.value[key], clonedValue)
 
 // Migration happens during addSetting for existing values:
@@ -259,13 +304,37 @@ if (settingValues.value[setting.id] !== undefined) {
 
 ### onChange Callbacks
 
-Settings can define onChange callbacks that receive the setting definition, new value, and old value:
+A setting can define an `onChange` callback. It is extension-facing public API
+and receives **the new value and the old value** — not the setting definition:
 
 ```typescript
-// From src/platform/settings/settingStore.ts:73, 177
-onChange(settingsById.value[key], newValue, oldValue) // During set()
-onChange(setting, get(setting.id), undefined) // During addSetting()
+// From src/platform/settings/types.ts
+onChange?(newValue: TValue, oldValue?: TValue): void | Promise<void>
 ```
+
+```typescript
+{
+  id: 'Comfy.Example.Setting',
+  type: 'boolean',
+  defaultValue: false,
+  onChange: (newValue, oldValue) => {
+    console.log(`changed from ${oldValue} to ${newValue}`)
+  }
+}
+```
+
+The store wraps it in an internal helper that also takes the setting definition
+so it can log which handler failed. That helper fires in two places — once when
+a value is set, and once when a setting is first registered so the handler sees
+its initial value:
+
+```typescript
+// From src/platform/settings/settingStore.ts
+await onChange(settingsById.value[key], newValue, oldValue) // during set()
+void onChange(setting, get(setting.id), undefined) // during addSetting()
+```
+
+A throwing handler is caught and warned about rather than failing the write.
 
 ### Settings UI and Categories
 

@@ -1,47 +1,40 @@
+import type { ComfyApp } from '@/scripts/app'
+import { fromPartial } from '@total-typescript/shoehorn'
+import { useAuthStore } from '@/stores/authStore'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-const mockGetIdToken = vi.fn()
-const mockGetAuthHeader = vi.fn()
-const mockAuthState = vi.hoisted(() => ({
-  currentUser: { uid: 'user-a' } as { uid: string } | null
-}))
-const mockFlags = vi.hoisted(() => ({ teamWorkspacesEnabled: true }))
+const mockGetIdToken = vi.fn<ReturnType<typeof useAuthStore>['getIdToken']>(
+  async () => undefined
+)
+const mockGetAuthHeader = vi.fn<
+  ReturnType<typeof useAuthStore>['getAuthHeader']
+>(async () => null)
 const originalFetch = globalThis.fetch
 
-vi.mock('@/platform/distribution/types', () => ({
+vi.mock(import('@/platform/distribution/types'), () => ({
   isCloud: true
 }))
 
-vi.mock('@/composables/useFeatureFlags', () => ({
-  useFeatureFlags: () => ({
-    flags: mockFlags
-  })
-}))
-
-vi.mock('@/stores/authStore', () => ({
-  useAuthStore: () => ({
-    getIdToken: mockGetIdToken,
-    getAuthHeader: mockGetAuthHeader,
-    get currentUser() {
-      return mockAuthState.currentUser
-    }
-  })
-}))
-
-vi.mock('@/scripts/api', () => ({
+vi.mock<unknown>(import('@/scripts/api'), () => ({
   api: {
     apiURL: (path: string) => `/api${path}`
   }
 }))
 
+const mockReportError = vi.hoisted(() => vi.fn())
+vi.mock(import('@/platform/telemetry/reportError'), () => ({
+  reportError: mockReportError
+}))
+
+beforeEach(() => {
+  vi.mocked(useAuthStore().getIdToken).mockImplementation(mockGetIdToken)
+  vi.mocked(useAuthStore().getAuthHeader).mockImplementation(mockGetAuthHeader)
+})
+
 describe('useSessionCookie', () => {
   beforeEach(() => {
     vi.resetModules()
-    vi.restoreAllMocks()
-    mockGetIdToken.mockReset()
-    mockGetAuthHeader.mockReset()
-    mockAuthState.currentUser = { uid: 'user-a' }
-    mockFlags.teamWorkspacesEnabled = true
+    useAuthStore().currentUser = fromPartial({ uid: 'user-a' })
     globalThis.fetch = vi.fn()
   })
 
@@ -65,14 +58,14 @@ describe('useSessionCookie', () => {
       method: 'POST',
       credentials: 'include',
       headers: {
-        Authorization: 'Bearer firebase-id-token',
+        Authorization: 'Bearer firebase-id-token' as const,
         'Content-Type': 'application/json'
       }
     })
   })
 
   it('createSessionOrThrow fails fast without a Firebase token', async () => {
-    mockGetIdToken.mockResolvedValue(null)
+    mockGetIdToken.mockResolvedValue(undefined)
     const { useSessionCookie } =
       await import('@/platform/auth/session/useSessionCookie')
 
@@ -133,9 +126,30 @@ describe('useSessionCookie', () => {
     )
   })
 
+  it('reports a swallowed createSession failure as session_cookie_creation_failure', async () => {
+    const consoleWarn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    mockGetIdToken.mockResolvedValue('firebase-id-token')
+    vi.mocked(globalThis.fetch).mockResolvedValue(
+      new Response(JSON.stringify({ message: 'session denied' }), {
+        status: 500,
+        headers: { 'Content-Type': 'application/json' }
+      })
+    )
+    const { useSessionCookie } =
+      await import('@/platform/auth/session/useSessionCookie')
+
+    await useSessionCookie().createSession()
+
+    expect(mockReportError).toHaveBeenCalledExactlyOnceWith(expect.any(Error), {
+      errorType: 'session_cookie_creation_failure',
+      level: 'warning'
+    })
+    expect(consoleWarn).not.toHaveBeenCalled()
+  })
+
   it('serializes strict session creation after the previous user response', async () => {
     mockGetIdToken.mockImplementation(() =>
-      Promise.resolve(`firebase-${mockAuthState.currentUser?.uid}`)
+      Promise.resolve(`firebase-${useAuthStore().currentUser?.uid}`)
     )
     let resolveFirstFetch: (value: Response) => void = () => {}
     vi.mocked(globalThis.fetch)
@@ -151,7 +165,7 @@ describe('useSessionCookie', () => {
     const first = useSessionCookie().createSession()
     await vi.waitFor(() => expect(globalThis.fetch).toHaveBeenCalledTimes(1))
 
-    mockAuthState.currentUser = { uid: 'user-b' }
+    useAuthStore().currentUser = fromPartial({ uid: 'user-b' })
     const second = useSessionCookie().createSessionOrThrow()
     await Promise.resolve()
     await Promise.resolve()
@@ -174,7 +188,7 @@ describe('useSessionCookie', () => {
 
   it('reconfirms a cached owner after another owner mutates the cookie', async () => {
     mockGetIdToken.mockImplementation(() =>
-      Promise.resolve(`firebase-${mockAuthState.currentUser?.uid}`)
+      Promise.resolve(`firebase-${useAuthStore().currentUser?.uid}`)
     )
     let resolveUserB: (value: Response) => void = () => {}
     vi.mocked(globalThis.fetch)
@@ -189,11 +203,11 @@ describe('useSessionCookie', () => {
       await import('@/platform/auth/session/useSessionCookie')
 
     await useSessionCookie().ensureSessionCookie()
-    mockAuthState.currentUser = { uid: 'user-b' }
+    useAuthStore().currentUser = fromPartial({ uid: 'user-b' })
     const userBSession = useSessionCookie().createSession()
     await vi.waitFor(() => expect(globalThis.fetch).toHaveBeenCalledTimes(2))
 
-    mockAuthState.currentUser = { uid: 'user-a' }
+    useAuthStore().currentUser = fromPartial({ uid: 'user-a' })
     const userASession = useSessionCookie().ensureSessionCookie()
     await Promise.resolve()
     expect(globalThis.fetch).toHaveBeenCalledTimes(2)
@@ -208,8 +222,7 @@ describe('useSessionCookie', () => {
     expect(finalHeaders.get('Authorization')).toBe('Bearer firebase-user-a')
   })
 
-  it('does not let strict Firebase creation join a weaker request', async () => {
-    mockFlags.teamWorkspacesEnabled = false
+  it('lets strict creation join an in-flight Firebase request on Cloud', async () => {
     mockGetAuthHeader.mockResolvedValue(null)
     mockGetIdToken.mockResolvedValue('firebase-id-token')
     vi.mocked(globalThis.fetch).mockResolvedValue(
@@ -227,6 +240,7 @@ describe('useSessionCookie', () => {
       vi.mocked(globalThis.fetch).mock.calls[0][1]?.headers
     )
     expect(headers.get('Authorization')).toBe('Bearer firebase-id-token')
+    expect(mockGetAuthHeader).not.toHaveBeenCalled()
   })
 
   it('serializes session deletion after an in-flight creation', async () => {
@@ -270,3 +284,9 @@ describe('useSessionCookie', () => {
     )
   })
 })
+
+vi.mock(import('@/scripts/app'), async () => {
+  const { fromPartial } = await import('@total-typescript/shoehorn')
+  return { app: fromPartial<ComfyApp>({}) }
+})
+vi.mock(import('firebase/auth'))

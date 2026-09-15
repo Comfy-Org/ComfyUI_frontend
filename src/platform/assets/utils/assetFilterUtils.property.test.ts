@@ -1,3 +1,5 @@
+import { fromPartial } from '@total-typescript/shoehorn'
+
 import * as fc from 'fast-check'
 import { describe, expect, it } from 'vitest'
 
@@ -12,28 +14,30 @@ import {
   filterItemByOwnership
 } from './assetFilterUtils'
 
-const arbAssetItem: fc.Arbitrary<AssetItem> = fc.record({
-  id: fc.uuid(),
-  name: fc.stringMatching(/^[a-z0-9_-]{1,12}\.[a-z]{2,6}$/),
-  tags: fc.array(fc.stringMatching(/^[a-z0-9/]{1,15}$/), { maxLength: 5 }),
-  is_immutable: fc.option(fc.boolean(), { nil: undefined }),
-  metadata: fc.option(
-    fc.record({
-      base_model: fc.array(fc.stringMatching(/^[A-Z0-9.]{1,8}$/), {
-        maxLength: 3
-      })
-    }),
-    { nil: undefined }
-  ),
-  user_metadata: fc.option(
-    fc.record({
-      base_model: fc.array(fc.stringMatching(/^[A-Z0-9.]{1,8}$/), {
-        maxLength: 3
-      })
-    }),
-    { nil: undefined }
-  )
-})
+const arbAssetItem: fc.Arbitrary<AssetItem> = fc
+  .record({
+    id: fc.uuid(),
+    name: fc.stringMatching(/^[a-z0-9_-]{1,12}\.[a-z]{2,6}$/),
+    tags: fc.array(fc.stringMatching(/^[a-z0-9/]{1,15}$/), { maxLength: 5 }),
+    is_immutable: fc.option(fc.boolean(), { nil: undefined }),
+    metadata: fc.option(
+      fc.record({
+        base_model: fc.array(fc.stringMatching(/^[A-Z0-9.]{1,8}$/), {
+          maxLength: 3
+        })
+      }),
+      { nil: undefined }
+    ),
+    user_metadata: fc.option(
+      fc.record({
+        base_model: fc.array(fc.stringMatching(/^[A-Z0-9.]{1,8}$/), {
+          maxLength: 3
+        })
+      }),
+      { nil: undefined }
+    )
+  })
+  .map((r) => fromPartial<AssetItem>(r))
 
 const arbOwnership: fc.Arbitrary<OwnershipOption> = fc.constantFrom(
   'all',

@@ -30,7 +30,7 @@
       "properties": {
         "Node name for S&R": "EmptyLatentImage"
       },
-      "widgets_values": [512, 512, 1]
+      "widgets_values": [640, 768, 3]
     },
     {
       "id": 4,
@@ -55,7 +55,7 @@
       "properties": {
         "Run widget replace on values": false
       },
-      "widgets_values": [512, "fixed"]
+      "widgets_values": [640, "fixed"]
     }
   ],
   "links": [[2, 4, 0, 3, 0, "INT"]],

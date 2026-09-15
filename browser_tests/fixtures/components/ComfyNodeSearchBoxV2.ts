@@ -92,25 +92,6 @@ export class ComfyNodeSearchBoxV2 {
     await this.comfyPage.page.mouse.dblclick(x, y, { delay: 5 })
   }
 
-  async ensureV2Search(): Promise<void> {
-    await this.comfyPage.settings.setSetting(
-      'Comfy.NodeSearchBoxImpl',
-      'default'
-    )
-  }
-
-  async setup(): Promise<void> {
-    await this.ensureV2Search()
-    await this.comfyPage.settings.setSetting(
-      'Comfy.LinkRelease.Action',
-      'search box'
-    )
-    await this.comfyPage.settings.setSetting(
-      'Comfy.LinkRelease.ActionShift',
-      'search box'
-    )
-  }
-
   async addNode(query: string, options: { position?: Position } = {}) {
     const position = options.position ?? { x: 200, y: 200 }
     await this.openByDoubleClickCanvas(position)

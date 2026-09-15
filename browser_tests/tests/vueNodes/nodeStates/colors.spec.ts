@@ -8,9 +8,7 @@ test.describe(
   'Vue Node Custom Colors',
   { tag: ['@screenshot', '@vue-nodes'] },
   () => {
-    test.beforeEach(async ({ comfyPage }) => {
-      await comfyPage.settings.setSetting('Comfy.Canvas.SelectionToolbox', true)
-    })
+    test.use({ initialSettings: { 'Comfy.Canvas.SelectionToolbox': true } })
 
     test('displays color picker button and allows color selection', async ({
       comfyPage

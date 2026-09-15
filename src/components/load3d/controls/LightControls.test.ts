@@ -1,6 +1,6 @@
-import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { render, screen } from '@testing-library/vue'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
@@ -9,6 +9,7 @@ import type {
   HDRIConfig,
   MaterialMode
 } from '@/extensions/core/load3d/interfaces'
+import { useSettingStore } from '@/platform/settings/settingStore'
 
 const settingValues: Record<string, unknown> = {
   'Comfy.Load3D.LightIntensityMaximum': 10,
@@ -16,34 +17,15 @@ const settingValues: Record<string, unknown> = {
   'Comfy.Load3D.LightAdjustmentIncrement': 0.5
 }
 
-vi.mock('@/platform/settings/settingStore', () => ({
-  useSettingStore: () => ({
-    get: (key: string) => settingValues[key]
-  })
-}))
+beforeEach(() => {
+  useSettingStore().$patch({ settingValues })
+})
 
-vi.mock('@/composables/useDismissableOverlay', () => ({
+vi.mock(import('@/composables/useDismissableOverlay'), () => ({
   useDismissableOverlay: vi.fn()
 }))
 
-vi.mock('@/components/ui/slider/Slider.vue', () => ({
-  default: {
-    name: 'UiSlider',
-    props: ['modelValue', 'min', 'max', 'step'],
-    emits: ['update:modelValue'],
-    template: `
-      <input
-        type="range"
-        role="slider"
-        :value="Array.isArray(modelValue) ? modelValue[0] : modelValue"
-        :min="min"
-        :max="max"
-        :step="step"
-        @input="$emit('update:modelValue', [Number($event.target.value)])"
-      />
-    `
-  }
-}))
+vi.mock(import('@/components/ui/slider/Slider.vue'))
 
 const i18n = createI18n({
   legacy: false,
@@ -94,10 +76,6 @@ function renderComponent(opts: RenderOpts = {}) {
 }
 
 describe('LightControls', () => {
-  afterEach(() => {
-    document.body.innerHTML = ''
-  })
-
   describe('material mode gating', () => {
     it('renders the intensity control when materialMode is original', () => {
       renderComponent({ materialMode: 'original' })

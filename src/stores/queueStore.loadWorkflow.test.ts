@@ -1,6 +1,4 @@
-import { createTestingPinia } from '@pinia/testing'
 import { fromPartial } from '@total-typescript/shoehorn'
-import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type {
@@ -12,11 +10,13 @@ import type { ComfyApp } from '@/scripts/app'
 import * as jobOutputCache from '@/services/jobOutputCache'
 import { TaskItemImpl } from '@/stores/queueStore'
 
-vi.mock('@/services/extensionService', () => ({
+vi.mock<unknown>(import('@/services/extensionService'), () => ({
   useExtensionService: vi.fn(() => ({
     invokeExtensions: vi.fn()
   }))
 }))
+
+vi.mock(import('@/platform/assets/composables/media/assetMappers'))
 
 const mockWorkflow: ComfyWorkflowJSON = {
   last_node_id: 5,
@@ -73,9 +73,6 @@ describe('TaskItemImpl.loadWorkflow - workflow fetching', () => {
   let mockFetchApi: ReturnType<typeof vi.fn>
 
   beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-    vi.clearAllMocks()
-
     mockFetchApi = vi.fn()
     mockApp = fromPartial<ComfyApp>({
       loadGraphData: vi.fn(),

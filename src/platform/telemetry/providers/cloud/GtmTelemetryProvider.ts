@@ -91,7 +91,7 @@ export class GtmTelemetryProvider implements TelemetryProvider {
         ;(window.dataLayer as unknown[] | undefined)?.push(arguments)
       }
 
-      window.gtag = gtag as Window['gtag']
+      window.gtag = gtag
     }
 
     const gtagScriptSrc = `https://www.googletagmanager.com/gtag/js?id=${measurementId}`

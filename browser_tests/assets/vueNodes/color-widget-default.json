@@ -1,0 +1,28 @@
+{
+  "id": "c0107e57-c01047-c01047-c01047-c0101010c010",
+  "revision": 0,
+  "last_node_id": 1,
+  "last_link_id": 0,
+  "nodes": [
+    {
+      "id": 1,
+      "type": "DevToolsNodeWithColorInput",
+      "pos": [400, 300],
+      "size": [270, 58],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "properties": {
+        "Node name for S&R": "DevToolsNodeWithColorInput"
+      },
+      "widgets_values": ["#ff00ff"]
+    }
+  ],
+  "links": [],
+  "groups": [],
+  "config": {},
+  "extra": {},
+  "version": 0.4
+}

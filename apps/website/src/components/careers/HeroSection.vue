@@ -15,7 +15,7 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
         {{ t('careers.hero.label', locale) }}
       </SectionLabel>
       <h1
-        class="text-primary-comfy-canvas mt-4 text-4xl font-light whitespace-pre-line md:text-6xl"
+        class="mt-4 text-4xl font-light whitespace-pre-line text-primary-comfy-canvas md:text-6xl"
       >
         {{ t('careers.hero.heading', locale) }}
       </h1>
@@ -27,7 +27,7 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
         alt="Comfy team"
         class="w-full rounded-4xl object-cover"
       />
-      <div class="text-primary-comfy-canvas space-y-6 p-8 text-base/relaxed">
+      <div class="space-y-6 p-8 text-base/relaxed text-primary-comfy-canvas">
         <p>{{ t('careers.hero.body1', locale) }}</p>
         <p>{{ t('careers.hero.body2', locale) }}</p>
         <p>{{ t('careers.hero.body3', locale) }}</p>

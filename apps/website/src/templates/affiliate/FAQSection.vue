@@ -9,8 +9,8 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 
 const faqs = affiliateFaqs.map((faq) => ({
   id: faq.id,
-  question: faq.question[locale],
-  answer: faq.answer[locale]
+  question: faq.question[locale] || faq.question.en,
+  answer: faq.answer[locale] || faq.answer.en
 }))
 </script>
 

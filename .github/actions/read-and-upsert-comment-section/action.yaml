@@ -1,0 +1,44 @@
+name: Read Section File and Upsert Comment Section
+description: >
+  Reads a generated markdown section file, if present and non-empty, and
+  upserts it into the unified PR report comment via upsert-comment-section.
+  No-ops when the section file is missing or empty, so callers don't need
+  their own hashFiles guard around the read+upsert step pair.
+
+inputs:
+  pr-number:
+    description: PR number to comment on
+    required: true
+  section-name:
+    description: 'Section identifier (e.g. "playwright", "video")'
+    required: true
+  section-file:
+    description: Path to the markdown file containing the section content
+    required: true
+  token:
+    description: GitHub token with pull-requests write permission
+    required: true
+  comment-marker:
+    description: Top-level HTML comment marker shared by all sections in this comment
+    required: false
+    default: '<!-- COMFYUI_FRONTEND_PR_REPORT -->'
+
+runs:
+  using: composite
+  steps:
+    - name: Read section file
+      id: section
+      if: ${{ hashFiles(inputs.section-file) != '' }}
+      uses: juliangruber/read-file-action@b549046febe0fe86f8cb4f93c24e284433f9ab58 # v1.1.7
+      with:
+        path: ${{ inputs.section-file }}
+
+    - name: Upsert section into unified report
+      if: ${{ steps.section.outputs.content != '' }}
+      uses: ./.github/actions/upsert-comment-section
+      with:
+        pr-number: ${{ inputs.pr-number }}
+        section-name: ${{ inputs.section-name }}
+        section-content: ${{ steps.section.outputs.content }}
+        comment-marker: ${{ inputs.comment-marker }}
+        token: ${{ inputs.token }}

@@ -7,11 +7,16 @@ test.describe(
   'Node context menu viewport overflow (#10824)',
   { tag: '@ui' },
   () => {
+    test.use({
+      initialSettings: {
+        'Comfy.UseNewMenu': 'Disabled',
+        'Comfy.Canvas.SelectionToolbox': true
+      }
+    })
+
     test.beforeEach(async ({ comfyPage }) => {
       // Keep the viewport well below the menu content height so overflow is guaranteed.
       await comfyPage.page.setViewportSize({ width: 1280, height: 300 })
-      await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Disabled')
-      await comfyPage.settings.setSetting('Comfy.Canvas.SelectionToolbox', true)
       await comfyPage.workflow.loadWorkflow('nodes/single_ksampler')
     })
 

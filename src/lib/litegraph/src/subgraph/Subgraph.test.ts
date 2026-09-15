@@ -5,9 +5,7 @@
  * patterns for the rest of the testing team. These tests cover construction
  * and basic I/O management.
  */
-import { createTestingPinia } from '@pinia/testing'
 import { fromAny } from '@total-typescript/shoehorn'
-import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it } from 'vitest'
 
 import {
@@ -25,7 +23,6 @@ import {
 } from './__fixtures__/subgraphHelpers'
 
 beforeEach(() => {
-  setActivePinia(createTestingPinia({ stubActions: false }))
   resetSubgraphFixtureState()
 })
 
@@ -68,6 +65,46 @@ describe('Subgraph Construction', () => {
 
     expect(subgraph.id).toBe(customId)
     expect(subgraph.name).toBe(customName)
+  })
+
+  it('clones into an independent store scope', () => {
+    const subgraph = createTestSubgraph({
+      name: 'Clone source',
+      nodeCount: 1,
+      inputs: [{ name: 'source input', type: 'number' }]
+    })
+    subgraph.rootGraph.subgraphs.set(subgraph.id, subgraph)
+    const sourceBeforeClone = structuredClone(subgraph.asSerialisable())
+
+    const clone = subgraph.clone()
+    for (const node of clone.nodes) node.title = 'Changed clone node'
+    clone.addInput('clone input', 'string')
+
+    expect(clone).not.toBe(subgraph)
+    expect(clone.id).not.toBe(subgraph.id)
+    expect(subgraph.rootGraph.subgraphs.get(clone.id)).toBe(clone)
+    expect(clone.name).toBe(subgraph.name)
+    expect(clone.nodes.map(({ id }) => id)).not.toEqual(
+      subgraph.nodes.map(({ id }) => id)
+    )
+    expect(clone.nodes.map(({ type }) => type)).toEqual(['Fixture/TestNode'])
+    expect(clone.nodes.every(({ has_errors }) => !has_errors)).toBe(true)
+    expect(clone.nodes.map(({ title }) => title)).toEqual([
+      'Changed clone node'
+    ])
+    expect(clone.asSerialisable().inputs?.map(({ name }) => name)).toEqual([
+      'source input',
+      'clone input'
+    ])
+    expect(subgraph.nodes).toHaveLength(1)
+    expect(subgraph.nodes.map(({ title }) => title)).toEqual(['Test Node 0'])
+
+    subgraph.rootGraph.releaseSubgraphs([clone])
+    expect(subgraph.rootGraph.subgraphs.has(clone.id)).toBe(false)
+    expect(subgraph.asSerialisable()).toEqual({
+      ...sourceBeforeClone,
+      state: subgraph.state
+    })
   })
 })
 

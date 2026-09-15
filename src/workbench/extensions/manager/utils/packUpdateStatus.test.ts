@@ -10,12 +10,14 @@ import {
 type NodePack = components['schemas']['Node']
 type ComfyManagerStore = ReturnType<typeof useComfyManagerStore>
 
-const createPack = (id: string | undefined, latestVersion?: string): NodePack =>
-  ({
-    id,
-    name: `Pack ${id}`,
-    latest_version: latestVersion ? { version: latestVersion } : undefined
-  }) as NodePack
+const createPack = (
+  id: string | undefined,
+  latestVersion?: string
+): NodePack => ({
+  id,
+  name: `Pack ${id}`,
+  latest_version: latestVersion ? { version: latestVersion } : undefined
+})
 
 const createStore = (
   installed: Record<string, string | undefined>

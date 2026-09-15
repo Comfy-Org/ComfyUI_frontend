@@ -16,7 +16,7 @@ const { highlightClass = 'text-white' } = defineProps<{
 
 <template>
   <section
-    class="max-w-9xl mx-auto flex flex-col gap-4 px-6 py-16 lg:flex-row lg:gap-16 lg:py-24"
+    class="mx-auto flex max-w-9xl flex-col gap-4 px-6 py-16 lg:flex-row lg:gap-16 lg:py-24"
   >
     <!-- Left heading -->
     <div

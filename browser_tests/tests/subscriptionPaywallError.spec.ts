@@ -12,12 +12,7 @@ import { TestIds } from '@e2e/fixtures/selectors'
 // and stay out of the error panel, instead of surfacing the raw backend string
 // with non-actionable Find-on-GitHub / Copy actions.
 test.describe('Subscription paywall on queue', { tag: '@ui' }, () => {
-  test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.settings.setSetting(
-      'Comfy.RightSidePanel.ShowErrorsTab',
-      true
-    )
-  })
+  test.use({ initialSettings: { 'Comfy.RightSidePanel.ShowErrorsTab': true } })
 
   async function mockQueueError(page: Page, error: PromptResponse['error']) {
     const body: PromptResponse = { node_errors: {}, error }

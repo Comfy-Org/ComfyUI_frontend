@@ -1,6 +1,6 @@
 import { render } from '@testing-library/vue'
 import { fromAny } from '@total-typescript/shoehorn'
-import { createPinia } from 'pinia'
+import { getActivePinia } from 'pinia'
 import PrimeVue from 'primevue/config'
 import Tag from 'primevue/tag'
 import Tooltip from 'primevue/tooltip'
@@ -16,7 +16,7 @@ const i18n = createI18n({
   locale: 'en'
 })
 
-vi.mock('@/utils/formatUtil', () => ({
+vi.mock(import('@/utils/formatUtil'), () => ({
   normalizeI18nKey: vi.fn()
 }))
 
@@ -37,7 +37,7 @@ describe('SettingItem', () => {
   function renderComponent(setting: SettingParams) {
     return render(SettingItem, {
       global: {
-        plugins: [PrimeVue, i18n, createPinia()],
+        plugins: [PrimeVue, i18n, getActivePinia()!],
         components: { Tag },
         stubs: {
           FormItem: FormItemStub,
@@ -52,7 +52,7 @@ describe('SettingItem', () => {
   function getFormItemData(container: Element) {
     // eslint-disable-next-line testing-library/no-node-access
     const el = container.querySelector('[data-testid="form-item-data"]')
-    return JSON.parse(el!.textContent!)
+    return JSON.parse(el!.textContent)
   }
 
   it('translates options that use legacy type', () => {

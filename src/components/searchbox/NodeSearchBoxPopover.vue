@@ -238,11 +238,16 @@ function showContextMenu(e: CanvasPointerEvent) {
     canvas.canvas,
     'connect-new-default-node',
     (createEvent) => {
-      if (!(createEvent instanceof CustomEvent))
-        throw new Error('Invalid event')
+      if (!(createEvent instanceof CustomEvent)) {
+        console.error('Invalid event')
+        return
+      }
 
       const node: unknown = createEvent.detail?.node
-      if (!(node instanceof LGraphNode)) throw new Error('Invalid node')
+      if (!(node instanceof LGraphNode)) {
+        console.error('Invalid node')
+        return
+      }
 
       disconnectOnReset = false
       createEvent.preventDefault()

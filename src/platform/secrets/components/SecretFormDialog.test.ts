@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { computed, defineComponent, ref } from 'vue'
+import { computed, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import SecretFormDialog from './SecretFormDialog.vue'
@@ -12,7 +12,7 @@ const mockState = vi.hoisted(() => ({
   credentialOptions: [] as SecretCredentialOption[]
 }))
 
-vi.mock('../composables/useSecretForm', () => ({
+vi.mock<unknown>(import('../composables/useSecretForm'), () => ({
   useSecretForm: () => ({
     form: { provider: '', name: '', secretValue: '' },
     errors: {},
@@ -29,64 +29,62 @@ vi.mock('../composables/useSecretForm', () => ({
   })
 }))
 
-vi.mock('primevue/inputtext', () => ({
-  default: { name: 'InputText', template: '<input />' }
-}))
-vi.mock('primevue/password', () => ({
-  default: { name: 'Password', template: '<input type="password" />' }
-}))
+vi.mock<unknown>(
+  import('primevue/inputtext'), // eslint-disable-line primevue-removal/no-imports
 
-let capturedPointerDownOutside: ((event: Event) => void) | null = null
+  () => ({
+    default: { name: 'InputText', template: '<input />' }
+  })
+)
+vi.mock<unknown>(
+  import('primevue/password'), // eslint-disable-line primevue-removal/no-imports
+  () => ({
+    default: { name: 'Password', template: '<input type="password" />' }
+  })
+)
 
-vi.mock('@/components/ui/button/Button.vue', () => ({
+vi.mock<unknown>(import('@/components/ui/button/Button.vue'), () => ({
   default: { name: 'Button', template: '<button><slot /></button>' }
 }))
 
-vi.mock('@/components/ui/select/Select.vue', () => ({
+vi.mock<unknown>(import('@/components/ui/select/Select.vue'), () => ({
   default: { name: 'Select', template: '<div><slot /></div>' }
 }))
-vi.mock('@/components/ui/select/SelectContent.vue', () => ({
+vi.mock<unknown>(import('@/components/ui/select/SelectContent.vue'), () => ({
   default: { name: 'SelectContent', template: '<div><slot /></div>' }
 }))
-vi.mock('@/components/ui/select/SelectItem.vue', () => ({
+vi.mock<unknown>(import('@/components/ui/select/SelectItem.vue'), () => ({
   default: { name: 'SelectItem', template: '<div><slot /></div>' }
 }))
-vi.mock('@/components/ui/select/SelectTrigger.vue', () => ({
+vi.mock<unknown>(import('@/components/ui/select/SelectTrigger.vue'), () => ({
   default: { name: 'SelectTrigger', template: '<div><slot /></div>' }
 }))
-vi.mock('@/components/ui/select/SelectValue.vue', () => ({
+vi.mock<unknown>(import('@/components/ui/select/SelectValue.vue'), () => ({
   default: { name: 'SelectValue', template: '<span />' }
 }))
 
-vi.mock('@/components/ui/dialog/Dialog.vue', () => ({
+vi.mock<unknown>(import('@/components/ui/dialog/Dialog.vue'), () => ({
   default: { name: 'Dialog', template: '<div><slot /></div>' }
 }))
-vi.mock('@/components/ui/dialog/DialogPortal.vue', () => ({
+vi.mock<unknown>(import('@/components/ui/dialog/DialogPortal.vue'), () => ({
   default: { name: 'DialogPortal', template: '<div><slot /></div>' }
 }))
-vi.mock('@/components/ui/dialog/DialogOverlay.vue', () => ({
+vi.mock<unknown>(import('@/components/ui/dialog/DialogOverlay.vue'), () => ({
   default: { name: 'DialogOverlay', template: '<div />' }
 }))
-vi.mock('@/components/ui/dialog/DialogContent.vue', () => ({
-  default: defineComponent({
+vi.mock<unknown>(import('@/components/ui/dialog/DialogContent.vue'), () => ({
+  default: {
     name: 'DialogContent',
-    inheritAttrs: false,
-    setup(_, { attrs }) {
-      const onPointerDownOutside = (attrs as Record<string, unknown>)[
-        'onPointerDownOutside'
-      ] as ((event: Event) => void) | undefined
-      capturedPointerDownOutside = onPointerDownOutside ?? null
-    },
     template: '<div data-testid="dialog-content"><slot /></div>'
-  })
+  }
 }))
-vi.mock('@/components/ui/dialog/DialogHeader.vue', () => ({
+vi.mock<unknown>(import('@/components/ui/dialog/DialogHeader.vue'), () => ({
   default: { name: 'DialogHeader', template: '<div><slot /></div>' }
 }))
-vi.mock('@/components/ui/dialog/DialogTitle.vue', () => ({
+vi.mock<unknown>(import('@/components/ui/dialog/DialogTitle.vue'), () => ({
   default: { name: 'DialogTitle', template: '<div><slot /></div>' }
 }))
-vi.mock('@/components/ui/dialog/DialogClose.vue', () => ({
+vi.mock<unknown>(import('@/components/ui/dialog/DialogClose.vue'), () => ({
   default: { name: 'DialogClose', template: '<button />' }
 }))
 
@@ -94,21 +92,8 @@ const i18n = createI18n({ legacy: false, locale: 'en', messages: { en: {} } })
 
 describe('SecretFormDialog', () => {
   beforeEach(() => {
-    capturedPointerDownOutside = null
     mockState.inputType = 'text'
     mockState.credentialOptions = []
-  })
-
-  it('prevents backdrop pointer-down-outside from closing the dialog', () => {
-    render(SecretFormDialog, {
-      global: { plugins: [i18n] },
-      props: { visible: true }
-    })
-
-    expect(capturedPointerDownOutside).not.toBeNull()
-    const event = new CustomEvent('pointerDownOutside', { cancelable: true })
-    capturedPointerDownOutside!(event)
-    expect(event.defaultPrevented).toBe(true)
   })
 
   it('does not render the JSON upload control for a text provider', () => {

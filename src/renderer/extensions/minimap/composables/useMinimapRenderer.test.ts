@@ -7,7 +7,7 @@ import { useMinimapRenderer } from '@/renderer/extensions/minimap/composables/us
 import { renderMinimapToCanvas } from '@/renderer/extensions/minimap/minimapCanvasRenderer'
 import type { UpdateFlags } from '@/renderer/extensions/minimap/types'
 
-vi.mock('@/renderer/extensions/minimap/minimapCanvasRenderer', () => ({
+vi.mock(import('@/renderer/extensions/minimap/minimapCanvasRenderer'), () => ({
   renderMinimapToCanvas: vi.fn()
 }))
 
@@ -17,8 +17,6 @@ describe('useMinimapRenderer', () => {
   let mockGraph: LGraph
 
   beforeEach(() => {
-    vi.clearAllMocks()
-
     mockContext = {
       clearRect: vi.fn(),
       save: vi.fn(),

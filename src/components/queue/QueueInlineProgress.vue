@@ -12,6 +12,7 @@
       :style="{ width: `${totalPercent}%` }"
     />
     <div
+      data-testid="queue-inline-progress-node-fill"
       class="pointer-events-none absolute bottom-0 left-0 h-[3px] bg-interface-panel-job-progress-secondary transition-[width]"
       :style="{ width: `${currentNodePercent}%` }"
     />

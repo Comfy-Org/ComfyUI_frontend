@@ -19,7 +19,7 @@ const baseCameraState: CameraState = {
 function makeLoad3d({
   cameraType = 'perspective',
   fov = 35,
-  modelInfo = { transform: { position: [0, 0, 0] } } as unknown
+  modelInfo = { transform: { position: [0, 0, 0] } }
 }: {
   cameraType?: string
   fov?: number

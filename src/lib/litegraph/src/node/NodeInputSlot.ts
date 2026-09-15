@@ -1,5 +1,5 @@
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import type { LinkId } from '@/lib/litegraph/src/LLink'
+import type { LLink, LinkId } from '@/lib/litegraph/src/LLink'
 import { LabelPosition } from '@/lib/litegraph/src/draw'
 import type {
   INodeInputSlot,
@@ -9,6 +9,8 @@ import type {
 } from '@/lib/litegraph/src/interfaces'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { NodeSlot } from '@/lib/litegraph/src/node/NodeSlot'
+import { inputHasLink, inputLink } from '@/lib/litegraph/src/node/slotLinks'
+import { warnDeprecated } from '@/lib/litegraph/src/utils/feedback'
 import type { IDrawOptions } from '@/lib/litegraph/src/node/NodeSlot'
 import type { SubgraphInput } from '@/lib/litegraph/src/subgraph/SubgraphInput'
 import type { SubgraphOutput } from '@/lib/litegraph/src/subgraph/SubgraphOutput'
@@ -16,8 +18,27 @@ import { isSubgraphInput } from '@/lib/litegraph/src/subgraph/subgraphUtils'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 
 export class NodeInputSlot extends NodeSlot implements INodeInputSlot {
-  link: LinkId | null
   alwaysVisible?: boolean
+
+  /** @deprecated Read-only compatibility view of the store-derived link id. */
+  get link(): LinkId | null {
+    warnDeprecated(
+      'input.link is deprecated. Read connectivity via node.isInputConnected(slot) / node.getInputLink(slot); mutate via node.connect() / node.disconnectInput().'
+    )
+    return linkIdOf(this)
+  }
+
+  set link(value: LinkId | null) {
+    warnDeprecated(
+      'Assignment to input.link is deprecated. Use node.connect() / node.disconnectInput().'
+    )
+    if (value !== null) return
+
+    const slot = indexOf(this)
+    const { graph } = this._node
+    if (!graph || slot === -1) return
+    this._node.disconnectInput(slot)
+  }
 
   get isWidgetInputSlot(): boolean {
     return !!this.widget
@@ -42,12 +63,16 @@ export class NodeInputSlot extends NodeSlot implements INodeInputSlot {
     slot: OptionalProps<INodeInputSlot, 'boundingRect'>,
     node: LGraphNode
   ) {
-    super(slot, node)
-    this.link = slot.link
+    // Serialized inputs carry a legacy link mirror; strip it so the base
+    // ctor's Object.assign does not trip the deprecated setter above.
+    const { link: _legacyLink, ...rest } = slot
+    super(rest, node)
   }
 
   override get isConnected(): boolean {
-    return this.link != null
+    const { graph } = this._node
+    if (!graph) return false
+    return inputHasLink(graph, this._node.id, indexOf(this))
   }
 
   override isValidTarget(
@@ -83,8 +108,26 @@ export class NodeInputSlot extends NodeSlot implements INodeInputSlot {
   override toJSON(): INodeInputSlot {
     return {
       ...super.toJSON(),
-      link: this.link,
+      link: linkIdOf(this),
       widget: this.widget
     }
   }
+}
+
+/**
+ * Module-local, not accessors: a getter-only property on the prototype would
+ * collide with the base ctor's `Object.assign` for any serialized slot that
+ * happens to carry the same key.
+ */
+function indexOf(slot: NodeInputSlot): number {
+  return slot.node.inputs.indexOf(slot)
+}
+
+function linkIdOf(slot: NodeInputSlot): LinkId | null {
+  return linkOf(slot)?.id ?? null
+}
+
+function linkOf(slot: NodeInputSlot): LLink | undefined {
+  const { graph } = slot.node
+  return graph ? inputLink(graph, slot.node.id, indexOf(slot)) : undefined
 }

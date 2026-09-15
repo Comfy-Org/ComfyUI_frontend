@@ -22,7 +22,7 @@ export interface PositionedNode {
 export function calculateNodeBounds(
   nodes: PositionedNode[]
 ): SpatialBounds | null {
-  if (!nodes || nodes.length === 0) {
+  if (nodes.length === 0) {
     return null
   }
 

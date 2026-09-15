@@ -4,9 +4,15 @@ interface ModelOverride {
   featured?: boolean
   // Slug used on comfy.org/workflows/model/{hubSlug}. Only set when the page exists.
   hubSlug?: string
+  // When set, the model page's "What is {name}" paragraph links the leading
+  // occurrence of displayName to this URL. See [slug].astro.
+  whatIsBacklinkUrl?: string
 }
 
 export const modelMetadata: Record<string, ModelOverride> = {
+  minimax: {
+    whatIsBacklinkUrl: 'https://design.minimax.io/tools/minimax-h3-comfyui'
+  },
   'nano-banana': {
     docsUrl:
       'https://docs.comfy.org/tutorials/partner-nodes/google/nano-banana-pro',
@@ -71,7 +77,10 @@ export const modelMetadata: Record<string, ModelOverride> = {
   },
   'hunyuan-3d': {
     docsUrl: 'https://docs.comfy.org/tutorials/3d/hunyuan3D-2',
-    hubSlug: 'hunyuan-3d',
+    // The hub spells this family without the hyphen, and unlike the other
+    // mismatches here it is not a variant alias the hub redirects, so the
+    // hyphenated URL 404s rather than resolving.
+    hubSlug: 'hunyuan3d',
     featured: true
   },
   vidu: {

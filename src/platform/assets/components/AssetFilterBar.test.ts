@@ -24,17 +24,19 @@ const i18n = createI18n({
 })
 
 // Mock components with minimal functionality for business logic testing
-vi.mock('@/components/ui/multi-select/MultiSelect.vue', () => ({
-  default: {
-    name: 'MultiSelect',
-    props: {
-      modelValue: Array,
-      label: String,
-      options: Array,
-      class: String
-    },
-    emits: ['update:modelValue'],
-    template: `
+vi.mock<unknown>(
+  import('@/components/ui/multi-select/MultiSelect.vue'),
+  () => ({
+    default: {
+      name: 'MultiSelect',
+      props: {
+        modelValue: Array,
+        label: String,
+        options: Array,
+        class: String
+      },
+      emits: ['update:modelValue'],
+      template: `
       <div data-testid="multi-select">
         <select multiple @change="$emit('update:modelValue', Array.from($event.target.selectedOptions).map(o => ({ name: o.text, value: o.value })))">
           <option v-for="option in options" :key="option.value" :value="option.value">
@@ -43,20 +45,23 @@ vi.mock('@/components/ui/multi-select/MultiSelect.vue', () => ({
         </select>
       </div>
     `
-  }
-}))
+    }
+  })
+)
 
-vi.mock('@/components/ui/single-select/SingleSelect.vue', () => ({
-  default: {
-    name: 'SingleSelect',
-    props: {
-      modelValue: String,
-      label: String,
-      options: Array,
-      class: String
-    },
-    emits: ['update:modelValue'],
-    template: `
+vi.mock<unknown>(
+  import('@/components/ui/single-select/SingleSelect.vue'),
+  () => ({
+    default: {
+      name: 'SingleSelect',
+      props: {
+        modelValue: String,
+        label: String,
+        options: Array,
+        class: String
+      },
+      emits: ['update:modelValue'],
+      template: `
       <div data-testid="single-select">
         <select @change="$emit('update:modelValue', $event.target.value)">
           <option v-for="option in options" :key="option.value" :value="option.value">
@@ -65,8 +70,9 @@ vi.mock('@/components/ui/single-select/SingleSelect.vue', () => ({
         </select>
       </div>
     `
-  }
-}))
+    }
+  })
+)
 
 // Test factory functions
 function mountAssetFilterBar(props = {}) {
@@ -116,10 +122,10 @@ describe('AssetFilterBar', () => {
       ) as HTMLSelectElement
       const fileFormatOptions = fileFormatEl.querySelectorAll('option')
       const ckptOption = Array.from(fileFormatOptions).find(
-        (o) => (o as HTMLOptionElement).value === 'ckpt'
+        (o) => o.value === 'ckpt'
       ) as HTMLOptionElement
       const safetensorsOption = Array.from(fileFormatOptions).find(
-        (o) => (o as HTMLOptionElement).value === 'safetensors'
+        (o) => o.value === 'safetensors'
       ) as HTMLOptionElement
       ckptOption.selected = true
       safetensorsOption.selected = true
@@ -134,7 +140,7 @@ describe('AssetFilterBar', () => {
       ) as HTMLSelectElement
       const baseModelOptions = baseModelEl.querySelectorAll('option')
       const sdxlOption = Array.from(baseModelOptions).find(
-        (o) => (o as HTMLOptionElement).value === 'sdxl'
+        (o) => o.value === 'sdxl'
       ) as HTMLOptionElement
       sdxlOption.selected = true
       await fireEvent.change(baseModelSelectEl)
@@ -214,8 +220,8 @@ describe('AssetFilterBar', () => {
       const options = fileFormatEl.querySelectorAll('option')
       expect(
         Array.from(options).map((o) => ({
-          name: o.textContent?.trim(),
-          value: (o as HTMLOptionElement).value
+          name: o.textContent.trim(),
+          value: o.value
         }))
       ).toEqual([
         { name: '.ckpt', value: 'ckpt' },
@@ -237,8 +243,8 @@ describe('AssetFilterBar', () => {
       const options = baseModelEl.querySelectorAll('option')
       expect(
         Array.from(options).map((o) => ({
-          name: o.textContent?.trim(),
-          value: (o as HTMLOptionElement).value
+          name: o.textContent.trim(),
+          value: o.value
         }))
       ).toEqual([
         { name: 'sd15', value: 'sd15' },

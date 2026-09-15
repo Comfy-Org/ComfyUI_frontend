@@ -1,6 +1,9 @@
-import { describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it } from 'vitest'
+import type { App } from 'vue'
+import { createApp, defineComponent } from 'vue'
 
-import { useAssetFilterOptions } from '@/platform/assets/composables/useAssetFilterOptions'
+import { i18n } from '@/i18n'
+import { useAssetFilterOptions as createAssetFilterOptions } from '@/platform/assets/composables/useAssetFilterOptions'
 
 import {
   createAssetWithSpecificBaseModel,
@@ -10,11 +13,28 @@ import {
   createAssetWithoutUserMetadata
 } from '@/platform/assets/fixtures/ui-mock-assets'
 
-vi.mock('vue-i18n', () => ({
-  useI18n: () => ({
-    t: (key: string) => key
-  })
-}))
+const apps: App<Element>[] = []
+
+function useAssetFilterOptions(
+  ...args: Parameters<typeof createAssetFilterOptions>
+) {
+  let result: ReturnType<typeof createAssetFilterOptions> | undefined
+  const app = createApp(
+    defineComponent({
+      setup() {
+        result = createAssetFilterOptions(...args)
+        return () => null
+      }
+    })
+  )
+  app.use(i18n)
+  app.mount(document.createElement('div'))
+  apps.push(app)
+  if (!result) throw new Error('Asset filter options were not initialized')
+  return result
+}
+
+afterEach(() => apps.splice(0).forEach((app) => app.unmount()))
 
 describe('useAssetFilterOptions', () => {
   describe('File Format Extraction', () => {

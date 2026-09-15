@@ -16,15 +16,22 @@ type ComboInput = ComboInputSpec | ComboInputSpecV2
 
 const OBJECT_INFO_ROUTE = '**/object_info'
 
-function getRequiredInputs(
-  objectInfo: ObjectInfoResponse,
+function getNodeInfo(
+  objectInfo: Partial<ObjectInfoResponse>,
   nodeType: string
-): Record<string, InputSpec> {
+) {
   const nodeInfo = objectInfo[nodeType]
   if (!nodeInfo) {
     throw new Error(`Missing object_info entry for ${nodeType}`)
   }
+  return nodeInfo
+}
 
+function getRequiredInputs(
+  objectInfo: ObjectInfoResponse,
+  nodeType: string
+): Partial<Record<string, InputSpec>> {
+  const nodeInfo = getNodeInfo(objectInfo, nodeType)
   const requiredInputs = nodeInfo.input?.required
   if (!requiredInputs) {
     throw new Error(`Missing required inputs for ${nodeType}`)
@@ -53,9 +60,7 @@ export function setStringInputTooltip(
   tooltip: string
 ): void {
   const requiredInputs = getRequiredInputs(objectInfo, nodeType)
-  if (!requiredInputs[inputName]) {
-    throw new Error(`Missing input ${nodeType}.${inputName}`)
-  }
+  getRequiredInput(objectInfo, nodeType, inputName)
 
   const input: InputSpec = ['STRING', { tooltip }]
   requiredInputs[inputName] = input
@@ -102,6 +107,32 @@ export function appendComboInputOptions(
     ...getComboSpecComboOptions(input),
     ...values
   ])
+}
+
+/**
+ * Clones an existing node definition under a new type whose display name is
+ * `displayName`, so a test can put arbitrary text on the node-search result
+ * label without depending on a real node happening to contain it.
+ *
+ * Deep-cloned: a spread would leave the copy sharing `input`/`output` with the
+ * donor, so a later mutator aimed at the clone would silently rewrite the real
+ * node in the same payload.
+ */
+export function addNodeWithDisplayName(
+  objectInfo: ObjectInfoResponse,
+  nodeType: string,
+  displayName: string,
+  donorNodeType = 'KSampler'
+): void {
+  const donor = getNodeInfo(objectInfo, donorNodeType)
+
+  objectInfo[nodeType] = {
+    ...structuredClone(donor),
+    name: nodeType,
+    display_name: displayName,
+    category: 'testing',
+    description: ''
+  }
 }
 
 export async function routeObjectInfoFromSetupApi(

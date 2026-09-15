@@ -624,6 +624,24 @@ describe('errorMessageResolver', () => {
     })
   })
 
+  it('resolves an agent transport failure to overlay copy', () => {
+    expect(
+      resolveRunErrorMessage({
+        kind: 'prompt',
+        isCloud: true,
+        error: {
+          type: 'apply_failed',
+          message: 'An agent edit could not be applied',
+          details: 'op_rejected: unknown_widget at seed'
+        }
+      })
+    ).toEqual({
+      displayTitle: 'Agent edit failed',
+      displayMessage:
+        'An agent edit could not be applied to the workflow document.'
+    })
+  })
+
   it('resolves server_error prompt copy by environment', () => {
     const error = {
       type: 'server_error',

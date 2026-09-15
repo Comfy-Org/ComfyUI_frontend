@@ -176,6 +176,9 @@
   "Comfy_Interrupt": {
     "label": "Прервать"
   },
+  "Comfy_LayerEditor_OpenLayerEditor": {
+    "label": "Открыть редактор слоёв для выбранного узла"
+  },
   "Comfy_LoadDefaultWorkflow": {
     "label": "Загрузить стандартный рабочий процесс"
   },
@@ -274,9 +277,6 @@
   },
   "Comfy_Subgraph_SetSearchAliases": {
     "label": "Установить поисковые псевдонимы подграфа"
-  },
-  "Comfy_ToggleAssetAPI": {
-    "label": "Экспериментально: Включить AssetAPI"
   },
   "Comfy_ToggleCanvasInfo": {
     "label": "Производительность холста"

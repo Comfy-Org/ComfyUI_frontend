@@ -68,6 +68,8 @@ const VALUE_SPECIFIC_COPY_RULES: Record<
   }
 }
 
+type ValueSpecificCopyRule = (typeof VALUE_SPECIFIC_COPY_RULES)[string]
+
 const NODE_LEVEL_VALIDATION_ERROR_RULES: Record<string, ValidationCatalogRule> =
   Object.fromEntries(
     Array.from(NODE_LEVEL_VALIDATION_ERROR_TYPES, (type) => [
@@ -177,14 +179,14 @@ function getValidationParams(
 }
 
 function hasParams(params: CatalogParams, keys: string[]): boolean {
-  return keys.every((key) => params[key] !== undefined)
+  return keys.every((key) => Object.hasOwn(params, key))
 }
 
 function getValueSpecificCopyKeys(
   errorType: string,
   params: CatalogParams
 ): CopyKeys {
-  const rule = VALUE_SPECIFIC_COPY_RULES[errorType]
+  const rule = getValueSpecificRule(errorType)
   if (!rule || !hasParams(params, rule.requiredParams)) return DEFAULT_COPY_KEYS
 
   return {
@@ -193,8 +195,14 @@ function getValueSpecificCopyKeys(
   }
 }
 
+function getValueSpecificRule(
+  errorType: string
+): ValueSpecificCopyRule | undefined {
+  return VALUE_SPECIFIC_COPY_RULES[errorType]
+}
+
 function getRawDetailsCopyKeys(error: NodeValidationError): CopyKeys {
-  return error.details?.trim()
+  return error.details.trim()
     ? {
         detailsKey: 'detailsWithRawDetails',
         toastMessageKey: 'toastMessageWithRawDetails'
@@ -203,7 +211,7 @@ function getRawDetailsCopyKeys(error: NodeValidationError): CopyKeys {
 }
 
 function getRawDetailsOnlyCopyKeys(error: NodeValidationError): CopyKeys {
-  if (!error.details?.trim()) return DEFAULT_COPY_KEYS
+  if (!error.details.trim()) return DEFAULT_COPY_KEYS
 
   return {
     detailsKey: 'detailsWithRawDetails',
@@ -241,7 +249,7 @@ function resolveValidationCatalogCopy(
 ): ResolvedCatalogErrorMessage {
   const nodeName = normalizeNodeName(context.nodeDisplayName)
   const inputName = getInputName(error)
-  const trimmedDetails = error.details?.trim() ?? ''
+  const trimmedDetails = error.details.trim()
   const rawDetails =
     error.type === 'dependency_cycle'
       ? formatDependencyCycleDetails(trimmedDetails)
@@ -273,7 +281,7 @@ function resolveValidationCatalogCopy(
     ),
     displayDetails: translateOptionalCatalogMessage(
       `${keyPrefix}.${copyKeys.detailsKey}`,
-      error.details ?? '',
+      error.details,
       params
     ),
     displayItemLabel: translateCatalogMessage(
@@ -307,7 +315,7 @@ export function resolveNodeValidationErrorMessage(
     )
   }
 
-  const rule = VALIDATION_ERROR_RULES[error.type]
+  const rule = getValidationRule(error.type)
   if (!rule) {
     return resolveValidationCatalogCopy(
       error,
@@ -321,4 +329,8 @@ export function resolveNodeValidationErrorMessage(
   }
 
   return resolveValidationCatalogCopy(error, context, error.type, rule)
+}
+
+function getValidationRule(type: string): ValidationCatalogRule | undefined {
+  return VALIDATION_ERROR_RULES[type]
 }

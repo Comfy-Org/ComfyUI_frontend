@@ -1,15 +1,19 @@
-import { fromAny } from '@total-typescript/shoehorn'
+import { fromAny, fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type { LGraph } from '@/lib/litegraph/src/LGraph'
-import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { LGraphEventMode } from '@/lib/litegraph/src/types/globalEnums'
 import type { IComboWidget } from '@/lib/litegraph/src/types/widgets'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
-import type * as AssetServiceModule from '@/platform/assets/services/assetService'
-import type * as FetchJobsModule from '@/platform/remote/comfyui/jobs/fetchJobs'
+import {
+  createMediaNodeDef,
+  seedMediaNodeDefs
+} from '@/platform/missingMedia/__fixtures__/promotedMedia'
 import type { JobListItem } from '@/platform/remote/comfyui/jobs/jobTypes'
+import { useNodeDefStore } from '@/stores/nodeDefStore'
 import type { MissingMediaAssetResolver } from './missingMediaAssetResolver'
 import {
+  isMissingMediaCandidateScopeActive,
   scanAllMediaCandidates,
   scanNodeMediaCandidates,
   verifyMediaCandidates,
@@ -22,49 +26,66 @@ import {
 } from './missingMediaGrouping'
 import type { MissingMediaCandidate } from './types'
 
-const { mockGetInputAssetsIncludingPublic, mockGetAssetsPageByTag } =
-  vi.hoisted(() => ({
-    mockGetInputAssetsIncludingPublic: vi.fn(),
-    mockGetAssetsPageByTag: vi.fn()
-  }))
+const { mockGetAllAssetsByTag, mockGetAssetsPageByTag } = vi.hoisted(() => ({
+  mockGetAllAssetsByTag: vi.fn(),
+  mockGetAssetsPageByTag: vi.fn()
+}))
 
 const { mockFetchHistoryPage } = vi.hoisted(() => ({
   mockFetchHistoryPage: vi.fn()
 }))
 
-vi.mock('@/utils/graphTraversalUtil', () => ({
-  collectAllNodes: (graph: { _testNodes: LGraphNode[] }) => graph._testNodes,
-  getExecutionIdByNode: (
-    _graph: unknown,
-    node: { _testExecutionId?: string; id: number }
-  ) => node._testExecutionId ?? String(node.id)
-}))
-
-vi.mock('@/platform/assets/services/assetService', async () => {
-  const actual = await vi.importActual<typeof AssetServiceModule>(
-    '@/platform/assets/services/assetService'
-  )
+vi.mock<unknown>(import('@/utils/graphTraversalUtil'), () => {
+  type TestNode = LGraphNode & { _testExecutionId?: string }
+  type TestGraph = { _testNodes: TestNode[] }
+  const isTestGraph = (graph: LGraph | TestGraph): graph is TestGraph =>
+    '_testNodes' in graph
+  const executionIdForNode = (node: TestNode) =>
+    node._testExecutionId ?? String(node.id)
+  const findNodeByExecutionId = (graph: TestGraph, executionId: string) =>
+    graph._testNodes.find((node) => executionIdForNode(node) === executionId)
+  const isInactive = (node: LGraphNode | undefined) =>
+    node?.mode === LGraphEventMode.NEVER ||
+    node?.mode === LGraphEventMode.BYPASS
 
   return {
-    ...actual,
-    assetService: {
-      ...actual.assetService,
-      getInputAssetsIncludingPublic: mockGetInputAssetsIncludingPublic,
-      getAssetsPageByTag: mockGetAssetsPageByTag
+    collectAllNodes: (graph: LGraph | TestGraph) =>
+      isTestGraph(graph) ? graph._testNodes : graph.nodes,
+    getExecutionIdByNode: (graph: LGraph | TestGraph, node: TestNode) =>
+      isTestGraph(graph) ? executionIdForNode(node) : String(node.id),
+    getNodeByExecutionId: (graph: LGraph | TestGraph, executionId: string) =>
+      isTestGraph(graph)
+        ? findNodeByExecutionId(graph, executionId)
+        : graph.nodes.find(
+            (node) => String(node.id) === executionId.split(':').at(-1)
+          ),
+    isExecutionPathActive: (graph: LGraph | TestGraph, executionId: string) => {
+      const path = executionId.split(':')
+      return path.every((_, index) => {
+        const prefix = path.slice(0, index + 1).join(':')
+        const node = isTestGraph(graph)
+          ? findNodeByExecutionId(graph, prefix)
+          : graph.nodes.find((node) => String(node.id) === prefix)
+        return !!node && !isInactive(node)
+      })
     }
   }
 })
 
-vi.mock('@/platform/remote/comfyui/jobs/fetchJobs', async () => {
-  const actual = await vi.importActual<typeof FetchJobsModule>(
-    '@/platform/remote/comfyui/jobs/fetchJobs'
-  )
+vi.mock<unknown>(import('@/composables/useFeatureFlags'), () => ({
+  useFeatureFlags: () => ({ flags: { assetsEnabled: true } })
+}))
 
-  return {
-    ...actual,
-    fetchHistoryPage: mockFetchHistoryPage
+vi.mock<unknown>(import('@/platform/assets/services/assetService'), () => ({
+  assetService: {
+    getAllAssetsByTag: mockGetAllAssetsByTag,
+    getAssetsPageByTag: mockGetAssetsPageByTag
   }
-})
+}))
+
+vi.mock(import('@/platform/remote/comfyui/jobs/fetchJobs'), () => ({
+  fetchHistoryPage: mockFetchHistoryPage
+}))
 
 function makeCandidate(
   nodeId: string,
@@ -107,6 +128,8 @@ function makeMediaNode(
     type,
     widgets,
     mode,
+    isSubgraphNode: () => false,
+    getSlotFromWidget: () => undefined,
     _testExecutionId: executionId ?? String(id)
   })
 }
@@ -115,14 +138,13 @@ function makeGraph(nodes: LGraphNode[]): LGraph {
   return fromAny<LGraph, unknown>({ _testNodes: nodes })
 }
 
-function makeAsset(name: string, assetHash: string | null = null): AssetItem {
-  return {
+function makeAsset(name: string, assetHash?: string): AssetItem {
+  return fromPartial({
     id: name,
     name,
     hash: assetHash,
-    mime_type: null,
     tags: ['input']
-  }
+  })
 }
 
 function makeAssetResolver(
@@ -162,15 +184,42 @@ function makeHistoryJob(
   })
 }
 
+beforeEach(() => {
+  seedMediaNodeDefs()
+})
+
 describe('scanNodeMediaCandidates', () => {
+  it('does not report a regular media widget whose input value comes from a link', () => {
+    const graph = new LGraph()
+    const upstream = new LGraphNode('ImageSource')
+    upstream.addOutput('image', 'COMBO')
+    graph.add(upstream)
+
+    const node = new LGraphNode('LoadImage', 'LoadImage')
+    const input = node.addInput('image', 'COMBO')
+    const widget = node.addWidget(
+      'combo',
+      'image',
+      'stale-local.png',
+      () => undefined,
+      { values: [] }
+    )
+    input.widget = { name: widget.name }
+    graph.add(node)
+    const link = upstream.connect(0, node, 0)
+    if (!link) throw new Error('Expected regular media input link')
+
+    expect(scanNodeMediaCandidates(graph, node, false)).toEqual([])
+  })
+
   it('returns candidate for a LoadImage node with missing image', () => {
-    const graph = makeGraph([])
     const node = makeMediaNode(
       1,
       'LoadImage',
       [makeMediaCombo('image', 'photo.png', ['other.png'])],
       0
     )
+    const graph = makeGraph([node])
 
     const result = scanNodeMediaCandidates(graph, node, false)
 
@@ -186,13 +235,13 @@ describe('scanNodeMediaCandidates', () => {
   })
 
   it('returns empty for non-media node types', () => {
-    const graph = makeGraph([])
     const node = makeMediaNode(
       1,
       'KSampler',
       [makeMediaCombo('sampler', 'euler', ['euler', 'dpm'])],
       0
     )
+    const graph = makeGraph([node])
 
     const result = scanNodeMediaCandidates(graph, node, false)
 
@@ -200,8 +249,8 @@ describe('scanNodeMediaCandidates', () => {
   })
 
   it('returns empty for node with no widgets', () => {
-    const graph = makeGraph([])
     const node = makeMediaNode(1, 'LoadImage', [], 0)
+    const graph = makeGraph([node])
 
     const result = scanNodeMediaCandidates(graph, node, false)
 
@@ -211,13 +260,13 @@ describe('scanNodeMediaCandidates', () => {
   it.for([false, true])(
     'returns empty while a media upload is pending on the node (isCloud: %s)',
     (isCloud) => {
-      const graph = makeGraph([])
       const node = makeMediaNode(
         1,
         'LoadVideo',
         [makeMediaCombo('file', 'clip.mp4', [])],
         0
       )
+      const graph = makeGraph([node])
       node.isUploading = true
 
       const result = scanNodeMediaCandidates(graph, node, isCloud)
@@ -227,13 +276,13 @@ describe('scanNodeMediaCandidates', () => {
   )
 
   it('detects missing media again after upload state clears', () => {
-    const graph = makeGraph([])
     const node = makeMediaNode(
       1,
       'LoadVideo',
       [makeMediaCombo('file', 'clip.mp4', [])],
       0
     )
+    const graph = makeGraph([node])
 
     node.isUploading = true
     expect(scanNodeMediaCandidates(graph, node, false)).toEqual([])
@@ -282,13 +331,13 @@ describe('scanNodeMediaCandidates', () => {
   ])(
     'matches annotated $nodeType values against clean OSS options',
     ({ nodeType, widgetName, mediaType, value, option }) => {
-      const graph = makeGraph([])
       const node = makeMediaNode(
         1,
         nodeType,
         [makeMediaCombo(widgetName, value, [option])],
         0
       )
+      const graph = makeGraph([node])
 
       const result = scanNodeMediaCandidates(graph, node, false)
 
@@ -322,13 +371,13 @@ describe('scanNodeMediaCandidates', () => {
   ])(
     'leaves OSS $nodeType output annotations pending when not in options',
     ({ nodeType, widgetName, value }) => {
-      const graph = makeGraph([])
       const node = makeMediaNode(
         1,
         nodeType,
         [makeMediaCombo(widgetName, value, ['other-file.png', value])],
         0
       )
+      const graph = makeGraph([node])
 
       const result = scanNodeMediaCandidates(graph, node, false)
 
@@ -341,14 +390,38 @@ describe('scanNodeMediaCandidates', () => {
     }
   )
 
+  it('reports a custom node whose input spec declares a media upload', () => {
+    useNodeDefStore().addNodeDef(
+      createMediaNodeDef('ThirdPartyVideoLoader', 'clip', 'video_upload')
+    )
+    const node = makeMediaNode(
+      1,
+      'ThirdPartyVideoLoader',
+      [makeMediaCombo('clip', 'gone.mp4', ['other.mp4'])],
+      0
+    )
+
+    const result = scanNodeMediaCandidates(makeGraph([node]), node, false)
+
+    expect(result).toEqual([
+      expect.objectContaining({
+        nodeType: 'ThirdPartyVideoLoader',
+        widgetName: 'clip',
+        mediaType: 'video',
+        name: 'gone.mp4',
+        isMissing: true
+      })
+    ])
+  })
+
   it('marks OSS input annotations missing when the clean option is absent', () => {
-    const graph = makeGraph([])
     const node = makeMediaNode(
       1,
       'LoadImage',
       [makeMediaCombo('image', 'photo.png [input]', ['other.png'])],
       0
     )
+    const graph = makeGraph([node])
 
     const result = scanNodeMediaCandidates(graph, node, false)
 
@@ -359,13 +432,13 @@ describe('scanNodeMediaCandidates', () => {
   })
 
   it('does not treat compact Cloud annotations as valid OSS options', () => {
-    const graph = makeGraph([])
     const node = makeMediaNode(
       1,
       'LoadImage',
       [makeMediaCombo('image', 'photo.png[input]', ['photo.png'])],
       0
     )
+    const graph = makeGraph([node])
 
     const result = scanNodeMediaCandidates(graph, node, false)
 
@@ -373,6 +446,53 @@ describe('scanNodeMediaCandidates', () => {
       name: 'photo.png[input]',
       isMissing: true
     })
+  })
+})
+
+describe('isMissingMediaCandidateScopeActive', () => {
+  function createLoadImageGraph() {
+    const graph = new LGraph()
+    const node = new LGraphNode('LoadImage', 'LoadImage')
+    const widget = node.addWidget(
+      'combo',
+      'image',
+      'missing.png',
+      () => undefined,
+      { values: [] }
+    )
+    graph.add(node)
+    return { graph, node, widget }
+  }
+
+  it('drops a candidate whose widget was removed while verification was pending', () => {
+    const { graph, node, widget } = createLoadImageGraph()
+    const candidate = makeCandidate(String(node.id), 'missing.png')
+
+    expect.soft(isMissingMediaCandidateScopeActive(graph, candidate)).toBe(true)
+
+    node.widgets = (node.widgets ?? []).filter((entry) => entry !== widget)
+
+    expect(isMissingMediaCandidateScopeActive(graph, candidate)).toBe(false)
+  })
+
+  it('drops a candidate whose widget was renamed while verification was pending', () => {
+    const { graph, node, widget } = createLoadImageGraph()
+    const candidate = makeCandidate(String(node.id), 'missing.png')
+
+    widget.name = 'renamed'
+
+    expect(isMissingMediaCandidateScopeActive(graph, candidate)).toBe(false)
+  })
+
+  it('drops a candidate whose widget value changed while verification was pending', () => {
+    const { graph, node, widget } = createLoadImageGraph()
+    const candidate = makeCandidate(String(node.id), 'missing.png')
+
+    expect.soft(isMissingMediaCandidateScopeActive(graph, candidate)).toBe(true)
+
+    widget.value = 'valid.png'
+
+    expect(isMissingMediaCandidateScopeActive(graph, candidate)).toBe(false)
   })
 })
 
@@ -524,8 +644,7 @@ describe('verifyMediaCandidates', () => {
     'blake3:2222222222222222222222222222222222222222222222222222222222222222'
 
   beforeEach(() => {
-    vi.clearAllMocks()
-    mockGetInputAssetsIncludingPublic.mockResolvedValue([])
+    mockGetAllAssetsByTag.mockResolvedValue([])
     mockGetAssetsPageByTag.mockResolvedValue(makeAssetPage([]))
     mockFetchHistoryPage.mockResolvedValue({
       jobs: [],
@@ -562,24 +681,6 @@ describe('verifyMediaCandidates', () => {
       generatedHashRequiredNames: new Set(),
       allowCompactSuffix: true
     })
-  })
-
-  it('matches asset names when hash is null', async () => {
-    const candidates = [
-      makeCandidate('1', 'legacy-photo.png', { isMissing: undefined }),
-      makeCandidate('2', 'missing-photo.png', { isMissing: undefined })
-    ]
-    const resolveAssetSources = makeAssetResolver([
-      makeAsset('legacy-photo.png', null)
-    ])
-
-    await verifyMediaCandidates(candidates, {
-      isCloud: true,
-      resolveAssetSources
-    })
-
-    expect(candidates[0].isMissing).toBe(false)
-    expect(candidates[1].isMissing).toBe(true)
   })
 
   it('matches annotated candidate names against clean asset names', async () => {
@@ -789,7 +890,6 @@ describe('verifyMediaCandidates', () => {
 
     await verifyMediaCandidates(candidates, { isCloud: false })
 
-    expect(mockGetInputAssetsIncludingPublic).not.toHaveBeenCalled()
     expect(mockFetchHistoryPage).toHaveBeenCalledWith(
       expect.any(Function),
       200,
@@ -853,20 +953,17 @@ describe('verifyMediaCandidates', () => {
     expect(candidates[0].isMissing).toBe(true)
   })
 
-  it('uses public input assets by default', async () => {
+  it('uses store input assets by default', async () => {
     const candidates = [
       makeCandidate('1', existingHash, { isMissing: undefined })
     ]
-    mockGetInputAssetsIncludingPublic.mockResolvedValue([
+    mockGetAllAssetsByTag.mockResolvedValue([
       makeAsset('stored-photo.png', existingHash)
     ])
 
     await verifyMediaCandidates(candidates, { isCloud: true })
 
     expect(candidates[0].isMissing).toBe(false)
-    expect(mockGetInputAssetsIncludingPublic).toHaveBeenCalledWith(
-      expect.any(AbortSignal)
-    )
     expect(mockFetchHistoryPage).not.toHaveBeenCalled()
   })
 
@@ -882,9 +979,6 @@ describe('verifyMediaCandidates', () => {
 
     await verifyMediaCandidates(candidates, { isCloud: true })
 
-    expect(mockGetInputAssetsIncludingPublic).toHaveBeenCalledWith(
-      expect.any(AbortSignal)
-    )
     expect(mockGetAssetsPageByTag).toHaveBeenCalledWith(
       'output',
       true,
@@ -975,7 +1069,6 @@ describe('verifyMediaCandidates', () => {
     })
 
     expect(candidates[0].isMissing).toBeUndefined()
-    expect(mockGetInputAssetsIncludingPublic).not.toHaveBeenCalled()
   })
 
   it('respects abort signal after loading input assets', async () => {
@@ -1006,7 +1099,6 @@ describe('verifyMediaCandidates', () => {
     await verifyMediaCandidates(candidates, { isCloud: true })
 
     expect(candidates[0].isMissing).toBe(true)
-    expect(mockGetInputAssetsIncludingPublic).not.toHaveBeenCalled()
   })
 
   it('skips candidates already resolved as false', async () => {
@@ -1015,18 +1107,15 @@ describe('verifyMediaCandidates', () => {
     await verifyMediaCandidates(candidates, { isCloud: true })
 
     expect(candidates[0].isMissing).toBe(false)
-    expect(mockGetInputAssetsIncludingPublic).not.toHaveBeenCalled()
   })
 
   it('skips entirely when no pending candidates', async () => {
     const candidates = [makeCandidate('1', missingHash, { isMissing: true })]
 
     await verifyMediaCandidates(candidates, { isCloud: true })
-
-    expect(mockGetInputAssetsIncludingPublic).not.toHaveBeenCalled()
   })
 
-  it('loads public input assets for default verification', async () => {
+  it('loads store input assets for default verification', async () => {
     const candidates = [
       makeCandidate('1', 'public-photo.png', { isMissing: undefined })
     ]
@@ -1034,13 +1123,10 @@ describe('verifyMediaCandidates', () => {
       makeAsset(`asset-${index}.png`)
     )
     inputAssets[42] = makeAsset('public-asset-record', 'public-photo.png')
-    mockGetInputAssetsIncludingPublic.mockResolvedValue(inputAssets)
+    mockGetAllAssetsByTag.mockResolvedValue(inputAssets)
 
     await verifyMediaCandidates(candidates, { isCloud: true })
 
-    expect(mockGetInputAssetsIncludingPublic).toHaveBeenCalledWith(
-      expect.any(AbortSignal)
-    )
     expect(candidates[0].isMissing).toBe(false)
   })
 
@@ -1064,34 +1150,6 @@ describe('verifyMediaCandidates', () => {
       })
     ).resolves.toBeUndefined()
 
-    expect(candidates[0].isMissing).toBeUndefined()
-  })
-
-  it('forwards the signal to the default input asset fetcher and silences aborts', async () => {
-    const abortError = new Error('aborted')
-    abortError.name = 'AbortError'
-    const controller = new AbortController()
-    const candidates = [
-      makeCandidate('1', 'photo.png', { isMissing: undefined })
-    ]
-    let serviceSignal: AbortSignal | undefined
-    mockGetInputAssetsIncludingPublic.mockImplementationOnce(
-      async (signal?: AbortSignal) => {
-        serviceSignal = signal
-        controller.abort()
-        throw abortError
-      }
-    )
-
-    await expect(
-      verifyMediaCandidates(candidates, {
-        isCloud: true,
-        signal: controller.signal
-      })
-    ).resolves.toBeUndefined()
-
-    expect(serviceSignal).toBeInstanceOf(AbortSignal)
-    expect(serviceSignal?.aborted).toBe(true)
     expect(candidates[0].isMissing).toBeUndefined()
   })
 })

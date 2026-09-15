@@ -125,8 +125,6 @@ export function scanAllModelCandidates(
   isAssetSupported: (nodeType: string, widgetName: string) => boolean,
   getDirectory?: (nodeType: string) => string | undefined
 ): MissingModelCandidate[] {
-  if (!rootGraph) return []
-
   const allNodes = collectAllNodes(rootGraph)
   const candidates: MissingModelCandidate[] = []
 
@@ -153,7 +151,9 @@ export function scanNodeModelCandidates(
   isAssetSupported: (nodeType: string, widgetName: string) => boolean,
   getDirectory?: (nodeType: string) => string | undefined
 ): MissingModelCandidate[] {
-  const widgets = node.isSubgraphNode?.()
+  const isSubgraphNode =
+    typeof node.isSubgraphNode === 'function' && node.isSubgraphNode()
+  const widgets = isSubgraphNode
     ? promotedInputWidgets(node)
     : (node.widgets ?? [])
   if (!widgets.length) return []
@@ -197,9 +197,11 @@ function getModelWidgetScanTarget(
   executionId: NodeExecutionId
 ): ModelWidgetScanTarget | null {
   const input = getInputForWidget(node, widget)
-  if (input?.link != null) return null
+  if (input && node.isInputConnected(node.inputs.indexOf(input))) return null
 
-  if (!node.isSubgraphNode?.()) {
+  const isSubgraphNode =
+    typeof node.isSubgraphNode === 'function' && node.isSubgraphNode()
+  if (!isSubgraphNode) {
     return {
       executionId,
       nodeType: node.type,

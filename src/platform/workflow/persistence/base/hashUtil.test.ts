@@ -62,4 +62,10 @@ describe('hashPath', () => {
     const hash2 = hashPath('workflows/Untitled (2).json')
     expect(hash1).not.toBe(hash2)
   })
+
+  it.fails('produces different hashes for known collision paths', () => {
+    const hash1 = hashPath('workflows/ewip.json')
+    const hash2 = hashPath('workflows/4hbab.json')
+    expect(hash1).not.toBe(hash2)
+  })
 })

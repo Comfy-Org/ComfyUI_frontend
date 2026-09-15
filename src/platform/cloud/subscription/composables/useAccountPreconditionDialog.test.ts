@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import { useAccountPreconditionDialog } from './useAccountPreconditionDialog'
 
@@ -13,19 +13,15 @@ const mockBilling = {
   fetchBalance: vi.fn()
 }
 
-vi.mock('@/services/dialogService', () => ({
+vi.mock<unknown>(import('@/services/dialogService'), () => ({
   useDialogService: vi.fn(() => mockDialogService)
 }))
 
-vi.mock('@/composables/billing/useBillingContext', () => ({
+vi.mock<unknown>(import('@/composables/billing/useBillingContext'), () => ({
   useBillingContext: vi.fn(() => mockBilling)
 }))
 
 describe('useAccountPreconditionDialog', () => {
-  beforeEach(() => {
-    vi.clearAllMocks()
-  })
-
   it('routes a sign-in precondition to the API sign-in dialog with the node type', () => {
     useAccountPreconditionDialog().open('sign_in', { nodeType: 'ApiNode' })
 

@@ -41,7 +41,7 @@ const label = computed(() =>
       v-if="hasInvalidNodes"
       class="flex w-full items-center justify-center gap-2"
     >
-      <i class="icon-[comfy--credits] bg-credit" />
+      <i class="icon-[lucide--coins] bg-credit" />
       {{ t('actionbar.freeTierPartner') }}
     </div>
     <div v-else class="flex w-full items-center justify-between">

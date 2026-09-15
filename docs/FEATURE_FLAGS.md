@@ -129,10 +129,8 @@ classDiagram
     }
 
     class useFeatureFlags {
-        +serverSupports(name) boolean
-        +getServerFeature(name, default) T
-        +createServerFeatureFlag(name) ComputedRef
-        +extension: ExtensionFlags
+        +flags: Readonly~ReactiveFlags~
+        +featureFlag(path, default) ComputedRef
     }
 
     class VueComponent {
@@ -209,8 +207,8 @@ SERVER_FEATURE_FLAGS = {
 **Frontend Usage:**
 
 ```typescript
-const { getServerFeature } = useFeatureFlags()
-const maxUploadSize = getServerFeature('max_upload_size', 100 * 1024 * 1024) // Default 100MB
+const { flags } = useFeatureFlags()
+const maxUploadSize = flags.maxUploadSize
 ```
 
 ## Using Feature Flags
@@ -231,25 +229,41 @@ const maxSize = api.getServerFeature('max_upload_size', 100 * 1024 * 1024)
 
 2. **Using the composable (recommended for reactive components):**
 
+`useFeatureFlags()` returns `{ flags, featureFlag }`.
+
+`flags` is a readonly reactive object of named, camelCase properties — one per
+entry in the `ServerFeatureFlag` enum. Each is a getter, so reading it always
+reflects the current value and tracks reactively:
+
 ```typescript
-const { serverSupports, getServerFeature, extension } = useFeatureFlags()
+const { flags } = useFeatureFlags()
 
 // Check feature support
-if (serverSupports('supports_preview_metadata')) {
+if (flags.supportsPreviewMetadata) {
   // Use enhanced previews
 }
 
-// Use reactive convenience properties (automatically update if flags change)
-if (extension.manager.supportsV4.value) {
+// Nested extension flags are exposed as named properties too
+if (flags.supportsManagerV4) {
   // Use V4 manager API
 }
+```
+
+`featureFlag(path, defaultValue)` returns a `ComputedRef` for a flag that has no
+named property yet. It accepts dot-separated paths for nested flags:
+
+```typescript
+const { featureFlag } = useFeatureFlags()
+
+const customFlag = featureFlag('extension.custom.nested.feature', false)
+console.log(customFlag.value)
 ```
 
 3. **Reactive usage in templates:**
 
 ```vue
 <template>
-  <div v-if="featureFlags.extension.manager.supportsV4">
+  <div v-if="flags.supportsManagerV4">
     <!-- V4-specific UI -->
   </div>
   <div v-else>
@@ -259,7 +273,8 @@ if (extension.manager.supportsV4.value) {
 
 <script setup>
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
-const featureFlags = useFeatureFlags()
+
+const { flags } = useFeatureFlags()
 </script>
 ```
 
@@ -315,28 +330,38 @@ if feature_flags.supports_feature(sockets_metadata, sid, "your_new_feature"):
 }
 ```
 
-2. **For extension features**, update the composable to add convenience accessors:
+2. **For server or extension features**, add the flag path to the
+   `ServerFeatureFlag` enum and expose a named getter on the `flags` object in
+   `src/composables/useFeatureFlags.ts`. Nested extension flags use a
+   dot-separated path:
 
 ```typescript
 // In useFeatureFlags.ts
-const extension = {
-  manager: {
-    supportsV4: computed(() =>
-      getServerFeature('extension.manager.supports_v4', false)
-    )
-  },
-  yourExtension: {
-    supportsNewFeature: computed(() =>
-      getServerFeature('extension.yourExtension.supports_new_feature', false)
-    )
-  }
+export enum ServerFeatureFlag {
+  // ... existing entries
+  YOUR_EXTENSION_NEW_FEATURE = 'extension.yourExtension.supports_new_feature'
 }
 
-return {
-  // ... existing returns
-  extension
+export function useFeatureFlags() {
+  const flags = reactive({
+    // ... existing getters
+    get yourExtensionNewFeature() {
+      return api.getServerFeature(
+        ServerFeatureFlag.YOUR_EXTENSION_NEW_FEATURE,
+        false
+      )
+    }
+  })
+  // ...
 }
 ```
+
+Adding it to the enum also opts the flag into the telemetry sweep in
+`startFeatureFlagTelemetry()`; add a matching entry there so its evaluated
+value is reported.
+
+For a one-off flag that does not warrant a named property, call
+`featureFlag(path, defaultValue)` at the call site instead.
 
 ## Testing Feature Flags
 
@@ -364,14 +389,15 @@ Test your feature flags with different combinations:
 
 ```typescript
 // Example from a colocated unit test
+// `serverFeatureFlags` is a ref, so assign through `.value`
 it('should handle preview metadata based on feature flag', () => {
   // Mock server supports feature
-  api.serverFeatureFlags = { supports_preview_metadata: true }
+  api.serverFeatureFlags.value = { supports_preview_metadata: true }
 
   expect(api.serverSupportsFeature('supports_preview_metadata')).toBe(true)
 
   // Mock server doesn't support feature
-  api.serverFeatureFlags = {}
+  api.serverFeatureFlags.value = {}
 
   expect(api.serverSupportsFeature('supports_preview_metadata')).toBe(false)
 })

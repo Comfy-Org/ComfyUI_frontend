@@ -3,6 +3,29 @@ set -euo pipefail
 
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$repo_root"
+
+if [[ "${AMP_ORB:-}" == 1 ]]; then
+  gh auth setup-git
+
+  if ! command -v docker >/dev/null 2>&1 ||
+    ! command -v dockerd >/dev/null 2>&1; then
+    echo "Installing Docker"
+    sudo install -m 0755 -d /etc/apt/keyrings
+    sudo curl -fsSL https://download.docker.com/linux/debian/gpg \
+      -o /etc/apt/keyrings/docker.asc
+    sudo chmod a+r /etc/apt/keyrings/docker.asc
+    echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/debian $(. /etc/os-release && echo "$VERSION_CODENAME") stable" |
+      sudo tee /etc/apt/sources.list.d/docker.list >/dev/null
+    sudo apt-get update
+    sudo apt-get install -y \
+      docker-ce \
+      docker-ce-cli \
+      containerd.io \
+      docker-buildx-plugin \
+      docker-compose-plugin
+  fi
+fi
+
 node_major="$(tr -d '[:space:]' < "$repo_root/.nvmrc")"
 node_home="$HOME/.local/share/comfyui-frontend-node-v$node_major"
 
@@ -56,16 +79,10 @@ if [[ ! -x "$node_home/bin/pnpm" ]] ||
   npm install --global --prefix "$node_home" "pnpm@$pnpm_version"
 fi
 
-profile_marker="# ComfyUI Frontend orb toolchain"
-if ! grep -Fqx "$profile_marker" "$HOME/.bash_profile" 2>/dev/null; then
-  cat >> "$HOME/.bash_profile" <<EOF
-
-$profile_marker
-if [[ "\${PWD:-}" == "$repo_root" || "\${PWD:-}" == "$repo_root/"* ]]; then
-  export PATH="$node_home/bin:\$PATH"
-fi
-EOF
-fi
+mkdir -p "$HOME/.local/bin"
+for executable in node npm npx pnpm pnpx; do
+  ln -sfn "$node_home/bin/$executable" "$HOME/.local/bin/$executable"
+done
 
 echo "Installing workspace dependencies"
 pnpm install --frozen-lockfile

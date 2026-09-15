@@ -1,0 +1,208 @@
+import { describe, expect, it } from 'vitest'
+
+import { faqAnswerPlainText, parseFaqAnswer } from './faqAnswer'
+
+describe('parseFaqAnswer', () => {
+  it('keeps a plain answer as a single text part', () => {
+    expect(parseFaqAnswer('Up to 2K, and 5 to 15 seconds.')).toEqual([
+      { type: 'text', value: 'Up to 2K, and 5 to 15 seconds.' }
+    ])
+  })
+
+  it('links a bare URL and drops the sentence punctuation after it', () => {
+    const parts = parseFaqAnswer('See https://docs.comfy.org/tutorials.')
+    expect(parts).toEqual([
+      { type: 'text', value: 'See ' },
+      { type: 'link', value: 'https://docs.comfy.org/tutorials' },
+      { type: 'text', value: '.' }
+    ])
+  })
+
+  it('uses the markdown label as the anchor text', () => {
+    const parts = parseFaqAnswer(
+      'Read [the launch post](https://blog.comfy.org/p/minimax-h3) for details.'
+    )
+    expect(parts).toEqual([
+      { type: 'text', value: 'Read ' },
+      {
+        type: 'link',
+        value: 'https://blog.comfy.org/p/minimax-h3',
+        label: 'the launch post'
+      },
+      { type: 'text', value: ' for details.' }
+    ])
+  })
+
+  it('does not double-link the URL inside a markdown link', () => {
+    const parts = parseFaqAnswer('[docs](https://docs.comfy.org/tutorials)')
+    expect(parts.filter((part) => part.type === 'link')).toHaveLength(1)
+  })
+
+  it('handles several links in one answer', () => {
+    const parts = parseFaqAnswer(
+      'Start in [the docs](https://docs.comfy.org/a), then https://blog.comfy.org/b'
+    )
+    expect(parts.filter((part) => part.type === 'link')).toEqual([
+      { type: 'link', value: 'https://docs.comfy.org/a', label: 'the docs' },
+      { type: 'link', value: 'https://blog.comfy.org/b' }
+    ])
+  })
+
+  it('returns nothing for an empty answer', () => {
+    expect(parseFaqAnswer('')).toEqual([])
+  })
+
+  it('emphasises a bold phrase without its markers', () => {
+    expect(parseFaqAnswer('No. **We match their price**, always.')).toEqual([
+      { type: 'text', value: 'No. ' },
+      { type: 'strong', value: 'We match their price' },
+      { type: 'text', value: ', always.' }
+    ])
+  })
+
+  it('keeps a bold phrase and a link in the same answer', () => {
+    expect(
+      parseFaqAnswer('**Acquire it** at https://platform.minimax.io/h3-license')
+    ).toEqual([
+      { type: 'strong', value: 'Acquire it' },
+      { type: 'text', value: ' at ' },
+      { type: 'link', value: 'https://platform.minimax.io/h3-license' }
+    ])
+  })
+
+  it('drops an unclosed bold marker rather than showing it', () => {
+    expect(parseFaqAnswer('No. **We match their price')).toEqual([
+      { type: 'text', value: 'No. We match their price' }
+    ])
+  })
+
+  it('keeps the link and drops the emphasis when bold wraps a link', () => {
+    expect(
+      parseFaqAnswer('Use **[docs](https://docs.comfy.org/a)** now')
+    ).toEqual([
+      { type: 'text', value: 'Use ' },
+      { type: 'link', value: 'https://docs.comfy.org/a', label: 'docs' },
+      { type: 'text', value: ' now' }
+    ])
+  })
+
+  it('keeps the link and drops the emphasis when bold sits inside a label', () => {
+    expect(
+      parseFaqAnswer('Read [**the docs**](https://docs.comfy.org/a) now')
+    ).toEqual([
+      { type: 'text', value: 'Read ' },
+      { type: 'link', value: 'https://docs.comfy.org/a', label: 'the docs' },
+      { type: 'text', value: ' now' }
+    ])
+  })
+
+  it('keeps a bare URL clickable when bold wraps it', () => {
+    expect(parseFaqAnswer('**See https://x.com/a**')).toEqual([
+      { type: 'text', value: 'See ' },
+      { type: 'link', value: 'https://x.com/a' }
+    ])
+  })
+
+  it('emits no duplicated text when bold straddles a link boundary', () => {
+    expect(parseFaqAnswer('[docs **bold](https://x.com/a) tail**')).toEqual([
+      { type: 'link', value: 'https://x.com/a', label: 'docs bold' },
+      { type: 'text', value: ' tail' }
+    ])
+  })
+
+  it('emphasises the intended phrase when a stray marker precedes it', () => {
+    expect(parseFaqAnswer('Star ** alone and **real bold** after')).toEqual([
+      { type: 'text', value: 'Star  alone and ' },
+      { type: 'strong', value: 'real bold' },
+      { type: 'text', value: ' after' }
+    ])
+  })
+
+  it('does not pair markers that trail word characters', () => {
+    expect(parseFaqAnswer('Tiers cost $10**, $20**')).toEqual([
+      { type: 'text', value: 'Tiers cost $10, $20' }
+    ])
+  })
+
+  it('does not treat spaced asterisks as emphasis', () => {
+    expect(parseFaqAnswer('2 ** 8 = 256')).toEqual([
+      { type: 'text', value: '2  8 = 256' }
+    ])
+  })
+
+  it('emphasises a phrase abutting CJK punctuation', () => {
+    expect(parseFaqAnswer('各处**价格一致**。')).toEqual([
+      { type: 'text', value: '各处' },
+      { type: 'strong', value: '价格一致' },
+      { type: 'text', value: '。' }
+    ])
+  })
+
+  it('falls back to the url when a label is only delimiters', () => {
+    expect(parseFaqAnswer('[**](https://x.com/a)')).toEqual([
+      { type: 'link', value: 'https://x.com/a' }
+    ])
+  })
+
+  it('does not pair bold markers across a paragraph break', () => {
+    expect(parseFaqAnswer('One **stray.\n\nTwo** stray.')).toEqual([
+      { type: 'text', value: 'One stray.\n\nTwo stray.' }
+    ])
+  })
+
+  it('leaves unfinished link markup as plain text', () => {
+    expect(parseFaqAnswer('See [the docs](')).toEqual([
+      { type: 'text', value: 'See [the docs](' }
+    ])
+  })
+
+  it('keeps a full-width stop outside a link in CJK copy', () => {
+    const labelled = parseFaqAnswer(
+      '技术细节请见[首日支持发布文章](https://blog.comfy.org/p/x)。'
+    )
+    expect(labelled).toEqual([
+      { type: 'text', value: '技术细节请见' },
+      {
+        type: 'link',
+        value: 'https://blog.comfy.org/p/x',
+        label: '首日支持发布文章'
+      },
+      { type: 'text', value: '。' }
+    ])
+
+    const bare = parseFaqAnswer('详见 https://docs.comfy.org/a。')
+    expect(bare[1]).toEqual({ type: 'link', value: 'https://docs.comfy.org/a' })
+    expect(bare[2]).toEqual({ type: 'text', value: '。' })
+  })
+})
+
+describe('faqAnswerPlainText', () => {
+  it('flattens link markup to the anchor text for structured data', () => {
+    expect(
+      faqAnswerPlainText(
+        'Read [the launch post](https://blog.comfy.org/p/minimax-h3) for details.'
+      )
+    ).toBe('Read the launch post for details.')
+  })
+
+  it('leaves a bare URL in place', () => {
+    expect(faqAnswerPlainText('See https://docs.comfy.org/a')).toBe(
+      'See https://docs.comfy.org/a'
+    )
+  })
+
+  it('drops bold markers so structured data carries no markup', () => {
+    expect(faqAnswerPlainText('No. **We match their price**, always.')).toBe(
+      'No. We match their price, always.'
+    )
+  })
+
+  it('emits no markdown when bold and a link overlap', () => {
+    expect(
+      faqAnswerPlainText('Use **[docs](https://docs.comfy.org/a)** now')
+    ).toBe('Use docs now')
+    expect(
+      faqAnswerPlainText('Read [**the docs**](https://docs.comfy.org/a) now')
+    ).toBe('Read the docs now')
+  })
+})

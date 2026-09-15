@@ -1,3 +1,5 @@
+import { fromPartial } from '@total-typescript/shoehorn'
+
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { defineComponent } from 'vue'
@@ -23,7 +25,7 @@ const spies = vi.hoisted(() => ({
   deleteAssets: vi.fn()
 }))
 
-vi.mock('@/composables/useAppMode', async () => {
+vi.mock<unknown>(import('@/composables/useAppMode'), async () => {
   const { computed } = await import('vue')
   return {
     useAppMode: () => ({
@@ -33,22 +35,28 @@ vi.mock('@/composables/useAppMode', async () => {
   }
 })
 
-vi.mock('@/renderer/extensions/linearMode/useOutputHistory', async () => {
-  const { computed } = await import('vue')
-  return {
-    useOutputHistory: () => ({
-      allOutputs: () => [],
-      isWorkflowActive: computed(() => outputHistoryState.isWorkflowActive),
-      cancelActiveWorkflowJobs: spies.cancelActiveWorkflowJobs
-    })
+vi.mock<unknown>(
+  import('@/renderer/extensions/linearMode/useOutputHistory'),
+  async () => {
+    const { computed } = await import('vue')
+    return {
+      useOutputHistory: () => ({
+        allOutputs: () => [],
+        isWorkflowActive: computed(() => outputHistoryState.isWorkflowActive),
+        cancelActiveWorkflowJobs: spies.cancelActiveWorkflowJobs
+      })
+    }
   }
-})
+)
 
-vi.mock('@/platform/assets/composables/useMediaAssetActions', () => ({
-  useMediaAssetActions: () => ({ deleteAssets: spies.deleteAssets })
-}))
+vi.mock<unknown>(
+  import('@/platform/assets/composables/useMediaAssetActions'),
+  () => ({
+    useMediaAssetActions: () => ({ deleteAssets: spies.deleteAssets })
+  })
+)
 
-vi.mock('@/scripts/app', () => ({
+vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: { rootGraph: { id: 'root' }, loadGraphData: vi.fn() }
 }))
 
@@ -106,7 +114,6 @@ function renderPreview(
 
 describe('LinearPreview', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
     appModeState.isBuilderMode = false
     appModeState.isArrangeMode = false
     outputHistoryState.isWorkflowActive = false
@@ -149,7 +156,11 @@ describe('LinearPreview', () => {
   })
 
   it('shows the selected asset actions and latent image when a selection is made', async () => {
-    const asset: AssetItem = { id: 'a1', name: 'out.png', tags: [] }
+    const asset = fromPartial<AssetItem>({
+      id: 'a1',
+      name: 'out.png',
+      tags: []
+    })
     const selection: OutputSelection = {
       asset,
       canShowPreview: true,

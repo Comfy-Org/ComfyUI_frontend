@@ -40,8 +40,10 @@ export function deserialiseAndCreate(data: string, canvas: LGraphCanvas): void {
       node.configure(info)
 
       // Paste to the bottom right of pointer
-      node.pos[0] += graph_mouse[0] - topLeft[0]
-      node.pos[1] += graph_mouse[1] - topLeft[1]
+      node.pos = [
+        node.pos[0] + graph_mouse[0] - topLeft[0],
+        node.pos[1] + graph_mouse[1] - topLeft[1]
+      ]
 
       // @ts-expect-error fixme ts strict error
       withNodeAddSource('paste', () => graph.add(node, true))
@@ -54,7 +56,7 @@ export function deserialiseAndCreate(data: string, canvas: LGraphCanvas): void {
       const outNode = relativeId != null ? nodes[relativeId] : undefined
 
       const inNode = nodes[info[2]]
-      if (outNode && inNode) outNode.connect(info[1], inNode, info[3])
+      if (outNode) outNode.connect(info[1], inNode, info[3])
       else console.warn('Warning, nodes missing on pasting')
     }
 

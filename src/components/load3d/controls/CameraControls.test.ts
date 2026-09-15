@@ -7,13 +7,16 @@ import { createI18n } from 'vue-i18n'
 import CameraControls from '@/components/load3d/controls/CameraControls.vue'
 import type { CameraType } from '@/extensions/core/load3d/interfaces'
 
-vi.mock('@/components/load3d/controls/PopupSlider.vue', () => ({
-  default: {
-    name: 'PopupSlider',
-    props: ['tooltipText', 'modelValue'],
-    template: '<div data-testid="popup-slider">{{ tooltipText }}</div>'
-  }
-}))
+vi.mock<unknown>(
+  import('@/components/load3d/controls/PopupSlider.vue'),
+  () => ({
+    default: {
+      name: 'PopupSlider',
+      props: ['tooltipText', 'modelValue'],
+      template: '<div data-testid="popup-slider">{{ tooltipText }}</div>'
+    }
+  })
+)
 
 const i18n = createI18n({
   legacy: false,

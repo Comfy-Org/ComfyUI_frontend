@@ -1,15 +1,9 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it } from 'vitest'
+import { describe, expect, it } from 'vitest'
 
 import { KeybindingImpl } from '@/platform/keybindings/keybinding'
 import { useKeybindingStore } from '@/platform/keybindings/keybindingStore'
 
 describe('useKeybindingStore', () => {
-  beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-  })
-
   it('should add and retrieve default keybindings', () => {
     const store = useKeybindingStore()
     const keybinding = new KeybindingImpl({
@@ -274,7 +268,9 @@ describe('useKeybindingStore', () => {
     store.updateKeybindingOnCommand(newKeybinding)
 
     expect(store.keybindings).toHaveLength(1)
-    expect(store.getKeybinding(newKeybinding.combo)?.commandId).toBe('command2')
+    expect(store.getKeybinding(newKeybinding.combo)).toMatchObject({
+      commandId: 'command2'
+    })
     expect(store.getKeybindingsByCommandId('command1')).toHaveLength(0)
   })
 
@@ -362,10 +358,7 @@ describe('useKeybindingStore', () => {
 
     const serializedCombo = defaultKeybinding.combo.serialize()
     const userUnsetKeybindings = store.getUserUnsetKeybindings()
-    expect(userUnsetKeybindings[serializedCombo]).toBeTruthy()
-    expect(
-      userUnsetKeybindings[serializedCombo].equals(defaultKeybinding)
-    ).toBe(true)
+    expect(userUnsetKeybindings[serializedCombo]).toEqual(defaultKeybinding)
 
     const result = store.resetKeybindingForCommand('test.command')
 

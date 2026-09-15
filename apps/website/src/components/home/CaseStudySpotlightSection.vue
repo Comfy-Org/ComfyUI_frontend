@@ -13,7 +13,7 @@ const routes = getRoutes(locale)
 
 <template>
   <section
-    class="bg-primary-comfy-ink max-w-9xl mx-auto px-4 py-20 lg:px-20 lg:py-24"
+    class="mx-auto max-w-9xl bg-primary-comfy-ink px-4 py-20 lg:px-20 lg:py-24"
   >
     <GlassCard
       class="flex flex-col gap-12 lg:flex-row lg:items-stretch lg:gap-8"
@@ -43,21 +43,24 @@ const routes = getRoutes(locale)
       >
         <div class="flex flex-col gap-8">
           <p
-            class="text-primary-comfy-yellow text-sm font-bold tracking-widest uppercase"
+            class="text-sm font-bold tracking-widest text-primary-comfy-yellow uppercase"
           >
             {{ t('caseStudy.label', locale) }}
           </p>
           <h2
-            class="text-primary-comfy-canvas text-5xl font-light whitespace-pre-line"
+            class="text-5xl font-light whitespace-pre-line text-primary-comfy-canvas"
           >
             {{ t('caseStudy.heading', locale) }}
           </h2>
-          <p class="text-primary-warm-gray text-base">
+          <p class="text-base text-primary-warm-gray">
             {{ t('caseStudy.subheading', locale) }}
           </p>
         </div>
 
         <div class="mt-8 flex flex-col items-start gap-3 sm:flex-row lg:mt-0">
+          <BrandButton :href="routes.customerVideoBlackMath" variant="solid">
+            {{ t('caseStudy.watchStory', locale) }}
+          </BrandButton>
           <BrandButton :href="routes.customers" variant="outline">
             {{ t('caseStudy.seeAll', locale) }}
           </BrandButton>

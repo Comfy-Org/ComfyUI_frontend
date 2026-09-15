@@ -9,12 +9,23 @@ import { VueNodeFixture } from '@e2e/fixtures/utils/vueNodeFixtures'
 export class SubgraphEditor {
   public readonly root: Locator
   public readonly promotionItems: Locator
+  public readonly selectionToolboxButton: Locator
 
   constructor(protected readonly comfyPage: ComfyPage) {
     this.root = this.comfyPage.menu.propertiesPanel.root
     this.promotionItems = this.root.getByTestId(
       TestIds.subgraphEditor.widgetItem
     )
+    this.selectionToolboxButton = this.comfyPage.selectionToolbox.getByRole(
+      'button',
+      { name: 'Edit Subgraph Widgets' }
+    )
+  }
+
+  async openFromSelectionToolbox(subgraphNode: Locator) {
+    await new VueNodeFixture(subgraphNode).select()
+    await this.selectionToolboxButton.click()
+    await expect(this.root, 'Open Properties Panel').toBeVisible()
   }
 
   async ensureOpen(subgraphNode: Locator) {

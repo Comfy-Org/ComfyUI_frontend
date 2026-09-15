@@ -9,50 +9,54 @@
           :key="tab.key"
           :variant="activeView === tab.key ? 'secondary' : 'muted-textonly'"
           size="lg"
-          @click="setView(tab.key)"
+          @click="activeView = tab.key"
         >
           {{ tab.label }}
         </Button>
       </div>
-      <SearchInput
-        v-if="activeView === 'activity'"
-        v-model="searchQuery"
-        :placeholder="$t('g.search')"
-        size="lg"
-        class="w-full @2xl:w-64"
-      />
     </div>
 
-    <SubscriptionPanelContentWorkspace v-if="activeView === 'overview'" />
-    <WorkspaceActivityContent v-else :search="searchQuery" />
+    <template v-if="activeView === 'overview'">
+      <SubscriptionPanelContentWorkspace v-if="isCloud" />
+      <div v-else class="flex min-h-0 flex-1 flex-col gap-8 overflow-y-auto">
+        <CreditsPanel embedded />
+        <SubscriptionFooterLinks
+          class="mt-auto shrink-0"
+          :show-invoice-history="false"
+          :show-usage-activity="false"
+        />
+      </div>
+    </template>
+    <UsageLogsTable v-else ref="usageLogsTable" />
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, ref, useTemplateRef, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import CreditsPanel from '@/components/dialog/content/setting/CreditsPanel.vue'
+import UsageLogsTable from '@/components/dialog/content/setting/UsageLogsTable.vue'
 import Button from '@/components/ui/button/Button.vue'
-import SearchInput from '@/components/ui/search-input/SearchInput.vue'
+import SubscriptionFooterLinks from '@/platform/cloud/subscription/components/SubscriptionFooterLinks.vue'
+import { isCloud } from '@/platform/distribution/types'
 import SubscriptionPanelContentWorkspace from '@/platform/workspace/components/SubscriptionPanelContentWorkspace.vue'
-import WorkspaceActivityContent from '@/platform/workspace/components/dialogs/settings/WorkspaceActivityContent.vue'
 
 type View = 'overview' | 'activity'
 
 const { t } = useI18n()
 
-// The owner-only Invoices tab is added by FE-1245, which owns the
-// next-invoice banner + Stripe portal link that fill it.
 const tabs = computed<{ key: View; label: string }[]>(() => [
   { key: 'overview', label: t('workspacePanel.planCredits.tabs.overview') },
   { key: 'activity', label: t('workspacePanel.planCredits.tabs.activity') }
 ])
 
 const activeView = ref<View>('overview')
-const searchQuery = ref('')
 
-function setView(view: View) {
-  activeView.value = view
-  searchQuery.value = ''
-}
+const usageLogsTable = useTemplateRef('usageLogsTable')
+watch(usageLogsTable, (table) => {
+  table?.refresh().catch(() => {
+    console.error('Error refreshing usage logs')
+  })
+})
 </script>

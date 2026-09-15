@@ -1,5 +1,5 @@
-import _ from 'es-toolkit/compat'
-import { type Component, toRaw } from 'vue'
+import { toRaw } from 'vue'
+import type { Component } from 'vue'
 
 import { useChainCallback } from '@/composables/functional/useChainCallback'
 // LegacyWidget is imported from its own module, not the barrel: the barrel
@@ -122,8 +122,6 @@ abstract class BaseDOMWidgetImpl<V extends object | string>
   implements BaseDOMWidget<V>
 {
   static readonly DEFAULT_MARGIN = 10
-  declare readonly name: string
-  declare readonly options: DOMWidgetOptions<V>
   declare callback?: (value: V) => void
 
   readonly id: string
@@ -258,7 +256,7 @@ export class DOMWidgetImpl<T extends HTMLElement, V extends object | string>
     let minHeight =
       this.options.getMinHeight?.() ??
       parseInt(styles.getPropertyValue('--comfy-widget-min-height'))
-    let maxHeight =
+    const maxHeight =
       this.options.getMaxHeight?.() ??
       parseInt(styles.getPropertyValue('--comfy-widget-max-height'))
 
@@ -331,7 +329,7 @@ export class ComponentWidgetImpl<
   }
 }
 
-export const addWidget = <W extends BaseDOMWidget<object | string>>(
+export const addWidget = <W extends BaseDOMWidget>(
   node: LGraphNode,
   widget: W
 ) => {
@@ -373,7 +371,7 @@ LGraphNode.prototype.addDOMWidget = function <
     options: { hideOnZoom: true, ...options }
   })
   // Note: Before `LGraphNode.configure` is called, `this.id` is always `-1`.
-  addWidget(this, widget as unknown as BaseDOMWidget<object | string>)
+  addWidget(this, widget as unknown as BaseDOMWidget)
 
   // Workaround for https://github.com/Comfy-Org/ComfyUI_frontend/issues/2493
   // Some custom nodes are explicitly expecting getter and setter of `value`

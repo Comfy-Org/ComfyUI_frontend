@@ -1,4 +1,3 @@
-import { createPinia, setActivePinia } from 'pinia'
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import PrimeVue from 'primevue/config'
@@ -18,7 +17,7 @@ function getMockLGraphNode(): LGraphNode {
   return createMockLGraphNode({ type: 'TestNode' })
 }
 
-vi.mock('@/utils/litegraphUtil', () => ({
+vi.mock<unknown>(import('@/utils/litegraphUtil'), () => ({
   isLGraphNode: vi.fn(() => true)
 }))
 
@@ -41,11 +40,8 @@ describe('BypassButton', () => {
   })
 
   beforeEach(() => {
-    setActivePinia(createPinia())
     canvasStore = useCanvasStore()
     commandStore = useCommandStore()
-
-    vi.clearAllMocks()
   })
 
   function renderComponent() {

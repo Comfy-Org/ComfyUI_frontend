@@ -1,6 +1,6 @@
+import { useAssetsStore } from '@/stores/assetsStore'
+import { useToastStore } from '@/platform/updates/common/toastStore'
 import { fromAny, fromPartial } from '@total-typescript/shoehorn'
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { INodeInputSlot } from '@/lib/litegraph/src/interfaces'
@@ -23,12 +23,11 @@ import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/w
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { toNodeId } from '@/types/nodeId'
 import { widgetId } from '@/types/widgetId'
+type TestNode = Omit<LGraphNode, 'constructor'> & {
+  _testExecutionId?: string
+}
 
-beforeEach(() => {
-  setActivePinia(createTestingPinia({ stubActions: false }))
-})
-
-vi.mock('@/utils/graphTraversalUtil', () => {
+vi.mock<unknown>(import('@/utils/graphTraversalUtil'), () => {
   type TestNode = LGraphNode & {
     _testExecutionId?: string
     _testActiveExecutionIds?: string[]
@@ -102,6 +101,13 @@ function makeOtherWidget(name: string, value: unknown): IBaseWidget {
   })
 }
 
+/** Mocks read connectivity from their own input mock data. */
+function stampInputConnectivity(node: LGraphNode): LGraphNode {
+  return Object.assign(node, {
+    isInputConnected: (slot: number) => node.inputs[slot].link != null
+  })
+}
+
 /** Helper: create a mock LGraphNode with configured widgets */
 function makeNode(
   id: number,
@@ -109,12 +115,14 @@ function makeNode(
   widgets: IBaseWidget[] = [],
   executionId?: string
 ): LGraphNode {
-  return fromAny<LGraphNode, unknown>({
-    id,
-    type,
-    widgets,
-    _testExecutionId: executionId
-  })
+  return stampInputConnectivity(
+    fromAny<LGraphNode, Partial<TestNode>>({
+      id: toNodeId(id),
+      type,
+      widgets,
+      _testExecutionId: executionId
+    })
+  )
 }
 
 /** Helper: create a mock LGraph containing given nodes */
@@ -186,13 +194,19 @@ function makeNestedPromotedModelGraph({
       },
       getLink: (id: number) =>
         id === innerLinkId
-          ? { resolve: () => ({ inputNode: leafNode }) }
+          ? {
+              resolve: () => ({
+                inputNode: leafNode,
+                input: leafNode.inputs[0]
+              })
+            }
           : null,
       getNodeById: (id: string | number) =>
         String(id) === String(leafNode.id) ? leafNode : null
     },
     _testExecutionId: innerExecutionId
   })
+  stampInputConnectivity(innerNode)
 
   const outerWidgetId = widgetId('graph', toNodeId(65), 'outer_ckpt')
   useWidgetValueStore().registerWidget(outerWidgetId, {
@@ -223,18 +237,35 @@ function makeNestedPromotedModelGraph({
       },
       getLink: (id: number) =>
         id === outerLinkId
-          ? { resolve: () => ({ inputNode: innerNode }) }
+          ? {
+              resolve: () => ({
+                inputNode: innerNode,
+                input: innerNode.inputs[0]
+              })
+            }
           : null,
       getNodeById: (id: string | number) =>
         String(id) === String(innerNode.id) ? innerNode : null
     },
     _testExecutionId: '65'
   })
+  stampInputConnectivity(outerNode)
 
   return makeGraph([outerNode, innerNode, leafNode])
 }
 
 const noAssetSupport = () => false
+
+beforeEach(() => {
+  vi.mocked(useToastStore().add).mockImplementation(() => undefined)
+})
+
+beforeEach(() => {
+  vi.mocked(useAssetsStore().updateModelsForNodeType).mockImplementation(
+    mockUpdateModelsForNodeType
+  )
+  vi.mocked(useAssetsStore().getAssets).mockImplementation(mockGetAssets)
+})
 
 describe('isModelFileName', () => {
   it('should return true for common model extensions', () => {
@@ -337,6 +368,7 @@ describe('scanNodeModelCandidates', () => {
         ]
       }
     })
+    stampInputConnectivity(node)
 
     const result = scanNodeModelCandidates(graph, node, noAssetSupport)
 
@@ -363,6 +395,7 @@ describe('scanNodeModelCandidates', () => {
         ]
       }
     })
+    stampInputConnectivity(node)
 
     const result = scanNodeModelCandidates(
       graph,
@@ -402,6 +435,7 @@ describe('scanNodeModelCandidates', () => {
         ]
       }
     })
+    stampInputConnectivity(node)
 
     const result = scanNodeModelCandidates(
       graph,
@@ -432,6 +466,7 @@ describe('scanNodeModelCandidates', () => {
         ]
       }
     })
+    stampInputConnectivity(node)
 
     const result = scanNodeModelCandidates(graph, node, noAssetSupport)
 
@@ -739,6 +774,7 @@ describe('scanAllModelCandidates', () => {
       mode: 2, // LGraphEventMode.NEVER
       _testExecutionId: '10'
     })
+    stampInputConnectivity(mutedNode)
 
     const graph = makeGraph([mutedNode])
     const result = scanAllModelCandidates(graph, noAssetSupport)
@@ -756,6 +792,7 @@ describe('scanAllModelCandidates', () => {
       mode: 4, // LGraphEventMode.BYPASS
       _testExecutionId: '11'
     })
+    stampInputConnectivity(bypassedNode)
 
     const graph = makeGraph([bypassedNode])
     const result = scanAllModelCandidates(graph, noAssetSupport)
@@ -773,6 +810,7 @@ describe('scanAllModelCandidates', () => {
       mode: 0, // LGraphEventMode.ALWAYS
       _testExecutionId: '12'
     })
+    stampInputConnectivity(activeNode)
 
     const graph = makeGraph([activeNode])
     const result = scanAllModelCandidates(graph, noAssetSupport)
@@ -841,13 +879,19 @@ describe('scanAllModelCandidates', () => {
         },
         getLink: (id: number) =>
           id === linkId
-            ? { resolve: () => ({ inputNode: interiorNode }) }
+            ? {
+                resolve: () => ({
+                  inputNode: interiorNode,
+                  input: interiorNode.inputs[0]
+                })
+              }
             : null,
         getNodeById: (id: string | number) =>
           String(id) === String(interiorNode.id) ? interiorNode : null
       },
       _testExecutionId: '65'
     })
+    stampInputConnectivity(hostNode)
 
     const isAssetSupported = vi.fn(() => false)
     const graph = makeGraph([hostNode, interiorNode])
@@ -918,13 +962,19 @@ describe('scanAllModelCandidates', () => {
         },
         getLink: (id: number) =>
           id === linkId
-            ? { resolve: () => ({ inputNode: interiorNode }) }
+            ? {
+                resolve: () => ({
+                  inputNode: interiorNode,
+                  input: interiorNode.inputs[0]
+                })
+              }
             : null,
         getNodeById: (id: string | number) =>
           String(id) === String(interiorNode.id) ? interiorNode : null
       },
       _testExecutionId: '65'
     })
+    stampInputConnectivity(hostNode)
 
     const result = scanAllModelCandidates(
       makeGraph([hostNode, interiorNode]),
@@ -993,13 +1043,19 @@ describe('scanAllModelCandidates', () => {
         },
         getLink: (id: number) =>
           id === innerLinkId
-            ? { resolve: () => ({ inputNode: leafNode }) }
+            ? {
+                resolve: () => ({
+                  inputNode: leafNode,
+                  input: leafNode.inputs[0]
+                })
+              }
             : null,
         getNodeById: (id: string | number) =>
           String(id) === String(leafNode.id) ? leafNode : null
       },
       _testExecutionId: '65:77'
     })
+    stampInputConnectivity(innerNode)
 
     const outerWidgetId = widgetId('graph', toNodeId(65), 'outer_ckpt')
     useWidgetValueStore().registerWidget(outerWidgetId, {
@@ -1030,13 +1086,19 @@ describe('scanAllModelCandidates', () => {
         },
         getLink: (id: number) =>
           id === outerLinkId
-            ? { resolve: () => ({ inputNode: innerNode }) }
+            ? {
+                resolve: () => ({
+                  inputNode: innerNode,
+                  input: innerNode.inputs[0]
+                })
+              }
             : null,
         getNodeById: (id: string | number) =>
           String(id) === String(innerNode.id) ? innerNode : null
       },
       _testExecutionId: '65'
     })
+    stampInputConnectivity(outerNode)
 
     const isAssetSupported = vi.fn(() => false)
     const graph = makeGraph([outerNode, innerNode, leafNode])
@@ -1678,20 +1740,8 @@ const { mockUpdateModelsForNodeType, mockGetAssets } = vi.hoisted(() => ({
   mockGetAssets: vi.fn().mockReturnValue([])
 }))
 
-vi.mock('@/stores/assetsStore', () => ({
-  useAssetsStore: () => ({
-    updateModelsForNodeType: mockUpdateModelsForNodeType,
-    getAssets: mockGetAssets
-  })
-}))
-
-vi.mock('@/platform/updates/common/toastStore', () => ({
-  useToastStore: () => ({
-    add: vi.fn()
-  })
-}))
-
-vi.mock('@/i18n', () => ({
+vi.mock(import('@/i18n'), () => ({
+  t: (key: string) => key,
   st: (_key: string, fallback: string) => fallback
 }))
 
@@ -1712,7 +1762,6 @@ function makeAssetCandidate(
 
 describe('verifyAssetSupportedCandidates', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
     mockUpdateModelsForNodeType.mockResolvedValue(undefined)
     mockGetAssets.mockReturnValue([])
   })

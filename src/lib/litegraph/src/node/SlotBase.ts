@@ -1,4 +1,3 @@
-import type { LLink } from '@/lib/litegraph/src/LLink'
 import { Rectangle } from '@/lib/litegraph/src/infrastructure/Rectangle'
 import type {
   CanvasColour,
@@ -28,7 +27,6 @@ export abstract class SlotBase implements INodeSlot {
   locked?: boolean
   nameLocked?: boolean
   widget?: IWidgetLocator
-  _floatingLinks?: Set<LLink>
   hasErrors?: boolean
 
   /** The centre point of the slot. */

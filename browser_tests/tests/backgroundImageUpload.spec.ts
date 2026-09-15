@@ -1,22 +1,21 @@
 import { expect } from '@playwright/test'
 
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
+import { assetPath } from '@e2e/fixtures/utils/paths'
 
-test.beforeEach(async ({ comfyPage }) => {
-  await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Disabled')
+test.use({
+  initialSettings: {
+    'Comfy.UseNewMenu': 'Disabled'
+  }
+})
+
+test.beforeEach(async ({ page }) => {
+  await page.route('https://example.com/*.png', (route) =>
+    route.fulfill({ path: assetPath('image32x32.webp') })
+  )
 })
 
 test.describe('Background Image Upload', () => {
-  test.beforeEach(async ({ comfyPage }) => {
-    // Reset the background image setting before each test
-    await comfyPage.settings.setSetting('Comfy.Canvas.BackgroundImage', '')
-  })
-
-  test.afterEach(async ({ comfyPage }) => {
-    // Clean up background image setting after each test
-    await comfyPage.settings.setSetting('Comfy.Canvas.BackgroundImage', '')
-  })
-
   test('should show background image upload component in settings', async ({
     comfyPage
   }) => {

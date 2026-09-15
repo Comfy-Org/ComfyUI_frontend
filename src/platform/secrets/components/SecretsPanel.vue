@@ -9,7 +9,7 @@
         </p>
       </div>
 
-      <Divider class="my-4" />
+      <div class="my-4 border-t border-interface-stroke" />
 
       <div class="my-4 flex items-center justify-between">
         <h3 class="my-0 text-lg font-semibold">
@@ -36,7 +36,7 @@
         <SecretListItem
           v-for="secret in secrets"
           :key="secret.id"
-          :secret="secret"
+          :secret
           :loading="operatingSecretId === secret.id"
           :disabled="operatingSecretId !== null"
           @edit="openEditDialog(secret)"
@@ -47,8 +47,8 @@
       <SecretFormDialog
         v-model:visible="createDialogVisible"
         mode="create"
-        :existing-providers="existingProviders"
-        :available-providers="availableProviders"
+        :existing-providers
+        :available-providers
         @saved="fetchSecrets"
       />
 
@@ -56,8 +56,8 @@
         v-model:visible="editDialogVisible"
         mode="edit"
         :secret="selectedSecret"
-        :existing-providers="existingProviders"
-        :available-providers="availableProviders"
+        :existing-providers
+        :available-providers
         @saved="fetchSecrets"
       />
     </div>
@@ -65,7 +65,6 @@
 </template>
 
 <script setup lang="ts">
-import Divider from 'primevue/divider'
 import ProgressSpinner from 'primevue/progressspinner'
 import TabPanel from 'primevue/tabpanel'
 import { ref } from 'vue'

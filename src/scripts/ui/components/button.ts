@@ -1,10 +1,11 @@
-import { type Settings } from '@/schemas/apiSchema'
+import type { Settings } from '@/schemas/apiSchema'
 import type { ComfyApp } from '@/scripts/app'
 
 import type { ComfyComponent } from '.'
 import { $el } from '../../ui'
 import { prop } from '../../utils'
-import { type ClassList, applyClasses, toggleElement } from '../utils'
+import { applyClasses, toggleElement } from '../utils'
+import type { ClassList } from '../utils'
 import type { ComfyPopup } from './popup'
 
 type ComfyButtonProps = {
@@ -20,7 +21,7 @@ type ComfyButtonProps = {
   app?: ComfyApp
 }
 
-export class ComfyButton implements ComfyComponent<HTMLElement> {
+export class ComfyButton implements ComfyComponent {
   private _over = 0
   private _popupOpen = false
   isOver = false

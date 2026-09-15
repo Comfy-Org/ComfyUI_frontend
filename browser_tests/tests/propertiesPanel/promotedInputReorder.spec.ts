@@ -36,11 +36,6 @@ test.describe(
     }) => {
       await expect(panel.sectionWidgetRows).toHaveCount(PROMOTED_WIDGETS.length)
 
-      // The section's DraggableList is wired up by a debounced watcher; a
-      // search round-trip flips `isDraggable` and settles that watch so the
-      // rows are grabbable without racing on debounce timing.
-      await panel.searchWidgets('t')
-      await panel.clearSearch()
       await expect
         .poll(() => comfyPage.subgraph.getPromotedWidgetOrder(SUBGRAPH_NODE_ID))
         .toEqual(PROMOTED_WIDGETS)

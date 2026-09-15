@@ -367,8 +367,8 @@
     "tooltip": "Substitui o painel flutuante de fila de tarefas por uma fila de tarefas equivalente incorporada ao painel lateral de Assets. Você pode desativar isso para voltar ao layout do painel flutuante."
   },
   "Comfy_RightSidePanel_ShowErrorsTab": {
-    "name": "Mostrar aba de erros no painel lateral",
-    "tooltip": "Quando ativado, uma aba de erros é exibida no painel lateral direito para mostrar rapidamente os erros de execução do fluxo de trabalho."
+    "name": "Mostrar a aba de problemas no painel lateral",
+    "tooltip": "Quando ativada, a aba Problemas é exibida no painel lateral direito para mostrar erros bloqueadores e recursos ausentes que precisam ser configurados."
   },
   "Comfy_Sidebar_Location": {
     "name": "Localização da barra lateral",
@@ -426,10 +426,6 @@
   "Comfy_Validation_Workflows": {
     "name": "Validar fluxos de trabalho"
   },
-  "Comfy_VueNodes_AutoScaleLayout": {
-    "name": "Auto-escalar layout (Nodes 2.0)",
-    "tooltip": "Escala automaticamente as posições dos nós ao alternar para a renderização Nodes 2.0 para evitar sobreposição"
-  },
   "Comfy_VueNodes_Enabled": {
     "name": "Design Moderno de Nós (Nodes 2.0)",
     "tooltip": "Moderno: renderização baseada em DOM com interatividade aprimorada, recursos nativos do navegador e design visual atualizado. Clássico: renderização tradicional em canvas."
@@ -458,6 +454,9 @@
   },
   "Comfy_Workflow_ConfirmDelete": {
     "name": "Mostrar confirmação ao excluir fluxos de trabalho"
+  },
+  "Comfy_Workflow_NamedValuesRestore": {
+    "name": "Restaurar valores do widget pelo nome"
   },
   "Comfy_Workflow_Persist": {
     "name": "Persistir estado do fluxo de trabalho e restaurar ao recarregar a página"
