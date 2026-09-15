@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest'
 
 import { modelReleaseSlides } from '../data/modelRelease'
-import { workshopModels } from './workshop-browse-content'
 import { modelReleaseLinks } from './model-release-links'
+import { workshopModels } from './workshop-browse-content'
 
 describe('homepage Models destinations', () => {
   it('does not override any existing release destination while disabled', async () => {

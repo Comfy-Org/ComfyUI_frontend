@@ -1,6 +1,6 @@
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import { createNodeLocatorId } from '@/types/nodeIdentification'
 import { parseNodeId } from '@/types/nodeId'
+import { createNodeLocatorId } from '@/types/nodeIdentification'
 
 import { usePreviewExposureStore } from './previewExposureStore'
 import { useWidgetValueStore } from './widgetValueStore'

@@ -1,14 +1,14 @@
-import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { nextTick } from 'vue'
+import { render, screen } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { nextTick } from 'vue'
 
 import type { WorkshopModel } from '../../config/models-catalogue'
-import FeaturedBanner from './FeaturedBanner.vue'
 import {
   setAllIntersecting,
   stubIntersectionObserver
 } from '../../test/fakeIntersectionObserver'
+import FeaturedBanner from './FeaturedBanner.vue'
 
 const motion = vi.hoisted(() => ({ reduced: false }))
 

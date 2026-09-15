@@ -1,9 +1,9 @@
-import type { Locator } from '@playwright/test'
-import { expect, mergeTests } from '@playwright/test'
-
 import { ExecutionHelper } from '@e2e/fixtures/helpers/ExecutionHelper'
 import { maskEditorTest as test } from '@e2e/fixtures/helpers/MaskEditorHelper'
 import { webSocketFixture } from '@e2e/fixtures/ws'
+import type { Locator } from '@playwright/test'
+import { expect, mergeTests } from '@playwright/test'
+
 import { toNodeId } from '@/types/nodeId'
 
 const wstest = mergeTests(test, webSocketFixture)

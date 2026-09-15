@@ -1,9 +1,8 @@
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
 import type { DialogContentEmits, DialogContentProps } from 'reka-ui'
 import { DialogContent, useForwardPropsEmits } from 'reka-ui'
 import type { HTMLAttributes } from 'vue'
-
-import { cn } from '@comfyorg/tailwind-utils'
 
 import type { DialogContentSize } from './dialog.variants'
 import { dialogContentVariants } from './dialog.variants'

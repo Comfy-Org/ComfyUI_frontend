@@ -109,10 +109,10 @@
 </template>
 
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
 import { computed, ref, watch } from 'vue'
 
 import CameraControls from '@/components/load3d/controls/CameraControls.vue'
-import { useDismissableOverlay } from '@/composables/useDismissableOverlay'
 import ExportControls from '@/components/load3d/controls/ExportControls.vue'
 import GizmoControls from '@/components/load3d/controls/GizmoControls.vue'
 import HDRIControls from '@/components/load3d/controls/HDRIControls.vue'
@@ -120,6 +120,7 @@ import LightControls from '@/components/load3d/controls/LightControls.vue'
 import ModelControls from '@/components/load3d/controls/ModelControls.vue'
 import SceneControls from '@/components/load3d/controls/SceneControls.vue'
 import Button from '@/components/ui/button/Button.vue'
+import { useDismissableOverlay } from '@/composables/useDismissableOverlay'
 import type {
   CameraConfig,
   GizmoMode,
@@ -128,7 +129,6 @@ import type {
   ModelConfig,
   SceneConfig
 } from '@/extensions/core/load3d/interfaces'
-import { cn } from '@comfyorg/tailwind-utils'
 
 const {
   canUseGizmo = true,

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
 import {
   Check,
   Clock,
@@ -10,10 +11,8 @@ import {
 } from '@lucide/vue'
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 
-import { cn } from '@comfyorg/tailwind-utils'
-
 import Button from '@/components/ui/button/Button.vue'
-import { externalLinks } from '../../config/routes'
+
 import {
   MAX_TOP_UP_USD,
   MIN_TOP_UP_USD,
@@ -21,6 +20,7 @@ import {
   clampTopUp,
   usdToCredits
 } from '../../config/credits'
+import { externalLinks } from '../../config/routes'
 import {
   clearTopUpWatch,
   refreshWorkshopCredits,

@@ -1,13 +1,6 @@
 import { fromAny, fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type Load3d from '@/extensions/core/load3d/Load3d'
-import Load3DConfiguration, {
-  parseAnnotatedFilename
-} from '@/extensions/core/load3d/Load3DConfiguration'
-import Load3dUtils from '@/extensions/core/load3d/Load3dUtils'
-import type { ComfyApi } from '@/scripts/api'
-import type { ComfyApp } from '@/scripts/app'
 import type {
   CameraConfig,
   GizmoConfig,
@@ -15,10 +8,17 @@ import type {
   ModelConfig,
   SceneConfig
 } from '@/extensions/core/load3d/interfaces'
-import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+import type Load3d from '@/extensions/core/load3d/Load3d'
+import Load3DConfiguration, {
+  parseAnnotatedFilename
+} from '@/extensions/core/load3d/Load3DConfiguration'
+import Load3dUtils from '@/extensions/core/load3d/Load3dUtils'
 import type { Dictionary } from '@/lib/litegraph/src/interfaces'
 import type { NodeProperty } from '@/lib/litegraph/src/LGraphNode'
+import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import type { ComfyApi } from '@/scripts/api'
+import type { ComfyApp } from '@/scripts/app'
 
 vi.mock(import('@/scripts/api'), () => ({
   api: fromPartial<ComfyApi>({

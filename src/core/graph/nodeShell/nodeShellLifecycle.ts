@@ -1,15 +1,14 @@
+import type { LGraph } from '@/lib/litegraph/src/LGraph'
+import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import type { Subgraph } from '@/lib/litegraph/src/subgraph/Subgraph'
 import { isNodeBindable } from '@/lib/litegraph/src/utils/type'
 import { getWidgetIds } from '@/lib/litegraph/src/utils/widget'
 import { usePreviewExposureStore } from '@/stores/previewExposureStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import type { NodeId } from '@/types/nodeId'
+import type { UUID } from '@/utils/uuid'
 
 import { registerNodeState, unregisterNodeState } from './nodeShellState'
-
-import type { LGraph } from '@/lib/litegraph/src/LGraph'
-import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import type { NodeId } from '@/types/nodeId'
-import type { Subgraph } from '@/lib/litegraph/src/subgraph/Subgraph'
-import type { UUID } from '@/utils/uuid'
 
 /**
  * Registers a node's shell state and its widget bindings with the app

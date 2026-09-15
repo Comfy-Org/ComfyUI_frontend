@@ -1,5 +1,6 @@
-import type { ReadOnlyRect } from '@/lib/litegraph/src/interfaces'
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
+
+import type { ReadOnlyRect } from '@/lib/litegraph/src/interfaces'
 
 interface FitToViewOptions {
   selectionOnly?: boolean

@@ -37,10 +37,9 @@
 </template>
 
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
-
-import { cn } from '@comfyorg/tailwind-utils'
 
 import MaskEditorToolIcon from '@/components/maskeditor/MaskEditorToolIcon.vue'
 import type { useToolManager } from '@/composables/maskeditor/useToolManager'

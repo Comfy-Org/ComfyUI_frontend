@@ -1,11 +1,11 @@
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
 import { remove } from 'es-toolkit'
 import { computed } from 'vue'
 
 import { useAppModeStore } from '@/stores/appModeStore'
 import { parseNodeId } from '@/types/nodeId'
 import type { NodeId, SerializedNodeId } from '@/types/nodeId'
-import { cn } from '@comfyorg/tailwind-utils'
 
 const { id } = defineProps<{ id: SerializedNodeId }>()
 

@@ -65,10 +65,10 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
 
-import Button from '@/components/ui/button/Button.vue'
-import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useErrorOverlayState } from '@/components/error/useErrorOverlayState'
+import Button from '@/components/ui/button/Button.vue'
 import { useViewErrorsInGraph } from '@/composables/useViewErrorsInGraph'
+import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 
 const { appMode = false } = defineProps<{ appMode?: boolean }>()
 

@@ -8,6 +8,7 @@ import { useWorkflowStore } from '@/platform/workflow/management/stores/workflow
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { useSubgraphStore } from '@/stores/subgraphStore'
+
 import { useSubgraphOperations } from './useSubgraphOperations'
 
 const captureCanvasState = vi.fn()

@@ -1,6 +1,5 @@
-import { expect } from '@playwright/test'
-
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
+import { expect } from '@playwright/test'
 
 test.describe('Bottom Panel Shortcuts', { tag: '@ui' }, () => {
   test('should toggle shortcuts panel visibility', async ({ comfyPage }) => {

@@ -1,9 +1,8 @@
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
 import type { SelectScrollUpButtonProps } from 'reka-ui'
 import { SelectScrollUpButton } from 'reka-ui'
 import type { HTMLAttributes } from 'vue'
-
-import { cn } from '@comfyorg/tailwind-utils'
 
 const { class: className, ...restProps } = defineProps<
   SelectScrollUpButtonProps & { class?: HTMLAttributes['class'] }

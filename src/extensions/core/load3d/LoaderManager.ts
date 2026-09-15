@@ -3,6 +3,12 @@ import type * as THREE from 'three'
 import { t } from '@/i18n'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 
+import type {
+  EventManagerInterface,
+  LoadModelOptions,
+  LoaderManagerInterface,
+  ModelManagerInterface
+} from './interfaces'
 import { MeshModelAdapter } from './MeshModelAdapter'
 import { createAdapterRef, fetchModelData } from './ModelAdapter'
 import type {
@@ -13,12 +19,6 @@ import type {
 } from './ModelAdapter'
 import { PointCloudModelAdapter } from './PointCloudModelAdapter'
 import { SplatModelAdapter } from './SplatModelAdapter'
-import type {
-  EventManagerInterface,
-  LoadModelOptions,
-  LoaderManagerInterface,
-  ModelManagerInterface
-} from './interfaces'
 
 /**
  * three.js's HttpError attaches the failed `Response` to the thrown Error.

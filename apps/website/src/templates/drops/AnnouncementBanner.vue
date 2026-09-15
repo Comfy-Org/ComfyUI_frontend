@@ -1,15 +1,14 @@
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
 import { ArrowRight, X } from '@lucide/vue'
 
-import type { BannerData } from '../../config/banner'
-import type { Locale } from '../../i18n/translations'
-
-import { cn } from '@comfyorg/tailwind-utils'
-
-import { t } from '../../i18n/translations'
 import Button from '@/components/ui/button/Button.vue'
 import IconButton from '@/components/ui/icon-button/IconButton.vue'
+
 import { useBannerDismissal } from '../../composables/useBannerDismissal'
+import type { BannerData } from '../../config/banner'
+import type { Locale } from '../../i18n/translations'
+import { t } from '../../i18n/translations'
 
 const GRADIENT_BACKGROUND =
   'linear-gradient(90deg, var(--color-primary-comfy-plum) 0%, var(--color-secondary-deep-plum) 53.85%, var(--color-secondary-mauve) 100%)'

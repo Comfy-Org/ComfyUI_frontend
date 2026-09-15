@@ -1,9 +1,9 @@
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
 import { ref, useTemplateRef } from 'vue'
 
 import ZoomPane from '@/components/ui/ZoomPane.vue'
 import { useExecutionStatus } from '@/renderer/extensions/linearMode/useExecutionStatus'
-import { cn } from '@comfyorg/tailwind-utils'
 
 const { executionStatusMessage } = useExecutionStatus()
 

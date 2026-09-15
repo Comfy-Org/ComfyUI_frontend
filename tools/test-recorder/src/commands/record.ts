@@ -1,6 +1,7 @@
-import { createInterface } from 'node:readline'
 import { writeFileSync, mkdirSync } from 'node:fs'
 import { join } from 'node:path'
+import { createInterface } from 'node:readline'
+
 import {
   text,
   autocomplete,
@@ -14,35 +15,36 @@ import {
   select
 } from '@clack/prompts'
 import pc from 'picocolors'
-import { runChecks } from './check'
-import {
-  runRecording,
-  findProjectRoot,
-  listWorkflows
-} from '../recorder/runner'
-import { transform, formatTransformSummary } from '../transform/engine'
-import { formatFile } from '../transform/format'
-import { openPr } from '../pr/openPr'
-import { runCommand } from '../cli/run'
-import { detectAgentClis } from '../checks/agentCli'
+
 import { runAgentRefactor } from '../agent/refactor'
-import { stepHeader } from '../ui/steps'
-import { pass, fail, warn, alert, info, blank, box } from '../ui/logger'
+import { detectAgentClis } from '../checks/agentCli'
+import { runCommand } from '../cli/run'
 import { toSlug } from '../cli/slug'
-import { TAG_REGISTRY } from '../tags'
-import { USE_CASES, useCaseById } from '../useCases'
-import { addWorkflow, WORKFLOW_ASSET_EXPLANATION } from '../workflows/add'
 import {
   customDistribution,
   DISTRIBUTIONS,
   normalizeBackendUrl,
   resolveDistribution
 } from '../devserver/distributions'
-import { ensureDevServer } from '../devserver/manager'
 import { fetchEnvInfo } from '../devserver/envInfo'
+import { ensureDevServer } from '../devserver/manager'
 import { discoverFlagKeys, parseFeatureFlagSpecs } from '../featureFlags'
-import type { RecordPrefill } from './recordPrefill'
+import { openPr } from '../pr/openPr'
+import {
+  runRecording,
+  findProjectRoot,
+  listWorkflows
+} from '../recorder/runner'
+import { TAG_REGISTRY } from '../tags'
+import { transform, formatTransformSummary } from '../transform/engine'
+import { formatFile } from '../transform/format'
+import { pass, fail, warn, alert, info, blank, box } from '../ui/logger'
+import { stepHeader } from '../ui/steps'
+import { USE_CASES, useCaseById } from '../useCases'
+import { addWorkflow, WORKFLOW_ASSET_EXPLANATION } from '../workflows/add'
+import { runChecks } from './check'
 import { decidePrCheckout } from './prCheckout'
+import type { RecordPrefill } from './recordPrefill'
 
 const PASTE_SENTINEL = '.'
 const ADD_WORKFLOW_SENTINEL = '__add-workflow__'

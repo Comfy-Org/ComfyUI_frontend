@@ -4,12 +4,11 @@ import type {
   SecretProvidersResponse,
   SecretResponse
 } from '@comfyorg/ingest-types'
+import type { SettingDialog } from '@e2e/fixtures/components/SettingDialog'
+import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 import type { Page, Route } from '@playwright/test'
 
 import type { RemoteConfig } from '@/platform/remoteConfig/types'
-
-import type { SettingDialog } from '@e2e/fixtures/components/SettingDialog'
-import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 
 /**
  * Shared scaffolding for the cloud user-secrets (API keys) E2E, alongside the

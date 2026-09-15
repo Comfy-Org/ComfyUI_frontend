@@ -1,5 +1,6 @@
-import { expect } from '@playwright/test'
 import { readFileSync } from 'node:fs'
+
+import { expect } from '@playwright/test'
 import { ModuleKind, ScriptTarget, transpileModule } from 'typescript'
 
 import { openRouterSvgRasterizer } from '../scripts/router-model-svg'

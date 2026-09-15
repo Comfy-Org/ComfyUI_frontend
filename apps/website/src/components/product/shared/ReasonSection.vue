@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import type { Locale, TranslationKey } from '../../../i18n/translations'
-
-import { t } from '../../../i18n/translations'
 import SafeRichText from '@/components/common/SafeRichTextContent'
+
+import type { Locale, TranslationKey } from '../../../i18n/translations'
+import { t } from '../../../i18n/translations'
 
 export interface Reason {
   titleKey: TranslationKey

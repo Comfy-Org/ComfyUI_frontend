@@ -7,9 +7,9 @@ import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 import { app } from '@/scripts/app'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import { widgetId } from '@/types/widgetId'
 
 import { applyFirstWidgetValueToGraph } from './widgetValuePropagation'
-import { widgetId } from '@/types/widgetId'
 
 function applyToGraph(this: LGraphNode, extraLinks: LLink[] = []) {
   applyFirstWidgetValueToGraph(this, extraLinks)

@@ -1,11 +1,14 @@
+import { fromPartial } from '@total-typescript/shoehorn'
+import { vi } from 'vitest'
+
+import { CustomEventTarget } from '@/lib/litegraph/src/infrastructure/CustomEventTarget'
+import type { LGraphEventMap } from '@/lib/litegraph/src/infrastructure/LGraphEventMap'
+import { Rectangle } from '@/lib/litegraph/src/infrastructure/Rectangle'
 import type {
   INodeInputSlot,
   INodeOutputSlot,
   Positionable
 } from '@/lib/litegraph/src/interfaces'
-import { CustomEventTarget } from '@/lib/litegraph/src/infrastructure/CustomEventTarget'
-import type { LGraphEventMap } from '@/lib/litegraph/src/infrastructure/LGraphEventMap'
-import { Rectangle } from '@/lib/litegraph/src/infrastructure/Rectangle'
 import type {
   CanvasPointerEvent,
   ISerialisedGraph,
@@ -20,18 +23,16 @@ import {
   LGraphNode,
   LLink
 } from '@/lib/litegraph/src/litegraph'
-import { fromPartial } from '@total-typescript/shoehorn'
-import { vi } from 'vitest'
 import type { LoadedComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 import type { ChangeTracker } from '@/scripts/changeTracker'
-import type { LinkId } from '@/types/linkId'
+import { usePreviewExposureStore } from '@/stores/previewExposureStore'
+import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { toGroupId } from '@/types/groupId'
+import type { LinkId } from '@/types/linkId'
 import { toLinkId } from '@/types/linkId'
 import type { NodeId } from '@/types/nodeId'
 import { toNodeId } from '@/types/nodeId'
 import type { NodeState } from '@/types/nodeState'
-import { usePreviewExposureStore } from '@/stores/previewExposureStore'
-import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { zeroUuid } from '@/utils/uuid'
 
 /** Creates a node shell state with minimal required fields. */

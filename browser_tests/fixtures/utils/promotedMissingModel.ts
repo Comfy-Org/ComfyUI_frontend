@@ -1,15 +1,14 @@
 import { readFileSync } from 'fs'
 
-import { expect } from '@playwright/test'
-import type { Locator } from '@playwright/test'
-
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { WidgetSelectDropdownFixture } from '@e2e/fixtures/components/WidgetSelectDropdown'
-import { TestIds } from '@e2e/fixtures/selectors'
 import { loadWorkflowAndOpenErrorsTab } from '@e2e/fixtures/helpers/ErrorsTabHelper'
+import { TestIds } from '@e2e/fixtures/selectors'
 import { assetPath } from '@e2e/fixtures/utils/paths'
 import { setPromotedHostWidgetValue } from '@e2e/fixtures/utils/promotedWidgets'
 import { PropertiesPanelHelper } from '@e2e/tests/propertiesPanel/PropertiesPanelHelper'
+import { expect } from '@playwright/test'
+import type { Locator } from '@playwright/test'
 
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 

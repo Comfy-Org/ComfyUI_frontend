@@ -1,6 +1,3 @@
-import { expect, mergeTests } from '@playwright/test'
-import type { Page, Response } from '@playwright/test'
-
 import { comfyPageFixture } from '@e2e/fixtures/ComfyPage'
 import { expectNoErrorUiAfterVerification } from '@e2e/fixtures/helpers/ErrorsTabHelper'
 import {
@@ -12,6 +9,9 @@ import {
 import { TestIds } from '@e2e/fixtures/selectors'
 import { mockViewFiles } from '@e2e/fixtures/utils/viewFileMocks'
 import { PropertiesPanelHelper } from '@e2e/tests/propertiesPanel/PropertiesPanelHelper'
+import { expect, mergeTests } from '@playwright/test'
+import type { Page, Response } from '@playwright/test'
+
 import type {
   JobDetail,
   RawJobListItem

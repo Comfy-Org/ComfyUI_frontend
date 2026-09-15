@@ -1,19 +1,19 @@
 import { render } from '@testing-library/vue'
 import { fromPartial } from '@total-typescript/shoehorn'
-import { useQueueStore } from '@/stores/queueStore'
-import { useExecutionStore } from '@/stores/executionStore'
-import { useJobPreviewStore } from '@/stores/jobPreviewStore'
-import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { nextTick, ref } from 'vue'
 import type { Ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import { useJobList } from '@/composables/queue/useJobList'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import { useExecutionStore } from '@/stores/executionStore'
+import { useJobPreviewStore } from '@/stores/jobPreviewStore'
+import { useQueueStore } from '@/stores/queueStore'
+import type { TaskItemImpl } from '@/stores/queueStore'
 import type { JobState } from '@/types/queue'
 import type { BuildJobDisplayCtx } from '@/utils/queueDisplay'
 import { buildJobDisplay } from '@/utils/queueDisplay'
-import type { TaskItemImpl } from '@/stores/queueStore'
 
 type TestTask = {
   jobId: string

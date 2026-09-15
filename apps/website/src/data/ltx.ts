@@ -1,9 +1,8 @@
+import { externalLinks } from '../config/routes'
 import type {
   ModelLaunchMedia,
   ModelLaunchPage
 } from '../templates/model-launch/types'
-
-import { externalLinks } from '../config/routes'
 
 const ltxLinks = {
   cloudRun: 'https://cloud.comfy.org/?template=video_ltx2_5_i2v',

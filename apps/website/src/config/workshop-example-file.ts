@@ -1,5 +1,5 @@
-import type { FileValue } from './workshop-playground'
 import { isHttpImageSource } from './workshop-image-source'
+import type { FileValue } from './workshop-playground'
 
 export const WORKSHOP_EXAMPLE_MIME_TYPES = new Map([
   ['png', 'image/png'],

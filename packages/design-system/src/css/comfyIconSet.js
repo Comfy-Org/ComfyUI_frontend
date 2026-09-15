@@ -1,5 +1,6 @@
-import { cleanupSVG, importDirectorySync, runSVGO } from '@iconify/tools'
 import { resolve } from 'node:path'
+
+import { cleanupSVG, importDirectorySync, runSVGO } from '@iconify/tools'
 
 export const COMFY_ICON_PREFIX = 'comfy'
 

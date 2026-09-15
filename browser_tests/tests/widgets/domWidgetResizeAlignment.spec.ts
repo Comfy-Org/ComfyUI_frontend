@@ -1,5 +1,3 @@
-import { expect } from '@playwright/test'
-
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import {
   expectDomWidgetAlignedAfterTransformChange,
@@ -7,6 +5,7 @@ import {
   snapshotDomWidget,
   snapshotRelativeOffset
 } from '@e2e/fixtures/utils/domWidgetAlignment'
+import { expect } from '@playwright/test'
 
 const LARGE_VIEWPORT = { width: 1920, height: 1080 }
 const SMALL_VIEWPORT = { width: 900, height: 600 }

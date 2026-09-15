@@ -3,7 +3,6 @@ import type { CSSProperties } from 'vue'
 import { computed } from 'vue'
 
 import VirtualGrid from '@/components/common/VirtualGrid.vue'
-
 import type {
   FilterOption,
   OwnershipFilterOption,

@@ -1,8 +1,7 @@
+import { createScriptLoader } from '@comfyorg/shared-frontend-utils/loadExternalScript'
 import { whenever } from '@vueuse/core'
 import type { MaybeRefOrGetter, Ref } from 'vue'
 import { computed, ref, toValue } from 'vue'
-
-import { createScriptLoader } from '@comfyorg/shared-frontend-utils/loadExternalScript'
 
 const TYPEFORM_SRC = 'https://embed.typeform.com/next/embed.js'
 const VALID_ID_PATTERN = /^[A-Za-z0-9]+$/

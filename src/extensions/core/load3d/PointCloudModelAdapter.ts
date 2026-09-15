@@ -4,6 +4,8 @@ import { PLYLoader } from 'three/examples/jsm/loaders/PLYLoader'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { isPLYAsciiFormat } from '@/scripts/metadata/ply'
 
+import type { MaterialMode } from './interfaces'
+import { FastPLYLoader } from './loader/FastPLYLoader'
 import { fetchModelData } from './ModelAdapter'
 import type {
   ModelAdapter,
@@ -11,8 +13,6 @@ import type {
   ModelLoadContext,
   ModelLoadResult
 } from './ModelAdapter'
-import type { MaterialMode } from './interfaces'
-import { FastPLYLoader } from './loader/FastPLYLoader'
 
 function getPLYEngine(): string {
   return useSettingStore().get('Comfy.Load3D.PLYEngine')

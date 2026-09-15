@@ -9,12 +9,12 @@ import {
 import { useClickDragGuard } from '@/composables/useClickDragGuard'
 import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
+import { useNodeEventHandlers } from '@/renderer/extensions/vueNodes/composables/useNodeEventHandlers'
+import { useNodeDrag } from '@/renderer/extensions/vueNodes/layout/useNodeDrag'
+import { isMultiSelectKey } from '@/renderer/extensions/vueNodes/utils/selectionUtils'
+import { useAgentNodeSelectionStore } from '@/stores/agentNodeSelectionStore'
 import type { NodeId } from '@/types/nodeId'
 import type { NodeState } from '@/types/nodeState'
-import { useNodeEventHandlers } from '@/renderer/extensions/vueNodes/composables/useNodeEventHandlers'
-import { isMultiSelectKey } from '@/renderer/extensions/vueNodes/utils/selectionUtils'
-import { useNodeDrag } from '@/renderer/extensions/vueNodes/layout/useNodeDrag'
-import { useAgentNodeSelectionStore } from '@/stores/agentNodeSelectionStore'
 
 export function useNodePointerInteractions(
   nodeStateRef: MaybeRefOrGetter<NodeState>

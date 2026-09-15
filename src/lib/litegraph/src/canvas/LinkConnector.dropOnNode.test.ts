@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, test, vi } from 'vitest'
+
 import type { CanvasPointerEvent } from '@/lib/litegraph/src/litegraph'
 import {
   LGraph,

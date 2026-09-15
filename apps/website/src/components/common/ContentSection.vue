@@ -7,16 +7,15 @@ import {
 } from '@vueuse/core'
 import { computed, onMounted, ref } from 'vue'
 
+import { prefersReducedMotion } from '../../composables/useReducedMotion'
+import { deriveSections } from '../../config/contentSections'
 import type { Locale, TranslationKey } from '../../i18n/translations'
-
 import { hasKey, t } from '../../i18n/translations'
 import { scrollTo } from '../../scripts/smoothScroll'
-import { prefersReducedMotion } from '../../composables/useReducedMotion'
 import BrandButton from './BrandButton.vue'
 import CategoryNav from './CategoryNav.vue'
 import SafeRichText from './SafeRichTextContent'
 import SectionLabel from './SectionLabel.vue'
-import { deriveSections } from '../../config/contentSections'
 
 const {
   prefix,

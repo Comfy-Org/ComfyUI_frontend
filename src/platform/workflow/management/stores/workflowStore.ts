@@ -1,5 +1,5 @@
-import { union } from 'es-toolkit/compat'
 import { until, useAsyncState } from '@vueuse/core'
+import { union } from 'es-toolkit/compat'
 import { defineStore } from 'pinia'
 import { computed, markRaw, ref, shallowRef, watch } from 'vue'
 import type { Raw } from 'vue'
@@ -14,14 +14,16 @@ import {
   ensureWorkflowId,
   getLegacyWorkflowId
 } from '@/platform/workflow/core/utils/workflowId'
-import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { useWorkflowDraftStoreV2 } from '@/platform/workflow/persistence/stores/workflowDraftStoreV2'
+import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 // eslint-disable-next-line import-x/no-restricted-paths
 import { useWorkflowThumbnail } from '@/renderer/core/thumbnail/useWorkflowThumbnail'
 import { api } from '@/scripts/api'
 import { app as comfyApp } from '@/scripts/app'
 import { defaultGraph } from '@/scripts/defaultGraph'
 import { useExecutionStore } from '@/stores/executionStore'
+import { parseNodeId } from '@/types/nodeId'
+import type { NodeId } from '@/types/nodeId'
 import type { NodeExecutionId, NodeLocatorId } from '@/types/nodeIdentification'
 import {
   createNodeExecutionId,
@@ -29,11 +31,10 @@ import {
   parseNodeExecutionId,
   parseNodeLocatorId
 } from '@/types/nodeIdentification'
-import { parseNodeId } from '@/types/nodeId'
-import type { NodeId } from '@/types/nodeId'
 import { generateUUID, getPathDetails } from '@/utils/formatUtil'
 import { syncEntities } from '@/utils/syncUtil'
 import { isSubgraph } from '@/utils/typeGuardUtil'
+
 import { ComfyWorkflow } from './comfyWorkflow'
 import type { LoadedComfyWorkflow } from './comfyWorkflow'
 export { ComfyWorkflow, type LoadedComfyWorkflow }

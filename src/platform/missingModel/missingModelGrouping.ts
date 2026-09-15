@@ -1,10 +1,10 @@
 import { sumBy } from 'es-toolkit'
 
+import { groupCandidatesByName } from '@/platform/missingModel/missingModelScan'
 import type {
   MissingModelCandidate,
   MissingModelGroup
 } from '@/platform/missingModel/types'
-import { groupCandidatesByName } from '@/platform/missingModel/missingModelScan'
 
 const UNSUPPORTED = Symbol('unsupported')
 

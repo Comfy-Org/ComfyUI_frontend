@@ -18,25 +18,23 @@ import WidgetDOM from '@/renderer/extensions/vueNodes/widgets/components/WidgetD
 import WidgetLegacy from '@/renderer/extensions/vueNodes/widgets/components/WidgetLegacy.vue'
 import { getComponent } from '@/renderer/extensions/vueNodes/widgets/registry/widgetRegistry'
 import { app } from '@/scripts/app'
-import { useLinkStore } from '@/stores/linkStore'
-import { graphScopeOf } from '@/types/graphScopeId'
-import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
+import { useLinkStore } from '@/stores/linkStore'
+import { useNodeDefStore } from '@/stores/nodeDefStore'
 import {
   stripGraphPrefix,
   useWidgetValueStore
 } from '@/stores/widgetValueStore'
+import { graphScopeOf } from '@/types/graphScopeId'
+import type { LinkTopology } from '@/types/linkTopology'
+import type { NodeId } from '@/types/nodeId'
 import {
   createNodeExecutionId,
   createNodeLocatorId
 } from '@/types/nodeIdentification'
 import type { NodeExecutionId, NodeLocatorId } from '@/types/nodeIdentification'
-import type { NodeId } from '@/types/nodeId'
 import type { NodeState } from '@/types/nodeState'
-import type { LinkTopology } from '@/types/linkTopology'
 import { getControlWidget } from '@/types/simplifiedWidget'
-import { isWidgetVisibleOnSurface } from '@/types/widgetVisibility'
-import type { WidgetVisibilityComponent } from '@/types/widgetVisibility'
 import type {
   LinkedUpstreamInfo,
   SafeControlWidget,
@@ -44,6 +42,8 @@ import type {
   WidgetValue
 } from '@/types/simplifiedWidget'
 import type { WidgetId } from '@/types/widgetId'
+import { isWidgetVisibleOnSurface } from '@/types/widgetVisibility'
+import type { WidgetVisibilityComponent } from '@/types/widgetVisibility'
 import {
   executionIdFromState,
   executionIdToNodeLocatorId,

@@ -15,8 +15,8 @@ import {
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { resolveDeployEnv } from '@/platform/telemetry/initDatadogRum'
 import { reportError } from '@/platform/telemetry/reportError'
-import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import { useExecutionStore } from '@/stores/executionStore'
@@ -26,11 +26,11 @@ import { useAgentConversationStore } from '../stores/agent/agentConversationStor
 import type { CrdtLogLevel } from './crdtDebugGate'
 import { CRDT_LOG_LEVELS, crdtLogLevel, setCrdtLogLevel } from './crdtDebugGate'
 import type { ReportIdentifiers, ReportSources } from './crdtDebugReport'
-import type { CrdtDebugSnapshot } from './crdtSnapshot'
 import {
   DEFAULT_REPORT_SOURCES,
   collectCrdtDebugReport
 } from './crdtDebugReport'
+import type { CrdtDebugSnapshot } from './crdtSnapshot'
 import type { CrdtLogScope, DevEvent, DevEventKind } from './devPanelLog'
 import { clearDevEvents, devEvents, stringifyDevEvents } from './devPanelLog'
 import type { MergeScenario, MergeSimulation } from './mergeScenarios'

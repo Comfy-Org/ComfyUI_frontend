@@ -1,6 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/vue3-vite'
 
 import Button from '@/components/ui/button/Button.vue'
+
 import IconGroup from './IconGroup.vue'
 
 const meta: Meta<typeof IconGroup> = {

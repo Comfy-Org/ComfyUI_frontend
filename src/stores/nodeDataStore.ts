@@ -1,15 +1,15 @@
 import { defineStore } from 'pinia'
 import { reactive, toRaw } from 'vue'
 
+import type { RemoteMutationContext } from '@/types/graphMutationContext'
 import { toOwningGraphId, toRootGraphId } from '@/types/graphScopeId'
 import type {
   GraphScope,
   OwningGraphId,
   RootGraphId
 } from '@/types/graphScopeId'
-import type { NodeState } from '@/types/nodeState'
 import type { NodeId } from '@/types/nodeId'
-import type { RemoteMutationContext } from '@/types/graphMutationContext'
+import type { NodeState } from '@/types/nodeState'
 import type { UUID } from '@/utils/uuid'
 
 /**

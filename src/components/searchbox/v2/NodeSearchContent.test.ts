@@ -1,14 +1,13 @@
-import { render, screen, waitFor } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
+import { render, screen, waitFor } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import NodeSearchContent from '@/components/searchbox/v2/NodeSearchContent.vue'
 import {
   createMockNodeDef,
   setViewport,
   testI18n
 } from '@/components/searchbox/v2/__test__/testUtils'
-
+import NodeSearchContent from '@/components/searchbox/v2/NodeSearchContent.vue'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useNodeBookmarkStore } from '@/stores/nodeBookmarkStore'
 import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'

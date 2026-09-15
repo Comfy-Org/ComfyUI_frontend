@@ -1,5 +1,6 @@
-import vue from '@vitejs/plugin-vue'
 import { fileURLToPath } from 'node:url'
+
+import vue from '@vitejs/plugin-vue'
 import { defineConfig } from 'vitest/config'
 
 const TEST_SYSTEM_TIME = Date.parse('2024-06-15T12:00:00Z')

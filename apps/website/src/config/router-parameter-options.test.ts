@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
-import type { FieldSchema } from './workshop-playground'
 import { closestOption, snapToStep } from './router-parameter-options'
+import type { FieldSchema } from './workshop-playground'
 
 describe('numeric parameter snapping', () => {
   it.for([0.1, 0.5, 2, 64])(

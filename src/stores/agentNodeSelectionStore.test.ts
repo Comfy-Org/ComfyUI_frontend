@@ -1,11 +1,11 @@
-import { useSettingStore } from '@/platform/settings/settingStore'
-import { useDialogStore } from '@/stores/dialogStore'
-import { api } from '@/scripts/api'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
+import { useSettingStore } from '@/platform/settings/settingStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import { api } from '@/scripts/api'
 import { useAgentNodeSelectionStore } from '@/stores/agentNodeSelectionStore'
+import { useDialogStore } from '@/stores/dialogStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 
 /**

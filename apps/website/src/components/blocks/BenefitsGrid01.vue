@@ -1,7 +1,7 @@
 <script setup lang="ts">
+import { resolveRel } from '../../utils/cta'
 import GlassCard from '../common/GlassCard.vue'
 import Button from '../ui/button/Button.vue'
-import { resolveRel } from '../../utils/cta'
 
 type Benefit = { id: string; title?: string; description: string }
 type Cta = {

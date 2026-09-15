@@ -81,6 +81,7 @@
 </template>
 
 <script lang="ts" setup>
+import { cn } from '@comfyorg/tailwind-utils'
 import {
   useDraggable,
   useEventListener,
@@ -101,15 +102,14 @@ import Button from '@/components/ui/button/Button.vue'
 import { useQueueFeatureFlags } from '@/composables/queue/useQueueFeatureFlags'
 import { buildTooltipConfig } from '@/composables/useTooltipConfig'
 import FreeTierQuota from '@/platform/cloud/subscription/components/FreeTierQuota.vue'
+import { FIRST_RUN_COACH_IDS } from '@/platform/onboarding/onboardingTours'
+import { vCoachmark } from '@/platform/onboarding/vCoachmark'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@/platform/telemetry'
 import { useCommandStore } from '@/stores/commandStore'
 import { useExecutionStore } from '@/stores/executionStore'
-import { FIRST_RUN_COACH_IDS } from '@/platform/onboarding/onboardingTours'
-import { vCoachmark } from '@/platform/onboarding/vCoachmark'
 import { useQueueStore } from '@/stores/queueStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
-import { cn } from '@comfyorg/tailwind-utils'
 
 import ComfyRunButton from './ComfyRunButton'
 

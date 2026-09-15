@@ -10,10 +10,10 @@ import type { PromotedWidgetSource } from '@/core/graph/subgraph/promotedWidgetT
 import type { PreviewExposure } from '@/core/schemas/previewExposureSchema'
 import type { SubgraphNode } from '@/lib/litegraph/src/litegraph'
 import { nextUniqueName } from '@/lib/litegraph/src/strings'
-import { createNodeLocatorId } from '@/types/nodeIdentification'
-import type { NodeLocatorId } from '@/types/nodeIdentification'
 import { toNodeId } from '@/types/nodeId'
 import type { SerializedNodeId } from '@/types/nodeId'
+import { createNodeLocatorId } from '@/types/nodeIdentification'
+import type { NodeLocatorId } from '@/types/nodeIdentification'
 import type { UUID } from '@/utils/uuid'
 
 const EMPTY_EXPOSURES: readonly PreviewExposure[] = Object.freeze([])

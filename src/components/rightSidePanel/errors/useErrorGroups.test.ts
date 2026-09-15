@@ -8,11 +8,11 @@ import { createBoundaryLinkedSubgraph } from '@/lib/litegraph/src/subgraph/__fix
 import type { MissingMediaCandidate } from '@/platform/missingMedia/types'
 import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import type { useComfyRegistryService } from '@/services/comfyRegistryService'
+import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import type { MissingNodeType } from '@/types/comfy'
-import type { NodeExecutionId } from '@/types/nodeIdentification'
 import { toNodeId } from '@/types/nodeId'
+import type { NodeExecutionId } from '@/types/nodeIdentification'
 import { nodeError, validationError } from '@/utils/__tests__/nodeErrorHelpers'
 import {
   forEachNode,

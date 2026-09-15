@@ -1,5 +1,6 @@
-import type { IColorWidget } from '../types/widgets'
 import { hexToInt, intToHex } from '@/utils/colorUtil'
+
+import type { IColorWidget } from '../types/widgets'
 import type { DrawWidgetOptions, WidgetEventOptions } from './BaseWidget'
 import { BaseWidget } from './BaseWidget'
 

@@ -1,9 +1,8 @@
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
 import { Upload } from '@lucide/vue'
 import { useDropZone } from '@vueuse/core'
 import { computed, nextTick, ref, useTemplateRef } from 'vue'
-
-import { cn } from '@comfyorg/tailwind-utils'
 
 import type { FieldSchema, FileValue } from '../../config/workshop-playground'
 import type { Locale, TranslationKey } from '../../i18n/translations'

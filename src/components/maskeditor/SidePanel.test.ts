@@ -1,9 +1,8 @@
 import { render, screen } from '@testing-library/vue'
 import { describe, expect, it, vi } from 'vitest'
 
-import type { useToolManager } from '@/composables/maskeditor/useToolManager'
-
 import SidePanel from '@/components/maskeditor/SidePanel.vue'
+import type { useToolManager } from '@/composables/maskeditor/useToolManager'
 
 type ToolManager = ReturnType<typeof useToolManager>
 

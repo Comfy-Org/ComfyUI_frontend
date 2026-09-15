@@ -23,14 +23,14 @@
 <script setup lang="ts">
 import { onErrorCaptured, ref } from 'vue'
 
-import type { NodeState } from '@/types/nodeState'
-import type { WidgetId } from '@/types/widgetId'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { st } from '@/i18n'
 import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
 import WidgetGrid from '@/renderer/extensions/vueNodes/components/WidgetGrid.vue'
 import { useNodeZIndex } from '@/renderer/extensions/vueNodes/composables/useNodeZIndex'
 import { useProcessedWidgets } from '@/renderer/extensions/vueNodes/composables/useProcessedWidgets'
+import type { NodeState } from '@/types/nodeState'
+import type { WidgetId } from '@/types/widgetId'
 
 interface NodeWidgetsProps {
   nodeData?: NodeState

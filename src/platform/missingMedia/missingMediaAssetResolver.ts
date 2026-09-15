@@ -5,6 +5,7 @@ import { fetchHistoryPage } from '@/platform/remote/comfyui/jobs/fetchJobs'
 import type { JobListItem } from '@/platform/remote/comfyui/jobs/jobTypes'
 import { api } from '@/scripts/api'
 import { getFilePathSeparatorVariants, joinFilePath } from '@/utils/formatUtil'
+
 import { getMediaPathDetectionNames } from './mediaPathDetectionUtil'
 
 const HISTORY_MEDIA_ASSETS_PAGE_SIZE = 200

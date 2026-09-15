@@ -1,17 +1,17 @@
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
 import Popover from 'primevue/popover'
 import { ref, useTemplateRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
+import AsyncSearchInput from '@/components/ui/search-input/AsyncSearchInput.vue'
 import type {
   FilterOption,
   OwnershipFilterOption,
   OwnershipOption
 } from '@/platform/assets/types/filterTypes'
-import { cn } from '@comfyorg/tailwind-utils'
 
-import AsyncSearchInput from '@/components/ui/search-input/AsyncSearchInput.vue'
 import { DROPDOWN_PANEL_CLASS } from './shared'
 import type { LayoutMode, SortOption } from './types'
 

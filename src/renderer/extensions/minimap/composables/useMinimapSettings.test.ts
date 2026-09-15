@@ -1,8 +1,8 @@
-import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 import { beforeEach, describe, expect, it } from 'vitest'
 
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useMinimapSettings } from '@/renderer/extensions/minimap/composables/useMinimapSettings'
+import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 
 beforeEach(() => {
   useSettingStore().settingValues = {

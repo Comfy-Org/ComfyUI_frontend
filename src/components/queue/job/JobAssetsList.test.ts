@@ -1,7 +1,7 @@
+import userEvent from '@testing-library/user-event'
 /* eslint-disable testing-library/no-container, testing-library/no-node-access -- stubs lack ARIA roles; data attributes for props */
 /* eslint-disable testing-library/prefer-user-event -- fireEvent needed: fake timers require fireEvent for mouseEnter/mouseLeave */
 import { fireEvent, render, screen } from '@testing-library/vue'
-import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 import { defineComponent, nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'

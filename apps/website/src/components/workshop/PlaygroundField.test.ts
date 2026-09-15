@@ -3,17 +3,17 @@ import { fireEvent, render, screen, within } from '@testing-library/vue'
 import { describe, expect, it, vi } from 'vitest'
 import { defineComponent, h, ref } from 'vue'
 
+import type { WorkshopInputDefinition } from '../../config/workshop-input-definition'
 import type {
   FieldErrors,
   FieldSchema,
   FormValues
 } from '../../config/workshop-playground'
-import type { WorkshopInputDefinition } from '../../config/workshop-input-definition'
-import { resolveWorkshopUrlInputs } from '../../config/workshop-url-input'
 import {
   defaultValues,
   MAX_UPLOAD_BYTES
 } from '../../config/workshop-playground'
+import { resolveWorkshopUrlInputs } from '../../config/workshop-url-input'
 import type { Locale } from '../../i18n/translations'
 import PlaygroundField from './PlaygroundField.vue'
 

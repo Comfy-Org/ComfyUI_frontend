@@ -155,20 +155,21 @@
 </template>
 
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
 import { computed, nextTick, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import NoResultsPlaceholder from '@/components/common/NoResultsPlaceholder.vue'
-import SearchInput from '@/components/ui/search-input/SearchInput.vue'
-import SidebarTopArea from '@/components/sidebar/tabs/SidebarTopArea.vue'
 import TextDivider from '@/components/common/TextDivider.vue'
 import TreeExplorer from '@/components/common/TreeExplorer.vue'
 import TreeExplorerTreeNode from '@/components/common/TreeExplorerTreeNode.vue'
 import SidebarTabTemplate from '@/components/sidebar/tabs/SidebarTabTemplate.vue'
+import SidebarTopArea from '@/components/sidebar/tabs/SidebarTopArea.vue'
 import WorkflowTreeLeaf from '@/components/sidebar/tabs/workflows/WorkflowTreeLeaf.vue'
 import Button from '@/components/ui/button/Button.vue'
-import { useTreeExpansion } from '@/composables/useTreeExpansion'
+import SearchInput from '@/components/ui/search-input/SearchInput.vue'
 import { useAppMode } from '@/composables/useAppMode'
+import { useTreeExpansion } from '@/composables/useTreeExpansion'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useSearchQueryTracking } from '@/platform/telemetry/searchQuery/useSearchQueryTracking'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
@@ -185,7 +186,6 @@ import {
   getWorkflowSuffix
 } from '@/utils/formatUtil'
 import { buildTree, sortedTree } from '@/utils/treeUtil'
-import { cn } from '@comfyorg/tailwind-utils'
 
 const { title, filter, searchSubject, dataTestid, hideLeafIcon } = defineProps<{
   title: string

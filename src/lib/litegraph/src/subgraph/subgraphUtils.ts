@@ -1,7 +1,18 @@
 import { isEqual } from 'es-toolkit'
+
+import {
+  SUBGRAPH_INPUT_ID,
+  SUBGRAPH_OUTPUT_ID
+} from '@/lib/litegraph/src/constants'
+import type {
+  INodeInputSlot,
+  INodeOutputSlot,
+  Positionable
+} from '@/lib/litegraph/src/interfaces'
 import type { LGraph, SubgraphId } from '@/lib/litegraph/src/LGraph'
 import { LGraphGroup } from '@/lib/litegraph/src/LGraphGroup'
 import { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import { LiteGraph, createUuidv4 } from '@/lib/litegraph/src/litegraph'
 import { LLink, slotFloatingLinks } from '@/lib/litegraph/src/LLink'
 import type { ResolvedConnection } from '@/lib/litegraph/src/LLink'
 import {
@@ -12,24 +23,14 @@ import {
 } from '@/lib/litegraph/src/node/slotLinks'
 import { Reroute } from '@/lib/litegraph/src/Reroute'
 import type { RerouteId } from '@/lib/litegraph/src/Reroute'
-import { toRerouteId } from '@/types/rerouteId'
-import {
-  SUBGRAPH_INPUT_ID,
-  SUBGRAPH_OUTPUT_ID
-} from '@/lib/litegraph/src/constants'
-import type {
-  INodeInputSlot,
-  INodeOutputSlot,
-  Positionable
-} from '@/lib/litegraph/src/interfaces'
-import { LiteGraph, createUuidv4 } from '@/lib/litegraph/src/litegraph'
 import { nextUniqueName } from '@/lib/litegraph/src/strings'
-import { UNASSIGNED_NODE_ID } from '@/types/nodeId'
 import type {
   ISerialisedNode,
   SerialisableLLink,
   SubgraphIO
 } from '@/lib/litegraph/src/types/serialisation'
+import { UNASSIGNED_NODE_ID } from '@/types/nodeId'
+import { toRerouteId } from '@/types/rerouteId'
 
 import type { GraphOrSubgraph, Subgraph } from './Subgraph'
 import type { SubgraphInput } from './SubgraphInput'

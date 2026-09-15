@@ -1,14 +1,12 @@
-import { expect } from '@playwright/test'
-import type { Page } from '@playwright/test'
-
 import type {
   PaymentPortalResponse,
   SavedPaymentMethod
 } from '@comfyorg/ingest-types'
-
 import { TopUpCreditsDialog } from '@e2e/fixtures/components/TopUpCreditsDialog'
 import { TestIds } from '@e2e/fixtures/selectors'
 import { workspaceRailAuthFixture as test } from '@e2e/fixtures/workspaceRailAuthFixture'
+import { expect } from '@playwright/test'
+import type { Page } from '@playwright/test'
 
 /**
  * Regression coverage for the 1.51 QA finding: with no payment method saved,

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
 import {
   ArrowUpDown,
   ChevronDown,
@@ -16,9 +17,8 @@ import {
 import { computed, nextTick, onMounted, ref, useTemplateRef, watch } from 'vue'
 
 import Button from '@/components/ui/button/Button.vue'
-import { groupModels } from '../../config/model-family'
-import { cn } from '@comfyorg/tailwind-utils'
 
+import { groupModels } from '../../config/model-family'
 import type {
   SortOrder,
   UseCase,
@@ -36,10 +36,10 @@ import type { Locale, TranslationKey } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 import { rememberShelf } from '../../lib/workshop/shelf-memory'
 import { useCaseLabelKey } from '../../lib/workshop/use-case-label'
+import FeaturedBanner from './FeaturedBanner.vue'
 import type { FacetMenuOption } from './WorkshopFilterMenu.vue'
 import WorkshopFilterMenu from './WorkshopFilterMenu.vue'
 import WorkshopModelCard from './WorkshopModelCard.vue'
-import FeaturedBanner from './FeaturedBanner.vue'
 import WorkshopSearchField from './WorkshopSearchField.vue'
 import WorkshopSections from './WorkshopSections.vue'
 

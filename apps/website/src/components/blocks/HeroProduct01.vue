@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
-
 import type { HTMLAttributes } from 'vue'
 
 import BrandButton from '../common/BrandButton.vue'

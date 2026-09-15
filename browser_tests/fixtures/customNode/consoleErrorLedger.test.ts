@@ -1,4 +1,3 @@
-import { describe, expect, it } from 'vitest'
 import {
   consoleErrorExclusionsForPacks,
   customExtensionStartupErrors,
@@ -11,6 +10,7 @@ import {
   unallowlistedErrorsForPacks
 } from '@e2e/fixtures/customNode/consoleErrorLedger'
 import { loadAllManifestPackNames } from '@e2e/fixtures/customNode/manifest'
+import { describe, expect, it } from 'vitest'
 
 // unallowlistedErrors is the sole enforcement point of the curated load and
 // run console gates (pack startup/load and curated workflow execution): a degradation

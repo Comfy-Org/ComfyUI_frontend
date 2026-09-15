@@ -35,12 +35,12 @@
 </template>
 
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
 import InputNumber from 'primevue/inputnumber'
 import { computed, ref } from 'vue'
 
 import Slider from '@/components/ui/slider/Slider.vue'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
-import { cn } from '@comfyorg/tailwind-utils'
 import {
   STANDARD_EXCLUDED_PROPS,
   filterWidgetProps

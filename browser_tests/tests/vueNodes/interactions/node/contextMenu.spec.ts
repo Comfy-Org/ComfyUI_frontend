@@ -1,11 +1,10 @@
-import type { Locator } from '@playwright/test'
-
 import {
   comfyExpect as expect,
   comfyPageFixture as test
 } from '@e2e/fixtures/ComfyPage'
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { TestIds } from '@e2e/fixtures/selectors'
+import type { Locator } from '@playwright/test'
 
 const BYPASS_CLASS = /before:bg-bypass\/60/
 

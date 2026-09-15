@@ -1,6 +1,7 @@
 import { expect } from '@playwright/test'
 import type { Page } from '@playwright/test'
 
+import { externalLinks } from '../src/config/routes'
 import {
   categoryChapters,
   featuredFor,
@@ -13,7 +14,6 @@ import {
   tutorialMetaTitle,
   tutorialPath
 } from '../src/data/learningTutorials'
-import { externalLinks } from '../src/config/routes'
 import { t } from '../src/i18n/translations'
 import { test } from './fixtures/blockExternalMedia'
 

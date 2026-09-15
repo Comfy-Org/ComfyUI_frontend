@@ -1,10 +1,10 @@
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
-import type { WorkspaceStore } from '@e2e/types/globals'
 import {
   comfyExpect as expect,
   comfyPageFixture as test
 } from '@e2e/fixtures/ComfyPage'
 import { TestIds } from '@e2e/fixtures/selectors'
+import type { WorkspaceStore } from '@e2e/types/globals'
 
 type ChangeTrackerDebugState = {
   changeCount: number

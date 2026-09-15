@@ -22,6 +22,7 @@
 import { whenever } from '@vueuse/core'
 
 import { useImageQuiet } from '@/composables/useImageQuiet'
+
 import type { AssetMeta } from '../schemas/mediaAssetSchema'
 import { getAssetDisplayName } from '../utils/assetMetadataUtils'
 

@@ -23,9 +23,10 @@ import type {
 } from '@comfyorg/shared-frontend-utils/nodePricing'
 import { readonly, ref } from 'vue'
 import type { Ref } from 'vue'
+
+import type { INodeInputSlot } from '@/lib/litegraph/src/interfaces'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import type { INodeInputSlot } from '@/lib/litegraph/src/interfaces'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import type { PriceBadge } from '@/schemas/nodeDefSchema'
 import { useNodeDefStore } from '@/stores/nodeDefStore'

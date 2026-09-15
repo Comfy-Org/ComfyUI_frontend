@@ -1,14 +1,14 @@
-import { useExecutionStore } from '@/stores/executionStore'
-import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
-import { useAppModeStore } from '@/stores/appModeStore'
-import { useJobPreviewStore } from '@/stores/jobPreviewStore'
-import { toNodeId } from '@/types/nodeId'
 import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useLinearOutputStore } from '@/renderer/extensions/linearMode/linearOutputStore'
 import type { ExecutedWsMessage } from '@/schemas/apiSchema'
+import { useAppModeStore } from '@/stores/appModeStore'
+import { useExecutionStore } from '@/stores/executionStore'
+import { useJobPreviewStore } from '@/stores/jobPreviewStore'
+import { toNodeId } from '@/types/nodeId'
 
 const isAppModeRef = ref(true)
 

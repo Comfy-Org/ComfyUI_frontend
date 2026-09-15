@@ -1,8 +1,9 @@
 import { fromAny, fromPartial } from '@total-typescript/shoehorn'
-import { ref } from 'vue'
 import { describe, expect, it, vi } from 'vitest'
+import { ref } from 'vue'
 
 import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
+
 import { useNodePreviewAndDrag } from './useNodePreviewAndDrag'
 
 const mockStartDrag = vi.fn()

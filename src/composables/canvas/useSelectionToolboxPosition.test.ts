@@ -1,6 +1,6 @@
 import { render } from '@testing-library/vue'
-import { defineComponent, h, markRaw, ref } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { defineComponent, h, markRaw, ref } from 'vue'
 
 import { useSelectionToolboxPosition } from '@/composables/canvas/useSelectionToolboxPosition'
 import type { Positionable } from '@/lib/litegraph/src/interfaces'

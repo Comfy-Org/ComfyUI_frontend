@@ -1,14 +1,13 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
-import type { GraphScope } from '@/types/graphScopeId'
-import type { RemoteMutationContext } from '@/types/graphMutationContext'
-import type { LinkTopology } from '@/types/linkTopology'
-
 import { useLinkStore } from '@/stores/linkStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import type { RemoteMutationContext } from '@/types/graphMutationContext'
+import type { GraphScope } from '@/types/graphScopeId'
 import { toOwningGraphId, toRootGraphId } from '@/types/graphScopeId'
 import { toLinkId } from '@/types/linkId'
+import type { LinkTopology } from '@/types/linkTopology'
 import { toNodeId } from '@/types/nodeId'
 import { widgetId } from '@/types/widgetId'
 

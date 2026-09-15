@@ -1,7 +1,6 @@
 <script lang="ts" setup>
-import { computed } from 'vue'
-
 import { cn } from '@comfyorg/tailwind-utils'
+import { computed } from 'vue'
 
 import TransitionCollapse from './TransitionCollapse.vue'
 

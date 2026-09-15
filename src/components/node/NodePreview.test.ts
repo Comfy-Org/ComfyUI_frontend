@@ -1,9 +1,8 @@
+import { render, screen } from '@testing-library/vue'
 import PrimeVue from 'primevue/config'
 import { beforeAll, describe, expect, it, vi } from 'vitest'
 import { createApp } from 'vue'
 import { createI18n } from 'vue-i18n'
-
-import { render, screen } from '@testing-library/vue'
 
 import type { ComfyNodeDef as ComfyNodeDefV2 } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import * as markdownRendererUtil from '@/utils/markdownRendererUtil'

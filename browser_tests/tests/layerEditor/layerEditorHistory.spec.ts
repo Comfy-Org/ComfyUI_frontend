@@ -1,6 +1,5 @@
-import { expect } from '@playwright/test'
-
 import { layerEditorTest as test } from '@e2e/fixtures/helpers/LayerEditorHelper'
+import { expect } from '@playwright/test'
 
 test.describe('Layer Editor history', { tag: ['@ui', '@vue-nodes'] }, () => {
   test('reorders layers through undo and redo', async ({ layerEditor }) => {

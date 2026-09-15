@@ -1,5 +1,5 @@
-import { getActivePinia } from 'pinia'
 import { render, screen } from '@testing-library/vue'
+import { getActivePinia } from 'pinia'
 import type { Pinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'

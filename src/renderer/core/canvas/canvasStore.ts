@@ -4,7 +4,7 @@ import { computed, markRaw, ref, shallowRef } from 'vue'
 import type { Raw } from 'vue'
 
 import { useAppMode } from '@/composables/useAppMode'
-
+import { promoteRecommendedWidgets } from '@/core/graph/subgraph/promotionUtils'
 import type { Point, Positionable } from '@/lib/litegraph/src/interfaces'
 import type {
   LGraph,
@@ -13,7 +13,6 @@ import type {
   LGraphNode,
   SubgraphNode
 } from '@/lib/litegraph/src/litegraph'
-import { promoteRecommendedWidgets } from '@/core/graph/subgraph/promotionUtils'
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
 import { LayoutSource } from '@/renderer/core/layout/types'
 import { app } from '@/scripts/app'

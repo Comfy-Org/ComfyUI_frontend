@@ -1,3 +1,4 @@
+import { render } from '@testing-library/vue'
 /**
  * Composable-owned behavior only (plan 3.5's subscribe-robustness probes):
  * the bridge/client mechanics have their own suites
@@ -9,8 +10,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, nextTick, ref, shallowRef } from 'vue'
 import type { Ref } from 'vue'
-
-import { render } from '@testing-library/vue'
 
 import type { GraphMutations } from '@/core/graph/graphMutations'
 import type { ExportedSubgraph } from '@/lib/litegraph/src/types/serialisation'

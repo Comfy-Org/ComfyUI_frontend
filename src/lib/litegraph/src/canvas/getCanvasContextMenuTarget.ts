@@ -1,12 +1,12 @@
+import { useLinkPresentationStore } from '@/stores/linkPresentationStore'
+import { graphScopeOf } from '@/types/graphScopeId'
+
+import type { LinkSegment } from '../interfaces'
 import type { LGraphCanvas } from '../LGraphCanvas'
 import type { LGraphGroup } from '../LGraphGroup'
 import { LLink } from '../LLink'
 import { Reroute } from '../Reroute'
-import type { LinkSegment } from '../interfaces'
 import { LinkRenderType } from '../types/globalEnums'
-import { useLinkPresentationStore } from '@/stores/linkPresentationStore'
-import { graphScopeOf } from '@/types/graphScopeId'
-
 import {
   findRerouteAtPoint,
   queryRenderedLinkSegmentsAtPoint

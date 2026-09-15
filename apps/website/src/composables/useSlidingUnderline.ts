@@ -1,7 +1,6 @@
+import { useResizeObserver } from '@vueuse/core'
 import type { Ref } from 'vue'
 import { nextTick, onMounted, ref, watch } from 'vue'
-
-import { useResizeObserver } from '@vueuse/core'
 
 // One underline that travels to the tab you picked, rather than a border that
 // blinks out under one heading and in under the next.

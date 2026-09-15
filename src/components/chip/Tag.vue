@@ -1,7 +1,6 @@
 <script setup lang="ts">
-import { computed } from 'vue'
-
 import { cn } from '@comfyorg/tailwind-utils'
+import { computed } from 'vue'
 
 import { tagVariants } from './tag.variants'
 import type { TagVariants } from './tag.variants'

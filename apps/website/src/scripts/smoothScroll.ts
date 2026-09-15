@@ -1,7 +1,7 @@
 import type Lenis from 'lenis'
 
-import { gsap, ScrollTrigger } from './gsapSetup'
 import { prefersReducedMotion } from '../composables/useReducedMotion'
+import { gsap, ScrollTrigger } from './gsapSetup'
 
 let lenis: Lenis | undefined
 

@@ -6,8 +6,8 @@ import { useWorkflowStore } from '@/platform/workflow/management/stores/workflow
 import { app } from '@/scripts/app'
 import { getNodeByLocatorId } from '@/utils/graphTraversalUtil'
 
-import { useAgentWorkflowTabBindingStore } from '../../stores/agent/agentWorkflowTabBindingStore'
 import { createTargetAwareAgentNavigation } from '../../services/agent/targetAwareAgentNavigation'
+import { useAgentWorkflowTabBindingStore } from '../../stores/agent/agentWorkflowTabBindingStore'
 
 export function useAgentTargetNavigation() {
   const bindingStore = useAgentWorkflowTabBindingStore()

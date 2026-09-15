@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/vue'
-import { defineComponent, nextTick, ref } from 'vue'
 import { describe, expect, it } from 'vitest'
+import { defineComponent, nextTick, ref } from 'vue'
 
 import { useSlidingUnderline } from './useSlidingUnderline'
 

@@ -1,6 +1,5 @@
-import type { Locator } from '@playwright/test'
-
 import { TestIds } from '@e2e/fixtures/selectors'
+import type { Locator } from '@playwright/test'
 
 class BoundingBoxCoordinate {
   public readonly root: Locator

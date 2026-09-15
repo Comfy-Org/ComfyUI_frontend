@@ -53,15 +53,15 @@
 </template>
 
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
 import { computed, ref, useId, useTemplateRef } from 'vue'
 
 import Button from '@/components/ui/button/Button.vue'
 import Textarea from '@/components/ui/textarea/Textarea.vue'
-import { useCopyToClipboard } from '@/composables/useCopyToClipboard'
 import { isNodeOptionsOpen } from '@/composables/graph/useMoreOptionsMenu'
+import { useCopyToClipboard } from '@/composables/useCopyToClipboard'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import { useHideLayoutField } from '@/types/widgetTypes'
-import { cn } from '@comfyorg/tailwind-utils'
 import {
   INPUT_EXCLUDED_PROPS,
   filterWidgetProps

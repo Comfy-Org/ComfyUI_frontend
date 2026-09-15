@@ -1,8 +1,8 @@
 import { storeToRefs } from 'pinia'
 import { computed, getCurrentScope, onScopeDispose } from 'vue'
 
-import { composerPromptForSend } from '../../utils/composerPrompt'
 import { useAgentComposerStore } from '../../stores/agent/agentComposerStore'
+import { composerPromptForSend } from '../../utils/composerPrompt'
 
 export interface ComposerAttachment {
   id: string

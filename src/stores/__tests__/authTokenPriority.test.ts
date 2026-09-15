@@ -1,12 +1,12 @@
-import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
-import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
-import { useWorkspaceAuthStore } from '@/platform/workspace/stores/workspaceAuthStore'
 import type { User } from 'firebase/auth'
 import * as firebaseAuth from 'firebase/auth'
 import type { Mock } from 'vitest'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import * as vuefire from 'vuefire'
 
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
+import { useWorkspaceAuthStore } from '@/platform/workspace/stores/workspaceAuthStore'
+import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
 import { useAuthStore } from '@/stores/authStore'
 const { mockFeatureFlags } = vi.hoisted(() => ({
   mockFeatureFlags: {

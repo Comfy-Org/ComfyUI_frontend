@@ -1,8 +1,8 @@
 import { ZIndex } from '@primeuix/utils/zindex'
 import { render, screen } from '@testing-library/vue'
-import type { ComponentProps } from 'vue-component-type-helpers'
 import { afterEach, describe, expect, it } from 'vitest'
 import { nextTick, ref } from 'vue'
+import type { ComponentProps } from 'vue-component-type-helpers'
 import { createI18n } from 'vue-i18n'
 
 import SingleSelect from './SingleSelect.vue'

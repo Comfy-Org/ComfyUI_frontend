@@ -1,6 +1,5 @@
-import type { Locator, Page } from '@playwright/test'
-
 import { comfyExpect as expect } from '@e2e/fixtures/ComfyPage'
+import type { Locator, Page } from '@playwright/test'
 
 export async function expectDomTextGeometry(texts: Locator[]) {
   const geometry = await Promise.all(

@@ -85,6 +85,8 @@
 </template>
 
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
+import { PopoverTrigger } from 'reka-ui'
 import { computed, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -101,8 +103,6 @@ import type {
   GizmoMode,
   ModelConfig
 } from '@/extensions/core/load3d/interfaces'
-import { cn } from '@comfyorg/tailwind-utils'
-import { PopoverTrigger } from 'reka-ui'
 
 const { compact = false } = defineProps<{
   compact?: boolean

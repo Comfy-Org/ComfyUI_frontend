@@ -1,5 +1,5 @@
-import { api } from '@/scripts/api'
 import type { UserDataFullInfo } from '@/schemas/apiSchema'
+import { api } from '@/scripts/api'
 
 /**
  * Sync entities from the API to the entityByPath map.

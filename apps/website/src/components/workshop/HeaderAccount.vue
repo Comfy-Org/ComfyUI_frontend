@@ -1,17 +1,17 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 
+import { requestWorkshopBuyCredits } from '../../config/workshop-buy-credits'
 import {
   refreshWorkshopCredits,
   useWorkshopCredits
 } from '../../config/workshop-credits'
-import { requestWorkshopBuyCredits } from '../../config/workshop-buy-credits'
 import { leaveForSignIn } from '../../config/workshop-return'
-import type { WorkspaceWithRole } from '../../lib/workshop/workspaces'
-import { listWorkspaces } from '../../lib/workshop/workspaces'
 import { useWorkshopSession } from '../../config/workshop-session-state'
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
+import type { WorkspaceWithRole } from '../../lib/workshop/workspaces'
+import { listWorkspaces } from '../../lib/workshop/workspaces'
 import { useWorkshopAuthFlag } from '../../scripts/posthog'
 import HeaderAccountMenu from './HeaderAccountMenu.vue'
 

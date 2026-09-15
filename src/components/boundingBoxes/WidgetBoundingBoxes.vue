@@ -156,9 +156,8 @@
 </template>
 
 <script setup lang="ts">
-import { useTemplateRef } from 'vue'
-
 import { cn } from '@comfyorg/tailwind-utils'
+import { useTemplateRef } from 'vue'
 
 import PaletteSwatchRow from '@/components/palette/PaletteSwatchRow.vue'
 import Button from '@/components/ui/button/Button.vue'

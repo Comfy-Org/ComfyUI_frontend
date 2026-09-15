@@ -1,6 +1,6 @@
 import { fireEvent, render, screen } from '@testing-library/vue'
-import type { ComponentProps } from 'vue-component-type-helpers'
 import { describe, expect, it } from 'vitest'
+import type { ComponentProps } from 'vue-component-type-helpers'
 
 import BaseThumbnail from '@/components/templates/thumbnails/BaseThumbnail.vue'
 

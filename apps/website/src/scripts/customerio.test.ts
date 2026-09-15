@@ -1,6 +1,5 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
-
 import type * as CustomerioSdk from '@customerio/cdp-analytics-browser'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 // AnalyticsBrowser.load returns a thenable resolving to [Analytics, Context].
 // The real signature resolves to a full AnalyticsBrowser, so the stub is

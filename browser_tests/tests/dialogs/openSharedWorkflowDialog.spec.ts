@@ -1,9 +1,9 @@
+import { comfyPageFixture } from '@e2e/fixtures/ComfyPage'
+import { TestIds } from '@e2e/fixtures/selectors'
 import { expect } from '@playwright/test'
 import type { Page } from '@playwright/test'
 import type { z } from 'zod'
 
-import { comfyPageFixture } from '@e2e/fixtures/ComfyPage'
-import { TestIds } from '@e2e/fixtures/selectors'
 import type { zSharedWorkflowResponse } from '@/platform/workflow/sharing/schemas/shareSchemas'
 
 type SharedWorkflowResponse = z.input<typeof zSharedWorkflowResponse>

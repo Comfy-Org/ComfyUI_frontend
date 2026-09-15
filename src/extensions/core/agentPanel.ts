@@ -3,9 +3,6 @@ import { watch } from 'vue'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { reportError } from '@/platform/telemetry/reportError'
-import { registerWorkflowTabActivityTracker } from '@/workbench/extensions/agent/services/agent/workflowTabActivityTracker'
-import { useAgentConsentStore } from '@/workbench/extensions/agent/stores/agent/agentConsentStore'
-import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useExtensionService } from '@/services/extensionService'
@@ -16,6 +13,9 @@ import {
   notifyMintPortsAfterGraphConfigure,
   notifyMintPortsBeforeGraphLoad
 } from '@/workbench/extensions/agent/crdt/mintPortWiring'
+import { registerWorkflowTabActivityTracker } from '@/workbench/extensions/agent/services/agent/workflowTabActivityTracker'
+import { useAgentConsentStore } from '@/workbench/extensions/agent/stores/agent/agentConsentStore'
+import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 
 let registered = false
 

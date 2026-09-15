@@ -1,7 +1,7 @@
 import { describe, expect, it, onTestFinished, vi } from 'vitest'
 
-import { LGraph } from '@/lib/litegraph/src/litegraph'
 import { createTestNode } from '@/lib/litegraph/src/__fixtures__/nodeHelpers'
+import { LGraph } from '@/lib/litegraph/src/litegraph'
 import { LLink, replaceLinkTopology } from '@/lib/litegraph/src/LLink'
 import {
   createTestRootGraph,

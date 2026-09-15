@@ -1,5 +1,3 @@
-import type { Rect } from '../node'
-import { modeUniforms } from './modeCodes'
 import type {
   Compositor,
   CompositeInput,
@@ -7,6 +5,8 @@ import type {
   FBOHandle,
   NodeTexture
 } from '../compositor'
+import type { Rect } from '../node'
+import { modeUniforms } from './modeCodes'
 import LAYER_BLEND_FRAG from './shaders/layerBlend.frag?raw'
 
 const VERT = `#version 300 es

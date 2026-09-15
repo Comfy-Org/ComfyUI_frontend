@@ -1,11 +1,11 @@
 import { render } from '@testing-library/vue'
+import { fromPartial } from '@total-typescript/shoehorn'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
 import NodeDragPreview from '@/components/graph/NodeDragPreview.vue'
 import { useNodeDragToCanvas } from '@/composables/node/useNodeDragToCanvas'
 import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
-import { fromPartial } from '@total-typescript/shoehorn'
 
 vi.mock<unknown>(
   import('@/renderer/extensions/vueNodes/components/LGraphNodePreview.vue'),

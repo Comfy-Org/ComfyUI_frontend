@@ -1,8 +1,8 @@
-import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
+import { render, screen } from '@testing-library/vue'
 import { describe, expect, it, vi } from 'vitest'
-import { createI18n } from 'vue-i18n'
 import { defineComponent } from 'vue'
+import { createI18n } from 'vue-i18n'
 
 vi.mock<unknown>(
   import('primevue/popover'), // eslint-disable-line primevue-removal/no-imports

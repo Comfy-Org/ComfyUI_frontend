@@ -1,5 +1,6 @@
 import { i18n } from '@/i18n'
 import { hasImageType } from '@/utils/eventUtils'
+
 import type { ComposerAttachment } from './useComposer'
 
 export const MAX_ATTACHMENT_BYTES = 20 * 1024 * 1024

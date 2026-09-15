@@ -5,13 +5,12 @@
  * the site's own copy of that rule, bound to the shared session client.
  */
 import { createBoundedOperation } from '@comfyorg/account/boundedOperation'
-import type { User } from 'firebase/auth'
-
 import type {
   AccountCredential,
   SessionClient
 } from '@comfyorg/account/session'
 import { zBillingBalanceResponse } from '@comfyorg/ingest-types/zod'
+import type { User } from 'firebase/auth'
 
 export type BalanceState =
   /** Cents, as the cloud app reads it: the `_micros` fields carry cents. */

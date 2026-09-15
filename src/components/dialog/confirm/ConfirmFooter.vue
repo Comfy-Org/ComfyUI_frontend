@@ -25,8 +25,8 @@ import { computed, toValue } from 'vue'
 import type { MaybeRefOrGetter } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import Button from '@/components/ui/button/Button.vue'
 import type { ButtonVariants } from '@/components/ui/button/button.variants'
+import Button from '@/components/ui/button/Button.vue'
 
 const { t } = useI18n()
 

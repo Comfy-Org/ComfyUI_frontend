@@ -1,15 +1,15 @@
+import { useEventListener } from '@vueuse/core'
 import { useToast } from 'primevue/usetoast'
 import { computed, ref } from 'vue'
-import { useEventListener } from '@vueuse/core'
 import { useI18n } from 'vue-i18n'
 
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useBillingRouting } from '@/composables/billing/useBillingRouting'
 import { getComfyPlatformBaseUrl } from '@/config/comfyApi'
-import { paymentReturnUrl } from '@/platform/cloud/subscription/utils/paymentReturnUrl'
 import { getTeamPlanSlug } from '@/platform/cloud/subscription/constants/teamPlanCreditStops'
 import type { TeamPlanSelection } from '@/platform/cloud/subscription/constants/teamPlanCreditStops'
 import type { TierKey } from '@/platform/cloud/subscription/constants/tierPricing'
+import { paymentReturnUrl } from '@/platform/cloud/subscription/utils/paymentReturnUrl'
 import type { BillingCycle } from '@/platform/cloud/subscription/utils/subscriptionTierRank'
 import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
@@ -21,8 +21,6 @@ import type {
   SubscriptionCheckoutType
 } from '@/platform/telemetry/types'
 import { categorizeBillingApiError } from '@/platform/telemetry/utils/billingFailureCategory'
-import { api } from '@/scripts/api'
-import { useAuthStore } from '@/stores/authStore'
 import type {
   Plan,
   PreviewSubscribeOptions,
@@ -49,6 +47,8 @@ import {
   savePendingSubscriptionCheckout
 } from '@/platform/workspace/utils/pendingSubscriptionCheckout'
 import { trackWorkspaceCheckoutStarted } from '@/platform/workspace/utils/workspaceCheckoutTelemetry'
+import { api } from '@/scripts/api'
+import { useAuthStore } from '@/stores/authStore'
 
 type CheckoutStep = 'pricing' | 'preview' | 'success'
 export type CheckoutTierKey = Exclude<TierKey, 'free' | 'founder'>

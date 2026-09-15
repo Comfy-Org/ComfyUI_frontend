@@ -1,7 +1,6 @@
-import { describe, expect, it, vi } from 'vitest'
-
-import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
+import { render, screen } from '@testing-library/vue'
+import { describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
 import type { SecretMetadata } from '../types'

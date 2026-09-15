@@ -1,6 +1,6 @@
 import { render } from '@testing-library/vue'
-import { nextTick, ref } from 'vue'
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import { nextTick, ref } from 'vue'
 
 import TextTickerMultiLine from './TextTickerMultiLine.vue'
 

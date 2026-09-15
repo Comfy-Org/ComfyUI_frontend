@@ -1,4 +1,5 @@
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
+
 import type { NodeId } from '@/types/nodeId'
 
 export const RENAMED_LABEL = 'Renamed Widget Label'

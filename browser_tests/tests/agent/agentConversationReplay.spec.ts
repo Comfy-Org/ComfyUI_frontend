@@ -1,7 +1,6 @@
-import { expect } from '@playwright/test'
-
 import { agentConversationTest as test } from '@e2e/fixtures/agentConversationFixture'
 import { listRecordedConversations } from '@e2e/fixtures/data/agent/agentConversation'
+import { expect } from '@playwright/test'
 
 // A recording whose second turn wires two nodes; the first turn only adds.
 const WIRING_CASE = 'agent-rec-two-turn-dependent-edit'

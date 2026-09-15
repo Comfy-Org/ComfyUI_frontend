@@ -1,12 +1,12 @@
+import type {
+  IBaseWidget,
+  IWidgetOptions
+} from '@/lib/litegraph/src/types/widgets'
 /**
  * Simplified widget interface for Vue-based node rendering
  * Removes all DOM manipulation and positioning concerns
  */
 import type { InputSpec as InputSpecV2 } from '@/schemas/nodeDef/nodeDefSchemaV2'
-import type {
-  IBaseWidget,
-  IWidgetOptions
-} from '@/lib/litegraph/src/types/widgets'
 import { IS_CONTROL_WIDGET } from '@/scripts/controlWidgetMarker'
 import type { NodeId } from '@/types/nodeId'
 import type { NodeLocatorId } from '@/types/nodeIdentification'

@@ -1,9 +1,8 @@
 <script setup lang="ts">
-import type { Locale } from '../../i18n/translations'
-import type { ModelLaunchPricing } from './types'
-
 import PricingFreeBanner from '../../components/pricing/PricingFreeBanner.vue'
 import PricingSection from '../../components/pricing/PricingSection.vue'
+import type { Locale } from '../../i18n/translations'
+import type { ModelLaunchPricing } from './types'
 
 const { locale = 'en', pricing } = defineProps<{
   pricing: ModelLaunchPricing

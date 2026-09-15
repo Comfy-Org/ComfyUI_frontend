@@ -14,9 +14,9 @@ import { getEffectiveBrushSize, getEffectiveHardness } from './brushUtils'
 import { resampleSegment } from './splineUtils'
 import { StrokeProcessor } from './StrokeProcessor'
 import { useBrushAdjustment } from './useBrushAdjustment'
-import { useGPUResources } from './useGPUResources'
 import { useBrushPersistence } from './useBrushPersistence'
 import { useCoordinateTransform } from './useCoordinateTransform'
+import { useGPUResources } from './useGPUResources'
 
 export function useBrushDrawing(initialSettings?: {
   useDominantAxis?: boolean

@@ -16,8 +16,8 @@ import {
 import { createEditor } from '@/renderer/extensions/layerEditor/engine/editor/editor'
 import type { AlphaSampler } from '@/renderer/extensions/layerEditor/engine/editor/pickOps'
 import { pickLayerAt } from '@/renderer/extensions/layerEditor/engine/editor/pickOps'
-import { Dirty } from '@/renderer/extensions/layerEditor/engine/history'
 import type { FillSpec } from '@/renderer/extensions/layerEditor/engine/fill'
+import { Dirty } from '@/renderer/extensions/layerEditor/engine/history'
 import {
   fillKind,
   rasterKind,
@@ -40,11 +40,11 @@ import type { OutsideCanvasPreviewLayer } from '@/renderer/extensions/layerEdito
 import { drawOutsideCanvasPreview } from '@/renderer/extensions/layerEditor/engine/render/outsideCanvasPreview'
 import type { CanvasItem } from '@/renderer/extensions/layerEditor/engine/tool'
 import { registerBuiltinTools } from '@/renderer/extensions/layerEditor/engine/tools'
-import { canTransformNode } from '@/renderer/extensions/layerEditor/engine/tools/transformTool'
 import {
   hitHandle,
   unionBounds
 } from '@/renderer/extensions/layerEditor/engine/tools/transformMath'
+import { canTransformNode } from '@/renderer/extensions/layerEditor/engine/tools/transformTool'
 import { createPanZoom } from '@/renderer/extensions/layerEditor/panZoom'
 
 export type LayerEditorPointerMode = 'pointer' | 'hand'

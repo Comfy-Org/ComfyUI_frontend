@@ -1,5 +1,3 @@
-import { expect } from '@playwright/test'
-
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { fitToViewInstant } from '@e2e/fixtures/utils/fitToView'
@@ -7,6 +5,7 @@ import {
   getPromotedWidgetNames,
   getPromotedWidgetCount
 } from '@e2e/fixtures/utils/promotedWidgets'
+import { expect } from '@playwright/test'
 
 async function expectPromotedWidgetNamesToContain(
   comfyPage: ComfyPage,

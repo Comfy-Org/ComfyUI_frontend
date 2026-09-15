@@ -97,6 +97,7 @@
 </template>
 
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
 import {
   ContextMenuContent,
   ContextMenuItem,
@@ -129,10 +130,9 @@ import {
 import { useWorkflowTabActivityStore } from '@/stores/workflowTabActivityStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import type { WorkflowMenuItem } from '@/types/workflowMenuItem'
-import { cn } from '@comfyorg/tailwind-utils'
 
-import WorkflowTabPopover from './WorkflowTabPopover.vue'
 import WorkflowAgentTargetIndicator from './WorkflowAgentTargetIndicator.vue'
+import WorkflowTabPopover from './WorkflowTabPopover.vue'
 
 defineOptions({ inheritAttrs: false })
 

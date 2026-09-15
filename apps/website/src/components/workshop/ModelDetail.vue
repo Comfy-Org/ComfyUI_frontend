@@ -1,18 +1,27 @@
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
 import { Download, ExternalLink, Play } from '@lucide/vue'
 import { useEventListener, useMounted, useTimestamp } from '@vueuse/core'
 import { computed, onUnmounted, ref, useSlots, watch } from 'vue'
 
-import { cn } from '@comfyorg/tailwind-utils'
-
 import Button from '@/components/ui/button/Button.vue'
 import CopyTextButton from '@/components/ui/copy-text-button/CopyTextButton.vue'
-import { useWorkshopFormDraft } from '../../composables/useWorkshopFormDraft'
-import { sameFormValues } from '../../lib/workshop/form-values'
-import { leaveForSignIn } from '../../config/workshop-return'
+
 import { useSignInHref } from '../../composables/useSignInHref'
 import { useTablist } from '../../composables/useTablist'
+import { useWorkshopFormDraft } from '../../composables/useWorkshopFormDraft'
 import type { WorkshopModelDetail } from '../../config/models-catalogue'
+import { router_render } from '../../config/router-render'
+import { requestWorkshopBuyCredits } from '../../config/workshop-buy-credits'
+import {
+  refreshWorkshopCredits,
+  useWorkshopCredits
+} from '../../config/workshop-credits'
+import {
+  initialWorkshopPageState,
+  workshopExampleState,
+  workshopPageSchema
+} from '../../config/workshop-page-state'
 import type {
   FieldErrors,
   FormValues,
@@ -23,29 +32,20 @@ import {
   schemaForModel,
   validateForm
 } from '../../config/workshop-playground'
-import {
-  initialWorkshopPageState,
-  workshopExampleState,
-  workshopPageSchema
-} from '../../config/workshop-page-state'
+import { releaseRouterOutputs } from '../../config/workshop-response'
+import { leaveForSignIn } from '../../config/workshop-return'
+import { WorkshopRouterError } from '../../config/workshop-router-errors'
 import type { RunOutput, RunRecord, RunState } from '../../config/workshop-run'
 import { IDLE, transition } from '../../config/workshop-run'
-import {
-  refreshWorkshopCredits,
-  useWorkshopCredits
-} from '../../config/workshop-credits'
-import { requestWorkshopBuyCredits } from '../../config/workshop-buy-credits'
-import { router_render } from '../../config/router-render'
-import { createWorkshopUrlUploader } from '../../config/workshop-url-upload'
-import { WorkshopRouterError } from '../../config/workshop-router-errors'
-import { releaseRouterOutputs } from '../../config/workshop-response'
 import { retainRunHistory } from '../../config/workshop-run-history'
-import { modelDocsHref } from '../../lib/workshop/model-docs'
-import { linkLeavingPage } from '../../lib/workshop/leaving-link'
 import { useWorkshopSession } from '../../config/workshop-session-state'
 import { workshopIdempotencyKey } from '../../config/workshop-snippets'
+import { createWorkshopUrlUploader } from '../../config/workshop-url-upload'
 import type { Locale, TranslationKey } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
+import { sameFormValues } from '../../lib/workshop/form-values'
+import { linkLeavingPage } from '../../lib/workshop/leaving-link'
+import { modelDocsHref } from '../../lib/workshop/model-docs'
 import {
   captureWorkshopEvent,
   useWorkshopEnabled,
@@ -54,12 +54,12 @@ import {
 import { workshopModelAnalytics } from '../../scripts/workshop-analytics'
 import type { WorkshopRunAnalytics } from '../../scripts/workshop-analytics'
 import ApiTab from './ApiTab.vue'
+import ExampleReplaceDialog from './ExampleReplaceDialog.vue'
 import ExamplesTab from './ExamplesTab.vue'
+import ModelSupport from './ModelSupport.vue'
 import PlaygroundForm from './PlaygroundForm.vue'
 import PlaygroundOutput from './PlaygroundOutput.vue'
-import ExampleReplaceDialog from './ExampleReplaceDialog.vue'
 import RunLeaveDialog from './RunLeaveDialog.vue'
-import ModelSupport from './ModelSupport.vue'
 
 const {
   model,

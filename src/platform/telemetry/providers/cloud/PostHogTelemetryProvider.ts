@@ -1,8 +1,7 @@
+import { createPostHogBeforeSend } from '@comfyorg/shared-frontend-utils/piiUtil'
 import type { PostHog } from 'posthog-js'
 import { watch } from 'vue'
 import type { WatchStopHandle } from 'vue'
-
-import { createPostHogBeforeSend } from '@comfyorg/shared-frontend-utils/piiUtil'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useBillingContext } from '@/composables/billing/useBillingContext'

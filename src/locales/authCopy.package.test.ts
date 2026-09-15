@@ -1,11 +1,10 @@
-import { describe, expect, it } from 'vitest'
-
 import {
   AUTH_ERROR_COPY,
   AUTH_TOAST_SUMMARIES,
   UNAUTHORIZED_DOMAIN_MESSAGES
 } from '@comfyorg/account/firebaseAuthError'
 import { TURNSTILE_MESSAGES } from '@comfyorg/account/turnstile'
+import { describe, expect, it } from 'vitest'
 
 import en from './en/main.json'
 import ja from './ja/main.json'

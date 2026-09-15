@@ -1,10 +1,11 @@
 import { readFile } from 'node:fs/promises'
 
-import type { ComfyApiWorkflow } from '@/platform/workflow/validation/schemas/workflowSchema'
 import {
   comfyPageFixture as test,
   comfyExpect as expect
 } from '@e2e/fixtures/ComfyPage'
+
+import type { ComfyApiWorkflow } from '@/platform/workflow/validation/schemas/workflowSchema'
 
 test.describe('API workflow export download', { tag: ['@workflow'] }, () => {
   test('downloads a non-empty API workflow with executable node schema', async ({

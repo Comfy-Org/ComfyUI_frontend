@@ -1,5 +1,6 @@
 import { tgpu } from 'typegpu'
 import * as d from 'typegpu/data'
+
 import { BrushUniforms } from './gpuSchema'
 
 const VertexOutput = d.struct({

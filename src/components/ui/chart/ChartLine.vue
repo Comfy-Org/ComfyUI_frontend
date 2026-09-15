@@ -9,10 +9,9 @@
 </template>
 
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
 import type { ChartData, ChartOptions } from 'chart.js'
 import { computed, ref, toRef } from 'vue'
-
-import { cn } from '@comfyorg/tailwind-utils'
 
 import { useChart } from './useChart'
 

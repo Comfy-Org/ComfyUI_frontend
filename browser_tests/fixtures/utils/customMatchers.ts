@@ -1,8 +1,7 @@
+import type { Position, Size } from '@e2e/fixtures/types'
+import type { NodeReference } from '@e2e/fixtures/utils/litegraphUtils'
 import type { ExpectMatcherState, Locator } from '@playwright/test'
 import { expect } from '@playwright/test'
-
-import type { NodeReference } from '@e2e/fixtures/utils/litegraphUtils'
-import type { Position, Size } from '@e2e/fixtures/types'
 
 type Bounds = Position & Size
 

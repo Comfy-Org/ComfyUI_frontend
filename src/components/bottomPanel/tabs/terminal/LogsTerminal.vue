@@ -25,8 +25,8 @@ import ProgressSpinner from 'primevue/progressspinner'
 import type { Ref } from 'vue'
 import { shallowRef } from 'vue'
 
-import type { useTerminal } from '@/composables/bottomPanelTabs/useTerminal'
 import { useLogsTerminal } from '@/composables/bottomPanelTabs/useLogsTerminal'
+import type { useTerminal } from '@/composables/bottomPanelTabs/useTerminal'
 
 import BaseTerminal from './BaseTerminal.vue'
 

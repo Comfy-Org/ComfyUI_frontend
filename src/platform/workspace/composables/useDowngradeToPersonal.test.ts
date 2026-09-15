@@ -1,10 +1,10 @@
 import { getActivePinia } from 'pinia'
-import { useBillingOperationStore } from '@/platform/workspace/stores/billingOperationStore'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 
 import { WorkspaceApiError } from '@/platform/workspace/api/workspaceApi'
 import type { ListMembersParams } from '@/platform/workspace/api/workspaceApi'
+import { useBillingOperationStore } from '@/platform/workspace/stores/billingOperationStore'
 import type { WorkspaceMember } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 

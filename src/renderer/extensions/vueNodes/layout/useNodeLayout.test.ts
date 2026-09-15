@@ -1,8 +1,8 @@
-import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { render } from '@testing-library/vue'
 import { beforeEach, describe, expect, it } from 'vitest'
 import { defineComponent, nextTick } from 'vue'
 
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { LayoutSource } from '@/renderer/core/layout/types'
 import { toNodeId } from '@/types/nodeId'

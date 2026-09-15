@@ -1,3 +1,5 @@
+import type { CanvasColour, Point } from '@/lib/litegraph/src/interfaces'
+import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 /**
  * Litegraph Link Adapter
  *
@@ -8,8 +10,6 @@
  */
 import type { LLink } from '@/lib/litegraph/src/LLink'
 import type { Reroute } from '@/lib/litegraph/src/Reroute'
-import type { CanvasColour, Point } from '@/lib/litegraph/src/interfaces'
-import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import {
   LinkDirection,
   LinkMarkerShape,

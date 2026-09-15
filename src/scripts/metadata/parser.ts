@@ -5,7 +5,6 @@ import { getDataFromJSON } from '@/scripts/metadata/json'
 import { getMp3Metadata } from '@/scripts/metadata/mp3'
 import { getOggMetadata } from '@/scripts/metadata/ogg'
 import { getSvgMetadata } from '@/scripts/metadata/svg'
-import type { ComfyMetadata } from '@/types/metadataTypes'
 import {
   getAvifMetadata,
   getWebpMetadata,
@@ -13,6 +12,7 @@ import {
   getLatentMetadata,
   getPngMetadata
 } from '@/scripts/pnginfo'
+import type { ComfyMetadata } from '@/types/metadataTypes'
 
 export async function getWorkflowDataFromFile(
   file: File

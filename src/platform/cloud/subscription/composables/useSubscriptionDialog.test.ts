@@ -1,7 +1,3 @@
-import { useDialogStore } from '@/stores/dialogStore'
-import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
-import { useBillingOperationStore } from '@/platform/workspace/stores/billingOperationStore'
-import { useAuthStore } from '@/stores/authStore'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { SubscriptionInfo } from '@/composables/billing/types'
@@ -10,10 +6,14 @@ import type {
   TeamCreditStops,
   TeamCreditStopSummary
 } from '@/platform/workspace/api/workspaceApi'
+import { useBillingOperationStore } from '@/platform/workspace/stores/billingOperationStore'
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import {
   getPendingSubscriptionCheckout,
   savePendingSubscriptionCheckout
 } from '@/platform/workspace/utils/pendingSubscriptionCheckout'
+import { useAuthStore } from '@/stores/authStore'
+import { useDialogStore } from '@/stores/dialogStore'
 
 import { useSubscriptionDialog } from './useSubscriptionDialog'
 

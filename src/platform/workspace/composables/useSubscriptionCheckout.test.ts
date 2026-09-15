@@ -1,30 +1,30 @@
 import { render } from '@testing-library/vue'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { computed } from 'vue'
-import { billingOperation } from './billingOperationTestUtils'
-import type { BillingOperation } from './billingOperationTestUtils'
-import { useBillingOperationStore } from '@/platform/workspace/stores/billingOperationStore'
-import { useAuthStore } from '@/stores/authStore'
 import {
   onAuthStateChanged,
   onIdTokenChanged,
   setPersistence
 } from 'firebase/auth'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { computed } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import type { PaymentIntentSource } from '@/platform/telemetry/types'
-import {
-  clearCheckoutJourney,
-  resolveCheckoutJourney
-} from '@/platform/workspace/utils/checkoutJourney'
 import { WorkspaceApiError } from '@/platform/workspace/api/workspaceApi'
 import type {
   BillingStatus,
   Plan,
   PreviewSubscribeResponse
 } from '@/platform/workspace/api/workspaceApi'
+import { useBillingOperationStore } from '@/platform/workspace/stores/billingOperationStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
+import {
+  clearCheckoutJourney,
+  resolveCheckoutJourney
+} from '@/platform/workspace/utils/checkoutJourney'
+import { useAuthStore } from '@/stores/authStore'
 
+import { billingOperation } from './billingOperationTestUtils'
+import type { BillingOperation } from './billingOperationTestUtils'
 import {
   findPlanSlug,
   useSubscriptionCheckout

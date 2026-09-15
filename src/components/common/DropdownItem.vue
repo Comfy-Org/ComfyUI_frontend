@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
 import type { MenuItem } from 'primevue/menuitem'
 import {
   DropdownMenuItem,
@@ -8,11 +9,9 @@ import {
   DropdownMenuSubContent,
   DropdownMenuSubTrigger
 } from 'reka-ui'
-import { useI18n } from 'vue-i18n'
 import { toValue } from 'vue'
 import type { StyleValue } from 'vue'
-
-import { cn } from '@comfyorg/tailwind-utils'
+import { useI18n } from 'vue-i18n'
 
 const { t } = useI18n()
 

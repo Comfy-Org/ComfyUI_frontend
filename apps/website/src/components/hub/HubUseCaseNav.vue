@@ -1,7 +1,6 @@
 <script setup lang="ts">
-import { useTemplateRef } from 'vue'
-
 import { cn } from '@comfyorg/tailwind-utils'
+import { useTemplateRef } from 'vue'
 
 import { useSlidingUnderline } from '../../composables/useSlidingUnderline'
 import type { UseCase } from '../../config/models-catalogue'

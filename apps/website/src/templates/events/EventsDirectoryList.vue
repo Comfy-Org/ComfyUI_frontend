@@ -2,9 +2,8 @@
 import { nextTick, onMounted, useTemplateRef, watch } from 'vue'
 
 import type { Locale } from '../../i18n/translations'
-import type { DirectoryRow } from '../../utils/eventsDirectory'
-
 import { t } from '../../i18n/translations'
+import type { DirectoryRow } from '../../utils/eventsDirectory'
 import EventsDirectoryRow from './EventsDirectoryRow.vue'
 
 const {

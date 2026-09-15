@@ -1,13 +1,3 @@
-import { expect } from '@playwright/test'
-import type { Page, Request } from '@playwright/test'
-
-import type { RemoteConfig } from '@/platform/remoteConfig/types'
-import type {
-  BillingOpStatusResponse,
-  BillingStatusResponse,
-  CreateTopupResponse
-} from '@/platform/workspace/api/workspaceApi'
-
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { TopUpCreditsDialog } from '@e2e/fixtures/components/TopUpCreditsDialog'
 import { createWorkspaceBillingCapabilities } from '@e2e/fixtures/data/billingCapabilities'
@@ -17,6 +7,15 @@ import {
   mockWorkspaceTokenMint,
   workspace
 } from '@e2e/fixtures/utils/workspaceMocks'
+import { expect } from '@playwright/test'
+import type { Page, Request } from '@playwright/test'
+
+import type { RemoteConfig } from '@/platform/remoteConfig/types'
+import type {
+  BillingOpStatusResponse,
+  BillingStatusResponse,
+  CreateTopupResponse
+} from '@/platform/workspace/api/workspaceApi'
 
 // Drives a raw `page` (not the `comfyPage` fixture) so the cloud app boots
 // against fully mocked endpoints; `comfyPage` would try to reach the OSS

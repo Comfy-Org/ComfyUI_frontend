@@ -3,7 +3,6 @@ import { computed, ref, shallowRef } from 'vue'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { isCloud } from '@/platform/distribution/types'
-import { WORKSPACE_STORAGE_KEYS } from '@/platform/workspace/workspaceConstants'
 import { clearPreservedQuery } from '@/platform/navigation/preservedQueryManager'
 import { PRESERVED_QUERY_NAMESPACES } from '@/platform/navigation/preservedQueryNamespaces'
 import {
@@ -11,6 +10,7 @@ import {
   prepareWorkflowWorkspaceTransition
 } from '@/platform/workflow/persistence/base/storageIO'
 import { useWorkspaceAuthStore } from '@/platform/workspace/stores/workspaceAuthStore'
+import { WORKSPACE_STORAGE_KEYS } from '@/platform/workspace/workspaceConstants'
 
 import type {
   BillingRail,

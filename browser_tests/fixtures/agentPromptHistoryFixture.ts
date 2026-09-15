@@ -1,4 +1,3 @@
-import { mergeTests } from '@playwright/test'
 import type {
   AgentCancelAccepted,
   AgentMessage,
@@ -7,13 +6,13 @@ import type {
   AgentTurnAccepted
 } from '@comfyorg/ingest-types'
 import { zAgentPostMessageRequest } from '@comfyorg/ingest-types/zod'
-
-import type { AgentWsEvent } from '@/workbench/extensions/agent/schemas/agentApiSchema'
-
 import { agentTest } from '@e2e/fixtures/agentPanelFixture'
 import { workflowSelectionTest } from '@e2e/fixtures/agentWorkflowSelectionFixture'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 import { webSocketFixture } from '@e2e/fixtures/ws'
+import { mergeTests } from '@playwright/test'
+
+import type { AgentWsEvent } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 
 const base = mergeTests(agentTest, workflowSelectionTest, webSocketFixture)
 

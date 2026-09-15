@@ -1,8 +1,9 @@
-import { useMaskEditorStore } from '@/stores/maskEditorStore'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { effectScope, ref } from 'vue'
 import type { EffectScope } from 'vue'
+
 import { BrushShape, Tools } from '@/extensions/core/maskeditor/types'
+import { useMaskEditorStore } from '@/stores/maskEditorStore'
 
 let saveStateSpy: ReturnType<typeof vi.spyOn>
 
@@ -67,8 +68,8 @@ vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: { registerExtension: vi.fn() }
 }))
 
-import { useGPUResources } from './useGPUResources'
 import { useBrushDrawing } from './useBrushDrawing'
+import { useGPUResources } from './useGPUResources'
 
 function makePointerEvent(
   x: number,

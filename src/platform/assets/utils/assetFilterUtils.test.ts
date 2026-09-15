@@ -1,5 +1,4 @@
 import { fromPartial } from '@total-typescript/shoehorn'
-
 import { describe, expect, it } from 'vitest'
 
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'

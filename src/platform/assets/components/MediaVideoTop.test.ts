@@ -1,9 +1,7 @@
-import { fromPartial } from '@total-typescript/shoehorn'
-
-import { describe, expect, it, vi } from 'vitest'
-
-import { fireEvent, render } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
+import { fireEvent, render } from '@testing-library/vue'
+import { fromPartial } from '@total-typescript/shoehorn'
+import { describe, expect, it, vi } from 'vitest'
 
 import type { AssetMeta } from '../schemas/mediaAssetSchema'
 import MediaVideoTop from './MediaVideoTop.vue'

@@ -1,7 +1,6 @@
+import { render, screen } from '@testing-library/vue'
 import { describe, expect, it } from 'vitest'
 import { createI18n } from 'vue-i18n'
-
-import { render, screen } from '@testing-library/vue'
 
 import ShortcutsList from '@/components/bottomPanel/tabs/shortcuts/ShortcutsList.vue'
 import type { ComfyCommandImpl } from '@/stores/commandStore'

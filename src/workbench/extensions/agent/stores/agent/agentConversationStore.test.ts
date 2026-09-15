@@ -4,7 +4,6 @@ import { nextTick, watch } from 'vue'
 import type { AgentMessages, TurnId } from '../../schemas/agentApiSchema'
 import { zAgentMessages, zAgentWsEvent } from '../../schemas/agentApiSchema'
 import type { AgentChatEvent } from '../../services/agent/agentEventTransport'
-
 import { useAgentConversationStore } from './agentConversationStore'
 
 const chat = (raw: unknown): AgentChatEvent => zAgentWsEvent.parse(raw)

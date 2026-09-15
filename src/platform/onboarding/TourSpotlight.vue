@@ -150,8 +150,8 @@
 
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
-import { useEventListener, useWindowSize } from '@vueuse/core'
 import { ZIndex } from '@primeuix/utils/zindex'
+import { useEventListener, useWindowSize } from '@vueuse/core'
 import { FocusScope } from 'reka-ui'
 import {
   computed,

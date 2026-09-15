@@ -1,6 +1,6 @@
 import { fireEvent, render, screen } from '@testing-library/vue'
-import { defineComponent } from 'vue'
 import { describe, expect, it, vi } from 'vitest'
+import { defineComponent } from 'vue'
 
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 

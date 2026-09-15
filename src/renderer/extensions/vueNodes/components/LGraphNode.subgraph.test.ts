@@ -5,19 +5,18 @@ import { render, screen, fireEvent } from '@testing-library/vue'
 import type { Pinia } from 'pinia'
 import { getActivePinia } from 'pinia'
 import { describe, expect, it, vi } from 'vitest'
-import { createI18n } from 'vue-i18n'
-
-import { toNodeId } from '@/types/nodeId'
 import { nextTick } from 'vue'
+import { createI18n } from 'vue-i18n'
 
 import { LGraph } from '@/lib/litegraph/src/litegraph'
 import type {
   LGraphNode as LGLGraphNode,
   SubgraphNode
 } from '@/lib/litegraph/src/litegraph'
-import type { NodeState } from '@/types/nodeState'
-import LGraphNode from '@/renderer/extensions/vueNodes/components/LGraphNode.vue'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import LGraphNode from '@/renderer/extensions/vueNodes/components/LGraphNode.vue'
+import { toNodeId } from '@/types/nodeId'
+import type { NodeState } from '@/types/nodeState'
 import { getNodeByLocatorId } from '@/utils/graphTraversalUtil'
 
 const SUBGRAPH_ID = '00000000-0000-4000-8000-000000000002'

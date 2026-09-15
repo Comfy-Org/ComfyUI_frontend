@@ -5,6 +5,7 @@ import { basename } from 'node:path'
 import { isEqual } from 'es-toolkit'
 import { z } from 'zod'
 
+import type { HostDoc } from '../browser_tests/fixtures/agentConversationHostDoc'
 import type {
   AgentConversation,
   zAgentConversationRequest
@@ -16,7 +17,6 @@ import {
   zAgentConversation,
   zAgentConversationWorkflow
 } from '../browser_tests/fixtures/data/agent/agentConversation'
-import type { HostDoc } from '../browser_tests/fixtures/agentConversationHostDoc'
 import type { AgentWsEvent } from '../src/workbench/extensions/agent/schemas/agentApiSchema'
 import {
   AGENT_WS_EVENT_TYPES,

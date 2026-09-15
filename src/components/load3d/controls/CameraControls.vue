@@ -49,12 +49,12 @@
 </template>
 
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
 import { computed } from 'vue'
 
 import PopupSlider from '@/components/load3d/controls/PopupSlider.vue'
 import Button from '@/components/ui/button/Button.vue'
 import type { CameraType } from '@/extensions/core/load3d/interfaces'
-import { cn } from '@comfyorg/tailwind-utils'
 
 const { hasCustomUp = false } = defineProps<{
   hasCustomUp?: boolean

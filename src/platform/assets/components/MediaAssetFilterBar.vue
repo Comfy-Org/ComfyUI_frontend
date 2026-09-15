@@ -84,12 +84,12 @@ import { useI18n } from 'vue-i18n'
 import SidebarTopArea from '@/components/sidebar/tabs/SidebarTopArea.vue'
 import Button from '@/components/ui/button/Button.vue'
 import SearchInput from '@/components/ui/search-input/SearchInput.vue'
-import { isCloud } from '@/platform/distribution/types'
 import {
   dateFilterOptions,
   mediaTypeFilterOptions
 } from '@/platform/assets/mediaAssetFilterOptions'
 import type { MediaAssetDateFilter } from '@/platform/assets/mediaAssetFilterOptions'
+import { isCloud } from '@/platform/distribution/types'
 
 import MediaAssetFilterButton from './MediaAssetFilterButton.vue'
 import MediaAssetFilterMenu from './MediaAssetFilterMenu.vue'

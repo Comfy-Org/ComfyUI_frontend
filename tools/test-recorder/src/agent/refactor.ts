@@ -1,4 +1,5 @@
 import { spawn as nodeSpawn } from 'node:child_process'
+
 import type { AgentCliAdapter } from '../checks/agentCli'
 
 // Agent CLIs routinely take several minutes on a convention pass — the old

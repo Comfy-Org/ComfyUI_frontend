@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest'
 
 import { packWorkshopFiles, restoreWorkshopFiles } from './workshop-draft-files'
-import type { FieldSchema } from './workshop-playground'
 import { workshopExampleFile } from './workshop-example-file'
+import type { FieldSchema } from './workshop-playground'
 
 const schema: FieldSchema[] = [
   {

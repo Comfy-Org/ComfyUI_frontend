@@ -7,9 +7,9 @@ import type {
 } from '@/scripts/api'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useQueueStore } from '@/stores/queueStore'
-import { resultItemUrlWithTimestamp } from '@/utils/resultItemUrl'
-import { isImageResult } from '@/utils/resultItem'
 import { jobStateFromTask } from '@/utils/queueUtil'
+import { isImageResult } from '@/utils/resultItem'
+import { resultItemUrlWithTimestamp } from '@/utils/resultItemUrl'
 
 const BANNER_DISMISS_DELAY_MS = 4000
 const MAX_COMPLETION_THUMBNAILS = 2

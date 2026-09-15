@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
 import type { Locale, TranslationKey } from '../../i18n/translations'
-
 import { hasKey, t } from '../../i18n/translations'
 
 const locales: Locale[] = ['en', 'zh-CN']

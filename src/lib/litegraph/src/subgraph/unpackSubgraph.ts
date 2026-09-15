@@ -1,7 +1,7 @@
-import type { UUID } from '@/utils/uuid'
-import { createUuidv4 } from '@/utils/uuid'
 import type { NodeId } from '@/types/nodeId'
 import { toNodeId } from '@/types/nodeId'
+import type { UUID } from '@/utils/uuid'
+import { createUuidv4 } from '@/utils/uuid'
 
 import { mintNodeId } from '../idAllocation'
 import type { INodeInputSlot, Point } from '../interfaces'

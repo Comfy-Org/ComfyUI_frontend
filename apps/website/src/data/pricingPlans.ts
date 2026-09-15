@@ -1,7 +1,6 @@
-import type { TranslationKey } from '../i18n/translations'
-
 import { SHOW_FREE_TIER } from '../config/features'
 import { externalLinks } from '../config/routes'
+import type { TranslationKey } from '../i18n/translations'
 
 export type BillingCycle = 'monthly' | 'yearly'
 

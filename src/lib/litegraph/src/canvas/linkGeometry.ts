@@ -1,9 +1,10 @@
-import type { LGraph } from '../LGraph'
-import type { LLink } from '../LLink'
-import type { Point } from '../interfaces'
-import { LiteGraph } from '../litegraph'
-import { inputLinkId } from '../node/slotLinks'
 import { getSlotPosition } from '@/renderer/core/canvas/litegraph/slotCalculations'
+
+import type { Point } from '../interfaces'
+import type { LGraph } from '../LGraph'
+import { LiteGraph } from '../litegraph'
+import type { LLink } from '../LLink'
+import { inputLinkId } from '../node/slotLinks'
 
 export function getLinkEndpointPositions(
   graph: LGraph,

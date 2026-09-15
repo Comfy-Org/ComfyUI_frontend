@@ -1,7 +1,3 @@
-import type { Page } from '@playwright/test'
-
-import { expect } from '@playwright/test'
-
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { TestIds } from '@e2e/fixtures/selectors'
@@ -9,6 +5,8 @@ import {
   interceptClipboardWrite,
   getClipboardText
 } from '@e2e/fixtures/utils/clipboardSpy'
+import type { Page } from '@playwright/test'
+import { expect } from '@playwright/test'
 
 async function triggerConfigureError(
   comfyPage: ComfyPage,

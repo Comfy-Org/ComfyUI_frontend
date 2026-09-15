@@ -20,13 +20,13 @@ import type { NodeExecutionOutput } from '@/schemas/apiSchema'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 import type { DOMWidget } from '@/scripts/domWidget'
 import { useAudioService } from '@/services/audioService'
+import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import type { NodeLocatorId } from '@/types'
 import { widgetId } from '@/types/widgetId'
 import { getNodeByLocatorId } from '@/utils/graphTraversalUtil'
 
 import { api } from '../../scripts/api'
 import { app } from '../../scripts/app'
-import { useWidgetValueStore } from '@/stores/widgetValueStore'
 
 function updateUIWidget(
   audioUIWidget: DOMWidget<HTMLAudioElement, string>,

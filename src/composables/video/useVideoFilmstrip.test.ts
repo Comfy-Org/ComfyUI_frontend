@@ -1,6 +1,6 @@
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { effectScope, nextTick, ref } from 'vue'
 import type { EffectScope } from 'vue'
-import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import { fetchVideoMetadata } from '@/utils/videoMetadataUtil'
 

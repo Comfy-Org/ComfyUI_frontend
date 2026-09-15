@@ -1,8 +1,8 @@
-import { useToastStore } from '@/platform/updates/common/toastStore'
-import { useCommandStore } from '@/stores/commandStore'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useSubscriptionActions } from '@/platform/cloud/subscription/composables/useSubscriptionActions'
+import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useCommandStore } from '@/stores/commandStore'
 
 const mockBillingFetchBalance = vi.fn()
 const mockAuthFetchBalance = vi.fn()

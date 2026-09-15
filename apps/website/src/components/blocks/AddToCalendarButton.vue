@@ -9,7 +9,6 @@ import {
 } from 'reka-ui'
 import { computed } from 'vue'
 
-import type { ButtonVariants } from '../ui/button'
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 import type { CalendarEvent } from '../../utils/calendar'
@@ -19,6 +18,7 @@ import {
   toOutlookCalendarUrl
 } from '../../utils/calendar'
 import { resolveRel } from '../../utils/cta'
+import type { ButtonVariants } from '../ui/button'
 import Button from '../ui/button/Button.vue'
 
 const {

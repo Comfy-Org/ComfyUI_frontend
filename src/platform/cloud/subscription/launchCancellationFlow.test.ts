@@ -1,4 +1,3 @@
-import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { SubscriptionInfo } from '@/composables/billing/types'
@@ -8,6 +7,7 @@ import type {
 } from '@/platform/cloud/churnkey/churnkeyClient'
 import type { ChurnkeySessionResults } from '@/platform/cloud/churnkey/types'
 import type { BillingRail } from '@/platform/workspace/api/workspaceApi'
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 
 const mocks = vi.hoisted(() => ({
   billingType: { value: 'workspace' },

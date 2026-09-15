@@ -1,10 +1,10 @@
-import { describe, expect, it } from 'vitest'
 import type { NodeInteractionProfile } from '@e2e/fixtures/customNode/interactionProfiles'
 import {
   comparePackProfiles,
   diffShapes,
   interactionCorpusIdentity
 } from '@e2e/fixtures/customNode/interactionProfiles'
+import { describe, expect, it } from 'vitest'
 
 const CONNECT_FIRST = ['+input:image2:IMAGE']
 const DISCONNECT = ['-input:image2:IMAGE']

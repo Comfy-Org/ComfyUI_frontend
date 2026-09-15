@@ -2,14 +2,13 @@ import { fromAny, fromPartial } from '@total-typescript/shoehorn'
 import { describe, expect, it, vi } from 'vitest'
 
 import { LGraph, LGraphNode, LLink } from '@/lib/litegraph/src/litegraph'
-import { NodeOutputSlot } from '@/lib/litegraph/src/node/NodeOutputSlot'
-import { useLinkStore } from '@/stores/linkStore'
 import type { SerialisedLLinkArray } from '@/lib/litegraph/src/LLink'
+import { NodeOutputSlot } from '@/lib/litegraph/src/node/NodeOutputSlot'
 import type {
   ISerialisedGraph,
   ISerialisedNode
 } from '@/lib/litegraph/src/types/serialisation'
-
+import { useLinkStore } from '@/stores/linkStore'
 import { graphScopeOf } from '@/types/graphScopeId'
 import { toLinkId } from '@/types/linkId'
 import { toNodeId } from '@/types/nodeId'

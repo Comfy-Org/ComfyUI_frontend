@@ -3,11 +3,10 @@ import type {
   Meta,
   StoryObj
 } from '@storybook/vue3-vite'
-
 import { ref } from 'vue'
 
-import SearchInput from './SearchInput.vue'
 import { searchInputStoryConfig } from './searchInput.variants'
+import SearchInput from './SearchInput.vue'
 
 const { sizes } = searchInputStoryConfig
 

@@ -1,6 +1,5 @@
-import { describe, expect, it } from 'vitest'
-
 import { render, screen } from '@testing-library/vue'
+import { describe, expect, it } from 'vitest'
 
 import type { INodeSlot } from '@/lib/litegraph/src/litegraph'
 import { RenderShape } from '@/lib/litegraph/src/types/globalEnums'

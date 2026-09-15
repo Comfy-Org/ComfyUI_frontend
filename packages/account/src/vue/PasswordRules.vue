@@ -22,6 +22,7 @@
 </template>
 
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
 /**
  * The password rule list both hosts show while a new password is typed:
  * every rule, the unmet ones marked. Unstyled: copy is host-translated and
@@ -29,8 +30,6 @@
  * focused) stays with the host.
  */
 import { computed } from 'vue'
-
-import { cn } from '@comfyorg/tailwind-utils'
 
 import type { PasswordRule } from '../signInSchemas'
 import { passwordRuleChecks } from '../signInSchemas'

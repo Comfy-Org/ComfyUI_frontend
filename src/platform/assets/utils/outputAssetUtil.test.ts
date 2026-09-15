@@ -1,12 +1,11 @@
 import { fromPartial } from '@total-typescript/shoehorn'
-
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { OutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { getOutputKey } from '@/platform/assets/utils/outputKeyUtil'
-import type { AugmentedResultItem } from '@/utils/resultItem'
 import type { SerializedNodeId } from '@/types/nodeId'
+import type { AugmentedResultItem } from '@/utils/resultItem'
 
 import { getTotalAssetOutputCount } from './outputAssetCountUtil'
 import { resolveOutputAssetItems } from './outputAssetUtil'

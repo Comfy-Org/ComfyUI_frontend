@@ -1,10 +1,10 @@
-import { useCanvasStore } from '@/renderer/core/canvas/canvasStore' // eslint-disable-line import-x/no-restricted-paths
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { App } from 'vue'
 import { createApp, defineComponent } from 'vue'
 
 import { i18n } from '@/i18n'
 import { useTemplateUrlLoader as createTemplateUrlLoader } from '@/platform/workflow/templates/composables/useTemplateUrlLoader'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore' // eslint-disable-line import-x/no-restricted-paths
 
 /**
  * Unit tests for useTemplateUrlLoader composable

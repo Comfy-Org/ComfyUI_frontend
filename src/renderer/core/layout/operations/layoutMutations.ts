@@ -1,8 +1,8 @@
-import type { NodeId } from '@/types/nodeId'
-import type { UUID } from '@/utils/uuid'
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import type { LayoutSource, Point } from '@/renderer/core/layout/types'
+import type { NodeId } from '@/types/nodeId'
+import type { UUID } from '@/utils/uuid'
 
 export function useLayoutMutations(source: LayoutSource) {
   const moveNode = (

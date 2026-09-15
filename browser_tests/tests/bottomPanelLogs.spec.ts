@@ -1,5 +1,3 @@
-import { mergeTests } from '@playwright/test'
-
 import {
   comfyExpect as expect,
   comfyPageFixture
@@ -8,11 +6,12 @@ import {
   LogsTerminalHelper,
   logsTerminalFixture
 } from '@e2e/fixtures/helpers/LogsTerminalHelper'
-import { webSocketFixture } from '@e2e/fixtures/ws'
 import {
   getClipboardText,
   interceptClipboardWrite
 } from '@e2e/fixtures/utils/clipboardSpy'
+import { webSocketFixture } from '@e2e/fixtures/ws'
+import { mergeTests } from '@playwright/test'
 
 const test = mergeTests(comfyPageFixture, logsTerminalFixture, webSocketFixture)
 

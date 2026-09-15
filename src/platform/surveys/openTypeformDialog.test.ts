@@ -2,8 +2,8 @@ import { describe, expect, it, vi } from 'vitest'
 
 import { useDialogStore } from '@/stores/dialogStore'
 
-import TypeformDialogContent from './TypeformDialogContent.vue'
 import { openTypeformDialog } from './openTypeformDialog'
+import TypeformDialogContent from './TypeformDialogContent.vue'
 
 describe('openTypeformDialog', () => {
   it('opens the form embed in a Reka dialog with the given id and hidden fields', () => {

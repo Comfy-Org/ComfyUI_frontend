@@ -1,16 +1,15 @@
-import { expect } from '@playwright/test'
-import type { Locator } from '@playwright/test'
-
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
+import {
+  cleanupFakeModel,
+  loadWorkflowAndOpenErrorsTab
+} from '@e2e/fixtures/helpers/ErrorsTabHelper'
 import { TestIds } from '@e2e/fixtures/selectors'
 import {
   interceptClipboardWrite,
   getClipboardText
 } from '@e2e/fixtures/utils/clipboardSpy'
-import {
-  cleanupFakeModel,
-  loadWorkflowAndOpenErrorsTab
-} from '@e2e/fixtures/helpers/ErrorsTabHelper'
+import { expect } from '@playwright/test'
+import type { Locator } from '@playwright/test'
 
 const FAKE_MODEL_NAME = 'fake_model.safetensors'
 const GATED_MODEL_REPO_URL = 'https://huggingface.co/comfy-e2e/gated-test'

@@ -1,8 +1,8 @@
-import { expect } from '@playwright/test'
-
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { BAD_DO_NOT_DO_THIS_LegacyApiHelper } from '@e2e/fixtures/helpers/BAD_DO_NOT_DO_THIS_LegacyApiHelper'
 import type { WorkspaceStore } from '@e2e/types/globals'
+import { expect } from '@playwright/test'
+
 import { toNodeId } from '@/types/nodeId'
 
 test(

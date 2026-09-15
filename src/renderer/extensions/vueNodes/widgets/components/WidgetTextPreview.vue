@@ -63,20 +63,21 @@
 </template>
 
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import { downloadFile } from '@/base/common/downloadUtil'
 import SanitizedHtml from '@/components/common/SanitizedHtml.vue'
 import Button from '@/components/ui/button/Button.vue'
 import Textarea from '@/components/ui/textarea/Textarea.vue'
 import { useCopyToClipboard } from '@/composables/useCopyToClipboard'
 import { useToastStore } from '@/platform/updates/common/toastStore'
-import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import { api } from '@/scripts/api'
-import { downloadFile } from '@/base/common/downloadUtil'
-import type { NodeOutputWith, ResultItem } from '@/schemas/apiSchema'
-import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import type { NodeOutputWith, ResultItem } from '@/schemas/apiSchema'
+import { api } from '@/scripts/api'
+import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import {
   stripGraphPrefix,
   useWidgetValueStore
@@ -86,7 +87,6 @@ import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import { widgetId } from '@/types/widgetId'
 import { resolveNode } from '@/utils/litegraphUtil'
 import { renderMarkdownToHtml } from '@/utils/markdownRendererUtil'
-import { cn } from '@comfyorg/tailwind-utils'
 
 import { WidgetInputBaseClass } from './layout'
 

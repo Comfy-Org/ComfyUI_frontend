@@ -5,10 +5,9 @@ import { pathToFileURL } from 'node:url'
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type { AshbyJobPosting } from './ashby.schema'
 import type { RolesSnapshot } from '../data/roles'
-
 import { fetchRolesForBuild, resetAshbyFetcherForTests } from './ashby'
+import type { AshbyJobPosting } from './ashby.schema'
 
 const BASE_URL = 'https://ashby.test'
 const BOARD = 'comfy-org'

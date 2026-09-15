@@ -1,25 +1,42 @@
+import * as Sentry from '@sentry/vue'
 import { promiseTimeout, until } from '@vueuse/core'
 import axios from 'axios'
-import { storeToRefs } from 'pinia'
-import { get } from 'es-toolkit/compat'
 import { trimEnd } from 'es-toolkit'
+import { get } from 'es-toolkit/compat'
+import { storeToRefs } from 'pinia'
 import { ref } from 'vue'
 
 import defaultClientFeatureFlags from '@/config/clientFeatureFlags.json' with { type: 'json' }
-import {
-  fetchWithUnifiedRemint,
-  shouldRemintCloudRequest
-} from '@/platform/auth/unified/remintRetry'
-import { getDevOverride } from '@/utils/devFeatureFlagOverride'
-import { getSessionOverride } from '@/utils/sessionFeatureFlagOverride'
 import type {
   ModelFile,
   ModelFolderInfo
 } from '@/platform/assets/schemas/assetSchema'
+import {
+  fetchWithUnifiedRemint,
+  shouldRemintCloudRequest
+} from '@/platform/auth/unified/remintRetry'
 import { isCloud } from '@/platform/distribution/types'
-import * as Sentry from '@sentry/vue'
+import {
+  fetchHistory,
+  fetchJobAssets,
+  fetchJobDetail,
+  fetchQueue
+} from '@/platform/remote/comfyui/jobs/fetchJobs'
+import type {
+  JobAssetsResult,
+  JobDetail,
+  JobListItem
+} from '@/platform/remote/comfyui/jobs/jobTypes'
 import { useTelemetry } from '@/platform/telemetry'
 import { useToastStore } from '@/platform/updates/common/toastStore'
+import type {
+  TemplateIncludeOnDistributionEnum,
+  WorkflowTemplates
+} from '@/platform/workflow/templates/types/template'
+import type {
+  ComfyApiWorkflow,
+  ComfyWorkflowJSON
+} from '@/platform/workflow/validation/schemas/workflowSchema'
 import type {
   ShareableAssetsResponse,
   AssetDownloadWsMessage,
@@ -54,30 +71,13 @@ import {
   zEmbeddingsResponse,
   zShareableAssetsResponse
 } from '@/schemas/apiSchema'
-import type {
-  TemplateIncludeOnDistributionEnum,
-  WorkflowTemplates
-} from '@/platform/workflow/templates/types/template'
-import type {
-  ComfyApiWorkflow,
-  ComfyWorkflowJSON
-} from '@/platform/workflow/validation/schemas/workflowSchema'
-import type { SerializedNodeId } from '@/types/nodeId'
-import type {
-  JobAssetsResult,
-  JobDetail,
-  JobListItem
-} from '@/platform/remote/comfyui/jobs/jobTypes'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 import type { useAuthStore } from '@/stores/authStore'
 import type { AuthHeader } from '@/types/authTypes'
+import type { SerializedNodeId } from '@/types/nodeId'
 import type { NodeExecutionId } from '@/types/nodeIdentification'
-import {
-  fetchHistory,
-  fetchJobAssets,
-  fetchJobDetail,
-  fetchQueue
-} from '@/platform/remote/comfyui/jobs/fetchJobs'
+import { getDevOverride } from '@/utils/devFeatureFlagOverride'
+import { getSessionOverride } from '@/utils/sessionFeatureFlagOverride'
 
 interface QueuePromptRequestBody {
   client_id: string

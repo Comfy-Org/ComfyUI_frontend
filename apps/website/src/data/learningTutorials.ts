@@ -1,11 +1,10 @@
 import type { VideoTrack } from '../components/common/VideoPlayer.vue'
+import { externalLinks } from '../config/routes'
 import type {
   Locale,
   LocalizedText,
   TranslationKey
 } from '../i18n/translations'
-
-import { externalLinks } from '../config/routes'
 import { t } from '../i18n/translations'
 
 export type LearningCategory = 'basics' | 'vfx' | 'animations' | 'ads'

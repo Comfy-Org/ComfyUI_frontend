@@ -241,6 +241,8 @@
 </template>
 
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
+import { storeToRefs } from 'pinia'
 import {
   computed,
   nextTick,
@@ -249,32 +251,29 @@ import {
   useTemplateRef,
   watch
 } from 'vue'
-import { storeToRefs } from 'pinia'
 import { useI18n } from 'vue-i18n'
-import { cn } from '@comfyorg/tailwind-utils'
 
 import { selectionEmphasisClass } from '@/components/rightSidePanel/errors/selectionEmphasis'
+import TransitionCollapse from '@/components/rightSidePanel/layout/TransitionCollapse.vue'
 import Button from '@/components/ui/button/Button.vue'
 import AccessibleTooltip from '@/components/ui/tooltip/AccessibleTooltip.vue'
-import TransitionCollapse from '@/components/rightSidePanel/layout/TransitionCollapse.vue'
-import type { MissingModelViewModel } from '@/platform/missingModel/types'
-import type { UploadModelDialogContext } from '@/platform/assets/composables/useUploadModelWizard'
-
+import { useCopyToClipboard } from '@/composables/useCopyToClipboard'
 import { useModelUpload } from '@/platform/assets/composables/useModelUpload'
+import type { UploadModelDialogContext } from '@/platform/assets/composables/useUploadModelWizard'
+import { isCloud } from '@/platform/distribution/types'
+import { useMissingModelDownload } from '@/platform/missingModel/composables/useMissingModelDownload'
 import {
   useMissingModelInteractions,
   getModelStateKey,
   getNodeDisplayLabel
 } from '@/platform/missingModel/composables/useMissingModelInteractions'
-import { useMissingModelDownload } from '@/platform/missingModel/composables/useMissingModelDownload'
-import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
-import { useCopyToClipboard } from '@/composables/useCopyToClipboard'
-import { isCloud } from '@/platform/distribution/types'
 import {
   isModelDownloadable,
   isTrustedHuggingFaceUrl,
   toBrowsableUrl
 } from '@/platform/missingModel/missingModelDownload'
+import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
+import type { MissingModelViewModel } from '@/platform/missingModel/types'
 import { formatSize } from '@/utils/formatUtil'
 
 const {

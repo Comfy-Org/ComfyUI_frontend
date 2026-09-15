@@ -1,7 +1,4 @@
 import type { ListMembersResponse } from '@comfyorg/ingest-types'
-
-import type { WorkspaceTokenResponse } from '@/platform/workspace/stores/workspaceAuthStore'
-
 import { comfyPageFixture } from '@e2e/fixtures/ComfyPage'
 import { createBillingCapabilities } from '@e2e/fixtures/data/billingCapabilities'
 import {
@@ -16,6 +13,8 @@ import {
 } from '@e2e/fixtures/data/workspaceSwitcher'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 import { mockWorkspaceList } from '@e2e/fixtures/utils/workspaceMocks'
+
+import type { WorkspaceTokenResponse } from '@/platform/workspace/stores/workspaceAuthStore'
 
 /**
  * Boots the app with the workspace-switcher endpoints mocked: remote config

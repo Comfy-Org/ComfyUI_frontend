@@ -3,6 +3,7 @@ import { useI18n } from 'vue-i18n'
 
 import { useTelemetry } from '@/platform/telemetry'
 import { useWorkflowTemplatesStore } from '@/platform/workflow/templates/repositories/workflowTemplatesStore'
+import { usePartnerNodesEducationStore } from '@/platform/workflow/templates/stores/partnerNodesEducationStore'
 import type {
   TemplateGroup,
   TemplateInfo,
@@ -11,7 +12,6 @@ import type {
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import { useDialogStore } from '@/stores/dialogStore'
-import { usePartnerNodesEducationStore } from '@/platform/workflow/templates/stores/partnerNodesEducationStore'
 
 export function useTemplateWorkflows() {
   const { t } = useI18n()

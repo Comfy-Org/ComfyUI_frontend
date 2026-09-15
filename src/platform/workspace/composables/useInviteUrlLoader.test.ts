@@ -1,10 +1,10 @@
-import { useTeamWorkspaceStore } from '../stores/teamWorkspaceStore'
 import { fromAny } from '@total-typescript/shoehorn'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createApp, defineComponent } from 'vue'
 import type { App } from 'vue'
 import { createI18n } from 'vue-i18n'
 
+import { useTeamWorkspaceStore } from '../stores/teamWorkspaceStore'
 import { useInviteUrlLoader as createInviteUrlLoader } from './useInviteUrlLoader'
 
 /**

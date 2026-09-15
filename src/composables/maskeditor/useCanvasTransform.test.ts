@@ -1,7 +1,8 @@
+import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+
 import { useCanvasTransform } from '@/composables/maskeditor/useCanvasTransform'
 import { useMaskEditorStore } from '@/stores/maskEditorStore'
-import { fromPartial } from '@total-typescript/shoehorn'
 
 interface IMockCanvas {
   width: number

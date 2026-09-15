@@ -1,9 +1,8 @@
+import { render, screen } from '@testing-library/vue'
 import { describe, expect, it } from 'vitest'
 
-import { render, screen } from '@testing-library/vue'
-
-import Badge from './Badge.vue'
 import { badgeVariants } from './badge.variants'
+import Badge from './Badge.vue'
 
 describe('Badge', () => {
   it('renders label text', () => {

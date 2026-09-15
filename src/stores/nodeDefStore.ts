@@ -3,12 +3,14 @@ import { cloneDeep, uniq } from 'es-toolkit/compat'
 import { defineStore } from 'pinia'
 import { computed, ref, watchEffect } from 'vue'
 
-import { resolveNodeDefText, t } from '@/i18n'
+import { NODE_TO_ESSENTIALS_CATEGORY } from '@/constants/essentialsNodes'
 import { promotedInputSource } from '@/core/graph/subgraph/promotedInputWidget'
 import { resolveConcretePromotedWidget } from '@/core/graph/subgraph/resolveConcretePromotedWidget'
 import { resolveInputType } from '@/core/graph/widgets/dynamicTypes'
+import { resolveNodeDefText, t } from '@/i18n'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { useSettingStore } from '@/platform/settings/settingStore'
 import { transformNodeDefV1ToV2 } from '@/schemas/nodeDef/migration'
 import type {
   ComfyNodeDef as ComfyNodeDefV2,
@@ -21,10 +23,8 @@ import type {
   ComfyOutputTypesSpec as ComfyOutputSpecV1,
   PriceBadge
 } from '@/schemas/nodeDefSchema'
-import { useSettingStore } from '@/platform/settings/settingStore'
 import { NodeSearchService } from '@/services/nodeSearchService'
 import { useSubgraphStore } from '@/stores/subgraphStore'
-import { NODE_TO_ESSENTIALS_CATEGORY } from '@/constants/essentialsNodes'
 import { CORE_NODE_MODULES, getNodeSource } from '@/types/nodeSource'
 import type { NodeSource } from '@/types/nodeSource'
 import type { TreeNode } from '@/types/treeExplorerTypes'

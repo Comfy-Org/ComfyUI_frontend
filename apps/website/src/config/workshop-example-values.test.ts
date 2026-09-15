@@ -2,13 +2,13 @@ import { z } from 'astro/zod'
 import { describe, expect, it } from 'vitest'
 
 import { routerContentBySlug, workshopModels } from './workshop-browse-content'
-import { getRouterWorkshopModelDetail } from './workshop-router-content'
+import { workshopExampleValues } from './workshop-example-values'
 import {
   defaultValues,
   schemaForModel,
   urlUploadField
 } from './workshop-playground'
-import { workshopExampleValues } from './workshop-example-values'
+import { getRouterWorkshopModelDetail } from './workshop-router-content'
 
 const mediaSchema = z.array(z.object({ role: z.string(), value: z.string() }))
 const examples = workshopModels.flatMap((model) => {

@@ -1,11 +1,11 @@
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import EditableText from '@/components/common/EditableText.vue'
-import Popover from '@/components/ui/Popover.vue'
 import Button from '@/components/ui/button/Button.vue'
-import { cn } from '@comfyorg/tailwind-utils'
+import Popover from '@/components/ui/Popover.vue'
 
 const { t } = useI18n()
 

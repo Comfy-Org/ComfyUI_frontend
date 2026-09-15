@@ -1,3 +1,13 @@
+import type {
+  ScheduledRefreshReport,
+  SessionErrorCode
+} from '@comfyorg/account/session'
+import {
+  SESSION_ERROR_MESSAGES,
+  createSessionClient,
+  isPermanentSessionError
+} from '@comfyorg/account/session'
+import { createWebCrossTabRefreshPort } from '@comfyorg/account/web'
 import { zWorkspaceWithRole } from '@comfyorg/ingest-types/zod'
 import type { User } from 'firebase/auth'
 import { defineStore } from 'pinia'
@@ -5,34 +15,23 @@ import { computed, ref, shallowRef, watch } from 'vue'
 import { z } from 'zod'
 import { fromZodError } from 'zod-validation-error'
 
-import type {
-  ScheduledRefreshReport,
-  SessionErrorCode
-} from '@comfyorg/account/session'
-import { createWebCrossTabRefreshPort } from '@comfyorg/account/web'
-import {
-  SESSION_ERROR_MESSAGES,
-  createSessionClient,
-  isPermanentSessionError
-} from '@comfyorg/account/session'
-
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { t } from '@/i18n'
+import { isCloud } from '@/platform/distribution/types'
+import { parseErrorResponse } from '@/platform/remote/comfyui/errors'
 import { useTelemetry } from '@/platform/telemetry'
 import type { UnifiedAuthRefreshOutcome } from '@/platform/telemetry/types'
-import { parseErrorResponse } from '@/platform/remote/comfyui/errors'
+import { useToastStore } from '@/platform/updates/common/toastStore'
 import { prepareWorkflowWorkspaceTransition } from '@/platform/workflow/persistence/base/storageIO'
+import { workspaceApiUrl } from '@/platform/workspace/api/workspaceApiUrl'
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import {
   TOKEN_REFRESH_BUFFER_MS,
   WORKSPACE_STORAGE_KEYS
 } from '@/platform/workspace/workspaceConstants'
-import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
-import { useToastStore } from '@/platform/updates/common/toastStore'
+import type { WorkspaceIdentity } from '@/platform/workspace/workspaceTypes'
 import { useAuthStore } from '@/stores/authStore'
 import type { AuthHeader } from '@/types/authTypes'
-import type { WorkspaceIdentity } from '@/platform/workspace/workspaceTypes'
-import { useFeatureFlags } from '@/composables/useFeatureFlags'
-import { isCloud } from '@/platform/distribution/types'
-import { workspaceApiUrl } from '@/platform/workspace/api/workspaceApiUrl'
 
 // Picked off the generated schema: a hand-written enum that lags the spec would
 // reject a valid persisted identity and silently clear the session.

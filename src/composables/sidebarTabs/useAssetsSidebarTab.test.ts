@@ -1,8 +1,8 @@
 import { describe, expect, it, vi } from 'vitest'
-import { useSettingStore } from '@/platform/settings/settingStore'
-import { useAssetsSidebarBadgeStore } from '@/stores/workspace/assetsSidebarBadgeStore'
 
 import { useAssetsSidebarTab } from '@/composables/sidebarTabs/useAssetsSidebarTab'
+import { useSettingStore } from '@/platform/settings/settingStore'
+import { useAssetsSidebarBadgeStore } from '@/stores/workspace/assetsSidebarBadgeStore'
 
 vi.mock<unknown>(
   import('@/components/sidebar/tabs/AssetsSidebarTab.vue'),

@@ -1,18 +1,9 @@
 import { describe, expect, it } from 'vitest'
 
-import generatedModels from './workshop-models.generated.json'
-import catalog from '../content/workshop-models.json'
 import display from '../content/workshop-display.json'
+import catalog from '../content/workshop-models.json'
 import availability from '../data/workshop-router-availability.json'
-import { routerAliasById, workshopModels } from './workshop-browse-content'
-import { workshopContract } from './workshop-contract-catalog'
-import { workshopContentInputs } from './workshop-content-inputs'
-import { isWorkshopModelDisabled } from './workshop-model-availability'
-import { modelOrderRank } from './workshop-model-order'
-import { getRouterWorkshopModelDetail as getWorkshopModelDetail } from './workshop-router-content'
-import { schemaForModel } from './workshop-playground'
 import type { GeneratedField, WorkshopModel } from './models-catalogue'
-import { decodeGeneratedModels } from './workshop-generated-models'
 import {
   USE_CASES,
   countByFacet,
@@ -30,6 +21,15 @@ import {
   useCaseFor,
   useCasesFor
 } from './models-catalogue'
+import { routerAliasById, workshopModels } from './workshop-browse-content'
+import { workshopContentInputs } from './workshop-content-inputs'
+import { workshopContract } from './workshop-contract-catalog'
+import { decodeGeneratedModels } from './workshop-generated-models'
+import { isWorkshopModelDisabled } from './workshop-model-availability'
+import { modelOrderRank } from './workshop-model-order'
+import generatedModels from './workshop-models.generated.json'
+import { schemaForModel } from './workshop-playground'
+import { getRouterWorkshopModelDetail as getWorkshopModelDetail } from './workshop-router-content'
 
 const fixture: WorkshopModel[] = [
   {

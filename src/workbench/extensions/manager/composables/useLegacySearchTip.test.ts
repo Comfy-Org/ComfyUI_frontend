@@ -1,5 +1,5 @@
-import type { Ref } from 'vue'
 import { beforeEach, describe, expect, it } from 'vitest'
+import type { Ref } from 'vue'
 import { nextTick, ref } from 'vue'
 
 import { useLegacySearchTip } from './useLegacySearchTip'

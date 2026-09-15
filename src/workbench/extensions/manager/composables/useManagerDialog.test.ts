@@ -5,10 +5,10 @@
  * Phase 4 renderer flip.
  */
 import { describe, expect, it, vi } from 'vitest'
-import { useDialogStore } from '@/stores/dialogStore'
 
-import { ManagerTab } from '@/workbench/extensions/manager/types/comfyManagerTypes'
+import { useDialogStore } from '@/stores/dialogStore'
 import { useManagerDialog } from '@/workbench/extensions/manager/composables/useManagerDialog'
+import { ManagerTab } from '@/workbench/extensions/manager/types/comfyManagerTypes'
 
 describe('useManagerDialog', () => {
   it("show() opens the Reka renderer with size 'full' and Manager content sizing", () => {

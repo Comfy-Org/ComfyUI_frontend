@@ -1,10 +1,10 @@
-import { render, screen, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
+import { render, screen, within } from '@testing-library/vue'
 import { describe, expect, it } from 'vitest'
 
 import { i18n } from '@/i18n'
-import type { ToolPart } from '../../../services/agent/agentMessageParts'
 
+import type { ToolPart } from '../../../services/agent/agentMessageParts'
 import ActivityTrace from './ActivityTrace.vue'
 import WorkSummary from './WorkSummary.vue'
 

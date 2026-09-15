@@ -1,14 +1,14 @@
-import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import type { LLink, LinkId } from '@/lib/litegraph/src/LLink'
 import { LabelPosition } from '@/lib/litegraph/src/draw'
+import { createArrayMutationView } from '@/lib/litegraph/src/infrastructure/createMutationView'
 import type {
   INodeInputSlot,
   INodeOutputSlot,
   OptionalProps,
   Point
 } from '@/lib/litegraph/src/interfaces'
+import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
-import { createArrayMutationView } from '@/lib/litegraph/src/infrastructure/createMutationView'
+import type { LLink, LinkId } from '@/lib/litegraph/src/LLink'
 import { NodeSlot } from '@/lib/litegraph/src/node/NodeSlot'
 import type { IDrawOptions } from '@/lib/litegraph/src/node/NodeSlot'
 import { outputHasLinks, outputLinks } from '@/lib/litegraph/src/node/slotLinks'

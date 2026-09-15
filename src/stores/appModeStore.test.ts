@@ -1,13 +1,8 @@
-import { useSettingStore } from '@/platform/settings/settingStore'
-import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import { api } from '@/scripts/api'
 import { fromAny, fromPartial } from '@total-typescript/shoehorn'
-import { nextTick } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { nextTick } from 'vue'
 
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import { toNodeId } from '@/types/nodeId'
-import type { SerializedNodeId } from '@/types/nodeId'
 import {
   LGraphNode as LGraphNodeClass,
   SubgraphNode
@@ -18,7 +13,7 @@ import {
   createTestSubgraphNode
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
-import { widgetId } from '@/types/widgetId'
+import { useSettingStore } from '@/platform/settings/settingStore'
 import type {
   InputWidgetConfig,
   LinearInput,
@@ -26,14 +21,19 @@ import type {
 } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { ComfyWorkflow as ComfyWorkflowClass } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import { ChangeTracker } from '@/scripts/changeTracker'
+import { toNodeId } from '@/types/nodeId'
+import type { SerializedNodeId } from '@/types/nodeId'
+import { widgetId } from '@/types/widgetId'
+import type { WidgetId } from '@/types/widgetId'
 import {
   createMockChangeTracker,
   createNodeState
 } from '@/utils/__tests__/litegraphTestUtils'
 import { resolveNode } from '@/utils/litegraphUtil'
-import type { WidgetId } from '@/types/widgetId'
 
 const mockEmptyWorkflowDialog = vi.hoisted(() => {
   let lastOptions: { onEnterBuilder: () => void; onDismiss: () => void }

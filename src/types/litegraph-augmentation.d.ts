@@ -1,11 +1,11 @@
 import '@/lib/litegraph/src/litegraph'
+import type { IWidgetLocator } from '@/lib/litegraph/src/interfaces'
 import type {
   ExecutableLGraphNode,
   ExecutionId,
   LLink,
   Size
 } from '@/lib/litegraph/src/litegraph'
-import type { IWidgetLocator } from '@/lib/litegraph/src/interfaces'
 import type {
   IBaseWidget,
   TWidgetValue

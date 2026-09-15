@@ -1,7 +1,3 @@
-import type { Locator } from '@playwright/test'
-import { expect } from '@playwright/test'
-import type { Position } from '@vueuse/core'
-
 import {
   comfyPageFixture as test,
   testComfySnapToGridGridSize
@@ -11,6 +7,9 @@ import { DefaultGraphPositions } from '@e2e/fixtures/constants/defaultGraphPosit
 import { TestIds } from '@e2e/fixtures/selectors'
 import type { NodeReference } from '@e2e/fixtures/utils/litegraphUtils'
 import type { WorkspaceStore } from '@e2e/types/globals'
+import type { Locator } from '@playwright/test'
+import { expect } from '@playwright/test'
+import type { Position } from '@vueuse/core'
 
 test.use({ initialSettings: { 'Comfy.UseNewMenu': 'Disabled' } })
 

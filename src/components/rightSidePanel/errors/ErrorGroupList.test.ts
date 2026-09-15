@@ -1,19 +1,13 @@
+import userEvent from '@testing-library/user-event'
+import { render, screen, waitFor, within } from '@testing-library/vue'
+import { fromPartial } from '@total-typescript/shoehorn'
 import { getActivePinia } from 'pinia'
 import type { Pinia } from 'pinia'
-import { render, screen, waitFor, within } from '@testing-library/vue'
-import userEvent from '@testing-library/user-event'
-import { fromPartial } from '@total-typescript/shoehorn'
 import PrimeVue from 'primevue/config'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createMemoryHistory, createRouter } from 'vue-router'
 
 import { testI18n } from '@/components/searchbox/v2/__test__/testUtils'
-import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
-import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import { app } from '@/scripts/app'
-import { useExecutionErrorStore } from '@/stores/executionErrorStore'
-import { isLGraphNode } from '@/utils/litegraphUtil'
-import { getNodeByExecutionId } from '@/utils/graphTraversalUtil'
 import { Rectangle } from '@/lib/litegraph/src/infrastructure/Rectangle'
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type {
@@ -21,7 +15,13 @@ import type {
   LGraphCanvas,
   Subgraph
 } from '@/lib/litegraph/src/litegraph'
+import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import { app } from '@/scripts/app'
+import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { toNodeId } from '@/types/nodeId'
+import { getNodeByExecutionId } from '@/utils/graphTraversalUtil'
+import { isLGraphNode } from '@/utils/litegraphUtil'
 
 import ErrorGroupList from './ErrorGroupList.vue'
 

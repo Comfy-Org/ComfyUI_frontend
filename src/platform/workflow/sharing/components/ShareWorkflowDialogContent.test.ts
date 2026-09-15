@@ -1,10 +1,10 @@
-import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
-import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
+import { render, screen } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import ShareWorkflowDialogContent from '@/platform/workflow/sharing/components/ShareWorkflowDialogContent.vue'
 
 const mockTrackShareFlow = vi.hoisted(() => vi.fn())

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
 import { ArrowLeftRight, Check } from '@lucide/vue'
 import {
   DropdownMenuItem,
@@ -7,8 +8,6 @@ import {
   DropdownMenuSubContent,
   DropdownMenuSubTrigger
 } from 'reka-ui'
-
-import { cn } from '@comfyorg/tailwind-utils'
 
 import type { WorkshopSession } from '../../config/workshop-session-state'
 import type { Locale } from '../../i18n/translations'

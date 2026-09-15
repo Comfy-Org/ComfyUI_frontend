@@ -1,38 +1,19 @@
 import { fromAny, fromPartial } from '@total-typescript/shoehorn'
-import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
-import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
-import { useNodeOutputStore } from '@/stores/nodeOutputStore'
-import { useToastStore } from '@/platform/updates/common/toastStore'
-import { useSettingStore } from '@/platform/settings/settingStore'
-import { useAuthStore } from '@/stores/authStore'
-import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
+
+import { useSettingStore } from '@/platform/settings/settingStore'
+import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
+import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
+import { useAuthStore } from '@/stores/authStore'
+import { useNodeOutputStore } from '@/stores/nodeOutputStore'
+import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
 
 vi.mock(import('@vueuse/router'), () => ({ useRouteHash: () => ref('') }))
 
 import type { CurveData } from '@/components/curve/types'
-import type { useExtensionService } from '@/services/extensionService'
-import { t } from '@/i18n'
-import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
-import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
-import type { SerialisableGraph } from '@/lib/litegraph/src/types/serialisation'
-import type {
-  ComfyApiWorkflow,
-  ComfyWorkflowJSON
-} from '@/platform/workflow/validation/schemas/workflowSchema'
-import {
-  ComfyWorkflow,
-  useWorkflowStore
-} from '@/platform/workflow/management/stores/workflowStore'
-import type { LoadedComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
-import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
-import { createMockChangeTracker } from '@/utils/__tests__/litegraphTestUtils'
-import { useNodeReplacementStore } from '@/platform/nodeReplacement/nodeReplacementStore'
-import type { NodeReplacement } from '@/platform/nodeReplacement/types'
-import type { NodeExecutionOutput, NodeError } from '@/schemas/apiSchema'
-import { ComfyApp, app as singletonApp } from './app'
-import { createNode } from '@/utils/litegraphUtil'
+import { installErrorClearingHooks } from '@/composables/graph/useErrorClearingHooks'
 import {
   pasteAudioNode,
   pasteAudioNodes,
@@ -42,30 +23,50 @@ import {
   pasteVideoNodes
 } from '@/composables/usePaste'
 import Load3dUtils from '@/extensions/core/load3d/Load3dUtils'
-import { getWorkflowDataFromFile } from '@/scripts/metadata/parser'
-import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
-import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
-import { installErrorClearingHooks } from '@/composables/graph/useErrorClearingHooks'
-import { setTelemetryRegistry } from '@/platform/telemetry'
-import { TelemetryRegistry } from '@/platform/telemetry/TelemetryRegistry'
-import * as executionContextUtils from '@/platform/telemetry/utils/getExecutionContext'
-import { isCloud } from '@/platform/distribution/types'
-
-import { PromptExecutionError, api } from '@/scripts/api'
-import { useExecutionErrorStore } from '@/stores/executionErrorStore'
-import { useExecutionStore } from '@/stores/executionStore'
-import { useDialogStore } from '@/stores/dialogStore'
-import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
-import { createNodeExecutionId } from '@/types/nodeIdentification'
-import { toNodeId } from '@/types/nodeId'
+import { t } from '@/i18n'
+import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
+import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
 import {
   createTestRootGraph,
   createTestSubgraph,
   createTestSubgraphNode
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
+import type { SerialisableGraph } from '@/lib/litegraph/src/types/serialisation'
+import { isCloud } from '@/platform/distribution/types'
+import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
+import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
+import { useNodeReplacementStore } from '@/platform/nodeReplacement/nodeReplacementStore'
+import type { NodeReplacement } from '@/platform/nodeReplacement/types'
+import { setTelemetryRegistry } from '@/platform/telemetry'
+import { TelemetryRegistry } from '@/platform/telemetry/TelemetryRegistry'
+import * as executionContextUtils from '@/platform/telemetry/utils/getExecutionContext'
+import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
+import type { LoadedComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
+import {
+  ComfyWorkflow,
+  useWorkflowStore
+} from '@/platform/workflow/management/stores/workflowStore'
+import type {
+  ComfyApiWorkflow,
+  ComfyWorkflowJSON
+} from '@/platform/workflow/validation/schemas/workflowSchema'
+import type { NodeExecutionOutput, NodeError } from '@/schemas/apiSchema'
+import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
+import { PromptExecutionError, api } from '@/scripts/api'
+import { getWorkflowDataFromFile } from '@/scripts/metadata/parser'
+import type { useExtensionService } from '@/services/extensionService'
+import { useDialogStore } from '@/stores/dialogStore'
+import { useExecutionErrorStore } from '@/stores/executionErrorStore'
+import { useExecutionStore } from '@/stores/executionStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import { toNodeId } from '@/types/nodeId'
+import { createNodeExecutionId } from '@/types/nodeIdentification'
+import { createMockChangeTracker } from '@/utils/__tests__/litegraphTestUtils'
 import { extractFilesFromDragEvent } from '@/utils/eventUtils'
+import { createNode } from '@/utils/litegraphUtil'
 import { zeroUuid } from '@/utils/uuid'
+
+import { ComfyApp, app as singletonApp } from './app'
 import type { importA1111 } from './pnginfo'
 
 type WorkflowService = ReturnType<typeof useWorkflowService>

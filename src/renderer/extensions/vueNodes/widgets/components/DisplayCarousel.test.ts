@@ -1,13 +1,14 @@
+import userEvent from '@testing-library/user-event'
 /* eslint-disable testing-library/no-node-access */
 import { fireEvent, render, screen } from '@testing-library/vue'
 import { fromAny } from '@total-typescript/shoehorn'
-import userEvent from '@testing-library/user-event'
 import { getActivePinia } from 'pinia'
 import { describe, expect, it } from 'vitest'
 import { nextTick, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
+
 import DisplayCarousel from './DisplayCarousel.vue'
 import type { GalleryImage, GalleryValue } from './DisplayCarousel.vue'
 import { createMockWidget } from './widgetTestUtils'

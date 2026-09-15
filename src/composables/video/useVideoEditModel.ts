@@ -1,7 +1,6 @@
+import { clamp } from 'es-toolkit'
 import { computed, watch } from 'vue'
 import type { Ref } from 'vue'
-
-import { clamp } from 'es-toolkit'
 
 import type {
   VideoEditTrim,

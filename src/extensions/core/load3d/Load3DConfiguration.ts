@@ -1,6 +1,4 @@
 import { LOAD3D_NONE_MODEL } from '@/extensions/core/load3d/constants'
-import type Load3d from '@/extensions/core/load3d/Load3d'
-import Load3dUtils from '@/extensions/core/load3d/Load3dUtils'
 import type {
   CameraConfig,
   CameraState,
@@ -9,6 +7,8 @@ import type {
   ModelConfig,
   SceneConfig
 } from '@/extensions/core/load3d/interfaces'
+import type Load3d from '@/extensions/core/load3d/Load3d'
+import Load3dUtils from '@/extensions/core/load3d/Load3dUtils'
 import type { Dictionary } from '@/lib/litegraph/src/interfaces'
 import type { NodeProperty } from '@/lib/litegraph/src/LGraphNode'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'

@@ -2,13 +2,13 @@ import { describe, expect, it, vi } from 'vitest'
 
 import type { PromotedWidgetSource } from '@/core/graph/subgraph/promotedWidgetTypes'
 import { resolveSubgraphPseudoWidgetCache } from '@/services/subgraphPseudoWidgetCache'
-import { toNodeId } from '@/types/nodeId'
-import type { NodeId, SerializedNodeId } from '@/types/nodeId'
 import type {
   SubgraphPseudoWidget,
   SubgraphPseudoWidgetCache,
   SubgraphPseudoWidgetNode
 } from '@/services/subgraphPseudoWidgetCache'
+import { toNodeId } from '@/types/nodeId'
+import type { NodeId, SerializedNodeId } from '@/types/nodeId'
 
 interface TestWidget extends SubgraphPseudoWidget {
   isPseudo?: boolean

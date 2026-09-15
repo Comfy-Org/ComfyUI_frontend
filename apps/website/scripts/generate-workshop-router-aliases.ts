@@ -1,14 +1,15 @@
 import { realpathSync } from 'node:fs'
 import { readFile, writeFile } from 'node:fs/promises'
 import { resolve } from 'node:path'
+
 import { z } from 'astro/zod'
 
-import { workshopModelSchema } from '../src/content/workshop-models.schema'
 import {
   workshopIdentityAuditSchema,
   workshopRouterAliasesSchema
 } from '../src/config/workshop-router-identity'
 import { parseRouterOpenApiSnapshot } from '../src/config/workshop-router-openapi'
+import { workshopModelSchema } from '../src/content/workshop-models.schema'
 
 export function compileWorkshopAliases(
   rawAudit: unknown,

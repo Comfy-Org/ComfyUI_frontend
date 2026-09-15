@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
 import type { PreviewSubscribeResponse } from '@/platform/workspace/api/workspaceApi'
+
 import SubscriptionSuccessWorkspace from './SubscriptionSuccessWorkspace.vue'
 
 const { mockInviteSubmit, mockMaxSeats, mockOccupiedSeats } = vi.hoisted(

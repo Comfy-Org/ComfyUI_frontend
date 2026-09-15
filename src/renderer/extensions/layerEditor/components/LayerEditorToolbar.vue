@@ -91,6 +91,7 @@
 </template>
 
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
 import type { AcceptableValue } from 'reka-ui'
 import { PopoverTrigger } from 'reka-ui'
 import { computed, ref } from 'vue'
@@ -100,10 +101,9 @@ import Popover from '@/components/ui/popover/Popover.vue'
 import PopoverContent from '@/components/ui/popover/PopoverContent.vue'
 import ToggleGroup from '@/components/ui/toggle-group/ToggleGroup.vue'
 import ToggleGroupItem from '@/components/ui/toggle-group/ToggleGroupItem.vue'
+import { useModalLiftedZIndex } from '@/composables/useModalLiftedZIndex'
 import { useLayerEditorExport } from '@/renderer/extensions/layerEditor/composables/useLayerEditorExport'
 import type { LayerEditorSession } from '@/renderer/extensions/layerEditor/composables/useLayerEditorSession'
-import { useModalLiftedZIndex } from '@/composables/useModalLiftedZIndex'
-import { cn } from '@comfyorg/tailwind-utils'
 
 const { session } = defineProps<{ session: LayerEditorSession }>()
 

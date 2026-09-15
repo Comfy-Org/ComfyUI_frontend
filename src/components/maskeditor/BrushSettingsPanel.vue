@@ -160,12 +160,12 @@
 </template>
 
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { BrushShape } from '@/extensions/core/maskeditor/types'
 import { useMaskEditorStore } from '@/stores/maskEditorStore'
-import { cn } from '@comfyorg/tailwind-utils'
 
 import SliderControl from './controls/SliderControl.vue'
 

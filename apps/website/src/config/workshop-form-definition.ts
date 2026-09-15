@@ -1,11 +1,11 @@
 import type { WorkshopModelEntry } from '../content/workshop-models.schema'
 import type { GeneratedField } from './models-catalogue'
 import type { WorkshopMediaBinding } from './workshop-contract'
+import type { WorkshopCreatorFile } from './workshop-creator-form'
 import { deriveWorkshopFields } from './workshop-fields'
+import type { WorkshopInputDefinition } from './workshop-input-definition'
 import { pointerKeys } from './workshop-json-pointer'
 import { resolveSchemaReference } from './workshop-router-openapi'
-import type { WorkshopInputDefinition } from './workshop-input-definition'
-import type { WorkshopCreatorFile } from './workshop-creator-form'
 
 export interface WorkshopFormDefinition {
   readonly source?: 'router'

@@ -1,7 +1,7 @@
 import { fromAny } from '@total-typescript/shoehorn'
 import { useMediaControls } from '@vueuse/core'
-import { ref } from 'vue'
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import { ref } from 'vue'
 
 import { useWaveAudioPlayer } from './useWaveAudioPlayer'
 

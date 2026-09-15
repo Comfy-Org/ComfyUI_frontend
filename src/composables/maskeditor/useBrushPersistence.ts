@@ -1,7 +1,7 @@
 import { debounce } from 'es-toolkit/compat'
 
-import { getStorageValue, setStorageValue } from '@/scripts/utils'
 import type { Brush } from '@/extensions/core/maskeditor/types'
+import { getStorageValue, setStorageValue } from '@/scripts/utils'
 import { useMaskEditorStore } from '@/stores/maskEditorStore'
 
 const STORAGE_KEY = 'maskeditor_brush_settings'

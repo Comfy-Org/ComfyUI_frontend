@@ -1,10 +1,10 @@
-import { render, screen, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
+import { render, screen, within } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { i18n } from '@/i18n'
-import type { HistoryGroups } from '../../stores/agent/agentChatHistoryStore'
 
+import type { HistoryGroups } from '../../stores/agent/agentChatHistoryStore'
 import ChatHistoryScreen from './ChatHistoryScreen.vue'
 
 const emptyGroups: HistoryGroups = {

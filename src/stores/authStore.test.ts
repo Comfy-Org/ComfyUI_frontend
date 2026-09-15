@@ -1,5 +1,3 @@
-import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
-import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { FirebaseError } from 'firebase/app'
 import type { User, UserCredential } from 'firebase/auth'
 import * as firebaseAuth from 'firebase/auth'
@@ -13,15 +11,17 @@ import {
   clearPreservedQuery
 } from '@/platform/navigation/preservedQueryManager'
 import { PRESERVED_QUERY_NAMESPACES } from '@/platform/navigation/preservedQueryNamespaces'
+import { refreshRemoteConfig } from '@/platform/remoteConfig/refreshRemoteConfig'
 import {
   cachedLegacyBillingMigrationEnabled,
   remoteConfig,
   remoteConfigState
 } from '@/platform/remoteConfig/remoteConfig'
-import { refreshRemoteConfig } from '@/platform/remoteConfig/refreshRemoteConfig'
-import { useDialogService } from '@/services/dialogService'
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useWorkspaceAuthStore } from '@/platform/workspace/stores/workspaceAuthStore'
 import { api } from '@/scripts/api'
+import { useDialogService } from '@/services/dialogService'
+import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
 import { AuthStoreError, useAuthStore } from '@/stores/authStore'
 
 const { mockDistributionTypes } = vi.hoisted(() => ({

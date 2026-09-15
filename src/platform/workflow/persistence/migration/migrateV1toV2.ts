@@ -5,16 +5,16 @@
  * Runs once on first load if V2 index doesn't exist.
  */
 
-import type { DraftIndexV2 } from '../base/draftTypes'
 import { upsertEntry, createEmptyIndex } from '../base/draftCacheV2'
+import type { DraftIndexV2 } from '../base/draftTypes'
 import { hashPath } from '../base/hashUtil'
-import { getWorkspaceId } from '../base/storageKeys'
 import {
   readIndex,
   writeIndex,
   writeOpenPaths,
   writePayload
 } from '../base/storageIO'
+import { getWorkspaceId } from '../base/storageKeys'
 
 /**
  * Legacy V1 draft snapshot structure.

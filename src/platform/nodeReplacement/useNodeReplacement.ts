@@ -2,15 +2,15 @@ import {
   canTransferReplacementOwnership,
   transferReplacementOwnership
 } from '@/core/graph/nodeShell/nodeShellState'
+import { t } from '@/i18n'
 import type { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
-import { inputLinkId, outputLinks } from '@/lib/litegraph/src/node/slotLinks'
 import type { LLink } from '@/lib/litegraph/src/LLink'
-import type { ISerialisedNode } from '@/lib/litegraph/src/types/serialisation'
+import { inputLinkId, outputLinks } from '@/lib/litegraph/src/node/slotLinks'
 import { NodeSlotType } from '@/lib/litegraph/src/types/globalEnums'
+import type { ISerialisedNode } from '@/lib/litegraph/src/types/serialisation'
 import type { TWidgetValue } from '@/lib/litegraph/src/types/widgets'
 import { isNodeBindable } from '@/lib/litegraph/src/utils/type'
-import { t } from '@/i18n'
 import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
 import type { NodeReplacement } from '@/platform/nodeReplacement/types'
 import { useToastStore } from '@/platform/updates/common/toastStore'

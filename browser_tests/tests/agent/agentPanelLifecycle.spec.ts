@@ -1,11 +1,10 @@
-import { expect } from '@playwright/test'
-
-import enMessages from '@/locales/en/main.json' with { type: 'json' }
-
 import {
   agentTest as test,
   bootAgentApp
 } from '@e2e/fixtures/agentPanelFixture'
+import { expect } from '@playwright/test'
+
+import enMessages from '@/locales/en/main.json' with { type: 'json' }
 
 const OPEN_AGENT_LABEL = enMessages.agent.askComfyAgent
 const OPEN_STORAGE_KEY = 'Comfy.AgentPanel.open'

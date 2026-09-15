@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, defineComponent, h, ref } from 'vue'
 
 import { i18n } from '@/i18n'
+
 import type { SelectedNode } from '../../composables/agent/useCanvasSelection'
 import { useCanvasSelection } from '../../composables/agent/useCanvasSelection'
 import { useAgentComposerStore } from '../../stores/agent/agentComposerStore'

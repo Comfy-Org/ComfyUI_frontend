@@ -2,8 +2,8 @@ import type {
   ScheduledPlanChange,
   SubscriptionTier
 } from '@comfyorg/ingest-types'
-import { render, screen, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
+import { render, screen, within } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, nextTick, ref } from 'vue'
 import type { ComponentProps } from 'vue-component-type-helpers'

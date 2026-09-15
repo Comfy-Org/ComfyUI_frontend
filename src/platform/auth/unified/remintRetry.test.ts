@@ -1,4 +1,3 @@
-import { useWorkspaceAuthStore } from '@/platform/workspace/stores/workspaceAuthStore'
 import type { AxiosAdapter } from 'axios'
 import axios, { AxiosError } from 'axios'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -7,6 +6,7 @@ import {
   attachUnifiedRemintInterceptor,
   fetchWithUnifiedRemint
 } from '@/platform/auth/unified/remintRetry'
+import { useWorkspaceAuthStore } from '@/platform/workspace/stores/workspaceAuthStore'
 
 const { mockRemint, mockTrackUnifiedAuthRetry, flagState } = vi.hoisted(() => ({
   mockRemint: vi.fn(),

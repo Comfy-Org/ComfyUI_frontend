@@ -1,12 +1,12 @@
-import type { Page, Request } from '@playwright/test'
-
-import type { ComfyApiWorkflow } from '@/platform/workflow/validation/schemas/workflowSchema'
-import type { SerializedNodeId } from '@/types/nodeId'
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import {
   comfyExpect as expect,
   comfyPageFixture as test
 } from '@e2e/fixtures/ComfyPage'
+import type { Page, Request } from '@playwright/test'
+
+import type { ComfyApiWorkflow } from '@/platform/workflow/validation/schemas/workflowSchema'
+import type { SerializedNodeId } from '@/types/nodeId'
 
 function isUserdataWorkflowSave(request: Request): boolean {
   return (

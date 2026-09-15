@@ -74,8 +74,8 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 
-import { useBillingContext } from '@/composables/billing/useBillingContext'
 import Button from '@/components/ui/button/Button.vue'
+import { useBillingContext } from '@/composables/billing/useBillingContext'
 import InviteMembersForm from '@/platform/workspace/components/InviteMembersForm.vue'
 import { useDialogStore } from '@/stores/dialogStore'
 

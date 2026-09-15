@@ -1,10 +1,9 @@
+import { render, screen } from '@testing-library/vue'
 import { getActivePinia } from 'pinia'
 import { describe, expect, it, vi } from 'vitest'
 import { defineComponent } from 'vue'
 import type { DirectiveBinding } from 'vue'
 import { createI18n } from 'vue-i18n'
-
-import { render, screen } from '@testing-library/vue'
 
 import type { INodeSlot } from '@/lib/litegraph/src/litegraph'
 import { useSettingStore } from '@/platform/settings/settingStore'

@@ -1,4 +1,3 @@
-import { useAuthStore } from '@/stores/authStore'
 import axios from 'axios'
 import {
   onAuthStateChanged,
@@ -8,9 +7,10 @@ import {
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { IWidget } from '@/lib/litegraph/src/litegraph'
-import { api } from '@/scripts/api'
 import { useRemoteWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useRemoteWidget'
 import type { RemoteWidgetConfig } from '@/schemas/nodeDefSchema'
+import { api } from '@/scripts/api'
+import { useAuthStore } from '@/stores/authStore'
 import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
 
 function createMockWidget(overrides: Partial<IWidget> = {}): IWidget {

@@ -1,8 +1,8 @@
-import type { Locator } from '@playwright/test'
-import type { CompassCorners } from '@/lib/litegraph/src/interfaces'
-
 import { TitleEditor } from '@e2e/fixtures/components/TitleEditor'
 import { TestIds } from '@e2e/fixtures/selectors'
+import type { Locator } from '@playwright/test'
+
+import type { CompassCorners } from '@/lib/litegraph/src/interfaces'
 
 /** DOM-centric helper for a single Vue-rendered node on the canvas. */
 export class VueNodeFixture {

@@ -1,6 +1,5 @@
-import type { Locator, Page } from '@playwright/test'
-
 import { networkIsolationFixture as base } from '@e2e/fixtures/networkIsolationFixture'
+import type { Locator, Page } from '@playwright/test'
 
 class UserSelectPage {
   public readonly selectionUrl: string

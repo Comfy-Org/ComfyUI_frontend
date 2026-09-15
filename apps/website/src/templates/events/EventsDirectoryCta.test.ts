@@ -4,7 +4,6 @@ import { describe, expect, it } from 'vitest'
 
 import type { ComfyEvent } from '../../data/events'
 import type { DirectoryRow } from '../../utils/eventsDirectory'
-
 import EventsDirectoryCta from './EventsDirectoryCta.vue'
 
 const localized = (en: string) => ({ en, 'zh-CN': en })

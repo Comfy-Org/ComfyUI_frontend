@@ -13,8 +13,8 @@ import {
   schemaForModel,
   validateForm
 } from '../../config/workshop-playground'
-import { getRouterWorkshopModelDetail } from '../../config/workshop-router-content'
 import { prepareWorkshopRouterInput } from '../../config/workshop-request'
+import { getRouterWorkshopModelDetail } from '../../config/workshop-router-content'
 import PlaygroundForm from './PlaygroundForm.vue'
 
 describe('Advanced form values', () => {

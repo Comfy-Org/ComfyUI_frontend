@@ -85,6 +85,9 @@
 </template>
 
 <script setup lang="ts">
+import { vAutoAnimate } from '@formkit/auto-animate/vue'
+import { computed, onMounted, ref } from 'vue'
+
 import Button from '@/components/ui/button/Button.vue'
 import Input from '@/components/ui/input/Input.vue'
 import TagsInput from '@/components/ui/tags-input/TagsInput.vue'
@@ -95,8 +98,6 @@ import TagsInputItemText from '@/components/ui/tags-input/TagsInputItemText.vue'
 import Textarea from '@/components/ui/textarea/Textarea.vue'
 import { COMFY_HUB_TAG_OPTIONS } from '@/platform/workflow/sharing/constants/comfyHubTags'
 import { useComfyHubService } from '@/platform/workflow/sharing/services/comfyHubService'
-import { computed, onMounted, ref } from 'vue'
-import { vAutoAnimate } from '@formkit/auto-animate/vue'
 
 const { tags } = defineProps<{
   name: string

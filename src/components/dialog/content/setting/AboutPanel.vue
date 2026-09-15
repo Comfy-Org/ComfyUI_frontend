@@ -32,8 +32,8 @@
 </template>
 
 <script setup lang="ts">
-import Tag from 'primevue/tag'
 import { cn } from '@comfyorg/tailwind-utils'
+import Tag from 'primevue/tag'
 
 import SystemStatsPanel from '@/components/common/SystemStatsPanel.vue'
 import { useAboutPanelStore } from '@/stores/aboutPanelStore'

@@ -32,6 +32,7 @@
 </template>
 
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
 import { computed } from 'vue'
 
 import type {
@@ -51,7 +52,6 @@ import { toNodeId } from '@/types/nodeId'
 import type { NodeState } from '@/types/nodeState'
 import type { WidgetValue } from '@/types/simplifiedWidget'
 import { zeroUuid } from '@/utils/uuid'
-import { cn } from '@comfyorg/tailwind-utils'
 
 const {
   nodeDef,

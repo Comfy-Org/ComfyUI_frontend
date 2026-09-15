@@ -1,7 +1,6 @@
 <script setup lang="ts">
-import type { Locale } from '../../i18n/translations'
-
 import { getRoutes } from '../../config/routes'
+import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 import BrandButton from '../common/BrandButton.vue'
 import GlassCard from '../common/GlassCard.vue'

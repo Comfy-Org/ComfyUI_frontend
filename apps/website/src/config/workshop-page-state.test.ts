@@ -5,8 +5,8 @@ import {
   initialWorkshopPageState,
   workshopExampleState
 } from './workshop-page-state'
-import { getRouterWorkshopModelDetail } from './workshop-router-content'
 import { validateForm } from './workshop-playground'
+import { getRouterWorkshopModelDetail } from './workshop-router-content'
 
 const model: WorkshopModelDetail = {
   slug: 'example--model--generate-images',

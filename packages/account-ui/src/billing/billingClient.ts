@@ -1,11 +1,3 @@
-/**
- * The core objects a host builds once — the lifecycle, the readers, the
- * commands — handed to every composable here either explicitly or through
- * the injection key, so one component tree shares one client.
- */
-import { inject, provide } from 'vue'
-import type { InjectionKey } from 'vue'
-
 import type {
   BillingCommands,
   BillingOperationLifecycle,
@@ -14,6 +6,13 @@ import type {
   CreditsReader,
   TopupCommand
 } from '@comfyorg/account/billing'
+/**
+ * The core objects a host builds once — the lifecycle, the readers, the
+ * commands — handed to every composable here either explicitly or through
+ * the injection key, so one component tree shares one client.
+ */
+import { inject, provide } from 'vue'
+import type { InjectionKey } from 'vue'
 
 /**
  * The host owns this client's lifetime. Composables never dispose what they

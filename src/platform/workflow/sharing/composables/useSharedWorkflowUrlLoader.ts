@@ -5,16 +5,16 @@ import { useRoute, useRouter } from 'vue-router'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useAppMode } from '@/composables/useAppMode'
 import { useWorkflowTemplateSelectorDialog } from '@/composables/useWorkflowTemplateSelectorDialog'
-import { useTelemetry } from '@/platform/telemetry'
-import OpenSharedWorkflowDialogContent from '@/platform/workflow/sharing/components/OpenSharedWorkflowDialogContent.vue'
-import type { SharedWorkflowPayload } from '@/platform/workflow/sharing/types/shareTypes'
 import {
   clearPreservedQuery,
   hydratePreservedQuery,
   mergePreservedQueryIntoQuery
 } from '@/platform/navigation/preservedQueryManager'
 import { PRESERVED_QUERY_NAMESPACES } from '@/platform/navigation/preservedQueryNamespaces'
+import { useTelemetry } from '@/platform/telemetry'
+import OpenSharedWorkflowDialogContent from '@/platform/workflow/sharing/components/OpenSharedWorkflowDialogContent.vue'
 import { useWorkflowShareService } from '@/platform/workflow/sharing/services/workflowShareService'
+import type { SharedWorkflowPayload } from '@/platform/workflow/sharing/types/shareTypes'
 import { isValidShareId } from '@/platform/workflow/sharing/utils/shareAuthAttribution'
 import { app } from '@/scripts/app'
 import { useDialogService } from '@/services/dialogService'

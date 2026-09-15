@@ -1,14 +1,14 @@
-import type { WebSocketRoute } from '@playwright/test'
-import { mergeTests } from '@playwright/test'
-
-import type { RawJobListItem } from '@/platform/remote/comfyui/jobs/jobTypes'
 import {
   comfyPageFixture,
   comfyExpect as expect
 } from '@e2e/fixtures/ComfyPage'
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
-import { webSocketFixture } from '@e2e/fixtures/ws'
 import { ExecutionHelper } from '@e2e/fixtures/helpers/ExecutionHelper'
+import { webSocketFixture } from '@e2e/fixtures/ws'
+import type { WebSocketRoute } from '@playwright/test'
+import { mergeTests } from '@playwright/test'
+
+import type { RawJobListItem } from '@/platform/remote/comfyui/jobs/jobTypes'
 
 const test = mergeTests(comfyPageFixture, webSocketFixture)
 

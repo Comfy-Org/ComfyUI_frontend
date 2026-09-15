@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+
 import { useExtensionStore } from '@/stores/extensionStore'
 
 const { getSystemStats, getLogs, getSettings } = vi.hoisted(() => ({
@@ -29,8 +30,8 @@ vi.mock(import('@/platform/telemetry/reportError'), () => ({
 }))
 
 import type { ReportIdentifiers, ReportSources } from './crdtDebugReport'
-import type { CrdtDebugSnapshot } from './crdtSnapshot'
 import { collectCrdtDebugReport } from './crdtDebugReport'
+import type { CrdtDebugSnapshot } from './crdtSnapshot'
 
 const ALL_SOURCES: ReportSources = {
   serverLogs: true,

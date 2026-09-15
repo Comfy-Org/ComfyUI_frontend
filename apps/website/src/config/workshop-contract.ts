@@ -1,10 +1,10 @@
 import { z } from 'astro/zod'
 
+import { workshopCreatorFormSchema } from './workshop-creator-form'
 import type { WorkshopFormDefinition } from './workshop-form-definition'
+import { workshopInputDefinitionSchema } from './workshop-input-definition'
 import { pointerKeys } from './workshop-json-pointer'
 import { resolveSchemaReference } from './workshop-router-openapi'
-import { workshopInputDefinitionSchema } from './workshop-input-definition'
-import { workshopCreatorFormSchema } from './workshop-creator-form'
 
 const jsonSchema = z.record(z.string(), z.json())
 const pointer = z.string().refine((value) => {

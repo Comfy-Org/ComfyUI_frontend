@@ -3,11 +3,12 @@ vi.mock(import('firebase/auth'))
 vi.mock(import('vuefire'), () => ({ useFirebaseAuth: vi.fn() }))
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { ComfyApp } from '@/scripts/app'
-import type { ComfyExtension } from '@/types/comfy'
 import type { useExtensionService } from '@/services/extensionService'
+import type { ComfyExtension } from '@/types/comfy'
+import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
+
 import { registerAgentPanelExtension } from './agentPanel'
 
 const registered = vi.hoisted<{

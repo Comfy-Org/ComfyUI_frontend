@@ -1,5 +1,4 @@
 import { useEventListener } from '@vueuse/core'
-
 import { toValue } from 'vue'
 import type { MaybeRefOrGetter } from 'vue'
 

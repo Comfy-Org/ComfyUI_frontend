@@ -1,34 +1,34 @@
-import { expect, mergeTests } from '@playwright/test'
-import type { Page, Route } from '@playwright/test'
 import type {
   Asset,
   GetAllSettingsResponse,
   GetSettingByIdResponse,
   ListAssetsResponse
 } from '@comfyorg/ingest-types'
-
 import {
   assetRequestIncludesTag,
   createCloudAssetsFixture
 } from '@e2e/fixtures/assetApiFixture'
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
-import type { WorkspaceStore } from '@e2e/types/globals'
-import {
-  routeObjectInfoFromSetupApi,
-  setComboInputOptions
-} from '@e2e/fixtures/utils/objectInfo'
 import { loadWorkflowAndOpenErrorsTab } from '@e2e/fixtures/helpers/ErrorsTabHelper'
-import {
-  selectVuePromotedMediaByTitle,
-  setPromotedMediaHostOptionsAndValue
-} from '@e2e/fixtures/utils/promotedMissingMedia'
 import {
   createRouteMockJob,
   jobsRouteFixture
 } from '@e2e/fixtures/jobsRouteFixture'
 import { TestIds } from '@e2e/fixtures/selectors'
+import {
+  routeObjectInfoFromSetupApi,
+  setComboInputOptions
+} from '@e2e/fixtures/utils/objectInfo'
+import {
+  selectVuePromotedMediaByTitle,
+  setPromotedMediaHostOptionsAndValue
+} from '@e2e/fixtures/utils/promotedMissingMedia'
 import { PropertiesPanelHelper } from '@e2e/tests/propertiesPanel/PropertiesPanelHelper'
+import type { WorkspaceStore } from '@e2e/types/globals'
+import { expect, mergeTests } from '@playwright/test'
+import type { Page, Route } from '@playwright/test'
+
 import type { RawJobListItem } from '@/platform/remote/comfyui/jobs/jobTypes'
 import { toNodeId } from '@/types/nodeId'
 

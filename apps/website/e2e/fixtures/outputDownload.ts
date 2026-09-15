@@ -1,4 +1,5 @@
 import { readFileSync } from 'node:fs'
+
 import { ModuleKind, ScriptTarget, transpileModule } from 'typescript'
 
 import type * as OutputDownloadModule from '../../src/config/workshop-output-download'

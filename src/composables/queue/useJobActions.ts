@@ -2,9 +2,9 @@ import { computed, toValue } from 'vue'
 import type { MaybeRefOrGetter } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import { useErrorHandling } from '@/composables/useErrorHandling'
 import type { JobListItem } from '@/composables/queue/useJobList'
 import { useJobMenu } from '@/composables/queue/useJobMenu'
+import { useErrorHandling } from '@/composables/useErrorHandling'
 import { isActiveJobState } from '@/utils/queueUtil'
 
 export type JobAction = {

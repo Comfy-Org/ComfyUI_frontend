@@ -1,6 +1,7 @@
-import { useAuthStore } from '@/stores/authStore'
 import axios from 'axios'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+
+import { useAuthStore } from '@/stores/authStore'
 
 vi.mock(import('firebase/auth'))
 

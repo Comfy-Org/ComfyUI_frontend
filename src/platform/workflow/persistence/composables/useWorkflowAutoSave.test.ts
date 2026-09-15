@@ -1,9 +1,9 @@
-import { useSettingStore } from '@/platform/settings/settingStore'
-import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { render } from '@testing-library/vue'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { useSettingStore } from '@/platform/settings/settingStore'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkflowAutoSave } from '@/platform/workflow/persistence/composables/useWorkflowAutoSave'
 import { api } from '@/scripts/api'
 

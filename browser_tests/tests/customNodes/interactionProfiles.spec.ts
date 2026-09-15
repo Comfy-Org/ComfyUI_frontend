@@ -2,19 +2,19 @@ import {
   comfyExpect as expect,
   comfyPageFixture as test
 } from '@e2e/fixtures/ComfyPage'
-import type { NodeInteractionProfile } from '@e2e/fixtures/customNode/interactionProfiles'
 import { SYNTH_PRODUCERS } from '@e2e/fixtures/customNode/autoRun'
+import {
+  INTERACTION_PROBE_CHUNK,
+  planInteractionProbes,
+  runInteractionProbeChunk
+} from '@e2e/fixtures/customNode/interactionProbe'
+import type { NodeInteractionProfile } from '@e2e/fixtures/customNode/interactionProfiles'
 import {
   INTERACTION_UNSTABLE_NODES,
   comparePackProfiles,
   loadPackProfiles,
   recordPackProfiles
 } from '@e2e/fixtures/customNode/interactionProfiles'
-import {
-  INTERACTION_PROBE_CHUNK,
-  planInteractionProbes,
-  runInteractionProbeChunk
-} from '@e2e/fixtures/customNode/interactionProbe'
 import {
   customNodesManifest,
   loadManifest,

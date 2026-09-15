@@ -1,12 +1,12 @@
-import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { ref } from 'vue'
+import { render, screen } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
-import ActiveJobCard from './ActiveMediaAssetCard.vue'
-
 import type { JobListItem } from '@/composables/queue/useJobList'
+
+import ActiveJobCard from './ActiveMediaAssetCard.vue'
 
 const mockRunCancelJob = vi.fn()
 const mockRunDeleteJob = vi.fn()

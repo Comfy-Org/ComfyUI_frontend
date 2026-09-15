@@ -1,19 +1,19 @@
-import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useCoreCommands } from '@/composables/useCoreCommands'
 import { useExternalLink } from '@/composables/useExternalLink'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
+import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import { useModelStore } from '@/stores/modelStore'
-import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
-import { useToastStore } from '@/platform/updates/common/toastStore'
-import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
-import { fromPartial } from '@total-typescript/shoehorn'
 
 const mockRunMintPortsIntentionalClear = vi.hoisted(() =>
   vi.fn(<T>(clear: () => T): T => clear())

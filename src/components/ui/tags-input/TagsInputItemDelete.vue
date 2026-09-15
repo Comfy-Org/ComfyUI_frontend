@@ -1,11 +1,11 @@
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
 import type { TagsInputItemDeleteProps } from 'reka-ui'
 import { TagsInputItemDelete, useForwardProps } from 'reka-ui'
 import type { HTMLAttributes } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
-import { cn } from '@comfyorg/tailwind-utils'
 
 const { class: className, ...restProps } = defineProps<
   TagsInputItemDeleteProps & { class?: HTMLAttributes['class'] }

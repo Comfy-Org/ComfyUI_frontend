@@ -1,23 +1,24 @@
 import { fromPartial } from '@total-typescript/shoehorn'
-import type { ComfyApp } from '@/scripts/app'
-import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
-import { useMissingModelStore } from './missingModelStore'
-import { useExecutionErrorStore } from '@/stores/executionErrorStore'
-import { useModelToNodeStore } from '@/stores/modelToNodeStore'
-import { useToastStore } from '@/platform/updates/common/toastStore'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
-import type { MissingModelCandidate } from '@/platform/missingModel/types'
-import type {
-  ComfyWorkflowJSON,
-  ModelFile
-} from '@/platform/workflow/validation/schemas/workflowSchema'
 import {
   refreshMissingModelPipeline,
   runMissingModelPipeline
 } from '@/platform/missingModel/missingModelPipeline'
+import type { MissingModelCandidate } from '@/platform/missingModel/types'
+import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import type {
+  ComfyWorkflowJSON,
+  ModelFile
+} from '@/platform/workflow/validation/schemas/workflowSchema'
+import type { ComfyApp } from '@/scripts/app'
+import { useExecutionErrorStore } from '@/stores/executionErrorStore'
+import { useModelToNodeStore } from '@/stores/modelToNodeStore'
 import { createNodeExecutionId } from '@/types/nodeIdentification'
+
+import { useMissingModelStore } from './missingModelStore'
 
 const { mockHandles } = vi.hoisted(() => {
   const isAncestorPathActive = vi.fn((_graph: LGraph, _nodeId: string) => true)

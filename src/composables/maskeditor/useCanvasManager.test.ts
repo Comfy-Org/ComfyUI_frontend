@@ -1,9 +1,9 @@
-import { useMaskEditorStore } from '@/stores/maskEditorStore'
+import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { MaskBlendMode } from '@/extensions/core/maskeditor/types'
 import { useCanvasManager } from '@/composables/maskeditor/useCanvasManager'
-import { fromPartial } from '@total-typescript/shoehorn'
+import { MaskBlendMode } from '@/extensions/core/maskeditor/types'
+import { useMaskEditorStore } from '@/stores/maskEditorStore'
 
 let mockStore: ReturnType<typeof useMaskEditorStore>
 

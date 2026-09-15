@@ -2,7 +2,6 @@ import { render, screen } from '@testing-library/vue'
 import { describe, expect, it } from 'vitest'
 
 import type { CardArticleItem } from './CardArticle01.vue'
-
 import CardArticle01 from './CardArticle01.vue'
 
 function makeItem(overrides: Partial<CardArticleItem> = {}): CardArticleItem {

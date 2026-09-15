@@ -1,6 +1,11 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import {
+  BADGE_GAP,
+  queryLinkBadgeAtPoint
+} from '@/lib/litegraph/src/canvas/linkBadges'
+import type { Point } from '@/lib/litegraph/src/interfaces'
+import {
   LGraph,
   LGraphCanvas,
   LGraphNode,
@@ -8,11 +13,6 @@ import {
 } from '@/lib/litegraph/src/litegraph'
 import type { CanvasPointerEvent } from '@/lib/litegraph/src/litegraph'
 import type { LLink } from '@/lib/litegraph/src/LLink'
-import {
-  BADGE_GAP,
-  queryLinkBadgeAtPoint
-} from '@/lib/litegraph/src/canvas/linkBadges'
-import type { Point } from '@/lib/litegraph/src/interfaces'
 import { createTestSubgraph } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { useLinkPresentationStore } from '@/stores/linkPresentationStore'

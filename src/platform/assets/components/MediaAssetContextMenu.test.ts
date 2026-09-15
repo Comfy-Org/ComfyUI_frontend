@@ -1,6 +1,5 @@
-import { fromPartial } from '@total-typescript/shoehorn'
-
 import { render } from '@testing-library/vue'
+import { fromPartial } from '@total-typescript/shoehorn'
 import type { MenuItem } from 'primevue/menuitem'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { PropType } from 'vue'

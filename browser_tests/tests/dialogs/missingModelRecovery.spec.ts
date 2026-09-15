@@ -2,11 +2,11 @@ import {
   comfyPageFixture as test,
   comfyExpect as expect
 } from '@e2e/fixtures/ComfyPage'
-import { TestIds } from '@e2e/fixtures/selectors'
 import {
   cleanupFakeModel,
   dismissErrorOverlay
 } from '@e2e/fixtures/helpers/ErrorsTabHelper'
+import { TestIds } from '@e2e/fixtures/selectors'
 
 test.describe(
   'Missing model dialog recovery',

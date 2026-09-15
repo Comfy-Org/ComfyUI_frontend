@@ -2,8 +2,8 @@ import { z } from 'astro/zod'
 import { describe, expect, it } from 'vitest'
 
 import { workshopContract } from '../src/config/workshop-contract-catalog'
-import { creatorFormFor } from './workshop-creator-forms'
 import { schemaAt } from './workshop-creator-fields'
+import { creatorFormFor } from './workshop-creator-forms'
 import { curateWorkshopInputs } from './workshop-input-presentation'
 
 const object = z.record(z.string(), z.json())

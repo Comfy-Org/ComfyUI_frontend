@@ -1,8 +1,9 @@
-import { useToastStore } from '@/platform/updates/common/toastStore'
 import { render } from '@testing-library/vue'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent } from 'vue'
 import { createI18n } from 'vue-i18n'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+
+import { useToastStore } from '@/platform/updates/common/toastStore'
 
 import type { SecretErrorCode, SecretMetadata } from '../types'
 import { useSecrets as useSecretsComposable } from './useSecrets'

@@ -1,10 +1,10 @@
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
-
 import { cn } from '@comfyorg/tailwind-utils'
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 
 import type { FilterBadgeType } from '../../composables/useHubStore'
 import { useHubStore } from '../../composables/useHubStore'
+import { groupModels } from '../../config/model-family'
 import type { UseCase, WorkshopModel } from '../../config/models-catalogue'
 import {
   USE_CASES,
@@ -13,18 +13,20 @@ import {
   useCasesFor
 } from '../../config/models-catalogue'
 import { workshopModels as defaultWorkshopModels } from '../../config/workshop-browse-content'
-import { groupModels } from '../../config/model-family'
 import hubTemplates from '../../data/hubTemplates.json'
-import { hubWorkflowPath } from '../../lib/hub/workflow-detail'
+import type { Locale, TranslationKey } from '../../i18n/translations'
+import { t } from '../../i18n/translations'
+import { withFacetFields } from '../../lib/hub/facet-fields'
+import { tagDisplayName } from '../../lib/hub/tag-aliases'
 import {
   partnerModelFor,
   useCaseForTemplate
 } from '../../lib/hub/template-use-case'
-import { tagDisplayName } from '../../lib/hub/tag-aliases'
-import { withFacetFields } from '../../lib/hub/facet-fields'
 import type { HubTemplate } from '../../lib/hub/types'
-import type { Locale, TranslationKey } from '../../i18n/translations'
-import { t } from '../../i18n/translations'
+import { hubWorkflowPath } from '../../lib/hub/workflow-detail'
+import WorkshopHero from '../workshop/WorkshopHero.vue'
+import WorkshopModelCard from '../workshop/WorkshopModelCard.vue'
+import WorkshopSearchField from '../workshop/WorkshopSearchField.vue'
 import type {
   FacetGroupConfig,
   SortOption,
@@ -33,9 +35,6 @@ import type {
 import HubUseCaseNav from './HubUseCaseNav.vue'
 import type { GridLabels } from './WorkflowGrid.vue'
 import WorkflowGrid from './WorkflowGrid.vue'
-import WorkshopHero from '../workshop/WorkshopHero.vue'
-import WorkshopModelCard from '../workshop/WorkshopModelCard.vue'
-import WorkshopSearchField from '../workshop/WorkshopSearchField.vue'
 
 const {
   locale = 'en',

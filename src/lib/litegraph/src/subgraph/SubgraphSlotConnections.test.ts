@@ -12,13 +12,13 @@ import type {
   NodeInputSlot,
   NodeOutputSlot
 } from '@/lib/litegraph/src/litegraph'
+import { toNodeId } from '@/types/nodeId'
 
 import {
   createTestSubgraph,
   createTestSubgraphNode,
   resetSubgraphFixtureState
 } from './__fixtures__/subgraphHelpers'
-import { toNodeId } from '@/types/nodeId'
 
 beforeEach(() => {
   resetSubgraphFixtureState()

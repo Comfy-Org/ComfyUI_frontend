@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import type { DialogContentEmits, DialogContentProps } from 'reka-ui'
-import type { HTMLAttributes } from 'vue'
-import { X } from '@lucide/vue'
-import { DialogContent, DialogPortal, useForwardPropsEmits } from 'reka-ui'
 import { cn } from '@comfyorg/tailwind-utils'
+import { X } from '@lucide/vue'
+import type { DialogContentEmits, DialogContentProps } from 'reka-ui'
+import { DialogContent, DialogPortal, useForwardPropsEmits } from 'reka-ui'
+import type { HTMLAttributes } from 'vue'
+
 import SheetClose from './SheetClose.vue'
 import SheetOverlay from './SheetOverlay.vue'
 

@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 
-import { parseChangeSummary, runAgentRefactor } from './refactor'
 import type { AgentCliAdapter } from '../checks/agentCli'
+import { parseChangeSummary, runAgentRefactor } from './refactor'
 
 const adapter: AgentCliAdapter = {
   label: 'Claude Code',

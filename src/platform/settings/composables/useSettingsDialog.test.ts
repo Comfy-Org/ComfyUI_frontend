@@ -1,4 +1,3 @@
-import { useDialogStore } from '@/stores/dialogStore'
 /**
  * Settings dialog migration regression net: `useSettingsDialog().show()` must
  * open the Reka-renderer path with sizing that matches the previous
@@ -6,6 +5,8 @@ import { useDialogStore } from '@/stores/dialogStore'
  * the Phase 3 renderer flip.
  */
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+
+import { useDialogStore } from '@/stores/dialogStore'
 
 const showDialog = vi.hoisted(() => vi.fn())
 const isCloudRef = vi.hoisted(() => ({ value: false }))

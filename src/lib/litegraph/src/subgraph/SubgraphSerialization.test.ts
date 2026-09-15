@@ -1,3 +1,7 @@
+import { afterEach, assert, beforeEach, describe, expect, it } from 'vitest'
+
+import { duplicateSubgraphNodeIds } from '@/lib/litegraph/src/__fixtures__/duplicateSubgraphNodeIds'
+import { createTestNode } from '@/lib/litegraph/src/__fixtures__/nodeHelpers'
 /**
  * SubgraphSerialization Tests
  *
@@ -8,10 +12,6 @@ import {
   SUBGRAPH_INPUT_ID,
   SUBGRAPH_OUTPUT_ID
 } from '@/lib/litegraph/src/constants'
-import { afterEach, assert, beforeEach, describe, expect, it } from 'vitest'
-
-import { duplicateSubgraphNodeIds } from '@/lib/litegraph/src/__fixtures__/duplicateSubgraphNodeIds'
-import { createTestNode } from '@/lib/litegraph/src/__fixtures__/nodeHelpers'
 import {
   LGraph,
   LGraphNode,
@@ -19,10 +19,10 @@ import {
   LiteGraph,
   Subgraph
 } from '@/lib/litegraph/src/litegraph'
-
 import { toLinkId } from '@/types/linkId'
 import { toNodeId, UNASSIGNED_NODE_ID } from '@/types/nodeId'
 import { createUuidv4 } from '@/utils/uuid'
+
 import {
   createTestSubgraph,
   createTestSubgraphNode,

@@ -1,10 +1,10 @@
+import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
+import { TestIds } from '@e2e/fixtures/selectors'
+import type { Position } from '@e2e/fixtures/types'
 import { expect } from '@playwright/test'
 import type { Locator } from '@playwright/test'
 
 import type { RootCategoryId } from '@/components/searchbox/v2/rootCategories'
-import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
-import { TestIds } from '@e2e/fixtures/selectors'
-import type { Position } from '@e2e/fixtures/types'
 
 const { searchBoxV2 } = TestIds
 

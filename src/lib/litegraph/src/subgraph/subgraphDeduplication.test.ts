@@ -1,12 +1,12 @@
+import { describe, expect, it } from 'vitest'
+
 import {
   SUBGRAPH_INPUT_ID,
   SUBGRAPH_OUTPUT_ID
 } from '@/lib/litegraph/src/constants'
-import { describe, expect, it } from 'vitest'
-
+import { isUuidShapedSubgraphId } from '@/schemas/subgraphIdSchema'
 import { toLinkId } from '@/types/linkId'
 import { toRerouteId } from '@/types/rerouteId'
-import { isUuidShapedSubgraphId } from '@/schemas/subgraphIdSchema'
 
 import type { LGraphState } from '../LGraph'
 import type {
@@ -15,7 +15,6 @@ import type {
   SerialisableLLink,
   SerialisableReroute
 } from '../types/serialisation'
-
 import {
   deduplicateSubgraphGroupIds,
   deduplicateSubgraphLinkIds,

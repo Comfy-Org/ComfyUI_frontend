@@ -1,11 +1,10 @@
-import userEvent from '@testing-library/user-event'
-import { render, screen, waitFor } from '@testing-library/vue'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
-
 import type {
   TurnstileApi,
   TurnstileRenderOptions
 } from '@comfyorg/account/turnstileScript'
+import userEvent from '@testing-library/user-event'
+import { render, screen, waitFor } from '@testing-library/vue'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import AuthEmailForm from './AuthEmailForm.vue'
 

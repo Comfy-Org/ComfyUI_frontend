@@ -1,6 +1,5 @@
-import { expect } from '@playwright/test'
-
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
+import { expect } from '@playwright/test'
 
 test.describe('File input same-file reselection', () => {
   test('should allow uploading the same file twice via LoadImage node', async ({

@@ -1,20 +1,20 @@
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
 import { remove } from 'es-toolkit'
 import { computed, ref, toValue } from 'vue'
 import type { MaybeRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import AppModeWidgetList from '@/components/builder/AppModeWidgetList.vue'
-import DraggableList from '@/components/common/DraggableList.vue'
 import IoItem from '@/components/builder/IoItem.vue'
-import PropertiesAccordionItem from '@/components/rightSidePanel/layout/PropertiesAccordionItem.vue'
 import { useResolvedSelectedInputs } from '@/components/builder/useResolvedSelectedInputs'
 import type { ResolvedSelection } from '@/components/builder/useResolvedSelectedInputs'
-import type { WidgetId } from '@/types/widgetId'
-import { LiteGraph } from '@/lib/litegraph/src/litegraph'
-import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import DraggableList from '@/components/common/DraggableList.vue'
+import PropertiesAccordionItem from '@/components/rightSidePanel/layout/PropertiesAccordionItem.vue'
+import { useAppMode } from '@/composables/useAppMode'
 import type { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
-import type { NodeId } from '@/types/nodeId'
+import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import {
   LGraphEventMode,
   TitleMode
@@ -28,11 +28,11 @@ import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteracti
 import TransformPane from '@/renderer/core/layout/transform/TransformPane.vue'
 import { app } from '@/scripts/app'
 import { DOMWidgetImpl } from '@/scripts/domWidget'
-import { renameWidget } from '@/utils/widgetUtil'
-import { useAppMode } from '@/composables/useAppMode'
 import { nodeTypeValidForApp, useAppModeStore } from '@/stores/appModeStore'
+import type { NodeId } from '@/types/nodeId'
+import type { WidgetId } from '@/types/widgetId'
 import { deriveWidgetVisibility } from '@/types/widgetVisibility'
-import { cn } from '@comfyorg/tailwind-utils'
+import { renameWidget } from '@/utils/widgetUtil'
 
 type BoundStyle = { top: string; left: string; width: string; height: string }
 

@@ -1,8 +1,9 @@
-import { setTelemetryRegistry } from './index'
 import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
 import { getDevOverride } from '@/utils/devFeatureFlagOverride'
-import { TelemetryRegistry } from './TelemetryRegistry'
+
+import { setTelemetryRegistry } from './index'
 import { HostTelemetrySink } from './providers/host/HostTelemetrySink'
+import { TelemetryRegistry } from './TelemetryRegistry'
 
 const ENABLE_TELEMETRY_FEATURE = 'enable_telemetry'
 

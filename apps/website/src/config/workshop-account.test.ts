@@ -1,8 +1,6 @@
-import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
-
-import type { User } from 'firebase/auth'
-
 import type { AccountUser, SessionClient } from '@comfyorg/account/session'
+import type { User } from 'firebase/auth'
+import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 
 const h = vi.hoisted(() => ({
   captureSucceeded: vi.fn(),

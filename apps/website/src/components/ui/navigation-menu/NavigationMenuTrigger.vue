@@ -1,11 +1,10 @@
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
 import { ChevronDown } from '@lucide/vue'
 import type { NavigationMenuTriggerProps } from 'reka-ui'
 import { NavigationMenuTrigger, useForwardProps } from 'reka-ui'
 import type { HTMLAttributes } from 'vue'
 import { computed } from 'vue'
-
-import { cn } from '@comfyorg/tailwind-utils'
 
 import { navigationMenuTriggerStyle } from './navigationMenuTriggerStyle'
 

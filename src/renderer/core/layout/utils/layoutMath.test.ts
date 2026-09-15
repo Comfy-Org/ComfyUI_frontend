@@ -1,8 +1,5 @@
 import { describe, expect, it } from 'vitest'
 
-import { toNodeId } from '@/types/nodeId'
-import type { NodeId } from '@/types/nodeId'
-
 import type { NodeLayout } from '@/renderer/core/layout/types'
 import {
   REROUTE_RADIUS,
@@ -10,6 +7,8 @@ import {
   calculateBounds,
   pointInBounds
 } from '@/renderer/core/layout/utils/layoutMath'
+import { toNodeId } from '@/types/nodeId'
+import type { NodeId } from '@/types/nodeId'
 
 describe('layoutMath utils', () => {
   describe('pointInBounds', () => {

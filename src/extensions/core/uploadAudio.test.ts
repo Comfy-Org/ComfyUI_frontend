@@ -2,10 +2,10 @@ import { fromAny, fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { useToastStore } from '@/platform/updates/common/toastStore'
 import type { ComfyApi } from '@/scripts/api'
 import type { ComfyApp } from '@/scripts/app'
 import type { useAudioService } from '@/services/audioService'
-import { useToastStore } from '@/platform/updates/common/toastStore'
 
 const {
   extensions,

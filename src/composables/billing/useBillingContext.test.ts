@@ -1,21 +1,21 @@
+import { fromPartial } from '@total-typescript/shoehorn'
+import { storeToRefs } from 'pinia'
 import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import { effectScope, nextTick, computed } from 'vue'
 import type { Ref } from 'vue'
-import { storeToRefs } from 'pinia'
-import { fromPartial } from '@total-typescript/shoehorn'
-import { useAuthStore } from '@/stores/authStore'
-import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 
+import {
+  remoteConfig,
+  remoteConfigState
+} from '@/platform/remoteConfig/remoteConfig'
 import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
 import type {
   BillingRail,
   BillingStatusResponse,
   Plan
 } from '@/platform/workspace/api/workspaceApi'
-import {
-  remoteConfig,
-  remoteConfigState
-} from '@/platform/remoteConfig/remoteConfig'
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
+import { useAuthStore } from '@/stores/authStore'
 
 import { useBillingContext as useSharedBillingContext } from './useBillingContext'
 

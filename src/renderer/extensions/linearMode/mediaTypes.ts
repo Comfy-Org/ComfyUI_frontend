@@ -1,5 +1,4 @@
 import { t } from '@/i18n'
-
 import type { AugmentedResultItem } from '@/utils/resultItem'
 import { isImageResult, isTextResult, isVideoResult } from '@/utils/resultItem'
 

@@ -49,6 +49,7 @@
 </template>
 
 <script lang="ts" setup>
+import { cn } from '@comfyorg/tailwind-utils'
 import { storeToRefs } from 'pinia'
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -56,7 +57,6 @@ import { useI18n } from 'vue-i18n'
 import Button from '@/components/ui/button/Button.vue'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useQueueSettingsStore } from '@/stores/queueSettingsStore'
-import { cn } from '@comfyorg/tailwind-utils'
 
 import TinyChevronIcon from './TinyChevronIcon.vue'
 

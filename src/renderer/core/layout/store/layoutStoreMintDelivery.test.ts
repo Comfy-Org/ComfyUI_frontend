@@ -13,21 +13,20 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
+import { LayoutSource } from '@/renderer/core/layout/types'
+import { useLinkStore } from '@/stores/linkStore'
 import type { GraphScope } from '@/types/graphScopeId'
+import { toOwningGraphId, toRootGraphId } from '@/types/graphScopeId'
+import { toLinkId } from '@/types/linkId'
 import type { LinkTopology } from '@/types/linkTopology'
+import { toNodeId } from '@/types/nodeId'
+import { createUuidv4 } from '@/utils/uuid'
 import type { GraphOperation } from '@/workbench/extensions/agent/crdt/graphOperations'
 import type {
   MintPortWiring,
   MintableGraph
 } from '@/workbench/extensions/agent/crdt/mintPortWiring'
-
-import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
-import { LayoutSource } from '@/renderer/core/layout/types'
-import { useLinkStore } from '@/stores/linkStore'
-import { toOwningGraphId, toRootGraphId } from '@/types/graphScopeId'
-import { toLinkId } from '@/types/linkId'
-import { toNodeId } from '@/types/nodeId'
-import { createUuidv4 } from '@/utils/uuid'
 import { attachMintPortWiring } from '@/workbench/extensions/agent/crdt/mintPortWiring'
 
 function createNodeOp(graphId: string, id: string) {

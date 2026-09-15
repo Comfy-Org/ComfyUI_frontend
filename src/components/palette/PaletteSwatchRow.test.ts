@@ -1,6 +1,6 @@
+import userEvent from '@testing-library/user-event'
 /* eslint-disable testing-library/no-container, testing-library/no-node-access, testing-library/prefer-user-event */
 import { fireEvent, render, screen } from '@testing-library/vue'
-import userEvent from '@testing-library/user-event'
 import { describe, expect, it } from 'vitest'
 import { createI18n } from 'vue-i18n'
 

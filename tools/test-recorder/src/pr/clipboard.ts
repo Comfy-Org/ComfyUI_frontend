@@ -1,4 +1,5 @@
 import { spawnSync } from 'node:child_process'
+
 import { detectPlatform } from '../checks/platform'
 
 type ClipboardResult = { ok: true } | { ok: false; reason: string }

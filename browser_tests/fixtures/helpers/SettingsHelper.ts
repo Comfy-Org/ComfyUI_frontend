@@ -1,6 +1,5 @@
-import type { Page } from '@playwright/test'
-
 import { nextFrame } from '@e2e/fixtures/utils/timing'
+import type { Page } from '@playwright/test'
 
 export class SettingsHelper {
   constructor(private readonly page: Page) {}

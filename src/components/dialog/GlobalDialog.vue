@@ -133,10 +133,14 @@
 </template>
 
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
 import PrimeDialog from 'primevue/dialog'
 
-import { cn } from '@comfyorg/tailwind-utils'
-
+import {
+  onRekaFocusOutside,
+  onRekaPointerDownOutside
+} from '@/components/dialog/rekaPrimeVueBridge'
+import { vRekaZIndex } from '@/components/dialog/vRekaZIndex'
 import Dialog from '@/components/ui/dialog/Dialog.vue'
 import DialogClose from '@/components/ui/dialog/DialogClose.vue'
 import DialogContent from '@/components/ui/dialog/DialogContent.vue'
@@ -146,11 +150,6 @@ import DialogMaximize from '@/components/ui/dialog/DialogMaximize.vue'
 import DialogOverlay from '@/components/ui/dialog/DialogOverlay.vue'
 import DialogPortal from '@/components/ui/dialog/DialogPortal.vue'
 import DialogTitle from '@/components/ui/dialog/DialogTitle.vue'
-import {
-  onRekaFocusOutside,
-  onRekaPointerDownOutside
-} from '@/components/dialog/rekaPrimeVueBridge'
-import { vRekaZIndex } from '@/components/dialog/vRekaZIndex'
 import type { DialogInstance } from '@/stores/dialogStore'
 import { useDialogStore } from '@/stores/dialogStore'
 

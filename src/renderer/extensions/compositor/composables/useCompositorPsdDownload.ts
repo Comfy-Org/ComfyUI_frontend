@@ -2,6 +2,8 @@ import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { downloadBlob } from '@/base/common/downloadUtil'
+import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import { useToastStore } from '@/platform/updates/common/toastStore'
 import { loadCompositorSession } from '@/renderer/extensions/compositor/composables/compositorSession'
 import {
   buildSessionPsdBlob,
@@ -9,8 +11,6 @@ import {
 } from '@/renderer/extensions/layerEditor/composables/useLayerEditorExport'
 import type { LayerEditorSession } from '@/renderer/extensions/layerEditor/composables/useLayerEditorSession'
 import { useLayerEditorSession } from '@/renderer/extensions/layerEditor/composables/useLayerEditorSession'
-import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import { useToastStore } from '@/platform/updates/common/toastStore'
 
 export function useCompositorPsdDownload(
   createSession: () => LayerEditorSession = () => useLayerEditorSession()

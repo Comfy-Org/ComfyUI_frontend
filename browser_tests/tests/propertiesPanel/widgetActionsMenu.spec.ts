@@ -1,8 +1,7 @@
-import { expect } from '@playwright/test'
-
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { TestIds } from '@e2e/fixtures/selectors'
 import { PropertiesPanelHelper } from '@e2e/tests/propertiesPanel/PropertiesPanelHelper'
+import { expect } from '@playwright/test'
 
 test.describe('Properties panel - Widget actions menu', { tag: '@ui' }, () => {
   let panel: PropertiesPanelHelper

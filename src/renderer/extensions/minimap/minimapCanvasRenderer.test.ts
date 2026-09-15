@@ -1,4 +1,3 @@
-import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
@@ -6,15 +5,16 @@ import { LGraphEventMode } from '@/lib/litegraph/src/litegraph'
 import { renderMinimapToCanvas } from '@/renderer/extensions/minimap/minimapCanvasRenderer'
 import type { MinimapRenderContext } from '@/renderer/extensions/minimap/types'
 import { useLinkStore } from '@/stores/linkStore'
-import { adjustColor } from '@/utils/colorUtil'
+import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
+import { toOwningGraphId, toRootGraphId } from '@/types/graphScopeId'
+import { toLinkId } from '@/types/linkId'
+import { toNodeId } from '@/types/nodeId'
 import {
   createMockLGraph,
   createMockLGraphNode,
   createMockNodeOutputSlot
 } from '@/utils/__tests__/litegraphTestUtils'
-import { toOwningGraphId, toRootGraphId } from '@/types/graphScopeId'
-import { toLinkId } from '@/types/linkId'
-import { toNodeId } from '@/types/nodeId'
+import { adjustColor } from '@/utils/colorUtil'
 import type { UUID } from '@/utils/uuid'
 
 vi.mock(import('@/utils/colorUtil'), () => ({

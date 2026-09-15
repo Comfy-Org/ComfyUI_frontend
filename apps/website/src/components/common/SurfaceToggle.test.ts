@@ -2,7 +2,6 @@ import { render, screen, within } from '@testing-library/vue'
 import { describe, expect, it } from 'vitest'
 
 import type { Locale } from '../../i18n/translations'
-
 import SurfaceToggle from './SurfaceToggle.vue'
 
 const cases: {

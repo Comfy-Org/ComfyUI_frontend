@@ -1,11 +1,11 @@
-import { fireEvent, render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
+import { fireEvent, render, screen } from '@testing-library/vue'
 import { describe, expect, it, vi } from 'vitest'
 
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 
-import WidgetTextarea from './WidgetTextarea.vue'
 import { createMockWidget } from './widgetTestUtils'
+import WidgetTextarea from './WidgetTextarea.vue'
 
 const mockCopyToClipboard = vi.hoisted(() => vi.fn())
 const mockIsNodeOptionsOpen = vi.hoisted(() => vi.fn(() => false))

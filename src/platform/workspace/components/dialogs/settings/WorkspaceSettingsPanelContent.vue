@@ -22,11 +22,11 @@
 <script setup lang="ts">
 import { storeToRefs } from 'pinia'
 
-import WorkspaceProfilePic from '@/platform/workspace/components/WorkspaceProfilePic.vue'
 import BillingStatusBanner from '@/platform/workspace/components/dialogs/settings/BillingStatusBanner.vue'
 import PartnerNodeAccessPanel from '@/platform/workspace/components/dialogs/settings/PartnerNodeAccessPanel.vue'
 import PlanCreditsPanelContent from '@/platform/workspace/components/dialogs/settings/PlanCreditsPanelContent.vue'
 import WorkspaceMembersPanelContent from '@/platform/workspace/components/dialogs/settings/WorkspaceMembersPanelContent.vue'
+import WorkspaceProfilePic from '@/platform/workspace/components/WorkspaceProfilePic.vue'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 
 const { section } = defineProps<{

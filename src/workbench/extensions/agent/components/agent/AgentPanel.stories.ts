@@ -1,6 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/vue3-vite'
 
 import type { HistoryGroups } from '../../stores/agent/agentChatHistoryStore'
+
 import '../../agentPanel.css'
 
 import AgentPanel from './AgentPanel.vue'

@@ -1,9 +1,19 @@
+import userEvent from '@testing-library/user-event'
+import { render, screen, waitFor } from '@testing-library/vue'
 import {
   onAuthStateChanged,
   onIdTokenChanged,
   setPersistence
 } from 'firebase/auth'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { nextTick } from 'vue'
+import { createI18n } from 'vue-i18n'
 
+import enMessages from '@/locales/en/main.json' with { type: 'json' }
+import { WorkspaceApiError } from '@/platform/workspace/api/workspaceApi'
+import type { CreateTopupResponse } from '@/platform/workspace/api/workspaceApi'
+import { billingOperation } from '@/platform/workspace/composables/billingOperationTestUtils'
+import type { BillingOperation } from '@/platform/workspace/composables/billingOperationTestUtils'
 import { useBillingOperationStore } from '@/platform/workspace/stores/billingOperationStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import {
@@ -13,18 +23,6 @@ import {
 } from '@/platform/workspace/utils/checkoutJourney'
 import { useAuthStore } from '@/stores/authStore'
 import { useDialogStore } from '@/stores/dialogStore'
-import { render, screen, waitFor } from '@testing-library/vue'
-import userEvent from '@testing-library/user-event'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { nextTick } from 'vue'
-import { createI18n } from 'vue-i18n'
-
-import enMessages from '@/locales/en/main.json' with { type: 'json' }
-
-import { WorkspaceApiError } from '@/platform/workspace/api/workspaceApi'
-import type { CreateTopupResponse } from '@/platform/workspace/api/workspaceApi'
-import { billingOperation } from '@/platform/workspace/composables/billingOperationTestUtils'
-import type { BillingOperation } from '@/platform/workspace/composables/billingOperationTestUtils'
 
 import TopUpCreditsDialogContentWorkspace from './TopUpCreditsDialogContentWorkspace.vue'
 

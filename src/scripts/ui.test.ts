@@ -3,7 +3,6 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { ComfyApi } from './api'
 import type { ComfyApp } from './app'
-
 import { ComfyUI } from './ui'
 
 const { mockApp } = vi.hoisted(() => ({

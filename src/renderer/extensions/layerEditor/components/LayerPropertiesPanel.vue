@@ -187,17 +187,18 @@
 </template>
 
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
 import type { AcceptableValue } from 'reka-ui'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import PropertyNumberField from '@/renderer/extensions/layerEditor/components/PropertyNumberField.vue'
 import ColorPicker from '@/components/ui/color-picker/ColorPicker.vue'
 import Select from '@/components/ui/select/Select.vue'
 import SelectContent from '@/components/ui/select/SelectContent.vue'
 import SelectItem from '@/components/ui/select/SelectItem.vue'
 import SelectTrigger from '@/components/ui/select/SelectTrigger.vue'
 import SelectValue from '@/components/ui/select/SelectValue.vue'
+import PropertyNumberField from '@/renderer/extensions/layerEditor/components/PropertyNumberField.vue'
 import type {
   LayerEditorAlignOp,
   LayerEditorSession
@@ -209,7 +210,6 @@ import {
 } from '@/renderer/extensions/layerEditor/composables/useLayerEditorSession'
 import type { BlendFn } from '@/renderer/extensions/layerEditor/engine/mode'
 import { LAYER_MODES } from '@/renderer/extensions/layerEditor/engine/mode'
-import { cn } from '@comfyorg/tailwind-utils'
 
 const { session } = defineProps<{ session: LayerEditorSession }>()
 

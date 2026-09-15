@@ -1,4 +1,3 @@
-import { useAuthStore } from '@/stores/authStore'
 import userEvent from '@testing-library/user-event'
 import { render, screen, waitFor } from '@testing-library/vue'
 import PrimeVue from 'primevue/config'
@@ -8,6 +7,7 @@ import { createMemoryHistory, createRouter } from 'vue-router'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import CloudSignInForm from '@/platform/cloud/onboarding/components/CloudSignInForm.vue'
+import { useAuthStore } from '@/stores/authStore'
 
 const LOGIN_COPY = enMessages.auth.login
 

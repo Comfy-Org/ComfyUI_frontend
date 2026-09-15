@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest'
 
+import { rasterKind } from '../kinds/raster'
 import { defaultMode } from '../mode'
 import type { GroupData, RasterData, SceneNode } from '../node'
-import { rasterKind } from '../kinds/raster'
 import { AddNodeCommand, ReorderCommand } from './structure'
 
 function group(children: SceneNode[]): GroupData {

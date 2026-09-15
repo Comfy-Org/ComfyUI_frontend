@@ -1,9 +1,9 @@
-import { useSettingStore } from '@/platform/settings/settingStore'
-import { useAppModeStore } from '@/stores/appModeStore'
 import { beforeEach, afterEach, describe, expect, it, vi } from 'vitest'
 import { nextTick, ref } from 'vue'
 import type { Ref } from 'vue'
 
+import { useSettingStore } from '@/platform/settings/settingStore'
+import { useAppModeStore } from '@/stores/appModeStore'
 import type { AppMode } from '@/utils/appMode'
 
 import { clearCoachmarks } from './coachmarkRegistry'

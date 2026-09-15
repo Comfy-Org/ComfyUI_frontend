@@ -2,8 +2,8 @@ import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useSettingStore } from '@/platform/settings/settingStore'
-import type { ActionBarButton } from '@/types/comfy'
 import type { useExtensionService } from '@/services/extensionService'
+import type { ActionBarButton } from '@/types/comfy'
 
 const registerExtension = vi.hoisted(() => vi.fn())
 const openFeedbackDialog = vi.hoisted(() => vi.fn())

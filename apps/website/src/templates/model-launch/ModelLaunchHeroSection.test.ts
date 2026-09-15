@@ -1,9 +1,8 @@
 import { render, screen, within } from '@testing-library/vue'
 import { describe, expect, it } from 'vitest'
 
-import type { ModelLaunchHero } from './types'
-
 import ModelLaunchHeroSection from './ModelLaunchHeroSection.vue'
+import type { ModelLaunchHero } from './types'
 
 const hero: ModelLaunchHero = {
   layout: 'media-first',

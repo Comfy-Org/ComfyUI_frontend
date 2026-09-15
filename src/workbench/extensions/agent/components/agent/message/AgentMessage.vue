@@ -1,6 +1,14 @@
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
+
+import { renderMarkdownToHtml } from '@/utils/markdownRendererUtil'
+import { DEFAULT_AGENT_PAYWALL_PRESENTATION } from '@/workbench/extensions/agent/services/agent/agentPaywallPresentation'
+import type {
+  AgentPaywallAction,
+  AgentPaywallPresentation
+} from '@/workbench/extensions/agent/services/agent/agentPaywallPresentation'
 
 import type {
   ActivityPart,
@@ -12,21 +20,13 @@ import type {
   TextPart
 } from '../../../services/agent/agentMessageParts'
 import { htmlReplyAssets } from '../../../utils/replyAssets'
-import { cn } from '@comfyorg/tailwind-utils'
-import { renderMarkdownToHtml } from '@/utils/markdownRendererUtil'
-
-import MarkdownStream from './MarkdownStream.vue'
+import ActivityTrace from './ActivityTrace.vue'
 import AgentPaywallCard from './AgentPaywallCard.vue'
+import MarkdownStream from './MarkdownStream.vue'
 import MessageFeedback from './MessageFeedback.vue'
 import RunApprovalCard from './RunApprovalCard.vue'
 import TabLinkCard from './TabLinkCard.vue'
-import ActivityTrace from './ActivityTrace.vue'
 import WorkSummary from './WorkSummary.vue'
-import { DEFAULT_AGENT_PAYWALL_PRESENTATION } from '@/workbench/extensions/agent/services/agent/agentPaywallPresentation'
-import type {
-  AgentPaywallAction,
-  AgentPaywallPresentation
-} from '@/workbench/extensions/agent/services/agent/agentPaywallPresentation'
 
 const {
   message,

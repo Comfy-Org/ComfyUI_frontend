@@ -4,8 +4,8 @@ import { describe, expect, it } from 'vitest'
 import { defineComponent, h, inject } from 'vue'
 
 import HoverCard from './HoverCard.vue'
-import HoverCardTrigger from './HoverCardTrigger.vue'
 import { hoverCardOpenKey } from './hoverCardContext'
+import HoverCardTrigger from './HoverCardTrigger.vue'
 
 const OpenStateProbe = defineComponent({
   setup() {

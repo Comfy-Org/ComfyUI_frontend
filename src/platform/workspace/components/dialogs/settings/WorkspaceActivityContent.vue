@@ -190,6 +190,7 @@
 </template>
 
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -214,7 +215,6 @@ import type {
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import { userBadgeColor } from '@/platform/workspace/utils/badgeColor'
 import { formatRelativeTime } from '@/platform/workspace/utils/relativeTime'
-import { cn } from '@comfyorg/tailwind-utils'
 
 // `events` is the data seam: the tab shell mounts this with no events (empty
 // state) until FE-1249 wires the per-workspace usage API and passes them in.

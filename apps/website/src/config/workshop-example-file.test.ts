@@ -2,10 +2,10 @@ import { describe, expect, it, vi } from 'vitest'
 
 import { workshopExampleFile } from './workshop-example-file'
 import { loadWorkshopExampleFile } from './workshop-example-file-loader'
-import { getRouterWorkshopModelDetail } from './workshop-router-content'
+import { workshopExampleValues } from './workshop-example-values'
 import { defaultValues, schemaForModel } from './workshop-playground'
 import { prepareWorkshopRouterInput } from './workshop-request'
-import { workshopExampleValues } from './workshop-example-values'
+import { getRouterWorkshopModelDetail } from './workshop-router-content'
 import { createWorkshopUrlUploader } from './workshop-url-upload'
 
 describe('example source images', () => {

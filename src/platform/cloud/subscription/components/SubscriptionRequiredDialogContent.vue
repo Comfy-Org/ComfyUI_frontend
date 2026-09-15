@@ -153,15 +153,15 @@ import { computed, watch } from 'vue'
 
 import CloudBadge from '@/components/topbar/CloudBadge.vue'
 import Button from '@/components/ui/button/Button.vue'
+import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { MONTHLY_SUBSCRIPTION_PRICE } from '@/config/subscriptionPricesConfig'
 import PricingTable from '@/platform/cloud/subscription/components/PricingTable.vue'
 import SubscribeButton from '@/platform/cloud/subscription/components/SubscribeButton.vue'
 import SubscriptionBenefits from '@/platform/cloud/subscription/components/SubscriptionBenefits.vue'
-import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
-import { useCommandStore } from '@/stores/commandStore'
 import type { PaymentIntentSource } from '@/platform/telemetry/types'
+import { useCommandStore } from '@/stores/commandStore'
 
 const { onClose, reason, onChooseTeam } = defineProps<{
   onClose: () => void

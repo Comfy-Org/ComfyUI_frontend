@@ -1,12 +1,13 @@
 import { describe, expect, it, vi } from 'vitest'
+
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
 import { notifyLayoutChanges } from '@/renderer/core/canvas/litegraph/notifyLayoutChanges'
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { LayoutSource } from '@/renderer/core/layout/types'
 import { toGroupId } from '@/types/groupId'
 import { createUuidv4 } from '@/utils/uuid'
-import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
 
 function setup() {
   const graph = new LGraph()

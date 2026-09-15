@@ -1,6 +1,6 @@
+import { loadIconSet } from '@iconify/tailwind4/lib/helpers/loader.js'
 import { getIconsCSSData } from '@iconify/utils/lib/css/icons'
 import { matchIconName } from '@iconify/utils/lib/icon/name'
-import { loadIconSet } from '@iconify/tailwind4/lib/helpers/loader.js'
 import plugin from 'tailwindcss/plugin'
 
 import { COMFY_ICON_PREFIX, loadComfyIconSet } from './comfyIconSet.js'

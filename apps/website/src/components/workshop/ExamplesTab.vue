@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
 import { Check, Music2 } from '@lucide/vue'
 import { computed } from 'vue'
 
@@ -6,8 +7,6 @@ import type { PlaygroundExample } from '../../config/workshop-playground'
 import { isVideoUrl } from '../../config/workshop-playground'
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
-
-import { cn } from '@comfyorg/tailwind-utils'
 
 const {
   examples,

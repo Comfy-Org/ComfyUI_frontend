@@ -1,9 +1,9 @@
-import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type {
   INodeInputSlot,
   INodeOutputSlot,
   Point
 } from '@/lib/litegraph/src/interfaces'
+import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { isInRectangle } from '@/lib/litegraph/src/measure'
 
 export function getNodeInputOnPos(

@@ -1,10 +1,10 @@
 import { render } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { useDialogStore } from '@/stores/dialogStore'
-import { useToastStore } from '@/platform/updates/common/toastStore'
 import { createI18n } from 'vue-i18n'
 
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useDialogStore } from '@/stores/dialogStore'
 import { toNodeId } from '@/types/nodeId'
 
 import { useCompositorEditor } from './useCompositorEditor'

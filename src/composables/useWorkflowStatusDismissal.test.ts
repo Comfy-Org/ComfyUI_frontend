@@ -1,12 +1,12 @@
+import { fromPartial } from '@total-typescript/shoehorn'
+import { storeToRefs } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { effectScope, nextTick, shallowRef, markRaw } from 'vue'
-import { storeToRefs } from 'pinia'
 import type { Ref } from 'vue'
-import { fromPartial } from '@total-typescript/shoehorn'
+
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import { useExecutionStore } from '@/stores/executionStore'
-
 import type { WorkflowExecutionStatus } from '@/stores/executionStore'
 
 let mockActiveWorkflow: Ref<ComfyWorkflow | null>

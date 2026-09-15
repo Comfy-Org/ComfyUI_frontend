@@ -206,6 +206,7 @@
 </template>
 
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
 import { useElementSize, useTimeoutFn } from '@vueuse/core'
 import { computed, nextTick, ref, useTemplateRef, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -222,7 +223,6 @@ import type { NodeId } from '@/types/nodeId'
 import { isHdrImageUrl } from '@/utils/hdrFormatUtil'
 import { getGridThumbnailUrl } from '@/utils/imageUtil'
 import { resolveNode } from '@/utils/litegraphUtil'
-import { cn } from '@comfyorg/tailwind-utils'
 
 interface ImagePreviewProps {
   /** Array of image URLs to display */

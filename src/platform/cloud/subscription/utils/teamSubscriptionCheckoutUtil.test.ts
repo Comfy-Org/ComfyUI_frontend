@@ -1,5 +1,6 @@
-import { useAuthStore } from '@/stores/authStore'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+
+import { useAuthStore } from '@/stores/authStore'
 
 const {
   mockIsCloud,

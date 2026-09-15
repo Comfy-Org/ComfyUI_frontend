@@ -1,11 +1,10 @@
-import { describe, expect, it } from 'vitest'
-
 import { render, screen } from '@testing-library/vue'
+import { describe, expect, it } from 'vitest'
 
 import type { ColorStop } from '@/lib/litegraph/src/interfaces'
 
-import GradientSlider from './GradientSlider.vue'
 import { interpolateStops, stopsToGradient } from './gradients'
+import GradientSlider from './GradientSlider.vue'
 
 const TEST_STOPS: ColorStop[] = [
   { offset: 0, color: [0, 0, 0] },

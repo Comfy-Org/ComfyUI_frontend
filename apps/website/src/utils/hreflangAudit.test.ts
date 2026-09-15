@@ -1,8 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
-import type { Alternate } from './hreflangRoutes'
-
 import { auditBuiltSite, sitemapChunkNames } from './hreflangAudit'
+import type { Alternate } from './hreflangRoutes'
 
 const ORIGIN = 'https://comfy.org'
 

@@ -1,15 +1,15 @@
-import type { Pinia } from 'pinia'
-import { getActivePinia } from 'pinia'
-import { useDialogStore } from '@/stores/dialogStore'
+import userEvent from '@testing-library/user-event'
 /* eslint-disable testing-library/no-container */
 /* eslint-disable testing-library/no-node-access */
 import { render } from '@testing-library/vue'
-import userEvent from '@testing-library/user-event'
+import type { Pinia } from 'pinia'
+import { getActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { createI18n } from 'vue-i18n'
 import { nextTick } from 'vue'
+import { createI18n } from 'vue-i18n'
 
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
+import { useDialogStore } from '@/stores/dialogStore'
 
 import TeamWorkspacesDialogContent from './TeamWorkspacesDialogContent.vue'
 

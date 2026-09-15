@@ -1,8 +1,7 @@
-import type { SplitterResizeEndEvent } from 'primevue/splitter'
-import type { WatchSource } from 'vue'
-
 import { unrefElement, useStorage } from '@vueuse/core'
 import type { MaybeComputedElementRef } from '@vueuse/core'
+import type { SplitterResizeEndEvent } from 'primevue/splitter'
+import type { WatchSource } from 'vue'
 import { nextTick, watch } from 'vue'
 
 interface PanelConfig {

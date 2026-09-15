@@ -1,8 +1,8 @@
 import type { Token } from 'marked'
 
-import type { AugmentedResultItem } from '@/utils/resultItem'
 import type { MediaType } from '@/utils/formatUtil'
 import { getMediaTypeFromFilename } from '@/utils/formatUtil'
+import type { AugmentedResultItem } from '@/utils/resultItem'
 
 type ReplyAssetKind = Extract<MediaType, 'image' | 'video' | 'audio' | '3D'>
 

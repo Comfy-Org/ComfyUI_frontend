@@ -1,8 +1,4 @@
-import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { transferLinkPresentation } from '@/core/graph/transferLinkPresentation'
-import { graphScopeOf } from '@/types/graphScopeId'
-import type { LLink } from '@/lib/litegraph/src/LLink'
-import type { Reroute } from '@/lib/litegraph/src/Reroute'
 import type { CustomEventTarget } from '@/lib/litegraph/src/infrastructure/CustomEventTarget'
 import type { LinkConnectorEventMap } from '@/lib/litegraph/src/infrastructure/LinkConnectorEventMap'
 import type {
@@ -12,10 +8,14 @@ import type {
   Point,
   SlotIndex
 } from '@/lib/litegraph/src/interfaces'
+import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import type { LLink } from '@/lib/litegraph/src/LLink'
+import type { Reroute } from '@/lib/litegraph/src/Reroute'
 import type { SubgraphInput } from '@/lib/litegraph/src/subgraph/SubgraphInput'
-import type { NodeLike } from '@/lib/litegraph/src/types/NodeLike'
 import { LinkDirection } from '@/lib/litegraph/src/types/globalEnums'
+import type { NodeLike } from '@/lib/litegraph/src/types/NodeLike'
 import type { SubgraphIO } from '@/lib/litegraph/src/types/serialisation'
+import { graphScopeOf } from '@/types/graphScopeId'
 
 import { MovingLinkBase } from './MovingLinkBase'
 

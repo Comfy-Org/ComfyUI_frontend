@@ -1,8 +1,8 @@
 import { beforeEach, expect, it, vi } from 'vitest'
 
 import { prepareModelPage } from '../routes/models/model-page'
-import { workshopModels } from './workshop-browse-content'
 import { fetchModelsCatalogue, fetchModelsPage } from './models-page-data'
+import { workshopModels } from './workshop-browse-content'
 
 const modelSlug = 'bfl--flux-2-max--generate-images'
 const page = await prepareModelPage(modelSlug)

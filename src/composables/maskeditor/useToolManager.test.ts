@@ -1,4 +1,3 @@
-import { useMaskEditorStore } from '@/stores/maskEditorStore'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { effectScope, nextTick } from 'vue'
 import type { EffectScope } from 'vue'
@@ -6,6 +5,7 @@ import type { EffectScope } from 'vue'
 import { useBrushDrawing } from '@/composables/maskeditor/useBrushDrawing'
 import { useToolManager } from '@/composables/maskeditor/useToolManager'
 import { Tools } from '@/extensions/core/maskeditor/types'
+import { useMaskEditorStore } from '@/stores/maskEditorStore'
 
 let mockStore: ReturnType<typeof useMaskEditorStore>
 

@@ -176,6 +176,7 @@
 </template>
 
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
 import { useAsyncState } from '@vueuse/core'
 import {
   CollapsibleContent,
@@ -184,12 +185,11 @@ import {
 } from 'reka-ui'
 import { computed, ref } from 'vue'
 
-import type { SharedWorkflowPayload } from '@/platform/workflow/sharing/types/shareTypes'
-import AssetSectionList from '@/platform/workflow/sharing/components/AssetSectionList.vue'
-import { useWorkflowShareService } from '@/platform/workflow/sharing/services/workflowShareService'
 import Button from '@/components/ui/button/Button.vue'
 import Skeleton from '@/components/ui/skeleton/Skeleton.vue'
-import { cn } from '@comfyorg/tailwind-utils'
+import AssetSectionList from '@/platform/workflow/sharing/components/AssetSectionList.vue'
+import { useWorkflowShareService } from '@/platform/workflow/sharing/services/workflowShareService'
+import type { SharedWorkflowPayload } from '@/platform/workflow/sharing/types/shareTypes'
 
 type OpeningAction = 'copy-and-open' | 'open-only'
 

@@ -6,20 +6,20 @@ import type { Mocked } from 'vitest'
 import { computed, effectScope, ref } from 'vue'
 import type { EffectScope } from 'vue'
 let setupScope: EffectScope
-import { useAgentConsentStore } from '@/workbench/extensions/agent/stores/agent/agentConsentStore'
-
-import type { ComfyExtension } from '@/types/comfy'
-import type { useCurrentUser } from '@/composables/auth/useCurrentUser'
-import type { useExtensionService } from '@/services/extensionService'
 import type { PostHog } from 'posthog-js'
+
+import type { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import type { useExtensionService } from '@/services/extensionService'
 import { useAgentNodeSelectionStore } from '@/stores/agentNodeSelectionStore'
-import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
+import type { ComfyExtension } from '@/types/comfy'
 import { createMockLoadedWorkflow } from '@/utils/__tests__/litegraphTestUtils'
 import { getNodeByLocatorId } from '@/utils/graphTraversalUtil'
 import { isLGraphNode } from '@/utils/litegraphUtil'
+import { useAgentConsentStore } from '@/workbench/extensions/agent/stores/agent/agentConsentStore'
+import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 
 let agentStore: Mocked<ReturnType<typeof useAgentPanelStore>>
 let canvasStore: Mocked<ReturnType<typeof useCanvasStore>>

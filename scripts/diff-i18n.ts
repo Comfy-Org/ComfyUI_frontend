@@ -7,6 +7,7 @@ import {
   writeFileSync
 } from 'fs'
 import { dirname, join } from 'path'
+
 import type { LocaleData } from './i18n-types'
 
 // Ensure directories exist

@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import type { JobListItem } from '@/platform/remote/comfyui/jobs/jobTypes'
+
 import {
   getAssetDetectionNames,
   resolveMissingMediaAssetSources

@@ -1,8 +1,8 @@
 import { fromAny, fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { INodeInputSlot } from '@/lib/litegraph/src/interfaces'
+import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { app } from '@/scripts/app'
 import { useAppModeStore } from '@/stores/appModeStore'
 import { toNodeId } from '@/types/nodeId'

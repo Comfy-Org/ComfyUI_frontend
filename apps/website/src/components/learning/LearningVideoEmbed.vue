@@ -1,7 +1,6 @@
 <script setup lang="ts">
-import type { HTMLAttributes } from 'vue'
-
 import { cn } from '@comfyorg/tailwind-utils'
+import type { HTMLAttributes } from 'vue'
 
 import { youtubeEmbedUrl } from '../../data/learningTutorials'
 

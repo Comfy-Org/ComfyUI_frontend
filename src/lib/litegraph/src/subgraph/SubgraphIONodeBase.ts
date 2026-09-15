@@ -1,5 +1,3 @@
-import { serializeNodeId } from '@/types/nodeId'
-import type { NodeId } from '@/types/nodeId'
 import type { LinkConnector } from '@/lib/litegraph/src/canvas/LinkConnector'
 import { Rectangle } from '@/lib/litegraph/src/infrastructure/Rectangle'
 import type {
@@ -23,6 +21,8 @@ import type {
   ExportedSubgraphIONode,
   Serialisable
 } from '@/lib/litegraph/src/types/serialisation'
+import { serializeNodeId } from '@/types/nodeId'
+import type { NodeId } from '@/types/nodeId'
 
 import type { EmptySubgraphInput } from './EmptySubgraphInput'
 import type { EmptySubgraphOutput } from './EmptySubgraphOutput'

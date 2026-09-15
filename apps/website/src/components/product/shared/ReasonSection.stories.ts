@@ -1,7 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/vue3-vite'
 
 import type { Reason } from './ReasonSection.vue'
-
 import ReasonSection from './ReasonSection.vue'
 
 const defaultReasons: Reason[] = [

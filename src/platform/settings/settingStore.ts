@@ -1,6 +1,6 @@
+import { until, useAsyncState } from '@vueuse/core'
 import { retry } from 'es-toolkit'
 import { cloneDeep } from 'es-toolkit/compat'
-import { until, useAsyncState } from '@vueuse/core'
 import { defineStore } from 'pinia'
 import { compare, valid } from 'semver'
 import { ref } from 'vue'

@@ -29,9 +29,8 @@
 </template>
 
 <script setup lang="ts">
-import { computed, useSlots } from 'vue'
-
 import { cn } from '@comfyorg/tailwind-utils'
+import { computed, useSlots } from 'vue'
 
 const slots = useSlots()
 

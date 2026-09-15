@@ -2,7 +2,6 @@ import { render, screen } from '@testing-library/vue'
 import { describe, expect, it, vi } from 'vitest'
 
 import type { ComfyEvent } from '../../data/events'
-
 import { directoryRows } from '../../utils/eventsDirectory'
 import EventsCardsView from './EventsCardsView.vue'
 

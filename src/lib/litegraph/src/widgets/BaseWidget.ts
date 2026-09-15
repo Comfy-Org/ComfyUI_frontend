@@ -1,9 +1,7 @@
 import { t } from '@/i18n'
 import { drawTextInArea } from '@/lib/litegraph/src/draw'
-import { cachedMeasureText } from '@/lib/litegraph/src/utils/textMeasureCache'
 import { Rectangle } from '@/lib/litegraph/src/infrastructure/Rectangle'
 import type { Point } from '@/lib/litegraph/src/interfaces'
-import type { NodeId } from '@/types/nodeId'
 import type {
   CanvasPointer,
   LGraphCanvas,
@@ -16,8 +14,10 @@ import type {
   IBaseWidget,
   NodeBindable
 } from '@/lib/litegraph/src/types/widgets'
+import { cachedMeasureText } from '@/lib/litegraph/src/utils/textMeasureCache'
 import { deriveWidgetRenderState } from '@/lib/litegraph/src/utils/widget'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import type { NodeId } from '@/types/nodeId'
 import type { WidgetId } from '@/types/widgetId'
 import { ensureUniqueWidgetNames, widgetId } from '@/types/widgetId'
 import type { WidgetState } from '@/types/widgetState'

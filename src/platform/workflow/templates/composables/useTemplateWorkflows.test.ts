@@ -1,5 +1,3 @@
-import { useDialogStore } from '@/stores/dialogStore'
-import { usePartnerNodesEducationStore } from '@/platform/workflow/templates/stores/partnerNodesEducationStore'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { App } from 'vue'
 import { createApp, defineComponent } from 'vue'
@@ -7,6 +5,8 @@ import { createApp, defineComponent } from 'vue'
 import { i18n } from '@/i18n'
 import { useTemplateWorkflows as createTemplateWorkflows } from '@/platform/workflow/templates/composables/useTemplateWorkflows'
 import { useWorkflowTemplatesStore } from '@/platform/workflow/templates/repositories/workflowTemplatesStore'
+import { usePartnerNodesEducationStore } from '@/platform/workflow/templates/stores/partnerNodesEducationStore'
+import { useDialogStore } from '@/stores/dialogStore'
 
 async function flushPromises() {
   await new Promise((r) => setTimeout(r, 0))

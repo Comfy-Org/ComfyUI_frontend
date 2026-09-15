@@ -3,12 +3,11 @@ import { defineStore } from 'pinia'
 import { v4 as uuidv4 } from 'uuid'
 import { ref, watch } from 'vue'
 
-import { t } from '@/i18n'
 import { useCachedRequest } from '@/composables/useCachedRequest'
 import { useServerLogs } from '@/composables/useServerLogs'
+import { t } from '@/i18n'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
-
 import { normalizePackKeys } from '@/utils/packUtils'
 import { useManagerQueue } from '@/workbench/extensions/manager/composables/useManagerQueue'
 import { useComfyManagerService } from '@/workbench/extensions/manager/services/comfyManagerService'

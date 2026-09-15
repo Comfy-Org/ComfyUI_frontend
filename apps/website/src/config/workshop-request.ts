@@ -3,12 +3,16 @@ import type {
   WorkshopMediaBinding
 } from './workshop-contract'
 import { formForContract } from './workshop-contract'
+import { prepareWorkshopCreatorRequest } from './workshop-creator-request'
+import { loadWorkshopExampleFile } from './workshop-example-file-loader'
+import { workshopFileBase64 } from './workshop-file-encoding'
 import {
   fieldsForDefinition,
   usesRequestBodyEditor
 } from './workshop-form-definition'
-import { validateWorkshopInput, validatorFor } from './workshop-json-schema'
 import { pointerKeys, setAtPointer } from './workshop-json-pointer'
+import { validateWorkshopInput, validatorFor } from './workshop-json-schema'
+import { MAX_REQUEST_BYTES } from './workshop-limits'
 import type { FieldErrors, FormValues } from './workshop-playground'
 import {
   MAX_UPLOAD_BYTES,
@@ -16,12 +20,8 @@ import {
   validateForm
 } from './workshop-playground'
 import { WorkshopRouterError } from './workshop-router-errors'
-import { workshopFileBase64 } from './workshop-file-encoding'
-import { prepareWorkshopCreatorRequest } from './workshop-creator-request'
 import type { WorkshopUrlEncoder } from './workshop-url-input'
 import { resolveWorkshopUrlInputs } from './workshop-url-input'
-import { loadWorkshopExampleFile } from './workshop-example-file-loader'
-import { MAX_REQUEST_BYTES } from './workshop-limits'
 
 const ACCEPT: Record<WorkshopMediaBinding['accept'], readonly string[]> = {
   image: ['image/png', 'image/jpeg', 'image/webp'],

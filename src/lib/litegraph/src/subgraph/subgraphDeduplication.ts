@@ -1,6 +1,11 @@
-import type { LGraph } from '../LGraph'
 import { isUuidShapedSubgraphId } from '@/schemas/subgraphIdSchema'
 import { toGroupId } from '@/types/groupId'
+import { toLinkId } from '@/types/linkId'
+import { toNodeId } from '@/types/nodeId'
+import type { NodeId, SerializedNodeId } from '@/types/nodeId'
+import { toRerouteId } from '@/types/rerouteId'
+import { createUuidv4 } from '@/utils/uuid'
+
 import {
   mintGroupId,
   mintLinkId,
@@ -12,15 +17,11 @@ import {
   observeRerouteId
 } from '../idAllocation'
 import type { LGraphState } from '../idAllocation'
+import type { LGraph } from '../LGraph'
 import {
   normalizeConfiguredTopology,
   remapLinkReferences
 } from '../linkDeduplication'
-import { toNodeId } from '@/types/nodeId'
-import type { NodeId, SerializedNodeId } from '@/types/nodeId'
-import { toLinkId } from '@/types/linkId'
-import { toRerouteId } from '@/types/rerouteId'
-import { createUuidv4 } from '@/utils/uuid'
 import type {
   ExportedSubgraph,
   ExposedWidget,

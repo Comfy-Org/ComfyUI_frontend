@@ -1,5 +1,5 @@
-import { devServerPort, devServerUrl } from './devServerUrl'
 import { fail, info, pass, warn } from '../ui/logger'
+import { devServerPort, devServerUrl } from './devServerUrl'
 import type { CheckResult } from './types'
 
 const NAME = 'Dev server'

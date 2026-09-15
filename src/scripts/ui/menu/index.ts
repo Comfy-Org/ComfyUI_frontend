@@ -2,6 +2,7 @@ import type { ComfyApp } from '@/scripts/app'
 
 import { $el } from '../../ui'
 import { ComfyButtonGroup } from '../components/buttonGroup'
+
 import './menu.css'
 
 // Export to make sure following components are shimmed and exported by vite

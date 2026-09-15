@@ -1,15 +1,15 @@
 import type { WorkshopDisplayEntry } from '../content/workshop-display.schema'
 import type { GeneratedExample, WorkshopModelDetail } from './models-catalogue'
-import { formForContract } from './workshop-contract'
-import { workshopContract } from './workshop-contract-catalog'
-import { workshopPromptDefaults } from './workshop-prompt-defaults'
-import type { WorkshopContract } from './workshop-contract'
-import { workshopExampleValues } from './workshop-example-values'
 import {
   routerContentBySlug,
   routerModelSlugAliases,
   workshopModels
 } from './workshop-browse-content'
+import { formForContract } from './workshop-contract'
+import type { WorkshopContract } from './workshop-contract'
+import { workshopContract } from './workshop-contract-catalog'
+import { workshopExampleValues } from './workshop-example-values'
+import { workshopPromptDefaults } from './workshop-prompt-defaults'
 
 function examplesFor(
   model: WorkshopModelDetail,

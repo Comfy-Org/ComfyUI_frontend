@@ -7,8 +7,8 @@ import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { toNodeId } from '@/types/nodeId'
 import { widgetId } from '@/types/widgetId'
 
-import { LegacyWidget } from './LegacyWidget'
 import { ButtonWidget } from './ButtonWidget'
+import { LegacyWidget } from './LegacyWidget'
 import { TextWidget } from './TextWidget'
 import { toConcreteWidget } from './widgetMap'
 

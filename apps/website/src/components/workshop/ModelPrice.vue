@@ -2,8 +2,9 @@
 import { computed } from 'vue'
 
 import InfoTooltip from '@/components/ui/tooltip/InfoTooltip.vue'
-import { splitPriceLabel } from '../../lib/workshop/price-label'
+
 import { t } from '../../i18n/translations'
+import { splitPriceLabel } from '../../lib/workshop/price-label'
 
 const { estimate } = defineProps<{ estimate?: string }>()
 

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
 import {
   TooltipArrow,
   TooltipContent,
@@ -10,7 +11,6 @@ import {
 import { computed, ref } from 'vue'
 
 import { useModalLiftedZIndex } from '@/composables/useModalLiftedZIndex'
-import { cn } from '@comfyorg/tailwind-utils'
 
 const {
   label,

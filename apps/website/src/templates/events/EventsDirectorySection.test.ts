@@ -4,7 +4,6 @@ import { describe, expect, it } from 'vitest'
 import { nextTick } from 'vue'
 
 import type { ComfyEvent } from '../../data/events'
-
 import EventsDirectorySection from './EventsDirectorySection.vue'
 
 // Three fixtures against a fixed clock: an upcoming hackathon and a past

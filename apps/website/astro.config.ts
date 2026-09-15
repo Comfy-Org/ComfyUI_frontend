@@ -1,8 +1,9 @@
-import { defineConfig } from 'astro/config'
 import mdx from '@astrojs/mdx'
 import sitemap from '@astrojs/sitemap'
 import vue from '@astrojs/vue'
 import tailwindcss from '@tailwindcss/vite'
+import { defineConfig } from 'astro/config'
+
 import { isExcludedFromSitemap } from './src/config/indexing'
 import { redirects } from './src/config/redirects'
 import { markdownTwins } from './src/integrations/markdown-twins'

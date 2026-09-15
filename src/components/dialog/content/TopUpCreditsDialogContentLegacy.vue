@@ -150,6 +150,7 @@
 </template>
 
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
 import { useToast } from 'primevue/usetoast'
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -158,13 +159,12 @@ import { creditsToUsd, usdToCredits } from '@/base/credits/comfyCredits'
 import Button from '@/components/ui/button/Button.vue'
 import FormattedNumberStepper from '@/components/ui/stepper/FormattedNumberStepper.vue'
 import { useAuthActions } from '@/composables/auth/useAuthActions'
-import { useExternalLink } from '@/composables/useExternalLink'
-import { useTelemetry } from '@/platform/telemetry'
 import { usePendingTopup } from '@/composables/billing/usePendingTopup'
-import { categorizeBillingApiError } from '@/platform/telemetry/utils/billingFailureCategory'
+import { useExternalLink } from '@/composables/useExternalLink'
 import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
+import { useTelemetry } from '@/platform/telemetry'
+import { categorizeBillingApiError } from '@/platform/telemetry/utils/billingFailureCategory'
 import { useDialogStore } from '@/stores/dialogStore'
-import { cn } from '@comfyorg/tailwind-utils'
 
 const { isInsufficientCredits = false } = defineProps<{
   isInsufficientCredits?: boolean

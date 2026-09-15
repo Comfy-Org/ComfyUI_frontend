@@ -49,12 +49,12 @@
 </template>
 
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
 import { computed, toRef, useTemplateRef } from 'vue'
 
 import { useCropBoxEditor } from '@/composables/video/useCropBoxEditor'
 import type { CropResizeDir } from '@/composables/video/useCropBoxEditor'
 import type { Bounds } from '@/renderer/core/layout/types'
-import { cn } from '@comfyorg/tailwind-utils'
 
 const CORNER_HANDLES: Array<{ dir: CropResizeDir; cursor: string }> = [
   { dir: 'nw', cursor: 'cursor-nwse-resize' },

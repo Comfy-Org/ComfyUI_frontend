@@ -1,9 +1,8 @@
+import { externalLinks } from '../config/routes'
 import type {
   ModelLaunchMedia,
   ModelLaunchPage
 } from '../templates/model-launch/types'
-
-import { externalLinks } from '../config/routes'
 
 // Flux 3 launch footage, encoded to the site's web video profile and served
 // from media.comfy.org. Posters are pending: add each clip's `posterSrc` once

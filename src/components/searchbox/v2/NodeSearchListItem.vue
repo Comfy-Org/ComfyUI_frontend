@@ -119,6 +119,7 @@
 </template>
 
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
 import { computed } from 'vue'
 
 import TextTicker from '@/components/common/TextTicker.vue'
@@ -133,7 +134,6 @@ import { useNodeFrequencyStore } from '@/stores/nodeDefStore'
 import { CORE_NODE_MODULES, NodeSourceType } from '@/types/nodeSource'
 import { getProviderIcon, getProviderName } from '@/utils/categoryUtil'
 import { formatNumberWithSuffix } from '@/utils/formatUtil'
-import { cn } from '@comfyorg/tailwind-utils'
 
 const {
   nodeDef,

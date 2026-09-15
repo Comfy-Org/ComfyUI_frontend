@@ -4,15 +4,15 @@ import type { GLTF } from 'three/examples/jsm/loaders/GLTFLoader'
 
 import type { RendererViewState } from '@/renderer/three/sharedWebGLRenderer'
 
-import { DEFAULT_MODEL_CAPABILITIES } from './ModelAdapter'
-import type { ModelAdapterCapabilities } from './ModelAdapter'
-import { buildPointCloudForMaterialMode } from './PointCloudModelAdapter'
 import type {
   EventManagerInterface,
   MaterialMode,
   ModelManagerInterface,
   UpDirection
 } from './interfaces'
+import { DEFAULT_MODEL_CAPABILITIES } from './ModelAdapter'
+import type { ModelAdapterCapabilities } from './ModelAdapter'
+import { buildPointCloudForMaterialMode } from './PointCloudModelAdapter'
 
 export class SceneModelManager implements ModelManagerInterface {
   currentModel: THREE.Object3D | null = null

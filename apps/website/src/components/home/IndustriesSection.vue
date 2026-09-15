@@ -4,10 +4,9 @@ import { useElementVisibility } from '@vueuse/core'
 import { computed, ref, useId, useTemplateRef } from 'vue'
 
 import { useAutoAdvance } from '../../composables/useAutoAdvance'
-
+import { externalLinks } from '../../config/routes'
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
-import { externalLinks } from '../../config/routes'
 import BrandButton from '../common/BrandButton.vue'
 import BlobMedia from './BlobMedia.vue'
 

@@ -9,6 +9,7 @@ import {
   LGraphNode
 } from '@/lib/litegraph/src/litegraph'
 
+// oxfmt-ignore
 import { LGraph as DirectLGraph } from '@/lib/litegraph/src/LGraph'
 
 import { test } from './__fixtures__/testExtensions'

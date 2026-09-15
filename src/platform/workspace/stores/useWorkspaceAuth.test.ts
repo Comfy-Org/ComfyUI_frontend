@@ -1,6 +1,3 @@
-import { useAuthStore } from '@/stores/authStore'
-import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
-import { useToastStore } from '@/platform/updates/common/toastStore'
 import type { User } from 'firebase/auth'
 import {
   onAuthStateChanged,
@@ -8,19 +5,21 @@ import {
   setPersistence
 } from 'firebase/auth'
 import { storeToRefs } from 'pinia'
-import { nextTick } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { nextTick } from 'vue'
 
-import {
-  useWorkspaceAuthStore,
-  WorkspaceAuthError
-} from '@/platform/workspace/stores/workspaceAuthStore'
-
+import { useToastStore } from '@/platform/updates/common/toastStore'
 import {
   getWorkspaceId,
   StorageKeys
 } from '@/platform/workflow/persistence/base/storageKeys'
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
+import {
+  useWorkspaceAuthStore,
+  WorkspaceAuthError
+} from '@/platform/workspace/stores/workspaceAuthStore'
 import { WORKSPACE_STORAGE_KEYS } from '@/platform/workspace/workspaceConstants'
+import { useAuthStore } from '@/stores/authStore'
 
 vi.mock(import('firebase/auth'), { spy: true })
 

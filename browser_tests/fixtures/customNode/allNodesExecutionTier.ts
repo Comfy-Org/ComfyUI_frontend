@@ -1,4 +1,3 @@
-import type { Page } from '@playwright/test'
 import { createHash } from 'node:crypto'
 
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
@@ -35,6 +34,7 @@ import {
   drainBackendToIdle,
   waitForQueueQuiet
 } from '@e2e/fixtures/utils/customNodeSuite'
+import type { Page } from '@playwright/test'
 
 const AUTO_RUN_BATCH = 10
 const SINGLE_RERUN_TIMEOUT = 60_000

@@ -1,6 +1,7 @@
 import { intersection } from 'es-toolkit/compat'
 
 import { useChainCallback } from '@/composables/functional/useChainCallback'
+import type { IWidgetLocator } from '@/lib/litegraph/src/interfaces'
 import { createWidgetRestorationState } from '@/lib/litegraph/src/LGraphNode'
 import { LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type {
@@ -10,27 +11,26 @@ import type {
   ISlotType,
   LLink
 } from '@/lib/litegraph/src/litegraph'
-import type { IWidgetLocator } from '@/lib/litegraph/src/interfaces'
 import { NodeSlot } from '@/lib/litegraph/src/node/NodeSlot'
 import { outputHasLinks, outputLinks } from '@/lib/litegraph/src/node/slotLinks'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { assetService } from '@/platform/assets/services/assetService'
 import { createAssetWidget } from '@/platform/assets/utils/createAssetWidget'
+import { isPrimitiveNode } from '@/renderer/utils/nodeTypeGuards'
 import {
   getComboSpecComboOptions,
   isComboInputSpec
 } from '@/schemas/nodeDefSchema'
 import type { ComfyNodeDef, InputSpec } from '@/schemas/nodeDefSchema'
 import { app } from '@/scripts/app'
-import { useWidgetValueStore } from '@/stores/widgetValueStore'
-import type { WidgetValue } from '@/types/simplifiedWidget'
 import {
   ComfyWidgets,
   addValueControlWidgets,
   isValidWidgetType
 } from '@/scripts/widgets'
-import { isPrimitiveNode } from '@/renderer/utils/nodeTypeGuards'
 import { CONFIG, GET_CONFIG } from '@/services/litegraphService'
+import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import type { WidgetValue } from '@/types/simplifiedWidget'
 import { mergeInputSpec } from '@/utils/nodeDefUtil'
 import { applyTextReplacements } from '@/utils/searchAndReplace'
 

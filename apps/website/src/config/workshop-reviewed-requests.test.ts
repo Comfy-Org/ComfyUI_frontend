@@ -1,17 +1,17 @@
 import { describe, expect, it, vi } from 'vitest'
 
-import { workshopContract } from './workshop-contract-catalog'
 import { formForContract } from './workshop-contract'
+import { workshopContract } from './workshop-contract-catalog'
+import { workshopExampleValues } from './workshop-example-values'
+import { validateWorkshopInput } from './workshop-json-schema'
 import {
   defaultValues,
   schemaForModel,
   validateForm
 } from './workshop-playground'
-import { getRouterWorkshopModelDetail } from './workshop-router-content'
 import { prepareWorkshopRouterInput } from './workshop-request'
 import { prepareWorkshopRequestCallback } from './workshop-request-callbacks'
-import { validateWorkshopInput } from './workshop-json-schema'
-import { workshopExampleValues } from './workshop-example-values'
+import { getRouterWorkshopModelDetail } from './workshop-router-content'
 
 function contractFor(id: string) {
   const contract = workshopContract(id)

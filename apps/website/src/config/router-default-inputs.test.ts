@@ -1,12 +1,12 @@
 import { describe, expect, it } from 'vitest'
 
 import defaultMedia from '../data/router-default-media.json'
-import { initialWorkshopPageState } from './workshop-page-state'
+import { applyRouterDefaultInputs } from './router-default-inputs'
 import { prepareModelRouterRender } from './router-render'
 import { workshopModels } from './workshop-browse-content'
-import { getRouterWorkshopModelDetail } from './workshop-router-content'
+import { initialWorkshopPageState } from './workshop-page-state'
 import { validateForm } from './workshop-playground'
-import { applyRouterDefaultInputs } from './router-default-inputs'
+import { getRouterWorkshopModelDetail } from './workshop-router-content'
 
 function modelFor(slug: string) {
   const model = getRouterWorkshopModelDetail(slug)

@@ -1,6 +1,6 @@
-import { useToastStore } from '@/platform/updates/common/toastStore'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useAudioService } from '@/services/audioService'
 import type { AudioRecordingError } from '@/services/audioService'
 

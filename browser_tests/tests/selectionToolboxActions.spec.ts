@@ -1,13 +1,12 @@
-import type { Locator } from '@playwright/test'
-
-import type { PromptResponse } from '@/schemas/apiSchema'
-
 import {
   comfyExpect as expect,
   comfyPageFixture as test
 } from '@e2e/fixtures/ComfyPage'
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import type { NodeReference } from '@e2e/fixtures/utils/litegraphUtils'
+import type { Locator } from '@playwright/test'
+
+import type { PromptResponse } from '@/schemas/apiSchema'
 
 const BYPASS_CLASS = /before:bg-bypass\/60/
 

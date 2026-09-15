@@ -1,3 +1,4 @@
+import type { Object3D } from 'three'
 /**
  * Load3D Service - provides access to Load3D instances
  *
@@ -7,7 +8,6 @@
  */
 import { toRaw } from 'vue'
 
-import type Load3d from '@/extensions/core/load3d/Load3d'
 import type {
   AnimationItem,
   BackgroundRenderModeType,
@@ -15,9 +15,9 @@ import type {
   MaterialMode,
   UpDirection
 } from '@/extensions/core/load3d/interfaces'
+import type Load3d from '@/extensions/core/load3d/Load3d'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { NodeId } from '@/types/nodeId'
-import type { Object3D } from 'three'
 
 // Type for the useLoad3dViewer composable function
 // Using explicit type to avoid import() type annotations (lint rule)

@@ -1,7 +1,3 @@
-import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
-import { useCanvasStore } from '@/renderer/core/canvas/canvasStore' // eslint-disable-line import-x/no-restricted-paths
-import { useWorkflowDraftStoreV2 } from '@/platform/workflow/persistence/stores/workflowDraftStoreV2'
-import { useDomWidgetStore } from '@/stores/domWidgetStore'
 import {
   onAuthStateChanged,
   onIdTokenChanged,
@@ -9,33 +5,37 @@ import {
 } from 'firebase/auth'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { useAppMode } from '@/composables/useAppMode'
+import { t } from '@/i18n'
+import { useMissingMediaStore } from '@/platform/missingMedia/missingMediaStore'
+import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
+import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
+import { useSettingStore } from '@/platform/settings/settingStore'
+import { useToastStore } from '@/platform/updates/common/toastStore'
+import {
+  resetWorkflowLoadQueueForTests,
+  useWorkflowService
+} from '@/platform/workflow/core/services/workflowService'
 import type {
   LoadedComfyWorkflow,
   PendingWarnings
 } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { ComfyWorkflow as ComfyWorkflowClass } from '@/platform/workflow/management/stores/comfyWorkflow'
-import { useSettingStore } from '@/platform/settings/settingStore'
-import { defaultGraph } from '@/scripts/defaultGraph'
-import { useToastStore } from '@/platform/updates/common/toastStore'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
-import {
-  resetWorkflowLoadQueueForTests,
-  useWorkflowService
-} from '@/platform/workflow/core/services/workflowService'
-import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
+import { useWorkflowDraftStoreV2 } from '@/platform/workflow/persistence/stores/workflowDraftStoreV2'
+import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore' // eslint-disable-line import-x/no-restricted-paths
+import { app } from '@/scripts/app'
+import { defaultGraph } from '@/scripts/defaultGraph'
+import { useDomWidgetStore } from '@/stores/domWidgetStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
-import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
-import { useMissingMediaStore } from '@/platform/missingMedia/missingMediaStore'
-import { app } from '@/scripts/app'
-import { useAppMode } from '@/composables/useAppMode'
-import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
+import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
 import { createMockChangeTracker } from '@/utils/__tests__/litegraphTestUtils'
 import type { AppMode } from '@/utils/appMode'
 import { isValidUuid } from '@/utils/formatUtil'
 import { zeroUuid } from '@/utils/uuid'
-import { t } from '@/i18n'
 
 vi.mock(import('firebase/auth'), { spy: true })
 

@@ -6,7 +6,6 @@
  * rules exist because the first version of the crawler passed a broken cluster.
  */
 import type { Alternate } from './hreflangRoutes'
-
 import { unprefixed, ZH_HREFLANG, ZH_PREFIX } from './hreflangRoutes'
 
 export interface BuiltSite {

@@ -1,6 +1,7 @@
 // oxlint-disable no-empty-pattern
 import { test as baseTest, describe, expect, vi } from 'vitest'
 
+import type { ConnectingLink } from '@/lib/litegraph/src/interfaces'
 import type {
   MovingInputLink,
   RerouteId,
@@ -16,7 +17,6 @@ import {
   ToInputRenderLink,
   LinkDirection
 } from '@/lib/litegraph/src/litegraph'
-import type { ConnectingLink } from '@/lib/litegraph/src/interfaces'
 import type { LinkId } from '@/types/linkId'
 import { toLinkId } from '@/types/linkId'
 import { toNodeId } from '@/types/nodeId'

@@ -1,16 +1,16 @@
-import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
-import { useToastStore } from '@/platform/updates/common/toastStore'
-import { useNodeOutputStore } from '@/stores/nodeOutputStore'
-import { fromPartial } from '@total-typescript/shoehorn'
 import userEvent from '@testing-library/user-event'
 import { render, screen, within } from '@testing-library/vue'
+import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
-import LayerEditorContent from '@/renderer/extensions/layerEditor/components/LayerEditorContent.vue'
-import TopBarHeader from '@/renderer/extensions/layerEditor/components/dialog/TopBarHeader.vue'
-import { useCompositorAutoSave } from '@/renderer/extensions/compositor/composables/useCompositorAutoSave'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import { useCompositorAutoSave } from '@/renderer/extensions/compositor/composables/useCompositorAutoSave'
+import TopBarHeader from '@/renderer/extensions/layerEditor/components/dialog/TopBarHeader.vue'
+import LayerEditorContent from '@/renderer/extensions/layerEditor/components/LayerEditorContent.vue'
+import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { toNodeId } from '@/types/nodeId'
 
 const {

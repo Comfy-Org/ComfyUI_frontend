@@ -1,8 +1,8 @@
 import { fromPartial } from '@total-typescript/shoehorn'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import type { useCurrentUser } from 'vuefire'
 
 import { api } from '@/scripts/api'
-import type { useCurrentUser } from 'vuefire'
 
 const mockDistribution = vi.hoisted(() => ({
   isCloud: true,

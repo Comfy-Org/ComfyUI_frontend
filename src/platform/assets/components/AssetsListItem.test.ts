@@ -1,7 +1,6 @@
-import { describe, expect, it } from 'vitest'
-
-import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
+import { render, screen } from '@testing-library/vue'
+import { describe, expect, it } from 'vitest'
 
 import AssetsListItem from './AssetsListItem.vue'
 

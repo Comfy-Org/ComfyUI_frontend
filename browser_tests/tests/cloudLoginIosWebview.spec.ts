@@ -1,7 +1,6 @@
+import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import type { Page } from '@playwright/test'
 import { expect } from '@playwright/test'
-
-import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 
 const APP_URL = process.env.PLAYWRIGHT_TEST_URL || 'http://localhost:8188'
 

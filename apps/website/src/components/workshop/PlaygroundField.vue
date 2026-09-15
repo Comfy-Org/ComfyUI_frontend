@@ -1,9 +1,12 @@
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
 import { ChevronDown } from '@lucide/vue'
 import { computed, ref, watch } from 'vue'
 
-import { cn } from '@comfyorg/tailwind-utils'
+import InfoTooltip from '@/components/ui/tooltip/InfoTooltip.vue'
 
+import { workshopExampleFile } from '../../config/workshop-example-file'
+import { isHttpImageSource } from '../../config/workshop-image-source'
 import type {
   FieldErrorCode,
   FieldErrors,
@@ -12,13 +15,10 @@ import type {
   FormValues
 } from '../../config/workshop-playground'
 import { urlUploadField, validateForm } from '../../config/workshop-playground'
-import { isHttpImageSource } from '../../config/workshop-image-source'
-import { workshopExampleFile } from '../../config/workshop-example-file'
 import type { Locale, TranslationKey } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
-import InfoTooltip from '@/components/ui/tooltip/InfoTooltip.vue'
-import FileSourceInput from './FileSourceInput.vue'
 import DialogueInput from './DialogueInput.vue'
+import FileSourceInput from './FileSourceInput.vue'
 
 const {
   field,

@@ -4,10 +4,10 @@ import { describe, expect, it, vi } from 'vitest'
 
 import { createRendererViewState } from '@/renderer/three/sharedWebGLRenderer'
 
+import type { EventManagerInterface } from './interfaces'
 import { DEFAULT_MODEL_CAPABILITIES } from './ModelAdapter'
 import type { ModelAdapterCapabilities } from './ModelAdapter'
 import { SceneModelManager } from './SceneModelManager'
-import type { EventManagerInterface } from './interfaces'
 
 function createMockEventManager(): EventManagerInterface {
   return {

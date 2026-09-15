@@ -1,29 +1,20 @@
-import type { Page } from '@playwright/test'
-
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import {
   comfyExpect as expect,
   comfyPageFixture as test
 } from '@e2e/fixtures/ComfyPage'
 import {
-  customNodeSuiteSettings,
-  drainBackendToIdle,
-  runWithCollectedCleanup,
-  submittedPromptCount,
-  trackSubmittedPrompts
-} from '@e2e/fixtures/utils/customNodeSuite'
+  connectivityExpectations,
+  pairEndpointOwnershipIssues,
+  pairExpectationKeys,
+  pairExpectationNodeTypes
+} from '@e2e/fixtures/customNode/connectivityExpectations'
 import {
   isForeignExecutionNoise,
   staleRequiredConnectivityErrorRulesForPacks,
   unallowlistedConnectivityErrorsForPacks,
   unallowlistedErrorsForPacks
 } from '@e2e/fixtures/customNode/consoleErrorLedger'
-import {
-  connectivityExpectations,
-  pairEndpointOwnershipIssues,
-  pairExpectationKeys,
-  pairExpectationNodeTypes
-} from '@e2e/fixtures/customNode/connectivityExpectations'
 import { failureSummary } from '@e2e/fixtures/customNode/failureReport'
 import {
   loadAllManifestPackNames,
@@ -46,10 +37,18 @@ import {
   collectConsoleErrors
 } from '@e2e/fixtures/utils/consoleErrorCollector'
 import {
+  customNodeSuiteSettings,
+  drainBackendToIdle,
+  runWithCollectedCleanup,
+  submittedPromptCount,
+  trackSubmittedPrompts
+} from '@e2e/fixtures/utils/customNodeSuite'
+import {
   expectNoVisibleErrors,
   trackVisibleErrors
 } from '@e2e/fixtures/utils/errorSurfaces'
 import { fitToViewInstant } from '@e2e/fixtures/utils/fitToView'
+import type { Page } from '@playwright/test'
 
 const PLAN_SETUP_MS = 120_000
 const SWEEP_MS_PER_PAIR = 70

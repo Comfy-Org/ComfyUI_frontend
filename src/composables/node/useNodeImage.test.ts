@@ -1,8 +1,8 @@
 import { describe, expect, it, onTestFinished, vi } from 'vitest'
 
 import { useNodeVideo } from '@/composables/node/useNodeImage'
-import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { createMockMediaNode } from '@/renderer/extensions/vueNodes/widgets/composables/domWidgetTestUtils'
+import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 
 const { canvasInteractionsMock } = vi.hoisted(() => ({
   canvasInteractionsMock: {

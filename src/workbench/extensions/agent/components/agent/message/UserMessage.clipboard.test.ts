@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent } from 'vue'
 
 import { i18n } from '@/i18n'
+
 import { useAgentComposerStore } from '../../../stores/agent/agentComposerStore'
 import type { ReplyAsset } from '../../../utils/replyAssets'
 import Composer from '../Composer.vue'

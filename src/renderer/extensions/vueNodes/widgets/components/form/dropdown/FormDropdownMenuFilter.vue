@@ -1,10 +1,10 @@
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
 import { computed } from 'vue'
 
 import Button from '@/components/ui/button/Button.vue'
 import { useModelUpload } from '@/platform/assets/composables/useModelUpload'
 import type { FilterOption } from '@/platform/assets/types/filterTypes'
-import { cn } from '@comfyorg/tailwind-utils'
 
 const { filterOptions } = defineProps<{
   filterOptions: FilterOption[]

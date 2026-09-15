@@ -1,5 +1,6 @@
 import { reportError } from '@/platform/telemetry/reportError'
 
+import { wireLog } from './crdtLog'
 import type {
   DocFrameClient,
   DocOp,
@@ -7,7 +8,6 @@ import type {
   DocSubscribed,
   DocUpdate
 } from './docFrameClient'
-import { wireLog } from './crdtLog'
 import { FollowerDoc } from './followerDoc'
 import { FollowerSchemaError, assertReadableSchema } from './schemaGuard'
 

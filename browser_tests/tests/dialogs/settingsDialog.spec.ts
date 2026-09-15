@@ -1,7 +1,6 @@
-import { expect } from '@playwright/test'
-
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { mockSystemStats } from '@e2e/fixtures/data/systemStats'
+import { expect } from '@playwright/test'
 
 const MOCK_COMFYUI_VERSION = '9.99.0-e2e-test'
 

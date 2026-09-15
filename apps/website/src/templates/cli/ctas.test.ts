@@ -1,8 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
-import type { Locale } from '../../i18n/translations'
-
 import { externalLinks } from '../../config/routes'
+import type { Locale } from '../../i18n/translations'
 import { cliCtas } from './ctas'
 
 const locales: Locale[] = ['en', 'zh-CN']

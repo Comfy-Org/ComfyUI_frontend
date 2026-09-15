@@ -7,6 +7,7 @@ import { pathToFileURL } from 'node:url'
 
 import { z } from 'zod'
 
+import { zAgentTurnAccepted } from '../src/workbench/extensions/agent/schemas/agentApiSchema'
 import {
   RecordRefusal,
   assembleConversation,
@@ -14,7 +15,6 @@ import {
   refuse,
   zSeedFixture
 } from './agentConversationAssemble'
-import { zAgentTurnAccepted } from '../src/workbench/extensions/agent/schemas/agentApiSchema'
 import type {
   RawCapture,
   RecordedFrame,

@@ -1,9 +1,8 @@
+import type { operations } from '@comfyorg/registry-types'
 import { describe, expect, it, vi } from 'vitest'
 
-import type { operations } from '@comfyorg/registry-types'
-
-import { createWorkshopUrlUploader } from './workshop-url-upload'
 import { WORKSHOP_ROUTER_BASE_URL } from './workshop-env'
+import { createWorkshopUrlUploader } from './workshop-url-upload'
 
 const grant = {
   upload_url: 'https://storage.googleapis.com/test/input?signature=upload',

@@ -1,5 +1,3 @@
-import { expect } from '@playwright/test'
-import type { Page, Request } from '@playwright/test'
 import type {
   BillingBalanceResponse,
   BillingOpStatusResponse,
@@ -11,13 +9,6 @@ import type {
   SubscribeResponse,
   TeamCreditStops
 } from '@comfyorg/ingest-types'
-
-import type { RemoteConfig } from '@/platform/remoteConfig/types'
-import type {
-  Member,
-  WorkspaceWithRole
-} from '@/platform/workspace/api/workspaceApi'
-
 import {
   cloudAppExpect,
   cloudAppFixture as test,
@@ -32,6 +23,14 @@ import {
   mockWorkspace,
   workspace
 } from '@e2e/fixtures/utils/workspaceMocks'
+import { expect } from '@playwright/test'
+import type { Page, Request } from '@playwright/test'
+
+import type { RemoteConfig } from '@/platform/remoteConfig/types'
+import type {
+  Member,
+  WorkspaceWithRole
+} from '@/platform/workspace/api/workspaceApi'
 
 /**
  * The `?pricing=` deep link opens the pricing table on app load, gated to the

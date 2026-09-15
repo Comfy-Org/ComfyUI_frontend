@@ -7,10 +7,10 @@ import {
 } from '@vueuse/core'
 import { computed, ref, useTemplateRef, watch } from 'vue'
 
-import IconButton from '../ui/icon-button/IconButton.vue'
 import { useCarouselAutoplay } from '../../composables/useCarouselAutoplay'
 import { prefersReducedMotion } from '../../composables/useReducedMotion'
 import { resolveRel } from '../../utils/cta'
+import IconButton from '../ui/icon-button/IconButton.vue'
 
 type FeaturedSlideMedia = {
   type: 'image' | 'video'

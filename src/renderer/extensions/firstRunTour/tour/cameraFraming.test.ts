@@ -1,18 +1,17 @@
-import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { fromPartial } from '@total-typescript/shoehorn'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { ReadOnlyRect } from '@/lib/litegraph/src/interfaces'
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
-import { toNodeId } from '@/types/nodeId'
-import type { NodeId } from '@/types/nodeId'
-
 import {
   CARD_GLIDE_MS,
   CARD_WIDTH,
   CURSOR_GAP,
   topSafeInset
 } from '@/platform/onboarding/coachmarkLayout'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import { toNodeId } from '@/types/nodeId'
+import type { NodeId } from '@/types/nodeId'
 
 import { MAX_FOCUS_SCALE, focusFill, frameNode } from './cameraFraming'
 

@@ -1,10 +1,9 @@
 import { readFileSync } from 'fs'
 import { basename } from 'path'
 
-import type { Locator, Page } from '@playwright/test'
-
 import type { KeyboardHelper } from '@e2e/fixtures/helpers/KeyboardHelper'
 import { getMimeType } from '@e2e/fixtures/utils/mimeTypeUtil'
+import type { Locator, Page } from '@playwright/test'
 
 function readFilePayload(filePath: string) {
   const buffer = readFileSync(filePath)

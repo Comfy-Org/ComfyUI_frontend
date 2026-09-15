@@ -1,8 +1,9 @@
-import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import { fromPartial } from '@total-typescript/shoehorn'
 import { render } from '@testing-library/vue'
+import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+
+import { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 
 const resolveMock = vi.hoisted(() => vi.fn())
 vi.mock(

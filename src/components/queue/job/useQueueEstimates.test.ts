@@ -1,5 +1,5 @@
-import { computed, ref } from 'vue'
 import { describe, expect, it } from 'vitest'
+import { computed, ref } from 'vue'
 
 import type { TaskItemImpl } from '@/stores/queueStore'
 import type { JobState } from '@/types/queue'

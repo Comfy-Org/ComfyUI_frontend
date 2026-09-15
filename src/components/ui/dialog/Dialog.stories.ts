@@ -2,6 +2,7 @@ import type { Meta, StoryObj } from '@storybook/vue3-vite'
 import { ref } from 'vue'
 
 import Button from '@/components/ui/button/Button.vue'
+import { FOR_STORIES } from '@/components/ui/dialog/dialog.variants'
 import Dialog from '@/components/ui/dialog/Dialog.vue'
 import DialogClose from '@/components/ui/dialog/DialogClose.vue'
 import DialogContent from '@/components/ui/dialog/DialogContent.vue'
@@ -11,7 +12,6 @@ import DialogHeader from '@/components/ui/dialog/DialogHeader.vue'
 import DialogOverlay from '@/components/ui/dialog/DialogOverlay.vue'
 import DialogPortal from '@/components/ui/dialog/DialogPortal.vue'
 import DialogTitle from '@/components/ui/dialog/DialogTitle.vue'
-import { FOR_STORIES } from '@/components/ui/dialog/dialog.variants'
 
 const { sizes } = FOR_STORIES
 

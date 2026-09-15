@@ -1,6 +1,5 @@
-import { computed, useAttrs } from 'vue'
-
 import type { ClassValue } from '@comfyorg/tailwind-utils'
+import { computed, useAttrs } from 'vue'
 
 /**
  * Splits `class` out of `$attrs` so wrappers can merge it with `cn()` onto an

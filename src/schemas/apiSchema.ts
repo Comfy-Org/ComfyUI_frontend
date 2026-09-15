@@ -1,11 +1,11 @@
 import { z } from 'zod'
 
 import { LinkMarkerShape } from '@/lib/litegraph/src/types/globalEnums'
+import { zKeybinding } from '@/platform/keybindings/types'
 import { zNodeId } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { colorPalettesSchema } from '@/schemas/colorPaletteSchema'
 import { resultItemType } from '@/schemas/resultItemTypeSchema'
 import type { ResultItemType } from '@/schemas/resultItemTypeSchema'
-import { zKeybinding } from '@/platform/keybindings/types'
 import { NodeBadgeMode } from '@/types/nodeSource'
 import { LinkReleaseTriggerAction } from '@/types/searchBoxTypes'
 

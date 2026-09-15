@@ -1,5 +1,5 @@
-import { createHash, randomUUID } from 'node:crypto'
 import { execFileSync } from 'node:child_process'
+import { createHash, randomUUID } from 'node:crypto'
 import { appendFileSync } from 'node:fs'
 import { mkdir, writeFile } from 'node:fs/promises'
 import { join, resolve } from 'node:path'
@@ -18,9 +18,9 @@ import { createStartGate, mapConcurrent } from './router-model-batch'
 import { captureRouterOutputs } from './router-model-evidence'
 import { openRouterModelReport } from './router-model-report'
 import { routerReportUpdate } from './router-model-report-events'
+import { openRouterSvgRasterizer } from './router-model-svg'
 import { openRouterModelTransport } from './router-model-transport'
 import { resolveRouterRender, router_render } from './router-render'
-import { openRouterSvgRasterizer } from './router-model-svg'
 
 const HELP = `Test every published image, video and audio page with its initial defaults.
 

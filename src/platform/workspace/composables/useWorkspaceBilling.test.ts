@@ -1,6 +1,3 @@
-import { billingOperation } from './billingOperationTestUtils'
-import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
-import { useBillingOperationStore } from '@/platform/workspace/stores/billingOperationStore'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { effectScope } from 'vue'
 
@@ -9,6 +6,10 @@ import type {
   SubscribeResponse
 } from '@/platform/workspace/api/workspaceApi'
 import { useWorkspaceBilling } from '@/platform/workspace/composables/useWorkspaceBilling'
+import { useBillingOperationStore } from '@/platform/workspace/stores/billingOperationStore'
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
+
+import { billingOperation } from './billingOperationTestUtils'
 
 const mockWorkspaceApi = vi.hoisted(() => ({
   getBillingStatus: vi.fn(),

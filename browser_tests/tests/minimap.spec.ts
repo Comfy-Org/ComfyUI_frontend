@@ -1,6 +1,3 @@
-import type { Locator, Page } from '@playwright/test'
-import { expect } from '@playwright/test'
-
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { TestIds } from '@e2e/fixtures/selectors'
@@ -9,6 +6,8 @@ import {
   MINIMAP_POINTER_OPTS,
   readMainCanvasOffset
 } from '@e2e/fixtures/utils/minimapUtils'
+import type { Locator, Page } from '@playwright/test'
+import { expect } from '@playwright/test'
 
 function hasCanvasContent(canvas: Locator): Promise<boolean> {
   return canvas.evaluate((el: HTMLCanvasElement) => {

@@ -1,9 +1,8 @@
-import { expect } from '@playwright/test'
-
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { TestIds } from '@e2e/fixtures/selectors'
 import { PropertiesPanelHelper } from '@e2e/tests/propertiesPanel/PropertiesPanelHelper'
+import { expect } from '@playwright/test'
 
 const NODE_TYPE = 'DevToolsRemoteWidgetNodeWithRefreshButton'
 const CHECKPOINTS_ROUTE = '**/api/models/checkpoints**'

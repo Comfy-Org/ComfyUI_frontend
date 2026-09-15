@@ -1,11 +1,11 @@
-import { expect, mergeTests } from '@playwright/test'
-
 import { comfyPageFixture } from '@e2e/fixtures/ComfyPage'
 import {
   createRouteMockJob,
   jobsRouteFixture
 } from '@e2e/fixtures/jobsRouteFixture'
 import { TestIds } from '@e2e/fixtures/selectors'
+import { expect, mergeTests } from '@playwright/test'
+
 import type { RawJobListItem } from '@/platform/remote/comfyui/jobs/jobTypes'
 
 const test = mergeTests(comfyPageFixture, jobsRouteFixture).extend<{

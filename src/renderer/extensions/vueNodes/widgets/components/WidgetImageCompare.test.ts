@@ -1,7 +1,6 @@
-import { describe, expect, it } from 'vitest'
-
-import { render, screen, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
+import { render, screen, within } from '@testing-library/vue'
+import { describe, expect, it } from 'vitest'
 
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 

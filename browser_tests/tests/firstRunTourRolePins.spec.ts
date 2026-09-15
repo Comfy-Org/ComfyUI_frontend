@@ -1,3 +1,4 @@
+import { templateApiFixture as test } from '@e2e/fixtures/templateApiFixture'
 import { expect } from '@playwright/test'
 
 import type {
@@ -13,7 +14,6 @@ import type {
   RolePin,
   RolePins
 } from '@/renderer/extensions/firstRunTour/roles/tourRolePins'
-import { templateApiFixture as test } from '@e2e/fixtures/templateApiFixture'
 
 const baseUrl = process.env.PLAYWRIGHT_TEST_URL || 'http://localhost:8188'
 

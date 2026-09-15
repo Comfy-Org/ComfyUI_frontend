@@ -1,10 +1,11 @@
-import { useAuthStore } from '@/stores/authStore'
 import {
   onAuthStateChanged,
   onIdTokenChanged,
   setPersistence
 } from 'firebase/auth'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+
+import { useAuthStore } from '@/stores/authStore'
 
 import type {
   BillingOpStatusResponse,

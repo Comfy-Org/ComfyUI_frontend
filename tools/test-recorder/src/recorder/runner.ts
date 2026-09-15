@@ -1,6 +1,13 @@
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs'
 import { dirname, join, parse } from 'node:path'
+
 import pc from 'picocolors'
+
+import { devServerUrl } from '../checks/devServerUrl'
+import { runCommand } from '../cli/run'
+import type { Distribution } from '../devserver/distributions'
+import { buildFfQuery } from '../featureFlags'
+import { box, info } from '../ui/logger'
 import {
   RECORDING_SPEC_BASENAME,
   cleanupRecordedCode,
@@ -13,11 +20,6 @@ import {
   storageStateKey,
   storageStatePath
 } from './template'
-import { runCommand } from '../cli/run'
-import { devServerUrl } from '../checks/devServerUrl'
-import { box, info } from '../ui/logger'
-import type { Distribution } from '../devserver/distributions'
-import { buildFfQuery } from '../featureFlags'
 
 interface RunnerOptions {
   testName: string

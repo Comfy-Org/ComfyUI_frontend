@@ -1,19 +1,19 @@
 import { describe, expect, it } from 'vitest'
-import { useSettingStore } from '@/platform/settings/settingStore'
 import { effectScope } from 'vue'
 
-import { badgeDrawObjects } from '@/lib/litegraph/src/nodeBadgeDraw'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import {
   LGraph,
   LGraphNode as LGraphNodeClass
 } from '@/lib/litegraph/src/litegraph'
+import { badgeDrawObjects } from '@/lib/litegraph/src/nodeBadgeDraw'
+import { useSettingStore } from '@/platform/settings/settingStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { usePartitionedBadges } from '@/renderer/extensions/vueNodes/composables/usePartitionedBadges'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { nodeBadges } from '@/systems/badgeSystem'
-import type { NodeState } from '@/types/nodeState'
 import { NodeBadgeMode } from '@/types/nodeSource'
+import type { NodeState } from '@/types/nodeState'
 
 const CORE_SOURCE_BADGE = '🦊'
 

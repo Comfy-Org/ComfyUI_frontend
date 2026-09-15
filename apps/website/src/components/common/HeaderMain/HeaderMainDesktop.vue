@@ -1,13 +1,13 @@
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
 import { computed } from 'vue'
+
 import NavigationMenu from '@/components/ui/navigation-menu/NavigationMenu.vue'
 import NavigationMenuContent from '@/components/ui/navigation-menu/NavigationMenuContent.vue'
 import NavigationMenuItem from '@/components/ui/navigation-menu/NavigationMenuItem.vue'
 import NavigationMenuLink from '@/components/ui/navigation-menu/NavigationMenuLink.vue'
 import NavigationMenuList from '@/components/ui/navigation-menu/NavigationMenuList.vue'
 import NavigationMenuTrigger from '@/components/ui/navigation-menu/NavigationMenuTrigger.vue'
-import { cn } from '@comfyorg/tailwind-utils'
-
 import { navigationMenuTriggerStyle } from '@/components/ui/navigation-menu/navigationMenuTriggerStyle'
 
 import {

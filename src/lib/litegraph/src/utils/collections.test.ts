@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 
-import { LGraph, LGraphGroup, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { Positionable } from '@/lib/litegraph/src/interfaces'
+import { LGraph, LGraphGroup, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { getDraggedItems } from '@/lib/litegraph/src/utils/collections'
 
 class TestNode extends LGraphNode {

@@ -1,17 +1,18 @@
-import { computed, ref, shallowRef, toValue, watch } from 'vue'
 import { createSharedComposable } from '@vueuse/core'
+import { computed, ref, shallowRef, toValue, watch } from 'vue'
 
+import { useFreeTierQuota } from '@/platform/cloud/subscription/composables/useFreeTierQuota'
+import type { SubscriptionDialogOptions } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
 import {
   KEY_TO_TIER,
   getTierFeatures
 } from '@/platform/cloud/subscription/constants/tierPricing'
 import type { TierKey } from '@/platform/cloud/subscription/constants/tierPricing'
-import { useFreeTierQuota } from '@/platform/cloud/subscription/composables/useFreeTierQuota'
-import type { SubscriptionDialogOptions } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
 import type {
   PreviewSubscribeOptions,
   SubscribeOptions
 } from '@/platform/workspace/api/workspaceApi'
+import { useWorkspaceBilling } from '@/platform/workspace/composables/useWorkspaceBilling'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 
 import type {
@@ -23,7 +24,6 @@ import type {
 } from './types'
 import { useBillingRouting } from './useBillingRouting'
 import { useLegacyBilling } from './useLegacyBilling'
-import { useWorkspaceBilling } from '@/platform/workspace/composables/useWorkspaceBilling'
 
 // Legacy per-member team plans use a hyphenated `team-{tier}-{cycle}` slug; the
 // new credit-slider plan uses an underscore `team_per_credit_{cycle}` slug and

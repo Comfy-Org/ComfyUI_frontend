@@ -1,7 +1,8 @@
 import { ref, watch } from 'vue'
-import { useMaskEditorStore } from '@/stores/maskEditorStore'
+
 import { ColorComparisonMethod } from '@/extensions/core/maskeditor/types'
 import type { Point } from '@/extensions/core/maskeditor/types'
+import { useMaskEditorStore } from '@/stores/maskEditorStore'
 import { rgbToHsl } from '@/utils/colorUtil'
 
 const getPixelAlpha = (

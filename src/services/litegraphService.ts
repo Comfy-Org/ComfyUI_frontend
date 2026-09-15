@@ -3,6 +3,7 @@ import { pick, zip } from 'es-toolkit/compat'
 import { downloadFile, openFileInNewTab } from '@/base/common/downloadUtil'
 import { useSelectedLiteGraphItems } from '@/composables/canvas/useSelectedLiteGraphItems'
 import { useSubgraphOperations } from '@/composables/graph/useSubgraphOperations'
+import { useMaskEditor } from '@/composables/maskeditor/useMaskEditor'
 import { useNodeAnimatedImage } from '@/composables/node/useNodeAnimatedImage'
 import { useNodeCanvasImagePreview } from '@/composables/node/useNodeCanvasImagePreview'
 import { useNodeImage, useNodeVideo } from '@/composables/node/useNodeImage'
@@ -41,11 +42,8 @@ import { toConcreteWidget } from '@/lib/litegraph/src/widgets/widgetMap'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
-import { createPromotedMultilineWidget } from '@/renderer/extensions/vueNodes/widgets/utils/multilineTextarea'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import { useDialogService } from '@/services/dialogService'
-import { resolveSubgraphPseudoWidgetCache } from '@/services/subgraphPseudoWidgetCache'
-import type { SubgraphPseudoWidgetCache } from '@/services/subgraphPseudoWidgetCache'
+import { createPromotedMultilineWidget } from '@/renderer/extensions/vueNodes/widgets/utils/multilineTextarea'
 import { transformInputSpecV2ToV1 } from '@/schemas/nodeDef/migration'
 import type {
   ComfyNodeDef as ComfyNodeDefV2,
@@ -55,22 +53,25 @@ import type {
 import type { ComfyNodeDef as ComfyNodeDefV1 } from '@/schemas/nodeDefSchema'
 import { ComfyApp, app } from '@/scripts/app'
 import { $el } from '@/scripts/ui'
+import { useDialogService } from '@/services/dialogService'
+import { resolveSubgraphPseudoWidgetCache } from '@/services/subgraphPseudoWidgetCache'
+import type { SubgraphPseudoWidgetCache } from '@/services/subgraphPseudoWidgetCache'
 import { useExecutionStore } from '@/stores/executionStore'
-import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
+import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import {
   getPreviewExposureHostLocator,
   usePreviewExposureStore
 } from '@/stores/previewExposureStore'
 import { useSubgraphStore } from '@/stores/subgraphStore'
+import { useWidgetStore } from '@/stores/widgetStore'
 import { useFavoritedWidgetsStore } from '@/stores/workspace/favoritedWidgetsStore'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
-import { useWidgetStore } from '@/stores/widgetStore'
 import { parseNodeId } from '@/types/nodeId'
 import type { SerializedNodeId } from '@/types/nodeId'
+import type { WidgetId } from '@/types/widgetId'
 import { isBlueprintType } from '@/utils/blueprintUtils'
 import { markCoreMediaMenuCallback } from '@/utils/coreMediaMenuActionUtils'
-import type { WidgetId } from '@/types/widgetId'
 import { normalizeI18nKey } from '@/utils/formatUtil'
 import {
   isAnimatedOutput,
@@ -82,7 +83,6 @@ import {
 import { getOrderedInputSpecs } from '@/workbench/utils/nodeDefOrderingUtil'
 
 import { useExtensionService } from './extensionService'
-import { useMaskEditor } from '@/composables/maskeditor/useMaskEditor'
 
 async function reencodeAsPngBlob(
   blob: Blob,

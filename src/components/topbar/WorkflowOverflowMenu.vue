@@ -32,9 +32,10 @@ import Menu from 'primevue/menu'
 import { computed, ref } from 'vue'
 
 import Button from '@/components/ui/button/Button.vue'
-import WorkflowAgentTargetIndicator from './WorkflowAgentTargetIndicator.vue'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
+
+import WorkflowAgentTargetIndicator from './WorkflowAgentTargetIndicator.vue'
 
 const props = defineProps<{
   workflows: ComfyWorkflow[]

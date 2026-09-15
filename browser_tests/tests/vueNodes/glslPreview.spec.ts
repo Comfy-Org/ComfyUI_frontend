@@ -1,6 +1,3 @@
-import type { Locator, WebSocketRoute } from '@playwright/test'
-import { mergeTests } from '@playwright/test'
-
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import {
   comfyPageFixture,
@@ -9,6 +6,8 @@ import {
 import { ExecutionHelper } from '@e2e/fixtures/helpers/ExecutionHelper'
 import { getPromotedWidgetNames } from '@e2e/fixtures/utils/promotedWidgets'
 import { webSocketFixture } from '@e2e/fixtures/ws'
+import type { Locator, WebSocketRoute } from '@playwright/test'
+import { mergeTests } from '@playwright/test'
 
 const test = mergeTests(comfyPageFixture, webSocketFixture)
 

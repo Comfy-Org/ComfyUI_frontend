@@ -14,8 +14,8 @@
 </template>
 
 <script setup lang="ts">
-import type { MenuItem } from 'primevue/menuitem'
 import { storeToRefs } from 'pinia'
+import type { MenuItem } from 'primevue/menuitem'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 

@@ -1,9 +1,8 @@
+import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { expect } from '@playwright/test'
 
 import { toLinkId } from '@/types/linkId'
 import { toNodeId } from '@/types/nodeId'
-
-import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 
 test.use({ initialSettings: { 'Comfy.UseNewMenu': 'Disabled' } })
 

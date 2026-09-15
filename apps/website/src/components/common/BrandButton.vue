@@ -1,12 +1,11 @@
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
-
 import { computed } from 'vue'
 import type { AnchorHTMLAttributes, HTMLAttributes } from 'vue'
 
+import { resolveRel } from '../../utils/cta'
 import type { BrandButtonVariants } from './brandButton.variants'
 import { brandButtonVariants } from './brandButton.variants'
-import { resolveRel } from '../../utils/cta'
 
 const props = defineProps<{
   href?: string

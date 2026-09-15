@@ -11,9 +11,9 @@ import {
   assetFilenameSchema,
   assetItemSchema
 } from '@/platform/assets/schemas/assetSchema'
+import { getAssetFilename } from '@/platform/assets/utils/assetMetadataUtils'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
-import { getAssetFilename } from '@/platform/assets/utils/assetMetadataUtils'
 
 type WidgetWithNode = IBaseWidget & { node: LGraphNode }
 

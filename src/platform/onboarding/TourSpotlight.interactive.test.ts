@@ -7,12 +7,12 @@ import { createI18n } from 'vue-i18n'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 
-import TourSpotlight from './TourSpotlight.vue'
 import { CARD_GLIDE_MS } from './coachmarkLayout'
 import { clearCoachmarks, registerCoachmark } from './coachmarkRegistry'
 import { laidOut, mountNode, movingTarget } from './fixtures/coachmarkTargets'
 import { COACH_IDS, FIRST_RUN_COACH_IDS } from './onboardingTours'
 import type { SpotlightStep } from './onboardingTours'
+import TourSpotlight from './TourSpotlight.vue'
 
 vi.mock<unknown>(import('@primeuix/utils/zindex'), () => ({
   ZIndex: { set: vi.fn(), clear: vi.fn() }

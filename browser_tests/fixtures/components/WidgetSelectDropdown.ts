@@ -1,7 +1,6 @@
+import { TestIds } from '@e2e/fixtures/selectors'
 import { expect } from '@playwright/test'
 import type { Locator } from '@playwright/test'
-
-import { TestIds } from '@e2e/fixtures/selectors'
 
 export class WidgetSelectDropdownFixture {
   public readonly selection: Locator

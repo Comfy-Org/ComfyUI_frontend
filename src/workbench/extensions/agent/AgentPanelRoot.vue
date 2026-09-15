@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import './agentPanel.css'
-
 import { useClipboard } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
 import {
@@ -16,90 +15,90 @@ import {
 import { useI18n } from 'vue-i18n'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
-import { useTelemetry } from '@/platform/telemetry'
+import { useBillingContext } from '@/composables/billing/useBillingContext'
+import { useAppMode } from '@/composables/useAppMode'
 import { createGraphMutations } from '@/core/graph/graphMutations'
+import type { LGraphCanvas, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { MIME_ASSET_INFO } from '@/platform/assets/schemas/mediaAssetSchema'
+import { useAccountPreconditionDialog } from '@/platform/cloud/subscription/composables/useAccountPreconditionDialog'
+import { useTelemetry } from '@/platform/telemetry'
+import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
-import type { LGraphCanvas, LGraphNode } from '@/lib/litegraph/src/litegraph'
-import { useAppMode } from '@/composables/useAppMode'
-import { MIME_ASSET_INFO } from '@/platform/assets/schemas/mediaAssetSchema'
-import {
-  fetchDroppedAsset,
-  getDroppedAsset,
-  hasVideoType
-} from '@/utils/eventUtils'
-import { useAssetsStore } from '@/stores/assetsStore'
-import { AGENT_ATTACH_ACCEPT, isAgentAttachable } from './utils/attachableFiles'
-import { getNodeByLocatorId } from '@/utils/graphTraversalUtil'
+import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
+import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
+import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 // eslint-disable-next-line import-x/no-restricted-paths
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+// eslint-disable-next-line import-x/no-restricted-paths
+import { ACTOR_CONFIG } from '@/renderer/core/layout/constants'
 // The composition root injects the renderer-owned layout port; follower core
 // stays independent of renderer and LiteGraph runtime values.
 // eslint-disable-next-line import-x/no-restricted-paths
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 // eslint-disable-next-line import-x/no-restricted-paths
-import { ACTOR_CONFIG } from '@/renderer/core/layout/constants'
-// eslint-disable-next-line import-x/no-restricted-paths
 import { LayoutSource } from '@/renderer/core/layout/types'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
-import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { blankGraph } from '@/scripts/defaultGraph'
 import { useAgentNodeSelectionStore } from '@/stores/agentNodeSelectionStore'
+import { useAssetsStore } from '@/stores/assetsStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useWorkflowTabActivityStore } from '@/stores/workflowTabActivityStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
-import { isLGraphNode } from '@/utils/litegraphUtil'
-import { useToastStore } from '@/platform/updates/common/toastStore'
 import { toOwningGraphId, toRootGraphId } from '@/types/graphScopeId'
-import { useBillingContext } from '@/composables/billing/useBillingContext'
-import { useAccountPreconditionDialog } from '@/platform/cloud/subscription/composables/useAccountPreconditionDialog'
-import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
-import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
+import {
+  fetchDroppedAsset,
+  getDroppedAsset,
+  hasVideoType
+} from '@/utils/eventUtils'
+import { getNodeByLocatorId } from '@/utils/graphTraversalUtil'
+import { isLGraphNode } from '@/utils/litegraphUtil'
 
 import AgentPanel from './components/agent/AgentPanel.vue'
+import { useAgentDraftSubmission } from './composables/agent/useAgentDraftSubmission'
+import type {
+  TurnOrigin,
+  WorkflowTurnContext
+} from './composables/agent/useAgentSession'
+import { useAgentSession } from './composables/agent/useAgentSession'
+import { useAgentWorkflowResolver } from './composables/agent/useAgentWorkflowResolver'
+import { useAgentWorkflowSelection } from './composables/agent/useAgentWorkflowSelection'
 import {
   MAX_ATTACHMENT_BYTES,
   useAttachment
 } from './composables/agent/useAttachment'
-import type { ActiveTab } from './types/activeTab'
 import type { SelectedNode } from './composables/agent/useCanvasSelection'
 import {
   selectedNodeKey,
   useCanvasSelection
 } from './composables/agent/useCanvasSelection'
-import type {
-  AgentActiveTabData,
-  AgentThreadSummary
-} from './schemas/agentApiSchema'
-import type { ChatSession } from './stores/agent/agentChatHistoryStore'
-import type { ConversationEntry } from './stores/agent/agentConversationStore'
-import type {
-  TurnOrigin,
-  WorkflowTurnContext
-} from './composables/agent/useAgentSession'
-import { useAgentWorkflowResolver } from './composables/agent/useAgentWorkflowResolver'
-import { useAgentWorkflowSelection } from './composables/agent/useAgentWorkflowSelection'
-import { useAgentSession } from './composables/agent/useAgentSession'
-import { useAgentDraftSubmission } from './composables/agent/useAgentDraftSubmission'
-import { useAgentWorkflowTabBindingStore } from './stores/agent/agentWorkflowTabBindingStore'
-import { createAgentRestClient } from './services/agent/agentRestClient'
-import type { DraftSnapshot } from './services/agent/agentRestClient'
-import type { AgentPaywallAction } from './services/agent/agentPaywallPresentation'
-import { resolveAgentPaywallPresentation } from './services/agent/agentPaywallPresentation'
-import { createAgentEventSource } from './services/agent/agentEventSource'
-import { createStandaloneAgentEventSource } from './services/agent/standaloneAgentEventSource'
-import { useAgentChatHistoryStore } from './stores/agent/agentChatHistoryStore'
-import { agentMessageText } from './utils/agentMessageText'
-import { useAgentComposerStore } from './stores/agent/agentComposerStore'
-import { useAgentPanelStore } from './stores/agent/agentPanelStore'
 import {
   isCrdtDebugEnabled,
   resolveDebugPanelEnabled
 } from './crdt/crdtDebugGate'
 import { attachMintPortWiring } from './crdt/mintPortWiring'
 import { useAgentCrdtFollower } from './crdt/useAgentCrdtFollower'
+import type {
+  AgentActiveTabData,
+  AgentThreadSummary
+} from './schemas/agentApiSchema'
+import { createAgentEventSource } from './services/agent/agentEventSource'
+import type { AgentPaywallAction } from './services/agent/agentPaywallPresentation'
+import { resolveAgentPaywallPresentation } from './services/agent/agentPaywallPresentation'
+import { createAgentRestClient } from './services/agent/agentRestClient'
+import type { DraftSnapshot } from './services/agent/agentRestClient'
+import { createStandaloneAgentEventSource } from './services/agent/standaloneAgentEventSource'
+import type { ChatSession } from './stores/agent/agentChatHistoryStore'
+import { useAgentChatHistoryStore } from './stores/agent/agentChatHistoryStore'
+import { useAgentComposerStore } from './stores/agent/agentComposerStore'
+import type { ConversationEntry } from './stores/agent/agentConversationStore'
+import { useAgentPanelStore } from './stores/agent/agentPanelStore'
+import { useAgentWorkflowTabBindingStore } from './stores/agent/agentWorkflowTabBindingStore'
+import type { ActiveTab } from './types/activeTab'
+import { agentMessageText } from './utils/agentMessageText'
+import { AGENT_ATTACH_ACCEPT, isAgentAttachable } from './utils/attachableFiles'
 
 const CrdtDevPanel = defineAsyncComponent(
   () => import('./crdt/CrdtDevPanel.vue')

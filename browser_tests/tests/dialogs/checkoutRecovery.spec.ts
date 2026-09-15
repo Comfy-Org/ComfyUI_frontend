@@ -1,5 +1,3 @@
-import { expect } from '@playwright/test'
-import type { Page, Request } from '@playwright/test'
 import type {
   BillingOpStatusResponse,
   BillingPlansResponse,
@@ -8,10 +6,6 @@ import type {
   Plan,
   PreviewSubscribeResponse
 } from '@comfyorg/ingest-types'
-
-import type { RemoteConfig } from '@/platform/remoteConfig/types'
-import type { PendingSubscriptionCheckout } from '@/platform/workspace/utils/pendingSubscriptionCheckout'
-
 import {
   cloudAppExpect,
   cloudAppFixture as test,
@@ -21,6 +15,11 @@ import { mockBilling } from '@e2e/fixtures/utils/cloudBillingMocks'
 import { bootCloud, mockCloudBoot } from '@e2e/fixtures/utils/cloudBootMocks'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 import { mockWorkspace, workspace } from '@e2e/fixtures/utils/workspaceMocks'
+import { expect } from '@playwright/test'
+import type { Page, Request } from '@playwright/test'
+
+import type { RemoteConfig } from '@/platform/remoteConfig/types'
+import type { PendingSubscriptionCheckout } from '@/platform/workspace/utils/pendingSubscriptionCheckout'
 
 /**
  * A redirect checkout persists its pending billing operation in sessionStorage

@@ -1,6 +1,5 @@
 import { defineAsyncComponent } from 'vue'
-import { useDialogService } from '@/services/dialogService'
-import { useDialogStore } from '@/stores/dialogStore'
+
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useBillingRouting } from '@/composables/billing/useBillingRouting'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
@@ -15,13 +14,15 @@ import type { SubscriptionCheckoutSelection } from '@/platform/workspace/composa
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import { useBillingOperationStore } from '@/platform/workspace/stores/billingOperationStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
-import { useAuthStore } from '@/stores/authStore'
 import {
   clearPendingSubscriptionCheckout,
   clearPendingSubscriptionCheckoutIfTerminal,
   getPendingSubscriptionCheckout
 } from '@/platform/workspace/utils/pendingSubscriptionCheckout'
 import type { PendingSubscriptionCheckout } from '@/platform/workspace/utils/pendingSubscriptionCheckout'
+import { useDialogService } from '@/services/dialogService'
+import { useAuthStore } from '@/stores/authStore'
+import { useDialogStore } from '@/stores/dialogStore'
 
 const DIALOG_KEY = 'subscription-required'
 const RESUME_PRICING_KEY = 'comfy:resume-team-pricing'

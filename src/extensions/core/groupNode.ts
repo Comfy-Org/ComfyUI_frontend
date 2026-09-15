@@ -1,13 +1,12 @@
 import { PREFIX, SEPARATOR } from '@/constants/groupNodeConstants'
 import { t } from '@/i18n'
-import type { SerialisedLLinkArray } from '@/lib/litegraph/src/LLink'
 import type {
   LGraphNodeConstructor,
   LGraphNode
 } from '@/lib/litegraph/src/litegraph'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
+import type { SerialisedLLinkArray } from '@/lib/litegraph/src/LLink'
 import { outputLinks } from '@/lib/litegraph/src/node/slotLinks'
-import { parseNodeId } from '@/types/nodeId'
 import type {
   ComfyNode,
   ComfyWorkflowJSON
@@ -16,6 +15,7 @@ import type { ComfyNodeDef, InputSpec } from '@/schemas/nodeDefSchema'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useWidgetStore } from '@/stores/widgetStore'
 import type { ComfyExtension, MissingNodeType } from '@/types/comfy'
+import { parseNodeId } from '@/types/nodeId'
 import { deserialiseAndCreate } from '@/utils/vintageClipboard'
 
 import { app } from '../../scripts/app'

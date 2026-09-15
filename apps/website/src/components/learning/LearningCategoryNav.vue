@@ -1,12 +1,11 @@
 <script setup lang="ts">
+import { localizeHref } from '../../config/routes'
 // Category nav for the learning directory sidebar: an "All" entry followed by
 // each populated category, with per-category tutorial counts and (on lg+)
 // blurbs. Entries are plain links to the statically generated category pages;
 // ClientRouter upgrades clicks to history-aware client-side navigations. The
 // active entry is derived from `category`.
 import type { LearningCategory } from '../../data/learningTutorials'
-import type { Locale, TranslationKey } from '../../i18n/translations'
-
 import {
   categoryBlurbKeys,
   categoryLabelKeys,
@@ -14,7 +13,7 @@ import {
   filterByCategory,
   populatedCategories
 } from '../../data/learningTutorials'
-import { localizeHref } from '../../config/routes'
+import type { Locale, TranslationKey } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 
 const { locale = 'en', category } = defineProps<{

@@ -1,8 +1,9 @@
-import { useSettingStore } from '@/platform/settings/settingStore'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { useSettingStore } from '@/platform/settings/settingStore'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 import * as utils from '@/scripts/utils'
+
 import { useWorkflowActionsService } from './workflowActionsService'
 
 const mockPrompt = vi.hoisted(() => vi.fn())

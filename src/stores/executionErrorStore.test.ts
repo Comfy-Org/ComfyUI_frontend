@@ -1,20 +1,20 @@
-import { useSettingStore } from '@/platform/settings/settingStore'
 import { fromAny } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { nodeError, validationError } from '@/utils/__tests__/nodeErrorHelpers'
+import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import {
   createBoundaryLinkedSubgraph,
   createTestRootGraph,
   createTestSubgraph,
   createTestSubgraphNode
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
-import { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { useSettingStore } from '@/platform/settings/settingStore'
 import { app } from '@/scripts/app'
 import {
   createNodeExecutionId,
   createNodeLocatorId
 } from '@/types/nodeIdentification'
+import { nodeError, validationError } from '@/utils/__tests__/nodeErrorHelpers'
 
 // Mock dependencies
 vi.mock(import('@/i18n'), () => ({
@@ -32,11 +32,12 @@ vi.mock<unknown>(
   })
 )
 
-import { useExecutionErrorStore } from './executionErrorStore'
 import { useMissingMediaStore } from '@/platform/missingMedia/missingMediaStore'
 import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
 import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
 import { toNodeId } from '@/types/nodeId'
+
+import { useExecutionErrorStore } from './executionErrorStore'
 
 function mockGraphReady(rootGraph: typeof app.rootGraph) {
   vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(rootGraph)

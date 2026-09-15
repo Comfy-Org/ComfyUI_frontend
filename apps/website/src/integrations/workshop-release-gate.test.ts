@@ -1,13 +1,15 @@
 // @vitest-environment node
 
-import type { AstroIntegrationLogger, HookParameters } from 'astro'
-import { mergeConfig, validateConfig } from 'astro/config'
 import { existsSync } from 'node:fs'
 import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { pathToFileURL } from 'node:url'
+
+import type { AstroIntegrationLogger, HookParameters } from 'astro'
+import { mergeConfig, validateConfig } from 'astro/config'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+
 import { modelsBuildRoutes, workshopReleaseGate } from './workshop-release-gate'
 
 let root: string

@@ -283,6 +283,7 @@
 </template>
 
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
 import { useElementSize } from '@vueuse/core'
 import { computed, useTemplateRef } from 'vue'
 
@@ -291,7 +292,6 @@ import Slider from '@/components/ui/slider/Slider.vue'
 import { PAINTER_TOOLS, usePainter } from '@/composables/painter/usePainter'
 import type { NodeId } from '@/types/nodeId'
 import { toHexFromFormat } from '@/utils/colorUtil'
-import { cn } from '@comfyorg/tailwind-utils'
 
 const { nodeId } = defineProps<{
   nodeId: NodeId

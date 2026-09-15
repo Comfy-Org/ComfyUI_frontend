@@ -134,20 +134,20 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
-import { useToast } from 'primevue/usetoast'
-import { useI18n } from 'vue-i18n'
-import { useObjectUrl } from '@vueuse/core'
-
 import { cn } from '@comfyorg/tailwind-utils'
+import { useObjectUrl } from '@vueuse/core'
+import { useToast } from 'primevue/usetoast'
+import { computed, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
+
 import Button from '@/components/ui/button/Button.vue'
 import Input from '@/components/ui/input/Input.vue'
 import Textarea from '@/components/ui/textarea/Textarea.vue'
+import { useComfyHubProfileGate } from '@/platform/workflow/sharing/composables/useComfyHubProfileGate'
 import {
   isFileTooLarge,
   MAX_IMAGE_SIZE_MB
 } from '@/platform/workflow/sharing/utils/validateFileSize'
-import { useComfyHubProfileGate } from '@/platform/workflow/sharing/composables/useComfyHubProfileGate'
 import type { ComfyHubProfile } from '@/schemas/apiSchema'
 
 const {

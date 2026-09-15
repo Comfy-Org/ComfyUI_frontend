@@ -1,5 +1,5 @@
-import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { SUBGRAPH_INPUT_ID } from '@/lib/litegraph/src/constants'
+import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 
 export const GLSL_NODE_TYPE = 'GLSLShader'
 export const DEBOUNCE_MS = 50

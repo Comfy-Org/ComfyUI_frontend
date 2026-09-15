@@ -1,9 +1,8 @@
-import type { FileValue } from './workshop-playground'
-
 import {
   WORKSHOP_EXAMPLE_MIME_TYPES,
   workshopExampleFile
 } from './workshop-example-file'
+import type { FileValue } from './workshop-playground'
 
 const files = new WeakMap<FileValue, File>()
 const MAX_BYTES = 7 * 1024 * 1024

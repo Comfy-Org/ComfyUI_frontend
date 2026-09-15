@@ -1,8 +1,8 @@
+import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import type { Locator } from '@playwright/test'
 
 import { BADGE_GAP } from '@/lib/litegraph/src/canvas/linkBadges'
 import type { Point } from '@/lib/litegraph/src/interfaces'
-import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 
 export class LinkVisibilityHelper {
   public readonly promptInput: Locator

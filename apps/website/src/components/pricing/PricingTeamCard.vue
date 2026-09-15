@@ -1,20 +1,19 @@
 <script setup lang="ts">
-import type { Locale, TranslationKey } from '../../i18n/translations'
-import type { PlanFeatureGroup } from './PricingPlanFeatureList.vue'
-import { computed, ref } from 'vue'
-
 import { Coins as CreditsIcon } from '@lucide/vue'
+import { computed, ref } from 'vue'
 
 import { subscribeUrl } from '../../data/pricingPlans'
 import {
   formatTeamCreditsShort,
   teamCreditTiers
 } from '../../data/teamCreditTiers'
+import type { Locale, TranslationKey } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 import Button from '../ui/button/Button.vue'
 import Slider from '../ui/slider/Slider.vue'
 import PricingCard from './PricingCard.vue'
 import PricingCredits from './PricingCredits.vue'
+import type { PlanFeatureGroup } from './PricingPlanFeatureList.vue'
 import PricingPlanFeatureList from './PricingPlanFeatureList.vue'
 import PricingPlanLabel from './PricingPlanLabel.vue'
 import PricingPrice from './PricingPrice.vue'

@@ -1,9 +1,9 @@
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
 import { Pause, Play, Volume2, VolumeX } from '@lucide/vue'
 import { useMediaControls } from '@vueuse/core'
 import { computed, useTemplateRef } from 'vue'
 
-import { cn } from '@comfyorg/tailwind-utils'
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 

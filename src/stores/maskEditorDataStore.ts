@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia'
 import { computed, ref, shallowRef } from 'vue'
+
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { NodeId } from '@/types/nodeId'
 

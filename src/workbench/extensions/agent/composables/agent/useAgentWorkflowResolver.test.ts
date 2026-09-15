@@ -7,7 +7,6 @@ import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyW
 
 import type { CloudWorkflowEntry } from '../../schemas/agentApiSchema'
 import { useAgentWorkflowTabBindingStore } from '../../stores/agent/agentWorkflowTabBindingStore'
-
 import { useAgentWorkflowResolver } from './useAgentWorkflowResolver'
 
 vi.mock(import('@/platform/telemetry/reportError'), () => ({

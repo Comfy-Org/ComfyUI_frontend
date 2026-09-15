@@ -1,6 +1,6 @@
 import { fireEvent, render, screen } from '@testing-library/vue'
-import { nextTick } from 'vue'
 import { describe, expect, it } from 'vitest'
+import { nextTick } from 'vue'
 
 import CardRow from './CardRow.vue'
 

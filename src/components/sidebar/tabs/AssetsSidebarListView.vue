@@ -67,6 +67,7 @@
 </template>
 
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
 import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -86,7 +87,6 @@ import {
   getMediaTypeFromFilename,
   truncateFilename
 } from '@/utils/formatUtil'
-import { cn } from '@comfyorg/tailwind-utils'
 
 const {
   assetItems,

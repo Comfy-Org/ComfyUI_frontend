@@ -4,13 +4,13 @@ import { createMemoryHistory, createRouter } from 'vue-router'
 import type { RouteLocationNormalized, RouteRecordRaw } from 'vue-router'
 
 import {
-  cloudOnboardingRoutes,
-  oauthConsentRedirect
-} from '@/platform/cloud/onboarding/onboardingCloudRoutes'
-import {
   captureOAuthRequestId,
   clearOAuthRequestId
 } from '@/platform/cloud/oauth/oauthState'
+import {
+  cloudOnboardingRoutes,
+  oauthConsentRedirect
+} from '@/platform/cloud/onboarding/onboardingCloudRoutes'
 
 const VALID_REQUEST_ID = '550e8400-e29b-41d4-a716-446655440000'
 

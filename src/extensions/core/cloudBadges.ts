@@ -1,6 +1,7 @@
 import { computed, watch } from 'vue'
-import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
+
 import { t } from '@/i18n'
+import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useExtensionService } from '@/services/extensionService'
 import type { TopbarBadge } from '@/types/comfy'

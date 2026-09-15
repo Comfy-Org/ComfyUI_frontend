@@ -20,10 +20,10 @@
 </template>
 
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
 import { computed } from 'vue'
 
 import { useQueueProgress } from '@/composables/queue/useQueueProgress'
-import { cn } from '@comfyorg/tailwind-utils'
 
 const { hidden = false, radiusClass = 'rounded-[7px]' } = defineProps<{
   hidden?: boolean

@@ -1,8 +1,8 @@
+import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { expect } from '@playwright/test'
 
 import type { ComfyApp } from '@/scripts/app'
 import { NodeBadgeMode } from '@/types/nodeSource'
-import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 
 test.use({ initialSettings: { 'Comfy.UseNewMenu': 'Disabled' } })
 

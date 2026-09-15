@@ -1,16 +1,16 @@
 import { moveRerouteLayout } from '@/renderer/core/layout/operations/graphLayoutAttachment'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
+import type { Point as LayoutPoint } from '@/renderer/core/layout/types'
 import { EMPTY_MEMBERSHIP, useRerouteStore } from '@/stores/rerouteStore'
 import type { RerouteMembership } from '@/stores/rerouteStore'
-import { UNASSIGNED_NODE_ID } from '@/types/nodeId'
-import type { NodeId } from '@/types/nodeId'
 import { graphScopeOf, toOwningGraphId } from '@/types/graphScopeId'
 import type { GraphScope } from '@/types/graphScopeId'
-import { zeroUuid } from '@/utils/uuid'
+import { UNASSIGNED_NODE_ID } from '@/types/nodeId'
+import type { NodeId } from '@/types/nodeId'
 import type { FloatingRerouteSlot, RerouteChain } from '@/types/rerouteChain'
 import type { RerouteId } from '@/types/rerouteId'
+import { zeroUuid } from '@/utils/uuid'
 import type { UUID } from '@/utils/uuid'
-import type { Point as LayoutPoint } from '@/renderer/core/layout/types'
 
 function isPointLike(value: unknown): value is ArrayLike<number> {
   return (
@@ -26,11 +26,6 @@ function hasPointLength(value: unknown): boolean {
   return Array.isArray(value) && value.length === 2
 }
 
-import { LGraphBadge } from './LGraphBadge'
-import type { LGraph } from './LGraph'
-import type { LGraphNode } from './LGraphNode'
-import { LLink } from './LLink'
-import type { LinkId } from './LLink'
 import { createMutationView } from './infrastructure/createMutationView'
 import type {
   CanvasColour,
@@ -43,7 +38,12 @@ import type {
   ReadOnlyRect,
   ReadonlyLinkNetwork
 } from './interfaces'
+import type { LGraph } from './LGraph'
+import { LGraphBadge } from './LGraphBadge'
+import type { LGraphNode } from './LGraphNode'
 import { LiteGraph } from './litegraph'
+import { LLink } from './LLink'
+import type { LinkId } from './LLink'
 import { distance, isPointInRect } from './measure'
 import type { Serialisable, SerialisableReroute } from './types/serialisation'
 

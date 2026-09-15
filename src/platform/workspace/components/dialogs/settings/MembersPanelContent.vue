@@ -225,14 +225,15 @@
 </template>
 
 <script setup lang="ts">
-import SearchInput from '@/components/ui/search-input/SearchInput.vue'
+import { cn } from '@comfyorg/tailwind-utils'
+
 import Button from '@/components/ui/button/Button.vue'
+import SearchInput from '@/components/ui/search-input/SearchInput.vue'
 import MemberListItem from '@/platform/workspace/components/dialogs/settings/MemberListItem.vue'
 import MemberUpsellBanner from '@/platform/workspace/components/dialogs/settings/MemberUpsellBanner.vue'
 import PendingInvitesList from '@/platform/workspace/components/dialogs/settings/PendingInvitesList.vue'
 import WorkspaceMenuButton from '@/platform/workspace/components/dialogs/settings/WorkspaceMenuButton.vue'
 import { useMembersPanel } from '@/platform/workspace/composables/useMembersPanel'
-import { cn } from '@comfyorg/tailwind-utils'
 
 const TEAM_PLAN_REQUEST_URL =
   'https://comfysupport.portal.usepylon.com/forms/team-plan-requests'

@@ -1,6 +1,7 @@
 import { render, screen } from '@testing-library/vue'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick, ref } from 'vue'
+
 import { captureWorkshopEvent } from '../../scripts/posthog'
 import ModelsCatalogue from './ModelsCatalogue.vue'
 

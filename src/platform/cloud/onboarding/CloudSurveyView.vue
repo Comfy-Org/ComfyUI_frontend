@@ -26,8 +26,8 @@ import {
 import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
 import { useTelemetry } from '@/platform/telemetry'
 
-import DynamicSurveyForm from './survey/DynamicSurveyForm.vue'
 import { defaultOnboardingSurvey } from './survey/defaultSurveySchema'
+import DynamicSurveyForm from './survey/DynamicSurveyForm.vue'
 
 const router = useRouter()
 const { flags } = useFeatureFlags()

@@ -1,12 +1,12 @@
 import type { UploadImageResponse } from '@comfyorg/ingest-types'
-import { mergeTests } from '@playwright/test'
-
-import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
-import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { agentTest } from '@e2e/fixtures/agentPanelFixture'
 import { workflowSelectionTest } from '@e2e/fixtures/agentWorkflowSelectionFixture'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 import { webSocketFixture } from '@e2e/fixtures/ws'
+import { mergeTests } from '@playwright/test'
+
+import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
+import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 
 export const referenceNode: ComfyNodeDef = {
   name: 'ColorBalance',

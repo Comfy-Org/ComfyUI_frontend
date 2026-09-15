@@ -4,8 +4,9 @@ import type * as Leaflet from 'leaflet'
 import type { HTMLAttributes } from 'vue'
 import { onBeforeUnmount, onMounted, ref, watch } from 'vue'
 
-import leafletStylesUrl from 'leaflet/dist/leaflet.css?url'
 import worldCountriesUrl from '../../assets/world-countries.json?url'
+
+import leafletStylesUrl from 'leaflet/dist/leaflet.css?url'
 
 export type MapPinMarker = {
   id: string

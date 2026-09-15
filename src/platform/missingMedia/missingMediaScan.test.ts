@@ -11,7 +11,12 @@ import {
 } from '@/platform/missingMedia/__fixtures__/promotedMedia'
 import type { JobListItem } from '@/platform/remote/comfyui/jobs/jobTypes'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
+
 import type { MissingMediaAssetResolver } from './missingMediaAssetResolver'
+import {
+  countMissingMediaReferences,
+  getMissingMediaReferences
+} from './missingMediaGrouping'
 import {
   isMissingMediaCandidateScopeActive,
   scanAllMediaCandidates,
@@ -20,10 +25,6 @@ import {
   groupCandidatesByName,
   groupCandidatesByMediaType
 } from './missingMediaScan'
-import {
-  countMissingMediaReferences,
-  getMissingMediaReferences
-} from './missingMediaGrouping'
 import type { MissingMediaCandidate } from './types'
 
 const { mockGetAllAssetsByTag, mockGetAssetsPageByTag } = vi.hoisted(() => ({

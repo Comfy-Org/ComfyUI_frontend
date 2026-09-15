@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import type { Locale } from '../../../i18n/translations'
 import { computed } from 'vue'
 import type { HTMLAttributes } from 'vue'
 
@@ -8,6 +7,7 @@ import {
   downloadUrls,
   useDownloadUrl
 } from '../../../composables/useDownloadUrl'
+import type { Locale } from '../../../i18n/translations'
 import { t } from '../../../i18n/translations'
 import { captureDownloadClick } from '../../../scripts/posthog'
 import BrandButton from '../../common/BrandButton.vue'

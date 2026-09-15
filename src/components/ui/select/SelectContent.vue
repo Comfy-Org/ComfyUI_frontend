@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
 import type { SelectContentEmits, SelectContentProps } from 'reka-ui'
 import {
   SelectContent,
@@ -11,7 +12,6 @@ import type { HTMLAttributes, StyleValue } from 'vue'
 import { computed, useAttrs } from 'vue'
 
 import { useModalLiftedZIndex } from '@/composables/useModalLiftedZIndex'
-import { cn } from '@comfyorg/tailwind-utils'
 
 import SelectScrollDownButton from './SelectScrollDownButton.vue'
 import SelectScrollUpButton from './SelectScrollUpButton.vue'

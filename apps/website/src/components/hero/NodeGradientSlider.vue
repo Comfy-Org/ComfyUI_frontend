@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
-
 import { computed, ref } from 'vue'
 
 const { label, min, max, step, track, valueText, moving } = defineProps<{

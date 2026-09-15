@@ -1,7 +1,6 @@
-import { expect } from '@playwright/test'
-
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { TopUpCreditsDialog } from '@e2e/fixtures/components/TopUpCreditsDialog'
+import { expect } from '@playwright/test'
 
 test.describe('TopUpCredits dialog', { tag: '@ui' }, () => {
   let dialog: TopUpCreditsDialog

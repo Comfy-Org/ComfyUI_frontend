@@ -1,9 +1,9 @@
+import { assetPath } from '@e2e/fixtures/utils/paths'
 import type { APIRequestContext } from '@playwright/test'
 import { expect, test as base } from '@playwright/test'
 import { config as dotenvConfig } from 'dotenv'
 
 import { HERO_SLIDES } from '@/platform/cloud/onboarding/constants/heroSlides'
-import { assetPath } from '@e2e/fixtures/utils/paths'
 
 dotenvConfig()
 

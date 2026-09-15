@@ -1,8 +1,9 @@
-import { useAgentComposerStore } from '../../stores/agent/agentComposerStore'
-import { getActivePinia } from 'pinia'
-import { render, screen, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
+import { render, screen, within } from '@testing-library/vue'
+import { getActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+
+import { useAgentComposerStore } from '../../stores/agent/agentComposerStore'
 
 // The node preview constructs its observer at import time; jsdom omits this API.
 vi.hoisted(() => {
@@ -14,9 +15,9 @@ vi.hoisted(() => {
 })
 
 import { i18n } from '@/i18n'
+
 import { toTurnId } from '../../schemas/agentApiSchema'
 import type { WorkflowReference } from '../../types/workflowReference'
-
 import AgentPanel from './AgentPanel.vue'
 import { setupInlinePromptEditorDom } from './composer/inlinePromptEditorTestSetup'
 

@@ -1,7 +1,7 @@
 import { fromPartial } from '@total-typescript/shoehorn'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick, ref } from 'vue'
 import type { Ref } from 'vue'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { LGraphGroup } from '@/lib/litegraph/src/LGraphGroup'
 import type { LGraphCanvas, Positionable } from '@/lib/litegraph/src/litegraph'

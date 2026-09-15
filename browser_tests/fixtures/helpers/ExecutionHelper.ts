@@ -1,13 +1,13 @@
+import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
+import { createMockJob } from '@e2e/fixtures/helpers/AssetsHelper'
 import type { WebSocketRoute } from '@playwright/test'
 
+import type { RawJobListItem } from '@/platform/remote/comfyui/jobs/jobTypes'
 import type {
   NodeError,
   NodeProgressState,
   PromptResponse
 } from '@/schemas/apiSchema'
-import type { RawJobListItem } from '@/platform/remote/comfyui/jobs/jobTypes'
-import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
-import { createMockJob } from '@e2e/fixtures/helpers/AssetsHelper'
 
 const PROMPT_ROUTE_PATTERN = /\/api\/prompt$/
 

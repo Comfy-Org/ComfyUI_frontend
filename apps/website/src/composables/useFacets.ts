@@ -1,8 +1,8 @@
 import type { Ref } from 'vue'
 import { computed } from 'vue'
 
-import { tagDisplayName } from '../lib/hub/tag-aliases'
 import { mediaName } from '../lib/hub/media-names'
+import { tagDisplayName } from '../lib/hub/tag-aliases'
 import type { FilterBadge } from './useHubStore'
 import { useHubStore } from './useHubStore'
 

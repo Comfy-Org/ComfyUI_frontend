@@ -49,13 +49,13 @@
 </template>
 
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
 import { computed, ref } from 'vue'
 
 import AccessibleTooltip from '@/components/ui/tooltip/AccessibleTooltip.vue'
 import type { LogoInfo } from '@/platform/workflow/templates/types/template'
 import type { ProviderBadge } from '@/platform/workflow/templates/utils/templateDisplay'
 import { getProviderBadges } from '@/platform/workflow/templates/utils/templateDisplay'
-import { cn } from '@comfyorg/tailwind-utils'
 
 const {
   logos,

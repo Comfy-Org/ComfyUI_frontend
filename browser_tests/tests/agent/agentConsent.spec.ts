@@ -1,8 +1,7 @@
+import { agentConsentTest as test } from '@e2e/fixtures/agentConsentFixture'
 import { expect } from '@playwright/test'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
-
-import { agentConsentTest as test } from '@e2e/fixtures/agentConsentFixture'
 
 test.describe('Agent consent gate', { tag: ['@cloud', '@ui'] }, () => {
   test.use({ agentConsentAccepted: false })

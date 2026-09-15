@@ -1,7 +1,6 @@
-import { expect } from '@playwright/test'
-
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { assertNodeSlotsWithinBounds } from '@e2e/fixtures/utils/slotBoundsUtil'
+import { expect } from '@playwright/test'
 
 const NODE_ID = '3'
 const NODE_TITLE = 'KSampler'

@@ -1,26 +1,7 @@
-import type { Locator, Page, WebSocketRoute } from '@playwright/test'
-import { expect } from '@playwright/test'
-import { z } from 'zod'
-
 import type { WorkflowListResponse } from '@comfyorg/ingest-types'
-import type { UserDataFullInfo } from '@/schemas/apiSchema'
-
-import { createI18n } from 'vue-i18n'
-
-import enMessages from '@/locales/en/main.json' with { type: 'json' }
-import type { ObjectInfoResponse } from '@/schemas/nodeDefSchema'
-import type {
-  AgentCancelAccepted,
-  AgentMessages,
-  AgentWsEvent
-} from '@/workbench/extensions/agent/schemas/agentApiSchema'
-import { parseServerDocFrame } from '@/workbench/extensions/agent/crdt/docFrameClient'
-import { parseAgentWsEvent } from '@/workbench/extensions/agent/schemas/agentApiSchema'
-
-import { agentTest, bootAgentApp } from '@e2e/fixtures/agentPanelFixture'
 import { HostDoc } from '@e2e/fixtures/agentConversationHostDoc'
 import type { HostFrame } from '@e2e/fixtures/agentConversationHostDoc'
-import { VueNodeHelpers } from '@e2e/fixtures/VueNodeHelpers'
+import { agentTest, bootAgentApp } from '@e2e/fixtures/agentPanelFixture'
 import type {
   AgentConversation,
   AgentConversationTurn,
@@ -29,8 +10,23 @@ import type {
 import { loadAgentConversation } from '@e2e/fixtures/data/agent/agentConversation'
 import type { ExpectedTurn } from '@e2e/fixtures/data/agent/agentConversationExpectations'
 import { RECORDED_EXPECTATIONS } from '@e2e/fixtures/data/agent/agentConversationExpectations'
-
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
+import { VueNodeHelpers } from '@e2e/fixtures/VueNodeHelpers'
+import type { Locator, Page, WebSocketRoute } from '@playwright/test'
+import { expect } from '@playwright/test'
+import { createI18n } from 'vue-i18n'
+import { z } from 'zod'
+
+import enMessages from '@/locales/en/main.json' with { type: 'json' }
+import type { UserDataFullInfo } from '@/schemas/apiSchema'
+import type { ObjectInfoResponse } from '@/schemas/nodeDefSchema'
+import { parseServerDocFrame } from '@/workbench/extensions/agent/crdt/docFrameClient'
+import type {
+  AgentCancelAccepted,
+  AgentMessages,
+  AgentWsEvent
+} from '@/workbench/extensions/agent/schemas/agentApiSchema'
+import { parseAgentWsEvent } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 
 const THREAD_ID = 'e9a2f3d1-7c44-4b2e-9a01-5f6d8c7b3a10'
 // One synthetic message id per turn; the recorded ids never reach the page.

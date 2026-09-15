@@ -9,12 +9,12 @@ import {
 import type { UUID } from '@/lib/litegraph/src/litegraph'
 import { useLinkStore } from '@/stores/linkStore'
 
-import { reorderSubgraphInputs } from './subgraphUtils'
 import {
   createTestSubgraph,
   createTestSubgraphNode,
   resetSubgraphFixtureState
 } from './__fixtures__/subgraphHelpers'
+import { reorderSubgraphInputs } from './subgraphUtils'
 
 describe('subgraphUtils', () => {
   beforeEach(() => {

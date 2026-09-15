@@ -1,11 +1,11 @@
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
 import { useDropZone } from '@vueuse/core'
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import ImageLightbox from '@/components/common/ImageLightbox.vue'
 import { useClickDragGuard } from '@/composables/useClickDragGuard'
-import { cn } from '@comfyorg/tailwind-utils'
 
 defineOptions({ inheritAttrs: false })
 

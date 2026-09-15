@@ -3,11 +3,10 @@ import type {
   IBaseWidget,
   IWidgetOptions
 } from '@/lib/litegraph/src/types/widgets'
+import { evaluateMathExpression } from '@/lib/litegraph/src/utils/mathParser'
 import type { WidgetRenderState } from '@/stores/widgetValueStore'
 import type { WidgetId } from '@/types/widgetId'
 import type { UUID } from '@/utils/uuid'
-
-import { evaluateMathExpression } from '@/lib/litegraph/src/utils/mathParser'
 
 /**
  * The step value for numeric widgets.

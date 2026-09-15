@@ -1,3 +1,4 @@
+import { cn } from '@comfyorg/tailwind-utils'
 import type {
   TooltipOptions,
   TooltipPassThroughMethodOptions
@@ -9,7 +10,6 @@ import { resolveNodeDefSlotText, resolveNodeDefText } from '@/i18n'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
-import { cn } from '@comfyorg/tailwind-utils'
 
 // PrimeVue adds this internal property to elements with tooltips
 interface PrimeVueTooltipElement extends Element {

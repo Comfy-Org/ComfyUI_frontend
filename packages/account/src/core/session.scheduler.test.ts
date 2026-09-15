@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { createTestIdentity } from '../testing.js'
 import type {
   AccountCredential,
   AccountUser,
@@ -9,7 +10,6 @@ import type {
   SessionClientOptions,
   SessionSnapshot
 } from './session.js'
-import { createTestIdentity } from '../testing.js'
 import { createSessionClient } from './session.js'
 
 const EXCHANGE_URL = 'https://cloud.test/api/auth/token'

@@ -102,21 +102,21 @@
 </template>
 
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
 import type { VirtualItem } from '@tanstack/vue-virtual'
-import type { CSSProperties } from 'vue'
 import { useVirtualizer } from '@tanstack/vue-virtual'
-import { useI18n } from 'vue-i18n'
+import type { CSSProperties } from 'vue'
 import { computed, onBeforeUnmount, ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import JobDetailsHoverPopover from '@/components/queue/job/JobDetailsHoverPopover.vue'
 import Button from '@/components/ui/button/Button.vue'
 import type { JobGroup, JobListItem } from '@/composables/queue/useJobList'
-import { resultItemPreviewUrl } from '@/utils/resultItemUrl'
-import { isImageResult, isVideoResult } from '@/utils/resultItem'
 import AssetsListItem from '@/platform/assets/components/AssetsListItem.vue'
-import { cn } from '@comfyorg/tailwind-utils'
 import { iconForJobState } from '@/utils/queueDisplay'
 import { isActiveJobState } from '@/utils/queueUtil'
+import { isImageResult, isVideoResult } from '@/utils/resultItem'
+import { resultItemPreviewUrl } from '@/utils/resultItemUrl'
 
 import { buildVirtualJobRows } from './buildVirtualJobRows'
 import type { VirtualJobRow } from './buildVirtualJobRows'

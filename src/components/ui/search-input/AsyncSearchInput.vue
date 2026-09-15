@@ -1,9 +1,8 @@
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
 import { refDebounced } from '@vueuse/core'
 import { nextTick, onMounted, ref, toRef, toValue, watch } from 'vue'
 import type { HTMLAttributes, MaybeRefOrGetter } from 'vue'
-
-import { cn } from '@comfyorg/tailwind-utils'
 
 const {
   searcher = async () => {},

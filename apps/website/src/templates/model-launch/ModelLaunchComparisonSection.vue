@@ -1,8 +1,7 @@
 <script setup lang="ts">
 import type { Locale } from '../../i18n/translations'
-import type { ModelLaunchComparison } from './types'
-
 import { t } from '../../i18n/translations'
+import type { ModelLaunchComparison } from './types'
 
 const { locale = 'en', comparison } = defineProps<{
   comparison: ModelLaunchComparison

@@ -1,9 +1,8 @@
-import { describe, expect, it } from 'vitest'
-
 import {
   eventsForPrompt,
   toPromptEvent
 } from '@e2e/fixtures/customNode/promptEventScope'
+import { describe, expect, it } from 'vitest'
 
 describe('eventsForPrompt', () => {
   it('excludes prompt-less events outside the captured prompt lifetime', () => {

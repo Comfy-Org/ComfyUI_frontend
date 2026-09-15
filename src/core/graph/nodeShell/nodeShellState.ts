@@ -1,6 +1,14 @@
 import { shallowReactive } from 'vue'
 
 import { assert } from '@/base/assert'
+import type {
+  INodeInputSlot,
+  INodeOutputSlot
+} from '@/lib/litegraph/src/interfaces'
+import type { LGraph } from '@/lib/litegraph/src/LGraph'
+import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import { LGraphEventMode } from '@/lib/litegraph/src/types/globalEnums'
+import type { TitleMode } from '@/lib/litegraph/src/types/globalEnums'
 import {
   canTransferLayoutAttachment,
   transferLayoutAttachment
@@ -8,17 +16,8 @@ import {
 import { useNodeDataStore } from '@/stores/nodeDataStore'
 import { graphScopeOf } from '@/types/graphScopeId'
 import { UNASSIGNED_NODE_ID } from '@/types/nodeId'
-import { LGraphEventMode } from '@/lib/litegraph/src/types/globalEnums'
-import { zeroUuid } from '@/utils/uuid'
-
-import type {
-  INodeInputSlot,
-  INodeOutputSlot
-} from '@/lib/litegraph/src/interfaces'
-import type { LGraph } from '@/lib/litegraph/src/LGraph'
-import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import type { TitleMode } from '@/lib/litegraph/src/types/globalEnums'
 import type { NodeState } from '@/types/nodeState'
+import { zeroUuid } from '@/utils/uuid'
 
 /**
  * Wraps a node's `inputs` array with a rehydration view — e.g.

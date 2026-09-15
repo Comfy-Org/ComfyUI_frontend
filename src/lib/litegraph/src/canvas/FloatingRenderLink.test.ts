@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest'
 
 import { SUBGRAPH_OUTPUT_ID } from '@/lib/litegraph/src/constants'
-import { LLink, slotFloatingLinks } from '@/lib/litegraph/src/LLink'
 import { LGraph, LGraphNode, Reroute } from '@/lib/litegraph/src/litegraph'
+import { LLink, slotFloatingLinks } from '@/lib/litegraph/src/LLink'
 import { toLinkId } from '@/types/linkId'
 import { toNodeId, UNASSIGNED_NODE_ID } from '@/types/nodeId'
 import { toRerouteId } from '@/types/rerouteId'

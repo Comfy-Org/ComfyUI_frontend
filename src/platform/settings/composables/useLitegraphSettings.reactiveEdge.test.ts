@@ -1,5 +1,5 @@
-import { effectScope, nextTick } from 'vue'
 import { expect, it, vi } from 'vitest'
+import { effectScope, nextTick } from 'vue'
 
 import { LGraph, LGraphCanvas, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useSettingStore } from '@/platform/settings/settingStore'

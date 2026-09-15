@@ -5,9 +5,9 @@ import { renderToString } from 'vue/server-renderer'
 
 import './ModelPage.vue'
 import './ModelsCatalogue.vue'
-import ModelsPage from './ModelsPage.vue'
-import { prepareModelPage } from '../../routes/models/model-page'
 import { workshopModels } from '../../config/workshop-browse-content'
+import { prepareModelPage } from '../../routes/models/model-page'
+import ModelsPage from './ModelsPage.vue'
 
 const { enabled, settled } = await vi.hoisted(async () => {
   const { ref } = await import('vue')

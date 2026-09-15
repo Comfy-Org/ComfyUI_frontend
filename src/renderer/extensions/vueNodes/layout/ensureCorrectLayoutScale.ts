@@ -1,15 +1,15 @@
+import type { Point as LGPoint } from '@/lib/litegraph/src/interfaces'
 import type { LGraph, RendererType } from '@/lib/litegraph/src/LGraph'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { snapPoint } from '@/lib/litegraph/src/measure'
-import type { Point as LGPoint } from '@/lib/litegraph/src/interfaces'
+import type { SubgraphInputNode } from '@/lib/litegraph/src/subgraph/SubgraphInputNode'
+import type { SubgraphOutputNode } from '@/lib/litegraph/src/subgraph/SubgraphOutputNode'
 import {
   RENDER_SCALE_FACTOR,
   getGraphRenderAnchor,
   unprojectBounds,
   unprojectPoint
 } from '@/renderer/core/layout/transform/graphRenderTransform'
-import type { SubgraphInputNode } from '@/lib/litegraph/src/subgraph/SubgraphInputNode'
-import type { SubgraphOutputNode } from '@/lib/litegraph/src/subgraph/SubgraphOutputNode'
 
 interface Positioned {
   pos: LGPoint

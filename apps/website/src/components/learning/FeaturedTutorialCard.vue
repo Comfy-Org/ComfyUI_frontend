@@ -1,15 +1,14 @@
 <script setup lang="ts">
+import { localizeHref } from '../../config/routes'
 // The prominent featured banner at the top of the learning directory: a large
 // poster with the play overlay beside the title, tags, and a try-workflow CTA.
 import type { LearningTutorial } from '../../data/learningTutorials'
-import type { Locale } from '../../i18n/translations'
-
 import { categoryLabelKeys, tutorialPath } from '../../data/learningTutorials'
-import { localizeHref } from '../../config/routes'
+import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
+import PlayOverlay from '../blocks/PlayOverlay.vue'
 import Badge from '../ui/badge/Badge.vue'
 import ButtonPill from '../ui/button-pill/ButtonPill.vue'
-import PlayOverlay from '../blocks/PlayOverlay.vue'
 
 const { tutorial, locale = 'en' } = defineProps<{
   tutorial: LearningTutorial

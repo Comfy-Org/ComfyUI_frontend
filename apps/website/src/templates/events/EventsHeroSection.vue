@@ -1,13 +1,12 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 
-import type { Locale } from '../../i18n/translations'
-
 import FeaturedCarousel01 from '../../components/blocks/FeaturedCarousel01.vue'
 import type { FeaturedSlide } from '../../components/blocks/FeaturedCarousel01.vue'
 import HeroCentered01 from '../../components/blocks/HeroCentered01.vue'
 import Button from '../../components/ui/button/Button.vue'
 import { featuredEvents } from '../../data/events'
+import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()

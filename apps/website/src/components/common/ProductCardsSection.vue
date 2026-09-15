@@ -1,11 +1,10 @@
 <script setup lang="ts">
-import type { Locale, TranslationKey } from '../../i18n/translations'
-import type { ButtonVariants } from '../ui/button'
-
 import { cn } from '@comfyorg/tailwind-utils'
 
 import { getRoutes } from '../../config/routes'
+import type { Locale, TranslationKey } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
+import type { ButtonVariants } from '../ui/button'
 import ProductCard from './ProductCard.vue'
 import SectionLabel from './SectionLabel.vue'
 

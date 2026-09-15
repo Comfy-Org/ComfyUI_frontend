@@ -3,8 +3,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
-import type { ComfyExtension } from '@/types/comfy'
 import type { ComfyApp } from '@/scripts/app'
+import type { ComfyExtension } from '@/types/comfy'
 
 const { app } = vi.hoisted(() => ({
   app: {

@@ -1,11 +1,10 @@
-import { expect } from '@playwright/test'
-
 import { comfyPageFixture } from '@e2e/fixtures/ComfyPage'
 import {
   makeWorkspaceTokenResponse,
   mockTeamWorkspace
 } from '@e2e/fixtures/data/workspaceAuthFixtures'
 import { WorkspaceAuthHelper } from '@e2e/fixtures/helpers/WorkspaceAuthHelper'
+import { expect } from '@playwright/test'
 
 const test = comfyPageFixture.extend<{ workspaceAuth: WorkspaceAuthHelper }>({
   page: async ({ page }, use) => {

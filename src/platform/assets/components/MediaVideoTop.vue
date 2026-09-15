@@ -30,7 +30,6 @@
 import { computed, ref } from 'vue'
 
 import type { AssetMeta } from '../schemas/mediaAssetSchema'
-
 import VideoPlayOverlay from './VideoPlayOverlay.vue'
 
 const { asset, showNativeControls = true } = defineProps<{

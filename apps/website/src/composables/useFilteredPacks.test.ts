@@ -2,7 +2,6 @@ import { describe, expect, it } from 'vitest'
 import { ref } from 'vue'
 
 import type { GridPack, PackNode } from '../data/cloudNodes'
-
 import { useFilteredPacks } from './useFilteredPacks'
 
 function pack(overrides: Partial<GridPack> = {}): GridPack {

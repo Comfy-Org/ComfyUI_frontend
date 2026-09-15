@@ -1,6 +1,6 @@
+import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
 import { fromPartial } from '@total-typescript/shoehorn'
-import userEvent from '@testing-library/user-event'
 import PrimeVue from 'primevue/config'
 import Listbox from 'primevue/listbox'
 import Select from 'primevue/select'
@@ -11,8 +11,8 @@ import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import VerifiedIcon from '@/components/icons/VerifiedIcon.vue'
-import { api } from '@/scripts/api'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
+import { api } from '@/scripts/api'
 import { useComfyManagerStore } from '@/workbench/extensions/manager/stores/comfyManagerStore'
 
 import PackVersionSelectorPopover from './PackVersionSelectorPopover.vue'

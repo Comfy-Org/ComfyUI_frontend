@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest'
 
-import { workshopModelOrderSchema } from './workshop-model-order.schema'
 import display from '../content/workshop-display.json'
 import { modelOrderRank } from './workshop-model-order'
+import { workshopModelOrderSchema } from './workshop-model-order.schema'
 
 const order: unknown = {
   measuredOn: '2026-09-12',

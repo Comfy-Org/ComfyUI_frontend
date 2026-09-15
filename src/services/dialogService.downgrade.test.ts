@@ -1,7 +1,8 @@
 import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { Component } from 'vue'
-import type DowngradeContent from '@/platform/workspace/components/dialogs/DowngradeRemoveMembersDialogContent.vue'
+
 import { useToastStore } from '@/platform/updates/common/toastStore'
+import type DowngradeContent from '@/platform/workspace/components/dialogs/DowngradeRemoveMembersDialogContent.vue'
 import { useDialogStore } from '@/stores/dialogStore'
 /**
  * showDowngradeToPersonalDialog must refresh members before the no-members

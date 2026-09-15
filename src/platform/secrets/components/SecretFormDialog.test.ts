@@ -1,11 +1,11 @@
-import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
+import { render, screen } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
-import SecretFormDialog from './SecretFormDialog.vue'
 import type { SecretCredentialOption, SecretInputType } from '../types'
+import SecretFormDialog from './SecretFormDialog.vue'
 
 const mockState = vi.hoisted(() => ({
   inputType: 'text' as SecretInputType,

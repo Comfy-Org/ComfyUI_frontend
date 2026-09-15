@@ -82,6 +82,7 @@
 </template>
 
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
 import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -92,7 +93,6 @@ import {
 } from '@/extensions/core/load3d/constants'
 import type { HDRIConfig } from '@/extensions/core/load3d/interfaces'
 import { useToastStore } from '@/platform/updates/common/toastStore'
-import { cn } from '@comfyorg/tailwind-utils'
 
 const { t } = useI18n()
 

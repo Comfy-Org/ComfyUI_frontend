@@ -1,12 +1,13 @@
 import { fromAny } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import type { Mock } from 'vitest'
 
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import type { ResultItem } from '@/schemas/apiSchema'
 import { useToastStore } from '@/platform/updates/common/toastStore'
+import type { ResultItem } from '@/schemas/apiSchema'
 import { useAssetsStore } from '@/stores/assetsStore'
+
 import { useNodeImageUpload } from './useNodeImageUpload'
-import type { Mock } from 'vitest'
 
 const mockFetchApi = vi.hoisted(() => vi.fn())
 let mockInvalidateInputs: Mock<

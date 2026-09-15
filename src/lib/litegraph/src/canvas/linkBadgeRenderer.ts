@@ -1,9 +1,10 @@
-import type { LGraph } from '../LGraph'
-import type { LLink } from '../LLink'
-import type { ReadOnlyRect } from '../interfaces'
+import { useLinkPresentationStore } from '@/stores/linkPresentationStore'
 import { graphScopeOf } from '@/types/graphScopeId'
 import { compareNodeIds } from '@/types/nodeId'
-import { useLinkPresentationStore } from '@/stores/linkPresentationStore'
+
+import type { ReadOnlyRect } from '../interfaces'
+import type { LGraph } from '../LGraph'
+import type { LLink } from '../LLink'
 import { drawHiddenLinkBadges, queryLinkBadgeAtPoint } from './linkBadges'
 import { getLinkEndpointPositions } from './linkGeometry'
 

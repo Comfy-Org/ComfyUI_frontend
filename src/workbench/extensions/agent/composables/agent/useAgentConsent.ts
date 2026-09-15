@@ -1,5 +1,5 @@
-import { defineAsyncComponent } from 'vue'
 import { storeToRefs } from 'pinia'
+import { defineAsyncComponent } from 'vue'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { i18n } from '@/i18n'

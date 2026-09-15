@@ -1,15 +1,14 @@
-import { expect } from '@playwright/test'
-
-import type { AlgoliaNodePack } from '@/types/algoliaTypes'
-import type { components as ManagerComponents } from '@/workbench/extensions/manager/types/generatedManagerTypes'
 import type {
   components as RegistryComponents,
   operations as RegistryOperations
 } from '@comfyorg/registry-types'
-
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { mockSystemStats } from '@e2e/fixtures/data/systemStats'
+import { expect } from '@playwright/test'
+
+import type { AlgoliaNodePack } from '@/types/algoliaTypes'
+import type { components as ManagerComponents } from '@/workbench/extensions/manager/types/generatedManagerTypes'
 
 type InstalledPacksResponse =
   ManagerComponents['schemas']['InstalledPacksResponse']

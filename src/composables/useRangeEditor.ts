@@ -1,10 +1,9 @@
+import { clamp } from 'es-toolkit'
 import { onBeforeUnmount, ref } from 'vue'
 import type { Ref } from 'vue'
 
-import { clamp } from 'es-toolkit'
-
-import { denormalize, normalize } from '@/utils/mathUtil'
 import type { RangeValue } from '@/lib/litegraph/src/types/widgets'
+import { denormalize, normalize } from '@/utils/mathUtil'
 
 type HandleType = 'min' | 'max' | 'midpoint'
 

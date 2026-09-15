@@ -1,13 +1,13 @@
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
 import { SliderRoot, SliderThumb, SliderTrack } from 'reka-ui'
 import { computed, ref } from 'vue'
 
-import type { ColorStop } from '@/lib/litegraph/src/interfaces'
 import {
   interpolateStops,
   stopsToGradient
 } from '@/components/gradientslider/gradients'
-import { cn } from '@comfyorg/tailwind-utils'
+import type { ColorStop } from '@/lib/litegraph/src/interfaces'
 
 const {
   stops,

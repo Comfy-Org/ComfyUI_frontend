@@ -1,7 +1,6 @@
-import { describe, expect, it } from 'vitest'
-
 import { AgentRequestResponseQueue } from '@e2e/fixtures/agentRequestResponseFixture'
 import type { AgentRequestResponseScenario } from '@e2e/fixtures/data/agentRequestResponse'
+import { describe, expect, it } from 'vitest'
 
 const scenarios = [
   {

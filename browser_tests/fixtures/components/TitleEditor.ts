@@ -1,7 +1,6 @@
+import { TestIds } from '@e2e/fixtures/selectors'
 import type { Locator, Page } from '@playwright/test'
 import { expect } from '@playwright/test'
-
-import { TestIds } from '@e2e/fixtures/selectors'
 
 /**
  * The node/group title-editing input. Rendered in three scopes: the canvas

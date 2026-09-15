@@ -1,13 +1,13 @@
-import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
-import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { useImageUploadWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useImageUploadWidget'
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { IComboWidget } from '@/lib/litegraph/src/types/widgets'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import { useImageUploadWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useImageUploadWidget'
 import type { ResultItem, ResultItemType } from '@/schemas/apiSchema'
 import type { InputSpec } from '@/schemas/nodeDefSchema'
+import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 
 type CapturedImageUploadOptions = {
   onUploadComplete: (paths: (string | ResultItem)[]) => void

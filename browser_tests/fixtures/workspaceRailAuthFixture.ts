@@ -1,7 +1,4 @@
-import { networkIsolationFixture as base } from '@e2e/fixtures/networkIsolationFixture'
-
 import type { ListSavedPaymentMethodsResponse } from '@comfyorg/ingest-types'
-import type { operations } from '@/types/comfyRegistryTypes'
 import { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { EMPTY_BILLING_PLANS } from '@e2e/fixtures/data/cloudWorkspace'
 import {
@@ -9,7 +6,10 @@ import {
   withUnsubscribed
 } from '@e2e/fixtures/helpers/SubscriptionHelper'
 import type { SubscriptionOperator } from '@e2e/fixtures/helpers/SubscriptionHelper'
+import { networkIsolationFixture as base } from '@e2e/fixtures/networkIsolationFixture'
 import { mockWorkspace, workspace } from '@e2e/fixtures/utils/workspaceMocks'
+
+import type { operations } from '@/types/comfyRegistryTypes'
 
 type CreateCustomerResponse =
   operations['createCustomer']['responses']['201']['content']['application/json']

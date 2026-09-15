@@ -1,11 +1,11 @@
-import { useAppModeStore } from '@/stores/appModeStore'
-import { useSettingStore } from '@/platform/settings/settingStore'
 import type { DetachedWindowAPI } from 'happy-dom'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 import type { Ref } from 'vue'
 
+import { useSettingStore } from '@/platform/settings/settingStore'
 import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useAppModeStore } from '@/stores/appModeStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 import type { AppMode } from '@/utils/appMode'
 

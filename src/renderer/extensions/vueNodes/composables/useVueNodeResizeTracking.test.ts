@@ -1,11 +1,10 @@
-import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import { render, screen } from '@testing-library/vue'
 import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, h, nextTick, ref } from 'vue'
 
-import { render, screen } from '@testing-library/vue'
-
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import type { NodeLayout } from '@/renderer/core/layout/types'
 import type { ComfyApp } from '@/scripts/app'
 import { toNodeId } from '@/types/nodeId'

@@ -1,6 +1,6 @@
-import { useWorkspaceAuthStore } from '@/platform/workspace/stores/workspaceAuthStore'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { useWorkspaceAuthStore } from '@/platform/workspace/stores/workspaceAuthStore'
 import { WORKSPACE_STORAGE_KEYS } from '@/platform/workspace/workspaceConstants'
 
 import { sortWorkspaces, useTeamWorkspaceStore } from './teamWorkspaceStore'

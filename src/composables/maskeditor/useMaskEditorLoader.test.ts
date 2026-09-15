@@ -1,12 +1,13 @@
-import { useMaskEditorDataStore } from '@/stores/maskEditorDataStore'
 import { fromAny } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { api } from '@/scripts/api'
+import { useMaskEditorDataStore } from '@/stores/maskEditorDataStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { toNodeId } from '@/types/nodeId'
 import { widgetId } from '@/types/widgetId'
-import { api } from '@/scripts/api'
+
 import { useMaskEditorLoader } from './useMaskEditorLoader'
 
 let mockDataStore: ReturnType<typeof useMaskEditorDataStore>

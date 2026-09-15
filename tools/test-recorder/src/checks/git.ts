@@ -1,6 +1,7 @@
 import { execSync } from 'node:child_process'
-import { detectPlatform } from './platform'
+
 import { pass, fail, info } from '../ui/logger'
+import { detectPlatform } from './platform'
 import type { CheckResult } from './types'
 
 export async function checkGit(): Promise<CheckResult> {

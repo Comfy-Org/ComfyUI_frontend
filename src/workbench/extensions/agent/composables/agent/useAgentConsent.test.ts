@@ -1,14 +1,15 @@
 vi.mock(import('firebase/auth'))
 vi.mock(import('vuefire'), () => ({ useFirebaseAuth: vi.fn() }))
-import type { GlobalSetting } from '@comfyorg/ingest-types'
-import { useAuthStore } from '@/stores/authStore'
-import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
-import { useToastStore } from '@/platform/updates/common/toastStore'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { setImmediate } from 'node:timers/promises'
 
-import { useDialogStore } from '@/stores/dialogStore'
+import type { GlobalSetting } from '@comfyorg/ingest-types'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+
 import { i18n } from '@/i18n'
+import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
+import { useAuthStore } from '@/stores/authStore'
+import { useDialogStore } from '@/stores/dialogStore'
 
 import { useAgentConsent } from './useAgentConsent'
 

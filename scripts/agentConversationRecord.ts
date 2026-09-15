@@ -11,6 +11,10 @@ import type { AgentPostMessageRequest } from '@comfyorg/ingest-types'
 import { z } from 'zod'
 
 import {
+  zAgentTurnAccepted,
+  zAgentWsEvent
+} from '../src/workbench/extensions/agent/schemas/agentApiSchema'
+import {
   RecordRefusal,
   assembleConversation,
   parseOrRefuse,
@@ -20,10 +24,6 @@ import {
   zRowsDump,
   zSeedFixture
 } from './agentConversationAssemble'
-import {
-  zAgentTurnAccepted,
-  zAgentWsEvent
-} from '../src/workbench/extensions/agent/schemas/agentApiSchema'
 import type {
   NormalizedRows,
   RawCapture,

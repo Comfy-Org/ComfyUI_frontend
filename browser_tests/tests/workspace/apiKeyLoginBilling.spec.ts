@@ -1,11 +1,10 @@
-import { expect } from '@playwright/test'
-
-import { TestIds } from '@e2e/fixtures/selectors'
 import {
   API_KEY_BALANCE_DISPLAY,
   API_KEY_WORKSPACE,
   apiKeyAuthFixture as test
 } from '@e2e/fixtures/apiKeyAuthFixture'
+import { TestIds } from '@e2e/fixtures/selectors'
+import { expect } from '@playwright/test'
 
 /**
  * Regression coverage for the 1.51 QA API-key login findings: an API-key

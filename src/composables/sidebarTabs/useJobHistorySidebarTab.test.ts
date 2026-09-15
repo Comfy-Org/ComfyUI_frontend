@@ -1,8 +1,8 @@
 import { describe, expect, it, vi } from 'vitest'
-import { useQueueStore } from '@/stores/queueStore'
-import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 
 import { useJobHistorySidebarTab } from '@/composables/sidebarTabs/useJobHistorySidebarTab'
+import { useQueueStore } from '@/stores/queueStore'
+import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 
 vi.mock<unknown>(
   import('@/components/sidebar/tabs/JobHistorySidebarTab.vue'),

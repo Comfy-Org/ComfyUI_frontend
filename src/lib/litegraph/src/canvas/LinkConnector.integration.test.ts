@@ -2,6 +2,7 @@
 // TODO: Fix these tests after migration
 import { afterEach, describe, expect, vi } from 'vitest'
 
+import type { ConnectingLink } from '@/lib/litegraph/src/interfaces'
 import type {
   LGraph,
   Reroute,
@@ -9,10 +10,6 @@ import type {
   RerouteId
 } from '@/lib/litegraph/src/litegraph'
 import { LGraphNode, LLink, LinkConnector } from '@/lib/litegraph/src/litegraph'
-
-import { slotFloatingLinks } from '../LLink'
-import { test as baseTest } from '../__fixtures__/testExtensions'
-import type { ConnectingLink } from '@/lib/litegraph/src/interfaces'
 import { useLinkStore } from '@/stores/linkStore'
 import { graphScopeOf } from '@/types/graphScopeId'
 import { toLinkId } from '@/types/linkId'
@@ -22,6 +19,9 @@ import {
   createMockCanvasPointerEvent,
   createMockCanvasRenderingContext2D
 } from '@/utils/__tests__/litegraphTestUtils'
+
+import { test as baseTest } from '../__fixtures__/testExtensions'
+import { slotFloatingLinks } from '../LLink'
 
 interface TestContext {
   graph: LGraph

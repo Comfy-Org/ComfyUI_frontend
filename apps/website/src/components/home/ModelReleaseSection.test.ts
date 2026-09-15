@@ -2,8 +2,8 @@ import { render, screen } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick, ref } from 'vue'
 
-import { getRoutes } from '../../config/routes'
 import { modelReleaseLinks } from '../../config/model-release-links'
+import { getRoutes } from '../../config/routes'
 import ModelReleaseSection from './ModelReleaseSection.vue'
 
 const enabled = ref(true)

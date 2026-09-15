@@ -1,8 +1,7 @@
-import { expect } from '@playwright/test'
-
 import { TopUpCreditsDialog } from '@e2e/fixtures/components/TopUpCreditsDialog'
 import { TestIds } from '@e2e/fixtures/selectors'
 import { workspaceRailAuthFixture as test } from '@e2e/fixtures/workspaceRailAuthFixture'
+import { expect } from '@playwright/test'
 
 /**
  * Regression coverage for 1.51 QA finding #11: on a local (non-Cloud)

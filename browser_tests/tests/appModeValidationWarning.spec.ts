@@ -2,9 +2,10 @@ import {
   comfyExpect as expect,
   comfyPageFixture as test
 } from '@e2e/fixtures/ComfyPage'
-import type { NodeError, PromptResponse } from '@/schemas/apiSchema'
 import { ExecutionHelper } from '@e2e/fixtures/helpers/ExecutionHelper'
 import { TestIds } from '@e2e/fixtures/selectors'
+
+import type { NodeError, PromptResponse } from '@/schemas/apiSchema'
 
 const SAVE_IMAGE_NODE_ID = '9'
 

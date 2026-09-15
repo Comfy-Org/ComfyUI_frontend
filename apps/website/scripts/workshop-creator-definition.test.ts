@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
-import models from '../src/data/workshop-creator-models.json'
 import variants from '../src/data/workshop-content-inputs.json'
+import models from '../src/data/workshop-creator-models.json'
 import { workshopCreatorDefinitionSchema } from './workshop-creator-definition'
 
 describe('creator family configuration boundary', () => {

@@ -1,6 +1,6 @@
-import { toNodeId } from '@/types/nodeId'
-
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
+
+import { toNodeId } from '@/types/nodeId'
 
 interface ConnectedInput {
   name: string

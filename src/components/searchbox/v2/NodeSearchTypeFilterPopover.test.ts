@@ -1,11 +1,11 @@
-import { render, screen, waitFor } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
+import { render, screen, waitFor } from '@testing-library/vue'
 import { describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
-import NodeSearchTypeFilterPopover from '@/components/searchbox/v2/NodeSearchTypeFilterPopover.vue'
-import type { FilterChip } from '@/components/searchbox/v2/NodeSearchFilterBar.vue'
 import { testI18n } from '@/components/searchbox/v2/__test__/testUtils'
+import type { FilterChip } from '@/components/searchbox/v2/NodeSearchFilterBar.vue'
+import NodeSearchTypeFilterPopover from '@/components/searchbox/v2/NodeSearchTypeFilterPopover.vue'
 
 function createMockChip(
   data: string[] = ['IMAGE', 'LATENT', 'MODEL']

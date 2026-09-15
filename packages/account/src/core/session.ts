@@ -19,13 +19,13 @@
  */
 import { z } from 'zod'
 
-import type { AccountIdentity } from './identity.js'
-import { isAccountIdentity } from './identity.js'
 import {
   CredentialResponseSchema,
   abortable,
   exchangeToken
 } from './exchange.js'
+import type { AccountIdentity } from './identity.js'
+import { isAccountIdentity } from './identity.js'
 import type { RefreshHost } from './refreshScheduler.js'
 import { createRefreshScheduler } from './refreshScheduler.js'
 import type {

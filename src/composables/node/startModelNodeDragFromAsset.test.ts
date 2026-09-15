@@ -1,9 +1,9 @@
+import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { startModelNodeDragFromAsset } from '@/composables/node/startModelNodeDragFromAsset'
+import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { useModelToNodeStore } from '@/stores/modelToNodeStore'
-import { fromPartial } from '@total-typescript/shoehorn'
 import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 
 const mockStartDrag = vi.hoisted(() => vi.fn())

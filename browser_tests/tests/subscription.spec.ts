@@ -1,6 +1,4 @@
-import { expect } from '@playwright/test'
 import { comfyPageFixture } from '@e2e/fixtures/ComfyPage'
-import { TestIds } from '@e2e/fixtures/selectors'
 import {
   createSubscriptionHelper,
   withActiveSubscription,
@@ -8,6 +6,8 @@ import {
   withUnsubscribed
 } from '@e2e/fixtures/helpers/SubscriptionHelper'
 import type { SubscriptionHelper } from '@e2e/fixtures/helpers/SubscriptionHelper'
+import { TestIds } from '@e2e/fixtures/selectors'
+import { expect } from '@playwright/test'
 
 // oxlint-disable-next-line comfy/no-comfy-page-setup-call -- pre-existing call, tracked by evfail-23; not fixed in this pass
 // Installs subscription mocks AFTER comfyPage.setup() and reloads the page

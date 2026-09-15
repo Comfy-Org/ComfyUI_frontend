@@ -1,16 +1,15 @@
-import type { Page } from '@playwright/test'
-
 import {
   comfyExpect as expect,
   comfyPageFixture as test
 } from '@e2e/fixtures/ComfyPage'
 import { LocalDesktopTarget } from '@e2e/fixtures/customNode/ComfyTarget'
 import { isForeignExecutionNoise } from '@e2e/fixtures/customNode/consoleErrorLedger'
+import { loadApplicableAutogrowCases } from '@e2e/fixtures/customNode/manifest'
 import { missingExpectedNodes } from '@e2e/fixtures/customNode/objectInfoValidator'
 import { collectConsoleErrors } from '@e2e/fixtures/utils/consoleErrorCollector'
-import { loadApplicableAutogrowCases } from '@e2e/fixtures/customNode/manifest'
 import { customNodeSuiteSettings } from '@e2e/fixtures/utils/customNodeSuite'
 import { errorSurfaces } from '@e2e/fixtures/utils/errorSurfaces'
+import type { Page } from '@playwright/test'
 
 // Dynamic-input (autogrow) tier: packs whose JS adds an input slot when the
 // last one is connected and removes trailing empties on disconnect. That

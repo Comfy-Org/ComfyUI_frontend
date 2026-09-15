@@ -1,6 +1,5 @@
-import { useMaskEditorStore } from '@/stores/maskEditorStore'
-
 import { MaskBlendMode } from '@/extensions/core/maskeditor/types'
+import { useMaskEditorStore } from '@/stores/maskEditorStore'
 
 export function useCanvasManager() {
   const store = useMaskEditorStore()

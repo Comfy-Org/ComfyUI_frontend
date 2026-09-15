@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -6,7 +7,6 @@ import ScrubableNumberInput from '@/components/common/ScrubableNumberInput.vue'
 import { evaluateInput } from '@/lib/litegraph/src/utils/widget'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import { useWidgetHeight } from '@/types/widgetTypes'
-import { cn } from '@comfyorg/tailwind-utils'
 import {
   INPUT_EXCLUDED_PROPS,
   filterWidgetProps

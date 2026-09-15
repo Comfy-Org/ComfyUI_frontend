@@ -1,10 +1,10 @@
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
 import { computed, ref, useTemplateRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import { cn } from '@comfyorg/tailwind-utils'
-
 import Loader from '@/components/loader/Loader.vue'
+
 import { WidgetInputBaseClass } from '../../layout'
 import type { FormDropdownInputProps } from './types'
 

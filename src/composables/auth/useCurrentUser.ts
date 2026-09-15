@@ -2,8 +2,8 @@ import { whenever } from '@vueuse/core'
 import { computed, watch } from 'vue'
 
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
-import { useCommandStore } from '@/stores/commandStore'
 import { useAuthStore } from '@/stores/authStore'
+import { useCommandStore } from '@/stores/commandStore'
 import type { AuthUserInfo } from '@/types/authTypes'
 
 export const useCurrentUser = () => {

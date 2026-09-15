@@ -1,9 +1,8 @@
 <script setup lang="ts">
-import type { Locale } from '../../i18n/translations'
-
 import HeroSplit01 from '../../components/blocks/HeroSplit01.vue'
 import { localizeHref } from '../../config/routes'
 import { fdctPage } from '../../data/fdct'
+import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()

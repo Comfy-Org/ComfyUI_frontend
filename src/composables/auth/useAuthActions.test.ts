@@ -1,6 +1,4 @@
-import { useAuthStore } from '@/stores/authStore'
-import { useToastStore } from '@/platform/updates/common/toastStore'
-import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import { fromPartial } from '@total-typescript/shoehorn'
 import { FirebaseError } from 'firebase/app'
 import {
   AuthErrorCodes,
@@ -9,12 +7,14 @@ import {
   setPersistence
 } from 'firebase/auth'
 import type { UserCredential } from 'firebase/auth'
-import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useAuthActions } from '@/composables/auth/useAuthActions'
 import enLocale from '@/locales/en/main.json'
+import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
+import { useAuthStore } from '@/stores/authStore'
 
 vi.mock(import('firebase/auth'), { spy: true })
 

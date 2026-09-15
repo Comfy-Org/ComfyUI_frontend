@@ -14,7 +14,6 @@ import {
   splitMinutes,
   tenthsOfSecond
 } from '../../../utils/formatDuration'
-
 import ActivityTrace from './ActivityTrace.vue'
 
 const { parts } = defineProps<{ parts: readonly ActivityPart[] }>()

@@ -92,11 +92,11 @@ import { useToastStore } from '@/platform/updates/common/toastStore'
 import { app } from '@/scripts/app'
 import { isDOMWidget } from '@/scripts/domWidget'
 import type { NodeId } from '@/types/nodeId'
+import { formatTime } from '@/utils/formatUtil'
 
 import { useAudioPlayback } from '../composables/audio/useAudioPlayback'
 import { useAudioRecorder } from '../composables/audio/useAudioRecorder'
 import { useAudioWaveform } from '../composables/audio/useAudioWaveform'
-import { formatTime } from '@/utils/formatUtil'
 
 const { t } = useI18n()
 

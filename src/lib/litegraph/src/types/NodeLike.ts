@@ -1,9 +1,9 @@
-import type { SerializedNodeId } from '@/types/nodeId'
 import type {
   INodeInputSlot,
   INodeOutputSlot
 } from '@/lib/litegraph/src/interfaces'
 import type { SubgraphIO } from '@/lib/litegraph/src/types/serialisation'
+import type { SerializedNodeId } from '@/types/nodeId'
 
 export interface NodeLike {
   id: SerializedNodeId

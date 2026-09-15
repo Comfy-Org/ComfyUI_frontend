@@ -5,10 +5,9 @@ import type {
 } from '@storybook/vue3-vite'
 import { computed, ref, toRefs } from 'vue'
 
+import type { IWidgetOptions } from '@/lib/litegraph/src/types/widgets'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import type { ColorFormat } from '@/utils/colorUtil'
-
-import type { IWidgetOptions } from '@/lib/litegraph/src/types/widgets'
 
 import WidgetColorPicker from './WidgetColorPicker.vue'
 

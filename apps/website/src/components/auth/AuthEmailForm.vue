@@ -1,23 +1,22 @@
 <script setup lang="ts">
-import { cn } from '@comfyorg/tailwind-utils'
-import { computed, ref, useTemplateRef } from 'vue'
-
 import {
   TURNSTILE_MESSAGES,
   isTurnstileEnabled
 } from '@comfyorg/account/turnstile'
 import PasswordRules from '@comfyorg/account/vue/PasswordRules'
-import TurnstileWidget from '@comfyorg/account/vue/TurnstileWidget'
 import { useTurnstileGate } from '@comfyorg/account/vue/turnstileGate'
+import TurnstileWidget from '@comfyorg/account/vue/TurnstileWidget'
+import { cn } from '@comfyorg/tailwind-utils'
+import { computed, ref, useTemplateRef } from 'vue'
 
 import { authSchemasFor } from '../../config/auth-schemas'
 import { WORKSHOP_TURNSTILE_SITE_KEY } from '../../config/workshop-env'
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 import { useWorkshopTurnstileMode } from '../../scripts/posthog'
+import { AUTH_BRAND_SOLID_BUTTON_CLASS, AUTH_FIELD_CLASS } from './authClasses'
 import AuthPasswordField from './AuthPasswordField.vue'
 import AuthSpinnerIcon from './AuthSpinnerIcon.vue'
-import { AUTH_BRAND_SOLID_BUTTON_CLASS, AUTH_FIELD_CLASS } from './authClasses'
 
 const {
   mode,

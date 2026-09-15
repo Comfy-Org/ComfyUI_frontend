@@ -1,10 +1,10 @@
 import type { Op } from '@comfyorg/comfy-multi-player'
+import { render } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import { defineComponent, nextTick, ref } from 'vue'
 import type { Ref } from 'vue'
 
 import type { GraphMutations } from '@/core/graph/graphMutations'
-import { render } from '@testing-library/vue'
 
 import type { GraphOperation } from './graphOperations'
 

@@ -1,4 +1,5 @@
 import type { SerializedNodeId } from '@/types/nodeId'
+
 import type { NodeSlotType } from './globalEnums'
 
 interface NodePropertyChangedEvent {

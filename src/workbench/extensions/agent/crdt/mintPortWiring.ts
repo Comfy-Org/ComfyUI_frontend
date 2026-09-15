@@ -1,3 +1,5 @@
+import type { WorkflowNode } from '@comfyorg/comfy-multi-player'
+
 /**
  * Composition seam for the three mint ports. Layout pieces are injected
  * (workbench must not import renderer); link and widget events come from their
@@ -8,13 +10,11 @@
  */
 import type { LGraph } from '@/lib/litegraph/src/LGraph'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import type { NodeId } from '@/types/nodeId'
-import type { WorkflowNode } from '@comfyorg/comfy-multi-player'
-
 import { useLinkStore } from '@/stores/linkStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
-import { isFloatingTopology } from '@/types/linkTopology'
 import { isRemoteMutationContext } from '@/types/graphMutationContext'
+import { isFloatingTopology } from '@/types/linkTopology'
+import type { NodeId } from '@/types/nodeId'
 import { parseWidgetId } from '@/types/widgetId'
 import { findSubgraphNodePathById } from '@/utils/graphTraversalUtil'
 
@@ -22,9 +22,9 @@ import type { GraphOperation } from './graphOperations'
 import { attachLayoutMintPort } from './layoutMintPort'
 import type { LayoutChangeView, LayoutMintPort } from './layoutMintPort'
 import { attachLinkMintPort } from './linkMintPort'
-import { attachWidgetMintPort } from './widgetMintPort'
 import { createMintSession } from './mintSession'
 import type { MintSession } from './mintSession'
+import { attachWidgetMintPort } from './widgetMintPort'
 
 /** The graph surface the wiring reads for snapshots and scope. */
 export interface MintableGraph {

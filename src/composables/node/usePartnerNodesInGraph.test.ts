@@ -1,13 +1,13 @@
+import { fromPartial } from '@total-typescript/shoehorn'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { effectScope, nextTick } from 'vue'
 import type { EffectScope } from 'vue'
 
-import * as apiModule from '@/scripts/api'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
+import * as apiModule from '@/scripts/api'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
-import { fromPartial } from '@total-typescript/shoehorn'
 
 import { usePartnerNodesInGraph } from './usePartnerNodesInGraph'
 

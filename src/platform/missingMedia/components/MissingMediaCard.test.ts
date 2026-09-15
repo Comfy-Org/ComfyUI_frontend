@@ -3,8 +3,8 @@ import { describe, expect, it, vi } from 'vitest'
 
 import { testI18n } from '@/components/searchbox/v2/__test__/testUtils'
 import type { MissingMediaGroup } from '@/platform/missingMedia/types'
-import { getNodeByExecutionId } from '@/utils/graphTraversalUtil'
 import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
+import { getNodeByExecutionId } from '@/utils/graphTraversalUtil'
 
 import MissingMediaCard from './MissingMediaCard.vue'
 

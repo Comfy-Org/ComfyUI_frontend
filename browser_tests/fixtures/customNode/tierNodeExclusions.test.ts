@@ -1,10 +1,9 @@
-import { describe, expect, it } from 'vitest'
-
 import type { TierNodeExclusion } from '@e2e/fixtures/customNode/tierNodeExclusions'
 import {
   eligibleNodeTypesForTier,
   tierNodeExclusionProblems
 } from '@e2e/fixtures/customNode/tierNodeExclusions'
+import { describe, expect, it } from 'vitest'
 
 const exclusion: TierNodeExclusion = {
   identity: 'example-pack@1.0.0',

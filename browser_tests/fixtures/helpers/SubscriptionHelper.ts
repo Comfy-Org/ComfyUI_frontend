@@ -1,11 +1,3 @@
-import { expect } from '@playwright/test'
-import type { Page, Route } from '@playwright/test'
-
-import {
-  PENDING_SUBSCRIPTION_CHECKOUT_EVENT,
-  PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY
-} from '@/platform/cloud/subscription/utils/subscriptionCheckoutTracker'
-import type { BillingStatusResponse } from '@/platform/workspace/api/workspaceApi'
 import {
   createBalance,
   createSubscriptionStatus,
@@ -14,6 +6,14 @@ import {
 } from '@e2e/fixtures/data/subscriptionFixtures'
 import type { BalanceResponse } from '@e2e/fixtures/data/subscriptionFixtures'
 import { TestIds } from '@e2e/fixtures/selectors'
+import { expect } from '@playwright/test'
+import type { Page, Route } from '@playwright/test'
+
+import {
+  PENDING_SUBSCRIPTION_CHECKOUT_EVENT,
+  PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY
+} from '@/platform/cloud/subscription/utils/subscriptionCheckoutTracker'
+import type { BillingStatusResponse } from '@/platform/workspace/api/workspaceApi'
 
 export interface SubscriptionConfig {
   status: BillingStatusResponse

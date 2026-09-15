@@ -1,3 +1,4 @@
+import { fromPartial } from '@total-typescript/shoehorn'
 /**
  * SubgraphNode Tests
  *
@@ -5,7 +6,6 @@
  * IO synchronization, and edge cases.
  */
 import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
-import { fromPartial } from '@total-typescript/shoehorn'
 
 import {
   BaseWidget,
@@ -15,8 +15,8 @@ import {
   SubgraphNode
 } from '@/lib/litegraph/src/litegraph'
 import { isWidgetInputSlot } from '@/lib/litegraph/src/node/slotUtils'
-import type { ExportedSubgraphInstance } from '@/lib/litegraph/src/types/serialisation'
 import { NodeSlotType } from '@/lib/litegraph/src/types/globalEnums'
+import type { ExportedSubgraphInstance } from '@/lib/litegraph/src/types/serialisation'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { UNASSIGNED_NODE_ID, toNodeId } from '@/types/nodeId'
 import { widgetId } from '@/types/widgetId'

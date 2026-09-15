@@ -28,24 +28,24 @@ import { useEventListener } from '@vueuse/core'
 import { onMounted, onUnmounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import LayerEditorCanvas from '@/renderer/extensions/layerEditor/components/LayerEditorCanvas.vue'
-import LayerEditorToolbar from '@/renderer/extensions/layerEditor/components/LayerEditorToolbar.vue'
-import LayerPanel from '@/renderer/extensions/layerEditor/components/LayerPanel.vue'
-import LayerPropertiesPanel from '@/renderer/extensions/layerEditor/components/LayerPropertiesPanel.vue'
 import Button from '@/components/ui/button/Button.vue'
+import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import {
   saveCompositorLayerState,
   saveCompositorPreview
 } from '@/renderer/extensions/compositor/composables/compositorSave'
 import { loadCompositorSession } from '@/renderer/extensions/compositor/composables/compositorSession'
 import { useCompositorAutoSave } from '@/renderer/extensions/compositor/composables/useCompositorAutoSave'
+import LayerEditorCanvas from '@/renderer/extensions/layerEditor/components/LayerEditorCanvas.vue'
+import LayerEditorToolbar from '@/renderer/extensions/layerEditor/components/LayerEditorToolbar.vue'
+import LayerPanel from '@/renderer/extensions/layerEditor/components/LayerPanel.vue'
+import LayerPropertiesPanel from '@/renderer/extensions/layerEditor/components/LayerPropertiesPanel.vue'
 import {
   isTextEditingTarget,
   useLayerEditorSession
 } from '@/renderer/extensions/layerEditor/composables/useLayerEditorSession'
-import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import { useToastStore } from '@/platform/updates/common/toastStore'
-import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 
 const { node, mode = 'images' } = defineProps<{

@@ -1,19 +1,6 @@
 import { fromAny } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type {
-  ISlotType,
-  LGraphCanvas,
-  Subgraph,
-  TWidgetType
-} from '@/lib/litegraph/src/litegraph'
-import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
-import {
-  BaseWidget,
-  LGraphNode,
-  LiteGraph
-} from '@/lib/litegraph/src/litegraph'
-import { NumberWidget } from '@/lib/litegraph/src/widgets/NumberWidget'
 import {
   appendQuarantine,
   flushProxyWidgetMigration,
@@ -21,6 +8,19 @@ import {
 } from '@/core/graph/subgraph/migration/proxyWidgetMigration'
 import { reorderSubgraphInputsByName } from '@/core/graph/subgraph/promotionUtils'
 import type { SerializedProxyWidgetTuple } from '@/core/schemas/promotionSchema'
+import type {
+  ISlotType,
+  LGraphCanvas,
+  Subgraph,
+  TWidgetType
+} from '@/lib/litegraph/src/litegraph'
+import {
+  BaseWidget,
+  LGraphNode,
+  LiteGraph
+} from '@/lib/litegraph/src/litegraph'
+import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+import { NumberWidget } from '@/lib/litegraph/src/widgets/NumberWidget'
 import { IS_CONTROL_WIDGET } from '@/scripts/controlWidgetMarker'
 import {
   getPreviewExposureHostLocator,
@@ -28,10 +28,10 @@ import {
 } from '@/stores/previewExposureStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { toNodeId } from '@/types/nodeId'
-import type { WidgetId } from '@/types/widgetId'
-import type { WidgetState } from '@/types/widgetState'
-import { widgetId } from '@/types/widgetId'
 import { createNodeLocatorId } from '@/types/nodeIdentification'
+import type { WidgetId } from '@/types/widgetId'
+import { widgetId } from '@/types/widgetId'
+import type { WidgetState } from '@/types/widgetState'
 import { graphToPrompt } from '@/utils/executionUtil'
 
 import {

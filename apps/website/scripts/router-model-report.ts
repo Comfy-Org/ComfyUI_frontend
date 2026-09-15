@@ -10,6 +10,7 @@ import {
   writeFileSync
 } from 'node:fs'
 import { dirname } from 'node:path'
+
 import { z } from 'zod'
 
 import { workshopModelAvailability } from '../src/config/workshop-model-availability'

@@ -1,9 +1,9 @@
-import type { Locator, Page } from '@playwright/test'
-import { expect } from '@playwright/test'
-
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { TestIds } from '@e2e/fixtures/selectors'
+import type { Locator, Page } from '@playwright/test'
+import { expect } from '@playwright/test'
+
 import { toNodeId } from '@/types/nodeId'
 
 const IMAGE_COMPARE_NODE_ID = toNodeId(1)

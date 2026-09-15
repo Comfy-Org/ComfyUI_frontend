@@ -1,10 +1,8 @@
-import { getActivePinia } from 'pinia'
-import { toRef, computed, ref } from 'vue'
-import { useBillingOperationStore } from '@/platform/workspace/stores/billingOperationStore'
-import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
-import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
+import { render, screen } from '@testing-library/vue'
+import { getActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { toRef, computed, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import type { BillingType, SubscriptionInfo } from '@/composables/billing/types'
@@ -17,6 +15,8 @@ import type {
   TeamCreditStops,
   TeamCreditStopSummary
 } from '@/platform/workspace/api/workspaceApi'
+import { useBillingOperationStore } from '@/platform/workspace/stores/billingOperationStore'
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 
 import SubscriptionPanelContentWorkspace from './SubscriptionPanelContentWorkspace.vue'
 

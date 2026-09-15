@@ -1,10 +1,10 @@
 import { fromPartial } from '@total-typescript/shoehorn'
-import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
-import { useWorkflowTemplatesStore } from '@/platform/workflow/templates/repositories/workflowTemplatesStore'
-import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import { useWorkflowTemplatesStore } from '@/platform/workflow/templates/repositories/workflowTemplatesStore'
+import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { NodeSourceType } from '@/types/nodeSource'
 
 const hoisted = vi.hoisted(() => ({

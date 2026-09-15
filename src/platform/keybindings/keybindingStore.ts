@@ -3,8 +3,8 @@ import { defineStore } from 'pinia'
 import type { Ref } from 'vue'
 import { computed, ref, shallowRef } from 'vue'
 
-import type { KeyComboImpl } from './keyCombo'
 import { KeybindingImpl } from './keybinding'
+import type { KeyComboImpl } from './keyCombo'
 import type { KeybindingPreset } from './types'
 
 type KeybindingMap = Partial<Record<string, KeybindingImpl>>

@@ -1,9 +1,8 @@
-import { expect, mergeTests } from '@playwright/test'
-
 import { comfyPageFixture } from '@e2e/fixtures/ComfyPage'
 import { makeTemplate } from '@e2e/fixtures/data/templateFixtures'
 import { withTemplates } from '@e2e/fixtures/helpers/TemplateHelper'
 import { templateApiFixture } from '@e2e/fixtures/templateApiFixture'
+import { expect, mergeTests } from '@playwright/test'
 
 const test = mergeTests(comfyPageFixture, templateApiFixture)
 

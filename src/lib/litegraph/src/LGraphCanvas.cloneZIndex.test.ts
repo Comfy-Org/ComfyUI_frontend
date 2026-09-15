@@ -1,18 +1,16 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type { NodeId } from '@/types/nodeId'
-import type { UUID } from '@/utils/uuid'
-
-import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
-import { LayoutSource } from '@/renderer/core/layout/types'
-import type { NodeLayout } from '@/renderer/core/layout/types'
-
 import {
   LGraph,
   LGraphCanvas,
   LGraphNode,
   LiteGraph
 } from '@/lib/litegraph/src/litegraph'
+import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
+import { LayoutSource } from '@/renderer/core/layout/types'
+import type { NodeLayout } from '@/renderer/core/layout/types'
+import type { NodeId } from '@/types/nodeId'
+import type { UUID } from '@/utils/uuid'
 
 const TEST_NODE_TYPE = 'test/CloneZIndex' as const
 

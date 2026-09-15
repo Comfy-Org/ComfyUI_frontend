@@ -94,6 +94,7 @@
 </template>
 
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
 import { useElementSize } from '@vueuse/core'
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import type { Ref } from 'vue'
@@ -111,7 +112,6 @@ import type { ComponentWidget } from '@/scripts/domWidget'
 import type { NodeId } from '@/types/nodeId'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import { resolveNode } from '@/utils/litegraphUtil'
-import { cn } from '@comfyorg/tailwind-utils'
 
 const { widget, nodeId } = defineProps<{
   widget: ComponentWidget<string[]> | SimplifiedWidget

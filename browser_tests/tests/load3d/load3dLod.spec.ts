@@ -1,6 +1,5 @@
-import { expect } from '@playwright/test'
-
 import { load3dTest as test } from '@e2e/fixtures/helpers/Load3DFixtures'
+import { expect } from '@playwright/test'
 
 test.describe('Load3D LOD', { tag: '@vue-nodes' }, () => {
   test(

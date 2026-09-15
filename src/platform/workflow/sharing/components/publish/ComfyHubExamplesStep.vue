@@ -70,6 +70,7 @@ import {
   isFileTooLarge,
   MAX_IMAGE_SIZE_MB
 } from '@/platform/workflow/sharing/utils/validateFileSize'
+
 import ReorderableExampleImage from './ReorderableExampleImage.vue'
 
 const fileInputRef = ref<HTMLInputElement | null>(null)

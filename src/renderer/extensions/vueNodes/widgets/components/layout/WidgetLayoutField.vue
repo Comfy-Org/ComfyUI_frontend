@@ -1,9 +1,9 @@
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
 import { computed } from 'vue'
 
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import { useHideLayoutField } from '@/types/widgetTypes'
-import { cn } from '@comfyorg/tailwind-utils'
 
 const { widget, rootClass } = defineProps<{
   widget: Pick<

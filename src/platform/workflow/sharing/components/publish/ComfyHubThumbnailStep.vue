@@ -183,6 +183,11 @@
 </template>
 
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
+import { useDropZone, useObjectUrl } from '@vueuse/core'
+import { computed, reactive, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
+
 import Button from '@/components/ui/button/Button.vue'
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 import { useSliderFromMouse } from '@/platform/workflow/sharing/composables/useSliderFromMouse'
@@ -192,10 +197,6 @@ import {
   MAX_IMAGE_SIZE_MB,
   MAX_VIDEO_SIZE_MB
 } from '@/platform/workflow/sharing/utils/validateFileSize'
-import { cn } from '@comfyorg/tailwind-utils'
-import { useDropZone, useObjectUrl } from '@vueuse/core'
-import { computed, reactive, ref } from 'vue'
-import { useI18n } from 'vue-i18n'
 
 const {
   thumbnailType = 'image',

@@ -1,8 +1,7 @@
+import { agentTest as test } from '@e2e/tests/agent/agentPanelMocks'
 import { expect } from '@playwright/test'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
-
-import { agentTest as test } from '@e2e/tests/agent/agentPanelMocks'
 
 const OPEN_AGENT_LABEL = enMessages.agent.askComfyAgent
 

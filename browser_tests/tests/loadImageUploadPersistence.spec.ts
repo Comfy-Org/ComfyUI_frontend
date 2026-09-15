@@ -1,3 +1,4 @@
+import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 /**
  * FE-1425: dropping an image on a Load Image node must survive a browser
  * reload without an explicit save. `Comfy.Workflow.Persist` defaults to true
@@ -6,8 +7,6 @@
  * mouseup for its global hook to catch — so the draft kept the previous image.
  */
 import { expect } from '@playwright/test'
-
-import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 
 const DROPPED_FILE = 'image64x64.webp'
 

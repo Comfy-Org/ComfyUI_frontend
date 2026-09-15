@@ -4,9 +4,8 @@ import { join } from 'node:path'
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type { FetchOutcome } from './ashby'
 import type { RolesSnapshot } from '../data/roles'
-
+import type { FetchOutcome } from './ashby'
 import { reportAshbyOutcome, resetAshbyReporterForTests } from './ashby.ci'
 
 function baseSnapshot(): RolesSnapshot {

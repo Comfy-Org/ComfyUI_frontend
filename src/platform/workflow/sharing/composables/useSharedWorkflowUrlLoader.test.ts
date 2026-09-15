@@ -1,4 +1,3 @@
-import { useDialogStore } from '@/stores/dialogStore'
 import { fromPartial } from '@total-typescript/shoehorn'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { App } from 'vue'
@@ -7,6 +6,7 @@ import { createApp, defineComponent } from 'vue'
 import { i18n } from '@/i18n'
 import { useSharedWorkflowUrlLoader as createSharedWorkflowUrlLoader } from '@/platform/workflow/sharing/composables/useSharedWorkflowUrlLoader'
 import type { SharedWorkflowPayload } from '@/platform/workflow/sharing/types/shareTypes'
+import { useDialogStore } from '@/stores/dialogStore'
 
 const preservedQueryMocks = vi.hoisted(() => ({
   capturePreservedQuery: vi.fn(),

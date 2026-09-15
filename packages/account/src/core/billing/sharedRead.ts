@@ -18,9 +18,9 @@ import type {
   BillingResult,
   BillingTransport
 } from './billingContracts.js'
+import { readBillingErrorCode } from './billingErrorBody.js'
 import type { BillingScopeContext } from './billingScope.js'
 import { sameBillingScope } from './billingScope.js'
-import { readBillingErrorCode } from './billingErrorBody.js'
 import { codeForHttpStatus } from './httpStatus.js'
 
 /**

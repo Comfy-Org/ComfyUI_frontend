@@ -4,8 +4,8 @@ import { computed, ref, watch } from 'vue'
 
 import { useTelemetry } from '@/platform/telemetry'
 import type { AgentPanelCloseSource } from '@/platform/telemetry/types'
-import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 
 const PANEL_MIN_WIDTH = 420
 const PANEL_MAX_WIDTH = 960

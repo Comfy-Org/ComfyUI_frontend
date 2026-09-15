@@ -1,8 +1,8 @@
 import * as Y from 'yjs'
 
+import type { GroupLayout, NodeLayout } from '@/renderer/core/layout/types'
 import { toGroupId } from '@/types/groupId'
 import type { GroupId } from '@/types/groupId'
-import type { GroupLayout, NodeLayout } from '@/renderer/core/layout/types'
 import { parseNodeId, toNodeId } from '@/types/nodeId'
 import type { NodeId } from '@/types/nodeId'
 

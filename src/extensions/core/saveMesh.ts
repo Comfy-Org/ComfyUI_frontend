@@ -4,8 +4,8 @@ import Load3D from '@/components/load3d/Load3D.vue'
 import { useLoad3d } from '@/composables/useLoad3d'
 import { createExportMenuItems } from '@/extensions/core/load3d/exportMenuHelper'
 import Load3DConfiguration from '@/extensions/core/load3d/Load3DConfiguration'
-import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { IContextMenuValue } from '@/lib/litegraph/src/interfaces'
+import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type {
   NodeExecutionOutput,
   NodeOutputWith,
@@ -16,11 +16,11 @@ import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 type SaveMeshOutput = NodeOutputWith<{
   '3d'?: ResultItem[]
 }>
-import type { CustomInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import {
   isAssetPreviewSupported,
   persistThumbnail
 } from '@/platform/assets/utils/assetPreviewUtil'
+import type { CustomInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import { app } from '@/scripts/app'
 import { ComponentWidgetImpl, addWidget } from '@/scripts/domWidget'
 import { useExtensionService } from '@/services/extensionService'

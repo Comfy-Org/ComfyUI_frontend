@@ -1,6 +1,7 @@
-import { render, screen } from '@testing-library/vue'
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
+
+import { render, screen } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 

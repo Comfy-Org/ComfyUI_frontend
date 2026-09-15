@@ -1,9 +1,8 @@
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
 import { useIntersectionObserver } from '@vueuse/core'
 import { computed, inject, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-
-import { cn } from '@comfyorg/tailwind-utils'
 
 import {
   findServerPreviewUrl,

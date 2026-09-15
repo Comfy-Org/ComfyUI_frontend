@@ -85,6 +85,7 @@
 </template>
 
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
 import { PopoverTrigger } from 'reka-ui'
 import { useI18n } from 'vue-i18n'
 
@@ -97,7 +98,6 @@ import {
 import { usePopoverExclusivity } from '@/components/load3d/menubar/usePopoverExclusivity'
 import Popover from '@/components/ui/popover/Popover.vue'
 import PopoverContent from '@/components/ui/popover/PopoverContent.vue'
-import { cn } from '@comfyorg/tailwind-utils'
 
 const { compact = false } = defineProps<{
   compact?: boolean

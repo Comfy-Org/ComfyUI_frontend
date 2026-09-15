@@ -1,8 +1,7 @@
-import type { Locale } from '../../i18n/translations'
-import type { JsonLdNode } from '../../utils/jsonLd'
-
 import { externalLinks } from '../../config/routes'
+import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
+import type { JsonLdNode } from '../../utils/jsonLd'
 import {
   faqPageNode,
   jsonLdId,

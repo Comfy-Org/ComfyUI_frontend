@@ -2,6 +2,8 @@ import { realpathSync } from 'node:fs'
 import { readFile, writeFile } from 'node:fs/promises'
 import { resolve } from 'node:path'
 
+import { workshopContract } from '../src/config/workshop-contract-catalog'
+import { deriveWorkshopFields } from '../src/config/workshop-fields'
 import {
   workshopDisplayEntriesSchema,
   workshopDisplaySourceSchema
@@ -12,8 +14,6 @@ import type {
 } from '../src/content/workshop-display.schema'
 import type { WorkshopModelEntry } from '../src/content/workshop-models.schema'
 import { workshopModelSchema } from '../src/content/workshop-models.schema'
-import { deriveWorkshopFields } from '../src/config/workshop-fields'
-import { workshopContract } from '../src/config/workshop-contract-catalog'
 import { splitWorkshopDisplay } from './workshop-display-use-cases'
 import { repairWorkshopExamples } from './workshop-example-repairs'
 

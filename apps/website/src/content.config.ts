@@ -1,5 +1,5 @@
-import { defineCollection } from 'astro:content'
 import { file, glob } from 'astro/loaders'
+import { defineCollection } from 'astro:content'
 
 import { customerStorySchema } from './content/customers.schema'
 import { faqSchema } from './content/faq.schema'

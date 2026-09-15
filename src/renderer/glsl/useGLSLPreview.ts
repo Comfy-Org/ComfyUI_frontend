@@ -1,27 +1,11 @@
 import { debounce } from 'es-toolkit/compat'
 import { computed, effectScope, onScopeDispose, ref, toValue, watch } from 'vue'
-
 import type { ComputedRef, EffectScope, MaybeRefOrGetter, Ref } from 'vue'
+
+import { curveDataToFloatLUT } from '@/components/curve/curveUtils'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { Subgraph } from '@/lib/litegraph/src/subgraph/Subgraph'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
-import { useNodeOutputStore } from '@/stores/nodeOutputStore'
-import { useWidgetValueStore } from '@/stores/widgetValueStore'
-import { widgetId } from '@/types/widgetId'
-
-import { curveDataToFloatLUT } from '@/components/curve/curveUtils'
-import type { GLSLRendererConfig } from '@/renderer/glsl/useGLSLRenderer'
-import { useGLSLRenderer } from '@/renderer/glsl/useGLSLRenderer'
-import {
-  extractUniformSources,
-  getAutogrowLimits,
-  useGLSLUniforms
-} from '@/renderer/glsl/useGLSLUniforms'
-import {
-  createSharedObjectUrl,
-  releaseSharedObjectUrl
-} from '@/utils/objectUrlUtil'
-
 import {
   clampResolution,
   DEBOUNCE_MS,
@@ -30,6 +14,20 @@ import {
   GLSL_NODE_TYPE,
   normalizeDimension
 } from '@/renderer/glsl/glslPreviewUtils'
+import type { GLSLRendererConfig } from '@/renderer/glsl/useGLSLRenderer'
+import { useGLSLRenderer } from '@/renderer/glsl/useGLSLRenderer'
+import {
+  extractUniformSources,
+  getAutogrowLimits,
+  useGLSLUniforms
+} from '@/renderer/glsl/useGLSLUniforms'
+import { useNodeOutputStore } from '@/stores/nodeOutputStore'
+import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import { widgetId } from '@/types/widgetId'
+import {
+  createSharedObjectUrl,
+  releaseSharedObjectUrl
+} from '@/utils/objectUrlUtil'
 
 /**
  * Two-tier composable for GLSL live preview.

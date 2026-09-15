@@ -1,29 +1,28 @@
 import { merge } from 'es-toolkit/compat'
 import { watch } from 'vue'
 import type { Component } from 'vue'
+import type { ComponentAttrs } from 'vue-component-type-helpers'
 
 import ConfirmationDialogContent from '@/components/dialog/content/ConfirmationDialogContent.vue'
 import ErrorDialogContent from '@/components/dialog/content/ErrorDialogContent.vue'
 import PromptDialogContent from '@/components/dialog/content/PromptDialogContent.vue'
 import TopUpCreditsDialogContentLegacy from '@/components/dialog/content/TopUpCreditsDialogContentLegacy.vue'
+import { useBillingContext } from '@/composables/billing/useBillingContext'
+import { t } from '@/i18n'
+import type { SubscriptionDialogOptions } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
+import { isCloud } from '@/platform/distribution/types'
+import { useTelemetry } from '@/platform/telemetry'
+import { useToastStore } from '@/platform/updates/common/toastStore'
+import type { WorkspaceRole } from '@/platform/workspace/api/workspaceApi'
 import InsufficientCreditsMemberDialog from '@/platform/workspace/components/InsufficientCreditsMemberDialog.vue'
 import TopUpCreditsDialogContentWorkspace from '@/platform/workspace/components/TopUpCreditsDialogContentWorkspace.vue'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
-import { t } from '@/i18n'
-import { useTelemetry } from '@/platform/telemetry'
-import { isCloud } from '@/platform/distribution/types'
-import { useBillingContext } from '@/composables/billing/useBillingContext'
-import { useToastStore } from '@/platform/updates/common/toastStore'
+import type { DowngradeToPersonalResult } from '@/platform/workspace/composables/useDowngradeToPersonal'
 import { useDialogStore } from '@/stores/dialogStore'
 import type {
   DialogComponentProps,
   ShowDialogOptions
 } from '@/stores/dialogStore'
-
-import type { ComponentAttrs } from 'vue-component-type-helpers'
-import type { SubscriptionDialogOptions } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
-import type { WorkspaceRole } from '@/platform/workspace/api/workspaceApi'
-import type { DowngradeToPersonalResult } from '@/platform/workspace/composables/useDowngradeToPersonal'
 
 // Lazy loaders for dialogs - components are loaded on first use
 const lazyApiNodesSignInContent = () =>

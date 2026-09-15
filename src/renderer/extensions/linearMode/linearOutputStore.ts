@@ -5,12 +5,12 @@ import { useAppMode } from '@/composables/useAppMode'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { flattenNodeOutput } from '@/renderer/extensions/linearMode/flattenNodeOutput'
 import type { InProgressItem } from '@/renderer/extensions/linearMode/linearModeTypes'
-import type { AugmentedResultItem } from '@/utils/resultItem'
 import type { ExecutedWsMessage, JobId } from '@/schemas/apiSchema'
 import { api } from '@/scripts/api'
 import { useAppModeStore } from '@/stores/appModeStore'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useJobPreviewStore } from '@/stores/jobPreviewStore'
+import type { AugmentedResultItem } from '@/utils/resultItem'
 
 export const useLinearOutputStore = defineStore('linearOutput', () => {
   const { isAppMode } = useAppMode()

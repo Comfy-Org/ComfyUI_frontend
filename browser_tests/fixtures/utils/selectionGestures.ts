@@ -1,6 +1,5 @@
-import type { Locator } from '@playwright/test'
-
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
+import type { Locator } from '@playwright/test'
 
 export async function marqueeAround(comfyPage: ComfyPage, nodes: Locator) {
   const boxes = await nodes.evaluateAll((elements) =>

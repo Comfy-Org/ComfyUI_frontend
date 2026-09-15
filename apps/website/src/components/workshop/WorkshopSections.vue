@@ -2,6 +2,7 @@
 import { ChevronRight } from '@lucide/vue'
 import { computed } from 'vue'
 
+import { groupModels } from '../../config/model-family'
 import type {
   SortOrder,
   UseCase,
@@ -16,7 +17,6 @@ import {
 import { OTHER_FORMAT_USE_CASES } from '../../config/workshop-sections'
 import type { Locale, TranslationKey } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
-import { groupModels } from '../../config/model-family'
 import { rememberShelf } from '../../lib/workshop/shelf-memory'
 import CardRow from './CardRow.vue'
 import WorkshopModelCard from './WorkshopModelCard.vue'

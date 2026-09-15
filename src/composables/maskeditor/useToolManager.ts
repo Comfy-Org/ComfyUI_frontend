@@ -9,6 +9,7 @@ import type {
 import { Tools } from '@/extensions/core/maskeditor/types'
 import { app } from '@/scripts/app'
 import { useMaskEditorStore } from '@/stores/maskEditorStore'
+
 import { useBrushDrawing } from './useBrushDrawing'
 import { useCanvasTools } from './useCanvasTools'
 import { useCoordinateTransform } from './useCoordinateTransform'

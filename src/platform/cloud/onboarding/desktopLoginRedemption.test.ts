@@ -1,9 +1,10 @@
 import { fromPartial } from '@total-typescript/shoehorn'
-import { useToastStore } from '@/platform/updates/common/toastStore'
-import { useAuthStore } from '@/stores/authStore'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createMemoryHistory, createRouter } from 'vue-router'
 import type { RouteRecordRaw } from 'vue-router'
+
+import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useAuthStore } from '@/stores/authStore'
 
 /**
  * Every test drives a real in-memory router and the real preserved-query

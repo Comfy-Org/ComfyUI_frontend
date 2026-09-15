@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 
-import { LGraphEventMode } from '@/lib/litegraph/src/types/globalEnums'
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { LGraphEventMode } from '@/lib/litegraph/src/types/globalEnums'
 import {
   createPromotedMediaRuntime,
   seedMediaNodeDefs

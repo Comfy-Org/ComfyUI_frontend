@@ -1,8 +1,7 @@
-import type { Locator, Page } from '@playwright/test'
-import { expect } from '@playwright/test'
-
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
+import type { Locator, Page } from '@playwright/test'
+import { expect } from '@playwright/test'
 
 const MULTI_BINDING_COMMAND = 'Comfy.Canvas.DeleteSelectedItems'
 const SINGLE_BINDING_COMMAND = 'Comfy.SaveWorkflow'

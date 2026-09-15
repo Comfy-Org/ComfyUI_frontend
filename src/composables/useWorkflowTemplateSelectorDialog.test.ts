@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+
 import { useDialogStore } from '@/stores/dialogStore'
 
 const mockDialogService = vi.hoisted(() => ({

@@ -1,11 +1,12 @@
+import { st } from '@/i18n'
+import { countMissingMediaReferences } from '@/platform/missingMedia/missingMediaGrouping'
+import { countMissingModels } from '@/platform/missingModel/missingModelGrouping'
+
+import { normalizeNodeName, translateCatalogMessage } from './catalogI18n'
 import type {
   MissingErrorMessageSource,
   ResolvedMissingErrorMessage
 } from './types'
-import { normalizeNodeName, translateCatalogMessage } from './catalogI18n'
-import { countMissingMediaReferences } from '@/platform/missingMedia/missingMediaGrouping'
-import { countMissingModels } from '@/platform/missingModel/missingModelGrouping'
-import { st } from '@/i18n'
 
 function formatNodeTypeName(nodeType: string): string | null {
   const trimmed = nodeType.trim()

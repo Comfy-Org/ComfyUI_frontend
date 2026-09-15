@@ -1,6 +1,6 @@
-import type { RectTarget } from '@/platform/onboarding/coachmarkRegistry'
 import type { Ref } from 'vue'
 
+import type { RectTarget } from '@/platform/onboarding/coachmarkRegistry'
 import {
   registerCoachmark,
   unregisterCoachmark

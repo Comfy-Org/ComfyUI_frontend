@@ -1,9 +1,8 @@
+import { render } from '@testing-library/vue'
 import PrimeVue from 'primevue/config'
 import InputNumber from 'primevue/inputnumber'
-import { defineComponent } from 'vue'
 import { describe, expect, it } from 'vitest'
-
-import { render } from '@testing-library/vue'
+import { defineComponent } from 'vue'
 
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 

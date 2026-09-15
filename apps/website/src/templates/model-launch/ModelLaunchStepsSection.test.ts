@@ -1,9 +1,8 @@
 import { render, screen } from '@testing-library/vue'
 import { describe, expect, it } from 'vitest'
 
-import type { ModelLaunchSteps } from './types'
-
 import ModelLaunchStepsSection from './ModelLaunchStepsSection.vue'
+import type { ModelLaunchSteps } from './types'
 
 const item = (id: string) => ({
   id,

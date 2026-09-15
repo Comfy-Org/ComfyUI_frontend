@@ -1,6 +1,5 @@
-import type { Locator, Page } from '@playwright/test'
-
 import { TestIds } from '@e2e/fixtures/selectors'
+import type { Locator, Page } from '@playwright/test'
 
 /**
  * The graph/app view-mode toggle and its workflow actions dropdown.

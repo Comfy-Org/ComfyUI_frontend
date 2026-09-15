@@ -1,3 +1,8 @@
+import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
+import { DefaultGraphPositions } from '@e2e/fixtures/constants/defaultGraphPositions'
+import type { Position, Size } from '@e2e/fixtures/types'
+import { NodeReference } from '@e2e/fixtures/utils/litegraphUtils'
+import type { VueNodeFixture } from '@e2e/fixtures/utils/vueNodeFixtures'
 import type { Locator } from '@playwright/test'
 
 import type {
@@ -8,11 +13,6 @@ import type {
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { toNodeId } from '@/types/nodeId'
 import type { NodeId, SerializedNodeId } from '@/types/nodeId'
-import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
-import { DefaultGraphPositions } from '@e2e/fixtures/constants/defaultGraphPositions'
-import type { Position, Size } from '@e2e/fixtures/types'
-import { NodeReference } from '@e2e/fixtures/utils/litegraphUtils'
-import type { VueNodeFixture } from '@e2e/fixtures/utils/vueNodeFixtures'
 
 export class NodeOperationsHelper {
   public readonly promptDialogInput: Locator

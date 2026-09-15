@@ -1,7 +1,4 @@
-import { useAssetsStore } from '@/stores/assetsStore'
 import { fromPartial } from '@total-typescript/shoehorn'
-import { useAssetDownloadStore } from '@/stores/assetDownloadStore'
-import { useModelToNodeStore } from '@/stores/modelToNodeStore'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createApp } from 'vue'
 import type { App } from 'vue'
@@ -9,6 +6,9 @@ import { createI18n } from 'vue-i18n'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import type { MissingModelCandidate } from '@/platform/missingModel/types'
+import { useAssetDownloadStore } from '@/stores/assetDownloadStore'
+import { useAssetsStore } from '@/stores/assetsStore'
+import { useModelToNodeStore } from '@/stores/modelToNodeStore'
 
 const mockGetNodeByExecutionId = vi.fn()
 const mockResolveNodeDisplayName = vi.fn()
@@ -47,8 +47,9 @@ vi.mock(import('@/utils/nodeTitleUtil'), () => ({
     mockResolveNodeDisplayName(...args)
 }))
 
-import { app } from '@/scripts/app'
 import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
+import { app } from '@/scripts/app'
+
 import {
   getModelStateKey,
   getNodeDisplayLabel,

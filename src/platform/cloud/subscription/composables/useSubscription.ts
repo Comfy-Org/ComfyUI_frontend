@@ -1,31 +1,18 @@
-import { computed, ref, watch } from 'vue'
 import {
   createSharedComposable,
   defaultDocument,
   defaultWindow,
   useEventListener
 } from '@vueuse/core'
+import { computed, ref, watch } from 'vue'
 
-import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useAuthActions } from '@/composables/auth/useAuthActions'
+import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { getComfyApiBaseUrl, getComfyPlatformBaseUrl } from '@/config/comfyApi'
 import { t } from '@/i18n'
-import { isCloud } from '@/platform/distribution/types'
-import { useTelemetry } from '@/platform/telemetry'
 import type { SubscriptionDialogOptions } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
-import type {
-  CheckoutAttributionMetadata,
-  ResubscribeClickMetadata
-} from '@/platform/telemetry/types'
-import type { BillingStatusResponse } from '@/platform/workspace/api/workspaceApi'
-import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
-import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
-import { AuthStoreError, useAuthStore } from '@/stores/authStore'
-import { useDialogService } from '@/services/dialogService'
 import { toTierKey } from '@/platform/cloud/subscription/constants/tierPricing'
-import type { operations } from '@/types/comfyRegistryTypes'
-import { parseErrorResponse } from '@/platform/remote/comfyui/errors'
 import {
   PENDING_SUBSCRIPTION_CHECKOUT_EVENT,
   PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY,
@@ -34,6 +21,20 @@ import {
   hasPendingSubscriptionCheckoutAttempt,
   recordPendingSubscriptionCheckoutAttempt
 } from '@/platform/cloud/subscription/utils/subscriptionCheckoutTracker'
+import { isCloud } from '@/platform/distribution/types'
+import { parseErrorResponse } from '@/platform/remote/comfyui/errors'
+import { useTelemetry } from '@/platform/telemetry'
+import type {
+  CheckoutAttributionMetadata,
+  ResubscribeClickMetadata
+} from '@/platform/telemetry/types'
+import type { BillingStatusResponse } from '@/platform/workspace/api/workspaceApi'
+import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
+import { useDialogService } from '@/services/dialogService'
+import { AuthStoreError, useAuthStore } from '@/stores/authStore'
+import type { operations } from '@/types/comfyRegistryTypes'
+
 import { useSubscriptionCancellationWatcher } from './useSubscriptionCancellationWatcher'
 
 type CloudSubscriptionCheckoutResponse = NonNullable<

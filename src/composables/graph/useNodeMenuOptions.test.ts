@@ -1,7 +1,7 @@
 import { render } from '@testing-library/vue'
+import { describe, expect, it, vi } from 'vitest'
 import { defineComponent } from 'vue'
 import { createI18n } from 'vue-i18n'
-import { describe, expect, it, vi } from 'vitest'
 
 import { useNodeMenuOptions } from '@/composables/graph/useNodeMenuOptions'
 import type { Positionable } from '@/lib/litegraph/src/litegraph'

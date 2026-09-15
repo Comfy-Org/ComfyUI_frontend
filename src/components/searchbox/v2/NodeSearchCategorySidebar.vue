@@ -54,21 +54,21 @@ export const DEFAULT_CATEGORY = 'most-relevant'
 </script>
 
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
+import { RovingFocusGroup, RovingFocusItem } from 'reka-ui'
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { RovingFocusGroup, RovingFocusItem } from 'reka-ui'
 
 import NodeSearchCategoryTreeNode, {
   CATEGORY_SELECTED_CLASS,
   CATEGORY_UNSELECTED_CLASS
 } from '@/components/searchbox/v2/NodeSearchCategoryTreeNode.vue'
-import Button from '@/components/ui/button/Button.vue'
 import type { CategoryNode } from '@/components/searchbox/v2/NodeSearchCategoryTreeNode.vue'
+import Button from '@/components/ui/button/Button.vue'
 import { nodeOrganizationService } from '@/services/nodeOrganizationService'
 import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import type { TreeNode } from '@/types/treeExplorerTypes'
-import { cn } from '@comfyorg/tailwind-utils'
 
 const {
   hideChevrons = false,

@@ -14,6 +14,7 @@ vi.mock<unknown>(import('@/scripts/app'), () => ({
 }))
 
 import { useMaskEditorStore } from '@/stores/maskEditorStore'
+
 import { useBrushAdjustment } from './useBrushAdjustment'
 
 function makePointerEvent(offsetX: number, offsetY: number): PointerEvent {

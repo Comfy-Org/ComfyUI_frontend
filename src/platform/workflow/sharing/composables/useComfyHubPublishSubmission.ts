@@ -1,10 +1,10 @@
-import type { AssetInfo, ComfyHubProfile } from '@/schemas/apiSchema'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useComfyHubProfileGate } from '@/platform/workflow/sharing/composables/useComfyHubProfileGate'
 import { useComfyHubService } from '@/platform/workflow/sharing/services/comfyHubService'
 import { useWorkflowShareService } from '@/platform/workflow/sharing/services/workflowShareService'
 import type { ComfyHubPublishFormData } from '@/platform/workflow/sharing/types/comfyHubTypes'
 import { normalizeTags } from '@/platform/workflow/sharing/utils/normalizeTags'
+import type { AssetInfo, ComfyHubProfile } from '@/schemas/apiSchema'
 
 function getFileContentType(file: File): string {
   return file.type || 'application/octet-stream'

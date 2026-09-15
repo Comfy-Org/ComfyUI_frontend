@@ -1,5 +1,5 @@
-import assignments from '../src/data/workshop-content-use-cases.json'
 import { z } from 'astro/zod'
+
 import {
   WORKSHOP_USE_CASES,
   workshopContentSlug,
@@ -10,6 +10,7 @@ import type {
   WorkshopDisplayEntry,
   WorkshopDisplaySource
 } from '../src/content/workshop-display.schema'
+import assignments from '../src/data/workshop-content-use-cases.json'
 
 const mediaUseCases = new Map(
   Object.entries(

@@ -1,3 +1,10 @@
+import type {
+  AgentAnswerAccepted,
+  AgentCancelAccepted,
+  AgentRunMode as AgentRunModePreference,
+  AgentThreadSummary,
+  AgentTurnAccepted as GeneratedAgentTurnAccepted
+} from '@comfyorg/ingest-types'
 import {
   zAgentAdmissionError,
   zAgentAnswerAccepted,
@@ -9,13 +16,6 @@ import {
   zAgentTurnAccepted as zGeneratedAgentTurnAccepted,
   zWorkflowListResponse
 } from '@comfyorg/ingest-types/zod'
-import type {
-  AgentAnswerAccepted,
-  AgentCancelAccepted,
-  AgentRunMode as AgentRunModePreference,
-  AgentThreadSummary,
-  AgentTurnAccepted as GeneratedAgentTurnAccepted
-} from '@comfyorg/ingest-types'
 import { z } from 'zod'
 
 import { isNodeLocatorId } from '@/types/nodeIdentification'

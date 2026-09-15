@@ -5,6 +5,7 @@ import { createI18n } from 'vue-i18n'
 
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
+
 import { useImageMenuOptions } from './useImageMenuOptions'
 
 const i18n = createI18n({

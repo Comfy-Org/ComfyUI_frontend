@@ -1,7 +1,7 @@
-import { fromPartial } from '@total-typescript/shoehorn'
 import { render, screen } from '@testing-library/vue'
-import { defineComponent } from 'vue'
+import { fromPartial } from '@total-typescript/shoehorn'
 import { describe, expect, it } from 'vitest'
+import { defineComponent } from 'vue'
 
 import { MEDIA_ASSET_GRID_MODE } from '@/platform/assets/components/mediaAssetViewOptions'
 import type { MediaAssetGridMode } from '@/platform/assets/components/mediaAssetViewOptions'

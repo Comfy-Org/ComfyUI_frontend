@@ -1,7 +1,6 @@
 import * as THREE from 'three'
-import { TransformControls } from 'three/examples/jsm/controls/TransformControls'
-
 import type { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
+import { TransformControls } from 'three/examples/jsm/controls/TransformControls'
 
 import type { GizmoMode, Model3DTransform } from './interfaces'
 import type { PointerNdcSource } from './load3dViewport'

@@ -1,12 +1,12 @@
-import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
-import { nextTick } from 'vue'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { nextTick } from 'vue'
 
 import type {
   PartnerNodePolicy,
   PartnerProvider
 } from '@/platform/workspace/api/partnerNodePolicyApi'
 import { usePartnerNodeGovernanceStore } from '@/platform/workspace/stores/partnerNodeGovernanceStore'
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 
 const mockGetPartnerNodePolicy = vi.hoisted(() => vi.fn())
 const mockGetPartnerProviders = vi.hoisted(() => vi.fn())

@@ -6,8 +6,8 @@ import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { ISerialisedNode } from '@/lib/litegraph/src/types/serialisation'
 import { toOwningGraphId, toRootGraphId } from '@/types/graphScopeId'
 import type { GraphScope } from '@/types/graphScopeId'
-import type { NodeState } from '@/types/nodeState'
 import { toNodeId } from '@/types/nodeId'
+import type { NodeState } from '@/types/nodeState'
 import {
   createMockNodeInputSlot,
   createMockNodeOutputSlot,

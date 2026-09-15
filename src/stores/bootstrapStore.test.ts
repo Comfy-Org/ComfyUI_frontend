@@ -1,6 +1,3 @@
-import { useAuthStore } from '@/stores/authStore'
-import { useUserStore } from '@/stores/userStore'
-import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type { AxiosResponse } from 'axios'
 import { AxiosError } from 'axios'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -9,7 +6,10 @@ import { mergeCustomNodesI18n } from '@/i18n'
 import * as i18nModule from '@/i18n'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { bootstrapTracer } from '@/platform/telemetry/perf/bootstrapTracer'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { api } from '@/scripts/api'
+import { useAuthStore } from '@/stores/authStore'
+import { useUserStore } from '@/stores/userStore'
 
 import { useBootstrapStore } from './bootstrapStore'
 

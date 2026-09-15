@@ -1,15 +1,14 @@
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
-
 import type { HTMLAttributes } from 'vue'
 
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
-import Badge from '../ui/badge/Badge.vue'
 import BrandButton from '../common/BrandButton.vue'
 import ProductHeroBadge from '../common/ProductHeroBadge.vue'
 import VideoPlayer from '../common/VideoPlayer.vue'
 import CheckIcon from '../icons/CheckIcon.vue'
+import Badge from '../ui/badge/Badge.vue'
 
 type Cta = {
   label: string

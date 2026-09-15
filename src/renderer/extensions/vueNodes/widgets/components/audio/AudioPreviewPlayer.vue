@@ -144,18 +144,16 @@
 </template>
 
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
+import { whenever } from '@vueuse/core'
 import Slider from 'primevue/slider'
 import TieredMenu from 'primevue/tieredmenu'
+import { useToast } from 'primevue/usetoast'
 import { computed, ref, useTemplateRef } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { whenever } from '@vueuse/core'
-
-import { useToast } from 'primevue/usetoast'
 
 import { downloadFile } from '@/base/common/downloadUtil'
 import Button from '@/components/ui/button/Button.vue'
-import { cn } from '@comfyorg/tailwind-utils'
-
 import { formatTime } from '@/utils/formatUtil'
 
 const { t } = useI18n()

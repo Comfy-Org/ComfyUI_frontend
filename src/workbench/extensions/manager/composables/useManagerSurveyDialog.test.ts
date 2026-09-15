@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
-import { useDialogStore } from '@/stores/dialogStore'
 
+import { useDialogStore } from '@/stores/dialogStore'
 import { useManagerSurveyDialog } from '@/workbench/extensions/manager/composables/useManagerSurveyDialog'
 
 describe('useManagerSurveyDialog', () => {

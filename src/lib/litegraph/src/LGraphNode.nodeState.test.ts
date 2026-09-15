@@ -3,7 +3,6 @@ import { computed } from 'vue'
 
 import { useNodeDataStore } from '@/stores/nodeDataStore'
 import { toNodeId } from '@/types/nodeId'
-
 import type { NodeState } from '@/types/nodeState'
 
 import { LGraphNode } from './litegraph'

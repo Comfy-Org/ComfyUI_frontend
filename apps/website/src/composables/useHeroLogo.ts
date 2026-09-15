@@ -1,8 +1,7 @@
-import type { Ref } from 'vue'
-import { onMounted, onUnmounted, ref } from 'vue'
-
 import * as THREE from 'three'
 import { SVGLoader } from 'three/addons/loaders/SVGLoader.js'
+import type { Ref } from 'vue'
+import { onMounted, onUnmounted, ref } from 'vue'
 
 import { prefersReducedMotion } from './useReducedMotion'
 

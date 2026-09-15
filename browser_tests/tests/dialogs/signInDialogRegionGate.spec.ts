@@ -1,7 +1,6 @@
-import { expect } from '@playwright/test'
-
 import { SignInDialog } from '@e2e/fixtures/components/SignInDialog'
 import { localSignedOutFixture as test } from '@e2e/fixtures/localSignedOutFixture'
+import { expect } from '@playwright/test'
 
 /**
  * The China region gate on the local dialog's sign-up form.

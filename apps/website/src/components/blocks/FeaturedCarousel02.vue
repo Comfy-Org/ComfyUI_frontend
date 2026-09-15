@@ -7,12 +7,11 @@ import {
   useIntersectionObserver
 } from '@vueuse/core'
 import { computed, ref, useTemplateRef } from 'vue'
-
 import type { HTMLAttributes } from 'vue'
 
-import type { Locale } from '../../i18n/translations'
 import { useCarouselAutoplay } from '../../composables/useCarouselAutoplay'
 import { prefersReducedMotion } from '../../composables/useReducedMotion'
+import type { Locale } from '../../i18n/translations'
 import { resolveRel } from '../../utils/cta'
 import VideoPlayer from '../common/VideoPlayer.vue'
 import Badge from '../ui/badge/Badge.vue'

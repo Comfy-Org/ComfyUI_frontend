@@ -2,6 +2,7 @@ import { Schema } from '@tiptap/pm/model'
 import type { Node } from '@tiptap/pm/model'
 
 import { isNodeLocatorId } from '@/types/nodeIdentification'
+
 import type {
   ComposerInsertionPoint,
   ComposerPrompt,

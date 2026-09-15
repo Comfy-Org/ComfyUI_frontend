@@ -2,13 +2,13 @@ import { fromPartial } from '@total-typescript/shoehorn'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick, watch } from 'vue'
 
-import { useAssetsStore } from '@/stores/assetsStore'
-import { ComfyNodeDefImpl, useNodeDefStore } from '@/stores/nodeDefStore'
 import type {
   AssetItem,
   AssetResponse
 } from '@/platform/assets/schemas/assetSchema'
 import { assetService } from '@/platform/assets/services/assetService'
+import { useAssetsStore } from '@/stores/assetsStore'
+import { ComfyNodeDefImpl, useNodeDefStore } from '@/stores/nodeDefStore'
 
 // Mock the api module
 vi.mock<unknown>(import('@/scripts/api'), () => ({

@@ -2,8 +2,8 @@ import { describe, expect, it, vi } from 'vitest'
 
 vi.mock(import('@/platform/assets/composables/media/assetMappers'))
 
-import { useResultGallery } from '@/composables/queue/useResultGallery'
 import type { JobListItem as JobListViewItem } from '@/composables/queue/useJobList'
+import { useResultGallery } from '@/composables/queue/useResultGallery'
 import type { JobListItem } from '@/platform/remote/comfyui/jobs/jobTypes'
 import { TaskItemImpl } from '@/stores/queueStore'
 import type { AugmentedResultItem } from '@/utils/resultItem'

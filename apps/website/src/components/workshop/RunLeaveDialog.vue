@@ -1,11 +1,11 @@
 <script setup lang="ts">
+import type { Locale } from '../../i18n/translations'
+import { t } from '../../i18n/translations'
 import Button from '../ui/button/Button.vue'
 import Dialog from '../ui/dialog/Dialog.vue'
 import DialogContent from '../ui/dialog/DialogContent.vue'
 import DialogDescription from '../ui/dialog/DialogDescription.vue'
 import DialogTitle from '../ui/dialog/DialogTitle.vue'
-import type { Locale } from '../../i18n/translations'
-import { t } from '../../i18n/translations'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 const open = defineModel<boolean>('open', { default: false })

@@ -1,10 +1,8 @@
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
 import type { HTMLAttributes } from 'vue'
 
-import { cn } from '@comfyorg/tailwind-utils'
-
 import { resolveRel } from '../../utils/cta'
-
 import Accordion from '../ui/accordion/Accordion.vue'
 import AccordionContent from '../ui/accordion/AccordionContent.vue'
 import AccordionItem from '../ui/accordion/AccordionItem.vue'

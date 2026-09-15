@@ -3,10 +3,11 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { Ref, ShallowRef } from 'vue'
 import { defineComponent, h, nextTick, ref, shallowRef } from 'vue'
 
-import { useBoundingBoxes } from './useBoundingBoxes'
+import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import type { BoundingBox } from '@/types/boundingBoxes'
 import { toNodeId } from '@/types/nodeId'
-import { useNodeOutputStore } from '@/stores/nodeOutputStore'
+
+import { useBoundingBoxes } from './useBoundingBoxes'
 
 const appState = vi.hoisted(() => ({ node: null as MockNode | null }))
 let incomingOutputs: { input_bboxes: unknown } | undefined

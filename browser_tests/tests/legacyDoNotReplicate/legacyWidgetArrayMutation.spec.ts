@@ -3,6 +3,7 @@ import {
   comfyPageFixture as test
 } from '@e2e/fixtures/ComfyPage'
 import { BAD_DO_NOT_DO_THIS_LegacyApiHelper } from '@e2e/fixtures/helpers/BAD_DO_NOT_DO_THIS_LegacyApiHelper'
+
 import { toNodeId } from '@/types/nodeId'
 
 test.describe('Legacy widget array mutation', { tag: '@vue-nodes' }, () => {

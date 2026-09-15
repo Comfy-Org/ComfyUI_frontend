@@ -1,13 +1,9 @@
-import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
+import { render, screen } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import { defineComponent, h, nextTick, ref } from 'vue'
 import type { Ref } from 'vue'
 
-import {
-  WORKSHOP_CLOUD_BASE_URL,
-  WORKSHOP_CREDITS_URL
-} from '../../config/workshop-env'
 import type {
   clearTopUpWatch,
   refreshWorkshopCredits,
@@ -15,6 +11,10 @@ import type {
   useWorkshopCredits,
   watchForTopUp
 } from '../../config/workshop-credits'
+import {
+  WORKSHOP_CLOUD_BASE_URL,
+  WORKSHOP_CREDITS_URL
+} from '../../config/workshop-env'
 import type { useWorkshopSession } from '../../config/workshop-session-state'
 import BuyCreditsDialog from './BuyCreditsDialog.vue'
 

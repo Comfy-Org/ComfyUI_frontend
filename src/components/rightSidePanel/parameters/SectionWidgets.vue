@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
 import { watchDebounced } from '@vueuse/core'
 import {
   computed,
@@ -14,28 +15,26 @@ import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
 import { resolvePromotedWidgetSource } from '@/core/graph/subgraph/resolvePromotedWidgetSource'
+import { getStableWidgetRenderKey } from '@/core/graph/subgraph/widgetRenderKey'
 import type { LGraphGroup, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { SubgraphNode } from '@/lib/litegraph/src/litegraph'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@/platform/telemetry'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { DraggableList } from '@/scripts/ui/draggableList'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
+import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
-import { useSettingStore } from '@/platform/settings/settingStore'
-import { cn } from '@comfyorg/tailwind-utils'
-import { useNodeDefStore } from '@/stores/nodeDefStore'
+import { HideLayoutFieldKey, WidgetHeightKey } from '@/types/widgetTypes'
 import { getExecutionIdByNode } from '@/utils/graphTraversalUtil'
 import { getWidgetDefaultValue } from '@/utils/widgetUtil'
 import type { WidgetValue } from '@/utils/widgetUtil'
 
 import PropertiesAccordionItem from '../layout/PropertiesAccordionItem.vue'
-import { HideLayoutFieldKey, WidgetHeightKey } from '@/types/widgetTypes'
-
 import { GetNodeParentGroupKey } from '../shared'
 import WidgetItem from './WidgetItem.vue'
-import { getStableWidgetRenderKey } from '@/core/graph/subgraph/widgetRenderKey'
 
 const {
   label,

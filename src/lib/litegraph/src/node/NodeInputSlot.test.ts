@@ -1,9 +1,9 @@
 import { fromAny } from '@total-typescript/shoehorn'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { LLink } from '@/lib/litegraph/src/LLink'
 import type { LinkId } from '@/lib/litegraph/src/LLink'
-import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { NodeInputSlot } from '@/lib/litegraph/src/node/NodeInputSlot'
 import { toLinkId } from '@/types/linkId'
 import { UNASSIGNED_NODE_ID } from '@/types/nodeId'

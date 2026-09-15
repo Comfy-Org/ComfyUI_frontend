@@ -1,7 +1,6 @@
 <script setup lang="ts">
-import type { Locale } from '../../i18n/translations'
-
 import ChecklistSplit01 from '../../components/blocks/ChecklistSplit01.vue'
+import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()

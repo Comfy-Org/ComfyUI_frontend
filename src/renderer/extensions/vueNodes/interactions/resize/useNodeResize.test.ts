@@ -1,5 +1,5 @@
-import type { MockInstance } from 'vitest'
 import { fromPartial } from '@total-typescript/shoehorn'
+import type { MockInstance } from 'vitest'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { CompassCorners } from '@/lib/litegraph/src/interfaces'

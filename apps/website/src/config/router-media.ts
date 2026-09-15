@@ -1,6 +1,6 @@
+import { workshopExampleFile } from './workshop-example-file'
 import type { FieldSchema, FieldValue, FileValue } from './workshop-playground'
 import { urlUploadField } from './workshop-playground'
-import { workshopExampleFile } from './workshop-example-file'
 import { WorkshopRouterError } from './workshop-router-errors'
 
 export type RouterMedia =

@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import type { DialogTitleProps } from 'reka-ui'
-import type { HTMLAttributes } from 'vue'
-import { reactiveOmit } from '@vueuse/core'
-import { DialogTitle } from 'reka-ui'
 import { cn } from '@comfyorg/tailwind-utils'
+import { reactiveOmit } from '@vueuse/core'
+import type { DialogTitleProps } from 'reka-ui'
+import { DialogTitle } from 'reka-ui'
+import type { HTMLAttributes } from 'vue'
 
 const props = defineProps<
   DialogTitleProps & { class?: HTMLAttributes['class'] }

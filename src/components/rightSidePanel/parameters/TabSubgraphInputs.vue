@@ -3,6 +3,7 @@ import { storeToRefs } from 'pinia'
 import { computed, nextTick, ref, shallowRef, useTemplateRef, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import CollapseToggleButton from '@/components/rightSidePanel/layout/CollapseToggleButton.vue'
 import { promotedInputWidgets } from '@/core/graph/subgraph/promotedInputWidget'
 import {
   isWidgetPromotedOnSubgraphNode,
@@ -10,7 +11,6 @@ import {
 } from '@/core/graph/subgraph/promotionUtils'
 import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import CollapseToggleButton from '@/components/rightSidePanel/layout/CollapseToggleButton.vue'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 import {
   deriveWidgetVisibility,

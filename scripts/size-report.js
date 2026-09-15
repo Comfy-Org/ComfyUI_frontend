@@ -1,8 +1,9 @@
-// @ts-check
-import { markdownTable } from 'markdown-table'
 import { existsSync } from 'node:fs'
 import { readdir } from 'node:fs/promises'
 import path from 'node:path'
+
+// @ts-check
+import { markdownTable } from 'markdown-table'
 import prettyBytes from 'pretty-bytes'
 
 import { getCategoryMetadata } from './bundle-categories.js'

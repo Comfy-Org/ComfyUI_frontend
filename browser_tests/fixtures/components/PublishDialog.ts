@@ -1,7 +1,6 @@
-import type { Locator, Page } from '@playwright/test'
-
 import { BaseDialog } from '@e2e/fixtures/components/BaseDialog'
 import { TestIds } from '@e2e/fixtures/selectors'
+import type { Locator, Page } from '@playwright/test'
 
 export class PublishDialog extends BaseDialog {
   readonly nav: Locator

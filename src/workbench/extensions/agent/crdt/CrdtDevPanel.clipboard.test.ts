@@ -1,8 +1,8 @@
-import { fromPartial } from '@total-typescript/shoehorn'
-import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { render, screen } from '@testing-library/vue'
+import { fromPartial } from '@total-typescript/shoehorn'
 import { useClipboard } from '@vueuse/core'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const { writeText } = vi.hoisted(() => ({
   writeText: vi.fn<ReturnType<typeof useClipboard>['copy']>(() =>
@@ -13,15 +13,15 @@ const { writeText } = vi.hoisted(() => ({
 vi.mock(import('@vueuse/core'), { spy: true })
 vi.mocked(useClipboard).mockReturnValue(fromPartial({ copy: writeText }))
 
-import type { AgentCrdtStatus } from './useAgentCrdtFollower'
-import CrdtDevPanel from './CrdtDevPanel.vue'
 import { setCrdtDebugEnabled } from './crdtDebugGate'
+import CrdtDevPanel from './CrdtDevPanel.vue'
 import {
   clearDevEvents,
   devEvents,
   recordDevEvent,
   stringifyDevEvents
 } from './devPanelLog'
+import type { AgentCrdtStatus } from './useAgentCrdtFollower'
 
 vi.mock<unknown>(import('@/scripts/api'), () => ({
   api: {

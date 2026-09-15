@@ -1,10 +1,9 @@
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
 import type { PopoverContentEmits, PopoverContentProps } from 'reka-ui'
 import { PopoverContent, PopoverPortal, useForwardPropsEmits } from 'reka-ui'
 import type { HTMLAttributes } from 'vue'
 import { computed } from 'vue'
-
-import { cn } from '@comfyorg/tailwind-utils'
 
 defineOptions({
   inheritAttrs: false

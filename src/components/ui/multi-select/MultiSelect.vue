@@ -155,6 +155,7 @@
 </template>
 
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
 import { useFuse } from '@vueuse/integrations/useFuse'
 import type { UseFuseOptions } from '@vueuse/integrations/useFuse'
 import type { FocusOutsideEvent } from 'reka-ui'
@@ -176,7 +177,6 @@ import type { StyleValue } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
-
 import {
   selectContentClass,
   selectCountBadgeClass,
@@ -190,7 +190,6 @@ import type { SelectOption } from '@/components/ui/select/types'
 import { useAttrsClass } from '@/composables/useAttrsClass'
 import { useModalLiftedZIndex } from '@/composables/useModalLiftedZIndex'
 import { usePopoverSizing } from '@/composables/usePopoverSizing'
-import { cn } from '@comfyorg/tailwind-utils'
 
 defineOptions({
   inheritAttrs: false

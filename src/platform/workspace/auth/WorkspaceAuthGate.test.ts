@@ -1,9 +1,5 @@
-import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
-import { useAuthStore } from '@/stores/authStore'
-import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
-import { useWorkspaceAuthStore } from '@/platform/workspace/stores/workspaceAuthStore'
-import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
+import { render, screen } from '@testing-library/vue'
 import {
   onAuthStateChanged,
   onIdTokenChanged,
@@ -17,6 +13,10 @@ import {
   remoteConfigErrorStatus,
   remoteConfigState
 } from '@/platform/remoteConfig/remoteConfig'
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
+import { useWorkspaceAuthStore } from '@/platform/workspace/stores/workspaceAuthStore'
+import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
+import { useAuthStore } from '@/stores/authStore'
 
 import WorkspaceAuthGate from './WorkspaceAuthGate.vue'
 

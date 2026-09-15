@@ -58,8 +58,8 @@ import SelectContent from '@/components/ui/select/SelectContent.vue'
 import SelectItem from '@/components/ui/select/SelectItem.vue'
 import SelectTrigger from '@/components/ui/select/SelectTrigger.vue'
 import SelectValue from '@/components/ui/select/SelectValue.vue'
-import { useKeybindingPresetService } from '@/platform/keybindings/presetService'
 import { useKeybindingStore } from '@/platform/keybindings/keybindingStore'
+import { useKeybindingPresetService } from '@/platform/keybindings/presetService'
 
 const { presetNames, contentStyle } = defineProps<{
   presetNames: string[]

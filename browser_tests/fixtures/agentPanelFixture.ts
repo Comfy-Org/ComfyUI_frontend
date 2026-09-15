@@ -1,14 +1,12 @@
-import type { Page } from '@playwright/test'
-
 import type { GlobalSetting, ListAssetsResponse } from '@comfyorg/ingest-types'
-
-import type { RemoteConfig } from '@/platform/remoteConfig/types'
-import { AGENT_CONSENT_SETTING_ID } from '@/platform/settings/constants/agent'
-
 import { cloudAppFixture, waitForCloudApp } from '@e2e/fixtures/cloudAppFixture'
 import { mockBilling } from '@e2e/fixtures/utils/cloudBillingMocks'
 import { bootCloud, mockCloudBoot } from '@e2e/fixtures/utils/cloudBootMocks'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
+import type { Page } from '@playwright/test'
+
+import type { RemoteConfig } from '@/platform/remoteConfig/types'
+import { AGENT_CONSENT_SETTING_ID } from '@/platform/settings/constants/agent'
 
 const APP_URL = process.env.PLAYWRIGHT_TEST_URL || 'http://localhost:8188'
 

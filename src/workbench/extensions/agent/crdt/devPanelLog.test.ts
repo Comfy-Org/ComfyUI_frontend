@@ -1,13 +1,13 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import { watch } from 'vue'
 
+import { setCrdtDebugEnabled } from './crdtDebugGate'
 import {
   clearDevEvents,
   devEvents,
   recordDevEvent,
   stringifyDevEvents
 } from './devPanelLog'
-import { setCrdtDebugEnabled } from './crdtDebugGate'
 
 describe('devPanelLog', () => {
   beforeEach(() => {

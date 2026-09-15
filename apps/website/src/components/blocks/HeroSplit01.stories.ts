@@ -1,8 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/vue3-vite'
 
-import EnterpriseHeroScene from '../product/enterprise/EnterpriseHeroScene.vue'
-
 import { externalLinks } from '../../config/routes'
+import EnterpriseHeroScene from '../product/enterprise/EnterpriseHeroScene.vue'
 import HeroSplit01 from './HeroSplit01.vue'
 
 const meta: Meta<typeof HeroSplit01> = {

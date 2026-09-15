@@ -1,4 +1,5 @@
 import type { ComfyDesktop2Bridge } from '@comfyorg/comfyui-desktop-bridge-types'
+
 import type {
   DeviceStats,
   EmbeddingsResponse,

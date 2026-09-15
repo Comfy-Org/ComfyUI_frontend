@@ -55,20 +55,19 @@
 </template>
 
 <script setup lang="ts">
-import { storeToRefs } from 'pinia'
-import { computed, ref } from 'vue'
+import { cn } from '@comfyorg/tailwind-utils'
 import { whenever } from '@vueuse/core'
-
+import { storeToRefs } from 'pinia'
 import { TabsContent, TabsList, TabsRoot, TabsTrigger } from 'reka-ui'
+import { computed, ref } from 'vue'
 
-import WorkspaceProfilePic from '@/platform/workspace/components/WorkspaceProfilePic.vue'
 import BillingStatusBanner from '@/platform/workspace/components/dialogs/settings/BillingStatusBanner.vue'
 import MembersPanelContent from '@/platform/workspace/components/dialogs/settings/MembersPanelContent.vue'
 import SubscriptionPanelContentWorkspace from '@/platform/workspace/components/SubscriptionPanelContentWorkspace.vue'
+import WorkspaceProfilePic from '@/platform/workspace/components/WorkspaceProfilePic.vue'
 import { useTeamPlan } from '@/platform/workspace/composables/useTeamPlan'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
-import { cn } from '@comfyorg/tailwind-utils'
 
 const tabTriggerBase =
   'flex items-center justify-center shrink-0 px-2.5 py-2 text-sm rounded-lg cursor-pointer transition-all duration-200 outline-hidden border-none'

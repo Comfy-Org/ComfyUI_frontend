@@ -1,6 +1,6 @@
-import type { MissingModelGroup } from '@/platform/missingModel/types'
 import { isModelDownloadable } from '@/platform/missingModel/missingModelDownload'
 import type { ModelWithUrl } from '@/platform/missingModel/missingModelDownload'
+import type { MissingModelGroup } from '@/platform/missingModel/types'
 
 export function toDownloadableModel(
   model: MissingModelGroup['models'][number]

@@ -1,5 +1,5 @@
-import type { LGraphCanvas } from './LGraphCanvas'
 import type { IContextMenuValue } from './interfaces'
+import type { LGraphCanvas } from './LGraphCanvas'
 
 /**
  * Simple compatibility layer for legacy getCanvasMenuOptions and getNodeMenuOptions monkey patches.

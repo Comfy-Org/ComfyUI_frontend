@@ -6,12 +6,11 @@ import {
   scanPartnerNodesInGraph,
   usePartnerNodesInGraph
 } from '@/composables/node/usePartnerNodesInGraph'
+import type { PartnerNodeInfo } from '@/composables/node/usePartnerNodesInGraph'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { isCloud } from '@/platform/distribution/types'
 import { reportError } from '@/platform/telemetry/reportError'
 import { useAuthStore } from '@/stores/authStore'
-
-import type { PartnerNodeInfo } from '@/composables/node/usePartnerNodesInGraph'
 
 type PartnerRunGate = 'sign-in' | 'none'
 

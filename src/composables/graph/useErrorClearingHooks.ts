@@ -6,8 +6,8 @@
  * works in legacy canvas mode as well.
  */
 import { useChainCallback } from '@/composables/functional/useChainCallback'
-import { resolvePromotedWidgetSource } from '@/core/graph/subgraph/resolvePromotedWidgetSource'
 import { createPromotionErrorReconciler } from '@/core/graph/subgraph/createPromotionErrorReconciler'
+import { resolvePromotedWidgetSource } from '@/core/graph/subgraph/resolvePromotedWidgetSource'
 import type {
   NodeBeforeRemovedEvent,
   NodeLifecycleEvent
@@ -19,16 +19,8 @@ import {
   NodeSlotType
 } from '@/lib/litegraph/src/types/globalEnums'
 import type { LGraphTriggerEvent } from '@/lib/litegraph/src/types/graphTriggers'
-import { ChangeTracker } from '@/scripts/changeTracker'
-import { isCloud } from '@/platform/distribution/types'
 import { assetService } from '@/platform/assets/services/assetService'
-import type { MissingMediaCandidate } from '@/platform/missingMedia/types'
-import type { MissingModelCandidate } from '@/platform/missingModel/types'
-import {
-  scanNodeModelCandidates,
-  verifyAssetSupportedCandidates
-} from '@/platform/missingModel/missingModelScan'
-import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
+import { isCloud } from '@/platform/distribution/types'
 import {
   isMissingMediaCandidateActive,
   isMissingMediaCandidateScopeActive,
@@ -36,14 +28,23 @@ import {
   verifyMediaCandidates
 } from '@/platform/missingMedia/missingMediaScan'
 import { useMissingMediaStore } from '@/platform/missingMedia/missingMediaStore'
+import type { MissingMediaCandidate } from '@/platform/missingMedia/types'
+import {
+  scanNodeModelCandidates,
+  verifyAssetSupportedCandidates
+} from '@/platform/missingModel/missingModelScan'
+import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
+import type { MissingModelCandidate } from '@/platform/missingModel/types'
+import { getCnrIdFromNode } from '@/platform/nodeReplacement/cnrIdUtil'
 import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
 import { useNodeReplacementStore } from '@/platform/nodeReplacement/nodeReplacementStore'
-import { getCnrIdFromNode } from '@/platform/nodeReplacement/cnrIdUtil'
 import { app } from '@/scripts/app'
+import { ChangeTracker } from '@/scripts/changeTracker'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
+import { useModelToNodeStore } from '@/stores/modelToNodeStore'
 import { toNodeId } from '@/types/nodeId'
 import type { NodeId } from '@/types/nodeId'
-import { useModelToNodeStore } from '@/stores/modelToNodeStore'
+import { getParentExecutionIds } from '@/types/nodeIdentification'
 import {
   collectAllNodes,
   getExecutionIdByNode,
@@ -52,7 +53,6 @@ import {
   isExecutionPathActive,
   isMissingCandidateActive
 } from '@/utils/graphTraversalUtil'
-import { getParentExecutionIds } from '@/types/nodeIdentification'
 
 const hookedNodes = new WeakSet<LGraphNode>()
 

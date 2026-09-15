@@ -1,5 +1,5 @@
-import type { NodeExecutionId } from '@/types/nodeIdentification'
 import type { SerializedNodeId } from '@/types/nodeId'
+import type { NodeExecutionId } from '@/types/nodeIdentification'
 
 /**
  * A single (node, widget, model) binding detected by the missing model pipeline.

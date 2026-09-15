@@ -4,8 +4,8 @@ import { nextTick } from 'vue'
 
 import './ModelPage.vue'
 import './ModelsCatalogue.vue'
-import { prepareModelPage } from '../../routes/models/model-page'
 import { workshopModels } from '../../config/workshop-browse-content'
+import { prepareModelPage } from '../../routes/models/model-page'
 import ModelsPage from './ModelsPage.vue'
 
 const modelSlug = 'bfl--flux-2-max--generate-images'

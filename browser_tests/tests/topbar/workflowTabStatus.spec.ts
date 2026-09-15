@@ -1,14 +1,13 @@
-import type { Locator, WebSocketRoute } from '@playwright/test'
-import { mergeTests } from '@playwright/test'
-
 import {
   comfyPageFixture,
   comfyExpect as expect
 } from '@e2e/fixtures/ComfyPage'
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { ExecutionHelper } from '@e2e/fixtures/helpers/ExecutionHelper'
-import { webSocketFixture } from '@e2e/fixtures/ws'
 import { TestIds } from '@e2e/fixtures/selectors'
+import { webSocketFixture } from '@e2e/fixtures/ws'
+import type { Locator, WebSocketRoute } from '@playwright/test'
+import { mergeTests } from '@playwright/test'
 
 const test = mergeTests(comfyPageFixture, webSocketFixture)
 

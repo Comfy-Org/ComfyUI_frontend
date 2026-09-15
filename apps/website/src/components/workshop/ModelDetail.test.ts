@@ -1,3 +1,7 @@
+import type {
+  AccountCredential,
+  SessionFailure
+} from '@comfyorg/account/session'
 // @vitest-environment happy-dom
 import userEvent from '@testing-library/user-event'
 import { fireEvent, render, screen, within } from '@testing-library/vue'
@@ -5,21 +9,16 @@ import { IDBFactory } from 'fake-indexeddb'
 import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import { computed, defineComponent, h, nextTick, ref } from 'vue'
 
-import type {
-  AccountCredential,
-  SessionFailure
-} from '@comfyorg/account/session'
-
 import type { WorkshopModelDetail } from '../../config/models-catalogue'
-import type { Locale } from '../../i18n/translations'
 import { subscribeToWorkshopBuyCredits } from '../../config/workshop-buy-credits'
-import { runWorkshopRouter } from '../../config/workshop-router'
-import { WorkshopRouterError } from '../../config/workshop-router-errors'
 import { workshopContract } from '../../config/workshop-contract-catalog'
-import { getRouterWorkshopModelDetail } from '../../config/workshop-router-content'
 import { refreshWorkshopCredits } from '../../config/workshop-credits'
 import type { useWorkshopCredits } from '../../config/workshop-credits'
 import * as draftStorage from '../../config/workshop-draft-storage'
+import { runWorkshopRouter } from '../../config/workshop-router'
+import { getRouterWorkshopModelDetail } from '../../config/workshop-router-content'
+import { WorkshopRouterError } from '../../config/workshop-router-errors'
+import type { Locale } from '../../i18n/translations'
 import { captureWorkshopEvent } from '../../scripts/posthog'
 import ModelDetail from './ModelDetail.vue'
 import WorkshopGate from './WorkshopGate.vue'

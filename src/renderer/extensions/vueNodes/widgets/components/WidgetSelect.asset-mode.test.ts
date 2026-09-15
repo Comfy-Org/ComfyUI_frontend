@@ -1,10 +1,11 @@
-import { getActivePinia } from 'pinia'
 import { render, screen } from '@testing-library/vue'
+import { getActivePinia } from 'pinia'
 import PrimeVue from 'primevue/config'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
 import WidgetSelect from '@/renderer/extensions/vueNodes/widgets/components/WidgetSelect.vue'
+
 import { createMockWidget } from './widgetTestUtils'
 
 const i18n = createI18n({

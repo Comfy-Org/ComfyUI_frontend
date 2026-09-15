@@ -1,7 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { Positionable, Rect } from '@/lib/litegraph/src/interfaces'
-import type { CanvasPointerEvent } from '@/lib/litegraph/src/types/events'
 import {
   LGraph,
   LGraphCanvas,
@@ -9,6 +8,7 @@ import {
   LGraphNode,
   LiteGraph
 } from '@/lib/litegraph/src/litegraph'
+import type { CanvasPointerEvent } from '@/lib/litegraph/src/types/events'
 import { createMockCanvasRenderingContext2D } from '@/utils/__tests__/litegraphTestUtils'
 
 vi.mock(import('@/renderer/core/layout/store/layoutStore'))

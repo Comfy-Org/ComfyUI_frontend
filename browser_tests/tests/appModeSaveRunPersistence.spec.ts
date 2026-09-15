@@ -1,5 +1,3 @@
-import { mergeTests } from '@playwright/test'
-
 import {
   comfyPageFixture,
   comfyExpect as expect
@@ -7,6 +5,7 @@ import {
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { ExecutionHelper } from '@e2e/fixtures/helpers/ExecutionHelper'
 import { webSocketFixture } from '@e2e/fixtures/ws'
+import { mergeTests } from '@playwright/test'
 
 const test = mergeTests(comfyPageFixture, webSocketFixture)
 

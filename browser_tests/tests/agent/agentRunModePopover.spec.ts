@@ -1,10 +1,9 @@
-import { expect, mergeTests } from '@playwright/test'
-
 import { webSocketFixture } from '@e2e/fixtures/ws'
 import {
   agentTest,
   selectAgentWorkflow
 } from '@e2e/tests/agent/agentPanelMocks'
+import { expect, mergeTests } from '@playwright/test'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 

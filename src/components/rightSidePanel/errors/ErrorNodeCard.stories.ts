@@ -1,8 +1,10 @@
 import type { Meta, StoryObj } from '@storybook/vue3-vite'
+
+import { toNodeId } from '@/types/nodeId'
+import { createNodeExecutionId } from '@/types/nodeIdentification'
+
 import ErrorNodeCard from './ErrorNodeCard.vue'
 import type { ErrorCardData } from './types'
-import { createNodeExecutionId } from '@/types/nodeIdentification'
-import { toNodeId } from '@/types/nodeId'
 
 const meta: Meta<typeof ErrorNodeCard> = {
   title: 'RightSidePanel/Errors/ErrorNodeCard',

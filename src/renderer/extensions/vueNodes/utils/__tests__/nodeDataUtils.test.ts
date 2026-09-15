@@ -1,6 +1,5 @@
-import { toOwningGraphId, toRootGraphId } from '@/types/graphScopeId'
-import { toLinkId } from '@/types/linkId'
-import { toNodeId } from '@/types/nodeId'
+import { describe, it } from 'vitest'
+
 import type {
   INodeInputSlot,
   IWidgetLocator
@@ -11,7 +10,9 @@ import {
   nonWidgetedInputs
 } from '@/renderer/extensions/vueNodes/utils/nodeDataUtils'
 import { useLinkStore } from '@/stores/linkStore'
-import { describe, it } from 'vitest'
+import { toOwningGraphId, toRootGraphId } from '@/types/graphScopeId'
+import { toLinkId } from '@/types/linkId'
+import { toNodeId } from '@/types/nodeId'
 
 const GRAPH_ID = 'graph-test'
 const GRAPH_SCOPE = {

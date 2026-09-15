@@ -1,12 +1,12 @@
-import type { ComfyApp } from '@/scripts/app'
-import { useSettingStore } from '@/platform/settings/settingStore'
-import { useToastStore } from '@/platform/updates/common/toastStore'
-import { useDialogStore } from '@/stores/dialogStore'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { KeybindingImpl } from '@/platform/keybindings/keybinding'
 import { useKeybindingStore } from '@/platform/keybindings/keybindingStore'
 import type { KeybindingPreset } from '@/platform/keybindings/types'
+import { useSettingStore } from '@/platform/settings/settingStore'
+import { useToastStore } from '@/platform/updates/common/toastStore'
+import type { ComfyApp } from '@/scripts/app'
+import { useDialogStore } from '@/stores/dialogStore'
 
 const mockApi = vi.hoisted(() => ({
   listUserDataFullInfo: vi.fn(),

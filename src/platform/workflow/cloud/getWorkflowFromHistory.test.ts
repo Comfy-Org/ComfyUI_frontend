@@ -1,11 +1,11 @@
 import { describe, expect, it, vi } from 'vitest'
 
-import type { JobDetail } from '@/platform/remote/comfyui/jobs/jobTypes'
-import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 import {
   extractWorkflow,
   fetchJobDetail
 } from '@/platform/remote/comfyui/jobs/fetchJobs'
+import type { JobDetail } from '@/platform/remote/comfyui/jobs/jobTypes'
+import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 
 const mockWorkflow: ComfyWorkflowJSON = {
   last_node_id: 5,

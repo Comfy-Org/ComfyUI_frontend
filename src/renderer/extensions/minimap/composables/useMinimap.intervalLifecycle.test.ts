@@ -1,5 +1,3 @@
-import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import { useSettingStore } from '@/platform/settings/settingStore'
 import { fromPartial } from '@total-typescript/shoehorn'
 /**
  * Lifecycle tests for the minimap's change-detection interval, run against the
@@ -9,13 +7,15 @@ import { fromPartial } from '@total-typescript/shoehorn'
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick, shallowRef } from 'vue'
+
 import type {
   LGraph,
   LGraphNode,
   LGraphCanvas
 } from '@/lib/litegraph/src/litegraph'
+import { useSettingStore } from '@/platform/settings/settingStore'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { toNodeId } from '@/types/nodeId'
-
 import {
   createMockCanvas2DContext,
   createMockLinks,

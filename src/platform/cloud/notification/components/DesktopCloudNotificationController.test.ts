@@ -1,6 +1,7 @@
 import { render } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
+
 import { useSettingStore } from '@/platform/settings/settingStore'
 
 import DesktopCloudNotificationController from './DesktopCloudNotificationController.vue'

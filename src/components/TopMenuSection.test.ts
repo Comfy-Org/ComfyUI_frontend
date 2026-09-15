@@ -1,9 +1,9 @@
+import userEvent from '@testing-library/user-event'
+import { render, screen } from '@testing-library/vue'
 /* eslint-disable testing-library/no-container */
 /* eslint-disable testing-library/no-node-access */
 import { getActivePinia } from 'pinia'
 import type { Pinia } from 'pinia'
-import userEvent from '@testing-library/user-event'
-import { render, screen } from '@testing-library/vue'
 import type { MenuItem } from 'primevue/menuitem'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, defineComponent, h, nextTick, onMounted, ref } from 'vue'

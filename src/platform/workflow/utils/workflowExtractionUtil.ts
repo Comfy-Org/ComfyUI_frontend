@@ -3,10 +3,10 @@
  * Supports both job-based and asset-based workflow extraction
  */
 
-import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
-import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { getOutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
+import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { getAssetUrl } from '@/platform/assets/utils/assetUrlUtil'
+import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { getWorkflowDataFromFile } from '@/scripts/metadata/parser'
 import { getJobWorkflow } from '@/services/jobOutputCache'
 import { parseJsonWithNonFinite } from '@/utils/jsonUtil'

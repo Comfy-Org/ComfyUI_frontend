@@ -2,11 +2,10 @@ import type {
   PromptResponse,
   UploadImageResponse
 } from '@comfyorg/ingest-types'
-import { expect } from '@playwright/test'
-import type { Locator, Page, Request } from '@playwright/test'
-
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
+import { expect } from '@playwright/test'
+import type { Locator, Page, Request } from '@playwright/test'
 
 const NODE_TITLE = 'Webcam Capture'
 

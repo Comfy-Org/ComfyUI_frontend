@@ -1,9 +1,9 @@
+import type { EndpointPatch } from '@/stores/linkStore'
 import { UNASSIGNED_NODE_ID, toNodeId } from '@/types/nodeId'
+import type { NodeId } from '@/types/nodeId'
 
 import type { LLink } from './LLink'
 import type { ISerialisedNode } from './types/serialisation'
-import type { EndpointPatch } from '@/stores/linkStore'
-import type { NodeId } from '@/types/nodeId'
 
 /**
  * Follows serialized link endpoints through node-id remints during

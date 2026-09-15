@@ -1,11 +1,4 @@
-import type { WebSocketRoute } from '@playwright/test'
-import { expect, mergeTests } from '@playwright/test'
-
 import { webSocketFixture } from '@e2e/fixtures/ws'
-
-import enMessages from '@/locales/en/main.json' with { type: 'json' }
-import type { AgentWsEvent } from '@/workbench/extensions/agent/schemas/agentApiSchema'
-
 import {
   INTERMEDIATE_MESSAGE_EVENT,
   MESSAGE_DELTA_EVENT,
@@ -19,6 +12,11 @@ import {
   agentTest,
   selectAgentWorkflow
 } from '@e2e/tests/agent/agentPanelMocks'
+import type { WebSocketRoute } from '@playwright/test'
+import { expect, mergeTests } from '@playwright/test'
+
+import enMessages from '@/locales/en/main.json' with { type: 'json' }
+import type { AgentWsEvent } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 
 const test = mergeTests(agentTest, webSocketFixture)
 

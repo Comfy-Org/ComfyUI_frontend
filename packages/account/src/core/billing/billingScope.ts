@@ -1,5 +1,5 @@
-import type { BillingSession } from './billingContracts.js'
 import type { AccountCredential } from '../sessionContracts.js'
+import type { BillingSession } from './billingContracts.js'
 
 export interface BillingScope {
   readonly userId: string

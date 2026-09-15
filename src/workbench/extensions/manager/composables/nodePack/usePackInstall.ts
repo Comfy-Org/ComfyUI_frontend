@@ -2,11 +2,11 @@ import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import type { components } from '@/types/comfyRegistryTypes'
-import type { components as ManagerComponents } from '@/workbench/extensions/manager/types/generatedManagerTypes'
 import { useConflictDetection } from '@/workbench/extensions/manager/composables/useConflictDetection'
 import { useNodeConflictDialog } from '@/workbench/extensions/manager/composables/useNodeConflictDialog'
 import { useComfyManagerStore } from '@/workbench/extensions/manager/stores/comfyManagerStore'
 import type { ConflictDetail } from '@/workbench/extensions/manager/types/conflictDetectionTypes'
+import type { components as ManagerComponents } from '@/workbench/extensions/manager/types/generatedManagerTypes'
 
 type NodePack = components['schemas']['Node']
 

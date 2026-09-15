@@ -105,18 +105,19 @@
 </template>
 
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
 import { useAsyncState } from '@vueuse/core'
 import { useToast } from 'primevue/usetoast'
 import { computed, ref, useId } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import { useBillingContext } from '@/composables/billing/useBillingContext'
 import Button from '@/components/ui/button/Button.vue'
 import TagsInput from '@/components/ui/tags-input/TagsInput.vue'
 import TagsInputInput from '@/components/ui/tags-input/TagsInputInput.vue'
 import TagsInputItem from '@/components/ui/tags-input/TagsInputItem.vue'
 import TagsInputItemDelete from '@/components/ui/tags-input/TagsInputItemDelete.vue'
 import TagsInputItemText from '@/components/ui/tags-input/TagsInputItemText.vue'
+import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useTelemetry } from '@/platform/telemetry'
 import type { WorkspaceInviteMetadata } from '@/platform/telemetry/types'
 import type { WorkspacePendingInvite } from '@/platform/workspace/stores/teamWorkspaceStore'
@@ -127,7 +128,6 @@ import {
   normalizeEmail,
   sanitizeInviteEmails
 } from '@/platform/workspace/utils/inviteEmails'
-import { cn } from '@comfyorg/tailwind-utils'
 
 const MAX_INVITES_PER_BATCH = 30
 

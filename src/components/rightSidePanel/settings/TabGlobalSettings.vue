@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
 import InputNumber from 'primevue/inputnumber'
 import Select from 'primevue/select'
 import { computed } from 'vue'
@@ -9,10 +10,9 @@ import Slider from '@/components/ui/slider/Slider.vue'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { LinkRenderType } from '@/lib/litegraph/src/types/globalEnums'
 import { LinkMarkerShape } from '@/lib/litegraph/src/types/globalEnums'
+import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { WidgetInputBaseClass } from '@/renderer/extensions/vueNodes/widgets/components/layout'
-import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
-import { cn } from '@comfyorg/tailwind-utils'
 
 import PropertiesAccordionItem from '../layout/PropertiesAccordionItem.vue'
 import FieldSwitch from './FieldSwitch.vue'

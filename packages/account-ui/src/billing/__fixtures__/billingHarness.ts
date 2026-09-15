@@ -1,10 +1,3 @@
-/**
- * A real billing core over a scripted transport: the readers, the lifecycle,
- * and the commands are the ones the package ships, so every composable test
- * exercises the merged API rather than a stand-in for it.
- */
-import { vi } from 'vitest'
-
 import type {
   BillingHttpResponse,
   BillingOpStatus,
@@ -29,6 +22,12 @@ import type {
   SessionClient,
   SessionSnapshot
 } from '@comfyorg/account/session'
+/**
+ * A real billing core over a scripted transport: the readers, the lifecycle,
+ * and the commands are the ones the package ships, so every composable test
+ * exercises the merged API rather than a stand-in for it.
+ */
+import { vi } from 'vitest'
 
 import type { BillingClient } from '../billingClient'
 

@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/vue'
-import { defineComponent, markRaw } from 'vue'
 import { describe, expect, it } from 'vitest'
+import { defineComponent, markRaw } from 'vue'
 
 import WidgetGrid from '@/renderer/extensions/vueNodes/components/WidgetGrid.vue'
 import type { WidgetGridItem } from '@/renderer/extensions/vueNodes/types/widgetGrid'

@@ -9,8 +9,8 @@ import {
 } from '@/platform/navigation/preservedQueryManager'
 import { PRESERVED_QUERY_NAMESPACES } from '@/platform/navigation/preservedQueryNamespaces'
 import type { TeamCreditStops } from '@/platform/workspace/api/workspaceApi'
-import type { SubscriptionCheckoutSelection } from '@/platform/workspace/composables/useSubscriptionCheckout'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
+import type { SubscriptionCheckoutSelection } from '@/platform/workspace/composables/useSubscriptionCheckout'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 
 const NAMESPACE = PRESERVED_QUERY_NAMESPACES.PRICING

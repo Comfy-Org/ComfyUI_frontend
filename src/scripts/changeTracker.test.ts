@@ -1,12 +1,14 @@
 import { fromPartial } from '@total-typescript/shoehorn'
-import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
-import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
-import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { markRaw, ref } from 'vue'
 
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import { useNodeOutputStore } from '@/stores/nodeOutputStore'
+import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
+
 vi.mock(import('@vueuse/router'), () => ({ useRouteHash: () => ref('') }))
 
+import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import {
   createNestedSubgraphs,
   createTestRootGraph,
@@ -14,12 +16,11 @@ import {
   createTestSubgraphNode,
   resetSubgraphFixtureState
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
-import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { ExportedSubgraph } from '@/lib/litegraph/src/types/serialisation'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
+import { validateComfyWorkflow } from '@/platform/workflow/validation/schemas/workflowSchema'
 import type { ComfyApi } from '@/scripts/api'
 import type { ComfyApp } from '@/scripts/app'
-import { validateComfyWorkflow } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { useQueueSettingsStore } from '@/stores/queueSettingsStore'
 
 const mockAssert = vi.hoisted(() => vi.fn())
@@ -64,8 +65,8 @@ vi.mock(import('@/scripts/api'), () => ({
   })
 }))
 
-import { app } from '@/scripts/app'
 import { api } from '@/scripts/api'
+import { app } from '@/scripts/app'
 import { ChangeTracker } from '@/scripts/changeTracker'
 
 let nodeIdCounter = 0

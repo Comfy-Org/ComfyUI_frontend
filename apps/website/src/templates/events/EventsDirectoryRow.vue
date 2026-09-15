@@ -1,17 +1,14 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
-
+import { cn } from '@comfyorg/tailwind-utils'
 import { CalendarDays, MapPin } from '@lucide/vue'
 import { useResizeObserver } from '@vueuse/core'
-
-import { cn } from '@comfyorg/tailwind-utils'
-
-import type { Locale } from '../../i18n/translations'
-import type { DirectoryRow } from '../../utils/eventsDirectory'
+import { computed, ref } from 'vue'
 
 import Badge from '../../components/ui/badge/Badge.vue'
+import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 import { resolveRel } from '../../utils/cta'
+import type { DirectoryRow } from '../../utils/eventsDirectory'
 import EventsDirectoryCta from './EventsDirectoryCta.vue'
 
 const {

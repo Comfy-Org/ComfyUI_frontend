@@ -1,3 +1,7 @@
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+
+import { useToastStore } from '@/platform/updates/common/toastStore'
+import type { BillingOpStatusResponse } from '@/platform/workspace/api/workspaceApi'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import {
   bindOperationToCheckoutJourney,
@@ -5,11 +9,7 @@ import {
   getActiveCheckoutJourney,
   resolveCheckoutJourney
 } from '@/platform/workspace/utils/checkoutJourney'
-import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useDialogStore } from '@/stores/dialogStore'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
-
-import type { BillingOpStatusResponse } from '@/platform/workspace/api/workspaceApi'
 
 const { mockHandleNextAction, mockLoadStripe, mockFeatureFlags } = vi.hoisted(
   () => ({

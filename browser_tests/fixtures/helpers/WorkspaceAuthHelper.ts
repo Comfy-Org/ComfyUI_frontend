@@ -1,12 +1,11 @@
-import { expect } from '@playwright/test'
-import type { Page, Route } from '@playwright/test'
-
 import {
   defaultWorkspaceTokenResponse,
   mockPersonalWorkspace,
   mockTeamWorkspace,
   mockWorkspacesRemoteConfig
 } from '@e2e/fixtures/data/workspaceAuthFixtures'
+import { expect } from '@playwright/test'
+import type { Page, Route } from '@playwright/test'
 
 export class WorkspaceAuthHelper {
   constructor(private readonly page: Page) {}

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
 import { storeToRefs } from 'pinia'
 import { computed, provide, ref, watchEffect } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -8,26 +9,27 @@ import Tab from '@/components/tab/Tab.vue'
 import TabList from '@/components/tab/TabList.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { useGraphHierarchy } from '@/composables/graph/useGraphHierarchy'
-import { app } from '@/scripts/app'
-import {
-  getActiveGraphNodeIds,
-  getExecutionIdByNode
-} from '@/utils/graphTraversalUtil'
 import { SubgraphNode } from '@/lib/litegraph/src/litegraph'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { useMissingMediaStore } from '@/platform/missingMedia/missingMediaStore'
+import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
+import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@/platform/telemetry'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
-import { useMissingMediaStore } from '@/platform/missingMedia/missingMediaStore'
+import { app } from '@/scripts/app'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
-import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 import type { RightSidePanelTab } from '@/stores/workspace/rightSidePanelStore'
+import {
+  getActiveGraphNodeIds,
+  getExecutionIdByNode
+} from '@/utils/graphTraversalUtil'
 import { resolveNodeDisplayName } from '@/utils/nodeTitleUtil'
-import { cn } from '@comfyorg/tailwind-utils'
 
+import TabErrors from './errors/TabErrors.vue'
+import { useHasBlockingError } from './errors/useHasBlockingError'
 import TabInfo from './info/TabInfo.vue'
 import TabGlobalParameters from './parameters/TabGlobalParameters.vue'
 import TabNodes from './parameters/TabNodes.vue'
@@ -41,8 +43,6 @@ import {
   useFlatAndCategorizeSelectedItems
 } from './shared'
 import SubgraphEditor from './subgraph/SubgraphEditor.vue'
-import TabErrors from './errors/TabErrors.vue'
-import { useHasBlockingError } from './errors/useHasBlockingError'
 
 const canvasStore = useCanvasStore()
 const workflowStore = useWorkflowStore()

@@ -8,6 +8,7 @@ import { ControlsManager } from './ControlsManager'
 import { EventManager } from './EventManager'
 import { GizmoManager } from './GizmoManager'
 import { HDRIManager } from './HDRIManager'
+import type { Load3DOptions } from './interfaces'
 import { LightingManager } from './LightingManager'
 import Load3d from './Load3d'
 import type { Load3dDeps } from './Load3d'
@@ -17,7 +18,6 @@ import { RecordingManager } from './RecordingManager'
 import { SceneManager } from './SceneManager'
 import { SceneModelManager } from './SceneModelManager'
 import { ViewHelperManager } from './ViewHelperManager'
-import type { Load3DOptions } from './interfaces'
 
 function buildLoad3dDeps(container: HTMLElement): Load3dDeps {
   const view = new RendererView(container)

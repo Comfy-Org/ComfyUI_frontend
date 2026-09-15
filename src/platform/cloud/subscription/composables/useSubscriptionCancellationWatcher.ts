@@ -1,6 +1,6 @@
+import { defaultWindow, useEventListener, useTimeoutFn } from '@vueuse/core'
 import { onScopeDispose, ref } from 'vue'
 import type { ComputedRef, Ref } from 'vue'
-import { defaultWindow, useEventListener, useTimeoutFn } from '@vueuse/core'
 
 import type { TelemetryDispatcher } from '@/platform/telemetry/types'
 import type { BillingStatusResponse } from '@/platform/workspace/api/workspaceApi'

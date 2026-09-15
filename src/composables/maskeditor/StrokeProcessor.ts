@@ -1,4 +1,5 @@
 import type { Point } from '@/extensions/core/maskeditor/types'
+
 import { catmullRomSpline, resampleSegment } from './splineUtils'
 
 export class StrokeProcessor {

@@ -73,6 +73,7 @@
 </template>
 
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
 import {
   SelectContent,
   SelectItem,
@@ -99,7 +100,6 @@ import type { SelectOption } from '@/components/ui/select/types'
 import { useAttrsClass } from '@/composables/useAttrsClass'
 import { useModalLiftedZIndex } from '@/composables/useModalLiftedZIndex'
 import { usePopoverSizing } from '@/composables/usePopoverSizing'
-import { cn } from '@comfyorg/tailwind-utils'
 
 defineOptions({
   inheritAttrs: false

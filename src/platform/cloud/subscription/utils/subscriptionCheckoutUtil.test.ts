@@ -1,7 +1,8 @@
-import { useAuthStore } from '@/stores/authStore'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY } from '@/platform/cloud/subscription/utils/subscriptionCheckoutTracker'
+import { useAuthStore } from '@/stores/authStore'
+
 import { performSubscriptionCheckout } from './subscriptionCheckoutUtil'
 
 const {

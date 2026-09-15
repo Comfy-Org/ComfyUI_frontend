@@ -1,7 +1,7 @@
-import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { defineComponent } from 'vue'
+import { render, screen } from '@testing-library/vue'
 import { describe, expect, it, vi } from 'vitest'
+import { defineComponent } from 'vue'
 
 import type { JobListItem } from '@/composables/queue/useJobList'
 

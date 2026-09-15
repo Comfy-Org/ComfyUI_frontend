@@ -1,5 +1,5 @@
-import * as THREE from 'three'
 import { fromAny } from '@total-typescript/shoehorn'
+import * as THREE from 'three'
 import type { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 

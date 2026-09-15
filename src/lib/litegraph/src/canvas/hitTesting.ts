@@ -1,7 +1,7 @@
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 
-import type { LGraph } from '../LGraph'
 import type { LinkSegment } from '../interfaces'
+import type { LGraph } from '../LGraph'
 import type { LGraphCanvas } from '../LGraphCanvas'
 import { Reroute } from '../Reroute'
 

@@ -1,5 +1,4 @@
 import type { Ref } from 'vue'
-
 import { computed } from 'vue'
 
 import { useAppMode } from '@/composables/useAppMode'

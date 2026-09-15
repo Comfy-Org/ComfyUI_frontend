@@ -180,17 +180,17 @@ import {
 } from '@/utils/formatUtil'
 
 import { getAssetType } from '../composables/media/assetMappers'
-import { resolvePreviewUrl } from '../utils/assetPreviewUtil'
-import { getAssetUrl } from '../utils/assetUrlUtil'
 import { useMediaAssetActions } from '../composables/useMediaAssetActions'
 import type { AssetItem } from '../schemas/assetSchema'
+import type { MediaKind } from '../schemas/mediaAssetSchema'
+import { MediaAssetKey, MIME_ASSET_INFO } from '../schemas/mediaAssetSchema'
 import {
   getAssetDisplayName,
   getAssetUrlFilename,
   resolveDisplayImageDimensions
 } from '../utils/assetMetadataUtils'
-import type { MediaKind } from '../schemas/mediaAssetSchema'
-import { MediaAssetKey, MIME_ASSET_INFO } from '../schemas/mediaAssetSchema'
+import { resolvePreviewUrl } from '../utils/assetPreviewUtil'
+import { getAssetUrl } from '../utils/assetUrlUtil'
 import MediaTitle from './MediaTitle.vue'
 
 type PreviewKind = ReturnType<typeof getMediaTypeFromFilename>

@@ -1,9 +1,8 @@
-import { expect } from '@playwright/test'
-
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { mockPaidTemplate } from '@e2e/fixtures/helpers/TemplateHelper'
 import { TestIds } from '@e2e/fixtures/selectors'
 import { assetPath } from '@e2e/fixtures/utils/paths'
+import { expect } from '@playwright/test'
 
 const PAID_TEMPLATE = 'paid-template'
 const PARTNER_WORKFLOW = 'browser_tests/assets/partner_api_node.json'

@@ -1,5 +1,5 @@
-import type { SlotTypeDefaultNodeOpts } from '@/lib/litegraph/src/LiteGraphGlobal'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
+import type { SlotTypeDefaultNodeOpts } from '@/lib/litegraph/src/LiteGraphGlobal'
 import type { ComfyExtension } from '@/types/comfy'
 
 import { app } from '../../scripts/app'

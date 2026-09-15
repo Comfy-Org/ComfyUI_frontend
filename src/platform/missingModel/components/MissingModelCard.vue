@@ -87,13 +87,14 @@
 <script setup lang="ts">
 import { computed, ref, useId, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import type { MissingModelGroup } from '@/platform/missingModel/types'
+
+import Button from '@/components/ui/button/Button.vue'
 import { isCloud } from '@/platform/distribution/types'
 import MissingModelRow from '@/platform/missingModel/components/MissingModelRow.vue'
-import Button from '@/components/ui/button/Button.vue'
 import { useMissingModelDownload } from '@/platform/missingModel/composables/useMissingModelDownload'
 import { isTrustedHuggingFaceUrl } from '@/platform/missingModel/missingModelDownload'
 import { getDownloadableModels } from '@/platform/missingModel/missingModelViewUtils'
+import type { MissingModelGroup } from '@/platform/missingModel/types'
 import { formatSize } from '@/utils/formatUtil'
 
 interface MissingModelRowEntry {

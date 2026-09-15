@@ -1,12 +1,6 @@
 import { remove } from 'es-toolkit'
-import { transferLinkPresentation } from '@/core/graph/transferLinkPresentation'
-import { useLinkPresentationStore } from '@/stores/linkPresentationStore'
-import { graphScopeOf } from '@/types/graphScopeId'
 
-import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import { LLink, slotFloatingLinks } from '@/lib/litegraph/src/LLink'
-import { inputLinkId, outputLinks } from '@/lib/litegraph/src/node/slotLinks'
-import type { Reroute } from '@/lib/litegraph/src/Reroute'
+import { transferLinkPresentation } from '@/core/graph/transferLinkPresentation'
 import {
   SUBGRAPH_INPUT_ID,
   SUBGRAPH_OUTPUT_ID
@@ -22,6 +16,10 @@ import type {
   LinkSegment,
   Point
 } from '@/lib/litegraph/src/interfaces'
+import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import { LLink, slotFloatingLinks } from '@/lib/litegraph/src/LLink'
+import { inputLinkId, outputLinks } from '@/lib/litegraph/src/node/slotLinks'
+import type { Reroute } from '@/lib/litegraph/src/Reroute'
 import { EmptySubgraphInput } from '@/lib/litegraph/src/subgraph/EmptySubgraphInput'
 import { EmptySubgraphOutput } from '@/lib/litegraph/src/subgraph/EmptySubgraphOutput'
 import { Subgraph } from '@/lib/litegraph/src/subgraph/Subgraph'
@@ -32,6 +30,8 @@ import { SubgraphOutputNode } from '@/lib/litegraph/src/subgraph/SubgraphOutputN
 import type { CanvasPointerEvent } from '@/lib/litegraph/src/types/events'
 import { LinkDirection } from '@/lib/litegraph/src/types/globalEnums'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+import { useLinkPresentationStore } from '@/stores/linkPresentationStore'
+import { graphScopeOf } from '@/types/graphScopeId'
 
 import { FloatingRenderLink } from './FloatingRenderLink'
 import { MovingInputLink } from './MovingInputLink'

@@ -1,7 +1,7 @@
-import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { createI18n } from 'vue-i18n'
+import { render, screen } from '@testing-library/vue'
 import { describe, expect, it, vi } from 'vitest'
+import { createI18n } from 'vue-i18n'
 
 import CreditTopUpOption from '@/components/dialog/content/credit/CreditTopUpOption.vue'
 

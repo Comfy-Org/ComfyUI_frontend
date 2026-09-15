@@ -5,9 +5,8 @@
 </template>
 
 <script setup lang="ts">
-import type { HTMLAttributes } from 'vue'
-
 import { cn } from '@comfyorg/tailwind-utils'
+import type { HTMLAttributes } from 'vue'
 
 const { class: className } = defineProps<{ class?: HTMLAttributes['class'] }>()
 </script>

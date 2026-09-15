@@ -1,6 +1,5 @@
-import { z } from 'zod'
-
 import type { components } from '@comfyorg/registry-types'
+import { z } from 'zod'
 
 export const DEFAULT_REGISTRY_BASE_URL = 'https://api.comfy.org'
 const DEFAULT_TIMEOUT_MS = 5_000

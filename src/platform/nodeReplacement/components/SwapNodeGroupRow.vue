@@ -159,15 +159,15 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
 import { cn } from '@comfyorg/tailwind-utils'
+import { computed, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import { selectionEmphasisClass } from '@/components/rightSidePanel/errors/selectionEmphasis'
-import { useI18n } from 'vue-i18n'
-import Button from '@/components/ui/button/Button.vue'
-import TransitionCollapse from '@/components/rightSidePanel/layout/TransitionCollapse.vue'
-import type { MissingNodeType } from '@/types/comfy'
 import type { SwapNodeGroup } from '@/components/rightSidePanel/errors/useErrorGroups'
+import TransitionCollapse from '@/components/rightSidePanel/layout/TransitionCollapse.vue'
+import Button from '@/components/ui/button/Button.vue'
+import type { MissingNodeType } from '@/types/comfy'
 
 const { group, highlighted } = defineProps<{
   group: SwapNodeGroup

@@ -1,7 +1,6 @@
-import { expect, mergeTests } from '@playwright/test'
-
 import { assetApiFixture } from '@e2e/fixtures/assetApiFixture'
 import { comfyPageFixture } from '@e2e/fixtures/ComfyPage'
+import { expect, mergeTests } from '@playwright/test'
 
 const test = mergeTests(comfyPageFixture, assetApiFixture)
 

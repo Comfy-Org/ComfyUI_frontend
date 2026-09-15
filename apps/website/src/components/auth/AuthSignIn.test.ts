@@ -1,12 +1,11 @@
-import { render, screen, waitFor } from '@testing-library/vue'
-import userEvent from '@testing-library/user-event'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
-
 import { AUTH_ERROR_MESSAGES } from '@comfyorg/account/firebaseAuthError'
 import type {
   TurnstileApi,
   TurnstileRenderOptions
 } from '@comfyorg/account/turnstileScript'
+import userEvent from '@testing-library/user-event'
+import { render, screen, waitFor } from '@testing-library/vue'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { removeAllToasts, useAuthToasts } from '../../config/auth-toast-state'
 import AuthSignIn from './AuthSignIn.vue'

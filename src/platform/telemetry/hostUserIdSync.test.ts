@@ -6,6 +6,7 @@ import {
 } from 'firebase/auth'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
+
 import { useAuthStore } from '@/stores/authStore'
 
 vi.mock(import('firebase/auth'), { spy: true })

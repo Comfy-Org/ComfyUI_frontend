@@ -26,11 +26,9 @@
 </template>
 
 <script setup lang="ts" generic="T extends string = string">
-import type { HTMLAttributes } from 'vue'
-
-import { computed, inject } from 'vue'
-
 import { cn } from '@comfyorg/tailwind-utils'
+import type { HTMLAttributes } from 'vue'
+import { computed, inject } from 'vue'
 
 import { TAB_LIST_INJECTION_KEY } from './tabKeys'
 

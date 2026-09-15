@@ -1,5 +1,5 @@
-import { getActivePinia } from 'pinia'
 import { fireEvent, render, screen } from '@testing-library/vue'
+import { getActivePinia } from 'pinia'
 import Badge from 'primevue/badge'
 import PrimeVue from 'primevue/config'
 import InputText from 'primevue/inputtext'

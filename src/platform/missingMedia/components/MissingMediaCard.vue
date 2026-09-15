@@ -59,12 +59,12 @@
 </template>
 
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { cn } from '@comfyorg/tailwind-utils'
 
-import Button from '@/components/ui/button/Button.vue'
 import { selectionEmphasisClass } from '@/components/rightSidePanel/errors/selectionEmphasis'
+import Button from '@/components/ui/button/Button.vue'
 import { resolveMissingMediaItemLabel } from '@/platform/errorCatalog/errorMessageResolver'
 import { getMissingMediaReferences } from '@/platform/missingMedia/missingMediaGrouping'
 import type { MissingMediaGroup } from '@/platform/missingMedia/types'

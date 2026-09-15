@@ -135,9 +135,10 @@
 </template>
 
 <script setup lang="ts">
-import { useProgressBarBackground } from '@/composables/useProgressBarBackground'
-import Button from '@/components/ui/button/Button.vue'
 import { cn } from '@comfyorg/tailwind-utils'
+
+import Button from '@/components/ui/button/Button.vue'
+import { useProgressBarBackground } from '@/composables/useProgressBarBackground'
 
 import VideoPlayOverlay from './VideoPlayOverlay.vue'
 

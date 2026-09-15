@@ -1,5 +1,4 @@
 import { fromPartial } from '@total-typescript/shoehorn'
-
 import * as fc from 'fast-check'
 import { describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
