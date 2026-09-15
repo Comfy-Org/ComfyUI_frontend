@@ -2,7 +2,6 @@ import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
 import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { computed } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import BuilderFooterToolbar from '@/components/builder/BuilderFooterToolbar.vue'
@@ -55,10 +54,10 @@ const i18n = createI18n({
 
 describe('BuilderFooterToolbar', () => {
   beforeEach(() => {
-    const appMode = useAppMode()
-    appMode.mode = computed(() => 'builder:inputs')
-    appMode.isBuilderMode = computed(() => true)
-    vi.mocked(useAppMode).mockReturnValue(appMode)
+    vi.spyOn(useAppMode().mode, 'value', 'get').mockReturnValue(
+      'builder:inputs'
+    )
+    vi.spyOn(useAppMode().isBuilderMode, 'value', 'get').mockReturnValue(true)
     vi.mocked(useAppModeStore().exitBuilder).mockImplementation(() => {})
     useAppModeStore().selectedOutputs = [toNodeId('1')]
     useWorkflowStore().activeWorkflow = fromPartial({
@@ -85,9 +84,6 @@ describe('BuilderFooterToolbar', () => {
   }
 
   it('disables back on the first step', () => {
-    vi.spyOn(useAppMode().mode, 'value', 'get').mockReturnValue(
-      'builder:inputs'
-    )
     renderComponent()
     expect(screen.getByRole('button', { name: /back/i })).toBeDisabled()
   })
@@ -110,9 +106,6 @@ describe('BuilderFooterToolbar', () => {
   })
 
   it('enables next on inputs step', () => {
-    vi.spyOn(useAppMode().mode, 'value', 'get').mockReturnValue(
-      'builder:inputs'
-    )
     renderComponent()
     expect(screen.getByRole('button', { name: /next/i })).toBeEnabled()
   })
@@ -127,9 +120,6 @@ describe('BuilderFooterToolbar', () => {
   })
 
   it('calls setMode on next click from inputs step', async () => {
-    vi.spyOn(useAppMode().mode, 'value', 'get').mockReturnValue(
-      'builder:inputs'
-    )
     const { user } = renderComponent()
     await user.click(screen.getByRole('button', { name: /next/i }))
     expect(useAppMode().setMode).toHaveBeenCalledWith('builder:outputs')

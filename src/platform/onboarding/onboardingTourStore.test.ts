@@ -2,7 +2,7 @@ import { useAppModeStore } from '@/stores/appModeStore'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import type { DetachedWindowAPI } from 'happy-dom'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { computed, nextTick, ref } from 'vue'
+import { nextTick, ref } from 'vue'
 import type { Ref } from 'vue'
 
 import { useAppMode } from '@/composables/useAppMode'
@@ -71,14 +71,17 @@ function shownCount(coachId?: CoachId) {
 beforeEach(() => {
   appMode = ref<AppMode>('graph')
   const context = useAppMode()
-  context.mode = computed(() => appMode.value)
-  context.isAppMode = computed(() => appMode.value === 'app')
-  context.isBuilderMode = computed(() => appMode.value.startsWith('builder:'))
-  context.isSelectMode = computed(
+  vi.spyOn(context.mode, 'value', 'get').mockImplementation(() => appMode.value)
+  vi.spyOn(context.isAppMode, 'value', 'get').mockImplementation(
+    () => appMode.value === 'app'
+  )
+  vi.spyOn(context.isBuilderMode, 'value', 'get').mockImplementation(() =>
+    appMode.value.startsWith('builder:')
+  )
+  vi.spyOn(context.isSelectMode, 'value', 'get').mockImplementation(
     () =>
       appMode.value === 'builder:inputs' || appMode.value === 'builder:outputs'
   )
-  vi.mocked(useAppMode).mockReturnValue(context)
   useSettingStore().settingValues[TOUR_SEEN_SETTING] = []
   vi.mocked(useSettingStore().set).mockImplementation(
     (key: string, value: unknown) => {
@@ -104,7 +107,6 @@ describe('onboardingTourStore', () => {
     appendedTargets.forEach((el) => el.remove())
     appendedTargets.length = 0
     setViewport({ width: 1024, height: 768 })
-    appMode.value = 'graph'
     telemetry.track.mockClear()
   })
 

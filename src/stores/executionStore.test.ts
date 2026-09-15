@@ -2320,7 +2320,6 @@ describe('useExecutionStore - WebSocket event handlers', () => {
 
   beforeEach(() => {
     apiEventHandlers.clear()
-    vi.mocked(useAppMode).mockReturnValue(useAppMode())
     store = useExecutionStore()
     store.bindExecutionEvents()
   })

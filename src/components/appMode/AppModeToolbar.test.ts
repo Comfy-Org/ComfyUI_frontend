@@ -60,9 +60,9 @@ describe('AppModeToolbar', () => {
   })
 
   it('hides the build button when app building is disabled', () => {
-    const appMode = useAppMode()
-    appMode.enableAppBuilder.value = false
-    vi.mocked(useAppMode).mockReturnValue(appMode)
+    vi.spyOn(useAppMode().enableAppBuilder, 'value', 'get').mockReturnValue(
+      false
+    )
     renderToolbar()
 
     expect(

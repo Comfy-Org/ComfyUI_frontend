@@ -3,7 +3,7 @@ import { computed, ref } from 'vue'
 
 import type { useAppMode as realUseAppMode } from '../useAppMode'
 
-export const useAppMode = vi.fn<typeof realUseAppMode>(() => ({
+const appMode: ReturnType<typeof realUseAppMode> = {
   mode: computed(() => 'graph'),
   enableAppBuilder: ref(true),
   isBuilderMode: computed(() => false),
@@ -14,4 +14,6 @@ export const useAppMode = vi.fn<typeof realUseAppMode>(() => ({
   isAppMode: computed(() => false),
   isGraphMode: computed(() => true),
   setMode: vi.fn()
-}))
+}
+
+export const useAppMode = vi.fn(() => appMode)
