@@ -5,6 +5,7 @@
   // scripts / CI / tool CLIs / Storybook), not imported from the app graph.
   "entry": [
     "src/main.ts",
+    "src/platform/telemetry/__mocks__/index.ts",
     "index.html",
     "scripts/**/*.{js,ts}",
     "apps/website/src/scripts/**/*.ts",
