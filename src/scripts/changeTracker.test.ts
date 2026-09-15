@@ -705,6 +705,9 @@ describe('ChangeTracker', () => {
         tracker.captureCanvasState()
         mockCanvasState(lateState)
         ChangeTracker.canvasTracker = createTracker()
+        useWorkflowStore().activeWorkflow = fromPartial({
+          changeTracker: tracker
+        })
         await vi.advanceTimersByTimeAsync(50)
 
         expect(tracker.activeState).toEqual(changed)
