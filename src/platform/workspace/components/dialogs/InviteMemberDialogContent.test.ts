@@ -208,7 +208,9 @@ describe('InviteMemberDialogContent', () => {
     await user.click(inviteButton())
 
     expect(
-      await screen.findByText('workspacePanel.inviteLinks.sentLead')
+      await screen.findByText(
+        'workspacePanel.inviteMemberDialog.invitedMessage'
+      )
     ).toBeInTheDocument()
     expect(useTeamWorkspaceStore().createInvite).toHaveBeenCalledTimes(2)
     expect(useTeamWorkspaceStore().createInvite).toHaveBeenCalledWith('a@b.com')
@@ -286,7 +288,7 @@ describe('InviteMemberDialogContent', () => {
     ) {
       await user.type(emailInput(), emails)
       await user.click(inviteButton())
-      await screen.findByText('workspacePanel.inviteLinks.sentLead')
+      await screen.findByText(/inviteLinks\.sentLead|invitedMessage/)
     }
 
     function mockInviteListAfterSend(invites: WorkspacePendingInvite[]) {

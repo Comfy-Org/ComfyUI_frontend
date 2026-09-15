@@ -158,7 +158,7 @@ const {
 }>()
 
 const emit = defineEmits<{
-  submitted: [emails: string[]]
+  submitted: [emails: string[], invites: WorkspacePendingInvite[]]
   cancel: []
 }>()
 
@@ -170,6 +170,7 @@ const { fetchStatus } = useBillingContext()
 
 const emails = ref<string[]>([])
 const invitedEmails = ref<string[]>([])
+const invitedInvites = ref<WorkspacePendingInvite[]>([])
 const loading = ref(false)
 
 const { state: pendingInvites, execute: refreshPendingInvites } = useAsyncState<
@@ -258,8 +259,12 @@ async function onSubmit() {
       (_, index) => results[index].status === 'fulfilled'
     )
 
+    const createdInvites = results.flatMap((result) =>
+      result.status === 'fulfilled' ? [result.value] : []
+    )
     if (successfulEmails.length > 0) {
       invitedEmails.value.push(...successfulEmails)
+      invitedInvites.value.push(...createdInvites)
       telemetry?.trackWorkspaceInviteSent({
         source,
         count: successfulEmails.length
@@ -268,7 +273,7 @@ async function onSubmit() {
     }
 
     if (failedEmails.length === 0) {
-      emit('submitted', [...invitedEmails.value])
+      emit('submitted', [...invitedEmails.value], [...invitedInvites.value])
       return
     }
 

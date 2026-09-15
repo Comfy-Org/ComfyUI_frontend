@@ -10,6 +10,9 @@ import { PRESERVED_QUERY_NAMESPACES } from '@/platform/navigation/preservedQuery
  */
 
 /** Builds the user-facing invite URL for a pending invite's token. */
+// Cloud-only assumption: every surface that renders invite links is gated on
+// isCloud, and Cloud builds serve from base '/'. Revisit if these surfaces
+// ever ship where getBasePath() resolves a reverse-proxy prefix.
 export function buildInviteLink(token: string): string {
   const url = new URL(window.location.origin)
   url.searchParams.set(PRESERVED_QUERY_NAMESPACES.INVITE, token)
@@ -34,8 +37,20 @@ export async function copyTextSilently(text: string): Promise<boolean> {
   try {
     await navigator.clipboard.writeText(text)
     return true
-  } catch (error) {
-    console.error('Failed to copy invite link to clipboard', error)
-    return false
+  } catch {
+    try {
+      const el = document.createElement('textarea')
+      el.value = text
+      el.style.position = 'fixed'
+      el.style.opacity = '0'
+      document.body.appendChild(el)
+      el.select()
+      const copied = document.execCommand('copy')
+      el.remove()
+      return copied
+    } catch (error) {
+      console.error('Failed to copy invite link to clipboard', error)
+      return false
+    }
   }
 }

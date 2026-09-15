@@ -64,6 +64,7 @@
               }
             "
           >
+            <!-- fallow-ignore-next-line css-token-drift -->
             <i class="icon-[lucide--mail-plus] size-4" />
             <span>{{ $t('workspacePanel.members.actions.resendInvite') }}</span>
           </Button>
@@ -78,6 +79,7 @@
               }
             "
           >
+            <!-- fallow-ignore-next-line css-token-drift -->
             <i class="icon-[lucide--mail-x] size-4" />
             <span>{{ $t('workspacePanel.members.actions.cancelInvite') }}</span>
           </Button>

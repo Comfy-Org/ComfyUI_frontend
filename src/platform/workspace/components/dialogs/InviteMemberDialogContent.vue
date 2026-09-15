@@ -66,50 +66,17 @@
     <template v-else>
       <div class="flex flex-col gap-3 p-4">
         <p class="m-0 text-sm/5 text-muted-foreground">
-          {{ $t('workspacePanel.inviteLinks.sentLead') }}
+          {{
+            copyableRows.length > 0
+              ? $t('workspacePanel.inviteLinks.sentLead')
+              : $t(
+                  'workspacePanel.inviteMemberDialog.invitedMessage',
+                  { emails: invitedEmails.join(', ') },
+                  invitedEmails.length
+                )
+          }}
         </p>
-        <ul
-          class="m-0 flex max-h-56 list-none flex-col overflow-y-auto rounded-lg border border-border-default p-0"
-        >
-          <li
-            v-for="(row, index) in inviteRows"
-            :key="row.email"
-            :class="
-              cn(
-                'flex h-12 shrink-0 items-center justify-between gap-2 px-3',
-                index > 0 && 'border-t border-border-default'
-              )
-            "
-          >
-            <span class="min-w-0 truncate text-sm text-base-foreground">
-              {{ row.email }}
-            </span>
-            <Button
-              v-if="row.url"
-              v-tooltip="{
-                value: $t('workspacePanel.inviteLinks.copyLink'),
-                showDelay: 300
-              }"
-              variant="muted-textonly"
-              size="icon-lg"
-              class="shrink-0"
-              :aria-label="
-                copiedEmail === row.email
-                  ? $t('workspacePanel.inviteLinks.copied')
-                  : $t('workspacePanel.inviteLinks.copyLink')
-              "
-              @click="copyLink(row.email, row.url)"
-            >
-              <i
-                :class="
-                  copiedEmail === row.email
-                    ? 'icon-[lucide--check] size-4'
-                    : 'icon-[lucide--link] size-4'
-                "
-              />
-            </Button>
-          </li>
-        </ul>
+        <InviteLinkList :rows="inviteRows" />
       </div>
 
       <div class="flex items-center justify-end gap-4 p-4">
@@ -143,15 +110,15 @@ import { computed, ref } from 'vue'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import Button from '@/components/ui/button/Button.vue'
 import InviteMembersForm from '@/platform/workspace/components/InviteMembersForm.vue'
+import InviteLinkList from '@/platform/workspace/components/dialogs/InviteLinkList.vue'
+import type { WorkspacePendingInvite } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
-import { normalizeEmail } from '@/platform/workspace/utils/inviteEmails'
 import {
   buildInviteLink,
   copyTextSilently,
   formatInviteLinksForCopy
 } from '@/platform/workspace/utils/inviteLinks'
 import { useDialogStore } from '@/stores/dialogStore'
-import { cn } from '@comfyorg/tailwind-utils'
 
 interface InviteLinkRow {
   email: string
@@ -164,10 +131,10 @@ const { maxSeats, occupiedSeats } = useBillingContext()
 
 const step = ref<'form' | 'invited'>('form')
 const invitedEmails = ref<string[]>([])
-const inviteTokensByEmail = ref<ReadonlyMap<string, string>>(new Map())
+const createdInvites = ref<WorkspacePendingInvite[]>([])
+const inviteTokensById = ref<ReadonlyMap<string, string>>(new Map())
 const inviteForm = ref<InstanceType<typeof InviteMembersForm>>()
 
-const copiedEmail = refAutoReset<string | null>(null, 2000)
 const copiedAll = refAutoReset(false, 2000)
 
 const inviteFormMaxSeats = computed(() => maxSeats.value)
@@ -181,9 +148,12 @@ const canSubmit = computed(
 const loading = computed(() => inviteForm.value?.loading ?? false)
 
 const inviteRows = computed<InviteLinkRow[]>(() =>
-  invitedEmails.value.map((email) => {
-    const token = inviteTokensByEmail.value.get(normalizeEmail(email))
-    return { email, url: token ? buildInviteLink(token) : undefined }
+  createdInvites.value.map((invite) => {
+    const token = inviteTokensById.value.get(invite.id)
+    return {
+      email: invite.email,
+      url: token ? buildInviteLink(token) : undefined
+    }
   })
 )
 
@@ -202,8 +172,9 @@ function handleInvite() {
   void inviteForm.value?.submit()?.catch(console.error)
 }
 
-function onInvited(emails: string[]) {
+function onInvited(emails: string[], invites: WorkspacePendingInvite[]) {
   invitedEmails.value = emails
+  createdInvites.value = invites
   step.value = 'invited'
   void loadInviteTokens()
 }
@@ -214,21 +185,13 @@ function onInvited(emails: string[]) {
 async function loadInviteTokens() {
   try {
     const invites = await workspaceStore.fetchPendingInvites()
-    inviteTokensByEmail.value = new Map(
+    inviteTokensById.value = new Map(
       invites.flatMap((invite) =>
-        invite.token
-          ? [[normalizeEmail(invite.email), invite.token] as const]
-          : []
+        invite.token ? [[invite.id, invite.token] as const] : []
       )
     )
   } catch (error) {
     console.error('Failed to load invite links', error)
-  }
-}
-
-async function copyLink(email: string, url: string) {
-  if (await copyTextSilently(url)) {
-    copiedEmail.value = email
   }
 }
 
