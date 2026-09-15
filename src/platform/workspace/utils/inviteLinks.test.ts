@@ -89,6 +89,18 @@ describe('copyTextSilently', () => {
     expect(document.body.querySelectorAll('textarea')).toHaveLength(0)
   })
 
+  it('releases the scratch textarea when the legacy command throws', async () => {
+    // The unsupported path: without a `finally` the textarea stays in the
+    // body — invisible but focusable — and accumulates one per attempt.
+    stubClipboard(vi.fn().mockRejectedValue(new Error('denied')))
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+
+    await copyTextSilently('hello')
+    await copyTextSilently('hello again')
+
+    expect(document.body.querySelectorAll('textarea')).toHaveLength(0)
+  })
+
   it('reports failure without throwing when the Clipboard API is unavailable', async () => {
     // A non-secure context (plain HTTP on a LAN host) leaves
     // navigator.clipboard undefined, so reading writeText off it throws
