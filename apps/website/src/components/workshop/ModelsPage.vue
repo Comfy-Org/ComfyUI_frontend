@@ -15,10 +15,7 @@ const { slug } = defineProps<{
   slug?: string
 }>()
 
-const loadingLabel = t(
-  slug ? 'workshop.load.playground' : 'workshop.load.models',
-  'en'
-)
+const loadingLabel = t('workshop.load.pending', 'en')
 
 const Loading: FunctionalComponent = () =>
   h(WorkshopLoading, { label: loadingLabel, 'data-testid': 'models-loading' })
