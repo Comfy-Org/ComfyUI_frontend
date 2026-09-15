@@ -1,5 +1,7 @@
 import { render, screen, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
+// eslint-disable-next-line primevue-removal/no-imports
+import ToastService from 'primevue/toastservice'
 import { describe, expect, it, vi } from 'vitest'
 import { i18n } from '@/i18n'
 import type { TurnId } from '../../../schemas/agentApiSchema'
@@ -111,7 +113,7 @@ describe('AgentMessage thinking narration', () => {
     }
     render(AgentMessage, {
       props: { message },
-      global: { plugins: [i18n] }
+      global: { plugins: [i18n, ToastService] }
     })
 
     expect(
@@ -127,7 +129,7 @@ describe('AgentMessage thinking narration', () => {
     }
     render(AgentMessage, {
       props: { message },
-      global: { plugins: [i18n] }
+      global: { plugins: [i18n, ToastService] }
     })
 
     await userEvent.click(
@@ -174,7 +176,7 @@ describe('AgentMessage thinking narration', () => {
 
     const { rerender } = render(AgentMessage, {
       props: { message },
-      global: { plugins: [i18n] }
+      global: { plugins: [i18n, ToastService] }
     })
 
     expect(screen.getByRole('listitem')).toHaveTextContent(
@@ -236,7 +238,7 @@ describe('AgentMessage thinking narration', () => {
 
     const { rerender } = render(AgentMessage, {
       props: { message },
-      global: { plugins: [i18n] }
+      global: { plugins: [i18n, ToastService] }
     })
 
     expect(screen.getByText('Inspecting the graph')).toBeInTheDocument()
@@ -297,7 +299,7 @@ describe('AgentMessage thinking narration', () => {
 
     const { rerender } = render(AgentMessage, {
       props: { message },
-      global: { plugins: [i18n] }
+      global: { plugins: [i18n, ToastService] }
     })
 
     expect(screen.queryByText('Working...')).not.toBeInTheDocument()
@@ -375,7 +377,7 @@ describe('AgentMessage thinking narration', () => {
     ]
     render(AgentMessage, {
       props: { message },
-      global: { plugins: [i18n] }
+      global: { plugins: [i18n, ToastService] }
     })
 
     const summary = screen.getByRole('button', { name: /^worked/i })
@@ -428,7 +430,7 @@ describe('AgentMessage thinking narration', () => {
     ]
     render(AgentMessage, {
       props: { message },
-      global: { plugins: [i18n] }
+      global: { plugins: [i18n, ToastService] }
     })
 
     const summary = screen.getByRole('button', { name: /^worked/i })
@@ -551,7 +553,7 @@ describe('AgentMessage fallback content', () => {
 
     render(AgentMessage, {
       props: { message },
-      global: { plugins: [i18n] }
+      global: { plugins: [i18n, ToastService] }
     })
 
     expect(

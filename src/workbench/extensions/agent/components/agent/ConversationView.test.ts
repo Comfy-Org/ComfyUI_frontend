@@ -1,5 +1,7 @@
 import { fromPartial } from '@total-typescript/shoehorn'
 import { getActivePinia } from 'pinia'
+// eslint-disable-next-line primevue-removal/no-imports
+import ToastService from 'primevue/toastservice'
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { defineComponent, nextTick } from 'vue'
@@ -69,7 +71,9 @@ const Harness = defineComponent({
 
 function mountHarness() {
   const pinia = getActivePinia()!
-  const utils = render(Harness, { global: { plugins: [pinia, i18n] } })
+  const utils = render(Harness, {
+    global: { plugins: [pinia, i18n, ToastService] }
+  })
   return { store: useAgentConversationStore(), ...utils }
 }
 
@@ -179,7 +183,7 @@ describe('ConversationView', () => {
 
     render(ConversationView, {
       props: { entries: [assistant] },
-      global: { plugins: [i18n] }
+      global: { plugins: [i18n, ToastService] }
     })
 
     expect(
@@ -205,7 +209,7 @@ describe('ConversationView', () => {
 
     const { container } = render(ConversationView, {
       props: { entries: [assistant] },
-      global: { plugins: [i18n] }
+      global: { plugins: [i18n, ToastService] }
     })
 
     // eslint-disable-next-line testing-library/no-node-access -- scroll container has no queryable role; mask classes are the behavior under test
