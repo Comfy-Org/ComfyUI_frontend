@@ -255,8 +255,10 @@ function start(): void {
         void begin(attempt).catch((error: unknown) => {
           if (!attempt.live()) return
           console.error('Workshop auth initialization failed', error)
-          // Nothing half-installed survives, and the latch opens again so
-          // the next caller retries instead of waiting out the timeout.
+          // Nothing half-installed survives: abandon invalidates a restore
+          // captured before begin threw, and the latch reopens so the next
+          // caller retries instead of waiting out the timeout.
+          operation.abandon()
           stopListeners()
           lifecycle.stop()
         })
