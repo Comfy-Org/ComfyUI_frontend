@@ -8,7 +8,8 @@
     "src/main.ts",
     "src/**/__mocks__/**/*.ts",
     "index.html",
-    "scripts/**/*.{js,ts}",
+    "scripts/**/*.{js,mjs,ts}",
+    "examples/node-api/**/web/*.js",
     "apps/website/src/scripts/**/*.ts",
     // Astro injects these routes when WORKSHOP_IN_BUILD is enabled.
     "apps/website/src/routes/models/*.{astro,ts}",
@@ -45,7 +46,8 @@
     // Static stylesheet referenced from index.html, resolved by the bundler.
     "./materialdesignicons.min.css",
     // Generated sibling JS for the desktop-bridge type stubs.
-    "./comfyDesktopBridge.js"
+    "./comfyDesktopBridge.js",
+    "/comfy/api/v2.js"
   ],
 
   "ignoreExports": [
