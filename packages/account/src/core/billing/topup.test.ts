@@ -454,7 +454,7 @@ describe('createTopupCommand', () => {
     })
   })
 
-  it('sends one fresh idempotency key per attempt in the body and on the request, never replaying a POST', async () => {
+  it('sends one fresh idempotency key per attempt in the body and on the request, so a 401 replay is deduplicated', async () => {
     const { topup, answer, calls } = harness()
     answer('POST', TOPUP_ROUTE, httpStatus(503), httpOk(topupResponse()))
 
