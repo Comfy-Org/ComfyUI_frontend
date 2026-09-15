@@ -65,4 +65,17 @@ describe('copyTextSilently', () => {
 
     await expect(copyTextSilently('hello')).resolves.toBe(false)
   })
+
+  it('reports failure without throwing when the Clipboard API is unavailable', async () => {
+    // A non-secure context (plain HTTP on a LAN host) leaves
+    // navigator.clipboard undefined, so reading writeText off it throws
+    // synchronously rather than rejecting.
+    Object.defineProperty(navigator, 'clipboard', {
+      value: undefined,
+      configurable: true
+    })
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+
+    await expect(copyTextSilently('hello')).resolves.toBe(false)
+  })
 })
