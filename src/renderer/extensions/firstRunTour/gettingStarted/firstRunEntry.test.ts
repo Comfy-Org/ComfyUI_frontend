@@ -86,6 +86,9 @@ const { useFirstRunEntry } = await import('./firstRunEntry')
 type FirstRunEntry = ReturnType<typeof useFirstRunEntry>
 
 beforeEach(() => {
+  // Several replay tests deliberately leave a request armed, and it outlives a
+  // test the way it outlives a reload.
+  sessionStorage.clear()
   vi.mocked(VueUse.useBreakpoints).mockReturnValue(
     fromAny<ReturnType<typeof VueUse.useBreakpoints>, unknown>({
       greaterOrEqual: () => computed(() => mocks.isDesktopWidth)
@@ -316,7 +319,6 @@ describe('useFirstRunEntry', () => {
 
   describe('a requested replay', () => {
     beforeEach(() => {
-      sessionStorage.clear()
       // The account this feature exists for: onboarding already spent, and
       // local work the new-user checks read and must not have cleared.
       mocks.isNewUser = false

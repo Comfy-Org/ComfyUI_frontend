@@ -111,7 +111,6 @@ describe('getSurveyCompletedStatus', () => {
 describe('onboarding replay', () => {
   beforeEach(() => {
     sessionStorage.clear()
-    fetchApi.mockReset()
   })
 
   test('a requested replay re-opens the gate without reading the stored answers', async () => {
@@ -142,25 +141,18 @@ describe('onboarding replay', () => {
     expect(isSurveyReplayRequested()).toBe(false)
   })
 
-  test('submitting a replay writes nothing, leaving the stored answers as they were', async () => {
-    requestOnboardingReplay()
-
-    await submitSurvey({ q1: 'replayed' })
-
-    expect(fetchApi).not.toHaveBeenCalled()
-  })
-
-  test('the stored answers survive a replayed pass end to end', async () => {
-    const stored = { q1: 'original', q2: 'kept' }
-    requestOnboardingReplay()
-
-    await expect(getSurveyCompletedStatus()).resolves.toBe(false)
-    await submitSurvey({ q1: 'replayed', q2: 'replaced' })
-
+  test('submitting a replay stores nothing, leaving the stored answers as they were', async () => {
     fetchApi.mockResolvedValueOnce(
-      mockResponse({ ok: true, status: 200, body: { value: stored } })
+      mockResponse({
+        ok: true,
+        status: 200,
+        body: { value: { q1: 'original' } }
+      })
     )
-    await expect(getSurveyCompletedStatus()).resolves.toBe(true)
+    requestOnboardingReplay()
+
+    await expect(submitSurvey({ q1: 'replayed' })).resolves.toBe(false)
+
     expect(
       fetchApi.mock.calls.every(
         ([, init]) => (init?.method ?? 'GET') === 'GET'
@@ -169,10 +161,42 @@ describe('onboarding replay', () => {
     ).toBe(true)
   })
 
+  test('the stored answers survive a replayed pass end to end', async () => {
+    const stored = { q1: 'original', q2: 'kept' }
+    requestOnboardingReplay()
+
+    await expect(getSurveyCompletedStatus()).resolves.toBe(false)
+
+    fetchApi.mockResolvedValueOnce(
+      mockResponse({ ok: true, status: 200, body: { value: stored } })
+    )
+    await submitSurvey({ q1: 'replayed', q2: 'replaced' })
+
+    fetchApi.mockResolvedValueOnce(
+      mockResponse({ ok: true, status: 200, body: { value: stored } })
+    )
+    await expect(getSurveyCompletedStatus()).resolves.toBe(true)
+  })
+
+  test('a replay with nothing stored keeps the pass, which is the account real first one', async () => {
+    fetchApi.mockResolvedValueOnce(mockResponse({ ok: false, status: 404 }))
+    fetchApi.mockResolvedValueOnce(mockResponse({ ok: true, status: 200 }))
+    requestOnboardingReplay()
+
+    await expect(submitSurvey({ q1: 'a' })).resolves.toBe(true)
+
+    expect(fetchApi).toHaveBeenCalledWith(
+      '/settings',
+      expect.objectContaining({
+        body: JSON.stringify({ onboarding_survey: { q1: 'a' } })
+      })
+    )
+  })
+
   test('submitting without a replay stores the answers as usual', async () => {
     fetchApi.mockResolvedValueOnce(mockResponse({ ok: true, status: 200 }))
 
-    await submitSurvey({ q1: 'a' })
+    await expect(submitSurvey({ q1: 'a' })).resolves.toBe(true)
 
     expect(fetchApi).toHaveBeenCalledWith(
       '/settings',

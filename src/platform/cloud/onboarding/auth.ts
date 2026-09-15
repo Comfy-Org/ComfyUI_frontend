@@ -84,6 +84,10 @@ export async function getSurveyCompletedStatus(): Promise<boolean> {
   // which `/api/settings` could only overwrite, never restore.
   if (isSurveyReplayRequested()) return false
 
+  return hasStoredSurvey()
+}
+
+async function hasStoredSurvey(): Promise<boolean> {
   try {
     const response = await api.fetchApi(`/settings/${ONBOARDING_SURVEY_KEY}`, {
       method: 'GET',
@@ -128,15 +132,18 @@ export async function getSurveyCompletedStatus(): Promise<boolean> {
   }
 }
 
+/** Whether the answers were stored, which a replayed pass declines to do. */
 export async function submitSurvey(
   survey: Record<string, unknown>
-): Promise<void> {
+): Promise<boolean> {
   // A replay exercises the flow rather than re-profiling the user, so it keeps
   // the answers already on the account: submitting is the only way out of the
-  // survey, and this POST would replace them wholesale.
+  // survey, and this POST would replace them wholesale. With nothing stored to
+  // preserve there is nothing to decline, and dropping the write would lose
+  // the pass and bounce the user back to the form.
   if (isSurveyReplayRequested()) {
     consumeSurveyReplayRequest()
-    return
+    if (await hasStoredSurvey()) return false
   }
 
   try {
@@ -175,16 +182,14 @@ export async function submitSurvey(
       throw error
     }
 
-    // A replay is spent by the submission that answers it; leaving it pending
-    // would send the user straight back to the survey they just finished.
-    consumeSurveyReplayRequest()
-
     // Log successful survey submission
     addBreadcrumb({
       category: 'auth',
       message: 'Survey submitted successfully',
       level: 'info'
     })
+
+    return true
   } catch (error) {
     // Only capture network errors (not HTTP errors we already captured)
     if (!isHttpError(error, 'Failed to submit survey:')) {

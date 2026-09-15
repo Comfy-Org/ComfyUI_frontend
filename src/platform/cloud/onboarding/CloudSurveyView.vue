@@ -23,6 +23,7 @@ import {
   getSurveyCompletedStatus,
   submitSurvey
 } from '@/platform/cloud/onboarding/auth'
+import { isSurveyReplayRequested } from '@/platform/onboarding/onboardingReplay'
 import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
 import { useTelemetry } from '@/platform/telemetry'
 
@@ -50,7 +51,9 @@ onMounted(async () => {
       await router.replace({ name: 'cloud-user-check' })
       return
     }
-    useTelemetry()?.trackSurvey('opened')
+    // A replay would otherwise report a fresh onboarding pass on an account
+    // that already converted, inflating the funnel on every test run.
+    if (!isSurveyReplayRequested()) useTelemetry()?.trackSurvey('opened')
   } catch (error) {
     console.error('Failed to check survey status:', error)
   }
@@ -63,8 +66,8 @@ const onSubmitSurvey = async (payload: Record<string, unknown>) => {
   }
   isSubmitting.value = true
   try {
-    await submitSurvey(payload)
-    useTelemetry()?.trackSurvey('submitted', payload)
+    const stored = await submitSurvey(payload)
+    if (stored) useTelemetry()?.trackSurvey('submitted', payload)
     await router.push({ name: 'cloud-user-check' })
   } finally {
     isSubmitting.value = false
