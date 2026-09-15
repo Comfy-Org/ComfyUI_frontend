@@ -125,6 +125,49 @@ describe('graphMutations', () => {
     expect(presentation.getPresentation(scope, toLinkId(10))).toBeUndefined()
   })
 
+  it('leaves the target occupant attached when the link store rejects the replacement', () => {
+    const graph = mutations()
+    graph.batch(context, (batch) => {
+      batch.addNode(node(1))
+      batch.addNode(node(2))
+      batch.addNode(node(3))
+      batch.connect({
+        id: 50,
+        originNodeId: 1,
+        originSlot: 0,
+        targetNodeId: 3,
+        targetSlot: 0,
+        type: 'IMAGE',
+        originOutputs: [{ name: 'out', type: 'IMAGE', links: [50] }],
+        targetInputs: [{ name: 'in', type: 'IMAGE', link: 50 }]
+      })
+    })
+
+    const links = useLinkStore()
+    vi.spyOn(links, 'replaceLink').mockReturnValueOnce(undefined)
+
+    graph.connect(
+      {
+        id: 51,
+        originNodeId: 2,
+        originSlot: 0,
+        targetNodeId: 3,
+        targetSlot: 0,
+        type: 'IMAGE'
+      },
+      context
+    )
+
+    const nodes = useNodeDataStore().getGraphNodesFor('root', 'root')
+    expect(links.getInputSlotLink(scope, toNodeId(3), 0)?.id).toBe(toLinkId(50))
+    expect(nodes.find(({ id }) => id === toNodeId(3))?.inputs[0].link).toBe(
+      toLinkId(50)
+    )
+    expect(
+      nodes.find(({ id }) => id === toNodeId(1))?.outputs[0].links
+    ).toEqual([toLinkId(50)])
+  })
+
   it('preserves presentation when a remote batch reconnects the same link id', () => {
     const graph = mutations()
     const link = {
