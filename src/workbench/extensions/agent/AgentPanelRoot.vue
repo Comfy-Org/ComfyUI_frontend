@@ -865,6 +865,15 @@ watch(
 watch(() => workflowStore.activeWorkflow, exitNodeSelectionMode)
 
 watch(
+  () =>
+    [workflowStore.activeWorkflow, workflowStore.activeWorkflow?.path] as const,
+  ([workflow, path], [previousWorkflow, previousPath]) => {
+    if (workflow !== previousWorkflow) return
+    agentNodeSelectionStore.moveNodeIds(previousPath, path)
+  }
+)
+
+watch(
   selectedTarget,
   (target, previous) => {
     exitNodeSelectionMode()
