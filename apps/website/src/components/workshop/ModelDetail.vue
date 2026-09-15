@@ -765,7 +765,7 @@ function useInCode() {
           <Button
             v-else
             size="lg"
-            class="w-full px-5"
+            class="h-auto min-h-14 w-full px-5 py-3 text-center whitespace-normal"
             disabled
             data-testid="run-button"
             :data-gate="gate"
