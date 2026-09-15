@@ -124,6 +124,7 @@ test.describe(
           await expect(comfyPage.vueNodes.nodes).toHaveCount(3)
         }
         const initial = await getPairGroupSnapshot(comfyPage)
+        expect(initial.members).toHaveLength(2)
 
         await comfyPage.canvasOps.dragGroup({
           name: 'Pair',
@@ -137,13 +138,16 @@ test.describe(
         expect(
           moved.group.map((value, index) => value - initial.group[index])
         ).toEqual([120, 90, 0, 0])
-        for (let index = 0; index < initial.members.length; index++) {
-          expect(
-            moved.members[index].bounds.map(
+        expect(
+          moved.members.map((member, index) =>
+            member.bounds.map(
               (value, axis) => value - initial.members[index].bounds[axis]
             )
-          ).toEqual([120, 90, 0, 0])
-        }
+          )
+        ).toEqual([
+          [120, 90, 0, 0],
+          [120, 90, 0, 0]
+        ])
 
         await comfyPage.keyboard.undo()
         await expect

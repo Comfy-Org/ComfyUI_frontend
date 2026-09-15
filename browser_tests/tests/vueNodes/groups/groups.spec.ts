@@ -367,6 +367,7 @@ test.describe('Vue Node Groups', { tag: ['@screenshot', '@vue-nodes'] }, () => {
     await comfyPage.vueNodes.waitForNodes()
     await expect(comfyPage.vueNodes.nodes).toHaveCount(3)
     const initial = await getPairSnapshot(comfyPage)
+    expect(initial.members).toHaveLength(2)
     const groupTitle = await getGroupTitlePosition(comfyPage, 'Pair')
     await comfyPage.page.mouse.click(groupTitle.x, groupTitle.y)
 
@@ -425,13 +426,16 @@ test.describe('Vue Node Groups', { tag: ['@screenshot', '@vue-nodes'] }, () => {
     expect(
       moved.group.map((value, index) => value - initial.group[index])
     ).toEqual([110, 70, 0, 0])
-    for (let index = 0; index < initial.members.length; index++) {
-      expect(
-        moved.members[index].bounds.map(
+    expect(
+      moved.members.map((member, index) =>
+        member.bounds.map(
           (value, axis) => value - initial.members[index].bounds[axis]
         )
-      ).toEqual([110, 70, 0, 0])
-    }
+      )
+    ).toEqual([
+      [110, 70, 0, 0],
+      [110, 70, 0, 0]
+    ])
   })
 })
 
