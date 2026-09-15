@@ -228,14 +228,14 @@ export function useAgentCrdtFollower(
     lifecycle.onDocumentUpdate()
     updatesApplied.value = bridge.follower.updatesApplied
     lastFrameType.value = event.type
-    const applied = withUndoBracket(() => {
+    withUndoBracket(() => {
       const ok = projection.applyFrame(update)
+      outcomes.value = ok
+        ? { ...outcomes.value, applied: outcomes.value.applied + 1 }
+        : { ...outcomes.value, skipped: outcomes.value.skipped + 1 }
       if (ok) projection.reconcileLiveGraph(update.workflowId)
       return ok
     })
-    outcomes.value = applied
-      ? { ...outcomes.value, applied: outcomes.value.applied + 1 }
-      : { ...outcomes.value, skipped: outcomes.value.skipped + 1 }
     recordDevEvent('doc_update', {
       workflowId: update.workflowId,
       seq: update.seq,
