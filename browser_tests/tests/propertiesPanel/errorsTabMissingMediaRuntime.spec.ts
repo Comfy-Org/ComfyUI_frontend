@@ -620,6 +620,11 @@ ossTest.describe(
           .poll(() => imageWidget.getValue())
           .toBe('ComfyUI_00001_.png [output]')
 
+        await comfyPage.page.unroute('**/internal/files/output**')
+        await comfyPage.page.route('**/internal/files/output**', (route) =>
+          route.fulfill({ status: 503 })
+        )
+
         await loadWorkflowAndOpenErrorsTab(
           comfyPage,
           'missing/missing_media_remote_output_option'
