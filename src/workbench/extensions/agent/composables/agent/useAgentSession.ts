@@ -212,7 +212,8 @@ export function useAgentSession(deps: AgentSessionDeps) {
     unsubscribeStatus?.()
     unsubscribe = null
     unsubscribeStatus = null
-    const stoppedGeneration = ownedGeneration
+    if (ownedGeneration !== sessionGeneration) return
+    const stoppedGeneration = ++sessionGeneration
     queueMicrotask(() => {
       if (stoppedGeneration !== sessionGeneration) return
       conversationStore.abortActiveTurn()
@@ -402,6 +403,13 @@ export function useAgentSession(deps: AgentSessionDeps) {
       answeringAskIds.value.has(askId)
     )
       return
+    const answerOwnedGeneration = ownedGeneration
+    const answerSessionGeneration = sessionGeneration
+    const isAnswerSessionLive = () =>
+      answerOwnedGeneration === ownedGeneration &&
+      answerSessionGeneration === sessionGeneration
+    const isAnswerThreadOnScreen = () =>
+      isAnswerSessionLive() && conversationStore.threadId === currentThreadId
     setAskAnswering(askId, true)
     try {
       await rest.answerAsk(currentThreadId, askId, [selection])
@@ -409,6 +417,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     } catch (error) {
       setAskAnswering(askId, false)
       if (error instanceof AgentApiError && error.status === 409) {
+        if (!isAnswerSessionLive()) return
         conversationStore.ingest({
           type: 'agent_ask_resolved',
           data: {
@@ -422,6 +431,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
         return
       }
       reportError(error, { errorType: 'agent_ask_answer_failed' })
+      if (!isAnswerThreadOnScreen()) return
       pushError(error instanceof Error ? error.message : String(error))
     }
   }
