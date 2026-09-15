@@ -230,7 +230,7 @@ describe('HeaderAccount menu', () => {
     h.balance!.value = { status: 'ok', credits: 42 }
   }
 
-  it('shows the user identity instead of the personal workspace in its lead card', async () => {
+  it('tells the person apart from the workspace their credits belong to', async () => {
     signIn()
     h.user!.value = {
       uid: 'user-1',
@@ -242,13 +242,28 @@ describe('HeaderAccount menu', () => {
     render(HeaderAccount)
 
     await user.click(screen.getByTestId('header-account'))
-    const card = await screen.findByTestId('account-identity')
+    const identity = await screen.findByTestId('account-identity')
+    const active = screen.getByTestId('account-workspace-current')
 
-    expect(card.textContent).toContain('Ada')
-    expect(card.textContent).toContain('a@b.co')
-    expect(card.textContent).not.toContain('Personal')
-    expect(screen.getByTestId('account-menu-avatar').getAttribute('src')).toBe(
-      'https://example.com/ada.jpg'
+    expect(identity.textContent).toContain('Ada')
+    expect(identity.textContent).toContain('a@b.co')
+    expect(identity.textContent).not.toContain('Personal')
+    expect(active.textContent).toContain('Personal')
+    expect(active.textContent).not.toContain('Ada')
+  })
+
+  it('marks the header with the active workspace, not the word workspace', async () => {
+    signIn()
+    h.session!.value = {
+      token: 'jwt',
+      uid: 'user-1',
+      workspace: { id: 'ws', name: 'Ada Studio Workspace', type: 'team' },
+      role: 'owner'
+    }
+    render(HeaderAccount)
+
+    expect(screen.getByTestId('header-workspace-monogram').textContent).toBe(
+      'AS'
     )
   })
 
