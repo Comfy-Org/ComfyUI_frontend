@@ -19,22 +19,12 @@
 import Message from 'primevue/message'
 import { computed, inject } from 'vue'
 
-import type { components } from '@/types/comfyRegistryTypes'
 import { ImportFailedKey } from '@/workbench/extensions/manager/types/importFailedTypes'
-
-type PackVersionStatus = components['schemas']['NodeVersionStatus']
-type PackStatus = components['schemas']['NodeStatus']
-type Status = PackVersionStatus | PackStatus
-
-type MessageProps = InstanceType<typeof Message>['$props']
-type MessageSeverity = MessageProps['severity']
-type StatusProps = {
-  label: string
-  severity: MessageSeverity
-}
+import type { PackStatusType } from '@/workbench/extensions/manager/utils/packStatusPresentation'
+import { resolvePackStatusPresentation } from '@/workbench/extensions/manager/utils/packStatusPresentation'
 
 const { statusType, hasCompatibilityIssues } = defineProps<{
-  statusType: Status
+  statusType: PackStatusType
   hasCompatibilityIssues?: boolean
 }>()
 
@@ -42,48 +32,14 @@ const { statusType, hasCompatibilityIssues } = defineProps<{
 const importFailedContext = inject(ImportFailedKey)
 const importFailed = importFailedContext?.importFailed
 
-const statusPropsMap: Record<Status, StatusProps> = {
-  NodeStatusActive: {
-    label: 'active',
-    severity: 'success'
-  },
-  NodeStatusDeleted: {
-    label: 'deleted',
-    severity: 'warn'
-  },
-  NodeStatusBanned: {
-    label: 'banned',
-    severity: 'error'
-  },
-  NodeVersionStatusActive: {
-    label: 'active',
-    severity: 'success'
-  },
-  NodeVersionStatusPending: {
-    label: 'pending',
-    severity: 'warn'
-  },
-  NodeVersionStatusDeleted: {
-    label: 'deleted',
-    severity: 'warn'
-  },
-  NodeVersionStatusFlagged: {
-    label: 'flagged',
-    severity: 'error'
-  },
-  NodeVersionStatusBanned: {
-    label: 'banned',
-    severity: 'error'
-  }
-}
+const presentation = computed(() =>
+  resolvePackStatusPresentation({
+    statusType,
+    hasCompatibilityIssues,
+    importFailed: importFailed?.value
+  })
+)
 
-const statusLabel = computed(() => {
-  if (importFailed?.value) return 'importFailed'
-  if (hasCompatibilityIssues) return 'conflicting'
-  return statusPropsMap[statusType]?.label || 'unknown'
-})
-const statusSeverity = computed(() => {
-  if (hasCompatibilityIssues || importFailed?.value) return 'error'
-  return statusPropsMap[statusType]?.severity || 'secondary'
-})
+const statusLabel = computed(() => presentation.value.label)
+const statusSeverity = computed(() => presentation.value.severity)
 </script>
