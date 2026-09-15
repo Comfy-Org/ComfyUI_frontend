@@ -53,6 +53,7 @@ GATES = {
     'poison-customnodes-throw': (CRITERION_LABELS['hook_free'],),
     'poison-op-break': (CRITERION_LABELS['op_clean'],),
     'poison-serialize-throw': (CRITERION_LABELS['op_clean'],),
+    'poison-reload-loss': (CRITERION_LABELS['op_clean'],),
     'poison-desync': (CRITERION_LABELS['op_clean'],),
     'poison-foreign-widget': (CRITERION_LABELS['op_clean'],),
     'poison-store-read-throw': (CRITERION_LABELS['op_clean'],),
@@ -200,6 +201,16 @@ def main() -> int:
         )
         == 'Error: foreign widget prototype methods lost:'
         ' draw,mouse,computeSize',
+    )
+    check(
+        'reload: restored serialization mismatch is recorded',
+        'serialized graph changed after reload'
+        in (ops('poison-reload-loss').get('reload') or {}).get('err', ''),
+    )
+    check(
+        'reload: clean control preserves the serialized graph',
+        not (ops('clean-control').get('reload') or {}).get('err', '')
+        and bool(rows.get('clean-control', {}).get('reloadedSerialized')),
     )
 
     check(
