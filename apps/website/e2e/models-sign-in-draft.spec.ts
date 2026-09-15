@@ -35,9 +35,7 @@ for (const { entry, randomUUID, failRead } of [
       })
     await page.goto(path)
     const chooser = page.waitForEvent('filechooser')
-    await page
-      .getByText('Choose images or drop them here', { exact: true })
-      .click()
+    await page.getByText(/^Select or drop /).click()
     await (await chooser).setFiles('e2e/assets/placeholder-1x1.webp')
     const replacement = page.getByRole('button', {
       name: 'Replace placeholder-1x1.webp'
@@ -154,9 +152,7 @@ test('unavailable draft storage does not trap sign-in and reports missing files 
   })
   await page.goto(path)
   const chooser = page.waitForEvent('filechooser')
-  await page
-    .getByText('Choose images or drop them here', { exact: true })
-    .click()
+  await page.getByText(/^Select or drop /).click()
   await (await chooser).setFiles('e2e/assets/placeholder-1x1.webp')
   await page.getByRole('link', { name: 'Sign in to run', exact: true }).click()
   await expect(page).toHaveURL(/\/login\/\?returnTo=/)
