@@ -10,7 +10,8 @@ import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 export function getCnrIdFromProperties(
   properties: Record<string, unknown> | undefined | null
 ): string | undefined {
-  if (typeof properties?.cnr_id === 'string') return properties.cnr_id
+  if (typeof properties?.cnr_id === 'string' && properties.cnr_id.length > 0)
+    return properties.cnr_id
   if (typeof properties?.aux_id === 'string') return properties.aux_id
   return undefined
 }

@@ -159,18 +159,21 @@ describe('graphToPrompt _meta pack identity', () => {
     })
   })
 
-  it('falls back to a valid aux_id when cnr_id is not a string', async () => {
-    const graph = new LGraph()
-    const node = addNode(graph, 'FallbackIdentityNode', {
-      cnr_id: 123,
-      aux_id: 'aux/pack'
-    })
+  it.for([123, ''])(
+    'falls back to a valid aux_id when cnr_id is %j',
+    async (cnrId) => {
+      const graph = new LGraph()
+      const node = addNode(graph, 'FallbackIdentityNode', {
+        cnr_id: cnrId,
+        aux_id: 'aux/pack'
+      })
 
-    const { output } = await graphToPrompt(graph)
+      const { output } = await graphToPrompt(graph)
 
-    expect(output[String(node.id)]._meta).toEqual({
-      title: 'FallbackIdentityNode',
-      cnr_id: 'aux/pack'
-    })
-  })
+      expect(output[String(node.id)]._meta).toEqual({
+        title: 'FallbackIdentityNode',
+        cnr_id: 'aux/pack'
+      })
+    }
+  )
 })
