@@ -76,6 +76,7 @@ const modelList = itemListNode(
           type="search"
           placeholder={t('models.index.searchLabel')}
           autocomplete="off"
+          aria-keyshortcuts="/"
           class="bg-transparency-white-t4 focus-visible:ring-primary-comfy-yellow/50 h-12 w-full rounded-full pr-12 pl-11 text-sm text-primary-comfy-canvas outline-none placeholder:text-primary-warm-gray focus-visible:ring-3 max-sm:text-base [&::-webkit-search-cancel-button]:hidden"
         />
         <kbd
@@ -125,15 +126,15 @@ const modelList = itemListNode(
 </BaseLayout>
 
 <script>
-  // Delegated document listeners: they query elements at event time, so they
-  // survive ClientRouter DOM swaps without rebinding and never pile up.
   function filterModels(query: string) {
     const grid = document.getElementById('model-grid')
     const empty = document.getElementById('model-search-empty')
     if (!grid || !empty) return
     const needle = query.trim().toLowerCase()
     let visible = 0
-    for (const item of grid.querySelectorAll<HTMLElement>('li')) {
+    for (const item of grid.querySelectorAll<HTMLElement>(
+      ':scope > li[data-search]'
+    )) {
       const match = (item.dataset.search ?? '').includes(needle)
       item.classList.toggle('hidden', !match)
       if (match) visible += 1

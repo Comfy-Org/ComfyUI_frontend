@@ -1,6 +1,6 @@
 import type { Model } from '../../../config/models'
 
-export const directoryLabel: Record<string, string> = {
+export const directoryLabel: Partial<Record<Model['directory'], string>> = {
   diffusion_models: 'Diffusion',
   checkpoints: 'Checkpoint',
   loras: 'LoRA',
