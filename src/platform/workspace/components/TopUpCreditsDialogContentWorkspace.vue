@@ -331,8 +331,7 @@ const settingsDialog = useSettingsDialog()
 const telemetry = useTelemetry()
 const toast = useToast()
 const { buildDocsUrl, docsPaths } = useExternalLink()
-const { fetchBalance, fetchStatus, manageSubscription, topup } =
-  useBillingContext()
+const { fetchBalance, fetchStatus, manageSubscription } = useBillingContext()
 const { canTopUp } = useBillingCapabilities()
 
 const billingOperationStore = useBillingOperationStore()
@@ -369,9 +368,14 @@ onMounted(enterTopupJourney)
 const {
   isAddingCredits,
   topupOperation,
+  topup,
   retryPaymentAuthentication,
   dismissOperation
 } = useTopupOperation()
+// Start over invalidates the attempt in flight: on the SDK rail the purchase
+// call resolves only at settlement, so a superseded attempt must not unlock
+// or close the dialog for the attempt that replaced it.
+let purchaseAttempt = 0
 const topupActionUrl = computed(() => topupOperation.value?.actionUrl ?? null)
 const topupAuthenticationError = computed(
   () => topupOperation.value?.errorMessage ?? null
@@ -525,6 +529,7 @@ function resumeTopupAuthentication() {
 }
 
 function startOverTopup() {
+  purchaseAttempt += 1
   const operation = topupOperation.value
   if (operation) dismissOperation(operation.opId)
   paymentSubmitted.value = false
@@ -543,6 +548,9 @@ async function handleBuy() {
     return
   }
 
+  purchaseAttempt += 1
+  const attempt = purchaseAttempt
+  const isCurrentAttempt = () => attempt === purchaseAttempt
   loading.value = true
   paymentSubmitted.value = true
   const attemptStartedAt = Date.now()
@@ -568,7 +576,7 @@ async function handleBuy() {
     const amountCents = payAmount.value * 100
     const response = await topup(amountCents)
     if (!response) {
-      paymentSubmitted.value = false
+      if (isCurrentAttempt()) paymentSubmitted.value = false
       telemetry?.trackBillingEvent({
         operation: 'topup',
         stage: 'failed',
@@ -632,6 +640,7 @@ async function handleBuy() {
         life: 5000
       })
       await Promise.allSettled([fetchBalance(), fetchStatus()])
+      if (!isCurrentAttempt()) return
       handleClose(false)
       settingsDialog.show(isCloud ? 'workspace' : 'credits')
     } else if (response.status === 'pending') {
@@ -641,14 +650,19 @@ async function handleBuy() {
           autoHandleRequiresAction: true
         })
         .then(() => {
-          paymentSubmitted.value = false
+          if (isCurrentAttempt()) paymentSubmitted.value = false
         })
         .catch(() => {
-          reportPurchaseError(attemptStartedAt, response.billing_op_id)
+          reportPurchaseError(
+            attemptStartedAt,
+            response.billing_op_id,
+            undefined,
+            isCurrentAttempt()
+          )
         })
     } else {
       // Synchronous 'failed' here means the charge was declined, not rejected pre-attempt.
-      paymentSubmitted.value = false
+      if (isCurrentAttempt()) paymentSubmitted.value = false
       telemetry?.trackBillingEvent({
         operation: 'topup',
         stage: 'failed',
@@ -673,18 +687,19 @@ async function handleBuy() {
       })
     }
   } catch (error) {
-    reportPurchaseError(attemptStartedAt, undefined, error)
+    reportPurchaseError(attemptStartedAt, undefined, error, isCurrentAttempt())
   } finally {
-    loading.value = false
+    if (isCurrentAttempt()) loading.value = false
   }
 }
 
 function reportPurchaseError(
   attemptStartedAt: number,
   billingOpId?: string,
-  error?: unknown
+  error?: unknown,
+  currentAttempt = true
 ) {
-  paymentSubmitted.value = false
+  if (currentAttempt) paymentSubmitted.value = false
   console.error('Purchase failed', ...(error === undefined ? [] : [error]))
 
   telemetry?.trackBillingEvent({

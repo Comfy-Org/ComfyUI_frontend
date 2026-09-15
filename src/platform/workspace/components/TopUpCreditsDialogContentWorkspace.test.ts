@@ -654,6 +654,45 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
     }
   )
 
+  it('ignores a superseded purchase attempt that settles after Start over', async () => {
+    let settleFirst!: (response: CreateTopupResponse) => void
+    mockTopup
+      .mockImplementationOnce(
+        () =>
+          new Promise<CreateTopupResponse>((resolve) => {
+            settleFirst = resolve
+          })
+      )
+      .mockImplementation(() => new Promise<CreateTopupResponse>(() => {}))
+
+    renderDialog()
+    await clickAddCredits()
+    await userEvent.click(screen.getByRole('button', { name: 'Pay $50.00' }))
+    await nextTick()
+    setTopupActionOperation({
+      opId: 'op-1',
+      status: 'pending',
+      actionUrl: null,
+      authenticationState: 'failed_retryable',
+      errorMessage: 'Your bank rejected the verification.'
+    })
+    await nextTick()
+    await userEvent.click(screen.getByRole('button', { name: 'Start over' }))
+    await nextTick()
+
+    await clickAddCredits()
+    const payButton = screen.getByRole('button', { name: 'Pay $50.00' })
+    await userEvent.click(payButton)
+    await nextTick()
+    settleFirst(topupResponse('completed'))
+    await waitFor(() => expect(mockFetchBalance).toHaveBeenCalled())
+    await nextTick()
+
+    expect(mockTopup).toHaveBeenCalledTimes(2)
+    expect(useDialogStore().closeDialog).not.toHaveBeenCalled()
+    expect(payButton).toBeDisabled()
+  })
+
   it('keeps a top-up locked when reconciliation needs support', () => {
     setTopupActionOperation({
       opId: 'op-reconcile',
