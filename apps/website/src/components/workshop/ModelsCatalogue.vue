@@ -35,7 +35,7 @@ watch(
 </script>
 
 <template>
-  <WorkshopHero v-if="!inSection" :locale>
+  <WorkshopHero v-if="!inSection" subtitle-key="workshop.hero.subtitle" :locale>
     <template #aside>
       <button
         type="button"
