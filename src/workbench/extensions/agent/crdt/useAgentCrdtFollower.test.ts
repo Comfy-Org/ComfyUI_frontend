@@ -129,7 +129,8 @@ vi.mock(import('./agentSubgraphDefinitions'), () => ({
 }))
 
 vi.mock(import('./devPanelLog'), () => ({
-  recordDevEvent: vi.fn()
+  recordDevEvent: vi.fn(),
+  sanitizeDevEventDetail: vi.fn((detail: unknown) => detail)
 }))
 
 vi.mock<unknown>(import('@/scripts/api'), () => ({ api: apiState.api }))
