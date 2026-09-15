@@ -1,4 +1,4 @@
-import { createTestingPinia } from '@pinia/testing'
+import { getActivePinia } from 'pinia'
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -104,10 +104,7 @@ function renderComponent(
         : {})
     },
     global: {
-      plugins: [
-        createTestingPinia({ createSpy: vi.fn, stubActions: false }),
-        i18n
-      ],
+      plugins: [getActivePinia()!, i18n],
       stubs: {
         PricingTableWorkspace: PricingTableStub,
         SubscriptionAddPaymentPreviewWorkspace: AddPaymentPreviewStub,

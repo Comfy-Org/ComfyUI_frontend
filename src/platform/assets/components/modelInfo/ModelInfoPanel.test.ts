@@ -1,4 +1,4 @@
-import { createTestingPinia } from '@pinia/testing'
+import { getActivePinia } from 'pinia'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
@@ -18,10 +18,7 @@ vi.mock(import('@/composables/useCopyToClipboard'), () => ({
 const mockDistribution = vi.hoisted(
   (): { isCloud: typeof DistributionTypes.isCloud } => ({ isCloud: false })
 )
-vi.mock<unknown>(
-  import('@/platform/distribution/types'),
-  () => mockDistribution
-)
+vi.mock(import('@/platform/distribution/types'), () => mockDistribution)
 
 vi.mock(import('@/platform/assets/composables/useModelTypes'), async () => {
   const { ref } = await import('vue')
@@ -70,7 +67,7 @@ describe('ModelInfoPanel', () => {
     return render(ModelInfoPanel, {
       props: { asset },
       global: {
-        plugins: [createTestingPinia({ stubActions: false }), i18n]
+        plugins: [getActivePinia()!, i18n]
       }
     })
   }

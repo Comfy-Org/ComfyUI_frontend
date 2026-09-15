@@ -1,43 +1,21 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { effectScope, nextTick } from 'vue'
+import { effectScope, nextTick, shallowRef, markRaw } from 'vue'
+import { storeToRefs } from 'pinia'
+import type { Ref } from 'vue'
+import { fromPartial } from '@total-typescript/shoehorn'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
+import { useExecutionStore } from '@/stores/executionStore'
 
 import type { WorkflowExecutionStatus } from '@/stores/executionStore'
 
-const { mockActiveWorkflow, statusMap } = await vi.hoisted(async () => {
-  const { shallowRef } = await import('vue')
-  return {
-    mockActiveWorkflow: shallowRef<object | null>(null),
-    statusMap: shallowRef<Map<object, WorkflowExecutionStatus>>(new Map())
-  }
-})
-
-vi.mock<unknown>(
-  import('@/platform/workflow/management/stores/workflowStore'),
-  () => ({
-    useWorkflowStore: () => ({
-      get activeWorkflow() {
-        return mockActiveWorkflow.value
-      }
-    })
-  })
-)
-
-vi.mock<unknown>(import('@/stores/executionStore'), () => ({
-  useExecutionStore: () => ({
-    getWorkflowStatus: (workflow: object | null | undefined) =>
-      workflow ? statusMap.value.get(workflow) : undefined,
-    clearWorkflowStatus: (workflow: object) => {
-      const next = new Map(statusMap.value)
-      next.delete(workflow)
-      statusMap.value = next
-    }
-  })
-}))
+let mockActiveWorkflow: Ref<ComfyWorkflow | null>
+const statusMap = shallowRef(new Map<ComfyWorkflow, WorkflowExecutionStatus>())
 
 import { useWorkflowStatusDismissal } from './useWorkflowStatusDismissal'
 
-const workflowA = { path: '/a.json' }
-const workflowB = { path: '/b.json' }
+const workflowA = markRaw(fromPartial<ComfyWorkflow>({ path: '/a.json' }))
+const workflowB = markRaw(fromPartial<ComfyWorkflow>({ path: '/b.json' }))
 
 function mount() {
   const scope = effectScope()
@@ -47,6 +25,18 @@ function mount() {
 
 describe('useWorkflowStatusDismissal', () => {
   beforeEach(() => {
+    mockActiveWorkflow = storeToRefs(useWorkflowStore()).activeWorkflow
+    const executionStore = useExecutionStore()
+    vi.mocked(executionStore.getWorkflowStatus).mockImplementation(
+      (workflow) => (workflow ? statusMap.value.get(workflow) : undefined)
+    )
+    vi.mocked(executionStore.clearWorkflowStatus).mockImplementation(
+      (workflow) => {
+        statusMap.value = new Map(
+          [...statusMap.value].filter(([entry]) => entry !== workflow)
+        )
+      }
+    )
     mockActiveWorkflow.value = null
     statusMap.value = new Map()
   })

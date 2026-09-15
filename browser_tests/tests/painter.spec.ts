@@ -50,6 +50,9 @@ test.describe('Painter', { tag: ['@widget', '@vue-nodes'] }, () => {
       })
       await comfyPage.actionbar.propertiesButton.click()
       const parameters = comfyPage.menu.propertiesPanel.root
+      await expect(comfyPage.menu.propertiesPanel.panelTitle).toContainText(
+        'Painter'
+      )
       for (const widgetName of HIDDEN_PAINTER_WIDGET_NAMES) {
         await expect(
           parameters.getByLabel(widgetName, { exact: true })
@@ -810,7 +813,6 @@ test.describe(
   { tag: ['@widget', '@canvas'] },
   () => {
     test.beforeEach(async ({ comfyPage }) => {
-      await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', false)
       await comfyPage.page.evaluate(() => window.app?.graph.clear())
       await comfyPage.workflow.loadWorkflow('widgets/painter_widget')
     })

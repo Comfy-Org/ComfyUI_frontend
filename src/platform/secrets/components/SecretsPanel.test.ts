@@ -1,3 +1,4 @@
+import { useDialogStore } from '@/stores/dialogStore'
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -32,12 +33,6 @@ vi.mock<unknown>(import('@/platform/secrets/composables/useSecrets'), () => ({
     fetchSecrets: mockFetchSecrets,
     fetchProviders: mockFetchProviders,
     deleteSecret: mockDeleteSecret
-  })
-}))
-
-vi.mock<unknown>(import('@/stores/dialogStore'), () => ({
-  useDialogStore: () => ({
-    closeDialog: mockCloseDialog
   })
 }))
 
@@ -111,6 +106,10 @@ function renderPanel() {
     }
   })
 }
+
+beforeEach(() => {
+  vi.mocked(useDialogStore().closeDialog).mockImplementation(mockCloseDialog)
+})
 
 describe('SecretsPanel', () => {
   beforeEach(() => {

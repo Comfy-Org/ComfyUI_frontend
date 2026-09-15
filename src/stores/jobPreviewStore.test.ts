@@ -1,19 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { ref } from 'vue'
 
+import { useSettingStore } from '@/platform/settings/settingStore'
 import { useJobPreviewStore } from '@/stores/jobPreviewStore'
 import { releaseSharedObjectUrl } from '@/utils/objectUrlUtil'
-
-const previewMethodRef = ref('latent2rgb')
-
-vi.mock<unknown>(import('@/platform/settings/settingStore'), () => ({
-  useSettingStore: () => ({
-    get: (key: string) => {
-      if (key === 'Comfy.Execution.PreviewMethod') return previewMethodRef.value
-      return undefined
-    }
-  })
-}))
 
 vi.mock(import('@/utils/objectUrlUtil'), () => ({
   retainSharedObjectUrl: vi.fn(),
@@ -22,7 +11,8 @@ vi.mock(import('@/utils/objectUrlUtil'), () => ({
 
 describe('jobPreviewStore', () => {
   beforeEach(() => {
-    previewMethodRef.value = 'latent2rgb'
+    useSettingStore().settingValues['Comfy.Execution.PreviewMethod'] =
+      'latent2rgb'
   })
 
   it('stores preview with nodeId', () => {
@@ -89,7 +79,7 @@ describe('jobPreviewStore', () => {
   })
 
   it('ignores setPreviewUrl when previews are disabled', () => {
-    previewMethodRef.value = 'none'
+    useSettingStore().settingValues['Comfy.Execution.PreviewMethod'] = 'none'
     const store = useJobPreviewStore()
 
     store.setPreviewUrl('p1', 'blob:a', 'node-1')

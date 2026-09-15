@@ -1,3 +1,4 @@
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { NodeExecutionId } from '@/types/nodeIdentification'
@@ -20,15 +21,6 @@ vi.mock(import('@/i18n'), () => ({
 vi.mock(import('@/platform/distribution/types'), () => ({
   isCloud: false
 }))
-
-vi.mock<unknown>(
-  import('@/platform/workflow/management/stores/workflowStore'),
-  () => ({
-    useWorkflowStore: () => ({
-      nodeLocatorIdToNodeExecutionId: mockNodeLocatorIdToNodeExecutionId
-    })
-  })
-)
 
 import { useMissingModelStore } from './missingModelStore'
 import { useToastStore } from '@/platform/updates/common/toastStore'
@@ -57,6 +49,14 @@ function makeModelCandidate(
     isMissing: true
   }
 }
+
+beforeEach(() => {
+  vi.mocked(
+    useWorkflowStore().nodeLocatorIdToNodeExecutionId
+  ).mockImplementation((id) =>
+    createNodeExecutionId(mockNodeLocatorIdToNodeExecutionId(id).split(':'))
+  )
+})
 
 describe('missingModelStore', () => {
   beforeEach(() => {

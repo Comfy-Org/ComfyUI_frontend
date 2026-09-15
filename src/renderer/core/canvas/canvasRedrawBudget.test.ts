@@ -1,5 +1,3 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { effectScope, nextTick } from 'vue'
 
@@ -77,7 +75,6 @@ describe('canvas redraw budget while progress events stream in', () => {
   let previousVueNodesMode: boolean
 
   beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
     previousVueNodesMode = LiteGraph.vueNodesMode
     LiteGraph.vueNodesMode = false
 

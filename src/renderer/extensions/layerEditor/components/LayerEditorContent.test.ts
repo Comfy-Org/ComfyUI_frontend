@@ -1,3 +1,7 @@
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useNodeOutputStore } from '@/stores/nodeOutputStore'
+import { fromPartial } from '@total-typescript/shoehorn'
 import userEvent from '@testing-library/user-event'
 import { render, screen, within } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -16,14 +20,13 @@ const {
   loadCompositorSession,
   saveLayerState,
   savePreview,
-  session,
-  toastAdd
+  session
 } = vi.hoisted(() => ({
   afterChange: vi.fn(),
   autoSaveStop: vi.fn(),
   beforeChange: vi.fn(),
   loadCompositorSession: vi.fn().mockResolvedValue(0),
-  toastAdd: vi.fn(),
+
   saveLayerState: vi.fn(() => true),
   savePreview: vi.fn().mockResolvedValue(undefined),
   session: {
@@ -74,26 +77,13 @@ vi.mock(
     useCompositorAutoSave: vi.fn(() => ({ stop: autoSaveStop }))
   })
 )
-vi.mock<unknown>(
-  import('@/platform/workflow/management/stores/workflowStore'),
-  () => ({
-    useWorkflowStore: () => ({
-      activeWorkflow: { changeTracker: { afterChange, beforeChange } }
-    })
-  })
-)
-vi.mock<unknown>(import('@/platform/updates/common/toastStore'), () => ({
-  useToastStore: () => ({ add: toastAdd })
-}))
+
 vi.mock(
   import('@/renderer/extensions/compositor/composables/compositorSession'),
   () => ({
     loadCompositorSession
   })
 )
-vi.mock<unknown>(import('@/stores/nodeOutputStore'), () => ({
-  useNodeOutputStore: () => ({ getNodeImageUrls: () => [] })
-}))
 
 const i18n = createI18n({
   legacy: false,
@@ -138,6 +128,14 @@ function findRestoreButton() {
 async function waitForAutoSaveStart() {
   await vi.waitFor(() => expect(useCompositorAutoSave).toHaveBeenCalled())
 }
+
+beforeEach(() => {
+  useWorkflowStore().activeWorkflow = fromPartial({
+    changeTracker: { afterChange, beforeChange }
+  })
+  vi.mocked(useToastStore().add).mockImplementation(() => undefined)
+  vi.mocked(useNodeOutputStore().getNodeImageUrls).mockReturnValue([])
+})
 
 describe('LayerEditorContent', () => {
   beforeEach(() => {
@@ -224,7 +222,7 @@ describe('LayerEditorContent', () => {
     renderEditor('compositor')
 
     await vi.waitFor(() =>
-      expect(toastAdd).toHaveBeenCalledWith(
+      expect(useToastStore().add).toHaveBeenCalledWith(
         expect.objectContaining({
           severity: 'warn',
           detail: '2 layers failed to load'
@@ -237,13 +235,13 @@ describe('LayerEditorContent', () => {
   it('warns on close when edits could not be auto-saved', async () => {
     loadCompositorSession.mockResolvedValueOnce(2)
     const { unmount } = renderEditor('compositor')
-    await vi.waitFor(() => expect(toastAdd).toHaveBeenCalled())
+    await vi.waitFor(() => expect(useToastStore().add).toHaveBeenCalled())
     session.editor.history.canUndo.mockReturnValue(true)
 
     unmount()
 
     expect(saveLayerState).not.toHaveBeenCalled()
-    expect(toastAdd).toHaveBeenCalledWith(
+    expect(useToastStore().add).toHaveBeenCalledWith(
       expect.objectContaining({ detail: 'Failed to save composite' })
     )
   })
@@ -253,7 +251,7 @@ describe('LayerEditorContent', () => {
     renderEditor('compositor')
 
     await vi.waitFor(() =>
-      expect(toastAdd).toHaveBeenCalledWith(
+      expect(useToastStore().add).toHaveBeenCalledWith(
         expect.objectContaining({ severity: 'error' })
       )
     )

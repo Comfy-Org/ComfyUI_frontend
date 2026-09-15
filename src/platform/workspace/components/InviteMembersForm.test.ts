@@ -1,3 +1,4 @@
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { render, screen, waitFor } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -8,18 +9,12 @@ import InviteMembersForm from './InviteMembersForm.vue'
 import type { WorkspacePendingInvite } from '@/platform/workspace/stores/teamWorkspaceStore'
 
 const {
-  mockCreateInvite,
-  mockFetchPendingInvites,
   mockFetchStatus,
-  mockPendingInvites,
   mockToastAdd,
   mockTrackInviteSent,
   mockTrackInviteFailed
 } = vi.hoisted(() => ({
-  mockCreateInvite: vi.fn(),
-  mockFetchPendingInvites: vi.fn(),
   mockFetchStatus: vi.fn(),
-  mockPendingInvites: { value: [] as WorkspacePendingInvite[] },
   mockToastAdd: vi.fn(),
   mockTrackInviteSent: vi.fn(),
   mockTrackInviteFailed: vi.fn()
@@ -28,21 +23,6 @@ const {
 vi.mock<unknown>(import('@/composables/billing/useBillingContext'), () => ({
   useBillingContext: () => ({ fetchStatus: mockFetchStatus })
 }))
-
-vi.mock<unknown>(
-  import('@/platform/workspace/stores/teamWorkspaceStore'),
-  () => ({
-    useTeamWorkspaceStore: () => ({
-      createInvite: mockCreateInvite as (
-        email: string
-      ) => Promise<WorkspacePendingInvite>,
-      fetchPendingInvites: mockFetchPendingInvites,
-      get pendingInvites() {
-        return [...mockPendingInvites.value]
-      }
-    })
-  })
-)
 
 vi.mock<unknown>(
   import('primevue/usetoast'), // eslint-disable-line primevue-removal/no-imports
@@ -102,11 +82,13 @@ function submitButton() {
 describe('InviteMembersForm', () => {
   beforeEach(() => {
     vi.useRealTimers()
-    mockPendingInvites.value = []
-    mockFetchPendingInvites.mockResolvedValue([...mockPendingInvites.value])
+    Object.assign(useTeamWorkspaceStore(), { pendingInvites: [] })
+    vi.mocked(useTeamWorkspaceStore().fetchPendingInvites).mockResolvedValue([
+      ...useTeamWorkspaceStore().pendingInvites
+    ])
     mockFetchStatus.mockResolvedValue(undefined)
-    mockCreateInvite.mockImplementation(async (email: string) =>
-      pendingInviteFor(email)
+    vi.mocked(useTeamWorkspaceStore().createInvite).mockImplementation(
+      async (email: string) => pendingInviteFor(email)
     )
   })
 
@@ -142,9 +124,11 @@ describe('InviteMembersForm', () => {
     await user.type(emailInput(), 'A@B.com C@D.com{Enter}')
     await user.click(submitButton())
 
-    await waitFor(() => expect(mockCreateInvite).toHaveBeenCalledTimes(2))
-    expect(mockCreateInvite).toHaveBeenCalledWith('a@b.com')
-    expect(mockCreateInvite).toHaveBeenCalledWith('c@d.com')
+    await waitFor(() =>
+      expect(useTeamWorkspaceStore().createInvite).toHaveBeenCalledTimes(2)
+    )
+    expect(useTeamWorkspaceStore().createInvite).toHaveBeenCalledWith('a@b.com')
+    expect(useTeamWorkspaceStore().createInvite).toHaveBeenCalledWith('c@d.com')
     expect(mockTrackInviteSent).toHaveBeenCalledWith({
       source: 'post_upgrade_success',
       count: 2
@@ -170,8 +154,12 @@ describe('InviteMembersForm', () => {
 
   it('ignores stale cached invites when pending invites cannot be refreshed', async () => {
     const refreshError = new Error('pending invites failed')
-    mockPendingInvites.value.push(pendingInviteFor('stale@example.com'))
-    mockFetchPendingInvites.mockRejectedValueOnce(refreshError)
+    useTeamWorkspaceStore().pendingInvites.push(
+      pendingInviteFor('stale@example.com')
+    )
+    vi.mocked(
+      useTeamWorkspaceStore().fetchPendingInvites
+    ).mockRejectedValueOnce(refreshError)
     const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
     const { user, emitted } = renderForm()
 
@@ -194,7 +182,9 @@ describe('InviteMembersForm', () => {
     let resolvePendingInvites: (
       invites: WorkspacePendingInvite[]
     ) => void = () => {}
-    mockFetchPendingInvites.mockImplementationOnce(
+    vi.mocked(
+      useTeamWorkspaceStore().fetchPendingInvites
+    ).mockImplementationOnce(
       () =>
         new Promise((resolve) => {
           resolvePendingInvites = resolve
@@ -210,24 +200,28 @@ describe('InviteMembersForm', () => {
     await waitFor(() =>
       expect(submitButton()).toHaveAttribute('aria-busy', 'false')
     )
-    expect(mockCreateInvite).not.toHaveBeenCalled()
+    expect(useTeamWorkspaceStore().createInvite).not.toHaveBeenCalled()
   })
 
   it('keeps failed emails for retry and emits all invited emails after recovery', async () => {
     let shouldFail = true
-    mockCreateInvite.mockImplementation(async (email: string) => {
-      if (email === 'fail@x.com' && shouldFail) {
-        shouldFail = false
-        throw new Error('nope')
+    vi.mocked(useTeamWorkspaceStore().createInvite).mockImplementation(
+      async (email: string) => {
+        if (email === 'fail@x.com' && shouldFail) {
+          shouldFail = false
+          throw new Error('nope')
+        }
+        return pendingInviteFor(email)
       }
-      return pendingInviteFor(email)
-    })
+    )
     const { user, emitted } = renderForm()
 
     await user.type(emailInput(), 'ok@x.com fail@x.com{Enter}')
     await user.click(submitButton())
 
-    await waitFor(() => expect(mockCreateInvite).toHaveBeenCalledTimes(2))
+    await waitFor(() =>
+      expect(useTeamWorkspaceStore().createInvite).toHaveBeenCalledTimes(2)
+    )
     expect(screen.getByText('fail@x.com')).toBeInTheDocument()
     expect(screen.queryByText('ok@x.com')).not.toBeInTheDocument()
     expect(mockToastAdd).toHaveBeenCalledWith(
@@ -241,7 +235,9 @@ describe('InviteMembersForm', () => {
 
     await user.click(submitButton())
 
-    await waitFor(() => expect(mockCreateInvite).toHaveBeenCalledTimes(3))
+    await waitFor(() =>
+      expect(useTeamWorkspaceStore().createInvite).toHaveBeenCalledTimes(3)
+    )
     expect(emitted().submitted).toEqual([[['ok@x.com', 'fail@x.com']]])
     expect(mockTrackInviteSent).toHaveBeenCalledTimes(2)
     expect(mockTrackInviteSent).toHaveBeenLastCalledWith({
@@ -251,13 +247,17 @@ describe('InviteMembersForm', () => {
   })
 
   it('keeps all chips, toasts, and emits nothing when every invite fails', async () => {
-    mockCreateInvite.mockRejectedValue(new Error('nope'))
+    vi.mocked(useTeamWorkspaceStore().createInvite).mockRejectedValue(
+      new Error('nope')
+    )
     const { user, emitted } = renderForm()
 
     await user.type(emailInput(), 'a@b.com,c@d.com{Enter}')
     await user.click(submitButton())
 
-    await waitFor(() => expect(mockCreateInvite).toHaveBeenCalledTimes(2))
+    await waitFor(() =>
+      expect(useTeamWorkspaceStore().createInvite).toHaveBeenCalledTimes(2)
+    )
     expect(screen.getByText('a@b.com')).toBeInTheDocument()
     expect(screen.getByText('c@d.com')).toBeInTheDocument()
     expect(mockToastAdd).toHaveBeenCalledWith(
@@ -295,8 +295,10 @@ describe('InviteMembersForm', () => {
 
   it('disables submit when every email has a pending invite', async () => {
     const pendingInvite = pendingInviteFor('ALREADY@EXAMPLE.COM')
-    mockPendingInvites.value.push(pendingInvite)
-    mockFetchPendingInvites.mockResolvedValueOnce([pendingInvite])
+    useTeamWorkspaceStore().pendingInvites.push(pendingInvite)
+    vi.mocked(
+      useTeamWorkspaceStore().fetchPendingInvites
+    ).mockResolvedValueOnce([pendingInvite])
     const { user } = renderForm()
 
     await user.type(emailInput(), 'already@example.com{Enter}')
@@ -305,7 +307,7 @@ describe('InviteMembersForm', () => {
       screen.getByText('workspacePanel.inviteMemberDialog.pendingInviteSingle')
     ).toBeInTheDocument()
     expect(submitButton()).toBeDisabled()
-    expect(mockCreateInvite).not.toHaveBeenCalled()
+    expect(useTeamWorkspaceStore().createInvite).not.toHaveBeenCalled()
   })
 
   it('skips pending invites and sends the rest of the batch', async () => {
@@ -313,8 +315,10 @@ describe('InviteMembersForm', () => {
       pendingInviteFor('first@example.com'),
       pendingInviteFor('second@example.com')
     ]
-    mockPendingInvites.value.push(...pendingInvites)
-    mockFetchPendingInvites.mockResolvedValueOnce(pendingInvites)
+    useTeamWorkspaceStore().pendingInvites.push(...pendingInvites)
+    vi.mocked(
+      useTeamWorkspaceStore().fetchPendingInvites
+    ).mockResolvedValueOnce(pendingInvites)
     const { user, emitted } = renderForm({ maxSeats: 3, occupiedSeats: 2 })
 
     await user.type(
@@ -329,8 +333,12 @@ describe('InviteMembersForm', () => {
 
     await user.click(submitButton())
 
-    await waitFor(() => expect(mockCreateInvite).toHaveBeenCalledOnce())
-    expect(mockCreateInvite).toHaveBeenCalledWith('new@example.com')
+    await waitFor(() =>
+      expect(useTeamWorkspaceStore().createInvite).toHaveBeenCalledOnce()
+    )
+    expect(useTeamWorkspaceStore().createInvite).toHaveBeenCalledWith(
+      'new@example.com'
+    )
     expect(emitted().submitted).toEqual([[['new@example.com']]])
   })
 
@@ -354,7 +362,7 @@ describe('InviteMembersForm', () => {
     await user.click(screen.getByRole('button', { name: 'Cancel' }))
 
     expect(emitted().cancel).toBeTruthy()
-    expect(mockCreateInvite).not.toHaveBeenCalled()
+    expect(useTeamWorkspaceStore().createInvite).not.toHaveBeenCalled()
   })
 
   it('hides the built-in submit row when showSubmit is false', () => {

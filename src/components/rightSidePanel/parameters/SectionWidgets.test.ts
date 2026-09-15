@@ -1,5 +1,6 @@
-import { render, screen, waitFor } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
+import { render, screen, waitFor } from '@testing-library/vue'
+import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent } from 'vue'
 import { createI18n } from 'vue-i18n'
@@ -13,41 +14,22 @@ import {
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
-import type { NodeExecutionId } from '@/types/nodeIdentification'
+import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { toNodeId } from '@/types/nodeId'
+import type { NodeExecutionId } from '@/types/nodeIdentification'
 import { getExecutionIdByNode } from '@/utils/graphTraversalUtil'
 
 import SectionWidgets from './SectionWidgets.vue'
 
-const { mockGetInputSpecForWidget, mockTrackUiButtonClicked } = vi.hoisted(
-  () => ({
-    mockGetInputSpecForWidget: vi.fn(),
-    mockTrackUiButtonClicked: vi.fn()
-  })
-)
+const { mockTrackUiButtonClicked } = vi.hoisted(() => ({
+  mockTrackUiButtonClicked: vi.fn()
+}))
 
 const setDirty = vi.fn()
 const getNodeById = vi.fn()
 const animateToBounds = vi.fn()
-const selectedItems: unknown[] = []
-
-vi.mock<unknown>(
-  import('@/renderer/core/canvas/canvasStore'),
-
-  () => ({
-    useCanvasStore: () => ({
-      canvas: { setDirty, graph: { getNodeById }, animateToBounds },
-      selectedItems
-    })
-  })
-)
-
-vi.mock<unknown>(import('@/stores/nodeDefStore'), () => ({
-  useNodeDefStore: () => ({
-    getInputSpecForWidget: mockGetInputSpecForWidget
-  })
-}))
 
 vi.mock<unknown>(import('@/platform/telemetry'), () => ({
   useTelemetry: () => ({
@@ -139,7 +121,11 @@ function createHostWithPromotedModel(): {
 
 describe('SectionWidgets', () => {
   beforeEach(() => {
-    selectedItems.length = 0
+    useCanvasStore().canvas = fromPartial({
+      setDirty,
+      graph: fromPartial({ getNodeById }),
+      animateToBounds
+    })
   })
 
   it('clears promoted widget validation by source and missing model by host', async () => {
@@ -262,7 +248,8 @@ describe('SectionWidgets', () => {
 
   it('tracks and resets all widgets when the Reset all button is clicked', async () => {
     const { node, widget } = createSimpleNodeWithWidget()
-    mockGetInputSpecForWidget.mockReturnValue({
+    vi.mocked(useNodeDefStore().getInputSpecForWidget).mockReturnValue({
+      name: widget.name,
       type: 'COMBO',
       default: 'default_model.safetensors'
     })

@@ -1,3 +1,4 @@
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -10,7 +11,7 @@ const mockHandleSubscribeTeamClick = vi.fn()
 const mockHandleBackToPricing = vi.fn()
 const mockHandleSubscribeClick = vi.fn()
 const mockInvalidateQuote = vi.fn()
-const mockIsInPersonalWorkspace = ref(false)
+
 const mockCheckoutStep = ref('pricing')
 const mockPreviewVariant = ref<string | null>(null)
 const mockPreviewData = ref<Record<string, unknown> | null>(null)
@@ -53,17 +54,6 @@ vi.mock<unknown>(
       applyPromotionCode: vi.fn(),
       invalidateQuote: mockInvalidateQuote,
       handleResubscribe: vi.fn()
-    })
-  })
-)
-
-vi.mock<unknown>(
-  import('@/platform/workspace/stores/teamWorkspaceStore'),
-  () => ({
-    useTeamWorkspaceStore: () => ({
-      get isInPersonalWorkspace() {
-        return mockIsInPersonalWorkspace.value
-      }
     })
   })
 )
@@ -130,7 +120,7 @@ function renderComponent(props: Record<string, unknown> = {}) {
 
 describe('SubscriptionRequiredDialogContentUnified team-plan subscribe', () => {
   beforeEach(() => {
-    mockIsInPersonalWorkspace.value = false
+    Object.assign(useTeamWorkspaceStore(), { isInPersonalWorkspace: false })
     mockCheckoutStep.value = 'pricing'
     mockPreviewVariant.value = null
     mockPreviewData.value = null
@@ -197,7 +187,7 @@ describe('SubscriptionRequiredDialogContentUnified team-plan subscribe', () => {
 
   it('advances to team checkout from a team workspace', async () => {
     const user = userEvent.setup()
-    mockIsInPersonalWorkspace.value = false
+    Object.assign(useTeamWorkspaceStore(), { isInPersonalWorkspace: false })
     renderComponent()
 
     await user.click(screen.getByTestId('subscribe-team-btn'))
@@ -209,7 +199,7 @@ describe('SubscriptionRequiredDialogContentUnified team-plan subscribe', () => {
 
   it('advances to team checkout from a personal workspace (no reroute)', async () => {
     const user = userEvent.setup()
-    mockIsInPersonalWorkspace.value = true
+    Object.assign(useTeamWorkspaceStore(), { isInPersonalWorkspace: true })
     renderComponent()
 
     await user.click(screen.getByTestId('subscribe-team-btn'))

@@ -1,4 +1,4 @@
-import { createTestingPinia } from '@pinia/testing'
+import { getActivePinia } from 'pinia'
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { afterAll, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -8,6 +8,7 @@ import { createI18n } from 'vue-i18n'
 import { formatCreditsFromCents } from '@/base/credits/comfyCredits'
 import type { BalanceInfo, SubscriptionInfo } from '@/composables/billing/types'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 
 import CurrentUserPopoverLegacy from './CurrentUserPopoverLegacy.vue'
 
@@ -148,17 +149,13 @@ describe('CurrentUserPopoverLegacy', () => {
     const onClose = vi.fn()
     const user = userEvent.setup()
 
+    if (teamWorkspaceState) {
+      useTeamWorkspaceStore().$patch(teamWorkspaceState)
+    }
+
     render(CurrentUserPopoverLegacy, {
       global: {
-        plugins: [
-          i18n,
-          createTestingPinia({
-            createSpy: vi.fn,
-            initialState: teamWorkspaceState
-              ? { teamWorkspace: teamWorkspaceState }
-              : {}
-          })
-        ],
+        plugins: [i18n, getActivePinia()!],
         stubs: {
           Divider: true
         }
