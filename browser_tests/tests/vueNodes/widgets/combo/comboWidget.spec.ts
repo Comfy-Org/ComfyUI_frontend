@@ -298,12 +298,15 @@ test.describe('Vue Combo Widget', { tag: ['@vue-nodes', '@widget'] }, () => {
     // Precondition: the selection reached the graph. Without it, "undo restored
     // the original" also holds for a selection that never applied at all.
     await expect.poll(scheduler).toBe('karras')
+    await expect(
+      comfyPage.page.getByTestId(TestIds.widgets.selectDefaultViewport)
+    ).toBeHidden()
+    await expect.poll(() => comfyPage.workflow.getUndoQueueSize()).toBe(1)
 
     // Keystrokes go to the page, not to the canvas locator. `keyboard.undo()`
     // defaults to `canvas.press()`, which runs actionability checks against a
     // canvas the Vue transform pane covers — the click is then intercepted by
     // whichever node sits under it (here the combobox itself).
-    await comfyPage.page.keyboard.press('Escape')
     await comfyPage.page.keyboard.press('ControlOrMeta+z')
     await expect.poll(scheduler).toBe(original)
 

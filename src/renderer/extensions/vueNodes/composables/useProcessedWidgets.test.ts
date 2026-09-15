@@ -1,3 +1,4 @@
+import { fromPartial } from '@total-typescript/shoehorn'
 import type { TooltipOptions } from 'primevue'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed } from 'vue'
@@ -11,6 +12,7 @@ import {
 import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { computeProcessedWidgets } from '@/renderer/extensions/vueNodes/composables/useProcessedWidgets'
 import WidgetDOM from '@/renderer/extensions/vueNodes/widgets/components/WidgetDOM.vue'
 import WidgetLegacy from '@/renderer/extensions/vueNodes/widgets/components/WidgetLegacy.vue'
@@ -690,7 +692,9 @@ describe('computeProcessedWidgets', () => {
 describe('createWidgetUpdateHandler (via computeProcessedWidgets)', () => {
   const NODE_ID = toNodeId(1)
 
-  beforeEach(() => {})
+  afterEach(() => {
+    useWorkflowStore().activeWorkflow = null
+  })
 
   function processUpdateWidgets(widgets: IBaseWidget[]) {
     const { graph } = createGraphWithNode(widgets, NODE_ID)
@@ -751,6 +755,53 @@ describe('createWidgetUpdateHandler (via computeProcessedWidgets)', () => {
 
     const [afterUpdate] = processWidgets({ widgetIds: [id], nodeId: NODE_ID })
     expect(afterUpdate.hasError).toBe(false)
+  })
+
+  it('checkpoints combo writes after the live widget value is set', () => {
+    const captureCanvasState = vi.fn()
+    useWorkflowStore().activeWorkflow = fromPartial({
+      changeTracker: { captureCanvasState }
+    })
+
+    const id = widgetId(GRAPH_ID, NODE_ID, 'scheduler')
+    const widget = createMockWidget({
+      name: 'scheduler',
+      type: 'combo',
+      widgetId: id,
+      value: 'simple'
+    })
+    registerWidgetState(id, { type: 'combo', value: 'simple' })
+
+    const [processed] = processUpdateWidgets([widget])
+    captureCanvasState.mockImplementation(() => {
+      expect(widget.value).toBe('karras')
+    })
+    processed.updateHandler('karras')
+
+    expect(widget.value).toBe('karras')
+    expect(captureCanvasState).toHaveBeenCalledOnce()
+  })
+
+  it('does not checkpoint non-combo widget writes', () => {
+    const captureCanvasState = vi.fn()
+    useWorkflowStore().activeWorkflow = fromPartial({
+      changeTracker: { captureCanvasState }
+    })
+
+    const id = widgetId(GRAPH_ID, NODE_ID, 'steps')
+    const widget = createMockWidget({
+      name: 'steps',
+      type: 'number',
+      widgetId: id,
+      value: 20
+    })
+    registerWidgetState(id, { type: 'number', value: 20 })
+
+    const [processed] = processUpdateWidgets([widget])
+    processed.updateHandler(30)
+
+    expect(widget.value).toBe(30)
+    expect(captureCanvasState).not.toHaveBeenCalled()
   })
 
   it('clears execution errors from simplified callback without a live widget', () => {

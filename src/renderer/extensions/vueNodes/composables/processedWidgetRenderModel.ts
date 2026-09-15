@@ -3,12 +3,14 @@ import type { TooltipOptions } from 'primevue'
 import { showNodeOptions } from '@/composables/graph/useMoreOptionsMenu'
 import { resolvePromotedWidgetSource } from '@/core/graph/subgraph/resolvePromotedWidgetSource'
 import type { INodeInputSlot } from '@/lib/litegraph/src/interfaces'
+import { isComboWidget } from '@/lib/litegraph/src/litegraph'
 import type { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type {
   IBaseWidget,
   IWidgetOptions
 } from '@/lib/litegraph/src/types/widgets'
 import { useMissingMediaStore } from '@/platform/missingMedia/missingMediaStore'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
 import type {
   WidgetGridItem,
@@ -239,6 +241,9 @@ function createWidgetUpdateHandler({
       live.widget.value = normalized
       live.widget.callback?.(normalized, app.canvas, live.node)
       live.node.widgets?.forEach((w) => w.triggerDraw?.())
+      if (isComboWidget(live.widget)) {
+        useWorkflowStore().activeWorkflow?.changeTracker.captureCanvasState()
+      }
     }
 
     const options = { min: widgetOptions.min, max: widgetOptions.max }
