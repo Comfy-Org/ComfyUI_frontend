@@ -153,6 +153,23 @@ describe('UnifiedStripePaymentSelector', () => {
 
   afterEach(cleanup)
 
+  it('leaves billing address collection to the Address Element alone', async () => {
+    renderSelector()
+    await waitFor(() => expect(stripeMocks.mount).toHaveBeenCalled())
+
+    // Two address forms in one group can disagree, and the one the issuer sees
+    // would then contradict the one collected for AVS.
+    expect(stripeMocks.create).toHaveBeenCalledWith(
+      'payment',
+      expect.objectContaining({
+        fields: { billingDetails: { address: 'never' } }
+      })
+    )
+    expect(stripeMocks.create).toHaveBeenCalledWith('address', {
+      mode: 'billing'
+    })
+  })
+
   describe('checkout journey instrumentation', () => {
     it('emits payment_element_ready on the ready callback for the live mount', async () => {
       renderSelector()
@@ -331,6 +348,7 @@ describe('UnifiedStripePaymentSelector', () => {
         radios: 'always',
         spacedAccordionItems: true
       },
+      fields: { billingDetails: { address: 'never' } },
       terms: { card: 'never' }
     })
     expect(stripeMocks.mount).toHaveBeenCalledTimes(1)

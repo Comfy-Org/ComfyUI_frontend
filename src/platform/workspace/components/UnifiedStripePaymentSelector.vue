@@ -144,6 +144,11 @@ function mountPaymentElement(
       radios: 'always',
       spacedAccordionItems: true
     },
+    // The Address Element below is the single source of billing address.
+    // Left at the default, card would also render its own country/postal
+    // inputs, and a customer who filled the two differently would send the
+    // issuer an address that contradicts the one we collected for AVS.
+    fields: { billingDetails: { address: 'never' } },
     // Our terms note carries the recurring-charge authorization; Stripe's
     // card mandate text would say it twice.
     terms: { card: 'never' }
