@@ -54,7 +54,9 @@ describe('Tooltip', () => {
 
     await user.tab()
 
-    expect(await screen.findByRole('tooltip')).toHaveTextContent('Helpful text')
+    expect((await screen.findByRole('tooltip')).textContent).toBe(
+      'Helpful text'
+    )
     expect(screen.getByRole('button')).toHaveAccessibleDescription(
       'Helpful text'
     )
@@ -293,9 +295,9 @@ describe('Tooltip', () => {
     const trigger = screen.getByRole('button')
 
     await user.hover(trigger)
-    expect(Number((await screen.findByRole('tooltip')).style.zIndex)).toBe(
-      Number(firstDialog.style.zIndex) + 1
-    )
+    expect(
+      Number((await screen.findByTestId('tooltip-positioner')).style.zIndex)
+    ).toBe(Number(firstDialog.style.zIndex) + 1)
     await user.unhover(trigger)
     await vi.waitFor(() => {
       expect(screen.queryByRole('tooltip')).not.toBeInTheDocument()
@@ -306,9 +308,9 @@ describe('Tooltip', () => {
     openDialogs.push(laterDialog)
     await user.hover(trigger)
 
-    expect(Number((await screen.findByRole('tooltip')).style.zIndex)).toBe(
-      Number(laterDialog.style.zIndex) + 1
-    )
+    expect(
+      Number((await screen.findByTestId('tooltip-positioner')).style.zIndex)
+    ).toBe(Number(laterDialog.style.zIndex) + 1)
   })
 
   it.for(['top', 'right', 'bottom', 'left'] as const)(
@@ -319,7 +321,7 @@ describe('Tooltip', () => {
 
       await user.hover(screen.getByRole('button'))
 
-      expect(await screen.findByRole('tooltip')).toHaveAttribute(
+      expect(await screen.findByTestId('tooltip-positioner')).toHaveAttribute(
         'data-side',
         side
       )

@@ -33,7 +33,7 @@ const contentStyle = useModalLiftedZIndex(() => open)
     <div class="pointer-events-none">
       <TooltipContent
         v-bind="forwarded"
-        role="tooltip"
+        data-testid="tooltip-positioner"
         :style="contentStyle"
         :class="
           cn(
@@ -42,7 +42,7 @@ const contentStyle = useModalLiftedZIndex(() => open)
           )
         "
       >
-        <div data-slot="tooltip-content">
+        <div role="tooltip" data-slot="tooltip-content">
           <slot />
         </div>
         <TooltipArrow

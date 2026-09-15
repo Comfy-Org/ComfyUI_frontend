@@ -399,12 +399,13 @@ test.describe('Templates', { tag: ['@slow', '@workflow'] }, () => {
 
     const overflow = card.getByRole('button', { name: 'Upscale, Inpaint' })
     const disclosure = comfyPage.page.getByRole('tooltip')
+    const positioner = comfyPage.page.getByTestId('tooltip-positioner')
 
     const expectOnTop = async () => {
-      await expect(disclosure).toHaveAttribute('data-state', /-open$/)
+      await expect(positioner).toHaveAttribute('data-state', /-open$/)
       await expect
         .poll(() =>
-          disclosure.evaluate((el) => {
+          positioner.evaluate((el) => {
             const portal = el.parentElement?.parentElement
             if (!portal) return false
             const pointerEvents = portal.style.pointerEvents
