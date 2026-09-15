@@ -162,7 +162,7 @@ export const useWorkflowStore = defineStore('workflow', () => {
   const openWorkflowPaths = ref<string[]>([])
   const openWorkflowPathSet = computed(() => new Set(openWorkflowPaths.value))
   const openWorkflows = computed(() =>
-    openWorkflowPaths.value.flatMap((path) => getWorkflowByPath(path) ?? [])
+    openWorkflowPaths.value.map((path) => workflowLookup.value[path])
   )
   const reorderWorkflows = (from: number, to: number) => {
     const movedTab = openWorkflowPaths.value[from]
@@ -456,10 +456,12 @@ export const useWorkflowStore = defineStore('workflow', () => {
           existingWorkflow.unload()
         },
         /* exclude */ (workflow) => workflow.isTemporary,
-        /* onDelete */ (_workflow, path) => {
+        /* beforeDelete */ (workflow, path) => {
+          if (isActive(workflow)) return false
           openWorkflowPaths.value = openWorkflowPaths.value.filter(
             (openPath) => openPath !== path
           )
+          return true
         }
       )
     },

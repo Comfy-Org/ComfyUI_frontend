@@ -8,9 +8,8 @@ import type { UserDataFullInfo } from '@/schemas/apiSchema'
  * @param createEntity A function to create an entity from a file
  * @param updateEntity A function to update an entity from a file
  * @param exclude A function to exclude an entity
- * @param onDelete Called for each entity removed because it no longer exists
- * remotely, before it leaves the map. Lets callers holding a separate list of
- * paths drop the same entry in the same tick.
+ * @param beforeDelete Called before deleting an entity that no longer exists
+ * remotely. Return false to keep the entity.
  */
 export async function syncEntities<T>(
   dir: string,
@@ -18,7 +17,7 @@ export async function syncEntities<T>(
   createEntity: (file: UserDataFullInfo & { path: string }) => T,
   updateEntity: (entity: T, file: UserDataFullInfo & { path: string }) => void,
   exclude: (file: T) => boolean = () => false,
-  onDelete: (entity: T, path: string) => void = () => {}
+  beforeDelete: (entity: T, path: string) => boolean = () => true
 ) {
   const files = (await api.listUserDataFullInfo(dir)).map((file) => ({
     ...file,
@@ -44,7 +43,7 @@ export async function syncEntities<T>(
   for (const [path, entity] of Object.entries(entityByPath)) {
     if (exclude(entity)) continue
     if (!files.some((file) => file.path === path)) {
-      onDelete(entity, path)
+      if (!beforeDelete(entity, path)) continue
       delete entityByPath[path]
     }
   }

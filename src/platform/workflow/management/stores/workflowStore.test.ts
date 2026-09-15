@@ -699,22 +699,7 @@ describe('useWorkflowStore', () => {
       expect(bookmarkStore.isBookmarked(workflow.path)).toBe(false)
     })
 
-    it('should remove the deleted workflow from the open tabs', async () => {
-      const workflow = store.createTemporary('test.json')
-      vi.spyOn(workflow, 'delete').mockResolvedValue()
-      await store.openWorkflow(workflow)
-      expect(store.isOpen(workflow)).toBe(true)
-      expect(store.openWorkflows).toEqual([workflow])
-
-      await store.deleteWorkflow(workflow)
-
-      expect(store.isOpen(workflow)).toBe(false)
-      expect(store.openWorkflows).toEqual([])
-    })
-  })
-
-  describe('openWorkflows integrity', () => {
-    it('should not expose a hole after deleting an open workflow', async () => {
+    it('should remove a deleted workflow without closing other tabs', async () => {
       const survivor = store.createTemporary('survivor.json')
       const doomed = store.createTemporary('doomed.json')
       vi.spyOn(doomed, 'delete').mockResolvedValue()
@@ -727,47 +712,39 @@ describe('useWorkflowStore', () => {
 
       await store.deleteWorkflow(doomed)
 
+      expect(store.isOpen(doomed)).toBe(false)
       expect(store.openWorkflows.map((w) => w.path)).toEqual([survivor.path])
     })
+  })
 
-    it('should not expose a hole after a sync prunes an open workflow', async () => {
+  describe('openWorkflows integrity', () => {
+    it('should retain a missing active workflow until it becomes inactive', async () => {
       await syncRemoteWorkflows(['a.json', 'b.json'])
-      vi.mocked(api.getUserData).mockResolvedValue({
-        status: 200,
-        text: () => Promise.resolve(defaultGraphJSON)
-      } as Response)
+      vi.mocked(api.getUserData).mockImplementation(() =>
+        Promise.resolve(new Response(defaultGraphJSON, { status: 200 }))
+      )
+      const survivor = store.getWorkflowByPath('workflows/a.json')!
       const removed = store.getWorkflowByPath('workflows/b.json')!
-      await store.openWorkflow(store.getWorkflowByPath('workflows/a.json')!)
+      await store.openWorkflow(survivor)
       await store.openWorkflow(removed)
-      expect(store.openWorkflows.map((w) => w.path)).toEqual([
-        'workflows/a.json',
-        'workflows/b.json'
-      ])
 
-      // The file disappears from the backend, e.g. deleted by another client.
       await syncRemoteWorkflows(['a.json'])
 
-      expect(store.openWorkflows.map((w) => w.path)).toEqual([
-        'workflows/a.json'
-      ])
-    })
-
-    it('should drop the pruned path from the open paths, not just the projection', async () => {
-      await syncRemoteWorkflows(['a.json', 'b.json'])
-      vi.mocked(api.getUserData).mockResolvedValue({
-        status: 200,
-        text: () => Promise.resolve(defaultGraphJSON)
-      } as Response)
-      const removed = store.getWorkflowByPath('workflows/b.json')!
-      await store.openWorkflow(store.getWorkflowByPath('workflows/a.json')!)
-      await store.openWorkflow(removed)
+      expect(store.activeWorkflow).toBe(removed)
+      expect(store.getWorkflowByPath(removed.path)).toBe(removed)
       expect(store.isOpen(removed)).toBe(true)
+      expect(store.openWorkflows.map((w) => w.path)).toEqual([
+        survivor.path,
+        removed.path
+      ])
 
+      await store.openWorkflow(survivor)
       await syncRemoteWorkflows(['a.json'])
 
-      // Filtering only the projection would leave isOpen answering from a
-      // stale path that is no longer in the lookup.
+      expect(store.activeWorkflow).toBe(survivor)
+      expect(store.getWorkflowByPath(removed.path)).toBeNull()
       expect(store.isOpen(removed)).toBe(false)
+      expect(store.openWorkflows).toEqual([survivor])
     })
   })
 
