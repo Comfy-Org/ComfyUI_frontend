@@ -246,7 +246,7 @@ function isAudio(index: number): boolean {
 
 function createLibrary(): TestItem[] {
   return Array.from({ length: LIBRARY_SIZE }, (_, i) => ({
-    key: `asset-${i}`,
+    id: `asset-${i}`,
     name: `asset-${i}`
   }))
 }
@@ -336,7 +336,7 @@ describe('VirtualGrid scrolled deep into a large library', () => {
     }
   )
 
-  it.fails('KNOWN BUG: goes blank when the filtered list shrinks below the scrolled-to index', async () => {
+  it('does not blank when the filtered list shrinks below the scrolled-to index', async () => {
     const { rerender } = renderLibrary(createLibrary())
     await nextTick()
 
@@ -352,7 +352,7 @@ describe('VirtualGrid scrolled deep into a large library', () => {
     expect(renderedNames().length).toBeGreaterThan(0)
   })
 
-  it.fails('KNOWN BUG: goes blank when the column count grows while scrolled deep', async () => {
+  it('does not blank when the column count grows while scrolled deep', async () => {
     renderLibrary(createLibrary())
     await nextTick()
 
