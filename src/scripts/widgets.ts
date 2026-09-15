@@ -18,6 +18,7 @@ import { useCompositorWidget } from '@/renderer/extensions/vueNodes/widgets/comp
 import { useFloatWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useFloatWidget'
 import { useGalleriaWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useGalleriaWidget'
 import { useBoundingBoxesWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useBoundingBoxesWidget'
+import { useLightInfoWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useLightInfoWidget'
 import { useColorsWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useColorsWidget'
 import { useImageCompareWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useImageCompareWidget'
 import { useImageUploadWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useImageUploadWidget'
@@ -256,6 +257,7 @@ export const ComfyWidgets = {
     useResolutionPreviewWidget()
   ),
   BOUNDING_BOXES: transformWidgetConstructorV2ToV1(useBoundingBoxesWidget()),
+  LIGHT_INFO_PREVIEW: transformWidgetConstructorV2ToV1(useLightInfoWidget()),
   COLORS: transformWidgetConstructorV2ToV1(useColorsWidget()),
   ...dynamicWidgets
 } as const
