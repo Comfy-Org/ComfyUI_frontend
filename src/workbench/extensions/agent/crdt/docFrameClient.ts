@@ -12,6 +12,7 @@ const MAX_DOC_OPS_PER_FRAME = 256
 const MAX_OP_ID_LENGTH = 128
 const MAX_ERROR_CODE_LENGTH = 128
 const MAX_ERROR_MESSAGE_LENGTH = 8 << 10
+const RESERVED_SYSTEM_ACTOR = 'system:mint'
 const BASE64_SINGLE_PADDING_END = /[AEIMQUYcgkosw048]=$/
 const BASE64_DOUBLE_PADDING_END = /[AQgw]==$/
 const utf8 = new TextEncoder()
@@ -182,9 +183,18 @@ function isValidActor(value: string): boolean {
     /[\0\n\r\t ]/.test(value)
   )
     return false
-  if (value === 'system:mint') return true
+  if (value === RESERVED_SYSTEM_ACTOR) return true
   const match = /^(?:agent|human):([^:]+):([^:]+)$/.exec(value)
   return match !== null
+}
+
+/**
+ * Inbound `doc_reset` frames legitimately carry the reserved identity, so
+ * `isValidActor` accepts it. The awareness actor key drives presence, so
+ * accepting it outbound would let any caller publish as the system.
+ */
+function isSendableActor(value: string): boolean {
+  return value !== RESERVED_SYSTEM_ACTOR && isValidActor(value)
 }
 
 /**
@@ -267,6 +277,34 @@ function encodedJsonSize(value: Record<string, unknown>): number | null {
   } catch {
     return null
   }
+}
+
+/**
+ * Outbound counterpart of `encodedJsonSize`. Receiving can afford the loose
+ * count above because the server is then the stricter of the two; sending
+ * inverts that margin, so bill `<`, `>` and `&` at the six bytes Go escapes
+ * them to rather than the one byte they occupy here.
+ *
+ * Returns the parsed round-trip of the very bytes that were measured. A getter,
+ * a key-sensitive `toJSON`, or a Proxy can otherwise serialize differently on
+ * the second pass, so sending the source object would put an unmeasured — and
+ * possibly throwing — value on the wire.
+ */
+function encodeAwarenessState(
+  value: Record<string, unknown>
+): Record<string, unknown> | null {
+  let encoded: string
+  try {
+    encoded = JSON.stringify(value)
+  } catch {
+    return null
+  }
+  if (typeof encoded !== 'string') return null
+  const escapeOverhead = (encoded.match(/[<>&]/g)?.length ?? 0) * 5
+  if (encoded.length + escapeOverhead > MAX_AWARENESS_STATE_BYTES) return null
+  if (utf8.encode(encoded).length + escapeOverhead > MAX_AWARENESS_STATE_BYTES)
+    return null
+  return parseRecord(JSON.parse(encoded))
 }
 
 export function parseServerDocFrame(value: unknown): ServerDocFrame | null {
@@ -385,6 +423,7 @@ export function parseServerDocFrame(value: unknown): ServerDocFrame | null {
 
 export class DocFrameClient extends EventTarget {
   private readonly listeners = new Map<string, EventListener>()
+  private readonly reportedAwarenessRejections = new Set<string>()
 
   constructor(private readonly transport: DocFrameTransport) {
     super()
@@ -441,6 +480,52 @@ export class DocFrameClient extends EventTarget {
       tab,
       ops
     })
+  }
+
+  /**
+   * @returns whether the ephemeral awareness frame left the transport.
+   *
+   * `false` from the transport is transient and reconcilable. `false` from the
+   * validation below is not: the same arguments will always be refused, so a
+   * caller that retries will spin. Those rejections are reported rather than
+   * returned distinctly, mirroring the inbound malformed-frame discard.
+   */
+  sendAwareness(
+    workflowId: string,
+    actor: string,
+    state?: Record<string, unknown> | null
+  ): boolean {
+    if (!isValidWorkflowId(workflowId))
+      return this.rejectAwareness('workflow_id')
+    if (!isSendableActor(actor)) return this.rejectAwareness('actor')
+
+    let encodedState: Record<string, unknown> | undefined
+    if (!isAbsent(state)) {
+      const record = parseRecord(state)
+      if (record === null) return this.rejectAwareness('state_shape')
+      const measured = encodeAwarenessState(record)
+      if (measured === null) return this.rejectAwareness('state_size')
+      encodedState = measured
+    }
+
+    return this.send('awareness', {
+      v: DOC_PROTOCOL_VERSION,
+      workflow_id: workflowId,
+      actor,
+      ...(encodedState !== undefined && { state: encodedState })
+    })
+  }
+
+  private rejectAwareness(reason: string): false {
+    if (!this.reportedAwarenessRejections.has(reason)) {
+      this.reportedAwarenessRejections.add(reason)
+      reportError(new Error('Discarded invalid outgoing awareness frame'), {
+        errorType: 'agent_crdt_invalid_outgoing_frame',
+        tags: { reason },
+        level: 'warning'
+      })
+    }
+    return false
   }
 
   destroy(): void {
