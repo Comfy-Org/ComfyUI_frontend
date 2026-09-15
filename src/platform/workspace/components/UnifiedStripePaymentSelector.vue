@@ -22,6 +22,12 @@
       class="flex flex-col gap-6 xl:min-h-0 xl:flex-1 xl:overflow-x-hidden xl:overflow-y-auto xl:pr-1"
     >
       <div ref="paymentElementTarget" />
+      <div class="flex flex-col gap-3">
+        <h4 class="m-0 text-sm font-medium text-base-foreground">
+          {{ $t('subscription.preview.billingAddress') }}
+        </h4>
+        <div ref="addressElementTarget" />
+      </div>
       <div
         v-if="selectedMethodType === 'alipay'"
         class="flex items-start gap-3 rounded-xl bg-base-background/60 px-4 py-3 text-xs text-muted-foreground"
@@ -50,6 +56,7 @@
 <script setup lang="ts">
 import type {
   Stripe,
+  StripeAddressElement,
   StripeElements,
   StripePaymentElement
 } from '@stripe/stripe-js'
@@ -107,29 +114,103 @@ function emitPaymentJourneyPhase(phase: CheckoutJourneyPhaseEvent): void {
 }
 
 const paymentElementTarget = ref<HTMLDivElement>()
+const addressElementTarget = ref<HTMLDivElement>()
 const stripeElements = ref<StripeElements>()
 const configurationError = ref('')
 const isSubmitting = ref(false)
 const selectedMethodType = ref('')
 let stripe: Stripe | null = null
 let paymentElement: StripePaymentElement | undefined
+let addressElement: StripeAddressElement | undefined
+
+function failElementInit(): void {
+  configurationError.value = t('subscription.preview.stripeUnavailable')
+  if (isUnmounted) return
+  emitPaymentJourneyPhase({
+    phase: 'payment_element_failed',
+    element: 'payment',
+    element_phase: 'init'
+  })
+}
+
+function mountPaymentElement(
+  elements: StripeElements,
+  target: HTMLDivElement
+): void {
+  paymentElement = elements.create('payment', {
+    layout: {
+      type: 'accordion',
+      defaultCollapsed: false,
+      radios: 'always',
+      spacedAccordionItems: true
+    },
+    // The Address Element below is the single source of billing address.
+    // Left at the default, card would also render its own country/postal
+    // inputs, and a customer who filled the two differently would send the
+    // issuer an address that contradicts the one we collected for AVS.
+    fields: { billingDetails: { address: 'never' } },
+    // Our terms note carries the recurring-charge authorization; Stripe's
+    // card mandate text would say it twice.
+    terms: { card: 'never' }
+  })
+  paymentElement.mount(target)
+  paymentElement.on('ready', () => {
+    if (isUnmounted) return
+    emitPaymentJourneyPhase({
+      phase: 'payment_element_ready',
+      element: 'payment'
+    })
+  })
+  paymentElement.on('loaderror', (event) => {
+    if (isUnmounted) return
+    emitPaymentJourneyPhase({
+      phase: 'payment_element_failed',
+      element: 'payment',
+      element_phase: 'mount',
+      ...(event.error?.code && { error_code: event.error.code })
+    })
+  })
+  // Method-specific notes (e.g. the Alipay auto-renewal disclosure) key off
+  // whichever payment method the user has selected inside the element.
+  paymentElement.on('change', (event) => {
+    selectedMethodType.value = event.value?.type ?? ''
+  })
+}
+
+/**
+ * A full billing address feeds AVS to the issuer and Radar. In billing mode
+ * every field is required, and because the address shares the Payment
+ * Element's group, createConfirmationToken folds it into the token's
+ * billing_details.
+ */
+function mountAddressElement(
+  elements: StripeElements,
+  target: HTMLDivElement
+): void {
+  addressElement = elements.create('address', { mode: 'billing' })
+  addressElement.mount(target)
+  addressElement.on('ready', () => {
+    if (isUnmounted) return
+    emitPaymentJourneyPhase({
+      phase: 'payment_element_ready',
+      element: 'address'
+    })
+  })
+  addressElement.on('loaderror', (event) => {
+    if (isUnmounted) return
+    emitPaymentJourneyPhase({
+      phase: 'payment_element_failed',
+      element: 'address',
+      element_phase: 'mount',
+      ...(event.error?.code && { error_code: event.error.code })
+    })
+  })
+}
 
 onMounted(async () => {
   const publishableKey = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY
-  if (!publishableKey) {
-    configurationError.value = t('subscription.preview.stripeUnavailable')
-    emitPaymentJourneyPhase({
-      phase: 'payment_element_failed',
-      element_phase: 'init'
-    })
-    return
-  }
-  if (!paymentMethodConfigurationId) {
-    configurationError.value = t('subscription.preview.stripeUnavailable')
-    emitPaymentJourneyPhase({
-      phase: 'payment_element_failed',
-      element_phase: 'init'
-    })
+  if (!publishableKey || !paymentMethodConfigurationId) {
+    failElementInit()
     return
   }
   // A non-positive amount means the caller mounted this before its quote
@@ -141,21 +222,11 @@ onMounted(async () => {
   try {
     stripe = await loadStripe(publishableKey)
   } catch {
-    configurationError.value = t('subscription.preview.stripeUnavailable')
-    emitPaymentJourneyPhase({
-      phase: 'payment_element_failed',
-      element_phase: 'init'
-    })
+    failElementInit()
     return
   }
   if (!stripe || !paymentElementTarget.value || isUnmounted) {
-    configurationError.value = t('subscription.preview.stripeUnavailable')
-    if (!isUnmounted) {
-      emitPaymentJourneyPhase({
-        phase: 'payment_element_failed',
-        element_phase: 'init'
-      })
-    }
+    failElementInit()
     return
   }
 
@@ -211,35 +282,10 @@ onMounted(async () => {
       }
     }
   })
-  paymentElement = stripeElements.value.create('payment', {
-    layout: {
-      type: 'accordion',
-      defaultCollapsed: false,
-      radios: 'always',
-      spacedAccordionItems: true
-    },
-    // Our terms note carries the recurring-charge authorization; Stripe's
-    // card mandate text would say it twice.
-    terms: { card: 'never' }
-  })
-  paymentElement.mount(paymentElementTarget.value)
-  paymentElement.on('ready', () => {
-    if (isUnmounted) return
-    emitPaymentJourneyPhase({ phase: 'payment_element_ready' })
-  })
-  paymentElement.on('loaderror', (event) => {
-    if (isUnmounted) return
-    emitPaymentJourneyPhase({
-      phase: 'payment_element_failed',
-      element_phase: 'mount',
-      ...(event.error?.code && { error_code: event.error.code })
-    })
-  })
-  // Method-specific notes (e.g. the Alipay auto-renewal disclosure) key off
-  // whichever payment method the user has selected inside the element.
-  paymentElement.on('change', (event) => {
-    selectedMethodType.value = event.value?.type ?? ''
-  })
+  mountPaymentElement(stripeElements.value, paymentElementTarget.value)
+  if (addressElementTarget.value) {
+    mountAddressElement(stripeElements.value, addressElementTarget.value)
+  }
 })
 
 watch([() => amountCents, () => currency], ([amount, nextCurrency]) => {
@@ -252,6 +298,7 @@ watch([() => amountCents, () => currency], ([amount, nextCurrency]) => {
       configurationError.value = t('g.error')
       emitPaymentJourneyPhase({
         phase: 'payment_element_failed',
+        element: 'payment',
         element_phase: 'update'
       })
     })
@@ -260,6 +307,7 @@ watch([() => amountCents, () => currency], ([amount, nextCurrency]) => {
 onBeforeUnmount(() => {
   isUnmounted = true
   paymentElement?.destroy()
+  addressElement?.destroy()
 })
 
 async function submit() {

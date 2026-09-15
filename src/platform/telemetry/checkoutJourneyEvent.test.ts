@@ -110,15 +110,19 @@ describe('getCheckoutJourneyTelemetryEventPayload', () => {
     })
   })
 
-  it('distinguishes the element failure phase', () => {
+  it('distinguishes the failing element from the failure phase', () => {
     const event: CheckoutJourneyTelemetryEvent = {
       ...baseContext,
       phase: 'payment_element_failed',
       assignment_status: 'resolved',
       assigned_arm: 'treatment',
+      element: 'address',
       element_phase: 'mount'
     }
     const payload = getCheckoutJourneyTelemetryEventPayload(event)
-    expect(payload).toMatchObject({ element_phase: 'mount' })
+    expect(payload).toMatchObject({
+      element: 'address',
+      element_phase: 'mount'
+    })
   })
 })
