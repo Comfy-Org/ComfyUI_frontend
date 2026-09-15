@@ -125,6 +125,50 @@ describe('SubscriptionAddPaymentPreviewWorkspace', () => {
     expect(selectorInstances).toBe(2)
   })
 
+  it('hides the legal fine print while the payment provider is unreachable', async () => {
+    render(SubscriptionAddPaymentPreviewWorkspace, {
+      props: {
+        tierKey: 'creator',
+        previewData: previewFixture('MONTHLY', 66_500),
+        usePaymentElement: true
+      },
+      global: {
+        ...globalOptions,
+        stubs: {
+          ...globalOptions.stubs,
+          SubscriptionTermsNote: {
+            template: '<p>subscription.preview.termsNote</p>'
+          },
+          UnifiedStripePaymentSelector: {
+            emits: ['providerUnreachableChange'],
+            template: `<div>
+              <button @click="$emit('providerUnreachableChange', true)">
+                report unreachable
+              </button>
+              <button @click="$emit('providerUnreachableChange', false)">
+                report recovered
+              </button>
+            </div>`
+          }
+        }
+      }
+    })
+
+    expect(screen.getByText('subscription.preview.termsNote')).toBeTruthy()
+
+    // With no way to pay there is nothing to agree to.
+    await userEvent.click(
+      screen.getByRole('button', { name: 'report unreachable' })
+    )
+    expect(screen.queryByText('subscription.preview.termsNote')).toBeNull()
+
+    // A successful retry brings the form - and the agreement - back.
+    await userEvent.click(
+      screen.getByRole('button', { name: 'report recovered' })
+    )
+    expect(screen.getByText('subscription.preview.termsNote')).toBeTruthy()
+  })
+
   it('submits a zero-dollar quote without mounting Stripe Elements', async () => {
     const quote = previewFixture('MONTHLY', 0)
     const { emitted } = render(SubscriptionAddPaymentPreviewWorkspace, {
