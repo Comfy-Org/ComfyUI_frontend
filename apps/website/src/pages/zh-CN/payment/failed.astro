@@ -6,3 +6,10 @@ import PaymentStatusSection from '../../../components/payment/PaymentStatusSecti
 <BaseLayout title="支付失败 - Comfy" description="您的支付未能完成。" noindex>
   <PaymentStatusSection status="failed" locale="zh-CN" />
 </BaseLayout>
+
+<script>
+  if (window.opener) {
+    window.opener.focus()
+    window.close()
+  }
+</script>

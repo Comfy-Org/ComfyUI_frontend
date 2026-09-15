@@ -44,7 +44,7 @@ const { isVisible, close, persistHidden } = useBannerDismissal(version)
           data-slot="announcement-banner"
           :class="
             cn(
-              'after:bg-transparency-white-t4 relative flex items-center gap-x-6 px-6 py-4 after:pointer-events-none after:absolute after:inset-x-0 after:bottom-0 after:h-px sm:px-3.5',
+              'relative flex items-center gap-x-6 px-6 py-4 after:pointer-events-none after:absolute after:inset-x-0 after:bottom-0 after:h-px after:bg-transparency-white-t4 sm:px-3.5',
               centered ? 'justify-center text-center' : 'sm:before:flex-1'
             )
           "

@@ -1,6 +1,7 @@
 ---
 globs:
   - '**/*.test.ts'
+  - '**/__mocks__/**/*.ts'
 ---
 
 # Vitest Unit Test Conventions
@@ -9,22 +10,10 @@ See `docs/testing/*.md` for detailed patterns.
 
 ## Test Quality
 
-The general test rules (no change-detector tests, no non-behavioral assertions,
-be parsimonious, don't mock what you don't own) live in the root `AGENTS.md`,
-which is always loaded. In addition:
-
-- Do not write tests that just test mocks - ensure real code is exercised (tests must fail when the code misbehaves)
-- Aim for behavioral coverage of critical and new features
-- Do not disable Testing Library rules to inspect DOM structure. Query by role,
-  label, text, or test ID. If no semantic query can identify an interactive
-  element, fix the component semantics before testing it.
-- Do not use attributes, utility classes, mock-call storage, or exact internal
-  option forwarding as substitutes for observable behavior.
-- Build typed fixtures from authoritative types or schemas. To test malformed
-  external input, keep it `unknown` and exercise the production parser. Do not
-  cast malformed data to the expected domain type.
-- Control asynchronous work with fake timers, a deferred promise, or an
-  observable readiness condition. Do not add sleeps or arbitrary timeouts.
+The rules that apply at every test level (behavioral assertions, tables over
+copied bodies, mock only what you own, no sleeps, typed fixtures) live in
+`docs/guidance/testing-principles.md`, which loads alongside this file. An
+ESLint rule enforces the Testing Library query rule. Do not disable it.
 
 ## Mocking
 
@@ -32,7 +21,8 @@ which is always loaded. In addition:
 - `vi.mock<unknown>(import('…'), …)` is only for legacy partial factories that
   cannot satisfy the module type. For new mocks, type the factory instead.
 - Keep module mocks contained - no global mutable state
-- Use `vi.hoisted()` for per-test mock manipulation
+- Use `vi.hoisted()` only for bindings needed by a hoisted mock factory.
+  Keep mutable scenario state inside the test that uses it.
 - Vitest automatically resets mocks, restores spies, and unstubs globals and
   environment variables before each test. Do not repeat that cleanup in test
   lifecycle hooks.
@@ -41,6 +31,39 @@ which is always loaded. In addition:
   first test runs.
 - Module-scope `vi.fn()` declarations may provide reset-persistent defaults by
   passing the implementation directly to `vi.fn(implementation)`.
+
+### Shared manual mocks
+
+- Put reusable module mocks in a same-named file under `__mocks__`. Activate
+  them with `vi.mock(import('…'))`. Tests import the real module path and
+  configure its functions with `vi.mocked`. Do not export mock-only setters,
+  state, or duplicate spies.
+- Type each complete default from the real function's return type. Preserve
+  async and cancellation behavior. Pass the default implementation to
+  `vi.fn<typeof realFn>` instead of setting it in `beforeEach`.
+- For composables, return fresh state from each call. If repeated calls must
+  share a result, create it in the test and pin it with
+  `vi.mocked(useX).mockReturnValue(result)`.
+- Do not use `mock.results` or other call history as a cache. Keep shared
+  result identity explicit in the test that needs it.
+- Assign writable fields directly. To override a readonly field on a
+  configurable mock object, use `vi.spyOn(flags, 'flagName', 'get')`. Vitest
+  also supports plain data properties; it installs a temporary getter and
+  restores the original property with the spy. Use `mockReturnValue` for a
+  fixed value or `mockImplementation` to read changing test state.
+- Override only the field the test needs. Do not rebuild a full result with
+  nested spreads or add hooks that repeat the shared defaults.
+
+For example, configure a live flag inside the test before creating its consumer:
+
+```ts
+const enabled = ref(false)
+const featureFlags = useFeatureFlags()
+vi.mocked(useFeatureFlags).mockReturnValue(featureFlags)
+vi.spyOn(featureFlags.flags, 'billingControlEnabled', 'get').mockImplementation(
+  () => enabled.value
+)
+```
 
 ## No Real Network
 

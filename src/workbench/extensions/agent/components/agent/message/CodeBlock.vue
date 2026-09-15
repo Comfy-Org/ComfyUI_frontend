@@ -51,20 +51,20 @@ watchDebounced(
 
 <template>
   <div
-    class="group border-agent-border-strong relative my-2 overflow-hidden rounded-md border"
+    class="group relative my-2 overflow-hidden rounded-md border border-border-default"
   >
     <div
-      class="border-agent-border-strong bg-agent-surface-hover flex items-center justify-between border-b px-3 py-1.5"
+      class="flex items-center justify-between border-b border-border-default bg-secondary-background-hover px-3 py-1.5"
     >
       <span
-        class="text-agent-fg-subtle flex items-center gap-1.5 font-mono text-xs"
+        class="flex items-center gap-1.5 font-mono text-xs text-muted-foreground"
       >
         <span class="icon-[lucide--file-code] size-3.5" />
-        <span class="text-agent-fg font-medium">{{ lang }}</span>
+        <span class="font-medium text-base-foreground">{{ lang }}</span>
       </span>
       <button
         type="button"
-        class="text-agent-fg-subtle hover:bg-agent-surface hover:text-agent-fg border-agent-border-strong flex items-center gap-1 rounded-sm border px-2 py-0.5 font-mono text-xs transition-colors"
+        class="flex items-center gap-1 rounded-sm border border-border-default px-2 py-0.5 font-mono text-xs text-muted-foreground transition-colors hover:bg-base-background hover:text-base-foreground"
         @click="copy(code)"
       >
         <span
@@ -85,7 +85,7 @@ watchDebounced(
     />
     <pre
       v-else
-      class="text-agent-fg overflow-x-auto p-4 font-mono text-sm"
+      class="overflow-x-auto p-4 font-mono text-sm text-base-foreground"
     ><code>{{ code }}</code></pre>
   </div>
 </template>

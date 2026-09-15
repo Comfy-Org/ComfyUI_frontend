@@ -121,6 +121,10 @@ regenerated.
 
 ## 3. Principles from the research
 
+The general form of these principles now lives in
+`docs/guidance/testing-principles.md`; this section records how they apply to
+this suite.
+
 ### Composable tests (Kent Beck)
 
 Beck's argument: a test suite is judged as a whole on properties like

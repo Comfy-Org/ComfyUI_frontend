@@ -30,12 +30,7 @@ const EXPECTED_RENDERED_FILLS = EXPECTED_WIDGET_ORDER.map(
   (name) => WIDGET_FILL[name]
 )
 
-test.use({
-  initialSettings: {
-    ...customNodeSuiteSettings,
-    'Comfy.VueNodes.Enabled': true
-  }
-})
+test.use({ initialSettings: customNodeSuiteSettings })
 
 test.beforeEach(async ({ comfyPage }) => {
   trackSubmittedPrompts(comfyPage.page)
@@ -57,79 +52,87 @@ test.afterEach(async ({ comfyPage }) => {
   ])
 })
 
-test.describe('legacy widget registration', { tag: '@custom-nodes' }, () => {
-  test.describe.configure({ timeout: 30_000 })
+test.describe(
+  'legacy widget registration',
+  { tag: ['@custom-nodes', '@vue-nodes'] },
+  () => {
+    test.describe.configure({ timeout: 30_000 })
 
-  test('renders foreign widgets built before graph attachment', async ({
-    comfyPage
-  }) => {
-    await comfyPage.nodeOps.clearGraph()
+    test('renders foreign widgets built before graph attachment', async ({
+      comfyPage
+    }) => {
+      await comfyPage.nodeOps.clearGraph()
 
-    const created = await comfyPage.page.evaluate((type) => {
-      const node = window.LiteGraph!.createNode(type, undefined, {
-        pos: [400, 200]
-      })
-      if (!node) return null
-      const detachedWidgetNames = (node.widgets ?? []).map(
-        (widget) => widget.name
-      )
-      window.app!.graph.add(node)
-      return {
-        id: String(node.id),
-        detachedWidgetNames,
-        attachedWidgetNames: (
-          window.app!.graph.getNodeById(node.id)?.widgets ?? []
-        ).map((widget) => widget.name)
-      }
-    }, NODE_TYPE)
-
-    expect(
-      created,
-      `${NODE_TYPE} is not registered - ComfyUI_devtools is not installed on this backend`
-    ).not.toBeNull()
-
-    expect(
-      created!.detachedWidgetNames,
-      'fixture did not build its widgets before graph attachment'
-    ).toEqual(EXPECTED_WIDGET_ORDER)
-
-    expect(
-      created!.attachedWidgetNames,
-      'graph attachment did not preserve the live widget order'
-    ).toEqual(EXPECTED_WIDGET_ORDER)
-
-    const node = comfyPage.vueNodes.getNodeLocator(created!.id)
-    await expect(node).toBeVisible()
-
-    const widgetCanvases = node
-      .getByTestId(TestIds.widgets.widget)
-      .locator('canvas')
-
-    await expect
-      .poll(
-        () =>
-          widgetCanvases.evaluateAll((canvases) =>
-            canvases.map((element) => {
-              if (!(element instanceof HTMLCanvasElement)) return 'not-a-canvas'
-              if (!element.width || !element.height) return 'unsized'
-              const ctx = element.getContext('2d')
-              if (!ctx) return 'no-2d-context'
-              const [red, green, blue, alpha] = ctx.getImageData(
-                Math.floor(element.width / 2),
-                Math.floor(element.height / 2),
-                1,
-                1
-              ).data
-              return alpha === 0 ? 'never-drawn' : `${red},${green},${blue}`
-            })
-          ),
-        {
-          message:
-            'Nodes 2.0 did not paint one legacy widget per row in node.widgets order'
+      const created = await comfyPage.page.evaluate((type) => {
+        const node = window.LiteGraph!.createNode(type, undefined, {
+          pos: [400, 200]
+        })
+        if (!node) return null
+        const detachedWidgetNames = (node.widgets ?? []).map(
+          (widget) => widget.name
+        )
+        window.app!.graph.add(node)
+        return {
+          id: String(node.id),
+          detachedWidgetNames,
+          attachedWidgetNames: (
+            window.app!.graph.getNodeById(node.id)?.widgets ?? []
+          ).map((widget) => widget.name)
         }
-      )
-      .toEqual(EXPECTED_RENDERED_FILLS)
+      }, NODE_TYPE)
 
-    await expectNoVisibleErrors(comfyPage.page, 'after mounting legacy widgets')
-  })
-})
+      expect(
+        created,
+        `${NODE_TYPE} is not registered - ComfyUI_devtools is not installed on this backend`
+      ).not.toBeNull()
+
+      expect(
+        created!.detachedWidgetNames,
+        'fixture did not build its widgets before graph attachment'
+      ).toEqual(EXPECTED_WIDGET_ORDER)
+
+      expect(
+        created!.attachedWidgetNames,
+        'graph attachment did not preserve the live widget order'
+      ).toEqual(EXPECTED_WIDGET_ORDER)
+
+      const node = comfyPage.vueNodes.getNodeLocator(created!.id)
+      await expect(node).toBeVisible()
+
+      const widgetCanvases = node
+        .getByTestId(TestIds.widgets.widget)
+        .locator('canvas')
+
+      await expect
+        .poll(
+          () =>
+            widgetCanvases.evaluateAll((canvases) =>
+              canvases.map((element) => {
+                if (!(element instanceof HTMLCanvasElement))
+                  return 'not-a-canvas'
+                if (!element.width || !element.height) return 'unsized'
+                const ctx = element.getContext('2d')
+                if (!ctx) return 'no-2d-context'
+                const [red, green, blue, alpha] = ctx.getImageData(
+                  Math.floor(element.width / 2),
+                  Math.floor(element.height / 2),
+                  1,
+                  1
+                ).data
+                return alpha === 0 ? 'never-drawn' : `${red},${green},${blue}`
+              })
+            ),
+          {
+            message:
+              'Nodes 2.0 did not paint one legacy widget per row in node.widgets order'
+          }
+        )
+        .toEqual(EXPECTED_RENDERED_FILLS)
+
+      await expectNoVisibleErrors(
+        comfyPage.page,
+        'after mounting legacy widgets'
+      )
+    })
+  }
+)
