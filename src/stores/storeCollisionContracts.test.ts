@@ -153,7 +153,12 @@ describe('store collision contracts (EX-002)', () => {
     assert(incumbent)
 
     const usurper = nodeState(1, rootA, 'Usurper')
+    // ADR ECS-IDENTITY-0016 pins the collision rejection as silent: the store
+    // must not log, because it lacks the caller's re-mint recovery context.
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
     expect(store.registerNode(scopeA, usurper)).toBeUndefined()
+    expect(warn).not.toHaveBeenCalled()
+    warn.mockRestore()
 
     expect(incumbent.title).toBe('Incumbent')
     expect(store.getGraphNodesFor(rootA, rootA)).toHaveLength(1)
