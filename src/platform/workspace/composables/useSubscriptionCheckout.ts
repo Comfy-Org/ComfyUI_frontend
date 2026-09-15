@@ -1224,7 +1224,7 @@ export function useSubscriptionCheckout(
     const ownerUid = useAuthStore().userId
     if (!workspaceId || !ownerUid) return null
 
-    const { record, resumed } = resolveCheckoutJourney({
+    const resolved = resolveCheckoutJourney({
       actorUid: ownerUid,
       workspaceId,
       entryFlow: currentSubscriptionEntryFlow(),
@@ -1233,10 +1233,12 @@ export function useSubscriptionCheckout(
       uiMode: embeddedCheckoutEnabled ? 'embedded' : 'hosted',
       assignment: resolveCheckoutAssignment(api.getServerFeatures())
     })
-    if (!resumed) {
-      emitCheckoutJourneyPhase(record, { phase: 'entered' })
+    if (resolved.status === 'blocked') return null
+
+    if (!resolved.resumed) {
+      emitCheckoutJourneyPhase(resolved.record, { phase: 'entered' })
     }
-    return record
+    return resolved.record
   }
 
   function linkSubmittingJourneyToOperation(

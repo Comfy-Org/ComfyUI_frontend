@@ -353,16 +353,16 @@ function enterTopupJourney(): void {
   const ownerUid = useAuthStore().userId
   if (!workspaceId || !ownerUid) return
 
-  const { record, resumed } = resolveCheckoutJourney({
+  const resolved = resolveCheckoutJourney({
     actorUid: ownerUid,
     workspaceId,
     entryFlow: 'topup',
     entrySource: 'settings_billing',
     assignment: resolveCheckoutAssignment(api.getServerFeatures())
   })
-  if (!resumed) {
-    emitTopupJourneyPhase(record, { phase: 'entered' })
-  }
+  if (resolved.status === 'blocked' || resolved.resumed) return
+
+  emitTopupJourneyPhase(resolved.record, { phase: 'entered' })
 }
 
 onMounted(enterTopupJourney)

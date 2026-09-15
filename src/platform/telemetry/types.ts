@@ -1093,10 +1093,35 @@ export type CheckoutJourneyTelemetryEvent = CheckoutJourneyContext &
 export type CheckoutJourneyTelemetryEventName =
   `billing.checkout.${CheckoutJourneyPhase}`
 
+/**
+ * The wire name for every phase. Typed as a total `Record` over the phase
+ * union, so a phase added to the union without a name here fails to compile —
+ * and so the runtime list below can never drift from the emitted names.
+ */
+const CHECKOUT_JOURNEY_EVENT_NAME_BY_PHASE: Record<
+  CheckoutJourneyPhase,
+  CheckoutJourneyTelemetryEventName
+> = {
+  entered: 'billing.checkout.entered',
+  preview_ready: 'billing.checkout.preview_ready',
+  preview_failed: 'billing.checkout.preview_failed',
+  payment_element_ready: 'billing.checkout.payment_element_ready',
+  payment_element_failed: 'billing.checkout.payment_element_failed',
+  payment_submit_attempted: 'billing.checkout.payment_submit_attempted',
+  payment_submit_failed: 'billing.checkout.payment_submit_failed',
+  submitted: 'billing.checkout.submitted',
+  operation_linked: 'billing.checkout.operation_linked'
+}
+
+/** Runtime counterpart of `CheckoutJourneyTelemetryEventName`, so providers can
+ * validate a configured disable list that names these events. */
+export const CHECKOUT_JOURNEY_EVENT_NAMES: readonly CheckoutJourneyTelemetryEventName[] =
+  Object.values(CHECKOUT_JOURNEY_EVENT_NAME_BY_PHASE)
+
 export function getCheckoutJourneyTelemetryEventName(
   event: CheckoutJourneyTelemetryEvent
 ): CheckoutJourneyTelemetryEventName {
-  return `billing.checkout.${event.phase}`
+  return CHECKOUT_JOURNEY_EVENT_NAME_BY_PHASE[event.phase]
 }
 
 export function getCheckoutJourneyTelemetryEventPayload(

@@ -89,11 +89,19 @@ export interface StartCheckoutJourneyInput extends CheckoutJourneyIdentity {
   uiMode?: CheckoutUiMode
 }
 
-export interface ResolveCheckoutJourneyResult {
-  record: CheckoutJourneyRecord
-  /** True when an in-flight journey was recovered rather than newly created. */
-  resumed: boolean
-}
+export type ResolveCheckoutJourneyResult =
+  | {
+      status: 'active'
+      record: CheckoutJourneyRecord
+      /** True when an in-flight journey was recovered rather than newly created. */
+      resumed: boolean
+    }
+  /**
+   * Another rail owns the single journey slot with an operation still in
+   * flight. This rail gets no journey at all rather than a foreign one: its
+   * phases would otherwise be emitted under the other rail's `entry_flow`.
+   */
+  | { status: 'blocked' }
 
 /**
  * Freeze the rollout arm from the server feature response used at entry. An
@@ -190,32 +198,33 @@ export function resolveCheckoutJourney(
   const now = Date.now()
   const existing = loadCheckoutJourney()
 
+  const live = existing && !isCheckoutJourneyExpired(existing, now)
+
   if (
-    existing &&
-    !isCheckoutJourneyExpired(existing, now) &&
+    live &&
     journeyMatchesIdentity(existing, input) &&
     existing.entry_flow === input.entryFlow &&
     existing.intent === input.intent
   ) {
-    return { record: existing, resumed: true }
+    return { status: 'active', record: existing, resumed: true }
   }
 
   // A different rail's operation is in flight and still owns the single journey
   // slot — its poller gates the terminal clear on this record's billing_op_id.
   // A single storage slot can't isolate two concurrent rails, so the bound
-  // journey takes precedence until it resolves. See ADR-BILLING-CHECKOUT-0031.
+  // journey keeps the slot and this rail goes uninstrumented until it resolves.
+  // See ADR-BILLING-CHECKOUT-0031.
   if (
-    existing &&
-    !isCheckoutJourneyExpired(existing, now) &&
+    live &&
     existing.billing_op_id !== undefined &&
     existing.entry_flow !== input.entryFlow
   ) {
-    return { record: existing, resumed: true }
+    return { status: 'blocked' }
   }
 
   const record = createCheckoutJourneyRecord(input, now)
   saveCheckoutJourney(record)
-  return { record, resumed: false }
+  return { status: 'active', record, resumed: false }
 }
 
 export function getActiveCheckoutJourney(): CheckoutJourneyRecord | null {
@@ -254,8 +263,9 @@ export function clearCheckoutJourney(): void {
 
   try {
     storage.removeItem(CHECKOUT_JOURNEY_STORAGE_KEY)
+    persistedJourneyIsStale = false
   } catch {
-    return
+    persistedJourneyIsStale = true
   }
 }
 
@@ -279,6 +289,14 @@ function createJourneyId(): string {
  * never silently vanishes and `entered` is not re-emitted.
  */
 let inMemoryJourney: CheckoutJourneyRecord | null = null
+
+/**
+ * Set when a write to persistent storage failed, leaving a record there that no
+ * longer reflects this session. Rehydrating it would resurrect a journey the
+ * session already cleared, so persisted reads are suppressed until a write
+ * succeeds.
+ */
+let persistedJourneyIsStale = false
 
 type CheckoutStorage = Pick<Storage, 'getItem' | 'setItem' | 'removeItem'>
 
@@ -316,8 +334,9 @@ function saveCheckoutJourney(record: CheckoutJourneyRecord): void {
 
   try {
     storage.setItem(CHECKOUT_JOURNEY_STORAGE_KEY, JSON.stringify(record))
+    persistedJourneyIsStale = false
   } catch {
-    return
+    persistedJourneyIsStale = true
   }
 }
 
@@ -340,6 +359,10 @@ function loadCheckoutJourney(): CheckoutJourneyRecord | null {
 }
 
 function readPersistedJourney(): CheckoutJourneyRecord | null {
+  if (persistedJourneyIsStale) {
+    return null
+  }
+
   const storage = getStorage()
   if (!storage) {
     return null
@@ -385,9 +408,14 @@ function readIdentity(
 ): PersistedJourneyIdentity | null {
   const { journey_id, entered_at, started_at_ms, actor_uid, workspace_id } =
     candidate
+  // A non-finite started_at_ms would make every expiry comparison false, so an
+  // immortal journey could be persisted by hand; an unparseable entered_at
+  // would reach telemetry as the journey's declared UTC entry time.
   return typeof journey_id === 'string' &&
     typeof entered_at === 'string' &&
+    !Number.isNaN(Date.parse(entered_at)) &&
     typeof started_at_ms === 'number' &&
+    Number.isFinite(started_at_ms) &&
     typeof actor_uid === 'string' &&
     typeof workspace_id === 'string'
     ? { journey_id, entered_at, started_at_ms, actor_uid, workspace_id }

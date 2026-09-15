@@ -3,6 +3,7 @@ import { cleanup, render, screen, waitFor } from '@testing-library/vue'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
+import type { CheckoutJourneyTelemetryEvent } from '@/platform/telemetry/types'
 import {
   clearCheckoutJourney,
   resolveCheckoutJourney
@@ -10,7 +11,9 @@ import {
 
 import UnifiedStripePaymentSelector from './UnifiedStripePaymentSelector.vue'
 
-const mockTrackCheckoutJourneyEvent = vi.hoisted(() => vi.fn())
+const mockTrackCheckoutJourneyEvent = vi.hoisted(() =>
+  vi.fn<(event: CheckoutJourneyTelemetryEvent) => void>()
+)
 vi.mock<unknown>(import('@/platform/telemetry'), () => ({
   useTelemetry: () => ({
     trackCheckoutJourneyEvent: mockTrackCheckoutJourneyEvent
@@ -89,17 +92,20 @@ describe('UnifiedStripePaymentSelector', () => {
     handler?.[1]?.(arg)
   }
 
+  let seededJourneyId = ''
+
   beforeEach(() => {
     sessionStorage.clear()
     clearCheckoutJourney()
     mockTrackCheckoutJourneyEvent.mockClear()
-    resolveCheckoutJourney({
+    const seeded = resolveCheckoutJourney({
       actorUid: 'user-1',
       workspaceId: 'ws-1',
       entryFlow: 'initial_subscription',
       entrySource: 'pricing',
       assignment: { status: 'resolved', arm: 'treatment' }
     })
+    seededJourneyId = seeded.status === 'active' ? seeded.record.journey_id : ''
     vi.stubEnv('VITE_STRIPE_PUBLISHABLE_KEY', 'pk_test_example')
     stripeMocks.loadStripe.mockResolvedValue(stripeMocks.stripe)
     stripeMocks.stripe.elements.mockReturnValue(stripeMocks.elements)
@@ -139,6 +145,7 @@ describe('UnifiedStripePaymentSelector', () => {
 
       expect(mockTrackCheckoutJourneyEvent).toHaveBeenCalledWith(
         expect.objectContaining({
+          checkout_journey_id: seededJourneyId,
           phase: 'payment_element_failed',
           element_phase: 'mount',
           error_code: 'invalid_request'
@@ -161,6 +168,7 @@ describe('UnifiedStripePaymentSelector', () => {
       await waitFor(() =>
         expect(mockTrackCheckoutJourneyEvent).toHaveBeenCalledWith(
           expect.objectContaining({
+            checkout_journey_id: seededJourneyId,
             phase: 'payment_submit_failed',
             submit_phase: 'validation',
             error_code: 'incomplete_number'
@@ -188,6 +196,7 @@ describe('UnifiedStripePaymentSelector', () => {
       await waitFor(() =>
         expect(mockTrackCheckoutJourneyEvent).toHaveBeenCalledWith(
           expect.objectContaining({
+            checkout_journey_id: seededJourneyId,
             phase: 'payment_submit_failed',
             submit_phase: 'validation'
           })

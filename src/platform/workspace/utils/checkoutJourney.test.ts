@@ -9,7 +9,10 @@ import {
   resolveCheckoutJourney,
   toCheckoutJourneyContext
 } from './checkoutJourney'
-import type { StartCheckoutJourneyInput } from './checkoutJourney'
+import type {
+  ResolveCheckoutJourneyResult,
+  StartCheckoutJourneyInput
+} from './checkoutJourney'
 
 const STORAGE_KEY = 'comfy.checkout.journey'
 
@@ -68,38 +71,48 @@ describe('createCheckoutJourneyRecord', () => {
   })
 })
 
+function activeJourney(
+  input: StartCheckoutJourneyInput
+): Extract<ResolveCheckoutJourneyResult, { status: 'active' }> {
+  const result = resolveCheckoutJourney(input)
+  if (result.status !== 'active') {
+    throw new Error(`expected an active journey, got ${result.status}`)
+  }
+  return result
+}
+
 describe('resolveCheckoutJourney', () => {
   it('starts a new journey when none is in flight', () => {
-    const { resumed, record } = resolveCheckoutJourney(baseInput)
+    const { resumed, record } = activeJourney(baseInput)
     expect(resumed).toBe(false)
     expect(getActiveCheckoutJourney()?.journey_id).toBe(record.journey_id)
   })
 
   it('resumes the same journey for the same actor, workspace, and flow', () => {
-    const first = resolveCheckoutJourney(baseInput)
-    const second = resolveCheckoutJourney(baseInput)
+    const first = activeJourney(baseInput)
+    const second = activeJourney(baseInput)
     expect(second.resumed).toBe(true)
     expect(second.record.journey_id).toBe(first.record.journey_id)
     expect(second.record.entered_at).toBe(first.record.entered_at)
   })
 
   it('does not inherit a prior journey after a workspace switch', () => {
-    const first = resolveCheckoutJourney(baseInput)
-    const second = resolveCheckoutJourney({ ...baseInput, workspaceId: 'ws-2' })
+    const first = activeJourney(baseInput)
+    const second = activeJourney({ ...baseInput, workspaceId: 'ws-2' })
     expect(second.resumed).toBe(false)
     expect(second.record.journey_id).not.toBe(first.record.journey_id)
   })
 
   it('does not inherit a prior journey after a different sign-in', () => {
-    const first = resolveCheckoutJourney(baseInput)
-    const second = resolveCheckoutJourney({ ...baseInput, actorUid: 'user-2' })
+    const first = activeJourney(baseInput)
+    const second = activeJourney({ ...baseInput, actorUid: 'user-2' })
     expect(second.resumed).toBe(false)
     expect(second.record.journey_id).not.toBe(first.record.journey_id)
   })
 
   it('starts a new journey when the purchase intent changes', () => {
-    const first = resolveCheckoutJourney(baseInput)
-    const second = resolveCheckoutJourney({ ...baseInput, entryFlow: 'topup' })
+    const first = activeJourney(baseInput)
+    const second = activeJourney({ ...baseInput, entryFlow: 'topup' })
     expect(second.resumed).toBe(false)
     expect(second.record.journey_id).not.toBe(first.record.journey_id)
   })
@@ -107,27 +120,70 @@ describe('resolveCheckoutJourney', () => {
   it('does not resume an expired journey', () => {
     vi.useFakeTimers()
     vi.setSystemTime(new Date('2026-09-09T00:00:00.000Z'))
-    const first = resolveCheckoutJourney(baseInput)
+    const first = activeJourney(baseInput)
 
     vi.setSystemTime(new Date('2026-09-10T01:00:00.000Z'))
-    const second = resolveCheckoutJourney(baseInput)
+    const second = activeJourney(baseInput)
     expect(second.resumed).toBe(false)
     expect(second.record.journey_id).not.toBe(first.record.journey_id)
   })
 
-  it('does not overwrite a different rail bound to an in-flight operation', () => {
-    const subscription = resolveCheckoutJourney(baseInput)
+  it.for([
+    // Infinity survives JSON.parse and makes every expiry comparison false.
+    { field: 'started_at_ms', value: 1e400 },
+    { field: 'entered_at', value: 'not-a-timestamp' }
+  ])(
+    'discards a persisted record with an invalid $field',
+    ({ field, value }) => {
+      sessionStorage.setItem(
+        STORAGE_KEY,
+        JSON.stringify({
+          journey_id: 'journey-1',
+          entered_at: '2026-09-09T00:00:00.000Z',
+          started_at_ms: Date.now(),
+          actor_uid: 'user-1',
+          workspace_id: 'ws-1',
+          entry_flow: 'initial_subscription',
+          entry_source: 'pricing',
+          assignment_status: 'unavailable',
+          [field]: value
+        })
+      )
+
+      expect(getActiveCheckoutJourney()).toBeNull()
+    }
+  )
+
+  it('does not resurrect a journey whose removal from storage failed', () => {
+    activeJourney(baseInput)
+    vi.spyOn(sessionStorage, 'removeItem').mockImplementation(() => {
+      throw new Error('quota')
+    })
+
+    clearCheckoutJourney()
+
+    // The record is still persisted, but this session ended it.
+    expect(sessionStorage.getItem(STORAGE_KEY)).not.toBeNull()
+    expect(getActiveCheckoutJourney()).toBeNull()
+  })
+
+  it('blocks a different rail rather than lending it a bound journey', () => {
+    const subscription = activeJourney(baseInput)
     bindOperationToCheckoutJourney('op-1')
 
     const topup = resolveCheckoutJourney({ ...baseInput, entryFlow: 'topup' })
-    expect(topup.resumed).toBe(true)
-    expect(topup.record.journey_id).toBe(subscription.record.journey_id)
+    // The top-up rail gets no journey at all: emitting its phases against the
+    // subscription record would file them under the subscription entry flow.
+    expect(topup.status).toBe('blocked')
+    expect(getActiveCheckoutJourney()?.journey_id).toBe(
+      subscription.record.journey_id
+    )
     expect(getActiveCheckoutJourney()?.billing_op_id).toBe('op-1')
   })
 
   it('still starts a fresh journey for a different rail when none is bound', () => {
-    const subscription = resolveCheckoutJourney(baseInput)
-    const topup = resolveCheckoutJourney({ ...baseInput, entryFlow: 'topup' })
+    const subscription = activeJourney(baseInput)
+    const topup = activeJourney({ ...baseInput, entryFlow: 'topup' })
     expect(topup.resumed).toBe(false)
     expect(topup.record.journey_id).not.toBe(subscription.record.journey_id)
   })
@@ -135,7 +191,7 @@ describe('resolveCheckoutJourney', () => {
 
 describe('bindOperationToCheckoutJourney', () => {
   it('attaches the operation id to the active journey', () => {
-    resolveCheckoutJourney(baseInput)
+    activeJourney(baseInput)
     const bound = bindOperationToCheckoutJourney('op-1')
     expect(bound?.billing_op_id).toBe('op-1')
     expect(getActiveCheckoutJourney()?.billing_op_id).toBe('op-1')
@@ -146,7 +202,7 @@ describe('bindOperationToCheckoutJourney', () => {
   })
 
   it('refuses to rebind a journey already bound to another operation', () => {
-    resolveCheckoutJourney(baseInput)
+    activeJourney(baseInput)
     bindOperationToCheckoutJourney('op-1')
 
     expect(bindOperationToCheckoutJourney('op-2')).toBeNull()
@@ -156,7 +212,7 @@ describe('bindOperationToCheckoutJourney', () => {
 
 describe('toCheckoutJourneyContext', () => {
   it('maps the record to a telemetry context and omits absent fields', () => {
-    const { record } = resolveCheckoutJourney({
+    const { record } = activeJourney({
       ...baseInput,
       assignment: { status: 'unavailable' }
     })
@@ -174,11 +230,11 @@ describe('toCheckoutJourneyContext', () => {
 
 describe('purchase intent boundary', () => {
   it('starts a new journey when the intent key changes', () => {
-    const first = resolveCheckoutJourney({
+    const first = activeJourney({
       ...baseInput,
       intent: 'standard:monthly'
     })
-    const second = resolveCheckoutJourney({
+    const second = activeJourney({
       ...baseInput,
       intent: 'pro:monthly'
     })
@@ -187,11 +243,11 @@ describe('purchase intent boundary', () => {
   })
 
   it('resumes when the intent key is unchanged', () => {
-    const first = resolveCheckoutJourney({
+    const first = activeJourney({
       ...baseInput,
       intent: 'standard:monthly'
     })
-    const second = resolveCheckoutJourney({
+    const second = activeJourney({
       ...baseInput,
       intent: 'standard:monthly'
     })
@@ -237,20 +293,20 @@ describe('resilience', () => {
   })
 
   it('keeps the active journey when session storage is wiped mid-session', () => {
-    const { record } = resolveCheckoutJourney(baseInput)
+    const { record } = activeJourney(baseInput)
     sessionStorage.removeItem(STORAGE_KEY)
     expect(getActiveCheckoutJourney()?.journey_id).toBe(record.journey_id)
   })
 
   it('prefers the in-memory journey when a replacement write fails', () => {
-    resolveCheckoutJourney({ ...baseInput, intent: 'a' })
+    activeJourney({ ...baseInput, intent: 'a' })
     const setItem = vi
       .spyOn(sessionStorage, 'setItem')
       .mockImplementation(() => {
         throw new Error('quota exceeded')
       })
 
-    const { record } = resolveCheckoutJourney({ ...baseInput, intent: 'b' })
+    const { record } = activeJourney({ ...baseInput, intent: 'b' })
     setItem.mockRestore()
 
     expect(record.intent).toBe('b')
@@ -271,7 +327,7 @@ describe('corrupt storage', () => {
   })
 
   it('clears the active journey', () => {
-    resolveCheckoutJourney(baseInput)
+    activeJourney(baseInput)
     clearCheckoutJourney()
     expect(getActiveCheckoutJourney()).toBeNull()
   })

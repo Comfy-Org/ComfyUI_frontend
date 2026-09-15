@@ -76,6 +76,7 @@ import type {
 } from '../../types'
 import {
   CANCELLATION_STAGE_EVENTS,
+  CHECKOUT_JOURNEY_EVENT_NAMES,
   getBillingTelemetryEventName,
   getBillingTelemetryEventPayload,
   getCheckoutJourneyTelemetryEventName,
@@ -99,7 +100,10 @@ const DEFAULT_DISABLED_EVENTS = [
   TelemetryEvents.WORKFLOW_CREATED
 ] as const satisfies TelemetryEventName[]
 
-const TELEMETRY_EVENT_SET = new Set<string>(Object.values(TelemetryEvents))
+const TELEMETRY_EVENT_SET = new Set<string>([
+  ...Object.values(TelemetryEvents),
+  ...CHECKOUT_JOURNEY_EVENT_NAMES
+])
 
 interface QueuedEvent {
   eventName: TelemetryEventName

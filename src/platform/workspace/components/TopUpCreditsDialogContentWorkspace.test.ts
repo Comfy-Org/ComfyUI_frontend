@@ -6,7 +6,11 @@ import {
 
 import { useBillingOperationStore } from '@/platform/workspace/stores/billingOperationStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
-import { clearCheckoutJourney } from '@/platform/workspace/utils/checkoutJourney'
+import {
+  clearCheckoutJourney,
+  getActiveCheckoutJourney,
+  resolveCheckoutJourney
+} from '@/platform/workspace/utils/checkoutJourney'
 import { useAuthStore } from '@/stores/authStore'
 import { useDialogStore } from '@/stores/dialogStore'
 import { render, screen, waitFor } from '@testing-library/vue'
@@ -290,6 +294,14 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
       phases.indexOf('operation_linked')
     )
     expect(phases.filter((phase) => phase === 'entered')).toHaveLength(1)
+
+    // One denominator: every phase of a top-up must carry the same journey.
+    const journeyIds = new Set(
+      mockTrackCheckoutJourneyEvent.mock.calls.map(
+        ([event]) => event.checkout_journey_id
+      )
+    )
+    expect(journeyIds.size).toBe(1)
   })
 
   it('does not correlate the operation to a journey replaced mid-request', async () => {
@@ -309,9 +321,16 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
       )
     )
 
-    // The user closes this dialog while the request is pending; the active
-    // journey is gone by the time the response lands.
+    // A different journey takes the slot while the request is pending, so the
+    // response must not bind to whatever happens to be active when it lands.
     clearCheckoutJourney()
+    const replacement = resolveCheckoutJourney({
+      actorUid: 'user-1',
+      workspaceId: 'workspace-1',
+      entryFlow: 'initial_subscription',
+      entrySource: 'pricing',
+      assignment: { status: 'unavailable' }
+    })
     resolveTopup(topupResponse('completed'))
     await waitFor(() => expect(mockFetchBalance).toHaveBeenCalled())
 
@@ -320,6 +339,8 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
     )
     expect(phases).toContain('submitted')
     expect(phases).not.toContain('operation_linked')
+    expect(replacement.status).toBe('active')
+    expect(getActiveCheckoutJourney()?.billing_op_id).toBeUndefined()
   })
 
   it('reports failure telemetry when topup resolves with no response', async () => {

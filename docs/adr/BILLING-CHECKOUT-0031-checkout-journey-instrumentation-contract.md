@@ -84,28 +84,36 @@ flag or identity resolution.
 
 A journey is one authenticated actor, one workspace, and one intended purchase.
 Persistence is per-tab `sessionStorage` (24h), surviving reload. The lifecycle
-owner exposes three named transitions:
+owner exposes four named transitions:
 
 | Transition | Rule                                                                                                     |
 | ---------- | -------------------------------------------------------------------------------------------------------- |
 | **resume** | Same actor, workspace, and `entry_flow`, unexpired → reuse the stored record (no new entry)              |
 | **create** | No record, or a changed actor / workspace / entry flow, or expired → discard stale, mint a fresh journey |
-| **end**    | Terminal outcome or explicit clear removes the record                                                    |
+| **end**    | A bound operation succeeding, or an explicit clear, removes the record                                   |
+| **retain** | A bound operation failing or timing out keeps the record, so a retry stays on the same journey           |
 
 UI remount is not an entry. A changed sign-in or workspace switch cannot inherit
 the previous context. Finer intent boundaries within a rail (tier change, top-up
 amount change) are enforced by the calling composable choosing to start a fresh
 journey; the owner enforces the actor/workspace/flow boundary. Stale or corrupt
 storage is discarded safely and legacy records without journey metadata are
-treated as unknown, never assigned retroactively.
+treated as unknown, never assigned retroactively. Persisted timestamps are
+validated at the boundary — a non-finite `started_at_ms` would make the record
+unexpirable, and an unparseable `entered_at` would reach telemetry as the
+journey's declared UTC entry time. When a storage write fails the persisted
+record is treated as stale for the rest of the session rather than rehydrated,
+so a clear that could not reach storage does not resurrect the journey.
 
 Storage is a single per-tab slot, so two rails cannot hold independent journeys
 at once. A journey already bound to an in-flight operation (`billing_op_id` set)
-takes precedence: a differing rail's entry will not overwrite it, and a journey
-binds to exactly one operation and is never rebound. The bound journey's poller
-owns the terminal clear (gated on `billing_op_id`) until it resolves. During
-such an overlap the second rail forgoes its own journey rather than corrupting
-the first; full per-rail isolation is deferred.
+takes precedence: a differing rail's entry is refused outright — it receives no
+journey rather than the foreign one, because emitting its phases against that
+record would file them under the other rail's `entry_flow`. A journey binds to
+exactly one operation and is never rebound, and the bound journey's poller owns
+the terminal clear (gated on `billing_op_id`) until it resolves. The blocked
+rail is therefore uninstrumented for the duration of the overlap; full per-rail
+isolation is deferred.
 
 ### 4. Privacy
 
