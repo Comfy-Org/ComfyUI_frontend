@@ -5352,6 +5352,33 @@
       }
     }
   },
+  "EndLoop": {
+    "display_name": "Finalizar bucle",
+    "inputs": {
+      "accumulate": {
+        "name": "accumulate",
+        "tooltip": "Devuelve output_value de cada iteración cuando está activado; de lo contrario, devuelve solo la iteración final."
+      },
+      "next_iteration_value": {
+        "name": "next_iteration_value",
+        "tooltip": "Valor enviado desde End Loop de vuelta a Start Loop para la siguiente iteración."
+      },
+      "output_value": {
+        "name": "output_value",
+        "tooltip": "Valor devuelto por End Loop. Devuelve la iteración final o todas las iteraciones según accumulate."
+      },
+      "terminations": {
+        "name": "terminations",
+        "tooltip": "Conecta las salidas que deben ejecutarse en cada iteración. Sus valores no se devuelven."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "salidas",
+        "tooltip": "El output_value de la iteración final, o los valores acumulados entre iteraciones cuando accumulate está activado."
+      }
+    }
+  },
   "Epsilon Scaling": {
     "display_name": "Escalado Épsilon",
     "inputs": {
@@ -6825,6 +6852,42 @@
       }
     }
   },
+  "GeminiNodeV3": {
+    "description": "Genera respuestas de texto con los modelos Gemini de Google. Proporciona un prompt de texto y, opcionalmente, una o más imágenes, clips de audio, vídeos o archivos como contexto multimodal.",
+    "display_name": "Google Gemini",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "El modelo Gemini utilizado para generar la respuesta."
+      },
+      "model_max_output_tokens": {
+        "name": "max_output_tokens"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_seed": {
+        "name": "seed"
+      },
+      "model_system_prompt": {
+        "name": "system_prompt"
+      },
+      "model_thinking_level": {
+        "name": "thinking_level"
+      },
+      "model_video_processing": {
+        "name": "video_processing"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "GeminiVideoOmni": {
     "description": "Genera un video con audio a partir de un prompt de texto usando el modelo Gemini Omni Flash de Google. Opcionalmente, proporciona imágenes y/o videos de referencia para guiar o editar el resultado. Describe la duración deseada (3-10s) y la relación de aspecto (16:9 o 9:16) directamente en el prompt.",
     "display_name": "Google Gemini Omni (Video)",
@@ -7012,6 +7075,22 @@
       },
       "2": {
         "name": "tamaño_de_lote",
+        "tooltip": null
+      }
+    }
+  },
+  "GetItemFromList": {
+    "display_name": "Obtener elemento de la lista",
+    "inputs": {
+      "index": {
+        "name": "index"
+      },
+      "list": {
+        "name": "list"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -11623,6 +11702,73 @@
       "1": {
         "name": "texts",
         "tooltip": "Lista de subtítulos de texto."
+      }
+    }
+  },
+  "LoopIteration": {
+    "display_name": "LoopIteration",
+    "inputs": {
+      "current_iteration_value": {
+        "name": "current_iteration_value"
+      },
+      "is_first": {
+        "name": "is_first"
+      },
+      "is_last": {
+        "name": "is_last"
+      },
+      "iteration_index": {
+        "name": "iteration_index"
+      },
+      "list_item": {
+        "name": "list_item"
+      },
+      "reuse_cache": {
+        "name": "reuse_cache"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      },
+      "2": {
+        "tooltip": null
+      },
+      "3": {
+        "tooltip": null
+      },
+      "4": {
+        "tooltip": null
+      }
+    }
+  },
+  "LoopProgress": {
+    "display_name": "LoopProgress",
+    "inputs": {
+      "position": {
+        "name": "position"
+      },
+      "start_id": {
+        "name": "start_id"
+      },
+      "total": {
+        "name": "total"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "LoopResult": {
+    "display_name": "LoopResult",
+    "inputs": {
+      "close_id": {
+        "name": "close_id"
       }
     }
   },
@@ -22698,6 +22844,52 @@
       "2": {
         "name": "latente",
         "tooltip": null
+      }
+    }
+  },
+  "StartLoop": {
+    "display_name": "Iniciar bucle",
+    "inputs": {
+      "cache_iterations": {
+        "name": "cache_iterations",
+        "tooltip": "Reutiliza los resultados de iteraciones sin cambios de ejecuciones anteriores. Desactívalo para ejecutar de nuevo cada iteración."
+      },
+      "initial_iteration_value": {
+        "name": "initial_iteration_value",
+        "tooltip": "Valor expuesto como current_iteration_value en la primera iteración."
+      },
+      "mode": {
+        "name": "mode",
+        "tooltip": "El modo de iteración del bucle."
+      },
+      "mode_num_iterations": {
+        "name": "num_iterations"
+      },
+      "parent_iteration": {
+        "name": "parent_iteration",
+        "tooltip": "Conecta iteration_index de un Start Loop externo para anidar este bucle."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "iteration_index",
+        "tooltip": "Índice de la iteración actual del bucle."
+      },
+      "1": {
+        "name": "is_first",
+        "tooltip": "Verdadero durante la primera iteración del bucle."
+      },
+      "2": {
+        "name": "is_last",
+        "tooltip": "Verdadero durante la última iteración del bucle."
+      },
+      "3": {
+        "name": "list_item",
+        "tooltip": "Elemento actual de la lista al usar el modo List. None en los modos Simple y For."
+      },
+      "4": {
+        "name": "current_iteration_value",
+        "tooltip": "Valor transportado por el bucle para la iteración actual: initial_iteration_value en la primera iteración y, después, next_iteration_value de End Loop en cada iteración posterior."
       }
     }
   },

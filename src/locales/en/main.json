@@ -1931,6 +1931,8 @@
     "geometry estimation": "geometry estimation",
     "splat": "splat",
     "triposplat": "triposplat",
+    "looping": "looping",
+    "sd": "sd",
     "partner": "partner",
     "Anthropic": "Anthropic",
     "Beeble": "Beeble",
