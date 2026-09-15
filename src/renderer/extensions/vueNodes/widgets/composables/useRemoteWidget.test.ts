@@ -1,717 +1,178 @@
-import { useAuthStore } from '@/stores/authStore'
+import { QueryClient } from '@tanstack/vue-query'
+import { fromPartial } from '@total-typescript/shoehorn'
 import axios from 'axios'
-import {
-  onAuthStateChanged,
-  onIdTokenChanged,
-  setPersistence
-} from 'firebase/auth'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { IWidget } from '@/lib/litegraph/src/litegraph'
-import { api } from '@/scripts/api'
 import { useRemoteWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useRemoteWidget'
-import type { RemoteWidgetConfig } from '@/schemas/nodeDefSchema'
-import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
+import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
+import { useAuthStore } from '@/stores/authStore'
 
-function createMockWidget(overrides: Partial<IWidget> = {}): IWidget {
-  return {
-    name: 'test_widget',
-    type: 'text',
-    value: '',
-    options: {},
-    ...overrides
-  } as Partial<IWidget> as IWidget
-}
+const getAppQueryClient = vi.hoisted(() => vi.fn())
 
-const mockCloudAuth = vi.hoisted(() => ({
-  isCloud: false,
-  authHeader: null as { Authorization: `Bearer ${string}` } | null
-}))
-
-vi.mock(import('axios'), { spy: true })
-vi.mock(import('firebase/auth'), { spy: true })
-vi.mocked(setPersistence).mockResolvedValue(undefined)
-vi.mocked(onAuthStateChanged).mockReturnValue(vi.fn())
-vi.mocked(onIdTokenChanged).mockReturnValue(vi.fn())
-
-vi.mock(import('@/platform/distribution/types'), () => ({
-  get isCloud() {
-    return mockCloudAuth.isCloud
+vi.mock(import('firebase/auth'))
+vi.mock(import('@/platform/remote/queryClient'), () => ({ getAppQueryClient }))
+vi.mock(import('@/platform/distribution/types'), () => ({ isCloud: true }))
+vi.mock<unknown>(import('@/scripts/api'), () => ({
+  api: {
+    addEventListener: vi.fn(),
+    removeEventListener: vi.fn()
   }
 }))
-
-const FIRST_BACKOFF = 1000 // backoff is 1s on first retry
-const DEFAULT_VALUE = 'Loading...'
-
-function createMockConfig(overrides = {}): RemoteWidgetConfig {
-  return {
-    route: `/api/test/${Date.now()}${Math.random().toString(36).substring(2, 15)}`,
-    refresh: 0,
-    ...overrides
-  }
-}
-
-const createMockOptions = (inputOverrides = {}) => ({
-  remoteConfig: createMockConfig(inputOverrides),
-  defaultValue: DEFAULT_VALUE,
-  node: createMockLGraphNode({
-    addWidget: vi.fn(() => createMockWidget()),
-    onRemoved: undefined
-  }),
-  widget: createMockWidget()
-})
-
-function mockAxiosResponse(data: unknown, status = 200) {
-  vi.mocked(axios.get).mockResolvedValueOnce({ data, status })
-}
-
-function mockAxiosError(error: Error | string) {
-  const err = error instanceof Error ? error : new Error(error)
-  vi.mocked(axios.get).mockRejectedValueOnce(err)
-}
-
-function createHookWithData(data: unknown, inputOverrides = {}) {
-  mockAxiosResponse(data)
-  const hook = useRemoteWidget(createMockOptions(inputOverrides))
-  return hook
-}
-
-async function setupHookWithResponse(data: unknown, inputOverrides = {}) {
-  const hook = createHookWithData(data, inputOverrides)
-  const result = await getResolvedValue(hook)
-  return { hook, result }
-}
-
-async function getResolvedValue(hook: ReturnType<typeof useRemoteWidget>) {
-  // Create a promise that resolves when the fetch is complete
-  const responsePromise = new Promise<void>((resolve) => {
-    hook.getValue(() => resolve())
-  })
-  await responsePromise
-  return hook.getCachedValue()
-}
-
-beforeEach(() => {
-  vi.mocked(setPersistence).mockResolvedValue(undefined)
-  vi.mocked(onAuthStateChanged).mockReturnValue(vi.fn())
-  vi.mocked(onIdTokenChanged).mockReturnValue(vi.fn())
-  vi.mocked(useAuthStore().getAuthHeader).mockImplementation(
-    async () => mockCloudAuth.authHeader
-  )
-})
 
 describe('useRemoteWidget', () => {
-  describe('initialization', () => {
-    it('should create hook with default values', () => {
-      const hook = useRemoteWidget(createMockOptions())
-      expect(hook.getCachedValue()).toBeUndefined()
-      expect(hook.getValue()).toBe('Loading...')
-    })
+  let queryClient: QueryClient
 
-    it('should generate consistent cache keys', () => {
-      const options = createMockOptions()
-      const hook1 = useRemoteWidget(options)
-      const hook2 = useRemoteWidget(options)
-      expect(hook1.cacheKey).toBe(hook2.cacheKey)
-    })
-
-    it('should handle query params in cache key', () => {
-      const hook1 = useRemoteWidget(
-        createMockOptions({ query_params: { a: 1 } })
-      )
-      const hook2 = useRemoteWidget(
-        createMockOptions({ query_params: { a: 2 } })
-      )
-      expect(hook1.cacheKey).not.toBe(hook2.cacheKey)
-    })
+  beforeEach(() => {
+    const apiKeyStore = useApiKeyAuthStore()
+    apiKeyStore.apiKeySessionId = 1
+    vi.mocked(apiKeyStore.getApiKey).mockReturnValue('api-key')
+    queryClient = new QueryClient()
+    getAppQueryClient.mockReturnValue(queryClient)
   })
 
-  describe('fetchOptions', () => {
-    it('should fetch data successfully', async () => {
-      const mockData = ['optionA', 'optionB']
-      const { hook, result } = await setupHookWithResponse(mockData)
-      expect(result).toEqual(mockData)
-      expect(vi.mocked(axios.get)).toHaveBeenCalledWith(
-        hook.cacheKey.split(';')[0], // Get the route part from cache key
-        expect.any(Object)
-      )
-    })
-
-    it('should use response_key if provided', async () => {
-      const mockResponse = { items: ['optionB', 'optionA', 'optionC'] }
-      const { result } = await setupHookWithResponse(mockResponse, {
-        response_key: 'items'
+  it('does not return cached data from a previous API-key session', () => {
+    const node = new LGraphNode('Test')
+    vi.spyOn(node, 'addWidget').mockReturnValue(
+      fromPartial<IWidget>({
+        type: 'toggle',
+        name: 'Auto-refresh after generation',
+        value: false,
+        options: {}
       })
-      expect(result).toEqual(mockResponse.items)
+    )
+    const widget = fromPartial<IWidget>({
+      type: 'combo',
+      name: 'remote',
+      value: undefined,
+      options: {}
+    })
+    const remote = useRemoteWidget({
+      remoteConfig: { route: '/options' },
+      defaultValue: [],
+      node,
+      widget
     })
 
-    it('should cache successful responses', async () => {
-      const mockData = ['optionA', 'optionB', 'optionC', 'optionD']
-      const { hook } = await setupHookWithResponse(mockData)
-      const entry = hook.getCacheEntry()
+    queryClient.setQueryData(remote.getQueryKey(), ['session-a'])
+    expect(remote.getCachedValue()).toEqual(['session-a'])
 
-      expect(entry?.data).toEqual(mockData)
-      expect(entry?.error).toBeNull()
-    })
-
-    it('should handle fetch errors', async () => {
-      const error = new Error('Network error')
-      mockAxiosError(error)
-
-      const { hook } = await setupHookWithResponse([])
-
-      const entry = hook.getCacheEntry()
-      expect(entry?.error).toBeTruthy()
-      expect(entry?.lastErrorTime).toBeDefined()
-    })
-
-    it('should handle empty array responses', async () => {
-      const { result } = await setupHookWithResponse([])
-      expect(result).toEqual([])
-    })
-
-    it('should handle malformed response data', async () => {
-      const hook = useRemoteWidget(createMockOptions())
-
-      mockAxiosResponse(null)
-      const data1 = hook.getValue()
-
-      mockAxiosResponse(undefined)
-      const data2 = hook.getValue()
-
-      expect(data1).toBe(DEFAULT_VALUE)
-      expect(data2).toBe(DEFAULT_VALUE)
-    })
-
-    it('should handle non-200 status codes', async () => {
-      mockAxiosError('Request failed with status code 404')
-
-      const { hook } = await setupHookWithResponse([])
-      const entry = hook.getCacheEntry()
-      expect(entry?.error?.message).toBe('Request failed with status code 404')
-    })
+    useApiKeyAuthStore().apiKeySessionId = 2
+    expect(remote.getCachedValue()).toEqual([])
   })
 
-  describe('refresh behavior', () => {
-    describe('permanent widgets (no refresh)', () => {
-      it('permanent widgets should not attempt fetch after initialization', async () => {
-        const mockData = ['data that is permanent after initialization']
-        const { hook } = await setupHookWithResponse(mockData)
-
-        await getResolvedValue(hook)
-        await getResolvedValue(hook)
-
-        expect(vi.mocked(axios.get)).toHaveBeenCalledTimes(1)
-      })
-
-      it('permanent widgets should re-fetch if refreshValue is called', async () => {
-        const mockData = ['data that is permanent after initialization']
-        const { hook } = await setupHookWithResponse(mockData)
-
-        await getResolvedValue(hook)
-        expect(hook.getCachedValue()).toEqual(mockData)
-
-        const refreshedData = ['data that user forced to be fetched']
-        mockAxiosResponse(refreshedData)
-
-        hook.refreshValue()
-
-        // Wait for cache to update with refreshed data
-        await vi.waitFor(() => {
-          expect(hook.getCachedValue()).toEqual(refreshedData)
+  it('uses captured credentials and ignores a response after the auth scope changes', async () => {
+    const node = new LGraphNode('Test')
+    vi.spyOn(node, 'addWidget').mockReturnValue(
+      fromPartial<IWidget>({ type: 'toggle', options: {} })
+    )
+    const callback = vi.fn()
+    const widget = fromPartial<IWidget>({
+      type: 'combo',
+      value: undefined,
+      callback,
+      options: {}
+    })
+    vi.mocked(useAuthStore().getAuthHeader).mockResolvedValue({
+      'X-API-KEY': 'session-a'
+    })
+    let resolveRequest!: (value: { data: string[] }) => void
+    vi.spyOn(axios, 'get').mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          resolveRequest = resolve
         })
-
-        expect(vi.mocked(axios.get)).toHaveBeenCalledTimes(2)
-      })
-
-      it('permanent widgets should still retry if request fails', async () => {
-        mockAxiosError('Network error')
-
-        const hook = useRemoteWidget(createMockOptions())
-        await getResolvedValue(hook)
-        expect(vi.mocked(axios.get)).toHaveBeenCalledTimes(1)
-
-        vi.advanceTimersByTime(FIRST_BACKOFF)
-        const secondData = await getResolvedValue(hook)
-        expect(secondData).toBe('Loading...')
-        expect(vi.mocked(axios.get)).toHaveBeenCalledTimes(2)
-      })
-
-      it('should treat empty refresh field as permanent', async () => {
-        const { hook } = await setupHookWithResponse(['data that is permanent'])
-
-        await getResolvedValue(hook)
-        await getResolvedValue(hook)
-
-        expect(vi.mocked(axios.get)).toHaveBeenCalledTimes(1)
-      })
+    )
+    const remote = useRemoteWidget({
+      remoteConfig: { route: '/options' },
+      defaultValue: [],
+      node,
+      widget
     })
+    const fulfilled = new Promise<void>((resolve) => remote.getValue(resolve))
 
-    it('should refresh when data is stale', async () => {
-      const refresh = 256
-      const mockData1 = ['option1']
-      const mockData2 = ['option2']
-
-      const { hook } = await setupHookWithResponse(mockData1, { refresh })
-      mockAxiosResponse(mockData2)
-
-      vi.advanceTimersByTime(refresh)
-      const newData = await getResolvedValue(hook)
-
-      expect(newData).toEqual(mockData2)
-      expect(vi.mocked(axios.get)).toHaveBeenCalledTimes(2)
-    })
-
-    it('should not refresh when data is not stale', async () => {
-      const { hook } = await setupHookWithResponse(['option1'], {
-        refresh: 512
-      })
-
-      vi.advanceTimersByTime(128)
-      await getResolvedValue(hook)
-
-      expect(vi.mocked(axios.get)).toHaveBeenCalledTimes(1)
-    })
-
-    it('should use backoff instead of refresh after error', async () => {
-      const refresh = 4096
-      const { hook } = await setupHookWithResponse(['first success'], {
-        refresh
-      })
-
-      mockAxiosError('Network error')
-      vi.advanceTimersByTime(refresh)
-      await getResolvedValue(hook)
-      expect(vi.mocked(axios.get)).toHaveBeenCalledTimes(2)
-
-      mockAxiosResponse(['second success'])
-      vi.advanceTimersByTime(FIRST_BACKOFF)
-      const thirdData = await getResolvedValue(hook)
-      expect(thirdData).toEqual(['second success'])
-      expect(vi.mocked(axios.get)).toHaveBeenCalledTimes(3)
-    })
-
-    it('should use last valid value after error', async () => {
-      const refresh = 4096
-      const { hook } = await setupHookWithResponse(['a valid value'], {
-        refresh
-      })
-
-      mockAxiosError('Network error')
-      vi.advanceTimersByTime(refresh)
-      const secondData = await getResolvedValue(hook)
-
-      expect(secondData).toEqual(['a valid value'])
-      expect(vi.mocked(axios.get)).toHaveBeenCalledTimes(2)
-    })
-  })
-
-  describe('error handling and backoff', () => {
-    it('should implement exponential backoff on errors', async () => {
-      mockAxiosError('Network error')
-
-      const hook = useRemoteWidget(createMockOptions())
-      await getResolvedValue(hook)
-      const entry1 = hook.getCacheEntry()
-      expect(entry1?.error).toBeTruthy()
-
-      await getResolvedValue(hook)
-      expect(vi.mocked(axios.get)).toHaveBeenCalledTimes(1)
-
-      vi.advanceTimersByTime(500)
-      await getResolvedValue(hook)
-      expect(vi.mocked(axios.get)).toHaveBeenCalledTimes(1) // Still backing off
-
-      vi.advanceTimersByTime(3000)
-      await getResolvedValue(hook)
-      expect(vi.mocked(axios.get)).toHaveBeenCalledTimes(2)
-      expect(entry1?.data).toBeDefined()
-    })
-
-    it('should reset error state on successful fetch', async () => {
-      mockAxiosError('Network error')
-      const hook = useRemoteWidget(createMockOptions())
-      const firstData = await getResolvedValue(hook)
-      expect(firstData).toBe('Loading...')
-
-      vi.advanceTimersByTime(3000)
-      mockAxiosResponse(['option1'])
-      const secondData = await getResolvedValue(hook)
-      expect(secondData).toEqual(['option1'])
-
-      const entry = hook.getCacheEntry()
-      expect(entry?.error).toBeNull()
-      expect(entry?.retryCount).toBe(0)
-    })
-
-    it('should save successful data after backoff', async () => {
-      mockAxiosError('Network error')
-      const hook = useRemoteWidget(createMockOptions())
-      await getResolvedValue(hook)
-      const entry1 = hook.getCacheEntry()
-      expect(entry1?.error).toBeTruthy()
-
-      vi.advanceTimersByTime(3000)
-      mockAxiosResponse(['success after backoff'])
-      const secondData = await getResolvedValue(hook)
-      expect(secondData).toEqual(['success after backoff'])
-
-      const entry2 = hook.getCacheEntry()
-      expect(entry2?.error).toBeNull()
-      expect(entry2?.retryCount).toBe(0)
-    })
-
-    it('should save successful data after multiple backoffs', async () => {
-      mockAxiosError('Network error')
-      mockAxiosError('Network error')
-      mockAxiosError('Network error')
-      const hook = useRemoteWidget(createMockOptions())
-      await getResolvedValue(hook)
-      const entry1 = hook.getCacheEntry()
-      expect(entry1?.error).toBeTruthy()
-
-      vi.advanceTimersByTime(3000)
-      const secondData = await getResolvedValue(hook)
-      expect(secondData).toBe('Loading...')
-      expect(entry1?.error).toBeDefined()
-
-      vi.advanceTimersByTime(9000)
-      const thirdData = await getResolvedValue(hook)
-      expect(thirdData).toBe('Loading...')
-      expect(entry1?.error).toBeDefined()
-
-      vi.advanceTimersByTime(120_000)
-      mockAxiosResponse(['success after multiple backoffs'])
-      const fourthData = await getResolvedValue(hook)
-      expect(fourthData).toEqual(['success after multiple backoffs'])
-
-      const entry2 = hook.getCacheEntry()
-      expect(entry2?.error).toBeNull()
-      expect(entry2?.retryCount).toBe(0)
-    })
-  })
-
-  describe('cache management', () => {
-    it('should clear cache entries', async () => {
-      const { hook } = await setupHookWithResponse(['to be cleared'])
-      expect(hook.getCachedValue()).toBeDefined()
-
-      hook.refreshValue()
-      expect(hook.getCachedValue()).toBe(DEFAULT_VALUE)
-    })
-
-    it('should prevent duplicate in-flight requests', async () => {
-      const mockData = ['non-duplicate']
-      mockAxiosResponse(mockData)
-
-      const hook = useRemoteWidget(createMockOptions())
-
-      // Start two concurrent getValue calls
-      const promise1 = new Promise<void>((resolve) => {
-        hook.getValue(() => resolve())
-      })
-      const promise2 = new Promise<void>((resolve) => {
-        hook.getValue(() => resolve())
-      })
-
-      // Wait for both e
-      await Promise.all([promise1, promise2])
-
-      // Both should see the same cached data
-      expect(hook.getCachedValue()).toEqual(mockData)
-      // Only one axios call should have been made
-      expect(vi.mocked(axios.get)).toHaveBeenCalledTimes(1)
-    })
-  })
-
-  describe('concurrent access and multiple instances', () => {
-    it('should handle concurrent hook instances with same route', async () => {
-      mockAxiosResponse(['shared data'])
-      const options = createMockOptions()
-      const hook1 = useRemoteWidget(options)
-      const hook2 = useRemoteWidget(options)
-
-      // Since they have the same route, only one request will be made
-      await Promise.race([getResolvedValue(hook1), getResolvedValue(hook2)])
-
-      const data1 = hook1.getValue()
-      const data2 = hook2.getValue()
-
-      expect(data1).toEqual(['shared data'])
-      expect(data2).toEqual(['shared data'])
-      expect(vi.mocked(axios.get)).toHaveBeenCalledTimes(1)
-      expect(hook1.getCachedValue()).toBe(hook2.getCachedValue())
-    })
-
-    it('should use shared cache across multiple hooks', async () => {
-      mockAxiosResponse(['shared data'])
-      const options = createMockOptions()
-      const hook1 = useRemoteWidget(options)
-      const hook2 = useRemoteWidget(options)
-      const hook3 = useRemoteWidget(options)
-      const hook4 = useRemoteWidget(options)
-
-      const data1 = await getResolvedValue(hook1)
-      const data2 = await getResolvedValue(hook2)
-      const data3 = await getResolvedValue(hook3)
-      const data4 = await getResolvedValue(hook4)
-
-      expect(data1).toEqual(['shared data'])
-      expect(data2).toBe(data1)
-      expect(data3).toBe(data1)
-      expect(data4).toBe(data1)
-      expect(vi.mocked(axios.get)).toHaveBeenCalledTimes(1)
-      expect(hook1.getCachedValue()).toBe(hook2.getCachedValue())
-      expect(hook2.getCachedValue()).toBe(hook3.getCachedValue())
-      expect(hook3.getCachedValue()).toBe(hook4.getCachedValue())
-    })
-
-    it('should handle rapid cache clearing during fetch', async () => {
-      let resolvePromise: (value: { data: unknown; status?: number }) => void
-      const delayedPromise = new Promise<{ data: unknown; status?: number }>(
-        (resolve) => {
-          resolvePromise = resolve
-        }
+    await vi.waitFor(() =>
+      expect(axios.get).toHaveBeenCalledWith(
+        '/options',
+        expect.objectContaining({ headers: { 'X-API-KEY': 'session-a' } })
       )
+    )
+    useApiKeyAuthStore().apiKeySessionId = 2
+    resolveRequest({ data: ['stale-option'] })
+    await fulfilled
 
-      vi.mocked(axios.get).mockImplementationOnce(() => delayedPromise)
-
-      const hook = useRemoteWidget(createMockOptions())
-      hook.getValue()
-      hook.refreshValue()
-
-      resolvePromise!({ data: ['delayed data'] })
-      const data = await getResolvedValue(hook)
-
-      // The value should be the default value because the refreshValue
-      // clears the cache and the fetch is aborted
-      expect(data).toEqual(DEFAULT_VALUE)
-      expect(hook.getCachedValue()).toBe(DEFAULT_VALUE)
-    })
-
-    it('should handle widget destroyed during fetch', async () => {
-      let resolvePromise: (value: { data: unknown; status?: number }) => void
-      const delayedPromise = new Promise<{ data: unknown; status?: number }>(
-        (resolve) => {
-          resolvePromise = resolve
-        }
-      )
-
-      vi.mocked(axios.get).mockImplementationOnce(() => delayedPromise)
-
-      let hook: ReturnType<typeof useRemoteWidget> | null =
-        useRemoteWidget(createMockOptions())
-      const fetchPromise = hook.getValue()
-
-      hook = null
-
-      resolvePromise!({ data: ['delayed data'] })
-      await fetchPromise
-
-      expect(hook).toBeNull()
-      hook = useRemoteWidget(createMockOptions())
-
-      const data2 = await getResolvedValue(hook)
-      expect(data2).toEqual(DEFAULT_VALUE)
-    })
+    expect(widget.value).toBeUndefined()
+    expect(callback).not.toHaveBeenCalled()
   })
 
-  describe('cloud distribution authentication', () => {
-    describe('when distribution is cloud', () => {
-      describe('when authenticated', () => {
-        it('passes Firebase authentication token in request headers', async () => {
-          const mockData = ['authenticated data']
-          mockCloudAuth.authHeader = null
-          mockCloudAuth.isCloud = true
-          mockCloudAuth.authHeader = { Authorization: 'Bearer test-token' }
-          mockAxiosResponse(mockData)
-
-          const hook = useRemoteWidget(createMockOptions())
-          await getResolvedValue(hook)
-
-          expect(vi.mocked(axios.get)).toHaveBeenCalledWith(
-            expect.any(String),
-            expect.objectContaining({
-              headers: { Authorization: 'Bearer test-token' }
-            })
-          )
+  it('deduplicates concurrent requests while resolving auth headers', async () => {
+    const node = new LGraphNode('Test')
+    vi.spyOn(node, 'addWidget').mockReturnValue(
+      fromPartial<IWidget>({ type: 'toggle', options: {} })
+    )
+    const getAuthHeader = vi.mocked(useAuthStore().getAuthHeader)
+    let resolveAuthHeader!: (value: null) => void
+    getAuthHeader.mockReturnValueOnce(
+      new Promise((resolve) => {
+        resolveAuthHeader = resolve
+      })
+    )
+    vi.spyOn(axios, 'get').mockResolvedValueOnce({ data: ['voice-a'] })
+    const createRemote = () =>
+      useRemoteWidget({
+        remoteConfig: { route: '/options' },
+        defaultValue: [],
+        node,
+        widget: fromPartial<IWidget>({
+          type: 'combo',
+          value: undefined,
+          options: {}
         })
       })
-    })
+    const remoteA = createRemote()
+    const remoteB = createRemote()
+    const fulfilledA = new Promise<void>((resolve) => remoteA.getValue(resolve))
+    const fulfilledB = new Promise<void>((resolve) => remoteB.getValue(resolve))
 
-    describe('when distribution is not cloud', () => {
-      it('bypasses authentication for non-cloud environments', async () => {
-        const mockData = ['non-cloud data']
-        mockCloudAuth.isCloud = false
-        mockAxiosResponse(mockData)
+    await vi.waitFor(() => expect(getAuthHeader).toHaveBeenCalledTimes(1))
+    resolveAuthHeader(null)
+    await Promise.all([fulfilledA, fulfilledB])
 
-        const hook = useRemoteWidget(createMockOptions())
-        await getResolvedValue(hook)
-
-        const axiosCall = vi.mocked(axios.get).mock.calls[0][1]
-        expect(axiosCall).not.toHaveProperty('headers')
-      })
-    })
+    expect(axios.get).toHaveBeenCalledTimes(1)
   })
 
-  describe('auto-refresh on task completion', () => {
-    it('should add auto-refresh toggle widget', () => {
-      const mockNode = createMockLGraphNode({
-        addWidget: vi.fn(),
-        widgets: []
-      })
-      const mockWidget = createMockWidget({
-        refresh: vi.fn()
-      })
-
-      useRemoteWidget({
-        remoteConfig: createMockConfig(),
-        defaultValue: DEFAULT_VALUE,
-        node: mockNode,
-        widget: mockWidget
-      })
-
-      // Should add auto-refresh toggle widget
-      expect(mockNode.addWidget).toHaveBeenCalledWith(
-        'toggle',
-        'Auto-refresh after generation',
-        false,
-        expect.any(Function),
-        {
-          serialize: false
-        }
+  it.for([
+    { response: ['voice-a', 7], expectedValue: 'voice-a' },
+    { response: { value: 'voice-a' }, expectedValue: 'default' },
+    { response: ['voice-a', { value: 7 }], expectedValue: 'default' }
+  ])(
+    'accepts combo values and replaces invalid response $response with the default',
+    async ({ response, expectedValue }) => {
+      const node = new LGraphNode('Test')
+      vi.spyOn(node, 'addWidget').mockReturnValue(
+        fromPartial<IWidget>({ type: 'toggle', options: {} })
       )
-    })
-
-    it('should register event listener when enabled', async () => {
-      const addEventListenerSpy = vi.spyOn(api, 'addEventListener')
-
-      const mockNode = createMockLGraphNode({
-        addWidget: vi.fn(),
-        widgets: []
+      const widget = fromPartial<IWidget>({
+        type: 'combo',
+        value: undefined,
+        options: {}
       })
-      const mockWidget = createMockWidget({
-        refresh: vi.fn()
-      })
-
-      useRemoteWidget({
-        remoteConfig: createMockConfig(),
-        defaultValue: DEFAULT_VALUE,
-        node: mockNode,
-        widget: mockWidget
+      vi.mocked(useAuthStore().getAuthHeader).mockResolvedValue(null)
+      vi.spyOn(axios, 'get').mockResolvedValueOnce({ data: response })
+      const remote = useRemoteWidget({
+        remoteConfig: { route: '/options' },
+        defaultValue: ['default'],
+        node,
+        widget
       })
 
-      // Event listener should be registered immediately
-      expect(addEventListenerSpy).toHaveBeenCalledWith(
-        'execution_success',
-        expect.any(Function)
+      await new Promise<void>((resolve) => remote.getValue(resolve))
+
+      expect(widget.value).toBe(expectedValue)
+      expect(queryClient.getQueryData(remote.getQueryKey())).toEqual(
+        expectedValue === 'voice-a' ? response : ['default']
       )
-    })
-
-    it('should refresh widget when workflow completes successfully', async () => {
-      let executionSuccessHandler: (() => void) | undefined
-
-      vi.spyOn(api, 'addEventListener').mockImplementation((event, handler) => {
-        if (event === 'execution_success') {
-          executionSuccessHandler = handler as () => void
-        }
-      })
-
-      const mockNode = createMockLGraphNode({
-        addWidget: vi.fn(),
-        widgets: []
-      })
-      const mockWidget = createMockWidget({})
-
-      useRemoteWidget({
-        remoteConfig: createMockConfig(),
-        defaultValue: DEFAULT_VALUE,
-        node: mockNode,
-        widget: mockWidget
-      })
-
-      // Spy on the refresh function that was added by useRemoteWidget
-      const refreshSpy = vi.spyOn(mockWidget, 'refresh')
-
-      // Get the toggle callback and enable auto-refresh
-      const addWidgetMock = mockNode.addWidget as ReturnType<typeof vi.fn>
-      const toggleCallback = addWidgetMock.mock.calls.find(
-        (call: unknown[]) => call[0] === 'toggle'
-      )?.[3]
-      toggleCallback?.(true)
-
-      // Simulate workflow completion
-      executionSuccessHandler?.()
-
-      expect(refreshSpy).toHaveBeenCalled()
-    })
-
-    it('should not refresh when toggle is disabled', async () => {
-      let executionSuccessHandler: (() => void) | undefined
-
-      vi.spyOn(api, 'addEventListener').mockImplementation((event, handler) => {
-        if (event === 'execution_success') {
-          executionSuccessHandler = handler as () => void
-        }
-      })
-
-      const mockNode = createMockLGraphNode({
-        addWidget: vi.fn(),
-        widgets: []
-      })
-      const mockWidget = createMockWidget({})
-
-      useRemoteWidget({
-        remoteConfig: createMockConfig(),
-        defaultValue: DEFAULT_VALUE,
-        node: mockNode,
-        widget: mockWidget
-      })
-
-      // Spy on the refresh function that was added by useRemoteWidget
-      const refreshSpy = vi.spyOn(mockWidget, 'refresh')
-
-      // Toggle is disabled by default
-      // Simulate workflow completion
-      executionSuccessHandler?.()
-
-      expect(refreshSpy).not.toHaveBeenCalled()
-    })
-
-    it('should cleanup event listener on node removal', async () => {
-      let executionSuccessHandler: (() => void) | undefined
-
-      vi.spyOn(api, 'addEventListener').mockImplementation((event, handler) => {
-        if (event === 'execution_success') {
-          executionSuccessHandler = handler as () => void
-        }
-      })
-
-      const removeEventListenerSpy = vi.spyOn(api, 'removeEventListener')
-
-      const mockNode = createMockLGraphNode({
-        addWidget: vi.fn(),
-        widgets: [],
-        onRemoved: undefined
-      })
-      const mockWidget = createMockWidget({
-        refresh: vi.fn()
-      })
-
-      useRemoteWidget({
-        remoteConfig: createMockConfig(),
-        defaultValue: DEFAULT_VALUE,
-        node: mockNode,
-        widget: mockWidget
-      })
-
-      // Simulate node removal
-      mockNode.onRemoved?.()
-
-      expect(removeEventListenerSpy).toHaveBeenCalledWith(
-        'execution_success',
-        executionSuccessHandler
-      )
-    })
-  })
+    }
+  )
 })

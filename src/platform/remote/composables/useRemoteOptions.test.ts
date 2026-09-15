@@ -1,0 +1,169 @@
+import { QueryClient, VueQueryPlugin } from '@tanstack/vue-query'
+import axios from 'axios'
+import { describe, expect, it, vi } from 'vitest'
+import { createApp, effectScope, h } from 'vue'
+
+import { useRemoteOptions } from '@/platform/remote/composables/useRemoteOptions'
+import { remoteOptionKeys } from '@/platform/remote/queryKeys'
+import type { RemoteRequestDescriptor } from '@/platform/remote/schema/remoteRequestSchema'
+import { useAuthStore } from '@/stores/authStore'
+
+vi.mock(import('firebase/auth'))
+
+function createTestQueryClient() {
+  return new QueryClient({
+    defaultOptions: { queries: { retry: false, gcTime: 0 } }
+  })
+}
+
+function withSetup<T>(setup: () => T): { result: T; cleanup: () => void } {
+  let result!: T
+  const queryClient = createTestQueryClient()
+  const app = createApp({
+    setup() {
+      result = setup()
+      return () => h('div')
+    }
+  })
+  app.use(VueQueryPlugin, { queryClient })
+  const container = document.createElement('div')
+  app.mount(container)
+  return {
+    result,
+    cleanup: () => {
+      app.unmount()
+    }
+  }
+}
+
+const desc: RemoteRequestDescriptor = {
+  client: 'comfyApi',
+  route: '/test'
+}
+
+describe('useRemoteOptions', () => {
+  it('builds a stable, scope-aware query key', () => {
+    const key = remoteOptionKeys.byRoute(desc, {
+      userId: 'u1',
+      workspaceId: 'w1'
+    })
+    expect(key).toContain('comfyApi')
+    expect(key).toContain('/test')
+    expect(key).toContain('u1')
+    expect(key).toContain('w1')
+  })
+
+  it('partitions by route', () => {
+    const a = remoteOptionKeys.byRoute(
+      { client: 'comfyApi', route: '/a' },
+      { userId: 'u1', workspaceId: null }
+    )
+    const b = remoteOptionKeys.byRoute(
+      { client: 'comfyApi', route: '/b' },
+      { userId: 'u1', workspaceId: null }
+    )
+    expect(JSON.stringify(a)).not.toBe(JSON.stringify(b))
+  })
+
+  it('partitions by workspaceId', () => {
+    const a = remoteOptionKeys.byRoute(desc, {
+      userId: 'u1',
+      workspaceId: 'w1'
+    })
+    const b = remoteOptionKeys.byRoute(desc, {
+      userId: 'u1',
+      workspaceId: 'w2'
+    })
+    expect(JSON.stringify(a)).not.toBe(JSON.stringify(b))
+  })
+
+  it('partitions anonymous from api-key sessions even when userId/workspaceId match', () => {
+    const anon = remoteOptionKeys.byRoute(desc, {
+      userId: null,
+      workspaceId: null,
+      apiKeyBucket: 'anon'
+    })
+    const apikey = remoteOptionKeys.byRoute(desc, {
+      userId: null,
+      workspaceId: null,
+      apiKeyBucket: 'apikey'
+    })
+    expect(JSON.stringify(anon)).not.toBe(JSON.stringify(apikey))
+  })
+
+  it('partitions one API-key session from its replacement', () => {
+    const keyA = remoteOptionKeys.byRoute(desc, {
+      userId: null,
+      workspaceId: null,
+      apiKeyBucket: 'apikey',
+      apiKeySessionId: 1
+    })
+    const keyB = remoteOptionKeys.byRoute(desc, {
+      userId: null,
+      workspaceId: null,
+      apiKeyBucket: 'apikey',
+      apiKeySessionId: 2
+    })
+    expect(keyA).not.toEqual(keyB)
+    expect(JSON.stringify(keyA)).not.toContain('key-a')
+    expect(JSON.stringify(keyB)).not.toContain('key-b')
+  })
+
+  it('does not deduplicate concurrent requests with different execution policies', async () => {
+    const queryClient = createTestQueryClient()
+    const timeoutRequest = vi.fn().mockResolvedValue('timeout-policy')
+    const retryRequest = vi.fn().mockResolvedValue('retry-policy')
+    const scope = { userId: 'u1', workspaceId: 'w1' }
+
+    const results = await Promise.all([
+      queryClient.fetchQuery({
+        queryKey: remoteOptionKeys.byRoute(
+          { ...desc, timeout: 1_000, maxRetries: 3 },
+          scope
+        ),
+        queryFn: timeoutRequest
+      }),
+      queryClient.fetchQuery({
+        queryKey: remoteOptionKeys.byRoute(
+          { ...desc, timeout: 30_000, maxRetries: 5 },
+          scope
+        ),
+        queryFn: retryRequest
+      })
+    ])
+
+    expect(results).toEqual(['timeout-policy', 'retry-policy'])
+    expect(timeoutRequest).toHaveBeenCalledOnce()
+    expect(retryRequest).toHaveBeenCalledOnce()
+  })
+
+  it('normalizes omitted execution policies to their defaults', () => {
+    const scope = { userId: 'u1', workspaceId: 'w1' }
+    expect(remoteOptionKeys.byRoute(desc, scope)).toEqual(
+      remoteOptionKeys.byRoute(
+        { ...desc, timeout: 30_000, maxRetries: 3 },
+        scope
+      )
+    )
+  })
+
+  it('returns disabled state when descriptor is null', async () => {
+    vi.mocked(useAuthStore().getAuthHeader).mockResolvedValue(null)
+    vi.spyOn(axios, 'get').mockResolvedValue({ data: [], status: 200 })
+    const scope = effectScope()
+    let result!: ReturnType<typeof useRemoteOptions>
+    let cleanup = () => {}
+    scope.run(() => {
+      const mounted = withSetup(() =>
+        useRemoteOptions({
+          descriptor: null
+        })
+      )
+      result = mounted.result
+      cleanup = mounted.cleanup
+    })
+    expect(result.isLoading.value).toBe(false)
+    cleanup()
+    scope.stop()
+  })
+})
