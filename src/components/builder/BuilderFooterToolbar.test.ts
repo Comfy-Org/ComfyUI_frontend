@@ -11,10 +11,6 @@ import { useWorkflowStore } from '@/platform/workflow/management/stores/workflow
 import { useAppModeStore } from '@/stores/appModeStore'
 import { toNodeId } from '@/types/nodeId'
 
-beforeEach(() => {
-  vi.mocked(useAppModeStore().exitBuilder).mockImplementation(() => {})
-})
-
 const mockSave = vi.hoisted(() => vi.fn())
 const mockSaveAs = vi.hoisted(() => vi.fn())
 
@@ -63,6 +59,7 @@ describe('BuilderFooterToolbar', () => {
     appMode.mode = computed(() => 'builder:inputs')
     appMode.isBuilderMode = computed(() => true)
     vi.mocked(useAppMode).mockReturnValue(appMode)
+    vi.mocked(useAppModeStore().exitBuilder).mockImplementation(() => {})
     useAppModeStore().selectedOutputs = [toNodeId('1')]
     useWorkflowStore().activeWorkflow = fromPartial({
       isTemporary: true,
@@ -88,39 +85,51 @@ describe('BuilderFooterToolbar', () => {
   }
 
   it('disables back on the first step', () => {
-    useAppMode().mode = computed(() => 'builder:inputs')
+    vi.spyOn(useAppMode().mode, 'value', 'get').mockReturnValue(
+      'builder:inputs'
+    )
     renderComponent()
     expect(screen.getByRole('button', { name: /back/i })).toBeDisabled()
   })
 
   it('enables back on the arrange step', () => {
-    useAppMode().mode = computed(() => 'builder:arrange')
+    vi.spyOn(useAppMode().mode, 'value', 'get').mockReturnValue(
+      'builder:arrange'
+    )
     renderComponent()
     expect(screen.getByRole('button', { name: /back/i })).toBeEnabled()
   })
 
   it('disables next on arrange step when no outputs', () => {
-    useAppMode().mode = computed(() => 'builder:arrange')
+    vi.spyOn(useAppMode().mode, 'value', 'get').mockReturnValue(
+      'builder:arrange'
+    )
     useAppModeStore().selectedOutputs = []
     renderComponent()
     expect(screen.getByRole('button', { name: /next/i })).toBeDisabled()
   })
 
   it('enables next on inputs step', () => {
-    useAppMode().mode = computed(() => 'builder:inputs')
+    vi.spyOn(useAppMode().mode, 'value', 'get').mockReturnValue(
+      'builder:inputs'
+    )
     renderComponent()
     expect(screen.getByRole('button', { name: /next/i })).toBeEnabled()
   })
 
   it('calls setMode on back click', async () => {
-    useAppMode().mode = computed(() => 'builder:arrange')
+    vi.spyOn(useAppMode().mode, 'value', 'get').mockReturnValue(
+      'builder:arrange'
+    )
     const { user } = renderComponent()
     await user.click(screen.getByRole('button', { name: /back/i }))
     expect(useAppMode().setMode).toHaveBeenCalledWith('builder:outputs')
   })
 
   it('calls setMode on next click from inputs step', async () => {
-    useAppMode().mode = computed(() => 'builder:inputs')
+    vi.spyOn(useAppMode().mode, 'value', 'get').mockReturnValue(
+      'builder:inputs'
+    )
     const { user } = renderComponent()
     await user.click(screen.getByRole('button', { name: /next/i }))
     expect(useAppMode().setMode).toHaveBeenCalledWith('builder:outputs')
