@@ -152,7 +152,13 @@ const surfaceClass =
             class="flex items-center gap-3 p-3"
             data-testid="account-workspace-current"
           >
-            <span :class="monogramClass" aria-hidden="true">
+            <!-- The mark is the workspace's own colour here, where it stands
+              for the workspace; in the header it is one of three things in a
+              pill and stays quiet. -->
+            <span
+              :class="cn(monogramClass, 'bg-workspace-mark')"
+              aria-hidden="true"
+            >
               {{ workspaceInitials }}
             </span>
             <span class="flex min-w-0 flex-1 flex-col gap-1">
@@ -207,7 +213,7 @@ const surfaceClass =
         <div class="h-3" aria-hidden="true" />
 
         <div
-          class="group/footer flex items-center gap-3 bg-transparency-white-t4 px-4 py-3"
+          class="group/footer flex items-center gap-3 bg-transparency-white-t4 px-4 pt-6 pb-3"
           data-testid="account-identity"
         >
           <span
