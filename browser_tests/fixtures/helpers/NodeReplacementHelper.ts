@@ -1,6 +1,5 @@
 import type { Locator, Page } from '@playwright/test'
 
-import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { TestIds } from '@e2e/fixtures/selectors'
 import type { NodeReplacementResponse } from '@/platform/nodeReplacement/types'
 
@@ -14,19 +13,17 @@ import type { NodeReplacementResponse } from '@/platform/nodeReplacement/types'
  * `page.evaluate`. To make the flow deterministic across CI shards, this
  * helper patches `WebSocket.prototype` so every incoming `feature_flags`
  * message has `node_replacements: true` injected before the api's WS
- * handler sees it. Reload the page so the patched WebSocket and persisted
- * settings apply to a fresh app boot, then wait for the resulting
- * `/api/node_replacements` fetch before returning.
+ * handler sees it.
  */
-export async function setupNodeReplacement(
-  comfyPage: ComfyPage,
+export async function mockNodeReplacement(
+  page: Page,
   replacements: NodeReplacementResponse
 ): Promise<void> {
-  await comfyPage.page.route('**/api/node_replacements', (route) =>
+  await page.route('**/api/node_replacements', (route) =>
     route.fulfill({ json: replacements })
   )
 
-  await comfyPage.page.addInitScript(() => {
+  await page.addInitScript(() => {
     const proto = window.WebSocket.prototype
     const originalAdd = proto.addEventListener
     proto.addEventListener = function patchedAdd(
@@ -71,15 +68,6 @@ export async function setupNodeReplacement(
       )
     }
   })
-
-  const fetchPromise = comfyPage.page.waitForResponse(
-    (response) =>
-      response.url().includes('/api/node_replacements') && response.ok(),
-    { timeout: 10000 }
-  )
-
-  await comfyPage.workflow.reloadAndWaitForApp()
-  await fetchPromise
 }
 
 export function getSwapNodesGroup(page: Page): Locator {
