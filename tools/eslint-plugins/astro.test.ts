@@ -60,6 +60,6 @@ debugger
       `${process.cwd()}/packages/example.astro`
     ])
 
-    expect(commands.join(' ')).not.toContain('prettier')
+    expect(commands).not.toContainEqual(expect.stringContaining('prettier'))
   })
 })
