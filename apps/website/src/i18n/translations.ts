@@ -9622,6 +9622,47 @@ Enterprise`
     en: 'Checkout reference',
     'zh-CN': '结账参考编号'
   },
+  'workshop.credits.openingLabel': {
+    en: 'Secure checkout',
+    'zh-CN': '安全结账'
+  },
+  'workshop.credits.openingMetaTitle': {
+    en: 'Opening checkout - Comfy',
+    'zh-CN': '正在打开结账页 - Comfy'
+  },
+  'workshop.credits.openingMetaDescription': {
+    en: 'Taking you to the secure checkout.',
+    'zh-CN': '正在带你前往安全结账页。'
+  },
+  'workshop.credits.openingTitle': {
+    en: 'Taking you to Stripe',
+    'zh-CN': '正在前往 Stripe'
+  },
+  'workshop.credits.openingBody': {
+    en: 'Finish your purchase here. The page you came from is still open, and your credits will appear there.',
+    'zh-CN': '请在此完成购买。你来时的页面仍然打开，积分会显示在那里。'
+  },
+  'workshop.credits.returnLabel': {
+    en: 'Checkout return',
+    'zh-CN': '结账返回'
+  },
+  'workshop.credits.returnMetaTitle': {
+    en: 'Returning to your model - Comfy',
+    'zh-CN': '正在返回模型页面 - Comfy'
+  },
+  'workshop.credits.returnMetaDescription': {
+    en: 'Returning you to the page where checkout started.',
+    'zh-CN': '正在返回发起结账的页面。'
+  },
+  'workshop.credits.returnTitle': {
+    en: 'Returning to your model',
+    'zh-CN': '正在返回模型页面'
+  },
+  'workshop.credits.returnBody': {
+    en: 'You can close this tab and continue on the page you came from. Your credit balance will update there if the payment completed.',
+    'zh-CN':
+      '你可以关闭此标签页，并在来时的页面继续。如果付款已完成，积分余额会在那里更新。'
+  },
   'workshop.credits.checkoutOpenedTitle': {
     en: 'Continue to checkout',
     'zh-CN': '继续结账'
