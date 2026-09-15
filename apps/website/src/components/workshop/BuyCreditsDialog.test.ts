@@ -257,6 +257,27 @@ describe('BuyCreditsDialog', () => {
     expect(credits.topUp!.value.status).toBe('landed')
   })
 
+  it('cancels receipt auto-close after keyboard interaction', async () => {
+    vi.useFakeTimers()
+    onTestFinished(() => {
+      vi.useRealTimers()
+    })
+    const { isOpen } = renderControlledDialog()
+    credits.topUp!.value = {
+      status: 'landed',
+      ...topUpScope,
+      newCredits: 5_375,
+      landedAt: Date.now()
+    }
+    await nextTick()
+
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab' }))
+    await vi.advanceTimersByTimeAsync(3_600)
+
+    expect(isOpen.value).toBe(true)
+    expect(credits.topUp!.value.status).toBe('landed')
+  })
+
   it('starts receipt auto-close only when the tab becomes visible', async () => {
     vi.useFakeTimers()
     onTestFinished(() => {
