@@ -447,7 +447,9 @@ describe('useWorkshopSession', () => {
     h.publish(authenticatedSnapshot())
     await remintStarted
 
-    h.flag!.value = false
+    const flag = h.flag
+    if (!flag) throw new Error('workshop auth flag was not initialized')
+    flag.value = false
     await vi.waitFor(() => expect(s.settled.value).toBe(false))
 
     releaseRemint({ status: 'error', code: 'TOKEN_EXCHANGE_FAILED' })
