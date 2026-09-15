@@ -1,3 +1,4 @@
+import { telemetryMock } from '@/platform/telemetry/__mocks__'
 import { useAuthStore } from '@/stores/authStore'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -34,16 +35,11 @@ vi.mock<unknown>(import('@/platform/workspace/api/workspaceApi'), () => ({
     }
   }
 }))
-vi.mock(import('@/platform/telemetry'), async () => {
-  const { createTelemetryMock } =
-    await import('@/platform/telemetry/__mocks__/telemetry')
-  return {
-    useTelemetry: () =>
-      createTelemetryMock({
-        trackBeginCheckout: mockTrackBeginCheckout,
-        trackBillingEvent: mockTrackBillingEvent
-      })
-  }
+vi.mock(import('@/platform/telemetry'))
+
+beforeEach(() => {
+  telemetryMock.trackBeginCheckout = mockTrackBeginCheckout
+  telemetryMock.trackBillingEvent = mockTrackBillingEvent
 })
 
 import { performTeamSubscriptionCheckout } from './teamSubscriptionCheckoutUtil'

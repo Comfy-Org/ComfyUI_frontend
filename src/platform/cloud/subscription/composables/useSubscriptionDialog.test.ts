@@ -1,3 +1,4 @@
+import { telemetryMock } from '@/platform/telemetry/__mocks__'
 import { useDialogStore } from '@/stores/dialogStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useBillingOperationStore } from '@/platform/workspace/stores/billingOperationStore'
@@ -105,13 +106,10 @@ vi.mock<unknown>(import('@/composables/billing/useBillingContext'), () => ({
   })
 }))
 
-vi.mock(import('@/platform/telemetry'), async () => {
-  const { createTelemetryMock } =
-    await import('@/platform/telemetry/__mocks__/telemetry')
-  return {
-    useTelemetry: () =>
-      createTelemetryMock({ trackSubscription: mockTrackSubscription })
-  }
+vi.mock(import('@/platform/telemetry'))
+
+beforeEach(() => {
+  telemetryMock.trackSubscription = mockTrackSubscription
 })
 
 vi.mock<unknown>(

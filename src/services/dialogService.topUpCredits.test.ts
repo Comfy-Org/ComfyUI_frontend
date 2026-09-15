@@ -1,3 +1,4 @@
+import { useTelemetry } from '@/platform/telemetry'
 import { useDialogStore } from '@/stores/dialogStore'
 /**
  * showTopUpCreditsDialog routes the paired server capabilities to purchase,
@@ -17,9 +18,11 @@ vi.mock(import('@/i18n'), () => ({
   t: (key: string) => key
 }))
 
-vi.mock(import('@/platform/telemetry'), () => ({
-  useTelemetry: () => null
-}))
+vi.mock(import('@/platform/telemetry'))
+
+beforeEach(() => {
+  vi.mocked(useTelemetry).mockReturnValue(null)
+})
 
 const mockIsCloud = vi.hoisted(() => ({ value: true }))
 vi.mock(import('@/platform/distribution/types'), () => ({

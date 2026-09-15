@@ -1,3 +1,4 @@
+import { telemetryMock } from '@/platform/telemetry/__mocks__'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createApp, defineComponent } from 'vue'
 import type { App } from 'vue'
@@ -67,16 +68,11 @@ vi.mock<unknown>(
   })
 )
 
-vi.mock(import('@/platform/telemetry'), async () => {
-  const { createTelemetryMock } =
-    await import('@/platform/telemetry/__mocks__/telemetry')
-  return {
-    useTelemetry: () =>
-      createTelemetryMock({
-        trackResubscribeClicked: state.trackResubscribeClicked,
-        trackBillingEvent: state.trackBillingEvent
-      })
-  }
+vi.mock(import('@/platform/telemetry'))
+
+beforeEach(() => {
+  telemetryMock.trackResubscribeClicked = state.trackResubscribeClicked
+  telemetryMock.trackBillingEvent = state.trackBillingEvent
 })
 
 vi.mock<unknown>(

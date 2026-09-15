@@ -1,3 +1,4 @@
+import { telemetryMock } from '@/platform/telemetry/__mocks__'
 import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore' // eslint-disable-line import-x/no-restricted-paths
 import { useWorkflowDraftStoreV2 } from '@/platform/workflow/persistence/stores/workflowDraftStoreV2'
@@ -131,17 +132,12 @@ vi.mock(import('@/platform/telemetry/reportError'), () => ({
   reportError: reportErrorMock
 }))
 
-vi.mock(import('@/platform/telemetry'), async () => {
-  const { createTelemetryMock } =
-    await import('@/platform/telemetry/__mocks__/telemetry')
-  return {
-    useTelemetry: () =>
-      createTelemetryMock({
-        trackDefaultViewSet: vi.fn(),
-        trackWorkflowSaved: mockTrackWorkflowSaved,
-        trackEnterLinear: vi.fn()
-      })
-  }
+vi.mock(import('@/platform/telemetry'))
+
+beforeEach(() => {
+  telemetryMock.trackDefaultViewSet = vi.fn()
+  telemetryMock.trackWorkflowSaved = mockTrackWorkflowSaved
+  telemetryMock.trackEnterLinear = vi.fn()
 })
 
 function createWorkflow(

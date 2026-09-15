@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { telemetryMock } from '@/platform/telemetry/__mocks__'
 import { app } from '@/scripts/app'
 import { createMockLoadedWorkflow } from '@/utils/__tests__/litegraphTestUtils'
 
@@ -9,13 +10,10 @@ const mockTrackDefaultViewSet = vi.hoisted(() => vi.fn())
 
 vi.mock(import('@/i18n'), () => ({ t: (key: string) => key }))
 
-vi.mock(import('@/platform/telemetry'), async () => {
-  const { createTelemetryMock } =
-    await import('@/platform/telemetry/__mocks__/telemetry')
-  return {
-    useTelemetry: () =>
-      createTelemetryMock({ trackDefaultViewSet: mockTrackDefaultViewSet })
-  }
+vi.mock(import('@/platform/telemetry'))
+
+beforeEach(() => {
+  telemetryMock.trackDefaultViewSet = mockTrackDefaultViewSet
 })
 
 vi.mock<unknown>(import('@/scripts/app'), () => {

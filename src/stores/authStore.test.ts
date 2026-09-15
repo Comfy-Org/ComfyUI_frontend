@@ -1,3 +1,4 @@
+import { telemetryMock } from '@/platform/telemetry/__mocks__'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { FirebaseError } from 'firebase/app'
@@ -95,15 +96,10 @@ vi.mock(import('vuefire'), () => ({
 vi.mock(import('firebase/auth'))
 
 const mockTrackAuth = vi.fn()
-vi.mock(import('@/platform/telemetry'), async () => {
-  const { createTelemetryMock } =
-    await import('@/platform/telemetry/__mocks__/telemetry')
-  return {
-    useTelemetry: () =>
-      createTelemetryMock({
-        trackAuth: mockTrackAuth
-      })
-  }
+vi.mock(import('@/platform/telemetry'))
+
+beforeEach(() => {
+  telemetryMock.trackAuth = mockTrackAuth
 })
 
 let mockResetSocket: Mock

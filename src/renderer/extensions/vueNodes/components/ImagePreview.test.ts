@@ -1,9 +1,10 @@
+import { telemetryMock } from '@/platform/telemetry/__mocks__'
 /* eslint-disable testing-library/no-container, testing-library/no-node-access */
 /* eslint-disable testing-library/prefer-user-event */
 import { render, screen, fireEvent } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { getActivePinia } from 'pinia'
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
@@ -20,15 +21,10 @@ vi.mock(import('@/services/hdrViewerService'), () => ({
 }))
 
 const mockTrackImageLoadFailed = vi.fn()
-vi.mock(import('@/platform/telemetry'), async () => {
-  const { createTelemetryMock } =
-    await import('@/platform/telemetry/__mocks__/telemetry')
-  return {
-    useTelemetry: () =>
-      createTelemetryMock({
-        trackImageLoadFailed: mockTrackImageLoadFailed
-      })
-  }
+vi.mock(import('@/platform/telemetry'))
+
+beforeEach(() => {
+  telemetryMock.trackImageLoadFailed = mockTrackImageLoadFailed
 })
 
 const i18n = createI18n({

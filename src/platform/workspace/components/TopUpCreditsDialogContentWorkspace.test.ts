@@ -4,6 +4,7 @@ import {
   setPersistence
 } from 'firebase/auth'
 
+import { telemetryMock } from '@/platform/telemetry/__mocks__'
 import { useBillingOperationStore } from '@/platform/workspace/stores/billingOperationStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import {
@@ -96,17 +97,13 @@ vi.mock<unknown>(
   })
 )
 
-vi.mock(import('@/platform/telemetry'), async () => {
-  const { createTelemetryMock } =
-    await import('@/platform/telemetry/__mocks__/telemetry')
-  return {
-    useTelemetry: () =>
-      createTelemetryMock({
-        trackApiCreditTopupButtonPurchaseClicked: mockTrackTopUpPurchase,
-        trackBillingEvent: mockTrackBillingEvent,
-        trackCheckoutJourneyEvent: mockTrackCheckoutJourneyEvent
-      })
-  }
+vi.mock(import('@/platform/telemetry'))
+
+beforeEach(() => {
+  telemetryMock.trackApiCreditTopupButtonPurchaseClicked =
+    mockTrackTopUpPurchase
+  telemetryMock.trackBillingEvent = mockTrackBillingEvent
+  telemetryMock.trackCheckoutJourneyEvent = mockTrackCheckoutJourneyEvent
 })
 
 vi.mock(import('firebase/auth'), { spy: true })

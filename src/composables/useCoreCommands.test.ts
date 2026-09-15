@@ -1,3 +1,4 @@
+import { telemetryMock } from '@/platform/telemetry/__mocks__'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -117,18 +118,12 @@ vi.mock<unknown>(import('@/services/litegraphService'), () => ({
 }))
 
 const mockTrackHelpResourceClicked = vi.hoisted(() => vi.fn())
-vi.mock(import('@/platform/telemetry'), async () => {
-  const { createTelemetryMock } =
-    await import('@/platform/telemetry/__mocks__/telemetry')
-  return {
-    useTelemetry: vi.fn(() =>
-      createTelemetryMock({
-        trackHelpResourceClicked: mockTrackHelpResourceClicked,
-        trackRunButton: vi.fn(),
-        trackWorkflowExecution: vi.fn()
-      })
-    )
-  }
+vi.mock(import('@/platform/telemetry'))
+
+beforeEach(() => {
+  telemetryMock.trackHelpResourceClicked = mockTrackHelpResourceClicked
+  telemetryMock.trackRunButton = vi.fn()
+  telemetryMock.trackWorkflowExecution = vi.fn()
 })
 
 const mockShowAbout = vi.hoisted(() => vi.fn())

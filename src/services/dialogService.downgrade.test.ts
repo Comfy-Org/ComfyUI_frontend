@@ -1,3 +1,4 @@
+import { useTelemetry } from '@/platform/telemetry'
 import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { Component } from 'vue'
 import type DowngradeContent from '@/platform/workspace/components/dialogs/DowngradeRemoveMembersDialogContent.vue'
@@ -38,9 +39,11 @@ vi.mock(import('@/i18n'), () => ({
   t: (key: string) => key
 }))
 
-vi.mock(import('@/platform/telemetry'), () => ({
-  useTelemetry: () => null
-}))
+vi.mock(import('@/platform/telemetry'))
+
+beforeEach(() => {
+  vi.mocked(useTelemetry).mockReturnValue(null)
+})
 
 vi.mock(import('@/platform/distribution/types'), () => ({
   isCloud: false

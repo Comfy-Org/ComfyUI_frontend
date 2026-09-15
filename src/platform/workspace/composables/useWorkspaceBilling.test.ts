@@ -1,3 +1,4 @@
+import { telemetryMock } from '@/platform/telemetry/__mocks__'
 import { billingOperation } from './billingOperationTestUtils'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useBillingOperationStore } from '@/platform/workspace/stores/billingOperationStore'
@@ -85,15 +86,10 @@ vi.mock(import('@/platform/telemetry/reportError'), () => ({
 
 const mockTrackBillingEvent = vi.hoisted(() => vi.fn())
 
-vi.mock(import('@/platform/telemetry'), async () => {
-  const { createTelemetryMock } =
-    await import('@/platform/telemetry/__mocks__/telemetry')
-  return {
-    useTelemetry: () =>
-      createTelemetryMock({
-        trackBillingEvent: mockTrackBillingEvent
-      })
-  }
+vi.mock(import('@/platform/telemetry'))
+
+beforeEach(() => {
+  telemetryMock.trackBillingEvent = mockTrackBillingEvent
 })
 
 let scope: ReturnType<typeof effectScope> | undefined

@@ -1,3 +1,4 @@
+import { useTelemetry } from '@/platform/telemetry'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
@@ -5,9 +6,11 @@ import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/ag
 
 import { visibleCanvasViewport } from './visibleCanvasViewport'
 
-vi.mock(import('@/platform/telemetry'), () => ({
-  useTelemetry: () => null
-}))
+vi.mock(import('@/platform/telemetry'))
+
+beforeEach(() => {
+  vi.mocked(useTelemetry).mockReturnValue(null)
+})
 
 describe('visibleCanvasViewport', () => {
   beforeEach(() => {

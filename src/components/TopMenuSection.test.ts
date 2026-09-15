@@ -1,3 +1,4 @@
+import { telemetryMock } from '@/platform/telemetry/__mocks__'
 /* eslint-disable testing-library/no-container */
 /* eslint-disable testing-library/no-node-access */
 import { getActivePinia } from 'pinia'
@@ -82,15 +83,10 @@ vi.mock<unknown>(import('@/scripts/app'), () => ({
 
 const mockTrackUiButtonClicked = vi.hoisted(() => vi.fn())
 
-vi.mock(import('@/platform/telemetry'), async () => {
-  const { createTelemetryMock } =
-    await import('@/platform/telemetry/__mocks__/telemetry')
-  return {
-    useTelemetry: () =>
-      createTelemetryMock({
-        trackUiButtonClicked: mockTrackUiButtonClicked
-      })
-  }
+vi.mock(import('@/platform/telemetry'))
+
+beforeEach(() => {
+  telemetryMock.trackUiButtonClicked = mockTrackUiButtonClicked
 })
 
 type WrapperOptions = {

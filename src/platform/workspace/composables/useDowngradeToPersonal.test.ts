@@ -1,3 +1,4 @@
+import { telemetryMock } from '@/platform/telemetry/__mocks__'
 import { getActivePinia } from 'pinia'
 import { useBillingOperationStore } from '@/platform/workspace/stores/billingOperationStore'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -104,15 +105,10 @@ vi.mock(import('@/config/comfyApi'), () => ({
   getComfyPlatformBaseUrl: () => 'https://platform.test'
 }))
 
-vi.mock(import('@/platform/telemetry'), async () => {
-  const { createTelemetryMock } =
-    await import('@/platform/telemetry/__mocks__/telemetry')
-  return {
-    useTelemetry: () =>
-      createTelemetryMock({
-        trackBillingEvent: mockTrackBillingEvent
-      })
-  }
+vi.mock(import('@/platform/telemetry'))
+
+beforeEach(() => {
+  telemetryMock.trackBillingEvent = mockTrackBillingEvent
 })
 
 function createMember(

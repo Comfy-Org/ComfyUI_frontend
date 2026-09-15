@@ -1,3 +1,4 @@
+import { telemetryMock } from '@/platform/telemetry/__mocks__'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { openTypeformDialog } from '@/platform/surveys/openTypeformDialog'
@@ -15,12 +16,10 @@ vi.mock(import('@/platform/surveys/openTypeformDialog'), () => ({
 }))
 
 const trackUiButtonClicked = vi.fn()
-vi.mock(import('@/platform/telemetry'), async () => {
-  const { createTelemetryMock } =
-    await import('@/platform/telemetry/__mocks__/telemetry')
-  return {
-    useTelemetry: vi.fn(() => createTelemetryMock({ trackUiButtonClicked }))
-  }
+vi.mock(import('@/platform/telemetry'))
+
+beforeEach(() => {
+  telemetryMock.trackUiButtonClicked = trackUiButtonClicked
 })
 
 const userEmail = vi.hoisted((): { value: string | undefined } => ({

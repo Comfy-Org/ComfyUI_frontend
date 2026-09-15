@@ -1,3 +1,4 @@
+import { telemetryMock } from '@/platform/telemetry/__mocks__'
 import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
@@ -38,16 +39,11 @@ vi.mock<unknown>(import('@/composables/useErrorHandling'), () => ({
   useErrorHandling: () => ({ toastErrorHandler: mockToastErrorHandler })
 }))
 
-vi.mock(import('@/platform/telemetry'), async () => {
-  const { createTelemetryMock } =
-    await import('@/platform/telemetry/__mocks__/telemetry')
-  return {
-    useTelemetry: () =>
-      createTelemetryMock({
-        trackEnterLinear: mockTrackEnterLinear,
-        trackDefaultViewSet: mockTrackDefaultViewSet
-      })
-  }
+vi.mock(import('@/platform/telemetry'))
+
+beforeEach(() => {
+  telemetryMock.trackEnterLinear = mockTrackEnterLinear
+  telemetryMock.trackDefaultViewSet = mockTrackDefaultViewSet
 })
 
 vi.mock<unknown>(

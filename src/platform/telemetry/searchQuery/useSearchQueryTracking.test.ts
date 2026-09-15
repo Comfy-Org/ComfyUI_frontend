@@ -1,3 +1,4 @@
+import { telemetryMock } from '@/platform/telemetry/__mocks__'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { EffectScope, Ref } from 'vue'
 import { effectScope, ref } from 'vue'
@@ -6,13 +7,10 @@ const hoisted = vi.hoisted(() => ({
   trackSearchQuery: vi.fn()
 }))
 
-vi.mock(import('@/platform/telemetry'), async () => {
-  const { createTelemetryMock } =
-    await import('@/platform/telemetry/__mocks__/telemetry')
-  return {
-    useTelemetry: () =>
-      createTelemetryMock({ trackSearchQuery: hoisted.trackSearchQuery })
-  }
+vi.mock(import('@/platform/telemetry'))
+
+beforeEach(() => {
+  telemetryMock.trackSearchQuery = hoisted.trackSearchQuery
 })
 
 import { useSearchQueryTracking } from './useSearchQueryTracking'

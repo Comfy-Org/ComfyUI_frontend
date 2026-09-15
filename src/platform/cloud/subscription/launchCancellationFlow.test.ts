@@ -1,3 +1,4 @@
+import { telemetryMock } from '@/platform/telemetry/__mocks__'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -39,15 +40,10 @@ vi.mock(import('@/platform/cloud/churnkey/churnkeyClient'), () => ({
   prepareChurnkey: mocks.prepare
 }))
 
-vi.mock(import('@/platform/telemetry'), async () => {
-  const { createTelemetryMock } =
-    await import('@/platform/telemetry/__mocks__/telemetry')
-  return {
-    useTelemetry: () =>
-      createTelemetryMock({
-        trackSubscriptionCancellation: mocks.trackCancellation
-      })
-  }
+vi.mock(import('@/platform/telemetry'))
+
+beforeEach(() => {
+  telemetryMock.trackSubscriptionCancellation = mocks.trackCancellation
 })
 
 import { launchCancellationFlow } from './launchCancellationFlow'

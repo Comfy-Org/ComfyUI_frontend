@@ -1,3 +1,4 @@
+import { telemetryMock } from '@/platform/telemetry/__mocks__'
 import { getActivePinia } from 'pinia'
 import userEvent from '@testing-library/user-event'
 import { render, screen, waitFor } from '@testing-library/vue'
@@ -41,17 +42,11 @@ vi.mock(import('@/utils/errorReportUtil'), () => ({
 
 const mockTrackHelpResourceClicked = vi.fn()
 
-vi.mock(import('@/platform/telemetry'), async () => {
-  const { createTelemetryMock } =
-    await import('@/platform/telemetry/__mocks__/telemetry')
-  return {
-    useTelemetry: vi.fn(() =>
-      createTelemetryMock({
-        trackUiButtonClicked: vi.fn(),
-        trackHelpResourceClicked: mockTrackHelpResourceClicked
-      })
-    )
-  }
+vi.mock(import('@/platform/telemetry'))
+
+beforeEach(() => {
+  telemetryMock.trackUiButtonClicked = vi.fn()
+  telemetryMock.trackHelpResourceClicked = mockTrackHelpResourceClicked
 })
 
 vi.mock<unknown>(import('@/composables/useExternalLink'), () => ({

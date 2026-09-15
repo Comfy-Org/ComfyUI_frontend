@@ -1,3 +1,4 @@
+import { telemetryMock } from '@/platform/telemetry/__mocks__'
 import { render } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed } from 'vue'
@@ -381,19 +382,15 @@ const mockTrackResubscribeClicked = vi.hoisted(() => vi.fn())
 const mockTrackMonthlySubscriptionSucceeded = vi.hoisted(() => vi.fn())
 const mockTrackCheckoutJourneyEvent = vi.hoisted(() => vi.fn())
 
-vi.mock(import('@/platform/telemetry'), async () => {
-  const { createTelemetryMock } =
-    await import('@/platform/telemetry/__mocks__/telemetry')
-  return {
-    useTelemetry: () =>
-      createTelemetryMock({
-        trackBillingEvent: mockTrackBillingEvent,
-        trackResubscribeClicked: mockTrackResubscribeClicked,
-        trackBeginCheckout: mockTrackBeginCheckout,
-        trackMonthlySubscriptionSucceeded: mockTrackMonthlySubscriptionSucceeded,
-        trackCheckoutJourneyEvent: mockTrackCheckoutJourneyEvent
-      })
-  }
+vi.mock(import('@/platform/telemetry'))
+
+beforeEach(() => {
+  telemetryMock.trackBillingEvent = mockTrackBillingEvent
+  telemetryMock.trackResubscribeClicked = mockTrackResubscribeClicked
+  telemetryMock.trackBeginCheckout = mockTrackBeginCheckout
+  telemetryMock.trackMonthlySubscriptionSucceeded =
+    mockTrackMonthlySubscriptionSucceeded
+  telemetryMock.trackCheckoutJourneyEvent = mockTrackCheckoutJourneyEvent
 })
 
 vi.mock(import('@/platform/telemetry/reportError'), () => ({

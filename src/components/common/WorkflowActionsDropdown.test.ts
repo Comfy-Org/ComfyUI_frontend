@@ -1,3 +1,4 @@
+import { telemetryMock } from '@/platform/telemetry/__mocks__'
 import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -26,13 +27,10 @@ const spies = vi.hoisted(() => ({
   markAsSeen: vi.fn()
 }))
 
-vi.mock(import('@/platform/telemetry'), async () => {
-  const { createTelemetryMock } =
-    await import('@/platform/telemetry/__mocks__/telemetry')
-  return {
-    useTelemetry: () =>
-      createTelemetryMock({ trackUiButtonClicked: spies.trackUiButtonClicked })
-  }
+vi.mock(import('@/platform/telemetry'))
+
+beforeEach(() => {
+  telemetryMock.trackUiButtonClicked = spies.trackUiButtonClicked
 })
 
 vi.mock<unknown>(import('@/composables/useWorkflowActionsMenu'), async () => {

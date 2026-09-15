@@ -1,18 +1,14 @@
-import { describe, expect, it, vi } from 'vitest'
+import { telemetryMock } from '@/platform/telemetry/__mocks__'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const { mockTrackUiButtonClicked } = vi.hoisted(() => ({
   mockTrackUiButtonClicked: vi.fn()
 }))
 
-vi.mock(import('@/platform/telemetry'), async () => {
-  const { createTelemetryMock } =
-    await import('@/platform/telemetry/__mocks__/telemetry')
-  return {
-    useTelemetry: () =>
-      createTelemetryMock({
-        trackUiButtonClicked: mockTrackUiButtonClicked
-      })
-  }
+vi.mock(import('@/platform/telemetry'))
+
+beforeEach(() => {
+  telemetryMock.trackUiButtonClicked = mockTrackUiButtonClicked
 })
 
 import { trackRightSidePanelTabOpened } from './rightSidePanelTabTelemetry'

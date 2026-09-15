@@ -1,3 +1,4 @@
+import { telemetryMock } from '@/platform/telemetry/__mocks__'
 import type { User } from 'firebase/auth'
 import * as firebaseAuth from 'firebase/auth'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -30,12 +31,10 @@ vi.mock<unknown>(import('@/composables/useFeatureFlags'), () => ({
   })
 }))
 
-vi.mock(import('@/platform/telemetry'), async () => {
-  const { createTelemetryMock } =
-    await import('@/platform/telemetry/__mocks__/telemetry')
-  return {
-    useTelemetry: () => createTelemetryMock({ trackAuth: vi.fn() })
-  }
+vi.mock(import('@/platform/telemetry'))
+
+beforeEach(() => {
+  telemetryMock.trackAuth = vi.fn()
 })
 
 vi.mock<unknown>(import('@/services/dialogService'), () => ({

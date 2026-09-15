@@ -1,3 +1,4 @@
+import { telemetryMock } from '@/platform/telemetry/__mocks__'
 import { useAuthStore } from '@/stores/authStore'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
@@ -77,16 +78,10 @@ vi.mock(import('@/platform/distribution/types'), () => ({
   }
 }))
 
-vi.mock(import('@/platform/telemetry'), async () => {
-  const { createTelemetryMock } =
-    await import('@/platform/telemetry/__mocks__/telemetry')
-  return {
-    useTelemetry: vi.fn(() =>
-      createTelemetryMock({
-        trackAuthFailed: mockTrackAuthFailed
-      })
-    )
-  }
+vi.mock(import('@/platform/telemetry'))
+
+beforeEach(() => {
+  telemetryMock.trackAuthFailed = mockTrackAuthFailed
 })
 
 vi.mock<unknown>(import('@/composables/billing/usePendingTopup'), () => ({

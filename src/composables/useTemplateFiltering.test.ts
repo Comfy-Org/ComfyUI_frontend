@@ -1,3 +1,4 @@
+import { telemetryMock } from '@/platform/telemetry/__mocks__'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTemplateRankingStore } from '@/stores/templateRankingStore'
 import { useSystemStatsStore } from '@/stores/systemStatsStore'
@@ -18,17 +19,11 @@ let defaultRankingStore: ReturnType<typeof useTemplateRankingStore>
 let mockSystemStatsStore: ReturnType<typeof useSystemStatsStore>
 
 const trackTemplateFilterChanged = vi.hoisted(() => vi.fn())
-vi.mock(import('@/platform/telemetry'), async () => {
-  const { createTelemetryMock } =
-    await import('@/platform/telemetry/__mocks__/telemetry')
-  return {
-    useTelemetry: vi.fn(() =>
-      createTelemetryMock({
-        trackTemplateFilterChanged,
-        trackSearchQuery: vi.fn()
-      })
-    )
-  }
+vi.mock(import('@/platform/telemetry'))
+
+beforeEach(() => {
+  telemetryMock.trackTemplateFilterChanged = trackTemplateFilterChanged
+  telemetryMock.trackSearchQuery = vi.fn()
 })
 
 vi.mock(

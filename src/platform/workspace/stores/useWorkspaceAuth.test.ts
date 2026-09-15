@@ -1,3 +1,4 @@
+import { telemetryMock } from '@/platform/telemetry/__mocks__'
 import { useAuthStore } from '@/stores/authStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useToastStore } from '@/platform/updates/common/toastStore'
@@ -70,15 +71,10 @@ vi.mock<unknown>(import('@/platform/auth/session/useSessionCookie'), () => ({
   })
 }))
 
-vi.mock(import('@/platform/telemetry'), async () => {
-  const { createTelemetryMock } =
-    await import('@/platform/telemetry/__mocks__/telemetry')
-  return {
-    useTelemetry: () =>
-      createTelemetryMock({
-        trackUnifiedAuthRefresh: mockTrackUnifiedAuthRefresh
-      })
-  }
+vi.mock(import('@/platform/telemetry'))
+
+beforeEach(() => {
+  telemetryMock.trackUnifiedAuthRefresh = mockTrackUnifiedAuthRefresh
 })
 
 vi.mock(import('@/platform/workspace/api/workspaceApiUrl'), () => ({

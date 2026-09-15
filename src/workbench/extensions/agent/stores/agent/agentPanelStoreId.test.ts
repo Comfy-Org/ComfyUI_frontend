@@ -1,3 +1,4 @@
+import { useTelemetry } from '@/platform/telemetry'
 import { getActivePinia } from 'pinia'
 import type { Pinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -8,9 +9,11 @@ import { useAgentDockMount } from '@/workbench/extensions/agent/composables/useA
 
 import { useAgentPanelStore } from './agentPanelStore'
 
-vi.mock(import('@/platform/telemetry'), () => ({
-  useTelemetry: () => null
-}))
+vi.mock(import('@/platform/telemetry'))
+
+beforeEach(() => {
+  vi.mocked(useTelemetry).mockReturnValue(null)
+})
 
 /**
  * Regression pin for the duplicate Pinia id `agentPanel`.

@@ -1,3 +1,4 @@
+import { useTelemetry } from '@/platform/telemetry'
 import { render, screen } from '@testing-library/vue'
 import { createI18n } from 'vue-i18n'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -11,9 +12,11 @@ import DockedAgentPanel from './DockedAgentPanel.vue'
 vi.mock(import('@/platform/telemetry/reportError'), () => ({
   reportError: vi.fn()
 }))
-vi.mock(import('@/platform/telemetry'), () => ({
-  useTelemetry: () => null
-}))
+vi.mock(import('@/platform/telemetry'))
+
+beforeEach(() => {
+  vi.mocked(useTelemetry).mockReturnValue(null)
+})
 
 // The mocked module factory throws, so the dynamic import itself rejects -
 // the chunk-load failure path, distinct from a runtime error inside a

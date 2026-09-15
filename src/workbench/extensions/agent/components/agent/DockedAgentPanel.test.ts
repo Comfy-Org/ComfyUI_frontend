@@ -1,3 +1,4 @@
+import { useTelemetry } from '@/platform/telemetry'
 import userEvent from '@testing-library/user-event'
 import { fireEvent, render, screen } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -13,9 +14,11 @@ import { useAgentRunModeStore } from '@/workbench/extensions/agent/stores/agent/
 
 import DockedAgentPanel from './DockedAgentPanel.vue'
 
-vi.mock(import('@/platform/telemetry'), () => ({
-  useTelemetry: () => null
-}))
+vi.mock(import('@/platform/telemetry'))
+
+beforeEach(() => {
+  vi.mocked(useTelemetry).mockReturnValue(null)
+})
 vi.mock(import('@/platform/telemetry/reportError'), () => ({
   reportError: vi.fn()
 }))

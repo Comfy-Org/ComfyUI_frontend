@@ -1,3 +1,4 @@
+import { telemetryMock } from '@/platform/telemetry/__mocks__'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type { LoadedComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { fromPartial } from '@total-typescript/shoehorn'
@@ -57,18 +58,13 @@ vi.mock(import('@/platform/distribution/types'), () => ({
   isCloud: true
 }))
 
-vi.mock(import('@/platform/telemetry'), async () => {
-  const { createTelemetryMock } =
-    await import('@/platform/telemetry/__mocks__/telemetry')
-  return {
-    useTelemetry: () =>
-      createTelemetryMock({
-        trackExecutionError: mockTrackExecutionError,
-        trackExecutionOutcome: mockTrackExecutionOutcome,
-        trackExecutionSuccess: mockTrackExecutionSuccess,
-        trackSharedWorkflowRun: mockTrackSharedWorkflowRun
-      })
-  }
+vi.mock(import('@/platform/telemetry'))
+
+beforeEach(() => {
+  telemetryMock.trackExecutionError = mockTrackExecutionError
+  telemetryMock.trackExecutionOutcome = mockTrackExecutionOutcome
+  telemetryMock.trackExecutionSuccess = mockTrackExecutionSuccess
+  telemetryMock.trackSharedWorkflowRun = mockTrackSharedWorkflowRun
 })
 
 // Remove any previous global types

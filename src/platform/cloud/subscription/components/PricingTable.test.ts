@@ -1,3 +1,4 @@
+import { telemetryMock } from '@/platform/telemetry/__mocks__'
 import { useAuthStore } from '@/stores/authStore'
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
@@ -114,16 +115,11 @@ vi.mock<unknown>(import('@/composables/useErrorHandling'), () => ({
   })
 }))
 
-vi.mock(import('@/platform/telemetry'), async () => {
-  const { createTelemetryMock } =
-    await import('@/platform/telemetry/__mocks__/telemetry')
-  return {
-    useTelemetry: () =>
-      createTelemetryMock({
-        trackBeginCheckout: mockTrackBeginCheckout,
-        trackBillingEvent: mockTrackBillingEvent
-      })
-  }
+vi.mock(import('@/platform/telemetry'))
+
+beforeEach(() => {
+  telemetryMock.trackBeginCheckout = mockTrackBeginCheckout
+  telemetryMock.trackBillingEvent = mockTrackBillingEvent
 })
 
 vi.mock<unknown>(

@@ -1,3 +1,4 @@
+import { telemetryMock } from '@/platform/telemetry/__mocks__'
 import { useWorkspaceAuthStore } from '@/platform/workspace/stores/workspaceAuthStore'
 import type { AxiosAdapter } from 'axios'
 import axios, { AxiosError } from 'axios'
@@ -14,15 +15,10 @@ const { mockRemint, mockTrackUnifiedAuthRetry, flagState } = vi.hoisted(() => ({
   flagState: { unifiedCloudAuthEnabled: true }
 }))
 
-vi.mock(import('@/platform/telemetry'), async () => {
-  const { createTelemetryMock } =
-    await import('@/platform/telemetry/__mocks__/telemetry')
-  return {
-    useTelemetry: () =>
-      createTelemetryMock({
-        trackUnifiedAuthRetry: mockTrackUnifiedAuthRetry
-      })
-  }
+vi.mock(import('@/platform/telemetry'))
+
+beforeEach(() => {
+  telemetryMock.trackUnifiedAuthRetry = mockTrackUnifiedAuthRetry
 })
 
 vi.mock<unknown>(import('@/composables/useFeatureFlags'), () => ({

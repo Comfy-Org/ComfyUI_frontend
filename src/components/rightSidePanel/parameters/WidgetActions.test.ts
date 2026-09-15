@@ -1,3 +1,4 @@
+import { telemetryMock } from '@/platform/telemetry/__mocks__'
 import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
 import { fromPartial, fromAny } from '@total-typescript/shoehorn'
@@ -26,15 +27,10 @@ vi.mock(import('@/core/graph/subgraph/promotionUtils'), () => ({
   promoteWidget: vi.fn()
 }))
 
-vi.mock(import('@/platform/telemetry'), async () => {
-  const { createTelemetryMock } =
-    await import('@/platform/telemetry/__mocks__/telemetry')
-  return {
-    useTelemetry: () =>
-      createTelemetryMock({
-        trackWidgetFavoriteToggled: mockTrackWidgetFavoriteToggled
-      })
-  }
+vi.mock(import('@/platform/telemetry'))
+
+beforeEach(() => {
+  telemetryMock.trackWidgetFavoriteToggled = mockTrackWidgetFavoriteToggled
 })
 
 vi.mock<unknown>(import('@/services/dialogService'), () => ({

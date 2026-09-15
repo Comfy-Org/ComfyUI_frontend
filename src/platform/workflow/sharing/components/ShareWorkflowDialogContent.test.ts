@@ -1,3 +1,4 @@
+import { telemetryMock } from '@/platform/telemetry/__mocks__'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
@@ -9,15 +10,10 @@ import ShareWorkflowDialogContent from '@/platform/workflow/sharing/components/S
 
 const mockTrackShareFlow = vi.hoisted(() => vi.fn())
 
-vi.mock(import('@/platform/telemetry'), async () => {
-  const { createTelemetryMock } =
-    await import('@/platform/telemetry/__mocks__/telemetry')
-  return {
-    useTelemetry: () =>
-      createTelemetryMock({
-        trackShareFlow: mockTrackShareFlow
-      })
-  }
+vi.mock(import('@/platform/telemetry'))
+
+beforeEach(() => {
+  telemetryMock.trackShareFlow = mockTrackShareFlow
 })
 
 const mockToast = vi.hoisted(() => ({ add: vi.fn() }))

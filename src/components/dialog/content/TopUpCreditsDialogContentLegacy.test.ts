@@ -1,3 +1,4 @@
+import { telemetryMock } from '@/platform/telemetry/__mocks__'
 import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -48,16 +49,12 @@ vi.mock<unknown>(
   })
 )
 
-vi.mock(import('@/platform/telemetry'), async () => {
-  const { createTelemetryMock } =
-    await import('@/platform/telemetry/__mocks__/telemetry')
-  return {
-    useTelemetry: () =>
-      createTelemetryMock({
-        trackApiCreditTopupButtonPurchaseClicked: mockTrackTopUpPurchase,
-        trackBillingEvent: mockTrackBillingEvent
-      })
-  }
+vi.mock(import('@/platform/telemetry'))
+
+beforeEach(() => {
+  telemetryMock.trackApiCreditTopupButtonPurchaseClicked =
+    mockTrackTopUpPurchase
+  telemetryMock.trackBillingEvent = mockTrackBillingEvent
 })
 
 const mockClearPendingTopup = vi.hoisted(() => vi.fn())

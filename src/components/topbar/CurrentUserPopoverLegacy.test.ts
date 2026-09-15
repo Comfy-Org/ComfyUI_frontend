@@ -1,3 +1,4 @@
+import { telemetryMock } from '@/platform/telemetry/__mocks__'
 import { getActivePinia } from 'pinia'
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
@@ -119,16 +120,10 @@ vi.mock<unknown>(import('@/composables/useExternalLink'), () => ({
   }))
 }))
 
-vi.mock(import('@/platform/telemetry'), async () => {
-  const { createTelemetryMock } =
-    await import('@/platform/telemetry/__mocks__/telemetry')
-  return {
-    useTelemetry: vi.fn(() =>
-      createTelemetryMock({
-        trackAddApiCreditButtonClicked: vi.fn()
-      })
-    )
-  }
+vi.mock(import('@/platform/telemetry'))
+
+beforeEach(() => {
+  telemetryMock.trackAddApiCreditButtonClicked = vi.fn()
 })
 
 describe('CurrentUserPopoverLegacy', () => {

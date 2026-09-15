@@ -1,3 +1,4 @@
+import { useTelemetry } from '@/platform/telemetry'
 import { render, screen } from '@testing-library/vue'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
@@ -115,9 +116,11 @@ vi.mock(import('@/composables/useProgressFavicon'), () => ({
 }))
 vi.mock(import('@/platform/distribution/types'), () => distribution)
 
-vi.mock(import('@/platform/telemetry'), () => ({
-  useTelemetry: () => null
-}))
+vi.mock(import('@/platform/telemetry'))
+
+beforeEach(() => {
+  vi.mocked(useTelemetry).mockReturnValue(null)
+})
 vi.mock(
   import('@/platform/updates/common/useFrontendVersionMismatchWarning'),
   () => ({

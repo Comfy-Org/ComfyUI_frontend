@@ -1,3 +1,4 @@
+import { telemetryMock } from '@/platform/telemetry/__mocks__'
 import { fromAny } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -55,15 +56,11 @@ vi.mock<unknown>(
 
 const mockTrackAddApiCreditButtonClicked = vi.hoisted(() => vi.fn())
 
-vi.mock(import('@/platform/telemetry'), async () => {
-  const { createTelemetryMock } =
-    await import('@/platform/telemetry/__mocks__/telemetry')
-  return {
-    useTelemetry: () =>
-      createTelemetryMock({
-        trackAddApiCreditButtonClicked: mockTrackAddApiCreditButtonClicked
-      })
-  }
+vi.mock(import('@/platform/telemetry'))
+
+beforeEach(() => {
+  telemetryMock.trackAddApiCreditButtonClicked =
+    mockTrackAddApiCreditButtonClicked
 })
 
 describe('useTopUpUrlLoader', () => {

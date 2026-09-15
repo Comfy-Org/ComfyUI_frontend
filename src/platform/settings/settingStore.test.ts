@@ -1,3 +1,4 @@
+import { telemetryMock } from '@/platform/telemetry/__mocks__'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import {
@@ -13,16 +14,10 @@ const { trackSettingChanged } = vi.hoisted(() => ({
   trackSettingChanged: vi.fn()
 }))
 
-vi.mock(import('@/platform/telemetry'), async () => {
-  const { createTelemetryMock } =
-    await import('@/platform/telemetry/__mocks__/telemetry')
-  return {
-    useTelemetry: vi.fn(() =>
-      createTelemetryMock({
-        trackSettingChanged
-      })
-    )
-  }
+vi.mock(import('@/platform/telemetry'))
+
+beforeEach(() => {
+  telemetryMock.trackSettingChanged = trackSettingChanged
 })
 
 // Mock the api

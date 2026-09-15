@@ -1,3 +1,4 @@
+import { useTelemetry } from '@/platform/telemetry'
 import { getActivePinia } from 'pinia'
 import { render, screen } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -32,9 +33,11 @@ vi.mock(import('@/composables/graph/useGraphHierarchy'), () => ({
   useGraphHierarchy: () => ({ findParentGroup: vi.fn(() => null) })
 }))
 
-vi.mock(import('@/platform/telemetry'), () => ({
-  useTelemetry: () => null
-}))
+vi.mock(import('@/platform/telemetry'))
+
+beforeEach(() => {
+  vi.mocked(useTelemetry).mockReturnValue(null)
+})
 
 function createPanelI18n() {
   return createI18n({
