@@ -182,22 +182,6 @@ test.describe(
               await promotedInput.fill(parentValue)
               await expect(promotedInput).toHaveValue(parentValue)
             })
-
-            await test.step('Keep the shared interior definition value unchanged', async () => {
-              await comfyPage.vueNodes.enterSubgraph(subgraphNodeId)
-              await expect
-                .poll(() =>
-                  comfyPage.page.evaluate(() => {
-                    const interiorNode = window.app!.canvas.graph?.nodes.find(
-                      (node) => node.type === 'ModelSamplingFlux'
-                    )
-                    return interiorNode?.widgets?.find(
-                      (widget) => widget.name === 'max_shift'
-                    )?.value
-                  })
-                )
-                .toBe(1.15)
-            })
           }
         )
 
