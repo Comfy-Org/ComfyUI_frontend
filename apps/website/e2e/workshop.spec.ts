@@ -391,6 +391,26 @@ test.describe('Models catalog', () => {
       expect(Math.abs(middleOf(arrowBox) - middleOf(cardBox))).toBeLessThan(1)
     }
   })
+
+  test('the fade reaches both ends of the scrolling row', async ({ page }) => {
+    await page.goto('/models/')
+    const row = page.getByTestId('section-generate-images')
+    await expect(row.getByTestId('workshop-model-card').first()).toBeVisible()
+    await row.hover()
+    const edges = await row.evaluate((section) => {
+      const span = (selector: string) => {
+        const element = section.querySelector(selector)
+        if (!element) return undefined
+        const { x, width } = element.getBoundingClientRect()
+        return { left: x, right: x + width }
+      }
+      return {
+        scroller: span('ul'),
+        fades: span('[data-testid="card-row-arrows"]')
+      }
+    })
+    expect(edges.fades).toEqual(edges.scroller)
+  })
 })
 
 test.describe('Model playground', () => {
