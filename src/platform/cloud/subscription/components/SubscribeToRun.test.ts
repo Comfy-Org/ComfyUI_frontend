@@ -59,6 +59,8 @@ const i18n = createI18n({
 })
 
 function renderButton() {
+  const billing = useBillingContext()
+  vi.mocked(useBillingContext).mockReturnValue(billing)
   const user = userEvent.setup()
   const result = render(SubscribeToRun, {
     global: {

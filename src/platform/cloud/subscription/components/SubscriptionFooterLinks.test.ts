@@ -62,6 +62,8 @@ const i18n = createI18n({
 function renderComponent(
   props: Partial<ComponentProps<typeof SubscriptionFooterLinks>> = {}
 ) {
+  const billing = useBillingContext()
+  vi.mocked(useBillingContext).mockReturnValue(billing)
   return render(SubscriptionFooterLinks, {
     props,
     global: {

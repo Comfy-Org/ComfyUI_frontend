@@ -1,6 +1,6 @@
 import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { computed, defineComponent, h, nextTick, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
@@ -9,7 +9,6 @@ import { useBillingContext } from '@/composables/billing/useBillingContext'
 
 import CreditsPanel from './CreditsPanel.vue'
 
-const balance = ref<BalanceInfo | null>(null)
 vi.mock(import('@/composables/billing/useBillingContext'))
 
 const refreshActivity = vi.hoisted(() => vi.fn())
@@ -69,14 +68,6 @@ function makeBalance(amountMicros: number): BalanceInfo {
 }
 
 describe('CreditsPanel', () => {
-  beforeEach(() => {
-    balance.value = null
-    vi.mocked(useBillingContext).mockReturnValue({
-      ...useBillingContext(),
-      balance: computed(() => balance.value)
-    } as const)
-  })
-
   function renderComponent() {
     return render(CreditsPanel, {
       global: { plugins: [i18n], stubs: { Divider: true } }
@@ -84,15 +75,21 @@ describe('CreditsPanel', () => {
   }
 
   it('opens the billing portal for the active billing rail', async () => {
+    const billing = useBillingContext()
+    vi.mocked(useBillingContext).mockReturnValue(billing)
     const user = userEvent.setup()
     renderComponent()
 
     await user.click(screen.getByRole('button', { name: /Invoice History/ }))
 
-    expect(useBillingContext().manageSubscription).toHaveBeenCalledOnce()
+    expect(billing.manageSubscription).toHaveBeenCalledOnce()
   })
 
   it('refreshes activity on a balance change but not on first hydration', async () => {
+    const billing = useBillingContext()
+    vi.mocked(useBillingContext).mockReturnValue(billing)
+    const balance = ref<BalanceInfo | null>(null)
+    billing.balance = computed(() => balance.value)
     renderComponent()
 
     balance.value = makeBalance(5000)

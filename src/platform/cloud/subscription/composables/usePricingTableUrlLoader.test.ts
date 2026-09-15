@@ -92,10 +92,9 @@ const TEAM_CREDIT_STOPS = {
 
 describe('usePricingTableUrlLoader', () => {
   beforeEach(() => {
-    vi.mocked(useBillingContext).mockReturnValue({
-      ...useBillingContext(),
-      teamCreditStops: computed(() => mockTeamCreditStops.value)
-    } as const)
+    const billing = useBillingContext()
+    billing.teamCreditStops = computed(() => mockTeamCreditStops.value)
+    vi.mocked(useBillingContext).mockReturnValue(billing)
 
     mockRouteQuery.value = {}
     mockPermissions.value = { canManageSubscription: true }
@@ -103,7 +102,7 @@ describe('usePricingTableUrlLoader', () => {
     mockInitializeCapabilities.mockClear()
     mockInitializeCapabilities.mockResolvedValue(undefined)
     mockTeamCreditStops.value = TEAM_CREDIT_STOPS
-    vi.mocked(useBillingContext().fetchPlans).mockResolvedValue(undefined)
+    vi.mocked(billing.fetchPlans).mockResolvedValue(undefined)
     mockShowPricingTable.mockResolvedValue(undefined)
     preservedQueryMocks.mergePreservedQueryIntoQuery.mockReturnValue(null)
   })

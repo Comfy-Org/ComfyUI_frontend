@@ -104,10 +104,9 @@ function renderControls({
   canRunWorkflows?: boolean
   mobile?: boolean
 } = {}) {
-  vi.mocked(useBillingContext).mockReturnValue({
-    ...useBillingContext(),
-    canRunWorkflows: computed(() => canRunWorkflows)
-  } as const)
+  const billing = useBillingContext()
+  billing.canRunWorkflows = computed(() => canRunWorkflows)
+  vi.mocked(useBillingContext).mockReturnValue(billing)
 
   const pinia = getActivePinia()!
 

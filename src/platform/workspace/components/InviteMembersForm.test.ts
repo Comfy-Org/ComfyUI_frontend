@@ -46,6 +46,8 @@ function pendingInviteFor(email: string): WorkspacePendingInvite {
 }
 
 function renderForm(props: Record<string, unknown> = {}) {
+  const billing = useBillingContext()
+  vi.mocked(useBillingContext).mockReturnValue(billing)
   const user = userEvent.setup()
   const result = render(InviteMembersForm, {
     props: {
@@ -127,11 +129,11 @@ describe('InviteMembersForm', () => {
 
   it('completes submission when the billing refresh fails', async () => {
     const refreshError = new Error('refresh failed')
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const { user, emitted } = renderForm()
     vi.mocked(useBillingContext().fetchStatus).mockRejectedValueOnce(
       refreshError
     )
-    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
-    const { user, emitted } = renderForm()
 
     await user.type(emailInput(), 'a@b.com{Enter}')
     await user.click(submitButton())

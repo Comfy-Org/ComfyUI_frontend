@@ -5,7 +5,7 @@ import { useBillingContext } from '@/composables/billing/useBillingContext'
  * Reka-migrated dialog, the dialog stack item must carry `renderer: 'reka'`.
  * Catches accidental reverts of the Reka renderer flip.
  */
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 vi.mock(import('@/i18n'), () => ({
   t: (key: string) => key
@@ -14,13 +14,14 @@ vi.mock(import('@/i18n'), () => ({
 vi.mock(import('@/platform/telemetry'))
 
 beforeEach(() => {
-  vi.mocked(useBillingContext).mockReturnValue({
-    ...useBillingContext(),
+  const billing = useBillingContext()
+  Object.assign(billing, {
     canAccessSubscriptionFeatures: computed(() => true),
     isTeamPlan: computed(() => false),
     tier: computed(() => 'STANDARD'),
     type: computed(() => 'legacy')
-  } as const)
+  })
+  vi.mocked(useBillingContext).mockReturnValue(billing)
 })
 
 vi.mock(import('@/platform/distribution/types'), () => ({

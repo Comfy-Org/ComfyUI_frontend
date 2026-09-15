@@ -165,16 +165,20 @@ describe('useSubscriptionActions', () => {
 
   describe('handleRefresh', () => {
     it('should refresh balance and status through the billing facade', async () => {
+      const billing = useBillingContext()
+      vi.mocked(useBillingContext).mockReturnValue(billing)
       const { handleRefresh } = useSubscriptionActions()
       await handleRefresh()
 
-      expect(useBillingContext().fetchBalance).toHaveBeenCalledOnce()
-      expect(useBillingContext().fetchStatus).toHaveBeenCalledOnce()
+      expect(billing.fetchBalance).toHaveBeenCalledOnce()
+      expect(billing.fetchStatus).toHaveBeenCalledOnce()
       expect(mockAuthFetchBalance).not.toHaveBeenCalled()
     })
 
     it('swallows refresh failures without surfacing a toast', async () => {
-      vi.mocked(useBillingContext().fetchBalance).mockRejectedValueOnce(
+      const billing = useBillingContext()
+      vi.mocked(useBillingContext).mockReturnValue(billing)
+      vi.mocked(billing.fetchBalance).mockRejectedValueOnce(
         new Error('Fetch failed')
       )
       const { handleRefresh } = useSubscriptionActions()

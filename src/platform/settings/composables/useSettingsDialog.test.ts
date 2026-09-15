@@ -25,12 +25,13 @@ vi.mock(import('@/i18n'), () => ({
 vi.mock(import('@/platform/telemetry'))
 
 beforeEach(() => {
-  vi.mocked(useBillingContext).mockReturnValue({
-    ...useBillingContext(),
+  const billing = useBillingContext()
+  Object.assign(billing, {
     canAccessSubscriptionFeatures: computed(() => true),
     isFreeTier: computed(() => false),
     type: computed(() => 'legacy')
-  } as const)
+  })
+  vi.mocked(useBillingContext).mockReturnValue(billing)
 })
 
 vi.mock(import('@/composables/billing/useBillingContext'))

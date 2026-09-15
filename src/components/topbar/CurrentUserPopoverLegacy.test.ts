@@ -26,8 +26,8 @@ vi.mock(import('@/platform/settings/composables/useSettingsDialog'), () => ({
 
 const originalWindowOpen = window.open
 beforeEach(() => {
-  vi.mocked(useBillingContext).mockReturnValue({
-    ...useBillingContext(),
+  const billing = useBillingContext()
+  Object.assign(billing, {
     canAccessSubscriptionFeatures: computed(
       () => mockCanAccessSubscriptionFeatures.value
     ),
@@ -36,7 +36,8 @@ beforeEach(() => {
     balance: computed(() => mockBalance.value),
     isLoading: mockIsLoading,
     isTeamPlan: computed(() => mockIsTeamPlan.value)
-  } as const)
+  })
+  vi.mocked(useBillingContext).mockReturnValue(billing)
 
   window.open = vi.fn()
 })

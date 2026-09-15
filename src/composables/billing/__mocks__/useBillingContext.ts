@@ -1,12 +1,11 @@
-import { beforeEach, vi } from 'vitest'
+import { vi } from 'vitest'
 import { computed, ref } from 'vue'
 
+import type { BillingContext } from '../types'
 import type { useBillingContext as realUseBillingContext } from '../useBillingContext'
 
-export const useBillingContext = vi.fn<typeof realUseBillingContext>()
-
-beforeEach(() => {
-  useBillingContext.mockReturnValue({
+function createBillingContextMock(): BillingContext {
+  return {
     type: computed(() => 'legacy'),
     isInitialized: ref(false),
     isLoading: ref(false),
@@ -43,5 +42,9 @@ beforeEach(() => {
     requireActiveSubscription: vi.fn(async () => {}),
     showSubscriptionDialog: vi.fn(),
     reconcileSubscriptionSuccess: vi.fn(async () => {})
-  } as const)
-})
+  }
+}
+
+export const useBillingContext = vi.fn<typeof realUseBillingContext>(
+  createBillingContextMock
+)
