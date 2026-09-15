@@ -41,7 +41,8 @@
   },
   "devDependencies": {
     "tailwindcss": "catalog:",
-    "typescript": "catalog:"
+    "typescript": "catalog:",
+    "vitest": "catalog:"
   },
   "peerDependencies": {
     "tailwindcss": "^4.1.0"

@@ -40,14 +40,7 @@ export default defineConfig({
           include: [
             'src/core/**/*.{test,spec}.ts',
             'src/web/**/*.{test,spec}.ts',
-            'src/provisioning.test.ts',
-            'src/redirect.test.ts',
-            'src/webviewDetection.test.ts',
-            'src/firebaseAuthError.test.ts',
-            'src/turnstile.test.ts',
-            'src/turnstileScript.test.ts',
-            'src/signInSchemas.test.ts',
-            'src/vueBoundary.test.ts'
+            'src/*.{test,spec}.ts'
           ]
         }
       },
