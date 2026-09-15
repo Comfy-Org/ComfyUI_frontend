@@ -336,7 +336,7 @@ describe('VirtualGrid scrolled deep into a large library', () => {
     }
   )
 
-  it('goes blank when the filtered list shrinks below the scrolled-to index', async () => {
+  it('does not blank when the filtered list shrinks below the scrolled-to index', async () => {
     const { rerender } = renderLibrary(createLibrary())
     await nextTick()
 
@@ -352,7 +352,7 @@ describe('VirtualGrid scrolled deep into a large library', () => {
     expect(renderedNames().length).toBeGreaterThan(0)
   })
 
-  it('goes blank when the column count grows while scrolled deep', async () => {
+  it('does not blank when the column count grows while scrolled deep', async () => {
     renderLibrary(createLibrary())
     await nextTick()
 
