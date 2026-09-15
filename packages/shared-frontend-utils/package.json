@@ -11,6 +11,7 @@
     "./loadExternalScript": "./src/loadExternalScript.ts",
     "./networkUtil": "./src/networkUtil.ts",
     "./nodePricing": "./src/nodePricing.ts",
+    "./nodePricingFailure": "./src/nodePricingFailure.ts",
     "./piiUtil": "./src/piiUtil.ts"
   },
   "scripts": {

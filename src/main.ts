@@ -11,6 +11,7 @@ import 'primeicons/primeicons.css'
 import PrimeVue from 'primevue/config'
 import ToastService from 'primevue/toastservice'
 import Tooltip from 'primevue/tooltip'
+import { setNodePricingFailureReporter } from '@comfyorg/shared-frontend-utils/nodePricingFailure'
 import { createApp } from 'vue'
 import { VueFire, VueFireAuth } from 'vuefire'
 
@@ -24,6 +25,7 @@ import {
   remoteConfig
 } from '@/platform/remoteConfig/remoteConfig'
 import { reportAssertFailure } from '@/platform/telemetry/assertFailureReporter'
+import { reportNodePricingFailure } from '@/platform/telemetry/nodePricingFailureReporter'
 import { syncHostUserIdWithFirebaseAuth } from '@/platform/telemetry/hostUserIdSync'
 import { flushErrorReports } from '@/platform/telemetry/reportError'
 import { bootstrapTracer } from '@/platform/telemetry/perf/bootstrapTracer'
@@ -125,6 +127,8 @@ sentryInit({
 phaseSentry.stop()
 
 flushErrorReports()
+
+setNodePricingFailureReporter(reportNodePricingFailure)
 
 // Assertion reporter receives pre-formatted messages (with "[Assertion failed]: " prefix).
 // Strings here are intentionally not i18n'd: they're developer/nightly diagnostics,

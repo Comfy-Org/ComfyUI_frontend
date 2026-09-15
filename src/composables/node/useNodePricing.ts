@@ -15,6 +15,7 @@ import {
   getCompiledRuleForNodeType,
   normalizeWidgetValue
 } from '@comfyorg/shared-frontend-utils/nodePricing'
+import { reportNodePricingFailure } from '@comfyorg/shared-frontend-utils/nodePricingFailure'
 import type {
   CompiledJsonataPricingRule,
   JsonataEvalContext,
@@ -156,13 +157,33 @@ const scheduleEvaluation = (
 
   if (!rule._compiled) return
 
+  const nodeType = getNodeConstructorData(node)?.name ?? 'unknown'
+
   const promise = Promise.resolve(rule._compiled.evaluate(ctx))
-    .then((res) => {
-      cacheLabel(node, sig, formatPricingResult(res))
-    })
-    .catch(() => {
-      // Cache empty to avoid retry-spam for same signature
-      cacheLabel(node, sig, '')
+    .then(
+      (res) => {
+        cacheLabel(node, sig, formatPricingResult(res))
+      },
+      (cause: unknown) => {
+        reportNodePricingFailure({
+          operation: 'evaluate',
+          nodeType,
+          source: 'live_node',
+          expr: rule.expr,
+          cause
+        })
+        // Cache empty to avoid retry-spam for same signature
+        cacheLabel(node, sig, '')
+      }
+    )
+    .catch((cause: unknown) => {
+      reportNodePricingFailure({
+        operation: 'format',
+        nodeType,
+        source: 'live_node',
+        expr: rule.expr,
+        cause
+      })
     })
     .finally(() => {
       const cur = inflight.get(node)
