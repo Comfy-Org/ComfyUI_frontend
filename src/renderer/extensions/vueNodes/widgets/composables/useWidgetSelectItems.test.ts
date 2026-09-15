@@ -9,7 +9,6 @@ import { useWidgetSelectItems } from '@/renderer/extensions/vueNodes/widgets/com
 import type { UseWidgetSelectItemsOptions } from '@/renderer/extensions/vueNodes/widgets/composables/useWidgetSelectItems'
 import { useAssetsStore } from '@/stores/assetsStore'
 import { pagedItems } from '@/utils/pagedList'
-import type { PagedList } from '@/utils/pagedList'
 
 vi.mock(import('@/platform/assets/composables/useAssetFilterOptions'), () => ({
   useAssetFilterOptions: () => ({
@@ -72,15 +71,6 @@ const storeAssets = {
   input: [] as AssetItem[],
   flatOutput: [] as AssetItem[]
 }
-
-const asPagedList = (items: AssetItem[]): PagedList<AssetItem> => ({
-  hasMore: false,
-  invalidate: async () => {},
-  isLoading: false,
-  items,
-  loadMore: async () => false,
-  loadNew: async () => {}
-})
 
 beforeEach(() => {
   storeAssets.input = [...DEFAULT_INPUTS]
@@ -199,7 +189,7 @@ describe('useWidgetSelectItems', () => {
     })
 
     it('uses allAssets for the default filter when present', () => {
-      useAssetsStore().allAssets = asPagedList([
+      vi.spyOn(useAssetsStore().allAssets, 'items', 'get').mockReturnValue([
         makeInput('a-in', 'x.png'),
         makeOutput('a-out', 'y.png')
       ])

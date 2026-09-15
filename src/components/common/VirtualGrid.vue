@@ -1,6 +1,6 @@
 <template>
   <slot
-    v-if="!pagedItems(items).length && slots.placeholder"
+    v-if="$slots.placeholder && !pagedItems(items).length && !canLoadMore"
     name="placeholder"
   />
   <div
@@ -19,11 +19,11 @@
       </div>
     </div>
     <div :style="bottomSpacerStyle" />
+    <slot
+      v-if="$slots.loading && isPaged(items) && toValue(items.isLoading)"
+      name="loading"
+    />
   </div>
-  <slot
-    v-if="isPaged(items) && items.isLoading && slots.loading"
-    name="loading"
-  />
 </template>
 
 <script setup lang="ts" generic="T extends { id: string }">
@@ -44,12 +44,6 @@ type GridState = {
   start: number
   end: number
 }
-
-const slots = defineSlots<{
-  item(props: { item: T; index: number }): unknown
-  loading?(): unknown
-  placeholder?(): unknown
-}>()
 
 const {
   items,
@@ -76,6 +70,7 @@ const { width, height } = useElementSize(container)
 const { y: scrollY } = useScroll(container, {
   eventListenerOptions: { passive: true }
 })
+const canLoadMore = computed(() => isPaged(items) && toValue(items.hasMore))
 
 const cols = computed(() => {
   if (maxColumns !== Infinity) return maxColumns
@@ -139,10 +134,7 @@ useInfiniteScroll(
   async () => {
     if (isPaged(items)) await items.loadMore()
   },
-  {
-    canLoadMore: () => isPaged(items) && toValue(items.hasMore),
-    distance
-  }
+  { canLoadMore: () => canLoadMore.value, distance }
 )
 
 function updateItemSize(): void {

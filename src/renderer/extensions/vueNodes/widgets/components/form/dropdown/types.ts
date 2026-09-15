@@ -31,7 +31,7 @@ export type LayoutMode = 'list' | 'grid' | 'list-small'
 export interface FormDropdownInputProps {
   isOpen?: boolean
   placeholder?: string
-  selectedItems: FormDropdownItem[]
+  selectedItems: readonly FormDropdownItem[]
   maxSelectable: number
   uploadable: boolean
   disabled: boolean
