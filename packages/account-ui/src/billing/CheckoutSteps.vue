@@ -31,9 +31,9 @@
       :projection
       :disabled
       :actions
-      :retry="() => emit('retry')"
-      :cancel="() => emit('cancel')"
-      :continue-verification="() => emit('continue-verification')"
+      :retry="() => activate('retry')"
+      :cancel="() => activate('cancel')"
+      :continue-verification="() => activate('continue_verification')"
     >
       <div v-if="actions.length > 0" :class="actionsClass">
         <button
@@ -123,8 +123,10 @@ const text = computed(() => createPaymentCopy(copy))
 const keys = computed(() => paymentCopyKeys(projection))
 const actions = computed(() => ACTIONS[projection.step] ?? [])
 
-function activate(action: PaymentAction) {
+function activate(action: PaymentAction | 'cancel') {
+  if (disabled) return
   if (action === 'retry') emit('retry')
+  else if (action === 'cancel') emit('cancel')
   else emit('continue-verification')
 }
 </script>

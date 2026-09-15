@@ -88,6 +88,27 @@ describe('CheckoutSteps', () => {
     expect(emitted('retry')).toBeUndefined()
   })
 
+  it('keeps host-rendered actions from firing while disabled', async () => {
+    const { emitted } = render(CheckoutSteps, {
+      props: { projection: projection({ step: 'verifying' }), disabled: true },
+      slots: {
+        actions: (scope: {
+          cancel: () => void
+          continueVerification: () => void
+        }) => [
+          h('button', { onClick: scope.cancel }, 'Back'),
+          h('button', { onClick: scope.continueVerification }, 'Go')
+        ]
+      }
+    })
+
+    await userEvent.click(screen.getByRole('button', { name: 'Back' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Go' }))
+
+    expect(emitted('cancel')).toBeUndefined()
+    expect(emitted('continue-verification')).toBeUndefined()
+  })
+
   it('names the region after the heading on screen, including one the host renders', () => {
     render(CheckoutSteps, {
       props: { projection: projection({ step: 'canceled' }) },
