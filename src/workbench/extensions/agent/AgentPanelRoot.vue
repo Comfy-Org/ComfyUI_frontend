@@ -99,6 +99,10 @@ import {
   resolveDebugPanelEnabled
 } from './crdt/crdtDebugGate'
 import { attachMintPortWiring } from './crdt/mintPortWiring'
+import {
+  applyLiveWidgetValue,
+  rebindLiveWidgetState
+} from './crdt/liveWidgetProjection'
 import { useAgentCrdtFollower } from './crdt/useAgentCrdtFollower'
 
 const CrdtDevPanel = defineAsyncComponent(
@@ -247,6 +251,31 @@ const graphMutations = (workflowId: string) => {
             timestamp
           }))
         )
+      }
+    },
+    liveWidgets: {
+      rebind(scope, nodeId, name) {
+        rebindLiveWidgetState(app.rootGraphOrUndefined, scope, nodeId, name)
+      },
+      setValue(scope, nodeId, name, value, context) {
+        try {
+          const result = applyLiveWidgetValue(
+            app.rootGraphOrUndefined,
+            scope,
+            nodeId,
+            name,
+            value,
+            context
+          )
+          if (result.status === 'applied') app.canvas?.setDirty(true)
+          return result
+        } catch (error) {
+          console.warn(
+            `[agent-crdt] live widget projection failed for node ${nodeId}, widget ${name}`,
+            error
+          )
+          return { status: 'skipped' }
+        }
       }
     }
   })
