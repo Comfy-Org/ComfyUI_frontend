@@ -71,6 +71,17 @@ export interface AgentCrdtStatus {
   outcomes: AgentCrdtOutcomeCounters
 }
 
+type OpsResultDropReason = 'inactive_target' | 'workflow_mismatch'
+
+function opsResultDropReason(
+  active: boolean,
+  workflowId: unknown,
+  subscribedWorkflowId: string | null
+): OpsResultDropReason | null {
+  if (!active) return 'inactive_target'
+  return workflowId === subscribedWorkflowId ? null : 'workflow_mismatch'
+}
+
 export function useAgentCrdtFollower(
   workflowId: Ref<string | null>,
   graphMutations: MutationsForTarget,
@@ -210,19 +221,15 @@ export function useAgentCrdtFollower(
   const onOpsResult: EventListener = (event) => {
     if (!(event instanceof CustomEvent)) return
     const detail = event.detail as { workflowId?: unknown } | null
-    const resultSubscriptionId =
-      typeof detail?.workflowId === 'string'
-        ? detail.workflowId
-        : subscribedWorkflowId.value
-    const dropReason = !isTargetActive.value
-      ? 'inactive_target'
-      : detail?.workflowId !== subscribedWorkflowId.value
-        ? 'workflow_mismatch'
-        : null
+    const dropReason = opsResultDropReason(
+      isTargetActive.value,
+      detail?.workflowId,
+      subscribedWorkflowId.value
+    )
     if (dropReason !== null) {
       recordDevEvent('doc_ops_result_dropped', {
         reason: dropReason,
-        subscribedWorkflowId: resultSubscriptionId,
+        subscribedWorkflowId: subscribedWorkflowId.value,
         frame: event.detail ?? null
       })
       return

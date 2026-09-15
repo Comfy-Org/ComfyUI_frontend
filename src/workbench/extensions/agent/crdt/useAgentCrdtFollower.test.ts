@@ -425,7 +425,7 @@ describe('useAgentCrdtFollower', () => {
     expect(persistedRecord()?.expiresAt).toBe(stampedAt)
     expect(recordDevEvent).toHaveBeenCalledWith('doc_ops_result_dropped', {
       reason: 'workflow_mismatch',
-      subscribedWorkflowId: 'wf-2',
+      subscribedWorkflowId: 'wf-1',
       frame: { workflowId: 'wf-2', ok: true }
     })
 
@@ -434,7 +434,7 @@ describe('useAgentCrdtFollower', () => {
     dispatchFrame('doc_ops_result', { workflowId: 'wf-1', ok: true })
     expect(recordDevEvent).toHaveBeenCalledWith('doc_ops_result_dropped', {
       reason: 'workflow_mismatch',
-      subscribedWorkflowId: 'wf-1',
+      subscribedWorkflowId: 'wf-2',
       frame: { workflowId: 'wf-1', ok: true }
     })
 
@@ -444,7 +444,7 @@ describe('useAgentCrdtFollower', () => {
     expect(persistedRecord()?.expiresAt).toBe(stampedAt)
     expect(recordDevEvent).toHaveBeenCalledWith('doc_ops_result_dropped', {
       reason: 'inactive_target',
-      subscribedWorkflowId: 'wf-1',
+      subscribedWorkflowId: null,
       frame: { workflowId: 'wf-1', ok: true }
     })
 
