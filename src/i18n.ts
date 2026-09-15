@@ -56,6 +56,13 @@ const secureCatalogs = new Map<
 const secureLocaleBases = new Map<SupportedLocale, Record<string, unknown>>()
 const forbiddenCatalogKeys = new Set(['__proto__', 'prototype', 'constructor'])
 
+interface CatalogBudget {
+  entries: number
+  bytes: number
+  readonly seen: WeakSet<object>
+  readonly encoder: TextEncoder
+}
+
 function cloneLocaleTree<T>(value: T): T {
   if (value === null || typeof value === 'string') return value
   if (typeof value !== 'object' || Array.isArray(value)) {
@@ -70,96 +77,131 @@ function cloneLocaleTree<T>(value: T): T {
   return result as T
 }
 
-function normalizeSecureCatalog(value: unknown): SecureLocalizationCatalog {
-  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return value !== null && typeof value === 'object' && !Array.isArray(value)
+}
+
+function secureCatalogRecord(value: unknown): Record<string, unknown> {
+  if (!isRecord(value))
     throw new TypeError('localization catalog must be an object')
-  }
-  const raw = value as Record<string, unknown>
+  const raw = value
   const keys = Object.keys(raw)
   if (
     !keys.includes('messages') ||
     keys.some((key) => key !== 'messages' && key !== 'phrases') ||
-    !raw.messages ||
-    typeof raw.messages !== 'object' ||
-    Array.isArray(raw.messages)
+    !isRecord(raw.messages)
   ) {
     throw new TypeError(
       'localization catalog requires messages and optional phrases'
     )
   }
+  return raw
+}
 
-  let entries = 0
-  let bytes = 0
-  const seen = new WeakSet<object>()
-  const addString = (text: string, maximum: number, label: string) => {
-    const size = new TextEncoder().encode(text).byteLength
-    if (size > maximum || text.includes('\0')) {
-      throw new TypeError(`localization ${label} exceeds its bound`)
-    }
-    bytes += size
-    if (bytes > 4 * 1024 * 1024) {
-      throw new TypeError('localization catalog exceeds 4 MiB')
-    }
+function addCatalogString(
+  budget: CatalogBudget,
+  text: string,
+  maximum: number,
+  label: string
+): void {
+  const size = budget.encoder.encode(text).byteLength
+  if (size > maximum || text.includes('\0')) {
+    throw new TypeError(`localization ${label} exceeds its bound`)
   }
-  const walk = (input: unknown, depth: number): SecureLocalizationMessage => {
-    if (typeof input === 'string') {
-      addString(input, 4096, 'message')
-      return input
-    }
-    if (input === null) return null
-    if (
-      !input ||
-      typeof input !== 'object' ||
-      Array.isArray(input) ||
-      depth > 16
-    ) {
-      throw new TypeError('localization message tree is invalid')
-    }
-    if (seen.has(input)) throw new TypeError('localization catalog is cyclic')
-    seen.add(input)
-    const output: Record<string, SecureLocalizationMessage> = {}
-    for (const [key, child] of Object.entries(input)) {
-      if (forbiddenCatalogKeys.has(key)) {
-        throw new TypeError('localization catalog contains a forbidden key')
-      }
-      entries++
-      if (entries > 20_000) {
-        throw new TypeError('localization catalog has too many entries')
-      }
-      addString(key, 512, 'key')
-      output[key] = walk(child, depth + 1)
-    }
-    seen.delete(input)
-    return output
+  budget.bytes += size
+  if (budget.bytes > 4 * 1024 * 1024) {
+    throw new TypeError('localization catalog exceeds 4 MiB')
   }
+}
 
-  const messages = walk(raw.messages, 0)
+function addCatalogEntry(budget: CatalogBudget): void {
+  budget.entries++
+  if (budget.entries > 20_000) {
+    throw new TypeError('localization catalog has too many entries')
+  }
+}
+
+function secureMessageRecord(
+  input: unknown,
+  depth: number
+): Record<string, unknown> {
+  if (!isRecord(input) || depth > 16) {
+    throw new TypeError('localization message tree is invalid')
+  }
+  return input
+}
+
+function normalizeSecureMessage(
+  input: unknown,
+  budget: CatalogBudget,
+  depth: number
+): SecureLocalizationMessage {
+  if (typeof input === 'string') {
+    addCatalogString(budget, input, 4096, 'message')
+    return input
+  }
+  if (input === null) return null
+
+  const record = secureMessageRecord(input, depth)
+  if (budget.seen.has(record)) {
+    throw new TypeError('localization catalog is cyclic')
+  }
+  budget.seen.add(record)
+  const output: Record<string, SecureLocalizationMessage> = {}
+  for (const [key, child] of Object.entries(record)) {
+    if (forbiddenCatalogKeys.has(key)) {
+      throw new TypeError('localization catalog contains a forbidden key')
+    }
+    addCatalogEntry(budget)
+    addCatalogString(budget, key, 512, 'key')
+    output[key] = normalizeSecureMessage(child, budget, depth + 1)
+  }
+  budget.seen.delete(record)
+  return output
+}
+
+function normalizeCatalogMessages(
+  input: unknown,
+  budget: CatalogBudget
+): Readonly<Record<string, SecureLocalizationMessage>> {
+  const messages = normalizeSecureMessage(input, budget, 0)
   if (!messages || typeof messages !== 'object' || Array.isArray(messages)) {
     throw new TypeError('localization messages must be an object')
   }
-  let phrases: Record<string, string> | undefined
-  if (raw.phrases !== undefined) {
-    if (
-      !raw.phrases ||
-      typeof raw.phrases !== 'object' ||
-      Array.isArray(raw.phrases)
-    ) {
-      throw new TypeError('localization phrases must be an object')
-    }
-    phrases = {}
-    for (const [source, translated] of Object.entries(raw.phrases)) {
-      if (forbiddenCatalogKeys.has(source) || typeof translated !== 'string') {
-        throw new TypeError('localization phrase is invalid')
-      }
-      entries++
-      if (entries > 20_000) {
-        throw new TypeError('localization catalog has too many entries')
-      }
-      addString(source, 4096, 'phrase source')
-      addString(translated, 4096, 'phrase translation')
-      phrases[source] = translated
-    }
+  return messages
+}
+
+function normalizeCatalogPhrases(
+  input: unknown,
+  budget: CatalogBudget
+): Readonly<Record<string, string>> | undefined {
+  if (input === undefined) return undefined
+  if (!isRecord(input)) {
+    throw new TypeError('localization phrases must be an object')
   }
+  const phrases: Record<string, string> = {}
+  for (const [source, translated] of Object.entries(input)) {
+    if (forbiddenCatalogKeys.has(source) || typeof translated !== 'string') {
+      throw new TypeError('localization phrase is invalid')
+    }
+    addCatalogEntry(budget)
+    addCatalogString(budget, source, 4096, 'phrase source')
+    addCatalogString(budget, translated, 4096, 'phrase translation')
+    phrases[source] = translated
+  }
+  return phrases
+}
+
+function normalizeSecureCatalog(value: unknown): SecureLocalizationCatalog {
+  const raw = secureCatalogRecord(value)
+  const budget: CatalogBudget = {
+    entries: 0,
+    bytes: 0,
+    seen: new WeakSet(),
+    encoder: new TextEncoder()
+  }
+  const messages = normalizeCatalogMessages(raw.messages, budget)
+  const phrases = normalizeCatalogPhrases(raw.phrases, budget)
   return { messages, ...(phrases ? { phrases } : {}) }
 }
 
@@ -431,25 +473,38 @@ function customNodesProvide(nodeName: string, path: string): boolean {
   return false
 }
 
+function secureMessageAtPath(
+  root: Readonly<Record<string, SecureLocalizationMessage>>,
+  path: string
+): SecureLocalizationMessage | undefined {
+  let cursor: SecureLocalizationMessage | undefined = root
+  for (const segment of path.split('.')) {
+    if (typeof cursor !== 'object' || cursor === null) return undefined
+    cursor = cursor[segment]
+  }
+  return cursor
+}
+
+function secureCatalogHasNodeText(
+  catalog: SecureLocalizationCatalog,
+  candidates: readonly string[],
+  path: string
+): boolean {
+  const nodeDefs = catalog.messages['nodeDefs']
+  if (typeof nodeDefs !== 'object' || nodeDefs === null) return false
+  return candidates.some(
+    (candidate) =>
+      typeof secureMessageAtPath(nodeDefs, `${candidate}.${path}`) === 'string'
+  )
+}
+
 function secureCatalogProvides(nodeName: string, path: string): boolean {
   const catalogs = secureCatalogs.get(i18n.global.locale.value)
   if (!catalogs) return false
-  for (const catalog of catalogs.values()) {
-    const nodeDefs = catalog.messages['nodeDefs']
-    if (typeof nodeDefs !== 'object' || nodeDefs === null) continue
-    for (const candidate of nodeDefKeyCandidates(nodeName)) {
-      let cursor: SecureLocalizationMessage | undefined = nodeDefs
-      for (const segment of `${candidate}.${path}`.split('.')) {
-        if (typeof cursor !== 'object' || cursor === null) {
-          cursor = undefined
-          break
-        }
-        cursor = cursor[segment]
-      }
-      if (typeof cursor === 'string') return true
-    }
-  }
-  return false
+  const candidates = nodeDefKeyCandidates(nodeName)
+  return [...catalogs.values()].some((catalog) =>
+    secureCatalogHasNodeText(catalog, candidates, path)
+  )
 }
 
 /**
