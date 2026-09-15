@@ -51,13 +51,6 @@ vi.mock<unknown>(import('@/platform/telemetry'), () => ({
   useTelemetry: () => ({ trackHelpResourceClicked: vi.fn() })
 }))
 
-vi.mock<unknown>(import('@/composables/useExternalLink'), () => ({
-  useExternalLink: () => ({
-    buildDocsUrl: () => 'https://docs.comfy.org',
-    docsPaths: { partnerNodesPricing: '/partner-nodes' }
-  })
-}))
-
 const i18n = createI18n({
   legacy: false,
   locale: 'en',

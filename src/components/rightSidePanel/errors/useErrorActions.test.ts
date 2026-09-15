@@ -14,16 +14,7 @@ const mocks = vi.hoisted(() => ({
   telemetry: null as {
     trackUiButtonClicked: ReturnType<typeof vi.fn>
     trackHelpResourceClicked: ReturnType<typeof vi.fn>
-  } | null,
-  staticUrls: {
-    githubIssues: 'https://github.com/Comfy-Org/ComfyUI/issues'
-  }
-}))
-
-vi.mock<unknown>(import('@/composables/useExternalLink'), () => ({
-  useExternalLink: () => ({
-    staticUrls: mocks.staticUrls
-  })
+  } | null
 }))
 
 vi.mock<unknown>(import('@/platform/telemetry'), () => ({
@@ -56,7 +47,7 @@ describe('useErrorActions', () => {
         element_group: 'errors_panel'
       })
       expect(windowOpenSpy).toHaveBeenCalledWith(
-        mocks.staticUrls.githubIssues,
+        'https://github.com/Comfy-Org/ComfyUI/issues',
         '_blank',
         'noopener,noreferrer'
       )
@@ -70,7 +61,7 @@ describe('useErrorActions', () => {
 
       expect(mocks.trackUiButtonClicked).not.toHaveBeenCalled()
       expect(windowOpenSpy).toHaveBeenCalledWith(
-        mocks.staticUrls.githubIssues,
+        'https://github.com/Comfy-Org/ComfyUI/issues',
         '_blank',
         'noopener,noreferrer'
       )
@@ -136,7 +127,7 @@ describe('useErrorActions', () => {
       })
       const expectedQuery = encodeURIComponent('CUDA out of memory is:issue')
       expect(windowOpenSpy).toHaveBeenCalledWith(
-        `${mocks.staticUrls.githubIssues}?q=${expectedQuery}`,
+        `https://github.com/Comfy-Org/ComfyUI/issues?q=${expectedQuery}`,
         '_blank',
         'noopener,noreferrer'
       )
