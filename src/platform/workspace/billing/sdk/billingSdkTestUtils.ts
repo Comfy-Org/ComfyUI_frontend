@@ -78,7 +78,10 @@ export function fakeBillingSdk() {
     status: fakeReader(),
     credits: fakeReader(),
     capabilities: fakeReader(),
-    topup: { createTopupCheckout: vi.fn() },
+    topup: {
+      createTopupCheckout: vi.fn(),
+      createHostedTopupCheckout: vi.fn()
+    },
     driveChallenge: vi.fn(async () => 'completed' as const),
     dispose: vi.fn()
   }
