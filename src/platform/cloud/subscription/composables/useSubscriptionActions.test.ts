@@ -3,10 +3,9 @@ import { useCommandStore } from '@/stores/commandStore'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useSubscriptionActions } from '@/platform/cloud/subscription/composables/useSubscriptionActions'
+import { mockBillingContext } from '@/utils/__tests__/mockBillingContext'
 
-const mockBillingFetchBalance = vi.fn()
 const mockAuthFetchBalance = vi.fn()
-const mockFetchStatus = vi.fn()
 const mockShowTopUpCreditsDialog = vi.fn()
 const mockExecute = vi.fn<ReturnType<typeof useCommandStore>['execute']>(
   async () => undefined
@@ -27,12 +26,7 @@ vi.mock<unknown>(import('@/composables/auth/useAuthActions'), () => ({
   })
 }))
 
-vi.mock<unknown>(import('@/composables/billing/useBillingContext'), () => ({
-  useBillingContext: () => ({
-    fetchBalance: mockBillingFetchBalance,
-    fetchStatus: mockFetchStatus
-  })
-}))
+vi.mock(import('@/composables/billing/useBillingContext'))
 
 vi.mock<unknown>(import('@/services/dialogService'), () => ({
   useDialogService: () => ({
@@ -171,16 +165,20 @@ describe('useSubscriptionActions', () => {
 
   describe('handleRefresh', () => {
     it('should refresh balance and status through the billing facade', async () => {
+      const billing = mockBillingContext()
       const { handleRefresh } = useSubscriptionActions()
       await handleRefresh()
 
-      expect(mockBillingFetchBalance).toHaveBeenCalledOnce()
-      expect(mockFetchStatus).toHaveBeenCalledOnce()
+      expect(billing.fetchBalance).toHaveBeenCalledOnce()
+      expect(billing.fetchStatus).toHaveBeenCalledOnce()
       expect(mockAuthFetchBalance).not.toHaveBeenCalled()
     })
 
     it('swallows refresh failures without surfacing a toast', async () => {
-      mockBillingFetchBalance.mockRejectedValueOnce(new Error('Fetch failed'))
+      const billing = mockBillingContext()
+      vi.mocked(billing.fetchBalance).mockRejectedValueOnce(
+        new Error('Fetch failed')
+      )
       const { handleRefresh } = useSubscriptionActions()
 
       await expect(handleRefresh()).resolves.toBeUndefined()
