@@ -1,6 +1,7 @@
+import { zAssetInfo } from '@comfyorg/ingest-types/zod'
 import { z } from 'zod'
 
-import { zAssetInfo, zComfyHubProfile } from '@/schemas/apiSchema'
+import { zComfyHubProfile } from '@/schemas/apiSchema'
 
 export const zPublishRecordResponse = z.object({
   workflow_id: z.string(),
