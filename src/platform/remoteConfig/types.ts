@@ -127,7 +127,9 @@ export type RemoteConfig = {
   workflow_sharing_enabled?: boolean
   comfyhub_upload_enabled?: boolean
   comfyhub_profile_gate_enabled?: boolean
-  hosted_billing_web_enabled?: boolean
+  // Raw, unvalidated wire value ('stripe' | 'billing_web' by contract). Always
+  // funnel it through normalizeHostedBillingDestination before trusting it.
+  hosted_billing_destination?: string
   unified_cloud_auth?: boolean
   billing_control_enabled?: boolean
   legacy_billing_migration_enabled?: boolean
