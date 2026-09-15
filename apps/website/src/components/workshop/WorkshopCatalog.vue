@@ -74,9 +74,6 @@ const outputOptions: readonly WorkshopOutputFilter[] = [
     <h1 class="text-4xl font-bold text-primary-comfy-canvas lg:text-6xl">
       {{ t('workshop.hero.heading', locale) }}
     </h1>
-    <p class="mt-4 max-w-3xl text-lg text-primary-comfy-canvas/70">
-      {{ t('workshop.hero.subtitle', locale) }}
-    </p>
   </header>
 
   <div class="mb-8 flex flex-col gap-4">

@@ -24,12 +24,8 @@ const translations = {
   },
   'workshop.hero.eyebrow': { en: 'Models', 'zh-CN': '模型' },
   'workshop.hero.heading': {
-    en: 'Run models in your browser',
-    'zh-CN': '运行顶尖模型'
-  },
-  'workshop.hero.subtitle': {
-    en: 'The latest AI models, ready to run. Nothing to install.',
-    'zh-CN': '最新 AI 模型，即开即用。无需安装配置。'
+    en: 'The latest models. Nothing to install.',
+    'zh-CN': '最新模型，无需安装。'
   },
   'workshop.search.label': {
     en: 'Search models, providers, and categories',
