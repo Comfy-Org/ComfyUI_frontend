@@ -2,6 +2,7 @@ import type { MockInstance } from 'vitest'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { reportError } from '@/platform/telemetry/reportError'
+import { app as comfyApp } from '@/scripts/app'
 
 import { createEmptyIndex } from '../base/draftCacheV2'
 import { MAX_DRAFTS } from '../base/draftTypes'
@@ -22,6 +23,8 @@ vi.mock<unknown>(import('@/scripts/app'), () => ({
     loadGraphData: vi.fn().mockResolvedValue(undefined)
   }
 }))
+
+vi.mock('@/platform/distribution/types', () => ({ isCloud: true }))
 
 const reportErrorMock = vi.hoisted(() => vi.fn<typeof reportError>())
 vi.mock(import('@/platform/telemetry/reportError'), () => ({
@@ -372,19 +375,22 @@ describe('workflowDraftStoreV2', () => {
       )
     })
 
-    it('rolls the persisted index back when the final index write fails after eviction', () => {
+    it('restores the evicted draft when the final index write fails', () => {
       const store = useWorkflowDraftStoreV2()
       seedDraftDirect('workflows/a.json', '{"id":"a"}', 'a')
 
       let payloadFailures = 0
-      let indexFailureInjected = false
+      let indexWrites = 0
+      let finalIndexFailureInjected = false
       withQuotaMock((key) => {
         if (key.startsWith(PAYLOAD_PREFIX) && payloadFailures === 0) {
           payloadFailures++
           return true
         }
-        if (key !== INDEX_KEY || indexFailureInjected) return false
-        indexFailureInjected = true
+        if (key !== INDEX_KEY) return false
+        indexWrites++
+        if (indexWrites !== 2 || finalIndexFailureInjected) return false
+        finalIndexFailureInjected = true
         return true
       })
 
@@ -393,12 +399,13 @@ describe('workflowDraftStoreV2', () => {
         isTemporary: true
       })
       expect(ok).toBe(false)
-      expect(indexFailureInjected).toBe(true)
+      expect(finalIndexFailureInjected).toBe(true)
 
       const persisted = readIndexFromStorage()
       expect(persisted.order).not.toContain(hashPath('workflows/incoming.json'))
-      expect(persisted.order).not.toContain(hashPath('workflows/a.json'))
+      expect(persisted.order).toContain(hashPath('workflows/a.json'))
       expect(store.getDraft('workflows/incoming.json')).toBeNull()
+      expect(store.getDraft('workflows/a.json')?.data).toBe('{"id":"a"}')
     })
   })
 
@@ -491,6 +498,7 @@ describe('workflowDraftStoreV2', () => {
       })
 
       const result = await store.loadPersistedWorkflow({
+        workflowName: null,
         preferredPath: 'workflows/test.json'
       })
 
@@ -506,6 +514,7 @@ describe('workflowDraftStoreV2', () => {
       })
 
       const result = await store.loadPersistedWorkflow({
+        workflowName: null,
         preferredPath: 'workflows/missing.json',
         fallbackToLatestDraft: true
       })
@@ -513,10 +522,47 @@ describe('workflowDraftStoreV2', () => {
       expect(result).toBe(true)
     })
 
+    it('does not use unscoped legacy fallbacks outside personal workspace', async () => {
+      sessionStorage.setItem(
+        'Comfy.Workspace.Current',
+        JSON.stringify({ type: 'team', id: 'team-workspace' })
+      )
+      sessionStorage.setItem('workflow:test-client', '{"nodes":[1]}')
+      localStorage.setItem('workflow', '{"nodes":[2]}')
+      const store = useWorkflowDraftStoreV2()
+
+      const result = await store.loadPersistedWorkflow({
+        workflowName: null,
+        fallbackToLatestDraft: true
+      })
+
+      expect(result).toBe(false)
+      expect(comfyApp.loadGraphData).not.toHaveBeenCalled()
+    })
+
+    it('keeps the legacy fallback available in personal workspace', async () => {
+      sessionStorage.setItem('workflow:test-client', '{"nodes":[]}')
+      const store = useWorkflowDraftStoreV2()
+
+      const result = await store.loadPersistedWorkflow({
+        workflowName: null,
+        fallbackToLatestDraft: true
+      })
+
+      expect(result).toBe(true)
+      expect(comfyApp.loadGraphData).toHaveBeenCalledWith(
+        { nodes: [] },
+        true,
+        true,
+        null
+      )
+    })
+
     it('returns false when no drafts available', async () => {
       const store = useWorkflowDraftStoreV2()
 
       const result = await store.loadPersistedWorkflow({
+        workflowName: null,
         fallbackToLatestDraft: true
       })
 

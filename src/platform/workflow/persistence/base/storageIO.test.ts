@@ -13,6 +13,7 @@ import {
   readIndex,
   readOpenPaths,
   readPayload,
+  readPersistentOpenPaths,
   writeActivePath,
   writeIndex,
   writeOpenPaths,
@@ -68,6 +69,57 @@ describe('storageIO', () => {
         JSON.stringify({ v: 1 })
       )
       expect(readIndex(workspaceId)).toBeNull()
+    })
+
+    it('drops malformed persisted modification metadata', () => {
+      localStorage.setItem(
+        'Comfy.Workflow.DraftIndex.v2:test-workspace',
+        JSON.stringify({
+          v: 2,
+          updatedAt: 1,
+          order: ['abc123'],
+          entries: {
+            abc123: {
+              path: 'workflows/test.json',
+              name: 'test',
+              isTemporary: false,
+              isModified: 0,
+              updatedAt: 1
+            }
+          }
+        })
+      )
+
+      expect(readIndex(workspaceId)?.entries.abc123?.isModified).toBeUndefined()
+    })
+
+    it('drops malformed ordered entries without a valid path', () => {
+      localStorage.setItem(
+        'Comfy.Workflow.DraftIndex.v2:test-workspace',
+        JSON.stringify({
+          v: 2,
+          updatedAt: 1,
+          order: ['broken', 'valid'],
+          entries: {
+            broken: {
+              name: 'broken',
+              isTemporary: false,
+              updatedAt: 1
+            },
+            valid: {
+              path: 'workflows/valid.json',
+              name: 'valid',
+              isTemporary: false,
+              updatedAt: 1
+            }
+          }
+        })
+      )
+
+      const index = readIndex(workspaceId)
+      expect(index?.order).toEqual(['valid'])
+      expect(index?.entries.broken).toBeUndefined()
+      expect(index?.entries.valid?.path).toBe('workflows/valid.json')
     })
   })
 
@@ -180,6 +232,19 @@ describe('storageIO', () => {
 
     it('returns null for missing open paths', () => {
       expect(readOpenPaths('missing')).toBeNull()
+    })
+
+    it('rejects a durable open-path pointer from another workspace', () => {
+      localStorage.setItem(
+        'Comfy.Workflow.LastOpenPaths:ws-1',
+        JSON.stringify({
+          workspaceId: 'ws-2',
+          paths: ['workflows/foreign.json'],
+          activeIndex: 0
+        })
+      )
+
+      expect(readPersistentOpenPaths('ws-1')).toBeNull()
     })
 
     it('falls back to workspace search when clientId does not match and migrates', () => {

@@ -172,6 +172,15 @@ beforeEach(() => {
   vi.mocked(useWorkflowDraftStoreV2().markDraftUsed).mockImplementation(
     () => {}
   )
+  vi.mocked(useWorkflowDraftStoreV2().isPersistencePaused).mockReturnValue(
+    false
+  )
+  vi.mocked(useWorkflowDraftStoreV2().shouldNotifySaveFailure).mockReturnValue(
+    true
+  )
+  vi.mocked(useWorkflowDraftStoreV2().markSaveSucceeded).mockImplementation(
+    () => {}
+  )
   vi.mocked(useDomWidgetStore().clear).mockImplementation(() => {})
   vi.mocked(
     useSubgraphNavigationStore().saveCurrentViewport
@@ -402,7 +411,8 @@ describe('useWorkflowService', () => {
         JSON.stringify(activeWorkflow.activeState),
         {
           name: activeWorkflow.key,
-          isTemporary: activeWorkflow.isTemporary
+          isTemporary: activeWorkflow.isTemporary,
+          isModified: activeWorkflow.isModified
         }
       )
     })
