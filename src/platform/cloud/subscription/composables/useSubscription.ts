@@ -104,6 +104,10 @@ function useSubscriptionInternal() {
     () => subscriptionDuration.value === 'ANNUAL'
   )
 
+  const isEduCustomer = computed(
+    () => subscriptionStatus.value?.is_edu === true
+  )
+
   const subscriptionTierName = computed(() => {
     const tier = subscriptionTier.value
     if (!tier) return ''
@@ -515,6 +519,7 @@ function useSubscriptionInternal() {
     isFreeTier,
     subscriptionDuration,
     isYearlySubscription,
+    isEduCustomer,
     subscriptionTierName,
     subscriptionStatus,
 

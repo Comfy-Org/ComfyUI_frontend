@@ -18,6 +18,18 @@ const mockPreviewData = ref<Record<string, unknown> | null>(null)
 const mockSelectedTeamStop = ref<Record<string, unknown> | null>(null)
 const mockSelectedSavedPaymentMethodId = ref<string | null>('pm_default')
 const mockSavedPaymentMethods = ref<Record<string, unknown>[]>([])
+const mockIsEduPricingActive = ref(false)
+const mockIsTeamEduEligible = ref(false)
+
+vi.mock<unknown>(
+  import('@/platform/cloud/subscription/composables/useEduPricing'),
+  () => ({
+    useEduPricing: () => ({
+      isEduPricingActive: computed(() => mockIsEduPricingActive.value),
+      isTeamEduEligible: computed(() => mockIsTeamEduEligible.value)
+    })
+  })
+)
 
 vi.mock<unknown>(
   import('@/platform/workspace/composables/useSubscriptionCheckout'),
@@ -64,7 +76,10 @@ const i18n = createI18n({
   messages: {
     en: {
       g: { back: 'Back', close: 'Close' },
-      subscription: { descriptionWorkspace: 'Choose your plan' }
+      subscription: {
+        descriptionWorkspace: 'Choose your plan',
+        eduPromoHeader: 'Education discount: up to {percent}% off'
+      }
     }
   }
 })
@@ -127,6 +142,8 @@ describe('SubscriptionRequiredDialogContentUnified team-plan subscribe', () => {
     mockSelectedTeamStop.value = null
     mockSelectedSavedPaymentMethodId.value = 'pm_default'
     mockSavedPaymentMethods.value = []
+    mockIsEduPricingActive.value = false
+    mockIsTeamEduEligible.value = false
   })
 
   // The team checkout mounts the payment element against the quote's amount, so
@@ -282,4 +299,23 @@ describe('SubscriptionRequiredDialogContentUnified team-plan subscribe', () => {
       expect(mockHandleBackToPricing).toHaveBeenCalled()
     }
   )
+
+  describe('EDU promo pill', () => {
+    it('is hidden by default', () => {
+      renderComponent()
+      expect(screen.queryByText(/Education discount/)).toBeNull()
+    })
+
+    it('shows when the requesting customer is EDU-eligible', () => {
+      mockIsEduPricingActive.value = true
+      renderComponent()
+      expect(screen.getByText(/Education discount/)).toBeInTheDocument()
+    })
+
+    it('shows when the team is EDU-eligible', () => {
+      mockIsTeamEduEligible.value = true
+      renderComponent()
+      expect(screen.getByText(/Education discount/)).toBeInTheDocument()
+    })
+  })
 })

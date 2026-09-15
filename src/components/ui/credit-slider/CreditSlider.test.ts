@@ -205,4 +205,15 @@ describe('CreditSlider', () => {
       expect(stop.credits).toBe(usdToCredits(stop.usd))
     }
   })
+
+  it('stacks an extra discount percent into the price and save badge', async () => {
+    // team_700 yearly: 10% volume + 5% EDU = $595 shown, 15% ($105) saved.
+    renderSlider({ modelValue: 700, extraDiscountPercent: 5 })
+    await flush()
+
+    expect(screen.getByTestId('credit-slider-price')).toHaveTextContent('$595')
+    expect(screen.getByTestId('credit-slider-save')).toHaveTextContent(
+      'Save 15% ($105)'
+    )
+  })
 })
