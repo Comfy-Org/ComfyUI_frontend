@@ -1050,7 +1050,7 @@ describe('agent CRDT follower on a SubgraphNode with promoted widgets', () => {
     // unreadable must be retired live, not left connected to its old slot.
     const state = startFollower()
     const connect = {
-      op: 'connect',
+      op: 'connect' as const,
       link_id: 9,
       from_node: 2,
       from_slot: 0,
