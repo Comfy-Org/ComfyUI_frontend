@@ -94,6 +94,7 @@ test.describe(
               }
               await expectDomTextGeometry(texts)
               await expectDomTextGeometry(portTexts)
+              await expectDomTextGeometry([...texts, ...portTexts])
               const originalStyle = await texts[2].getAttribute('style')
               const target = await texts[1].boundingBox()
               await texts[2].evaluate((element, target) => {
@@ -134,6 +135,29 @@ test.describe(
                 }, originalPortStyle)
               }
               await expectDomTextGeometry(portTexts)
+              const portRow = portTexts[0].locator('..')
+              const originalPortRowStyle = await portRow.getAttribute('style')
+              const crossFamilyTarget = await texts[1].boundingBox()
+              await portRow.evaluate((element, target) => {
+                if (!(element instanceof HTMLElement) || !target)
+                  throw new Error('Missing cross-family label geometry')
+                const bounds = element.getBoundingClientRect()
+                const scale = bounds.width / element.offsetWidth
+                element.style.transform = `translate(${(target.x - bounds.x) / scale}px, ${(target.y - bounds.y) / scale}px)`
+              }, crossFamilyTarget)
+              try {
+                await expectDomTextGeometry(texts)
+                await expectDomTextGeometry(portTexts)
+                await expect(
+                  expectDomTextGeometry([...texts, ...portTexts])
+                ).rejects.toThrow('rendered label bounds must not overlap')
+              } finally {
+                await portRow.evaluate((element, style) => {
+                  if (style === null) element.removeAttribute('style')
+                  else element.setAttribute('style', style)
+                }, originalPortRowStyle)
+              }
+              await expectDomTextGeometry([...texts, ...portTexts])
             } else {
               await captureCanvasTextGeometry(comfyPage.page, zhLabels)
               await expect(
@@ -157,6 +181,33 @@ test.describe(
               await captureCanvasTextGeometry(
                 comfyPage.page,
                 zhPortLabels,
+                false,
+                '3'
+              )
+              const combinedLabels = [
+                zhLabels[0],
+                zhPortLabels[0],
+                zhLabels[1],
+                ...zhLabels.slice(2),
+                ...zhPortLabels.slice(1)
+              ]
+              await captureCanvasTextGeometry(
+                comfyPage.page,
+                combinedLabels,
+                false,
+                '3'
+              )
+              await expect(
+                captureCanvasTextGeometry(
+                  comfyPage.page,
+                  combinedLabels,
+                  true,
+                  '3'
+                )
+              ).rejects.toThrow('rendered label bounds must not overlap')
+              await captureCanvasTextGeometry(
+                comfyPage.page,
+                combinedLabels,
                 false,
                 '3'
               )
@@ -234,11 +285,18 @@ test.describe(
               }
               await expectDomTextGeometry(texts)
               await expectDomTextGeometry(portTexts)
+              await expectDomTextGeometry([...texts, ...portTexts])
             } else {
               await captureCanvasTextGeometry(comfyPage.page, enLabels)
               await captureCanvasTextGeometry(
                 comfyPage.page,
                 enPortLabels,
+                false,
+                '3'
+              )
+              await captureCanvasTextGeometry(
+                comfyPage.page,
+                [...enLabels, ...enPortLabels],
                 false,
                 '3'
               )
