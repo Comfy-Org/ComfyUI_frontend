@@ -122,6 +122,8 @@
                   'data-[state=checked]:bg-primary-background/20 data-[state=checked]:hover:bg-primary-background/20 data-[state=checked]:data-highlighted:bg-primary-background/30'
                 )
               "
+              @pointerenter="previewOption(option.value, $event)"
+              @pointerleave="hideComboOptionPreview"
             >
               <span class="truncate">
                 {{ option.label }}
@@ -165,6 +167,10 @@ import {
 import { computed, ref } from 'vue'
 import type { CSSProperties } from 'vue'
 
+import {
+  hideComboOptionPreview,
+  showComboOptionPreview
+} from '@/lib/litegraph/src/widgets/comboOptionPreview'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useRestoreFocusOnViewportPointer } from '@/renderer/extensions/vueNodes/widgets/composables/useRestoreFocusOnViewportPointer'
 import type { SimplifiedWidget, WidgetValue } from '@/types/simplifiedWidget'
@@ -353,6 +359,7 @@ const selectedLabel = computed(() => {
 })
 
 function selectOption(rekaValue: string | undefined) {
+  hideComboOptionPreview()
   const value = fromComboboxValue(rekaValue)
   const option = normalizedOptions.value.find(
     (option) => option.value === value
@@ -363,6 +370,11 @@ function selectOption(rekaValue: string | undefined) {
   useWorkflowStore().activeWorkflow?.changeTracker.captureCanvasState()
   searchQuery.value = ''
   isOpen.value = false
+}
+
+function previewOption(value: string, event: PointerEvent) {
+  const anchor = event.currentTarget
+  if (anchor instanceof HTMLElement) showComboOptionPreview(value, anchor)
 }
 
 function focusSearchInput() {
@@ -380,6 +392,7 @@ function handleOpenChange(open: boolean) {
   if (open) {
     refreshOptions()
   } else {
+    hideComboOptionPreview()
     searchQuery.value = ''
   }
 }

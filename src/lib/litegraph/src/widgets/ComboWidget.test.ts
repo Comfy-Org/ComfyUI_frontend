@@ -6,6 +6,7 @@ import { LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { CanvasPointerEvent } from '@/lib/litegraph/src/types/events'
 import type { IComboWidget } from '@/lib/litegraph/src/types/widgets'
 import { ComboWidget } from '@/lib/litegraph/src/widgets/ComboWidget'
+import { provideComboOptionPreviewSource } from '@/lib/litegraph/src/widgets/comboOptionPreview'
 
 type LGraphCanvasType = InstanceType<typeof LGraphCanvas>
 
@@ -969,6 +970,47 @@ describe('ComboWidget', () => {
     })
 
     describe('onClick', () => {
+      it('delegates preview hover using the original option value', () => {
+        const rawValue = 'models/demo.safetensors'
+        const optionElement = document.createElement('div')
+        const show = vi.fn()
+        const hide = vi.fn()
+        provideComboOptionPreviewSource({ show, hide })
+        widget = new ComboWidget(
+          createMockWidgetConfig({
+            name: 'model',
+            value: rawValue,
+            options: {
+              values: [rawValue],
+              getOptionLabel: () => 'Demo model'
+            }
+          }),
+          node
+        )
+        const mockCanvas = { ds: { scale: 1 } } as LGraphCanvasType
+        const mockEvent = { canvasX: 150 } as CanvasPointerEvent
+        node.pos = [50, 50]
+        node.size = [200, 30]
+        const mockContextMenu = vi
+          .fn<typeof LiteGraph.ContextMenu>()
+          .mockImplementation(function () {
+            this.addItem = vi.fn(() => optionElement)
+          })
+        LiteGraph.ContextMenu = mockContextMenu as Partial<
+          typeof LiteGraph.ContextMenu
+        > as typeof LiteGraph.ContextMenu
+
+        try {
+          widget.onClick({ e: mockEvent, node, canvas: mockCanvas })
+          optionElement.dispatchEvent(new Event('pointerenter'))
+          expect(show).toHaveBeenCalledWith(rawValue, optionElement)
+          optionElement.dispatchEvent(new Event('pointerleave'))
+          expect(hide).toHaveBeenCalled()
+        } finally {
+          provideComboOptionPreviewSource(undefined)
+        }
+      })
+
       it('should show dropdown with formatted labels', () => {
         const mockGetOptionLabel = vi
           .fn()
