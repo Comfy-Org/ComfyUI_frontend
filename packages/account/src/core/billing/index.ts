@@ -115,3 +115,34 @@ export type {
 } from './challengeDriver.js'
 export { driveEmbeddedChallenge } from './challengeDriver.js'
 export { readBillingErrorCode } from './billingErrorBody.js'
+export type {
+  BillingCommands,
+  BillingCommandsOptions,
+  PaymentPortalResult,
+  SubscribeInput,
+  SubscriptionCommandCode,
+  SubscriptionCommandFailure,
+  SubscriptionCommandOutcome,
+  SubscriptionCommandResult,
+  TerminalBillingOperation
+} from './subscriptionCommands.js'
+export {
+  CANCEL_SUBSCRIPTION_ROUTE,
+  PAYMENT_PORTAL_ROUTE,
+  RESUBSCRIBE_ROUTE,
+  SUBSCRIBE_ROUTE,
+  createBillingCommands
+} from './subscriptionCommands.js'
+export type {
+  HostPaymentStep,
+  PaymentProjection,
+  PaymentReasonKey,
+  PaymentStep
+} from './paymentProjection.js'
+export { projectPaymentStep } from './paymentProjection.js'
+export type { PaymentCopyKey, PaymentCopyKeys } from './paymentCopy.js'
+export {
+  DEFAULT_PAYMENT_COPY,
+  createPaymentCopy,
+  paymentCopyKeys
+} from './paymentCopy.js'
