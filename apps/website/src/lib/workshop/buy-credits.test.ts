@@ -129,6 +129,9 @@ describe('createTopUpCheckout', () => {
       status: 401,
       code: 'NOT_AUTHENTICATED'
     })
+    await expect(result).rejects.not.toHaveProperty(
+      'authenticationRetrySkipped'
+    )
     expect(fetchCheckout).toHaveBeenCalledTimes(1)
   })
 

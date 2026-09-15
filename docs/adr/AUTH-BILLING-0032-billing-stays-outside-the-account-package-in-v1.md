@@ -22,12 +22,14 @@ lives in `src/platform/auth/unified/remintRetry.ts`.
 
 `createSessionBillingTransport` in
 `packages/account/src/core/billing/transport.ts` is not a third
-production path today: outside its own definition and re-export, its
-only callers are tests. It is the adoption target of #17665, which
-routes the cloud app's top-up through it behind a flag. That matters
-for how the cost below is counted — the shared transport is a designed
-replacement awaiting its first production caller, not a hardened path
-the site declined to use.
+production path as of this ADR's date: outside its own definition and
+re-export, its only callers are tests. Read that as dated rather than
+standing — #17665 is the adoption target that makes it false, routing
+the cloud app's top-up through the transport behind a flag, and it may
+land before this ADR is next read. That matters for how the cost below
+is counted — the shared transport is a designed replacement awaiting
+its first production caller, not a hardened path the site declined to
+use.
 
 This split was not an oversight, but until now it was recorded only in
 two source-file header comments
@@ -120,6 +122,24 @@ top-up endpoint called directly from the site.
    the condition for closing this ADR, not a follow-up to schedule
    later.
 
+### Revisit trigger
+
+Rule 5 closes this ADR on another PR landing, and like rule 4 it has
+no owner: if #17657 slips, nothing re-decides the boundary, it simply
+persists. **If #17657 has not landed by 2026-10-15, this ADR is
+re-decided rather than extended** — either the boundary is re-affirmed
+with a new date and a named owner, or `buy-credits.ts` converges onto
+whatever the package offers by then.
+
+The date is a backstop, not an estimate of #17657. It is worth having
+because the site's exposure moves independently of this document: as
+of this date `topup_checkout_enabled` is at 100% within an
+`email ends_with @comfy.org` filter, so the unhandled 401 under the
+residual-401 consequence reaches employees only — but that filter was
+removed and restored within ten minutes on 15 Sep 2026. Widening it to
+customer payments is a flag edit that touches nothing this ADR
+governs.
+
 ## Alternatives Considered
 
 - **Wait for the billing SDK's command layer.** Rejected at the time:
@@ -169,9 +189,11 @@ top-up endpoint called directly from the site.
   expiry. What remains is a credential rejected between mint and
   validation: revoked workspace access, clock skew, server-side
   invalidation. The shared transport retries once; the site surfaces
-  the failure to the user. The gap is narrow and is covered by a test
-  pinning the behaviour, so the retry arrives with rule 5 rather than
-  as a fourth copy of the rule.
+  the failure to the user. The gap is narrow and a test pins the
+  current behaviour, so the retry arrives with rule 5 rather than as a
+  fourth copy of the rule. That test records the gap; it does not by
+  itself guarantee the retry arrives correctly, which is what the
+  replay-safety consequence below is about.
 
 - **Replay safety is unchanged, but the retry is not free at
   convergence.** The site passes a per-attempt `idempotencyKey`, which
@@ -186,6 +208,18 @@ top-up endpoint called directly from the site.
   the body for the endpoint. Doing only the first breaks the request;
   doing only the second silently ships convergence without the 401
   retry, which is the whole point of converging.
+
+  Those two errors are not symmetric, and the single-call assertion in
+  `buy-credits.test.ts` only catches the loud one. A header-only
+  adapter fails on its first run. A body-only adapter leaves
+  `idempotencyKey` undefined, takes the non-replayable branch, calls
+  `fetch` once, and satisfies that assertion. So the same test also
+  asserts the 401 rejection carries no `authenticationRetrySkipped`:
+  vacuous against today's plain `fetch`, which cannot produce the
+  field, and a real check once the transport can. It arms only if the
+  adapter carries that flag across when it maps `BillingHttpResponse`
+  onto `TopUpCheckoutError`, so the adapter must, rather than dropping
+  it with the rest of the response.
 
 - **This boundary has no codified owner, which is its own gap.**
   `CODEOWNERS` carries no entry for `packages/account/`,
