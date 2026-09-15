@@ -56,3 +56,51 @@ test.describe(
     })
   }
 )
+
+for (const renderer of [
+  { name: 'LiteGraph', tag: ['@slow', '@subgraph', '@ui'] },
+  { name: 'Vue', tag: ['@slow', '@subgraph', '@ui', '@vue-nodes'] }
+]) {
+  test.describe(`${renderer.name} renderer`, { tag: renderer.tag }, () => {
+    test('editing a copied host does not change the original', async ({
+      comfyPage
+    }) => {
+      await comfyPage.workflow.loadWorkflow(
+        'subgraphs/subgraph-with-promoted-text-widget'
+      )
+      const original = await comfyPage.nodeOps.getNodeRefById('11')
+
+      await test.step('Edit the original host', async () => {
+        await original.fillPromotedTextWidget('text', 'original parent edit')
+      })
+
+      const copy = await test.step('Copy the host', () => original.duplicate())
+
+      await test.step('Edit only the copy', async () => {
+        await copy.fillPromotedTextWidget('text', 'copy-only edit')
+        await original.expectPromotedTextWidgetValue(
+          'text',
+          'original parent edit'
+        )
+      })
+
+      await test.step('Edit the original without changing the copy', async () => {
+        await original.fillPromotedTextWidget('text', 'original second edit')
+        await copy.expectPromotedTextWidgetValue('text', 'copy-only edit')
+      })
+
+      await test.step('Delete the copy and continue editing the original', async () => {
+        await copy.delete()
+        await copy.expectExists(false)
+        await original.expectPromotedTextWidgetValue(
+          'text',
+          'original second edit'
+        )
+        await original.fillPromotedTextWidget(
+          'text',
+          'original survives duplicate deletion'
+        )
+      })
+    })
+  })
+}
