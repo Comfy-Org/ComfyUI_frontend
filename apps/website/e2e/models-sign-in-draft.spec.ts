@@ -226,6 +226,39 @@ test.describe('Narrow account menu', () => {
     await expect(identity).not.toContainText('Personal')
   })
 
+  test('shows the log out label on hover and on keyboard focus', async ({
+    page,
+    modelsAccount
+  }) => {
+    await page.goto('/login/')
+    await page.getByRole('button', { name: 'Use email instead' }).click()
+    await page.getByLabel('Email').fill(modelsAccount.email)
+    await page
+      .getByLabel('Password', { exact: true })
+      .fill(modelsAccount.password)
+    await page.getByRole('button', { name: 'Sign in', exact: true }).click()
+    await expect(page).toHaveURL('/')
+
+    await page
+      .getByTestId('mobile-nav-cta')
+      .getByTestId('header-account')
+      .click()
+
+    const signOut = page.getByTestId('account-sign-out')
+    const label = signOut.getByText('Log out')
+    await expect(signOut).toBeVisible()
+    await expect(label).toBeHidden()
+
+    await page.getByTestId('account-email').hover()
+    await expect(label).toBeVisible()
+
+    await page.mouse.move(0, 0)
+    await expect(label).toBeHidden()
+
+    await signOut.focus()
+    await expect(label).toBeVisible()
+  })
+
   test('opens one shared credits dialog and resets it after closing', async ({
     page,
     modelsAccount
