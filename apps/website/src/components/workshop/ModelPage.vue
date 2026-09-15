@@ -2,7 +2,7 @@
 import { ArrowRight } from '@lucide/vue'
 import { computed } from 'vue'
 
-import { catalogSearch } from '../../config/models-catalogue'
+import { catalogSearch, useCaseFor } from '../../config/models-catalogue'
 import { getRoutes } from '../../config/routes'
 import type { ModelsPageData } from '../../config/models-page-data'
 import { t } from '../../i18n/translations'
@@ -19,6 +19,7 @@ import WorkshopModelCard from './WorkshopModelCard.vue'
 const { page } = defineProps<{ page: ModelsPageData }>()
 const routes = getRoutes()
 const enabled = useWorkshopEnabled()
+const modelUseCase = computed(() => useCaseFor(page.model))
 const pillClass =
   'inline-flex h-7 items-center rounded-full border border-transparency-white-t20 px-3 text-xs leading-none text-primary-comfy-canvas transition-colors hover:border-primary-comfy-yellow hover:text-primary-comfy-yellow'
 const restTags = computed(() =>
@@ -50,11 +51,11 @@ const restTags = computed(() =>
               :reason="page.model.incompleteReason"
             />
             <a
-              v-if="page.model.modality"
-              :href="`${routes.workshop}${catalogSearch({ modalities: [page.model.modality] })}`"
+              v-if="modelUseCase && page.useCaseLabel"
+              :href="`${routes.workshop}${catalogSearch({ useCase: modelUseCase })}`"
               :class="pillClass"
             >
-              {{ page.modalityLabel[page.model.modality] }}
+              {{ page.useCaseLabel }}
             </a>
           </div>
 

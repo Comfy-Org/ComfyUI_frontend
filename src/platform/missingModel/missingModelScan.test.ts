@@ -1740,7 +1740,7 @@ const { mockUpdateModelsForNodeType, mockGetAssets } = vi.hoisted(() => ({
   mockGetAssets: vi.fn().mockReturnValue([])
 }))
 
-vi.mock<unknown>(import('@/i18n'), () => ({
+vi.mock(import('@/i18n'), () => ({
   t: (key: string) => key,
   st: (_key: string, fallback: string) => fallback
 }))

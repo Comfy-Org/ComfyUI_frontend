@@ -287,6 +287,8 @@ async function signOutFromMenu() {
       :balance-error="balance.status === 'error'"
       :can-top-up="canTopUp"
       :account-label="accountLabel"
+      :account-name="user.displayName || user.email || user.uid"
+      :account-photo-url="user.photoURL"
       :account-identity="user.email ?? user.displayName"
       :locale
       @retry="retryWorkspaceList"
