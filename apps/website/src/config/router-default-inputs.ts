@@ -25,6 +25,8 @@ const robotInputs =
   'https://cdn.jsdelivr.net/gh/Comfy-Org/workflow_templates@f331af10934fdf0d773d5f26c1d00f33559ae09d/input/'
 const robotFirstFrame = `${robotInputs}pink_robot_front.png`
 const robotLastFrame = `${robotInputs}pink_robot_back.png`
+const klingOmniInputs =
+  'https://cdn.jsdelivr.net/gh/Comfy-Org/workflow_templates@3db6490611e6a16b84b09110e61a07264ce47cd3/input/'
 const robotTurn: RouterRenderParameters = {
   prompt:
     'The pink toy robot smoothly turns from the front view in the first frame to the back view in the last frame. Keep its design and the warm orange studio background consistent.',
@@ -41,6 +43,33 @@ const pageDefaults: Readonly<Partial<Record<string, RouterRenderParameters>>> =
         'The pink toy robot from the reference image performs a cheerful dance in a warm orange studio. Keep its design and colors consistent as it waves and takes a small step.',
       reference_images: [robotFirstFrame],
       duration_seconds: 5
+    },
+    'kling--omni-pro-first-last-frame--animate-images': {
+      prompt:
+        'A graceful pale-haired girl in an ivory lace outfit and orange-tinted sunglasses rides a majestic white horse. Move smoothly from the intimate first frame to the sweeping desert gallop in the final frame while preserving the rider and horse.',
+      first_frame: `${klingOmniInputs}ivory_rider_right_front_view.png`,
+      last_frame: `${klingOmniInputs}ivory_rider.png`,
+      duration_seconds: 5,
+      resolution: '1080p'
+    },
+    'kling--omni-pro-image-to-video--animate-images': {
+      prompt:
+        'At night, the quokka in a white bathrobe looks out at the stars as the knitted sheep approaches with a warm drink. The camera slowly pushes in, candlelight flickers, and the room feels cozy and peaceful.',
+      reference_images: [
+        `${klingOmniInputs}sheep_knit.jpg`,
+        `${klingOmniInputs}quokka_bath.jpg`,
+        `${klingOmniInputs}quokka_relax.jpg`
+      ],
+      duration_seconds: 3,
+      resolution: '1080p'
+    },
+    'kling--omni-pro-video-to-video--edit-videos': {
+      prompt:
+        'Transform the dancer into the anthropomorphic rabbit from the reference image. Preserve the original dance movements, poses, background, camera movement, and energetic pacing.',
+      source_videos: [`${klingOmniInputs}dancing_women.mp4`],
+      reference_images: [`${klingOmniInputs}blue_shirt_rabbit.jpg`],
+      duration_seconds: 3,
+      resolution: '1080p'
     },
     'kling--lip-sync-text-to-video--edit-videos': {
       prompt:

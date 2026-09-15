@@ -9844,6 +9844,22 @@ Enterprise`
   },
   'workshop.run.leaveStay': { en: 'Stay on this page', 'zh-CN': '留在此页面' },
   'workshop.run.leaveAnyway': { en: 'Leave and cancel', 'zh-CN': '离开并取消' },
+  'workshop.examples.replaceTitle': {
+    en: 'Replace your inputs?',
+    'zh-CN': '要替换你的输入吗？'
+  },
+  'workshop.examples.replaceBody': {
+    en: 'This example comes with its own inputs. What you wrote will be replaced.',
+    'zh-CN': '该示例自带输入内容，你填写的内容将被替换。'
+  },
+  'workshop.examples.replaceKeep': {
+    en: 'Keep mine',
+    'zh-CN': '保留我的内容'
+  },
+  'workshop.examples.replaceConfirm': {
+    en: 'Use the example',
+    'zh-CN': '使用该示例'
+  },
   'workshop.run.policy': {
     en: 'Disabled by your workspace policy',
     'zh-CN': '已被工作区策略禁用'

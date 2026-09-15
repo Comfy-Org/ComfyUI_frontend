@@ -25,6 +25,7 @@ import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { graphScopeOf } from '@/types/graphScopeId'
 import { toNodeId } from '@/types/nodeId'
 import { widgetId } from '@/types/widgetId'
+import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 
 import {
   docResetFrame,
@@ -94,6 +95,7 @@ function mountFollower() {
 
 describe('useAgentCrdtFollower graph catch-up', () => {
   beforeEach(() => {
+    useAgentPanelStore().enabled = true
     vi.spyOn(apiTransport, 'send').mockReturnValue(true)
   })
 

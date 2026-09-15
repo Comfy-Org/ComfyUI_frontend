@@ -350,6 +350,127 @@ describe('initPostHog', () => {
   })
 })
 
+describe('workshop-enabled settles only on an observed answer', () => {
+  beforeEach(() => {
+    vi.resetModules()
+    hoisted.mockGetProperty.mockReturnValue(undefined)
+    hoisted.mockIsFeatureEnabled.mockReturnValue(undefined)
+  })
+
+  it('settles to the public site when PostHog never initializes', async () => {
+    const { useWorkshopEnabledSettled, useWorkshopEnabled } =
+      await import('./posthog')
+    expect(useWorkshopEnabledSettled().value).toBe(true)
+    expect(useWorkshopEnabled().value).toBe(false)
+  })
+
+  it('an identity arriving before init does not strand the gate', async () => {
+    const { identifyWorkshopUser, useWorkshopEnabledSettled } =
+      await import('./posthog')
+    identifyWorkshopUser({ uid: 'x' })
+    expect(useWorkshopEnabledSettled().value).toBe(true)
+  })
+
+  it('is settled at load under the local dev override', async () => {
+    hoisted.localDev = true
+    vi.stubEnv('PUBLIC_WORKSHOP_ENABLED', '1')
+    const { useWorkshopEnabledSettled, useWorkshopEnabled } =
+      await import('./posthog')
+    expect(useWorkshopEnabledSettled().value).toBe(true)
+    expect(useWorkshopEnabled().value).toBe(true)
+  })
+
+  it('stays unsettled through init until a flag answer arrives', async () => {
+    const { initPostHog, useWorkshopEnabledSettled } = await import('./posthog')
+    initPostHog()
+    expect(useWorkshopEnabledSettled().value).toBe(false)
+    hoisted.mockIsFeatureEnabled.mockReturnValue(false)
+    emitFeatureFlags()
+    expect(useWorkshopEnabledSettled().value).toBe(true)
+  })
+
+  it('settles to the persisted answer synchronously on a warm load', async () => {
+    hoisted.mockIsFeatureEnabled.mockReturnValue(false)
+    const { initPostHog, useWorkshopEnabledSettled, useWorkshopEnabled } =
+      await import('./posthog')
+    initPostHog()
+    expect(useWorkshopEnabledSettled().value).toBe(true)
+    expect(useWorkshopEnabled().value).toBe(false)
+  })
+
+  it('settles after a timeout when PostHog never answers', async () => {
+    vi.useFakeTimers()
+    const { initPostHog, useWorkshopEnabledSettled } = await import('./posthog')
+    initPostHog()
+    expect(useWorkshopEnabledSettled().value).toBe(false)
+    await vi.advanceTimersByTimeAsync(3000)
+    expect(useWorkshopEnabledSettled().value).toBe(true)
+    vi.useRealTimers()
+  })
+
+  it('settles when the flag load errors', async () => {
+    const { initPostHog, useWorkshopEnabledSettled } = await import('./posthog')
+    initPostHog()
+    emitFeatureFlags(true)
+    expect(useWorkshopEnabledSettled().value).toBe(true)
+  })
+
+  it('does not churn state when the timeout fires after a real answer', async () => {
+    vi.useFakeTimers()
+    hoisted.mockIsFeatureEnabled.mockReturnValue(true)
+    const { initPostHog, useWorkshopEnabled, useWorkshopEnabledSettled } =
+      await import('./posthog')
+    initPostHog()
+    emitFeatureFlags()
+    expect(useWorkshopEnabled().value).toBe(true)
+    expect(useWorkshopEnabledSettled().value).toBe(true)
+    await vi.advanceTimersByTimeAsync(3000)
+    expect(useWorkshopEnabled().value).toBe(true)
+    expect(useWorkshopEnabledSettled().value).toBe(true)
+    vi.useRealTimers()
+  })
+
+  it('re-arms the timeout when an identity reload leaves visibility pending', async () => {
+    vi.useFakeTimers()
+    hoisted.mockGetProperty.mockReturnValue('staff-uid')
+    const { initPostHog, identifyWorkshopUser, useWorkshopEnabledSettled } =
+      await import('./posthog')
+    initPostHog()
+    emitFeatureFlags()
+    expect(useWorkshopEnabledSettled().value).toBe(true)
+
+    hoisted.mockIsFeatureEnabled.mockReturnValue(undefined)
+    identifyWorkshopUser({ uid: 'staff-uid' })
+    expect(useWorkshopEnabledSettled().value).toBe(false)
+    await vi.advanceTimersByTimeAsync(3000)
+    expect(useWorkshopEnabledSettled().value).toBe(true)
+    vi.useRealTimers()
+  })
+
+  it('drops a stale grant when a same-identity reload times out', async () => {
+    vi.useFakeTimers()
+    hoisted.mockGetProperty.mockReturnValue('staff-uid')
+    hoisted.mockIsFeatureEnabled.mockReturnValue(true)
+    const {
+      initPostHog,
+      identifyWorkshopUser,
+      useWorkshopEnabled,
+      useWorkshopEnabledSettled
+    } = await import('./posthog')
+    initPostHog()
+    emitFeatureFlags()
+    expect(useWorkshopEnabled().value).toBe(true)
+
+    hoisted.mockIsFeatureEnabled.mockReturnValue(undefined)
+    identifyWorkshopUser({ uid: 'staff-uid' })
+    expect(useWorkshopEnabled().value).toBe(false)
+    await vi.advanceTimersByTimeAsync(3000)
+    expect(useWorkshopEnabledSettled().value).toBe(true)
+    expect(useWorkshopEnabled().value).toBe(false)
+    vi.useRealTimers()
+  })
+})
+
 describe('capturePageview', () => {
   beforeEach(() => {
     vi.resetModules()

@@ -17,10 +17,10 @@ const { sharedProps, sharedReset, sharedEmit } = vi.hoisted(() => ({
   }
 }))
 
-vi.mock<unknown>(import('@comfyorg/account/vue'), async () => {
+vi.mock<unknown>(import('@comfyorg/account/vue/TurnstileWidget'), async () => {
   const { defineComponent, h } = await import('vue')
   return {
-    TurnstileWidget: defineComponent({
+    default: defineComponent({
       props: {
         siteKey: String,
         theme: String,

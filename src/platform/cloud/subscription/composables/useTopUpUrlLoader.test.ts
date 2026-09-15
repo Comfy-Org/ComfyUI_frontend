@@ -1,6 +1,8 @@
 import { fromAny } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { useTelemetry } from '@/platform/telemetry'
+
 import { useTopUpUrlLoader } from './useTopUpUrlLoader'
 
 const preservedQueryMocks = vi.hoisted(() => ({
@@ -53,13 +55,7 @@ vi.mock<unknown>(
   })
 )
 
-const mockTrackAddApiCreditButtonClicked = vi.hoisted(() => vi.fn())
-
-vi.mock<unknown>(import('@/platform/telemetry'), () => ({
-  useTelemetry: () => ({
-    trackAddApiCreditButtonClicked: mockTrackAddApiCreditButtonClicked
-  })
-}))
+vi.mock(import('@/platform/telemetry'))
 
 describe('useTopUpUrlLoader', () => {
   beforeEach(() => {
@@ -97,9 +93,11 @@ describe('useTopUpUrlLoader', () => {
     const { loadTopUpFromUrl } = useTopUpUrlLoader()
     await loadTopUpFromUrl()
 
-    expect(mockTrackAddApiCreditButtonClicked).toHaveBeenCalledWith({
-      source: 'deep_link'
-    })
+    expect(useTelemetry()?.trackAddApiCreditButtonClicked).toHaveBeenCalledWith(
+      {
+        source: 'deep_link'
+      }
+    )
   })
 
   it('retains the deep link until capability loading settles', async () => {
@@ -136,7 +134,9 @@ describe('useTopUpUrlLoader', () => {
     await loadTopUpFromUrl()
 
     expect(mockShowTopUpCreditsDialog).not.toHaveBeenCalled()
-    expect(mockTrackAddApiCreditButtonClicked).not.toHaveBeenCalled()
+    expect(
+      useTelemetry()?.trackAddApiCreditButtonClicked
+    ).not.toHaveBeenCalled()
   })
 
   it('opens the subscription path without top-up telemetry', async () => {
@@ -148,7 +148,9 @@ describe('useTopUpUrlLoader', () => {
     await loadTopUpFromUrl()
 
     expect(mockShowTopUpCreditsDialog).toHaveBeenCalledOnce()
-    expect(mockTrackAddApiCreditButtonClicked).not.toHaveBeenCalled()
+    expect(
+      useTelemetry()?.trackAddApiCreditButtonClicked
+    ).not.toHaveBeenCalled()
   })
 
   it('denies, strips, and clears together when the user is not eligible', async () => {

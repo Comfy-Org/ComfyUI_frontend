@@ -52,10 +52,10 @@ vi.mock<unknown>(import('@/scripts/app'), () => {
   }
 })
 
-vi.mock<unknown>(import('@/utils/graphTraversalUtil'), () => ({
+vi.mock(import('@/utils/graphTraversalUtil'), () => ({
   collectAllNodes: vi.fn(() => []),
   getNodeByExecutionId: vi.fn(),
-  getActiveGraphNodeIds: vi.fn(() => new Set()),
+  getActiveGraphNodeIds: vi.fn(() => new Set<string>()),
   getRootParentNode: vi.fn(() => null),
   forEachNode: vi.fn(),
   mapAllNodes: vi.fn(() => [])
