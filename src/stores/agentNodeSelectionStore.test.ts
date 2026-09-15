@@ -235,6 +235,10 @@ describe('agentNodeSelectionStore', () => {
     store.restoreNodeIds(['20'])
     expect(store.restoredNodeIds).toEqual(['20'])
 
+    store.beginWorkflowLoad()
+    expect(store.isLoadingWorkflow).toBe(true)
+    expect(store.restoredNodeIds).toBeNull()
+
     store.finishWorkflowLoad()
 
     expect(store.isLoadingWorkflow).toBe(false)

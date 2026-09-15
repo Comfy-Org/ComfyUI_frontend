@@ -132,6 +132,7 @@ describe('mint ports against the real layout store delivery', () => {
       serialize: () => ({
         id: 5,
         type: 'TestNode',
+        flags: {},
         widgets_values: [7]
       })
     })
@@ -145,7 +146,7 @@ describe('mint ports against the real layout store delivery', () => {
         node_id: toNodeId('5'),
         class_type: 'TestNode',
         pos: [10, 20],
-        node: { id: 5, type: 'TestNode', widgets_values: [7] }
+        node: { id: 5, type: 'TestNode', flags: {}, widgets_values: [7] }
       }
     ])
   })

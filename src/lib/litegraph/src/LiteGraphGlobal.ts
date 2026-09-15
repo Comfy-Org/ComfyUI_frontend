@@ -409,6 +409,24 @@ export class LiteGraphGlobal {
   }
 
   onNodeTypeRegistered?(type: string, base_class: typeof LGraphNode): void
+  private readonly nodeTypeRegisteredListeners = new Set<
+    (type: string, base_class: typeof LGraphNode) => void
+  >()
+
+  /**
+   * Subscribe to node type registrations. Listeners run after the legacy
+   * `onNodeTypeRegistered` callback and each one is isolated, so a throwing
+   * listener neither aborts the registration nor starves the others.
+   * @returns unsubscribe
+   */
+  subscribeNodeTypeRegistered(
+    listener: (type: string, base_class: typeof LGraphNode) => void
+  ): () => void {
+    this.nodeTypeRegisteredListeners.add(listener)
+    return () => {
+      this.nodeTypeRegisteredListeners.delete(listener)
+    }
+  }
   onNodeTypeReplaced?(
     type: string,
     base_class: typeof LGraphNode,
@@ -447,6 +465,16 @@ export class LiteGraphGlobal {
     if (base_class.constructor.name) this.Nodes[classname] = base_class
 
     this.onNodeTypeRegistered?.(type, base_class)
+    for (const listener of this.nodeTypeRegisteredListeners) {
+      try {
+        listener(type, base_class)
+      } catch (error) {
+        console.error(
+          `[LiteGraph] nodeTypeRegistered listener failed for "${type}"`,
+          error
+        )
+      }
+    }
     if (prev) this.onNodeTypeReplaced?.(type, base_class, prev)
 
     // warnings

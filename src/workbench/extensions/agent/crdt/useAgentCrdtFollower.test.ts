@@ -17,6 +17,7 @@ import type { ExportedSubgraph } from '@/lib/litegraph/src/types/serialisation'
 import type { reportError as reportErrorFn } from '@/platform/telemetry/reportError'
 import type { NodeId } from '@/types/nodeId'
 import { toNodeId } from '@/types/nodeId'
+import { LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 
 import type { MaterializableGraph } from './agentNodeMaterializer'
 
@@ -502,11 +503,7 @@ describe('useAgentCrdtFollower', () => {
 
     dispatchFrame('follower_replaced', { workflowId: 'wf-1' })
     expect(status().updatesApplied).toBe(0)
-    expect(adapterState.clearForReset).toHaveBeenLastCalledWith('wf-1', {
-      source: 'agent-remote',
-      actor: 'agent-lineage',
-      opId: 'follower-replaced:wf-1'
-    })
+    expect(adapterState.clearForReset).toHaveBeenCalledTimes(1)
     expect(adapterState.bind).toHaveBeenCalledTimes(2)
     expect(adapterState.bind).toHaveBeenLastCalledWith(
       'wf-1',
@@ -740,6 +737,123 @@ describe('useAgentCrdtFollower', () => {
       unmount()
     })
 
+    it('rebinds a placeholder when its node type registers, and stops after unmount', () => {
+      const placeholder = new LGraphNode('Missing', 'late-registered')
+      const graphWithPlaceholder = {
+        ...fakeGraph,
+        _nodes: [placeholder]
+      } as unknown as MaterializableGraph
+      const { unmount } = mountFollower(
+        'wf-1',
+        true,
+        () => graphWithPlaceholder
+      )
+      materializerState.reconcileAgentAdapters.mockClear()
+      class LateNode extends LGraphNode {}
+      class OtherNode extends LGraphNode {}
+      try {
+        LiteGraph.registerNodeType('other-type', OtherNode)
+        expect(materializerState.reconcileAgentAdapters).not.toHaveBeenCalled()
+
+        LiteGraph.registerNodeType('late-registered', LateNode)
+        expect(materializerState.reconcileAgentAdapters).toHaveBeenCalledTimes(
+          1
+        )
+        expect(materializerState.reconcileAgentAdapters).toHaveBeenCalledWith(
+          graphWithPlaceholder,
+          fakeDefinitions
+        )
+
+        unmount()
+        LiteGraph.registerNodeType('late-registered', LateNode)
+        expect(materializerState.reconcileAgentAdapters).toHaveBeenCalledTimes(
+          1
+        )
+      } finally {
+        LiteGraph.unregisterNodeType('late-registered')
+        LiteGraph.unregisterNodeType('other-type')
+      }
+    })
+
+    it('keeps rebinding after another consumer assigns the legacy callback, and reports a rebind that throws', () => {
+      const placeholder = new LGraphNode('Missing', 'late-assigned')
+      const graphWithPlaceholder = {
+        ...fakeGraph,
+        _nodes: [placeholder]
+      } as unknown as MaterializableGraph
+      const { unmount } = mountFollower(
+        'wf-1',
+        true,
+        () => graphWithPlaceholder
+      )
+      const previous = LiteGraph.onNodeTypeRegistered
+      const legacy = vi.fn()
+      class LateNode extends LGraphNode {}
+      try {
+        LiteGraph.onNodeTypeRegistered = legacy
+        materializerState.reconcileAgentAdapters.mockClear()
+        LiteGraph.registerNodeType('late-assigned', LateNode)
+        expect(legacy).toHaveBeenCalledOnce()
+        expect(materializerState.reconcileAgentAdapters).toHaveBeenCalledTimes(
+          1
+        )
+
+        materializerState.reconcileAgentAdapters.mockImplementationOnce(() => {
+          throw new Error('onRemoved threw')
+        })
+        expect(() =>
+          LiteGraph.registerNodeType('late-assigned', LateNode)
+        ).not.toThrow()
+        expect(telemetryState.reportError).toHaveBeenCalledWith(
+          expect.any(Error),
+          expect.objectContaining({
+            errorType: 'agent_placeholder_rebind_failed'
+          })
+        )
+      } finally {
+        LiteGraph.onNodeTypeRegistered = previous
+        unmount()
+        LiteGraph.unregisterNodeType('late-assigned')
+      }
+    })
+
+    it('keeps rebinding a newer follower after an older overlapping one unmounts', () => {
+      const graphA = {
+        ...fakeGraph,
+        _nodes: [new LGraphNode('Missing', 'late-a')]
+      } as unknown as MaterializableGraph
+      const graphB = {
+        ...fakeGraph,
+        _nodes: [new LGraphNode('Missing', 'late-b')]
+      } as unknown as MaterializableGraph
+      const followerA = mountFollower('wf-a', true, () => graphA)
+      const followerB = mountFollower('wf-b', true, () => graphB)
+      materializerState.reconcileAgentAdapters.mockClear()
+      class LateA extends LGraphNode {}
+      class LateB extends LGraphNode {}
+      try {
+        followerA.unmount()
+
+        LiteGraph.registerNodeType('late-b', LateB)
+        expect(materializerState.reconcileAgentAdapters).toHaveBeenCalledTimes(
+          1
+        )
+        expect(materializerState.reconcileAgentAdapters).toHaveBeenCalledWith(
+          graphB,
+          fakeDefinitions
+        )
+
+        LiteGraph.registerNodeType('late-a', LateA)
+        expect(materializerState.reconcileAgentAdapters).toHaveBeenCalledTimes(
+          1
+        )
+      } finally {
+        followerB.unmount()
+        LiteGraph.unregisterNodeType('late-b')
+        LiteGraph.unregisterNodeType('late-a')
+      }
+    })
+
     it('reconciles the live graph after every applied frame', () => {
       const { unmount } = mountFollower('wf-1', true, () => fakeGraph)
 
@@ -879,24 +993,15 @@ describe('useAgentCrdtFollower', () => {
       unmount()
     })
 
-    it('reconciles a follower_replaced clear against the replacement document', () => {
+    it('waits for a document frame before reconciling a replacement', () => {
       const { unmount } = mountFollower('wf-1', true, () => fakeGraph)
       const replacementDoc = { getMap: () => ({ toJSON: () => ({}) }) }
       bridge().follower = { updatesApplied: 0, doc: replacementDoc }
 
       dispatchFrame('follower_replaced', { workflowId: 'wf-1' })
 
-      expect(adapterState.clearForReset).toHaveBeenCalled()
-      expect(
-        definitionsState.readSubgraphDefinitionIds
-      ).toHaveBeenLastCalledWith(replacementDoc)
-      expect(definitionsState.readSubgraphDefinitions).toHaveBeenLastCalledWith(
-        replacementDoc
-      )
-      expect(materializerState.reconcileAgentAdapters).toHaveBeenCalledWith(
-        fakeGraph,
-        fakeDefinitions
-      )
+      expect(adapterState.clearForReset).not.toHaveBeenCalled()
+      expect(materializerState.reconcileAgentAdapters).not.toHaveBeenCalled()
       unmount()
     })
 

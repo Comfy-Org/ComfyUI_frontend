@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { applyOps, mint, project } from '@comfyorg/comfy-multi-player'
 
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { GraphScope } from '@/types/graphScopeId'
@@ -19,6 +20,7 @@ import {
   runMintPortsIntentionalClear
 } from './mintPortWiring'
 import type { MintPortWiring, MintableGraph } from './mintPortWiring'
+import { mintWireOps } from './opEnvelope'
 
 const ROOT_ID = 'root-uuid'
 
@@ -277,6 +279,7 @@ describe('attachMintPortWiring', () => {
       serialize: () => ({
         id: 5,
         type: 'LoadImage',
+        flags: {},
         widgets_values: ['positional'],
         widgets_values_named: { image: 'cat.png', upload: 'button-slot' }
       }),
@@ -304,10 +307,49 @@ describe('attachMintPortWiring', () => {
         node: {
           id: 5,
           type: 'LoadImage',
+          flags: {},
           widgets_values: { image: 'cat.png' }
         }
       }
     ])
+  })
+
+  it('preserves frontend-only note values through the real document applier', () => {
+    const note = new LGraphNode('Note', 'MarkdownNote')
+    note.id = toNodeId(5)
+    note.pos = [10, 20]
+    note.isVirtualNode = true
+    note.serialize_widgets = true
+    note.addWidget('text', 'text', 'Preserve this note', () => {})
+    graphNodes.set('5', note)
+    deliverLayoutChange({
+      operation: {
+        type: 'createNode',
+        actor: 'user-abc',
+        nodeId: toNodeId(5),
+        layout: { position: { x: 10, y: 20 } }
+      }
+    })
+
+    expect(minted).toHaveLength(1)
+    const catalog = { types: {} }
+    const doc = mint({ nodes: [], links: [] }, catalog)
+    const ops = mintWireOps(minted, { actor: 'human:test:tab', baseVersion: 1 })
+    const result = applyOps(doc, ops, catalog)
+
+    expect(result.outcomes).toEqual([
+      { op_id: ops[0].op_id, outcome: 'applied' }
+    ])
+    expect(project(doc, catalog).nodes).toEqual([
+      expect.objectContaining({
+        id: 5,
+        type: 'MarkdownNote',
+        widgets_values: ['Preserve this note']
+      })
+    ])
+    expect(project(doc, catalog).nodes[0]).not.toHaveProperty(
+      'widgets_values_named'
+    )
   })
 
   it('positive control: an unbound workflow runs normally, zero mint and zero blockage', () => {
