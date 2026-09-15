@@ -24,6 +24,10 @@ export function modelsBuildRoutes(enabled: boolean) {
       pattern: '/models',
       entrypoint: entry(enabled ? 'index.astro' : 'showcase.astro')
     },
+    // The markdown twin renders from catalogue data in both build states, so the
+    // gated /models HTML (which SSRs only a loading frame) never leaves the .md
+    // export empty.
+    { pattern: '/models.md', entrypoint: entry('catalogue.md.ts') },
     ...(enabled
       ? [
           { pattern: '/models/[slug]', entrypoint: entry('[slug].astro') },
