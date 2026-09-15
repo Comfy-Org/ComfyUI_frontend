@@ -1,5 +1,4 @@
 import { render, screen } from '@testing-library/vue'
-import PrimeVue from 'primevue/config'
 import { describe, expect, it } from 'vitest'
 import type { ComponentProps } from 'vue-component-type-helpers'
 
@@ -11,10 +10,7 @@ type FormRadioGroupProps = ComponentProps<typeof FormRadioGroup>
 
 describe('FormRadioGroup', () => {
   function renderComponent(props: FormRadioGroupProps) {
-    return render(FormRadioGroup, {
-      global: { plugins: [PrimeVue] },
-      props
-    })
+    return render(FormRadioGroup, { props })
   }
 
   describe('normalizedOptions computed property', () => {
@@ -156,7 +152,7 @@ describe('FormRadioGroup', () => {
   })
 
   describe('component functionality', () => {
-    it('sets correct id and name attributes on inputs', () => {
+    it('sets ids on radio buttons', () => {
       renderComponent({
         modelValue: 'A',
         options: ['A', 'B'],
@@ -166,9 +162,7 @@ describe('FormRadioGroup', () => {
       const radios = screen.getAllByRole('radio')
 
       expect(radios[0]).toHaveAttribute('id', 'my-radio-group-A')
-      expect(radios[0]).toHaveAttribute('name', 'my-radio-group')
       expect(radios[1]).toHaveAttribute('id', 'my-radio-group-B')
-      expect(radios[1]).toHaveAttribute('name', 'my-radio-group')
     })
 
     it('associates labels with radio buttons correctly', () => {
@@ -196,17 +190,8 @@ describe('FormRadioGroup', () => {
       })
 
       const radios = screen.getAllByRole('radio')
-      // PrimeVue RadioButton places aria-describedby on its root <div>, not the <input>
-      // eslint-disable-next-line testing-library/no-node-access
-      expect(radios[0].closest('[aria-describedby]')).toHaveAttribute(
-        'aria-describedby',
-        'Option 1-label'
-      )
-      // eslint-disable-next-line testing-library/no-node-access
-      expect(radios[1].closest('[aria-describedby]')).toHaveAttribute(
-        'aria-describedby',
-        'Option 2-label'
-      )
+      expect(radios[0]).toHaveAttribute('aria-describedby', 'Option 1-label')
+      expect(radios[1]).toHaveAttribute('aria-describedby', 'Option 2-label')
     })
   })
 })

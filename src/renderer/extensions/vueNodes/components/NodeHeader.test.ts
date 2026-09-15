@@ -1,8 +1,6 @@
 import { getActivePinia } from 'pinia'
 import { fireEvent, render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import PrimeVue from 'primevue/config'
-import InputText from 'primevue/inputtext'
 import { describe, expect, it, vi } from 'vitest'
 
 import { toNodeId } from '@/types/nodeId'
@@ -102,8 +100,7 @@ const createGlobalConfig = () => {
   return {
     tooltipDirective,
     global: {
-      plugins: [PrimeVue, i18n, pinia],
-      components: { InputText },
+      plugins: [i18n, pinia],
       directives: {
         tooltip: tooltipDirective
       }

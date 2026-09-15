@@ -11,24 +11,24 @@
       v-bind="$attrs"
       @update:model-value="updateValue"
     />
-    <InputNumber
+    <FormattedNumberStepper
       :model-value="modelValue"
       class="input-part"
-      :max-fraction-digits="3"
+      :format-options="{ maximumFractionDigits: 3 }"
       :class="inputClass"
       :min="min"
       :max="max"
       :step="step"
-      :allow-empty="false"
       @update:model-value="updateValue"
     />
   </div>
 </template>
 
 <script setup lang="ts">
-import InputNumber from 'primevue/inputnumber'
 import Knob from 'primevue/knob'
 import { ref, watch } from 'vue'
+
+import FormattedNumberStepper from '@/components/ui/stepper/FormattedNumberStepper.vue'
 
 const props = defineProps<{
   modelValue: number

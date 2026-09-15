@@ -21,7 +21,7 @@
       <component
         :is="markRaw(getFormComponent(props.item))"
         :id="props.id"
-        v-model:model-value="formValue"
+        v-model:model-value="componentValue"
         :aria-labelledby="`${props.id}-label`"
         v-bind="getFormAttrs(props.item)"
       />
@@ -30,10 +30,7 @@
 </template>
 
 <script setup lang="ts">
-import InputNumber from 'primevue/inputnumber'
-import InputText from 'primevue/inputtext'
-import Select from 'primevue/select'
-import { markRaw } from 'vue'
+import { computed, markRaw } from 'vue'
 import type { Component } from 'vue'
 
 import BackgroundImageUpload from '@/components/common/BackgroundImageUpload.vue'
@@ -44,6 +41,9 @@ import FormRadioGroup from '@/components/common/FormRadioGroup.vue'
 import InputKnob from '@/components/common/InputKnob.vue'
 import InputSlider from '@/components/common/InputSlider.vue'
 import UrlInput from '@/components/common/UrlInput.vue'
+import Input from '@/components/ui/input/Input.vue'
+import SingleSelect from '@/components/ui/single-select/SingleSelect.vue'
+import FormattedNumberStepper from '@/components/ui/stepper/FormattedNumberStepper.vue'
 import Switch from '@/components/ui/switch/Switch.vue'
 import type { FormItem } from '@/platform/settings/types'
 
@@ -53,6 +53,17 @@ const props = defineProps<{
   id?: string
   labelClass?: string | Record<string, boolean>
 }>()
+
+const componentValue = computed({
+  get: () => {
+    if (props.item.type !== 'number' || typeof formValue.value === 'number') {
+      return formValue.value
+    }
+    const min = props.item.attrs?.min
+    return typeof min === 'number' && Number.isFinite(min) ? min : 0
+  },
+  set: (value: unknown) => (formValue.value = value)
+})
 
 function getFormAttrs(item: FormItem) {
   const attrs = { ...(item.attrs || {}) }
@@ -68,18 +79,22 @@ function getFormAttrs(item: FormItem) {
   }
   switch (item.type) {
     case 'combo':
-    case 'radio':
-      attrs['options'] =
+      attrs['options'] = (
         typeof item.options === 'function'
           ? // @ts-expect-error: Audit and deprecate usage of legacy options type:
             // (value) => [string | {text: string, value: string}]
             item.options(formValue.value)
           : item.options
-
-      if (typeof item.options?.[0] !== 'string') {
-        attrs['optionLabel'] = 'text'
-        attrs['optionValue'] = 'value'
-      }
+      )?.map((option: string | { text: string; value?: string | number }) =>
+        typeof option === 'string'
+          ? { name: option, value: option }
+          : { name: option.text, value: option.value ?? option.text }
+      )
+      attrs['class'] = 'w-44'
+      break
+    case 'radio':
+      attrs['options'] = item.options
+      attrs['class'] = 'w-44'
       break
   }
   return attrs
@@ -93,13 +108,13 @@ function getFormComponent(item: FormItem): Component {
     case 'boolean':
       return Switch
     case 'number':
-      return InputNumber
+      return FormattedNumberStepper
     case 'slider':
       return InputSlider
     case 'knob':
       return InputKnob
     case 'combo':
-      return Select
+      return SingleSelect
     case 'radio':
       return FormRadioGroup
     case 'image':
@@ -111,24 +126,21 @@ function getFormComponent(item: FormItem): Component {
     case 'backgroundImage':
       return BackgroundImageUpload
     default:
-      return InputText
+      return Input
   }
 }
 </script>
 
 <style scoped>
-.form-input :deep(.input-slider) .p-inputnumber input,
 .form-input :deep(.input-slider) .slider-part {
   width: 5rem;
 }
 
-.form-input :deep(.input-knob) .p-inputnumber input,
 .form-input :deep(.input-knob) .knob-part {
   width: 8rem;
 }
 
-.form-input :deep(.p-inputtext),
-.form-input :deep(.p-select) {
+.form-input > input {
   width: 11rem;
 }
 </style>

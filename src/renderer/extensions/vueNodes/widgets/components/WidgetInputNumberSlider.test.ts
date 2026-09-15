@@ -1,11 +1,11 @@
-import PrimeVue from 'primevue/config'
-import InputNumber from 'primevue/inputnumber'
 import { defineComponent } from 'vue'
 import { describe, expect, it } from 'vitest'
+import { createI18n } from 'vue-i18n'
 
 import { render } from '@testing-library/vue'
 
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
+import enMessages from '@/locales/en/main.json' with { type: 'json' }
 
 import WidgetInputNumberSlider from './WidgetInputNumberSlider.vue'
 import { createMockWidget } from './widgetTestUtils'
@@ -36,10 +36,14 @@ function createSliderWidget(
 }
 
 function renderComponent(widget: SimplifiedWidget<number>, modelValue: number) {
+  const i18n = createI18n({
+    legacy: false,
+    locale: 'en',
+    messages: { en: enMessages }
+  })
   return render(WidgetInputNumberSlider, {
     global: {
-      plugins: [PrimeVue],
-      components: { InputNumber },
+      plugins: [i18n],
       stubs: { Slider: SliderStub }
     },
     props: {
@@ -55,7 +59,7 @@ function getSlider(container: Element) {
 
 function getNumberInput(container: Element) {
   return container.querySelector(
-    'input[inputmode="numeric"]'
+    'input[inputmode="decimal"]'
   ) as HTMLInputElement
 }
 
@@ -109,7 +113,7 @@ describe('WidgetInputNumberSlider Value Binding', () => {
   })
 
   describe('Widget Options', () => {
-    it('passes widget options to PrimeVue components', () => {
+    it('passes widget bounds to the slider', () => {
       const widget = createSliderWidget(5, { min: -10, max: 50 })
       const { container } = renderComponent(widget, 5)
 

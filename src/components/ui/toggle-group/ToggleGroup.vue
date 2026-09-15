@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { ToggleGroupRootEmits, ToggleGroupRootProps } from 'reka-ui'
-import { ToggleGroupRoot, useForwardPropsEmits } from 'reka-ui'
+import { ToggleGroupRoot, useForwardProps } from 'reka-ui'
 import type { HTMLAttributes } from 'vue'
 import { provide, toRef } from 'vue'
 
@@ -25,7 +25,12 @@ const {
 
 const emits = defineEmits<ToggleGroupRootEmits>()
 
-const forwarded = useForwardPropsEmits(restProps, emits)
+const forwarded = useForwardProps(restProps)
+
+function updateModelValue(value: ToggleGroupRootEmits['update:modelValue'][0]) {
+  if (restProps.required && restProps.type === 'single' && value == null) return
+  emits('update:modelValue', value)
+}
 
 provide(
   toggleGroupVariantKey,
@@ -37,6 +42,7 @@ provide(
   <ToggleGroupRoot
     v-bind="forwarded"
     :class="cn(toggleGroupVariants({ variant }), className)"
+    @update:model-value="updateModelValue"
   >
     <slot />
   </ToggleGroupRoot>
