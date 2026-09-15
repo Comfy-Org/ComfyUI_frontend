@@ -29,8 +29,6 @@ describe('AgentPaywallCard visual contract', () => {
 
     const upgrade = screen.getByRole('button', { name: 'Upgrade plan' })
     const addCredits = screen.getByRole('button', { name: 'Add credits' })
-    expect(upgrade).toHaveAccessibleName('Upgrade plan')
-    expect(addCredits).toHaveAccessibleName('Add credits')
 
     await user.click(upgrade)
     await user.click(addCredits)
