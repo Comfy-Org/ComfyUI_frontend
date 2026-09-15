@@ -40,15 +40,17 @@ import WorkshopSearchField from '../workshop/WorkshopSearchField.vue'
 const {
   locale = 'en',
   embedded = false,
-  models = defaultWorkshopModels
+  models = defaultWorkshopModels,
+  templates = hubTemplates as HubTemplate[]
 } = defineProps<{
   locale?: Locale
   embedded?: boolean
   models?: readonly WorkshopModel[]
+  templates?: readonly HubTemplate[]
 }>()
 
-const templates = (hubTemplates as HubTemplate[]).map((template) =>
-  withFacetFields(template, models)
+const facetedTemplates = computed(() =>
+  templates.map((template) => withFacetFields(template, models))
 )
 const store = useHubStore()
 
@@ -79,7 +81,7 @@ const inUseCase = (value: UseCase | 'all') => ({
   models: models.filter(
     (model) => value === 'all' || useCasesFor(model).includes(value)
   ),
-  templates: templates.filter(
+  templates: facetedTemplates.value.filter(
     (tmpl) => value === 'all' || useCaseForTemplate(tmpl, models) === value
   )
 })
@@ -266,7 +268,7 @@ const filteredTemplates = computed(() => {
       <div class="min-w-0">
         <WorkflowGrid
           :templates="filteredTemplates"
-          :facet-templates="templates"
+          :facet-templates="facetedTemplates"
           :facets-config="facetsConfig"
           :toolbar-labels="toolbarLabels"
           :sort-options="sortOptions"
