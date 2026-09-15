@@ -22,6 +22,10 @@ to a section below.
 
 ## Prerequisites
 
+For real Cloud billing E2E setup and account prerequisites, see [Cloud billing E2E coverage](../docs/testing/cloud-billing-e2e.md).
+Its dedicated runner requires real authentication and a dedicated sandbox account;
+the live suite is excluded from the ordinary browser test configurations.
+
 **CRITICAL**: Start the ComfyUI backend with `--multi-user`:
 
 ```bash
