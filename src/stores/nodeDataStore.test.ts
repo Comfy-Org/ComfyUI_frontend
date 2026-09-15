@@ -8,7 +8,11 @@ import { toOwningGraphId, toRootGraphId } from '@/types/graphScopeId'
 import type { GraphScope } from '@/types/graphScopeId'
 import type { NodeState } from '@/types/nodeState'
 import { toNodeId } from '@/types/nodeId'
-import { createNodeState } from '@/utils/__tests__/litegraphTestUtils'
+import {
+  createMockNodeInputSlot,
+  createMockNodeOutputSlot,
+  createNodeState
+} from '@/utils/__tests__/litegraphTestUtils'
 import type { UUID } from '@/utils/uuid'
 
 import { useNodeDataStore } from './nodeDataStore'
@@ -126,6 +130,65 @@ describe('useNodeDataStore', () => {
     expect(reRegistered).toBeDefined()
     expect(store.getGraphNodesFor(rootA, rootA)).toEqual([])
     expect(store.getGraphNodesFor(rootA, 'sub-1')).toEqual([reRegistered])
+  })
+
+  it('updateNodeFields replaces scalar fields but never the slot arrays', () => {
+    const store = useNodeDataStore()
+    const scope = graphScope(rootA, rootA)
+    const registered = store.registerNode(
+      scope,
+      createNodeState({
+        id: toNodeId(1),
+        graphId: rootA,
+        title: 'Host',
+        color: '#111',
+        inputs: [createMockNodeInputSlot({ name: 'in', type: 'IMAGE' })],
+        outputs: [createMockNodeOutputSlot({ name: 'out', type: 'IMAGE' })]
+      })
+    )
+    assert(registered)
+    const liveInputs = registered.inputs
+    const liveOutputs = registered.outputs
+    const [liveInput] = liveInputs
+
+    expect(
+      store.updateNodeFields(
+        scope,
+        registered.id,
+        createNodeState({
+          id: toNodeId(1),
+          graphId: rootA,
+          title: 'Renamed',
+          mode: 2,
+          properties: { source: 'doc' },
+          // Different slot shape on purpose: it must be ignored entirely.
+          inputs: [
+            createMockNodeInputSlot({ name: 'in', type: 'IMAGE' }),
+            createMockNodeInputSlot({ name: 'extra', type: 'MASK' })
+          ],
+          outputs: []
+        })
+      )
+    ).toBe(true)
+
+    expect(registered.title).toBe('Renamed')
+    expect(registered.mode).toBe(2)
+    expect(registered.properties).toEqual({ source: 'doc' })
+    expect(registered.color).toBeUndefined()
+    expect(registered.inputs).toBe(liveInputs)
+    expect(registered.outputs).toBe(liveOutputs)
+    expect(registered.inputs).toHaveLength(1)
+    expect(registered.inputs[0]).toBe(liveInput)
+    expect(registered.outputs).toHaveLength(1)
+
+    expect(
+      store.updateNodeFields(
+        graphScope(rootA, 'sub-1'),
+        registered.id,
+        createNodeState({ id: toNodeId(1), graphId: 'sub-1', title: 'Wrong' })
+      )
+    ).toBe(false)
+    expect(registered.title).toBe('Renamed')
   })
 })
 

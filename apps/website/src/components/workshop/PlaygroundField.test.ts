@@ -1,4 +1,3 @@
-// @vitest-environment happy-dom
 import userEvent from '@testing-library/user-event'
 import { fireEvent, render, screen, within } from '@testing-library/vue'
 import { describe, expect, it, vi } from 'vitest'
@@ -480,10 +479,9 @@ describe('PlaygroundField', () => {
       name: 'Duration'
     })
     expect(select.selectedOptions[0].textContent.trim()).toBe('5 seconds')
-    expect(screen.getByText('Default: 5 seconds')).toBeTruthy()
+    expect(screen.queryByText('Default: 5 seconds')).toBeNull()
     expect(select.getAttribute('aria-describedby')?.split(' ')).toEqual([
-      'help-duration',
-      'default-duration'
+      'help-duration'
     ])
     const user = userEvent.setup()
     await user.selectOptions(
@@ -517,13 +515,13 @@ describe('PlaygroundField', () => {
       }
     }
     const values = mountField(field, defaultValues([field]))
-    expect(screen.getByText('Default: 5 seconds')).toBeTruthy()
+    const select = screen.getByRole<HTMLSelectElement>('combobox', {
+      name: 'Duration'
+    })
+    expect(select.selectedOptions[0].textContent.trim()).toBe('5 seconds')
     await userEvent
       .setup()
-      .selectOptions(
-        screen.getByRole('combobox', { name: 'Duration' }),
-        screen.getByRole('option', { name: '9 seconds' })
-      )
+      .selectOptions(select, screen.getByRole('option', { name: '9 seconds' }))
     expect(values.value.duration).toBe('9s')
   })
 
@@ -580,8 +578,10 @@ describe('PlaygroundField', () => {
       defaultValue: false
     }
     const audio = mountField(toggle, defaultValues([toggle]), 'zh-CN')
-    expect(screen.getByText('默认值：关闭')).toBeTruthy()
-    await userEvent.setup().click(screen.getByRole('switch', { name: 'Audio' }))
+    const shown = screen.getByRole('switch', { name: 'Audio' })
+    expect(shown.getAttribute('aria-checked')).toBe('false')
+    expect(screen.queryByText('默认值：关闭')).toBeNull()
+    await userEvent.setup().click(shown)
     expect(audio.value.audio).toBe(true)
   })
 

@@ -1,5 +1,3 @@
-// @vitest-environment jsdom
-import '@testing-library/jest-dom/vitest'
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
@@ -253,7 +251,7 @@ describe('BuyCreditsDialog', () => {
     const held = await screen.findByTestId('buy-credits-held')
     expect(held.textContent).toContain('No new credits detected')
     expect(screen.getByRole('dialog').textContent).toContain(
-      'The checkout may have been cancelled'
+      'The checkout was either cancelled'
     )
     expect(screen.getByRole('dialog').textContent).not.toContain(
       'Payment received'

@@ -2,6 +2,7 @@
 import WorkshopGate from '../workshop/WorkshopGate.vue'
 import { ref } from 'vue'
 
+import { catalogSearch } from '../../config/models-catalogue'
 import { getRoutes } from '../../config/routes'
 import type { DiscoveryProvider } from '../../data/modelDiscovery'
 import type { Locale } from '../../i18n/translations'
@@ -23,7 +24,7 @@ function reveal(name: string) {
 }
 
 const cardHref = (name: string) =>
-  `${routes.workshop}?provider=${encodeURIComponent(name)}`
+  `${routes.workshop}${catalogSearch({ query: name })}`
 
 const cardClass =
   'group/card bg-transparency-white-t4 relative flex h-44 w-48 shrink-0 flex-col items-center justify-center gap-3 overflow-hidden rounded-3xl border border-transparency-white-t8 px-5 text-center text-primary-warm-white transition-colors hover:border-transparency-white-t20 focus-visible:border-primary-comfy-yellow focus-visible:outline-none'

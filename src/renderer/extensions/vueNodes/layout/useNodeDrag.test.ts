@@ -43,7 +43,7 @@ const testState = vi.hoisted(() => {
   }
 })
 
-vi.mock<unknown>(import('@/renderer/core/canvas/useAutoPan'), () => ({
+vi.mock(import('@/renderer/core/canvas/useAutoPan'), () => ({
   AutoPanController: vi.fn()
 }))
 
