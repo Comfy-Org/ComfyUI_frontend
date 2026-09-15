@@ -17,9 +17,9 @@
             :key="depth"
             :class="
               cn(
-                'pointer-events-none absolute inset-x-0 top-0 h-9 rounded-[10px] border border-white/[0.09] bg-[#171718]/75 backdrop-blur-xl transition-all duration-200 ease-out',
+                'pointer-events-none absolute inset-x-0 top-0 h-9 rounded-[10px] border border-base-foreground/9 bg-base-background/75 backdrop-blur-xl transition-all duration-200 ease-out',
                 depth === 1
-                  ? 'z-[1] translate-y-[6px] scale-[0.97] opacity-90'
+                  ? 'z-1 translate-y-[6px] scale-[0.97] opacity-90'
                   : 'z-0 translate-y-[12px] scale-[0.94] opacity-70'
               )
             "
@@ -27,18 +27,20 @@
           />
         </template>
 
-        <component
-          :is="isTerminal ? 'button' : 'div'"
-          :type="isTerminal ? 'button' : undefined"
+        <button
+          type="button"
+          :aria-expanded="isTerminal ? undefined : expanded"
           :aria-label="
-            isTerminal && terminalKind === 'completed'
-              ? t('queueStatus.viewResults')
-              : undefined
+            isTerminal
+              ? terminalKind === 'completed'
+                ? t('queueStatus.viewResults')
+                : undefined
+              : t('queueStatus.activeGenerations')
           "
           data-testid="queue-status-toast"
           :class="
             cn(
-              'relative z-[2] flex h-9 cursor-pointer items-stretch overflow-hidden rounded-[10px] border border-white/[0.09] bg-[#171718]/80 shadow-[0_4px_16px_rgba(0,0,0,0.3)] backdrop-blur-xl transition-colors hover:bg-[#262729]/80',
+              'relative z-2 flex h-9 cursor-pointer items-stretch overflow-hidden rounded-[10px] border border-base-foreground/9 bg-base-background/80 p-0 text-left shadow-[0_4px_16px_rgba(0,0,0,0.3)] backdrop-blur-xl transition-colors hover:bg-secondary-background/80',
               isTerminal ? 'items-center px-3' : 'min-w-[176px]'
             )
           "
@@ -58,7 +60,12 @@
             >
               <span
                 v-if="!isTerminal"
-                class="inline-block size-[15px] animate-spin rounded-full border-2 border-white/20 border-t-white/80"
+                class="inline-block size-[15px] animate-spin rounded-full border-2 border-base-foreground/20 border-t-base-foreground/80"
+                aria-hidden
+              />
+              <i
+                v-else-if="terminalKind === 'failed'"
+                class="icon-[lucide--circle-alert] size-4 text-destructive-background"
                 aria-hidden
               />
               <i
@@ -82,7 +89,7 @@
 
             <span
               v-if="queuedBadge"
-              class="shrink-0 rounded-full bg-white/[0.08] px-1.5 py-1 text-[10px] font-medium leading-none tracking-wide text-muted-foreground uppercase"
+              class="shrink-0 rounded-full bg-white/8 px-1.5 py-1 text-[10px] leading-none font-medium tracking-wide text-muted-foreground uppercase"
             >
               {{ queuedBadge }}
             </span>
@@ -90,12 +97,12 @@
             <!-- Progress hugs the chip's bottom edge, as in the spec. -->
             <div
               v-if="showProgressLine"
-              class="pointer-events-none absolute bottom-0 left-0 h-px bg-white/70 transition-[width] duration-200 ease-out"
+              class="pointer-events-none absolute bottom-0 left-0 h-px bg-base-foreground/70 transition-[width] duration-200 ease-out"
               :style="{ width: `${headlineProgress}%` }"
               aria-hidden
             />
           </div>
-        </component>
+        </button>
       </div>
 
       <!-- Expanding does not open a panel: the toasts behind the pill simply
@@ -111,7 +118,7 @@
         <div
           v-for="(job, index) in jobs"
           :key="job.id"
-          class="job-toast-row relative w-full overflow-hidden rounded-[10px] border border-white/[0.09] bg-[#171718]/75 px-3 py-2 shadow-[0_4px_16px_rgba(0,0,0,0.3)] backdrop-blur-xl transition-colors hover:bg-[#262729]/80"
+          class="job-toast-row relative w-full overflow-hidden rounded-[10px] border border-base-foreground/9 bg-base-background/75 px-3 py-2 shadow-[0_4px_16px_rgba(0,0,0,0.3)] backdrop-blur-xl transition-colors hover:bg-secondary-background/80"
           :style="{ '--row-delay': `${index * 45}ms` }"
           data-testid="queue-status-row"
         >
@@ -121,9 +128,8 @@
                 v-if="job.status === 'running'"
                 :class="
                   cn(
-                    'inline-block size-[13px] rounded-full border-2 border-white/20 border-t-white/80',
-                    !isPaused(job.id) && 'animate-spin',
-                    isPaused(job.id) && 'opacity-60'
+                    'inline-block size-[13px] rounded-full border-2 border-base-foreground/20 border-t-base-foreground/80',
+                    'animate-spin'
                   )
                 "
                 aria-hidden
@@ -149,29 +155,9 @@
             </div>
 
             <div class="flex shrink-0 items-center gap-0.5">
-              <!-- Pause is mocked, but it behaves: the row stops and says so. -->
-              <button
-                v-if="job.status === 'running'"
-                type="button"
-                class="flex size-6 cursor-pointer items-center justify-center rounded-[6px] border-none bg-transparent p-0 text-muted-foreground transition-colors hover:bg-white/[0.08] hover:text-base-foreground"
-                :aria-label="
-                  isPaused(job.id)
-                    ? `${t('queueStatus.resume')} ${job.title}`
-                    : `${t('queueStatus.pause')} ${job.title}`
-                "
-                data-testid="queue-status-row-pause"
-                @click="togglePause(job.id)"
-              >
-                <i
-                  v-if="isPaused(job.id)"
-                  class="icon-[lucide--play] size-3.5"
-                  aria-hidden
-                />
-                <i v-else class="icon-[lucide--pause] size-3.5" aria-hidden />
-              </button>
               <button
                 type="button"
-                class="flex size-6 cursor-pointer items-center justify-center rounded-[6px] border-none bg-transparent p-0 text-muted-foreground transition-colors hover:bg-white/[0.08] hover:text-base-foreground"
+                class="flex size-6 cursor-pointer items-center justify-center rounded-[6px] border-none bg-transparent p-0 text-muted-foreground transition-colors hover:bg-base-foreground/8 hover:text-base-foreground"
                 :aria-label="`${t('queueStatus.cancel')} ${job.title}`"
                 data-testid="queue-status-row-cancel"
                 @click="handleCancel(job)"
@@ -187,10 +173,10 @@
             :class="
               cn(
                 'pointer-events-none absolute bottom-0 left-0 h-px transition-[width] duration-200 ease-out',
-                isPaused(job.id) ? 'bg-white/30' : 'bg-white/70'
+                'bg-base-foreground/70'
               )
             "
-            :style="{ width: `${displayProgress(job)}%` }"
+            :style="{ width: `${job.progress}%` }"
             aria-hidden
           />
         </div>
@@ -200,32 +186,13 @@
              cancel everything. -->
         <div
           v-if="jobs.length > 1"
-          class="job-toast-row flex items-center gap-0.5 rounded-[10px] border border-white/[0.1] bg-[#171718]/60 px-1 py-1 shadow-[0_2px_12px_rgba(0,0,0,0.25)] backdrop-blur-2xl"
+          class="job-toast-row flex items-center gap-0.5 rounded-[10px] border border-base-foreground/10 bg-base-background/60 p-1 shadow-[0_2px_12px_rgba(0,0,0,0.25)] backdrop-blur-2xl"
           :style="{ '--row-delay': `${jobs.length * 45}ms` }"
         >
           <button
-            v-if="runningCount > 0"
-            type="button"
-            class="flex cursor-pointer items-center gap-1.5 rounded-[7px] border-none bg-transparent px-2 py-1.5 text-[11.5px] font-medium text-muted-foreground transition-colors hover:bg-white/[0.08] hover:text-base-foreground"
-            data-testid="queue-status-pause-all"
-            @click="togglePauseAll"
-          >
-            <i
-              v-if="allRunningPaused"
-              class="icon-[lucide--play] size-3"
-              aria-hidden
-            />
-            <i v-else class="icon-[lucide--pause] size-3" aria-hidden />
-            {{
-              allRunningPaused
-                ? t('queueStatus.resumeAll')
-                : t('queueStatus.pauseAll')
-            }}
-          </button>
-          <button
             v-if="queuedCount > 0"
             type="button"
-            class="flex cursor-pointer items-center gap-1.5 rounded-[7px] border-none bg-transparent px-2 py-1.5 text-[11.5px] font-medium text-muted-foreground transition-colors hover:bg-white/[0.08] hover:text-base-foreground"
+            class="flex cursor-pointer items-center gap-1.5 rounded-[7px] border-none bg-transparent px-2 py-1.5 text-[11.5px] font-medium text-muted-foreground transition-colors hover:bg-base-foreground/8 hover:text-base-foreground"
             data-testid="queue-status-clear-queue"
             @click="handleClearQueue"
           >
@@ -234,7 +201,7 @@
           </button>
           <button
             type="button"
-            class="flex cursor-pointer items-center gap-1.5 rounded-[7px] border-none bg-transparent px-2 py-1.5 text-[11.5px] font-medium text-muted-foreground transition-colors hover:bg-white/[0.08] hover:text-[#ff8b8b]"
+            class="flex cursor-pointer items-center gap-1.5 rounded-[7px] border-none bg-transparent px-2 py-1.5 text-[11.5px] font-medium text-muted-foreground transition-colors hover:bg-base-foreground/8 hover:text-destructive-background"
             data-testid="queue-status-cancel-all"
             @click="handleCancelAll"
           >
@@ -255,7 +222,7 @@
           data-testid="queue-status-idle"
           :aria-label="t('queueStatus.nothingRunning')"
           :aria-expanded="idleOpen"
-          class="group pointer-events-auto flex cursor-pointer items-center gap-1 rounded-lg border border-solid border-[#2d2e32] bg-transparent px-2 py-1 text-sm leading-5 text-base-foreground transition-colors hover:bg-[#232426] data-[state=open]:bg-[#232426]"
+          class="group pointer-events-auto flex cursor-pointer items-center gap-1 rounded-lg border border-solid border-base-foreground/9 bg-transparent px-2 py-1 text-sm/5 text-base-foreground transition-colors hover:bg-secondary-background data-[state=open]:bg-secondary-background"
         >
           {{ activeJobsLabel }}
           <i
@@ -271,7 +238,7 @@
         side="bottom"
         :side-offset="8"
         data-testid="queue-status-idle-panel"
-        class="flex w-80 flex-col gap-2 rounded-[10px] border border-white/[0.09] bg-[#171718]/80 px-2 py-2 shadow-[0_4px_18px_rgba(0,0,0,0.3)] backdrop-blur-xl"
+        class="flex w-80 flex-col gap-2 rounded-[10px] border border-base-foreground/9 bg-base-background/80 p-2 shadow-[0_4px_18px_rgba(0,0,0,0.3)] backdrop-blur-xl"
       >
         <!-- Idle is exactly when someone goes looking for what they just
              made, so recent runs live here rather than a tab away. -->
@@ -298,7 +265,7 @@
               v-for="result in recentResults"
               :key="result.id"
               type="button"
-              class="relative flex cursor-pointer items-center gap-2.5 overflow-hidden rounded-[8px] border-none bg-transparent px-1.5 py-2 text-left transition-colors hover:bg-[#262729]"
+              class="relative flex cursor-pointer items-center gap-2.5 overflow-hidden rounded-[8px] border-none bg-transparent px-1.5 py-2 text-left transition-colors hover:bg-secondary-background"
               :aria-label="t('queueStatus.viewResult')"
               data-testid="queue-status-recent-job"
               @click="handleViewResult(result.job)"
@@ -307,7 +274,7 @@
                    toasts: one place for the picture, everywhere. -->
               <span
                 v-if="result.thumbSrc"
-                class="relative flex size-9 shrink-0 items-center justify-center overflow-hidden rounded-[6px] bg-[#171718] outline-1 outline-white/10"
+                class="relative flex size-9 shrink-0 items-center justify-center overflow-hidden rounded-[6px] bg-base-background outline-1 outline-white/10"
               >
                 <img
                   :src="result.thumbSrc"
@@ -317,7 +284,7 @@
                 />
                 <i
                   v-if="result.isVideo"
-                  class="icon-[lucide--play] absolute right-0.5 bottom-0.5 size-2.5 text-base-foreground drop-shadow-[0_1px_2px_rgba(0,0,0,0.6)]"
+                  class="absolute right-0.5 bottom-0.5 icon-[lucide--play] size-2.5 text-base-foreground drop-shadow-[0_1px_2px_rgba(0,0,0,0.6)]"
                   aria-hidden
                 />
               </span>
@@ -345,11 +312,11 @@
 
         <!-- Same quiet verb treatment as the stack's footer actions. -->
         <div
-          class="flex w-full items-center justify-end border-t border-white/[0.06] pt-1.5"
+          class="flex w-full items-center justify-end border-t border-base-foreground/6 pt-1.5"
         >
           <button
             type="button"
-            class="flex cursor-pointer items-center gap-1.5 rounded-[7px] border-none bg-transparent px-2 py-1.5 text-[11.5px] font-medium text-muted-foreground transition-colors hover:bg-white/[0.06] hover:text-base-foreground"
+            class="flex cursor-pointer items-center gap-1.5 rounded-[7px] border-none bg-transparent px-2 py-1.5 text-[11.5px] font-medium text-muted-foreground transition-colors hover:bg-base-foreground/6 hover:text-base-foreground"
             data-testid="queue-status-go-history"
             @click="handleGoToHistory"
           >
@@ -364,30 +331,6 @@
       v-model:active-index="galleryActiveIndex"
       :all-gallery-items="galleryItems"
     />
-
-    <!-- Dev-only state driver (?toastDemo=1). Not part of the shipped UI. -->
-    <Teleport to="body">
-      <div
-        v-if="isDemo"
-        class="pointer-events-auto fixed bottom-3 left-1/2 z-[3000] flex -translate-x-1/2 items-center gap-1 rounded-lg border border-solid border-charcoal-700 bg-comfy-menu-bg p-1 shadow-interface"
-      >
-        <span class="px-2 text-[11px] text-muted-foreground">Toast demo</span>
-        <button
-          v-for="state in demoStates"
-          :key="state.name"
-          type="button"
-          class="cursor-pointer rounded-md border-none px-2.5 py-1.5 text-xs"
-          :class="
-            demoName === state.name
-              ? 'bg-base-foreground text-base-background'
-              : 'bg-secondary-background text-muted-foreground'
-          "
-          @click="selectDemo(state)"
-        >
-          {{ state.name }}
-        </button>
-      </div>
-    </Teleport>
   </div>
 </template>
 
@@ -429,7 +372,7 @@ const RECENT_JOB_LIMIT = 4
 let popoverAutoOpened = false
 const JOB_POPOVER_AUTO_OPEN_MS = 4000
 
-const { t, n } = useI18n()
+const { t, n, locale } = useI18n()
 const queueStore = useQueueStore()
 const executionStore = useExecutionStore()
 const { wrapWithErrorHandlingAsync } = useErrorHandling()
@@ -448,6 +391,13 @@ const ACTIVE_STATES: ReadonlySet<JobListItem['state']> = new Set([
 ])
 const activeJobs = computed(() =>
   jobItems.value.filter((job) => ACTIVE_STATES.has(job.state)).reverse()
+)
+watch(
+  activeJobs,
+  (current) => {
+    if (current.length > 0) lastActiveIds = current.map((job) => job.id)
+  },
+  { immediate: true }
 )
 const isRunningState = (state: JobListItem['state']) =>
   state === 'running' || state === 'initialization'
@@ -474,69 +424,7 @@ const liveJobs = computed<JobView[]>(() => {
   ]
 })
 
-/**
- * Dev-only harness: with ?toastDemo=1 a scripted set of jobs overrides the
- * live queue so parallel runs and the terminal chips can be reviewed in the
- * real app, where the staging backend rarely reaches them.
- */
-const isDemo =
-  import.meta.env.DEV &&
-  new URLSearchParams(window.location.search).has('toastDemo')
-
-type DemoState = { name: string; jobs: JobView[] }
-const demoRun = (id: string, title: string, progress: number): JobView => ({
-  id,
-  title,
-  status: 'running',
-  progress,
-  queuePosition: 0
-})
-const demoQueued = (
-  id: string,
-  title: string,
-  queuePosition: number
-): JobView => ({
-  id,
-  title,
-  status: 'queued',
-  progress: 0,
-  queuePosition
-})
-const demoStates: DemoState[] = [
-  { name: 'Idle', jobs: [] },
-  {
-    name: 'Queued',
-    jobs: [
-      demoQueued('d-q-1', 'Background swap', 1),
-      demoQueued('d-q-2', 'Add reflections', 2),
-      demoQueued('d-q-3', 'Export sheet', 3)
-    ]
-  },
-  {
-    name: 'Running',
-    jobs: [demoRun('d-run-1', "Add Product to Character's Hand", 45)]
-  },
-  {
-    name: 'Parallel + queue',
-    jobs: [
-      demoRun('d-run-1', "Add Product to Character's Hand", 45),
-      demoRun('d-run-2', 'Upscale to 4K', 68),
-      demoRun('d-run-3', 'Relight product shot', 24),
-      demoQueued('d-q-1', 'Background swap', 1),
-      demoQueued('d-q-2', 'Add reflections', 2)
-    ]
-  }
-]
-const demoName = ref('Idle')
-const demoJobs = ref<JobView[]>([])
-const selectDemo = (state: DemoState) => {
-  demoName.value = state.name
-  demoJobs.value = state.jobs.map((job) => ({ ...job }))
-}
-
-const jobs = computed<JobView[]>(() =>
-  isDemo ? demoJobs.value : liveJobs.value
-)
+const jobs = computed<JobView[]>(() => liveJobs.value)
 
 const runningJobs = computed(() =>
   jobs.value.filter((job) => job.status === 'running')
@@ -554,13 +442,27 @@ const activeCount = computed(() => jobs.value.length)
  * "Cancelled". Celebrating a cancellation was a lie.
  */
 const completedFlash = ref(false)
-const terminalKind = ref<'completed' | 'cancelled'>('completed')
+const terminalKind = ref<'completed' | 'cancelled' | 'failed'>('completed')
 /** Set by the cancel paths just before the queue empties. */
 const cancelIntent = ref(false)
+/** Ids of the jobs active on the last tick, so the drain can be judged by
+ * how each of them actually ended rather than by which button was pressed. */
+let lastActiveIds: string[] = []
+
+const outcomeOf = (ids: string[]): typeof terminalKind.value => {
+  // JobState folds Cancelled into failed, so read the task's display status.
+  const outcomes = jobItems.value
+    .filter((job) => ids.includes(job.id))
+    .map((job) => job.taskRef?.displayStatus)
+  if (outcomes.some((status) => status === 'Failed')) return 'failed'
+  if (cancelIntent.value || outcomes.some((status) => status === 'Cancelled'))
+    return 'cancelled'
+  return 'completed'
+}
 
 watch(activeCount, (count, prev) => {
   if (count === 0 && (prev ?? 0) > 0) {
-    terminalKind.value = cancelIntent.value ? 'cancelled' : 'completed'
+    terminalKind.value = outcomeOf(lastActiveIds)
     cancelIntent.value = false
     completedFlash.value = true
     expanded.value = false
@@ -636,10 +538,12 @@ const headlineProgress = computed(() => runningJobs.value[0]?.progress ?? 0)
  * in the panel.
  */
 const pillLabel = computed(() => {
-  if (isTerminal.value)
+  if (isTerminal.value) {
+    if (terminalKind.value === 'failed') return t('queueStatus.failed')
     return terminalKind.value === 'cancelled'
       ? t('queueStatus.cancelled')
       : t('queueStatus.completed')
+  }
   if (runningCount.value > 1)
     return t('queueStatus.processingCount', { count: runningCount.value })
   if (runningCount.value === 1)
@@ -671,47 +575,6 @@ const activeJobsLabel = computed(() => {
   )
 })
 
-/**
- * Pause is mocked here (the backend has none yet) but it behaves: a paused run
- * stops spinning, freezes its percent and says so.
- */
-const pausedIds = ref<string[]>([])
-const isPaused = (jobId: string) => pausedIds.value.includes(jobId)
-function togglePause(jobId: string) {
-  pausedIds.value = isPaused(jobId)
-    ? pausedIds.value.filter((id) => id !== jobId)
-    : [...pausedIds.value, jobId]
-}
-/** Frozen at the percent it held when paused, so the row stops moving. */
-const pausedProgress = reactive<Record<string, number>>({})
-watch(
-  () => jobs.value.map((job) => `${job.id}:${job.progress}`),
-  () => {
-    for (const job of jobs.value) {
-      if (!isPaused(job.id)) pausedProgress[job.id] = job.progress
-    }
-  },
-  { immediate: true }
-)
-function displayProgress(job: JobView) {
-  return isPaused(job.id) ? (pausedProgress[job.id] ?? 0) : job.progress
-}
-const allRunningPaused = computed(
-  () =>
-    runningJobs.value.length > 0 &&
-    runningJobs.value.every((job) => isPaused(job.id))
-)
-function togglePauseAll() {
-  if (allRunningPaused.value) {
-    const running = new Set(runningJobs.value.map((job) => job.id))
-    pausedIds.value = pausedIds.value.filter((id) => !running.has(id))
-    return
-  }
-  const next = new Set(pausedIds.value)
-  for (const job of runningJobs.value) next.add(job.id)
-  pausedIds.value = [...next]
-}
-
 /** When each run started, stamped once so the row reads "18:23:02 · 45%". */
 const startedLabels = reactive<Record<string, string>>({})
 watch(
@@ -719,9 +582,7 @@ watch(
   (ids) => {
     for (const id of ids) {
       if (!startedLabels[id]) {
-        startedLabels[id] = new Date().toLocaleTimeString('en-GB', {
-          hour12: false
-        })
+        startedLabels[id] = new Date().toLocaleTimeString(locale.value)
       }
     }
   },
@@ -730,9 +591,8 @@ watch(
 function jobSubtitle(job: JobView): string {
   if (job.status === 'running') {
     const started = startedLabels[job.id]
-    const percent = `${displayProgress(job)}%`
-    const state = isPaused(job.id) ? `${t('queueStatus.paused')} · ` : ''
-    return started ? `${state}${started} · ${percent}` : `${state}${percent}`
+    const percent = `${job.progress}%`
+    return started ? `${started} · ${percent}` : percent
   }
   return job.queuePosition === 1
     ? t('queueStatus.queuedNextUp')
@@ -756,10 +616,6 @@ const reconcileActiveJob = () => {
 const jobRef = (id: string) => activeJobs.value.find((job) => job.id === id)
 
 const cancelJobById = wrapWithErrorHandlingAsync(async (id: string) => {
-  if (isDemo) {
-    demoJobs.value = demoJobs.value.filter((job) => job.id !== id)
-    return
-  }
   const jobId = jobRef(id)?.taskRef?.jobId
   if (!jobId) return
   await api.cancelJob(String(jobId))
@@ -769,11 +625,6 @@ const cancelJobById = wrapWithErrorHandlingAsync(async (id: string) => {
 })
 
 const cancelJobIds = wrapWithErrorHandlingAsync(async (ids: string[]) => {
-  if (isDemo) {
-    const drop = new Set(ids)
-    demoJobs.value = demoJobs.value.filter((job) => !drop.has(job.id))
-    return
-  }
   const jobIds = ids
     .map((id) => jobRef(id)?.taskRef?.jobId)
     .filter(
@@ -804,8 +655,8 @@ function handleCancelAll() {
   void cancelJobIds(jobs.value.map((job) => job.id))
 }
 
-const { galleryActiveIndex, galleryItems } = useResultGallery(() =>
-  activeJobs.value
+const { galleryActiveIndex, galleryItems, onViewItem } = useResultGallery(() =>
+  recentJobs.value
     .map((job) => job.taskRef)
     .filter((task): task is TaskItemImpl => !!task)
 )
@@ -853,17 +704,9 @@ const recentResults = computed(() =>
 )
 
 /** Clicking a recent result opens it in the lightbox. */
-function handleViewResult(job: JobListItem) {
+async function handleViewResult(job: JobListItem) {
   idleOpen.value = false
-  const outputs = recentJobs.value
-    .map((entry) => jobThumbnail(entry))
-    .filter((output): output is AugmentedResultItem => !!output)
-  const index = outputs.findIndex(
-    (output) => output.url === jobThumbnail(job)?.url
-  )
-  if (index < 0) return
-  galleryItems.value = outputs
-  galleryActiveIndex.value = index
+  await onViewItem(job)
 }
 
 onUnmounted(() => {

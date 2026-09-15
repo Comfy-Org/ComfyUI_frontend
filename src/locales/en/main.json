@@ -5066,8 +5066,6 @@
     "recentResults": "Recent results",
     "viewResult": "Open result",
     "goToHistory": "View all history",
-    "pause": "Pause",
-    "pauseUnavailable": "Pause is not available yet",
     "chooseRunToStop": "Choose which run to stop",
     "resolveErrors": "Resolve errors",
     "onCanvas": "Shown on canvas",
@@ -5078,16 +5076,13 @@
     "completed": "Completed",
     "cancelled": "Cancelled",
     "queuedBadge": "Queued {count}",
-    "pauseAll": "Pause all",
-    "resumeAll": "Resume all",
     "clearQueue": "Clear queue",
     "viewResults": "View results",
     "goToHistoryShort": "Go to history",
     "recentCompleted": "Completed · Today",
     "queuedNextUp": "Queued · next up",
     "queuedPosition": "Queued · #{position}",
-    "paused": "Paused",
-    "resume": "Resume"
+    "failed": "Failed"
   },
   "gettingStarted": {
     "title": "Let's make something",
