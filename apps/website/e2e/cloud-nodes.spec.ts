@@ -112,13 +112,38 @@ test.describe('Cloud nodes page @smoke', () => {
 })
 
 test.describe('Cloud node detail pages @smoke', () => {
-  test('direct pack detail route renders node entries', async ({ page }) => {
-    await page.goto('/cloud/supported-nodes/comfyui-impact-pack')
-    await expect(page.getByTestId('cloud-node-pack-detail')).toBeVisible()
-    await expect(
-      page.getByTestId('cloud-node-pack-detail-node').first()
-    ).toBeVisible()
-  })
+  for (const { prefix, title, back } of [
+    { prefix: '', title: / on Comfy Cloud$/, back: 'Back to all packs' },
+    { prefix: '/zh-CN', title: /（Comfy Cloud）$/, back: '返回所有节点包' }
+  ]) {
+    test(`pack detail preserves locale and structured data at ${prefix || '/'}`, async ({
+      page
+    }) => {
+      const path = `${prefix}/cloud/supported-nodes/comfyui-impact-pack`
+      await page.goto(path)
+      await expect(page).toHaveTitle(title)
+      await expect(
+        page.getByTestId('cloud-node-pack-detail-node').first()
+      ).toBeVisible()
+      await expect(page.getByRole('link', { name: back })).toHaveAttribute(
+        'href',
+        `${prefix}/cloud/supported-nodes`
+      )
+
+      const jsonLd: unknown = JSON.parse(
+        await page.locator('script[type="application/ld+json"]').innerText()
+      )
+      expect(jsonLd).toMatchObject({
+        '@graph': expect.arrayContaining([
+          expect.objectContaining({
+            '@type': 'SoftwareApplication',
+            '@id': `https://comfy.org${path}/#software`,
+            url: `https://comfy.org${path}/`
+          })
+        ])
+      })
+    })
+  }
 
   test('clicking the back link returns to the index from a detail page', async ({
     page
