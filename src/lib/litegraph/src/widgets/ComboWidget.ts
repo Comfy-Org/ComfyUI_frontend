@@ -12,6 +12,7 @@ import { warnDeprecated } from '@/lib/litegraph/src/utils/feedback'
 import { BaseSteppedWidget } from './BaseSteppedWidget'
 import type { WidgetEventOptions } from './BaseWidget'
 import {
+  hasComboOptionPreviewSource,
   hideComboOptionPreview,
   showComboOptionPreview
 } from './comboOptionPreview'
@@ -158,6 +159,7 @@ export class ComboWidget
     // Otherwise, show dropdown menu
     const values = this.getValues(node)
     const values_list = toArray(values)
+    const hasOptionPreview = hasComboOptionPreviewSource()
 
     // Use addItem to solve duplicate filename issues
     if (this.options.getOptionLabel) {
@@ -170,18 +172,24 @@ export class ComboWidget
         }
       }
       const menu = new LiteGraph.ContextMenu([], menuOptions)
-      menu.controller.signal.addEventListener('abort', hideComboOptionPreview, {
-        once: true
-      })
+      if (hasOptionPreview) {
+        menu.controller.signal.addEventListener(
+          'abort',
+          hideComboOptionPreview,
+          { once: true }
+        )
+      }
 
       const getOptionLabel = this.options.getOptionLabel
       for (const value of values_list) {
         try {
           const label = getOptionLabel(value)
-          attachOptionPreview(menu.addItem(label, value, menuOptions), value)
+          const element = menu.addItem(label, value, menuOptions)
+          if (hasOptionPreview) attachOptionPreview(element, value)
         } catch (err) {
           console.error('Failed to map value:', err)
-          attachOptionPreview(menu.addItem(value, value, menuOptions), value)
+          const element = menu.addItem(value, value, menuOptions)
+          if (hasOptionPreview) attachOptionPreview(element, value)
         }
       }
       return
@@ -200,14 +208,16 @@ export class ComboWidget
         )
       }
     })
-    menu.controller.signal.addEventListener('abort', hideComboOptionPreview, {
-      once: true
-    })
-    Array.from(menu.root.children).forEach((element, index) => {
-      const value = values_list[index]
-      if (element instanceof HTMLElement && typeof value === 'string') {
-        attachOptionPreview(element, value)
-      }
-    })
+    if (hasOptionPreview) {
+      menu.controller.signal.addEventListener('abort', hideComboOptionPreview, {
+        once: true
+      })
+      Array.from(menu.root.children).forEach((element, index) => {
+        const value = values_list[index]
+        if (element instanceof HTMLElement && typeof value === 'string') {
+          attachOptionPreview(element, value)
+        }
+      })
+    }
   }
 }
