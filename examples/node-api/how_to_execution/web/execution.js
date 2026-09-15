@@ -24,6 +24,20 @@ const reportActionError = (summary, error, status) => {
 const runAction = (action, onError) => {
   void action().catch(onError)
 }
+const isRecord = (value) => value !== null && typeof value === 'object'
+const backendMessage = (body) => {
+  if (!isRecord(body) || body.ok !== true) {
+    throw new Error('Invalid backend response')
+  }
+  if (typeof body.message !== 'string') {
+    throw new Error('Invalid backend response')
+  }
+  return body.message
+}
+const eventMessage = (detail) => {
+  if (!isRecord(detail)) return undefined
+  return typeof detail.message === 'string' ? detail.message : undefined
+}
 
 api.defs.extend('HowToTextOutput', (definition) => {
   definition.onCreated((node) => {
@@ -87,20 +101,12 @@ const pingBackend = async (node) => {
   if (!response.ok) {
     throw new Error(`HTTP ${response.status}`)
   }
-  const body = await response.json()
-  if (
-    body === null ||
-    typeof body !== 'object' ||
-    body.ok !== true ||
-    typeof body.message !== 'string'
-  ) {
-    throw new Error('Invalid backend response')
-  }
-  node.widgets.get('status')?.setValue(body.message)
+  const message = backendMessage(await response.json())
+  node.widgets.get('status')?.setValue(message)
   api.commands.notify({
     severity: 'success',
     summary: 'Backend ping',
-    detail: body.message
+    detail: message
   })
 }
 
@@ -134,16 +140,10 @@ api.defs.define({
 const eventStatuses = new Map()
 
 api.backend.on('how-to-api-event', (detail) => {
-  if (
-    detail === null ||
-    typeof detail !== 'object' ||
-    !('message' in detail) ||
-    typeof detail.message !== 'string'
-  ) {
-    return
-  }
+  const message = eventMessage(detail)
+  if (message === undefined) return
   for (const widget of eventStatuses.values()) {
-    widget.setValue(detail.message)
+    widget.setValue(message)
   }
 })
 
