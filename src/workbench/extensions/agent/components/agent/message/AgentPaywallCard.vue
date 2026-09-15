@@ -9,9 +9,11 @@ import type {
   AgentPaywallPresentation
 } from '@/workbench/extensions/agent/services/agent/agentPaywallPresentation'
 
-const { presentation = DEFAULT_AGENT_PAYWALL_PRESENTATION } = defineProps<{
-  presentation?: AgentPaywallPresentation
-}>()
+const { presentation = DEFAULT_AGENT_PAYWALL_PRESENTATION, message } =
+  defineProps<{
+    presentation?: AgentPaywallPresentation
+    message?: string
+  }>()
 const emit = defineEmits<{
   paywallAction: [action: AgentPaywallAction]
 }>()
@@ -21,7 +23,8 @@ const bodyKeys: Record<AgentPaywallPresentation['kind'], string> = {
   subscriptionRequired: 'agent.paywall.body.subscriptionRequired',
   member: 'agent.paywall.body.member',
   salesManaged: 'agent.paywall.body.salesManaged',
-  local: 'agent.paywall.body.local'
+  local: 'agent.paywall.body.local',
+  unavailable: 'agent.paywall.body.subscriptionRequired'
 }
 const bodyKey = computed(() => bodyKeys[presentation.kind])
 const showUpgrade = computed(
@@ -37,19 +40,20 @@ const showAddCredits = computed(
 
 <template>
   <div
+    role="alert"
     class="border-agent-border flex w-full flex-col justify-center gap-2 overflow-hidden rounded-lg border bg-modal-card-background p-4 shadow-sm"
   >
     <div class="flex w-full items-start gap-2">
       <span
         aria-hidden="true"
-        class="text-agent-danger mt-0.5 icon-[lucide--gauge] size-5 shrink-0"
+        class="text-agent-danger mt-0.5 icon-[lucide--circle-alert] size-5 shrink-0"
       />
       <div class="min-w-0 flex-1 text-sm/5">
         <p class="text-agent-fg m-0 font-medium">
           {{ $t('agent.paywall.title') }}
         </p>
         <p class="text-agent-fg-muted m-0">
-          {{ $t(bodyKey) }}
+          {{ message || $t(bodyKey) }}
         </p>
       </div>
     </div>

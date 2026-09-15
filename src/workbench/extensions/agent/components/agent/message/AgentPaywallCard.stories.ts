@@ -33,6 +33,22 @@ export const SubscriptionRequired: Story = {
   render: renderAtMinimumWidth
 }
 
+export const AdmissionError: Story = {
+  args: {
+    presentation: { kind: 'member' },
+    message: 'Your workspace spend limit was reached.'
+  },
+  render: renderAtMinimumWidth
+}
+
+export const Unavailable: Story = {
+  args: {
+    presentation: { kind: 'member' },
+    message: 'The agent is temporarily unavailable. Try again shortly.'
+  },
+  render: renderAtMinimumWidth
+}
+
 export const Member: Story = {
   args: { presentation: { kind: 'member' } },
   render: renderAtMinimumWidth
