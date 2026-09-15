@@ -15,6 +15,7 @@ import { findComboValueIndex } from '@/lib/litegraph/src/utils/widget'
 import { BaseSteppedWidget } from './BaseSteppedWidget'
 import type { WidgetEventOptions } from './BaseWidget'
 import {
+  hasComboOptionPreviewSource,
   hideComboOptionPreview,
   showComboOptionPreview
 } from './comboOptionPreview'
@@ -171,6 +172,7 @@ export class ComboWidget
     // Otherwise, show dropdown menu
     const values = this.getValues(node)
     const values_list = toArray(values)
+    const hasOptionPreview = hasComboOptionPreviewSource()
 
     // Use addItem to solve duplicate filename issues
     if (this.options.getOptionLabel) {
@@ -186,25 +188,33 @@ export class ComboWidget
         }
       }
       const menu = new LiteGraph.ContextMenu<number>([], menuOptions)
-      menu.controller.signal.addEventListener('abort', hideComboOptionPreview, {
-        once: true
-      })
+      if (hasOptionPreview) {
+        menu.controller.signal.addEventListener(
+          'abort',
+          hideComboOptionPreview,
+          { once: true }
+        )
+      }
 
       const getOptionLabel = this.options.getOptionLabel
       for (const value of values_list) {
         try {
           const label = getOptionLabel(String(value))
-          attachOptionPreview(
-            menu.addItem(label, toContextMenuValue(value, label), menuOptions),
-            value
+          const element = menu.addItem(
+            label,
+            toContextMenuValue(value, label),
+            menuOptions
           )
+          if (hasOptionPreview) attachOptionPreview(element, value)
         } catch (err) {
           console.error('Failed to map value:', err)
           const label = String(value)
-          attachOptionPreview(
-            menu.addItem(label, toContextMenuValue(value, label), menuOptions),
-            value
+          const element = menu.addItem(
+            label,
+            toContextMenuValue(value, label),
+            menuOptions
           )
+          if (hasOptionPreview) attachOptionPreview(element, value)
         }
       }
       return
@@ -224,14 +234,16 @@ export class ComboWidget
         )
       }
     })
-    menu.controller.signal.addEventListener('abort', hideComboOptionPreview, {
-      once: true
-    })
-    Array.from(menu.root.children).forEach((element, index) => {
-      const value = values_list[index]
-      if (element instanceof HTMLElement && typeof value === 'string') {
-        attachOptionPreview(element, value)
-      }
-    })
+    if (hasOptionPreview) {
+      menu.controller.signal.addEventListener('abort', hideComboOptionPreview, {
+        once: true
+      })
+      Array.from(menu.root.children).forEach((element, index) => {
+        const value = values_list[index]
+        if (element instanceof HTMLElement && typeof value === 'string') {
+          attachOptionPreview(element, value)
+        }
+      })
+    }
   }
 }
