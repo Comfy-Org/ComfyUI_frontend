@@ -1474,7 +1474,7 @@ describe('AuthSignIn controller lifecycle', () => {
       toasts.value,
       'a hung email request recovers with a message rather than silently re-enabling'
     ).toHaveLength(1)
-    expect(toasts.value[0].detail).toBe(AUTH_ERROR_MESSAGES.generic)
+    expect(toasts.value[0].detail).toBe(t('auth.errors.generic', 'en'))
     expect(
       screen.getByRole('button', { name: /^sign in$/i }),
       'a bounded email request frees the controls at its deadline'
