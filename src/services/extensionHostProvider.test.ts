@@ -1,7 +1,12 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
-import { hasExtensionHost, provideExtensionHost, resolveExtensionHost } from './extensionHostProvider';
-import type { ExtensionHostProvider } from './extensionHostProvider';
+import {
+  currentExtensionHost,
+  hasExtensionHost,
+  provideExtensionHost,
+  resolveExtensionHost
+} from './extensionHostProvider'
+import type { ExtensionHostProvider } from './extensionHostProvider'
 
 const makeProvider = (
   overrides: Partial<ExtensionHostProvider> = {}
@@ -28,6 +33,7 @@ describe('extension host provider', () => {
 
     expect(hasExtensionHost()).toBe(true)
     expect(resolveExtensionHost('/extensions/foo/main.js')).toBe(provider)
+    expect(currentExtensionHost()).toBe(provider)
   })
 
   it('falls through when the provider declines an extension', () => {
@@ -58,6 +64,7 @@ describe('extension host provider', () => {
 
     provideExtensionHost(null)
     expect(hasExtensionHost()).toBe(false)
+    expect(currentExtensionHost()).toBeNull()
     expect(resolveExtensionHost('/extensions/foo/main.js')).toBeNull()
   })
 })
