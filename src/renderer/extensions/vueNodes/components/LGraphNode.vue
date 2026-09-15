@@ -408,7 +408,10 @@ const nodeSizeStyle = computed(() =>
       }
 )
 
-const { pointerHandlers } = useNodePointerInteractions(() => nodeData)
+const { pointerHandlers } = useNodePointerInteractions(
+  () => nodeData,
+  resolveLGraphNode
+)
 const { onPointerdown, ...remainingPointerHandlers } = pointerHandlers
 const { startDrag } = useNodeDrag()
 const badges = usePartitionedBadges(nodeData)
@@ -528,9 +531,11 @@ const selectionShapeClass = computed(() => {
   return shapeVariantClass(nodeData.shape, {
     box: '',
     card: isExpanded
-      ? 'rounded-tl-[23px] rounded-br-[23px]'
-      : 'rounded-tl-[19px] rounded-br-[19px]',
-    default: isExpanded ? 'rounded-[19px]' : 'rounded-[15px]'
+      ? 'rounded-tl-node-selection-wide rounded-br-node-selection-wide'
+      : 'rounded-tl-node-selection-expanded rounded-br-node-selection-expanded',
+    default: isExpanded
+      ? 'rounded-node-selection-expanded'
+      : 'rounded-node-selection'
   })
 })
 
