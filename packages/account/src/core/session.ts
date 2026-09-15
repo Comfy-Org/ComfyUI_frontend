@@ -68,19 +68,17 @@ const CachedCredentialSchema = CredentialResponseSchema.omit({
 })
 
 /**
- * English source strings for the codes above, extracted verbatim from the
- * cloud app's shipped copy (src/locales/en/main.json, workspaceAuth.errors)
- * so hosts never invent independently worded copy for the same failure.
- * A host may localize, but generic copy starts from these strings.
+ * The session error codes, keys only. Hosts own the copy (the cloud app's
+ * workspaceAuth.errors.*); the package ships the vocabulary so a host can
+ * narrow an arbitrary error code to one it has a line for. Exhaustive by
+ * type: a new SessionErrorCode is a compile error until it is listed here.
  */
-export const SESSION_ERROR_MESSAGES: Readonly<
-  Record<SessionErrorCode, string>
-> = {
-  NOT_AUTHENTICATED: 'You must be logged in to access workspaces',
-  INVALID_FIREBASE_TOKEN: 'Authentication failed. Please try logging in again.',
-  ACCESS_DENIED: 'You do not have access to this workspace',
-  WORKSPACE_NOT_FOUND: 'Workspace not found',
-  TOKEN_EXCHANGE_FAILED: 'Failed to authenticate with workspace: {error}'
+export const SESSION_ERROR_CODES: Readonly<Record<SessionErrorCode, true>> = {
+  NOT_AUTHENTICATED: true,
+  INVALID_FIREBASE_TOKEN: true,
+  ACCESS_DENIED: true,
+  WORKSPACE_NOT_FOUND: true,
+  TOKEN_EXCHANGE_FAILED: true
 }
 
 export { SESSION_TELEMETRY_EVENT } from '../telemetry.js'
