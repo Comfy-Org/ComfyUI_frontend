@@ -24,8 +24,6 @@ import WorkspaceAuthGate from './WorkspaceAuthGate.vue'
 vi.mock(import('firebase/auth'), { spy: true })
 
 beforeEach(() => {
-  const authActions = useAuthActions()
-  vi.mocked(useAuthActions).mockReturnValue(authActions)
   vi.mocked(setPersistence).mockResolvedValue(undefined)
   vi.mocked(onAuthStateChanged).mockImplementation(vi.fn())
   vi.mocked(onIdTokenChanged).mockImplementation(vi.fn())

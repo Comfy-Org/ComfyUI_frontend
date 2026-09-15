@@ -154,8 +154,6 @@ vi.mock<unknown>(import('@/services/dialogService'), () => ({
 global.fetch = vi.fn()
 
 beforeEach(() => {
-  const authActions = useAuthActions()
-  vi.mocked(useAuthActions).mockReturnValue(authActions)
   Object.assign(useAuthStore(), { isInitialized: true, userId: 'user-123' })
   vi.mocked(useAuthStore().getFirebaseAuthHeader).mockImplementation(
     mockGetAuthHeader
@@ -184,7 +182,6 @@ describe('useSubscription', () => {
 
     mockLocalStorage.__reset()
     mockIsLoggedIn.value = false
-    vi.mocked(useAuthActions().accessBillingPortal).mockResolvedValue(true)
     Object.assign(useAuthStore(), { userId: 'user-123' })
     mockIsCloud.value = true
     Object.assign(useAuthStore(), { isInitialized: true })

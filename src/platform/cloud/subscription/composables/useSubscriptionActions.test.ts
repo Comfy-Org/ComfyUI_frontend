@@ -65,8 +65,6 @@ Object.defineProperty(window, 'open', {
 })
 
 beforeEach(() => {
-  const authActions = useAuthActions()
-  vi.mocked(useAuthActions).mockReturnValue(authActions)
   vi.mocked(useToastStore().add).mockImplementation(mockToastAdd)
   vi.mocked(useCommandStore().execute).mockImplementation(mockExecute)
 })

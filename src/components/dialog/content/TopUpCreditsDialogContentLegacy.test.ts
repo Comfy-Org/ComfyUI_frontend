@@ -128,8 +128,6 @@ async function clickBuyCredits() {
 
 describe('TopUpCreditsDialogContentLegacy', () => {
   beforeEach(() => {
-    const authActions = useAuthActions()
-    vi.mocked(useAuthActions).mockReturnValue(authActions)
     mockIsSubscriptionEnabled.mockReturnValue(true)
     mockShouldUseWorkspaceBilling.value = false
   })

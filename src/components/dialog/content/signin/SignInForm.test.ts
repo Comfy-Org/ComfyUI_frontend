@@ -34,8 +34,6 @@ const loginButtonText = enMessages.auth.login.loginButton
 
 describe('SignInForm', () => {
   beforeEach(() => {
-    const authActions = useAuthActions()
-    vi.mocked(useAuthActions).mockReturnValue(authActions)
     useAuthStore().loading = false
   })
 

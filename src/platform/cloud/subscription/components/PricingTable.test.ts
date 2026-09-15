@@ -220,8 +220,6 @@ function renderComponent() {
 const onChooseTeamWorkspace = vi.fn()
 
 beforeEach(() => {
-  const authActions = useAuthActions()
-  vi.mocked(useAuthActions).mockReturnValue(authActions)
   Object.assign(useAuthStore(), { userId: 'user-123' })
   vi.mocked(useAuthStore().getFirebaseAuthHeader).mockImplementation(
     mockGetAuthHeader
@@ -237,7 +235,6 @@ describe('PricingTable', () => {
     mockSubscriptionTier.value = null
     mockSubscriptionDuration.value = 'MONTHLY'
     Object.assign(useAuthStore(), { userId: 'user-123' })
-    vi.mocked(useAuthActions().accessBillingPortal).mockResolvedValue(true)
     mockLocalStorage.__reset()
     vi.mocked(global.fetch).mockResolvedValue({
       ok: true,

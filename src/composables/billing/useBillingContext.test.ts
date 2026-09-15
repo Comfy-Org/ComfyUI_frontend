@@ -146,8 +146,6 @@ vi.mock<unknown>(import('@/platform/workspace/api/workspaceApi'), () => ({
 
 describe('useBillingContext', () => {
   beforeEach(() => {
-    const authActions = useAuthActions()
-    vi.mocked(useAuthActions).mockReturnValue(authActions)
     const workspaceStore = useTeamWorkspaceStore()
     const refs = storeToRefs(workspaceStore)
     mockIsPersonal = refs.isInPersonalWorkspace

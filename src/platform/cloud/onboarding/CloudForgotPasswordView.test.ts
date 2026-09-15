@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 import type { Router } from 'vue-router'
 import { createMemoryHistory, createRouter } from 'vue-router'
@@ -9,11 +9,6 @@ import { useAuthActions } from '@/composables/auth/useAuthActions'
 import CloudForgotPasswordView from '@/platform/cloud/onboarding/CloudForgotPasswordView.vue'
 
 vi.mock(import('@/composables/auth/useAuthActions'))
-
-beforeEach(() => {
-  const authActions = useAuthActions()
-  vi.mocked(useAuthActions).mockReturnValue(authActions)
-})
 
 async function renderView(): Promise<{ router: Router; unmount: () => void }> {
   const router = createRouter({
