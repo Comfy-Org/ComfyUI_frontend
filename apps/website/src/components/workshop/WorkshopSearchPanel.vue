@@ -44,7 +44,7 @@ const suggestions = computed(() =>
   <div
     :class="
       cn(
-        'bg-page flex flex-col gap-5 p-4',
+        'flex flex-col gap-5 bg-page p-4',
         variant === 'sheet'
           ? 'min-h-0 flex-1 overflow-y-auto overscroll-contain'
           : 'absolute inset-x-0 top-full z-30 mt-2 max-h-[70dvh] overflow-y-auto overscroll-contain rounded-2xl border border-transparency-white-t20 shadow-lg'
@@ -63,7 +63,7 @@ const suggestions = computed(() =>
         v-for="model in suggestions"
         :key="model.slug"
         type="button"
-        class="hover:bg-transparency-white-t4 focus-visible:bg-transparency-white-t4 flex cursor-pointer items-center gap-3 rounded-xl p-2 text-left outline-none"
+        class="flex cursor-pointer items-center gap-3 rounded-xl p-2 text-left outline-none hover:bg-transparency-white-t4 focus-visible:bg-transparency-white-t4"
         data-testid="workshop-search-model"
         @mousedown.prevent
         @click="emit('pick', model)"
