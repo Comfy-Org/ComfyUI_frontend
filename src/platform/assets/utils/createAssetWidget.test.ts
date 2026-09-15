@@ -1,5 +1,3 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
@@ -9,6 +7,8 @@ import type {
 } from '@/lib/litegraph/src/types/widgets'
 import { useAssetBrowserDialog } from '@/platform/assets/composables/useAssetBrowserDialog'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import { createMockLoadedWorkflow } from '@/utils/__tests__/litegraphTestUtils'
 
 import { createAssetWidget } from './createAssetWidget'
 
@@ -70,19 +70,9 @@ describe('createAssetWidget', () => {
   let captureCanvasState: ReturnType<typeof vi.fn>
 
   beforeEach(() => {
-    captureCanvasState = vi.fn()
-    setActivePinia(
-      createTestingPinia({
-        stubActions: false,
-        initialState: {
-          workflow: {
-            activeWorkflow: {
-              changeTracker: { captureCanvasState }
-            }
-          }
-        }
-      })
-    )
+    const workflow = createMockLoadedWorkflow()
+    captureCanvasState = vi.mocked(workflow.changeTracker.captureCanvasState)
+    useWorkflowStore().activeWorkflow = workflow
   })
 
   it('preserves regular asset widget change handling for the owning widget', async () => {

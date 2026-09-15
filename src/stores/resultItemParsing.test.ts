@@ -1,7 +1,7 @@
 import { fromPartial } from '@total-typescript/shoehorn'
 import { describe, expect, it, vi } from 'vitest'
 
-vi.mock('@/platform/assets/composables/media/assetMappers')
+vi.mock(import('@/platform/assets/composables/media/assetMappers'))
 
 import type { NodeExecutionOutput } from '@/schemas/apiSchema'
 import { isTextResult, resultItemSupportsPreview } from '@/utils/resultItem'

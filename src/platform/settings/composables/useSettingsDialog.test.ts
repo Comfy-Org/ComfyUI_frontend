@@ -1,3 +1,4 @@
+import { useDialogStore } from '@/stores/dialogStore'
 /**
  * Settings dialog migration regression net: `useSettingsDialog().show()` must
  * open the Reka-renderer path with sizing that matches the previous
@@ -9,21 +10,17 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 const showDialog = vi.hoisted(() => vi.fn())
 const isCloudRef = vi.hoisted(() => ({ value: false }))
 
-vi.mock<unknown>(import('@/stores/dialogStore'), () => ({
-  useDialogStore: () => ({ showDialog, closeDialog: vi.fn() })
-}))
-
 vi.mock(import('@/platform/distribution/types'), () => ({
   get isCloud() {
     return isCloudRef.value
   }
 }))
 
-vi.mock(import('@/i18n'), () => ({ t: (k: string) => k }))
-
-vi.mock<unknown>(import('@/platform/telemetry'), () => ({
-  useTelemetry: () => ({ trackEvent: vi.fn() })
+vi.mock(import('@/i18n'), () => ({
+  t: (k: string) => k
 }))
+
+vi.mock(import('@/platform/telemetry'))
 
 vi.mock<unknown>(import('@/composables/billing/useBillingContext'), () => ({
   useBillingContext: () => ({
@@ -34,6 +31,11 @@ vi.mock<unknown>(import('@/composables/billing/useBillingContext'), () => ({
 }))
 
 import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
+
+beforeEach(() => {
+  useDialogStore().showDialog = showDialog
+  vi.mocked(useDialogStore().closeDialog).mockImplementation(() => undefined)
+})
 
 describe('useSettingsDialog', () => {
   beforeEach(() => {

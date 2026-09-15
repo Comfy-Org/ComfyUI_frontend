@@ -1,0 +1,160 @@
+<svg viewBox="0 0 900 1876" xmlns="http://www.w3.org/2000/svg" font-family="-apple-system, 'Segoe UI', Roboto, Arial, sans-serif">
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#333" />
+    </marker>
+    <style>
+      .box-real{fill:#eaf6ea;stroke:#2e7d32;stroke-width:2.5;}
+      .box-lib{fill:#eaf1fb;stroke:#1565c0;stroke-width:2.5;}
+      .box-data{fill:#fff6e0;stroke:#c8860a;stroke-width:2.5;stroke-dasharray:8 5;}
+      .box-stub{fill:#f5eaf9;stroke:#7b1fa2;stroke-width:2.5;stroke-dasharray:1.5 5;stroke-linecap:round;}
+      .t{font-size:16px;font-weight:700;fill:#111;text-anchor:middle;}
+      .d{font-size:15px;font-weight:400;fill:#111;text-anchor:middle;}
+      .l{font-size:14px;font-weight:400;fill:#111;}
+      .sec{fill:#f4f3ee;stroke:#9a9d9f;stroke-width:1.5;}
+      .sech{font-size:17px;font-weight:700;fill:#111;}
+      .arrow{fill:none;stroke:#333;stroke-width:2;}
+      .alabel{font-size:15px;font-style:italic;fill:#555;}
+    </style>
+  </defs>
+
+  <rect x="0" y="0" width="900" height="1876" fill="#fbfaf6" />
+
+  <!-- Legend -->
+  <rect class="box-real" x="16" y="18" width="26" height="15" rx="3" />
+  <text class="l" x="50" y="31">real code</text>
+  <rect class="box-lib" x="150" y="18" width="26" height="15" rx="3" />
+  <text class="l" x="184" y="31">real library run in-process</text>
+  <rect class="box-data" x="400" y="18" width="26" height="15" rx="3" />
+  <text class="l" x="434" y="31">recorded data</text>
+  <rect class="box-stub" x="560" y="18" width="26" height="15" rx="3" />
+  <text class="l" x="594" y="31">stub that only carries data</text>
+
+  <g transform="translate(0,64)">
+    <!-- Section 1 container -->
+    <rect class="sec" x="12" y="24" width="876" height="800" rx="14" />
+    <text class="sech" x="28" y="50">Record: the cloud repo's local stack, everything real</text>
+
+    <!-- Section 2 container -->
+    <rect class="sec" x="12" y="964" width="876" height="556" rx="14" />
+    <text class="sech" x="28" y="990">Replay: Playwright, data in, real UI out</text>
+
+    <!-- Section 3 container -->
+    <rect class="sec" x="12" y="1548" width="876" height="240" rx="14" />
+    <text class="sech" x="28" y="1574">Smoke: no fixture, everything real</text>
+
+    <!-- Section 1 boxes -->
+    <rect class="box-data" x="325" y="64" width="250" height="84" rx="10" />
+    <text class="t" x="450" y="88">Prompt</text>
+    <text class="d" x="450" y="110">user turns on a seeded</text>
+    <text class="d" x="450" y="130">saved workflow</text>
+
+    <rect class="box-real" x="340" y="176" width="220" height="84" rx="10" />
+    <text class="t" x="450" y="200">Cloud agent</text>
+    <text class="d" x="450" y="222">non-standalone, real model</text>
+    <text class="d" x="450" y="242">call, real tool set</text>
+
+    <rect class="box-real" x="160" y="288" width="300" height="64" rx="10" />
+    <text class="t" x="310" y="312">Doc host</text>
+    <text class="d" x="310" y="334">applies the ops to the CRDT doc</text>
+
+    <rect class="box-real" x="210" y="400" width="200" height="84" rx="10" />
+    <text class="t" x="310" y="424">Postgres</text>
+    <text class="d" x="310" y="446">tool-call rows and</text>
+    <text class="d" x="310" y="466">accepted op rows</text>
+
+    <rect class="box-real" x="500" y="288" width="240" height="84" rx="10" />
+    <text class="t" x="620" y="312">Redis channel</text>
+    <text class="d" x="620" y="334">frames: active tab, thinking,</text>
+    <text class="d" x="620" y="354">tool calls, text</text>
+
+    <rect class="box-real" x="290" y="512" width="320" height="64" rx="10" />
+    <text class="t" x="450" y="536">Recorder</text>
+    <text class="d" x="450" y="558">drives the turns; frames stamped at_ms, rows</text>
+
+    <rect class="box-real" x="335" y="604" width="230" height="84" rx="10" />
+    <text class="t" x="450" y="628">Assembler</text>
+    <text class="d" x="450" y="650">refuses: foreign turn, seed</text>
+    <text class="d" x="450" y="670">hash, catalog, audit rows</text>
+
+    <rect class="box-real" x="325" y="716" width="250" height="84" rx="10" />
+    <text class="t" x="450" y="740">Exporter</text>
+    <text class="d" x="450" y="762">ops inserted before</text>
+    <text class="d" x="450" y="782">their tool frame</text>
+
+    <!-- Fixture JSON (between sections) -->
+    <rect class="box-data" x="245" y="852" width="410" height="84" rx="10" />
+    <text class="t" x="450" y="876">Fixture JSON</text>
+    <text class="d" x="450" y="898">seed, catalog, turns: prompts, frames, ops, offsets;</text>
+    <text class="d" x="450" y="918">response_side: recorded</text>
+
+    <!-- Section 2 boxes -->
+    <rect class="box-stub" x="165" y="1004" width="270" height="84" rx="10" />
+    <text class="t" x="300" y="1028">WS route</text>
+    <text class="d" x="300" y="1050">replays the recorded frames</text>
+    <text class="d" x="300" y="1070">back to back, or at recorded gaps</text>
+
+    <rect class="box-lib" x="475" y="1004" width="260" height="64" rx="10" />
+    <text class="t" x="605" y="1028">In-process doc host</text>
+    <text class="d" x="605" y="1050">mint, applyOps, readGraph</text>
+
+    <rect class="box-stub" x="24" y="1116" width="260" height="64" rx="10" />
+    <text class="t" x="154" y="1140">HTTP stubs</text>
+    <text class="d" x="154" y="1162">static acks and empty lists</text>
+
+    <rect class="box-real" x="300" y="1116" width="300" height="64" rx="10" />
+    <text class="t" x="450" y="1140">Agent panel</text>
+    <text class="d" x="450" y="1162">composer, tool rows</text>
+
+    <rect class="box-real" x="500" y="1208" width="210" height="84" rx="10" />
+    <text class="t" x="605" y="1232">CRDT follower</text>
+    <text class="d" x="605" y="1254">projects doc updates</text>
+    <text class="d" x="605" y="1274">into the stores</text>
+
+    <rect class="box-real" x="495" y="1320" width="220" height="64" rx="10" />
+    <text class="t" x="605" y="1344">Canvas</text>
+    <text class="d" x="605" y="1366">nodes, slots, widgets</text>
+
+    <rect class="box-data" x="325" y="1412" width="250" height="84" rx="10" />
+    <text class="t" x="450" y="1436">Assertions</text>
+    <text class="d" x="450" y="1458">derived from the fixture</text>
+    <text class="d" x="450" y="1478">and readGraph</text>
+
+    <!-- Section 3 boxes -->
+    <rect class="box-real" x="335" y="1588" width="230" height="84" rx="10" />
+    <text class="t" x="450" y="1612">Harness launcher</text>
+    <text class="d" x="450" y="1634">starts vite and the agent,</text>
+    <text class="d" x="450" y="1654">checks ComfyUI is up</text>
+
+    <rect class="box-real" x="350" y="1700" width="200" height="64" rx="10" />
+    <text class="t" x="450" y="1724">One real turn</text>
+    <text class="d" x="450" y="1746">nonce in, reply out</text>
+
+    <!-- Arrows: Section 1 -->
+    <path class="arrow" marker-end="url(#arrow)" d="M450,148 L450,176" />
+    <path class="arrow" marker-end="url(#arrow)" d="M450,260 L450,274 L310,274 L310,288" />
+    <path class="arrow" marker-end="url(#arrow)" d="M450,260 L450,274 L620,274 L620,288" />
+    <path class="arrow" marker-end="url(#arrow)" d="M310,352 L310,400" />
+    <path class="arrow" marker-end="url(#arrow)" d="M310,484 L310,500 L400,500 L400,512" />
+    <path class="arrow" marker-end="url(#arrow)" d="M620,372 L620,500 L500,500 L500,512" />
+    <path class="arrow" marker-end="url(#arrow)" d="M450,576 L450,604" />
+    <path class="arrow" marker-end="url(#arrow)" d="M450,688 L450,716" />
+
+    <!-- Arrow: Section 1 to Fixture JSON -->
+    <path class="arrow" marker-end="url(#arrow)" d="M450,800 L450,852" />
+
+    <!-- Arrows: Section 2 -->
+    <path class="arrow" marker-end="url(#arrow)" d="M450,936 L450,970 L300,970 L300,1004" />
+    <path class="arrow" marker-end="url(#arrow)" d="M450,936 L450,975 L605,975 L605,1004" />
+    <path class="arrow" marker-end="url(#arrow)" d="M284,1148 L300,1148" />
+    <path class="arrow" marker-end="url(#arrow)" d="M300,1088 L300,1102 L450,1102 L450,1116" />
+    <path class="arrow" marker-end="url(#arrow)" d="M605,1068 L605,1208" />
+    <text class="alabel" x="613" y="1142">doc_update</text>
+    <path class="arrow" marker-end="url(#arrow)" d="M605,1292 L605,1320" />
+    <path class="arrow" marker-end="url(#arrow)" d="M450,1180 L450,1400 L420,1400 L420,1412" />
+    <path class="arrow" marker-end="url(#arrow)" d="M605,1384 L605,1400 L480,1400 L480,1412" />
+
+    <!-- Arrows: Section 3 -->
+    <path class="arrow" marker-end="url(#arrow)" d="M450,1672 L450,1700" />
+  </g>
+</svg>

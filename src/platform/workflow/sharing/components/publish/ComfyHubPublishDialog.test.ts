@@ -1,3 +1,6 @@
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import type { LoadedComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
+import { fromPartial } from '@total-typescript/shoehorn'
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -109,41 +112,8 @@ vi.mock<unknown>(
   })
 )
 
-const mockWorkflowStore = vi.hoisted(() => {
-  return {
-    instance: null as { activeWorkflow: Record<string, unknown> | null } | null
-  }
-})
-
-vi.mock<unknown>(
-  import('@/platform/workflow/management/stores/workflowStore'),
-  async () => {
-    const { reactive } = await import('vue')
-    mockWorkflowStore.instance = reactive({
-      activeWorkflow: {
-        path: 'workflows/test.json',
-        filename: 'test.json',
-        directory: 'workflows',
-        isTemporary: false,
-        isModified: false
-      }
-    })
-    return {
-      useWorkflowStore: () => ({
-        ...mockWorkflowStore.instance,
-        get activeWorkflow() {
-          return mockWorkflowStore.instance?.activeWorkflow ?? null
-        },
-        saveWorkflow: vi.fn()
-      })
-    }
-  }
-)
-
-function setActiveWorkflow(workflow: Record<string, unknown> | null) {
-  if (mockWorkflowStore.instance) {
-    mockWorkflowStore.instance.activeWorkflow = workflow
-  }
+function setActiveWorkflow(workflow: Partial<LoadedComfyWorkflow>) {
+  useWorkflowStore().activeWorkflow = fromPartial<LoadedComfyWorkflow>(workflow)
 }
 
 function createTestI18n() {
@@ -171,6 +141,10 @@ function createTestI18n() {
 async function flushPromises() {
   await new Promise((r) => setTimeout(r, 0))
 }
+
+beforeEach(() => {
+  vi.mocked(useWorkflowStore().saveWorkflow).mockResolvedValue(undefined)
+})
 
 describe('ComfyHubPublishDialog', () => {
   const onClose = vi.fn()

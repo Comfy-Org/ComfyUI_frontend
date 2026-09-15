@@ -8,15 +8,15 @@ import { useWorkspaceStore } from '@/stores/workspaceStore'
 
 import App from './App.vue'
 
-vi.mock('firebase/auth')
-vi.mock('vuefire', () => ({ useFirebaseAuth: vi.fn() }))
+vi.mock(import('firebase/auth'))
+vi.mock(import('vuefire'), () => ({ useFirebaseAuth: vi.fn() }))
 
-vi.mock('@/components/dialog/GlobalDialog.vue', () => ({
+vi.mock<unknown>(import('@/components/dialog/GlobalDialog.vue'), () => ({
   default: { template: '<div />' }
 }))
-vi.mock('@/scripts/app', () => ({ app: {} }))
-vi.mock(
-  '@/workbench/extensions/manager/composables/useConflictDetection',
+vi.mock<unknown>(import('@/scripts/app'), () => ({ app: {} }))
+vi.mock<unknown>(
+  import('@/workbench/extensions/manager/composables/useConflictDetection'),
   () => ({
     useConflictDetection: () => ({
       initializeConflictDetection: vi.fn()

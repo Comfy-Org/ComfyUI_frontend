@@ -4,7 +4,7 @@ import { perfMark, perfPoint } from './perfMark'
 
 const { addBreadcrumb } = vi.hoisted(() => ({ addBreadcrumb: vi.fn() }))
 
-vi.mock('@sentry/vue', () => ({ addBreadcrumb }))
+vi.mock(import('@sentry/vue'), () => ({ addBreadcrumb }))
 
 describe('perfMark', () => {
   beforeEach(() => {

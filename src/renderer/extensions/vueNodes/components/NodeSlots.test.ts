@@ -1,5 +1,4 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
+import { getActivePinia } from 'pinia'
 import { fromPartial } from '@total-typescript/shoehorn'
 import { render } from '@testing-library/vue'
 import type { RenderOptions } from '@testing-library/vue'
@@ -141,7 +140,7 @@ function createTrackingStub(
 function renderSlots(
   nodeData: NodeState,
   stubs: SlotComponentStubs = defaultSlotStubs,
-  pinia = createTestingPinia({ stubActions: false }),
+  pinia = getActivePinia()!,
   syncLayout = true
 ) {
   return render(NodeSlots, {
@@ -154,8 +153,7 @@ function renderSlots(
 }
 
 function createConnectedGraph() {
-  const pinia = createTestingPinia({ stubActions: false })
-  setActivePinia(pinia)
+  const pinia = getActivePinia()!
 
   const graph = new LGraph()
   useCanvasStore().canvas = fromPartial<LGraphCanvas>({ graph })
@@ -231,8 +229,7 @@ describe('NodeSlots.vue', () => {
   beforeEach(() => layoutStore.resetForTests())
 
   it('stores slot offsets when the rendered element mounts', async () => {
-    const pinia = createTestingPinia({ stubActions: false })
-    setActivePinia(pinia)
+    const pinia = getActivePinia()!
     const graph = new LGraph()
     const canvasStore = useCanvasStore()
     canvasStore.canvas = fromPartial<LGraphCanvas>({ graph })
@@ -260,8 +257,7 @@ describe('NodeSlots.vue', () => {
   })
 
   it('does not store slot offsets when layout synchronization is disabled', async () => {
-    const pinia = createTestingPinia({ stubActions: false })
-    setActivePinia(pinia)
+    const pinia = getActivePinia()!
     const graph = new LGraph()
     const canvasStore = useCanvasStore()
     canvasStore.canvas = fromPartial<LGraphCanvas>({ graph })
@@ -289,8 +285,7 @@ describe('NodeSlots.vue', () => {
   })
 
   it('renders slots from nodeDataStore without resolving the live node', async () => {
-    const pinia = createTestingPinia({ stubActions: false })
-    setActivePinia(pinia)
+    const pinia = getActivePinia()!
 
     const graph = new LGraph()
     const canvasStore = useCanvasStore()
@@ -477,8 +472,7 @@ describe('NodeSlots.vue', () => {
     graph.add(subgraphNode)
     vi.spyOn(app, 'rootGraphOrUndefined', 'get').mockReturnValue(graph)
 
-    const pinia = createTestingPinia({ stubActions: false })
-    setActivePinia(pinia)
+    const pinia = getActivePinia()!
     useCanvasStore().currentGraph = subgraph
 
     const nodeData = makeNodeData({
@@ -518,8 +512,7 @@ describe('NodeSlots.vue', () => {
     graph.add(outerSubgraphNode)
     vi.spyOn(app, 'rootGraphOrUndefined', 'get').mockReturnValue(graph)
 
-    const pinia = createTestingPinia({ stubActions: false })
-    setActivePinia(pinia)
+    const pinia = getActivePinia()!
     useCanvasStore().currentGraph = innerSubgraph
 
     const nodeData = makeNodeData({
@@ -604,11 +597,7 @@ describe('NodeSlots.vue', () => {
   })
 
   describe('unified mode', () => {
-    function renderUnified(
-      nodeData: NodeState,
-      pinia = createTestingPinia({ stubActions: false })
-    ) {
-      setActivePinia(pinia)
+    function renderUnified(nodeData: NodeState, pinia = getActivePinia()!) {
       return render(NodeSlots, {
         global: {
           plugins: [i18n, pinia],

@@ -6,6 +6,7 @@ See @docs/guidance/\*.md for file-type-specific conventions (auto-loaded by glob
 - `docs/guidance/vue-components.md` — Vue 3 Composition API best practices
 - `docs/guidance/state-and-effects.md` — modelling a feature's state: one discriminated union, named events, a pure transition, effects reserved for synchronising outward
 - `docs/guidance/typescript.md` — TypeScript type-safety rules
+- `docs/guidance/testing-principles.md` — test design rules that hold at every level: behavioral assertions, lowest proving level, N + M + 1 composition and table-driven cases with sparse filters, isolation, classical doubles, coverage as a gap finder, changing existing tests
 - `docs/guidance/vitest.md` — Vitest unit/component test conventions
 - `docs/guidance/playwright.md` — Playwright E2E conventions and API-mock typing table
 - `docs/guidance/storybook.md` — Storybook story patterns
@@ -208,10 +209,7 @@ See `docs/guidance/design-standards.md` for Figma file keys, section node IDs, a
 
 - Frameworks: Vitest (unit/component, happy-dom) and Playwright (E2E).
 - Locations: unit/component `src/**/*.test.ts`, E2E `browser_tests/**/*.spec.ts`, litegraph `src/lib/litegraph/test/`.
-- Do not write change detector tests, e.g. a test that just asserts that the defaults are certain values
-- Do not write tests that are dependent on non-behavioral features like utility classes or styles
-- Be parsimonious in testing, do not write redundant tests (see [composable tests](https://tidyfirst.substack.com/p/composable-tests))
-- [Don't Mock What You Don't Own](https://hynek.me/articles/what-to-mock-in-5-mins/)
+- Principles: `docs/guidance/testing-principles.md` (auto-loaded for `*.test.ts` and `*.spec.ts`). Behavioral tests, no change detectors, parameterized tables over copied bodies, mock only what you own, fewest tests that keep coverage.
 - Conventions: `docs/guidance/vitest.md` (unit/component), `docs/guidance/playwright.md` (E2E), and `docs/testing/*.md` for detailed patterns.
 
 ## Architecture Decision Records
@@ -232,6 +230,20 @@ When working from a TDD or design doc, record its tradeoffs, alternatives consid
 
 - NEVER use `any` type - use proper TypeScript types
 - NEVER use `as any` type assertions - fix the underlying type issue
+- NEVER add `@ts-ignore` or `@ts-nocheck`. Use `@ts-expect-error` only in a test
+  that intentionally verifies a compiler error.
+- NEVER add `eslint-disable` or `oxlint-disable` as the first fix. Remove the
+  directive and repair the type, API, component semantics, or test. A comment
+  explaining why a workaround was convenient does not make it acceptable.
+  - Before keeping a rare lint exception or specific type assertion, inspect
+    the authoritative type or schema, search for an existing typed pattern, and
+    run the failing check without the override. Record the external constraint
+    that makes a compliant fix impossible.
+  - Scope a justified lint exception to one expression or line. File-wide and
+    multi-rule disables are review blockers.
+  - In tests, use typed builders, real platform objects, runtime narrowing,
+    semantic queries, and deterministic readiness signals instead of casts,
+    DOM traversal, or timing sleeps.
 - NEVER use `--no-verify` flag when committing
 - NEVER delete or disable tests to make them pass
 - NEVER circumvent quality checks

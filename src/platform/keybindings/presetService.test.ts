@@ -1,3 +1,7 @@
+import type { ComfyApp } from '@/scripts/app'
+import { useSettingStore } from '@/platform/settings/settingStore'
+import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useDialogStore } from '@/stores/dialogStore'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { KeybindingImpl } from '@/platform/keybindings/keybinding'
@@ -24,7 +28,9 @@ const mockShowSmallLayoutDialog = vi.hoisted(() =>
     onResult?.(true)
   })
 )
-const mockSettingSet = vi.hoisted(() => vi.fn())
+const mockSettingSet = vi.hoisted(() =>
+  vi.fn<ReturnType<typeof useSettingStore>['set']>(async () => undefined)
+)
 const mockToastAdd = vi.hoisted(() => vi.fn())
 const mockPersistUserKeybindings = vi.hoisted(() =>
   vi.fn(async () => undefined)
@@ -50,19 +56,6 @@ vi.mock<unknown>(import('@/services/dialogService'), () => ({
   })
 }))
 
-vi.mock<unknown>(import('@/platform/settings/settingStore'), () => ({
-  useSettingStore: () => ({
-    set: mockSettingSet,
-    get: vi.fn(() => 'default')
-  })
-}))
-
-vi.mock<unknown>(import('@/platform/updates/common/toastStore'), () => ({
-  useToastStore: () => ({
-    add: mockToastAdd
-  })
-}))
-
 vi.mock<unknown>(import('@/composables/useErrorHandling'), () => ({
   useErrorHandling: () => ({
     wrapWithErrorHandling: <T extends (...args: unknown[]) => unknown>(fn: T) =>
@@ -80,17 +73,20 @@ vi.mock<unknown>(import('@/platform/keybindings/keybindingService'), () => ({
   })
 }))
 
-vi.mock<unknown>(import('@/stores/dialogStore'), () => ({
-  useDialogStore: () => ({
-    showDialog: vi.fn(),
-    closeDialog: vi.fn(),
-    dialogStack: []
-  })
-}))
-
 vi.mock(import('@/i18n'), () => ({
   t: (key: string) => key
 }))
+
+beforeEach(() => {
+  vi.mocked(useDialogStore().closeDialog).mockImplementation(() => undefined)
+  useDialogStore().dialogStack = []
+})
+
+beforeEach(() => {
+  vi.mocked(useSettingStore().set).mockImplementation(mockSettingSet)
+  vi.mocked(useSettingStore().get).mockImplementation(() => 'default')
+  vi.mocked(useToastStore().add).mockImplementation(mockToastAdd)
+})
 
 describe('useKeybindingPresetService', () => {
   let store: ReturnType<typeof useKeybindingStore>
@@ -800,4 +796,9 @@ describe('useKeybindingPresetService', () => {
       )
     })
   })
+})
+
+vi.mock(import('@/scripts/app'), async () => {
+  const { fromPartial } = await import('@total-typescript/shoehorn')
+  return { app: fromPartial<ComfyApp>({}) }
 })

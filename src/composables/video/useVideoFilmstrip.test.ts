@@ -11,7 +11,7 @@ import {
   useVideoFilmstrip
 } from './useVideoFilmstrip'
 
-vi.mock('@/utils/videoMetadataUtil', () => ({
+vi.mock(import('@/utils/videoMetadataUtil'), () => ({
   fetchVideoMetadata: vi.fn(async () => undefined)
 }))
 

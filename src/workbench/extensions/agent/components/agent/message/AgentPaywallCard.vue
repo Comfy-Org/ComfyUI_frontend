@@ -37,18 +37,18 @@ const showAddCredits = computed(
 
 <template>
   <div
-    class="border-agent-border flex w-full flex-col justify-center gap-2 overflow-hidden rounded-lg border bg-modal-card-background p-4 shadow-sm"
+    class="flex w-full flex-col justify-center gap-2 overflow-hidden rounded-lg border border-component-node-border bg-modal-card-background p-4 shadow-sm"
   >
     <div class="flex w-full items-start gap-2">
       <span
         aria-hidden="true"
-        class="text-agent-danger mt-0.5 icon-[lucide--gauge] size-5 shrink-0"
+        class="mt-0.5 icon-[lucide--gauge] size-5 shrink-0 text-destructive-background"
       />
       <div class="min-w-0 flex-1 text-sm/5">
-        <p class="text-agent-fg m-0 font-medium">
+        <p class="m-0 font-medium text-base-foreground">
           {{ $t('agent.paywall.title') }}
         </p>
-        <p class="text-agent-fg-muted m-0">
+        <p class="m-0 text-muted-foreground">
           {{ $t(bodyKey) }}
         </p>
       </div>

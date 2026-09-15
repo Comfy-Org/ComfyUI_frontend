@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, it } from 'vitest'
 
 import { createNodeExecutionId } from '@/types/nodeIdentification'
 
@@ -6,14 +6,6 @@ import { useMissingMediaStore } from './missingMediaStore'
 import type { MissingMediaCandidate } from './types'
 
 // Mock dependencies
-vi.mock<unknown>(
-  import('@/renderer/core/canvas/canvasStore'), // eslint-disable-line import-x/no-restricted-paths
-  () => ({
-    useCanvasStore: () => ({
-      currentGraph: null
-    })
-  })
-)
 
 vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: {

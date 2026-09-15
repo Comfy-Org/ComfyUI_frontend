@@ -1,3 +1,4 @@
+import { useToastStore } from '@/platform/updates/common/toastStore'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { App } from 'vue'
 import { createApp, defineComponent, ref } from 'vue'
@@ -9,13 +10,13 @@ import { toNodeId } from '@/types/nodeId'
 
 import { useCompositorPsdDownload } from './useCompositorPsdDownload'
 
-const { buildSessionPsdBlob, downloadBlob, loadCompositorSession, toastAdd } =
-  vi.hoisted(() => ({
+const { buildSessionPsdBlob, downloadBlob, loadCompositorSession } = vi.hoisted(
+  () => ({
     buildSessionPsdBlob: vi.fn(async () => new Blob(['psd'])),
     downloadBlob: vi.fn(),
-    loadCompositorSession: vi.fn().mockResolvedValue(0),
-    toastAdd: vi.fn()
-  }))
+    loadCompositorSession: vi.fn().mockResolvedValue(0)
+  })
+)
 
 vi.mock(
   import('@/renderer/extensions/compositor/composables/compositorSession'),
@@ -31,9 +32,7 @@ vi.mock(
   })
 )
 vi.mock(import('@/base/common/downloadUtil'), () => ({ downloadBlob }))
-vi.mock<unknown>(import('@/platform/updates/common/toastStore'), () => ({
-  useToastStore: () => ({ add: toastAdd })
-}))
+
 const i18n = createI18n({
   legacy: false,
   locale: 'en',
@@ -75,6 +74,10 @@ function makeSession(glOk = true) {
 
 const node = { id: toNodeId(5) } as unknown as LGraphNode
 
+beforeEach(() => {
+  vi.mocked(useToastStore().add).mockImplementation(() => undefined)
+})
+
 describe('useCompositorPsdDownload', () => {
   beforeEach(() => {
     loadCompositorSession.mockResolvedValue(0)
@@ -100,7 +103,7 @@ describe('useCompositorPsdDownload', () => {
     )
     expect(session.dispose).toHaveBeenCalledTimes(1)
     expect(exporting.value).toBe(false)
-    expect(toastAdd).not.toHaveBeenCalled()
+    expect(vi.mocked(useToastStore().add)).not.toHaveBeenCalled()
   })
 
   it('reports an error and still disposes when WebGL is unavailable', async () => {
@@ -112,7 +115,7 @@ describe('useCompositorPsdDownload', () => {
     await downloadPsd(node)
 
     expect(downloadBlob).not.toHaveBeenCalled()
-    expect(toastAdd).toHaveBeenCalledWith(
+    expect(vi.mocked(useToastStore().add)).toHaveBeenCalledWith(
       expect.objectContaining({
         severity: 'error',
         detail: 'layerEditor.webglUnavailable'
@@ -132,7 +135,7 @@ describe('useCompositorPsdDownload', () => {
 
     expect(buildSessionPsdBlob).not.toHaveBeenCalled()
     expect(downloadBlob).not.toHaveBeenCalled()
-    expect(toastAdd).toHaveBeenCalledTimes(1)
+    expect(vi.mocked(useToastStore().add)).toHaveBeenCalledTimes(1)
     expect(session.dispose).toHaveBeenCalledTimes(1)
   })
 
@@ -146,7 +149,7 @@ describe('useCompositorPsdDownload', () => {
     await downloadPsd(node)
 
     expect(downloadBlob).not.toHaveBeenCalled()
-    expect(toastAdd).toHaveBeenCalledTimes(1)
+    expect(vi.mocked(useToastStore().add)).toHaveBeenCalledTimes(1)
     expect(session.dispose).toHaveBeenCalledTimes(1)
     expect(exporting.value).toBe(false)
   })
@@ -159,7 +162,7 @@ describe('useCompositorPsdDownload', () => {
     await downloadPsd(node)
 
     expect(downloadBlob).not.toHaveBeenCalled()
-    expect(toastAdd).toHaveBeenCalledTimes(1)
+    expect(vi.mocked(useToastStore().add)).toHaveBeenCalledTimes(1)
     expect(exporting.value).toBe(false)
   })
 

@@ -9,14 +9,17 @@ import { useComfyManagerStore } from '@/workbench/extensions/manager/stores/comf
 
 import ManagerProgressToast from './ManagerProgressToast.vue'
 
-vi.mock('@/workbench/extensions/manager/services/comfyManagerService', () => ({
-  useComfyManagerService: () => ({
-    listInstalledPacks: vi.fn(async () => ({}))
+vi.mock<unknown>(
+  import('@/workbench/extensions/manager/services/comfyManagerService'),
+  () => ({
+    useComfyManagerService: () => ({
+      listInstalledPacks: vi.fn(async () => ({}))
+    })
   })
-}))
+)
 
 vi.mock(
-  '@/workbench/extensions/manager/composables/useApplyChanges',
+  import('@/workbench/extensions/manager/composables/useApplyChanges'),
   async () => {
     const { ref } = await import('vue')
     return {

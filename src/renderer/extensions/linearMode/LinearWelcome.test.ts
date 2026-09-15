@@ -1,23 +1,10 @@
+import { useAppModeStore } from '@/stores/appModeStore'
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
 import LinearWelcome from './LinearWelcome.vue'
-
-const { hasNodes, hasOutputs, enterBuilder } = vi.hoisted(() => {
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
-  const { ref } = require('vue')
-  return {
-    hasNodes: ref(false),
-    hasOutputs: ref(false),
-    enterBuilder: vi.fn()
-  }
-})
-
-vi.mock<unknown>(import('@/composables/useAppMode'), () => ({
-  useAppMode: () => ({ setMode: vi.fn() })
-}))
 
 vi.mock<unknown>(
   import('@/composables/useWorkflowTemplateSelectorDialog'),
@@ -26,39 +13,26 @@ vi.mock<unknown>(
   })
 )
 
-vi.mock<unknown>(import('@/stores/appModeStore'), () => ({
-  useAppModeStore: () => ({
-    hasNodes,
-    hasOutputs,
-    enterBuilder
-  })
-}))
-
-vi.mock<unknown>(
-  import('@/platform/workflow/management/stores/workflowStore'),
-  () => ({
-    useWorkflowStore: () => ({
-      activeWorkflow: null
-    })
-  })
-)
-
 const i18n = createI18n({ legacy: false, locale: 'en', missingWarn: false })
 
 function renderComponent(
   opts: { hasNodes?: boolean; hasOutputs?: boolean } = {}
 ) {
-  hasNodes.value = opts.hasNodes ?? false
-  hasOutputs.value = opts.hasOutputs ?? false
+  Object.assign(useAppModeStore(), { hasNodes: opts.hasNodes ?? false })
+  Object.assign(useAppModeStore(), { hasOutputs: opts.hasOutputs ?? false })
   return render(LinearWelcome, {
     global: { plugins: [i18n] }
   })
 }
 
+beforeEach(() => {
+  vi.mocked(useAppModeStore().enterBuilder).mockImplementation(() => undefined)
+})
+
 describe('LinearWelcome', () => {
   beforeEach(() => {
-    hasNodes.value = false
-    hasOutputs.value = false
+    Object.assign(useAppModeStore(), { hasNodes: false })
+    Object.assign(useAppModeStore(), { hasOutputs: false })
   })
 
   it('shows empty workflow text when there are no nodes', () => {
@@ -83,6 +57,6 @@ describe('LinearWelcome', () => {
     const user = userEvent.setup()
     renderComponent({ hasNodes: true, hasOutputs: false })
     await user.click(screen.getByTestId('linear-welcome-build-app'))
-    expect(enterBuilder).toHaveBeenCalled()
+    expect(useAppModeStore().enterBuilder).toHaveBeenCalled()
   })
 })
