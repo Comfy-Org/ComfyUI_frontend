@@ -62,6 +62,11 @@
         "
         class="pointer-events-auto"
       />
+      <!-- DockedAgentPanel is the distribution seam: no agent, no activity. -->
+      <AgentGraphActivityBar
+        v-if="showUI && !isBuilderMode && DockedAgentPanel"
+        :panel-el="canvasPanelBoundsRef ?? undefined"
+      />
       <NodeSelectionModeBanner />
     </template>
   </LiteGraphCanvasSplitterOverlay>
@@ -147,6 +152,7 @@ import AppBuilder from '@/components/builder/AppBuilder.vue'
 import VueNodeSwitchPopup from '@/components/builder/VueNodeSwitchPopup.vue'
 import ExtensionSlot from '@/components/common/ExtensionSlot.vue'
 import DomWidgets from '@/components/graph/DomWidgets.vue'
+import AgentGraphActivityBar from '@/components/graph/AgentGraphActivityBar.vue'
 import GraphCanvasMenu from '@/components/graph/GraphCanvasMenu.vue'
 import { createNodeProgressCanvasSync } from '@/components/graph/nodeProgressCanvasSync'
 import LinkOverlayCanvas from '@/components/graph/LinkOverlayCanvas.vue'

@@ -5,6 +5,7 @@ import { useLinkPresentationStore } from '@/stores/linkPresentationStore'
 import { useLinkStore } from '@/stores/linkStore'
 import { useNodeDataStore } from '@/stores/nodeDataStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import { useWorkflowTabActivityStore } from '@/stores/workflowTabActivityStore'
 import { toOwningGraphId, toRootGraphId } from '@/types/graphScopeId'
 import type { RemoteMutationContext } from '@/types/graphMutationContext'
 import { toLinkId } from '@/types/linkId'
@@ -102,6 +103,18 @@ describe('graphMutations', () => {
     expect(
       agentNodes.generatedAtFor(createNodeLocatorId(null, toNodeId(9)))
     ).toBeUndefined()
+  })
+
+  it('marks a catch-up that lands while a turn is running', () => {
+    useWorkflowTabActivityStore().setAgentRunning(true)
+
+    mutations().addNode(node(11), { ...context, hydration: true })
+
+    expect(
+      useAgentGeneratedNodesStore().generatedAtFor(
+        createNodeLocatorId(null, toNodeId(11))
+      )
+    ).toBeTypeOf('number')
   })
 
   it('marks a node whose frame carried no op ids', () => {

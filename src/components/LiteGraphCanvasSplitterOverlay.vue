@@ -65,7 +65,10 @@
           </SplitterPanel>
 
           <!-- Main panel (always present) -->
-          <SplitterPanel :size="centerPanelDefaultSize" class="flex flex-col">
+          <SplitterPanel
+            :size="centerPanelDefaultSize"
+            class="workspace-panel relative flex flex-col"
+          >
             <slot name="topmenu" :sidebar-panel-visible />
 
             <Splitter
