@@ -43,14 +43,22 @@ test.describe(
           'CPU Output Input',
           'CPU Output Landmark'
         ]
-        const painted = new Set<string>()
         const fillText = CanvasRenderingContext2D.prototype.fillText
         const initialScale = canvas.ds.scale
         const initialOffset = [...canvas.ds.offset]
-        CanvasRenderingContext2D.prototype.fillText = function (text, ...args) {
-          fillText.call(this, text, ...args)
-          if (landmarkTitles.includes(text)) painted.add(text)
-        }
+        const initialGeometry = JSON.stringify({
+          nodes: canvas.graph!.nodes.map((node) => [
+            node.id,
+            node.pos,
+            node.size
+          ]),
+          groups: canvas.graph!.groups.map((group) => [
+            group.title,
+            group.pos,
+            group.size
+          ])
+        })
+        const evidence: Array<{ title: string; changedPixels: number }> = []
 
         try {
           canvas.ds.scale = 1
@@ -71,7 +79,44 @@ test.describe(
               canvas.ds.offset[1] =
                 -group.pos[1] + canvas.canvas.height / (4 * dpi)
             }
+
             canvas.draw(true, true)
+            const context = canvas.canvas.getContext('2d')
+            if (!context) throw new Error('Canvas context not available')
+            const painted = context.getImageData(
+              0,
+              0,
+              canvas.canvas.width,
+              canvas.canvas.height
+            ).data
+
+            CanvasRenderingContext2D.prototype.fillText = function (
+              text,
+              ...args
+            ) {
+              if (text !== title) fillText.call(this, text, ...args)
+            }
+            canvas.draw(true, true)
+            const suppressed = context.getImageData(
+              0,
+              0,
+              canvas.canvas.width,
+              canvas.canvas.height
+            ).data
+            CanvasRenderingContext2D.prototype.fillText = fillText
+
+            let changedPixels = 0
+            for (let index = 0; index < painted.length; index += 4) {
+              if (
+                painted[index] !== suppressed[index] ||
+                painted[index + 1] !== suppressed[index + 1] ||
+                painted[index + 2] !== suppressed[index + 2] ||
+                painted[index + 3] !== suppressed[index + 3]
+              ) {
+                changedPixels++
+              }
+            }
+            evidence.push({ title, changedPixels })
           }
         } finally {
           CanvasRenderingContext2D.prototype.fillText = fillText
@@ -81,17 +126,37 @@ test.describe(
           canvas.setDirty(true, true)
         }
 
-        return [...painted]
+        if (
+          JSON.stringify({
+            nodes: canvas.graph!.nodes.map((node) => [
+              node.id,
+              node.pos,
+              node.size
+            ]),
+            groups: canvas.graph!.groups.map((group) => [
+              group.title,
+              group.pos,
+              group.size
+            ])
+          }) !== initialGeometry
+        ) {
+          throw new Error(
+            'Landmark paint proof changed graph geometry or identity'
+          )
+        }
+
+        return evidence
       })
-      expect(paintedLandmarks).toEqual(
-        expect.arrayContaining([
-          'First Pipeline Landmark',
-          'Middle Pipeline Landmark',
-          'CPU Output Branch Landmark',
-          'CPU Output Input',
-          'CPU Output Landmark'
-        ])
-      )
+      expect(paintedLandmarks.map(({ title }) => title)).toEqual([
+        'First Pipeline Landmark',
+        'Middle Pipeline Landmark',
+        'CPU Output Branch Landmark',
+        'CPU Output Input',
+        'CPU Output Landmark'
+      ])
+      expect(
+        paintedLandmarks.every(({ changedPixels }) => changedPixels > 0)
+      ).toBe(true)
 
       const canvasBox = await comfyPage.canvas.boundingBox()
       expect(canvasBox).not.toBeNull()
