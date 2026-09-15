@@ -9,16 +9,16 @@ See `docs/testing/*.md` for detailed patterns.
 
 ## Test Quality
 
-The general test rules (no change-detector tests, no non-behavioral assertions,
-be parsimonious, don't mock what you don't own) live in the root `AGENTS.md`,
-which is always loaded. In addition:
-
-- Do not write tests that just test mocks - ensure real code is exercised (tests must fail when the code misbehaves)
-- Aim for behavioral coverage of critical and new features
+The rules that apply at every test level (behavioral assertions, tables over
+copied bodies, mock only what you own, no sleeps, typed fixtures) live in
+`docs/guidance/testing-principles.md`, which loads alongside this file. An
+ESLint rule enforces the Testing Library query rule. Do not disable it.
 
 ## Mocking
 
 - Use Vitest's mocking utilities (`vi.mock`, `vi.spyOn`)
+- `vi.mock<unknown>(import('…'), …)` is only for legacy partial factories that
+  cannot satisfy the module type. For new mocks, type the factory instead.
 - Keep module mocks contained - no global mutable state
 - Use `vi.hoisted()` for per-test mock manipulation
 - Vitest automatically resets mocks, restores spies, and unstubs globals and

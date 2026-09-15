@@ -40,12 +40,7 @@ async function searchAndExpectResult(
 }
 
 test.describe('Subgraph Search Aliases', { tag: ['@subgraph'] }, () => {
-  test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.settings.setSetting(
-      'Comfy.NodeSearchBoxImpl',
-      'v1 (legacy)'
-    )
-  })
+  test.use({ initialSettings: { 'Comfy.NodeSearchBoxImpl': 'v1 (legacy)' } })
 
   test('Can set description on subgraph', async ({ comfyPage }) => {
     await createSubgraphAndNavigateInto(comfyPage)

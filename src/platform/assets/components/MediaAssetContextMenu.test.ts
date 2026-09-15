@@ -6,15 +6,10 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { PropType } from 'vue'
 import { defineComponent, nextTick, onMounted, ref } from 'vue'
 
+import { i18n } from '@/i18n'
 import MediaAssetContextMenu from '@/platform/assets/components/MediaAssetContextMenu.vue'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import type * as LoaderNodeUtil from '@/utils/loaderNodeUtil'
-
-vi.mock<unknown>(import('vue-i18n'), () => ({
-  useI18n: () => ({
-    t: (key: string) => key
-  })
-}))
 
 vi.mock(import('@/platform/distribution/types'), () => ({
   isCloud: false
@@ -132,6 +127,7 @@ function mountComponent(targetAsset: AssetItem = asset) {
     }),
     {
       global: {
+        plugins: [i18n],
         stubs: {
           ContextMenu: contextMenuStub,
           Button: buttonStub
@@ -164,7 +160,9 @@ function findMenuItem(label: string): MenuItem | undefined {
 }
 
 function findDownloadMenuItem(): MenuItemWithCommand {
-  const downloadItem = findMenuItem('mediaAsset.actions.download')
+  const downloadItem = findMenuItem(
+    i18n.global.t('mediaAsset.actions.download')
+  )
   if (!downloadItem?.command) {
     throw new Error('Download menu item or command was not registered')
   }
@@ -203,7 +201,7 @@ describe('MediaAssetContextMenu', () => {
     await showMenu(container)
 
     expect(
-      findMenuItem('mediaAsset.actions.insertAsNodeInWorkflow')
+      findMenuItem(i18n.global.t('mediaAsset.actions.insertAsNodeInWorkflow'))
     ).toBeDefined()
 
     unmount()

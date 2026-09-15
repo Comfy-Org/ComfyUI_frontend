@@ -12,7 +12,9 @@ import {
 import { FollowerDoc } from './followerDoc'
 import { LayoutFollowerBridge } from './layoutFollowerBridge'
 
-vi.mock('@/platform/telemetry/reportError', () => ({ reportError: vi.fn() }))
+vi.mock(import('@/platform/telemetry/reportError'), () => ({
+  reportError: vi.fn()
+}))
 
 class TestTransport extends EventTarget implements DocFrameTransport {
   readonly sent: string[] = []
@@ -226,6 +228,30 @@ describe('doc frame client', () => {
         expiresAt: 123
       }
     })
+  })
+
+  it('keeps a seq-0 or absent-seq doc_subscribed ok ack as a valid baseline', () => {
+    // The relay's DocSubscribedFrame uses `json:"seq,omitempty"`, so a fresh
+    // (unminted) doc acked at seq 0 arrives with `seq` absent. Both shapes are
+    // valid baseline-0 acks and must not be treated as malformed.
+    expect(
+      parseServerDocFrame({
+        type: 'doc_subscribed',
+        data: { v: 1, workflow_id: 'wf-1', ok: true, seq: 0 }
+      })
+    ).toEqual({
+      type: 'doc_subscribed',
+      data: { workflowId: 'wf-1', ok: true, seq: 0 }
+    })
+    const absent = parseServerDocFrame({
+      type: 'doc_subscribed',
+      data: { v: 1, workflow_id: 'wf-1', ok: true }
+    })
+    expect(absent).toEqual({
+      type: 'doc_subscribed',
+      data: { workflowId: 'wf-1', ok: true }
+    })
+    expect(absent?.data).not.toHaveProperty('seq')
   })
 
   it('reports the first malformed inbound frame per type', () => {

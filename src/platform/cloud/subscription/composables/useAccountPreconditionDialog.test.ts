@@ -13,11 +13,11 @@ const mockBilling = {
   fetchBalance: vi.fn()
 }
 
-vi.mock('@/services/dialogService', () => ({
+vi.mock<unknown>(import('@/services/dialogService'), () => ({
   useDialogService: vi.fn(() => mockDialogService)
 }))
 
-vi.mock('@/composables/billing/useBillingContext', () => ({
+vi.mock<unknown>(import('@/composables/billing/useBillingContext'), () => ({
   useBillingContext: vi.fn(() => mockBilling)
 }))
 

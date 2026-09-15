@@ -1,3 +1,9 @@
+import { useSettingStore } from '@/platform/settings/settingStore'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import { useNodeDefStore } from '@/stores/nodeDefStore'
+import { useQueueStore } from '@/stores/queueStore'
+import { fromPartial } from '@total-typescript/shoehorn'
+import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { nextTick, ref } from 'vue'
 import type { Ref } from 'vue'
@@ -5,12 +11,14 @@ import type { Ref } from 'vue'
 import type { JobListItem } from '@/composables/queue/useJobList'
 import type { MenuEntry } from '@/composables/queue/useJobMenu'
 
-vi.mock('@/platform/distribution/types', () => ({
+vi.mock(import('@/platform/distribution/types'), () => ({
   isCloud: false
 }))
 
 const downloadFileMock = vi.fn()
-vi.mock('@/base/common/downloadUtil', () => ({
+vi.mock(import('@/base/common/downloadUtil'), () => ({
+  downloadBlob: (filename: string, blob: Blob) =>
+    downloadBlobMock(filename, blob),
   downloadFile: (url: string, filename?: string) => {
     if (filename === undefined) {
       return downloadFileMock(url)
@@ -20,7 +28,7 @@ vi.mock('@/base/common/downloadUtil', () => ({
 }))
 
 const copyToClipboardMock = vi.fn()
-vi.mock('@/composables/useCopyToClipboard', () => ({
+vi.mock(import('@/composables/useCopyToClipboard'), () => ({
   useCopyToClipboard: () => ({
     copyToClipboard: (text: string) => copyToClipboardMock(text)
   })
@@ -28,13 +36,13 @@ vi.mock('@/composables/useCopyToClipboard', () => ({
 
 const stMock = vi.fn((_: string, fallback?: string) => fallback ?? _)
 const tMock = vi.fn((key: string) => `i18n:${key}`)
-vi.mock('@/i18n', () => ({
+vi.mock(import('@/i18n'), () => ({
   st: (...args: Parameters<typeof stMock>) => stMock(...args),
   t: (...args: Parameters<typeof tMock>) => tMock(...args)
 }))
 
 const mapTaskOutputToAssetItemMock = vi.fn()
-vi.mock('@/platform/assets/composables/media/assetMappers', () => ({
+vi.mock(import('@/platform/assets/composables/media/assetMappers'), () => ({
   mapTaskOutputToAssetItem: (
     taskItem: TaskItemImpl,
     output: AugmentedResultItem
@@ -44,51 +52,43 @@ vi.mock('@/platform/assets/composables/media/assetMappers', () => ({
 const mediaAssetActionsMock = {
   deleteAssets: vi.fn()
 }
-vi.mock('@/platform/assets/composables/useMediaAssetActions', () => ({
-  useMediaAssetActions: () => mediaAssetActionsMock
-}))
+vi.mock<unknown>(
+  import('@/platform/assets/composables/useMediaAssetActions'),
+  () => ({
+    useMediaAssetActions: () => mediaAssetActionsMock
+  })
+)
 
-const settingStoreMock = {
-  get: vi.fn()
-}
-vi.mock('@/platform/settings/settingStore', () => ({
-  useSettingStore: () => settingStoreMock
-}))
+let settingStoreMock: ReturnType<typeof useSettingStore>
 
 const workflowServiceMock = {
   openWorkflow: vi.fn()
 }
-vi.mock('@/platform/workflow/core/services/workflowService', () => ({
-  useWorkflowService: () => workflowServiceMock
-}))
+vi.mock<unknown>(
+  import('@/platform/workflow/core/services/workflowService'),
+  () => ({
+    useWorkflowService: () => workflowServiceMock
+  })
+)
 
-const workflowStoreMock = {
-  createTemporary: vi.fn()
-}
-vi.mock('@/platform/workflow/management/stores/workflowStore', () => ({
-  useWorkflowStore: () => workflowStoreMock,
-  ComfyWorkflow: class {}
-}))
+let workflowStoreMock: ReturnType<typeof useWorkflowStore>
 
 const cancelJobMock = vi.fn()
-vi.mock('@/scripts/api', () => ({
+vi.mock<unknown>(import('@/scripts/api'), () => ({
   api: {
+    addEventListener: vi.fn(),
+    removeEventListener: vi.fn(),
     cancelJob: (jobId: string) => cancelJobMock(jobId)
   }
 }))
 
 const downloadBlobMock = vi.fn()
-vi.mock('@/scripts/utils', () => ({
-  downloadBlob: (filename: string, blob: Blob) =>
-    downloadBlobMock(filename, blob)
-}))
-
 const dialogServiceMock = {
   showErrorDialog: vi.fn(),
   showExecutionErrorDialog: vi.fn(),
   prompt: vi.fn()
 }
-vi.mock('@/services/dialogService', () => ({
+vi.mock<unknown>(import('@/services/dialogService'), () => ({
   useDialogService: () => dialogServiceMock
 }))
 
@@ -96,42 +96,20 @@ const litegraphServiceMock = {
   addNodeOnGraph: vi.fn(),
   getCanvasCenter: vi.fn()
 }
-vi.mock('@/services/litegraphService', () => ({
+vi.mock<unknown>(import('@/services/litegraphService'), () => ({
   useLitegraphService: () => litegraphServiceMock
 }))
 
-const nodeDefStoreMock: {
-  nodeDefsByName: Record<string, Partial<ComfyNodeDefImpl>>
-} = {
-  nodeDefsByName: {}
-}
-vi.mock('@/stores/nodeDefStore', () => ({
-  useNodeDefStore: () => nodeDefStoreMock,
-  ComfyNodeDefImpl: class {}
-}))
+let nodeDefStoreMock: ReturnType<typeof useNodeDefStore>
 
-const queueStoreMock = {
-  update: vi.fn(),
-  delete: vi.fn()
-}
-vi.mock('@/stores/queueStore', () => ({
-  useQueueStore: () => queueStoreMock
-}))
-
-const executionStoreMock = {
-  clearInitializationByJobId: vi.fn()
-}
-vi.mock('@/stores/executionStore', () => ({
-  useExecutionStore: () => executionStoreMock
-}))
+let queueStoreMock: ReturnType<typeof useQueueStore>
 
 const getJobWorkflowMock = vi.fn()
-vi.mock('@/services/jobOutputCache', () => ({
+vi.mock(import('@/services/jobOutputCache'), () => ({
   getJobWorkflow: (jobId: string) => getJobWorkflowMock(jobId)
 }))
 
 import { useJobMenu } from '@/composables/queue/useJobMenu'
-import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 import type { TaskItemImpl } from '@/stores/queueStore'
 import type { AugmentedResultItem } from '@/utils/resultItem'
 
@@ -172,17 +150,24 @@ const findActionEntry = (entries: MenuEntry[], key: string) =>
 
 describe('useJobMenu', () => {
   beforeEach(() => {
+    settingStoreMock = useSettingStore()
+    workflowStoreMock = useWorkflowStore()
+    nodeDefStoreMock = useNodeDefStore()
+    queueStoreMock = useQueueStore()
     currentItem = ref<JobListItem | null>(null)
-    settingStoreMock.get.mockReturnValue(false)
+    vi.mocked(settingStoreMock.get).mockReturnValue(false)
     dialogServiceMock.prompt.mockResolvedValue(undefined)
     litegraphServiceMock.getCanvasCenter.mockReturnValue([100, 200])
     litegraphServiceMock.addNodeOnGraph.mockReturnValue(null)
-    workflowStoreMock.createTemporary.mockImplementation((filename, data) => ({
-      filename,
-      data
-    }))
-    queueStoreMock.update.mockResolvedValue(undefined)
-    queueStoreMock.delete.mockResolvedValue(undefined)
+    vi.mocked(workflowStoreMock.createTemporary).mockImplementation(
+      (filename, data) =>
+        fromPartial<ReturnType<typeof workflowStoreMock.createTemporary>>({
+          filename: filename ?? 'Untitled',
+          content: JSON.stringify(data)
+        })
+    )
+    vi.mocked(queueStoreMock.update).mockResolvedValue(undefined)
+    vi.mocked(queueStoreMock.delete).mockResolvedValue(undefined)
     cancelJobMock.mockResolvedValue(undefined)
     mediaAssetActionsMock.deleteAssets.mockResolvedValue(false)
     mapTaskOutputToAssetItemMock.mockImplementation((task, output) => ({
@@ -190,9 +175,9 @@ describe('useJobMenu', () => {
       output
     }))
     nodeDefStoreMock.nodeDefsByName = {
-      LoadImage: { name: 'LoadImage' },
-      LoadVideo: { name: 'LoadVideo' },
-      LoadAudio: { name: 'LoadAudio' }
+      LoadImage: fromPartial<ComfyNodeDefImpl>({ name: 'LoadImage' }),
+      LoadVideo: fromPartial<ComfyNodeDefImpl>({ name: 'LoadVideo' }),
+      LoadAudio: fromPartial<ComfyNodeDefImpl>({ name: 'LoadAudio' })
     }
     // Default: no workflow available via lazy loading
     getJobWorkflowMock.mockResolvedValue(undefined)
@@ -218,7 +203,7 @@ describe('useJobMenu', () => {
     )
     expect(workflowServiceMock.openWorkflow).toHaveBeenCalledWith({
       filename: 'Job 55.json',
-      data: workflow
+      content: JSON.stringify(workflow)
     })
   })
 
@@ -639,7 +624,7 @@ describe('useJobMenu', () => {
   })
 
   it('prompts for filename when setting enabled', async () => {
-    settingStoreMock.get.mockReturnValue(true)
+    vi.mocked(settingStoreMock.get).mockReturnValue(true)
     dialogServiceMock.prompt.mockResolvedValue('custom-name')
     getJobWorkflowMock.mockResolvedValue({})
     const { jobMenuEntries } = mountJobMenu()
@@ -663,7 +648,7 @@ describe('useJobMenu', () => {
   })
 
   it('keeps existing json extension when exporting workflow', async () => {
-    settingStoreMock.get.mockReturnValue(true)
+    vi.mocked(settingStoreMock.get).mockReturnValue(true)
     dialogServiceMock.prompt.mockResolvedValue('existing.json')
     getJobWorkflowMock.mockResolvedValue({ foo: 'bar' })
     const { jobMenuEntries } = mountJobMenu()
@@ -683,7 +668,7 @@ describe('useJobMenu', () => {
   })
 
   it('abandons export when prompt cancelled', async () => {
-    settingStoreMock.get.mockReturnValue(true)
+    vi.mocked(settingStoreMock.get).mockReturnValue(true)
     dialogServiceMock.prompt.mockResolvedValue('')
     getJobWorkflowMock.mockResolvedValue({})
     const { jobMenuEntries } = mountJobMenu()

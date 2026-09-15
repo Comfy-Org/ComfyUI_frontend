@@ -1,4 +1,3 @@
-// @vitest-environment happy-dom
 /* eslint-disable testing-library/no-container, testing-library/no-node-access */
 import { render, screen } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -11,7 +10,7 @@ import FeaturedWorkflowsSection from './FeaturedWorkflowsSection.vue'
 
 const motion = vi.hoisted(() => ({ reduced: false }))
 
-vi.mock('../../composables/useReducedMotion', () => ({
+vi.mock(import('../../composables/useReducedMotion'), () => ({
   prefersReducedMotion: () => motion.reduced
 }))
 

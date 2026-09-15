@@ -16,7 +16,7 @@
     />
     <div
       data-testid="docked-agent-panel-shell"
-      class="bg-agent-surface size-full border-l border-interface-stroke p-2"
+      class="size-full border-l border-interface-stroke bg-base-background p-2"
     >
       <div
         class="size-full overflow-hidden rounded-lg border border-interface-stroke"
@@ -30,7 +30,7 @@
 <script setup lang="ts">
 import { useEventListener } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
-import { computed, defineAsyncComponent, defineComponent, h, ref } from 'vue'
+import { defineAsyncComponent, defineComponent, h, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { reportError } from '@/platform/telemetry/reportError'
@@ -65,9 +65,8 @@ const AgentPanelRoot = defineAsyncComponent({
 })
 
 const agentPanelStore = useAgentPanelStore()
+const { isVisible: docked, width } = storeToRefs(agentPanelStore)
 const agentRunModeStore = useAgentRunModeStore()
-const { isOpen, enabled, width } = storeToRefs(agentPanelStore)
-const docked = computed(() => enabled.value && isOpen.value)
 
 void agentRunModeStore.load().catch((error: unknown) => {
   reportError(error, { errorType: 'agent_run_mode_load_failure' })

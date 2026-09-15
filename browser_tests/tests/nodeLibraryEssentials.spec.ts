@@ -34,7 +34,6 @@ test.describe('Node Library Essentials Tab', { tag: '@ui' }, () => {
   })
 
   test('Essential node cards have node names', async ({ comfyPage }) => {
-    await comfyPage.settings.setSetting('Comfy.NodeLibrary.NewDesign', true)
     const tab = comfyPage.menu.nodeLibraryTabV2
     await tab.open()
     await tab.essentialsTab.click()
@@ -48,7 +47,6 @@ test.describe('Node Library Essentials Tab', { tag: '@ui' }, () => {
   test('Node library can switch between all and essentials tabs', async ({
     comfyPage
   }) => {
-    await comfyPage.settings.setSetting('Comfy.NodeLibrary.NewDesign', true)
     const tab = comfyPage.menu.nodeLibraryTabV2
     await tab.open()
     await tab.allTab.click()

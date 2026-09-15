@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 
-vi.mock('@/scripts/utils', () => ({
+vi.mock(import('@/scripts/utils'), () => ({
   getStorageValue: vi.fn((key: string) => localStorage.getItem(key)),
   setStorageValue: vi.fn((key: string, value: string) => {
     localStorage.setItem(key, value)

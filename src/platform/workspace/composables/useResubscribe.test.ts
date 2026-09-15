@@ -1,8 +1,13 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { createApp, defineComponent } from 'vue'
+import type { App } from 'vue'
+import { createI18n } from 'vue-i18n'
+
+import { useTelemetry } from '@/platform/telemetry'
 
 import { AuthStoreError } from '@/stores/authStore'
 
-import { useResubscribe } from './useResubscribe'
+import { useResubscribe as createResubscribe } from './useResubscribe'
 
 const state = vi.hoisted(() => ({
   shouldUseWorkspaceBilling: true,
@@ -10,16 +15,14 @@ const state = vi.hoisted(() => ({
   canReactivate: true,
   canReactivatePlan: true,
   resubscribe: vi.fn(),
-  toastAdd: vi.fn(),
-  trackResubscribeClicked: vi.fn(),
-  trackBillingEvent: vi.fn()
+  toastAdd: vi.fn()
 }))
 
-vi.mock('@/composables/billing/useBillingContext', () => ({
+vi.mock<unknown>(import('@/composables/billing/useBillingContext'), () => ({
   useBillingContext: () => ({ resubscribe: state.resubscribe })
 }))
 
-vi.mock('@/composables/billing/useBillingRouting', () => ({
+vi.mock<unknown>(import('@/composables/billing/useBillingRouting'), () => ({
   useBillingRouting: () => ({
     shouldUseWorkspaceBilling: {
       get value() {
@@ -29,60 +32,72 @@ vi.mock('@/composables/billing/useBillingRouting', () => ({
   })
 }))
 
-vi.mock('@/platform/distribution/types', () => ({ isCloud: true }))
+vi.mock(import('@/platform/distribution/types'), () => ({ isCloud: true }))
 
-vi.mock('@/platform/workspace/composables/useBillingCapabilities', () => ({
-  useBillingCapabilities: () => ({
-    canReactivate: {
-      get value() {
-        return state.canReactivate
-      }
-    }
-  })
-}))
-
-vi.mock('@/platform/workspace/composables/useWorkspaceUI', () => ({
-  useWorkspaceUI: () => ({
-    permissions: {
-      get value() {
-        return {
-          canManageSubscriptionLifecycle: state.canManageSubscriptionLifecycle
+vi.mock<unknown>(
+  import('@/platform/workspace/composables/useBillingCapabilities'),
+  () => ({
+    useBillingCapabilities: () => ({
+      canReactivate: {
+        get value() {
+          return state.canReactivate
         }
       }
-    },
-    canReactivatePlan: {
-      get value() {
-        return state.canReactivatePlan
+    })
+  })
+)
+
+vi.mock<unknown>(
+  import('@/platform/workspace/composables/useWorkspaceUI'),
+  () => ({
+    useWorkspaceUI: () => ({
+      permissions: {
+        get value() {
+          return {
+            canManageSubscriptionLifecycle: state.canManageSubscriptionLifecycle
+          }
+        }
+      },
+      canReactivatePlan: {
+        get value() {
+          return state.canReactivatePlan
+        }
       }
-    }
+    })
   })
-}))
+)
 
-vi.mock('@/platform/telemetry', () => ({
-  useTelemetry: () => ({
-    trackResubscribeClicked: state.trackResubscribeClicked,
-    trackBillingEvent: state.trackBillingEvent
+vi.mock(import('@/platform/telemetry'))
+
+vi.mock<unknown>(
+  import('primevue/usetoast'), // eslint-disable-line primevue-removal/no-imports
+  () => ({
+    useToast: () => ({ add: state.toastAdd })
   })
-}))
+)
 
-vi.mock('@/stores/authStore', () => ({
-  AuthStoreError: class AuthStoreError extends Error {
-    readonly status: number | undefined
-    constructor(message: string, status?: number) {
-      super(message)
-      this.name = 'AuthStoreError'
-      this.status = status
-    }
-  }
-}))
+const apps: App<Element>[] = []
 
-vi.mock('primevue/usetoast', () => ({
-  useToast: () => ({ add: state.toastAdd })
-}))
+function useResubscribe(): ReturnType<typeof createResubscribe> {
+  let result: ReturnType<typeof createResubscribe> | undefined
+  const app = createApp(
+    defineComponent({
+      setup() {
+        result = createResubscribe()
+        return () => null
+      }
+    })
+  )
+  app.use(createI18n({ legacy: false, locale: 'en', messages: { en: {} } }))
+  app.mount(document.createElement('div'))
+  apps.push(app)
+  if (!result) throw new Error('resubscribe composable not initialized')
+  return result
+}
 
-vi.mock('vue-i18n', () => ({
-  useI18n: () => ({ t: (key: string) => key })
-}))
+afterEach(() => {
+  for (const app of apps.splice(0)) app.unmount()
+})
 
 describe('useResubscribe', () => {
   beforeEach(() => {
@@ -102,7 +117,7 @@ describe('useResubscribe', () => {
     await handleResubscribe()
 
     expect(state.resubscribe).not.toHaveBeenCalled()
-    expect(state.trackResubscribeClicked).not.toHaveBeenCalled()
+    expect(useTelemetry()?.trackResubscribeClicked).not.toHaveBeenCalled()
     expect(state.toastAdd).not.toHaveBeenCalled()
     expect(isResubscribing.value).toBe(false)
   })
@@ -116,7 +131,7 @@ describe('useResubscribe', () => {
     await handleResubscribe()
 
     expect(state.resubscribe).not.toHaveBeenCalled()
-    expect(state.trackResubscribeClicked).not.toHaveBeenCalled()
+    expect(useTelemetry()?.trackResubscribeClicked).not.toHaveBeenCalled()
     expect(state.toastAdd).not.toHaveBeenCalled()
     expect(isResubscribing.value).toBe(false)
   })
@@ -151,7 +166,7 @@ describe('useResubscribe', () => {
 
     await handleResubscribe()
 
-    expect(state.trackBillingEvent).toHaveBeenCalledWith({
+    expect(useTelemetry()?.trackBillingEvent).toHaveBeenCalledWith({
       operation: 'resubscribe',
       stage: 'started',
       outcome: 'pending',
@@ -170,11 +185,11 @@ describe('useResubscribe', () => {
     await handleResubscribe()
 
     expect(state.resubscribe).toHaveBeenCalledOnce()
-    expect(state.trackResubscribeClicked).toHaveBeenCalledOnce()
-    expect(state.trackBillingEvent).not.toHaveBeenCalledWith(
+    expect(useTelemetry()?.trackResubscribeClicked).toHaveBeenCalledOnce()
+    expect(useTelemetry()?.trackBillingEvent).not.toHaveBeenCalledWith(
       expect.objectContaining({ stage: 'succeeded' })
     )
-    expect(state.trackBillingEvent).toHaveBeenCalledWith({
+    expect(useTelemetry()?.trackBillingEvent).toHaveBeenCalledWith({
       operation: 'resubscribe',
       stage: 'started',
       outcome: 'pending',
@@ -182,7 +197,7 @@ describe('useResubscribe', () => {
     })
     // Exactly one started event on the legacy success rail: the pre-call start,
     // with no duplicate post-await started/pending emitted after resubscribe() resolves.
-    expect(state.trackBillingEvent).toHaveBeenCalledTimes(1)
+    expect(useTelemetry()?.trackBillingEvent).toHaveBeenCalledTimes(1)
     expect(state.toastAdd).toHaveBeenCalledWith(
       expect.objectContaining({ severity: 'success' })
     )
@@ -203,7 +218,7 @@ describe('useResubscribe', () => {
         detail: 'Resubscribe failed for person@example.com'
       })
     )
-    expect(state.trackBillingEvent).toHaveBeenCalledWith({
+    expect(useTelemetry()?.trackBillingEvent).toHaveBeenCalledWith({
       operation: 'resubscribe',
       stage: 'failed',
       outcome: 'failure',
@@ -224,10 +239,10 @@ describe('useResubscribe', () => {
 
     await handleResubscribe()
 
-    expect(state.trackBillingEvent).not.toHaveBeenCalledWith(
+    expect(useTelemetry()?.trackBillingEvent).not.toHaveBeenCalledWith(
       expect.objectContaining({ stage: 'succeeded' })
     )
-    expect(state.trackBillingEvent).toHaveBeenCalledWith({
+    expect(useTelemetry()?.trackBillingEvent).toHaveBeenCalledWith({
       operation: 'resubscribe',
       stage: 'failed',
       outcome: 'failure',
@@ -244,7 +259,7 @@ describe('useResubscribe', () => {
 
     await handleResubscribe()
 
-    expect(state.trackBillingEvent).toHaveBeenCalledWith({
+    expect(useTelemetry()?.trackBillingEvent).toHaveBeenCalledWith({
       operation: 'resubscribe',
       stage: 'failed',
       outcome: 'failure',
@@ -258,9 +273,11 @@ describe('useResubscribe', () => {
     state.resubscribe.mockImplementation(async () => {
       callOrder.push('resubscribe')
     })
-    state.trackBillingEvent.mockImplementation((event: { stage: string }) => {
-      callOrder.push(`trackBillingEvent:${event.stage}`)
-    })
+    vi.mocked(useTelemetry()?.trackBillingEvent)?.mockImplementation(
+      (event: { stage: string }) => {
+        callOrder.push(`trackBillingEvent:${event.stage}`)
+      }
+    )
     const { handleResubscribe } = useResubscribe()
 
     await handleResubscribe()

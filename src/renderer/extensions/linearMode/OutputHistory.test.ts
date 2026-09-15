@@ -1,3 +1,7 @@
+import { useLinearOutputStore } from '@/renderer/extensions/linearMode/linearOutputStore'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import { useAppModeStore } from '@/stores/appModeStore'
+import { useQueueStore } from '@/stores/queueStore'
 import { fromPartial } from '@total-typescript/shoehorn'
 
 import type { RenderResult } from '@testing-library/vue'
@@ -21,29 +25,13 @@ const mediaRef = ref<AssetItem[]>([])
 const hasMoreRef = ref(false)
 const loadMoreFn = vi.fn()
 
-const selectedIdRef = ref<string | null>(null)
-const activeWorkflowInProgressItemsRef = ref<InProgressItem[]>([])
-
-const activeWorkflowPathRef = ref<string | undefined>('workflows/test.json')
-const hasOutputsRef = ref(false)
-
-const runningTasksRef = ref<Array<{ jobId: string }>>([])
-const pendingTasksRef = ref<Array<{ jobId: string }>>([])
-
 const selectFirstHistoryFn = vi.fn(() => {
   const first = mediaRef.value.at(0)
-  selectedIdRef.value = first ? `history:${first.id}:0` : null
+  useLinearOutputStore().selectedId = first ? `history:${first.id}:0` : null
 })
 const mayBeActiveWorkflowPendingRef = ref(false)
 
 const allOutputsFn = vi.fn((): AugmentedResultItem[] => [])
-
-const selectFn = vi.fn((id: string | null) => {
-  selectedIdRef.value = id
-})
-const selectAsLatestFn = vi.fn((id: string | null) => {
-  selectedIdRef.value = id
-})
 
 vi.mock<unknown>(import('@/lib/litegraph/src/CanvasPointer'), () => ({
   CanvasPointer: class {
@@ -69,55 +57,6 @@ vi.mock(import('@/renderer/extensions/linearMode/useOutputHistory'), () => ({
       mayBeActiveWorkflowPendingRef as ComputedRef<boolean>,
     isWorkflowActive: computed(() => false),
     cancelActiveWorkflowJobs: vi.fn()
-  })
-}))
-
-vi.mock<unknown>(
-  import('@/renderer/extensions/linearMode/linearOutputStore'),
-  () => ({
-    useLinearOutputStore: () => ({
-      get activeWorkflowInProgressItems() {
-        return activeWorkflowInProgressItemsRef.value
-      },
-      get selectedId() {
-        return selectedIdRef.value
-      },
-      set selectedId(v: string | null) {
-        selectedIdRef.value = v
-      },
-      select: selectFn,
-      selectAsLatest: selectAsLatestFn
-    })
-  })
-)
-
-vi.mock<unknown>(
-  import('@/platform/workflow/management/stores/workflowStore'),
-  () => ({
-    useWorkflowStore: () => ({
-      get activeWorkflow() {
-        return activeWorkflowPathRef.value
-          ? { path: activeWorkflowPathRef.value }
-          : undefined
-      }
-    })
-  })
-)
-
-vi.mock<unknown>(import('@/stores/appModeStore'), () => ({
-  useAppModeStore: () => ({
-    hasOutputs: hasOutputsRef
-  })
-}))
-
-vi.mock<unknown>(import('@/stores/queueStore'), () => ({
-  useQueueStore: () => ({
-    get runningTasks() {
-      return runningTasksRef.value
-    },
-    get pendingTasks() {
-      return pendingTasksRef.value
-    }
   })
 }))
 
@@ -206,12 +145,14 @@ describe('OutputHistory', () => {
   beforeEach(() => {
     mediaRef.value = []
     hasMoreRef.value = false
-    selectedIdRef.value = null
-    activeWorkflowInProgressItemsRef.value = []
-    activeWorkflowPathRef.value = 'workflows/test.json'
-    hasOutputsRef.value = false
-    runningTasksRef.value = []
-    pendingTasksRef.value = []
+    useLinearOutputStore().selectedId = null
+    Object.assign(useLinearOutputStore(), { activeWorkflowInProgressItems: [] })
+    useWorkflowStore().activeWorkflow = fromPartial({
+      path: 'workflows/test.json'
+    })
+    Object.assign(useAppModeStore(), { hasOutputs: false })
+    useQueueStore().runningTasks = []
+    useQueueStore().pendingTasks = []
     mayBeActiveWorkflowPendingRef.value = false
     allOutputsFn.mockReturnValue([])
   })
@@ -254,11 +195,11 @@ describe('OutputHistory', () => {
     })
 
     it('renders queue badge when queueCount > 1 and has active content', async () => {
-      runningTasksRef.value = [{ jobId: 'j1' }]
-      pendingTasksRef.value = [{ jobId: 'j2' }]
-      activeWorkflowInProgressItemsRef.value = [
-        makeInProgressItem('ip1', 'skeleton')
-      ]
+      useQueueStore().runningTasks = fromPartial([{ jobId: 'j1' }])
+      useQueueStore().pendingTasks = fromPartial([{ jobId: 'j2' }])
+      Object.assign(useLinearOutputStore(), {
+        activeWorkflowInProgressItems: [makeInProgressItem('ip1', 'skeleton')]
+      })
 
       mountComponent()
       await nextTick()
@@ -274,9 +215,9 @@ describe('OutputHistory', () => {
     })
 
     it('renders preview item for skeleton in-progress items', async () => {
-      activeWorkflowInProgressItemsRef.value = [
-        makeInProgressItem('ip1', 'skeleton')
-      ]
+      Object.assign(useLinearOutputStore(), {
+        activeWorkflowInProgressItems: [makeInProgressItem('ip1', 'skeleton')]
+      })
 
       mountComponent()
       await nextTick()
@@ -286,9 +227,11 @@ describe('OutputHistory', () => {
 
     it('renders history item for image in-progress items with output prop', async () => {
       const output = makeResult('out.png')
-      activeWorkflowInProgressItemsRef.value = [
-        makeInProgressItem('ip1', 'image', { output })
-      ]
+      Object.assign(useLinearOutputStore(), {
+        activeWorkflowInProgressItems: [
+          makeInProgressItem('ip1', 'image', { output })
+        ]
+      })
 
       mountComponent()
       await nextTick()
@@ -299,9 +242,9 @@ describe('OutputHistory', () => {
     })
 
     it('renders both active and history content when both exist', async () => {
-      activeWorkflowInProgressItemsRef.value = [
-        makeInProgressItem('ip1', 'skeleton')
-      ]
+      Object.assign(useLinearOutputStore(), {
+        activeWorkflowInProgressItems: [makeInProgressItem('ip1', 'skeleton')]
+      })
       mediaRef.value = [makeAsset('a1')]
       allOutputsFn.mockReturnValue([makeResult('a1.png')])
 
@@ -328,9 +271,13 @@ describe('OutputHistory', () => {
       await userEvent.click(items[0])
       await nextTick()
 
-      expect(selectedIdRef.value).toBe('history:a1:0')
-      expect(selectFn).toHaveBeenCalledWith('history:a1:0')
-      expect(selectAsLatestFn).not.toHaveBeenCalledWith('history:a1:0')
+      expect(useLinearOutputStore().selectedId).toBe('history:a1:0')
+      expect(vi.mocked(useLinearOutputStore().select)).toHaveBeenCalledWith(
+        'history:a1:0'
+      )
+      expect(
+        vi.mocked(useLinearOutputStore().selectAsLatest)
+      ).not.toHaveBeenCalledWith('history:a1:0')
       expect(lastEmission(result)).toMatchObject({
         asset,
         output: expect.objectContaining({ filename: 'a1.png' }),
@@ -341,9 +288,9 @@ describe('OutputHistory', () => {
     })
 
     it('selects in-progress item on click', async () => {
-      activeWorkflowInProgressItemsRef.value = [
-        makeInProgressItem('ip1', 'skeleton')
-      ]
+      Object.assign(useLinearOutputStore(), {
+        activeWorkflowInProgressItems: [makeInProgressItem('ip1', 'skeleton')]
+      })
 
       mountComponent()
       await nextTick()
@@ -353,9 +300,13 @@ describe('OutputHistory', () => {
 
       vi.clearAllMocks()
       await userEvent.click(slots[0])
-      expect(selectedIdRef.value).toBe('slot:ip1')
-      expect(selectFn).toHaveBeenCalledWith('slot:ip1')
-      expect(selectAsLatestFn).not.toHaveBeenCalledWith('slot:ip1')
+      expect(useLinearOutputStore().selectedId).toBe('slot:ip1')
+      expect(vi.mocked(useLinearOutputStore().select)).toHaveBeenCalledWith(
+        'slot:ip1'
+      )
+      expect(
+        vi.mocked(useLinearOutputStore().selectAsLatest)
+      ).not.toHaveBeenCalledWith('slot:ip1')
     })
 
     it('marks unselected items with tabindex=-1', async () => {
@@ -363,7 +314,7 @@ describe('OutputHistory', () => {
       const a2 = makeAsset('a2')
       mediaRef.value = [a1, a2]
       allOutputsFn.mockReturnValue([makeResult('out.png')])
-      selectedIdRef.value = 'history:a1:0'
+      useLinearOutputStore().selectedId = 'history:a1:0'
 
       mountComponent()
       await nextTick()
@@ -378,7 +329,7 @@ describe('OutputHistory', () => {
 
     it('selects pending slot on click', async () => {
       mayBeActiveWorkflowPendingRef.value = true
-      runningTasksRef.value = [{ jobId: 'j1' }]
+      useQueueStore().runningTasks = fromPartial([{ jobId: 'j1' }])
 
       mountComponent()
       await nextTick()
@@ -386,13 +337,13 @@ describe('OutputHistory', () => {
       const pendingPreview = screen.getByTestId('output-preview-item')
 
       await userEvent.click(pendingPreview)
-      expect(selectedIdRef.value).toBe('slot:pending')
+      expect(useLinearOutputStore().selectedId).toBe('slot:pending')
     })
   })
 
   describe('emit updateSelection', () => {
     it('emits canShowPreview:true when no selection', async () => {
-      selectedIdRef.value = null
+      useLinearOutputStore().selectedId = null
 
       const result = mountComponent()
       await nextTick()
@@ -401,10 +352,10 @@ describe('OutputHistory', () => {
     })
 
     it('emits showSkeleton for in-progress skeleton item', async () => {
-      activeWorkflowInProgressItemsRef.value = [
-        makeInProgressItem('ip1', 'skeleton')
-      ]
-      selectedIdRef.value = 'slot:ip1'
+      Object.assign(useLinearOutputStore(), {
+        activeWorkflowInProgressItems: [makeInProgressItem('ip1', 'skeleton')]
+      })
+      useLinearOutputStore().selectedId = 'slot:ip1'
 
       const result = mountComponent()
       await nextTick()
@@ -417,12 +368,14 @@ describe('OutputHistory', () => {
     })
 
     it('emits latentPreviewUrl for in-progress latent item', async () => {
-      activeWorkflowInProgressItemsRef.value = [
-        makeInProgressItem('ip1', 'latent', {
-          latentPreviewUrl: 'blob:preview'
-        })
-      ]
-      selectedIdRef.value = 'slot:ip1'
+      Object.assign(useLinearOutputStore(), {
+        activeWorkflowInProgressItems: [
+          makeInProgressItem('ip1', 'latent', {
+            latentPreviewUrl: 'blob:preview'
+          })
+        ]
+      })
+      useLinearOutputStore().selectedId = 'slot:ip1'
 
       const result = mountComponent()
       await nextTick()
@@ -436,10 +389,12 @@ describe('OutputHistory', () => {
 
     it('emits output for in-progress image item', async () => {
       const output = makeResult('out.png')
-      activeWorkflowInProgressItemsRef.value = [
-        makeInProgressItem('ip1', 'image', { output })
-      ]
-      selectedIdRef.value = 'slot:ip1'
+      Object.assign(useLinearOutputStore(), {
+        activeWorkflowInProgressItems: [
+          makeInProgressItem('ip1', 'image', { output })
+        ]
+      })
+      useLinearOutputStore().selectedId = 'slot:ip1'
 
       const result = mountComponent()
       await nextTick()
@@ -456,12 +411,12 @@ describe('OutputHistory', () => {
       const output = makeResult('a1.png')
       mediaRef.value = [asset]
       allOutputsFn.mockReturnValue([output])
-      hasOutputsRef.value = true
+      Object.assign(useAppModeStore(), { hasOutputs: true })
 
       const rendered = mountComponent()
       await nextTick()
 
-      selectedIdRef.value = 'history:a1:0'
+      useLinearOutputStore().selectedId = 'history:a1:0'
       await nextTick()
       await nextTick()
 
@@ -478,12 +433,12 @@ describe('OutputHistory', () => {
       const secondOutput = makeResult('second.png')
       mediaRef.value = [asset]
       allOutputsFn.mockReturnValue([firstOutput, secondOutput])
-      hasOutputsRef.value = true
+      Object.assign(useAppModeStore(), { hasOutputs: true })
 
       const result = mountComponent()
       await nextTick()
 
-      selectedIdRef.value = 'history:a1:1'
+      useLinearOutputStore().selectedId = 'history:a1:1'
       await nextTick()
       await nextTick()
 
@@ -499,12 +454,12 @@ describe('OutputHistory', () => {
       const a2 = makeAsset('a2')
       mediaRef.value = [a1, a2]
       allOutputsFn.mockReturnValue([makeResult('out.png')])
-      hasOutputsRef.value = true
+      Object.assign(useAppModeStore(), { hasOutputs: true })
 
       const result = mountComponent()
       await nextTick()
 
-      selectedIdRef.value = 'history:a2:0'
+      useLinearOutputStore().selectedId = 'history:a2:0'
       await nextTick()
       await nextTick()
 
@@ -513,12 +468,12 @@ describe('OutputHistory', () => {
 
     it('emits skeleton for pending slot selection', async () => {
       mayBeActiveWorkflowPendingRef.value = true
-      runningTasksRef.value = [{ jobId: 'j1' }]
+      useQueueStore().runningTasks = fromPartial([{ jobId: 'j1' }])
 
       const result = mountComponent()
       await nextTick()
 
-      selectedIdRef.value = 'slot:pending'
+      useLinearOutputStore().selectedId = 'slot:pending'
       await nextTick()
       await nextTick()
 
@@ -531,39 +486,43 @@ describe('OutputHistory', () => {
 
   describe('workflow tab switch', () => {
     it('selects first in-progress item on mount', async () => {
-      activeWorkflowInProgressItemsRef.value = [
-        makeInProgressItem('ip1', 'skeleton')
-      ]
+      Object.assign(useLinearOutputStore(), {
+        activeWorkflowInProgressItems: [makeInProgressItem('ip1', 'skeleton')]
+      })
 
       mountComponent()
       await nextTick()
 
-      expect(selectAsLatestFn).toHaveBeenCalledWith('slot:ip1')
+      expect(
+        vi.mocked(useLinearOutputStore().selectAsLatest)
+      ).toHaveBeenCalledWith('slot:ip1')
     })
 
     it('selects first history when no in-progress but outputs exist', async () => {
       mediaRef.value = [makeAsset('a1')]
       allOutputsFn.mockReturnValue([makeResult('a1.png')])
-      hasOutputsRef.value = true
+      Object.assign(useAppModeStore(), { hasOutputs: true })
 
       mountComponent()
       await nextTick()
 
       expect(selectFirstHistoryFn).toHaveBeenCalled()
-      expect(selectedIdRef.value).toBe('history:a1:0')
+      expect(useLinearOutputStore().selectedId).toBe('history:a1:0')
     })
 
     it('clears selection when no outputs and no in-progress', async () => {
       mountComponent()
       await nextTick()
 
-      expect(selectAsLatestFn).toHaveBeenCalledWith(null)
+      expect(
+        vi.mocked(useLinearOutputStore().selectAsLatest)
+      ).toHaveBeenCalledWith(null)
     })
 
     it('reselects when workflow path changes after mount', async () => {
       mediaRef.value = [makeAsset('a1')]
       allOutputsFn.mockReturnValue([makeResult('a1.png')])
-      hasOutputsRef.value = true
+      Object.assign(useAppModeStore(), { hasOutputs: true })
 
       mountComponent()
       await nextTick()
@@ -571,11 +530,13 @@ describe('OutputHistory', () => {
       vi.clearAllMocks()
 
       // Simulate workflow tab switch
-      activeWorkflowPathRef.value = 'workflows/other.json'
+      useWorkflowStore().activeWorkflow = fromPartial({
+        path: 'workflows/other.json'
+      })
       await nextTick()
 
       expect(selectFirstHistoryFn).toHaveBeenCalled()
-      expect(selectedIdRef.value).toBe('history:a1:0')
+      expect(useLinearOutputStore().selectedId).toBe('history:a1:0')
     })
 
     it('does not reselect when path becomes falsy', async () => {
@@ -584,20 +545,22 @@ describe('OutputHistory', () => {
 
       vi.clearAllMocks()
 
-      activeWorkflowPathRef.value = undefined
+      useWorkflowStore().activeWorkflow = null
       await nextTick()
 
-      expect(selectAsLatestFn).not.toHaveBeenCalled()
+      expect(
+        vi.mocked(useLinearOutputStore().selectAsLatest)
+      ).not.toHaveBeenCalled()
       expect(selectFirstHistoryFn).not.toHaveBeenCalled()
     })
   })
 
   describe('media change watcher', () => {
     it('does not reselect when selection is a slot item', async () => {
-      activeWorkflowInProgressItemsRef.value = [
-        makeInProgressItem('ip1', 'skeleton')
-      ]
-      selectedIdRef.value = 'slot:ip1'
+      Object.assign(useLinearOutputStore(), {
+        activeWorkflowInProgressItems: [makeInProgressItem('ip1', 'skeleton')]
+      })
+      useLinearOutputStore().selectedId = 'slot:ip1'
 
       mountComponent()
       await nextTick()
@@ -618,11 +581,11 @@ describe('OutputHistory', () => {
       const a2 = makeAsset('a2')
       mediaRef.value = [a1, a2]
       allOutputsFn.mockReturnValue([makeResult('out.png')])
-      hasOutputsRef.value = true
+      Object.assign(useAppModeStore(), { hasOutputs: true })
 
       mountComponent()
       await nextTick()
-      selectedIdRef.value = 'history:a1:0'
+      useLinearOutputStore().selectedId = 'history:a1:0'
       await nextTick()
 
       vi.clearAllMocks()
@@ -638,11 +601,11 @@ describe('OutputHistory', () => {
       const oldFirst = makeAsset('old-first')
       mediaRef.value = [oldFirst]
       allOutputsFn.mockReturnValue([makeResult('out.png')])
-      hasOutputsRef.value = true
+      Object.assign(useAppModeStore(), { hasOutputs: true })
 
       mountComponent()
       await nextTick()
-      selectedIdRef.value = 'history:old-first:0'
+      useLinearOutputStore().selectedId = 'history:old-first:0'
       await nextTick()
 
       vi.clearAllMocks()
@@ -651,7 +614,7 @@ describe('OutputHistory', () => {
       await nextTick()
 
       expect(selectFirstHistoryFn).toHaveBeenCalled()
-      expect(selectedIdRef.value).toBe('history:new-first:0')
+      expect(useLinearOutputStore().selectedId).toBe('history:new-first:0')
     })
 
     it('keeps older history selection stable when new assets arrive', async () => {
@@ -659,11 +622,11 @@ describe('OutputHistory', () => {
       const selectedOlder = makeAsset('selected-older')
       mediaRef.value = [currentFirst, selectedOlder]
       allOutputsFn.mockReturnValue([makeResult('out.png')])
-      hasOutputsRef.value = true
+      Object.assign(useAppModeStore(), { hasOutputs: true })
 
       mountComponent()
       await nextTick()
-      selectedIdRef.value = 'history:selected-older:0'
+      useLinearOutputStore().selectedId = 'history:selected-older:0'
       await nextTick()
 
       vi.clearAllMocks()
@@ -672,7 +635,7 @@ describe('OutputHistory', () => {
       await nextTick()
 
       expect(selectFirstHistoryFn).not.toHaveBeenCalled()
-      expect(selectedIdRef.value).toBe('history:selected-older:0')
+      expect(useLinearOutputStore().selectedId).toBe('history:selected-older:0')
     })
   })
 
@@ -688,63 +651,71 @@ describe('OutputHistory', () => {
       const a2 = makeAsset('a2')
       mediaRef.value = [a1, a2]
       allOutputsFn.mockReturnValue([makeResult('out.png')])
-      hasOutputsRef.value = true
+      Object.assign(useAppModeStore(), { hasOutputs: true })
 
       mountComponent()
       await nextTick()
 
       // Set selection after mount (mount watcher may reset it)
-      selectedIdRef.value = 'history:a1:0'
+      useLinearOutputStore().selectedId = 'history:a1:0'
       await nextTick()
 
       pressKey('ArrowRight')
       await nextTick()
-      expect(selectedIdRef.value).toBe('history:a2:0')
-      expect(selectFn).toHaveBeenLastCalledWith('history:a2:0')
-      expect(selectAsLatestFn).not.toHaveBeenCalledWith('history:a2:0')
+      expect(useLinearOutputStore().selectedId).toBe('history:a2:0')
+      expect(vi.mocked(useLinearOutputStore().select)).toHaveBeenLastCalledWith(
+        'history:a2:0'
+      )
+      expect(
+        vi.mocked(useLinearOutputStore().selectAsLatest)
+      ).not.toHaveBeenCalledWith('history:a2:0')
 
       pressKey('ArrowLeft')
       await nextTick()
-      expect(selectedIdRef.value).toBe('history:a1:0')
-      expect(selectFn).toHaveBeenLastCalledWith('history:a1:0')
-      expect(selectAsLatestFn).not.toHaveBeenCalledWith('history:a1:0')
+      expect(useLinearOutputStore().selectedId).toBe('history:a1:0')
+      expect(vi.mocked(useLinearOutputStore().select)).toHaveBeenLastCalledWith(
+        'history:a1:0'
+      )
+      expect(
+        vi.mocked(useLinearOutputStore().selectAsLatest)
+      ).not.toHaveBeenCalledWith('history:a1:0')
 
       pressKey('ArrowDown')
       await nextTick()
-      expect(selectedIdRef.value).toBe('history:a2:0')
+      expect(useLinearOutputStore().selectedId).toBe('history:a2:0')
 
       pressKey('ArrowUp')
       await nextTick()
-      expect(selectedIdRef.value).toBe('history:a1:0')
+      expect(useLinearOutputStore().selectedId).toBe('history:a1:0')
     })
 
     it('clamps to first and last items', async () => {
       mediaRef.value = [makeAsset('a1')]
       allOutputsFn.mockReturnValue([makeResult('out.png')])
-      hasOutputsRef.value = true
+      Object.assign(useAppModeStore(), { hasOutputs: true })
 
       mountComponent()
       await nextTick()
-      selectedIdRef.value = 'history:a1:0'
+      useLinearOutputStore().selectedId = 'history:a1:0'
       await nextTick()
 
       pressKey('ArrowLeft')
       await nextTick()
-      expect(selectedIdRef.value).toBe('history:a1:0')
+      expect(useLinearOutputStore().selectedId).toBe('history:a1:0')
 
       pressKey('ArrowRight')
       await nextTick()
-      expect(selectedIdRef.value).toBe('history:a1:0')
+      expect(useLinearOutputStore().selectedId).toBe('history:a1:0')
     })
 
     it('ignores key events from input elements', async () => {
       mediaRef.value = [makeAsset('a1')]
       allOutputsFn.mockReturnValue([makeResult('out.png')])
-      hasOutputsRef.value = true
+      Object.assign(useAppModeStore(), { hasOutputs: true })
 
       mountComponent()
       await nextTick()
-      selectedIdRef.value = 'history:a1:0'
+      useLinearOutputStore().selectedId = 'history:a1:0'
       vi.clearAllMocks()
       await nextTick()
 
@@ -758,14 +729,14 @@ describe('OutputHistory', () => {
       )
       await nextTick()
 
-      expect(selectFn).not.toHaveBeenCalled()
+      expect(vi.mocked(useLinearOutputStore().select)).not.toHaveBeenCalled()
       document.body.removeChild(input)
     })
 
     it('navigates across in-progress and history items', async () => {
-      activeWorkflowInProgressItemsRef.value = [
-        makeInProgressItem('ip1', 'skeleton')
-      ]
+      Object.assign(useLinearOutputStore(), {
+        activeWorkflowInProgressItems: [makeInProgressItem('ip1', 'skeleton')]
+      })
       mediaRef.value = [makeAsset('a1')]
       allOutputsFn.mockReturnValue([makeResult('out.png')])
 
@@ -773,11 +744,11 @@ describe('OutputHistory', () => {
       await nextTick()
 
       // Mount watcher selects the in-progress item
-      expect(selectedIdRef.value).toBe('slot:ip1')
+      expect(useLinearOutputStore().selectedId).toBe('slot:ip1')
 
       pressKey('ArrowRight')
       await nextTick()
-      expect(selectedIdRef.value).toBe('history:a1:0')
+      expect(useLinearOutputStore().selectedId).toBe('history:a1:0')
     })
 
     it('selects first item when no current selection', async () => {
@@ -786,12 +757,12 @@ describe('OutputHistory', () => {
 
       mountComponent()
       await nextTick()
-      selectedIdRef.value = null
+      useLinearOutputStore().selectedId = null
       await nextTick()
 
       pressKey('ArrowRight')
       await nextTick()
-      expect(selectedIdRef.value).toBe('history:a1:0')
+      expect(useLinearOutputStore().selectedId).toBe('history:a1:0')
     })
   })
 })

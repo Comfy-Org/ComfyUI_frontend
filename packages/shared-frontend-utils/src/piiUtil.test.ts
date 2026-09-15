@@ -38,13 +38,13 @@ describe('createPostHogBeforeSend', () => {
     expect(result.properties).not.toHaveProperty('$email')
     expect(result.properties).toHaveProperty('method', 'google')
 
-    expect(result.$set).not.toHaveProperty('email')
-    expect(result.$set).not.toHaveProperty('user_email')
-    expect(result.$set).not.toHaveProperty('$email')
-    expect(result.$set).toHaveProperty('name', 'keep me')
+    expect(result).not.toHaveProperty('$set.email')
+    expect(result).not.toHaveProperty('$set.user_email')
+    expect(result).not.toHaveProperty('$set.$email')
+    expect(result).toHaveProperty('$set.name', 'keep me')
 
-    expect(result.$set_once).not.toHaveProperty('email')
-    expect(result.$set_once).toHaveProperty('plan', 'free')
+    expect(result).not.toHaveProperty('$set_once.email')
+    expect(result).toHaveProperty('$set_once.plan', 'free')
   })
 
   it('handles missing property bags gracefully', () => {
@@ -52,7 +52,7 @@ describe('createPostHogBeforeSend', () => {
     const result = beforeSend(event)!
     expect(result.properties).not.toHaveProperty('email')
     expect(result.properties).toHaveProperty('safe', true)
-    expect(result.$set).toBeUndefined()
-    expect(result.$set_once).toBeUndefined()
+    expect(result).not.toHaveProperty('$set')
+    expect(result).not.toHaveProperty('$set_once')
   })
 })

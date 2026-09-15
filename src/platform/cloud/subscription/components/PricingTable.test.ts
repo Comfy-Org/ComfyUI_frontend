@@ -1,9 +1,11 @@
-import { createTestingPinia } from '@pinia/testing'
+import { useAuthStore } from '@/stores/authStore'
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { computed, nextTick, reactive, ref } from 'vue'
+import { computed, nextTick, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
+
+import { useTelemetry } from '@/platform/telemetry'
 
 import PricingTable from '@/platform/cloud/subscription/components/PricingTable.vue'
 import Button from '@/components/ui/button/Button.vue'
@@ -28,11 +30,9 @@ const mockSubscriptionTier = ref<IngestSubscriptionTier | null>(null)
 const mockSubscriptionDuration = ref<'MONTHLY' | 'ANNUAL'>('MONTHLY')
 const mockAccessBillingPortal = vi.fn()
 const mockReportError = vi.fn()
-const mockTrackBeginCheckout = vi.fn()
-const mockTrackBillingEvent = vi.fn()
-const mockUserId = ref<string | undefined>('user-123')
+
 const mockGetAuthHeader = vi.fn(() =>
-  Promise.resolve({ Authorization: 'Bearer test-token' })
+  Promise.resolve({ Authorization: 'Bearer test-token' as const })
 )
 const mockGetCheckoutAttribution = vi.hoisted(() => vi.fn(() => ({})))
 const mockLocalStorage = vi.hoisted(() => {
@@ -65,7 +65,7 @@ Object.defineProperty(globalThis, 'localStorage', {
   writable: true
 })
 
-vi.mock('@/composables/billing/useBillingContext', () => ({
+vi.mock<unknown>(import('@/composables/billing/useBillingContext'), () => ({
   useBillingContext: () => ({
     canAccessSubscriptionFeatures: computed(
       () => mockCanAccessSubscriptionFeatures.value
@@ -89,14 +89,14 @@ vi.mock('@/composables/billing/useBillingContext', () => ({
   })
 }))
 
-vi.mock('@/composables/auth/useAuthActions', () => ({
+vi.mock<unknown>(import('@/composables/auth/useAuthActions'), () => ({
   useAuthActions: () => ({
     accessBillingPortal: mockAccessBillingPortal,
     reportError: mockReportError
   })
 }))
 
-vi.mock('@/composables/useErrorHandling', () => ({
+vi.mock<unknown>(import('@/composables/useErrorHandling'), () => ({
   useErrorHandling: () => ({
     wrapWithErrorHandlingAsync: vi.fn(
       (fn, errorHandler) =>
@@ -114,35 +114,16 @@ vi.mock('@/composables/useErrorHandling', () => ({
   })
 }))
 
-vi.mock('@/stores/authStore', () => ({
-  useAuthStore: () =>
-    reactive({
-      getFirebaseAuthHeader: mockGetAuthHeader,
-      fetchWithCustomerRecovery: (input: string, init?: RequestInit) =>
-        fetch(input, init),
-      userId: computed(() => mockUserId.value)
-    }),
-  AuthStoreError: class extends Error {
-    readonly status: number | undefined
-    constructor(message: string, status?: number) {
-      super(message)
-      this.status = status
-    }
-  }
-}))
+vi.mock(import('@/platform/telemetry'))
 
-vi.mock('@/platform/telemetry', () => ({
-  useTelemetry: () => ({
-    trackBeginCheckout: mockTrackBeginCheckout,
-    trackBillingEvent: mockTrackBillingEvent
+vi.mock<unknown>(
+  import('@/platform/telemetry/utils/checkoutAttribution'),
+  () => ({
+    getCheckoutAttribution: mockGetCheckoutAttribution
   })
-}))
+)
 
-vi.mock('@/platform/telemetry/utils/checkoutAttribution', () => ({
-  getCheckoutAttribution: mockGetCheckoutAttribution
-}))
-
-vi.mock('@/platform/distribution/types', () => ({
+vi.mock(import('@/platform/distribution/types'), () => ({
   isCloud: true
 }))
 
@@ -208,7 +189,7 @@ function renderComponent() {
       // verify checkout-failure telemetry; without an app-level errorHandler,
       // Vue's dev-mode default handler re-throws it as an unhandled rejection.
       config: { errorHandler: () => {} },
-      plugins: [createTestingPinia({ createSpy: vi.fn }), i18n],
+      plugins: [i18n],
       components: {
         Button
       },
@@ -239,12 +220,22 @@ function renderComponent() {
 
 const onChooseTeamWorkspace = vi.fn()
 
+beforeEach(() => {
+  Object.assign(useAuthStore(), { userId: 'user-123' })
+  vi.mocked(useAuthStore().getFirebaseAuthHeader).mockImplementation(
+    mockGetAuthHeader
+  )
+  vi.mocked(useAuthStore().fetchWithCustomerRecovery).mockImplementation(
+    (input, init) => fetch(input, init)
+  )
+})
+
 describe('PricingTable', () => {
   beforeEach(() => {
     mockCanAccessSubscriptionFeatures.value = false
     mockSubscriptionTier.value = null
     mockSubscriptionDuration.value = 'MONTHLY'
-    mockUserId.value = 'user-123'
+    Object.assign(useAuthStore(), { userId: 'user-123' })
     mockAccessBillingPortal.mockResolvedValue(true)
     mockLocalStorage.__reset()
     vi.mocked(global.fetch).mockResolvedValue({
@@ -269,7 +260,7 @@ describe('PricingTable', () => {
       await userEvent.click(creatorButton!)
       await flushPromises()
 
-      expect(mockTrackBeginCheckout).toHaveBeenCalledWith({
+      expect(useTelemetry()?.trackBeginCheckout).toHaveBeenCalledWith({
         user_id: 'user-123',
         tier: 'creator',
         cycle: 'yearly',
@@ -355,18 +346,18 @@ describe('PricingTable', () => {
       expect(
         window.localStorage.getItem(PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY)
       ).toBeNull()
-      expect(mockTrackBeginCheckout).not.toHaveBeenCalled()
+      expect(useTelemetry()?.trackBeginCheckout).not.toHaveBeenCalled()
     })
 
     it('should use the latest userId value when it changes after mount', async () => {
       mockCanAccessSubscriptionFeatures.value = true
       mockSubscriptionTier.value = 'STANDARD'
-      mockUserId.value = 'user-early'
+      Object.assign(useAuthStore(), { userId: 'user-early' })
 
       renderComponent()
       await flushPromises()
 
-      mockUserId.value = 'user-late'
+      Object.assign(useAuthStore(), { userId: 'user-late' })
 
       const creatorButton = screen
         .getAllByRole('button')
@@ -375,8 +366,8 @@ describe('PricingTable', () => {
       await userEvent.click(creatorButton!)
       await flushPromises()
 
-      expect(mockTrackBeginCheckout).toHaveBeenCalledTimes(1)
-      expect(mockTrackBeginCheckout).toHaveBeenCalledWith({
+      expect(useTelemetry()?.trackBeginCheckout).toHaveBeenCalledTimes(1)
+      expect(useTelemetry()?.trackBeginCheckout).toHaveBeenCalledWith({
         user_id: 'user-late',
         tier: 'creator',
         cycle: 'yearly',
@@ -471,7 +462,7 @@ describe('PricingTable', () => {
       await userEvent.click(subscribeButton!)
       await flushPromises()
 
-      expect(mockTrackBillingEvent).toHaveBeenCalledWith({
+      expect(useTelemetry()?.trackBillingEvent).toHaveBeenCalledWith({
         operation: 'subscription_checkout',
         stage: 'failed',
         outcome: 'failure',
@@ -500,7 +491,7 @@ describe('PricingTable', () => {
       await userEvent.click(subscribeButton!)
       await flushPromises()
 
-      expect(mockTrackBillingEvent).toHaveBeenCalledWith(
+      expect(useTelemetry()?.trackBillingEvent).toHaveBeenCalledWith(
         expect.objectContaining({ failure_category: 'network' })
       )
     })
@@ -564,3 +555,4 @@ describe('PricingTable', () => {
     })
   })
 })
+vi.mock(import('firebase/auth'))

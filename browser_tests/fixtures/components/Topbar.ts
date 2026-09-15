@@ -2,6 +2,7 @@ import type { Locator, Page } from '@playwright/test'
 
 import type { WorkspaceStore } from '@e2e/types/globals'
 import { TestIds } from '@e2e/fixtures/selectors'
+import { VueNodeHelpers } from '@e2e/fixtures/VueNodeHelpers'
 
 export class Topbar {
   private readonly menuLocator: Locator
@@ -128,9 +129,7 @@ export class Topbar {
     // If menu is already open, close it first to reset state
     const isAlreadyOpen = await this.menuLocator.isVisible()
     if (isAlreadyOpen) {
-      // Click outside the menu to close it properly
-      await this.page.locator('body').click({ position: { x: 500, y: 300 } })
-      await this.menuLocator.waitFor({ state: 'hidden', timeout: 1000 })
+      await this.closeTopbarMenu()
     }
 
     await this.menuTrigger.click()
@@ -138,11 +137,8 @@ export class Topbar {
     return this.menuLocator
   }
 
-  /**
-   * Close the topbar menu by clicking outside
-   */
   async closeTopbarMenu() {
-    await this.page.locator('body').click({ position: { x: 300, y: 10 } })
+    await this.page.keyboard.press('Escape')
     await this.menuLocator.waitFor({ state: 'hidden' })
   }
 
@@ -165,6 +161,7 @@ export class Topbar {
       )
     }
     await this.closeTopbarMenu()
+    await new VueNodeHelpers(this.page).waitForNodes()
   }
 
   /**

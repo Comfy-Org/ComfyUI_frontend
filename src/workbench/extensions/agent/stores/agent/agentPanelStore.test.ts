@@ -1,12 +1,11 @@
-import { createPinia, setActivePinia } from 'pinia'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
 const telemetry = vi.hoisted(() => ({
   trackAgentPanelOpened: vi.fn(),
   trackAgentPanelClosed: vi.fn()
 }))
-vi.mock('@/platform/telemetry', () => ({
+vi.mock<unknown>(import('@/platform/telemetry'), () => ({
   useTelemetry: () => telemetry
 }))
 
@@ -14,20 +13,21 @@ import { useAgentPanelStore } from './agentPanelStore'
 
 const OPEN_STORAGE_KEY = 'Comfy.AgentPanel.open'
 
+function useConsentedAgentPanelStore() {
+  const store = useAgentPanelStore()
+  store.consentAccepted = true
+  return store
+}
+
 describe('agentPanelStore engagement telemetry', () => {
   beforeEach(() => {
     localStorage.clear()
-    setActivePinia(createPinia())
     vi.useFakeTimers()
-  })
-
-  afterEach(() => {
-    useAgentPanelStore().$dispose()
   })
 
   it('emits a restored open only once the rehydrated panel actually docks', async () => {
     localStorage.setItem(OPEN_STORAGE_KEY, 'true')
-    const store = useAgentPanelStore()
+    const store = useConsentedAgentPanelStore()
 
     expect(store.isOpen).toBe(true)
     await nextTick()
@@ -48,7 +48,7 @@ describe('agentPanelStore engagement telemetry', () => {
   })
 
   it('emits exactly one opened event for a user click while the panel is enabled', async () => {
-    const store = useAgentPanelStore()
+    const store = useConsentedAgentPanelStore()
     store.enabled = true
     await nextTick()
 
@@ -61,12 +61,52 @@ describe('agentPanelStore engagement telemetry', () => {
     })
   })
 
+  it('starts a new visible interval after consent hides and restores the panel', async () => {
+    const store = useConsentedAgentPanelStore()
+    store.enabled = true
+    store.open()
+    await nextTick()
+    vi.advanceTimersByTime(2000)
+
+    store.consentAccepted = false
+    await nextTick()
+    expect(store.isOpen).toBe(true)
+    vi.advanceTimersByTime(10000)
+    store.consentAccepted = true
+    await nextTick()
+    vi.advanceTimersByTime(3000)
+    store.close('close_button')
+
+    expect(telemetry.trackAgentPanelClosed).toHaveBeenCalledWith({
+      source: 'close_button',
+      open_duration_ms: 3000
+    })
+    expect(telemetry.trackAgentPanelOpened).toHaveBeenCalledTimes(2)
+    expect(telemetry.trackAgentPanelOpened).toHaveBeenLastCalledWith({
+      source: 'restored'
+    })
+  })
+
   it('never emits for a rehydrated-open panel while the feature stays disabled', async () => {
     localStorage.setItem(OPEN_STORAGE_KEY, 'true')
     useAgentPanelStore()
 
     await nextTick()
     expect(telemetry.trackAgentPanelOpened).not.toHaveBeenCalled()
+  })
+
+  it('suppresses a restored open intent that has no consent', async () => {
+    localStorage.setItem(OPEN_STORAGE_KEY, 'true')
+    const store = useAgentPanelStore()
+    store.enabled = true
+    await nextTick()
+
+    expect(store.isOpen).toBe(true)
+    expect(store.isVisible).toBe(false)
+    expect(telemetry.trackAgentPanelOpened).not.toHaveBeenCalled()
+
+    store.suppressRestoredOpen()
+    expect(store.isOpen).toBe(false)
   })
 
   it('emits opened on toggle-open and closed with the open duration', () => {
@@ -122,11 +162,6 @@ describe('agentPanelStore engagement telemetry', () => {
 describe('agentPanelStore open-state persistence', () => {
   beforeEach(() => {
     localStorage.clear()
-    setActivePinia(createPinia())
-  })
-
-  afterEach(() => {
-    useAgentPanelStore().$dispose()
   })
 
   it('persists the open state when the panel is toggled open', async () => {

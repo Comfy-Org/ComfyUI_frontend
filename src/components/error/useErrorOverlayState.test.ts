@@ -1,4 +1,4 @@
-import { createPinia, setActivePinia } from 'pinia'
+import { getActivePinia } from 'pinia'
 import { render, screen } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, nextTick } from 'vue'
@@ -82,8 +82,7 @@ function makeNodeError(messages: string[]): NodeError {
 }
 
 function mountOverlayState() {
-  const pinia = createPinia()
-  setActivePinia(pinia)
+  const pinia = getActivePinia()!
 
   const Harness = defineComponent({
     setup() {

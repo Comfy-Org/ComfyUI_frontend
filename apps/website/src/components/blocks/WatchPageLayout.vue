@@ -50,7 +50,7 @@ useResizeObserver(descriptionEl, updateClamped)
 </script>
 
 <template>
-  <section :class="cn('max-w-9xl mx-auto px-6 pt-8 pb-16 lg:pb-24', className)">
+  <section :class="cn('mx-auto max-w-9xl px-6 pt-8 pb-16 lg:pb-24', className)">
     <nav v-if="breadcrumbs.length" :aria-label="breadcrumbsLabel" class="mb-6">
       <ol
         class="flex flex-wrap items-center gap-2 text-sm font-light text-primary-warm-gray"
@@ -92,7 +92,7 @@ useResizeObserver(descriptionEl, updateClamped)
         </p>
 
         <h1
-          class="text-3.5xl mt-5 font-light tracking-tight text-primary-comfy-canvas lg:text-5xl"
+          class="mt-5 text-3.5xl font-light tracking-tight text-primary-comfy-canvas lg:text-5xl"
         >
           {{ title }}
         </h1>

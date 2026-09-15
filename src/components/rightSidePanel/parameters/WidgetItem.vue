@@ -102,6 +102,11 @@ const simplifiedWidget = computed((): SimplifiedWidget => {
       : widget.value) as SimplifiedWidgetValue,
     label: widgetState?.label ?? widget.label,
     options: { ...baseOptions, disabled },
+    callback:
+      widgetType.toLowerCase() === 'button'
+        ? (value) =>
+            widget.callback?.(value, canvasStore.canvas ?? undefined, node)
+        : undefined,
     spec: nodeDefStore.getInputSpecForWidget(node, widgetName),
     controlWidget: getControlWidget(widget)
   }

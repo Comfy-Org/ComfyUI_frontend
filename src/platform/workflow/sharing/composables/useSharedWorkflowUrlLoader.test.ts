@@ -1,7 +1,13 @@
+import { useDialogStore } from '@/stores/dialogStore'
 import { fromPartial } from '@total-typescript/shoehorn'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import type { App } from 'vue'
+import { createApp, defineComponent } from 'vue'
 
-import { useSharedWorkflowUrlLoader } from '@/platform/workflow/sharing/composables/useSharedWorkflowUrlLoader'
+import { useTelemetry } from '@/platform/telemetry'
+
+import { i18n } from '@/i18n'
+import { useSharedWorkflowUrlLoader as createSharedWorkflowUrlLoader } from '@/platform/workflow/sharing/composables/useSharedWorkflowUrlLoader'
 import type { SharedWorkflowPayload } from '@/platform/workflow/sharing/types/shareTypes'
 
 const preservedQueryMocks = vi.hoisted(() => ({
@@ -30,7 +36,6 @@ vi.mock<unknown>(import('vue-router'), () => ({
 
 const mockImportPublishedAssets = vi.fn()
 const mockIsLoggedIn = vi.hoisted(() => ({ value: false }))
-const mockTrackShareLinkOpened = vi.hoisted(() => vi.fn())
 
 vi.mock<unknown>(import('@/composables/auth/useCurrentUser'), () => ({
   useCurrentUser: () => ({
@@ -45,11 +50,7 @@ vi.mock<unknown>(import('@/composables/useAppMode'), () => ({
   })
 }))
 
-vi.mock<unknown>(import('@/platform/telemetry'), () => ({
-  useTelemetry: () => ({
-    trackShareLinkOpened: mockTrackShareLinkOpened
-  })
-}))
+vi.mock(import('@/platform/telemetry'))
 
 vi.mock<unknown>(
   import('@/platform/workflow/sharing/services/workflowShareService'),
@@ -88,26 +89,29 @@ vi.mock<unknown>(
   })
 )
 
-vi.mock<unknown>(import('vue-i18n'), () => ({
-  useI18n: () => ({
-    t: vi.fn((key: string) => {
-      if (key === 'g.error') return 'Error'
-      if (key === 'shareWorkflow.loadFailed') {
-        return 'Failed to load shared workflow'
+const apps: App<Element>[] = []
+
+function useSharedWorkflowUrlLoader() {
+  let result: ReturnType<typeof createSharedWorkflowUrlLoader> | undefined
+  const app = createApp(
+    defineComponent({
+      setup() {
+        result = createSharedWorkflowUrlLoader()
+        return () => null
       }
-      if (key === 'openSharedWorkflow.dialogTitle') {
-        return 'Open shared workflow'
-      }
-      if (key === 'openSharedWorkflow.importFailed') {
-        return 'Failed to import workflow assets'
-      }
-      return key
     })
-  })
-}))
+  )
+  app.use(i18n)
+  app.mount(document.createElement('div'))
+  apps.push(app)
+  if (!result) throw new Error('Shared workflow URL loader was not initialized')
+  return result
+}
+
+afterEach(() => apps.splice(0).forEach((app) => app.unmount()))
 
 const mockShowLayoutDialog = vi.hoisted(() => vi.fn())
-const mockCloseDialog = vi.hoisted(() => vi.fn())
+
 const mockHideTemplateSelector = vi.hoisted(() => vi.fn())
 const mockDialogStack = vi.hoisted(
   () =>
@@ -117,19 +121,10 @@ const mockDialogStack = vi.hoisted(
       dialogComponentProps: Record<string, unknown>
     }>
 )
-const mockUpdateDialog = vi.hoisted(() => vi.fn())
 
 vi.mock<unknown>(import('@/services/dialogService'), () => ({
   useDialogService: () => ({
     showLayoutDialog: mockShowLayoutDialog
-  })
-}))
-
-vi.mock<unknown>(import('@/stores/dialogStore'), () => ({
-  useDialogStore: () => ({
-    dialogStack: mockDialogStack,
-    closeDialog: mockCloseDialog,
-    updateDialog: mockUpdateDialog
   })
 }))
 
@@ -202,13 +197,19 @@ function createDeferred() {
   return { promise, resolve }
 }
 
+beforeEach(() => {
+  Object.assign(useDialogStore(), { dialogStack: [] })
+  vi.mocked(useDialogStore().closeDialog).mockImplementation(() => {})
+  vi.mocked(useDialogStore().updateDialog).mockReturnValue(false)
+})
+
 describe('useSharedWorkflowUrlLoader', () => {
   beforeEach(() => {
     mockQueryParams = {}
     mockIsLoggedIn.value = false
     mockDialogStack.length = 0
     mockShowLayoutDialog.mockImplementation(createDialogInstance)
-    mockUpdateDialog.mockImplementation(
+    vi.mocked(useDialogStore().updateDialog).mockImplementation(
       (options: {
         key: string
         contentProps?: Record<string, unknown>
@@ -245,7 +246,7 @@ describe('useSharedWorkflowUrlLoader', () => {
     expect(loaded).toBe('not-present')
     expect(mockShowLayoutDialog).not.toHaveBeenCalled()
     expect(mockLoadGraphData).not.toHaveBeenCalled()
-    expect(mockTrackShareLinkOpened).not.toHaveBeenCalled()
+    expect(useTelemetry()?.trackShareLinkOpened).not.toHaveBeenCalled()
   })
 
   it('opens dialog immediately with shareId and loads graph on confirm', async () => {
@@ -269,7 +270,7 @@ describe('useSharedWorkflowUrlLoader', () => {
       'Test Workflow',
       { openSource: 'shared_url', shareId: 'share-id-1' }
     )
-    expect(mockTrackShareLinkOpened).toHaveBeenCalledWith({
+    expect(useTelemetry()?.trackShareLinkOpened).toHaveBeenCalledWith({
       share_id: 'share-id-1',
       is_authenticated: false,
       view_mode: 'graph',
@@ -293,7 +294,7 @@ describe('useSharedWorkflowUrlLoader', () => {
     const loaded = await loadSharedWorkflowFromUrl()
 
     expect(loaded).toBe('loaded')
-    expect(mockTrackShareLinkOpened).toHaveBeenCalledWith({
+    expect(useTelemetry()?.trackShareLinkOpened).toHaveBeenCalledWith({
       share_id: 'share-id-1',
       is_authenticated: true,
       view_mode: 'graph',
@@ -329,19 +330,19 @@ describe('useSharedWorkflowUrlLoader', () => {
     await Promise.resolve()
 
     expect(dialogInstance.contentProps.openingAction).toBe('copy-and-open')
-    expect(mockUpdateDialog).toHaveBeenCalledWith({
+    expect(useDialogStore().updateDialog).toHaveBeenCalledWith({
       key: 'open-shared-workflow',
       contentProps: { openingAction: 'copy-and-open' }
     })
     expect(dialogInstance.dialogComponentProps.closable).toBeUndefined()
     expect(dialogInstance.dialogComponentProps.closeOnEscape).toBeUndefined()
     expect(dialogInstance.dialogComponentProps.dismissableMask).toBeUndefined()
-    expect(mockCloseDialog).not.toHaveBeenCalled()
+    expect(useDialogStore().closeDialog).not.toHaveBeenCalled()
 
     graphLoad.resolve()
     await loadPromise
 
-    expect(mockCloseDialog).toHaveBeenLastCalledWith({
+    expect(useDialogStore().closeDialog).toHaveBeenLastCalledWith({
       key: 'open-shared-workflow'
     })
   })

@@ -12,7 +12,7 @@ const preservedQueryMocks = vi.hoisted(() => ({
 }))
 
 vi.mock(
-  '@/platform/navigation/preservedQueryManager',
+  import('@/platform/navigation/preservedQueryManager'),
   () => preservedQueryMocks
 )
 
@@ -21,7 +21,7 @@ const mockRouteQuery = vi.hoisted(() => ({
 }))
 const mockRouterReplace = vi.hoisted(() => vi.fn(async () => undefined))
 
-vi.mock('vue-router', () => ({
+vi.mock<unknown>(import('vue-router'), () => ({
   useRoute: () => ({
     query: mockRouteQuery.value
   }),
@@ -32,8 +32,8 @@ vi.mock('vue-router', () => ({
 
 const mockShowPricingTable = vi.hoisted(() => vi.fn())
 
-vi.mock(
-  '@/platform/cloud/subscription/composables/useSubscriptionDialog',
+vi.mock<unknown>(
+  import('@/platform/cloud/subscription/composables/useSubscriptionDialog'),
   () => ({
     useSubscriptionDialog: () => ({
       showPricingTable: mockShowPricingTable
@@ -49,7 +49,7 @@ const mockTeamCreditStops = vi.hoisted(() => ({
 }))
 const mockFetchPlans = vi.hoisted(() => vi.fn())
 
-vi.mock('@/composables/billing/useBillingContext', () => ({
+vi.mock<unknown>(import('@/composables/billing/useBillingContext'), () => ({
   useBillingContext: () => ({
     teamCreditStops: mockTeamCreditStops,
     fetchPlans: mockFetchPlans
@@ -61,18 +61,24 @@ const mockInitializeCapabilities = vi.hoisted(() =>
   vi.fn(async () => undefined)
 )
 
-vi.mock('@/platform/workspace/composables/useWorkspaceUI', () => ({
-  useWorkspaceUI: () => ({
-    permissions: mockPermissions,
-    canOpenPricingSurface: mockCanOpenPricingSurface
+vi.mock<unknown>(
+  import('@/platform/workspace/composables/useWorkspaceUI'),
+  () => ({
+    useWorkspaceUI: () => ({
+      permissions: mockPermissions,
+      canOpenPricingSurface: mockCanOpenPricingSurface
+    })
   })
-}))
+)
 
-vi.mock('@/platform/workspace/composables/useBillingCapabilities', () => ({
-  useBillingCapabilities: () => ({
-    initialize: mockInitializeCapabilities
+vi.mock<unknown>(
+  import('@/platform/workspace/composables/useBillingCapabilities'),
+  () => ({
+    useBillingCapabilities: () => ({
+      initialize: mockInitializeCapabilities
+    })
   })
-}))
+)
 
 const TEAM_CREDIT_STOPS = {
   default_stop_index: 2,
