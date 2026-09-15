@@ -1,3 +1,4 @@
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { stripPaymentReturnParams } from '@/platform/cloud/subscription/utils/paymentReturnUrl'
@@ -11,15 +12,19 @@ const mocks = vi.hoisted(() => ({
 
 vi.mock(import('@/composables/billing/useBillingContext'))
 
-vi.mock<unknown>(import('@/composables/useFeatureFlags'), () => ({
-  useFeatureFlags: () => ({
+vi.mock(import('@/composables/useFeatureFlags'))
+
+beforeEach(() => {
+  vi.mocked(useFeatureFlags).mockReturnValue({
+    ...useFeatureFlags(),
     flags: {
+      ...useFeatureFlags().flags,
       get embeddedCheckoutEnabled() {
         return mocks.embeddedCheckoutEnabled
       }
     }
   })
-}))
+})
 
 describe('usePaymentReturnUrlLoader', () => {
   beforeEach(() => {

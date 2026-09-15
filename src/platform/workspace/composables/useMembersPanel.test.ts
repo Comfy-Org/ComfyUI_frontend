@@ -1,3 +1,4 @@
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { getActivePinia } from 'pinia'
 import type { Pinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -466,15 +467,19 @@ vi.mock<unknown>(import('@/services/dialogService'), () => ({
 
 const mockBillingControlEnabled = vi.hoisted(() => ({ value: true }))
 
-vi.mock<unknown>(import('@/composables/useFeatureFlags'), () => ({
-  useFeatureFlags: () => ({
+vi.mock(import('@/composables/useFeatureFlags'))
+
+beforeEach(() => {
+  vi.mocked(useFeatureFlags).mockReturnValue({
+    ...useFeatureFlags(),
     flags: {
+      ...useFeatureFlags().flags,
       get billingControlEnabled() {
         return mockBillingControlEnabled.value
       }
     }
   })
-}))
+})
 
 describe('useMembersPanel', () => {
   const apps: App<Element>[] = []

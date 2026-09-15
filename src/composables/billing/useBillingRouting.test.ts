@@ -1,3 +1,4 @@
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { storeToRefs } from 'pinia'
@@ -18,15 +19,19 @@ let mockActiveWorkspace: Ref<
 >
 let mockActiveWorkspaceBillingRail: Ref<BillingRail | null>
 
-vi.mock<unknown>(import('@/composables/useFeatureFlags'), () => ({
-  useFeatureFlags: () => ({
+vi.mock(import('@/composables/useFeatureFlags'))
+
+beforeEach(() => {
+  vi.mocked(useFeatureFlags).mockReturnValue({
+    ...useFeatureFlags(),
     flags: {
+      ...useFeatureFlags().flags,
       get legacyBillingMigrationEnabled() {
         return mockLegacyBillingMigrationEnabled.value
       }
     }
   })
-}))
+})
 
 vi.mock(import('@/platform/distribution/types'), () => ({
   get isCloud() {

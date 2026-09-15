@@ -1,3 +1,4 @@
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useModelToNodeStore } from '@/stores/modelToNodeStore'
 import { render, screen, waitFor } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
@@ -12,9 +13,13 @@ const mockAssetsByKey = vi.hoisted(() => new Map<string, AssetItem[]>())
 const mockLoadingByKey = vi.hoisted(() => new Map<string, boolean>())
 const mockSupportsModelTypeTags = vi.hoisted(() => ({ value: false }))
 
-vi.mock<unknown>(import('@/composables/useFeatureFlags'), () => ({
-  useFeatureFlags: () => ({
+vi.mock(import('@/composables/useFeatureFlags'))
+
+beforeEach(() => {
+  vi.mocked(useFeatureFlags).mockReturnValue({
+    ...useFeatureFlags(),
     flags: {
+      ...useFeatureFlags().flags,
       get supportsModelTypeTags() {
         return mockSupportsModelTypeTags.value
       },
@@ -23,7 +28,7 @@ vi.mock<unknown>(import('@/composables/useFeatureFlags'), () => ({
       }
     }
   })
-}))
+})
 
 vi.mock<unknown>(import('@/platform/assets/composables/useModelTypes'), () => ({
   useModelTypes: () => ({

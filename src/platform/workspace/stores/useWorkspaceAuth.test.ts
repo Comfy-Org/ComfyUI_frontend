@@ -8,9 +8,10 @@ import {
   setPersistence
 } from 'firebase/auth'
 import { storeToRefs } from 'pinia'
-import { nextTick } from 'vue'
+import { nextTick, ref } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useTelemetry } from '@/platform/telemetry'
 
 import {
@@ -86,35 +87,20 @@ vi.mock(import('@/i18n'), () => ({
   }
 }))
 
-/** Ref-backed like the real remote-config flag, so the store's watcher sees a rollback. */
-const mockUnifiedCloudAuthEnabled = vi.hoisted(() => {
-  let flag: { value: boolean } | undefined
-  return {
-    bind(target: { value: boolean }) {
-      flag = target
-    },
-    get value(): boolean {
-      return flag?.value ?? false
-    },
-    set value(next: boolean) {
-      if (flag) flag.value = next
-    }
-  }
-})
+const mockUnifiedCloudAuthEnabled = ref(false)
 
-vi.mock<unknown>(import('@/composables/useFeatureFlags'), async () => {
-  const { ref } = await import('vue')
-  const flag = ref(false)
-  mockUnifiedCloudAuthEnabled.bind(flag)
-  return {
-    useFeatureFlags: () => ({
-      flags: {
-        get unifiedCloudAuthEnabled() {
-          return flag.value
-        }
+vi.mock(import('@/composables/useFeatureFlags'))
+
+beforeEach(() => {
+  vi.mocked(useFeatureFlags).mockReturnValue({
+    ...useFeatureFlags(),
+    flags: {
+      ...useFeatureFlags().flags,
+      get unifiedCloudAuthEnabled() {
+        return mockUnifiedCloudAuthEnabled.value
       }
-    })
-  }
+    }
+  })
 })
 
 const mockWorkspace = {

@@ -1,3 +1,4 @@
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { fromPartial } from '@total-typescript/shoehorn'
 import {
   useWorkflowBookmarkStore,
@@ -55,9 +56,19 @@ vi.mock<unknown>(
   })
 )
 
-vi.mock<unknown>(import('@/composables/useFeatureFlags'), () => ({
-  useFeatureFlags: vi.fn(() => mockFeatureFlags)
-}))
+vi.mock(import('@/composables/useFeatureFlags'))
+
+beforeEach(() => {
+  vi.mocked(useFeatureFlags).mockReturnValue({
+    ...useFeatureFlags(),
+    flags: {
+      ...useFeatureFlags().flags,
+      get linearToggleEnabled() {
+        return mockFeatureFlags.flags.linearToggleEnabled
+      }
+    }
+  })
+})
 
 function useWorkflowActionsMenu(
   ...args: Parameters<typeof useWorkflowActionsMenuComposable>

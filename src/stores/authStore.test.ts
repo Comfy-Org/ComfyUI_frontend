@@ -1,3 +1,4 @@
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { FirebaseError } from 'firebase/app'
@@ -106,11 +107,19 @@ vi.mock<unknown>(
   import('@/platform/distribution/types'),
   () => mockDistributionTypes
 )
-vi.mock<unknown>(import('@/composables/useFeatureFlags'), () => ({
-  useFeatureFlags: () => ({
-    flags: mockFeatureFlags
+vi.mock(import('@/composables/useFeatureFlags'))
+
+beforeEach(() => {
+  vi.mocked(useFeatureFlags).mockReturnValue({
+    ...useFeatureFlags(),
+    flags: {
+      ...useFeatureFlags().flags,
+      get unifiedCloudAuthEnabled() {
+        return mockFeatureFlags.unifiedCloudAuthEnabled
+      }
+    }
   })
-}))
+})
 
 // Mock apiKeyAuthStore
 

@@ -1,3 +1,4 @@
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
@@ -17,9 +18,19 @@ vi.mock<unknown>(import('@/scripts/api'), () => ({
   api: { apiURL: mockApiURL }
 }))
 
-vi.mock<unknown>(import('@/composables/useFeatureFlags'), () => ({
-  useFeatureFlags: () => ({ flags: mockFlags })
-}))
+vi.mock(import('@/composables/useFeatureFlags'))
+
+beforeEach(() => {
+  vi.mocked(useFeatureFlags).mockReturnValue({
+    ...useFeatureFlags(),
+    flags: {
+      ...useFeatureFlags().flags,
+      get assetsEnabled() {
+        return mockFlags.assetsEnabled
+      }
+    }
+  })
+})
 
 function createAsset(overrides: Partial<AssetItem> = {}): AssetItem {
   return {

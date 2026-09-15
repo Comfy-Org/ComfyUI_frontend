@@ -1,5 +1,6 @@
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { render, screen } from '@testing-library/vue'
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
 import UserCheckView from './UserCheckView.vue'
@@ -17,11 +18,17 @@ vi.mock<unknown>(import('@/composables/useErrorHandling'), () => ({
   })
 }))
 
-vi.mock<unknown>(import('@/composables/useFeatureFlags'), () => ({
-  useFeatureFlags: () => ({
-    flags: { onboardingSurveyEnabled: true }
+vi.mock(import('@/composables/useFeatureFlags'))
+
+beforeEach(() => {
+  vi.mocked(useFeatureFlags).mockReturnValue({
+    ...useFeatureFlags(),
+    flags: {
+      ...useFeatureFlags().flags,
+      onboardingSurveyEnabled: true
+    }
   })
-}))
+})
 
 vi.mock(import('@/platform/cloud/onboarding/auth'), () => ({
   getUserCloudStatus: () => new Promise(() => {}),
