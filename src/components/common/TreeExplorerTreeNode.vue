@@ -1,22 +1,22 @@
 <template>
   <div
     ref="container"
-    :class="[
-      'tree-node',
-      {
-        'can-drop': canDrop,
-        'tree-folder': !props.node.leaf,
-        'tree-leaf': props.node.leaf
-      }
-    ]"
+    :class="
+      cn(
+        'tree-node flex w-full items-center justify-between rounded-sm',
+        canDrop && 'border border-border-default',
+        props.node.leaf ? 'tree-leaf' : 'tree-folder'
+      )
+    "
     :data-testid="`tree-node-${node.key}`"
   >
-    <div class="node-content">
-      <span class="node-label">
+    <div class="node-content flex min-w-0 flex-1 items-center">
+      <span class="node-label min-w-0">
         <slot name="before-label" :node="props.node" />
         <EditableText
           :model-value="node.label"
           :is-editing="isEditing"
+          label-class="break-all"
           @edit="handleRename"
         />
         <slot name="after-label" :node="props.node" />
@@ -26,7 +26,7 @@
         :value="nodeBadgeText"
         variant="badge"
         severity="secondary"
-        class="leaf-count-badge"
+        class="ml-2"
       />
     </div>
     <div
@@ -40,6 +40,8 @@
 <script setup lang="ts" generic="T">
 import { setCustomNativeDragPreview } from '@atlaskit/pragmatic-drag-and-drop/element/set-custom-native-drag-preview'
 import { computed, inject, ref } from 'vue'
+
+import { cn } from '@comfyorg/tailwind-utils'
 
 import EditableText from '@/components/common/EditableText.vue'
 import Badge from '@/components/ui/badge/Badge.vue'
@@ -88,7 +90,7 @@ const container = ref<HTMLElement | null>(null)
 const canDrop = ref(false)
 
 const treeNodeElementGetter = () =>
-  container.value?.closest('.p-tree-node-content') as HTMLElement
+  container.value?.closest<HTMLElement>('.tree-explorer-item') ?? null
 
 if (props.node.draggable) {
   usePragmaticDraggable(treeNodeElementGetter, {
@@ -139,26 +141,3 @@ if (props.node.droppable) {
   })
 }
 </script>
-
-<style scoped>
-.tree-node {
-  width: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-.leaf-count-badge {
-  margin-left: 0.5rem;
-}
-.node-content {
-  display: flex;
-  align-items: center;
-  flex-grow: 1;
-}
-.leaf-label {
-  margin-left: 0.5rem;
-}
-:deep(.editable-text span) {
-  word-break: break-all;
-}
-</style>
