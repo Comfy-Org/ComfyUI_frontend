@@ -414,9 +414,7 @@
       "auth/popup-closed-by-user": "La ventana de inicio de sesión se cerró antes de finalizar el inicio de sesión. Inténtalo de nuevo.",
       "auth/too-many-requests": "Demasiados intentos de inicio de sesión. Por favor, espera un momento e inténtalo de nuevo.",
       "auth/user-disabled": "Esta cuenta ha sido deshabilitada. Por favor, contacta al soporte.",
-      "auth/user-not-found": "Credenciales de inicio de sesión no válidas. Comprueba tu correo electrónico y contraseña.",
       "auth/weak-password": "La contraseña es demasiado débil. Por favor, usa una contraseña más segura con al menos 6 caracteres.",
-      "auth/wrong-password": "Credenciales de inicio de sesión no válidas. Comprueba tu correo electrónico y contraseña.",
       "generic": "Ocurrió un error al iniciar sesión. Por favor, inténtalo de nuevo.",
       "signupBlocked": "No pudimos crear tu cuenta en este momento. Por favor, inténtalo de nuevo más tarde. Si el problema persiste, escribe a support@comfy.org."
     },

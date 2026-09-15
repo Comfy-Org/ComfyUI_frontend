@@ -414,9 +414,7 @@
       "auth/popup-closed-by-user": "Oturum açma tamamlanmadan oturum açma penceresi kapatıldı. Lütfen tekrar deneyin.",
       "auth/too-many-requests": "Çok fazla giriş denemesi. Lütfen bir süre bekleyip tekrar deneyin.",
       "auth/user-disabled": "Bu hesap devre dışı bırakıldı. Lütfen destek ekibiyle iletişime geçin.",
-      "auth/user-not-found": "Geçersiz giriş bilgileri. Lütfen e-postanızı ve parolanızı kontrol edin.",
       "auth/weak-password": "Parola çok zayıf. Lütfen en az 6 karakterden oluşan daha güçlü bir parola kullanın.",
-      "auth/wrong-password": "Geçersiz giriş bilgileri. Lütfen e-postanızı ve parolanızı kontrol edin.",
       "generic": "Oturum açarken bir hata oluştu. Lütfen tekrar deneyin.",
       "signupBlocked": "Şu anda hesabınızı oluşturamıyoruz. Lütfen daha sonra tekrar deneyin. Sorun devam ederse support@comfy.org adresine e-posta gönderin."
     },

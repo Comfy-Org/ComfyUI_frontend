@@ -414,9 +414,7 @@
       "auth/popup-closed-by-user": "A janela de login foi fechada antes da conclusão do login. Tente novamente.",
       "auth/too-many-requests": "Muitas tentativas de login. Aguarde um momento e tente novamente.",
       "auth/user-disabled": "Esta conta foi desativada. Por favor, entre em contato com o suporte.",
-      "auth/user-not-found": "Credenciais de login inválidas. Verifique seu e-mail e senha.",
       "auth/weak-password": "A senha é muito fraca. Use uma senha mais forte com pelo menos 6 caracteres.",
-      "auth/wrong-password": "Credenciais de login inválidas. Verifique seu e-mail e senha.",
       "generic": "Algo deu errado ao fazer login. Por favor, tente novamente.",
       "signupBlocked": "Não foi possível criar sua conta agora. Por favor, tente novamente mais tarde. Se o problema persistir, envie um e-mail para support@comfy.org."
     },

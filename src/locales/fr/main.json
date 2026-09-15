@@ -414,9 +414,7 @@
       "auth/popup-closed-by-user": "La fenêtre de connexion s’est fermée avant la fin de la connexion. Veuillez réessayer.",
       "auth/too-many-requests": "Trop de tentatives de connexion. Veuillez patienter un moment et réessayer.",
       "auth/user-disabled": "Ce compte a été désactivé. Veuillez contacter le support.",
-      "auth/user-not-found": "Identifiants de connexion invalides. Veuillez vérifier votre e-mail et votre mot de passe.",
       "auth/weak-password": "Le mot de passe est trop faible. Veuillez utiliser un mot de passe plus fort avec au moins 6 caractères.",
-      "auth/wrong-password": "Identifiants de connexion invalides. Veuillez vérifier votre e-mail et votre mot de passe.",
       "generic": "Une erreur s'est produite lors de votre connexion. Veuillez réessayer.",
       "signupBlocked": "Nous ne pouvons pas créer votre compte pour le moment. Veuillez réessayer plus tard. Si le problème persiste, contactez support@comfy.org."
     },

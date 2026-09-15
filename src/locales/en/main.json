@@ -2637,8 +2637,6 @@
     "errors": {
       "auth/invalid-email": "Please enter a valid email address.",
       "auth/user-disabled": "This account has been disabled. Please contact support.",
-      "auth/user-not-found": "Invalid login credentials. Please check your email and password.",
-      "auth/wrong-password": "Invalid login credentials. Please check your email and password.",
       "auth/email-already-in-use": "We couldn't create an account with this email. Try signing in or resetting your password instead.",
       "auth/weak-password": "Password is too weak. Please use a stronger password with at least 6 characters.",
       "auth/too-many-requests": "Too many login attempts. Please wait a moment and try again.",
