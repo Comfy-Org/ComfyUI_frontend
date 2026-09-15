@@ -1,16 +1,10 @@
 <script setup lang="ts">
-import {
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuPortal,
-  DropdownMenuRoot,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger
-} from 'reka-ui'
 import { computed, nextTick, ref } from 'vue'
 import type { ComponentPublicInstance } from 'vue'
 import { useI18n } from 'vue-i18n'
+import type { ComponentProps } from 'vue-component-type-helpers'
 
+import DropdownMenu from '@/components/common/DropdownMenu.vue'
 import Button from '@/components/ui/button/Button.vue'
 import Input from '@/components/ui/input/Input.vue'
 import AccessibleTooltip from '@/components/ui/tooltip/AccessibleTooltip.vue'
@@ -19,6 +13,10 @@ import type {
   ChatSession,
   HistoryGroups
 } from '../../stores/agent/agentChatHistoryStore'
+
+type DropdownEntries = NonNullable<
+  ComponentProps<typeof DropdownMenu>['entries']
+>
 
 const { groups } = defineProps<{ groups: HistoryGroups }>()
 const emit = defineEmits<{
@@ -101,6 +99,22 @@ function commitRename(session: ChatSession): void {
 // keyboard users keep their place.
 function onMenuCloseAutoFocus(event: Event): void {
   if (renamingId.value !== null) event.preventDefault()
+}
+
+function sessionMenuEntries(session: ChatSession): DropdownEntries {
+  return [
+    {
+      label: t('g.rename'),
+      icon: 'icon-[lucide--pencil]',
+      command: () => startRename(session)
+    },
+    { separator: true },
+    {
+      label: t('g.delete'),
+      icon: 'icon-[lucide--trash-2]',
+      command: () => emit('delete', session.id)
+    }
+  ]
 }
 
 function onRenameKeydown(session: ChatSession, event: KeyboardEvent): void {
@@ -210,8 +224,14 @@ function onRenameKeydown(session: ChatSession, event: KeyboardEvent): void {
                 </Button>
               </template>
             </AccessibleTooltip>
-            <DropdownMenuRoot>
-              <DropdownMenuTrigger as-child>
+            <DropdownMenu
+              :entries="sessionMenuEntries(session)"
+              side="bottom"
+              align="end"
+              :side-offset="4"
+              @close-auto-focus="onMenuCloseAutoFocus"
+            >
+              <template #button>
                 <Button
                   variant="muted-textonly"
                   size="icon-sm"
@@ -220,35 +240,8 @@ function onRenameKeydown(session: ChatSession, event: KeyboardEvent): void {
                 >
                   <span class="icon-[lucide--chevron-down] size-3" />
                 </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuPortal>
-                <DropdownMenuContent
-                  side="bottom"
-                  align="end"
-                  :side-offset="4"
-                  class="agent-scope z-1100 flex w-32 flex-col gap-1 overflow-clip rounded-lg bg-secondary-background p-1 shadow-md ring-1 ring-border-subtle ring-inset"
-                  @close-auto-focus="onMenuCloseAutoFocus"
-                >
-                  <DropdownMenuItem
-                    class="flex h-6 w-full shrink-0 cursor-pointer items-center gap-1.5 rounded-lg px-1.5 py-1 text-xs text-base-foreground outline-none data-highlighted:bg-secondary-background-hover"
-                    @select="startRename(session)"
-                  >
-                    <span class="icon-[lucide--pencil] size-4 shrink-0" />
-                    <span class="truncate">{{ t('g.rename') }}</span>
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator
-                    class="relative h-0 w-full shrink-0 before:absolute before:inset-x-0 before:top-0 before:h-px before:bg-component-node-border"
-                  />
-                  <DropdownMenuItem
-                    class="flex h-6 w-full shrink-0 cursor-pointer items-center gap-1.5 rounded-lg px-1.5 py-1 text-xs text-base-foreground outline-none data-highlighted:bg-secondary-background-hover data-highlighted:text-destructive-background"
-                    @select="emit('delete', session.id)"
-                  >
-                    <span class="icon-[lucide--trash-2] size-4 shrink-0" />
-                    <span class="truncate">{{ t('g.delete') }}</span>
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenuPortal>
-            </DropdownMenuRoot>
+              </template>
+            </DropdownMenu>
           </template>
         </div>
       </section>
