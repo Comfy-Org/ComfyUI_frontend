@@ -10,6 +10,7 @@ import type {
 } from '@comfyorg/account/session'
 
 import type { WorkshopModelDetail } from '../../config/models-catalogue'
+import type { Locale } from '../../i18n/translations'
 import { subscribeToWorkshopBuyCredits } from '../../config/workshop-buy-credits'
 import { runWorkshopRouter } from '../../config/workshop-router'
 import { WorkshopRouterError } from '../../config/workshop-router-errors'
@@ -175,6 +176,7 @@ function mountDetail(options?: {
   clone?: { href: string }
   details?: () => ReturnType<typeof h>
   model?: WorkshopModelDetail
+  locale?: Locale
 }) {
   return render(
     defineComponent({
@@ -184,7 +186,8 @@ function mountDetail(options?: {
             ModelDetail,
             {
               model: options?.model ?? model,
-              clone: options?.clone
+              clone: options?.clone,
+              locale: options?.locale
             },
             options?.details ? { details: options.details } : undefined
           )
@@ -1593,6 +1596,26 @@ describe('ModelDetail', () => {
       ).toBe(expected)
     }
   )
+
+  it('asks in the reader locale before it overwrites', async () => {
+    auth.session.value = credential
+    mountDetail({ locale: 'zh-CN' })
+    await nextTick()
+    const prompt = screen.getByTestId('field-prompt')
+    await user().clear(prompt)
+    await user().type(prompt, '我写的')
+
+    await user().click(
+      screen.getByRole('button', { name: /在 Playground 中打开$/ })
+    )
+
+    expect(screen.getByTestId('example-replace-dialog').textContent).toContain(
+      '要替换你填写的内容吗？'
+    )
+    expect(screen.getByTestId('example-replace-confirm').textContent).toContain(
+      '使用该示例'
+    )
+  })
 
   it('asks before an example overwrites a native JSON request too', async () => {
     const jsonModel: WorkshopModelDetail = {
