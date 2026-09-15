@@ -115,12 +115,7 @@ function rememberModel(
             >
               {{ t(labelKey[section.useCase], locale) }}
               <span class="text-sm text-primary-warm-gray tabular-nums">
-                {{
-                  t('workshop.sections.seeAll', locale).replace(
-                    '{n}',
-                    `${section.total}`
-                  )
-                }}
+                {{ section.total }}
               </span>
               <ChevronRight
                 class="size-5 self-center transition-transform group-hover:translate-x-0.5"
@@ -160,12 +155,7 @@ function rememberModel(
             >
               {{ t('workshop.sections.otherFormats', locale) }}
               <span class="text-sm text-primary-warm-gray tabular-nums">
-                {{
-                  t('workshop.sections.seeAll', locale).replace(
-                    '{n}',
-                    `${otherFormats.length}`
-                  )
-                }}
+                {{ otherFormats.length }}
               </span>
               <ChevronRight
                 class="size-5 self-center transition-transform group-hover:translate-x-0.5"

@@ -9363,10 +9363,6 @@ Enterprise`
     en: '{n} models',
     'zh-CN': '{n} 个模型'
   },
-  'workshop.sections.seeAll': {
-    en: 'See all {n}',
-    'zh-CN': '查看全部 {n}'
-  },
   'workshop.useCase.label': {
     en: 'Browse by use case',
     'zh-CN': '按用途浏览'

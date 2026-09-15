@@ -169,8 +169,8 @@ test.describe('Models catalog', () => {
     const rowHeading = await videos
       .getByRole('heading', { level: 2 })
       .innerText()
-    const promisedCount = Number(rowHeading.match(/See all\s+(\d+)\s*$/)?.[1])
-    const rowLabel = rowHeading.replace(/\s*See all\s+\d+\s*$/, '').trim()
+    const promisedCount = Number(rowHeading.match(/(\d+)\s*$/)?.[1])
+    const rowLabel = rowHeading.replace(/\s*\d+\s*$/, '').trim()
     expect(promisedCount).toBeGreaterThan(0)
     await videos.getByTestId('section-generate-videos-open').click()
     const cards = page
