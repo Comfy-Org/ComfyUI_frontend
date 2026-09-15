@@ -1,6 +1,7 @@
 import { fromAny, fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { mockFeatureFlag } from '@/utils/__tests__/mockFeatureFlag'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import type { JobListItem } from '@/platform/remote/comfyui/jobs/jobTypes'
 import {
@@ -17,9 +18,11 @@ const { mockFetchHistoryPage } = vi.hoisted(() => ({
   mockFetchHistoryPage: vi.fn()
 }))
 
-vi.mock<unknown>(import('@/composables/useFeatureFlags'), () => ({
-  useFeatureFlags: () => ({ flags: { assetsEnabled: true } })
-}))
+vi.mock(import('@/composables/useFeatureFlags'))
+
+beforeEach(() => {
+  mockFeatureFlag('assetsEnabled', true)
+})
 
 vi.mock<unknown>(import('@/platform/assets/services/assetService'), () => ({
   assetService: {

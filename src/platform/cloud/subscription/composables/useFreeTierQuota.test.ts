@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { effectScope, nextTick } from 'vue'
 import type { EffectScope } from 'vue'
 
+import { mockFeatureFlag } from '@/utils/__tests__/mockFeatureFlag'
 import { useFreeTierQuota } from './useFreeTierQuota'
 
 vi.mock(import('@vueuse/core'), () => ({
@@ -16,11 +17,7 @@ vi.mock(import('@/platform/distribution/types'), () => ({
   }
 }))
 
-vi.mock<unknown>(import('@/composables/useFeatureFlags'), () => ({
-  useFeatureFlags: () => ({
-    flags: { freeTierJobAllowanceEnabled: true }
-  })
-}))
+vi.mock(import('@/composables/useFeatureFlags'))
 
 const mockCreditBadges = vi.hoisted<{ value: object[] }>(() => ({ value: [] }))
 vi.mock<unknown>(import('@/scripts/app'), () => ({
@@ -42,6 +39,7 @@ describe('useFreeTierQuota', () => {
   let scope: EffectScope
 
   function createQuota() {
+    mockFeatureFlag('freeTierJobAllowanceEnabled', true)
     const quota = scope.run(() => useFreeTierQuota())
     if (!quota) throw new Error('Failed to create free tier quota')
     return quota

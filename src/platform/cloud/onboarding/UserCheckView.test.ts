@@ -2,6 +2,7 @@ import { render, screen } from '@testing-library/vue'
 import { describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
+import { mockFeatureFlag } from '@/utils/__tests__/mockFeatureFlag'
 import UserCheckView from './UserCheckView.vue'
 
 vi.mock<unknown>(import('vue-router'), () => ({
@@ -17,11 +18,7 @@ vi.mock<unknown>(import('@/composables/useErrorHandling'), () => ({
   })
 }))
 
-vi.mock<unknown>(import('@/composables/useFeatureFlags'), () => ({
-  useFeatureFlags: () => ({
-    flags: { onboardingSurveyEnabled: true }
-  })
-}))
+vi.mock(import('@/composables/useFeatureFlags'))
 
 vi.mock(import('@/platform/cloud/onboarding/auth'), () => ({
   getUserCloudStatus: () => new Promise(() => {}),
@@ -30,6 +27,7 @@ vi.mock(import('@/platform/cloud/onboarding/auth'), () => ({
 
 describe('UserCheckView', () => {
   it('renders bootstrap state without unresolved component warnings', () => {
+    mockFeatureFlag('onboardingSurveyEnabled', true)
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
 
     render(UserCheckView, {

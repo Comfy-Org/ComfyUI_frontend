@@ -1,5 +1,8 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { nextTick } from 'vue'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { effectScope, nextTick, ref } from 'vue'
+import type { EffectScope } from 'vue'
+
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 
 const mocks = vi.hoisted(() => ({
   billing: null as {
@@ -9,31 +12,27 @@ const mocks = vi.hoisted(() => ({
     subscription: { value: { hasFunds: boolean } | null }
     fetchStatus: ReturnType<typeof vi.fn>
     fetchBalance: ReturnType<typeof vi.fn>
-  } | null,
-  billingControlEnabled: null as { value: boolean } | null,
-  v1PaymentRecovery: null as { value: boolean } | null
+  } | null
 }))
 
 vi.mock(import('@/platform/distribution/types'), () => ({ isCloud: true }))
 
-vi.mock<unknown>(import('@/composables/useFeatureFlags'), async () => {
-  const { ref } = await import('vue')
-  const billingControlEnabled = ref(true)
-  const v1PaymentRecovery = ref(true)
-  mocks.billingControlEnabled = billingControlEnabled
-  mocks.v1PaymentRecovery = v1PaymentRecovery
-  return {
-    useFeatureFlags: () => ({
-      flags: {
-        get billingControlEnabled() {
-          return billingControlEnabled.value
-        },
-        get v1PaymentRecovery() {
-          return v1PaymentRecovery.value
-        }
-      }
-    })
-  }
+vi.mock(import('@/composables/useFeatureFlags'))
+
+const billingControlEnabled = ref(true)
+const v1PaymentRecovery = ref(true)
+
+beforeEach(() => {
+  const featureFlags = useFeatureFlags()
+  vi.mocked(useFeatureFlags).mockReturnValue(featureFlags)
+  vi.spyOn(
+    featureFlags.flags,
+    'billingControlEnabled',
+    'get'
+  ).mockImplementation(() => billingControlEnabled.value)
+  vi.spyOn(featureFlags.flags, 'v1PaymentRecovery', 'get').mockImplementation(
+    () => v1PaymentRecovery.value
+  )
 })
 
 vi.mock<unknown>(
@@ -68,18 +67,29 @@ vi.mock<unknown>(
   }
 )
 
-import { useBillingBanner } from './useBillingBanner'
+import { useBillingBanner as createBillingBanner } from './useBillingBanner'
 
 describe('useBillingBanner', () => {
+  let scope: EffectScope
+
+  function useBillingBanner() {
+    const banner = scope.run(createBillingBanner)
+    if (!banner) throw new Error('Failed to create billing banner')
+    return banner
+  }
+
   beforeEach(() => {
+    scope = effectScope()
     const b = mocks.billing!
     b.canAccessSubscriptionFeatures.value = true
     b.isTeamPlan.value = true
     b.billingStatus.value = 'paid'
     b.subscription.value = { hasFunds: true }
-    mocks.billingControlEnabled!.value = true
-    mocks.v1PaymentRecovery!.value = true
+    billingControlEnabled.value = true
+    v1PaymentRecovery.value = true
   })
+
+  afterEach(() => scope.stop())
 
   it('suppresses the banner entirely when billing control is rolled back', async () => {
     const b = mocks.billing!
@@ -89,7 +99,7 @@ describe('useBillingBanner', () => {
     await nextTick()
     expect(kind.value).toBe('outOfCredits')
 
-    mocks.billingControlEnabled!.value = false
+    billingControlEnabled.value = false
     await nextTick()
     expect(kind.value).toBeNull()
   })
@@ -129,7 +139,7 @@ describe('useBillingBanner', () => {
     const b = mocks.billing!
     useBillingBanner()
     b.billingStatus.value = 'payment_failed'
-    mocks.v1PaymentRecovery!.value = false
+    v1PaymentRecovery.value = false
 
     window.dispatchEvent(new Event('focus'))
     await nextTick()

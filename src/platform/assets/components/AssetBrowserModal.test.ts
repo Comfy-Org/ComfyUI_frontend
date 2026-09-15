@@ -3,6 +3,7 @@ import { render, screen, waitFor } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { mockFeatureFlag } from '@/utils/__tests__/mockFeatureFlag'
 import { i18n } from '@/i18n'
 import AssetBrowserModal from '@/platform/assets/components/AssetBrowserModal.vue'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
@@ -10,20 +11,8 @@ import { useAssetsStore } from '@/stores/assetsStore'
 
 const mockAssetsByKey = vi.hoisted(() => new Map<string, AssetItem[]>())
 const mockLoadingByKey = vi.hoisted(() => new Map<string, boolean>())
-const mockSupportsModelTypeTags = vi.hoisted(() => ({ value: false }))
 
-vi.mock<unknown>(import('@/composables/useFeatureFlags'), () => ({
-  useFeatureFlags: () => ({
-    flags: {
-      get supportsModelTypeTags() {
-        return mockSupportsModelTypeTags.value
-      },
-      get modelUploadButtonEnabled() {
-        return false
-      }
-    }
-  })
-}))
+vi.mock(import('@/composables/useFeatureFlags'))
 
 vi.mock<unknown>(import('@/platform/assets/composables/useModelTypes'), () => ({
   useModelTypes: () => ({
@@ -196,7 +185,6 @@ describe('AssetBrowserModal', () => {
   beforeEach(() => {
     mockAssetsByKey.clear()
     mockLoadingByKey.clear()
-    mockSupportsModelTypeTags.value = false
   })
 
   describe('Integration with useAssetBrowser', () => {
@@ -405,7 +393,7 @@ describe('AssetBrowserModal', () => {
     })
 
     it('strips the model_type: prefix from the title when the flag is on', async () => {
-      mockSupportsModelTypeTags.value = true
+      mockFeatureFlag('supportsModelTypeTags', true)
       const assets = [
         createTestAsset('asset1', 'Model A', 'model_type:checkpoints')
       ]
