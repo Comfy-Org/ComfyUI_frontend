@@ -159,11 +159,11 @@ describe('withSearchIds', () => {
   })
 
   it('never lets a collision anywhere prevent the search index from building', () => {
-    // This is the exact failure mode reported upstream: two unrelated
-    // custom node packs (or one pack's own duplicated example-workflow
-    // folders) each contributing a template with the same bare name used
-    // to throw out of MiniSearch.addAll(), breaking search for every
-    // template, not just the colliding ones.
+    // This is the exact failure mode reported upstream: two custom node
+    // packs (whether genuinely different packs or the same pack registered
+    // twice) each contributing a template with the same bare name used to
+    // throw out of MiniSearch.addAll(), breaking search for every template,
+    // not just the colliding ones.
     const templates = [
       {
         ...buildTemplate({ name: 'rtx_image_upscale' }),
@@ -186,6 +186,14 @@ describe('withSearchIds', () => {
     const index = createTemplateSearchIndex(withSearchIds(templates))
     expect(searchTemplates(index, 'yue')).toEqual(
       expect.arrayContaining(['yue_2_0_song', 'yue_2_0_instrumental'])
+    )
+
+    // The colliding pair itself must both still be indexed and searchable
+    // independently, not silently dropped down to just one survivor.
+    const duplicateResults = searchTemplates(index, 'rtx image upscale')
+    expect(duplicateResults).toHaveLength(2)
+    expect(duplicateResults).toEqual(
+      expect.arrayContaining(['rtx_image_upscale', 'rtx_image_upscale::PackB'])
     )
   })
 })
