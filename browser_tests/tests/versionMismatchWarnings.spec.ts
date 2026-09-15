@@ -1,9 +1,9 @@
 import { expect } from '@playwright/test'
 
 import type { SystemStats } from '@/schemas/apiSchema'
-import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
+import { comfyPageFixture } from '@e2e/fixtures/ComfyPage'
 
-test.describe('Version Mismatch Warnings', { tag: '@slow' }, () => {
+comfyPageFixture.describe('Version Mismatch Warnings', { tag: '@slow' }, () => {
   const ALWAYS_AHEAD_OF_INSTALLED_VERSION = '100.100.100'
   const ALWAYS_BEHIND_INSTALLED_VERSION = '0.0.0'
 
@@ -36,73 +36,52 @@ test.describe('Version Mismatch Warnings', { tag: '@slow' }, () => {
     }
   }
 
-  test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.settings.setSetting(
-      'Comfy.VersionCompatibility.DisableWarnings',
-      false
-    )
+  const test = comfyPageFixture.extend<{ requiredFrontendVersion: string }>({
+    requiredFrontendVersion: [
+      ALWAYS_AHEAD_OF_INSTALLED_VERSION,
+      { option: true }
+    ],
+    page: async ({ page, requiredFrontendVersion }, use) => {
+      await page.route('**/system_stats**', async (route) => {
+        await route.fulfill({
+          json: createMockSystemStatsRes(requiredFrontendVersion)
+        })
+      })
+      await use(page)
+    }
+  })
+
+  test.use({
+    initialSettings: { 'Comfy.VersionCompatibility.DisableWarnings': false }
+  })
+
+  const newerFrontendTest = test.extend({
+    requiredFrontendVersion: ALWAYS_BEHIND_INSTALLED_VERSION
   })
 
   test('should show version mismatch warnings when installed version lower than required', async ({
     comfyPage
   }) => {
-    // Mock system_stats route to indicate that the installed version is always ahead of the required version
-    await comfyPage.page.route('**/system_stats**', async (route) => {
-      await route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        body: JSON.stringify(
-          createMockSystemStatsRes(ALWAYS_AHEAD_OF_INSTALLED_VERSION)
-        )
-      })
-    })
-    // oxlint-disable-next-line comfy/no-comfy-page-setup-call -- pre-existing call, tracked by evfail-23; not fixed in this pass
-    await comfyPage.setup()
-
     // Expect a warning toast to be shown
     await expect(
       comfyPage.page.getByText('Version Compatibility Warning')
     ).toBeVisible()
   })
 
-  test('should not show version mismatch warnings when installed version is ahead of required', async ({
-    comfyPage
-  }) => {
-    // Mock system_stats route to indicate that the installed version is always ahead of the required version
-    await comfyPage.page.route('**/system_stats**', async (route) => {
-      await route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        body: JSON.stringify(
-          createMockSystemStatsRes(ALWAYS_BEHIND_INSTALLED_VERSION)
-        )
-      })
-    })
-    // oxlint-disable-next-line comfy/no-comfy-page-setup-call -- pre-existing call, tracked by evfail-23; not fixed in this pass
-    await comfyPage.setup()
-
-    // Expect no warning toast to be shown
-    await expect(
-      comfyPage.page.getByText('Version Compatibility Warning')
-    ).toBeHidden()
-  })
+  newerFrontendTest(
+    'should not show version mismatch warnings when installed version is ahead of required',
+    async ({ comfyPage }) => {
+      // Expect no warning toast to be shown
+      await expect(
+        comfyPage.page.getByText('Version Compatibility Warning')
+      ).toBeHidden()
+    }
+  )
 
   test('should persist dismissed state across sessions', async ({
     comfyPage
   }) => {
     test.setTimeout(30_000)
-    // Mock system_stats route to indicate that the installed version is always ahead of the required version
-    await comfyPage.page.route('**/system_stats**', async (route) => {
-      await route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        body: JSON.stringify(
-          createMockSystemStatsRes(ALWAYS_AHEAD_OF_INSTALLED_VERSION)
-        )
-      })
-    })
-    // oxlint-disable-next-line comfy/no-comfy-page-setup-call -- pre-existing call, tracked by evfail-23; not fixed in this pass
-    await comfyPage.setup()
 
     // Locate the warning toast and dismiss it
     const warningToast = comfyPage.page.locator('.p-toast-message').filter({
@@ -118,8 +97,7 @@ test.describe('Version Mismatch Warnings', { tag: '@slow' }, () => {
     )
 
     // Reload the page, keeping local storage
-    // oxlint-disable-next-line comfy/no-comfy-page-setup-call -- pre-existing call, tracked by evfail-23; not fixed in this pass
-    await comfyPage.setup({ clearStorage: false })
+    await comfyPage.workflow.reloadAndWaitForApp()
 
     // The same warning from same versions should not be shown to the user again
     await expect(

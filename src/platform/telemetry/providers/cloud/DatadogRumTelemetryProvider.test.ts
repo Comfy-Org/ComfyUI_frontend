@@ -1,4 +1,7 @@
-import { describe, expect, it, vi } from 'vitest'
+import { fromPartial } from '@total-typescript/shoehorn'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+
+import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 
 import type { BillingTelemetryEvent } from '../../types'
 import { TelemetryEvents } from '../../types'
@@ -8,12 +11,16 @@ const {
   addAction,
   addDurationVital,
   addFeatureFlagEvaluation,
-  getInternalContext
+  getInternalContext,
+  setUser,
+  clearUser
 } = vi.hoisted(() => ({
   addAction: vi.fn(),
   addDurationVital: vi.fn(),
   addFeatureFlagEvaluation: vi.fn(),
-  getInternalContext: vi.fn()
+  getInternalContext: vi.fn(),
+  setUser: vi.fn(),
+  clearUser: vi.fn()
 }))
 
 vi.mock<unknown>(import('@datadog/browser-rum'), () => ({
@@ -21,15 +28,69 @@ vi.mock<unknown>(import('@datadog/browser-rum'), () => ({
     addAction,
     addDurationVital,
     addFeatureFlagEvaluation,
-    getInternalContext
+    getInternalContext,
+    setUser,
+    clearUser
   }
 }))
+
+vi.mock(import('@/composables/auth/useCurrentUser'), () => ({
+  useCurrentUser: vi.fn()
+}))
+
+const onUserLogout = vi.fn<(callback: () => void) => void>()
+
+beforeEach(() => {
+  vi.mocked(useCurrentUser).mockReturnValue(
+    fromPartial({
+      resolvedUserInfo: { value: { id: 'restored-user' } },
+      userEmail: { value: 'restored@example.com' },
+      onUserLogout
+    })
+  )
+})
 
 const workflowExecutionIntent = {
   trigger_source: 'keybinding'
 } as const
 
 describe('DatadogRumTelemetryProvider', () => {
+  it('identifies restored sessions and replaces identity on account changes', () => {
+    const provider = new DatadogRumTelemetryProvider()
+    provider.trackUserLoggedIn()
+    provider.trackAuth({ user_id: 'new-user', email: 'new@example.com' })
+    provider.trackAuth({ user_id: 'user-without-email' })
+
+    expect(setUser).toHaveBeenNthCalledWith(1, {
+      id: 'restored-user',
+      email: 'restored@example.com'
+    })
+    expect(setUser).toHaveBeenNthCalledWith(2, {
+      id: 'new-user',
+      email: 'new@example.com'
+    })
+    expect(setUser).toHaveBeenNthCalledWith(3, { id: 'user-without-email' })
+    expect(onUserLogout).toHaveBeenCalledOnce()
+    onUserLogout.mock.calls[0][0]()
+    expect(clearUser).toHaveBeenCalledOnce()
+  })
+
+  it('does not identify an unresolved user or send email without an account ID', () => {
+    vi.mocked(useCurrentUser).mockReturnValue(
+      fromPartial({
+        resolvedUserInfo: { value: null },
+        userEmail: { value: null },
+        onUserLogout
+      })
+    )
+    const provider = new DatadogRumTelemetryProvider()
+    provider.trackUserLoggedIn()
+    provider.trackAuth({ email: 'unresolved@example.com' })
+
+    expect(setUser).not.toHaveBeenCalled()
+    expect(onUserLogout).not.toHaveBeenCalled()
+  })
+
   it('records fetch timeouts as RUM actions', () => {
     new DatadogRumTelemetryProvider().trackFetchTimeout({
       route: '/userdata/:resource',
