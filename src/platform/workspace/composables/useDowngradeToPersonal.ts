@@ -26,7 +26,7 @@ export interface DowngradeToPersonalResult {
   response: SubscribeResponse
 }
 
-export interface DowngradePreview {
+interface DowngradePreview {
   preview: PreviewSubscribeResponse
   /** Cancelled subscription + a real plan change: the BE requires
    *  `confirm_reactivation` on the subscribe call or it rejects the change. */
