@@ -3,15 +3,41 @@ import { cleanup, render, screen, waitFor } from '@testing-library/vue'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
+import type { CheckoutJourneyTelemetryEvent } from '@/platform/telemetry/types'
+import {
+  clearCheckoutJourney,
+  resolveCheckoutJourney
+} from '@/platform/workspace/utils/checkoutJourney'
+
 import UnifiedStripePaymentSelector from './UnifiedStripePaymentSelector.vue'
+
+const mockTrackCheckoutJourneyEvent = vi.hoisted(() =>
+  vi.fn<(event: CheckoutJourneyTelemetryEvent) => void>()
+)
+vi.mock<unknown>(import('@/platform/telemetry'), () => ({
+  useTelemetry: () => ({
+    trackCheckoutJourneyEvent: mockTrackCheckoutJourneyEvent
+  })
+}))
 
 const stripeMocks = vi.hoisted(() => {
   const mount = vi.fn()
   const destroy = vi.fn()
   const on = vi.fn()
+  const addressMount = vi.fn()
+  const addressDestroy = vi.fn()
+  const addressOn = vi.fn()
   const submit = vi.fn()
   const update = vi.fn()
-  const create = vi.fn(() => ({ mount, destroy, on }))
+  const paymentElement = { mount, destroy, on }
+  const addressElement = {
+    mount: addressMount,
+    destroy: addressDestroy,
+    on: addressOn
+  }
+  const create = vi.fn((type: string) =>
+    type === 'address' ? addressElement : paymentElement
+  )
   const elements = { submit, create, update }
   const createConfirmationToken = vi.fn()
   const stripe = {
@@ -22,6 +48,9 @@ const stripeMocks = vi.hoisted(() => {
     mount,
     destroy,
     on,
+    addressMount,
+    addressDestroy,
+    addressOn,
     submit,
     update,
     create,
@@ -45,6 +74,7 @@ const i18n = createI18n({
       subscription: {
         preview: {
           paymentMethod: 'Payment method',
+          billingAddress: 'Billing address',
           stripeMethodChoice: 'Choose a payment method',
           alipayRenewalNote: 'Alipay renewal note',
           payAndSubscribe: 'Pay and subscribe',
@@ -72,15 +102,48 @@ function renderSelector(
 }
 
 describe('UnifiedStripePaymentSelector', () => {
+  function fireStripeElementEvent(name: string, arg?: unknown) {
+    const handler = stripeMocks.on.mock.calls.find(([event]) => event === name)
+    handler?.[1]?.(arg)
+  }
+
+  function fireAddressElementEvent(name: string, arg?: unknown) {
+    const handler = stripeMocks.addressOn.mock.calls.find(
+      ([event]) => event === name
+    )
+    handler?.[1]?.(arg)
+  }
+
+  let seededJourneyId = ''
+
   beforeEach(() => {
+    sessionStorage.clear()
+    clearCheckoutJourney()
+    mockTrackCheckoutJourneyEvent.mockClear()
+    const seeded = resolveCheckoutJourney({
+      actorUid: 'user-1',
+      workspaceId: 'ws-1',
+      entryFlow: 'initial_subscription',
+      entrySource: 'pricing',
+      assignment: { status: 'resolved', arm: 'treatment' }
+    })
+    seededJourneyId = seeded.status === 'active' ? seeded.record.journey_id : ''
     vi.stubEnv('VITE_STRIPE_PUBLISHABLE_KEY', 'pk_test_example')
     stripeMocks.loadStripe.mockResolvedValue(stripeMocks.stripe)
     stripeMocks.stripe.elements.mockReturnValue(stripeMocks.elements)
-    stripeMocks.create.mockReturnValue({
-      mount: stripeMocks.mount,
-      destroy: stripeMocks.destroy,
-      on: stripeMocks.on
-    })
+    stripeMocks.create.mockImplementation((type: string) =>
+      type === 'address'
+        ? {
+            mount: stripeMocks.addressMount,
+            destroy: stripeMocks.addressDestroy,
+            on: stripeMocks.addressOn
+          }
+        : {
+            mount: stripeMocks.mount,
+            destroy: stripeMocks.destroy,
+            on: stripeMocks.on
+          }
+    )
     stripeMocks.submit.mockResolvedValue({})
     stripeMocks.update.mockResolvedValue(undefined)
     stripeMocks.createConfirmationToken.mockResolvedValue({
@@ -89,6 +152,179 @@ describe('UnifiedStripePaymentSelector', () => {
   })
 
   afterEach(cleanup)
+
+  it('leaves billing address collection to the Address Element alone', async () => {
+    renderSelector()
+    await waitFor(() => expect(stripeMocks.mount).toHaveBeenCalled())
+
+    // Two address forms in one group can disagree, and the one the issuer sees
+    // would then contradict the one collected for AVS.
+    expect(stripeMocks.create).toHaveBeenCalledWith(
+      'payment',
+      expect.objectContaining({
+        fields: { billingDetails: { address: 'never' } }
+      })
+    )
+    expect(stripeMocks.create).toHaveBeenCalledWith('address', {
+      mode: 'billing'
+    })
+  })
+
+  describe('checkout journey instrumentation', () => {
+    it('emits payment_element_ready on the ready callback for the live mount', async () => {
+      renderSelector()
+      await waitFor(() => expect(stripeMocks.mount).toHaveBeenCalled())
+
+      fireStripeElementEvent('ready')
+
+      expect(mockTrackCheckoutJourneyEvent).toHaveBeenCalledWith(
+        expect.objectContaining({
+          phase: 'payment_element_ready',
+          element: 'payment'
+        })
+      )
+    })
+
+    it('distinguishes the address readiness from the payment element', async () => {
+      renderSelector()
+      await waitFor(() =>
+        expect(stripeMocks.addressMount).toHaveBeenCalledTimes(1)
+      )
+
+      fireStripeElementEvent('ready')
+      fireAddressElementEvent('ready')
+
+      const readyElements = mockTrackCheckoutJourneyEvent.mock.calls
+        .map(([event]) => event)
+        .filter((event) => event.phase === 'payment_element_ready')
+        .map((event) => event.element)
+      expect(readyElements).toStrictEqual(['payment', 'address'])
+    })
+
+    it('reports a mount failure with a safe code from loaderror', async () => {
+      renderSelector()
+      await waitFor(() => expect(stripeMocks.mount).toHaveBeenCalled())
+
+      fireStripeElementEvent('loaderror', {
+        error: { code: 'invalid_request' }
+      })
+
+      expect(mockTrackCheckoutJourneyEvent).toHaveBeenCalledWith(
+        expect.objectContaining({
+          checkout_journey_id: seededJourneyId,
+          phase: 'payment_element_failed',
+          element: 'payment',
+          element_phase: 'mount',
+          error_code: 'invalid_request'
+        })
+      )
+    })
+
+    it('reports an Address Element load failure as a mount failure', async () => {
+      renderSelector()
+      await waitFor(() =>
+        expect(stripeMocks.addressMount).toHaveBeenCalledTimes(1)
+      )
+
+      fireAddressElementEvent('loaderror', {
+        error: { code: 'invalid_request' }
+      })
+
+      expect(mockTrackCheckoutJourneyEvent).toHaveBeenCalledWith(
+        expect.objectContaining({
+          phase: 'payment_element_failed',
+          element: 'address',
+          element_phase: 'mount',
+          error_code: 'invalid_request'
+        })
+      )
+    })
+
+    it('emits submit attempted before a validation failure', async () => {
+      const user = userEvent.setup()
+      stripeMocks.submit.mockResolvedValue({
+        error: { code: 'incomplete_number', message: 'Card is incomplete' }
+      })
+      renderSelector()
+      await waitFor(() => expect(stripeMocks.mount).toHaveBeenCalled())
+
+      await user.click(
+        screen.getByRole('button', { name: 'Pay and subscribe' })
+      )
+
+      await waitFor(() =>
+        expect(mockTrackCheckoutJourneyEvent).toHaveBeenCalledWith(
+          expect.objectContaining({
+            checkout_journey_id: seededJourneyId,
+            phase: 'payment_submit_failed',
+            submit_phase: 'validation',
+            error_code: 'incomplete_number'
+          })
+        )
+      )
+      const phases = mockTrackCheckoutJourneyEvent.mock.calls.map(
+        ([event]) => event.phase
+      )
+      expect(phases.indexOf('payment_submit_attempted')).toBeLessThan(
+        phases.indexOf('payment_submit_failed')
+      )
+    })
+
+    it('labels a rejected submit() as a validation failure', async () => {
+      const user = userEvent.setup()
+      stripeMocks.submit.mockRejectedValue(new Error('network'))
+      renderSelector()
+      await waitFor(() => expect(stripeMocks.mount).toHaveBeenCalled())
+
+      await user.click(
+        screen.getByRole('button', { name: 'Pay and subscribe' })
+      )
+
+      await waitFor(() =>
+        expect(mockTrackCheckoutJourneyEvent).toHaveBeenCalledWith(
+          expect.objectContaining({
+            checkout_journey_id: seededJourneyId,
+            phase: 'payment_submit_failed',
+            submit_phase: 'validation'
+          })
+        )
+      )
+      expect(stripeMocks.createConfirmationToken).not.toHaveBeenCalled()
+    })
+
+    it('suppresses a submit rejection that resolves after unmount', async () => {
+      const user = userEvent.setup()
+      let rejectSubmit: (reason: unknown) => void = () => {}
+      stripeMocks.submit.mockReturnValue(
+        new Promise((_resolve, reject) => {
+          rejectSubmit = reject
+        })
+      )
+      const { unmount } = renderSelector()
+      await waitFor(() => expect(stripeMocks.mount).toHaveBeenCalled())
+
+      await user.click(
+        screen.getByRole('button', { name: 'Pay and subscribe' })
+      )
+      unmount()
+      mockTrackCheckoutJourneyEvent.mockClear()
+      rejectSubmit(new Error('late'))
+      await Promise.resolve()
+
+      expect(mockTrackCheckoutJourneyEvent).not.toHaveBeenCalled()
+    })
+
+    it('does not leak an element event after unmount', async () => {
+      const { unmount } = renderSelector()
+      await waitFor(() => expect(stripeMocks.mount).toHaveBeenCalled())
+      unmount()
+      mockTrackCheckoutJourneyEvent.mockClear()
+
+      fireStripeElementEvent('ready')
+
+      expect(mockTrackCheckoutJourneyEvent).not.toHaveBeenCalled()
+    })
+  })
 
   it('collects deferred subscription details and emits a confirmation token', async () => {
     const user = userEvent.setup()
@@ -112,6 +348,7 @@ describe('UnifiedStripePaymentSelector', () => {
         radios: 'always',
         spacedAccordionItems: true
       },
+      fields: { billingDetails: { address: 'never' } },
       terms: { card: 'never' }
     })
     expect(stripeMocks.mount).toHaveBeenCalledTimes(1)
@@ -127,6 +364,34 @@ describe('UnifiedStripePaymentSelector', () => {
       elements: stripeMocks.elements
     })
     expect(emitted().confirm).toEqual([['ctoken_1']])
+  })
+
+  it('collects a billing address alongside the payment element', async () => {
+    renderSelector()
+
+    await waitFor(() =>
+      expect(stripeMocks.create).toHaveBeenCalledWith('address', {
+        mode: 'billing'
+      })
+    )
+    expect(stripeMocks.addressMount).toHaveBeenCalledTimes(1)
+  })
+
+  it('blocks submission until the billing address is valid', async () => {
+    const user = userEvent.setup()
+    stripeMocks.submit.mockResolvedValue({
+      error: { code: 'incomplete_address', message: 'Enter your address' }
+    })
+    const { emitted } = renderSelector()
+
+    await waitFor(() =>
+      expect(stripeMocks.addressMount).toHaveBeenCalledTimes(1)
+    )
+    await user.click(screen.getByRole('button', { name: 'Pay and subscribe' }))
+
+    expect(await screen.findByText('Enter your address')).toBeTruthy()
+    expect(stripeMocks.createConfirmationToken).not.toHaveBeenCalled()
+    expect(emitted().confirm).toBeUndefined()
   })
 
   it('keeps the customer in the form when Stripe rejects its contents', async () => {
@@ -221,13 +486,16 @@ describe('UnifiedStripePaymentSelector', () => {
     })
   })
 
-  it('destroys the Stripe element when the preview unmounts', async () => {
+  it('destroys the Stripe elements when the preview unmounts', async () => {
     const { unmount } = renderSelector()
-    await waitFor(() => expect(stripeMocks.mount).toHaveBeenCalledTimes(1))
+    await waitFor(() =>
+      expect(stripeMocks.addressMount).toHaveBeenCalledTimes(1)
+    )
 
     unmount()
 
     expect(stripeMocks.destroy).toHaveBeenCalledTimes(1)
+    expect(stripeMocks.addressDestroy).toHaveBeenCalledTimes(1)
   })
 })
 
@@ -236,11 +504,19 @@ describe('UnifiedStripePaymentSelector payment method configuration', () => {
     vi.stubEnv('VITE_STRIPE_PUBLISHABLE_KEY', 'pk_test_example')
     stripeMocks.loadStripe.mockResolvedValue(stripeMocks.stripe)
     stripeMocks.stripe.elements.mockReturnValue(stripeMocks.elements)
-    stripeMocks.create.mockReturnValue({
-      mount: stripeMocks.mount,
-      destroy: stripeMocks.destroy,
-      on: stripeMocks.on
-    })
+    stripeMocks.create.mockImplementation((type: string) =>
+      type === 'address'
+        ? {
+            mount: stripeMocks.addressMount,
+            destroy: stripeMocks.addressDestroy,
+            on: stripeMocks.addressOn
+          }
+        : {
+            mount: stripeMocks.mount,
+            destroy: stripeMocks.destroy,
+            on: stripeMocks.on
+          }
+    )
   })
 
   it('mounts against the served configuration instead of a hardcoded method list', async () => {
