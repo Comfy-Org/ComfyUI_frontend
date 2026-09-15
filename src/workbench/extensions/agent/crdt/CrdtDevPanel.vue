@@ -169,7 +169,8 @@ const EVENT_KINDS: readonly DevEventKind[] = [
   'rebind',
   'doc_gap',
   'doc_stale',
-  'frame_send_failed'
+  'frame_send_failed',
+  'agent_node_adapters_materialized'
 ]
 
 const VERDICT_TONE: Record<string, string> = {
