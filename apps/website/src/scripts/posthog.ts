@@ -124,6 +124,12 @@ function markFlagResolved(): void {
   workshopEnabledSettled.value = true
 }
 
+function awaitFlagAnswer(): void {
+  if (flagResolutionTimer !== undefined) clearTimeout(flagResolutionTimer)
+  workshopEnabledSettled.value = false
+  flagResolutionTimer = setTimeout(markFlagResolved, FLAG_RESOLUTION_TIMEOUT_MS)
+}
+
 export function useWorkshopEnabled(): Readonly<Ref<boolean>> {
   return readonly(workshopEnabled)
 }
@@ -173,20 +179,21 @@ export function identifyWorkshopUser(user: WorkshopIdentity | null): void {
           send_event: false
         }) === undefined
       ) {
-        workshopEnabledSettled.value = false
+        awaitFlagAnswer()
         posthog.reloadFeatureFlags()
       }
       return
     }
     workshopEnabled.value = VISIBILITY_OVERRIDE
-    workshopEnabledSettled.value = !waitForIdentityAnswer
+    if (waitForIdentityAnswer) awaitFlagAnswer()
+    else markFlagResolved()
     if (persistedUid) posthog.reset()
     if (user) identifyInPostHog(user)
     posthog.reloadFeatureFlags()
   } catch (error) {
     workshopUser = previous
     workshopEnabled.value = VISIBILITY_OVERRIDE
-    workshopEnabledSettled.value = true
+    markFlagResolved()
     console.error('PostHog identity failed', error)
   }
 }

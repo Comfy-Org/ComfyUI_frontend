@@ -406,6 +406,38 @@ describe('workshop-enabled settles only on an observed answer', () => {
     emitFeatureFlags(true)
     expect(useWorkshopEnabledSettled().value).toBe(true)
   })
+
+  it('does not churn state when the timeout fires after a real answer', async () => {
+    vi.useFakeTimers()
+    hoisted.mockIsFeatureEnabled.mockReturnValue(true)
+    const { initPostHog, useWorkshopEnabled, useWorkshopEnabledSettled } =
+      await import('./posthog')
+    initPostHog()
+    emitFeatureFlags()
+    expect(useWorkshopEnabled().value).toBe(true)
+    expect(useWorkshopEnabledSettled().value).toBe(true)
+    await vi.advanceTimersByTimeAsync(3000)
+    expect(useWorkshopEnabled().value).toBe(true)
+    expect(useWorkshopEnabledSettled().value).toBe(true)
+    vi.useRealTimers()
+  })
+
+  it('re-arms the timeout when an identity reload leaves visibility pending', async () => {
+    vi.useFakeTimers()
+    hoisted.mockGetProperty.mockReturnValue('staff-uid')
+    const { initPostHog, identifyWorkshopUser, useWorkshopEnabledSettled } =
+      await import('./posthog')
+    initPostHog()
+    emitFeatureFlags()
+    expect(useWorkshopEnabledSettled().value).toBe(true)
+
+    hoisted.mockIsFeatureEnabled.mockReturnValue(undefined)
+    identifyWorkshopUser({ uid: 'staff-uid' })
+    expect(useWorkshopEnabledSettled().value).toBe(false)
+    await vi.advanceTimersByTimeAsync(3000)
+    expect(useWorkshopEnabledSettled().value).toBe(true)
+    vi.useRealTimers()
+  })
 })
 
 describe('capturePageview', () => {
