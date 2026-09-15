@@ -363,16 +363,6 @@ const translations = {
     'zh-CN': '此账户已被禁用。请联系客服。',
     ja: 'このアカウントは無効化されています。サポートまでご連絡ください。'
   },
-  'auth.errors.auth/user-not-found': {
-    en: 'Invalid login credentials. Please check your email and password.',
-    'zh-CN': '登录凭据无效。请检查您的电子邮箱和密码。',
-    ja: 'ログイン認証情報が無効です。メールアドレスとパスワードを確認してください。'
-  },
-  'auth.errors.auth/wrong-password': {
-    en: 'Invalid login credentials. Please check your email and password.',
-    'zh-CN': '登录凭据无效。请检查您的电子邮箱和密码。',
-    ja: 'ログイン認証情報が無効です。メールアドレスとパスワードを確認してください。'
-  },
   'auth.errors.auth/email-already-in-use': {
     en: "We couldn't create an account with this email. Try signing in or resetting your password instead.",
     'zh-CN': '无法使用此电子邮件创建账户。请尝试登录或重置密码。',
