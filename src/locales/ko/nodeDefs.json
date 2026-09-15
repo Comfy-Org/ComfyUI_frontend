@@ -6825,6 +6825,42 @@
       }
     }
   },
+  "GeminiNodeV3": {
+    "description": "Google의 Gemini 모델로 텍스트 응답을 생성합니다. 텍스트 프롬프트와 선택적으로 하나 이상의 이미지, 오디오 클립, 비디오 또는 파일을 멀티모달 컨텍스트로 제공합니다.",
+    "display_name": "Google Gemini",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "응답 생성에 사용되는 Gemini 모델입니다."
+      },
+      "model_max_output_tokens": {
+        "name": "max_output_tokens"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_seed": {
+        "name": "seed"
+      },
+      "model_system_prompt": {
+        "name": "system_prompt"
+      },
+      "model_thinking_level": {
+        "name": "thinking_level"
+      },
+      "model_video_processing": {
+        "name": "video_processing"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "GeminiVideoOmni": {
     "description": "Google의 Gemini Omni Flash 모델을 사용하여 텍스트 프롬프트로 오디오가 포함된 영상을 생성합니다. 결과를 안내하거나 편집하기 위해 참조 이미지 및/또는 영상을 선택적으로 제공할 수 있습니다. 원하는 길이(3~10초)와 화면 비율(16:9 또는 9:16)을 프롬프트에 직접 작성하세요.",
     "display_name": "Google Gemini Omni (Video)",
