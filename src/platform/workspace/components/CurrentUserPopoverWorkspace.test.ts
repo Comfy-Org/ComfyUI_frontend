@@ -327,7 +327,7 @@ describe('CurrentUserPopoverWorkspace', () => {
     }
   )
 
-  it('shows Subscribe instead of Manage plan when payment_failed has no plan', () => {
+  it('shows the upgrade upsell instead of Manage plan when payment_failed has no plan', () => {
     state.billingStatus = 'payment_failed'
     state.canAccessSubscriptionFeatures = false
     state.canManageSubscription = true
@@ -340,8 +340,11 @@ describe('CurrentUserPopoverWorkspace', () => {
       screen.queryByTestId('manage-plan-menu-item')
     ).not.toBeInTheDocument()
     expect(
-      screen.getByRole('button', { name: 'Subscribe' })
+      screen.getByTestId('upgrade-to-add-credits-button')
     ).toBeInTheDocument()
+    expect(
+      screen.queryByRole('button', { name: 'Subscribe' })
+    ).not.toBeInTheDocument()
   })
 
   it('keeps Subscribe hidden on Local after switching to an unsubscribed workspace', async () => {
@@ -411,7 +414,8 @@ describe('CurrentUserPopoverWorkspace', () => {
     expect(screen.getByTestId('add-credits-button')).toBeInTheDocument()
   })
 
-  it('keeps the upgrade upsell for the Cloud free tier', () => {
+  it('shows one subscription CTA on the Cloud free tier', () => {
+    state.canAccessSubscriptionFeatures = false
     state.canTopUp = false
     state.canSubscribeSelfServe = true
 
@@ -421,6 +425,9 @@ describe('CurrentUserPopoverWorkspace', () => {
       screen.getByTestId('upgrade-to-add-credits-button')
     ).toBeInTheDocument()
     expect(screen.queryByTestId('add-credits-button')).not.toBeInTheDocument()
+    expect(
+      screen.queryByRole('button', { name: 'Subscribe' })
+    ).not.toBeInTheDocument()
   })
 
   it('keeps Resubscribe hidden on Local for a cancelled plan', () => {
@@ -445,6 +452,7 @@ describe('CurrentUserPopoverWorkspace', () => {
       canManageSubscriptionLifecycle: true,
       canReactivate: true,
       canSubscribeSelfServe: false,
+      canTopUp: false,
       action: 'Resubscribe',
       visible: true
     },
@@ -456,6 +464,7 @@ describe('CurrentUserPopoverWorkspace', () => {
       canManageSubscriptionLifecycle: false,
       canReactivate: false,
       canSubscribeSelfServe: false,
+      canTopUp: false,
       action: 'Resubscribe',
       visible: false
     },
@@ -467,6 +476,7 @@ describe('CurrentUserPopoverWorkspace', () => {
       canManageSubscriptionLifecycle: true,
       canReactivate: false,
       canSubscribeSelfServe: false,
+      canTopUp: false,
       action: 'Resubscribe',
       visible: false
     },
@@ -478,6 +488,7 @@ describe('CurrentUserPopoverWorkspace', () => {
       canManageSubscriptionLifecycle: false,
       canReactivate: false,
       canSubscribeSelfServe: true,
+      canTopUp: true,
       action: 'Subscribe',
       visible: true
     },
@@ -489,6 +500,7 @@ describe('CurrentUserPopoverWorkspace', () => {
       canManageSubscriptionLifecycle: true,
       canReactivate: true,
       canSubscribeSelfServe: false,
+      canTopUp: false,
       action: 'Subscribe',
       visible: false
     }
@@ -501,6 +513,7 @@ describe('CurrentUserPopoverWorkspace', () => {
       canManageSubscriptionLifecycle,
       canReactivate,
       canSubscribeSelfServe,
+      canTopUp,
       action,
       visible
     }) => {
@@ -510,6 +523,7 @@ describe('CurrentUserPopoverWorkspace', () => {
       state.canManageSubscriptionLifecycle = canManageSubscriptionLifecycle
       state.canReactivatePlan = canReactivate
       state.canSubscribeSelfServe = canSubscribeSelfServe
+      state.canTopUp = canTopUp
 
       renderComponent('team')
 
