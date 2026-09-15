@@ -4,6 +4,7 @@ import { computed, useTemplateRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { cn } from '@comfyorg/tailwind-utils'
+import Button from '@/components/ui/button/Button.vue'
 import AccessibleTooltip from '@/components/ui/tooltip/AccessibleTooltip.vue'
 import { iconForMediaType } from '@/platform/assets/utils/mediaIconUtil'
 import { api } from '@/scripts/api'
@@ -238,14 +239,16 @@ const splitAttachments = computed(() => {
         :collision-padding="8"
       >
         <template #trigger>
-          <button
+          <Button
             type="button"
+            variant="muted-textonly"
+            size="icon-sm"
             :aria-label="t('g.edit')"
-            class="flex size-6 cursor-pointer items-center justify-center rounded-lg p-1 transition-colors hover:bg-secondary-background-hover hover:text-base-foreground"
+            class="size-6 rounded-lg"
             @click="emit('edit', { text, workflowReferences })"
           >
             <span class="icon-[lucide--pencil] size-3" />
-          </button>
+          </Button>
         </template>
       </AccessibleTooltip>
       <AccessibleTooltip
@@ -255,10 +258,12 @@ const splitAttachments = computed(() => {
         :collision-padding="8"
       >
         <template #trigger>
-          <button
+          <Button
             type="button"
+            variant="muted-textonly"
+            size="icon-sm"
             :aria-label="copied ? t('agent.copied') : t('agent.copy')"
-            class="flex size-6 cursor-pointer items-center justify-center rounded-lg p-1 transition-colors hover:bg-secondary-background-hover hover:text-base-foreground"
+            class="size-6 rounded-lg"
             @click="copyMessage"
           >
             <span
@@ -269,7 +274,7 @@ const splitAttachments = computed(() => {
                 )
               "
             />
-          </button>
+          </Button>
         </template>
       </AccessibleTooltip>
     </div>

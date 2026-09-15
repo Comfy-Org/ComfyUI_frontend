@@ -4,6 +4,7 @@ import { storeToRefs } from 'pinia'
 import { computed, ref, useId, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import Button from '@/components/ui/button/Button.vue'
 import { useAgentTargetNavigation } from '../../../composables/agent/useAgentTargetNavigation'
 import { useAgentPanelStore } from '../../../stores/agent/agentPanelStore'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
@@ -80,12 +81,14 @@ async function open(): Promise<void> {
 </script>
 
 <template>
-  <button
+  <Button
     v-if="agentEnabled && tab"
     type="button"
+    variant="outline"
+    size="unset"
     :aria-label="t('agent.openWorkflowTab', { name: label })"
     :aria-describedby="nodeCount === undefined ? undefined : nodeCountId"
-    class="flex h-[53px] w-full cursor-pointer items-center gap-2.5 rounded-lg border border-component-node-border px-3 py-2.5 text-left transition-colors hover:bg-secondary-background-hover"
+    class="h-[53px] w-full justify-start gap-2.5 border-component-node-border px-3 py-2.5 text-left whitespace-normal"
     @click="open"
   >
     <span
@@ -115,5 +118,5 @@ async function open(): Promise<void> {
       data-testid="workflow-link-navigation"
       class="icon-[lucide--arrow-right] size-4 shrink-0 text-muted-foreground"
     />
-  </button>
+  </Button>
 </template>
