@@ -306,6 +306,28 @@ describe('success response parsing', () => {
     expect(result.thread_id).toBe('t1')
     expect((result as Record<string, unknown>).workflow_id).toBe('w1')
   })
+
+  it('rejects an incomplete thread row from the agent service', async () => {
+    respond(
+      jsonResponse(200, {
+        threads: [{ id: 'th-1', title: 'Thread' }],
+        pagination: { has_more: false, limit: 20, offset: 0, total: 1 }
+      })
+    )
+
+    await expect(makeClient().listThreads()).rejects.toThrow()
+  })
+
+  it('rejects incomplete pagination from the agent service', async () => {
+    respond(
+      jsonResponse(200, {
+        threads: [],
+        pagination: { has_more: false }
+      })
+    )
+
+    await expect(makeClient().listThreads()).rejects.toThrow()
+  })
 })
 
 describe('error mapping', () => {
