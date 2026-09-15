@@ -101,6 +101,12 @@ describe('computeNextControlledValue (number)', () => {
 })
 
 describe('computeNextControlledValue (combo)', () => {
+  it('increments a zero-valued numeric combo to the next option', () => {
+    const widget = makeComboWidget(0, [0, 1, 2])
+
+    expect(computeNextControlledValue(widget, 'increment')).toBe(1)
+  })
+
   it('increments a numeric combo to the next option', () => {
     const widget = makeComboWidget(8, [6, 8, 10])
     const result = computeNextControlledValue(widget, 'increment')
