@@ -37,11 +37,13 @@ onMounted(() => void nextTick(measure))
 useResizeObserver(row, measure)
 useMutationObserver(row, measure, { childList: true, subtree: true })
 
-// The arrows ride over the row rather than under it: a strip of their own
-// would put a band of empty page between every two sliders. They are opaque,
-// because a card showing through a control reads as a rendering fault.
+// The arrows straddle the edge of the row, half over the cards and half over
+// the page, so the row reads as running past them. They are opaque, because a
+// card showing through a control reads as a rendering fault. Hovering lifts
+// them without colour: the yellow belongs to See all, and two yellows on one
+// row compete.
 const arrowClass =
-  'focus-visible:ring-primary-comfy-yellow/50 hover:border-primary-comfy-yellow hover:text-primary-comfy-yellow bg-page pointer-events-auto absolute top-1/2 z-10 grid size-9 -translate-y-1/2 cursor-pointer place-items-center rounded-xl border border-transparency-white-t20 text-primary-warm-white shadow-lg shadow-black/40 transition-colors outline-none focus-visible:ring-3'
+  'focus-visible:ring-primary-comfy-yellow/50 hover:border-primary-warm-gray hover:bg-site-dropdown bg-page pointer-events-auto absolute top-1/2 z-10 grid size-9 -translate-y-1/2 cursor-pointer place-items-center rounded-xl border border-transparency-white-t20 text-primary-warm-white shadow-lg shadow-black/40 transition-colors outline-none focus-visible:ring-3'
 
 // A pointer that can hover earns them by hovering, so a page of rows is not a
 // page of chrome, and a keyboard earns them by focusing. A touch screen can do
@@ -88,7 +90,7 @@ const fadeClass =
           <button
             type="button"
             :aria-label="t('workshop.sections.scrollBack', locale)"
-            :class="cn(arrowClass, 'left-0')"
+            :class="cn(arrowClass, 'left-0 -translate-x-1/2')"
             data-testid="card-row-prev"
             @click="page(-1)"
           >
@@ -103,7 +105,7 @@ const fadeClass =
           <button
             type="button"
             :aria-label="t('workshop.sections.scrollForward', locale)"
-            :class="cn(arrowClass, 'right-0')"
+            :class="cn(arrowClass, 'right-0 translate-x-1/2')"
             data-testid="card-row-next"
             @click="page(1)"
           >
