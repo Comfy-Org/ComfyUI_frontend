@@ -7,6 +7,13 @@ import { authSignInTransition, signInErrorMessage } from './auth-sign-in-state'
 const idle: AuthSignInState = { step: 'idle' }
 const pending: AuthSignInState = { step: 'pending', provider: 'google' }
 
+// Mirrors the cloud host's ENUMERATION_ORACLE
+// (src/composables/auth/authErrorEnumeration.test.ts): any wording that
+// confirms an email already has an account, in any synonym, not just the two
+// phrasings the first draft happened to ship.
+const ENUMERATION_ORACLE =
+  /\bexists?\b|already (?:registered|in use|have|exists)|wrong password|no account|not found|is registered|different (?:sign-in method|credential)/i
+
 describe('authSignInTransition', () => {
   it('starts a popup from idle and ignores a second click while pending', () => {
     const started = authSignInTransition(idle, {
@@ -229,13 +236,27 @@ describe('signInErrorMessage', () => {
       expect(
         message,
         `${why}; copy that confirms the account exists is an enumeration oracle`
-      ).not.toMatch(/\bexists?\b|different sign-in method/i)
+      ).not.toMatch(ENUMERATION_ORACLE)
       expect(
         message,
         `${why}; the neutral copy must still offer a password reset`
       ).toMatch(/reset(?:ting)? your password/i)
     }
   )
+
+  it('catches account-existence synonyms the shipped neutral copy avoids', () => {
+    // A re-worded leak like "This email is already registered" carries neither
+    // "exists" nor "different sign-in method", so the first-draft oracle waved
+    // it through; the broadened oracle rejects it while the shipped line passes.
+    expect('This email is already registered').toMatch(ENUMERATION_ORACLE)
+    expect(
+      signInErrorMessage(
+        failed({ code: 'auth/email-already-in-use', message: 'x' }),
+        'en',
+        'comfy.org'
+      )
+    ).not.toMatch(ENUMERATION_ORACLE)
+  })
 
   it('names this host in the unauthorized-domain line', () => {
     expect(
