@@ -1,7 +1,9 @@
 import { render, screen } from '@testing-library/vue'
 import { beforeEach, describe, expect, test, vi } from 'vitest'
+import { computed, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
+import { useBillingContext } from '@/composables/billing/useBillingContext'
 import type { TeamCreditStops } from '@/platform/workspace/api/workspaceApi'
 
 import CloudSubscriptionRedirectView from './CloudSubscriptionRedirectView.vue'
@@ -40,18 +42,10 @@ vi.mock<unknown>(import('@/composables/useErrorHandling'), () => ({
   })
 }))
 
-const subscriptionMocks = vi.hoisted(() => ({
-  canAccessSubscriptionFeatures: { value: false },
-  isInitialized: { value: true },
-  teamCreditStops: { value: null as TeamCreditStops | null },
-  initialize: vi.fn(),
-  fetchPlans: vi.fn(),
-  manageSubscription: vi.fn()
-}))
+const canAccessSubscriptionFeatures = ref(false)
+const teamCreditStops = ref<TeamCreditStops | null>(null)
 
-vi.mock<unknown>(import('@/composables/billing/useBillingContext'), () => ({
-  useBillingContext: () => subscriptionMocks
-}))
+vi.mock(import('@/composables/billing/useBillingContext'))
 
 const mockShowPricingTable = vi.hoisted(() => vi.fn())
 vi.mock<unknown>(
@@ -136,12 +130,16 @@ const mountView = async (query: Record<string, unknown>) => {
 describe('CloudSubscriptionRedirectView', () => {
   beforeEach(() => {
     mockQuery = {}
-    subscriptionMocks.canAccessSubscriptionFeatures.value = false
-    subscriptionMocks.isInitialized.value = true
-    subscriptionMocks.teamCreditStops.value = TEAM_CREDIT_STOPS
-    subscriptionMocks.initialize.mockResolvedValue(undefined)
-    subscriptionMocks.fetchPlans.mockResolvedValue(undefined)
-    subscriptionMocks.manageSubscription.mockResolvedValue(undefined)
+    canAccessSubscriptionFeatures.value = false
+    teamCreditStops.value = TEAM_CREDIT_STOPS
+    vi.mocked(useBillingContext).mockReturnValue({
+      ...useBillingContext(),
+      isInitialized: ref(true),
+      canAccessSubscriptionFeatures: computed(
+        () => canAccessSubscriptionFeatures.value
+      ),
+      teamCreditStops: computed(() => teamCreditStops.value)
+    } as const)
   })
 
   test('redirects to home when subscriptionType is missing', async () => {
@@ -185,12 +183,12 @@ describe('CloudSubscriptionRedirectView', () => {
   })
 
   test('opens billing portal when subscription is already active', async () => {
-    subscriptionMocks.canAccessSubscriptionFeatures.value = true
+    canAccessSubscriptionFeatures.value = true
 
     await mountView({ tier: 'creator' })
 
     expect(mockRouterPush).not.toHaveBeenCalledWith('/')
-    expect(subscriptionMocks.manageSubscription).toHaveBeenCalledTimes(1)
+    expect(useBillingContext().manageSubscription).toHaveBeenCalledTimes(1)
     expect(authActionMocks.accessBillingPortal).not.toHaveBeenCalled()
     expect(mockShowPricingTable).not.toHaveBeenCalled()
   })
@@ -234,9 +232,9 @@ describe('CloudSubscriptionRedirectView', () => {
   })
 
   test('opens the generic team pricing table when plan loading fails', async () => {
-    subscriptionMocks.teamCreditStops.value = null
+    teamCreditStops.value = null
     const plansError = new Error('plans down')
-    subscriptionMocks.fetchPlans.mockRejectedValue(plansError)
+    vi.mocked(useBillingContext().fetchPlans).mockRejectedValue(plansError)
 
     await mountView({ tier: 'team', stop: 'team_700', cycle: 'yearly' })
 
@@ -270,11 +268,11 @@ describe('CloudSubscriptionRedirectView', () => {
   })
 
   test('routes a personal tier in an active Team workspace to workspace subscription management', async () => {
-    subscriptionMocks.canAccessSubscriptionFeatures.value = true
+    canAccessSubscriptionFeatures.value = true
 
     await mountView({ tier: 'creator', cycle: 'yearly' })
 
-    expect(subscriptionMocks.manageSubscription).toHaveBeenCalledTimes(1)
+    expect(useBillingContext().manageSubscription).toHaveBeenCalledTimes(1)
     expect(authActionMocks.accessBillingPortal).not.toHaveBeenCalled()
     expect(
       legacyCheckoutMocks.performSubscriptionCheckout
@@ -283,11 +281,11 @@ describe('CloudSubscriptionRedirectView', () => {
   })
 
   test('routes an active founder subscription to facade management', async () => {
-    subscriptionMocks.canAccessSubscriptionFeatures.value = true
+    canAccessSubscriptionFeatures.value = true
 
     await mountView({ tier: 'founder' })
 
-    expect(subscriptionMocks.manageSubscription).toHaveBeenCalledTimes(1)
+    expect(useBillingContext().manageSubscription).toHaveBeenCalledTimes(1)
     expect(mockRouterPush).not.toHaveBeenCalled()
     expect(mockShowPricingTable).not.toHaveBeenCalled()
   })

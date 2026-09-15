@@ -1,3 +1,4 @@
+import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { stripPaymentReturnParams } from '@/platform/cloud/subscription/utils/paymentReturnUrl'
@@ -5,13 +6,10 @@ import { stripPaymentReturnParams } from '@/platform/cloud/subscription/utils/pa
 import { usePaymentReturnUrlLoader } from './usePaymentReturnUrlLoader'
 
 const mocks = vi.hoisted(() => ({
-  fetchStatus: vi.fn().mockResolvedValue(undefined),
   embeddedCheckoutEnabled: true
 }))
 
-vi.mock<unknown>(import('@/composables/billing/useBillingContext'), () => ({
-  useBillingContext: () => ({ fetchStatus: mocks.fetchStatus })
-}))
+vi.mock(import('@/composables/billing/useBillingContext'))
 
 vi.mock<unknown>(import('@/composables/useFeatureFlags'), () => ({
   useFeatureFlags: () => ({
@@ -41,7 +39,7 @@ describe('usePaymentReturnUrlLoader', () => {
     await loadPaymentReturnFromUrl()
 
     expect(window.location.search).toBe('?workspace=ws-1')
-    expect(mocks.fetchStatus).toHaveBeenCalledOnce()
+    expect(useBillingContext().fetchStatus).toHaveBeenCalledOnce()
   })
 
   it('does nothing on an ordinary page load', async () => {
@@ -50,7 +48,7 @@ describe('usePaymentReturnUrlLoader', () => {
     const { loadPaymentReturnFromUrl } = usePaymentReturnUrlLoader()
     await loadPaymentReturnFromUrl()
 
-    expect(mocks.fetchStatus).not.toHaveBeenCalled()
+    expect(useBillingContext().fetchStatus).not.toHaveBeenCalled()
   })
 
   it('does not start embedded recovery while the flag is off', async () => {
@@ -64,6 +62,6 @@ describe('usePaymentReturnUrlLoader', () => {
 
     await usePaymentReturnUrlLoader().loadPaymentReturnFromUrl()
 
-    expect(mocks.fetchStatus).not.toHaveBeenCalled()
+    expect(useBillingContext().fetchStatus).not.toHaveBeenCalled()
   })
 })
