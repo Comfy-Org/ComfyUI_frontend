@@ -1,7 +1,7 @@
 import userEvent from '@testing-library/user-event'
 import { render, screen, waitFor } from '@testing-library/vue'
 import { fromPartial } from '@total-typescript/shoehorn'
-import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent } from 'vue'
 import { createI18n } from 'vue-i18n'
 
@@ -30,9 +30,6 @@ const getNodeById = vi.fn()
 const animateToBounds = vi.fn()
 
 vi.mock(import('@/platform/telemetry'))
-
-const dispatcher = vi.mocked(useTelemetry(), { deep: true })
-assert.exists(dispatcher)
 
 const WidgetItemStub = defineComponent({
   inheritAttrs: false,
@@ -235,7 +232,9 @@ describe('SectionWidgets', () => {
 
     await user.click(screen.getByRole('button', { name: 'Locate' }))
 
-    expect(dispatcher.trackUiButtonClicked).toHaveBeenCalledExactlyOnceWith({
+    expect(
+      useTelemetry()?.trackUiButtonClicked
+    ).toHaveBeenCalledExactlyOnceWith({
       button_id: 'right_side_panel_locate_node_clicked',
       element_group: 'right_side_panel_nodes'
     })
@@ -267,7 +266,9 @@ describe('SectionWidgets', () => {
 
     await user.click(screen.getByRole('button', { name: 'Reset all' }))
 
-    expect(dispatcher.trackUiButtonClicked).toHaveBeenCalledExactlyOnceWith({
+    expect(
+      useTelemetry()?.trackUiButtonClicked
+    ).toHaveBeenCalledExactlyOnceWith({
       button_id: 'right_side_panel_reset_all_parameters_clicked',
       element_group: 'right_side_panel_nodes'
     })

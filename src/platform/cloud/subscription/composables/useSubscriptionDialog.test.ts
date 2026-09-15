@@ -2,7 +2,7 @@ import { useDialogStore } from '@/stores/dialogStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useBillingOperationStore } from '@/platform/workspace/stores/billingOperationStore'
 import { useAuthStore } from '@/stores/authStore'
-import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useTelemetry } from '@/platform/telemetry'
 
@@ -107,9 +107,6 @@ vi.mock<unknown>(import('@/composables/billing/useBillingContext'), () => ({
 }))
 
 vi.mock(import('@/platform/telemetry'))
-
-const dispatcher = vi.mocked(useTelemetry(), { deep: true })
-assert.exists(dispatcher)
 
 vi.mock<unknown>(
   import('@/platform/workspace/composables/useWorkspaceUI'),
@@ -335,7 +332,7 @@ describe('useSubscriptionDialog', () => {
       expect(props).not.toHaveProperty('initialCheckout')
       const { dialogComponentProps } = mockShowLayoutDialog.mock.calls[0][0]
       expectRekaPricingDialogProps(dialogComponentProps)
-      expect(dispatcher.trackSubscription).toHaveBeenCalledWith(
+      expect(useTelemetry()?.trackSubscription).toHaveBeenCalledWith(
         'modal_opened',
         expect.objectContaining({ reason: 'deep_link' })
       )
@@ -433,7 +430,7 @@ describe('useSubscriptionDialog', () => {
 
       showPricingTable({ reason: 'upgrade_to_add_credits' })
 
-      expect(dispatcher.trackSubscription).toHaveBeenCalledWith(
+      expect(useTelemetry()?.trackSubscription).toHaveBeenCalledWith(
         'modal_opened',
         {
           current_tier: 'standard',
@@ -448,7 +445,7 @@ describe('useSubscriptionDialog', () => {
 
       showPricingTable({ reason: 'subscribe_to_run' })
 
-      expect(dispatcher.trackSubscription).toHaveBeenCalledWith(
+      expect(useTelemetry()?.trackSubscription).toHaveBeenCalledWith(
         'modal_opened',
         expect.objectContaining({ reason: 'subscribe_to_run' })
       )
@@ -463,7 +460,7 @@ describe('useSubscriptionDialog', () => {
       showPricingTable({ reason: 'subscribe_to_run' })
 
       expect(mockShowLayoutDialog).toHaveBeenCalledTimes(1)
-      expect(dispatcher.trackSubscription).not.toHaveBeenCalled()
+      expect(useTelemetry()?.trackSubscription).not.toHaveBeenCalled()
     })
 
     it('shows the read-only member dialog for out-of-credits too, not the pricing table', () => {
@@ -487,7 +484,7 @@ describe('useSubscriptionDialog', () => {
 
       showPricingTable({ reason: 'subscribe_to_run' })
 
-      expect(dispatcher.trackSubscription).not.toHaveBeenCalled()
+      expect(useTelemetry()?.trackSubscription).not.toHaveBeenCalled()
     })
   })
 
@@ -516,7 +513,7 @@ describe('useSubscriptionDialog', () => {
       expect(mockShowLayoutDialog).toHaveBeenCalledWith(
         expect.objectContaining({ key: 'subscription-required' })
       )
-      expect(dispatcher.trackSubscription).not.toHaveBeenCalled()
+      expect(useTelemetry()?.trackSubscription).not.toHaveBeenCalled()
     })
 
     it('falls back to the pricing table for a non-free-tier user', () => {
@@ -549,8 +546,8 @@ describe('useSubscriptionDialog', () => {
 
       show({ reason: 'out_of_credits' })
 
-      expect(dispatcher.trackSubscription).toHaveBeenCalledTimes(1)
-      expect(dispatcher.trackSubscription).toHaveBeenCalledWith(
+      expect(useTelemetry()?.trackSubscription).toHaveBeenCalledTimes(1)
+      expect(useTelemetry()?.trackSubscription).toHaveBeenCalledWith(
         'modal_opened',
         expect.objectContaining({ reason: 'out_of_credits' })
       )

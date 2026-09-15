@@ -7,7 +7,7 @@ import {
   onIdTokenChanged,
   setPersistence
 } from 'firebase/auth'
-import { assert, afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useTelemetry } from '@/platform/telemetry'
 
@@ -133,9 +133,6 @@ vi.mock(import('@/platform/telemetry/reportError'), () => ({
 }))
 
 vi.mock(import('@/platform/telemetry'))
-
-const dispatcher = vi.mocked(useTelemetry(), { deep: true })
-assert.exists(dispatcher)
 
 function createWorkflow(
   warnings: PendingWarnings | null = null,
@@ -2528,8 +2525,8 @@ describe('useWorkflowService', () => {
         'workflows/test.app.json'
       )
       expect(workflowStore.saveWorkflow).toHaveBeenCalledWith(copy)
-      expect(dispatcher.trackWorkflowSaved).toHaveBeenCalledTimes(1)
-      expect(dispatcher.trackWorkflowSaved).toHaveBeenCalledWith({
+      expect(useTelemetry()?.trackWorkflowSaved).toHaveBeenCalledTimes(1)
+      expect(useTelemetry()?.trackWorkflowSaved).toHaveBeenCalledWith({
         is_app: true,
         is_new: true
       })
@@ -2566,8 +2563,8 @@ describe('useWorkflowService', () => {
         isApp: true
       })
 
-      expect(dispatcher.trackWorkflowSaved).toHaveBeenCalledTimes(1)
-      expect(dispatcher.trackWorkflowSaved).toHaveBeenCalledWith({
+      expect(useTelemetry()?.trackWorkflowSaved).toHaveBeenCalledTimes(1)
+      expect(useTelemetry()?.trackWorkflowSaved).toHaveBeenCalledWith({
         is_app: true,
         is_new: true
       })

@@ -1,7 +1,7 @@
 import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
 import { fromPartial, fromAny } from '@total-typescript/shoehorn'
-import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { Slots } from 'vue'
 import { h } from 'vue'
 import { createI18n } from 'vue-i18n'
@@ -25,9 +25,6 @@ vi.mock(import('@/core/graph/subgraph/promotionUtils'), () => ({
 }))
 
 vi.mock(import('@/platform/telemetry'))
-
-const dispatcher = vi.mocked(useTelemetry(), { deep: true })
-assert.exists(dispatcher)
 
 vi.mock<unknown>(import('@/services/dialogService'), () => ({
   useDialogService: () => ({
@@ -226,7 +223,7 @@ describe('WidgetActions', () => {
     await user.click(screen.getByRole('button', { name: /Favorite/ }))
 
     expect(
-      dispatcher.trackWidgetFavoriteToggled
+      useTelemetry()?.trackWidgetFavoriteToggled
     ).toHaveBeenCalledExactlyOnceWith({
       node_type: 'TestNode',
       widget_name: 'test_widget',
@@ -250,7 +247,7 @@ describe('WidgetActions', () => {
     await user.click(screen.getByRole('button', { name: /Unfavorite/ }))
 
     expect(
-      dispatcher.trackWidgetFavoriteToggled
+      useTelemetry()?.trackWidgetFavoriteToggled
     ).toHaveBeenCalledExactlyOnceWith({
       node_type: 'TestNode',
       widget_name: 'test_widget',

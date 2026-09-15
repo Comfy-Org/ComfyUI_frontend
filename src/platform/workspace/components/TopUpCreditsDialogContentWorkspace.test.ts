@@ -15,7 +15,7 @@ import { useAuthStore } from '@/stores/authStore'
 import { useDialogStore } from '@/stores/dialogStore'
 import { render, screen, waitFor } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
@@ -97,11 +97,7 @@ vi.mock<unknown>(
 
 vi.mock(import('@/platform/telemetry'))
 
-const dispatcher = vi.mocked(useTelemetry(), { deep: true })
-assert.exists(dispatcher)
-
 vi.mock(import('firebase/auth'), { spy: true })
-
 const mockClearPendingTopup = vi.hoisted(() => vi.fn())
 vi.mock<unknown>(import('@/composables/billing/usePendingTopup'), () => ({
   usePendingTopup: () => ({ clearPendingTopup: mockClearPendingTopup })
@@ -199,7 +195,7 @@ beforeEach(() => {
   vi.mocked(useDialogStore().closeDialog).mockImplementation(() => {})
   Object.assign(useAuthStore(), { userId: 'user-1' })
   Object.assign(useTeamWorkspaceStore(), { activeWorkspaceId: 'workspace-1' })
-  dispatcher.trackCheckoutJourneyEvent.mockClear()
+  vi.mocked(useTelemetry()?.trackCheckoutJourneyEvent)?.mockClear()
   sessionStorage.clear()
   clearCheckoutJourney()
 })
@@ -248,13 +244,13 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Pay $50.00' }))
 
     await waitFor(() =>
-      expect(dispatcher.trackBillingEvent).toHaveBeenCalledWith({
+      expect(useTelemetry()?.trackBillingEvent).toHaveBeenCalledWith({
         operation: 'topup',
         stage: 'started',
         outcome: 'pending'
       })
     )
-    expect(dispatcher.trackBillingEvent).toHaveBeenCalledWith({
+    expect(useTelemetry()?.trackBillingEvent).toHaveBeenCalledWith({
       operation: 'operation',
       stage: 'started',
       outcome: 'pending',
@@ -267,7 +263,7 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
 
     renderDialog()
     await waitFor(() =>
-      expect(dispatcher.trackCheckoutJourneyEvent).toHaveBeenCalledWith(
+      expect(useTelemetry()?.trackCheckoutJourneyEvent).toHaveBeenCalledWith(
         expect.objectContaining({ phase: 'entered', entry_flow: 'topup' })
       )
     )
@@ -276,16 +272,16 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Pay $50.00' }))
 
     await waitFor(() =>
-      expect(dispatcher.trackCheckoutJourneyEvent).toHaveBeenCalledWith(
+      expect(useTelemetry()?.trackCheckoutJourneyEvent).toHaveBeenCalledWith(
         expect.objectContaining({
           phase: 'operation_linked',
           billing_op_id: 'op-1'
         })
       )
     )
-    const phases = dispatcher.trackCheckoutJourneyEvent.mock.calls.map(
-      ([event]) => event.phase
-    )
+    const phases = (
+      useTelemetry()?.trackCheckoutJourneyEvent.mock.calls ?? []
+    ).map(([event]) => event.phase)
     expect(phases.indexOf('submitted')).toBeLessThan(
       phases.indexOf('operation_linked')
     )
@@ -293,7 +289,7 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
 
     // One denominator: every phase of a top-up must carry the same journey.
     const journeyIds = new Set(
-      dispatcher.trackCheckoutJourneyEvent.mock.calls.map(
+      (useTelemetry()?.trackCheckoutJourneyEvent.mock.calls ?? []).map(
         ([event]) => event.checkout_journey_id
       )
     )
@@ -312,7 +308,7 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
     await clickAddCredits()
     await userEvent.click(screen.getByRole('button', { name: 'Pay $50.00' }))
     await waitFor(() =>
-      expect(dispatcher.trackCheckoutJourneyEvent).toHaveBeenCalledWith(
+      expect(useTelemetry()?.trackCheckoutJourneyEvent).toHaveBeenCalledWith(
         expect.objectContaining({ phase: 'submitted' })
       )
     )
@@ -330,9 +326,9 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
     resolveTopup(topupResponse('completed'))
     await waitFor(() => expect(mockFetchBalance).toHaveBeenCalled())
 
-    const phases = dispatcher.trackCheckoutJourneyEvent.mock.calls.map(
-      ([event]) => event.phase
-    )
+    const phases = (
+      useTelemetry()?.trackCheckoutJourneyEvent.mock.calls ?? []
+    ).map(([event]) => event.phase)
     expect(phases).toContain('submitted')
     expect(phases).not.toContain('operation_linked')
     expect(replacement.status).toBe('active')
@@ -347,7 +343,7 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Pay $50.00' }))
 
     await waitFor(() =>
-      expect(dispatcher.trackBillingEvent).toHaveBeenCalledWith({
+      expect(useTelemetry()?.trackBillingEvent).toHaveBeenCalledWith({
         operation: 'topup',
         stage: 'failed',
         outcome: 'failure',
@@ -700,7 +696,7 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
       summary: 'Purchase Failed',
       detail: 'Failed to purchase credits: An unknown error occurred'
     })
-    expect(dispatcher.trackBillingEvent).toHaveBeenCalledWith({
+    expect(useTelemetry()?.trackBillingEvent).toHaveBeenCalledWith({
       operation: 'topup',
       stage: 'failed',
       outcome: 'failure',
@@ -722,14 +718,14 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
     expect(mockFetchBalance).toHaveBeenCalledOnce()
     expect(mockFetchStatus).toHaveBeenCalledOnce()
     expect(mockShowSettings).toHaveBeenCalledWith('workspace')
-    expect(dispatcher.trackBillingEvent).toHaveBeenCalledWith({
+    expect(useTelemetry()?.trackBillingEvent).toHaveBeenCalledWith({
       operation: 'topup',
       stage: 'succeeded',
       outcome: 'success',
       billing_op_id: 'op-1',
       duration_ms: expect.any(Number)
     })
-    expect(dispatcher.trackBillingEvent).toHaveBeenCalledWith({
+    expect(useTelemetry()?.trackBillingEvent).toHaveBeenCalledWith({
       operation: 'operation',
       stage: 'succeeded',
       outcome: 'success',
@@ -768,8 +764,8 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
     await clickAddCredits()
     await userEvent.click(screen.getByRole('button', { name: 'Pay $50.00' }))
 
-    expect(dispatcher.trackBillingEvent).toHaveBeenCalledTimes(4)
-    expect(dispatcher.trackBillingEvent).toHaveBeenCalledWith({
+    expect(useTelemetry()?.trackBillingEvent).toHaveBeenCalledTimes(4)
+    expect(useTelemetry()?.trackBillingEvent).toHaveBeenCalledWith({
       operation: 'topup',
       stage: 'succeeded',
       outcome: 'success',
@@ -796,7 +792,7 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
     )
     expect(mockFetchBalance).not.toHaveBeenCalled()
     expect(mockFetchStatus).not.toHaveBeenCalled()
-    expect(dispatcher.trackBillingEvent).not.toHaveBeenCalledWith(
+    expect(useTelemetry()?.trackBillingEvent).not.toHaveBeenCalledWith(
       expect.objectContaining({ stage: 'succeeded' })
     )
   })
@@ -810,7 +806,7 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
 
     expect(mockFetchBalance).not.toHaveBeenCalled()
     expect(mockFetchStatus).not.toHaveBeenCalled()
-    expect(dispatcher.trackBillingEvent).toHaveBeenCalledWith({
+    expect(useTelemetry()?.trackBillingEvent).toHaveBeenCalledWith({
       operation: 'topup',
       stage: 'failed',
       outcome: 'failure',
@@ -818,7 +814,7 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
       failure_category: 'provider_decline',
       duration_ms: expect.any(Number)
     })
-    expect(dispatcher.trackBillingEvent).toHaveBeenCalledWith({
+    expect(useTelemetry()?.trackBillingEvent).toHaveBeenCalledWith({
       operation: 'operation',
       stage: 'failed',
       outcome: 'failure',
@@ -838,7 +834,7 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Pay $50.00' }))
 
     await waitFor(() =>
-      expect(dispatcher.trackBillingEvent).toHaveBeenCalledWith({
+      expect(useTelemetry()?.trackBillingEvent).toHaveBeenCalledWith({
         operation: 'topup',
         stage: 'failed',
         outcome: 'failure',
@@ -858,7 +854,7 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
 
     expect(mockTopup).not.toHaveBeenCalled()
     expect(
-      dispatcher.trackApiCreditTopupButtonPurchaseClicked
+      useTelemetry()?.trackApiCreditTopupButtonPurchaseClicked
     ).not.toHaveBeenCalled()
     expect(mockToastAdd).not.toHaveBeenCalled()
     expect(useDialogStore().closeDialog).not.toHaveBeenCalled()

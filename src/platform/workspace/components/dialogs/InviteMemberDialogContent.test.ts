@@ -2,7 +2,7 @@ import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspace
 import { useDialogStore } from '@/stores/dialogStore'
 import { render, screen, waitFor } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
 import { useTelemetry } from '@/platform/telemetry'
@@ -31,9 +31,6 @@ vi.mock<unknown>(import('@/composables/billing/useBillingContext'), () => ({
 }))
 
 vi.mock(import('@/platform/telemetry'))
-
-const dispatcher = vi.mocked(useTelemetry(), { deep: true })
-assert.exists(dispatcher)
 
 vi.mock<unknown>(
   import('primevue/usetoast'), // eslint-disable-line primevue-removal/no-imports
@@ -197,7 +194,7 @@ describe('InviteMemberDialogContent', () => {
     expect(useTeamWorkspaceStore().createInvite).toHaveBeenCalledTimes(2)
     expect(useTeamWorkspaceStore().createInvite).toHaveBeenCalledWith('a@b.com')
     expect(useTeamWorkspaceStore().createInvite).toHaveBeenCalledWith('c@d.com')
-    expect(dispatcher.trackWorkspaceInviteSent).toHaveBeenCalledWith({
+    expect(useTelemetry()?.trackWorkspaceInviteSent).toHaveBeenCalledWith({
       source: 'settings_members',
       count: 2
     })
@@ -232,7 +229,7 @@ describe('InviteMemberDialogContent', () => {
     expect(mockToastAdd).toHaveBeenCalledWith(
       expect.objectContaining({ severity: 'error' })
     )
-    expect(dispatcher.trackWorkspaceInviteSent).toHaveBeenCalledWith({
+    expect(useTelemetry()?.trackWorkspaceInviteSent).toHaveBeenCalledWith({
       source: 'settings_members',
       count: 1
     })
@@ -259,7 +256,7 @@ describe('InviteMemberDialogContent', () => {
     expect(mockToastAdd).toHaveBeenCalledWith(
       expect.objectContaining({ severity: 'error' })
     )
-    expect(dispatcher.trackWorkspaceInviteSent).not.toHaveBeenCalled()
+    expect(useTelemetry()?.trackWorkspaceInviteSent).not.toHaveBeenCalled()
     expect(inviteButton()).toBeEnabled()
   })
 

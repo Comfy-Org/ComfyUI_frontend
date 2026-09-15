@@ -2,7 +2,7 @@ import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import PrimeVue from 'primevue/config'
 import Tooltip from 'primevue/tooltip'
-import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
 import { useTelemetry } from '@/platform/telemetry'
@@ -21,9 +21,6 @@ vi.mock<unknown>(import('@/composables/graph/useSelectionState'), () => ({
 }))
 
 vi.mock(import('@/platform/telemetry'))
-
-const dispatcher = vi.mocked(useTelemetry(), { deep: true })
-assert.exists(dispatcher)
 
 describe('InfoButton', () => {
   const i18n = createI18n({
@@ -63,7 +60,7 @@ describe('InfoButton', () => {
     await clickNodeInfoButton()
 
     expect(openNodeInfoMock).toHaveBeenCalled()
-    expect(dispatcher.trackUiButtonClicked).toHaveBeenCalledWith({
+    expect(useTelemetry()?.trackUiButtonClicked).toHaveBeenCalledWith({
       button_id: 'selection_toolbox_node_info_opened',
       element_group: 'selection_toolbox'
     })
@@ -76,6 +73,6 @@ describe('InfoButton', () => {
     await clickNodeInfoButton()
 
     expect(openNodeInfoMock).toHaveBeenCalled()
-    expect(dispatcher.trackUiButtonClicked).not.toHaveBeenCalled()
+    expect(useTelemetry()?.trackUiButtonClicked).not.toHaveBeenCalled()
   })
 })

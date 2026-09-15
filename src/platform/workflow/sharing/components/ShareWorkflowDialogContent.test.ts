@@ -1,7 +1,7 @@
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
@@ -10,9 +10,6 @@ import { useTelemetry } from '@/platform/telemetry'
 import ShareWorkflowDialogContent from '@/platform/workflow/sharing/components/ShareWorkflowDialogContent.vue'
 
 vi.mock(import('@/platform/telemetry'))
-
-const dispatcher = vi.mocked(useTelemetry(), { deep: true })
-assert.exists(dispatcher)
 
 const mockToast = vi.hoisted(() => ({ add: vi.fn() }))
 
@@ -378,7 +375,7 @@ describe('ShareWorkflowDialogContent', () => {
       'workflows/test.json',
       initialShareableAssets
     )
-    expect(dispatcher.trackShareFlow).toHaveBeenCalledWith({
+    expect(useTelemetry()?.trackShareFlow).toHaveBeenCalledWith({
       step: 'link_created',
       source: 'graph_mode',
       view_mode: 'graph',
@@ -400,7 +397,7 @@ describe('ShareWorkflowDialogContent', () => {
 
     await userEvent.click(screen.getByRole('button', { name: /Copy link/i }))
 
-    expect(dispatcher.trackShareFlow).toHaveBeenCalledWith({
+    expect(useTelemetry()?.trackShareFlow).toHaveBeenCalledWith({
       step: 'link_copied',
       source: 'graph_mode',
       view_mode: 'graph',

@@ -1,7 +1,7 @@
 import { useWorkspaceAuthStore } from '@/platform/workspace/stores/workspaceAuthStore'
 import type { AxiosAdapter } from 'axios'
 import axios, { AxiosError } from 'axios'
-import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useTelemetry } from '@/platform/telemetry'
 
@@ -16,9 +16,6 @@ const { mockRemint, flagState } = vi.hoisted(() => ({
 }))
 
 vi.mock(import('@/platform/telemetry'))
-
-const dispatcher = vi.mocked(useTelemetry(), { deep: true })
-assert.exists(dispatcher)
 
 vi.mock<unknown>(import('@/composables/useFeatureFlags'), () => ({
   useFeatureFlags: () => ({
@@ -73,7 +70,9 @@ describe('fetchWithUnifiedRemint', () => {
     const retryHeaders = new Headers(mockFetch.mock.calls[1][1].headers)
     expect(retryHeaders.get('Authorization')).toBe('Bearer tokenB')
     expect(retryHeaders.get('Comfy-User')).toBe('u1')
-    expect(dispatcher.trackUnifiedAuthRetry).toHaveBeenCalledExactlyOnceWith({
+    expect(
+      useTelemetry()?.trackUnifiedAuthRetry
+    ).toHaveBeenCalledExactlyOnceWith({
       transport: 'fetch',
       outcome: 'succeeded',
       final_status: 200
@@ -96,7 +95,9 @@ describe('fetchWithUnifiedRemint', () => {
     expect(result).toBe(secondUnauthorized)
     expect(mockFetch).toHaveBeenCalledTimes(2)
     expect(mockRemint).toHaveBeenCalledTimes(1)
-    expect(dispatcher.trackUnifiedAuthRetry).toHaveBeenCalledExactlyOnceWith({
+    expect(
+      useTelemetry()?.trackUnifiedAuthRetry
+    ).toHaveBeenCalledExactlyOnceWith({
       transport: 'fetch',
       outcome: 'failed',
       final_status: 401,
@@ -116,7 +117,7 @@ describe('fetchWithUnifiedRemint', () => {
     expect(result).toBe(unauthorized)
     expect(mockFetch).toHaveBeenCalledTimes(1)
     expect(mockRemint).not.toHaveBeenCalled()
-    expect(dispatcher.trackUnifiedAuthRetry).not.toHaveBeenCalled()
+    expect(useTelemetry()?.trackUnifiedAuthRetry).not.toHaveBeenCalled()
   })
 
   it('does not retry a non-401 response', async () => {
@@ -147,7 +148,9 @@ describe('fetchWithUnifiedRemint', () => {
     expect(result).toBe(unauthorized)
     expect(mockFetch).toHaveBeenCalledTimes(1)
     expect(mockRemint).toHaveBeenCalledTimes(1)
-    expect(dispatcher.trackUnifiedAuthRetry).toHaveBeenCalledExactlyOnceWith({
+    expect(
+      useTelemetry()?.trackUnifiedAuthRetry
+    ).toHaveBeenCalledExactlyOnceWith({
       transport: 'fetch',
       outcome: 'failed',
       final_status: 401,
@@ -205,7 +208,9 @@ describe('fetchWithUnifiedRemint', () => {
     expect(result).toBe(unauthorized)
     expect(mockFetch).toHaveBeenCalledTimes(1)
     expect(mockRemint).not.toHaveBeenCalled()
-    expect(dispatcher.trackUnifiedAuthRetry).toHaveBeenCalledExactlyOnceWith({
+    expect(
+      useTelemetry()?.trackUnifiedAuthRetry
+    ).toHaveBeenCalledExactlyOnceWith({
       transport: 'fetch',
       outcome: 'failed',
       final_status: 401,
@@ -245,7 +250,9 @@ describe('fetchWithUnifiedRemint', () => {
     expect(result).toBe(unauthorized)
     expect(mockFetch).toHaveBeenCalledTimes(1)
     expect(mockRemint).not.toHaveBeenCalled()
-    expect(dispatcher.trackUnifiedAuthRetry).toHaveBeenCalledExactlyOnceWith({
+    expect(
+      useTelemetry()?.trackUnifiedAuthRetry
+    ).toHaveBeenCalledExactlyOnceWith({
       transport: 'fetch',
       outcome: 'failed',
       final_status: 401,
@@ -350,7 +357,9 @@ describe('attachUnifiedRemintInterceptor', () => {
     expect(String(adapter.mock.calls[1][0].headers.Authorization)).toBe(
       'Bearer tokenB'
     )
-    expect(dispatcher.trackUnifiedAuthRetry).toHaveBeenCalledExactlyOnceWith({
+    expect(
+      useTelemetry()?.trackUnifiedAuthRetry
+    ).toHaveBeenCalledExactlyOnceWith({
       transport: 'axios',
       outcome: 'succeeded',
       final_status: 200
@@ -369,7 +378,9 @@ describe('attachUnifiedRemintInterceptor', () => {
 
     expect(adapter).toHaveBeenCalledTimes(2)
     expect(mockRemint).toHaveBeenCalledTimes(1)
-    expect(dispatcher.trackUnifiedAuthRetry).toHaveBeenCalledExactlyOnceWith({
+    expect(
+      useTelemetry()?.trackUnifiedAuthRetry
+    ).toHaveBeenCalledExactlyOnceWith({
       transport: 'axios',
       outcome: 'failed',
       final_status: 401,
@@ -389,7 +400,7 @@ describe('attachUnifiedRemintInterceptor', () => {
 
     expect(adapter).toHaveBeenCalledTimes(1)
     expect(mockRemint).not.toHaveBeenCalled()
-    expect(dispatcher.trackUnifiedAuthRetry).not.toHaveBeenCalled()
+    expect(useTelemetry()?.trackUnifiedAuthRetry).not.toHaveBeenCalled()
   })
 
   it('does not re-mint a request flagged __skipUnifiedRemint (acceptInvite)', async () => {

@@ -3,7 +3,7 @@
 import { render, screen, fireEvent } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { getActivePinia } from 'pinia'
-import { assert, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
@@ -22,9 +22,6 @@ vi.mock(import('@/services/hdrViewerService'), () => ({
 }))
 
 vi.mock(import('@/platform/telemetry'))
-
-const dispatcher = vi.mocked(useTelemetry(), { deep: true })
-assert.exists(dispatcher)
 
 const i18n = createI18n({
   legacy: false,
@@ -170,7 +167,9 @@ describe('ImagePreview', () => {
     expect(
       screen.queryByRole('button', { name: 'Download image' })
     ).not.toBeInTheDocument()
-    expect(dispatcher.trackImageLoadFailed).toHaveBeenCalledExactlyOnceWith({
+    expect(
+      useTelemetry()?.trackImageLoadFailed
+    ).toHaveBeenCalledExactlyOnceWith({
       source: 'node_image_preview'
     })
   })

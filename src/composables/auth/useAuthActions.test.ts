@@ -10,7 +10,7 @@ import {
 } from 'firebase/auth'
 import type { UserCredential } from 'firebase/auth'
 import { fromPartial } from '@total-typescript/shoehorn'
-import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useTelemetry } from '@/platform/telemetry'
 
@@ -80,9 +80,6 @@ vi.mock(import('@/platform/distribution/types'), () => ({
 }))
 
 vi.mock(import('@/platform/telemetry'))
-
-const dispatcher = vi.mocked(useTelemetry(), { deep: true })
-assert.exists(dispatcher)
 
 vi.mock<unknown>(import('@/composables/billing/usePendingTopup'), () => ({
   usePendingTopup: () => ({ startPendingTopup: mockStartPendingTopup })
@@ -387,7 +384,7 @@ describe('useAuthActions auth flow error telemetry', () => {
       signInWithEmail('user@example.com', 'password')
     ).resolves.toBeUndefined()
 
-    expect(dispatcher.trackAuthFailed).toHaveBeenCalledExactlyOnceWith({
+    expect(useTelemetry()?.trackAuthFailed).toHaveBeenCalledExactlyOnceWith({
       error_code: 'auth/user-not-found',
       auth_action: 'email_sign_in'
     })
@@ -407,7 +404,7 @@ describe('useAuthActions auth flow error telemetry', () => {
       signUpWithEmail('user@example.com', 'password')
     ).resolves.toBeUndefined()
 
-    expect(dispatcher.trackAuthFailed).toHaveBeenCalledExactlyOnceWith({
+    expect(useTelemetry()?.trackAuthFailed).toHaveBeenCalledExactlyOnceWith({
       error_code: 'unknown',
       auth_action: 'email_sign_up'
     })
@@ -420,7 +417,7 @@ describe('useAuthActions auth flow error telemetry', () => {
 
     await expect(signInWithGoogle({ isNewUser: true })).resolves.toBeUndefined()
 
-    expect(dispatcher.trackAuthFailed).toHaveBeenCalledExactlyOnceWith({
+    expect(useTelemetry()?.trackAuthFailed).toHaveBeenCalledExactlyOnceWith({
       error_code: 'auth/popup-closed-by-user',
       auth_action: 'google_sign_up'
     })
@@ -433,7 +430,7 @@ describe('useAuthActions auth flow error telemetry', () => {
 
     await expect(signInWithGithub({ isNewUser: true })).resolves.toBeUndefined()
 
-    expect(dispatcher.trackAuthFailed).toHaveBeenCalledExactlyOnceWith({
+    expect(useTelemetry()?.trackAuthFailed).toHaveBeenCalledExactlyOnceWith({
       error_code: 'auth/popup-closed-by-user',
       auth_action: 'github_sign_up'
     })
@@ -446,7 +443,7 @@ describe('useAuthActions auth flow error telemetry', () => {
 
     await logout()
 
-    expect(dispatcher.trackAuthFailed).not.toHaveBeenCalled()
+    expect(useTelemetry()?.trackAuthFailed).not.toHaveBeenCalled()
   })
 })
 

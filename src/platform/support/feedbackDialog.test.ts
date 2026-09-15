@@ -1,4 +1,4 @@
-import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useTelemetry } from '@/platform/telemetry'
 
@@ -16,9 +16,6 @@ vi.mock(import('@/platform/surveys/openTypeformDialog'), () => ({
 }))
 
 vi.mock(import('@/platform/telemetry'))
-
-const dispatcher = vi.mocked(useTelemetry(), { deep: true })
-assert.exists(dispatcher)
 
 const userEmail = vi.hoisted((): { value: string | undefined } => ({
   value: undefined
@@ -64,7 +61,7 @@ describe('openFeedbackDialog', () => {
   it('tracks the button click tagged with the opening source', () => {
     openFeedbackDialog('topbar')
 
-    expect(dispatcher.trackUiButtonClicked).toHaveBeenCalledWith({
+    expect(useTelemetry()?.trackUiButtonClicked).toHaveBeenCalledWith({
       button_id: 'feedback_button_clicked',
       element_group: 'topbar'
     })

@@ -1,4 +1,4 @@
-import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useTelemetry } from '@/platform/telemetry'
 
@@ -10,9 +10,6 @@ import { setWorkflowDefaultView } from './builderViewOptions'
 vi.mock(import('@/i18n'), () => ({ t: (key: string) => key }))
 
 vi.mock(import('@/platform/telemetry'))
-
-const dispatcher = vi.mocked(useTelemetry(), { deep: true })
-assert.exists(dispatcher)
 
 vi.mock<unknown>(import('@/scripts/app'), () => {
   const rootGraph = { extra: {} }
@@ -54,12 +51,12 @@ describe('setWorkflowDefaultView', () => {
   it('tracks telemetry with correct default_view', () => {
     const workflow = createMockLoadedWorkflow()
     setWorkflowDefaultView(workflow, true)
-    expect(dispatcher.trackDefaultViewSet).toHaveBeenCalledWith({
+    expect(useTelemetry()?.trackDefaultViewSet).toHaveBeenCalledWith({
       default_view: 'app'
     })
 
     setWorkflowDefaultView(workflow, false)
-    expect(dispatcher.trackDefaultViewSet).toHaveBeenCalledWith({
+    expect(useTelemetry()?.trackDefaultViewSet).toHaveBeenCalledWith({
       default_view: 'graph'
     })
   })

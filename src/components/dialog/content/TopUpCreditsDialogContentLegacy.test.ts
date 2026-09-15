@@ -1,6 +1,6 @@
 import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
-import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
 import { useTelemetry } from '@/platform/telemetry'
@@ -50,9 +50,6 @@ vi.mock<unknown>(
 )
 
 vi.mock(import('@/platform/telemetry'))
-
-const dispatcher = vi.mocked(useTelemetry(), { deep: true })
-assert.exists(dispatcher)
 
 const mockClearPendingTopup = vi.hoisted(() => vi.fn())
 vi.mock<unknown>(import('@/composables/billing/usePendingTopup'), () => ({
@@ -184,7 +181,7 @@ describe('TopUpCreditsDialogContentLegacy', () => {
     renderDialog()
     await clickBuyCredits()
 
-    expect(dispatcher.trackBillingEvent).toHaveBeenCalledWith({
+    expect(useTelemetry()?.trackBillingEvent).toHaveBeenCalledWith({
       operation: 'topup',
       stage: 'failed',
       outcome: 'failure',
@@ -209,7 +206,7 @@ describe('TopUpCreditsDialogContentLegacy', () => {
     renderDialog()
     await clickBuyCredits()
 
-    expect(dispatcher.trackBillingEvent).toHaveBeenCalledWith({
+    expect(useTelemetry()?.trackBillingEvent).toHaveBeenCalledWith({
       operation: 'topup',
       stage: 'failed',
       outcome: 'failure',
@@ -224,7 +221,7 @@ describe('TopUpCreditsDialogContentLegacy', () => {
     renderDialog()
     await clickBuyCredits()
 
-    expect(dispatcher.trackBillingEvent).toHaveBeenCalledWith({
+    expect(useTelemetry()?.trackBillingEvent).toHaveBeenCalledWith({
       operation: 'topup',
       stage: 'failed',
       outcome: 'failure',
@@ -238,7 +235,7 @@ describe('TopUpCreditsDialogContentLegacy', () => {
     renderDialog()
     await clickBuyCredits()
 
-    expect(dispatcher.trackBillingEvent).toHaveBeenCalledWith({
+    expect(useTelemetry()?.trackBillingEvent).toHaveBeenCalledWith({
       operation: 'topup',
       stage: 'failed',
       outcome: 'failure',

@@ -1,5 +1,5 @@
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
-import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useTelemetry } from '@/platform/telemetry'
 
@@ -119,9 +119,6 @@ vi.mock<unknown>(import('@/services/litegraphService'), () => ({
 }))
 
 vi.mock(import('@/platform/telemetry'))
-
-const dispatcher = vi.mocked(useTelemetry(), { deep: true })
-assert.exists(dispatcher)
 
 const mockShowAbout = vi.hoisted(() => vi.fn())
 const mockShowSettings = vi.hoisted(() => vi.fn())
@@ -744,7 +741,7 @@ describe('useCoreCommands', () => {
     it('Comfy.Help.OpenComfyUIIssues opens the GitHub issues URL and tracks telemetry', async () => {
       await findCmd('Comfy.Help.OpenComfyUIIssues').function()
 
-      expect(dispatcher.trackHelpResourceClicked).toHaveBeenCalledWith(
+      expect(useTelemetry()?.trackHelpResourceClicked).toHaveBeenCalledWith(
         expect.objectContaining({
           resource_type: 'github',
           is_external: true,
@@ -757,7 +754,7 @@ describe('useCoreCommands', () => {
     it('Comfy.Help.OpenComfyOrgDiscord opens the Discord URL and tracks telemetry', async () => {
       await findCmd('Comfy.Help.OpenComfyOrgDiscord').function()
 
-      expect(dispatcher.trackHelpResourceClicked).toHaveBeenCalledWith(
+      expect(useTelemetry()?.trackHelpResourceClicked).toHaveBeenCalledWith(
         expect.objectContaining({
           resource_type: 'discord'
         })

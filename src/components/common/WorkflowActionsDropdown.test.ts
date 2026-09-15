@@ -1,6 +1,6 @@
 import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
-import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
@@ -28,9 +28,6 @@ const spies = vi.hoisted(() => ({
 }))
 
 vi.mock(import('@/platform/telemetry'))
-
-const dispatcher = vi.mocked(useTelemetry(), { deep: true })
-assert.exists(dispatcher)
 
 vi.mock<unknown>(import('@/composables/useWorkflowActionsMenu'), async () => {
   const { ref } = await import('vue')
@@ -161,7 +158,7 @@ describe('WorkflowActionsDropdown', () => {
     expect(
       screen.getByRole('button', { name: /workflow actions/ })
     ).toHaveAttribute('aria-expanded', 'false')
-    expect(dispatcher.trackUiButtonClicked).not.toHaveBeenCalled()
+    expect(useTelemetry()?.trackUiButtonClicked).not.toHaveBeenCalled()
     expect(spies.markAsSeen).not.toHaveBeenCalled()
   })
 
@@ -174,7 +171,7 @@ describe('WorkflowActionsDropdown', () => {
     expect(vi.mocked(useCommandStore().execute)).not.toHaveBeenCalled()
     expect(active).toHaveAttribute('aria-expanded', 'true')
     expect(spies.markAsSeen).toHaveBeenCalled()
-    expect(dispatcher.trackUiButtonClicked).toHaveBeenCalledWith({
+    expect(useTelemetry()?.trackUiButtonClicked).toHaveBeenCalledWith({
       button_id: 'test',
       element_group: 'workflow_actions'
     })
@@ -207,7 +204,7 @@ describe('WorkflowActionsDropdown', () => {
     expect(
       screen.getByRole('button', { name: /workflow actions/ })
     ).toHaveAttribute('aria-expanded', 'false')
-    expect(dispatcher.trackUiButtonClicked).not.toHaveBeenCalled()
+    expect(useTelemetry()?.trackUiButtonClicked).not.toHaveBeenCalled()
   })
 
   it('lets non-trigger keys bubble past the inactive segment', async () => {

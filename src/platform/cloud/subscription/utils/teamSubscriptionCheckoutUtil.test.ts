@@ -1,5 +1,5 @@
 import { useAuthStore } from '@/stores/authStore'
-import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useTelemetry } from '@/platform/telemetry'
 
@@ -30,9 +30,6 @@ vi.mock<unknown>(import('@/platform/workspace/api/workspaceApi'), () => ({
   }
 }))
 vi.mock(import('@/platform/telemetry'))
-
-const dispatcher = vi.mocked(useTelemetry(), { deep: true })
-assert.exists(dispatcher)
 
 import { performTeamSubscriptionCheckout } from './teamSubscriptionCheckoutUtil'
 
@@ -75,7 +72,7 @@ describe('performTeamSubscriptionCheckout', () => {
       teamCreditStopId: 'team_700'
     })
     expect(assignedHref).toBe('https://stripe.test/pay')
-    expect(dispatcher.trackBeginCheckout).toHaveBeenCalledWith({
+    expect(useTelemetry()?.trackBeginCheckout).toHaveBeenCalledWith({
       user_id: 'user-1',
       tier: 'team',
       cycle: 'yearly',
@@ -112,7 +109,7 @@ describe('performTeamSubscriptionCheckout', () => {
     ).rejects.toThrow(/payment URL/)
 
     expect(assignedHref).toBeUndefined()
-    expect(dispatcher.trackBillingEvent).toHaveBeenCalledWith({
+    expect(useTelemetry()?.trackBillingEvent).toHaveBeenCalledWith({
       operation: 'subscription_checkout',
       stage: 'failed',
       outcome: 'failure',
@@ -133,8 +130,8 @@ describe('performTeamSubscriptionCheckout', () => {
       })
     ).rejects.toThrow('subscribe failed')
 
-    expect(dispatcher.trackBeginCheckout).not.toHaveBeenCalled()
-    expect(dispatcher.trackBillingEvent).toHaveBeenCalledWith({
+    expect(useTelemetry()?.trackBeginCheckout).not.toHaveBeenCalled()
+    expect(useTelemetry()?.trackBillingEvent).toHaveBeenCalledWith({
       operation: 'subscription_checkout',
       stage: 'failed',
       outcome: 'failure',

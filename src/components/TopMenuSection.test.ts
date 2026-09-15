@@ -5,7 +5,7 @@ import type { Pinia } from 'pinia'
 import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
 import type { MenuItem } from 'primevue/menuitem'
-import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, defineComponent, h, nextTick, onMounted, ref } from 'vue'
 import type { Component } from 'vue'
 import { createI18n } from 'vue-i18n'
@@ -83,9 +83,6 @@ vi.mock<unknown>(import('@/scripts/app'), () => ({
 }))
 
 vi.mock(import('@/platform/telemetry'))
-
-const dispatcher = vi.mocked(useTelemetry(), { deep: true })
-assert.exists(dispatcher)
 
 type WrapperOptions = {
   pinia?: Pinia
@@ -283,7 +280,7 @@ describe('TopMenuSection', () => {
       screen.getByRole('button', { name: 'Toggle properties panel' })
     )
 
-    expect(dispatcher.trackUiButtonClicked).toHaveBeenCalledWith({
+    expect(useTelemetry()?.trackUiButtonClicked).toHaveBeenCalledWith({
       button_id: 'right_side_panel_opened',
       element_group: 'top_menu'
     })

@@ -1,7 +1,7 @@
 import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
 import PrimeVue from 'primevue/config'
-import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { ComponentProps } from 'vue-component-type-helpers'
 import { createI18n } from 'vue-i18n'
 
@@ -41,9 +41,6 @@ vi.mock(import('@/platform/distribution/types'), () => ({
 }))
 
 vi.mock(import('@/platform/telemetry'))
-
-const dispatcher = vi.mocked(useTelemetry(), { deep: true })
-assert.exists(dispatcher)
 
 const i18n = createI18n({
   legacy: false,
@@ -150,7 +147,7 @@ describe('SideToolbar', () => {
 
     await user.click(screen.getByRole('button', { name: 'Assets' }))
 
-    expect(dispatcher.trackUiButtonClicked).toHaveBeenCalledWith({
+    expect(useTelemetry()?.trackUiButtonClicked).toHaveBeenCalledWith({
       button_id: 'sidebar_tab_assets_media_selected',
       element_group: 'sidebar'
     })

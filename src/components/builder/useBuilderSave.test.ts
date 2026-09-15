@@ -1,5 +1,5 @@
 import { fromPartial } from '@total-typescript/shoehorn'
-import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 
 import { useTelemetry } from '@/platform/telemetry'
@@ -40,9 +40,6 @@ vi.mock<unknown>(import('@/composables/useErrorHandling'), () => ({
 }))
 
 vi.mock(import('@/platform/telemetry'))
-
-const dispatcher = vi.mocked(useTelemetry(), { deep: true })
-assert.exists(dispatcher)
 
 vi.mock<unknown>(
   import('@/platform/workflow/core/services/workflowService'),
@@ -213,7 +210,7 @@ describe('useBuilderSave', () => {
           isApp: true
         }
       )
-      expect(dispatcher.trackDefaultViewSet).toHaveBeenCalledWith({
+      expect(useTelemetry()?.trackDefaultViewSet).toHaveBeenCalledWith({
         default_view: 'app'
       })
     })
@@ -231,7 +228,7 @@ describe('useBuilderSave', () => {
           isApp: false
         }
       )
-      expect(dispatcher.trackDefaultViewSet).toHaveBeenCalledWith({
+      expect(useTelemetry()?.trackDefaultViewSet).toHaveBeenCalledWith({
         default_view: 'graph'
       })
     })
@@ -242,7 +239,7 @@ describe('useBuilderSave', () => {
 
       await onSave('new-name', false)
 
-      expect(dispatcher.trackDefaultViewSet).not.toHaveBeenCalled()
+      expect(useTelemetry()?.trackDefaultViewSet).not.toHaveBeenCalled()
       expect(useDialogStore().closeDialog).not.toHaveBeenCalled()
     })
 
@@ -354,7 +351,7 @@ describe('useBuilderSave', () => {
       expect(useDialogStore().closeDialog).toHaveBeenCalledWith({
         key: SUCCESS_DIALOG_KEY
       })
-      expect(dispatcher.trackEnterLinear).toHaveBeenCalledWith({
+      expect(useTelemetry()?.trackEnterLinear).toHaveBeenCalledWith({
         source: 'app_builder'
       })
       expect(mockSetMode).toHaveBeenCalledWith('app')

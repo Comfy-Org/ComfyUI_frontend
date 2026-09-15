@@ -1,4 +1,4 @@
-import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useTelemetry } from '@/platform/telemetry'
 
@@ -12,9 +12,6 @@ import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 
 vi.mock(import('@/platform/telemetry'))
-
-const dispatcher = vi.mocked(useTelemetry(), { deep: true })
-assert.exists(dispatcher)
 
 // Mock the api
 vi.mock<unknown>(import('@/scripts/api'), () => ({
@@ -626,7 +623,7 @@ describe('useSettingStore', () => {
 
       await store.set('test.setting', 'newvalue')
 
-      expect(dispatcher.trackSettingChanged).toHaveBeenCalledWith({
+      expect(useTelemetry()?.trackSettingChanged).toHaveBeenCalledWith({
         setting_id: 'test.setting',
         previous_value: 'default',
         new_value: 'newvalue'
@@ -643,7 +640,7 @@ describe('useSettingStore', () => {
 
       await store.set('test.setting', 'newvalue')
 
-      expect(dispatcher.trackSettingChanged).not.toHaveBeenCalled()
+      expect(useTelemetry()?.trackSettingChanged).not.toHaveBeenCalled()
     })
 
     it('does not track visible settings that opt out', async () => {
@@ -657,7 +654,7 @@ describe('useSettingStore', () => {
 
       await store.set('test.setting', 'newvalue')
 
-      expect(dispatcher.trackSettingChanged).not.toHaveBeenCalled()
+      expect(useTelemetry()?.trackSettingChanged).not.toHaveBeenCalled()
     })
 
     it('tracks visible settings without values when values opt out', async () => {
@@ -671,7 +668,7 @@ describe('useSettingStore', () => {
 
       await store.set('test.setting', 'newvalue')
 
-      expect(dispatcher.trackSettingChanged).toHaveBeenCalledWith({
+      expect(useTelemetry()?.trackSettingChanged).toHaveBeenCalledWith({
         setting_id: 'test.setting'
       })
     })
@@ -686,13 +683,13 @@ describe('useSettingStore', () => {
       })
 
       await store.set('test.setting', 'newvalue')
-      expect(dispatcher.trackSettingChanged).toHaveBeenCalledWith({
+      expect(useTelemetry()?.trackSettingChanged).toHaveBeenCalledWith({
         setting_id: 'test.setting'
       })
 
       // Setting the same value again is a no-op and should not re-emit
       await store.set('test.setting', 'newvalue')
-      expect(dispatcher.trackSettingChanged).toHaveBeenCalledTimes(1)
+      expect(useTelemetry()?.trackSettingChanged).toHaveBeenCalledTimes(1)
     })
 
     it('ships previous/new values when the setting opts into includeValues', async () => {
@@ -706,7 +703,7 @@ describe('useSettingStore', () => {
 
       await store.set('Comfy.ColorPalette', 'light')
 
-      expect(dispatcher.trackSettingChanged).toHaveBeenCalledWith({
+      expect(useTelemetry()?.trackSettingChanged).toHaveBeenCalledWith({
         setting_id: 'Comfy.ColorPalette',
         previous_value: 'dark',
         new_value: 'light'
@@ -727,7 +724,7 @@ describe('useSettingStore', () => {
         'failed'
       )
 
-      expect(dispatcher.trackSettingChanged).not.toHaveBeenCalled()
+      expect(useTelemetry()?.trackSettingChanged).not.toHaveBeenCalled()
     })
 
     describe('object mutation prevention', () => {
@@ -877,8 +874,8 @@ describe('useSettingStore', () => {
         'Comfy.Release.Version': '1.0.0'
       })
 
-      expect(dispatcher.trackSettingChanged).toHaveBeenCalledTimes(1)
-      expect(dispatcher.trackSettingChanged).toHaveBeenCalledWith({
+      expect(useTelemetry()?.trackSettingChanged).toHaveBeenCalledTimes(1)
+      expect(useTelemetry()?.trackSettingChanged).toHaveBeenCalledWith({
         setting_id: 'Comfy.ColorPalette',
         previous_value: 'dark',
         new_value: 'light'
@@ -924,7 +921,7 @@ describe('useSettingStore', () => {
       await store.setMany({ 'Comfy.Release.Version': 'existing' })
 
       expect(api.storeSettings).not.toHaveBeenCalled()
-      expect(dispatcher.trackSettingChanged).not.toHaveBeenCalled()
+      expect(useTelemetry()?.trackSettingChanged).not.toHaveBeenCalled()
     })
   })
 })
