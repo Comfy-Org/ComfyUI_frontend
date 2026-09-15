@@ -108,8 +108,31 @@ const WORKSHOP_TURNSTILE_FLAG = 'workshop-signup-turnstile'
 const VISIBILITY_OVERRIDE =
   WORKSHOP_LOCAL_DEV && import.meta.env.PUBLIC_WORKSHOP_ENABLED === '1'
 const workshopEnabled = ref(VISIBILITY_OVERRIDE)
+// Default to the resolved public experience. The gate only leaves it once
+// `awaitFlagAnswer()` starts a real flag fetch (and arms the timeout), so an
+// environment that never initializes PostHog — local dev, no key, SSR — shows
+// the public site instead of stranding on the loading frame.
 const workshopEnabledSettled = ref(true)
 let workshopUser: WorkshopIdentity | null | undefined
+
+// If PostHog never answers (blocked, offline), resolve to the default-off
+// experience rather than leaving the gate on its loading frame forever.
+const FLAG_RESOLUTION_TIMEOUT_MS = 3000
+let flagResolutionTimer: ReturnType<typeof setTimeout> | undefined
+
+function markFlagResolved(): void {
+  if (flagResolutionTimer !== undefined) {
+    clearTimeout(flagResolutionTimer)
+    flagResolutionTimer = undefined
+  }
+  workshopEnabledSettled.value = true
+}
+
+function awaitFlagAnswer(): void {
+  if (flagResolutionTimer !== undefined) clearTimeout(flagResolutionTimer)
+  workshopEnabledSettled.value = false
+  flagResolutionTimer = setTimeout(markFlagResolved, FLAG_RESOLUTION_TIMEOUT_MS)
+}
 
 export function useWorkshopEnabled(): Readonly<Ref<boolean>> {
   return readonly(workshopEnabled)
@@ -141,39 +164,47 @@ function identifyInPostHog(user: WorkshopIdentity): void {
   else posthog.identify(user.uid)
 }
 
+function refreshFlagForSameIdentity(user: WorkshopIdentity | null): void {
+  const cachedAnswer =
+    user &&
+    posthog.isFeatureEnabled(WORKSHOP_ENABLED_FLAG, { send_event: false })
+  if (cachedAnswer !== undefined) return
+  workshopEnabled.value = VISIBILITY_OVERRIDE
+  awaitFlagAnswer()
+  posthog.reloadFeatureFlags()
+}
+
+function adoptNewIdentity(
+  user: WorkshopIdentity | null,
+  persistedUid: string | undefined,
+  waitForIdentityAnswer: boolean
+): void {
+  workshopEnabled.value = VISIBILITY_OVERRIDE
+  if (waitForIdentityAnswer) awaitFlagAnswer()
+  else markFlagResolved()
+  if (persistedUid) posthog.reset()
+  if (user) identifyInPostHog(user)
+  posthog.reloadFeatureFlags()
+}
+
 export function identifyWorkshopUser(user: WorkshopIdentity | null): void {
   if (workshopUser !== undefined && workshopUser?.uid === user?.uid) return
   const previous = workshopUser
   workshopUser = user
-  const waitForIdentityAnswer = !VISIBILITY_OVERRIDE && user !== null
-  if (!initialized) {
-    workshopEnabledSettled.value = !waitForIdentityAnswer
-    return
-  }
+  // Before init, visibility stays at its resolved default; initPostHog owns the
+  // transition into awaiting an answer, so an identity arriving first must not
+  // strand the gate by unsettling without a resolver.
+  if (!initialized) return
   try {
     const uid = user?.uid ?? null
     const persistedUid = posthog.get_property('$user_id') ?? previous?.uid
-    if (uid === persistedUid || (!uid && !persistedUid)) {
-      if (
-        user &&
-        posthog.isFeatureEnabled(WORKSHOP_ENABLED_FLAG, {
-          send_event: false
-        }) === undefined
-      ) {
-        workshopEnabledSettled.value = false
-        posthog.reloadFeatureFlags()
-      }
-      return
-    }
-    workshopEnabled.value = VISIBILITY_OVERRIDE
-    workshopEnabledSettled.value = !waitForIdentityAnswer
-    if (persistedUid) posthog.reset()
-    if (user) identifyInPostHog(user)
-    posthog.reloadFeatureFlags()
+    if (uid === persistedUid || (!uid && !persistedUid))
+      return refreshFlagForSameIdentity(user)
+    adoptNewIdentity(user, persistedUid, !VISIBILITY_OVERRIDE && user !== null)
   } catch (error) {
     workshopUser = previous
     workshopEnabled.value = VISIBILITY_OVERRIDE
-    workshopEnabledSettled.value = true
+    markFlagResolved()
     console.error('PostHog identity failed', error)
   }
 }
@@ -198,6 +229,10 @@ export function useWorkshopTurnstileMode(): Readonly<Ref<TurnstileMode>> {
 
 export function initPostHog() {
   if (initialized || typeof window === 'undefined' || !POSTHOG_KEY) return
+  // Enter the awaiting state before init can throw, so the gate holds the
+  // loader (not the public page) through the whole fetch and the timeout is
+  // always armed the moment visibility becomes unresolved.
+  if (!VISIBILITY_OVERRIDE) awaitFlagAnswer()
   try {
     posthog.init(POSTHOG_KEY, {
       api_host: POSTHOG_API_HOST,
@@ -220,17 +255,17 @@ export function initPostHog() {
       (!expectedUid && !persistedUid)
     if (persistedAnswer !== undefined && persistedIdentityMatches) {
       workshopEnabled.value = VISIBILITY_OVERRIDE || persistedAnswer
-      workshopEnabledSettled.value = true
+      markFlagResolved()
     }
     posthog.onFeatureFlags((_flags, _variants, context) => {
       if (context?.errorsLoading) {
-        workshopEnabledSettled.value = true
+        markFlagResolved()
         return
       }
       workshopEnabled.value =
         VISIBILITY_OVERRIDE ||
         posthog.isFeatureEnabled(WORKSHOP_ENABLED_FLAG) === true
-      workshopEnabledSettled.value = true
+      markFlagResolved()
       if (!OVERRIDDEN_ON) {
         workshopAuthEnabled.value =
           posthog.isFeatureEnabled(WORKSHOP_AUTH_FLAG) !== false
@@ -248,7 +283,7 @@ export function initPostHog() {
       identifyWorkshopUser(user)
     }
   } catch (error) {
-    workshopEnabledSettled.value = true
+    markFlagResolved()
     console.error('PostHog init failed', error)
   }
 }
