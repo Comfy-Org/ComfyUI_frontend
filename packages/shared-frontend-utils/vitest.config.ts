@@ -13,8 +13,9 @@ export default defineConfig({
     unstubGlobals: true,
     fakeTimers: { shouldAdvanceTime: true },
     environment: 'node',
-    include: ['src/__tests__/**/*.test.ts'],
+    include: ['src/**/*.{test,spec}.ts'],
     globals: false,
+    env: { TZ: 'UTC' },
     setupFiles: ['../../vitest.timer.setup.ts']
   }
 })
