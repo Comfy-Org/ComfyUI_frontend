@@ -25,6 +25,25 @@ test.describe('Agent conversation replay', { tag: '@cloud' }, () => {
         { mask: [agentConversation.panel] }
       )
     })
+
+    test('preserves the rendered graph after switching workflow tabs', async ({
+      agentConversation,
+      page
+    }) => {
+      test.setTimeout(90_000)
+      await agentConversation.runTurns()
+
+      const canvas = page.locator('#graph-canvas')
+      const renderedGraph = await canvas.screenshot()
+      const tabs = page.getByTestId('workflow-tab')
+      await expect(tabs).toHaveCount(1)
+
+      await page.locator('.new-blank-workflow-button').click()
+      await expect(tabs).toHaveCount(2)
+      await tabs.first().click()
+
+      await expect.poll(() => canvas.screenshot()).toEqual(renderedGraph)
+    })
   })
 
   for (const conversationCase of listRecordedConversations()) {
