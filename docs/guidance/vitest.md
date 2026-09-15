@@ -34,27 +34,25 @@ ESLint rule enforces the Testing Library query rule. Do not disable it.
 
 ### Shared manual mocks
 
-- Put reusable module doubles in a matching-name `__mocks__` file. Load them
-  with factory-free `vi.mock(import('…'))`, import from the real module path,
-  and configure mocks with `vi.mocked`. Export only the real module's exports;
-  do not add special mock objects, setters, or duplicate action spies.
-- Derive complete defaults from the real return type. Preserve async and
-  cancellation contracts. Pass the default factory to `vi.fn<typeof realFn>`
-  instead of installing defaults with a `beforeEach` in the mock module.
-- For composable result objects, prefer a factory that creates fresh state
-  per call. When a test needs repeated calls to share state or action spies,
-  pin a local result with `vi.mocked(useX).mockReturnValue(result)`. Querying
-  an unpinned factory again creates a different result.
-- Never use `mock.results` or other call-history metadata as a cache. Keep
-  result identity explicit in the narrowest test or setup that needs it.
-- Override writable fields directly. For readonly flags on a plain mock
-  object, use `vi.spyOn(flags, 'flagName', 'get')`. Use `mockReturnValue` for
-  fixed values and `mockImplementation` for live reads of scenario state.
-  Typed getter spies preserve property and value checks that untyped
-  `Object.assign` or `Object.defineProperties` overrides bypass.
-- Avoid rebuilding complete results with nested spreads to override a field.
-  Delete hooks that only restate shared defaults; keep scenario overrides
-  beside the test that needs them.
+- Put reusable module mocks in a same-named file under `__mocks__`. Activate
+  them with `vi.mock(import('…'))`. Tests import the real module path and
+  configure its functions with `vi.mocked`. Do not export mock-only setters,
+  state, or duplicate spies.
+- Type each complete default from the real function's return type. Preserve
+  async and cancellation behavior. Pass the default implementation to
+  `vi.fn<typeof realFn>` instead of setting it in `beforeEach`.
+- For composables, return fresh state from each call. If repeated calls must
+  share a result, create it in the test and pin it with
+  `vi.mocked(useX).mockReturnValue(result)`.
+- Do not use `mock.results` or other call history as a cache. Keep shared
+  result identity explicit in the test that needs it.
+- Assign writable fields directly. To override a readonly field on a
+  configurable mock object, use `vi.spyOn(flags, 'flagName', 'get')`. Vitest
+  also supports plain data properties; it installs a temporary getter and
+  restores the original property with the spy. Use `mockReturnValue` for a
+  fixed value or `mockImplementation` to read changing test state.
+- Override only the field the test needs. Do not rebuild a full result with
+  nested spreads or add hooks that repeat the shared defaults.
 
 For example, configure a live flag inside the test before creating its consumer:
 
