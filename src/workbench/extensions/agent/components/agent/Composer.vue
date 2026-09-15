@@ -249,6 +249,7 @@ defineExpose({
 
 <template>
   <div
+    id="agent-composer"
     class="border-agent-border-strong bg-agent-surface relative flex flex-col rounded-[10px] border"
   >
     <div

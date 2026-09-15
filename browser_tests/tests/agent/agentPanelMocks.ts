@@ -159,6 +159,7 @@ async function mockAgentBoot(
     if (localStorage.getItem('Comfy.AgentPanel.open') === null) {
       localStorage.setItem('Comfy.AgentPanel.open', String(initiallyOpen))
     }
+    localStorage.setItem('Comfy.AgentPanel.onboarded', 'true')
   }, agentPanelInitiallyOpen)
 
   await mockBilling(page)
