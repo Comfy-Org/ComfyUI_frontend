@@ -6,6 +6,7 @@ import { t } from '@/i18n'
 import { appendCloudResParam } from '@/platform/distribution/cloudPreviewUtil'
 import { useAssetFilterOptions } from '@/platform/assets/composables/useAssetFilterOptions'
 import { useMissingMediaStore } from '@/platform/missingMedia/missingMediaStore'
+import { getOutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
 import {
   filterItemByBaseModels,
   filterItemByOwnership
@@ -13,7 +14,7 @@ import {
 import {
   getAssetBaseModels,
   getAssetDisplayName,
-  getAssetFilename
+  getAssetUrlFilename
 } from '@/platform/assets/utils/assetMetadataUtils'
 import type {
   FilterOption,
@@ -105,7 +106,7 @@ export function useWidgetSelectItems(options: UseWidgetSelectItemsOptions) {
       case 'outputs':
         return assetsStore.flatOutputAssets
       default:
-        return assetsStore.allAssets ?? assetsStore.inputAssets
+        return assetsStore.allAssets
     }
   })
 
@@ -119,7 +120,7 @@ export function useWidgetSelectItems(options: UseWidgetSelectItemsOptions) {
 
     if (toValue(options.isAssetMode) && assetData) {
       const existsInAssets = assetData.assets.value.some(
-        (asset) => getAssetFilename(asset) === currentValue
+        (asset) => itemNameFor(asset) === currentValue
       )
       if (existsInAssets) return undefined
 
@@ -132,7 +133,9 @@ export function useWidgetSelectItems(options: UseWidgetSelectItemsOptions) {
     }
 
     if (
-      pagedItems(baseAssets.value).some((asset) => asset.name === currentValue)
+      pagedItems(baseAssets.value).some(
+        (asset) => itemNameFor(asset) === currentValue
+      )
     )
       return undefined
 
@@ -153,12 +156,20 @@ export function useWidgetSelectItems(options: UseWidgetSelectItemsOptions) {
     }
   })
 
+  function itemNameFor(asset: AssetItem): string {
+    const filenameForUrl = getAssetUrlFilename(asset)
+    const subfolder =
+      toValue(options.assetKind) === 'mesh'
+        ? getOutputAssetMetadata(asset.user_metadata)?.subfolder
+        : undefined
+    const name = subfolder ? `${subfolder}/${filenameForUrl}` : filenameForUrl
+    return createAnnotatedPath(name, { rootFolder: assetRoot(asset) })
+  }
+
   function assetToForm(asset: AssetItem): FormDropdownItem {
-    const type = assetRoot(asset)
-    const name = getAssetFilename(asset)
     return {
       id: asset.id,
-      name: createAnnotatedPath(name, { rootFolder: type }),
+      name: itemNameFor(asset),
       label: getAssetDisplayName(asset),
       preview_url: asset.preview_url,
       is_immutable: asset.is_immutable,

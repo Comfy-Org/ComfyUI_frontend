@@ -38,7 +38,7 @@ provide(AssetKindKey, assetKind)
 const modelValue = defineModel<string | undefined>({
   default({ widget }: { widget?: SimplifiedWidget<string | undefined> }) {
     const values = widget?.options?.values
-    return (Array.isArray(values) ? values[0] : undefined) ?? ''
+    return Array.isArray(values) ? values[0] : undefined
   }
 })
 
