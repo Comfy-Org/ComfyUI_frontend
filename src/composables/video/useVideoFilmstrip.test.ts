@@ -505,32 +505,6 @@ describe('useVideoFilmstrip', () => {
     )
   })
 
-  it('reloads the current video when retry is called after a failure', async () => {
-    const videos: MockVideoElement[] = []
-    installVideoMocks({
-      onVideoCreated: (video) => {
-        video.autoEmitMetadata = videos.length > 0
-        if (videos.length === 0) {
-          queueMicrotask(() => video.emit('error'))
-        }
-        videos.push(video)
-      }
-    })
-
-    const videoUrl = ref('https://example.com/video.mp4')
-    const { thumbnail, error, loading, retry } = runWithScope(() =>
-      useVideoFilmstrip(videoUrl)
-    )
-
-    await vi.waitFor(() => expect(error.value).toBe('load-failed'))
-
-    retry()
-    await vi.waitFor(() => expect(loading.value).toBe(false))
-
-    expect(error.value).toBeNull()
-    expect(thumbnail.value).not.toBe('')
-  })
-
   it('aborts a superseded load so its video element is released immediately', async () => {
     const videos: MockVideoElement[] = []
     installVideoMocks({

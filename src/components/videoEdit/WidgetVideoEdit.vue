@@ -13,19 +13,22 @@
       :file-size="fileSize"
       :width="width"
       :height="height"
+      :has-source="hasSource"
       :loading="loading"
       :error="error"
+      @load-error="onError"
       @retry="retry"
     />
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, watch } from 'vue'
 
 import VideoEditPanel from '@/components/videoEdit/VideoEditPanel.vue'
 import { useVideoEditModel } from '@/composables/video/useVideoEditModel'
 import { useVideoFilmstrip } from '@/composables/video/useVideoFilmstrip'
+import type { FilmstripError } from '@/composables/video/useVideoFilmstrip'
 import { useVideoSourceUrl } from '@/composables/video/useVideoSourceUrl'
 import type {
   IWidgetVideoEditOptions,
@@ -56,7 +59,7 @@ const node = computed(() => {
   return owner || app.canvas.graph?.getNodeById(nodeId)
 })
 
-const { videoUrl } = useVideoSourceUrl(node)
+const { videoUrl, status, onError, retry } = useVideoSourceUrl(node)
 
 const {
   thumbnail,
@@ -66,10 +69,24 @@ const {
   height,
   fps,
   fileSize,
-  loading,
-  error,
-  retry
+  loading: filmstripLoading,
+  error: filmstripError
 } = useVideoFilmstrip(videoUrl)
+
+watch(filmstripError, (error) => {
+  if (error === 'load-failed') onError()
+})
+
+const hasSource = computed(() => status.value !== 'idle')
+const loading = computed(
+  () =>
+    status.value !== 'failed' &&
+    (filmstripLoading.value || status.value === 'retrying')
+)
+const error = computed<FilmstripError | null>(() => {
+  if (filmstripError.value === 'canvas-unavailable') return 'canvas-unavailable'
+  return status.value === 'failed' ? 'load-failed' : null
+})
 
 const { startFrame, endFrame, cropBounds } = useVideoEditModel(modelValue, {
   duration,
