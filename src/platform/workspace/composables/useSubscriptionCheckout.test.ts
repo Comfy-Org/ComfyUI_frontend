@@ -668,34 +668,6 @@ describe('useSubscriptionCheckout', () => {
       )
     })
 
-    it('links a Team-to-personal downgrade operation to the entered journey', async () => {
-      mockIsTeamPlan.value = true
-      mockShowDowngradeToPersonalDialog.mockResolvedValue({
-        preview: { is_immediate: true },
-        response: {
-          status: 'subscribed',
-          billing_op_id: 'downgrade-op'
-        }
-      })
-      const checkout = await setup()
-
-      await checkout.handleSubscribeClick({
-        tierKey: 'creator',
-        billingCycle: 'monthly'
-      })
-
-      const events = mockTrackCheckoutJourneyEvent.mock.calls.map(
-        ([event]) => event
-      )
-      const entered = events.find((event) => event.phase === 'entered')
-      const linked = events.find((event) => event.phase === 'operation_linked')
-      expect(journeyPhases()).toContain('submitted')
-      expect(linked).toMatchObject({
-        billing_op_id: 'downgrade-op',
-        checkout_journey_id: entered.checkout_journey_id
-      })
-    })
-
     it('records a correlated preview failure with no operation id', async () => {
       await submitRejectedPreview('PREVIEW_FAILED')
 

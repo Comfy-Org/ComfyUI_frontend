@@ -107,13 +107,21 @@ so a clear that could not reach storage does not resurrect the journey.
 
 Storage is a single per-tab slot, so two rails cannot hold independent journeys
 at once. A journey already bound to an in-flight operation (`billing_op_id` set)
-takes precedence: a differing rail's entry is refused outright — it receives no
-journey rather than the foreign one, because emitting its phases against that
-record would file them under the other rail's `entry_flow`. A journey binds to
+takes precedence: a differing rail's entry is refused — it is given no journey
+rather than the foreign one, and so emits no `entered`. A journey binds to
 exactly one operation and is never rebound, and the bound journey's poller owns
-the terminal clear (gated on `billing_op_id`) until it resolves. The blocked
-rail is therefore uninstrumented for the duration of the overlap; full per-rail
-isolation is deferred.
+the terminal clear (gated on `billing_op_id`) until it resolves.
+
+**Known limitation.** Refusing entry does not make the blocked rail silent. Every
+later phase emitter re-reads the shared slot through `getActiveCheckoutJourney()`
+rather than carrying the record it was given at entry, so a blocked rail's
+`preview_*`, `payment_*` and `submitted` phases are still emitted against the
+owning rail's record — under its `entry_flow`, `journey_id` and `billing_op_id`.
+Queries that split by `entry_flow` must therefore treat an overlap window as
+contaminated rather than authoritative. Closing this needs the record to be
+threaded from entry through to each emitter (including
+`UnifiedStripePaymentSelector`, which today resolves the journey itself), which
+is deferred with full per-rail isolation.
 
 ### 4. Privacy
 

@@ -669,7 +669,6 @@ export function useSubscriptionCheckout(
     if (tierPlanType === 'team' || !isTeamPlan.value) return false
 
     const { useDialogService } = await import('@/services/dialogService')
-    const submittingJourney = getActiveCheckoutJourney()
     const result = await useDialogService().showDowngradeToPersonalDialog({
       planName: t(`subscription.tiers.${tierKey}.name`),
       planSlug
@@ -677,13 +676,6 @@ export function useSubscriptionCheckout(
     if (!result) return true
 
     previewData.value = result.preview
-    if (submittingJourney) {
-      emitCheckoutJourneyPhase(submittingJourney, { phase: 'submitted' })
-    }
-    linkSubmittingJourneyToOperation(
-      submittingJourney,
-      result.response.billing_op_id
-    )
     trackWorkspaceCheckoutStarted({
       tier: tierKey,
       cycle: selectedBillingCycle.value,
