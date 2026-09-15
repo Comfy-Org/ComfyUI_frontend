@@ -16,9 +16,7 @@ vi.mock(import('@/i18n'), () => ({
   t: (key: string) => key
 }))
 
-vi.mock<unknown>(import('@/platform/telemetry'), () => ({
-  useTelemetry: () => ({ trackEvent: vi.fn() })
-}))
+vi.mock(import('@/platform/telemetry'))
 
 const mockIsCloud = vi.hoisted(() => ({ value: true }))
 vi.mock(import('@/platform/distribution/types'), () => ({
@@ -38,7 +36,7 @@ vi.mock(import('@/platform/workspace/composables/useBillingCapabilities'))
 const mockCanTopUp = ref(true)
 const mockCanSubscribeSelfServe = ref(false)
 const mockIsReady = ref(true)
-const { initialize } = vi.mocked(useBillingCapabilities(), true)
+const { initialize } = vi.mocked(useBillingCapabilities())
 
 const showSubscriptionDialog = vi.hoisted(() => vi.fn())
 

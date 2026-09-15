@@ -20,9 +20,7 @@ vi.mock(import('@/i18n'), () => ({
   t: (k: string) => k
 }))
 
-vi.mock<unknown>(import('@/platform/telemetry'), () => ({
-  useTelemetry: () => ({ trackEvent: vi.fn() })
-}))
+vi.mock(import('@/platform/telemetry'))
 
 vi.mock<unknown>(import('@/composables/billing/useBillingContext'), () => ({
   useBillingContext: () => ({

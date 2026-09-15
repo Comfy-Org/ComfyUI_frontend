@@ -33,6 +33,7 @@ const MAX_LOG_CHARS = 40_000
 const MAX_WORKFLOW_CHARS = 200_000
 /** The event log and the stamp ledger both grow without bound with session length. */
 const MAX_SECTION_CHARS = 60_000
+const MAX_REPORT_CHARS = 256_000
 const MAX_REDACTION_DEPTH = 12
 const DEPTH_LIMIT_REDACTED = '[redacted at depth limit]'
 const SOURCE_TIMEOUT_MS = 5_000
@@ -253,7 +254,31 @@ function redactEventPayloads(value: unknown): unknown {
 
 function truncate(text: string, max: number): string {
   if (text.length <= max) return text
-  return `…(${text.length - max} earlier characters trimmed)…\n${text.slice(-max)}`
+  const start = text.length - max
+  const safeStart =
+    text.charCodeAt(start) >= 0xdc00 && text.charCodeAt(start) <= 0xdfff
+      ? start + 1
+      : start
+  return `…(${safeStart} earlier characters trimmed)…\n${text.slice(safeStart)}`
+}
+
+function truncateReport(text: string): string {
+  if (text.length <= MAX_REPORT_CHARS) return text
+
+  const marker = `\n\n[report truncated to ${MAX_REPORT_CHARS} characters]\n\n`
+  const available = MAX_REPORT_CHARS - marker.length
+  const headLength = Math.floor(available * 0.75)
+  const tailStart = text.length - (available - headLength)
+  const safeHeadLength =
+    text.charCodeAt(headLength - 1) >= 0xd800 &&
+    text.charCodeAt(headLength - 1) <= 0xdbff
+      ? headLength - 1
+      : headLength
+  const safeTailStart =
+    text.charCodeAt(tailStart) >= 0xdc00 && text.charCodeAt(tailStart) <= 0xdfff
+      ? tailStart + 1
+      : tailStart
+  return `${text.slice(0, safeHeadLength)}${marker}${text.slice(safeTailStart)}`
 }
 
 type SystemStats = Awaited<ReturnType<typeof api.getSystemStats>>
@@ -380,6 +405,7 @@ function identifiersSection(identifiers: ReportIdentifiers): string {
 
 function crdtSection(crdt: CrdtDebugSnapshot): string {
   return [
+    `- **Schema version:** ${crdt.meta.schema_version ?? 'unknown'}`,
     `- **Enabled:** ${crdt.status.enabled}`,
     `- **Connected:** ${crdt.status.connected}`,
     `- **Doc id:** ${crdt.status.workflowId ?? 'none'}`,
@@ -432,6 +458,7 @@ export async function collectCrdtDebugReport(
   const sections: string[] = [
     '# ComfyUI Agent — CRDT debug report',
     `Generated ${new Date().toISOString()}`,
+    `Report format version: 1 · Document schema version: ${input.crdt.meta.schema_version ?? 'unknown'} · Redaction marker: ${REDACTED}`,
     '## Identifiers',
     'Paste this block into a bug report or search Datadog/logs by any of these fields.',
     identifiersSection(input.identifiers ?? EMPTY_REPORT_IDENTIFIERS)
@@ -474,7 +501,7 @@ export async function collectCrdtDebugReport(
 
   sections.push(
     '## CRDT event log',
-    `${SHARING_WARNING} Operation payload values are redacted; op ids and workflow ids appear verbatim.`,
+    `${SHARING_WARNING} Operation payload values appear as \`${REDACTED}\`; op ids and workflow ids appear verbatim.`,
     fence(
       'json',
       truncate(json(redactEventPayloads(input.events)), MAX_SECTION_CHARS)
@@ -528,5 +555,5 @@ export async function collectCrdtDebugReport(
         ].join('\n\n')
   )
 
-  return sections.join('\n\n')
+  return truncateReport(sections.join('\n\n'))
 }

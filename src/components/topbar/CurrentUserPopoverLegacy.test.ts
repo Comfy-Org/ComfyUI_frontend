@@ -112,11 +112,7 @@ vi.mock<unknown>(import('@/composables/useExternalLink'), () => ({
   }))
 }))
 
-vi.mock<unknown>(import('@/platform/telemetry'), () => ({
-  useTelemetry: vi.fn(() => ({
-    trackAddApiCreditButtonClicked: vi.fn()
-  }))
-}))
+vi.mock(import('@/platform/telemetry'))
 
 describe('CurrentUserPopoverLegacy', () => {
   beforeEach(() => {

@@ -11,6 +11,8 @@ import { storeToRefs } from 'pinia'
 import { nextTick } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { useTelemetry } from '@/platform/telemetry'
+
 import {
   useWorkspaceAuthStore,
   WorkspaceAuthError
@@ -23,8 +25,6 @@ import {
 import { WORKSPACE_STORAGE_KEYS } from '@/platform/workspace/workspaceConstants'
 
 vi.mock(import('firebase/auth'), { spy: true })
-
-const mockTrackUnifiedAuthRefresh = vi.fn()
 
 /**
  * Stands in for Firebase behind the store's identity entry: assigning
@@ -70,11 +70,7 @@ vi.mock<unknown>(import('@/platform/auth/session/useSessionCookie'), () => ({
   })
 }))
 
-vi.mock<unknown>(import('@/platform/telemetry'), () => ({
-  useTelemetry: () => ({
-    trackUnifiedAuthRefresh: mockTrackUnifiedAuthRefresh
-  })
-}))
+vi.mock(import('@/platform/telemetry'))
 
 vi.mock(import('@/platform/workspace/api/workspaceApiUrl'), () => ({
   workspaceApiUrl: (route: string) => `https://api.example.com/api${route}`
@@ -3061,7 +3057,9 @@ describe('useWorkspaceAuthStore', () => {
         expect(useToastStore().add).toHaveBeenCalledWith(
           expect.objectContaining({ severity: 'error', detail: detailKey })
         )
-        expect(mockTrackUnifiedAuthRefresh).toHaveBeenLastCalledWith({
+        expect(
+          useTelemetry()?.trackUnifiedAuthRefresh
+        ).toHaveBeenLastCalledWith({
           outcome: 'permanent_failure',
           retry_count: 0
         })
@@ -3198,7 +3196,7 @@ describe('useWorkspaceAuthStore', () => {
       await vi.advanceTimersByTimeAsync(refreshDelay)
       expect(mockFetch).toHaveBeenCalledTimes(2)
       expect(useAuthStore().notifyTokenRefreshed).not.toHaveBeenCalled()
-      expect(mockTrackUnifiedAuthRefresh).toHaveBeenLastCalledWith({
+      expect(useTelemetry()?.trackUnifiedAuthRefresh).toHaveBeenLastCalledWith({
         outcome: 'retry_scheduled',
         retry_count: 1
       })
@@ -3207,7 +3205,7 @@ describe('useWorkspaceAuthStore', () => {
 
       expect(mockFetch).toHaveBeenCalledTimes(3)
       expect(useAuthStore().notifyTokenRefreshed).toHaveBeenCalledTimes(1)
-      expect(mockTrackUnifiedAuthRefresh).toHaveBeenLastCalledWith({
+      expect(useTelemetry()?.trackUnifiedAuthRefresh).toHaveBeenLastCalledWith({
         outcome: 'succeeded'
       })
       expect(unifiedToken.value).toBe('unified-token-1')
@@ -3251,7 +3249,7 @@ describe('useWorkspaceAuthStore', () => {
       const store = useWorkspaceAuthStore()
       await store.mintAtLogin()
       await vi.advanceTimersByTimeAsync(expiresInMs - 5 * 60 * 1000)
-      expect(mockTrackUnifiedAuthRefresh).toHaveBeenLastCalledWith({
+      expect(useTelemetry()?.trackUnifiedAuthRefresh).toHaveBeenLastCalledWith({
         outcome: 'retry_scheduled',
         retry_count: 1
       })
@@ -3262,7 +3260,7 @@ describe('useWorkspaceAuthStore', () => {
       await vi.advanceTimersByTimeAsync(expiresInMs - 5 * 60 * 1000)
 
       expect(
-        mockTrackUnifiedAuthRefresh,
+        useTelemetry()?.trackUnifiedAuthRefresh,
         'a successful mint starts a fresh retry chain; a stale count here poisons the exhaustion signal'
       ).toHaveBeenLastCalledWith({
         outcome: 'retry_scheduled',
@@ -3305,7 +3303,7 @@ describe('useWorkspaceAuthStore', () => {
       await vi.advanceTimersByTimeAsync(20000)
       expect(mockFetch).toHaveBeenCalledTimes(5)
 
-      expect(mockTrackUnifiedAuthRefresh).toHaveBeenLastCalledWith({
+      expect(useTelemetry()?.trackUnifiedAuthRefresh).toHaveBeenLastCalledWith({
         outcome: 'retries_exhausted',
         retry_count: 3
       })
@@ -3318,7 +3316,7 @@ describe('useWorkspaceAuthStore', () => {
 
       expect(mockFetch).toHaveBeenCalledTimes(5)
       expect(useToastStore().add).not.toHaveBeenCalled()
-      expect(mockTrackUnifiedAuthRefresh).toHaveBeenLastCalledWith({
+      expect(useTelemetry()?.trackUnifiedAuthRefresh).toHaveBeenLastCalledWith({
         outcome: 'expired',
         retry_count: 3
       })
@@ -3378,7 +3376,7 @@ describe('useWorkspaceAuthStore', () => {
       await vi.advanceTimersByTimeAsync(expiresInMs - 5 * 60 * 1000)
       await vi.advanceTimersByTimeAsync(5000 + 10_000 + 20_000)
 
-      expect(mockTrackUnifiedAuthRefresh).toHaveBeenLastCalledWith({
+      expect(useTelemetry()?.trackUnifiedAuthRefresh).toHaveBeenLastCalledWith({
         outcome: 'retries_exhausted',
         retry_count: 3
       })
@@ -3391,7 +3389,7 @@ describe('useWorkspaceAuthStore', () => {
 
       await vi.advanceTimersByTimeAsync(5 * 60 * 1000)
 
-      expect(mockTrackUnifiedAuthRefresh).toHaveBeenLastCalledWith({
+      expect(useTelemetry()?.trackUnifiedAuthRefresh).toHaveBeenLastCalledWith({
         outcome: 'expired',
         retry_count: 3
       })

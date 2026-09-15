@@ -11,9 +11,7 @@ import DockedAgentPanel from './DockedAgentPanel.vue'
 vi.mock(import('@/platform/telemetry/reportError'), () => ({
   reportError: vi.fn()
 }))
-vi.mock<unknown>(import('@/platform/telemetry'), () => ({
-  useTelemetry: () => undefined
-}))
+vi.mock(import('@/platform/telemetry'))
 
 // The mocked module factory throws, so the dynamic import itself rejects -
 // the chunk-load failure path, distinct from a runtime error inside a

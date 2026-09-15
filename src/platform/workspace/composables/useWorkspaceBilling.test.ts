@@ -5,6 +5,8 @@ import { useBillingOperationStore } from '@/platform/workspace/stores/billingOpe
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { effectScope } from 'vue'
 
+import { useTelemetry } from '@/platform/telemetry'
+
 import type {
   BillingStatusResponse,
   SubscribeResponse
@@ -58,7 +60,7 @@ vi.mock<unknown>(import('@/platform/workspace/api/workspaceApi'), () => ({
 
 vi.mock(import('@/platform/workspace/composables/useBillingCapabilities'))
 
-const { refresh } = vi.mocked(useBillingCapabilities(), true)
+const { refresh } = vi.mocked(useBillingCapabilities())
 
 vi.mock<unknown>(
   import('@/platform/cloud/subscription/composables/useBillingPlans'),
@@ -80,13 +82,7 @@ vi.mock(import('@/platform/telemetry/reportError'), () => ({
   reportError: mockReportError
 }))
 
-const mockTrackBillingEvent = vi.hoisted(() => vi.fn())
-
-vi.mock<unknown>(import('@/platform/telemetry'), () => ({
-  useTelemetry: () => ({
-    trackBillingEvent: mockTrackBillingEvent
-  })
-}))
+vi.mock(import('@/platform/telemetry'))
 
 let scope: ReturnType<typeof effectScope> | undefined
 
@@ -1173,7 +1169,7 @@ describe('useWorkspaceBilling', () => {
       const billing = setupBilling()
       await billing.cancelSubscription()
 
-      expect(mockTrackBillingEvent).toHaveBeenCalledWith({
+      expect(useTelemetry()?.trackBillingEvent).toHaveBeenCalledWith({
         operation: 'operation',
         stage: 'started',
         outcome: 'pending',
@@ -1191,7 +1187,7 @@ describe('useWorkspaceBilling', () => {
       await expect(billing.cancelSubscription()).rejects.toThrow(
         'Upstream failure'
       )
-      expect(mockTrackBillingEvent).toHaveBeenCalledWith({
+      expect(useTelemetry()?.trackBillingEvent).toHaveBeenCalledWith({
         operation: 'operation',
         stage: 'failed',
         outcome: 'failure',
@@ -1209,7 +1205,7 @@ describe('useWorkspaceBilling', () => {
       const billing = setupBilling()
 
       await expect(billing.cancelSubscription()).rejects.toThrow()
-      expect(mockTrackBillingEvent).toHaveBeenCalledWith(
+      expect(useTelemetry()?.trackBillingEvent).toHaveBeenCalledWith(
         expect.objectContaining({ failure_category: 'network' })
       )
     })
@@ -1231,7 +1227,7 @@ describe('useWorkspaceBilling', () => {
       await expect(billing.cancelSubscription()).rejects.toThrow(
         'processor rejected'
       )
-      expect(mockTrackBillingEvent).not.toHaveBeenCalledWith(
+      expect(useTelemetry()?.trackBillingEvent).not.toHaveBeenCalledWith(
         expect.objectContaining({ stage: 'failed' })
       )
     })
@@ -1269,16 +1265,16 @@ describe('useWorkspaceBilling', () => {
       expect(billing.subscription.value?.tier).toBe('CREATOR')
       expect(useBillingOperationStore().startOperation).not.toHaveBeenCalled()
       expect(billing.isLoading.value).toBe(false)
-      expect(mockTrackBillingEvent).not.toHaveBeenCalledWith(
+      expect(useTelemetry()?.trackBillingEvent).not.toHaveBeenCalledWith(
         expect.objectContaining({ stage: 'failed' })
       )
-      expect(mockTrackBillingEvent).toHaveBeenCalledWith({
+      expect(useTelemetry()?.trackBillingEvent).toHaveBeenCalledWith({
         operation: 'operation',
         stage: 'started',
         outcome: 'pending',
         operation_type: 'cancel'
       })
-      expect(mockTrackBillingEvent).toHaveBeenCalledWith({
+      expect(useTelemetry()?.trackBillingEvent).toHaveBeenCalledWith({
         operation: 'operation',
         stage: 'succeeded',
         outcome: 'success',

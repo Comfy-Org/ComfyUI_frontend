@@ -62,7 +62,7 @@ vi.mock<unknown>(import('@/composables/useFeatureFlags'), () => ({
 
 vi.mock(import('@/platform/workspace/composables/useBillingCapabilities'))
 
-const { initialize } = vi.mocked(useBillingCapabilities(), true)
+const { initialize } = vi.mocked(useBillingCapabilities())
 
 const mockIsCloud = vi.hoisted(() => ({ value: true }))
 vi.mock(import('@/platform/distribution/types'), () => ({

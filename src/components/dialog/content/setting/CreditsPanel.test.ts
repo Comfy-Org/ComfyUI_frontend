@@ -47,9 +47,7 @@ vi.mock(
   })
 )
 
-vi.mock<unknown>(import('@/platform/telemetry'), () => ({
-  useTelemetry: () => ({ trackHelpResourceClicked: vi.fn() })
-}))
+vi.mock(import('@/platform/telemetry'))
 
 vi.mock<unknown>(import('@/composables/useExternalLink'), () => ({
   useExternalLink: () => ({

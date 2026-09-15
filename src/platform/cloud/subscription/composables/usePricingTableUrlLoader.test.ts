@@ -71,7 +71,7 @@ vi.mock<unknown>(
 
 vi.mock(import('@/platform/workspace/composables/useBillingCapabilities'))
 
-const { initialize } = vi.mocked(useBillingCapabilities(), true)
+const { initialize } = vi.mocked(useBillingCapabilities())
 
 const TEAM_CREDIT_STOPS = {
   default_stop_index: 2,

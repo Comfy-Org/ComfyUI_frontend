@@ -1,6 +1,6 @@
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 import { render } from '@testing-library/vue'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, ref } from 'vue'
 import { billingOperation } from './billingOperationTestUtils'
 import type { BillingOperation } from './billingOperationTestUtils'
@@ -12,6 +12,8 @@ import {
   setPersistence
 } from 'firebase/auth'
 import { createI18n } from 'vue-i18n'
+
+import { useTelemetry } from '@/platform/telemetry'
 
 import type { PaymentIntentSource } from '@/platform/telemetry/types'
 import {
@@ -189,8 +191,6 @@ const {
   mockResubscribe,
   mockToastAdd,
   mockListSavedPaymentMethods,
-  mockTrackBeginCheckout,
-  mockTrackBillingEvent,
   mockShowDowngradeToPersonalDialog,
   mockIsTeamPlan,
   mockShouldUseWorkspaceBilling,
@@ -214,8 +214,6 @@ const {
     mockResubscribe: vi.fn(),
     mockToastAdd: vi.fn(),
     mockListSavedPaymentMethods: vi.fn(),
-    mockTrackBeginCheckout: vi.fn(),
-    mockTrackBillingEvent: vi.fn(),
     mockShowDowngradeToPersonalDialog: vi.fn(),
     mockIsTeamPlan: { value: false },
     mockShouldUseWorkspaceBilling: { value: true },
@@ -228,7 +226,11 @@ const {
       }
     },
     mockCanReactivatePlan: { value: true },
-    mockSubscription: { value: null as { isCancelled: boolean } | null },
+    mockSubscription: {
+      value: null as {
+        isCancelled: boolean
+      } | null
+    },
     mockBillingStatus: { value: null as BillingStatus | null }
   }
 })
@@ -364,19 +366,7 @@ vi.mock<unknown>(
   })
 )
 
-const mockTrackResubscribeClicked = vi.hoisted(() => vi.fn())
-const mockTrackMonthlySubscriptionSucceeded = vi.hoisted(() => vi.fn())
-const mockTrackCheckoutJourneyEvent = vi.hoisted(() => vi.fn())
-
-vi.mock<unknown>(import('@/platform/telemetry'), () => ({
-  useTelemetry: () => ({
-    trackBillingEvent: mockTrackBillingEvent,
-    trackResubscribeClicked: mockTrackResubscribeClicked,
-    trackBeginCheckout: mockTrackBeginCheckout,
-    trackMonthlySubscriptionSucceeded: mockTrackMonthlySubscriptionSucceeded,
-    trackCheckoutJourneyEvent: mockTrackCheckoutJourneyEvent
-  })
-}))
+vi.mock(import('@/platform/telemetry'))
 
 vi.mock(import('@/platform/telemetry/reportError'), () => ({
   reportError: mockReportError
@@ -526,16 +516,16 @@ describe('useSubscriptionCheckout', () => {
     }
     mockCanReactivatePlan.value = true
     mockSubscription.value = null
-    mockTrackCheckoutJourneyEvent.mockClear()
+    vi.mocked(useTelemetry()?.trackCheckoutJourneyEvent)?.mockClear()
     sessionStorage.clear()
     clearCheckoutJourney()
   })
 
   describe('checkout journey instrumentation', () => {
     function journeyPhases() {
-      return mockTrackCheckoutJourneyEvent.mock.calls.map(
-        ([event]) => event.phase
-      )
+      return (
+        vi.mocked(useTelemetry()?.trackCheckoutJourneyEvent)?.mock.calls ?? []
+      ).map(([event]) => event.phase)
     }
 
     it('emits entered, submitted, and operation_linked across a subscribe', async () => {
@@ -562,9 +552,9 @@ describe('useSubscriptionCheckout', () => {
         phases.indexOf('operation_linked')
       )
 
-      const events = mockTrackCheckoutJourneyEvent.mock.calls.map(
-        ([event]) => event
-      )
+      const events = (
+        vi.mocked(useTelemetry()?.trackCheckoutJourneyEvent)?.mock.calls ?? []
+      ).map(([event]) => event)
       const opLinked = events.find(
         (event) => event.phase === 'operation_linked'
       )
@@ -647,9 +637,9 @@ describe('useSubscriptionCheckout', () => {
       })
       await checkout.handleConfirmTransition()
 
-      const events = mockTrackCheckoutJourneyEvent.mock.calls.map(
-        ([event]) => event
-      )
+      const events = (
+        vi.mocked(useTelemetry()?.trackCheckoutJourneyEvent)?.mock.calls ?? []
+      ).map(([event]) => event)
       expect(events.some((event) => event.phase === 'operation_linked')).toBe(
         false
       )
@@ -658,13 +648,13 @@ describe('useSubscriptionCheckout', () => {
     it('records a correlated preview failure with no operation id', async () => {
       await submitRejectedPreview('PREVIEW_FAILED')
 
-      const events = mockTrackCheckoutJourneyEvent.mock.calls.map(
-        ([event]) => event
-      )
+      const events = (
+        vi.mocked(useTelemetry()?.trackCheckoutJourneyEvent)?.mock.calls ?? []
+      ).map(([event]) => event)
       const entered = events.find((event) => event.phase === 'entered')
       const failed = events.find((event) => event.phase === 'preview_failed')
-      expect(entered).toBeDefined()
-      expect(failed).toBeDefined()
+      assert.exists(entered)
+      assert.exists(failed)
       expect(events.some((event) => event.phase === 'operation_linked')).toBe(
         false
       )
@@ -1427,9 +1417,9 @@ describe('useSubscriptionCheckout', () => {
 
       expect(checkout.previewData.value).toStrictEqual(preview)
       expect(checkout.checkoutStep.value).toBe('success')
-      expect(mockTrackBillingEvent).not.toHaveBeenCalled()
+      expect(useTelemetry()?.trackBillingEvent).not.toHaveBeenCalled()
       expect(mockToastAdd).not.toHaveBeenCalled()
-      expect(mockTrackBeginCheckout).toHaveBeenCalledWith(
+      expect(useTelemetry()?.trackBeginCheckout).toHaveBeenCalledWith(
         expect.objectContaining({
           tier: 'creator',
           cycle: 'monthly',
@@ -1456,7 +1446,7 @@ describe('useSubscriptionCheckout', () => {
       })
 
       expect(checkout.checkoutStep.value).toBe('success')
-      expect(mockTrackBillingEvent).not.toHaveBeenCalled()
+      expect(useTelemetry()?.trackBillingEvent).not.toHaveBeenCalled()
     })
   })
 
@@ -2133,7 +2123,7 @@ describe('useSubscriptionCheckout', () => {
 
       await checkout.handleTeamSubscribe()
 
-      expect(mockTrackBillingEvent).toHaveBeenCalledWith({
+      expect(useTelemetry()?.trackBillingEvent).toHaveBeenCalledWith({
         operation: 'subscription_checkout',
         stage: 'started',
         outcome: 'pending',
@@ -2142,7 +2132,7 @@ describe('useSubscriptionCheckout', () => {
         checkout_type: 'new',
         payment_intent_source: undefined
       })
-      expect(mockTrackBillingEvent).toHaveBeenCalledWith({
+      expect(useTelemetry()?.trackBillingEvent).toHaveBeenCalledWith({
         operation: 'operation',
         stage: 'started',
         outcome: 'pending',
@@ -2182,7 +2172,7 @@ describe('useSubscriptionCheckout', () => {
         confirmReactivation: false
       })
       expect(checkout.checkoutStep.value).toBe('success')
-      expect(mockTrackBeginCheckout).toHaveBeenCalledWith(
+      expect(useTelemetry()?.trackBeginCheckout).toHaveBeenCalledWith(
         expect.objectContaining({
           tier: 'team',
           checkout_type: 'new',
@@ -2370,7 +2360,7 @@ describe('useSubscriptionCheckout', () => {
           detail: 'Reactivation confirmation required'
         })
       )
-      expect(mockTrackBillingEvent).toHaveBeenCalledWith(
+      expect(useTelemetry()?.trackBillingEvent).toHaveBeenCalledWith(
         expect.objectContaining({
           operation: 'subscription_checkout',
           stage: 'failed',
@@ -2429,7 +2419,7 @@ describe('useSubscriptionCheckout', () => {
       expect(mockToastAdd).toHaveBeenCalledWith(
         expect.objectContaining({ severity: 'error' })
       )
-      expect(mockTrackBillingEvent).not.toHaveBeenCalled()
+      expect(useTelemetry()?.trackBillingEvent).not.toHaveBeenCalled()
     })
 
     it('refuses to bill a team reactivation when a fresh preview no longer matches the confirmed charge', async () => {
@@ -2517,7 +2507,7 @@ describe('useSubscriptionCheckout', () => {
           detail: 'status unavailable'
         })
       )
-      expect(mockTrackBillingEvent).not.toHaveBeenCalled()
+      expect(useTelemetry()?.trackBillingEvent).not.toHaveBeenCalled()
     })
 
     it('bounces to pricing when a required reactivation refresh cannot collect consent', async () => {
@@ -2616,7 +2606,7 @@ describe('useSubscriptionCheckout', () => {
           detail: 'Reactivation confirmation required'
         })
       )
-      expect(mockTrackBillingEvent).not.toHaveBeenCalledWith(
+      expect(useTelemetry()?.trackBillingEvent).not.toHaveBeenCalledWith(
         expect.objectContaining({ stage: 'failed' })
       )
 
@@ -2637,17 +2627,21 @@ describe('useSubscriptionCheckout', () => {
       )
       expect(checkout.checkoutStep.value).toBe('success')
       expect(
-        mockTrackBillingEvent.mock.calls.filter(
-          ([event]) =>
-            event.operation === 'subscription_checkout' &&
-            event.stage === 'started'
-        )
+        vi
+          .mocked(useTelemetry()?.trackBillingEvent)
+          ?.mock.calls.filter(
+            ([event]) =>
+              event.operation === 'subscription_checkout' &&
+              event.stage === 'started'
+          )
       ).toHaveLength(1)
       expect(
-        mockTrackBillingEvent.mock.calls.filter(
-          ([event]) =>
-            event.operation === 'operation' && event.stage === 'started'
-        )
+        vi
+          .mocked(useTelemetry()?.trackBillingEvent)
+          ?.mock.calls.filter(
+            ([event]) =>
+              event.operation === 'operation' && event.stage === 'started'
+          )
       ).toHaveLength(1)
     })
 
@@ -2743,8 +2737,8 @@ describe('useSubscriptionCheckout', () => {
           detail: 'Team payment failed'
         })
       )
-      expect(mockTrackBeginCheckout).not.toHaveBeenCalled()
-      expect(mockTrackBillingEvent).toHaveBeenCalledWith({
+      expect(useTelemetry()?.trackBeginCheckout).not.toHaveBeenCalled()
+      expect(useTelemetry()?.trackBillingEvent).toHaveBeenCalledWith({
         operation: 'subscription_checkout',
         stage: 'failed',
         outcome: 'failure',
@@ -3105,7 +3099,7 @@ describe('useSubscriptionCheckout', () => {
 
       await checkout.handleAddCreditCard()
 
-      expect(mockTrackBillingEvent).toHaveBeenCalledWith({
+      expect(useTelemetry()?.trackBillingEvent).toHaveBeenCalledWith({
         operation: 'subscription_checkout',
         stage: 'started',
         outcome: 'pending',
@@ -3114,7 +3108,7 @@ describe('useSubscriptionCheckout', () => {
         checkout_type: 'new',
         payment_intent_source: undefined
       })
-      expect(mockTrackBillingEvent).toHaveBeenCalledWith({
+      expect(useTelemetry()?.trackBillingEvent).toHaveBeenCalledWith({
         operation: 'operation',
         stage: 'started',
         outcome: 'pending',
@@ -3145,7 +3139,7 @@ describe('useSubscriptionCheckout', () => {
         confirmReactivation: false
       })
       expect(checkout.checkoutStep.value).toBe('success')
-      expect(mockTrackBillingEvent).toHaveBeenCalledWith({
+      expect(useTelemetry()?.trackBillingEvent).toHaveBeenCalledWith({
         operation: 'subscription_checkout',
         stage: 'succeeded',
         outcome: 'success',
@@ -3156,7 +3150,9 @@ describe('useSubscriptionCheckout', () => {
         billing_op_id: 'op-1',
         duration_ms: expect.any(Number)
       })
-      expect(mockTrackMonthlySubscriptionSucceeded).not.toHaveBeenCalled()
+      expect(
+        useTelemetry()?.trackMonthlySubscriptionSucceeded
+      ).not.toHaveBeenCalled()
       expect(mockFetchStatus).toHaveBeenCalledTimes(1)
       expect(mockFetchBalance).not.toHaveBeenCalled()
     })
@@ -3175,7 +3171,7 @@ describe('useSubscriptionCheckout', () => {
 
       await checkout.handleAddCreditCard()
 
-      expect(mockTrackBeginCheckout).not.toHaveBeenCalled()
+      expect(useTelemetry()?.trackBeginCheckout).not.toHaveBeenCalled()
       Object.assign(useAuthStore(), { userId: 'user-1' })
     })
 
@@ -3192,7 +3188,7 @@ describe('useSubscriptionCheckout', () => {
 
       await checkout.handleAddCreditCard()
 
-      expect(mockTrackBeginCheckout).toHaveBeenCalledWith({
+      expect(useTelemetry()?.trackBeginCheckout).toHaveBeenCalledWith({
         user_id: 'user-1',
         tier: 'standard',
         cycle: 'yearly',
@@ -3667,8 +3663,8 @@ describe('useSubscriptionCheckout', () => {
           detail: 'Payment failed'
         })
       )
-      expect(mockTrackBeginCheckout).not.toHaveBeenCalled()
-      expect(mockTrackBillingEvent).toHaveBeenCalledWith({
+      expect(useTelemetry()?.trackBeginCheckout).not.toHaveBeenCalled()
+      expect(useTelemetry()?.trackBillingEvent).toHaveBeenCalledWith({
         operation: 'subscription_checkout',
         stage: 'failed',
         outcome: 'failure',
@@ -3689,7 +3685,7 @@ describe('useSubscriptionCheckout', () => {
 
       await checkout.handleAddCreditCard()
 
-      expect(mockTrackBillingEvent).toHaveBeenCalledWith({
+      expect(useTelemetry()?.trackBillingEvent).toHaveBeenCalledWith({
         operation: 'subscription_checkout',
         stage: 'failed',
         outcome: 'failure',
@@ -3712,7 +3708,7 @@ describe('useSubscriptionCheckout', () => {
 
       await checkout.handleAddCreditCard()
 
-      expect(mockTrackBillingEvent).not.toHaveBeenCalled()
+      expect(useTelemetry()?.trackBillingEvent).not.toHaveBeenCalled()
     })
 
     it('does not submit when workspace ownership is revoked', async () => {
@@ -3744,7 +3740,9 @@ describe('useSubscriptionCheckout', () => {
       await checkout.handleConfirmTransition()
 
       expect(checkout.checkoutStep.value).toBe('success')
-      expect(mockTrackMonthlySubscriptionSucceeded).not.toHaveBeenCalled()
+      expect(
+        useTelemetry()?.trackMonthlySubscriptionSucceeded
+      ).not.toHaveBeenCalled()
     })
 
     it('shows error toast on failure', async () => {
@@ -3872,7 +3870,7 @@ describe('useSubscriptionCheckout', () => {
           detail: 'Reactivation confirmation required'
         })
       )
-      expect(mockTrackBillingEvent).not.toHaveBeenCalledWith(
+      expect(useTelemetry()?.trackBillingEvent).not.toHaveBeenCalledWith(
         expect.objectContaining({ stage: 'failed' })
       )
     })
@@ -3989,7 +3987,7 @@ describe('useSubscriptionCheckout', () => {
           detail: 'Reactivation amount changed'
         })
       )
-      expect(mockTrackBillingEvent).toHaveBeenCalledWith(
+      expect(useTelemetry()?.trackBillingEvent).toHaveBeenCalledWith(
         expect.objectContaining({
           operation: 'subscription_checkout',
           stage: 'failed',
@@ -4074,7 +4072,7 @@ describe('useSubscriptionCheckout', () => {
       expect(mockToastAdd).toHaveBeenCalledWith(
         expect.objectContaining({ severity: 'error' })
       )
-      expect(mockTrackBillingEvent).not.toHaveBeenCalled()
+      expect(useTelemetry()?.trackBillingEvent).not.toHaveBeenCalled()
     })
 
     it('refuses to bill when a fresh preview no longer matches the confirmed charge', async () => {
@@ -4177,7 +4175,7 @@ describe('useSubscriptionCheckout', () => {
       await checkout.handleConfirmTransition()
 
       expect(mockSubscribe).not.toHaveBeenCalled()
-      expect(mockTrackBeginCheckout).not.toHaveBeenCalled()
+      expect(useTelemetry()?.trackBeginCheckout).not.toHaveBeenCalled()
       expect(emit).not.toHaveBeenCalled()
       expect(mockToastAdd).not.toHaveBeenCalled()
     })
@@ -4250,7 +4248,7 @@ describe('useSubscriptionCheckout', () => {
 
       await checkout.handleResubscribe()
 
-      expect(mockTrackBillingEvent).toHaveBeenCalledWith({
+      expect(useTelemetry()?.trackBillingEvent).toHaveBeenCalledWith({
         operation: 'resubscribe',
         stage: 'started',
         outcome: 'pending',
@@ -4272,11 +4270,11 @@ describe('useSubscriptionCheckout', () => {
 
       expect(mockResubscribe).toHaveBeenCalled()
       expect(emit).toHaveBeenCalledWith('close', true)
-      expect(mockTrackResubscribeClicked).toHaveBeenCalledWith({
+      expect(useTelemetry()?.trackResubscribeClicked).toHaveBeenCalledWith({
         source: 'pricing_dialog',
         payment_intent_source: 'subscribe_to_run'
       })
-      expect(mockTrackBillingEvent).toHaveBeenCalledWith({
+      expect(useTelemetry()?.trackBillingEvent).toHaveBeenCalledWith({
         operation: 'resubscribe',
         stage: 'succeeded',
         outcome: 'success',
@@ -4299,7 +4297,7 @@ describe('useSubscriptionCheckout', () => {
           detail: 'Resubscribe failed for person@example.com'
         })
       )
-      expect(mockTrackBillingEvent).toHaveBeenCalledWith({
+      expect(useTelemetry()?.trackBillingEvent).toHaveBeenCalledWith({
         operation: 'resubscribe',
         stage: 'failed',
         outcome: 'failure',
@@ -4317,18 +4315,18 @@ describe('useSubscriptionCheckout', () => {
       await checkout.handleResubscribe()
 
       expect(mockResubscribe).toHaveBeenCalledOnce()
-      expect(mockTrackResubscribeClicked).toHaveBeenCalledOnce()
-      expect(mockTrackBillingEvent).not.toHaveBeenCalledWith(
+      expect(useTelemetry()?.trackResubscribeClicked).toHaveBeenCalledOnce()
+      expect(useTelemetry()?.trackBillingEvent).not.toHaveBeenCalledWith(
         expect.objectContaining({ stage: 'succeeded' })
       )
-      expect(mockTrackBillingEvent).toHaveBeenCalledWith({
+      expect(useTelemetry()?.trackBillingEvent).toHaveBeenCalledWith({
         operation: 'resubscribe',
         stage: 'started',
         outcome: 'pending',
         source: 'pricing_dialog',
         payment_intent_source: 'subscribe_to_run'
       })
-      expect(mockTrackBillingEvent).toHaveBeenCalledTimes(1)
+      expect(useTelemetry()?.trackBillingEvent).toHaveBeenCalledTimes(1)
     })
 
     it('fires resubscribe failure telemetry on the legacy rail too', async () => {
@@ -4339,7 +4337,7 @@ describe('useSubscriptionCheckout', () => {
 
       await checkout.handleResubscribe()
 
-      expect(mockTrackBillingEvent).toHaveBeenCalledWith({
+      expect(useTelemetry()?.trackBillingEvent).toHaveBeenCalledWith({
         operation: 'resubscribe',
         stage: 'failed',
         outcome: 'failure',
@@ -4375,7 +4373,7 @@ describe('useSubscriptionCheckout', () => {
       await checkout.handleResubscribe()
 
       expect(mockResubscribe).not.toHaveBeenCalled()
-      expect(mockTrackResubscribeClicked).not.toHaveBeenCalled()
+      expect(useTelemetry()?.trackResubscribeClicked).not.toHaveBeenCalled()
     })
 
     it('does not resubscribe when the server denies reactivation to a client-side owner', async () => {
@@ -4386,7 +4384,7 @@ describe('useSubscriptionCheckout', () => {
       await checkout.handleResubscribe()
 
       expect(mockResubscribe).not.toHaveBeenCalled()
-      expect(mockTrackResubscribeClicked).not.toHaveBeenCalled()
+      expect(useTelemetry()?.trackResubscribeClicked).not.toHaveBeenCalled()
     })
 
     it('emits started before the awaited resubscribe call resolves', async () => {
@@ -4395,7 +4393,7 @@ describe('useSubscriptionCheckout', () => {
         callOrder.push('resubscribe')
         return { billing_op_id: 'op-4', status: 'active' }
       })
-      mockTrackBillingEvent.mockImplementationOnce(
+      vi.mocked(useTelemetry()?.trackBillingEvent)?.mockImplementationOnce(
         (event: { stage: string }) => {
           callOrder.push(`trackBillingEvent:${event.stage}`)
         }

@@ -7,6 +7,8 @@ import type { Mock } from 'vitest'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import * as vuefire from 'vuefire'
 
+import { useTelemetry } from '@/platform/telemetry'
+
 import { i18n } from '@/i18n'
 import {
   capturePreservedQuery,
@@ -94,12 +96,7 @@ vi.mock(import('vuefire'), () => ({
 
 vi.mock(import('firebase/auth'))
 
-const mockTrackAuth = vi.fn()
-vi.mock<unknown>(import('@/platform/telemetry'), () => ({
-  useTelemetry: () => ({
-    trackAuth: mockTrackAuth
-  })
-}))
+vi.mock(import('@/platform/telemetry'))
 
 let mockResetSocket: Mock
 
@@ -1535,7 +1532,7 @@ describe('useAuthStore', () => {
 
           await store[method]()
 
-          expect(mockTrackAuth).toHaveBeenCalledWith(
+          expect(useTelemetry()?.trackAuth).toHaveBeenCalledWith(
             expect.objectContaining({ is_new_user: true })
           )
         }
@@ -1552,7 +1549,7 @@ describe('useAuthStore', () => {
 
           await store[method]({ isNewUser: true })
 
-          expect(mockTrackAuth).toHaveBeenCalledWith(
+          expect(useTelemetry()?.trackAuth).toHaveBeenCalledWith(
             expect.objectContaining({ is_new_user: true })
           )
         }
@@ -1569,7 +1566,7 @@ describe('useAuthStore', () => {
 
           await store[method]()
 
-          expect(mockTrackAuth).toHaveBeenCalledWith(
+          expect(useTelemetry()?.trackAuth).toHaveBeenCalledWith(
             expect.objectContaining({ is_new_user: false })
           )
         }
@@ -1582,7 +1579,7 @@ describe('useAuthStore', () => {
 
           await store[method]()
 
-          expect(mockTrackAuth).toHaveBeenCalledWith(
+          expect(useTelemetry()?.trackAuth).toHaveBeenCalledWith(
             expect.objectContaining({ is_new_user: false })
           )
         }
@@ -1633,7 +1630,7 @@ describe('useAuthStore', () => {
 
       await store.register('new@example.com', 'password')
 
-      expect(mockTrackAuth).toHaveBeenCalledWith({
+      expect(useTelemetry()?.trackAuth).toHaveBeenCalledWith({
         method: 'email',
         is_new_user: true,
         user_id: 'test-user-id',
@@ -1648,7 +1645,7 @@ describe('useAuthStore', () => {
 
       await store.login('test@example.com', 'password')
 
-      expect(mockTrackAuth).toHaveBeenCalledWith({
+      expect(useTelemetry()?.trackAuth).toHaveBeenCalledWith({
         method: 'email',
         is_new_user: false,
         user_id: 'test-user-id',
@@ -1663,7 +1660,7 @@ describe('useAuthStore', () => {
 
       await store.loginWithGoogle()
 
-      expect(mockTrackAuth).toHaveBeenCalledWith({
+      expect(useTelemetry()?.trackAuth).toHaveBeenCalledWith({
         method: 'google',
         is_new_user: true,
         user_id: 'test-user-id',
@@ -1678,7 +1675,7 @@ describe('useAuthStore', () => {
 
       await store.loginWithGithub()
 
-      expect(mockTrackAuth).toHaveBeenCalledWith({
+      expect(useTelemetry()?.trackAuth).toHaveBeenCalledWith({
         method: 'github',
         is_new_user: true,
         user_id: 'test-user-id',
