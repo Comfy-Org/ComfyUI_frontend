@@ -252,6 +252,21 @@ describe('AgentGraphActivityBar', () => {
     expect(settingStore.get('Comfy.Minimap.Visible')).toBe(false)
   })
 
+  it('still reports a turn after earlier nodes were deleted', async () => {
+    const store = useAgentGeneratedNodesStore()
+    renderBar()
+    await turnAdds(3)
+    await screen.findByTestId('agent-graph-added-toast')
+    for (const locatorId of [...store.markedNodes]) store.forget(locatorId)
+    await nextTick()
+
+    await turnAdds(1)
+
+    await waitFor(() =>
+      expect(report()).toHaveTextContent('1 node added to the graph by agent')
+    )
+  })
+
   it('clears the report when the next turn begins', async () => {
     renderBar()
     await turnAdds(2)

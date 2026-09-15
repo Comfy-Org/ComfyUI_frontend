@@ -117,6 +117,30 @@ describe('graphMutations', () => {
     ).toBeTypeOf('number')
   })
 
+  it('forgets the mark when the node is deleted', () => {
+    const agentNodes = useAgentGeneratedNodesStore()
+    mutations().addNode(node(20), context)
+
+    mutations().deleteNode(toNodeId(20), [], context)
+
+    expect(
+      agentNodes.generatedAtFor(createNodeLocatorId(null, toNodeId(20)))
+    ).toBeUndefined()
+  })
+
+  it('drops a stale mark when a human takes the id', () => {
+    const agentNodes = useAgentGeneratedNodesStore()
+    const locatorId = createNodeLocatorId(null, toNodeId(21))
+    agentNodes.markGenerated(locatorId)
+
+    mutations().addNode(node(21), {
+      ...context,
+      actor: 'human:someone:tab-1'
+    })
+
+    expect(agentNodes.generatedAtFor(locatorId)).toBeUndefined()
+  })
+
   it('marks a node whose frame carried no op ids', () => {
     mutations().addNode(node(10), { ...context, opId: 'replay' })
 
