@@ -163,10 +163,7 @@ export function useTemplateWorkflows() {
     toast.add(progress)
     try {
       const workflow = await validateComfyWorkflow(json)
-      if (!workflow) {
-        showTemplateError(t('templateWorkflows.error.loading'))
-        return null
-      }
+      if (!workflow) return { json, template }
       const result = await prepareTemplateInputs(
         workflow,
         template.io.inputs,

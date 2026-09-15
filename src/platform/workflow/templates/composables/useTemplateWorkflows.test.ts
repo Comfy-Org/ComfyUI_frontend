@@ -570,6 +570,52 @@ describe('useTemplateWorkflows', () => {
     }
   )
 
+  it.for([null, '0123456789abcdef0123456789abcdef01234567'])(
+    'opens legacy subgraph templates without preparing media (revision: %s)',
+    async (revision) => {
+      const graph: unknown = {
+        ...addVideoTemplate(revision),
+        definitions: {
+          subgraphs: [
+            {
+              id: '7a06a6de-067d-4d41-b7bf-7d6add20ec8c',
+              version: 1,
+              revision: 0,
+              name: 'Legacy subgraph',
+              state: {
+                lastGroupId: 0,
+                lastNodeId: 0,
+                lastLinkId: 0,
+                lastRerouteId: 0
+              },
+              nodes: [],
+              inputNode: { id: -10, bounding: [0, 0, 100, 100] },
+              outputNode: { id: -20, bounding: [200, 0, 100, 100] },
+              inputs: [{ id: 'image1', name: 'image1', type: 'IMAGE' }]
+            }
+          ]
+        }
+      }
+      vi.mocked(fetch).mockImplementation(async () => Response.json(graph))
+      vi.spyOn(console, 'warn').mockImplementation(() => {})
+      const loader = useTemplateWorkflows()
+
+      expect(await loader.loadWorkflowTemplate('video', 'default')).toBe(true)
+      expect(app.loadGraphData).toHaveBeenCalledWith(
+        graph,
+        true,
+        true,
+        expect.any(String),
+        { openSource: 'template' }
+      )
+      expect(fetch).toHaveBeenCalledTimes(1)
+      expect(api.fetchApi).not.toHaveBeenCalled()
+      expect(useToastStore().messagesToAdd).not.toContainEqual(
+        expect.objectContaining({ severity: 'error' })
+      )
+    }
+  )
+
   it('leaves the dialog open on sample failure and allows another click to retry', async () => {
     const graph = addVideoTemplate()
     vi.mocked(fetch).mockImplementation(async (url) =>
