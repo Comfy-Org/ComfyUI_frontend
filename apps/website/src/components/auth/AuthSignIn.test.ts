@@ -24,6 +24,7 @@ const handles = vi.hoisted(() => ({
   emailSignIn: vi.fn(),
   emailSignUp: vi.fn(),
   provision: vi.fn(),
+  signOut: vi.fn(),
   turnstileReset: vi.fn(),
   isProvisioningError: vi.fn(),
   isNewUser: vi.fn(),
@@ -95,6 +96,7 @@ vi.mock<unknown>(import('../../config/workshop-firebase'), () => {
     signInWorkshopWithEmail: handles.emailSignIn,
     signUpWorkshopWithEmail: handles.emailSignUp,
     provisionWorkshopCustomer: handles.provision,
+    signOutWorkshop: handles.signOut,
     isWorkshopProvisioningError: handles.isProvisioningError,
     isNewWorkshopUser: handles.isNewUser
   }
@@ -137,6 +139,7 @@ beforeEach(() => {
   handles.emailSignIn.mockReset()
   handles.emailSignUp.mockReset()
   handles.provision.mockReset().mockResolvedValue(undefined)
+  handles.signOut.mockReset().mockResolvedValue(undefined)
   handles.turnstileReset.mockReset()
   turnstileApi.render.mockImplementation(
     (_container: string | HTMLElement, options: TurnstileRenderOptions) => {
@@ -1084,6 +1087,418 @@ describe('AuthSignIn', () => {
       vi.resetModules()
       handles.flag = staticFlag
     }
+  })
+})
+
+describe('AuthSignIn controller lifecycle', () => {
+  const socialUser = {
+    user: { uid: 'user-1', email: 'user@example.com', displayName: null }
+  }
+  const flush = () => vi.advanceTimersByTimeAsync(0)
+  const googleButton = () =>
+    screen.getByRole('button', { name: /^sign in with google$/i })
+
+  it('does not leave the page when the flag turns off during the mint, even once the session client publishes the credential', async () => {
+    let publishAndResolveMint: (() => void) | undefined
+    handles.google.mockResolvedValue(socialUser)
+    handles.ensureFresh.mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          publishAndResolveMint = () => {
+            handles.session!.value = { token: 'workspace-jwt' }
+            resolve({ status: 'ok', session: { token: 'workspace-jwt' } })
+          }
+        })
+    )
+    render(AuthSignIn)
+
+    await clickGoogle()
+    await waitFor(() => expect(handles.ensureFresh).toHaveBeenCalledOnce())
+
+    handles.flag!.value = false
+    publishAndResolveMint!()
+    await flush()
+
+    expect(
+      replace,
+      'a flag disabled mid-mint must not redirect an abandoned attempt, even when the session client publishes the credential'
+    ).not.toHaveBeenCalled()
+  })
+
+  it('reports no completion for an attempt abandoned during the mint', async () => {
+    let resolveMint: ((value: unknown) => void) | undefined
+    handles.google.mockResolvedValue(socialUser)
+    handles.ensureFresh.mockImplementation(
+      () => new Promise((resolve) => (resolveMint = resolve))
+    )
+    render(AuthSignIn)
+
+    await clickGoogle()
+    await waitFor(() => expect(handles.ensureFresh).toHaveBeenCalledOnce())
+
+    handles.flag!.value = false
+    resolveMint!({ status: 'ok', session: { token: 'workspace-jwt' } })
+    await flush()
+
+    expect(
+      handles.captureAuthCompleted,
+      'an attempt abandoned mid-mint must emit no auth_completed'
+    ).not.toHaveBeenCalled()
+  })
+
+  it('does not mint or redirect after the component unmounts mid-mint', async () => {
+    let resolveMint: ((value: unknown) => void) | undefined
+    handles.google.mockResolvedValue(socialUser)
+    handles.ensureFresh.mockImplementation(
+      () => new Promise((resolve) => (resolveMint = resolve))
+    )
+    const { unmount } = render(AuthSignIn)
+
+    await clickGoogle()
+    await waitFor(() => expect(handles.ensureFresh).toHaveBeenCalledOnce())
+
+    unmount()
+    resolveMint!({ status: 'ok', session: { token: 'workspace-jwt' } })
+    await flush()
+
+    expect(
+      replace,
+      'a mint resolving after teardown must not redirect'
+    ).not.toHaveBeenCalled()
+  })
+
+  it('stops the flow after the component unmounts mid-provisioning', async () => {
+    let resolveProvision: (() => void) | undefined
+    handles.google.mockResolvedValue(socialUser)
+    handles.provision.mockReturnValue(
+      new Promise<void>((resolve) => (resolveProvision = resolve))
+    )
+    const { unmount } = render(AuthSignIn)
+
+    await clickGoogle()
+    await waitFor(() => expect(handles.provision).toHaveBeenCalledOnce())
+
+    unmount()
+    resolveProvision!()
+    await flush()
+
+    expect(
+      handles.captureAuthCompleted,
+      'provisioning completing after teardown must not continue the flow'
+    ).not.toHaveBeenCalled()
+    expect(
+      handles.ensureFresh,
+      'and must not mint a session for a torn-down attempt'
+    ).not.toHaveBeenCalled()
+  })
+
+  it('stops the flow after the component unmounts mid-popup', async () => {
+    let resolvePopup: ((value: unknown) => void) | undefined
+    handles.google.mockReturnValue(
+      new Promise((resolve) => (resolvePopup = resolve))
+    )
+    const { unmount } = render(AuthSignIn)
+
+    await clickGoogle()
+    await waitFor(() => expect(handles.google).toHaveBeenCalledOnce())
+
+    unmount()
+    resolvePopup!(socialUser)
+    await flush()
+
+    expect(
+      handles.provision,
+      'a popup resolving after teardown must not provision'
+    ).not.toHaveBeenCalled()
+    expect(handles.captureAuthCompleted).not.toHaveBeenCalled()
+  })
+
+  it('signs the Firebase identity out once when the flag turns off after authentication', async () => {
+    let resolvePopup: ((value: unknown) => void) | undefined
+    handles.google.mockReturnValue(
+      new Promise((resolve) => (resolvePopup = resolve))
+    )
+    render(AuthSignIn)
+
+    await clickGoogle()
+    await waitFor(() => expect(handles.google).toHaveBeenCalledOnce())
+
+    handles.flag!.value = false
+    resolvePopup!(socialUser)
+    await flush()
+
+    expect(
+      handles.signOut,
+      'abandoning after Firebase auth succeeded must roll the persisted identity back'
+    ).toHaveBeenCalledOnce()
+  })
+
+  it('re-enables the controls when a non-interactive step hangs past its deadline', async () => {
+    handles.google.mockResolvedValue(socialUser)
+    handles.provision.mockReturnValue(new Promise<void>(() => {}))
+    render(AuthSignIn)
+
+    await clickGoogle()
+    await waitFor(() => expect(handles.provision).toHaveBeenCalledOnce())
+    expect(googleButton()).toHaveProperty('disabled', true)
+
+    await vi.advanceTimersByTimeAsync(16_000)
+
+    expect(
+      googleButton(),
+      'a hung provider must not disable the controls forever'
+    ).toHaveProperty('disabled', false)
+  })
+
+  it('keeps the identity and offers a retry when provisioning outruns its deadline, instead of signing out', async () => {
+    handles.google.mockResolvedValue(socialUser)
+    handles.provision.mockReturnValue(new Promise<void>(() => {}))
+    render(AuthSignIn)
+
+    await clickGoogle()
+    await waitFor(() => expect(handles.provision).toHaveBeenCalledOnce())
+
+    await vi.advanceTimersByTimeAsync(16_000)
+
+    expect(
+      (await screen.findByRole('alert')).textContent,
+      'a slow-but-valid provider keeps the user signed in and says setup did not finish'
+    ).toContain('account setup did not finish')
+    expect(
+      handles.signOut,
+      'a provisioning timeout must not tear the fresh identity down like a full sign-out'
+    ).not.toHaveBeenCalled()
+    expect(replace).not.toHaveBeenCalled()
+    expect(
+      handles.captureAuthCompleted,
+      'a timeout is not a completion'
+    ).not.toHaveBeenCalled()
+    expect(
+      googleButton(),
+      'the controls recover so the user can retry'
+    ).toHaveProperty('disabled', false)
+  })
+
+  it('frees the controls even when the post-authentication rollback sign-out rejects', async () => {
+    let resolvePopup: ((value: unknown) => void) | undefined
+    handles.google.mockReturnValue(
+      new Promise((resolve) => (resolvePopup = resolve))
+    )
+    handles.signOut.mockRejectedValue(new Error('sign-out failed'))
+    render(AuthSignIn)
+
+    await clickGoogle()
+    await waitFor(() => expect(handles.google).toHaveBeenCalledOnce())
+
+    handles.flag!.value = false
+    resolvePopup!(socialUser)
+    await flush()
+
+    handles.flag!.value = true
+    await flush()
+
+    expect(
+      handles.signOut,
+      'abandoning after auth rolls the persisted identity back once'
+    ).toHaveBeenCalledOnce()
+    expect(
+      googleButton(),
+      'a rejected best-effort sign-out must not strand the disabled controls'
+    ).toHaveProperty('disabled', false)
+  })
+
+  it('discards a provisioning result that settles after the deadline', async () => {
+    let resolveProvision: (() => void) | undefined
+    handles.google.mockResolvedValue(socialUser)
+    handles.provision.mockReturnValue(
+      new Promise<void>((resolve) => (resolveProvision = resolve))
+    )
+    render(AuthSignIn)
+
+    await clickGoogle()
+    await waitFor(() => expect(handles.provision).toHaveBeenCalledOnce())
+
+    await vi.advanceTimersByTimeAsync(16_000)
+    expect(
+      googleButton(),
+      'a provider past its deadline must recover the controls'
+    ).toHaveProperty('disabled', false)
+
+    resolveProvision!()
+    await flush()
+
+    expect(
+      handles.captureAuthCompleted,
+      'a provisioning result settling after the deadline must not continue the flow'
+    ).not.toHaveBeenCalled()
+    expect(
+      handles.ensureFresh,
+      'and must not mint a session for the abandoned attempt'
+    ).not.toHaveBeenCalled()
+    expect(
+      replace,
+      'and must not redirect an abandoned attempt'
+    ).not.toHaveBeenCalled()
+    expect(handles.session!.value).toBeUndefined()
+  })
+
+  it('recovers the controls with a message when a prior rollback sign-out never settles', async () => {
+    const events: string[] = []
+    let resolveMint: ((value: unknown) => void) | undefined
+    handles.google.mockImplementation(() => {
+      events.push('authenticate')
+      return Promise.resolve(socialUser)
+    })
+    handles.ensureFresh.mockImplementationOnce(
+      () => new Promise((resolve) => (resolveMint = resolve))
+    )
+    // The abandoned attempt's rollback sign-out hangs and never settles.
+    handles.signOut.mockReturnValue(new Promise<void>(() => {}))
+    render(AuthSignIn)
+
+    await clickGoogle()
+    await waitFor(() => expect(handles.ensureFresh).toHaveBeenCalledOnce())
+
+    handles.flag!.value = false
+    resolveMint!({ status: 'ok', session: { token: 'workspace-jwt' } })
+    await flush()
+    await waitFor(() => expect(handles.signOut).toHaveBeenCalledOnce())
+
+    // The first attempt's own bounded rollback wait recovers its controls.
+    handles.flag!.value = true
+    await vi.advanceTimersByTimeAsync(16_000)
+    await waitFor(() =>
+      expect(googleButton()).toHaveProperty('disabled', false)
+    )
+
+    // The retry starts while that sign-out is still pending; the bounded wait
+    // must free the controls at the deadline instead of hanging on it forever.
+    await clickGoogle()
+    await vi.advanceTimersByTimeAsync(16_000)
+    await flush()
+
+    expect(
+      googleButton(),
+      'a never-settling rollback sign-out must not pin the controls: the bounded wait recovers them'
+    ).toHaveProperty('disabled', false)
+    expect(
+      toasts.value,
+      'the timed-out retry surfaces the failure copy rather than going silently idle'
+    ).toHaveLength(1)
+    expect(
+      events,
+      'the retry must not authenticate into the still-live global sign-out'
+    ).toEqual(['authenticate'])
+    expect(replace).not.toHaveBeenCalled()
+  })
+
+  it('serializes a rollback sign-out that outran its deadline before the retry authenticates, so the stale sign-out cannot clear the new identity', async () => {
+    const events: string[] = []
+    let resolveSignOut: (() => void) | undefined
+    let resolveMint: ((value: unknown) => void) | undefined
+    handles.google.mockImplementation(() => {
+      events.push('authenticate')
+      return Promise.resolve(socialUser)
+    })
+    // First attempt authenticates, then the flag flips off during the mint, so
+    // it is abandoned after an identity was persisted; its rollback sign-out
+    // then hangs past its own deadline.
+    handles.ensureFresh.mockImplementationOnce(
+      () => new Promise((resolve) => (resolveMint = resolve))
+    )
+    handles.signOut.mockReturnValue(
+      new Promise<void>((resolve) => {
+        resolveSignOut = () => {
+          events.push('signOut:settled')
+          resolve()
+        }
+      })
+    )
+    render(AuthSignIn)
+
+    await clickGoogle()
+    await waitFor(() => expect(handles.ensureFresh).toHaveBeenCalledOnce())
+
+    handles.flag!.value = false
+    resolveMint!({ status: 'ok', session: { token: 'workspace-jwt' } })
+    await flush()
+    await waitFor(() => expect(handles.signOut).toHaveBeenCalledOnce())
+
+    // The sign-out outruns its own deadline; the controls recover even though
+    // the rollback is still in flight — the deadline's benefit is preserved.
+    handles.flag!.value = true
+    await vi.advanceTimersByTimeAsync(16_000)
+    expect(
+      googleButton(),
+      'a hung rollback sign-out must still free the controls at its deadline'
+    ).toHaveProperty('disabled', false)
+
+    // The retry starts while the stale sign-out is still pending, but must not
+    // authenticate into it.
+    await clickGoogle()
+    await flush()
+    expect(
+      events,
+      'the retry must not authenticate while the stale sign-out is still clearing the global identity'
+    ).toEqual(['authenticate'])
+    expect(replace).not.toHaveBeenCalled()
+
+    resolveSignOut!()
+    await waitFor(() => expect(replace).toHaveBeenCalledWith('/'))
+
+    expect(
+      events,
+      "the retry's authentication is ordered strictly after the stale sign-out settles, or that sign-out would clear the new attempt's identity"
+    ).toEqual(['authenticate', 'signOut:settled', 'authenticate'])
+    expect(
+      handles.signOut,
+      'the new attempt must not be signed out by the abandoned attempt'
+    ).toHaveBeenCalledOnce()
+  })
+
+  it('bounds a hung email sign-in and surfaces a message on recovery', async () => {
+    handles.emailSignIn.mockImplementation(() => new Promise(() => {}))
+    render(AuthSignIn)
+    render(AuthToast)
+    const user = userEvent.setup()
+
+    await openEmailForm(user)
+    await user.type(screen.getByLabelText('Email'), 'user@example.com')
+    await user.type(screen.getByLabelText('Password'), 'Password1!')
+    await user.click(screen.getByRole('button', { name: /^sign in$/i }))
+    await waitFor(() => expect(handles.emailSignIn).toHaveBeenCalledOnce())
+
+    await vi.advanceTimersByTimeAsync(16_000)
+
+    expect(
+      toasts.value,
+      'a hung email request recovers with a message rather than silently re-enabling'
+    ).toHaveLength(1)
+    expect(toasts.value[0].detail).toBe(AUTH_ERROR_MESSAGES.generic)
+    expect(
+      screen.getByRole('button', { name: /^sign in$/i }),
+      'a bounded email request frees the controls at its deadline'
+    ).toHaveProperty('disabled', false)
+  })
+
+  it('leaves the user-driven social popup wait unbounded past the operation deadline', async () => {
+    handles.google.mockReturnValue(new Promise(() => {}))
+    render(AuthSignIn)
+    render(AuthToast)
+
+    await clickGoogle()
+    await waitFor(() => expect(handles.google).toHaveBeenCalledOnce())
+
+    await vi.advanceTimersByTimeAsync(16_000)
+
+    expect(
+      googleButton(),
+      'the user-driven popup is never timed out'
+    ).toHaveProperty('disabled', true)
+    expect(
+      toasts.value,
+      'an unbounded popup wait surfaces no timeout message'
+    ).toHaveLength(0)
   })
 })
 
