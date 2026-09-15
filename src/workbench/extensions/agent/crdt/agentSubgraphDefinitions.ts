@@ -200,35 +200,8 @@ function isSafeDefinition(value: unknown): boolean {
 }
 
 function readDefinition(source: Y.Map<unknown>): ExportedSubgraph | null {
-  const definition: Record<string, unknown> = {}
-  source.forEach((value, key) => {
-    if (
-      key === NODE_ORDER ||
-      key === LINK_ORDER ||
-      isDefinitionBookkeeping(key) ||
-      !isReadableKey(key)
-    )
-      return
-    if (key === 'nodes' && value instanceof Y.Map) {
-      definition.nodes = orderedKeys(source.get(NODE_ORDER), value).flatMap(
-        (id) => {
-          const node = readInteriorNode(value.get(id))
-          return node ? [node] : []
-        }
-      )
-    } else if (key === 'links' && value instanceof Y.Map) {
-      definition.links = orderedKeys(source.get(LINK_ORDER), value).map((id) =>
-        plain(value.get(id))
-      )
-    } else if (key === 'definitions') {
-      definition.definitions = withoutNestedDefinitionBookkeeping(plain(value))
-    } else {
-      definition[key] = plain(value)
-    }
-  })
-  return isSafeDefinition(definition)
-    ? (definition as unknown as ExportedSubgraph)
-    : null
+  const definition = projectSubgraphDefinition(source)
+  return isSafeDefinition(definition) ? definition : null
 }
 
 function readField(source: unknown, key: string): unknown {
