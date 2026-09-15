@@ -85,6 +85,10 @@ export class ExecutableNodeDTO implements ExecutableLGraphNode {
     return this.node.comfyClass
   }
 
+  get properties() {
+    return this.node.properties
+  }
+
   get isVirtualNode() {
     return this.node.isVirtualNode
   }
