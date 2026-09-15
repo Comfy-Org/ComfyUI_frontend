@@ -85,19 +85,13 @@ async function loadComposable() {
   const { useBillingCapabilities } =
     await import('@/platform/workspace/composables/useBillingCapabilities')
   const capabilities = useBillingCapabilities()
-  vi.spyOn(capabilities.canReactivate, 'value', 'get').mockImplementation(
-    () => mockCanReactivate.value
+  capabilities.canReactivate = computed(() => mockCanReactivate.value)
+  capabilities.canSubscribeSelfServe = computed(
+    () => mockCanSubscribeSelfServe.value
   )
-  vi.spyOn(
-    capabilities.canSubscribeSelfServe,
-    'value',
-    'get'
-  ).mockImplementation(() => mockCanSubscribeSelfServe.value)
-  vi.spyOn(
-    capabilities.snapshotAuthoritative,
-    'value',
-    'get'
-  ).mockImplementation(() => mockSnapshotAuthoritative.value)
+  capabilities.snapshotAuthoritative = computed(
+    () => mockSnapshotAuthoritative.value
+  )
   const module = await import('@/platform/workspace/composables/useWorkspaceUI')
   return module.useWorkspaceUI()
 }
