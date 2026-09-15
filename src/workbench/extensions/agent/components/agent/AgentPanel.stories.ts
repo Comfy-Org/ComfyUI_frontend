@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/vue3-vite'
+import { expect, userEvent, within } from 'storybook/test'
 import { ref } from 'vue'
 
 import Dialog from '@/components/ui/dialog/Dialog.vue'
@@ -89,6 +90,31 @@ export const InDialog: Story = {
       </Dialog>
     `
   })
+}
+
+export const LongWorkflowList: Story = {
+  args: {
+    availableWorkflows: Array.from({ length: 30 }, (_, index) => ({
+      id: `workflow-${index + 1}`,
+      name: `Workflow ${String(index + 1).padStart(2, '0')}`
+    }))
+  },
+  play: async () => {
+    const body = within(document.body)
+    await userEvent.click(body.getByRole('button', { name: 'Add to prompt' }))
+    await userEvent.click(body.getByRole('menuitem', { name: 'Workflows' }))
+    const lastWorkflow = await body.findByRole('menuitem', {
+      name: 'Workflow 30'
+    })
+
+    lastWorkflow.scrollIntoView({ block: 'nearest' })
+
+    const lastWorkflowRect = lastWorkflow.getBoundingClientRect()
+    await expect(lastWorkflowRect.top).toBeGreaterThanOrEqual(10)
+    await expect(lastWorkflowRect.bottom).toBeLessThanOrEqual(
+      window.innerHeight - 10
+    )
+  }
 }
 
 export const ChipStates: Story = {
