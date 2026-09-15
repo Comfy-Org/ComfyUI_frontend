@@ -13,6 +13,7 @@ import { useOutputHistory } from '@/renderer/extensions/linearMode/useOutputHist
 import { useAppModeStore } from '@/stores/appModeStore'
 import type { AugmentedResultItem } from '@/utils/resultItem'
 import { mockPagedList } from '@/utils/__tests__/pagedListUtils'
+import type { PagedList } from '@/utils/pagedList'
 import { toNodeId } from '@/types/nodeId'
 
 vi.mock(import('@/platform/assets/composables/media/assetMappers'), () => ({
@@ -67,11 +68,10 @@ function makeResult(
   }
 }
 
-const mockOutputAssets = mockPagedList<AssetItem>({})
+let mockOutputAssets!: PagedList<AssetItem>
 beforeEach(() => {
+  mockOutputAssets = mockPagedList({ loadMore: vi.fn() })
   Object.assign(useAssetsStore(), { outputAssets: mockOutputAssets })
-  mockOutputAssets.hasMore = false
-  vi.spyOn(mockOutputAssets, 'loadMore').mockResolvedValue(undefined)
   vi.mocked(useLinearOutputStore().selectAsLatest).mockImplementation(
     () => undefined
   )

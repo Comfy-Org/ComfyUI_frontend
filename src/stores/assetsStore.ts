@@ -15,7 +15,6 @@ import type { EffectScope } from 'vue'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import {
   mapInputFileToAssetItem,
-  mapChildAssetToAssetItem,
   mapTaskOutputToAssetItem,
   unflattenOutputAssets
 } from '@/platform/assets/composables/media/assetMappers'
@@ -31,10 +30,9 @@ import {
 import { getOutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
 import { assetService } from '@/platform/assets/services/assetService'
 import type { AssetPaginationOptions } from '@/platform/assets/services/assetService'
+import { resolveOutputAssetItems } from '@/platform/assets/utils/outputAssetUtil'
 import type { JobListItem } from '@/platform/remote/comfyui/jobs/jobTypes'
-import { getJobDetail } from '@/services/jobOutputCache'
 import { api } from '@/scripts/api'
-import { parseTaskOutput } from '@/stores/resultItemParsing'
 import { WrappedList } from '@/utils/pagedList'
 import type { PagedList } from '@/utils/pagedList'
 
@@ -130,6 +128,7 @@ export const useAssetsStore = defineStore('assets', () => {
     isLoading: inputLoading,
     execute: executeUpdateInputs
   } = useAsyncState(fetchInputFiles, [], {
+    immediate: false,
     resetOnExecute: false,
     onError: (err) => {
       console.error('Error fetching input assets:', err)
@@ -154,7 +153,7 @@ export const useAssetsStore = defineStore('assets', () => {
     const isLoadingMore = ref(false)
     const allHistoryItems = ref<AssetItem[]>([])
     const loadedIds = shallowReactive(new Set<string>())
-    const resolvedAssetsCache = ref(new Map<string, AssetItem[]>())
+    const resolvedAssetsCache = ref<Partial<Record<string, AssetItem[]>>>({})
 
     /**
      * Fetch history assets with pagination support
@@ -233,6 +232,7 @@ export const useAssetsStore = defineStore('assets', () => {
      * Initial load of history assets
      */
     const updateHistory = async () => {
+      resolvedAssetsCache.value = {}
       historyLoading.value = true
       historyError.value = null
       try {
@@ -283,24 +283,27 @@ export const useAssetsStore = defineStore('assets', () => {
       loadMore: loadMoreHistory,
       loadNew: updateHistory
     }
+    watch(
+      () => allHistoryItems.value.length,
+      () => {
+        const currentAssetsCache = resolvedAssetsCache.value
+        for (const asset of allHistoryItems.value) {
+          const metadata = getOutputAssetMetadata(asset.user_metadata)
+          const jobId = metadata?.jobId
+          if (!jobId || currentAssetsCache[jobId]) continue
+
+          void resolveOutputAssetItems(metadata).then(
+            (assets) => (currentAssetsCache[jobId] = assets)
+          )
+        }
+      },
+      { immediate: true }
+    )
     const flatOutputs = new WrappedList(outputAssets, () =>
       allHistoryItems.value.flatMap((asset) => {
         const jobId = getOutputAssetMetadata(asset.user_metadata)?.jobId
         if (!jobId) return [asset]
-        const cached = resolvedAssetsCache.value.get(jobId)
-        if (cached) return cached
-
-        async function resolveAssets(jobId: string) {
-          const outputs = (await getJobDetail(jobId))?.outputs
-          if (!outputs) return
-
-          const childAssets = parseTaskOutput(outputs).map((resultItem) =>
-            mapChildAssetToAssetItem(asset, resultItem)
-          )
-          resolvedAssetsCache.value.set(jobId, childAssets)
-        }
-        void resolveAssets(jobId)
-        return [asset]
+        return resolvedAssetsCache.value[jobId] ?? [asset]
       })
     )
     void loadMoreHistory()
@@ -310,7 +313,7 @@ export const useAssetsStore = defineStore('assets', () => {
   const inputAssets = ref<PagedList<AssetItem>>(undefined!)
   const outputAssets = ref<PagedList<AssetItem>>(undefined!)
   const flatOutputAssets = ref<PagedList<AssetItem>>(undefined!)
-  const allAssets = ref<PagedList<AssetItem>>()
+  const allAssets = ref<PagedList<AssetItem>>(undefined!)
   let assetsScope: EffectScope | undefined
   watch(
     () => flags.assetsEnabled,
@@ -336,7 +339,11 @@ export const useAssetsStore = defineStore('assets', () => {
       } else {
         inputAssets.value = historyInputs
         ;[outputAssets.value, flatOutputAssets.value] = useHistoryAssets()
-        allAssets.value = undefined
+        allAssets.value = new WrappedList(
+          flatOutputAssets.value,
+          (outputItems) => [...toValue(historyInputs.items), ...outputItems]
+        )
+        void executeUpdateInputs()
       }
     },
     { immediate: true }

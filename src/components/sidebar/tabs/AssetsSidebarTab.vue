@@ -109,7 +109,7 @@
         <AssetsSidebarListView
           v-if="isListView"
           :asset-items="pagedListViewAssets"
-          :is-selected="isSelected"
+          :is-selected
           :selectable-assets="listViewSelectableAssets"
           :is-stack-expanded="isListViewStackExpanded"
           :toggle-stack="toggleListViewStack"
@@ -119,7 +119,7 @@
         />
         <div v-else class="size-full">
           <AssetsSidebarGridView
-            :assets="pagedFilteredAssets"
+            :assets="isInFolderView ? filteredAssets : pagedFilteredAssets"
             :is-selected
             :show-output-count
             :get-output-count
@@ -383,7 +383,7 @@ const {
   isStackExpanded: isListViewStackExpanded,
   toggleStack: toggleListViewStack
 } = useOutputStacks({
-  assets: computed(() => filteredAssets.value)
+  assets: filteredAssets
 })
 const pagedListViewAssets = computed(
   () => new WrappedList(currentAssets.value, () => listViewAssetItems.value)

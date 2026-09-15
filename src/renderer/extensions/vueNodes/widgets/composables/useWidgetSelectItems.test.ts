@@ -72,14 +72,15 @@ const storeAssets = {
   flatOutput: [] as AssetItem[]
 }
 
-const asPagedList = (items: AssetItem[]): PagedList<AssetItem> => ({
-  hasMore: false,
-  invalidate: async () => {},
-  isLoading: false,
-  items,
-  loadMore: async () => {},
-  loadNew: async () => {}
-})
+const asPagedList = (items: AssetItem[]) =>
+  ({
+    hasMore: false,
+    invalidate: async () => {},
+    isLoading: false,
+    items,
+    loadMore: async () => {},
+    loadNew: async () => {}
+  }) satisfies PagedList<AssetItem>
 
 beforeEach(() => {
   storeAssets.input = [...DEFAULT_INPUTS]
