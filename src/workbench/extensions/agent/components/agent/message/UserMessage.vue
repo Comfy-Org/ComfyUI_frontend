@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { useClipboard, useClipboardItems } from '@vueuse/core'
 import { computed, useTemplateRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -7,6 +6,7 @@ import { cn } from '@comfyorg/tailwind-utils'
 import Button from '@/components/ui/button/Button.vue'
 import Tag from '@/components/chip/Tag.vue'
 import AccessibleTooltip from '@/components/ui/tooltip/AccessibleTooltip.vue'
+import { useCopyToClipboard } from '@/composables/useCopyToClipboard'
 import { iconForMediaType } from '@/platform/assets/utils/mediaIconUtil'
 import { api } from '@/scripts/api'
 import { getMediaTypeFromFilename } from '@/utils/formatUtil'
@@ -51,18 +51,13 @@ const readableText = computed(() =>
   agentMessageText({ text, workflowReferences, tags, attachments })
 )
 const bubble = useTemplateRef<HTMLElement>('bubble')
-const plainClipboard = useClipboard({ copiedDuring: 2000, legacy: true })
-const richClipboard = useClipboardItems({ copiedDuring: 2000 })
-const copied = computed(
-  () => plainClipboard.copied.value || richClipboard.copied.value
-)
+const { copied, copyToClipboard } = useCopyToClipboard({
+  copiedDuring: 2000,
+  showSuccessToast: false
+})
 
 async function copyMessage(): Promise<void> {
-  if (
-    workflowReferences.length &&
-    richClipboard.isSupported.value &&
-    typeof ClipboardItem !== 'undefined'
-  ) {
+  if (workflowReferences.length && typeof ClipboardItem !== 'undefined') {
     const content = userMessageClipboard({
       text,
       workflowReferences,
@@ -70,7 +65,7 @@ async function copyMessage(): Promise<void> {
       attachments
     })
     try {
-      await richClipboard.copy([
+      await copyToClipboard(content.text, [
         new ClipboardItem({
           'text/plain': new Blob([content.text], { type: 'text/plain' }),
           'text/html': new Blob([content.html], { type: 'text/html' })
@@ -78,11 +73,11 @@ async function copyMessage(): Promise<void> {
       ])
       return
     } catch {
-      await plainClipboard.copy(content.text)
+      await copyToClipboard(content.text)
       return
     }
   }
-  await plainClipboard.copy(readableText.value)
+  await copyToClipboard(readableText.value)
 }
 
 function copySelection(event: ClipboardEvent): void {

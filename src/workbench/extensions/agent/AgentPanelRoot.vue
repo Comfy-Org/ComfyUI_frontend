@@ -2,7 +2,6 @@
 import './agentPanel.css'
 
 import type { GetFeaturesResponse } from '@comfyorg/ingest-types'
-import { useClipboard } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
 import {
   computed,
@@ -17,6 +16,7 @@ import {
 import { useI18n } from 'vue-i18n'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
+import { useCopyToClipboard } from '@/composables/useCopyToClipboard'
 import { useTelemetry } from '@/platform/telemetry'
 import type {
   AgentMessageSentMetadata,
@@ -1161,7 +1161,7 @@ onBeforeUnmount(() => {
 
 const history = useAgentChatHistoryStore()
 
-const { copy } = useClipboard({ legacy: true })
+const { copyToClipboard } = useCopyToClipboard({ showSuccessToast: false })
 
 function onFeedback(turnId: string, vote: 'up' | 'down' | null): void {
   const message = entries.value.find(
@@ -1231,7 +1231,8 @@ function buildTranscriptMarkdown(entries: ConversationEntry[]): string {
 }
 
 function onCopyMarkdown(id: string): void {
-  if (id === history.activeId) void copy(buildTranscriptMarkdown(entries.value))
+  if (id === history.activeId)
+    void copyToClipboard(buildTranscriptMarkdown(entries.value))
   else toast.add({ severity: 'info', summary: t('agent.copyUnavailable') })
 }
 
