@@ -134,11 +134,64 @@ export function expandQuery(query: string): string | null {
   return expandedTokens.map(({ token }) => token).join(' ')
 }
 
+/** A template annotated with the id actually used to key the search index. */
+export type SearchableTemplate<T extends TemplateInfo = TemplateInfo> = T & {
+  searchId: string
+}
+
+/**
+ * Assigns each template a unique `searchId` before it's indexed. MiniSearch's
+ * addAll() throws on the first duplicate id it finds, and since one call
+ * indexes every visible template at once, a single unrelated collision - e.g.
+ * two different custom node packs that both happen to ship a workflow file
+ * with the same name - would otherwise take down search for every template,
+ * not just the colliding ones.
+ *
+ * `name` itself is never touched here (it's still what's used to load the
+ * template): only templates whose `name` actually collides get a different,
+ * disambiguated `searchId`. A non-colliding template's `searchId` is just
+ * its unchanged `name`.
+ */
+export function withSearchIds<T extends TemplateInfo>(
+  templates: T[]
+): SearchableTemplate<T>[] {
+  const occurrences = new Map<string, number>()
+  const usedIds = new Set<string>()
+
+  return templates.map((template) => {
+    const occurrence = occurrences.get(template.name) ?? 0
+    occurrences.set(template.name, occurrence + 1)
+
+    // The plain name is only safe to reuse as-is if this is genuinely the
+    // first template with this name, AND no earlier disambiguation already
+    // happened to produce this exact string.
+    if (occurrence === 0 && !usedIds.has(template.name)) {
+      usedIds.add(template.name)
+      return { ...template, searchId: template.name }
+    }
+
+    // A later template shares a name already claimed above - disambiguate
+    // using its source pack when known, falling back to an ordinal.
+    const disambiguator =
+      'sourceModule' in template && typeof template.sourceModule === 'string'
+        ? template.sourceModule
+        : String(occurrence + 1)
+    let attempt = occurrence + 1
+    let searchId = `${template.name}::${disambiguator}`
+    while (usedIds.has(searchId)) {
+      attempt += 1
+      searchId = `${template.name}::${disambiguator}-${attempt}`
+    }
+    usedIds.add(searchId)
+    return { ...template, searchId }
+  })
+}
+
 export function createTemplateSearchIndex(
-  templates: TemplateInfo[]
-): MiniSearch<TemplateInfo> {
-  const index = new MiniSearch<TemplateInfo>({
-    idField: 'name',
+  templates: SearchableTemplate[]
+): MiniSearch<SearchableTemplate> {
+  const index = new MiniSearch<SearchableTemplate>({
+    idField: 'searchId',
     fields: [...SEARCH_FIELDS],
     // Returned on each hit so ranking can read usage and curation without a
     // second lookup.
@@ -188,9 +241,9 @@ export function rankByRelevanceThenUsage(hits: SearchResult[]): SearchResult[] {
     .map((entry) => entry.hit)
 }
 
-/** Ordered template names for a query: literal matches first, then dedup'd expansion matches. */
+/** Ordered searchIds for a query: literal matches first, then dedup'd expansion matches. */
 export function searchTemplates(
-  index: MiniSearch<TemplateInfo>,
+  index: MiniSearch<SearchableTemplate>,
   query: string
 ): string[] {
   const trimmed = query.trim()
