@@ -4,6 +4,8 @@ import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { useClipboard } from '@vueuse/core'
 
+import { i18n } from '@/i18n'
+
 const { writeText } = vi.hoisted(() => ({
   writeText: vi.fn<ReturnType<typeof useClipboard>['copy']>(() =>
     Promise.resolve()
@@ -55,7 +57,8 @@ const status: AgentCrdtStatus = {
 function renderPanel(overrides: Partial<AgentCrdtStatus> = {}) {
   localStorage.setItem('Comfy.Agent.CrdtDevPanel.open', 'true')
   return render(CrdtDevPanel, {
-    props: { status: { ...status, ...overrides } }
+    props: { status: { ...status, ...overrides } },
+    global: { plugins: [i18n] }
   })
 }
 
@@ -172,10 +175,8 @@ describe('CrdtDevPanel clipboard controls', () => {
     renderPanel()
     await user.click(screen.getByTestId('crdt-dev-panel-tab-log'))
 
-    await user.selectOptions(
-      screen.getByTestId('crdt-dev-panel-filter'),
-      'doc_update'
-    )
+    await user.click(screen.getByTestId('crdt-dev-panel-filter'))
+    await user.click(screen.getByRole('option', { name: 'doc_update' }))
     await user.click(screen.getByRole('button', { name: 'Copy log' }))
 
     expect(writeText).toHaveBeenCalledExactlyOnceWith(
