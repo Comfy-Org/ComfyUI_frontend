@@ -5,7 +5,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
-import { render, screen, waitFor } from '@testing-library/vue'
+import { render, screen, waitFor, within } from '@testing-library/vue'
 
 import type { AuditLog } from '@/services/customerEventsService'
 import { EventType } from '@/services/customerEventsService'
@@ -177,7 +177,8 @@ describe('UsageLogsTable', () => {
       }
     )
     mockCustomerEventsService.formatDate.mockImplementation(
-      (dateString: string) => new Date(dateString).toLocaleDateString()
+      (dateString: string) =>
+        new Date(dateString).toLocaleDateString('en-US', { timeZone: 'UTC' })
     )
     mockCustomerEventsService.hasAdditionalInfo.mockImplementation(
       (event: AuditLog) => {
@@ -290,15 +291,38 @@ describe('UsageLogsTable', () => {
     it('renders event type badges', async () => {
       await renderLoaded()
 
-      expect(mockCustomerEventsService.formatEventType).toHaveBeenCalled()
-      expect(mockCustomerEventsService.getEventSeverity).toHaveBeenCalled()
+      const creditRow = screen.getByRole('row', { name: /Added \$10\.00/ })
+      const usageRow = screen.getByRole('row', { name: /Image Generation/ })
+
+      expect(within(creditRow).getByText('Credits Added')).toBeInTheDocument()
+      expect(within(usageRow).getByText('API Usage')).toBeInTheDocument()
     })
 
     it('renders credit added details with formatted amount', async () => {
+      mockCustomerEventsService.getMyEvents.mockResolvedValue(
+        makeEventsResponse([
+          {
+            event_id: 'credit-1',
+            event_type: EventType.CREDIT_ADDED,
+            params: { amount: 2735 },
+            createdAt: '2024-01-01T10:00:00Z'
+          },
+          {
+            event_id: 'credit-2',
+            event_type: EventType.CREDIT_ADDED,
+            params: { amount: 408 },
+            createdAt: '2024-01-02T10:00:00Z'
+          }
+        ])
+      )
+
       await renderLoaded()
 
-      expect(screen.getByText(/Added \$/)).toBeInTheDocument()
-      expect(mockCustomerEventsService.formatAmount).toHaveBeenCalled()
+      const firstRow = screen.getByRole('row', { name: /1\/1\/2024/ })
+      const secondRow = screen.getByRole('row', { name: /1\/2\/2024/ })
+
+      expect(within(firstRow).getByText('Added $27.35')).toBeInTheDocument()
+      expect(within(secondRow).getByText('Added $4.08')).toBeInTheDocument()
     })
 
     it('renders API usage details with api name and model', async () => {
@@ -330,7 +354,11 @@ describe('UsageLogsTable', () => {
     it('renders formatted dates', async () => {
       await renderLoaded()
 
-      expect(mockCustomerEventsService.formatDate).toHaveBeenCalled()
+      const creditRow = screen.getByRole('row', { name: /Added \$10\.00/ })
+      const usageRow = screen.getByRole('row', { name: /Image Generation/ })
+
+      expect(within(creditRow).getByText('1/1/2024')).toBeInTheDocument()
+      expect(within(usageRow).getByText('1/2/2024')).toBeInTheDocument()
     })
 
     it('renders info buttons for events with additional info', async () => {
@@ -489,24 +517,6 @@ describe('UsageLogsTable', () => {
   })
 
   describe('EventType integration', () => {
-    it('renders credit_added event with correct detail template', async () => {
-      mockCustomerEventsService.getMyEvents.mockResolvedValue(
-        makeEventsResponse([
-          {
-            event_id: 'event-1',
-            event_type: EventType.CREDIT_ADDED,
-            params: { amount: 1000 },
-            createdAt: '2024-01-01T10:00:00Z'
-          }
-        ])
-      )
-
-      await renderLoaded()
-
-      expect(screen.getByText(/Added \$/)).toBeInTheDocument()
-      expect(mockCustomerEventsService.formatAmount).toHaveBeenCalled()
-    })
-
     it('renders api_usage_completed event with correct detail template', async () => {
       mockCustomerEventsService.getMyEvents.mockResolvedValue(
         makeEventsResponse([
