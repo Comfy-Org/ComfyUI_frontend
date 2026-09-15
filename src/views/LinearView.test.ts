@@ -49,6 +49,7 @@ vi.mock(
     return {
       useAgentDockMount: () => ({
         docked: computed(() => true),
+        everDocked: computed(() => true),
         DockedAgentPanel: defineComponent({
           name: 'DockedAgentPanel',
           setup: () => () => h('div', { 'data-testid': 'docked-agent-panel' })
@@ -83,7 +84,12 @@ function leafStub(testId: string) {
 const baseStubs = {
   Splitter: passthroughStub,
   SplitterPanel: passthroughStub,
-  DockedAgentPanel: leafStub('docked-agent-panel'),
+  DockedAgentPanel: {
+    props: { hasOpaqueNeighbor: Boolean },
+    template:
+      '<div data-testid="docked-agent-panel" :data-has-opaque-neighbor="String(hasOpaqueNeighbor)" />'
+  },
+  AgentEntryOrb: leafStub('agent-entry-orb'),
   MobileDisplay: leafStub('mobile-display'),
   AppBuilder: leafStub('app-builder'),
   AppModeToolbar: leafStub('app-mode-toolbar'),
@@ -167,6 +173,12 @@ describe('LinearView', () => {
     )
   })
 
+  it('floats the agent entry orb over the app view', () => {
+    renderView()
+
+    expect(screen.getByTestId('agent-entry-orb')).toBeInTheDocument()
+  })
+
   it('shows the toolbar and puts the active tab before the controls for a left sidebar', () => {
     renderView({
       sidebarLocation: 'left',
@@ -226,12 +238,25 @@ describe('LinearView', () => {
     expect(screen.queryByTestId('side-toolbar')).not.toBeInTheDocument()
   })
 
-  it('docks the agent panel beside the workspace column, not inside it', () => {
+  it('tells the panel its neighbour is opaque, since app mode hides the canvas', () => {
     renderView()
 
+    expect(screen.getByTestId('docked-agent-panel')).toHaveAttribute(
+      'data-has-opaque-neighbor',
+      'true'
+    )
+  })
+
+  it('docks the agent panel beside the workspace column, below the full-width tab bar', () => {
+    renderView()
+
+    // The tab bar spans above both, so neither it nor the panel sits inside
+    // the workspace column any more.
     const column = within(screen.getByTestId('linear-workspace-column'))
-    expect(column.getByTestId('workflow-tabs')).toBeInTheDocument()
+    expect(column.queryByTestId('workflow-tabs')).toBeNull()
     expect(column.queryByTestId('docked-agent-panel')).toBeNull()
+
+    expect(screen.getByTestId('workflow-tabs')).toBeInTheDocument()
     expect(screen.getByTestId('docked-agent-panel')).toBeInTheDocument()
   })
 })

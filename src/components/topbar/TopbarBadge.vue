@@ -7,16 +7,8 @@
     :style="menuBackgroundStyle"
     @click="togglePopover"
   >
-    <i
-      v-if="iconClass"
-      data-testid="badge-icon"
-      :class="['shrink-0 text-base', iconClass, iconColorClass]"
-    />
-    <div
-      v-else-if="badge.label"
-      class="shrink-0 rounded-full px-1.5 py-0.5 text-3xs font-semibold"
-      :class="labelClasses"
-    >
+    <i v-if="iconClass" data-testid="badge-icon" :class="badgeIconClass" />
+    <div v-else-if="badge.label" :class="labelClasses">
       {{ badge.label }}
     </div>
     <div v-else class="size-2 shrink-0 rounded-full" :class="dotClasses" />
@@ -31,11 +23,7 @@
       :pt="popoverPt"
     >
       <div class="flex max-w-xs min-w-40 flex-col gap-2 p-3">
-        <div
-          v-if="badge.label"
-          class="w-fit rounded-full px-1.5 py-0.5 text-3xs font-semibold"
-          :class="labelClasses"
-        >
+        <div v-if="showLabel" :class="cn(labelClasses, 'w-fit')">
           {{ badge.label }}
         </div>
         <div class="font-inter text-sm">{{ badge.text }}</div>
@@ -61,16 +49,8 @@
       ]"
       @click="togglePopover"
     >
-      <i
-        v-if="iconClass"
-        data-testid="badge-icon"
-        :class="['shrink-0 text-base', iconClass, iconColorClass]"
-      />
-      <div
-        v-if="badge.label"
-        class="shrink-0 rounded-full px-1.5 py-0.5 text-3xs font-semibold"
-        :class="labelClasses"
-      >
+      <i v-if="iconClass" data-testid="badge-icon" :class="badgeIconClass" />
+      <div v-if="badge.label" :class="labelClasses">
         {{ badge.label }}
       </div>
     </div>
@@ -85,11 +65,7 @@
       :pt="popoverPt"
     >
       <div class="flex max-w-xs min-w-40 flex-col gap-2 p-3">
-        <div
-          v-if="badge.label"
-          class="w-fit rounded-full px-1.5 py-0.5 text-3xs font-semibold"
-          :class="labelClasses"
-        >
+        <div v-if="showLabel" :class="cn(labelClasses, 'w-fit')">
           {{ badge.label }}
         </div>
         <div class="font-inter text-sm">{{ badge.text }}</div>
@@ -104,24 +80,16 @@
   <div
     v-else
     v-tooltip="badge.tooltip"
-    class="flex h-full shrink-0 items-center gap-2 whitespace-nowrap"
-    :class="[{ 'flex-row-reverse': reverseOrder }, noPadding ? '' : 'px-3']"
+    class="flex h-full shrink-0 items-center gap-1 whitespace-nowrap"
+    :class="[{ 'flex-row-reverse': reverseOrder }, noPadding ? '' : 'px-2']"
     :style="menuBackgroundStyle"
   >
-    <i
-      v-if="iconClass"
-      data-testid="badge-icon"
-      :class="['shrink-0 text-base', iconClass, iconColorClass]"
-    />
-    <div
-      v-if="badge.label"
-      class="shrink-0 rounded-full px-1.5 py-0.5 text-3xs font-semibold"
-      :class="labelClasses"
-    >
-      {{ badge.label }}
-    </div>
-    <div class="font-inter text-sm" :class="textClasses">
+    <i v-if="iconClass" data-testid="badge-icon" :class="badgeIconClass" />
+    <div class="font-inter text-xs font-medium" :class="textClasses">
       {{ badge.text }}
+    </div>
+    <div v-if="showLabel" :class="labelClasses">
+      {{ badge.label }}
     </div>
   </div>
 </template>
@@ -158,17 +126,25 @@ const menuBackgroundStyle = computed(() => ({
   backgroundColor: backgroundColor
 }))
 
-const labelClasses = computed(() => {
-  switch (variant.value) {
-    case 'error':
-      return 'bg-danger-100 text-white'
-    case 'warning':
-      return 'bg-gold-600 text-black'
-    case 'info':
-    default:
-      return 'bg-white text-black'
-  }
+/**
+ * A badge the text already carries is dropped, so "Warning Message" is not
+ * followed by "WARN". Matched on word prefix, and only where the text is
+ * shown beside it.
+ */
+const showLabel = computed(() => {
+  if (!badge.label) return false
+  const needle = badge.label.toLowerCase()
+  return !badge.text
+    .toLowerCase()
+    .split(/\s+/)
+    .some((word) =>
+      word.replace(/^[^\p{L}\p{N}]+|[^\p{L}\p{N}]+$/gu, '').startsWith(needle)
+    )
 })
+
+/** Matches the ALPHA badge in the agent panel header. */
+const labelClasses =
+  'shrink-0 rounded-full border border-border-default px-2 py-0.5 text-xs text-muted-foreground'
 
 const textClasses = computed(() => {
   switch (variant.value) {
@@ -181,8 +157,6 @@ const textClasses = computed(() => {
       return 'text-text-primary'
   }
 })
-
-const iconColorClass = computed(() => textClasses.value)
 
 const iconClass = computed(() => {
   if (badge.icon) {
@@ -198,6 +172,10 @@ const iconClass = computed(() => {
       return undefined
   }
 })
+
+const badgeIconClass = computed(() =>
+  cn('size-4 shrink-0 text-base', iconClass.value, textClasses.value)
+)
 
 const clickableClasses = 'cursor-pointer transition-opacity hover:opacity-80'
 

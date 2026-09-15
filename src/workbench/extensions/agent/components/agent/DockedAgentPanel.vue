@@ -1,33 +1,44 @@
 <template>
-  <div
-    v-if="docked"
-    data-testid="docked-agent-panel"
-    role="complementary"
-    aria-labelledby="agent-panel-title"
-    class="docked-agent-panel pointer-events-auto relative h-full shrink-0 overflow-hidden [anchor-name:--docked-agent-panel]"
-    :style="{ width: `${width}px` }"
-  >
+  <Transition name="agent-panel" appear>
     <div
-      data-testid="agent-panel-resize-handle"
-      class="agent-resize-handle absolute top-0 left-0 z-10 h-full w-[5px] cursor-col-resize"
-      :data-resizing="isResizing"
-      @pointerdown="onResizeStart"
-      @lostpointercapture="isResizing = false"
-    />
-    <div
-      data-testid="docked-agent-panel-shell"
-      class="bg-agent-surface size-full border-l border-interface-stroke p-2"
+      v-if="docked"
+      data-testid="docked-agent-panel"
+      role="complementary"
+      aria-labelledby="agent-panel-title"
+      class="docked-agent-panel pointer-events-auto relative h-full shrink-0 overflow-hidden [anchor-name:--docked-agent-panel]"
+      :style="{ width: `${width}px` }"
     >
       <div
-        class="size-full overflow-hidden rounded-lg border border-interface-stroke"
+        data-testid="agent-panel-resize-handle"
+        class="agent-resize-handle absolute top-0 left-0 z-10 h-full w-[5px] cursor-col-resize"
+        :data-resizing="isResizing"
+        @pointerdown="onResizeStart"
+        @lostpointercapture="isResizing = false"
+      />
+      <!-- Against the canvas the panel floats as a card and the graph shows
+           through its gutter. An opaque neighbour needs a surface and a seam. -->
+      <div
+        data-testid="docked-agent-panel-shell"
+        :class="
+          cn(
+            'size-full p-2',
+            hasOpaqueNeighbor &&
+              'bg-agent-surface border-l border-interface-stroke'
+          )
+        "
       >
-        <AgentPanelRoot />
+        <div
+          class="size-full overflow-hidden rounded-lg border border-interface-stroke"
+        >
+          <AgentPanelRoot />
+        </div>
       </div>
     </div>
-  </div>
+  </Transition>
 </template>
 
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
 import { useEventListener } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
 import { defineAsyncComponent, defineComponent, h, ref } from 'vue'
@@ -63,6 +74,11 @@ const AgentPanelRoot = defineAsyncComponent({
     fail()
   }
 })
+
+/** Set by the parent that lays out both this panel and its left neighbour. */
+const { hasOpaqueNeighbor = false } = defineProps<{
+  hasOpaqueNeighbor?: boolean
+}>()
 
 const agentPanelStore = useAgentPanelStore()
 const { isVisible: docked, width } = storeToRefs(agentPanelStore)

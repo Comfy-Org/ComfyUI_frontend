@@ -7,15 +7,9 @@
       <div
         v-if="workflowTabsPosition === 'Topbar'"
         data-testid="topbar-workflow-tabs"
-        class="workflow-tabs-container pointer-events-auto relative h-(--workflow-tabs-height) w-full"
+        class="workflow-tabs-container pointer-events-auto relative flex h-(--workflow-tabs-height) w-full items-center border-b border-interface-stroke bg-comfy-menu-bg shadow-interface"
       >
-        <div
-          class="flex h-full items-center border-b border-interface-stroke bg-comfy-menu-bg shadow-interface"
-        >
-          <WorkflowTabs />
-          <TopbarBadges />
-          <TopbarSubscribeButton />
-        </div>
+        <WorkflowTabs />
       </div>
     </template>
     <template #side-toolbar>
@@ -40,8 +34,12 @@
       <AppBuilder v-if="isBuilderMode" />
       <NodePropertiesPanel v-else />
     </template>
-    <template v-if="showUI" #agent-panel>
-      <component :is="DockedAgentPanel" v-if="agentDocked && !linearMode" />
+    <template v-if="showUI" #agent-panel="{ hasOpaqueNeighbor }">
+      <component
+        :is="DockedAgentPanel"
+        v-if="agentPanelMounted && !linearMode"
+        :has-opaque-neighbor="hasOpaqueNeighbor"
+      />
     </template>
     <template #graph-canvas-panel>
       <div
@@ -56,11 +54,11 @@
            the minimap setting off, so this reacts the same way it does to the
            user's own toggle - and leaves them free to switch it back on while
            they pick. -->
-      <MiniMap
-        v-if="
-          comfyAppReady && minimapEnabled && betaMenuEnabled && !isBuilderMode
-        "
-        class="pointer-events-auto"
+      <MiniMap v-if="minimapVisible" class="pointer-events-auto" />
+      <AgentEntryOrb
+        v-if="showUI && !isBuilderMode && !linearMode"
+        class="pointer-events-auto absolute right-0 z-900"
+        :style="{ bottom: minimapVisible ? `${minimapHeight + 8}px` : '0' }"
       />
       <NodeSelectionModeBanner />
     </template>
@@ -148,6 +146,7 @@ import VueNodeSwitchPopup from '@/components/builder/VueNodeSwitchPopup.vue'
 import ExtensionSlot from '@/components/common/ExtensionSlot.vue'
 import DomWidgets from '@/components/graph/DomWidgets.vue'
 import GraphCanvasMenu from '@/components/graph/GraphCanvasMenu.vue'
+import AgentEntryOrb from '@/workbench/extensions/agent/components/agent/AgentEntryOrb.vue'
 import { createNodeProgressCanvasSync } from '@/components/graph/nodeProgressCanvasSync'
 import LinkOverlayCanvas from '@/components/graph/LinkOverlayCanvas.vue'
 import NodeTooltip from '@/components/graph/NodeTooltip.vue'
@@ -160,8 +159,6 @@ import NodePropertiesPanel from '@/components/rightSidePanel/RightSidePanel.vue'
 import { useAgentDockMount } from '@/workbench/extensions/agent/composables/useAgentDockMount'
 import NodeSearchboxPopover from '@/components/searchbox/NodeSearchBoxPopover.vue'
 import SideToolbar from '@/components/sidebar/SideToolbar.vue'
-import TopbarBadges from '@/components/topbar/TopbarBadges.vue'
-import TopbarSubscribeButton from '@/components/topbar/TopbarSubscribeButton.vue'
 import WorkflowTabs from '@/components/topbar/WorkflowTabs.vue'
 import { useChainCallback } from '@/composables/functional/useChainCallback'
 import { useGroupContextMenu } from '@/composables/graph/useGroupContextMenu'
@@ -195,6 +192,7 @@ import TransformPane from '@/renderer/core/layout/transform/TransformPane.vue'
 import type { StartupOutcome } from '@/platform/workflow/persistence/base/draftTypes'
 import { useFirstRunEntry } from '@/renderer/extensions/firstRunTour/gettingStarted/firstRunEntry'
 import MiniMap from '@/renderer/extensions/minimap/MiniMap.vue'
+import { useMinimap } from '@/renderer/extensions/minimap/composables/useMinimap'
 import LGraphNode from '@/renderer/extensions/vueNodes/components/LGraphNode.vue'
 import { UnauthorizedError } from '@/scripts/api'
 import { app as comfyApp } from '@/scripts/app'
@@ -240,7 +238,7 @@ const nodeProgressCanvasSync = createNodeProgressCanvasSync(
   workflowStore.nodeToNodeLocatorId
 )
 const { linearMode } = storeToRefs(canvasStore)
-const { docked: agentDocked, DockedAgentPanel } = useAgentDockMount()
+const { everDocked: agentPanelMounted, DockedAgentPanel } = useAgentDockMount()
 const executionStore = useExecutionStore()
 const executionErrorStore = useExecutionErrorStore()
 const toastStore = useToastStore()
@@ -275,6 +273,15 @@ const showUI = computed(
 )
 
 const minimapEnabled = computed(() => settingStore.get('Comfy.Minimap.Visible'))
+
+const { height: minimapHeight } = useMinimap()
+const minimapVisible = computed(
+  () =>
+    comfyAppReady.value &&
+    minimapEnabled.value &&
+    betaMenuEnabled.value &&
+    !isBuilderMode.value
+)
 
 // Feature flags
 const { shouldRenderVueNodes } = useVueFeatureFlags()
