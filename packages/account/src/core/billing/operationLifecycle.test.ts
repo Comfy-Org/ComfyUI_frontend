@@ -625,6 +625,31 @@ describe('createBillingOperationLifecycle', () => {
         code: 'NOT_AUTHENTICATED'
       })
     })
+
+    it('keeps the pointer across a role change so recover re-adopts the operation', async () => {
+      const session = fakeSession()
+      const { lifecycle, storage } = harness({
+        session,
+        answers: [httpOk(opStatus()), httpOk(opStatus())]
+      })
+      await lifecycle.begin('topup', issued())
+      await flush()
+
+      session.moveTo(authenticated(credential({ role: 'member' })))
+
+      expect(lifecycle.get('op-1')).toMatchObject({ phase: 'superseded' })
+      expect(storedPointer(storage)).toMatchObject({ operationId: 'op-1' })
+
+      await expect(lifecycle.recover()).resolves.toMatchObject({
+        status: 'ok',
+        value: {
+          id: 'op-1',
+          kind: 'topup',
+          phase: 'pending',
+          scope: { userId: 'uid-1', workspaceId: 'ws-1', role: 'member' }
+        }
+      })
+    })
   })
 
   describe('recover', () => {

@@ -294,6 +294,10 @@ export function createBillingOperationLifecycle(
   const listeners = new Set<(state: BillingOperationState) => void>()
   const lifetime = { disposed: false }
 
+  // Role is part of the scope, so a demotion mid-payment supersedes the
+  // operation and this tab stops observing it. The pointer key omits role on
+  // purpose: the charge still belongs to (user, workspace), so `recover` finds
+  // it again under the new role. Keying the pointer by role would strand it.
   const scopeTracker = createBillingScopeTracker(session, () => {
     for (const record of operations.values()) {
       dispatch(record, { type: 'superseded' })
