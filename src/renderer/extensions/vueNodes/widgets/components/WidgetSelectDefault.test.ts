@@ -1,10 +1,11 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import type { SimplifiedWidget, WidgetValue } from '@/types/simplifiedWidget'
+import { provideComboOptionPreviewSource } from '@/lib/litegraph/src/widgets/comboOptionPreview'
 
 import WidgetSelectDefault from './WidgetSelectDefault.vue'
 
@@ -34,6 +35,7 @@ describe('WidgetSelectDefault', () => {
     vi.useRealTimers()
   })
 
+  afterEach(() => provideComboOptionPreviewSource(undefined))
   const createWidget = (
     values: unknown,
     options: Record<string, unknown> = {}
@@ -87,6 +89,24 @@ describe('WidgetSelectDefault', () => {
   }
 
   describe('option sources', () => {
+    it('delegates option hover previews without exposing the menu to extensions', async () => {
+      const show = vi.fn()
+      const hide = vi.fn()
+      provideComboOptionPreviewSource({ show, hide })
+      const { user } = renderComponent(
+        createWidget(['models/demo.safetensors'])
+      )
+
+      await openDropdown(user)
+      const option = screen.getByRole('option', {
+        name: 'models/demo.safetensors'
+      })
+      await user.hover(option)
+      expect(show).toHaveBeenCalledWith('models/demo.safetensors', option)
+      await user.unhover(option)
+      expect(hide).toHaveBeenCalled()
+    })
+
     it('resolves options from a plain array', async () => {
       const { user } = renderComponent(createWidget(['a', 'b', 'c']))
 
