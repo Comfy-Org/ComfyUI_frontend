@@ -1,0 +1,7 @@
+diff --git a/browser_tests/tests/example.spec.ts b/browser_tests/tests/example.spec.ts
+index 1111111..2222222 100644
+--- a/browser_tests/tests/example.spec.ts
++++ b/browser_tests/tests/example.spec.ts
+@@ -1,0 +2,2 @@
++test('works', async ({ comfyPage }) => {
++  if (isUnsupported) test.skip('flaky on webkit')
