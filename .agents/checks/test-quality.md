@@ -36,3 +36,40 @@ Rules:
 - Browser/E2E tests use **Playwright** in `browser_tests/` — run with `pnpm test:browser:local`
 - Mock composables using the singleton factory pattern inside `vi.mock()` — see `docs/testing/unit-testing.md` for the pattern
 - Never use `any` in test code either — proper typing applies to tests too
+
+## CRDT / agent-follower test oracles
+
+Ported from `comfy-multi-player`'s `.agents/checks/test-quality.md` and
+`convergence-idempotency.md` (the shared op/CRDT package `comfy-multi-player`
+is the canonical source; these are the lessons that apply on this side of the
+follower boundary — see [ADR 0025](../../docs/adr/0025-in-app-agent-crdt-follower-and-distribution.md)
+and [ADR 0003](../../docs/adr/0003-crdt-based-layout-system.md)). Applies to
+tests touching `useAgentCrdtFollower`, the projector, `DocFrameClient`, or any
+code that applies/rejects ops or renders doc state.
+
+1. **Rejection oracle: bytes, not projection.** A test asserting a rejected
+   op left the doc unchanged must compare `Y.encodeStateAsUpdate` bytes
+   before/after (plus that the op's id is absent from the applied-ops
+   ledger), not a `project(doc)` snapshot — the projection does not render
+   ledger/stamp state, so a rejection that already wrote into the ledger
+   reads as unchanged under a projection diff while the document has
+   genuinely diverged. Also assert a trailing valid op after a rejected one
+   in the same batch does not apply (abort-remainder).
+2. **Accepted ops are the opposite case.** For an **accepted** op (including
+   a delete-wins or last-write-wins no-op that still consumes an op id), the
+   default observable is the projection, not raw bytes — those ops
+   deliberately do not leave the encoded doc byte-identical. Flag a byte
+   assertion offered for an accepted-op property as readily as a projection
+   assertion offered for a rejection.
+3. **Both arrival orders.** An op-semantics change needs a convergence test
+   that applies the same op set in both arrival orders and asserts the
+   resulting projections match, plus a double-apply test asserting a
+   duplicate `op_id` is a true no-op. One happy-path fixture is not
+   convergence proof.
+4. **Probe validity before trusting a "no difference" result.** Before
+   treating a passing rejection/idempotency test as proof, confirm the
+   probe can actually fail: revert the guarded behavior (one mutant per
+   change), rerun, and paste the actual red output (test name + error, or
+   exit code) — a claim with no pasted failure is unproven, not passing.
+   Then re-check the assertion is on an observable that could express the
+   violation at all (see rule 1) before trusting a green run either way.
