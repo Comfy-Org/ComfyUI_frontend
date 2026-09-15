@@ -53,7 +53,11 @@ export function useNodeHelpContent(
     helpContent.value = ''
     error.value = null
 
-    if (!node) return
+    if (!node) {
+      currentRequest = null
+      isLoading.value = false
+      return
+    }
 
     isLoading.value = true
     const request = (currentRequest = nodeHelpService.fetchNodeHelp(
