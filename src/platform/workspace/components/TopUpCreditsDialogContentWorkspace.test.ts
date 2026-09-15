@@ -280,7 +280,7 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
       )
     )
     const phases = (
-      useTelemetry()?.trackCheckoutJourneyEvent.mock.calls ?? []
+      vi.mocked(useTelemetry()?.trackCheckoutJourneyEvent)?.mock.calls ?? []
     ).map(([event]) => event.phase)
     expect(phases.indexOf('submitted')).toBeLessThan(
       phases.indexOf('operation_linked')
@@ -289,9 +289,9 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
 
     // One denominator: every phase of a top-up must carry the same journey.
     const journeyIds = new Set(
-      (useTelemetry()?.trackCheckoutJourneyEvent.mock.calls ?? []).map(
-        ([event]) => event.checkout_journey_id
-      )
+      (
+        vi.mocked(useTelemetry()?.trackCheckoutJourneyEvent)?.mock.calls ?? []
+      ).map(([event]) => event.checkout_journey_id)
     )
     expect(journeyIds.size).toBe(1)
   })
@@ -327,7 +327,7 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
     await waitFor(() => expect(mockFetchBalance).toHaveBeenCalled())
 
     const phases = (
-      useTelemetry()?.trackCheckoutJourneyEvent.mock.calls ?? []
+      vi.mocked(useTelemetry()?.trackCheckoutJourneyEvent)?.mock.calls ?? []
     ).map(([event]) => event.phase)
     expect(phases).toContain('submitted')
     expect(phases).not.toContain('operation_linked')

@@ -1,4 +1,3 @@
-import { useTelemetry } from '@/platform/telemetry'
 import { render, screen, waitFor } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
@@ -25,10 +24,6 @@ vi.mock(import('@comfyorg/account/webviewDetection'), () => ({
   isEmbeddedWebView: () => false
 }))
 vi.mock(import('@/platform/telemetry'))
-
-beforeEach(() => {
-  vi.mocked(useTelemetry).mockReturnValue(null)
-})
 
 const inChina = vi.hoisted(() => ({
   value: false,

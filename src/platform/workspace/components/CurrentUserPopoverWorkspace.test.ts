@@ -1,4 +1,3 @@
-import { useTelemetry } from '@/platform/telemetry'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { getActivePinia } from 'pinia'
 import { render, screen, waitFor } from '@testing-library/vue'
@@ -129,10 +128,6 @@ vi.mock<unknown>(import('@/services/dialogService'), () => ({
 }))
 
 vi.mock(import('@/platform/telemetry'))
-
-beforeEach(() => {
-  vi.mocked(useTelemetry).mockReturnValue(null)
-})
 
 vi.mock<unknown>(import('@/composables/useExternalLink'), () => ({
   useExternalLink: () => ({

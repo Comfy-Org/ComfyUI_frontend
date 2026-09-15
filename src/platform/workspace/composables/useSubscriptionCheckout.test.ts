@@ -1,5 +1,5 @@
 import { render } from '@testing-library/vue'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed } from 'vue'
 import { billingOperation } from './billingOperationTestUtils'
 import type { BillingOperation } from './billingOperationTestUtils'
@@ -536,9 +536,9 @@ describe('useSubscriptionCheckout', () => {
 
   describe('checkout journey instrumentation', () => {
     function journeyPhases() {
-      return (useTelemetry()?.trackCheckoutJourneyEvent.mock.calls ?? []).map(
-        ([event]) => event.phase
-      )
+      return (
+        vi.mocked(useTelemetry()?.trackCheckoutJourneyEvent)?.mock.calls ?? []
+      ).map(([event]) => event.phase)
     }
 
     it('emits entered, submitted, and operation_linked across a subscribe', async () => {
@@ -566,7 +566,7 @@ describe('useSubscriptionCheckout', () => {
       )
 
       const events = (
-        useTelemetry()?.trackCheckoutJourneyEvent.mock.calls ?? []
+        vi.mocked(useTelemetry()?.trackCheckoutJourneyEvent)?.mock.calls ?? []
       ).map(([event]) => event)
       const opLinked = events.find(
         (event) => event.phase === 'operation_linked'
@@ -651,7 +651,7 @@ describe('useSubscriptionCheckout', () => {
       await checkout.handleConfirmTransition()
 
       const events = (
-        useTelemetry()?.trackCheckoutJourneyEvent.mock.calls ?? []
+        vi.mocked(useTelemetry()?.trackCheckoutJourneyEvent)?.mock.calls ?? []
       ).map(([event]) => event)
       expect(events.some((event) => event.phase === 'operation_linked')).toBe(
         false
@@ -662,12 +662,12 @@ describe('useSubscriptionCheckout', () => {
       await submitRejectedPreview('PREVIEW_FAILED')
 
       const events = (
-        useTelemetry()?.trackCheckoutJourneyEvent.mock.calls ?? []
+        vi.mocked(useTelemetry()?.trackCheckoutJourneyEvent)?.mock.calls ?? []
       ).map(([event]) => event)
       const entered = events.find((event) => event.phase === 'entered')
       const failed = events.find((event) => event.phase === 'preview_failed')
-      expect(entered).toBeDefined()
-      expect(failed).toBeDefined()
+      assert.exists(entered)
+      assert.exists(failed)
       expect(events.some((event) => event.phase === 'operation_linked')).toBe(
         false
       )

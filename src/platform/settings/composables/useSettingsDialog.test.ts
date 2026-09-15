@@ -1,4 +1,3 @@
-import { useTelemetry } from '@/platform/telemetry'
 import { useDialogStore } from '@/stores/dialogStore'
 /**
  * Settings dialog migration regression net: `useSettingsDialog().show()` must
@@ -22,10 +21,6 @@ vi.mock(import('@/i18n'), () => ({
 }))
 
 vi.mock(import('@/platform/telemetry'))
-
-beforeEach(() => {
-  vi.mocked(useTelemetry).mockReturnValue(null)
-})
 
 vi.mock<unknown>(import('@/composables/billing/useBillingContext'), () => ({
   useBillingContext: () => ({
