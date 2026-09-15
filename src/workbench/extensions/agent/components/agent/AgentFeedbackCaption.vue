@@ -9,7 +9,7 @@ const { t } = useI18n()
 <template>
   <button
     type="button"
-    class="text-agent-fg-muted hover:text-agent-fg focus-visible:ring-agent-accent -mt-1.5 mb-0 min-h-6 w-full cursor-pointer bg-transparent py-1 text-center text-xs focus-visible:ring-2 focus-visible:outline-none"
+    class="-mt-1.5 mb-0 min-h-6 w-full cursor-pointer bg-transparent py-1 text-center text-xs text-muted-foreground hover:text-base-foreground focus-visible:ring-2 focus-visible:ring-primary-background focus-visible:outline-none"
     @click="openFeedbackDialog('agent-panel')"
   >
     {{ t('agent.feedbackCaption') }}
