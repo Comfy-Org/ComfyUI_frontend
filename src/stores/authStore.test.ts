@@ -142,11 +142,6 @@ describe('useAuthStore', () => {
 
     mockFeatureFlags.unifiedCloudAuthEnabled = false
 
-    // Setup dialog service mock
-    vi.mocked(useDialogService, { partial: true }).mockReturnValue({
-      showErrorDialog: vi.fn()
-    })
-
     // Mock useFirebaseAuth to return our mock auth object
     vi.mocked(vuefire.useFirebaseAuth).mockReturnValue(
       mockAuth as Partial<
@@ -2369,10 +2364,6 @@ describe('useAuthStore in local/desktop distribution', () => {
 
     vi.stubGlobal('fetch', mockFetch)
     mockFeatureFlags.unifiedCloudAuthEnabled = false
-
-    vi.mocked(useDialogService, { partial: true }).mockReturnValue({
-      showErrorDialog: vi.fn()
-    })
 
     vi.mocked(vuefire.useFirebaseAuth).mockReturnValue(
       mockAuth as Partial<

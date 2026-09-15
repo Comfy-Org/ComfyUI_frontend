@@ -1,3 +1,4 @@
+import { useDialogService } from '@/services/dialogService'
 import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore' // eslint-disable-line import-x/no-restricted-paths
 import { useWorkflowDraftStoreV2 } from '@/platform/workflow/persistence/stores/workflowDraftStoreV2'
@@ -89,16 +90,7 @@ function makeWorkflowDataWithId(id: string): ComfyWorkflowJSON {
   return { ...makeWorkflowData(), id }
 }
 
-const { mockConfirm } = vi.hoisted(() => ({
-  mockConfirm: vi.fn()
-}))
-
-vi.mock<unknown>(import('@/services/dialogService'), () => ({
-  useDialogService: () => ({
-    prompt: vi.fn(),
-    confirm: mockConfirm
-  })
-}))
+vi.mock(import('@/services/dialogService'))
 
 vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: {
@@ -1795,7 +1787,7 @@ describe('useWorkflowService', () => {
       workflow.isModified = true
       Object.defineProperty(workflow, 'isTemporary', { get: () => true })
       vi.spyOn(workflow, 'promptSave').mockResolvedValue(null)
-      mockConfirm.mockResolvedValue(true)
+      vi.mocked(useDialogService().confirm).mockResolvedValue(true)
 
       const closed = await service.closeWorkflow(workflow)
 
@@ -2538,7 +2530,7 @@ describe('useWorkflowService', () => {
         initialMode: 'app'
       })
       vi.spyOn(workflowStore, 'getWorkflowByPath').mockReturnValue(source)
-      mockConfirm.mockResolvedValue(true)
+      vi.mocked(useDialogService().confirm).mockResolvedValue(true)
 
       await service.saveWorkflowAs(source, {
         filename: 'test',
@@ -2556,7 +2548,7 @@ describe('useWorkflowService', () => {
         initialMode: 'app'
       })
       vi.spyOn(workflowStore, 'getWorkflowByPath').mockReturnValue(source)
-      mockConfirm.mockResolvedValue(true)
+      vi.mocked(useDialogService().confirm).mockResolvedValue(true)
 
       await service.saveWorkflowAs(source, {
         filename: 'test',
@@ -2576,7 +2568,7 @@ describe('useWorkflowService', () => {
         initialMode: 'app'
       })
       vi.spyOn(workflowStore, 'getWorkflowByPath').mockReturnValue(source)
-      mockConfirm.mockResolvedValue(true)
+      vi.mocked(useDialogService().confirm).mockResolvedValue(true)
 
       await service.saveWorkflowAs(source, {
         filename: 'test',
@@ -2817,11 +2809,11 @@ describe('useWorkflowService', () => {
       const existing = createSaveableWorkflow('workflows/test.app.json')
       vi.spyOn(workflowStore, 'getWorkflowByPath').mockReturnValue(existing)
       vi.spyOn(workflowStore, 'deleteWorkflow').mockResolvedValue()
-      mockConfirm.mockResolvedValue(true)
+      vi.mocked(useDialogService().confirm).mockResolvedValue(true)
 
       await service.saveWorkflow(workflow)
 
-      expect(mockConfirm).toHaveBeenCalled()
+      expect(useDialogService().confirm).toHaveBeenCalled()
       expect(workflowStore.renameWorkflow).toHaveBeenCalledWith(
         workflow,
         'workflows/test.app.json'
@@ -2835,11 +2827,11 @@ describe('useWorkflowService', () => {
 
       const existing = createSaveableWorkflow('workflows/test.app.json')
       vi.spyOn(workflowStore, 'getWorkflowByPath').mockReturnValue(existing)
-      mockConfirm.mockResolvedValue(false)
+      vi.mocked(useDialogService().confirm).mockResolvedValue(false)
 
       await service.saveWorkflow(workflow)
 
-      expect(mockConfirm).toHaveBeenCalled()
+      expect(useDialogService().confirm).toHaveBeenCalled()
       expect(workflowStore.renameWorkflow).not.toHaveBeenCalled()
       expect(workflowStore.saveWorkflow).toHaveBeenCalledWith(workflow)
     })

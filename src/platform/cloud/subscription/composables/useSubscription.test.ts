@@ -1,3 +1,4 @@
+import { useDialogService } from '@/services/dialogService'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useAuthStore } from '@/stores/authStore'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -10,7 +11,7 @@ const {
   mockIsLoggedIn,
   mockReportError,
   mockAccessBillingPortal,
-  mockShowSubscriptionRequiredDialog,
+
   mockGetAuthHeader,
   mockGetCheckoutAttribution,
   mockTelemetry,
@@ -30,7 +31,7 @@ const {
   mockSetWorkspaceBillingRail: vi.fn(),
   mockReportError: vi.fn(),
   mockAccessBillingPortal: vi.fn(),
-  mockShowSubscriptionRequiredDialog: vi.fn(),
+
   mockGetAuthHeader: vi.fn(() =>
     Promise.resolve({ Authorization: 'Bearer test-token' as const })
   ),
@@ -152,11 +153,7 @@ vi.mock<unknown>(import('@/platform/workspace/api/workspaceApi'), () => ({
   }
 }))
 
-vi.mock<unknown>(import('@/services/dialogService'), () => ({
-  useDialogService: vi.fn(() => ({
-    showSubscriptionRequiredDialog: mockShowSubscriptionRequiredDialog
-  }))
-}))
+vi.mock(import('@/services/dialogService'))
 
 // Mock fetch
 global.fetch = vi.fn()
@@ -837,7 +834,9 @@ describe('useSubscription', () => {
 
       await requireActiveSubscription()
 
-      expect(mockShowSubscriptionRequiredDialog).not.toHaveBeenCalled()
+      expect(
+        useDialogService().showSubscriptionRequiredDialog
+      ).not.toHaveBeenCalled()
     })
 
     it('should show dialog when subscription is inactive', async () => {
@@ -851,7 +850,9 @@ describe('useSubscription', () => {
 
       await requireActiveSubscription()
 
-      expect(mockShowSubscriptionRequiredDialog).toHaveBeenCalled()
+      expect(
+        useDialogService().showSubscriptionRequiredDialog
+      ).toHaveBeenCalled()
     })
   })
 

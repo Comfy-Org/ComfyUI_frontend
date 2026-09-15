@@ -1,3 +1,4 @@
+import { useDialogService } from '@/services/dialogService'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
@@ -83,14 +84,8 @@ vi.mock<unknown>(import('@/scripts/api'), () => ({
 }))
 
 const downloadBlobMock = vi.fn()
-const dialogServiceMock = {
-  showErrorDialog: vi.fn(),
-  showExecutionErrorDialog: vi.fn(),
-  prompt: vi.fn()
-}
-vi.mock<unknown>(import('@/services/dialogService'), () => ({
-  useDialogService: () => dialogServiceMock
-}))
+
+vi.mock(import('@/services/dialogService'))
 
 const litegraphServiceMock = {
   addNodeOnGraph: vi.fn(),
@@ -156,7 +151,6 @@ describe('useJobMenu', () => {
     queueStoreMock = useQueueStore()
     currentItem = ref<JobListItem | null>(null)
     vi.mocked(settingStoreMock.get).mockReturnValue(false)
-    dialogServiceMock.prompt.mockResolvedValue(undefined)
     litegraphServiceMock.getCanvasCenter.mockReturnValue([100, 200])
     litegraphServiceMock.addNodeOnGraph.mockReturnValue(null)
     vi.mocked(workflowStoreMock.createTemporary).mockImplementation(
@@ -227,7 +221,7 @@ describe('useJobMenu', () => {
 
     await expect(openJobWorkflow()).resolves.toBeUndefined()
 
-    expect(dialogServiceMock.showErrorDialog).toHaveBeenCalledWith(
+    expect(useDialogService().showErrorDialog).toHaveBeenCalledWith(
       loadError,
       expect.objectContaining({
         reportType: 'queueOpenWorkflowError'
@@ -334,11 +328,11 @@ describe('useJobMenu', () => {
     const entry = findActionEntry(jobMenuEntries.value, 'report-error')
     await entry?.onClick?.()
 
-    expect(dialogServiceMock.showExecutionErrorDialog).toHaveBeenCalledTimes(1)
-    expect(dialogServiceMock.showExecutionErrorDialog).toHaveBeenCalledWith(
+    expect(useDialogService().showExecutionErrorDialog).toHaveBeenCalledTimes(1)
+    expect(useDialogService().showExecutionErrorDialog).toHaveBeenCalledWith(
       executionError
     )
-    expect(dialogServiceMock.showErrorDialog).not.toHaveBeenCalled()
+    expect(useDialogService().showErrorDialog).not.toHaveBeenCalled()
   })
 
   it('falls back to simple error dialog when no execution_error', async () => {
@@ -356,12 +350,12 @@ describe('useJobMenu', () => {
     const entry = findActionEntry(jobMenuEntries.value, 'report-error')
     await entry?.onClick?.()
 
-    expect(dialogServiceMock.showExecutionErrorDialog).not.toHaveBeenCalled()
-    expect(dialogServiceMock.showErrorDialog).toHaveBeenCalledTimes(1)
-    const [errorArg, optionsArg] =
-      dialogServiceMock.showErrorDialog.mock.calls[0]
+    expect(useDialogService().showExecutionErrorDialog).not.toHaveBeenCalled()
+    expect(useDialogService().showErrorDialog).toHaveBeenCalledTimes(1)
+    const [errorArg, optionsArg] = vi.mocked(useDialogService().showErrorDialog)
+      .mock.calls[0]
     expect(errorArg).toBeInstanceOf(Error)
-    expect(errorArg.message).toBe('Job failed with error')
+    expect(errorArg).toHaveProperty('message', 'Job failed with error')
     expect(optionsArg).toEqual({ reportType: 'queueJobError' })
   })
 
@@ -381,8 +375,8 @@ describe('useJobMenu', () => {
     await reportEntry?.onClick?.()
 
     expect(copyToClipboardMock).not.toHaveBeenCalled()
-    expect(dialogServiceMock.showErrorDialog).not.toHaveBeenCalled()
-    expect(dialogServiceMock.showExecutionErrorDialog).not.toHaveBeenCalled()
+    expect(useDialogService().showErrorDialog).not.toHaveBeenCalled()
+    expect(useDialogService().showExecutionErrorDialog).not.toHaveBeenCalled()
   })
 
   const previewCases = [
@@ -614,7 +608,7 @@ describe('useJobMenu', () => {
     const entry = findActionEntry(jobMenuEntries.value, 'export-workflow')
     await entry?.onClick?.()
 
-    expect(dialogServiceMock.prompt).not.toHaveBeenCalled()
+    expect(useDialogService().prompt).not.toHaveBeenCalled()
     expect(downloadBlobMock).toHaveBeenCalledTimes(1)
     const [filename, blob] = downloadBlobMock.mock.calls[0]
     expect(filename).toBe('Job 7.json')
@@ -625,7 +619,7 @@ describe('useJobMenu', () => {
 
   it('prompts for filename when setting enabled', async () => {
     vi.mocked(settingStoreMock.get).mockReturnValue(true)
-    dialogServiceMock.prompt.mockResolvedValue('custom-name')
+    vi.mocked(useDialogService().prompt).mockResolvedValue('custom-name')
     getJobWorkflowMock.mockResolvedValue({})
     const { jobMenuEntries } = mountJobMenu()
     setCurrentItem(
@@ -638,7 +632,7 @@ describe('useJobMenu', () => {
     const entry = findActionEntry(jobMenuEntries.value, 'export-workflow')
     await entry?.onClick?.()
 
-    expect(dialogServiceMock.prompt).toHaveBeenCalledWith({
+    expect(useDialogService().prompt).toHaveBeenCalledWith({
       title: expect.stringContaining('workflowService.exportWorkflow'),
       message: expect.stringContaining('workflowService.enterFilename'),
       defaultValue: 'Job job-1.json'
@@ -649,7 +643,7 @@ describe('useJobMenu', () => {
 
   it('keeps existing json extension when exporting workflow', async () => {
     vi.mocked(settingStoreMock.get).mockReturnValue(true)
-    dialogServiceMock.prompt.mockResolvedValue('existing.json')
+    vi.mocked(useDialogService().prompt).mockResolvedValue('existing.json')
     getJobWorkflowMock.mockResolvedValue({ foo: 'bar' })
     const { jobMenuEntries } = mountJobMenu()
     setCurrentItem(
@@ -669,7 +663,7 @@ describe('useJobMenu', () => {
 
   it('abandons export when prompt cancelled', async () => {
     vi.mocked(settingStoreMock.get).mockReturnValue(true)
-    dialogServiceMock.prompt.mockResolvedValue('')
+    vi.mocked(useDialogService().prompt).mockResolvedValue('')
     getJobWorkflowMock.mockResolvedValue({})
     const { jobMenuEntries } = mountJobMenu()
     setCurrentItem(
