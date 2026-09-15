@@ -1,3 +1,4 @@
+import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 import { fromAny } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -40,18 +41,10 @@ vi.mock<unknown>(import('@/services/dialogService'), () => ({
 
 const mockCanTopUp = vi.hoisted(() => ({ value: true }))
 const mockCanSubscribeSelfServe = vi.hoisted(() => ({ value: false }))
-const mockInitialize = vi.hoisted(() => vi.fn(async (): Promise<void> => {}))
 
-vi.mock<unknown>(
-  import('@/platform/workspace/composables/useBillingCapabilities'),
-  () => ({
-    useBillingCapabilities: () => ({
-      canTopUp: mockCanTopUp,
-      canSubscribeSelfServe: mockCanSubscribeSelfServe,
-      initialize: mockInitialize
-    })
-  })
-)
+vi.mock(import('@/platform/workspace/composables/useBillingCapabilities'))
+
+let capabilities: ReturnType<typeof useBillingCapabilities>
 
 const mockTrackAddApiCreditButtonClicked = vi.hoisted(() => vi.fn())
 
@@ -63,10 +56,21 @@ vi.mock<unknown>(import('@/platform/telemetry'), () => ({
 
 describe('useTopUpUrlLoader', () => {
   beforeEach(() => {
+    capabilities = useBillingCapabilities()
+    vi.spyOn(capabilities.canTopUp, 'value', 'get').mockImplementation(
+      () => mockCanTopUp.value
+    )
+    vi.spyOn(
+      capabilities.canSubscribeSelfServe,
+      'value',
+      'get'
+    ).mockImplementation(() => mockCanSubscribeSelfServe.value)
+    vi.mocked(useBillingCapabilities).mockReturnValue(capabilities)
+
     mockRouteQuery.value = {}
     mockCanTopUp.value = true
     mockCanSubscribeSelfServe.value = false
-    mockInitialize.mockResolvedValue(undefined)
+
     mockShowTopUpCreditsDialog.mockResolvedValue(undefined)
     preservedQueryMocks.mergePreservedQueryIntoQuery.mockReturnValue(null)
   })
@@ -106,7 +110,7 @@ describe('useTopUpUrlLoader', () => {
     let resolveCapabilities!: () => void
     mockRouteQuery.value = { topup: '1' }
     mockCanTopUp.value = false
-    mockInitialize.mockImplementationOnce(
+    vi.mocked(capabilities.initialize).mockImplementationOnce(
       () =>
         new Promise<void>((resolve) => {
           resolveCapabilities = resolve
@@ -193,7 +197,7 @@ describe('useTopUpUrlLoader', () => {
     expect(preservedQueryMocks.clearPreservedQuery).toHaveBeenCalledWith(
       'topup'
     )
-    expect(mockInitialize).not.toHaveBeenCalled()
+    expect(capabilities.initialize).not.toHaveBeenCalled()
   })
 
   it('strips but does not open for a non-string param', async () => {

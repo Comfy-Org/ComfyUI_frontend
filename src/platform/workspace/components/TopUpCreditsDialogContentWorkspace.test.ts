@@ -3,7 +3,8 @@ import { useDialogStore } from '@/stores/dialogStore'
 import { render, screen, waitFor } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { nextTick } from 'vue'
+import { computed, nextTick, ref } from 'vue'
+import type { Ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
@@ -12,6 +13,7 @@ import { WorkspaceApiError } from '@/platform/workspace/api/workspaceApi'
 import type { CreateTopupResponse } from '@/platform/workspace/api/workspaceApi'
 import { billingOperation } from '@/platform/workspace/composables/billingOperationTestUtils'
 import type { BillingOperation } from '@/platform/workspace/composables/billingOperationTestUtils'
+import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 
 import TopUpCreditsDialogContentWorkspace from './TopUpCreditsDialogContentWorkspace.vue'
 
@@ -31,9 +33,7 @@ const mockToastAdd = vi.fn()
 
 const mockTrackTopUpPurchase = vi.fn()
 const mockTrackBillingEvent = vi.fn()
-const mockCanTopUp = vi.hoisted(() => ({
-  ref: undefined as { value: boolean } | undefined
-}))
+let canTopUp: Ref<boolean>
 const mockDistributionTypes = vi.hoisted(() => ({ isCloud: true }))
 
 vi.mock(import('@/platform/distribution/types'), () => mockDistributionTypes)
@@ -64,16 +64,7 @@ vi.mock<unknown>(import('@/composables/billing/useBillingContext'), () => ({
   })
 }))
 
-vi.mock<unknown>(
-  import('@/platform/workspace/composables/useBillingCapabilities'),
-  async () => {
-    const { ref } = await import('vue')
-    mockCanTopUp.ref = ref(true)
-    return {
-      useBillingCapabilities: () => ({ canTopUp: mockCanTopUp.ref })
-    }
-  }
-)
+vi.mock(import('@/platform/workspace/composables/useBillingCapabilities'))
 
 vi.mock<unknown>(
   import('@/platform/settings/composables/useSettingsDialog'),
@@ -145,11 +136,6 @@ function renderDialog() {
   })
 }
 
-function setCanTopUp(canTopUp: boolean) {
-  if (!mockCanTopUp.ref) throw new Error('Capability mock not initialized')
-  mockCanTopUp.ref.value = canTopUp
-}
-
 function setIsAddingCredits(isAddingCredits: boolean) {
   Object.assign(useBillingOperationStore(), { isAddingCredits })
 }
@@ -201,8 +187,11 @@ beforeEach(() => {
 
 describe('TopUpCreditsDialogContentWorkspace', () => {
   beforeEach(() => {
+    canTopUp = ref(true)
+    const capabilities = useBillingCapabilities()
+    capabilities.canTopUp = computed(() => canTopUp.value)
+    vi.mocked(useBillingCapabilities).mockReturnValue(capabilities)
     mockDistributionTypes.isCloud = true
-    setCanTopUp(true)
     setIsAddingCredits(false)
     setTopupActionOperation(undefined)
     mockFetchBalance.mockResolvedValue(undefined)
@@ -432,7 +421,7 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
   })
 
   it('hides topup verification after permission is revoked', () => {
-    setCanTopUp(false)
+    canTopUp.value = false
     setTopupActionOperation({
       opId: 'op-action',
       status: 'pending',
@@ -447,7 +436,7 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
   })
 
   it('enters verification once permission resolves after an operation already exists', async () => {
-    setCanTopUp(false)
+    canTopUp.value = false
     setTopupActionOperation({
       opId: 'op-action',
       status: 'pending',
@@ -457,7 +446,7 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
     renderDialog()
     expect(screen.getByText('Select amount')).toBeInTheDocument()
 
-    setCanTopUp(true)
+    canTopUp.value = true
     await nextTick()
 
     expect(screen.getByText('Verify your payment')).toBeInTheDocument()
@@ -750,7 +739,7 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
   it('does not top up after the server capability is revoked', async () => {
     renderDialog()
     await clickAddCredits()
-    setCanTopUp(false)
+    canTopUp.value = false
     await nextTick()
 
     expect(screen.getByRole('button', { name: 'Pay $50.00' })).toBeDisabled()

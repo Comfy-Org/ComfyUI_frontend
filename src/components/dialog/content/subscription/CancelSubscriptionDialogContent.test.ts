@@ -1,3 +1,4 @@
+import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 import userEvent from '@testing-library/user-event'
 import { render, screen, waitFor } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -76,14 +77,7 @@ vi.mock<unknown>(import('@/composables/billing/useBillingRouting'), () => ({
 
 vi.mock(import('@/platform/distribution/types'), () => mockDistributionTypes)
 
-vi.mock<unknown>(
-  import('@/platform/workspace/composables/useBillingCapabilities'),
-  () => ({
-    useBillingCapabilities: () => ({
-      canCancel: mockCanCancel
-    })
-  })
-)
+vi.mock(import('@/platform/workspace/composables/useBillingCapabilities'))
 
 vi.mock<unknown>(
   import('@/platform/workspace/composables/useWorkspaceUI'),
@@ -142,6 +136,12 @@ function renderComponent(
 
 describe('CancelSubscriptionDialogContent', () => {
   beforeEach(() => {
+    const capabilities = useBillingCapabilities()
+    vi.spyOn(capabilities.canCancel, 'value', 'get').mockImplementation(
+      () => mockCanCancel.value
+    )
+    vi.mocked(useBillingCapabilities).mockReturnValue(capabilities)
+
     mockTier.value = 'STANDARD'
     mockShouldUseWorkspaceBilling.value = false
     mockCanCancel.value = true

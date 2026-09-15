@@ -1,3 +1,4 @@
+import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -97,16 +98,7 @@ vi.mock<unknown>(
   })
 )
 
-vi.mock<unknown>(
-  import('@/platform/workspace/composables/useBillingCapabilities'),
-  () => ({
-    useBillingCapabilities: () => ({
-      canTopUp: computed(() => state.canTopUp),
-      canSubscribeSelfServe: computed(() => state.canSubscribeSelfServe),
-      canReactivate: computed(() => state.canReactivate)
-    })
-  })
-)
+vi.mock(import('@/platform/workspace/composables/useBillingCapabilities'))
 
 vi.mock(import('@/platform/workspace/composables/useResubscribe'), () => ({
   useResubscribe: () => ({
@@ -228,6 +220,14 @@ function paymentFailedState() {
 
 describe('BillingStatusBanner', () => {
   beforeEach(() => {
+    const capabilities = useBillingCapabilities()
+    capabilities.canTopUp = computed(() => state.canTopUp)
+    capabilities.canSubscribeSelfServe = computed(
+      () => state.canSubscribeSelfServe
+    )
+    capabilities.canReactivate = computed(() => state.canReactivate)
+    vi.mocked(useBillingCapabilities).mockReturnValue(capabilities)
+
     state.billingControlEnabled = true
     state.v1PaymentRecovery = true
     state.canAccessSubscriptionFeatures = true

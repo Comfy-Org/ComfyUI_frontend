@@ -1,3 +1,4 @@
+import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 import { render, screen, waitFor } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -79,15 +80,7 @@ vi.mock<unknown>(import('@/composables/billing/useBillingContext'), () => ({
   })
 }))
 
-vi.mock<unknown>(
-  import('@/platform/workspace/composables/useBillingCapabilities'),
-  () => ({
-    useBillingCapabilities: () => ({
-      canTopUp: computed(() => state.canTopUp),
-      canSubscribeSelfServe: computed(() => state.canSubscribeSelfServe)
-    })
-  })
-)
+vi.mock(import('@/platform/workspace/composables/useBillingCapabilities'))
 
 vi.mock<unknown>(
   import('@/platform/cloud/subscription/composables/useSubscriptionDialog'),
@@ -221,6 +214,13 @@ function createDeferred() {
 
 describe('CreditsTile', () => {
   beforeEach(() => {
+    const capabilities = useBillingCapabilities()
+    capabilities.canTopUp = computed(() => state.canTopUp)
+    capabilities.canSubscribeSelfServe = computed(
+      () => state.canSubscribeSelfServe
+    )
+    vi.mocked(useBillingCapabilities).mockReturnValue(capabilities)
+
     state.balance = null
     state.subscription = null
     state.personalIsYearly = false

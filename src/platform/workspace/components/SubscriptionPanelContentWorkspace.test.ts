@@ -1,3 +1,4 @@
+import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 import { getActivePinia } from 'pinia'
 import { toRef, computed, ref } from 'vue'
 import { useBillingOperationStore } from '@/platform/workspace/stores/billingOperationStore'
@@ -247,17 +248,7 @@ vi.mock<unknown>(
   })
 )
 
-vi.mock<unknown>(
-  import('@/platform/workspace/composables/useBillingCapabilities'),
-  () => ({
-    useBillingCapabilities: () => ({
-      canCancel: mockCanCancel,
-      canReactivate: mockCanReactivate,
-      canChangeSeats: mockCanChangeSeats,
-      canSubscribeSelfServe: mockCanSubscribeSelfServe
-    })
-  })
-)
+vi.mock(import('@/platform/workspace/composables/useBillingCapabilities'))
 
 vi.mock<unknown>(import('@/services/dialogService'), () => ({
   useDialogService: () => ({
@@ -338,6 +329,23 @@ function renderComponent({ stubFooter = true } = {}) {
 
 describe('SubscriptionPanelContentWorkspace', () => {
   beforeEach(() => {
+    const capabilities = useBillingCapabilities()
+    vi.spyOn(capabilities.canCancel, 'value', 'get').mockImplementation(
+      () => mockCanCancel.value
+    )
+    vi.spyOn(capabilities.canReactivate, 'value', 'get').mockImplementation(
+      () => mockCanReactivate.value
+    )
+    vi.spyOn(capabilities.canChangeSeats, 'value', 'get').mockImplementation(
+      () => mockCanChangeSeats.value
+    )
+    vi.spyOn(
+      capabilities.canSubscribeSelfServe,
+      'value',
+      'get'
+    ).mockImplementation(() => mockCanSubscribeSelfServe.value)
+    vi.mocked(useBillingCapabilities).mockReturnValue(capabilities)
+
     mockDistributionState.isCloud = true
     mockSubscriptionStatus.value = 'active'
     mockBillingStatus.value = 'paid'

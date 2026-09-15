@@ -1,3 +1,4 @@
+import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 import type {
   ScheduledPlanChange,
   SubscriptionTier
@@ -83,18 +84,23 @@ vi.mock<unknown>(import('@/composables/billing/useBillingContext'), () => ({
 
 vi.mock(import('@/platform/distribution/types'), () => mockDistributionTypes)
 
-vi.mock<unknown>(
-  import('@/platform/workspace/composables/useBillingCapabilities'),
-  () => ({
-    useBillingCapabilities: () => ({
-      canSubscribeSelfServe: computed(() => mockCanManageSubscription.value),
-      canReactivate: computed(() => mockRawCanReactivate.value),
-      canChangeSeats: computed(() => mockCanChangeSeats.value),
-      canDowngradeToPersonal: computed(() => mockCanDowngradeToPersonal.value),
-      snapshotAuthoritative: computed(() => mockSnapshotAuthoritative.value)
-    })
-  })
-)
+vi.mock(import('@/platform/workspace/composables/useBillingCapabilities'))
+
+beforeEach(() => {
+  const capabilities = useBillingCapabilities()
+  capabilities.canSubscribeSelfServe = computed(
+    () => mockCanManageSubscription.value
+  )
+  capabilities.canReactivate = computed(() => mockRawCanReactivate.value)
+  capabilities.canChangeSeats = computed(() => mockCanChangeSeats.value)
+  capabilities.canDowngradeToPersonal = computed(
+    () => mockCanDowngradeToPersonal.value
+  )
+  capabilities.snapshotAuthoritative = computed(
+    () => mockSnapshotAuthoritative.value
+  )
+  vi.mocked(useBillingCapabilities).mockReturnValue(capabilities)
+})
 
 vi.mock<unknown>(
   import('@/platform/workspace/composables/useWorkspaceUI'),
