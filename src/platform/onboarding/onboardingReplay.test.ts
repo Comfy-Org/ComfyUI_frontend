@@ -12,6 +12,14 @@ import {
 } from './onboardingReplay'
 import { TOUR_SEEN_SETTING } from './onboardingTours'
 
+const mocks = vi.hoisted<{ isCloud: boolean }>(() => ({ isCloud: true }))
+
+vi.mock(import('@/platform/distribution/types'), () => ({
+  get isCloud() {
+    return mocks.isCloud
+  }
+}))
+
 function response(status: number): Response {
   return new Response(null, { status })
 }
@@ -19,6 +27,7 @@ function response(status: number): Response {
 describe('onboardingReplay', () => {
   beforeEach(() => {
     sessionStorage.clear()
+    mocks.isCloud = true
     vi.spyOn(api, 'storeSetting').mockResolvedValue(response(200))
   })
 
@@ -66,13 +75,26 @@ describe('onboardingReplay', () => {
     })
 
     it('arm neither gate when only the first write lands', () => {
-      vi.spyOn(sessionStorage, 'setItem')
-        .mockImplementationOnce(sessionStorage.setItem.bind(sessionStorage))
-        .mockImplementationOnce(() => {
+      // Captured before the spy replaces it, so the surviving write is the real
+      // one rather than a re-entry that would consume the throwing case.
+      const write = Storage.prototype.setItem.bind(sessionStorage)
+      vi.spyOn(sessionStorage, 'setItem').mockImplementation((key, value) => {
+        if (key === 'Comfy.OnboardingReplay.FirstRun') {
           throw new Error('QuotaExceededError')
-        })
+        }
+        write(key, value)
+      })
 
       expect(requestOnboardingReplay()).toBe(false)
+
+      expect(isSurveyReplayRequested()).toBe(false)
+      expect(isFirstRunReplayRequested()).toBe(false)
+    })
+
+    it('arm nothing off cloud, where neither gate exists to serve them', () => {
+      mocks.isCloud = false
+
+      expect(requestOnboardingReplay()).toBe(true)
 
       expect(isSurveyReplayRequested()).toBe(false)
       expect(isFirstRunReplayRequested()).toBe(false)
@@ -134,6 +156,14 @@ describe('onboardingReplay', () => {
 
       expect(isSurveyReplayRequested()).toBe(false)
       expect(isFirstRunReplayRequested()).toBe(false)
+    })
+
+    it('clears the coachmark tours off cloud, where they are the whole of onboarding', async () => {
+      mocks.isCloud = false
+
+      await resetOnboardingState()
+
+      expect(api.storeSetting).toHaveBeenCalledWith(TOUR_SEEN_SETTING, [])
     })
 
     it('throws when the replay cannot be recorded, rather than reporting success', async () => {

@@ -1,3 +1,4 @@
+import { isCloud } from '@/platform/distribution/types'
 import { api } from '@/scripts/api'
 
 import { TOUR_SEEN_SETTING } from './onboardingTours'
@@ -78,12 +79,22 @@ export function consumeFirstRunReplayRequest(): void {
  * did land so a half-armed replay cannot serve one gate and not the other.
  */
 export function requestOnboardingReplay(): boolean {
+  // Both gates these arm are cloud-only. Off cloud the coachmark tours are the
+  // whole of onboarding, so clearing their seen-list is the entire replay and
+  // an armed request would only sit unserved for the life of the tab.
+  if (!isCloud) return true
+
   if (!requestReplay(SURVEY_KEY)) return false
   if (!requestReplay(FIRST_RUN_KEY)) {
     consumeReplayRequest(SURVEY_KEY)
     return false
   }
   return true
+}
+
+function clearOnboardingReplay(): void {
+  consumeReplayRequest(SURVEY_KEY)
+  consumeReplayRequest(FIRST_RUN_KEY)
 }
 
 /**
@@ -102,22 +113,25 @@ export function requestOnboardingReplay(): boolean {
  * this to take effect.
  */
 export async function resetOnboardingState(): Promise<void> {
-  // `settingStore.set` resolves even when the server rejects the write, since
-  // nothing between it and `fetch` inspects the status. Going through the API
-  // is what makes a failed reset observable; safe here because the setting is
-  // `type: 'hidden'` with no `onChange`, and the caller reloads, so the
-  // store's copy is rebuilt from the server either way.
-  const response = await api.storeSetting(TOUR_SEEN_SETTING, [])
-  if (!response.ok) {
-    throw new OnboardingReplayError(
-      `Failed to clear seen onboarding tours: ${response.statusText}`
-    )
-  }
-
-  // Last, so that until it lands the reset above stays recoverable by retrying.
+  // Armed first because it is the reversible half: the server write cannot be
+  // taken back, so failing after it would clear the seen-list while reporting
+  // that nothing happened.
   if (!requestOnboardingReplay()) {
     throw new OnboardingReplayError(
       'Session storage is unavailable, so the onboarding replay cannot be requested'
+    )
+  }
+
+  // `settingStore.set` resolves even when the server rejects the write, since
+  // nothing between it and `fetch` inspects the status. Going through the API
+  // is what makes a failed reset observable; safe here because the setting is
+  // `type: 'hidden'` with no `onChange`, and a successful reset reloads, so
+  // the store's copy is rebuilt from the server.
+  const response = await api.storeSetting(TOUR_SEEN_SETTING, [])
+  if (!response.ok) {
+    clearOnboardingReplay()
+    throw new OnboardingReplayError(
+      `Failed to clear seen onboarding tours: ${response.statusText}`
     )
   }
 }

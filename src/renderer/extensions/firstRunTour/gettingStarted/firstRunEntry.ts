@@ -63,16 +63,19 @@ export const useFirstRunEntry = createSharedComposable(() => {
   // `url-intent` defers to handleUrlWorkflow: we don't know yet whether
   // anything arrived to tour, and TutorialCompleted is write-once.
   async function handleStartupOutcome(outcome: StartupOutcome) {
+    const decision = decideFirstRun()
+
     // Restored work and a spent tutorial are the two reasons to withhold
     // onboarding from someone who did not ask for it. A replay is someone
-    // asking, so it overrides both.
-    const isReplay = isFirstRunReplayRequested()
+    // asking, so it overrides both — but only once this boot can actually
+    // serve the screen, or the fall-through below would cover their restored
+    // work with the template browser instead.
+    const isReplay =
+      isFirstRunReplayRequested() && decision === 'getting-started'
     if (!isReplay) {
       if (outcome === 'restored') return
       if (settingStore.get('Comfy.TutorialCompleted')) return
     }
-
-    const decision = decideFirstRun()
 
     if (outcome === 'url-intent') {
       if (decision === 'complete') await markTutorialCompleted()
@@ -113,7 +116,12 @@ export const useFirstRunEntry = createSharedComposable(() => {
     const started = await useFirstRunTourController().beginTour(
       shareLoaded ? undefined : templateId
     )
-    if (started) await markTutorialCompleted()
+    if (started) {
+      // The tour a replay asked for, delivered over the link instead of the
+      // Getting Started screen; leaving the request armed would re-offer it.
+      consumeFirstRunReplayRequest()
+      await markTutorialCompleted()
+    }
   }
 
   // Applied locally before the request, so a failed write is next launch's problem.

@@ -131,6 +131,14 @@ export async function getSurveyCompletedStatus(): Promise<boolean> {
 export async function submitSurvey(
   survey: Record<string, unknown>
 ): Promise<void> {
+  // A replay exercises the flow rather than re-profiling the user, so it keeps
+  // the answers already on the account: submitting is the only way out of the
+  // survey, and this POST would replace them wholesale.
+  if (isSurveyReplayRequested()) {
+    consumeSurveyReplayRequest()
+    return
+  }
+
   try {
     addBreadcrumb({
       category: 'auth',

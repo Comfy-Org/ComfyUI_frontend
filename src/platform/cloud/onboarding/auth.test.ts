@@ -17,6 +17,11 @@ vi.mock<unknown>(import('@/scripts/api'), () => ({
   }
 }))
 
+// The replay flags are cloud-only; the survey this file covers is too.
+vi.mock(import('@/platform/distribution/types'), () => ({
+  isCloud: true
+}))
+
 vi.mock(import('@sentry/vue'), () => ({
   addBreadcrumb: vi.fn(),
   captureException: vi.fn(),
@@ -137,8 +142,34 @@ describe('onboarding replay', () => {
     expect(isSurveyReplayRequested()).toBe(false)
   })
 
-  test('submitting preserves the answers, never overwriting them with an empty survey', async () => {
+  test('submitting a replay writes nothing, leaving the stored answers as they were', async () => {
     requestOnboardingReplay()
+
+    await submitSurvey({ q1: 'replayed' })
+
+    expect(fetchApi).not.toHaveBeenCalled()
+  })
+
+  test('the stored answers survive a replayed pass end to end', async () => {
+    const stored = { q1: 'original', q2: 'kept' }
+    requestOnboardingReplay()
+
+    await expect(getSurveyCompletedStatus()).resolves.toBe(false)
+    await submitSurvey({ q1: 'replayed', q2: 'replaced' })
+
+    fetchApi.mockResolvedValueOnce(
+      mockResponse({ ok: true, status: 200, body: { value: stored } })
+    )
+    await expect(getSurveyCompletedStatus()).resolves.toBe(true)
+    expect(
+      fetchApi.mock.calls.every(
+        ([, init]) => (init?.method ?? 'GET') === 'GET'
+      ),
+      'a replay may only read the survey key, never write it'
+    ).toBe(true)
+  })
+
+  test('submitting without a replay stores the answers as usual', async () => {
     fetchApi.mockResolvedValueOnce(mockResponse({ ok: true, status: 200 }))
 
     await submitSurvey({ q1: 'a' })
@@ -151,12 +182,9 @@ describe('onboarding replay', () => {
     )
   })
 
-  test('a failed submission keeps the replay, so the survey can be retried', async () => {
-    requestOnboardingReplay()
+  test('a failed first-time submission throws, so the caller can surface it', async () => {
     fetchApi.mockResolvedValueOnce(mockResponse({ ok: false, status: 500 }))
 
     await expect(submitSurvey({ q1: 'a' })).rejects.toThrow()
-
-    expect(isSurveyReplayRequested()).toBe(true)
   })
 })

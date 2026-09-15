@@ -361,6 +361,34 @@ describe('useFirstRunEntry', () => {
       expect(isFirstRunReplayRequested()).toBe(true)
     })
 
+    /**
+     * A replay may override the restored-work guard only to show the Getting
+     * Started screen. On a boot that cannot show it, overriding the guard
+     * anyway would fall through to the template browser and cover the very
+     * work the guard protects — and, being session-scoped, do it again on
+     * every reload for the life of the tab.
+     */
+    const cannotServe = [
+      ['not on cloud', () => void (mocks.isCloud = false)],
+      ['subscription disabled', () => void (mocks.subscriptionEnabled = false)],
+      ['below the md breakpoint', () => void (mocks.isDesktopWidth = false)],
+      ['the tour flag off', () => void (mocks.tourFlag = false)]
+    ] as const
+
+    it.for(cannotServe)(
+      'never covers restored work with the template browser when %s',
+      async ([, disqualify]) => {
+        requestOnboardingReplay()
+        disqualify()
+        const entry = useFirstRunEntry()
+
+        await entry.handleStartupOutcome('restored')
+
+        expect(entry.gettingStartedVisible.value).toBe(false)
+        expect(useCommandStore().execute).not.toHaveBeenCalled()
+      }
+    )
+
     it('leaves the invariant intact for everyone who did not ask', async () => {
       const entry = useFirstRunEntry()
 
