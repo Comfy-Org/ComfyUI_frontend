@@ -6,7 +6,10 @@ import { describe, expect, it } from 'vitest'
 
 const execFileAsync = promisify(execFile)
 
-async function importConfig(devAgentUrl: string) {
+async function importConfig(
+  devAgentUrl: string,
+  overrides: Record<string, string | undefined> = {}
+) {
   return await execFileAsync(
     process.execPath,
     ['--import', 'tsx', '--eval', "import('./vite.config.mts')"],
@@ -16,7 +19,8 @@ async function importConfig(devAgentUrl: string) {
         ...process.env,
         DEV_AGENT_SESSION_TOKEN: 'test-session-token',
         DEV_AGENT_URL: devAgentUrl,
-        VITE_AGENT_STANDALONE: undefined
+        VITE_AGENT_STANDALONE: undefined,
+        ...overrides
       }
     }
   )
@@ -40,5 +44,36 @@ describe('dev agent proxy transport', () => {
         'DEV_AGENT_URL must use https unless it targets loopback'
       )
     })
+  })
+})
+
+describe('dev agent comfy credential', () => {
+  it('loads when a comfy token accompanies a protected target', async () => {
+    await expect(
+      importConfig('http://127.0.0.1:8095', {
+        DEV_AGENT_COMFY_TOKEN: 'comfyui-test-key'
+      })
+    ).resolves.toBeDefined()
+  })
+
+  it('rejects a comfy token with no agent target to forward it to', async () => {
+    await expect(
+      importConfig('', {
+        DEV_AGENT_COMFY_TOKEN: 'comfyui-test-key',
+        DEV_AGENT_SESSION_TOKEN: undefined
+      })
+    ).rejects.toMatchObject({
+      stderr: expect.stringContaining(
+        'DEV_AGENT_COMFY_TOKEN requires DEV_AGENT_URL'
+      )
+    })
+  })
+
+  it('warns rather than failing when standalone runs without a comfy token', async () => {
+    const result = await importConfig('http://127.0.0.1:8095', {
+      VITE_AGENT_STANDALONE: 'true',
+      DEV_AGENT_COMFY_TOKEN: undefined
+    })
+    expect(result.stderr).toContain('DEV_AGENT_COMFY_TOKEN is not set')
   })
 })

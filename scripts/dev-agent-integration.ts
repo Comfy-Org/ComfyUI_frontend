@@ -107,6 +107,11 @@ async function run(options: Options): Promise<number> {
         ...process.env,
         DEV_AGENT_SESSION_TOKEN: token,
         DEV_AGENT_URL: agentUrl,
+        // Forwarded verbatim when present so a harness run can complete a model turn without a
+        // browser login; absent, the panel still loads and only the model round fails.
+        ...(process.env.DEV_AGENT_COMFY_TOKEN
+          ? { DEV_AGENT_COMFY_TOKEN: process.env.DEV_AGENT_COMFY_TOKEN }
+          : {}),
         DEV_SERVER_COMFYUI_URL: options.comfyUrl,
         VITE_AGENT_STANDALONE: 'true'
       }
