@@ -111,20 +111,23 @@ const STALE_RECEIPT_MS = 60_000
 const AUTO_CLOSE_MS = 3_600
 let autoCloseTimer: ReturnType<typeof setTimeout> | undefined
 
-watch(open, (value) => {
-  if (!value) {
-    stopAutoClose()
-    cancelPendingCheckout()
-    usd.value = 25
-    state.value = 'amount'
-    if (
-      latchedReturn.value === 'landed' ||
-      latchedReturn.value === 'unresolved'
-    ) {
-      clearReturnReceipt()
-    }
-    return
-  }
+watch(open, handleOpenChange)
+
+function handleOpenChange(value: boolean): void {
+  if (value) prepareOpenDialog()
+  else resetClosedDialog()
+}
+
+function resetClosedDialog(): void {
+  stopAutoClose()
+  cancelPendingCheckout()
+  usd.value = 25
+  state.value = 'amount'
+  if (latchedReturn.value === 'landed' || latchedReturn.value === 'unresolved')
+    clearReturnReceipt()
+}
+
+function prepareOpenDialog(): void {
   if (
     topUp.value.status === 'landed' &&
     Date.now() - topUp.value.landedAt > STALE_RECEIPT_MS
@@ -136,7 +139,7 @@ watch(open, (value) => {
     if (checkoutAttempt && lastCheckout.value) state.value = 'checkout'
   }
   if (step.value === 'landed') scheduleAutoClose()
-})
+}
 
 function clearReturnReceipt(): void {
   latchedReturn.value = undefined
