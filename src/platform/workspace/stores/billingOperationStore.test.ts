@@ -1,4 +1,3 @@
-import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import {
   bindOperationToCheckoutJourney,
@@ -12,16 +11,14 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useTelemetry } from '@/platform/telemetry'
 
+import { mockFeatureFlag } from '@/utils/__tests__/mockFeatureFlag'
 import type { BillingOpStatusResponse } from '@/platform/workspace/api/workspaceApi'
 import { mockBillingContext } from '@/utils/__tests__/mockBillingContext'
 
-const { mockHandleNextAction, mockLoadStripe, mockFeatureFlags } = vi.hoisted(
-  () => ({
-    mockHandleNextAction: vi.fn(),
-    mockLoadStripe: vi.fn(),
-    mockFeatureFlags: { embeddedCheckoutEnabled: true }
-  })
-)
+const { mockHandleNextAction, mockLoadStripe } = vi.hoisted(() => ({
+  mockHandleNextAction: vi.fn(),
+  mockLoadStripe: vi.fn()
+}))
 
 vi.mock<unknown>(import('@stripe/stripe-js/pure'), () => ({
   loadStripe: mockLoadStripe
@@ -44,18 +41,6 @@ vi.mock<unknown>(
 )
 
 vi.mock(import('@/composables/useFeatureFlags'))
-
-beforeEach(() => {
-  vi.mocked(useFeatureFlags).mockReturnValue({
-    ...useFeatureFlags(),
-    flags: {
-      ...useFeatureFlags().flags,
-      get embeddedCheckoutEnabled() {
-        return mockFeatureFlags.embeddedCheckoutEnabled
-      }
-    }
-  })
-})
 
 const mockReportError = vi.hoisted(() => vi.fn())
 
@@ -107,7 +92,7 @@ describe('billingOperationStore', () => {
   beforeEach(() => {
     mockDistributionTypes.isCloud = true
     Object.assign(useTeamWorkspaceStore(), { activeWorkspaceId: 'workspace-1' })
-    mockFeatureFlags.embeddedCheckoutEnabled = true
+    mockFeatureFlag('embeddedCheckoutEnabled', true)
     vi.stubEnv('VITE_STRIPE_PUBLISHABLE_KEY', 'pk_test_3ds')
     mockHandleNextAction.mockResolvedValue({})
     mockLoadStripe.mockResolvedValue({
@@ -1214,7 +1199,7 @@ describe('billingOperationStore', () => {
 
   describe('payment authentication recovery', () => {
     it('does not initialize embedded recovery while the flag is off', async () => {
-      mockFeatureFlags.embeddedCheckoutEnabled = false
+      mockFeatureFlag('embeddedCheckoutEnabled', false)
       vi.mocked(workspaceApi.getBillingOpStatus)
         .mockResolvedValueOnce({
           id: 'op-3ds',
@@ -1941,7 +1926,7 @@ describe('billingOperationStore', () => {
     })
 
     it('terminates polling for reconciliation_needed while the embedded flag is off', async () => {
-      mockFeatureFlags.embeddedCheckoutEnabled = false
+      mockFeatureFlag('embeddedCheckoutEnabled', false)
       vi.mocked(workspaceApi.getBillingOpStatus).mockResolvedValue({
         id: 'op-reconcile-legacy',
         status: 'reconciliation_needed',

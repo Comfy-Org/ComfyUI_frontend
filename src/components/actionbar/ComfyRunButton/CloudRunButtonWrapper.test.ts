@@ -1,4 +1,3 @@
-import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import userEvent from '@testing-library/user-event'
 import { render, screen, waitFor } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -8,6 +7,7 @@ import { createI18n } from 'vue-i18n'
 
 import TopbarSubscribeButton from '@/components/topbar/TopbarSubscribeButton.vue'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
+import { mockFeatureFlag } from '@/utils/__tests__/mockFeatureFlag'
 import type { BillingStatus } from '@/platform/workspace/api/workspaceApi'
 import { useDialogStore } from '@/stores/dialogStore'
 
@@ -19,7 +19,6 @@ const mockIsInitialized = ref(true)
 const mockBillingStatus = ref<BillingStatus | null>('paid')
 const mockSubscriptionTier = ref<string | null>(null)
 const state = vi.hoisted(() => ({
-  v1PaymentRecovery: true,
   canManageSubscription: true,
   manageSubscription: vi.fn(),
   fetchStatus: vi.fn(),
@@ -65,18 +64,6 @@ vi.mock<unknown>(
 )
 
 vi.mock(import('@/composables/useFeatureFlags'))
-
-beforeEach(() => {
-  vi.mocked(useFeatureFlags).mockReturnValue({
-    ...useFeatureFlags(),
-    flags: {
-      ...useFeatureFlags().flags,
-      get v1PaymentRecovery() {
-        return state.v1PaymentRecovery
-      }
-    }
-  })
-})
 
 vi.mock<unknown>(import('@/composables/useErrorHandling'), () => ({
   useErrorHandling: () => ({ toastErrorHandler: state.toastErrorHandler })
@@ -138,7 +125,7 @@ describe('CloudRunButtonWrapper', () => {
     mockIsInitialized.value = true
     mockBillingStatus.value = 'paid'
     mockSubscriptionTier.value = null
-    state.v1PaymentRecovery = true
+    mockFeatureFlag('v1PaymentRecovery', true)
     state.canManageSubscription = true
     mockIsFreeTier.value = true
   })
@@ -585,7 +572,7 @@ describe('CloudRunButtonWrapper', () => {
   it('does not fall back to Subscribe to Run for payment failure when recovery flag is disabled', () => {
     mockCanRunWorkflows.value = false
     mockBillingStatus.value = 'payment_failed'
-    state.v1PaymentRecovery = false
+    mockFeatureFlag('v1PaymentRecovery', false)
     renderWrapper()
 
     expect(screen.getByTestId('queue-button')).toHaveTextContent(
@@ -599,7 +586,7 @@ describe('CloudRunButtonWrapper', () => {
   it('keeps generic inactive behavior when payment recovery is disabled', () => {
     mockCanRunWorkflows.value = false
     mockBillingStatus.value = 'paused'
-    state.v1PaymentRecovery = false
+    mockFeatureFlag('v1PaymentRecovery', false)
     renderWrapper()
 
     expect(screen.getByTestId('subscribe-to-run-button')).toBeInTheDocument()

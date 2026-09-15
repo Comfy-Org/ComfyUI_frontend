@@ -1,4 +1,4 @@
-import { beforeEach, vi } from 'vitest'
+import { vi } from 'vitest'
 
 import type * as realFeatureFlags from '../useFeatureFlags'
 
@@ -7,10 +7,11 @@ export const { ServerFeatureFlag } =
 
 export const startFeatureFlagTelemetry =
   vi.fn<typeof realFeatureFlags.startFeatureFlagTelemetry>()
-export const useFeatureFlags = vi.fn<typeof realFeatureFlags.useFeatureFlags>()
 
-beforeEach(() => {
-  useFeatureFlags.mockReturnValue({
+function createFeatureFlagsMock(): ReturnType<
+  typeof realFeatureFlags.useFeatureFlags
+> {
+  return {
     flags: {
       supportsPreviewMetadata: false,
       maxUploadSize: 0,
@@ -29,6 +30,7 @@ beforeEach(() => {
       workflowSharingEnabled: false,
       comfyHubUploadEnabled: false,
       comfyHubProfileGateEnabled: false,
+      hostedBillingWebEnabled: false,
       showSignInButton: undefined,
       unifiedCloudAuthEnabled: false,
       billingControlEnabled: false,
@@ -43,5 +45,9 @@ beforeEach(() => {
       assetsEnabled: false
     },
     featureFlag: vi.fn()
-  })
-})
+  }
+}
+
+export const useFeatureFlags = vi.fn<typeof realFeatureFlags.useFeatureFlags>(
+  createFeatureFlagsMock
+)

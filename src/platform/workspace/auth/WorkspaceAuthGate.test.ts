@@ -1,4 +1,3 @@
-import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
 import { useAuthStore } from '@/stores/authStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
@@ -13,6 +12,7 @@ import {
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
+import { mockFeatureFlag } from '@/utils/__tests__/mockFeatureFlag'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import {
   remoteConfigErrorStatus,
@@ -49,20 +49,7 @@ vi.mock(import('@/platform/remoteConfig/refreshRemoteConfig'), () => ({
   refreshRemoteConfig: (options: unknown) => mockRefreshRemoteConfig(options)
 }))
 
-const mockUnifiedCloudAuthEnabled = vi.hoisted(() => ({ value: false }))
 vi.mock(import('@/composables/useFeatureFlags'))
-
-beforeEach(() => {
-  vi.mocked(useFeatureFlags).mockReturnValue({
-    ...useFeatureFlags(),
-    flags: {
-      ...useFeatureFlags().flags,
-      get unifiedCloudAuthEnabled() {
-        return mockUnifiedCloudAuthEnabled.value
-      }
-    }
-  })
-})
 
 const mockBillingCapabilitiesInitialize = vi.hoisted(() => vi.fn())
 
@@ -103,7 +90,6 @@ describe('WorkspaceAuthGate', () => {
     Object.assign(useAuthStore(), { isInitialized: false })
     Object.assign(useAuthStore(), { currentUser: null })
     Object.assign(useApiKeyAuthStore(), { isAuthenticated: false })
-    mockUnifiedCloudAuthEnabled.value = false
     remoteConfigState.value = 'authenticated'
     remoteConfigErrorStatus.value = null
     Object.assign(useTeamWorkspaceStore(), { initState: 'uninitialized' })
@@ -312,7 +298,7 @@ describe('WorkspaceAuthGate', () => {
 
     it('mints unified auth after refreshing authenticated flags', async () => {
       mockRefreshRemoteConfig.mockImplementation(async () => {
-        mockUnifiedCloudAuthEnabled.value = true
+        mockFeatureFlag('unifiedCloudAuthEnabled', true)
       })
 
       mountComponent()
@@ -484,7 +470,7 @@ describe('WorkspaceAuthGate', () => {
     })
 
     it('shows a recoverable error when unified auth initialization fails', async () => {
-      mockUnifiedCloudAuthEnabled.value = true
+      mockFeatureFlag('unifiedCloudAuthEnabled', true)
       vi.mocked(useWorkspaceAuthStore().mintAtLogin).mockResolvedValue(false)
 
       mountComponent()
@@ -526,7 +512,7 @@ describe('WorkspaceAuthGate', () => {
     })
 
     it('shows a recoverable error when workspace setup clears unified auth', async () => {
-      mockUnifiedCloudAuthEnabled.value = true
+      mockFeatureFlag('unifiedCloudAuthEnabled', true)
       vi.mocked(useWorkspaceAuthStore().getUnifiedToken).mockReturnValue(
         undefined
       )

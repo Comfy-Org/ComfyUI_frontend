@@ -1,30 +1,15 @@
-import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { nextTick } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { mockFeatureFlag } from '@/utils/__tests__/mockFeatureFlag'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useCommandStore } from '@/stores/commandStore'
 import { useMenuItemStore } from '@/stores/menuItemStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 
-const { mockOpenModelLibraryBrowser, featureFlagState } = vi.hoisted(() => ({
-  mockOpenModelLibraryBrowser: vi.fn(),
-  featureFlagState: { assetsEnabled: false }
-}))
+const mockOpenModelLibraryBrowser = vi.hoisted(() => vi.fn())
 
 vi.mock(import('@/composables/useFeatureFlags'))
-
-beforeEach(() => {
-  vi.mocked(useFeatureFlags).mockReturnValue({
-    ...useFeatureFlags(),
-    flags: {
-      ...useFeatureFlags().flags,
-      get assetsEnabled() {
-        return featureFlagState.assetsEnabled
-      }
-    }
-  })
-})
 
 vi.mock(
   import('@/platform/assets/composables/openModelLibraryBrowser'),
@@ -101,7 +86,6 @@ vi.mock(
 describe('useSidebarTabStore', () => {
   beforeEach(() => {
     vi.mocked(useMenuItemStore().registerCommands).mockImplementation(() => {})
-    featureFlagState.assetsEnabled = false
     mockOpenModelLibraryBrowser.mockClear()
   })
 
@@ -173,7 +157,7 @@ describe('useSidebarTabStore', () => {
 
     it('toggles the sidebar tab when the asset view is disabled', async () => {
       useAssetBrowserSetting(false)
-      featureFlagState.assetsEnabled = true
+      mockFeatureFlag('assetsEnabled', true)
 
       const store = useSidebarTabStore()
       store.registerCoreSidebarTabs()
@@ -186,7 +170,7 @@ describe('useSidebarTabStore', () => {
 
     it('opens the asset browser when the asset view and the assets capability are both enabled', async () => {
       useAssetBrowserSetting(true)
-      featureFlagState.assetsEnabled = true
+      mockFeatureFlag('assetsEnabled', true)
 
       const store = useSidebarTabStore()
       store.registerCoreSidebarTabs()
@@ -199,7 +183,6 @@ describe('useSidebarTabStore', () => {
 
     it('falls back to the sidebar tree when the assets capability is missing', async () => {
       useAssetBrowserSetting(true)
-      featureFlagState.assetsEnabled = false
 
       const store = useSidebarTabStore()
       store.registerCoreSidebarTabs()
