@@ -1,114 +1,138 @@
 {
   "meta": {
-    "style": "Pixel art icon, 128x128, dark background, game UI button icon style, clean readable silhouette",
+    "style": "Vintage architectural blueprint schematic, cyan-white linework on midnight-blue drafting paper, 128x128 challenge choice icon",
     "usage": "Each key is {room}-{choiceKey lowercase}. Used in challenge choice buttons in adventure.html.",
-    "model": "Z-Image Turbo (no LoRA)",
+    "model": "V2 blueprint theme: Krea 2 Turbo (community int8 build) on Comfy Cloud, generated at 1024x1024 (icons) / 1344x576 (rooms), icons downscaled to 128",
     "resolution": "128x128"
   },
   "choices": {
     "components-a": {
       "label": "Composition over inheritance",
-      "prompt": "Pixel art icon of puzzle pieces snapping together cleanly, green glow, dark background, game UI icon"
+      "prompt": "Vintage architectural blueprint schematic of puzzle pieces snapping together cleanly, green glow, drawn in luminous cyan-white linework with fine hatching on deep midnight-blue drafting paper, faint blueprint grid, glowing accents, bold readable silhouette, centered game icon composition"
     },
     "components-b": {
       "label": "Barrel file reordering",
-      "prompt": "Pixel art icon of a stack of files being shuffled with arrows, amber warning glow, dark background, game UI icon"
+      "prompt": "Vintage architectural blueprint schematic of a stack of files being shuffled with arrows, amber warning glow, drawn in luminous cyan-white linework with fine hatching on deep midnight-blue drafting paper, faint blueprint grid, glowing accents, bold readable silhouette, centered game icon composition"
     },
     "components-c": {
       "label": "Factory injection",
-      "prompt": "Pixel art icon of a factory building with a syringe injecting into it, blue mechanical glow, dark background, game UI icon"
+      "prompt": "Vintage architectural blueprint schematic of a factory building with a syringe injecting into it, blue mechanical glow, drawn in luminous cyan-white linework with fine hatching on deep midnight-blue drafting paper, faint blueprint grid, glowing accents, bold readable silhouette, centered game icon composition"
     },
     "stores-a": {
       "label": "Centralize into graph.incrementVersion()",
-      "prompt": "Pixel art icon of scattered dots converging into a single glowing funnel point, green glow, dark background, game UI icon"
+      "prompt": "Vintage architectural blueprint schematic of scattered dots converging into a single glowing funnel point, green glow, drawn in luminous cyan-white linework with fine hatching on deep midnight-blue drafting paper, faint blueprint grid, glowing accents, bold readable silhouette, centered game icon composition"
     },
     "stores-b": {
       "label": "Add a JavaScript Proxy",
-      "prompt": "Pixel art icon of a shield proxy intercepting arrows mid-flight, amber translucent glow, dark background, game UI icon"
+      "prompt": "Vintage architectural blueprint schematic of a shield proxy intercepting arrows mid-flight, amber translucent glow, drawn in luminous cyan-white linework with fine hatching on deep midnight-blue drafting paper, faint blueprint grid, glowing accents, bold readable silhouette, centered game icon composition"
     },
     "stores-c": {
       "label": "Leave it as-is",
-      "prompt": "Pixel art icon of a shrug gesture with cobwebs on old machinery, grey muted glow, dark background, game UI icon"
+      "prompt": "Vintage architectural blueprint schematic of a shrug gesture with cobwebs on old machinery, grey muted glow, drawn in luminous cyan-white linework with fine hatching on deep midnight-blue drafting paper, faint blueprint grid, glowing accents, bold readable silhouette, centered game icon composition"
     },
     "services-a": {
-      "label": "5-phase incremental plan",
-      "prompt": "Pixel art icon of five stepping stones ascending in a staircase with checkmarks, green glow, dark background, game UI icon"
+      "label": "A feature branch of small reviewed slices",
+      "prompt": "Vintage architectural blueprint schematic of many small glowing pull request cards with checkmarks merging one by one into a single growing git branch arrow, green glow, drawn in luminous cyan-white linework with fine hatching on deep midnight-blue drafting paper, faint blueprint grid, glowing accents, bold readable silhouette, centered game icon composition"
     },
     "services-b": {
       "label": "Big bang rewrite",
-      "prompt": "Pixel art icon of a dynamite stick with lit fuse and explosion sparks, red danger glow, dark background, game UI icon"
+      "prompt": "Vintage architectural blueprint schematic of a dynamite stick with lit fuse and explosion sparks, red danger glow, drawn in luminous cyan-white linework with fine hatching on deep midnight-blue drafting paper, faint blueprint grid, glowing accents, bold readable silhouette, centered game icon composition"
     },
     "services-c": {
       "label": "Strangler fig pattern",
-      "prompt": "Pixel art icon of vines growing around and enveloping an old tree trunk, green and brown organic glow, dark background, game UI icon"
+      "prompt": "Vintage architectural blueprint schematic of vines growing around and enveloping an old tree trunk, green and brown organic glow, drawn in luminous cyan-white linework with fine hatching on deep midnight-blue drafting paper, faint blueprint grid, glowing accents, bold readable silhouette, centered game icon composition"
     },
     "litegraph-a": {
       "label": "Rewrite from scratch",
-      "prompt": "Pixel art icon of a wrecking ball demolishing a building into rubble, red destructive glow, dark background, game UI icon"
+      "prompt": "Vintage architectural blueprint schematic of a wrecking ball demolishing a building into rubble, red destructive glow, drawn in luminous cyan-white linework with fine hatching on deep midnight-blue drafting paper, faint blueprint grid, glowing accents, bold readable silhouette, centered game icon composition"
     },
     "litegraph-b": {
       "label": "Extract incrementally",
-      "prompt": "Pixel art icon of surgical tweezers carefully extracting a glowing module from a larger block, green precise glow, dark background, game UI icon"
+      "prompt": "Vintage architectural blueprint schematic of surgical tweezers carefully extracting a glowing module from a larger block, green precise glow, drawn in luminous cyan-white linework with fine hatching on deep midnight-blue drafting paper, faint blueprint grid, glowing accents, bold readable silhouette, centered game icon composition"
     },
     "litegraph-c": {
       "label": "Add a facade layer",
-      "prompt": "Pixel art icon of a decorative mask covering a cracked wall, yellow cosmetic glow, dark background, game UI icon"
+      "prompt": "Vintage architectural blueprint schematic of a decorative mask covering a cracked wall, yellow cosmetic glow, drawn in luminous cyan-white linework with fine hatching on deep midnight-blue drafting paper, faint blueprint grid, glowing accents, bold readable silhouette, centered game icon composition"
     },
     "ecs-a": {
-      "label": "Branded types with cast helpers",
-      "prompt": "Pixel art icon of ID badges with distinct colored stamps and a compiler checkmark, green type-safe glow, dark background, game UI icon"
+      "label": "Branded types with scoped identity",
+      "prompt": "Vintage architectural blueprint schematic of ID badges with distinct colored stamps and a compiler checkmark, green type-safe glow, drawn in luminous cyan-white linework with fine hatching on deep midnight-blue drafting paper, faint blueprint grid, glowing accents, bold readable silhouette, centered game icon composition"
     },
     "ecs-b": {
       "label": "String prefixes at runtime",
-      "prompt": "Pixel art icon of text labels being parsed with a magnifying glass at runtime, amber slow glow, dark background, game UI icon"
+      "prompt": "Vintage architectural blueprint schematic of text labels being parsed with a magnifying glass at runtime, amber slow glow, drawn in luminous cyan-white linework with fine hatching on deep midnight-blue drafting paper, faint blueprint grid, glowing accents, bold readable silhouette, centered game icon composition"
     },
     "ecs-c": {
       "label": "Keep plain numbers",
-      "prompt": "Pixel art icon of bare numbers floating unprotected with a question mark, red risky glow, dark background, game UI icon"
+      "prompt": "Vintage architectural blueprint schematic of bare numbers floating unprotected with a question mark, red risky glow, drawn in luminous cyan-white linework with fine hatching on deep midnight-blue drafting paper, faint blueprint grid, glowing accents, bold readable silhouette, centered game icon composition"
     },
     "renderer-a": {
       "label": "Separate update and render phases",
-      "prompt": "Pixel art icon of two clean pipeline stages labeled U and R with an arrow between them, green orderly glow, dark background, game UI icon"
+      "prompt": "Vintage architectural blueprint schematic of two clean pipeline stages labeled U and R with an arrow between them, green orderly glow, drawn in luminous cyan-white linework with fine hatching on deep midnight-blue drafting paper, faint blueprint grid, glowing accents, bold readable silhouette, centered game icon composition"
     },
     "renderer-b": {
       "label": "Dirty flags and deferred render",
-      "prompt": "Pixel art icon of a flag with a smudge mark and a clock showing delay, amber patch glow, dark background, game UI icon"
+      "prompt": "Vintage architectural blueprint schematic of a flag with a smudge mark and a clock showing delay, amber patch glow, drawn in luminous cyan-white linework with fine hatching on deep midnight-blue drafting paper, faint blueprint grid, glowing accents, bold readable silhouette, centered game icon composition"
     },
     "composables-a": {
       "label": "Y.js CRDTs",
-      "prompt": "Pixel art icon of two documents merging seamlessly with sync arrows and no conflicts, green collaboration glow, dark background, game UI icon"
+      "prompt": "Vintage architectural blueprint schematic of two documents merging seamlessly with sync arrows and no conflicts, green collaboration glow, drawn in luminous cyan-white linework with fine hatching on deep midnight-blue drafting paper, faint blueprint grid, glowing accents, bold readable silhouette, centered game icon composition"
     },
     "composables-b": {
       "label": "Polling-based sync",
-      "prompt": "Pixel art icon of a clock with circular refresh arrows and flickering signal, red laggy glow, dark background, game UI icon"
+      "prompt": "Vintage architectural blueprint schematic of a clock with circular refresh arrows and flickering signal, red laggy glow, drawn in luminous cyan-white linework with fine hatching on deep midnight-blue drafting paper, faint blueprint grid, glowing accents, bold readable silhouette, centered game icon composition"
     },
     "composables-c": {
       "label": "Skip collaboration for now",
-      "prompt": "Pixel art icon of a single person at a desk with a pause symbol, grey neutral glow, dark background, game UI icon"
+      "prompt": "Vintage architectural blueprint schematic of a single person at a desk with a pause symbol, grey neutral glow, drawn in luminous cyan-white linework with fine hatching on deep midnight-blue drafting paper, faint blueprint grid, glowing accents, bold readable silhouette, centered game icon composition"
     },
     "subgraph-a": {
       "label": "Connections-only: promotion = adding a typed input",
-      "prompt": "Pixel art icon of a function signature with typed input slots and a green checkmark, clean minimal glow, dark background, game UI icon"
+      "prompt": "Vintage architectural blueprint schematic of a function signature with typed input slots and a green checkmark, clean minimal glow, drawn in luminous cyan-white linework with fine hatching on deep midnight-blue drafting paper, faint blueprint grid, glowing accents, bold readable silhouette, centered game icon composition"
     },
     "subgraph-b": {
       "label": "Simplified component promotion",
-      "prompt": "Pixel art icon of a widget being lifted up with a promotion arrow and a component badge, amber glow, dark background, game UI icon"
+      "prompt": "Vintage architectural blueprint schematic of a widget being lifted up with a promotion arrow and a component badge, amber glow, drawn in luminous cyan-white linework with fine hatching on deep midnight-blue drafting paper, faint blueprint grid, glowing accents, bold readable silhouette, centered game icon composition"
     },
     "subgraph-c": {
       "label": "Keep the current three-layer system",
-      "prompt": "Pixel art icon of three stacked translucent layers with proxy shadows underneath, red complex glow, dark background, game UI icon"
+      "prompt": "Vintage architectural blueprint schematic of three stacked translucent layers with proxy shadows underneath, red complex glow, drawn in luminous cyan-white linework with fine hatching on deep midnight-blue drafting paper, faint blueprint grid, glowing accents, bold readable silhouette, centered game icon composition"
     },
     "sidepanel-a": {
-      "label": "Commands as intent; systems as handlers; World as store",
-      "prompt": "Pixel art icon of a layered architectural diagram with arrows flowing top-to-bottom through five labeled tiers, green glow, dark background, game UI icon"
+      "label": "Data first — commands when a consumer exists",
+      "prompt": "Vintage architectural blueprint schematic of five glowing treasure chests neatly arranged on shelves beside a small cold unlit blacksmith anvil, green orderly glow, drawn in luminous cyan-white linework with fine hatching on deep midnight-blue drafting paper, faint blueprint grid, glowing accents, bold readable silhouette, centered game icon composition"
     },
     "sidepanel-b": {
-      "label": "Make World.setComponent() itself serializable",
-      "prompt": "Pixel art icon of a database with every cell being logged into a scroll, amber overflow glow, dark background, game UI icon"
+      "label": "Build the full command bus now",
+      "prompt": "Vintage architectural blueprint schematic of an elaborate overbuilt conveyor belt machine with gears and pipes running above a pile of scattered unsorted mechanical parts, amber warning glow, drawn in luminous cyan-white linework with fine hatching on deep midnight-blue drafting paper, faint blueprint grid, glowing accents, bold readable silhouette, centered game icon composition"
     },
     "sidepanel-c": {
-      "label": "Skip commands — let callers mutate directly",
-      "prompt": "Pixel art icon of multiple hands reaching into a glowing orb simultaneously causing cracks, red chaos glow, dark background, game UI icon"
+      "label": "Skip it all — keep mutating classes directly",
+      "prompt": "Vintage architectural blueprint schematic of multiple hands reaching into a glowing orb simultaneously causing cracks, red chaos glow, drawn in luminous cyan-white linework with fine hatching on deep midnight-blue drafting paper, faint blueprint grid, glowing accents, bold readable silhouette, centered game icon composition"
+    },
+    "registry-a": {
+      "label": "Refuse foreign overwrites; tie ownership to the instance",
+      "prompt": "Vintage architectural blueprint schematic of a hand stamping a glowing X seal onto a duplicate ID card while the original card rests safely in its slot, green glow, drawn in luminous cyan-white linework with fine hatching on deep midnight-blue drafting paper, faint blueprint grid, glowing accents, bold readable silhouette, centered game icon composition"
+    },
+    "registry-b": {
+      "label": "First-wins, everywhere",
+      "prompt": "Vintage architectural blueprint schematic of two identical glowing ID cards racing toward one card slot, the first card sliding in and the second waiting outside, amber glow, drawn in luminous cyan-white linework with fine hatching on deep midnight-blue drafting paper, faint blueprint grid, glowing accents, bold readable silhouette, centered game icon composition"
+    },
+    "registry-c": {
+      "label": "Last-wins: newest registration takes the slot",
+      "prompt": "Vintage architectural blueprint schematic of a new ID card shoving an older glowing card out of its slot, the old card tumbling away, red glow, drawn in luminous cyan-white linework with fine hatching on deep midnight-blue drafting paper, faint blueprint grid, glowing accents, bold readable silhouette, centered game icon composition"
+    },
+    "mirrors-a": {
+      "label": "Warning facades: reads warn once, writes are ignored",
+      "prompt": "Vintage architectural blueprint schematic of an empty gilded mirror frame with a small glowing warning bell hanging peacefully inside it, green calm glow, drawn in luminous cyan-white linework with fine hatching on deep midnight-blue drafting paper, faint blueprint grid, glowing accents, bold readable silhouette, centered game icon composition"
+    },
+    "mirrors-b": {
+      "label": "Fail fast: throw on any write to the dead field",
+      "prompt": "Vintage architectural blueprint schematic of a mirror frame filled with jagged electric sparks zapping a small hand reaching toward it, harsh amber glow, drawn in luminous cyan-white linework with fine hatching on deep midnight-blue drafting paper, faint blueprint grid, glowing accents, bold readable silhouette, centered game icon composition"
+    },
+    "mirrors-c": {
+      "label": "Keep writing the mirror alongside the store",
+      "prompt": "Vintage architectural blueprint schematic of two mirrors facing each other showing two slightly different reflections of the same glowing orb, red uneasy glow, drawn in luminous cyan-white linework with fine hatching on deep midnight-blue drafting paper, faint blueprint grid, glowing accents, bold readable silhouette, centered game icon composition"
     }
   }
 }
