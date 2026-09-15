@@ -94,18 +94,19 @@ test.describe(
   'ECS migration: history and clipboard regression sanity',
   { tag: ['@canvas', '@workflow'] },
   () => {
+    test.use({
+      initialSettings: {
+        'Comfy.UseNewMenu': 'Disabled',
+        'Comfy.VueNodes.Enabled': false,
+        'Comfy.Canvas.LeftMouseClickBehavior': 'select'
+      }
+    })
+
     test.beforeEach(async ({ comfyPage }) => {
-      await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Disabled')
-      await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', false)
-      await comfyPage.settings.setSetting(
-        'Comfy.Canvas.LeftMouseClickBehavior',
-        'select'
-      )
       await comfyPage.workflow.loadWorkflow('default')
     })
 
     test.afterEach(async ({ comfyPage }) => {
-      await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', false)
       await comfyPage.canvasOps.resetView()
     })
 
@@ -118,7 +119,10 @@ test.describe(
           vueNodesEnabled
         )
         await comfyPage.workflow.loadWorkflow('selection/three-nodes-and-group')
-        if (vueNodesEnabled) await comfyPage.vueNodes.waitForNodes(3)
+        if (vueNodesEnabled) {
+          await comfyPage.vueNodes.waitForNodes()
+          await expect(comfyPage.vueNodes.nodes).toHaveCount(3)
+        }
         const initial = await getPairGroupSnapshot(comfyPage)
 
         await comfyPage.canvasOps.dragGroup({
@@ -267,7 +271,6 @@ test.describe(
       )
       const position = { x: 640, y: 420 }
 
-      await comfyPage.searchBoxV2.setup()
       await comfyPage.page.mouse.move(position.x, position.y)
       await comfyPage.searchBoxV2.open()
       await comfyPage.searchBoxV2.input.fill('KSamp')

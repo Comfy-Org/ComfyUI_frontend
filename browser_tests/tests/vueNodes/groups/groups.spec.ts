@@ -364,7 +364,8 @@ test.describe('Vue Node Groups', { tag: ['@screenshot', '@vue-nodes'] }, () => {
   }) => {
     await comfyPage.settings.setSetting('Comfy.Canvas.SelectionToolbox', true)
     await comfyPage.workflow.loadWorkflow('selection/three-nodes-and-group')
-    await comfyPage.vueNodes.waitForNodes(3)
+    await comfyPage.vueNodes.waitForNodes()
+    await expect(comfyPage.vueNodes.nodes).toHaveCount(3)
     const initial = await getPairSnapshot(comfyPage)
     const groupTitle = await getGroupTitlePosition(comfyPage, 'Pair')
     await comfyPage.page.mouse.click(groupTitle.x, groupTitle.y)
