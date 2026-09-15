@@ -95,7 +95,8 @@ describe('CrdtDevPanel', () => {
           appliedOpIds: ['op-1'],
           stamps: { 'node:node-1': [7, 'actor-1', 'op-1'] }
         })
-      }
+      },
+      global: { plugins: [i18n] }
     })
 
     await user.click(chip()!)
@@ -198,10 +199,8 @@ describe('CrdtDevPanel', () => {
       'ws_out'
     )
 
-    await user.selectOptions(
-      screen.getByTestId('crdt-dev-panel-scope-filter'),
-      'doc'
-    )
+    await user.click(screen.getByTestId('crdt-dev-panel-scope-filter'))
+    await user.click(screen.getByRole('option', { name: 'doc' }))
 
     const log = screen.getByTestId('crdt-dev-panel-log').textContent
     expect(log).toContain('doc_update')
@@ -222,13 +221,10 @@ describe('CrdtDevPanel', () => {
     await user.click(screen.getByTestId('crdt-dev-panel-tab-log'))
 
     const kindFilter = screen.getByTestId('crdt-dev-panel-filter')
-    expect(
-      within(kindFilter)
-        .getAllByRole<HTMLOptionElement>('option')
-        .map((option) => option.value)
-    ).toContain('agent_node_adapters_materialized')
-
-    await user.selectOptions(kindFilter, 'agent_node_adapters_materialized')
+    await user.click(kindFilter)
+    await user.click(
+      screen.getByRole('option', { name: 'agent_node_adapters_materialized' })
+    )
 
     const log = screen.getByTestId('crdt-dev-panel-log')
     expect(
