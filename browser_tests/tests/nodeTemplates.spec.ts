@@ -95,6 +95,67 @@ test.describe('Node Templates', { tag: ['@canvas'] }, () => {
     defineNodeTemplatesTests('litegraph')
   })
 
+  const seededTemplates = [
+    {
+      name: 'existing-template-a',
+      data: JSON.stringify({ nodes: [] })
+    },
+    {
+      name: 'existing-template-b',
+      data: JSON.stringify({ nodes: [], links: [] })
+    }
+  ]
+
+  test.describe('Load failure', () => {
+    test.describe.configure({ timeout: 30_000 })
+
+    test.beforeEach(async ({ comfyPage, nodeTemplates }) => {
+      await nodeTemplates.seedTemplates(seededTemplates)
+      await nodeTemplates.mockUnreadableTemplateLoad()
+      await nodeTemplates.reloadAndWaitForTemplates()
+      await comfyPage.workflow.loadWorkflow('default')
+      await comfyPage.canvasOps.resetView()
+    })
+
+    test('Failed template load does not overwrite persisted templates', async ({
+      nodeTemplates
+    }) => {
+      await nodeTemplates.selectKSampler()
+      await nodeTemplates.expectSaveSelectionDisabled()
+
+      expect(nodeTemplates.getTemplateWriteCount()).toBe(0)
+      await expect
+        .poll(() => nodeTemplates.readPersistedTemplates())
+        .toEqual(seededTemplates)
+    })
+  })
+
+  test.describe('Retry after failed load', () => {
+    test.describe.configure({ timeout: 30_000 })
+
+    test.beforeEach(async ({ nodeTemplates }) => {
+      await nodeTemplates.seedTemplates(seededTemplates)
+      await nodeTemplates.mockUnreadableTemplateLoadOnce()
+      await nodeTemplates.reloadAndWaitForTemplates()
+    })
+
+    test('restores saved templates after a failed load', async ({
+      nodeTemplates
+    }) => {
+      await nodeTemplates.openManageDialog()
+      await nodeTemplates.manageDialog.root
+        .getByRole('button', { name: 'Retry' })
+        .click()
+
+      await expect(
+        nodeTemplates.manageDialog.rowByName('existing-template-a')
+      ).toHaveCount(1)
+      await expect(
+        nodeTemplates.manageDialog.rowByName('existing-template-b')
+      ).toHaveCount(1)
+    })
+  })
+
   // Import/Export are dialog-only flows unaffected by node rendering mode;
   // run once outside the Vue/Litegraph matrix.
   test.describe('Dialog import/export', () => {
