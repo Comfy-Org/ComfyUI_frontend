@@ -6,6 +6,7 @@ import { h, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import { formatCreditsFromCents } from '@/base/credits/comfyCredits'
+import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import type { BalanceInfo, SubscriptionInfo } from '@/composables/billing/types'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
@@ -32,15 +33,8 @@ afterAll(() => {
   window.open = originalWindowOpen
 })
 
-const mockHandleSignOut = vi.fn()
-vi.mock<unknown>(import('@/composables/auth/useCurrentUser'), () => ({
-  useCurrentUser: vi.fn(() => ({
-    userPhotoUrl: 'https://example.com/avatar.jpg',
-    userDisplayName: 'Test User',
-    userEmail: 'test@example.com',
-    handleSignOut: mockHandleSignOut
-  }))
-}))
+vi.mock(import('@/composables/auth/useCurrentUser'))
+const currentUser = useCurrentUser()
 
 vi.mock<unknown>(import('@/services/dialogService'), () => ({
   useDialogService: vi.fn(() => ({
@@ -127,6 +121,15 @@ vi.mock<unknown>(import('@/platform/telemetry'), () => ({
 
 describe('CurrentUserPopoverLegacy', () => {
   beforeEach(() => {
+    vi.spyOn(currentUser.userPhotoUrl, 'value', 'get').mockReturnValue(
+      'https://example.com/avatar.jpg'
+    )
+    vi.spyOn(currentUser.userDisplayName, 'value', 'get').mockReturnValue(
+      'Test User'
+    )
+    vi.spyOn(currentUser.userEmail, 'value', 'get').mockReturnValue(
+      'test@example.com'
+    )
     mockCanAccessSubscriptionFeatures.value = true
     mockTier.value = 'CREATOR'
     mockSubscription.value = makeSubscription()
@@ -268,7 +271,7 @@ describe('CurrentUserPopoverLegacy', () => {
 
     await user.click(screen.getByTestId('logout-menu-item'))
 
-    expect(mockHandleSignOut).toHaveBeenCalled()
+    expect(useCurrentUser().handleSignOut).toHaveBeenCalled()
     expect(onClose).toHaveBeenCalledTimes(1)
   })
 

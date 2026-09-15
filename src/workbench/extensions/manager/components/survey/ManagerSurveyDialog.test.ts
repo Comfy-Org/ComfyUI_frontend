@@ -1,8 +1,9 @@
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { nextTick } from 'vue'
+import { nextTick, ref } from 'vue'
 
+import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import type { RemoteConfig } from '@/platform/remoteConfig/types'
 
 const mocks = vi.hoisted<{
@@ -19,13 +20,8 @@ vi.mock<unknown>(import('@/platform/remoteConfig/remoteConfig'), async () => {
   return { remoteConfig: mocks.remoteConfig }
 })
 
-vi.mock<unknown>(import('@/composables/auth/useCurrentUser'), async () => {
-  const { ref } = await import('vue')
-  mocks.resolvedUserInfo = ref<{ id: string } | null>(null)
-  return {
-    useCurrentUser: () => ({ resolvedUserInfo: mocks.resolvedUserInfo })
-  }
-})
+vi.mock(import('@/composables/auth/useCurrentUser'))
+const currentUser = useCurrentUser()
 
 import ManagerSurveyDialog from '@/workbench/extensions/manager/components/survey/ManagerSurveyDialog.vue'
 
@@ -40,8 +36,12 @@ function renderDialog(onClose = vi.fn()) {
 
 describe('ManagerSurveyDialog', () => {
   beforeEach(() => {
+    const resolvedUserInfo = ref<{ id: string } | null>(null)
+    mocks.resolvedUserInfo = resolvedUserInfo
+    vi.spyOn(currentUser.resolvedUserInfo, 'value', 'get').mockImplementation(
+      () => resolvedUserInfo.value
+    )
     mocks.remoteConfig.value = {}
-    mocks.resolvedUserInfo.value = null
   })
 
   it('embeds the configured survey URL with the logged-in user', () => {

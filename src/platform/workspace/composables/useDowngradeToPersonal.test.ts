@@ -3,6 +3,7 @@ import { useBillingOperationStore } from '@/platform/workspace/stores/billingOpe
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 
+import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { WorkspaceApiError } from '@/platform/workspace/api/workspaceApi'
 import type { ListMembersParams } from '@/platform/workspace/api/workspaceApi'
 import type { WorkspaceMember } from '@/platform/workspace/stores/teamWorkspaceStore'
@@ -89,11 +90,8 @@ vi.mock<unknown>(import('@/composables/billing/useBillingContext'), () => ({
   })
 }))
 
-vi.mock<unknown>(import('@/composables/auth/useCurrentUser'), () => ({
-  useCurrentUser: () => ({
-    userEmail: mockUserEmail
-  })
-}))
+vi.mock(import('@/composables/auth/useCurrentUser'))
+const currentUser = useCurrentUser()
 
 vi.mock<unknown>(import('@/i18n'), () => ({
   t: (key: string, params?: Record<string, unknown>) =>
@@ -137,6 +135,9 @@ function teamWithOwnerAnd(...memberIds: string[]) {
 }
 
 beforeEach(() => {
+  vi.spyOn(currentUser.userEmail, 'value', 'get').mockImplementation(
+    () => mockUserEmail.value
+  )
   vi.mocked(useBillingOperationStore().startOperation).mockResolvedValue(
     billingOperation()
   )

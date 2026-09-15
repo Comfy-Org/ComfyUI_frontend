@@ -10,6 +10,7 @@ import { computed, defineComponent, h, nextTick, onMounted, ref } from 'vue'
 import type { Component } from 'vue'
 import { createI18n } from 'vue-i18n'
 
+import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import QueueNotificationBannerHost from '@/components/queue/QueueNotificationBannerHost.vue'
 import TopMenuSection from '@/components/TopMenuSection.vue'
 import type {
@@ -31,13 +32,14 @@ const mockData = vi.hoisted(() => ({
   setShowConflictRedDot: (_value: boolean) => {}
 }))
 
-vi.mock<unknown>(import('@/composables/auth/useCurrentUser'), () => ({
-  useCurrentUser: () => {
-    return {
-      isLoggedIn: computed(() => mockData.isLoggedIn)
-    }
-  }
-}))
+vi.mock(import('@/composables/auth/useCurrentUser'))
+const currentUser = useCurrentUser()
+
+beforeEach(() => {
+  vi.spyOn(currentUser.isLoggedIn, 'value', 'get').mockImplementation(
+    () => mockData.isLoggedIn
+  )
+})
 
 vi.mock(import('@/platform/distribution/types'), () => ({
   isCloud: false,

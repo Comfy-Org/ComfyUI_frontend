@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createMemoryHistory, createRouter } from 'vue-router'
 import type { RouteLocationNormalized, RouteRecordRaw } from 'vue-router'
 
+import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import {
   cloudOnboardingRoutes,
   oauthConsentRedirect
@@ -20,18 +21,15 @@ vi.mock<unknown>(import('@/platform/auth/session/useSessionCookie'), () => ({
   useSessionCookie: () => ({ createSessionOrThrow })
 }))
 
-// The `cloud-login` guard reads only `isLoggedIn.value`, so a plain box stands
-// in for the ref and keeps the factory hoistable.
-const { useCurrentUser, isLoggedIn } = vi.hoisted(() => {
-  const isLoggedIn = { value: false }
-  return { isLoggedIn, useCurrentUser: vi.fn(() => ({ isLoggedIn })) }
-})
+const isLoggedIn = { value: false }
 
-vi.mock<unknown>(import('@/composables/auth/useCurrentUser'), () => ({
-  useCurrentUser
-}))
+vi.mock(import('@/composables/auth/useCurrentUser'))
+const currentUser = useCurrentUser()
 
 beforeEach(() => {
+  vi.spyOn(currentUser.isLoggedIn, 'value', 'get').mockImplementation(
+    () => isLoggedIn.value
+  )
   isLoggedIn.value = false
 })
 
@@ -208,7 +206,6 @@ describe('cloudOnboardingRoutes', () => {
 describe('legacy /login through the cloud-login guard', () => {
   beforeEach(() => {
     clearOAuthRequestId()
-    useCurrentUser.mockClear()
   })
 
   it('lands a signed-out visitor on the login view', async () => {

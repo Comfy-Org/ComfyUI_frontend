@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { openTypeformDialog } from '@/platform/surveys/openTypeformDialog'
 import { useTelemetry } from '@/platform/telemetry'
 
@@ -22,9 +23,8 @@ vi.mock<unknown>(import('@/platform/telemetry'), () => ({
 const userEmail = vi.hoisted((): { value: string | undefined } => ({
   value: undefined
 }))
-vi.mock<unknown>(import('@/composables/auth/useCurrentUser'), () => ({
-  useCurrentUser: () => ({ userEmail })
-}))
+vi.mock(import('@/composables/auth/useCurrentUser'))
+const currentUser = useCurrentUser()
 
 vi.mock(import('@/platform/distribution/types'), () => ({
   isCloud: true,
@@ -33,6 +33,9 @@ vi.mock(import('@/platform/distribution/types'), () => ({
 
 describe('openFeedbackDialog', () => {
   beforeEach(() => {
+    vi.spyOn(currentUser.userEmail, 'value', 'get').mockImplementation(
+      () => userEmail.value
+    )
     userEmail.value = undefined
   })
 

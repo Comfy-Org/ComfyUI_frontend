@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { effectScope, nextTick, ref } from 'vue'
 import type { EffectScope, Ref } from 'vue'
 
-import * as currentUserModule from '@/composables/auth/useCurrentUser'
+import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import * as featureFlagsModule from '@/composables/useFeatureFlags'
 import { useAuthStore } from '@/stores/authStore'
 
@@ -32,18 +32,8 @@ vi.mock(import('@/composables/node/usePartnerNodesInGraph'), async () => {
   }
 })
 
-vi.mock<unknown>(import('@/composables/auth/useCurrentUser'), async () => {
-  const { computed, ref } = await import('vue')
-  const loggedIn = ref(false)
-  return {
-    useCurrentUser: () => ({
-      isLoggedIn: computed(() => loggedIn.value)
-    }),
-    __setLoggedIn: (value: boolean) => {
-      loggedIn.value = value
-    }
-  }
-})
+vi.mock(import('@/composables/auth/useCurrentUser'))
+const currentUser = useCurrentUser()
 
 vi.mock<unknown>(import('@/composables/useFeatureFlags'), async () => {
   const { reactive } = await import('vue')
@@ -61,9 +51,7 @@ vi.mock(import('@/platform/telemetry/reportError'), () => ({
   reportError: mockReportError
 }))
 
-const { __setLoggedIn } = currentUserModule as typeof currentUserModule & {
-  __setLoggedIn: (value: boolean) => void
-}
+let loggedIn: Ref<boolean>
 const { __setPartnerRunGateEnabled } =
   featureFlagsModule as typeof featureFlagsModule & {
     __setPartnerRunGateEnabled: (value: boolean) => void
@@ -76,11 +64,17 @@ function setup() {
   return scope.run(() => usePartnerNodesRunGate())!
 }
 
+beforeEach(() => {
+  loggedIn = ref(false)
+  vi.spyOn(currentUser.isLoggedIn, 'value', 'get').mockImplementation(
+    () => loggedIn.value
+  )
+})
+
 describe('usePartnerNodesRunGate', () => {
   beforeEach(() => {
     state.hasPartnerNodes = ref(false)
     state.partnerNodes = ref([])
-    __setLoggedIn(false)
     useAuthStore().isInitialized = true
     __setPartnerRunGateEnabled(true)
   })
@@ -90,7 +84,7 @@ describe('usePartnerNodesRunGate', () => {
   })
 
   it('resolves none without partner nodes', () => {
-    __setLoggedIn(true)
+    loggedIn.value = true
     const { gate } = setup()
     expect(gate.value).toBe('none')
   })
@@ -103,7 +97,7 @@ describe('usePartnerNodesRunGate', () => {
 
   it('resolves none when signed in', () => {
     state.hasPartnerNodes.value = true
-    __setLoggedIn(true)
+    loggedIn.value = true
     const { gate } = setup()
     expect(gate.value).toBe('none')
   })
@@ -123,11 +117,11 @@ describe('usePartnerNodesRunGate', () => {
 
   it('flips to sign-in when the user signs out mid-session', async () => {
     state.hasPartnerNodes.value = true
-    __setLoggedIn(true)
+    loggedIn.value = true
     const { gate } = setup()
     expect(gate.value).toBe('none')
 
-    __setLoggedIn(false)
+    loggedIn.value = false
     await nextTick()
     expect(gate.value).toBe('sign-in')
   })
@@ -154,7 +148,7 @@ describe('usePartnerNodesRunGate', () => {
   })
 
   it('reports nothing while the gate stays open', async () => {
-    __setLoggedIn(true)
+    loggedIn.value = true
     state.hasPartnerNodes.value = true
     setup()
     await nextTick()
@@ -170,14 +164,14 @@ describe('usePartnerNodesRunGate', () => {
       'none'
     )
 
-    __setLoggedIn(true)
+    loggedIn.value = true
     useAuthStore().isInitialized = true
     await nextTick()
     expect(gate.value, 'a signed-in resolution keeps the gate open').toBe(
       'none'
     )
 
-    __setLoggedIn(false)
+    loggedIn.value = false
     await nextTick()
     expect(gate.value).toBe('sign-in')
   })
@@ -197,7 +191,6 @@ describe('usePartnerNodesRunGate', () => {
 describe('partnerRunGateBlocksAutoQueue', () => {
   beforeEach(() => {
     state.partnerNodes = ref([])
-    __setLoggedIn(false)
     useAuthStore().isInitialized = true
     __setPartnerRunGateEnabled(true)
   })
@@ -232,7 +225,7 @@ describe('partnerRunGateBlocksAutoQueue', () => {
 
   it('allows partner nodes once the user is signed in', () => {
     state.partnerNodes.value = [{ nodeName: 'Kling', displayName: 'Kling' }]
-    __setLoggedIn(true)
+    loggedIn.value = true
     expect(partnerRunGateBlocksAutoQueue()).toBe(false)
   })
 })

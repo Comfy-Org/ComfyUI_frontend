@@ -1,8 +1,7 @@
 import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type { useCurrentUser } from '@/composables/auth/useCurrentUser'
-import type * as useCurrentUserModule from '@/composables/auth/useCurrentUser'
+import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { openFeedbackDialog as openGeneralFeedbackDialog } from '@/platform/support/feedbackDialog'
 import { openTypeformDialog } from '@/platform/surveys/openTypeformDialog'
 import type * as telemetryModule from '@/platform/telemetry'
@@ -30,17 +29,14 @@ vi.mock(import('@/platform/telemetry'), (): typeof telemetryModule =>
 const userEmail = vi.hoisted((): { value: string | undefined } => ({
   value: undefined
 }))
-vi.mock(
-  import('@/composables/auth/useCurrentUser'),
-  (): typeof useCurrentUserModule =>
-    fromPartial({
-      useCurrentUser: (): ReturnType<typeof useCurrentUser> =>
-        fromPartial({ userEmail })
-    })
-)
+vi.mock(import('@/composables/auth/useCurrentUser'))
+const currentUser = useCurrentUser()
 
 describe('openFeedbackDialog (agent)', () => {
   beforeEach(() => {
+    vi.spyOn(currentUser.userEmail, 'value', 'get').mockImplementation(
+      () => userEmail.value
+    )
     userEmail.value = undefined
     vi.stubGlobal('__COMFYUI_FRONTEND_VERSION__', '1.55.4')
     vi.spyOn(window.navigator, 'platform', 'get').mockReturnValue('MacIntel')

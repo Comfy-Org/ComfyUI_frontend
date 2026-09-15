@@ -8,6 +8,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, defineComponent, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
+import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import enMessages from '@/locales/en/main.json'
 
 import CurrentUserPopoverWorkspace from './CurrentUserPopoverWorkspace.vue'
@@ -44,14 +45,8 @@ const state = vi.hoisted(() => {
   }
 })
 
-vi.mock<unknown>(import('@/composables/auth/useCurrentUser'), () => ({
-  useCurrentUser: () => ({
-    userDisplayName: ref('Liz'),
-    userEmail: ref('liz@example.com'),
-    userPhotoUrl: ref(null),
-    handleSignOut: vi.fn()
-  })
-}))
+vi.mock(import('@/composables/auth/useCurrentUser'))
+const currentUser = useCurrentUser()
 
 vi.mock<unknown>(import('@/composables/billing/useBillingContext'), () => ({
   useBillingContext: () => ({
@@ -207,6 +202,11 @@ function renderComponent(
 
 describe('CurrentUserPopoverWorkspace', () => {
   beforeEach(() => {
+    vi.spyOn(currentUser.userDisplayName, 'value', 'get').mockReturnValue('Liz')
+    vi.spyOn(currentUser.userEmail, 'value', 'get').mockReturnValue(
+      'liz@example.com'
+    )
+    vi.spyOn(currentUser.userPhotoUrl, 'value', 'get').mockReturnValue(null)
     state.isCloud = true
     state.billingStatus = 'paid'
     state.canAccessSubscriptionFeatures = true

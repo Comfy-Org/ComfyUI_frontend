@@ -16,6 +16,7 @@ vi.mock(import('firebase/auth'))
 vi.mock(import('vuefire'), () => ({ useFirebaseAuth: vi.fn() }))
 
 import { i18n } from '@/i18n'
+import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useAgentConsentStore } from '@/workbench/extensions/agent/stores/agent/agentConsentStore'
 import { setupInlinePromptEditorDom } from './components/agent/composer/inlinePromptEditorTestSetup'
 
@@ -189,13 +190,8 @@ vi.mock<unknown>(import('@/utils/litegraphUtil'), () => ({
     (item as { isNodeFake?: boolean } | null)?.isNodeFake === true
 }))
 
-vi.mock<unknown>(import('@/composables/auth/useCurrentUser'), () => ({
-  useCurrentUser: () => ({
-    isLoggedIn: { value: true },
-    userDisplayName: { value: 'Jo Rivera' },
-    resolvedUserInfo: { value: { id: 'account-a' } }
-  })
-}))
+vi.mock(import('@/composables/auth/useCurrentUser'))
+const currentUser = useCurrentUser()
 
 const clipboard = vi.hoisted(() => ({ copy: vi.fn() }))
 
@@ -260,6 +256,13 @@ import { useAgentWorkflowTabBindingStore } from './stores/agent/agentWorkflowTab
 import AgentPanelRoot from './AgentPanelRoot.vue'
 
 beforeEach(() => {
+  vi.spyOn(currentUser.isLoggedIn, 'value', 'get').mockReturnValue(true)
+  vi.spyOn(currentUser.userDisplayName, 'value', 'get').mockReturnValue(
+    'Jo Rivera'
+  )
+  vi.spyOn(currentUser.resolvedUserInfo, 'value', 'get').mockReturnValue({
+    id: 'account-a'
+  })
   Object.assign(useAgentConsentStore(), { accepted: true })
   vi.mocked(validateComfyWorkflow).mockImplementation(async (content) =>
     fromPartial<ComfyWorkflowJSON>(

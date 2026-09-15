@@ -1,4 +1,3 @@
-import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
@@ -34,19 +33,15 @@ vi.mock<unknown>(import('@datadog/browser-rum'), () => ({
   }
 }))
 
-vi.mock(import('@/composables/auth/useCurrentUser'), () => ({
-  useCurrentUser: vi.fn()
-}))
-
-const onUserLogout = vi.fn<(callback: () => void) => void>()
+vi.mock(import('@/composables/auth/useCurrentUser'))
+const currentUser = useCurrentUser()
 
 beforeEach(() => {
-  vi.mocked(useCurrentUser).mockReturnValue(
-    fromPartial({
-      resolvedUserInfo: { value: { id: 'restored-user' } },
-      userEmail: { value: 'restored@example.com' },
-      onUserLogout
-    })
+  vi.spyOn(currentUser.resolvedUserInfo, 'value', 'get').mockReturnValue({
+    id: 'restored-user'
+  })
+  vi.spyOn(currentUser.userEmail, 'value', 'get').mockReturnValue(
+    'restored@example.com'
   )
 })
 
@@ -56,6 +51,7 @@ const workflowExecutionIntent = {
 
 describe('DatadogRumTelemetryProvider', () => {
   it('identifies restored sessions and replaces identity on account changes', () => {
+    const onUserLogout = vi.mocked(useCurrentUser().onUserLogout)
     const provider = new DatadogRumTelemetryProvider()
     provider.trackUserLoggedIn()
     provider.trackAuth({ user_id: 'new-user', email: 'new@example.com' })
@@ -76,13 +72,9 @@ describe('DatadogRumTelemetryProvider', () => {
   })
 
   it('does not identify an unresolved user or send email without an account ID', () => {
-    vi.mocked(useCurrentUser).mockReturnValue(
-      fromPartial({
-        resolvedUserInfo: { value: null },
-        userEmail: { value: null },
-        onUserLogout
-      })
-    )
+    vi.spyOn(currentUser.resolvedUserInfo, 'value', 'get').mockReturnValue(null)
+    vi.spyOn(currentUser.userEmail, 'value', 'get').mockReturnValue(null)
+    const onUserLogout = vi.mocked(currentUser.onUserLogout)
     const provider = new DatadogRumTelemetryProvider()
     provider.trackUserLoggedIn()
     provider.trackAuth({ email: 'unresolved@example.com' })

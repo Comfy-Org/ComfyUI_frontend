@@ -4,6 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { App } from 'vue'
 import { createApp, defineComponent } from 'vue'
 
+import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { i18n } from '@/i18n'
 import { useSharedWorkflowUrlLoader as createSharedWorkflowUrlLoader } from '@/platform/workflow/sharing/composables/useSharedWorkflowUrlLoader'
 import type { SharedWorkflowPayload } from '@/platform/workflow/sharing/types/shareTypes'
@@ -36,11 +37,8 @@ const mockImportPublishedAssets = vi.fn()
 const mockIsLoggedIn = vi.hoisted(() => ({ value: false }))
 const mockTrackShareLinkOpened = vi.hoisted(() => vi.fn())
 
-vi.mock<unknown>(import('@/composables/auth/useCurrentUser'), () => ({
-  useCurrentUser: () => ({
-    isLoggedIn: mockIsLoggedIn
-  })
-}))
+vi.mock(import('@/composables/auth/useCurrentUser'))
+const currentUser = useCurrentUser()
 
 vi.mock<unknown>(import('@/composables/useAppMode'), () => ({
   useAppMode: () => ({
@@ -201,6 +199,9 @@ function createDeferred() {
 }
 
 beforeEach(() => {
+  vi.spyOn(currentUser.isLoggedIn, 'value', 'get').mockImplementation(
+    () => mockIsLoggedIn.value
+  )
   Object.assign(useDialogStore(), { dialogStack: [] })
   vi.mocked(useDialogStore().closeDialog).mockImplementation(() => {})
   vi.mocked(useDialogStore().updateDialog).mockReturnValue(false)
