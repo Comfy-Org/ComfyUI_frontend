@@ -53,6 +53,20 @@ describe('CardRow', () => {
     expect(screen.getByTestId('card-row-prev')).toHaveFocus()
   })
 
+  it('hands focus back the other way when the row returns to its start', async () => {
+    renderRow()
+    await scrollRow(300, 900, 300)
+    const back = screen.getByTestId('card-row-prev')
+    back.focus()
+    expect(back).toHaveFocus()
+
+    await scrollRow(300, 900, 0)
+    await nextTick()
+
+    expect(screen.queryByTestId('card-row-prev')).toBeNull()
+    expect(screen.getByTestId('card-row-next')).toHaveFocus()
+  })
+
   it('pages by most of a screenful, so a card stays to hold on to', async () => {
     renderRow()
     await scrollRow(300, 900, 300)
