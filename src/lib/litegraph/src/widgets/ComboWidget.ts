@@ -15,6 +15,10 @@ import { findComboValueIndex } from '@/lib/litegraph/src/utils/widget'
 
 import { BaseSteppedWidget } from './BaseSteppedWidget'
 import type { WidgetEventOptions } from './BaseWidget'
+import {
+  hideComboOptionPreview,
+  showComboOptionPreview
+} from './comboOptionPreview'
 
 /**
  * This is used as an (invalid) assertion to resolve issues with legacy duck-typed values.
@@ -38,6 +42,18 @@ function toContextMenuValue(
   label: string
 ): string | IContextMenuValue<number> {
   return typeof value === 'number' ? { content: label, value } : value
+}
+
+function attachOptionPreview(
+  element: unknown,
+  value: string | number
+): void {
+  if (!(element instanceof HTMLElement) || typeof value !== 'string') return
+  element.addEventListener('pointerenter', () => {
+    showComboOptionPreview(value, element)
+  })
+  element.addEventListener('pointerleave', hideComboOptionPreview)
+  element.addEventListener('pointerdown', hideComboOptionPreview)
 }
 
 export class ComboWidget
@@ -171,16 +187,25 @@ export class ComboWidget
         }
       }
       const menu = new (litegraph().ContextMenu)<number>([], menuOptions)
+      menu.controller.signal.addEventListener('abort', hideComboOptionPreview, {
+        once: true
+      })
 
       const getOptionLabel = this.options.getOptionLabel
       for (const value of values_list) {
         try {
           const label = getOptionLabel(String(value))
-          menu.addItem(label, toContextMenuValue(value, label), menuOptions)
+          attachOptionPreview(
+            menu.addItem(label, toContextMenuValue(value, label), menuOptions),
+            value
+          )
         } catch (err) {
           console.error('Failed to map value:', err)
           const label = String(value)
-          menu.addItem(label, toContextMenuValue(value, label), menuOptions)
+          attachOptionPreview(
+            menu.addItem(label, toContextMenuValue(value, label), menuOptions),
+            value
+          )
         }
       }
       return
@@ -188,7 +213,7 @@ export class ComboWidget
 
     // Show dropdown menu when user clicks on widget label
     const text_values = values != values_list ? Object.values(values) : values
-    new (litegraph().ContextMenu)(text_values, {
+    const menu = new (litegraph().ContextMenu)(text_values, {
       scale: Math.max(1, canvas.ds.scale),
       event: e,
       className: 'dark',
@@ -198,6 +223,15 @@ export class ComboWidget
           values != values_list ? text_values.indexOf(value) : value,
           { e, node, canvas }
         )
+      }
+    })
+    menu.controller.signal.addEventListener('abort', hideComboOptionPreview, {
+      once: true
+    })
+    Array.from(menu.root.children).forEach((element, index) => {
+      const value = values_list[index]
+      if (element instanceof HTMLElement && typeof value === 'string') {
+        attachOptionPreview(element, value)
       }
     })
   }
