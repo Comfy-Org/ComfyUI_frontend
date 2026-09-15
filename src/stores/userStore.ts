@@ -50,7 +50,7 @@ export const useUserStore = defineStore('user', () => {
       link.id = USER_STYLESHEET_ID
       link.rel = 'stylesheet'
       link.href = api.apiURL(USER_STYLESHEET_ROUTE)
-      document.head.append(link)
+      document.head.prepend(link)
       return
     }
 
@@ -63,7 +63,7 @@ export const useUserStore = defineStore('user', () => {
         document.createElement('style')
       style.id = USER_STYLESHEET_ID
       style.textContent = await response.text()
-      if (!style.isConnected) document.head.append(style)
+      if (!style.isConnected) document.head.prepend(style)
     } catch {
       return
     }

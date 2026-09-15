@@ -86,12 +86,7 @@ describe('userStore', () => {
       getUserConfig.mockResolvedValue({ users: { 'alice-id': 'Alice' } })
       fetchApi.mockImplementation(async () => {
         expect(api.user).toBe('alice-id')
-        return new Response(
-          '@import "theme.css"; body { background: url("background.png"), url("images/image (1).png"); }',
-          {
-            status: 200
-          }
-        )
+        return new Response('body { color: red; }', { status: 200 })
       })
       const store = useUserStore()
 
@@ -99,9 +94,34 @@ describe('userStore', () => {
 
       expect(fetchApi).toHaveBeenCalledWith('/userdata/user.css')
       expect(document.querySelector('#user-stylesheet')?.textContent).toBe(
-        '@import "theme.css"; body { background: url("background.png"), url("images/image (1).png"); }'
+        'body { color: red; }'
       )
     })
+
+    it.for([
+      { config: {}, tagName: 'LINK' },
+      { config: { users: { 'alice-id': 'Alice' } }, tagName: 'STYLE' }
+    ])(
+      'inserts the $tagName before app styles to preserve cascade order',
+      async ({ config, tagName }) => {
+        localStorage['Comfy.userId'] = 'users' in config ? 'alice-id' : ''
+        getUserConfig.mockResolvedValue(config)
+        fetchApi.mockResolvedValue(
+          new Response('body { color: red; }', { status: 200 })
+        )
+        const appStyle = document.createElement('style')
+        appStyle.id = 'app-stylesheet'
+        document.head.prepend(appStyle)
+        const store = useUserStore()
+
+        await store.initialize()
+
+        const userStyle = document.querySelector('#user-stylesheet')
+        expect(userStyle?.tagName).toBe(tagName)
+        expect(userStyle?.nextElementSibling).toBe(appStyle)
+        appStyle.remove()
+      }
+    )
 
     it('loads CSS for a single-user server without a selected identity', async () => {
       getUserConfig.mockResolvedValue({})
