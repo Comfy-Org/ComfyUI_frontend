@@ -251,7 +251,7 @@ describe('HeaderAccount menu', () => {
     expect(active.textContent).not.toContain('Ada')
   })
 
-  it('marks the header with the active workspace, not the word workspace', async () => {
+  it('marks the workspace with its own name, not with the word workspace', async () => {
     signIn()
     h.session!.value = {
       token: 'jwt',
@@ -259,11 +259,14 @@ describe('HeaderAccount menu', () => {
       workspace: { id: 'ws', name: 'Ada Studio Workspace', type: 'team' },
       role: 'owner'
     }
+    const user = userEvent.setup()
     render(HeaderAccount)
 
-    expect(screen.getByTestId('header-workspace-monogram').textContent).toBe(
-      'AS'
-    )
+    await user.click(screen.getByTestId('header-account'))
+    const active = await screen.findByTestId('account-workspace-current')
+
+    expect(active.textContent).toContain('AS')
+    expect(active.textContent).toContain('Ada Studio Workspace')
   })
 
   it('uses the user ID when profile fields are empty', async () => {

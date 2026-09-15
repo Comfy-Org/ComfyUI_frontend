@@ -91,22 +91,12 @@ const surfaceClass =
       class="flex h-10 cursor-pointer items-center gap-1.5 rounded-full border border-transparency-white-t20 bg-transparency-white-t4 p-1 outline-none focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow/50"
     >
       <span
-        :class="cn(monogramClass, 'text-xs')"
-        data-testid="header-workspace-monogram"
-        aria-hidden="true"
-      >
-        {{ workspaceInitials }}
-      </span>
-
-      <span
         v-if="formattedCredits !== undefined"
         data-testid="header-credits"
         :class="
           cn(
-            'flex h-8 items-center gap-1.5 rounded-full px-3 text-sm font-bold whitespace-nowrap tabular-nums',
-            hasCredits
-              ? 'bg-primary-comfy-yellow/10 text-primary-comfy-yellow'
-              : 'bg-primary-comfy-red/10 text-primary-comfy-red'
+            'flex h-8 items-center gap-1.5 px-2 text-sm font-bold whitespace-nowrap tabular-nums',
+            hasCredits ? 'text-primary-warm-white' : 'text-primary-comfy-red'
           )
         "
       >
@@ -210,10 +200,8 @@ const surfaceClass =
           </DropdownMenuItem>
         </div>
 
-        <div class="h-3" aria-hidden="true" />
-
         <div
-          class="group/footer flex items-center gap-3 bg-transparency-white-t4 px-4 pt-6 pb-3"
+          class="group/footer flex items-center gap-3 bg-transparency-white-t4 p-4"
           data-testid="account-identity"
         >
           <span
