@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import type { HTMLAttributes } from 'vue'
-import { useI18n } from 'vue-i18n'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
@@ -24,7 +23,6 @@ const {
 }>()
 
 const emit = defineEmits<{ remove: [event: MouseEvent] }>()
-const { t } = useI18n()
 </script>
 
 <template>
@@ -37,7 +35,7 @@ const { t } = useI18n()
       variant="textonly"
       size="icon-sm"
       class="-mr-1 rounded-full text-current"
-      :aria-label="t('g.remove')"
+      :aria-label="$t('g.remove')"
       @click="emit('remove', $event)"
     >
       <i class="icon-[lucide--x] size-3" aria-hidden="true" />

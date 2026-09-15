@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import type { HTMLAttributes } from 'vue'
-import { useI18n } from 'vue-i18n'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
@@ -23,7 +22,6 @@ const {
 }>()
 
 const emit = defineEmits<{ close: [event: MouseEvent] }>()
-const { t } = useI18n()
 const visible = ref(true)
 
 function close(event: MouseEvent) {
@@ -50,7 +48,7 @@ function close(event: MouseEvent) {
       variant="textonly"
       size="unset"
       class="size-6 shrink-0 p-0 text-current"
-      :aria-label="t('g.close')"
+      :aria-label="$t('g.close')"
       @click="close"
     >
       <i class="icon-[lucide--x] size-4" aria-hidden="true" />

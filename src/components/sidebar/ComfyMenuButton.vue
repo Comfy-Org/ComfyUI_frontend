@@ -75,7 +75,7 @@
         @click.stop="handleNodes2ToggleClick"
       >
         <span class="p-menubar-item-label text-nowrap">{{ item.label }}</span>
-        <Tag severity="info" class="ml-2 text-xs">{{ $t('g.beta') }}</Tag>
+        <Badge severity="info" class="ml-2 text-xs">{{ $t('g.beta') }}</Badge>
         <Switch
           :model-value="nodes2Enabled"
           class="ml-4"
@@ -95,9 +95,8 @@ import type { TieredMenuMethods, TieredMenuState } from 'primevue/tieredmenu'
 import { computed, nextTick, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import Tag from '@/components/ui/badge/Badge.vue'
-
 import ComfyLogo from '@/components/icons/ComfyLogo.vue'
+import Badge from '@/components/ui/badge/Badge.vue'
 import Switch from '@/components/ui/switch/Switch.vue'
 import { useWorkflowTemplateSelectorDialog } from '@/composables/useWorkflowTemplateSelectorDialog'
 import { useSettingStore } from '@/platform/settings/settingStore'

@@ -24,7 +24,7 @@
       class="icon-[lucide--triangle-alert] text-warning-background"
     />
     <span class="p-breadcrumb-item-label max-w-72 px-2">{{ item.label }}</span>
-    <Tag
+    <Badge
       v-if="item.isBlueprint"
       data-testid="subgraph-breadcrumb-blueprint-tag"
       :value="t('breadcrumbsMenu.blueprint')"
@@ -69,9 +69,8 @@ import type { MenuItem } from 'primevue/menuitem'
 import { computed, nextTick, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import Badge from '@/components/ui/badge/Badge.vue'
 import { useWorkflowActionsMenu } from '@/composables/useWorkflowActionsMenu'
-import Tag from '@/components/ui/badge/Badge.vue'
-import { ensureWorkflowSuffix, getWorkflowSuffix } from '@/utils/formatUtil'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import {
   ComfyWorkflow,
@@ -83,6 +82,7 @@ import { useCommandStore } from '@/stores/commandStore'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { isMissingWarningVisible } from '@/platform/settings/missingWarningVisibility'
 import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
+import { ensureWorkflowSuffix, getWorkflowSuffix } from '@/utils/formatUtil'
 import { graphHasMissingNodes } from '@/workbench/extensions/manager/utils/graphHasMissingNodes'
 
 interface Props {

@@ -4,7 +4,7 @@
       {{ getDownloadLabel(download.savePath ?? '') }}
     </div>
     <div v-if="['cancelled', 'error'].includes(download.status ?? '')">
-      <Chip
+      <Badge
         variant="chip"
         severity="danger"
         class="mt-2 h-6 text-sm font-light"
@@ -12,7 +12,7 @@
         @remove="handleRemoveDownload"
       >
         {{ t('electronFileDownload.cancelled') }}
-      </Chip>
+      </Badge>
     </div>
     <div
       v-if="
@@ -82,8 +82,8 @@
 import { computed, useId } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import Badge from '@/components/ui/badge/Badge.vue'
 import Button from '@/components/ui/button/Button.vue'
-import Chip from '@/components/ui/badge/Badge.vue'
 import { useElectronDownloadStore } from '@/stores/electronDownloadStore'
 import type { ElectronDownload } from '@/stores/electronDownloadStore'
 
@@ -92,12 +92,12 @@ const labelId = useId()
 
 const electronDownloadStore = useElectronDownloadStore()
 
-const props = defineProps<{
+const { download } = defineProps<{
   download: ElectronDownload
 }>()
 
 const downloadProgressPercent = computed(() =>
-  Number(((props.download.progress ?? 0) * 100).toFixed(1))
+  Number(((download.progress ?? 0) * 100).toFixed(1))
 )
 
 const getDownloadLabel = (savePath: string) => {
@@ -108,18 +108,13 @@ const getDownloadLabel = (savePath: string) => {
   return `${dir}/${name}`
 }
 
-const triggerCancelDownload = () =>
-  electronDownloadStore.cancel(props.download.url)
-const triggerPauseDownload = () =>
-  electronDownloadStore.pause(props.download.url)
-const triggerResumeDownload = () =>
-  electronDownloadStore.resume(props.download.url)
+const triggerCancelDownload = () => electronDownloadStore.cancel(download.url)
+const triggerPauseDownload = () => electronDownloadStore.pause(download.url)
+const triggerResumeDownload = () => electronDownloadStore.resume(download.url)
 
 const handleRemoveDownload = () => {
   electronDownloadStore.$patch((state) => {
-    state.downloads = state.downloads.filter(
-      ({ url }) => url !== props.download.url
-    )
+    state.downloads = state.downloads.filter(({ url }) => url !== download.url)
   })
 }
 </script>

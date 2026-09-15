@@ -268,7 +268,7 @@
                       :get-logo-url="workflowTemplatesStore.getLogoUrl"
                       default-position="right-2 bottom-2"
                     />
-                    <ProgressSpinner
+                    <Spinner
                       v-if="loadingTemplate === template.name"
                       class="absolute inset-0 z-10 m-auto size-12"
                     />
@@ -425,7 +425,6 @@ import { computed, onBeforeUnmount, onMounted, provide, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import CardBottom from '@/components/card/CardBottom.vue'
-import ProgressSpinner from '@/components/ui/spinner/Spinner.vue'
 import CardContainer from '@/components/card/CardContainer.vue'
 import CardTop from '@/components/card/CardTop.vue'
 import Tag from '@/components/chip/Tag.vue'
@@ -441,6 +440,7 @@ import Button from '@/components/ui/button/Button.vue'
 import AccessibleTooltip from '@/components/ui/tooltip/AccessibleTooltip.vue'
 import { selectCountBadgeClass } from '@/components/ui/select/select.variants'
 import type { SelectOption } from '@/components/ui/select/types'
+import Spinner from '@/components/ui/spinner/Spinner.vue'
 import BaseModalLayout from '@/components/widget/layout/BaseModalLayout.vue'
 import LeftSidePanel from '@/components/widget/panel/LeftSidePanel.vue'
 import { useIntersectionObserver } from '@/composables/useIntersectionObserver'

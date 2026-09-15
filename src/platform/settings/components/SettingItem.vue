@@ -6,12 +6,12 @@
     @update:form-value="updateSettingValue"
   >
     <template #name-prefix>
-      <Tag
+      <Badge
         v-if="setting.id === 'Comfy.Locale'"
         severity="primary"
         class="pi pi-language"
       />
-      <Tag
+      <Badge
         v-if="setting.experimental"
         v-tooltip="{
           value: $t('g.experimental'),
@@ -22,7 +22,7 @@
         <template #icon>
           <i-material-symbols:experiment-outline />
         </template>
-      </Tag>
+      </Badge>
     </template>
   </FormItem>
 </template>
@@ -32,7 +32,7 @@ import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import FormItem from '@/components/common/FormItem.vue'
-import Tag from '@/components/ui/badge/Badge.vue'
+import Badge from '@/components/ui/badge/Badge.vue'
 import { st } from '@/i18n'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import type { SettingOption, SettingParams } from '@/platform/settings/types'

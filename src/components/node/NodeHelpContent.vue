@@ -1,10 +1,6 @@
 <template>
   <div class="node-help-content mx-auto w-full">
-    <ProgressSpinner
-      v-if="isLoading"
-      class="m-auto"
-      :aria-label="$t('g.loading')"
-    />
+    <Spinner v-if="isLoading" class="m-auto" :aria-label="$t('g.loading')" />
     <!-- Markdown fetched successfully -->
     <SanitizedHtml
       v-else-if="!error"
@@ -80,7 +76,7 @@
 import { computed } from 'vue'
 
 import SanitizedHtml from '@/components/common/SanitizedHtml.vue'
-import ProgressSpinner from '@/components/ui/spinner/Spinner.vue'
+import Spinner from '@/components/ui/spinner/Spinner.vue'
 import { useNodeHelpContent } from '@/composables/useNodeHelpContent'
 import { flattenInputSpecs } from '@/schemas/nodeDef/inputSpecUtil'
 import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'

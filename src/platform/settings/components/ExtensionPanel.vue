@@ -40,11 +40,11 @@
       <Column :header="$t('g.extensionName')" sortable field="name">
         <template #body="slotProps">
           {{ slotProps.data.name }}
-          <Tag
+          <Badge
             v-if="extensionStore.isCoreExtension(slotProps.data.name)"
             :value="$t('g.core')"
           />
-          <Tag v-else :value="$t('g.custom')" severity="info" />
+          <Badge v-else :value="$t('g.custom')" severity="info" />
         </template>
       </Column>
       <Column
@@ -88,7 +88,7 @@ import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
-import Tag from '@/components/ui/badge/Badge.vue'
+import Badge from '@/components/ui/badge/Badge.vue'
 import Message from '@/components/ui/message/Message.vue'
 import SearchInput from '@/components/ui/search-input/SearchInput.vue'
 import Switch from '@/components/ui/switch/Switch.vue'
