@@ -313,8 +313,8 @@ function renderComponent({ stubFooter = true } = {}) {
 
 describe('SubscriptionPanelContentWorkspace', () => {
   beforeEach(() => {
-    vi.mocked(useBillingContext).mockReturnValue({
-      ...useBillingContext(),
+    const billing = useBillingContext()
+    Object.assign(billing, {
       type: computed(() => mockBillingType.value),
       canAccessSubscriptionFeatures: computed(
         () => mockIsActiveSubscription.value
@@ -329,8 +329,9 @@ describe('SubscriptionPanelContentWorkspace', () => {
       currentTeamCreditStop: computed(() => mockCurrentTeamCreditStop.value),
       isLoading: mockIsLoading,
       error: mockError
-    } as const)
-    vi.mocked(useBillingContext().getMaxSeats).mockReturnValue(5)
+    })
+    vi.mocked(billing.getMaxSeats).mockReturnValue(5)
+    vi.mocked(useBillingContext).mockReturnValue(billing)
 
     mockDistributionState.isCloud = true
     mockSubscriptionStatus.value = 'active'

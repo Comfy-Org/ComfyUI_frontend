@@ -72,12 +72,11 @@ beforeEach(() => {
 
 describe('PricingTableWorkspace credit allotment copy', () => {
   beforeEach(() => {
+    const billing = useBillingContext()
     state.plans = []
-    vi.mocked(useBillingContext).mockReturnValue({
-      ...useBillingContext(),
-      plans: computed(() => state.plans)
-    } as const)
-    vi.mocked(useBillingContext().getMaxSeats).mockReturnValue(5)
+    billing.plans = computed(() => state.plans)
+    vi.mocked(billing.getMaxSeats).mockReturnValue(5)
+    vi.mocked(useBillingContext).mockReturnValue(billing)
   })
 
   it('shows the catalog grant in preference to twelve static months', () => {

@@ -132,14 +132,15 @@ describe('CloudSubscriptionRedirectView', () => {
     mockQuery = {}
     canAccessSubscriptionFeatures.value = false
     teamCreditStops.value = TEAM_CREDIT_STOPS
-    vi.mocked(useBillingContext).mockReturnValue({
-      ...useBillingContext(),
+    const billing = useBillingContext()
+    Object.assign(billing, {
       isInitialized: ref(true),
       canAccessSubscriptionFeatures: computed(
         () => canAccessSubscriptionFeatures.value
       ),
       teamCreditStops: computed(() => teamCreditStops.value)
-    } as const)
+    })
+    vi.mocked(useBillingContext).mockReturnValue(billing)
   })
 
   test('redirects to home when subscriptionType is missing', async () => {

@@ -28,6 +28,8 @@ describe('usePaymentReturnUrlLoader', () => {
   })
 
   it('refreshes billing after bootstrap strips Stripe return params', async () => {
+    const billing = useBillingContext()
+    vi.mocked(useBillingContext).mockReturnValue(billing)
     window.history.replaceState(
       {},
       '',
@@ -39,19 +41,23 @@ describe('usePaymentReturnUrlLoader', () => {
     await loadPaymentReturnFromUrl()
 
     expect(window.location.search).toBe('?workspace=ws-1')
-    expect(useBillingContext().fetchStatus).toHaveBeenCalledOnce()
+    expect(billing.fetchStatus).toHaveBeenCalledOnce()
   })
 
   it('does nothing on an ordinary page load', async () => {
+    const billing = useBillingContext()
+    vi.mocked(useBillingContext).mockReturnValue(billing)
     window.history.replaceState({}, '', '/?workspace=ws-1')
 
     const { loadPaymentReturnFromUrl } = usePaymentReturnUrlLoader()
     await loadPaymentReturnFromUrl()
 
-    expect(useBillingContext().fetchStatus).not.toHaveBeenCalled()
+    expect(billing.fetchStatus).not.toHaveBeenCalled()
   })
 
   it('does not start embedded recovery while the flag is off', async () => {
+    const billing = useBillingContext()
+    vi.mocked(useBillingContext).mockReturnValue(billing)
     mocks.embeddedCheckoutEnabled = false
     window.history.replaceState(
       {},
@@ -62,6 +68,6 @@ describe('usePaymentReturnUrlLoader', () => {
 
     await usePaymentReturnUrlLoader().loadPaymentReturnFromUrl()
 
-    expect(useBillingContext().fetchStatus).not.toHaveBeenCalled()
+    expect(billing.fetchStatus).not.toHaveBeenCalled()
   })
 })
