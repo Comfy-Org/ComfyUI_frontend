@@ -75,6 +75,22 @@ export const StorageKeys = {
     return `Comfy.Workflow.OpenPaths:${clientId}`
   },
 
+  agentThread(workspaceId: string): string {
+    return `Comfy.Agent.ThreadId:${workspaceId}`
+  },
+
+  agentWorkflowTabBindings(workspaceId: string): string {
+    return `Comfy.Agent.WorkflowTabBindings:${workspaceId}`
+  },
+
+  agentChatTitles(workspaceId: string): string {
+    return `Comfy.Agent.ChatTitles:${workspaceId}`
+  },
+
+  agentDeletedThreads(workspaceId: string): string {
+    return `Comfy.Agent.DeletedThreads:${workspaceId}`
+  },
+
   /**
    * localStorage copies of tab pointers for cross-session restore.
    * sessionStorage is per-tab (correct for in-session use) but lost
@@ -97,6 +113,10 @@ export const StorageKeys = {
     activePath: 'Comfy.Workflow.ActivePath:',
     openPaths: 'Comfy.Workflow.OpenPaths:',
     lastActivePath: 'Comfy.Workflow.LastActivePath:',
-    lastOpenPaths: 'Comfy.Workflow.LastOpenPaths:'
+    lastOpenPaths: 'Comfy.Workflow.LastOpenPaths:',
+    agentThread: 'Comfy.Agent.ThreadId:',
+    agentWorkflowTabBindings: 'Comfy.Agent.WorkflowTabBindings:',
+    agentChatTitles: 'Comfy.Agent.ChatTitles:',
+    agentDeletedThreads: 'Comfy.Agent.DeletedThreads:'
   }
 } as const
