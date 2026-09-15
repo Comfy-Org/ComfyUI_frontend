@@ -47,7 +47,7 @@ const arrowClass =
 // page of chrome, and a keyboard earns them by focusing. A touch screen can do
 // neither, so there they stay: the fade is the only thing saying there is more.
 const revealClass =
-  'pointer-events-none absolute inset-0 transition-opacity duration-200 can-hover:opacity-0 can-hover:group-hover/row:opacity-100 can-hover:group-focus-within/row:opacity-100'
+  'pointer-events-none absolute inset-x-0 top-0 bottom-2 transition-opacity duration-200 can-hover:opacity-0 can-hover:group-hover/row:opacity-100 can-hover:group-focus-within/row:opacity-100'
 
 // The fade says there is more that way, so it keeps the arrows' company: each
 // side carries one only while that side has somewhere to go.
