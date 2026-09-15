@@ -350,6 +350,64 @@ describe('initPostHog', () => {
   })
 })
 
+describe('workshop-enabled settles only on an observed answer', () => {
+  beforeEach(() => {
+    vi.resetModules()
+    hoisted.mockGetProperty.mockReturnValue(undefined)
+    hoisted.mockIsFeatureEnabled.mockReturnValue(undefined)
+  })
+
+  it('is unsettled before init so the gate shows loading, not the public site', async () => {
+    const { useWorkshopEnabledSettled } = await import('./posthog')
+    expect(useWorkshopEnabledSettled().value).toBe(false)
+  })
+
+  it('is settled at load under the local dev override', async () => {
+    hoisted.localDev = true
+    vi.stubEnv('PUBLIC_WORKSHOP_ENABLED', '1')
+    const { useWorkshopEnabledSettled, useWorkshopEnabled } =
+      await import('./posthog')
+    expect(useWorkshopEnabledSettled().value).toBe(true)
+    expect(useWorkshopEnabled().value).toBe(true)
+    vi.unstubAllEnvs()
+  })
+
+  it('stays unsettled through init until a flag answer arrives', async () => {
+    const { initPostHog, useWorkshopEnabledSettled } = await import('./posthog')
+    initPostHog()
+    expect(useWorkshopEnabledSettled().value).toBe(false)
+    hoisted.mockIsFeatureEnabled.mockReturnValue(false)
+    emitFeatureFlags()
+    expect(useWorkshopEnabledSettled().value).toBe(true)
+  })
+
+  it('settles to the persisted answer synchronously on a warm load', async () => {
+    hoisted.mockIsFeatureEnabled.mockReturnValue(false)
+    const { initPostHog, useWorkshopEnabledSettled, useWorkshopEnabled } =
+      await import('./posthog')
+    initPostHog()
+    expect(useWorkshopEnabledSettled().value).toBe(true)
+    expect(useWorkshopEnabled().value).toBe(false)
+  })
+
+  it('settles after a timeout when PostHog never answers', async () => {
+    vi.useFakeTimers()
+    const { initPostHog, useWorkshopEnabledSettled } = await import('./posthog')
+    initPostHog()
+    expect(useWorkshopEnabledSettled().value).toBe(false)
+    await vi.advanceTimersByTimeAsync(3000)
+    expect(useWorkshopEnabledSettled().value).toBe(true)
+    vi.useRealTimers()
+  })
+
+  it('settles when the flag load errors', async () => {
+    const { initPostHog, useWorkshopEnabledSettled } = await import('./posthog')
+    initPostHog()
+    emitFeatureFlags(true)
+    expect(useWorkshopEnabledSettled().value).toBe(true)
+  })
+})
+
 describe('capturePageview', () => {
   beforeEach(() => {
     vi.resetModules()

@@ -108,8 +108,21 @@ const WORKSHOP_TURNSTILE_FLAG = 'workshop-signup-turnstile'
 const VISIBILITY_OVERRIDE =
   WORKSHOP_LOCAL_DEV && import.meta.env.PUBLIC_WORKSHOP_ENABLED === '1'
 const workshopEnabled = ref(VISIBILITY_OVERRIDE)
-const workshopEnabledSettled = ref(true)
+const workshopEnabledSettled = ref(VISIBILITY_OVERRIDE)
 let workshopUser: WorkshopIdentity | null | undefined
+
+// If PostHog never answers (blocked, offline), resolve to the default-off
+// experience rather than leaving the gate on its loading frame forever.
+const FLAG_RESOLUTION_TIMEOUT_MS = 3000
+let flagResolutionTimer: ReturnType<typeof setTimeout> | undefined
+
+function markFlagResolved(): void {
+  if (flagResolutionTimer !== undefined) {
+    clearTimeout(flagResolutionTimer)
+    flagResolutionTimer = undefined
+  }
+  workshopEnabledSettled.value = true
+}
 
 export function useWorkshopEnabled(): Readonly<Ref<boolean>> {
   return readonly(workshopEnabled)
@@ -147,7 +160,7 @@ export function identifyWorkshopUser(user: WorkshopIdentity | null): void {
   workshopUser = user
   const waitForIdentityAnswer = !VISIBILITY_OVERRIDE && user !== null
   if (!initialized) {
-    workshopEnabledSettled.value = !waitForIdentityAnswer
+    workshopEnabledSettled.value = VISIBILITY_OVERRIDE
     return
   }
   try {
@@ -209,6 +222,11 @@ export function initPostHog() {
       before_send: createPostHogBeforeSend()
     })
     initialized = true
+    if (!workshopEnabledSettled.value)
+      flagResolutionTimer = setTimeout(
+        markFlagResolved,
+        FLAG_RESOLUTION_TIMEOUT_MS
+      )
     const persistedAnswer = posthog.isFeatureEnabled(WORKSHOP_ENABLED_FLAG, {
       send_event: false
     })
@@ -220,17 +238,17 @@ export function initPostHog() {
       (!expectedUid && !persistedUid)
     if (persistedAnswer !== undefined && persistedIdentityMatches) {
       workshopEnabled.value = VISIBILITY_OVERRIDE || persistedAnswer
-      workshopEnabledSettled.value = true
+      markFlagResolved()
     }
     posthog.onFeatureFlags((_flags, _variants, context) => {
       if (context?.errorsLoading) {
-        workshopEnabledSettled.value = true
+        markFlagResolved()
         return
       }
       workshopEnabled.value =
         VISIBILITY_OVERRIDE ||
         posthog.isFeatureEnabled(WORKSHOP_ENABLED_FLAG) === true
-      workshopEnabledSettled.value = true
+      markFlagResolved()
       if (!OVERRIDDEN_ON) {
         workshopAuthEnabled.value =
           posthog.isFeatureEnabled(WORKSHOP_AUTH_FLAG) !== false
@@ -248,7 +266,7 @@ export function initPostHog() {
       identifyWorkshopUser(user)
     }
   } catch (error) {
-    workshopEnabledSettled.value = true
+    markFlagResolved()
     console.error('PostHog init failed', error)
   }
 }
