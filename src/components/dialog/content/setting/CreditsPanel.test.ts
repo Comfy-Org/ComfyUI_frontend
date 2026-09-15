@@ -1,31 +1,16 @@
 import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { defineComponent, h, nextTick } from 'vue'
+import { computed, defineComponent, h, nextTick, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import type { BalanceInfo } from '@/composables/billing/types'
+import { useBillingContext } from '@/composables/billing/useBillingContext'
 
 import CreditsPanel from './CreditsPanel.vue'
 
-const billingMocks = vi.hoisted(() => ({
-  balance: { value: null as BalanceInfo | null },
-  manageSubscription: vi.fn()
-}))
-vi.mock<unknown>(
-  import('@/composables/billing/useBillingContext'),
-  async () => {
-    const { ref } = await import('vue')
-    const balance = ref<BalanceInfo | null>(null)
-    Object.defineProperty(billingMocks, 'balance', { get: () => balance })
-    return {
-      useBillingContext: () => ({
-        balance,
-        manageSubscription: billingMocks.manageSubscription
-      })
-    }
-  }
-)
+const balance = ref<BalanceInfo | null>(null)
+vi.mock(import('@/composables/billing/useBillingContext'))
 
 const refreshActivity = vi.hoisted(() => vi.fn())
 vi.mock<unknown>(import('./UsageLogsTable.vue'), async () => {
@@ -85,7 +70,11 @@ function makeBalance(amountMicros: number): BalanceInfo {
 
 describe('CreditsPanel', () => {
   beforeEach(() => {
-    billingMocks.balance.value = null
+    balance.value = null
+    vi.mocked(useBillingContext).mockReturnValue({
+      ...useBillingContext(),
+      balance: computed(() => balance.value)
+    } as const)
   })
 
   function renderComponent() {
@@ -100,17 +89,17 @@ describe('CreditsPanel', () => {
 
     await user.click(screen.getByRole('button', { name: /Invoice History/ }))
 
-    expect(billingMocks.manageSubscription).toHaveBeenCalledOnce()
+    expect(useBillingContext().manageSubscription).toHaveBeenCalledOnce()
   })
 
   it('refreshes activity on a balance change but not on first hydration', async () => {
     renderComponent()
 
-    billingMocks.balance.value = makeBalance(5000)
+    balance.value = makeBalance(5000)
     await nextTick()
     expect(refreshActivity).not.toHaveBeenCalled()
 
-    billingMocks.balance.value = makeBalance(9000)
+    balance.value = makeBalance(9000)
     await nextTick()
     expect(refreshActivity).toHaveBeenCalledOnce()
   })

@@ -6,6 +6,7 @@
   "entry": [
     "src/main.ts",
     "src/platform/telemetry/__mocks__/index.ts",
+    "src/composables/billing/__mocks__/useBillingContext.ts",
     "index.html",
     "scripts/**/*.{js,ts}",
     "apps/website/src/scripts/**/*.ts",

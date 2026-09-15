@@ -1,3 +1,4 @@
+import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -6,15 +7,10 @@ import { createI18n } from 'vue-i18n'
 
 import SubscribeToRun from './SubscribeToRun.vue'
 
-const mockShowSubscriptionDialog = vi.fn()
 const mockCanManageSubscription = ref(true)
 const mockIsMdOrLarger = ref(true)
 
-vi.mock<unknown>(import('@/composables/billing/useBillingContext'), () => ({
-  useBillingContext: () => ({
-    showSubscriptionDialog: mockShowSubscriptionDialog
-  })
-}))
+vi.mock(import('@/composables/billing/useBillingContext'))
 
 vi.mock<unknown>(
   import('@/platform/workspace/composables/useWorkspaceUI'),
@@ -101,7 +97,7 @@ describe('SubscribeToRun', () => {
 
     await user.click(screen.getByTestId('subscribe-to-run-button'))
 
-    expect(mockShowSubscriptionDialog).toHaveBeenCalledOnce()
+    expect(useBillingContext().showSubscriptionDialog).toHaveBeenCalledOnce()
   })
 
   it('routes members to the same role-aware dialog on click', async () => {
@@ -110,6 +106,6 @@ describe('SubscribeToRun', () => {
 
     await user.click(screen.getByTestId('subscribe-to-run-button'))
 
-    expect(mockShowSubscriptionDialog).toHaveBeenCalledOnce()
+    expect(useBillingContext().showSubscriptionDialog).toHaveBeenCalledOnce()
   })
 })
