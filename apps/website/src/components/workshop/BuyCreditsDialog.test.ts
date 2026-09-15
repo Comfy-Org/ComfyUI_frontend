@@ -115,6 +115,15 @@ function claimTab() {
   return tab
 }
 
+function returnFromCheckout(id: string = attemptId) {
+  window.dispatchEvent(
+    new MessageEvent('message', {
+      origin: window.location.origin,
+      data: { type: 'workshop-topup-return', attemptId: id }
+    })
+  )
+}
+
 function stubCheckout(
   body: unknown = {
     checkout_url: 'https://checkout.stripe.com/c/session_1',
@@ -131,10 +140,10 @@ function stubCheckout(
   return fetchCheckout
 }
 
-function renderOpenDialog() {
+function renderOpenDialog(locale: 'en' | 'zh-CN' = 'en') {
   return render(
     defineComponent({
-      setup: () => () => h(BuyCreditsDialog, { open: true })
+      setup: () => () => h(BuyCreditsDialog, { open: true, locale })
     })
   )
 }
@@ -423,10 +432,48 @@ describe('BuyCreditsDialog', () => {
       idempotency_key: attemptId
     })
     expect(returnUrl.toString()).toBe(
-      new URL('/payment/success', window.location.origin).toString()
+      new URL(
+        `/payment/success?workshopTopUpReturn=${attemptId}`,
+        window.location.origin
+      ).toString()
     )
-    expect(credits.watchForTopUp).toHaveBeenCalledWith(topUpScope)
+    expect(credits.watchForTopUp).not.toHaveBeenCalled()
     expect(await screen.findByTestId('buy-credits-open-checkout')).toBeTruthy()
+  })
+
+  it('starts confirmation only after the matching checkout returns', async () => {
+    const user = userEvent.setup()
+    const tab = claimTab()
+    stubCheckout()
+    renderOpenDialog()
+
+    await user.click(await screen.findByTestId('buy-credits-continue'))
+    await vi.waitFor(() => expect(tab.location.assign).toHaveBeenCalledOnce())
+    vi.useFakeTimers()
+    onTestFinished(() => {
+      vi.useRealTimers()
+    })
+
+    await vi.advanceTimersByTimeAsync(120_000)
+    returnFromCheckout('another-attempt')
+    expect(credits.watchForTopUp).not.toHaveBeenCalled()
+
+    returnFromCheckout()
+    expect(credits.watchForTopUp).toHaveBeenCalledWith(topUpScope)
+  })
+
+  it('opens the localized checkout handoff for Chinese', async () => {
+    const user = userEvent.setup()
+    claimTab()
+    stubCheckout()
+    renderOpenDialog('zh-CN')
+
+    await user.click(await screen.findByTestId('buy-credits-continue'))
+
+    expect(window.open).toHaveBeenCalledWith(
+      '/zh-CN/checkout-opening',
+      '_blank'
+    )
   })
 
   it('keeps an explicit checkout link when the popup is blocked', async () => {
@@ -441,7 +488,8 @@ describe('BuyCreditsDialog', () => {
     expect(link.getAttribute('href')).toBe(
       'https://checkout.stripe.com/c/session_1'
     )
-    expect(credits.watchForTopUp).toHaveBeenCalledWith(topUpScope)
+    expect(link.getAttribute('rel')).toBe('opener')
+    expect(credits.watchForTopUp).not.toHaveBeenCalled()
   })
 
   it('uses the Cloud credits page only for an explicit rollout miss', async () => {

@@ -33,6 +33,10 @@ export function modelsBuildRoutes(enabled: boolean) {
             entrypoint: entry('checkout-opening.astro')
           },
           {
+            pattern: '/zh-CN/checkout-opening',
+            entrypoint: entry('checkout-opening.astro')
+          },
+          {
             pattern: '/models/[slug]/page.json',
             entrypoint: entry('page.json.ts')
           },

@@ -45,7 +45,7 @@ describe('createTopUpCheckout', () => {
     expect(JSON.parse(String(init.body))).toEqual({
       amount_cents: 5_000,
       return_url: new URL(
-        '/payment/success',
+        '/payment/success?workshopTopUpReturn=attempt-1',
         window.location.origin
       ).toString(),
       idempotency_key: 'attempt-1'
@@ -89,6 +89,28 @@ describe('createTopUpCheckout', () => {
     const [, init] = fetchCheckout.mock.calls[0] as [URL, RequestInit]
     expect(JSON.parse(String(init.body))).toMatchObject({
       return_url: WORKSHOP_CREDITS_URL
+    })
+  })
+
+  it('returns a Chinese checkout through the localized payment page', async () => {
+    const fetchCheckout = vi.fn().mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          checkout_url: 'https://checkout.stripe.com/c/pay_1'
+        }),
+        { status: 200 }
+      )
+    )
+    vi.stubGlobal('fetch', fetchCheckout)
+
+    await createTopUpCheckout({ ...options, locale: 'zh-CN' })
+
+    const [, init] = fetchCheckout.mock.calls[0] as [URL, RequestInit]
+    expect(JSON.parse(String(init.body))).toMatchObject({
+      return_url: new URL(
+        '/zh-CN/payment/success?workshopTopUpReturn=attempt-1',
+        window.location.origin
+      ).toString()
     })
   })
 
@@ -143,7 +165,7 @@ describe('createTopUpCheckout', () => {
         {
           amount_cents: 5_000,
           return_url: new URL(
-            '/payment/success',
+            '/payment/success?workshopTopUpReturn=attempt-1',
             window.location.origin
           ).toString(),
           idempotency_key: 'attempt-1'

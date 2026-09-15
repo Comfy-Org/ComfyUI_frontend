@@ -18,7 +18,12 @@ async function expectNoIndex(page: Page) {
 }
 
 test.describe('Payment checkout returns @smoke', () => {
-  for (const returnPath of ['/payment/success', '/payment/failed']) {
+  for (const returnPath of [
+    '/payment/success',
+    '/payment/failed',
+    '/zh-CN/payment/success',
+    '/zh-CN/payment/failed'
+  ]) {
     test(`${returnPath} closes when checkout opened it`, async ({ page }) => {
       await page.goto('/')
       const popupPromise = page.waitForEvent('popup')
@@ -35,17 +40,32 @@ test.describe('Payment checkout returns @smoke', () => {
   }
 })
 
-test('checkout opening page explains the handoff @smoke', async ({ page }) => {
-  await page.goto('/checkout-opening')
+test.describe('Checkout opening page @smoke', () => {
+  for (const handoff of [
+    {
+      path: '/checkout-opening',
+      title: 'Opening checkout - Comfy',
+      heading: 'Taking you to Stripe',
+      context: 'The page you came from is still open'
+    },
+    {
+      path: '/zh-CN/checkout-opening',
+      title: '正在打开结账页 - Comfy',
+      heading: '正在前往 Stripe',
+      context: '你来时的页面仍然打开'
+    }
+  ]) {
+    test(`${handoff.path} explains the handoff`, async ({ page }) => {
+      await page.goto(handoff.path)
 
-  await expect(page).toHaveTitle('Opening checkout - Comfy')
-  await expectNoIndex(page)
-  await expect(
-    page.getByRole('heading', { name: 'Taking you to Stripe', level: 1 })
-  ).toBeVisible()
-  await expect(
-    page.getByText('The page you came from is still open')
-  ).toBeVisible()
+      await expect(page).toHaveTitle(handoff.title)
+      await expectNoIndex(page)
+      await expect(
+        page.getByRole('heading', { name: handoff.heading, level: 1 })
+      ).toBeVisible()
+      await expect(page.getByText(handoff.context)).toBeVisible()
+    })
+  }
 })
 
 test.describe('Payment success page @smoke', () => {

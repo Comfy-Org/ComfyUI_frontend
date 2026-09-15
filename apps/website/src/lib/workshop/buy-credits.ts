@@ -6,6 +6,8 @@ import {
   WORKSHOP_CLOUD_BASE_URL,
   WORKSHOP_CREDITS_URL
 } from '../../config/workshop-env'
+import type { Locale } from '../../i18n/translations'
+import { topUpReturnUrl } from './topup-return'
 
 export class TopUpCheckoutError extends Error {
   constructor(
@@ -51,8 +53,19 @@ export interface CreateTopUpCheckoutOptions {
   readonly token: string
   readonly amountCents: number
   readonly idempotencyKey: string
+  readonly locale?: Locale
   readonly signal?: AbortSignal
   readonly timeoutMs?: number
+}
+
+function returnUrlFor(options: CreateTopUpCheckoutOptions): string {
+  if (typeof window === 'undefined') return WORKSHOP_CREDITS_URL
+  const paymentPath =
+    options.locale === 'zh-CN' ? '/zh-CN/payment/success' : '/payment/success'
+  return topUpReturnUrl(
+    new URL(paymentPath, window.location.origin).toString(),
+    options.idempotencyKey
+  )
 }
 
 async function requestTopUpCheckout(
@@ -102,10 +115,7 @@ export async function createTopUpCheckout(
   const signal = options.signal
     ? AbortSignal.any([options.signal, timeout])
     : timeout
-  const ownReturnUrl =
-    typeof window === 'undefined'
-      ? WORKSHOP_CREDITS_URL
-      : new URL('/payment/success', window.location.origin).toString()
+  const ownReturnUrl = returnUrlFor(options)
   try {
     return await requestTopUpCheckout(options, ownReturnUrl, signal)
   } catch (error) {
