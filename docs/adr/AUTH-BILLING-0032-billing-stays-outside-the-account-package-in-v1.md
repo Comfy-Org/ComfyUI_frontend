@@ -88,6 +88,11 @@ top-up endpoint called directly from the site.
    existing modules. Further billing surfaces — subscriptions,
    embedded checkout, retention — do not get a site-local
    implementation under it; they wait for the shared command layer.
+   Nothing enforces this mechanically. `CODEOWNERS` has no entry for
+   these paths, and `.github/workflows/ci-pr-risk.yml` is advisory by
+   construction, so a change can land against this rule without any
+   check objecting. Until the entries exist the rule is convention,
+   and the consequence below is what would turn it into a gate.
 
 5. **The boundary retires when FE-2214 lands.** Once the shared
    top-up command (#17657) is on `main`, `buy-credits.ts` moves onto
