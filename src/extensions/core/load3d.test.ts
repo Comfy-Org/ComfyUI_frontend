@@ -5,6 +5,8 @@ import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 import { app } from '@/scripts/app'
+import { toNodeId } from '@/types/nodeId'
+import { createNodeLocatorId } from '@/types/nodeIdentification'
 
 const {
   capture,
@@ -697,6 +699,29 @@ describe('Comfy.Save3DAdvanced.onNodeOutputsUpdated', () => {
     )
   })
 
+  it('restores the saved model from a standard 3d output item', () => {
+    const node = makePreview3DAdvancedNode({ comfyClass: 'Save3DAdvanced' })
+    getNodeByLocatorIdMock.mockReturnValue(node)
+
+    save3DAdvancedExt.onNodeOutputsUpdated!({
+      [createNodeLocatorId(null, toNodeId(7))]: {
+        '3d': [
+          { filename: 'ComfyUI_00001.glb', subfolder: '3d', type: 'output' }
+        ],
+        camera_info: [null],
+        model_3d_info: []
+      }
+    })
+
+    expect(node.properties['Last Time Model File']).toBe('3d/ComfyUI_00001.glb')
+    expect(node.properties['Last Time Model Folder']).toBe('output')
+    expect(configureForSaveMeshMock).toHaveBeenCalledWith(
+      'output',
+      '3d/ComfyUI_00001.glb',
+      expect.objectContaining({ silentOnNotFound: true })
+    )
+  })
+
   it('skips nodes whose comfyClass is not Save3DAdvanced', async () => {
     const node = makePreview3DAdvancedNode({ comfyClass: 'Preview3DAdvanced' })
     getNodeByLocatorIdMock.mockReturnValue(node)
@@ -706,6 +731,24 @@ describe('Comfy.Save3DAdvanced.onNodeOutputsUpdated', () => {
     } as never)
 
     expect(configureForSaveMeshMock).not.toHaveBeenCalled()
+  })
+
+  it('restores a persisted temp preview on startup instead of its output default', async () => {
+    const node = makePreview3DAdvancedNode({
+      comfyClass: 'Save3DAdvanced',
+      properties: {
+        'Last Time Model File': 'preview3d_advanced_1.glb',
+        'Last Time Model Folder': 'temp'
+      }
+    })
+
+    await save3DAdvancedExt.nodeCreated!(node, app)
+
+    expect(configureForSaveMeshMock).toHaveBeenCalledWith(
+      'temp',
+      'preview3d_advanced_1.glb',
+      { silentOnNotFound: true }
+    )
   })
 })
 
@@ -739,6 +782,23 @@ describe('Comfy.Preview3DAdvanced.nodeCreated', () => {
     expect(configureForSaveMeshMock).toHaveBeenCalledWith(
       'temp',
       'prev/model.glb',
+      { silentOnNotFound: true }
+    )
+  })
+
+  it('restores from the persisted output folder instead of its temp default', async () => {
+    const node = makePreview3DAdvancedNode({
+      properties: {
+        'Last Time Model File': '3d/kept.glb',
+        'Last Time Model Folder': 'output'
+      }
+    })
+
+    await preview3DAdvancedExt.nodeCreated!(node, app)
+
+    expect(configureForSaveMeshMock).toHaveBeenCalledWith(
+      'output',
+      '3d/kept.glb',
       { silentOnNotFound: true }
     )
   })
@@ -867,7 +927,12 @@ describe('Comfy.Preview3DAdvanced.nodeCreated', () => {
     waitForLoad3dMock.mockImplementation((cb: (l: FakeLoad3d) => void) =>
       cb(load3d)
     )
-    const cameraState = { position: [1, 2, 3] }
+    const cameraState = {
+      position: { x: 1, y: 2, z: 3 },
+      target: { x: 0, y: 0, z: 0 },
+      zoom: 1,
+      cameraType: 'perspective'
+    }
     const node = makePreview3DAdvancedNode()
 
     await preview3DAdvancedExt.nodeCreated!(node, app)

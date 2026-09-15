@@ -25,6 +25,8 @@ import {
   SUPPORTED_EXTENSIONS_ACCEPT
 } from '@/extensions/core/load3d/constants'
 import { snapshotLoad3dState } from '@/extensions/core/load3d/load3dSerialize'
+import type { Model3DOutput } from '@/extensions/core/load3d/model3dOutput'
+import { readModel3DOutput } from '@/extensions/core/load3d/model3dOutput'
 import Load3dUtils from '@/extensions/core/load3d/Load3dUtils'
 import { t } from '@/i18n'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
@@ -39,9 +41,6 @@ import { getNodeByLocatorId } from '@/utils/graphTraversalUtil'
 type Matrix = number[][]
 type Load3dPreviewOutput = NodeOutputWith<{
   result?: [string?, CameraState?, string?, Matrix?, Matrix?]
-}>
-type Preview3DAdvancedOutput = NodeOutputWith<{
-  result?: [string?, CameraState?, Model3DInfo?]
 }>
 import type { CustomInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import { api } from '@/scripts/api'
@@ -688,23 +687,21 @@ useExtensionService().registerExtension({
 function applyPreview3DAdvancedResult(
   node: LGraphNode,
   load3d: Load3d,
-  result: NonNullable<Preview3DAdvancedOutput['result']>,
+  reported: Model3DOutput,
   loadFolder: LoadFolder,
   comfyClass: string
 ): void {
-  const filePath = result[0]
-  if (!filePath) return
-
-  const normalizedPath = filePath.replaceAll('\\', '/')
+  const normalizedPath = reported.filePath.replaceAll('\\', '/')
+  const folder = reported.folder ?? loadFolder
   node.properties['Last Time Model File'] = normalizedPath
+  node.properties['Last Time Model Folder'] = folder
 
   const config = new Load3DConfiguration(load3d, node.properties)
-  config.configureForSaveMesh(loadFolder, normalizedPath, {
+  config.configureForSaveMesh(folder, normalizedPath, {
     silentOnNotFound: true
   })
 
-  const cameraState = result[1]
-  const modelTransform = result[2]?.[0]
+  const { cameraState, modelTransform } = reported
   if (!cameraState && !modelTransform) return
 
   const targetGeneration = load3d.currentLoadGeneration
@@ -735,8 +732,8 @@ function createPreview3DAdvancedExtension(
       nodeOutputs: Record<NodeLocatorId, NodeExecutionOutput>
     ) {
       for (const [locatorId, output] of Object.entries(nodeOutputs)) {
-        const result = (output as Preview3DAdvancedOutput).result
-        if (!result?.[0]) continue
+        const reported = readModel3DOutput(output)
+        if (!reported) continue
 
         const node = getNodeByLocatorId(app.rootGraph, locatorId)
         if (!node || node.constructor.comfyClass !== comfyClass) continue
@@ -745,7 +742,7 @@ function createPreview3DAdvancedExtension(
           applyPreview3DAdvancedResult(
             node,
             load3d,
-            result,
+            reported,
             loadFolder,
             comfyClass
           )
@@ -780,8 +777,14 @@ function createPreview3DAdvancedExtension(
         const lastTimeModelFile = node.properties['Last Time Model File']
         if (!lastTimeModelFile) return
 
+        const lastTimeModelFolder = node.properties['Last Time Model Folder']
+        const folder =
+          lastTimeModelFolder === 'temp' || lastTimeModelFolder === 'output'
+            ? lastTimeModelFolder
+            : loadFolder
+
         const config = new Load3DConfiguration(load3d, node.properties)
-        config.configureForSaveMesh(loadFolder, lastTimeModelFile as string, {
+        config.configureForSaveMesh(folder, lastTimeModelFile as string, {
           silentOnNotFound: true
         })
 
@@ -859,11 +862,11 @@ function createPreview3DAdvancedExtension(
           }
         }
 
-        node.onExecuted = function (output: Preview3DAdvancedOutput) {
+        node.onExecuted = function (output: NodeExecutionOutput) {
           onExecuted?.call(this, output)
 
-          const result = output.result
-          if (!result?.[0]) {
+          const reported = readModel3DOutput(output)
+          if (!reported) {
             const msg = t('toastMessages.unableToGetModelFilePath')
             console.error(msg)
             useToastStore().addAlert(msg)
@@ -873,7 +876,7 @@ function createPreview3DAdvancedExtension(
           applyPreview3DAdvancedResult(
             node,
             resolveLoad3d(),
-            result,
+            reported,
             loadFolder,
             comfyClass
           )

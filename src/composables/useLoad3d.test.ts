@@ -1663,6 +1663,49 @@ describe('useLoad3d', () => {
       )
     })
 
+    it('skips thumbnail persistence for a temp preview', async () => {
+      const { isAssetPreviewSupported, persistThumbnail } =
+        await import('@/platform/assets/utils/assetPreviewUtil')
+      vi.mocked(isAssetPreviewSupported).mockReturnValue(true)
+      mockNode.widgets = [
+        { name: 'model_file', value: 'preview.glb' } as unknown as IWidget
+      ]
+      mockNode.properties['Last Time Model Folder'] = 'temp'
+
+      const { handler } = await getModelReadyHandler()
+      handler()
+
+      expect(mockLoad3d.captureThumbnail).not.toHaveBeenCalled()
+      await expect
+        .poll(() => vi.mocked(persistThumbnail).mock.calls.length)
+        .toBe(0)
+    })
+
+    it('persists the thumbnail of a model loaded from the output folder', async () => {
+      const { isAssetPreviewSupported, persistThumbnail } =
+        await import('@/platform/assets/utils/assetPreviewUtil')
+      vi.mocked(isAssetPreviewSupported).mockReturnValue(true)
+      vi.mocked(Load3dUtils.splitFilePath).mockReturnValue([
+        '3d',
+        'saved.glb'
+      ] as unknown as ReturnType<typeof Load3dUtils.splitFilePath>)
+      mockNode.widgets = [
+        { name: 'model_file', value: '3d/saved.glb' } as unknown as IWidget
+      ]
+      mockNode.properties['Last Time Model Folder'] = 'output'
+
+      const { handler } = await getModelReadyHandler()
+      handler()
+
+      expect(mockLoad3d.captureThumbnail).toHaveBeenCalledWith(256, 256)
+      await vi.waitFor(() =>
+        expect(persistThumbnail).toHaveBeenCalledWith(
+          'saved.glb',
+          expect.any(Blob)
+        )
+      )
+    })
+
     it('skips persistence when the model widget has no value', async () => {
       const { isAssetPreviewSupported, persistThumbnail } =
         await import('@/platform/assets/utils/assetPreviewUtil')
