@@ -128,6 +128,8 @@ export function useAuthSignInController(options: AuthSignInControllerOptions) {
   // Any rollout-flag transition invalidates an in-flight attempt, so a disable
   // (or an off->on flicker) mid-popup cannot still provision, publish, or mint.
   // Sync so even a same-tick flicker is counted, not collapsed to no-change.
+  // The guard also abandons on scope disposal, so teardown stops auth,
+  // provisioning, and minting too.
   const signIn = useGenerationGuard()
   watch(enabled, signIn.abandon, { flush: 'sync' })
 
