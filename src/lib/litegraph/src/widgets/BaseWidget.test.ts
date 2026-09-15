@@ -401,6 +401,22 @@ describe('BaseWidget store integration', () => {
   })
 
   describe('metadata properties after registration', () => {
+    it('reinstates the type accessor over a shadowing own property', () => {
+      const widget = createTestWidget(node)
+      Object.defineProperty(widget, 'type', {
+        configurable: true,
+        enumerable: true,
+        writable: true,
+        value: 'number'
+      })
+
+      widget.setNodeId(toNodeId(1))
+      widget.type = fromAny('hidden')
+
+      expect(widget.type).toBe('hidden')
+      expect(widget.visibility.suppression.byExtension).toBe(true)
+    })
+
     it('reads from store when registered', () => {
       const widget = createTestWidget(node, {
         name: 'storeWidget',
