@@ -1,4 +1,5 @@
 import type { Locator, Page } from '@playwright/test'
+import { expect } from '@playwright/test'
 
 import type { WorkspaceStore } from '@e2e/types/globals'
 import { TestIds } from '@e2e/fixtures/selectors'
@@ -126,6 +127,8 @@ export class Topbar {
   }
 
   async openTopbarMenu() {
+    await this.dismissWorkflowTabPopover()
+
     // If menu is already open, close it first to reset state
     const isAlreadyOpen = await this.menuLocator.isVisible()
     if (isAlreadyOpen) {
@@ -135,6 +138,23 @@ export class Topbar {
     await this.menuTrigger.click()
     await this.menuLocator.waitFor({ state: 'visible' })
     return this.menuLocator
+  }
+
+  private async dismissWorkflowTabPopover() {
+    const popover = this.page.locator('.workflow-popover-fade')
+    await expect(async () => {
+      const box = await this.page.locator('#graph-canvas').boundingBox()
+      if (box) {
+        await this.page.mouse.move(
+          box.x + box.width / 2,
+          box.y + box.height / 2
+        )
+      }
+      if (await popover.isVisible()) {
+        await this.page.keyboard.press('Escape')
+      }
+      await expect(popover).toBeHidden({ timeout: 500 })
+    }).toPass({ timeout: 5000 })
   }
 
   async closeTopbarMenu() {
