@@ -39,17 +39,13 @@ jobs:
       - name: Run Vitest tests with coverage
         run: pnpm test:coverage
 
-      - name: Run account package unit tests
-        run: pnpm --filter @comfyorg/account exec vitest run --coverage
-
-      - name: Run object-info-parser package unit tests
-        run: pnpm --filter @comfyorg/object-info-parser exec vitest run --coverage
-
-      - name: Run shared-frontend-utils package unit tests
-        run: pnpm --filter @comfyorg/shared-frontend-utils exec vitest run --coverage
-
-      - name: Run design-system package unit tests
-        run: pnpm --filter @comfyorg/design-system exec vitest run --coverage
+      - name: Run package unit tests with coverage
+        run: |
+          rc=0
+          for pkg in account object-info-parser shared-frontend-utils design-system; do
+            pnpm --filter "@comfyorg/$pkg" exec vitest run --coverage || rc=1
+          done
+          exit $rc
 
       - name: Upload unit coverage artifact
         if: always() && github.event_name == 'push'
