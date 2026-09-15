@@ -22,23 +22,90 @@ test.beforeEach(async ({ comfyPage, initialSettings }) => {
   await comfyPage.nextFrame()
 })
 
-test.describe('Item Interaction', { tag: ['@screenshot', '@node'] }, () => {
-  test('Can select/delete all items', async ({ comfyPage }) => {
-    await comfyPage.workflow.loadWorkflow('groups/mixed_graph_items')
-    await comfyPage.canvas.press('Control+a')
-    await expect(comfyPage.canvas).toHaveScreenshot('selected-all.png')
-    await comfyPage.canvas.press('Delete')
-    await expect(comfyPage.canvas).toHaveScreenshot('deleted-all.png')
+test.describe('Item Interaction', { tag: ['@node'] }, () => {
+  test(
+    'Can select/delete all items',
+    { tag: ['@screenshot'] },
+    async ({ comfyPage }) => {
+      await comfyPage.workflow.loadWorkflow('groups/mixed_graph_items')
+      await comfyPage.canvas.press('Control+a')
+      await expect(comfyPage.canvas).toHaveScreenshot('selected-all.png')
+      await comfyPage.canvas.press('Delete')
+      await expect(comfyPage.canvas).toHaveScreenshot('deleted-all.png')
+    }
+  )
+
+  test('A pinned node resists dragging and stays pinned across a reload', async ({
+    comfyPage
+  }) => {
+    await comfyPage.workflow.loadWorkflow('nodes/single_ksampler')
+
+    const title = 'KSampler'
+    async function readPos() {
+      const node = await comfyPage.nodeOps.getNodeRefByTitle(title)
+      return node.getProperty<[number, number]>('pos')
+    }
+
+    const node = await comfyPage.nodeOps.getNodeRefByTitle(title)
+    const pinnedOrigin = await readPos()
+
+    const dragDelta = { x: 90, y: 70 }
+
+    await test.step('Pinned node resists dragging', async () => {
+      await comfyPage.nodeOps.selectNodes([title])
+      await comfyPage.command.executeCommand(
+        'Comfy.Canvas.ToggleSelectedNodes.Pin'
+      )
+      await expect.poll(() => node.isPinned()).toBe(true)
+
+      await node.dragBy(dragDelta)
+      await expect.poll(readPos).toEqual(pinnedOrigin)
+    })
+
+    const movedPos =
+      await test.step('Unpinned node moves with the same drag', async () => {
+        // Control: the same gesture must move the node once it is unpinned.
+        // Without this, "did not move" could simply mean the drag never landed.
+        await comfyPage.command.executeCommand(
+          'Comfy.Canvas.ToggleSelectedNodes.Pin'
+        )
+        await expect.poll(() => node.isPinned()).toBe(false)
+        await node.dragBy(dragDelta)
+        await expect.poll(readPos).not.toEqual(pinnedOrigin)
+        return await readPos()
+      })
+
+    await test.step('Repin and save the moved node', async () => {
+      const beforeRepin = Date.now()
+      await comfyPage.command.executeCommand(
+        'Comfy.Canvas.ToggleSelectedNodes.Pin'
+      )
+      await expect.poll(() => node.isPinned()).toBe(true)
+      await comfyPage.workflow.waitForDraftIndexUpdatedSince(beforeRepin)
+    })
+
+    await test.step('Reload restores the pinned node at its moved position', async () => {
+      await comfyPage.workflow.reloadAndWaitForApp()
+
+      const reloaded = await comfyPage.nodeOps.getNodeRefByTitle(title)
+      expect(reloaded.id).toBe(node.id)
+      await expect.poll(() => reloaded.isPinned()).toBe(true)
+      await expect.poll(readPos).toEqual(movedPos)
+    })
   })
 
-  test('Can pin/unpin items with keyboard shortcut', async ({ comfyPage }) => {
-    await comfyPage.workflow.loadWorkflow('groups/mixed_graph_items')
-    await comfyPage.canvas.press('Control+a')
-    await comfyPage.keyboard.press('KeyP')
-    await expect(comfyPage.canvas).toHaveScreenshot('pinned-all.png')
-    await comfyPage.keyboard.press('KeyP')
-    await expect(comfyPage.canvas).toHaveScreenshot('unpinned-all.png')
-  })
+  test(
+    'Can pin/unpin items with keyboard shortcut',
+    { tag: ['@screenshot'] },
+    async ({ comfyPage }) => {
+      await comfyPage.workflow.loadWorkflow('groups/mixed_graph_items')
+      await comfyPage.canvas.press('Control+a')
+      await comfyPage.keyboard.press('KeyP')
+      await expect(comfyPage.canvas).toHaveScreenshot('pinned-all.png')
+      await comfyPage.keyboard.press('KeyP')
+      await expect(comfyPage.canvas).toHaveScreenshot('unpinned-all.png')
+    }
+  )
 })
 
 test.describe('Node Interaction', () => {
@@ -228,6 +295,53 @@ test.describe('Node Interaction', () => {
           maxDiffPixels: 50
         })
       })
+    })
+
+    test('Repeated disconnect/connect leaves exactly one link', async ({
+      comfyPage
+    }) => {
+      test.slow()
+      await comfyPage.workflow.loadWorkflow('default')
+
+      const checkpoint = await comfyPage.nodeOps.getNodeRefByType(
+        'CheckpointLoaderSimple'
+      )
+      const clipOutput = await checkpoint.getOutput(1)
+      const targetNode = await comfyPage.nodeOps.getNodeRefById(6)
+      const targetInput = await targetNode.getInput(0)
+      const targetLink = await targetInput.getLink()
+      if (!targetLink) throw new Error('Default workflow link not found')
+
+      const targetEndpoints = {
+        origin_id: targetLink.origin_id,
+        origin_slot: targetLink.origin_slot,
+        target_id: targetLink.target_id,
+        target_slot: targetLink.target_slot
+      }
+      const initial = await clipOutput.getLinkCount()
+      expect(initial, 'default workflow should have links').toBeGreaterThan(0)
+
+      for (let cycle = 0; cycle < 5; cycle++) {
+        await comfyPage.canvasOps.disconnectEdge()
+        await clipOutput.expectLinkCount(initial - 1)
+        await expect.poll(() => targetInput.getLink()).toBeNull()
+        await comfyPage.canvasOps.connectEdge()
+        await clipOutput.expectLinkCount(initial)
+        await expect
+          .poll(() => targetInput.getLink())
+          .toMatchObject(targetEndpoints)
+      }
+
+      // End disconnected so the reload assertion cannot pass by restoring a
+      // pristine default instead of the edited draft.
+      await comfyPage.canvasOps.disconnectEdge()
+      await comfyPage.canvasOps.moveMouseToEmptyArea()
+      await clipOutput.expectLinkCount(initial - 1)
+      await expect.poll(() => targetInput.getLink()).toBeNull()
+
+      await comfyPage.workflow.reloadAndWaitForApp()
+      await clipOutput.expectLinkCount(initial - 1)
+      await expect.poll(() => targetInput.getLink()).toBeNull()
     })
 
     test('Can move link', async ({ comfyPage }) => {

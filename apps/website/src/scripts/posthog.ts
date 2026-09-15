@@ -1,4 +1,5 @@
-import posthog from 'posthog-js'
+import { WORKSHOP_LOCAL_DEV, WORKSHOP_DEPLOY_ENV } from 'astro:env/client'
+import { posthog } from 'posthog-js'
 import { readonly, ref } from 'vue'
 import type { Ref } from 'vue'
 
@@ -17,6 +18,7 @@ import type { TurnstileMode } from '@comfyorg/account/turnstile'
 
 import type { Platform } from '@/composables/useDownloadUrl'
 import type { ConnectionId, McpClientId } from '@/config/mcpClients'
+import type { WorkshopAnalyticsEvent } from './workshop-analytics'
 
 const POSTHOG_KEY =
   import.meta.env.PUBLIC_POSTHOG_KEY ??
@@ -54,6 +56,10 @@ export type CliClientId =
   | 'ci'
 
 type AnalyticsEvent =
+  | {
+      name: `website:workshop_${WorkshopAnalyticsEvent['name']}`
+      properties: WorkshopAnalyticsEvent['properties']
+    }
   | { name: typeof ANALYTICS_EVENT.pageview; properties?: undefined }
   | {
       name: typeof ANALYTICS_EVENT.downloadButtonClicked
@@ -96,19 +102,86 @@ type AnalyticsEvent =
 let initialized = false
 
 const WORKSHOP_AUTH_FLAG = 'workshop-auth'
+const WORKSHOP_ENABLED_FLAG = 'workshop-enabled'
 const WORKSHOP_TURNSTILE_FLAG = 'workshop-signup-turnstile'
 
-/**
- * The build-time override forces the flag on for dev and preview builds, which
- * have no PostHog to answer; without it no flag-gated surface is exercisable
- * anywhere. It is sticky: an override-on build ignores PostHog turning the flag
- * off. Otherwise the ref tracks PostHog's answer both ways, so disabling the
- * flag remotely actually takes the surfaces down.
- */
-const OVERRIDDEN_ON = import.meta.env.PUBLIC_WORKSHOP_AUTH_FLAG === '1'
-const workshopAuthEnabled = ref(OVERRIDDEN_ON)
-/** True once PostHog has answered (or the override stands in for it). */
-const workshopAuthFlagSettled = ref(OVERRIDDEN_ON)
+const VISIBILITY_OVERRIDE =
+  WORKSHOP_LOCAL_DEV && import.meta.env.PUBLIC_WORKSHOP_ENABLED === '1'
+const workshopEnabled = ref(VISIBILITY_OVERRIDE)
+const workshopEnabledSettled = ref(true)
+let workshopUser: WorkshopIdentity | null | undefined
+
+export function useWorkshopEnabled(): Readonly<Ref<boolean>> {
+  return readonly(workshopEnabled)
+}
+
+export function useWorkshopEnabledSettled(): Readonly<Ref<boolean>> {
+  return readonly(workshopEnabledSettled)
+}
+
+export interface WorkshopIdentity {
+  uid: string
+  email?: string | null
+  emailVerified?: boolean
+}
+
+const STAFF_EMAIL_DOMAINS = new Set(['comfy.org', 'drip.art'])
+
+function isStaff({ email, emailVerified }: WorkshopIdentity): boolean {
+  const domain = email?.split('@')[1]?.toLowerCase()
+  return (
+    emailVerified === true &&
+    domain !== undefined &&
+    STAFF_EMAIL_DOMAINS.has(domain)
+  )
+}
+
+function identifyInPostHog(user: WorkshopIdentity): void {
+  if (isStaff(user)) posthog.identify(user.uid, { comfy_staff: true })
+  else posthog.identify(user.uid)
+}
+
+export function identifyWorkshopUser(user: WorkshopIdentity | null): void {
+  if (workshopUser !== undefined && workshopUser?.uid === user?.uid) return
+  const previous = workshopUser
+  workshopUser = user
+  const waitForIdentityAnswer = !VISIBILITY_OVERRIDE && user !== null
+  if (!initialized) {
+    workshopEnabledSettled.value = !waitForIdentityAnswer
+    return
+  }
+  try {
+    const uid = user?.uid ?? null
+    const persistedUid = posthog.get_property('$user_id') ?? previous?.uid
+    if (uid === persistedUid || (!uid && !persistedUid)) {
+      if (
+        user &&
+        posthog.isFeatureEnabled(WORKSHOP_ENABLED_FLAG, {
+          send_event: false
+        }) === undefined
+      ) {
+        workshopEnabledSettled.value = false
+        posthog.reloadFeatureFlags()
+      }
+      return
+    }
+    workshopEnabled.value = VISIBILITY_OVERRIDE
+    workshopEnabledSettled.value = !waitForIdentityAnswer
+    if (persistedUid) posthog.reset()
+    if (user) identifyInPostHog(user)
+    posthog.reloadFeatureFlags()
+  } catch (error) {
+    workshopUser = previous
+    workshopEnabled.value = VISIBILITY_OVERRIDE
+    workshopEnabledSettled.value = true
+    console.error('PostHog identity failed', error)
+  }
+}
+
+const OVERRIDDEN_ON =
+  WORKSHOP_DEPLOY_ENV !== 'production' &&
+  import.meta.env.PUBLIC_WORKSHOP_AUTH_FLAG === '1'
+const workshopAuthEnabled = ref(true)
 const TURNSTILE_OVERRIDE = import.meta.env.PUBLIC_WORKSHOP_TURNSTILE_MODE
 const TURNSTILE_OVERRIDDEN = Boolean(TURNSTILE_OVERRIDE)
 const workshopTurnstileMode = ref<TurnstileMode>(
@@ -117,10 +190,6 @@ const workshopTurnstileMode = ref<TurnstileMode>(
 
 export function useWorkshopAuthFlag(): Readonly<Ref<boolean>> {
   return readonly(workshopAuthEnabled)
-}
-
-export function useWorkshopAuthFlagSettled(): Readonly<Ref<boolean>> {
-  return readonly(workshopAuthFlagSettled)
 }
 
 export function useWorkshopTurnstileMode(): Readonly<Ref<TurnstileMode>> {
@@ -140,11 +209,31 @@ export function initPostHog() {
       before_send: createPostHogBeforeSend()
     })
     initialized = true
-    posthog.onFeatureFlags(() => {
-      workshopAuthFlagSettled.value = true
+    const persistedAnswer = posthog.isFeatureEnabled(WORKSHOP_ENABLED_FLAG, {
+      send_event: false
+    })
+    const persistedUid = posthog.get_property('$user_id')
+    const expectedUid = workshopUser?.uid ?? null
+    const persistedIdentityMatches =
+      workshopUser === undefined ||
+      expectedUid === persistedUid ||
+      (!expectedUid && !persistedUid)
+    if (persistedAnswer !== undefined && persistedIdentityMatches) {
+      workshopEnabled.value = VISIBILITY_OVERRIDE || persistedAnswer
+      workshopEnabledSettled.value = true
+    }
+    posthog.onFeatureFlags((_flags, _variants, context) => {
+      if (context?.errorsLoading) {
+        workshopEnabledSettled.value = true
+        return
+      }
+      workshopEnabled.value =
+        VISIBILITY_OVERRIDE ||
+        posthog.isFeatureEnabled(WORKSHOP_ENABLED_FLAG) === true
+      workshopEnabledSettled.value = true
       if (!OVERRIDDEN_ON) {
         workshopAuthEnabled.value =
-          posthog.isFeatureEnabled(WORKSHOP_AUTH_FLAG) === true
+          posthog.isFeatureEnabled(WORKSHOP_AUTH_FLAG) !== false
       }
       if (!TURNSTILE_OVERRIDDEN) {
         const value = posthog.getFeatureFlag(WORKSHOP_TURNSTILE_FLAG)
@@ -153,7 +242,13 @@ export function initPostHog() {
         )
       }
     })
+    if (workshopUser !== undefined) {
+      const user = workshopUser
+      workshopUser = undefined
+      identifyWorkshopUser(user)
+    }
   } catch (error) {
+    workshopEnabledSettled.value = true
     console.error('PostHog init failed', error)
   }
 }
@@ -169,6 +264,13 @@ function captureEvent(event: AnalyticsEvent): void {
 
 export function capturePageview(): void {
   captureEvent({ name: ANALYTICS_EVENT.pageview })
+}
+
+export function captureWorkshopEvent(event: WorkshopAnalyticsEvent): void {
+  captureEvent({
+    name: `website:workshop_${event.name}`,
+    properties: event.properties
+  })
 }
 
 export function captureDownloadClick(platform: Platform): void {

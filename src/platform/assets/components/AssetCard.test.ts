@@ -1,4 +1,3 @@
-import type * as VueUseModule from '@vueuse/core'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useAssetDownloadStore } from '@/stores/assetDownloadStore'
 import { useDialogStore } from '@/stores/dialogStore'
@@ -19,11 +18,6 @@ vi.mock<unknown>(import('@/platform/assets/services/assetService'), () => ({
 
 vi.mock(import('@/components/dialog/confirm/confirmDialog'), () => ({
   showConfirmDialog: vi.fn()
-}))
-
-vi.mock<unknown>(import('@vueuse/core'), async (importOriginal) => ({
-  ...(await importOriginal<typeof VueUseModule>()),
-  useImage: () => ({ isLoading: false, error: null })
 }))
 
 const HASH = 'blake3:abc123def456'

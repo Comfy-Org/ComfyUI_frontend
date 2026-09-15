@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
-import type { AgentMessages, TurnId } from '../../schemas/agentApiSchema'
+import type { AgentMessages } from '../../schemas/agentApiSchema'
+import { toTurnId } from '../../schemas/agentApiSchema'
 import { normalizeAgentTranscript } from './agentTranscript'
 
 const row = (
@@ -20,6 +21,40 @@ const row = (
 })
 
 describe('normalizeAgentTranscript', () => {
+  it('restores inline reference positions from the persisted message text', () => {
+    const message = row(1, 'user', 'turn-a', '', 'row-1')
+    message.content = {
+      text: 'Copy [A](workflow://wf-a) into [B](workflow://wf-b).',
+      workflow_references: [
+        { workflow_id: 'wf-a', name: 'A' },
+        { workflow_id: 'wf-b', name: 'B', unavailable: true }
+      ]
+    }
+    const transcript = normalizeAgentTranscript([message])
+
+    expect(transcript.userTexts.get(toTurnId('turn-a'))).toBe('Copy  into .')
+    expect(transcript.userWorkflowReferences.get(toTurnId('turn-a'))).toEqual([
+      { id: 'wf-a', name: 'A', textOffset: 5 },
+      { id: 'wf-b', name: 'B', unavailable: true, textOffset: 11 }
+    ])
+  })
+
+  it('ignores empty workflow ids when restoring the latest target', () => {
+    const target = {
+      ...row(1, 'user', 'turn-a', 'Edit A', 'row-1'),
+      workflow_id: 'wf-a'
+    }
+    const detached = {
+      ...row(2, 'user', 'turn-b', 'Hello', 'row-2'),
+      workflow_id: ''
+    }
+    expect(
+      normalizeAgentTranscript([detached]).latestWorkflowId
+    ).toBeUndefined()
+    expect(normalizeAgentTranscript([target, detached]).latestWorkflowId).toBe(
+      'wf-a'
+    )
+  })
   it('orders rows by sequence and groups them by stable turn identity', () => {
     const transcript = normalizeAgentTranscript([
       row(4, 'assistant', 'turn-b', 'Second reply', 'row-4'),
@@ -32,7 +67,7 @@ describe('normalizeAgentTranscript', () => {
       'turn-a',
       'turn-b'
     ])
-    expect(transcript.userTexts.get('turn-a' as TurnId)).toBe('First prompt')
+    expect(transcript.userTexts.get(toTurnId('turn-a'))).toBe('First prompt')
     expect(transcript.messages[0].parts).toEqual([
       { type: 'text', text: 'First reply', state: 'done' }
     ])
@@ -72,7 +107,7 @@ describe('normalizeAgentTranscript', () => {
         streaming: false
       }
     ])
-    expect(transcript.userTexts.get('turn-a' as TurnId)).toBe('Prompt')
+    expect(transcript.userTexts.get(toTurnId('turn-a'))).toBe('Prompt')
     expect(transcript.assistantTurnIds).toEqual(new Set())
     expect(transcript.rowIds).toEqual(new Set(['row-1', 'row-2']))
   })
@@ -88,5 +123,42 @@ describe('normalizeAgentTranscript', () => {
       { type: 'text', text: 'First', state: 'done' },
       { type: 'text', text: 'Second', state: 'done' }
     ])
+  })
+
+  it('restores available and unavailable references without changing the latest workflow target', () => {
+    const first = row(1, 'user', 'turn-a', 'Compare these', 'row-1')
+    first.workflow_id = 'wf-target-a'
+    first.content = {
+      text: 'Compare these',
+      workflow_references: [
+        { workflow_id: 'wf-reference', name: 'Reference' },
+        {
+          workflow_id: 'wf-unavailable',
+          name: 'My upscaler',
+          unavailable: true
+        }
+      ]
+    }
+    const latest = row(3, 'user', 'turn-b', 'Now edit B', 'row-3')
+    latest.workflow_id = 'wf-target-b'
+
+    const transcript = normalizeAgentTranscript([
+      latest,
+      row(2, 'assistant', 'turn-a', 'Done', 'row-2'),
+      first
+    ])
+
+    expect(transcript).toMatchObject({ latestWorkflowId: 'wf-target-b' })
+    expect(transcript).toMatchObject({
+      userWorkflowReferences: new Map([
+        [
+          'turn-a',
+          [
+            { id: 'wf-reference', name: 'Reference' },
+            { id: 'wf-unavailable', name: 'My upscaler', unavailable: true }
+          ]
+        ]
+      ])
+    })
   })
 })
