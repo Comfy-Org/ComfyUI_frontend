@@ -96,13 +96,13 @@ union is removed. Rob's 268 entries corresponded to the partner-client
 model/task list we supplied, not the native Router execution inventory.
 Different ID spellings and task variants explain much, but not all, of the gap.
 
-| Audit disposition                           | Original rows | Visible treatment                                  |
-| ------------------------------------------- | ------------: | -------------------------------------------------- |
-| Verified single-target identity             |           142 | Join to 114 distinct native Router IDs             |
-| Verified but multiple/conditional targets   |             6 | Preserve evidence; do not pick an arbitrary target |
-| Ambiguous version/operation                 |             4 | Exclude until identity is resolved                 |
-| No supported native target in pinned source |           116 | Exclude; preserve source content                   |
-| Total original records audited              |           268 | No source rows deleted                             |
+| Audit disposition                           | Original rows | Visible treatment                                   |
+| ------------------------------------------- | ------------: | --------------------------------------------------- |
+| Verified single-target identity             |           142 | Join to 114 distinct native Router IDs              |
+| Verified but multiple/conditional targets   |             6 | Bind each role-specific page to its reviewed target |
+| Ambiguous version/operation                 |             4 | Exclude until identity is resolved                  |
+| No supported native target in pinned source |           116 | Exclude; preserve source content                    |
+| Total original records audited              |           268 | No source rows deleted                              |
 
 Of the 142 single-target joins, 22 already used the native ID and **120 ID
 spellings are repaired**. The corresponding old URLs redirect to the canonical
@@ -120,9 +120,10 @@ use cases/modalities, explicitly chosen primary artwork and no guessed preset.
 | Original task rows excluded from Models                      |   126 |
 | Native Router-only rows without a single-target content join |    93 |
 
-The 93 Router-only IDs stay in the source/schema data; they do not add extra
-cards under the agreed intersection policy. A canonical model may appear in
-multiple use-case sections, but remains one identity and one detail page.
+Router-only IDs stay in the source/schema data; they do not add extra cards
+under the agreed intersection policy. One native Router identity may back
+multiple role-specific cards and detail pages. Each page keeps its own slug,
+inputs, copy, examples and use case while sharing the execution identity.
 
 Incomplete now means a verified native model with a missing authored input:
 `gemini-interactions/gemini-omni-1.1-flash`,
@@ -164,13 +165,19 @@ produce byte-identical aliases. Source evidence retains backend file/selector
 references; temporary investigative reports live under
 `/tmp/workshop-id-repair.JaIFEg/`, which is not a runtime input.
 
-Six verified but non-single-target rows remain excluded:
+Six verified but non-single-target rows have no global alias:
 `kling/omni-pro-edit-video`, `kling/omni-pro-first-last-frame`,
 `kling/omni-pro-image-to-video`, `kling/omni-pro-text-to-video`,
 `kling/omni-pro-video-to-video`, and `ltx/text-to-video-v2`.
-The audit explains why a single replacement would lose a version/operation
-choice. Meshy `latest` selectors likewise are not silently reinterpreted as
-Meshy 7; uncertain Kling operations remain ambiguous.
+Their role-specific content records select a reviewed Router target through
+`workshop-content-inputs.json`, while the audit preserves why a single global
+replacement would lose a version or operation choice. Meshy `latest` selectors
+likewise are not silently reinterpreted as Meshy 7; uncertain Kling operations
+remain ambiguous.
+
+The page binding is authoritative and the model-family alias is only a
+fallback. Each binding also generates a creator-form variant keyed by the page
+slug, so pages that share one Router endpoint do not have to share inputs.
 
 ## Rob's content and remaining editorial work
 
@@ -455,12 +462,12 @@ wavespeed/ultimate-image-upscaler
 | kling/lip-sync-audio-to-video               | no               | /proxy/kling/v1/videos/lip-sync; 1 Router route candidate(s)                                   | mapping pending                  |
 | kling/lip-sync-text-to-video                | no               | /proxy/kling/v1/videos/lip-sync; 1 Router route candidate(s)                                   | mapping pending                  |
 | kling/motion-control                        | no               | /proxy/kling/v1/videos/motion-control; 0 Router route candidate(s)                             | mapping pending                  |
-| kling/omni-pro-edit-video                   | no               | /proxy/kling/v1/videos/omni-video; 2 Router route candidate(s)                                 | mapping pending                  |
-| kling/omni-pro-first-last-frame             | no               | /proxy/kling/v1/videos/omni-video; 2 Router route candidate(s)                                 | mapping pending                  |
+| kling/omni-pro-edit-video                   | no               | /proxy/kling/v1/videos/omni-video; 2 Router route candidate(s)                                 | page-bound to kling-v3-omni      |
+| kling/omni-pro-first-last-frame             | no               | /proxy/kling/v1/videos/omni-video; 2 Router route candidate(s)                                 | page-bound to kling-v3-omni      |
 | kling/omni-pro-image                        | no               | /proxy/kling/v1/images/omni-image; 1 Router route candidate(s)                                 | mapping pending                  |
-| kling/omni-pro-image-to-video               | no               | /proxy/kling/v1/videos/omni-video; 2 Router route candidate(s)                                 | mapping pending                  |
-| kling/omni-pro-text-to-video                | no               | /proxy/kling/v1/videos/omni-video; 2 Router route candidate(s)                                 | mapping pending                  |
-| kling/omni-pro-video-to-video               | no               | /proxy/kling/v1/videos/omni-video; 2 Router route candidate(s)                                 | mapping pending                  |
+| kling/omni-pro-image-to-video               | no               | /proxy/kling/v1/videos/omni-video; 2 Router route candidate(s)                                 | page-bound to kling-video-o1     |
+| kling/omni-pro-text-to-video                | no               | /proxy/kling/v1/videos/omni-video; 2 Router route candidate(s)                                 | page-bound to kling-video-o1     |
+| kling/omni-pro-video-to-video               | no               | /proxy/kling/v1/videos/omni-video; 2 Router route candidate(s)                                 | page-bound to kling-video-o1     |
 | kling/single-image-effect                   | no               | /proxy/kling/v1/videos/effects; 0 Router route candidate(s)                                    | mapping pending                  |
 | kling/start-end-frame                       | no               | /proxy/kling/v1/videos/image2video; 2 Router route candidate(s)                                | mapping pending                  |
 | kling/text-to-video                         | no               | /proxy/kling/v1/videos/text2video; 7 Router route candidate(s)                                 | mapping pending                  |
@@ -475,7 +482,7 @@ wavespeed/ultimate-image-upscaler
 | ltx/image-to-video                          | no               | Capture inconclusive                                                                           | mapping pending                  |
 | ltx/image-to-video-v2                       | no               | Capture inconclusive                                                                           | mapping pending                  |
 | ltx/text-to-video                           | no               | /proxy/ltx/v1/text-to-video; 0 Router route candidate(s)                                       | mapping pending                  |
-| ltx/text-to-video-v2                        | no               | /proxy/ltx/v2/text-to-video; 2 Router route candidate(s)                                       | mapping pending                  |
+| ltx/text-to-video-v2                        | no               | /proxy/ltx/v2/text-to-video; 2 Router route candidate(s)                                       | page-bound to ltx-2-5-pro        |
 | luma/photon-1-image-generation              | no               | /proxy/luma/generations/image; 2 Router route candidate(s)                                     | mapping pending                  |
 | luma/photon-1-image-modify                  | no               | /proxy/luma/generations/image; 2 Router route candidate(s)                                     | mapping pending                  |
 | luma/photon-flash-1-image-generation        | no               | /proxy/luma/generations/image; 2 Router route candidate(s)                                     | mapping pending                  |

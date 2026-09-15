@@ -41,6 +41,21 @@ describe('canonical model display names', () => {
       )?.name
     ).toBe('Seedance 2.0 Fast Text-to-Video')
   })
+
+  it('places reference and corrected text-to-image models in their intended use cases', () => {
+    const placements = [
+      'byteplus--seedance-2-5-reference--generate-videos',
+      'openai--gpt-image-2--edit-images'
+    ].map((slug) => {
+      const model = workshopModels.find((item) => item.slug === slug)
+      return [model?.useCases, model?.task]
+    })
+
+    expect(placements).toEqual([
+      [['animate-images'], 'image-to-video'],
+      [['generate-images'], 'text-to-image']
+    ])
+  })
 })
 
 describe('model availability', () => {
