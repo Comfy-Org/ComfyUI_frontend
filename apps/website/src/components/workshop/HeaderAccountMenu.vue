@@ -139,7 +139,7 @@ const surfaceClass =
       >
         <!-- The workspace the credits belong to sits above them, so the
           balance is never read as the reader's own. -->
-        <div class="bg-site-dropdown">
+        <div class="bg-site-dropdown pb-3">
           <div
             class="flex items-center gap-3 p-3"
             data-testid="account-workspace-current"
