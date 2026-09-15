@@ -24,9 +24,9 @@ two source-file header comments
 (`apps/website/src/config/workshop-balance.ts` and
 `workshop-credits.ts`), both of which state that "billing stays outside
 `@comfyorg/account` in V1". A meeting on 11 Sep 2026 agreed that the
-arrangement should be written up so the account layer's owner could
-review it; that write-up did not happen, and its absence is what this
-ADR corrects.
+arrangement should be written up for the people who were not in the
+room; that write-up did not happen, and its absence is what this ADR
+corrects.
 
 Three facts bound the decision.
 
@@ -143,8 +143,11 @@ top-up endpoint called directly from the site.
   `idempotencyKey`, which is what makes a retry safe to add at
   convergence without revisiting the call sites.
 
-- **Domain-owner review applies to this boundary.** Changes that cross
-  it — a new site-local billing surface, or a change to rules 2 or 3 —
-  need the account layer's owner, at design time rather than at review.
-  Rule 4 exists so that requirement has something concrete to attach
-  to.
+- **This boundary has no codified owner, which is its own gap.**
+  `CODEOWNERS` carries no entry for `packages/account/`,
+  `apps/website/`, or either billing surface, so "domain-owner review"
+  has nothing to resolve against. Billing — the transport, the
+  commands, and the hosted app — was authored under FE-2212 through
+  FE-2216; the session and identity half of the account layer has its
+  own history. Rule 4 needs a named owner per side to attach to,
+  recorded in `CODEOWNERS` rather than asserted per thread.
