@@ -1,6 +1,7 @@
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { fromAny } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { nextTick } from 'vue'
 
 import { nodeError, validationError } from '@/utils/__tests__/nodeErrorHelpers'
 import {
@@ -723,8 +724,8 @@ describe('per-kind visibility', () => {
       rawCount: () => useMissingMediaStore().missingMediaCandidates?.length
     }
   ])(
-    'stores missing $kind but keeps the overlay closed while its warning is off',
-    ({ settingId, surface, rawCount }) => {
+    'restores missing $kind visibility without rescanning',
+    async ({ settingId, surface, rawCount }) => {
       useSettingStore().settingValues['Comfy.RightSidePanel.ShowErrorsTab'] =
         true
       useSettingStore().settingValues[settingId] = false
@@ -735,6 +736,12 @@ describe('per-kind visibility', () => {
       expect(rawCount()).toBe(1)
       expect(store.isErrorOverlayOpen).toBe(false)
       expect(store.hasMissingError).toBe(false)
+
+      useSettingStore().settingValues[settingId] = true
+      await nextTick()
+
+      expect(rawCount()).toBe(1)
+      expect(store.hasMissingError).toBe(true)
     }
   )
 })
