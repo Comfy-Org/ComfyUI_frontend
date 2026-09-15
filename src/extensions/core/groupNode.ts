@@ -852,6 +852,10 @@ export class GroupNodeConfig {
  * {@link convertToNodes} and {@link LGraph.convertToSubgraph} repackages the
  * result as a subgraph.
  *
+ * Consumed directly by external custom nodes (e.g. cg-use-everywhere) via
+ * `window.comfyAPI.groupNode.GroupNodeHandler` — that consumption is invisible
+ * to Knip, so this class stays part of the public API regardless of whether
+ * anything in this repo still imports it.
  */
 export class GroupNodeHandler {
   node: LGraphNode
@@ -1000,6 +1004,29 @@ export class GroupNodeHandler {
     } finally {
       app.canvas.emitAfterChange()
     }
+  }
+
+  /**
+   * @deprecated Restored for custom-node backward compatibility (see #12931).
+   * Prefer {@link GroupNodeHandler.getHandler} and read `.groupData` off the
+   * result instead.
+   */
+  static getGroupData(
+    node: LGraphNodeConstructor<LGraphNode>
+  ): GroupNodeConfig | undefined
+  static getGroupData(node: LGraphNode): GroupNodeConfig | undefined
+  static getGroupData(
+    node: LGraphNode | LGraphNodeConstructor<LGraphNode>
+  ): GroupNodeConfig | undefined {
+    if (typeof node === 'function') {
+      return node.nodeData?.[GROUP] as GroupNodeConfig | undefined
+    }
+    // Check the instance before falling back to the constructor: some legacy
+    // callers stamp the marker directly on the node instance rather than on
+    // its constructor's `nodeData`.
+    const instanceMarker = node.nodeData?.[GROUP]
+    if (instanceMarker) return instanceMarker as GroupNodeConfig
+    return node.constructor?.nodeData?.[GROUP] as GroupNodeConfig | undefined
   }
 
   static getHandler(node: LGraphNode): GroupNodeHandler | undefined {
