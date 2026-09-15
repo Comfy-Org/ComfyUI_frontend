@@ -10194,8 +10194,8 @@ Enterprise`
     'zh-CN': '无法启动结账，请重试。'
   },
   'workshop.error.noCreditsCloud': {
-    en: 'Add credits to {workspace} to keep running models.',
-    'zh-CN': '为 {workspace} 添加积分以继续运行模型。'
+    en: 'Not enough credits in {workspace}.',
+    'zh-CN': '{workspace} 的积分不足。'
   },
   'workshop.error.noCreditsPlatform': {
     en: 'Add credits to {workspace} on platform.comfy.org',

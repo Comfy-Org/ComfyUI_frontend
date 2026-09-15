@@ -685,19 +685,17 @@ function useInCode() {
                balance re-read. Naming the workspace is what makes topping up
                the wrong wallet visible before it happens. -->
           <template v-else-if="gate === 'noCredits'">
-            <div class="mb-2 flex flex-col gap-1" data-testid="gate-note">
-              <p class="text-sm font-bold text-primary-warm-white">
-                {{ t('workshop.error.creditsTitle', locale) }}
-              </p>
-              <p class="text-xs text-primary-warm-gray">
-                {{
-                  t('workshop.error.noCreditsCloud', locale).replace(
-                    '{workspace}',
-                    () => session?.workspace.name ?? ''
-                  )
-                }}
-              </p>
-            </div>
+            <p
+              class="mb-2 text-sm font-bold text-primary-warm-white"
+              data-testid="gate-note"
+            >
+              {{
+                t('workshop.error.noCreditsCloud', locale).replace(
+                  '{workspace}',
+                  () => session?.workspace.name ?? ''
+                )
+              }}
+            </p>
             <Button
               size="lg"
               class="w-full px-5"
