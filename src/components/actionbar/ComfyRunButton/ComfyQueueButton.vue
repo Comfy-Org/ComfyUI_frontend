@@ -190,8 +190,7 @@ const queueModeMenuItems = computed(() =>
   Object.values(queueModeMenuItemLookup.value)
 )
 
-// Labels come from i18n, which custom nodes can extend, so they are escaped
-// before being placed in the tooltip's HTML.
+// i18n labels can come from custom nodes, so they are escaped for the HTML.
 const escapeHtml = (value: string) =>
   value.replace(
     /[&<>"']/g,

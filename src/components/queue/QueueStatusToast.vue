@@ -356,7 +356,6 @@ import { useQueueStore } from '@/stores/queueStore'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 import { cn } from '@comfyorg/tailwind-utils'
 
-/** One run as the toast model sees it: verb + percent, nothing store-shaped. */
 type JobView = {
   id: string
   title: string
@@ -402,7 +401,6 @@ watch(
 const isRunningState = (state: JobListItem['state']) =>
   state === 'running' || state === 'initialization'
 
-/** Map the live queue to the toast model: running first, queue numbered below. */
 const liveJobs = computed<JobView[]>(() => {
   const running = activeJobs.value.filter((job) => isRunningState(job.state))
   const queued = activeJobs.value.filter((job) => job.state === 'pending')
@@ -436,17 +434,10 @@ const queuedJobs = computed(() =>
 const queuedCount = computed(() => queuedJobs.value.length)
 const activeCount = computed(() => jobs.value.length)
 
-/**
- * Terminal chip shown briefly when the queue drains, but WHY it drained
- * matters: work that finished says "Completed", work you stopped says
- * "Cancelled". Celebrating a cancellation was a lie.
- */
 const completedFlash = ref(false)
 const terminalKind = ref<'completed' | 'cancelled' | 'failed'>('completed')
-/** Set by the cancel paths just before the queue empties. */
 const cancelIntent = ref(false)
-/** Ids of the jobs active on the last tick, so the drain can be judged by
- * how each of them actually ended rather than by which button was pressed. */
+/** Active on the last tick, so the drain is judged by how each job ended. */
 let lastActiveIds: string[] = []
 
 const outcomeOf = (ids: string[]): typeof terminalKind.value => {
@@ -482,7 +473,6 @@ watch(activeCount, (count, prev) => {
   }
 })
 
-/** First completion of the session opens the recents popover so people find their output. */
 async function maybeAutoOpenRecents() {
   if (popoverAutoOpened) return
   popoverAutoOpened = true
@@ -500,11 +490,6 @@ const isTerminal = computed(
   () => completedFlash.value && activeCount.value === 0
 )
 
-/**
- * Sonner-style stack: with parallel runs the pill sits on a small deck of
- * cards; hovering fans them out into the full list, so you see everything
- * running without clicking.
- */
 const hovered = ref(false)
 const HOVER_CLOSE_GRACE_MS = 320
 let hoverCloseTimer: number | undefined
@@ -525,18 +510,12 @@ function scheduleCloseStack() {
 }
 
 const stackCount = computed(() => Math.min(activeCount.value - 1, 2))
-/** Hover reveals the list; clicking the pill pins it open. */
 const fanned = computed(
   () => !isTerminal.value && (hovered.value || expanded.value)
 )
 
 const headlineProgress = computed(() => runningJobs.value[0]?.progress ?? 0)
 
-/**
- * Verb only, never a global percent: with runs in parallel a single number
- * would be a lie. The count rides the verb and each run keeps its own percent
- * in the panel.
- */
 const pillLabel = computed(() => {
   if (isTerminal.value) {
     if (terminalKind.value === 'failed') return t('queueStatus.failed')
@@ -553,19 +532,16 @@ const pillLabel = computed(() => {
   return t('g.queued')
 })
 
-/** Waiting work rides along as a badge instead of replacing the verb. */
 const queuedBadge = computed(() =>
   !isTerminal.value && runningCount.value > 0 && queuedCount.value > 0
     ? t('queueStatus.queuedBadge', { count: queuedCount.value })
     : null
 )
 
-/** One run has one honest percent; several don't. */
 const showProgressLine = computed(
   () => runningCount.value === 1 && !isTerminal.value
 )
 
-/** Idle label, e.g. "0 active". */
 const activeJobsLabel = computed(() => {
   const count = queueStore.activeJobsCount
   return t(
@@ -575,7 +551,6 @@ const activeJobsLabel = computed(() => {
   )
 })
 
-/** When each run started, stamped once so the row reads "18:23:02 · 45%". */
 const startedLabels = reactive<Record<string, string>>({})
 watch(
   () => jobs.value.map((job) => job.id),
@@ -599,10 +574,7 @@ function jobSubtitle(job: JobView): string {
     : t('queueStatus.queuedPosition', { position: job.queuePosition })
 }
 
-/**
- * Cancelling leaves activeJobId pointing at a job the backend will never
- * report on. Reconcile it against what the queue actually holds.
- */
+/** After a cancel, activeJobId can point at a job the backend never reports. */
 const reconcileActiveJob = () => {
   executionStore.clearActiveJobIfStale(
     new Set([
@@ -612,7 +584,6 @@ const reconcileActiveJob = () => {
   )
 }
 
-/** Resolve the live JobListItem behind a JobView so we can reach its task. */
 const jobRef = (id: string) => activeJobs.value.find((job) => job.id === id)
 
 const cancelJobById = wrapWithErrorHandlingAsync(async (id: string) => {
@@ -644,7 +615,6 @@ function handleCancel(job: JobView) {
   }
   void cancelJobById(job.id)
 }
-/** Clear queue drops what hasn't started; the running work is left alone. */
 function handleClearQueue() {
   if (runningCount.value === 0) cancelIntent.value = true
   void cancelJobIds(queuedJobs.value.map((job) => job.id))
@@ -661,7 +631,6 @@ const { galleryActiveIndex, galleryItems, onViewItem } = useResultGallery(() =>
     .filter((task): task is TaskItemImpl => !!task)
 )
 
-/** Clicking the completed chip jumps straight to the recent results. */
 async function onCompletedChipClick() {
   if (completedTimer !== undefined) {
     window.clearTimeout(completedTimer)
@@ -672,16 +641,11 @@ async function onCompletedChipClick() {
   idleOpen.value = true
 }
 
-/** Open the full job history in the right-side panel (with its filters). */
 function handleGoToHistory() {
   idleOpen.value = false
   rightSidePanelStore.openPanel('job-history')
 }
 
-/**
- * Latest finished generations, newest first. Surfaced on the idle popover
- * because that is the moment people go looking for what a run produced.
- */
 const jobThumbnail = (job: JobListItem): AugmentedResultItem | undefined =>
   job.taskRef?.previewOutput
 const recentJobs = computed(() =>
@@ -703,7 +667,6 @@ const recentResults = computed(() =>
   })
 )
 
-/** Clicking a recent result opens it in the lightbox. */
 async function handleViewResult(job: JobListItem) {
   idleOpen.value = false
   await onViewItem(job)
@@ -717,10 +680,6 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
-/*
- * Sonner-style stack: collapsed the cards sit scaled and stacked, and
- * expanding lifts each one into place a beat after the one before it.
- */
 .job-toast-row {
   animation: job-toast-row-in 260ms cubic-bezier(0.22, 1, 0.36, 1) both;
   animation-delay: var(--row-delay, 0ms);

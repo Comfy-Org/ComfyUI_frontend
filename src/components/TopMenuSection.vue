@@ -279,8 +279,7 @@ const isIntegratedTabBar = computed(
 )
 const { isQueuePanelV2Enabled, isRunProgressBarEnabled } =
   useQueueFeatureFlags()
-// Replaced by the separate QueueStatusToast (ProcessToast) below the run bar.
-// Toggle back on to restore the legacy in-bar queue overlay / inline summary.
+// The legacy in-bar queue UI, replaced by QueueStatusToast.
 const showLegacyQueueUi = false
 const isQueueProgressOverlayEnabled = computed(
   () => !isQueuePanelV2Enabled.value
