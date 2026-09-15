@@ -94,6 +94,7 @@ import { useAgentChatHistoryStore } from './stores/agent/agentChatHistoryStore'
 import { agentMessageText } from './utils/agentMessageText'
 import { useAgentComposerStore } from './stores/agent/agentComposerStore'
 import { useAgentPanelStore } from './stores/agent/agentPanelStore'
+import { useAgentRunModeStore } from './stores/agent/agentRunModeStore'
 import {
   isCrdtDebugEnabled,
   resolveDebugPanelEnabled
@@ -138,6 +139,7 @@ const userName = computed(
 )
 
 const rest = createAgentRestClient()
+const agentRunModeStore = useAgentRunModeStore()
 
 const events =
   import.meta.env.VITE_AGENT_STANDALONE === 'true'
@@ -459,6 +461,7 @@ const {
 } = useAgentSession({
   rest,
   events,
+  runMode: { mode: () => agentRunModeStore.mode },
   workflow: {
     current: targetWorkflowTurnContext,
     adopted: onWorkflowAdopted,

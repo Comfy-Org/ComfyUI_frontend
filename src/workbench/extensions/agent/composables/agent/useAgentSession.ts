@@ -3,7 +3,12 @@ import { computed, ref } from 'vue'
 import { i18n } from '@/i18n'
 import { reportError } from '@/platform/telemetry/reportError'
 import { createUuidv4 } from '@/utils/uuid'
-import type { AgentActiveTabData, TurnId } from '../../schemas/agentApiSchema'
+import type {
+  AgentActiveTabData,
+  AgentRunModeValue,
+  AgentWsEvent,
+  TurnId
+} from '../../schemas/agentApiSchema'
 import {
   isAgentEvent,
   parseAgentWsEvent,
@@ -26,7 +31,7 @@ export interface AgentEventSource {
   onStatus?(listener: (live: boolean) => void): () => void
 }
 
-export interface SessionNotice {
+interface SessionNotice {
   level: 'error'
   text: string
 }
@@ -63,6 +68,19 @@ type PromptEditState =
 export interface AgentSessionDeps {
   rest: AgentRestClient
   events: AgentEventSource
+  /**
+   * Run-mode gate for `agent_ask` (kind `run_approval`): omitted or
+   * `ask_approval` leaves the existing manual RunApprovalCard flow untouched.
+   * `auto` answers the ask with `run` automatically, exactly once, with no
+   * user interaction. `auto_limited` is intentionally treated like
+   * `ask_approval` here: the ask payload carries no cost estimate to compare
+   * against `creditLimit`, so auto-applying it would silently spend past a
+   * limit the user set specifically to bound spend. Revisit once the ask
+   * payload carries an estimated cost.
+   */
+  runMode?: {
+    mode(): AgentRunModeValue
+  }
   workflow?: {
     // origin, when given, pins resolution to the tab that initiated the send
     // instead of the target selected when this is called - it is read
@@ -101,7 +119,7 @@ function parseAdmissionError(error: unknown) {
 }
 
 export function useAgentSession(deps: AgentSessionDeps) {
-  const { rest, events, workflow } = deps
+  const { rest, events, workflow, runMode } = deps
 
   const conversationStore = useAgentConversationStore()
   const bindingStore = useAgentWorkflowTabBindingStore()
@@ -456,41 +474,33 @@ export function useAgentSession(deps: AgentSessionDeps) {
     if (hydrated && isCurrent()) conversationStore.resumeBackgroundTurn()
   }
 
-  function onRaw(raw: unknown): void {
-    if (typeof raw !== 'object' || raw === null) return
-    const type = (raw as { type?: unknown }).type
-    if (typeof type !== 'string' || !isAgentEvent(type)) return
-    const parsed = parseAgentWsEvent(raw)
-    if (!parsed.success) {
-      const messageId = (raw as { data?: { message_id?: unknown } }).data
-        ?.message_id
-      if (type === 'agent_message_done') {
-        if (
-          typeof messageId !== 'string' ||
-          messageId === conversationStore.activeTurnId
-        ) {
-          conversationStore.abortActiveTurn()
-          pushError(i18n.global.t('agent.malformedEvent'))
-        } else {
-          conversationStore.settleBackgroundTurn(messageId)
-        }
-      }
-      console.warn('[agent] dropping malformed agent event', parsed.error)
-      return
+  function handleMalformedEvent(
+    raw: { data?: { message_id?: unknown } },
+    type: string,
+    error: unknown
+  ): void {
+    const messageId = raw.data?.message_id
+    if (type === 'agent_message_done') {
+      if (
+        typeof messageId !== 'string' ||
+        messageId === conversationStore.activeTurnId
+      ) {
+        conversationStore.abortActiveTurn()
+        pushError(i18n.global.t('agent.malformedEvent'))
+      } else conversationStore.settleBackgroundTurn(messageId)
     }
-    const event = parsed.data
+    console.warn('[agent] dropping malformed agent event', error)
+  }
+
+  function ingestAgentEvent(event: AgentWsEvent): void {
     if (event.type === 'agent_ask_resolved')
       setAskAnswering(event.data.ask_id, false)
     switch (event.type) {
       case 'agent_active_tab':
-        // Every thread records the link in its own transcript; only the thread
-        // on screen is allowed to move the user's tabs.
-        conversationStore.ingest(event)
-        if (
-          event.data.thread_id === undefined ||
-          event.data.thread_id === conversationStore.threadId
-        )
-          workflow?.activeTab?.(event.data)
+        ingestActiveTab(event)
+        return
+      case 'agent_ask':
+        ingestAsk(event)
         return
       default:
         conversationStore.ingest(event)
@@ -505,6 +515,47 @@ export function useAgentSession(deps: AgentSessionDeps) {
             turnId: promptEditState.value.turnId
           }
     }
+  }
+
+  function ingestActiveTab(
+    event: Extract<AgentWsEvent, { type: 'agent_active_tab' }>
+  ): void {
+    // Every thread records the link in its own transcript; only the thread
+    // on screen is allowed to move the user's tabs.
+    conversationStore.ingest(event)
+    if (
+      event.data.thread_id === undefined ||
+      event.data.thread_id === conversationStore.threadId
+    )
+      workflow?.activeTab?.(event.data)
+  }
+
+  function ingestAsk(
+    event: Extract<AgentWsEvent, { type: 'agent_ask' }>
+  ): void {
+    conversationStore.ingest(event)
+    // Auto mode answers a run-approval ask itself, exactly once, with no
+    // user interaction; answerAsk's answeringAskIds guard is what makes
+    // this idempotent against a duplicate/replayed agent_ask frame.
+    if (
+      event.data.kind === 'run_approval' &&
+      runMode?.mode() === 'auto' &&
+      event.data.thread_id === conversationStore.threadId
+    )
+      void answerAsk(event.data.ask_id, 'run')
+  }
+
+  function onRaw(raw: unknown): void {
+    if (typeof raw !== 'object' || raw === null) return
+    const candidate = raw as { type?: unknown; data?: { message_id?: unknown } }
+    const type = candidate.type
+    if (typeof type !== 'string' || !isAgentEvent(type)) return
+    const parsed = parseAgentWsEvent(raw)
+    if (!parsed.success) {
+      handleMalformedEvent(candidate, type, parsed.error)
+      return
+    }
+    ingestAgentEvent(parsed.data)
   }
 
   function onStatus(live: boolean): void {
