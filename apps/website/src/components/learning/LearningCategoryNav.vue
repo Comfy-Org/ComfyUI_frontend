@@ -46,7 +46,7 @@ const navOptions: readonly NavOption[] = [
 
 <template>
   <nav
-    class="mt-8 flex scrollbar-none gap-3 overflow-x-auto lg:flex-col lg:overflow-visible"
+    class="mt-8 scrollbar-none flex gap-3 overflow-x-auto lg:flex-col lg:overflow-visible"
     :aria-label="t('learning.categoryNav', locale)"
   >
     <a
@@ -57,7 +57,7 @@ const navOptions: readonly NavOption[] = [
       class="shrink-0 rounded-xl px-4 py-3 text-left transition-colors lg:w-full"
       :class="
         category === option.value
-          ? 'lg:bg-primary-comfy-yellow bg-white/20 text-primary-comfy-canvas lg:text-primary-comfy-ink'
+          ? 'bg-white/20 text-primary-comfy-canvas lg:bg-primary-comfy-yellow lg:text-primary-comfy-ink'
           : 'bg-transparency-white-t4 text-primary-comfy-canvas hover:bg-white/10'
       "
     >

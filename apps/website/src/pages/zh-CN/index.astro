@@ -44,7 +44,7 @@ const discoveryProviders = await resolveDiscoveryProviders(isWorkshopInBuild())
   <DeveloperPlatformSection locale="zh-CN" client:visible />
   <MinimaxLicenseHeroSection locale="zh-CN" client:visible />
   <ModelReleaseSection locale="zh-CN" modelLinks={await modelReleaseLinks(isWorkshopInBuild())} client:visible />
-  {isWorkshopInBuild() && <ModelDiscoverySection locale="zh-CN" providers={discoveryProviders} client:visible />}
+  {isWorkshopInBuild() && <ModelDiscoverySection locale="zh-CN" providers={discoveryProviders} client:load />}
   <FeaturedWorkflowsSection locale="zh-CN" client:load />
   <ProductShowcaseSection locale="zh-CN" client:load />
   <IndustriesSection locale="zh-CN" client:load />

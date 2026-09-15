@@ -1,4 +1,3 @@
-// @vitest-environment happy-dom
 import userEvent from '@testing-library/user-event'
 import { render, screen, waitFor } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -14,7 +13,6 @@ vi.mock<unknown>(import('../../scripts/posthog'), async () => {
   const { ref } = await import('vue')
   return {
     useWorkshopAuthFlag: () => ref(true),
-    useWorkshopAuthFlagSettled: () => ref(true),
     captureAuthFailed: vi.fn()
   }
 })
@@ -33,6 +31,7 @@ describe('AuthForgotPassword lazy-load boundary', () => {
   it('loads workshop-firebase only when a reset is sent, never on render', async () => {
     render(AuthForgotPassword)
     const user = userEvent.setup()
+    await waitFor(() => expect(screen.getByLabelText(/email/i)).toBeEnabled())
     await user.type(screen.getByLabelText(/email/i), 'user@example.com')
 
     expect(

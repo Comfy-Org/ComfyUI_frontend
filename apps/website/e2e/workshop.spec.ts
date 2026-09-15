@@ -54,7 +54,19 @@ test.describe('Models catalog', () => {
     const sections = page.getByTestId('workshop-sections')
     await expect(sections).toBeVisible()
     const sort = page.getByTestId('workshop-sort')
-    await expect(sort).toContainText('Recommended')
+    await expect(sort).toContainText('Most popular')
+    async function recommendedIn(section: string, count: number) {
+      return page
+        .getByTestId(`section-${section}`)
+        .getByTestId('workshop-model-card')
+        .evaluateAll(
+          (cards, limit) =>
+            cards
+              .slice(0, limit)
+              .map((card) => card.getAttribute('href') ?? ''),
+          count
+        )
+    }
     const leading = page
       .getByTestId('section-generate-images')
       .getByTestId('workshop-model-card')
@@ -66,8 +78,30 @@ test.describe('Models catalog', () => {
     )
     expect(recommended).toEqual([
       '/models/byteplus--seedream-5-pro--generate-images/',
-      '/models/byteplus--seedream-4--generate-images/',
-      '/models/xai--grok-imagine-image--generate-images/'
+      '/models/openai--gpt-image-2--edit-images/',
+      '/models/byteplus--seedream-4--generate-images/'
+    ])
+    expect(await recommendedIn('generate-videos', 7)).toEqual([
+      '/models/byteplus--seedance-2-5-reference--generate-videos/',
+      '/models/byteplus--seedance-2-5-text-to-video--generate-videos/',
+      '/models/kling--kling-3.0-turbo-text-to-video--generate-videos/',
+      '/models/xai--grok-imagine-video-1.5--generate-videos/',
+      '/models/xai--grok-imagine-video--generate-videos/',
+      '/models/byteplus--seedance-2-fast-reference--generate-videos/',
+      '/models/gemini--omni-1.1-flash--generate-videos/'
+    ])
+    expect(await recommendedIn('animate-images', 4)).toEqual([
+      '/models/byteplus--seedance-2-5-first-last-frame--animate-images/',
+      '/models/xai--grok-imagine-video--animate-images/',
+      '/models/wan--image-to-video-3.0--animate-images/',
+      '/models/wan--reference-to-video-3.0--animate-images/'
+    ])
+    expect(await recommendedIn('other-formats', 1)).toEqual([
+      '/models/byteplus--seed-audio-1.0--audio/'
+    ])
+    expect(await recommendedIn('edit-videos', 2)).toEqual([
+      '/models/gemini--omni-1.1-flash--edit-videos/',
+      '/models/runway--aleph2-video-to-video--edit-videos/'
     ])
 
     await sort.click()
@@ -90,7 +124,7 @@ test.describe('Models catalog', () => {
 
     await sort.click()
     await page.getByTestId('sort-popular').click()
-    await expect(sort).toContainText('Recommended')
+    await expect(sort).toContainText('Most popular')
     await expect
       .poll(() =>
         leading.evaluateAll((cards) =>
@@ -263,26 +297,31 @@ test.describe('Models catalog', () => {
     )
   })
 
-  test('the capability filter actually narrows the catalog', async ({
-    page
-  }) => {
+  test('the use-case filter actually narrows the catalog', async ({ page }) => {
     await page.goto('/models/')
     await expect(page.getByTestId('workshop-sections')).toBeVisible()
     const all = await page.getByTestId('workshop-model-card').count()
     expect(all).toBeGreaterThan(0)
     await page.getByTestId('workshop-filter').click()
-    await page.getByTestId('workshop-facet-capability').click()
-    await page.getByTestId('filter-capability-upscale').click()
+    await page.getByTestId('filter-useCase-edit-images').click()
     const cards = page
       .getByTestId('workshop-models-grid')
       .getByTestId('workshop-model-card')
     await expect(cards.first()).toBeVisible()
     expect(await cards.count()).toBeLessThan(all)
-    for (const card of await cards.all())
-      await expect(card).toContainText(/upscal/i)
     await expect(
-      page.getByTestId('workshop-facet-capability-count')
-    ).toHaveText('1')
+      page.locator(
+        '[data-testid="workshop-model-card"][href="/models/vertexai--gemini-nano-banana-2--edit-images/"]'
+      )
+    ).toBeVisible()
+    await expect(
+      page.locator(
+        '[data-testid="workshop-model-card"][href="/models/bfl--flux-2-max--generate-images/"]'
+      )
+    ).toHaveCount(0)
+    await expect(page.getByTestId('workshop-facet-useCase-count')).toHaveText(
+      '1'
+    )
     await expect(page.getByTestId('workshop-filter-count')).toHaveText('1')
     await page.getByTestId('workshop-filter-clear').click()
     await expect(page.getByTestId('workshop-sections')).toBeVisible()
@@ -293,10 +332,10 @@ test.describe('Models catalog', () => {
     const tag = page
       .getByTestId('model-tags')
       .getByRole('link', { name: 'flux', exact: true })
-    await expect(tag).toHaveAttribute('href', '/models?capability=flux')
+    await expect(tag).toHaveAttribute('href', '/models?q=flux')
     await tag.click()
-    await expect(page).toHaveURL(/\/models\/?\?capability=flux$/)
-    await expect(page.getByTestId('workshop-filter-count')).toHaveText('1')
+    await expect(page).toHaveURL(/\/models\/?\?q=flux$/)
+    await expect(page.getByTestId('workshop-search')).toHaveValue('flux')
     const cards = page
       .getByTestId('workshop-models-grid')
       .getByTestId('workshop-model-card')
@@ -309,16 +348,21 @@ test.describe('Models catalog', () => {
     await page.goto('/models/kling--avatar--animate-images/')
     await page
       .getByTestId('model-hero')
-      .getByRole('link', { name: 'Video', exact: true })
+      .getByRole('link', { name: 'Image to video', exact: true })
       .click()
-    await expect(page).toHaveURL(/\/models\/?\?modality=video$/)
-    await expect(page.getByTestId('workshop-filter-count')).toHaveText('1')
+    await expect(page).toHaveURL(/\/models\/?\?useCase=animate-images$/)
+    await expect(
+      page.getByRole('heading', { level: 1, name: /Image to video/ })
+    ).toBeVisible()
   })
 
   test('homepage model releases use the published canonical URL', async ({
     page
   }) => {
     await page.goto('/')
+    await page
+      .getByRole('link', { name: /Explore Seedance/i })
+      .scrollIntoViewIfNeeded()
     await expect(
       page.getByRole('link', { name: /Explore Seedance/i })
     ).toHaveAttribute(
@@ -391,20 +435,64 @@ test.describe('Model playground', () => {
     ).toBeVisible()
   })
 
-  test('API tab mirrors the form values', async ({ page }) => {
+  test('API tab highlights snippets and mirrors the form values', async ({
+    page
+  }) => {
     await page.goto(MODEL_PATH)
     await page
       .getByRole('textbox', { name: 'Prompt', exact: true })
       .fill('neon street at night')
-    await page.getByRole('tab', { name: 'API', exact: true }).click()
-    await expect(page.getByTestId('snippet')).toContainText(
-      'neon street at night'
+    const firstSnippetRender = page.evaluate(
+      () =>
+        new Promise<boolean>((resolve) => {
+          const observer = new MutationObserver(() => {
+            const code = document.querySelector(
+              '[data-testid="highlighted-code"]'
+            )
+            if (!code) return
+            observer.disconnect()
+            resolve(code.querySelector('span') !== null)
+          })
+          observer.observe(document.body, { childList: true, subtree: true })
+        })
     )
-    await expect(page.getByTestId('snippet')).toContainText('bfl/flux-2-max')
+    await page.getByRole('tab', { name: 'API', exact: true }).click()
+    const snippet = page.getByTestId('snippet')
+    const highlighted = page.getByTestId('highlighted-code')
+    expect(await firstSnippetRender).toBe(true)
+    await expect(snippet).toContainText('neon street at night')
+    await expect(snippet).toContainText('bfl/flux-2-max')
     await page.getByTestId('snippet-curl').click()
-    await expect(page.getByTestId('snippet')).toContainText(
+    await expect(snippet).toContainText(
       "--request POST 'https://testapi.comfy.org/v2/models/bfl/flux-2-max'"
     )
+    await expect(highlighted.locator('span').first()).toBeVisible()
+  })
+
+  test('API snippets keep uploaded media local', async ({ page }) => {
+    await page.goto('/models/byteplus--seedream-4-5--edit-images/')
+    const [chooser] = await Promise.all([
+      page.waitForEvent('filechooser'),
+      page.getByText('Choose images or drop them here', { exact: true }).click()
+    ])
+    await chooser.setFiles('e2e/assets/placeholder-1x1.webp')
+    await page.getByRole('tab', { name: 'API', exact: true }).click()
+    const snippet = page.getByTestId('snippet')
+    await expect(snippet).toContainText(
+      'client.assets.from_file("placeholder-1x1.webp")'
+    )
+    await expect(snippet).not.toContainText('base64.b64decode')
+    await expect(snippet).not.toContainText('data:image')
+    await expect(page.getByRole('note')).toContainText(
+      'Set the paths to your local files.'
+    )
+
+    await page.getByTestId('snippet-curl').click()
+    await expect(page.getByRole('note')).toContainText(
+      'cURL cannot carry your uploaded files'
+    )
+    await expect(snippet).not.toContainText('data:image')
+    await expect(snippet).not.toContainText('"image"')
   })
 
   test('examples are initially visible and refill the playground', async ({

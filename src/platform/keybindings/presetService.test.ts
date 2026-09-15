@@ -73,7 +73,7 @@ vi.mock<unknown>(import('@/platform/keybindings/keybindingService'), () => ({
   })
 }))
 
-vi.mock<unknown>(import('@/i18n'), () => ({
+vi.mock(import('@/i18n'), () => ({
   t: (key: string) => key
 }))
 

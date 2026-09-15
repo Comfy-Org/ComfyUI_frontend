@@ -20,7 +20,7 @@ const {
   <template v-if="shown">
     <span
       v-if="variant === 'pill'"
-      class="border-primary-comfy-orange/50 text-primary-comfy-orange inline-flex h-6 items-center rounded-2xl border px-3 text-[11px] leading-none font-bold tracking-wider uppercase"
+      class="inline-flex h-6 items-center rounded-2xl border border-primary-comfy-orange/50 px-3 text-[11px] leading-none font-bold tracking-wider text-primary-comfy-orange uppercase"
       data-testid="model-status"
     >
       {{
@@ -31,7 +31,7 @@ const {
     </span>
     <p
       v-else
-      class="border-primary-comfy-orange/40 bg-primary-comfy-orange/10 rounded-2xl border px-4 py-3 text-sm text-primary-warm-white"
+      class="rounded-2xl border border-primary-comfy-orange/40 bg-primary-comfy-orange/10 px-4 py-3 text-sm text-primary-warm-white"
       data-testid="model-status-banner"
     >
       <template v-if="shown === 'deprecated'">
@@ -39,7 +39,7 @@ const {
         <a
           v-if="successor"
           :href="successor.href"
-          class="text-primary-comfy-yellow ml-2 font-bold hover:underline"
+          class="ml-2 font-bold text-primary-comfy-yellow hover:underline"
         >
           {{
             t('workshop.model.deprecatedSuccessor', locale).replace(

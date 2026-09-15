@@ -42,7 +42,7 @@ const {
   <section
     :class="
       cn(
-        'max-w-9xl relative mx-auto flex flex-col items-center gap-12 overflow-x-clip px-6 pt-20 pb-16 md:pt-28 md:pb-24 lg:flex-row lg:gap-8 lg:px-16',
+        'relative mx-auto flex max-w-9xl flex-col items-center gap-12 overflow-x-clip px-6 pt-20 pb-16 md:pt-28 md:pb-24 lg:flex-row lg:gap-8 lg:px-16',
         className
       )
     "
@@ -50,7 +50,7 @@ const {
     <div class="w-full lg:flex-1">
       <component
         :is="headingTag"
-        class="font-formula-narrow flex h-12 items-stretch font-semibold **:select-none md:h-20"
+        class="flex h-12 items-stretch font-formula-narrow font-semibold **:select-none md:h-20"
       >
         <img
           src="/icons/node-left.svg"
@@ -59,7 +59,7 @@ const {
           aria-hidden="true"
         />
         <span
-          class="bg-primary-comfy-yellow flex items-center px-1 text-primary-comfy-ink"
+          class="flex items-center bg-primary-comfy-yellow px-1 text-primary-comfy-ink"
         >
           <span
             class="inline-block translate-y-0.5 text-3xl font-bold tracking-[-0.03em] whitespace-nowrap md:text-[2.5rem]"
@@ -75,7 +75,7 @@ const {
             aria-hidden="true"
           />
           <span
-            class="bg-primary-comfy-yellow flex h-7 items-center self-center px-1.5 text-primary-comfy-ink md:h-12 md:px-2"
+            class="flex h-7 items-center self-center bg-primary-comfy-yellow px-1.5 text-primary-comfy-ink md:h-12 md:px-2"
           >
             <span
               class="inline-block translate-y-0.5 text-lg font-bold whitespace-nowrap md:text-3xl"

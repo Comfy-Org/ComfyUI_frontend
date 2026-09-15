@@ -55,7 +55,7 @@ test.describe('Sign-in page with the auth flag on', () => {
     await page.goto('/login/')
 
     await expect(
-      page.getByRole('heading', { name: 'Log in to your account' })
+      page.getByRole('heading', { name: 'Sign in to your account' })
     ).toBeVisible()
     await expect(
       page.getByRole('button', { name: /with Google/ })

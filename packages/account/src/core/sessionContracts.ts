@@ -50,14 +50,6 @@ export function isPermanentSessionError(code: SessionErrorCode): boolean {
   return PERMANENT_ERROR_CODES.has(code)
 }
 
-export type SessionRefreshOutcome =
-  | 'succeeded'
-  | 'retry_scheduled'
-  | 'retries_exhausted'
-  | 'permanent_failure'
-  /** The credential reached its expiry after retries ran out; the client failed closed. */
-  | 'expired'
-
 export type SessionResult =
   | { readonly status: 'ok'; readonly session: AccountCredential }
   | {
@@ -68,6 +60,23 @@ export type SessionResult =
     }
 
 export type SessionFailure = Extract<SessionResult, { status: 'error' }>
+
+/**
+ * The result of one SCHEDULED refresh attempt as a single tagged value: the
+ * outcomes that committed a failure carry it and the rest structurally cannot,
+ * so a permanent failure without its error — or a success with one — cannot be
+ * represented.
+ */
+export type ScheduledRefreshReport =
+  | { readonly outcome: 'succeeded' }
+  | { readonly outcome: 'retry_scheduled' }
+  | { readonly outcome: 'retries_exhausted' }
+  | { readonly outcome: 'permanent_failure'; readonly failure: SessionFailure }
+  /** Retries ran out and the credential reached expiry; the client failed closed. */
+  | { readonly outcome: 'expired'; readonly failure: SessionFailure }
+
+/** The outcome discriminants a scheduled refresh can report. */
+export type SessionRefreshOutcome = ScheduledRefreshReport['outcome']
 
 export interface MintHandle {
   readonly mintId: number
@@ -125,14 +134,11 @@ export interface RefreshSchedulerOptions {
     readonly onCredentialAdopted?: (credential: AccountCredential) => void
   }
   /**
-   * Called with the outcome of every SCHEDULED refresh attempt (never a
+   * Called with the result of every SCHEDULED refresh attempt (never a
    * login or caller-initiated mint), so a host can feed its refresh
    * telemetry without owning the scheduler. A permanent failure and an
    * expiry carry the failure the client committed, so the host never has
    * to read it back out of the snapshot.
    */
-  readonly onScheduledOutcome?: (
-    outcome: SessionRefreshOutcome,
-    failure?: SessionFailure
-  ) => void
+  readonly onScheduledOutcome?: (report: ScheduledRefreshReport) => void
 }

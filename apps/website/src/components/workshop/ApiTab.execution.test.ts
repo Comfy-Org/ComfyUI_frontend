@@ -1,4 +1,3 @@
-// @vitest-environment happy-dom
 import { execFileSync } from 'node:child_process'
 import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
@@ -11,7 +10,7 @@ import { workshopContract } from '../../config/workshop-contract-catalog'
 import defaultMedia from '../../data/router-default-media.json'
 import ApiTab from './ApiTab.vue'
 
-it('copies the embedded default image and mask into a runnable BFL request', async () => {
+it('omits embedded default media from the cURL example', async () => {
   const model = getRouterWorkshopModelDetail('bfl--flux-pro-fill--edit-images')
   if (!model) throw new Error('Missing FLUX Fill page')
   render(ApiTab, {
@@ -20,25 +19,24 @@ it('copies the embedded default image and mask into a runnable BFL request', asy
       values: initialWorkshopPageState(model).values
     }
   })
-  await screen.findByTestId('snippet')
+  const snippet = await screen.findByTestId('snippet')
   await userEvent.setup().click(screen.getByRole('tab', { name: 'cURL' }))
   const args = execFileSync(
     'bash',
-    [
-      '-c',
-      'curl() { printf \'%s\\0\' "$@"; }\n' +
-        screen.getByTestId('snippet').textContent
-    ],
+    ['-c', 'curl() { printf \'%s\\0\' "$@"; }\n' + snippet.textContent],
     {
       encoding: 'utf8',
       env: { PATH: process.env.PATH, COMFY_API_KEY: 'test-key' }
     }
   ).split('\0')
-  expect(JSON.parse(args[args.indexOf('--data') + 1])).toMatchObject({
-    image: defaultMedia.image,
-    mask: defaultMedia.mask
-  })
-  expect(screen.queryByRole('note')).toBeNull()
+  const parameters = JSON.parse(args[args.indexOf('--data') + 1])
+  expect(parameters).not.toHaveProperty('image')
+  expect(parameters).not.toHaveProperty('mask')
+  expect(snippet.textContent).not.toContain(defaultMedia.image)
+  expect(snippet.textContent).not.toContain(defaultMedia.mask)
+  expect(screen.getByRole('note').textContent).toContain(
+    'cURL cannot carry your uploaded files'
+  )
 })
 
 it('a copied cURL example starts distinct executions with fresh idempotency keys', async () => {

@@ -1,60 +1,36 @@
-// @vitest-environment happy-dom
-import '@testing-library/jest-dom/vitest'
 import userEvent from '@testing-library/user-event'
 import { render, screen, waitFor, within } from '@testing-library/vue'
 import { describe, expect, it } from 'vitest'
-import { defineComponent, h } from 'vue'
+import { defineComponent, h, ref } from 'vue'
 import { renderToString } from 'vue/server-renderer'
 
 import WorkshopSearchField from './WorkshopSearchField.vue'
 
 describe('WorkshopSearchField', () => {
-  it('reopens the suggestion panel when typing resumes after it closed', async () => {
+  it('updates the search without opening a duplicate results panel', async () => {
     const user = userEvent.setup()
     render(
       defineComponent({
-        setup: () => () =>
-          h(WorkshopSearchField, {
-            models: [],
-            modelValue: '',
-            providers: [],
-            capabilities: []
-          })
+        setup() {
+          const query = ref('')
+          return () =>
+            h(WorkshopSearchField, {
+              models: [],
+              modelValue: query.value,
+              'onUpdate:modelValue': (value: string) => {
+                query.value = value
+              }
+            })
+        }
       })
     )
 
-    const field = screen.getByRole('combobox')
-    await user.click(field)
-    expect(field.getAttribute('aria-expanded')).toBe('true')
-
-    await user.keyboard('{Escape}')
-    expect(field.getAttribute('aria-expanded')).toBe('false')
-
-    await user.keyboard('flux')
-    expect(field.getAttribute('aria-expanded')).toBe('true')
-  })
-
-  it('dismisses a nonempty native search without clearing or reopening it', async () => {
-    const user = userEvent.setup()
-    render(
-      defineComponent({
-        setup: () => () =>
-          h(WorkshopSearchField, {
-            models: [],
-            modelValue: '',
-            providers: [],
-            capabilities: []
-          })
-      })
-    )
-
-    const field = screen.getByRole<HTMLInputElement>('combobox')
-    await user.click(field)
+    const field = screen.getByRole<HTMLInputElement>('searchbox')
+    await waitFor(() => expect(field).toBeEnabled())
     await user.type(field, 'flux')
-    await user.keyboard('{Escape}')
 
     expect(field.value).toBe('flux')
-    expect(field.getAttribute('aria-expanded')).toBe('false')
+    expect(screen.queryByTestId('workshop-search-panel')).toBeNull()
   })
 
   it('contains keyboard focus in mobile search and restores it when Escape is pressed from a button', async () => {
@@ -64,8 +40,6 @@ describe('WorkshopSearchField', () => {
         h(WorkshopSearchField, {
           models: [],
           modelValue: '',
-          providers: [],
-          capabilities: [],
           compact: true
         })
     })
@@ -75,12 +49,12 @@ describe('WorkshopSearchField', () => {
     )
     expect(
       within(server.body).getByRole('button', {
-        name: 'Search models, providers, categories...'
+        name: 'Search models, providers, and categories'
       })
     ).toBeDisabled()
     render(search)
     const trigger = screen.getByRole('button', {
-      name: 'Search models, providers, categories...'
+      name: 'Search models, providers, and categories'
     })
     await waitFor(() => expect(trigger).toBeEnabled())
     await user.click(trigger)

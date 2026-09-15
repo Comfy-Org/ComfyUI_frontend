@@ -132,11 +132,11 @@ const caretClass =
 <template>
   <section
     id="events-directory"
-    class="max-w-9xl mx-auto scroll-mt-24 px-6 py-16 lg:px-20 lg:py-24"
+    class="mx-auto max-w-9xl scroll-mt-24 px-6 py-16 lg:px-20 lg:py-24"
   >
     <div class="mx-auto max-w-3xl text-center">
       <p
-        class="text-primary-comfy-yellow text-xs font-semibold tracking-widest uppercase"
+        class="text-xs font-semibold tracking-widest text-primary-comfy-yellow uppercase"
         aria-live="polite"
       >
         {{ countLabel }}

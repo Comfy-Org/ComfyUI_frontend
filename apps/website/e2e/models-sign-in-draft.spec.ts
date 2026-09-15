@@ -62,7 +62,7 @@ for (const { entry, randomUUID, failRead } of [
     if (failRead) {
       await expect(
         page.getByText(
-          'Some saved inputs could not be restored. Check your inputs and select your files again.'
+          'We could not restore all of your saved inputs. Check the form and pick your files again.'
         )
       ).toBeVisible()
       await page.reload()
@@ -163,7 +163,7 @@ test('unavailable draft storage does not trap sign-in and reports missing files 
   await page.goto(path)
   await expect(
     page.getByText(
-      'Some saved inputs could not be restored. Check your inputs and select your files again.'
+      'We could not restore all of your saved inputs. Check the form and pick your files again.'
     )
   ).toBeVisible()
   await expect(
