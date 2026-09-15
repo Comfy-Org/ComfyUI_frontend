@@ -27,18 +27,18 @@
         </span>
       </div>
     </div>
-    <span
+    <StatusBadge
       v-if="showRoleColumn && !isSingleSeatPlan"
-      :class="
-        cn('text-sm text-muted-foreground', !showCreditsColumn && 'text-right')
-      "
-    >
-      {{
+      :label="
         member.role === 'owner'
           ? $t('workspaceSwitcher.roleOwner')
           : $t('workspaceSwitcher.roleMember')
-      }}
-    </span>
+      "
+      severity="contrast"
+      :class="
+        cn('py-0.5 text-2xs font-bold', !showCreditsColumn && 'text-right')
+      "
+    />
     <div v-if="showCreditsColumn" class="text-sm tabular-nums">
       <div v-if="hasCreditLimit" class="flex flex-col gap-1">
         <span class="text-base-foreground">{{ creditsLabel }}</span>
@@ -86,6 +86,7 @@ import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import DropdownMenu from '@/components/common/DropdownMenu.vue'
+import StatusBadge from '@/components/common/StatusBadge.vue'
 import UserAvatar from '@/components/common/UserAvatar.vue'
 import Button from '@/components/ui/button/Button.vue'
 import type { WorkspaceMember } from '@/platform/workspace/stores/teamWorkspaceStore'
