@@ -38,7 +38,7 @@
         <div
           v-if="previewUrl"
           class="relative size-full"
-          @click="emit('preview-click')"
+          @click="onPreviewClick"
         >
           <template v-if="isVideoPreview">
             <video
@@ -60,7 +60,7 @@
         <div
           v-else
           class="flex size-full items-center justify-center"
-          @click="emit('preview-click')"
+          @click="onPreviewClick"
         >
           <i
             aria-hidden="true"
@@ -143,7 +143,7 @@ import VideoPlayOverlay from './VideoPlayOverlay.vue'
 
 const emit = defineEmits<{
   'stack-toggle': []
-  'preview-click': []
+  'preview-click': [event: MouseEvent]
 }>()
 
 const {
@@ -177,6 +177,10 @@ const {
   progressTotalPercent?: number
   progressCurrentPercent?: number
 }>()
+
+function onPreviewClick(event: MouseEvent) {
+  emit('preview-click', event)
+}
 
 const {
   progressBarContainerClass,
