@@ -26,6 +26,7 @@ import { useDialogService } from '@/services/dialogService'
 import { toTierKey } from '@/platform/cloud/subscription/constants/tierPricing'
 import type { operations } from '@/types/comfyRegistryTypes'
 import { parseErrorResponse } from '@/platform/remote/comfyui/errors'
+import { isAnnualDuration } from '@/platform/cloud/subscription/utils/planDuration'
 import {
   PENDING_SUBSCRIPTION_CHECKOUT_EVENT,
   PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY,
@@ -100,8 +101,8 @@ function useSubscriptionInternal() {
     () => subscriptionStatus.value?.subscription_duration ?? null
   )
 
-  const isYearlySubscription = computed(
-    () => subscriptionDuration.value === 'ANNUAL'
+  const isYearlySubscription = computed(() =>
+    isAnnualDuration(subscriptionDuration.value ?? undefined)
   )
 
   const subscriptionTierName = computed(() => {
@@ -261,7 +262,7 @@ function useSubscriptionInternal() {
       cycle: 'monthly',
       checkout_type: canAccessSubscriptionFeatures.value ? 'change' : 'new',
       ...(previousTierKey ? { previous_tier: previousTierKey } : {}),
-      ...(subscriptionDuration.value === 'ANNUAL'
+      ...(isAnnualDuration(subscriptionDuration.value ?? undefined)
         ? { previous_cycle: 'yearly' as const }
         : subscriptionDuration.value === 'MONTHLY'
           ? { previous_cycle: 'monthly' as const }

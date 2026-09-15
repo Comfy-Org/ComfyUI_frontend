@@ -410,6 +410,7 @@ import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useSubscriptionDialog } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
 import { useFreeTierQuota } from '@/platform/cloud/subscription/composables/useFreeTierQuota'
 import { isSalesManagedTier } from '@/platform/cloud/subscription/constants/tierPricing'
+import { isAnnualDuration } from '@/platform/cloud/subscription/utils/planDuration'
 import type { TierBenefit } from '@/platform/cloud/subscription/utils/tierBenefits'
 import { getCommonTierBenefits } from '@/platform/cloud/subscription/utils/tierBenefits'
 import { isCloud } from '@/platform/distribution/types'
@@ -563,8 +564,8 @@ async function handleRetry() {
   await initialize()
 }
 
-const isYearlySubscription = computed(
-  () => subscription.value?.duration === 'ANNUAL'
+const isYearlySubscription = computed(() =>
+  isAnnualDuration(subscription.value?.duration ?? undefined)
 )
 
 const formattedRenewalDate = computed(() =>
