@@ -133,7 +133,8 @@ top-up endpoint called directly from the site.
   depended on the package. Not taken, because V1 drew the boundary at
   "billing" rather than at "billing commands". Had it been taken, the
   401 re-mint described under the residual-401 consequence would have
-  come for free, and the site would have been the transport's first
+  been available — subject to the key mapping in the replay-safety
+  consequence — and the site would have been the transport's first
   production caller — which is also why not taking it is a weaker
   error than it first looks: no production surface was using it to
   diverge from. This is still the part of the decision least worth
@@ -172,9 +173,19 @@ top-up endpoint called directly from the site.
   pinning the behaviour, so the retry arrives with rule 5 rather than
   as a fourth copy of the rule.
 
-- **Replay safety is unchanged.** The site passes a per-attempt
-  `idempotencyKey`, which is what makes a retry safe to add at
-  convergence without revisiting the call sites.
+- **Replay safety is unchanged, but the retry is not free at
+  convergence.** The site passes a per-attempt `idempotencyKey`, which
+  is what makes a retry safe to add at all. It does not make the retry
+  automatic. `transport.ts` gates the re-mint on
+  `request.method === 'GET' || request.idempotencyKey !== undefined`
+  and otherwise returns `authenticationRetrySkipped`, and it emits the
+  key as an `Idempotency-Key` header — while
+  `/api/billing/topup/checkout` reads `idempotency_key` from the body.
+  So the rule 5 adapter has to satisfy both: lift the attempt key onto
+  `BillingRequest.idempotencyKey` to unlock the retry, and keep it in
+  the body for the endpoint. Doing only the first breaks the request;
+  doing only the second silently ships convergence without the 401
+  retry, which is the whole point of converging.
 
 - **This boundary has no codified owner, which is its own gap.**
   `CODEOWNERS` carries no entry for `packages/account/`,
