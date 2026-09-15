@@ -188,19 +188,36 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
           body: JSON.stringify({ system: {}, devices: [] })
         })
       )
-      await page.getByRole('button', { name: OPEN_AGENT_LABEL }).click()
       const panel = page.locator('#agent-panel-root')
-      await expect(panel.getByText('CRDT debug', { exact: true })).toBeVisible()
 
-      for (const name of ['Server logs', 'Settings', 'Workflow JSON']) {
-        await panel.getByRole('switch', { name }).click()
-      }
-      await panel.getByRole('button', { name: 'Copy full report' }).click()
+      await test.step('turn off every optional privacy source', async () => {
+        await page.getByRole('button', { name: OPEN_AGENT_LABEL }).click()
+        await expect(
+          panel.getByText('CRDT debug', { exact: true })
+        ).toBeVisible()
+        await panel.getByRole('switch', { name: 'Server logs' }).click()
+        await panel.getByRole('switch', { name: 'Settings' }).click()
+        await panel.getByRole('switch', { name: 'Workflow JSON' }).click()
+      })
 
-      await expect(panel.getByRole('button', { name: 'Copied' })).toBeVisible()
-      await expect
-        .poll(() => page.evaluate(() => navigator.clipboard.readText()))
-        .toContain('- Workflow: turned off')
+      await test.step('copy a report that marks every source turned off', async () => {
+        await panel.getByRole('button', { name: 'Copy full report' }).click()
+        await expect(
+          panel.getByRole('button', { name: 'Copied' })
+        ).toBeVisible()
+        await expect
+          .poll(async () => {
+            const report = await page.evaluate(() =>
+              navigator.clipboard.readText()
+            )
+            return {
+              serverLogs: report.includes('- Server logs: turned off'),
+              settings: report.includes('- Settings: turned off'),
+              workflow: report.includes('- Workflow: turned off')
+            }
+          })
+          .toEqual({ serverLogs: true, settings: true, workflow: true })
+      })
     })
   })
 

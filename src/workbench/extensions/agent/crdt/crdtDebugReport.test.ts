@@ -317,11 +317,13 @@ describe('collectCrdtDebugReport', () => {
       crdt: SNAPSHOT,
       events: [],
       sources: ALL_SOURCES,
-      workflowError: `${'x'.repeat(80_000)} apiKey=do-not-leak`
+      workflowError: `${'x'.repeat(80_000)} apiKey=do-not-leak "apiKey":"json-do-not-leak" auth: Bearer bearer-do-not-leak`
     })
 
     expect(report).not.toContain('do-not-leak')
     expect(report).toContain('apiKey=[redacted by the debug report]')
+    expect(report).toContain('"apiKey":"[redacted by the debug report]"')
+    expect(report).toContain('auth: [redacted by the debug report]')
     expect(report).toContain('earlier characters trimmed')
   })
 
