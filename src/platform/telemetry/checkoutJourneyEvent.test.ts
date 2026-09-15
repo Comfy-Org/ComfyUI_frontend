@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import {
+  CHECKOUT_JOURNEY_EVENT_NAME_BY_PHASE,
   CHECKOUT_JOURNEY_SCHEMA_VERSION,
   getCheckoutJourneyTelemetryEventName,
   getCheckoutJourneyTelemetryEventPayload
@@ -26,6 +27,23 @@ describe('getCheckoutJourneyTelemetryEventName', () => {
       'billing.checkout.preview_ready'
     )
   })
+
+  // The table is a total Record, so a missing phase fails to compile — but a
+  // swapped value (entered -> 'billing.checkout.submitted') would not. Comparing
+  // each key against its own value restores what the template literal proved.
+  it.for(Object.entries(CHECKOUT_JOURNEY_EVENT_NAME_BY_PHASE))(
+    'names %s after its own phase',
+    ([phase, name]) => {
+      expect(name).toBe(`billing.checkout.${phase}`)
+
+      const event = {
+        ...baseContext,
+        phase,
+        assignment_status: 'unavailable'
+      } as CheckoutJourneyTelemetryEvent
+      expect(getCheckoutJourneyTelemetryEventName(event)).toBe(name)
+    }
+  )
 })
 
 describe('getCheckoutJourneyTelemetryEventPayload', () => {

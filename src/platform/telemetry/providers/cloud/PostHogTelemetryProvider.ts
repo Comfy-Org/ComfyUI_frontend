@@ -76,7 +76,7 @@ import type {
 } from '../../types'
 import {
   CANCELLATION_STAGE_EVENTS,
-  CHECKOUT_JOURNEY_EVENT_NAMES,
+  CHECKOUT_JOURNEY_EVENT_NAME_BY_PHASE,
   getBillingTelemetryEventName,
   getBillingTelemetryEventPayload,
   getCheckoutJourneyTelemetryEventName,
@@ -102,7 +102,7 @@ const DEFAULT_DISABLED_EVENTS = [
 
 const TELEMETRY_EVENT_SET = new Set<string>([
   ...Object.values(TelemetryEvents),
-  ...CHECKOUT_JOURNEY_EVENT_NAMES
+  ...Object.values(CHECKOUT_JOURNEY_EVENT_NAME_BY_PHASE)
 ])
 
 interface QueuedEvent {

@@ -1098,7 +1098,7 @@ export type CheckoutJourneyTelemetryEventName =
  * union, so a phase added to the union without a name here fails to compile —
  * and so the runtime list below can never drift from the emitted names.
  */
-const CHECKOUT_JOURNEY_EVENT_NAME_BY_PHASE: Record<
+export const CHECKOUT_JOURNEY_EVENT_NAME_BY_PHASE: Record<
   CheckoutJourneyPhase,
   CheckoutJourneyTelemetryEventName
 > = {
@@ -1112,11 +1112,6 @@ const CHECKOUT_JOURNEY_EVENT_NAME_BY_PHASE: Record<
   submitted: 'billing.checkout.submitted',
   operation_linked: 'billing.checkout.operation_linked'
 }
-
-/** Runtime counterpart of `CheckoutJourneyTelemetryEventName`, so providers can
- * validate a configured disable list that names these events. */
-export const CHECKOUT_JOURNEY_EVENT_NAMES: readonly CheckoutJourneyTelemetryEventName[] =
-  Object.values(CHECKOUT_JOURNEY_EVENT_NAME_BY_PHASE)
 
 export function getCheckoutJourneyTelemetryEventName(
   event: CheckoutJourneyTelemetryEvent

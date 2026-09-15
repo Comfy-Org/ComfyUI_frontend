@@ -42,7 +42,7 @@ import type {
 import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
 import type { RemoteConfig } from '@/platform/remoteConfig/types'
 import {
-  CHECKOUT_JOURNEY_EVENT_NAMES,
+  CHECKOUT_JOURNEY_EVENT_NAME_BY_PHASE,
   OnboardingTourEvents,
   TelemetryEvents
 } from '../../types'
@@ -62,7 +62,7 @@ const DEFAULT_DISABLED_EVENTS = [
 
 const TELEMETRY_EVENT_SET = new Set<string>([
   ...Object.values(TelemetryEvents),
-  ...CHECKOUT_JOURNEY_EVENT_NAMES
+  ...Object.values(CHECKOUT_JOURNEY_EVENT_NAME_BY_PHASE)
 ])
 
 interface QueuedEvent {
