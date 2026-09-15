@@ -196,6 +196,57 @@ function veo({
   }
 }
 
+function validateKlingOmniReferences(
+  mode: unknown,
+  lastFrameUrl: Values[string],
+  references: string[]
+) {
+  if (mode === 'first-last' && lastFrameUrl && references.length)
+    throw new WorkshopRouterError('validation', null, {
+      reference_image_url: 'rejected'
+    })
+}
+
+function klingImageInput(
+  firstFrameUrl: Values[string],
+  lastFrameUrl: Values[string],
+  references: string[]
+): Record<string, unknown> {
+  const imageList = [
+    ...(firstFrameUrl
+      ? [{ image_url: firstFrameUrl, type: 'first_frame' }]
+      : []),
+    ...(lastFrameUrl ? [{ image_url: lastFrameUrl, type: 'end_frame' }] : []),
+    ...references.map((image_url) => ({ image_url }))
+  ]
+  return imageList.length ? { image_list: imageList } : {}
+}
+
+function klingVideoInput(
+  mode: unknown,
+  videoUrl: Values[string],
+  keepOriginalSound: Values[string]
+): Record<string, unknown> {
+  if (!videoUrl) return {}
+  return {
+    video_list: [
+      {
+        video_url: videoUrl,
+        refer_type: mode === 'edit' ? 'base' : 'feature',
+        keep_original_sound: keepOriginalSound === false ? 'no' : 'yes'
+      }
+    ]
+  }
+}
+
+function klingSoundInput(
+  generateAudio: Values[string]
+): Record<string, unknown> {
+  return generateAudio === undefined
+    ? {}
+    : { sound: generateAudio ? 'on' : 'off' }
+}
+
 function klingOmni(
   request: CallbackRequest,
   { values }: WorkshopRequestInputs
@@ -211,36 +262,13 @@ function klingOmni(
     ...body
   } = withoutIndexed(values, 'reference_image_url')
   const mode = request.options.mode
-  if (mode === 'first-last' && last_frame_url && references.length)
-    throw new WorkshopRouterError('validation', null, {
-      reference_image_url: 'rejected'
-    })
-  const imageList = [
-    ...(first_frame_url
-      ? [{ image_url: first_frame_url, type: 'first_frame' }]
-      : []),
-    ...(last_frame_url
-      ? [{ image_url: last_frame_url, type: 'end_frame' }]
-      : []),
-    ...references.map((image_url) => ({ image_url }))
-  ]
-  const videoList = video_url
-    ? [
-        {
-          video_url,
-          refer_type: mode === 'edit' ? 'base' : 'feature',
-          keep_original_sound: keep_original_sound === false ? 'no' : 'yes'
-        }
-      ]
-    : []
+  validateKlingOmniReferences(mode, last_frame_url, references)
   return {
     ...body,
     mode: resolution === '720p' ? 'std' : 'pro',
-    ...(generate_audio !== undefined
-      ? { sound: generate_audio ? 'on' : 'off' }
-      : {}),
-    ...(imageList.length ? { image_list: imageList } : {}),
-    ...(videoList.length ? { video_list: videoList } : {})
+    ...klingSoundInput(generate_audio),
+    ...klingImageInput(first_frame_url, last_frame_url, references),
+    ...klingVideoInput(mode, video_url, keep_original_sound)
   }
 }
 
