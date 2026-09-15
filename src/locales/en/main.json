@@ -3421,8 +3421,8 @@
     },
     "inviteLinks": {
       "sentLead": "Invites sent. Each invite also has a personal link you can share directly:",
-      "copyLink": "Copy link",
-      "copied": "Copied",
+      "copyLink": "Copy invite link",
+      "copied": "Copied!",
       "copyAll": "Copy all links"
     },
     "createWorkspaceDialog": {
