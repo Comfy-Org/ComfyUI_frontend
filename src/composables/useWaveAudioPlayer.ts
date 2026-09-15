@@ -10,7 +10,7 @@ interface WaveformBar {
 }
 
 interface UseWaveAudioPlayerOptions {
-  src: Ref<string>
+  src: Ref<string | undefined>
   barCount?: number
   waveform?: boolean
 }
