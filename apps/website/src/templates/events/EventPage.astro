@@ -13,9 +13,9 @@ import type { ComfyEvent } from '../../data/events'
 import {
   eventJsonLdNode,
   eventVideoId,
+  eventVideoUploadDate,
   pastEvents,
-  toCalendarEvent,
-  youtubeWatchHref
+  toCalendarEvent
 } from '../../data/events'
 import { t } from '../../i18n/translations'
 import type { JsonLdNode } from '../../utils/jsonLd'
@@ -53,11 +53,8 @@ const videoJsonLd: JsonLdNode | undefined =
         name: title,
         description,
         thumbnailUrl: event.media.src,
-        contentUrl:
-          youtubeWatchHref(event.recordingVideoId)[locale] ||
-          youtubeWatchHref(event.recordingVideoId).en,
         embedUrl: `https://www.youtube-nocookie.com/embed/${event.recordingVideoId}`,
-        uploadDate: event.startDateTime,
+        uploadDate: eventVideoUploadDate(event),
         locale
       })
     : undefined
