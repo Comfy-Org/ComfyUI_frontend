@@ -299,11 +299,14 @@ test.describe('Vue Combo Widget', { tag: ['@vue-nodes', '@widget'] }, () => {
     // the original" also holds for a selection that never applied at all.
     await expect.poll(scheduler).toBe('karras')
 
-    // Keystrokes go to the page, not to the canvas locator. `keyboard.undo()`
-    // defaults to `canvas.press()`, which runs actionability checks against a
-    // canvas the Vue transform pane covers — the click is then intercepted by
-    // whichever node sits under it (here the combobox itself).
-    await comfyPage.page.keyboard.press('Escape')
+    // The change tracker only records the combo edit onto the undo stack when a
+    // mouseup reaches its window listener; the dropdown's own mouseup does not
+    // reliably get there, which leaves the first undo a no-op. Clicking the node
+    // is a mouseup that does reach it, flushing the edit into history and moving
+    // focus off the combobox before the keystrokes.
+    const ksampler = await comfyPage.vueNodes.getFixtureByTitle('KSampler')
+    await ksampler.title.click()
+
     await comfyPage.page.keyboard.press('ControlOrMeta+z')
     await expect.poll(scheduler).toBe(original)
 
