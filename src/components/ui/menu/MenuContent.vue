@@ -18,6 +18,7 @@ import { menuContentClass } from './menuStyles'
 
 const {
   class: className,
+  collisionPadding = 10,
   width = 'default',
   maxHeight = 'available',
   ...restProps
@@ -37,6 +38,7 @@ const contentStyle = useModalLiftedZIndex(rootContext.open)
 <template>
   <DropdownMenuContent
     v-bind="forwarded"
+    :collision-padding
     :style="contentStyle"
     :class="
       cn(
