@@ -1,3 +1,4 @@
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { usePartnerNodeGovernanceStore } from '@/platform/workspace/stores/partnerNodeGovernanceStore'
 import { fromPartial } from '@total-typescript/shoehorn'
 
@@ -40,9 +41,13 @@ vi.mock<unknown>(import('@/composables/auth/useCurrentUser'), () => ({
   useCurrentUser: () => ({ isLoggedIn: env.fakeRef('isLoggedIn') })
 }))
 
-vi.mock<unknown>(import('@/composables/useFeatureFlags'), () => ({
-  useFeatureFlags: () => ({
+vi.mock(import('@/composables/useFeatureFlags'))
+
+beforeEach(() => {
+  vi.mocked(useFeatureFlags).mockReturnValue({
+    ...useFeatureFlags(),
     flags: {
+      ...useFeatureFlags().flags,
       get partnerNodeGovernanceEnabled() {
         return env.state.partnerNodeGovernanceEnabled
       },
@@ -51,7 +56,7 @@ vi.mock<unknown>(import('@/composables/useFeatureFlags'), () => ({
       }
     }
   })
-}))
+})
 
 vi.mock<unknown>(import('@/composables/useVueFeatureFlags'), () => ({
   useVueFeatureFlags: () => ({ shouldRenderVueNodes: ref(false) })

@@ -1,3 +1,4 @@
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { nextTick } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -11,15 +12,19 @@ const { mockOpenModelLibraryBrowser, featureFlagState } = vi.hoisted(() => ({
   featureFlagState: { assetsEnabled: false }
 }))
 
-vi.mock<unknown>(import('@/composables/useFeatureFlags'), () => ({
-  useFeatureFlags: () => ({
+vi.mock(import('@/composables/useFeatureFlags'))
+
+beforeEach(() => {
+  vi.mocked(useFeatureFlags).mockReturnValue({
+    ...useFeatureFlags(),
     flags: {
+      ...useFeatureFlags().flags,
       get assetsEnabled() {
         return featureFlagState.assetsEnabled
       }
     }
   })
-}))
+})
 
 vi.mock(
   import('@/platform/assets/composables/openModelLibraryBrowser'),

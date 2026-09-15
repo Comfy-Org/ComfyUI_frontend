@@ -1,3 +1,4 @@
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
 import { fromPartial } from '@total-typescript/shoehorn'
@@ -68,15 +69,19 @@ const mockModel = fromPartial<ComfyModelDef>({
   searchable: 'checkpoints/model.safetensors'
 })
 
-vi.mock<unknown>(import('@/composables/useFeatureFlags'), () => ({
-  useFeatureFlags: () => ({
+vi.mock(import('@/composables/useFeatureFlags'))
+
+beforeEach(() => {
+  vi.mocked(useFeatureFlags).mockReturnValue({
+    ...useFeatureFlags(),
     flags: {
+      ...useFeatureFlags().flags,
       get assetsEnabled() {
         return featureFlagState.assetsEnabled
       }
     }
   })
-}))
+})
 
 const mockExpandNode = vi.hoisted(() => vi.fn())
 vi.mock<unknown>(import('@/composables/useTreeExpansion'), () => ({

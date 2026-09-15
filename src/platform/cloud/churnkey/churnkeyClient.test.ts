@@ -1,3 +1,4 @@
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import type { ChurnkeyAuthResponse } from '@comfyorg/ingest-types'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -11,15 +12,19 @@ const mocks = vi.hoisted(() => ({
   clearState: vi.fn()
 }))
 
-vi.mock<unknown>(import('@/composables/useFeatureFlags'), () => ({
-  useFeatureFlags: () => ({
+vi.mock(import('@/composables/useFeatureFlags'))
+
+beforeEach(() => {
+  vi.mocked(useFeatureFlags).mockReturnValue({
+    ...useFeatureFlags(),
     flags: {
+      ...useFeatureFlags().flags,
       get churnkeyAppId() {
         return mocks.appId
       }
     }
   })
-}))
+})
 
 vi.mock(import('@/i18n'), () => ({ t: (key: string) => key }))
 

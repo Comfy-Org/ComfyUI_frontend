@@ -1,3 +1,4 @@
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
@@ -32,11 +33,22 @@ const mockFlags = vi.hoisted(() => ({
 
 const mockShowPublishDialog = vi.hoisted(() => vi.fn())
 
-vi.mock<unknown>(import('@/composables/useFeatureFlags'), () => ({
-  useFeatureFlags: () => ({
-    flags: mockFlags
+vi.mock(import('@/composables/useFeatureFlags'))
+
+beforeEach(() => {
+  vi.mocked(useFeatureFlags).mockReturnValue({
+    ...useFeatureFlags(),
+    flags: {
+      ...useFeatureFlags().flags,
+      get comfyHubUploadEnabled() {
+        return mockFlags.comfyHubUploadEnabled
+      },
+      get comfyHubProfileGateEnabled() {
+        return mockFlags.comfyHubProfileGateEnabled
+      }
+    }
   })
-}))
+})
 
 vi.mock<unknown>(
   import('@/platform/workflow/sharing/composables/useComfyHubPublishDialog'),

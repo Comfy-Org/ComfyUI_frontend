@@ -1,3 +1,4 @@
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { fromAny, fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -65,9 +66,17 @@ vi.mock<unknown>(import('@/utils/graphTraversalUtil'), () => {
   }
 })
 
-vi.mock<unknown>(import('@/composables/useFeatureFlags'), () => ({
-  useFeatureFlags: () => ({ flags: { assetsEnabled: true } })
-}))
+vi.mock(import('@/composables/useFeatureFlags'))
+
+beforeEach(() => {
+  vi.mocked(useFeatureFlags).mockReturnValue({
+    ...useFeatureFlags(),
+    flags: {
+      ...useFeatureFlags().flags,
+      assetsEnabled: true
+    }
+  })
+})
 
 vi.mock(import('@/platform/assets/services/assetService'))
 vi.mock(import('@/platform/remote/comfyui/jobs/fetchJobs'))

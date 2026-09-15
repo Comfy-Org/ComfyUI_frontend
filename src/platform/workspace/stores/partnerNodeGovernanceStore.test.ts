@@ -1,3 +1,4 @@
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { nextTick } from 'vue'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -27,9 +28,19 @@ const mockFlags = vi.hoisted(() => ({
   partnerNodeGovernanceEnabled: true
 }))
 
-vi.mock<unknown>(import('@/composables/useFeatureFlags'), () => ({
-  useFeatureFlags: () => ({ flags: mockFlags })
-}))
+vi.mock(import('@/composables/useFeatureFlags'))
+
+beforeEach(() => {
+  vi.mocked(useFeatureFlags).mockReturnValue({
+    ...useFeatureFlags(),
+    flags: {
+      ...useFeatureFlags().flags,
+      get partnerNodeGovernanceEnabled() {
+        return mockFlags.partnerNodeGovernanceEnabled
+      }
+    }
+  })
+})
 
 vi.mock(import('@/platform/workspace/api/partnerNodePolicyApi'), () => ({
   getPartnerNodePolicy: mockGetPartnerNodePolicy,

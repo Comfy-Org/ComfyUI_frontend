@@ -1,3 +1,4 @@
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useCommandStore } from '@/stores/commandStore'
 import { fromAny } from '@total-typescript/shoehorn'
@@ -63,15 +64,19 @@ vi.mock<unknown>(import('@/services/useNewUserService'), () => ({
   useNewUserService: () => ({ isNewUser: () => mocks.isNewUser })
 }))
 
-vi.mock<unknown>(import('@/composables/useFeatureFlags'), () => ({
-  useFeatureFlags: () => ({
+vi.mock(import('@/composables/useFeatureFlags'))
+
+beforeEach(() => {
+  vi.mocked(useFeatureFlags).mockReturnValue({
+    ...useFeatureFlags(),
     flags: {
+      ...useFeatureFlags().flags,
       get onboardingTourEnabled() {
         return mocks.tourFlag
       }
     }
   })
-}))
+})
 
 vi.mock<unknown>(import('../tour/useFirstRunTourController'), () => ({
   useFirstRunTourController: () => ({ beginTour: mocks.beginTour })

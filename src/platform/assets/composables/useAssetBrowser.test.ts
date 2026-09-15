@@ -1,3 +1,4 @@
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { App } from 'vue'
 import { createApp, defineComponent, nextTick, ref } from 'vue'
@@ -7,15 +8,19 @@ import { useAssetBrowser as createAssetBrowser } from '@/platform/assets/composa
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 
 const mockSupportsModelTypeTags = vi.hoisted(() => ({ value: false }))
-vi.mock<unknown>(import('@/composables/useFeatureFlags'), () => ({
-  useFeatureFlags: () => ({
+vi.mock(import('@/composables/useFeatureFlags'))
+
+beforeEach(() => {
+  vi.mocked(useFeatureFlags).mockReturnValue({
+    ...useFeatureFlags(),
     flags: {
+      ...useFeatureFlags().flags,
       get supportsModelTypeTags() {
         return mockSupportsModelTypeTags.value
       }
     }
   })
-}))
+})
 
 const apps: App<Element>[] = []
 

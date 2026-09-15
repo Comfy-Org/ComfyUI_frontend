@@ -1,3 +1,4 @@
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import type { User } from 'firebase/auth'
 import * as firebaseAuth from 'firebase/auth'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -24,11 +25,17 @@ vi.mock(
     }) as const
 )
 
-vi.mock<unknown>(import('@/composables/useFeatureFlags'), () => ({
-  useFeatureFlags: () => ({
-    flags: { unifiedCloudAuthEnabled: false }
+vi.mock(import('@/composables/useFeatureFlags'))
+
+beforeEach(() => {
+  vi.mocked(useFeatureFlags).mockReturnValue({
+    ...useFeatureFlags(),
+    flags: {
+      ...useFeatureFlags().flags,
+      unifiedCloudAuthEnabled: false
+    }
   })
-}))
+})
 
 vi.mock(import('@/platform/telemetry'))
 

@@ -1,3 +1,4 @@
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useModelToNodeStore } from '@/stores/modelToNodeStore'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -7,15 +8,19 @@ import { resolveModelNodeFromAsset } from '@/platform/assets/utils/resolveModelN
 const mockGetNodeProvider = vi.hoisted(() => vi.fn())
 const mockSupportsModelTypeTags = vi.hoisted(() => ({ value: false }))
 
-vi.mock<unknown>(import('@/composables/useFeatureFlags'), () => ({
-  useFeatureFlags: () => ({
+vi.mock(import('@/composables/useFeatureFlags'))
+
+beforeEach(() => {
+  vi.mocked(useFeatureFlags).mockReturnValue({
+    ...useFeatureFlags(),
     flags: {
+      ...useFeatureFlags().flags,
       get supportsModelTypeTags() {
         return mockSupportsModelTypeTags.value
       }
     }
   })
-}))
+})
 
 function createMockAsset(overrides: Partial<AssetItem> = {}): AssetItem {
   return {

@@ -1,3 +1,4 @@
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useDialogStore } from '@/stores/dialogStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useBillingOperationStore } from '@/platform/workspace/stores/billingOperationStore'
@@ -74,15 +75,19 @@ vi.mock<unknown>(import('@/composables/billing/useBillingRouting'), () => ({
   })
 }))
 
-vi.mock<unknown>(import('@/composables/useFeatureFlags'), () => ({
-  useFeatureFlags: () => ({
+vi.mock(import('@/composables/useFeatureFlags'))
+
+beforeEach(() => {
+  vi.mocked(useFeatureFlags).mockReturnValue({
+    ...useFeatureFlags(),
     flags: {
+      ...useFeatureFlags().flags,
       get embeddedCheckoutEnabled() {
         return mockEmbeddedCheckoutEnabled.value
       }
     }
   })
-}))
+})
 
 vi.mock(import('@/platform/distribution/types'), () => ({
   get isCloud() {

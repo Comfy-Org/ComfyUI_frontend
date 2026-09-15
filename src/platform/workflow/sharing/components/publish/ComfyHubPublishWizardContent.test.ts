@@ -1,3 +1,4 @@
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -37,11 +38,19 @@ const mockFlags = vi.hoisted(() => ({
   comfyHubProfileGateEnabled: true
 }))
 
-vi.mock<unknown>(import('@/composables/useFeatureFlags'), () => ({
-  useFeatureFlags: () => ({
-    flags: mockFlags
+vi.mock(import('@/composables/useFeatureFlags'))
+
+beforeEach(() => {
+  vi.mocked(useFeatureFlags).mockReturnValue({
+    ...useFeatureFlags(),
+    flags: {
+      ...useFeatureFlags().flags,
+      get comfyHubProfileGateEnabled() {
+        return mockFlags.comfyHubProfileGateEnabled
+      }
+    }
   })
-}))
+})
 
 function createDefaultFormData(): ComfyHubPublishFormData {
   return {
