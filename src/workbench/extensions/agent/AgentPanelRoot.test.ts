@@ -31,6 +31,7 @@ import { validateComfyWorkflow } from '@/platform/workflow/validation/schemas/wo
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { app } from '@/scripts/app'
 import { useAgentNodeSelectionStore } from '@/stores/agentNodeSelectionStore'
 import { useWorkflowTabActivityStore } from '@/stores/workflowTabActivityStore'
@@ -295,6 +296,10 @@ beforeEach(() => {
   )
   workflowStore = useWorkflowStore()
   canvasStore = useCanvasStore()
+  Object.defineProperty(useTeamWorkspaceStore(), 'activeWorkspaceId', {
+    get: () => 'workspace-a',
+    configurable: true
+  })
   executionErrors = vi.mocked(useExecutionErrorStore())
   executionErrors.showErrorOverlay.mockImplementation(() => {})
   vi.useRealTimers()
@@ -442,7 +447,9 @@ describe('AgentPanelRoot first-use experience', () => {
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
 
     expect(await screen.findByRole('textbox')).toBeInTheDocument()
-    await vi.waitFor(() => expect(history.replaceAll).toHaveBeenCalledWith([]))
+    await vi.waitFor(() =>
+      expect(history.replaceAll).toHaveBeenCalledWith([], 1)
+    )
 
     expect(executionErrors.showErrorOverlay).not.toHaveBeenCalled()
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
@@ -1931,7 +1938,12 @@ describe('AgentPanelRoot history', () => {
     // The server has no delete endpoint yet, so the tombstone must hold the
     // thread out of the next refresh instead of letting it resurrect.
     useAgentChatHistoryStore().replaceAll([
-      { id: 'th-active', title: 'build a duck', updatedAt: Date.now() }
+      {
+        id: 'th-active',
+        title: 'build a duck',
+        updatedAt: Date.now(),
+        status: 'active'
+      }
     ])
     expect(useAgentChatHistoryStore().sessions).toHaveLength(0)
   })
@@ -1951,7 +1963,8 @@ describe('AgentPanelRoot history', () => {
                 id: 'th-10',
                 title: '',
                 preview: 'make a duck',
-                last_message_at: '2026-07-07T09:00:00Z'
+                last_message_at: '2026-07-07T09:00:00Z',
+                status: 'archived'
               })
             ])
           ),
@@ -1971,11 +1984,13 @@ describe('AgentPanelRoot history', () => {
     await vi.waitFor(() => expect(history.sessions).toHaveLength(2))
     expect(history.sessions[0]).toMatchObject({
       id: 'th-9',
-      title: 'build a text to image graph'
+      title: 'build a text to image graph',
+      status: 'active'
     })
     expect(history.sessions[1]).toMatchObject({
       id: 'th-10',
-      title: 'make a duck'
+      title: 'make a duck',
+      status: 'archived'
     })
   })
 
@@ -1995,6 +2010,40 @@ describe('AgentPanelRoot history', () => {
       type: 'agent_api_failed'
     })
     expect(useAgentChatHistoryStore().sessions).toHaveLength(0)
+  })
+
+  it('ignores an older thread-list failure after a newer refresh succeeds', async () => {
+    executionErrors.showErrorOverlay.mockClear()
+    let rejectInitial!: (error: Error) => void
+    const initialThreadResponse = new Promise<Response>((_resolve, reject) => {
+      rejectInitial = reject
+    })
+    let threadRequestCount = 0
+    vi.stubGlobal(
+      'fetch',
+      vi.fn((url: string) => {
+        if (url.endsWith('/api/agent/threads')) {
+          threadRequestCount++
+          return threadRequestCount === 1
+            ? initialThreadResponse
+            : Promise.resolve(json(200, agentThreadList()))
+        }
+        return Promise.resolve(json(200, []))
+      })
+    )
+
+    renderWithSelectedTarget()
+    await userEvent.click(
+      screen.getByRole('button', {
+        name: i18n.global.t('agent.showChatHistory')
+      })
+    )
+    await vi.waitFor(() => expect(threadRequestCount).toBe(2))
+
+    rejectInitial(new Error('stale refresh failed'))
+    await new Promise((resolve) => setTimeout(resolve, 0))
+
+    expect(executionErrors.showErrorOverlay).not.toHaveBeenCalled()
   })
 
   it('marks the adopted thread as the current session', async () => {
