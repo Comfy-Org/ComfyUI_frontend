@@ -37,6 +37,7 @@ jobs:
     # pull-requests: write, which is what silently broke manual dispatch.
     # Steps needing a different token still set GH_TOKEN themselves.
     env:
+      INPUT_PR_NUMBER: ${{ inputs.pr_number }}
       GH_TOKEN: ${{ secrets.PR_GH_TOKEN || secrets.GH_TOKEN }}
 
     steps:
@@ -44,7 +45,7 @@ jobs:
         if: github.event_name == 'workflow_dispatch'
         run: |
           # Validate PR number format
-          if ! [[ "${{ inputs.pr_number }}" =~ ^[0-9]+$ ]]; then
+          if ! [[ "$INPUT_PR_NUMBER" =~ ^[0-9]+$ ]]; then
             echo "::error::Invalid PR number format. Must be a positive integer."
             exit 1
           fi
@@ -52,20 +53,20 @@ jobs:
           # Validate PR exists and is merged. The gh error is surfaced rather
           # than discarded: an auth failure and a genuinely missing PR are
           # indistinguishable once it is swallowed.
-          if ! PR_VIEW_ERR=$(gh pr view "${{ inputs.pr_number }}" --json state 2>&1 >/dev/null); then
-            echo "::error::PR #${{ inputs.pr_number }} not found or inaccessible: ${PR_VIEW_ERR}"
+          if ! PR_VIEW_ERR=$(gh pr view "$INPUT_PR_NUMBER" --json state 2>&1 >/dev/null); then
+            echo "::error::PR #$INPUT_PR_NUMBER not found or inaccessible: ${PR_VIEW_ERR}"
             exit 1
           fi
 
-          MERGED=$(gh pr view "${{ inputs.pr_number }}" --json state --jq '.state == "MERGED"')
+          MERGED=$(gh pr view "$INPUT_PR_NUMBER" --json state --jq '.state == "MERGED"')
           if [ "$MERGED" != "true" ]; then
-            echo "::error::PR #${{ inputs.pr_number }} is not merged. Only merged PRs can be backported."
+            echo "::error::PR #$INPUT_PR_NUMBER is not merged. Only merged PRs can be backported."
             exit 1
           fi
 
           # Validate PR has needs-backport label
-          if ! gh pr view "${{ inputs.pr_number }}" --json labels --jq '.labels[].name' | grep -q "needs-backport"; then
-            echo "::error::PR #${{ inputs.pr_number }} does not have 'needs-backport' label."
+          if ! gh pr view "$INPUT_PR_NUMBER" --json labels --jq '.labels[].name' | grep -q "needs-backport"; then
+            echo "::error::PR #$INPUT_PR_NUMBER does not have 'needs-backport' label."
             exit 1
           fi
         env:
@@ -95,7 +96,7 @@ jobs:
           declare -A SEEN=()
 
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            LABELS=$(gh pr view ${{ inputs.pr_number }} --json labels | jq -r '.labels[].name')
+            LABELS=$(gh pr view "$INPUT_PR_NUMBER" --json labels | jq -r '.labels[].name')
           else
             LABELS=$(jq -r '.pull_request.labels[].name' "$GITHUB_EVENT_PATH")
           fi
@@ -251,7 +252,7 @@ jobs:
 
           # Get PR data for manual triggers
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            PR_DATA=$(gh pr view ${{ inputs.pr_number }} --json title,mergeCommit)
+            PR_DATA=$(gh pr view "$INPUT_PR_NUMBER" --json title,mergeCommit)
             PR_TITLE=$(echo "$PR_DATA" | jq -r '.title')
             MERGE_COMMIT=$(echo "$PR_DATA" | jq -r '.mergeCommit.oid')
           else
@@ -358,7 +359,7 @@ jobs:
         run: |
           # Get PR data for manual triggers
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            PR_DATA=$(gh pr view ${{ inputs.pr_number }} --json title,author)
+            PR_DATA=$(gh pr view "$INPUT_PR_NUMBER" --json title,author)
             PR_TITLE=$(echo "$PR_DATA" | jq -r '.title')
             PR_AUTHOR=$(echo "$PR_DATA" | jq -r '.author.login')
             PR_AUTHOR_IS_BOT=$(echo "$PR_DATA" | jq -r '.author.is_bot')
@@ -453,8 +454,8 @@ jobs:
             cc @${PR_AUTHOR}
         run: |
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            PR_DATA=$(gh pr view ${{ inputs.pr_number }} --json author,mergeCommit)
-            PR_NUMBER="${{ inputs.pr_number }}"
+            PR_DATA=$(gh pr view "$INPUT_PR_NUMBER" --json author,mergeCommit)
+            PR_NUMBER="$INPUT_PR_NUMBER"
             PR_AUTHOR=$(echo "$PR_DATA" | jq -r '.author.login')
             MERGE_COMMIT=$(echo "$PR_DATA" | jq -r '.mergeCommit.oid')
           else
