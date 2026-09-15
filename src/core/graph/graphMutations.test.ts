@@ -53,6 +53,17 @@ describe('graphMutations', () => {
     })
   }
 
+  function semanticStateJson() {
+    const nodes = useNodeDataStore().getGraphNodesFor('root', 'root')
+    return JSON.stringify({
+      nodes,
+      links: [...useLinkStore().graphTopologies(scope)],
+      widgets: nodes.flatMap(({ id }) =>
+        useWidgetValueStore().getNodeWidgets('root', id)
+      )
+    })
+  }
+
   it('adds the authoritative payload directly to node, widget, and layout stores', () => {
     expect(mutations().addNode(node(7, { seed: 42 }), context)).toBe(true)
 
@@ -258,6 +269,63 @@ describe('graphMutations', () => {
     expect(useNodeDataStore().getGraphNodesFor('root', 'root')).toEqual([])
     expect(createLayout).not.toHaveBeenCalled()
     error.mockRestore()
+  })
+
+  it.fails('M2: rolls back without publishing when a widget store write is rejected', () => {
+    const graph = mutations()
+    expect(graph.addNode(node(1, { seed: 'before' }), context)).toBe(true)
+    const before = semanticStateJson()
+    createLayout.mockClear()
+    const publications: string[] = []
+    const stop = useNodeDataStore().$onAction(({ name, after }) => {
+      if (name === 'registerNode') {
+        after(() => publications.push(semanticStateJson()))
+      }
+    })
+    vi.spyOn(useWidgetValueStore(), 'registerWidget').mockReturnValueOnce(
+      undefined
+    )
+
+    const applied = graph.batch(context, (batch) => {
+      batch.addNode(node(2, { seed: 'rejected' }))
+    })
+
+    expect.soft(applied).toBe(false)
+    expect.soft(semanticStateJson()).toBe(before)
+    expect.soft(publications).toEqual([])
+    expect.soft(createLayout).not.toHaveBeenCalled()
+    stop()
+  })
+
+  it.fails('M2: rolls back the whole batch when link publication is rejected', () => {
+    const graph = mutations()
+    const before = semanticStateJson()
+    const publications: string[] = []
+    const stop = useNodeDataStore().$onAction(({ name, after }) => {
+      if (name === 'registerNode') {
+        after(() => publications.push(semanticStateJson()))
+      }
+    })
+    vi.spyOn(useLinkStore(), 'replaceLink').mockReturnValueOnce(undefined)
+
+    const applied = graph.batch(context, (batch) => {
+      batch.addNode(node(1))
+      batch.addNode(node(2))
+      batch.connect({
+        id: 9,
+        originNodeId: 1,
+        originSlot: 0,
+        targetNodeId: 2,
+        targetSlot: 0,
+        type: 'IMAGE'
+      })
+    })
+
+    expect.soft(applied).toBe(false)
+    expect.soft(semanticStateJson()).toBe(before)
+    expect.soft(publications).toEqual([])
+    expect.soft(createLayout).not.toHaveBeenCalled()
+    stop()
   })
 
   it('reconciles a seeded node while preserving renderer-owned layout', () => {
