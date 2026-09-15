@@ -14,6 +14,14 @@ import type {
   TopupCommand
 } from '@comfyorg/account/billing'
 
+/**
+ * The host owns this client's lifetime. Composables never dispose what they
+ * are handed, because a shared client cannot be torn down by whichever
+ * component unmounts first, so when the session scope ends — sign-out, an
+ * account or workspace switch — the host must call `disposeBillingClient`.
+ * A retained reader goes on serving the scope it was built for, which is the
+ * previous account's balance and capabilities.
+ */
 export interface BillingClient {
   readonly lifecycle: BillingOperationLifecycle
   readonly capabilities: CapabilitiesReader
@@ -28,6 +36,17 @@ export const BILLING_CLIENT_KEY: InjectionKey<BillingClient> = Symbol(
 
 export function provideBillingClient(client: BillingClient): void {
   provide(BILLING_CLIENT_KEY, client)
+}
+
+/**
+ * Ends the client's lifetime by disposing everything in it that holds a scope
+ * subscription. `topup` and `commands` hold none; they run on the lifecycle
+ * and the readers disposed here.
+ */
+export function disposeBillingClient(client: BillingClient): void {
+  client.lifecycle.dispose()
+  client.capabilities.dispose()
+  client.credits.dispose()
 }
 
 export function useBillingClient<K extends keyof BillingClient>(

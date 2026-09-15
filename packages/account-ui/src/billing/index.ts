@@ -1,12 +1,14 @@
 /**
  * The billing view layer: composables over the framework-free core in
- * `@comfyorg/account/billing`. A host builds the core once, provides it, and
- * renders what these expose; routing, windows, dialogs, the payment
- * provider's SDK, and styling all stay with the host.
+ * `@comfyorg/account/billing`. A host builds the core once, provides it,
+ * renders what these expose, and disposes it when the session scope ends;
+ * routing, windows, dialogs, the payment provider's SDK, and styling all stay
+ * with the host.
  */
 export type { BillingClient } from './billingClient'
 export {
   BILLING_CLIENT_KEY,
+  disposeBillingClient,
   provideBillingClient,
   useBillingClient
 } from './billingClient'
