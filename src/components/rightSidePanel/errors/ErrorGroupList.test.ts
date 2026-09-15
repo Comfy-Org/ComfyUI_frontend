@@ -5,6 +5,7 @@ import userEvent from '@testing-library/user-event'
 import { fromPartial } from '@total-typescript/shoehorn'
 import PrimeVue from 'primevue/config'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { ref } from 'vue'
 import { createMemoryHistory, createRouter } from 'vue-router'
 
 import { testI18n } from '@/components/searchbox/v2/__test__/testUtils'
@@ -58,6 +59,7 @@ vi.mock<unknown>(import('@/utils/litegraphUtil'), () => ({
 
 vi.mock(import('@/composables/useCopyToClipboard'), () => ({
   useCopyToClipboard: vi.fn(() => ({
+    copied: ref(false),
     copyToClipboard: vi.fn()
   }))
 }))

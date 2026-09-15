@@ -10,7 +10,14 @@ import { api } from '@/scripts/api'
 import type { ReplyAsset } from '../../../utils/replyAssets'
 import MessageFeedback from './MessageFeedback.vue'
 
-const clipboard = vi.hoisted(() => ({ copy: vi.fn() }))
+const clipboard = vi.hoisted(() => ({ copyToClipboard: vi.fn() }))
+
+vi.mock(import('@/composables/useCopyToClipboard'), () => ({
+  useCopyToClipboard: () => ({
+    copied: ref(false),
+    copyToClipboard: clipboard.copyToClipboard
+  })
+}))
 
 vi.mock(import('@/platform/telemetry/reportError'), () => ({
   reportError: vi.fn()
@@ -22,15 +29,6 @@ const fetchApi = vi.mocked(api.fetchApi)
 vi.mock(import('@/platform/assets/utils/assetPreviewUtil'), () => ({
   isAssetPreviewSupported: () => false,
   findOutputAsset: async () => undefined
-}))
-
-vi.mock<unknown>(import('@vueuse/core'), () => ({
-  useClipboard: () => ({
-    copy: clipboard.copy,
-    copied: ref(false),
-    isSupported: ref(true),
-    text: ref('')
-  })
 }))
 
 const markdownSource = '# Title\n\n**bold** move'
@@ -55,7 +53,7 @@ describe('MessageFeedback', () => {
         disconnect() {}
       }
     )
-    clipboard.copy.mockClear()
+    clipboard.copyToClipboard.mockClear()
     fetchApi.mockReset()
   })
 
@@ -108,7 +106,7 @@ describe('MessageFeedback', () => {
 
     await user.click(screen.getByRole('button', { name: 'Copy' }))
 
-    expect(clipboard.copy).toHaveBeenCalledWith('Title\nbold move')
+    expect(clipboard.copyToClipboard).toHaveBeenCalledWith('Title\nbold move')
     expect(screen.queryByRole('menu')).not.toBeInTheDocument()
   })
 
@@ -124,7 +122,7 @@ describe('MessageFeedback', () => {
 
     await user.click(menuItems[0])
 
-    expect(clipboard.copy).toHaveBeenCalledWith(markdownSource)
+    expect(clipboard.copyToClipboard).toHaveBeenCalledWith(markdownSource)
     expect(screen.queryByRole('menu')).not.toBeInTheDocument()
   })
 
@@ -200,6 +198,6 @@ describe('MessageFeedback', () => {
     await user.keyboard('{Escape}')
 
     expect(screen.queryByRole('menu')).not.toBeInTheDocument()
-    expect(clipboard.copy).not.toHaveBeenCalled()
+    expect(clipboard.copyToClipboard).not.toHaveBeenCalled()
   })
 })

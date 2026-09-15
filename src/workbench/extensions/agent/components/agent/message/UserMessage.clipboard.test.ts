@@ -10,6 +10,11 @@ import Composer from '../Composer.vue'
 import { setupInlinePromptEditorDom } from '../composer/inlinePromptEditorTestSetup'
 import UserMessage from './UserMessage.vue'
 
+vi.mock<unknown>(
+  import('primevue/usetoast'), // eslint-disable-line primevue-removal/no-imports
+  () => ({ useToast: () => ({ add: vi.fn() }) })
+)
+
 vi.mock(import('./ReplyAssetGroup.vue'), () => ({
   default: defineComponent<{ assets: ReplyAsset[] }>({
     setup: () => () => null
