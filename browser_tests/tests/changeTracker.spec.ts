@@ -155,6 +155,140 @@ test.describe('Change Tracker', { tag: '@workflow' }, () => {
     })
   })
 
+  test('A multi-operation chain survives undo-all then redo-all', async ({
+    comfyPage
+  }) => {
+    const snapshot = () =>
+      comfyPage.page.evaluate(() => {
+        const graph = window.app!.canvas.graph!
+        return {
+          nodes: graph.nodes
+            .map((node) => ({
+              id: String(node.id),
+              pos: [...node.pos],
+              type: node.type
+            }))
+            .sort((left, right) => left.id.localeCompare(right.id)),
+          links: [...graph.links.values()]
+            .map((link) =>
+              [
+                String(link.origin_id),
+                link.origin_slot,
+                String(link.target_id),
+                link.target_slot
+              ].join(':')
+            )
+            .sort()
+        }
+      })
+
+    await expect.poll(() => comfyPage.workflow.getUndoQueueSize()).toBe(0)
+    const before = await snapshot()
+
+    const source = await comfyPage.nodeOps.addNode('EmptyImage', undefined, {
+      x: 120,
+      y: 460
+    })
+    const target = await comfyPage.nodeOps.addNode(
+      'ImageCompositeMasked',
+      undefined,
+      { x: 620, y: 460 }
+    )
+    await comfyPage.nextFrame()
+
+    const destinationIndex = await comfyPage.page.evaluate((id) => {
+      const node = window.app!.canvas.graph!.getNodeById(id)!
+      return node.inputs.findIndex((input) => input.name === 'destination')
+    }, target.id)
+    expect(
+      destinationIndex,
+      'ImageCompositeMasked should expose a destination input'
+    ).toBeGreaterThanOrEqual(0)
+
+    await source.connectOutput(0, target, destinationIndex)
+    await source.dragBy({ x: 40, y: 70 })
+    await target.dragBy({ x: -30, y: 45 })
+
+    // Delete through the UI. `graph.remove()` from `page.evaluate` mutates the
+    // graph without the change tracker ever capturing it, so `activeState`
+    // never catches up: `graphMatchesActiveState` stays false forever and the
+    // deletion is missing from the history the loops below walk.
+    const nodeCountBeforeDelete = await comfyPage.nodeOps.getNodeCount()
+    await source.click('title')
+    await comfyPage.page.keyboard.press('Delete')
+    await expect
+      .poll(() => comfyPage.nodeOps.getNodeCount())
+      .toBe(nodeCountBeforeDelete - 1)
+
+    // Sampling `depth` before the tracker has settled returns a short count, and
+    // the first undo then fires into a pending capture and is swallowed —
+    // exactly how this failed on CI (undo=2/redo=0 where 1/1 was expected).
+    //
+    // `graphMatchesActiveState` is deliberately NOT the gate. It was observed
+    // to stay false indefinitely after a node deletion: `removeNode()` captures
+    // inside its own `afterChange()`, then runs `updateExecutionOrder()`, which
+    // rewrites serialized node order after the capture. The undo queue settling
+    // is the signal that matters here, and the per-step sizes below are direct
+    // evidence that each press landed.
+    await expect
+      .poll(() => getChangeTrackerDebugState(comfyPage))
+      .toMatchObject({
+        changeCount: 0,
+        isLoadingGraph: false,
+        restoringState: false
+      })
+
+    // Read the depth rather than assuming one entry per operation. How finely
+    // the tracker checkpoints is not what this row is about, and asserting a
+    // count here would turn a round-trip test into a probe of the transaction
+    // model.
+    let previousDepth = -1
+    await expect
+      .poll(async () => {
+        const current = (await comfyPage.workflow.getUndoQueueSize()) ?? 0
+        const stable = current > 1 && current === previousDepth
+        previousDepth = current
+        return stable
+      })
+      .toBe(true)
+    const depth = previousDepth
+
+    const after = await snapshot()
+    expect(after, 'the chain must actually have changed the graph').not.toEqual(
+      before
+    )
+
+    // Settle on the queue sizes only. `waitForChangeTrackerSettled` also pins
+    // `isModified`, which depends on a saved baseline this describe does not
+    // establish — and which is not what this row is about.
+    const waitForQueues = async (
+      undoQueueSize: number,
+      redoQueueSize: number
+    ) => {
+      await expect
+        .poll(() => getChangeTrackerDebugState(comfyPage))
+        .toMatchObject({
+          changeCount: 0,
+          isLoadingGraph: false,
+          redoQueueSize,
+          restoringState: false,
+          undoQueueSize
+        })
+    }
+
+    for (let step = 0; step < depth; step++) {
+      await comfyPage.keyboard.undo(null)
+      await waitForQueues(depth - step - 1, step + 1)
+    }
+    expect(await snapshot()).toEqual(before)
+
+    for (let step = 0; step < depth; step++) {
+      await comfyPage.page.keyboard.press('ControlOrMeta+Shift+z')
+      await waitForQueues(step + 1, depth - step - 1)
+    }
+    expect(await snapshot()).toEqual(after)
+  })
+
   test('Can group multiple change actions into a single transaction', async ({
     comfyPage
   }) => {
