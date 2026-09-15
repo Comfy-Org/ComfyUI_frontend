@@ -169,9 +169,7 @@ const mockChangeTracker = vi.hoisted(() => ({
 
 let mockWorkflowStore: ReturnType<typeof useWorkflowStore>
 
-vi.mock<unknown>(import('@/composables/auth/useAuthActions'), () => ({
-  useAuthActions: vi.fn(() => ({}))
-}))
+vi.mock(import('@/composables/auth/useAuthActions'))
 
 vi.mock<unknown>(
   import('@/platform/cloud/subscription/composables/useSubscription'),
