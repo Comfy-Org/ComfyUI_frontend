@@ -4,6 +4,7 @@ import type {
   ISerialisedNode
 } from '@/lib/litegraph/src/types/serialisation'
 import { useAgentGeneratedNodesStore } from '@/stores/agentGeneratedNodesStore'
+import { useWorkflowTabActivityStore } from '@/stores/workflowTabActivityStore'
 import { useLinkPresentationStore } from '@/stores/linkPresentationStore'
 import { useLinkStore } from '@/stores/linkStore'
 import { useNodeDataStore } from '@/stores/nodeDataStore'
@@ -312,25 +313,33 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
   const linkPresentationStore = useLinkPresentationStore()
   const widgetStore = useWidgetValueStore()
   const agentGeneratedNodes = useAgentGeneratedNodesStore()
+  const tabActivity = useWorkflowTabActivityStore()
 
   /**
    * Frames a human authored are mirrored back through this same stream, and a
    * subscription's catch-up replays nodes that landed long before this tab
-   * opened, so neither counts as the agent generating something now.
+   * opened, so neither counts as the agent generating something now. A catch-up
+   * during a live turn is the agent's own work arriving: a workflow it builds
+   * from scratch opens its tab blank and lands entire in that first frame.
    */
   function markAgentGenerated(
     scope: GraphScope,
     nodeId: NodeId,
     context: RemoteMutationContext
   ): void {
-    if (context.hydration || context.actor.startsWith('human:')) return
+    if (context.actor.startsWith('human:')) return
+    if (context.hydration && !tabActivity.agentRunning) return
 
     const subgraphUuid =
       scope.owningGraphId === String(scope.rootGraphId)
         ? null
         : scope.owningGraphId
     const locatorId = createNodeLocatorId(subgraphUuid, nodeId)
-    if (locatorId) agentGeneratedNodes.markGenerated(locatorId)
+    // A catch-up lands the whole workflow at once, so its nodes pop in sequence.
+    if (locatorId)
+      agentGeneratedNodes.markGenerated(locatorId, {
+        cascade: context.hydration === true
+      })
   }
 
   function fail(message: string): false {

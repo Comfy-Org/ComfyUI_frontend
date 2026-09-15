@@ -391,7 +391,7 @@ describe('minimapCanvasRenderer', () => {
       if (marked) {
         useAgentGeneratedNodesStore().markGenerated(
           createNodeLocatorId(null, toNodeId('1')),
-          generatedAt
+          { at: generatedAt }
         )
       }
 

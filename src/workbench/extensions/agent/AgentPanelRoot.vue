@@ -541,6 +541,7 @@ function resumedTurnTabPath(): string | null {
 // primary spinner setters; the non-idle branch only re-arms it after the
 // stash/resume flip of a panel remount, where those setters never run.
 watch(status, (value) => {
+  tabActivity.setAgentRunning(value !== 'idle')
   if (value === 'idle') {
     const completedPath = tabActivity.editingTabPath
     tabActivity.setEditing(null)
@@ -699,6 +700,7 @@ onBeforeUnmount(() => {
   exitNodeSelectionMode()
   stop()
   tabActivity.setEditing(null)
+  tabActivity.setAgentRunning(false)
   tabActivity.setCreating(false)
 })
 
