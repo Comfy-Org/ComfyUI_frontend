@@ -1,8 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const state = vi.hoisted(() => ({
-  mode: { value: 'graph' },
-  isAppMode: { value: false },
   telemetry: {
     trackRunButton: vi.fn()
   },
@@ -18,13 +16,6 @@ const state = vi.hoisted(() => ({
     toolkit_node_names: []
   },
   executionContextError: null as Error | null
-}))
-
-vi.mock<unknown>(import('@/composables/useAppMode'), () => ({
-  useAppMode: () => ({
-    mode: state.mode,
-    isAppMode: state.isAppMode
-  })
 }))
 
 vi.mock<unknown>(import('@/platform/telemetry'), () => ({
@@ -48,8 +39,6 @@ import {
 
 describe('useRunButtonTelemetry', () => {
   beforeEach(() => {
-    state.mode.value = 'graph'
-    state.isAppMode.value = false
     state.executionContextError = null
   })
 

@@ -15,16 +15,6 @@ beforeEach(() => {
   useSettingStore().settingValues['Comfy.Sidebar.Location'] = 'left'
 })
 
-vi.mock<unknown>(import('@/composables/useAppMode'), async () => {
-  const { ref } = await import('vue')
-  return {
-    useAppMode: () => ({
-      isSelectMode: ref(false),
-      isBuilderMode: ref(false)
-    })
-  }
-})
-
 const slotStub = (testid: string) => `<div data-testid="${testid}" />`
 
 function renderOverlay() {
