@@ -143,7 +143,13 @@ key with `on_call_write`; export it as `DATADOG_WRITE_APP_KEY`, and never widen
 or reuse the CI secret for this destructive operation.
 
 `PUT` is a full replace, so read the schedule first and edit what comes back
-rather than composing a body by hand:
+rather than composing a body by hand. Save the following block as a script and
+run the saved file with Bash; do not paste it into an interactive shell, where
+queued input could satisfy its confirmation prompts:
+
+`EDITOR` must contain one executable path that blocks until the file closes.
+For an editor that needs arguments, such as `code -w`, create a blocking wrapper
+script and set `EDITOR` to that wrapper's path.
 
 ```bash
 set -euo pipefail
@@ -161,7 +167,16 @@ printf 'header = "DD-API-KEY: %s"\nheader = "DD-APPLICATION-KEY: %s"\n' \
 printf 'header = "DD-API-KEY: %s"\nheader = "DD-APPLICATION-KEY: %s"\n' \
   "$DATADOG_API_KEY" "$DATADOG_WRITE_APP_KEY" >"$WRITE_CONFIG"
 
+read -r -p 'Confirm a schedule change freeze is active? [y/N] ' CONFIRM_FREEZE
+test "$CONFIRM_FREEZE" = y
+
 cat >"$PUT_FILTER" <<'JQ'
+  def included($response; $type; $id):
+    [$response.included[] | select(.type == $type and .id == $id)]
+    | if length == 1 then .[0]
+      else error("expected exactly one included \($type) resource with id \($id)")
+      end;
+
   . as $response
   | .data as $schedule
   | {
@@ -172,16 +187,18 @@ cat >"$PUT_FILTER" <<'JQ'
           $schedule.attributes
           | .layers = [
               $schedule.relationships.layers.data[] as $layer_ref
-              | $response.included[]
-              | select(.type == "layers" and .id == $layer_ref.id)
+              | included($response; "layers"; $layer_ref.id)
               | . as $layer
               | $layer.attributes + {
                   id: $layer.id,
                   members: [
                     $layer.relationships.members.data[] as $member_ref
-                    | $response.included[]
-                    | select(.type == "members" and .id == $member_ref.id)
-                    | {user: {id: .relationships.user.data.id}}
+                    | included($response; "members"; $member_ref.id)
+                    | .relationships.user.data.id as $user_id
+                    | if ($user_id | type == "string" and length > 0)
+                      then {user: {id: $user_id}}
+                      else error("member \($member_ref.id) has no user id")
+                      end
                   ]
                 }
             ]
@@ -198,7 +215,7 @@ jq -f "$PUT_FILTER" "$WORK_DIR/schedule.response.original.json" \
   >"$WORK_DIR/schedule.put.original.json"
 cp "$WORK_DIR/schedule.put.original.json" \
   "$WORK_DIR/schedule.put.edited.json"
-"${EDITOR:?Set EDITOR before running this procedure}" \
+"${EDITOR:?Set EDITOR to one blocking executable path}" \
   "$WORK_DIR/schedule.put.edited.json"
 
 curl --fail-with-body -sS --config "$READ_CONFIG" \
@@ -219,6 +236,16 @@ jq -e '.data.attributes.tags | type == "array"' \
 curl --fail-with-body -sS -X PUT --config "$WRITE_CONFIG" \
   -H 'Content-Type: application/json' \
   "$BASE/$SCHEDULE_ID" -d @"$WORK_DIR/schedule.put.edited.json"
+curl --fail-with-body -sS --config "$READ_CONFIG" \
+  "$BASE/$SCHEDULE_ID?include=teams,layers,layers.members,layers.members.user" \
+  --output "$WORK_DIR/schedule.response.verified.json"
+jq -f "$PUT_FILTER" "$WORK_DIR/schedule.response.verified.json" \
+  >"$WORK_DIR/schedule.put.verified.json"
+diff -u \
+  <(jq -S '.data.attributes.tags |= map(ascii_downcase) | .data.attributes.tags |= sort' \
+    "$WORK_DIR/schedule.put.edited.json") \
+  <(jq -S '.data.attributes.tags |= map(ascii_downcase) | .data.attributes.tags |= sort' \
+    "$WORK_DIR/schedule.put.verified.json")
 ```
 
 The GET response is JSON:API: layers and members live in `included`. The `jq`
@@ -229,10 +256,17 @@ PUT body remain beside it until the shell exits. The conversion preserves the
 schedule's `name`, `time_zone`, `tags`, and team references; every layer's
 complete attributes and `id`; and member order.
 
-Datadog offers no optimistic-concurrency token for this endpoint. After the
-editor closes, the procedure immediately fetches the schedule again and stops
-if anything changed. It also stops unless `tags` is still an array and every
-other field in the edited body exactly matches the original.
+Datadog offers no optimistic-concurrency token for this endpoint. Coordinate an
+external change freeze with the other schedule administrators before running
+the script and keep it active until verification completes. The confirmation
+prompt records that coordination; it is not a lock. Another writer can still
+change the schedule between the final `GET` and `PUT`, and that full replacement
+would overwrite their update. After the editor closes, the procedure immediately
+fetches the schedule again and stops if anything changed. It also stops unless
+`tags` is still an array and every other field in the edited body exactly
+matches the original. After the write, it reads the complete schedule back and
+compares the full stored body with the intended body, normalizing only tag case
+and order to match Datadog's behavior.
 
 Although the GitHub mapping no longer depends on tags, preserving the complete
 schedule payload remains important: a partial `PUT` can still silently remove
@@ -244,7 +278,10 @@ object of `scripts/release-sheriff/release-sheriff.ts`. Note `datadogSite` is
 `api.datadoghq.com` returns 403.
 
 Requires repo secrets `DATADOG_API_KEY` and `DATADOG_APP_KEY` (scope:
-`on_call_read`) plus `RELEASE_SHERIFF_DIRECTORY`.
+`on_call_read`) plus `RELEASE_SHERIFF_DIRECTORY`. The manual tags-only API
+procedure additionally requires a local `DATADOG_WRITE_APP_KEY` scoped to
+`on_call_write`; request it from a Datadog organization administrator and never
+store it as a repo secret.
 
 If the on-call user cannot be mapped — a missing directory entry, a directory
 secret that is absent or not valid JSON, missing Datadog credentials, an
