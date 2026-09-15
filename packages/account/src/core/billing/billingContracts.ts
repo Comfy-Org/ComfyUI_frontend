@@ -6,7 +6,10 @@
  * Billing reports failures as coded results rather than thrown errors, so a
  * caller cannot accidentally surface a server or payment-provider string to a
  * user. The codes carry no server text; the copy that belongs to each code is
- * owned by the billing core and localized by the host.
+ * owned by the billing core and localized by the host. The one server value
+ * that crosses this boundary is `serverCode`, a machine identifier and never
+ * copy: a command matches it against its own closed set, and a host stores it
+ * where it already keeps `WorkspaceApiError.code`.
  */
 
 /**
@@ -38,7 +41,8 @@ export type BillingFailure = {
   /**
    * The coded `code` of a generated `ErrorResponse` body, when the server
    * sent one. Its `message` is dropped on purpose: a command acts on codes
-   * it names, never on server text.
+   * it names, never on server text. Never render it; the contract does not
+   * bound its shape, so it is a value to match, not to show.
    */
   readonly serverCode?: string
 }
