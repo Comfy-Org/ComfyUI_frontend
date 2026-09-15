@@ -21,7 +21,7 @@ jobs:
     steps:
       - uses: actions/checkout@v7
         with:
-          ref: e17f329bc54a5cb56038e18a16a74c5fdcd3091e
+          ref: 264cbf751cd44ae50bde3a97936165ae1441914d
           persist-credentials: false
       - uses: actions/setup-node@v6
         with:
@@ -35,7 +35,7 @@ jobs:
           script: |
             const { execFileSync } = require('node:child_process')
             const { writeFileSync } = require('node:fs')
-            const candidate = 'e17f329bc54a5cb56038e18a16a74c5fdcd3091e'
+            const candidate = '264cbf751cd44ae50bde3a97936165ae1441914d'
             const cases = {
               'codex/verify-17526-tooling': { verdict: 'not-applicable', path: null },
               'codex/verify-17526-mixed': { verdict: 'review-required', path: 'src/platform/keybindings/keybindingService.ts' },
@@ -47,7 +47,7 @@ jobs:
             for (const pull_number of prs) {
               const { data: pull } = await github.rest.pulls.get({ ...context.repo, pull_number })
               const expected = cases[pull.head.ref]
-              if (!expected || pull.head.repo.full_name !== `${context.repo.owner}/${context.repo.repo}` || pull.base.ref !== 'main' || !pull.draft || pull.state !== 'open' || !pull.title.startsWith('[DISPOSABLE]')) throw new Error('Refusing to mutate a non-fixture PR')
+              if (!expected || pull.head.repo.full_name !== `${context.repo.owner}/${context.repo.repo}` || pull.base.ref !== 'main' || !pull.draft || pull.state !== 'closed' || pull.merged || !pull.title.startsWith('[DISPOSABLE]')) throw new Error('Refusing to mutate a non-fixture PR')
               const sha = pull.head.sha
               const { data: failure } = await github.rest.checks.create({
                 ...context.repo, name: 'disposable-metadata-failure', head_sha: sha,
@@ -63,7 +63,7 @@ jobs:
                 const { data } = await github.rest.checks.listForRef({ ...context.repo, ref: sha, check_name: 'feature-flag-policy', filter: 'latest', per_page: 100 })
                 const check = data.check_runs[0]
                 if (!check || check.head_sha !== sha || check.status !== 'completed' || check.conclusion !== 'neutral' || check.output.title !== `Feature flag advice: ${expected.verdict}`) throw new Error(`Unexpected published verdict for #${pull_number}`)
-                if (expected.path && !check.output.summary.includes(expected.path)) throw new Error('Runtime path was silently excluded')
+                if (expected.path && !check.output.summary.replace(/&#(\d+);/g, (_, digits) => String.fromCodePoint(Number(digits))).includes(expected.path)) throw new Error('Runtime path was silently excluded')
                 const { data: stillFailed } = await github.rest.checks.get({ ...context.repo, check_run_id: failure.id })
                 if (stillFailed.conclusion !== 'failure') throw new Error('Metadata failure fixture no longer fails')
                 phases.push({ risk, conclusion: check.conclusion, title: check.output.title, url: check.html_url, summary: check.output.summary })
@@ -94,11 +94,11 @@ jobs:
             } finally {
               await github.rest.pulls.update({ ...context.repo, pull_number: runtimeNumber, body: originalBody })
             }
-            writeFileSync('verification-17526.json', JSON.stringify({ candidate, results, bodyEditResults, trigger: 'workflow_dispatch; production pull_request_target not exercised' }, null, 2))
+            writeFileSync('verification-17526.json', JSON.stringify({ candidate, results, bodyEditResults, trigger: 'workflow_dispatch; production workflow_run publisher not exercised' }, null, 2))
             await core.summary.addHeading('PR #17526 disposable verification: PASS').addRaw(`Candidate: ${candidate}\n\n`).addTable([
               ['PR', 'Expected advice', 'risk:high + failed metadata', 'risk:medium + failed metadata'],
               ...results.map(r => [`#${r.pr}`, r.expected, r.phases[0].conclusion, r.phases[1].conclusion])
-            ]).addTable([['Body edit', 'Expected', 'Conclusion'], ...bodyEditResults.map(r => [r.phase, r.verdict, r.conclusion])]).addRaw('\nChecks were read back on each fixture head SHA. Body edits were verified on the same SHA. This run uses workflow_dispatch, not the production pull_request_target trigger. No fixture was merged.\n').write()
+            ]).addTable([['Body edit', 'Expected', 'Conclusion'], ...bodyEditResults.map(r => [r.phase, r.verdict, r.conclusion])]).addRaw('\nChecks were read back on each fixture head SHA. Body edits were verified on the same SHA. This run uses workflow_dispatch, not the production workflow_run publisher trigger. No fixture was merged.\n').write()
       - uses: actions/upload-artifact@v6
         with:
           name: verification-17526
