@@ -1,9 +1,16 @@
 import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { nextTick } from 'vue'
+import { nextTick, ref } from 'vue'
 
 import { i18n } from '@/i18n'
+
+vi.mock(import('@/composables/useCopyToClipboard'), () => ({
+  useCopyToClipboard: () => ({
+    copied: ref(false),
+    copyToClipboard: vi.fn(async () => true)
+  })
+}))
 
 vi.mock<unknown>(import('@/scripts/api'), () => ({
   api: {

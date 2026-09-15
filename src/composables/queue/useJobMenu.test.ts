@@ -30,6 +30,7 @@ vi.mock(import('@/base/common/downloadUtil'), () => ({
 const copyToClipboardMock = vi.fn()
 vi.mock(import('@/composables/useCopyToClipboard'), () => ({
   useCopyToClipboard: () => ({
+    copied: ref(false),
     copyToClipboard: (text: string) => copyToClipboardMock(text)
   })
 }))
