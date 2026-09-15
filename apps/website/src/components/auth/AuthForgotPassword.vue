@@ -109,6 +109,17 @@ function beginBoundedSend(): () => boolean {
   return () => attempt === resetGeneration && enabled.value
 }
 
+// Firebase spells a missing account two ways depending on whether enumeration
+// protection is on; neither may reach the visitor.
+const UNKNOWN_ACCOUNT_CODES = new Set([
+  'auth/user-not-found',
+  'auth/invalid-credential'
+])
+
+function isUnknownAccountError(error: unknown): boolean {
+  return isFirebaseAuthErrorLike(error) && UNKNOWN_ACCOUNT_CODES.has(error.code)
+}
+
 async function deliverReset(live: () => boolean) {
   const firebase = await loadWorkshopFirebase().catch(() => undefined)
   if (!live()) return
@@ -117,14 +128,21 @@ async function deliverReset(live: () => boolean) {
     reportLoadFailure()
     return
   }
-  // An unknown email already resolves as sent (the package keeps that
-  // neutral); anything that rejects here is a delivery failure the visitor
-  // can retry, so it stays an error.
+  // An unknown email normally resolves as sent, because Firebase's email
+  // enumeration protection answers unknown addresses the same way. That is a
+  // server-side setting, not something this code controls, so treat an
+  // explicit user-not-found as sent too: surfacing it would tell a stranger
+  // which addresses hold accounts. Every other rejection is a delivery
+  // failure the visitor can retry, so it stays an error.
   try {
     await firebase.sendWorkshopPasswordReset(email.value)
   } catch (error) {
     if (!live()) return
     clearTimeout(boundTimer)
+    if (isUnknownAccountError(error)) {
+      reportSent()
+      return
+    }
     reportSendFailure(error)
     return
   }
