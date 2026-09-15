@@ -613,14 +613,62 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
     ).not.toHaveBeenCalled()
   })
 
-  it('lets the customer start over after a failed challenge', async () => {
-    mockTopup.mockResolvedValue(topupResponse('pending'))
+  it.for([
+    {
+      rail: 'resolves at issue',
+      issue: () => Promise.resolve(topupResponse('pending'))
+    },
+    {
+      rail: 'resolves only at settlement',
+      issue: () => new Promise<CreateTopupResponse>(() => {})
+    }
+  ])(
+    'lets the customer start over after a failed challenge when the purchase $rail',
+    async ({ issue }) => {
+      mockTopup.mockImplementation(issue)
+
+      renderDialog()
+      await clickAddCredits()
+      await userEvent.click(screen.getByRole('button', { name: 'Pay $50.00' }))
+      await nextTick()
+
+      setTopupActionOperation({
+        opId: 'op-1',
+        status: 'pending',
+        actionUrl: null,
+        authenticationState: 'failed_retryable',
+        errorMessage: 'Your bank rejected the verification.'
+      })
+      await nextTick()
+
+      await userEvent.click(screen.getByRole('button', { name: 'Start over' }))
+      await nextTick()
+
+      expect(useBillingOperationStore().dismissOperation).toHaveBeenCalledWith(
+        'op-1'
+      )
+      expect(
+        screen.queryByText('Your bank rejected the verification.')
+      ).not.toBeInTheDocument()
+      expect(screen.getByRole('button', { name: 'Add credits' })).toBeEnabled()
+    }
+  )
+
+  it('ignores a superseded purchase attempt that settles after Start over', async () => {
+    let settleFirst!: (response: CreateTopupResponse) => void
+    mockTopup
+      .mockImplementationOnce(
+        () =>
+          new Promise<CreateTopupResponse>((resolve) => {
+            settleFirst = resolve
+          })
+      )
+      .mockImplementation(() => new Promise<CreateTopupResponse>(() => {}))
 
     renderDialog()
     await clickAddCredits()
     await userEvent.click(screen.getByRole('button', { name: 'Pay $50.00' }))
     await nextTick()
-
     setTopupActionOperation({
       opId: 'op-1',
       status: 'pending',
@@ -629,17 +677,20 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
       errorMessage: 'Your bank rejected the verification.'
     })
     await nextTick()
-
     await userEvent.click(screen.getByRole('button', { name: 'Start over' }))
     await nextTick()
 
-    expect(useBillingOperationStore().dismissOperation).toHaveBeenCalledWith(
-      'op-1'
-    )
-    expect(
-      screen.queryByText('Your bank rejected the verification.')
-    ).not.toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Add credits' })).toBeEnabled()
+    await clickAddCredits()
+    const payButton = screen.getByRole('button', { name: 'Pay $50.00' })
+    await userEvent.click(payButton)
+    await nextTick()
+    settleFirst(topupResponse('completed'))
+    await waitFor(() => expect(mockFetchBalance).toHaveBeenCalled())
+    await nextTick()
+
+    expect(mockTopup).toHaveBeenCalledTimes(2)
+    expect(useDialogStore().closeDialog).not.toHaveBeenCalled()
+    expect(payButton).toBeDisabled()
   })
 
   it('keeps a top-up locked when reconciliation needs support', () => {
