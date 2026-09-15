@@ -329,6 +329,38 @@ function matchesFacet(
   )
 }
 
+function matchesUseCases(
+  selected: readonly UseCase[],
+  model: WorkshopModel
+): boolean {
+  return (
+    selected.length === 0 ||
+    selected.some((value) => useCasesFor(model).includes(value))
+  )
+}
+
+function matchesModalities(
+  selected: readonly string[],
+  model: WorkshopModel
+): boolean {
+  return (
+    selected.length === 0 ||
+    (model.modalities ?? [modalityOf(model)]).some((value) =>
+      selected.includes(value)
+    )
+  )
+}
+
+function matchesCapabilities(
+  selected: readonly string[],
+  model: WorkshopModel
+): boolean {
+  return (
+    selected.length === 0 ||
+    selected.some((value) => model.capabilities.includes(value))
+  )
+}
+
 type CatalogLocation = Pick<WorkshopFilter, 'query' | 'useCase'>
 
 interface ParsedCatalogLocation extends CatalogLocation {
@@ -376,15 +408,10 @@ export function filterWorkshopModels(
   return list.filter(
     (model) =>
       matchesUseCase(useCase, model) &&
-      (useCases.length === 0 ||
-        useCases.some((value) => useCasesFor(model).includes(value))) &&
-      (modalities.length === 0 ||
-        (model.modalities ?? [modalityOf(model)]).some((modality) =>
-          modalities.includes(modality)
-        )) &&
+      matchesUseCases(useCases, model) &&
+      matchesModalities(modalities, model) &&
       matchesFacet(providers, model.provider) &&
-      (capabilities.length === 0 ||
-        capabilities.some((value) => model.capabilities.includes(value))) &&
+      matchesCapabilities(capabilities, model) &&
       (needle === '' || searchText(model).includes(needle))
   )
 }
