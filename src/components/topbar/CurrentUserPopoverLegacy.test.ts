@@ -110,15 +110,6 @@ vi.mock(import('@/base/credits/comfyCredits'), () => ({
   formatCreditsFromCents: vi.fn(({ cents }) => (cents / 100).toString())
 }))
 
-vi.mock<unknown>(import('@/composables/useExternalLink'), () => ({
-  useExternalLink: vi.fn(() => ({
-    buildDocsUrl: vi.fn((path) => `https://docs.comfy.org${path}`),
-    docsPaths: {
-      partnerNodesPricing: '/tutorials/partner-nodes/pricing'
-    }
-  }))
-}))
-
 vi.mock<unknown>(import('@/platform/telemetry'), () => ({
   useTelemetry: vi.fn(() => ({
     trackAddApiCreditButtonClicked: vi.fn()

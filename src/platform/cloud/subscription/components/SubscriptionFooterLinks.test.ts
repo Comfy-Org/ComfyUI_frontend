@@ -30,13 +30,6 @@ vi.mock<unknown>(import('@/composables/billing/useBillingContext'), () => ({
   })
 }))
 
-vi.mock<unknown>(import('@/composables/useExternalLink'), () => ({
-  useExternalLink: () => ({
-    buildDocsUrl: vi.fn(() => 'https://docs.comfy.org/partner-nodes'),
-    docsPaths: { partnerNodesPricing: 'partner-nodes' }
-  })
-}))
-
 vi.mock<unknown>(
   import('@/platform/cloud/subscription/composables/useSubscriptionActions'),
   () => ({
@@ -122,7 +115,7 @@ describe('SubscriptionFooterLinks', () => {
       screen.getByRole('button', { name: 'Partner Nodes pricing' })
     )
     expect(openSpy).toHaveBeenCalledWith(
-      'https://docs.comfy.org/partner-nodes',
+      'https://docs.comfy.org/tutorials/partner-nodes/pricing',
       '_blank'
     )
   })
