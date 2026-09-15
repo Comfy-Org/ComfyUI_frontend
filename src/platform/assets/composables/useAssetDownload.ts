@@ -4,7 +4,7 @@ import { downloadFile, downloadFileAsBlob } from '@/base/common/downloadUtil'
 import { reportError } from '@/platform/telemetry/reportError'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 
-export interface DirectAssetDownload {
+interface DirectAssetDownload {
   mode: 'direct'
   url: string
   filename: string
