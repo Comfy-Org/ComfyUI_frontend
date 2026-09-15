@@ -922,21 +922,26 @@ test.describe('Load workflow', { tag: '@screenshot' }, () => {
     await expect(comfyPage.canvas).toHaveScreenshot('string_input.png')
   })
 
-  test('Creates initial workflow tab when persistence is disabled', async ({
-    comfyPage
-  }) => {
-    await comfyPage.settings.setSetting('Comfy.Workflow.Persist', false)
-    // oxlint-disable-next-line comfy/no-comfy-page-setup-call -- pre-existing call, tracked by evfail-23; not fixed in this pass
-    await comfyPage.setup()
+  test.describe('Persistence disabled at startup', () => {
+    test.use({
+      initialSettings: {
+        'Comfy.UseNewMenu': 'Disabled',
+        'Comfy.Workflow.Persist': false
+      }
+    })
 
-    await expect
-      .poll(() =>
-        comfyPage.page.evaluate(() => {
-          return (window.app!.extensionManager as WorkspaceStore).workflow
-            .openWorkflows.length
-        })
-      )
-      .toBeGreaterThanOrEqual(1)
+    test('Creates initial workflow tab when persistence is disabled', async ({
+      comfyPage
+    }) => {
+      await expect
+        .poll(() =>
+          comfyPage.page.evaluate(() => {
+            return (window.app!.extensionManager as WorkspaceStore).workflow
+              .openWorkflows.length
+          })
+        )
+        .toBeGreaterThanOrEqual(1)
+    })
   })
 
   test('Restore workflow on reload (switch workflow)', async ({

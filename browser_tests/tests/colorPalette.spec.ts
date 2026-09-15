@@ -144,28 +144,30 @@ const customColorPalettes = {
 }
 
 test.describe('Color Palette', { tag: ['@screenshot', '@settings'] }, () => {
-  test('Can show custom color palette', async ({ comfyPage }) => {
-    await comfyPage.settings.setSetting(
-      'Comfy.CustomColorPalettes',
-      customColorPalettes
-    )
-    // Reload to apply the new setting. Setting Comfy.CustomColorPalettes directly
-    // doesn't update the store immediately.
-    // oxlint-disable-next-line comfy/no-comfy-page-setup-call -- pre-existing call, tracked by evfail-23; not fixed in this pass
-    await comfyPage.setup()
+  test.describe('Saved custom palettes', () => {
+    test.use({
+      initialSettings: {
+        'Comfy.UseNewMenu': 'Disabled',
+        'Comfy.CustomColorPalettes': customColorPalettes
+      }
+    })
 
-    await comfyPage.workflow.loadWorkflow('nodes/every_node_color')
-    await comfyPage.settings.setSetting('Comfy.ColorPalette', 'obsidian_dark')
-    await expect(comfyPage.canvas).toHaveScreenshot(
-      'custom-color-palette-obsidian-dark-all-colors.png'
-    )
-    await comfyPage.settings.setSetting('Comfy.ColorPalette', 'light_red')
-    await expect(comfyPage.canvas).toHaveScreenshot(
-      'custom-color-palette-light-red.png'
-    )
+    test('Can show custom color palette', async ({ comfyPage }) => {
+      await comfyPage.workflow.loadWorkflow('nodes/every_node_color')
+      await comfyPage.settings.setSetting('Comfy.ColorPalette', 'obsidian_dark')
+      await expect(comfyPage.canvas).toHaveScreenshot(
+        'custom-color-palette-obsidian-dark-all-colors.png'
+      )
+      await comfyPage.settings.setSetting('Comfy.ColorPalette', 'light_red')
+      await expect(comfyPage.canvas).toHaveScreenshot(
+        'custom-color-palette-light-red.png'
+      )
 
-    await comfyPage.settings.setSetting('Comfy.ColorPalette', 'dark')
-    await expect(comfyPage.canvas).toHaveScreenshot('default-color-palette.png')
+      await comfyPage.settings.setSetting('Comfy.ColorPalette', 'dark')
+      await expect(comfyPage.canvas).toHaveScreenshot(
+        'default-color-palette.png'
+      )
+    })
   })
 
   test('Can add custom color palette', async ({ comfyPage }) => {
