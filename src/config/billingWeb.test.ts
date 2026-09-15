@@ -8,12 +8,19 @@ describe('normalizeHostedBillingDestination', () => {
     expect(normalizeHostedBillingDestination('billing_web')).toBe('billing_web')
   })
 
-  it.for(['stripe', '', undefined, true, 'true', 'BILLING_WEB', 'billing-web'])(
-    'stays on the provider page for %s',
-    (value) => {
-      expect(normalizeHostedBillingDestination(value)).toBe('stripe')
-    }
-  )
+  it.for([
+    'stripe',
+    '',
+    null,
+    undefined,
+    true,
+    false,
+    'true',
+    'BILLING_WEB',
+    'billing-web'
+  ])('stays on the provider page for %s', (value) => {
+    expect(normalizeHostedBillingDestination(value)).toBe('stripe')
+  })
 })
 
 describe('getBillingWebUrl', () => {
