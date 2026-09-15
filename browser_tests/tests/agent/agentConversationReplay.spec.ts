@@ -25,6 +25,29 @@ test.describe('Agent conversation replay', { tag: '@cloud' }, () => {
         { mask: [agentConversation.panel] }
       )
     })
+
+    // PM-985: leaving and re-entering the agent's workflow tab rebuilt the
+    // canvas from a snapshot that carried no display titles or positional
+    // widget values. After the round trip the canvas must still read the way
+    // it did when the last turn landed: same nodes, titles and widget values.
+    // (The canvas viewport is not part of the contract: the tab switch may
+    // restore a different offset/scale, so this is not a pixel comparison.)
+    test('preserves the rendered graph after switching workflow tabs', async ({
+      agentConversation,
+      page
+    }) => {
+      test.setTimeout(90_000)
+      await agentConversation.runTurns()
+      const lastTurn = agentConversation.conversation.turns.length - 1
+
+      const tabs = page.getByTestId('workflow-tab')
+      await expect(tabs).toHaveCount(1)
+      await page.locator('.new-blank-workflow-button').click()
+      await expect(tabs).toHaveCount(2)
+      await tabs.first().click()
+
+      await agentConversation.expectCanvasReplayed(lastTurn)
+    })
   })
 
   for (const conversationCase of listRecordedConversations()) {
