@@ -13,6 +13,13 @@ import { workspaceSwitcherTest as test } from '@e2e/fixtures/workspaceSwitcherFi
 // text-sm rows render a single 20px line; a wrapped name is 40px+.
 const SINGLE_LINE_MAX_HEIGHT_PX = 28
 
+const scrollingTest = test.extend({
+  page: async ({ page }, use) => {
+    await mockWorkspaceList(page, createManyWorkspacesResponse())
+    await use(page)
+  }
+})
+
 test.describe('Workspace switcher', { tag: '@cloud' }, () => {
   test('renders a long team workspace name on a single line', async ({
     comfyPage
@@ -54,16 +61,11 @@ test.describe('Workspace switcher', { tag: '@cloud' }, () => {
     expect(panelBox!.x + panelBox!.width).toBeLessThanOrEqual(profileBox!.x)
   })
 
-  test(
+  scrollingTest(
     'scrolls the list to reveal workspaces past the visible area',
     { tag: '@screenshot' },
     async ({ comfyPage }) => {
       const page = comfyPage.page
-
-      await mockWorkspaceList(page, createManyWorkspacesResponse())
-
-      // Workspace list is fetched once on boot; reload to pick up the override.
-      await comfyPage.workflow.reloadAndWaitForApp()
 
       await comfyPage.toast.closeToasts()
       await page.getByRole('button', { name: 'Current user' }).click()
