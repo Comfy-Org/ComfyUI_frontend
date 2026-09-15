@@ -5,7 +5,7 @@ import {
   isFirebaseAuthErrorLike,
   severityForAuthError
 } from '@comfyorg/account/firebaseAuthError'
-import { useGenerationGuard } from '@comfyorg/account/vue'
+import { useGenerationGuard } from '@comfyorg/account/vue/useGenerationGuard'
 import { cn } from '@comfyorg/tailwind-utils'
 import { useMounted } from '@vueuse/core'
 import { onBeforeUnmount, onMounted, ref, watch } from 'vue'

@@ -22,8 +22,8 @@ import {
   watch
 } from 'vue'
 
-import type { RegionGateStatus } from '@comfyorg/account/vue'
-import { useRegionGate } from '@comfyorg/account/vue'
+import type { RegionGateStatus } from '@comfyorg/account/vue/regionGate'
+import { useRegionGate } from '@comfyorg/account/vue/regionGate'
 import { isEmbeddedWebView } from '@comfyorg/account/webviewDetection'
 
 import type {
