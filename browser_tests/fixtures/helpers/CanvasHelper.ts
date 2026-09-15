@@ -89,6 +89,29 @@ export class CanvasHelper {
     await nextFrame(this.page)
   }
 
+  /**
+   * Double-clicks at absolute page coordinates the way a person does: the
+   * pointer drifts a little between press and release instead of staying
+   * pixel-perfect still, the way `page.mouse.dblclick` sends it.
+   *
+   * `driftPx` stays inside `Comfy.Pointer.ClickDrift` so both presses remain
+   * clicks, and alternates sign so the pointer does not walk away from the
+   * start.
+   */
+  async doubleClickWithDrift(
+    position: Position,
+    { driftPx = 2 }: { driftPx?: number } = {}
+  ): Promise<void> {
+    const { x, y } = position
+    await this.page.mouse.move(x, y)
+    for (const drift of [driftPx, 0]) {
+      await this.page.mouse.down()
+      await this.page.mouse.move(x + drift, y)
+      await this.page.mouse.up()
+    }
+    await nextFrame(this.page)
+  }
+
   async click(position: Position): Promise<void> {
     await this.canvas.click({ position })
     await nextFrame(this.page)
