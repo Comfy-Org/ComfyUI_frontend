@@ -2,7 +2,7 @@
 import '@testing-library/jest-dom/vitest'
 import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import InfoTooltip from './InfoTooltip.vue'
 
@@ -31,5 +31,16 @@ describe('InfoTooltip', () => {
     await user.click(screen.getByRole('button', { name: label }))
     const [shown] = await screen.findAllByText(note)
     expect(shown).toBeVisible()
+  })
+
+  it('dismisses the tapped note when Escape is pressed', async () => {
+    const user = userEvent.setup()
+    render(InfoTooltip, { props: { text: note, label } })
+
+    await user.click(screen.getByRole('button', { name: label }))
+    await screen.findAllByText(note)
+
+    await user.keyboard('{Escape}')
+    await vi.waitFor(() => expect(screen.queryAllByText(note)).toHaveLength(0))
   })
 })
