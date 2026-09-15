@@ -72,6 +72,26 @@ describe('createTopUpCheckout', () => {
     })
   })
 
+  it('uses the Cloud credits page as the server-side return URL', async () => {
+    const fetchCheckout = vi.fn().mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          checkout_url: 'https://checkout.stripe.com/c/pay_1'
+        }),
+        { status: 200 }
+      )
+    )
+    vi.stubGlobal('fetch', fetchCheckout)
+    vi.stubGlobal('window', undefined)
+
+    await createTopUpCheckout(options)
+
+    const [, init] = fetchCheckout.mock.calls[0] as [URL, RequestInit]
+    expect(JSON.parse(String(init.body))).toMatchObject({
+      return_url: WORKSHOP_CREDITS_URL
+    })
+  })
+
   it.for([
     'not a URL',
     'http://checkout.stripe.com/c/pay_1',

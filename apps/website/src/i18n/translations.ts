@@ -9626,6 +9626,14 @@ Enterprise`
     en: 'Secure checkout',
     'zh-CN': '安全结账'
   },
+  'workshop.credits.openingMetaTitle': {
+    en: 'Opening checkout - Comfy',
+    'zh-CN': '正在打开结账页 - Comfy'
+  },
+  'workshop.credits.openingMetaDescription': {
+    en: 'Taking you to the secure checkout.',
+    'zh-CN': '正在带你前往安全结账页。'
+  },
   'workshop.credits.openingTitle': {
     en: 'Taking you to Stripe',
     'zh-CN': '正在前往 Stripe'

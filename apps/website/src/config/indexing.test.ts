@@ -51,6 +51,8 @@ describe('indexing policy', () => {
     '/login',
     '/signup',
     '/forgot-password',
+    '/checkout-opening',
+    '/zh-CN/checkout-opening/',
     '/zh-CN/login'
   ])('marks %s as noindex', (pathname) => {
     expect(isNoindexPathname(pathname)).toBe(true)

@@ -21,6 +21,7 @@ const NOINDEX_PATHNAMES = new Set([
   ...LOCALE_PREFIXES.map((prefix) => `${prefix}/signup`),
   ...LOCALE_PREFIXES.map((prefix) => `${prefix}/forgot-password`),
   ...LOCALE_PREFIXES.map((prefix) => `${prefix}/models/showcase`),
+  ...LOCALE_PREFIXES.map((prefix) => `${prefix}/checkout-opening`),
   ...LOCALE_PREFIXES.map((prefix) => `${prefix}/privacy-policy`),
   ...LOCALE_PREFIXES.map((prefix) => `${prefix}/terms-of-service`),
   ...LOCALE_PREFIXES.flatMap((prefix) =>

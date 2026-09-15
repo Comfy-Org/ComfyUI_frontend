@@ -28,6 +28,9 @@ test.describe('Payment checkout returns @smoke', () => {
       const popup = await popupPromise
 
       await expect.poll(() => popup.isClosed()).toBe(true)
+      await expect
+        .poll(() => page.evaluate(() => document.hasFocus()))
+        .toBe(true)
     })
   }
 })
