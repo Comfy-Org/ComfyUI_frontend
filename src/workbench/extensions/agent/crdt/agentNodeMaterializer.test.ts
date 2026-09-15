@@ -1008,13 +1008,21 @@ describe('reconcileAgentAdapters', () => {
         }
       }
       LiteGraph.registerNodeType('replacement-node', ReplacementNode)
-      mutations.batch(REMOTE, (batch) =>
+      mutations.batch(REMOTE, (batch) => {
         batch.reconcileNode({
           ...nodePayload(1, 'replacement-node'),
-          outputs: [{ name: 'value', type: '*', links: [9] }],
+          outputs: [{ name: 'value', type: '*', links: [] }],
           widgets_values: { value: 7 }
         })
-      )
+        batch.connect({
+          id: 9,
+          originNodeId: 1,
+          originSlot: 0,
+          targetNodeId: 2,
+          targetSlot: 0,
+          type: '*'
+        })
+      })
 
       expect(reconcileAgentAdapters(graph)).toEqual([toNodeId(1)])
 

@@ -1,5 +1,3 @@
-// @vitest-environment jsdom
-
 import { useAgentComposerStore } from '../../stores/agent/agentComposerStore'
 import { getActivePinia } from 'pinia'
 import { render, screen, within } from '@testing-library/vue'
@@ -63,7 +61,7 @@ describe('AgentPanel', () => {
       'The agent can now edit portrait. It works on 1 workflow at a time, and you can switch workflows during chat.'
     )
     expect(
-      screen.getByText('The AI agent can make mistakes')
+      screen.getByRole('button', { name: 'Share feedback' })
     ).toBeInTheDocument()
   })
 
@@ -74,9 +72,7 @@ describe('AgentPanel', () => {
       'The agent can now edit portrait. It works on 1 workflow at a time, and you can switch workflows during chat.'
     )
     expect(
-      screen.getByText(
-        'The AI agent can make mistakes. Double check your response.'
-      )
+      screen.getByRole('button', { name: 'Share feedback' })
     ).toBeInTheDocument()
   })
 
@@ -193,7 +189,7 @@ describe('AgentPanel', () => {
       expect(textarea).toHaveFocus()
 
       await user.pointer({ target: textarea, offset: 0, keys: '[MouseLeft]' })
-      await user.keyboard('Updated. ')
+      await user.paste('Updated. ')
       expect(screen.getByTestId('user-message-bubble')).toHaveTextContent(
         hasReferences
           ? 'Compare Flow B with Flow A please.'

@@ -6216,6 +6216,40 @@
       }
     }
   },
+  "FluxVideoEditNode": {
+    "description": "Modifica un clip a partire da un'istruzione scritta: rimuovi, aggiungi o sostituisci oggetti, cambia l'ambientazione, modifica lo stile del filmato, cambia il testo sullo schermo o sostituisci il dialogo parlato. Durata, inquadratura, movimento della videocamera e audio provengono dal clip di origine.",
+    "display_name": "Flux Video Edit",
+    "inputs": {
+      "auto_downscale": {
+        "name": "auto_downscale",
+        "tooltip": "Ridimensiona automaticamente prima del caricamento le sorgenti più grandi di 1280x704 pixel in area. Il rapporto d'aspetto viene mantenuto; i video più piccoli non vengono modificati."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Cosa modificare, in linguaggio naturale, fino a 4096 caratteri. Tutto ciò che non menzioni deve rimanere com'era. Il dialogo sostitutivo deve adattarsi alla durata del parlato originale e un clip silenzioso rimane silenzioso."
+      },
+      "safety_tolerance": {
+        "name": "safety_tolerance",
+        "tooltip": "Tolleranza della moderazione; 0 è l'impostazione più restrittiva."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed per determinare se il nodo deve essere rieseguito; FLUX sceglie il proprio seed, quindi i risultati effettivi non sono deterministici indipendentemente da questo valore."
+      },
+      "video": {
+        "name": "video",
+        "tooltip": "Clip di origine da 0,7 a 15 secondi, di almeno 160x160 pixel. L'output viene renderizzato a 24 fps e limitato a circa 0,9 megapixel per fotogramma, quindi una sorgente più grande viene restituita più piccola."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "FluxVideoUpscaleNode": {
     "description": "Esegue l'upscale di un video da 1,5 a 3 volte con la super-risoluzione FLUX, preservando fedelmente la sorgente o migliorandone creativamente i dettagli.",
     "display_name": "Upscale video Flux",

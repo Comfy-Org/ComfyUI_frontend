@@ -6216,6 +6216,40 @@
       }
     }
   },
+  "FluxVideoEditNode": {
+    "description": "작성한 지시에 따라 클립을 편집합니다. 객체를 제거, 추가 또는 교체하고, 배경을 변경하거나, 영상 스타일을 바꾸고, 화면 텍스트를 변경하거나, 음성 대사를 교체할 수 있습니다. 길이, 구도, 카메라 움직임 및 오디오는 원본 클립에서 가져옵니다.",
+    "display_name": "Flux 비디오 편집",
+    "inputs": {
+      "auto_downscale": {
+        "name": "auto_downscale",
+        "tooltip": "업로드 전에 면적이 1280x704픽셀보다 큰 원본을 자동으로 축소합니다. 종횡비는 유지되며, 더 작은 비디오는 변경되지 않습니다."
+      },
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "변경할 내용을 일반 언어로 최대 4096자까지 입력합니다. 언급하지 않은 모든 내용은 기존 상태로 유지됩니다. 교체 대사는 원본 음성 길이에 맞아야 하며, 무음 클립은 계속 무음으로 유지됩니다."
+      },
+      "safety_tolerance": {
+        "name": "safety_tolerance",
+        "tooltip": "검토 허용 수준입니다. 0이 가장 엄격합니다."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "노드를 다시 실행할지 결정하는 시드입니다. FLUX는 자체 시드를 선택하므로 이 값과 관계없이 실제 결과는 비결정적입니다."
+      },
+      "video": {
+        "name": "video",
+        "tooltip": "0.7~15초 길이이며 최소 160x160픽셀인 원본 클립입니다. 출력은 24 fps로 렌더링되며 프레임당 약 0.9메가픽셀로 제한되므로, 더 큰 원본은 더 작게 반환됩니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "FluxVideoUpscaleNode": {
     "description": "FLUX 슈퍼 해상도로 비디오를 1.5~3배 업스케일하며, 원본을 정밀하게 유지하거나 디테일을 창의적으로 향상합니다.",
     "display_name": "Flux 비디오 업스케일",

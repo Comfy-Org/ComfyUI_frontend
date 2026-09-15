@@ -26,7 +26,7 @@ const difficultyKey = `demos.difficulty.${difficulty}` as TranslationKey
   <section class="pt-16 lg:px-20 lg:pt-40 lg:pb-8">
     <div class="mx-auto flex max-w-4xl flex-col items-center text-center">
       <span
-        class="text-primary-comfy-yellow text-xs font-semibold tracking-widest uppercase"
+        class="text-xs font-semibold tracking-widest text-primary-comfy-yellow uppercase"
       >
         {{ label }}
       </span>
@@ -45,12 +45,12 @@ const difficultyKey = `demos.difficulty.${difficulty}` as TranslationKey
 
       <div class="mt-6 flex flex-wrap justify-center gap-3">
         <span
-          class="bg-transparency-white-t4 rounded-full px-3 py-1 text-xs font-semibold tracking-wide text-primary-comfy-canvas uppercase"
+          class="rounded-full bg-transparency-white-t4 px-3 py-1 text-xs font-semibold tracking-wide text-primary-comfy-canvas uppercase"
         >
           {{ t(difficultyKey, locale) }}
         </span>
         <span
-          class="bg-transparency-white-t4 rounded-full px-3 py-1 text-xs font-semibold text-primary-comfy-canvas"
+          class="rounded-full bg-transparency-white-t4 px-3 py-1 text-xs font-semibold text-primary-comfy-canvas"
         >
           {{ t(estimatedTime as TranslationKey, locale) }}
         </span>

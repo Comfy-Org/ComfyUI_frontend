@@ -6186,6 +6186,40 @@
       }
     }
   },
+  "FluxVideoEditNode": {
+    "display_name": "Flux Video Edit",
+    "description": "Edits a clip from a written instruction: remove, add or replace objects, change the setting, restyle the footage, change on-screen text, or replace the spoken dialogue. Length, framing, camera motion and audio come from the source clip.",
+    "inputs": {
+      "video": {
+        "name": "video",
+        "tooltip": "Source clip of 0.7 to 15 seconds, at least 160x160 pixels. The output is rendered at 24 fps and capped at about 0.9 megapixels per frame, so a larger source comes back smaller."
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "What to change, in plain language, up to 4096 characters. Anything you do not mention is meant to stay as it was. Replacement dialogue has to fit the time the original speech takes, and a silent clip stays silent."
+      },
+      "auto_downscale": {
+        "name": "auto_downscale",
+        "tooltip": "Automatically downscale sources larger than 1280x704 pixels in area before upload. Aspect ratio is preserved; smaller videos are untouched."
+      },
+      "safety_tolerance": {
+        "name": "safety_tolerance",
+        "tooltip": "Moderation tolerance, 0 is the strictest."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed to determine if node should re-run; FLUX picks its own seed, so actual results are nondeterministic regardless of this value."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "FluxVideoUpscaleNode": {
     "display_name": "Flux Video Upscale",
     "description": "Upscales a video 1.5 to 3 times with FLUX super-resolution, either preserving the source precisely or creatively enhancing its detail.",

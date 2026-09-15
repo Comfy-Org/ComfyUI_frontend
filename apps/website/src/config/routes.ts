@@ -185,6 +185,8 @@ export const externalLinks = {
   docsUpdateComfyUI: 'https://docs.comfy.org/installation/update_comfyui',
   docsComfyRouter:
     'https://docs.comfy.org/development/comfy-router/quickstart#comfy-router-quickstart',
+  docsComfyRouterModels:
+    'https://docs.comfy.org/development/comfy-router/models',
   docsPlatform: 'https://docs.comfy.org/development/overview',
   docsPlatformExamples: 'https://docs.comfy.org/platform/examples',
   docsSdk: 'https://docs.comfy.org/development/api-development/sdks',

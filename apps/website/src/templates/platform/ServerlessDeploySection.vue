@@ -21,7 +21,7 @@ const deployTranscript = [
 </script>
 
 <template>
-  <section class="max-w-9xl mx-auto px-6 pt-10 pb-4 lg:pt-14 lg:pb-6">
+  <section class="mx-auto max-w-9xl px-6 pt-10 pb-4 lg:pt-14 lg:pb-6">
     <SectionHeader max-width="xl" heading-size="compact">
       {{ t('platform.serverlessDeploy.shipHeading', locale) }}
       <template #subtitle>

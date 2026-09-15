@@ -6,8 +6,8 @@ import { z } from 'zod'
 import { fromZodError } from 'zod-validation-error'
 
 import type {
-  SessionErrorCode,
-  SessionFailure
+  ScheduledRefreshReport,
+  SessionErrorCode
 } from '@comfyorg/account/session'
 import { createWebCrossTabRefreshPort } from '@comfyorg/account/web'
 import {
@@ -791,11 +791,8 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
     )
   }
 
-  function handleScheduledRefreshOutcome(
-    outcome: UnifiedAuthRefreshOutcome,
-    scheduledFailure?: SessionFailure
-  ): void {
-    if (outcome === 'succeeded') {
+  function handleScheduledRefreshOutcome(report: ScheduledRefreshReport): void {
+    if (report.outcome === 'succeeded') {
       unifiedScheduledRetryCount = 0
       // Only re-mints rotate the session cookie; the initial login mint and
       // workspace switches establish it themselves.
@@ -803,20 +800,20 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
       trackUnifiedRefresh('succeeded')
       return
     }
-    if (outcome === 'retry_scheduled') {
+    if (report.outcome === 'retry_scheduled') {
       unifiedScheduledRetryCount += 1
       trackUnifiedRefresh('retry_scheduled')
       console.warn('Unified token refresh failed; retrying shortly')
       return
     }
-    if (outcome === 'retries_exhausted') {
+    if (report.outcome === 'retries_exhausted') {
       trackUnifiedRefresh('retries_exhausted')
       console.warn(
         'Unified token refresh failed; retries exhausted, the session ends at expiry unless a reactive re-mint lands first'
       )
       return
     }
-    if (outcome === 'expired') {
+    if (report.outcome === 'expired') {
       // The legacy rail's clear-at-expiry: nothing refreshed the token in
       // time, so the workspace session ends rather than serving a dead JWT.
       trackUnifiedRefresh('expired')
@@ -824,7 +821,7 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
       return
     }
     trackUnifiedRefresh('permanent_failure')
-    const code = scheduledFailure?.code ?? 'TOKEN_EXCHANGE_FAILED'
+    const code = report.failure.code
     surfaceUnifiedPermanentFailure(code)
     endWorkspaceSession(
       unifiedSelectionInvalid(code)
