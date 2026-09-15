@@ -40,6 +40,14 @@ export const RESUBSCRIBE_ROUTE = '/billing/subscription/resubscribe'
 export const CANCEL_SUBSCRIPTION_ROUTE = '/billing/subscription/cancel'
 export const PAYMENT_PORTAL_ROUTE = '/billing/payment-portal'
 
+/** The closed set of `serverCode` values these commands act on. */
+const NO_ACTIVE_SUBSCRIPTION_SERVER_CODE = 'NO_ACTIVE_SUBSCRIPTION'
+const REACTIVATION_CONFIRMATION_REQUIRED_SERVER_CODE =
+  'REACTIVATION_CONFIRMATION_REQUIRED'
+const NOT_SCHEDULED_FOR_CANCELLATION_SERVER_CODE =
+  'NOT_SCHEDULED_FOR_CANCELLATION'
+const ALREADY_CANCELED_SERVER_CODE = 'ALREADY_CANCELED'
+
 export type SubscribeInput = z.infer<typeof zSubscribeRequest>
 
 export type TerminalBillingOperation = Exclude<
@@ -146,7 +154,7 @@ function mapServerCode(
   if (alreadyInRequestedState(failure, alreadyHeldCode)) {
     return { status: 'already_held' }
   }
-  return failure.serverCode === 'NO_ACTIVE_SUBSCRIPTION'
+  return failure.serverCode === NO_ACTIVE_SUBSCRIPTION_SERVER_CODE
     ? coded('NO_ACTIVE_SUBSCRIPTION')
     : failure
 }
@@ -228,7 +236,8 @@ export function createBillingCommands(
       key
     )
     if (response.status === 'error') {
-      return response.serverCode === 'REACTIVATION_CONFIRMATION_REQUIRED'
+      return response.serverCode ===
+        REACTIVATION_CONFIRMATION_REQUIRED_SERVER_CODE
         ? coded('REACTIVATION_CONFIRMATION_REQUIRED')
         : response
     }
@@ -254,7 +263,7 @@ export function createBillingCommands(
       key
     )
     if (response.status === 'error') {
-      return mapServerCode(response, 'NOT_SCHEDULED_FOR_CANCELLATION')
+      return mapServerCode(response, NOT_SCHEDULED_FOR_CANCELLATION_SERVER_CODE)
     }
     return {
       status: 'ok',
@@ -271,7 +280,7 @@ export function createBillingCommands(
       key
     )
     if (response.status === 'error') {
-      return mapServerCode(response, 'ALREADY_CANCELED')
+      return mapServerCode(response, ALREADY_CANCELED_SERVER_CODE)
     }
     return {
       status: 'ok',

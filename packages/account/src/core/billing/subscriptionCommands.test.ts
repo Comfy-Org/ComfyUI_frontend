@@ -143,9 +143,13 @@ function opStatus(overrides: Partial<BillingOpStatus> = {}): BillingOpStatus {
 
 function http(
   httpStatus: number,
-  body: unknown = {}
+  body: unknown = {},
+  extra: Pick<BillingHttpResponse, 'authenticationRetrySkipped'> = {}
 ): BillingResult<BillingHttpResponse> {
-  return { status: 'ok', value: { httpStatus, body, header: () => null } }
+  return {
+    status: 'ok',
+    value: { httpStatus, body, header: () => null, ...extra }
+  }
 }
 
 function serverError(httpStatus: number, code: string) {
@@ -452,6 +456,21 @@ describe('createBillingCommands', () => {
         expect(h.invalidate).not.toHaveBeenCalled()
       }
     )
+
+    it('reports a 401 the transport could not replay as transient, not as a denial', async () => {
+      const h = harness({
+        status: PRO_ACTIVE,
+        script: {
+          [POST_PORTAL]: [http(401, {}, { authenticationRetrySkipped: true })]
+        }
+      })
+
+      await expect(h.commands.openPaymentPortal({})).resolves.toEqual({
+        status: 'error',
+        code: 'REQUEST_FAILED',
+        httpStatus: 401
+      })
+    })
 
     it('refuses a portal URL that is not https', async () => {
       const h = harness({

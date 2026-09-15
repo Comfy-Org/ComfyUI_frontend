@@ -66,7 +66,7 @@ export async function readValidatedBillingResponse<T>(
     const serverCode = readBillingErrorCode(body)
     return {
       status: 'error',
-      code: codeForHttpStatus(httpStatus),
+      code: codeForHttpStatus(response.value),
       httpStatus,
       ...(serverCode === undefined ? {} : { serverCode })
     }
