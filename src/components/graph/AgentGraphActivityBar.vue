@@ -4,8 +4,7 @@ import { clamp } from 'es-toolkit/math'
 import { computed, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import { cn } from '@comfyorg/tailwind-utils'
-
+import CanvasBanner from '@/components/graph/CanvasBanner.vue'
 import Button from '@/components/ui/button/Button.vue'
 import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
 import { useSettingStore } from '@/platform/settings/settingStore'
@@ -20,9 +19,6 @@ import { frameBounds } from '@/utils/frameBoundsUtil'
 import { getNodeByLocatorId } from '@/utils/graphTraversalUtil'
 
 const MINIMAP_SETTING = 'Comfy.Minimap.Visible'
-
-const CARD_CLASS =
-  'pointer-events-auto flex items-center rounded-lg border border-l-4 border-interface-stroke bg-interface-panel-surface py-2 pr-2 pl-4 shadow-interface'
 
 const { panelEl } = defineProps<{
   /** The graph viewport element, so framing centres on what is actually visible. */
@@ -73,40 +69,45 @@ watch(
   }
 )
 
-const isUpdatingGraph = computed(
-  () =>
-    turnRunning.value && agentGeneratedNodes.markCount > marksBeforeTurn.value
+/** What this turn has put on the graph so far. */
+const addedNodes = computed(() =>
+  agentGeneratedNodes.markedNodesAfter(marksBeforeTurn.value)
 )
 
 /**
- * How long the updating bar stays up once it has appeared. A workflow the agent
- * builds from scratch lands in a single catch-up frame, so without a floor the
- * bar would enter and leave within a tick; holding it gives the ring, the
- * minimap's node pops and the copy time to register before the report replaces
- * it.
+ * A turn only earns the bar by reaching the graph. Answering a question is not
+ * activity the canvas has anything to say about.
  */
-const MIN_UPDATING_MS = 1200
+const isWritingGraph = computed(
+  () => turnRunning.value && addedNodes.value.length > 0
+)
 
-const holdingUpdating = refAutoReset(false, MIN_UPDATING_MS)
+/**
+ * How long the bar stays up once it has appeared. A workflow the agent builds
+ * from scratch lands in a single catch-up frame, so without a floor the bar
+ * would enter and leave within a tick; holding it gives the minimap's node pops
+ * and the copy time to register before the report replaces it.
+ */
+const MIN_WORKING_MS = 1200
+
+const holdingWorking = refAutoReset(false, MIN_WORKING_MS)
 
 const activeTabPath = computed(() => workflowStore.activeWorkflow?.path ?? null)
 
 /** The tab the turn is writing to, taken as its first node lands. */
 const turnTabPath = ref<string | null>(null)
 
-watch(isUpdatingGraph, (updating) => {
-  if (!updating) return
+watch(isWritingGraph, (writing) => {
+  if (!writing) return
   turnTabPath.value = activeTabPath.value
-  holdingUpdating.value = true
+  holdingWorking.value = true
   // The map shows the nodes arriving, so it opens while they do if the user had
-  // it closed, and stays open afterwards for reading the graph the agent built.
+  // it closed, and stays open for reading the graph the agent built.
   if (!settingStore.get(MINIMAP_SETTING))
     void settingStore.set(MINIMAP_SETTING, true)
 })
 
-const showUpdating = computed(
-  () => isUpdatingGraph.value || holdingUpdating.value
-)
+const showWorking = computed(() => isWritingGraph.value || holdingWorking.value)
 
 /**
  * Both bars describe one graph, so they stay on its tab: switching away leaves
@@ -115,13 +116,14 @@ const showUpdating = computed(
  */
 const isShowing = computed(
   () =>
-    (showUpdating.value || report.value !== null) &&
+    (showWorking.value || report.value !== null) &&
     turnTabPath.value === activeTabPath.value
 )
 
 watch(turnRunning, (running) => {
   if (running) {
     marksBeforeTurn.value = agentGeneratedNodes.markCount
+    turnTabPath.value = null
     report.value = null
     return
   }
@@ -174,7 +176,7 @@ function overlayInsets(panel: DOMRect, overlays: readonly DOMRect[]) {
   }
 }
 
-/** The ring starts where the toolbar stops covering the panel's leading edge. */
+/** Centring ignores the width the toolbar covers on the panel's leading edge. */
 const sidebarOverlap = computed(() => {
   const panelLeft = panelBounds.left.value
   if (sidebarBounds.left.value > panelLeft) return 0
@@ -211,10 +213,10 @@ function framingViewport(
   ]
 }
 
-function viewAddedNodes(): void {
+function viewNodes(locators: readonly NodeLocatorId[]): void {
   const canvas = canvasStore.canvas
-  if (!canvas || !report.value || !panelEl) return
-  const nodes = report.value.flatMap((locatorId) => {
+  if (!canvas || !panelEl || locators.length === 0) return
+  const nodes = locators.flatMap((locatorId) => {
     const node = getNodeByLocatorId(app.rootGraph, locatorId)
     return node && node.graph === canvas.graph ? [node] : []
   })
@@ -227,25 +229,6 @@ function viewAddedNodes(): void {
 </script>
 
 <template>
-  <!-- The workspace column holds the top toolbar, the canvas and the bottom
-       panel, so the ring traces its edge to surround them. -->
-  <!-- `defer`: the target is created in the same render pass as this bar. -->
-  <Teleport defer to=".workspace-panel">
-    <Transition
-      enter-active-class="transition-opacity duration-300 ease-out"
-      leave-active-class="transition-opacity duration-300 ease-in"
-      enter-from-class="opacity-0"
-      leave-to-class="opacity-0"
-    >
-      <div
-        v-if="isShowing && showUpdating"
-        data-testid="agent-graph-edge-shimmer"
-        class="agent-graph-edge-shimmer pointer-events-none absolute inset-y-0 right-0"
-        :style="{ left: `${sidebarOverlap}px` }"
-      />
-    </Transition>
-  </Teleport>
-
   <div
     v-if="isShowing"
     class="pointer-events-none absolute inset-x-0 bottom-8 z-1100 flex justify-center"
@@ -259,53 +242,80 @@ function viewAddedNodes(): void {
       enter-from-class="translate-y-4 opacity-0"
       leave-to-class="translate-y-4 opacity-0"
     >
-      <div
-        v-if="showUpdating"
+      <CanvasBanner
+        v-if="showWorking"
         key="updating"
         data-testid="agent-graph-activity-bar"
         role="status"
-        :class="cn(CARD_CLASS, 'border-l-base-foreground pr-4')"
+        accent="border-l-base-foreground"
+        class="agent-banner-shimmer"
       >
-        <i
-          class="icon-[lucide--loader-circle] size-4 shrink-0 text-muted-foreground motion-safe:animate-spin"
-          aria-hidden="true"
-        />
-        <span class="agent-shimmer-text ml-2 text-sm whitespace-nowrap">
-          {{ t('agent.updatingGraph') }}
-        </span>
-      </div>
-      <div
+        <template #icon>
+          <i
+            class="icon-[lucide--loader-circle] size-4 shrink-0 text-muted-foreground motion-safe:animate-spin"
+            aria-hidden="true"
+          />
+        </template>
+        <template #title>
+          <span class="whitespace-nowrap">{{ t('agent.updatingGraph') }}</span>
+        </template>
+        <template #description>
+          <span class="whitespace-nowrap">{{
+            t('agent.editWhileWorking')
+          }}</span>
+        </template>
+        <template #actions>
+          <Button
+            variant="secondary"
+            size="sm"
+            class="whitespace-nowrap"
+            data-testid="agent-graph-view-working"
+            @click="viewNodes(addedNodes)"
+          >
+            {{ t('agent.viewAddedNodes', addedNodes.length) }}
+          </Button>
+        </template>
+      </CanvasBanner>
+      <CanvasBanner
         v-else-if="report"
         key="added"
         data-testid="agent-graph-added-toast"
         role="status"
-        :class="cn(CARD_CLASS, 'border-l-success-background')"
+        accent="border-l-success-background"
       >
-        <i
-          class="icon-[lucide--check] size-4 shrink-0 text-success-background"
-          aria-hidden="true"
-        />
-        <span class="ml-2 text-sm whitespace-nowrap text-base-foreground">
-          {{ t('agent.nodesAdded', report.length) }}
-        </span>
-        <Button
-          variant="secondary"
-          size="sm"
-          class="ml-12 whitespace-nowrap"
-          @click="viewAddedNodes"
-        >
-          {{ t('agent.viewAddedNodes', report.length) }}
-        </Button>
-        <Button
-          variant="muted-textonly"
-          size="icon"
-          class="ml-1 shrink-0"
-          :aria-label="t('agent.close')"
-          @click="report = null"
-        >
-          <i class="icon-[lucide--x] size-4" aria-hidden="true" />
-        </Button>
-      </div>
+        <template #icon>
+          <i
+            class="icon-[lucide--check] size-4 shrink-0 text-success-background"
+            aria-hidden="true"
+          />
+        </template>
+        <template #title>
+          <span class="whitespace-nowrap">
+            {{ t('agent.nodesAdded', report.length) }}
+          </span>
+        </template>
+        <template #actions>
+          <div class="flex items-center gap-1">
+            <Button
+              variant="secondary"
+              size="sm"
+              class="whitespace-nowrap"
+              @click="viewNodes(report)"
+            >
+              {{ t('agent.viewAddedNodes', report.length) }}
+            </Button>
+            <Button
+              variant="muted-textonly"
+              size="icon"
+              class="shrink-0"
+              :aria-label="t('agent.close')"
+              @click="report = null"
+            >
+              <i class="icon-[lucide--x] size-4" aria-hidden="true" />
+            </Button>
+          </div>
+        </template>
+      </CanvasBanner>
     </Transition>
   </div>
 </template>

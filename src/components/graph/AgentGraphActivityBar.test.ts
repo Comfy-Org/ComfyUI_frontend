@@ -34,9 +34,6 @@ vi.mock(import('@/renderer/core/canvas/useCanvasInteractions'), () => ({
 }))
 
 function renderBar(props: { panelEl?: HTMLElement } = {}) {
-  const workspace = document.createElement('div')
-  workspace.className = 'workspace-panel'
-  document.body.append(workspace)
   const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
   const result = render(AgentGraphActivityBar, {
     props: { panelEl: undefined, ...props },
@@ -51,14 +48,15 @@ function renderBar(props: { panelEl?: HTMLElement } = {}) {
       ]
     }
   })
-  return { user, workspace, ...result }
+  return { user, ...result }
 }
 
 const [VIEW_NODE, VIEW_NODES] = enMessages.agent.viewAddedNodes.split(' | ')
 
-/** The edge ring is what marks the graph as being written to. */
-const writingRing = () => screen.queryByTestId('agent-graph-edge-shimmer')
+/** The bar is what marks the graph as being written to. */
 const writingBar = () => screen.queryByTestId('agent-graph-activity-bar')
+/** Its label follows the count, so the button is found by test id. */
+const viewButton = () => screen.getByTestId('agent-graph-view-working')
 const report = () => screen.queryByTestId('agent-graph-added-toast')
 
 /** A DOMRect derives its far edges, so a stub of one has to as well. */
@@ -121,7 +119,7 @@ async function agentAddsNodes(count = 1) {
   await nextTick()
 }
 
-/** Past the turn-settle grace and the ring's floor together. */
+/** Past the turn-settle grace and the bar's floor together. */
 async function barsSettle() {
   vi.advanceTimersByTime(2000)
   await nextTick()
@@ -142,19 +140,27 @@ async function turnAdds(count: number) {
 }
 
 describe('AgentGraphActivityBar', () => {
-  it('leaves the ring off while the agent runs but has not touched the graph', async () => {
+  it('stays away while the agent runs but has not touched the graph', async () => {
     renderBar()
     await turnRuns(true)
 
-    expect(writingRing()).not.toBeInTheDocument()
+    expect(writingBar()).not.toBeInTheDocument()
   })
 
-  it('rings the graph once the agent adds a node to it', async () => {
+  it('appears once the agent adds a node to the graph', async () => {
     renderBar()
     await turnRuns(true)
     await agentAddsNodes()
 
-    expect(writingRing()).toBeInTheDocument()
+    expect(writingBar()).toBeInTheDocument()
+  })
+
+  it('tells the user the graph is still theirs to edit', async () => {
+    renderBar()
+    await turnRuns(true)
+    await agentAddsNodes()
+
+    expect(writingBar()).toHaveTextContent(enMessages.agent.editWhileWorking)
   })
 
   it('says what the agent is doing while it writes', async () => {
@@ -165,11 +171,26 @@ describe('AgentGraphActivityBar', () => {
     expect(writingBar()).toHaveTextContent(enMessages.agent.updatingGraph)
   })
 
-  it('leaves the ring off for nodes that land while no turn is running', async () => {
+  it('frames what the turn has added without waiting for it to end', async () => {
+    vi.mocked(getNodeByLocatorId).mockReturnValue(
+      createMockLGraphNode({ pos: [0, 0], size: [10, 10], graph: null })
+    )
+    const { panelEl, animateToBounds, canvas } = stubLayout()
+    const { user } = renderBar({ panelEl })
+    useCanvasStore().canvas = canvas
+    await turnRuns(true)
+    await agentAddsNodes(2)
+
+    await user.click(viewButton())
+
+    expect(animateToBounds).toHaveBeenCalledOnce()
+  })
+
+  it('stays away for nodes that land while no turn is running', async () => {
     renderBar()
     await agentAddsNodes()
 
-    expect(writingRing()).not.toBeInTheDocument()
+    expect(writingBar()).not.toBeInTheDocument()
   })
 
   it('reports what the finished turn added and stays put', async () => {
@@ -179,7 +200,7 @@ describe('AgentGraphActivityBar', () => {
     expect(
       await screen.findByTestId('agent-graph-added-toast')
     ).toHaveTextContent('3 nodes added to the graph by agent')
-    await waitFor(() => expect(writingRing()).not.toBeInTheDocument())
+    await waitFor(() => expect(writingBar()).not.toBeInTheDocument())
 
     vi.advanceTimersByTime(60_000)
     await nextTick()
@@ -199,18 +220,18 @@ describe('AgentGraphActivityBar', () => {
     tabActivity.setAgentRunning(true)
     await nextTick()
 
-    expect(writingRing()).toBeInTheDocument()
+    expect(writingBar()).toBeInTheDocument()
     expect(report()).not.toBeInTheDocument()
   })
 
-  it('holds the ring when a whole workflow lands in one frame', async () => {
+  it('holds the bar when a whole workflow lands in one frame', async () => {
     renderBar()
     await turnRuns(true)
     await agentAddsNodes(5)
     useWorkflowTabActivityStore().setAgentRunning(false)
     await nextTick()
 
-    expect(writingRing()).toBeInTheDocument()
+    expect(writingBar()).toBeInTheDocument()
     expect(report()).not.toBeInTheDocument()
 
     await barsSettle()
@@ -345,14 +366,6 @@ describe('AgentGraphActivityBar', () => {
     expect(animateToBounds).toHaveBeenCalledWith(expect.anything(), {
       viewport: [64, 0, 636, 540]
     })
-  })
-
-  it('rings the workspace column while the agent writes', async () => {
-    const { workspace } = renderBar()
-    await turnRuns(true)
-    await agentAddsNodes()
-
-    expect(workspace).toContainElement(writingRing())
   })
 
   it('opens the minimap while nodes arrive and leaves it open', async () => {

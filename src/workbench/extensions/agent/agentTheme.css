@@ -50,53 +50,48 @@
   }
 }
 
-/* The workspace column's own edges while the agent is writing to the graph.
-   The highlight crosses the ring left to right on a slight lean, and it travels
-   on a child rather than through an animated background-position on this
-   element: a transform is composited, where a moving background repaints the
-   whole area every frame. Padding sets the ring thickness and the mask keeps
-   only that ring, because a border cannot carry a gradient. */
-.agent-graph-edge-shimmer {
+@property --agent-banner-sweep {
+  syntax: '<angle>';
+  initial-value: 0deg;
+  inherits: false;
+}
+
+/* A highlight that travels the banner's edge while the agent writes to the
+   graph. The ring is a masked overlay because a border cannot carry a
+   gradient, and the card is small enough that repainting it costs little. */
+.agent-banner-shimmer::after {
+  content: '';
+  position: absolute;
+  inset: 0;
   padding: 1px;
+  border-radius: inherit;
+  pointer-events: none;
+  background: conic-gradient(
+    from var(--agent-banner-sweep),
+    rgb(from var(--base-foreground) r g b / 0) 0deg,
+    rgb(from var(--base-foreground) r g b / 0.7) 60deg,
+    rgb(from var(--base-foreground) r g b / 0) 140deg,
+    rgb(from var(--base-foreground) r g b / 0) 360deg
+  );
   mask:
     linear-gradient(#000 0 0) content-box,
     linear-gradient(#000 0 0);
   mask-composite: exclude;
+  animation: agent-banner-sweep 1.8s linear infinite;
 }
 
-.agent-graph-edge-shimmer::before {
-  content: '';
-  position: absolute;
-  /* Overhang, so the lean never pulls the band off the top or bottom edge. */
-  top: -20%;
-  bottom: -20%;
-  left: 0;
-  width: 40%;
-  background: linear-gradient(
-    90deg,
-    rgb(from var(--base-foreground) r g b / 0) 0%,
-    rgb(from var(--base-foreground) r g b / 0.7) 50%,
-    rgb(from var(--base-foreground) r g b / 0) 100%
-  );
-  animation: agent-shimmer-sweep 1.8s linear infinite;
-  will-change: transform;
-}
-
-@keyframes agent-shimmer-sweep {
-  from {
-    transform: translateX(-100%) rotate(12deg);
-  }
+@keyframes agent-banner-sweep {
   to {
-    transform: translateX(350%) rotate(12deg);
+    --agent-banner-sweep: 360deg;
   }
 }
 
-.disable-animations .agent-graph-edge-shimmer {
+.disable-animations .agent-banner-shimmer::after {
   display: none;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .agent-graph-edge-shimmer {
+  .agent-banner-shimmer::after {
     display: none;
   }
 }
