@@ -1,3 +1,4 @@
+import { useDialogService } from '@/services/dialogService'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { getActivePinia } from 'pinia'
 import { render, screen, waitFor } from '@testing-library/vue'
@@ -37,8 +38,6 @@ const state = vi.hoisted(() => {
     shouldUseWorkspaceBilling: true,
     hostedBillingWebEnabled: false,
     billingWebUrl: initialBillingWebUrl(),
-    showCreateWorkspaceDialog: vi.fn(),
-    showTopUpCreditsDialog: vi.fn(),
     showPricingTable: vi.fn(),
     showSettingsDialog: vi.fn()
   }
@@ -120,12 +119,7 @@ vi.mock(import('@/platform/distribution/types'), () => ({
   }
 }))
 
-vi.mock<unknown>(import('@/services/dialogService'), () => ({
-  useDialogService: () => ({
-    showCreateWorkspaceDialog: state.showCreateWorkspaceDialog,
-    showTopUpCreditsDialog: state.showTopUpCreditsDialog
-  })
-}))
+vi.mock(import('@/services/dialogService'))
 
 vi.mock(import('@/platform/telemetry'))
 
@@ -302,7 +296,7 @@ describe('CurrentUserPopoverWorkspace', () => {
     await user.click(screen.getByTestId('workspace-switcher-trigger'))
     await user.click(screen.getByTestId('stub-create-workspace'))
 
-    expect(state.showCreateWorkspaceDialog).toHaveBeenCalled()
+    expect(useDialogService().showCreateWorkspaceDialog).toHaveBeenCalled()
     expect(emitted('close')).toHaveLength(1)
     expect(
       screen.queryByTestId('workspace-switcher-panel')
@@ -468,7 +462,7 @@ describe('CurrentUserPopoverWorkspace', () => {
     ).not.toBeInTheDocument()
     await user.click(screen.getByTestId('add-credits-button'))
 
-    expect(state.showTopUpCreditsDialog).toHaveBeenCalledOnce()
+    expect(useDialogService().showTopUpCreditsDialog).toHaveBeenCalledOnce()
   })
 
   it('offers add-credits alongside Subscribe for an unsubscribed Cloud owner', () => {

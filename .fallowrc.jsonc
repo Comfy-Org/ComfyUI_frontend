@@ -8,6 +8,7 @@
     "src/platform/telemetry/__mocks__/index.ts",
     "src/composables/billing/__mocks__/useBillingContext.ts",
     "src/composables/__mocks__/useFeatureFlags.ts",
+    "src/services/__mocks__/dialogService.ts",
     "index.html",
     "scripts/**/*.{js,ts}",
     "apps/website/src/scripts/**/*.ts",
