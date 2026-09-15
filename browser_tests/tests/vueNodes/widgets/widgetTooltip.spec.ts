@@ -1,6 +1,6 @@
 import {
   comfyExpect as expect,
-  comfyPageFixture as test
+  comfyPageFixture
 } from '@e2e/fixtures/ComfyPage'
 import {
   routeObjectInfoFromSetupApi,
@@ -9,6 +9,35 @@ import {
 
 // max-w-96 === 24rem === 384px at the default 16px root font size.
 const MAX_TOOLTIP_WIDTH = 384
+
+const label = 'Detection prompt for the segmentation model.'
+const longValue =
+  'a very long default detection value that keeps going and going and going ' +
+  'so it has to wrap across several lines while remaining readable inside the ' +
+  'bounded tooltip surface'
+const tooltipContent = `${label}\n\n${longValue}`
+
+const test = comfyPageFixture.extend({
+  initialSettings: { 'Comfy.EnableTooltips': true },
+  page: async ({ page }, use) => {
+    const unrouteObjectInfo = await routeObjectInfoFromSetupApi(
+      page,
+      (objectInfo) =>
+        setStringInputTooltip(
+          objectInfo,
+          'DevToolsNodeWithStringInput',
+          'string_input',
+          tooltipContent
+        )
+    )
+
+    try {
+      await use(page)
+    } finally {
+      await unrouteObjectInfo()
+    }
+  }
+})
 
 test.describe('Vue Node Widget Tooltip', { tag: '@vue-nodes' }, () => {
   // BUG-020: a widget tooltip that joins a short label and a long value with a
@@ -19,30 +48,6 @@ test.describe('Vue Node Widget Tooltip', { tag: '@vue-nodes' }, () => {
   test('renders a long widget tooltip with label and value on separate lines within bounds', async ({
     comfyPage
   }) => {
-    const label = 'Detection prompt for the segmentation model.'
-    const longValue =
-      'a very long default detection value that keeps going and going and going ' +
-      'so it has to wrap across several lines while remaining readable inside the ' +
-      'bounded tooltip surface'
-    const tooltipContent = `${label}\n\n${longValue}`
-
-    const unrouteObjectInfo = await routeObjectInfoFromSetupApi(
-      comfyPage.page,
-      (objectInfo) =>
-        setStringInputTooltip(
-          objectInfo,
-          'DevToolsNodeWithStringInput',
-          'string_input',
-          tooltipContent
-        )
-    )
-    // Reload so the patched object_info (with the multi-line tooltip) is the one
-    // the node definition store boots from.
-    await comfyPage.workflow.reloadAndWaitForApp()
-
-    // Enable tooltips before the widget mounts: the v-tooltip directive reads
-    // its disabled state once at mount, so the setting must be on beforehand.
-    await comfyPage.settings.setSetting('Comfy.EnableTooltips', true)
     await comfyPage.workflow.loadWorkflow('inputs/string_input')
 
     const widget = comfyPage.vueNodes
@@ -70,7 +75,5 @@ test.describe('Vue Node Widget Tooltip', { tag: '@vue-nodes' }, () => {
     const box = await tooltipText.boundingBox()
     expect(box).not.toBeNull()
     expect(box!.width).toBeLessThanOrEqual(MAX_TOOLTIP_WIDTH)
-
-    await unrouteObjectInfo()
   })
 })
