@@ -21,4 +21,15 @@ describe('InfoTooltip', () => {
     const [shown] = await screen.findAllByText(note)
     expect(shown).toBeVisible()
   })
+
+  it('opens the note on tap, where touch devices have no hover', async () => {
+    const user = userEvent.setup()
+    render(InfoTooltip, { props: { text: note, label } })
+
+    expect(screen.queryAllByText(note)).toHaveLength(0)
+
+    await user.click(screen.getByRole('button', { name: label }))
+    const [shown] = await screen.findAllByText(note)
+    expect(shown).toBeVisible()
+  })
 })
