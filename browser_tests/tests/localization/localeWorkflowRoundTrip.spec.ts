@@ -33,6 +33,20 @@ test.describe(
         'scheduler',
         'denoise'
       ]
+      const zhPortLabels = [
+        '模型',
+        '正面条件',
+        '负面条件',
+        'Latent图像',
+        'Latent'
+      ]
+      const enPortLabels = [
+        'model',
+        'positive',
+        'negative',
+        'latent_image',
+        'LATENT'
+      ]
       for (const vueNodesEnabled of [false, true]) {
         await test.step(
           vueNodesEnabled ? 'Vue renderer' : 'LiteGraph renderer',
@@ -67,10 +81,19 @@ test.describe(
               const texts = zhLabels.map((label) =>
                 root.getByText(label, { exact: true }).first()
               )
+              const portTexts = zhPortLabels.map((label) =>
+                root
+                  .locator('.lg-slot--input, .lg-slot--output')
+                  .getByText(label, { exact: true })
+              )
               for (const text of texts) {
                 await expect(text).toBeVisible()
               }
+              for (const text of portTexts) {
+                await expect(text).toBeVisible()
+              }
               await expectDomTextGeometry(texts)
+              await expectDomTextGeometry(portTexts)
               const originalStyle = await texts[2].getAttribute('style')
               const target = await texts[1].boundingBox()
               await texts[2].evaluate((element, target) => {
@@ -91,12 +114,52 @@ test.describe(
                 }, originalStyle)
               }
               await expectDomTextGeometry(texts)
+              const originalPortStyle = await portTexts[2].getAttribute('style')
+              const portTarget = await portTexts[1].boundingBox()
+              await portTexts[2].evaluate((element, target) => {
+                if (!(element instanceof HTMLElement) || !target)
+                  throw new Error('Missing port label geometry')
+                const bounds = element.getBoundingClientRect()
+                const scale = bounds.width / element.offsetWidth
+                element.style.transform = `translate(${(target.x - bounds.x) / scale}px, ${(target.y - bounds.y) / scale}px)`
+              }, portTarget)
+              try {
+                await expect(expectDomTextGeometry(portTexts)).rejects.toThrow(
+                  'rendered label bounds must not overlap'
+                )
+              } finally {
+                await portTexts[2].evaluate((element, style) => {
+                  if (style === null) element.removeAttribute('style')
+                  else element.setAttribute('style', style)
+                }, originalPortStyle)
+              }
+              await expectDomTextGeometry(portTexts)
             } else {
               await captureCanvasTextGeometry(comfyPage.page, zhLabels)
               await expect(
                 captureCanvasTextGeometry(comfyPage.page, zhLabels, true)
               ).rejects.toThrow('rendered label bounds must not overlap')
               await captureCanvasTextGeometry(comfyPage.page, zhLabels)
+              await captureCanvasTextGeometry(
+                comfyPage.page,
+                zhPortLabels,
+                false,
+                '3'
+              )
+              await expect(
+                captureCanvasTextGeometry(
+                  comfyPage.page,
+                  zhPortLabels,
+                  true,
+                  '3'
+                )
+              ).rejects.toThrow('rendered label bounds must not overlap')
+              await captureCanvasTextGeometry(
+                comfyPage.page,
+                zhPortLabels,
+                false,
+                '3'
+              )
             }
             await comfyPage.page.screenshot({
               path: test
@@ -158,12 +221,27 @@ test.describe(
               const texts = enLabels.map((label) =>
                 root.getByText(label, { exact: true }).first()
               )
+              const portTexts = enPortLabels.map((label) =>
+                root
+                  .locator('.lg-slot--input, .lg-slot--output')
+                  .getByText(label, { exact: true })
+              )
               for (const text of texts) {
                 await expect(text).toBeVisible()
               }
+              for (const text of portTexts) {
+                await expect(text).toBeVisible()
+              }
               await expectDomTextGeometry(texts)
+              await expectDomTextGeometry(portTexts)
             } else {
               await captureCanvasTextGeometry(comfyPage.page, enLabels)
+              await captureCanvasTextGeometry(
+                comfyPage.page,
+                enPortLabels,
+                false,
+                '3'
+              )
             }
             await expect
               .poll(() =>
