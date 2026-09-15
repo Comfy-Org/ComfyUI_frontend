@@ -1,9 +1,11 @@
-import type { INodeInputSlot } from '@/lib/litegraph/src/litegraph'
+import { invokePromotedWidgetSourceCallback } from '@/core/graph/subgraph/promotedInputWidget'
+import type { INodeInputSlot, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import type { WidgetId } from '@/types/widgetId'
 
 export function createPromotedWidgetStoreProjection(
+  node: LGraphNode,
   input: INodeInputSlot,
   id: WidgetId
 ): IBaseWidget {
@@ -46,8 +48,13 @@ export function createPromotedWidgetStoreProjection(
       const visibility = store.getWidgetVisibility(id)
       if (visibility) visibility.suppression.byConnection = next
     },
-    callback(next) {
+    // Canvas edits operate on a transient concrete widget (toConcreteWidget),
+    // so the value setter above is never invoked; BaseWidget.setValue writes
+    // its own local state and then calls this callback, which is the only
+    // bridge back to the store.
+    callback(next, canvas, _node, pos, e) {
       store.setValue(id, next)
+      invokePromotedWidgetSourceCallback(node, input, next, canvas, pos, e)
     }
   }
   Object.defineProperty(widget, 'widgetId', {

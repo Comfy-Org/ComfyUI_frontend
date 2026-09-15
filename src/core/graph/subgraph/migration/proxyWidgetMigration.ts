@@ -125,7 +125,8 @@ function resolveSourceWidget(
     })
     // Store-backed projection for a promoted input on a nested subgraph node:
     // getSlotFromWidget locates the backing slot by widgetId.
-    if (input?.widgetId) return promotedInputWidget(input) ?? undefined
+    if (input?.widgetId)
+      return promotedInputWidget(sourceNode, input) ?? undefined
   }
 
   const widgets = sourceNode.widgets
