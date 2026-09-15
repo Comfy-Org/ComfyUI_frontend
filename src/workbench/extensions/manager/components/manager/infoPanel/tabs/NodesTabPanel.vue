@@ -12,7 +12,7 @@
       </div>
     </template>
     <template v-else-if="isLoading">
-      <ProgressSpinner />
+      <Spinner />
     </template>
     <template v-else-if="nodeNames.length">
       <div v-for="node in nodeNames" :key="node" class="truncate text-muted">
@@ -33,7 +33,7 @@ import { whenever } from '@vueuse/core'
 import { computed, ref, shallowRef, useId } from 'vue'
 
 import NoResultsPlaceholder from '@/components/common/NoResultsPlaceholder.vue'
-import ProgressSpinner from '@/components/ui/spinner/Spinner.vue'
+import Spinner from '@/components/ui/spinner/Spinner.vue'
 import NodePreview from '@/components/node/NodePreview.vue'
 import { useComfyRegistryStore } from '@/stores/comfyRegistryStore'
 import type { components, operations } from '@/types/comfyRegistryTypes'

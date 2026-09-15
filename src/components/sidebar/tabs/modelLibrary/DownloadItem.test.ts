@@ -28,12 +28,12 @@ describe('DownloadItem', () => {
     const progress = screen.getByRole('progressbar', {
       name: 'checkpoints/model.safetensors'
     })
-    expect(progress).toHaveAttribute('aria-valuenow', '10')
+    expect(progress).toHaveValue(10)
     expect(screen.queryByText('10%')).not.toBeInTheDocument()
 
     await rerender({ download: { ...download, progress: 0.1274 } })
 
-    expect(progress).toHaveAttribute('aria-valuenow', '12.7')
+    expect(progress).toHaveValue(12.7)
     expect(screen.getByText('12.7%')).toBeInTheDocument()
   })
 })

@@ -7,7 +7,7 @@
     <Skeleton width="8rem" height="2rem" />
   </div>
   <div v-else class="flex items-center gap-1">
-    <Tag
+    <Badge
       v-if="!showCreditsOnly"
       severity="secondary"
       class="rounded-full p-1 text-amber-400"
@@ -15,7 +15,7 @@
       <template #icon>
         <i class="icon-[lucide--coins]" />
       </template>
-    </Tag>
+    </Badge>
     <div :class="textClass">
       {{ showCreditsOnly ? formattedCreditsOnly : formattedBalance }}
     </div>
@@ -28,7 +28,7 @@ import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { formatCreditsFromCents } from '@/base/credits/comfyCredits'
-import Tag from '@/components/ui/badge/Badge.vue'
+import Badge from '@/components/ui/badge/Badge.vue'
 import { useAuthStore } from '@/stores/authStore'
 
 const { textClass, showCreditsOnly } = defineProps<{

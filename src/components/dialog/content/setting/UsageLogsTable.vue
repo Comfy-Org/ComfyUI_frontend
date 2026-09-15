@@ -1,7 +1,7 @@
 <template>
   <div>
     <div v-if="loading" class="flex items-center justify-center p-8">
-      <ProgressSpinner />
+      <Spinner />
     </div>
     <div v-else-if="error" class="p-4">
       <Message severity="error">{{ error }}</Message>
@@ -100,7 +100,7 @@ import { useI18n } from 'vue-i18n'
 import Button from '@/components/ui/button/Button.vue'
 import Badge from '@/components/ui/badge/Badge.vue'
 import Message from '@/components/ui/message/Message.vue'
-import ProgressSpinner from '@/components/ui/spinner/Spinner.vue'
+import Spinner from '@/components/ui/spinner/Spinner.vue'
 import { useBillingRouting } from '@/composables/billing/useBillingRouting'
 import { useTelemetry } from '@/platform/telemetry'
 import { workspaceApi } from '@/platform/workspace/api/workspaceApi'

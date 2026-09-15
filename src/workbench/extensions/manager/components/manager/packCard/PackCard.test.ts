@@ -3,7 +3,7 @@ import { createI18n } from 'vue-i18n'
 
 import { render, screen } from '@testing-library/vue'
 
-import ProgressSpinner from '@/components/ui/spinner/Spinner.vue'
+import Spinner from '@/components/ui/spinner/Spinner.vue'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import { useSystemStatsStore } from '@/stores/systemStatsStore'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
@@ -62,7 +62,7 @@ describe('PackCard', () => {
       global: {
         plugins: [i18n],
         components: {
-          ProgressSpinner
+          Spinner
         },
         stubs: {
           PackBanner: true,
