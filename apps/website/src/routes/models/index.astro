@@ -12,4 +12,7 @@ import ModelsShowcase from '../../components/models/ModelsShowcase.astro'
   <ModelsPage client:load>
     <ModelsShowcase slot="fallback" />
   </ModelsPage>
+  <noscript>
+    <ModelsShowcase />
+  </noscript>
 </BaseLayout>

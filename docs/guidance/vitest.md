@@ -1,6 +1,7 @@
 ---
 globs:
   - '**/*.test.ts'
+  - '**/__mocks__/**/*.ts'
 ---
 
 # Vitest Unit Test Conventions
@@ -20,7 +21,8 @@ ESLint rule enforces the Testing Library query rule. Do not disable it.
 - `vi.mock<unknown>(import('…'), …)` is only for legacy partial factories that
   cannot satisfy the module type. For new mocks, type the factory instead.
 - Keep module mocks contained - no global mutable state
-- Use `vi.hoisted()` for per-test mock manipulation
+- Use `vi.hoisted()` only for bindings needed by a hoisted mock factory.
+  Keep mutable scenario state inside the test that uses it.
 - Vitest automatically resets mocks, restores spies, and unstubs globals and
   environment variables before each test. Do not repeat that cleanup in test
   lifecycle hooks.
@@ -29,6 +31,39 @@ ESLint rule enforces the Testing Library query rule. Do not disable it.
   first test runs.
 - Module-scope `vi.fn()` declarations may provide reset-persistent defaults by
   passing the implementation directly to `vi.fn(implementation)`.
+
+### Shared manual mocks
+
+- Put reusable module mocks in a same-named file under `__mocks__`. Activate
+  them with `vi.mock(import('…'))`. Tests import the real module path and
+  configure its functions with `vi.mocked`. Do not export mock-only setters,
+  state, or duplicate spies.
+- Type each complete default from the real function's return type. Preserve
+  async and cancellation behavior. Pass the default implementation to
+  `vi.fn<typeof realFn>` instead of setting it in `beforeEach`.
+- For composables, return fresh state from each call. If repeated calls must
+  share a result, create it in the test and pin it with
+  `vi.mocked(useX).mockReturnValue(result)`.
+- Do not use `mock.results` or other call history as a cache. Keep shared
+  result identity explicit in the test that needs it.
+- Assign writable fields directly. To override a readonly field on a
+  configurable mock object, use `vi.spyOn(flags, 'flagName', 'get')`. Vitest
+  also supports plain data properties; it installs a temporary getter and
+  restores the original property with the spy. Use `mockReturnValue` for a
+  fixed value or `mockImplementation` to read changing test state.
+- Override only the field the test needs. Do not rebuild a full result with
+  nested spreads or add hooks that repeat the shared defaults.
+
+For example, configure a live flag inside the test before creating its consumer:
+
+```ts
+const enabled = ref(false)
+const featureFlags = useFeatureFlags()
+vi.mocked(useFeatureFlags).mockReturnValue(featureFlags)
+vi.spyOn(featureFlags.flags, 'billingControlEnabled', 'get').mockImplementation(
+  () => enabled.value
+)
+```
 
 ## No Real Network
 
