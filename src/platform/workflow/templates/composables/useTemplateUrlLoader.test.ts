@@ -144,18 +144,14 @@ describe('useTemplateUrlLoader', () => {
     )
   })
 
-  it('shows error toast when template loading fails', async () => {
+  it('does not replace an error already handled by the template loader', async () => {
     mockQueryParams = { template: 'invalid-template' }
     mockLoadWorkflowTemplate.mockResolvedValueOnce(false)
 
     const { loadTemplateFromUrl } = useTemplateUrlLoader()
     await loadTemplateFromUrl()
 
-    expect(mockToastAdd).toHaveBeenCalledWith({
-      severity: 'error',
-      summary: 'Error',
-      detail: 'Template "invalid-template" not found'
-    })
+    expect(mockToastAdd).not.toHaveBeenCalled()
   })
 
   it('handles array query params correctly', () => {
@@ -247,7 +243,7 @@ describe('useTemplateUrlLoader', () => {
     expect(mockToastAdd).toHaveBeenCalledWith({
       severity: 'error',
       summary: 'Error',
-      detail: i18n.global.t('g.errorLoadingTemplate')
+      detail: i18n.global.t('templateWorkflows.error.loading')
     })
   })
 

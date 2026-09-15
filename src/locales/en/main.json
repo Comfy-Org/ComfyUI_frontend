@@ -1153,6 +1153,7 @@
     "removeFromBookmarks": "Remove from Bookmarks"
   },
   "templateWorkflows": {
+    "preparingMedia": "Preparing example media...",
     "title": "Get Started with a Template",
     "loadingMore": "Loading more templates...",
     "searchPlaceholder": "Search templates...",
@@ -1211,6 +1212,8 @@
       "default": "Default"
     },
     "error": {
+      "preparingMedia": "Couldn't download the example media. Select the template again to retry.",
+      "loading": "Couldn't open the template. Please try again.",
       "templateNotFound": "Template \"{templateName}\" not found"
     }
   },
@@ -5054,7 +5057,6 @@
     "startBlank": "Start with a blank canvas",
     "retry": "Try again",
     "loadFailed": "We couldn't load the templates.",
-    "templateFailed": "We couldn't open this template.",
     "retryTemplate": "Retry {title}",
     "tabs": {
       "templates": "Templates",

@@ -5,8 +5,20 @@ import type { App } from 'vue'
 import { createApp, defineComponent } from 'vue'
 
 import { i18n } from '@/i18n'
+import { useToastStore } from '@/platform/updates/common/toastStore'
+import { api } from '@/scripts/api'
+import { app } from '@/scripts/app'
+import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { useTemplateWorkflows as createTemplateWorkflows } from '@/platform/workflow/templates/composables/useTemplateWorkflows'
 import { useWorkflowTemplatesStore } from '@/platform/workflow/templates/repositories/workflowTemplatesStore'
+
+function deferred<T>() {
+  let resolve: (value: T | PromiseLike<T>) => void = () => {}
+  const promise = new Promise<T>((done) => {
+    resolve = done
+  })
+  return { promise, resolve }
+}
 
 async function flushPromises() {
   await new Promise((r) => setTimeout(r, 0))
@@ -15,8 +27,14 @@ async function flushPromises() {
 // Mock the API
 vi.mock<unknown>(import('@/scripts/api'), () => ({
   api: {
+    addEventListener: vi.fn(),
+    getServerFeature: vi.fn(() => false),
+    internalURL: vi.fn((path) => `mock-internal-url${path}`),
     fileURL: vi.fn((path) => `mock-file-url${path}`),
-    apiURL: vi.fn((path) => `mock-api-url${path}`)
+    apiURL: vi.fn((path) => `mock-api-url${path}`),
+    fetchApi: vi.fn(async () =>
+      Response.json({ name: 'kitten_cop.mp4', type: 'input' })
+    )
   }
 }))
 
@@ -32,7 +50,8 @@ const { mockLoadedWorkflow } = vi.hoisted(
 
 vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: {
-    loadGraphData: vi.fn(() => Promise.resolve(mockLoadedWorkflow.value))
+    loadGraphData: vi.fn(() => Promise.resolve(mockLoadedWorkflow.value)),
+    reloadNodeDefs: vi.fn(async () => {})
   }
 }))
 
@@ -78,9 +97,6 @@ vi.mock(import('@/platform/distribution/types'), () => ({
   }
 }))
 
-// Mock fetch
-global.fetch = vi.fn()
-
 type MockWorkflowTemplatesStore = ReturnType<typeof useWorkflowTemplatesStore>
 
 beforeEach(() => {
@@ -91,6 +107,10 @@ describe('useTemplateWorkflows', () => {
   let mockWorkflowTemplatesStore: MockWorkflowTemplatesStore
 
   beforeEach(() => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => Response.json({ workflow: 'data' }))
+    )
     mockIsCloud.value = true
     mockDistributionIsCloud.value = false
     mockLoadedWorkflow.value = { key: 'loaded-template' }
@@ -147,11 +167,6 @@ describe('useTemplateWorkflows', () => {
         }
       ]
     })
-
-    // Mock fetch response
-    vi.mocked(fetch).mockResolvedValue({
-      json: vi.fn().mockResolvedValue({ workflow: 'data' })
-    } as Partial<Response> as Response)
   })
 
   it('should load templates from store', async () => {
@@ -449,4 +464,228 @@ describe('useTemplateWorkflows', () => {
     // Restore console.error
     consoleSpy.mockRestore()
   })
+
+  function addVideoTemplate(
+    sourceRevision: string | null = '0123456789abcdef0123456789abcdef01234567'
+  ) {
+    mockWorkflowTemplatesStore.isLoaded = true
+    mockWorkflowTemplatesStore.enhancedTemplates.push({
+      name: 'video',
+      sourceModule: 'default',
+      description: 'Video editing',
+      mediaType: 'image',
+      mediaSubtype: 'webp',
+      io: {
+        inputs: [
+          {
+            nodeId: 35,
+            nodeType: 'LoadVideo',
+            file: 'kitten_cop.mp4',
+            mediaType: 'video',
+            sourceRevision: sourceRevision ?? undefined
+          }
+        ]
+      }
+    })
+    const graph: ComfyWorkflowJSON = {
+      version: 0.4,
+      last_node_id: 35,
+      last_link_id: 0,
+      links: [],
+      nodes: [
+        {
+          id: 35,
+          type: 'LoadVideo',
+          pos: [0, 0],
+          size: [300, 200],
+          flags: {},
+          order: 0,
+          mode: 0,
+          properties: {},
+          widgets_values: ['kitten_cop.mp4', 'image'],
+          widgets_values_named: { file: 'kitten_cop.mp4', upload: 'image' }
+        }
+      ]
+    }
+    vi.mocked(fetch).mockImplementation(async () => Response.json(graph))
+    return graph
+  }
+
+  it('keeps the graph closed until sample upload and file-list refresh complete', async () => {
+    const graph = addVideoTemplate()
+    const download = deferred<Response>()
+    const started = deferred<void>()
+    vi.mocked(fetch).mockImplementation((url) => {
+      if (String(url).startsWith('mock-internal-url'))
+        return Promise.resolve(Response.json([]))
+      if (String(url).endsWith('.mp4')) {
+        started.resolve()
+        return download.promise
+      }
+      return Promise.resolve(Response.json(graph))
+    })
+    const refreshed = deferred<void>()
+    vi.mocked(app.reloadNodeDefs).mockImplementation(() => refreshed.promise)
+    const loader = useTemplateWorkflows()
+    const result = loader.loadWorkflowTemplate('video', 'default')
+    await started.promise
+    expect(loader.loadingTemplateId.value).toBe('video')
+    expect(app.loadGraphData).not.toHaveBeenCalled()
+    download.resolve(new Response('video'))
+    await vi.waitFor(() => expect(app.reloadNodeDefs).toHaveBeenCalled())
+    expect(app.loadGraphData).not.toHaveBeenCalled()
+    refreshed.resolve()
+    expect(await result).toBe(true)
+    expect(app.loadGraphData).toHaveBeenCalledWith(
+      expect.objectContaining({
+        nodes: [
+          expect.objectContaining({
+            widgets_values: ['kitten_cop.mp4', 'image']
+          })
+        ]
+      }),
+      true,
+      true,
+      expect.any(String),
+      { openSource: 'template' }
+    )
+  })
+
+  it.for([null, 'main'])(
+    'opens a template without downloading unversioned samples (revision: %s)',
+    async (revision) => {
+      const graph = addVideoTemplate(revision)
+      const loader = useTemplateWorkflows()
+      expect(await loader.loadWorkflowTemplate('video', 'default')).toBe(true)
+      expect(api.fetchApi).not.toHaveBeenCalled()
+      expect(app.reloadNodeDefs).not.toHaveBeenCalled()
+      expect(app.loadGraphData).toHaveBeenCalledWith(
+        expect.objectContaining({ nodes: graph.nodes }),
+        true,
+        true,
+        expect.any(String),
+        { openSource: 'template' }
+      )
+      expect(fetch).toHaveBeenCalledTimes(1)
+    }
+  )
+
+  it.for([null, '0123456789abcdef0123456789abcdef01234567'])(
+    'opens legacy subgraph templates without preparing media (revision: %s)',
+    async (revision) => {
+      const graph: unknown = {
+        ...addVideoTemplate(revision),
+        definitions: {
+          subgraphs: [
+            {
+              id: '7a06a6de-067d-4d41-b7bf-7d6add20ec8c',
+              version: 1,
+              revision: 0,
+              name: 'Legacy subgraph',
+              state: {
+                lastGroupId: 0,
+                lastNodeId: 0,
+                lastLinkId: 0,
+                lastRerouteId: 0
+              },
+              nodes: [],
+              inputNode: { id: -10, bounding: [0, 0, 100, 100] },
+              outputNode: { id: -20, bounding: [200, 0, 100, 100] },
+              inputs: [{ id: 'image1', name: 'image1', type: 'IMAGE' }]
+            }
+          ]
+        }
+      }
+      vi.mocked(fetch).mockImplementation(async () => Response.json(graph))
+      vi.spyOn(console, 'warn').mockImplementation(() => {})
+      const loader = useTemplateWorkflows()
+
+      expect(await loader.loadWorkflowTemplate('video', 'default')).toBe(true)
+      expect(app.loadGraphData).toHaveBeenCalledWith(
+        graph,
+        true,
+        true,
+        expect.any(String),
+        { openSource: 'template' }
+      )
+      expect(fetch).toHaveBeenCalledTimes(1)
+      expect(api.fetchApi).not.toHaveBeenCalled()
+      expect(useToastStore().messagesToAdd).not.toContainEqual(
+        expect.objectContaining({ severity: 'error' })
+      )
+    }
+  )
+
+  it('leaves the dialog open on sample failure and allows another click to retry', async () => {
+    const graph = addVideoTemplate()
+    vi.mocked(fetch).mockImplementation(async (url) =>
+      String(url).startsWith('mock-internal-url')
+        ? Response.json([])
+        : String(url).endsWith('.mp4')
+          ? new Response('Not found', { status: 404 })
+          : Response.json(graph)
+    )
+    const loader = useTemplateWorkflows()
+    expect(await loader.loadWorkflowTemplate('video', 'default')).toBe(false)
+    expect(app.loadGraphData).not.toHaveBeenCalled()
+    expect(useDialogStore().closeDialog).not.toHaveBeenCalled()
+    expect(useToastStore().messagesToAdd).toContainEqual(
+      expect.objectContaining({
+        severity: 'error',
+        detail: expect.stringContaining("Couldn't download the example media")
+      })
+    )
+    vi.mocked(fetch).mockImplementation(async (url) =>
+      String(url).startsWith('mock-internal-url')
+        ? Response.json([])
+        : String(url).endsWith('.mp4')
+          ? new Response('video')
+          : Response.json(graph)
+    )
+    expect(await loader.loadWorkflowTemplate('video', 'default')).toBe(true)
+  })
+
+  it('does not prepare samples on Cloud or for extension templates', async () => {
+    addVideoTemplate()
+    const loader = useTemplateWorkflows()
+    mockDistributionIsCloud.value = true
+    expect(await loader.loadWorkflowTemplate('video', 'default')).toBe(true)
+    mockDistributionIsCloud.value = false
+    expect(await loader.loadWorkflowTemplate('video', 'extension')).toBe(true)
+    expect(api.fetchApi).not.toHaveBeenCalled()
+    expect(app.reloadNodeDefs).not.toHaveBeenCalled()
+  })
+
+  it.for([false, true])(
+    'does not open an older template after a newer selection finishes (separate loader: %s)',
+    async (separateLoader) => {
+      const graph = addVideoTemplate()
+      const download = deferred<Response>()
+      const started = deferred<void>()
+      vi.mocked(fetch).mockImplementation((url) => {
+        if (String(url).startsWith('mock-internal-url'))
+          return Promise.resolve(Response.json([]))
+        if (String(url).endsWith('.mp4')) {
+          started.resolve()
+          return download.promise
+        }
+        return Promise.resolve(Response.json(graph))
+      })
+      const loader = useTemplateWorkflows()
+      const first = loader.loadWorkflowTemplate('video', 'default')
+      await started.promise
+      const nextLoader = separateLoader ? useTemplateWorkflows() : loader
+      expect(
+        await nextLoader.loadWorkflowTemplate('template1', 'default')
+      ).toBe(true)
+      download.resolve(new Response('video'))
+      expect(await first).toBe(false)
+      expect(app.loadGraphData).toHaveBeenCalledTimes(1)
+      expect(
+        useToastStore().messagesToAdd.filter(
+          (message) => message.severity === 'error'
+        )
+      ).toEqual([])
+    }
+  )
 })

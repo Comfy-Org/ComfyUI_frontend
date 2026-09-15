@@ -5,6 +5,7 @@ import { getWav } from '@e2e/fixtures/components/AudioPreview'
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { TestIds } from '@e2e/fixtures/selectors'
 import { trackElementFlash } from '@e2e/fixtures/utils/flashDetector'
+import { assetPath } from '@e2e/fixtures/utils/paths'
 import type { WorkflowTemplates } from '@/platform/workflow/templates/types/template'
 
 async function checkTemplateFileExists(
@@ -41,6 +42,15 @@ test.describe('Templates', { tag: ['@slow', '@workflow'] }, () => {
   })
 
   test('Can load template workflows', async ({ comfyPage }) => {
+    await comfyPage.page.route(
+      /^https:\/\/raw\.githubusercontent\.com\/Comfy-Org\/workflow_templates\/[a-f0-9]{40}\/input\/transparent_rgb_gaming_mouse\.png$/,
+      (route) =>
+        route.fulfill({
+          path: assetPath('test_upload_image.png'),
+          contentType: 'image/png'
+        })
+    )
+
     // Clear the workflow
     await comfyPage.menu.workflowsTab.open()
     await comfyPage.command.executeCommand('Comfy.NewBlankWorkflow')
