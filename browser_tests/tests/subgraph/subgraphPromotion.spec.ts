@@ -115,12 +115,27 @@ test.describe(
           'Promoted advanced widget remains visible when global advanced widgets are disabled',
           { tag: ['@node'] },
           async ({ comfyPage }) => {
+            const settingId = 'Comfy.Node.AlwaysShowAdvancedWidgets'
+            const settingName = 'Always show advanced widgets on all nodes'
+            const parentValue = '2.25'
+
+            await test.step('Verify the named global setting is disabled', async () => {
+              await comfyPage.settings.setSetting(settingId, false)
+              await comfyPage.settingDialog.open()
+              await comfyPage.settingDialog.searchBox.fill(settingName)
+              const settingRow = comfyPage.settingDialog.root.locator(
+                `[data-setting-id="${settingId}"]`
+              )
+              await expect(settingRow).toContainText(settingName)
+              await expect(settingRow.getByRole('switch')).toHaveAttribute(
+                'aria-checked',
+                'false'
+              )
+              await comfyPage.settingDialog.close()
+            })
+
             const subgraphNodeId =
               await test.step('Convert a node with hidden advanced widgets to a subgraph', async () => {
-                await comfyPage.settings.setSetting(
-                  'Comfy.Node.AlwaysShowAdvancedWidgets',
-                  false
-                )
                 const modelSamplingNode = await comfyPage.nodeOps.addNode(
                   'ModelSamplingFlux',
                   {},
@@ -153,17 +168,35 @@ test.describe(
               await comfyPage.subgraph.exitViaBreadcrumb()
             })
 
-            await test.step('Keep the promoted widget visible on the host', async () => {
+            await test.step('Edit the visible promoted widget on the host', async () => {
               await expectPromotedWidgetNamesToContain(
                 comfyPage,
                 subgraphNodeId,
                 'max_shift'
               )
-              await expect(
-                comfyPage.vueNodes
-                  .getNodeLocator(subgraphNodeId)
-                  .getByLabel('max_shift', { exact: true })
-              ).toBeVisible()
+              const promotedWidget = comfyPage.vueNodes
+                .getNodeLocator(subgraphNodeId)
+                .getByLabel('max_shift', { exact: true })
+              await expect(promotedWidget).toBeVisible()
+              const promotedInput = promotedWidget.getByRole('spinbutton')
+              await promotedInput.fill(parentValue)
+              await expect(promotedInput).toHaveValue(parentValue)
+            })
+
+            await test.step('Keep the shared interior definition value unchanged', async () => {
+              await comfyPage.vueNodes.enterSubgraph(subgraphNodeId)
+              await expect
+                .poll(() =>
+                  comfyPage.page.evaluate(() => {
+                    const interiorNode = window.app!.canvas.graph?.nodes.find(
+                      (node) => node.type === 'ModelSamplingFlux'
+                    )
+                    return interiorNode?.widgets?.find(
+                      (widget) => widget.name === 'max_shift'
+                    )?.value
+                  })
+                )
+                .toBe(1.15)
             })
           }
         )
