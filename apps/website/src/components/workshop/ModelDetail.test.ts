@@ -1610,7 +1610,7 @@ describe('ModelDetail', () => {
     )
 
     expect(screen.getByTestId('example-replace-dialog').textContent).toContain(
-      '要替换你填写的内容吗？'
+      '要替换你的输入吗？'
     )
     expect(screen.getByTestId('example-replace-confirm').textContent).toContain(
       '使用该示例'
