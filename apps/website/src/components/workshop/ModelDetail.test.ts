@@ -1554,6 +1554,43 @@ describe('ModelDetail', () => {
     ).toBe('example')
   })
 
+  it('opens an example straight away when there is nothing to lose', async () => {
+    await signedInDetail()
+    await user().click(
+      screen.getByRole('button', { name: /Open in Playground$/ })
+    )
+    expect(screen.queryByTestId('example-replace-dialog')).toBeNull()
+    expect(screen.getByTestId<HTMLTextAreaElement>('field-prompt').value).toBe(
+      'a capybara'
+    )
+  })
+
+  it.for([
+    ['keeps', 'example-replace-keep', 'my own words'],
+    ['replaces', 'example-replace-confirm', 'a capybara']
+  ] as const)(
+    'asks before an example overwrites what was typed, and then %s it',
+    async ([, answer, expected]) => {
+      await signedInDetail()
+      await fireEvent.update(screen.getByTestId('field-prompt'), 'my own words')
+
+      await user().click(
+        screen.getByRole('button', { name: /Open in Playground$/ })
+      )
+
+      expect(screen.getByTestId('example-replace-dialog')).toBeTruthy()
+      expect(
+        screen.getByTestId<HTMLTextAreaElement>('field-prompt').value
+      ).toBe('my own words')
+
+      await user().click(screen.getByTestId(answer))
+
+      expect(
+        screen.getByTestId<HTMLTextAreaElement>('field-prompt').value
+      ).toBe(expected)
+    }
+  )
+
   it.for(['My saved prompt', ''])(
     'preserves a saved prompt or deliberate clear instead of restoring the starter: %s',
     async (saved) => {

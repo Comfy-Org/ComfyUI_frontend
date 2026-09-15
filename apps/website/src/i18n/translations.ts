@@ -9838,6 +9838,22 @@ Enterprise`
   },
   'workshop.run.leaveStay': { en: 'Stay on this page', 'zh-CN': '留在此页面' },
   'workshop.run.leaveAnyway': { en: 'Leave and cancel', 'zh-CN': '离开并取消' },
+  'workshop.examples.replaceTitle': {
+    en: 'Replace what you wrote?',
+    'zh-CN': '要替换你填写的内容吗？'
+  },
+  'workshop.examples.replaceBody': {
+    en: 'This example fills the form with its own inputs, and what you have written here goes with it.',
+    'zh-CN': '该示例会用它自己的输入填充表单，你在此处填写的内容将被覆盖。'
+  },
+  'workshop.examples.replaceKeep': {
+    en: 'Keep what I wrote',
+    'zh-CN': '保留我填写的内容'
+  },
+  'workshop.examples.replaceConfirm': {
+    en: 'Use the example',
+    'zh-CN': '使用该示例'
+  },
   'workshop.run.policy': {
     en: 'Disabled by your workspace policy',
     'zh-CN': '已被工作区策略禁用'

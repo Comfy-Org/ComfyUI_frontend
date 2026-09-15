@@ -1,7 +1,15 @@
 <script setup lang="ts">
 import { Download, ExternalLink, Play } from '@lucide/vue'
 import { useEventListener, useMounted, useTimestamp } from '@vueuse/core'
-import { computed, onUnmounted, ref, useSlots, watch } from 'vue'
+import {
+  computed,
+  nextTick,
+  onMounted,
+  onUnmounted,
+  ref,
+  useSlots,
+  watch
+} from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
@@ -55,6 +63,7 @@ import ApiTab from './ApiTab.vue'
 import ExamplesTab from './ExamplesTab.vue'
 import PlaygroundForm from './PlaygroundForm.vue'
 import PlaygroundOutput from './PlaygroundOutput.vue'
+import ExampleReplaceDialog from './ExampleReplaceDialog.vue'
 import RunLeaveDialog from './RunLeaveDialog.vue'
 import ModelSupport from './ModelSupport.vue'
 
@@ -153,6 +162,21 @@ const { pending: draftPending, restoreFailed } = useWorkshopFormDraft(
   nativeJson,
   !!model.execution && model.execution.inputs === undefined
 )
+// Every write replaces the whole record, so the last one the page itself made
+// is enough to tell a reader's work from the form merely settling. The draft
+// restore writes too, and its media half lands late, so the mark is taken
+// again once that has finished.
+const settledValues = ref<FormValues>()
+const inputsEdited = computed(
+  () =>
+    settledValues.value !== undefined &&
+    fieldValues.value !== settledValues.value
+)
+onMounted(() => void nextTick(() => (settledValues.value = fieldValues.value)))
+watch(draftPending, (pending, was) => {
+  if (was && !pending) settledValues.value = fieldValues.value
+})
+
 const runState = ref<RunState>(
   firstExample
     ? { status: 'example', output: exampleOutput(firstExample) }
@@ -536,16 +560,35 @@ function reset() {
   runState.value = IDLE
 }
 
-function openExample(example: PlaygroundExample) {
-  if (isRunning.value || draftPending.value) return
+function applyExample(example: PlaygroundExample) {
   if (!example.sampleOnly) {
     nativeJson.value = false
     activeExample.value = example.fields ? example : undefined
     values.value = workshopExampleState(model, example).values
+    settledValues.value = fieldValues.value
   }
   activeExampleId.value = example.id
   runState.value = { status: 'example', output: exampleOutput(example) }
   activeSection.value = 'playground'
+}
+
+// An example overwrites the whole form, so where there is writing to lose the
+// reader decides, instead of finding it gone.
+const replacing = ref<PlaygroundExample>()
+
+function openExample(example: PlaygroundExample) {
+  if (isRunning.value || draftPending.value) return
+  if (!example.sampleOnly && inputsEdited.value) {
+    replacing.value = example
+    return
+  }
+  applyExample(example)
+}
+
+function replaceWithExample() {
+  const example = replacing.value
+  replacing.value = undefined
+  if (example) applyExample(example)
 }
 
 function useInCode() {
@@ -867,6 +910,13 @@ function useInCode() {
       :locale
       @update:open="(value: boolean) => !value && (leavingTo = undefined)"
       @leave="leaveForLink"
+    />
+
+    <ExampleReplaceDialog
+      :open="replacing !== undefined"
+      :locale
+      @update:open="(value: boolean) => !value && (replacing = undefined)"
+      @replace="replaceWithExample"
     />
   </div>
 </template>
