@@ -111,6 +111,7 @@ import { useBillingContext } from '@/composables/billing/useBillingContext'
 import Button from '@/components/ui/button/Button.vue'
 import InviteMembersForm from '@/platform/workspace/components/InviteMembersForm.vue'
 import InviteLinkList from '@/platform/workspace/components/dialogs/InviteLinkList.vue'
+import type { InviteLinkRow } from '@/platform/workspace/components/dialogs/InviteLinkList.vue'
 import type { WorkspacePendingInvite } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import {
@@ -119,11 +120,6 @@ import {
   formatInviteLinksForCopy
 } from '@/platform/workspace/utils/inviteLinks'
 import { useDialogStore } from '@/stores/dialogStore'
-
-interface InviteLinkRow {
-  email: string
-  url?: string
-}
 
 const dialogStore = useDialogStore()
 const workspaceStore = useTeamWorkspaceStore()
