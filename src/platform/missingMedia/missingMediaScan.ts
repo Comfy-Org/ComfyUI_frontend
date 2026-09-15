@@ -133,13 +133,19 @@ export function scanNodeMediaCandidates(
 
     // Label only, and leaf-derived to match missingModelScan: the overlay
     // formats nodeType directly and a SubgraphNode's own type is a UUID.
-    const labelNode =
-      resolvePromotedWidgetSource(rootGraph, node, widget)?.sourceNode ?? node
+    const promotedSource = resolvePromotedWidgetSource(rootGraph, node, widget)
+    const labelNode = promotedSource?.sourceNode ?? node
 
     candidates.push({
       nodeId: executionId,
       nodeType: labelNode.type,
       widgetName: widget.name,
+      ...(promotedSource?.sourceExecutionId
+        ? {
+            sourceExecutionId: promotedSource.sourceExecutionId,
+            sourceWidgetName: promotedSource.sourceWidgetName
+          }
+        : {}),
       mediaType,
       name: value,
       isMissing

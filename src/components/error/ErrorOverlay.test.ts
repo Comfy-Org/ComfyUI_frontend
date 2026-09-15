@@ -126,6 +126,7 @@ describe('ErrorOverlay', () => {
         displayTitle: 'Execution failed',
         count: 1,
         priority: 0,
+        blockedLastRun: false,
         cards: [
           {
             id: '1',
@@ -164,6 +165,7 @@ describe('ErrorOverlay', () => {
         displayTitle: 'Execution failed',
         count: 1,
         priority: 0,
+        blockedLastRun: false,
         cards: [
           {
             id: '1',

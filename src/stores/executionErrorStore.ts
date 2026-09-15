@@ -1,5 +1,8 @@
 import { defineStore } from 'pinia'
-import { computed, ref } from 'vue'
+import { computed, ref, toRaw, watch } from 'vue'
+import { whenever } from '@vueuse/core'
+
+import { classifyValidationErrorAbsorption } from '@/components/rightSidePanel/errors/missingResourceAbsorption'
 
 import { useNodeErrorFlagSync } from '@/composables/graph/useNodeErrorFlagSync'
 import {
@@ -16,6 +19,7 @@ import { useSettingStore } from '@/platform/settings/settingStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { app } from '@/scripts/app'
+import { ChangeTracker } from '@/scripts/changeTracker'
 import { useDialogService } from '@/services/dialogService'
 import type {
   ExecutionErrorWsMessage,
@@ -39,8 +43,10 @@ import {
   errorsForSlot,
   getInputConfigBounds,
   hasErrorForSlot,
+  isMissingNodePromptError,
   isValueStillOutOfRange
 } from '@/utils/executionErrorUtil'
+import type { NodeValidationError } from '@/utils/executionErrorUtil'
 import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
 
 interface SlotNodeErrorClearTarget {
@@ -48,6 +54,11 @@ interface SlotNodeErrorClearTarget {
   slotName: string
   /** Interior targets validate against the bounds recorded on their errors. */
   useRecordedBounds?: boolean
+}
+
+interface ValidationErrorSurface {
+  executionId: NodeExecutionId
+  error: NodeValidationError
 }
 
 interface RunErrorState {
@@ -151,6 +162,62 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
     Map<NodeExecutionId, number>
   >()
   const pendingAddedNodeScanRevision = ref(0)
+  const validationErrorSurfaces = new WeakMap<
+    NodeValidationError,
+    ValidationErrorSurface[]
+  >()
+
+  function getValidationErrorSurfaces(
+    rawNodeId: NodeExecutionId,
+    nodeError: NodeError,
+    error: NodeValidationError
+  ): ValidationErrorSurface[] {
+    const rawErrorRecord = {
+      [rawNodeId]: { ...nodeError, errors: [error] }
+    }
+    const surfacedErrorRecord = app.isGraphReady
+      ? liftNodeErrorsToBoundary(app.rootGraph, rawErrorRecord)
+      : rawErrorRecord
+
+    return Object.entries(surfacedErrorRecord).flatMap(
+      ([surfaceNodeId, surfaceNodeError]) => {
+        const executionId = tryNormalizeNodeExecutionId(surfaceNodeId)
+        if (!executionId) return []
+        return surfaceNodeError.errors.map((error) => ({ executionId, error }))
+      }
+    )
+  }
+
+  function captureValidationErrorSurfaces(
+    nodeErrors: Record<string, NodeError>
+  ): void {
+    if (!app.isGraphReady) return
+
+    for (const [rawNodeId, nodeError] of Object.entries(nodeErrors)) {
+      const executionId = tryNormalizeNodeExecutionId(rawNodeId)
+      if (!executionId) continue
+      for (const error of nodeError.errors) {
+        validationErrorSurfaces.set(
+          toRaw(error),
+          getValidationErrorSurfaces(executionId, nodeError, error)
+        )
+      }
+    }
+  }
+
+  function resolveValidationErrorSurfaces(
+    executionId: NodeExecutionId,
+    nodeError: NodeError,
+    error: NodeValidationError
+  ): ValidationErrorSurface[] {
+    const rawError = toRaw(error)
+    const cached = validationErrorSurfaces.get(rawError)
+    if (cached) return cached
+
+    const surfaces = getValidationErrorSurfaces(executionId, nodeError, error)
+    if (app.isGraphReady) validationErrorSurfaces.set(rawError, surfaces)
+    return surfaces
+  }
 
   function beginAddedNodeErrorScan(
     rootGraph: LGraph,
@@ -183,6 +250,100 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
   }
 
   /**
+   * Also called after a graph load settles: the sync watcher below skips
+   * transitions that happen while a load is in flight, and no later
+   * transition reruns it.
+   */
+  function retireResolvedMissingNodePromptError() {
+    if (missingNodesStore.hasMissingNodes) return
+    if (!isMissingNodePromptError(lastPromptError.value)) return
+    updateRunErrors({ promptError: null }, activeRunErrorKey.value)
+  }
+
+  whenever(
+    () => !missingNodesStore.hasMissingNodes,
+    () => {
+      if (ChangeTracker.isLoadingGraph) return
+      retireResolvedMissingNodePromptError()
+    },
+    // The missing-node scan and prompt recording share a synchronous block; clear before recording the new error.
+    { flush: 'sync' }
+  )
+
+  /**
+   * The model/media analog of the missing-node retirement above: when a
+   * candidate leaves the store (installed + refreshed, node deleted or
+   * bypassed), the validation errors it was absorbing must retire with it —
+   * otherwise resolving the resource resurfaces them as blocking errors.
+   * Matching is by content, so a rescan that rebuilds equivalent candidates
+   * retires nothing.
+   */
+  watch(
+    () =>
+      [
+        missingModelStore.missingModelCandidates,
+        missingMediaStore.missingMediaCandidates
+      ] as const,
+    ([nextModels, nextMedia], [prevModels, prevMedia]) => {
+      if (ChangeTracker.isLoadingGraph) return
+
+      const key = activeRunErrorKey.value
+      if (key === null) return
+
+      const record = lastNodeErrors.value
+      if (!record) return
+
+      let changed = false
+      const updated: Record<string, NodeError> = {}
+      for (const [rawNodeId, nodeError] of Object.entries(record)) {
+        const executionId = tryNormalizeNodeExecutionId(rawNodeId)
+        if (!executionId) {
+          updated[rawNodeId] = nodeError
+          continue
+        }
+        const remaining = nodeError.errors.filter((error) => {
+          const surfaces = resolveValidationErrorSurfaces(
+            executionId,
+            nodeError,
+            error
+          )
+          const wasAbsorbed = surfaces.some(({ executionId, error }) =>
+            classifyValidationErrorAbsorption(
+              prevModels ?? null,
+              prevMedia ?? null,
+              error,
+              executionId
+            )
+          )
+          if (!wasAbsorbed) return true
+          return surfaces.some(({ executionId, error }) =>
+            classifyValidationErrorAbsorption(
+              nextModels ?? null,
+              nextMedia ?? null,
+              error,
+              executionId
+            )
+          )
+        })
+        if (remaining.length === nodeError.errors.length) {
+          updated[rawNodeId] = nodeError
+        } else {
+          changed = true
+          if (remaining.length > 0) {
+            updated[rawNodeId] = { ...nodeError, errors: remaining }
+          }
+        }
+      }
+      if (changed) {
+        updateRunErrors(
+          { nodeErrors: Object.keys(updated).length > 0 ? updated : null },
+          key
+        )
+      }
+    }
+  )
+
+  /**
    * Replaces the full record; empty or null means the run produced no errors.
    *
    * `key` files the errors against the workflow that produced them, which is
@@ -194,13 +355,12 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
     nodeErrors: Record<string, NodeError> | null,
     key: string | null = activeRunErrorKey.value
   ) {
-    updateRunErrors(
-      {
-        nodeErrors:
-          nodeErrors && Object.keys(nodeErrors).length > 0 ? nodeErrors : null
-      },
-      key
-    )
+    const record =
+      nodeErrors && Object.keys(nodeErrors).length > 0 ? nodeErrors : null
+    updateRunErrors({ nodeErrors: record }, key)
+    if (record && key !== null && key === activeRunErrorKey.value) {
+      captureValidationErrorSurfaces(record)
+    }
   }
 
   function recordExecutionError(
@@ -719,6 +879,7 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
     clearRunErrors,
     clearExecutionStartErrors,
     clearPromptError,
+    retireResolvedMissingNodePromptError,
 
     // Overlay UI
     isErrorOverlayOpen,
