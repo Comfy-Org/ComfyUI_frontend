@@ -52,6 +52,7 @@ export function useBillingContext(): BillingContext {
     isInitialized: ref(true),
     subscription: computed(() => state.value.subscription),
     balance: computed(() => null),
+    usageLogsRefreshSignal: ref(0),
     plans: computed(() => []),
     currentPlanSlug: computed(() => null),
     teamCreditStops: computed(() => null),
