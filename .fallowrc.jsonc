@@ -6,6 +6,7 @@
 
   // Runtime entry points fallow cannot infer.
   "entry": [
+    "examples/node-api/**/web/*.js",
     // Astro injects these routes when WORKSHOP_IN_BUILD is enabled.
     "apps/website/src/routes/models/*.{astro,ts}",
     "index.html",
@@ -22,7 +23,7 @@
         "**/.storybook/{main,preview}.ts",
         "apps/website/src/scripts/**/*.ts",
         "packages/ingest-types/openapi-ts.config.ts",
-        "scripts/**/*.{js,ts}"
+        "scripts/**/*.{js,mjs,ts}"
       ],
       "entryPointRole": "support"
     },
@@ -69,7 +70,8 @@
     // Static stylesheet referenced from index.html, resolved by the bundler.
     "./materialdesignicons.min.css",
     // Generated sibling JS for the desktop-bridge type stubs.
-    "./comfyDesktopBridge.js"
+    "./comfyDesktopBridge.js",
+    "/comfy/api/v2.js"
   ],
 
   "ignoreExports": [

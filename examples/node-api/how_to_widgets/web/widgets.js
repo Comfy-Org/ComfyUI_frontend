@@ -49,6 +49,19 @@ api.defs.defineWidgetType('HOW_TO_RATING', {
   }
 })
 
+const isSubmitKey = (event) => event.kind === 'keydown' && event.key === 'Enter'
+const hasSubmitModifier = (event) => event.ctrlKey || event.metaKey
+const handleTextInteraction = (event) => {
+  if (!isSubmitKey(event)) return
+  if (!hasSubmitModifier(event)) return
+  event.preventDefault()
+  api.commands.notify({
+    severity: 'success',
+    summary: 'Text interaction received',
+    detail: event.value
+  })
+}
+
 api.defs.define({
   type: 'HowTo/WidgetEvents',
   title: 'How-To: Widget Events',
@@ -218,19 +231,6 @@ api.defs.define({
     text: { literal: String(self.widgetValue('text') ?? '') }
   }),
   onCreated(node) {
-    node.widgets.get('text')?.on('textInteraction', (event) => {
-      if (
-        event.kind === 'keydown' &&
-        event.key === 'Enter' &&
-        (event.ctrlKey || event.metaKey)
-      ) {
-        event.preventDefault()
-        api.commands.notify({
-          severity: 'success',
-          summary: 'Text interaction received',
-          detail: event.value
-        })
-      }
-    })
+    node.widgets.get('text')?.on('textInteraction', handleTextInteraction)
   }
 })
