@@ -72,16 +72,27 @@
             </span>
             <Button
               v-if="row.url"
-              variant="secondary"
-              size="sm"
+              v-tooltip="{
+                value: $t('workspacePanel.inviteLinks.copyLink'),
+                showDelay: 300
+              }"
+              variant="muted-textonly"
+              size="icon-lg"
               class="shrink-0"
-              @click="copyLink(row.email, row.url)"
-            >
-              {{
+              :aria-label="
                 copiedEmail === row.email
                   ? $t('workspacePanel.inviteLinks.copied')
                   : $t('workspacePanel.inviteLinks.copyLink')
-              }}
+              "
+              @click="copyLink(row.email, row.url)"
+            >
+              <i
+                :class="
+                  copiedEmail === row.email
+                    ? 'icon-[lucide--check] size-4'
+                    : 'icon-[lucide--link] size-4'
+                "
+              />
             </Button>
           </li>
         </ul>
