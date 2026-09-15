@@ -129,6 +129,37 @@ test.describe('Performance', { tag: ['@perf'] }, () => {
     )
   })
 
+  test('large graph load to responsive', async ({ comfyPage }) => {
+    await comfyPage.perf.startMeasuring()
+    await comfyPage.workflow.loadWorkflow('ecs-qa-007-large-workflow-readiness')
+    await expect
+      .poll(() =>
+        comfyPage.page.evaluate(() => ({
+          nodeCount: window.app!.graph.nodes.length,
+          groupCount: window.app!.graph.groups.length
+        }))
+      )
+      .toEqual({ nodeCount: 247, groupCount: 3 })
+    const canvasBox = await comfyPage.canvas.boundingBox()
+    if (!canvasBox) throw new Error('Canvas bounding box not available')
+    const initialScale = await comfyPage.canvasOps.getScale()
+    await comfyPage.page.mouse.move(
+      canvasBox.x + canvasBox.width / 2,
+      canvasBox.y + canvasBox.height / 2
+    )
+    await comfyPage.page.mouse.wheel(0, -100)
+    await comfyPage.nextFrame()
+    await expect
+      .poll(() => comfyPage.canvasOps.getScale())
+      .toBeGreaterThan(initialScale)
+
+    const m = await comfyPage.perf.stopMeasuring(
+      'large-workflow-load-responsive'
+    )
+    recordMeasurement(m)
+    console.log(`Large workflow responsive: ${m.durationMs.toFixed(0)}ms`)
+  })
+
   test('large graph pan interaction', async ({ comfyPage }) => {
     await comfyPage.workflow.loadWorkflow('large-graph-workflow')
 
