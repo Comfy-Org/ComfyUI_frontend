@@ -20,7 +20,6 @@ import {
   ref
 } from 'vue'
 import type { Ref } from 'vue'
-import { useClipboard } from '@vueuse/core'
 
 vi.mock(import('firebase/auth'))
 
@@ -201,9 +200,13 @@ vi.mock<unknown>(import('@/utils/litegraphUtil'), async () => {
 
 vi.mock(import('@/composables/auth/useCurrentUser'))
 
-const clipboard = vi.hoisted(() => ({ copy: vi.fn() }))
-
-vi.mock(import('@vueuse/core'), { spy: true })
+const clipboard = vi.hoisted(() => ({ copyToClipboard: vi.fn() }))
+vi.mock(import('@/composables/useCopyToClipboard'), () => ({
+  useCopyToClipboard: () => ({
+    copied: ref(false),
+    copyToClipboard: clipboard.copyToClipboard
+  })
+}))
 
 vi.mock(import('@/platform/telemetry'))
 const telemetryProvider = useTelemetry()
@@ -309,14 +312,6 @@ beforeEach(() => {
     fromPartial<ComfyWorkflowJSON>(
       typeof content === 'object' && content !== null ? content : {}
     )
-  )
-  vi.mocked(useClipboard).mockReturnValue(
-    fromPartial({
-      copy: clipboard.copy,
-      copied: computed(() => false),
-      isSupported: ref(true),
-      text: ref('')
-    })
   )
   vi.mocked(useWorkspaceUI).mockReturnValue(
     fromPartial({
@@ -4155,7 +4150,7 @@ describe('AgentPanelRoot history', () => {
 describe('AgentPanelRoot transcript copy', () => {
   beforeEach(() => {
     ws.clear()
-    clipboard.copy.mockClear()
+    clipboard.copyToClipboard.mockClear()
   })
 
   it.for(['current', 'pending'])(
@@ -4239,11 +4234,11 @@ describe('AgentPanelRoot transcript copy', () => {
       )
 
       if (loaded === 'current') {
-        expect(clipboard.copy).toHaveBeenCalledWith(
+        expect(clipboard.copyToClipboard).toHaveBeenCalledWith(
           '**You:** make a cat with @[Workflow: Portrait]\n@[Node: KSampler #12]\n@[File: brief.txt]\n\n**Agent:** Here is a cat.'
         )
       } else {
-        expect(clipboard.copy).not.toHaveBeenCalled()
+        expect(clipboard.copyToClipboard).not.toHaveBeenCalled()
         expect(useToastStore().messagesToAdd).toContainEqual(
           expect.objectContaining({
             summary: i18n.global.t('agent.copyUnavailable')

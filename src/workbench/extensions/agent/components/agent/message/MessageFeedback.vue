@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { useClipboard } from '@vueuse/core'
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -8,6 +7,7 @@ import Button from '@/components/ui/button/Button.vue'
 import Menu from '@/components/ui/menu/Menu.vue'
 import type { MenuItem } from '@/components/ui/menu/types'
 import AccessibleTooltip from '@/components/ui/tooltip/AccessibleTooltip.vue'
+import { useCopyToClipboard } from '@/composables/useCopyToClipboard'
 import { useAssetDownload } from '@/platform/assets/composables/useAssetDownload'
 import { renderMarkdownToHtml } from '@/utils/markdownRendererUtil'
 import { resolveReplyAssetDownload } from '../../../utils/resolveReplyAssetDownload'
@@ -20,7 +20,10 @@ const { markdown, assets = [] } = defineProps<{
 const emit = defineEmits<{ feedback: [vote: 'up' | 'down' | null] }>()
 
 const { t } = useI18n()
-const { copy, copied } = useClipboard({ copiedDuring: 2000, legacy: true })
+const { copied, copyToClipboard } = useCopyToClipboard({
+  copiedDuring: 2000,
+  showSuccessToast: false
+})
 const { downloadFiles } = useAssetDownload()
 
 const vote = ref<'up' | 'down' | null>(null)
@@ -35,14 +38,14 @@ function copyPlainText(): void {
     renderMarkdownToHtml(markdown),
     'text/html'
   )
-  void copy(doc.body.textContent?.trim() ?? '')
+  void copyToClipboard(doc.body.textContent?.trim() ?? '')
 }
 
 const downloading = ref(false)
 const copyMenuItems = computed<MenuItem[]>(() => [
   {
     label: t('agent.copyMarkdown'),
-    command: () => copy(markdown)
+    command: () => copyToClipboard(markdown)
   }
 ])
 
