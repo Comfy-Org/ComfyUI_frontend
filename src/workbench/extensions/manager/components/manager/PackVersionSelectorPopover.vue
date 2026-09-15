@@ -39,7 +39,9 @@
               }"
               side="right"
             >
-              <i class="icon-[lucide--triangle-alert] text-warning-background" />
+              <i
+                class="icon-[lucide--triangle-alert] text-warning-background"
+              />
             </Tooltip>
             <VerifiedIcon v-else :size="20" class="relative right-0.5" />
             <span>{{ option.label }}</span>
