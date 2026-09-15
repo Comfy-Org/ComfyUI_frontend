@@ -169,6 +169,96 @@ function widgetValuesOf(node: WorkflowNode): Record<string, unknown> {
     : {}
 }
 
+function removedNodeOperations(
+  before: RestoreSnapshot,
+  after: RestoreSnapshot
+): GraphOperation[] {
+  return [...before.nodes.keys()].flatMap((id) => {
+    if (after.nodes.has(id)) return []
+    const removedLinks = [...before.links.values()]
+      .filter(
+        (link) => String(link.origin_id) === id || String(link.target_id) === id
+      )
+      .map((link) => link.id)
+    return [{ op: 'delete_node', node_id: id, removed_links: removedLinks }]
+  })
+}
+
+function addedNodeOperations(
+  before: RestoreSnapshot,
+  after: RestoreSnapshot
+): GraphOperation[] {
+  return [...after.nodes].flatMap(([id, node]) =>
+    before.nodes.has(id)
+      ? []
+      : [
+          {
+            op: 'add_node',
+            node_id: id,
+            class_type: node.type,
+            pos: Array.isArray(node.pos) ? node.pos : [0, 0],
+            node
+          }
+        ]
+  )
+}
+
+function changedWidgetOperations(
+  before: RestoreSnapshot,
+  after: RestoreSnapshot
+): GraphOperation[] {
+  return [...after.nodes].flatMap(([id, node]) => {
+    const previous = before.nodes.get(id)
+    if (!previous) return []
+    const oldValues = widgetValuesOf(previous)
+    return Object.entries(widgetValuesOf(node)).flatMap(([name, value]) => {
+      const old = oldValues[name]
+      return JSON.stringify(old) === JSON.stringify(value)
+        ? []
+        : [{ op: 'set_widget', node_id: id, widget: name, value, old }]
+    })
+  })
+}
+
+function addedLinkOperations(
+  before: RestoreSnapshot,
+  after: RestoreSnapshot
+): GraphOperation[] {
+  return [...after.links].flatMap(([id, link]) =>
+    before.links.has(id)
+      ? []
+      : [
+          {
+            op: 'connect',
+            link_id: link.id,
+            from_node: link.origin_id,
+            from_slot: link.origin_slot,
+            to_node: link.target_id,
+            to_slot: link.target_slot,
+            link_type: String(link.type)
+          }
+        ]
+  )
+}
+
+function reportDetachedLinks(
+  before: RestoreSnapshot,
+  after: RestoreSnapshot
+): void {
+  for (const [id, link] of before.links) {
+    if (after.links.has(id)) continue
+    const endpointRemoved =
+      !after.nodes.has(String(link.origin_id)) ||
+      !after.nodes.has(String(link.target_id))
+    if (!endpointRemoved) {
+      console.error(
+        '[agent-crdt] undo/redo restore removed link without its node; doc may diverge',
+        id
+      )
+    }
+  }
+}
+
 /**
  * Express an undo/redo restore as the semantic ops a human would have minted
  * by hand: deletions first (with the links they severed), then additions,
@@ -180,78 +270,13 @@ function diffRestore(
   before: RestoreSnapshot,
   after: RestoreSnapshot
 ): GraphOperation[] {
-  const operations: GraphOperation[] = []
-
-  for (const [id] of before.nodes) {
-    if (after.nodes.has(id)) continue
-    const removedLinks: Array<string | number> = []
-    for (const link of before.links.values()) {
-      if (String(link.origin_id) === id || String(link.target_id) === id) {
-        removedLinks.push(link.id)
-      }
-    }
-    operations.push({
-      op: 'delete_node',
-      node_id: id,
-      removed_links: removedLinks
-    })
-  }
-
-  for (const [id, node] of after.nodes) {
-    if (before.nodes.has(id)) continue
-    const pos = Array.isArray(node.pos) ? node.pos : [0, 0]
-    operations.push({
-      op: 'add_node',
-      node_id: id,
-      class_type: node.type,
-      pos,
-      node
-    })
-  }
-
-  for (const [id, node] of after.nodes) {
-    const previous = before.nodes.get(id)
-    if (!previous) continue
-    const oldValues = widgetValuesOf(previous)
-    for (const [name, value] of Object.entries(widgetValuesOf(node))) {
-      const old = oldValues[name]
-      if (JSON.stringify(old) === JSON.stringify(value)) continue
-      operations.push({
-        op: 'set_widget',
-        node_id: id,
-        widget: name,
-        value,
-        old
-      })
-    }
-  }
-
-  for (const [id, link] of after.links) {
-    if (before.links.has(id)) continue
-    operations.push({
-      op: 'connect',
-      link_id: link.id,
-      from_node: link.origin_id,
-      from_slot: link.origin_slot,
-      to_node: link.target_id,
-      to_slot: link.target_slot,
-      link_type: String(link.type)
-    })
-  }
-
-  for (const [id, link] of before.links) {
-    if (after.links.has(id)) continue
-    const endpointRemoved =
-      !after.nodes.has(String(link.origin_id)) ||
-      !after.nodes.has(String(link.target_id))
-    if (endpointRemoved) continue
-    console.error(
-      '[agent-crdt] undo/redo restore removed link without its node; doc may diverge',
-      id
-    )
-  }
-
-  return operations
+  reportDetachedLinks(before, after)
+  return [
+    ...removedNodeOperations(before, after),
+    ...addedNodeOperations(before, after),
+    ...changedWidgetOperations(before, after),
+    ...addedLinkOperations(before, after)
+  ]
 }
 
 export function attachMintPortWiring(deps: MintPortWiringDeps): MintPortWiring {
