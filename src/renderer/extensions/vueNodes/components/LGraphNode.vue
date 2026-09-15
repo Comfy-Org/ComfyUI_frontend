@@ -107,6 +107,7 @@
           :node-data
           :collapsed="isCollapsed"
           :price-badges="badges.pricing"
+          :activity
           @collapse="handleCollapse"
           @update:title="handleHeaderTitleUpdate"
         />
@@ -350,7 +351,7 @@ const isSelected = computed(() => {
 const nodeLocatorId = computed(
   () => locatorIdFromState(nodeData, canvasStore.rootGraphId) ?? undefined
 )
-const { executing, progress } = useNodeExecutionState(nodeLocatorId)
+const { executing, progress, activity } = useNodeExecutionState(nodeLocatorId)
 const hasAnyError = computed(() =>
   nodeHasError(nodeData, canvasStore.rootGraphId, lgraphNode.value)
 )

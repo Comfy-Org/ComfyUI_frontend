@@ -360,6 +360,7 @@ export const useExecutionStore = defineStore('execution', () => {
         mergedState.max = newState.max
       }
       mergedState.state = 'running'
+      mergedState.activity = newState.activity
     }
 
     return mergedState

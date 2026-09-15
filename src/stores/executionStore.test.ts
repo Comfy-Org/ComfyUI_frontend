@@ -284,6 +284,51 @@ describe('useExecutionStore - nodeLocationProgressStates caching', () => {
     ).toBeDefined()
   })
 
+  it('carries the running node activity onto its subgraph locator', () => {
+    const mockSubgraph = {
+      id: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
+      nodes: []
+    }
+    const mockNode = createMockLGraphNode({
+      id: 123,
+      isSubgraphNode: () => true,
+      subgraph: mockSubgraph
+    })
+    vi.mocked(app.rootGraph.getNodeById).mockReturnValue(mockNode)
+    const parentLocator = createNodeLocatorId(null, toNodeId(123))
+
+    const finishedSibling: NodeProgressState = {
+      display_node_id: '123:455',
+      state: 'finished',
+      value: 1,
+      max: 1,
+      prompt_id: 'test',
+      node_id: 'node0'
+    }
+    const loadingNode: NodeProgressState = {
+      display_node_id: '123:456',
+      state: 'running',
+      activity: 'loading',
+      value: 0,
+      max: 0,
+      prompt_id: 'test',
+      node_id: 'node1'
+    }
+
+    store.nodeProgressStates = { node0: finishedSibling, node1: loadingNode }
+    expect(store.nodeLocationProgressStates[parentLocator].activity).toBe(
+      'loading'
+    )
+
+    store.nodeProgressStates = {
+      node0: finishedSibling,
+      node1: { ...loadingNode, activity: undefined }
+    }
+    expect(
+      store.nodeLocationProgressStates[parentLocator].activity
+    ).toBeUndefined()
+  })
+
   it('should not re-traverse graph for same execution IDs across progress updates', () => {
     const mockSubgraph = {
       id: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890',

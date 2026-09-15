@@ -35,6 +35,10 @@ export const useNodeExecutionState = (
     return state && state.max > 0 ? state.value / state.max : undefined
   })
 
+  const activity = computed(() =>
+    executing.value ? progressState.value?.activity : undefined
+  )
+
   const progressPercentage = computed(() => {
     const prog = progress.value
     return prog !== undefined ? Math.round(prog * 100) : undefined
@@ -50,6 +54,7 @@ export const useNodeExecutionState = (
     executing,
     progress,
     progressPercentage,
+    activity,
     progressState,
     executionState
   }
