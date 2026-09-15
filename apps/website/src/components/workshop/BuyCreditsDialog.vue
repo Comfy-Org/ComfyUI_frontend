@@ -37,10 +37,6 @@ import {
   TopUpCheckoutError,
   createTopUpCheckout
 } from '../../lib/workshop/buy-credits'
-import {
-  subscribeToTopUpReturns,
-  topUpReturnUrl
-} from '../../lib/workshop/topup-return'
 import Dialog from '../ui/dialog/Dialog.vue'
 import DialogContent from '../ui/dialog/DialogContent.vue'
 import DialogDescription from '../ui/dialog/DialogDescription.vue'
@@ -57,25 +53,14 @@ const state = ref<'amount' | 'pending' | 'checkout' | 'failed'>('amount')
 const topUp = useTopUpWatch()
 const lastCheckout = ref<TopUpCheckoutSession | undefined>(undefined)
 
-interface CheckoutAttempt {
-  readonly id: string
-  readonly uid: string
-  readonly workspaceId: string
-  readonly workspaceName: string
-  readonly previousCredits: number
-  readonly returned: boolean
-}
-
 interface CheckoutScope {
   readonly uid: string
   readonly workspaceId: string
   readonly workspaceName: string
 }
 
-const checkoutAttempt = ref<CheckoutAttempt | undefined>(undefined)
 let checkoutController: AbortController | undefined
 let checkoutTab: Window | null = null
-let unsubscribeFromTopUpReturns: (() => void) | undefined
 
 // The hand-off owns the step from the moment it happens: waiting is 4a,
 // landed 4b, unresolved 4c; before that, the amount card and its errors.
@@ -94,7 +79,6 @@ watch(
     if (latchedReturn.value !== undefined) {
       latchedReturn.value = undefined
       lastCheckout.value = undefined
-      checkoutAttempt.value = undefined
       open.value = false
     }
   },
@@ -116,9 +100,12 @@ const topUpWorkspaceName = computed(() =>
 // A receipt nobody acknowledged within a minute was read off the chip
 // instead; greeting the next visit with it would look like a fresh grant.
 const STALE_RECEIPT_MS = 60_000
+const AUTO_CLOSE_MS = 3_600
+let autoCloseTimer: ReturnType<typeof setTimeout> | undefined
 
 watch(open, (value) => {
   if (!value) {
+    stopAutoClose()
     cancelPendingCheckout()
     usd.value = 25
     state.value = 'amount'
@@ -139,28 +126,60 @@ watch(open, (value) => {
   } else if (topUp.value.status === 'idle') {
     latchedReturn.value = undefined
   }
+  if (step.value === 'landed') scheduleAutoClose()
 })
 
 function clearReturnReceipt(): void {
   latchedReturn.value = undefined
   lastCheckout.value = undefined
-  checkoutAttempt.value = undefined
   if (topUp.value.status !== 'idle') clearTopUpWatch()
 }
 
 function finish() {
+  stopAutoClose()
   cancelPendingCheckout()
   clearReturnReceipt()
   open.value = false
 }
 
+function stopAutoClose(): void {
+  if (autoCloseTimer) clearTimeout(autoCloseTimer)
+  autoCloseTimer = undefined
+}
+
+function scheduleAutoClose(): void {
+  stopAutoClose()
+  if (document.hidden) return
+  autoCloseTimer = setTimeout(() => finish(), AUTO_CLOSE_MS)
+}
+
+function onVisibilityChange(): void {
+  if (step.value !== 'landed' || !open.value) return
+  if (document.hidden) stopAutoClose()
+  else scheduleAutoClose()
+}
+
+function cancelAutoClose(): void {
+  if (step.value === 'landed') stopAutoClose()
+}
+
+watch(step, (value) => {
+  if (value === 'landed' && open.value) scheduleAutoClose()
+  else stopAutoClose()
+})
+
 onMounted(() => {
-  unsubscribeFromTopUpReturns = subscribeToTopUpReturns(onTopUpReturn)
+  document.addEventListener('visibilitychange', onVisibilityChange)
+  document.addEventListener('pointerdown', cancelAutoClose)
+  document.addEventListener('keydown', cancelAutoClose)
 })
 
 onBeforeUnmount(() => {
+  stopAutoClose()
   cancelPendingCheckout()
-  unsubscribeFromTopUpReturns?.()
+  document.removeEventListener('visibilitychange', onVisibilityChange)
+  document.removeEventListener('pointerdown', cancelAutoClose)
+  document.removeEventListener('keydown', cancelAutoClose)
 })
 
 function setAmount(next: number) {
@@ -177,9 +196,7 @@ function cancelPendingCheckout(): void {
 
 function claimCheckoutTab(): Window | null {
   try {
-    const tab = window.open('about:blank', '_blank')
-    if (tab) tab.opener = null
-    return tab
+    return window.open('/checkout-opening', '_blank')
   } catch {
     return null
   }
@@ -199,18 +216,6 @@ function navigateCheckoutTab(tab: Window | null, url: string): void {
   } catch {
     closeCheckoutTab(tab)
   }
-}
-
-function onTopUpReturn(attemptId: string): void {
-  const attempt = checkoutAttempt.value
-  if (!attempt || attempt.id !== attemptId || attempt.returned) return
-  checkoutAttempt.value = { ...attempt, returned: true }
-  watchForTopUp({
-    uid: attempt.uid,
-    workspaceId: attempt.workspaceId,
-    workspaceName: attempt.workspaceName,
-    previousCredits: attempt.previousCredits
-  })
 }
 
 function captureCheckoutScope(): CheckoutScope | undefined {
@@ -272,20 +277,17 @@ async function tokenForCheckout(
 
 function recordCheckout(
   scope: CheckoutScope,
-  attemptId: string,
   previousCredits: number,
   checkout: TopUpCheckoutSession,
   tab: Window | null
 ): void {
   lastCheckout.value = checkout
-  checkoutAttempt.value = {
-    id: attemptId,
+  watchForTopUp({
     uid: scope.uid,
     workspaceId: scope.workspaceId,
     workspaceName: scope.workspaceName,
-    previousCredits,
-    returned: false
-  }
+    previousCredits
+  })
   state.value = 'checkout'
   navigateCheckoutTab(tab, checkout.url)
 }
@@ -306,7 +308,6 @@ function handleCheckoutFailure(
   if (checkoutController !== controller) return
   if (checkoutEndpointIsUnavailable(error)) {
     lastCheckout.value = { url: WORKSHOP_CREDITS_URL }
-    checkoutAttempt.value = undefined
     state.value = 'checkout'
     navigateCheckoutTab(tab, WORKSHOP_CREDITS_URL)
     return
@@ -340,7 +341,6 @@ async function continueToCheckout() {
     const checkout = await createTopUpCheckout({
       token,
       amountCents,
-      returnUrl: topUpReturnUrl(window.location.href, attemptId),
       idempotencyKey: attemptId,
       signal: controller.signal
     })
@@ -348,7 +348,7 @@ async function continueToCheckout() {
     if (checkoutController !== controller)
       throw new Error('Session changed before checkout opened')
     requireCurrentCheckoutScope(scope, 'Session changed before checkout opened')
-    recordCheckout(scope, attemptId, previousCredits, checkout, tab)
+    recordCheckout(scope, previousCredits, checkout, tab)
   } catch (error) {
     handleCheckoutFailure(error, controller, tab)
   } finally {

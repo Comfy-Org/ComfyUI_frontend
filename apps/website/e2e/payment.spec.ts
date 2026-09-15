@@ -17,6 +17,34 @@ async function expectNoIndex(page: Page) {
   )
 }
 
+test.describe('Payment checkout returns @smoke', () => {
+  for (const returnPath of ['/payment/success', '/payment/failed']) {
+    test(`${returnPath} closes when checkout opened it`, async ({ page }) => {
+      await page.goto('/')
+      const popupPromise = page.waitForEvent('popup')
+      await page.evaluate((path) => {
+        window.open(path, '_blank')
+      }, returnPath)
+      const popup = await popupPromise
+
+      await expect.poll(() => popup.isClosed()).toBe(true)
+    })
+  }
+})
+
+test('checkout opening page explains the handoff @smoke', async ({ page }) => {
+  await page.goto('/checkout-opening')
+
+  await expect(page).toHaveTitle('Opening checkout - Comfy')
+  await expectNoIndex(page)
+  await expect(
+    page.getByRole('heading', { name: 'Taking you to Stripe', level: 1 })
+  ).toBeVisible()
+  await expect(
+    page.getByText('The page you came from is still open')
+  ).toBeVisible()
+})
+
 test.describe('Payment success page @smoke', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/payment/success')

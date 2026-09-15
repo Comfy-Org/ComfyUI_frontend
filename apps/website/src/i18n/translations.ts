@@ -9622,6 +9622,18 @@ Enterprise`
     en: 'Checkout reference',
     'zh-CN': '结账参考编号'
   },
+  'workshop.credits.openingLabel': {
+    en: 'Secure checkout',
+    'zh-CN': '安全结账'
+  },
+  'workshop.credits.openingTitle': {
+    en: 'Taking you to Stripe',
+    'zh-CN': '正在前往 Stripe'
+  },
+  'workshop.credits.openingBody': {
+    en: 'Finish your purchase here. The page you came from is still open, and your credits will appear there.',
+    'zh-CN': '请在此完成购买。你来时的页面仍然打开，积分会显示在那里。'
+  },
   'workshop.credits.checkoutOpenedTitle': {
     en: 'Continue to checkout',
     'zh-CN': '继续结账'
