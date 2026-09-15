@@ -14,10 +14,20 @@ Stripe checkout URL. It reaches that endpoint through its own module,
 `apps/website/src/lib/workshop/buy-credits.ts`, and lists workspaces
 through `apps/website/src/lib/workshop/workspaces.ts` — both plain
 `fetch` calls with their own Zod response validation. The cloud app
-reaches the same class of endpoint through
+reaches billing and workspaces through one axios client,
+`src/platform/workspace/api/workspaceApi.ts` — `getBillingStatus`,
+`subscribe`, `resubscribe`, `list` — and that client carries
+`attachUnifiedRemintInterceptor`, so production's re-mint behaviour
+lives in `src/platform/auth/unified/remintRetry.ts`.
+
 `createSessionBillingTransport` in
-`packages/account/src/core/billing/transport.ts`, and lists workspaces
-through `src/platform/workspace/api/workspaceApi.ts`.
+`packages/account/src/core/billing/transport.ts` is not a third
+production path today: outside its own definition and re-export, its
+only callers are tests. It is the adoption target of #17665, which
+routes the cloud app's top-up through it behind a flag. That matters
+for how the cost below is counted — the shared transport is a designed
+replacement awaiting its first production caller, not a hardened path
+the site declined to use.
 
 This split was not an oversight, but until now it was recorded only in
 two source-file header comments
@@ -82,7 +92,17 @@ top-up endpoint called directly from the site.
    `await`, and rejects a response that arrives after either changed.
    This is the site's stand-in for the transport's `SUPERSEDED`
    result, and it is not optional: without it a response can be
-   attributed to the wrong account.
+   attributed to the wrong account. The checkout and workspace-list
+   call sites compare workspace id explicitly. The balance reader in
+   `workshop-balance.ts` does not: `runRefresh()` captures uid and
+   token, and its publish guard compares those two. Because the
+   credential is a workspace-scoped JWT, token equality stands in for
+   workspace equality there — but `AccountCredential` carries `token`
+   and `workspace` separately and nothing in the session contract
+   forces them to move together, so that reader relies on a property
+   of the mint rather than on this rule. New call sites take the
+   explicit comparison; aligning the balance reader is a separate
+   change against a hardened path, not a docs edit.
 
 4. **No new local copies.** This ADR authorizes exactly the two
    existing modules. Further billing surfaces — subscriptions,
@@ -112,8 +132,12 @@ top-up endpoint called directly from the site.
   transport is generic over route and body, and the site already
   depended on the package. Not taken, because V1 drew the boundary at
   "billing" rather than at "billing commands". Had it been taken, the
-  401 retry in rule 2 of the consequences below would have come for
-  free. This is the part of the decision least worth repeating.
+  401 re-mint described under the residual-401 consequence would have
+  come for free, and the site would have been the transport's first
+  production caller — which is also why not taking it is a weaker
+  error than it first looks: no production surface was using it to
+  diverge from. This is still the part of the decision least worth
+  repeating.
 
 - **Route the site's top-up through the cloud app.** Rejected: it
   reintroduces the failure the endpoint was built to avoid, where a
@@ -122,16 +146,20 @@ top-up endpoint called directly from the site.
 
 ## Consequences
 
-- **One rule, three copies.** The single-forced-re-mint rule now
-  exists in `transport.ts`, in the cloud app's
+- **One rule, two live copies and a third in waiting.** The
+  single-forced-re-mint rule runs in production in the cloud app's
   `attachUnifiedRemintInterceptor`
-  (`src/platform/auth/unified/remintRetry.ts`), and in the site's
+  (`src/platform/auth/unified/remintRetry.ts`, attached to both
+  `workspaceApi` and `customerEventsService`) and in the site's
   balance reader, which names itself "the site's own copy of that
-  rule". `transport.ts` already carries a "keep the two in step"
-  instruction for the first two. Billing policy, auth, workspace,
-  monitoring, and incident fixes now have a wider change surface than
-  the line count suggests. This is the real cost of the decision, and
-  rule 5 is how it is paid down.
+  rule". It is implemented a third time in `transport.ts`, which
+  carries a "keep the two in step" instruction against the
+  interceptor, but has no production caller yet. So the rule is
+  duplicated twice over today and three times once #17665 lands,
+  which is the shape rule 5 exists to collapse. Billing policy, auth,
+  workspace, monitoring, and incident fixes all cross that surface,
+  which is wider than the line count suggests. This is the real cost
+  of the decision, and rule 5 is how it is paid down.
 
 - **A residual 401 is unhandled on the site's top-up.**
   `createTopUpCheckout` throws `TopUpCheckoutError` on any non-OK
