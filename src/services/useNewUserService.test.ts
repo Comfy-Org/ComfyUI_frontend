@@ -1,5 +1,5 @@
 import {
-  isOnboardingReplayRequested,
+  isFirstRunReplayRequested,
   requestOnboardingReplay
 } from '@/platform/onboarding/onboardingReplay'
 import { useSettingStore } from '@/platform/settings/settingStore'
@@ -252,7 +252,7 @@ describe('useNewUserService', () => {
       requestOnboardingReplay()
 
       await service.initializeIfNewUser()
-      expect(isOnboardingReplayRequested()).toBe(false)
+      expect(isFirstRunReplayRequested()).toBe(false)
 
       service.reset()
       await service.initializeIfNewUser()

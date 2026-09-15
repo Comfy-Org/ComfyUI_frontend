@@ -919,9 +919,15 @@ export function useCoreCommands(): ComfyCommand[] {
           return
         }
 
-        // Every gate is read during startup, so the reset needs a fresh boot,
-        // and at the root path for the survey's route guard to run.
-        globalThis.location.assign('/')
+        // Every gate is read during startup, so the reset needs a fresh boot.
+        // On cloud the survey's route guard only runs at the app root, so land
+        // there; off cloud there is no survey and no guarantee the app is
+        // served from the origin root, so reload where we already are.
+        if (isCloud) {
+          globalThis.location.assign(import.meta.env.BASE_URL || '/')
+        } else {
+          globalThis.location.reload()
+        }
       }
     },
     {

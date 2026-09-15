@@ -1,7 +1,13 @@
 import { fromPartial } from '@total-typescript/shoehorn'
-import { describe, expect, test, vi } from 'vitest'
+import { beforeEach, describe, expect, test, vi } from 'vitest'
 
-import { getSurveyCompletedStatus } from './auth'
+import {
+  consumeSurveyReplayRequest,
+  isSurveyReplayRequested,
+  requestOnboardingReplay
+} from '@/platform/onboarding/onboardingReplay'
+
+import { getSurveyCompletedStatus, submitSurvey } from './auth'
 
 const fetchApi = vi.fn()
 
@@ -94,5 +100,63 @@ describe('getSurveyCompletedStatus', () => {
   test('network rejection → true (do not bounce on network error)', async () => {
     fetchApi.mockRejectedValueOnce(new TypeError('Network request failed'))
     await expect(getSurveyCompletedStatus()).resolves.toBe(true)
+  })
+})
+
+describe('onboarding replay', () => {
+  beforeEach(() => {
+    sessionStorage.clear()
+    fetchApi.mockReset()
+  })
+
+  test('a requested replay re-opens the gate without reading the stored answers', async () => {
+    requestOnboardingReplay()
+
+    await expect(getSurveyCompletedStatus()).resolves.toBe(false)
+    expect(fetchApi).not.toHaveBeenCalled()
+  })
+
+  test('a completed account is gated again as soon as the replay is spent', async () => {
+    requestOnboardingReplay()
+    await expect(getSurveyCompletedStatus()).resolves.toBe(false)
+
+    consumeSurveyReplayRequest()
+    fetchApi.mockResolvedValueOnce(
+      mockResponse({ ok: true, status: 200, body: { value: { q1: 'a' } } })
+    )
+
+    await expect(getSurveyCompletedStatus()).resolves.toBe(true)
+  })
+
+  test('submitting spends the replay, so the survey does not immediately re-open', async () => {
+    requestOnboardingReplay()
+    fetchApi.mockResolvedValueOnce(mockResponse({ ok: true, status: 200 }))
+
+    await submitSurvey({ q1: 'a' })
+
+    expect(isSurveyReplayRequested()).toBe(false)
+  })
+
+  test('submitting preserves the answers, never overwriting them with an empty survey', async () => {
+    requestOnboardingReplay()
+    fetchApi.mockResolvedValueOnce(mockResponse({ ok: true, status: 200 }))
+
+    await submitSurvey({ q1: 'a' })
+
+    expect(fetchApi).toHaveBeenCalledWith(
+      '/settings',
+      expect.objectContaining({
+        body: JSON.stringify({ onboarding_survey: { q1: 'a' } })
+      })
+    )
+  })
+
+  test('a failed submission keeps the replay, so the survey can be retried', async () => {
+    requestOnboardingReplay()
+    fetchApi.mockResolvedValueOnce(mockResponse({ ok: false, status: 500 }))
+
+    await expect(submitSurvey({ q1: 'a' })).rejects.toThrow()
+
+    expect(isSurveyReplayRequested()).toBe(true)
   })
 })

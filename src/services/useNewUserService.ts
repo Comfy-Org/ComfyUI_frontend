@@ -1,8 +1,8 @@
 import { ref, shallowRef } from 'vue'
 import { createSharedComposable } from '@vueuse/core'
 import {
-  consumeOnboardingReplayRequest,
-  isOnboardingReplayRequested
+  consumeFirstRunReplayRequest,
+  isFirstRunReplayRequested
 } from '@/platform/onboarding/onboardingReplay'
 import { useSettingStore } from '@/platform/settings/settingStore'
 
@@ -85,8 +85,8 @@ function _useNewUserService() {
   async function initializeIfNewUser() {
     if (isNewUserDetermined.value) return
 
-    const isReplay = isOnboardingReplayRequested()
-    consumeOnboardingReplayRequest()
+    const isReplay = isFirstRunReplayRequested()
+    consumeFirstRunReplayRequest()
 
     isNewUserCached.value = isReplay || checkIsNewUser()
     isNewUserDetermined.value = true
