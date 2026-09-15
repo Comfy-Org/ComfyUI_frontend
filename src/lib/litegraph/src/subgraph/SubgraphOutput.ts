@@ -27,6 +27,8 @@ import { isNodeSlot, isSubgraphInput } from './subgraphUtils'
  * You have "Subgraph Outputs", because they go from inside the subgraph and out, but links to them come from "node outputs".
  *
  * Functionally, however, when editing a subgraph, that "subgraph output" is the "target" or "input side" of a link.
+ *
+ * @internal
  */
 export class SubgraphOutput extends SubgraphSlot {
   declare parent: SubgraphOutputNode
