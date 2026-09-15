@@ -2,12 +2,13 @@
  * The blessed connect port: litegraph's registerLinkTopology bridge calls
  * linkStore synchronously for EVERY link change, so nothing escapes this seam.
  * Register/replace mint a CONCRETE connect (a replace displaces the incumbent
- * register by LWW - no severance). Deletes cannot mint (no disconnect op in
- * the frozen vocabulary): they feed the severance log for delete_node, and an
- * unconsumed local severance surfaces as observable divergence after a double
- * microtask (strictly after the layout store's single-microtask delivery).
+ * register by LWW - no severance). Deletes mint a standalone disconnect and
+ * also feed the severance log so delete_node can carry removed_links when the
+ * link deletion was part of node removal.
  */
 import type { NodeId as WireNodeId } from '@comfyorg/comfy-multi-player'
+
+import { reportError } from '@/platform/telemetry/reportError'
 
 import type { GraphOperation } from './graphOperations'
 import { shouldMint } from './mintGate'
@@ -53,7 +54,7 @@ export interface SeveranceLog {
    * Link ids severed for `nodeId` in the current capture window, each
    * consumed globally (a link touches two nodes; only one delete carries it).
    */
-  take(nodeId: string): WireNodeId[]
+  take(owningGraphId: string, nodeId: string): WireNodeId[]
 }
 
 export interface LinkMintPortDeps {
@@ -63,6 +64,8 @@ export interface LinkMintPortDeps {
   isEnabled(): boolean
   /** A semantic doc is bound for the active workflow. */
   isDocBound(): boolean
+  /** A whole-graph clear is carrying its own semantic `clear` operation. */
+  isIntentionalClear(): boolean
   /** Receives minted semantic operations (the sender's inbox). */
   enqueue(operations: GraphOperation[]): void
 }
@@ -74,8 +77,12 @@ export interface LinkMintPort {
 
 interface SeveranceEntry {
   linkId: WireNodeId
+  topology: LinkTopologyView
+  owningGraphId: string
   /** The gate was open at severance: unconsumed means a real divergence. */
   mintable: boolean
+  /** Only root-scope link deletions can be represented as standalone ops. */
+  rootScoped: boolean
 }
 
 function isRootScope(scope: LinkScopeView): boolean {
@@ -86,6 +93,15 @@ export function attachLinkMintPort(deps: LinkMintPortDeps): LinkMintPort {
   const severancesByNode = new Map<string, SeveranceEntry[]>()
   const consumedLinkIds = new Set<string>()
   let sweepScheduled = false
+  let detached = false
+
+  function graphEntityKey(owningGraphId: string, entityId: string | number) {
+    return `${owningGraphId}:${String(entityId)}`
+  }
+
+  function linkKey(entry: SeveranceEntry): string {
+    return graphEntityKey(entry.owningGraphId, entry.linkId)
+  }
 
   function gateOpen(): boolean {
     return shouldMint({
@@ -96,12 +112,12 @@ export function attachLinkMintPort(deps: LinkMintPortDeps): LinkMintPort {
   }
 
   function surfaceUnrepresentable(what: string, id: string | number): void {
-    // A doc that no longer matches the local graph must be observable,
-    // never silent (the surfacing-honesty principle).
-    console.error(
-      `[agent-crdt] ${what} has no wire op; the bound doc diverges from the local graph`,
-      id
-    )
+    const message = `[agent-crdt] ${what} has no wire op; the bound doc diverges from the local graph`
+    console.error(message, id)
+    reportError(new Error(message), {
+      errorType: 'agent_crdt_reporting_unrepresentable_link_operation',
+      context: { id }
+    })
   }
 
   function onPlaced(scope: LinkScopeView, topology: LinkTopologyView): void {
@@ -132,14 +148,29 @@ export function attachLinkMintPort(deps: LinkMintPortDeps): LinkMintPort {
     queueMicrotask(() => {
       queueMicrotask(() => {
         sweepScheduled = false
+        if (detached) return
         const surfaced = new Set<string>()
         for (const entries of severancesByNode.values()) {
           for (const entry of entries) {
-            const key = String(entry.linkId)
-            if (!entry.mintable || consumedLinkIds.has(key)) continue
+            const key = linkKey(entry)
+            if (!entry.mintable) continue
             if (surfaced.has(key)) continue
             surfaced.add(key)
-            surfaceUnrepresentable('link disconnect', entry.linkId)
+            if (entry.rootScoped) {
+              deps.enqueue([
+                {
+                  op: 'disconnect',
+                  link_id: entry.linkId,
+                  to_node: entry.topology.targetNodeId,
+                  to_slot: entry.topology.targetSlot
+                }
+              ])
+            } else {
+              surfaceUnrepresentable(
+                'subgraph-interior disconnect',
+                String(entry.linkId)
+              )
+            }
           }
         }
         severancesByNode.clear()
@@ -149,16 +180,21 @@ export function attachLinkMintPort(deps: LinkMintPortDeps): LinkMintPort {
   }
 
   function capture(nodeId: string | number, entry: SeveranceEntry): void {
-    const key = String(nodeId)
+    const key = graphEntityKey(entry.owningGraphId, nodeId)
     const bucket = severancesByNode.get(key)
     if (bucket) bucket.push(entry)
     else severancesByNode.set(key, [entry])
   }
 
   function onDeleted(scope: LinkScopeView, topology: LinkTopologyView): void {
+    const mintable = gateOpen() && !deps.isIntentionalClear()
+    const rootScoped = isRootScope(scope)
     const entry: SeveranceEntry = {
       linkId: topology.id,
-      mintable: gateOpen() && isRootScope(scope)
+      topology,
+      owningGraphId: scope.owningGraphId,
+      mintable,
+      rootScoped
     }
     capture(topology.originNodeId, entry)
     capture(topology.targetNodeId, entry)
@@ -170,10 +206,12 @@ export function attachLinkMintPort(deps: LinkMintPortDeps): LinkMintPort {
 
   return {
     severances: {
-      take(nodeId: string): WireNodeId[] {
+      take(owningGraphId: string, nodeId: string): WireNodeId[] {
         const taken: WireNodeId[] = []
-        for (const entry of severancesByNode.get(nodeId) ?? []) {
-          const key = String(entry.linkId)
+        const nodeKey = graphEntityKey(owningGraphId, nodeId)
+        for (const entry of severancesByNode.get(nodeKey) ?? []) {
+          if (!entry.rootScoped) continue
+          const key = linkKey(entry)
           if (consumedLinkIds.has(key)) continue
           consumedLinkIds.add(key)
           taken.push(entry.linkId)
@@ -182,6 +220,9 @@ export function attachLinkMintPort(deps: LinkMintPortDeps): LinkMintPort {
       }
     },
     detach() {
+      detached = true
+      severancesByNode.clear()
+      consumedLinkIds.clear()
       detachPlaced()
       detachDeleted()
     }
