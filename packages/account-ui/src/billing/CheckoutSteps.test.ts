@@ -88,6 +88,26 @@ describe('CheckoutSteps', () => {
     expect(emitted('retry')).toBeUndefined()
   })
 
+  it('names the region after the heading on screen, including one the host renders', () => {
+    render(CheckoutSteps, {
+      props: { projection: projection({ step: 'canceled' }) },
+      slots: {
+        header: (scope: { headerId: string }) =>
+          h('h2', { id: scope.headerId }, 'Checkout cancelled by you')
+      }
+    })
+
+    expect(
+      screen.getByRole('region', { name: 'Checkout cancelled by you' })
+    ).toBeTruthy()
+    expect(
+      screen.queryByRole('region', {
+        name: DEFAULT_PAYMENT_COPY['billing.step.canceled.header']
+      }),
+      'the region must not be named after copy that is no longer on screen'
+    ).toBeNull()
+  })
+
   it('gives the actions slot the projection and the callbacks so a host lays out its own controls', async () => {
     const { emitted } = render(CheckoutSteps, {
       props: { projection: projection({ step: 'verifying' }) },

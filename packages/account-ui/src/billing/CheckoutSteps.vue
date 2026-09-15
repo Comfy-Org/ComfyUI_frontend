@@ -2,15 +2,16 @@
   <section
     :class="rootClass"
     :data-billing-step="projection.step"
-    :aria-label="text[keys.header]"
+    :aria-labelledby="headerId"
   >
     <slot
       name="header"
       :projection
       :copy-key="keys.header"
       :text="text[keys.header]"
+      :header-id="headerId"
     >
-      <h2 :class="headerClass" :data-copy-key="keys.header">
+      <h2 :id="headerId" :class="headerClass" :data-copy-key="keys.header">
         {{ text[keys.header] }}
       </h2>
     </slot>
@@ -81,7 +82,7 @@ const ACTION_COPY_KEY: Readonly<Record<PaymentAction, PaymentCopyKey>> = {
  * reach the screen. The look comes through the class props, the layout
  * through the slots, and every click stays with the host via the emits.
  */
-import { computed } from 'vue'
+import { computed, useId } from 'vue'
 
 import type { PaymentProjection } from '@comfyorg/account/billing'
 import { createPaymentCopy, paymentCopyKeys } from '@comfyorg/account/billing'
@@ -117,6 +118,7 @@ const emit = defineEmits<{
   'continue-verification': []
 }>()
 
+const headerId = useId()
 const text = computed(() => createPaymentCopy(copy))
 const keys = computed(() => paymentCopyKeys(projection))
 const actions = computed(() => ACTIONS[projection.step] ?? [])
