@@ -185,6 +185,34 @@ describe('fallow findings renderer', () => {
     ).not.toThrow()
   })
 
+  it('survives null and wrong-shaped members inside a section', () => {
+    // A container that is an array but whose members are not objects. The
+    // renderer must not throw on the first field read.
+    const md = renderReport({
+      verdict: 'fail',
+      duplication: { clone_groups: [null, 'x'] as never },
+      complexity: { findings: [null, 3] as never },
+      dead_code: {
+        unused_files: [null] as never,
+        unused_exports: [null] as never
+      }
+    })
+    expect(md).not.toContain('No new findings')
+  })
+
+  it('reads a real fallow error envelope through readReport', () => {
+    const f = join(tmpdir(), `fallow-env-${process.pid}.json`)
+    writeFileSync(
+      f,
+      JSON.stringify({ error: true, message: 'boom', exit_code: 2 })
+    )
+    try {
+      expect(renderReport(readReport(f))).toContain('never actually audited')
+    } finally {
+      rmSync(f, { force: true })
+    }
+  })
+
   it('tolerates a report with no sections at all', () => {
     expect(renderCloneGroups({})).toEqual([])
     expect(renderComplexity({})).toEqual([])

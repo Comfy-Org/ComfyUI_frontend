@@ -66,7 +66,13 @@ function cell(value: string | number): string {
  * failure the error-envelope handling above exists to prevent.
  */
 function asArray<T>(value: T[] | undefined): T[] {
-  return Array.isArray(value) ? value : []
+  if (!Array.isArray(value)) return []
+  // Members are filtered too, not just the container: a `null` entry would
+  // throw on the first field read, and with `set -euo pipefail` the render
+  // step then fails the whole job — strictly worse than an empty table.
+  return value.filter(
+    (entry): entry is T => typeof entry === 'object' && entry !== null
+  )
 }
 
 export function renderCloneGroups(report: FallowReport): string[] {
