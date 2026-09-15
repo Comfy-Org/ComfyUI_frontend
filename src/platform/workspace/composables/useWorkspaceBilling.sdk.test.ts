@@ -2,24 +2,26 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { effectScope } from 'vue'
 
 import type { BillingStatusResponse } from '@/platform/workspace/api/workspaceApi'
-import {
-  WorkspaceApiError,
-  workspaceApi
-} from '@/platform/workspace/api/workspaceApi'
-import {
-  fakeBillingSdk,
-  settledTopup
-} from '@/platform/workspace/billing/sdk/billingSdkTestUtils'
+import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
+import { fakeBillingSdk } from '@/platform/workspace/billing/sdk/billingSdkTestUtils'
 import type { BillingSdk } from '@/platform/workspace/billing/sdk/createBillingSdk'
 import { useWorkspaceBilling } from '@/platform/workspace/composables/useWorkspaceBilling'
 import { useBillingOperationStore } from '@/platform/workspace/stores/billingOperationStore'
 
-const flagState = vi.hoisted(() => ({ billingSdkTopupEnabled: false }))
+const flagState = vi.hoisted(() => ({
+  billingSdkTopupEnabled: false,
+  unifiedCloudAuthEnabled: true
+}))
 vi.mock<unknown>(import('@/composables/useFeatureFlags'), () => ({
   useFeatureFlags: () => ({
     flags: {
       get billingSdkTopupEnabled() {
         return flagState.billingSdkTopupEnabled
+      },
+      get billingSdkTopupRailEnabled() {
+        return (
+          flagState.billingSdkTopupEnabled && flagState.unifiedCloudAuthEnabled
+        )
       },
       embeddedCheckoutEnabled: false
     }
@@ -81,6 +83,7 @@ function setupBilling() {
 beforeEach(() => {
   harness = fakeBillingSdk()
   mockCreateBillingSdk.mockReturnValue(harness.sdk)
+  flagState.unifiedCloudAuthEnabled = true
   vi.spyOn(workspaceApi, 'getBillingStatus').mockResolvedValue(STATUS)
   vi.spyOn(workspaceApi, 'getBillingBalance').mockResolvedValue({
     amount_micros: 0,
@@ -93,46 +96,6 @@ beforeEach(() => {
 })
 
 describe('useWorkspaceBilling top-up with the billing SDK flag', () => {
-  it('routes the purchase through the SDK and leaves the issuing client untouched', async () => {
-    flagState.billingSdkTopupEnabled = true
-    vi.mocked(harness.sdk.topup.createTopupCheckout).mockResolvedValue({
-      status: 'ok',
-      operation: settledTopup('succeeded'),
-      creditsReconciled: true
-    })
-    const billing = setupBilling()
-
-    const purchase = billing.topup(1000)
-    expect(billing.isLoading.value).toBe(false)
-
-    await expect(purchase).resolves.toEqual({
-      billing_op_id: 'op-1',
-      topup_id: '',
-      status: 'completed',
-      amount_cents: 1000
-    })
-    expect(harness.sdk.topup.createTopupCheckout).toHaveBeenCalledWith({
-      amountCents: 1000
-    })
-    expect(workspaceApi.createTopup).not.toHaveBeenCalled()
-  })
-
-  it('records an SDK refusal as the billing error', async () => {
-    flagState.billingSdkTopupEnabled = true
-    vi.mocked(harness.sdk.topup.createTopupCheckout).mockResolvedValue({
-      status: 'error',
-      code: 'REQUEST_FAILED',
-      httpStatus: 503
-    })
-    const billing = setupBilling()
-
-    const refusal = await billing.topup(1000).catch((error: unknown) => error)
-
-    expect(refusal).toBeInstanceOf(WorkspaceApiError)
-    expect(refusal).toMatchObject({ status: 503, code: 'REQUEST_FAILED' })
-    expect(billing.error.value).toBe('An unknown error occurred')
-  })
-
   it('issues through the workspace client while the flag is off', async () => {
     flagState.billingSdkTopupEnabled = false
     const response = {
@@ -160,6 +123,21 @@ describe('useWorkspaceBilling top-up with the billing SDK flag', () => {
 
     expect(harness.sdk.lifecycle.recover).toHaveBeenCalledOnce()
     expect(useBillingOperationStore().startOperation).not.toHaveBeenCalled()
+  })
+
+  it('keeps a pending top-up on the poller while unified auth is off, whatever the SDK flag says', async () => {
+    flagState.billingSdkTopupEnabled = true
+    flagState.unifiedCloudAuthEnabled = false
+    vi.mocked(workspaceApi.getBillingStatus).mockResolvedValue({
+      ...STATUS,
+      pending_billing_op_id: 'op-1',
+      pending_billing_op_type: 'topup'
+    })
+
+    await setupBilling().fetchStatus()
+
+    expect(useBillingOperationStore().startOperation).toHaveBeenCalledOnce()
+    expect(mockCreateBillingSdk).not.toHaveBeenCalled()
   })
 
   it('still hands a pending subscription to the poller', async () => {

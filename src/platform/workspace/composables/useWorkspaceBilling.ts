@@ -248,7 +248,7 @@ export function useWorkspaceBilling(): BillingState & BillingActions {
       return
     }
     if (
-      flags.billingSdkTopupEnabled &&
+      flags.billingSdkTopupRailEnabled &&
       status.pending_billing_op_type === 'topup'
     ) {
       useBillingSdkStore().recover()
@@ -559,25 +559,9 @@ export function useWorkspaceBilling(): BillingState & BillingActions {
     }
   }
 
-  // The SDK path resolves once the operation settles, so it must not hold
-  // `isLoading` the way the issuing call does; the dialog locks itself.
-  async function topupThroughSdk(
-    amountCents: number
-  ): Promise<CreateTopupResponse | undefined> {
-    error.value = null
-    try {
-      return await useBillingSdkStore().createTopup(amountCents)
-    } catch (err) {
-      error.value =
-        err instanceof Error ? err.message : 'Failed to top up credits'
-      throw err
-    }
-  }
-
   async function topup(
     amountCents: number
   ): Promise<CreateTopupResponse | undefined> {
-    if (flags.billingSdkTopupEnabled) return topupThroughSdk(amountCents)
     isLoading.value = true
     error.value = null
     try {

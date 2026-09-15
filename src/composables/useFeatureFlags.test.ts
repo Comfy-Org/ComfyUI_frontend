@@ -237,6 +237,32 @@ describe('useFeatureFlags', () => {
     })
   })
 
+  describe('billingSdkTopupRailEnabled', () => {
+    afterEach(() => {
+      vi.mocked(distributionTypes).isCloud = false
+    })
+
+    it.for([
+      { auth: 'off', unifiedCloudAuth: false, expected: false },
+      { auth: 'on', unifiedCloudAuth: true, expected: true }
+    ])(
+      'follows the SDK flag only while unified auth is $auth',
+      ({ unifiedCloudAuth, expected }) => {
+        vi.mocked(distributionTypes).isCloud = true
+        vi.mocked(api.getServerFeature).mockImplementation((path) => {
+          if (path === ServerFeatureFlag.BILLING_SDK_TOPUP_ENABLED) return true
+          if (path === ServerFeatureFlag.UNIFIED_CLOUD_AUTH)
+            return unifiedCloudAuth
+          return false
+        })
+
+        expect(useFeatureFlags().flags.billingSdkTopupRailEnabled).toBe(
+          expected
+        )
+      }
+    )
+  })
+
   describe('linearToggleEnabled', () => {
     afterEach(() => {
       vi.mocked(distributionTypes).isNightly = false
