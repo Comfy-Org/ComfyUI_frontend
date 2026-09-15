@@ -35,7 +35,7 @@ const observers = vi.hoisted(() => {
       }
     }
   }
-  globalThis.ResizeObserver = TestResizeObserver
+  vi.stubGlobal('ResizeObserver', TestResizeObserver)
   return observers
 })
 
@@ -99,12 +99,10 @@ describe('WidgetGrid', () => {
       const nodeId = toNodeId(1)
       useCanvasStore().canvas = fromPartial({
         canvas: document.createElement('canvas'),
+        graph: fromPartial({ rootGraph: { id: graphId } }),
         setDirty: vi.fn()
       })
-      Object.assign(useCanvasStore(), {
-        rootGraphId: graphId,
-        linearMode: false
-      })
+      useCanvasStore().linearMode = false
       layoutStore.resetForTests()
       const { container, rerender, unmount } = render(WidgetGrid, {
         props: {

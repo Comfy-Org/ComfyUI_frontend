@@ -254,9 +254,8 @@ const resizeObserver = new ResizeObserver((entries) => {
 /**
  * Tracks DOM element size/position changes for a Vue component and syncs to layout store
  *
- * Sets up automatic ResizeObserver tracking when the component mounts and cleans up
- * when unmounted. The tracked element is identified by a data attribute set on the
- * component's root DOM element.
+ * Sets up ResizeObserver tracking on the root and, when configured, its direct
+ * children. Reconciles observed elements after updates and cleans up on unmount.
  *
  * @param appIdentifier - Application-level identifier for this tracked element (not a DOM ID)
  *                       Example: node ID like 'node-123', widget ID like 'widget-456'
