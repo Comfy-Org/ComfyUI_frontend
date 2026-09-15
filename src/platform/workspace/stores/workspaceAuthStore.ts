@@ -17,6 +17,7 @@ import {
 } from '@comfyorg/account/session'
 
 import { t } from '@/i18n'
+import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import { useTelemetry } from '@/platform/telemetry'
 import type { UnifiedAuthRefreshOutcome } from '@/platform/telemetry/types'
 import { parseErrorResponse } from '@/platform/remote/comfyui/errors'
@@ -105,9 +106,14 @@ function isSessionErrorCode(
   return code !== undefined && code in SESSION_ERROR_CODES
 }
 
-// The one code-to-copy mapping; exhaustive so a new code is a compile
-// error here instead of a silently wrong fallback toast.
-function sessionErrorMessageKey(code: SessionErrorCode): string {
+// Exhaustive switch and locale-shaped return: an unmapped code and a renamed
+// key are both compile errors here.
+type WorkspaceAuthErrorMessageKey =
+  `workspaceAuth.errors.${keyof (typeof enMessages)['workspaceAuth']['errors']}`
+
+function sessionErrorMessageKey(
+  code: SessionErrorCode
+): WorkspaceAuthErrorMessageKey {
   switch (code) {
     case 'ACCESS_DENIED':
       return 'workspaceAuth.errors.accessDenied'
