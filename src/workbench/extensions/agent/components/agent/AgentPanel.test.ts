@@ -1,5 +1,7 @@
 import { useAgentComposerStore } from '../../stores/agent/agentComposerStore'
 import { getActivePinia } from 'pinia'
+// eslint-disable-next-line primevue-removal/no-imports
+import ToastService from 'primevue/toastservice'
 import { render, screen, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { defineComponent, nextTick, ref } from 'vue'
@@ -330,7 +332,7 @@ describe('AgentPanel', () => {
           historyGroups: createHistoryGroups()
         },
         global: {
-          plugins: [pinia, i18n],
+          plugins: [pinia, i18n, ToastService],
           directives: { tooltip: {} },
           stubs: { WorkflowSelectorChip: true }
         }
