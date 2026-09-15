@@ -1,5 +1,4 @@
 @import '@comfyorg/design-system/css/style.css';
-@import '../../workbench/extensions/agent/agentTheme.css';
 
 @theme {
   --comfy-canvas-gutter: calc(var(--spacing) * 2);

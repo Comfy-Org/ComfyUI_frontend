@@ -27,7 +27,7 @@ const meta: Meta<typeof AgentPanel> = {
   decorators: [
     () => ({
       template:
-        '<div class="agent-scope bg-agent-surface-raised h-screen w-100"><story /></div>'
+        '<div class="agent-scope bg-secondary-background h-screen w-100"><story /></div>'
     })
   ]
 }
@@ -37,4 +37,18 @@ type Story = StoryObj<typeof meta>
 
 export const PanelSpacing: Story = {
   name: 'T-26 / PM-670 / FE-1324 Panel spacing'
+}
+
+export const WithHistory: Story = {
+  args: {
+    sessionId: 'portrait',
+    historyGroups: {
+      current: [{ id: 'portrait', title: 'Portrait lighting', updatedAt: 0 }],
+      today: [
+        { id: 'upscale', title: 'Upscale a product photo', updatedAt: 0 }
+      ],
+      yesterday: [],
+      earlier: []
+    }
+  }
 }

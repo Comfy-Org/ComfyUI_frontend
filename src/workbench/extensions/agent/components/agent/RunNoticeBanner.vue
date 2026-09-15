@@ -13,12 +13,12 @@ const dismissed = useStorage('Comfy.AgentPanel.runNoticeDismissed', false)
   <div
     v-if="!dismissed"
     role="note"
-    class="bg-agent-surface before:bg-agent-accent relative flex items-start gap-2 overflow-hidden rounded-lg p-4 shadow-[0_0_1px_var(--color-smoke-200)] before:absolute before:inset-y-0 before:left-0 before:w-1"
+    class="relative flex items-start gap-2 overflow-hidden rounded-lg bg-base-background p-4 ring-1 ring-border-subtle before:absolute before:inset-y-0 before:left-0 before:w-1 before:bg-primary-background"
   >
     <span
-      class="text-agent-accent icon-[heroicons--information-circle-20-solid] size-5 shrink-0"
+      class="icon-[heroicons--information-circle-20-solid] size-5 shrink-0 text-primary-background"
     />
-    <p class="text-agent-fg my-0 min-w-0 flex-1 text-sm font-medium">
+    <p class="my-0 min-w-0 flex-1 text-sm font-medium text-base-foreground">
       <i18n-t v-if="workflowName" keypath="agent.workflowEditNotice" tag="span">
         <template #workflow>
           <span class="underline decoration-solid">{{ workflowName }}</span>
@@ -31,7 +31,7 @@ const dismissed = useStorage('Comfy.AgentPanel.runNoticeDismissed', false)
     <button
       type="button"
       :aria-label="$t('agent.dismiss')"
-      class="text-agent-fg-muted hover:text-agent-fg flex size-5 shrink-0 cursor-pointer items-center justify-center p-0"
+      class="flex size-5 shrink-0 cursor-pointer items-center justify-center p-0 text-muted-foreground hover:text-base-foreground"
       @click="dismissed = true"
     >
       <span class="icon-[lucide--x] size-5" />
