@@ -1,10 +1,13 @@
 import { render, screen } from '@testing-library/vue'
 import { describe, expect, it } from 'vitest'
+import type { ComponentProps } from 'vue-component-type-helpers'
 
 import { t } from '../../i18n/translations'
 import WorkshopHero from './WorkshopHero.vue'
 
-function renderHero(props: Record<string, unknown> = {}) {
+type WorkshopHeroProps = ComponentProps<typeof WorkshopHero>
+
+function renderHero(props: Partial<WorkshopHeroProps> = {}) {
   return render(WorkshopHero, {
     props,
     slots: { aside: '<button data-testid="aside">Browse all</button>' }
