@@ -213,8 +213,8 @@ export function useRemoteWidget<
     const entry = dataCache.get(cacheKey)
     const isFresh =
       isInitialized(entry) && (isPermanent || !isStale(entry, refresh))
-    if (isFresh && isLoaded) return 'ready'
-    if (isFresh || isFetching(entry)) return 'loading'
+    if (isFresh) return isLoaded ? 'ready' : 'loading'
+    if (isFetching(entry)) return 'loading'
     if (isFailed(entry) || entry?.error) return 'error'
     return 'loading'
   }
