@@ -47,6 +47,7 @@ it.for([
       props: { slug },
       slots: { fallback: '<h1>Public Models</h1>' }
     })
+    await nextTick()
     expect(screen.getByRole('heading', { name: 'Public Models' })).toBeTruthy()
 
     enabled.value = true
