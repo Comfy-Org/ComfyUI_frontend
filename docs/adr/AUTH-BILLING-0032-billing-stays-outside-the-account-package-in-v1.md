@@ -21,15 +21,17 @@ reaches billing and workspaces through one axios client,
 lives in `src/platform/auth/unified/remintRetry.ts`.
 
 `createSessionBillingTransport` in
-`packages/account/src/core/billing/transport.ts` is not a third
-production path as of this ADR's date: outside its own definition and
-re-export, its only callers are tests. Read that as dated rather than
-standing — #17665 is the adoption target that makes it false, routing
-the cloud app's top-up through the transport behind a flag, and it may
-land before this ADR is next read. That matters for how the cost below
-is counted — the shared transport is a designed replacement awaiting
-its first production caller, not a hardened path the site declined to
-use.
+`packages/account/src/core/billing/transport.ts` became a second
+production path hours before this ADR was written. #17665 landed on
+2026-09-15 and routes the cloud app's top-up through it behind
+`billing_sdk_topup_enabled`, reached from `useTopupOperation.ts` and
+`useWorkspaceBilling.ts` by way of
+`src/platform/workspace/billing/sdk/createBillingSdk.ts`. Until then
+its only callers outside its own definition and re-export were tests.
+That matters for how the cost below is counted — the shared transport
+is no longer a designed replacement awaiting its first production
+caller, so the site is now the surface declining a path the cloud app
+already exercises.
 
 This split was not an oversight, but until now it was recorded only in
 two source-file header comments
@@ -116,24 +118,27 @@ top-up endpoint called directly from the site.
    check objecting. Until the entries exist the rule is convention,
    and the consequence below is what would turn it into a gate.
 
-5. **The boundary retires when FE-2214 lands.** Once the shared
-   top-up command (#17657) is on `main`, `buy-credits.ts` moves onto
-   it and stops being a separate implementation. That convergence is
-   the condition for closing this ADR, not a follow-up to schedule
-   later.
+5. **The boundary retires on convergence.** The shared top-up command
+   (#17657) landed on 2026-09-15, so what remains is `buy-credits.ts`
+   moving onto it and ceasing to be a separate implementation. That
+   convergence is the condition for closing this ADR, not a follow-up
+   to schedule later, and as of this date it is the only part of the
+   closing condition still outstanding.
 
 ### Revisit trigger
 
-Rule 5 closes this ADR on another PR landing, and like rule 4 it has
-no owner: if #17657 slips, nothing re-decides the boundary, it simply
-persists. **If #17657 has not landed by 2026-10-15, this ADR is
+Rule 5 closes this ADR on convergence, and like rule 4 that has no
+owner. #17657 landed on 2026-09-15, so the event rule 5 waits on is no
+longer the one at risk; what is outstanding is the convergence work
+itself, and nothing schedules it. **If `buy-credits.ts` has not
+converged onto the shared top-up command by 2026-10-15, this ADR is
 re-decided rather than extended** — either the boundary is re-affirmed
-with a new date and a named owner, or `buy-credits.ts` converges onto
-whatever the package offers by then.
+with a new date and a named owner, or convergence is scheduled as
+committed work.
 
-The date is a backstop, not an estimate of #17657. It is worth having
-because the site's exposure moves independently of this document: as
-of this date `topup_checkout_enabled` is at 100% within an
+The date is a backstop, not an estimate of that work. It is worth
+having because the site's exposure moves independently of this
+document: as of this date `topup_checkout_enabled` is at 100% within an
 `email ends_with @comfy.org` filter, so the unhandled 401 under the
 residual-401 consequence reaches employees only — but that filter was
 removed and restored within ten minutes on 15 Sep 2026. Widening it to
