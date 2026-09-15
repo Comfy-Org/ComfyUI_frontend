@@ -17,7 +17,7 @@ vi.mock<unknown>(
 )
 
 vi.mock(import('@/base/common/downloadUtil'), () => ({
-  downloadFile: vi.fn()
+  downloadFileAsync: vi.fn().mockResolvedValue(undefined)
 }))
 
 const i18n = createI18n({
@@ -59,21 +59,24 @@ describe('AudioPreviewPlayer', () => {
       ).not.toBeInTheDocument()
     })
 
-    it('calls downloadFile when download button is clicked', async () => {
-      const { downloadFile } = await import('@/base/common/downloadUtil')
+    it('calls downloadFileAsync when download button is clicked', async () => {
+      const { downloadFileAsync } = await import('@/base/common/downloadUtil')
       const user = userEvent.setup()
 
       renderPlayer('http://example.com/audio.mp3')
       await user.click(screen.getByRole('button', { name: 'g.downloadAudio' }))
 
-      expect(downloadFile).toHaveBeenCalledWith('http://example.com/audio.mp3')
+      expect(downloadFileAsync).toHaveBeenCalledWith(
+        'http://example.com/audio.mp3',
+        undefined
+      )
     })
 
     it('shows toast on download failure', async () => {
-      const { downloadFile } = await import('@/base/common/downloadUtil')
-      vi.mocked(downloadFile).mockImplementation(() => {
-        throw new Error('download failed')
-      })
+      const { downloadFileAsync } = await import('@/base/common/downloadUtil')
+      vi.mocked(downloadFileAsync).mockRejectedValueOnce(
+        new Error('download failed')
+      )
       const user = userEvent.setup()
 
       renderPlayer('http://example.com/audio.mp3')
@@ -84,8 +87,6 @@ describe('AudioPreviewPlayer', () => {
           severity: 'error'
         })
       )
-
-      vi.mocked(downloadFile).mockReset()
     })
   })
 })
