@@ -8,6 +8,8 @@ let resolveNodeDefText: typeof I18nModule.resolveNodeDefText
 let resolveNodeDefSlotText: typeof I18nModule.resolveNodeDefSlotText
 let setBackendNodeText: typeof I18nModule.setBackendNodeText
 let mergeCustomNodesI18n: typeof I18nModule.mergeCustomNodesI18n
+let registerSecureLocalizationCatalog: typeof I18nModule.registerSecureLocalizationCatalog
+let translateSecurePhrase: typeof I18nModule.translateSecurePhrase
 let resolveSupportedLocale: typeof I18nModule.resolveSupportedLocale
 let setActiveLocale: typeof I18nModule.setActiveLocale
 let te: typeof I18nModule.te
@@ -20,9 +22,16 @@ async function importI18nModule() {
   resolveNodeDefSlotText = i18nModule.resolveNodeDefSlotText
   setBackendNodeText = i18nModule.setBackendNodeText
   mergeCustomNodesI18n = i18nModule.mergeCustomNodesI18n
+  registerSecureLocalizationCatalog =
+    i18nModule.registerSecureLocalizationCatalog
+  translateSecurePhrase = i18nModule.translateSecurePhrase
   resolveSupportedLocale = i18nModule.resolveSupportedLocale
   setActiveLocale = i18nModule.setActiveLocale
   te = i18nModule.te
+}
+
+function localeMessage(locale: string, key: string): unknown {
+  return Reflect.get(i18n.global.getLocaleMessage(locale) ?? {}, key)
 }
 
 // Mock the JSON imports before importing i18n module
@@ -232,6 +241,116 @@ describe('i18n', () => {
       expect(zhMessages.plugin2).toEqual({ name: '插件2' })
       // First call's data is overwritten
       expect(zhMessages.plugin1).toBeUndefined()
+    })
+  })
+
+  describe('secure localization catalogs', () => {
+    it('merges and reversibly removes one pack contribution', () => {
+      const remove = registerSecureLocalizationCatalog('secure-pack', 'en', {
+        messages: {
+          secureFeature: { title: 'Secure title' },
+          nodeDefs: {
+            KSampler: { display_name: 'Secure KSampler' }
+          }
+        },
+        phrases: { 'Host-owned label': 'Translated host label' }
+      })
+
+      const messages = i18n.global.getLocaleMessage('en') as Record<
+        string,
+        unknown
+      >
+      expect(messages.secureFeature).toEqual({ title: 'Secure title' })
+      expect(resolveNodeDefText('display_name', 'KSampler')).toBe(
+        'Secure KSampler'
+      )
+      expect(translateSecurePhrase('Host-owned label', 'en')).toBe(
+        'Translated host label'
+      )
+
+      remove()
+      remove()
+
+      const restored = i18n.global.getLocaleMessage('en') as Record<
+        string,
+        unknown
+      >
+      expect(restored.secureFeature).toBeUndefined()
+      expect(resolveNodeDefText('display_name', 'KSampler')).toBe(
+        'KSampler (bundled)'
+      )
+      expect(translateSecurePhrase('Host-owned label', 'en')).toBe(
+        'Host-owned label'
+      )
+    })
+
+    it('retains a contribution until its locale is lazily loaded', async () => {
+      const remove = registerSecureLocalizationCatalog('secure-pack', 'zh', {
+        messages: {
+          secureFeature: { title: '安全标题' }
+        },
+        phrases: { 'Host-owned label': '主机标签' }
+      })
+
+      expect(localeMessage('zh', 'secureFeature')).toBeUndefined()
+
+      await setActiveLocale('zh')
+
+      expect(localeMessage('zh', 'secureFeature')).toEqual({
+        title: '安全标题'
+      })
+      expect(translateSecurePhrase('Host-owned label')).toBe('主机标签')
+
+      remove()
+      expect(localeMessage('zh', 'secureFeature')).toBeUndefined()
+    })
+
+    it('keeps pack contributions isolated while owners overlap', () => {
+      const removeFirst = registerSecureLocalizationCatalog('first', 'en', {
+        messages: { secureFeature: { title: 'First' } },
+        phrases: { Shared: 'First phrase' }
+      })
+      const removeSecond = registerSecureLocalizationCatalog('second', 'en', {
+        messages: { secureFeature: { title: 'Second' } },
+        phrases: { Shared: 'Second phrase' }
+      })
+
+      expect(localeMessage('en', 'secureFeature')).toEqual({ title: 'Second' })
+      expect(translateSecurePhrase('Shared', 'en')).toBe('Second phrase')
+
+      removeSecond()
+      expect(localeMessage('en', 'secureFeature')).toEqual({ title: 'First' })
+      expect(translateSecurePhrase('Shared', 'en')).toBe('First phrase')
+      removeFirst()
+    })
+
+    it('rejects unsupported, duplicate, cyclic, and prototype-key catalogs', () => {
+      expect(() =>
+        registerSecureLocalizationCatalog('pack', 'not-shipped', {
+          messages: {}
+        })
+      ).toThrow(/unsupported localization locale/)
+
+      const remove = registerSecureLocalizationCatalog('pack', 'en', {
+        messages: {}
+      })
+      expect(() =>
+        registerSecureLocalizationCatalog('pack', 'en', { messages: {} })
+      ).toThrow(/duplicate localization catalog/)
+      remove()
+
+      const cyclic: Record<string, unknown> = {}
+      cyclic.self = cyclic
+      expect(() =>
+        registerSecureLocalizationCatalog('cyclic', 'en', {
+          messages: cyclic
+        })
+      ).toThrow(/cyclic/)
+
+      const unsafe = JSON.parse('{"messages":{"__proto__":{"title":"unsafe"}}}')
+      expect(() =>
+        registerSecureLocalizationCatalog('unsafe', 'en', unsafe)
+      ).toThrow(/forbidden key/)
     })
   })
 
