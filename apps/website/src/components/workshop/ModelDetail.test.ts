@@ -1617,6 +1617,28 @@ describe('ModelDetail', () => {
     )
   })
 
+  it('asks for a form edit left behind in the other editor', async () => {
+    const jsonModel: WorkshopModelDetail = {
+      ...uncuratedRunnable,
+      fields: [prompt],
+      examples: [{ ...model.examples[0], fields: undefined }]
+    }
+    auth.session.value = credential
+    mountDetail({ model: jsonModel })
+    await nextTick()
+
+    const prompt_ = screen.getByTestId('field-prompt')
+    await user().clear(prompt_)
+    await user().type(prompt_, 'my own words')
+    await user().click(screen.getByRole('button', { name: 'Native JSON' }))
+
+    await user().click(
+      screen.getByRole('button', { name: /Open in Playground$/ })
+    )
+
+    expect(screen.getByTestId('example-replace-dialog')).toBeTruthy()
+  })
+
   it('asks before an example overwrites a native JSON request too', async () => {
     const jsonModel: WorkshopModelDetail = {
       ...uncuratedRunnable,
