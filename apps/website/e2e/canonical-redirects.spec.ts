@@ -56,4 +56,33 @@ test.describe('canonical redirects', () => {
       )
     }
   })
+
+  test('navigates English-only and legacy localized routes to canonical destinations', async ({
+    page
+  }) => {
+    const redirects = [
+      {
+        source: '/zh-CN/p/supported-models',
+        destination: /\/p\/supported-models\/$/
+      },
+      {
+        source: '/zh-CN/p/supported-models/grok-imagine',
+        destination: /\/p\/supported-models\/grok-imagine\/$/
+      },
+      {
+        source: '/zh-CN/platform/serverless-animation',
+        destination: /\/platform\/serverless-animation\/$/
+      },
+      {
+        source: '/zh-CN/pixal3d-trellis2',
+        destination: /\/pixal3d-trellis2\/$/
+      },
+      { source: '/zh-CN/ja', destination: /\/zh-CN\/$/ }
+    ]
+
+    for (const { source, destination } of redirects) {
+      await page.goto(source)
+      await expect(page).toHaveURL(destination)
+    }
+  })
 })

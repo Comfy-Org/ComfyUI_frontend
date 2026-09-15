@@ -186,6 +186,56 @@
       "source": "/zh-CN/platform/models/",
       "destination": "/zh-CN/platform/router",
       "permanent": true
+    },
+    {
+      "source": "/zh-CN/p/supported-models",
+      "destination": "/p/supported-models/",
+      "permanent": true
+    },
+    {
+      "source": "/zh-CN/p/supported-models/",
+      "destination": "/p/supported-models/",
+      "permanent": true
+    },
+    {
+      "source": "/zh-CN/p/supported-models/grok-imagine",
+      "destination": "/p/supported-models/grok-imagine/",
+      "permanent": true
+    },
+    {
+      "source": "/zh-CN/p/supported-models/grok-imagine/",
+      "destination": "/p/supported-models/grok-imagine/",
+      "permanent": true
+    },
+    {
+      "source": "/zh-CN/platform/serverless-animation",
+      "destination": "/platform/serverless-animation/",
+      "permanent": true
+    },
+    {
+      "source": "/zh-CN/platform/serverless-animation/",
+      "destination": "/platform/serverless-animation/",
+      "permanent": true
+    },
+    {
+      "source": "/zh-CN/pixal3d-trellis2",
+      "destination": "/pixal3d-trellis2/",
+      "permanent": true
+    },
+    {
+      "source": "/zh-CN/pixal3d-trellis2/",
+      "destination": "/pixal3d-trellis2/",
+      "permanent": true
+    },
+    {
+      "source": "/zh-CN/ja",
+      "destination": "/zh-CN/",
+      "permanent": true
+    },
+    {
+      "source": "/zh-CN/ja/",
+      "destination": "/zh-CN/",
+      "permanent": true
     }
   ]
 }
