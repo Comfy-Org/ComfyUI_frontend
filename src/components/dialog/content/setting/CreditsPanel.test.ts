@@ -5,7 +5,7 @@ import { computed, defineComponent, h, nextTick, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import type { BalanceInfo } from '@/composables/billing/types'
-import { useBillingContext } from '@/composables/billing/useBillingContext'
+import { mockBillingContext } from '@/utils/__tests__/mockBillingContext'
 
 import CreditsPanel from './CreditsPanel.vue'
 
@@ -75,8 +75,7 @@ describe('CreditsPanel', () => {
   }
 
   it('opens the billing portal for the active billing rail', async () => {
-    const billing = useBillingContext()
-    vi.mocked(useBillingContext).mockReturnValue(billing)
+    const billing = mockBillingContext()
     const user = userEvent.setup()
     renderComponent()
 
@@ -86,8 +85,7 @@ describe('CreditsPanel', () => {
   })
 
   it('refreshes activity on a balance change but not on first hydration', async () => {
-    const billing = useBillingContext()
-    vi.mocked(useBillingContext).mockReturnValue(billing)
+    const billing = mockBillingContext()
     const balance = ref<BalanceInfo | null>(null)
     billing.balance = computed(() => balance.value)
     renderComponent()

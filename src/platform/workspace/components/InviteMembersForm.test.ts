@@ -6,6 +6,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
 import { useTelemetry } from '@/platform/telemetry'
+import { mockBillingContext } from '@/utils/__tests__/mockBillingContext'
 
 import InviteMembersForm from './InviteMembersForm.vue'
 
@@ -46,8 +47,7 @@ function pendingInviteFor(email: string): WorkspacePendingInvite {
 }
 
 function renderForm(props: Record<string, unknown> = {}) {
-  const billing = useBillingContext()
-  vi.mocked(useBillingContext).mockReturnValue(billing)
+  mockBillingContext()
   const user = userEvent.setup()
   const result = render(InviteMembersForm, {
     props: {

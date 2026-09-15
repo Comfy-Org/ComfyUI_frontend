@@ -4,7 +4,6 @@ import {
   setPersistence
 } from 'firebase/auth'
 
-import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useBillingOperationStore } from '@/platform/workspace/stores/billingOperationStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import {
@@ -28,6 +27,7 @@ import { WorkspaceApiError } from '@/platform/workspace/api/workspaceApi'
 import type { CreateTopupResponse } from '@/platform/workspace/api/workspaceApi'
 import { billingOperation } from '@/platform/workspace/composables/billingOperationTestUtils'
 import type { BillingOperation } from '@/platform/workspace/composables/billingOperationTestUtils'
+import { mockBillingContext } from '@/utils/__tests__/mockBillingContext'
 
 import TopUpCreditsDialogContentWorkspace from './TopUpCreditsDialogContentWorkspace.vue'
 
@@ -126,12 +126,6 @@ function topupResponse(
     status,
     amount_cents: 5000
   }
-}
-
-function mockBillingContext() {
-  const billing = useBillingContext()
-  vi.mocked(useBillingContext).mockReturnValue(billing)
-  return billing
 }
 
 function renderDialog() {

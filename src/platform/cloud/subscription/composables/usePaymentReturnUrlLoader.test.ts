@@ -1,7 +1,7 @@
-import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { stripPaymentReturnParams } from '@/platform/cloud/subscription/utils/paymentReturnUrl'
+import { mockBillingContext } from '@/utils/__tests__/mockBillingContext'
 
 import { usePaymentReturnUrlLoader } from './usePaymentReturnUrlLoader'
 
@@ -28,8 +28,7 @@ describe('usePaymentReturnUrlLoader', () => {
   })
 
   it('refreshes billing after bootstrap strips Stripe return params', async () => {
-    const billing = useBillingContext()
-    vi.mocked(useBillingContext).mockReturnValue(billing)
+    const billing = mockBillingContext()
     window.history.replaceState(
       {},
       '',
@@ -45,8 +44,7 @@ describe('usePaymentReturnUrlLoader', () => {
   })
 
   it('does nothing on an ordinary page load', async () => {
-    const billing = useBillingContext()
-    vi.mocked(useBillingContext).mockReturnValue(billing)
+    const billing = mockBillingContext()
     window.history.replaceState({}, '', '/?workspace=ws-1')
 
     const { loadPaymentReturnFromUrl } = usePaymentReturnUrlLoader()
@@ -56,8 +54,7 @@ describe('usePaymentReturnUrlLoader', () => {
   })
 
   it('does not start embedded recovery while the flag is off', async () => {
-    const billing = useBillingContext()
-    vi.mocked(useBillingContext).mockReturnValue(billing)
+    const billing = mockBillingContext()
     mocks.embeddedCheckoutEnabled = false
     window.history.replaceState(
       {},

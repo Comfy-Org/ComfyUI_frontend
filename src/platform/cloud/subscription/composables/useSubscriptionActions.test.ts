@@ -1,10 +1,10 @@
-import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useCommandStore } from '@/stores/commandStore'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useAuthActions } from '@/composables/auth/useAuthActions'
 import { useSubscriptionActions } from '@/platform/cloud/subscription/composables/useSubscriptionActions'
+import { mockBillingContext } from '@/utils/__tests__/mockBillingContext'
 
 const mockShowTopUpCreditsDialog = vi.fn()
 const mockExecute = vi.fn<ReturnType<typeof useCommandStore>['execute']>(
@@ -161,8 +161,7 @@ describe('useSubscriptionActions', () => {
 
   describe('handleRefresh', () => {
     it('should refresh balance and status through the billing facade', async () => {
-      const billing = useBillingContext()
-      vi.mocked(useBillingContext).mockReturnValue(billing)
+      const billing = mockBillingContext()
       const { handleRefresh } = useSubscriptionActions()
       await handleRefresh()
 
@@ -172,8 +171,7 @@ describe('useSubscriptionActions', () => {
     })
 
     it('swallows refresh failures without surfacing a toast', async () => {
-      const billing = useBillingContext()
-      vi.mocked(useBillingContext).mockReturnValue(billing)
+      const billing = mockBillingContext()
       vi.mocked(billing.fetchBalance).mockRejectedValueOnce(
         new Error('Fetch failed')
       )
