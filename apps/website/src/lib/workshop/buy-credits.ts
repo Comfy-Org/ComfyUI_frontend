@@ -122,7 +122,7 @@ export async function createTopUpCheckout(
     if (
       ownReturnUrl !== WORKSHOP_CREDITS_URL &&
       error instanceof TopUpCheckoutError &&
-      (error.status === 400 || error.status === 404)
+      error.status === 404
     ) {
       return requestTopUpCheckout(options, WORKSHOP_CREDITS_URL, signal)
     }
