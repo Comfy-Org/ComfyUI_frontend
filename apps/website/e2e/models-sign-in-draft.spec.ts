@@ -167,6 +167,65 @@ test('unavailable draft storage does not trap sign-in and reports missing files 
   ).toHaveCount(0)
 })
 
+test('the workspace list opens beside the account menu, not over it', async ({
+  page,
+  modelsAccount
+}) => {
+  await page.route('**/api/workspaces', (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        workspaces: [
+          {
+            id: 'ws-personal',
+            name: 'Personal Workspace',
+            role: 'owner',
+            type: 'personal',
+            created_at: '2026-01-01T00:00:00Z',
+            joined_at: '2026-01-01T00:00:00Z'
+          },
+          {
+            id: 'ws-team',
+            name: 'Design Team',
+            role: 'member',
+            type: 'team',
+            subscription_tier: 'PRO',
+            created_at: '2026-02-01T00:00:00Z',
+            joined_at: '2026-02-01T00:00:00Z'
+          }
+        ]
+      })
+    })
+  )
+  await page.goto('/login/')
+  await page.getByRole('button', { name: 'Use email instead' }).click()
+  await page.getByLabel('Email').fill(modelsAccount.email)
+  await page
+    .getByLabel('Password', { exact: true })
+    .fill(modelsAccount.password)
+  await page.getByRole('button', { name: 'Sign in', exact: true }).click()
+  await expect(page).toHaveURL('/')
+
+  await page.locator('[data-testid="header-account"]:visible').click()
+  const menu = page.getByTestId('header-account-menu')
+  await expect(menu).toBeVisible()
+  await page.getByTestId('account-workspace').click()
+  const workspaces = page.getByTestId('account-workspaces')
+  await expect(workspaces).toBeVisible()
+
+  await expect
+    .poll(async () => {
+      const [menuBox, listBox] = await Promise.all([
+        menu.boundingBox(),
+        workspaces.boundingBox()
+      ])
+      if (!menuBox || !listBox) return false
+      return listBox.x + listBox.width <= menuBox.x
+    })
+    .toBe(true)
+})
+
 test.describe('Narrow account menu', () => {
   test.use({ viewport: { width: 320, height: 720 } })
 
