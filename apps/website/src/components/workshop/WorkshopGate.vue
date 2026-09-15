@@ -12,7 +12,8 @@ const enabled = useWorkshopEnabled()
 const settled = useWorkshopEnabledSettled()
 const mounted = useMounted()
 
-const view = computed(() =>
+type GateView = 'loading' | 'granted' | 'denied'
+const view = computed<GateView>(() =>
   !mounted.value || !settled.value
     ? 'loading'
     : enabled.value

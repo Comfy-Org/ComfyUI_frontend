@@ -42,6 +42,9 @@ test('static HTML paints the loading frame, marketing stays inert', async ({
       .replace(/<noscript>[\s\S]*?<\/noscript>/g, '')
     expect(liveDom).toContain('data-testid="workshop-loading"')
     expect(liveDom).not.toMatch(MARKETING_LINK)
+    expect(liveDom).not.toContain('data-testid="model-detail"')
+    expect(liveDom).not.toContain('data-testid="model-hero"')
+    expect(liveDom).not.toContain('data-testid="workshop-search"')
   }
 })
 
