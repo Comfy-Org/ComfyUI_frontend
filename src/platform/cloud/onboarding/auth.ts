@@ -120,6 +120,17 @@ export async function getSurveyCompletedStatus(): Promise<boolean> {
   }
 }
 
+/**
+ * Re-opens the onboarding survey gate for the signed-in user.
+ *
+ * `/api/settings` is a merge update with no delete, so the key cannot be
+ * removed once written. {@link getSurveyCompletedStatus} reads an empty stored
+ * value as "not completed", so storing `{}` is what re-opens the gate.
+ */
+export async function resetSurvey(): Promise<void> {
+  await submitSurvey({})
+}
+
 export async function submitSurvey(
   survey: Record<string, unknown>
 ): Promise<void> {
