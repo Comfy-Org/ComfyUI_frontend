@@ -9642,6 +9642,27 @@ Enterprise`
     en: 'Finish your purchase here. The page you came from is still open, and your credits will appear there.',
     'zh-CN': '请在此完成购买。你来时的页面仍然打开，积分会显示在那里。'
   },
+  'workshop.credits.returnLabel': {
+    en: 'Checkout return',
+    'zh-CN': '结账返回'
+  },
+  'workshop.credits.returnMetaTitle': {
+    en: 'Returning to your model - Comfy',
+    'zh-CN': '正在返回模型页面 - Comfy'
+  },
+  'workshop.credits.returnMetaDescription': {
+    en: 'Returning you to the page where checkout started.',
+    'zh-CN': '正在返回发起结账的页面。'
+  },
+  'workshop.credits.returnTitle': {
+    en: 'Returning to your model',
+    'zh-CN': '正在返回模型页面'
+  },
+  'workshop.credits.returnBody': {
+    en: 'You can close this tab and continue on the page you came from. Your credit balance will update there if the payment completed.',
+    'zh-CN':
+      '你可以关闭此标签页，并在来时的页面继续。如果付款已完成，积分余额会在那里更新。'
+  },
   'workshop.credits.checkoutOpenedTitle': {
     en: 'Continue to checkout',
     'zh-CN': '继续结账'

@@ -45,7 +45,7 @@ describe('createTopUpCheckout', () => {
     expect(JSON.parse(String(init.body))).toEqual({
       amount_cents: 5_000,
       return_url: new URL(
-        '/payment/success?workshopTopUpReturn=attempt-1',
+        '/checkout-return?workshopTopUpReturn=attempt-1',
         window.location.origin
       ).toString(),
       idempotency_key: 'attempt-1'
@@ -92,7 +92,7 @@ describe('createTopUpCheckout', () => {
     })
   })
 
-  it('returns a Chinese checkout through the localized payment page', async () => {
+  it('returns a Chinese checkout through the localized return page', async () => {
     const fetchCheckout = vi.fn().mockResolvedValue(
       new Response(
         JSON.stringify({
@@ -108,7 +108,7 @@ describe('createTopUpCheckout', () => {
     const [, init] = fetchCheckout.mock.calls[0] as [URL, RequestInit]
     expect(JSON.parse(String(init.body))).toMatchObject({
       return_url: new URL(
-        '/zh-CN/payment/success?workshopTopUpReturn=attempt-1',
+        '/zh-CN/checkout-return?workshopTopUpReturn=attempt-1',
         window.location.origin
       ).toString()
     })
@@ -161,7 +161,7 @@ describe('createTopUpCheckout', () => {
       {
         amount_cents: 5_000,
         return_url: new URL(
-          '/payment/success?workshopTopUpReturn=attempt-1',
+          '/checkout-return?workshopTopUpReturn=attempt-1',
           window.location.origin
         ).toString(),
         idempotency_key: 'attempt-1'

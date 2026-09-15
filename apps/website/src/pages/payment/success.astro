@@ -10,13 +10,3 @@ import PaymentStatusSection from '../../components/payment/PaymentStatusSection.
 >
   <PaymentStatusSection status="success" />
 </BaseLayout>
-
-<script>
-  import { announceTopUpReturnFromLocation } from '../../lib/workshop/topup-return'
-
-  announceTopUpReturnFromLocation()
-  if (window.opener) {
-    window.opener.focus()
-    window.close()
-  }
-</script>

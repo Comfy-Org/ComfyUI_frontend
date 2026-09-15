@@ -7,17 +7,17 @@ import {
 } from './topup-return'
 
 describe('topUpReturnUrl', () => {
-  it('adds an attempt marker to the payment result page', () => {
+  it('adds an attempt marker to the checkout return page', () => {
     expect(
-      topUpReturnUrl('https://comfy.org/payment/success', 'attempt_1')
-    ).toBe('https://comfy.org/payment/success?workshopTopUpReturn=attempt_1')
+      topUpReturnUrl('https://comfy.org/checkout-return', 'attempt_1')
+    ).toBe('https://comfy.org/checkout-return?workshopTopUpReturn=attempt_1')
   })
 
   it.for(['', '../escape', 'contains space', 'a'.repeat(65)])(
     'rejects an invalid attempt marker: %s',
     (attemptId) => {
       expect(() =>
-        topUpReturnUrl('https://comfy.org/payment/success', attemptId)
+        topUpReturnUrl('https://comfy.org/checkout-return', attemptId)
       ).toThrow('Invalid checkout attempt')
     }
   )
@@ -110,13 +110,13 @@ describe('announceTopUpReturnFromLocation', () => {
     window.history.replaceState(
       {},
       '',
-      '/payment/success?workshopTopUpReturn=attempt-1'
+      '/checkout-return?workshopTopUpReturn=attempt-1'
     )
 
     announceTopUpReturnFromLocation()
 
     expect(window.location.href).toBe(
-      `${window.location.origin}/payment/success`
+      `${window.location.origin}/checkout-return`
     )
     expect(postMessage).toHaveBeenCalledWith({
       type: 'workshop-topup-return',
@@ -139,7 +139,7 @@ describe('announceTopUpReturnFromLocation', () => {
     window.history.replaceState(
       {},
       '',
-      '/payment/success?workshopTopUpReturn=attempt-2'
+      '/checkout-return?workshopTopUpReturn=attempt-2'
     )
 
     announceTopUpReturnFromLocation()

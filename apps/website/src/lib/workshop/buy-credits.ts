@@ -60,10 +60,10 @@ export interface CreateTopUpCheckoutOptions {
 
 function returnUrlFor(options: CreateTopUpCheckoutOptions): string {
   if (typeof window === 'undefined') return WORKSHOP_CREDITS_URL
-  const paymentPath =
-    options.locale === 'zh-CN' ? '/zh-CN/payment/success' : '/payment/success'
+  const returnPath =
+    options.locale === 'zh-CN' ? '/zh-CN/checkout-return' : '/checkout-return'
   return topUpReturnUrl(
-    new URL(paymentPath, window.location.origin).toString(),
+    new URL(returnPath, window.location.origin).toString(),
     options.idempotencyKey
   )
 }

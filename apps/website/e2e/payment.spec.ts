@@ -18,12 +18,7 @@ async function expectNoIndex(page: Page) {
 }
 
 test.describe('Payment checkout returns @smoke', () => {
-  for (const returnPath of [
-    '/payment/success',
-    '/payment/failed',
-    '/zh-CN/payment/success',
-    '/zh-CN/payment/failed'
-  ]) {
+  for (const returnPath of ['/checkout-return', '/zh-CN/checkout-return']) {
     test(`${returnPath} closes when checkout opened it`, async ({ page }) => {
       await page.goto('/')
       const popupPromise = page.waitForEvent('popup')
@@ -36,6 +31,40 @@ test.describe('Payment checkout returns @smoke', () => {
       await expect
         .poll(() => page.evaluate(() => document.hasFocus()))
         .toBe(true)
+    })
+  }
+})
+
+test.describe('Checkout return page @smoke', () => {
+  for (const checkoutReturn of [
+    {
+      path: '/checkout-return',
+      title: 'Returning to your model - Comfy',
+      heading: 'Returning to your model',
+      context: 'if the payment completed'
+    },
+    {
+      path: '/zh-CN/checkout-return',
+      title: '正在返回模型页面 - Comfy',
+      heading: '正在返回模型页面',
+      context: '如果付款已完成'
+    }
+  ]) {
+    test(`${checkoutReturn.path} stays neutral without an opener`, async ({
+      page
+    }) => {
+      await page.goto(checkoutReturn.path)
+
+      await expect(page).toHaveTitle(checkoutReturn.title)
+      await expectNoIndex(page)
+      await expect(
+        page.getByRole('heading', {
+          name: checkoutReturn.heading,
+          level: 1
+        })
+      ).toBeVisible()
+      await expect(page.getByText(checkoutReturn.context)).toBeVisible()
+      await expect(page.getByText(/Payment Successful/i)).toHaveCount(0)
     })
   }
 })

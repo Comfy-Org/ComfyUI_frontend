@@ -454,7 +454,7 @@ describe('BuyCreditsDialog', () => {
     })
     expect(returnUrl.toString()).toBe(
       new URL(
-        `/payment/success?workshopTopUpReturn=${attemptId}`,
+        `/checkout-return?workshopTopUpReturn=${attemptId}`,
         window.location.origin
       ).toString()
     )
@@ -478,6 +478,28 @@ describe('BuyCreditsDialog', () => {
     await vi.advanceTimersByTimeAsync(120_000)
     returnFromCheckout('another-attempt')
     expect(credits.watchForTopUp).not.toHaveBeenCalled()
+
+    returnFromCheckout()
+    expect(credits.watchForTopUp).toHaveBeenCalledWith(topUpScope)
+  })
+
+  it('restores an outstanding checkout when the dialog reopens', async () => {
+    const user = userEvent.setup()
+    const tab = claimTab()
+    const fetchCheckout = stubCheckout()
+    const { isOpen } = renderControlledDialog()
+
+    await user.click(await screen.findByTestId('buy-credits-continue'))
+    await vi.waitFor(() => expect(tab.location.assign).toHaveBeenCalledOnce())
+    await user.click(screen.getByTestId('buy-credits-checkout-close'))
+    await vi.waitFor(() => expect(isOpen.value).toBe(false))
+
+    isOpen.value = true
+    await nextTick()
+
+    expect(await screen.findByTestId('buy-credits-open-checkout')).toBeTruthy()
+    expect(screen.queryByTestId('buy-credits-packs')).toBeNull()
+    expect(fetchCheckout).toHaveBeenCalledOnce()
 
     returnFromCheckout()
     expect(credits.watchForTopUp).toHaveBeenCalledWith(topUpScope)

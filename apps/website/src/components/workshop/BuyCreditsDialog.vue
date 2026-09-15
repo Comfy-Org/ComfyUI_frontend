@@ -86,8 +86,7 @@ watch(
       return
     }
     if (latchedReturn.value !== undefined) {
-      latchedReturn.value = undefined
-      lastCheckout.value = undefined
+      clearReturnReceipt()
       open.value = false
     }
   },
@@ -134,6 +133,7 @@ watch(open, (value) => {
     latchedReturn.value = undefined
   } else if (topUp.value.status === 'idle') {
     latchedReturn.value = undefined
+    if (checkoutAttempt && lastCheckout.value) state.value = 'checkout'
   }
   if (step.value === 'landed') scheduleAutoClose()
 })
@@ -356,11 +356,10 @@ function releaseCheckoutAttempt(
 }
 
 async function continueToCheckout() {
-  if (state.value === 'pending') return
+  if (state.value === 'pending' || checkoutAttempt) return
   const amountCents = clampTopUp(usd.value) * 100
   const scope = captureCheckoutScope()
   if (!scope) return
-  checkoutAttempt = undefined
   const controller = new AbortController()
   const tab = claimCheckoutTab()
   checkoutController = controller
