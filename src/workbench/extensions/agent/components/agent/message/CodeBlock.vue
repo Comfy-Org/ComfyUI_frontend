@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { useClipboard, watchDebounced } from '@vueuse/core'
+import { watchDebounced } from '@vueuse/core'
 import { default as DOMPurify } from 'dompurify'
 import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -8,6 +8,7 @@ import { cn } from '@comfyorg/tailwind-utils'
 
 import SanitizedHtml from '@/components/common/SanitizedHtml.vue'
 import Button from '@/components/ui/button/Button.vue'
+import { useCopyToClipboard } from '@/composables/useCopyToClipboard'
 
 const { code, lang = 'text' } = defineProps<{
   code: string
@@ -15,7 +16,10 @@ const { code, lang = 'text' } = defineProps<{
 }>()
 
 const { t } = useI18n()
-const { copy, copied } = useClipboard({ copiedDuring: 2000, legacy: true })
+const { copied, copyToClipboard } = useCopyToClipboard({
+  copiedDuring: 2000,
+  showSuccessToast: false
+})
 
 // shiki highlights asynchronously and its bundle is lazy-loaded, so the block first
 // renders as plain escaped code and swaps to the highlighted markup once shiki resolves.
@@ -68,7 +72,7 @@ watchDebounced(
         variant="outline"
         size="sm"
         class="gap-1 font-mono"
-        @click="copy(code)"
+        @click="copyToClipboard(code)"
       >
         <span
           :class="

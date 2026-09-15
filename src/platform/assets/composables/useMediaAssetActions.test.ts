@@ -65,6 +65,7 @@ const mockInputAssets = vi.hoisted(() => ({ items: [] as AssetItem[] }))
 
 vi.mock(import('@/composables/useCopyToClipboard'), () => ({
   useCopyToClipboard: () => ({
+    copied: ref(false),
     copyToClipboard: vi.fn()
   })
 }))

@@ -4,7 +4,7 @@ import type { ComputedRef } from 'vue'
 import type { ExecutionErrorDialogInput } from '@/services/dialogService'
 import type { TaskItemImpl } from '@/stores/queueStore'
 
-type CopyHandler = (value: string) => void | Promise<void>
+type CopyHandler = (value: string) => unknown
 
 export type JobErrorDialogService = {
   showExecutionErrorDialog: (executionError: ExecutionErrorDialogInput) => void
