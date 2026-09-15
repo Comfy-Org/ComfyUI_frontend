@@ -8,6 +8,8 @@ import { api } from '@/scripts/api'
 
 import { prepareTemplateInputs } from './templateInputService'
 
+const sourceRevision = '0123456789abcdef0123456789abcdef01234567'
+
 function videoNode(id = 35, file = 'kitten_cop.mp4'): ComfyNode {
   return {
     id,
@@ -28,7 +30,13 @@ function workflow(nodes = [videoNode()]): ComfyWorkflowJSON {
 }
 
 function input(file = 'kitten_cop.mp4') {
-  return { nodeId: 35, nodeType: 'LoadVideo', file, mediaType: 'video' }
+  return {
+    nodeId: 35,
+    nodeType: 'LoadVideo',
+    file,
+    mediaType: 'video',
+    sourceRevision
+  }
 }
 
 function prepare(
@@ -79,7 +87,7 @@ describe('template input preparation', () => {
         Response.json({ name: `saved-${file}` })
       )
       const result = await prepare(workflow([node]), [
-        { nodeId: 35, nodeType, file, mediaType }
+        { nodeId: 35, nodeType, file, mediaType, sourceRevision }
       ])
       if (!result.ok) throw result.error
       expect(result.workflow.nodes[0].widgets_values_named).toEqual({
@@ -123,6 +131,10 @@ describe('template input preparation', () => {
       'image'
     ])
     expect(fetch).toHaveBeenCalledTimes(1)
+    expect(fetch).toHaveBeenCalledWith(
+      `https://raw.githubusercontent.com/Comfy-Org/workflow_templates/${sourceRevision}/input/kitten_cop.mp4`,
+      expect.any(Object)
+    )
     expect(api.fetchApi).toHaveBeenCalledTimes(1)
   })
 
@@ -149,6 +161,50 @@ describe('template input preparation', () => {
     expect(result.workflow.nodes[1].widgets_values).toEqual({
       file: 'examples/saved.mp4'
     })
+  })
+
+  it.for([undefined, null, 'main', 'v1.0.0', '0123456', '../main', 42])(
+    'opens without downloading when the catalog has no immutable revision: %s',
+    async (revision) => {
+      const graph = workflow()
+      const result = await prepare(graph, [
+        { ...input(), sourceRevision: revision }
+      ])
+      expect(result).toEqual({ ok: true, workflow: graph })
+      if (!result.ok) throw result.error
+      expect(result.workflow).toBe(graph)
+      expect(fetch).not.toHaveBeenCalled()
+      expect(api.fetchApi).not.toHaveBeenCalled()
+    }
+  )
+
+  it('uses each catalog revision to download the corresponding sample bytes', async () => {
+    const nextRevision = 'abcdef0123456789abcdef0123456789abcdef01'
+    vi.mocked(fetch).mockImplementation(async (url) => {
+      const path = String(url)
+      if (path.includes(`/${sourceRevision}/`)) return new Response('old video')
+      if (path.includes(`/${nextRevision}/`)) return new Response('new video')
+      throw new Error(`Unexpected sample URL: ${path}`)
+    })
+    const uploadedBytes: string[] = []
+    vi.mocked(api.fetchApi).mockImplementation(async (_route, options) => {
+      const body = options?.body
+      if (!(body instanceof FormData))
+        throw new Error('Expected multipart upload')
+      const file = body.get('image')
+      if (!(file instanceof File)) throw new Error('Expected a sample file')
+      uploadedBytes.push(await file.text())
+      return Response.json({ name: 'kitten_cop.mp4' })
+    })
+    expect((await prepare()).ok).toBe(true)
+    expect(
+      (
+        await prepare(workflow(), [
+          { ...input(), sourceRevision: nextRevision }
+        ])
+      ).ok
+    ).toBe(true)
+    expect(uploadedBytes).toEqual(['old video', 'new video'])
   })
 
   it('only fetches declared files that are still used by supported input nodes', async () => {

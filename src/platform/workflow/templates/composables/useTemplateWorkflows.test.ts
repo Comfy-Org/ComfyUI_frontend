@@ -465,7 +465,9 @@ describe('useTemplateWorkflows', () => {
     consoleSpy.mockRestore()
   })
 
-  function addVideoTemplate() {
+  function addVideoTemplate(
+    sourceRevision: string | null = '0123456789abcdef0123456789abcdef01234567'
+  ) {
     mockWorkflowTemplatesStore.isLoaded = true
     mockWorkflowTemplatesStore.enhancedTemplates.push({
       name: 'video',
@@ -479,7 +481,8 @@ describe('useTemplateWorkflows', () => {
             nodeId: 35,
             nodeType: 'LoadVideo',
             file: 'kitten_cop.mp4',
-            mediaType: 'video'
+            mediaType: 'video',
+            sourceRevision: sourceRevision ?? undefined
           }
         ]
       }
@@ -547,6 +550,25 @@ describe('useTemplateWorkflows', () => {
       { openSource: 'template' }
     )
   })
+
+  it.for([null, 'main'])(
+    'opens a template without downloading unversioned samples (revision: %s)',
+    async (revision) => {
+      const graph = addVideoTemplate(revision)
+      const loader = useTemplateWorkflows()
+      expect(await loader.loadWorkflowTemplate('video', 'default')).toBe(true)
+      expect(api.fetchApi).not.toHaveBeenCalled()
+      expect(app.reloadNodeDefs).not.toHaveBeenCalled()
+      expect(app.loadGraphData).toHaveBeenCalledWith(
+        expect.objectContaining({ nodes: graph.nodes }),
+        true,
+        true,
+        expect.any(String),
+        { openSource: 'template' }
+      )
+      expect(fetch).toHaveBeenCalledTimes(1)
+    }
+  )
 
   it('leaves the dialog open on sample failure and allows another click to retry', async () => {
     const graph = addVideoTemplate()

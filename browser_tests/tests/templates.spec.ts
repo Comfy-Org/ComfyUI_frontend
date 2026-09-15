@@ -43,7 +43,7 @@ test.describe('Templates', { tag: ['@slow', '@workflow'] }, () => {
 
   test('Can load template workflows', async ({ comfyPage }) => {
     await comfyPage.page.route(
-      'https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/input/transparent_rgb_gaming_mouse.png',
+      /^https:\/\/raw\.githubusercontent\.com\/Comfy-Org\/workflow_templates\/[a-f0-9]{40}\/input\/transparent_rgb_gaming_mouse\.png$/,
       (route) =>
         route.fulfill({
           path: assetPath('test_upload_image.png'),

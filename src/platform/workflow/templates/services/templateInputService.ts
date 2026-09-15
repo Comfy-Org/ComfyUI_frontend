@@ -10,7 +10,7 @@ import { api } from '@/scripts/api'
 import { zTemplateInput } from '../schemas/templateSchema'
 
 const INPUT_BASE =
-  'https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/input/'
+  'https://raw.githubusercontent.com/Comfy-Org/workflow_templates/'
 const INPUT_WIDGETS: Readonly<Record<string, string>> = {
   LoadImage: 'image',
   LoadImageMask: 'image',
@@ -46,6 +46,7 @@ function isSampleFilename(file: string): boolean {
 
 async function uploadTemplateInput(
   file: string,
+  sourceRevision: string,
   signal: AbortSignal
 ): Promise<{ ok: true; path: string } | { ok: false; error: unknown }> {
   if (!isSampleFilename(file)) {
@@ -55,9 +56,10 @@ async function uploadTemplateInput(
     }
   }
   const requestSignal = AbortSignal.any([signal, AbortSignal.timeout(120_000)])
-  const response = await fetch(`${INPUT_BASE}${encodeURIComponent(file)}`, {
-    signal: requestSignal
-  })
+  const response = await fetch(
+    `${INPUT_BASE}${sourceRevision}/input/${encodeURIComponent(file)}`,
+    { signal: requestSignal }
+  )
   if (!response.ok)
     return {
       ok: false,
@@ -102,20 +104,24 @@ export async function prepareTemplateInputs(
       const binding = getInputBinding(node)
       return binding ? [binding] : []
     })
-    const files = new Set(
+    const files = new Map(
       declared
         .filter((input) =>
           workflow.nodes.some(
             (node) => node.id === input.nodeId && node.type === input.nodeType
           )
         )
-        .map((input) => input.file)
-        .filter((file) => bindings.some((binding) => binding.file === file))
+        .filter((input) =>
+          bindings.some((binding) => binding.file === input.file)
+        )
+        .flatMap(({ file, sourceRevision }) =>
+          sourceRevision ? [[file, sourceRevision] as const] : []
+        )
     )
     if (!files.size) return { ok: true, workflow }
-    for (const file of files) {
+    for (const [file, sourceRevision] of files) {
       signal.throwIfAborted()
-      const uploaded = await uploadTemplateInput(file, signal)
+      const uploaded = await uploadTemplateInput(file, sourceRevision, signal)
       if (!uploaded.ok) return uploaded
       const path = uploaded.path
       for (const { node, widget, values, named } of bindings.filter(
