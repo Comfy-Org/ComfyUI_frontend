@@ -1,7 +1,6 @@
 import { getActivePinia } from 'pinia'
 import userEvent from '@testing-library/user-event'
 import { render, screen, waitFor } from '@testing-library/vue'
-import PrimeVue from 'primevue/config'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
@@ -123,7 +122,7 @@ describe('ErrorNodeCard.vue', () => {
     const { container } = render(ErrorNodeCard, {
       props: { card, onCopyToClipboard, onLocateNode },
       global: {
-        plugins: [PrimeVue, i18n, getActivePinia()!],
+        plugins: [i18n, getActivePinia()!],
         stubs: {
           TransitionCollapse: { template: '<div><slot /></div>' },
           Button: {

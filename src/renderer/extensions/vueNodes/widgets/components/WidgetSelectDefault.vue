@@ -192,7 +192,7 @@ type SelectWidgetOptions = NonNullable<Props['widget']['options']> & {
 const { widget } = defineProps<Props>()
 
 // Reka reserves an empty string value for clearing the combobox. Encode values
-// internally so custom-node combo options can still use '' like PrimeVue/legacy.
+// internally so custom-node combo options can still use the legacy '' value.
 const COMBOBOX_VALUE_PREFIX = 'widget-select-value:'
 const MAX_VISIBLE_OPTIONS = 7
 

@@ -42,9 +42,7 @@ export function useOverlayChildStyle(): {
 } {
   const overlayScopeRef = ref<HTMLElement | null>(null)
   const contentStyle = computed<CSSProperties>(() => {
-    const overlay = overlayScopeRef.value?.closest(
-      '[data-reka-dialog-content], .p-overlay-mask'
-    )
+    const overlay = overlayScopeRef.value?.closest('[data-reka-dialog-content]')
     if (!overlay) return {}
 
     const zIndex = Number.parseInt(getComputedStyle(overlay).zIndex, 10)

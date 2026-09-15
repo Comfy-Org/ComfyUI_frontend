@@ -45,7 +45,7 @@ function togglePromotion() {
     >
       <i
         v-if="isPromoted"
-        class="bg-primary-foreground place-center icon-[lucide--check]"
+        class="place-center icon-[lucide--check] bg-base-background"
       />
     </div>
     <div
