@@ -146,3 +146,38 @@ export {
   createPaymentCopy,
   paymentCopyKeys
 } from './paymentCopy.js'
+export type {
+  CreateHostedTopupCheckoutInput,
+  CreateTopupCheckoutInput,
+  HostedTopupCheckout,
+  HostedTopupCheckoutFailure,
+  HostedTopupCheckoutResult,
+  TopupCommand,
+  TopupCommandOptions,
+  TopupDeclined,
+  TopupDenied,
+  TopupFailure,
+  TopupInvalidAmount,
+  TopupInvalidReturnUrl,
+  TopupNoPaymentMethod,
+  TopupNotAvailable,
+  TopupResult,
+  TopupSucceeded,
+  TopupUnsettled
+} from './topup.js'
+export {
+  TOPUP_CHECKOUT_ROUTE,
+  TOPUP_ROUTE,
+  createTopupCommand
+} from './topup.js'
+export type {
+  BalanceWatch,
+  BalanceWatchOptions,
+  BalanceWatchOutcome
+} from './balanceWatch.js'
+export {
+  BALANCE_WATCH_LIFETIME_MS,
+  BALANCE_WATCH_MAX_SCHEDULED_RUNS,
+  BALANCE_WATCH_RETRY_GAPS_MS,
+  createBalanceWatch
+} from './balanceWatch.js'
