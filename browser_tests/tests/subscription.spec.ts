@@ -9,24 +9,30 @@ import {
 } from '@e2e/fixtures/helpers/SubscriptionHelper'
 import type { SubscriptionHelper } from '@e2e/fixtures/helpers/SubscriptionHelper'
 
-// oxlint-disable-next-line comfy/no-comfy-page-setup-call -- pre-existing call, tracked by evfail-23; not fixed in this pass
-// Installs subscription mocks AFTER comfyPage.setup() and reloads the page
-// so `addInitScript` (which sets `window.__CONFIG__.subscription_required`)
-// applies before module-level reads in `ComfyRunButton/index.ts` evaluate.
 function createSubscriptionTest(
   ...defaultOps: Parameters<typeof createSubscriptionHelper>[1][]
 ) {
   return comfyPageFixture.extend<{
+    subscriptionMocks: SubscriptionHelper
     subscriptionHelper: SubscriptionHelper
   }>({
     initialSettings: {
       'Comfy.Extension.Disabled': ['Comfy.Cloud.Subscription']
     },
+    subscriptionMocks: [
+      async ({ page }, use) => {
+        const helper = createSubscriptionHelper(page, ...defaultOps)
+        try {
+          await helper.mock()
+          await use(helper)
+        } finally {
+          await helper.clearMocks()
+        }
+      },
+      { auto: true }
+    ],
     subscriptionHelper: [
-      async ({ comfyPage }, use) => {
-        const helper = createSubscriptionHelper(comfyPage.page, ...defaultOps)
-        await helper.mock()
-        await comfyPage.page.reload()
+      async ({ subscriptionMocks: helper, comfyPage }, use) => {
         // Firebase auth resolves asynchronously after app boot — wait for the
         // user button (v-if="isLoggedIn") before any test body interacts with it.
         await expect(
@@ -35,7 +41,6 @@ function createSubscriptionTest(
         // Defense-in-depth: dismiss the dialog if it surfaces via a different code path.
         await helper.dismissSubscriptionDialogIfOpen()
         await use(helper)
-        await helper.clearMocks()
       },
       { auto: true }
     ]
