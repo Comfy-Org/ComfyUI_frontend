@@ -20,7 +20,7 @@ import type { NodeExecutionOutput } from '@/schemas/apiSchema'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 import type { DOMWidget } from '@/scripts/domWidget'
 import { useAudioService } from '@/services/audioService'
-import { type NodeLocatorId } from '@/types'
+import type { NodeLocatorId } from '@/types'
 import { widgetId } from '@/types/widgetId'
 import { getNodeByLocatorId } from '@/utils/graphTraversalUtil'
 

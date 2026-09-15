@@ -1,4 +1,8 @@
+import { fromPartial } from '@total-typescript/shoehorn'
 import { describe, expect, it, vi } from 'vitest'
+
+import type { ComfyExtension } from '@/types/comfy'
+import type { useExtensionService } from '@/services/extensionService'
 
 const { state } = vi.hoisted(() => ({
   state: {
@@ -6,12 +10,13 @@ const { state } = vi.hoisted(() => ({
   }
 }))
 
-vi.mock('@/services/extensionService', () => ({
-  useExtensionService: () => ({
-    registerExtension: (ext: { nodeCreated: (node: unknown) => void }) => {
-      state.extension = ext
-    }
-  })
+vi.mock(import('@/services/extensionService'), () => ({
+  useExtensionService: () =>
+    fromPartial<ReturnType<typeof useExtensionService>>({
+      registerExtension: (ext: ComfyExtension) => {
+        state.extension = fromPartial({ nodeCreated: ext.nodeCreated })
+      }
+    })
 }))
 
 await import('./createBoundingBoxes')

@@ -208,6 +208,74 @@ describe('PlaygroundOutput', () => {
     ).toContain('latest')
   })
 
+  it('switches between the files of one run from the output header', async () => {
+    const user = userEvent.setup()
+    const response: RunOutput = {
+      kind: 'text',
+      url: 'https://example.com/response.json',
+      fileName: 'response.json'
+    }
+    render(PlaygroundOutput, {
+      props: {
+        modelName: 'Seedream 4.5',
+        state: succeeded(output('latest')),
+        attachments: [response],
+        now: 2_000
+      }
+    })
+
+    const header = within(screen.getByRole('group', { name: 'Output files' }))
+    expect(
+      header.getByRole('button', { name: 'Image', pressed: true })
+    ).toBeTruthy()
+
+    await user.click(header.getByRole('button', { name: 'Raw response' }))
+    expect(
+      screen.getByTestId('output-download').getAttribute('href')
+    ).toContain('response')
+    expect(
+      header.getByRole('button', { name: 'Raw response', pressed: true })
+    ).toBeTruthy()
+  })
+
+  it('gives every file of a wide run its own button', () => {
+    render(PlaygroundOutput, {
+      props: {
+        modelName: 'Seedream 4.5',
+        state: succeeded(output('latest')),
+        attachments: Array.from({ length: 10 }, (_, index) => ({
+          kind: 'image' as const,
+          url: `https://example.com/extra-${index}.webp`,
+          fileName: `extra-${index}.webp`
+        })),
+        now: 2_000
+      }
+    })
+    expect(
+      within(screen.getByRole('group', { name: 'Output files' })).getAllByRole(
+        'button'
+      )
+    ).toHaveLength(11)
+  })
+
+  it('withholds the file switch while the result is blurred', () => {
+    render(PlaygroundOutput, {
+      props: {
+        modelName: 'Seedream 4.5',
+        state: succeeded(output('latest'), true),
+        attachments: [
+          {
+            kind: 'text',
+            url: 'https://example.com/response.json',
+            fileName: 'response.json'
+          }
+        ],
+        now: 2_000
+      }
+    })
+    expect(screen.queryByRole('button', { name: 'Raw response' })).toBeNull()
+  })
+
   it('lines the session up in the order it was generated, newest last', async () => {
     const user = userEvent.setup()
     render(PlaygroundOutput, {

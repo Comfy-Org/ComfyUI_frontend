@@ -1,4 +1,20 @@
-@import 'tailwindcss';
-@import '@comfyorg/design-system/css/_palette.css';
+@import 'tailwindcss/preflight' layer(base);
+@import '@comfyorg/design-system/css/style.css';
 
 @source './**/*.{ts,vue}';
+
+@font-face {
+  font-family: 'Inter';
+  src: url('../../../public/fonts/inter-latin-normal.woff2') format('woff2');
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Inter';
+  src: url('../../../public/fonts/inter-latin-italic.woff2') format('woff2');
+  font-style: italic;
+  font-weight: 100 900;
+  font-display: swap;
+}
