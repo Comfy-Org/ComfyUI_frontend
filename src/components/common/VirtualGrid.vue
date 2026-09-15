@@ -1,5 +1,10 @@
 <template>
+  <slot
+    v-if="!pagedItems(items).length && slots.placeholder"
+    name="placeholder"
+  />
   <div
+    v-else
     ref="container"
     class="h-full scrollbar-thin scrollbar-thumb-(--dialog-surface) scrollbar-track-transparent scrollbar-gutter-stable overflow-y-auto [overflow-anchor:none]"
   >
@@ -7,7 +12,7 @@
     <div :style="mergedGridStyle">
       <div
         v-for="(item, i) in renderedItems"
-        :key="item.key"
+        :key="item.id"
         data-virtual-grid-item
       >
         <slot name="item" :item :index="state.start + i" />
@@ -15,9 +20,13 @@
     </div>
     <div :style="bottomSpacerStyle" />
   </div>
+  <slot
+    v-if="isPaged(items) && items.isLoading && slots.loading"
+    name="loading"
+  />
 </template>
 
-<script setup lang="ts" generic="T">
+<script setup lang="ts" generic="T extends { id: string }">
 import {
   useElementSize,
   useInfiniteScroll,
@@ -25,13 +34,22 @@ import {
   whenever
 } from '@vueuse/core'
 import { clamp, debounce } from 'es-toolkit/compat'
-import { computed, onBeforeUnmount, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, ref, toValue, watch } from 'vue'
 import type { CSSProperties } from 'vue'
+
+import { isPaged, pagedItems } from '@/utils/pagedList'
+import type { MaybePaged } from '@/utils/pagedList'
 
 type GridState = {
   start: number
   end: number
 }
+
+const slots = defineSlots<{
+  item(props: { item: T; index: number }): unknown
+  loading?(): unknown
+  placeholder?(): unknown
+}>()
 
 const {
   items,
@@ -40,19 +58,15 @@ const {
   resizeDebounce = 64,
   defaultItemHeight = 200,
   defaultItemWidth = 200,
-  maxColumns = Infinity,
-  onLoadMore,
-  canLoadMore = false
+  maxColumns = Infinity
 } = defineProps<{
-  items: (T & { key: string })[]
+  items: MaybePaged<T>
   gridStyle: CSSProperties
   bufferRows?: number
   resizeDebounce?: number
   defaultItemHeight?: number
   defaultItemWidth?: number
   maxColumns?: number
-  onLoadMore?: () => unknown
-  canLoadMore?: boolean
 }>()
 
 const itemHeight = ref(defaultItemHeight)
@@ -77,8 +91,15 @@ const mergedGridStyle = computed<CSSProperties>(() => {
 })
 
 const viewRows = computed(() => Math.ceil(height.value / itemHeight.value))
-const offsetRows = computed(() => Math.floor(scrollY.value / itemHeight.value))
-const isValidGrid = computed(() => height.value && width.value && items?.length)
+const maxOffsetRows = computed(() =>
+  Math.max(0, Math.ceil(pagedItems(items).length / cols.value) - viewRows.value)
+)
+const offsetRows = computed(() =>
+  clamp(Math.floor(scrollY.value / itemHeight.value), 0, maxOffsetRows.value)
+)
+const isValidGrid = computed(
+  () => height.value && width.value && pagedItems(items).length
+)
 
 const state = computed<GridState>(() => {
   const fromRow = offsetRows.value - bufferRows
@@ -88,12 +109,14 @@ const state = computed<GridState>(() => {
   const toCol = toRow * cols.value
 
   return {
-    start: clamp(fromCol, 0, items?.length),
-    end: clamp(toCol, fromCol, items?.length)
+    start: clamp(fromCol, 0, pagedItems(items).length),
+    end: clamp(toCol, fromCol, pagedItems(items).length)
   }
 })
 const renderedItems = computed(() =>
-  isValidGrid.value ? items.slice(state.value.start, state.value.end) : []
+  isValidGrid.value
+    ? pagedItems(items).slice(state.value.start, state.value.end)
+    : []
 )
 
 function rowsToHeight(itemsCount: number): string {
@@ -104,16 +127,22 @@ const topSpacerStyle = computed<CSSProperties>(() => ({
   height: rowsToHeight(state.value.start)
 }))
 const bottomSpacerStyle = computed<CSSProperties>(() => ({
-  height: rowsToHeight(items.length - state.value.end)
+  height: rowsToHeight(pagedItems(items).length - state.value.end)
 }))
 
 const distance = 2 * defaultItemHeight * (1 + bufferRows)
+const infiniteScrollElement = computed(() =>
+  isPaged(items) ? container.value : undefined
+)
 useInfiniteScroll(
-  container,
+  infiniteScrollElement,
   async () => {
-    await onLoadMore?.()
+    if (isPaged(items)) await items.loadMore()
   },
-  { canLoadMore: () => canLoadMore, distance }
+  {
+    canLoadMore: () => isPaged(items) && toValue(items.hasMore),
+    distance
+  }
 )
 
 function updateItemSize(): void {

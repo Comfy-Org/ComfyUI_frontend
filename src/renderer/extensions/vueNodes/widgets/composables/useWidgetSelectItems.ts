@@ -1,6 +1,6 @@
 import { capitalize } from 'es-toolkit'
-import { computed, ref, shallowRef, toValue, watch } from 'vue'
-import type { MaybeRefOrGetter, Ref } from 'vue'
+import { computed, toValue } from 'vue'
+import type { MaybeRefOrGetter } from 'vue'
 
 import { t } from '@/i18n'
 import { appendCloudResParam } from '@/platform/distribution/cloudPreviewUtil'
@@ -12,10 +12,8 @@ import {
 } from '@/platform/assets/utils/assetFilterUtils'
 import {
   getAssetBaseModels,
-  getAssetDisplayFilename,
   getAssetDisplayName,
-  getAssetFilename,
-  getAssetUrlFilename
+  getAssetFilename
 } from '@/platform/assets/utils/assetMetadataUtils'
 import type {
   FilterOption,
@@ -23,29 +21,21 @@ import type {
 } from '@/platform/assets/types/filterTypes'
 import type { FormDropdownItem } from '@/renderer/extensions/vueNodes/widgets/components/form/dropdown/types'
 import type { useAssetWidgetData } from '@/renderer/extensions/vueNodes/widgets/composables/useAssetWidgetData'
-import { getOutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
-import { resolveOutputAssetItems } from '@/platform/assets/utils/outputAssetUtil'
+import { useAssetsStore } from '@/stores/assetsStore'
 import type { AssetKind } from '@/types/widgetTypes'
+import { createAnnotatedPath } from '@/utils/createAnnotatedPath'
 import { getMediaTypeFromFilename } from '@/utils/formatUtil'
-import type { PagedList } from '@/utils/pagedList'
+import { isPaged, pagedItems, WrappedList } from '@/utils/pagedList'
+import type { MaybePaged } from '@/utils/pagedList'
 
-function getDisplayLabel(
-  value: string,
-  getOptionLabel?: ((value?: string | null) => string) | undefined
-): string {
-  if (!getOptionLabel) return value
-
+function getDisplayLabel(value: string, getLabel?: (v: string) => string) {
   try {
-    return getOptionLabel(value) || value
+    return getLabel?.(value) || value
   } catch (e) {
     console.warn('Failed to map value:', e)
     return value
   }
-}
-
-function assetKindToMediaType(kind: AssetKind): string {
-  return kind === 'mesh' ? '3D' : kind
 }
 
 function getMediaUrl(
@@ -58,21 +48,25 @@ function getMediaUrl(
   appendCloudResParam(params, filename)
   return `/api/view?${params}`
 }
+function assetRoot(asset: AssetItem): 'input' | 'output' | 'temp' | undefined {
+  for (const testTag of ['input', 'output', 'temp'] as const) {
+    if (asset.tags.includes(testTag)) return testTag
+  }
+}
 
 export interface UseWidgetSelectItemsOptions {
-  values: MaybeRefOrGetter<unknown[] | undefined>
-  getOptionLabel: MaybeRefOrGetter<
-    ((value?: string | null) => string) | undefined
-  >
-  modelValue: Ref<string | undefined>
+  getOptionLabel: MaybeRefOrGetter<((value: string) => string) | undefined>
+  modelValue: MaybeRefOrGetter<string | undefined>
   assetKind: MaybeRefOrGetter<AssetKind | undefined>
-  outputMediaAssets: MaybeRefOrGetter<PagedList<AssetItem>>
   assetData: ReturnType<typeof useAssetWidgetData> | null
-  isAssetMode: MaybeRefOrGetter<boolean | undefined>
+  isAssetMode: MaybeRefOrGetter<boolean>
+  filterSelected: MaybeRefOrGetter<string>
+  ownershipSelected: MaybeRefOrGetter<OwnershipOption>
+  baseModelSelected: MaybeRefOrGetter<Set<string>>
 }
 
 export function useWidgetSelectItems(options: UseWidgetSelectItemsOptions) {
-  const { modelValue, outputMediaAssets, assetData } = options
+  const { modelValue, assetData } = options
 
   const missingMediaStore = useMissingMediaStore()
   const missingMediaValues = computed<ReadonlySet<string>>(
@@ -82,10 +76,8 @@ export function useWidgetSelectItems(options: UseWidgetSelectItemsOptions) {
       )
   )
 
-  const filterSelected = ref('all')
   const filterOptions = computed<FilterOption[]>(() => {
-    const isAsset = toValue(options.isAssetMode)
-    if (isAsset) {
+    if (toValue(options.isAssetMode)) {
       const categoryName = assetData?.category.value ?? 'All'
       return [{ name: capitalize(categoryName), value: 'all' }]
     }
@@ -96,158 +88,29 @@ export function useWidgetSelectItems(options: UseWidgetSelectItemsOptions) {
     ]
   })
 
-  const ownershipSelected = ref<OwnershipOption>('all')
-  const showOwnershipFilter = computed(() => !!toValue(options.isAssetMode))
-
   const { ownershipOptions, availableBaseModels } = useAssetFilterOptions(
     () => assetData?.assets.value ?? []
   )
 
-  const baseModelSelected = ref<Set<string>>(new Set())
-  const showBaseModelFilter = computed(() => !!toValue(options.isAssetMode))
   const baseModelOptions = computed<FilterOption[]>(() => {
     if (!toValue(options.isAssetMode) || !assetData) return []
     return availableBaseModels.value
   })
 
-  const resolvedByJobId = shallowRef(new Map<string, AssetItem[]>())
-
-  watch(
-    () => toValue(toValue(outputMediaAssets).items),
-    (assets, _, onCleanup) => {
-      let cancelled = false
-      onCleanup(() => {
-        cancelled = true
-      })
-
-      const seenJobIds = new Set<string>()
-      const jobsToResolve: Array<{
-        jobId: string
-        meta: ReturnType<typeof getOutputAssetMetadata>
-        createdAt?: string
-      }> = []
-
-      for (const asset of assets) {
-        // Hash-keyed assets are leaf rows from the cloud `/assets` API and
-        // already carry their own URL-resolvable filename. Expanding them via
-        // resolveOutputAssetItems would synthesize sibling AssetItems without
-        // a hash and reintroduce the FE-227 hash→name fallback bug.
-        if (asset.hash) continue
-
-        const meta = getOutputAssetMetadata(asset.user_metadata)
-        if (!meta) continue
-
-        const outputCount = meta.outputCount ?? meta.allOutputs?.length ?? 0
-        if (
-          outputCount <= 1 ||
-          resolvedByJobId.value.has(meta.jobId) ||
-          seenJobIds.has(meta.jobId)
-        )
-          continue
-
-        seenJobIds.add(meta.jobId)
-        jobsToResolve.push({
-          jobId: meta.jobId,
-          meta,
-          createdAt: asset.created_at
-        })
-      }
-
-      if (jobsToResolve.length === 0) return
-
-      void Promise.all(
-        jobsToResolve.map(({ jobId, meta, createdAt }) =>
-          resolveOutputAssetItems(meta!, { createdAt })
-            .then((resolved) => ({ jobId, resolved }))
-            .catch((error) => {
-              console.warn('Failed to resolve multi-output job', jobId, error)
-              return { jobId, resolved: [] as AssetItem[] }
-            })
-        )
-      ).then((results) => {
-        if (cancelled) return
-
-        const next = new Map(resolvedByJobId.value)
-        let changed = false
-        for (const { jobId, resolved } of results) {
-          if (!resolved.length) continue
-          next.set(jobId, resolved)
-          changed = true
-        }
-        if (changed) resolvedByJobId.value = next
-      })
-    },
-    { immediate: true }
-  )
-
-  const inputItems = computed<FormDropdownItem[]>(() => {
-    const values = toValue(options.values) || []
-    if (!Array.isArray(values)) return []
-
-    const labelFn = toValue(options.getOptionLabel)
-    const kind = toValue(options.assetKind)
-    const missing = missingMediaValues.value
-    return values
-      .filter((value) => !missing.has(String(value)))
-      .map((value, index) => ({
-        id: `input-${index}`,
-        preview_url: getMediaUrl(String(value), 'input', kind),
-        name: String(value),
-        label: getDisplayLabel(String(value), labelFn)
-      }))
-  })
-
-  const outputItems = computed<FormDropdownItem[]>(() => {
-    const kind = toValue(options.assetKind)
-    if (!['image', 'video', 'audio', 'mesh'].includes(kind ?? '')) return []
-
-    const targetMediaType = assetKindToMediaType(kind!)
-    const seen = new Set<string>()
-    const items: FormDropdownItem[] = []
-    const labelFn = toValue(options.getOptionLabel)
-
-    const assets = toValue(toValue(outputMediaAssets).items).flatMap(
-      (asset) => {
-        const meta = getOutputAssetMetadata(asset.user_metadata)
-        const resolved = meta
-          ? resolvedByJobId.value.get(meta.jobId)
-          : undefined
-        return resolved ?? [asset]
-      }
-    )
-
-    const missing = missingMediaValues.value
-    for (const asset of assets) {
-      if (getMediaTypeFromFilename(asset.name) !== targetMediaType) continue
-      if (seen.has(asset.id)) continue
-      seen.add(asset.id)
-      const filenameForUrl = getAssetUrlFilename(asset)
-      const subfolder =
-        kind === 'mesh'
-          ? getOutputAssetMetadata(asset.user_metadata)?.subfolder
-          : undefined
-      const pathWithSubfolder = subfolder
-        ? `${subfolder}/${filenameForUrl}`
-        : filenameForUrl
-      const annotatedPath = `${pathWithSubfolder} [output]`
-      if (missing.has(annotatedPath)) continue
-      const displayLabel = `${getAssetDisplayFilename(asset)} [output]`
-      items.push({
-        id: `output-${asset.id}`,
-        preview_url:
-          kind === 'mesh'
-            ? ''
-            : asset.preview_url || getMediaUrl(filenameForUrl, 'output', kind),
-        name: annotatedPath,
-        label: getDisplayLabel(displayLabel, labelFn)
-      })
+  const baseAssets = computed<MaybePaged<AssetItem>>(() => {
+    const assetsStore = useAssetsStore()
+    switch (toValue(options.filterSelected)) {
+      case 'inputs':
+        return assetsStore.inputAssets
+      case 'outputs':
+        return assetsStore.flatOutputAssets
+      default:
+        return assetsStore.allAssets ?? assetsStore.inputAssets
     }
-
-    return items
   })
 
   const missingValueItem = computed<FormDropdownItem | undefined>(() => {
-    const currentValue = modelValue.value
+    const currentValue = toValue(modelValue)
     if (!currentValue) return undefined
     const labelFn = toValue(options.getOptionLabel)
     const kind = toValue(options.assetKind)
@@ -268,14 +131,10 @@ export function useWidgetSelectItems(options: UseWidgetSelectItemsOptions) {
       }
     }
 
-    const existsInInputs = inputItems.value.some(
-      (item) => item.name === currentValue
+    if (
+      pagedItems(baseAssets.value).some((asset) => asset.name === currentValue)
     )
-    const existsInOutputs = outputItems.value.some(
-      (item) => item.name === currentValue
-    )
-
-    if (existsInInputs || existsInOutputs) return undefined
+      return undefined
 
     const isOutput = currentValue.endsWith(' [output]')
     const strippedValue = isOutput
@@ -294,77 +153,69 @@ export function useWidgetSelectItems(options: UseWidgetSelectItemsOptions) {
     }
   })
 
-  const assetItems = computed<FormDropdownItem[]>(() => {
-    if (!toValue(options.isAssetMode) || !assetData) return []
-    return assetData.assets.value.map((asset) => ({
+  function assetToForm(asset: AssetItem): FormDropdownItem {
+    const type = assetRoot(asset)
+    const name = getAssetFilename(asset)
+    return {
       id: asset.id,
-      name: getAssetFilename(asset),
+      name: createAnnotatedPath(name, { rootFolder: type }),
       label: getAssetDisplayName(asset),
       preview_url: asset.preview_url,
       is_immutable: asset.is_immutable,
       base_models: getAssetBaseModels(asset)
-    }))
+    }
+  }
+  const assetItems = computed<FormDropdownItem[]>(() => {
+    if (!toValue(options.isAssetMode) || !assetData) return []
+    return assetData.assets.value.map(assetToForm)
   })
 
   const filteredAssetItems = computed<FormDropdownItem[]>(() =>
     filterItemByBaseModels(
-      filterItemByOwnership(assetItems.value, ownershipSelected.value),
-      baseModelSelected.value
+      filterItemByOwnership(
+        assetItems.value,
+        toValue(options.ownershipSelected)
+      ),
+      toValue(options.baseModelSelected)
     )
   )
 
-  const allItems = computed<FormDropdownItem[]>(() => {
+  const missingItems = computed<FormDropdownItem[]>(() =>
+    missingValueItem.value ? [missingValueItem.value] : []
+  )
+
+  const dropdownItems = computed<MaybePaged<FormDropdownItem>>(() => {
     if (toValue(options.isAssetMode) && assetData) {
-      return filteredAssetItems.value
+      return [...missingItems.value, ...filteredAssetItems.value]
     }
-    return [
-      ...(missingValueItem.value ? [missingValueItem.value] : []),
-      ...inputItems.value,
-      ...outputItems.value
-    ]
-  })
-
-  const dropdownItems = computed<FormDropdownItem[]>(() => {
-    if (toValue(options.isAssetMode)) {
-      return allItems.value
+    const targetKind = toValue(options.assetKind)
+    const targetMediaType = targetKind === 'mesh' ? '3D' : targetKind
+    const kindFilter = (asset: AssetItem) => {
+      const kind = asset.metadata?.kind
+      if (kind !== undefined) return kind === targetKind
+      return getMediaTypeFromFilename(asset.name) === targetMediaType
     }
 
-    switch (filterSelected.value) {
-      case 'inputs':
-        return inputItems.value
-      case 'outputs':
-        return outputItems.value
-      case 'all':
-      default:
-        return allItems.value
-    }
-  })
-
-  const displayItems = computed<FormDropdownItem[]>(() => {
-    if (toValue(options.isAssetMode) && assetData && missingValueItem.value) {
-      return [missingValueItem.value, ...filteredAssetItems.value]
-    }
-    return dropdownItems.value
+    const base = baseAssets.value
+    const baseItems = pagedItems(base).filter(kindFilter).map(assetToForm)
+    const mapped = [...missingItems.value, ...baseItems]
+    return isPaged(base) ? new WrappedList(base, () => mapped) : mapped
   })
 
   const selectedSet = computed<Set<string>>(() => {
-    const currentValue = modelValue.value
+    const currentValue = toValue(modelValue)
     if (currentValue === undefined) return new Set()
 
-    const item = displayItems.value.find((item) => item.name === currentValue)
+    const item = pagedItems(dropdownItems.value).find(
+      (item) => item.name === currentValue
+    )
     return item ? new Set([item.id]) : new Set()
   })
 
   return {
     dropdownItems,
-    displayItems,
-    filterSelected,
     filterOptions,
-    ownershipSelected,
-    showOwnershipFilter,
     ownershipOptions,
-    baseModelSelected,
-    showBaseModelFilter,
     baseModelOptions,
     selectedSet
   }

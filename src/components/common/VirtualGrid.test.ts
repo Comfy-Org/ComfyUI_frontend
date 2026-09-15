@@ -7,7 +7,7 @@ import { nextTick, ref, toValue, watchEffect } from 'vue'
 
 import VirtualGrid from './VirtualGrid.vue'
 
-type TestItem = { key: string; name: string }
+type TestItem = { id: string; name: string }
 
 let mockedWidth: Ref<number>
 let mockedHeight: Ref<number>
@@ -32,7 +32,7 @@ beforeEach(() => {
 
 function createItems(count: number): TestItem[] {
   return Array.from({ length: count }, (_, i) => ({
-    key: `item-${i}`,
+    id: `item-${i}`,
     name: `Item ${i}`
   }))
 }
