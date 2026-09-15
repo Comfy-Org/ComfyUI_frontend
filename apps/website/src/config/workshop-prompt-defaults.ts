@@ -27,8 +27,15 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return value !== null && typeof value === 'object' && !Array.isArray(value)
 }
 
+const INTERNAL_PLACEHOLDER =
+  /\b(?:billing|payment|api|integration|smoke)\s+(?:verification|validation)?\s*test\b|\btest\s+(?:prompt|string|placeholder|value|input)\b|\bverification\s+test\b|\bplaceholder\s+text\b|\blorem\s+ipsum\b/i
+
 function isPrompt(value: unknown): value is string {
   return typeof value === 'string' && value.trim().length > 0
+}
+
+function isUsablePrompt(value: unknown): value is string {
+  return isPrompt(value) && !INTERNAL_PLACEHOLDER.test(value)
 }
 
 function promptOnly(value: unknown, replacement?: string): unknown {
@@ -116,7 +123,7 @@ export function workshopPromptDefaults(
     }
     const chosen = candidates.find(
       (value): value is string =>
-        isPrompt(value) &&
+        isUsablePrompt(value) &&
         !Object.hasOwn(
           validateForm([field], { [field.name]: value }),
           field.name

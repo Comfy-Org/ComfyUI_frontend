@@ -75,6 +75,44 @@ describe('starter prompts', () => {
     })
   })
 
+  it('rejects an internal billing-test example and falls back to a real starter prompt', () => {
+    const ttsModel: WorkshopModelDetail = {
+      ...model,
+      modality: 'audio',
+      fields: [
+        {
+          kind: 'text',
+          name: 'text',
+          label: 'Prompt',
+          required: true,
+          multiline: true
+        }
+      ],
+      execution: {
+        id: 'heygen/starfish',
+        sourceCommit: 'a'.repeat(40),
+        inputSchema: {
+          type: 'object',
+          example: {
+            text: 'This is a billing verification test for HeyGen speech generation.'
+          }
+        },
+        media: [],
+        advancedFields: [],
+        output: {
+          format: 'binary',
+          kind: 'audio',
+          contentTypes: ['audio/mpeg']
+        }
+      }
+    }
+
+    const defaults = workshopPromptDefaults(ttsModel, [])
+    expect(defaults.text.trim()).not.toBe('')
+    expect(defaults.text).not.toContain('billing verification test')
+    expect(validateForm(schemaForModel(ttsModel), defaults)).toEqual({})
+  })
+
   it('uses a predefined prompt when an example is missing or blank, without inventing media', () => {
     const defaults = workshopPromptDefaults(model, [display('   ')])
     const schema = schemaForModel(model)
