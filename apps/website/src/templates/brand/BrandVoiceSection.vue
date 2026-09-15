@@ -37,7 +37,7 @@ const dontExamples = [
 </script>
 
 <template>
-  <section class="max-w-9xl mx-auto px-6 py-10 lg:px-20 lg:py-12">
+  <section class="mx-auto max-w-9xl px-6 py-10 lg:px-20 lg:py-12">
     <SectionHeader align="start" max-width="xl">
       {{ t('brand.voice.heading', locale) }}
     </SectionHeader>
@@ -50,10 +50,10 @@ const dontExamples = [
     </dl>
 
     <div class="mt-12 grid gap-4 md:grid-cols-2">
-      <div class="bg-transparency-white-t4 flex flex-col gap-4 rounded-4xl p-8">
+      <div class="flex flex-col gap-4 rounded-4xl bg-transparency-white-t4 p-8">
         <div class="flex items-center gap-2">
           <span
-            class="bg-primary-comfy-yellow size-2.5 rounded-full"
+            class="size-2.5 rounded-full bg-primary-comfy-yellow"
             aria-hidden="true"
           />
           <span
@@ -65,7 +65,7 @@ const dontExamples = [
         <div
           v-for="example in doExamples"
           :key="example"
-          class="bg-transparency-ink-t80 rounded-2xl p-5"
+          class="rounded-2xl bg-transparency-ink-t80 p-5"
         >
           <p class="text-base/[1.45] text-primary-comfy-canvas">
             {{ example }}
@@ -73,7 +73,7 @@ const dontExamples = [
         </div>
       </div>
 
-      <div class="bg-transparency-white-t4 flex flex-col gap-4 rounded-4xl p-8">
+      <div class="flex flex-col gap-4 rounded-4xl bg-transparency-white-t4 p-8">
         <div class="flex items-center gap-2">
           <span
             class="size-2.5 rounded-full bg-primary-warm-gray"
@@ -88,7 +88,7 @@ const dontExamples = [
         <div
           v-for="example in dontExamples"
           :key="example"
-          class="bg-transparency-ink-t80 rounded-2xl p-5"
+          class="rounded-2xl bg-transparency-ink-t80 p-5"
         >
           <p class="text-base/[1.45] text-primary-warm-gray line-through">
             {{ example }}

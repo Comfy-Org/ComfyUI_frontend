@@ -44,7 +44,7 @@ onMounted(() => {
   <div class="relative isolate overflow-hidden bg-primary-comfy-ink">
     <div
       v-if="visual === 'shader'"
-      class="mask-platform-terminal-feather pointer-events-none absolute inset-0"
+      class="pointer-events-none absolute inset-0 mask-platform-terminal-feather"
       aria-hidden="true"
     >
       <TerminalAsciiShader v-if="isMounted" />

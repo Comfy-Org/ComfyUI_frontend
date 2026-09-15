@@ -26,7 +26,7 @@ const nextHref = localizeHref(`/demos/${nextSlug}`, locale)
     </h2>
 
     <div
-      class="bg-transparency-white-t4 rounded-5xl mx-auto flex flex-col gap-8 p-2 lg:max-w-237.5 lg:flex-row lg:items-center"
+      class="mx-auto flex flex-col gap-8 rounded-5xl bg-transparency-white-t4 p-2 lg:max-w-237.5 lg:flex-row lg:items-center"
     >
       <a :href="nextHref" class="shrink-0 lg:w-1/2">
         <img
@@ -45,7 +45,7 @@ const nextHref = localizeHref(`/demos/${nextSlug}`, locale)
 
         <a :href="nextHref" class="flex items-center gap-3">
           <span
-            class="bg-primary-comfy-yellow flex size-10 items-center justify-center rounded-full text-primary-comfy-ink"
+            class="flex size-10 items-center justify-center rounded-full bg-primary-comfy-yellow text-primary-comfy-ink"
           >
             <span class="text-lg font-bold">›</span>
           </span>

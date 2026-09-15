@@ -290,6 +290,121 @@ describe('graphMutations', () => {
     expect(createLayout).not.toHaveBeenCalled()
   })
 
+  it('resyncs scalar fields without touching slots, widgets, or layout', () => {
+    const graph = mutations()
+    graph.addNode(node(1, { seed: 1 }), context)
+    graph.addNode(node(2), context)
+    expect(
+      graph.connect(
+        {
+          id: 9,
+          originNodeId: 2,
+          originSlot: 0,
+          targetNodeId: 1,
+          targetSlot: 0,
+          type: 'IMAGE',
+          targetInputs: [{ name: 'in', type: 'IMAGE', link: toLinkId(9) }]
+        },
+        context
+      )
+    ).toBe(true)
+    const [existing] = useNodeDataStore().getGraphNodesFor('root', 'root')
+    const [inputBefore] = existing.inputs
+    expect(inputBefore.link).toBe(toLinkId(9))
+    createLayout.mockClear()
+    deleteLayouts.mockClear()
+
+    expect(
+      graph.batch({ ...context, opId: 'resync' }, (batch) => {
+        batch.reconcileNodeFields({
+          ...node(1),
+          title: 'Renamed host',
+          mode: 2,
+          flags: { collapsed: true },
+          properties: { source: 'doc' },
+          // Doc slot records are stale on purpose: they must be ignored.
+          inputs: [{ name: 'in', type: 'IMAGE', link: null }],
+          widgets_values: {}
+        })
+      })
+    ).toBe(true)
+
+    const [resynced] = useNodeDataStore().getGraphNodesFor('root', 'root')
+    expect(resynced).toBe(existing)
+    expect(resynced.title).toBe('Renamed host')
+    expect(resynced.mode).toBe(2)
+    expect(resynced.flags).toEqual({ collapsed: true })
+    expect(resynced.properties).toEqual({ source: 'doc' })
+    expect(resynced.inputs[0]).toBe(inputBefore)
+    expect(resynced.inputs[0].link).toBe(toLinkId(9))
+    expect(
+      useWidgetValueStore().getWidget(widgetId('root', toNodeId(1), 'seed'))
+        ?.value
+    ).toBe(1)
+    expect(deleteLayouts).not.toHaveBeenCalled()
+    expect(createLayout).not.toHaveBeenCalled()
+  })
+
+  it('adds a missing field-reconciled node and rejects incomplete payloads', () => {
+    const graph = mutations()
+    graph.addNode(node(1, { seed: 1 }), context)
+
+    expect(
+      graph.batch(context, (batch) => {
+        batch.reconcileNodeFields({ ...node(3), title: 'Ghost' })
+      })
+    ).toBe(true)
+    expect(
+      useNodeDataStore().getNode(scope.rootGraphId, toNodeId(3))?.title
+    ).toBe('Ghost')
+    expect(
+      graph.batch(context, (batch) => {
+        batch.reconcileNodeFields({ ...node(1), type: '' })
+      })
+    ).toBe(false)
+    expect(
+      graph.batch(context, (batch) => {
+        batch.reconcileNodeFields({ ...node(1), title: 'Live' })
+        batch.reconcileNodeFields({ ...node(4), type: '' })
+      })
+    ).toBe(false)
+
+    expect(
+      useNodeDataStore().getNode(scope.rootGraphId, toNodeId(1))?.title
+    ).toBe('Node 1')
+  })
+
+  it('replaces a field-reconciled node when its type changes', () => {
+    const graph = mutations()
+    graph.addNode(node(1, { seed: 1 }), context)
+    const existing = useNodeDataStore().getNode(scope.rootGraphId, toNodeId(1))
+    createLayout.mockClear()
+    deleteLayouts.mockClear()
+
+    expect(
+      graph.batch(context, (batch) => {
+        batch.reconcileNodeFields({
+          ...node(1, { replacement: 2 }),
+          type: 'Replacement'
+        })
+      })
+    ).toBe(true)
+
+    const replacement = useNodeDataStore().getNode(
+      scope.rootGraphId,
+      toNodeId(1)
+    )
+    expect(replacement).not.toBe(existing)
+    expect(replacement?.type).toBe('Replacement')
+    expect(
+      useWidgetValueStore().getWidget(
+        widgetId(scope.rootGraphId, toNodeId(1), 'replacement')
+      )?.value
+    ).toBe(2)
+    expect(deleteLayouts).toHaveBeenCalledOnce()
+    expect(createLayout).toHaveBeenCalledOnce()
+  })
+
   it('updates endpoint slot records while retaining the supplied link id', () => {
     const graph = mutations()
     graph.batch(context, (batch) => {
@@ -321,6 +436,227 @@ describe('graphMutations', () => {
       name: 'grown',
       link: toLinkId(9)
     })
+  })
+
+  it('keeps the live link on target slots whose supplied record omits link', () => {
+    const graph = mutations()
+    graph.batch(context, (batch) => {
+      batch.addNode(node(1))
+      batch.addNode(node(2))
+      batch.addNode(node(3))
+      batch.connect({
+        id: 5,
+        originNodeId: 1,
+        originSlot: 0,
+        targetNodeId: 2,
+        targetSlot: 0,
+        type: 'IMAGE',
+        targetInputs: [
+          { name: 'in', type: 'IMAGE', link: toLinkId(5) },
+          { name: 'grown', type: 'IMAGE', link: null }
+        ]
+      })
+    })
+
+    expect(
+      graph.batch({ ...context, opId: 'op-2' }, (batch) => {
+        batch.connect({
+          id: 9,
+          originNodeId: 3,
+          originSlot: 0,
+          targetNodeId: 2,
+          targetSlot: 1,
+          type: 'IMAGE',
+          targetInputs: [
+            { name: 'in', type: 'IMAGE' },
+            { name: 'grown', type: 'IMAGE', link: toLinkId(9) }
+          ]
+        })
+      })
+    ).toBe(true)
+
+    const target = useNodeDataStore()
+      .getGraphNodesFor('root', 'root')
+      .find(({ id }) => id === toNodeId(2))
+    expect(target?.inputs.map(({ link }) => link)).toEqual([
+      toLinkId(5),
+      toLinkId(9)
+    ])
+  })
+
+  it('lets two connects on one target within a batch both keep their links', () => {
+    const graph = mutations()
+    expect(
+      graph.batch(context, (batch) => {
+        batch.addNode(node(1))
+        batch.addNode(node(2))
+        batch.addNode(node(3))
+        batch.connect({
+          id: 5,
+          originNodeId: 1,
+          originSlot: 0,
+          targetNodeId: 2,
+          targetSlot: 0,
+          type: 'IMAGE',
+          targetInputs: [
+            { name: 'in', type: 'IMAGE', link: toLinkId(5) },
+            { name: 'grown', type: 'IMAGE' }
+          ]
+        })
+        batch.connect({
+          id: 9,
+          originNodeId: 3,
+          originSlot: 0,
+          targetNodeId: 2,
+          targetSlot: 1,
+          type: 'IMAGE',
+          targetInputs: [
+            { name: 'in', type: 'IMAGE' },
+            { name: 'grown', type: 'IMAGE', link: toLinkId(9) }
+          ]
+        })
+      })
+    ).toBe(true)
+
+    const target = useNodeDataStore()
+      .getGraphNodesFor('root', 'root')
+      .find(({ id }) => id === toNodeId(2))
+    expect(target?.inputs.map(({ link }) => link)).toEqual([
+      toLinkId(5),
+      toLinkId(9)
+    ])
+  })
+
+  it('merges input and output updates for self-links within a batch', () => {
+    const graph = mutations()
+    expect(
+      graph.batch(context, (batch) => {
+        batch.addNode({
+          ...node(1),
+          inputs: [
+            { name: 'in-0', type: 'IMAGE', link: null },
+            { name: 'in-1', type: 'IMAGE', link: null }
+          ],
+          outputs: [{ name: 'out-0', type: 'IMAGE', links: [] }]
+        })
+        batch.connect({
+          id: 5,
+          originNodeId: 1,
+          originSlot: 0,
+          targetNodeId: 1,
+          targetSlot: 0,
+          type: 'IMAGE',
+          originOutputs: [
+            { name: 'out-0', type: 'IMAGE', links: [toLinkId(5)] },
+            { name: 'out-1', type: 'IMAGE', links: [] }
+          ],
+          targetInputs: [
+            { name: 'in-0', type: 'IMAGE', link: toLinkId(5) },
+            { name: 'in-1', type: 'IMAGE', link: null }
+          ]
+        })
+        batch.connect({
+          id: 9,
+          originNodeId: 1,
+          originSlot: 1,
+          targetNodeId: 1,
+          targetSlot: 1,
+          type: 'IMAGE',
+          targetInputs: [
+            { name: 'in-0', type: 'IMAGE', link: toLinkId(5) },
+            { name: 'in-1', type: 'IMAGE', link: toLinkId(9) }
+          ]
+        })
+      })
+    ).toBe(true)
+
+    const [state] = useNodeDataStore().getGraphNodesFor('root', 'root')
+    expect(state.inputs.map(({ link }) => link)).toEqual([
+      toLinkId(5),
+      toLinkId(9)
+    ])
+    expect(state.outputs.map(({ links }) => links)).toEqual([[toLinkId(5)], []])
+    expect(
+      useLinkStore().getTopology(scope.rootGraphId, toLinkId(9))
+    ).toBeDefined()
+  })
+
+  it('does not restore a removed link from an omitted reconciled slot field', () => {
+    const graph = mutations()
+    graph.batch(context, (batch) => {
+      batch.addNode(node(1))
+      batch.addNode(node(2))
+      batch.connect({
+        id: 5,
+        originNodeId: 1,
+        originSlot: 0,
+        targetNodeId: 2,
+        targetSlot: 0,
+        type: 'IMAGE',
+        originOutputs: [{ name: 'out', type: 'IMAGE', links: [toLinkId(5)] }],
+        targetInputs: [{ name: 'in', type: 'IMAGE', link: toLinkId(5) }]
+      })
+    })
+
+    expect(
+      graph.batch({ ...context, opId: 'reconcile' }, (batch) => {
+        batch.removeMissing([toNodeId(1), toNodeId(2)], [])
+        batch.reconcileNode({
+          ...node(2),
+          inputs: [{ name: 'in', type: 'IMAGE' }]
+        })
+      })
+    ).toBe(true)
+
+    const target = useNodeDataStore()
+      .getGraphNodesFor('root', 'root')
+      .find(({ id }) => id === toNodeId(2))
+    expect(target?.inputs[0].link).toBeNull()
+    expect(
+      useLinkStore().getTopology(scope.rootGraphId, toLinkId(5))
+    ).toBeUndefined()
+  })
+
+  it('resolves omitted input links against the existing node on reconcile and to null on add', () => {
+    const graph = mutations()
+    graph.batch(context, (batch) => {
+      batch.addNode({
+        ...node(1),
+        inputs: [{ name: 'in', type: 'IMAGE' }]
+      })
+      batch.addNode(node(2))
+      batch.connect({
+        id: 5,
+        originNodeId: 2,
+        originSlot: 0,
+        targetNodeId: 1,
+        targetSlot: 0,
+        type: 'IMAGE',
+        targetInputs: [{ name: 'in', type: 'IMAGE', link: toLinkId(5) }]
+      })
+    })
+    const find = (id: number) =>
+      useNodeDataStore()
+        .getGraphNodesFor('root', 'root')
+        .find((state) => state.id === toNodeId(id))
+    expect(find(2)?.inputs[0].link).toBeNull()
+    expect(find(1)?.inputs[0].link).toBe(toLinkId(5))
+
+    expect(
+      graph.batch({ ...context, opId: 'op-2' }, (batch) => {
+        batch.reconcileNode({
+          ...node(1),
+          title: 'Reconciled',
+          inputs: [
+            { name: 'in', type: 'IMAGE' },
+            { name: 'added', type: 'IMAGE' }
+          ]
+        })
+      })
+    ).toBe(true)
+
+    expect(find(1)?.title).toBe('Reconciled')
+    expect(find(1)?.inputs.map(({ link }) => link)).toEqual([toLinkId(5), null])
   })
 
   it('re-adds a normalized node id as a fresh widget incarnation', () => {

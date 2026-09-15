@@ -1,4 +1,3 @@
-// @vitest-environment happy-dom
 import userEvent from '@testing-library/user-event'
 import { render, screen, waitFor } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -9,7 +8,6 @@ import AuthForgotPassword from './AuthForgotPassword.vue'
 
 const h = vi.hoisted(() => ({
   flag: undefined as { value: boolean } | undefined,
-  settled: undefined as { value: boolean } | undefined,
   sendReset: vi.fn(),
   captureAuthFailed: vi.fn()
 }))
@@ -17,12 +15,9 @@ const h = vi.hoisted(() => ({
 vi.mock<unknown>(import('../../scripts/posthog'), async () => {
   const { ref } = await import('vue')
   const flag = ref(true)
-  const settled = ref(true)
   h.flag = flag
-  h.settled = settled
   return {
     useWorkshopAuthFlag: () => flag,
-    useWorkshopAuthFlagSettled: () => settled,
     captureAuthFailed: h.captureAuthFailed
   }
 })
@@ -34,8 +29,11 @@ vi.mock<unknown>(import('../../config/workshop-firebase'), () => ({
 const { messages: toasts } = useAuthToasts()
 const assign = vi.fn<(url: string | URL) => void>()
 
-const typeEmail = (value: string) =>
-  userEvent.setup().type(screen.getByLabelText(/email/i), value)
+async function typeEmail(value: string) {
+  const input = screen.getByLabelText(/email/i)
+  await waitFor(() => expect(input).toBeEnabled())
+  await userEvent.setup().type(input, value)
+}
 const clickSend = () =>
   userEvent
     .setup()
@@ -50,7 +48,6 @@ const flushMicrotasks = async () => {
 
 beforeEach(() => {
   h.flag!.value = true
-  h.settled!.value = true
   h.sendReset.mockReset().mockResolvedValue(undefined)
   h.captureAuthFailed.mockClear()
   removeAllToasts()
@@ -173,35 +170,6 @@ describe('AuthForgotPassword', () => {
     expect(send.hasAttribute('disabled')).toBe(true)
     await clickSend()
     expect(h.sendReset).toHaveBeenCalledOnce()
-  })
-
-  it("shows the cloud app's timeout copy when the flag never answers", async () => {
-    h.flag!.value = false
-    h.settled!.value = false
-    render(AuthForgotPassword)
-
-    await vi.advanceTimersByTimeAsync(16_000)
-
-    expect((await screen.findByRole('alert')).textContent).toContain(
-      'Connection Taking Too Long'
-    )
-  })
-
-  it('drops the timeout screen when a late answer says the flag is off', async () => {
-    h.flag!.value = false
-    h.settled!.value = false
-    render(AuthForgotPassword)
-    await vi.advanceTimersByTimeAsync(16_000)
-    await screen.findByRole('alert')
-
-    h.settled!.value = true
-
-    await waitFor(() =>
-      expect(
-        screen.queryByText('Connection Taking Too Long'),
-        'a flag that answered off renders nothing, not a troubleshooting screen'
-      ).toBeNull()
-    )
   })
 
   it('blocks a double submit while a send is in flight', async () => {

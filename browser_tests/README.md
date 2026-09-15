@@ -325,6 +325,11 @@ for adding packs - see
 
 ## Writing Tests
 
+Design rules that hold at every test level (behavioral assertions, lowest
+proving level, table-driven variants, isolation, no sleeps) are in
+`docs/guidance/testing-principles.md`, which auto-loads for `*.spec.ts`. This
+guide covers the Playwright and ComfyUI mechanics.
+
 ### Golden rules
 
 1. **Look at existing tests first.** Search `tests/` for similar patterns.

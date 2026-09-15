@@ -56,17 +56,8 @@ function actionFor(example: PlaygroundExample, active = false) {
           )
         }}
       </h2>
-      <p class="text-sm text-primary-warm-gray">
-        {{
-          t(
-            samplesOnly
-              ? 'workshop.examples.samplesSubtitle'
-              : examples.length === 1
-                ? 'workshop.examples.subtitleOne'
-                : 'workshop.examples.subtitle',
-            locale
-          )
-        }}
+      <p v-if="samplesOnly" class="text-sm text-primary-warm-gray">
+        {{ t('workshop.examples.samplesSubtitle', locale) }}
       </p>
     </div>
 
@@ -80,7 +71,7 @@ function actionFor(example: PlaygroundExample, active = false) {
       v-else
       :class="
         cn(
-          'flex scrollbar-hide snap-x gap-3 overflow-x-auto max-sm:-mx-6 max-sm:-my-1 max-sm:scroll-px-6 max-sm:px-6 max-sm:py-1 sm:grid sm:max-w-5xl sm:justify-start sm:overflow-visible',
+          'scrollbar-hide flex snap-x gap-3 overflow-x-auto max-sm:-mx-6 max-sm:-my-1 max-sm:scroll-px-6 max-sm:px-6 max-sm:py-1 sm:grid sm:max-w-5xl sm:justify-start sm:overflow-visible',
           desktopGridColumns
         )
       "
@@ -109,10 +100,10 @@ function actionFor(example: PlaygroundExample, active = false) {
           <span
             :class="
               cn(
-                'bg-primary-comfy-ink-light relative block aspect-video overflow-hidden rounded-lg ring-1 transition-all',
+                'relative block aspect-video overflow-hidden rounded-lg bg-primary-comfy-ink-light ring-1 transition-all',
                 example.id === activeId
-                  ? 'ring-primary-comfy-yellow ring-2'
-                  : 'group-focus-visible:ring-primary-comfy-yellow ring-transparency-white-t8 group-hover:-translate-y-0.5 group-hover:ring-transparency-white-t20 group-hover:brightness-110'
+                  ? 'ring-2 ring-primary-comfy-yellow'
+                  : 'ring-transparency-white-t8 group-hover:-translate-y-0.5 group-hover:ring-transparency-white-t20 group-hover:brightness-110 group-focus-visible:ring-primary-comfy-yellow'
               )
             "
           >
@@ -142,39 +133,32 @@ function actionFor(example: PlaygroundExample, active = false) {
 
             <span
               v-if="example.id === activeId"
-              class="bg-primary-comfy-yellow absolute top-1.5 right-1.5 grid size-5 place-items-center rounded-full text-primary-comfy-ink"
+              class="absolute top-1.5 right-1.5 grid size-5 place-items-center rounded-full bg-primary-comfy-yellow text-primary-comfy-ink"
               data-testid="example-chosen"
             >
               <Check class="size-3" :stroke-width="3" aria-hidden="true" />
             </span>
             <span
               v-else
-              class="absolute inset-x-0 bottom-0 truncate bg-black/70 px-2 py-1 text-center text-[11px] font-medium text-primary-warm-white opacity-0 transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100"
+              class="absolute top-1.5 left-1.5 rounded-full bg-black/70 px-2 py-0.5 text-[11px] font-medium text-primary-warm-white opacity-0 transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100"
               aria-hidden="true"
             >
               {{ actionFor(example) }}
             </span>
-          </span>
 
-          <span class="flex flex-col gap-0.5">
             <span
-              :class="
-                cn(
-                  'line-clamp-1 text-xs transition-colors',
-                  example.id === activeId
-                    ? 'text-primary-warm-white'
-                    : 'text-primary-comfy-canvas group-hover:text-primary-warm-white'
-                )
-              "
+              class="absolute inset-x-0 bottom-0 flex flex-col gap-0.5 bg-linear-to-t from-black/85 to-transparent px-2 pt-6 pb-1.5"
             >
-              {{ example.title }}
-            </span>
-            <span
-              v-if="specsOf(example)"
-              class="text-[11px] text-primary-warm-gray"
-              data-testid="example-specs"
-            >
-              {{ specsOf(example) }}
+              <span class="line-clamp-1 text-xs text-primary-warm-white">
+                {{ example.title }}
+              </span>
+              <span
+                v-if="specsOf(example)"
+                class="line-clamp-1 text-[11px] text-primary-comfy-canvas/70"
+                data-testid="example-specs"
+              >
+                {{ specsOf(example) }}
+              </span>
             </span>
           </span>
         </button>
