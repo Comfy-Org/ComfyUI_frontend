@@ -30,7 +30,7 @@ const {
       v-if="eyebrow"
       :class="
         cn(
-          'text-primary-comfy-yellow text-sm font-extrabold tracking-wider uppercase',
+          'text-sm font-extrabold tracking-wider text-primary-comfy-yellow uppercase',
           eyebrowClass
         )
       "

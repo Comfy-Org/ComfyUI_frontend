@@ -39,8 +39,7 @@ import {
   captureAuthCompleted,
   captureAuthFailed,
   captureSignupOpened,
-  useWorkshopAuthFlag,
-  useWorkshopAuthFlagSettled
+  useWorkshopAuthFlag
 } from '../../scripts/posthog'
 import type { AuthMode } from './AuthSignInPanel.vue'
 
@@ -69,7 +68,6 @@ export function useAuthSignInController(options: AuthSignInControllerOptions) {
   type WorkshopFirebase = Awaited<ReturnType<typeof loadWorkshopFirebase>>
 
   const enabled = useWorkshopAuthFlag()
-  const flagSettled = useWorkshopAuthFlagSettled()
   const authTimedOut = ref(false)
   const {
     user,
@@ -348,10 +346,7 @@ export function useAuthSignInController(options: AuthSignInControllerOptions) {
     }, AUTH_INIT_TIMEOUT_MS)
   })
 
-  /** Still waiting on PostHog, or on Firebase once the flag is on. */
-  const initPending = computed(
-    () => !flagSettled.value || (enabled.value && !identitySettled.value)
-  )
+  const initPending = computed(() => enabled.value && !identitySettled.value)
   // A late answer, whichever way it goes, ends the timeout screen.
   watch(initPending, (pending) => {
     if (!pending) authTimedOut.value = false

@@ -1,4 +1,3 @@
-// @vitest-environment happy-dom
 import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { PerspectiveCamera, Vector3 } from 'three'

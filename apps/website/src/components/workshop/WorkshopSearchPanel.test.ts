@@ -1,4 +1,3 @@
-// @vitest-environment happy-dom
 import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
 import { describe, expect, it } from 'vitest'
@@ -28,41 +27,36 @@ const models: WorkshopModel[] = [
 ]
 
 describe('WorkshopSearchPanel', () => {
-  it('searches capabilities consistently and suggests by name without fabricated usage', () => {
-    render(WorkshopSearchPanel, {
-      props: {
-        models,
-        query: 'upscale',
-        providers: ['Provider A'],
-        capabilities: []
-      }
+  it('shows matching models only after a query is entered', async () => {
+    const { rerender } = render(WorkshopSearchPanel, {
+      props: { models, query: '' }
     })
+    expect(screen.queryByRole('button')).toBeNull()
+
+    await rerender({ query: 'upscale' })
     expect(
       screen.getAllByRole('button', { name: /^(Alpha|Zeta) Provider/ })
     ).toEqual([
       screen.getByRole('button', { name: 'Alpha Provider A' }),
       screen.getByRole('button', { name: 'Zeta Provider B' })
     ])
-    expect(screen.getByRole('button', { name: 'Provider B 1' })).toBeTruthy()
     expect(screen.queryByText(/popular|\d+.*runs/i)).toBeNull()
   })
 
-  it.for(['{Enter}', ' '])(
-    'activates model and facet buttons with %s',
-    async (key) => {
-      const user = userEvent.setup()
-      const { emitted } = render(WorkshopSearchPanel, {
-        props: { models, query: '', providers: [], capabilities: [] }
-      })
-      screen.getByRole('button', { name: 'Alpha Provider A' }).focus()
-      await user.keyboard(key)
-      expect(emitted().pick).toEqual([[models[1]]])
-      screen.getByRole('button', { name: 'Provider A 1' }).focus()
-      await user.keyboard(key)
-      expect(emitted().toggleProvider).toEqual([['Provider A']])
-      screen.getByRole('button', { name: 'Upscale 2' }).focus()
-      await user.keyboard(key)
-      expect(emitted().toggleCapability).toEqual([['Upscale']])
-    }
-  )
+  it('shows an empty state for a query without matches', () => {
+    render(WorkshopSearchPanel, {
+      props: { models, query: 'missing' }
+    })
+    expect(screen.getByText(/no match/i)).toBeTruthy()
+  })
+
+  it.for(['{Enter}', ' '])('activates a model result with %s', async (key) => {
+    const user = userEvent.setup()
+    const { emitted } = render(WorkshopSearchPanel, {
+      props: { models, query: 'alpha' }
+    })
+    screen.getByRole('button', { name: 'Alpha Provider A' }).focus()
+    await user.keyboard(key)
+    expect(emitted().pick).toEqual([[models[1]]])
+  })
 })

@@ -25,12 +25,14 @@ import type {
 } from '../../config/workshop-run'
 import { formatElapsed, isExpired } from '../../config/workshop-run'
 import { downloadOutput } from '../../config/workshop-output-download'
+import { outputLabels } from '../../lib/workshop/output-labels'
 import type { Locale, TranslationKey } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 
 const {
   state,
   now,
+  modelName,
   modality,
   earlier = [],
   attachments = [],
@@ -39,6 +41,7 @@ const {
 } = defineProps<{
   state: RunState
   now: number
+  modelName: string
   modality?: Modality
   earlier?: readonly RunRecord[]
   attachments?: readonly RunOutput[]
@@ -53,6 +56,7 @@ const emit = defineEmits<{
   useInCode: []
   switchPersonal: []
   buyCredits: []
+  download: [kind: RunOutput['kind']]
 }>()
 
 const elapsed = computed(() =>
@@ -113,6 +117,10 @@ const currentAttachments = computed(
   () => viewing.value?.attachments ?? attachments
 )
 const shown = computed(() => selectedAttachment.value ?? primary.value)
+const files = computed(() =>
+  primary.value ? [primary.value, ...currentAttachments.value] : []
+)
+const fileLabels = computed(() => outputLabels(files.value))
 
 // Only a result the visitor produced opens full screen; the example is a
 // sample of what the model makes, not their picture to inspect.
@@ -132,9 +140,10 @@ const downloadNeedsLink = computed(
   () => failedDownloadUrl.value === currentUrl.value
 )
 async function download(event: MouseEvent) {
+  if (!shown.value) return
+  emit('download', shown.value.kind)
   if (downloadNeedsLink.value) return
   event.preventDefault()
-  if (!shown.value) return
   const url = currentUrl.value
   if (!(await downloadOutput(url, shown.value.fileName)))
     failedDownloadUrl.value = url
@@ -146,12 +155,18 @@ watch(primary, () => {
   selectedAttachment.value = undefined
 })
 
+// The router reports the latest run's rating on the run, not always on the
+// output, so anything showing that run has to consult both.
+const latestIsSensitive = computed(
+  () =>
+    (state.status === 'succeeded' && state.nsfw) || latest.value?.nsfw === true
+)
 // Earlier runs carry their own flag, so switching away from the latest output
 // must not drop the gate.
 const shownIsSensitive = computed(() =>
   viewing.value
     ? viewing.value.output.nsfw === true || shown.value?.nsfw === true
-    : (state.status === 'succeeded' && state.nsfw) || shown.value?.nsfw === true
+    : latestIsSensitive.value || shown.value?.nsfw === true
 )
 const blurred = computed(() => shownIsSensitive.value && !revealed.value)
 watch(shown, () => {
@@ -165,6 +180,7 @@ watch(shown, () => {
 interface RunStop {
   readonly record?: RunRecord
   readonly output: RunOutput
+  readonly nsfw: boolean
   readonly name: string
   readonly testId: string
 }
@@ -176,6 +192,7 @@ const runStops = computed<RunStop[]>(() =>
         ...[...earlier].reverse().map((record, index) => ({
           record,
           output: record.output,
+          nsfw: record.output.nsfw === true,
           name: t('workshop.output.earlierRun', locale).replace(
             '{number}',
             String(index + 1)
@@ -185,6 +202,7 @@ const runStops = computed<RunStop[]>(() =>
         {
           record: undefined,
           output: latest.value,
+          nsfw: latestIsSensitive.value,
           name: t('workshop.output.latest', locale),
           testId: 'earlier-latest'
         }
@@ -202,7 +220,7 @@ const earlierClass = (active: boolean) =>
 
 <template>
   <section
-    class="bg-transparency-white-t4 flex min-h-96 flex-col overflow-hidden rounded-2xl border border-transparency-white-t8"
+    class="flex min-h-96 flex-col overflow-hidden rounded-2xl border border-transparency-white-t8 bg-transparency-white-t4"
     data-testid="playground-output"
     :data-state="state.status"
   >
@@ -242,7 +260,7 @@ const earlierClass = (active: boolean) =>
       class="flex flex-1 flex-col items-center justify-center gap-4 p-6 text-center"
     >
       <Loader2
-        class="text-primary-comfy-yellow size-8 animate-spin"
+        class="size-8 animate-spin text-primary-comfy-yellow"
         aria-hidden="true"
       />
       <p class="text-sm text-primary-warm-white">
@@ -293,7 +311,7 @@ const earlierClass = (active: boolean) =>
       data-testid="run-error"
       :data-reason="state.reason"
     >
-      <p class="text-primary-comfy-red text-sm">
+      <p class="text-sm text-primary-comfy-red">
         {{ statusMessage }}
       </p>
       <Button
@@ -330,14 +348,14 @@ const earlierClass = (active: boolean) =>
         <div
           :key="currentUrl"
           :class="blurred ? 'blur-2xl select-none' : ''"
-          class="animate-soft-in size-full transition-all"
+          class="size-full animate-soft-in transition-all"
         >
           <VideoPlayer
             v-if="currentUrl && shown.kind === 'video' && !blurred"
             :src="currentUrl"
             :locale
             :aria-label="t('workshop.output.title', locale)"
-            class="size-full"
+            class="size-full rounded-none border-0"
             fit="contain"
             controls-on-hover
             autoplay
@@ -362,7 +380,7 @@ const earlierClass = (active: boolean) =>
             <span
               v-for="bar in 32"
               :key="bar"
-              class="bg-primary-comfy-yellow/70 w-1.5 rounded-full"
+              class="w-1.5 rounded-full bg-primary-comfy-yellow/70"
               :style="{ height: `${20 + ((bar * 37) % 60)}%` }"
             />
           </div>
@@ -413,7 +431,7 @@ const earlierClass = (active: boolean) =>
             {{ t('workshop.output.nsfw', locale) }}
           </span>
           <span
-            class="text-primary-comfy-yellow text-xs font-bold tracking-wider uppercase"
+            class="text-xs font-bold tracking-wider text-primary-comfy-yellow uppercase"
           >
             {{ t('workshop.output.reveal', locale) }}
           </span>
@@ -470,16 +488,18 @@ const earlierClass = (active: boolean) =>
         class="flex flex-wrap gap-2 border-t border-transparency-white-t8 px-4 py-3"
       >
         <button
-          v-for="output in [primary, ...currentAttachments]"
-          :key="output?.url"
+          v-for="(output, index) in files"
+          :key="output.url"
           type="button"
           :aria-pressed="shown === output"
-          :class="
-            cn(earlierClass(shown === output), 'size-auto px-3 py-2 break-all')
-          "
+          :title="output.fileName"
+          :class="cn(earlierClass(shown === output), 'size-auto px-3 py-2')"
           @click="selectedAttachment = output"
         >
-          {{ output?.fileName }}
+          {{ t(fileLabels[index].key, locale)
+          }}{{
+            fileLabels[index].ordinal ? ` ${fileLabels[index].ordinal}` : ''
+          }}
         </button>
       </div>
 
@@ -503,7 +523,7 @@ const earlierClass = (active: boolean) =>
           <video
             v-if="stop.output.kind === 'video'"
             :src="stop.output.url"
-            :class="cn('size-full object-cover', stop.output.nsfw && 'blur-md')"
+            :class="cn('size-full object-cover', stop.nsfw && 'blur-md')"
             muted
             playsinline
             preload="metadata"
@@ -512,7 +532,7 @@ const earlierClass = (active: boolean) =>
             v-else-if="stop.output.kind === 'image'"
             :src="stop.output.url"
             alt=""
-            :class="cn('size-full object-cover', stop.output.nsfw && 'blur-md')"
+            :class="cn('size-full object-cover', stop.nsfw && 'blur-md')"
           />
           <FileIcon
             v-else
@@ -537,7 +557,10 @@ const earlierClass = (active: boolean) =>
       >
         {{
           state.status === 'example'
-            ? t('workshop.output.exampleHint', locale)
+            ? t('workshop.output.exampleHint', locale).replace(
+                '{model}',
+                modelName
+              )
             : t('workshop.output.expires', locale)
         }}
       </p>

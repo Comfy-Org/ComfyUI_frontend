@@ -1,4 +1,3 @@
-// @vitest-environment happy-dom
 import { render, screen, waitFor } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -15,7 +14,6 @@ import AuthToast from './AuthToast.vue'
 
 const handles = vi.hoisted(() => ({
   flag: undefined as { value: boolean } | undefined,
-  settled: undefined as { value: boolean } | undefined,
   user: undefined as { value: unknown } | undefined,
   session: undefined as { value: unknown } | undefined,
   identitySettled: undefined as { value: boolean } | undefined,
@@ -38,12 +36,9 @@ const handles = vi.hoisted(() => ({
 vi.mock<unknown>(import('../../scripts/posthog'), async () => {
   const { ref } = await import('vue')
   const flag = ref(true)
-  const settled = ref(true)
   handles.flag = flag
-  handles.settled = settled
   return {
     useWorkshopAuthFlag: () => flag,
-    useWorkshopAuthFlagSettled: () => settled,
     useWorkshopTurnstileMode: () => ref('shadow'),
     captureAuthCompleted: handles.captureAuthCompleted,
     captureAuthFailed: handles.captureAuthFailed,
@@ -129,7 +124,6 @@ const assign = vi.fn<(url: string | URL) => void>()
 
 beforeEach(() => {
   handles.flag!.value = true
-  handles.settled!.value = true
   handles.user!.value = null
   handles.session!.value = undefined
   handles.identitySettled!.value = true
@@ -172,7 +166,7 @@ beforeEach(() => {
 const clickGoogle = () =>
   userEvent
     .setup()
-    .click(screen.getByRole('button', { name: /log in with google/i }))
+    .click(screen.getByRole('button', { name: /^sign in with google$/i }))
 
 const openEmailForm = (user: ReturnType<typeof userEvent.setup>) =>
   user.click(screen.getByRole('button', { name: /use email instead/i }))
@@ -192,7 +186,7 @@ describe('AuthSignIn', () => {
     handles.flag!.value = true
 
     expect(
-      await screen.findByRole('button', { name: /log in with google/i })
+      await screen.findByRole('button', { name: /^sign in with google$/i })
     ).toBeTruthy()
   })
 
@@ -314,7 +308,7 @@ describe('AuthSignIn', () => {
     }
 
     expect(
-      await screen.findByRole('button', { name: /log in with google/i })
+      await screen.findByRole('button', { name: /^sign in with google$/i })
     ).toBeTruthy()
     await new Promise((resolve) => setTimeout(resolve, 0))
     expect(
@@ -334,7 +328,7 @@ describe('AuthSignIn', () => {
 
     await userEvent
       .setup()
-      .click(screen.getByRole('button', { name: /log in with github/i }))
+      .click(screen.getByRole('button', { name: /^sign in with github$/i }))
 
     const alert = await screen.findByRole('alert')
     expect(alert.getAttribute('data-severity')).toBe('warn')
@@ -678,7 +672,7 @@ describe('AuthSignIn', () => {
     handles.identitySettled!.value = true
 
     expect(
-      await screen.findByRole('button', { name: /log in with google/i })
+      await screen.findByRole('button', { name: /^sign in with google$/i })
     ).toBeTruthy()
     expect(screen.queryByTestId('auth-initializing')).toBeNull()
   })
@@ -712,23 +706,6 @@ describe('AuthSignIn', () => {
   })
 
   describe('when auth never initializes', () => {
-    it("shows the cloud app's timeout copy after its 16 s bound when the flag never answers", async () => {
-      handles.flag!.value = false
-      handles.settled!.value = false
-      render(AuthSignIn)
-
-      await vi.advanceTimersByTimeAsync(15_999)
-      expect(screen.queryByRole('alert')).toBeNull()
-
-      await vi.advanceTimersByTimeAsync(1)
-      expect((await screen.findByRole('alert')).textContent).toContain(
-        'Connection Taking Too Long'
-      )
-      expect(
-        screen.getByRole('link', { name: 'support' }).getAttribute('href')
-      ).toBe('https://support.comfy.org')
-    })
-
     it('shows the same copy when Firebase never settles', async () => {
       handles.identitySettled!.value = false
       render(AuthSignIn)
@@ -747,40 +724,6 @@ describe('AuthSignIn', () => {
 
       await vi.advanceTimersByTimeAsync(16_000)
       expect(screen.queryByRole('alert')).toBeNull()
-    })
-
-    it('drops the timeout screen when a late answer says the flag is off', async () => {
-      handles.flag!.value = false
-      handles.settled!.value = false
-      render(AuthSignIn)
-      await vi.advanceTimersByTimeAsync(16_000)
-      await screen.findByRole('alert')
-
-      handles.settled!.value = true
-
-      await waitFor(() =>
-        expect(
-          screen.queryByText('Connection Taking Too Long'),
-          'a flag that answered off renders nothing, not a troubleshooting screen'
-        ).toBeNull()
-      )
-      expect(screen.queryByRole('alert')).toBeNull()
-    })
-
-    it('gives way to the page once a late answer turns the flag on', async () => {
-      handles.flag!.value = false
-      handles.settled!.value = false
-      render(AuthSignIn)
-      await vi.advanceTimersByTimeAsync(16_000)
-      await screen.findByRole('alert')
-
-      handles.settled!.value = true
-      handles.flag!.value = true
-
-      expect(
-        await screen.findByRole('button', { name: /log in with google/i })
-      ).toBeTruthy()
-      expect(screen.queryByText('Connection Taking Too Long')).toBeNull()
     })
   })
 
@@ -816,7 +759,7 @@ describe('AuthSignIn', () => {
     window.dispatchEvent(new PopStateEvent('popstate'))
 
     expect(
-      await screen.findByRole('heading', { name: 'Log in to your account' })
+      await screen.findByRole('heading', { name: 'Sign in to your account' })
     ).toBeTruthy()
   })
 
@@ -830,8 +773,8 @@ describe('AuthSignIn', () => {
       await screen.findByText('Finish signing in from the pop-up window.')
     ).toBeTruthy()
     for (const name of [
-      /log in with google/i,
-      /log in with github/i,
+      /^sign in with google$/i,
+      /^sign in with github$/i,
       /use email instead/i
     ]) {
       expect(screen.getByRole('button', { name })).toHaveProperty(
@@ -870,7 +813,7 @@ describe('AuthSignIn', () => {
 
   it('does not report a sign-up open from the login page', async () => {
     render(AuthSignIn)
-    await screen.findByRole('button', { name: /log in with google/i })
+    await screen.findByRole('button', { name: /^sign in with google$/i })
 
     expect(handles.captureSignupOpened).not.toHaveBeenCalled()
   })
@@ -886,7 +829,7 @@ describe('AuthSignIn', () => {
 
   it('shows no in-app browser notice in a regular browser', async () => {
     render(AuthSignIn)
-    await screen.findByRole('button', { name: /log in with google/i })
+    await screen.findByRole('button', { name: /^sign in with google$/i })
 
     expect(screen.queryByTestId('google-sso-in-app-browser-notice')).toBeNull()
   })
@@ -1022,7 +965,7 @@ describe('AuthSignIn', () => {
     await openEmailForm(user)
     expect(screen.getByLabelText('Email')).toBeTruthy()
     expect(
-      screen.queryByRole('button', { name: /log in with google/i })
+      screen.queryByRole('button', { name: /^sign in with google$/i })
     ).toBeNull()
 
     await user.click(
@@ -1032,7 +975,7 @@ describe('AuthSignIn', () => {
     )
     expect(screen.queryByLabelText('Email')).toBeNull()
     expect(
-      screen.getByRole('button', { name: /log in with google/i })
+      screen.getByRole('button', { name: /^sign in with google$/i })
     ).toBeTruthy()
   })
 
@@ -1126,7 +1069,7 @@ describe('AuthSignIn', () => {
     try {
       render(FreshAuthSignIn)
       const button = screen.getByRole('button', {
-        name: /log in with google/i
+        name: /^sign in with google$/i
       }) as HTMLButtonElement
       await userEvent.setup().click(button)
 
