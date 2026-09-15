@@ -5352,6 +5352,33 @@
       }
     }
   },
+  "EndLoop": {
+    "display_name": "Finalizar loop",
+    "inputs": {
+      "accumulate": {
+        "name": "accumulate",
+        "tooltip": "Retorna output_value de cada iteração quando ativado; caso contrário, retorna apenas a iteração final."
+      },
+      "next_iteration_value": {
+        "name": "next_iteration_value",
+        "tooltip": "Valor enviado de End Loop de volta para Start Loop na próxima iteração."
+      },
+      "output_value": {
+        "name": "output_value",
+        "tooltip": "Valor retornado por End Loop. Retorna a iteração final ou todas as iterações de acordo com accumulate."
+      },
+      "terminations": {
+        "name": "terminations",
+        "tooltip": "Conecte saídas que devem ser executadas em cada iteração. Seus valores não são retornados."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "saídas",
+        "tooltip": "O output_value da iteração final ou os valores acumulados entre as iterações quando accumulate está ativado."
+      }
+    }
+  },
   "Epsilon Scaling": {
     "display_name": "Escalonamento Epsilon",
     "inputs": {
@@ -6825,6 +6852,42 @@
       }
     }
   },
+  "GeminiNodeV3": {
+    "description": "Gere respostas de texto com os modelos Gemini do Google. Forneça um prompt de texto e, opcionalmente, uma ou mais imagens, clipes de áudio, vídeos ou arquivos como contexto multimodal.",
+    "display_name": "Google Gemini",
+    "inputs": {
+      "control_after_generate": {
+        "name": "controle após gerar"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "O modelo Gemini usado para gerar a resposta."
+      },
+      "model_max_output_tokens": {
+        "name": "max_output_tokens"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_seed": {
+        "name": "seed"
+      },
+      "model_system_prompt": {
+        "name": "system_prompt"
+      },
+      "model_thinking_level": {
+        "name": "thinking_level"
+      },
+      "model_video_processing": {
+        "name": "video_processing"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "GeminiVideoOmni": {
     "description": "Gere um vídeo com áudio a partir de um prompt de texto usando o modelo Gemini Omni Flash do Google. Opcionalmente, forneça imagens e/ou vídeos de referência para guiar ou editar o resultado. Descreva o comprimento desejado (3-10s) e a proporção (16:9 ou 9:16) diretamente no prompt.",
     "display_name": "Google Gemini Omni (Vídeo)",
@@ -7012,6 +7075,22 @@
       },
       "2": {
         "name": "tamanho_do_lote",
+        "tooltip": null
+      }
+    }
+  },
+  "GetItemFromList": {
+    "display_name": "Obter item da lista",
+    "inputs": {
+      "index": {
+        "name": "index"
+      },
+      "list": {
+        "name": "list"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -11623,6 +11702,73 @@
       "1": {
         "name": "textos",
         "tooltip": "Lista de legendas de texto."
+      }
+    }
+  },
+  "LoopIteration": {
+    "display_name": "LoopIteration",
+    "inputs": {
+      "current_iteration_value": {
+        "name": "current_iteration_value"
+      },
+      "is_first": {
+        "name": "is_first"
+      },
+      "is_last": {
+        "name": "is_last"
+      },
+      "iteration_index": {
+        "name": "iteration_index"
+      },
+      "list_item": {
+        "name": "list_item"
+      },
+      "reuse_cache": {
+        "name": "reuse_cache"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      },
+      "2": {
+        "tooltip": null
+      },
+      "3": {
+        "tooltip": null
+      },
+      "4": {
+        "tooltip": null
+      }
+    }
+  },
+  "LoopProgress": {
+    "display_name": "LoopProgress",
+    "inputs": {
+      "position": {
+        "name": "position"
+      },
+      "start_id": {
+        "name": "start_id"
+      },
+      "total": {
+        "name": "total"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "LoopResult": {
+    "display_name": "LoopResult",
+    "inputs": {
+      "close_id": {
+        "name": "close_id"
       }
     }
   },
@@ -22698,6 +22844,52 @@
       "2": {
         "name": "latente",
         "tooltip": null
+      }
+    }
+  },
+  "StartLoop": {
+    "display_name": "Iniciar loop",
+    "inputs": {
+      "cache_iterations": {
+        "name": "cache_iterations",
+        "tooltip": "Reutiliza resultados de iterações inalteradas de execuções anteriores. Desative para executar cada iteração novamente."
+      },
+      "initial_iteration_value": {
+        "name": "initial_iteration_value",
+        "tooltip": "Valor exposto como current_iteration_value na primeira iteração."
+      },
+      "mode": {
+        "name": "mode",
+        "tooltip": "O modo de iteração do loop."
+      },
+      "mode_num_iterations": {
+        "name": "num_iterations"
+      },
+      "parent_iteration": {
+        "name": "parent_iteration",
+        "tooltip": "Conecte iteration_index de um Start Loop externo para aninhar este loop."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "iteration_index",
+        "tooltip": "Índice da iteração atual do loop."
+      },
+      "1": {
+        "name": "is_first",
+        "tooltip": "Verdadeiro durante a primeira iteração do loop."
+      },
+      "2": {
+        "name": "is_last",
+        "tooltip": "Verdadeiro durante a última iteração do loop."
+      },
+      "3": {
+        "name": "list_item",
+        "tooltip": "Item atual da lista ao usar o modo List. None nos modos Simple e For."
+      },
+      "4": {
+        "name": "current_iteration_value",
+        "tooltip": "Valor transportado pelo loop para a iteração atual: initial_iteration_value na primeira iteração e, em seguida, next_iteration_value de End Loop em cada iteração subsequente."
       }
     }
   },

@@ -5352,6 +5352,33 @@
       }
     }
   },
+  "EndLoop": {
+    "display_name": "Конец цикла",
+    "inputs": {
+      "accumulate": {
+        "name": "накапливать",
+        "tooltip": "Возвращать выходное значение из каждой итерации, если включено; в противном случае возвращать только последнюю итерацию."
+      },
+      "next_iteration_value": {
+        "name": "значение следующей итерации",
+        "tooltip": "Значение, отправляемое из узла «Конец цикла» обратно в «Начало цикла» для следующей итерации."
+      },
+      "output_value": {
+        "name": "выходное значение",
+        "tooltip": "Значение, возвращаемое узлом «Конец цикла». Он возвращает последнюю итерацию или все итерации в соответствии с параметром накопления."
+      },
+      "terminations": {
+        "name": "завершения",
+        "tooltip": "Подключите выходы, которые должны выполняться на каждой итерации. Их значения не возвращаются."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "выходы",
+        "tooltip": "Выходное значение последней итерации или значения, накопленные за все итерации, если включено накопление."
+      }
+    }
+  },
   "Epsilon Scaling": {
     "display_name": "Масштабирование эпсилон",
     "inputs": {
@@ -6825,6 +6852,42 @@
       }
     }
   },
+  "GeminiNodeV3": {
+    "description": "Генерируйте текстовые ответы с помощью моделей Gemini от Google. Укажите текстовый запрос и, при необходимости, одно или несколько изображений, аудиоклипов, видео или файлов в качестве мультимодального контекста.",
+    "display_name": "Google Gemini",
+    "inputs": {
+      "control_after_generate": {
+        "name": "управление после генерации"
+      },
+      "model": {
+        "name": "модель",
+        "tooltip": "Модель Gemini, используемая для генерации ответа."
+      },
+      "model_max_output_tokens": {
+        "name": "максимальное число выходных токенов"
+      },
+      "model_prompt": {
+        "name": "запрос"
+      },
+      "model_seed": {
+        "name": "сид"
+      },
+      "model_system_prompt": {
+        "name": "системный запрос"
+      },
+      "model_thinking_level": {
+        "name": "уровень рассуждений"
+      },
+      "model_video_processing": {
+        "name": "обработка видео"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "GeminiVideoOmni": {
     "description": "Генерируйте видео со звуком по текстовому промпту с помощью модели Google Gemini Omni Flash. Дополнительно можно добавить референсные изображения и/или видео для направления или редактирования результата. Опишите желаемую длительность (3-10 сек) и соотношение сторон (16:9 или 9:16) прямо в промпте.",
     "display_name": "Google Gemini Omni (Video)",
@@ -7012,6 +7075,22 @@
       },
       "2": {
         "name": "batch_size",
+        "tooltip": null
+      }
+    }
+  },
+  "GetItemFromList": {
+    "display_name": "Получить элемент из списка",
+    "inputs": {
+      "index": {
+        "name": "индекс"
+      },
+      "list": {
+        "name": "список"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -11623,6 +11702,73 @@
       "1": {
         "name": "тексты",
         "tooltip": "Список текстовых подписей."
+      }
+    }
+  },
+  "LoopIteration": {
+    "display_name": "Итерация цикла",
+    "inputs": {
+      "current_iteration_value": {
+        "name": "значение текущей итерации"
+      },
+      "is_first": {
+        "name": "первая"
+      },
+      "is_last": {
+        "name": "последняя"
+      },
+      "iteration_index": {
+        "name": "индекс итерации"
+      },
+      "list_item": {
+        "name": "элемент списка"
+      },
+      "reuse_cache": {
+        "name": "повторно использовать кэш"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      },
+      "2": {
+        "tooltip": null
+      },
+      "3": {
+        "tooltip": null
+      },
+      "4": {
+        "tooltip": null
+      }
+    }
+  },
+  "LoopProgress": {
+    "display_name": "Прогресс цикла",
+    "inputs": {
+      "position": {
+        "name": "позиция"
+      },
+      "start_id": {
+        "name": "ID начала"
+      },
+      "total": {
+        "name": "всего"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "LoopResult": {
+    "display_name": "Результат цикла",
+    "inputs": {
+      "close_id": {
+        "name": "ID завершения"
       }
     }
   },
@@ -22698,6 +22844,52 @@
       "2": {
         "name": "латентный",
         "tooltip": null
+      }
+    }
+  },
+  "StartLoop": {
+    "display_name": "Начало цикла",
+    "inputs": {
+      "cache_iterations": {
+        "name": "cache_iterations",
+        "tooltip": "Повторно использует неизменённые результаты итераций из предыдущих запусков. Отключите, чтобы повторно выполнить каждую итерацию."
+      },
+      "initial_iteration_value": {
+        "name": "initial_iteration_value",
+        "tooltip": "Значение, доступное как current_iteration_value на первой итерации."
+      },
+      "mode": {
+        "name": "режим",
+        "tooltip": "Режим итераций цикла."
+      },
+      "mode_num_iterations": {
+        "name": "num_iterations"
+      },
+      "parent_iteration": {
+        "name": "parent_iteration",
+        "tooltip": "Подключите iteration_index из внешнего Start Loop, чтобы вложить этот цикл."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "iteration_index",
+        "tooltip": "Индекс текущей итерации цикла."
+      },
+      "1": {
+        "name": "is_first",
+        "tooltip": "True на первой итерации цикла."
+      },
+      "2": {
+        "name": "is_last",
+        "tooltip": "True на последней итерации цикла."
+      },
+      "3": {
+        "name": "list_item",
+        "tooltip": "Текущий элемент списка при использовании режима List. None в режимах Simple и For."
+      },
+      "4": {
+        "name": "current_iteration_value",
+        "tooltip": "Значение, передаваемое через цикл для текущей итерации: initial_iteration_value на первой итерации, затем next_iteration_value из End Loop на каждой последующей итерации."
       }
     }
   },
