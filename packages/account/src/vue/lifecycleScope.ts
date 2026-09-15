@@ -10,9 +10,10 @@ import type { EffectScope } from 'vue'
  * On the server (`window` undefined) `start` is a no-op that does not latch, so
  * the client's first `start` still installs.
  *
- * `start` is synchronous and returns void: it never surfaces a setup failure to
- * its caller. A `setup` that can fail launches its own promise and catches it,
- * calling `stop` from that handler to reopen the latch before a later `start`.
+ * `start` is synchronous. A synchronous throw from `setup` disposes the scope,
+ * reopens the latch, and rethrows, so a failed install leaves no stuck latch or
+ * leaked effects. Async failures are the setup's own to catch: a `setup` that
+ * launches a promise catches it and calls `stop` from that handler.
  */
 export interface LifecycleScope {
   start: (setup: () => void) => void
@@ -24,8 +25,15 @@ export function createLifecycleScope(): LifecycleScope {
   return {
     start(setup) {
       if (scope || typeof window === 'undefined') return
-      scope = effectScope(true)
-      scope.run(setup)
+      const created = effectScope(true)
+      scope = created
+      try {
+        created.run(setup)
+      } catch (error) {
+        created.stop()
+        scope = undefined
+        throw error
+      }
     },
     stop() {
       scope?.stop()

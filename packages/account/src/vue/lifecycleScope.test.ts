@@ -49,6 +49,23 @@ describe('createLifecycleScope', () => {
     ).toHaveBeenCalledTimes(2)
   })
 
+  it('reopens the latch when setup throws synchronously', () => {
+    const lifecycle = createLifecycleScope()
+    const good = vi.fn()
+
+    expect(() =>
+      lifecycle.start(() => {
+        throw new Error('install failed')
+      })
+    ).toThrow('install failed')
+    lifecycle.start(good)
+
+    expect(
+      good,
+      'a synchronous install failure disposes its scope and reopens the latch, so the next start still installs'
+    ).toHaveBeenCalledOnce()
+  })
+
   it('fires scope-disposal hooks registered by the setup on stop', () => {
     const lifecycle = createLifecycleScope()
     const disposed = vi.fn()
