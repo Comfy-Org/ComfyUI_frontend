@@ -205,6 +205,31 @@ test.describe('Narrow account menu', () => {
       .toBe(true)
   })
 
+  test('names the workspace the credits belong to, apart from the person', async ({
+    page,
+    modelsAccount
+  }) => {
+    await page.goto('/login/')
+    await page.getByRole('button', { name: 'Use email instead' }).click()
+    await page.getByLabel('Email').fill(modelsAccount.email)
+    await page
+      .getByLabel('Password', { exact: true })
+      .fill(modelsAccount.password)
+    await page.getByRole('button', { name: 'Sign in', exact: true }).click()
+    await expect(page).toHaveURL('/')
+
+    await page
+      .getByTestId('mobile-nav-cta')
+      .getByTestId('header-account')
+      .click()
+
+    const workspace = page.getByTestId('account-workspace-current')
+    await expect(workspace).toContainText('Personal')
+    const identity = page.getByTestId('account-identity')
+    await expect(identity).toContainText(modelsAccount.email)
+    await expect(identity).not.toContainText('Personal')
+  })
+
   test('opens one shared credits dialog and resets it after closing', async ({
     page,
     modelsAccount

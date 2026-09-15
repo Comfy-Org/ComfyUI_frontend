@@ -4,6 +4,7 @@ const TRAILING_WORKSPACE = /\s+workspace$/i
 
 export function initialsOf(name: string): string {
   return name
+    .trim()
     .replace(TRAILING_WORKSPACE, '')
     .split(/\s+/)
     .filter(Boolean)

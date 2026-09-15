@@ -230,7 +230,7 @@ describe('HeaderAccount menu', () => {
     h.balance!.value = { status: 'ok', credits: 42 }
   }
 
-  it('tells the person apart from the workspace their credits belong to', async () => {
+  it('shows the mail beside sign out and the workspace above the credits', async () => {
     signIn()
     h.user!.value = {
       uid: 'user-1',
@@ -245,7 +245,6 @@ describe('HeaderAccount menu', () => {
     const identity = await screen.findByTestId('account-identity')
     const active = screen.getByTestId('account-workspace-current')
 
-    expect(identity.textContent).toContain('Ada')
     expect(identity.textContent).toContain('a@b.co')
     expect(identity.textContent).not.toContain('Personal')
     expect(active.textContent).toContain('Personal')
@@ -466,7 +465,7 @@ describe('HeaderAccount workspace switcher', () => {
     await waitFor(() => expect(screen.queryByRole('menu')).toBeNull())
     await user.click(screen.getByTestId('header-account'))
     const account = await screen.findByTestId('account-identity')
-    expect(account.textContent).toContain('Ada')
+    expect(account.textContent).toContain('a@b.co')
     expect(account.textContent).not.toContain('Comfy team')
   })
 

@@ -63,19 +63,13 @@ const workspacesOpen = defineModel<boolean>('workspacesOpen', {
 const accountInitials = computed(() => initialsOf(accountName))
 const workspaceInitials = computed(() => initialsOf(session.workspace.name))
 
-// The plan comes from the workspace list, which loads after the menu can be
-// opened, so until it arrives the row says the reader's role instead.
-const workspacePlan = computed(() => {
-  const listed = Array.isArray(workspaces)
-    ? workspaces.find((workspace) => workspace.id === session.workspace.id)
-    : undefined
-  if (listed?.subscription_tier)
-    return listed.subscription_tier.split('_').join(' ')
-  return t(
-    session.role === 'member' ? 'nav.roleMember' : 'nav.roleOwner',
-    locale
-  )
-})
+// The plan would cost a workspace list the menu does not otherwise need, and
+// would arrive late enough to swap under the name. The standing the session
+// already carries says enough here, and the plan is one click away in the
+// switcher, where the list is loaded anyway.
+const workspaceRole = computed(() =>
+  t(session.role === 'member' ? 'nav.roleMember' : 'nav.roleOwner', locale)
+)
 
 const avatarFailed = ref(false)
 watch(
@@ -84,11 +78,9 @@ watch(
 )
 
 const monogramClass =
-  'grid shrink-0 place-items-center rounded-lg bg-transparency-white-t8 font-bold text-primary-warm-white'
-const itemClass =
-  'flex w-full cursor-pointer items-center gap-3 rounded-xl px-3 py-3 text-sm text-primary-comfy-canvas outline-none hover:bg-transparency-white-t4 focus-visible:bg-transparency-white-t4'
+  'grid size-8 shrink-0 place-items-center rounded-md bg-transparency-white-t8 text-sm font-bold text-primary-warm-white'
 const surfaceClass =
-  'border-primary-comfy-ink-light bg-site-dropdown z-50 rounded-2xl border p-2 shadow-lg data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:animate-in data-[state=open]:fade-in-0'
+  'border-primary-comfy-ink-light bg-page z-50 w-[300px] overflow-hidden rounded-xl border shadow-lg data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:animate-in data-[state=open]:fade-in-0'
 </script>
 
 <template>
@@ -99,7 +91,7 @@ const surfaceClass =
       class="flex h-10 cursor-pointer items-center gap-1.5 rounded-full border border-transparency-white-t20 bg-transparency-white-t4 p-1 outline-none focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow/50"
     >
       <span
-        :class="cn(monogramClass, 'size-8 text-xs')"
+        :class="cn(monogramClass, 'text-xs')"
         data-testid="header-workspace-monogram"
         aria-hidden="true"
       >
@@ -148,34 +140,31 @@ const surfaceClass =
         :class="
           cn(
             surfaceClass,
-            'w-96 max-w-(--reka-dropdown-menu-content-available-width)'
+            'max-w-(--reka-dropdown-menu-content-available-width)'
           )
         "
         data-testid="header-account-menu"
       >
         <!-- The workspace the credits belong to sits above them, so the
           balance is never read as the reader's own. -->
-        <div class="rounded-xl bg-transparency-white-t4 p-1">
+        <div class="bg-site-dropdown">
           <div
-            class="flex items-center gap-3 p-2"
+            class="flex items-center gap-3 p-3"
             data-testid="account-workspace-current"
           >
-            <span
-              :class="cn(monogramClass, 'size-8 text-sm')"
-              aria-hidden="true"
-            >
+            <span :class="monogramClass" aria-hidden="true">
               {{ workspaceInitials }}
             </span>
-            <span class="min-w-0 flex-1">
+            <span class="flex min-w-0 flex-1 flex-col gap-1">
               <span
-                class="block truncate text-sm font-medium text-primary-warm-white"
+                class="truncate text-sm font-medium text-primary-warm-white"
               >
                 {{ session.workspace.name }}
               </span>
               <span
-                class="block text-[11px] font-bold tracking-wider text-primary-warm-gray uppercase"
+                class="text-[0.625rem] font-medium text-primary-warm-gray uppercase"
               >
-                {{ workspacePlan }}
+                {{ workspaceRole }}
               </span>
             </span>
             <HeaderWorkspaceMenu
@@ -191,58 +180,51 @@ const surfaceClass =
 
           <p
             v-if="workspaceSwitchError"
-            class="px-3 pb-2 text-xs text-red-400"
+            class="px-4 pb-3 text-xs text-red-400"
             role="alert"
             data-testid="account-workspace-switch-error"
           >
             {{ t('nav.workspaceSwitchError', locale) }}
           </p>
 
-          <p v-if="balanceError" class="px-3 pb-2 text-xs text-red-400">
+          <p v-if="balanceError" class="px-4 pb-3 text-xs text-red-400">
             {{ t('auth.header.balanceError', locale) }}
           </p>
 
           <DropdownMenuItem
             v-if="canTopUp"
-            :class="itemClass"
+            class="flex h-10 w-full cursor-pointer items-center gap-2 px-4 text-sm text-primary-warm-white outline-none hover:bg-transparency-white-t4 focus-visible:bg-transparency-white-t4"
             data-testid="account-add-credits"
             @select="emit('buyCredits')"
           >
-            <Coins class="size-5 text-primary-warm-gray" aria-hidden="true" />
-            <span class="flex-1">
+            <Coins class="size-4 text-primary-warm-gray" aria-hidden="true" />
+            <span class="flex-1 text-left">
               {{ t('workshop.run.buyCredits', locale) }}
             </span>
           </DropdownMenuItem>
         </div>
 
+        <div class="h-3" aria-hidden="true" />
+
         <div
-          class="group/footer mt-1 flex items-center gap-3 rounded-xl px-3 py-2"
+          class="group/footer flex items-center gap-3 bg-transparency-white-t4 px-4 py-3"
           data-testid="account-identity"
         >
-          <span class="min-w-0 flex-1">
-            <span class="block truncate text-sm text-primary-warm-white">
-              {{ accountName }}
-            </span>
-            <span
-              v-if="accountIdentity && accountIdentity !== accountName"
-              class="block truncate text-xs text-primary-warm-gray"
-              data-testid="account-email"
-            >
-              {{ accountIdentity }}
-            </span>
+          <span
+            class="min-w-0 flex-1 truncate text-sm text-primary-warm-gray"
+            data-testid="account-email"
+          >
+            {{ accountIdentity ?? accountName }}
           </span>
           <DropdownMenuItem as-child>
             <button
               type="button"
               :aria-label="t('nav.signOut', locale)"
-              class="flex h-8 shrink-0 cursor-pointer items-center gap-2 rounded-lg px-2 text-sm text-primary-warm-gray transition-colors outline-none group-hover/footer:bg-transparency-white-t8 group-hover/footer:text-primary-warm-white focus-visible:bg-transparency-white-t8 focus-visible:text-primary-warm-white"
+              class="grid size-8 shrink-0 cursor-pointer place-items-center rounded-md text-primary-warm-gray transition-colors outline-none hover:bg-transparency-white-t8 hover:text-primary-warm-white focus-visible:bg-transparency-white-t8 focus-visible:text-primary-warm-white"
               data-testid="account-sign-out"
               @click="emit('signOut')"
             >
-              <span class="hidden group-hover/footer:inline">
-                {{ t('nav.signOut', locale) }}
-              </span>
-              <LogOut class="size-5" aria-hidden="true" />
+              <LogOut class="size-4" aria-hidden="true" />
             </button>
           </DropdownMenuItem>
         </div>

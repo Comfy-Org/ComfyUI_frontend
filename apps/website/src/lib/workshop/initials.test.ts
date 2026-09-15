@@ -9,6 +9,7 @@ describe('initialsOf', () => {
     ['personal workspace', 'P'],
     ['Ada Studio Workspace', 'AS'],
     ['Workspace', 'W'],
+    ['Ada Workspace  ', 'A'],
     ['Mariana Martinho Design', 'MM'],
     ['  spaced   out  ', 'SO'],
     ['solo', 'S'],
