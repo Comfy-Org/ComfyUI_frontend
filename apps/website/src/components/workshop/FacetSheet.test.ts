@@ -115,12 +115,12 @@ describe('FacetSheet', () => {
     expect(screen.getByRole('tabpanel', { name: /^Media/ })).toBeTruthy()
 
     await view.rerender({ groups: [groups[0]], labels, resultCount: 1 })
-    expect(
-      screen.getByRole('tab', { name: /^Provider/, selected: true })
-    ).toBeTruthy()
+    expect(screen.queryByRole('tablist')).toBeNull()
+    expect(screen.queryByRole('tab')).toBeNull()
+    expect(await screen.findByRole('region', { name: 'Provider' })).toBeTruthy()
   })
 
-  it('leaves the lone group out of the tab order it no longer needs', async () => {
+  it('labels a lone group without exposing an inoperable tab', async () => {
     const view = render(FacetSheet, {
       props: { groups, labels, resultCount: 2 }
     })
@@ -130,9 +130,11 @@ describe('FacetSheet', () => {
 
     await view.rerender({ groups: [groups[1]], labels, resultCount: 1 })
 
-    // The tab is clipped from sight, so it is not somewhere a keyboard should
-    // land, but it still names the panel under it.
-    expect(screen.getByRole('tab', { name: /^Media/ })).toBeDisabled()
-    expect(screen.getByRole('tabpanel', { name: /^Media/ })).toBeTruthy()
+    expect(screen.queryByRole('tablist')).toBeNull()
+    expect(screen.queryByRole('tab')).toBeNull()
+    expect(screen.getByRole('region', { name: 'Media' })).toHaveAttribute(
+      'tabindex',
+      '-1'
+    )
   })
 })

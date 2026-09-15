@@ -686,7 +686,7 @@ function useInCode() {
                the wrong wallet visible before it happens. -->
           <template v-else-if="gate === 'noCredits'">
             <p
-              class="mb-2 text-sm font-bold text-primary-warm-gray"
+              class="mb-2 text-sm font-bold text-content-secondary"
               data-testid="gate-note"
             >
               {{
@@ -708,10 +708,10 @@ function useInCode() {
           </template>
           <template v-else-if="gate === 'memberNoCredits'">
             <div class="mb-2 flex flex-col gap-1" data-testid="gate-note">
-              <p class="text-sm font-bold text-primary-warm-gray">
+              <p class="text-sm font-bold text-content-secondary">
                 {{ t('workshop.error.creditsTitle', locale) }}
               </p>
-              <p class="text-xs text-primary-warm-gray">
+              <p class="text-xs text-content-secondary">
                 {{
                   t('workshop.error.memberNoCredits', locale).replace(
                     '{workspace}',

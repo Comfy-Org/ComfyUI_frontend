@@ -2,7 +2,7 @@
 import { Check, X } from '@lucide/vue'
 import { useMediaQuery, useWindowSize } from '@vueuse/core'
 import { TabsContent, TabsList, TabsRoot, TabsTrigger } from 'reka-ui'
-import { computed, ref, watch } from 'vue'
+import { computed, ref, useId, watch } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
@@ -55,6 +55,7 @@ const emit = defineEmits<{
 
 const activeKey = ref(groups[0]?.key ?? '')
 const search = ref<Record<string, string>>({})
+const loneGroupLabelId = `facet-sheet-group-${useId()}`
 
 // A facet that is no longer offered would leave the sheet on an empty tab.
 watch(
@@ -208,23 +209,19 @@ function visibleOptions(group: FacetSheetGroup) {
     </div>
 
     <TabsRoot v-model="activeKey" class="flex min-h-0 flex-col max-sm:flex-1">
-      <!-- One group has nothing to be chosen between, so its name is a
-        heading over the only thing there is. It stays in the accessibility
-        tree, because the panel below is named by it, and out of the tab order,
-        because a clipped control is not somewhere to land. -->
+      <!-- One group has nothing to be chosen between. Its name labels the
+        region directly without exposing an inoperable tab widget. -->
+      <h3 v-if="groups.length === 1" :id="loneGroupLabelId" class="sr-only">
+        {{ groups[0]?.label }}
+      </h3>
       <TabsList
-        :class="
-          cn(
-            'scrollbar-hide flex items-center gap-1 overflow-x-auto border-b border-white/10 p-2 max-sm:px-4 max-sm:pb-3',
-            groups.length < 2 && 'sr-only'
-          )
-        "
+        v-if="groups.length > 1"
+        class="scrollbar-hide flex items-center gap-1 overflow-x-auto border-b border-white/10 p-2 max-sm:px-4 max-sm:pb-3"
       >
         <TabsTrigger
           v-for="group in groups"
           :key="group.key"
           :value="group.key"
-          :disabled="groups.length < 2"
           :data-testid="`workshop-facet-${group.key}`"
           class="inline-flex flex-1 cursor-pointer items-center justify-center gap-1.5 rounded-lg px-2 py-1.5 text-xs font-semibold tracking-wider whitespace-nowrap text-content-secondary uppercase transition-colors outline-none hover:bg-white/5 hover:text-content focus-visible:ring-2 focus-visible:ring-brand data-[state=active]:bg-white/8 data-[state=active]:text-content"
         >
@@ -243,6 +240,15 @@ function visibleOptions(group: FacetSheetGroup) {
         v-for="group in groups"
         :key="group.key"
         :value="group.key"
+        v-bind="
+          groups.length === 1
+            ? {
+                role: 'region',
+                'aria-labelledby': loneGroupLabelId,
+                tabindex: -1
+              }
+            : {}
+        "
         class="flex min-h-0 flex-col outline-none max-sm:flex-1"
       >
         <div class="border-b border-white/10 p-2 max-sm:px-4 max-sm:py-3">
