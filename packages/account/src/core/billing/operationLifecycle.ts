@@ -520,8 +520,9 @@ export function createBillingOperationLifecycle(
     // The backend's word on what is already pending comes first: a second
     // charge attempt is never issued over one the server is still settling.
     const status = await statusReader.read()
-    if (status.status === 'error') return status
+    // A scope change outranks a failed read, as in recover().
     if (!isLive(context)) return SUPERSEDED
+    if (status.status === 'error') return status
 
     const rail = status.value.status.billing_rail
     const pending = pendingFromStatus(status.value.status)
@@ -538,25 +539,26 @@ export function createBillingOperationLifecycle(
 
     const attemptStartedAt = now()
     const issued = await issue(context.scope)
-    if (issued.status === 'error') return issued
-    const presentation = routeFor(rail, issued.value)
     if (!isLive(context)) {
       // The operation exists server-side under the scope this tab just left;
       // the pointer waits there so a return recovers it rather than reissuing.
-      pointers.write(context.scope, {
-        operationId: issued.value.operationId,
-        kind,
-        presentation,
-        attemptStartedAt
-      })
+      if (issued.status === 'ok') {
+        pointers.write(context.scope, {
+          operationId: issued.value.operationId,
+          kind,
+          presentation: routeFor(rail, issued.value),
+          attemptStartedAt
+        })
+      }
       return SUPERSEDED
     }
+    if (issued.status === 'error') return issued
 
     const record = adopt({
       id: issued.value.operationId,
       kind,
       context,
-      presentation,
+      presentation: routeFor(rail, issued.value),
       ...continuationOf(issued.value),
       attemptStartedAt,
       resumed: false

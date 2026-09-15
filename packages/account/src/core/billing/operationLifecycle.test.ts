@@ -388,6 +388,53 @@ describe('createBillingOperationLifecycle', () => {
       expect(lifecycle.get('op-1')).toBeUndefined()
       expect(calls).toHaveLength(0)
     })
+
+    it('reports SUPERSEDED, not the read failure, when the workspace changes under a failing status read', async () => {
+      const session = fakeSession()
+      const { lifecycle } = harness({
+        session,
+        status: { status: 'error', code: 'REQUEST_FAILED' }
+      })
+      const issue = vi.fn(issued())
+
+      const began = lifecycle.begin('topup', issue)
+      session.moveTo(
+        authenticated(
+          credential({
+            workspace: { id: 'ws-2', name: 'Team', type: 'team' }
+          })
+        )
+      )
+
+      await expect(began).resolves.toEqual({
+        status: 'error',
+        code: 'SUPERSEDED'
+      })
+      expect(issue).not.toHaveBeenCalled()
+    })
+
+    it('reports SUPERSEDED, not the command failure, when the workspace changes under a failing command, writing no pointer', async () => {
+      const session = fakeSession()
+      const { lifecycle, storage } = harness({ session })
+      const gate = deferred<BillingResult<IssuedBillingOperation>>()
+
+      const began = lifecycle.begin('topup', () => gate.promise)
+      await flush()
+      session.moveTo(
+        authenticated(
+          credential({
+            workspace: { id: 'ws-2', name: 'Team', type: 'team' }
+          })
+        )
+      )
+      gate.resolve({ status: 'error', code: 'REQUEST_FAILED' })
+
+      await expect(began).resolves.toEqual({
+        status: 'error',
+        code: 'SUPERSEDED'
+      })
+      expect(storedPointer(storage)).toBeUndefined()
+    })
   })
 
   describe('polling', () => {
