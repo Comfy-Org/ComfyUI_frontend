@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import {
   buildInviteLink,
@@ -51,6 +51,12 @@ describe('formatInviteLinksForCopy', () => {
 })
 
 describe('copyTextSilently', () => {
+  // document.execCommand does not exist in happy-dom; drop any stub so the
+  // surrounding tests keep exercising the unsupported-command path.
+  afterEach(() => {
+    Reflect.deleteProperty(document, 'execCommand')
+  })
+
   it('writes the text to the clipboard and reports success', async () => {
     const writeText = vi.fn().mockResolvedValue(undefined)
     stubClipboard(writeText)
@@ -64,6 +70,23 @@ describe('copyTextSilently', () => {
     vi.spyOn(console, 'error').mockImplementation(() => {})
 
     await expect(copyTextSilently('hello')).resolves.toBe(false)
+  })
+
+  it('falls back to the legacy copy command when the Clipboard API rejects', async () => {
+    // happy-dom has no document.execCommand, so the legacy branch is only
+    // reachable with an explicit stub — without one it throws and the branch
+    // looks covered while never running.
+    stubClipboard(vi.fn().mockRejectedValue(new Error('denied')))
+    const execCommand = vi.fn().mockReturnValue(true)
+    Object.defineProperty(document, 'execCommand', {
+      value: execCommand,
+      configurable: true
+    })
+
+    await expect(copyTextSilently('hello')).resolves.toBe(true)
+    expect(execCommand).toHaveBeenCalledWith('copy')
+    // The scratch textarea must not outlive the copy.
+    expect(document.body.querySelectorAll('textarea')).toHaveLength(0)
   })
 
   it('reports failure without throwing when the Clipboard API is unavailable', async () => {

@@ -455,6 +455,41 @@ describe('InviteMemberDialogContent', () => {
       expect(copyLinkButtons()).toHaveLength(0)
       consoleError.mockRestore()
     })
+
+    // pendingInviteFor derives the id from the email, so the tests above pass
+    // under either join. These two decouple the two fields so the id-keyed
+    // lookup is what is actually pinned.
+    it('ignores a token from a different invite with the same address', async () => {
+      mockInviteListAfterSend([
+        { ...pendingInviteFor('a@b.com', 'tok-elsewhere'), id: 'inv-unrelated' }
+      ])
+      const { user } = renderDialog()
+
+      await inviteAndConfirm(user, 'a@b.com{Enter}')
+
+      await waitFor(() =>
+        expect(
+          screen.getByText('workspacePanel.inviteMemberDialog.invitedMessage')
+        ).toBeInTheDocument()
+      )
+      expect(copyLinkButtons()).toHaveLength(0)
+    })
+
+    it('takes the token from the matching id when the stored address differs', async () => {
+      mockInviteListAfterSend([
+        { ...pendingInviteFor('a@b.com', 'tok-a'), email: 'A@B.com' }
+      ])
+      const { user } = renderDialog()
+
+      await inviteAndConfirm(user, 'a@b.com{Enter}')
+
+      await waitFor(() => expect(copyLinkButtons()).toHaveLength(1))
+      await user.click(copyLinkButtons()[0])
+
+      expect(await navigator.clipboard.readText()).toBe(
+        buildInviteLink('tok-a')
+      )
+    })
   })
 
   it('closes without inviting on Cancel', async () => {
