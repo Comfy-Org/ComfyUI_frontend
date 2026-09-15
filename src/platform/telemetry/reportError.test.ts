@@ -5,11 +5,17 @@ const isEnabled = vi.fn()
 const addError = vi.fn()
 const getInitConfiguration = vi.fn()
 const mockIsCloud = { value: false }
+const captureDesktopException = vi.fn()
+const hostTelemetryEnabled = vi.fn(() => true)
 
 vi.mock(import('@/platform/distribution/types'), () => ({
   get isCloud() {
     return mockIsCloud.value
   }
+}))
+
+vi.mock(import('@/platform/telemetry/initHostTelemetry'), () => ({
+  isHostTelemetryEnabled: () => hostTelemetryEnabled()
 }))
 
 vi.mock(import('@sentry/vue'), () => ({
@@ -33,9 +39,17 @@ const sentryLive = (live: boolean) => isEnabled.mockReturnValue(live)
 const datadogLive = (live: boolean) =>
   getInitConfiguration.mockReturnValue(live ? {} : undefined)
 
+function installDesktopBridge(capture: unknown = captureDesktopException) {
+  const telemetry = { capture: vi.fn() }
+  Object.defineProperty(telemetry, 'captureException', { value: capture })
+  window.__comfyDesktop2 = { Telemetry: telemetry }
+}
+
 describe('reportError', () => {
   beforeEach(() => {
     mockIsCloud.value = false
+    delete window.__comfyDesktop2
+    hostTelemetryEnabled.mockReturnValue(true)
     sentryLive(true)
     datadogLive(true)
   })
@@ -104,6 +118,94 @@ describe('reportError', () => {
     reportError(new Error('boom'), { errorType: 'bootstrap_auth_wait_timeout' })
 
     expect(captureException).not.toHaveBeenCalled()
+    expect(addError).toHaveBeenCalledOnce()
+  })
+
+  it('sends only sanctioned fields through the Desktop error bridge', async () => {
+    sentryLive(false)
+    datadogLive(false)
+    installDesktopBridge()
+    const { reportError } = await loadReportError()
+    const error = new Error('failed for /Users/private/workflow.json')
+    const tags = {
+      feature_area: 'workspace_auth',
+      http_status: undefined
+    }
+    Object.assign(tags, { unsafe: { nested: true } })
+
+    reportError(error, {
+      errorType: 'workspace_auth_gate_initialization_failure',
+      tags,
+      context: { workflow: '/Users/private/workflow.json' },
+      level: 'error'
+    })
+
+    expect(captureDesktopException).toHaveBeenCalledWith(
+      { message: error.message, stack: error.stack },
+      {
+        error_type: 'workspace_auth_gate_initialization_failure',
+        feature_area: 'workspace_auth',
+        level: 'error'
+      }
+    )
+  })
+
+  it('delivers an early report to Desktop and later to Datadog once each', async () => {
+    sentryLive(false)
+    datadogLive(false)
+    const { reportError, flushErrorReports } = await loadReportError()
+
+    installDesktopBridge()
+    reportError(new Error('early'), { errorType: 'resource_load_error' })
+
+    datadogLive(true)
+    flushErrorReports()
+    flushErrorReports()
+
+    expect(captureDesktopException).toHaveBeenCalledOnce()
+    expect(addError).toHaveBeenCalledOnce()
+  })
+
+  it('buffers for another sink when an older Desktop bridge omits captureException', async () => {
+    sentryLive(false)
+    datadogLive(false)
+    window.__comfyDesktop2 = { Telemetry: { capture: vi.fn() } }
+    const { reportError, flushErrorReports } = await loadReportError()
+
+    reportError(new Error('early'), { errorType: 'resource_load_error' })
+    datadogLive(true)
+    flushErrorReports()
+
+    expect(addError).toHaveBeenCalledOnce()
+  })
+
+  it('honors the host telemetry kill switch', async () => {
+    sentryLive(false)
+    datadogLive(false)
+    hostTelemetryEnabled.mockReturnValue(false)
+    installDesktopBridge()
+    const { reportError, flushErrorReports } = await loadReportError()
+
+    reportError(new Error('disabled'), { errorType: 'resource_load_error' })
+    expect(captureDesktopException).not.toHaveBeenCalled()
+
+    hostTelemetryEnabled.mockReturnValue(true)
+    flushErrorReports()
+    expect(captureDesktopException).toHaveBeenCalledOnce()
+  })
+
+  it('ignores a non-callable Desktop captureException', async () => {
+    sentryLive(false)
+    datadogLive(false)
+    installDesktopBridge('not a function')
+    const { reportError, flushErrorReports } = await loadReportError()
+
+    expect(() =>
+      reportError(new Error('early'), { errorType: 'resource_load_error' })
+    ).not.toThrow()
+
+    datadogLive(true)
+    flushErrorReports()
     expect(addError).toHaveBeenCalledOnce()
   })
 
