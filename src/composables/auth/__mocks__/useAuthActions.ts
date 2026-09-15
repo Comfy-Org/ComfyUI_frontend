@@ -3,9 +3,7 @@ import { ref } from 'vue'
 
 import type { useAuthActions as realUseAuthActions } from '../useAuthActions'
 
-type AuthActions = ReturnType<typeof realUseAuthActions>
-
-const actions: Omit<AuthActions, 'accessError'> = {
+const actions: ReturnType<typeof realUseAuthActions> = {
   logout: vi.fn(async () => undefined),
   sendPasswordReset: vi.fn(async () => true),
   purchaseCredits: vi.fn(async () => undefined),
@@ -17,12 +15,8 @@ const actions: Omit<AuthActions, 'accessError'> = {
   signInWithEmail: vi.fn(async () => undefined),
   signUpWithEmail: vi.fn(async () => undefined),
   updatePassword: vi.fn(async () => undefined),
-  reportError: vi.fn()
+  reportError: vi.fn(),
+  accessError: ref(false)
 }
 
-export const useAuthActions = vi.fn<typeof realUseAuthActions>(
-  (): AuthActions => ({
-    ...actions,
-    accessError: ref(false)
-  })
-)
+export const useAuthActions = vi.fn<typeof realUseAuthActions>(() => actions)
