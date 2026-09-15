@@ -69,7 +69,7 @@ const statusPropsMap: Record<Status, StatusProps> = {
   },
   NodeVersionStatusFlagged: {
     label: 'flagged',
-    severity: 'error'
+    severity: 'warn'
   },
   NodeVersionStatusBanned: {
     label: 'banned',
@@ -77,13 +77,27 @@ const statusPropsMap: Record<Status, StatusProps> = {
   }
 }
 
+// A security status is why the pack is conflicting, so it outranks the generic
+// 'conflicting' label. Without this, banned and flagged both render as
+// "Conflicting" and the user cannot tell a rejected version from an unreviewed
+// one.
+const SECURITY_STATUSES = new Set<Status>([
+  'NodeStatusBanned',
+  'NodeVersionStatusBanned',
+  'NodeVersionStatusFlagged'
+])
+
+const isSecurityStatus = computed(() => SECURITY_STATUSES.has(statusType))
+
 const statusLabel = computed(() => {
   if (importFailed?.value) return 'importFailed'
-  if (hasCompatibilityIssues) return 'conflicting'
+  if (hasCompatibilityIssues && !isSecurityStatus.value) return 'conflicting'
   return statusPropsMap[statusType]?.label || 'unknown'
 })
 const statusSeverity = computed(() => {
-  if (hasCompatibilityIssues || importFailed?.value) return 'error'
+  if (importFailed?.value) return 'error'
+  if (isSecurityStatus.value) return statusPropsMap[statusType]?.severity
+  if (hasCompatibilityIssues) return 'error'
   return statusPropsMap[statusType]?.severity || 'secondary'
 })
 </script>
