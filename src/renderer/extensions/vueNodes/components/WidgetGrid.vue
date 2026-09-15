@@ -21,7 +21,10 @@
         <div
           :class="
             cn(
-              'z-10 flex w-3 items-stretch opacity-0 transition-opacity duration-150 group-hover:opacity-100',
+              'z-10 flex items-stretch',
+              row.showsControl
+                ? 'w-3 opacity-0 transition-opacity duration-150 group-hover:opacity-100'
+                : 'col-span-full',
               row.widget.slotMetadata?.linked && 'opacity-100'
             )
           "
@@ -39,7 +42,7 @@
             :index="row.widget.slotMetadata.index"
             :socketless="row.widget.simplified.spec?.socketless"
             :standalone="row.standalone"
-            dot-only
+            :dot-only="row.showsControl"
           />
         </div>
         <AppInput
@@ -107,7 +110,10 @@ const {
   syncLayout?: boolean
 }>()
 
-useVueElementTracking(syncLayout ? String(nodeId ?? '') : '', 'widgets-grid')
+const tracking = useVueElementTracking(
+  syncLayout ? String(nodeId ?? '') : '',
+  'widgets-grid'
+)
 const canvasStore = useCanvasStore()
 const renderedRows = computed(() =>
   processedWidgets.flatMap((widget) => {
@@ -150,6 +156,7 @@ const layoutKey = computed(() =>
 watch(
   layoutKey,
   () => {
+    tracking.reconcile()
     const rootGraphId = canvasStore.rootGraphId
     if (syncLayout && grid.value && rootGraphId && nodeId) {
       syncSlotOffsets(grid.value, rootGraphId, nodeId)
