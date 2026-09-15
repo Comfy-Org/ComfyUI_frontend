@@ -42,13 +42,20 @@
         >
           <template v-if="isVideoPreview">
             <video
-              :src="previewUrl"
+              v-if="videoStatus !== 'failed'"
+              :src="videoSrc"
               preload="metadata"
               muted
               playsinline
               class="pointer-events-none size-full object-cover"
+              @error="onVideoError"
             />
-            <VideoPlayOverlay size="sm" />
+            <VideoPlayOverlay v-if="videoStatus !== 'failed'" size="sm" />
+            <i
+              v-if="videoStatus === 'failed'"
+              aria-hidden="true"
+              class="absolute inset-0 m-auto icon-[lucide--video-off] size-4 text-text-secondary"
+            />
           </template>
           <img
             v-else
@@ -135,6 +142,7 @@
 </template>
 
 <script setup lang="ts">
+import { useRetryableMediaSrc } from '@/composables/media/useRetryableMediaSrc'
 import { useProgressBarBackground } from '@/composables/useProgressBarBackground'
 import Button from '@/components/ui/button/Button.vue'
 import { cn } from '@comfyorg/tailwind-utils'
@@ -177,6 +185,12 @@ const {
   progressTotalPercent?: number
   progressCurrentPercent?: number
 }>()
+
+const {
+  src: videoSrc,
+  status: videoStatus,
+  onError: onVideoError
+} = useRetryableMediaSrc(() => (isVideoPreview ? previewUrl : undefined))
 
 const {
   progressBarContainerClass,
