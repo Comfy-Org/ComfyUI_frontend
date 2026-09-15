@@ -1,0 +1,139 @@
+{
+  "id": "c0b4e23b-b873-4b79-af44-5a51d41a4ec6",
+  "revision": 0,
+  "last_node_id": 2,
+  "last_link_id": 0,
+  "nodes": [
+    {
+      "id": 1,
+      "type": "EmptyImage",
+      "pos": [120, 240],
+      "size": [270, 130],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [
+        {
+          "localized_name": "width",
+          "name": "width",
+          "type": "INT",
+          "widget": { "name": "width" },
+          "link": null
+        },
+        {
+          "localized_name": "height",
+          "name": "height",
+          "type": "INT",
+          "widget": { "name": "height" },
+          "link": null
+        },
+        {
+          "localized_name": "batch_size",
+          "name": "batch_size",
+          "type": "INT",
+          "widget": { "name": "batch_size" },
+          "link": null
+        },
+        {
+          "localized_name": "color",
+          "name": "color",
+          "type": "INT",
+          "widget": { "name": "color" },
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "localized_name": "IMAGE",
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": null
+        }
+      ],
+      "properties": { "Node name for S&R": "EmptyImage" },
+      "widgets_values": [512, 512, 1, 0],
+      "widgets_values_named": {
+        "width": 512,
+        "height": 512,
+        "batch_size": 1,
+        "color": 0
+      }
+    },
+    {
+      "id": 2,
+      "type": "ImageCompositeMasked",
+      "pos": [620, 240],
+      "size": [271.9, 146],
+      "flags": {},
+      "order": 1,
+      "mode": 0,
+      "inputs": [
+        {
+          "localized_name": "destination",
+          "name": "destination",
+          "type": "IMAGE",
+          "link": null
+        },
+        {
+          "localized_name": "source",
+          "name": "source",
+          "type": "IMAGE",
+          "link": null
+        },
+        {
+          "localized_name": "mask",
+          "name": "mask",
+          "shape": 7,
+          "type": "MASK",
+          "link": null
+        },
+        {
+          "localized_name": "x",
+          "name": "x",
+          "type": "INT",
+          "widget": { "name": "x" },
+          "link": null
+        },
+        {
+          "localized_name": "y",
+          "name": "y",
+          "type": "INT",
+          "widget": { "name": "y" },
+          "link": null
+        },
+        {
+          "localized_name": "resize_source",
+          "name": "resize_source",
+          "type": "BOOLEAN",
+          "widget": { "name": "resize_source" },
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "localized_name": "IMAGE",
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": null
+        }
+      ],
+      "properties": { "Node name for S&R": "ImageCompositeMasked" },
+      "widgets_values": [0, 0, false],
+      "widgets_values_named": {
+        "x": 0,
+        "y": 0,
+        "resize_source": false
+      }
+    }
+  ],
+  "links": [],
+  "groups": [],
+  "config": {},
+  "extra": {
+    "ds": {
+      "scale": 0.9,
+      "offset": [416, 110]
+    }
+  },
+  "version": 0.4
+}
