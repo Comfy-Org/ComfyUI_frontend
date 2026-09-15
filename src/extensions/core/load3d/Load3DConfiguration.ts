@@ -14,6 +14,14 @@ import type { NodeProperty } from '@/lib/litegraph/src/LGraphNode'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { api } from '@/scripts/api'
+import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import { isRemoteMutationContext } from '@/types/graphMutationContext'
+
+// One store subscription per widget instance, regardless of how many times
+// `configure()` re-runs across this node's lifecycle (queue results, preview
+// re-applies, etc). Keyed by the widget object itself so a widget torn down
+// with its node is naturally released.
+const remoteModelUpdateSubscribed = new WeakSet<IBaseWidget>()
 
 type Load3DConfigurationSettings = {
   loadFolder: string
@@ -160,6 +168,42 @@ class Load3DConfiguration {
 
       onSceneInvalidated?.()
     }
+
+    this.subscribeToRemoteModelUpdates(modelWidget)
+  }
+
+  /**
+   * The agent/CRDT follower writes widget values straight into
+   * `widgetValueStore` (`graphMutations.ts`'s `setWidget`/`reconcileNode`
+   * commit path), never through this widget's own JS property. The
+   * `Object.defineProperty` override above only fires when something sets
+   * `modelWidget.value` directly, so a remote-origin `model_file` change
+   * would otherwise never reload the Three.js scene or invalidate the
+   * capture cache, leaving `serializeValue` (load3d.ts) returning a stale
+   * cached image/mask/normal/recording on the next queue or manual capture.
+   * Bridge the two by replaying the widget's own setter for value changes
+   * that originated remotely.
+   */
+  private subscribeToRemoteModelUpdates(modelWidget: IBaseWidget): void {
+    if (remoteModelUpdateSubscribed.has(modelWidget)) return
+    remoteModelUpdateSubscribed.add(modelWidget)
+
+    const widgetValueStore = useWidgetValueStore()
+    const unsubscribe = widgetValueStore.onValueChange(
+      ({ widgetId, value, context }) => {
+        // The widget (and its node) may have been removed since this
+        // listener was registered; `onValueChange` has no per-widget scope,
+        // so detect staleness here and detach rather than leaking forever.
+        if (!widgetValueStore.getWidget(modelWidget.widgetId ?? widgetId)) {
+          unsubscribe()
+          return
+        }
+        if (!isRemoteMutationContext(context)) return
+        if (widgetId !== modelWidget.widgetId) return
+        if (value === modelWidget.value) return
+        modelWidget.value = value as IBaseWidget['value']
+      }
+    )
   }
 
   private setupDefaultProperties(bgImagePath?: string) {
