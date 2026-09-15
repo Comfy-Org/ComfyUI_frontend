@@ -56,9 +56,6 @@ describe('DesktopCloudNotificationController', () => {
           value
       }
     )
-    vi.mocked(useDialogService().showCloudNotification).mockResolvedValue(
-      undefined
-    )
   })
 
   it('waits for settings to load before deciding whether to show the notification', async () => {

@@ -117,7 +117,6 @@ describe('useAgentConsent', () => {
     fetchApi.mockReset()
     fetchWithUnifiedRemint.mockReset()
     fetchWithUnifiedRemint.mockResolvedValue(settingResponse(false))
-    vi.mocked(useDialogService().showSignInDialog).mockReset()
     reportError.mockReset()
     vi.mocked(useToastStore().add).mockReset()
   })

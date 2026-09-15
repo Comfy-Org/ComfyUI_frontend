@@ -56,9 +56,6 @@ describe('useTopUpUrlLoader', () => {
     mockCanTopUp.value = true
     mockCanSubscribeSelfServe.value = false
     mockInitialize.mockResolvedValue(undefined)
-    vi.mocked(useDialogService().showTopUpCreditsDialog).mockResolvedValue(
-      undefined
-    )
     preservedQueryMocks.mergePreservedQueryIntoQuery.mockReturnValue(null)
   })
 
