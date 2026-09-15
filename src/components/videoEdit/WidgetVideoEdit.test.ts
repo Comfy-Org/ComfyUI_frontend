@@ -45,7 +45,7 @@ vi.mock<unknown>(import('@/utils/graphTraversalUtil'), () => ({
   getNodeByLocatorId: mocks.getNodeByLocatorId
 }))
 
-vi.mock(import('@/composables/video/useVideoSourceUrl'), () => {
+vi.mock<unknown>(import('@/composables/video/useVideoSourceUrl'), () => {
   // eslint-disable-next-line @typescript-eslint/no-require-imports
   const { ref: createRef } = require('vue')
   return {
