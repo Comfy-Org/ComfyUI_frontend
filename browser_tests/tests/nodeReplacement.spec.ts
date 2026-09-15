@@ -1,16 +1,8 @@
-import {
-  comfyPageFixture as test,
-  comfyExpect as expect
-} from '@e2e/fixtures/ComfyPage'
-import {
-  mockNodeReplacements,
-  mockNodeReplacementsSingle
-} from '@e2e/fixtures/data/nodeReplacements'
+import { comfyExpect as expect } from '@e2e/fixtures/ComfyPage'
+import { nodeReplacementFixture as test } from '@e2e/fixtures/nodeReplacementFixture'
+import { mockNodeReplacements } from '@e2e/fixtures/data/nodeReplacements'
 import { loadWorkflowAndOpenErrorsTab } from '@e2e/fixtures/helpers/ErrorsTabHelper'
-import {
-  getSwapNodesGroup,
-  setupNodeReplacement
-} from '@e2e/fixtures/helpers/NodeReplacementHelper'
+import { getSwapNodesGroup } from '@e2e/fixtures/helpers/NodeReplacementHelper'
 import { TestIds } from '@e2e/fixtures/selectors'
 import { toNodeId } from '@/types/nodeId'
 
@@ -31,7 +23,6 @@ test.describe('Node replacement', { tag: ['@node', '@ui'] }, () => {
       () => {
         test.describe('Single replacement', () => {
           test.beforeEach(async ({ comfyPage }) => {
-            await setupNodeReplacement(comfyPage, mockNodeReplacementsSingle)
             await loadWorkflowAndOpenErrorsTab(
               comfyPage,
               'missing/node_replacement_simple'
@@ -165,7 +156,6 @@ test.describe('Node replacement', { tag: ['@node', '@ui'] }, () => {
 
         test.describe('Same-type replacement group', () => {
           test.beforeEach(async ({ comfyPage }) => {
-            await setupNodeReplacement(comfyPage, mockNodeReplacementsSingle)
             await loadWorkflowAndOpenErrorsTab(
               comfyPage,
               'missing/node_replacement_same_type'
@@ -209,8 +199,9 @@ test.describe('Node replacement', { tag: ['@node', '@ui'] }, () => {
         })
 
         test.describe('Multi-type replacement', () => {
+          test.use({ nodeReplacements: mockNodeReplacements })
+
           test.beforeEach(async ({ comfyPage }) => {
-            await setupNodeReplacement(comfyPage, mockNodeReplacements)
             await loadWorkflowAndOpenErrorsTab(
               comfyPage,
               'missing/node_replacement_multi'
@@ -266,7 +257,7 @@ test.describe('Node replacement', { tag: ['@node', '@ui'] }, () => {
     { tag: ['@vue-nodes'] },
     async ({ comfyPage }) => {
       test.slow()
-      await setupNodeReplacement(comfyPage, mockNodeReplacementsSingle)
+
       await loadWorkflowAndOpenErrorsTab(
         comfyPage,
         'missing/node_replacement_simple'
