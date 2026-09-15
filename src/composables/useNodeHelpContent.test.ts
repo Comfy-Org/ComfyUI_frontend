@@ -523,4 +523,27 @@ The MEDIA_SRC_REGEX handles both single and double quotes in img, video and sour
     // Should have second node's content, not first
     expect(helpContent.value).toBe('# Second node content')
   })
+
+  it('should ignore a pending request when the node is cleared', async () => {
+    const nodeRef = ref<ComfyNodeDefImpl | null>(mockCoreNode)
+    let resolveRequest: ((response: Response) => void) | undefined
+    const request = new Promise<Response>((resolve) => {
+      resolveRequest = resolve
+    })
+    mockFetch.mockReturnValueOnce(request)
+
+    const { helpContent, isLoading } = useNodeHelpContent(nodeRef)
+    await nextTick()
+    expect(isLoading.value).toBe(true)
+
+    nodeRef.value = null
+    await nextTick()
+    expect(isLoading.value).toBe(false)
+
+    assert(resolveRequest)
+    resolveRequest(markdownResponse('# Stale content'))
+    await flushPromises()
+
+    expect(helpContent.value).toBe('')
+  })
 })
