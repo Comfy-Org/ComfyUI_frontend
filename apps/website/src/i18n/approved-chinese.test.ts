@@ -28,10 +28,7 @@ describe('approved Chinese is never overwritten', () => {
       if (approved === undefined) continue
       if (t(key, 'zh-CN') !== approved) shadowed.push(key)
     }
-    expect(
-      shadowed,
-      'the machine layer shadowed an approved Chinese string'
-    ).toEqual([])
+    expect(shadowed).toEqual([])
   })
 
   it('reports every one of them as approved, never as machine', () => {
@@ -65,12 +62,7 @@ describe('approved Chinese is never overwritten', () => {
     const covered = sourceTranslationKeys.filter(
       (key) => localizedEntry(key)['zh-CN'] !== undefined
     ).length
-    expect(
-      covered,
-      `approved Chinese dropped from ${APPROVED_CHINESE_FLOOR} to ${covered}. ` +
-        `Adding an English-only key is fine and does not change this number; ` +
-        `losing a Chinese string does.`
-    ).toBeGreaterThanOrEqual(APPROVED_CHINESE_FLOOR)
+    expect(covered).toBeGreaterThanOrEqual(APPROVED_CHINESE_FLOOR)
   })
 
   /**
@@ -85,9 +77,6 @@ describe('approved Chinese is never overwritten', () => {
         sourceTranslationKeys.includes(key as never) &&
         localizedEntry(key as never)['zh-CN'] !== undefined
     )
-    expect(
-      shadowing,
-      'these machine translations can never be displayed; the source build should not have requested them'
-    ).toEqual([])
+    expect(shadowing).toEqual([])
   })
 })

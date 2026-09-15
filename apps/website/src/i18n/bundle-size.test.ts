@@ -33,10 +33,8 @@ describe('the client module carries no dictionary of its own', () => {
     ]
 
     expect(sourceImports.length).toBeGreaterThan(0)
-    for (const [line, isTypeOnly] of sourceImports) {
-      expect(isTypeOnly, `value import of the copy source: ${line}`).toBe(
-        'type '
-      )
+    for (const [, isTypeOnly] of sourceImports) {
+      expect(isTypeOnly).toBe('type ')
     }
   })
 
@@ -88,10 +86,6 @@ describe('per-locale dictionary budget', () => {
     const file = join(i18nDir, 'resolved', `${locale}.json`)
     const bytes = statSync(file).size
 
-    expect(
-      bytes,
-      `src/i18n/resolved/${locale}.json is ${bytes} bytes, downloaded by every ` +
-        `${locale} visitor.`
-    ).toBeLessThan(BUDGET_BYTES)
+    expect(bytes).toBeLessThan(BUDGET_BYTES)
   })
 })

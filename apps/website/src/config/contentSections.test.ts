@@ -30,7 +30,7 @@ describe('deriveSections', () => {
     // silently failed.
     for (const section of chinese) {
       for (const block of section.blocks) {
-        expect(block.type, section.id).toBeTruthy()
+        expect(block.type).toBeTruthy()
       }
     }
   })

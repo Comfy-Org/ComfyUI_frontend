@@ -32,13 +32,13 @@ describe('LOCALES', () => {
   it('carries complete metadata for every locale', () => {
     for (const code of LOCALE_CODES) {
       const locale = LOCALES[code]
-      expect(locale.code, code).toBe(code)
-      expect(locale.name, code).toBeTruthy()
-      expect(locale.nativeName, code).toBeTruthy()
-      expect(locale.hreflang, code).toBeTruthy()
-      expect(['ltr', 'rtl'], code).toContain(locale.dir)
+      expect(locale.code).toBe(code)
+      expect(locale.name).toBeTruthy()
+      expect(locale.nativeName).toBeTruthy()
+      expect(locale.hreflang).toBeTruthy()
+      expect(['ltr', 'rtl']).toContain(locale.dir)
       // Open Graph wants language_TERRITORY, not the BCP 47 tag.
-      expect(locale.ogLocale, code).toMatch(/^[a-z]{2}_[A-Z]{2}$/)
+      expect(locale.ogLocale).toMatch(/^[a-z]{2}_[A-Z]{2}$/)
     }
   })
 })

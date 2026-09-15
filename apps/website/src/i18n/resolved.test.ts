@@ -40,11 +40,7 @@ describe('resolved dictionaries match the source they came from', () => {
       (key) => resolved[key] !== resolveTranslation(key, locale).value
     )
 
-    expect(
-      wrong.slice(0, 5),
-      `src/i18n/resolved/${locale}.json is stale for ${wrong.length} key(s). ` +
-        `Run \`pnpm i18n:build-resolved\`.`
-    ).toEqual([])
+    expect(wrong.slice(0, 5)).toEqual([])
   })
 
   it.for(LOCALE_CODES)('%s carries every key in source order', (locale) => {
@@ -96,12 +92,7 @@ describe('the per-locale split cannot be silently undone', () => {
       .filter((file) => SINGLE_ARG_T.test(readFileSync(file, 'utf8')))
       .map((file) => file.slice(websiteDir.length + 1))
 
-    expect(
-      offenders,
-      'These components call t() without a locale, so they would render ' +
-        'English on a localized page and throw once hydrated. Pass the ' +
-        "component's `locale` through."
-    ).toEqual([])
+    expect(offenders).toEqual([])
   })
 
   it('keeps the pipeline off the client module, which tsx cannot load', () => {

@@ -18,10 +18,7 @@ vi.mock(import('@/composables/useCopyToClipboard'), () => ({
 const mockDistribution = vi.hoisted(
   (): { isCloud: typeof DistributionTypes.isCloud } => ({ isCloud: false })
 )
-vi.mock<unknown>(
-  import('@/platform/distribution/types'),
-  () => mockDistribution
-)
+vi.mock(import('@/platform/distribution/types'), () => mockDistribution)
 
 vi.mock(import('@/platform/assets/composables/useModelTypes'), async () => {
   const { ref } = await import('vue')
