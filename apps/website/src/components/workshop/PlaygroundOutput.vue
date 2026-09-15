@@ -231,7 +231,10 @@ const earlierClass = (active: boolean) =>
       <span class="shrink-0">{{ t('workshop.output.title', locale) }}</span>
       <div
         v-if="currentAttachments.length && !blurred"
+        role="group"
+        :aria-label="t('workshop.output.files', locale)"
         class="flex min-w-0 items-center gap-2 overflow-x-auto"
+        data-testid="output-files"
       >
         <button
           v-for="(output, index) in files"

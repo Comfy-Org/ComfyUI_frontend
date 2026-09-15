@@ -9860,6 +9860,7 @@ Enterprise`
 
   // Workshop – output
   'workshop.output.title': { en: 'Output', 'zh-CN': '输出' },
+  'workshop.output.files': { en: 'Output files', 'zh-CN': '输出文件' },
   'workshop.output.kindImage': { en: 'Image', 'zh-CN': '图片' },
   'workshop.output.kindVideo': { en: 'Video', 'zh-CN': '视频' },
   'workshop.output.kindAudio': { en: 'Audio', 'zh-CN': '音频' },

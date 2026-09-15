@@ -224,7 +224,7 @@ describe('PlaygroundOutput', () => {
       }
     })
 
-    const header = within(screen.getByRole('banner'))
+    const header = within(screen.getByRole('group', { name: 'Output files' }))
     expect(
       header.getByRole('button', { name: 'Image', pressed: true })
     ).toBeTruthy()
@@ -252,7 +252,9 @@ describe('PlaygroundOutput', () => {
       }
     })
     expect(
-      within(screen.getByRole('banner')).getAllByRole('button')
+      within(screen.getByRole('group', { name: 'Output files' })).getAllByRole(
+        'button'
+      )
     ).toHaveLength(11)
   })
 
