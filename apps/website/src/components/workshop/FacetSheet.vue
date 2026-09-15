@@ -209,10 +209,15 @@ function visibleOptions(group: FacetSheetGroup) {
 
     <TabsRoot v-model="activeKey" class="flex min-h-0 flex-col max-sm:flex-1">
       <!-- One group has nothing to be chosen between, so its name is a
-        heading over the only thing there is. -->
+        heading over the only thing there is. It stays in the accessibility
+        tree, because the panel below is named by it. -->
       <TabsList
-        v-if="groups.length > 1"
-        class="scrollbar-hide flex items-center gap-1 overflow-x-auto border-b border-white/10 p-2 max-sm:px-4 max-sm:pb-3"
+        :class="
+          cn(
+            'scrollbar-hide flex items-center gap-1 overflow-x-auto border-b border-white/10 p-2 max-sm:px-4 max-sm:pb-3',
+            groups.length < 2 && 'sr-only'
+          )
+        "
       >
         <TabsTrigger
           v-for="group in groups"
