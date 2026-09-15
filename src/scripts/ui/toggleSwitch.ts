@@ -17,9 +17,6 @@ export function toggleSwitch(name, items, e?) {
   // @ts-expect-error fixme ts strict error
   let selectedIndex
   // @ts-expect-error fixme ts strict error
-  let elements
-
-  // @ts-expect-error fixme ts strict error
   function updateSelected(index) {
     // @ts-expect-error fixme ts strict error
     if (selectedIndex != null) {
@@ -32,12 +29,11 @@ export function toggleSwitch(name, items, e?) {
       prev: selectedIndex == null ? undefined : items[selectedIndex]
     })
     selectedIndex = index
-    // @ts-expect-error fixme ts strict error
     elements[selectedIndex].classList.add('comfy-toggle-selected')
   }
 
   // @ts-expect-error fixme ts strict error
-  elements = items.map((item, i) => {
+  const elements = items.map((item, i) => {
     if (typeof item === 'string') item = { text: item }
     if (!item.value) item.value = item.text
 

@@ -35,7 +35,8 @@ export async function getMp3Metadata(file: File) {
   }
   let workflow: ComfyWorkflowJSON | undefined
   let prompt: ComfyApiWorkflow | undefined
-  let prompt_s = header.match(/prompt\u0000(\{.*?\})\u0000/s)?.[1]
+  // eslint-disable-next-line no-control-regex -- NUL-delimited binary field
+  const prompt_s = header.match(/prompt\u0000(\{.*?\})\u0000/s)?.[1]
   if (prompt_s) {
     try {
       prompt = parseJsonWithNonFinite<ComfyApiWorkflow>(prompt_s)
@@ -43,7 +44,8 @@ export async function getMp3Metadata(file: File) {
       console.error('Failed to parse MP3 prompt metadata', e)
     }
   }
-  let workflow_s = header.match(/workflow\u0000(\{.*?\})\u0000/s)?.[1]
+  // eslint-disable-next-line no-control-regex -- NUL-delimited binary field
+  const workflow_s = header.match(/workflow\u0000(\{.*?\})\u0000/s)?.[1]
   if (workflow_s) {
     try {
       workflow = parseJsonWithNonFinite<ComfyWorkflowJSON>(workflow_s)

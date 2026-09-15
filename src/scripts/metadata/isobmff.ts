@@ -1,12 +1,11 @@
-import {
-  type ComfyApiWorkflow,
-  type ComfyWorkflowJSON
+import type {
+  ComfyApiWorkflow,
+  ComfyWorkflowJSON
 } from '@/platform/workflow/validation/schemas/workflowSchema'
-import {
-  ASCII,
-  type ComfyMetadata,
-  ComfyMetadataTags,
-  type IsobmffBoxContentRange
+import { ASCII, ComfyMetadataTags } from '@/types/metadataTypes'
+import type {
+  ComfyMetadata,
+  IsobmffBoxContentRange
 } from '@/types/metadataTypes'
 import { readFileAsArrayBuffer } from '@/utils/fileUtil'
 import { parseJsonWithNonFinite } from '@/utils/jsonUtil'
@@ -195,10 +194,13 @@ const parseIlstBox = (
 }
 
 const findUserDataBox = (data: Uint8Array): IsobmffBoxContentRange => {
-  let userDataBox: IsobmffBoxContentRange = null
-
   // Metadata can be in 'udta' at top level or inside 'moov'
-  userDataBox = findIsobmffBoxByType(data, 0, data.length, BOX_TYPES.USER_DATA)
+  let userDataBox: IsobmffBoxContentRange = findIsobmffBoxByType(
+    data,
+    0,
+    data.length,
+    BOX_TYPES.USER_DATA
+  )
 
   if (!userDataBox) {
     const moovBox = findIsobmffBoxByType(data, 0, data.length, BOX_TYPES.MOVIE)
