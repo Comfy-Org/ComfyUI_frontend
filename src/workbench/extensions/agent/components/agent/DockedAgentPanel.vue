@@ -16,7 +16,7 @@
     />
     <div
       data-testid="docked-agent-panel-shell"
-      class="bg-agent-surface size-full border-l border-interface-stroke p-2"
+      class="size-full border-l border-interface-stroke bg-base-background p-2"
     >
       <div
         class="size-full overflow-hidden rounded-lg border border-interface-stroke"

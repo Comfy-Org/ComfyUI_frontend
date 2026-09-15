@@ -80,7 +80,7 @@ describe('file source selection', () => {
       expect(screen.getByText('2 KB')).toBeTruthy()
       expect(screen.queryByRole('img')).toBeNull()
       expect(values.value).toMatchObject([{ file }])
-      expect(screen.getByText('Choose files or drop them here')).toBeTruthy()
+      expect(screen.getByText('Select or drop up to 2 files')).toBeTruthy()
       await user.click(screen.getByRole('button', { name: `Replace ${name}` }))
       const replacement = new File(['replacement bytes'], 'replacement.fbx', {
         type: 'application/octet-stream'
@@ -242,6 +242,16 @@ describe('file source selection', () => {
     )
     expect(value.value).toMatchObject([{ file: first }])
     expect(screen.getAllByRole('img')).toHaveLength(1)
+  })
+
+  it('promises one image where a second would replace the first', async () => {
+    const single = { ...field, multiple: false, maxItems: 1 }
+    const value = mountInput(false, single)
+    expect(screen.getByText('Select or drop an image')).toBeTruthy()
+    await drop([new File(['one'], 'one.png', { type: 'image/png' })])
+    expect(screen.getByText('Select or drop to replace')).toBeTruthy()
+    await drop([new File(['two'], 'two.png', { type: 'image/png' })])
+    expect(value.value).toMatchObject({ name: 'two.png' })
   })
 
   it('ignores file drops while disabled', async () => {

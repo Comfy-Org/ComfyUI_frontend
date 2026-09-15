@@ -3,7 +3,7 @@ import { describe, expect, test, vi } from 'vitest'
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { ComponentWidgetImpl, DOMWidgetImpl } from '@/scripts/domWidget'
 
-vi.mock('@/utils/formatUtil', () => ({
+vi.mock(import('@/utils/formatUtil'), () => ({
   generateUUID: () => 'test-uuid'
 }))
 

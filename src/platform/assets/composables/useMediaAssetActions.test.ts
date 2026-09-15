@@ -86,11 +86,10 @@ vi.mock<unknown>(import('@/services/litegraphService'), () => ({
   useLitegraphService: () => litegraphServiceMock
 }))
 
-vi.mock<unknown>(import('@/utils/loaderNodeUtil'), () => ({
-  detectNodeTypeFromFilename: vi.fn(() => ({
-    nodeType: 'LoadImage',
-    widgetName: 'image'
-  }))
+vi.mock(import('@/utils/loaderNodeUtil'), () => ({
+  detectNodeTypeFromFilename: vi.fn(
+    () => ({ nodeType: 'LoadImage', widgetName: 'image' }) as const
+  )
 }))
 
 vi.mock<unknown>(import('@/utils/typeGuardUtil'), () => ({
