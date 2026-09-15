@@ -23,6 +23,7 @@ const forwarded = useForwardPropsEmits(restProps, emits)
   <ToastRoot
     v-bind="forwarded"
     :role
+    :aria-live="role === 'alert' ? 'assertive' : 'polite'"
     :class="
       cn(
         'pointer-events-auto relative flex w-full items-start gap-3 rounded-lg border border-border-default bg-base-background p-4 text-base-foreground shadow-lg',
@@ -30,6 +31,8 @@ const forwarded = useForwardPropsEmits(restProps, emits)
       )
     "
   >
-    <slot />
+    <div class="contents" data-reka-toast-announce-exclude="">
+      <slot />
+    </div>
   </ToastRoot>
 </template>

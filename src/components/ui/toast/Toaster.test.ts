@@ -36,7 +36,28 @@ describe('Toaster', () => {
     const notifications = screen.getAllByTestId('toast')
     expect(notifications).toHaveLength(2)
     expect(notifications[0]).toHaveAttribute('role', 'status')
+    expect(notifications[0]).toHaveAttribute('aria-live', 'polite')
     expect(notifications[1]).toHaveAttribute('role', 'alert')
+    expect(notifications[1]).toHaveAttribute('aria-live', 'assertive')
+  })
+
+  it('renders standard and custom messages only once after announcement', async () => {
+    vi.useFakeTimers()
+    renderToaster()
+    const toast = useToast()
+
+    toast.error('Save failed', { description: 'Try another location' })
+    toast.custom({ template: '<div>Custom notification</div>' })
+    await nextTick()
+    await vi.advanceTimersByTimeAsync(1000)
+
+    expect(document.body.textContent.match(/Save failed/g)).toHaveLength(1)
+    expect(
+      document.body.textContent.match(/Try another location/g)
+    ).toHaveLength(1)
+    expect(
+      document.body.textContent.match(/Custom notification/g)
+    ).toHaveLength(1)
   })
 
   it('lifts a new notification above an open dialog', async () => {
