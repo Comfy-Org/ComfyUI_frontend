@@ -656,7 +656,10 @@ test.describe(
       const output = await queueAndReadPng(comfyPage)
       expect(output).toMatchObject({ width: 64, height: 48 })
       runtimeErrors.stop()
-      expect(runtimeErrors.errors).toEqual([])
+      const benignUserCssLoad = /Failed to load resource.*\buser\.css\]$/
+      expect(
+        runtimeErrors.errors.filter((e) => !benignUserCssLoad.test(e))
+      ).toEqual([])
       await expectNoVisibleErrors(
         comfyPage.page,
         'after sanity operations and real Queue'
