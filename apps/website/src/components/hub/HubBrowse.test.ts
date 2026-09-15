@@ -56,18 +56,14 @@ describe('HubBrowse', () => {
     cards.forEach((card) => expect(card.textContent).toMatch(/Upscale/i))
   })
 
-  it('shows model results in the shared search panel only after typing', async () => {
+  it('does not show a duplicate search results panel', async () => {
     const user = userEvent.setup()
     render(HubBrowse)
     expect(screen.queryByTestId('workshop-search-panel')).toBeNull()
 
-    await user.click(screen.getByTestId('workshop-search'))
-    expect(screen.queryByTestId('workshop-search-panel')).toBeNull()
+    await user.click(screen.getByTestId('hub-tab-models'))
     await user.type(screen.getByTestId('workshop-search'), 'kling')
-    expect(screen.getByTestId('workshop-search-panel')).toBeTruthy()
-    expect(
-      screen.getAllByTestId('workshop-search-model').length
-    ).toBeGreaterThan(0)
+    expect(screen.queryByTestId('workshop-search-panel')).toBeNull()
   })
 
   it('filters by a model facet from the Filter popover', async () => {
