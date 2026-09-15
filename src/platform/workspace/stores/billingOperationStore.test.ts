@@ -1,4 +1,3 @@
-import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import {
   bindOperationToCheckoutJourney,
@@ -13,6 +12,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { useTelemetry } from '@/platform/telemetry'
 
 import type { BillingOpStatusResponse } from '@/platform/workspace/api/workspaceApi'
+import { mockBillingContext } from '@/utils/__tests__/mockBillingContext'
 
 const { mockHandleNextAction, mockLoadStripe, mockFeatureFlags } = vi.hoisted(
   () => ({
@@ -451,8 +451,7 @@ describe('billingOperationStore', () => {
     })
 
     it('updates status and shows toast on success', async () => {
-      const billing = useBillingContext()
-      vi.mocked(useBillingContext).mockReturnValue(billing)
+      const billing = mockBillingContext()
       vi.mocked(workspaceApi.getBillingOpStatus).mockResolvedValue({
         id: 'op-1',
         status: 'succeeded',
@@ -880,8 +879,7 @@ describe('billingOperationStore', () => {
     })
 
     it('resolves the terminal promise even if reconciliation throws synchronously', async () => {
-      const billing = useBillingContext()
-      vi.mocked(useBillingContext).mockReturnValue(billing)
+      const billing = mockBillingContext()
       vi.mocked(workspaceApi.getBillingOpStatus).mockResolvedValue({
         id: 'op-1',
         status: 'succeeded',
@@ -2458,8 +2456,7 @@ describe('billingOperationStore', () => {
     })
 
     it('resolves with the succeeded operation and refreshes status', async () => {
-      const billing = useBillingContext()
-      vi.mocked(useBillingContext).mockReturnValue(billing)
+      const billing = mockBillingContext()
       vi.mocked(workspaceApi.getBillingOpStatus).mockResolvedValue({
         id: 'op-1',
         status: 'succeeded',
@@ -2490,8 +2487,7 @@ describe('billingOperationStore', () => {
     })
 
     it('resolves the terminal outcome even when the post-success refresh fails', async () => {
-      const billing = useBillingContext()
-      vi.mocked(useBillingContext).mockReturnValue(billing)
+      const billing = mockBillingContext()
       vi.mocked(billing.fetchStatus).mockRejectedValueOnce(
         new Error('refresh failed')
       )
