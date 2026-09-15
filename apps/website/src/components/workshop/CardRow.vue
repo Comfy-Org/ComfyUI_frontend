@@ -13,10 +13,6 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 const row = useTemplateRef<HTMLElement>('row')
 const atStart = ref(true)
 const atEnd = ref(true)
-// Rows are not all the same height: a card carrying three tags stands taller
-// than one carrying a single tag. Centring on the row would put each row's
-// arrows at a different point of its cards, so they centre on the artwork.
-const arrowTop = ref('50%')
 
 // The row carries a little padding so focus rings are not clipped, and snapping
 // rests inside it, so "at the start" is a few pixels wide.
@@ -27,11 +23,6 @@ function measure() {
   if (!el) return
   atStart.value = el.scrollLeft <= EDGE
   atEnd.value = el.scrollLeft + el.clientWidth >= el.scrollWidth - EDGE
-
-  const art = el.querySelector('li img, li video')
-  if (!art) return
-  const { top, height } = art.getBoundingClientRect()
-  arrowTop.value = `${Math.round(top - el.getBoundingClientRect().top + height / 2)}px`
 }
 
 function page(direction: 1 | -1) {
@@ -50,7 +41,13 @@ useMutationObserver(row, measure, { childList: true, subtree: true })
 // would put a band of empty page between every two sliders. They are opaque,
 // because a card showing through a control reads as a rendering fault.
 const arrowClass =
-  'focus-visible:ring-primary-comfy-yellow/50 hover:border-primary-comfy-yellow hover:text-primary-comfy-yellow bg-page pointer-events-auto absolute z-10 grid size-9 -translate-y-1/2 cursor-pointer place-items-center rounded-xl border border-transparency-white-t20 text-primary-warm-white shadow-lg shadow-black/40 transition-colors outline-none focus-visible:ring-3'
+  'focus-visible:ring-primary-comfy-yellow/50 hover:border-primary-comfy-yellow hover:text-primary-comfy-yellow bg-page pointer-events-auto absolute top-1/2 z-10 grid size-9 -translate-y-1/2 cursor-pointer place-items-center rounded-xl border border-transparency-white-t20 text-primary-warm-white shadow-lg shadow-black/40 transition-colors outline-none focus-visible:ring-3'
+
+// A pointer that can hover earns them by hovering, so a page of rows is not a
+// page of chrome, and a keyboard earns them by focusing. A touch screen can do
+// neither, so there they stay: the fade is the only thing saying there is more.
+const revealClass =
+  'pointer-events-none absolute inset-0 transition-opacity duration-200 can-hover:opacity-0 can-hover:group-hover/row:opacity-100 can-hover:group-focus-within/row:opacity-100'
 
 // The fade says there is more that way, so it keeps the arrows' company: each
 // side carries one only while that side has somewhere to go.
@@ -67,7 +64,7 @@ const fadeClass =
       </div>
     </div>
 
-    <div class="relative">
+    <div class="group/row relative">
       <ul
         ref="row"
         class="-mx-1 scrollbar-hide flex snap-x snap-mandatory gap-5 overflow-x-auto px-1 pb-2"
@@ -80,7 +77,7 @@ const fadeClass =
         never carries a control it cannot honour. -->
       <div
         v-if="!atStart || !atEnd"
-        class="pointer-events-none absolute inset-0"
+        :class="revealClass"
         data-testid="card-row-arrows"
       >
         <template v-if="!atStart">
@@ -92,7 +89,6 @@ const fadeClass =
             type="button"
             :aria-label="t('workshop.sections.scrollBack', locale)"
             :class="cn(arrowClass, '-left-1')"
-            :style="{ top: arrowTop }"
             data-testid="card-row-prev"
             @click="page(-1)"
           >
@@ -108,7 +104,6 @@ const fadeClass =
             type="button"
             :aria-label="t('workshop.sections.scrollForward', locale)"
             :class="cn(arrowClass, '-right-1')"
-            :style="{ top: arrowTop }"
             data-testid="card-row-next"
             @click="page(1)"
           >

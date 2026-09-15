@@ -66,6 +66,7 @@
 }
 
 @custom-variant short (@media (max-height: 1100px));
+@custom-variant can-hover (@media (hover: hover));
 
 @theme {
   --color-site-dropdown: #332b38;

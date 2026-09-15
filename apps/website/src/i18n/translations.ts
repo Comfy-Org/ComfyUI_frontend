@@ -9336,8 +9336,8 @@ Enterprise`
   },
   'workshop.sections.featured': { en: 'Featured', 'zh-CN': '精选' },
   'workshop.sections.seeAll': {
-    en: 'See all {n}',
-    'zh-CN': '查看全部 {n}'
+    en: 'See all ({n})',
+    'zh-CN': '查看全部 ({n})'
   },
   'workshop.sections.otherFormats': {
     en: 'Other formats',
