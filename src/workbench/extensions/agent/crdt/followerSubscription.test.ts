@@ -714,6 +714,20 @@ describe('FE-GAP-1 — a seq jump means a dropped frame and forces a resync', ()
     expect(transport.framesOfType('doc_subscribe')).toHaveLength(1)
   })
 
+  it.fails('M1: leaves a rejected projection sequence uncommitted for replay', () => {
+    const { transport, bridge } = wire()
+    transport.open = true
+    bridge.subscribe(WORKFLOW_ID)
+    bridge.addEventListener('doc_update', (event) => event.preventDefault())
+
+    transport.deliver(
+      'doc_update',
+      docUpdateFrame(hostDocUpdate(), WORKFLOW_ID, 1)
+    )
+
+    expect(bridge.lastSequence).toBe(0)
+  })
+
   it('withholds the gapped frame, retains the exact doc, and replays from its state vector', () => {
     const { transport, bridge, projected } = wire()
     transport.open = true

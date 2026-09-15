@@ -43,6 +43,40 @@ function op(id: string, baseVersion: number, payload: object) {
   }
 }
 
+function controlledMutations(firstOutcome: false | Error): {
+  mutations: GraphMutations
+  reconciledNodeIds: NodeId[]
+} {
+  const reconciledNodeIds: NodeId[] = []
+  let batchCount = 0
+  const mutations: GraphMutations = {
+    batch: (_context, define) => {
+      define({
+        addNode: vi.fn(),
+        reconcileNode: ({ id }) => reconciledNodeIds.push(toNodeId(id)),
+        setWidget: vi.fn(),
+        connect: vi.fn(),
+        removeMissing: vi.fn(),
+        removeLinks: vi.fn(),
+        deleteNode: vi.fn(),
+        clearSemanticGraph: vi.fn()
+      })
+      batchCount += 1
+      if (batchCount === 1) {
+        if (firstOutcome instanceof Error) throw firstOutcome
+        return firstOutcome
+      }
+      return true
+    },
+    addNode: vi.fn(() => true),
+    setWidget: vi.fn(() => true),
+    connect: vi.fn(() => true),
+    deleteNode: vi.fn(() => true),
+    clearSemanticGraph: vi.fn(() => true)
+  }
+  return { mutations, reconciledNodeIds }
+}
+
 describe('EcsFollowerAdapter integration', () => {
   it('reconciles a full seeded snapshot with existing and server-ahead entities', () => {
     const layouts = new Map<NodeId, TestLayout>()
@@ -297,6 +331,51 @@ describe('EcsFollowerAdapter integration', () => {
       [toNodeId(99)],
       expect.objectContaining({ opId: 'replay' })
     )
+
+    adapter.destroy()
+    follower.destroy()
+    host.destroy()
+  })
+
+  it('replays the authoritative frame after the mutation batch returns false', () => {
+    const { mutations, reconciledNodeIds } = controlledMutations(false)
+    const host = mint(
+      { nodes: [{ id: 1, type: 'Source' }], links: [] },
+      catalog
+    )
+    const follower = new FollowerDoc()
+    const adapter = new EcsFollowerAdapter(mutations)
+    adapter.bind('wf', follower)
+    const update = Y.encodeStateAsUpdate(host)
+    follower.applyRemoteUpdate(update)
+
+    expect(adapter.applyFrame({ workflowId: 'wf', seq: 1, update })).toBe(false)
+    expect(adapter.applyFrame({ workflowId: 'wf', seq: 2, update })).toBe(true)
+    expect(reconciledNodeIds).toEqual([toNodeId(1), toNodeId(1)])
+
+    adapter.destroy()
+    follower.destroy()
+    host.destroy()
+  })
+
+  it('replays the authoritative frame after the mutation batch throws', () => {
+    const failure = new Error('projection failed')
+    const { mutations, reconciledNodeIds } = controlledMutations(failure)
+    const host = mint(
+      { nodes: [{ id: 1, type: 'Source' }], links: [] },
+      catalog
+    )
+    const follower = new FollowerDoc()
+    const adapter = new EcsFollowerAdapter(mutations)
+    adapter.bind('wf', follower)
+    const update = Y.encodeStateAsUpdate(host)
+    follower.applyRemoteUpdate(update)
+
+    expect(() =>
+      adapter.applyFrame({ workflowId: 'wf', seq: 1, update })
+    ).toThrow(failure)
+    expect(adapter.applyFrame({ workflowId: 'wf', seq: 2, update })).toBe(true)
+    expect(reconciledNodeIds).toEqual([toNodeId(1), toNodeId(1)])
 
     adapter.destroy()
     follower.destroy()
