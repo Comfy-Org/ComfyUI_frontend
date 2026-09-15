@@ -77,20 +77,6 @@ function redactSecrets(value: unknown, depth = 0): unknown {
   )
 }
 
-/**
- * The sources a tester must opt into.
- *
- * The panel this replaced shipped everything unconditionally. The dialog
- * DELETED in #5259 did not: it listed Workflow, Logs, Settings AND SystemStats
- * as unchecked opt-ins under "what can we include", and restoring the
- * collection without restoring that choice would be a privacy regression
- * dressed as a feature.
- *
- * SystemStats is deliberately NOT gated here: it is the "copy system stats"
- * capability this report exists to provide, and the only privacy-bearing part
- * of it — `argv` — is redacted by {@link redactArgv} instead. Versions, OS and
- * RAM carry nothing a tester would withhold.
- */
 export interface ReportSources {
   serverLogs: boolean
   settings: boolean
@@ -98,16 +84,16 @@ export interface ReportSources {
 }
 
 export const DEFAULT_REPORT_SOURCES: ReportSources = {
-  serverLogs: false,
-  settings: false,
-  workflow: false
+  serverLogs: true,
+  settings: true,
+  workflow: true
 }
 
 /**
  * The IDs a backend engineer needs to find this session in Datadog/logs,
  * without reading the rest of the report. None of these are secrets — they
  * are the join keys support and backend already search by — so this block
- * is included unconditionally, unlike the opt-in {@link ReportSources}.
+ * is included unconditionally, unlike the optional {@link ReportSources}.
  *
  * Collected by the caller (the panel component) rather than read directly in
  * this module, because every value here lives behind a Pinia store or a
@@ -192,6 +178,7 @@ export interface CrdtDebugReportInput {
   mergeTrace?: readonly MergeTraceEntry[]
   /** Serialized active workflow, when the caller can supply one. */
   workflow?: unknown
+  workflowError?: string
 }
 
 async function attempt<T>(label: string, load: () => Promise<T>) {
@@ -454,6 +441,34 @@ export async function collectCrdtDebugReport(
     sources.serverLogs ? attempt('Server logs', () => api.getLogs()) : null,
     sources.settings ? attempt('Settings', () => api.getSettings()) : null
   ])
+  const workflow =
+    sources.workflow && input.workflow !== undefined
+      ? json(input.workflow)
+      : undefined
+  const workflowStatus = !sources.workflow
+    ? 'turned off'
+    : input.workflowError !== undefined
+      ? 'failed (see source section)'
+      : workflow === undefined
+        ? 'unavailable'
+        : workflow.length > MAX_WORKFLOW_CHARS
+          ? `omitted (over ${MAX_WORKFLOW_CHARS} characters)`
+          : 'collected'
+  const collectionStatus = (
+    [
+      ['System stats', stats],
+      ['Server logs', logs],
+      ['Settings', settings]
+    ] as const
+  ).map(([label, result]) => {
+    const status =
+      result === null
+        ? 'turned off'
+        : result.ok
+          ? 'collected'
+          : 'failed (see source section)'
+    return `- ${label}: ${status}`
+  })
 
   const sections: string[] = [
     '# ComfyUI Agent — CRDT debug report',
@@ -461,7 +476,9 @@ export async function collectCrdtDebugReport(
     `Report format version: 1 · Document schema version: ${input.crdt.meta.schema_version ?? 'unknown'} · Redaction marker: ${REDACTED}`,
     '## Identifiers',
     'Paste this block into a bug report or search Datadog/logs by any of these fields.',
-    identifiersSection(input.identifiers ?? EMPTY_REPORT_IDENTIFIERS)
+    identifiersSection(input.identifiers ?? EMPTY_REPORT_IDENTIFIERS),
+    '## Collection status',
+    [...collectionStatus, `- Workflow: ${workflowStatus}`].join('\n')
   ]
 
   if (input.testerNote?.trim()) {
@@ -514,16 +531,17 @@ export async function collectCrdtDebugReport(
     fence('json', truncate(json(input.crdt.stamps), MAX_SECTION_CHARS))
   )
 
-  if (sources.workflow && input.workflow !== undefined) {
-    const serialized = json(input.workflow)
+  if (sources.workflow && input.workflowError !== undefined) {
+    sections.push('## Workflow', fence('text', input.workflowError))
+  } else if (workflow !== undefined) {
     sections.push(
       '## Workflow',
       `${SHARING_WARNING} Prompts and API keys embedded in nodes appear verbatim.`,
       fence(
         'json',
-        serialized.length > MAX_WORKFLOW_CHARS
-          ? `<workflow omitted: ${serialized.length} characters — attach the .json file instead>`
-          : serialized
+        workflow.length > MAX_WORKFLOW_CHARS
+          ? `<workflow omitted: ${workflow.length} characters — attach the .json file instead>`
+          : workflow
       )
     )
   }
@@ -531,7 +549,7 @@ export async function collectCrdtDebugReport(
   sections.push(
     '## Settings',
     settings === null
-      ? `_Not included. The tester did not opt in to sharing settings._`
+      ? `_Not included. Turned off by the tester._`
       : [
           `${SHARING_WARNING} Values under keys that look like credentials are replaced with \`${REDACTED}\`, at every depth — but a custom node may name a secret anything.`,
           settings.ok
@@ -546,7 +564,7 @@ export async function collectCrdtDebugReport(
   sections.push(
     '## Server logs',
     logs === null
-      ? `_Not included. The tester did not opt in to sharing server logs._`
+      ? `_Not included. Turned off by the tester._`
       : [
           `${SHARING_WARNING} Backend logs can echo prompts, file paths and tokens.`,
           logs.ok

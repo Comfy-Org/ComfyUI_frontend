@@ -243,24 +243,74 @@ describe('collectCrdtDebugReport', () => {
     expect(report).toContain('Review before sharing')
   })
 
-  it('leaves logs, settings and the workflow out unless the tester opts in', async () => {
+  it('leaves logs, settings and the workflow out when the tester turns them off', async () => {
     getSettings.mockResolvedValue({ 'Comfy.Theme': 'do-not-leak-settings' })
     getLogs.mockResolvedValue('do-not-leak-logs')
 
     const report = await collectCrdtDebugReport({
       crdt: SNAPSHOT,
       events: [],
+      sources: { serverLogs: false, settings: false, workflow: false },
       workflow: { nodes: [{ id: 'do-not-leak-workflow' }] }
     })
 
     expect(report).not.toContain('do-not-leak-settings')
     expect(report).not.toContain('do-not-leak-logs')
     expect(report).not.toContain('do-not-leak-workflow')
-    expect(report).toContain('did not opt in')
+    expect(report).toContain('Turned off by the tester')
     // The parts that are the point of the feature still ship.
     expect(report).toContain('## CRDT state')
     expect(report).toContain('## System')
   })
+
+  it('includes all optional sources by default and records collection outcomes', async () => {
+    const report = await collectCrdtDebugReport({
+      crdt: SNAPSHOT,
+      events: [],
+      workflow: { nodes: [{ id: 'workflow-node' }] }
+    })
+
+    expect(report).toContain('backend log line')
+    expect(report).toContain('Comfy.Setting')
+    expect(report).toContain('workflow-node')
+    expect(report).toContain('## Collection status')
+    expect(report).toContain('- System stats: collected')
+    expect(report).toContain('- Server logs: collected')
+    expect(report).toContain('- Settings: collected')
+    expect(report).toContain('- Workflow: collected')
+  })
+
+  it('distinguishes failed, disabled and unavailable sources in collection status', async () => {
+    getLogs.mockRejectedValue(new Error('offline'))
+    const report = await collectCrdtDebugReport({
+      crdt: SNAPSHOT,
+      events: [],
+      sources: { serverLogs: true, settings: false, workflow: true }
+    })
+
+    expect(report).toContain('- Server logs: failed (see source section)')
+    expect(report).toContain('- Settings: turned off')
+    expect(report).toContain('- Workflow: unavailable')
+    expect(report).toContain('Server logs unavailable: Error: offline')
+  })
+
+  it.for([
+    { enabled: true, status: 'failed (see source section)' },
+    { enabled: false, status: 'turned off' }
+  ])(
+    'reports workflow serialization failure when enabled=$enabled',
+    async ({ enabled, status }) => {
+      const report = await collectCrdtDebugReport({
+        crdt: SNAPSHOT,
+        events: [],
+        sources: { serverLogs: false, settings: false, workflow: enabled },
+        workflowError: 'serialize failed'
+      })
+
+      expect(report).toContain(`- Workflow: ${status}`)
+      expect(report.includes('serialize failed')).toBe(enabled)
+    }
+  )
 
   it('redacts widget values from outbound operation events', async () => {
     const report = await collectCrdtDebugReport({
@@ -528,6 +578,7 @@ describe('collectCrdtDebugReport', () => {
     })
 
     expect(report).toContain('workflow omitted')
+    expect(report).toContain('- Workflow: omitted (over 200000 characters)')
   })
 
   it('deterministically caps an oversized report without dropping its contract markers', async () => {

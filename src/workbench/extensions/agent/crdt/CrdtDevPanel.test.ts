@@ -3,6 +3,8 @@ import { render, screen } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
+import { i18n } from '@/i18n'
+
 vi.mock<unknown>(import('@/scripts/api'), () => ({
   api: {
     getSystemStats: () => Promise.reject(new Error('offline')),
@@ -45,7 +47,10 @@ const STATUS: AgentCrdtStatus = {
 }
 
 function renderPanel() {
-  return render(CrdtDevPanel, { props: { status: STATUS } })
+  return render(CrdtDevPanel, {
+    props: { status: STATUS },
+    global: { plugins: [i18n] }
+  })
 }
 
 const chip = () => screen.queryByTestId('crdt-dev-panel-chip')
@@ -72,6 +77,7 @@ describe('CrdtDevPanel', () => {
   it('smoke-renders follower and document status from a live snapshot', async () => {
     const user = userEvent.setup()
     render(CrdtDevPanel, {
+      global: { plugins: [i18n] },
       props: {
         status: STATUS,
         snapshot: () => ({
@@ -198,28 +204,19 @@ describe('CrdtDevPanel', () => {
     expect(log).not.toContain('ws_out')
   })
 
-  it('shows the sensitive-source opt-ins as off, and lets them be turned on', async () => {
-    const user = userEvent.setup()
-    renderPanel()
-    await user.click(chip()!)
+  it.for(['Server logs', 'Settings', 'Workflow JSON'])(
+    'includes %s by default and lets it be turned off',
+    async (name) => {
+      const user = userEvent.setup()
+      renderPanel()
+      await user.click(screen.getByTestId('crdt-dev-panel-chip'))
 
-    // These three are the only consent gate on logs, settings and the workflow
-    // reaching the clipboard, so their state has to be readable. A bare
-    // <input type="checkbox"> renders at 0x0 here: agentPanel.css strips
-    // `appearance` from every input under #agent-panel-root.
-    for (const key of ['serverLogs', 'settings', 'workflow']) {
-      const toggle = screen.getByTestId(`crdt-dev-panel-include-${key}`)
-      expect(toggle.getAttribute('role')).toBe('switch')
-      expect(toggle.getAttribute('aria-checked')).toBe('false')
-
+      const toggle = screen.getByRole('switch', { name })
+      expect(toggle).toBeChecked()
       await user.click(toggle)
-      expect(
-        screen
-          .getByTestId(`crdt-dev-panel-include-${key}`)
-          .getAttribute('aria-checked')
-      ).toBe('true')
+      expect(toggle).not.toBeChecked()
     }
-  })
+  )
 
   it('explains a merge sequence without needing a backend', async () => {
     const user = userEvent.setup()
@@ -239,7 +236,7 @@ describe('CrdtDevPanel', () => {
     expect(trace).toContain('had already been deleted')
   })
 
-  it('reports a failure and flips to the failed state when report collection rejects', async () => {
+  it('offers a retry when report collection rejects without showing stale report text', async () => {
     const collectSpy = vi
       .spyOn(crdtDebugReport, 'collectCrdtDebugReport')
       .mockRejectedValueOnce(new Error('snapshot unavailable'))
@@ -253,7 +250,13 @@ describe('CrdtDevPanel', () => {
     expect(reportError).toHaveBeenCalledWith(expect.any(Error), {
       errorType: 'crdt_dev_panel_report_copy_failed'
     })
-    expect(copyReportButton.textContent).toContain('Copy failed')
+    expect(copyReportButton).toHaveTextContent('Retry copy report')
+    expect(screen.getByRole('alert')).toHaveTextContent(
+      'Could not collect the report. Retry, or turn off optional sources and retry.'
+    )
+    expect(
+      screen.queryByRole('textbox', { name: 'Report to copy' })
+    ).not.toBeInTheDocument()
 
     collectSpy.mockRestore()
   })
