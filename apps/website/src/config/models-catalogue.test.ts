@@ -362,12 +362,14 @@ describe('workshopModels', () => {
     const ids = new Set(
       display.flatMap((entry) => {
         const alias = routerAliasById.get(entry.modelId)
-        return alias &&
-          workshopContract(alias.routerId) &&
-          !Object.hasOwn(availability, alias.routerId) &&
+        const routerId =
+          workshopContentInputs.get(entry.id)?.routerId ?? alias?.routerId
+        return routerId &&
+          workshopContract(routerId) &&
+          !Object.hasOwn(availability, routerId) &&
           !workshopContentInputs.get(entry.id)?.unavailableReason &&
           !isWorkshopModelDisabled(entry.slug)
-          ? [alias.routerId]
+          ? [routerId]
           : []
       })
     )

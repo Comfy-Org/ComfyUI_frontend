@@ -103,6 +103,12 @@
     "kling/kling-v3": {
       "family": "flat"
     },
+    "kling/kling-v3-omni": {
+      "family": "kling-omni-video"
+    },
+    "kling/kling-video-o1": {
+      "family": "kling-omni-video"
+    },
     "kling/videos-avatar-image2video": {
       "family": "kling-avatar"
     },
@@ -116,6 +122,12 @@
       "family": "flat"
     },
     "krea/krea-2-medium-turbo": {
+      "family": "flat"
+    },
+    "ltx/ltx-2-5-fast": {
+      "family": "flat"
+    },
+    "ltx/ltx-2-5-pro": {
       "family": "flat"
     },
     "luma/photon-1": {

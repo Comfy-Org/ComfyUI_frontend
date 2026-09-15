@@ -196,6 +196,54 @@ function veo({
   }
 }
 
+function klingOmni(
+  request: CallbackRequest,
+  { values }: WorkshopRequestInputs
+): Record<string, unknown> {
+  const references = indexedUrls(values, 'reference_image_url')
+  const {
+    first_frame_url,
+    generate_audio,
+    keep_original_sound,
+    last_frame_url,
+    resolution,
+    video_url,
+    ...body
+  } = withoutIndexed(values, 'reference_image_url')
+  const mode = request.options.mode
+  if (mode === 'first-last' && last_frame_url && references.length)
+    throw new WorkshopRouterError('validation', null, {
+      reference_image_url: 'rejected'
+    })
+  const imageList = [
+    ...(first_frame_url
+      ? [{ image_url: first_frame_url, type: 'first_frame' }]
+      : []),
+    ...(last_frame_url
+      ? [{ image_url: last_frame_url, type: 'end_frame' }]
+      : []),
+    ...references.map((image_url) => ({ image_url }))
+  ]
+  const videoList = video_url
+    ? [
+        {
+          video_url,
+          refer_type: mode === 'edit' ? 'base' : 'feature',
+          keep_original_sound: keep_original_sound === false ? 'no' : 'yes'
+        }
+      ]
+    : []
+  return {
+    ...body,
+    mode: resolution === '720p' ? 'std' : 'pro',
+    ...(generate_audio !== undefined
+      ? { sound: generate_audio ? 'on' : 'off' }
+      : {}),
+    ...(imageList.length ? { image_list: imageList } : {}),
+    ...(videoList.length ? { video_list: videoList } : {})
+  }
+}
+
 export function prepareWorkshopRequestCallback(
   request: CallbackRequest,
   context: WorkshopRequestInputs
@@ -339,6 +387,8 @@ export function prepareWorkshopRequestCallback(
           audio_url: values.audio_url
         }
       }
+    case 'kling-omni-video':
+      return klingOmni(request, context)
     case 'bfl-video': {
       const images = (files.images ?? []).map((file) => file.data)
       if (values.mode === 'i2v' && !images.length)

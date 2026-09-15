@@ -63,14 +63,14 @@ const detailBySlug = new Map(
     const execution = model.incompleteReason
       ? undefined
       : executionFor(source.record.catalogId, source.overlay.id)
-    if (execution && execution.sourceCommit !== source.alias.sourceCommit)
+    if (execution && execution.sourceCommit !== source.binding.sourceCommit)
       throw new Error(`Stale Router identity audit: ${model.routerId}`)
     const detail: WorkshopModelDetail = {
       ...model,
       ...(execution ? { execution, form: formForContract(execution) } : {}),
       fields: [],
       defaults: execution
-        ? workshopExampleValues(execution, source.alias.nativeDefaults ?? {})
+        ? workshopExampleValues(execution, source.binding.nativeDefaults ?? {})
         : {},
       examples: []
     }
@@ -78,16 +78,16 @@ const detailBySlug = new Map(
       model.slug,
       {
         ...detail,
-        examples: source.alias.contentIssue
+        examples: source.binding.contentIssue
           ? []
           : examplesFor(detail, source.overlay),
         defaults: {
           ...detail.defaults,
           ...workshopPromptDefaults(
             detail,
-            source.alias.contentIssue ? [] : [source.overlay]
+            source.binding.contentIssue ? [] : [source.overlay]
           ),
-          ...(execution && !source.alias.contentIssue
+          ...(execution && !source.binding.contentIssue
             ? workshopExampleValues(
                 execution,
                 source.overlay.examples.at(0)?.values ?? {}

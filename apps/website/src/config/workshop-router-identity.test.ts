@@ -28,11 +28,21 @@ import {
 const audit = workshopIdentityAuditSchema.parse(rawAudit)
 const aliases = workshopRouterAliasesSchema.parse(packedAliases)
 const aliasesById = new Map(aliases.map((alias) => [alias.id, alias]))
+const auditById = new Map(
+  audit.records.map((record) => [record.legacyId, record])
+)
 
 function isPublishablePage(entry: { id: string; slug: string }): boolean {
   return (
     !workshopContentInputs.get(entry.id)?.unavailableReason &&
     !isWorkshopModelDisabled(entry.slug)
+  )
+}
+
+function routerIdForPage(entry: { id: string; modelId: string }) {
+  return (
+    workshopContentInputs.get(entry.id)?.routerId ??
+    aliasesById.get(entry.modelId)?.routerId
   )
 }
 
@@ -46,8 +56,32 @@ describe('legacy content identity repairs', () => {
       const alias = aliasesById.get(record.legacyId)
       if (record.status !== 'verified' || record.matches.length !== 1) {
         expect(alias).toBeUndefined()
-        expect(detail).toBeUndefined()
-        expect(routerWorkshopModelPaths).not.toContain(old.slug)
+        const pageTargets = display
+          .filter(
+            (entry) =>
+              entry.modelId === record.legacyId && isPublishablePage(entry)
+          )
+          .flatMap((entry) => {
+            const routerId = routerIdForPage(entry)
+            return routerId && workshopContract(routerId)
+              ? [{ entry, routerId }]
+              : []
+          })
+        if (!pageTargets.length) {
+          expect(detail).toBeUndefined()
+          expect(routerWorkshopModelPaths).not.toContain(old.slug)
+          return
+        }
+        expect(record.status).toBe('verified')
+        expect(
+          pageTargets.every(({ routerId }) =>
+            record.matches.some((match) => match.routerId === routerId)
+          )
+        ).toBe(true)
+        expect(pageTargets.map(({ routerId }) => routerId)).toContain(
+          detail?.routerId
+        )
+        expect(routerWorkshopModelPaths).toContain(old.slug)
         return
       }
       const match = record.matches[0]
@@ -93,23 +127,21 @@ describe('legacy content identity repairs', () => {
 
   it('publishes only verified Router joins with one distinct card per content record', () => {
     const nativeIds = new Set(rawSnapshots.map((entry) => entry.id))
-    const publishedAliases = aliases.filter(
-      (alias) =>
-        workshopContract(alias.routerId) &&
-        !Object.hasOwn(availability, alias.routerId)
-    )
-    const publishedIds = new Set(publishedAliases.map((alias) => alias.id))
-    const content = display.filter(
-      (entry) => publishedIds.has(entry.modelId) && isPublishablePage(entry)
-    )
-    const joinedIds = new Set(
-      content.map((entry) => aliasesById.get(entry.modelId)?.routerId)
-    )
+    const content = display.flatMap((entry) => {
+      const routerId = routerIdForPage(entry)
+      return routerId &&
+        workshopContract(routerId) &&
+        !Object.hasOwn(availability, routerId) &&
+        isPublishablePage(entry)
+        ? [{ entry, routerId }]
+        : []
+    })
+    const joinedIds = new Set(content.map(({ routerId }) => routerId))
     expect(new Set(workshopModels.map((model) => model.routerId))).toEqual(
       joinedIds
     )
     expect(workshopModels.map((model) => model.slug).sort()).toEqual(
-      content.map((entry) => entry.slug).sort()
+      content.map(({ entry }) => entry.slug).sort()
     )
     expect(new Set(workshopModels.map((model) => model.slug)).size).toBe(
       content.length
@@ -134,6 +166,59 @@ describe('legacy content identity repairs', () => {
     expect(
       getRouterWorkshopModelDetail('bria--image-edit-erase')?.execution?.id
     ).toBe('bria/image-edit-erase')
+  })
+
+  it('binds every role-specific page only to a verified family target', () => {
+    for (const [id, binding] of workshopContentInputs) {
+      const page = display.find((entry) => entry.id === id)
+      if (!page) throw new Error(`Missing content page: ${id}`)
+      const record = auditById.get(page.modelId)
+      expect({ id, status: record?.status }).toMatchObject({
+        status: 'verified'
+      })
+      expect(record?.matches.map((match) => match.routerId)).toContain(
+        binding.routerId
+      )
+    }
+  })
+
+  it('requires every active page for a multi-target model to declare its Router target', () => {
+    const multiTargetIds = new Set(
+      audit.records
+        .filter(
+          (record) => record.status === 'verified' && record.matches.length > 1
+        )
+        .map((record) => record.legacyId)
+    )
+    const missing = display
+      .filter(
+        (entry) =>
+          multiTargetIds.has(entry.modelId) &&
+          !isWorkshopModelDisabled(entry.slug) &&
+          !workshopContentInputs.has(entry.id)
+      )
+      .map((entry) => entry.id)
+    expect(missing).toEqual([])
+  })
+
+  it('does not silently drop active content with a verified available target', () => {
+    const published = new Set(workshopModels.map((model) => model.slug))
+    const missing = display
+      .filter((entry) => {
+        if (!isPublishablePage(entry)) return false
+        const record = auditById.get(entry.modelId)
+        return (
+          record?.status === 'verified' &&
+          record.matches.some(
+            (match) =>
+              workshopContract(match.routerId) &&
+              !Object.hasOwn(availability, match.routerId)
+          ) &&
+          !published.has(entry.slug)
+        )
+      })
+      .map((entry) => entry.slug)
+    expect(missing).toEqual([])
   })
 
   it('keeps disabled models in the authored content without publishing their URLs', () => {
