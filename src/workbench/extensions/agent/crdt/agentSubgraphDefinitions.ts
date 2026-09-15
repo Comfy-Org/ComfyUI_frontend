@@ -21,6 +21,11 @@ const LINK_ORDER = 'link_order'
  */
 const NODE_INCARNATION = '__incarnation'
 
+/** The op layer reserves double-underscore definition keys for bookkeeping. */
+function isDefinitionBookkeeping(key: string): boolean {
+  return key.startsWith('__')
+}
+
 /**
  * Own-key filter shared by both record readers. Assigning through
  * `record['__proto__']` swaps the record's prototype, so a document carrying
@@ -42,6 +47,33 @@ function plain(value: unknown): unknown {
     return value.toJSON()
   }
   return structuredClone(value)
+}
+
+function withoutDefinitionBookkeeping(source: unknown): unknown {
+  if (typeof source !== 'object' || source === null || Array.isArray(source)) {
+    return source
+  }
+  return Object.fromEntries(
+    Object.entries(source).flatMap(([key, value]) => {
+      if (isDefinitionBookkeeping(key)) return []
+      if (key !== 'definitions') return [[key, value]]
+      return [[key, withoutNestedDefinitionBookkeeping(value)]]
+    })
+  )
+}
+
+function withoutNestedDefinitionBookkeeping(source: unknown): unknown {
+  if (typeof source !== 'object' || source === null || Array.isArray(source)) {
+    return source
+  }
+  return Object.fromEntries(
+    Object.entries(source).map(([key, value]) => [
+      key,
+      key === 'subgraphs' && Array.isArray(value)
+        ? value.map(withoutDefinitionBookkeeping)
+        : value
+    ])
+  )
 }
 
 /**
@@ -79,6 +111,38 @@ function readInteriorNode(source: unknown): Record<string, unknown> | null {
     }
   })
   return node
+}
+
+export function projectSubgraphDefinition(
+  source: Y.Map<unknown>
+): ExportedSubgraph {
+  const definition: Record<string, unknown> = {}
+  for (const [key, value] of source.entries()) {
+    if (
+      key === NODE_ORDER ||
+      key === LINK_ORDER ||
+      isDefinitionBookkeeping(key) ||
+      !isReadableKey(key)
+    )
+      continue
+    if (key === 'nodes' && value instanceof Y.Map) {
+      definition.nodes = orderedKeys(source.get(NODE_ORDER), value).flatMap(
+        (id) => {
+          const node = readInteriorNode(value.get(id))
+          return node ? [node] : []
+        }
+      )
+    } else if (key === 'links' && value instanceof Y.Map) {
+      definition.links = orderedKeys(source.get(LINK_ORDER), value).map((id) =>
+        plain(value.get(id))
+      )
+    } else if (key === 'definitions') {
+      definition.definitions = withoutNestedDefinitionBookkeeping(plain(value))
+    } else {
+      definition[key] = plain(value)
+    }
+  }
+  return definition as unknown as ExportedSubgraph
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -138,7 +202,13 @@ function isSafeDefinition(value: unknown): boolean {
 function readDefinition(source: Y.Map<unknown>): ExportedSubgraph | null {
   const definition: Record<string, unknown> = {}
   source.forEach((value, key) => {
-    if (key === NODE_ORDER || key === LINK_ORDER || !isReadableKey(key)) return
+    if (
+      key === NODE_ORDER ||
+      key === LINK_ORDER ||
+      isDefinitionBookkeeping(key) ||
+      !isReadableKey(key)
+    )
+      return
     if (key === 'nodes' && value instanceof Y.Map) {
       definition.nodes = orderedKeys(source.get(NODE_ORDER), value).flatMap(
         (id) => {
@@ -150,6 +220,8 @@ function readDefinition(source: Y.Map<unknown>): ExportedSubgraph | null {
       definition.links = orderedKeys(source.get(LINK_ORDER), value).map((id) =>
         plain(value.get(id))
       )
+    } else if (key === 'definitions') {
+      definition.definitions = withoutNestedDefinitionBookkeeping(plain(value))
     } else {
       definition[key] = plain(value)
     }
