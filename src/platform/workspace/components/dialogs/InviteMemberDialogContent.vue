@@ -5,8 +5,22 @@
     <div
       class="flex h-12 items-center justify-between border-b border-border-default px-4"
     >
-      <h2 class="m-0 text-sm font-normal text-base-foreground">
-        {{ $t('workspacePanel.inviteMemberDialog.title') }}
+      <h2
+        class="m-0 flex items-center gap-2 text-sm font-normal text-base-foreground"
+      >
+        <template v-if="step === 'invited'">
+          <i class="pi pi-check-circle size-4 text-success-background" />
+          {{
+            $t(
+              'workspacePanel.inviteLinks.sentTitle',
+              { count: invitedEmails.length },
+              invitedEmails.length
+            )
+          }}
+        </template>
+        <template v-else>
+          {{ $t('workspacePanel.inviteMemberDialog.title') }}
+        </template>
       </h2>
       <button
         class="focus-visible:ring-secondary-foreground cursor-pointer rounded-sm border-none bg-transparent p-0 text-muted-foreground transition-colors hover:text-base-foreground focus-visible:ring-1 focus-visible:outline-none"
