@@ -9,7 +9,8 @@
     :pt="{
       root: {
         class: 'workflow-popover-fade fit-content',
-        'data-popover-id': id
+        'data-popover-id': id,
+        'data-testid': 'workflow-tab-popover'
       }
     }"
     @mouseenter="cancelHidePopover"

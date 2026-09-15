@@ -1198,10 +1198,7 @@ test.describe('Viewport settings', () => {
       await comfyPage.nextFrame()
       await comfyMouse.move(DefaultGraphPositions.emptySpace)
 
-      // If tooltip is visible, wait for it to hide
-      await expect(
-        comfyPage.page.locator('.workflow-popover-fade')
-      ).toHaveCount(0)
+      await comfyPage.menu.topbar.workflowTabPopover.dismiss()
     }
 
     // Screenshot the canvas element
