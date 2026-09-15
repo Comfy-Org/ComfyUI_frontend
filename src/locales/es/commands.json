@@ -278,9 +278,6 @@
   "Comfy_Subgraph_SetSearchAliases": {
     "label": "Establecer alias de búsqueda del subgrafo"
   },
-  "Comfy_ToggleAssetAPI": {
-    "label": "Experimental: Habilitar AssetAPI"
-  },
   "Comfy_ToggleCanvasInfo": {
     "label": "Rendimiento del lienzo"
   },

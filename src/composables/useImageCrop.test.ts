@@ -1,10 +1,10 @@
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { fromPartial } from '@total-typescript/shoehorn'
+import { useResizeObserver } from '@vueuse/core'
 import { createApp, defineComponent, nextTick, ref, computed } from 'vue'
 import { createI18n } from 'vue-i18n'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import type { Mock } from 'vitest'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 
@@ -13,7 +13,7 @@ import type { LGraphCanvas, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { toNodeId } from '@/types/nodeId'
 import type { NodeId } from '@/types/nodeId'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
-import type { resolveNode } from '@/utils/litegraphUtil'
+import { resolveNode } from '@/utils/litegraphUtil'
 import {
   createMockLGraphNode,
   createMockSubgraphNode
@@ -23,26 +23,17 @@ import { imageCropLoadingAfterUrlChange, useImageCrop } from './useImageCrop'
 
 const resizeObserverCallbacks: Array<() => void> = []
 
-vi.mock(import('@vueuse/core'), async (importOriginal) => ({
-  ...(await importOriginal()),
-  useResizeObserver: (_target: unknown, cb: ResizeObserverCallback) => {
-    resizeObserverCallbacks.push(() => cb([], fromPartial<ResizeObserver>({})))
-    return { stop: vi.fn(), isSupported: computed(() => true) }
-  }
-}))
+vi.mock(import('@vueuse/core'), { spy: true })
 
 const mockResolveNode = vi.hoisted(() => vi.fn<typeof resolveNode>())
-vi.mock(import('@/utils/litegraphUtil'), async (importOriginal) => ({
-  ...(await importOriginal()),
-  resolveNode: mockResolveNode
-}))
-
-let mockGetNodeImageUrls: Mock<
-  ReturnType<typeof useNodeOutputStore>['getNodeImageUrls']
->
+vi.mock(import('@/utils/litegraphUtil'), { spy: true })
 
 beforeEach(() => {
-  mockGetNodeImageUrls = vi.mocked(useNodeOutputStore().getNodeImageUrls)
+  vi.mocked(useResizeObserver).mockImplementation((_target, cb) => {
+    resizeObserverCallbacks.push(() => cb([], fromPartial<ResizeObserver>({})))
+    return { stop: vi.fn(), isSupported: computed(() => true) }
+  })
+  vi.mocked(resolveNode).mockImplementation(mockResolveNode)
   useCanvasStore().canvas = fromPartial<LGraphCanvas>({
     graph: { rootGraph: { id: 'test-graph' } }
   })
@@ -220,7 +211,7 @@ describe('useImageCrop', () => {
       isSubgraphNode: () => false
     })
     mockResolveNode.mockReturnValue(cropNode)
-    mockGetNodeImageUrls.mockImplementation((n) =>
+    vi.mocked(useNodeOutputStore().getNodeImageUrls).mockImplementation((n) =>
       n === sourceNode ? ['https://example.com/a.png'] : undefined
     )
   })
@@ -288,7 +279,7 @@ describe('useImageCrop', () => {
       isSubgraphNode: () => false
     })
     mockResolveNode.mockReturnValue(sgCrop)
-    mockGetNodeImageUrls.mockImplementation((n) =>
+    vi.mocked(useNodeOutputStore().getNodeImageUrls).mockImplementation((n) =>
       n === innerSource ? ['https://subgraph.png'] : undefined
     )
 
@@ -300,7 +291,7 @@ describe('useImageCrop', () => {
     const vm = await mountHarness()
     expect(vm.imageUrl).toBe('https://example.com/a.png')
 
-    mockGetNodeImageUrls.mockImplementation((n) =>
+    vi.mocked(useNodeOutputStore().getNodeImageUrls).mockImplementation((n) =>
       n === sourceNode ? ['https://example.com/b.png'] : undefined
     )
     outputStore.nodeOutputs['touch'] = { updated: true }
@@ -311,7 +302,7 @@ describe('useImageCrop', () => {
 
   it('updates imageUrl when nodePreviewImages change', async () => {
     let url = 'https://example.com/a.png'
-    mockGetNodeImageUrls.mockImplementation((n) =>
+    vi.mocked(useNodeOutputStore().getNodeImageUrls).mockImplementation((n) =>
       n === sourceNode ? [url] : undefined
     )
     const vm = await mountHarness()
@@ -372,7 +363,7 @@ describe('useImageCrop', () => {
     const vm = await mountHarness()
     expect(vm.imageUrl).toBe('https://example.com/a.png')
 
-    mockGetNodeImageUrls.mockImplementation((n) =>
+    vi.mocked(useNodeOutputStore().getNodeImageUrls).mockImplementation((n) =>
       n === sourceNode ? ['https://example.com/b.png'] : undefined
     )
     outputStore.nodeOutputs['touch'] = {}
@@ -393,7 +384,7 @@ describe('useImageCrop', () => {
   })
 
   it('does not start dragging when there is no image', async () => {
-    mockGetNodeImageUrls.mockReturnValue(undefined)
+    vi.mocked(useNodeOutputStore().getNodeImageUrls).mockReturnValue(undefined)
     const vm = await mountHarness()
     expect(vm.imageUrl).toBeNull()
     const xBefore = vm.cropX as number
@@ -602,13 +593,13 @@ describe('WidgetImageCrop', () => {
       isSubgraphNode: () => false
     })
     mockResolveNode.mockReturnValue(crop)
-    mockGetNodeImageUrls.mockImplementation((n) =>
+    vi.mocked(useNodeOutputStore().getNodeImageUrls).mockImplementation((n) =>
       n === source ? ['https://example.com/a.png'] : undefined
     )
   })
 
   it('renders empty state copy when no image URL is available', async () => {
-    mockGetNodeImageUrls.mockReturnValue(undefined)
+    vi.mocked(useNodeOutputStore().getNodeImageUrls).mockReturnValue(undefined)
     const widget = fromPartial<SimplifiedWidget>({
       type: 'imagecrop',
       options: {}

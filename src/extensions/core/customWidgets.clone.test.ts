@@ -3,22 +3,15 @@ import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 import { app } from '@/scripts/app'
-import type { ComfyExtension } from '@/types/comfy'
 
-const registeredExtensions = vi.hoisted((): ComfyExtension[] => [])
-vi.mock(import('@/scripts/app'), async (importOriginal) => {
-  const original = await importOriginal()
-  original.app.registerExtension = (extension) => {
-    registeredExtensions.push(extension)
-  }
-  return original
+const extensions = await vi.hoisted(async () => {
+  const { createExtensionCapture } =
+    await import('@/utils/__tests__/extensionTestUtils')
+  return createExtensionCapture()
 })
+app.registerExtension = extensions.registerExtension
 await import('./customWidgets')
-const extension = registeredExtensions.find(
-  (candidate) => candidate.name === 'Comfy.CustomWidgets'
-)
-if (!extension)
-  throw new Error('Comfy.CustomWidgets extension was not registered')
+const extension = extensions.getExtension('Comfy.CustomWidgets')
 const TEST_CUSTOM_COMBO_TYPE = 'test/CustomComboCopyPaste'
 
 class TestCustomComboNode extends LGraphNode {

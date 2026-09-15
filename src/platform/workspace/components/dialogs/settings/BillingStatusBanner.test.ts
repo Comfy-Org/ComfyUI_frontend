@@ -153,8 +153,8 @@ const i18n = createI18n({
           },
           ending: {
             title: 'Your team plan ends on {date}',
-            body: 'Members keep full access until then. Reactivate to keep your shared credits and seats.',
-            reactivate: 'Reactivate plan'
+            body: 'Members keep full access until then. Resume your subscription to keep your shared credits and seats.',
+            reactivate: 'Resume subscription'
           },
           planChange: {
             title: 'Your plan changes to {plan} on {date}',
@@ -434,7 +434,7 @@ describe('BillingStatusBanner', () => {
       'Your team plan ends on'
     )
     await userEvent.click(
-      screen.getByRole('button', { name: 'Reactivate plan' })
+      screen.getByRole('button', { name: 'Resume subscription' })
     )
     expect(state.handleResubscribe).toHaveBeenCalledTimes(1)
   })
@@ -454,7 +454,7 @@ describe('BillingStatusBanner', () => {
     renderBanner()
 
     await userEvent.click(
-      screen.getByRole('button', { name: 'Reactivate plan' })
+      screen.getByRole('button', { name: 'Resume subscription' })
     )
     expect(state.handleResubscribe).toHaveBeenCalledTimes(1)
   })
@@ -473,7 +473,7 @@ describe('BillingStatusBanner', () => {
 
     expect(screen.queryByRole('status')).not.toBeInTheDocument()
     expect(
-      screen.queryByRole('button', { name: 'Reactivate plan' })
+      screen.queryByRole('button', { name: 'Resume subscription' })
     ).not.toBeInTheDocument()
   })
 
@@ -493,7 +493,7 @@ describe('BillingStatusBanner', () => {
       'Your team plan ends on'
     )
     expect(
-      screen.queryByRole('button', { name: 'Reactivate plan' })
+      screen.queryByRole('button', { name: 'Resume subscription' })
     ).not.toBeInTheDocument()
   })
 

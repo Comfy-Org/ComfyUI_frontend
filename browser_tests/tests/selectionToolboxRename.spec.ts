@@ -6,8 +6,9 @@ import { getGroupTitlePosition } from '@e2e/fixtures/utils/groupHelpers'
 import { openMoreOptions } from '@e2e/fixtures/utils/selectionToolbox'
 
 test.describe('Selection toolbox rename', { tag: '@ui' }, () => {
+  test.use({ initialSettings: { 'Comfy.Canvas.SelectionToolbox': true } })
+
   test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.settings.setSetting('Comfy.Canvas.SelectionToolbox', true)
     await comfyPage.workflow.loadWorkflow('default')
     await comfyPage.nextFrame()
   })

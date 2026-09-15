@@ -3,6 +3,8 @@ import { expect } from '@playwright/test'
 import type { RemoteConfig } from '@/platform/remoteConfig/types'
 import type { WorkspaceTokenResponse } from '@/platform/workspace/stores/workspaceAuthStore'
 
+import type { Page } from '@playwright/test'
+
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { AssetsSidebarTab } from '@e2e/fixtures/components/SidebarTab'
 import {
@@ -12,6 +14,7 @@ import {
 } from '@e2e/fixtures/data/cloudWorkspace'
 import { AssetsHelper } from '@e2e/fixtures/helpers/AssetsHelper'
 import { CloudWorkspaceMockHelper } from '@e2e/fixtures/helpers/CloudWorkspaceMockHelper'
+import { TestIds } from '@e2e/fixtures/selectors'
 import { assetPath } from '@e2e/fixtures/utils/paths'
 import { member } from '@e2e/fixtures/utils/workspaceMocks'
 
@@ -365,5 +368,70 @@ test.describe('Cloud account switch', { tag: '@cloud' }, () => {
       expect(viewCookie).toContain(`mock-cloud-session=${ACCOUNT_B.id}`)
       expect(viewStatus).toBe(200)
     })
+  })
+})
+
+async function bootSignedIn(page: Page): Promise<void> {
+  await new CloudWorkspaceMockHelper(page).setup()
+  await page.goto(APP_URL)
+  await page.waitForFunction(() => !!window.app?.extensionManager, null, {
+    timeout: 45_000
+  })
+  await expect(page.getByTestId(TestIds.user.currentUserButton)).toBeVisible({
+    timeout: 15_000
+  })
+}
+
+// Sign-out navigates to the cloud SPA's /cloud/login, which 404s on this
+// static test backend, so the navigation is fulfilled with an empty page.
+async function clickLogout(page: Page): Promise<void> {
+  await page.route('**/cloud/login', (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: 'text/html',
+      body: '<!doctype html><html><body></body></html>'
+    })
+  )
+  await page.getByTestId(TestIds.user.currentUserButton).click()
+  await page.getByTestId('logout-menu-item').click()
+}
+
+async function expectSignedOut(page: Page, message: string): Promise<void> {
+  await expect(async () => {
+    expect(page.isClosed(), 'a torn-down page must fail this check').toBe(false)
+    const url = page.url()
+    expect(url.startsWith(APP_URL), `page is at "${url}": ${message}`).toBe(
+      true
+    )
+    const atLogin = url.includes('/cloud/login')
+    const loginButtonVisible = await page
+      .getByTestId(TestIds.topbar.loginButton)
+      .isVisible()
+    const userButtonGone = !(await page
+      .getByTestId(TestIds.user.currentUserButton)
+      .isVisible())
+    expect(atLogin || loginButtonVisible || userButtonGone, message).toBe(true)
+  }).toPass({ timeout: 60_000 })
+}
+
+// Two pages in one context share Firebase's persistence, so a sign-out in
+// one tab must reach the other through the SDK and the app's reaction to it.
+test.describe('Cloud cross-tab sign-out', { tag: '@cloud' }, () => {
+  test('signing out in one tab signs out its sibling', async ({ browser }) => {
+    test.setTimeout(150_000)
+    const context = await browser.newContext()
+    const pageA = await context.newPage()
+    const pageB = await context.newPage()
+    await bootSignedIn(pageA)
+    await bootSignedIn(pageB)
+
+    await clickLogout(pageA)
+
+    await expectSignedOut(pageA, 'the signing-out tab must land signed out')
+    await expectSignedOut(
+      pageB,
+      'the sibling tab must not keep a working session after a sign-out elsewhere'
+    )
+    await context.close()
   })
 })
