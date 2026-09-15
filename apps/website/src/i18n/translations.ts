@@ -9825,7 +9825,7 @@ Enterprise`
   'workshop.run.requestId': { en: 'Request ID:', 'zh-CN': '请求 ID：' },
   'workshop.run.cancel': { en: 'Cancel', 'zh-CN': '取消' },
   'workshop.run.running': { en: 'Generating…', 'zh-CN': '生成中…' },
-  'workshop.load.pending': { en: 'Loading Models', 'zh-CN': '正在加载模型' },
+  'workshop.load.pending': { en: 'Loading', 'zh-CN': '加载中' },
   'workshop.load.failed': {
     en: 'Models did not load.',
     'zh-CN': '模型未能加载。'
