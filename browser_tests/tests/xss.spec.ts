@@ -50,40 +50,43 @@ test('Is not vulnerable to xss', async ({ comfyPage }) => {
  * search service, dialog — writes the display name as `innerHTML` on the way
  * through.
  */
-test(
-  'Does not render HTML in node search results',
-  { tag: ['@node'] },
-  async ({ comfyPage }) => {
+const nodeSearchTest = test.extend({
+  initialSettings: { 'Comfy.NodeSearchBoxImpl': 'default' },
+  page: async ({ page }, use) => {
     const unrouteObjectInfo = await routeObjectInfoFromSetupApi(
-      comfyPage.page,
+      page,
       (objectInfo) =>
         addNodeWithDisplayName(objectInfo, INJECTED_NODE_TYPE, HTML_PAYLOAD)
     )
-
     try {
-      // Reload so the node definition store boots from the patched object_info.
-      await comfyPage.workflow.reloadAndWaitForApp()
-
-      await comfyPage.searchBoxV2.open()
-      await comfyPage.searchBoxV2.input.fill(SEARCH_TERM)
-
-      const result = comfyPage.searchBoxV2.results
-        .filter({ hasText: SEARCH_TERM })
-        .first()
-      await expect(result).toBeVisible()
-
-      // `toContainText` compares rendered text, so anything parsed as markup
-      // would have been stripped out of it.
-      await expect(result).toContainText(HTML_PAYLOAD)
-      await expect(result.locator('img')).toHaveCount(0)
-
-      // Catches the payload executing anywhere on the page, not just inside
-      // the result row.
-      expect(
-        await comfyPage.page.evaluate((flag) => flag in window, XSS_FLAG)
-      ).toBe(false)
+      await use(page)
     } finally {
       await unrouteObjectInfo()
     }
+  }
+})
+
+nodeSearchTest(
+  'Does not render HTML in node search results',
+  { tag: ['@node'] },
+  async ({ comfyPage }) => {
+    await comfyPage.searchBoxV2.open()
+    await comfyPage.searchBoxV2.input.fill(SEARCH_TERM)
+
+    const result = comfyPage.searchBoxV2.results
+      .filter({ hasText: SEARCH_TERM })
+      .first()
+    await expect(result).toBeVisible()
+
+    // `toContainText` compares rendered text, so anything parsed as markup
+    // would have been stripped out of it.
+    await expect(result).toContainText(HTML_PAYLOAD)
+    await expect(result.locator('img')).toHaveCount(0)
+
+    // Catches the payload executing anywhere on the page, not just inside
+    // the result row.
+    expect(
+      await comfyPage.page.evaluate((flag) => flag in window, XSS_FLAG)
+    ).toBe(false)
   }
 )
