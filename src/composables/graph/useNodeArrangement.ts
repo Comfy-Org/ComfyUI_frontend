@@ -1,6 +1,7 @@
 import { useI18n } from 'vue-i18n'
 
 import type { Direction } from '@/lib/litegraph/src/interfaces'
+import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { alignNodes, distributeNodes } from '@/lib/litegraph/src/utils/arrange'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { isLGraphNode } from '@/utils/litegraphUtil'
@@ -70,7 +71,7 @@ export function useNodeArrangement() {
     }
   ]
 
-  const applyAlign = (alignOption: AlignOption) => {
+  const applyAlign = (alignOption: AlignOption, alignTo?: LGraphNode) => {
     const selectedNodes = Array.from(canvasStore.selectedItems).filter((item) =>
       isLGraphNode(item)
     )
@@ -79,7 +80,7 @@ export function useNodeArrangement() {
       return
     }
 
-    const newPositions = alignNodes(selectedNodes, alignOption.value)
+    const newPositions = alignNodes(selectedNodes, alignOption.value, alignTo)
     canvasStore.canvas?.applyNodePositions(newPositions)
 
     canvasRefresh.refreshCanvas()

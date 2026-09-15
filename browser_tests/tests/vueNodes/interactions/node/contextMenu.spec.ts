@@ -1,65 +1,23 @@
-import type { Locator } from '@playwright/test'
-
 import {
   comfyExpect as expect,
   comfyPageFixture as test
 } from '@e2e/fixtures/ComfyPage'
-import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { TestIds } from '@e2e/fixtures/selectors'
+import {
+  clickExactMenuItem,
+  getNodeRef,
+  getNodeWrapper,
+  openContextMenu,
+  openMultiNodeContextMenu
+} from '@e2e/fixtures/utils/contextMenuTestHelpers'
 
 const BYPASS_CLASS = /before:bg-bypass\/60/
 
-async function clickExactMenuItem(comfyPage: ComfyPage, name: string) {
-  await comfyPage.contextMenu.clickMenuItemExact(name)
-  await expect(comfyPage.contextMenu.primeVueMenu).toBeHidden()
-}
-
-async function openContextMenu(comfyPage: ComfyPage, nodeTitle: string) {
-  const fixture = await comfyPage.vueNodes.getFixtureByTitle(nodeTitle)
-  await comfyPage.contextMenu.openForVueNode(fixture.header)
-  return comfyPage.contextMenu.primeVueMenu
-}
-
-async function openMultiNodeContextMenu(
-  comfyPage: ComfyPage,
-  titles: string[]
-) {
-  // deselectAll via evaluate — clearSelection() clicks at a fixed position
-  // which can hit nodes or the toolbar overlay
-  await comfyPage.page.evaluate(() => window.app!.canvas.deselectAll())
-  await comfyPage.nextFrame()
-
-  for (const title of titles) {
-    const fixture = await comfyPage.vueNodes.getFixtureByTitle(title)
-    await fixture.header.click({ modifiers: ['ControlOrMeta'] })
-  }
-  await comfyPage.nextFrame()
-
-  const firstFixture = await comfyPage.vueNodes.getFixtureByTitle(titles[0])
-  const box = await firstFixture.header.boundingBox()
-  if (!box) throw new Error(`Header for "${titles[0]}" not found`)
-  await comfyPage.page.mouse.click(
-    box.x + box.width / 2,
-    box.y + box.height / 2,
-    { button: 'right' }
-  )
-
-  const menu = comfyPage.contextMenu.primeVueMenu
-  await menu.waitFor({ state: 'visible' })
-  return menu
-}
-
-function getNodeWrapper(comfyPage: ComfyPage, nodeTitle: string): Locator {
-  return comfyPage.vueNodes
-    .getNodeByTitle(nodeTitle)
-    .getByTestId(TestIds.node.innerWrapper)
-}
-
-async function getNodeRef(comfyPage: ComfyPage, nodeTitle: string) {
-  return await comfyPage.nodeOps.getNodeRefByTitle(nodeTitle)
-}
-
 test.describe('Vue Node Context Menu', { tag: '@vue-nodes' }, () => {
+  test.beforeEach(async ({ comfyPage }) => {
+    await comfyPage.workflow.loadWorkflow('default')
+  })
+
   test.describe('Single Node Actions', () => {
     test('should rename node via context menu', async ({ comfyPage }) => {
       await openContextMenu(comfyPage, 'KSampler')
@@ -236,7 +194,7 @@ test.describe('Vue Node Context Menu', { tag: '@vue-nodes' }, () => {
       await comfyPage.nodeOps.clearGraph()
       await comfyPage.searchBoxV2.addNode('Load Image')
       await comfyPage.page
-        .locator('[data-node-id] img')
+        .getByTestId(TestIds.node.mainImage)
         .first()
         .waitFor({ state: 'visible' })
 
@@ -247,8 +205,7 @@ test.describe('Vue Node Context Menu', { tag: '@vue-nodes' }, () => {
         .poll(() =>
           comfyPage.page.evaluate(
             (nodeId) =>
-              window.app!.graph.nodes.find((node) => node.id === nodeId)?.imgs
-                ?.length ?? 0,
+              window.app!.graph.getNodeById(nodeId)?.imgs?.length ?? 0,
             loadImageNode.id
           )
         )
@@ -369,6 +326,8 @@ test.describe('Vue Node Context Menu', { tag: '@vue-nodes' }, () => {
     test('should add subgraph to library and find in node library', async ({
       comfyPage
     }) => {
+      const blueprintName = `TestBlueprint-${Date.now()}`
+
       // Convert to subgraph first
       await openContextMenu(comfyPage, 'KSampler')
       await clickExactMenuItem(comfyPage, 'Convert to Subgraph')
@@ -382,7 +341,7 @@ test.describe('Vue Node Context Menu', { tag: '@vue-nodes' }, () => {
 
       // Fill the blueprint name
       await comfyPage.nodeOps.promptDialogInput.waitFor({ state: 'visible' })
-      await comfyPage.nodeOps.fillPromptDialog('TestBlueprint')
+      await comfyPage.nodeOps.fillPromptDialog(blueprintName)
 
       // Open node library sidebar and search for the blueprint
       await comfyPage.menu.nodeLibraryTab.tabButton.click()
@@ -390,9 +349,9 @@ test.describe('Vue Node Context Menu', { tag: '@vue-nodes' }, () => {
         name: 'Search'
       })
       await searchBox.waitFor({ state: 'visible' })
-      await searchBox.fill('TestBlueprint')
+      await searchBox.fill(blueprintName)
 
-      await expect(comfyPage.page.getByText('TestBlueprint')).toBeVisible()
+      await expect(comfyPage.page.getByText(blueprintName)).toBeVisible()
     })
   })
 
