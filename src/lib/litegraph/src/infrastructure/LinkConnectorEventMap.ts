@@ -51,4 +51,21 @@ export interface LinkConnectorEventMap {
     node: LGraphNode
     widget: IWidget
   }
+
+  /**
+   * A link was dropped on a node's body and no single slot on it fits.
+   *
+   * Cancel to say the drop was handled some other way — a node that carries a
+   * bundle of values on one slot wires several at once here. Uncancelled, the
+   * connector reports the drop unplaceable, exactly as it did before.
+   */
+  'link-unplaced': {
+    /** The node the link was dropped on. */
+    node: LGraphNode
+    /** The link being dragged; its `node` is the other end. */
+    link: RenderLink
+    /** Which of {@link node}'s slots were searched. */
+    side: 'input' | 'output'
+    event: CanvasPointerEvent
+  }
 }
