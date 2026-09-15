@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import type { ComfyHubProfile } from '@/schemas/apiSchema'
 
 const mockGetMyProfile = vi.hoisted(() => vi.fn())
@@ -23,11 +24,7 @@ vi.mock<unknown>(
   })
 )
 
-vi.mock<unknown>(import('@/composables/auth/useCurrentUser'), () => ({
-  useCurrentUser: () => ({
-    resolvedUserInfo: mockResolvedUserInfo
-  })
-}))
+vi.mock(import('@/composables/auth/useCurrentUser'))
 
 vi.mock<unknown>(import('@/composables/useErrorHandling'), () => ({
   useErrorHandling: () => ({
@@ -60,6 +57,11 @@ describe('useComfyHubProfileGate', () => {
   let gate: ReturnType<typeof useComfyHubProfileGate>
 
   beforeEach(() => {
+    const currentUser = useCurrentUser()
+    vi.spyOn(currentUser.resolvedUserInfo, 'value', 'get').mockImplementation(
+      () => mockResolvedUserInfo.value
+    )
+    vi.mocked(useCurrentUser).mockReturnValue(currentUser)
     mockResolvedUserInfo.value = { id: 'user-a' }
     setCurrentWorkspace('workspace-1')
     mockGetMyProfile.mockResolvedValue(mockProfile)

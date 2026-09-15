@@ -2,10 +2,11 @@ import { getActivePinia } from 'pinia'
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { afterAll, beforeEach, describe, expect, it, vi } from 'vitest'
-import { h, ref } from 'vue'
+import { computed, h, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import { formatCreditsFromCents } from '@/base/credits/comfyCredits'
+import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import type { BalanceInfo, SubscriptionInfo } from '@/composables/billing/types'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
@@ -32,15 +33,7 @@ afterAll(() => {
   window.open = originalWindowOpen
 })
 
-const mockHandleSignOut = vi.fn()
-vi.mock<unknown>(import('@/composables/auth/useCurrentUser'), () => ({
-  useCurrentUser: vi.fn(() => ({
-    userPhotoUrl: 'https://example.com/avatar.jpg',
-    userDisplayName: 'Test User',
-    userEmail: 'test@example.com',
-    handleSignOut: mockHandleSignOut
-  }))
-}))
+vi.mock(import('@/composables/auth/useCurrentUser'))
 
 vi.mock<unknown>(import('@/services/dialogService'), () => ({
   useDialogService: vi.fn(() => ({
@@ -127,6 +120,11 @@ vi.mock<unknown>(import('@/platform/telemetry'), () => ({
 
 describe('CurrentUserPopoverLegacy', () => {
   beforeEach(() => {
+    const currentUser = useCurrentUser()
+    currentUser.userPhotoUrl = computed(() => 'https://example.com/avatar.jpg')
+    currentUser.userDisplayName = computed(() => 'Test User')
+    currentUser.userEmail = computed(() => 'test@example.com')
+    vi.mocked(useCurrentUser).mockReturnValue(currentUser)
     mockCanAccessSubscriptionFeatures.value = true
     mockTier.value = 'CREATOR'
     mockSubscription.value = makeSubscription()
@@ -268,7 +266,7 @@ describe('CurrentUserPopoverLegacy', () => {
 
     await user.click(screen.getByTestId('logout-menu-item'))
 
-    expect(mockHandleSignOut).toHaveBeenCalled()
+    expect(useCurrentUser().handleSignOut).toHaveBeenCalled()
     expect(onClose).toHaveBeenCalledTimes(1)
   })
 

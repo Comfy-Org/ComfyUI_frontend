@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, h, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
+import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 
@@ -19,15 +20,7 @@ vi.mock(import('@/platform/distribution/types'), () => ({
   }
 }))
 
-// Mock the useCurrentUser composable
-vi.mock<unknown>(import('@/composables/auth/useCurrentUser'), () => ({
-  useCurrentUser: vi.fn(() => ({
-    isLoggedIn: true,
-    userPhotoUrl: 'https://example.com/avatar.jpg',
-    userDisplayName: 'Test User',
-    userEmail: 'test@example.com'
-  }))
-}))
+vi.mock(import('@/composables/auth/useCurrentUser'))
 
 // Mock the UserAvatar component
 vi.mock<unknown>(import('@/components/common/UserAvatar.vue'), () => ({
@@ -90,6 +83,18 @@ vi.mock(import('./CurrentUserPopoverLegacy.vue'), () => ({
 
 describe('CurrentUserButton', () => {
   beforeEach(() => {
+    const currentUser = useCurrentUser()
+    vi.spyOn(currentUser.isLoggedIn, 'value', 'get').mockReturnValue(true)
+    vi.spyOn(currentUser.userPhotoUrl, 'value', 'get').mockReturnValue(
+      'https://example.com/avatar.jpg'
+    )
+    vi.spyOn(currentUser.userDisplayName, 'value', 'get').mockReturnValue(
+      'Test User'
+    )
+    vi.spyOn(currentUser.userEmail, 'value', 'get').mockReturnValue(
+      'test@example.com'
+    )
+    vi.mocked(useCurrentUser).mockReturnValue(currentUser)
     Object.assign(useTeamWorkspaceStore(), { workspaceName: '' })
     useTeamWorkspaceStore().initState = 'uninitialized'
     Object.assign(useTeamWorkspaceStore(), { isInPersonalWorkspace: false })

@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
+import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import enMessages from '@/locales/en/main.json'
 import type { ActivityEvent } from '@/platform/workspace/composables/useWorkspaceActivity'
 
@@ -25,11 +26,7 @@ vi.mock<unknown>(
   })
 )
 
-vi.mock<unknown>(import('@/composables/auth/useCurrentUser'), () => ({
-  useCurrentUser: () => ({
-    resolvedUserInfo: { value: { id: 'user-ada' } }
-  })
-}))
+vi.mock(import('@/composables/auth/useCurrentUser'))
 
 vi.mock(import('@/config/comfyApi'), () => ({
   getComfyPlatformBaseUrl: () => 'https://platform.test'
@@ -66,6 +63,11 @@ const creditedRow: ActivityEvent = {
 
 describe('WorkspaceActivityContent', () => {
   beforeEach(() => {
+    const currentUser = useCurrentUser()
+    vi.spyOn(currentUser.resolvedUserInfo, 'value', 'get').mockReturnValue({
+      id: 'user-ada'
+    })
+    vi.mocked(useCurrentUser).mockReturnValue(currentUser)
     globalThis.ResizeObserver = NoopResizeObserver
     mockWorkspaceRole.value = 'owner'
   })

@@ -7,6 +7,7 @@ import { useToastStore } from '@/platform/updates/common/toastStore'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { setImmediate } from 'node:timers/promises'
 
+import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useDialogStore } from '@/stores/dialogStore'
 import { i18n } from '@/i18n'
 
@@ -19,18 +20,7 @@ const authState = await vi.hoisted(async () => {
     identity: 'account-a'
   })
 })
-vi.mock<unknown>(import('@/composables/auth/useCurrentUser'), () => ({
-  useCurrentUser: () => ({
-    get isLoggedIn() {
-      return { value: authState.loggedIn }
-    },
-    resolvedUserInfo: {
-      get value() {
-        return authState.identity ? { id: authState.identity } : null
-      }
-    }
-  })
-}))
+vi.mock(import('@/composables/auth/useCurrentUser'))
 
 vi.mock(import('@/config/comfyApi'), () => ({
   getComfyApiBaseUrl: () => 'https://api.comfy.test'
@@ -106,6 +96,14 @@ async function startConsent() {
 
 describe('useAgentConsent', () => {
   beforeEach(() => {
+    const currentUser = useCurrentUser()
+    vi.spyOn(currentUser.isLoggedIn, 'value', 'get').mockImplementation(
+      () => authState.loggedIn
+    )
+    vi.spyOn(currentUser.resolvedUserInfo, 'value', 'get').mockImplementation(
+      () => (authState.identity ? { id: authState.identity } : null)
+    )
+    vi.mocked(useCurrentUser).mockReturnValue(currentUser)
     localStorage.clear()
     authState.loggedIn = true
     authState.identity = 'account-a'
