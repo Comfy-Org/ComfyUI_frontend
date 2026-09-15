@@ -1,33 +1,26 @@
-import { telemetryMock } from '@/platform/telemetry/__mocks__'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useDialogStore } from '@/stores/dialogStore'
 import { render, screen, waitFor } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
+
+import { useTelemetry } from '@/platform/telemetry'
 
 import InviteMemberDialogContent from './InviteMemberDialogContent.vue'
 
 import type { WorkspacePendingInvite } from '@/platform/workspace/stores/teamWorkspaceStore'
 
-const {
-  mockToastAdd,
-  mockTrackInviteSent,
-  mockTrackInviteFailed,
-  mockFetchStatus,
-  mockMaxSeats,
-  mockOccupiedSeats
-} = vi.hoisted(() => {
-  const nullableNumber = (value: number | null) => ({ value })
-  return {
-    mockToastAdd: vi.fn(),
-    mockTrackInviteSent: vi.fn(),
-    mockTrackInviteFailed: vi.fn(),
-    mockFetchStatus: vi.fn(),
-    mockMaxSeats: nullableNumber(73),
-    mockOccupiedSeats: nullableNumber(0)
-  }
-})
+const { mockToastAdd, mockFetchStatus, mockMaxSeats, mockOccupiedSeats } =
+  vi.hoisted(() => {
+    const nullableNumber = (value: number | null) => ({ value })
+    return {
+      mockToastAdd: vi.fn(),
+      mockFetchStatus: vi.fn(),
+      mockMaxSeats: nullableNumber(73),
+      mockOccupiedSeats: nullableNumber(0)
+    }
+  })
 
 vi.mock<unknown>(import('@/composables/billing/useBillingContext'), () => ({
   useBillingContext: () => ({
@@ -39,10 +32,8 @@ vi.mock<unknown>(import('@/composables/billing/useBillingContext'), () => ({
 
 vi.mock(import('@/platform/telemetry'))
 
-beforeEach(() => {
-  telemetryMock.trackWorkspaceInviteSent = mockTrackInviteSent
-  telemetryMock.trackWorkspaceInviteFailed = mockTrackInviteFailed
-})
+const dispatcher = vi.mocked(useTelemetry(), { deep: true })
+assert.exists(dispatcher)
 
 vi.mock<unknown>(
   import('primevue/usetoast'), // eslint-disable-line primevue-removal/no-imports
@@ -206,7 +197,7 @@ describe('InviteMemberDialogContent', () => {
     expect(useTeamWorkspaceStore().createInvite).toHaveBeenCalledTimes(2)
     expect(useTeamWorkspaceStore().createInvite).toHaveBeenCalledWith('a@b.com')
     expect(useTeamWorkspaceStore().createInvite).toHaveBeenCalledWith('c@d.com')
-    expect(mockTrackInviteSent).toHaveBeenCalledWith({
+    expect(dispatcher.trackWorkspaceInviteSent).toHaveBeenCalledWith({
       source: 'settings_members',
       count: 2
     })
@@ -241,7 +232,7 @@ describe('InviteMemberDialogContent', () => {
     expect(mockToastAdd).toHaveBeenCalledWith(
       expect.objectContaining({ severity: 'error' })
     )
-    expect(mockTrackInviteSent).toHaveBeenCalledWith({
+    expect(dispatcher.trackWorkspaceInviteSent).toHaveBeenCalledWith({
       source: 'settings_members',
       count: 1
     })
@@ -268,7 +259,7 @@ describe('InviteMemberDialogContent', () => {
     expect(mockToastAdd).toHaveBeenCalledWith(
       expect.objectContaining({ severity: 'error' })
     )
-    expect(mockTrackInviteSent).not.toHaveBeenCalled()
+    expect(dispatcher.trackWorkspaceInviteSent).not.toHaveBeenCalled()
     expect(inviteButton()).toBeEnabled()
   })
 

@@ -1,4 +1,3 @@
-import { telemetryMock } from '@/platform/telemetry/__mocks__'
 /* eslint-disable testing-library/no-container */
 /* eslint-disable testing-library/no-node-access */
 import { getActivePinia } from 'pinia'
@@ -6,10 +5,12 @@ import type { Pinia } from 'pinia'
 import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
 import type { MenuItem } from 'primevue/menuitem'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, defineComponent, h, nextTick, onMounted, ref } from 'vue'
 import type { Component } from 'vue'
 import { createI18n } from 'vue-i18n'
+
+import { useTelemetry } from '@/platform/telemetry'
 
 import QueueNotificationBannerHost from '@/components/queue/QueueNotificationBannerHost.vue'
 import TopMenuSection from '@/components/TopMenuSection.vue'
@@ -81,13 +82,10 @@ vi.mock<unknown>(import('@/scripts/app'), () => ({
   }
 }))
 
-const mockTrackUiButtonClicked = vi.hoisted(() => vi.fn())
-
 vi.mock(import('@/platform/telemetry'))
 
-beforeEach(() => {
-  telemetryMock.trackUiButtonClicked = mockTrackUiButtonClicked
-})
+const dispatcher = vi.mocked(useTelemetry(), { deep: true })
+assert.exists(dispatcher)
 
 type WrapperOptions = {
   pinia?: Pinia
@@ -285,7 +283,7 @@ describe('TopMenuSection', () => {
       screen.getByRole('button', { name: 'Toggle properties panel' })
     )
 
-    expect(mockTrackUiButtonClicked).toHaveBeenCalledWith({
+    expect(dispatcher.trackUiButtonClicked).toHaveBeenCalledWith({
       button_id: 'right_side_panel_opened',
       element_group: 'top_menu'
     })

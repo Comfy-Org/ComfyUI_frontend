@@ -1,10 +1,11 @@
-import { telemetryMock } from '@/platform/telemetry/__mocks__'
 import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
 import PrimeVue from 'primevue/config'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { ComponentProps } from 'vue-component-type-helpers'
 import { createI18n } from 'vue-i18n'
+
+import { useTelemetry } from '@/platform/telemetry'
 
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useCommandStore } from '@/stores/commandStore'
@@ -30,7 +31,6 @@ beforeEach(() => {
 })
 
 const spies = vi.hoisted(() => ({
-  trackUiButtonClicked: vi.fn(),
   toggleAssets: vi.fn()
 }))
 
@@ -42,9 +42,8 @@ vi.mock(import('@/platform/distribution/types'), () => ({
 
 vi.mock(import('@/platform/telemetry'))
 
-beforeEach(() => {
-  telemetryMock.trackUiButtonClicked = spies.trackUiButtonClicked
-})
+const dispatcher = vi.mocked(useTelemetry(), { deep: true })
+assert.exists(dispatcher)
 
 const i18n = createI18n({
   legacy: false,
@@ -151,7 +150,7 @@ describe('SideToolbar', () => {
 
     await user.click(screen.getByRole('button', { name: 'Assets' }))
 
-    expect(spies.trackUiButtonClicked).toHaveBeenCalledWith({
+    expect(dispatcher.trackUiButtonClicked).toHaveBeenCalledWith({
       button_id: 'sidebar_tab_assets_media_selected',
       element_group: 'sidebar'
     })

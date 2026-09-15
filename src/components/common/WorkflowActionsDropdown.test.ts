@@ -1,9 +1,10 @@
-import { telemetryMock } from '@/platform/telemetry/__mocks__'
 import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
+
+import { useTelemetry } from '@/platform/telemetry'
 
 import { KeybindingImpl } from '@/platform/keybindings/keybinding'
 import { useKeybindingStore } from '@/platform/keybindings/keybindingStore'
@@ -23,15 +24,13 @@ beforeEach(() => {
 })
 
 const spies = vi.hoisted(() => ({
-  trackUiButtonClicked: vi.fn(),
   markAsSeen: vi.fn()
 }))
 
 vi.mock(import('@/platform/telemetry'))
 
-beforeEach(() => {
-  telemetryMock.trackUiButtonClicked = spies.trackUiButtonClicked
-})
+const dispatcher = vi.mocked(useTelemetry(), { deep: true })
+assert.exists(dispatcher)
 
 vi.mock<unknown>(import('@/composables/useWorkflowActionsMenu'), async () => {
   const { ref } = await import('vue')
@@ -162,7 +161,7 @@ describe('WorkflowActionsDropdown', () => {
     expect(
       screen.getByRole('button', { name: /workflow actions/ })
     ).toHaveAttribute('aria-expanded', 'false')
-    expect(spies.trackUiButtonClicked).not.toHaveBeenCalled()
+    expect(dispatcher.trackUiButtonClicked).not.toHaveBeenCalled()
     expect(spies.markAsSeen).not.toHaveBeenCalled()
   })
 
@@ -175,7 +174,7 @@ describe('WorkflowActionsDropdown', () => {
     expect(vi.mocked(useCommandStore().execute)).not.toHaveBeenCalled()
     expect(active).toHaveAttribute('aria-expanded', 'true')
     expect(spies.markAsSeen).toHaveBeenCalled()
-    expect(spies.trackUiButtonClicked).toHaveBeenCalledWith({
+    expect(dispatcher.trackUiButtonClicked).toHaveBeenCalledWith({
       button_id: 'test',
       element_group: 'workflow_actions'
     })
@@ -208,7 +207,7 @@ describe('WorkflowActionsDropdown', () => {
     expect(
       screen.getByRole('button', { name: /workflow actions/ })
     ).toHaveAttribute('aria-expanded', 'false')
-    expect(spies.trackUiButtonClicked).not.toHaveBeenCalled()
+    expect(dispatcher.trackUiButtonClicked).not.toHaveBeenCalled()
   })
 
   it('lets non-trigger keys bubble past the inactive segment', async () => {

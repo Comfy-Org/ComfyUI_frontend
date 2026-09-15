@@ -1,4 +1,3 @@
-import { telemetryMock } from '@/platform/telemetry/__mocks__'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useWorkspaceAuthStore } from '@/platform/workspace/stores/workspaceAuthStore'
@@ -35,10 +34,6 @@ vi.mock(import('vuefire'), () => ({
 vi.mock(import('firebase/auth'))
 
 vi.mock(import('@/platform/telemetry'))
-
-beforeEach(() => {
-  telemetryMock.trackAuth = vi.fn()
-})
 
 vi.mock(import('@/services/dialogService'))
 vi.mock(import('@/platform/distribution/types'), () => mockDistributionTypes)

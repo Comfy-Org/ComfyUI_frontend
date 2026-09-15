@@ -1,10 +1,11 @@
-import { telemetryMock } from '@/platform/telemetry/__mocks__'
 import { getActivePinia } from 'pinia'
 import userEvent from '@testing-library/user-event'
 import { render, screen, waitFor } from '@testing-library/vue'
 import PrimeVue from 'primevue/config'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
+
+import { useTelemetry } from '@/platform/telemetry'
 
 import { resolveRunErrorMessage } from '@/platform/errorCatalog/errorMessageResolver'
 import { useCommandStore } from '@/stores/commandStore'
@@ -40,14 +41,10 @@ vi.mock(import('@/utils/errorReportUtil'), () => ({
   generateErrorReport: (data: unknown) => mockGenerateErrorReport(data)
 }))
 
-const mockTrackHelpResourceClicked = vi.fn()
-
 vi.mock(import('@/platform/telemetry'))
 
-beforeEach(() => {
-  telemetryMock.trackUiButtonClicked = vi.fn()
-  telemetryMock.trackHelpResourceClicked = mockTrackHelpResourceClicked
-})
+const dispatcher = vi.mocked(useTelemetry(), { deep: true })
+assert.exists(dispatcher)
 
 vi.mock<unknown>(import('@/composables/useExternalLink'), () => ({
   useExternalLink: vi.fn(() => ({
@@ -405,7 +402,7 @@ describe('ErrorNodeCard.vue', () => {
     expect(useCommandStore().execute).toHaveBeenCalledWith(
       'Comfy.ContactSupport'
     )
-    expect(mockTrackHelpResourceClicked).toHaveBeenCalledWith(
+    expect(dispatcher.trackHelpResourceClicked).toHaveBeenCalledWith(
       expect.objectContaining({
         resource_type: 'help_feedback',
         source: 'error_dialog'

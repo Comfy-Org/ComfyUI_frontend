@@ -1,11 +1,12 @@
-import { telemetryMock } from '@/platform/telemetry/__mocks__'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTemplateRankingStore } from '@/stores/templateRankingStore'
 import { useSystemStatsStore } from '@/stores/systemStatsStore'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick, ref } from 'vue'
 import { fromPartial } from '@total-typescript/shoehorn'
 import { until } from '@vueuse/core'
+
+import { useTelemetry } from '@/platform/telemetry'
 
 import type { TemplateInfo } from '@/platform/workflow/templates/types/template'
 import { TemplateIncludeOnDistributionEnum } from '@/platform/workflow/templates/types/template'
@@ -18,13 +19,10 @@ let defaultRankingStore: ReturnType<typeof useTemplateRankingStore>
 
 let mockSystemStatsStore: ReturnType<typeof useSystemStatsStore>
 
-const trackTemplateFilterChanged = vi.hoisted(() => vi.fn())
 vi.mock(import('@/platform/telemetry'))
 
-beforeEach(() => {
-  telemetryMock.trackTemplateFilterChanged = trackTemplateFilterChanged
-  telemetryMock.trackSearchQuery = vi.fn()
-})
+const dispatcher = vi.mocked(useTelemetry(), { deep: true })
+assert.exists(dispatcher)
 
 vi.mock(
   import('@/platform/telemetry/searchQuery/useSearchQueryTracking'),
@@ -613,7 +611,7 @@ describe('useTemplateFiltering', () => {
       await vi.runOnlyPendingTimersAsync()
 
       expect(
-        trackTemplateFilterChanged,
+        dispatcher.trackTemplateFilterChanged,
         'telemetry must report the search default, not the persisted browse sort'
       ).toHaveBeenLastCalledWith(
         expect.objectContaining({ sort_by: 'popular' })

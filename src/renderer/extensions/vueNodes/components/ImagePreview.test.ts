@@ -1,12 +1,13 @@
-import { telemetryMock } from '@/platform/telemetry/__mocks__'
 /* eslint-disable testing-library/no-container, testing-library/no-node-access */
 /* eslint-disable testing-library/prefer-user-event */
 import { render, screen, fireEvent } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { getActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { assert, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
+
+import { useTelemetry } from '@/platform/telemetry'
 
 import { downloadFile } from '@/base/common/downloadUtil'
 import ImagePreview from '@/renderer/extensions/vueNodes/components/ImagePreview.vue'
@@ -20,12 +21,10 @@ vi.mock(import('@/services/hdrViewerService'), () => ({
   openHdrViewer: vi.fn()
 }))
 
-const mockTrackImageLoadFailed = vi.fn()
 vi.mock(import('@/platform/telemetry'))
 
-beforeEach(() => {
-  telemetryMock.trackImageLoadFailed = mockTrackImageLoadFailed
-})
+const dispatcher = vi.mocked(useTelemetry(), { deep: true })
+assert.exists(dispatcher)
 
 const i18n = createI18n({
   legacy: false,
@@ -171,7 +170,7 @@ describe('ImagePreview', () => {
     expect(
       screen.queryByRole('button', { name: 'Download image' })
     ).not.toBeInTheDocument()
-    expect(mockTrackImageLoadFailed).toHaveBeenCalledExactlyOnceWith({
+    expect(dispatcher.trackImageLoadFailed).toHaveBeenCalledExactlyOnceWith({
       source: 'node_image_preview'
     })
   })

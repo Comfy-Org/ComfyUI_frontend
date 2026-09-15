@@ -1,17 +1,17 @@
-import { telemetryMock } from '@/platform/telemetry/__mocks__'
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import PrimeVue from 'primevue/config'
 import Tooltip from 'primevue/tooltip'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
+
+import { useTelemetry } from '@/platform/telemetry'
 
 import InfoButton from '@/components/graph/selectionToolbox/InfoButton.vue'
 import Button from '@/components/ui/button/Button.vue'
 
-const { openNodeInfoMock, trackUiButtonClickedMock } = vi.hoisted(() => ({
-  openNodeInfoMock: vi.fn(),
-  trackUiButtonClickedMock: vi.fn()
+const { openNodeInfoMock } = vi.hoisted(() => ({
+  openNodeInfoMock: vi.fn()
 }))
 
 vi.mock<unknown>(import('@/composables/graph/useSelectionState'), () => ({
@@ -22,9 +22,8 @@ vi.mock<unknown>(import('@/composables/graph/useSelectionState'), () => ({
 
 vi.mock(import('@/platform/telemetry'))
 
-beforeEach(() => {
-  telemetryMock.trackUiButtonClicked = trackUiButtonClickedMock
-})
+const dispatcher = vi.mocked(useTelemetry(), { deep: true })
+assert.exists(dispatcher)
 
 describe('InfoButton', () => {
   const i18n = createI18n({
@@ -64,7 +63,7 @@ describe('InfoButton', () => {
     await clickNodeInfoButton()
 
     expect(openNodeInfoMock).toHaveBeenCalled()
-    expect(trackUiButtonClickedMock).toHaveBeenCalledWith({
+    expect(dispatcher.trackUiButtonClicked).toHaveBeenCalledWith({
       button_id: 'selection_toolbox_node_info_opened',
       element_group: 'selection_toolbox'
     })
@@ -77,6 +76,6 @@ describe('InfoButton', () => {
     await clickNodeInfoButton()
 
     expect(openNodeInfoMock).toHaveBeenCalled()
-    expect(trackUiButtonClickedMock).not.toHaveBeenCalled()
+    expect(dispatcher.trackUiButtonClicked).not.toHaveBeenCalled()
   })
 })

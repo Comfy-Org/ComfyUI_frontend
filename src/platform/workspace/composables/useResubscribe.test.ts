@@ -1,8 +1,9 @@
-import { telemetryMock } from '@/platform/telemetry/__mocks__'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { assert, afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createApp, defineComponent } from 'vue'
 import type { App } from 'vue'
 import { createI18n } from 'vue-i18n'
+
+import { useTelemetry } from '@/platform/telemetry'
 
 import { AuthStoreError } from '@/stores/authStore'
 
@@ -14,9 +15,7 @@ const state = vi.hoisted(() => ({
   canReactivate: true,
   canReactivatePlan: true,
   resubscribe: vi.fn(),
-  toastAdd: vi.fn(),
-  trackResubscribeClicked: vi.fn(),
-  trackBillingEvent: vi.fn()
+  toastAdd: vi.fn()
 }))
 
 vi.mock<unknown>(import('@/composables/billing/useBillingContext'), () => ({
@@ -70,10 +69,8 @@ vi.mock<unknown>(
 
 vi.mock(import('@/platform/telemetry'))
 
-beforeEach(() => {
-  telemetryMock.trackResubscribeClicked = state.trackResubscribeClicked
-  telemetryMock.trackBillingEvent = state.trackBillingEvent
-})
+const dispatcher = vi.mocked(useTelemetry(), { deep: true })
+assert.exists(dispatcher)
 
 vi.mock<unknown>(
   import('primevue/usetoast'), // eslint-disable-line primevue-removal/no-imports
@@ -123,7 +120,7 @@ describe('useResubscribe', () => {
     await handleResubscribe()
 
     expect(state.resubscribe).not.toHaveBeenCalled()
-    expect(state.trackResubscribeClicked).not.toHaveBeenCalled()
+    expect(dispatcher.trackResubscribeClicked).not.toHaveBeenCalled()
     expect(state.toastAdd).not.toHaveBeenCalled()
     expect(isResubscribing.value).toBe(false)
   })
@@ -137,7 +134,7 @@ describe('useResubscribe', () => {
     await handleResubscribe()
 
     expect(state.resubscribe).not.toHaveBeenCalled()
-    expect(state.trackResubscribeClicked).not.toHaveBeenCalled()
+    expect(dispatcher.trackResubscribeClicked).not.toHaveBeenCalled()
     expect(state.toastAdd).not.toHaveBeenCalled()
     expect(isResubscribing.value).toBe(false)
   })
@@ -172,7 +169,7 @@ describe('useResubscribe', () => {
 
     await handleResubscribe()
 
-    expect(state.trackBillingEvent).toHaveBeenCalledWith({
+    expect(dispatcher.trackBillingEvent).toHaveBeenCalledWith({
       operation: 'resubscribe',
       stage: 'started',
       outcome: 'pending',
@@ -191,11 +188,11 @@ describe('useResubscribe', () => {
     await handleResubscribe()
 
     expect(state.resubscribe).toHaveBeenCalledOnce()
-    expect(state.trackResubscribeClicked).toHaveBeenCalledOnce()
-    expect(state.trackBillingEvent).not.toHaveBeenCalledWith(
+    expect(dispatcher.trackResubscribeClicked).toHaveBeenCalledOnce()
+    expect(dispatcher.trackBillingEvent).not.toHaveBeenCalledWith(
       expect.objectContaining({ stage: 'succeeded' })
     )
-    expect(state.trackBillingEvent).toHaveBeenCalledWith({
+    expect(dispatcher.trackBillingEvent).toHaveBeenCalledWith({
       operation: 'resubscribe',
       stage: 'started',
       outcome: 'pending',
@@ -203,7 +200,7 @@ describe('useResubscribe', () => {
     })
     // Exactly one started event on the legacy success rail: the pre-call start,
     // with no duplicate post-await started/pending emitted after resubscribe() resolves.
-    expect(state.trackBillingEvent).toHaveBeenCalledTimes(1)
+    expect(dispatcher.trackBillingEvent).toHaveBeenCalledTimes(1)
     expect(state.toastAdd).toHaveBeenCalledWith(
       expect.objectContaining({ severity: 'success' })
     )
@@ -224,7 +221,7 @@ describe('useResubscribe', () => {
         detail: 'Resubscribe failed for person@example.com'
       })
     )
-    expect(state.trackBillingEvent).toHaveBeenCalledWith({
+    expect(dispatcher.trackBillingEvent).toHaveBeenCalledWith({
       operation: 'resubscribe',
       stage: 'failed',
       outcome: 'failure',
@@ -245,10 +242,10 @@ describe('useResubscribe', () => {
 
     await handleResubscribe()
 
-    expect(state.trackBillingEvent).not.toHaveBeenCalledWith(
+    expect(dispatcher.trackBillingEvent).not.toHaveBeenCalledWith(
       expect.objectContaining({ stage: 'succeeded' })
     )
-    expect(state.trackBillingEvent).toHaveBeenCalledWith({
+    expect(dispatcher.trackBillingEvent).toHaveBeenCalledWith({
       operation: 'resubscribe',
       stage: 'failed',
       outcome: 'failure',
@@ -265,7 +262,7 @@ describe('useResubscribe', () => {
 
     await handleResubscribe()
 
-    expect(state.trackBillingEvent).toHaveBeenCalledWith({
+    expect(dispatcher.trackBillingEvent).toHaveBeenCalledWith({
       operation: 'resubscribe',
       stage: 'failed',
       outcome: 'failure',
@@ -279,9 +276,11 @@ describe('useResubscribe', () => {
     state.resubscribe.mockImplementation(async () => {
       callOrder.push('resubscribe')
     })
-    state.trackBillingEvent.mockImplementation((event: { stage: string }) => {
-      callOrder.push(`trackBillingEvent:${event.stage}`)
-    })
+    dispatcher.trackBillingEvent.mockImplementation(
+      (event: { stage: string }) => {
+        callOrder.push(`trackBillingEvent:${event.stage}`)
+      }
+    )
     const { handleResubscribe } = useResubscribe()
 
     await handleResubscribe()

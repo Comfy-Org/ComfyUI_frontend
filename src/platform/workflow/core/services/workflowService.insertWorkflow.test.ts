@@ -1,4 +1,3 @@
-import { telemetryMock } from '@/platform/telemetry/__mocks__'
 import { useWorkflowDraftStoreV2 } from '@/platform/workflow/persistence/stores/workflowDraftStoreV2'
 import { useDomWidgetStore } from '@/stores/domWidgetStore'
 import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
@@ -53,12 +52,6 @@ vi.mock<unknown>(
 )
 
 vi.mock(import('@/platform/telemetry'))
-
-beforeEach(() => {
-  telemetryMock.trackDefaultViewSet = vi.fn()
-  telemetryMock.trackWorkflowSaved = vi.fn()
-  telemetryMock.trackEnterLinear = vi.fn()
-})
 
 const PROBE_NODE_TYPE = 'test/insert-workflow-probe'
 

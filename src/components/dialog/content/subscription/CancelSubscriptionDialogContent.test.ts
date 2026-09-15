@@ -1,8 +1,9 @@
-import { telemetryMock } from '@/platform/telemetry/__mocks__'
 import userEvent from '@testing-library/user-event'
 import { render, screen, waitFor } from '@testing-library/vue'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
+
+import { useTelemetry } from '@/platform/telemetry'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import { useDialogStore } from '@/stores/dialogStore'
@@ -54,7 +55,7 @@ const mockFetchStatus = vi.hoisted(() => vi.fn())
 
 const mockToastAdd = vi.hoisted(() => vi.fn())
 const mockTier = vi.hoisted(() => ({ value: 'STANDARD' as string | null }))
-const mockTrackCancellation = vi.hoisted(() => vi.fn())
+
 const mockShouldUseWorkspaceBilling = vi.hoisted(() => ({ value: false }))
 const mockCanCancel = vi.hoisted(() => ({ value: true }))
 const mockCanManageSubscriptionLifecycle = vi.hoisted(() => ({ value: true }))
@@ -104,9 +105,8 @@ vi.mock<unknown>(
 
 vi.mock(import('@/platform/telemetry'))
 
-beforeEach(() => {
-  telemetryMock.trackSubscriptionCancellation = mockTrackCancellation
-})
+const dispatcher = vi.mocked(useTelemetry(), { deep: true })
+assert.exists(dispatcher)
 
 vi.mock<unknown>(
   import('primevue/usetoast'), // eslint-disable-line primevue-removal/no-imports
@@ -159,12 +159,15 @@ describe('CancelSubscriptionDialogContent', () => {
 
       renderComponent()
 
-      expect(mockTrackCancellation).toHaveBeenCalledWith('flow_opened', {
-        source: 'cancel_plan_menu',
-        current_tier: 'standard',
-        cycle: 'yearly',
-        end_date: '2026-08-01T00:00:00.000Z'
-      })
+      expect(dispatcher.trackSubscriptionCancellation).toHaveBeenCalledWith(
+        'flow_opened',
+        {
+          source: 'cancel_plan_menu',
+          current_tier: 'standard',
+          cycle: 'yearly',
+          end_date: '2026-08-01T00:00:00.000Z'
+        }
+      )
     })
 
     it('does not repeat flow_opened when continuing a fallback flow', () => {
@@ -172,7 +175,7 @@ describe('CancelSubscriptionDialogContent', () => {
 
       renderComponent({ flowAlreadyOpened: true })
 
-      expect(mockTrackCancellation).not.toHaveBeenCalledWith(
+      expect(dispatcher.trackSubscriptionCancellation).not.toHaveBeenCalledWith(
         'flow_opened',
         expect.anything()
       )
@@ -191,11 +194,11 @@ describe('CancelSubscriptionDialogContent', () => {
         expect(vi.mocked(useDialogStore().closeDialog)).toHaveBeenCalled()
       )
       unmount()
-      expect(mockTrackCancellation).toHaveBeenCalledWith(
+      expect(dispatcher.trackSubscriptionCancellation).toHaveBeenCalledWith(
         'confirmed',
         expect.objectContaining({ current_tier: 'standard' })
       )
-      expect(mockTrackCancellation).not.toHaveBeenCalledWith(
+      expect(dispatcher.trackSubscriptionCancellation).not.toHaveBeenCalledWith(
         'abandoned',
         expect.anything()
       )
@@ -211,12 +214,12 @@ describe('CancelSubscriptionDialogContent', () => {
       )
 
       await waitFor(() =>
-        expect(mockTrackCancellation).toHaveBeenCalledWith(
+        expect(dispatcher.trackSubscriptionCancellation).toHaveBeenCalledWith(
           'failed',
           expect.not.objectContaining({ error_message: expect.anything() })
         )
       )
-      expect(mockTrackCancellation).toHaveBeenCalledWith(
+      expect(dispatcher.trackSubscriptionCancellation).toHaveBeenCalledWith(
         'confirmed',
         expect.anything()
       )
@@ -237,7 +240,7 @@ describe('CancelSubscriptionDialogContent', () => {
           expect.objectContaining({ severity: 'error' })
         )
       )
-      expect(mockTrackCancellation).not.toHaveBeenCalledWith(
+      expect(dispatcher.trackSubscriptionCancellation).not.toHaveBeenCalledWith(
         'failed',
         expect.anything()
       )
@@ -255,7 +258,7 @@ describe('CancelSubscriptionDialogContent', () => {
         key: 'cancel-subscription'
       })
       unmount()
-      expect(mockTrackCancellation).toHaveBeenCalledWith(
+      expect(dispatcher.trackSubscriptionCancellation).toHaveBeenCalledWith(
         'abandoned',
         expect.objectContaining({ current_tier: 'standard' })
       )
@@ -266,10 +269,10 @@ describe('CancelSubscriptionDialogContent', () => {
       mockSubscription.value = null
 
       const { unmount } = renderComponent()
-      mockTrackCancellation.mockClear()
+      dispatcher.trackSubscriptionCancellation.mockClear()
       unmount()
 
-      expect(mockTrackCancellation).toHaveBeenCalledWith(
+      expect(dispatcher.trackSubscriptionCancellation).toHaveBeenCalledWith(
         'abandoned',
         expect.objectContaining({ current_tier: 'standard' })
       )
@@ -331,7 +334,7 @@ describe('CancelSubscriptionDialogContent', () => {
       )
 
       expect(mockCancelSubscription).not.toHaveBeenCalled()
-      expect(mockTrackCancellation).not.toHaveBeenCalledWith(
+      expect(dispatcher.trackSubscriptionCancellation).not.toHaveBeenCalledWith(
         'confirmed',
         expect.anything()
       )
@@ -368,7 +371,7 @@ describe('CancelSubscriptionDialogContent', () => {
       )
 
       expect(mockCancelSubscription).not.toHaveBeenCalled()
-      expect(mockTrackCancellation).not.toHaveBeenCalledWith(
+      expect(dispatcher.trackSubscriptionCancellation).not.toHaveBeenCalledWith(
         'confirmed',
         expect.anything()
       )
@@ -393,11 +396,13 @@ describe('CancelSubscriptionDialogContent', () => {
         key: 'cancel-subscription'
       })
       expect(
-        mockTrackCancellation.mock.calls.some(([stage]) => stage === 'failed')
+        dispatcher.trackSubscriptionCancellation.mock.calls.some(
+          ([stage]) => stage === 'failed'
+        )
       ).toBe(false)
 
       unmount()
-      expect(mockTrackCancellation).not.toHaveBeenCalledWith(
+      expect(dispatcher.trackSubscriptionCancellation).not.toHaveBeenCalledWith(
         'abandoned',
         expect.anything()
       )

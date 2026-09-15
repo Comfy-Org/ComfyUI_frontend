@@ -1,10 +1,11 @@
-import { telemetryMock } from '@/platform/telemetry/__mocks__'
 import { useDialogStore } from '@/stores/dialogStore'
 import { fromPartial } from '@total-typescript/shoehorn'
 import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
+
+import { useTelemetry } from '@/platform/telemetry'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 
@@ -17,12 +18,10 @@ const mocks = await vi.hoisted(async () => {
   return {
     nudgeArmed: ref(false),
     tourWasCompleted: ref(true),
-
     dismissNudge: vi.fn(() => {
       mocks.nudgeArmed.value = false
     }),
-    showTemplates: vi.fn(),
-    trackOnboardingTour: vi.fn()
+    showTemplates: vi.fn()
   }
 })
 
@@ -43,9 +42,8 @@ vi.mock<unknown>(
 
 vi.mock(import('@/platform/telemetry'))
 
-beforeEach(() => {
-  telemetryMock.trackOnboardingTour = mocks.trackOnboardingTour
-})
+const dispatcher = vi.mocked(useTelemetry(), { deep: true })
+assert.exists(dispatcher)
 
 const i18n = createI18n({
   legacy: false,
@@ -86,7 +84,7 @@ describe('FirstRunTourNudge', () => {
       nudge(),
       'a nudge armed before this mounted still has to appear'
     ).not.toBeNull()
-    expect(mocks.trackOnboardingTour).toHaveBeenCalledWith('nudge_shown', {
+    expect(dispatcher.trackOnboardingTour).toHaveBeenCalledWith('nudge_shown', {
       tour: 'firstRun',
       tour_completed: true
     })
@@ -125,7 +123,7 @@ describe('FirstRunTourNudge', () => {
       'a nudge that came due behind a dialog would land on top of the modal'
     ).toBeNull()
     expect(
-      mocks.trackOnboardingTour,
+      dispatcher.trackOnboardingTour,
       'a nudge nobody can see has not been shown'
     ).not.toHaveBeenCalledWith('nudge_shown', expect.anything())
   })
@@ -140,7 +138,7 @@ describe('FirstRunTourNudge', () => {
     useDialogStore().dialogStack = []
     await vi.advanceTimersByTimeAsync(APPEAR_DELAY_MS)
 
-    const shown = mocks.trackOnboardingTour.mock.calls.filter(
+    const shown = dispatcher.trackOnboardingTour.mock.calls.filter(
       ([stage]) => stage === 'nudge_shown'
     )
     expect(
@@ -222,7 +220,7 @@ describe('FirstRunTourNudge', () => {
       'the source is what separates a nudge conversion from a command-palette one, and it defaults to command'
     ).toHaveBeenCalledWith('first_run_nudge')
     expect(mocks.dismissNudge).toHaveBeenCalled()
-    expect(mocks.trackOnboardingTour).toHaveBeenCalledWith(
+    expect(dispatcher.trackOnboardingTour).toHaveBeenCalledWith(
       'explore_templates_clicked',
       { tour: 'firstRun', tour_completed: true }
     )
@@ -240,11 +238,11 @@ describe('FirstRunTourNudge', () => {
     // Both events carry it, so the funnel can be read end to end: without it
     // a conversion from a finished tour and one from a tour that never
     // started are indistinguishable.
-    expect(mocks.trackOnboardingTour).toHaveBeenCalledWith('nudge_shown', {
+    expect(dispatcher.trackOnboardingTour).toHaveBeenCalledWith('nudge_shown', {
       tour: 'firstRun',
       tour_completed: false
     })
-    expect(mocks.trackOnboardingTour).toHaveBeenCalledWith(
+    expect(dispatcher.trackOnboardingTour).toHaveBeenCalledWith(
       'explore_templates_clicked',
       { tour: 'firstRun', tour_completed: false }
     )

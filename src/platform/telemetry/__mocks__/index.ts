@@ -6,6 +6,6 @@ import type {
 } from '../index'
 import { TelemetryRegistry } from '../TelemetryRegistry'
 
-export const telemetryMock = vi.mockObject(new TelemetryRegistry())
+const telemetryMock = vi.mockObject(new TelemetryRegistry())
 export const useTelemetry = vi.fn<typeof realUseTelemetry>(() => telemetryMock)
 export const setTelemetryRegistry = vi.fn<typeof realSetTelemetryRegistry>()

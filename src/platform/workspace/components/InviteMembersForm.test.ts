@@ -1,24 +1,18 @@
-import { telemetryMock } from '@/platform/telemetry/__mocks__'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { render, screen, waitFor } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
+
+import { useTelemetry } from '@/platform/telemetry'
 
 import InviteMembersForm from './InviteMembersForm.vue'
 
 import type { WorkspacePendingInvite } from '@/platform/workspace/stores/teamWorkspaceStore'
 
-const {
-  mockFetchStatus,
-  mockToastAdd,
-  mockTrackInviteSent,
-  mockTrackInviteFailed
-} = vi.hoisted(() => ({
+const { mockFetchStatus, mockToastAdd } = vi.hoisted(() => ({
   mockFetchStatus: vi.fn(),
-  mockToastAdd: vi.fn(),
-  mockTrackInviteSent: vi.fn(),
-  mockTrackInviteFailed: vi.fn()
+  mockToastAdd: vi.fn()
 }))
 
 vi.mock<unknown>(import('@/composables/billing/useBillingContext'), () => ({
@@ -36,10 +30,8 @@ vi.mock<unknown>(
 
 vi.mock(import('@/platform/telemetry'))
 
-beforeEach(() => {
-  telemetryMock.trackWorkspaceInviteSent = mockTrackInviteSent
-  telemetryMock.trackWorkspaceInviteFailed = mockTrackInviteFailed
-})
+const dispatcher = vi.mocked(useTelemetry(), { deep: true })
+assert.exists(dispatcher)
 
 const i18n = createI18n({
   legacy: false,
@@ -130,7 +122,7 @@ describe('InviteMembersForm', () => {
     )
     expect(useTeamWorkspaceStore().createInvite).toHaveBeenCalledWith('a@b.com')
     expect(useTeamWorkspaceStore().createInvite).toHaveBeenCalledWith('c@d.com')
-    expect(mockTrackInviteSent).toHaveBeenCalledWith({
+    expect(dispatcher.trackWorkspaceInviteSent).toHaveBeenCalledWith({
       source: 'post_upgrade_success',
       count: 2
     })
@@ -229,7 +221,7 @@ describe('InviteMembersForm', () => {
       expect.objectContaining({ severity: 'error' })
     )
     expect(emitted().submitted).toBeUndefined()
-    expect(mockTrackInviteSent).toHaveBeenCalledWith({
+    expect(dispatcher.trackWorkspaceInviteSent).toHaveBeenCalledWith({
       source: 'post_upgrade_success',
       count: 1
     })
@@ -240,8 +232,8 @@ describe('InviteMembersForm', () => {
       expect(useTeamWorkspaceStore().createInvite).toHaveBeenCalledTimes(3)
     )
     expect(emitted().submitted).toEqual([[['ok@x.com', 'fail@x.com']]])
-    expect(mockTrackInviteSent).toHaveBeenCalledTimes(2)
-    expect(mockTrackInviteSent).toHaveBeenLastCalledWith({
+    expect(dispatcher.trackWorkspaceInviteSent).toHaveBeenCalledTimes(2)
+    expect(dispatcher.trackWorkspaceInviteSent).toHaveBeenLastCalledWith({
       source: 'post_upgrade_success',
       count: 1
     })
@@ -265,7 +257,7 @@ describe('InviteMembersForm', () => {
       expect.objectContaining({ severity: 'error' })
     )
     expect(emitted().submitted).toBeUndefined()
-    expect(mockTrackInviteSent).not.toHaveBeenCalled()
+    expect(dispatcher.trackWorkspaceInviteSent).not.toHaveBeenCalled()
     expect(mockFetchStatus).not.toHaveBeenCalled()
   })
 

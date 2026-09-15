@@ -1,4 +1,3 @@
-import { telemetryMock } from '@/platform/telemetry/__mocks__'
 import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -46,12 +45,6 @@ vi.mock<unknown>(import('@/composables/useExternalLink'), () => ({
 }))
 
 vi.mock(import('@/platform/telemetry'))
-
-beforeEach(() => {
-  telemetryMock.trackHelpResourceClicked = vi.fn()
-  telemetryMock.trackHelpCenterOpened = vi.fn()
-  telemetryMock.trackHelpCenterClosed = vi.fn()
-})
 
 vi.mock<unknown>(import('@/utils/envUtil'), () => ({
   electronAPI: () => null

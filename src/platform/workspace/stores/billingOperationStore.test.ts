@@ -1,4 +1,3 @@
-import { telemetryMock } from '@/platform/telemetry/__mocks__'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import {
   bindOperationToCheckoutJourney,
@@ -8,7 +7,9 @@ import {
 } from '@/platform/workspace/utils/checkoutJourney'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useDialogStore } from '@/stores/dialogStore'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
+
+import { useTelemetry } from '@/platform/telemetry'
 
 import type { BillingOpStatusResponse } from '@/platform/workspace/api/workspaceApi'
 
@@ -81,16 +82,10 @@ vi.mock(import('@/platform/settings/composables/useSettingsDialog'), () => ({
   })
 }))
 
-const mockTrackBillingEvent = vi.fn()
-const mockTrackMonthlySubscriptionSucceeded = vi.fn()
-
 vi.mock(import('@/platform/telemetry'))
 
-beforeEach(() => {
-  telemetryMock.trackBillingEvent = mockTrackBillingEvent
-  telemetryMock.trackMonthlySubscriptionSucceeded =
-    mockTrackMonthlySubscriptionSucceeded
-})
+const dispatcher = vi.mocked(useTelemetry(), { deep: true })
+assert.exists(dispatcher)
 
 import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
 
@@ -392,7 +387,7 @@ describe('billingOperationStore', () => {
 
       await vi.advanceTimersByTimeAsync(0)
 
-      expect(mockTrackBillingEvent.mock.calls).toEqual([
+      expect(dispatcher.trackBillingEvent.mock.calls).toEqual([
         [
           {
             operation: 'operation',
@@ -435,7 +430,7 @@ describe('billingOperationStore', () => {
 
       await vi.advanceTimersByTimeAsync(0)
 
-      expect(mockTrackBillingEvent.mock.calls).toEqual([
+      expect(dispatcher.trackBillingEvent.mock.calls).toEqual([
         [
           {
             operation: 'operation',
@@ -562,7 +557,7 @@ describe('billingOperationStore', () => {
 
       await vi.advanceTimersByTimeAsync(0)
 
-      expect(mockTrackBillingEvent).toHaveBeenCalledWith({
+      expect(dispatcher.trackBillingEvent).toHaveBeenCalledWith({
         operation: 'subscription_checkout',
         stage: 'succeeded',
         outcome: 'success',
@@ -593,13 +588,15 @@ describe('billingOperationStore', () => {
 
       await vi.advanceTimersByTimeAsync(0)
 
-      expect(mockTrackMonthlySubscriptionSucceeded).toHaveBeenCalledWith({
-        tier: 'creator',
-        cycle: 'yearly',
-        checkout_type: 'new',
-        payment_intent_source: undefined,
-        billing_op_id: 'op-1'
-      })
+      expect(dispatcher.trackMonthlySubscriptionSucceeded).toHaveBeenCalledWith(
+        {
+          tier: 'creator',
+          cycle: 'yearly',
+          checkout_type: 'new',
+          payment_intent_source: undefined,
+          billing_op_id: 'op-1'
+        }
+      )
     })
 
     it('does not fire the generic subscription-success event for topup or cancel', async () => {
@@ -614,7 +611,9 @@ describe('billingOperationStore', () => {
 
       await vi.advanceTimersByTimeAsync(0)
 
-      expect(mockTrackMonthlySubscriptionSucceeded).not.toHaveBeenCalled()
+      expect(
+        dispatcher.trackMonthlySubscriptionSucceeded
+      ).not.toHaveBeenCalled()
     })
 
     it('does not fire the generic subscription-success event for a downgrade-to-personal success', async () => {
@@ -642,8 +641,10 @@ describe('billingOperationStore', () => {
 
       await vi.advanceTimersByTimeAsync(0)
 
-      expect(mockTrackMonthlySubscriptionSucceeded).not.toHaveBeenCalled()
-      expect(mockTrackBillingEvent).toHaveBeenCalledWith(
+      expect(
+        dispatcher.trackMonthlySubscriptionSucceeded
+      ).not.toHaveBeenCalled()
+      expect(dispatcher.trackBillingEvent).toHaveBeenCalledWith(
         expect.objectContaining({ operation: 'downgrade_to_personal' })
       )
     })
@@ -669,10 +670,10 @@ describe('billingOperationStore', () => {
         }
       })
 
-      expect(mockTrackBillingEvent).not.toHaveBeenCalled()
+      expect(dispatcher.trackBillingEvent).not.toHaveBeenCalled()
       await vi.advanceTimersByTimeAsync(0)
 
-      expect(mockTrackBillingEvent).toHaveBeenCalledWith({
+      expect(dispatcher.trackBillingEvent).toHaveBeenCalledWith({
         operation: 'downgrade_to_personal',
         stage: 'succeeded',
         outcome: 'success',
@@ -697,7 +698,7 @@ describe('billingOperationStore', () => {
 
       await vi.advanceTimersByTimeAsync(0)
 
-      expect(mockTrackBillingEvent).toHaveBeenCalledWith({
+      expect(dispatcher.trackBillingEvent).toHaveBeenCalledWith({
         operation: 'topup',
         stage: 'succeeded',
         outcome: 'success',
@@ -728,7 +729,7 @@ describe('billingOperationStore', () => {
 
         await vi.advanceTimersByTimeAsync(0)
 
-        expect(mockTrackBillingEvent).toHaveBeenCalledWith({
+        expect(dispatcher.trackBillingEvent).toHaveBeenCalledWith({
           operation: 'operation',
           stage: 'succeeded',
           outcome: 'success',
@@ -781,11 +782,13 @@ describe('billingOperationStore', () => {
       await vi.advanceTimersByTimeAsync(0)
       await vi.advanceTimersByTimeAsync(1500)
 
-      const successCall = mockTrackBillingEvent.mock.calls.find(
-        ([event]) =>
-          event.operation === 'operation' && event.stage === 'succeeded'
-      )
-      expect(successCall?.[0].duration_ms).toBeGreaterThanOrEqual(1500)
+      const successEvent = dispatcher.trackBillingEvent.mock.calls
+        .map(([event]) => event)
+        .find(
+          (event) =>
+            event.operation === 'operation' && event.stage === 'succeeded'
+        )
+      expect(successEvent?.duration_ms).toBeGreaterThanOrEqual(1500)
     })
 
     it('computes duration_ms from the caller-supplied attemptStartedAt, not from when startOperation() itself ran', async () => {
@@ -810,12 +813,14 @@ describe('billingOperationStore', () => {
       await vi.advanceTimersByTimeAsync(0)
       await vi.advanceTimersByTimeAsync(1500)
 
-      const successCall = mockTrackBillingEvent.mock.calls.find(
-        ([event]) => event.operation === 'topup' && event.stage === 'succeeded'
-      )
+      const successEvent = dispatcher.trackBillingEvent.mock.calls
+        .map(([event]) => event)
+        .find(
+          (event) => event.operation === 'topup' && event.stage === 'succeeded'
+        )
       // Poll-observed time alone is ~1500ms; duration_ms must also include the
       // 300ms initiation latency that preceded startOperation() running.
-      expect(successCall?.[0].duration_ms).toBeGreaterThanOrEqual(1800)
+      expect(successEvent?.duration_ms).toBeGreaterThanOrEqual(1800)
     })
 
     it('removes the received toast when operation succeeds', async () => {
@@ -927,7 +932,7 @@ describe('billingOperationStore', () => {
         detail: 'billingOperation.subscriptionFailedDetail',
         life: 7000
       })
-      expect(mockTrackBillingEvent).toHaveBeenCalledWith({
+      expect(dispatcher.trackBillingEvent).toHaveBeenCalledWith({
         operation: 'operation',
         stage: 'failed',
         outcome: 'failure',
@@ -954,7 +959,7 @@ describe('billingOperationStore', () => {
 
       await vi.advanceTimersByTimeAsync(0)
 
-      expect(mockTrackBillingEvent).toHaveBeenCalledWith(
+      expect(dispatcher.trackBillingEvent).toHaveBeenCalledWith(
         expect.objectContaining({
           operation_type: 'topup',
           failure_category: 'provider_decline'
@@ -979,7 +984,7 @@ describe('billingOperationStore', () => {
       expect(useToastStore().add).not.toHaveBeenCalledWith(
         expect.objectContaining({ severity: 'error' })
       )
-      expect(mockTrackBillingEvent).toHaveBeenCalledWith(
+      expect(dispatcher.trackBillingEvent).toHaveBeenCalledWith(
         expect.objectContaining({
           stage: 'failed',
           billing_op_id: 'op-1',
@@ -1000,7 +1005,7 @@ describe('billingOperationStore', () => {
 
       await vi.advanceTimersByTimeAsync(0)
 
-      expect(mockTrackBillingEvent).toHaveBeenCalledWith(
+      expect(dispatcher.trackBillingEvent).toHaveBeenCalledWith(
         expect.objectContaining({
           operation_type: 'cancel',
           failure_category: 'api_rejected'
@@ -1030,21 +1035,21 @@ describe('billingOperationStore', () => {
 
       // Both emissions must agree: a downgrade that was merely replaced is not
       // an unexplained billing failure in either event stream.
-      expect(mockTrackBillingEvent).toHaveBeenCalledWith(
+      expect(dispatcher.trackBillingEvent).toHaveBeenCalledWith(
         expect.objectContaining({
           operation: 'operation',
           stage: 'failed',
           failure_category: 'stale_operation'
         })
       )
-      expect(mockTrackBillingEvent).toHaveBeenCalledWith(
+      expect(dispatcher.trackBillingEvent).toHaveBeenCalledWith(
         expect.objectContaining({
           operation: 'downgrade_to_personal',
           stage: 'failed',
           failure_category: 'stale_operation'
         })
       )
-      expect(mockTrackBillingEvent).not.toHaveBeenCalledWith(
+      expect(dispatcher.trackBillingEvent).not.toHaveBeenCalledWith(
         expect.objectContaining({ failure_category: 'unknown' })
       )
     })
@@ -1068,17 +1073,19 @@ describe('billingOperationStore', () => {
       await vi.advanceTimersByTimeAsync(0)
       await vi.advanceTimersByTimeAsync(1500)
 
-      expect(mockTrackBillingEvent).toHaveBeenCalledWith(
+      expect(dispatcher.trackBillingEvent).toHaveBeenCalledWith(
         expect.objectContaining({
           operation: 'operation',
           stage: 'failed',
           duration_ms: expect.any(Number)
         })
       )
-      const failureCall = mockTrackBillingEvent.mock.calls.find(
-        ([event]) => event.operation === 'operation' && event.stage === 'failed'
-      )
-      expect(failureCall?.[0].duration_ms).toBeGreaterThanOrEqual(1500)
+      const failureEvent = dispatcher.trackBillingEvent.mock.calls
+        .map(([event]) => event)
+        .find(
+          (event) => event.operation === 'operation' && event.stage === 'failed'
+        )
+      expect(failureEvent?.duration_ms).toBeGreaterThanOrEqual(1500)
     })
 
     it('uses default message when no error_message in response', async () => {
@@ -1122,20 +1129,20 @@ describe('billingOperationStore', () => {
 
       await vi.advanceTimersByTimeAsync(0)
 
-      expect(mockTrackBillingEvent).toHaveBeenCalledWith(
+      expect(dispatcher.trackBillingEvent).toHaveBeenCalledWith(
         expect.objectContaining({
           operation: 'operation',
           operation_type: 'subscription',
           failure_category: 'api_rejected'
         })
       )
-      expect(mockTrackBillingEvent).toHaveBeenCalledWith(
+      expect(dispatcher.trackBillingEvent).toHaveBeenCalledWith(
         expect.objectContaining({
           operation: 'downgrade_to_personal',
           failure_category: 'api_rejected'
         })
       )
-      expect(mockTrackBillingEvent).not.toHaveBeenCalledWith(
+      expect(dispatcher.trackBillingEvent).not.toHaveBeenCalledWith(
         expect.objectContaining({ failure_category: 'provider_decline' })
       )
     })
@@ -1153,7 +1160,7 @@ describe('billingOperationStore', () => {
 
       await vi.advanceTimersByTimeAsync(0)
 
-      expect(mockTrackBillingEvent).toHaveBeenCalledWith(
+      expect(dispatcher.trackBillingEvent).toHaveBeenCalledWith(
         expect.objectContaining({
           operation_type: 'subscription',
           failure_category: 'network'
@@ -1901,7 +1908,7 @@ describe('billingOperationStore', () => {
       })
       await vi.advanceTimersByTimeAsync(60_000)
       expect(workspaceApi.getBillingOpStatus).toHaveBeenCalledOnce()
-      expect(mockTrackBillingEvent).toHaveBeenCalledWith({
+      expect(dispatcher.trackBillingEvent).toHaveBeenCalledWith({
         operation: 'operation',
         stage: 'failed',
         outcome: 'failure',
@@ -1914,7 +1921,7 @@ describe('billingOperationStore', () => {
         failure_category: 'reconciliation_needed',
         duration_ms: 0
       })
-      expect(mockTrackBillingEvent).toHaveBeenCalledWith({
+      expect(dispatcher.trackBillingEvent).toHaveBeenCalledWith({
         operation: 'subscription_checkout',
         stage: 'failed',
         outcome: 'failure',
@@ -2058,18 +2065,20 @@ describe('billingOperationStore', () => {
       await vi.advanceTimersByTimeAsync(121_000)
       await vi.runAllTimersAsync()
 
-      expect(mockTrackBillingEvent).toHaveBeenCalledWith(
+      expect(dispatcher.trackBillingEvent).toHaveBeenCalledWith(
         expect.objectContaining({
           operation: 'operation',
           stage: 'timeout',
           duration_ms: expect.any(Number)
         })
       )
-      const timeoutCall = mockTrackBillingEvent.mock.calls.find(
-        ([event]) =>
-          event.operation === 'operation' && event.stage === 'timeout'
-      )
-      expect(timeoutCall?.[0].duration_ms).toBeGreaterThanOrEqual(120_000)
+      const timeoutEvent = dispatcher.trackBillingEvent.mock.calls
+        .map(([event]) => event)
+        .find(
+          (event) =>
+            event.operation === 'operation' && event.stage === 'timeout'
+        )
+      expect(timeoutEvent?.duration_ms).toBeGreaterThanOrEqual(120_000)
     })
 
     it('keeps a valid action URL pending past discovery and clears it on success', async () => {
@@ -2113,9 +2122,9 @@ describe('billingOperationStore', () => {
       expect(
         JSON.stringify(vi.mocked(useToastStore().add).mock.calls)
       ).not.toContain(actionUrl)
-      expect(JSON.stringify(mockTrackBillingEvent.mock.calls)).not.toContain(
-        actionUrl
-      )
+      expect(
+        JSON.stringify(dispatcher.trackBillingEvent.mock.calls)
+      ).not.toContain(actionUrl)
     })
 
     it('replaces the processing toast when the operation parks on a bank challenge', async () => {
@@ -2469,7 +2478,7 @@ describe('billingOperationStore', () => {
       ).toHaveBeenCalledWith({
         isSubscribed: false
       })
-      expect(mockTrackBillingEvent).toHaveBeenCalledWith({
+      expect(dispatcher.trackBillingEvent).toHaveBeenCalledWith({
         operation: 'operation',
         stage: 'succeeded',
         outcome: 'success',
@@ -2532,7 +2541,7 @@ describe('billingOperationStore', () => {
         useTeamWorkspaceStore().updateActiveWorkspace
       ).not.toHaveBeenCalled()
       expect(useToastStore().add).not.toHaveBeenCalled()
-      expect(mockTrackBillingEvent).toHaveBeenCalledWith(
+      expect(dispatcher.trackBillingEvent).toHaveBeenCalledWith(
         expect.objectContaining({
           operation: 'operation',
           stage: 'failed',
@@ -2568,7 +2577,7 @@ describe('billingOperationStore', () => {
         useTeamWorkspaceStore().updateActiveWorkspace
       ).not.toHaveBeenCalled()
       expect(useToastStore().add).not.toHaveBeenCalled()
-      expect(mockTrackBillingEvent).toHaveBeenCalledWith(
+      expect(dispatcher.trackBillingEvent).toHaveBeenCalledWith(
         expect.objectContaining({
           operation: 'operation',
           stage: 'timeout',

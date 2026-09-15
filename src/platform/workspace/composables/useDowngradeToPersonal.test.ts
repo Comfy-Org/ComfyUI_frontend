@@ -1,8 +1,9 @@
-import { telemetryMock } from '@/platform/telemetry/__mocks__'
 import { getActivePinia } from 'pinia'
 import { useBillingOperationStore } from '@/platform/workspace/stores/billingOperationStore'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { assert, afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
+
+import { useTelemetry } from '@/platform/telemetry'
 
 import { WorkspaceApiError } from '@/platform/workspace/api/workspaceApi'
 import type { ListMembersParams } from '@/platform/workspace/api/workspaceApi'
@@ -25,7 +26,6 @@ const mockSubscribe = vi.hoisted(() => vi.fn())
 const mockPreviewSubscribe = vi.hoisted(() => vi.fn())
 const mockFetchStatus = vi.hoisted(() => vi.fn())
 
-const mockTrackBillingEvent = vi.hoisted(() => vi.fn())
 const mockPermissions = vi.hoisted(() => ({
   value: {
     canManageSubscription: true,
@@ -107,9 +107,8 @@ vi.mock(import('@/config/comfyApi'), () => ({
 
 vi.mock(import('@/platform/telemetry'))
 
-beforeEach(() => {
-  telemetryMock.trackBillingEvent = mockTrackBillingEvent
-})
+const dispatcher = vi.mocked(useTelemetry(), { deep: true })
+assert.exists(dispatcher)
 
 function createMember(
   overrides: Partial<WorkspaceMember> = {}
@@ -504,7 +503,7 @@ describe('useDowngradeToPersonal', () => {
         calls.push('remove')
         return Promise.resolve()
       })
-      mockTrackBillingEvent.mockImplementation((event) => {
+      dispatcher.trackBillingEvent.mockImplementation((event) => {
         if (
           event.stage === 'started' &&
           (event.operation === 'subscription_checkout' ||
@@ -564,7 +563,7 @@ describe('useDowngradeToPersonal', () => {
       const result = await downgradeToPersonal('creator-annual')
 
       expect(result).toStrictEqual({ preview, response })
-      expect(mockTrackBillingEvent).toHaveBeenCalledWith({
+      expect(dispatcher.trackBillingEvent).toHaveBeenCalledWith({
         operation: 'downgrade_to_personal',
         stage: 'succeeded',
         outcome: 'success',
@@ -690,7 +689,7 @@ describe('useDowngradeToPersonal', () => {
           attemptStartedAt: expect.any(Number)
         }
       )
-      expect(mockTrackBillingEvent).not.toHaveBeenCalledWith(
+      expect(dispatcher.trackBillingEvent).not.toHaveBeenCalledWith(
         expect.objectContaining({ stage: 'succeeded' })
       )
     })
@@ -738,7 +737,7 @@ describe('useDowngradeToPersonal', () => {
 
       await downgradeToPersonal('founder-monthly')
 
-      expect(mockTrackBillingEvent).toHaveBeenCalledWith({
+      expect(dispatcher.trackBillingEvent).toHaveBeenCalledWith({
         operation: 'downgrade_to_personal',
         stage: 'started',
         outcome: 'pending',
@@ -758,7 +757,7 @@ describe('useDowngradeToPersonal', () => {
         'm2@example.com'
       )
 
-      expect(mockTrackBillingEvent).toHaveBeenCalledWith({
+      expect(dispatcher.trackBillingEvent).toHaveBeenCalledWith({
         operation: 'downgrade_to_personal',
         stage: 'failed',
         outcome: 'failure',
@@ -769,7 +768,7 @@ describe('useDowngradeToPersonal', () => {
         error_code: 'member_removal_failed',
         duration_ms: expect.any(Number)
       })
-      expect(mockTrackBillingEvent).not.toHaveBeenCalledWith(
+      expect(dispatcher.trackBillingEvent).not.toHaveBeenCalledWith(
         expect.objectContaining({ stage: 'succeeded' })
       )
     })
@@ -781,7 +780,7 @@ describe('useDowngradeToPersonal', () => {
 
       await expect(downgradeToPersonal('founder-monthly')).rejects.toBe('boom')
 
-      expect(mockTrackBillingEvent).toHaveBeenCalledWith({
+      expect(dispatcher.trackBillingEvent).toHaveBeenCalledWith({
         operation: 'downgrade_to_personal',
         stage: 'failed',
         outcome: 'failure',
@@ -804,7 +803,7 @@ describe('useDowngradeToPersonal', () => {
         'offline'
       )
 
-      expect(mockTrackBillingEvent).toHaveBeenCalledWith({
+      expect(dispatcher.trackBillingEvent).toHaveBeenCalledWith({
         operation: 'downgrade_to_personal',
         stage: 'failed',
         outcome: 'failure',
@@ -825,7 +824,7 @@ describe('useDowngradeToPersonal', () => {
         'offline'
       )
 
-      expect(mockTrackBillingEvent).toHaveBeenCalledWith({
+      expect(dispatcher.trackBillingEvent).toHaveBeenCalledWith({
         operation: 'downgrade_to_personal',
         stage: 'failed',
         outcome: 'failure',
@@ -846,7 +845,7 @@ describe('useDowngradeToPersonal', () => {
         'm1@example.com'
       )
 
-      expect(mockTrackBillingEvent).toHaveBeenCalledWith({
+      expect(dispatcher.trackBillingEvent).toHaveBeenCalledWith({
         operation: 'downgrade_to_personal',
         stage: 'failed',
         outcome: 'failure',

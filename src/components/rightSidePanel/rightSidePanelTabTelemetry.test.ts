@@ -1,15 +1,11 @@
-import { telemetryMock } from '@/platform/telemetry/__mocks__'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { assert, describe, expect, it, vi } from 'vitest'
 
-const { mockTrackUiButtonClicked } = vi.hoisted(() => ({
-  mockTrackUiButtonClicked: vi.fn()
-}))
+import { useTelemetry } from '@/platform/telemetry'
 
 vi.mock(import('@/platform/telemetry'))
 
-beforeEach(() => {
-  telemetryMock.trackUiButtonClicked = mockTrackUiButtonClicked
-})
+const dispatcher = vi.mocked(useTelemetry(), { deep: true })
+assert.exists(dispatcher)
 
 import { trackRightSidePanelTabOpened } from './rightSidePanelTabTelemetry'
 
@@ -17,7 +13,7 @@ describe('trackRightSidePanelTabOpened', () => {
   it('tracks opening the settings tab', () => {
     trackRightSidePanelTabOpened('settings')
 
-    expect(mockTrackUiButtonClicked).toHaveBeenCalledExactlyOnceWith({
+    expect(dispatcher.trackUiButtonClicked).toHaveBeenCalledExactlyOnceWith({
       button_id: 'right_side_panel_settings_tab_opened',
       element_group: 'right_side_panel'
     })
@@ -26,7 +22,7 @@ describe('trackRightSidePanelTabOpened', () => {
   it('tracks opening the info tab', () => {
     trackRightSidePanelTabOpened('info')
 
-    expect(mockTrackUiButtonClicked).toHaveBeenCalledExactlyOnceWith({
+    expect(dispatcher.trackUiButtonClicked).toHaveBeenCalledExactlyOnceWith({
       button_id: 'right_side_panel_info_tab_opened',
       element_group: 'right_side_panel'
     })
@@ -37,7 +33,7 @@ describe('trackRightSidePanelTabOpened', () => {
     (tab) => {
       trackRightSidePanelTabOpened(tab)
 
-      expect(mockTrackUiButtonClicked).not.toHaveBeenCalled()
+      expect(dispatcher.trackUiButtonClicked).not.toHaveBeenCalled()
     }
   )
 })

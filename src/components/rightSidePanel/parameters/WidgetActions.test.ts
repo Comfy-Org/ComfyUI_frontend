@@ -1,11 +1,12 @@
-import { telemetryMock } from '@/platform/telemetry/__mocks__'
 import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
 import { fromPartial, fromAny } from '@total-typescript/shoehorn'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { Slots } from 'vue'
 import { h } from 'vue'
 import { createI18n } from 'vue-i18n'
+
+import { useTelemetry } from '@/platform/telemetry'
 
 import { promoteWidget } from '@/core/graph/subgraph/promotionUtils'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
@@ -19,19 +20,14 @@ import { widgetId } from '@/types/widgetId'
 
 import WidgetActions from './WidgetActions.vue'
 
-const { mockTrackWidgetFavoriteToggled } = vi.hoisted(() => ({
-  mockTrackWidgetFavoriteToggled: vi.fn()
-}))
-
 vi.mock(import('@/core/graph/subgraph/promotionUtils'), () => ({
   promoteWidget: vi.fn()
 }))
 
 vi.mock(import('@/platform/telemetry'))
 
-beforeEach(() => {
-  telemetryMock.trackWidgetFavoriteToggled = mockTrackWidgetFavoriteToggled
-})
+const dispatcher = vi.mocked(useTelemetry(), { deep: true })
+assert.exists(dispatcher)
 
 vi.mock<unknown>(import('@/services/dialogService'), () => ({
   useDialogService: () => ({
@@ -229,7 +225,9 @@ describe('WidgetActions', () => {
 
     await user.click(screen.getByRole('button', { name: /Favorite/ }))
 
-    expect(mockTrackWidgetFavoriteToggled).toHaveBeenCalledExactlyOnceWith({
+    expect(
+      dispatcher.trackWidgetFavoriteToggled
+    ).toHaveBeenCalledExactlyOnceWith({
       node_type: 'TestNode',
       widget_name: 'test_widget',
       widget_type: 'number',
@@ -251,7 +249,9 @@ describe('WidgetActions', () => {
 
     await user.click(screen.getByRole('button', { name: /Unfavorite/ }))
 
-    expect(mockTrackWidgetFavoriteToggled).toHaveBeenCalledExactlyOnceWith({
+    expect(
+      dispatcher.trackWidgetFavoriteToggled
+    ).toHaveBeenCalledExactlyOnceWith({
       node_type: 'TestNode',
       widget_name: 'test_widget',
       widget_type: 'number',

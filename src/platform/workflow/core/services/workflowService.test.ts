@@ -1,4 +1,3 @@
-import { telemetryMock } from '@/platform/telemetry/__mocks__'
 import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore' // eslint-disable-line import-x/no-restricted-paths
 import { useWorkflowDraftStoreV2 } from '@/platform/workflow/persistence/stores/workflowDraftStoreV2'
@@ -8,7 +7,9 @@ import {
   onIdTokenChanged,
   setPersistence
 } from 'firebase/auth'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { assert, afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+
+import { useTelemetry } from '@/platform/telemetry'
 
 import type {
   LoadedComfyWorkflow,
@@ -88,9 +89,8 @@ function makeWorkflowDataWithId(id: string): ComfyWorkflowJSON {
   return { ...makeWorkflowData(), id }
 }
 
-const { mockConfirm, mockTrackWorkflowSaved } = vi.hoisted(() => ({
-  mockConfirm: vi.fn(),
-  mockTrackWorkflowSaved: vi.fn()
+const { mockConfirm } = vi.hoisted(() => ({
+  mockConfirm: vi.fn()
 }))
 
 vi.mock<unknown>(import('@/services/dialogService'), () => ({
@@ -134,11 +134,8 @@ vi.mock(import('@/platform/telemetry/reportError'), () => ({
 
 vi.mock(import('@/platform/telemetry'))
 
-beforeEach(() => {
-  telemetryMock.trackDefaultViewSet = vi.fn()
-  telemetryMock.trackWorkflowSaved = mockTrackWorkflowSaved
-  telemetryMock.trackEnterLinear = vi.fn()
-})
+const dispatcher = vi.mocked(useTelemetry(), { deep: true })
+assert.exists(dispatcher)
 
 function createWorkflow(
   warnings: PendingWarnings | null = null,
@@ -2531,8 +2528,8 @@ describe('useWorkflowService', () => {
         'workflows/test.app.json'
       )
       expect(workflowStore.saveWorkflow).toHaveBeenCalledWith(copy)
-      expect(mockTrackWorkflowSaved).toHaveBeenCalledTimes(1)
-      expect(mockTrackWorkflowSaved).toHaveBeenCalledWith({
+      expect(dispatcher.trackWorkflowSaved).toHaveBeenCalledTimes(1)
+      expect(dispatcher.trackWorkflowSaved).toHaveBeenCalledWith({
         is_app: true,
         is_new: true
       })
@@ -2569,8 +2566,8 @@ describe('useWorkflowService', () => {
         isApp: true
       })
 
-      expect(mockTrackWorkflowSaved).toHaveBeenCalledTimes(1)
-      expect(mockTrackWorkflowSaved).toHaveBeenCalledWith({
+      expect(dispatcher.trackWorkflowSaved).toHaveBeenCalledTimes(1)
+      expect(dispatcher.trackWorkflowSaved).toHaveBeenCalledWith({
         is_app: true,
         is_new: true
       })

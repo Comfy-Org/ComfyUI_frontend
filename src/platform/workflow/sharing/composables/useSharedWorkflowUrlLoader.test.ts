@@ -1,9 +1,10 @@
-import { telemetryMock } from '@/platform/telemetry/__mocks__'
 import { useDialogStore } from '@/stores/dialogStore'
 import { fromPartial } from '@total-typescript/shoehorn'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { assert, afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { App } from 'vue'
 import { createApp, defineComponent } from 'vue'
+
+import { useTelemetry } from '@/platform/telemetry'
 
 import { i18n } from '@/i18n'
 import { useSharedWorkflowUrlLoader as createSharedWorkflowUrlLoader } from '@/platform/workflow/sharing/composables/useSharedWorkflowUrlLoader'
@@ -35,7 +36,6 @@ vi.mock<unknown>(import('vue-router'), () => ({
 
 const mockImportPublishedAssets = vi.fn()
 const mockIsLoggedIn = vi.hoisted(() => ({ value: false }))
-const mockTrackShareLinkOpened = vi.hoisted(() => vi.fn())
 
 vi.mock<unknown>(import('@/composables/auth/useCurrentUser'), () => ({
   useCurrentUser: () => ({
@@ -52,9 +52,8 @@ vi.mock<unknown>(import('@/composables/useAppMode'), () => ({
 
 vi.mock(import('@/platform/telemetry'))
 
-beforeEach(() => {
-  telemetryMock.trackShareLinkOpened = mockTrackShareLinkOpened
-})
+const dispatcher = vi.mocked(useTelemetry(), { deep: true })
+assert.exists(dispatcher)
 
 vi.mock<unknown>(
   import('@/platform/workflow/sharing/services/workflowShareService'),
@@ -250,7 +249,7 @@ describe('useSharedWorkflowUrlLoader', () => {
     expect(loaded).toBe('not-present')
     expect(mockShowLayoutDialog).not.toHaveBeenCalled()
     expect(mockLoadGraphData).not.toHaveBeenCalled()
-    expect(mockTrackShareLinkOpened).not.toHaveBeenCalled()
+    expect(dispatcher.trackShareLinkOpened).not.toHaveBeenCalled()
   })
 
   it('opens dialog immediately with shareId and loads graph on confirm', async () => {
@@ -274,7 +273,7 @@ describe('useSharedWorkflowUrlLoader', () => {
       'Test Workflow',
       { openSource: 'shared_url', shareId: 'share-id-1' }
     )
-    expect(mockTrackShareLinkOpened).toHaveBeenCalledWith({
+    expect(dispatcher.trackShareLinkOpened).toHaveBeenCalledWith({
       share_id: 'share-id-1',
       is_authenticated: false,
       view_mode: 'graph',
@@ -298,7 +297,7 @@ describe('useSharedWorkflowUrlLoader', () => {
     const loaded = await loadSharedWorkflowFromUrl()
 
     expect(loaded).toBe('loaded')
-    expect(mockTrackShareLinkOpened).toHaveBeenCalledWith({
+    expect(dispatcher.trackShareLinkOpened).toHaveBeenCalledWith({
       share_id: 'share-id-1',
       is_authenticated: true,
       view_mode: 'graph',

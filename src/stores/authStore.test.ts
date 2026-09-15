@@ -1,12 +1,13 @@
-import { telemetryMock } from '@/platform/telemetry/__mocks__'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { FirebaseError } from 'firebase/app'
 import type { User, UserCredential } from 'firebase/auth'
 import * as firebaseAuth from 'firebase/auth'
 import type { Mock } from 'vitest'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { assert, afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import * as vuefire from 'vuefire'
+
+import { useTelemetry } from '@/platform/telemetry'
 
 import { i18n } from '@/i18n'
 import {
@@ -95,12 +96,10 @@ vi.mock(import('vuefire'), () => ({
 
 vi.mock(import('firebase/auth'))
 
-const mockTrackAuth = vi.fn()
 vi.mock(import('@/platform/telemetry'))
 
-beforeEach(() => {
-  telemetryMock.trackAuth = mockTrackAuth
-})
+const dispatcher = vi.mocked(useTelemetry(), { deep: true })
+assert.exists(dispatcher)
 
 let mockResetSocket: Mock
 
@@ -1536,7 +1535,7 @@ describe('useAuthStore', () => {
 
           await store[method]()
 
-          expect(mockTrackAuth).toHaveBeenCalledWith(
+          expect(dispatcher.trackAuth).toHaveBeenCalledWith(
             expect.objectContaining({ is_new_user: true })
           )
         }
@@ -1553,7 +1552,7 @@ describe('useAuthStore', () => {
 
           await store[method]({ isNewUser: true })
 
-          expect(mockTrackAuth).toHaveBeenCalledWith(
+          expect(dispatcher.trackAuth).toHaveBeenCalledWith(
             expect.objectContaining({ is_new_user: true })
           )
         }
@@ -1570,7 +1569,7 @@ describe('useAuthStore', () => {
 
           await store[method]()
 
-          expect(mockTrackAuth).toHaveBeenCalledWith(
+          expect(dispatcher.trackAuth).toHaveBeenCalledWith(
             expect.objectContaining({ is_new_user: false })
           )
         }
@@ -1583,7 +1582,7 @@ describe('useAuthStore', () => {
 
           await store[method]()
 
-          expect(mockTrackAuth).toHaveBeenCalledWith(
+          expect(dispatcher.trackAuth).toHaveBeenCalledWith(
             expect.objectContaining({ is_new_user: false })
           )
         }
@@ -1634,7 +1633,7 @@ describe('useAuthStore', () => {
 
       await store.register('new@example.com', 'password')
 
-      expect(mockTrackAuth).toHaveBeenCalledWith({
+      expect(dispatcher.trackAuth).toHaveBeenCalledWith({
         method: 'email',
         is_new_user: true,
         user_id: 'test-user-id',
@@ -1649,7 +1648,7 @@ describe('useAuthStore', () => {
 
       await store.login('test@example.com', 'password')
 
-      expect(mockTrackAuth).toHaveBeenCalledWith({
+      expect(dispatcher.trackAuth).toHaveBeenCalledWith({
         method: 'email',
         is_new_user: false,
         user_id: 'test-user-id',
@@ -1664,7 +1663,7 @@ describe('useAuthStore', () => {
 
       await store.loginWithGoogle()
 
-      expect(mockTrackAuth).toHaveBeenCalledWith({
+      expect(dispatcher.trackAuth).toHaveBeenCalledWith({
         method: 'google',
         is_new_user: true,
         user_id: 'test-user-id',
@@ -1679,7 +1678,7 @@ describe('useAuthStore', () => {
 
       await store.loginWithGithub()
 
-      expect(mockTrackAuth).toHaveBeenCalledWith({
+      expect(dispatcher.trackAuth).toHaveBeenCalledWith({
         method: 'github',
         is_new_user: true,
         user_id: 'test-user-id',

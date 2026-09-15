@@ -1,20 +1,18 @@
-import { telemetryMock } from '@/platform/telemetry/__mocks__'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
-import ShareWorkflowDialogContent from '@/platform/workflow/sharing/components/ShareWorkflowDialogContent.vue'
+import { useTelemetry } from '@/platform/telemetry'
 
-const mockTrackShareFlow = vi.hoisted(() => vi.fn())
+import ShareWorkflowDialogContent from '@/platform/workflow/sharing/components/ShareWorkflowDialogContent.vue'
 
 vi.mock(import('@/platform/telemetry'))
 
-beforeEach(() => {
-  telemetryMock.trackShareFlow = mockTrackShareFlow
-})
+const dispatcher = vi.mocked(useTelemetry(), { deep: true })
+assert.exists(dispatcher)
 
 const mockToast = vi.hoisted(() => ({ add: vi.fn() }))
 
@@ -380,7 +378,7 @@ describe('ShareWorkflowDialogContent', () => {
       'workflows/test.json',
       initialShareableAssets
     )
-    expect(mockTrackShareFlow).toHaveBeenCalledWith({
+    expect(dispatcher.trackShareFlow).toHaveBeenCalledWith({
       step: 'link_created',
       source: 'graph_mode',
       view_mode: 'graph',
@@ -402,7 +400,7 @@ describe('ShareWorkflowDialogContent', () => {
 
     await userEvent.click(screen.getByRole('button', { name: /Copy link/i }))
 
-    expect(mockTrackShareFlow).toHaveBeenCalledWith({
+    expect(dispatcher.trackShareFlow).toHaveBeenCalledWith({
       step: 'link_copied',
       source: 'graph_mode',
       view_mode: 'graph',

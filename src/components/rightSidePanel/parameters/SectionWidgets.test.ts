@@ -1,10 +1,11 @@
-import { telemetryMock } from '@/platform/telemetry/__mocks__'
 import userEvent from '@testing-library/user-event'
 import { render, screen, waitFor } from '@testing-library/vue'
 import { fromPartial } from '@total-typescript/shoehorn'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent } from 'vue'
 import { createI18n } from 'vue-i18n'
+
+import { useTelemetry } from '@/platform/telemetry'
 
 import { promoteValueWidgetViaSubgraphInput } from '@/core/graph/subgraph/promotionUtils'
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
@@ -24,19 +25,14 @@ import { getExecutionIdByNode } from '@/utils/graphTraversalUtil'
 
 import SectionWidgets from './SectionWidgets.vue'
 
-const { mockTrackUiButtonClicked } = vi.hoisted(() => ({
-  mockTrackUiButtonClicked: vi.fn()
-}))
-
 const setDirty = vi.fn()
 const getNodeById = vi.fn()
 const animateToBounds = vi.fn()
 
 vi.mock(import('@/platform/telemetry'))
 
-beforeEach(() => {
-  telemetryMock.trackUiButtonClicked = mockTrackUiButtonClicked
-})
+const dispatcher = vi.mocked(useTelemetry(), { deep: true })
+assert.exists(dispatcher)
 
 const WidgetItemStub = defineComponent({
   inheritAttrs: false,
@@ -239,7 +235,7 @@ describe('SectionWidgets', () => {
 
     await user.click(screen.getByRole('button', { name: 'Locate' }))
 
-    expect(mockTrackUiButtonClicked).toHaveBeenCalledExactlyOnceWith({
+    expect(dispatcher.trackUiButtonClicked).toHaveBeenCalledExactlyOnceWith({
       button_id: 'right_side_panel_locate_node_clicked',
       element_group: 'right_side_panel_nodes'
     })
@@ -271,7 +267,7 @@ describe('SectionWidgets', () => {
 
     await user.click(screen.getByRole('button', { name: 'Reset all' }))
 
-    expect(mockTrackUiButtonClicked).toHaveBeenCalledExactlyOnceWith({
+    expect(dispatcher.trackUiButtonClicked).toHaveBeenCalledExactlyOnceWith({
       button_id: 'right_side_panel_reset_all_parameters_clicked',
       element_group: 'right_side_panel_nodes'
     })

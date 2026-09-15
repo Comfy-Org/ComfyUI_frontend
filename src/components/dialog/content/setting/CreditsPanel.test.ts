@@ -1,4 +1,3 @@
-import { telemetryMock } from '@/platform/telemetry/__mocks__'
 import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -49,10 +48,6 @@ vi.mock(
 )
 
 vi.mock(import('@/platform/telemetry'))
-
-beforeEach(() => {
-  telemetryMock.trackHelpResourceClicked = vi.fn()
-})
 
 vi.mock<unknown>(import('@/composables/useExternalLink'), () => ({
   useExternalLink: () => ({
