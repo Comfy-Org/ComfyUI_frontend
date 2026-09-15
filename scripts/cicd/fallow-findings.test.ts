@@ -57,6 +57,26 @@ const REAL_REPORT: FallowReport = {
   }
 }
 
+let fixtureN = 0
+
+/**
+ * Writes a fixture to disk and loads it the way the CLI does. Fixtures stay
+ * `unknown` so a malformed report is never cast into a shape the parser is
+ * supposed to be the one deciding about.
+ */
+function readFixture(value: unknown): FallowReport {
+  const path = join(
+    tmpdir(),
+    `fallow-fixture-${process.pid}-${fixtureN++}.json`
+  )
+  writeFileSync(path, JSON.stringify(value))
+  try {
+    return readReport(path)
+  } finally {
+    rmSync(path, { force: true })
+  }
+}
+
 describe('fallow findings renderer', () => {
   it('renders every finding that failed the real gate', () => {
     const md = renderReport(REAL_REPORT)
@@ -173,44 +193,38 @@ describe('fallow findings renderer', () => {
   })
 
   it('survives a section whose shape changed upstream', () => {
-    // Syntactically valid JSON, wrong type. Crashing here would leave the
-    // explainer empty, which is the failure the error envelope exists to stop.
-    expect(() =>
-      renderReport({
-        verdict: 'fail',
-        duplication: { clone_groups: {} as never },
-        complexity: { findings: 'nope' as never },
-        dead_code: { unused_files: 7 as never }
-      })
-    ).not.toThrow()
+    // Stays `unknown` and goes through readReport, so this exercises the real
+    // file -> parse -> render boundary rather than an in-memory object that
+    // could never arrive that way. Crashing here would leave the explainer
+    // empty, which is the failure the error envelope exists to stop.
+    const malformed: unknown = {
+      verdict: 'fail',
+      duplication: { clone_groups: {} },
+      complexity: { findings: 'nope' },
+      dead_code: { unused_files: 7 }
+    }
+    expect(() => renderReport(readFixture(malformed))).not.toThrow()
   })
 
   it('survives null and wrong-shaped members inside a section', () => {
-    // A container that is an array but whose members are not objects. The
+    // Containers that are arrays but whose members are not objects. The
     // renderer must not throw on the first field read.
-    const md = renderReport({
+    const malformed: unknown = {
       verdict: 'fail',
-      duplication: { clone_groups: [null, 'x'] as never },
-      complexity: { findings: [null, 3] as never },
-      dead_code: {
-        unused_files: [null] as never,
-        unused_exports: [null] as never
-      }
-    })
-    expect(md).not.toContain('No new findings')
+      duplication: { clone_groups: [null, 'x'] },
+      complexity: { findings: [null, 3] },
+      dead_code: { unused_files: [null], unused_exports: [null] }
+    }
+    expect(renderReport(readFixture(malformed))).not.toContain(
+      'No new findings'
+    )
   })
 
   it('reads a real fallow error envelope through readReport', () => {
-    const f = join(tmpdir(), `fallow-env-${process.pid}.json`)
-    writeFileSync(
-      f,
-      JSON.stringify({ error: true, message: 'boom', exit_code: 2 })
+    const envelope: unknown = { error: true, message: 'boom', exit_code: 2 }
+    expect(renderReport(readFixture(envelope))).toContain(
+      'never actually audited'
     )
-    try {
-      expect(renderReport(readReport(f))).toContain('never actually audited')
-    } finally {
-      rmSync(f, { force: true })
-    }
   })
 
   it('tolerates a report with no sections at all', () => {
