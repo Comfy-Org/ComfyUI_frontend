@@ -321,8 +321,8 @@ test.describe('Models catalog', () => {
         '[data-testid="workshop-model-card"][href="/models/bfl--flux-2-max--generate-images/"]'
       )
     ).toHaveCount(0)
-    await expect(page.getByTestId('workshop-facet-useCase-count')).toHaveText(
-      '1'
+    await expect(page.getByTestId('workshop-filter-applied')).toHaveText(
+      '1 selected'
     )
     await expect(page.getByTestId('workshop-filter-count')).toHaveText('1')
     await page.getByTestId('workshop-filter-clear').click()
