@@ -1,0 +1,303 @@
+import { readFileSync } from 'node:fs'
+import { pathToFileURL } from 'node:url'
+import { describe, expect, it } from 'vitest'
+
+import type {
+  PendingShadow,
+  ShadowChange,
+  ShadowTarget
+} from './pendingOpShadow'
+import { createPendingOpShadowSurface } from './pendingOpShadow'
+
+const node = (nodeId: string, graphId = 'root'): ShadowTarget => ({
+  kind: 'node',
+  graphId,
+  nodeId
+})
+const link = (linkId: string, graphId = 'root'): ShadowTarget => ({
+  kind: 'link',
+  graphId,
+  linkId
+})
+const widget = (
+  nodeId: string,
+  widgetName: string,
+  graphId = 'root'
+): ShadowTarget => ({
+  kind: 'widget',
+  graphId,
+  nodeId,
+  widgetName
+})
+
+describe('pendingOpShadow (s3-opt-5 presentation surface)', () => {
+  it('shows a shadow exactly once per op id and never overwrites', () => {
+    const surface = createPendingOpShadowSurface()
+    expect(surface.show('op-1', [node('n1')])).toBe(true)
+    expect(surface.show('op-1', [node('n2')])).toBe(false)
+    expect(surface.get('op-1')?.targets).toEqual([node('n1')])
+    expect(surface.size()).toBe(1)
+  })
+
+  it('never reuses an op id after its shadow is removed', () => {
+    const surface = createPendingOpShadowSurface()
+    surface.show('op-1', [node('n1')])
+    surface.clear('op-1')
+
+    expect(surface.show('op-1', [node('n2')])).toBe(false)
+    expect(surface.isPending(node('n2'))).toBe(false)
+  })
+
+  it('tracks node, link, and widget targets for one op', () => {
+    const surface = createPendingOpShadowSurface()
+    surface.show('op-1', [node('n1'), link('l1'), widget('n1', 'seed')])
+    expect(surface.isPending(node('n1'))).toBe(true)
+    expect(surface.isPending(link('l1'))).toBe(true)
+    expect(surface.isPending(widget('n1', 'seed'))).toBe(true)
+    expect(surface.isPending(widget('n1', 'steps'))).toBe(false)
+    expect(surface.isPending(node('n2'))).toBe(false)
+  })
+
+  it('rejects malformed target kinds instead of sharing an undefined key', () => {
+    const surface = createPendingOpShadowSurface()
+    const malformed = { kind: 'group', nodeId: 'n1' } as unknown as ShadowTarget
+    expect(() => surface.isPending(malformed)).toThrow(
+      'Unsupported shadow target'
+    )
+  })
+
+  it('rejects a malformed target in show before recording the op id', () => {
+    const surface = createPendingOpShadowSurface()
+    const malformed = { kind: 'group', nodeId: 'n1' } as unknown as ShadowTarget
+
+    expect(() => surface.show('op-1', [malformed])).toThrow(
+      'Unsupported shadow target'
+    )
+    // A later show with the same op id must not be treated as a duplicate:
+    // the rejected attempt above must not have reached seenOpIds.add/shadows.set.
+    expect(surface.show('op-1', [node('n1')])).toBe(true)
+  })
+
+  it('revert removes the shadow and returns it; unknown id is a no-op', () => {
+    const surface = createPendingOpShadowSurface()
+    surface.show('op-1', [node('n1')])
+    const removed = surface.revert('op-1')
+    expect(removed?.opId).toBe('op-1')
+    expect(surface.get('op-1')).toBeUndefined()
+    expect(surface.isPending(node('n1'))).toBe(false)
+    expect(surface.revert('op-1')).toBeUndefined()
+    expect(surface.revert('never-shown')).toBeUndefined()
+  })
+
+  it('clear removes the shadow on effect (KA-9) and returns it', () => {
+    const surface = createPendingOpShadowSurface()
+    surface.show('op-1', [widget('n1', 'seed')])
+    const removed = surface.clear('op-1')
+    expect(removed?.targets).toEqual([widget('n1', 'seed')])
+    expect(surface.isPending(widget('n1', 'seed'))).toBe(false)
+    expect(surface.clear('op-1')).toBeUndefined()
+  })
+
+  it('refcounts a target shared by two ops across revert and clear', () => {
+    const surface = createPendingOpShadowSurface()
+    surface.show('op-1', [node('n1')])
+    surface.show('op-2', [node('n1'), node('n2')])
+    expect(surface.isPending(node('n1'))).toBe(true)
+
+    surface.revert('op-1')
+    expect(surface.isPending(node('n1'))).toBe(true)
+    expect(surface.isPending(node('n2'))).toBe(true)
+
+    surface.clear('op-2')
+    expect(surface.isPending(node('n1'))).toBe(false)
+    expect(surface.isPending(node('n2'))).toBe(false)
+  })
+
+  it('deduplicates shared targets in pendingTargets()', () => {
+    const surface = createPendingOpShadowSurface()
+    surface.show('op-1', [node('n1'), link('l1')])
+    surface.show('op-2', [node('n1')])
+    expect(surface.pendingTargets()).toEqual([node('n1'), link('l1')])
+  })
+
+  it('keeps widget targets distinct when ids contain separators', () => {
+    const surface = createPendingOpShadowSurface()
+    surface.show('op-1', [widget('a:b', 'c')])
+    surface.show('op-2', [widget('a', 'b:c')])
+
+    surface.clear('op-1')
+    expect(surface.isPending(widget('a:b', 'c'))).toBe(false)
+    expect(surface.isPending(widget('a', 'b:c'))).toBe(true)
+  })
+
+  it('keeps identical local node/link ids distinct across graph scopes', () => {
+    const surface = createPendingOpShadowSurface()
+    surface.show('op-1', [node('n1', 'graph-a')])
+    surface.show('op-2', [node('n1', 'graph-b'), link('l1', 'graph-b')])
+
+    expect(surface.isPending(node('n1', 'graph-a'))).toBe(true)
+    expect(surface.isPending(node('n1', 'graph-b'))).toBe(true)
+    expect(surface.isPending(link('l1', 'graph-a'))).toBe(false)
+    expect(surface.isPending(link('l1', 'graph-b'))).toBe(true)
+
+    // Resolving one graph's shadow must not touch the other graph's refcount
+    // for the same local id (the bug: an omitted graph scope shares one key).
+    surface.clear('op-1')
+    expect(surface.isPending(node('n1', 'graph-a'))).toBe(false)
+    expect(surface.isPending(node('n1', 'graph-b'))).toBe(true)
+  })
+
+  it('keeps identical local widget ids distinct across graph scopes', () => {
+    const surface = createPendingOpShadowSurface()
+    surface.show('op-1', [widget('n1', 'seed', 'graph-a')])
+    surface.show('op-2', [widget('n1', 'seed', 'graph-b')])
+
+    expect(surface.isPending(widget('n1', 'seed', 'graph-a'))).toBe(true)
+    expect(surface.isPending(widget('n1', 'seed', 'graph-b'))).toBe(true)
+
+    surface.revert('op-1')
+    expect(surface.isPending(widget('n1', 'seed', 'graph-a'))).toBe(false)
+    expect(surface.isPending(widget('n1', 'seed', 'graph-b'))).toBe(true)
+  })
+
+  it('dedupes pendingTargets() by graph scope, not local id alone', () => {
+    const surface = createPendingOpShadowSurface()
+    surface.show('op-1', [node('n1', 'graph-a')])
+    surface.show('op-2', [node('n1', 'graph-b')])
+    expect(surface.pendingTargets()).toEqual([
+      node('n1', 'graph-a'),
+      node('n1', 'graph-b')
+    ])
+  })
+
+  it('clearAll drops every shadow in insertion order (FEB-5)', () => {
+    const surface = createPendingOpShadowSurface()
+    surface.show('op-1', [node('n1')])
+    surface.show('op-2', [link('l1')])
+    const removed = surface.clearAll()
+    expect(removed.map((s: PendingShadow) => s.opId)).toEqual(['op-1', 'op-2'])
+    expect(surface.size()).toBe(0)
+    expect(surface.pendingTargets()).toEqual([])
+    expect(surface.isPending(node('n1'))).toBe(false)
+    expect(surface.clearAll()).toEqual([])
+  })
+
+  it('notifies subscribers with the distinct verb per mutation', () => {
+    const surface = createPendingOpShadowSurface()
+    const changes: ShadowChange[] = []
+    const unsubscribe = surface.subscribe((change) => changes.push(change))
+
+    surface.show('op-1', [node('n1')])
+    surface.show('op-2', [node('n2')])
+    surface.revert('op-1')
+    surface.clear('op-2')
+    surface.show('op-3', [node('n3')])
+    surface.clearAll()
+
+    expect(changes).toEqual([
+      { type: 'show', opId: 'op-1' },
+      { type: 'show', opId: 'op-2' },
+      { type: 'revert', opId: 'op-1' },
+      { type: 'clear', opId: 'op-2' },
+      { type: 'show', opId: 'op-3' },
+      { type: 'clear-all', opIds: ['op-3'] }
+    ])
+
+    unsubscribe()
+    surface.show('op-4', [node('n4')])
+    expect(changes).toHaveLength(6)
+  })
+
+  it('does not notify on rejected or no-op mutations', () => {
+    const surface = createPendingOpShadowSurface()
+    const changes: ShadowChange[] = []
+    surface.subscribe((change) => changes.push(change))
+
+    surface.revert('unknown')
+    surface.clear('unknown')
+    surface.clearAll()
+    surface.show('op-1', [node('n1')])
+    surface.show('op-1', [node('n1')])
+
+    expect(changes).toEqual([{ type: 'show', opId: 'op-1' }])
+  })
+
+  it('isolates subscriber failures after committing a change', () => {
+    const surface = createPendingOpShadowSurface()
+    const changes: ShadowChange[] = []
+    surface.subscribe(() => {
+      throw new Error('renderer failed')
+    })
+    surface.subscribe((change) => changes.push(change))
+
+    expect(() => surface.show('op-1', [node('n1')])).not.toThrow()
+    expect(changes).toEqual([{ type: 'show', opId: 'op-1' }])
+    expect(surface.isPending(node('n1'))).toBe(true)
+  })
+
+  it('starts subscriptions added during notification on the next change', () => {
+    const surface = createPendingOpShadowSurface()
+    const lateChanges: ShadowChange[] = []
+    surface.subscribe(() => {
+      surface.subscribe((change) => lateChanges.push(change))
+    })
+
+    surface.show('op-1', [node('n1')])
+    expect(lateChanges).toEqual([])
+    surface.show('op-2', [node('n2')])
+    expect(lateChanges).toEqual([{ type: 'show', opId: 'op-2' }])
+  })
+
+  it('keeps duplicate listener registrations independently subscribed', () => {
+    const surface = createPendingOpShadowSurface()
+    const changes: ShadowChange[] = []
+    const listener = (change: ShadowChange) => changes.push(change)
+    const unsubscribeFirst = surface.subscribe(listener)
+    surface.subscribe(listener)
+
+    unsubscribeFirst()
+    surface.show('op-1', [node('n1')])
+    expect(changes).toEqual([{ type: 'show', opId: 'op-1' }])
+  })
+
+  it('snapshots are decoupled from caller input and internal state', () => {
+    const surface = createPendingOpShadowSurface()
+    const input = [node('n1')]
+    surface.show('op-1', input)
+    input.push(node('n2'))
+    expect(surface.get('op-1')?.targets).toEqual([node('n1')])
+
+    const shadow = surface.get('op-1')
+    expect(shadow && Object.isFrozen(shadow)).toBe(true)
+    expect(shadow && Object.isFrozen(shadow.targets)).toBe(true)
+    expect(shadow && Object.isFrozen(shadow.targets[0])).toBe(true)
+
+    const listed = surface.pendingShadows()
+    listed.pop()
+    expect(surface.pendingShadows()).toHaveLength(1)
+  })
+
+  it('never touches Yjs or the shared doc: the only permitted import is @/base/assert', () => {
+    // FORECLOSE #5 guard: the overlay must stay presentation-only. Importing
+    // yjs (or anything that could reach the shared doc) from this module
+    // would be the first step toward encoding shadows into the shared doc.
+    // @/base/assert is the repo's central invariant channel (ADR 0019) — a
+    // base-layer leaf with no Yjs/DOM/framework coupling.
+    const source = readFileSync(
+      new URL('./pendingOpShadow.ts', pathToFileURL(import.meta.filename)),
+      'utf8'
+    )
+    const code = source
+      .replace(/\/\*[\s\S]*?\*\//g, '')
+      .replace(/\/\/.*$/gm, '')
+    expect(code).not.toMatch(/\bimport\s*\(/)
+    expect(code).not.toMatch(/\bimport\s*["']/)
+    expect(code).not.toMatch(/\bexport\s*(?:\{|\*)/)
+    expect(code).not.toMatch(/\brequire\s*\(/)
+    expect(code).not.toMatch(/\bfrom\s*["']yjs["']/)
+    const fromSpecifiers = [...code.matchAll(/\bfrom\s*["']([^"']+)["']/g)].map(
+      (m) => m[1]
+    )
+    expect(fromSpecifiers.every((s) => s === '@/base/assert')).toBe(true)
+  })
+})
