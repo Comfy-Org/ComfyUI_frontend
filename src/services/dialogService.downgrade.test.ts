@@ -1,3 +1,5 @@
+import { computed } from 'vue'
+import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { Component } from 'vue'
 import type DowngradeContent from '@/platform/workspace/components/dialogs/DowngradeRemoveMembersDialogContent.vue'
@@ -40,17 +42,20 @@ vi.mock(import('@/i18n'), () => ({
 
 vi.mock(import('@/platform/telemetry'))
 
+beforeEach(() => {
+  vi.mocked(useBillingContext).mockReturnValue({
+    ...useBillingContext(),
+    canAccessSubscriptionFeatures: computed(() => true),
+    isFreeTier: computed(() => false),
+    type: computed(() => 'legacy')
+  } as const)
+})
+
 vi.mock(import('@/platform/distribution/types'), () => ({
   isCloud: false
 }))
 
-vi.mock<unknown>(import('@/composables/billing/useBillingContext'), () => ({
-  useBillingContext: () => ({
-    canAccessSubscriptionFeatures: { value: true },
-    isFreeTier: { value: false },
-    type: { value: 'legacy' }
-  })
-}))
+vi.mock(import('@/composables/billing/useBillingContext'))
 
 vi.mock<unknown>(
   import('@/platform/workspace/composables/useDowngradeToPersonal'),

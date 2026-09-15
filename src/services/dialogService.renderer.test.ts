@@ -1,3 +1,5 @@
+import { computed } from 'vue'
+import { useBillingContext } from '@/composables/billing/useBillingContext'
 /**
  * Dialog migration regression net: when callers in `dialogService` open a
  * Reka-migrated dialog, the dialog stack item must carry `renderer: 'reka'`.
@@ -11,18 +13,21 @@ vi.mock(import('@/i18n'), () => ({
 
 vi.mock(import('@/platform/telemetry'))
 
+beforeEach(() => {
+  vi.mocked(useBillingContext).mockReturnValue({
+    ...useBillingContext(),
+    canAccessSubscriptionFeatures: computed(() => true),
+    isTeamPlan: computed(() => false),
+    tier: computed(() => 'STANDARD'),
+    type: computed(() => 'legacy')
+  } as const)
+})
+
 vi.mock(import('@/platform/distribution/types'), () => ({
   isCloud: false
 }))
 
-vi.mock<unknown>(import('@/composables/billing/useBillingContext'), () => ({
-  useBillingContext: () => ({
-    canAccessSubscriptionFeatures: { value: true },
-    isTeamPlan: { value: false },
-    tier: { value: 'STANDARD' },
-    type: { value: 'legacy' }
-  })
-}))
+vi.mock(import('@/composables/billing/useBillingContext'))
 
 vi.mock<unknown>(
   import('@/platform/workspace/composables/useBillingCapabilities'),

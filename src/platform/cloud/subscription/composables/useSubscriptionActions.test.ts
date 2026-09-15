@@ -1,3 +1,4 @@
+import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useCommandStore } from '@/stores/commandStore'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -5,8 +6,6 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { useAuthActions } from '@/composables/auth/useAuthActions'
 import { useSubscriptionActions } from '@/platform/cloud/subscription/composables/useSubscriptionActions'
 
-const mockBillingFetchBalance = vi.fn()
-const mockFetchStatus = vi.fn()
 const mockShowTopUpCreditsDialog = vi.fn()
 const mockExecute = vi.fn<ReturnType<typeof useCommandStore>['execute']>(
   async () => undefined
@@ -23,12 +22,7 @@ vi.mock(import('@/platform/telemetry/reportError'), () => ({
 
 vi.mock(import('@/composables/auth/useAuthActions'))
 
-vi.mock<unknown>(import('@/composables/billing/useBillingContext'), () => ({
-  useBillingContext: () => ({
-    fetchBalance: mockBillingFetchBalance,
-    fetchStatus: mockFetchStatus
-  })
-}))
+vi.mock(import('@/composables/billing/useBillingContext'))
 
 vi.mock<unknown>(import('@/services/dialogService'), () => ({
   useDialogService: () => ({
@@ -170,13 +164,15 @@ describe('useSubscriptionActions', () => {
       const { handleRefresh } = useSubscriptionActions()
       await handleRefresh()
 
-      expect(mockBillingFetchBalance).toHaveBeenCalledOnce()
-      expect(mockFetchStatus).toHaveBeenCalledOnce()
+      expect(useBillingContext().fetchBalance).toHaveBeenCalledOnce()
+      expect(useBillingContext().fetchStatus).toHaveBeenCalledOnce()
       expect(useAuthActions().fetchBalance).not.toHaveBeenCalled()
     })
 
     it('swallows refresh failures without surfacing a toast', async () => {
-      mockBillingFetchBalance.mockRejectedValueOnce(new Error('Fetch failed'))
+      vi.mocked(useBillingContext().fetchBalance).mockRejectedValueOnce(
+        new Error('Fetch failed')
+      )
       const { handleRefresh } = useSubscriptionActions()
 
       await expect(handleRefresh()).resolves.toBeUndefined()

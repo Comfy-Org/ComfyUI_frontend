@@ -1,3 +1,5 @@
+import { computed, ref } from 'vue'
+import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useDialogStore } from '@/stores/dialogStore'
 import { render, screen, waitFor } from '@testing-library/vue'
@@ -11,24 +13,11 @@ import InviteMemberDialogContent from './InviteMemberDialogContent.vue'
 
 import type { WorkspacePendingInvite } from '@/platform/workspace/stores/teamWorkspaceStore'
 
-const { mockToastAdd, mockFetchStatus, mockMaxSeats, mockOccupiedSeats } =
-  vi.hoisted(() => {
-    const nullableNumber = (value: number | null) => ({ value })
-    return {
-      mockToastAdd: vi.fn(),
-      mockFetchStatus: vi.fn(),
-      mockMaxSeats: nullableNumber(73),
-      mockOccupiedSeats: nullableNumber(0)
-    }
-  })
+const mockToastAdd = vi.hoisted(() => vi.fn())
+const mockMaxSeats = ref<number | null>(73)
+const mockOccupiedSeats = ref<number | null>(0)
 
-vi.mock<unknown>(import('@/composables/billing/useBillingContext'), () => ({
-  useBillingContext: () => ({
-    fetchStatus: mockFetchStatus,
-    maxSeats: mockMaxSeats,
-    occupiedSeats: mockOccupiedSeats
-  })
-}))
+vi.mock(import('@/composables/billing/useBillingContext'))
 
 vi.mock(import('@/platform/telemetry'))
 
@@ -75,6 +64,12 @@ function inviteButton() {
 }
 
 beforeEach(() => {
+  vi.mocked(useBillingContext).mockReturnValue({
+    ...useBillingContext(),
+    maxSeats: computed(() => mockMaxSeats.value),
+    occupiedSeats: computed(() => mockOccupiedSeats.value)
+  } as const)
+
   Object.assign(useTeamWorkspaceStore(), { pendingInvites: [] })
   vi.mocked(useDialogStore().closeDialog).mockImplementation(() => {})
 })
@@ -83,7 +78,7 @@ describe('InviteMemberDialogContent', () => {
   beforeEach(() => {
     vi.useRealTimers()
     vi.mocked(useTeamWorkspaceStore().fetchPendingInvites).mockResolvedValue([])
-    mockFetchStatus.mockResolvedValue(undefined)
+    vi.mocked(useBillingContext().fetchStatus).mockResolvedValue(undefined)
     mockMaxSeats.value = 73
     mockOccupiedSeats.value = 0
     vi.mocked(useTeamWorkspaceStore().createInvite).mockImplementation(

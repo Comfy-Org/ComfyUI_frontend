@@ -1,3 +1,4 @@
+import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -9,7 +10,6 @@ import SubscriptionFooterLinks from './SubscriptionFooterLinks.vue'
 
 const state = vi.hoisted(() => ({
   isCloud: true,
-  manageSubscription: vi.fn(),
   handleLearnMoreClick: vi.fn(),
   handleMessageSupport: vi.fn()
 }))
@@ -24,11 +24,7 @@ vi.mock(import('@/platform/distribution/types'), () => ({
   }
 }))
 
-vi.mock<unknown>(import('@/composables/billing/useBillingContext'), () => ({
-  useBillingContext: () => ({
-    manageSubscription: state.manageSubscription
-  })
-}))
+vi.mock(import('@/composables/billing/useBillingContext'))
 
 vi.mock<unknown>(import('@/composables/useExternalLink'), () => ({
   useExternalLink: () => ({
@@ -134,7 +130,7 @@ describe('SubscriptionFooterLinks', () => {
 
     await user.click(screen.getByRole('button', { name: 'Invoice history' }))
 
-    expect(state.manageSubscription).toHaveBeenCalledOnce()
+    expect(useBillingContext().manageSubscription).toHaveBeenCalledOnce()
   })
 
   it('hides Invoice history from local users without billing permission', () => {
@@ -144,7 +140,7 @@ describe('SubscriptionFooterLinks', () => {
     expect(
       screen.queryByRole('button', { name: 'Invoice history' })
     ).not.toBeInTheDocument()
-    expect(state.manageSubscription).not.toHaveBeenCalled()
+    expect(useBillingContext().manageSubscription).not.toHaveBeenCalled()
   })
 
   it('opens the platform usage page', async () => {
