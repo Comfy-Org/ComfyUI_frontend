@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
 
+import CanvasBanner from '@/components/graph/CanvasBanner.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
 import { useAgentNodeSelectionStore } from '@/stores/agentNodeSelectionStore'
@@ -20,28 +21,27 @@ const agentNodeSelectionStore = useAgentNodeSelectionStore()
       enter-from-class="-translate-y-full opacity-0"
       leave-to-class="-translate-y-full opacity-0"
     >
-      <div
+      <CanvasBanner
         v-if="agentNodeSelectionStore.isBannerVisible"
         data-testid="node-selection-mode-banner"
-        class="pointer-events-auto flex max-w-lg items-center gap-8 rounded-lg border border-l-4 border-interface-stroke border-l-primary-background bg-interface-panel-surface p-4 shadow-interface"
+        accent="border-l-primary-background"
+        class="max-w-lg"
         @wheel="canvasInteractions.forwardEventToCanvas"
       >
-        <div class="flex flex-col">
-          <span class="text-sm font-medium text-base-foreground">
-            {{ t('agent.nodeSelection.bannerTitle') }}
-          </span>
-          <span class="text-sm text-muted-foreground">
-            {{ t('agent.nodeSelection.bannerSubtitle') }}
-          </span>
-        </div>
-        <Button
-          variant="secondary"
-          size="sm"
-          @click="agentNodeSelectionStore.exit()"
-        >
-          {{ t('agent.nodeSelection.exit') }}
-        </Button>
-      </div>
+        <template #title>{{ t('agent.nodeSelection.bannerTitle') }}</template>
+        <template #description>
+          {{ t('agent.nodeSelection.bannerSubtitle') }}
+        </template>
+        <template #actions>
+          <Button
+            variant="secondary"
+            size="sm"
+            @click="agentNodeSelectionStore.exit()"
+          >
+            {{ t('agent.nodeSelection.exit') }}
+          </Button>
+        </template>
+      </CanvasBanner>
     </Transition>
   </div>
 </template>
