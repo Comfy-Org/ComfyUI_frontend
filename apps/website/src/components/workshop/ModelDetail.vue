@@ -686,7 +686,7 @@ function useInCode() {
                the wrong wallet visible before it happens. -->
           <template v-else-if="gate === 'noCredits'">
             <p
-              class="mb-2 text-sm font-bold text-primary-warm-white"
+              class="mb-2 text-sm font-bold text-primary-warm-gray"
               data-testid="gate-note"
             >
               {{
@@ -708,7 +708,7 @@ function useInCode() {
           </template>
           <template v-else-if="gate === 'memberNoCredits'">
             <div class="mb-2 flex flex-col gap-1" data-testid="gate-note">
-              <p class="text-sm font-bold text-primary-warm-white">
+              <p class="text-sm font-bold text-primary-warm-gray">
                 {{ t('workshop.error.creditsTitle', locale) }}
               </p>
               <p class="text-xs text-primary-warm-gray">
@@ -816,7 +816,10 @@ function useInCode() {
           >
             {{ t('workshop.output.expires', locale) }}
           </p>
-          <div v-if="requestId" class="flex flex-col items-start gap-1">
+          <!-- The id is for the rare conversation with support, so it keeps
+            to itself and the copy comes to hand when the reader reaches for
+            it. A screen that cannot hover keeps the button in view. -->
+          <div v-if="requestId" class="group/request flex items-center gap-1">
             <p
               class="text-2xs break-all text-primary-warm-gray/70"
               data-testid="router-request-id"
@@ -827,6 +830,7 @@ function useInCode() {
               :value="requestId"
               :label="t('workshop.run.copyRequestId', locale)"
               :copied-label="t('workshop.api.copied', locale)"
+              class="h-7 min-w-7 rounded-lg px-1.5 transition-opacity can-hover:opacity-0 can-hover:group-focus-within/request:opacity-100 can-hover:group-hover/request:opacity-100"
             />
           </div>
         </div>
