@@ -36,7 +36,7 @@ const expanded = ref(false)
       <button
         type="button"
         :aria-label="expandLabel"
-        class="focus-visible:ring-primary-comfy-yellow/50 group relative size-12 shrink-0 cursor-zoom-in overflow-hidden rounded-lg bg-transparency-white-t8 outline-none focus-visible:ring-3"
+        class="group relative size-12 shrink-0 cursor-zoom-in overflow-hidden rounded-lg bg-transparency-white-t8 outline-none focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow/50"
       >
         <video
           :key="source"

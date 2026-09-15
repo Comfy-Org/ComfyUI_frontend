@@ -94,7 +94,6 @@ test.describe(
     }) => {
       await comfyPage.command.executeCommand('Comfy.NewBlankWorkflow')
       await expect.poll(() => comfyPage.nodeOps.getGraphNodesCount()).toBe(0)
-      await comfyPage.searchBoxV2.ensureV2Search()
       const clickPosition = { x: 200, y: 200 }
       await comfyPage.searchBoxV2.addNode('KSampler', {
         position: clickPosition

@@ -18,6 +18,7 @@ import type { RunOutput } from './workshop-run'
 import type { WorkshopUrlEncoder } from './workshop-url-input'
 import { createWorkshopUrlUploader } from './workshop-url-upload'
 import type { WorkshopSvgRasterizer } from './workshop-svg-output'
+import { releaseRouterOutputs } from './workshop-response'
 
 const upload = createWorkshopUrlUploader()
 
@@ -153,10 +154,17 @@ export async function router_render(
     rasterizeSvg: options.rasterizeSvg,
     ...(options.onRequestId ? { onRequestId: options.onRequestId } : {})
   })
+  const outputs = result.outputs.filter(
+    (output) => output.purpose !== 'response-metadata'
+  )
+  releaseRouterOutputs(
+    result.outputs.filter((output) => output.purpose === 'response-metadata')
+  )
   return {
     slug: prepared.slug,
     routerId: prepared.routerId,
     expectedKind: prepared.expectedKind,
-    ...result
+    ...result,
+    outputs
   }
 }

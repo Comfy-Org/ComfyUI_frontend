@@ -19,8 +19,8 @@ const translations = {
     'zh-CN': '浏览模型 - Comfy'
   },
   'workshop.meta.description': {
-    en: 'Browse and run partner models and curated workflows on Comfy.',
-    'zh-CN': '在 Comfy 上浏览并运行合作伙伴模型和精选工作流。'
+    en: 'Browse and run the latest AI image, video and audio models on Comfy.',
+    'zh-CN': '在 Comfy 上浏览并运行最新的 AI 图像、视频和音频模型。'
   },
   'workshop.hero.eyebrow': { en: 'Models', 'zh-CN': '模型' },
   'workshop.hero.heading': {
@@ -28,11 +28,11 @@ const translations = {
     'zh-CN': '运行顶尖模型'
   },
   'workshop.hero.subtitle': {
-    en: 'Partner models, ready to run. Nothing to install.',
-    'zh-CN': '合作伙伴模型，即开即用。无需安装配置。'
+    en: 'The latest AI models, ready to run. Nothing to install.',
+    'zh-CN': '最新 AI 模型，即开即用。无需安装配置。'
   },
   'workshop.search.label': {
-    en: 'Search models, providers, and capabilities',
+    en: 'Search models, providers, and categories',
     'zh-CN': '搜索模型、提供商、分类...'
   },
   'workshop.search.placeholder': {
@@ -7078,6 +7078,10 @@ Enterprise`
     en: 'Zoom to {count} events here',
     'zh-CN': '放大查看此处的 {count} 场活动'
   },
+  'events.directory.clusterPopupTitle': {
+    en: '{count} events here',
+    'zh-CN': '此处有 {count} 场活动'
+  },
   'events.directory.saveTheDate': {
     en: 'Save the date',
     'zh-CN': '标记日期'
@@ -9959,8 +9963,9 @@ Enterprise`
   },
   'workshop.error.retry': { en: 'Try again', 'zh-CN': '重试' },
   'workshop.error.timeout': {
-    en: 'The provider took too long to answer. You were not charged.',
-    'zh-CN': '提供方响应超时。未扣费。'
+    en: 'The provider took too long to answer. A run that finishes later is still billed, so retry the unchanged request rather than starting a new one.',
+    'zh-CN':
+      '提供方响应超时。若该运行随后完成仍会扣费，请重试未更改的请求，而不要开始新的运行。'
   },
   'workshop.error.lowCredits': {
     en: 'You have {credits} credits and this run needs {n}. Add credits to continue; your inputs stay here.',
