@@ -62,26 +62,23 @@ test.describe('Templates', { tag: ['@slow', '@workflow'] }, () => {
       .toBeGreaterThan(0)
   })
 
-  test('dialog should open Popular for first-time users', async ({
-    comfyPage
-  }) => {
-    // Set the tutorial as not completed to mark the user as a first-time user
-    await comfyPage.settings.setSetting('Comfy.TutorialCompleted', false)
+  test.describe('First-time user', () => {
+    test.use({ initialSettings: { 'Comfy.TutorialCompleted': false } })
 
-    // Load the page
-    // oxlint-disable-next-line comfy/no-comfy-page-setup-call -- pre-existing call, tracked by evfail-23; not fixed in this pass
-    await comfyPage.setup({ clearStorage: true })
-
-    await expect(comfyPage.templates.content).toBeVisible()
-    await expect(
-      comfyPage.page.getByRole('heading', { name: 'Popular', exact: true })
-    ).toBeVisible()
-    await comfyPage.page.getByRole('button', { name: 'Filters' }).click()
-    await expect(
-      comfyPage.page
-        .getByRole('combobox', { name: 'Sort by' })
-        .filter({ visible: true })
-    ).toHaveText('Popular')
+    test('dialog should open Popular for first-time users', async ({
+      comfyPage
+    }) => {
+      await expect(comfyPage.templates.content).toBeVisible()
+      await expect(
+        comfyPage.page.getByRole('heading', { name: 'Popular', exact: true })
+      ).toBeVisible()
+      await comfyPage.page.getByRole('button', { name: 'Filters' }).click()
+      await expect(
+        comfyPage.page
+          .getByRole('combobox', { name: 'Sort by' })
+          .filter({ visible: true })
+      ).toHaveText('Popular')
+    })
   })
 
   test("dialog should preserve a returning user's Popular sort", async ({
@@ -108,48 +105,49 @@ test.describe('Templates', { tag: ['@slow', '@workflow'] }, () => {
       .toBe('popular')
   })
 
-  test('dialog should not be shown when first-time user opens a shared workflow link', async ({
-    comfyPage
-  }) => {
-    await comfyPage.page.route(
-      '**/workflows/published/test-share-id',
-      async (route) => {
-        await route.fulfill({
-          status: 200,
-          contentType: 'application/json',
-          body: JSON.stringify({
-            share_id: 'test-share-id',
-            workflow_id: 'wf-1',
-            name: 'Shared Workflow',
-            listed: true,
-            publish_time: new Date().toISOString(),
-            workflow_json: {
-              version: 0.4,
-              nodes: [],
-              links: [],
-              groups: [],
-              config: {},
-              extra: {}
-            },
-            assets: []
-          })
-        })
-      }
-    )
-
-    await comfyPage.settings.setSetting('Comfy.TutorialCompleted', false)
-
-    // oxlint-disable-next-line comfy/no-comfy-page-setup-call -- pre-existing call, tracked by evfail-23; not fixed in this pass
-    await comfyPage.setup({
-      clearStorage: true,
-      url: '/?share=test-share-id'
+  test.describe('First-time shared workflow link', () => {
+    test.use({
+      initialSettings: { 'Comfy.TutorialCompleted': false },
+      initialUrl: '/?share=test-share-id'
     })
 
-    await expect(
-      comfyPage.page.getByTestId(TestIds.dialogs.openSharedWorkflowTitle)
-    ).toBeVisible()
+    test.beforeEach(async ({ page }) => {
+      await page.route(
+        '**/workflows/published/test-share-id',
+        async (route) => {
+          await route.fulfill({
+            status: 200,
+            contentType: 'application/json',
+            body: JSON.stringify({
+              share_id: 'test-share-id',
+              workflow_id: 'wf-1',
+              name: 'Shared Workflow',
+              listed: true,
+              publish_time: new Date().toISOString(),
+              workflow_json: {
+                version: 0.4,
+                nodes: [],
+                links: [],
+                groups: [],
+                config: {},
+                extra: {}
+              },
+              assets: []
+            })
+          })
+        }
+      )
+    })
 
-    await expect(comfyPage.templates.content).toBeHidden()
+    test('dialog should not be shown when first-time user opens a shared workflow link', async ({
+      comfyPage
+    }) => {
+      await expect(
+        comfyPage.page.getByTestId(TestIds.dialogs.openSharedWorkflowTitle)
+      ).toBeVisible()
+
+      await expect(comfyPage.templates.content).toBeHidden()
+    })
   })
 
   test('Uses proper locale files for templates', async ({ comfyPage }) => {
@@ -507,28 +505,29 @@ test.describe(
   'Templates deeplink (new user)',
   { tag: ['@slow', '@workflow'] },
   () => {
-    test('templates dialog never flashes when first-time user opens a template link', async ({
-      comfyPage
-    }) => {
-      const templatesFlash = await trackElementFlash(
-        comfyPage.page,
-        TestIds.templates.content
-      )
-
-      await comfyPage.settings.setSetting('Comfy.TutorialCompleted', false)
-
-      // oxlint-disable-next-line comfy/no-comfy-page-setup-call -- pre-existing call, tracked by evfail-23; not fixed in this pass
-      await comfyPage.setup({
-        clearStorage: true,
-        url: '/?template=default'
-      })
-
-      await expect
-        .poll(() => comfyPage.nodeOps.getGraphNodesCount())
-        .toBeGreaterThan(0)
-
-      expect(await templatesFlash.hasFlashed()).toBe(false)
-      await expect(comfyPage.templates.content).toBeHidden()
+    const templateLinkTest = test.extend<{
+      templatesFlash: Awaited<ReturnType<typeof trackElementFlash>>
+    }>({
+      initialSettings: { 'Comfy.TutorialCompleted': false },
+      initialUrl: '/?template=default',
+      templatesFlash: [
+        async ({ page }, use) => {
+          await use(await trackElementFlash(page, TestIds.templates.content))
+        },
+        { auto: true }
+      ]
     })
+
+    templateLinkTest(
+      'templates dialog never flashes when first-time user opens a template link',
+      async ({ comfyPage, templatesFlash }) => {
+        await expect
+          .poll(() => comfyPage.nodeOps.getGraphNodesCount())
+          .toBeGreaterThan(0)
+
+        expect(await templatesFlash.hasFlashed()).toBe(false)
+        await expect(comfyPage.templates.content).toBeHidden()
+      }
+    )
   }
 )
