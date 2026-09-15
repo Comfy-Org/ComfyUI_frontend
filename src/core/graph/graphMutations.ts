@@ -148,6 +148,18 @@ type PreparedMutation =
     }
   | { kind: 'clearSemanticGraph'; nodeIds: readonly NodeId[] }
 
+type QueuedOf<K extends QueuedMutation['kind']> = Extract<
+  QueuedMutation,
+  { kind: K }
+>
+
+interface PrepareDraft {
+  scope: GraphScope
+  nodes: Map<string, NodeState>
+  links: Map<LinkId, LinkTopology>
+  widgets: Map<string, Set<string>>
+}
+
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value)
 }
@@ -326,6 +338,17 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
     scope: GraphScope,
     queued: readonly QueuedMutation[]
   ): PreparedMutation[] | string {
+    const draft = snapshotDraft(scope)
+    const prepared: PreparedMutation[] = []
+    for (const mutation of queued) {
+      const result = prepareMutation(draft, mutation)
+      if (typeof result === 'string') return result
+      prepared.push(result)
+    }
+    return prepared
+  }
+
+  function snapshotDraft(scope: GraphScope): PrepareDraft {
     const nodes = new Map(
       nodeStore
         .getGraphNodesFor(scope.rootGraphId, scope.owningGraphId)
@@ -345,225 +368,263 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
         )
       )
     }
+    return { scope, nodes, links, widgets }
+  }
 
-    const prepared: PreparedMutation[] = []
-    for (const mutation of queued) {
-      switch (mutation.kind) {
-        case 'addNode':
-        case 'reconcileNode': {
-          if (
-            (typeof mutation.payload.id !== 'string' &&
-              typeof mutation.payload.id !== 'number') ||
-            typeof mutation.payload.type !== 'string' ||
-            mutation.payload.type.length === 0
-          ) {
-            return 'addNode requires a payload id and type'
-          }
-          const node = prepareNode(mutation.payload, scope)
-          const key = nodeKey(node.state.id)
-          const registered = nodeStore.getNode(scope.rootGraphId, node.state.id)
-          if (registered && registered.graphId !== scope.owningGraphId) {
-            return `node id ${key} belongs to graph ${registered.graphId}`
-          }
-          const incumbent = nodes.get(key)
-          // A reconcile payload without a title leaves the title unspecified;
-          // it does not rename the node to its type. The incumbent's title
-          // may have come from the node class (`configure()` falls back to
-          // the constructor's static title) rather than from any payload.
-          if (
-            mutation.kind === 'reconcileNode' &&
-            incumbent &&
-            !hasTitle(mutation.payload) &&
-            deps.isSubgraphType?.(mutation.payload.type)
-          ) {
-            node.state.title = incumbent.title
-            if (node.state.lastSerialization) {
-              node.state.lastSerialization.title = incumbent.title
-            }
-          }
-          if (mutation.kind === 'addNode' && nodes.has(key)) {
-            return `node id ${key} is already registered`
-          }
-          if (
-            node.widgets.some(
-              ({ name }) =>
-                !isWidgetId(widgetId(scope.rootGraphId, node.state.id, name))
-            )
-          ) {
-            return `node ${key} has an invalid widget name`
-          }
-          nodes.set(key, node.state)
-          widgets.set(key, new Set(node.widgets.map(({ name }) => name)))
-          prepared.push({ kind: mutation.kind, node })
-          break
-        }
-        case 'setWidget': {
-          const key = nodeKey(mutation.nodeId)
-          if (!nodes.has(key)) return `node ${key} does not exist`
-          if (
-            !isWidgetId(
-              widgetId(scope.rootGraphId, mutation.nodeId, mutation.name)
-            )
-          ) {
-            return `node ${key} has an invalid widget name`
-          }
-          widgets.get(key)?.add(mutation.name)
-          prepared.push({
-            kind: mutation.kind,
-            nodeId: mutation.nodeId,
-            name: mutation.name,
-            value: structuredClone(mutation.value) as WidgetValue
-          })
-          break
-        }
-        case 'connect': {
-          if (
-            !Number.isInteger(mutation.link.id) ||
-            mutation.link.id < 0 ||
-            !Number.isInteger(mutation.link.originSlot) ||
-            mutation.link.originSlot < 0 ||
-            !Number.isInteger(mutation.link.targetSlot) ||
-            mutation.link.targetSlot < 0
-          ) {
-            return 'connect requires non-negative integer ids and slots'
-          }
-          const topology = prepareTopology(mutation.link, scope)
-          const incumbent = linkStore.getTopology(
-            scope.rootGraphId,
-            topology.id
-          )
-          if (incumbent && incumbent.graphId !== scope.owningGraphId) {
-            return `link id ${topology.id} belongs to graph ${incumbent.graphId}`
-          }
-          const origin = nodes.get(nodeKey(topology.originNodeId))
-          if (!origin) {
-            return `connect origin node ${topology.originNodeId} does not exist`
-          }
-          const target = nodes.get(nodeKey(topology.targetNodeId))
-          if (!target) {
-            return `connect target node ${topology.targetNodeId} does not exist`
-          }
-          const originOutputs = mutation.link.originOutputs
-            ? prepareOutputSlots(mutation.link.originOutputs)
-            : origin.outputs
-          const targetInputs = mutation.link.targetInputs
-            ? prepareInputSlots(mutation.link.targetInputs)
-            : target.inputs
-          if (topology.originSlot >= originOutputs.length) {
-            return `connect origin slot ${topology.originSlot} does not exist`
-          }
-          if (topology.targetSlot >= targetInputs.length) {
-            return `connect target slot ${topology.targetSlot} does not exist`
-          }
-          links.delete(topology.id)
-          for (const [id, incumbent] of links) {
-            if (
-              incumbent.targetNodeId === topology.targetNodeId &&
-              incumbent.targetSlot === topology.targetSlot
-            ) {
-              links.delete(id)
-            }
-          }
-          links.set(topology.id, topology)
-          prepared.push({
-            kind: mutation.kind,
-            topology,
-            ...(mutation.link.originOutputs && {
-              originOutputs
-            }),
-            ...(mutation.link.targetInputs && {
-              targetInputs
-            })
-          })
-          break
-        }
-        case 'removeMissing': {
-          const retainedNodeIds = new Set(mutation.retainedNodeIds.map(nodeKey))
-          const retainedLinkIds = new Set<LinkId>()
-          for (const value of mutation.retainedLinkIds) {
-            if (!Number.isInteger(value) || value < 0) {
-              return 'removeMissing requires non-negative integer link ids'
-            }
-            retainedLinkIds.add(toLinkId(value))
-          }
+  function prepareMutation(
+    draft: PrepareDraft,
+    mutation: QueuedMutation
+  ): PreparedMutation | string {
+    switch (mutation.kind) {
+      case 'addNode':
+      case 'reconcileNode':
+        return prepareNodeMutation(draft, mutation)
+      case 'setWidget':
+        return prepareSetWidget(draft, mutation)
+      case 'connect':
+        return prepareConnect(draft, mutation)
+      case 'removeMissing':
+        return prepareRemoveMissing(draft, mutation)
+      case 'removeLinks':
+        return prepareRemoveLinks(draft, mutation)
+      case 'deleteNode':
+        return prepareDeleteNode(draft, mutation)
+      case 'clearSemanticGraph':
+        return prepareClear(draft)
+    }
+  }
 
-          const nodeIds = [...nodes.values()]
-            .map(({ id }) => id)
-            .filter((id) => !retainedNodeIds.has(nodeKey(id)))
-          for (const id of nodeIds) {
-            nodes.delete(nodeKey(id))
-            widgets.delete(nodeKey(id))
-            removeIncidentLinks(links, id)
-          }
-          const linkIds = [...links.keys()].filter(
-            (id) => !retainedLinkIds.has(id)
-          )
-          for (const id of linkIds) links.delete(id)
-          prepared.push({ kind: mutation.kind, nodeIds, linkIds })
-          break
-        }
-        case 'removeLinks': {
-          const linkIds: LinkId[] = []
-          for (const value of mutation.linkIds) {
-            if (!Number.isInteger(value) || value < 0) {
-              return 'removeLinks requires non-negative integer ids'
-            }
-            const id = toLinkId(value)
-            const incumbent = linkStore.getTopology(scope.rootGraphId, id)
-            if (incumbent && incumbent.graphId !== scope.owningGraphId) {
-              return `link id ${id} belongs to graph ${incumbent.graphId}`
-            }
-            links.delete(id)
-            linkIds.push(id)
-          }
-          prepared.push({
-            kind: mutation.kind,
-            linkIds
-          })
-          break
-        }
-        case 'deleteNode': {
-          const incumbent = nodeStore.getNode(
-            scope.rootGraphId,
-            mutation.nodeId
-          )
-          if (incumbent && incumbent.graphId !== scope.owningGraphId) {
-            return `node id ${mutation.nodeId} belongs to graph ${incumbent.graphId}`
-          }
-          const removedLinkIds: LinkId[] = []
-          for (const value of mutation.removedLinkIds) {
-            if (!Number.isInteger(value) || value < 0) {
-              return 'deleteNode requires non-negative integer link ids'
-            }
-            const id = toLinkId(value)
-            const link = linkStore.getTopology(scope.rootGraphId, id)
-            if (link && link.graphId !== scope.owningGraphId) {
-              return `link id ${id} belongs to graph ${link.graphId}`
-            }
-            removedLinkIds.push(id)
-          }
-          nodes.delete(nodeKey(mutation.nodeId))
-          widgets.delete(nodeKey(mutation.nodeId))
-          removeIncidentLinks(links, mutation.nodeId)
-          for (const id of removedLinkIds) links.delete(id)
-          prepared.push({
-            kind: mutation.kind,
-            nodeId: mutation.nodeId,
-            removedLinkIds
-          })
-          break
-        }
-        case 'clearSemanticGraph': {
-          const nodeIds = [...nodes.values()].map(({ id }) => id)
-          nodes.clear()
-          widgets.clear()
-          links.clear()
-          prepared.push({ kind: mutation.kind, nodeIds })
-          break
-        }
+  function nodePayloadError(payload: SemanticNodePayload): string | undefined {
+    const { id, type } = payload
+    const valid =
+      (typeof id === 'string' || typeof id === 'number') &&
+      typeof type === 'string' &&
+      type.length > 0
+    return valid ? undefined : 'addNode requires a payload id and type'
+  }
+
+  function prepareNodeMutation(
+    draft: PrepareDraft,
+    mutation: QueuedOf<'addNode' | 'reconcileNode'>
+  ): PreparedMutation | string {
+    const payloadError = nodePayloadError(mutation.payload)
+    if (payloadError) return payloadError
+    const { scope, nodes, widgets } = draft
+    const node = prepareNode(mutation.payload, scope)
+    const key = nodeKey(node.state.id)
+    const registered = nodeStore.getNode(scope.rootGraphId, node.state.id)
+    if (registered && registered.graphId !== scope.owningGraphId) {
+      return `node id ${key} belongs to graph ${registered.graphId}`
+    }
+    const incumbent = nodes.get(key)
+    if (
+      mutation.kind === 'reconcileNode' &&
+      incumbent &&
+      !hasTitle(mutation.payload) &&
+      deps.isSubgraphType?.(mutation.payload.type)
+    ) {
+      node.state.title = incumbent.title
+      if (node.state.lastSerialization) {
+        node.state.lastSerialization.title = incumbent.title
       }
     }
-    return prepared
+    if (mutation.kind === 'addNode' && nodes.has(key)) {
+      return `node id ${key} is already registered`
+    }
+    const invalidWidget = node.widgets.some(
+      ({ name }) =>
+        !isWidgetId(widgetId(scope.rootGraphId, node.state.id, name))
+    )
+    if (invalidWidget) return `node ${key} has an invalid widget name`
+    nodes.set(key, node.state)
+    widgets.set(key, new Set(node.widgets.map(({ name }) => name)))
+    return { kind: mutation.kind, node }
+  }
+
+  function prepareSetWidget(
+    draft: PrepareDraft,
+    mutation: QueuedOf<'setWidget'>
+  ): PreparedMutation | string {
+    const { scope, nodes, widgets } = draft
+    const key = nodeKey(mutation.nodeId)
+    if (!nodes.has(key)) return `node ${key} does not exist`
+    if (
+      !isWidgetId(widgetId(scope.rootGraphId, mutation.nodeId, mutation.name))
+    ) {
+      return `node ${key} has an invalid widget name`
+    }
+    widgets.get(key)?.add(mutation.name)
+    return {
+      kind: mutation.kind,
+      nodeId: mutation.nodeId,
+      name: mutation.name,
+      value: structuredClone(mutation.value) as WidgetValue
+    }
+  }
+
+  function foreignLinkError(scope: GraphScope, id: LinkId): string | undefined {
+    const incumbent = linkStore.getTopology(scope.rootGraphId, id)
+    return incumbent && incumbent.graphId !== scope.owningGraphId
+      ? `link id ${id} belongs to graph ${incumbent.graphId}`
+      : undefined
+  }
+
+  function prepareConnect(
+    draft: PrepareDraft,
+    mutation: QueuedOf<'connect'>
+  ): PreparedMutation | string {
+    const { link } = mutation
+    const wellFormed = [link.id, link.originSlot, link.targetSlot].every(
+      (value) => Number.isInteger(value) && value >= 0
+    )
+    if (!wellFormed)
+      return 'connect requires non-negative integer ids and slots'
+    const { scope, nodes, links } = draft
+    const topology = prepareTopology(link, scope)
+    const foreign = foreignLinkError(scope, topology.id)
+    if (foreign) return foreign
+    const origin = nodes.get(nodeKey(topology.originNodeId))
+    if (!origin) {
+      return `connect origin node ${topology.originNodeId} does not exist`
+    }
+    const target = nodes.get(nodeKey(topology.targetNodeId))
+    if (!target) {
+      return `connect target node ${topology.targetNodeId} does not exist`
+    }
+    const slots = connectEndpointSlots(link, topology, origin, target)
+    if (typeof slots === 'string') return slots
+    replaceDraftLink(links, topology)
+    return {
+      kind: mutation.kind,
+      topology,
+      ...(link.originOutputs && { originOutputs: slots.originOutputs }),
+      ...(link.targetInputs && { targetInputs: slots.targetInputs })
+    }
+  }
+
+  function connectEndpointSlots(
+    link: SemanticLinkPayload,
+    topology: LinkTopology,
+    origin: NodeState,
+    target: NodeState
+  ):
+    | { originOutputs: NodeState['outputs']; targetInputs: NodeState['inputs'] }
+    | string {
+    const originOutputs = link.originOutputs
+      ? prepareOutputSlots(link.originOutputs)
+      : origin.outputs
+    const targetInputs = link.targetInputs
+      ? prepareInputSlots(link.targetInputs)
+      : target.inputs
+    if (topology.originSlot >= originOutputs.length) {
+      return `connect origin slot ${topology.originSlot} does not exist`
+    }
+    if (topology.targetSlot >= targetInputs.length) {
+      return `connect target slot ${topology.targetSlot} does not exist`
+    }
+    return { originOutputs, targetInputs }
+  }
+
+  function replaceDraftLink(
+    links: Map<LinkId, LinkTopology>,
+    topology: LinkTopology
+  ): void {
+    links.delete(topology.id)
+    for (const [id, incumbent] of links) {
+      if (
+        incumbent.targetNodeId === topology.targetNodeId &&
+        incumbent.targetSlot === topology.targetSlot
+      ) {
+        links.delete(id)
+      }
+    }
+    links.set(topology.id, topology)
+  }
+
+  function prepareRemoveMissing(
+    draft: PrepareDraft,
+    mutation: QueuedOf<'removeMissing'>
+  ): PreparedMutation | string {
+    const { nodes, links, widgets } = draft
+    const retainedNodeIds = new Set(mutation.retainedNodeIds.map(nodeKey))
+    const retainedLinkIds = new Set<LinkId>()
+    for (const value of mutation.retainedLinkIds) {
+      if (!Number.isInteger(value) || value < 0) {
+        return 'removeMissing requires non-negative integer link ids'
+      }
+      retainedLinkIds.add(toLinkId(value))
+    }
+    const nodeIds = [...nodes.values()]
+      .map(({ id }) => id)
+      .filter((id) => !retainedNodeIds.has(nodeKey(id)))
+    for (const id of nodeIds) {
+      nodes.delete(nodeKey(id))
+      widgets.delete(nodeKey(id))
+      removeIncidentLinks(links, id)
+    }
+    const linkIds = [...links.keys()].filter((id) => !retainedLinkIds.has(id))
+    for (const id of linkIds) links.delete(id)
+    return { kind: mutation.kind, nodeIds, linkIds }
+  }
+
+  function resolveOwnedLinkIds(
+    scope: GraphScope,
+    values: readonly number[],
+    message: string
+  ): LinkId[] | string {
+    const linkIds: LinkId[] = []
+    for (const value of values) {
+      if (!Number.isInteger(value) || value < 0) return message
+      const id = toLinkId(value)
+      const foreign = foreignLinkError(scope, id)
+      if (foreign) return foreign
+      linkIds.push(id)
+    }
+    return linkIds
+  }
+
+  function prepareRemoveLinks(
+    draft: PrepareDraft,
+    mutation: QueuedOf<'removeLinks'>
+  ): PreparedMutation | string {
+    const linkIds = resolveOwnedLinkIds(
+      draft.scope,
+      mutation.linkIds,
+      'removeLinks requires non-negative integer ids'
+    )
+    if (typeof linkIds === 'string') return linkIds
+    for (const id of linkIds) draft.links.delete(id)
+    return { kind: mutation.kind, linkIds }
+  }
+
+  function prepareDeleteNode(
+    draft: PrepareDraft,
+    mutation: QueuedOf<'deleteNode'>
+  ): PreparedMutation | string {
+    const { scope, nodes, links, widgets } = draft
+    const incumbent = nodeStore.getNode(scope.rootGraphId, mutation.nodeId)
+    if (incumbent && incumbent.graphId !== scope.owningGraphId) {
+      return `node id ${mutation.nodeId} belongs to graph ${incumbent.graphId}`
+    }
+    const removedLinkIds = resolveOwnedLinkIds(
+      scope,
+      mutation.removedLinkIds,
+      'deleteNode requires non-negative integer link ids'
+    )
+    if (typeof removedLinkIds === 'string') return removedLinkIds
+    nodes.delete(nodeKey(mutation.nodeId))
+    widgets.delete(nodeKey(mutation.nodeId))
+    removeIncidentLinks(links, mutation.nodeId)
+    for (const id of removedLinkIds) links.delete(id)
+    return { kind: mutation.kind, nodeId: mutation.nodeId, removedLinkIds }
+  }
+
+  function prepareClear(draft: PrepareDraft): PreparedMutation {
+    const nodeIds = [...draft.nodes.values()].map(({ id }) => id)
+    draft.nodes.clear()
+    draft.widgets.clear()
+    draft.links.clear()
+    return { kind: 'clearSemanticGraph', nodeIds }
   }
 
   function detachLinkSlots(
