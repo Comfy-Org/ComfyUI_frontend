@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/vue'
 import { fromPartial } from '@total-typescript/shoehorn'
 import { defineComponent, markRaw } from 'vue'
-import { assert, describe, expect, it, vi } from 'vitest'
+import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
@@ -92,6 +92,12 @@ function widget(name: string, type: string, index: number): WidgetGridItem {
 }
 
 describe('WidgetGrid', () => {
+  beforeEach(() => {
+    // The composable constructs its ResizeObserver at module load, so the stub
+    // is hoisted; the registry it fills is reset here so tests stay isolated.
+    for (const observer of observers) observer.disconnect()
+  })
+
   it.for([true, false])(
     'tracks row geometry only when syncLayout is %s',
     async (syncLayout) => {
@@ -144,23 +150,97 @@ describe('WidgetGrid', () => {
         layoutStore.getSlotOffset(graphId, nodeId, 0, 'input', 'expanded')
       ).toEqual(syncLayout ? { x: 0, y: 74 } : null)
 
-      await rerender({ processedWidgets: [widget('steps', 'number', 1)] })
-      expect(observers.every((observer) => !observer.elements.has(row))).toBe(
-        true
-      )
+      await rerender({ processedWidgets: [widget('steps', 'number', 0)] })
       const replacement = screen.getByTestId('node-widget')
+      const replacementSocket = screen.getByTestId('slot-dot')
+      // The replacement row keeps the store current, and a late resize on the
+      // replaced row must not write its detached geometry over it.
+      replacementSocket.getBoundingClientRect = () => new DOMRect(0, 120, 8, 8)
+      for (const observer of observers) observer.resize(replacement)
       expect(
-        observers.some((observer) => observer.elements.has(replacement))
-      ).toBe(syncLayout)
+        layoutStore.getSlotOffset(graphId, nodeId, 0, 'input', 'expanded')
+      ).toEqual(syncLayout ? { x: 0, y: 94 } : null)
+      socket.getBoundingClientRect = () => new DOMRect(0, 60, 8, 8)
+      for (const observer of observers) observer.resize(row)
+      expect(
+        layoutStore.getSlotOffset(graphId, nodeId, 0, 'input', 'expanded')
+      ).toEqual(syncLayout ? { x: 0, y: 94 } : null)
+
       unmount()
-      expect(observers.every((observer) => !observer.elements.has(grid))).toBe(
-        true
-      )
+      // Nothing survives unmount: a resize on the old grid or row cannot
+      // write a stale offset for the node.
+      replacementSocket.getBoundingClientRect = () => new DOMRect(0, 200, 8, 8)
+      for (const observer of observers) {
+        observer.resize(grid)
+        observer.resize(replacement)
+      }
       expect(
-        observers.every((observer) => !observer.elements.has(replacement))
-      ).toBe(true)
+        layoutStore.getSlotOffset(graphId, nodeId, 0, 'input', 'expanded')
+      ).toEqual(syncLayout ? { x: 0, y: 94 } : null)
     }
   )
+
+  it('keeps tracking rows after they are reordered', async () => {
+    const graphId = 'widget-grid-graph'
+    const nodeId = toNodeId(2)
+    useCanvasStore().canvas = fromPartial({
+      canvas: document.createElement('canvas'),
+      graph: fromPartial({ rootGraph: { id: graphId } }),
+      setDirty: vi.fn()
+    })
+    useCanvasStore().linearMode = false
+    layoutStore.resetForTests()
+    const widgets = [
+      widget('width', 'number', 0),
+      widget('height', 'number', 1)
+    ]
+    const { container, rerender } = render(WidgetGrid, {
+      props: {
+        nodeId,
+        nodeType: 'TestNode',
+        syncLayout: true,
+        processedWidgets: widgets
+      },
+      global: {
+        plugins: [
+          createI18n({
+            legacy: false,
+            locale: 'en',
+            messages: { en: { g: { inputTooltip: 'Input: {name}' } } }
+          })
+        ],
+        directives: { tooltip: {} },
+        stubs: { AppInput: AppInputStub }
+      }
+    })
+    assert.instanceOf(container, HTMLElement)
+    container.dataset.nodeId = String(nodeId)
+    Object.defineProperty(container, 'offsetWidth', { value: 200 })
+    container.getBoundingClientRect = () => new DOMRect(0, 0, 200, 300)
+    const offsetOf = (index: number) =>
+      layoutStore.getSlotOffset(graphId, nodeId, index, 'input', 'expanded')
+    const placeSockets = (tops: number[]) => {
+      screen.getAllByTestId('slot-dot').forEach((socket, i) => {
+        socket.getBoundingClientRect = () => new DOMRect(0, tops[i], 8, 8)
+      })
+    }
+
+    placeSockets([100, 140])
+    for (const row of screen.getAllByTestId('node-widget')) {
+      for (const observer of observers) observer.resize(row)
+    }
+    expect(offsetOf(0)).toEqual({ x: 0, y: 74 })
+    expect(offsetOf(1)).toEqual({ x: 0, y: 114 })
+
+    await rerender({ processedWidgets: [widgets[1], widgets[0]] })
+    // Same rows, swapped order: height now sits above width in the DOM.
+    placeSockets([100, 140])
+    for (const row of screen.getAllByTestId('node-widget')) {
+      for (const observer of observers) observer.resize(row)
+    }
+    expect(offsetOf(1)).toEqual({ x: 0, y: 74 })
+    expect(offsetOf(0)).toEqual({ x: 0, y: 114 })
+  })
 
   it('shows socket-only labels and restores controls when disconnected', async () => {
     const connectedWidgets = ['width', 'height', 'prompt'].map(
