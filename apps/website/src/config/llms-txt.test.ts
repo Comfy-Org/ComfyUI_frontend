@@ -130,8 +130,7 @@ describe('llms.txt', () => {
   const links = parseLlmsTxtLinks(llmsTxt)
   const internalPaths = internalLinks(links).map(({ path }) => path)
   const { static: staticPages, dynamic } = pageMatchers(pagesDir)
-  for (const route of modelsBuildRoutes(false))
-    if (!route.pattern.endsWith('.md')) staticPages.add(route.pattern)
+  for (const route of modelsBuildRoutes(false)) staticPages.add(route.pattern)
   const zhCN = pageMatchers(join(pagesDir, 'zh-CN'))
 
   it('follows the llms.txt shape: one H1, a summary blockquote, Optional last', () => {

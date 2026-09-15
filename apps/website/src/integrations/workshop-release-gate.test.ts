@@ -113,16 +113,11 @@ describe('Workshop release output', () => {
       {
         pattern: '/models',
         entrypoint: expect.stringContaining('/routes/models/showcase.astro')
-      },
-      {
-        pattern: '/models.md',
-        entrypoint: expect.stringContaining('/routes/models/catalogue.md.ts')
       }
     ])
     const enabled = modelsBuildRoutes(true)
     expect(enabled.map((route) => route.pattern)).toEqual([
       '/models',
-      '/models.md',
       '/models/[slug]',
       '/models/showcase',
       '/models/[slug]/page.json',

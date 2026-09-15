@@ -15,7 +15,7 @@ const { label, minh = true } = defineProps<{
     :aria-label="label"
     :class="
       cn(
-        'flex flex-col items-center justify-center gap-4 p-6 text-center',
+        'flex flex-col items-center justify-center gap-4 p-6 text-center noscript:hidden',
         minh && 'min-h-svh'
       )
     "
