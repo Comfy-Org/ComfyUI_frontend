@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/vue3-vite'
+import { defineComponent, onMounted, onUnmounted, ref } from 'vue'
 
 import type { TurnId } from '../../../schemas/agentApiSchema'
 import type {
@@ -141,4 +142,53 @@ export const FailedCall: Story = {
       false
     )
   }
+}
+
+/**
+ * The steps arrive one at a time, the way a turn delivers them. Each row fades
+ * in as it lands and the rows already on screen hold still. The other stories
+ * mount every row at once, which shows the fade but not this.
+ */
+const ArrivingTurn = defineComponent({
+  components: { AgentMessage },
+  setup() {
+    const parts = ref<MessagePart[]>([])
+    let timer: number | undefined
+
+    const next = () => {
+      if (parts.value.length >= trace.length) return
+      parts.value = trace.slice(0, parts.value.length + 1)
+      timer = window.setTimeout(next, 900)
+    }
+
+    const replay = () => {
+      window.clearTimeout(timer)
+      parts.value = []
+      timer = window.setTimeout(next, 300)
+    }
+
+    onMounted(replay)
+    onUnmounted(() => window.clearTimeout(timer))
+
+    return { parts, replay, message }
+  },
+  template: `
+    <div>
+      <button
+        class="text-agent-fg-muted border-agent-border mb-3 cursor-pointer rounded-lg border px-2 py-1 text-xs"
+        @click="replay"
+      >
+        Replay
+      </button>
+      <AgentMessage :message="message(parts, true)" />
+    </div>
+  `
+})
+
+export const StepsArriving: Story = {
+  name: 'DES-1032 Each step fades in as it arrives',
+  render: () => ({
+    components: { ArrivingTurn },
+    template: '<ArrivingTurn />'
+  })
 }
