@@ -2,10 +2,11 @@ import type { AgentAdmissionError } from '@comfyorg/ingest-types'
 import { fromPartial } from '@total-typescript/shoehorn'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick, ref } from 'vue'
-import type * as VueModule from 'vue'
 
+import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { reportError } from '@/platform/telemetry/reportError'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
+import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { createNodeLocatorId } from '@/types/nodeIdentification'
 import { toNodeId } from '@/types/nodeId'
@@ -65,22 +66,21 @@ function setActiveWorkspaceId(workspaceId: string | null) {
   activeWorkspaceId.value = workspaceId
 }
 
-const identity = await vi.hoisted(async () => {
-  const { ref } = await vi.importActual<typeof VueModule>('vue')
-  return {
-    user: ref<{ id: string } | null>({ id: 'user-1' })
-  }
-})
+const identity = {
+  user: ref<{ id: string } | null>({ id: 'user-1' })
+}
 
-vi.mock(import('@/composables/auth/useCurrentUser'), async (importOriginal) => {
-  const actual = await importOriginal()
-  return {
-    ...actual,
-    useCurrentUser: () =>
-      fromPartial<ReturnType<typeof actual.useCurrentUser>>({
-        resolvedUserInfo: identity.user
-      })
-  }
+vi.mock(import('@/composables/auth/useCurrentUser'), { spy: true })
+
+beforeEach(() => {
+  vi.mocked(useCurrentUser).mockReturnValue(
+    fromPartial<ReturnType<typeof useCurrentUser>>({
+      resolvedUserInfo: identity.user
+    })
+  )
+  installActiveWorkspaceId()
+  identity.user.value = { id: 'user-1' }
+  setActiveWorkspaceId('workspace-1')
 })
 
 vi.mock(import('@/platform/telemetry/reportError'), () => ({
@@ -493,6 +493,31 @@ describe('useAgentSession (v1 composition root)', () => {
 
     expect(executionErrors.lastPromptError).toBeNull()
     expect(executionErrors.lastExecutionError).toEqual(executionError)
+    expect(executionErrors.isErrorOverlayOpen).toBe(true)
+  })
+
+  it('preserves missing-resource errors when clearing an agent prompt error', async () => {
+    const executionErrors = useExecutionErrorStore()
+    useMissingNodesErrorStore().setMissingNodeTypes([
+      { type: 'MissingNode', hint: '' }
+    ])
+    const session = useAgentSession({
+      rest: fakeRest(),
+      events: fakeEvents().source
+    })
+    session.start()
+    executionErrors.recordPromptError({
+      type: 'agent_api_failed',
+      message: 'Agent failed',
+      details: 'agent request failed'
+    })
+    executionErrors.showErrorOverlay()
+
+    setActiveWorkspaceId('workspace-2')
+    await nextTick()
+
+    expect(executionErrors.lastPromptError).toBeNull()
+    expect(executionErrors.hasMissingError).toBe(true)
     expect(executionErrors.isErrorOverlayOpen).toBe(true)
   })
 
@@ -1186,21 +1211,11 @@ describe('useAgentSession (v1 composition root)', () => {
       expect(await sending).toBe(false)
       expect(rest.postMessage).not.toHaveBeenCalled()
       expect(adopted).not.toHaveBeenCalled()
-      expect(session.entries.value).toHaveLength(2)
-      expect(session.entries.value[0]).toMatchObject({
-        role: 'user',
-        text: 'Old draft'
-      })
-      expect(session.entries.value[1]).toMatchObject({
-        role: 'assistant',
-        parts: [
-          {
-            type: 'notice',
-            level: 'error',
-            text: 'Message was not sent because the conversation changed'
-          }
-        ]
-      })
+      expect(
+        session.entries.value
+          .filter((entry) => entry.role === 'user')
+          .map((entry) => entry.text)
+      ).not.toContain('Old draft')
       expect(session.threadId.value).toBe(
         context === 'new-chat' ? null : 'th-history'
       )
@@ -1392,7 +1407,7 @@ describe('useAgentSession (v1 composition root)', () => {
     expect(adopted).toHaveBeenCalledWith('wf-b', undefined)
   })
 
-  it('(h10) a conversation switch during prepare() preserves the failed prompt without posting it elsewhere', async () => {
+  it('(h10) a conversation switch during prepare() does not copy the prompt into the replacement conversation', async () => {
     const postMessage = vi.fn<AgentRestClient['postMessage']>()
     const getMessages = vi.fn(
       async (): Promise<AgentMessages> => [
@@ -1423,20 +1438,11 @@ describe('useAgentSession (v1 composition root)', () => {
 
     expect(await sendPromise).toBe(false)
     expect(postMessage).not.toHaveBeenCalled()
-    expect(session.entries.value.at(-2)).toMatchObject({
-      role: 'user',
-      text: 'meant for the new chat'
-    })
-    expect(session.entries.value.at(-1)).toMatchObject({
-      role: 'assistant',
-      parts: [
-        {
-          type: 'notice',
-          level: 'error',
-          text: 'Message was not sent because the conversation changed'
-        }
-      ]
-    })
+    expect(
+      session.entries.value
+        .filter((entry) => entry.role === 'user')
+        .map((entry) => entry.text)
+    ).not.toContain('meant for the new chat')
     expect(session.notices.value).toEqual([])
     expect(session.isStreaming.value).toBe(false)
   })
@@ -1516,7 +1522,8 @@ describe('useAgentSession (v1 composition root)', () => {
     session.start()
 
     expect(getMessages).not.toHaveBeenCalled()
-    expect(await session.sendMessage('unresolved identity')).toBe(true)
+    expect(await session.sendMessage('unresolved identity')).toBe(false)
+    expect(session.entries.value).toEqual([])
     expect(
       localStorage.getItem('Comfy.Agent.ThreadId.signed-out.personal')
     ).toBe('th-other')

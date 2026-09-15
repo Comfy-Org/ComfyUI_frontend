@@ -191,10 +191,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     notices.value = []
     if (executionErrorStore.lastPromptError?.type === 'agent_api_failed') {
       executionErrorStore.clearPromptError()
-      if (
-        executionErrorStore.lastExecutionError === null &&
-        executionErrorStore.lastNodeErrors === null
-      )
+      if (!executionErrorStore.hasAnyError)
         executionErrorStore.dismissErrorOverlay()
     }
     promptEditState.value = { phase: 'idle' }
@@ -310,6 +307,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     workflowReferences?: WorkflowReference[]
   ): Promise<boolean> {
     reconcileStorageScope()
+    if (storageScope.value === null) return false
     if (sending.value) {
       conversationStore.recordFailedSend(
         nextLocalErrorId(),
@@ -341,11 +339,6 @@ export function useAgentSession(deps: AgentSessionDeps) {
         (conversationStore.threadId ?? 'new') !== destinationThread
       ) {
         sending.value = false
-        conversationStore.recordFailedSend(
-          nextLocalErrorId(),
-          text,
-          i18n.global.t('agent.sendAbandoned')
-        )
         return false
       }
       const wfContext = workflow?.current(origin)

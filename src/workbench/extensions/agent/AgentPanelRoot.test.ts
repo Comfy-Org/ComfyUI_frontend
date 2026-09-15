@@ -31,6 +31,7 @@ import { validateComfyWorkflow } from '@/platform/workflow/validation/schemas/wo
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { app } from '@/scripts/app'
 import { useAgentNodeSelectionStore } from '@/stores/agentNodeSelectionStore'
 import { useWorkflowTabActivityStore } from '@/stores/workflowTabActivityStore'
@@ -295,6 +296,10 @@ beforeEach(() => {
   )
   workflowStore = useWorkflowStore()
   canvasStore = useCanvasStore()
+  Object.defineProperty(useTeamWorkspaceStore(), 'activeWorkspaceId', {
+    get: () => 'workspace-a',
+    configurable: true
+  })
   executionErrors = vi.mocked(useExecutionErrorStore())
   executionErrors.showErrorOverlay.mockImplementation(() => {})
   vi.useRealTimers()
@@ -442,7 +447,9 @@ describe('AgentPanelRoot first-use experience', () => {
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
 
     expect(await screen.findByRole('textbox')).toBeInTheDocument()
-    await vi.waitFor(() => expect(history.replaceAll).toHaveBeenCalledWith([]))
+    await vi.waitFor(() =>
+      expect(history.replaceAll).toHaveBeenCalledWith([], 1)
+    )
 
     expect(executionErrors.showErrorOverlay).not.toHaveBeenCalled()
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
