@@ -56,10 +56,7 @@ test.describe('Homepage @smoke', () => {
       section.getByRole('heading', { name: /ready to run/i })
     ).toBeVisible()
     const bytedance = section.getByRole('link', { name: /ByteDance/ }).first()
-    await expect(bytedance).toHaveAttribute(
-      'href',
-      '/models?provider=ByteDance'
-    )
+    await expect(bytedance).toHaveAttribute('href', '/models?q=ByteDance')
     await expect(
       section.getByRole('link', { name: 'Browse all models' })
     ).toHaveAttribute('href', '/models')

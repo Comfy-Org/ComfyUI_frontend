@@ -32,7 +32,7 @@ const translations = {
     'zh-CN': '最新 AI 模型，即开即用。无需安装配置。'
   },
   'workshop.search.label': {
-    en: 'Search models, providers, and capabilities',
+    en: 'Search models, providers, and categories',
     'zh-CN': '搜索模型、提供商、分类...'
   },
   'workshop.search.placeholder': {
