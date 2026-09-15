@@ -992,6 +992,7 @@ describe('ComboWidget', () => {
           .fn<typeof LiteGraph.ContextMenu>()
           .mockImplementation(function () {
             this.addItem = vi.fn(() => optionElement)
+            this.controller = new AbortController()
           })
         LiteGraph.ContextMenu = mockContextMenu as Partial<
           typeof LiteGraph.ContextMenu

@@ -12,6 +12,10 @@ export function provideComboOptionPreviewSource(
   source = next
 }
 
+export function hasComboOptionPreviewSource(): boolean {
+  return source !== undefined
+}
+
 export function showComboOptionPreview(
   value: string,
   anchor: HTMLElement
