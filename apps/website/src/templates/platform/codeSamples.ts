@@ -58,3 +58,48 @@ export const modelsApiCodeTabs: Record<string, CodeTab> = {
     ]
   }
 }
+
+// Router code block: the model and prompt stay fixed while the provider
+// cycles, illustrating that switching providers only changes one argument.
+const ROUTER_MODEL = 'openai/gpt-image-2'
+const ROUTER_PROMPT = 'aerial view of a neon coral reef at dusk'
+const ROUTER_PROVIDERS = ['fal', 'replicate']
+
+export const routerCodeTabs: Record<string, CodeTab> = {
+  python: {
+    name: 'Python',
+    segments: [
+      'from comfy_sdk import Comfy\n\nclient = Comfy(api_key="comfyui-...")\n\nresult = client.models.run(\n    "' +
+        ROUTER_MODEL +
+        '",\n    arguments={"prompt": "' +
+        ROUTER_PROMPT +
+        '"},\n    provider="',
+      { values: ROUTER_PROVIDERS, highlight: true },
+      '",\n)'
+    ]
+  },
+  typescript: {
+    name: 'TypeScript',
+    segments: [
+      "import { Comfy } from 'comfy-sdk'\n\nconst client = new Comfy({ apiKey: 'comfyui-...' })\n\nconst result = await client.models.run('" +
+        ROUTER_MODEL +
+        "', {\n  arguments: { prompt: '" +
+        ROUTER_PROMPT +
+        "' },\n  provider: '",
+      { values: ROUTER_PROVIDERS, highlight: true },
+      "',\n})"
+    ]
+  },
+  curl: {
+    name: 'cURL',
+    segments: [
+      'curl -X POST https://api.comfy.org/v1/models/' +
+        ROUTER_MODEL +
+        ' \\\n  -H "X-API-Key: $COMFY_API_KEY" \\\n  -H "Content-Type: application/json" \\\n  -d \'{"prompt": "' +
+        ROUTER_PROMPT +
+        '", "provider": "',
+      { values: ROUTER_PROVIDERS, highlight: true },
+      '"}\''
+    ]
+  }
+}

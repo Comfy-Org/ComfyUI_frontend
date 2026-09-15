@@ -1,11 +1,17 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro'
 import ProductCardsSection from '../../components/common/ProductCardsSection.vue'
+import FAQSection from '../../components/common/FAQSection.vue'
 import ClosingCtaSection from '../../templates/platform/ClosingCtaSection.vue'
-import ModelsApiFeaturesSection from '../../templates/platform/ModelsApiFeaturesSection.vue'
-import ModelsApiGallery from '../../templates/platform/ModelsApiGallery.vue'
 import ModelsApiHero from '../../templates/platform/ModelsApiHero.vue'
+import RouterCapabilitiesSection from '../../templates/platform/RouterCapabilitiesSection.vue'
+import RouterCodeSection from '../../templates/platform/RouterCodeSection.vue'
+import RouterProofStripSection from '../../templates/platform/RouterProofStripSection.vue'
+import RouterRoadmapSection from '../../templates/platform/RouterRoadmapSection.vue'
+import { externalLinks, getRoutes } from '../../config/routes'
 import { t } from '../../i18n/translations'
+
+const routes = getRoutes('en')
 ---
 
 <BaseLayout
@@ -13,11 +19,26 @@ import { t } from '../../i18n/translations'
   description={t('platform.products.models.description', 'en')}
 >
   <ModelsApiHero locale="en" client:load />
-  <ModelsApiGallery locale="en" client:visible />
-  <ModelsApiFeaturesSection locale="en" />
+  <RouterProofStripSection locale="en" />
+  <RouterCodeSection locale="en" client:visible />
+  <RouterCapabilitiesSection locale="en" />
+  <RouterRoadmapSection locale="en" />
+  <FAQSection
+    locale="en"
+    headingKey="platform.router.faq.heading"
+    faqPrefix="platform.router.faq"
+    faqCount={11}
+  />
   <ClosingCtaSection
     locale="en"
-    heading-after-badge={t('platform.closing.headingAfterBadge', 'en')}
+    heading-after-badge={t('platform.router.closing.headingAfterBadge', 'en')}
+    subtitle={t('platform.router.closing.subtitle', 'en')}
+    primary-href={externalLinks.apiKeys}
+    primary-label={t('platform.router.cta.getApiKey', 'en')}
+    secondary-cta={{
+      label: t('platform.router.cta.browseModels', 'en'),
+      href: routes.models
+    }}
     client:visible
   />
   <ProductCardsSection
