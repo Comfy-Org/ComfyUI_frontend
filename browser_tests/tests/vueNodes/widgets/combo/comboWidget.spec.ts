@@ -278,42 +278,43 @@ test.describe('Vue Combo Widget', { tag: ['@vue-nodes', '@widget'] }, () => {
   test('a combo value tracks undo and redo', async ({ comfyPage }) => {
     await comfyPage.workflow.loadWorkflow('vueNodes/linked-int-widget')
 
-    // Read the value off the graph rather than the combobox label. The row is
-    // about what the workflow carries, and a history bug that leaves the
-    // control showing the right text while the node still holds the old value
-    // is precisely the failure worth catching.
     const scheduler = async () => {
       const ksampler = await comfyPage.nodeOps.getNodeRefByType('KSampler')
       return (await ksampler.getWidgetByName('scheduler')).getValue()
     }
 
-    const original = await scheduler()
-    expect(original, 'fixture should start on a known scheduler').toBe('simple')
+    const original =
+      await test.step('Selecting a combo value records history', async () => {
+        const original = await scheduler()
+        expect(original, 'fixture should start on a known scheduler').toBe(
+          'simple'
+        )
 
-    await comfyPage.vueNodes.selectComboOption(
-      'KSampler',
-      'scheduler',
-      'karras'
-    )
-    // Precondition: the selection reached the graph. Without it, "undo restored
-    // the original" also holds for a selection that never applied at all.
-    await expect.poll(scheduler).toBe('karras')
+        await comfyPage.vueNodes.selectComboOption(
+          'KSampler',
+          'scheduler',
+          'karras'
+        )
+        await expect.poll(scheduler).toBe('karras')
+        await expect.poll(() => comfyPage.workflow.getUndoQueueSize()).toBe(1)
 
-    // Keystrokes go to the page, not to the canvas locator. `keyboard.undo()`
-    // defaults to `canvas.press()`, which runs actionability checks against a
-    // canvas the Vue transform pane covers — the click is then intercepted by
-    // whichever node sits under it (here the combobox itself).
-    await comfyPage.page.keyboard.press('Escape')
-    await comfyPage.page.keyboard.press('ControlOrMeta+z')
-    await expect.poll(scheduler).toBe(original)
+        return original
+      })
 
-    await comfyPage.page.keyboard.press('ControlOrMeta+Shift+z')
-    await expect.poll(scheduler).toBe('karras')
+    await test.step('Undo restores the original value', async () => {
+      await comfyPage.page.keyboard.press('ControlOrMeta+z')
+      await expect.poll(scheduler).toBe(original)
+    })
 
-    // The redo must not have pushed an entry of its own: one more undo has to
-    // land back on the original, not on an intermediate copy of 'karras'.
-    await comfyPage.page.keyboard.press('ControlOrMeta+z')
-    await expect.poll(scheduler).toBe(original)
+    await test.step('Redo reapplies the selected value', async () => {
+      await comfyPage.page.keyboard.press('ControlOrMeta+Shift+z')
+      await expect.poll(scheduler).toBe('karras')
+    })
+
+    await test.step('Undo after redo restores the original value', async () => {
+      await comfyPage.page.keyboard.press('ControlOrMeta+z')
+      await expect.poll(scheduler).toBe(original)
+    })
   })
 
   test('Dropdown displays over Selection Toolbox', async ({ comfyPage }) => {
