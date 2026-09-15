@@ -1,7 +1,9 @@
+import { expect } from '@playwright/test'
 import type { Page } from '@playwright/test'
 
 import type { GlobalSetting, ListAssetsResponse } from '@comfyorg/ingest-types'
 
+import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import type { RemoteConfig } from '@/platform/remoteConfig/types'
 import { AGENT_CONSENT_SETTING_ID } from '@/platform/settings/constants/agent'
 
@@ -15,6 +17,7 @@ const APP_URL = process.env.PLAYWRIGHT_TEST_URL || 'http://localhost:8188'
 function agentFeatures(agentFlag: boolean): RemoteConfig {
   return {
     posthog_project_token: 'phc_e2e_agent_panel',
+    posthog_api_host: 'https://posthog.invalid',
     posthog_config: {
       advanced_disable_flags: true,
       bootstrap: {
@@ -64,12 +67,12 @@ async function mockAgentBoot(
     has_more: false
   }
   await page.route('**/api/assets**', (r) => r.fulfill(jsonRoute(emptyAssets)))
-  // The bootstrapped project token makes PostHogTelemetryProvider run a real
-  // posthog.init(); route its ingest host so CI never emits live third-party
-  // traffic under the fabricated token.
-  await page.route('**://t.comfy.org/**', (r) =>
-    r.fulfill(jsonRoute({ status: 1 }))
-  )
+  await page.route('https://posthog.invalid/**', (route) => {
+    if (route.request().url().endsWith('.js')) {
+      return route.fulfill({ contentType: 'text/javascript', body: '' })
+    }
+    return route.fulfill(jsonRoute({ status: 1 }))
+  })
 }
 
 type AgentFixtures = {
@@ -95,4 +98,10 @@ export async function bootAgentApp(
   await bootCloud(page)
   await page.goto(APP_URL)
   await waitForCloudApp(page)
+
+  const panelTrigger = page.getByRole('button', {
+    name: enMessages.agent.askComfyAgent
+  })
+  if (agentFlag) await expect(panelTrigger).toBeVisible()
+  else await expect(panelTrigger).toHaveCount(0)
 }
