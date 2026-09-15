@@ -25,6 +25,7 @@
   },
   "scripts": {
     "lint": "oxlint src --type-aware && eslint src",
+    "test": "vitest run",
     "typecheck": "vue-tsc --noEmit"
   },
   "dependencies": {
@@ -37,8 +38,11 @@
     "@testing-library/user-event": "catalog:",
     "@testing-library/vue": "catalog:",
     "@types/node": "catalog:",
+    "@vitejs/plugin-vue": "catalog:",
+    "@vitest/coverage-v8": "catalog:",
     "@vueuse/core": "catalog:",
     "firebase": "catalog:",
+    "happy-dom": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:",
     "vue": "catalog:",
