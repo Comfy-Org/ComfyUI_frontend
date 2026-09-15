@@ -56,6 +56,14 @@ function attachOptionPreview(
   element.addEventListener('pointerdown', hideComboOptionPreview)
 }
 
+function hideOptionPreviewWithMenu(menu: {
+  readonly controller: AbortController
+}): void {
+  menu.controller.signal.addEventListener('abort', hideComboOptionPreview, {
+    once: true
+  })
+}
+
 export class ComboWidget
   extends BaseSteppedWidget<IStringComboWidget | IComboWidget>
   implements IComboWidget
@@ -154,7 +162,74 @@ export class ComboWidget
     this.setValue(value, options)
   }
 
-  override onClick({ e, node, canvas }: WidgetEventOptions) {
+  private showLabeledMenu(
+    values: readonly (string | number)[],
+    getOptionLabel: (value?: string | null) => string,
+    options: WidgetEventOptions,
+    showPreviews: boolean
+  ): void {
+    const { e, canvas } = options
+    const menuOptions = {
+      scale: Math.max(1, canvas.ds.scale),
+      event: e,
+      className: 'dark',
+      callback: (value?: string | IContextMenuValue<number>) => {
+        const selectedValue = typeof value === 'string' ? value : value?.value
+        if (selectedValue !== undefined) this.setValue(selectedValue, options)
+      }
+    }
+    const menu = new LiteGraph.ContextMenu<number>([], menuOptions)
+    if (showPreviews) hideOptionPreviewWithMenu(menu)
+
+    for (const value of values) {
+      let label = String(value)
+      try {
+        label = getOptionLabel(String(value))
+      } catch (error) {
+        console.error('Failed to map value:', error)
+      }
+      const element = menu.addItem(
+        label,
+        toContextMenuValue(value, label),
+        menuOptions
+      )
+      if (showPreviews) attachOptionPreview(element, value)
+    }
+  }
+
+  private showValueMenu(
+    values: Values,
+    indexedValues: readonly (string | number)[],
+    options: WidgetEventOptions,
+    showPreviews: boolean
+  ): void {
+    const { e, canvas } = options
+    const textValues = values !== indexedValues ? Object.values(values) : values
+    const menu = new LiteGraph.ContextMenu(textValues, {
+      scale: Math.max(1, canvas.ds.scale),
+      event: e,
+      className: 'dark',
+      callback: (value?: string | number | IContextMenuValue) => {
+        if (value === undefined || typeof value === 'object') return
+        this.setValue(
+          values !== indexedValues ? textValues.indexOf(value) : value,
+          options
+        )
+      }
+    })
+    if (!showPreviews) return
+
+    hideOptionPreviewWithMenu(menu)
+    Array.from(menu.root.children).forEach((element, index) => {
+      const value = indexedValues[index]
+      if (element instanceof HTMLElement && typeof value === 'string') {
+        attachOptionPreview(element, value)
+      }
+    })
+  }
+
+  override onClick(options: WidgetEventOptions) {
+    const { e, node, canvas } = options
     const x = e.canvasX - node.pos[0]
     const width = this.width || node.size[0]
 
@@ -173,77 +248,14 @@ export class ComboWidget
     const values = this.getValues(node)
     const values_list = toArray(values)
     const hasOptionPreview = hasComboOptionPreviewSource()
-
-    // Use addItem to solve duplicate filename issues
-    if (this.options.getOptionLabel) {
-      const menuOptions = {
-        scale: Math.max(1, canvas.ds.scale),
-        event: e,
-        className: 'dark',
-        callback: (value?: string | IContextMenuValue<number>) => {
-          const selectedValue = typeof value === 'string' ? value : value?.value
-          if (selectedValue !== undefined) {
-            this.setValue(selectedValue, { e, node, canvas })
-          }
-        }
-      }
-      const menu = new LiteGraph.ContextMenu<number>([], menuOptions)
-      if (hasOptionPreview) {
-        menu.controller.signal.addEventListener(
-          'abort',
-          hideComboOptionPreview,
-          { once: true }
-        )
-      }
-
-      const getOptionLabel = this.options.getOptionLabel
-      for (const value of values_list) {
-        try {
-          const label = getOptionLabel(String(value))
-          const element = menu.addItem(
-            label,
-            toContextMenuValue(value, label),
-            menuOptions
-          )
-          if (hasOptionPreview) attachOptionPreview(element, value)
-        } catch (err) {
-          console.error('Failed to map value:', err)
-          const label = String(value)
-          const element = menu.addItem(
-            label,
-            toContextMenuValue(value, label),
-            menuOptions
-          )
-          if (hasOptionPreview) attachOptionPreview(element, value)
-        }
-      }
-      return
-    }
-
-    // Show dropdown menu when user clicks on widget label
-    const text_values = values != values_list ? Object.values(values) : values
-    const menu = new LiteGraph.ContextMenu(text_values, {
-      scale: Math.max(1, canvas.ds.scale),
-      event: e,
-      className: 'dark',
-      callback: (value?: string | number | IContextMenuValue) => {
-        if (value === undefined || typeof value === 'object') return
-        this.setValue(
-          values != values_list ? text_values.indexOf(value) : value,
-          { e, node, canvas }
-        )
-      }
-    })
-    if (hasOptionPreview) {
-      menu.controller.signal.addEventListener('abort', hideComboOptionPreview, {
-        once: true
-      })
-      Array.from(menu.root.children).forEach((element, index) => {
-        const value = values_list[index]
-        if (element instanceof HTMLElement && typeof value === 'string') {
-          attachOptionPreview(element, value)
-        }
-      })
-    }
+    const getOptionLabel = this.options.getOptionLabel
+    if (getOptionLabel)
+      return this.showLabeledMenu(
+        values_list,
+        getOptionLabel,
+        options,
+        hasOptionPreview
+      )
+    this.showValueMenu(values, values_list, options, hasOptionPreview)
   }
 }
