@@ -525,12 +525,19 @@ test.describe(
       }
       const pastedSource = pastedByType.get('EmptyImage')!
       const pastedTarget = pastedByType.get('SaveImage')!
-      expect(afterCopy.links).toContainEqual({
-        originId: pastedSource.id,
-        originSlot: 0,
-        targetId: pastedTarget.id,
-        targetSlot: 0
-      })
+      expect(
+        afterCopy.links.filter(
+          ({ originId, targetId }) =>
+            pastedIds.includes(originId) || pastedIds.includes(targetId)
+        )
+      ).toEqual([
+        {
+          originId: pastedSource.id,
+          originSlot: 0,
+          targetId: pastedTarget.id,
+          targetSlot: 0
+        }
+      ])
       await comfyPage.keyboard.delete()
       await expect.poll(() => comfyPage.nodeOps.getNodeCount()).toBe(2)
 
@@ -582,6 +589,11 @@ test.describe(
         )
       }
       expect(afterDrag.links).toEqual(beforeDrag.links)
+      await expectRenderedEndpoint(
+        comfyPage,
+        String(target.id),
+        String(source.id)
+      )
 
       await comfyPage.page.keyboard.press('Control+g')
       await comfyPage.keyboard.press('Enter')
@@ -641,6 +653,11 @@ test.describe(
       const beforeReload = await getSanitySnapshot(comfyPage)
       await comfyPage.workflow.reloadAndWaitForApp()
       expect(await getSanitySnapshot(comfyPage)).toEqual(beforeReload)
+      await expectRenderedEndpoint(
+        comfyPage,
+        String(target.id),
+        String(source.id)
+      )
       await expect
         .poll(() =>
           comfyPage.page.evaluate(() => {
@@ -655,10 +672,7 @@ test.describe(
       const output = await queueAndReadPng(comfyPage)
       expect(output).toMatchObject({ width: 64, height: 48 })
       runtimeErrors.stop()
-      const benignUserCssLoad = /Failed to load resource.*\buser\.css\]$/
-      expect(
-        runtimeErrors.errors.filter((e) => !benignUserCssLoad.test(e))
-      ).toEqual([])
+      expect(runtimeErrors.errors).toEqual([])
       await expectNoVisibleErrors(
         comfyPage.page,
         'after sanity operations and real Queue'
