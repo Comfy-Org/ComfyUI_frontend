@@ -1,3 +1,4 @@
+// fallow-ignore-file duplicate-export -- Vitest manual mock mirrors module exports
 import { fromPartial } from '@total-typescript/shoehorn'
 import { vi } from 'vitest'
 
