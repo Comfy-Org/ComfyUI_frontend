@@ -2,12 +2,13 @@
 import { ArrowRight } from '@lucide/vue'
 import { computed } from 'vue'
 
-import { catalogSearch } from '../../config/models-catalogue'
+import { catalogSearch, useCaseFor } from '../../config/models-catalogue'
 import { getRoutes } from '../../config/routes'
 import type { ModelsPageData } from '../../config/models-page-data'
 import { t } from '../../i18n/translations'
 import { useWorkshopEnabled } from '../../scripts/posthog'
 import CatalogueBackLink from './CatalogueBackLink.vue'
+import ModelPrice from './ModelPrice.vue'
 import ModelDetail from './ModelDetail.vue'
 import ModelStatus from './ModelStatus.vue'
 import ModelSupport from './ModelSupport.vue'
@@ -18,6 +19,7 @@ import WorkshopModelCard from './WorkshopModelCard.vue'
 const { page } = defineProps<{ page: ModelsPageData }>()
 const routes = getRoutes()
 const enabled = useWorkshopEnabled()
+const modelUseCase = computed(() => useCaseFor(page.model))
 const pillClass =
   'inline-flex h-7 items-center rounded-full border border-transparency-white-t20 px-3 text-xs leading-none text-primary-comfy-canvas transition-colors hover:border-primary-comfy-yellow hover:text-primary-comfy-yellow'
 const restTags = computed(() =>
@@ -49,11 +51,11 @@ const restTags = computed(() =>
               :reason="page.model.incompleteReason"
             />
             <a
-              v-if="page.model.modality"
-              :href="`${routes.workshop}${catalogSearch({ modalities: [page.model.modality] })}`"
+              v-if="modelUseCase && page.useCaseLabel"
+              :href="`${routes.workshop}${catalogSearch({ useCase: modelUseCase })}`"
               :class="pillClass"
             >
-              {{ page.modalityLabel[page.model.modality] }}
+              {{ page.useCaseLabel }}
             </a>
           </div>
 
@@ -69,22 +71,7 @@ const restTags = computed(() =>
         </div>
 
         <div class="flex flex-col gap-4 lg:items-end">
-          <p
-            class="flex items-baseline gap-2 text-sm text-primary-comfy-canvas/60"
-            data-testid="model-price"
-          >
-            {{
-              page.priceEstimate
-                ? t('workshop.model.estimatedPrice').replace(
-                    '{price}',
-                    page.priceEstimate
-                  )
-                : t('workshop.model.variablePrice')
-            }}
-          </p>
-          <p v-if="page.priceEstimate" class="text-xs text-primary-warm-gray">
-            {{ t('workshop.model.nodePriceDefaults') }}
-          </p>
+          <ModelPrice :estimate="page.priceEstimate" />
           <ul
             v-if="page.shownTags.length > 0"
             class="scrollbar-hide flex items-center gap-2 max-sm:overflow-x-auto sm:flex-wrap lg:justify-end"

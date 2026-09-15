@@ -1,5 +1,5 @@
 vi.mock(import('firebase/auth'))
-vi.mock<unknown>(import('vuefire'), () => ({ useFirebaseAuth: vi.fn() }))
+vi.mock(import('vuefire'), () => ({ useFirebaseAuth: vi.fn() }))
 import type { GlobalSetting } from '@comfyorg/ingest-types'
 import { useAuthStore } from '@/stores/authStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
@@ -11,7 +11,7 @@ const accountApi = vi.hoisted(() => ({
   get: vi.fn(),
   set: vi.fn()
 }))
-vi.mock<unknown>(import('@/platform/settings/globalSettingsApi'), () => ({
+vi.mock(import('@/platform/settings/globalSettingsApi'), () => ({
   getGlobalSetting: accountApi.get,
   setGlobalSetting: accountApi.set
 }))

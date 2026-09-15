@@ -18,7 +18,7 @@ import { createMockWidget } from './widgetTestUtils'
 const mockCheckState = vi.hoisted(() => vi.fn())
 const mockAssetsData = vi.hoisted(() => ({ items: [] as AssetItem[] }))
 
-vi.mock<unknown>(import('@/scripts/api'))
+vi.mock(import('@/scripts/api'))
 
 vi.mock(
   import('@/renderer/extensions/vueNodes/widgets/composables/useAssetWidgetData'),

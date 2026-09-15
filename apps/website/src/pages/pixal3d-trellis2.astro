@@ -242,12 +242,10 @@ const out = job.getOutputs("321")[0];
 await out.toFile("viking_wolf_rune_axe_output.glb");`
   }
 ] as const
-const highlightedSdkExamples = await Promise.all(
-  sdkExamples.map(async (example) => ({
-    ...example,
-    html: await highlightInline(example.code, example.language)
-  }))
-)
+const highlightedSdkExamples = sdkExamples.map((example) => ({
+  ...example,
+  html: highlightInline(example.code, example.language)
+}))
 const llmPrompt = encodeURIComponent(
   `Read ${canonicalURL.href}.md and help me run ${name} in ComfyUI. I want to understand the inputs and get my first output.`
 )
@@ -1887,11 +1885,10 @@ const faqJsonLd = {
         el.textContent = code
         const stamp = String(Number(el.dataset.paint ?? '0') + 1)
         el.dataset.paint = stamp
-        void import('../lib/highlight').then(({ highlightInline }) =>
-          highlightInline(code, 'json').then((html) => {
-            if (html && el.dataset.paint === stamp) el.innerHTML = html
-          })
-        )
+        void import('../lib/highlight').then(({ highlightInline }) => {
+          const html = highlightInline(code, 'json')
+          if (html && el.dataset.paint === stamp) el.innerHTML = html
+        })
       }
       const modal = $('auth-modal')!
       const strip = $('signed-in-strip')!

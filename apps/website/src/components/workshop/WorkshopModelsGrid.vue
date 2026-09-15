@@ -20,18 +20,16 @@ import { groupModels } from '../../config/model-family'
 import { cn } from '@comfyorg/tailwind-utils'
 
 import type {
-  ModalityFilter,
   SortOrder,
   UseCase,
   WorkshopModel
 } from '../../config/models-catalogue'
 import {
-  SORT_ORDERS,
   parseCatalogSearch,
-  MODALITIES,
-  countByFacet,
-  countByModality,
+  USE_CASES,
+  countByUseCase,
   filterWorkshopModels,
+  sortOrdersFor,
   sortWorkshopModels
 } from '../../config/models-catalogue'
 import type { Locale, TranslationKey } from '../../i18n/translations'
@@ -51,11 +49,11 @@ const { models, locale = 'en' } = defineProps<{
 }>()
 
 const query = ref('')
-// 'other' is the shelf the browsing rows show for text, 3D and audio at once.
 const useCase = ref<UseCase | 'all' | 'other'>('all')
-const modalities = ref<string[]>([])
-const capabilities = ref<string[]>([])
-const providers = ref<string[]>([])
+const selectedUseCases = ref<UseCase[]>([])
+const legacyModalities = ref<string[]>([])
+const legacyProviders = ref<string[]>([])
+const legacyCapabilities = ref<string[]>([])
 const sort = ref<SortOrder>('popular')
 let scrollReady = false
 
@@ -63,15 +61,16 @@ onMounted(() => {
   const initial = parseCatalogSearch(location.search)
   query.value = initial.query ?? ''
   useCase.value = initial.useCase ?? 'all'
-  capabilities.value = [...(initial.capabilities ?? [])]
-  providers.value = [...(initial.providers ?? [])]
-  modalities.value = [...(initial.modalities ?? [])]
+  legacyModalities.value = [...initial.modalities]
+  legacyProviders.value = [...initial.providers]
+  legacyCapabilities.value = [...initial.capabilities]
   void nextTick(() => {
     scrollReady = true
   })
 })
 
 const toolbar = useTemplateRef<HTMLElement>('toolbar')
+const sortOrders = sortOrdersFor(models)
 const sortLabelKey: Record<SortOrder, TranslationKey> = {
   popular: 'workshop.sort.popular',
   name: 'workshop.sort.name',
@@ -79,44 +78,14 @@ const sortLabelKey: Record<SortOrder, TranslationKey> = {
   priceDesc: 'workshop.sort.priceDesc'
 }
 
-// A facet answers "what else is in here", so it counts what the category
-// holds rather than what the whole catalogue holds.
-const withinSection = computed(() =>
-  filterWorkshopModels(models, { useCase: useCase.value })
-)
-
-const capabilityOptions = computed<FacetMenuOption[]>(() =>
-  countByFacet(withinSection.value, 'capabilities').map((option) => ({
-    ...option,
-    label: option.value
-  }))
-)
-const providerOptions = computed<FacetMenuOption[]>(() =>
-  countByFacet(withinSection.value, 'provider').map((option) => ({
-    ...option,
-    label: option.value
-  }))
-)
-// What a model puts out stays reachable, one level below the tabs.
-const modalityOptions = computed<FacetMenuOption[]>(() => {
-  const counts = countByModality(withinSection.value)
-  return MODALITIES.filter((value) => counts[value] > 0).map((value) => ({
+const useCaseOptions = computed<FacetMenuOption[]>(() => {
+  const counts = countByUseCase(models)
+  return USE_CASES.filter((value) => counts[value] > 0).map((value) => ({
     value,
-    label: t(modalityLabelKey[value], locale),
+    label: t(useCaseLabelKey[value], locale),
     count: counts[value]
   }))
 })
-const modalityLabelKey: Record<
-  Exclude<ModalityFilter, 'all'>,
-  TranslationKey
-> = {
-  image: 'workshop.filter.image',
-  video: 'workshop.filter.video',
-  audio: 'workshop.filter.audio',
-  '3d': 'workshop.filter.3d',
-  text: 'workshop.filter.text',
-  other: 'workshop.filter.other'
-}
 
 const visible = computed(() =>
   groupModels(
@@ -124,9 +93,10 @@ const visible = computed(() =>
       filterWorkshopModels(models, {
         query: query.value,
         useCase: useCase.value,
-        providers: providers.value,
-        capabilities: capabilities.value,
-        modalities: modalities.value
+        useCases: selectedUseCases.value,
+        modalities: legacyModalities.value,
+        providers: legacyProviders.value,
+        capabilities: legacyCapabilities.value
       }),
       sort.value
     )
@@ -136,10 +106,10 @@ const isFiltered = computed(
   () =>
     query.value !== '' ||
     useCase.value !== 'all' ||
-    capabilities.value.length +
-      providers.value.length +
-      modalities.value.length >
-      0
+    selectedUseCases.value.length > 0 ||
+    legacyModalities.value.length > 0 ||
+    legacyProviders.value.length > 0 ||
+    legacyCapabilities.value.length > 0
 )
 
 // Willie's browseable listing: rows per use case until the visitor narrows
@@ -176,12 +146,11 @@ watch(inSection, (value) => emit('section', value), { immediate: true })
 // order used by the rows decide where every selected model appears.
 const FEATURED_LIMIT = 6
 const FEATURED_SLUGS = [
-  'byteplus--seedance-2-fast-text-to-video--generate-videos',
-  'bfl--flux-3-text-to-video--generate-videos'
+  'byteplus--seedance-2-fast-text-to-video--generate-videos'
 ]
 const featured = computed(() => {
   const available = sortWorkshopModels(models, 'popular').filter(
-    (model) => model.thumbnailUrl
+    (model) => model.thumbnailUrl && !model.slug.startsWith('bfl--flux-3-')
   )
   const selected = FEATURED_SLUGS.flatMap((slug) =>
     available.filter((model) => model.slug === slug)
@@ -206,9 +175,15 @@ function leaveSection() {
 function resetFilters() {
   query.value = ''
   useCase.value = 'all'
-  modalities.value = []
-  capabilities.value = []
-  providers.value = []
+  selectedUseCases.value = []
+  legacyModalities.value = []
+  legacyProviders.value = []
+  legacyCapabilities.value = []
+}
+
+function applyUseCases(values: UseCase[]) {
+  selectedUseCases.value = values
+  if (values.length) useCase.value = 'all'
 }
 
 function clearFilters() {
@@ -260,7 +235,7 @@ const menuItemClass =
 
       <div
         ref="toolbar"
-        class="sticky top-20 z-30 mb-8 flex scroll-mt-20 flex-wrap items-center justify-end gap-3 bg-page py-4 max-sm:mb-4 max-sm:py-2 lg:top-26 lg:scroll-mt-26"
+        class="sticky top-20 z-30 -mx-1 mb-8 flex scroll-mt-20 flex-wrap items-center justify-end gap-3 bg-page px-1 py-4 max-sm:mb-4 max-sm:py-2 lg:top-26 lg:scroll-mt-26"
       >
         <h1
           v-if="inSection"
@@ -276,8 +251,6 @@ const menuItemClass =
 
         <WorkshopSearchField
           v-model="query"
-          v-model:providers="providers"
-          v-model:capabilities="capabilities"
           :models
           :locale
           compact
@@ -291,14 +264,11 @@ const menuItemClass =
 
         <div class="flex items-center gap-2" data-testid="workshop-filters">
           <WorkshopFilterMenu
-            v-model:capabilities="capabilities"
-            v-model:providers="providers"
-            v-model:modalities="modalities"
-            :capability-options="capabilityOptions"
-            :provider-options="providerOptions"
-            :modality-options="modalityOptions"
+            :use-cases="selectedUseCases"
+            :use-case-options="useCaseOptions"
             :result-count="visible.length"
             :locale
+            @update:use-cases="applyUseCases"
           />
 
           <DropdownMenuRoot>
@@ -324,7 +294,7 @@ const menuItemClass =
               >
                 <DropdownMenuRadioGroup v-model="sort">
                   <DropdownMenuRadioItem
-                    v-for="order in SORT_ORDERS"
+                    v-for="order in sortOrders"
                     :key="order"
                     :value="order"
                     :data-testid="`sort-${order}`"

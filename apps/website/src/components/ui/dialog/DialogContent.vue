@@ -33,7 +33,7 @@ const forwarded = useForwardPropsEmits(delegatedProps, emits)
       data-slot="dialog-content"
       :class="
         cn(
-          'fixed top-1/2 left-1/2 z-50 max-h-[85vh] w-[calc(100%-2rem)] -translate-1/2 overflow-y-auto rounded-5xl border border-primary-comfy-yellow bg-primary-comfy-ink-light p-6 duration-200 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95 sm:max-w-lg sm:p-8 lg:p-12',
+          'fixed top-1/2 left-1/2 z-50 max-h-[85vh] w-[calc(100%-2rem)] -translate-1/2 overflow-y-auto rounded-5xl border border-transparency-white-t8 bg-primary-comfy-ink-light p-6 duration-200 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95 sm:max-w-lg sm:p-8 lg:p-12',
           classProp
         )
       "

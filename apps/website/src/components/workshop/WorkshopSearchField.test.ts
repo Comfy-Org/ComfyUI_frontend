@@ -1,5 +1,3 @@
-// @vitest-environment happy-dom
-import '@testing-library/jest-dom/vitest'
 import userEvent from '@testing-library/user-event'
 import { render, screen, waitFor, within } from '@testing-library/vue'
 import { describe, expect, it } from 'vitest'
@@ -16,22 +14,22 @@ describe('WorkshopSearchField', () => {
         setup: () => () =>
           h(WorkshopSearchField, {
             models: [],
-            modelValue: '',
-            providers: [],
-            capabilities: []
+            modelValue: ''
           })
       })
     )
 
     const field = screen.getByRole('combobox')
     await user.click(field)
-    expect(field.getAttribute('aria-expanded')).toBe('true')
+    expect(field.getAttribute('aria-expanded')).toBe('false')
+    expect(field.hasAttribute('aria-controls')).toBe(false)
 
     await user.keyboard('{Escape}')
     expect(field.getAttribute('aria-expanded')).toBe('false')
 
     await user.keyboard('flux')
     expect(field.getAttribute('aria-expanded')).toBe('true')
+    expect(field.hasAttribute('aria-controls')).toBe(true)
   })
 
   it('dismisses a nonempty native search without clearing or reopening it', async () => {
@@ -41,9 +39,7 @@ describe('WorkshopSearchField', () => {
         setup: () => () =>
           h(WorkshopSearchField, {
             models: [],
-            modelValue: '',
-            providers: [],
-            capabilities: []
+            modelValue: ''
           })
       })
     )
@@ -64,8 +60,6 @@ describe('WorkshopSearchField', () => {
         h(WorkshopSearchField, {
           models: [],
           modelValue: '',
-          providers: [],
-          capabilities: [],
           compact: true
         })
     })
@@ -75,12 +69,12 @@ describe('WorkshopSearchField', () => {
     )
     expect(
       within(server.body).getByRole('button', {
-        name: 'Search models, providers, categories...'
+        name: 'Search models, providers, and categories'
       })
     ).toBeDisabled()
     render(search)
     const trigger = screen.getByRole('button', {
-      name: 'Search models, providers, categories...'
+      name: 'Search models, providers, and categories'
     })
     await waitFor(() => expect(trigger).toBeEnabled())
     await user.click(trigger)
