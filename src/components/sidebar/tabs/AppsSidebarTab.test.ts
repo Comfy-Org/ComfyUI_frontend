@@ -3,6 +3,7 @@ import { render, screen } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
+import { useAppMode } from '@/composables/useAppMode'
 import {
   useWorkflowStore,
   useWorkflowBookmarkStore
@@ -15,6 +16,7 @@ vi.mock(import('firebase/auth'))
 vi.mock(import('vuefire'), () => ({ useFirebaseAuth: vi.fn() }))
 
 beforeEach(() => {
+  vi.spyOn(useAppMode().isAppMode, 'value', 'get').mockReturnValue(true)
   vi.mocked(useCommandStore().execute).mockResolvedValue(undefined)
   vi.mocked(useWorkflowStore().syncWorkflows).mockResolvedValue(undefined)
   vi.mocked(useWorkflowBookmarkStore().loadBookmarks).mockResolvedValue(
@@ -36,10 +38,7 @@ vi.mock(
   })
 )
 
-vi.mock<unknown>(import('@/composables/useAppMode'), async () => {
-  const { computed } = await import('vue')
-  return { useAppMode: () => ({ isAppMode: computed(() => true) }) }
-})
+vi.mock(import('@/composables/useAppMode'))
 
 const i18n = createI18n({
   legacy: false,

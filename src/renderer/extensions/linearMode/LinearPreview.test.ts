@@ -6,15 +6,11 @@ import { defineComponent } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
+import { useAppMode } from '@/composables/useAppMode'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 
 import LinearPreview from './LinearPreview.vue'
 import type { OutputSelection } from './linearModeTypes'
-
-const appModeState = vi.hoisted(() => ({
-  isBuilderMode: false,
-  isArrangeMode: false
-}))
 
 const outputHistoryState = vi.hoisted(() => ({
   isWorkflowActive: false
@@ -25,15 +21,7 @@ const spies = vi.hoisted(() => ({
   deleteAssets: vi.fn()
 }))
 
-vi.mock<unknown>(import('@/composables/useAppMode'), async () => {
-  const { computed } = await import('vue')
-  return {
-    useAppMode: () => ({
-      isBuilderMode: computed(() => appModeState.isBuilderMode),
-      isArrangeMode: computed(() => appModeState.isArrangeMode)
-    })
-  }
-})
+vi.mock(import('@/composables/useAppMode'))
 
 vi.mock<unknown>(
   import('@/renderer/extensions/linearMode/useOutputHistory'),
@@ -114,8 +102,6 @@ function renderPreview(
 
 describe('LinearPreview', () => {
   beforeEach(() => {
-    appModeState.isBuilderMode = false
-    appModeState.isArrangeMode = false
     outputHistoryState.isWorkflowActive = false
   })
 
@@ -127,7 +113,7 @@ describe('LinearPreview', () => {
   })
 
   it('hides the output history in builder mode', () => {
-    appModeState.isBuilderMode = true
+    vi.spyOn(useAppMode().isBuilderMode, 'value', 'get').mockReturnValue(true)
 
     renderPreview()
 
@@ -135,7 +121,7 @@ describe('LinearPreview', () => {
   })
 
   it('shows the arrange view in arrange mode', () => {
-    appModeState.isArrangeMode = true
+    vi.spyOn(useAppMode().isArrangeMode, 'value', 'get').mockReturnValue(true)
 
     renderPreview()
 
