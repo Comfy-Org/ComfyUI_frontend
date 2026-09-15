@@ -147,6 +147,7 @@ const inviteRows = computed<InviteLinkRow[]>(() =>
   createdInvites.value.map((invite) => {
     const token = inviteTokensById.value.get(invite.id)
     return {
+      id: invite.id,
       email: invite.email,
       url: token ? buildInviteLink(token) : undefined
     }
@@ -175,7 +176,8 @@ function onInvited(emails: string[], invites: WorkspacePendingInvite[]) {
   void loadInviteTokens()
 }
 
-// The create-invite response deliberately omits the token, so the shareable
+// The create-invite response deliberately omits the token (see BE-13026;
+// cloud workspace_invites.go), so the shareable
 // links come from re-fetching the pending-invite list. On failure the rows
 // render without a Copy action — the invites themselves were already sent.
 async function loadInviteTokens() {

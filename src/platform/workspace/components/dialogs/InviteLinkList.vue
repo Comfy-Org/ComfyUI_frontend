@@ -4,7 +4,7 @@
   >
     <li
       v-for="(row, index) in rows"
-      :key="row.email"
+      :key="row.id"
       :class="
         cn(
           'flex h-12 shrink-0 items-center justify-between gap-2 px-3',
@@ -17,16 +17,16 @@
       </span>
       <Button
         v-if="row.url"
-        v-tooltip="{ value: copyLabel(row.email), showDelay: 300 }"
+        v-tooltip="{ value: copyLabel(row.id), showDelay: 300 }"
         variant="muted-textonly"
         size="icon-lg"
         class="shrink-0"
-        :aria-label="copyLabel(row.email)"
-        @click="copyLink(row.email, row.url)"
+        :aria-label="copyLabel(row.id)"
+        @click="copyLink(row.id, row.url)"
       >
         <i
           :class="
-            copiedEmail === row.email
+            copiedId === row.id
               ? 'icon-[lucide--check] size-4'
               : 'icon-[lucide--link] size-4'
           "
@@ -45,6 +45,7 @@ import { copyTextSilently } from '@/platform/workspace/utils/inviteLinks'
 import { cn } from '@comfyorg/tailwind-utils'
 
 export interface InviteLinkRow {
+  id: string
   email: string
   url?: string
 }
@@ -52,17 +53,17 @@ export interface InviteLinkRow {
 defineProps<{ rows: InviteLinkRow[] }>()
 
 const { t } = useI18n()
-const copiedEmail = refAutoReset<string | null>(null, 2000)
+const copiedId = refAutoReset<string | null>(null, 2000)
 
-function copyLabel(email: string) {
-  return copiedEmail.value === email
+function copyLabel(id: string) {
+  return copiedId.value === id
     ? t('workspacePanel.inviteLinks.copied')
     : t('workspacePanel.inviteLinks.copyLink')
 }
 
-async function copyLink(email: string, url: string) {
+async function copyLink(id: string, url: string) {
   if (await copyTextSilently(url)) {
-    copiedEmail.value = email
+    copiedId.value = id
   }
 }
 </script>

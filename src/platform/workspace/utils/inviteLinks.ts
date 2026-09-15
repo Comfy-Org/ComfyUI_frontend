@@ -38,19 +38,19 @@ export async function copyTextSilently(text: string): Promise<boolean> {
     await navigator.clipboard.writeText(text)
     return true
   } catch {
+    const el = document.createElement('textarea')
+    el.value = text
+    el.style.position = 'fixed'
+    el.style.opacity = '0'
+    document.body.appendChild(el)
     try {
-      const el = document.createElement('textarea')
-      el.value = text
-      el.style.position = 'fixed'
-      el.style.opacity = '0'
-      document.body.appendChild(el)
       el.select()
-      const copied = document.execCommand('copy')
-      el.remove()
-      return copied
+      return document.execCommand('copy')
     } catch (error) {
       console.error('Failed to copy invite link to clipboard', error)
       return false
+    } finally {
+      el.remove()
     }
   }
 }
