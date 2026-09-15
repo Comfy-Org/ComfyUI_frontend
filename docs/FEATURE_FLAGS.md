@@ -300,6 +300,68 @@ max_size = feature_flags.get_connection_feature(
 
 ## Adding New Feature Flags
 
+### Feature flag policy (advisory)
+
+`feature-flag-policy` reports **PASS**, **FAIL**, or **UNGRADED** in its title.
+Every result uses GitHub's `neutral` conclusion, so neither PASS nor FAIL blocks
+merging or feeds a failed check back into CI-based risk grading. This is a policy
+result, not evidence that tests passed. Keep this check out of required checks;
+normal CI and review requirements still apply.
+
+Risk labels are the source of truth. The policy uses `risk:low`, `risk:medium`,
+`risk:high`, and `risk:xhigh`, with named `risk-dispute:*` overrides taking
+precedence. It follows the grader's existing override order: xhigh, high,
+medium, low. A plain `risk-dispute` label does not change the tier. If multiple
+risk labels exist, the highest wins. Missing or `risk:unknown` classification
+reports UNGRADED until a valid grade or named override is available.
+
+Fork and Dependabot PRs are not graded automatically. A maintainer can assign
+risk labels or dispatch the risk workflow for those PRs; until then, UNGRADED
+requires no action to merge.
+
+| Effective risk                                 | Declaration or exception                              | Result |
+| ---------------------------------------------- | ----------------------------------------------------- | ------ |
+| Low / medium                                   | Any                                                   | PASS   |
+| High / xhigh                                   | One valid rollout flag                                | PASS   |
+| Downgraded to low / medium by `risk-dispute:*` | No flag needed                                        | PASS   |
+| High / xhigh                                   | `flag-dispute` and a non-empty rationale              | PASS   |
+| High / xhigh                                   | Missing flag, rationale only, or exception label only | FAIL   |
+
+For a flag, fill in the PR description:
+
+```markdown
+## Feature flag
+
+- **Flag**: unified_cloud_auth
+```
+
+For a flag exception, document why a flag is unsuitable and include validation
+and rollback evidence. A maintainer acknowledges the exception with
+`flag-dispute`:
+
+```markdown
+## Feature flag
+
+- **Rationale**: Removes obsolete code; regression tests cover remaining behavior, and reverting restores the removed path.
+```
+
+The rationale may continue onto following lines, up to the next field or heading.
+
+The policy checks declaration presence, not rollout safety or rationale
+quality. Reviewers verify containment, fail-closed defaults, production-OFF
+state for every cohort, OFF-path coverage, rollback, and exception evidence.
+Client capability flags are not rollout controls. Blank, placeholder, commented,
+or fenced declarations do not qualify. `flag-exempt` has no effect. Removing a
+named dispute restores evaluation from the remaining labels.
+
+PR body edits, pushes, label changes, and completed risk grading request fresh
+advice. Run manual or batch grading from the default branch. Advice can briefly
+be stale after an edit; rerun a failed or cancelled request, or edit the PR body,
+to refresh it. Publication errors remain visible in the Actions run.
+
+See [ADR-CI-ROLLOUT-0031](adr/CI-ROLLOUT-0031-advisory-feature-flag-policy.md)
+for the trusted publisher, permissions, and risk-grading tradeoffs.
+
 ### Backend
 
 1. **For server capabilities**, add to `SERVER_FEATURE_FLAGS` in `comfy_api/feature_flags.py`:
