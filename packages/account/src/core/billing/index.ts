@@ -116,20 +116,29 @@ export type {
 export { driveEmbeddedChallenge } from './challengeDriver.js'
 export { readBillingErrorCode } from './billingErrorBody.js'
 export type {
+  CreateHostedTopupCheckoutInput,
   CreateTopupCheckoutInput,
+  HostedTopupCheckout,
+  HostedTopupCheckoutFailure,
+  HostedTopupCheckoutResult,
   TopupCommand,
   TopupCommandOptions,
   TopupDeclined,
   TopupDenied,
   TopupFailure,
   TopupInvalidAmount,
+  TopupInvalidReturnUrl,
   TopupNoPaymentMethod,
   TopupNotAvailable,
   TopupResult,
   TopupSucceeded,
   TopupUnsettled
 } from './topup.js'
-export { TOPUP_ROUTE, createTopupCommand } from './topup.js'
+export {
+  TOPUP_CHECKOUT_ROUTE,
+  TOPUP_ROUTE,
+  createTopupCommand
+} from './topup.js'
 export type {
   BalanceWatch,
   BalanceWatchOptions,
