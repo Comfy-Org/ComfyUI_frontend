@@ -269,7 +269,6 @@ Visit our [homepage](https://example.com) to learn more.
     it('does not double-encode an entity a link URL already carries', () => {
       const html = renderMarkdownToHtml('[x](https://e.com/?a=1&amp;b=2)')
 
-      // The browser-visible value is the claim; the raw string is not.
       expect(attrOf(html, 'a', 'href')).toBe('https://e.com/?a=1&b=2')
     })
 
@@ -340,8 +339,6 @@ Visit our [homepage](https://example.com) to learn more.
       )
       const anchor = parseOne(html, 'a')
 
-      // The payload stays inside the href value instead of becoming an
-      // attribute of its own — that is what decoding one layer must not undo.
       expect(anchor.getAttribute('href')).toContain('"onload=alert(1)')
       expect(
         Array.from(anchor.attributes)

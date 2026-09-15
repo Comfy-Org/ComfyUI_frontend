@@ -20,10 +20,7 @@ type RuntimeLinkToken = Omit<Tokens.Link, 'tokens'> & {
 // Matches relative src attributes in img, source, and video HTML tags
 // Captures: 1) opening tag with src=", 2) relative path, 3) closing quote
 // Excludes absolute paths (starting with /) and URLs (http:// or https://)
-// Scope: raw-HTML media gets RELATIVE rebasing only. Absolute URLs in raw
-// HTML (comfy.org api forms included) pass through verbatim to sanitizing -
-// the api rewrite applies to markdown-authored images and links alone.
-const MEDIA_SRC_REGEX =
+const RELATIVE_RAW_MEDIA_SRC_REGEX =
   /(<(?:img|source|video)[^>]*\ssrc=['"])(?!(?:[/#?]|[a-z][a-z0-9+.-]*:))([^'"\s>]+)(['"])/gi
 
 // Rooted paths, fragments, queries, and anything carrying a scheme (http,
@@ -59,9 +56,6 @@ export function resolveMarkdownUrl(href: string, baseUrl: string): string {
 function createMarkdownRenderer(baseUrl?: string): Renderer {
   const normalizedBase = baseUrl ? baseUrl.replace(/\/+$/, '') : ''
   const renderer = new Renderer()
-  // Resolved targets and author-supplied titles interpolate into attribute
-  // positions before sanitizing; escaping there keeps a quote in either from
-  // breaking out of the attribute at parse time.
   renderer.image = ({ href, title, text }) => {
     const src = resolveMarkdownUrl(href, normalizedBase)
     const titleAttr = title ? ` title="${escape(title)}"` : ''
@@ -95,7 +89,7 @@ export function renderMarkdownToHtml(
 
   if (baseUrl) {
     html = html.replace(
-      MEDIA_SRC_REGEX,
+      RELATIVE_RAW_MEDIA_SRC_REGEX,
       `$1${baseUrl.replace(/\/+$/, '')}/$2$3`
     )
   }

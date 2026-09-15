@@ -16,8 +16,6 @@ describe('toSafeExternalHref', () => {
   it.for([
     'javascript:alert(1)',
     'JavaScript:alert(1)',
-    // The URL parser strips leading control characters, so a tab does not
-    // hide the scheme from the check.
     '\tjavascript:alert(1)',
     'data:text/html,<script>alert(1)</script>',
     'vbscript:msgbox(1)',

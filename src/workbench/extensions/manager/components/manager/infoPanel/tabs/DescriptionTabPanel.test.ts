@@ -162,24 +162,13 @@ describe('DescriptionTabPanel', () => {
     })
   })
 
-  // The registry is an open publishing surface, so every URL-shaped field on a
-  // node pack is attacker-controlled. Vue does not sanitize :href.
   describe('hostile registry URLs', () => {
-    const EXECUTABLE_URL = 'javascript:alert(document.domain)'
+    const EXECUTABLE_URL = 'javascript:alert'
 
-    // An anchor with no href carries no link role, so this returns only the
-    // anchors that are actually navigable.
     function navigableHrefs() {
       return screen
         .queryAllByRole('link')
         .map((link) => link.getAttribute('href') ?? '')
-    }
-
-    // The invariant, stated on the scheme rather than the whole string: the
-    // panel's markdown tokenizer truncates a URL at its first ')', so an
-    // exact-match assertion silently stops matching the payload.
-    function executableHrefs() {
-      return navigableHrefs().filter((href) => !/^https?:/i.test(href))
     }
 
     it('renders the repository field but refuses to make it navigable', () => {
@@ -188,7 +177,7 @@ describe('DescriptionTabPanel', () => {
       })
 
       expect(screen.getByText(EXECUTABLE_URL)).toBeInTheDocument()
-      expect(executableHrefs()).toEqual([])
+      expect(navigableHrefs()).toEqual([])
     })
 
     it('refuses to make a license URL built on a hostile repository navigable', () => {
@@ -202,7 +191,7 @@ describe('DescriptionTabPanel', () => {
       expect(
         screen.getByText(`${EXECUTABLE_URL}/blob/main/LICENSE`)
       ).toBeInTheDocument()
-      expect(executableHrefs()).toEqual([])
+      expect(navigableHrefs()).toEqual([])
     })
 
     it('refuses to make a description markdown link navigable', () => {
@@ -213,7 +202,7 @@ describe('DescriptionTabPanel', () => {
       })
 
       expect(screen.getByText('the docs')).toBeInTheDocument()
-      expect(executableHrefs()).toEqual([])
+      expect(navigableHrefs()).toEqual([])
     })
 
     it('still links an ordinary https repository and description link', () => {

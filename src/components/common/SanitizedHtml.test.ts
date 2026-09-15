@@ -47,10 +47,6 @@ describe('SanitizedHtml', () => {
     ].join('')
 
     it('drops the form, the password field, and the submit button', () => {
-      expect(SIGN_IN_FORM).toContain('<form')
-      expect(SIGN_IN_FORM).toContain('type="password"')
-      expect(SIGN_IN_FORM).toContain('<button')
-
       const content = renderHtml(SIGN_IN_FORM)
 
       expect(content.innerHTML).not.toContain('<form')
@@ -61,7 +57,6 @@ describe('SanitizedHtml', () => {
 
     it('drops textarea and select controls', () => {
       const markup = '<textarea>x</textarea><select><option>a</option></select>'
-      expect(markup).toContain('<textarea')
 
       const content = renderHtml(markup)
 
@@ -74,18 +69,14 @@ describe('SanitizedHtml', () => {
     it('keeps the disabled checkbox a GFM task list renders', () => {
       const taskList =
         '<ul><li><input disabled="" type="checkbox"> todo</li></ul>'
-      expect(taskList).toContain('type="checkbox"')
 
       renderHtml(taskList)
 
-      // Disabled is the whole reason this one input is allowed through, so
-      // assert it — otherwise dropping that condition keeps this test green.
       expect(screen.getByRole('checkbox')).toBeDisabled()
     })
 
     it('drops an enabled checkbox, which no task list emits', () => {
       const impostor = '<ul><li><input type="checkbox"> pick me</li></ul>'
-      expect(impostor).toContain('type="checkbox"')
 
       renderHtml(impostor)
 
@@ -98,8 +89,6 @@ describe('SanitizedHtml', () => {
       '<div style="position:fixed;inset:0;z-index:99999">click me</div>'
 
     it('is stripped from authored content by default', () => {
-      expect(OVERLAY).toContain('position:fixed')
-
       const content = renderHtml(OVERLAY)
 
       expect(screen.getByText('click me')).toBeInTheDocument()

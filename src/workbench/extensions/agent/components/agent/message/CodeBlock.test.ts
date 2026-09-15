@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
-import { render, screen } from '@testing-library/vue'
+import { render, screen, waitFor } from '@testing-library/vue'
+import { codeToHtml } from 'shiki'
 import { describe, expect, it, vi } from 'vitest'
 
 import { i18n } from '@/i18n'
@@ -34,7 +35,9 @@ describe('CodeBlock', () => {
       global: { plugins: [i18n] }
     })
 
-    await new Promise((resolve) => setTimeout(resolve, 50))
+    await waitFor(() =>
+      expect(codeToHtml).toHaveBeenCalledWith('mystery', expect.anything())
+    )
     expect(screen.queryByText('HL:mystery')).not.toBeInTheDocument()
     expect(screen.getByText('mystery')).toBeInTheDocument()
   })
