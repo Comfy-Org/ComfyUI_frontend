@@ -7,7 +7,7 @@ import {
   DropdownMenuRoot,
   DropdownMenuTrigger
 } from 'reka-ui'
-import { computed, ref, toValue } from 'vue'
+import { computed, toValue } from 'vue'
 
 import DropdownItem from '@/components/common/DropdownItem.vue'
 import Button from '@/components/ui/button/Button.vue'
@@ -48,19 +48,22 @@ const contentClass = computed(() =>
   )
 )
 
-const open = ref(false)
+const separatorClass = 'm-1 h-px bg-border-subtle'
+const open = defineModel<boolean>('open', { default: false })
 const contentStyle = useModalLiftedZIndex(open)
 </script>
 
 <template>
   <DropdownMenuRoot v-model:open="open" :modal>
-    <DropdownMenuTrigger as-child>
-      <slot name="button">
-        <Button :size="buttonSize ?? 'icon'" :class="buttonClass">
-          <i :class="icon ?? 'icon-[lucide--menu]'" />
-        </Button>
-      </slot>
-    </DropdownMenuTrigger>
+    <slot name="trigger">
+      <DropdownMenuTrigger as-child>
+        <slot name="button">
+          <Button :size="buttonSize ?? 'icon'" :class="buttonClass">
+            <i :class="icon ?? 'icon-[lucide--menu]'" />
+          </Button>
+        </slot>
+      </DropdownMenuTrigger>
+    </slot>
 
     <DropdownMenuPortal :to>
       <DropdownMenuContent
@@ -71,7 +74,7 @@ const contentStyle = useModalLiftedZIndex(open)
         :class="contentClass"
         :style="contentStyle"
       >
-        <slot :item-class>
+        <slot :item-class :content-class :content-style :separator-class>
           <DropdownItem
             v-for="(item, index) in entries ?? []"
             :key="toValue(item.label) ?? index"

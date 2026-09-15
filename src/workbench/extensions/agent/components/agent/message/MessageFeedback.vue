@@ -1,22 +1,21 @@
 <script setup lang="ts">
 import { useClipboard } from '@vueuse/core'
-import {
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuPortal,
-  DropdownMenuRoot,
-  DropdownMenuTrigger
-} from 'reka-ui'
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
+import type { ComponentProps } from 'vue-component-type-helpers'
 
 import { cn } from '@comfyorg/tailwind-utils'
+import DropdownMenu from '@/components/common/DropdownMenu.vue'
 import Button from '@/components/ui/button/Button.vue'
 import AccessibleTooltip from '@/components/ui/tooltip/AccessibleTooltip.vue'
 import { useAssetDownload } from '@/platform/assets/composables/useAssetDownload'
 import { renderMarkdownToHtml } from '@/utils/markdownRendererUtil'
 import { resolveReplyAssetDownload } from '../../../utils/resolveReplyAssetDownload'
 import type { ReplyAsset } from '../../../utils/replyAssets'
+
+type DropdownEntries = NonNullable<
+  ComponentProps<typeof DropdownMenu>['entries']
+>
 
 const { markdown, assets = [] } = defineProps<{
   markdown: string
@@ -42,6 +41,10 @@ function copyPlainText(): void {
   )
   void copy(doc.body.textContent?.trim() ?? '')
 }
+
+const copyMenuEntries = computed<DropdownEntries>(() => [
+  { label: t('agent.copyMarkdown'), command: () => copy(markdown) }
+])
 
 const downloading = ref(false)
 
@@ -157,8 +160,8 @@ async function downloadAssets(): Promise<void> {
           </Button>
         </template>
       </AccessibleTooltip>
-      <DropdownMenuRoot>
-        <DropdownMenuTrigger as-child>
+      <DropdownMenu :entries="copyMenuEntries" align="end" :side-offset="4">
+        <template #button>
           <Button
             variant="muted-textonly"
             size="icon-sm"
@@ -167,22 +170,8 @@ async function downloadAssets(): Promise<void> {
           >
             <span class="icon-[lucide--chevron-down] size-3" />
           </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuPortal>
-          <DropdownMenuContent
-            align="end"
-            :side-offset="4"
-            class="z-1100 h-9 w-36 rounded-lg border border-border-subtle bg-secondary-background p-1 shadow-lg"
-          >
-            <DropdownMenuItem
-              class="flex h-7 w-full cursor-pointer items-center rounded-lg px-1.5 text-[14px]/5 font-normal whitespace-nowrap text-base-foreground outline-none data-highlighted:bg-secondary-background-hover"
-              @select="copy(markdown)"
-            >
-              {{ t('agent.copyMarkdown') }}
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenuPortal>
-      </DropdownMenuRoot>
+        </template>
+      </DropdownMenu>
     </div>
   </div>
 </template>
