@@ -104,6 +104,15 @@ export const networkIsolationFixture = base.extend<{
     await context.route('https://apis.google.com/js/api.js**', (route) =>
       route.fulfill({ status: 503, body: '' })
     )
+    await context.route(
+      'https://ajax.googleapis.com/ajax/libs/model-viewer/4.0.0/model-viewer.min.js',
+      (route) =>
+        route.fulfill({
+          contentType: 'application/javascript',
+          headers: { 'access-control-allow-origin': '*' },
+          body: ''
+        })
+    )
     await context.route('https://cloud.comfy.org/cdn-cgi/trace', (route) =>
       route.fulfill({ contentType: 'text/plain', body: 'loc=US\n' })
     )
@@ -122,6 +131,14 @@ export const networkIsolationFixture = base.extend<{
     await context.route(
       'https://{api,stagingapi}.comfy.org/nodes{,?*}',
       (route) => route.fulfill({ status: 404, body: '' })
+    )
+    await context.route(
+      'https://{api,stagingapi}.comfy.org/releases{,?*}',
+      (route) =>
+        route.fulfill({
+          headers: { 'access-control-allow-origin': '*' },
+          json: []
+        })
     )
 
     await use(context)
