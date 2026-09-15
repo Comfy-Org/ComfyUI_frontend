@@ -2,7 +2,7 @@ import { fileURLToPath } from 'node:url'
 
 import { expect } from '@playwright/test'
 
-import { test } from './fixtures/blockExternalMedia'
+import { test } from './fixtures/workshopVisibility'
 
 const caseStudyVideoPath = fileURLToPath(
   new URL(
@@ -40,6 +40,7 @@ test.describe('Homepage @smoke', () => {
     })
     await expect(activeSlide.getByText('New Model Release')).toBeVisible()
     const cta = activeSlide.getByRole('link', { name: 'Explore Seedance 2.5' })
+    await cta.scrollIntoViewIfNeeded()
     await expect(cta).toBeVisible()
     await expect(cta).toHaveAttribute(
       'href',
@@ -55,10 +56,7 @@ test.describe('Homepage @smoke', () => {
       section.getByRole('heading', { name: /ready to run/i })
     ).toBeVisible()
     const bytedance = section.getByRole('link', { name: /ByteDance/ }).first()
-    await expect(bytedance).toHaveAttribute(
-      'href',
-      '/models?provider=ByteDance'
-    )
+    await expect(bytedance).toHaveAttribute('href', '/models?q=ByteDance')
     await expect(
       section.getByRole('link', { name: 'Browse all models' })
     ).toHaveAttribute('href', '/models')

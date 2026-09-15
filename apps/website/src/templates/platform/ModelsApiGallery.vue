@@ -26,7 +26,7 @@ const isVideo = (media: GalleryMedia) => media.src.endsWith('.webm')
 
 <template>
   <section
-    class="max-w-9xl mx-auto px-6 pb-16 md:pb-24 lg:px-16"
+    class="mx-auto max-w-9xl px-6 pb-16 md:pb-24 lg:px-16"
     :aria-label="t('platform.modelsGallery.ariaLabel', locale)"
   >
     <div class="grid grid-cols-2 gap-2 lg:grid-cols-4">

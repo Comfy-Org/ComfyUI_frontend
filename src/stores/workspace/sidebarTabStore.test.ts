@@ -21,7 +21,7 @@ vi.mock<unknown>(import('@/composables/useFeatureFlags'), () => ({
   })
 }))
 
-vi.mock<unknown>(
+vi.mock(
   import('@/platform/assets/composables/openModelLibraryBrowser'),
   () => ({
     openModelLibraryBrowser: mockOpenModelLibraryBrowser

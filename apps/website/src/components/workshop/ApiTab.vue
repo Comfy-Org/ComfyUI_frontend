@@ -24,6 +24,8 @@ import { workshopIdempotencyKey } from '../../config/workshop-snippets'
 import type { Locale } from '../../i18n/translations'
 import { useTablist } from '../../composables/useTablist'
 import { t } from '../../i18n/translations'
+import type { CodeLang } from '../../lib/highlight'
+import HighlightedCode from './HighlightedCode.vue'
 
 const {
   contract,
@@ -69,11 +71,9 @@ const unavailable = ref(false)
 
 function previewValues(
   values: FormValues,
-  sources: WeakMap<File, Pick<FileValue, 'sourceUrl' | 'sourceDataUrl'>>
+  sources: WeakMap<File, Pick<FileValue, 'sourceUrl'>>
 ): FormValues {
   function preview(value: FileValue): FileValue {
-    if (value.file && value.sourceDataUrl)
-      sources.set(value.file, { sourceDataUrl: value.sourceDataUrl })
     if (value.file || !value.sourceUrl) return value
     const file = new File([], value.name, { type: value.type })
     sources.set(file, { sourceUrl: value.sourceUrl })
@@ -109,10 +109,7 @@ watch(
     unavailable.value = false
     try {
       const files: SnippetFile[] = []
-      const sources = new WeakMap<
-        File,
-        Pick<FileValue, 'sourceUrl' | 'sourceDataUrl'>
-      >()
+      const sources = new WeakMap<File, Pick<FileValue, 'sourceUrl'>>()
       function addReference(file: File, encoding: 'base64' | 'url') {
         const reference = referenceFor(file, encoding)
         if (!files.some((entry) => entry.token === reference.token))
@@ -173,7 +170,7 @@ const showFileNotice = computed(() => {
   const { body, files } = request.value
   return language.value === 'curl'
     ? hasOmittedCurlFiles(body, files)
-    : files.some((file) => !file.sourceUrl && !file.sourceDataUrl)
+    : files.some((file) => !file.sourceUrl)
 })
 
 const languageLabel: Record<SnippetLanguage, string> = {
@@ -181,6 +178,11 @@ const languageLabel: Record<SnippetLanguage, string> = {
   typescript: 'TypeScript',
   curl: 'cURL'
 }
+const highlightLanguage = {
+  python: 'python',
+  typescript: 'typescript',
+  curl: 'shell'
+} satisfies Record<SnippetLanguage, CodeLang>
 </script>
 
 <template>
@@ -196,7 +198,7 @@ const languageLabel: Record<SnippetLanguage, string> = {
 
     <div
       v-if="snippet"
-      class="bg-transparency-white-t4 overflow-hidden rounded-2xl border border-transparency-white-t20"
+      class="overflow-hidden rounded-2xl border border-transparency-white-t20 bg-transparency-white-t4"
     >
       <div
         class="flex items-center justify-between border-b border-transparency-white-t8 px-3 py-2"
@@ -257,7 +259,10 @@ const languageLabel: Record<SnippetLanguage, string> = {
         tabindex="0"
         class="overflow-x-auto bg-primary-comfy-ink p-6 font-mono text-sm/relaxed text-primary-warm-white"
         data-testid="snippet"
-      ><code>{{ snippet }}</code></pre>
+      ><HighlightedCode
+          :code="snippet"
+          :language="highlightLanguage[language]"
+        /></pre>
     </div>
 
     <p v-if="!snippet" role="status" class="text-sm text-primary-warm-gray">

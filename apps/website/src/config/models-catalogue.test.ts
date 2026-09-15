@@ -21,6 +21,7 @@ import {
   filterWorkshopModels,
   parseCatalogSearch,
   isRouterModel,
+  sortOrdersFor,
   sortWorkshopModels,
   splitTask,
   summaryFor,
@@ -163,6 +164,29 @@ describe('filterWorkshopModels facets', () => {
       })
     ).toEqual([])
   })
+
+  it('filters by any selected use case', () => {
+    const matches = filterWorkshopModels(fixture, {
+      query: '',
+      useCases: ['generate-videos', 'edit-images']
+    })
+    expect(matches).toHaveLength(2)
+    expect(new Set(matches.map((model) => model.slug))).toEqual(
+      new Set(['a', 'b'])
+    )
+  })
+
+  it('treats no selected use cases as unrestricted', () => {
+    expect(filterWorkshopModels(fixture, { query: '', useCases: [] })).toEqual(
+      fixture
+    )
+  })
+
+  it('returns no models when none match the selected use case', () => {
+    expect(
+      filterWorkshopModels(fixture, { query: '', useCases: ['audio'] })
+    ).toEqual([])
+  })
 })
 
 describe('sortWorkshopModels', () => {
@@ -205,6 +229,18 @@ describe('sortWorkshopModels', () => {
     expect(
       sortWorkshopModels(list, 'popular').map((model) => model.slug)
     ).toEqual([first, second, 'never-run'])
+  })
+})
+
+describe('sortOrdersFor', () => {
+  it('withholds the price orders while no model carries a price', () => {
+    expect(sortOrdersFor(fixture)).toEqual(['popular', 'name'])
+  })
+
+  it('offers them again as soon as one model does', () => {
+    expect(
+      sortOrdersFor([{ ...fixture[0], creditsPerRun: 10 }, ...fixture.slice(1)])
+    ).toEqual(['popular', 'name', 'priceAsc', 'priceDesc'])
   })
 })
 
@@ -436,22 +472,30 @@ describe('catalog deep links', () => {
   it('round-trips a filter through the query string', () => {
     const search = catalogSearch({
       useCase: 'edit-images',
-      capabilities: ['Upscale', 'Image editing'],
-      providers: ['Kling'],
-      modalities: ['video']
+      query: 'upscale'
     })
     expect(parseCatalogSearch(search)).toEqual({
-      query: '',
+      query: 'upscale',
       useCase: 'edit-images',
-      capabilities: ['Upscale', 'Image editing'],
-      providers: ['Kling'],
-      modalities: ['video']
+      modalities: [],
+      providers: [],
+      capabilities: []
     })
   })
 
-  it('ignores unknown use cases and yields no query string when empty', () => {
-    expect(parseCatalogSearch('?useCase=nonsense').useCase).toBe('all')
-    expect(catalogSearch({ useCase: 'all', capabilities: [] })).toBe('')
+  it('keeps retired facets working for existing links', () => {
+    expect(
+      parseCatalogSearch(
+        '?useCase=nonsense&provider=Kling&capability=Upscale&modality=video'
+      )
+    ).toEqual({
+      query: '',
+      useCase: 'all',
+      modalities: ['video'],
+      providers: ['Kling'],
+      capabilities: ['Upscale']
+    })
+    expect(catalogSearch({ useCase: 'all' })).toBe('')
   })
 })
 

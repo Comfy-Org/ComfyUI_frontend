@@ -47,11 +47,32 @@ describe('createTopUpCheckout', () => {
     })
   })
 
+  it('accepts the Comfy custom checkout domain', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue(
+        new Response(
+          JSON.stringify({
+            checkout_url: 'https://checkout.comfy.org/c/pay_1',
+            session_id: 'cs_2'
+          }),
+          { status: 200 }
+        )
+      )
+    )
+
+    await expect(createTopUpCheckout(options)).resolves.toEqual({
+      url: 'https://checkout.comfy.org/c/pay_1',
+      sessionId: 'cs_2'
+    })
+  })
+
   it.for([
     'not a URL',
     'http://checkout.stripe.com/c/pay_1',
     'https://stripe.example.com/c/pay_1',
     'https://checkout.stripe.com.evil.test/c/pay_1',
+    'https://checkout.comfy.org.evil.test/c/pay_1',
     'https://user@checkout.stripe.com/c/pay_1',
     'https://checkout.stripe.com:444/c/pay_1'
   ])('rejects an unsafe checkout URL: %s', async (checkoutUrl) => {

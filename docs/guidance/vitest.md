@@ -9,22 +9,10 @@ See `docs/testing/*.md` for detailed patterns.
 
 ## Test Quality
 
-The general test rules (no change-detector tests, no non-behavioral assertions,
-be parsimonious, don't mock what you don't own) live in the root `AGENTS.md`,
-which is always loaded. In addition:
-
-- Do not write tests that just test mocks - ensure real code is exercised (tests must fail when the code misbehaves)
-- Aim for behavioral coverage of critical and new features
-- Do not disable Testing Library rules to inspect DOM structure. Query by role,
-  label, text, or test ID. If no semantic query can identify an interactive
-  element, fix the component semantics before testing it.
-- Do not use attributes, utility classes, mock-call storage, or exact internal
-  option forwarding as substitutes for observable behavior.
-- Build typed fixtures from authoritative types or schemas. To test malformed
-  external input, keep it `unknown` and exercise the production parser. Do not
-  cast malformed data to the expected domain type.
-- Control asynchronous work with fake timers, a deferred promise, or an
-  observable readiness condition. Do not add sleeps or arbitrary timeouts.
+The rules that apply at every test level (behavioral assertions, tables over
+copied bodies, mock only what you own, no sleeps, typed fixtures) live in
+`docs/guidance/testing-principles.md`, which loads alongside this file. An
+ESLint rule enforces the Testing Library query rule. Do not disable it.
 
 ## Mocking
 
