@@ -52,6 +52,21 @@ describe('Tag', () => {
     expect(onRemove).toHaveBeenCalledOnce()
   })
 
+  it('uses a context-specific remove label', () => {
+    render(Tag, {
+      props: {
+        label: 'KSampler',
+        removable: true,
+        removeLabel: 'Remove KSampler reference'
+      },
+      global: { plugins: [i18n] }
+    })
+
+    expect(
+      screen.getByRole('button', { name: 'Remove KSampler reference' })
+    ).toBeInTheDocument()
+  })
+
   it('renders icon slot content', () => {
     renderTag(
       { label: 'LoRA' },
