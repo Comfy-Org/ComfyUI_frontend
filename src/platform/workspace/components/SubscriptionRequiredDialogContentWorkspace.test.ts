@@ -63,10 +63,10 @@ const AddPaymentPreviewStub = {
   props: ['quoteIsCurrent'],
   template: `<div data-testid="add-payment-preview">
     <span data-testid="quote-current">{{ quoteIsCurrent }}</span>
+    <button @click="$emit('back')">Back</button>
     <button data-testid="add-card-btn" @click="$emit('addCreditCard')">Add Card</button>
     <button data-testid="apply-promo-btn" @click="$emit('applyPromotionCode', 'SAVE20')">Apply promo</button>
     <button data-testid="invalidate-quote-btn" @click="$emit('invalidateQuote')">Invalidate quote</button>
-    <button @click="$emit('back')">Back</button>
   </div>`
 }
 
