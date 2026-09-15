@@ -84,6 +84,9 @@ dist.zip
 # Hosted on https://github.com/Comfy-Org/workflow_templates
 /public/templates/
 
+# Separately licensed local overlay mount
+/public/secure-nodes/src
+
 # Temporary repository directory
 templates_repo/
 
