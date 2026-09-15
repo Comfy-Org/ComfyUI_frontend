@@ -456,11 +456,11 @@ describe('InviteMemberDialogContent', () => {
 
       await inviteAndConfirm(user, 'a@b.com{Enter}')
 
-      await waitFor(() =>
-        expect(
-          screen.getByText('workspacePanel.inviteMemberDialog.invitedMessage')
-        ).toBeInTheDocument()
-      )
+      expect(
+        await screen.findByText(
+          'workspacePanel.inviteMemberDialog.invitedMessage'
+        )
+      ).toBeInTheDocument()
       expect(copyLinkButtons()).toHaveLength(0)
     })
 
