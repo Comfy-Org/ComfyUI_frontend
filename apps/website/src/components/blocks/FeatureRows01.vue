@@ -44,7 +44,7 @@ const {
 </script>
 
 <template>
-  <section class="max-w-9xl mx-auto px-6 py-16 lg:py-24">
+  <section class="mx-auto max-w-9xl px-6 py-16 lg:py-24">
     <SectionHeader :label="eyebrow" max-width="xl">
       {{ heading }}
     </SectionHeader>

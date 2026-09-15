@@ -89,7 +89,7 @@ const surfaceClass =
     <DropdownMenuTrigger
       data-testid="header-account"
       :aria-label="accountLabel"
-      class="bg-transparency-white-t4 focus-visible:ring-primary-comfy-yellow/50 flex h-10 cursor-pointer items-center gap-1.5 rounded-full border border-transparency-white-t20 p-1 outline-none focus-visible:ring-3"
+      class="flex h-10 cursor-pointer items-center gap-1.5 rounded-full border border-transparency-white-t20 bg-transparency-white-t4 p-1 outline-none focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow/50"
     >
       <span
         v-if="formattedCredits !== undefined"

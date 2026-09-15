@@ -33,19 +33,19 @@ const cardClass =
 <template>
   <WorkshopGate>
     <section
-      class="max-w-9xl mx-auto overflow-hidden py-16 lg:py-24"
+      class="mx-auto max-w-9xl overflow-hidden py-16 lg:py-24"
       data-testid="model-discovery"
     >
       <div
         class="mx-auto flex max-w-3xl flex-col items-center px-6 text-center"
       >
         <p
-          class="text-primary-comfy-yellow text-sm font-bold tracking-widest uppercase"
+          class="text-sm font-bold tracking-widest text-primary-comfy-yellow uppercase"
         >
           {{ t('modelDiscovery.label', locale) }}
         </p>
         <h2
-          class="text-3.5xl/tight mt-6 font-light whitespace-pre-line text-primary-comfy-canvas lg:text-5xl"
+          class="mt-6 text-3.5xl/tight font-light whitespace-pre-line text-primary-comfy-canvas lg:text-5xl"
         >
           {{ t('modelDiscovery.heading', locale) }}
         </h2>
@@ -66,7 +66,7 @@ const cardClass =
             <div
               v-for="copy in 2"
               :key="copy"
-              class="animate-marquee flex shrink-0 gap-3 group-focus-within:[animation-play-state:paused] group-hover:[animation-play-state:paused]"
+              class="flex shrink-0 animate-marquee gap-3 group-focus-within:paused group-hover:paused"
               style="--marquee-gap: 0.75rem"
               :aria-hidden="copy === 2 ? 'true' : undefined"
             >
