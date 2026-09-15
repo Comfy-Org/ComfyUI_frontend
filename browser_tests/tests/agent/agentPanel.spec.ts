@@ -174,6 +174,36 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
     await expect(panel.getByText('Resize image node')).toBeVisible()
   })
 
+  test.describe('diagnostic report', () => {
+    test.use({
+      permissions: ['clipboard-read', 'clipboard-write'],
+      crdtDebugEnabled: true
+    })
+
+    test('copies with privacy sources turned off', async ({ comfyPage }) => {
+      const page = comfyPage.page
+      await page.route('**/system_stats', (route) =>
+        route.fulfill({
+          contentType: 'application/json',
+          body: JSON.stringify({ system: {}, devices: [] })
+        })
+      )
+      await page.getByRole('button', { name: OPEN_AGENT_LABEL }).click()
+      const panel = page.locator('#agent-panel-root')
+      await expect(panel.getByText('CRDT debug', { exact: true })).toBeVisible()
+
+      for (const name of ['Server logs', 'Settings', 'Workflow JSON']) {
+        await panel.getByRole('switch', { name }).click()
+      }
+      await panel.getByRole('button', { name: 'Copy full report' }).click()
+
+      await expect(panel.getByRole('button', { name: 'Copied' })).toBeVisible()
+      await expect
+        .poll(() => page.evaluate(() => navigator.clipboard.readText()))
+        .toContain('- Workflow: turned off')
+    })
+  })
+
   test.describe('composer sizing', () => {
     test.use({
       viewport: { width: 1920, height: 1080 },

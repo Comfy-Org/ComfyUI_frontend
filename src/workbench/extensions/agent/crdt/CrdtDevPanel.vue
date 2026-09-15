@@ -461,7 +461,15 @@ async function copyLog() {
 
 async function copyReport() {
   clearTimeout(reportCopyReset)
+  const retainedReport =
+    reportCopyState.value.status === 'failed'
+      ? reportCopyState.value.report
+      : null
   reportCopyState.value = { status: 'busy' }
+  if (retainedReport !== null) {
+    await copyCollectedReport(retainedReport)
+    return
+  }
   try {
     const crdt = snapshot?.() ?? docState.value ?? fallbackSnapshot()
     const report = await collectCrdtDebugReport({
@@ -473,21 +481,25 @@ async function copyReport() {
       sources: reportSources.value,
       ...(reportSources.value.workflow ? serializeActiveWorkflow() : {})
     })
-    try {
-      await navigator.clipboard.writeText(report)
-    } catch {
-      reportCopyState.value = { status: 'failed', report }
-      return
-    }
-    reportCopyState.value = { status: 'done' }
-    reportCopyReset = setTimeout(
-      () => (reportCopyState.value = { status: 'idle' }),
-      1600
-    )
+    await copyCollectedReport(report)
   } catch (error) {
     reportError(error, { errorType: 'crdt_dev_panel_report_copy_failed' })
     reportCopyState.value = { status: 'failed', report: null }
   }
+}
+
+async function copyCollectedReport(report: string): Promise<void> {
+  try {
+    await navigator.clipboard.writeText(report)
+  } catch {
+    reportCopyState.value = { status: 'failed', report }
+    return
+  }
+  reportCopyState.value = { status: 'done' }
+  reportCopyReset = setTimeout(
+    () => (reportCopyState.value = { status: 'idle' }),
+    1600
+  )
 }
 
 function fallbackSnapshot(): CrdtDebugSnapshot {

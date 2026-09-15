@@ -240,6 +240,7 @@ describe('CrdtDevPanel', () => {
     const collectSpy = vi
       .spyOn(crdtDebugReport, 'collectCrdtDebugReport')
       .mockRejectedValueOnce(new Error('snapshot unavailable'))
+      .mockResolvedValueOnce('# recovered report')
     const user = userEvent.setup()
     renderPanel()
     await user.click(chip()!)
@@ -258,7 +259,34 @@ describe('CrdtDevPanel', () => {
       screen.queryByRole('textbox', { name: 'Report to copy' })
     ).not.toBeInTheDocument()
 
+    await user.click(copyReportButton)
+    expect(collectSpy).toHaveBeenCalledTimes(2)
+    expect(copyReportButton).toHaveTextContent('Copied')
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument()
+
     collectSpy.mockRestore()
+  })
+
+  it('passes turned-off privacy sources to the collector', async () => {
+    const collectSpy = vi
+      .spyOn(crdtDebugReport, 'collectCrdtDebugReport')
+      .mockResolvedValueOnce('# report')
+    const user = userEvent.setup()
+    renderPanel()
+    await user.click(chip()!)
+
+    for (const name of ['Server logs', 'Settings', 'Workflow JSON']) {
+      await user.click(screen.getByRole('switch', { name }))
+    }
+    await user.click(screen.getByTestId('crdt-dev-panel-copy-report'))
+
+    expect(collectSpy).toHaveBeenCalledWith(
+      expect.objectContaining({
+        sources: { serverLogs: false, settings: false, workflow: false }
+      })
+    )
+    expect(collectSpy.mock.calls[0][0]).not.toHaveProperty('workflow')
+    expect(collectSpy.mock.calls[0][0]).not.toHaveProperty('workflowError')
   })
 
   it('passes an identifiers block to the report collector on every copy', async () => {

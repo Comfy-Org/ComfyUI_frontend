@@ -88,9 +88,9 @@ describe('CrdtDevPanel clipboard controls', () => {
 
   it('keeps a report available for manual copy after clipboard failure and retries', async () => {
     const report = '# Diagnostic report\n\nCollected context'
-    vi.spyOn(crdtDebugReport, 'collectCrdtDebugReport').mockResolvedValue(
-      report
-    )
+    const collectReport = vi
+      .spyOn(crdtDebugReport, 'collectCrdtDebugReport')
+      .mockResolvedValue(report)
     vi.mocked(useClipboard).mockReturnValue(
       fromPartial({ copy: vi.fn(() => Promise.resolve()) })
     )
@@ -115,6 +115,7 @@ describe('CrdtDevPanel clipboard controls', () => {
     await user.click(screen.getByRole('button', { name: 'Retry copy report' }))
 
     expect(writeReport).toHaveBeenLastCalledWith(report)
+    expect(collectReport).toHaveBeenCalledOnce()
     expect(screen.queryByRole('alert')).not.toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Copied' })).toBeInTheDocument()
   })

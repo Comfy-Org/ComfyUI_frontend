@@ -18,6 +18,11 @@ describe('api.getLogs', () => {
       data: [{ level: 'info', message: 'System is running normally' }],
       expected:
         '[\n  {\n    "level": "info",\n    "message": "System is running normally"\n  }\n]'
+    },
+    {
+      name: 'empty response body',
+      data: undefined,
+      expected: ''
     }
   ])('returns text for $name', async ({ data, expected }) => {
     vi.mocked(axios.get).mockResolvedValueOnce({ data })

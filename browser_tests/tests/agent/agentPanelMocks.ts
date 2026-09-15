@@ -149,17 +149,25 @@ async function mockAgentBoot(
     postedMessages,
     agentConsentAccepted,
     agentPanelInitiallyOpen,
+    crdtDebugEnabled,
     agentConsentSave,
     agentConsentWrites
   }: AgentFixtures
 ): Promise<void> {
   let consentAccepted = agentConsentAccepted
 
-  await page.addInitScript((initiallyOpen) => {
-    if (localStorage.getItem('Comfy.AgentPanel.open') === null) {
-      localStorage.setItem('Comfy.AgentPanel.open', String(initiallyOpen))
-    }
-  }, agentPanelInitiallyOpen)
+  await page.addInitScript(
+    ({ initiallyOpen, debugEnabled }) => {
+      if (localStorage.getItem('Comfy.AgentPanel.open') === null) {
+        localStorage.setItem('Comfy.AgentPanel.open', String(initiallyOpen))
+      }
+      if (debugEnabled) {
+        localStorage.setItem('Comfy.Agent.CrdtDebug.enabled', 'true')
+        localStorage.setItem('Comfy.Agent.CrdtDevPanel.open', 'true')
+      }
+    },
+    { initiallyOpen: agentPanelInitiallyOpen, debugEnabled: crdtDebugEnabled }
+  )
 
   await mockBilling(page)
   await page.route(
@@ -335,6 +343,7 @@ type AgentFixtures = {
   agentFlagEnabled: boolean
   agentConsentAccepted: boolean
   agentPanelInitiallyOpen: boolean
+  crdtDebugEnabled: boolean
   agentConsentSave: { status: number; pending?: Promise<void> }
   agentConsentWrites: boolean[]
   postedMessages: string[]
@@ -344,6 +353,7 @@ export const agentTest = comfyPageFixture.extend<AgentFixtures>({
   agentFlagEnabled: [true, { option: true }],
   agentConsentAccepted: [true, { option: true }],
   agentPanelInitiallyOpen: [false, { option: true }],
+  crdtDebugEnabled: [false, { option: true }],
   agentConsentSave: async ({ agentFlagEnabled: _agentFlagEnabled }, use) => {
     await use({ status: 200 })
   },
@@ -360,6 +370,7 @@ export const agentTest = comfyPageFixture.extend<AgentFixtures>({
       postedMessages,
       agentConsentAccepted,
       agentPanelInitiallyOpen,
+      crdtDebugEnabled,
       agentConsentSave,
       agentConsentWrites
     },
@@ -370,6 +381,7 @@ export const agentTest = comfyPageFixture.extend<AgentFixtures>({
       postedMessages,
       agentConsentAccepted,
       agentPanelInitiallyOpen,
+      crdtDebugEnabled,
       agentConsentSave,
       agentConsentWrites
     })

@@ -312,6 +312,38 @@ describe('collectCrdtDebugReport', () => {
     }
   )
 
+  it('redacts and bounds a workflow serialization failure', async () => {
+    const report = await collectCrdtDebugReport({
+      crdt: SNAPSHOT,
+      events: [],
+      sources: ALL_SOURCES,
+      workflowError: `${'x'.repeat(80_000)} apiKey=do-not-leak`
+    })
+
+    expect(report).not.toContain('do-not-leak')
+    expect(report).toContain('apiKey=[redacted by the debug report]')
+    expect(report).toContain('earlier characters trimmed')
+  })
+
+  it('reports a thrown workflow JSON conversion as failed', async () => {
+    const workflow = Object.defineProperty({}, 'broken', {
+      enumerable: true,
+      get: () => {
+        throw new Error('serialize failed')
+      }
+    })
+
+    const report = await collectCrdtDebugReport({
+      crdt: SNAPSHOT,
+      events: [],
+      sources: ALL_SOURCES,
+      workflow
+    })
+
+    expect(report).toContain('- Workflow: failed (see source section)')
+    expect(report).toContain('## Workflow')
+  })
+
   it('redacts widget values from outbound operation events', async () => {
     const report = await collectCrdtDebugReport({
       crdt: SNAPSHOT,

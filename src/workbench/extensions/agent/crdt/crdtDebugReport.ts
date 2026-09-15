@@ -282,9 +282,12 @@ type SystemStats = Awaited<ReturnType<typeof api.getSystemStats>>
  */
 const PRIVATE_VALUE_PATTERN =
   /(^|=)(\/|~|[A-Za-z]:[\\/]|\\\\|\.{1,2}[\\/])|:\/\//
+const SECRET_VALUE_PATTERN =
+  /((?:token|secret|password|passwd|credential|api[-_]?key|apikey|auth|bearer|session|cookie|private)\s*[:=]\s*)([^\s,;]+)/gi
 
 function redactPrivateValue(value: string): string {
-  return PRIVATE_VALUE_PATTERN.test(value) ? REDACTED : value
+  if (PRIVATE_VALUE_PATTERN.test(value)) return REDACTED
+  return value.replace(SECRET_VALUE_PATTERN, `$1${REDACTED}`)
 }
 
 function redactArgv(argv: readonly string[]): string {
@@ -416,6 +419,54 @@ function mergeSection(entries: readonly MergeTraceEntry[]): string {
     .join('\n')
 }
 
+function serializeWorkflow(
+  input: CrdtDebugReportInput
+): { status: string; section?: string } | undefined {
+  const sources = input.sources ?? DEFAULT_REPORT_SOURCES
+  if (!sources.workflow) return { status: 'turned off' }
+  if (input.workflowError !== undefined) {
+    return {
+      status: 'failed (see source section)',
+      section: fence(
+        'text',
+        truncate(String(redactSecrets(input.workflowError)), MAX_SECTION_CHARS)
+      )
+    }
+  }
+  if (input.workflow === undefined) return { status: 'unavailable' }
+
+  let serialized: string
+  try {
+    serialized = JSON.stringify(input.workflow, devEventReplacer(), 2)
+  } catch (error) {
+    return {
+      status: 'failed (see source section)',
+      section: fence(
+        'text',
+        truncate(String(redactSecrets(String(error))), MAX_SECTION_CHARS)
+      )
+    }
+  }
+
+  if (serialized.length > MAX_WORKFLOW_CHARS) {
+    return {
+      status: `omitted (over ${MAX_WORKFLOW_CHARS} characters)`,
+      section: fence(
+        'json',
+        `<workflow omitted: ${serialized.length} characters — attach the .json file instead>`
+      )
+    }
+  }
+  return { status: 'collected', section: fence('json', serialized) }
+}
+
+function sourceStatus(
+  result: Awaited<ReturnType<typeof attempt>> | null
+): string {
+  if (result === null) return 'turned off'
+  return result.ok ? 'collected' : 'failed (see source section)'
+}
+
 /**
  * Build the full markdown report.
  *
@@ -441,19 +492,7 @@ export async function collectCrdtDebugReport(
     sources.serverLogs ? attempt('Server logs', () => api.getLogs()) : null,
     sources.settings ? attempt('Settings', () => api.getSettings()) : null
   ])
-  const workflow =
-    sources.workflow && input.workflow !== undefined
-      ? json(input.workflow)
-      : undefined
-  const workflowStatus = !sources.workflow
-    ? 'turned off'
-    : input.workflowError !== undefined
-      ? 'failed (see source section)'
-      : workflow === undefined
-        ? 'unavailable'
-        : workflow.length > MAX_WORKFLOW_CHARS
-          ? `omitted (over ${MAX_WORKFLOW_CHARS} characters)`
-          : 'collected'
+  const workflow = serializeWorkflow(input)
   const collectionStatus = (
     [
       ['System stats', stats],
@@ -461,13 +500,7 @@ export async function collectCrdtDebugReport(
       ['Settings', settings]
     ] as const
   ).map(([label, result]) => {
-    const status =
-      result === null
-        ? 'turned off'
-        : result.ok
-          ? 'collected'
-          : 'failed (see source section)'
-    return `- ${label}: ${status}`
+    return `- ${label}: ${sourceStatus(result)}`
   })
 
   const sections: string[] = [
@@ -478,7 +511,10 @@ export async function collectCrdtDebugReport(
     'Paste this block into a bug report or search Datadog/logs by any of these fields.',
     identifiersSection(input.identifiers ?? EMPTY_REPORT_IDENTIFIERS),
     '## Collection status',
-    [...collectionStatus, `- Workflow: ${workflowStatus}`].join('\n')
+    [
+      ...collectionStatus,
+      `- Workflow: ${workflow?.status ?? 'unavailable'}`
+    ].join('\n')
   ]
 
   if (input.testerNote?.trim()) {
@@ -531,18 +567,11 @@ export async function collectCrdtDebugReport(
     fence('json', truncate(json(input.crdt.stamps), MAX_SECTION_CHARS))
   )
 
-  if (sources.workflow && input.workflowError !== undefined) {
-    sections.push('## Workflow', fence('text', input.workflowError))
-  } else if (workflow !== undefined) {
+  if (workflow?.section !== undefined) {
     sections.push(
       '## Workflow',
       `${SHARING_WARNING} Prompts and API keys embedded in nodes appear verbatim.`,
-      fence(
-        'json',
-        workflow.length > MAX_WORKFLOW_CHARS
-          ? `<workflow omitted: ${workflow.length} characters — attach the .json file instead>`
-          : workflow
-      )
+      workflow.section
     )
   }
 
