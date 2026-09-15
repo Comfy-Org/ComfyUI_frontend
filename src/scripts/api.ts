@@ -5,6 +5,7 @@ import type {
 } from '@comfyorg/ingest-types'
 import {
   zGetEmbeddingsResponse,
+  zGetExtensionsResponse,
   zPostAssetsFromWorkflowResponse
 } from '@comfyorg/ingest-types/zod'
 import { promiseTimeout, until } from '@vueuse/core'
@@ -1076,7 +1077,7 @@ export class ComfyApi extends EventTarget {
    */
   async getExtensions(): Promise<GetExtensionsResponse> {
     const resp = await this.fetchApi('/extensions', { cache: 'no-store' })
-    return await resp.json()
+    return zGetExtensionsResponse.parse(await resp.json())
   }
 
   /**
