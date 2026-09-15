@@ -133,22 +133,25 @@ describe('WidgetGrid', () => {
       container.dataset.nodeId = String(nodeId)
       Object.defineProperty(container, 'offsetWidth', { value: 200 })
       container.getBoundingClientRect = () => new DOMRect(0, 0, 200, 300)
+      const stored = () =>
+        layoutStore.getSlotOffset(graphId, nodeId, 0, 'input', 'expanded')
+      const expected = (y: number) => (syncLayout ? { x: 0, y } : null)
+      const resizeAll = (...elements: Element[]) => {
+        for (const observer of observers)
+          for (const element of elements) observer.resize(element)
+      }
       const grid = screen.getByTestId('node-widgets')
       grid.getBoundingClientRect = () => new DOMRect(0, 30, 200, 270)
       const row = screen.getByTestId('node-widget')
       const socket = screen.getByTestId('slot-dot')
       socket.getBoundingClientRect = () => new DOMRect(0, 140, 8, 8)
-      for (const observer of observers) observer.resize(grid)
-      expect(
-        layoutStore.getSlotOffset(graphId, nodeId, 0, 'input', 'expanded')
-      ).toEqual(syncLayout ? { x: 0, y: 114 } : null)
+      resizeAll(grid)
+      expect(stored()).toEqual(expected(114))
 
       // Internal rows redistribute space without changing the node or grid bounds.
       socket.getBoundingClientRect = () => new DOMRect(0, 100, 8, 8)
-      for (const observer of observers) observer.resize(row)
-      expect(
-        layoutStore.getSlotOffset(graphId, nodeId, 0, 'input', 'expanded')
-      ).toEqual(syncLayout ? { x: 0, y: 74 } : null)
+      resizeAll(row)
+      expect(stored()).toEqual(expected(74))
 
       await rerender({ processedWidgets: [widget('steps', 'number', 0)] })
       const replacement = screen.getByTestId('node-widget')
@@ -156,27 +159,18 @@ describe('WidgetGrid', () => {
       // The replacement row keeps the store current, and a late resize on the
       // replaced row must not write its detached geometry over it.
       replacementSocket.getBoundingClientRect = () => new DOMRect(0, 120, 8, 8)
-      for (const observer of observers) observer.resize(replacement)
-      expect(
-        layoutStore.getSlotOffset(graphId, nodeId, 0, 'input', 'expanded')
-      ).toEqual(syncLayout ? { x: 0, y: 94 } : null)
+      resizeAll(replacement)
+      expect(stored()).toEqual(expected(94))
       socket.getBoundingClientRect = () => new DOMRect(0, 60, 8, 8)
-      for (const observer of observers) observer.resize(row)
-      expect(
-        layoutStore.getSlotOffset(graphId, nodeId, 0, 'input', 'expanded')
-      ).toEqual(syncLayout ? { x: 0, y: 94 } : null)
+      resizeAll(row)
+      expect(stored()).toEqual(expected(94))
 
       unmount()
       // Nothing survives unmount: a resize on the old grid or row cannot
       // write a stale offset for the node.
       replacementSocket.getBoundingClientRect = () => new DOMRect(0, 200, 8, 8)
-      for (const observer of observers) {
-        observer.resize(grid)
-        observer.resize(replacement)
-      }
-      expect(
-        layoutStore.getSlotOffset(graphId, nodeId, 0, 'input', 'expanded')
-      ).toEqual(syncLayout ? { x: 0, y: 94 } : null)
+      resizeAll(grid, replacement)
+      expect(stored()).toEqual(expected(94))
     }
   )
 

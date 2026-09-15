@@ -8,13 +8,7 @@
  * Supports different element types (nodes, slots, widgets, etc.) with
  * customizable data attributes and update handlers.
  */
-import {
-  getCurrentInstance,
-  onMounted,
-  onUnmounted,
-  onUpdated,
-  watch
-} from 'vue'
+import { getCurrentInstance, onMounted, onUnmounted, watch } from 'vue'
 
 import { useDocumentVisibility } from '@vueuse/core'
 
@@ -254,8 +248,10 @@ const resizeObserver = new ResizeObserver((entries) => {
 /**
  * Tracks DOM element size/position changes for a Vue component and syncs to layout store
  *
- * Sets up ResizeObserver tracking on the root and, when configured, its direct
- * children. Reconciles observed elements after updates and cleans up on unmount.
+ * Sets up ResizeObserver tracking on the root when the component mounts and,
+ * for configurations with `observeChildren`, on its direct children too. The
+ * returned `reconcile` re-reads the children; call it after the rendered set
+ * of children changes (post flush). Everything observed is released on unmount.
  *
  * @param appIdentifier - Application-level identifier for this tracked element (not a DOM ID)
  *                       Example: node ID like 'node-123', widget ID like 'widget-456'
@@ -287,8 +283,10 @@ export function useVueElementTracking(
     observed.delete(element)
   }
 
-  function observeElements() {
-    const element = getCurrentInstance()?.proxy?.$el
+  const instance = getCurrentInstance()
+
+  function reconcile() {
+    const element = instance?.proxy?.$el
     if (!(element instanceof HTMLElement) || !appIdentifier || !config) return
     const elements = new Set([
       element,
@@ -310,9 +308,10 @@ export function useVueElementTracking(
     }
   }
 
-  onMounted(observeElements)
-  onUpdated(observeElements)
+  onMounted(reconcile)
   onUnmounted(() => {
     for (const element of observed) unobserve(element)
   })
+
+  return { reconcile }
 }
