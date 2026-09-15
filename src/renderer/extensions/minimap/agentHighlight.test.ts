@@ -18,6 +18,10 @@ describe('agentHighlightAt', () => {
     expect(agentHighlightAt(CREATED_AT, CREATED_AT + AGENT_POP_MS).pop).toBe(1)
   })
 
+  it('holds at nothing until a staggered stamp comes due', () => {
+    expect(agentHighlightAt(CREATED_AT, CREATED_AT - 500).pop).toBe(0)
+  })
+
   it('keeps marking the node long after it landed', () => {
     expect(agentHighlightAt(CREATED_AT, CREATED_AT + 60 * 60_000).pop).toBe(1)
   })

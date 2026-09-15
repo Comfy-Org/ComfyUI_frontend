@@ -263,6 +263,7 @@ function viewAddedNodes(): void {
         v-if="showUpdating"
         key="updating"
         data-testid="agent-graph-activity-bar"
+        role="status"
         :class="cn(CARD_CLASS, 'border-l-base-foreground pr-4')"
       >
         <i
