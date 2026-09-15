@@ -21,6 +21,7 @@ export type ConflictType =
   | 'os' // Operating system incompatibility
   | 'accelerator' // GPU/accelerator incompatibility
   | 'banned' // Banned package
+  | 'flagged' // Security review raised findings, not yet adjudicated
   | 'pending' // Security verification pending
 
 /**
@@ -31,6 +32,7 @@ export interface NodeRequirements extends Node {
   installed_version: string
   is_enabled: boolean
   is_banned: boolean
+  is_flagged: boolean
   is_pending: boolean
   // Aliases for backwards compatibility with existing code
   version_status?: string
