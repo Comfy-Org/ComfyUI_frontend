@@ -25,6 +25,21 @@ describe('agentGeneratedNodesStore', () => {
     expect(new Set(stamps).size).toBe(3)
   })
 
+  it('stops spreading a cascade once its budget is spent', () => {
+    const store = useAgentGeneratedNodesStore()
+    const landed = Date.now()
+    const ids = [...Array(15).keys()]
+
+    for (const id of ids)
+      store.markGenerated(locator(id), { at: landed, cascade: true })
+
+    const stamps = ids.map((id) => store.generatedAtFor(locator(id)))
+    expect(stamps).toStrictEqual([...stamps].sort((a = 0, b = 0) => a - b))
+    // The tail shares the capped stamp rather than running further ahead.
+    expect(stamps.at(-1)).toBe(stamps.at(-2))
+    expect(new Set(stamps).size).toBeLessThan(ids.length)
+  })
+
   it('stamps nodes added to a graph as they land', () => {
     const store = useAgentGeneratedNodesStore()
     const landed = Date.now()

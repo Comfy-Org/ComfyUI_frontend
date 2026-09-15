@@ -231,7 +231,6 @@ export class EcsFollowerAdapter {
     const changedLinkIds = new Set(session.changedLinks)
     const reconcile = session.reconcileNextFrame
     const hydration = session.hydrating
-    session.hydrating = false
     this.discardSessionPending(session)
 
     const replacedNodeIds = new Set(
@@ -319,6 +318,9 @@ export class EcsFollowerAdapter {
     // cleanup instead of falling through to incremental handling with
     // stale local-only graph state still present.
     if (committed) session.reconcileNextFrame = false
+    // Same for the catch-up: a rejected batch never reached the stores, so the
+    // next frame is still this subscription's first applied one.
+    if (committed) session.hydrating = false
     return committed
   }
 
