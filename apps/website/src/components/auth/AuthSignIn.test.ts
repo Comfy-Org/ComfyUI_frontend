@@ -1096,7 +1096,7 @@ describe('AuthSignIn controller lifecycle', () => {
   }
   const flush = () => vi.advanceTimersByTimeAsync(0)
   const googleButton = () =>
-    screen.getByRole('button', { name: /log in with google/i })
+    screen.getByRole('button', { name: /^sign in with google$/i })
 
   it('does not leave the page when the flag turns off during the mint, even once the session client publishes the credential', async () => {
     let publishAndResolveMint: (() => void) | undefined
