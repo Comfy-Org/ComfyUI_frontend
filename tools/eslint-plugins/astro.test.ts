@@ -44,12 +44,22 @@ debugger
   it('formats after ESLint fixes and typechecks an Astro-only commit', () => {
     const commands = lintStaged([`${process.cwd()}/${filePath}`])
     const lintCommand = `pnpm exec eslint --cache --fix --no-warn-ignored "${filePath}"`
-    const formatCommand = `pnpm exec prettier --write "${filePath}"`
+    const formatCommand =
+      'pnpm --dir apps/website exec prettier --write "src/pages/lint-coverage.astro"'
 
     expect(commands).toContain(lintCommand)
     expect(commands.indexOf(formatCommand)).toBeGreaterThan(
       commands.indexOf(lintCommand)
     )
     expect(commands).toContain('pnpm typecheck:website')
+  })
+
+  it('does not run Prettier outside the website source directory', () => {
+    const commands = lintStaged([
+      `${process.cwd()}/apps/website/content.astro`,
+      `${process.cwd()}/packages/example.astro`
+    ])
+
+    expect(commands.join(' ')).not.toContain('prettier')
   })
 })
