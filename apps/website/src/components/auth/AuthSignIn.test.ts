@@ -909,8 +909,8 @@ describe('AuthSignIn', () => {
     expect(alert.getAttribute('data-severity')).toBe('error')
     expect(
       alert.textContent,
-      'the website renders its own i18n line for the failure, not a package-shipped string'
-    ).toContain(t('auth.errors.auth/user-not-found', 'en'))
+      'user-not-found collapses to the neutral invalid-credential line so the toast never confirms whether the email has an account'
+    ).toContain(t('auth.errors.auth/invalid-credential', 'en'))
     expect(toasts.value[0].life).toBeUndefined()
     expect(replace).not.toHaveBeenCalled()
   })
