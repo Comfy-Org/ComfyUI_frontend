@@ -3,6 +3,8 @@ import { render, screen } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
+import { i18n } from '@/i18n'
+
 vi.mock<unknown>(import('@/scripts/api'), () => ({
   api: {
     getSystemStats: () => Promise.reject(new Error('offline')),
@@ -45,7 +47,10 @@ const STATUS: AgentCrdtStatus = {
 }
 
 function renderPanel() {
-  return render(CrdtDevPanel, { props: { status: STATUS } })
+  return render(CrdtDevPanel, {
+    props: { status: STATUS },
+    global: { plugins: [i18n] }
+  })
 }
 
 const chip = () => screen.queryByTestId('crdt-dev-panel-chip')
@@ -85,7 +90,8 @@ describe('CrdtDevPanel', () => {
           appliedOpIds: ['op-1'],
           stamps: { 'node:node-1': [7, 'actor-1', 'op-1'] }
         })
-      }
+      },
+      global: { plugins: [i18n] }
     })
 
     await user.click(chip()!)
@@ -95,6 +101,22 @@ describe('CrdtDevPanel', () => {
     expect(sheet()).toHaveTextContent('node-1')
     expect(sheet()).toHaveTextContent('last seq')
     expect(sheet()).toHaveTextContent('7')
+  })
+
+  it('keeps the active tab selected when activated again', async () => {
+    const user = userEvent.setup()
+    renderPanel()
+    await user.click(chip()!)
+
+    const statusTab = screen.getByTestId('crdt-dev-panel-tab-status')
+    await user.click(statusTab)
+    expect(statusTab).toHaveAttribute('aria-pressed', 'true')
+    expect(sheet()).toHaveTextContent('doc-1')
+
+    statusTab.focus()
+    await user.keyboard(' ')
+    expect(statusTab).toHaveAttribute('aria-pressed', 'true')
+    expect(sheet()).toHaveTextContent('doc-1')
   })
 
   it('moves focus into the panel and restores it after Escape closes', async () => {
@@ -188,10 +210,8 @@ describe('CrdtDevPanel', () => {
       'ws_out'
     )
 
-    await user.selectOptions(
-      screen.getByTestId('crdt-dev-panel-scope-filter'),
-      'doc'
-    )
+    await user.click(screen.getByTestId('crdt-dev-panel-scope-filter'))
+    await user.click(screen.getByRole('option', { name: 'doc' }))
 
     const log = screen.getByTestId('crdt-dev-panel-log').textContent
     expect(log).toContain('doc_update')
