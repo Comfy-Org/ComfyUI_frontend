@@ -138,15 +138,20 @@ describe('WorkshopSections', () => {
     expect(names).toEqual(['a', 'b'])
   })
 
-  it('asks the catalog to open the section behind its title', async () => {
-    const { emitted } = render(WorkshopSections, {
-      props: { models, labelKey }
-    })
+  it.for(['open', 'see-all'])(
+    'asks the catalog to open the section from its %s control',
+    async (control) => {
+      const { emitted } = render(WorkshopSections, {
+        props: { models, labelKey }
+      })
 
-    await userEvent.click(screen.getByTestId('section-generate-videos-open'))
+      await userEvent.click(
+        screen.getByTestId(`section-generate-videos-${control}`)
+      )
 
-    expect(emitted().open).toEqual([['generate-videos']])
-  })
+      expect(emitted().open).toEqual([['generate-videos']])
+    }
+  )
 
   it('opens the sparse formats as one combined section', async () => {
     const sparse = [
@@ -158,7 +163,7 @@ describe('WorkshopSections', () => {
       props: { models: sparse, labelKey }
     })
 
-    await userEvent.click(screen.getByTestId('section-other-formats-open'))
+    await userEvent.click(screen.getByTestId('section-other-formats-see-all'))
 
     expect(emitted().open).toEqual([['other']])
   })
