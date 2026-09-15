@@ -9813,7 +9813,6 @@ Enterprise`
     'zh-CN': '此模型尚未启用 Comfy Router 执行。'
   },
   'workshop.model.incomplete': { en: 'Incomplete', 'zh-CN': '尚未完善' },
-  'workshop.model.viewDetails': { en: 'View details', 'zh-CN': '查看详情' },
   'workshop.model.notSupported': {
     en: 'Run not yet supported',
     'zh-CN': '暂不支持运行'
