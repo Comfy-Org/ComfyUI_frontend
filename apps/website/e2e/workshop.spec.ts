@@ -512,10 +512,30 @@ test.describe('Model playground', () => {
       .toBeLessThan(320)
     await page.getByRole('textbox', { name: 'Prompt', exact: true }).fill('')
     await example.click()
+
+    // Clearing the field is a deliberate edit, so the example asks before it
+    // writes over it.
+    await page.getByTestId('example-replace-confirm').click()
+
     await expect(page.getByTestId('playground-tab')).toBeVisible()
     await expect(
       page.getByRole('textbox', { name: 'Prompt', exact: true })
     ).not.toHaveValue('')
+  })
+
+  test('an example leaves a cleared prompt alone when asked to', async ({
+    page
+  }) => {
+    await page.goto(MODEL_PATH)
+    const prompt = page.getByRole('textbox', { name: 'Prompt', exact: true })
+    await expect(prompt).not.toHaveValue('')
+    await prompt.fill('')
+
+    await page.getByTestId('example-card').first().click()
+    await page.getByTestId('example-replace-keep').click()
+
+    await expect(page.getByTestId('example-replace-dialog')).toHaveCount(0)
+    await expect(prompt).toHaveValue('')
   })
 
   test('three examples fill the available desktop row', async ({ page }) => {

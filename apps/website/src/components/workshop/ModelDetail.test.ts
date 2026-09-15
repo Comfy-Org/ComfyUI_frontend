@@ -1572,7 +1572,9 @@ describe('ModelDetail', () => {
     'asks before an example overwrites what was typed, and then %s it',
     async ([, answer, expected]) => {
       await signedInDetail()
-      await fireEvent.update(screen.getByTestId('field-prompt'), 'my own words')
+      const prompt = screen.getByTestId('field-prompt')
+      await user().clear(prompt)
+      await user().type(prompt, 'my own words')
 
       await user().click(
         screen.getByRole('button', { name: /Open in Playground$/ })
@@ -1585,11 +1587,36 @@ describe('ModelDetail', () => {
 
       await user().click(screen.getByTestId(answer))
 
+      expect(screen.queryByTestId('example-replace-dialog')).toBeNull()
       expect(
         screen.getByTestId<HTMLTextAreaElement>('field-prompt').value
       ).toBe(expected)
     }
   )
+
+  it('asks before an example overwrites a native JSON request too', async () => {
+    const jsonModel: WorkshopModelDetail = {
+      ...uncuratedRunnable,
+      examples: [{ ...model.examples[0], fields: undefined }]
+    }
+    auth.session.value = credential
+    mountDetail({ model: jsonModel })
+    await nextTick()
+
+    await user().click(screen.getByRole('button', { name: 'Native JSON' }))
+    const body = screen.getByTestId('field-request_body')
+    await user().clear(body)
+    await user().type(body, '{{"prompt":"mine"}')
+
+    await user().click(
+      screen.getByRole('button', { name: /Open in Playground$/ })
+    )
+
+    expect(screen.getByTestId('example-replace-dialog')).toBeTruthy()
+    expect(
+      screen.getByTestId<HTMLTextAreaElement>('field-request_body').value
+    ).toBe('{"prompt":"mine"}')
+  })
 
   it.for(['My saved prompt', ''])(
     'preserves a saved prompt or deliberate clear instead of restoring the starter: %s',

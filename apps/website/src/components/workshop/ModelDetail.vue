@@ -164,17 +164,25 @@ const { pending: draftPending, restoreFailed } = useWorkshopFormDraft(
 )
 // Every write replaces the whole record, so the last one the page itself made
 // is enough to tell a reader's work from the form merely settling. The draft
-// restore writes too, and its media half lands late, so the mark is taken
-// again once that has finished.
+// restore writes too, and its media half lands late, so the marks are taken
+// again once that has finished. The two editors hold their own records, and
+// an example replaces the form while leaving the JSON where it was, so each
+// carries its own mark.
 const settledValues = ref<FormValues>()
-const inputsEdited = computed(
-  () =>
-    settledValues.value !== undefined &&
-    fieldValues.value !== settledValues.value
+const settledJson = ref<FormValues>()
+const inputsEdited = computed(() =>
+  nativeJson.value
+    ? settledJson.value !== undefined && jsonValues.value !== settledJson.value
+    : settledValues.value !== undefined &&
+      fieldValues.value !== settledValues.value
 )
-onMounted(() => void nextTick(() => (settledValues.value = fieldValues.value)))
+function markSettled(): void {
+  settledValues.value = fieldValues.value
+  settledJson.value = jsonValues.value
+}
+onMounted(() => void nextTick(markSettled))
 watch(draftPending, (pending, was) => {
-  if (was && !pending) settledValues.value = fieldValues.value
+  if (was && !pending) markSettled()
 })
 
 const runState = ref<RunState>(
