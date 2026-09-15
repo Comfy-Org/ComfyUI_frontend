@@ -152,7 +152,7 @@ const STATUS_ROWS = [
   ['last frame', () => status.lastFrameType ?? S.none]
 ] as const
 
-const SCOPES: readonly CrdtLogScope[] = ['wire', 'doc']
+const SCOPES: readonly CrdtLogScope[] = ['wire', 'doc', 'ecs', 'ops']
 
 const EVENT_KINDS: readonly DevEventKind[] = [
   'ws_out',

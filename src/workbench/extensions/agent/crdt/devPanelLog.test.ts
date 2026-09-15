@@ -122,6 +122,14 @@ describe('devPanelLog', () => {
     expect(event.level).toBe('warn')
   })
 
+  it('accepts the ecs and ops scopes alongside wire and doc', () => {
+    recordDevEvent('doc_nodes_changed', null, { scope: 'ecs' })
+    recordDevEvent('doc_ops_result', null, { scope: 'ops' })
+
+    const scopes = devEvents.value.map((event) => event.scope)
+    expect(scopes).toEqual(['ecs', 'ops'])
+  })
+
   it('does not retain events while the debug instrument is disabled', () => {
     setCrdtDebugEnabled(false)
 

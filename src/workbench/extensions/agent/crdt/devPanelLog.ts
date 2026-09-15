@@ -16,10 +16,17 @@ import type { CrdtLogLevel } from './crdtDebugGate'
 
 /**
  * The layer an event came from. Filtering by scope is how the panel offers
- * "varying levels of abstraction": `wire` is bytes on the socket and `doc`
- * is document lineage.
+ * "varying levels of abstraction": `wire` is bytes on the socket, `doc` is
+ * document lineage, `ecs` is the follower-adapter reconcile step that turns
+ * doc deltas into ECS/graph mutations, and `ops` is the outbound op-minting
+ * and batch-settlement lifecycle. `ecs`/`ops` existed on the pre-salvage
+ * branch (`ecsLog`/`opsLog` in a since-retired `crdtLog.ts`) and were
+ * dropped when #16365 ported the panel to main without them; call sites
+ * that logically belong to those two layers had been emitting under the
+ * catch-all `doc` scope in the meantime (`options.scope` defaults to
+ * `'doc'` below).
  */
-export type CrdtLogScope = 'wire' | 'doc'
+export type CrdtLogScope = 'wire' | 'doc' | 'ecs' | 'ops'
 
 export type DevEventKind =
   | 'ws_out'

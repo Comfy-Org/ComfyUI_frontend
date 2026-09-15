@@ -23,7 +23,9 @@ import { recordDevEvent } from './devPanelLog'
  */
 const SCOPE_STYLE: Record<CrdtLogScope, string> = {
   wire: 'color:#7dd3fc',
-  doc: 'color:#a5b4fc'
+  doc: 'color:#a5b4fc',
+  ecs: 'color:#86efac',
+  ops: 'color:#fcd34d'
 }
 
 const CONSOLE_METHOD: Record<CrdtLogLevel, 'warn' | 'info' | 'debug'> = {
