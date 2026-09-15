@@ -225,7 +225,10 @@ describe('SubgraphConversion', () => {
 
       expect(beforeChange).not.toHaveBeenCalled()
       expect(graph.serialize()).toEqual(before)
-      expect(error).toHaveBeenCalledWith(expect.any(Error))
+      expect(error).toHaveBeenCalledWith(
+        '[Reported error]: error_unpacking_subgraph_node_type',
+        expect.any(Error)
+      )
     })
 
     it('keeps a shared definition link registered while copying it to the parent', () => {
