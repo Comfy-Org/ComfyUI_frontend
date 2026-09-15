@@ -165,14 +165,18 @@ describe('MessageFeedback', () => {
 
     // Belt and braces: if the disabled state is ever dropped, the wait above
     // becomes a no-op, so the count keeps its own bounded retry rather than
-    // silently going back to racing the second download.
+    // silently going back to racing the second download. Kept well inside the
+    // test budget below — a retry as long as the budget just turns a slow run
+    // into a timeout instead of a wait.
     await waitFor(() => expect(fetchApi).toHaveBeenCalledTimes(2), {
-      timeout: 5000
+      timeout: 2000
     })
     expect(fetchApi).toHaveBeenCalledWith('/view?filename=a.png')
     expect(fetchApi).toHaveBeenCalledWith('/view?filename=mesh.glb')
     expect(revokeObjectURL).toHaveBeenCalledTimes(2)
-  })
+    // Two sequential downloads through the component, under coverage
+    // instrumentation on a shared runner, do not reliably fit the 5s default.
+  }, 20_000)
 
   it('Escape closes the markdown menu without copying', async () => {
     const { user } = renderFeedback()
