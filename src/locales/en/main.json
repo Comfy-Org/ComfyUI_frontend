@@ -2256,6 +2256,11 @@
       "playbackSpeed": "Playback speed",
       "animationClip": "Animation clip"
     },
+    "stats": {
+      "vertices": "Vertices",
+      "edges": "Edges",
+      "triangles": "Triangles"
+    },
     "materialModes": {
       "normal": "Normal",
       "wireframe": "Wireframe",
