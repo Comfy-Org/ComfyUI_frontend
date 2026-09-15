@@ -40,7 +40,7 @@ const { mockFeatureFlags } = vi.hoisted(() => ({
 
 const mockReportError = vi.hoisted(() => vi.fn())
 
-vi.mock<unknown>(import('@/platform/telemetry/reportError'), () => ({
+vi.mock(import('@/platform/telemetry/reportError'), () => ({
   reportError: mockReportError
 }))
 
