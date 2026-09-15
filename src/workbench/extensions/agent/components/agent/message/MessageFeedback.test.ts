@@ -136,16 +136,29 @@ describe('MessageFeedback', () => {
     const revokeObjectURL = vi.fn()
     URL.createObjectURL = createObjectURL
     URL.revokeObjectURL = revokeObjectURL
+    // Reply assets the backend serves live on the API's own view route.
+    // Only those go through the authenticated client; downloadReplyAsset
+    // sends anything else through a plain fetch, so asserting foreign URLs
+    // here would be asserting a credential leak.
+    const origin = window.location.origin
     const { user } = renderFeedback([
-      { url: 'https://x/a.png', filename: 'a.png', kind: 'image' },
-      { url: 'https://x/mesh.glb', filename: 'mesh.glb', kind: '3D' }
+      {
+        url: `${origin}/api/view?filename=a.png`,
+        filename: 'a.png',
+        kind: 'image'
+      },
+      {
+        url: `${origin}/api/view?filename=mesh.glb`,
+        filename: 'mesh.glb',
+        kind: '3D'
+      }
     ])
 
     await user.click(screen.getByRole('button', { name: 'Download assets' }))
 
     await waitFor(() => expect(fetchApi).toHaveBeenCalledTimes(2))
-    expect(fetchApi).toHaveBeenCalledWith('https://x/a.png')
-    expect(fetchApi).toHaveBeenCalledWith('https://x/mesh.glb')
+    expect(fetchApi).toHaveBeenCalledWith('/view?filename=a.png')
+    expect(fetchApi).toHaveBeenCalledWith('/view?filename=mesh.glb')
     await waitFor(() => expect(revokeObjectURL).toHaveBeenCalledTimes(2))
   })
 
