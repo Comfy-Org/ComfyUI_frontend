@@ -6,6 +6,7 @@ import type { ComfyEvent } from '../src/data/events'
 import {
   directoryEvents,
   eventPath,
+  eventStatus,
   eventVideoId,
   featuredEvents,
   pastEvents,
@@ -508,8 +509,9 @@ test.describe('Events page — desktop @smoke', () => {
   test('cards carry the same upcoming and past CTAs as the list', async ({
     page
   }) => {
+    const now = new Date()
     const upcoming = directoryEvents.find(
-      (event) => Date.parse(event.startDateTime) > Date.now()
+      (event) => eventStatus(event, now) === 'upcoming'
     )
     test.skip(!upcoming, 'needs an upcoming event')
     if (!upcoming) return
@@ -551,7 +553,7 @@ test.describe('Events page — desktop @smoke', () => {
 
     // A past card links out instead of offering the menu.
     const past = directoryEvents.find(
-      (event) => Date.parse(event.startDateTime) < Date.now() && event.link
+      (event) => eventStatus(event, now) === 'past' && event.link
     )
     if (past) {
       await page.keyboard.press('Escape')

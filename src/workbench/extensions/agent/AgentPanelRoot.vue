@@ -91,6 +91,7 @@ import { resolveAgentPaywallPresentation } from './services/agent/agentPaywallPr
 import { createAgentEventSource } from './services/agent/agentEventSource'
 import { createStandaloneAgentEventSource } from './services/agent/standaloneAgentEventSource'
 import { useAgentChatHistoryStore } from './stores/agent/agentChatHistoryStore'
+import { agentMessageText } from './utils/agentMessageText'
 import { useAgentComposerStore } from './stores/agent/agentComposerStore'
 import { useAgentPanelStore } from './stores/agent/agentPanelStore'
 import {
@@ -278,6 +279,7 @@ const nodeReferenceDisabledReason = computed(() => {
 const selectedNodes = computed<SelectedNode[]>(() =>
   canvasStore.selectedItems.filter(isLGraphNode).map(toSelectedNode)
 )
+composerStore.setNodeScope(selectedTarget.value?.path ?? null)
 const {
   staged: selectionTags,
   consume: consumeSelection,
@@ -285,6 +287,11 @@ const {
   add: addSelectionTag,
   replace: replaceSelectionTags
 } = useCanvasSelection({
+  staged: computed({
+    get: () => composerStore.nodes,
+    set: composerStore.setNodes
+  }),
+  retainWhenNotLive: true,
   selection: selectedNodes,
   enabled: () => agentEnabled.value && selectedTarget.value !== null,
   isLive: () => agentPanelStore.isOpen,
@@ -744,7 +751,7 @@ async function onSelectHistory(id: string): Promise<void> {
 function buildTranscriptMarkdown(entries: ConversationEntry[]): string {
   return entries
     .map((entry) => {
-      if (entry.role === 'user') return `**You:** ${entry.text}`
+      if (entry.role === 'user') return `**You:** ${agentMessageText(entry)}`
       const text = entry.parts
         .filter((part) => part.type === 'text')
         .map((part) => part.text)
@@ -803,6 +810,7 @@ function onNewChat(): void {
   cancelWorkflowSelection()
   exitNodeSelectionMode()
   composerStore.setWorkflowReferences([])
+  composerStore.resetPromptHistory()
   newChat()
 }
 
@@ -860,7 +868,7 @@ watch(
   selectedTarget,
   (target, previous) => {
     exitNodeSelectionMode()
-    replaceSelectionTags([])
+    composerStore.setNodeScope(target?.path ?? null)
     nodeReferenceWorkflow = null
     agentNodeSelectionStore.saveNodeIds(previous?.path, [])
     agentNodeSelectionStore.saveNodeIds(target?.path, [])
@@ -930,9 +938,9 @@ const attachment = useAttachment({
   // must not raise the server-error overlay.
   onError: (message) =>
     toast.add({ severity: 'warn', detail: message, life: 5000 }),
-  stage: (staged) => panelRef.value?.addAttachment(staged),
-  update: (id, patch) => panelRef.value?.updateAttachment(id, patch),
-  remove: (id) => panelRef.value?.removeAttachment(id)
+  stage: composerStore.addAttachment,
+  update: composerStore.updateAttachment,
+  remove: composerStore.removeAttachment
 })
 
 function onAttach(): void {

@@ -6216,6 +6216,40 @@
       }
     }
   },
+  "FluxVideoEditNode": {
+    "description": "Yazılı bir talimata göre bir clip'i düzenler: nesneleri kaldırır, ekler veya değiştirir; ortamı değiştirir, görüntüleri yeniden stillendirir, ekrandaki metni değiştirir ya da konuşulan diyaloğu değiştirir. Süre, kadraj, kamera hareketi ve ses kaynak clip'ten alınır.",
+    "display_name": "Flux Video Düzenleme",
+    "inputs": {
+      "auto_downscale": {
+        "name": "auto_downscale",
+        "tooltip": "Yüklemeden önce 1280x704 pikselden daha büyük kaynakları otomatik olarak küçültür. En-boy oranı korunur; daha küçük videolara dokunulmaz."
+      },
+      "control_after_generate": {
+        "name": "oluşturma sonrası kontrol"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "4096 karaktere kadar, sade bir dille neyin değiştirileceği. Bahsetmediğiniz her şeyin olduğu gibi kalması amaçlanır. Değiştirilen diyalog, özgün konuşmanın sürdüğü zamana sığmalıdır ve sessiz bir clip sessiz kalır."
+      },
+      "safety_tolerance": {
+        "name": "safety_tolerance",
+        "tooltip": "Moderasyon toleransı; 0 en katı değerdir."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Düğümün yeniden çalışıp çalışmayacağını belirleyen seed; FLUX kendi seed değerini seçtiğinden, gerçek sonuçlar bu değerden bağımsız olarak deterministik değildir."
+      },
+      "video": {
+        "name": "video",
+        "tooltip": "0,7 ila 15 saniye uzunluğunda, en az 160x160 piksel kaynak clip. Çıktı 24 fps'de işlenir ve kare başına yaklaşık 0,9 megapiksel ile sınırlandırılır; bu nedenle daha büyük bir kaynak daha küçük olarak döner."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "FluxVideoUpscaleNode": {
     "description": "Videoyu FLUX süper çözünürlüğüyle 1,5 ila 3 kat büyütür; kaynak görüntüyü hassas biçimde korur veya ayrıntılarını yaratıcı şekilde geliştirir.",
     "display_name": "Flux Video Ölçek Büyütme",

@@ -8,7 +8,7 @@ import { workshopExampleValues } from './workshop-example-values'
 import {
   routerContentBySlug,
   routerModelSlugAliases,
-  routerWorkshopModels
+  workshopModels
 } from './workshop-browse-content'
 
 function examplesFor(
@@ -57,7 +57,7 @@ function executionFor(
 }
 
 const detailBySlug = new Map(
-  routerWorkshopModels.map((model) => {
+  workshopModels.map((model) => {
     const source = routerContentBySlug.get(model.slug)
     if (!source) throw new Error(`Missing content record: ${model.slug}`)
     const execution = model.incompleteReason

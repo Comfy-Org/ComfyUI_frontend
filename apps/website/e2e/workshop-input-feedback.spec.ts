@@ -40,7 +40,7 @@ test('FLUX Erase hydrates its local image and mask and shows an actual Erase res
 test('Kontext Pro shows a sourced price estimate', async ({ page }) => {
   await page.goto('/models/bfl--flux-kontext-pro--edit-images/')
   await expect(page.getByTestId('model-price')).toContainText(
-    'Estimated 8.44 credits/Run'
+    '8.44 credits/Run'
   )
 })
 
@@ -63,7 +63,7 @@ test('Beeble displays readable options while the API keeps its native values', a
   await expect(page.getByTestId('snippet')).toContainText('fill')
 })
 
-test('HeyGen offers named language and locale choices and keeps Voice ID in Advanced', async ({
+test('HeyGen offers named language and locale choices and uses the supported voice without exposing its account-specific ID', async ({
   page
 }) => {
   await page.goto('/models/heygen--starfish-tts--audio/')
@@ -83,9 +83,12 @@ test('HeyGen offers named language and locale choices and keeps Voice ID in Adva
   await page.getByTestId('playground-advanced').locator('summary').click()
   await expect(
     page.getByRole('textbox', { name: 'Voice ID', exact: true })
-  ).toBeVisible()
+  ).toHaveCount(0)
   await page.getByRole('tab', { name: 'API', exact: true }).click()
   await expect(page.getByTestId('snippet')).toContainText('fr-FR')
+  await expect(page.getByTestId('snippet')).toContainText(
+    'd2f4f24783d04e22ab49ee8fdc3715e0'
+  )
   await expect(page.getByTestId('snippet')).not.toContainText('French (France)')
 })
 

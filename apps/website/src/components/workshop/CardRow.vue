@@ -41,16 +41,16 @@ useMutationObserver(row, measure, { childList: true, subtree: true })
 
 const arrowClass = (spent: boolean) =>
   cn(
-    'focus-visible:ring-primary-comfy-yellow/50 grid size-9 place-items-center rounded-full border border-transparency-white-t20 text-primary-warm-white transition-colors outline-none focus-visible:ring-3',
+    'grid size-9 place-items-center rounded-xl border border-transparency-white-t20 text-primary-warm-white transition-colors outline-none focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow/50',
     spent
       ? 'cursor-default opacity-30'
-      : 'hover:border-primary-comfy-yellow hover:text-primary-comfy-yellow cursor-pointer'
+      : 'cursor-pointer hover:border-primary-comfy-yellow hover:text-primary-comfy-yellow'
   )
 </script>
 
 <template>
-  <div>
-    <div class="mb-5 flex items-center justify-between gap-4">
+  <div class="@container">
+    <div class="mb-5 flex items-baseline justify-between gap-4">
       <slot name="heading" />
       <div class="flex items-center gap-3">
         <slot name="actions" />
@@ -81,7 +81,7 @@ const arrowClass = (spent: boolean) =>
 
     <ul
       ref="row"
-      class="-mx-1 flex scrollbar-hide snap-x snap-mandatory gap-5 overflow-x-auto px-1 pb-2"
+      class="-mx-1 scrollbar-hide flex snap-x snap-mandatory gap-5 overflow-x-auto px-1 pb-2"
       @scroll="measure"
     >
       <slot />

@@ -8,10 +8,11 @@ import { useHubStore } from '../../composables/useHubStore'
 import type { UseCase, WorkshopModel } from '../../config/models-catalogue'
 import {
   USE_CASES,
+  filterWorkshopModels,
   sortWorkshopModels,
-  useCaseFor,
-  workshopModels
+  useCasesFor
 } from '../../config/models-catalogue'
+import { workshopModels as defaultWorkshopModels } from '../../config/workshop-browse-content'
 import { groupModels } from '../../config/model-family'
 import hubTemplates from '../../data/hubTemplates.json'
 import { hubWorkflowPath } from '../../lib/hub/workflow-detail'
@@ -36,13 +37,20 @@ import WorkshopHero from '../workshop/WorkshopHero.vue'
 import WorkshopModelCard from '../workshop/WorkshopModelCard.vue'
 import WorkshopSearchField from '../workshop/WorkshopSearchField.vue'
 
-const { locale = 'en', embedded = false } = defineProps<{
+const {
+  locale = 'en',
+  embedded = false,
+  models = defaultWorkshopModels,
+  templates = hubTemplates as HubTemplate[]
+} = defineProps<{
   locale?: Locale
   embedded?: boolean
+  models?: readonly WorkshopModel[]
+  templates?: readonly HubTemplate[]
 }>()
 
-const templates = (hubTemplates as HubTemplate[]).map((template) =>
-  withFacetFields(template, workshopModels)
+const facetedTemplates = computed(() =>
+  templates.map((template) => withFacetFields(template, models))
 )
 const store = useHubStore()
 
@@ -69,53 +77,12 @@ const useCaseLabelKey: Record<UseCase | 'all', TranslationKey> = {
   text: 'workshop.useCase.text'
 }
 
-// Arriving from the home row means "show me this provider": the models it makes
-// and the workflows that run them. The search panel narrows the same two lists,
-// by provider and by what a model can do.
-const providers = ref<string[]>([])
-const capabilities = ref<string[]>([])
-
-const narrowed = computed(
-  () => providers.value.length + capabilities.value.length > 0
-)
-
-function clearSearchFilters() {
-  providers.value = []
-  capabilities.value = []
-}
-
-const matchesModel = (model: WorkshopModel) =>
-  (providers.value.length === 0 ||
-    (model.provider !== undefined &&
-      providers.value.includes(model.provider))) &&
-  (capabilities.value.length === 0 ||
-    capabilities.value.some((capability) =>
-      model.capabilities.includes(capability)
-    ))
-
-// A workflow answers to the same narrowing through the models it runs.
-const matchingModelNames = computed(
-  () =>
-    new Set(
-      workshopModels
-        .filter(matchesModel)
-        .map((model) => model.name.toLowerCase())
-    )
-)
-
-const runsMatchingModel = (tmpl: HubTemplate) =>
-  !narrowed.value ||
-  tmpl.models.some((name) => matchingModelNames.value.has(name.toLowerCase()))
-
 const inUseCase = (value: UseCase | 'all') => ({
-  models: workshopModels.filter(
-    (model) =>
-      (value === 'all' || useCaseFor(model) === value) && matchesModel(model)
+  models: models.filter(
+    (model) => value === 'all' || useCasesFor(model).includes(value)
   ),
-  templates: templates.filter(
-    (tmpl) =>
-      (value === 'all' || useCaseForTemplate(tmpl, workshopModels) === value) &&
-      runsMatchingModel(tmpl)
+  templates: facetedTemplates.value.filter(
+    (tmpl) => value === 'all' || useCaseForTemplate(tmpl, models) === value
   )
 })
 
@@ -140,8 +107,6 @@ onMounted(() => {
   if (tab) store.setTab(tab)
   const wanted = USE_CASES.find((value) => value === params.get('useCase'))
   if (wanted) useCase.value = wanted
-  const asked = params.get('provider')
-  if (asked) providers.value = [asked]
   for (const type of ['tag', 'model'] as const) {
     const value = params.get(type)
     if (value) store.toggleBadge({ type, value })
@@ -163,7 +128,8 @@ const toolbarLabels: ToolbarLabels = {
   less: t('workshop.hub.facets.less', locale),
   selected: t('workshop.hub.facets.selected', locale),
   showResults: t('workshop.hub.facets.show', locale),
-  showModels: t('workshop.search.show', locale)
+  showModels: t('workshop.search.show', locale),
+  resize: t('workshop.filter.resize', locale)
 }
 // Workflows are dated and models are priced, so a tab offers what the things
 // it lists can actually be ordered by.
@@ -229,17 +195,12 @@ const gridLabels: GridLabels = {
 // A Hub entry tagged as a partner node whose model matches a Workshop model
 // opens that model's playground; everything else stays on comfy.org.
 const hrefFor = (template: HubTemplate) =>
-  partnerModelFor(template, workshopModels)?.href ??
-  hubWorkflowPath(template.name)
+  partnerModelFor(template, models)?.href ?? hubWorkflowPath(template.name)
 
 const filteredModels = computed(() => {
-  const query = store.searchQuery.value.trim().toLowerCase()
-  const matches = scoped.value.models.filter(
-    (model) =>
-      query === '' ||
-      model.name.toLowerCase().includes(query) ||
-      (model.provider ?? '').toLowerCase().includes(query)
-  )
+  const matches = filterWorkshopModels(scoped.value.models, {
+    query: store.searchQuery.value
+  })
   const order = store.sortBy.value
   return sortWorkshopModels(matches, order === 'newest' ? 'popular' : order)
 })
@@ -307,22 +268,18 @@ const filteredTemplates = computed(() => {
       <div class="min-w-0">
         <WorkflowGrid
           :templates="filteredTemplates"
-          :facet-templates="templates"
+          :facet-templates="facetedTemplates"
           :facets-config="facetsConfig"
           :toolbar-labels="toolbarLabels"
           :sort-options="sortOptions"
           :labels="gridLabels"
           :href-for="hrefFor"
-          :extra-filters="providers.length + capabilities.length"
           :model-count="modelFamilies.length"
-          @clear-extra="clearSearchFilters"
         >
           <template #search>
             <WorkshopSearchField
               v-model="store.searchQuery.value"
-              v-model:providers="providers"
-              v-model:capabilities="capabilities"
-              :models="workshopModels"
+              :models
               :locale
               compact
               class="max-sm:size-10 max-sm:flex-none sm:w-64 lg:w-80"

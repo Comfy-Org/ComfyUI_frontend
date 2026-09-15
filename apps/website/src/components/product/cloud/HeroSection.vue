@@ -11,7 +11,7 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 
 <template>
   <section
-    class="max-w-9xl relative mx-auto mb-12 flex flex-col items-center overflow-hidden px-4 md:flex-row md:overflow-visible md:pt-20 lg:items-center lg:space-x-20"
+    class="relative mx-auto mb-12 flex max-w-9xl flex-col items-center overflow-hidden px-4 md:flex-row md:overflow-visible md:pt-20 lg:items-center lg:space-x-20"
   >
     <!-- Illustration (stacks above on mobile, left on lg) -->
     <div class="pointer-events-none mx-auto w-full flex-1 md:-translate-x-20">

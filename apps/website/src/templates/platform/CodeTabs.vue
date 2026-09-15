@@ -105,7 +105,7 @@ function cycleValue(values: string[]): string {
       :aria-label="label"
       :class="
         cn(
-          'flex w-full max-w-full scrollbar-none overflow-x-auto rounded-2xl border border-white/15 bg-primary-comfy-ink p-1 sm:inline-flex sm:w-auto',
+          'scrollbar-none flex w-full max-w-full overflow-x-auto rounded-2xl border border-white/15 bg-primary-comfy-ink p-1 sm:inline-flex sm:w-auto',
           listClass
         )
       "
@@ -116,7 +116,7 @@ function cycleValue(values: string[]): string {
         :value="tabId"
         :class="
           cn(
-            'focus-visible:ring-primary-comfy-yellow/50 data-[state=active]:bg-secondary-mauve flex-1 cursor-pointer rounded-xl px-1 py-2 text-center text-[10px] font-bold tracking-normal whitespace-nowrap text-smoke-700 uppercase transition-colors hover:text-primary-comfy-canvas focus-visible:ring-2 focus-visible:outline-none data-[state=active]:text-primary-warm-white sm:flex-none sm:px-5 sm:text-xs sm:tracking-wider',
+            'flex-1 cursor-pointer rounded-xl px-1 py-2 text-center text-[10px] font-bold tracking-normal whitespace-nowrap text-smoke-700 uppercase transition-colors hover:text-primary-comfy-canvas focus-visible:ring-2 focus-visible:ring-primary-comfy-yellow/50 focus-visible:outline-none data-[state=active]:bg-secondary-mauve data-[state=active]:text-primary-warm-white sm:flex-none sm:px-5 sm:text-xs sm:tracking-wider',
             triggerClass
           )
         "
@@ -134,7 +134,7 @@ function cycleValue(values: string[]): string {
       <pre
         :class="
           cn(
-            'h-[calc(var(--code-panel-h)*0.9)] scrollbar-none overflow-auto rounded-3xl p-4 font-mono text-2xs/relaxed whitespace-pre-wrap text-primary-comfy-canvas sm:p-5 sm:text-xs/relaxed sm:whitespace-pre lg:h-(--code-panel-h) lg:p-6 lg:text-sm/relaxed',
+            'scrollbar-none h-[calc(var(--code-panel-h)*0.9)] overflow-auto rounded-3xl p-4 font-mono text-2xs/relaxed whitespace-pre-wrap text-primary-comfy-canvas sm:p-5 sm:text-xs/relaxed sm:whitespace-pre lg:h-(--code-panel-h) lg:p-6 lg:text-sm/relaxed',
             contentClass
           )
         "

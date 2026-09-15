@@ -6216,6 +6216,40 @@
       }
     }
   },
+  "FluxVideoEditNode": {
+    "description": "根据书面指令编辑视频片段：移除、添加或替换对象，更改场景，重设视频风格，更改屏幕文字，或替换语音对白。时长、构图、镜头运动和音频均来自源视频片段。",
+    "display_name": "Flux 视频编辑",
+    "inputs": {
+      "auto_downscale": {
+        "name": "auto_downscale",
+        "tooltip": "上传前自动缩小面积大于 1280x704 像素的源视频。将保留宽高比；较小的视频不受影响。"
+      },
+      "control_after_generate": {
+        "name": "生成后控制"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "使用自然语言描述要更改的内容，最多 4096 个字符。未提及的内容将保持原样。替换后的对白必须适应原语音所占的时长，静音视频片段将保持静音。"
+      },
+      "safety_tolerance": {
+        "name": "safety_tolerance",
+        "tooltip": "内容审核容忍度，0 为最严格。"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "用于确定节点是否应重新运行的种子；FLUX 会自行选择种子，因此无论此值为何，实际结果均不具有确定性。"
+      },
+      "video": {
+        "name": "video",
+        "tooltip": "源视频片段时长需为 0.7 至 15 秒，分辨率至少为 160x160 像素。输出以 24 fps 渲染，每帧上限约为 0.9 百万像素，因此较大的源视频会以较小尺寸返回。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "FluxVideoUpscaleNode": {
     "description": "使用 FLUX 超分辨率将视频放大 1.5 至 3 倍，可精确保留源视频，或创造性地增强其细节。",
     "display_name": "Flux 视频放大",

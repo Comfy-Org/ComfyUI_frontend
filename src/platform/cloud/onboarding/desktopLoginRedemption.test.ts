@@ -25,7 +25,7 @@ const mockToastAdd = vi.hoisted(() => vi.fn())
 const mockUserGetIdToken = vi.hoisted(() => vi.fn())
 const mockStoreGetIdToken = vi.hoisted(() => vi.fn())
 
-vi.mock<unknown>(import('@/i18n'), () => ({
+vi.mock(import('@/i18n'), () => ({
   t: (key: string) => key
 }))
 
