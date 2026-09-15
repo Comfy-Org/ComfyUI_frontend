@@ -88,6 +88,12 @@ function runFollowerTeardown(cleanups: readonly (() => void)[]): void {
   }
 }
 
+/** The `beforeChange`/`afterChange` pair of a workflow's ChangeTracker. */
+export interface UndoBracket {
+  beforeChange(): void
+  afterChange(): void
+}
+
 export function useAgentCrdtFollower(
   workflowId: Ref<string | null>,
   graphMutations: MutationsForTarget,
@@ -98,8 +104,24 @@ export function useAgentCrdtFollower(
    * reads inside the getter are tracked, so a `null` → graph flip triggers a
    * reconcile without waiting for the next remote frame.
    */
-  getGraph: () => MaterializableGraph | null = () => null
+  getGraph: () => MaterializableGraph | null = () => null,
+  /**
+   * Undo tracker of the bound workflow. Remote frames mutate the live graph
+   * outside any human gesture, so without a `beforeChange`/`afterChange`
+   * bracket the ChangeTracker never captures the post-frame state and Ctrl+Z
+   * skips straight past what the agent drew (QAF-52).
+   */
+  getChangeTracker: () => UndoBracket | null = () => null
 ) {
+  const withUndoBracket = <T>(fn: () => T): T => {
+    const tracker = getChangeTracker()
+    tracker?.beforeChange()
+    try {
+      return fn()
+    } finally {
+      tracker?.afterChange()
+    }
+  }
   const connected = ref(false)
   const updatesApplied = ref(0)
   const lastFrameType = ref<string | null>(null)
@@ -206,11 +228,14 @@ export function useAgentCrdtFollower(
     lifecycle.onDocumentUpdate()
     updatesApplied.value = bridge.follower.updatesApplied
     lastFrameType.value = event.type
-    const applied = projection.applyFrame(update)
-    outcomes.value = applied
-      ? { ...outcomes.value, applied: outcomes.value.applied + 1 }
-      : { ...outcomes.value, skipped: outcomes.value.skipped + 1 }
-    if (applied) projection.reconcileLiveGraph(update.workflowId)
+    withUndoBracket(() => {
+      const ok = projection.applyFrame(update)
+      outcomes.value = ok
+        ? { ...outcomes.value, applied: outcomes.value.applied + 1 }
+        : { ...outcomes.value, skipped: outcomes.value.skipped + 1 }
+      if (ok) projection.reconcileLiveGraph(update.workflowId)
+      return ok
+    })
     recordDevEvent('doc_update', {
       workflowId: update.workflowId,
       seq: update.seq,
@@ -245,18 +270,23 @@ export function useAgentCrdtFollower(
             seq?: number
           })
         : undefined
-    outcomes.value = { ...outcomes.value, reset: outcomes.value.reset + 1 }
+    const resetWorkflowId = detail?.workflowId
     if (
       !isTargetActive.value ||
-      detail?.workflowId !== subscribedWorkflowId.value
+      resetWorkflowId === undefined ||
+      resetWorkflowId !== subscribedWorkflowId.value
     )
       return
+    outcomes.value = { ...outcomes.value, reset: outcomes.value.reset + 1 }
     const context: RemoteMutationContext = {
       source: 'agent-remote',
-      actor: detail.actor ?? 'agent-reset',
-      opId: `doc-reset:${detail.seq ?? 'unknown'}`
+      actor: detail?.actor ?? 'agent-reset',
+      opId: `doc-reset:${detail?.seq ?? 'unknown'}`
     }
-    projection.clearForReset(detail.workflowId, context)
+    withUndoBracket(() => {
+      projection.clearForReset(resetWorkflowId, context)
+      projection.reconcileLiveGraph(resetWorkflowId)
+    })
     connected.value = false
     updatesApplied.value = 0
     lastFrameType.value = event.type
@@ -282,10 +312,13 @@ export function useAgentCrdtFollower(
       workflowId === subscribedWorkflowId.value
     ) {
       updatesApplied.value = 0
-      projection.clearForReset(workflowId, {
-        source: 'agent-remote',
-        actor: 'agent-lineage',
-        opId: `follower-replaced:${workflowId}`
+      withUndoBracket(() => {
+        projection.clearForReset(workflowId, {
+          source: 'agent-remote',
+          actor: 'agent-lineage',
+          opId: `follower-replaced:${workflowId}`
+        })
+        projection.reconcileLiveGraph(workflowId)
       })
       projection.bind(workflowId, bridge.follower)
     }
