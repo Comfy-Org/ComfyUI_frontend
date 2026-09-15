@@ -10,7 +10,7 @@ function createWatchHandle(): ReturnType<
   return Object.assign(stop, { stop, pause: vi.fn(), resume: vi.fn() })
 }
 
-export const useCurrentUser = vi.fn<typeof realUseCurrentUser>(() => ({
+const currentUser: ReturnType<typeof realUseCurrentUser> = {
   loading: false,
   isLoggedIn: computed(() => false),
   isApiKeyLogin: computed(() => false),
@@ -26,4 +26,6 @@ export const useCurrentUser = vi.fn<typeof realUseCurrentUser>(() => ({
   onUserResolved: vi.fn(createWatchHandle),
   onTokenRefreshed: vi.fn(createWatchHandle),
   onUserLogout: vi.fn()
-}))
+}
+
+export const useCurrentUser = vi.fn(() => currentUser)

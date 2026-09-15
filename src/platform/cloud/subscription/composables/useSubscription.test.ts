@@ -100,6 +100,7 @@ Object.defineProperty(globalThis, 'localStorage', {
 })
 
 vi.mock(import('@/composables/auth/useCurrentUser'))
+const currentUser = useCurrentUser()
 
 vi.mock<unknown>(import('@/platform/telemetry'), () => ({
   useTelemetry: vi.fn(() => mockTelemetry)
@@ -159,11 +160,9 @@ vi.mock<unknown>(import('@/services/dialogService'), () => ({
 global.fetch = vi.fn()
 
 beforeEach(() => {
-  const currentUser = useCurrentUser()
   vi.spyOn(currentUser.isLoggedIn, 'value', 'get').mockImplementation(
     () => mockIsLoggedIn.value
   )
-  vi.mocked(useCurrentUser).mockReturnValue(currentUser)
   Object.assign(useAuthStore(), { isInitialized: true, userId: 'user-123' })
   vi.mocked(useAuthStore().getFirebaseAuthHeader).mockImplementation(
     mockGetAuthHeader

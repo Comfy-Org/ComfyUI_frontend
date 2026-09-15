@@ -30,14 +30,13 @@ const userEmail = vi.hoisted((): { value: string | undefined } => ({
   value: undefined
 }))
 vi.mock(import('@/composables/auth/useCurrentUser'))
+const currentUser = useCurrentUser()
 
 describe('openFeedbackDialog (agent)', () => {
   beforeEach(() => {
-    const currentUser = useCurrentUser()
     vi.spyOn(currentUser.userEmail, 'value', 'get').mockImplementation(
       () => userEmail.value
     )
-    vi.mocked(useCurrentUser).mockReturnValue(currentUser)
     userEmail.value = undefined
     vi.stubGlobal('__COMFYUI_FRONTEND_VERSION__', '1.55.4')
     vi.spyOn(window.navigator, 'platform', 'get').mockReturnValue('MacIntel')

@@ -34,6 +34,7 @@ const mockCurrentUser = vi.hoisted(() => ({
 }))
 
 vi.mock(import('@/composables/auth/useCurrentUser'))
+const currentUser = useCurrentUser()
 
 // Mock workspaceApi
 const mockWorkspaceApi = vi.hoisted(() => ({
@@ -140,14 +141,12 @@ function expectCleanupBeforeContextAndReload(): void {
 }
 
 beforeEach(() => {
-  const currentUser = useCurrentUser()
   vi.spyOn(currentUser.userEmail, 'value', 'get').mockImplementation(
     () => mockCurrentUser.userEmail.value
   )
   vi.spyOn(currentUser.isApiKeyLogin, 'value', 'get').mockImplementation(
     () => mockCurrentUser.isApiKeyLogin.value
   )
-  vi.mocked(useCurrentUser).mockReturnValue(currentUser)
   Object.assign(useWorkspaceAuthStore(), {
     currentWorkspace: null,
     workspaceToken: null,

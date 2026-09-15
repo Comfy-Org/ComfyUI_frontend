@@ -412,6 +412,7 @@ vi.mock<unknown>(
 )
 
 vi.mock(import('@/composables/auth/useCurrentUser'))
+const currentUser = useCurrentUser()
 
 vi.mock<unknown>(
   import('@/platform/cloud/subscription/composables/useSubscriptionDialog'),
@@ -476,7 +477,6 @@ describe('useMembersPanel', () => {
   let pinia: Pinia
 
   beforeEach(() => {
-    const currentUser = useCurrentUser()
     vi.spyOn(currentUser.userPhotoUrl, 'value', 'get').mockReturnValue(null)
     vi.spyOn(currentUser.userEmail, 'value', 'get').mockReturnValue(
       'owner@example.com'
@@ -484,7 +484,6 @@ describe('useMembersPanel', () => {
     vi.spyOn(currentUser.userDisplayName, 'value', 'get').mockReturnValue(
       'Owner User'
     )
-    vi.mocked(useCurrentUser).mockReturnValue(currentUser)
     pinia = getActivePinia()!
     workspaceStore = useTeamWorkspaceStore(pinia)
     vi.spyOn(workspaceStore, 'resendInvite').mockImplementation(

@@ -25,6 +25,7 @@ vi.mock<unknown>(
 )
 
 vi.mock(import('@/composables/auth/useCurrentUser'))
+const currentUser = useCurrentUser()
 
 vi.mock<unknown>(import('@/composables/useErrorHandling'), () => ({
   useErrorHandling: () => ({
@@ -57,11 +58,9 @@ describe('useComfyHubProfileGate', () => {
   let gate: ReturnType<typeof useComfyHubProfileGate>
 
   beforeEach(() => {
-    const currentUser = useCurrentUser()
     vi.spyOn(currentUser.resolvedUserInfo, 'value', 'get').mockImplementation(
       () => mockResolvedUserInfo.value
     )
-    vi.mocked(useCurrentUser).mockReturnValue(currentUser)
     mockResolvedUserInfo.value = { id: 'user-a' }
     setCurrentWorkspace('workspace-1')
     mockGetMyProfile.mockResolvedValue(mockProfile)

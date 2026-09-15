@@ -38,6 +38,7 @@ const mockIsLoggedIn = vi.hoisted(() => ({ value: false }))
 const mockTrackShareLinkOpened = vi.hoisted(() => vi.fn())
 
 vi.mock(import('@/composables/auth/useCurrentUser'))
+const currentUser = useCurrentUser()
 
 vi.mock<unknown>(import('@/composables/useAppMode'), () => ({
   useAppMode: () => ({
@@ -198,11 +199,9 @@ function createDeferred() {
 }
 
 beforeEach(() => {
-  const currentUser = useCurrentUser()
   vi.spyOn(currentUser.isLoggedIn, 'value', 'get').mockImplementation(
     () => mockIsLoggedIn.value
   )
-  vi.mocked(useCurrentUser).mockReturnValue(currentUser)
   Object.assign(useDialogStore(), { dialogStack: [] })
   vi.mocked(useDialogStore().closeDialog).mockImplementation(() => {})
   vi.mocked(useDialogStore().updateDialog).mockReturnValue(false)

@@ -21,6 +21,7 @@ vi.mock(import('@/platform/distribution/types'), () => ({
 }))
 
 vi.mock(import('@/composables/auth/useCurrentUser'))
+const currentUser = useCurrentUser()
 
 // Mock the UserAvatar component
 vi.mock<unknown>(import('@/components/common/UserAvatar.vue'), () => ({
@@ -83,7 +84,6 @@ vi.mock(import('./CurrentUserPopoverLegacy.vue'), () => ({
 
 describe('CurrentUserButton', () => {
   beforeEach(() => {
-    const currentUser = useCurrentUser()
     vi.spyOn(currentUser.isLoggedIn, 'value', 'get').mockReturnValue(true)
     vi.spyOn(currentUser.userPhotoUrl, 'value', 'get').mockReturnValue(
       'https://example.com/avatar.jpg'
@@ -94,7 +94,6 @@ describe('CurrentUserButton', () => {
     vi.spyOn(currentUser.userEmail, 'value', 'get').mockReturnValue(
       'test@example.com'
     )
-    vi.mocked(useCurrentUser).mockReturnValue(currentUser)
     Object.assign(useTeamWorkspaceStore(), { workspaceName: '' })
     useTeamWorkspaceStore().initState = 'uninitialized'
     Object.assign(useTeamWorkspaceStore(), { isInPersonalWorkspace: false })

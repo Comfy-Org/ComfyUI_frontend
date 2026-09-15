@@ -27,6 +27,7 @@ vi.mock<unknown>(
 )
 
 vi.mock(import('@/composables/auth/useCurrentUser'))
+const currentUser = useCurrentUser()
 
 vi.mock(import('@/config/comfyApi'), () => ({
   getComfyPlatformBaseUrl: () => 'https://platform.test'
@@ -63,11 +64,9 @@ const creditedRow: ActivityEvent = {
 
 describe('WorkspaceActivityContent', () => {
   beforeEach(() => {
-    const currentUser = useCurrentUser()
     vi.spyOn(currentUser.resolvedUserInfo, 'value', 'get').mockReturnValue({
       id: 'user-ada'
     })
-    vi.mocked(useCurrentUser).mockReturnValue(currentUser)
     globalThis.ResizeObserver = NoopResizeObserver
     mockWorkspaceRole.value = 'owner'
   })

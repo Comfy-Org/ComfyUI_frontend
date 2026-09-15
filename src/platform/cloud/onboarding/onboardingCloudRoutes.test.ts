@@ -24,13 +24,12 @@ vi.mock<unknown>(import('@/platform/auth/session/useSessionCookie'), () => ({
 const isLoggedIn = { value: false }
 
 vi.mock(import('@/composables/auth/useCurrentUser'))
+const currentUser = useCurrentUser()
 
 beforeEach(() => {
-  const currentUser = useCurrentUser()
   vi.spyOn(currentUser.isLoggedIn, 'value', 'get').mockImplementation(
     () => isLoggedIn.value
   )
-  vi.mocked(useCurrentUser).mockReturnValue(currentUser)
   isLoggedIn.value = false
 })
 
@@ -207,7 +206,6 @@ describe('cloudOnboardingRoutes', () => {
 describe('legacy /login through the cloud-login guard', () => {
   beforeEach(() => {
     clearOAuthRequestId()
-    vi.mocked(useCurrentUser).mockClear()
   })
 
   it('lands a signed-out visitor on the login view', async () => {

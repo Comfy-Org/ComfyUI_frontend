@@ -46,6 +46,7 @@ const state = vi.hoisted(() => {
 })
 
 vi.mock(import('@/composables/auth/useCurrentUser'))
+const currentUser = useCurrentUser()
 
 vi.mock<unknown>(import('@/composables/billing/useBillingContext'), () => ({
   useBillingContext: () => ({
@@ -201,11 +202,11 @@ function renderComponent(
 
 describe('CurrentUserPopoverWorkspace', () => {
   beforeEach(() => {
-    const currentUser = useCurrentUser()
-    currentUser.userDisplayName = computed(() => 'Liz')
-    currentUser.userEmail = computed(() => 'liz@example.com')
-    currentUser.userPhotoUrl = computed(() => null)
-    vi.mocked(useCurrentUser).mockReturnValue(currentUser)
+    vi.spyOn(currentUser.userDisplayName, 'value', 'get').mockReturnValue('Liz')
+    vi.spyOn(currentUser.userEmail, 'value', 'get').mockReturnValue(
+      'liz@example.com'
+    )
+    vi.spyOn(currentUser.userPhotoUrl, 'value', 'get').mockReturnValue(null)
     state.isCloud = true
     state.billingStatus = 'paid'
     state.canAccessSubscriptionFeatures = true

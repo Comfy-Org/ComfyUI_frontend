@@ -24,6 +24,7 @@ const userEmail = vi.hoisted((): { value: string | undefined } => ({
   value: undefined
 }))
 vi.mock(import('@/composables/auth/useCurrentUser'))
+const currentUser = useCurrentUser()
 
 vi.mock(import('@/platform/distribution/types'), () => ({
   isCloud: true,
@@ -32,11 +33,9 @@ vi.mock(import('@/platform/distribution/types'), () => ({
 
 describe('openFeedbackDialog', () => {
   beforeEach(() => {
-    const currentUser = useCurrentUser()
     vi.spyOn(currentUser.userEmail, 'value', 'get').mockImplementation(
       () => userEmail.value
     )
-    vi.mocked(useCurrentUser).mockReturnValue(currentUser)
     userEmail.value = undefined
   })
 

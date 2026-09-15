@@ -38,6 +38,7 @@ const env = vi.hoisted(() => {
 })
 
 vi.mock(import('@/composables/auth/useCurrentUser'))
+const currentUser = useCurrentUser()
 
 vi.mock<unknown>(import('@/composables/useFeatureFlags'), () => ({
   useFeatureFlags: () => ({
@@ -104,11 +105,9 @@ function useSettingUI(
 }
 
 beforeEach(() => {
-  const currentUser = useCurrentUser()
   vi.spyOn(currentUser.isLoggedIn, 'value', 'get').mockImplementation(
     () => env.state.isLoggedIn
   )
-  vi.mocked(useCurrentUser).mockReturnValue(currentUser)
   vi.spyOn(usePartnerNodeGovernanceStore(), 'status', 'get').mockImplementation(
     () => {
       return env.state.partnerNodeGovernanceStatus

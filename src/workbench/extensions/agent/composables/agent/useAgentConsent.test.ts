@@ -21,6 +21,7 @@ const authState = await vi.hoisted(async () => {
   })
 })
 vi.mock(import('@/composables/auth/useCurrentUser'))
+const currentUser = useCurrentUser()
 
 vi.mock(import('@/config/comfyApi'), () => ({
   getComfyApiBaseUrl: () => 'https://api.comfy.test'
@@ -96,14 +97,12 @@ async function startConsent() {
 
 describe('useAgentConsent', () => {
   beforeEach(() => {
-    const currentUser = useCurrentUser()
     vi.spyOn(currentUser.isLoggedIn, 'value', 'get').mockImplementation(
       () => authState.loggedIn
     )
     vi.spyOn(currentUser.resolvedUserInfo, 'value', 'get').mockImplementation(
       () => (authState.identity ? { id: authState.identity } : null)
     )
-    vi.mocked(useCurrentUser).mockReturnValue(currentUser)
     localStorage.clear()
     authState.loggedIn = true
     authState.identity = 'account-a'

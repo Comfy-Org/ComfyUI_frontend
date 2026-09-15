@@ -34,6 +34,7 @@ vi.mock(import('@sentry/vue'), () => ({
 }))
 
 vi.mock(import('@/composables/auth/useCurrentUser'))
+const currentUser = useCurrentUser()
 
 vi.mock(import('../../utils/getExecutionContext'), () => ({
   getExecutionContext: () => mocks.executionContext
@@ -51,11 +52,9 @@ const shellLayout: ShellLayoutMetadata = {
 }
 
 beforeEach(() => {
-  const currentUser = useCurrentUser()
   vi.spyOn(currentUser.resolvedUserInfo, 'value', 'get').mockImplementation(
     () => (mocks.resolvedUserId ? { id: mocks.resolvedUserId } : null)
   )
-  vi.mocked(useCurrentUser).mockReturnValue(currentUser)
   useWorkflowStore().activeWorkflow = fromPartial({
     isModified: mocks.workflowIsModified
   })

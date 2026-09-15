@@ -79,6 +79,7 @@ vi.mock<unknown>(import('vue-router'), () => ({
 }))
 
 vi.mock(import('@/composables/auth/useCurrentUser'))
+const currentUser = useCurrentUser()
 
 const preservedQueryMocks = vi.hoisted(() => ({
   payloads: {} as Record<string, Record<string, string> | undefined>
@@ -792,8 +793,6 @@ describe('useWorkflowPersistenceV2', () => {
     distributionMocks.isCloud = true
     localStorage.setItem('Comfy.Workflow.DraftIndex.v2:workspace-a', '{}')
     sessionStorage.setItem('Comfy.Workflow.ActivePath:test-client', '{}')
-    const currentUser = useCurrentUser()
-    vi.mocked(useCurrentUser).mockReturnValue(currentUser)
     mountWorkflowPersistence()
 
     const onLogout = vi.mocked(currentUser.onUserLogout).mock.calls[0][0]
@@ -837,8 +836,6 @@ describe('useWorkflowPersistenceV2', () => {
       storageIO,
       'completeWorkflowLogoutTransition'
     )
-    const currentUser = useCurrentUser()
-    vi.mocked(useCurrentUser).mockReturnValue(currentUser)
     mountWorkflowPersistence()
 
     const onLogout = vi.mocked(currentUser.onUserLogout).mock.calls[0][0]
@@ -862,8 +859,6 @@ describe('useWorkflowPersistenceV2', () => {
       storageIO,
       'completeWorkflowLogoutTransition'
     )
-    const currentUser = useCurrentUser()
-    vi.mocked(useCurrentUser).mockReturnValue(currentUser)
     mountWorkflowPersistence()
 
     const onLogout = vi.mocked(currentUser.onUserLogout).mock.calls[0][0]
@@ -893,8 +888,6 @@ describe('useWorkflowPersistenceV2', () => {
       .createTemporary('LogoutRecovery.json')
       .load()
     workflowStore.activeWorkflow = workflow
-    const currentUser = useCurrentUser()
-    vi.mocked(useCurrentUser).mockReturnValue(currentUser)
     mountWorkflowPersistence()
     mocks.state.currentGraph = { marker: 'stale-source-edit' }
     mocks.state.graphChangedHandler?.()

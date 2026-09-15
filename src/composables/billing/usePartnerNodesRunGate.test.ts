@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { computed, effectScope, nextTick, ref } from 'vue'
+import { effectScope, nextTick, ref } from 'vue'
 import type { EffectScope, Ref } from 'vue'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
@@ -33,6 +33,7 @@ vi.mock(import('@/composables/node/usePartnerNodesInGraph'), async () => {
 })
 
 vi.mock(import('@/composables/auth/useCurrentUser'))
+const currentUser = useCurrentUser()
 
 vi.mock<unknown>(import('@/composables/useFeatureFlags'), async () => {
   const { reactive } = await import('vue')
@@ -65,9 +66,9 @@ function setup() {
 
 beforeEach(() => {
   loggedIn = ref(false)
-  const currentUser = useCurrentUser()
-  currentUser.isLoggedIn = computed(() => loggedIn.value)
-  vi.mocked(useCurrentUser).mockReturnValue(currentUser)
+  vi.spyOn(currentUser.isLoggedIn, 'value', 'get').mockImplementation(
+    () => loggedIn.value
+  )
 })
 
 describe('usePartnerNodesRunGate', () => {

@@ -32,6 +32,7 @@ const authState = await vi.hoisted(async () => {
   })
 })
 vi.mock(import('@/composables/auth/useCurrentUser'))
+const currentUser = useCurrentUser()
 const stored: GlobalSetting = {
   key: 'Comfy.AgentPanel.ConsentAccepted',
   value: true,
@@ -50,11 +51,9 @@ function deferred<T>() {
 
 describe('agentConsentStore', () => {
   beforeEach(() => {
-    const currentUser = useCurrentUser()
     vi.spyOn(currentUser.resolvedUserInfo, 'value', 'get').mockImplementation(
       () => (authState.identity ? { id: authState.identity } : null)
     )
-    vi.mocked(useCurrentUser).mockReturnValue(currentUser)
     authState.identity = 'account-a'
     Object.assign(useTeamWorkspaceStore(), { activeWorkspaceId: 'workspace-a' })
     useTeamWorkspaceStore().isSwitching = false

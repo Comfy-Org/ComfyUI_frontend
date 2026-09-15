@@ -91,6 +91,7 @@ vi.mock<unknown>(import('@/composables/billing/useBillingContext'), () => ({
 }))
 
 vi.mock(import('@/composables/auth/useCurrentUser'))
+const currentUser = useCurrentUser()
 
 vi.mock<unknown>(import('@/i18n'), () => ({
   t: (key: string, params?: Record<string, unknown>) =>
@@ -134,11 +135,9 @@ function teamWithOwnerAnd(...memberIds: string[]) {
 }
 
 beforeEach(() => {
-  const currentUser = useCurrentUser()
   vi.spyOn(currentUser.userEmail, 'value', 'get').mockImplementation(
     () => mockUserEmail.value
   )
-  vi.mocked(useCurrentUser).mockReturnValue(currentUser)
   vi.mocked(useBillingOperationStore().startOperation).mockResolvedValue(
     billingOperation()
   )
