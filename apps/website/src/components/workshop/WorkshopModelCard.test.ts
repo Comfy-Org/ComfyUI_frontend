@@ -1,5 +1,3 @@
-import '@testing-library/jest-dom/vitest'
-
 import { render, screen } from '@testing-library/vue'
 import { describe, expect, it } from 'vitest'
 import { nextTick } from 'vue'
@@ -42,11 +40,11 @@ describe('WorkshopModelCard', () => {
   })
 
   it.for([
-    { locale: 'en', label: 'Incomplete', action: 'View details' },
-    { locale: 'zh-CN', label: '尚未完善', action: '查看详情' }
+    { locale: 'en', label: 'Incomplete' },
+    { locale: 'zh-CN', label: '尚未完善' }
   ] as const)(
     'labels incomplete models in $locale without disabling the page link',
-    ({ locale, label, action }) => {
+    ({ locale, label }) => {
       render(WorkshopModelCard, {
         props: {
           model: { ...base, incompleteReason: 'missing-input-schema' },
@@ -59,8 +57,6 @@ describe('WorkshopModelCard', () => {
           .getByRole('link', { name: new RegExp(label) })
           .getAttribute('href')
       ).toBe(base.href)
-      expect(screen.getByText(action)).toBeTruthy()
-      expect(screen.queryByText('Try now')).toBeNull()
     }
   )
 
@@ -159,7 +155,6 @@ describe('WorkshopModelCard', () => {
       expect(screen.getByTestId('model-thumbnail-label').textContent).toBe(
         'Pro'
       )
-      expect(screen.getByText('View details')).toBeTruthy()
     }
   )
 

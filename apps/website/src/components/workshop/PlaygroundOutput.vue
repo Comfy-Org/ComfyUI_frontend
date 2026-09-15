@@ -220,7 +220,7 @@ const earlierClass = (active: boolean) =>
 
 <template>
   <section
-    class="bg-transparency-white-t4 flex min-h-96 flex-col overflow-hidden rounded-2xl border border-transparency-white-t8"
+    class="flex min-h-96 flex-col overflow-hidden rounded-2xl border border-transparency-white-t8 bg-transparency-white-t4"
     data-testid="playground-output"
     :data-state="state.status"
   >
@@ -228,14 +228,29 @@ const earlierClass = (active: boolean) =>
     <header
       class="flex items-center justify-between border-b border-transparency-white-t8 px-5 py-3 text-xs font-bold tracking-wider text-primary-comfy-canvas uppercase"
     >
-      <span>{{ t('workshop.output.title', locale) }}</span>
-      <span
-        v-if="state.status === 'running'"
-        class="text-primary-warm-white tabular-nums"
-        data-testid="run-elapsed"
+      <span class="shrink-0">{{ t('workshop.output.title', locale) }}</span>
+      <div
+        v-if="currentAttachments.length && !blurred"
+        role="group"
+        :aria-label="t('workshop.output.files', locale)"
+        class="flex min-w-0 items-center gap-2 overflow-x-auto"
+        data-testid="output-files"
       >
-        {{ elapsed }}
-      </span>
+        <button
+          v-for="(output, index) in files"
+          :key="output.url"
+          type="button"
+          :aria-pressed="shown === output"
+          :title="output.fileName"
+          :class="cn(earlierClass(shown === output), 'size-auto px-2.5 py-1')"
+          @click="selectedAttachment = output"
+        >
+          {{ t(fileLabels[index].key, locale)
+          }}{{
+            fileLabels[index].ordinal ? ` ${fileLabels[index].ordinal}` : ''
+          }}
+        </button>
+      </div>
     </header>
 
     <!-- Idle -->
@@ -260,11 +275,17 @@ const earlierClass = (active: boolean) =>
       class="flex flex-1 flex-col items-center justify-center gap-4 p-6 text-center"
     >
       <Loader2
-        class="text-primary-comfy-yellow size-8 animate-spin"
+        class="size-8 animate-spin text-primary-comfy-yellow"
         aria-hidden="true"
       />
-      <p class="text-sm text-primary-warm-white">
+      <p class="flex items-baseline gap-2 text-sm text-primary-warm-white">
         {{ t('workshop.run.running', locale) }}
+        <span
+          class="text-primary-warm-gray tabular-nums"
+          data-testid="run-elapsed"
+        >
+          {{ elapsed }}
+        </span>
       </p>
       <p
         v-if="modality === 'video'"
@@ -311,7 +332,7 @@ const earlierClass = (active: boolean) =>
       data-testid="run-error"
       :data-reason="state.reason"
     >
-      <p class="text-primary-comfy-red text-sm">
+      <p class="text-sm text-primary-comfy-red">
         {{ statusMessage }}
       </p>
       <Button
@@ -348,7 +369,7 @@ const earlierClass = (active: boolean) =>
         <div
           :key="currentUrl"
           :class="blurred ? 'blur-2xl select-none' : ''"
-          class="animate-soft-in size-full transition-all"
+          class="size-full animate-soft-in transition-all"
         >
           <VideoPlayer
             v-if="currentUrl && shown.kind === 'video' && !blurred"
@@ -380,7 +401,7 @@ const earlierClass = (active: boolean) =>
             <span
               v-for="bar in 32"
               :key="bar"
-              class="bg-primary-comfy-yellow/70 w-1.5 rounded-full"
+              class="w-1.5 rounded-full bg-primary-comfy-yellow/70"
               :style="{ height: `${20 + ((bar * 37) % 60)}%` }"
             />
           </div>
@@ -431,7 +452,7 @@ const earlierClass = (active: boolean) =>
             {{ t('workshop.output.nsfw', locale) }}
           </span>
           <span
-            class="text-primary-comfy-yellow text-xs font-bold tracking-wider uppercase"
+            class="text-xs font-bold tracking-wider text-primary-comfy-yellow uppercase"
           >
             {{ t('workshop.output.reveal', locale) }}
           </span>
@@ -484,26 +505,6 @@ const earlierClass = (active: boolean) =>
       </div>
 
       <div
-        v-if="currentAttachments.length && !blurred"
-        class="flex flex-wrap gap-2 border-t border-transparency-white-t8 px-4 py-3"
-      >
-        <button
-          v-for="(output, index) in files"
-          :key="output.url"
-          type="button"
-          :aria-pressed="shown === output"
-          :title="output.fileName"
-          :class="cn(earlierClass(shown === output), 'size-auto px-3 py-2')"
-          @click="selectedAttachment = output"
-        >
-          {{ t(fileLabels[index].key, locale)
-          }}{{
-            fileLabels[index].ordinal ? ` ${fileLabels[index].ordinal}` : ''
-          }}
-        </button>
-      </div>
-
-      <div
         v-if="earlier.length && state.status === 'succeeded'"
         role="group"
         :aria-label="t('workshop.output.earlier', locale)"
@@ -550,18 +551,12 @@ const earlierClass = (active: boolean) =>
         {{ t('workshop.output.truncated', locale) }}
       </p>
       <p
+        v-if="state.status === 'example'"
         class="border-t border-transparency-white-t8 px-5 py-2 text-xs text-primary-warm-gray"
-        :data-testid="
-          state.status === 'example' ? 'output-example-hint' : undefined
-        "
+        data-testid="output-example-hint"
       >
         {{
-          state.status === 'example'
-            ? t('workshop.output.exampleHint', locale).replace(
-                '{model}',
-                modelName
-              )
-            : t('workshop.output.expires', locale)
+          t('workshop.output.exampleHint', locale).replace('{model}', modelName)
         }}
       </p>
       <div
