@@ -2,7 +2,6 @@ import { describe, expect, it, onTestFinished, vi } from 'vitest'
 
 import { useNodeAnimatedImage } from '@/composables/node/useNodeAnimatedImage'
 import { createMockMediaNode } from '@/renderer/extensions/vueNodes/widgets/composables/domWidgetTestUtils'
-import type * as AppModule from '@/scripts/app'
 
 const { canvasInteractionsMock } = vi.hoisted(() => ({
   canvasInteractionsMock: {
@@ -25,9 +24,7 @@ vi.mock<unknown>(
 // that we cannot pull in here, so we stub only the constant we need.
 vi.mock(
   import('@/scripts/app'),
-  (): Partial<typeof AppModule> => ({
-    ANIM_PREVIEW_WIDGET: '$$comfy_animation_preview'
-  })
+  () => ({ ANIM_PREVIEW_WIDGET: '$$comfy_animation_preview' }) as const
 )
 
 describe('useNodeAnimatedImage', () => {

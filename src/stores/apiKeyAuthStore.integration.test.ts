@@ -3,7 +3,6 @@ import * as firebaseAuth from 'firebase/auth'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import * as vuefire from 'vuefire'
 
-import type * as DistributionTypes from '@/platform/distribution/types'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
 import { useAuthStore } from '@/stores/authStore'
 
@@ -17,11 +16,12 @@ vi.mock(import('firebase/auth'))
 
 vi.mock(
   import('@/platform/distribution/types'),
-  (): Partial<typeof DistributionTypes> => ({
-    DISTRIBUTION: 'cloud',
-    isCloud: true,
-    isDesktop: false
-  })
+  () =>
+    ({
+      DISTRIBUTION: 'cloud',
+      isCloud: true,
+      isDesktop: false
+    }) as const
 )
 
 vi.mock<unknown>(import('@/composables/useFeatureFlags'), () => ({
