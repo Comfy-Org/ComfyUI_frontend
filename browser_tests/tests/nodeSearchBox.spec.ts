@@ -44,9 +44,6 @@ test.describe('Node search box', { tag: '@node' }, () => {
   test('New user (1.24.1+) gets search box by default on link release', async ({
     comfyPage
   }) => {
-    // Start fresh to test new user behavior
-    // oxlint-disable-next-line comfy/no-comfy-page-setup-call -- pre-existing call, tracked by evfail-23; not fixed in this pass
-    await comfyPage.setup({ clearStorage: true })
     // Simulate new user with 1.24.1+ installed version
     await comfyPage.settings.setSetting('Comfy.InstalledVersion', '1.24.1')
     await comfyPage.settings.setSetting(
@@ -317,9 +314,6 @@ test.describe('Release context menu', { tag: '@node' }, () => {
   test('Existing user (pre-1.24.1) gets context menu by default on link release', async ({
     comfyPage
   }) => {
-    // Start fresh to test existing user behavior
-    // oxlint-disable-next-line comfy/no-comfy-page-setup-call -- pre-existing call, tracked by evfail-23; not fixed in this pass
-    await comfyPage.setup({ clearStorage: true })
     // Simulate existing user with pre-1.24.1 version
     await comfyPage.settings.setSetting('Comfy.InstalledVersion', '1.23.0')
     await comfyPage.settings.setSetting(
@@ -338,9 +332,6 @@ test.describe('Release context menu', { tag: '@node' }, () => {
   test('Explicit setting overrides versioned defaults', async ({
     comfyPage
   }) => {
-    // Start fresh and simulate new user who should get search box by default
-    // oxlint-disable-next-line comfy/no-comfy-page-setup-call -- pre-existing call, tracked by evfail-23; not fixed in this pass
-    await comfyPage.setup({ clearStorage: true })
     await comfyPage.settings.setSetting('Comfy.InstalledVersion', '1.24.1')
     // But explicitly set to context menu (overriding versioned default)
     await comfyPage.settings.setSetting(
