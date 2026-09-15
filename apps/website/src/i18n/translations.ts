@@ -9127,9 +9127,9 @@ Enterprise`
     'zh-CN': '需要特定的订阅计划吗？'
   },
   'platform.faq.9.a': {
-    en: 'The platform and Builder are included with any Comfy subscription. A Team or Enterprise plan is only needed to share builds with teammates; governance over models and partner nodes is Enterprise-only.',
+    en: 'The platform and Builder are included with any Comfy subscription. An Enterprise plan is needed to share builds with teammates; governance over models and partner nodes is Enterprise-only.',
     'zh-CN':
-      '任何 Comfy 订阅都包含平台和 Builder。只有与队友共享构建才需要 Team 或 Enterprise 计划；模型与合作伙伴节点的治理功能仅限 Enterprise。'
+      '任何 Comfy 订阅都包含平台和 Builder。只有与队友共享构建才需要企业版计划；模型与合作伙伴节点的治理功能仅限 Enterprise。'
   },
   'platform.faq.10.q': {
     en: 'What are the limits during beta?',
