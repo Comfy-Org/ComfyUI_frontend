@@ -1,4 +1,3 @@
-// @vitest-environment happy-dom
 import '@testing-library/jest-dom/vitest'
 import userEvent from '@testing-library/user-event'
 import { render, screen, waitFor, within } from '@testing-library/vue'
@@ -75,12 +74,12 @@ describe('WorkshopSearchField', () => {
     )
     expect(
       within(server.body).getByRole('button', {
-        name: 'Search models, providers, categories...'
+        name: 'Search models, providers, and capabilities'
       })
     ).toBeDisabled()
     render(search)
     const trigger = screen.getByRole('button', {
-      name: 'Search models, providers, categories...'
+      name: 'Search models, providers, and capabilities'
     })
     await waitFor(() => expect(trigger).toBeEnabled())
     await user.click(trigger)
