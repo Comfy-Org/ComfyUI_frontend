@@ -8,7 +8,7 @@ test.describe(
   () => {
     test('legacy canvas loads, navigates, and executes its CPU branch', async ({
       comfyPage
-    }) => {
+    }, testInfo) => {
       expect(
         await comfyPage.settings.getSetting<boolean>('Comfy.VueNodes.Enabled')
       ).toBe(false)
@@ -58,7 +58,11 @@ test.describe(
             group.size
           ])
         })
-        const evidence: Array<{ title: string; changedPixels: number }> = []
+        const evidence: Array<{
+          title: string
+          changedPixels: number
+          unstablePixels: number
+        }> = []
 
         try {
           canvas.ds.scale = 1
@@ -89,6 +93,13 @@ test.describe(
               canvas.canvas.width,
               canvas.canvas.height
             ).data
+            canvas.draw(true, true)
+            const unchanged = context.getImageData(
+              0,
+              0,
+              canvas.canvas.width,
+              canvas.canvas.height
+            ).data
 
             CanvasRenderingContext2D.prototype.fillText = function (
               text,
@@ -104,9 +115,26 @@ test.describe(
               canvas.canvas.height
             ).data
             CanvasRenderingContext2D.prototype.fillText = fillText
+            canvas.draw(true, true)
+            const restored = context.getImageData(
+              0,
+              0,
+              canvas.canvas.width,
+              canvas.canvas.height
+            ).data
 
             let changedPixels = 0
+            let unstablePixels = 0
             for (let index = 0; index < painted.length; index += 4) {
+              for (let channel = 0; channel < 4; channel++) {
+                if (
+                  painted[index + channel] !== unchanged[index + channel] ||
+                  painted[index + channel] !== restored[index + channel]
+                ) {
+                  unstablePixels++
+                  break
+                }
+              }
               if (
                 painted[index] !== suppressed[index] ||
                 painted[index + 1] !== suppressed[index + 1] ||
@@ -116,7 +144,7 @@ test.describe(
                 changedPixels++
               }
             }
-            evidence.push({ title, changedPixels })
+            evidence.push({ title, changedPixels, unstablePixels })
           }
         } finally {
           CanvasRenderingContext2D.prototype.fillText = fillText
@@ -147,6 +175,10 @@ test.describe(
 
         return evidence
       })
+      await testInfo.attach('painted-landmarks', {
+        body: JSON.stringify(paintedLandmarks),
+        contentType: 'application/json'
+      })
       expect(paintedLandmarks.map(({ title }) => title)).toEqual([
         'First Pipeline Landmark',
         'Middle Pipeline Landmark',
@@ -154,6 +186,9 @@ test.describe(
         'CPU Output Input',
         'CPU Output Landmark'
       ])
+      expect(
+        paintedLandmarks.map(({ unstablePixels }) => unstablePixels)
+      ).toEqual([0, 0, 0, 0, 0])
       expect(
         paintedLandmarks.every(({ changedPixels }) => changedPixels > 0)
       ).toBe(true)
