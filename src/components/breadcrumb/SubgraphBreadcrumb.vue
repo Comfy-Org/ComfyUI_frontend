@@ -1,11 +1,15 @@
 <template>
   <div
     data-testid="subgraph-breadcrumb"
-    class="subgraph-breadcrumb -mt-3 flex w-auto items-center pt-4 pl-1 drop-shadow-(--interface-panel-drop-shadow)"
-    :class="{
-      'subgraph-breadcrumb-collapse': collapseTabs,
-      'subgraph-breadcrumb-overflow': overflowingTabs
-    }"
+    :class="
+      cn(
+        'subgraph-breadcrumb -mt-3 flex w-auto items-center pt-4 pl-1 drop-shadow-(--interface-panel-drop-shadow)',
+        {
+          'subgraph-breadcrumb-collapse': collapseTabs,
+          'subgraph-breadcrumb-overflow': overflowingTabs
+        }
+      )
+    "
     :style="{
       '--p-breadcrumb-gap': `0px`,
       '--p-breadcrumb-item-margin': `${ITEM_GAP / 2}px`,
@@ -29,32 +33,43 @@
     >
       <i class="icon-[lucide--undo-2]" />
     </Button>
-    <Breadcrumb
+    <nav
       ref="breadcrumbRef"
-      class="w-fit rounded-lg p-0"
-      :class="{ hidden: !isInSubgraph }"
-      :model="items"
-      :pt="{ item: { class: 'pointer-events-auto' } }"
+      :class="
+        cn('p-breadcrumb w-fit rounded-lg p-0', !isInSubgraph && 'hidden')
+      "
       :aria-label="$t('g.graphNavigation')"
     >
-      <template #item="{ item }">
-        <SubgraphBreadcrumbItem
-          :item="item"
-          :is-active="item.key === activeItemKey"
-        />
-      </template>
-      <template #separator
-        ><span style="transform: scale(1.5)"> / </span></template
+      <ol
+        class="p-breadcrumb-list m-0 flex list-none items-center p-0 text-muted"
       >
-    </Breadcrumb>
+        <template v-for="(item, index) in items" :key="item.key">
+          <li
+            class="p-breadcrumb-item hover:text-foreground pointer-events-auto"
+          >
+            <SubgraphBreadcrumbItem
+              :item
+              :is-active="item.key === activeItemKey"
+            />
+          </li>
+          <li
+            v-if="index < items.length - 1"
+            class="p-breadcrumb-separator"
+            aria-hidden="true"
+          >
+            <span class="scale-150">/</span>
+          </li>
+        </template>
+      </ol>
+    </nav>
   </div>
 </template>
 
 <script setup lang="ts">
-import Breadcrumb from 'primevue/breadcrumb'
+import { cn } from '@comfyorg/tailwind-utils'
 import Button from 'primevue/button'
 import type { MenuItem } from 'primevue/menuitem'
-import { computed, onUpdated, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, onMounted, onUpdated, ref } from 'vue'
 
 import SubgraphBreadcrumbItem from '@/components/breadcrumb/SubgraphBreadcrumbItem.vue'
 import WorkflowActionsDropdown from '@/components/common/WorkflowActionsDropdown.vue'
@@ -75,7 +90,7 @@ const ICON_WIDTH = 20
 const workflowStore = useWorkflowStore()
 const navigationStore = useSubgraphNavigationStore()
 const canvasStore = useCanvasStore()
-const breadcrumbRef = ref<InstanceType<typeof Breadcrumb>>()
+const breadcrumbRef = ref<HTMLElement | null>(null)
 const workflowName = computed(() => workflowStore.activeWorkflow?.filename)
 const isBlueprint = computed(() =>
   useSubgraphStore().isSubgraphBlueprint(workflowStore.activeWorkflow)
@@ -135,20 +150,11 @@ const handleBackClick = () => {
   void useCommandStore().execute('Comfy.Graph.ExitSubgraph')
 }
 
-const breadcrumbElement = computed(() => {
-  if (!breadcrumbRef.value) return null
-
-  const el = (breadcrumbRef.value as unknown as { $el: HTMLElement }).$el
-  const list = el?.querySelector('.p-breadcrumb-list') as HTMLElement
-  return list
-})
-
 // Check for overflow on breadcrumb items and collapse/expand the breadcrumb to fit
 let overflowObserver: ReturnType<typeof useOverflowObserver> | undefined
-watch(breadcrumbElement, (el) => {
-  overflowObserver?.dispose()
-  overflowObserver = undefined
-
+onMounted(() => {
+  const el =
+    breadcrumbRef.value?.querySelector<HTMLElement>('.p-breadcrumb-list')
   if (!el) return
 
   overflowObserver = useOverflowObserver(el, {
@@ -192,6 +198,8 @@ watch(breadcrumbElement, (el) => {
     }
   })
 })
+
+onBeforeUnmount(() => overflowObserver?.dispose())
 
 // If e.g. the workflow name changes, we need to check the overflow again
 onUpdated(() => {
@@ -272,7 +280,7 @@ onUpdated(() => {
     in srgb,
     var(--fg-color) 10%,
     var(--comfy-menu-bg)
-  ) !important;
+  );
   color: var(--fg-color);
 }
 </style>

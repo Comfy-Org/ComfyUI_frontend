@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
 import {
@@ -6,16 +6,11 @@ import {
   coachmarkElements,
   registerCoachmark,
   targetMounted,
+  PLACEMENT_POLL_MS,
   unregisterCoachmark,
   waitForTarget
 } from './coachmarkRegistry'
-
-/** An element with a non-zero measured rect, so it counts as laid out. */
-function laidOut(): HTMLElement {
-  const el = document.createElement('div')
-  el.getBoundingClientRect = () => new DOMRect(0, 0, 80, 30)
-  return el
-}
+import { laidOut, mountNode, movingTarget } from './fixtures/coachmarkTargets'
 
 describe('coachmarkRegistry', () => {
   const a = document.createElement('div')
@@ -38,7 +33,9 @@ describe('coachmarkRegistry', () => {
 })
 
 describe('targetMounted', () => {
-  afterEach(clearCoachmarks)
+  afterEach(() => {
+    clearCoachmarks()
+  })
 
   it('is true once a laid-out element is registered', () => {
     expect(targetMounted('app-run-button')).toBe(false)
@@ -50,34 +47,32 @@ describe('targetMounted', () => {
     registerCoachmark('outputs', document.createElement('div'))
     expect(targetMounted('outputs')).toBe(false)
   })
+
+  it('resolves a moving target through the node it names', () => {
+    registerCoachmark('outputs', movingTarget())
+    expect(targetMounted('outputs')).toBe(false)
+
+    mountNode()
+    expect(
+      targetMounted('outputs'),
+      'the node mounts after the tour registers its target'
+    ).toBe(true)
+  })
 })
 
 describe('waitForTarget', () => {
-  let frames: Array<() => void>
-
-  beforeEach(() => {
-    frames = []
-    vi.stubGlobal('requestAnimationFrame', (cb: FrameRequestCallback) => {
-      frames.push(() => cb(0))
-      return frames.length
-    })
-    vi.stubGlobal('cancelAnimationFrame', () => {})
-  })
-
   afterEach(() => {
     clearCoachmarks()
-    vi.useRealTimers()
-    vi.unstubAllGlobals()
   })
 
-  // Drain the poll queue; an unresolved poll reschedules, so cap the drain to
-  // avoid spinning when the target never lays out.
-  function runFrames(max = 50) {
-    let ran = 0
-    while (frames.length && ran < max) {
-      frames.shift()!()
-      ran++
-    }
+  /** Lets the poll sample once, and the resulting promise settle. */
+  async function runPoll() {
+    await vi.advanceTimersByTimeAsync(PLACEMENT_POLL_MS)
+  }
+
+  /** Timers beyond the caller's own timeout, i.e. a poll still scheduled. */
+  function pollScheduled() {
+    return vi.getTimerCount() > 1
   }
 
   it('resolves true immediately when a laid-out target is already mounted', async () => {
@@ -92,7 +87,7 @@ describe('waitForTarget', () => {
     const signal = new AbortController().signal
     const found = waitForTarget('app-run-button', signal, 1000)
     registerCoachmark('app-run-button', laidOut())
-    runFrames()
+    await runPoll()
     await expect(found).resolves.toBe(true)
   })
 
@@ -103,20 +98,35 @@ describe('waitForTarget', () => {
     let resolved: boolean | undefined
     void waitForTarget('outputs', signal, 1000).then((v) => (resolved = v))
 
-    runFrames()
-    await Promise.resolve()
+    await runPoll()
     expect(resolved).toBeUndefined()
 
     el.getBoundingClientRect = () => new DOMRect(0, 0, 80, 30)
-    runFrames()
-    await Promise.resolve()
+    await runPoll()
     expect(resolved).toBe(true)
   })
 
-  it('does not schedule rAF polling while no candidate is registered', () => {
+  it('keeps polling a moving target until the node it names mounts', async () => {
+    registerCoachmark('outputs', movingTarget())
+    const signal = new AbortController().signal
+    let resolved: boolean | undefined
+    void waitForTarget('outputs', signal, 1000).then((v) => (resolved = v))
+
+    await runPoll()
+    expect(resolved).toBeUndefined()
+
+    mountNode()
+    await runPoll()
+    expect(
+      resolved,
+      'the tour registers its canvas target before the node renders'
+    ).toBe(true)
+  })
+
+  it('does not poll while no candidate is registered', () => {
     const signal = new AbortController().signal
     void waitForTarget('outputs', signal, 1000)
-    expect(frames).toHaveLength(0)
+    expect(pollScheduled()).toBe(false)
   })
 
   it('parks the poll when the last candidate unregisters and resumes on re-registration', async () => {
@@ -127,12 +137,12 @@ describe('waitForTarget', () => {
 
     registerCoachmark('outputs', el)
     await nextTick()
-    expect(frames.length).toBeGreaterThan(0)
+    expect(pollScheduled()).toBe(true)
 
     unregisterCoachmark('outputs', el)
     await nextTick()
-    runFrames()
-    expect(frames).toHaveLength(0)
+    await runPoll()
+    expect(pollScheduled()).toBe(false)
 
     registerCoachmark('outputs', laidOut())
     await nextTick()
@@ -141,7 +151,6 @@ describe('waitForTarget', () => {
   })
 
   it('resolves false when the target never mounts (transient failure)', async () => {
-    vi.useFakeTimers()
     const signal = new AbortController().signal
     const found = waitForTarget('outputs', signal, 1000)
     await vi.advanceTimersByTimeAsync(1000)

@@ -69,7 +69,6 @@ import { resolveMissingMediaItemLabel } from '@/platform/errorCatalog/errorMessa
 import { getMissingMediaReferences } from '@/platform/missingMedia/missingMediaGrouping'
 import type { MissingMediaGroup } from '@/platform/missingMedia/types'
 import { app } from '@/scripts/app'
-import { st } from '@/i18n'
 import { getNodeByExecutionId } from '@/utils/graphTraversalUtil'
 import { resolveNodeDisplayName } from '@/utils/nodeTitleUtil'
 
@@ -137,8 +136,7 @@ function getNodeDisplayLabel(nodeId: string, fallback: string): string {
   const node = getNodeByExecutionId(graph, nodeId)
   return resolveNodeDisplayName(node, {
     emptyLabel: fallback,
-    untitledLabel: fallback,
-    st
+    untitledLabel: fallback
   })
 }
 </script>

@@ -26,7 +26,7 @@ body:
     id: reproduce
     attributes:
       label: Steps to Reproduce
-      description: How can we reproduce this issue? Please attach your workflow (JSON or PNG).
+      description: How can we reproduce this issue?
       placeholder: |
         1. Add a KSampler node
         2. Connect it to...
@@ -36,6 +36,22 @@ body:
         1.
         2.
         3.
+    validations:
+      required: true
+
+  - type: textarea
+    id: workflow
+    attributes:
+      label: Workflow
+      description: |
+        **This is the single most useful thing you can give us.** A workflow that reproduces the
+        bug lets us write a regression test matching your exact setup, so the bug stays fixed.
+
+        Export it with **Workflow → Export** in the menu, then drag the `.json` file into this box.
+        A PNG saved by ComfyUI also works — it has the workflow embedded.
+
+        If the bug has nothing to do with a specific workflow, write "N/A".
+      placeholder: Drag your workflow .json or .png here, or write N/A
     validations:
       required: true
 
@@ -56,8 +72,8 @@ body:
     id: version
     attributes:
       label: ComfyUI Frontend Version
-      description: Found in Settings > About (e.g., "1.3.45")
-      placeholder: '1.3.45'
+      description: Open **Settings → About** and copy the frontend version shown there. Please give the actual version, not the example.
+      placeholder: 'e.g. 1.49.2'
     validations:
       required: true
 

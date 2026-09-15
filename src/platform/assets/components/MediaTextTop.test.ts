@@ -1,5 +1,5 @@
 import { render, screen } from '@testing-library/vue'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import type { AssetMeta } from '../schemas/mediaAssetSchema'
 import MediaTextTop from './MediaTextTop.vue'
@@ -16,10 +16,6 @@ function makeAsset(overrides: Partial<AssetMeta> = {}): AssetMeta {
 }
 
 describe('MediaTextTop', () => {
-  afterEach(() => {
-    vi.unstubAllGlobals()
-  })
-
   it('shows a snippet of the fetched text', async () => {
     const fetchMock = vi.fn().mockResolvedValue({
       ok: true,

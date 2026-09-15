@@ -8,7 +8,7 @@ import type {
  * Secret metadata as returned by the ingest API, sourced from the generated
  * OpenAPI types (`SecretResponse`). The secret value itself is never returned
  * after creation. `provider` is a free-form identifier (huggingface, civitai,
- * and BYOK providers); the `SecretProvider` union below is only the subset the
+ * and BYOK providers); the `FirstClassSecretProvider` union below is only the subset the
  * UI renders first-class.
  */
 export type SecretMetadata = SecretResponse
@@ -19,7 +19,7 @@ export type SecretMetadata = SecretResponse
  * configurable providers is data-driven via `GET /secrets/providers`, so the
  * selected provider is stored/sent as a free-form string.
  */
-export type SecretProvider = 'huggingface' | 'civitai'
+export type FirstClassSecretProvider = 'huggingface' | 'civitai'
 
 /**
  * A configurable provider as returned by `GET /secrets/providers`: its id plus

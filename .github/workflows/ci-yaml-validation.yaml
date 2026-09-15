@@ -17,7 +17,7 @@ jobs:
   yaml-lint:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - name: Set up Python
         uses: actions/setup-python@v6
@@ -31,3 +31,6 @@ jobs:
 
       - name: Validate YAML syntax and style
         run: ./scripts/cicd/check-yaml.sh
+
+      - name: Check ComfyUI container versions
+        run: ./scripts/cicd/check-comfyui-container-version.sh

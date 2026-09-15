@@ -18,7 +18,6 @@ describe(TextTicker, () => {
   let cleanup: (() => void) | undefined
 
   beforeEach(() => {
-    vi.useFakeTimers()
     rafCallbacks = []
     vi.spyOn(window, 'requestAnimationFrame').mockImplementation((cb) => {
       rafCallbacks.push(cb)
@@ -30,8 +29,6 @@ describe(TextTicker, () => {
 
   afterEach(() => {
     cleanup?.()
-    vi.useRealTimers()
-    vi.restoreAllMocks()
   })
 
   it('renders slot content', () => {

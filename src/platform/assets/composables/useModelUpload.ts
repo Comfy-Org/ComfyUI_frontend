@@ -17,9 +17,10 @@ type UploadModelContextResolver = () => UploadModelDialogContext | undefined
 // zero the section padding (the PrimeVue `pt` overrides this replaces).
 const uploadDialogComponentProps = {
   renderer: 'reka',
+  size: 'lg',
   contentClass: 'w-fit max-w-[calc(100vw-1rem)]',
   headerClass: 'py-0 pl-0',
-  bodyClass: 'p-0 overflow-y-hidden'
+  bodyClass: 'min-h-0 overflow-hidden p-0'
 } as const
 
 export function useModelUpload(

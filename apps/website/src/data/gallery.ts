@@ -1,3 +1,5 @@
+import type { CSSProperties } from 'vue'
+
 export interface GalleryItem {
   id: string
   image?: string
@@ -7,8 +9,8 @@ export interface GalleryItem {
   teamAlias: string
   tool: string
   href?: string
-  objectPosition?: string
-  objectFit?: string
+  objectPosition?: CSSProperties['objectPosition']
+  objectFit?: CSSProperties['objectFit']
   /** Defaults to true. Set to false to hide this item from rendered lists. */
   visible?: boolean
 }
@@ -184,8 +186,3 @@ const galleryItems: GalleryItem[] = [
 export const visibleGalleryItems: GalleryItem[] = galleryItems.filter(
   (item) => item.visible !== false
 )
-
-/** @knipIgnoreUsedByStackedPR */
-export function getGalleryItemById(id: string): GalleryItem | undefined {
-  return galleryItems.find((item) => item.id === id)
-}

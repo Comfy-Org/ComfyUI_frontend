@@ -1,6 +1,8 @@
 <template>
   <NotificationPopup
-    v-if="appModeStore.showVueNodeSwitchPopup"
+    v-if="
+      appModeStore.showVueNodeSwitchPopup && !agentNodeSelectionStore.isActive
+    "
     data-testid="linear-vue-node-switch-popup"
     :title="$t('appBuilder.vueNodeSwitch.title')"
     show-close
@@ -43,9 +45,13 @@ import { ref } from 'vue'
 import NotificationPopup from '@/components/common/NotificationPopup.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import { useAgentNodeSelectionStore } from '@/stores/agentNodeSelectionStore'
 import { useAppModeStore } from '@/stores/appModeStore'
 
 const appModeStore = useAppModeStore()
+// Node selection mode keeps the canvas clear of everything but the graph and
+// its own banner, so this popup steps aside for the duration and returns after.
+const agentNodeSelectionStore = useAgentNodeSelectionStore()
 const settingStore = useSettingStore()
 const dontShowAgain = ref(false)
 

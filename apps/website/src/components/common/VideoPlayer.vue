@@ -4,6 +4,7 @@ import {
   refAutoReset,
   useElementHover,
   useEventListener,
+  useFocusWithin,
   useFullscreen,
   useMediaControls,
   useMouseInElement,
@@ -14,6 +15,8 @@ import type { HTMLAttributes } from 'vue'
 
 import { t } from '../../i18n/translations'
 import type { Locale } from '../../i18n/translations'
+import VolumeMutedIcon from '../icons/VolumeMutedIcon.vue'
+import VolumeUnmutedIcon from '../icons/VolumeUnmutedIcon.vue'
 import PlayPauseButton from './PlayPauseButton.vue'
 
 export type VideoTrack = {
@@ -30,10 +33,16 @@ const {
   tracks = [],
   autoplay = false,
   autoplayUnmuted = false,
+  lazyAutoplay = false,
   loop = false,
   minimal = false,
+  muteOnly = false,
   hideControls = false,
+  hideFullscreen = false,
+  controlsOnHover = false,
+  playButtonVariant = 'solid',
   fit = 'cover',
+  noCors = false,
   ariaLabel,
   class: className
 } = defineProps<{
@@ -45,10 +54,27 @@ const {
   /** Attempt autoplay with sound; browsers without engagement-based
    * permission reject it, and playback falls back to muted. */
   autoplayUnmuted?: boolean
+  /** Omit the native autoplay attribute and keep preload conservative so
+   * media loads and plays only after hydration; pair with `client:visible`
+   * to start the preview when it scrolls into view. */
+  lazyAutoplay?: boolean
   loop?: boolean
   minimal?: boolean
+  /** Replace the control bar with persistent play/pause and mute toggles
+   * in the top-right corner. */
+  muteOnly?: boolean
   hideControls?: boolean
+  hideFullscreen?: boolean
+  /** Where the video is the content rather than something to operate, a
+   * paused frame should not carry a bar across it: the controls wait for a
+   * pointer. */
+  controlsOnHover?: boolean
+  /** Style of the centered play/pause button in `minimal` mode. */
+  playButtonVariant?: 'solid' | 'overlay'
   fit?: 'cover' | 'contain'
+  /** Load without a CORS request, for hosts such as generated-output buckets
+   * that send no CORS headers. Caption tracks still require CORS. */
+  noCors?: boolean
   ariaLabel?: string
   class?: HTMLAttributes['class']
 }>()
@@ -70,12 +96,32 @@ const {
 const { isSupported: fullscreenSupported, toggle: toggleFs } =
   useFullscreen(playerEl)
 
+// A server-rendered `autoplay` video can start playing before hydration
+// attaches useMediaControls' listeners, so its play/volumechange events are
+// missed and the controls render stale state (e.g. a play icon over a
+// playing video). Sync the refs from the element once it binds; the
+// assignments are no-ops when the element already matches.
+watch(
+  videoEl,
+  (el) => {
+    if (!el) return
+    playing.value = !el.paused
+    muted.value = el.muted
+  },
+  { flush: 'post' }
+)
+
 // Controls fade
 const hovering = useElementHover(playerEl)
+const { focused } = useFocusWithin(playerEl)
 const recentActivity = refAutoReset(false, 800)
 
 const controlsVisible = computed(
-  () => !playing.value || hovering.value || recentActivity.value
+  () =>
+    focused.value ||
+    (controlsOnHover
+      ? hovering.value || recentActivity.value
+      : !playing.value || hovering.value || recentActivity.value)
 )
 
 function showControls() {
@@ -253,13 +299,13 @@ function toggleFullscreen() {
       "
       :src
       :poster
-      :preload="autoplay ? 'auto' : 'metadata'"
-      crossorigin="anonymous"
+      :preload="autoplay && !lazyAutoplay ? 'auto' : 'metadata'"
+      :crossorigin="noCors && !tracks.length ? undefined : 'anonymous'"
       playsinline
-      :autoplay
+      :autoplay="autoplay && !lazyAutoplay"
       :loop
-      muted
-      @click="hideControls ? undefined : (playing = !playing)"
+      :muted="autoplay"
+      @click="hideControls || muteOnly ? undefined : (playing = !playing)"
     >
       <track
         v-for="track in tracks"
@@ -271,9 +317,36 @@ function toggleFullscreen() {
       />
     </video>
 
+    <!-- Persistent corner pause and mute toggles. z-30 keeps them above the
+      overlay hero's scrim and content layers. -->
+    <div
+      v-if="src && muteOnly && !hideControls"
+      class="absolute top-4 right-4 z-30 flex gap-2 lg:top-6 lg:right-6"
+    >
+      <PlayPauseButton
+        :playing
+        size="sm"
+        :aria-label="
+          playing ? t('player.pause', locale) : t('player.play', locale)
+        "
+        @click="playing = !playing"
+      />
+      <button
+        type="button"
+        class="flex size-8 items-center justify-center rounded-lg bg-primary-comfy-yellow lg:size-10"
+        :aria-label="
+          muted ? t('player.unmute', locale) : t('player.mute', locale)
+        "
+        @click="muted = !muted"
+      >
+        <VolumeMutedIcon v-if="muted" class="size-4 text-primary-comfy-ink" />
+        <VolumeUnmutedIcon v-else class="size-4 text-primary-comfy-ink" />
+      </button>
+    </div>
+
     <!-- Minimal centered play/pause button -->
     <div
-      v-if="minimal && src && !hideControls"
+      v-if="minimal && src && !hideControls && !muteOnly"
       :class="
         cn(
           'absolute inset-0 flex items-center justify-center transition-opacity duration-300',
@@ -284,6 +357,7 @@ function toggleFullscreen() {
     >
       <PlayPauseButton
         :playing
+        :variant="playButtonVariant"
         :aria-label="
           playing ? t('player.pause', locale) : t('player.play', locale)
         "
@@ -293,7 +367,7 @@ function toggleFullscreen() {
 
     <!-- Bottom control bar -->
     <div
-      v-if="src && !minimal && !hideControls"
+      v-if="src && !minimal && !hideControls && !muteOnly"
       :class="
         cn(
           'absolute inset-x-0 bottom-0 flex items-center gap-3 p-4 transition-opacity duration-300 lg:px-6 lg:py-5',
@@ -326,7 +400,7 @@ function toggleFullscreen() {
         @touchstart.passive="scrubbing = true"
       >
         <div
-          class="bg-primary-comfy-yellow h-full rounded-full"
+          class="h-full rounded-full bg-primary-comfy-yellow"
           :style="{ width: `${progress * 100}%` }"
         />
       </div>
@@ -338,7 +412,9 @@ function toggleFullscreen() {
 
       <!-- Fullscreen button -->
       <button
-        class="bg-primary-comfy-yellow flex size-8 shrink-0 items-center justify-center rounded-lg lg:size-10"
+        v-if="!hideFullscreen"
+        type="button"
+        class="flex size-8 shrink-0 items-center justify-center rounded-lg bg-primary-comfy-yellow lg:size-10"
         :aria-label="t('player.fullscreen', locale)"
         @click="toggleFullscreen"
       >
@@ -360,6 +436,7 @@ function toggleFullscreen() {
       <!-- CC button -->
       <button
         v-if="hasSubtitles"
+        type="button"
         :class="
           cn(
             'flex size-8 shrink-0 items-center justify-center rounded-lg text-xs font-bold lg:size-10 lg:text-sm',
@@ -380,58 +457,21 @@ function toggleFullscreen() {
 
       <!-- Mute / Unmute button -->
       <button
-        class="bg-primary-comfy-yellow flex size-8 shrink-0 items-center justify-center rounded-lg lg:size-10"
+        type="button"
+        class="flex size-8 shrink-0 items-center justify-center rounded-lg bg-primary-comfy-yellow lg:size-10"
         :aria-label="
           muted ? t('player.unmute', locale) : t('player.mute', locale)
         "
         @click="muted = !muted"
       >
-        <!-- Muted icon -->
-        <svg
+        <VolumeMutedIcon
           v-if="muted"
           class="size-3.5 text-primary-comfy-ink lg:size-4"
-          viewBox="0 0 24 24"
-          fill="currentColor"
-          stroke="currentColor"
-          stroke-width="1.5"
-          aria-hidden="true"
-        >
-          <path
-            d="M11 5L6 9H2v6h4l5 4V5z"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-          />
-          <line x1="23" y1="9" x2="17" y2="15" stroke-width="2.5" />
-          <line x1="17" y1="9" x2="23" y2="15" stroke-width="2.5" />
-        </svg>
-        <!-- Unmuted icon -->
-        <svg
+        />
+        <VolumeUnmutedIcon
           v-else
           class="size-3.5 text-primary-comfy-ink lg:size-4"
-          viewBox="0 0 24 24"
-          fill="currentColor"
-          stroke="currentColor"
-          stroke-width="1.5"
-          aria-hidden="true"
-        >
-          <path
-            d="M11 5L6 9H2v6h4l5 4V5z"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-          />
-          <path
-            d="M15.54 8.46a5 5 0 0 1 0 7.07"
-            fill="none"
-            stroke-width="2"
-            stroke-linecap="round"
-          />
-          <path
-            d="M19.07 4.93a10 10 0 0 1 0 14.14"
-            fill="none"
-            stroke-width="2"
-            stroke-linecap="round"
-          />
-        </svg>
+        />
       </button>
     </div>
   </div>

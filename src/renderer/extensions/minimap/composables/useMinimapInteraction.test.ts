@@ -11,8 +11,6 @@ describe('useMinimapInteraction', () => {
   let centerViewOnMock: (worldX: number, worldY: number) => void
 
   beforeEach(() => {
-    vi.clearAllMocks()
-
     mockContainer = {
       getBoundingClientRect: vi.fn().mockReturnValue({
         left: 100,

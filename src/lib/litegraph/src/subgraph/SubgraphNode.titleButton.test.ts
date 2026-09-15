@@ -1,5 +1,3 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { LGraphButton } from '@/lib/litegraph/src/litegraph'
@@ -12,7 +10,6 @@ import {
 } from './__fixtures__/subgraphHelpers'
 
 beforeEach(() => {
-  setActivePinia(createTestingPinia({ stubActions: false }))
   resetSubgraphFixtureState()
 })
 

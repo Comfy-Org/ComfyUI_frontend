@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { effectScope, nextTick, ref } from 'vue'
 
 import { useCarouselAutoplay } from './useCarouselAutoplay'
@@ -10,14 +10,6 @@ function runInScope(fn: () => void): () => void {
 }
 
 describe('useCarouselAutoplay', () => {
-  beforeEach(() => {
-    vi.useFakeTimers()
-  })
-
-  afterEach(() => {
-    vi.useRealTimers()
-  })
-
   it('advances after the active slide delay elapses', () => {
     const index = ref(0)
     const advance = vi.fn(() => {

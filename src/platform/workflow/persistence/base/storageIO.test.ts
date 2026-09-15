@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { DraftIndexV2, DraftPayloadV2 } from './draftTypes'
 import {
@@ -21,14 +21,7 @@ import {
 
 describe('storageIO', () => {
   beforeEach(() => {
-    localStorage.clear()
-    sessionStorage.clear()
     vi.resetModules()
-  })
-
-  afterEach(() => {
-    localStorage.clear()
-    sessionStorage.clear()
   })
 
   describe('index operations', () => {
@@ -344,10 +337,11 @@ describe('storageIO', () => {
       expect(sessionStorage.getItem('unrelated')).toBe('keep')
     })
 
-    it('blocks workflow writes after cleanup starts', async () => {
+    it('blocks workflow writes during logout cleanup', async () => {
       const isolatedStorageIO = await import('./storageIO')
 
-      isolatedStorageIO.clearAllWorkflowStorage({ blockWrites: true })
+      isolatedStorageIO.prepareWorkflowLogoutTransition()
+      isolatedStorageIO.clearAllWorkflowStorage()
 
       expect(isolatedStorageIO.isStorageAvailable()).toBe(false)
       expect(
@@ -394,7 +388,7 @@ describe('storageIO', () => {
     })
   })
 
-  describe('clearWorkflowRestoreState', () => {
+  describe('workflow storage transitions', () => {
     it('blocks writes and clears restore state when a persistence flush fails', async () => {
       const isolatedStorageIO = await import('./storageIO')
       localStorage.setItem('workflow', '{}')
@@ -428,6 +422,98 @@ describe('storageIO', () => {
       consoleWarnSpy.mockRestore()
     })
 
+    it('resumes writes when a workspace transition is cancelled', async () => {
+      const isolatedStorageIO = await import('./storageIO')
+
+      const cancelTransition =
+        isolatedStorageIO.prepareWorkflowWorkspaceTransition()
+      expect(
+        isolatedStorageIO.writePayload('ws-1', 'blocked', {
+          data: '{}',
+          updatedAt: 1
+        })
+      ).toBe(false)
+
+      cancelTransition()
+
+      expect(
+        isolatedStorageIO.writePayload('ws-1', 'resumed', {
+          data: '{}',
+          updatedAt: 2
+        })
+      ).toBe(true)
+    })
+
+    it('preserves unavailable storage when a workspace transition is cancelled', async () => {
+      const isolatedStorageIO = await import('./storageIO')
+
+      isolatedStorageIO.markStorageUnavailable()
+      const cancelTransition =
+        isolatedStorageIO.prepareWorkflowWorkspaceTransition()
+      cancelTransition()
+
+      expect(isolatedStorageIO.isStorageAvailable()).toBe(false)
+      expect(
+        isolatedStorageIO.writePayload('ws-1', 'draft', {
+          data: '{}',
+          updatedAt: 1
+        })
+      ).toBe(false)
+    })
+
+    it('only resumes logout transitions after authentication recovers', async () => {
+      const isolatedStorageIO = await import('./storageIO')
+
+      isolatedStorageIO.prepareWorkflowWorkspaceTransition()
+      isolatedStorageIO.completeWorkflowLogoutTransition()
+      expect(isolatedStorageIO.isStorageAvailable()).toBe(false)
+
+      isolatedStorageIO.prepareWorkflowLogoutTransition()
+      isolatedStorageIO.completeWorkflowLogoutTransition()
+
+      expect(isolatedStorageIO.isStorageAvailable()).toBe(true)
+    })
+
+    it('preserves unavailable storage after logout recovery', async () => {
+      const isolatedStorageIO = await import('./storageIO')
+
+      isolatedStorageIO.markStorageUnavailable()
+      isolatedStorageIO.prepareWorkflowLogoutTransition()
+      isolatedStorageIO.completeWorkflowLogoutTransition()
+
+      expect(isolatedStorageIO.isStorageAvailable()).toBe(false)
+    })
+
+    it('does not let a duplicate transition cancel the owner transition', async () => {
+      const isolatedStorageIO = await import('./storageIO')
+
+      const cancelOwner = isolatedStorageIO.prepareWorkflowWorkspaceTransition()
+      const cancelDuplicate =
+        isolatedStorageIO.prepareWorkflowWorkspaceTransition()
+      cancelDuplicate()
+      expect(isolatedStorageIO.isStorageAvailable()).toBe(false)
+
+      cancelOwner()
+      expect(isolatedStorageIO.isStorageAvailable()).toBe(true)
+    })
+
+    it('keeps reads available while a workspace transition blocks writes', async () => {
+      const isolatedStorageIO = await import('./storageIO')
+
+      isolatedStorageIO.writePayload('ws-1', 'draft', {
+        data: '{}',
+        updatedAt: 1
+      })
+      const cancelTransition =
+        isolatedStorageIO.prepareWorkflowWorkspaceTransition()
+
+      expect(isolatedStorageIO.readPayload('ws-1', 'draft')).not.toBeNull()
+      expect(isolatedStorageIO.getPayloadKeys('ws-1')).toContain('draft')
+      cancelTransition()
+    })
+  })
+
+  describe('clearWorkflowRestoreState', () => {
     it('clears cross-workspace restore state without deleting scoped drafts', () => {
       localStorage.setItem('Comfy.Workflow.DraftIndex.v2:ws-1', '{}')
       localStorage.setItem('Comfy.Workflow.Draft.v2:ws-1:abc', '{}')

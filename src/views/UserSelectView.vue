@@ -15,7 +15,7 @@
             @keyup.enter="login"
           />
         </div>
-        <Divider />
+        <div class="my-4 w-full border-t border-interface-stroke" />
         <div class="flex w-full flex-col gap-2">
           <label for="existing-user-select"
             >{{ $t('userSelect.existingUser') }}:</label
@@ -42,7 +42,6 @@
 </template>
 
 <script setup lang="ts">
-import Divider from 'primevue/divider'
 import InputText from 'primevue/inputtext'
 import Message from 'primevue/message'
 import Select from 'primevue/select'
@@ -76,7 +75,9 @@ const login = async () => {
       : selectedUser.value
 
     if (!user) {
-      throw new Error('No user selected')
+      console.error('No user selected')
+      loginError.value = 'No user selected'
+      return
     }
 
     await userStore.login(user)

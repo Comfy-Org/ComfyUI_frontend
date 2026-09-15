@@ -49,6 +49,19 @@ test.describe('Onboarding coachmarks', { tag: '@ui' }, () => {
       await expect(coach.landing).toBeHidden()
       await expect.poll(() => coach.seen('appMode')).toBe(true)
     })
+
+    test('ends the tour when the viewport narrows below desktop size', async ({
+      comfyPage,
+      onboarding
+    }) => {
+      await comfyPage.appMode.enterAppModeWithInputs([])
+      await expect(onboarding.landing).toBeVisible()
+
+      await comfyPage.page.setViewportSize({ width: 500, height: 800 })
+
+      await expect(onboarding.landing).toBeHidden()
+      await expect.poll(() => onboarding.seen('appMode')).toBe(false)
+    })
   })
 
   test.describe('coach anchors', () => {
@@ -101,6 +114,33 @@ test.describe('Onboarding coachmarks', { tag: '@ui' }, () => {
       await coach.cardNextButton.click()
       await expect(coach.cardForStep(2)).toBeVisible()
       await expect(coach.cardNextButton).toBeFocused()
+    })
+  })
+
+  test.describe('reduced motion', () => {
+    test('honours prefers-reduced-motion on every animated tour surface', async ({
+      comfyPage,
+      onboarding
+    }) => {
+      const coach = onboarding
+      await comfyPage.page.emulateMedia({ reducedMotion: 'reduce' })
+      await comfyPage.appMode.enterAppModeWithInputs([])
+
+      await coach.startTour('appMode')
+      await expect(coach.landing).toBeVisible()
+      await coach.landingStartButton.click()
+      await expect(coach.cardForStep(1)).toBeVisible()
+
+      for (const surface of [coach.spotlight, coach.card]) {
+        const unguarded = await surface.evaluate((el) =>
+          [...el.classList].filter(
+            (name) =>
+              name.includes('transition') && !name.startsWith('motion-safe:')
+          )
+        )
+        expect(unguarded).toEqual([])
+        await expect(surface).toHaveCSS('transition-duration', '0s')
+      }
     })
   })
 

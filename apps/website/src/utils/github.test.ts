@@ -11,7 +11,6 @@ describe('fetchGitHubStars', () => {
 
   afterEach(() => {
     resetGitHubStarsFetcherForTests()
-    vi.restoreAllMocks()
     if (savedOverride === undefined)
       delete process.env.WEBSITE_GITHUB_STARS_OVERRIDE
     else process.env.WEBSITE_GITHUB_STARS_OVERRIDE = savedOverride

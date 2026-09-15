@@ -5,6 +5,7 @@ import { computed, reactive } from 'vue'
 import type { Locale, TranslationKey } from '../../i18n/translations'
 
 import { t } from '../../i18n/translations'
+import SafeRichText from './SafeRichTextContent'
 
 const {
   locale = 'en',
@@ -43,7 +44,7 @@ function toggle(index: number) {
 </script>
 
 <template>
-  <section class="max-w-9xl mx-auto px-4 py-24 md:px-20 md:py-40">
+  <section class="mx-auto max-w-9xl px-4 py-24 md:px-20 md:py-40">
     <div class="flex flex-col gap-6 md:flex-row md:gap-16">
       <div
         class="sticky top-20 z-10 w-full shrink-0 self-start bg-primary-comfy-ink py-4 md:top-28 md:w-80 md:py-0"
@@ -85,7 +86,7 @@ function toggle(index: number) {
               {{ faq.question }}
             </span>
             <span
-              class="text-primary-comfy-yellow ml-4 shrink-0 text-2xl"
+              class="ml-4 shrink-0 text-2xl text-primary-comfy-yellow"
               aria-hidden="true"
             >
               {{ expanded[index] ? '−' : '+' }}
@@ -98,17 +99,19 @@ function toggle(index: number) {
             :aria-labelledby="`faq-trigger-${index}`"
             class="pb-6"
           >
-            <p
-              class="[&_a]:text-primary-comfy-yellow text-sm whitespace-pre-line text-primary-comfy-canvas/70 [&_a]:underline"
-              v-html="faq.answer"
+            <SafeRichText
+              as="p"
+              class="text-sm whitespace-pre-line text-primary-comfy-canvas/70 [&_a]:text-primary-comfy-yellow [&_a]:underline"
+              :html="faq.answer"
             />
           </section>
         </div>
 
-        <p
+        <SafeRichText
           v-if="footerKey"
-          class="[&_a]:text-primary-comfy-yellow mt-8 text-sm text-primary-comfy-canvas/70 [&_a]:underline"
-          v-html="t(footerKey, locale)"
+          as="p"
+          class="mt-8 text-sm text-primary-comfy-canvas/70 [&_a]:text-primary-comfy-yellow [&_a]:underline"
+          :html="t(footerKey, locale)"
         />
       </div>
     </div>

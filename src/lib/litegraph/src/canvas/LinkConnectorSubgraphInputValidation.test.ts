@@ -32,7 +32,6 @@ describe('LinkConnector SubgraphInput connection validation', () => {
 
   beforeEach(() => {
     connector = new LinkConnector(mockSetConnectingLinks)
-    vi.clearAllMocks()
   })
   describe('Link disconnection validation', () => {
     it('should properly cleanup a moved input link', () => {
@@ -121,7 +120,7 @@ describe('LinkConnector SubgraphInput connection validation', () => {
         targetNode.id,
         0
       )
-      subgraph._links.set(link.id, link)
+      subgraph.links.set(link.id, link)
 
       const movingLink = new MovingOutputLink(subgraph, link)
 
@@ -153,7 +152,7 @@ describe('LinkConnector SubgraphInput connection validation', () => {
         targetNode.id,
         0
       )
-      subgraph._links.set(validLink.id, validLink)
+      subgraph.links.set(validLink.id, validLink)
       const validMovingLink = new MovingOutputLink(subgraph, validLink)
 
       // Create invalid link (string -> number)
@@ -165,7 +164,7 @@ describe('LinkConnector SubgraphInput connection validation', () => {
         targetNode.id,
         1
       )
-      subgraph._links.set(invalidLink.id, invalidLink)
+      subgraph.links.set(invalidLink.id, invalidLink)
       const invalidMovingLink = new MovingOutputLink(subgraph, invalidLink)
 
       const numberInput = subgraph.inputs[0]
@@ -198,7 +197,7 @@ describe('LinkConnector SubgraphInput connection validation', () => {
         targetNode.id,
         0
       )
-      subgraph._links.set(link.id, link)
+      subgraph.links.set(link.id, link)
       const movingLink = new MovingOutputLink(subgraph, link)
 
       const wildcardInput = subgraph.inputs[0]
@@ -248,7 +247,7 @@ describe('LinkConnector SubgraphInput connection validation', () => {
         targetNode.id,
         0
       )
-      subgraph._links.set(link.id, link)
+      subgraph.links.set(link.id, link)
       const movingLink = new MovingOutputLink(subgraph, link)
 
       // Mock console.warn to verify it's called
@@ -307,7 +306,7 @@ describe('LinkConnector SubgraphInput connection validation', () => {
         targetNode.id,
         0
       )
-      subgraph._links.set(link.id, link)
+      subgraph.links.set(link.id, link)
       const movingLink = new MovingOutputLink(subgraph, link)
 
       // Add the link to the connector
@@ -368,8 +367,8 @@ describe('LinkConnector SubgraphInput connection validation', () => {
         targetNode.id,
         1
       )
-      subgraph._links.set(validLink.id, validLink)
-      subgraph._links.set(invalidLink.id, invalidLink)
+      subgraph.links.set(validLink.id, validLink)
+      subgraph.links.set(invalidLink.id, invalidLink)
 
       const validMovingLink = new MovingOutputLink(subgraph, validLink)
       const invalidMovingLink = new MovingOutputLink(subgraph, invalidLink)

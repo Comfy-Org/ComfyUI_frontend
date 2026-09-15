@@ -42,7 +42,6 @@ export const useRightSidePanelStore = defineStore('rightSidePanel', () => {
    * cleared by TabErrors after expanding the relevant error group.
    */
   const focusedErrorNodeId = ref<string | null>(null)
-  const searchQuery = ref('')
 
   // Auto-close panel when switching to legacy menu mode
   watch(isLegacyMenu, (legacy) => {
@@ -90,7 +89,6 @@ export const useRightSidePanelStore = defineStore('rightSidePanel', () => {
     isEditingSubgraph,
     focusedSection,
     focusedErrorNodeId,
-    searchQuery,
     openPanel,
     closePanel,
     togglePanel,

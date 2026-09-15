@@ -44,7 +44,7 @@
       "properties": {
         "Node name for S&R": "LoadVideo"
       },
-      "widgets_values": [null, "image"]
+      "widgets_values": ["this-video-does-not-exist-deadbeef.mp4", "image"]
     },
     {
       "id": 3,

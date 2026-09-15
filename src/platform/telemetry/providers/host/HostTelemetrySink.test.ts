@@ -10,7 +10,6 @@ const state = vi.hoisted(() => ({
 
 describe('HostTelemetrySink', () => {
   beforeEach(() => {
-    state.capture.mockClear()
     window.__comfyDesktop2 = {
       isRemote: () => false,
       Telemetry: {
@@ -153,6 +152,71 @@ describe('HostTelemetrySink', () => {
     expect(state.capture).toHaveBeenCalledExactlyOnceWith(
       TelemetryEvents.ADD_API_CREDIT_BUTTON_CLICKED,
       { source: 'avatar_menu' }
+    )
+  })
+
+  it('forwards canonical billing events using the derived name and payload', () => {
+    new HostTelemetrySink().trackBillingEvent({
+      operation: 'operation',
+      stage: 'succeeded',
+      outcome: 'success',
+      billing_op_id: 'op-1',
+      operation_type: 'subscription',
+      tier: 'pro',
+      cycle: 'monthly',
+      checkout_type: 'new'
+    })
+
+    expect(state.capture).toHaveBeenCalledExactlyOnceWith(
+      TelemetryEvents.BILLING_OPERATION_SUCCEEDED,
+      {
+        operation: 'operation',
+        stage: 'succeeded',
+        outcome: 'success',
+        billing_op_id: 'op-1',
+        operation_type: 'subscription',
+        tier: 'pro',
+        cycle: 'monthly',
+        checkout_type: 'new'
+      }
+    )
+  })
+
+  it('forwards billing failures with their failure category', () => {
+    new HostTelemetrySink().trackBillingEvent({
+      operation: 'topup',
+      stage: 'failed',
+      outcome: 'failure',
+      billing_op_id: 'op-2',
+      failure_category: 'provider_decline'
+    })
+
+    expect(state.capture).toHaveBeenCalledExactlyOnceWith(
+      TelemetryEvents.BILLING_TOPUP_FAILED,
+      {
+        operation: 'topup',
+        stage: 'failed',
+        outcome: 'failure',
+        billing_op_id: 'op-2',
+        failure_category: 'provider_decline'
+      }
+    )
+  })
+
+  it('forwards link dedup drops to the host bridge', () => {
+    new HostTelemetrySink().trackLinkDedupDrop({
+      droppedLinkId: 7,
+      survivorLinkId: 3,
+      target: '12:0'
+    })
+
+    expect(state.capture).toHaveBeenCalledExactlyOnceWith(
+      TelemetryEvents.LINK_DEDUP_DROP,
+      {
+        droppedLinkId: 7,
+        survivorLinkId: 3,
+        target: '12:0'
+      }
     )
   })
 

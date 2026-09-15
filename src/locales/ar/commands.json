@@ -176,6 +176,9 @@
   "Comfy_Interrupt": {
     "label": "إيقاف مؤقت"
   },
+  "Comfy_LayerEditor_OpenLayerEditor": {
+    "label": "افتح محرر الطبقات للعقدة المحددة"
+  },
   "Comfy_LoadDefaultWorkflow": {
     "label": "تحميل سير العمل الافتراضي"
   },
@@ -274,9 +277,6 @@
   },
   "Comfy_Subgraph_SetSearchAliases": {
     "label": "تعيين الأسماء المستعارة للبحث في الرسم البياني الفرعي"
-  },
-  "Comfy_ToggleAssetAPI": {
-    "label": "تجريبي: تمكين AssetAPI"
   },
   "Comfy_ToggleCanvasInfo": {
     "label": "أداء اللوحة"

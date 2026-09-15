@@ -1,26 +1,34 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { fromPartial } from '@total-typescript/shoehorn'
+import { describe, expect, it, vi } from 'vitest'
 
-import type { ComfyExtension } from '@/types/comfy'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import type { ComfyApp } from '@/scripts/app'
+import type { useExtensionService } from '@/services/extensionService'
+import type { ComfyExtension } from '@/types/comfy'
 
 const { addTextPreviewWidgets, updateTextPreviewWidgets } = vi.hoisted(() => ({
   addTextPreviewWidgets: vi.fn(),
   updateTextPreviewWidgets: vi.fn()
 }))
 
-vi.mock('@/extensions/core/textPreviewWidgets', () => ({
+vi.mock(import('@/extensions/core/textPreviewWidgets'), () => ({
   addTextPreviewWidgets,
   updateTextPreviewWidgets
 }))
 
+vi.mock(import('@/scripts/app'), () => ({
+  app: fromPartial<ComfyApp>({ rootGraph: {} })
+}))
+
 const capturedExtensions: ComfyExtension[] = []
 
-vi.mock('@/services/extensionService', () => ({
-  useExtensionService: () => ({
-    registerExtension: (ext: ComfyExtension) => {
-      capturedExtensions.push(ext)
-    }
-  })
+vi.mock(import('@/services/extensionService'), () => ({
+  useExtensionService: () =>
+    fromPartial<ReturnType<typeof useExtensionService>>({
+      registerExtension: (ext: ComfyExtension) => {
+        capturedExtensions.push(ext)
+      }
+    })
 }))
 
 type BeforeRegister = NonNullable<ComfyExtension['beforeRegisterNodeDef']>
@@ -45,15 +53,15 @@ async function setupNode() {
   return { node, proto }
 }
 
-describe('PreviewAny extension', () => {
-  beforeEach(async () => {
-    capturedExtensions.length = 0
-    addTextPreviewWidgets.mockClear()
-    updateTextPreviewWidgets.mockClear()
-    vi.resetModules()
-    await import('./previewAny')
-  })
+// Registering the extension is a module side effect, so importing once at
+// module scope is enough. Re-importing it per test behind `vi.resetModules()`
+// re-evaluated the whole graph every time - ~8s against the 10s `hookTimeout`
+// once the suite is competing for the transform pipeline. Collection is
+// untimed, so the cost belongs here. Each test still builds its own nodeType,
+// so they stay independent.
+await import('./previewAny')
 
+describe('PreviewAny extension', () => {
   it('adds the shared text preview widgets on node creation', async () => {
     const { node, proto } = await setupNode()
 

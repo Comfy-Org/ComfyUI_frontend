@@ -1,5 +1,5 @@
-import { createPinia, setActivePinia } from 'pinia'
-import { markRaw, reactive } from 'vue'
+import { useSettingStore } from '@/platform/settings/settingStore'
+import { markRaw } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { CORE_KEYBINDINGS } from '@/platform/keybindings/defaults'
@@ -26,36 +26,21 @@ function createTestDialogInstance(
   }
 }
 
-vi.mock('@/platform/settings/settingStore', () => ({
-  useSettingStore: vi.fn(() => ({
-    get: vi.fn(() => [])
-  }))
-}))
-
-vi.mock('@/stores/dialogStore', () => {
-  const dialogStack = reactive<DialogInstance[]>([])
-  return {
-    useDialogStore: () => ({ dialogStack })
-  }
-})
-
-vi.mock('@/scripts/app', () => ({
+vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: {
     canvas: null
   }
 }))
 
+beforeEach(() => {
+  vi.mocked(useSettingStore().get).mockImplementation(() => [])
+})
+
 describe('keybindingService - Escape key handling', () => {
   let keybindingService: ReturnType<typeof useKeybindingService>
-  let mockCommandExecute: ReturnType<typeof useCommandStore>['execute']
 
   beforeEach(() => {
-    vi.clearAllMocks()
-    setActivePinia(createPinia())
-
-    const commandStore = useCommandStore()
-    mockCommandExecute = vi.fn()
-    commandStore.execute = mockCommandExecute
+    vi.mocked(useCommandStore().execute).mockResolvedValue(undefined)
 
     const dialogStore = useDialogStore()
     dialogStore.dialogStack.length = 0
@@ -67,6 +52,7 @@ describe('keybindingService - Escape key handling', () => {
   function createKeyboardEvent(
     key: string,
     options: {
+      target?: Element
       ctrlKey?: boolean
       altKey?: boolean
       metaKey?: boolean
@@ -84,7 +70,7 @@ describe('keybindingService - Escape key handling', () => {
     })
 
     event.preventDefault = vi.fn()
-    event.composedPath = vi.fn(() => [document.body])
+    event.composedPath = vi.fn(() => [options.target ?? document.body])
 
     return event
   }
@@ -93,7 +79,9 @@ describe('keybindingService - Escape key handling', () => {
     const event = createKeyboardEvent('Escape')
     await keybindingService.keybindHandler(event)
 
-    expect(mockCommandExecute).toHaveBeenCalledWith('Comfy.Graph.ExitSubgraph')
+    expect(useCommandStore().execute).toHaveBeenCalledWith(
+      'Comfy.Graph.ExitSubgraph'
+    )
   })
 
   it('should NOT execute Escape keybinding when dialogs are open', async () => {
@@ -105,7 +93,7 @@ describe('keybindingService - Escape key handling', () => {
     const event = createKeyboardEvent('Escape')
     await keybindingService.keybindHandler(event)
 
-    expect(mockCommandExecute).not.toHaveBeenCalled()
+    expect(useCommandStore().execute).not.toHaveBeenCalled()
   })
 
   it('should NOT execute Escape keybinding with modifiers when a dialog is open', async () => {
@@ -125,8 +113,25 @@ describe('keybindingService - Escape key handling', () => {
     const event = createKeyboardEvent('Escape', { ctrlKey: true })
     await keybindingService.keybindHandler(event)
 
-    expect(mockCommandExecute).not.toHaveBeenCalled()
+    expect(useCommandStore().execute).not.toHaveBeenCalled()
   })
+
+  it.for(['menu', 'menubar'])(
+    'should leave Escape events from role=%s to the menu',
+    async (role) => {
+      const menu = document.createElement('div')
+      menu.setAttribute('role', role)
+      const menuItem = document.createElement('div')
+      menuItem.setAttribute('role', 'menuitemcheckbox')
+      menu.appendChild(menuItem)
+
+      const event = createKeyboardEvent('Escape', { target: menuItem })
+      await keybindingService.keybindHandler(event)
+
+      expect(event.preventDefault).not.toHaveBeenCalled()
+      expect(useCommandStore().execute).not.toHaveBeenCalled()
+    }
+  )
 
   it('should verify Escape keybinding exists in CORE_KEYBINDINGS', () => {
     const escapeBinding = CORE_KEYBINDINGS.find(
@@ -155,7 +160,9 @@ describe('keybindingService - Escape key handling', () => {
   })
 
   it('should still close legacy modals on Escape when no keybinding matched', async () => {
-    setActivePinia(createPinia())
+    useKeybindingStore().removeAllKeybindingsForCommand(
+      'Comfy.Graph.ExitSubgraph'
+    )
     keybindingService = useKeybindingService()
 
     const mockModal = document.createElement('div')

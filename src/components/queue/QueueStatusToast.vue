@@ -53,7 +53,9 @@
               )
             "
           >
-            <span class="relative flex size-4 shrink-0 items-center justify-center">
+            <span
+              class="relative flex size-4 shrink-0 items-center justify-center"
+            >
               <span
                 v-if="!isTerminal"
                 class="inline-block size-[15px] animate-spin rounded-full border-2 border-white/20 border-t-white/80"
@@ -134,10 +136,14 @@
             </span>
 
             <div class="flex min-w-0 flex-1 flex-col gap-0.5">
-              <span class="truncate text-[13px] leading-none text-base-foreground">
+              <span
+                class="truncate text-[13px] leading-none text-base-foreground"
+              >
                 {{ job.title }}
               </span>
-              <span class="truncate text-[11px] leading-none text-muted-foreground">
+              <span
+                class="truncate text-[11px] leading-none text-muted-foreground"
+              >
                 {{ jobSubtitle(job) }}
               </span>
             </div>
@@ -210,7 +216,11 @@
               aria-hidden
             />
             <i v-else class="icon-[lucide--pause] size-3" aria-hidden />
-            {{ allRunningPaused ? t('queueStatus.resumeAll') : t('queueStatus.pauseAll') }}
+            {{
+              allRunningPaused
+                ? t('queueStatus.resumeAll')
+                : t('queueStatus.pauseAll')
+            }}
           </button>
           <button
             v-if="queuedCount > 0"
@@ -312,10 +322,14 @@
                 />
               </span>
               <span class="flex min-w-0 flex-1 flex-col gap-0.5">
-                <span class="truncate text-[13px] leading-none text-base-foreground">
+                <span
+                  class="truncate text-[13px] leading-none text-base-foreground"
+                >
                   {{ result.name }}
                 </span>
-                <span class="truncate text-[11px] leading-none text-muted-foreground">
+                <span
+                  class="truncate text-[11px] leading-none text-muted-foreground"
+                >
                   {{ result.meta }}
                 </span>
               </span>
@@ -392,7 +406,9 @@ import { useResultGallery } from '@/composables/queue/useResultGallery'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { api } from '@/scripts/api'
 import { useExecutionStore } from '@/stores/executionStore'
-import type { ResultItemImpl, TaskItemImpl } from '@/stores/queueStore'
+import type { TaskItemImpl } from '@/stores/queueStore'
+import type { AugmentedResultItem } from '@/utils/resultItem'
+import { isVideoResult } from '@/utils/resultItem'
 import { useQueueStore } from '@/stores/queueStore'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 import { cn } from '@comfyorg/tailwind-utils'
@@ -475,7 +491,11 @@ const demoRun = (id: string, title: string, progress: number): JobView => ({
   progress,
   queuePosition: 0
 })
-const demoQueued = (id: string, title: string, queuePosition: number): JobView => ({
+const demoQueued = (
+  id: string,
+  title: string,
+  queuePosition: number
+): JobView => ({
   id,
   title,
   status: 'queued',
@@ -514,11 +534,17 @@ const selectDemo = (state: DemoState) => {
   demoJobs.value = state.jobs.map((job) => ({ ...job }))
 }
 
-const jobs = computed<JobView[]>(() => (isDemo ? demoJobs.value : liveJobs.value))
+const jobs = computed<JobView[]>(() =>
+  isDemo ? demoJobs.value : liveJobs.value
+)
 
-const runningJobs = computed(() => jobs.value.filter((job) => job.status === 'running'))
+const runningJobs = computed(() =>
+  jobs.value.filter((job) => job.status === 'running')
+)
 const runningCount = computed(() => runningJobs.value.length)
-const queuedJobs = computed(() => jobs.value.filter((job) => job.status === 'queued'))
+const queuedJobs = computed(() =>
+  jobs.value.filter((job) => job.status === 'queued')
+)
 const queuedCount = computed(() => queuedJobs.value.length)
 const activeCount = computed(() => jobs.value.length)
 
@@ -568,7 +594,9 @@ async function maybeAutoOpenRecents() {
 }
 
 const showToast = computed(() => activeCount.value > 0 || completedFlash.value)
-const isTerminal = computed(() => completedFlash.value && activeCount.value === 0)
+const isTerminal = computed(
+  () => completedFlash.value && activeCount.value === 0
+)
 
 /**
  * Sonner-style stack: with parallel runs the pill sits on a small deck of
@@ -596,7 +624,9 @@ function scheduleCloseStack() {
 
 const stackCount = computed(() => Math.min(activeCount.value - 1, 2))
 /** Hover reveals the list; clicking the pill pins it open. */
-const fanned = computed(() => !isTerminal.value && (hovered.value || expanded.value))
+const fanned = computed(
+  () => !isTerminal.value && (hovered.value || expanded.value)
+)
 
 const headlineProgress = computed(() => runningJobs.value[0]?.progress ?? 0)
 
@@ -746,7 +776,9 @@ const cancelJobIds = wrapWithErrorHandlingAsync(async (ids: string[]) => {
   }
   const jobIds = ids
     .map((id) => jobRef(id)?.taskRef?.jobId)
-    .filter((jobId): jobId is string => typeof jobId === 'string' && jobId.length > 0)
+    .filter(
+      (jobId): jobId is string => typeof jobId === 'string' && jobId.length > 0
+    )
   if (!jobIds.length) return
   await api.cancelJobs(jobIds)
   executionStore.clearInitializationByJobIds(jobIds)
@@ -799,7 +831,7 @@ function handleGoToHistory() {
  * Latest finished generations, newest first. Surfaced on the idle popover
  * because that is the moment people go looking for what a run produced.
  */
-const jobThumbnail = (job: JobListItem): ResultItemImpl | undefined =>
+const jobThumbnail = (job: JobListItem): AugmentedResultItem | undefined =>
   job.taskRef?.previewOutput
 const recentJobs = computed(() =>
   jobItems.value
@@ -815,7 +847,7 @@ const recentResults = computed(() =>
       name: thumb?.filename || job.title,
       meta: t('queueStatus.recentCompleted'),
       thumbSrc: thumb?.previewUrl,
-      isVideo: thumb?.isVideo ?? false
+      isVideo: thumb ? isVideoResult(thumb) : false
     }
   })
 )
@@ -825,7 +857,7 @@ function handleViewResult(job: JobListItem) {
   idleOpen.value = false
   const outputs = recentJobs.value
     .map((entry) => jobThumbnail(entry))
-    .filter((output): output is ResultItemImpl => !!output)
+    .filter((output): output is AugmentedResultItem => !!output)
   const index = outputs.findIndex(
     (output) => output.url === jobThumbnail(job)?.url
   )

@@ -33,6 +33,7 @@ export type SubscriptionTier =
   | 'PRO'
   | 'FOUNDERS_EDITION'
   | 'TEAM'
+  | 'ENTERPRISE'
 
 /**
  * Abbreviated workspace metadata used in list responses.
@@ -746,6 +747,22 @@ export type SystemStatsResponse = {
  */
 export type SubscriptionDuration = 'MONTHLY' | 'ANNUAL'
 
+export type SubscriptionDiscount = {
+  /**
+   * What this discount removed from the amount due today.
+   */
+  amount_off_cents?: number
+  code: string
+  kind: 'plan' | 'promotion'
+  /**
+   * Customer-facing display name of the underlying coupon. `code` can
+   * be an internal identifier (e.g. team_commitment_7_5); render this
+   * when present.
+   *
+   */
+  name?: string
+}
+
 /**
  * Response after successfully subscribing to a billing plan.
  */
@@ -790,6 +807,20 @@ export type SubscribeRequest = {
    */
   cancel_url?: string
   /**
+   * Client-minted identifier for one checkout attempt, generated when
+   * the customer starts checkout and sent on every request and
+   * analytics event of that attempt. Purely for observability: it is
+   * what joins the frontend funnel (which emits events before any
+   * billing op exists) to the backend outcome. Expected to match
+   * ^[A-Za-z0-9_-]{1,64}$; a present value that does not is ignored,
+   * never rejected, so the constraint is intentionally not declared
+   * here as pattern/maxLength -- either would make a conforming
+   * client or request validator reject the request before ingest
+   * ever applies that "ignored, not rejected" behavior.
+   *
+   */
+  checkout_attempt_id?: string
+  /**
    * Explicit consent to reactivate a subscription that is currently
    * scheduled to cancel at period end. Set to true when the caller has
    * confirmed this with the user; omitting it (or sending false) while
@@ -800,6 +831,13 @@ export type SubscribeRequest = {
    */
   confirm_reactivation?: boolean
   /**
+   * Stripe ConfirmationToken created from deferred Payment Element
+   * details. For an initial subscription, the backend creates the exact
+   * invoice PaymentIntent and confirms it with this token.
+   *
+   */
+  confirmation_token?: string
+  /**
    * Client-provided key to prevent duplicate operations.
    * If a billing op with this key already exists, returns the existing op instead of creating a new one.
    *
@@ -809,6 +847,12 @@ export type SubscribeRequest = {
    * Target plan slug to subscribe to
    */
   plan_slug: string
+  /**
+   * Optional customer-facing Stripe promotion code. The backend
+   * resolves and validates it, then stacks it with plan discounts.
+   *
+   */
+  promotion_code?: string
   /**
    * Echoes PreviewSubscribeResponse.proration_at from the preview the
    * caller consented to. When present, the charge is prorated to this
@@ -822,11 +866,30 @@ export type SubscribeRequest = {
    */
   proration_at?: string
   /**
+   * Opaque quote id returned by PreviewSubscribeResponse.
+   */
+  quote_id?: string
+  /**
+   * Quote version returned by PreviewSubscribeResponse.
+   */
+  quote_version?: number
+  /**
    * URL to redirect after payment method is added successfully.
-   * Required if workspace has no payment method on file.
+   * Required if the workspace has no payment method on file, when
+   * confirmation_token is provided, or when a selected saved payment
+   * method is redirect-based (any non-card type). Redirect-based flows
+   * require an absolute HTTPS URL; plain HTTP is accepted only for
+   * loopback hosts during local development.
    *
    */
   return_url?: string
+  /**
+   * Optional saved payment method selected for this subscription. It
+   * must be attached to the current workspace's Stripe customer.
+   * Mutually exclusive with confirmation_token.
+   *
+   */
+  saved_payment_method_id?: string
   /**
    * Selected team credit-stop preset id (e.g. "team_700") for the
    * per-credit Team plan. Required when subscribing to a per-credit Team
@@ -835,6 +898,105 @@ export type SubscribeRequest = {
    *
    */
   team_credit_stop_id?: string
+}
+
+/**
+ * A stored AgentConsentSettingValue with its timestamp. Named apart from the write schema because codegen derives nested property type names from the schema name, and `AgentConsentSetting` would generate an `AgentConsentSettingValue` that collides with the write schema itself.
+ */
+export type StoredAgentConsentSetting = AgentConsentSettingValue &
+  GlobalSettingUpdatedAt
+
+/**
+ * The last-changed timestamp every stored setting carries.
+ */
+export type GlobalSettingUpdatedAt = {
+  /**
+   * When this value was last changed. A write that stores the value already present changes nothing and leaves this alone.
+   */
+  updated_at: string
+}
+
+/**
+ * Consent to the in-app Agent panel. `true` is the only value that can be written — consent is revoked by DELETE, not by writing `false`, so the audit trail records a revocation rather than a value flip.
+ */
+export type AgentConsentSettingValue = {
+  /**
+   * Discriminator selecting this member of GlobalSettingValue.
+   */
+  key: 'Comfy.AgentPanel.ConsentAccepted'
+  /**
+   * Always `true`; see the schema description.
+   */
+  value: true
+}
+
+/**
+ * Server-to-client CRDT document frame carried by the /ws envelope.
+ */
+export type ServerDocFrame = DocUpdateFrame | DocResetFrame | DocOpsResultFrame
+
+/**
+ * First rejected op in an abort-remainder batch.
+ */
+export type DocOpFailure = {
+  code: string
+  index: number
+  message: string
+  op_id?: string
+}
+
+export type DocOpsResultData = {
+  applied?: Array<string>
+  code?: string
+  failed?: DocOpFailure
+  message?: string
+  ok: boolean
+  seq?: number
+  skipped?: Array<string>
+  v: number
+  workflow_id: string
+}
+
+/**
+ * Host acknowledgement for a doc_ops batch.
+ */
+export type DocOpsResultFrame = {
+  data: DocOpsResultData
+  type: 'doc_ops_result'
+}
+
+export type DocResetData = {
+  actor?: string
+  seq: number
+  v: number
+  workflow_id: string
+}
+
+/**
+ * Host-to-follower lineage break. The follower must resubscribe for fresh state.
+ */
+export type DocResetFrame = {
+  data: DocResetData
+  type: 'doc_reset'
+}
+
+export type DocUpdateData = {
+  actor?: string
+  seq: number
+  /**
+   * Standard-base64 encoded Yjs update. Host-to-follower only.
+   */
+  update_b64: string
+  v: number
+  workflow_id: string
+}
+
+/**
+ * Host-to-follower incremental Yjs document update.
+ */
+export type DocUpdateFrame = {
+  data: DocUpdateData
+  type: 'doc_update'
 }
 
 /**
@@ -919,6 +1081,41 @@ export type SecretProvider = {
  */
 export type SecretListResponse = {
   data: Array<SecretResponse>
+}
+
+/**
+ * A plan change persisted to take effect at a future billing boundary.
+ */
+export type ScheduledPlanChange = {
+  /**
+   * Billing boundary when the destination plan takes effect
+   */
+  effective_at: string
+  /**
+   * Destination plan identifier
+   */
+  plan_slug: string
+  /**
+   * Destination Team credit stop. Null for personal plans and legacy Team plans without a credit stop.
+   */
+  team_credit_stop: TeamCreditStopSummary | null
+}
+
+export type SavedPaymentMethod = {
+  /**
+   * Card brand. Present only for card payment methods.
+   */
+  brand?: string
+  id: string
+  /**
+   * Exactly one item is the default when the returned list is non-empty.
+   */
+  is_default: boolean
+  /**
+   * Masked card suffix. Present only for card payment methods.
+   */
+  last4?: string
+  type: string
 }
 
 /**
@@ -1092,6 +1289,62 @@ export type PublishHubWorkflowRequest = {
 }
 
 /**
+ * One provider's policy state.
+ */
+export type ProviderPolicyEntry = {
+  /**
+   * true = allowlisted. false and absent evaluate identically when enforcing; explicit false is UI review state.
+   */
+  enabled: boolean
+  /**
+   * Catalog provider identifier.
+   */
+  provider_id: string
+}
+
+/**
+ * A workspace's partner-provider governance policy document — the exact shape PUT accepts (round-trips; entries come back sorted by provider_id, write order is not significant). Effective rule: enabled(P) = !enforcement_enabled || (the entry for P has enabled=true); absent from the array = unset (deny when enforcing).
+ */
+export type ProviderPolicy = {
+  /**
+   * The arming switch. While false the policy is editable but nothing blocks (preview mode).
+   */
+  enforcement_enabled: boolean
+  /**
+   * One entry per reviewed provider. A duplicate provider_id in a write is rejected with 400. Unknown provider_ids are rejected with 422.
+   */
+  providers: Array<ProviderPolicyEntry>
+}
+
+/**
+ * The partner-provider governance catalog: every governable provider, identical for all workspaces. A projection of the curated catalog minus the internal api_names.
+ */
+export type ProviderCatalogResponse = {
+  /**
+   * Sorted by provider_id.
+   */
+  providers: Array<CatalogProvider>
+}
+
+/**
+ * Display data for one governable partner provider.
+ */
+export type CatalogProvider = {
+  /**
+   * Panel display label (e.g. "OpenAI (inc. Sora)"). Changeable freely, unlike the provider_id.
+   */
+  display_name: string
+  /**
+   * The provider's owned /object_info category segments (partner/<modality>/<Segment>), e.g. openai -> ["OpenAI", "Sora"]. The panel uses them to group nodes under providers (including merged vendors) and preview which nodes a toggle disables. Empty for route-only vendors (callable and governed; the panel hides their toggles).
+   */
+  node_categories: Array<string>
+  /**
+   * Permanent policy identifier (e.g. "kling", "openai"). Not client-derivable (merged vendors such as OpenAI+Sora).
+   */
+  provider_id: string
+}
+
+/**
  * Response returned after successfully queuing a workflow prompt.
  */
 export type PromptResponse = {
@@ -1176,6 +1429,7 @@ export type PreviewSubscribeResponse = {
    * Whether this subscription change is allowed
    */
   allowed: boolean
+  amount_due_cents?: number
   /**
    * Amount that will be charged at next billing period in cents
    */
@@ -1192,7 +1446,9 @@ export type PreviewSubscribeResponse = {
    * Credits granted today in cents (prorated for mid-period upgrades)
    */
   credits_today_cents: number
+  currency?: string
   current_plan?: PreviewPlanInfo
+  discounts?: Array<SubscriptionDiscount>
   /**
    * When the change takes effect
    */
@@ -1203,6 +1459,20 @@ export type PreviewSubscribeResponse = {
   is_immediate: boolean
   new_plan: PreviewPlanInfo
   /**
+   * The Stripe payment method configuration governing which payment
+   * methods the embedded checkout offers for this environment. Mount
+   * Stripe Elements with `paymentMethodConfiguration` set to this id
+   * instead of hardcoding payment method types. Present on every
+   * successful preview while embedded checkout is enabled and absent
+   * from legacy previews.
+   *
+   */
+  payment_method_configuration_id?: string
+  /**
+   * Normalized promotion code accepted by Stripe.
+   */
+  promotion_code?: string
+  /**
    * The instant cost_today_cents was priced at (Stripe-native transitions
    * only; absent for other billing rails). Echo this back as proration_at
    * on POST /billing/subscribe to have the subscribe charge exactly this
@@ -1212,9 +1482,33 @@ export type PreviewSubscribeResponse = {
    */
   proration_at?: string
   /**
+   * Opaque short-lived quote identifier to echo on Subscribe.
+   */
+  quote_id?: string
+  /**
+   * Quote contract version to echo on Subscribe.
+   */
+  quote_version?: number
+  /**
    * Reason why the change is not allowed (only present if allowed=false)
    */
   reason?: string
+  renewal_amount_cents?: number
+  /**
+   * The next recurring charge and target-plan period end. Current servers
+   * always return this later than effective_at and following the target
+   * plan's billing interval. Optional in the schema for older clients.
+   *
+   */
+  renewal_at?: string
+  /**
+   * Whether this previewed change requires explicit reactivation
+   * consent. Computed from the persisted subscription and a short-lived
+   * cache of Stripe lifecycle state. The subscribe enforcement path
+   * performs its own uncached Stripe lifecycle read.
+   *
+   */
+  requires_reactivation_confirmation?: boolean
   /**
    * Type of subscription transition
    */
@@ -1277,9 +1571,27 @@ export type PreviewPlanInfo = {
  */
 export type PreviewSubscribeRequest = {
   /**
+   * Client-minted identifier for one checkout attempt, generated when
+   * the customer starts checkout and sent on every request and
+   * analytics event of that attempt. Purely for observability: it is
+   * what joins the frontend funnel (which emits events before any
+   * billing op exists) to the backend outcome. Expected to match
+   * ^[A-Za-z0-9_-]{1,64}$; a present value that does not is ignored,
+   * never rejected, so the constraint is intentionally not declared
+   * here as pattern/maxLength -- either would make a conforming
+   * client or request validator reject the request before ingest
+   * ever applies that "ignored, not rejected" behavior.
+   *
+   */
+  checkout_attempt_id?: string
+  /**
    * Target plan slug to preview subscribing to
    */
   plan_slug: string
+  /**
+   * Optional Stripe promotion code to validate and include in the exact quote.
+   */
+  promotion_code?: string
   /**
    * Selected per-credit Team plan stop to preview.
    */
@@ -1874,6 +2186,10 @@ export type Asset = {
    */
   last_access_time?: string
   /**
+   * The bare value a loader widget consumes for this asset. For models it is the path inside the category folder (e.g. "flux.safetensors" for "models/checkpoints/flux.safetensors"), which is what the model resolver matches. For input/output/temp it is the content hash, because those assets are fetched by hash rather than staged by name — that is the value LoadImage-style widgets must carry. Clients add the "[output]"/"[temp]" annotation from the asset's own type, so it is never included here. Null when no such value can be derived.
+   */
+  loader_path?: string | null
+  /**
    * System-managed metadata from download sources (HuggingFace, CivitAI, etc.) - read-only, not user-modifiable
    */
   readonly metadata?: {
@@ -2043,6 +2359,10 @@ export type JobEntry = {
     [key: string]: unknown
   }
   /**
+   * Count of outputs classified as previewable media types (images, video, audio, 3D, text) — a subset of outputs_count (omitted for non-terminal states)
+   */
+  previewable_outputs_count?: number
+  /**
    * User-friendly job status
    */
   status: 'pending' | 'in_progress' | 'completed' | 'failed' | 'cancelled'
@@ -2116,6 +2436,56 @@ export type JobStatusResponse = {
 }
 
 /**
+ * An asset produced by a job, enriched with the per-output node context
+ * (`node_id`, `output_key`, `output_index`) correlated from the job's
+ * execution outputs by content hash. The node-context fields are null
+ * when the asset cannot be matched to an output entry.
+ *
+ */
+export type JobOutputAsset = {
+  /**
+   * Timestamp when the asset was created
+   */
+  created_at: string
+  /**
+   * Blake3 hash of the asset content.
+   */
+  hash?: string
+  /**
+   * Unique identifier for the asset
+   */
+  id: string
+  /**
+   * MIME type of the asset
+   */
+  mime_type?: string
+  /**
+   * Name of the asset file
+   */
+  name: string
+  /**
+   * ID of the workflow node that produced this asset, if known
+   */
+  node_id?: string | null
+  /**
+   * Zero-based index of this asset within the node's output slot, if known
+   */
+  output_index?: number | null
+  /**
+   * Output slot key under the producing node (e.g. "images"), if known
+   */
+  output_key?: string | null
+  /**
+   * Relative URL for asset preview/thumbnail
+   */
+  preview_url?: string
+  /**
+   * Size of the asset in bytes
+   */
+  size?: number
+}
+
+/**
  * Full job details including workflow and outputs
  */
 export type JobDetailResponse = {
@@ -2168,6 +2538,10 @@ export type JobDetailResponse = {
     [key: string]: unknown
   }
   /**
+   * Count of outputs classified as previewable media types (images, video, audio, 3D, text) — a subset of outputs_count (omitted for non-terminal states)
+   */
+  previewable_outputs_count?: number
+  /**
    * User-friendly job status
    */
   status: 'pending' | 'in_progress' | 'completed' | 'failed' | 'cancelled'
@@ -2199,6 +2573,14 @@ export type JobDetailResponse = {
    */
   workflow_id?: string
   /**
+   * UUID of the cloud workflow version this job is pinned to, if the
+   * submission carried one (see PromptRequest's workflow_version_id).
+   * Absent for jobs submitted without that association, including
+   * every job submitted through the public API v2 today.
+   *
+   */
+  workflow_version_id?: string
+  /**
    * ID of the workspace that owns this job. A successful (200)
    * response from this operation is only ever returned for the
    * caller's own job (see this operation's ownership-scoped
@@ -2227,13 +2609,34 @@ export type JobCancelResponse = {
 }
 
 /**
- * Request body for minting an input-image upload grant.
+ * Paginated list of the assets produced by a single job.
+ */
+export type JobAssetsResponse = {
+  /**
+   * The job's output assets for the requested page (empty when the job produced none)
+   */
+  assets: Array<JobOutputAsset>
+  /**
+   * ID of the job these assets belong to
+   */
+  job_id: string
+  pagination: PaginationInfo
+}
+
+/**
+ * Request body for minting an input-image, input-audio or input-video upload grant.
  */
 export type InputUploadUrlRequest = {
   /**
-   * MIME type of the image to upload. Must be one of image/jpeg,
-   * image/png, image/webp, or image/gif. Advisory: the stored asset's
-   * format always follows the uploaded bytes as decoded server-side.
+   * MIME type of the file to upload. Must be one of the image types
+   * image/jpeg, image/png, image/webp, image/gif, the audio types
+   * audio/mpeg, audio/mp3, audio/wav, audio/wave, audio/x-wav,
+   * audio/flac, audio/x-flac, audio/ogg, or — where the deployment has
+   * enabled video input uploads — the video types video/mp4,
+   * video/webm, video/quicktime.
+   * Advisory: the stored asset's format always follows the uploaded
+   * bytes as identified server-side (decoded for images, sniffed for
+   * audio and video containers).
    *
    */
   content_type: string
@@ -2327,6 +2730,10 @@ export type HubWorkflowTemplateEntry = {
     }>
   }
   /**
+   * Whether App Mode is this workflow's default view.
+   */
+  isApp: boolean
+  /**
    * Whether the template belongs to a module marked as essential.
    */
   isEssential?: boolean
@@ -2413,6 +2820,10 @@ export type HubProfileSummary = {
 export type HubWorkflowSummary = {
   custom_nodes?: Array<LabelRef>
   description?: string
+  /**
+   * Whether App Mode is this workflow's default view.
+   */
+  is_app: boolean
   metadata?: {
     [key: string]: unknown
   }
@@ -2454,6 +2865,10 @@ export type HubWorkflowDetail = {
   assets: Array<AssetInfo>
   custom_nodes?: Array<LabelRef>
   description?: string
+  /**
+   * Whether App Mode is this workflow's default view.
+   */
+  is_app: boolean
   metadata?: {
     [key: string]: unknown
   }
@@ -2778,6 +3193,25 @@ export type GlobalSubgraphData = {
 }
 
 /**
+ * A setting key with its value, discriminated on `key`. Narrowing on the key yields exactly one value schema, which is what gives writes their type safety.
+ */
+export type GlobalSettingValue = {
+  key: 'Comfy.AgentPanel.ConsentAccepted'
+} & AgentConsentSettingValue
+
+/**
+ * The union of setting keys this server accepts. Published as an enum so clients cannot address a key the registry does not know.
+ */
+export type GlobalSettingKey = 'Comfy.AgentPanel.ConsentAccepted'
+
+/**
+ * A stored setting: one GlobalSettingValue member plus when it last changed. Discriminated on `key` like GlobalSettingValue, so narrowing a read yields the same single value schema a write is typed by.
+ */
+export type GlobalSetting = {
+  key: 'Comfy.AgentPanel.ConsentAccepted'
+} & StoredAgentConsentSetting
+
+/**
  * Individual file entry within a full user data response.
  */
 export type GetUserDataResponseFullFile = {
@@ -2994,6 +3428,23 @@ export type DeleteSessionResponse = {
 }
 
 /**
+ * The workspace bound to the presented credential, plus how that credential authenticated. Same shape as Workspace with the caller's role and the auth method added, and without created_at (callers of this endpoint want identity, not provenance).
+ */
+export type CurrentWorkspaceResponse = {
+  /**
+   * How this request authenticated. Known values are firebase, cookie, comfy_api_key, comfy_admin_key, cloud_api_key and cloud_jwt; treat it as an open string so a new auth method is not a breaking change.
+   */
+  auth_method: string
+  id: string
+  name: string
+  /**
+   * The requesting user's role in this workspace. Omitted (absent from the object, never an explicit null) when the credential carries no resolvable user membership.
+   */
+  role?: 'owner' | 'member'
+  type: 'personal' | 'team'
+}
+
+/**
  * Request body for creating a new workspace.
  */
 export type CreateWorkspaceRequest = {
@@ -3134,11 +3585,72 @@ export type CreateTopupRequest = {
    */
   amount_cents: number
   /**
+   * Client-minted identifier for one checkout attempt, generated when
+   * the customer starts checkout and sent on every request and
+   * analytics event of that attempt. Purely for observability: it is
+   * what joins the frontend funnel (which emits events before any
+   * billing op exists) to the backend outcome. Expected to match
+   * ^[A-Za-z0-9_-]{1,64}$; a present value that does not is ignored,
+   * never rejected, so the constraint is intentionally not declared
+   * here as pattern/maxLength -- either would make a conforming
+   * client or request validator reject the request before ingest
+   * ever applies that "ignored, not rejected" behavior.
+   *
+   */
+  checkout_attempt_id?: string
+  /**
    * Client-provided key to prevent duplicate operations.
    * If a billing op with this key already exists, returns the existing op instead of creating a new one.
    *
    */
   idempotency_key?: string
+}
+
+/**
+ * A hosted Stripe Checkout session for a credit top-up.
+ */
+export type CreateTopupCheckoutResponse = {
+  /**
+   * Stripe-hosted Checkout URL to send the customer to.
+   */
+  checkout_url: string
+  /**
+   * Stripe Checkout session id, for support and log correlation. There
+   * is no billing operation to return: the purchase has not happened
+   * yet, and the operation recording it is created once the payment
+   * completes. Nothing needs polling — the credits land on their own.
+   *
+   */
+  session_id?: string
+}
+
+/**
+ * Request body for creating a hosted credit top-up checkout session.
+ */
+export type CreateTopupCheckoutRequest = {
+  /**
+   * Amount to charge in cents, before any promotion code the customer
+   * enters. Whole dollars only, from $5.00 to $4,739.00. The ceiling is
+   * a fixed business limit (not a Stripe technical constraint) on how
+   * much a single unauthenticated-approval session may sell. The
+   * credits granted are derived server-side from this amount and
+   * cannot be set by the caller.
+   *
+   */
+  amount_cents: number
+  /**
+   * Optional client-provided key. Forwarded to Stripe so a double-submit
+   * collapses onto one session instead of minting two payable links.
+   *
+   */
+  idempotency_key?: string
+  /**
+   * Where Stripe returns the customer after a completed or cancelled
+   * payment. Must match an allowlisted origin; an arbitrary URL is
+   * rejected rather than redirected to.
+   *
+   */
+  return_url: string
 }
 
 /**
@@ -3243,7 +3755,7 @@ export type CancelSubscriptionResponse = {
    */
   billing_op_id: string
   /**
-   * The date when the subscription will end (end of current billing period)
+   * The terminal cancellation time for a delinquent Stripe subscription, otherwise the end of the current billing period
    */
   cancel_at: string
 }
@@ -3261,6 +3773,20 @@ export type CancelSubscriptionRequest = {
 }
 
 /**
+ * Response when a cancellation is accepted but has not committed yet. Carries no cancel_at: no cancellation time exists to report until the operation settles. The billing operation reports only status, so once it reaches `succeeded` the committed date is read from `cancel_at` on `GET /api/billing/status`.
+ */
+export type CancelSubscriptionAcceptedResponse = {
+  /**
+   * Billing operation ID to poll for status via GET /api/billing/ops/{id}
+   */
+  billing_op_id: string
+  /**
+   * Always `pending` — the cancellation is still executing. Poll the billing operation for the final outcome.
+   */
+  status: 'pending'
+}
+
+/**
  * Response after bulk-revoking API keys for a workspace member.
  */
 export type BulkRevokeApiKeysResponse = {
@@ -3271,15 +3797,33 @@ export type BulkRevokeApiKeysResponse = {
 }
 
 /**
+ * A tax identifier for a company Stripe customer. Stripe validates the
+ * type/value combination synchronously and verifies VAT/ABN-style IDs
+ * asynchronously.
+ *
+ */
+export type BillingTaxId = {
+  /**
+   * Stripe tax ID type, e.g. `eu_vat`, `us_ein`, `au_abn`. See
+   * https://docs.stripe.com/api/tax_ids/object#tax_id_object-type
+   * for the full list.
+   *
+   */
+  type: string
+  value: string
+}
+
+/**
  * Current billing and subscription status for a workspace.
  */
 export type BillingStatusResponse = {
   /**
    * Present when the pending operation cannot proceed without the
-   * customer. Today this is a Stripe-hosted payment page for a
-   * subscription whose first invoice needs authentication (SCA/3DS);
+   * customer. Today this is a Stripe-hosted payment page for an invoice
+   * needing authentication (SCA/3DS);
    * send the customer there to complete payment. Mirrors the field of
-   * the same name on BillingOpStatusResponse.
+   * the same name on BillingOpStatusResponse. This bearer capability is
+   * returned only to workspace billing managers.
    *
    */
   action_url?: string
@@ -3301,14 +3845,43 @@ export type BillingStatusResponse = {
    */
   is_active: boolean
   /**
+   * Effective active workspace seat limit after applying any workspace override. 0 means unlimited (billing-disabled/no-op).
+   */
+  max_seats: number
+  /**
+   * Current workspace members plus non-expired pending invites, used against max_seats. 0 when billing is disabled.
+   */
+  occupied_seats: number
+  /**
+   * Present when a pending operation supports embedded Stripe
+   * authentication. It may be returned alongside a hosted payment page
+   * when both recovery methods are available. This bearer
+   * capability is returned only to workspace billing managers. Pass
+   * directly to Stripe.js; do not log or
+   * persist it in client storage.
+   *
+   */
+  payment_intent_client_secret?: string
+  /**
    * The workspace's in-flight billing operation, when one exists. Lets a
    * client recover a payment it has lost the local reference to — a
    * cleared browser, or simply a different device from the one that
    * started it — by polling /billing/ops/{id} without having stored the
-   * id. Absent when no operation is pending.
+   * id. Absent when no operation is pending, and for non-owners, who
+   * cannot act on one.
    *
    */
   pending_billing_op_id?: string
+  /**
+   * How the client should resume `pending_billing_op_id`, not the
+   * internal operation type: a plan change reports `subscription`,
+   * because it resumes exactly like one. A top-up resumes with a
+   * different timeout and completion path, so the two cannot be
+   * told apart by the client. Present whenever
+   * `pending_billing_op_id` is.
+   *
+   */
+  pending_billing_op_type?: 'subscription' | 'topup'
   /**
    * Plan identifier (e.g., standard-monthly, team-pro-annual)
    */
@@ -3317,6 +3890,10 @@ export type BillingStatusResponse = {
    * When the current billing period ends and the next one begins
    */
   renewal_date?: string
+  /**
+   * The authoritative successor scheduled for the current Stripe subscription. Always present; null when no valid scheduled plan transition exists.
+   */
+  scheduled_change: ScheduledPlanChange | null
   subscription_duration?: SubscriptionDuration
   /**
    * Subscription activity status (scheduled subscriptions are not returned)
@@ -3360,16 +3937,49 @@ export type BillingOpStatusResponse = {
    * Present while status is "pending" and the operation cannot proceed
    * without the customer. Today this is a Stripe-hosted payment page for
    * a subscription whose first invoice needs authentication (SCA/3DS);
-   * send the customer there to complete payment. Absent otherwise.
+   * send the customer there to complete payment. This bearer capability is
+   * returned only to workspace billing managers. Absent otherwise.
    *
    */
   action_url?: string
+  /**
+   * State derived from the PaymentIntent attached to this operation's
+   * exact stored Stripe invoice. Absent when the operation has no
+   * correlated PaymentIntent.
+   *
+   */
+  authentication_state?:
+    | 'requires_action'
+    | 'processing'
+    | 'failed_retryable'
+    | 'succeeded'
+    | 'reconciliation_needed'
   /**
    * When the operation completed (success or failure)
    */
   completed_at?: string
   /**
-   * Error message if status is failed
+   * Coarse classification of why the correlated PaymentIntent's last
+   * payment attempt failed, derived at read time from the provider's
+   * machine-readable error and decline codes — never from provider
+   * message text or payment-method details. Present only when the
+   * intent has recorded a failed attempt and the operation is either
+   * still pending with authentication_state failed_retryable or has
+   * terminally failed. generic means the attempt failed for a reason
+   * outside this vocabulary.
+   *
+   */
+  decline_reason?:
+    | 'card_declined'
+    | 'insufficient_funds'
+    | 'expired_card'
+    | 'incorrect_cvc'
+    | 'authentication_required'
+    | 'authentication_failed'
+    | 'processing_error'
+    | 'generic'
+  /**
+   * PII-safe failure code or generic failure message
    */
   error_message?: string
   /**
@@ -3377,13 +3987,49 @@ export type BillingOpStatusResponse = {
    */
   id: string
   /**
+   * Stripe PaymentIntent client secret for completing requires_action.
+   * This bearer capability is returned only to workspace billing managers
+   * and is absent otherwise.
+   *
+   */
+  payment_intent_client_secret?: string
+  /**
+   * What a pending operation is waiting on, for callers deciding
+   * whether to keep polling or to put the customer back in the loop.
+   * The two awaiting_ values are blocked on the customer and will not
+   * advance on their own: awaiting_payment_method is parked on a hosted
+   * checkout needing a card, awaiting_invoice_payment on an invoice
+   * needing payment or authentication. in_progress means the operation
+   * is ours to finish, so polling is the right response. Deliberately
+   * coarser than the internal phase — phases that differ only in what
+   * the workflow is doing all report in_progress. Absent for a terminal
+   * operation, and for a phase this build does not recognise: absent
+   * means no claim, never an implied in_progress.
+   *
+   */
+  phase?: 'awaiting_payment_method' | 'awaiting_invoice_payment' | 'in_progress'
+  /**
+   * Typed next action for a failed operation. Absent for pending and succeeded operations.
+   */
+  recovery_action?:
+    | 'retry'
+    | 'replace_payment_method'
+    | 'authenticate_payment'
+    | 'contact_support'
+  /**
+   * Whether the customer can recover by starting a new billing operation after performing recovery_action.
+   */
+  retryable?: boolean
+  /**
    * When the operation was initiated
    */
   started_at: string
   /**
-   * Current status of the operation
+   * Current status of the operation. reconciliation_needed is terminal
+   * for client polling but requires support reconciliation.
+   *
    */
-  status: 'pending' | 'succeeded' | 'failed'
+  status: 'pending' | 'succeeded' | 'failed' | 'reconciliation_needed'
 }
 
 /**
@@ -3431,6 +4077,104 @@ export type BillingEvent = {
   params?: {
     [key: string]: unknown
   }
+}
+
+/**
+ * Fields to set on the workspace's Stripe customer. Every group is
+ * optional; omit a group to leave that part of the customer unchanged.
+ *
+ */
+export type BillingCompanyDetailsUpdateRequest = {
+  address?: BillingAddress
+  /**
+   * Legal or trading name to show on invoices.
+   */
+  company_name?: string
+  tax_id?: BillingTaxId
+}
+
+/**
+ * A billing address for a company Stripe customer. city and postal_code
+ * are optional because some countries (e.g. Hong Kong, the UAE, Panama)
+ * have no postal code and are not collected for them; Stripe validates
+ * what a given country actually requires.
+ *
+ */
+export type BillingAddress = {
+  city?: string
+  /**
+   * Two-letter ISO 3166-1 country code.
+   */
+  country: string
+  line1: string
+  line2?: string
+  postal_code?: string
+  state?: string
+}
+
+/**
+ * Company billing details on file for the workspace's Stripe customer.
+ * A field is absent until the workspace sets it via PATCH
+ * /api/billing/company-details.
+ *
+ */
+export type BillingCompanyDetailsResponse = {
+  address?: BillingAddress
+  company_name?: string
+  tax_id?: BillingTaxId
+}
+
+export type BillingCapabilityScope = {
+  user_id: string
+  workspace_id: string
+}
+
+/**
+ * Identifies capability values currently using safe rollout defaults
+ * instead of deterministic policy results. A true value is UI guidance,
+ * not evidence that the corresponding write will succeed.
+ *
+ */
+export type BillingCapabilityRolloutDefaults = {
+  can_downgrade_to_personal: boolean
+  can_subscribe_self_serve: boolean
+  can_top_up: boolean
+}
+
+/**
+ * Effective billing UI guidance for one authenticated user and workspace.
+ */
+export type BillingCapabilitiesResponse = {
+  capabilities: BillingCapabilities
+  /**
+   * Time after which the client must refetch this snapshot.
+   */
+  expires_at: string
+  resolved_for: BillingCapabilityScope
+  /**
+   * JavaScript-safe, time-sortable revision for this snapshot. It
+   * increases monotonically within a serving process. Clients should
+   * invalidate on a different X-Capability-Revision value and use
+   * expires_at as the cross-instance freshness bound.
+   *
+   */
+  revision: number
+  rollout_defaults_applied: BillingCapabilityRolloutDefaults
+}
+
+/**
+ * Conservative UI guidance. These values do not authorize billing writes;
+ * each write endpoint independently enforces its permission policy.
+ *
+ */
+export type BillingCapabilities = {
+  can_cancel: boolean
+  can_change_seats: boolean
+  can_downgrade_to_personal: boolean
+  can_invite_members: boolean
+  can_reactivate: boolean
+  can_subscribe_self_serve: boolean
+  can_top_up: boolean
 }
 
 /**
@@ -3487,6 +4231,10 @@ export type AssetUpdated = {
    * ID of the job that created this asset, if available
    */
   job_id?: string | null
+  /**
+   * The bare value a loader widget consumes for this asset. For models it is the path inside the category folder (e.g. "flux.safetensors" for "models/checkpoints/flux.safetensors"), which is what the model resolver matches. For input/output/temp it is the content hash, because those assets are fetched by hash rather than staged by name — that is the value LoadImage-style widgets must carry. Clients add the "[output]"/"[temp]" annotation from the asset's own type, so it is never included here. Null when no such value can be derived.
+   */
+  loader_path?: string | null
   /**
    * Updated MIME type of the asset
    */
@@ -3664,11 +4412,99 @@ export type AgentThreadCreateRequest = {
 }
 
 /**
+ * A user-authored skill pack to create or replace. Plain JSON — a pack body is small enough that a signed-URL upload would be pure overhead.
+ */
+export type AgentSkillPublishRequest = {
+  /**
+   * Accepted only so an `always: true` copied out of a SKILL.md frontmatter is refused with an explanation instead of silently dropped. User packs are on-demand only, so true is rejected.
+   */
+  always?: boolean
+  /**
+   * The full instruction text, injected only when the pack is loaded. Capped per pack and, together with the caller's other packs, in total; the exact byte limits are deployment configuration and are named in the rejection message when exceeded.
+   */
+  body: string
+  /**
+   * One line saying when the agent should load this pack. It is what every prompt carries for an unloaded pack, so it is a trigger description, not a title. Single-line: control characters, including CR and LF, are refused. maxLength is counted in code points, as JSON Schema defines it, and the service counts the same way.
+   */
+  description: string
+  /**
+   * The pack's flat identifier and the load_skill argument: letters, digits, '.', '_' and '-'. Publishing a name already held by the caller replaces that pack. A name matching a built-in always-on pack is refused; a name matching a built-in on-demand pack is accepted, and is the name consumption will resolve to the user's pack. Must contain at least one character that is not a dot: "." and ".." are path segments a normalizing client rewrites.
+   */
+  name: string
+}
+
+/**
+ * The caller's skill packs, ordered by name.
+ */
+export type AgentSkillListResponse = {
+  skills: Array<AgentSkill>
+}
+
+/**
+ * One of the caller's user-authored skill packs.
+ */
+export type AgentSkill = {
+  /**
+   * The full instruction text.
+   */
+  body: string
+  /**
+   * Lowercase hex sha256 of body, with no algorithm prefix. Stamped on every write, so a client can tell whether the stored pack matches the body it last sent.
+   */
+  body_hash: string
+  /**
+   * RFC3339 timestamp of when the pack was first published.
+   */
+  created_at: string
+  /**
+   * One-line trigger description the agent selects the pack from.
+   */
+  description: string
+  /**
+   * Server-assigned pack ID.
+   */
+  id: string
+  /**
+   * The pack's flat identifier and the load_skill argument.
+   */
+  name: string
+  /**
+   * RFC3339 timestamp of the pack's most recent publish.
+   */
+  updated_at: string
+}
+
+/**
+ * The run mode to save.
+ */
+export type AgentRunModePutRequest = {
+  /**
+   * Required and positive for auto_limited; must be absent or null for ask_approval and auto. Bounded at 2^31-1 so the value round-trips exactly through an IEEE-754 JSON number.
+   */
+  credit_limit?: number | null
+  mode: 'ask_approval' | 'auto' | 'auto_limited'
+}
+
+/**
+ * How the agent may spend the caller's credits by running workflows from chat. The saved choice, or the default (ask_approval, no limit) for a caller who never chose.
+ */
+export type AgentRunMode = {
+  /**
+   * The credit ceiling for auto_limited. Always present; null for the other two modes. Bounded at 2^31-1 so the value round-trips exactly through an IEEE-754 JSON number and a client is never bounded by a ceiling it did not send.
+   */
+  credit_limit: number | null
+  /**
+   * ask_approval pauses at every run and asks on the consent card; auto runs without asking; auto_limited runs without asking until credit_limit credits have been spent, then asks again.
+   */
+  mode: 'ask_approval' | 'auto' | 'auto_limited'
+}
+
+/**
  * A user turn posted to the agent.
  */
 export type AgentPostMessageRequest = {
   /**
-   * Optional input-image filenames the client already uploaded to the ComfyUI input namespace (via /api/upload/image, which returns the {name, subfolder, type} reference). The agent wires them into the workflow by filename — it never receives image bytes here.
+   * Optional input filenames the client already uploaded to the ComfyUI input namespace (via /api/upload/image, which returns the {name, subfolder, type} reference). Images, video and audio are all accepted. The agent wires them into the workflow by filename — it never receives file bytes here, and reads an attachment's contents through its own asset tools when a request depends on them.
    */
   attachments?: Array<string>
   /**
@@ -3676,7 +4512,7 @@ export type AgentPostMessageRequest = {
    */
   content: string
   /**
-   * Cloud workflow id of the client's active tab (should appear in open_tabs). When present and authorized it selects the workflow the turn starts focused on — explicit workflow_id > current_tab > the thread's remembered workflow.
+   * Cloud workflow id of the client's active editor tab; no ordering requirement. Modern clients use workflow_id for the editable target and omit this field. When present and authorized it selects the workflow the turn starts focused on — explicit workflow_id > current_tab > the thread's remembered workflow.
    */
   current_tab?: string
   /**
@@ -3695,7 +4531,7 @@ export type AgentPostMessageRequest = {
     version?: number | null
   }
   /**
-   * Snapshot of the client's open workflow tabs that have cloud workflow ids (local-only/unsaved tabs are omitted), so the agent knows the user's real tab strip and can switch between tabs. Advisory context, not a grant — entries not in the caller's workspace are ignored. Additive — older clients omit it.
+   * Snapshot of the client's open editor tabs in editor order. Advisory context, not a grant — entries outside the caller's workspace are ignored. With workflow_references present, only the editable target and explicit references enter the model's workflow context.
    */
   open_tabs?: Array<{
     /**
@@ -3717,6 +4553,44 @@ export type AgentPostMessageRequest = {
    * When present, the agent edits this workflow's draft. Ownership-checked (403 if not the caller's workflow).
    */
   workflow_id?: string
+  /**
+   * Explicit read-only workflow references for this turn, independent of open_tabs. Omitted preserves legacy open-tab context; an empty array means no additional workflow context. The editable target is selected by workflow_id and excluded from references. Entries are workspace-authorized, deduplicated, capped at 50, and names truncated to 120 characters. References need not be open in the editor. Unknown or inaccessible references, including authorization lookup failures, are retained as unavailable metadata so the agent can acknowledge missing context; no workflow content or access is granted.
+   */
+  workflow_references?: Array<{
+    name?: string
+    workflow_id: string
+  }>
+}
+
+/**
+ * An unanswered ask attached to its assistant message, so a reload rehydrates the prompt from the ROW rather than from the agent_ask WebSocket event the client missed. Present only while the ask is pending; answer it via POST /agent/threads/{id}/asks/{ask_id}/answer.
+ */
+export type AgentPendingAsk = {
+  /**
+   * When true the UI offers a free-text answer, returned as other_text.
+   */
+  allow_other: boolean
+  ask_id: string
+  /**
+   * Kind-specific renderer payload. For `run_approval`: `workflow_id`, and `workflow_name` when the workflow's display name is known. Omitted for `ask_user`. Carries ids and a display name, never the user's prose.
+   */
+  context?: {
+    [key: string]: unknown
+  }
+  /**
+   * Which UI renders the ask. `ask_user` is the generic prompt raised by the ask_user tool. `run_approval` is the run consent card raised when the caller's ask_approval run mode gates a run: exactly the Run and Cancel options, never free text, with the workflow named in `context`. Same value as the agent_ask event's `kind`, so a reload rehydrates the identical widget.
+   */
+  kind: 'ask_user' | 'run_approval'
+  max_selections: number
+  message_id: string
+  min_selections: number
+  /**
+   * Selectable options, each with an `id` and a `label`.
+   */
+  options: Array<{
+    [key: string]: unknown
+  }>
+  prompt: string
 }
 
 /**
@@ -3724,12 +4598,13 @@ export type AgentPostMessageRequest = {
  */
 export type AgentMessage = {
   /**
-   * Message payload. User turns carry {text, attachments?} (attachments are the input-image filenames from the request); assistant turns carry {text} — the final answer text (or error copy on a failed turn). Omitted when empty (e.g. an assistant message still streaming). Per-turn token accounting is NOT included here; it is surfaced on the agent_message_done WebSocket broadcast.
+   * Message payload. User turns carry {text, attachments?, attachment_refs?, workflow_references?}. Attachments are the input-image filenames from the request. attachment_refs is the server's own resolution of those same filenames to library assets, as {name, id?, kind?} objects, and exists so a later turn in the thread can reach an earlier turn's file — clients should keep reading attachments. workflow_references is an optional array of explicit non-target references, each with workflow_id and name (an empty string when no name was supplied). An optional unavailable: true records that the reference could not be authorized at turn start, without distinguishing unknown IDs, inaccessible workflows, or lookup failures. These entries preserve the user's reference intent without exposing workflow content; the frontend restores reference chips from this metadata. The field is omitted when there are no references. Assistant turns carry {text} — the final answer text (or error copy on a failed turn). Omitted when empty (e.g. an assistant message still streaming). Per-turn token accounting is NOT included here; it is surfaced on the agent_message_done WebSocket broadcast.
    */
   content?: {
     [key: string]: unknown
   }
   id: string
+  pending_ask?: AgentPendingAsk
   role: 'user' | 'assistant' | 'tool' | 'system'
   /**
    * Monotonic ordering within the thread.
@@ -3799,6 +4674,26 @@ export type AgentAnswerRequest = {
  */
 export type AgentAnswerAccepted = {
   status: 'answered'
+}
+
+/**
+ * Returned when a request to run the agent is declined before the turn starts, because of a billing or account condition on the workspace. The `error` object carries a `message` you can show the user, a `type` that matches the HTTP status, and a more specific `reason` you can branch on to offer the right next step.
+ */
+export type AgentAdmissionError = {
+  error: {
+    /**
+     * A human-readable explanation of why the request was declined, suitable for display.
+     */
+    message: string
+    /**
+     * The specific cause of the denial, for choosing what to show the user. `no_funds`: the workspace is out of credits — prompt them to add credits. `manual_block`: the workspace has been blocked — direct them to support. `funds_unavailable`: billing was temporarily unreachable — retry after the delay given in the `Retry-After` response header.
+     */
+    reason: 'no_funds' | 'manual_block' | 'funds_unavailable'
+    /**
+     * The general category of the denial, matching the HTTP status. `PAYMENT_REQUIRED` (402): the workspace cannot currently pay for a turn. `SERVICE_UNAVAILABLE` (503): billing status could not be checked right now and the request can be retried (see the `Retry-After` response header).
+     */
+    type: 'PAYMENT_REQUIRED' | 'SERVICE_UNAVAILABLE'
+  }
 }
 
 /**
@@ -3875,6 +4770,10 @@ export type AssetWritable = {
    * Timestamp when the asset was last accessed
    */
   last_access_time?: string
+  /**
+   * The bare value a loader widget consumes for this asset. For models it is the path inside the category folder (e.g. "flux.safetensors" for "models/checkpoints/flux.safetensors"), which is what the model resolver matches. For input/output/temp it is the content hash, because those assets are fetched by hash rather than staged by name — that is the value LoadImage-style widgets must carry. Clients add the "[output]"/"[temp]" annotation from the asset's own type, so it is never included here. Null when no such value can be derived.
+   */
+  loader_path?: string | null
   /**
    * MIME type of the asset
    */
@@ -4138,6 +5037,375 @@ export type AgentGetDraftResponses = {
 export type AgentGetDraftResponse =
   AgentGetDraftResponses[keyof AgentGetDraftResponses]
 
+export type AgentLlmAdmitData = {
+  body: {
+    /**
+     * The assistant message the turn is writing (attribution only).
+     */
+    message_id?: string
+    /**
+     * The zero-based index of the model round about to run.
+     */
+    step: number
+    /**
+     * The turn about to run a round; a bounded [A-Za-z0-9._:-] id.
+     */
+    turn_id: string
+  }
+  path?: never
+  query?: never
+  url: '/api/agent/llm/v1/admit'
+}
+
+export type AgentLlmAdmitErrors = {
+  /**
+   * Malformed body, missing turn_id, or a negative step.
+   */
+  400: ErrorResponse
+  /**
+   * Unauthorized
+   */
+  401: ErrorResponse
+  /**
+   * The agent in-app experience is disabled for this caller (FlagAgentInAppExperience off). Kept invisible when off, so 404 rather than 403.
+   */
+  404: ErrorResponse
+  /**
+   * Agent service unavailable (the binary proceeds).
+   */
+  502: ErrorResponse
+  /**
+   * The agent proxy is not configured to forward safely (a non-local agent service URL with no shared machine-to-machine secret).
+   */
+  503: ErrorResponse
+}
+
+export type AgentLlmAdmitError = AgentLlmAdmitErrors[keyof AgentLlmAdmitErrors]
+
+export type AgentLlmAdmitResponses = {
+  /**
+   * The admission verdict for the round.
+   */
+  200: {
+    /**
+     * For wait and pause, how long to sleep (already floored at 1 s and capped at 15 min) before asking again.
+     */
+    after_seconds?: number
+    kind: 'proceed' | 'wait' | 'pause' | 'fail'
+    /**
+     * Optional user-facing copy (the paused card's text).
+     */
+    message?: string
+    /**
+     * Tickets ahead of this round in the user's queue, when waiting on queue order.
+     */
+    position?: number
+    /**
+     * The binding limit or policy reason (workspace_inflight, user_inflight, queue_position, queue_full, workspace_paused, ...).
+     */
+    reason?: string
+  }
+}
+
+export type AgentLlmAdmitResponse =
+  AgentLlmAdmitResponses[keyof AgentLlmAdmitResponses]
+
+export type AgentLlmMessagesData = {
+  /**
+   * Opaque Anthropic Messages request body, passed through to the upstream. Not modeled here — the agent's LLM proxy owns the contract.
+   */
+  body: {
+    [key: string]: unknown
+  }
+  path?: never
+  query?: never
+  url: '/api/agent/llm/v1/messages'
+}
+
+export type AgentLlmMessagesErrors = {
+  /**
+   * Unauthorized
+   */
+  401: ErrorResponse
+  /**
+   * The pre-turn admission gate declined the turn for a payment reason: the workspace is out of credits or has been blocked. Not retryable as-is — resolve the account condition first.
+   */
+  402: AgentAdmissionError
+  /**
+   * The agent in-app experience is disabled for this caller (FlagAgentInAppExperience off). The feature is kept invisible when off, so ingest returns 404 rather than 403.
+   */
+  404: ErrorResponse
+  /**
+   * Agent service unavailable
+   */
+  502: ErrorResponse
+  /**
+   * The agent proxy is not configured to forward safely (a non-local agent service URL with no shared machine-to-machine secret), so ingest refuses rather than sending unverifiable identity headers.
+   */
+  503: ErrorResponse
+}
+
+export type AgentLlmMessagesError =
+  AgentLlmMessagesErrors[keyof AgentLlmMessagesErrors]
+
+export type AgentLlmMessagesResponses = {
+  /**
+   * The upstream LLM response, streamed back as Server-Sent Events (text/event-stream) chunk-by-chunk.
+   */
+  200: string
+}
+
+export type AgentLlmMessagesResponse =
+  AgentLlmMessagesResponses[keyof AgentLlmMessagesResponses]
+
+export type AgentGetRunModeData = {
+  body?: never
+  path?: never
+  query?: never
+  url: '/api/agent/run-mode'
+}
+
+export type AgentGetRunModeErrors = {
+  /**
+   * Unauthorized
+   */
+  401: ErrorResponse
+  /**
+   * The run-mode surface is not reachable, from either of two sources, and the two do NOT share a body shape — a client must accept both. Ingest-raised (standard ErrorResponse): the caller is not enrolled in the agent-in-app-experience flag gating the whole /api/agent surface, which defaults off and fails closed, so this is the common answer for a non-enrolled caller. Agent-raised (AgentError): the caller is enrolled but AGENT_RUN_MODE_ENABLED is off in the comfy-agent service. Both answer 404 rather than 403 so the surface is invisible when off. Clients should treat either as "not available" and keep any local state.
+   */
+  404: ErrorResponse | AgentError
+  /**
+   * Internal server error (ingest-raised failures use the standard ErrorResponse shape instead)
+   */
+  500: AgentError
+  /**
+   * Agent service unavailable
+   */
+  502: ErrorResponse
+  /**
+   * The agent proxy is not configured to forward safely (a non-local agent service URL with no shared machine-to-machine secret), so ingest refuses rather than sending unverifiable identity headers.
+   */
+  503: ErrorResponse
+}
+
+export type AgentGetRunModeError =
+  AgentGetRunModeErrors[keyof AgentGetRunModeErrors]
+
+export type AgentGetRunModeResponses = {
+  /**
+   * The caller's run mode (the saved choice, or the default).
+   */
+  200: AgentRunMode
+}
+
+export type AgentGetRunModeResponse =
+  AgentGetRunModeResponses[keyof AgentGetRunModeResponses]
+
+export type AgentPutRunModeData = {
+  body: AgentRunModePutRequest
+  path?: never
+  query?: never
+  url: '/api/agent/run-mode'
+}
+
+export type AgentPutRunModeErrors = {
+  /**
+   * The body was rejected: not JSON, a mode outside the three values, a missing, non-positive or above-maximum credit_limit for auto_limited, or a credit_limit on a limitless mode. The message names what to change.
+   */
+  400: AgentError
+  /**
+   * Unauthorized
+   */
+  401: ErrorResponse
+  /**
+   * The run-mode surface is not reachable, from either of two sources, and the two do NOT share a body shape — a client must accept both. Ingest-raised (standard ErrorResponse): the caller is not enrolled in the agent-in-app-experience flag gating the whole /api/agent surface, which defaults off and fails closed, so this is the common answer for a non-enrolled caller. Agent-raised (AgentError): the caller is enrolled but AGENT_RUN_MODE_ENABLED is off in the comfy-agent service. Both answer 404 rather than 403 so the surface is invisible when off. Clients should treat either as "not available" and keep any local state.
+   */
+  404: ErrorResponse | AgentError
+  /**
+   * Request body over the route's transport-level cap (4 KiB); the body is two scalars, so reaching this means the request itself is malformed.
+   */
+  413: ErrorResponse
+  /**
+   * Internal server error (ingest-raised failures use the standard ErrorResponse shape instead)
+   */
+  500: AgentError
+  /**
+   * Agent service unavailable
+   */
+  502: ErrorResponse
+  /**
+   * The agent proxy is not configured to forward safely (a non-local agent service URL with no shared machine-to-machine secret), so ingest refuses rather than sending unverifiable identity headers.
+   */
+  503: ErrorResponse
+}
+
+export type AgentPutRunModeError =
+  AgentPutRunModeErrors[keyof AgentPutRunModeErrors]
+
+export type AgentPutRunModeResponses = {
+  /**
+   * The saved run mode.
+   */
+  200: AgentRunMode
+}
+
+export type AgentPutRunModeResponse =
+  AgentPutRunModeResponses[keyof AgentPutRunModeResponses]
+
+export type AgentListSkillsData = {
+  body?: never
+  path?: never
+  query?: never
+  url: '/api/agent/skills'
+}
+
+export type AgentListSkillsErrors = {
+  /**
+   * Unauthorized
+   */
+  401: ErrorResponse
+  /**
+   * The caller is not enrolled in the cohort gate fronting these CRUD routes: the agent-skill-packs flag, or the agent-in-app-experience flag gating the whole /api/agent surface. Both default off and fail closed (a missing evaluation context resolves to false), and both answer 404 rather than 403 so the surface is invisible when off. Ingest-raised, so the body is the standard ErrorResponse shape.
+   */
+  404: ErrorResponse
+  /**
+   * Internal server error (ingest-raised failures use the standard ErrorResponse shape instead)
+   */
+  500: AgentError
+  /**
+   * Agent service unavailable
+   */
+  502: ErrorResponse
+  /**
+   * The agent proxy is not configured to forward safely (a non-local agent service URL with no shared machine-to-machine secret), so ingest refuses rather than sending unverifiable identity headers.
+   */
+  503: ErrorResponse
+}
+
+export type AgentListSkillsError =
+  AgentListSkillsErrors[keyof AgentListSkillsErrors]
+
+export type AgentListSkillsResponses = {
+  /**
+   * The caller's skill packs.
+   */
+  200: AgentSkillListResponse
+}
+
+export type AgentListSkillsResponse =
+  AgentListSkillsResponses[keyof AgentListSkillsResponses]
+
+export type AgentPublishSkillData = {
+  body: AgentSkillPublishRequest
+  path?: never
+  query?: never
+  url: '/api/agent/skills'
+}
+
+export type AgentPublishSkillErrors = {
+  /**
+   * The pack was rejected by publish-time validation (name shape, empty description or body, control characters in either, body over the per-pack size cap, always:true, a reserved always-on name, or comfy-cli shell syntax in the body). The message names what to change.
+   */
+  400: AgentError
+  /**
+   * Unauthorized
+   */
+  401: ErrorResponse
+  /**
+   * The caller is not enrolled in the cohort gate fronting these CRUD routes: the agent-skill-packs flag, or the agent-in-app-experience flag gating the whole /api/agent surface. Both default off and fail closed (a missing evaluation context resolves to false), and both answer 404 rather than 403 so the surface is invisible when off. Ingest-raised, so the body is the standard ErrorResponse shape.
+   */
+  404: ErrorResponse
+  /**
+   * A per-user budget is full — the pack count, or the combined size of the caller's packs. Nothing about this pack can be edited to make it fit; another pack has to be deleted first.
+   */
+  409: AgentError
+  /**
+   * Request body over ingest's transport-level cap (AGENT_SKILL_REQUEST_BODY_LIMIT), which is set well above the per-pack size cap so an over-size pack gets the actionable 400 above instead. Reaching this means the request itself is outsized.
+   */
+  413: ErrorResponse
+  /**
+   * Internal server error (ingest-raised failures use the standard ErrorResponse shape instead)
+   */
+  500: AgentError
+  /**
+   * Agent service unavailable
+   */
+  502: ErrorResponse
+  /**
+   * The agent proxy is not configured to forward safely (a non-local agent service URL with no shared machine-to-machine secret), so ingest refuses rather than sending unverifiable identity headers.
+   */
+  503: ErrorResponse
+}
+
+export type AgentPublishSkillError =
+  AgentPublishSkillErrors[keyof AgentPublishSkillErrors]
+
+export type AgentPublishSkillResponses = {
+  /**
+   * An existing pack of the same name was replaced.
+   */
+  200: AgentSkill
+  /**
+   * A new pack was created.
+   */
+  201: AgentSkill
+}
+
+export type AgentPublishSkillResponse =
+  AgentPublishSkillResponses[keyof AgentPublishSkillResponses]
+
+export type AgentDeleteSkillData = {
+  body?: never
+  path: {
+    /**
+     * The pack's name.
+     */
+    name: string
+  }
+  query?: never
+  url: '/api/agent/skills/{name}'
+}
+
+export type AgentDeleteSkillErrors = {
+  /**
+   * The name is not a valid pack name.
+   */
+  400: ErrorResponse
+  /**
+   * Unauthorized
+   */
+  401: ErrorResponse
+  /**
+   * The caller holds no pack with that name, or the caller is not enrolled in the cohort gate fronting these CRUD routes (the agent-skill-packs flag, or the agent-in-app-experience flag gating the whole /api/agent surface). Both flags default off and fail closed, and both answer 404 rather than 403 so the surface is invisible when off. The schema below is the agent-raised no-such-pack body; the gate-off 404 is ingest-raised and uses the standard ErrorResponse shape instead.
+   */
+  404: AgentError
+  /**
+   * Internal server error (ingest-raised failures use the standard ErrorResponse shape instead)
+   */
+  500: AgentError
+  /**
+   * Agent service unavailable
+   */
+  502: ErrorResponse
+  /**
+   * The agent proxy is not configured to forward safely (a non-local agent service URL with no shared machine-to-machine secret), so ingest refuses rather than sending unverifiable identity headers.
+   */
+  503: ErrorResponse
+}
+
+export type AgentDeleteSkillError =
+  AgentDeleteSkillErrors[keyof AgentDeleteSkillErrors]
+
+export type AgentDeleteSkillResponses = {
+  /**
+   * The pack was deleted.
+   */
+  204: void
+}
+
+export type AgentDeleteSkillResponse =
+  AgentDeleteSkillResponses[keyof AgentDeleteSkillResponses]
+
 export type AgentListThreadsData = {
   body?: never
   path?: never
@@ -4232,6 +5500,10 @@ export type AgentAnswerAskData = {
     id: string
     /**
      * Ask ID (from the agent_ask event or the message list's pending_ask).
+     * The same event/row also carries `kind` (ask_user | run_approval),
+     * which selects the widget, and, for run_approval, a `context` naming
+     * the workflow.
+     *
      */
     ask_id: string
   }
@@ -4353,6 +5625,10 @@ export type AgentPostMessageErrors = {
    */
   401: ErrorResponse
   /**
+   * The request to run the agent was declined for a payment reason: the workspace is out of credits or has been blocked. Not retryable as-is — resolve the account condition first.
+   */
+  402: AgentAdmissionError
+  /**
    * Forbidden (workflow or thread not owned by the caller)
    */
   403: AgentError
@@ -4364,6 +5640,10 @@ export type AgentPostMessageErrors = {
    * Agent service unavailable
    */
   502: ErrorResponse
+  /**
+   * The workspace's billing status could not be checked right now (a temporary outage, not a payment problem). Retry the request after the delay given in the Retry-After header.
+   */
+  503: AgentAdmissionError
 }
 
 export type AgentPostMessageError =
@@ -4440,13 +5720,55 @@ export type ListAssetsData = {
   path?: never
   query?: {
     /**
-     * Filter assets that have ALL of these tags
+     * Deprecated alias for `tags_all`, kept permanently for existing
+     * callers. Filter assets that have ALL of these tags. Combining it
+     * with `tags_all`, or exceeding 100 tags (counted after removing
+     * empty values and duplicates), returns 400 `INVALID_TAG_FILTER`.
+     *
+     *
+     * @deprecated
      */
     include_tags?: Array<string>
     /**
-     * Exclude assets that have ANY of these tags
+     * Deprecated alias for `tags_none`, kept permanently for existing
+     * callers. Exclude assets that have ANY of these tags. Combining it
+     * with `tags_none`, or exceeding 100 tags (counted after removing
+     * empty values and duplicates), returns 400 `INVALID_TAG_FILTER`.
+     *
+     *
+     * @deprecated
      */
     exclude_tags?: Array<string>
+    /**
+     * Filter assets that have ALL of these tags. Tag values are opaque
+     * byte-strings compared exactly and case-sensitively; unknown tags
+     * are not an error — they simply match nothing. Replaces the
+     * deprecated `include_tags`. Sending both spellings, listing the
+     * same tag here and in `tags_none`, or exceeding 100 tags per list
+     * (counted after removing empty values and duplicates) returns 400
+     * `INVALID_TAG_FILTER`.
+     *
+     */
+    tags_all?: Array<string>
+    /**
+     * Filter assets that have AT LEAST ONE of these tags. Combines with
+     * `tags_all`/`tags_none` by intersection (`tags_none` always wins;
+     * overlap with `tags_none` is allowed and leaves a dead term).
+     * Supplying a positive tag filter (`tags_any`, `tags_all`, or
+     * `include_tags`) replaces the default category filter that is
+     * otherwise applied. Lists over 100 tags (counted after removing
+     * empty values and duplicates) return 400 `INVALID_TAG_FILTER`.
+     *
+     */
+    tags_any?: Array<string>
+    /**
+     * Exclude assets that have ANY of these tags. Replaces the
+     * deprecated `exclude_tags`. Sending both spellings, or exceeding
+     * 100 tags per list (counted after removing empty values and
+     * duplicates), returns 400 `INVALID_TAG_FILTER`.
+     *
+     */
+    tags_none?: Array<string>
     /**
      * Filter assets where name contains this substring (case-insensitive)
      */
@@ -5404,13 +6726,47 @@ export type GetAssetTagHistogramData = {
   path?: never
   query?: {
     /**
-     * Filter assets that have ALL of these tags
+     * Deprecated alias for `tags_all`, kept permanently for existing
+     * callers. Filter assets that have ALL of these tags. The same
+     * combination and list-size rules as on `/api/assets` apply
+     * (400 `INVALID_TAG_FILTER`).
+     *
+     *
+     * @deprecated
      */
     include_tags?: Array<string>
     /**
-     * Exclude assets that have ANY of these tags
+     * Deprecated alias for `tags_none`, kept permanently for existing
+     * callers. Exclude assets that have ANY of these tags. The same
+     * combination and list-size rules as on `/api/assets` apply
+     * (400 `INVALID_TAG_FILTER`).
+     *
+     *
+     * @deprecated
      */
     exclude_tags?: Array<string>
+    /**
+     * Filter assets that have ALL of these tags. Replaces the deprecated
+     * `include_tags`. The same combination and list-size rules as on
+     * `/api/assets` apply (400 `INVALID_TAG_FILTER`).
+     *
+     */
+    tags_all?: Array<string>
+    /**
+     * Filter assets that have AT LEAST ONE of these tags. Combines with
+     * `tags_all`/`tags_none` by intersection (`tags_none` always wins).
+     * The same combination and list-size rules as on `/api/assets` apply
+     * (400 `INVALID_TAG_FILTER`).
+     *
+     */
+    tags_any?: Array<string>
+    /**
+     * Exclude assets that have ANY of these tags. Replaces the deprecated
+     * `exclude_tags`. The same combination and list-size rules as on
+     * `/api/assets` apply (400 `INVALID_TAG_FILTER`).
+     *
+     */
+    tags_none?: Array<string>
     /**
      * Filter assets where name contains this substring (case-insensitive)
      */
@@ -5697,6 +7053,45 @@ export type GetBillingBalanceResponses = {
 export type GetBillingBalanceResponse =
   GetBillingBalanceResponses[keyof GetBillingBalanceResponses]
 
+export type GetBillingCapabilitiesData = {
+  body?: never
+  path?: never
+  query?: never
+  url: '/api/billing/capabilities'
+}
+
+export type GetBillingCapabilitiesErrors = {
+  /**
+   * Workspace or user context required
+   */
+  401: ErrorResponse
+  /**
+   * Actor is not a member of the authenticated workspace
+   */
+  403: ErrorResponse
+  /**
+   * Workspace not found
+   */
+  404: ErrorResponse
+  /**
+   * Billing service unavailable or returned an invalid response
+   */
+  502: ErrorResponse
+}
+
+export type GetBillingCapabilitiesError =
+  GetBillingCapabilitiesErrors[keyof GetBillingCapabilitiesErrors]
+
+export type GetBillingCapabilitiesResponses = {
+  /**
+   * Effective billing capabilities
+   */
+  200: BillingCapabilitiesResponse
+}
+
+export type GetBillingCapabilitiesResponse =
+  GetBillingCapabilitiesResponses[keyof GetBillingCapabilitiesResponses]
+
 export type GetChurnkeyAuthData = {
   body?: never
   path?: never
@@ -5735,6 +7130,76 @@ export type GetChurnkeyAuthResponses = {
 
 export type GetChurnkeyAuthResponse =
   GetChurnkeyAuthResponses[keyof GetChurnkeyAuthResponses]
+
+export type GetBillingCompanyDetailsData = {
+  body?: never
+  path?: never
+  query?: never
+  url: '/api/billing/company-details'
+}
+
+export type GetBillingCompanyDetailsErrors = {
+  /**
+   * Unauthorized
+   */
+  401: ErrorResponse
+  /**
+   * Workspace owner role required
+   */
+  403: ErrorResponse
+  /**
+   * Internal server error
+   */
+  500: ErrorResponse
+}
+
+export type GetBillingCompanyDetailsError =
+  GetBillingCompanyDetailsErrors[keyof GetBillingCompanyDetailsErrors]
+
+export type GetBillingCompanyDetailsResponses = {
+  /**
+   * Success
+   */
+  200: BillingCompanyDetailsResponse
+}
+
+export type GetBillingCompanyDetailsResponse =
+  GetBillingCompanyDetailsResponses[keyof GetBillingCompanyDetailsResponses]
+
+export type UpdateBillingCompanyDetailsData = {
+  body: BillingCompanyDetailsUpdateRequest
+  path?: never
+  query?: never
+  url: '/api/billing/company-details'
+}
+
+export type UpdateBillingCompanyDetailsErrors = {
+  /**
+   * Bad request (e.g., missing address fields or an invalid tax ID)
+   */
+  400: ErrorResponse
+  /**
+   * Unauthorized
+   */
+  401: ErrorResponse
+  /**
+   * Internal server error
+   */
+  500: ErrorResponse
+}
+
+export type UpdateBillingCompanyDetailsError =
+  UpdateBillingCompanyDetailsErrors[keyof UpdateBillingCompanyDetailsErrors]
+
+export type UpdateBillingCompanyDetailsResponses = {
+  /**
+   * Success
+   */
+  200: BillingCompanyDetailsResponse
+}
+
+export type UpdateBillingCompanyDetailsResponse =
+  UpdateBillingCompanyDetailsResponses[keyof UpdateBillingCompanyDetailsResponses]
 
 export type GetBillingEventsData = {
   body?: never
@@ -5844,6 +7309,45 @@ export type GetBillingOpStatusResponses = {
 export type GetBillingOpStatusResponse =
   GetBillingOpStatusResponses[keyof GetBillingOpStatusResponses]
 
+export type ListSavedPaymentMethodsData = {
+  body?: never
+  path?: never
+  query?: never
+  url: '/api/billing/payment-methods'
+}
+
+export type ListSavedPaymentMethodsErrors = {
+  /**
+   * Billing is disabled
+   */
+  400: ErrorResponse
+  /**
+   * Unauthorized
+   */
+  401: ErrorResponse
+  /**
+   * Workspace owner role required
+   */
+  403: ErrorResponse
+  /**
+   * Internal server error
+   */
+  500: ErrorResponse
+}
+
+export type ListSavedPaymentMethodsError =
+  ListSavedPaymentMethodsErrors[keyof ListSavedPaymentMethodsErrors]
+
+export type ListSavedPaymentMethodsResponses = {
+  /**
+   * Saved payment methods
+   */
+  200: Array<SavedPaymentMethod>
+}
+
+export type ListSavedPaymentMethodsResponse =
+  ListSavedPaymentMethodsResponses[keyof ListSavedPaymentMethodsResponses]
+
 export type GetPaymentPortalData = {
   body?: PaymentPortalRequest
   path?: never
@@ -5926,6 +7430,10 @@ export type PreviewSubscribeErrors = {
    * Unauthorized
    */
   401: ErrorResponse
+  /**
+   * Workspace owner role required
+   */
+  403: ErrorResponse
   /**
    * Internal server error
    */
@@ -6022,7 +7530,7 @@ export type CancelSubscriptionData = {
 
 export type CancelSubscriptionErrors = {
   /**
-   * Invalid request (e.g., no active subscription)
+   * Invalid request (for example, no active subscription). Ambiguous legacy Stripe state uses code BILLING_RECONCILIATION_REQUIRED.
    */
   400: ErrorResponse
   /**
@@ -6043,6 +7551,10 @@ export type CancelSubscriptionResponses = {
    * Subscription cancellation scheduled
    */
   200: CancelSubscriptionResponse
+  /**
+   * Cancellation accepted and still executing. No cancellation time is confirmed yet; poll `GET /api/billing/ops/{id}` for the final outcome, then read `cancel_at` from `GET /api/billing/status` once that operation reports `succeeded`.
+   */
+  202: CancelSubscriptionAcceptedResponse
 }
 
 export type CancelSubscriptionResponse2 =
@@ -6115,6 +7627,53 @@ export type CreateTopupResponses = {
 
 export type CreateTopupResponse2 =
   CreateTopupResponses[keyof CreateTopupResponses]
+
+export type CreateTopupCheckoutData = {
+  body: CreateTopupCheckoutRequest
+  path?: never
+  query?: never
+  url: '/api/billing/topup/checkout'
+}
+
+export type CreateTopupCheckoutErrors = {
+  /**
+   * Bad request (invalid amount or return URL)
+   */
+  400: ErrorResponse
+  /**
+   * Unauthorized
+   */
+  401: ErrorResponse
+  /**
+   * Forbidden. Buying credits is an owner action: the route is
+   * registered on the workspace-owner group, so a workspace member
+   * is rejected by middleware before the handler runs. Email
+   * verification is enforced on the same group.
+   *
+   */
+  403: ErrorResponse
+  /**
+   * Not found (feature flag disabled for this caller)
+   */
+  404: ErrorResponse
+  /**
+   * Internal server error
+   */
+  500: ErrorResponse
+}
+
+export type CreateTopupCheckoutError =
+  CreateTopupCheckoutErrors[keyof CreateTopupCheckoutErrors]
+
+export type CreateTopupCheckoutResponses = {
+  /**
+   * Checkout session created
+   */
+  200: CreateTopupCheckoutResponse
+}
+
+export type CreateTopupCheckoutResponse2 =
+  CreateTopupCheckoutResponses[keyof CreateTopupCheckoutResponses]
 
 export type GetBillingUsageTimeSeriesData = {
   body?: never
@@ -6358,25 +7917,7 @@ export type GetFeaturesResponses = {
      * Whether the server supports preview metadata
      */
     supports_preview_metadata?: boolean
-    [key: string]:
-      | unknown
-      | {
-          /**
-           * Total free jobs granted for the current period
-           */
-          allowance: number
-          /**
-           * Free jobs remaining (allowance - used, floored at 0)
-           */
-          remaining: number
-          /**
-           * Free jobs consumed so far
-           */
-          used: number
-        }
-      | number
-      | boolean
-      | undefined
+    [key: string]: unknown
   }
 }
 
@@ -6488,6 +8029,153 @@ export type FreeMemoryResponses = {
    */
   200: unknown
 }
+
+export type SetGlobalSettingData = {
+  body: GlobalSettingValue
+  path?: never
+  query?: never
+  url: '/api/global-settings'
+}
+
+export type SetGlobalSettingErrors = {
+  /**
+   * Unregistered key, or a value the registry validator rejected
+   */
+  400: ErrorResponse
+  /**
+   * Unauthorized
+   */
+  401: ErrorResponse
+  /**
+   * The principal is not a user actor with a workspace, or the registry
+   * forbids this authentication method for this key.
+   *
+   */
+  403: ErrorResponse
+  /**
+   * Request body exceeds 8 KiB. Enforced by the server's body-limit
+   * middleware ahead of the handler, so the registry never sees the
+   * value and the status stays 413 rather than being remapped to 400.
+   * The service's error handler still renders it into the same
+   * `{code, message}` envelope as the other failures, with code
+   * `PAYLOAD_TOO_LARGE`.
+   *
+   */
+  413: ErrorResponse
+  /**
+   * Internal server error
+   */
+  500: ErrorResponse
+}
+
+export type SetGlobalSettingError =
+  SetGlobalSettingErrors[keyof SetGlobalSettingErrors]
+
+export type SetGlobalSettingResponses = {
+  /**
+   * Setting stored
+   */
+  200: GlobalSetting
+}
+
+export type SetGlobalSettingResponse =
+  SetGlobalSettingResponses[keyof SetGlobalSettingResponses]
+
+export type DeleteGlobalSettingData = {
+  body?: never
+  path: {
+    /**
+     * Registered setting key to unset
+     */
+    key: GlobalSettingKey
+  }
+  query?: never
+  url: '/api/global-settings/{key}'
+}
+
+export type DeleteGlobalSettingErrors = {
+  /**
+   * Key is not in the server registry, or does not support delete
+   */
+  400: ErrorResponse
+  /**
+   * Unauthorized
+   */
+  401: ErrorResponse
+  /**
+   * The principal is not a user actor with a workspace
+   */
+  403: ErrorResponse
+  /**
+   * Key is registered but unset for this user and workspace
+   */
+  404: ErrorResponse
+  /**
+   * Internal server error
+   */
+  500: ErrorResponse
+}
+
+export type DeleteGlobalSettingError =
+  DeleteGlobalSettingErrors[keyof DeleteGlobalSettingErrors]
+
+export type DeleteGlobalSettingResponses = {
+  /**
+   * Setting unset
+   */
+  204: void
+}
+
+export type DeleteGlobalSettingResponse =
+  DeleteGlobalSettingResponses[keyof DeleteGlobalSettingResponses]
+
+export type GetGlobalSettingData = {
+  body?: never
+  path: {
+    /**
+     * Registered setting key to read
+     */
+    key: GlobalSettingKey
+  }
+  query?: never
+  url: '/api/global-settings/{key}'
+}
+
+export type GetGlobalSettingErrors = {
+  /**
+   * Key is not in the server registry
+   */
+  400: ErrorResponse
+  /**
+   * Unauthorized
+   */
+  401: ErrorResponse
+  /**
+   * The principal is not a user actor with a workspace
+   */
+  403: ErrorResponse
+  /**
+   * Key is registered but unset for this user and workspace
+   */
+  404: ErrorResponse
+  /**
+   * Internal server error
+   */
+  500: ErrorResponse
+}
+
+export type GetGlobalSettingError =
+  GetGlobalSettingErrors[keyof GetGlobalSettingErrors]
+
+export type GetGlobalSettingResponses = {
+  /**
+   * Success
+   */
+  200: GlobalSetting
+}
+
+export type GetGlobalSettingResponse =
+  GetGlobalSettingResponses[keyof GetGlobalSettingResponses]
 
 export type GetGlobalSubgraphsData = {
   body?: never
@@ -7502,6 +9190,58 @@ export type GetJobDetailResponses = {
 export type GetJobDetailResponse =
   GetJobDetailResponses[keyof GetJobDetailResponses]
 
+export type GetJobAssetsData = {
+  body?: never
+  path: {
+    /**
+     * Job identifier (UUID)
+     */
+    job_id: string
+  }
+  query?: {
+    /**
+     * Maximum number of assets to return (1-500)
+     */
+    limit?: number
+    /**
+     * Number of assets to skip for pagination
+     */
+    offset?: number
+  }
+  url: '/api/jobs/{job_id}/assets'
+}
+
+export type GetJobAssetsErrors = {
+  /**
+   * Invalid request parameters
+   */
+  400: ErrorResponse
+  /**
+   * Unauthorized - Authentication required
+   */
+  401: ErrorResponse
+  /**
+   * Job not found or does not belong to the user
+   */
+  404: ErrorResponse
+  /**
+   * Internal server error
+   */
+  500: ErrorResponse
+}
+
+export type GetJobAssetsError = GetJobAssetsErrors[keyof GetJobAssetsErrors]
+
+export type GetJobAssetsResponses = {
+  /**
+   * Success - Job assets returned
+   */
+  200: JobAssetsResponse
+}
+
+export type GetJobAssetsResponse =
+  GetJobAssetsResponses[keyof GetJobAssetsResponses]
+
 export type CancelJobData = {
   body?: never
   path: {
@@ -7722,6 +9462,10 @@ export type ExecutePromptErrors = {
    */
   402: PromptErrorResponse
   /**
+   * Workspace governance policy blocks one or more partner providers (error.type PARTNER_NODE_DISABLED; error.class_types lists the offending nodes, error.providers the disabled providers)
+   */
+  403: PromptErrorResponse
+  /**
    * Workflow JSON too large
    */
   413: PromptErrorResponse
@@ -7766,6 +9510,40 @@ export type GetLegacyPromptByIdErrors = {
    */
   404: unknown
 }
+
+export type GetProvidersData = {
+  body?: never
+  path?: never
+  query?: never
+  url: '/api/providers'
+}
+
+export type GetProvidersErrors = {
+  /**
+   * Unauthorized
+   */
+  401: ErrorResponse
+  /**
+   * Governance not available (no governance entitlement)
+   */
+  403: ErrorResponse
+  /**
+   * Internal server error
+   */
+  500: ErrorResponse
+}
+
+export type GetProvidersError = GetProvidersErrors[keyof GetProvidersErrors]
+
+export type GetProvidersResponses = {
+  /**
+   * The provider catalog
+   */
+  200: ProviderCatalogResponse
+}
+
+export type GetProvidersResponse =
+  GetProvidersResponses[keyof GetProvidersResponses]
 
 export type GetQueueInfoData = {
   body?: never
@@ -9735,7 +11513,12 @@ export type CreateWorkflowUploadUrlResponse =
 export type ListWorkspaceApiKeysData = {
   body?: never
   path?: never
-  query?: never
+  query?: {
+    /**
+     * Include revoked API keys in the response
+     */
+    include_revoked?: boolean
+  }
   url: '/api/workspace/api-keys'
 }
 
@@ -10259,6 +12042,92 @@ export type UpdateWorkspaceMemberRoleResponses = {
 export type UpdateWorkspaceMemberRoleResponse =
   UpdateWorkspaceMemberRoleResponses[keyof UpdateWorkspaceMemberRoleResponses]
 
+export type GetProviderPolicyData = {
+  body?: never
+  path?: never
+  query?: never
+  url: '/api/workspace/provider-policy'
+}
+
+export type GetProviderPolicyErrors = {
+  /**
+   * Unauthorized
+   */
+  401: ErrorResponse
+  /**
+   * Governance not available (no governance entitlement)
+   */
+  403: ErrorResponse
+  /**
+   * Entitled workspace with no policy document yet
+   */
+  404: ErrorResponse
+  /**
+   * Internal server error
+   */
+  500: ErrorResponse
+}
+
+export type GetProviderPolicyError =
+  GetProviderPolicyErrors[keyof GetProviderPolicyErrors]
+
+export type GetProviderPolicyResponses = {
+  /**
+   * The policy document
+   */
+  200: ProviderPolicy
+}
+
+export type GetProviderPolicyResponse =
+  GetProviderPolicyResponses[keyof GetProviderPolicyResponses]
+
+export type PutProviderPolicyData = {
+  body: ProviderPolicy
+  path?: never
+  query?: never
+  url: '/api/workspace/provider-policy'
+}
+
+export type PutProviderPolicyErrors = {
+  /**
+   * Malformed document (wrong shape, missing fields, or duplicate provider_id entries)
+   */
+  400: ErrorResponse
+  /**
+   * Unauthorized
+   */
+  401: ErrorResponse
+  /**
+   * Not a workspace owner, or governance not available (no governance entitlement)
+   */
+  403: ErrorResponse
+  /**
+   * Unknown provider slugs (code UNKNOWN_PROVIDERS; details.unknown_providers enumerates them so the client can prune and retry)
+   */
+  422: ErrorResponse
+  /**
+   * Internal server error
+   */
+  500: ErrorResponse
+}
+
+export type PutProviderPolicyError =
+  PutProviderPolicyErrors[keyof PutProviderPolicyErrors]
+
+export type PutProviderPolicyResponses = {
+  /**
+   * Policy replaced
+   */
+  200: ProviderPolicy
+  /**
+   * Policy created
+   */
+  201: ProviderPolicy
+}
+
+export type PutProviderPolicyResponse =
+  PutProviderPolicyResponses[keyof PutProviderPolicyResponses]
+
 export type ListWorkspacesData = {
   body?: never
   path?: never
@@ -10464,6 +12333,41 @@ export type UpdateWorkspaceResponses = {
 export type UpdateWorkspaceResponse =
   UpdateWorkspaceResponses[keyof UpdateWorkspaceResponses]
 
+export type GetCurrentWorkspaceData = {
+  body?: never
+  path?: never
+  query?: never
+  url: '/api/workspaces/current'
+}
+
+export type GetCurrentWorkspaceErrors = {
+  /**
+   * Unauthorized
+   */
+  401: ErrorResponse
+  /**
+   * No workspace resolves for this credential — it carries no workspace binding, the workspace was deleted, or the credential's user is no longer a member. Deliberately not 401: the credential itself is valid, so clients must not discard it or re-authenticate.
+   */
+  404: ErrorResponse
+  /**
+   * Internal server error
+   */
+  500: ErrorResponse
+}
+
+export type GetCurrentWorkspaceError =
+  GetCurrentWorkspaceErrors[keyof GetCurrentWorkspaceErrors]
+
+export type GetCurrentWorkspaceResponses = {
+  /**
+   * The credential's workspace
+   */
+  200: CurrentWorkspaceResponse
+}
+
+export type GetCurrentWorkspaceResponse =
+  GetCurrentWorkspaceResponses[keyof GetCurrentWorkspaceResponses]
+
 export type GetStaticExtensionsData = {
   body?: never
   path: {
@@ -10489,6 +12393,44 @@ export type GetStaticExtensionsResponses = {
    */
   200: unknown
 }
+
+export type RedirectExtensionScriptsData = {
+  body?: never
+  path: {
+    /**
+     * Core script filename (e.g. `app.js`, `widgets.js`).
+     */
+    file: string
+  }
+  query?: never
+  url: '/extensions/scripts/{file}'
+}
+
+export type RedirectExtensionScriptsErrors = {
+  /**
+   * The `file` param is not a valid plain basename. The redirect target
+   * is derived from an untrusted path param, so values that are not a
+   * single, traversal-free filename (e.g. `..`, `%2e%2e`, embedded
+   * separators, backslashes, or control characters) are rejected instead
+   * of being redirected, keeping the 302 a same-origin `/scripts/<file>`.
+   *
+   */
+  404: {
+    error: {
+      /**
+       * Human-readable rejection reason.
+       */
+      message: string
+      /**
+       * Machine-readable error code (e.g. `not_found`).
+       */
+      type: string
+    }
+  }
+}
+
+export type RedirectExtensionScriptsError =
+  RedirectExtensionScriptsErrors[keyof RedirectExtensionScriptsErrors]
 
 export type GetHealthData = {
   body?: never
@@ -10602,6 +12544,32 @@ export type SubscribeToLogsData = {
 export type SubscribeToLogsResponses = {
   /**
    * Subscription updated
+   */
+  200: unknown
+}
+
+export type GetStaticKjwebAsyncData = {
+  body?: never
+  path: {
+    /**
+     * Asset file path relative to /static/kjweb_async on disk.
+     */
+    path: string
+  }
+  query?: never
+  url: '/kjweb_async/{path}'
+}
+
+export type GetStaticKjwebAsyncErrors = {
+  /**
+   * File not found
+   */
+  404: unknown
+}
+
+export type GetStaticKjwebAsyncResponses = {
+  /**
+   * Static file
    */
   200: unknown
 }

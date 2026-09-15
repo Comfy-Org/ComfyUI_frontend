@@ -1,5 +1,5 @@
 import { fireEvent, render, screen } from '@testing-library/vue'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { computed, nextTick } from 'vue'
 
 import { useTransformState } from '@/renderer/core/layout/transform/useTransformState'
@@ -15,18 +15,21 @@ const mockData = vi.hoisted(() => ({
   mockCamera: { x: 0, y: 0, z: 1 }
 }))
 
-vi.mock('@/renderer/core/layout/transform/useTransformState', () => {
-  const syncWithCanvas = vi.fn()
-  return {
-    useTransformState: () => ({
-      camera: computed(() => mockData.mockCamera),
-      transformStyle: computed(() => mockData.mockTransformStyle),
-      screenToCanvas: vi.fn(),
-      isNodeInViewport: vi.fn(),
-      syncWithCanvas
-    })
+vi.mock<unknown>(
+  import('@/renderer/core/layout/transform/useTransformState'),
+  () => {
+    const syncWithCanvas = vi.fn()
+    return {
+      useTransformState: () => ({
+        camera: computed(() => mockData.mockCamera),
+        transformStyle: computed(() => mockData.mockTransformStyle),
+        screenToCanvas: vi.fn(),
+        isNodeInViewport: vi.fn(),
+        syncWithCanvas
+      })
+    }
   }
-})
+)
 
 function createMockLGraphCanvas() {
   return createMockCanvas({
@@ -42,11 +45,6 @@ function createMockLGraphCanvas() {
 }
 
 describe('TransformPane', () => {
-  beforeEach(() => {
-    vi.useFakeTimers()
-    vi.resetAllMocks()
-  })
-
   describe('component mounting', () => {
     it('should mount successfully with minimal props', () => {
       const mockCanvas = createMockLGraphCanvas()

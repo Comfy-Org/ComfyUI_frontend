@@ -1,14 +1,15 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
+import { describe, expect, it, vi } from 'vitest'
 
-vi.mock('@/composables/maskeditor/useCoordinateTransform', () => ({
-  useCoordinateTransform: () => ({
-    screenToCanvas: vi.fn(({ x, y }: { x: number; y: number }) => ({ x, y }))
+vi.mock<unknown>(
+  import('@/composables/maskeditor/useCoordinateTransform'),
+  () => ({
+    useCoordinateTransform: () => ({
+      screenToCanvas: vi.fn(({ x, y }: { x: number; y: number }) => ({ x, y }))
+    })
   })
-}))
+)
 
-vi.mock('@/scripts/app', () => ({
+vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: { registerExtension: vi.fn() }
 }))
 
@@ -22,11 +23,6 @@ function makePointerEvent(offsetX: number, offsetY: number): PointerEvent {
     preventDefault: vi.fn()
   } as unknown as PointerEvent
 }
-
-beforeEach(() => {
-  setActivePinia(createTestingPinia({ stubActions: false }))
-  vi.resetAllMocks()
-})
 
 describe('startBrushAdjustment', () => {
   it('sets brushPreviewGradientVisible to true', async () => {

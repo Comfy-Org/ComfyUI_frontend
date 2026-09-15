@@ -1,40 +1,12 @@
-import {
-  afterAll,
-  beforeAll,
-  beforeEach,
-  describe,
-  expect,
-  it,
-  vi
-} from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { GPUBrushRenderer } from './GPUBrushRenderer'
 
-// WebGPU globals are not available in happy-dom
-beforeAll(() => {
-  vi.stubGlobal('GPUBufferUsage', {
-    VERTEX: 0x0020,
-    INDEX: 0x0010,
-    COPY_DST: 0x0008,
-    UNIFORM: 0x0040
-  })
-  vi.stubGlobal('GPUTextureUsage', {
-    RENDER_ATTACHMENT: 0x0010,
-    TEXTURE_BINDING: 0x0004,
-    COPY_SRC: 0x0001
-  })
-  vi.stubGlobal('GPUShaderStage', { VERTEX: 0x1, FRAGMENT: 0x2 })
-})
-
-afterAll(() => {
-  vi.unstubAllGlobals()
-})
-
-vi.mock('typegpu', () => ({
+vi.mock<unknown>(import('typegpu'), () => ({
   tgpu: { resolve: vi.fn(() => '/* mock wgsl */') }
 }))
 
-vi.mock('typegpu/data', () => ({
+vi.mock<unknown>(import('typegpu/data'), () => ({
   struct: vi.fn(() => ({})),
   vec2f: {},
   vec3f: {},
@@ -143,7 +115,18 @@ describe('GPUBrushRenderer', () => {
   let renderer: GPUBrushRenderer
 
   beforeEach(() => {
-    vi.clearAllMocks()
+    vi.stubGlobal('GPUBufferUsage', {
+      VERTEX: 0x0020,
+      INDEX: 0x0010,
+      COPY_DST: 0x0008,
+      UNIFORM: 0x0040
+    })
+    vi.stubGlobal('GPUTextureUsage', {
+      RENDER_ATTACHMENT: 0x0010,
+      TEXTURE_BINDING: 0x0004,
+      COPY_SRC: 0x0001
+    })
+    vi.stubGlobal('GPUShaderStage', { VERTEX: 0x1, FRAGMENT: 0x2 })
     pipelineCounter = 0
     device = createMockDevice()
     renderer = new GPUBrushRenderer(device)

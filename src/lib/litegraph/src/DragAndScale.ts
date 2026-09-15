@@ -18,6 +18,8 @@ export type AnimationOptions = {
   zoom?: number
   /** The animation easing function (curve) */
   easing?: EaseFunction
+  /** CSS-pixel canvas region to fit and center the bounds within. */
+  viewport?: ReadOnlyRect
 }
 
 export class DragAndScale {
@@ -100,10 +102,6 @@ export class DragAndScale {
       copyState(this.state, this.lastState)
     }
 
-    if (!this.element) {
-      visible_area[0] = visible_area[1] = visible_area[2] = visible_area[3] = 0
-      return
-    }
     let { width, height } = this.element
     let startx = -offset[0]
     let starty = -offset[1]
@@ -160,8 +158,6 @@ export class DragAndScale {
     if (value == this.scale) return
 
     const rect = this.element.getBoundingClientRect()
-    if (!rect) return
-
     zooming_center = zooming_center ?? [rect.width * 0.5, rect.height * 0.5]
 
     const normalizedCenter: Point = [
@@ -234,7 +230,8 @@ export class DragAndScale {
     {
       duration = 350,
       zoom = 0.75,
-      easing = EaseFunction.EASE_IN_OUT_QUAD
+      easing = EaseFunction.EASE_IN_OUT_QUAD,
+      viewport
     }: AnimationOptions = {}
   ) {
     if (!(duration > 0)) throw new RangeError('Duration must be greater than 0')
@@ -245,11 +242,13 @@ export class DragAndScale {
       easeOutQuad: (t: number) => t * (2 - t),
       easeInOutQuad: (t: number) => (t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t)
     }
-    const easeFunction = easeFunctions[easing] ?? easeFunctions.linear
+    const easeFunction = easeFunctions[easing]
 
     const startTimestamp = performance.now()
     const cw = this.element.width / window.devicePixelRatio
     const ch = this.element.height / window.devicePixelRatio
+    const [vx, vy, vw, vh] = viewport ?? [0, 0, cw, ch]
+    if (vw <= 0 || vh <= 0) return
     const startX = this.offset[0]
     const startY = this.offset[1]
     const startX2 = startX - cw / this.scale
@@ -258,8 +257,8 @@ export class DragAndScale {
     let targetScale = startScale
 
     if (zoom > 0) {
-      const targetScaleX = (zoom * cw) / Math.max(bounds[2], 300)
-      const targetScaleY = (zoom * ch) / Math.max(bounds[3], 300)
+      const targetScaleX = (zoom * vw) / Math.max(bounds[2], 300)
+      const targetScaleY = (zoom * vh) / Math.max(bounds[3], 300)
 
       // Choose the smaller scale to ensure the node fits into the viewport
       // Ensure we don't go over the max scale
@@ -268,8 +267,8 @@ export class DragAndScale {
     const scaledWidth = cw / targetScale
     const scaledHeight = ch / targetScale
 
-    const targetX = -bounds[0] - bounds[2] * 0.5 + scaledWidth * 0.5
-    const targetY = -bounds[1] - bounds[3] * 0.5 + scaledHeight * 0.5
+    const targetX = (vx + vw * 0.5) / targetScale - bounds[0] - bounds[2] * 0.5
+    const targetY = (vy + vh * 0.5) / targetScale - bounds[1] - bounds[3] * 0.5
     const targetX2 = targetX - scaledWidth
     const targetY2 = targetY - scaledHeight
 

@@ -400,14 +400,14 @@ const { saveWorkflow, loadWorkflow } = useWorkflowService()
 describe('useWorkflowService', () => {
   beforeEach(() => {
     // Mock external dependencies
-    vi.mock('@/stores/settingStore', () => ({
+    vi.mock('@/platform/settings/settingStore', () => ({
       useSettingStore: () => ({
         get: vi.fn().mockReturnValue(true),
         set: vi.fn()
       })
     }))
 
-    vi.mock('@/stores/toastStore', () => ({
+    vi.mock('@/platform/updates/common/toastStore', () => ({
       useToastStore: () => ({
         add: vi.fn()
       })
@@ -449,7 +449,7 @@ describe('autoQueueService', () => {
     setupAutoQueueHandler()
 
     expect(mockApi.addEventListener).toHaveBeenCalledWith(
-      'graphChanged',
+      'autoQueueGraphChanged',
       expect.any(Function)
     )
   })
@@ -457,7 +457,7 @@ describe('autoQueueService', () => {
   test('should handle graph changes when auto-queue enabled', () => {
     setupAutoQueueHandler()
 
-    // Simulate graph change event
+    // Simulate execution graph change event
     const graphChangeHandler = mockApi.addEventListener.mock.calls[0][1]
     graphChangeHandler()
 
@@ -506,7 +506,7 @@ describe('newUserService', () => {
 
 ```typescript
 // Mock stores
-vi.mock('@/stores/settingStore', () => ({
+vi.mock('@/platform/settings/settingStore', () => ({
   useSettingStore: () => ({
     get: vi.fn(),
     set: vi.fn()

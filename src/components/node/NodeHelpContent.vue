@@ -6,10 +6,10 @@
       :aria-label="$t('g.loading')"
     />
     <!-- Markdown fetched successfully -->
-    <div
+    <SanitizedHtml
       v-else-if="!error"
       class="markdown-content overflow-visible text-sm leading-(--text-sm--line-height)"
-      v-html="renderedHelpHtml"
+      :html="renderedHelpHtml"
     />
     <!-- Fallback: markdown not found or fetch error -->
     <div
@@ -80,7 +80,9 @@
 import ProgressSpinner from 'primevue/progressspinner'
 import { computed } from 'vue'
 
+import SanitizedHtml from '@/components/common/SanitizedHtml.vue'
 import { useNodeHelpContent } from '@/composables/useNodeHelpContent'
+import { flattenInputSpecs } from '@/schemas/nodeDef/inputSpecUtil'
 import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 
 const { node } = defineProps<{
@@ -90,7 +92,7 @@ const { node } = defineProps<{
 const { renderedHelpHtml, isLoading, error } = useNodeHelpContent(() => node)
 
 const inputList = computed(() =>
-  Object.values(node.inputs).map((spec) => ({
+  flattenInputSpecs(node.inputs).map((spec) => ({
     name: spec.name,
     type: spec.type,
     tooltip: spec.tooltip || ''

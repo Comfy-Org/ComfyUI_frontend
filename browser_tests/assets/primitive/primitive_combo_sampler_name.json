@@ -1,0 +1,58 @@
+{
+  "last_node_id": 2,
+  "last_link_id": 1,
+  "nodes": [
+    {
+      "id": 2,
+      "type": "KSampler",
+      "pos": [521, 41],
+      "size": [315, 262],
+      "flags": {},
+      "order": 1,
+      "mode": 0,
+      "inputs": [
+        { "name": "model", "type": "MODEL", "link": null },
+        { "name": "positive", "type": "CONDITIONING", "link": null },
+        { "name": "negative", "type": "CONDITIONING", "link": null },
+        { "name": "latent_image", "type": "LATENT", "link": null },
+        {
+          "name": "sampler_name",
+          "type": "COMBO",
+          "link": 1,
+          "widget": { "name": "sampler_name" }
+        }
+      ],
+      "outputs": [
+        { "name": "LATENT", "type": "LATENT", "links": null, "shape": 3 }
+      ],
+      "properties": { "Node name for S&R": "KSampler" },
+      "widgets_values": [0, "randomize", 20, 8, "euler", "normal", 1]
+    },
+    {
+      "id": 1,
+      "type": "PrimitiveNode",
+      "pos": [15, 46],
+      "size": [400, 110],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "COMBO",
+          "type": "COMBO",
+          "links": [1],
+          "slot_index": 0,
+          "widget": { "name": "sampler_name" }
+        }
+      ],
+      "properties": { "Run widget replace on values": false },
+      "widgets_values": ["euler", "fixed"]
+    }
+  ],
+  "links": [[1, 1, 0, 2, 4, "COMBO"]],
+  "groups": [],
+  "config": {},
+  "extra": { "ds": { "scale": 1, "offset": [0, 0] } },
+  "version": 0.4
+}

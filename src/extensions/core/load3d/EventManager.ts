@@ -1,4 +1,4 @@
-import { type EventCallback, type EventManagerInterface } from './interfaces'
+import type { EventCallback, EventManagerInterface } from './interfaces'
 
 export class EventManager implements EventManagerInterface {
   private listeners: Record<string, EventCallback[]> = {}

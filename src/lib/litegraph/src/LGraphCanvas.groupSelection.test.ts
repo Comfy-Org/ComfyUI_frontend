@@ -9,16 +9,7 @@ import {
   LGraphNode
 } from '@/lib/litegraph/src/litegraph'
 
-vi.mock('@/renderer/core/layout/store/layoutStore', () => ({
-  layoutStore: {
-    querySlotAtPoint: vi.fn(),
-    queryRerouteAtPoint: vi.fn(),
-    getNodeLayoutRef: vi.fn(() => ({ value: null })),
-    getSlotLayout: vi.fn(),
-    setSource: vi.fn(),
-    batchUpdateNodeBounds: vi.fn()
-  }
-}))
+vi.mock(import('@/renderer/core/layout/store/layoutStore'))
 
 function createCanvas(graph: LGraph): LGraphCanvas {
   const el = document.createElement('canvas')
@@ -85,8 +76,6 @@ describe('LGraphCanvas group selection', () => {
   let nodeB: TestNode
 
   beforeEach(() => {
-    vi.clearAllMocks()
-
     graph = new LGraph()
     canvas = createCanvas(graph)
 

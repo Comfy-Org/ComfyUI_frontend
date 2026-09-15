@@ -33,6 +33,7 @@
             :data-nav-id="item.id"
             :icon="item.icon"
             :badge="item.badge"
+            :suffix-icon="item.suffixIcon"
             :active="activeCategoryKey === item.id"
             @click="onNavItemClick(item.id)"
           >

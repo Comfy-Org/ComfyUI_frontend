@@ -18,7 +18,7 @@ export function useFrameNodes() {
 
   const frameNodes = () => {
     const { canvas } = app
-    if (!canvas.selectedItems?.size) return
+    if (!canvas.selectedItems.size) return
     const group = new LGraphGroup()
     const padding = settingStore.get('Comfy.GroupSelectedNodes.Padding')
     group.resizeTo(canvas.selectedItems, padding)

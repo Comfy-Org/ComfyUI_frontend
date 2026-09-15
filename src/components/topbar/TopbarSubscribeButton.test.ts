@@ -1,4 +1,6 @@
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { getActivePinia } from 'pinia'
+import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import { render, screen } from '@testing-library/vue'
@@ -9,7 +11,7 @@ import TopbarSubscribeButton from './TopbarSubscribeButton.vue'
 
 const mockIsCloud = vi.hoisted(() => ({ value: true }))
 
-vi.mock('@/platform/distribution/types', () => ({
+vi.mock(import('@/platform/distribution/types'), () => ({
   get isCloud() {
     return mockIsCloud.value
   }
@@ -17,8 +19,8 @@ vi.mock('@/platform/distribution/types', () => ({
 
 const mockShowPricingTable = vi.fn()
 
-vi.mock(
-  '@/platform/cloud/subscription/composables/useSubscriptionDialog',
+vi.mock<unknown>(
+  import('@/platform/cloud/subscription/composables/useSubscriptionDialog'),
   () => ({
     useSubscriptionDialog: vi.fn(() => ({
       showPricingTable: mockShowPricingTable
@@ -26,20 +28,41 @@ vi.mock(
   })
 )
 
-vi.mock('@/composables/billing/useBillingContext', () => ({
-  useBillingContext: vi.fn(() => ({
-    isFreeTier: { value: true }
-  }))
+const mockState = vi.hoisted(() => ({
+  holder: null as null | { isFreeTier: boolean; promptMounted: boolean }
 }))
 
-vi.mock('pinia')
+vi.mock<unknown>(
+  import('@/composables/billing/useBillingContext'),
+  async () => {
+    const { computed, reactive } = await import('vue')
+    mockState.holder ??= reactive({ isFreeTier: true, promptMounted: false })
+    return {
+      useBillingContext: vi.fn(() => ({
+        isFreeTier: computed(() => mockState.holder!.isFreeTier)
+      }))
+    }
+  }
+)
 
-vi.mock('firebase/app', () => ({
+vi.mock<unknown>(
+  import('@/platform/cloud/subscription/composables/useSubscribeCtaPresence'),
+  async () => {
+    const { computed, reactive } = await import('vue')
+    mockState.holder ??= reactive({ isFreeTier: true, promptMounted: false })
+    return {
+      useSubscribeToRunPromptPresence: () =>
+        computed(() => mockState.holder!.promptMounted)
+    }
+  }
+)
+
+vi.mock(import('firebase/app'), () => ({
   initializeApp: vi.fn(),
   getApp: vi.fn()
 }))
 
-vi.mock('firebase/auth', () => ({
+vi.mock<unknown>(import('firebase/auth'), () => ({
   getAuth: vi.fn(),
   setPersistence: vi.fn(),
   browserLocalPersistence: {},
@@ -56,15 +79,33 @@ function renderComponent() {
 
   return render(TopbarSubscribeButton, {
     global: {
-      plugins: [i18n]
+      plugins: [i18n, getActivePinia()!]
     }
   })
 }
 
 describe('TopbarSubscribeButton', () => {
+  beforeEach(() => {
+    mockState.holder!.isFreeTier = true
+    mockState.holder!.promptMounted = false
+  })
+
   it('renders on cloud when isFreeTier is true', () => {
     mockIsCloud.value = true
     renderComponent()
+    expect(screen.getByTestId('topbar-subscribe-button')).toBeInTheDocument()
+  })
+
+  it('yields while a Run-slot subscribe prompt is mounted, and returns when it unmounts', async () => {
+    mockIsCloud.value = true
+    mockState.holder!.promptMounted = true
+    renderComponent()
+    expect(
+      screen.queryByTestId('topbar-subscribe-button')
+    ).not.toBeInTheDocument()
+
+    mockState.holder!.promptMounted = false
+    await nextTick()
     expect(screen.getByTestId('topbar-subscribe-button')).toBeInTheDocument()
   })
 

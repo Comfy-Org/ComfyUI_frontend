@@ -1,6 +1,6 @@
 import { fromAny, fromPartial } from '@total-typescript/shoehorn'
 import { ref } from 'vue'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 import { useNodePreviewAndDrag } from './useNodePreviewAndDrag'
@@ -8,16 +8,10 @@ import { useNodePreviewAndDrag } from './useNodePreviewAndDrag'
 const mockStartDrag = vi.fn()
 const mockHandleNativeDrop = vi.fn()
 
-vi.mock('@/composables/node/useNodeDragToCanvas', () => ({
+vi.mock<unknown>(import('@/composables/node/useNodeDragToCanvas'), () => ({
   useNodeDragToCanvas: () => ({
     startDrag: mockStartDrag,
     handleNativeDrop: mockHandleNativeDrop
-  })
-}))
-
-vi.mock('@/platform/settings/settingStore', () => ({
-  useSettingStore: () => ({
-    get: vi.fn().mockReturnValue('left')
   })
 }))
 
@@ -26,10 +20,6 @@ describe('useNodePreviewAndDrag', () => {
     name: 'TestNode',
     display_name: 'Test Node'
   } as ComfyNodeDefImpl
-
-  beforeEach(() => {
-    vi.clearAllMocks()
-  })
 
   describe('initial state', () => {
     it('should initialize with correct default values', () => {

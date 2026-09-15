@@ -8,13 +8,16 @@ import Tab from '@/components/tab/Tab.vue'
 import TabList from '@/components/tab/TabList.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { useGraphHierarchy } from '@/composables/graph/useGraphHierarchy'
-import { st } from '@/i18n'
 import { app } from '@/scripts/app'
-import { getActiveGraphNodeIds } from '@/utils/graphTraversalUtil'
+import {
+  getActiveGraphNodeIds,
+  getExecutionIdByNode
+} from '@/utils/graphTraversalUtil'
 import { SubgraphNode } from '@/lib/litegraph/src/litegraph'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@/platform/telemetry'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
 import { useMissingMediaStore } from '@/platform/missingMedia/missingMediaStore'
@@ -40,8 +43,10 @@ import {
 import SubgraphEditor from './subgraph/SubgraphEditor.vue'
 import TabErrors from './errors/TabErrors.vue'
 import JobHistorySidebarTab from '@/components/sidebar/tabs/JobHistorySidebarTab.vue'
+import { useHasBlockingError } from './errors/useHasBlockingError'
 
 const canvasStore = useCanvasStore()
+const workflowStore = useWorkflowStore()
 const executionErrorStore = useExecutionErrorStore()
 const missingModelStore = useMissingModelStore()
 const missingMediaStore = useMissingMediaStore()
@@ -107,6 +112,20 @@ const isSingleSubgraphNode = computed(() => {
   return selectedSingleNode.value instanceof SubgraphNode
 })
 
+const workflowKey = computed(() => workflowStore.activeWorkflow?.path ?? '')
+
+const selectedNodesKey = computed(() => {
+  const nodeIds = selectedNodes.value.map((n) => n.id).join(',')
+  const groupIds = selectedGroups.value.map((g) => g.id).join(',')
+  return `${workflowKey.value}|${nodeIds}|${groupIds}`
+})
+
+const singleSubgraphKey = computed(() =>
+  selectedSingleNode.value
+    ? `${workflowKey.value}:${selectedSingleNode.value.id}`
+    : ''
+)
+
 function closePanel() {
   useTelemetry()?.trackUiButtonClicked({
     button_id: 'right_side_panel_closed',
@@ -123,7 +142,10 @@ function handleTabChange(newTab: RightSidePanelTab) {
 type RightSidePanelTabList = Array<{
   label: () => string
   value: RightSidePanelTab
-  icon?: string
+  icon?: {
+    className: string
+    label: () => string
+  }
 }>
 
 const hasDirectNodeError = computed(() =>
@@ -175,17 +197,50 @@ const hasRelevantErrors = computed(() => {
   )
 })
 
+const hasPendingErrorScanSelected = computed(() => {
+  const nodes = selectedNodes.value
+  if (!app.isGraphReady) return false
+  const rootGraph = app.rootGraph
+  return nodes.some((node) => {
+    const executionId = getExecutionIdByNode(rootGraph, node)
+    return (
+      executionId !== null &&
+      executionErrorStore.hasPendingAddedNodeErrorScan(rootGraph, executionId)
+    )
+  })
+})
+
+const hasBlockingError = useHasBlockingError()
+
 const tabs = computed<RightSidePanelTabList>(() => {
   const list: RightSidePanelTabList = []
 
   if (
     settingStore.get('Comfy.RightSidePanel.ShowErrorsTab') &&
-    hasRelevantErrors.value
+    (hasRelevantErrors.value ||
+      (activeTab.value === 'errors' && hasPendingErrorScanSelected.value))
   ) {
     list.push({
       label: () => t('rightSidePanel.errors'),
       value: 'errors',
-      icon: 'icon-[lucide--octagon-alert] bg-node-stroke-error ml-1'
+      // No icon while the tab is only retained by a pending scan: with both
+      // severities absent there is no state for it to describe.
+      icon: hasRelevantErrors.value
+        ? {
+            className: cn(
+              'ml-1',
+              hasBlockingError.value
+                ? 'icon-[lucide--octagon-alert] bg-node-stroke-error'
+                : 'icon-[lucide--triangle-alert] bg-warning-foreground'
+            ),
+            label: () =>
+              t(
+                hasBlockingError.value
+                  ? 'rightSidePanel.severityErrorLabel'
+                  : 'rightSidePanel.severitySetupLabel'
+              )
+          }
+        : undefined
     })
   }
 
@@ -224,15 +279,17 @@ const tabs = computed<RightSidePanelTabList>(() => {
   return list
 })
 
-// Use global state for activeTab and ensure it's valid
+function isActiveTabAvailable() {
+  return (
+    tabs.value.some((tab) => tab.value === activeTab.value) ||
+    (activeTab.value === 'subgraph' && isSingleSubgraphNode.value) ||
+    // Job history is a full-panel takeover, not one of the contextual tabs.
+    activeTab.value === 'job-history'
+  )
+}
+
 watchEffect(() => {
-  if (
-    !tabs.value.some((tab) => tab.value === activeTab.value) &&
-    !(activeTab.value === 'subgraph' && isSingleSubgraphNode.value) &&
-    // Job history is a full-panel takeover, not one of the contextual tabs,
-    // so it must not be reset to the first tab.
-    activeTab.value !== 'job-history'
-  ) {
+  if (!isActiveTabAvailable()) {
     rightSidePanelStore.openPanel(tabs.value[0].value)
   }
 })
@@ -253,8 +310,7 @@ function resolveTitle() {
       const fallbackNodeTitle = t('rightSidePanel.fallbackNodeTitle')
       return resolveNodeDisplayName(nodes[0], {
         emptyLabel: fallbackNodeTitle,
-        untitledLabel: fallbackNodeTitle,
-        st
+        untitledLabel: fallbackNodeTitle
       })
     }
   }
@@ -374,8 +430,10 @@ function handleTitleCancel() {
             {{ tab.label() }}
             <i
               v-if="tab.icon"
-              aria-hidden="true"
-              :class="cn(tab.icon, 'size-4')"
+              role="img"
+              :aria-label="tab.icon.label()"
+              data-testid="panel-tab-icon"
+              :class="cn(tab.icon.className, 'size-4')"
             />
           </Tab>
         </TabList>
@@ -387,21 +445,27 @@ function handleTitleCancel() {
       <JobHistorySidebarTab v-if="activeTab === 'job-history'" />
       <TabErrors v-else-if="activeTab === 'errors'" />
       <template v-else-if="!hasSelection">
-        <TabGlobalParameters v-if="activeTab === 'parameters'" />
-        <TabNodes v-else-if="activeTab === 'nodes'" />
+        <TabGlobalParameters
+          v-if="activeTab === 'parameters'"
+          :key="workflowKey"
+        />
+        <TabNodes v-else-if="activeTab === 'nodes'" :key="workflowKey" />
         <TabGlobalSettings v-else-if="activeTab === 'settings'" />
       </template>
       <SubgraphEditor
         v-else-if="isSingleSubgraphNode && isEditingSubgraph"
+        :key="singleSubgraphKey"
         :node="selectedSingleNode"
       />
       <template v-else>
         <TabSubgraphInputs
           v-if="activeTab === 'parameters' && isSingleSubgraphNode"
+          :key="singleSubgraphKey"
           :node="selectedSingleNode as SubgraphNode"
         />
         <TabNormalInputs
           v-else-if="activeTab === 'parameters'"
+          :key="selectedNodesKey"
           :nodes="selectedNodes"
           :must-show-node-title="selectedGroups.length > 0"
         />

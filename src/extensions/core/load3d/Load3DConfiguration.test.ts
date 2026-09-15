@@ -1,10 +1,13 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { fromAny, fromPartial } from '@total-typescript/shoehorn'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type Load3d from '@/extensions/core/load3d/Load3d'
 import Load3DConfiguration, {
   parseAnnotatedFilename
 } from '@/extensions/core/load3d/Load3DConfiguration'
 import Load3dUtils from '@/extensions/core/load3d/Load3dUtils'
+import type { ComfyApi } from '@/scripts/api'
+import type { ComfyApp } from '@/scripts/app'
 import type {
   CameraConfig,
   GizmoConfig,
@@ -15,37 +18,32 @@ import type {
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import type { Dictionary } from '@/lib/litegraph/src/interfaces'
 import type { NodeProperty } from '@/lib/litegraph/src/LGraphNode'
+import { useSettingStore } from '@/platform/settings/settingStore'
 
-const { settingsGetMock } = vi.hoisted(() => ({
-  settingsGetMock: vi.fn()
-}))
-
-vi.mock('@/platform/settings/settingStore', () => ({
-  useSettingStore: () => ({ get: settingsGetMock })
-}))
-
-vi.mock('@/scripts/api', () => ({
-  api: {
+vi.mock(import('@/scripts/api'), () => ({
+  api: fromPartial<ComfyApi>({
     apiURL: (p: string) => p,
     addEventListener: vi.fn(),
     removeEventListener: vi.fn(),
     dispatchCustomEvent: vi.fn(),
     fetchApi: vi.fn(),
     getSystemStats: vi.fn()
-  }
+  })
 }))
 
-vi.mock('@/scripts/app', () => ({
-  app: { rootGraph: { extra: {} } }
+vi.mock(import('@/scripts/app'), () => ({
+  app: fromPartial<ComfyApp>({ rootGraph: { extra: {} } })
 }))
 
-vi.mock('@/extensions/core/load3d/Load3d', () => ({ default: class {} }))
+vi.mock(import('@/extensions/core/load3d/Load3d'), () => ({
+  default: fromAny(class {})
+}))
 
-vi.mock('@/extensions/core/load3d/Load3dUtils', () => ({
-  default: {
+vi.mock(import('@/extensions/core/load3d/Load3dUtils'), () => ({
+  default: fromAny({
     splitFilePath: vi.fn(),
     getResourceURL: vi.fn()
-  }
+  })
 }))
 
 type WithPrivate = {
@@ -61,7 +59,7 @@ function createConfig(properties?: Dictionary<NodeProperty | undefined>) {
 }
 
 function stubSettings(values: Record<string, unknown>) {
-  settingsGetMock.mockImplementation((key: string) => values[key])
+  vi.mocked(useSettingStore().get).mockImplementation((key) => values[key])
 }
 
 const defaultGizmo: GizmoConfig = {
@@ -80,10 +78,6 @@ const hdriDefaults = {
 } as const
 
 describe('Load3DConfiguration.loadModelConfig', () => {
-  afterEach(() => {
-    vi.restoreAllMocks()
-  })
-
   it('returns full defaults including gizmo when no properties are provided', () => {
     const result = createConfig().loadModelConfig()
 
@@ -224,10 +218,6 @@ describe('Load3DConfiguration.silentOnNotFound propagation', () => {
     )
   })
 
-  afterEach(() => {
-    vi.restoreAllMocks()
-  })
-
   it('configureForSaveMesh forwards silentOnNotFound: true to loadModel', async () => {
     const config = new Load3DConfiguration(makeLoad3dMock())
     config.configureForSaveMesh('output', 'model.glb', {
@@ -365,14 +355,6 @@ describe('parseAnnotatedFilename', () => {
 })
 
 describe('Load3DConfiguration.loadSceneConfig', () => {
-  beforeEach(() => {
-    settingsGetMock.mockReset()
-  })
-
-  afterEach(() => {
-    vi.restoreAllMocks()
-  })
-
   it('returns the persisted Scene Config when present, ignoring settings', () => {
     const stored: SceneConfig = {
       showGrid: false,
@@ -388,7 +370,7 @@ describe('Load3DConfiguration.loadSceneConfig', () => {
     })
 
     expect(createConfig(properties).loadSceneConfig()).toEqual(stored)
-    expect(settingsGetMock).not.toHaveBeenCalled()
+    expect(useSettingStore().get).not.toHaveBeenCalled()
   })
 
   it('falls back to settings and prepends # to the background color', () => {
@@ -406,14 +388,6 @@ describe('Load3DConfiguration.loadSceneConfig', () => {
 })
 
 describe('Load3DConfiguration.loadCameraConfig', () => {
-  beforeEach(() => {
-    settingsGetMock.mockReset()
-  })
-
-  afterEach(() => {
-    vi.restoreAllMocks()
-  })
-
   it('returns the persisted Camera Config when present', () => {
     const stored: CameraConfig = {
       cameraType: 'orthographic',
@@ -425,7 +399,7 @@ describe('Load3DConfiguration.loadCameraConfig', () => {
     stubSettings({ 'Comfy.Load3D.CameraType': 'perspective' })
 
     expect(createConfig(properties).loadCameraConfig()).toEqual(stored)
-    expect(settingsGetMock).not.toHaveBeenCalled()
+    expect(useSettingStore().get).not.toHaveBeenCalled()
   })
 
   it('falls back to settings and a default fov of 35', () => {
@@ -439,14 +413,6 @@ describe('Load3DConfiguration.loadCameraConfig', () => {
 })
 
 describe('Load3DConfiguration.loadLightConfig', () => {
-  beforeEach(() => {
-    settingsGetMock.mockReset()
-  })
-
-  afterEach(() => {
-    vi.restoreAllMocks()
-  })
-
   it('falls back to settings with default hdri when nothing is persisted', () => {
     stubSettings({ 'Comfy.Load3D.LightIntensity': 4 })
 
@@ -531,14 +497,9 @@ describe('Load3DConfiguration.configure forwards persisted + settings to load3d'
   }
 
   beforeEach(() => {
-    settingsGetMock.mockReset()
     load3d = makeLoad3dMock()
     vi.mocked(Load3dUtils.splitFilePath).mockReturnValue(['', 'model.glb'])
     vi.mocked(Load3dUtils.getResourceURL).mockReturnValue('/view')
-  })
-
-  afterEach(() => {
-    vi.restoreAllMocks()
   })
 
   it('uses settings defaults when no Scene/Camera/Light Config is persisted', async () => {
@@ -632,10 +593,6 @@ describe('Load3DConfiguration "none" model handling', () => {
     load3d = makeLoad3dMock()
     vi.mocked(Load3dUtils.splitFilePath).mockReturnValue(['', 'model.glb'])
     vi.mocked(Load3dUtils.getResourceURL).mockReturnValue('/view')
-  })
-
-  afterEach(() => {
-    vi.restoreAllMocks()
   })
 
   it('does not load or clear a model when the initial widget value is "none"', async () => {

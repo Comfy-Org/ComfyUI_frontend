@@ -1,11 +1,11 @@
 import { expect } from '@playwright/test'
 
+import { toNodeId } from '@/types/nodeId'
+
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { TestIds } from '@e2e/fixtures/selectors'
 
-test.beforeEach(async ({ comfyPage }) => {
-  await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Disabled')
-})
+test.use({ initialSettings: { 'Comfy.UseNewMenu': 'Disabled' } })
 
 // If an input is optional by node definition, it should be shown as
 // a hollow circle no matter what shape it was defined in the workflow JSON.
@@ -50,26 +50,31 @@ test.describe('Optional input', { tag: ['@screenshot', '@node'] }, () => {
 
   test('Old workflow with converted input', async ({ comfyPage }) => {
     await comfyPage.workflow.loadWorkflow('inputs/old_workflow_converted_input')
-    const node = await comfyPage.nodeOps.getNodeRefById('1')
-    const inputs = (await node.getProperty('inputs')) as {
-      name: string
-      link?: number | null
-    }[]
-    const vaeInput = inputs.find((w) => w.name === 'vae')
-    const convertedInput = inputs.find((w) => w.name === 'strength')
 
-    expect(vaeInput).toBeDefined()
-    expect(convertedInput).toBeDefined()
-    expect(vaeInput!.link).toBeNull()
-    expect(convertedInput!.link).not.toBeNull()
+    const linkState = await comfyPage.page.evaluate((nodeId) => {
+      const node = window.app!.graph.getNodeById(nodeId)
+      if (!node) return null
+      const linkIdOf = (name: string) => {
+        const slot = node.inputs.findIndex((input) => input.name === name)
+        return slot === -1 ? 'missing' : (node.getInputLink(slot)?.id ?? null)
+      }
+      return { vae: linkIdOf('vae'), strength: linkIdOf('strength') }
+    }, toNodeId(1))
+
+    expect(linkState).not.toBeNull()
+    expect(linkState!.vae).toBeNull()
+    expect(linkState!.strength).toEqual(expect.any(Number))
   })
 
   test('Renamed converted input', async ({ comfyPage }) => {
     await comfyPage.workflow.loadWorkflow('inputs/renamed_converted_widget')
-    const node = await comfyPage.nodeOps.getNodeRefById('3')
-    const inputs = (await node.getProperty('inputs')) as { name: string }[]
-    const renamedInput = inputs.find((w) => w.name === 'breadth')
-    expect(renamedInput).toBeUndefined()
+    const inputNames = await comfyPage.page.evaluate(
+      (nodeId) =>
+        window.app!.graph.getNodeById(nodeId)!.inputs.map(({ name }) => name),
+      toNodeId(3)
+    )
+
+    expect(inputNames).not.toContain('breadth')
   })
 
   test('slider', async ({ comfyPage }) => {
@@ -91,5 +96,22 @@ test.describe('Optional input', { tag: ['@screenshot', '@node'] }, () => {
     await expect(comfyPage.canvas).toHaveScreenshot(
       'dynamically_added_input.png'
     )
+  })
+})
+
+test.describe('Renamed converted widget values', { tag: ['@node'] }, () => {
+  test('keeps each widget value on its own widget', async ({ comfyPage }) => {
+    await comfyPage.workflow.loadWorkflow('inputs/renamed_converted_widget')
+
+    const node = await comfyPage.nodeOps.getNodeRefById(toNodeId(3))
+    const [width, height, batchSize] = await Promise.all([
+      node.getWidgetByName('width'),
+      node.getWidgetByName('height'),
+      node.getWidgetByName('batch_size')
+    ])
+
+    expect.soft(await width.getValue()).toBe(640)
+    expect.soft(await height.getValue()).toBe(768)
+    expect.soft(await batchSize.getValue()).toBe(3)
   })
 })

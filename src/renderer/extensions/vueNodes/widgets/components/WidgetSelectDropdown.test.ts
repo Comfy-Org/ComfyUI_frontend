@@ -1,4 +1,7 @@
-import { createTestingPinia } from '@pinia/testing'
+import { getActivePinia } from 'pinia'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import { fromPartial } from '@total-typescript/shoehorn'
+
 import { render, screen } from '@testing-library/vue'
 import PrimeVue from 'primevue/config'
 import { computed, nextTick, ref } from 'vue'
@@ -15,33 +18,10 @@ import { createMockWidget } from './widgetTestUtils'
 const mockCheckState = vi.hoisted(() => vi.fn())
 const mockAssetsData = vi.hoisted(() => ({ items: [] as AssetItem[] }))
 
-vi.mock('@/platform/workflow/management/stores/workflowStore', async () => {
-  const actual = await vi.importActual(
-    '@/platform/workflow/management/stores/workflowStore'
-  )
-  return {
-    ...actual,
-    useWorkflowStore: () => ({
-      activeWorkflow: {
-        changeTracker: {
-          checkState: mockCheckState
-        }
-      }
-    })
-  }
-})
-
-vi.mock('@/scripts/api', () => ({
-  api: {
-    fetchApi: vi.fn(),
-    apiURL: vi.fn((url: string) => url),
-    addEventListener: vi.fn(),
-    removeEventListener: vi.fn()
-  }
-}))
+vi.mock(import('@/scripts/api'))
 
 vi.mock(
-  '@/renderer/extensions/vueNodes/widgets/composables/useAssetWidgetData',
+  import('@/renderer/extensions/vueNodes/widgets/composables/useAssetWidgetData'),
   () => ({
     useAssetWidgetData: () => ({
       category: computed(() => 'checkpoints'),
@@ -69,13 +49,7 @@ const { mockMediaAssets } = vi.hoisted(() => {
   }
 })
 
-vi.mock('@/platform/assets/composables/media/useAssetsApi', () => ({
-  useAssetsApi: () => mockMediaAssets
-}))
-
-vi.mock('@/platform/assets/utils/outputAssetUtil', () => ({
-  resolveOutputAssetItems: vi.fn().mockResolvedValue([])
-}))
+vi.mock(import('@/platform/assets/utils/outputAssetUtil'))
 
 const mockUpdateSelectedItems = vi.hoisted(() => vi.fn())
 const mockHandleFilesUpdate = vi.hoisted(() => vi.fn())
@@ -93,7 +67,7 @@ const { mockItemsRef, mockSelectedSetRef, mockFilterSelectedRef } = vi.hoisted(
 )
 
 vi.mock(
-  '@/renderer/extensions/vueNodes/widgets/composables/useWidgetSelectItems',
+  import('@/renderer/extensions/vueNodes/widgets/composables/useWidgetSelectItems'),
   () => {
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     const { computed } = require('vue')
@@ -119,7 +93,7 @@ vi.mock(
 )
 
 vi.mock(
-  '@/renderer/extensions/vueNodes/widgets/composables/useWidgetSelectActions',
+  import('@/renderer/extensions/vueNodes/widgets/composables/useWidgetSelectActions'),
   () => ({
     useWidgetSelectActions: () => ({
       updateSelectedItems: mockUpdateSelectedItems,
@@ -134,16 +108,19 @@ const i18n = createI18n({
   messages: { en: {} }
 })
 
+beforeEach(() => {
+  useWorkflowStore().activeWorkflow = fromPartial({
+    changeTracker: { checkState: mockCheckState }
+  })
+})
+
 describe('WidgetSelectDropdown', () => {
   beforeEach(() => {
     mockMediaAssets.media.value = []
-    mockCheckState.mockClear()
     mockAssetsData.items = []
     mockItemsRef.value = []
     mockSelectedSetRef.value = new Set()
     mockFilterSelectedRef.value = 'all'
-    mockUpdateSelectedItems.mockClear()
-    mockHandleFilesUpdate.mockClear()
   })
 
   function renderComponent(
@@ -161,7 +138,7 @@ describe('WidgetSelectDropdown', () => {
         ...extraProps
       },
       global: {
-        plugins: [PrimeVue, createTestingPinia(), i18n]
+        plugins: [PrimeVue, getActivePinia()!, i18n]
       }
     })
   }
@@ -184,14 +161,29 @@ describe('WidgetSelectDropdown', () => {
     expect(screen.getByText('img_001.png')).toBeDefined()
   })
 
+  it('allows EXR files for image uploads', () => {
+    const widget = createMockWidget<string | undefined>({
+      value: undefined,
+      name: 'test_image',
+      type: 'combo',
+      options: { values: [] }
+    })
+    renderComponent(widget, undefined)
+
+    expect(screen.getByLabelText('g.upload')).toHaveAttribute(
+      'accept',
+      'image/*,.exr'
+    )
+  })
+
   it('renders in cloud asset mode', () => {
     mockAssetsData.items = [
-      {
+      fromPartial({
         id: 'asset-1',
         name: 'model_a.safetensors',
         preview_url: 'https://example.com/a.jpg',
         tags: []
-      }
+      })
     ]
     mockItemsRef.value = [{ id: 'asset-1', name: 'model_a.safetensors' }]
     mockSelectedSetRef.value = new Set(['asset-1'])

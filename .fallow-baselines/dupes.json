@@ -1,0 +1,26 @@
+{
+  "clone_groups": [
+    "apps/website/src/pages/zh-CN/cloud/pricing.astro:25-32|apps/website/src/pages/zh-CN/cloud/supported-nodes.astro:37-44|apps/website/src/pages/zh-CN/cloud/supported-nodes/[pack].astro:65-73",
+    "browser_tests/fixtures/utils/litegraphUtils.ts:113-117|browser_tests/fixtures/utils/litegraphUtils.ts:146-149|browser_tests/fixtures/utils/litegraphUtils.ts:159-162",
+    "scripts/cicd/extract-playwright-counts.ts:168-177|scripts/cicd/extract-playwright-counts.ts:206-215|scripts/cicd/extract-playwright-counts.ts:233-242",
+    "src/components/actionbar/ComfyActionbar.vue:419-424|src/components/queue/QueueProgressOverlay.vue:270-277|src/components/sidebar/tabs/JobHistorySidebarTab.vue:165-170",
+    "src/components/queue/job/useQueueEstimates.ts:112-116|src/components/queue/job/useQueueEstimates.ts:64-68|src/components/queue/job/useQueueEstimates.ts:97-101",
+    "src/composables/boundingBoxes/useBoundingBoxes.ts:651-656|src/composables/useLoad3d.ts:195-204|src/extensions/core/load3d.ts:818-831|src/extensions/core/load3dPreviewExtensions.ts:157-171",
+    "src/composables/queue/useJobMenu.ts:163-169|src/platform/assets/composables/useMediaAssetActions.ts:381-388|src/platform/assets/composables/useMediaAssetActions.ts:507-514",
+    "src/composables/useCoreCommands.ts:504-514|src/composables/useCoreCommands.ts:527-537|src/composables/useCoreCommands.ts:549-559",
+    "src/extensions/core/groupOptions.ts:162-177|src/extensions/core/groupOptions.ts:181-196|src/extensions/core/groupOptions.ts:209-224",
+    "src/extensions/core/load3d/Load3dUtils.ts:20-32|src/extensions/core/webcamCapture.ts:137-147|src/services/audioService.ts:58-70",
+    "src/extensions/core/load3d.ts:366-377|src/extensions/core/load3d.ts:757-768|src/extensions/core/load3dPreviewExtensions.ts:109-120|src/extensions/core/saveMesh.ts:124-135",
+    "src/lib/litegraph/src/LGraph.ts:2240-2247|src/lib/litegraph/src/LGraph.ts:2260-2267|src/lib/litegraph/src/LGraph.ts:2280-2287",
+    "src/lib/litegraph/src/LGraphCanvas.ts:1611-1625|src/lib/litegraph/src/LGraphCanvas.ts:1640-1654|src/lib/litegraph/src/LGraphCanvas.ts:1676-1695",
+    "src/lib/litegraph/src/__fixtures__/duplicateSubgraphNodeIds.ts:21-45|src/lib/litegraph/src/__fixtures__/nestedSubgraphProxyWidgets.ts:25-49|src/lib/litegraph/src/__fixtures__/nodeIdSpaceExhausted.ts:21-45",
+    "src/lib/litegraph/src/__fixtures__/duplicateSubgraphNodeIds.ts:44-65|src/lib/litegraph/src/__fixtures__/nestedSubgraphProxyWidgets.ts:48-69|src/lib/litegraph/src/__fixtures__/uniqueSubgraphNodeIds.ts:44-65",
+    "src/lib/litegraph/src/__fixtures__/duplicateSubgraphNodeIds.ts:85-167|src/lib/litegraph/src/__fixtures__/nestedSubgraphProxyWidgets.ts:98-181|src/lib/litegraph/src/__fixtures__/nodeIdSpaceExhausted.ts:94-176",
+    "src/lib/litegraph/src/__fixtures__/duplicateSubgraphNodeIds.ts:101-123|src/lib/litegraph/src/__fixtures__/nestedSubgraphProxyWidgets.ts:115-137|src/lib/litegraph/src/__fixtures__/nodeIdSpaceExhausted.ts:110-132|src/lib/litegraph/src/__fixtures__/uniqueSubgraphNodeIds.ts:101-123",
+    "src/lib/litegraph/src/widgets/BaseWidget.ts:312-323|src/lib/litegraph/src/widgets/ChartWidget.ts:21-32|src/lib/litegraph/src/widgets/FileUploadWidget.ts:21-32|src/lib/litegraph/src/widgets/GalleriaWidget.ts:21-32|src/lib/litegraph/src/widgets/ImageCompareWidget.ts:21-32|src/lib/litegraph/src/widgets/MarkdownWidget.ts:21-32|src/lib/litegraph/src/widgets/MultiSelectWidget.ts:21-32|src/lib/litegraph/src/widgets/SelectButtonWidget.ts:21-32",
+    "src/lib/litegraph/src/widgets/ChartWidget.ts:15-46|src/lib/litegraph/src/widgets/FileUploadWidget.ts:15-46|src/lib/litegraph/src/widgets/GalleriaWidget.ts:15-46|src/lib/litegraph/src/widgets/ImageCompareWidget.ts:15-46|src/lib/litegraph/src/widgets/MarkdownWidget.ts:15-46|src/lib/litegraph/src/widgets/MultiSelectWidget.ts:15-46|src/lib/litegraph/src/widgets/SelectButtonWidget.ts:15-46",
+    "src/lib/litegraph/src/widgets/GradientSliderWidget.ts:35-45|src/lib/litegraph/src/widgets/KnobWidget.ts:162-176|src/lib/litegraph/src/widgets/SliderWidget.ts:55-66",
+    "src/platform/cloud/subscription/components/PricingTable.vue:52-66|src/platform/workspace/components/PricingTableWorkspace.vue:52-66|src/platform/workspace/components/UnifiedPricingTable.vue:101-115",
+    "src/platform/workspace/components/SubscriptionPanelContentWorkspace.vue:135-150|src/platform/workspace/components/SubscriptionPanelContentWorkspace.vue:186-201|src/platform/workspace/components/SubscriptionPanelContentWorkspace.vue:269-284"
+  ]
+}

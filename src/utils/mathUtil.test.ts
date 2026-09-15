@@ -7,10 +7,31 @@ import {
   denormalize,
   gcd,
   lcm,
-  normalize
+  normalize,
+  wrapIndex
 } from '@/utils/mathUtil'
 
 describe('mathUtil', () => {
+  describe('wrapIndex', () => {
+    it('leaves an in-range index alone', () => {
+      expect(wrapIndex(0, 3)).toBe(0)
+      expect(wrapIndex(2, 3)).toBe(2)
+    })
+
+    it('wraps past the end back to the start', () => {
+      expect(wrapIndex(3, 3)).toBe(0)
+      expect(wrapIndex(4, 3)).toBe(1)
+    })
+
+    it('wraps a negative index round to the end', () => {
+      expect(
+        wrapIndex(-1, 3),
+        'plain `%` returns -1 here, which is the whole reason this helper exists'
+      ).toBe(2)
+      expect(wrapIndex(-4, 3)).toBe(2)
+    })
+  })
+
   describe('normalize', () => {
     it('normalizes value to 0-1', () => {
       expect(normalize(128, 0, 256)).toBe(0.5)

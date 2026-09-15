@@ -8,6 +8,7 @@ const CLOUD_URL = externalLinks.cloud
 const PLATFORM_USAGE_URL = externalLinks.platformUsage
 const SUPPORT_URL = externalLinks.support
 const DOCS_SUBSCRIPTION_URL = externalLinks.docsSubscription
+const STATUS_URL = externalLinks.cloudStatus
 
 async function expectNoIndex(page: Page) {
   await expect(page.locator('meta[name="robots"]')).toHaveAttribute(
@@ -15,6 +16,86 @@ async function expectNoIndex(page: Page) {
     'noindex, nofollow'
   )
 }
+
+test.describe('Payment checkout returns @smoke', () => {
+  for (const returnPath of ['/checkout-return', '/zh-CN/checkout-return']) {
+    test(`${returnPath} closes when checkout opened it`, async ({ page }) => {
+      await page.goto('/')
+      const popupPromise = page.waitForEvent('popup')
+      await page.evaluate((path) => {
+        window.open(path, '_blank')
+      }, returnPath)
+      const popup = await popupPromise
+
+      await expect.poll(() => popup.isClosed()).toBe(true)
+      await expect
+        .poll(() => page.evaluate(() => document.hasFocus()))
+        .toBe(true)
+    })
+  }
+})
+
+test.describe('Checkout return page @smoke', () => {
+  for (const checkoutReturn of [
+    {
+      path: '/checkout-return',
+      title: 'Returning to your model - Comfy',
+      heading: 'Returning to your model',
+      context: 'if the payment completed'
+    },
+    {
+      path: '/zh-CN/checkout-return',
+      title: '正在返回模型页面 - Comfy',
+      heading: '正在返回模型页面',
+      context: '如果付款已完成'
+    }
+  ]) {
+    test(`${checkoutReturn.path} stays neutral without an opener`, async ({
+      page
+    }) => {
+      await page.goto(checkoutReturn.path)
+
+      await expect(page).toHaveTitle(checkoutReturn.title)
+      await expectNoIndex(page)
+      await expect(
+        page.getByRole('heading', {
+          name: checkoutReturn.heading,
+          level: 1
+        })
+      ).toBeVisible()
+      await expect(page.getByText(checkoutReturn.context)).toBeVisible()
+      await expect(page.getByText(/Payment Successful/i)).toHaveCount(0)
+    })
+  }
+})
+
+test.describe('Checkout opening page @smoke', () => {
+  for (const handoff of [
+    {
+      path: '/checkout-opening',
+      title: 'Opening checkout - Comfy',
+      heading: 'Taking you to Stripe',
+      context: 'The page you came from is still open'
+    },
+    {
+      path: '/zh-CN/checkout-opening',
+      title: '正在打开结账页 - Comfy',
+      heading: '正在前往 Stripe',
+      context: '你来时的页面仍然打开'
+    }
+  ]) {
+    test(`${handoff.path} explains the handoff`, async ({ page }) => {
+      await page.goto(handoff.path)
+
+      await expect(page).toHaveTitle(handoff.title)
+      await expectNoIndex(page)
+      await expect(
+        page.getByRole('heading', { name: handoff.heading, level: 1 })
+      ).toBeVisible()
+      await expect(page.getByText(handoff.context)).toBeVisible()
+    })
+  }
+})
 
 test.describe('Payment success page @smoke', () => {
   test.beforeEach(async ({ page }) => {
@@ -79,6 +160,17 @@ test.describe('Payment failed page @smoke', () => {
     await expect(cta).toBeVisible()
     await expect(cta).toHaveAttribute('href', DOCS_SUBSCRIPTION_URL)
   })
+
+  test('points at the status page so an outage can be ruled out', async ({
+    page
+  }) => {
+    const statusLink = page.getByRole('link', {
+      name: 'status page',
+      exact: true
+    })
+    await expect(statusLink).toBeVisible()
+    await expect(statusLink).toHaveAttribute('href', STATUS_URL)
+  })
 })
 
 test.describe('Payment pages zh-CN @smoke', () => {
@@ -111,5 +203,8 @@ test.describe('Payment pages zh-CN @smoke', () => {
     await expect(
       page.getByRole('link', { name: '查看订阅文档' })
     ).toHaveAttribute('href', DOCS_SUBSCRIPTION_URL)
+    await expect(
+      page.getByRole('link', { name: '状态页面', exact: true })
+    ).toHaveAttribute('href', STATUS_URL)
   })
 })

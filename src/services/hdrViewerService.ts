@@ -21,7 +21,7 @@ export function openHdrViewer(url: string) {
     dialogComponentProps: {
       renderer: 'reka',
       size: 'full',
-      contentClass: 'w-[80vw] h-[80vh] max-h-[80vh]',
+      contentClass: 'left-1/2 w-[80vw] sm:max-w-[80vw] h-[80vh] max-h-[80vh]',
       maximizable: true
     }
   })

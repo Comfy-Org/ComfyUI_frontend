@@ -1,14 +1,15 @@
 import {
   cachedBillingControlEnabled,
-  cachedConsolidatedBillingEnabled,
-  cachedTeamWorkspacesEnabled,
+  cachedLegacyBillingMigrationEnabled,
+  cachedV1PaymentRecovery,
   remoteConfig,
+  remoteConfigErrorStatus,
   remoteConfigState
 } from './remoteConfig'
 
 // Cap the bootstrap fetch so a wedged /features endpoint can never block app.mount indefinitely.
 // A same-origin GET against the local comfyui server should resolve in well under a second;
-// on timeout the catch below clears remoteConfig and consumers fall back to build-time defaults.
+// on timeout consumers retain the last known config or use build-time defaults.
 const FEATURES_FETCH_TIMEOUT_MS = 5_000
 
 interface RefreshRemoteConfigOptions {
@@ -17,6 +18,28 @@ interface RefreshRemoteConfigOptions {
    * Set to false during bootstrap before auth is initialized.
    */
   useAuth?: boolean
+  signal?: AbortSignal
+}
+
+let refreshGeneration = 0
+const activeRefreshControllers = new Set<AbortController>()
+
+export function invalidateRemoteConfig(): void {
+  refreshGeneration++
+  for (const controller of activeRefreshControllers) controller.abort()
+  activeRefreshControllers.clear()
+  const { comfy_api_base_url, comfy_cloud_base_url, comfy_platform_base_url } =
+    remoteConfig.value
+  const retainedConfig = {
+    ...(comfy_api_base_url && { comfy_api_base_url }),
+    ...(comfy_cloud_base_url && { comfy_cloud_base_url }),
+    ...(comfy_platform_base_url && { comfy_platform_base_url })
+  }
+  window.__CONFIG__ = retainedConfig
+  remoteConfig.value = retainedConfig
+  remoteConfigErrorStatus.value = null
+  remoteConfigState.value = 'unloaded'
+  cachedLegacyBillingMigrationEnabled.value = undefined
 }
 
 async function fetchRemoteConfig(
@@ -27,7 +50,7 @@ async function fetchRemoteConfig(
   if (!useAuth) {
     return fetch(api.apiURL('/features'), { cache: 'no-store', signal })
   }
-  return api.fetchApi('/features', { cache: 'no-store' })
+  return api.fetchApi('/features', { cache: 'no-store', signal })
 }
 
 /**
@@ -42,31 +65,40 @@ async function fetchRemoteConfig(
 export async function refreshRemoteConfig(
   options: RefreshRemoteConfigOptions = {}
 ): Promise<void> {
-  const { useAuth = true } = options
+  const { useAuth = true, signal } = options
+  const generation = ++refreshGeneration
+  const controller = new AbortController()
+  activeRefreshControllers.add(controller)
+  const abort = () => controller.abort()
+  signal?.addEventListener('abort', abort, { once: true })
+  if (signal?.aborted) abort()
 
-  const controller = useAuth ? null : new AbortController()
-  const timeoutId = controller
-    ? setTimeout(() => controller.abort(), FEATURES_FETCH_TIMEOUT_MS)
-    : null
+  const timeoutId = setTimeout(
+    () => controller.abort(),
+    FEATURES_FETCH_TIMEOUT_MS
+  )
 
   try {
-    const response = await fetchRemoteConfig(useAuth, controller?.signal)
+    const response = await fetchRemoteConfig(useAuth, controller.signal)
+    if (generation !== refreshGeneration) return
+    if (signal?.aborted) return
 
     if (response.ok) {
       const config = await response.json()
+      if (generation !== refreshGeneration) return
+      if (signal?.aborted) return
       window.__CONFIG__ = config
       remoteConfig.value = config
+      remoteConfigErrorStatus.value = null
       remoteConfigState.value = useAuth ? 'authenticated' : 'anonymous'
       if (useAuth) {
-        cachedTeamWorkspacesEnabled.value = Boolean(
-          config.team_workspaces_enabled
-        )
-        cachedConsolidatedBillingEnabled.value = Boolean(
-          config.consolidated_billing_enabled
-        )
         cachedBillingControlEnabled.value = Boolean(
           config.billing_control_enabled
         )
+        cachedLegacyBillingMigrationEnabled.value = Boolean(
+          config.legacy_billing_migration_enabled
+        )
+        cachedV1PaymentRecovery.value = Boolean(config.v1_payment_recovery)
       }
       return
     }
@@ -75,14 +107,22 @@ export async function refreshRemoteConfig(
     if (response.status === 401 || response.status === 403) {
       window.__CONFIG__ = {}
       remoteConfig.value = {}
-      remoteConfigState.value = 'error'
+      remoteConfigErrorStatus.value = response.status
+    } else {
+      remoteConfigErrorStatus.value = null
     }
+    if (useAuth) cachedLegacyBillingMigrationEnabled.value = undefined
+    remoteConfigState.value = 'error'
   } catch (error) {
+    if (generation !== refreshGeneration) return
+    if (signal?.aborted) return
     console.error('Failed to fetch remote config:', error)
-    window.__CONFIG__ = {}
-    remoteConfig.value = {}
+    remoteConfigErrorStatus.value = null
+    if (useAuth) cachedLegacyBillingMigrationEnabled.value = undefined
     remoteConfigState.value = 'error'
   } finally {
-    if (timeoutId !== null) clearTimeout(timeoutId)
+    clearTimeout(timeoutId)
+    signal?.removeEventListener('abort', abort)
+    activeRefreshControllers.delete(controller)
   }
 }

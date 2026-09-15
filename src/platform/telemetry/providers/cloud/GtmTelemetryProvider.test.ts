@@ -18,7 +18,6 @@ describe('GtmTelemetryProvider', () => {
     window.dataLayer = undefined
     window.gtag = undefined
     document.head.innerHTML = ''
-    localStorage.clear()
   })
 
   it('injects the GTM runtime script', () => {

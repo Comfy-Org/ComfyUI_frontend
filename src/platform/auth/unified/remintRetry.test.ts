@@ -1,6 +1,9 @@
+import { useWorkspaceAuthStore } from '@/platform/workspace/stores/workspaceAuthStore'
 import type { AxiosAdapter } from 'axios'
 import axios, { AxiosError } from 'axios'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+
+import { useTelemetry } from '@/platform/telemetry'
 
 import {
   attachUnifiedRemintInterceptor,
@@ -12,11 +15,9 @@ const { mockRemint, flagState } = vi.hoisted(() => ({
   flagState: { unifiedCloudAuthEnabled: true }
 }))
 
-vi.mock('@/platform/workspace/stores/workspaceAuthStore', () => ({
-  useWorkspaceAuthStore: () => ({ remintUnifiedOnce: mockRemint })
-}))
+vi.mock(import('@/platform/telemetry'))
 
-vi.mock('@/composables/useFeatureFlags', () => ({
+vi.mock<unknown>(import('@/composables/useFeatureFlags'), () => ({
   useFeatureFlags: () => ({
     flags: {
       get unifiedCloudAuthEnabled() {
@@ -28,7 +29,15 @@ vi.mock('@/composables/useFeatureFlags', () => ({
 
 // The axios interceptor gates on shouldRemintCloudRequest(), which is a no-op
 // off-cloud; the unit env is not a cloud build, so force it on.
-vi.mock('@/platform/distribution/types', () => ({ isCloud: true }))
+vi.mock(import('@/platform/distribution/types'), () => ({
+  isCloud: true
+}))
+
+beforeEach(() => {
+  vi.mocked(useWorkspaceAuthStore().remintUnifiedOnce).mockImplementation(
+    mockRemint
+  )
+})
 
 describe('fetchWithUnifiedRemint', () => {
   const ok = { status: 200 } as Response
@@ -36,14 +45,9 @@ describe('fetchWithUnifiedRemint', () => {
   let mockFetch: ReturnType<typeof vi.fn>
 
   beforeEach(() => {
-    mockRemint.mockReset()
     flagState.unifiedCloudAuthEnabled = true
     mockFetch = vi.fn()
     vi.stubGlobal('fetch', mockFetch)
-  })
-
-  afterEach(() => {
-    vi.unstubAllGlobals()
   })
 
   it('re-mints once and retries with the fresh token on a 401 (AC1)', async () => {
@@ -52,7 +56,9 @@ describe('fetchWithUnifiedRemint', () => {
 
     const result = await fetchWithUnifiedRemint(
       'https://cloud/x',
-      { headers: { Authorization: 'Bearer tokenA', 'Comfy-User': 'u1' } },
+      {
+        headers: { Authorization: 'Bearer tokenA' as const, 'Comfy-User': 'u1' }
+      },
       true
     )
 
@@ -64,6 +70,13 @@ describe('fetchWithUnifiedRemint', () => {
     const retryHeaders = new Headers(mockFetch.mock.calls[1][1].headers)
     expect(retryHeaders.get('Authorization')).toBe('Bearer tokenB')
     expect(retryHeaders.get('Comfy-User')).toBe('u1')
+    expect(
+      useTelemetry()?.trackUnifiedAuthRetry
+    ).toHaveBeenCalledExactlyOnceWith({
+      transport: 'fetch',
+      outcome: 'succeeded',
+      final_status: 200
+    })
   })
 
   it('surfaces a persistent 401 after exactly one retry (AC2)', async () => {
@@ -75,13 +88,21 @@ describe('fetchWithUnifiedRemint', () => {
 
     const result = await fetchWithUnifiedRemint(
       'https://cloud/x',
-      { headers: { Authorization: 'Bearer tokenA' } },
+      { headers: { Authorization: 'Bearer tokenA' as const } },
       true
     )
 
     expect(result).toBe(secondUnauthorized)
     expect(mockFetch).toHaveBeenCalledTimes(2)
     expect(mockRemint).toHaveBeenCalledTimes(1)
+    expect(
+      useTelemetry()?.trackUnifiedAuthRetry
+    ).toHaveBeenCalledExactlyOnceWith({
+      transport: 'fetch',
+      outcome: 'failed',
+      final_status: 401,
+      failure_reason: 'retry_rejected'
+    })
   })
 
   it('does not re-mint or retry when the caller gate is false (AC3)', async () => {
@@ -89,13 +110,14 @@ describe('fetchWithUnifiedRemint', () => {
 
     const result = await fetchWithUnifiedRemint(
       'https://cloud/x',
-      { headers: { Authorization: 'Bearer tokenA' } },
+      { headers: { Authorization: 'Bearer tokenA' as const } },
       false
     )
 
     expect(result).toBe(unauthorized)
     expect(mockFetch).toHaveBeenCalledTimes(1)
     expect(mockRemint).not.toHaveBeenCalled()
+    expect(useTelemetry()?.trackUnifiedAuthRetry).not.toHaveBeenCalled()
   })
 
   it('does not retry a non-401 response', async () => {
@@ -104,7 +126,7 @@ describe('fetchWithUnifiedRemint', () => {
 
     const result = await fetchWithUnifiedRemint(
       'https://cloud/x',
-      { headers: { Authorization: 'Bearer t' } },
+      { headers: { Authorization: 'Bearer t' as const } },
       true
     )
 
@@ -119,20 +141,28 @@ describe('fetchWithUnifiedRemint', () => {
 
     const result = await fetchWithUnifiedRemint(
       'https://cloud/x',
-      { headers: { Authorization: 'Bearer t' } },
+      { headers: { Authorization: 'Bearer t' as const } },
       true
     )
 
     expect(result).toBe(unauthorized)
     expect(mockFetch).toHaveBeenCalledTimes(1)
     expect(mockRemint).toHaveBeenCalledTimes(1)
+    expect(
+      useTelemetry()?.trackUnifiedAuthRetry
+    ).toHaveBeenCalledExactlyOnceWith({
+      transport: 'fetch',
+      outcome: 'failed',
+      final_status: 401,
+      failure_reason: 'remint_failed'
+    })
   })
 
   it('uses the bearer from a Request when init does not override headers', async () => {
     mockFetch.mockResolvedValueOnce(unauthorized).mockResolvedValueOnce(ok)
     mockRemint.mockResolvedValue('tokenB')
     const request = new Request('https://cloud/x', {
-      headers: { Authorization: 'Bearer tokenA' }
+      headers: { Authorization: 'Bearer tokenA' as const }
     })
 
     const result = await fetchWithUnifiedRemint(request, {}, true)
@@ -148,7 +178,7 @@ describe('fetchWithUnifiedRemint', () => {
     const request = new Request('https://cloud/x', {
       method: 'POST',
       body,
-      headers: { Authorization: 'Bearer tokenA' }
+      headers: { Authorization: 'Bearer tokenA' as const }
     })
     mockFetch
       .mockImplementationOnce(async (input: Request) => {
@@ -178,6 +208,14 @@ describe('fetchWithUnifiedRemint', () => {
     expect(result).toBe(unauthorized)
     expect(mockFetch).toHaveBeenCalledTimes(1)
     expect(mockRemint).not.toHaveBeenCalled()
+    expect(
+      useTelemetry()?.trackUnifiedAuthRetry
+    ).toHaveBeenCalledExactlyOnceWith({
+      transport: 'fetch',
+      outcome: 'failed',
+      final_status: 401,
+      failure_reason: 'missing_bearer'
+    })
   })
 
   it('surfaces the original 401 when the re-mint throws a permanent auth error', async () => {
@@ -186,7 +224,7 @@ describe('fetchWithUnifiedRemint', () => {
 
     const result = await fetchWithUnifiedRemint(
       'https://cloud/x',
-      { headers: { Authorization: 'Bearer t' } },
+      { headers: { Authorization: 'Bearer t' as const } },
       true
     )
 
@@ -204,7 +242,7 @@ describe('fetchWithUnifiedRemint', () => {
       {
         method: 'POST',
         body: new ReadableStream<Uint8Array>(),
-        headers: { Authorization: 'Bearer tokenA' }
+        headers: { Authorization: 'Bearer tokenA' as const }
       },
       true
     )
@@ -212,12 +250,20 @@ describe('fetchWithUnifiedRemint', () => {
     expect(result).toBe(unauthorized)
     expect(mockFetch).toHaveBeenCalledTimes(1)
     expect(mockRemint).not.toHaveBeenCalled()
+    expect(
+      useTelemetry()?.trackUnifiedAuthRetry
+    ).toHaveBeenCalledExactlyOnceWith({
+      transport: 'fetch',
+      outcome: 'failed',
+      final_status: 401,
+      failure_reason: 'non_replayable_body'
+    })
   })
 
   it.for([
     {
       shape: 'object',
-      headers: { Authorization: 'Bearer tokenA', 'Comfy-User': 'u1' }
+      headers: { Authorization: 'Bearer tokenA' as const, 'Comfy-User': 'u1' }
     },
     {
       shape: 'array of tuples',
@@ -229,7 +275,7 @@ describe('fetchWithUnifiedRemint', () => {
     {
       shape: 'Headers',
       headers: new Headers({
-        Authorization: 'Bearer tokenA',
+        Authorization: 'Bearer tokenA' as const,
         'Comfy-User': 'u1'
       })
     }
@@ -258,7 +304,6 @@ describe('fetchWithUnifiedRemint', () => {
 
 describe('attachUnifiedRemintInterceptor', () => {
   beforeEach(() => {
-    mockRemint.mockReset()
     flagState.unifiedCloudAuthEnabled = true
   })
 
@@ -302,7 +347,7 @@ describe('attachUnifiedRemintInterceptor', () => {
     mockRemint.mockResolvedValue('tokenB')
 
     const res = await client.get('https://cloud/x', {
-      headers: { Authorization: 'Bearer tokenA' }
+      headers: { Authorization: 'Bearer tokenA' as const }
     })
 
     expect(res.status).toBe(200)
@@ -312,6 +357,13 @@ describe('attachUnifiedRemintInterceptor', () => {
     expect(String(adapter.mock.calls[1][0].headers.Authorization)).toBe(
       'Bearer tokenB'
     )
+    expect(
+      useTelemetry()?.trackUnifiedAuthRetry
+    ).toHaveBeenCalledExactlyOnceWith({
+      transport: 'axios',
+      outcome: 'succeeded',
+      final_status: 200
+    })
   })
 
   it('retries once then surfaces a persistent 401 (AC2)', async () => {
@@ -320,12 +372,20 @@ describe('attachUnifiedRemintInterceptor', () => {
 
     await expect(
       client.get('https://cloud/x', {
-        headers: { Authorization: 'Bearer tokenA' }
+        headers: { Authorization: 'Bearer tokenA' as const }
       })
     ).rejects.toMatchObject({ response: { status: 401 } })
 
     expect(adapter).toHaveBeenCalledTimes(2)
     expect(mockRemint).toHaveBeenCalledTimes(1)
+    expect(
+      useTelemetry()?.trackUnifiedAuthRetry
+    ).toHaveBeenCalledExactlyOnceWith({
+      transport: 'axios',
+      outcome: 'failed',
+      final_status: 401,
+      failure_reason: 'retry_rejected'
+    })
   })
 
   it('does not re-mint when the flag is OFF (AC3)', async () => {
@@ -334,12 +394,13 @@ describe('attachUnifiedRemintInterceptor', () => {
 
     await expect(
       client.get('https://cloud/x', {
-        headers: { Authorization: 'Bearer tokenA' }
+        headers: { Authorization: 'Bearer tokenA' as const }
       })
     ).rejects.toMatchObject({ response: { status: 401 } })
 
     expect(adapter).toHaveBeenCalledTimes(1)
     expect(mockRemint).not.toHaveBeenCalled()
+    expect(useTelemetry()?.trackUnifiedAuthRetry).not.toHaveBeenCalled()
   })
 
   it('does not re-mint a request flagged __skipUnifiedRemint (acceptInvite)', async () => {
@@ -348,7 +409,7 @@ describe('attachUnifiedRemintInterceptor', () => {
 
     await expect(
       client.post('https://cloud/invites/x/accept', null, {
-        headers: { Authorization: 'Bearer firebase' },
+        headers: { Authorization: 'Bearer firebase' as const },
         __skipUnifiedRemint: true
       })
     ).rejects.toMatchObject({ response: { status: 401 } })
@@ -372,7 +433,9 @@ describe('attachUnifiedRemintInterceptor', () => {
     const { client } = makeClient([500])
 
     await expect(
-      client.get('https://cloud/x', { headers: { Authorization: 'Bearer t' } })
+      client.get('https://cloud/x', {
+        headers: { Authorization: 'Bearer t' as const }
+      })
     ).rejects.toMatchObject({ response: { status: 500 } })
 
     expect(mockRemint).not.toHaveBeenCalled()
@@ -385,7 +448,7 @@ describe('attachUnifiedRemintInterceptor', () => {
     const res = await client.post(
       'https://cloud/topup',
       { amount: 5 },
-      { headers: { Authorization: 'Bearer tokenA' } }
+      { headers: { Authorization: 'Bearer tokenA' as const } }
     )
 
     expect(res.status).toBe(200)
@@ -427,10 +490,10 @@ describe('attachUnifiedRemintInterceptor', () => {
     mockRemint.mockResolvedValue('tokenB')
 
     const a = await client.get('https://cloud/a', {
-      headers: { Authorization: 'Bearer tokenA' }
+      headers: { Authorization: 'Bearer tokenA' as const }
     })
     const b = await client.get('https://cloud/b', {
-      headers: { Authorization: 'Bearer tokenA' }
+      headers: { Authorization: 'Bearer tokenA' as const }
     })
 
     expect(a.status).toBe(200)

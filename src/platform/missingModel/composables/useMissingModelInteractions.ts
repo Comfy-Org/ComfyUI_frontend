@@ -1,5 +1,4 @@
 import { resolveNodeDisplayName } from '@/utils/nodeTitleUtil'
-import { st } from '@/i18n'
 import type { UploadModelSuccess } from '@/platform/assets/composables/useUploadModelWizard'
 import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
 import { useAssetsStore } from '@/stores/assetsStore'
@@ -8,6 +7,10 @@ import { useModelToNodeStore } from '@/stores/modelToNodeStore'
 import { app } from '@/scripts/app'
 import { getNodeByExecutionId } from '@/utils/graphTraversalUtil'
 import type { MissingModelViewModel } from '@/platform/missingModel/types'
+
+function currentRootGraph(): typeof app.rootGraph | null {
+  return app.rootGraph
+}
 
 export function getModelStateKey(
   modelName: string,
@@ -22,13 +25,12 @@ export function getNodeDisplayLabel(
   nodeId: string | number,
   fallback: string
 ): string {
-  const graph = app.rootGraph
+  const graph = currentRootGraph()
   if (!graph) return fallback
   const node = getNodeByExecutionId(graph, String(nodeId))
   return resolveNodeDisplayName(node, {
     emptyLabel: fallback,
-    untitledLabel: fallback,
-    st
+    untitledLabel: fallback
   })
 }
 
@@ -56,7 +58,7 @@ export function useMissingModelInteractions() {
     const value = store.selectedLibraryModel[key]
     if (!value) return
 
-    const graph = app.rootGraph
+    const graph = currentRootGraph()
     if (!graph) return
 
     if (directory) {

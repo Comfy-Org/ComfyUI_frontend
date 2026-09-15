@@ -123,7 +123,7 @@
               </span>
               <div class="flex flex-row items-center gap-1">
                 <i
-                  class="icon-[comfy--credits] size-4 shrink-0 bg-credit"
+                  class="icon-[lucide--coins] size-4 shrink-0 bg-credit"
                   aria-hidden="true"
                 />
                 <span
@@ -191,7 +191,7 @@
                 <span
                   class="font-inter text-sm/normal font-bold text-base-foreground tabular-nums"
                 >
-                  ~{{ n(tier.pricing.videoEstimate) }}
+                  ~{{ n(getVideoEstimateDisplay(tier)) }}
                 </span>
               </div>
             </div>
@@ -248,7 +248,7 @@
           <span class="underline">
             {{ t('subscription.videoEstimateTryTemplate') }}
           </span>
-          <span class="no-underline" v-html="'&rarr;'"></span>
+          <span class="no-underline">→</span>
         </a>
       </div>
     </Popover>
@@ -270,10 +270,11 @@ import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import {
   TIER_PRICING,
-  TIER_TO_KEY
+  amountForBillingCycle,
+  toTierKey
 } from '@/platform/cloud/subscription/constants/tierPricing'
 import type {
-  SubscriptionTier,
+  RegistrySubscriptionTier,
   TierKey,
   TierPricing
 } from '@/platform/cloud/subscription/constants/tierPricing'
@@ -318,7 +319,7 @@ interface BillingCycleOption {
 }
 
 interface PricingTierConfig {
-  id: SubscriptionTier
+  id: RegistrySubscriptionTier
   key: CheckoutTierKey
   name: string
   pricing: TierPricing
@@ -372,7 +373,7 @@ const tiers: PricingTierConfig[] = [
   }
 ]
 const {
-  isActiveSubscription,
+  canAccessSubscriptionFeatures,
   isFreeTier,
   tier: subscriptionTier,
   subscription
@@ -392,11 +393,11 @@ const popover = ref()
 const currentBillingCycle = ref<BillingCycle>('yearly')
 
 const hasPaidSubscription = computed(
-  () => isActiveSubscription.value && !isFreeTier.value
+  () => canAccessSubscriptionFeatures.value && !isFreeTier.value
 )
 
 const currentTierKey = computed<TierKey | null>(() =>
-  subscriptionTier.value ? TIER_TO_KEY[subscriptionTier.value] : null
+  subscriptionTier.value ? toTierKey(subscriptionTier.value) : null
 )
 
 const currentPlanDescriptor = computed(() => {
@@ -455,8 +456,13 @@ const getPrice = (tier: PricingTierConfig): number =>
 const getAnnualTotal = (tier: PricingTierConfig): number =>
   tier.pricing.yearly * 12
 
+const isYearly = computed(() => currentBillingCycle.value === 'yearly')
+
 const getCreditsDisplay = (tier: PricingTierConfig): number =>
-  tier.pricing.credits * (currentBillingCycle.value === 'yearly' ? 12 : 1)
+  amountForBillingCycle(tier.pricing.credits, isYearly.value)
+
+const getVideoEstimateDisplay = (tier: PricingTierConfig): number =>
+  amountForBillingCycle(tier.pricing.videoEstimate, isYearly.value)
 
 const handleSubscribe = wrapWithErrorHandlingAsync(
   async (tierKey: CheckoutTierKey) => {
@@ -528,25 +534,10 @@ const handleSubscribe = wrapWithErrorHandlingAsync(
           }
         }
       } else {
-        try {
-          await performSubscriptionCheckout(
-            tierKey,
-            currentBillingCycle.value,
-            { paymentIntentSource: reason }
-          )
-        } catch (error) {
-          telemetry?.trackBillingEvent({
-            operation: 'subscription_checkout',
-            stage: 'failed',
-            outcome: 'failure',
-            tier: tierKey,
-            cycle: currentBillingCycle.value,
-            checkout_type: 'new',
-            payment_intent_source: reason,
-            failure_category: 'unknown'
-          })
-          throw error
-        }
+        // Failure telemetry now lives in performSubscriptionCheckout itself.
+        await performSubscriptionCheckout(tierKey, currentBillingCycle.value, {
+          paymentIntentSource: reason
+        })
       }
     } finally {
       isLoading.value = false

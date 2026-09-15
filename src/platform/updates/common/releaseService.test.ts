@@ -8,7 +8,7 @@ const mockAxiosInstance = vi.hoisted(() => ({
   get: vi.fn()
 }))
 
-vi.mock('axios', () => ({
+vi.mock<unknown>(import('axios'), () => ({
   default: {
     create: vi.fn(() => mockAxiosInstance),
     isAxiosError: vi.fn()
@@ -30,7 +30,7 @@ describe('useReleaseService', () => {
   ]
 
   beforeEach(() => {
-    vi.clearAllMocks()
+    vi.mocked(axios.isAxiosError).mockReturnValue(true)
     service = useReleaseService()
   })
 

@@ -1,13 +1,13 @@
-import {
-  type ComfyApiWorkflow,
-  type ComfyWorkflowJSON
+import type {
+  ComfyApiWorkflow,
+  ComfyWorkflowJSON
 } from '@/platform/workflow/validation/schemas/workflowSchema'
-import {
-  ASCII,
-  type ComfyMetadata,
-  ComfyMetadataTags,
-  type IsobmffBoxContentRange
+import { ASCII, ComfyMetadataTags } from '@/types/metadataTypes'
+import type {
+  ComfyMetadata,
+  IsobmffBoxContentRange
 } from '@/types/metadataTypes'
+import { readFileAsArrayBuffer } from '@/utils/fileUtil'
 import { parseJsonWithNonFinite } from '@/utils/jsonUtil'
 
 // Set max read high, as atoms are stored near end of file
@@ -256,28 +256,14 @@ const parseIsobmffMetadata = (data: Uint8Array): ComfyMetadata => {
  * (e.g., MP4, MOV) by parsing the `udta.meta.keys` and `udta.meta.ilst` boxes.
  * @param file - The file to extract metadata from.
  */
-export function getFromIsobmffFile(file: File): Promise<ComfyMetadata> {
-  return new Promise<ComfyMetadata>((resolve) => {
-    const reader = new FileReader()
-    reader.onload = (event: ProgressEvent<FileReader>) => {
-      if (!event.target?.result) {
-        resolve({})
-        return
-      }
+export async function getFromIsobmffFile(file: File): Promise<ComfyMetadata> {
+  const buffer = await readFileAsArrayBuffer(file, MAX_READ_BYTES)
+  if (!buffer) return {}
 
-      try {
-        const data = new Uint8Array(event.target.result as ArrayBuffer)
-        resolve(parseIsobmffMetadata(data))
-      } catch (e) {
-        console.error('Parser: Error parsing ISOBMFF metadata:', e)
-        resolve({})
-      }
-    }
-    reader.onerror = (err) => {
-      console.error('FileReader: Error reading ISOBMFF file:', err)
-      resolve({})
-    }
-    reader.onabort = () => resolve({})
-    reader.readAsArrayBuffer(file.slice(0, MAX_READ_BYTES))
-  })
+  try {
+    return parseIsobmffMetadata(new Uint8Array(buffer))
+  } catch (e) {
+    console.error('Parser: Error parsing ISOBMFF metadata:', e)
+    return {}
+  }
 }
