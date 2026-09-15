@@ -1,4 +1,4 @@
-# Real Cloud billing E2E setup
+# Real Cloud billing E2E
 
 Run the opt-in `cloud-live` project through the existing browser-test runner:
 
@@ -25,10 +25,26 @@ The fixture disables `onboarding_survey_enabled` through the existing dev-only
 feature-flag helper before navigation. Deployed builds ignore this override, so
 accounts used against a deployed frontend must have completed the survey.
 
-The smoke test signs in, validates the browser's real billing-status response,
-and checks that the app leaves the login page. It attaches a post-login
-screenshot and never opens checkout or submits a payment.
+The account must own a personal workspace with no active paid subscription or saved
+payment method. Use an account reserved for this test. Do not run concurrent
+billing tests against that account.
 
-Use a dedicated sandbox account. Checkout recovery tests in #17481 additionally
-require a personal workspace with no paid plan or saved card. Those tests own
-the account preflight and direct API assertions.
+The read-only smoke test signs in, validates the browser's billing-status
+response, and checks that the app leaves the login page. Checkout fixtures
+additionally verify the workspace, subscription, and saved payment methods
+before opening checkout.
+
+The test signs in, checks the real preview and payment dialog are ready, opens
+Stripe test checkout, closes it without entering a card, and resumes the same
+pending billing operation. The report attaches screenshots and the operation ID.
+Authentication traces and saved credentials are not retained.
+
+No database, Stripe secret key, or Temporal access is required. Closing the
+browser leaves the unpaid checkout pending in the backend. The test does not
+reset billing state or claim that the operation expired. The first action accepts either a fresh Subscribe button or the pending
+Complete your payment button, so sequential runs can resume an existing checkout. Backend expiry and fixture reset remain separate work.
+
+The no-card tests cover checkout handoff, retry, page reload, and signing in
+from an empty browser context. Payment completion, the 24-hour timeout, and
+CI integration remain follow-up work. A
+successful sign-in alone does not establish billing coverage.

@@ -19,9 +19,10 @@ Reuse `.env`, frontend/backend URL conventions, and ComfyPage. Sign in through t
 real UI and capture post-login screenshots. Keep normal browser CI independent of
 sandbox credentials.
 
-Use a dedicated sandbox account and the public billing API. Establish the
+Use a dedicated no-card account and the public billing API. Establish the
 connection with a sign-in and billing-read smoke test. Checkout recovery
-scenarios build on this harness in a separate change.
+scenarios build on this harness in a separate change: abandon the unpaid Stripe
+checkout and verify retry, reload, and fresh sign-in reuse the pending operation.
 
 A separate JSON configuration and an external reset executable add unnecessary
 setup. Embedding database writes and Stripe/Temporal administration in the fixture
@@ -39,8 +40,9 @@ can be added separately when required for repeatable CI.
 ### Negative
 
 - Live validation requires a dedicated sandbox account and a running frontend.
-- The smoke test establishes authentication and billing reads, not checkout
-  correctness. Recovery and payment scenarios require additional coverage.
+- Recovery tests leave unpaid checkout operations pending. Sequential runs can
+  resume them, but concurrent tests against the same workspace must be avoided.
+- Payment completion, timeout behavior, and a release gate remain follow-up work.
 
 ## Notes
 
