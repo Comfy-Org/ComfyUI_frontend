@@ -125,11 +125,6 @@ describe('useAuthStore', () => {
     vi.stubGlobal('fetch', mockFetch)
     clearPreservedQuery(PRESERVED_QUERY_NAMESPACES.SHARE_AUTH)
 
-    // Setup dialog service mock
-    vi.mocked(useDialogService, { partial: true }).mockReturnValue({
-      showErrorDialog: vi.fn()
-    })
-
     // Mock useFirebaseAuth to return our mock auth object
     vi.mocked(vuefire.useFirebaseAuth).mockReturnValue(
       mockAuth as Partial<
@@ -2352,9 +2347,6 @@ describe('useAuthStore in local/desktop distribution', () => {
     mockDistributionTypes.DISTRIBUTION = 'localhost'
 
     vi.stubGlobal('fetch', mockFetch)
-    vi.mocked(useDialogService, { partial: true }).mockReturnValue({
-      showErrorDialog: vi.fn()
-    })
 
     vi.mocked(vuefire.useFirebaseAuth).mockReturnValue(
       mockAuth as Partial<

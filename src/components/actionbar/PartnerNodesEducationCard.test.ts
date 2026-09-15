@@ -87,7 +87,6 @@ describe('PartnerNodesEducationCard', () => {
   beforeEach(() => {
     __setHasPartnerNodes(true)
     __setGate('none')
-    vi.mocked(useDialogService().showApiNodesSignInDialog).mockClear()
   })
 
   it('stays hidden until a paid template load requests it', () => {

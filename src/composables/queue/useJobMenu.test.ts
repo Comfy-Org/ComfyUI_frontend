@@ -151,7 +151,6 @@ describe('useJobMenu', () => {
     queueStoreMock = useQueueStore()
     currentItem = ref<JobListItem | null>(null)
     vi.mocked(settingStoreMock.get).mockReturnValue(false)
-    vi.mocked(useDialogService().prompt).mockResolvedValue(null)
     litegraphServiceMock.getCanvasCenter.mockReturnValue([100, 200])
     litegraphServiceMock.addNodeOnGraph.mockReturnValue(null)
     vi.mocked(workflowStoreMock.createTemporary).mockImplementation(
