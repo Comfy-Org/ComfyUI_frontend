@@ -1,4 +1,3 @@
-import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createApp, defineComponent } from 'vue'
 import type { App } from 'vue'
@@ -7,6 +6,7 @@ import { createI18n } from 'vue-i18n'
 import { useTelemetry } from '@/platform/telemetry'
 
 import { AuthStoreError } from '@/stores/authStore'
+import { mockBillingContext } from '@/utils/__tests__/mockBillingContext'
 
 import { useResubscribe as createResubscribe } from './useResubscribe'
 
@@ -75,12 +75,6 @@ vi.mock<unknown>(
 )
 
 const apps: App<Element>[] = []
-
-function mockBillingContext() {
-  const billing = useBillingContext()
-  vi.mocked(useBillingContext).mockReturnValue(billing)
-  return billing
-}
 
 function useResubscribe(): ReturnType<typeof createResubscribe> {
   mockBillingContext()

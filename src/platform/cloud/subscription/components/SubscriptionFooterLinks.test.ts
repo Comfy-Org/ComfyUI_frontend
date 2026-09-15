@@ -6,6 +6,8 @@ import { ref } from 'vue'
 import type { ComponentProps } from 'vue-component-type-helpers'
 import { createI18n } from 'vue-i18n'
 
+import { mockBillingContext } from '@/utils/__tests__/mockBillingContext'
+
 import SubscriptionFooterLinks from './SubscriptionFooterLinks.vue'
 
 const state = vi.hoisted(() => ({
@@ -62,8 +64,7 @@ const i18n = createI18n({
 function renderComponent(
   props: Partial<ComponentProps<typeof SubscriptionFooterLinks>> = {}
 ) {
-  const billing = useBillingContext()
-  vi.mocked(useBillingContext).mockReturnValue(billing)
+  mockBillingContext()
   return render(SubscriptionFooterLinks, {
     props,
     global: {

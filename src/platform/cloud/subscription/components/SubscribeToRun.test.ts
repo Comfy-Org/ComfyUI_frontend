@@ -5,6 +5,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
+import { mockBillingContext } from '@/utils/__tests__/mockBillingContext'
+
 import SubscribeToRun from './SubscribeToRun.vue'
 
 const mockCanManageSubscription = ref(true)
@@ -59,8 +61,7 @@ const i18n = createI18n({
 })
 
 function renderButton() {
-  const billing = useBillingContext()
-  vi.mocked(useBillingContext).mockReturnValue(billing)
+  mockBillingContext()
   const user = userEvent.setup()
   const result = render(SubscribeToRun, {
     global: {

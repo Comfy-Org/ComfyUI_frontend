@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 
-import { useBillingContext } from '@/composables/billing/useBillingContext'
+import { mockBillingContext } from '@/utils/__tests__/mockBillingContext'
 
 import { useAccountPreconditionDialog } from './useAccountPreconditionDialog'
 
@@ -57,8 +57,7 @@ describe('useAccountPreconditionDialog', () => {
   })
 
   it('refreshes the billing snapshot on a credit precondition so exhausted-state surfaces converge', () => {
-    const billing = useBillingContext()
-    vi.mocked(useBillingContext).mockReturnValue(billing)
+    const billing = mockBillingContext()
     useAccountPreconditionDialog().open('credits')
 
     expect(billing.fetchStatus).toHaveBeenCalledTimes(1)
@@ -66,8 +65,7 @@ describe('useAccountPreconditionDialog', () => {
   })
 
   it('does not touch billing state for non-credit preconditions', () => {
-    const billing = useBillingContext()
-    vi.mocked(useBillingContext).mockReturnValue(billing)
+    const billing = mockBillingContext()
     useAccountPreconditionDialog().open('subscription')
 
     expect(billing.fetchStatus).not.toHaveBeenCalled()

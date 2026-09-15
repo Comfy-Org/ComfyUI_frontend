@@ -4,7 +4,6 @@ import {
   setPersistence
 } from 'firebase/auth'
 
-import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useBillingOperationStore } from '@/platform/workspace/stores/billingOperationStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import {
@@ -28,6 +27,7 @@ import { WorkspaceApiError } from '@/platform/workspace/api/workspaceApi'
 import type { CreateTopupResponse } from '@/platform/workspace/api/workspaceApi'
 import { billingOperation } from '@/platform/workspace/composables/billingOperationTestUtils'
 import type { BillingOperation } from '@/platform/workspace/composables/billingOperationTestUtils'
+import { mockBillingContext } from '@/utils/__tests__/mockBillingContext'
 
 import TopUpCreditsDialogContentWorkspace from './TopUpCreditsDialogContentWorkspace.vue'
 
@@ -126,12 +126,6 @@ function topupResponse(
     status,
     amount_cents: 5000
   }
-}
-
-function mockBillingContext() {
-  const billing = useBillingContext()
-  vi.mocked(useBillingContext).mockReturnValue(billing)
-  return billing
 }
 
 function renderDialog() {
@@ -256,7 +250,9 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
   })
 
   it('enters a topup journey on mount and correlates the purchase', async () => {
-    mockTopup.mockResolvedValue(topupResponse('pending'))
+    vi.mocked(mockBillingContext().topup).mockResolvedValue(
+      topupResponse('pending')
+    )
 
     renderDialog()
     await waitFor(() =>
@@ -295,7 +291,7 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
 
   it('does not correlate the operation to a journey replaced mid-request', async () => {
     let resolveTopup: (value: CreateTopupResponse) => void = () => {}
-    mockTopup.mockReturnValue(
+    vi.mocked(mockBillingContext().topup).mockReturnValue(
       new Promise<CreateTopupResponse>((resolve) => {
         resolveTopup = resolve
       })
@@ -321,7 +317,9 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
       assignment: { status: 'unavailable' }
     })
     resolveTopup(topupResponse('completed'))
-    await waitFor(() => expect(mockFetchBalance).toHaveBeenCalled())
+    await waitFor(() =>
+      expect(mockBillingContext().fetchBalance).toHaveBeenCalled()
+    )
 
     const phases = (
       vi.mocked(useTelemetry()?.trackCheckoutJourneyEvent)?.mock.calls ?? []
