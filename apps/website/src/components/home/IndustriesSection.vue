@@ -129,7 +129,7 @@ const ambientClipId = `industries-ambient-${uid}`
     </svg>
 
     <div
-      class="max-w-9xl mx-auto grid grid-cols-1 gap-16 px-6 py-20 lg:grid-cols-2 lg:items-center lg:gap-10 lg:px-20 lg:py-28"
+      class="mx-auto grid max-w-9xl grid-cols-1 gap-16 px-6 py-20 lg:grid-cols-2 lg:items-center lg:gap-10 lg:px-20 lg:py-28"
     >
       <!-- Copy column -->
       <div class="flex flex-col items-start gap-10">
@@ -148,7 +148,7 @@ const ambientClipId = `industries-ambient-${uid}`
         </div>
         <div v-else class="flex flex-col gap-6">
           <p
-            class="text-primary-comfy-yellow text-sm font-bold tracking-widest uppercase"
+            class="text-sm font-bold tracking-widest text-primary-comfy-yellow uppercase"
           >
             {{ t('industries.label', locale) }}
           </p>

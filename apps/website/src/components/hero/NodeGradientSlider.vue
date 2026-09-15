@@ -107,7 +107,7 @@ function onKeydown(event: KeyboardEvent) {
         :class="
           cn(
             'pointer-events-none absolute top-1/2 size-(--hero-dot,0.575em) -translate-1/2 rounded-full transition-colors duration-150',
-            'group-hover:bg-primary-comfy-yellow bg-primary-comfy-canvas',
+            'bg-primary-comfy-canvas group-hover:bg-primary-comfy-yellow',
             (dragging || moving) && 'bg-primary-comfy-yellow'
           )
         "

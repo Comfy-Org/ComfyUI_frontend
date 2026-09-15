@@ -39,7 +39,7 @@ watch(
     <template #aside>
       <button
         type="button"
-        class="group hover:text-primary-comfy-yellow focus-visible:ring-primary-comfy-yellow/50 -mx-1 inline-flex cursor-pointer items-center gap-1.5 rounded-lg px-1 text-xl font-medium text-primary-warm-white transition-colors outline-none focus-visible:ring-3"
+        class="group -mx-1 inline-flex cursor-pointer items-center gap-1.5 rounded-lg px-1 text-xl font-medium text-primary-warm-white transition-colors outline-none hover:text-primary-comfy-yellow focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow/50"
         data-testid="browse-all"
         @click="browseAll = true"
       >

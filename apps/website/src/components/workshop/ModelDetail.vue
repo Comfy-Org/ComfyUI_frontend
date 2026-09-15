@@ -39,6 +39,7 @@ import { WorkshopRouterError } from '../../config/workshop-router-errors'
 import { releaseRouterOutputs } from '../../config/workshop-response'
 import { retainRunHistory } from '../../config/workshop-run-history'
 import { modelDocsHref } from '../../lib/workshop/model-docs'
+import { linkLeavingPage } from '../../lib/workshop/leaving-link'
 import { useWorkshopSession } from '../../config/workshop-session-state'
 import { workshopIdempotencyKey } from '../../config/workshop-snippets'
 import type { Locale, TranslationKey } from '../../i18n/translations'
@@ -54,6 +55,7 @@ import ApiTab from './ApiTab.vue'
 import ExamplesTab from './ExamplesTab.vue'
 import PlaygroundForm from './PlaygroundForm.vue'
 import PlaygroundOutput from './PlaygroundOutput.vue'
+import RunLeaveDialog from './RunLeaveDialog.vue'
 import ModelSupport from './ModelSupport.vue'
 
 const {
@@ -278,6 +280,29 @@ useEventListener(
   },
   { capture: true }
 )
+
+// Caught before the client router sees the click, nothing has moved yet, so
+// this one route off the page can be asked in our own words. The rest still
+// reach the guards above.
+const leavingTo = ref<string>()
+useEventListener(
+  () => (isRunning.value ? globalThis.document : undefined),
+  'click',
+  (event: MouseEvent) => {
+    const href = linkLeavingPage(event, location)
+    if (!href) return
+    event.preventDefault()
+    leavingTo.value = href
+  },
+  { capture: true }
+)
+function leaveForLink() {
+  const href = leavingTo.value
+  leavingTo.value = undefined
+  if (!href) return
+  cancelRun()
+  location.assign(href)
+}
 
 // A push/replace has not moved history yet, so native fallback is safe and the
 // beforeunload guard owns its confirmation. An approved traversal is the one
@@ -536,7 +561,7 @@ function useInCode() {
       <div
         role="tablist"
         :aria-label="t('workshop.title', locale)"
-        class="flex scrollbar-hide min-w-0 gap-8 overflow-x-auto max-sm:gap-5"
+        class="scrollbar-hide flex min-w-0 gap-8 overflow-x-auto max-sm:gap-5"
         data-testid="model-tabs"
         @keydown="onTabKeydown"
       >
@@ -568,7 +593,7 @@ function useInCode() {
         :href="docsHref"
         target="_blank"
         rel="noopener noreferrer"
-        class="hover:text-primary-comfy-yellow ml-auto inline-flex shrink-0 items-center gap-1.5 pb-3 text-sm font-bold tracking-wider whitespace-nowrap text-primary-warm-white uppercase transition-colors"
+        class="ml-auto inline-flex shrink-0 items-center gap-1.5 pb-3 text-sm leading-none font-bold tracking-wider whitespace-nowrap text-primary-warm-white uppercase transition-colors hover:text-primary-comfy-yellow"
         data-testid="model-docs-link"
       >
         {{ t('workshop.hub.docs', locale) }}
@@ -585,7 +610,7 @@ function useInCode() {
       data-testid="playground-tab"
     >
       <div
-        class="bg-transparency-white-t4 flex min-w-0 flex-col rounded-2xl border border-transparency-white-t8 lg:col-span-5"
+        class="flex min-w-0 flex-col rounded-2xl border border-transparency-white-t8 bg-transparency-white-t4 lg:col-span-5"
         data-testid="playground-input"
       >
         <header
@@ -612,7 +637,7 @@ function useInCode() {
           settles in instead of snapping. -->
         <div
           :key="activeExampleId"
-          class="animate-soft-in flex flex-col gap-6 p-5"
+          class="flex animate-soft-in flex-col gap-6 p-5"
         >
           <ModelSupport
             v-if="model.incompleteReason"
@@ -640,7 +665,7 @@ function useInCode() {
         <!-- Run follows the form down the page, so a long list of inputs never
           pushes it past the bottom of a laptop screen. -->
         <div
-          class="bg-page/85 sticky bottom-0 z-10 mt-auto flex flex-col gap-2 rounded-b-2xl border-t border-transparency-white-t8 p-3 backdrop-blur-sm"
+          class="sticky bottom-0 z-10 mt-auto flex flex-col gap-2 rounded-b-2xl border-t border-transparency-white-t8 bg-page/85 p-3 backdrop-blur-sm"
         >
           <Button
             v-if="gate === 'signedOut'"
@@ -769,6 +794,7 @@ function useInCode() {
           :earlier
           :attachments
           :now
+          :model-name="model.name"
           :modality="model.modality"
           :locale
           :member-workspace="
@@ -835,5 +861,12 @@ function useInCode() {
     >
       <ApiTab :contract="model.execution" :values :locale />
     </section>
+
+    <RunLeaveDialog
+      :open="leavingTo !== undefined"
+      :locale
+      @update:open="(value: boolean) => !value && (leavingTo = undefined)"
+      @leave="leaveForLink"
+    />
   </div>
 </template>
