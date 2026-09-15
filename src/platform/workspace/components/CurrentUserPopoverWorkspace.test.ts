@@ -1,3 +1,4 @@
+import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { getActivePinia } from 'pinia'
 import { render, screen, waitFor } from '@testing-library/vue'
@@ -83,16 +84,9 @@ vi.mock<unknown>(
   })
 )
 
-vi.mock<unknown>(
-  import('@/platform/workspace/composables/useBillingCapabilities'),
-  () => ({
-    useBillingCapabilities: () => ({
-      canTopUp: computed(() => state.canTopUp),
-      canSubscribeSelfServe: computed(() => state.canSubscribeSelfServe),
-      canReactivate: computed(() => state.canReactivate)
-    })
-  })
-)
+vi.mock(import('@/platform/workspace/composables/useBillingCapabilities'))
+
+const capabilities = useBillingCapabilities()
 
 vi.mock<unknown>(import('@/composables/billing/useBillingRouting'), () => ({
   useBillingRouting: () => ({
@@ -207,6 +201,18 @@ function renderComponent(
 
 describe('CurrentUserPopoverWorkspace', () => {
   beforeEach(() => {
+    vi.spyOn(capabilities.canTopUp, 'value', 'get').mockImplementation(
+      () => state.canTopUp
+    )
+    vi.spyOn(
+      capabilities.canSubscribeSelfServe,
+      'value',
+      'get'
+    ).mockImplementation(() => state.canSubscribeSelfServe)
+    vi.spyOn(capabilities.canReactivate, 'value', 'get').mockImplementation(
+      () => state.canReactivate
+    )
+
     state.isCloud = true
     state.billingStatus = 'paid'
     state.canAccessSubscriptionFeatures = true

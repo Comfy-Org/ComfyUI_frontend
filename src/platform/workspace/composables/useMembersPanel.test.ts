@@ -1,3 +1,4 @@
+import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 import { getActivePinia } from 'pinia'
 import type { Pinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -400,15 +401,18 @@ vi.mock<unknown>(
 
 vi.mock(import('@/platform/distribution/types'), () => ({ isCloud: true }))
 
-vi.mock<unknown>(
-  import('@/platform/workspace/composables/useBillingCapabilities'),
-  () => ({
-    useBillingCapabilities: () => ({
-      canChangeSeats: mockCanChangeSeats,
-      canInviteMembers: mockCanInviteMembers
-    })
-  })
-)
+vi.mock(import('@/platform/workspace/composables/useBillingCapabilities'))
+
+const capabilities = useBillingCapabilities()
+
+beforeEach(() => {
+  vi.spyOn(capabilities.canChangeSeats, 'value', 'get').mockImplementation(
+    () => mockCanChangeSeats.value
+  )
+  vi.spyOn(capabilities.canInviteMembers, 'value', 'get').mockImplementation(
+    () => mockCanInviteMembers.value
+  )
+})
 
 vi.mock<unknown>(import('@/composables/auth/useCurrentUser'), () => ({
   useCurrentUser: () => ({

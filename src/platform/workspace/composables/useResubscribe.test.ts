@@ -3,6 +3,7 @@ import { createApp, defineComponent } from 'vue'
 import type { App } from 'vue'
 import { createI18n } from 'vue-i18n'
 
+import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 import { AuthStoreError } from '@/stores/authStore'
 
 import { useResubscribe as createResubscribe } from './useResubscribe'
@@ -34,18 +35,9 @@ vi.mock<unknown>(import('@/composables/billing/useBillingRouting'), () => ({
 
 vi.mock(import('@/platform/distribution/types'), () => ({ isCloud: true }))
 
-vi.mock<unknown>(
-  import('@/platform/workspace/composables/useBillingCapabilities'),
-  () => ({
-    useBillingCapabilities: () => ({
-      canReactivate: {
-        get value() {
-          return state.canReactivate
-        }
-      }
-    })
-  })
-)
+vi.mock(import('@/platform/workspace/composables/useBillingCapabilities'))
+
+const capabilities = useBillingCapabilities()
 
 vi.mock<unknown>(
   import('@/platform/workspace/composables/useWorkspaceUI'),
@@ -106,6 +98,10 @@ afterEach(() => {
 
 describe('useResubscribe', () => {
   beforeEach(() => {
+    vi.spyOn(capabilities.canReactivate, 'value', 'get').mockImplementation(
+      () => state.canReactivate
+    )
+
     state.shouldUseWorkspaceBilling = true
     state.canManageSubscriptionLifecycle = true
     state.canReactivate = true

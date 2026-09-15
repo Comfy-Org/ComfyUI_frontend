@@ -1,3 +1,4 @@
+import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 import type {
   ScheduledPlanChange,
   SubscriptionTier
@@ -83,18 +84,33 @@ vi.mock<unknown>(import('@/composables/billing/useBillingContext'), () => ({
 
 vi.mock(import('@/platform/distribution/types'), () => mockDistributionTypes)
 
-vi.mock<unknown>(
-  import('@/platform/workspace/composables/useBillingCapabilities'),
-  () => ({
-    useBillingCapabilities: () => ({
-      canSubscribeSelfServe: computed(() => mockCanManageSubscription.value),
-      canReactivate: computed(() => mockRawCanReactivate.value),
-      canChangeSeats: computed(() => mockCanChangeSeats.value),
-      canDowngradeToPersonal: computed(() => mockCanDowngradeToPersonal.value),
-      snapshotAuthoritative: computed(() => mockSnapshotAuthoritative.value)
-    })
-  })
-)
+vi.mock(import('@/platform/workspace/composables/useBillingCapabilities'))
+
+const capabilities = useBillingCapabilities()
+
+beforeEach(() => {
+  vi.spyOn(
+    capabilities.canSubscribeSelfServe,
+    'value',
+    'get'
+  ).mockImplementation(() => mockCanManageSubscription.value)
+  vi.spyOn(capabilities.canReactivate, 'value', 'get').mockImplementation(
+    () => mockRawCanReactivate.value
+  )
+  vi.spyOn(capabilities.canChangeSeats, 'value', 'get').mockImplementation(
+    () => mockCanChangeSeats.value
+  )
+  vi.spyOn(
+    capabilities.canDowngradeToPersonal,
+    'value',
+    'get'
+  ).mockImplementation(() => mockCanDowngradeToPersonal.value)
+  vi.spyOn(
+    capabilities.snapshotAuthoritative,
+    'value',
+    'get'
+  ).mockImplementation(() => mockSnapshotAuthoritative.value)
+})
 
 vi.mock<unknown>(
   import('@/platform/workspace/composables/useWorkspaceUI'),

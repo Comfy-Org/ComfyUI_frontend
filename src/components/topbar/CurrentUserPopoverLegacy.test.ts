@@ -1,3 +1,4 @@
+import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 import { getActivePinia } from 'pinia'
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
@@ -87,15 +88,9 @@ vi.mock<unknown>(import('@/composables/billing/useBillingContext'), () => ({
   }))
 }))
 
-vi.mock<unknown>(
-  import('@/platform/workspace/composables/useBillingCapabilities'),
-  () => ({
-    useBillingCapabilities: () => ({
-      canTopUp: mockCanTopUp,
-      canSubscribeSelfServe: mockCanSubscribeSelfServe
-    })
-  })
-)
+vi.mock(import('@/platform/workspace/composables/useBillingCapabilities'))
+
+const capabilities = useBillingCapabilities()
 
 vi.mock<unknown>(import('@/components/common/UserAvatar.vue'), () => ({
   default: {
@@ -127,6 +122,15 @@ vi.mock<unknown>(import('@/platform/telemetry'), () => ({
 
 describe('CurrentUserPopoverLegacy', () => {
   beforeEach(() => {
+    vi.spyOn(capabilities.canTopUp, 'value', 'get').mockImplementation(
+      () => mockCanTopUp.value
+    )
+    vi.spyOn(
+      capabilities.canSubscribeSelfServe,
+      'value',
+      'get'
+    ).mockImplementation(() => mockCanSubscribeSelfServe.value)
+
     mockCanAccessSubscriptionFeatures.value = true
     mockTier.value = 'CREATOR'
     mockSubscription.value = makeSubscription()
