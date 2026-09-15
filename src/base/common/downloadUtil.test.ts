@@ -317,7 +317,10 @@ describe('downloadUtil', () => {
         .mockResolvedValue(new Response(null, { status: 503 }))
 
       await expect(
-        downloadFileAsBlob('/api/asset', 'asset.png', fetchFile)
+        downloadFileAsBlob('/api/asset', {
+          filename: 'asset.png',
+          fetch: fetchFile
+        })
       ).rejects.toThrow('Failed to fetch /api/asset: 503')
       expect(mockLink.click).not.toHaveBeenCalled()
     })
@@ -329,7 +332,10 @@ describe('downloadUtil', () => {
         .mockRejectedValue(networkError)
 
       await expect(
-        downloadFileAsBlob('/api/asset', 'asset.png', fetchFile)
+        downloadFileAsBlob('/api/asset', {
+          filename: 'asset.png',
+          fetch: fetchFile
+        })
       ).rejects.toBe(networkError)
       expect(mockLink.click).not.toHaveBeenCalled()
     })

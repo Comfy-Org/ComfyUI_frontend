@@ -4,6 +4,7 @@ import {
 } from '@/platform/assets/utils/assetPreviewUtil'
 import { api } from '@/scripts/api'
 
+import type { FetchedAssetDownload } from '@/platform/assets/composables/useAssetDownload'
 import type { ReplyAsset } from './replyAssets'
 
 async function displayFilename(asset: ReplyAsset): Promise<string> {
@@ -17,13 +18,17 @@ async function displayFilename(asset: ReplyAsset): Promise<string> {
     : `${name}${asset.filename.slice(dot)}`
 }
 
-export async function resolveReplyAssetDownload(asset: ReplyAsset) {
+export async function resolveReplyAssetDownload(
+  asset: ReplyAsset
+): Promise<FetchedAssetDownload> {
   const apiBase = api.apiURL('/')
   return {
     url: asset.url.includes(apiBase)
       ? asset.url.slice(asset.url.indexOf(apiBase) + api.apiURL('').length)
       : asset.url,
     filename: await displayFilename(asset),
-    fetch: (url: string) => api.fetchApi(url)
+    fetch: (url: string) => api.fetchApi(url),
+    mode: 'fetch',
+    preferResponseFilename: false
   }
 }
