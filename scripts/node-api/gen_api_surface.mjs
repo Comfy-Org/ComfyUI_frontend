@@ -53,42 +53,47 @@ function declarationsByName(dir) {
   return byName
 }
 
-/**
- * Member names on a declaration, plus every type name it mentions.
- *
- * A member's own type is followed because the surface is the transitive shape:
- * `graph()` returns `GraphHandle`, whose `nodes()` return `NodeHandle`, and a
- * conversion may name any of their members.
- */
-function walk(node, members, referenced) {
+function declarationMemberName(node) {
   if (
-    ts.isPropertySignature(node) ||
-    ts.isMethodSignature(node) ||
-    ts.isPropertyDeclaration(node) ||
-    ts.isMethodDeclaration(node)
-  ) {
-    // `__brand` and friends mark a nominal type; no pack ever writes one.
-    if (
-      node.name &&
-      ts.isIdentifier(node.name) &&
-      !node.name.text.startsWith('__')
-    )
-      members.add(node.name.text)
-  }
-  if (ts.isTypeReferenceNode(node)) {
-    const name = ts.isIdentifier(node.typeName)
-      ? node.typeName.text
-      : node.typeName.right.text
-    referenced.add(name)
-  }
-  // `interface NodeHandle extends HandleCommon` puts the base in a heritage
-  // clause rather than a type reference, and missing it dropped `isDeleted` —
-  // a member of every handle — out of the published set.
-  if (
-    ts.isExpressionWithTypeArguments(node) &&
-    ts.isIdentifier(node.expression)
+    !ts.isPropertySignature(node) &&
+    !ts.isMethodSignature(node) &&
+    !ts.isPropertyDeclaration(node) &&
+    !ts.isMethodDeclaration(node)
   )
-    referenced.add(node.expression.text)
+    return undefined
+  if (
+    !node.name ||
+    !ts.isIdentifier(node.name) ||
+    node.name.text.startsWith('__')
+  )
+    return undefined
+  return node.name.text
+}
+
+function referencedTypeName(node) {
+  if (!ts.isTypeReferenceNode(node)) return undefined
+  return ts.isIdentifier(node.typeName)
+    ? node.typeName.text
+    : node.typeName.right.text
+}
+
+function inheritedTypeName(node) {
+  if (
+    !ts.isExpressionWithTypeArguments(node) ||
+    !ts.isIdentifier(node.expression)
+  ) {
+    return undefined
+  }
+  return node.expression.text
+}
+
+function walk(node, members, referenced) {
+  const member = declarationMemberName(node)
+  if (member) members.add(member)
+  const reference = referencedTypeName(node)
+  if (reference) referenced.add(reference)
+  const inherited = inheritedTypeName(node)
+  if (inherited) referenced.add(inherited)
   node.forEachChild((child) => walk(child, members, referenced))
 }
 
