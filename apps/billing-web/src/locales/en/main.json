@@ -15,7 +15,7 @@
     "stripeSecurity": "Your payment details are handled securely by Stripe.",
     "card": "Card",
     "cardNumber": "Card number",
-    "cardDetails": "MM / YY  CVC",
+    "cardDetails": "MM / YY CVC",
     "country": "Country",
     "postalCode": "Postal code",
     "alipay": "Alipay",
