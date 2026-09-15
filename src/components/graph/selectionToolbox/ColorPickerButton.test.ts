@@ -8,7 +8,7 @@ import { createI18n } from 'vue-i18n'
 
 import ColorPickerButton from '@/components/graph/selectionToolbox/ColorPickerButton.vue'
 import type { Positionable } from '@/lib/litegraph/src/litegraph'
-import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import { setCanvasSelection } from '@/utils/__tests__/canvasSelectionTestUtils'
 import { toGroupId } from '@/types/groupId'
 
 function createMockPositionable(): Positionable {
@@ -49,13 +49,13 @@ describe('ColorPickerButton', () => {
   }
 
   it('should render when nodes are selected', () => {
-    useCanvasStore().selectedItems = [createMockPositionable()]
+    setCanvasSelection([createMockPositionable()])
     renderComponent()
     expect(screen.getByTestId('color-picker-button')).toBeInTheDocument()
   })
 
   it('should toggle color picker visibility on button click', async () => {
-    useCanvasStore().selectedItems = [createMockPositionable()]
+    setCanvasSelection([createMockPositionable()])
     const { user } = renderComponent()
     const button = screen.getByTestId('color-picker-button')
 

@@ -1,7 +1,9 @@
 import { showNodeOptions } from '@/composables/graph/useMoreOptionsMenu'
 import { getCanvasContextMenuTarget } from '@/lib/litegraph/src/canvas/getCanvasContextMenuTarget'
 import { LGraphCanvas, LiteGraph } from '@/lib/litegraph/src/litegraph'
-import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import { selectableKeyOf } from '@/lib/litegraph/src/utils/selectableItems'
+import { useSelectionStore } from '@/renderer/core/canvas/selectionStore'
+import { graphScopeOf } from '@/types/graphScopeId'
 
 /**
  * Routes Nodes 2.0 group right-clicks to Vue while nodes, reroutes,
@@ -40,8 +42,11 @@ export function useGroupContextMenu() {
       group.recomputeInsideNodes()
       this.selectedItems.add(group)
       this.state.selectionChanged = true
+      useSelectionStore().apply(graphScopeOf(this.graph), {
+        type: 'selection.add',
+        keys: [selectableKeyOf(group)]
+      })
     }
-    useCanvasStore().updateSelectedItems()
     showNodeOptions(event)
   }
 

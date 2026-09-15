@@ -25,7 +25,6 @@ export function useSubgraphOperations() {
     const res = graph.convertToSubgraph(canvas.selectedItems)
     const { node } = res
     canvas.select(node)
-    canvasStore.updateSelectedItems()
     // Trigger change tracking
     workflowStore.activeWorkflow?.changeTracker.captureCanvasState()
   }

@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { Positionable, Rect } from '@/lib/litegraph/src/interfaces'
 import type { CanvasPointerEvent } from '@/lib/litegraph/src/types/events'
@@ -9,6 +9,10 @@ import {
   LGraphNode,
   LiteGraph
 } from '@/lib/litegraph/src/litegraph'
+import { createTestSubgraph } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
+import { selectableKeyOf } from '@/lib/litegraph/src/utils/selectableItems'
+import { useSelectionStore } from '@/renderer/core/canvas/selectionStore'
+import { graphScopeOf } from '@/types/graphScopeId'
 import { createMockCanvasRenderingContext2D } from '@/utils/__tests__/litegraphTestUtils'
 
 vi.mock(import('@/renderer/core/layout/store/layoutStore'))
@@ -30,6 +34,7 @@ function createCanvas(graph: LGraph): LGraphCanvas {
     width: 800,
     height: 600
   })
+  document.body.append(canvasElement)
   return new LGraphCanvas(canvasElement, graph, { skip_render: true })
 }
 
@@ -126,6 +131,12 @@ describe('LGraphCanvas selection', () => {
     b = addNode(graph, 'B', 300, 40)
     onSelectionChange = vi.fn()
     canvas.onSelectionChange = onSelectionChange
+  })
+
+  afterEach(() => {
+    expect(useSelectionStore().selectedKeys(graphScopeOf(graph))).toEqual(
+      [...canvas.selectedItems].map(selectableKeyOf)
+    )
   })
 
   describe('click', () => {
@@ -239,6 +250,102 @@ describe('LGraphCanvas selection', () => {
       canvas.deselect(a)
 
       expect(onSelectionChange).toHaveBeenCalledTimes(2)
+    })
+
+    it('deleteSelected() empties the selection', () => {
+      canvas.select(a)
+      canvas.select(b)
+
+      canvas.deleteSelected()
+
+      expect(canvas.selectedItems.size).toBe(0)
+      expect(graph.nodes).toHaveLength(0)
+    })
+
+    it('records and removes every selectable kind', () => {
+      const group = addGroup(graph, 'G', [400, 200, 100, 100])
+      const reroute = graph.setReroute({ pos: [500, 500], linkIds: [] })!
+      const subgraph = createTestSubgraph({ rootGraph: graph })
+
+      for (const item of [a, group, reroute]) canvas.select(item)
+      expect(canvas.selectedItems.size).toBe(3)
+      for (const item of [a, group, reroute]) canvas.deselect(item)
+      expect(canvas.selectedItems.size).toBe(0)
+
+      canvas.setGraph(subgraph)
+      graph = subgraph
+      const ioNodes = [subgraph.inputNode, subgraph.outputNode]
+      for (const item of ioNodes) canvas.select(item)
+      expect(canvas.selectedItems.size).toBe(2)
+      for (const item of ioNodes) canvas.deselect(item)
+      expect(canvas.selectedItems.size).toBe(0)
+    })
+
+    it('graph.clear() evicts the selection of every scope in that root', () => {
+      const store = useSelectionStore()
+      const subgraph = createTestSubgraph({ rootGraph: graph })
+      const scopes = [graphScopeOf(graph), graphScopeOf(subgraph)]
+      for (const scope of scopes) {
+        store.apply(scope, {
+          type: 'selection.add',
+          keys: [selectableKeyOf(a)]
+        })
+      }
+
+      graph.clear()
+
+      for (const scope of scopes) expect(store.selectedKeys(scope)).toEqual([])
+    })
+
+    it('subgraph.clear() evicts only that graph scope', () => {
+      const store = useSelectionStore()
+      const subgraph = createTestSubgraph({ rootGraph: graph })
+      const scope = graphScopeOf(subgraph)
+      const rootScope = graphScopeOf(graph)
+      const rootGroup = addGroup(graph, 'Root', [0, 0, 100, 100])
+      const selectedGroup = addGroup(subgraph, 'Selected', [0, 0, 100, 100])
+      canvas.select(rootGroup)
+      store.apply(scope, {
+        type: 'selection.add',
+        keys: [selectableKeyOf(selectedGroup)]
+      })
+
+      subgraph.clear()
+      const replacement = new LGraphGroup('Replacement', selectedGroup.id)
+      subgraph.add(replacement)
+
+      expect(store.selectedKeys(scope)).toEqual([])
+      expect(store.selectedKeys(rootScope)).toEqual([
+        selectableKeyOf(rootGroup)
+      ])
+      expect(
+        store.isSelected(graphScopeOf(subgraph), selectableKeyOf(replacement))
+      ).toBe(false)
+    })
+
+    it('ignores items owned by another graph', () => {
+      const foreignGraph = new LGraph()
+      const foreignNode = addNode(foreignGraph, 'Foreign', 20, 40)
+      foreignNode.id = a.id
+      canvas.select(a)
+
+      canvas.select(foreignNode)
+      canvas.deselect(foreignNode)
+      canvas.selectItems([foreignNode])
+
+      expect(canvas.selectedItems).toEqual(new Set([a]))
+      expect(foreignNode.selected).toBeFalsy()
+      expect(a.selected).toBe(true)
+    })
+
+    it('setGraph() clears the selection of the graph being left', () => {
+      canvas.select(a)
+      const scope = graphScopeOf(graph)
+
+      canvas.setGraph(new LGraph())
+
+      expect(useSelectionStore().selectedKeys(scope)).toEqual([])
+      expect(a.selected).toBeFalsy()
     })
 
     it('deselectAll() reports only when something was selected', () => {
