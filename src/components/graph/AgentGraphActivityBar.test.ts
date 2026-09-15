@@ -239,6 +239,19 @@ describe('AgentGraphActivityBar', () => {
     await waitFor(() => expect(report()).toBeInTheDocument())
   })
 
+  it('does not carry a finished turn into the next one', async () => {
+    const settingStore = useSettingStore()
+    renderBar()
+    await turnAdds(2)
+    await screen.findByTestId('agent-graph-added-toast')
+    settingStore.settingValues['Comfy.Minimap.Visible'] = false
+
+    await turnRuns(true)
+
+    expect(writingBar()).not.toBeInTheDocument()
+    expect(settingStore.get('Comfy.Minimap.Visible')).toBe(false)
+  })
+
   it('clears the report when the next turn begins', async () => {
     renderBar()
     await turnAdds(2)
