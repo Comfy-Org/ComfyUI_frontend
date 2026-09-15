@@ -9335,6 +9335,10 @@ Enterprise`
     'zh-CN': 'V2 · 工作流、应用与模型'
   },
   'workshop.sections.featured': { en: 'Featured', 'zh-CN': '精选' },
+  'workshop.sections.seeAll': {
+    en: 'See all {n}',
+    'zh-CN': '查看全部 {n}'
+  },
   'workshop.sections.otherFormats': {
     en: 'Other formats',
     'zh-CN': '其他格式'

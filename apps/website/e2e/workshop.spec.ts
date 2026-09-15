@@ -166,11 +166,13 @@ test.describe('Models catalog', () => {
     const sections = page.getByTestId('workshop-sections')
     await expect(sections).toBeVisible()
     const videos = page.getByTestId('section-generate-videos')
-    const rowHeading = await videos
-      .getByRole('heading', { level: 2 })
+    const rowLabel = (
+      await videos.getByRole('heading', { level: 2 }).innerText()
+    ).trim()
+    const seeAll = await videos
+      .getByTestId('section-generate-videos-see-all')
       .innerText()
-    const promisedCount = Number(rowHeading.match(/(\d+)\s*$/)?.[1])
-    const rowLabel = rowHeading.replace(/\s*\d+\s*$/, '').trim()
+    const promisedCount = Number(seeAll.match(/(\d+)/)?.[1])
     expect(promisedCount).toBeGreaterThan(0)
     await videos.getByTestId('section-generate-videos-open').click()
     const cards = page

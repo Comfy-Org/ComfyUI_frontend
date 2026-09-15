@@ -90,7 +90,8 @@ describe('WorkshopSections', () => {
       props: { models: entries, labelKey, sort: 'name' }
     })
     const shelf = within(screen.getByTestId('section-other-formats'))
-    expect(shelf.getByRole('button', { name: 'Other formats 10' })).toBeTruthy()
+    expect(shelf.getByRole('button', { name: 'Other formats' })).toBeTruthy()
+    expect(shelf.getByRole('button', { name: 'See all 10' })).toBeTruthy()
     expect(
       shelf
         .getAllByRole('heading', { level: 3 })
