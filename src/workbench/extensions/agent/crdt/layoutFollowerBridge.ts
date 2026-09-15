@@ -254,19 +254,14 @@ export class LayoutFollowerBridge extends EventTarget {
     if (!(event instanceof CustomEvent)) return
     const update = event.detail as DocUpdate
     if (update.workflowId !== this.sentWorkflowId) return
+    this.applyDocUpdate(update)
+  }
 
+  private applyDocUpdate(update: DocUpdate): void {
     // Lineage identity is checked before the schema-error latch: a newer
     // lineage is the only thing that may replace the follower doc (and clear
     // the latch through dropDocForNewLineage); an older lineage is stale.
-    if (this.lineageSeq !== null && update.lineageSeq < this.lineageSeq) {
-      this.dispatchStale(update.workflowId, update.seq, update.lineageSeq)
-      return
-    }
-    if (this.lineageSeq !== null && update.lineageSeq > this.lineageSeq) {
-      this.replaceLineage(update.workflowId, update.lineageSeq)
-      this.resubscribe()
-      return
-    }
+    if (!this.acceptLineage(update)) return
     this.lineageSeq ??= update.lineageSeq
 
     // The first incompatible frame is already in the Y.Doc. Same-lineage
@@ -283,10 +278,7 @@ export class LayoutFollowerBridge extends EventTarget {
     // null the catch-up arrives AT ackSeq, so `<= ackSeq` would drop it and
     // leave the follower on an empty doc (KA-11).
     const isCatchUp = this.catchUpPending && update.seq === this.ackSeq
-    if (!isCatchUp && this.lastSeq !== null && update.seq <= this.lastSeq) {
-      this.dispatchStale(update.workflowId, update.seq)
-      return
-    }
+    if (!this.acceptSequence(update, isCatchUp)) return
 
     // Seq is only a gap detector. A jump withholds the uncertain frame and
     // asks the host for a same-lineage state-vector delta using this EXACT
@@ -297,44 +289,71 @@ export class LayoutFollowerBridge extends EventTarget {
     // N instead: the catch-up (seq N) and the first live frame (seq N+1) are
     // both contiguous with it, so neither trips it, while a first frame at
     // N+2 or beyond is a real drop. Nothing arms it before the ack lands.
-    const baseline = this.lastSeq ?? this.ackSeq
-    if (baseline !== null && update.seq > baseline + 1) {
-      this.dispatchEvent(
-        new CustomEvent('doc_gap', {
-          detail: {
-            workflowId: update.workflowId,
-            expected: baseline + 1,
-            received: update.seq
-          }
-        })
-      )
-      this.resubscribe()
-      return
-    }
-    if (this.lastSeq === null || update.seq > this.lastSeq)
-      this.lastSeq = update.seq
-    if (isCatchUp) this.catchUpPending = false
-    this.follower.applyRemoteUpdate(update.update)
+    this.integrateUpdate(update, isCatchUp)
 
     // KA-11 read-time gate. The frame must merge before its schema can be
     // checked, but nothing downstream may READ a doc whose declared schema
     // this build was not written against. Failing closed here, before the
     // frame is re-dispatched, is what keeps a v2 doc from being half-projected
     // onto the canvas by a v1 reader.
+    if (!this.hasReadableSchema(update.workflowId)) return
+
+    this.dispatchEvent(new CustomEvent('doc_update', { detail: update }))
+  }
+
+  private integrateUpdate(update: DocUpdate, isCatchUp: boolean): void {
+    if (this.lastSeq === null || update.seq > this.lastSeq)
+      this.lastSeq = update.seq
+    if (isCatchUp) this.catchUpPending = false
+    this.follower.applyRemoteUpdate(update.update)
+  }
+
+  private acceptLineage(update: DocUpdate): boolean {
+    if (this.lineageSeq === null || update.lineageSeq === this.lineageSeq)
+      return true
+    if (update.lineageSeq < this.lineageSeq) {
+      this.dispatchStale(update.workflowId, update.seq, update.lineageSeq)
+      return false
+    }
+    this.replaceLineage(update.workflowId, update.lineageSeq)
+    this.resubscribe()
+    return false
+  }
+
+  private acceptSequence(update: DocUpdate, isCatchUp: boolean): boolean {
+    if (!isCatchUp && this.lastSeq !== null && update.seq <= this.lastSeq) {
+      this.dispatchStale(update.workflowId, update.seq)
+      return false
+    }
+    const baseline = this.lastSeq ?? this.ackSeq
+    if (baseline === null || update.seq <= baseline + 1) return true
+    this.dispatchEvent(
+      new CustomEvent('doc_gap', {
+        detail: {
+          workflowId: update.workflowId,
+          expected: baseline + 1,
+          received: update.seq
+        }
+      })
+    )
+    this.resubscribe()
+    return false
+  }
+
+  private hasReadableSchema(workflowId: string): boolean {
     try {
       assertReadableSchema(this.follower.doc)
+      return true
     } catch (error) {
       if (!(error instanceof FollowerSchemaError)) throw error
       this.schemaError = error
       this.dispatchEvent(
         new CustomEvent('schema_error', {
-          detail: { workflowId: update.workflowId, found: error.found }
+          detail: { workflowId, found: error.found }
         })
       )
-      return
+      return false
     }
-
-    this.dispatchEvent(new CustomEvent('doc_update', { detail: update }))
   }
 
   /**
@@ -414,31 +433,30 @@ export class LayoutFollowerBridge extends EventTarget {
     if (!(event instanceof CustomEvent)) return
     const subscribed = event.detail as DocSubscribed
     if (subscribed.workflowId !== this.sentWorkflowId) return
-    if (subscribed.ok) {
-      const lineageSeq = subscribed.lineageSeq ?? 0
-      if (this.lineageSeq !== null && lineageSeq < this.lineageSeq) {
-        this.dispatchStale(
-          subscribed.workflowId,
-          subscribed.seq ?? 0,
-          lineageSeq
-        )
-        // Keep the newer local lineage, but reopen intent/reality so the next
-        // transport status or reconnect retries instead of latching dead.
-        this.sentWorkflowId = null
-        return
-      }
-      // No resubscribe here, unlike the newer-lineage `doc_update` path: the
-      // server already answered a mismatched `known_lineage_seq` with the full
-      // state (cloud `docwire.Resync`), so the catch-up that follows this ack
-      // is the whole new lineage.
-      if (this.lineageSeq !== null && lineageSeq > this.lineageSeq) {
-        this.replaceLineage(subscribed.workflowId, lineageSeq)
-      }
-      this.lineageSeq = lineageSeq
-      this.ackSeq = subscribed.seq ?? null
-      this.catchUpPending = this.ackSeq !== null
-    } else this.sentWorkflowId = null
+    if (!subscribed.ok) this.sentWorkflowId = null
+    else if (!this.applySubscriptionAck(subscribed)) return
     this.dispatchEvent(new CustomEvent(event.type, { detail: event.detail }))
+  }
+
+  private applySubscriptionAck(subscribed: DocSubscribed): boolean {
+    const lineageSeq = subscribed.lineageSeq ?? 0
+    if (this.lineageSeq !== null && lineageSeq < this.lineageSeq) {
+      this.dispatchStale(subscribed.workflowId, subscribed.seq ?? 0, lineageSeq)
+      // Keep the newer local lineage, but reopen intent/reality so the next
+      // transport status or reconnect retries instead of latching dead.
+      this.sentWorkflowId = null
+      return false
+    }
+    // No resubscribe here, unlike the newer-lineage `doc_update` path: the
+    // server already answered a mismatched `known_lineage_seq` with the full
+    // state (cloud `docwire.Resync`), so the catch-up that follows this ack
+    // is the whole new lineage.
+    if (this.lineageSeq !== null && lineageSeq > this.lineageSeq)
+      this.replaceLineage(subscribed.workflowId, lineageSeq)
+    this.lineageSeq = lineageSeq
+    this.ackSeq = subscribed.seq ?? null
+    this.catchUpPending = this.ackSeq !== null
+    return true
   }
 
   private readonly forwardFrame: EventListener = (event) => {

@@ -128,14 +128,8 @@ interface WireData {
 }
 
 function decodeBase64(value: string): Uint8Array | null {
-  if (value === '' || value.length % 4 !== 0) return null
+  if (!isCanonicalBase64(value)) return null
   const padding = value.endsWith('==') ? 2 : value.endsWith('=') ? 1 : 0
-  if (value.length > MAX_DOC_UPDATE_B64_LENGTH) return null
-
-  // `atob` is permissive about missing padding, so require canonical standard
-  // base64 before decoding the untrusted wire value.
-  if (!/^[A-Za-z0-9+/]*={0,2}$/.test(value)) return null
-
   if (padding === 2 && !BASE64_DOUBLE_PADDING_END.test(value)) return null
   if (padding === 1 && !BASE64_SINGLE_PADDING_END.test(value)) return null
 
@@ -145,6 +139,18 @@ function decodeBase64(value: string): Uint8Array | null {
   } catch {
     return null
   }
+}
+
+function isCanonicalBase64(value: string): boolean {
+  if (
+    value === '' ||
+    value.length % 4 !== 0 ||
+    value.length > MAX_DOC_UPDATE_B64_LENGTH
+  )
+    return false
+  // `atob` is permissive about missing padding, so require canonical standard
+  // base64 before decoding the untrusted wire value.
+  return /^[A-Za-z0-9+/]*={0,2}$/.test(value)
 }
 
 export function encodeBase64(value: Uint8Array): string {
@@ -241,23 +247,27 @@ function parseOptionalStringArray(value: unknown): string[] | null {
 
 function parseDocOpFailure(value: unknown): DocOpFailure | null {
   const failure = parseWireData(value)
-  if (
-    failure === null ||
-    !isSequence(failure.index) ||
-    (!isAbsent(failure.op_id) && !isValidOpId(failure.op_id)) ||
-    typeof failure.code !== 'string' ||
-    !hasBoundedUtf8Length(failure.code, MAX_ERROR_CODE_LENGTH) ||
-    typeof failure.message !== 'string' ||
-    !hasBoundedUtf8Length(failure.message, MAX_ERROR_MESSAGE_LENGTH)
-  )
-    return null
+  if (failure === null || !isValidDocOpFailure(failure)) return null
 
   return {
     index: failure.index,
-    ...(!isAbsent(failure.op_id) && { op_id: failure.op_id }),
+    ...(typeof failure.op_id === 'string' && { op_id: failure.op_id }),
     code: failure.code,
     message: failure.message
   }
+}
+
+function isValidDocOpFailure(
+  failure: WireData
+): failure is WireData & { index: number; code: string; message: string } {
+  if (!isSequence(failure.index)) return false
+  if (!isAbsent(failure.op_id) && !isValidOpId(failure.op_id)) return false
+  if (typeof failure.code !== 'string' || typeof failure.message !== 'string')
+    return false
+  return (
+    hasBoundedUtf8Length(failure.code, MAX_ERROR_CODE_LENGTH) &&
+    hasBoundedUtf8Length(failure.message, MAX_ERROR_MESSAGE_LENGTH)
+  )
 }
 
 // Defence in depth behind the server's identical cap. The counts are not
@@ -273,6 +283,143 @@ function encodedJsonSize(value: Record<string, unknown>): number | null {
   }
 }
 
+type ParsedFrame<T extends ServerDocFrame['type']> = Extract<
+  ServerDocFrame,
+  { type: T }
+>
+
+function parseDocUpdate(data: WireData): ParsedFrame<'doc_update'> | null {
+  if (!isValidDocUpdate(data)) return null
+  const update = decodeBase64(data.update_b64)
+  if (update === null) return null
+  if (!isAbsent(data.op_ids) && !isStringArray(data.op_ids)) return null
+  const actor = parseAdvisoryActor(data.actor)
+  return {
+    type: 'doc_update',
+    data: {
+      workflowId: data.workflow_id as string,
+      seq: data.seq,
+      lineageSeq: data.lineage_seq,
+      update,
+      ...(actor !== undefined && { actor }),
+      ...(isStringArray(data.op_ids) && { opIds: data.op_ids })
+    }
+  }
+}
+
+function isValidDocUpdate(data: WireData): data is WireData & {
+  seq: number
+  lineage_seq: number
+  update_b64: string
+} {
+  if (!isSequence(data.seq) || !isSequence(data.lineage_seq)) return false
+  return data.lineage_seq <= data.seq && typeof data.update_b64 === 'string'
+}
+
+function parseDocSubscribed(
+  data: WireData
+): ParsedFrame<'doc_subscribed'> | null {
+  const ackLineageSeq = isAbsent(data.lineage_seq) ? 0 : data.lineage_seq
+  if (!isValidSubscribeAck(data.ok, data.seq, ackLineageSeq)) return null
+  const code = parseBoundedString(data.code, MAX_ERROR_CODE_LENGTH)
+  const message = parseBoundedString(data.message, MAX_ERROR_MESSAGE_LENGTH)
+  return {
+    type: 'doc_subscribed',
+    data: {
+      workflowId: data.workflow_id as string,
+      ok: data.ok,
+      ...(isSequence(data.seq) && { seq: data.seq }),
+      ...(data.ok &&
+        isSequence(ackLineageSeq) && { lineageSeq: ackLineageSeq }),
+      ...(code !== undefined && { code }),
+      ...(message !== undefined && { message })
+    }
+  }
+}
+
+function isValidSubscribeAck(
+  ok: unknown,
+  seq: unknown,
+  lineageSeq: unknown
+): ok is boolean {
+  if (typeof ok !== 'boolean') return false
+  if (!ok) return true
+  if (!isSequence(lineageSeq)) return false
+  return isSequence(seq) ? lineageSeq <= seq : lineageSeq === 0
+}
+
+function parseDocOpsResult(
+  data: WireData
+): ParsedFrame<'doc_ops_result'> | null {
+  if (typeof data.ok !== 'boolean') return null
+  const applied = parseOptionalStringArray(data.applied)
+  const skipped = parseOptionalStringArray(data.skipped)
+  if (applied === null || skipped === null) return null
+  const code = parseBoundedString(data.code, MAX_ERROR_CODE_LENGTH)
+  const message = parseBoundedString(data.message, MAX_ERROR_MESSAGE_LENGTH)
+  const failed = isAbsent(data.failed) ? null : parseDocOpFailure(data.failed)
+  return {
+    type: 'doc_ops_result',
+    data: {
+      workflowId: data.workflow_id as string,
+      ok: data.ok,
+      applied,
+      skipped,
+      ...(isSequence(data.seq) && { seq: data.seq }),
+      ...(code !== undefined && { code }),
+      ...(message !== undefined && { message }),
+      ...(failed !== null && { failed })
+    }
+  }
+}
+
+function parseDocReset(data: WireData): ParsedFrame<'doc_reset'> | null {
+  if (
+    !isSequence(data.seq) ||
+    !isSequence(data.lineage_seq) ||
+    data.lineage_seq !== data.seq
+  )
+    return null
+  const actor = parseAdvisoryActor(data.actor)
+  return {
+    type: 'doc_reset',
+    data: {
+      workflowId: data.workflow_id as string,
+      seq: data.seq,
+      lineageSeq: data.lineage_seq,
+      ...(actor !== undefined && { actor })
+    }
+  }
+}
+
+function parseAwareness(data: WireData): ParsedFrame<'awareness'> | null {
+  if (typeof data.actor !== 'string' || !isValidActor(data.actor)) return null
+  const state = parseAwarenessState(data.state)
+  if (state === undefined) return null
+  if (!isAbsent(data.expires_at) && !isSequence(data.expires_at)) return null
+  return {
+    type: 'awareness',
+    data: {
+      workflowId: data.workflow_id as string,
+      actor: data.actor,
+      ...(state !== null && { state }),
+      ...(isSequence(data.expires_at) && { expiresAt: data.expires_at })
+    }
+  }
+}
+
+function parseAwarenessState(
+  value: unknown
+): Record<string, unknown> | null | undefined {
+  if (isAbsent(value)) return null
+  const state = parseRecord(value)
+  if (state === null) return undefined
+  const stateSize = encodedJsonSize(state)
+  return stateSize !== null && stateSize <= MAX_AWARENESS_STATE_BYTES
+    ? state
+    : undefined
+}
+
 export function parseServerDocFrame(value: unknown): ServerDocFrame | null {
   if (typeof value !== 'object' || value === null) return null
   const frame = value as { type?: unknown; data?: unknown }
@@ -285,130 +432,20 @@ export function parseServerDocFrame(value: unknown): ServerDocFrame | null {
   )
     return null
 
-  if (
-    frame.type === 'doc_update' &&
-    isSequence(data.seq) &&
-    isSequence(data.lineage_seq) &&
-    data.lineage_seq <= data.seq &&
-    typeof data.update_b64 === 'string'
-  ) {
-    const update = decodeBase64(data.update_b64)
-    if (update === null) return null
-    if (!isAbsent(data.op_ids) && !isStringArray(data.op_ids)) return null
-    const actor = parseAdvisoryActor(data.actor)
-    return {
-      type: frame.type,
-      data: {
-        workflowId: data.workflow_id,
-        seq: data.seq,
-        lineageSeq: data.lineage_seq,
-        update,
-        ...(actor !== undefined && { actor }),
-        ...(isStringArray(data.op_ids) && {
-          opIds: data.op_ids
-        })
-      }
-    }
+  switch (frame.type) {
+    case 'doc_update':
+      return parseDocUpdate(data)
+    case 'doc_subscribed':
+      return parseDocSubscribed(data)
+    case 'doc_ops_result':
+      return parseDocOpsResult(data)
+    case 'doc_reset':
+      return parseDocReset(data)
+    case 'awareness':
+      return parseAwareness(data)
+    default:
+      return null
   }
-
-  // The server omits `lineage_seq` from the ack while a doc is still on the
-  // migration default lineage 0 (`omitempty`), so absent means 0 here. A
-  // present value must still be a well-formed lineage: unlike `seq`, lineage
-  // is load-bearing on the ack, so a malformed one rejects the frame.
-  const ackLineageSeq = isAbsent(data.lineage_seq) ? 0 : data.lineage_seq
-  if (
-    frame.type === 'doc_subscribed' &&
-    typeof data.ok === 'boolean' &&
-    (!data.ok ||
-      (isSequence(ackLineageSeq) &&
-        (isSequence(data.seq)
-          ? ackLineageSeq <= data.seq
-          : ackLineageSeq === 0)))
-  ) {
-    const code = parseBoundedString(data.code, MAX_ERROR_CODE_LENGTH)
-    const message = parseBoundedString(data.message, MAX_ERROR_MESSAGE_LENGTH)
-    return {
-      type: frame.type,
-      data: {
-        workflowId: data.workflow_id,
-        ok: data.ok,
-        ...(isSequence(data.seq) && { seq: data.seq }),
-        ...(data.ok &&
-          isSequence(ackLineageSeq) && { lineageSeq: ackLineageSeq }),
-        ...(code !== undefined && { code }),
-        ...(message !== undefined && { message })
-      }
-    }
-  }
-
-  if (frame.type === 'doc_ops_result' && typeof data.ok === 'boolean') {
-    const applied = parseOptionalStringArray(data.applied)
-    const skipped = parseOptionalStringArray(data.skipped)
-    if (applied === null || skipped === null) return null
-    const code = parseBoundedString(data.code, MAX_ERROR_CODE_LENGTH)
-    const message = parseBoundedString(data.message, MAX_ERROR_MESSAGE_LENGTH)
-    let failed: DocOpFailure | undefined
-    if (!isAbsent(data.failed)) {
-      const parsedFailure = parseDocOpFailure(data.failed)
-      if (parsedFailure !== null) failed = parsedFailure
-    }
-    return {
-      type: frame.type,
-      data: {
-        workflowId: data.workflow_id,
-        ok: data.ok,
-        applied,
-        skipped,
-        ...(isSequence(data.seq) && { seq: data.seq }),
-        ...(code !== undefined && { code }),
-        ...(message !== undefined && { message }),
-        ...(failed !== undefined && { failed })
-      }
-    }
-  }
-
-  if (
-    frame.type === 'doc_reset' &&
-    isSequence(data.seq) &&
-    isSequence(data.lineage_seq) &&
-    data.lineage_seq === data.seq
-  ) {
-    const actor = parseAdvisoryActor(data.actor)
-    return {
-      type: frame.type,
-      data: {
-        workflowId: data.workflow_id,
-        seq: data.seq,
-        lineageSeq: data.lineage_seq,
-        ...(actor !== undefined && { actor })
-      }
-    }
-  }
-
-  if (frame.type === 'awareness' && typeof data.actor === 'string') {
-    if (!isValidActor(data.actor)) return null
-    const state = parseRecord(data.state)
-    if (!isAbsent(data.state) && state === null) return null
-    if (state !== null) {
-      const stateSize = encodedJsonSize(state)
-      if (stateSize === null || stateSize > MAX_AWARENESS_STATE_BYTES)
-        return null
-    }
-    if (!isAbsent(data.expires_at) && !isSequence(data.expires_at)) return null
-    return {
-      type: frame.type,
-      data: {
-        workflowId: data.workflow_id,
-        actor: data.actor,
-        ...(state !== null && { state }),
-        ...(isSequence(data.expires_at) && {
-          expiresAt: data.expires_at
-        })
-      }
-    }
-  }
-
-  return null
 }
 
 export class DocFrameClient extends EventTarget {
