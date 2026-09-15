@@ -1,20 +1,13 @@
 <script setup lang="ts">
 import { Download, ExternalLink, Play } from '@lucide/vue'
 import { useEventListener, useMounted, useTimestamp } from '@vueuse/core'
-import {
-  computed,
-  nextTick,
-  onMounted,
-  onUnmounted,
-  ref,
-  useSlots,
-  watch
-} from 'vue'
+import { computed, onUnmounted, ref, useSlots, watch } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
 import Button from '@/components/ui/button/Button.vue'
 import { useWorkshopFormDraft } from '../../composables/useWorkshopFormDraft'
+import { sameFormValues } from '../../lib/workshop/form-values'
 import { leaveForSignIn } from '../../config/workshop-return'
 import { useSignInHref } from '../../composables/useSignInHref'
 import { useTablist } from '../../composables/useTablist'
@@ -162,30 +155,25 @@ const { pending: draftPending, restoreFailed } = useWorkshopFormDraft(
   nativeJson,
   !!model.execution && model.execution.inputs === undefined
 )
-// Every write replaces the whole record, so the last one the page itself made
-// is enough to tell a reader's work from the form merely settling. The draft
-// restore writes too, and its media half lands late, so the marks are taken
-// again once that has finished.
+// The marks are what the page itself put on the form, taken before anything
+// else can write. A restored draft is a reader's own work carried across a
+// sign-in, so the restore moving the form away from these marks is exactly
+// what makes it worth asking about.
 //
 // An example lands on the form and takes the reader there, so it can spend
 // work typed in either editor whichever one is open. Both records are read,
 // and writing anywhere is enough to be asked about.
-const settledValues = ref<FormValues>()
-const settledJson = ref<FormValues>()
+const settledValues = ref<FormValues>(fieldValues.value)
+const settledJson = ref<FormValues>(jsonValues.value)
 const inputsEdited = computed(
   () =>
-    (settledValues.value !== undefined &&
-      fieldValues.value !== settledValues.value) ||
-    (settledJson.value !== undefined && jsonValues.value !== settledJson.value)
+    !sameFormValues(fieldValues.value, settledValues.value) ||
+    !sameFormValues(jsonValues.value, settledJson.value)
 )
 function markSettled(): void {
   settledValues.value = fieldValues.value
   settledJson.value = jsonValues.value
 }
-onMounted(() => void nextTick(markSettled))
-watch(draftPending, (pending, was) => {
-  if (was && !pending) markSettled()
-})
 
 const runState = ref<RunState>(
   firstExample
@@ -575,7 +563,8 @@ function applyExample(example: PlaygroundExample) {
     nativeJson.value = false
     activeExample.value = example.fields ? example : undefined
     values.value = workshopExampleState(model, example).values
-    settledValues.value = fieldValues.value
+    // Agreeing settles both records: the reader has let the example win.
+    markSettled()
   }
   activeExampleId.value = example.id
   runState.value = { status: 'example', output: exampleOutput(example) }

@@ -1617,6 +1617,28 @@ describe('ModelDetail', () => {
     )
   })
 
+  it('asks for a draft restored after a sign-in, not only for fresh typing', async () => {
+    sessionStorage.setItem(
+      `comfy-workshop-form:${model.slug}`,
+      JSON.stringify({ prompt: 'what I wrote before signing in' })
+    )
+    auth.session.value = credential
+    mountDetail()
+    await nextTick()
+    expect(screen.getByTestId<HTMLTextAreaElement>('field-prompt').value).toBe(
+      'what I wrote before signing in'
+    )
+
+    await user().click(
+      screen.getByRole('button', { name: /Open in Playground$/ })
+    )
+
+    expect(screen.getByTestId('example-replace-dialog')).toBeTruthy()
+    expect(screen.getByTestId<HTMLTextAreaElement>('field-prompt').value).toBe(
+      'what I wrote before signing in'
+    )
+  })
+
   it('asks for a form edit left behind in the other editor', async () => {
     const jsonModel: WorkshopModelDetail = {
       ...uncuratedRunnable,
