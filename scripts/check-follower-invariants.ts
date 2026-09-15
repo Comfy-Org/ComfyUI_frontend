@@ -225,7 +225,7 @@ export function checkNoScatteredDistributionChecks(
   if (!(FOLLOWER_CORE_FILES as readonly string[]).includes(file)) return []
   const DISTRIBUTION_PATTERN = /\b(DISTRIBUTION|isCloud|isDesktop)\b/
 
-  return scan(source, DISTRIBUTION_PATTERN, (line, lineNumber) => ({
+  return scan(source, DISTRIBUTION_PATTERN, (_line, lineNumber) => ({
     file,
     line: lineNumber,
     rule: 'no-scattered-distribution-checks',
