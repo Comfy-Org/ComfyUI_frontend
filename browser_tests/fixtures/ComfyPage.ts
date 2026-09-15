@@ -1,3 +1,4 @@
+import { UserDataHelper } from '@e2e/fixtures/helpers/UserDataHelper'
 import type { APIRequestContext, Locator, Page } from '@playwright/test'
 import { config as dotenvConfig } from 'dotenv'
 import MCR from 'monocart-coverage-reports'
@@ -597,6 +598,7 @@ export const comfyPageFixture = base.extend<{
   initialLocalStorage: Record<string, string>
   initialSettings: Record<string, unknown>
   initialUrl: string | undefined
+  resetUserDataFiles: string[]
   mockReleases: boolean
   comfyPage: ComfyPage
   comfyMouse: ComfyMouse
@@ -612,6 +614,7 @@ export const comfyPageFixture = base.extend<{
   // the fixture's defaults so per-test values win.
   initialSettings: [{}, { option: true }],
   initialUrl: [undefined, { option: true }],
+  resetUserDataFiles: [[], { option: true }],
   mockReleases: [true, { option: true }],
 
   page: async ({ page, browserName }, use) => {
@@ -640,6 +643,7 @@ export const comfyPageFixture = base.extend<{
       initialLocalStorage,
       initialSettings,
       initialUrl,
+      resetUserDataFiles,
       mockReleases
     },
     use,
@@ -667,6 +671,9 @@ export const comfyPageFixture = base.extend<{
     const run = async () => {
       const userId = await comfyPage.setupUser(username)
       comfyPage.userIds[parallelIndex] = userId
+
+      const userData = new UserDataHelper(request, userId, comfyPage.url)
+      for (const file of resetUserDataFiles) await userData.delete(file)
 
       const isVueNodes = testInfo.tags.includes('@vue-nodes')
       comfyPage.isVueNodes = isVueNodes
