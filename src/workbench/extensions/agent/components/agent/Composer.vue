@@ -509,7 +509,13 @@ defineExpose({
             </Button>
           </template>
           <template
-            #default="{ itemClass, contentClass, contentStyle, separatorClass }"
+            #default="{
+              itemClass,
+              contentClass,
+              contentStyle,
+              separatorClass,
+              collisionPadding
+            }"
           >
             <AccessibleTooltip
               :label="nodeReferenceDisabledReason ?? ''"
@@ -546,6 +552,7 @@ defineExpose({
               <DropdownMenuPortal>
                 <DropdownMenuSubContent
                   :side-offset="4"
+                  :collision-padding
                   :class="contentClass"
                   :style="contentStyle"
                 >
