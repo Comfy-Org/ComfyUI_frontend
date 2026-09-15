@@ -162,9 +162,13 @@ describe('MessageFeedback', () => {
     fetchApi
       .mockResolvedValueOnce(new Response(new Blob(['x'])))
       .mockResolvedValueOnce(new Response(null, { status: 500 }))
-      .mockResolvedValue(new Response(new Blob(['retry'])))
-    URL.createObjectURL = vi.fn(() => 'blob:mock')
-    URL.revokeObjectURL = vi.fn()
+      .mockImplementation(async () => new Response(new Blob(['retry'])))
+    const createObjectURL = vi
+      .spyOn(URL, 'createObjectURL')
+      .mockReturnValue('blob:mock')
+    const revokeObjectURL = vi
+      .spyOn(URL, 'revokeObjectURL')
+      .mockImplementation(() => {})
     const { user } = renderFeedback([
       { url: 'https://x/a.png', filename: 'a.png', kind: 'image' },
       { url: 'https://x/b.png', filename: 'b.png', kind: 'image' }
@@ -186,6 +190,8 @@ describe('MessageFeedback', () => {
     await user.click(download)
 
     await waitFor(() => expect(fetchApi).toHaveBeenCalledTimes(4))
+    await waitFor(() => expect(createObjectURL).toHaveBeenCalledTimes(3))
+    expect(revokeObjectURL).toHaveBeenCalledTimes(3)
   })
 
   it('Escape closes the markdown menu without copying', async () => {
