@@ -1,5 +1,7 @@
 import { shallowRef, triggerRef } from 'vue'
 
+import { reportError } from '@/platform/telemetry/reportError'
+
 import { isCrdtDebugEnabled } from './crdtDebugGate'
 import type { CrdtLogLevel } from './crdtDebugGate'
 
@@ -54,9 +56,78 @@ export interface DevEventOptions {
 }
 
 const CAPACITY = 500
+const REDACTED = '[REDACTED]'
+const MAX_SANITIZE_DEPTH = 12
+const SENSITIVE_KEY =
+  /(^|_)(token|accesstoken|secret|password|passwd|credential|api_key|apikey|authorization|auth|bearer|session|cookie|signature|jwt|prompt|text)$/
+const CONTENT_KEYS = new Set([
+  'value',
+  'old',
+  'widgets_values',
+  'widgets_values_named',
+  'signed_url',
+  'node',
+  'workflow'
+])
 
 let nextSeq = 1
 let buffer: DevEvent[] | undefined
+
+function normalizeKey(key: string): string {
+  return key
+    .replace(/([a-z0-9])([A-Z])/g, '$1_$2')
+    .replace(/[^a-zA-Z0-9]+/g, '_')
+    .toLowerCase()
+}
+
+function sanitizeObject(
+  value: object,
+  depth: number,
+  ancestors: readonly object[]
+): unknown {
+  const nextAncestors = [...ancestors, value]
+  if (Array.isArray(value)) {
+    return value.map((item) => sanitizeDetail(item, depth + 1, nextAncestors))
+  }
+  if (value instanceof Error)
+    return { name: value.name, message: value.message }
+  if (value instanceof Map) return `Map(${value.size})`
+  if (value instanceof Set) return `Set(${value.size})`
+  if (value instanceof Date) {
+    return Number.isNaN(value.getTime()) ? null : value.toISOString()
+  }
+
+  return Object.fromEntries(
+    Object.entries(value).map(([key, item]) => {
+      const normalizedKey = normalizeKey(key)
+      if (
+        SENSITIVE_KEY.test(normalizedKey) ||
+        CONTENT_KEYS.has(normalizedKey)
+      ) {
+        return [key, REDACTED]
+      }
+      return [key, sanitizeDetail(item, depth + 1, nextAncestors)]
+    })
+  )
+}
+
+function sanitizeDetail(
+  value: unknown,
+  depth = 0,
+  ancestors: readonly object[] = []
+): unknown {
+  if (depth > MAX_SANITIZE_DEPTH) return REDACTED
+  if (ArrayBuffer.isView(value)) {
+    return `${value.constructor.name}(${value.byteLength})`
+  }
+  if (Object.prototype.toString.call(value) === '[object ArrayBuffer]') {
+    return `ArrayBuffer(${(value as ArrayBuffer).byteLength})`
+  }
+  if (value === null || typeof value !== 'object') return value
+  if (ancestors.includes(value)) return '[Circular]'
+
+  return sanitizeObject(value, depth, ancestors)
+}
 
 /**
  * Shallow ref over the lazily allocated ring buffer. Production sessions that
@@ -79,11 +150,22 @@ export function recordDevEvent(
     kind,
     scope: options.scope ?? 'doc',
     level: options.level ?? 'info',
-    detail
+    detail: sanitizeDevEventDetail(detail)
   })
   if (events.length > CAPACITY) events.splice(0, events.length - CAPACITY)
   if (devEvents.value !== events) devEvents.value = events
   else triggerRef(devEvents)
+}
+
+export function sanitizeDevEventDetail(detail: unknown): unknown {
+  try {
+    return sanitizeDetail(detail)
+  } catch {
+    reportError(new Error('Failed to sanitize CRDT dev event detail'), {
+      errorType: 'crdt_dev_event_sanitization_failed'
+    })
+    return REDACTED
+  }
 }
 
 export function clearDevEvents(): void {

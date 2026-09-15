@@ -104,13 +104,13 @@ describe('CrdtDevPanel clipboard controls', () => {
 
   it('copies the full log detail while displaying a truncated excerpt', async () => {
     const user = userEvent.setup()
-    const detail = { value: 'x'.repeat(220), bytes: new Uint8Array(3) }
+    const detail = { description: 'x'.repeat(220), bytes: new Uint8Array(3) }
     recordDevEvent('doc_update', detail)
     renderPanel()
     await user.click(screen.getByTestId('crdt-dev-panel-tab-log'))
 
     const full = JSON.stringify({
-      value: 'x'.repeat(220),
+      description: 'x'.repeat(220),
       bytes: 'Uint8Array(3)'
     })
     expect(screen.getByText(`${full.slice(0, 200)}…`)).toBeInTheDocument()
