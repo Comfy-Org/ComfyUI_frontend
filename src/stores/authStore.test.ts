@@ -110,15 +110,13 @@ vi.mock<unknown>(
 vi.mock(import('@/composables/useFeatureFlags'))
 
 beforeEach(() => {
-  vi.mocked(useFeatureFlags).mockReturnValue({
-    ...useFeatureFlags(),
-    flags: {
-      ...useFeatureFlags().flags,
-      get unifiedCloudAuthEnabled() {
-        return mockFeatureFlags.unifiedCloudAuthEnabled
-      }
-    }
-  })
+  const featureFlags = useFeatureFlags()
+  vi.mocked(useFeatureFlags).mockReturnValue(featureFlags)
+  vi.spyOn(
+    featureFlags.flags,
+    'unifiedCloudAuthEnabled',
+    'get'
+  ).mockImplementation(() => mockFeatureFlags.unifiedCloudAuthEnabled)
 })
 
 // Mock apiKeyAuthStore

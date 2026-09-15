@@ -1,6 +1,6 @@
-import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { mockFeatureFlag } from '@/utils/__tests__/mockFeatureFlag'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import {
   getAssetFileUrl,
@@ -12,25 +12,11 @@ import type { AugmentedResultItem } from '@/utils/resultItem'
 const mockApiURL = vi.hoisted(() =>
   vi.fn((path: string) => `http://localhost:8188/api${path}`)
 )
-const mockFlags = vi.hoisted(() => ({ assetsEnabled: false }))
-
 vi.mock<unknown>(import('@/scripts/api'), () => ({
   api: { apiURL: mockApiURL }
 }))
 
 vi.mock(import('@/composables/useFeatureFlags'))
-
-beforeEach(() => {
-  vi.mocked(useFeatureFlags).mockReturnValue({
-    ...useFeatureFlags(),
-    flags: {
-      ...useFeatureFlags().flags,
-      get assetsEnabled() {
-        return mockFlags.assetsEnabled
-      }
-    }
-  })
-})
 
 function createAsset(overrides: Partial<AssetItem> = {}): AssetItem {
   return {
@@ -95,7 +81,7 @@ describe('getAssetUrl', () => {
 describe('getAssetFileUrl', () => {
   describe('with the assets API enabled', () => {
     beforeEach(() => {
-      mockFlags.assetsEnabled = true
+      mockFeatureFlag('assetsEnabled', true)
     })
 
     it('addresses the file by asset id without any path inference', () => {
@@ -146,10 +132,6 @@ describe('getAssetFileUrl', () => {
   })
 
   describe('with history-backed assets', () => {
-    beforeEach(() => {
-      mockFlags.assetsEnabled = false
-    })
-
     it('uses preview_url, which already points at the file', () => {
       const asset = createAsset({
         preview_url: '/api/view?filename=clip.webm&type=output&subfolder=vid'

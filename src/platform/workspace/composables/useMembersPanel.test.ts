@@ -1,4 +1,3 @@
-import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { getActivePinia } from 'pinia'
 import type { Pinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -6,6 +5,7 @@ import { createApp, defineComponent, ref } from 'vue'
 import type { App } from 'vue'
 import { createI18n } from 'vue-i18n'
 
+import { mockFeatureFlag } from '@/utils/__tests__/mockFeatureFlag'
 import type {
   WorkspacePendingInvite,
   WorkspaceMember
@@ -465,21 +465,7 @@ vi.mock<unknown>(import('@/services/dialogService'), () => ({
   })
 }))
 
-const mockBillingControlEnabled = vi.hoisted(() => ({ value: true }))
-
 vi.mock(import('@/composables/useFeatureFlags'))
-
-beforeEach(() => {
-  vi.mocked(useFeatureFlags).mockReturnValue({
-    ...useFeatureFlags(),
-    flags: {
-      ...useFeatureFlags().flags,
-      get billingControlEnabled() {
-        return mockBillingControlEnabled.value
-      }
-    }
-  })
-})
 
 describe('useMembersPanel', () => {
   const apps: App<Element>[] = []
@@ -495,7 +481,7 @@ describe('useMembersPanel', () => {
     workspaceMembers = []
     workspacePendingInvites = []
     updateWorkspaceStore()
-    mockBillingControlEnabled.value = true
+    mockFeatureFlag('billingControlEnabled', true)
     mockMaxSeats.value = 73
     mockOccupiedSeats.value = 0
     mockCanAccessSubscriptionFeatures.value = true
@@ -901,7 +887,7 @@ describe('useMembersPanel', () => {
     })
 
     it('omits the credit-limit action when the flag is disabled', async () => {
-      mockBillingControlEnabled.value = false
+      mockFeatureFlag('billingControlEnabled', false)
       const panel = await setup()
 
       expect(panel.memberMenuItems(createMember()).map((i) => i.label)).toEqual(
@@ -913,7 +899,7 @@ describe('useMembersPanel', () => {
     })
 
     it('keeps the creator menu hidden when the flag is disabled', async () => {
-      mockBillingControlEnabled.value = false
+      mockFeatureFlag('billingControlEnabled', false)
       setOriginalOwner()
       const panel = await setup()
 

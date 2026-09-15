@@ -1,5 +1,6 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { nextTick, ref } from 'vue'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { effectScope, nextTick, ref } from 'vue'
+import type { EffectScope } from 'vue'
 
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 
@@ -22,18 +23,16 @@ const billingControlEnabled = ref(true)
 const v1PaymentRecovery = ref(true)
 
 beforeEach(() => {
-  vi.mocked(useFeatureFlags).mockReturnValue({
-    ...useFeatureFlags(),
-    flags: {
-      ...useFeatureFlags().flags,
-      get billingControlEnabled() {
-        return billingControlEnabled.value
-      },
-      get v1PaymentRecovery() {
-        return v1PaymentRecovery.value
-      }
-    }
-  })
+  const featureFlags = useFeatureFlags()
+  vi.mocked(useFeatureFlags).mockReturnValue(featureFlags)
+  vi.spyOn(
+    featureFlags.flags,
+    'billingControlEnabled',
+    'get'
+  ).mockImplementation(() => billingControlEnabled.value)
+  vi.spyOn(featureFlags.flags, 'v1PaymentRecovery', 'get').mockImplementation(
+    () => v1PaymentRecovery.value
+  )
 })
 
 vi.mock<unknown>(
@@ -68,10 +67,19 @@ vi.mock<unknown>(
   }
 )
 
-import { useBillingBanner } from './useBillingBanner'
+import { useBillingBanner as createBillingBanner } from './useBillingBanner'
 
 describe('useBillingBanner', () => {
+  let scope: EffectScope
+
+  function useBillingBanner() {
+    const banner = scope.run(createBillingBanner)
+    if (!banner) throw new Error('Failed to create billing banner')
+    return banner
+  }
+
   beforeEach(() => {
+    scope = effectScope()
     const b = mocks.billing!
     b.canAccessSubscriptionFeatures.value = true
     b.isTeamPlan.value = true
@@ -80,6 +88,8 @@ describe('useBillingBanner', () => {
     billingControlEnabled.value = true
     v1PaymentRecovery.value = true
   })
+
+  afterEach(() => scope.stop())
 
   it('suppresses the banner entirely when billing control is rolled back', async () => {
     const b = mocks.billing!

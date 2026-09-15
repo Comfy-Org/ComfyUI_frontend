@@ -1,7 +1,7 @@
-import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { fromAny, fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { mockFeatureFlag } from '@/utils/__tests__/mockFeatureFlag'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { assetService } from '@/platform/assets/services/assetService'
 import { fetchHistoryPage } from '@/platform/remote/comfyui/jobs/fetchJobs'
@@ -14,13 +14,7 @@ import {
 vi.mock(import('@/composables/useFeatureFlags'))
 
 beforeEach(() => {
-  vi.mocked(useFeatureFlags).mockReturnValue({
-    ...useFeatureFlags(),
-    flags: {
-      ...useFeatureFlags().flags,
-      assetsEnabled: true
-    }
-  })
+  mockFeatureFlag('assetsEnabled', true)
 })
 
 vi.mock(import('@/platform/assets/services/assetService'))

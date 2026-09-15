@@ -1,9 +1,9 @@
-import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 
+import { mockFeatureFlag } from '@/utils/__tests__/mockFeatureFlag'
 import ComfyHubPublishWizardContent from './ComfyHubPublishWizardContent.vue'
 import type { ComfyHubPublishFormData } from '@/platform/workflow/sharing/types/comfyHubTypes'
 
@@ -34,23 +34,7 @@ vi.mock<unknown>(import('@/composables/useErrorHandling'), () => ({
   })
 }))
 
-const mockFlags = vi.hoisted(() => ({
-  comfyHubProfileGateEnabled: true
-}))
-
 vi.mock(import('@/composables/useFeatureFlags'))
-
-beforeEach(() => {
-  vi.mocked(useFeatureFlags).mockReturnValue({
-    ...useFeatureFlags(),
-    flags: {
-      ...useFeatureFlags().flags,
-      get comfyHubProfileGateEnabled() {
-        return mockFlags.comfyHubProfileGateEnabled
-      }
-    }
-  })
-})
 
 function createDefaultFormData(): ComfyHubPublishFormData {
   return {
@@ -86,12 +70,12 @@ describe('ComfyHubPublishWizardContent', () => {
   const onGateClose = vi.fn()
 
   beforeEach(() => {
+    mockFeatureFlag('comfyHubProfileGateEnabled', true)
     onPublish.mockResolvedValue(undefined)
     mockCheckProfile.mockResolvedValue(true)
     mockHasProfile.value = true
     mockIsFetchingProfile.value = false
     mockProfile.value = { username: 'testuser', name: 'Test User' }
-    mockFlags.comfyHubProfileGateEnabled = true
   })
 
   function renderComponent(
@@ -221,7 +205,7 @@ describe('ComfyHubPublishWizardContent', () => {
     })
 
     it('calls onPublish directly when profile gate is disabled', async () => {
-      mockFlags.comfyHubProfileGateEnabled = false
+      mockFeatureFlag('comfyHubProfileGateEnabled', false)
 
       renderComponent()
       await userEvent.click(screen.getByTestId('publish-btn'))
@@ -319,7 +303,7 @@ describe('ComfyHubPublishWizardContent', () => {
     })
 
     it('enables publish when gate is disabled regardless of profile', () => {
-      mockFlags.comfyHubProfileGateEnabled = false
+      mockFeatureFlag('comfyHubProfileGateEnabled', false)
       mockHasProfile.value = null
       renderComponent()
 

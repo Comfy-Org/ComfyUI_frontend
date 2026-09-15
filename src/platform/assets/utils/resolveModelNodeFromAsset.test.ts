@@ -1,26 +1,13 @@
-import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useModelToNodeStore } from '@/stores/modelToNodeStore'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { mockFeatureFlag } from '@/utils/__tests__/mockFeatureFlag'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { resolveModelNodeFromAsset } from '@/platform/assets/utils/resolveModelNodeFromAsset'
 
 const mockGetNodeProvider = vi.hoisted(() => vi.fn())
-const mockSupportsModelTypeTags = vi.hoisted(() => ({ value: false }))
 
 vi.mock(import('@/composables/useFeatureFlags'))
-
-beforeEach(() => {
-  vi.mocked(useFeatureFlags).mockReturnValue({
-    ...useFeatureFlags(),
-    flags: {
-      ...useFeatureFlags().flags,
-      get supportsModelTypeTags() {
-        return mockSupportsModelTypeTags.value
-      }
-    }
-  })
-})
 
 function createMockAsset(overrides: Partial<AssetItem> = {}): AssetItem {
   return {
@@ -68,7 +55,6 @@ beforeEach(() => {
 describe('resolveModelNodeFromAsset', () => {
   beforeEach(() => {
     vi.spyOn(console, 'error').mockImplementation(() => {})
-    mockSupportsModelTypeTags.value = false
   })
 
   describe('valid assets', () => {
@@ -89,7 +75,7 @@ describe('resolveModelNodeFromAsset', () => {
     })
 
     it('strips the model_type: prefix when resolving the provider in model_type mode', () => {
-      mockSupportsModelTypeTags.value = true
+      mockFeatureFlag('supportsModelTypeTags', true)
       mockProvider(createMockNodeProvider())
       const result = resolveModelNodeFromAsset(
         createMockAsset({ tags: ['models', 'model_type:vae'] })
@@ -100,7 +86,7 @@ describe('resolveModelNodeFromAsset', () => {
     })
 
     it('skips an unresolvable incidental tag and resolves via the model_type value', () => {
-      mockSupportsModelTypeTags.value = true
+      mockFeatureFlag('supportsModelTypeTags', true)
       mockGetNodeProvider.mockImplementation((category: string) =>
         category === 'vae' ? createMockNodeProvider() : undefined
       )
@@ -114,7 +100,7 @@ describe('resolveModelNodeFromAsset', () => {
     })
 
     it('prefers the deepest resolvable path over a flat model_type value', () => {
-      mockSupportsModelTypeTags.value = true
+      mockFeatureFlag('supportsModelTypeTags', true)
       mockGetNodeProvider.mockImplementation((category: string) =>
         category === 'LLM/Qwen-VL/Qwen3-0.6B'
           ? createMockNodeProvider()

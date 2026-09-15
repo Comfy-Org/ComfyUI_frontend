@@ -1,4 +1,3 @@
-import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useDialogStore } from '@/stores/dialogStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useBillingOperationStore } from '@/platform/workspace/stores/billingOperationStore'
@@ -7,6 +6,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useTelemetry } from '@/platform/telemetry'
 
+import { mockFeatureFlag } from '@/utils/__tests__/mockFeatureFlag'
 import type { SubscriptionInfo } from '@/composables/billing/types'
 import type {
   BillingSubscriptionStatus,
@@ -35,8 +35,6 @@ const mockIsLegacyTeamPlan = vi.hoisted(() => ({ value: false }))
 const mockIsTeamPlan = vi.hoisted(() => ({ value: false }))
 const mockCurrentPlanSlug = vi.hoisted(() => ({ value: null as string | null }))
 const mockCanManageSubscription = vi.hoisted(() => ({ value: true }))
-const mockEmbeddedCheckoutEnabled = vi.hoisted(() => ({ value: false }))
-
 const mockStartOperation = vi.hoisted(() => vi.fn())
 const mockFetchPlans = vi.hoisted(() => vi.fn())
 const mockFetchStatus = vi.hoisted(() => vi.fn())
@@ -76,18 +74,6 @@ vi.mock<unknown>(import('@/composables/billing/useBillingRouting'), () => ({
 }))
 
 vi.mock(import('@/composables/useFeatureFlags'))
-
-beforeEach(() => {
-  vi.mocked(useFeatureFlags).mockReturnValue({
-    ...useFeatureFlags(),
-    flags: {
-      ...useFeatureFlags().flags,
-      get embeddedCheckoutEnabled() {
-        return mockEmbeddedCheckoutEnabled.value
-      }
-    }
-  })
-})
 
 vi.mock(import('@/platform/distribution/types'), () => ({
   get isCloud() {
@@ -159,7 +145,6 @@ describe('useSubscriptionDialog', () => {
     mockIsTeamPlan.value = false
     mockCurrentPlanSlug.value = null
     mockCanManageSubscription.value = true
-    mockEmbeddedCheckoutEnabled.value = false
     Object.assign(useTeamWorkspaceStore(), { activeWorkspaceId: 'workspace-1' })
     Object.assign(useAuthStore(), { userId: 'user-1' })
     mockStartOperation.mockResolvedValue({ status: 'succeeded' })
@@ -359,7 +344,7 @@ describe('useSubscriptionDialog', () => {
 
     it('enables embedded checkout only for the exact server flag', () => {
       mockShouldUseWorkspaceBilling.value = true
-      mockEmbeddedCheckoutEnabled.value = true
+      mockFeatureFlag('embeddedCheckoutEnabled', true)
       const { showPricingTable } = useSubscriptionDialog()
 
       showPricingTable()

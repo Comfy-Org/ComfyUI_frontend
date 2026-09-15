@@ -9,6 +9,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import * as vuefire from 'vuefire'
 
 import { useAuthStore } from '@/stores/authStore'
+
 const { mockFeatureFlags } = vi.hoisted(() => ({
   mockFeatureFlags: {
     unifiedCloudAuthEnabled: false
@@ -25,15 +26,13 @@ const { mockDistributionTypes } = vi.hoisted(() => ({
 vi.mock(import('@/composables/useFeatureFlags'))
 
 beforeEach(() => {
-  vi.mocked(useFeatureFlags).mockReturnValue({
-    ...useFeatureFlags(),
-    flags: {
-      ...useFeatureFlags().flags,
-      get unifiedCloudAuthEnabled() {
-        return mockFeatureFlags.unifiedCloudAuthEnabled
-      }
-    }
-  })
+  const featureFlags = useFeatureFlags()
+  vi.mocked(useFeatureFlags).mockReturnValue(featureFlags)
+  vi.spyOn(
+    featureFlags.flags,
+    'unifiedCloudAuthEnabled',
+    'get'
+  ).mockImplementation(() => mockFeatureFlags.unifiedCloudAuthEnabled)
 })
 
 vi.mock(import('vuefire'), () => ({

@@ -51,15 +51,13 @@ const mockPartnerRunGateEnabled = ref(true)
 
 beforeEach(() => {
   mockPartnerRunGateEnabled.value = true
-  vi.mocked(useFeatureFlags).mockReturnValue({
-    ...useFeatureFlags(),
-    flags: {
-      ...useFeatureFlags().flags,
-      get partnerRunGateEnabled() {
-        return mockPartnerRunGateEnabled.value
-      }
-    }
-  })
+  const featureFlags = useFeatureFlags()
+  vi.mocked(useFeatureFlags).mockReturnValue(featureFlags)
+  vi.spyOn(
+    featureFlags.flags,
+    'partnerRunGateEnabled',
+    'get'
+  ).mockImplementation(() => mockPartnerRunGateEnabled.value)
 })
 
 const mockReportError = vi.hoisted(() => vi.fn())

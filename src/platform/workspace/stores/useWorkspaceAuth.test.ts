@@ -92,15 +92,13 @@ const mockUnifiedCloudAuthEnabled = ref(false)
 vi.mock(import('@/composables/useFeatureFlags'))
 
 beforeEach(() => {
-  vi.mocked(useFeatureFlags).mockReturnValue({
-    ...useFeatureFlags(),
-    flags: {
-      ...useFeatureFlags().flags,
-      get unifiedCloudAuthEnabled() {
-        return mockUnifiedCloudAuthEnabled.value
-      }
-    }
-  })
+  const featureFlags = useFeatureFlags()
+  vi.mocked(useFeatureFlags).mockReturnValue(featureFlags)
+  vi.spyOn(
+    featureFlags.flags,
+    'unifiedCloudAuthEnabled',
+    'get'
+  ).mockImplementation(() => mockUnifiedCloudAuthEnabled.value)
 })
 
 const mockWorkspace = {

@@ -1,18 +1,15 @@
-import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { storeToRefs } from 'pinia'
 import type { Ref } from 'vue'
 import { fromPartial } from '@total-typescript/shoehorn'
 
+import { mockFeatureFlag } from '@/utils/__tests__/mockFeatureFlag'
 import type { BillingRail } from '@/platform/workspace/api/workspaceApi'
 
 import { useBillingRouting } from './useBillingRouting'
 
-const { mockIsCloud, mockLegacyBillingMigrationEnabled } = vi.hoisted(() => ({
-  mockIsCloud: { value: true },
-  mockLegacyBillingMigrationEnabled: { value: false }
-}))
+const mockIsCloud = vi.hoisted(() => ({ value: true }))
 
 let mockActiveWorkspace: Ref<
   ReturnType<typeof useTeamWorkspaceStore>['activeWorkspace']
@@ -20,18 +17,6 @@ let mockActiveWorkspace: Ref<
 let mockActiveWorkspaceBillingRail: Ref<BillingRail | null>
 
 vi.mock(import('@/composables/useFeatureFlags'))
-
-beforeEach(() => {
-  vi.mocked(useFeatureFlags).mockReturnValue({
-    ...useFeatureFlags(),
-    flags: {
-      ...useFeatureFlags().flags,
-      get legacyBillingMigrationEnabled() {
-        return mockLegacyBillingMigrationEnabled.value
-      }
-    }
-  })
-})
 
 vi.mock(import('@/platform/distribution/types'), () => ({
   get isCloud() {
@@ -52,7 +37,6 @@ describe('useBillingRouting', () => {
     mockActiveWorkspace = refs.activeWorkspace
     mockActiveWorkspaceBillingRail = refs.activeWorkspaceBillingRail
     mockIsCloud.value = true
-    mockLegacyBillingMigrationEnabled.value = false
     mockActiveWorkspace.value = personal
     mockActiveWorkspaceBillingRail.value = null
   })
@@ -96,7 +80,7 @@ describe('useBillingRouting', () => {
   })
 
   it('migrates legacy Stripe personal workspaces behind the rollout flag', () => {
-    mockLegacyBillingMigrationEnabled.value = true
+    mockFeatureFlag('legacyBillingMigrationEnabled', true)
     mockActiveWorkspaceBillingRail.value = 'legacy_stripe'
 
     const { type, shouldUseWorkspaceBilling } = useBillingRouting()
