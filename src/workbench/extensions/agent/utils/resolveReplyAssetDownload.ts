@@ -1,4 +1,3 @@
-import { downloadBlob } from '@/base/common/downloadUtil'
 import {
   findOutputAsset,
   isAssetPreviewSupported
@@ -18,12 +17,13 @@ async function displayFilename(asset: ReplyAsset): Promise<string> {
     : `${name}${asset.filename.slice(dot)}`
 }
 
-export async function downloadReplyAsset(asset: ReplyAsset): Promise<void> {
+export async function resolveReplyAssetDownload(asset: ReplyAsset) {
   const apiBase = api.apiURL('/')
-  const route = asset.url.includes(apiBase)
-    ? asset.url.slice(asset.url.indexOf(apiBase) + api.apiURL('').length)
-    : asset.url
-  const response = await api.fetchApi(route)
-  if (!response.ok) return
-  downloadBlob(await displayFilename(asset), await response.blob())
+  return {
+    url: asset.url.includes(apiBase)
+      ? asset.url.slice(asset.url.indexOf(apiBase) + api.apiURL('').length)
+      : asset.url,
+    filename: await displayFilename(asset),
+    fetch: (url: string) => api.fetchApi(url)
+  }
 }
