@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
-import { useClipboard, useEventListener } from '@vueuse/core'
+import { useEventListener } from '@vueuse/core'
 import type { AcceptableValue } from 'reka-ui'
 import type { ComponentPublicInstance } from 'vue'
 import {
@@ -23,6 +23,7 @@ import ToggleGroup from '@/components/ui/toggle-group/ToggleGroup.vue'
 import ToggleGroupItem from '@/components/ui/toggle-group/ToggleGroupItem.vue'
 import type { SelectOption } from '@/components/ui/select/types'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
+import { useCopyToClipboard } from '@/composables/useCopyToClipboard'
 import { resolveDeployEnv } from '@/platform/telemetry/initDatadogRum'
 import { reportError } from '@/platform/telemetry/reportError'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
@@ -437,7 +438,7 @@ const reportCopyState = ref<
 >({ status: 'idle' })
 const itemCopy = ref<{ key: string; state: 'done' | 'failed' } | null>(null)
 const reportSources = ref<ReportSources>({ ...DEFAULT_REPORT_SOURCES })
-const { copy } = useClipboard({ legacy: true })
+const { copyToClipboard } = useCopyToClipboard({ showSuccessToast: false })
 let itemCopyRequest = 0
 
 const copyReportLabel = computed(() => {
@@ -454,18 +455,9 @@ const copyLogLabel = computed(() => {
   return t(`${i18nKey}.copyLog`)
 })
 
-async function writeClipboard(text: string): Promise<boolean> {
-  try {
-    await copy(text)
-    return true
-  } catch {
-    return false
-  }
-}
-
 async function copyItem(key: string, text: string) {
   const request = ++itemCopyRequest
-  const ok = await writeClipboard(text)
+  const ok = await copyToClipboard(text)
   if (request !== itemCopyRequest) return
   itemCopy.value = { key, state: ok ? 'done' : 'failed' }
   clearTimeout(itemCopyReset)
@@ -491,7 +483,7 @@ function flashLogCopyState(ok: boolean) {
 async function copyLog() {
   try {
     flashLogCopyState(
-      await writeClipboard(stringifyDevEvents(matchingEvents.value))
+      await copyToClipboard(stringifyDevEvents(matchingEvents.value))
     )
   } catch {
     flashLogCopyState(false)
@@ -552,9 +544,7 @@ function collectCurrentMediaUiDiagnostics() {
 }
 
 async function copyCollectedReport(report: string): Promise<void> {
-  try {
-    await navigator.clipboard.writeText(report)
-  } catch {
+  if (!(await copyToClipboard(report))) {
     reportCopyState.value = { status: 'failed', report }
     return
   }

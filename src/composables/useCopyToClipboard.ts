@@ -1,5 +1,6 @@
-import { useToast } from '@/components/ui/toast/toastStore'
+import { getCurrentScope, onScopeDispose, ref } from 'vue'
 
+import { useToast } from '@/components/ui/toast/toastStore'
 import { t } from '@/i18n'
 
 function legacyCopy(text: string): boolean {
@@ -18,46 +19,79 @@ function legacyCopy(text: string): boolean {
   }
 }
 
-export function useCopyToClipboard() {
+async function writeToClipboard(
+  text: string,
+  clipboardItems?: ClipboardItem[]
+): Promise<boolean> {
+  if (clipboardItems) {
+    try {
+      await navigator.clipboard.write(clipboardItems)
+      return true
+    } catch {
+      // Rich clipboard failed, fall through to plain text
+    }
+  }
+
+  try {
+    await navigator.clipboard.writeText(text)
+    return true
+  } catch {
+    // Modern clipboard API failed, fall through to legacy
+  }
+
+  try {
+    return legacyCopy(text)
+  } catch {
+    return false
+  }
+}
+
+export function useCopyToClipboard({
+  copiedDuring,
+  showSuccessToast = true
+}: {
+  copiedDuring?: number
+  showSuccessToast?: boolean
+} = {}) {
   const toast = useToast()
+  const copied = ref(false)
+  let copiedReset: ReturnType<typeof setTimeout> | undefined
 
   async function copyToClipboard(
     text: string,
-    { toastOnSuccess = true }: { toastOnSuccess?: boolean } = {}
+    {
+      clipboardItems,
+      toastOnSuccess = showSuccessToast
+    }: { clipboardItems?: ClipboardItem[]; toastOnSuccess?: boolean } = {}
   ): Promise<boolean> {
-    let success = false
-
-    try {
-      await navigator.clipboard.writeText(text)
-      success = true
-    } catch {
-      // Modern clipboard API failed, fall through to legacy
-    }
-
-    if (!success) {
-      try {
-        success = legacyCopy(text)
-      } catch {
-        // Legacy also failed
-      }
-    }
-
-    if (success && !toastOnSuccess) return true
+    copied.value = false
+    clearTimeout(copiedReset)
+    const success = await writeToClipboard(text, clipboardItems)
 
     if (success) {
-      toast.success(t('g.success'), {
-        description: t('clipboard.successMessage'),
-        duration: 3000
-      })
+      copied.value = true
+      if (copiedDuring !== undefined) {
+        copiedReset = setTimeout(() => (copied.value = false), copiedDuring)
+      }
+      if (toastOnSuccess) {
+        toast.success(t('g.success'), {
+          description: t('clipboard.successMessage'),
+          duration: 3000
+        })
+      }
     } else {
       toast.error(t('g.error'), {
         description: t('clipboard.errorMessage')
       })
     }
+
     return success
   }
 
+  if (getCurrentScope()) onScopeDispose(() => clearTimeout(copiedReset))
+
   return {
+    copied,
     copyToClipboard
   }
 }
