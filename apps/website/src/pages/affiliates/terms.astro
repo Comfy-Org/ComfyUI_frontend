@@ -9,21 +9,33 @@ import BaseLayout from '../../layouts/BaseLayout.astro'
 import HeroSection from '../../components/legal/HeroSection.vue'
 import LegalContentSection from '../../components/legal/LegalContentSection.vue'
 import { t } from '../../i18n/translations'
+import { pageContext } from '../../utils/jsonLd'
+
+const { locale } = pageContext(
+  Astro.site,
+  Astro.originPathname,
+  Astro.currentLocale,
+)
+
+
+
+
+
 ---
 
 <BaseLayout
-  title={t('affiliate-terms.page.title')}
-  description={t('affiliate-terms.page.description')}
+  title={t('affiliate-terms.page.title', locale)}
+  description={t('affiliate-terms.page.description', locale)}
 >
-  <HeroSection title={t('affiliate-terms.page.heading')} />
+  <HeroSection title={t('affiliate-terms.page.heading', locale)} />
   <p class="text-primary-warm-gray mt-2 text-center text-sm">
-    {t('affiliate-terms.page.effectiveDateLabel')}: {
-      t('affiliate-terms.effective-date')
+    {t('affiliate-terms.page.effectiveDateLabel', locale)}: {
+      t('affiliate-terms.effective-date', locale)
     }
   </p>
   <LegalContentSection
     prefix="affiliate-terms"
-    locale="en"
+    locale={locale}
     tocLabelKey="affiliate-terms.page.tocLabel"
     client:load
   />

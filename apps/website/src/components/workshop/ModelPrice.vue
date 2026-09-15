@@ -23,10 +23,10 @@ const price = computed(() => splitPriceLabel(estimate ?? ''))
         }}</span>
       </span>
       <InfoTooltip
-        :text="t('workshop.model.nodePriceDefaults')"
-        :label="t('workshop.model.priceNoteLabel')"
+        :text="t('workshop.model.nodePriceDefaults', 'en')"
+        :label="t('workshop.model.priceNoteLabel', 'en')"
       />
     </template>
-    <template v-else>{{ t('workshop.model.variablePrice') }}</template>
+    <template v-else>{{ t('workshop.model.variablePrice', 'en') }}</template>
   </p>
 </template>

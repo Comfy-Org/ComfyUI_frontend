@@ -381,8 +381,17 @@ test.describe('Learning tutorial page @smoke', () => {
     const zhPath = `/zh-CN${tutorialPath(firstTutorial)}`
     await page.goto(zhPath)
     await expect(page).toHaveTitle(tutorialMetaTitle(firstTutorial, 'zh-CN'))
+    // Resolved the way the page resolves it — `||`, not `??`. The two differ on
+    // an empty string, where the page falls back to English and `??` would have
+    // expected the empty value. Chinese is optional on the type now, so
+    // completeness is the coverage report's job, not this test's.
+    //
+    // Every tutorial carries Chinese today, so this cannot exercise the English
+    // fallback whatever fixture it picks. That branch is covered in
+    // `src/data/learningTutorials.test.ts`, where a tutorial can be made to
+    // lack a locale without inventing site content.
     await expect(page.getByRole('heading', { level: 1 })).toHaveText(
-      firstTutorial.title['zh-CN']
+      firstTutorial.title['zh-CN'] || firstTutorial.title.en
     )
   })
 })
@@ -445,7 +454,10 @@ test.describe('Learning page (zh-CN) @smoke', () => {
     const [firstTutorial] = learningTutorials
     await expect(
       page.getByRole('link', {
-        name: thumbnailLinkName(firstTutorial.title['zh-CN'], 'zh-CN')
+        name: thumbnailLinkName(
+          firstTutorial.title['zh-CN'] ?? firstTutorial.title.en,
+          'zh-CN'
+        )
       })
     ).toBeVisible()
   })

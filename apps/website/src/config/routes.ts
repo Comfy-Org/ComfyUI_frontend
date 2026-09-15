@@ -1,4 +1,5 @@
-import type { Locale } from '../i18n/translations'
+import { DEFAULT_LOCALE, localeHasRoute, localePrefix } from './locales'
+import type { Locale } from './locales'
 
 const baseRoutes = {
   home: '/',
@@ -89,8 +90,6 @@ const LOCALE_INVARIANT_ROUTE_KEYS = new Set<keyof Routes>([
   'affiliateTerms',
   'termsOfService',
   'enterpriseMsa',
-  'enterprise',
-  'managedBuilds',
   'models',
   'minimaxLicenseProfessionalRequest',
   'workshop',
@@ -136,15 +135,37 @@ export function isLocaleInvariantPath(pathname: string): boolean {
   )
 }
 
-export function localizeHref(href: string, locale: Locale = 'en'): string {
-  if (locale === 'en' || !href.startsWith('/')) return href
-  if (isLocaleInvariantPath(href.split(/[?#]/, 1)[0])) return href
-  if (locale === 'ja') return href === '/' ? '/ja/' : href
-  return `/${locale}${href}`
+export function localizeHref(
+  href: string,
+  locale: Locale = DEFAULT_LOCALE
+): string {
+  if (locale === DEFAULT_LOCALE || !href.startsWith('/')) return href
+  // A query or fragment is not part of the route. `/customers#hero-video` was
+  // compared against a route list holding `/customers`, missed, and returned
+  // unprefixed — so a link into a section of a published page would leave the
+  // locale. The suffix is set aside for the checks and put back afterwards.
+  const suffixAt = href.search(/[?#]/)
+  if (suffixAt !== -1) {
+    return `${localizeHref(href.slice(0, suffixAt), locale)}${href.slice(suffixAt)}`
+  }
+  // The same predicate the hreflang emitter uses. It matched whole paths here
+  // and prefixes there, so a page nested under an invariant route was localized
+  // by one and not the other: /zh-CN/models linked to
+  // /zh-CN/p/supported-models/grok-imagine, which has never existed.
+  if (isLocaleInvariantPath(href)) return href
+  // Only localize a path the locale actually serves. This replaces a hardcoded
+  // `locale === 'ja'` branch that sent every Japanese link except the home page
+  // to the English page. Deleting that outright would have been worse than the
+  // bug: the links would resolve to /ja/<path> URLs that do not exist until P3
+  // generates the shells. `localeHasRoute` is the same predicate the hreflang
+  // builder uses, so links and clusters cannot disagree, and both start working
+  // on their own as P3 adds pages.
+  if (!localeHasRoute(locale, href)) return href
+  return `${localePrefix(locale)}${href === '/' ? '/' : href}`
 }
 
-export function getRoutes(locale: Locale = 'en'): Routes {
-  if (locale === 'en') return baseRoutes
+export function getRoutes(locale: Locale = DEFAULT_LOCALE): Routes {
+  if (locale === DEFAULT_LOCALE) return baseRoutes
   return Object.fromEntries(
     Object.entries(baseRoutes).map(([key, path]) => [
       key,

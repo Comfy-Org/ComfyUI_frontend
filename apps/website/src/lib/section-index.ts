@@ -1,6 +1,8 @@
 import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import { dirname, join } from 'node:path'
 
+import { LOCALE_PREFIXES } from '../config/locales'
+
 const SITE_INDEX_URL = 'https://comfy.org/llms.txt'
 
 export interface SectionSpec {
@@ -130,7 +132,15 @@ export async function writeFullText(
   const english = twinPaths
     .filter(
       (path) =>
-        !path.startsWith('/zh-CN/') &&
+        // Every locale, via the same `belongsTo` the section indexes use, which
+        // already knows a prefix owns both `/zh-CN.md` and `/zh-CN/...`.
+        //
+        // This was a literal `!path.startsWith('/zh-CN/')`, which missed two
+        // things: every Japanese page once /ja/ existed, and BOTH locales' home
+        // pages in every build before that, since a locale home's twin is
+        // `/zh-CN.md` rather than `/zh-CN/index.md`. All of them were being
+        // concatenated into what is meant to be the English corpus.
+        !LOCALE_PREFIXES.some((prefix) => belongsTo(path, prefix)) &&
         path !== '/404.md' &&
         path !== '/p/supported-models.md' &&
         !path.startsWith('/p/supported-models/')

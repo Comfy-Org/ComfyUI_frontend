@@ -1,19 +1,31 @@
 <script setup lang="ts">
-import type { Locale } from '../../i18n/translations'
+import { computed } from 'vue'
+
+import type { Locale } from '../../config/locales'
+import { DEFAULT_LOCALE } from '../../config/locales'
+import { localizeHref } from '../../config/routes'
 import { t } from '../../i18n/translations'
 import type { StoryCard } from '../../utils/customers'
 
-const { story, locale = 'en' } = defineProps<{
+const { story, locale = DEFAULT_LOCALE } = defineProps<{
   story: StoryCard
   locale?: Locale
 }>()
 
-const prefix = locale === 'zh-CN' ? '/zh-CN' : ''
+// Via localizeHref rather than a `locale === 'zh-CN'` ternary, so a locale that
+// does not serve this route links to the English page instead of a 404, and so
+// a new locale does not need this component edited.
+//
+// Computed, not a plain const: the card is rendered from a `v-for`, so one
+// instance is reused for whichever story lands in that slot, and a value read
+// once at setup would keep the first story's link under the second story's
+// title.
+const href = computed(() => localizeHref(`/customers/${story.slug}`, locale))
 </script>
 
 <template>
   <a
-    :href="`${prefix}/customers/${story.slug}`"
+    :href="href"
     class="bg-transparency-white-t4 group flex flex-col overflow-hidden rounded-3xl transition-colors hover:bg-white/8"
   >
     <div class="m-2 aspect-video overflow-hidden rounded-2xl">

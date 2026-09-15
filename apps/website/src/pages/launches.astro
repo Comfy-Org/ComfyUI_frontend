@@ -4,8 +4,13 @@ import CtaSection from '../templates/drops/CtaSection.vue'
 import DropsSection from '../templates/drops/DropsSection.vue'
 import HeroSection from '../templates/drops/HeroSection.vue'
 import { t } from '../i18n/translations'
+import { pageContext } from '../utils/jsonLd'
 
-const locale = 'en' as const
+const { locale } = pageContext(
+  Astro.site,
+  Astro.originPathname,
+  Astro.currentLocale,
+)
 ---
 
 <BaseLayout

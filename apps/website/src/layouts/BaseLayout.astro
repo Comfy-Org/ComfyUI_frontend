@@ -6,16 +6,19 @@ import SiteFooter from '../components/common/SiteFooter.vue'
 import GoogleTagManager from '../components/common/GoogleTagManager.astro'
 import HeaderMain from '../components/common/HeaderMain/HeaderMain.vue'
 import AnnouncementBanner from '../templates/drops/AnnouncementBanner.vue'
+import { LOCALE_PREFIXES } from '../config/locales'
 import { bannerConfig, getBannerData } from '../config/banner'
 import { getRoutes } from '../config/routes'
 import { isNoindexPathname } from '../config/indexing'
 import { isWorkshopInBuild } from '../config/workshop-release'
 import {
+  canonicalPath,
   hreflangAlternates,
   ogLocale,
   ogLocaleAlternate
 } from '../lib/hreflang'
 import { markdownTwinPath } from '../lib/markdown-twin-path'
+import { t } from '../i18n/translations'
 import { isHrefActive } from '../composables/useCurrentPath'
 import {
   BANNER_DISMISS_ATTR,
@@ -30,6 +33,7 @@ import JsonLdGraph from '../components/common/JsonLdGraph.astro'
 
 interface Props {
   title: string
+  /** Falls back to `meta.defaultDescription`, translated for this locale. */
   description?: string
   keywords?: string[]
   ogImage?: string
@@ -43,7 +47,7 @@ interface Props {
 
 const {
   title,
-  description = 'Comfy is the AI creation engine for visual professionals who demand control.',
+  description,
   keywords,
   ogImage = 'https://media.comfy.org/website/comfy.webp',
   noindex = false,
@@ -56,16 +60,32 @@ const {
 
 const keywordsContent = keywords && keywords.length > 0 ? keywords.join(', ') : undefined
 
+// `originPathname`, not `url.pathname`: with i18n fallback rewrites, Astro
+// reports the ENGLISH path it rendered FROM, while originPathname keeps the URL
+// actually requested. Every locale-aware thing on the page — canonical, JSON-LD,
+// breadcrumbs, hreflang — has to describe the page a reader asked for.
 const { siteUrl, locale, url } = pageContext(
   Astro.site,
-  Astro.url.pathname,
+  Astro.originPathname,
   Astro.currentLocale,
 )
-const canonicalURL = new URL(url)
-const shouldNoindex = noindex || isNoindexPathname(Astro.url.pathname)
+const pageDescription =
+  description ?? t('meta.defaultDescription', locale)
+
+// NOT `new URL(url)`. Once a locale is served by the i18n fallback, Astro
+// reports the ENGLISH pathname during the render, so a canonical taken from it
+// declares the English page the original. That is right for a held-back locale
+// and catastrophic for a translated one: it would have told Google the English
+// page is the original for every Chinese page on the site.
+const canonicalURL = new URL(canonicalPath(new URL(url).pathname, locale), url)
+const shouldNoindex =
+  noindex || isNoindexPathname(Astro.originPathname)
 const alternates = shouldNoindex
   ? []
-  : hreflangAlternates(canonicalURL.pathname, canonicalURL.origin)
+  : // `locale` comes from Astro.currentLocale, which is the ONLY thing that
+    // knows a rewritten fallback page is Japanese: Astro reports the English
+    // pathname during that render.
+    hreflangAlternates(canonicalURL.pathname, canonicalURL.origin, locale)
 const openGraphLocale = ogLocale(locale)
 const openGraphLocaleAlternate = ogLocaleAlternate(locale, alternates)
 const ogImageURL = new URL(ogImage, Astro.site ?? 'https://comfy.org')
@@ -81,7 +101,7 @@ const bannerVisible =
     currentLocale: locale,
     currentSection: 'sitewide',
     now: new Date(),
-  }) && !isHrefActive(bannerData.link?.href ?? '', Astro.url.pathname)
+  }) && !isHrefActive(bannerData.link?.href ?? '', Astro.originPathname)
 const bannerVersion = createBannerVersion(bannerData, locale)
 
 const structuredData = shouldNoindex
@@ -89,9 +109,14 @@ const structuredData = shouldNoindex
   : buildPageGraph(
       { siteUrl, locale },
       {
-        url,
+        // The canonical, not the path Astro reported. During a fallback render
+        // that path is the ENGLISH one, so the graph claimed a Chinese page WAS
+        // the English page: same @id, same url. Structured data has to agree
+        // with the canonical tag or it describes a different page than the one
+        // being served.
+        url: canonicalURL.href,
         name: title,
-        description,
+        description: pageDescription,
         imageUrl: ogImageURL.href,
         type: pageType,
         crumbs: breadcrumbs,
@@ -111,7 +136,7 @@ const structuredData = shouldNoindex
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="description" content={description} />
+    <meta name="description" content={pageDescription} />
     {keywordsContent && <meta name="keywords" content={keywordsContent} />}
     {shouldNoindex && <meta name="robots" content="noindex, nofollow" />}
     <title>{title}</title>
@@ -176,7 +201,7 @@ const structuredData = shouldNoindex
     <!-- Open Graph -->
     <meta property="og:type" content="website" />
     <meta property="og:title" content={title} />
-    <meta property="og:description" content={description} />
+    <meta property="og:description" content={pageDescription} />
     <meta property="og:image" content={ogImageURL.href} />
     <meta property="og:image:width" content="1200" />
     <meta property="og:image:height" content="630" />
@@ -193,7 +218,7 @@ const structuredData = shouldNoindex
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:site" content="@comaboratory" />
     <meta name="twitter:title" content={title} />
-    <meta name="twitter:description" content={description} />
+    <meta name="twitter:description" content={pageDescription} />
     <meta name="twitter:image" content={ogImageURL.href} />
 
     <!-- Structured Data -->
@@ -263,9 +288,79 @@ const structuredData = shouldNoindex
     <main class="overflow-x-clip">
       <slot />
     </main>
-    {!minimal && <SiteFooter locale={locale} client:load />}
+    {!minimal && (
+      <SiteFooter locale={locale} alternates={alternates} client:load />
+    )}
 
     <Analytics />
+    {/*
+      @vercel/analytics bakes `Astro.url.pathname` into the element and offers
+      no prop to override it. With i18n fallback rewrites that path is the
+      ENGLISH one, so every Chinese and Japanese pageview would be reported
+      against the English URL and the localized sites would look like they had
+      no traffic at all.
+
+      Corrected through the element's own data attribute, which its constructor
+      reads. Safe to do here: the vendor's script is `type="module"` and
+      therefore deferred, while this classic inline script runs immediately, so
+      the attribute is right before the element upgrades.
+
+      The page's OWN url, not its canonical: a held-back Japanese page points its
+      canonical at English, but its traffic is still Japanese traffic.
+    */}
+    <!--
+      Crossing locales has to be a real page load.
+
+      ClientRouter swaps the document without re-evaluating any module, and in
+      production the browser deliberately loads only its own page's dictionary
+      — an English reader never downloads Chinese. A client-side swap into
+      another locale therefore leaves the incoming islands asking for a
+      dictionary that was never fetched, and `t()` throws rather than render
+      text the server did not. The page looks broken until a refresh, which is
+      a full load and fetches the right one.
+
+      This is not only the language switcher. `localizeHref` returns an
+      unprefixed path for a route a locale does not publish, so an ordinary
+      footer link from /zh-CN/about to /terms-of-service crosses locales too.
+      Hence one listener rather than an attribute on links nobody can
+      enumerate.
+
+      `loader` is the documented override point for the loading phase.
+    -->
+    <script is:inline define:vars={{ localePrefixes: LOCALE_PREFIXES }}>
+      document.addEventListener('astro:before-preparation', (event) => {
+        const localeOf = (pathname) =>
+          localePrefixes.find(
+            (prefix) =>
+              pathname === prefix || pathname.startsWith(prefix + '/')
+          ) ?? ''
+        if (localeOf(event.to.pathname) === localeOf(event.from.pathname)) {
+          return
+        }
+        event.loader = async () => {
+          // Back and forward have already moved the history position, and a
+          // replace was asked not to add one. Only a push should create an
+          // entry — assign() for all three would pile up entries and leave the
+          // back button walking forwards.
+          const keepsHistoryPosition =
+            event.navigationType === 'traverse' ||
+            event.navigationType === 'replace'
+          if (keepsHistoryPosition) {
+            window.location.replace(event.to.href)
+          } else {
+            window.location.assign(event.to.href)
+          }
+          // The browser is leaving; never resolve, so nothing swaps first.
+          await new Promise(() => {})
+        }
+      })
+    </script>
+
+    <script is:inline define:vars={{ analyticsPath: new URL(url).pathname }}>
+      document
+        .querySelector('vercel-analytics')
+        ?.setAttribute('data-pathname', analyticsPath)
+    </script>
 
     <script>
       import { initSmoothScroll, cancelScroll } from '../scripts/smoothScroll'
@@ -286,6 +381,12 @@ const structuredData = shouldNoindex
 
       document.addEventListener('astro:before-preparation', () => {
         cancelScroll()
+      })
+
+      document.addEventListener('astro:before-swap', (event) => {
+        event.newDocument
+          .querySelector('vercel-analytics')
+          ?.setAttribute('data-pathname', event.to.pathname)
       })
 
       // Synchronous, so it runs before island hydration touches the DOM.

@@ -8,20 +8,23 @@ import {
   jsonLdId,
   pageContext,
 } from '../../../utils/jsonLd'
+import { localizeHref } from '../../../config/routes'
 
-const title = t('models.index.title')
-const subtitle = t('models.index.subtitle')
-
-const { url, locale } = pageContext(
+const { locale, canonicalUrl, canonicalLocale } = pageContext(
   Astro.site,
-  Astro.url.pathname,
+  Astro.originPathname,
   Astro.currentLocale,
 )
+
+const title = t('models.index.title', locale)
+const subtitle = t('models.index.subtitle', locale)
+
+
 const modelList = itemListNode(
-  url,
+  canonicalUrl,
   title,
   models.map((model) => ({
-    url: absoluteUrl(Astro.site, `/p/supported-models/${model.slug}`),
+    url: absoluteUrl(Astro.site, localizeHref(`/p/supported-models/${model.slug}`, canonicalLocale)),
   })),
 )
 
@@ -46,9 +49,9 @@ const dirLabel: Record<string, string> = {
   title={`${title} - Comfy`}
   description={subtitle}
   pageType="CollectionPage"
-  mainEntityId={jsonLdId(url, 'itemlist')}
+  mainEntityId={jsonLdId(canonicalUrl, 'itemlist')}
   breadcrumbs={[
-    { name: t('breadcrumb.home', locale), url: absoluteUrl(Astro.site, '/') },
+    { name: t('breadcrumb.home', locale), url: absoluteUrl(Astro.site, localizeHref('/', canonicalLocale)) },
     { name: title },
   ]}
   extraJsonLd={[modelList]}
@@ -58,7 +61,7 @@ const dirLabel: Record<string, string> = {
       <p
         class="mb-2 text-sm font-medium uppercase tracking-widest text-primary-comfy-yellow"
       >
-        {t('models.hero.eyebrow')}
+        {t('models.hero.eyebrow', locale)}
       </p>
       <h1 class="text-4xl font-bold text-primary-comfy-canvas lg:text-6xl">
         {title}

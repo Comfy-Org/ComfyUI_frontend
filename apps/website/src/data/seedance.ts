@@ -68,9 +68,17 @@ const media = {
 // future change to the tier or link a single edit. Spreading the clip last lets
 // any one of them override a field if the set starts to diverge.
 const sharedCardIdentity = {
-  name: { en: 'Seedance 2.5', 'zh-CN': 'Seedance 2.5' },
+  name: {
+    en: 'Seedance 2.5',
+    'zh-CN': 'Seedance 2.5',
+    ja: 'Seedance 2.5' /* machine */
+  },
   tier: 'premium',
-  note: { en: 'Pay-as-you-go', 'zh-CN': '按量付费' },
+  note: {
+    en: 'Pay-as-you-go',
+    'zh-CN': '按量付费',
+    ja: '従量課金' /* machine */
+  },
   href: seedanceLinks.cloudRun
 } as const
 
@@ -120,7 +128,8 @@ const clips = [
     prompt: { en: BALLOONS_PROMPT, 'zh-CN': BALLOONS_PROMPT },
     description: {
       en: 'Animals crossing a rain-slick city street under balloon letters.',
-      'zh-CN': '动物们走过雨后的城市街道，身后是巨大的气球字母。'
+      'zh-CN': '动物们走过雨后的城市街道，身后是巨大的气球字母。',
+      ja: '風船の文字の下、雨で濡れた街路を横断する動物たち。' /* machine */
     }
   },
   {
@@ -129,7 +138,8 @@ const clips = [
     prompt: { en: GRASS_PROMPT, 'zh-CN': GRASS_PROMPT },
     description: {
       en: 'A meadow running down the middle of an empty office floor.',
-      'zh-CN': '一片草地从空荡的办公楼中间蔓延开来。'
+      'zh-CN': '一片草地从空荡的办公楼中间蔓延开来。',
+      ja: '無人のオフィスフロア中央を走る草原。' /* machine */
     }
   },
   {
@@ -138,7 +148,8 @@ const clips = [
     prompt: { en: WORLDCUP_PROMPT, 'zh-CN': WORLDCUP_PROMPT },
     description: {
       en: 'A packed stadium crowd, shot handheld from the stands.',
-      'zh-CN': '看台上人声鼎沸的球迷，手持镜头拍摄。'
+      'zh-CN': '看台上人声鼎沸的球迷，手持镜头拍摄。',
+      ja: 'スタンドから手持ち撮影した、満員のスタジアム観衆。' /* machine */
     }
   },
   {
@@ -147,7 +158,8 @@ const clips = [
     prompt: { en: CITY_PROMPT, 'zh-CN': CITY_PROMPT },
     description: {
       en: 'A close pass over a wet city street at ground level.',
-      'zh-CN': '贴近地面掠过湿漉漉的城市路面。'
+      'zh-CN': '贴近地面掠过湿漉漉的城市路面。',
+      ja: '地面すれすれの視点で、濡れた街路の上を通過するショット。' /* machine */
     }
   },
   {
@@ -156,7 +168,8 @@ const clips = [
     prompt: { en: SHARK_PROMPT, 'zh-CN': SHARK_PROMPT },
     description: {
       en: 'A dog fetching a frisbee as a shark breaches behind it.',
-      'zh-CN': '狗狗叼回飞盘，身后鲨鱼破浪跃起。'
+      'zh-CN': '狗狗叼回飞盘，身后鲨鱼破浪跃起。',
+      ja: '背後でサメが跳ね上がる中、フリスビーを取ってくる犬。' /* machine */
     }
   },
   {
@@ -165,7 +178,8 @@ const clips = [
     prompt: { en: GIRAFFE_PROMPT, 'zh-CN': GIRAFFE_PROMPT },
     description: {
       en: 'A giraffe clearing a ring of fire in a single leap.',
-      'zh-CN': '一只长颈鹿一跃穿过熊熊火圈。'
+      'zh-CN': '一只长颈鹿一跃穿过熊熊火圈。',
+      ja: '炎の輪を一跳びで越えるキリン。' /* machine */
     }
   }
 ] as const
@@ -229,82 +243,96 @@ export const seedancePage: ModelLaunchPage = {
         id: 'what-is-seedance',
         question: {
           en: 'What is Seedance 2.5?',
-          'zh-CN': 'Seedance 2.5 是什么？'
+          'zh-CN': 'Seedance 2.5 是什么？',
+          ja: 'Seedance 2.5とは？' /* machine */
         },
         answer: {
           en: "ByteDance's cinematic video model. Give it a text prompt or a reference image and it renders the shot with native audio. On Comfy you direct it on the canvas alongside every other model.",
           'zh-CN':
-            '字节跳动的电影级视频模型。给它一段文本提示或一张参考图，它就能渲染出带原生音频的镜头。在 Comfy 上，你可以在画布上与其他模型一起执导它。'
+            '字节跳动的电影级视频模型。给它一段文本提示或一张参考图，它就能渲染出带原生音频的镜头。在 Comfy 上，你可以在画布上与其他模型一起执导它。',
+          ja: 'ByteDanceのシネマティック動画モデルです。テキストプロンプトまたは参照画像を渡すと、ネイティブ音声付きでショットをレンダリングします。Comfyでは、他のすべてのモデルと並べてキャンバス上で指示できます。' /* machine */
         }
       },
       {
         id: 'whats-new-in-25',
         question: {
           en: "What's new in Seedance 2.5 vs Seedance 2.0?",
-          'zh-CN': 'Seedance 2.5 相比 Seedance 2.0 有哪些新变化？'
+          'zh-CN': 'Seedance 2.5 相比 Seedance 2.0 有哪些新变化？',
+          ja: 'Seedance 2.5はSeedance 2.0から何が変わりましたか？' /* machine */
         },
         answer: {
           en: 'Longer native clips and support for many more reference inputs than 2.0.',
-          'zh-CN': '更长的原生片段，以及比 2.0 多得多的参考输入支持。'
+          'zh-CN': '更长的原生片段，以及比 2.0 多得多的参考输入支持。',
+          ja: '2.0より長いネイティブクリップと、より多くの参照入力に対応。' /* machine */
         }
       },
       {
         id: 'run-in-comfyui',
         question: {
           en: 'How do I run Seedance 2.5 in ComfyUI?',
-          'zh-CN': '如何在 ComfyUI 中运行 Seedance 2.5？'
+          'zh-CN': '如何在 ComfyUI 中运行 Seedance 2.5？',
+          ja: 'ComfyUIでSeedance 2.5を実行するには？' /* machine */
         },
         answer: {
           en: 'Open a Seedance workflow template, or add Seedance to any workflow on the canvas. It runs on Comfy Cloud, so you do not need a local GPU.',
           'zh-CN':
-            '打开 Seedance 工作流模板，或将 Seedance 添加到画布上的任意工作流中。它在 Comfy Cloud 上运行，因此你不需要本地 GPU。'
+            '打开 Seedance 工作流模板，或将 Seedance 添加到画布上的任意工作流中。它在 Comfy Cloud 上运行，因此你不需要本地 GPU。',
+          ja: 'Seedanceのワークフローテンプレートを開くか、キャンバス上の任意のワークフローにSeedanceを追加します。Comfy Cloudで実行されるため、ローカルのGPUは不要です。' /* machine */
         }
       },
       {
         id: 'clip-length',
         question: {
           en: 'How long can Seedance 2.5 videos be?',
-          'zh-CN': 'Seedance 2.5 能生成多长的视频？'
+          'zh-CN': 'Seedance 2.5 能生成多长的视频？',
+          ja: 'Seedance 2.5で生成できる動画の長さは？' /* machine */
         },
         answer: {
           en: 'Up to 30 seconds natively, and you can chain shots on the canvas when you need a longer cut.',
           'zh-CN':
-            '最长可原生生成 30 秒。需要更长的成片时，你可以在画布上串联多个镜头。'
+            '最长可原生生成 30 秒。需要更长的成片时，你可以在画布上串联多个镜头。',
+          ja: 'ネイティブで最長30秒です。より長い映像が必要な場合は、キャンバス上でショットをつなげられます。' /* machine */
         }
       },
       {
         id: 'native-audio',
         question: {
           en: 'Does Seedance 2.5 generate audio?',
-          'zh-CN': 'Seedance 2.5 会生成音频吗？'
+          'zh-CN': 'Seedance 2.5 会生成音频吗？',
+          ja: 'Seedance 2.5は音声を生成できますか？' /* machine */
         },
         answer: {
           en: 'Yes. Dialogue, music and sound effects are generated with the frame, so you do not have to score the clip afterwards.',
           'zh-CN':
-            '会。对白、音乐和音效会与画面一同生成，你无需事后再单独配乐配音。'
+            '会。对白、音乐和音效会与画面一同生成，你无需事后再单独配乐配音。',
+          ja: 'はい。会話、音楽、効果音はフレームと同時に生成されるため、後からクリップに音を付ける必要はありません。' /* machine */
         }
       },
       {
         id: 'is-it-free',
         question: {
           en: 'Is Seedance 2.5 free to use?',
-          'zh-CN': 'Seedance 2.5 可以免费使用吗？'
+          'zh-CN': 'Seedance 2.5 可以免费使用吗？',
+          ja: 'Seedance 2.5は無料で使えますか？' /* machine */
         },
         answer: {
           en: 'Seedance runs on pay-as-you-go or subscription credits. You can draft the same shot free on Wan 2.2 first, and spend credits only on the final render.',
           'zh-CN':
-            'Seedance 采用按量付费或订阅积分。你可以先在 Wan 2.2 上免费打样同一镜头，只在最终渲染时消耗积分。'
+            'Seedance 采用按量付费或订阅积分。你可以先在 Wan 2.2 上免费打样同一镜头，只在最终渲染时消耗积分。',
+          ja: 'Seedanceは従量課金またはサブスクリプションのクレジットで利用できます。まずWan 2.2で同じショットを無料でドラフトし、最終レンダリング時だけクレジットを使えます。' /* machine */
         }
       },
       {
         id: 'commercial-use',
         question: {
           en: 'Can I use the videos commercially?',
-          'zh-CN': '视频可以商用吗？'
+          'zh-CN': '视频可以商用吗？',
+          ja: '動画を商用利用できますか？' /* machine */
         },
         answer: {
           en: 'Yes. Renders include commercial use and carry no watermark.',
-          'zh-CN': '可以。渲染结果包含商业使用授权，且不带水印。'
+          'zh-CN': '可以。渲染结果包含商业使用授权，且不带水印。',
+          ja: 'はい。レンダリングには商用利用権が含まれ、ウォーターマークは付きません。' /* machine */
         }
       }
     ]
@@ -315,32 +343,41 @@ export const seedancePage: ModelLaunchPage = {
     items: [
       {
         id: 'write-the-shot',
-        title: { en: 'Write the shot', 'zh-CN': '写下你的镜头' },
+        title: {
+          en: 'Write the shot',
+          'zh-CN': '写下你的镜头',
+          ja: 'ショットを書く' /* machine */
+        },
         description: {
           en: 'Camera, subject, framing',
-          'zh-CN': '运镜、主体、构图'
+          'zh-CN': '运镜、主体、构图',
+          ja: 'カメラ、被写体、フレーミング' /* machine */
         }
       },
       {
         id: 'draft-free',
         title: {
           en: 'Draft free on other models',
-          'zh-CN': '先用其他模型免费打样'
+          'zh-CN': '先用其他模型免费打样',
+          ja: '他のモデルで無料ドラフト' /* machine */
         },
         description: {
           en: 'Same workflow, zero credits',
-          'zh-CN': '同一工作流，零积分消耗'
+          'zh-CN': '同一工作流，零积分消耗',
+          ja: '同じワークフロー、クレジット不要' /* machine */
         }
       },
       {
         id: 'switch-to-seedance',
         title: {
           en: 'Switch to Seedance 2.5',
-          'zh-CN': '切换到 Seedance 2.5'
+          'zh-CN': '切换到 Seedance 2.5',
+          ja: 'Seedance 2.5に切り替え' /* machine */
         },
         description: {
           en: 'Final render, native audio',
-          'zh-CN': '最终渲染，原生音频'
+          'zh-CN': '最终渲染，原生音频',
+          ja: '最終レンダリング、ネイティブ音声' /* machine */
         }
       }
     ],

@@ -11,16 +11,17 @@ import {
   organizationId,
   pageContext,
 } from '../utils/jsonLd'
+import { localizeHref } from '../config/routes'
 
-const { siteUrl, locale, url } = pageContext(
+const { siteUrl, locale, canonicalLocale, canonicalUrl } = pageContext(
   Astro.site,
-  Astro.url.pathname,
+  Astro.originPathname,
   Astro.currentLocale,
 )
 
 const faqs = contactFaqs(locale)
 const faqPage = faqPageNode(
-  url,
+  canonicalUrl,
   faqs.map((faq) => ({
     question: faq.question,
     answer: faqAnswerPlainText(faq.answer),
@@ -29,17 +30,17 @@ const faqPage = faqPageNode(
 ---
 
 <BaseLayout
-  title="Contact - Comfy"
-  description="Reach Comfy about Enterprise, Forward Deployed Creatives, MiniMax commercial licenses, or partnerships. Common questions answered, including SOC 2 status."
+  title={t('contact.meta.title', locale)}
+  description={t('contact.meta.description', locale)}
   pageType="ContactPage"
   mainEntityId={organizationId(siteUrl)}
   breadcrumbs={[
-    { name: t('breadcrumb.home', locale), url: absoluteUrl(Astro.site, '/') },
+    { name: t('breadcrumb.home', locale), url: absoluteUrl(Astro.site, localizeHref('/', canonicalLocale)) },
     { name: t('breadcrumb.contact', locale) },
   ]}
   extraJsonLd={[faqPage]}
 >
-  <FormSection client:load />
+  <FormSection locale={locale} client:load />
   <FAQSplit01
     client:visible
     heading={t('contact.faq.heading', locale)}

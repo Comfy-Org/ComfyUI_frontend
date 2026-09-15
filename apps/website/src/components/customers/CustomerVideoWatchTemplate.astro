@@ -11,7 +11,7 @@ import BreadcrumbBar from '../common/BreadcrumbBar.vue'
 import CustomerWatchPage from './CustomerWatchPage.vue'
 import WhatsNextSection from './WhatsNextSection.vue'
 import BaseLayout from '../../layouts/BaseLayout.astro'
-import { getRoutes } from '../../config/routes'
+import { getRoutes, localizeHref } from '../../config/routes'
 import type { CustomerVideoStory } from '../../data/customerVideos'
 import {
   customerVideoPath,
@@ -33,18 +33,18 @@ interface Props {
 
 const { story } = Astro.props
 
-const { siteUrl, locale, url } = pageContext(
+const { siteUrl, locale, canonicalUrl, canonicalLocale } = pageContext(
   Astro.site,
-  Astro.url.pathname,
+  Astro.originPathname,
   Astro.currentLocale
 )
 const routes = getRoutes(locale)
-const videoId = jsonLdId(url, 'video')
+const videoId = jsonLdId(canonicalUrl, 'video')
 
 const video = videoObjectNode({
   siteUrl,
   id: videoId,
-  pageUrl: url,
+  pageUrl: canonicalUrl,
   name: story.title,
   description: story.description,
   thumbnailUrl: story.poster,
@@ -77,16 +77,19 @@ const collectionLabel = t('nav.customerStories', locale)
   ogImage={story.poster}
   mainEntityId={videoId}
   breadcrumbs={[
-    { name: homeLabel, url: absoluteUrl(Astro.site, '/') },
-    { name: collectionLabel, url: absoluteUrl(Astro.site, routes.customers) },
+    { name: homeLabel, url: absoluteUrl(Astro.site, localizeHref('/', canonicalLocale)) },
+    {
+      name: collectionLabel,
+      url: absoluteUrl(Astro.site, localizeHref('/customers', canonicalLocale))
+    },
     { name: story.title }
   ]}
   extraJsonLd={[video]}
 >
   <BreadcrumbBar
     crumbs={[
-      { label: homeLabel, href: '/' },
-      { label: collectionLabel, href: '/customers' },
+      { label: homeLabel, href: routes.home },
+      { label: collectionLabel, href: routes.customers },
       { label: story.title }
     ]}
     label={t('ui.breadcrumb', locale)}

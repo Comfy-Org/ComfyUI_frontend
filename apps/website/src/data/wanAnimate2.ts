@@ -63,25 +63,40 @@ export const wanAnimate2Page: ModelLaunchPage = {
         id: 'upload-your-reference',
         title: {
           en: 'Upload your reference',
-          'zh-CN': '上传你的参考素材'
+          'zh-CN': '上传你的参考素材',
+          ja: '参照素材をアップロード' /* machine */
         },
         description: {
           en: 'A reference image of your character, plus a driving video of the motion you want to transfer.',
-          'zh-CN': '一张角色参考图，加上一段你想要迁移的动作驱动视频。'
+          'zh-CN': '一张角色参考图，加上一段你想要迁移的动作驱动视频。',
+          ja: 'キャラクターの参照画像と、転送したい動きを含むドライビング動画。' /* machine */
         }
       },
       {
         id: 'write-the-shot',
-        title: { en: 'Write the shot', 'zh-CN': '写下你的镜头' },
+        title: {
+          en: 'Write the shot',
+          'zh-CN': '写下你的镜头',
+          ja: 'ショットを書く' /* machine */
+        },
         description: {
           en: 'Add your prompt, zero credits',
-          'zh-CN': '添加提示词，零积分消耗'
+          'zh-CN': '添加提示词，零积分消耗',
+          ja: 'プロンプトを追加、クレジット不要' /* machine */
         }
       },
       {
         id: 'run-wan-animate-2',
-        title: { en: 'Run Wan Animate 2', 'zh-CN': '运行 Wan Animate 2' },
-        description: { en: 'Final render', 'zh-CN': '最终渲染' }
+        title: {
+          en: 'Run Wan Animate 2',
+          'zh-CN': '运行 Wan Animate 2',
+          ja: 'Wan Animate 2 を実行' /* machine */
+        },
+        description: {
+          en: 'Final render',
+          'zh-CN': '最终渲染',
+          ja: '最終レンダリング' /* machine */
+        }
       }
     ],
     primaryCta: {

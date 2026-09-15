@@ -14,14 +14,15 @@ import TechnologistsSection from '../templates/fdct/TechnologistsSection.vue'
 import WhatYouGetSection from '../templates/fdct/WhatYouGetSection.vue'
 import { faqAnswerPlainText } from '../utils/faqAnswer'
 import { absoluteUrl, faqPageNode, pageContext } from '../utils/jsonLd'
+import { localizeHref } from '../config/routes'
 
-const { locale, url } = pageContext(
+const { locale, canonicalLocale, canonicalUrl } = pageContext(
   Astro.site,
-  Astro.url.pathname,
+  Astro.originPathname,
   Astro.currentLocale,
 )
 const faqPage = faqPageNode(
-  url,
+  canonicalUrl,
   fdctFaqs(locale).map((faq) => ({
     question: faq.question,
     answer: faqAnswerPlainText(faq.answer),
@@ -34,7 +35,7 @@ const faqPage = faqPageNode(
   description={t('fdct.meta.description', locale)}
   pageType="WebPage"
   breadcrumbs={[
-    { name: t('breadcrumb.home', locale), url: absoluteUrl(Astro.site, '/') },
+    { name: t('breadcrumb.home', locale), url: absoluteUrl(Astro.site, localizeHref('/', canonicalLocale)) },
     { name: t('breadcrumb.fdct', locale) },
   ]}
   extraJsonLd={[faqPage]}

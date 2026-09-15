@@ -18,16 +18,20 @@ const hostedTutorial = filterByCategory('vfx').find(
 )
 if (!hostedTutorial) throw new Error('Expected a VFX tutorial with videoSrc')
 
-// The embed stub mirrors the real component's <iframe>, named by its `title`,
-// so the page is queried by the same accessible name without happy-dom
-// actually fetching the YouTube player.
+/**
+ * `LearningVideoEmbed` is deliberately NOT stubbed. It was, and the stub echoed
+ * whatever `title` it was handed — so the two locale tests below were asserting
+ * the stub's own template. The real embed could have stopped putting the title
+ * on its iframe and they would still have passed, which is the one thing they
+ * exist to catch. `VideoPlayer` stays stubbed: it is the other branch of the
+ * choice under test, not the thing being measured.
+ */
 const stubs = {
-  LearningVideoEmbed: {
-    props: ['title'],
-    template: '<iframe :title="title" />'
-  },
   VideoPlayer: { template: '<div data-testid="hosted-video" />' }
 }
+
+/** The embed a reader would land on, found by the accessible title it carries. */
+const embed = (title: string) => screen.getByTitle(title)
 
 function renderWatchPage(tutorial: LearningTutorial, locale: Locale = 'en') {
   render(LearningWatchPage, {
@@ -40,7 +44,7 @@ describe('LearningWatchPage', () => {
   it('embeds the YouTube player for tutorials with a youtubeId', () => {
     renderWatchPage(youtubeTutorial)
 
-    expect(screen.getByTitle(youtubeTutorial.title.en)).toBeTruthy()
+    expect(embed(youtubeTutorial.title.en)).toBeTruthy()
     expect(screen.queryByTestId('hosted-video')).toBeNull()
   })
 
@@ -51,21 +55,39 @@ describe('LearningWatchPage', () => {
     expect(screen.queryByTitle(hostedTutorial.title.en)).toBeNull()
   })
 
-  it('titles the embed in English when the locale has no translation', () => {
-    renderWatchPage(youtubeTutorial, 'ja')
+  /**
+   * Both directions, on fixtures rather than on whichever tutorial happens to
+   * be untranslated today. The previous version asserted that a real tutorial
+   * had no Japanese, so it started failing the moment one was translated —
+   * reporting a defect in the data instead of in the component.
+   */
+  it('titles the embed in the locale when the tutorial has a translation', () => {
+    renderWatchPage(
+      {
+        ...youtubeTutorial,
+        title: { en: 'Node graph basics', ja: 'ノードの基本' }
+      },
+      'ja'
+    )
 
-    expect(screen.getByTitle(youtubeTutorial.title.en)).toBeTruthy()
+    expect(embed('ノードの基本')).toBeTruthy()
+  })
+
+  it('titles the embed in English when the locale has no translation', () => {
+    renderWatchPage(
+      { ...youtubeTutorial, title: { en: 'Node graph basics' } },
+      'ja'
+    )
+
+    expect(embed('Node graph basics')).toBeTruthy()
   })
 
   it('titles the embed in English when the localized title is empty', () => {
     renderWatchPage(
-      {
-        ...youtubeTutorial,
-        title: { ...youtubeTutorial.title, 'zh-CN': '' }
-      },
+      { ...youtubeTutorial, title: { en: 'Node graph basics', 'zh-CN': '' } },
       'zh-CN'
     )
 
-    expect(screen.getByTitle(youtubeTutorial.title.en)).toBeTruthy()
+    expect(screen.getByTitle('Node graph basics')).toBeTruthy()
   })
 })

@@ -11,122 +11,149 @@ import StepsCards01 from '../../components/blocks/StepsCards01.vue'
 import IndustriesSection from '../../components/home/IndustriesSection.vue'
 import DistributionsScene from '../../components/product/enterprise/DistributionsScene.vue'
 import Button from '../../components/ui/button/Button.vue'
+import { localizeHref } from '../../config/routes'
 import { t } from '../../i18n/translations'
 import BaseLayout from '../../layouts/BaseLayout.astro'
 import ClosingCtaSection from '../../templates/platform/ClosingCtaSection.vue'
 import { absoluteUrl, pageContext } from '../../utils/jsonLd'
 import { buildFaqPageNode } from './_faqMetadata'
 
+const { canonicalUrl, locale, canonicalLocale } = pageContext(
+  Astro.site,
+  Astro.originPathname,
+  Astro.currentLocale,
+)
+
+// Keys are written out rather than built from an id. `t()` takes a literal
+// union, so a typo is a compile error; a template string defeats that and the
+// missing key surfaces as blank text on the page instead.
 const faqs = [
   {
     id: 'what',
-    question: 'What is a ComfyUI Managed Build?',
-    answer:
-      'A Managed Build is an approved, reproducible ComfyUI environment. It pins the ComfyUI version, custom nodes, models, and dependencies your team needs so the same setup can be assigned and updated across machines.',
+    question: t('enterprise.managedBuilds.faq.what.question', locale),
+    answer: t('enterprise.managedBuilds.faq.what.answer', locale),
   },
   {
     id: 'where',
-    question: 'Where do Managed Builds run?',
-    answer:
-      'Managed Builds run on your workstations, studio GPU servers, or customer cloud infrastructure. Your Comfy Workflows stay on the machines where they run.',
+    question: t('enterprise.managedBuilds.faq.where.question', locale),
+    answer: t('enterprise.managedBuilds.faq.where.answer', locale),
   },
   {
     id: 'models',
-    question: 'Can we use private models and our own provider keys?',
-    answer:
-      'Yes. Teams can include private fine-tuned models, govern which models and partner providers are available in a build, and use supported provider keys with their existing contracts.',
+    question: t('enterprise.managedBuilds.faq.models.question', locale),
+    answer: t('enterprise.managedBuilds.faq.models.answer', locale),
   },
   {
     id: 'nodes',
-    question: 'How are custom nodes governed?',
-    answer:
-      'Administrators choose which custom nodes belong in each build, then pin them with the rest of the environment for controlled rollout.',
+    question: t('enterprise.managedBuilds.faq.nodes.question', locale),
+    answer: t('enterprise.managedBuilds.faq.nodes.answer', locale),
   },
   {
     id: 'access',
-    question: 'How are users and teams assigned?',
-    answer:
-      'Company identity and SSO can gate access to approved builds. Teams receive the environments assigned to them instead of configuring every machine independently.',
+    question: t('enterprise.managedBuilds.faq.access.question', locale),
+    answer: t('enterprise.managedBuilds.faq.access.answer', locale),
   },
   {
     id: 'usage',
-    question: 'What usage and audit information is available?',
-    answer:
-      'Track usage by model and partner on the Developer Platform. Authentication, build-assignment, release, retention, and export requirements are scoped explicitly during enterprise security review.',
+    question: t('enterprise.managedBuilds.faq.usage.question', locale),
+    answer: t('enterprise.managedBuilds.faq.usage.answer', locale),
   },
   {
     id: 'start',
-    question: 'How do we get started?',
-    answer:
-      'Request a demo and bring one known-good environment. Comfy engineers will map the current setup, deployment targets, governance requirements, onboarding plan, and path to the first approved build.',
+    question: t('enterprise.managedBuilds.faq.start.question', locale),
+    answer: t('enterprise.managedBuilds.faq.start.answer', locale),
   },
 ] as const
 
 const governanceRows = [
   {
     id: 'build-policy',
-    term: 'Build policy',
-    description:
-      'Pin the ComfyUI release, custom nodes, models, and dependencies that belong in an approved build.',
+    term: t('enterprise.managedBuilds.governance.build-policy.title', locale),
+    description: t(
+      'enterprise.managedBuilds.governance.build-policy.description',
+      locale,
+    ),
   },
   {
     id: 'model-policy',
-    term: 'Model policy and BYOK',
-    description:
-      'Choose the partner, open, and private models teams can use. Bring supported provider keys and existing contracts.',
+    term: t('enterprise.managedBuilds.governance.model-policy.title', locale),
+    description: t(
+      'enterprise.managedBuilds.governance.model-policy.description',
+      locale,
+    ),
   },
   {
     id: 'people-access',
-    term: 'People and access',
-    description:
-      'Use company identity and SSO to assign approved environments to the teams that need them.',
+    term: t('enterprise.managedBuilds.governance.people-access.title', locale),
+    description: t(
+      'enterprise.managedBuilds.governance.people-access.description',
+      locale,
+    ),
   },
   {
     id: 'usage-records',
-    term: 'Usage visibility and audit requirements',
-    description:
-      'Track usage by model and partner on the Developer Platform. Scope authentication, build-assignment, release, retention, and export requirements during enterprise security review.',
+    term: t('enterprise.managedBuilds.governance.usage-records.title', locale),
+    description: t(
+      'enterprise.managedBuilds.governance.usage-records.description',
+      locale,
+    ),
   },
 ] as const
+
+const included = t('enterprise.managedBuilds.compare.included', locale)
+const notIncluded = t('enterprise.managedBuilds.compare.notIncluded', locale)
+const enterpriseOnly = t(
+  'enterprise.managedBuilds.compare.enterpriseOnly',
+  locale,
+)
 
 const compareRows = [
   {
     id: 'packaging',
-    feature: 'Custom nodes packaging',
-    cells: ['Included', 'Included'],
+    feature: t('enterprise.managedBuilds.compare.packaging.feature', locale),
+    cells: [included, included],
   },
   {
     id: 'sharing',
-    feature: 'Team sharing',
-    cells: ['Not included', 'Enterprise only'],
+    feature: t('enterprise.managedBuilds.compare.sharing.feature', locale),
+    cells: [notIncluded, enterpriseOnly],
   },
   {
     id: 'governance',
-    feature: 'Governance',
-    cells: ['Not included', 'Enterprise only'],
+    feature: t('enterprise.managedBuilds.compare.governance.feature', locale),
+    cells: [notIncluded, enterpriseOnly],
   },
   {
     id: 'python',
-    feature: 'Python dependency auto-resolution',
-    cells: ['Included', 'Included'],
+    feature: t('enterprise.managedBuilds.compare.python.feature', locale),
+    cells: [included, included],
   },
 ] as const
 
-const { url } = pageContext(
-  Astro.site,
-  Astro.url.pathname,
-  Astro.currentLocale,
-)
-const faqPage = buildFaqPageNode(url, faqs)
+const requestDemo = {
+  label: t('enterprise.cta.requestDemo', locale),
+  href: localizeHref('/contact/', locale),
+}
+
+const faqPage = buildFaqPageNode(canonicalUrl, faqs)
 ---
 
 <BaseLayout
-  title="ComfyUI Managed Builds | Govern ComfyUI across your fleet"
-  description="Create approved, reproducible ComfyUI environments and deploy them across workstations, studios, and customer infrastructure."
+  title={t('enterprise.managedBuilds.meta.title', locale)}
+  description={t('enterprise.managedBuilds.meta.description', locale)}
   pageType="WebPage"
   breadcrumbs={[
-    { name: 'Home', url: absoluteUrl(Astro.site, '/') },
-    { name: 'Enterprise', url: absoluteUrl(Astro.site, '/enterprise/') },
+    {
+      name: t('breadcrumb.home', locale),
+      url: absoluteUrl(Astro.site, localizeHref('/', canonicalLocale)),
+    },
+    {
+      name: 'Enterprise',
+      url: absoluteUrl(
+        Astro.site,
+        localizeHref('/enterprise/', canonicalLocale),
+      ),
+    },
     { name: 'ComfyUI Managed Builds' },
   ]}
   extraJsonLd={[faqPage]}
@@ -135,22 +162,22 @@ const faqPage = buildFaqPageNode(url, faqs)
     headingTag="h1"
     title="MANAGED BUILDS"
     tag="BETA"
-    body="Govern the models, custom nodes, and dependencies your team runs. Create a managed distribution of ComfyUI and deploy the same build anywhere, local or serverless cloud."
-    primaryCta={{ label: 'REQUEST DEMO', href: '/contact/' }}
+    body={t('enterprise.managedBuilds.hero.body', locale)}
+    primaryCta={requestDemo}
   >
     <DistributionsScene slot="media" client:load />
   </HeroProduct01>
 
   <BuildConfiguratorSplit01
     eyebrow="MANAGED BUILDS"
-    heading={'One approved ComfyUI environment,\neverywhere your team runs it.'}
-    body="Define the ComfyUI release, custom nodes, models, and dependencies your team is approved to run. Ship the same versioned build wherever the work happens."
+    heading={t('enterprise.configurator.heading', locale)}
+    body={t('enterprise.configurator.body', locale)}
     features={[
-      'Private custom nodes and models',
-      'Use supported provider keys and existing contracts',
-      'Assign approved builds through company identity',
+      t('enterprise.configurator.feature1', locale),
+      t('enterprise.configurator.feature2', locale),
+      t('enterprise.configurator.feature3', locale),
     ]}
-    releasesLabel="COMFYUI RELEASE"
+    releasesLabel={t('enterprise.configurator.releasesLabel', locale)}
     releases={['v0.3.41', 'v0.3.40', 'v0.3.38']}
     environmentsLabel="PYTHON · PYTORCH · CUDA"
     environments={[
@@ -158,162 +185,203 @@ const faqPage = buildFaqPageNode(url, faqs)
       { id: 'env-previous', python: '3.12', torch: '2.5', cuda: '12.4' },
       { id: 'env-legacy', python: '3.11', torch: '2.5', cuda: '12.4' },
     ]}
-    nodesLabel="CUSTOM NODES"
+    nodesLabel={t('enterprise.configurator.nodesLabel', locale)}
     nodes={[
       { id: 'manager', label: 'ComfyUI-Manager', selected: true },
       { id: 'ipadapter', label: 'IPAdapter Plus', selected: true },
       { id: 'controlnet', label: 'ControlNet Aux' },
       { id: 'videohelper', label: 'VideoHelperSuite', selected: true },
-      { id: 'studio-nodes', label: 'studio-nodes (private)', selected: true },
+      {
+        id: 'studio-nodes',
+        label: t('enterprise.configurator.privateNodes', locale),
+        selected: true,
+      },
     ]}
-    modelsLabel="MODELS"
+    modelsLabel={t('enterprise.configurator.modelsLabel', locale)}
     models={[
       { id: 'flux', label: 'FLUX 3', selected: true },
       { id: 'wan', label: 'Wan 3.0' },
       { id: 'sdxl', label: 'SDXL Base', selected: true },
       { id: 'ltx', label: 'LTX-2.5' },
-      { id: 'brand-lora', label: 'brand-lora (private)', selected: true },
+      {
+        id: 'brand-lora',
+        label: t('enterprise.configurator.privateModel', locale),
+        selected: true,
+      },
     ]}
-    cta={{ label: 'REQUEST DEMO', href: '/contact/' }}
+    nodesUnit={t('enterprise.configurator.nodesUnit', locale)}
+    modelsUnit={t('enterprise.configurator.modelsUnit', locale)}
+    pinnedLabel={t('enterprise.configurator.pinned', locale)}
+    moreOptionsLabel={t('enterprise.configurator.moreOptions', locale)}
+    cta={requestDemo}
     client:visible
   />
 
   <FeatureRows02
-    heading="One ComfyUI build for the whole team"
+    heading={t('enterprise.managedBuilds.build.heading', locale)}
     rows={[
       {
         id: 'packaging',
-        term: 'Environment packaging',
-        description:
-          'Replace one-off install scripts, dependency matrices, and machine-specific fixes with one versioned build.',
+        term: t('enterprise.managedBuilds.build.packaging.title', locale),
+        description: t(
+          'enterprise.managedBuilds.build.packaging.description',
+          locale,
+        ),
       },
       {
         id: 'governance',
-        term: 'Node governance',
-        description:
-          'ComfyUI’s ecosystem spans 5,000+ extensions and 60,000+ community nodes. Pin and approve the nodes included in each build.',
+        term: t('enterprise.managedBuilds.build.governance.title', locale),
+        description: t(
+          'enterprise.managedBuilds.build.governance.description',
+          locale,
+        ),
       },
       {
         id: 'rollout',
-        term: 'Onboarding and rollout',
-        description:
-          'Assign known-good builds through company identity, onboard new teammates, and move the fleet together when a release is ready.',
+        term: t('enterprise.managedBuilds.build.rollout.title', locale),
+        description: t(
+          'enterprise.managedBuilds.build.rollout.description',
+          locale,
+        ),
       },
     ]}
   />
 
   <div id="how-it-works" class="scroll-mt-24">
     <StepsCards01
-      heading="From one working setup to an approved fleet"
+      heading={t('enterprise.managedBuilds.steps.heading', locale)}
       steps={[
         {
           id: 'define',
-          title: 'Define the build',
-          description:
-            'Start from a known-good environment or import a snapshot of a setup you already run.',
+          title: t('enterprise.managedBuilds.steps.define.title', locale),
+          description: t(
+            'enterprise.managedBuilds.steps.define.description',
+            locale,
+          ),
         },
         {
           id: 'build',
-          title: 'Build it once',
-          description:
-            'Pin the ComfyUI release, Python and CUDA versions, custom nodes, models, and dependencies.',
+          title: t('enterprise.managedBuilds.steps.build.title', locale),
+          description: t(
+            'enterprise.managedBuilds.steps.build.description',
+            locale,
+          ),
         },
         {
           id: 'update',
-          title: 'Update deliberately',
-          description:
-            'Cut a new version when you decide. Move the team together without changing work already in flight.',
+          title: t('enterprise.managedBuilds.steps.update.title', locale),
+          description: t(
+            'enterprise.managedBuilds.steps.update.description',
+            locale,
+          ),
         },
         {
           id: 'deploy',
-          title: 'Roll out to the fleet',
-          description:
-            'Assign the build through Comfy Desktop or your GPU servers. Deploy endpoints through the Developer Platform.',
+          title: t('enterprise.managedBuilds.steps.deploy.title', locale),
+          description: t(
+            'enterprise.managedBuilds.steps.deploy.description',
+            locale,
+          ),
         },
       ]}
     />
   </div>
 
   <CardSplitContent02
-    title="Govern the build, models, people, and usage."
+    title={t('enterprise.governance.heading', locale)}
     imageSrc="/assets/enterprise/govern-matrix-city.webp"
   />
   <FeatureRows02
     class="pt-0 lg:pt-0"
     rows={governanceRows}
-    footnote="The graph stays flexible. The environment around it becomes an approved, reviewable operating model for the organization."
+    footnote={t('enterprise.governance.footnote', locale)}
   />
 
   <BenefitsGrid01
-    heading="Ready for your security review"
+    heading={t('enterprise.managedBuilds.security.heading', locale)}
     columns={2}
     numbered={false}
     contained={false}
     benefits={[
       {
         id: 'local',
-        title: 'Workflows stay local',
-        description:
-          'For local deployments, your Comfy Workflows and outputs stay where they run. Comfy does not train on customer data.',
+        title: t('enterprise.managedBuilds.security.local.title', locale),
+        description: t(
+          'enterprise.managedBuilds.security.local.description',
+          locale,
+        ),
       },
       {
         id: 'private-assets',
-        title: 'Private models and nodes',
-        description:
-          'Include internal node packs and fine-tuned models inside a team-controlled build.',
+        title: t(
+          'enterprise.managedBuilds.security.private-assets.title',
+          locale,
+        ),
+        description: t(
+          'enterprise.managedBuilds.security.private-assets.description',
+          locale,
+        ),
       },
       {
         id: 'access',
-        title: 'Identity and BYOK',
-        description:
-          'Gate build assignment through company identity and use supported provider keys with existing contracts.',
+        title: t('enterprise.managedBuilds.security.access.title', locale),
+        description: t(
+          'enterprise.managedBuilds.security.access.description',
+          locale,
+        ),
       },
       {
         id: 'usage',
-        title: 'Audit requirements',
-        description:
-          'Define the model, partner, authentication, release, retention, and export events your organization needs.',
+        title: t('enterprise.managedBuilds.security.usage.title', locale),
+        description: t(
+          'enterprise.managedBuilds.security.usage.description',
+          locale,
+        ),
       },
     ]}
-    footnote="DPA and enterprise agreement available. US processing on Google Cloud. 99.5% workflow-execution uptime SLA. SOC 2 Type II audit in progress."
+    footnote={t('enterprise.managedBuilds.security.footnote', locale)}
   />
 
   <CompareTable01
-    heading="Builds vs. Managed Builds"
-    subtitle="Builds is self-serve for packaging and testing your own environment. Managed Builds adds team sharing and enterprise governance."
-    columns={['BUILDS', 'MANAGED BUILDS']}
+    heading={t('enterprise.managedBuilds.compare.heading', locale)}
+    subtitle={t('enterprise.managedBuilds.compare.subtitle', locale)}
+    columns={[
+      t('enterprise.managedBuilds.compare.columnBuilds', locale),
+      t('enterprise.managedBuilds.compare.columnManaged', locale),
+    ]}
     rows={compareRows}
   />
 
   <div class="max-w-9xl mx-auto flex justify-center px-6 pb-16 lg:pb-24">
     <Button
       as="a"
-      href="/platform/builder"
+      href={localizeHref('/platform/builder', locale)}
       variant="outline"
       size="lg"
       class="h-12 rounded-full text-sm"
     >
-      EXPLORE BUILDS
+      {t('enterprise.managedBuilds.compare.exploreBuilds', locale)}
     </Button>
   </div>
 
   <FAQSplit01
     id="faq"
-    heading="Managed Builds, answered."
+    heading={t('enterprise.managedBuilds.faq.heading', locale)}
     faqs={faqs}
     client:visible
   />
 
   <IndustriesSection
-    heading="Built with studios in the room"
+    locale={locale}
+    heading={t('enterprise.industries.heading', locale)}
     client:visible
   />
 
   <ClosingCtaSection
-    locale="en"
+    locale={locale}
     heading-after-badge={t(
       'enterprise.managedBuilds.closing.headingAfterBadge',
-      'en'
+      locale,
     )}
     client:visible
   />
@@ -323,9 +391,15 @@ const faqPage = buildFaqPageNode(url, faqs)
     bands={[
       {
         id: 'fdc',
-        label: 'Forward Deployed Creatives',
-        text: 'Builders, not advisors. Forward Deployed Creatives build production Comfy Workflows inside approved environments, alongside the teams that will own and extend them.',
-        cta: { label: 'VIEW THE OFFERING', href: '/forward-deployed-creatives/' },
+        label: t('enterprise.offers.forward-deployed-creatives.title', locale),
+        text: t('enterprise.managedBuilds.fdcBand.text', locale),
+        cta: {
+          label: t(
+            'enterprise.offers.forward-deployed-creatives.cta.label',
+            locale,
+          ),
+          href: localizeHref('/forward-deployed-creatives/', locale),
+        },
       },
     ]}
   />

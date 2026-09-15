@@ -44,7 +44,7 @@ const restTags = computed(() =>
             <p
               class="text-primary-comfy-yellow text-sm leading-none font-medium tracking-widest uppercase"
             >
-              {{ page.model.provider ?? t('workshop.card.partnerNode') }}
+              {{ page.model.provider ?? t('workshop.card.partnerNode', 'en') }}
             </p>
             <ModelSupport
               v-if="page.model.incompleteReason"
@@ -116,10 +116,10 @@ const restTags = computed(() =>
             class="text-primary-comfy-yellow inline-flex items-center gap-2 text-sm font-bold tracking-wider uppercase hover:underline"
           >
             <span class="sm:hidden">{{
-              t('workshop.model.browseAllShort')
+              t('workshop.model.browseAllShort', 'en')
             }}</span>
             <span class="max-sm:hidden">{{
-              t('workshop.model.browseAll')
+              t('workshop.model.browseAll', 'en')
             }}</span>
             <ArrowRight class="size-4 shrink-0" aria-hidden="true" />
           </a>

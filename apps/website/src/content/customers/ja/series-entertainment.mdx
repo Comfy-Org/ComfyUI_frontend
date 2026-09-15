@@ -1,0 +1,107 @@
+---
+title: "Series EntertainmentがComfyUIでゲーム・映像制作を再構築した方法"
+category: "ゲーム・映像制作"
+description: "再現可能なComfyUI制作システムにより、10万点以上のアセットと複数のNetflix作品にわたる感情豊かなストーリーテリングをスケール。"
+cover: "https://media.comfy.org/website/customers/series-entertainment/cover.webp"
+order: 6
+translatedBy: machine
+sections:
+  - id: topic-1
+    label: "はじめに"
+  - id: topic-2
+    label: "成果"
+  - id: topic-3
+    label: "課題"
+  - id: topic-4
+    label: "解決策"
+  - id: topic-5
+    label: "COMFYUIを選ぶ理由"
+  - id: topic-6
+    label: "まとめ"
+---
+
+<Section id="topic-1">
+
+Series Entertainmentは、キャラクター、感情表現、ビジュアルの一貫性が重要となるストーリー主導のゲームと短編動画体験を制作しています。社内プロジェクト、パートナーとの協業、Netflixタイトルへと制作の対象が広がる中、チームは課題に直面しました。スピードや一貫性を損なうことなく、より多くのプロジェクトで、より多くのコンテンツを制作する必要があったのです。
+
+この課題に対応するため、SeriesはComfyUIを活用してワークフローを拡張しました。ComfyUI上にカスタムで再利用可能なワークフローを構築することで、キャラクター、感情表現、動画の制作方法を変革しました。その結果、10万点を超えるアセットを支え、Netflixゲームをリリースし、現在も複数の開発中プロジェクトを支える、拡張可能な制作システムが実現しました。
+
+<Figure src="https://media.comfy.org/website/customers/series-entertainment/series.webp" alt="Olympus Rising、Gilded Scales、Evergrove、The Wandering Teahouseを含むSeries Entertainmentのゲームタイトル" caption="Series Entertainmentは、複数のタイトルとビジュアルスタイルにわたり、ストーリー主導のゲームと動画体験を制作しています。" />
+
+</Section>
+
+<Section id="topic-2" title="ComfyUIでSeriesが達成した成果">
+
+制作ワークフローにComfyUIを導入したことで、Seriesは以下を達成しました。
+
+- ゲームと動画で10万点以上のアセットを生成
+- 制作速度を180倍に向上
+- 6種類のキャラクター感情表現を数秒で生成
+- クリエイター1人あたり週15分の完成動画を制作
+- 複数のNetflixタイトルをリリースし、さらに多くの体験を開発中
+
+これらの成果は、キャラクターアセット、感情表現のバリエーション、背景の一貫性、短編動画に及び、すべて再利用可能なComfyUIベースのワークフローによって制作されています。
+
+</Section>
+
+<Section id="topic-3" title="Seriesが解決しようとしていた課題">
+
+Seriesの制作では、表現力豊かなキャラクターと一貫したビジュアルアイデンティティが欠かせません。プロジェクトの規模と複雑さが増す中、スケジュールを崩さずにコンテンツ制作を拡張する方法が必要でした。
+
+従来のアニメーションワークフローは、手作業のキーフレーム設定、分断された複数ツール、動画1本につき数週間に及ぶこともある長い制作サイクルに依存しています。バリエーションの制作では最初から作り直す必要があることが多く、試行も時間とコストを要します。
+
+Seriesには、感情を軸としたストーリーテリング、キャラクターの一貫性、迅速な反復を支えながら、チームやプロジェクトをまたいで再利用できるワークフローが必要でした。
+
+</Section>
+
+<Section id="topic-4" title="SeriesがComfyUIで課題を解決した方法">
+
+Seriesは、ComfyUIのノードベースのワークフローシステムを中心に制作プロセスを再構築しました。生成を一度きりの工程として扱うのではなく、ワークフローを長期的な制作アセットとして活用しています。キャラクター制作から感情表現の生成、動画出力まで、クリエイティブの構造を担う場所がComfyUIになりました。
+
+### 大規模な感情表現の生成
+
+SeriesはComfyUIを使い、喜び、悲しみ、真剣、皮肉、思考、驚きという6種類の明確な感情表現を数秒で生成するカスタムアバターシステムを構築しました。これにより、各バリエーションを手作業で作り直すことなく、複数の感情状態を持つ表現力豊かなキャラクターを制作できます。
+
+<Figure src="https://media.comfy.org/website/customers/series-entertainment/panel.webp" alt="顔の表情を操作するComfyUI Expression Editorノード" caption="ComfyUIのExpression Editorノードにより、キャラクターの感情表現を細かく制御できます。" />
+
+### テストから本制作まで再現可能なパイプライン
+
+ComfyUIのモジュール式ノードシステムを使用し、Seriesは初期の探索から最終出力まで、制作サイクル全体を支える4つの効率化されたパイプラインを構築しました。アセット1点あたり6時間以上かかることもある従来の手作業プロセスと比べ、制作品質を維持しながら最大**180倍高速**に結果を得られます。
+
+パイプラインは、512×512の単一感情表現を素早く試すテストから高解像度のバッチ生成まで対応し、同じワークフローのまま迅速な試行から本制作へ移行できます。
+
+<Figure src="https://media.comfy.org/website/customers/series-entertainment/workflows.webp" alt="顔の表情操作とアップスケーリング用のComfyUIワークフロー" caption="表情編集、アップスケーリング、顔のディテール調整を並列で行うComfyUIワークフロー。" />
+
+### ゲームと分岐型ストーリー全体での一貫性
+
+複数のNetflixタイトルで、Seriesは複雑に分岐する物語全体でキャラクターと背景の一貫性を保つワークフローをComfyUIで構築しました。スタイリングと一貫性のパイプラインにより、アセット数が増えても、シーン、感情、ストーリー分岐をまたいでキャラクターのビジュアルを揃えられます。
+
+<Figure src="https://media.comfy.org/website/customers/series-entertainment/consistency.webp" alt="複数のシーンと感情状態で一貫性を保つキャラクター" caption="ComfyUIの一貫性パイプラインにより、6つの異なるシーンと感情状態で維持された1人のキャラクター。" />
+
+### ComfyUIによる大規模制作
+
+Seriesは、ストーリー開発を画像・動画生成に直接つなぐAI支援アニメーションパイプラインの一部としてもComfyUIを使用しています。このパイプラインにはボット支援の動画生成が含まれ、クリエイターは同じワークフローを繰り返し実行して効率的に動画を制作できます。この手法により、各クリエイターはLorespark動画を大規模に制作し、週15分を超える完成動画を提供できます。
+
+<Figure src="https://media.comfy.org/website/customers/series-entertainment/batch.webp" alt="Nano BananaとGoogle Geminiを使用したComfyUIのバッチ処理ワークフロー" caption="複数のキャラクター画像をNano Bananaに接続し、スタイルの一貫した生成を行うバッチ処理ワークフロー。" />
+
+</Section>
+
+<Section id="topic-5" title="ComfyUIがSeriesに適していた理由">
+
+ComfyUIが適していたのは、ノードベースの構造によりワークフローが明確かつ再利用可能になるためです。ワークフローは一度構築すれば、プロジェクト間で改善・共有できます。これによりSeriesは、動画生成を一度きりのプロセスではなく、繰り返し実行できるシステムへと変えました。
+
+バッチ実行とボット統合により、これらのワークフローを大規模に実行できます。同じワークフローで低解像度のテストから高解像度の最終出力まで対応するため、ツールの切り替えやパイプラインの再構築をせずに、探索から納品まで進められます。
+
+最も重要なのは、ComfyUIによって試行錯誤のプロンプトに頼るのではなく、構造の構築に集中できたことです。感情、一貫性、制作ロジックは、ワークフローそのものに組み込まれています。
+
+<Figure src="https://media.comfy.org/website/customers/series-entertainment/scale.webp" alt="一貫したスタイルで生成された同一キャラクターの6つのバリエーション" caption="ビジュアルの一貫性を保ちながら大規模に生成された、1人のキャラクターの複数のポーズと表情のバリエーション。" />
+
+</Section>
+
+<Section id="topic-6" title="まとめ">
+
+ComfyUIを中核となるクリエイティブプラットフォームに据えることで、Series Entertainmentはゲームと動画の制作方法を変革しました。拡張性と一貫性へのニーズから始まった取り組みは、感情を軸としたストーリーテリング、大量のアセット、複数チームにわたる継続的な開発を支える、ワークフロー主導の制作システムへと発展しました。
+
+<Quote name="Series Entertainment">Seriesにとって、ComfyUIは実験ではありません。エンターテインメントを制作する方法そのものです。</Quote>
+
+</Section>

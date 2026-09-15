@@ -8,9 +8,22 @@
  * Kept free of `import.meta.glob` so a plain Node script can import it.
  */
 
+/**
+ * Prefixes and hreflang values come from `config/locales.ts` rather than being
+ * restated here. Sharing them is deliberate and is what #15488 asked for: there
+ * must be exactly one definition of what the Chinese twin of a URL is, or the
+ * pages and the sitemap can disagree about it. What this module keeps to itself
+ * is which ROUTES cluster, which is the part that has to stay independent of
+ * the emitter.
+ */
+import { LOCALE_PREFIXES, LOCALES } from '../config/locales'
+
 /** The value the marketing site publishes for Simplified Chinese. */
-export const ZH_HREFLANG = 'zh-CN'
-export const ZH_PREFIX = '/zh-CN'
+export const ZH_HREFLANG = LOCALES['zh-CN'].hreflang
+export const ZH_PREFIX = LOCALES['zh-CN'].prefix
+
+export const JA_HREFLANG = LOCALES.ja.hreflang
+export const JA_PREFIX = LOCALES.ja.prefix
 
 /**
  * `/src/pages/cloud/pricing.astro` -> `/cloud/pricing/`, index files -> their directory.
@@ -39,10 +52,16 @@ export interface Alternate {
  * whatever page happens to own that path.
  */
 export function unprefixed(pathname: string): string {
-  const isLocalePrefixed =
-    pathname === ZH_PREFIX || pathname.startsWith(`${ZH_PREFIX}/`)
-  const path = isLocalePrefixed
-    ? pathname.slice(ZH_PREFIX.length) || '/'
-    : pathname
-  return path.endsWith('/') ? path : `${path}/`
+  for (const prefix of LOCALE_PREFIXES) {
+    if (pathname === prefix || pathname.startsWith(`${prefix}/`)) {
+      const path = pathname.slice(prefix.length) || '/'
+      return path.endsWith('/') ? path : `${path}/`
+    }
+  }
+  return pathname.endsWith('/') ? pathname : `${pathname}/`
+}
+
+/** The URL of `path` in a locale, given that locale's prefix. */
+export function localizedHref(prefix: string, path: string): string {
+  return `${prefix}${path === '/' ? '/' : path}`
 }
