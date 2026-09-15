@@ -345,6 +345,47 @@ describe('applyLiveWidgetValue', () => {
     }
   })
 
+  it('mints a callback-produced edit to a sibling widget', () => {
+    const { graph, node, widget } = graphWithWidget()
+    const sibling = node.addWidget('text', 'sibling', 'before', null)
+    const minted: GraphOperation[] = []
+    const wiring = attachMintPortWiring({
+      isEnabled: () => true,
+      isDocBound: () => true,
+      enqueue: (operations) => minted.push(...operations),
+      layoutChanges: () => () => undefined,
+      localActorPrefix: 'user-',
+      getGraph: () => graph
+    })
+    widget.callback = () => {
+      sibling.value = 'callback edit'
+    }
+
+    try {
+      expect(
+        applyLiveWidgetValue(
+          graph,
+          rootScope,
+          toNodeId(7),
+          'value',
+          'after',
+          remoteContext
+        )
+      ).toEqual({ status: 'applied', resolvedValue: 'after' })
+      expect(minted).toEqual([
+        {
+          op: 'set_widget',
+          node_id: toNodeId(7),
+          widget: 'sibling',
+          value: 'callback edit',
+          old: 'before'
+        }
+      ])
+    } finally {
+      wiring.detach()
+    }
+  })
+
   it('does not mint remote apply or rollback writes', () => {
     const { graph, widget, callback } = graphWithWidget()
     const minted: GraphOperation[] = []

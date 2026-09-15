@@ -6,8 +6,9 @@ import type { GraphScope } from '@/types/graphScopeId'
 import type { RemoteMutationContext } from '@/types/graphMutationContext'
 import type { NodeId } from '@/types/nodeId'
 import type { WidgetValue } from '@/types/simplifiedWidget'
+import { widgetId } from '@/types/widgetId'
 
-import { runMintPortsSuppressed } from './mintPortWiring'
+import { runMintPortsBuffered } from './mintPortWiring'
 
 function isScalarValue(value: WidgetValue): boolean {
   return (
@@ -26,6 +27,30 @@ export type LiveWidgetProjectionResult =
   | { status: 'skipped' }
   | { status: 'applied'; resolvedValue: WidgetValue }
   | { status: 'rolledBack'; resolvedValue: WidgetValue }
+
+export function rebindLiveWidgetState(
+  rootGraph: LGraph | undefined,
+  scope: GraphScope,
+  nodeId: NodeId,
+  name: string
+): void {
+  if (!rootGraph) return
+  const widget = owningGraph(rootGraph, scope)
+    ?.getNodeById(nodeId)
+    ?.widgets?.find((candidate) => candidate.name === name)
+  const state = useWidgetValueStore().getWidget(
+    widgetId(scope.rootGraphId, nodeId, name)
+  )
+  if (
+    widget &&
+    state &&
+    'bindRegisteredState' in widget &&
+    typeof widget.bindRegisteredState === 'function'
+  ) {
+    widget.type = state.type
+    widget.bindRegisteredState(nodeId)
+  }
+}
 
 function skipped(
   nodeId: NodeId,
@@ -76,17 +101,16 @@ export function applyLiveWidgetValue(
     nextValue: WidgetValue,
     mutationContext?: RemoteMutationContext
   ) => {
-    if (
-      !widget.widgetId ||
-      !widgetStore.setValue(widget.widgetId, nextValue, mutationContext)
-    ) {
-      widget.value = nextValue
+    const id = widget.widgetId
+    if (id) {
+      widgetStore.setValue(id, nextValue, mutationContext)
     }
+    widget.value = nextValue
     syncBackingProperty(node, widget, nextValue)
   }
   setValue(value, context)
   try {
-    runMintPortsSuppressed(() => {
+    runMintPortsBuffered(() => {
       widget.callback?.(value)
       node.onWidgetChanged?.(name, value, previousValue, widget)
     })
@@ -100,9 +124,5 @@ export function applyLiveWidgetValue(
   }
   const resolvedValue = widget.value
   syncBackingProperty(node, widget, resolvedValue)
-  if (!Object.is(resolvedValue, value)) {
-    setValue(value, context)
-    setValue(resolvedValue)
-  }
   return { status: 'applied', resolvedValue }
 }
