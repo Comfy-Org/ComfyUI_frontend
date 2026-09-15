@@ -346,6 +346,7 @@ describe('WorkflowTemplateSelectorDialog detail routing', () => {
 
     const { card, user } = await clickTemplateCard()
     await screen.findByRole('article', { name: fixtures.template.title })
+    scrollContainer.scrollTop = 0
     await user.click(
       screen.getByRole('button', { name: 'Back to All Templates' })
     )
