@@ -127,6 +127,13 @@ describe('ReplyAudioCard', () => {
   it('downloads under the resolved display name instead of the hash', async () => {
     isAssetPreviewSupported.mockReturnValue(true)
     findOutputAsset.mockResolvedValue({ name: 'qa_audio_mp3_00001' })
+    fetchApi.mockResolvedValue(
+      new Response(new Blob(['x']), {
+        headers: {
+          'Content-Disposition': 'attachment; filename="storage-hash.mp3"'
+        }
+      })
+    )
     renderCard()
 
     await userEvent.click(screen.getByRole('button', { name: 'Download' }))

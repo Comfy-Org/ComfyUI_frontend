@@ -42,9 +42,11 @@ export function downloadFile(url: string, filename?: string): void {
 
   if (isCloud) {
     // Assets from cross-origin (e.g., GCS) cannot be downloaded this way
-    void downloadFileAsBlob(url, inferredFilename).catch((error) => {
-      console.error('Failed to download file', error)
-    })
+    void downloadFileAsBlob(url, { filename: inferredFilename }).catch(
+      (error) => {
+        console.error('Failed to download file', error)
+      }
+    )
     return
   }
 
@@ -133,8 +135,15 @@ async function fetchAsBlob(
 
 export async function downloadFileAsBlob(
   url: string,
-  filename?: string,
-  fetchFile: (url: string) => Promise<Response> = fetch
+  {
+    filename,
+    fetch: fetchFile = fetch,
+    preferResponseFilename = true
+  }: {
+    filename?: string
+    fetch?: (url: string) => Promise<Response>
+    preferResponseFilename?: boolean
+  } = {}
 ): Promise<void> {
   const fallbackFilename =
     filename || extractFilenameFromUrl(url) || DEFAULT_DOWNLOAD_FILENAME
@@ -146,7 +155,12 @@ export async function downloadFileAsBlob(
     extractFilenameFromContentDisposition(contentDisposition)
 
   const blob = await response.blob()
-  downloadBlob(headerFilename ?? fallbackFilename, blob)
+  downloadBlob(
+    preferResponseFilename
+      ? (headerFilename ?? fallbackFilename)
+      : fallbackFilename,
+    blob
+  )
 }
 
 /**
