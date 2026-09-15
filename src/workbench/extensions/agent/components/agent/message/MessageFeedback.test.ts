@@ -1,4 +1,3 @@
-// @vitest-environment jsdom
 import userEvent from '@testing-library/user-event'
 import { render, screen, waitFor, within } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -18,6 +17,14 @@ vi.mock<unknown>(import('@/scripts/api'), () => ({
     fetchApi
   }
 }))
+
+// Mock the download sink the way ReplyAudioCard.test.ts in this folder does.
+// The real one appends an <a href="blob:..."> and clicks it, which this DOM
+// treats as a navigation: window.location.origin becomes "null", so the next
+// `new URL(path, origin)` throws Invalid URL. That is why the second of two
+// downloads failed while the first succeeded.
+const downloadBlob = vi.hoisted(() => vi.fn())
+vi.mock(import('@/base/common/downloadUtil'), () => ({ downloadBlob }))
 
 vi.mock(import('@/platform/assets/utils/assetPreviewUtil'), () => ({
   isAssetPreviewSupported: () => false,
@@ -46,8 +53,17 @@ function renderFeedback(assets?: ReplyAsset[]) {
 
 describe('MessageFeedback', () => {
   beforeEach(() => {
+    vi.stubGlobal(
+      'ResizeObserver',
+      class {
+        observe() {}
+        unobserve() {}
+        disconnect() {}
+      }
+    )
     clipboard.copy.mockClear()
     fetchApi.mockReset()
+    downloadBlob.mockClear()
   })
 
   it('emits the vote, then null when the same vote is clicked again', async () => {
@@ -132,10 +148,6 @@ describe('MessageFeedback', () => {
       ok: true,
       blob: () => Promise.resolve(new Blob(['x']))
     })
-    const createObjectURL = vi.fn(() => 'blob:mock')
-    const revokeObjectURL = vi.fn()
-    URL.createObjectURL = createObjectURL
-    URL.revokeObjectURL = revokeObjectURL
     // Reply assets the backend serves live on the API's own view route.
     // Only those go through the authenticated client; downloadReplyAsset
     // sends anything else through a plain fetch, so asserting foreign URLs
@@ -173,7 +185,8 @@ describe('MessageFeedback', () => {
     })
     expect(fetchApi).toHaveBeenCalledWith('/view?filename=a.png')
     expect(fetchApi).toHaveBeenCalledWith('/view?filename=mesh.glb')
-    expect(revokeObjectURL).toHaveBeenCalledTimes(2)
+    expect(downloadBlob).toHaveBeenCalledWith('a.png', expect.any(Blob))
+    expect(downloadBlob).toHaveBeenCalledWith('mesh.glb', expect.any(Blob))
     // Two sequential downloads through the component, under coverage
     // instrumentation on a shared runner, do not reliably fit the 5s default.
   }, 20_000)
