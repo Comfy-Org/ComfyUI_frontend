@@ -106,6 +106,8 @@ export function createBillingSdk(options: BillingSdkOptions): BillingSdk {
         (await challengePort().catch(() => undefined)) ??
           UNAVAILABLE_CHALLENGE_PORT
       ),
+    // Every scope-holder the core exposes, listed a second time next to the
+    // helper in @comfyorg/account-ui; a new core reader has to join both.
     dispose: () => {
       lifecycle.dispose()
       status.dispose()

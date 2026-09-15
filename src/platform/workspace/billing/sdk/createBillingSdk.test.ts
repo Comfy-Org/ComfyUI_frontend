@@ -14,7 +14,7 @@ import type {
   AccountCredential,
   SessionSnapshot
 } from '@comfyorg/account/session'
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, onTestFinished, vi } from 'vitest'
 
 import type { BillingSdkOptions } from './createBillingSdk'
 import { createBillingSdk } from './createBillingSdk'
@@ -147,6 +147,7 @@ function harness(overrides: Partial<BillingSdkOptions> = {}) {
     fetchImpl,
     ...overrides
   })
+  onTestFinished(() => sdk.dispose())
 
   return {
     sdk,
