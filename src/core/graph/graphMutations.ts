@@ -322,24 +322,33 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
    * during a live turn is the agent's own work arriving: a workflow it builds
    * from scratch opens its tab blank and lands entire in that first frame.
    */
+  function locatorFor(scope: GraphScope, nodeId: NodeId) {
+    const subgraphUuid =
+      scope.owningGraphId === String(scope.rootGraphId)
+        ? null
+        : scope.owningGraphId
+    return createNodeLocatorId(subgraphUuid, nodeId)
+  }
+
   function markAgentGenerated(
     scope: GraphScope,
     nodeId: NodeId,
     context: RemoteMutationContext
   ): void {
-    if (context.actor.startsWith('human:')) return
+    const locatorId = locatorFor(scope, nodeId)
+    if (!locatorId) return
+
+    // A node a human placed is theirs, even at an id the agent once held.
+    if (context.actor.startsWith('human:')) {
+      agentGeneratedNodes.forget(locatorId)
+      return
+    }
     if (context.hydration && !tabActivity.agentRunning) return
 
-    const subgraphUuid =
-      scope.owningGraphId === String(scope.rootGraphId)
-        ? null
-        : scope.owningGraphId
-    const locatorId = createNodeLocatorId(subgraphUuid, nodeId)
     // A catch-up lands the whole workflow at once, so its nodes pop in sequence.
-    if (locatorId)
-      agentGeneratedNodes.markGenerated(locatorId, {
-        cascade: context.hydration === true
-      })
+    agentGeneratedNodes.markGenerated(locatorId, {
+      cascade: context.hydration === true
+    })
   }
 
   function fail(message: string): false {
@@ -652,6 +661,8 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
     widgetStore.clearNode(scope.rootGraphId, nodeId, context)
     if (node) nodeStore.deleteNode(scope, node, context)
     deps.layout.deleteNodes(scope, [nodeId], context)
+    const locatorId = locatorFor(scope, nodeId)
+    if (locatorId) agentGeneratedNodes.forget(locatorId)
   }
 
   function commit(

@@ -35,11 +35,11 @@ const agentGeneratedNodes = useAgentGeneratedNodesStore()
 
 /**
  * The marks standing when this turn began. Marks are provenance and outlive the
- * turn that made them, so a turn reads back its own work as the tail past this
- * count rather than by timestamp: several nodes can share a millisecond with
- * the previous turn's last mark.
+ * turn that made them, so a turn reads back its own work as whatever is marked
+ * now and was not marked then. Held as a set rather than a count because a
+ * deleted node drops its mark.
  */
-const marksBeforeTurn = ref(agentGeneratedNodes.markCount)
+const marksBeforeTurn = ref(new Set(agentGeneratedNodes.markedNodes))
 
 /** The finished turn's nodes, held until the next turn or a dismissal. */
 const report = ref<NodeLocatorId[] | null>(null)
@@ -74,7 +74,7 @@ watch(
     // Only a turn that starts from idle takes a new baseline. Coming back
     // inside the settle is the same turn, and it keeps the one it began with.
     if (!turnRunning.value) {
-      marksBeforeTurn.value = agentGeneratedNodes.markCount
+      marksBeforeTurn.value = new Set(agentGeneratedNodes.markedNodes)
       turnTabPath.value = null
       report.value = null
     }
@@ -84,7 +84,9 @@ watch(
 
 /** What this turn has put on the graph so far. */
 const addedNodes = computed(() =>
-  agentGeneratedNodes.markedNodesAfter(marksBeforeTurn.value)
+  agentGeneratedNodes.markedNodes.filter(
+    (locatorId) => !marksBeforeTurn.value.has(locatorId)
+  )
 )
 
 /**
@@ -133,8 +135,7 @@ const isShowing = computed(
 watch(turnRunning, (running) => {
   if (running) return
   // Report only a turn that actually reached the graph.
-  const added = agentGeneratedNodes.markedNodesAfter(marksBeforeTurn.value)
-  report.value = added.length > 0 ? added : null
+  report.value = addedNodes.value.length > 0 ? addedNodes.value : null
 })
 
 /**

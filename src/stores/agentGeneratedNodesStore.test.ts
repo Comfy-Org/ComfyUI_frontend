@@ -50,6 +50,17 @@ describe('agentGeneratedNodesStore', () => {
     expect(stamps).toStrictEqual([landed, landed, landed])
   })
 
+  it('forgets a mark so the next node at that id starts clean', () => {
+    const store = useAgentGeneratedNodesStore()
+    store.markGenerated(locator(1))
+    store.markGenerated(locator(2))
+
+    store.forget(locator(1))
+
+    expect(store.generatedAtFor(locator(1))).toBeUndefined()
+    expect(store.markedNodes).toStrictEqual([locator(2)])
+  })
+
   it('leaves a cascade past nodes that arrive later on their own time', () => {
     const store = useAgentGeneratedNodesStore()
     const landed = Date.now()

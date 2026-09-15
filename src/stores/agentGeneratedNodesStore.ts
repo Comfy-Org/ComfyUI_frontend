@@ -44,17 +44,8 @@ export const useAgentGeneratedNodesStore = defineStore(
      */
     const CASCADE_BUDGET_MS = 900
 
-    /** Marks standing this session. A turn reads its own work off this count. */
-    const markCount = computed(() => generatedAt.value.size)
-
-    /**
-     * The nodes marked after the first `skip`. Marks are only ever added, and
-     * the map keeps insertion order, so a turn's own work is the tail past the
-     * count it started with.
-     */
-    function markedNodesAfter(skip: number): NodeLocatorId[] {
-      return [...generatedAt.value.keys()].slice(skip)
-    }
+    /** Every mark standing, in the order the agent made them. */
+    const markedNodes = computed(() => [...generatedAt.value.keys()])
 
     function markGenerated(
       locatorId: NodeLocatorId,
@@ -74,6 +65,15 @@ export const useAgentGeneratedNodesStore = defineStore(
       return generatedAt.value.get(locatorId)
     }
 
+    /**
+     * Drops a mark. Provenance describes a node that exists: once the node is
+     * gone the mark has nothing to describe, and leaving it would hand the
+     * agent's treatment to whatever takes that id next.
+     */
+    function forget(locatorId: NodeLocatorId): void {
+      generatedAt.value.delete(locatorId)
+    }
+
     function clear(): void {
       generatedAt.value.clear()
       latestMarkAt.value = 0
@@ -81,9 +81,9 @@ export const useAgentGeneratedNodesStore = defineStore(
 
     return {
       latestMarkAt,
-      markCount,
-      markedNodesAfter,
+      markedNodes,
       markGenerated,
+      forget,
       generatedAtFor,
       clear
     }
