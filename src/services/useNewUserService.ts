@@ -1,9 +1,5 @@
 import { ref, shallowRef } from 'vue'
 import { createSharedComposable } from '@vueuse/core'
-import {
-  consumeFirstRunReplayRequest,
-  isFirstRunReplayRequested
-} from '@/platform/onboarding/onboardingReplay'
 import { useSettingStore } from '@/platform/settings/settingStore'
 
 function hasV2DraftHistory(raw: string | null): boolean {
@@ -85,10 +81,7 @@ function _useNewUserService() {
   async function initializeIfNewUser() {
     if (isNewUserDetermined.value) return
 
-    const isReplay = isFirstRunReplayRequested()
-    consumeFirstRunReplayRequest()
-
-    isNewUserCached.value = isReplay || checkIsNewUser()
+    isNewUserCached.value = checkIsNewUser()
     isNewUserDetermined.value = true
 
     if (!isNewUserCached.value) {
@@ -96,13 +89,10 @@ function _useNewUserService() {
       return
     }
 
-    // A replaying account installed the frontend long ago; keep that version.
-    if (!isReplay) {
-      await settingStore.set(
-        'Comfy.InstalledVersion',
-        __COMFYUI_FRONTEND_VERSION__
-      )
-    }
+    await settingStore.set(
+      'Comfy.InstalledVersion',
+      __COMFYUI_FRONTEND_VERSION__
+    )
 
     for (const callback of pendingCallbacks.value) {
       try {

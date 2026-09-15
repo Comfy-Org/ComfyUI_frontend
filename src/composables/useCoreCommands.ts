@@ -899,6 +899,11 @@ export function useCoreCommands(): ComfyCommand[] {
       label: 'Replay Onboarding',
       versionAdded: '1.55.10',
       function: async () => {
+        // The help-center item hides itself the same way, but the command is
+        // also reachable from the keybinding panel, which lists every
+        // registered command regardless.
+        if (!settingStore.get('Comfy.DevMode')) return
+
         const confirmed = await useDialogService().confirm({
           title: t('onboardingReplay.confirmTitle'),
           message: t('onboardingReplay.confirmMessage'),

@@ -1,4 +1,3 @@
-import type { Settings } from '@/schemas/apiSchema'
 import { api } from '@/scripts/api'
 
 import { TOUR_SEEN_SETTING } from './onboardingTours'
@@ -12,11 +11,8 @@ import { TOUR_SEEN_SETTING } from './onboardingTours'
 const SURVEY_KEY = 'Comfy.OnboardingReplay.Survey'
 const FIRST_RUN_KEY = 'Comfy.OnboardingReplay.FirstRun'
 
-export class OnboardingReplayError extends Error {
-  constructor(
-    message: string,
-    readonly status?: number
-  ) {
+class OnboardingReplayError extends Error {
+  constructor(message: string) {
     super(message)
     this.name = 'OnboardingReplayError'
   }
@@ -40,11 +36,20 @@ function isReplayRequested(key: string): boolean {
   }
 }
 
+/**
+ * Falls back to overwriting the marker, because leaving a served request
+ * standing re-serves the gate forever: the survey would bounce a user back to
+ * a form they already submitted.
+ */
 function consumeReplayRequest(key: string): void {
   try {
     sessionStorage.removeItem(key)
   } catch {
-    console.warn(`[onboarding] Failed to clear the replay request ${key}`)
+    try {
+      sessionStorage.setItem(key, 'false')
+    } catch {
+      console.warn(`[onboarding] Failed to clear the replay request ${key}`)
+    }
   }
 }
 
@@ -69,58 +74,47 @@ export function consumeFirstRunReplayRequest(): void {
  * through it. Session-scoped so a request cannot outlive the tab that made it,
  * and each gate spends its own request, so one click replays onboarding once.
  *
- * Returns false when session storage rejected the write, which leaves the
- * replay unrecorded and therefore unable to happen.
+ * Returns false when session storage rejected a write, having cleared whatever
+ * did land so a half-armed replay cannot serve one gate and not the other.
  */
 export function requestOnboardingReplay(): boolean {
-  const survey = requestReplay(SURVEY_KEY)
-  const firstRun = requestReplay(FIRST_RUN_KEY)
-  return survey && firstRun
-}
-
-/**
- * `settingStore.set` resolves even when the server rejects the write, because
- * nothing between it and `fetch` inspects the response status. Going through
- * the API directly is what makes a failed reset observable. Safe for these two
- * keys specifically: both are `type: 'hidden'` with no `onChange`, and the
- * caller reloads, so the store's in-memory copy is rebuilt from the server
- * either way.
- */
-async function storeSettingOrThrow<K extends keyof Settings>(
-  id: K,
-  value: Settings[K]
-): Promise<void> {
-  const response = await api.storeSetting(id, value)
-  if (!response.ok) {
-    throw new OnboardingReplayError(
-      `Failed to store ${id}: ${response.statusText}`,
-      response.status
-    )
+  if (!requestReplay(SURVEY_KEY)) return false
+  if (!requestReplay(FIRST_RUN_KEY)) {
+    consumeReplayRequest(SURVEY_KEY)
+    return false
   }
+  return true
 }
 
 /**
  * Re-opens the gates that hide onboarding from an account that has already
  * been through it, leaving everything the user authored intact.
  *
- * Nothing the user produced is rewritten. The signup survey's stored answers
- * are left alone — `/api/settings` merges only at the top level, so writing
- * that key at all would overwrite them — and the survey is re-served by
- * {@link isSurveyReplayRequested} overriding its gate for this session
- * instead. Local draft history is read by the Getting Started screen's
- * `isNewUser` check but likewise never cleared: it is the user's work rather
- * than onboarding state, so {@link isFirstRunReplayRequested} stands in for
- * it.
+ * Only the coachmark seen-list is written, and it is onboarding bookkeeping
+ * this flow owns. The survey's stored answers and the local draft history that
+ * the Getting Started screen reads are both left alone — they are the user's,
+ * and `/api/settings` merges only at the top level, so writing the survey key
+ * at all would overwrite the answers. Those two gates are re-opened for this
+ * session by {@link isSurveyReplayRequested} and
+ * {@link isFirstRunReplayRequested} instead.
  *
- * That leaves the two pieces of onboarding bookkeeping this flow genuinely
- * owns. Every gate is read during startup, so the caller has to reload for any
- * of it to take effect.
+ * Every gate is read during startup, so the caller has to reload for any of
+ * this to take effect.
  */
 export async function resetOnboardingState(): Promise<void> {
-  await storeSettingOrThrow('Comfy.TutorialCompleted', false)
-  await storeSettingOrThrow(TOUR_SEEN_SETTING, [])
+  // `settingStore.set` resolves even when the server rejects the write, since
+  // nothing between it and `fetch` inspects the status. Going through the API
+  // is what makes a failed reset observable; safe here because the setting is
+  // `type: 'hidden'` with no `onChange`, and the caller reloads, so the
+  // store's copy is rebuilt from the server either way.
+  const response = await api.storeSetting(TOUR_SEEN_SETTING, [])
+  if (!response.ok) {
+    throw new OnboardingReplayError(
+      `Failed to clear seen onboarding tours: ${response.statusText}`
+    )
+  }
 
-  // Last, so that until it lands the reset above stays inert, not partial.
+  // Last, so that until it lands the reset above stays recoverable by retrying.
   if (!requestOnboardingReplay()) {
     throw new OnboardingReplayError(
       'Session storage is unavailable, so the onboarding replay cannot be requested'

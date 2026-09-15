@@ -8,6 +8,10 @@ import { readonly, ref } from 'vue'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useSubscription } from '@/platform/cloud/subscription/composables/useSubscription'
 import { isCloud } from '@/platform/distribution/types'
+import {
+  consumeFirstRunReplayRequest,
+  isFirstRunReplayRequested
+} from '@/platform/onboarding/onboardingReplay'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import type { StartupOutcome } from '@/platform/workflow/persistence/base/draftTypes'
 import type { SharedWorkflowUrlLoadStatus } from '@/platform/workflow/sharing/composables/useSharedWorkflowUrlLoader'
@@ -37,7 +41,11 @@ export const useFirstRunEntry = createSharedComposable(() => {
   function decideFirstRun(): FirstRunDecision {
     if (!isCloud) return 'complete'
 
-    const isNewUser = useNewUserService().isNewUser()
+    // A replay stands in for the new-user checks rather than satisfying them:
+    // they read local draft history, which is the user's work, not onboarding
+    // state, and so is never cleared to re-open this gate.
+    const isNewUser =
+      isFirstRunReplayRequested() || useNewUserService().isNewUser()
     if (isNewUser === false) return 'complete'
 
     if (!useFeatureFlags().flags.onboardingTourEnabled) return 'defer'
@@ -55,8 +63,14 @@ export const useFirstRunEntry = createSharedComposable(() => {
   // `url-intent` defers to handleUrlWorkflow: we don't know yet whether
   // anything arrived to tour, and TutorialCompleted is write-once.
   async function handleStartupOutcome(outcome: StartupOutcome) {
-    if (outcome === 'restored') return
-    if (settingStore.get('Comfy.TutorialCompleted')) return
+    // Restored work and a spent tutorial are the two reasons to withhold
+    // onboarding from someone who did not ask for it. A replay is someone
+    // asking, so it overrides both.
+    const isReplay = isFirstRunReplayRequested()
+    if (!isReplay) {
+      if (outcome === 'restored') return
+      if (settingStore.get('Comfy.TutorialCompleted')) return
+    }
 
     const decision = decideFirstRun()
 
@@ -67,6 +81,9 @@ export const useFirstRunEntry = createSharedComposable(() => {
 
     if (decision === 'getting-started') {
       gettingStartedVisible.value = true
+      // Spent where the screen is actually delivered, so a boot that could not
+      // show it leaves the request standing for the next one.
+      consumeFirstRunReplayRequest()
       return
     }
 

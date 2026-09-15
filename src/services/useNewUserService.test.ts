@@ -1,7 +1,3 @@
-import {
-  isFirstRunReplayRequested,
-  requestOnboardingReplay
-} from '@/platform/onboarding/onboardingReplay'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { api } from '@/scripts/api'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -204,57 +200,6 @@ describe('useNewUserService', () => {
         return null
       })
 
-      await service.initializeIfNewUser()
-
-      expect(service.isNewUser()).toBe(false)
-    })
-  })
-
-  describe('onboarding replay', () => {
-    beforeEach(() => {
-      sessionStorage.clear()
-      useSettingStore().settingValues = {
-        'Comfy.ColorPalette': 'dark',
-        'Comfy.TutorialCompleted': true
-      }
-      mockLocalStorage.getItem.mockImplementation((key: string) => {
-        if (key === 'Comfy.Workflow.DraftIndex.v2:personal') {
-          return JSON.stringify({
-            order: ['draft-1'],
-            entries: { 'draft-1': {} }
-          })
-        }
-        return null
-      })
-    })
-
-    it('treats an account with draft history as new, so onboarding replays without touching the drafts', async () => {
-      requestOnboardingReplay()
-
-      await service.initializeIfNewUser()
-
-      expect(service.isNewUser()).toBe(true)
-      expect(mockLocalStorage.removeItem).not.toHaveBeenCalled()
-    })
-
-    it('keeps the recorded install version, which a replaying account already has', async () => {
-      requestOnboardingReplay()
-
-      await service.initializeIfNewUser()
-
-      expect(api.storeSetting).not.toHaveBeenCalledWith(
-        'Comfy.InstalledVersion',
-        expect.anything()
-      )
-    })
-
-    it('spends the request, so a later reload sees the real account state again', async () => {
-      requestOnboardingReplay()
-
-      await service.initializeIfNewUser()
-      expect(isFirstRunReplayRequested()).toBe(false)
-
-      service.reset()
       await service.initializeIfNewUser()
 
       expect(service.isNewUser()).toBe(false)

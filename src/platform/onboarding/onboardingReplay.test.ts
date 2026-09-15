@@ -64,17 +64,43 @@ describe('onboardingReplay', () => {
 
       expect(requestOnboardingReplay()).toBe(false)
     })
+
+    it('arm neither gate when only the first write lands', () => {
+      vi.spyOn(sessionStorage, 'setItem')
+        .mockImplementationOnce(sessionStorage.setItem.bind(sessionStorage))
+        .mockImplementationOnce(() => {
+          throw new Error('QuotaExceededError')
+        })
+
+      expect(requestOnboardingReplay()).toBe(false)
+
+      expect(isSurveyReplayRequested()).toBe(false)
+      expect(isFirstRunReplayRequested()).toBe(false)
+    })
+
+    it('are still spent when removal fails, so a served gate cannot re-serve forever', () => {
+      requestOnboardingReplay()
+      vi.spyOn(sessionStorage, 'removeItem').mockImplementation(() => {
+        throw new Error('SecurityError')
+      })
+
+      consumeSurveyReplayRequest()
+
+      expect(isSurveyReplayRequested()).toBe(false)
+    })
   })
 
   describe('resetOnboardingState', () => {
-    it('re-opens the Getting Started screen and the coachmark tours', async () => {
+    it('re-opens the coachmark tours', async () => {
       await resetOnboardingState()
 
-      expect(api.storeSetting).toHaveBeenCalledWith(
-        'Comfy.TutorialCompleted',
-        false
-      )
       expect(api.storeSetting).toHaveBeenCalledWith(TOUR_SEEN_SETTING, [])
+    })
+
+    it('writes nothing else, so no other onboarding state can be left half-applied', async () => {
+      await resetOnboardingState()
+
+      expect(api.storeSetting).toHaveBeenCalledTimes(1)
     })
 
     it('never writes the survey key, whose stored answers a write would destroy', async () => {
@@ -97,11 +123,11 @@ describe('onboardingReplay', () => {
       vi.spyOn(api, 'storeSetting').mockResolvedValue(response(401))
 
       await expect(resetOnboardingState()).rejects.toThrow(
-        'Failed to store Comfy.TutorialCompleted'
+        'Failed to clear seen onboarding tours'
       )
     })
 
-    it('requests no replay when a write is rejected, so a failed reset stays inert', async () => {
+    it('requests no replay when the write is rejected, so a failed reset stays inert', async () => {
       vi.spyOn(api, 'storeSetting').mockResolvedValue(response(500))
 
       await expect(resetOnboardingState()).rejects.toThrow()

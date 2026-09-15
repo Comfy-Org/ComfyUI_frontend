@@ -5,6 +5,10 @@ import * as VueUse from '@vueuse/core'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed } from 'vue'
 
+import {
+  isFirstRunReplayRequested,
+  requestOnboardingReplay
+} from '@/platform/onboarding/onboardingReplay'
 import type { StartupOutcome } from '@/platform/workflow/persistence/base/draftTypes'
 import type { SharedWorkflowUrlLoadStatus } from '@/platform/workflow/sharing/composables/useSharedWorkflowUrlLoader'
 
@@ -308,6 +312,62 @@ describe('useFirstRunEntry', () => {
       useCommandStore().execute,
       'nor may the template browser cover their restored workflow'
     ).not.toHaveBeenCalled()
+  })
+
+  describe('a requested replay', () => {
+    beforeEach(() => {
+      sessionStorage.clear()
+      // The account this feature exists for: onboarding already spent, and
+      // local work the new-user checks read and must not have cleared.
+      mocks.isNewUser = false
+      useSettingStore().settingValues['Comfy.TutorialCompleted'] = true
+    })
+
+    it('onboards over restored work, because this user asked for onboarding', async () => {
+      requestOnboardingReplay()
+      const entry = useFirstRunEntry()
+
+      await entry.handleStartupOutcome('restored')
+
+      expect(entry.gettingStartedVisible.value).toBe(true)
+    })
+
+    it('onboards a returning user whose tutorial is already complete', async () => {
+      requestOnboardingReplay()
+      const entry = useFirstRunEntry()
+
+      await entry.handleStartupOutcome('fresh')
+
+      expect(entry.gettingStartedVisible.value).toBe(true)
+    })
+
+    it('is spent by the boot that shows the screen', async () => {
+      requestOnboardingReplay()
+      const entry = useFirstRunEntry()
+
+      await entry.handleStartupOutcome('restored')
+
+      expect(isFirstRunReplayRequested()).toBe(false)
+    })
+
+    it('stands until a boot can show the screen, so eligibility this boot lacked is not lost', async () => {
+      requestOnboardingReplay()
+      mocks.subscriptionEnabled = false
+      const entry = useFirstRunEntry()
+
+      await entry.handleStartupOutcome('fresh')
+
+      expect(entry.gettingStartedVisible.value).toBe(false)
+      expect(isFirstRunReplayRequested()).toBe(true)
+    })
+
+    it('leaves the invariant intact for everyone who did not ask', async () => {
+      const entry = useFirstRunEntry()
+
+      await entry.handleStartupOutcome('restored')
+
+      expect(entry.gettingStartedVisible.value).toBe(false)
+    })
   })
 
   /**
