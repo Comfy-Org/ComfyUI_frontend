@@ -87,7 +87,7 @@ vi.mock<unknown>(import('@/scripts/api'), () => ({
 }))
 
 const mockDistributionState = vi.hoisted(() => ({ isCloud: false }))
-vi.mock<unknown>(import('@/platform/distribution/types'), () => ({
+vi.mock(import('@/platform/distribution/types'), () => ({
   get isCloud() {
     return mockDistributionState.isCloud
   }
