@@ -378,7 +378,11 @@ export function filterWorkshopModels(
         )) &&
       matchesFacet(providers, model.provider) &&
       (capabilities.length === 0 ||
-        capabilities.some((value) => model.capabilities.includes(value))) &&
+        capabilities.some(
+          (value) =>
+            model.capabilities.includes(value) ||
+            categoriesFor(model).includes(value)
+        )) &&
       (needle === '' || searchText(model).includes(needle))
   )
 }
@@ -455,8 +459,19 @@ export interface FacetOption {
 // `kling`, `v4.1` and `premium` sit in the same list as `text-to-image`. A tag
 // shaped input-to-output is the only one that names what a visitor came to
 // narrow by, so the catalogue offers those and leaves the rest to search.
-export function isCategoryTag(tag: string): boolean {
+function isCategoryTag(tag: string): boolean {
   return tag.includes('-to-')
+}
+
+// 101 of the 268 models carry no shaped tag at all: FLUX.1 Kontext Max is
+// tagged `image-edit`, never `image-to-image`. Its normalized task says the
+// same thing and says it for every model, so the task leads and a shaped tag
+// only adds a second category the tags happen to name.
+export function categoriesFor(model: WorkshopModel): readonly string[] {
+  const shaped = model.capabilities.filter(isCategoryTag)
+  return model.task && !shaped.includes(model.task)
+    ? [model.task, ...shaped]
+    : shaped
 }
 
 export function countByFacet(

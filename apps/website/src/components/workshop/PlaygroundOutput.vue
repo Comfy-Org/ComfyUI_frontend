@@ -228,10 +228,10 @@ const earlierClass = (active: boolean) =>
     <header
       class="flex items-center justify-between border-b border-transparency-white-t8 px-5 py-3 text-xs font-bold tracking-wider text-primary-comfy-canvas uppercase"
     >
-      <span>{{ t('workshop.output.title', locale) }}</span>
+      <span class="shrink-0">{{ t('workshop.output.title', locale) }}</span>
       <div
         v-if="currentAttachments.length && !blurred"
-        class="flex items-center gap-2"
+        class="flex min-w-0 items-center gap-2 overflow-x-auto"
       >
         <button
           v-for="(output, index) in files"

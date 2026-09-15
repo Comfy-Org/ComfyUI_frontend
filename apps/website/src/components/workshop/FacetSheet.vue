@@ -40,11 +40,13 @@ interface FacetSheetLabels {
 // One facet picker for the whole prototype. Both catalogues narrow the same
 // way on a phone, so the tabs, the rows, the empty state and the way out are
 // decided here once rather than in each listing.
-const { groups, labels, resultCount } = defineProps<{
+const { groups, labels, resultCount, appliedCount } = defineProps<{
   groups: readonly FacetSheetGroup[]
   labels: FacetSheetLabels
   /** What the catalogue holds under the current choices, for the way out. */
   resultCount: number
+  /** Counts a filter with no group of its own, so clearing can still reach it. */
+  appliedCount?: number
 }>()
 
 const emit = defineEmits<{
@@ -65,8 +67,10 @@ watch(
   }
 )
 
-const selectedCount = computed(() =>
-  groups.reduce((total, group) => total + group.selected.length, 0)
+const selectedCount = computed(
+  () =>
+    appliedCount ??
+    groups.reduce((total, group) => total + group.selected.length, 0)
 )
 
 // The handle is the only way to make the sheet taller, so it drags rather than

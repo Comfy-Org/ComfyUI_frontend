@@ -15,6 +15,7 @@ import type { GeneratedField, WorkshopModel } from './models-catalogue'
 import { decodeGeneratedModels } from './workshop-generated-models'
 import {
   USE_CASES,
+  categoriesFor,
   countByFacet,
   countByUseCase,
   catalogSearch,
@@ -68,6 +69,39 @@ it('keeps generated video ahead of animated-image use cases', () => {
   expect(USE_CASES.indexOf('generate-videos')).toBeLessThan(
     USE_CASES.indexOf('animate-images')
   )
+})
+
+describe('categoriesFor', () => {
+  it('names the task of a model whose tags never spell it out', () => {
+    // FLUX.1 Kontext Max is tagged image-edit, never image-to-image: 101 of the
+    // catalogue's 268 models carry no shaped tag at all.
+    expect(
+      categoriesFor({ ...fixture[1], capabilities: ['image-edit', 'premium'] })
+    ).toEqual(['image-to-image'])
+  })
+
+  it('keeps a shaped tag that names a second thing the model does', () => {
+    expect(
+      categoriesFor({
+        ...fixture[1],
+        capabilities: ['text-to-image', 'flux']
+      })
+    ).toEqual(['image-to-image', 'text-to-image'])
+  })
+
+  it('reaches a model the facet counted but its tags do not name', () => {
+    const tagged = { ...fixture[1], capabilities: ['image-edit'] }
+    expect(
+      filterWorkshopModels([tagged], { capabilities: ['image-to-image'] })
+    ).toEqual([tagged])
+  })
+
+  it('still resolves a raw-tag deep link such as ?capability=flux', () => {
+    const tagged = { ...fixture[1], capabilities: ['flux'] }
+    expect(filterWorkshopModels([tagged], { capabilities: ['flux'] })).toEqual([
+      tagged
+    ])
+  })
 })
 
 describe('filterWorkshopModels', () => {

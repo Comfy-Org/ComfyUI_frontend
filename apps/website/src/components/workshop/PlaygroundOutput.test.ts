@@ -239,6 +239,24 @@ describe('PlaygroundOutput', () => {
     ).toBeTruthy()
   })
 
+  it('gives every file of a wide run its own button', () => {
+    render(PlaygroundOutput, {
+      props: {
+        modelName: 'Seedream 4.5',
+        state: succeeded(output('latest')),
+        attachments: Array.from({ length: 10 }, (_, index) => ({
+          kind: 'image' as const,
+          url: `https://example.com/extra-${index}.webp`,
+          fileName: `extra-${index}.webp`
+        })),
+        now: 2_000
+      }
+    })
+    expect(
+      within(screen.getByRole('banner')).getAllByRole('button')
+    ).toHaveLength(11)
+  })
+
   it('withholds the file switch while the result is blurred', () => {
     render(PlaygroundOutput, {
       props: {

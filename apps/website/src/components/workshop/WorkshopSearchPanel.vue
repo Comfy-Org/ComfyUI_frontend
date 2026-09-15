@@ -5,8 +5,8 @@ import { cn } from '@comfyorg/tailwind-utils'
 
 import type { WorkshopModel } from '../../config/models-catalogue'
 import {
+  categoriesFor,
   filterWorkshopModels,
-  isCategoryTag,
   sortWorkshopModels
 } from '../../config/models-catalogue'
 import type { Locale } from '../../i18n/translations'
@@ -78,7 +78,7 @@ const allCapabilities = ref(false)
 
 const capabilityChips = computed(() =>
   chipsFrom(
-    (model) => model.capabilities.filter(isCategoryTag),
+    (model) => categoriesFor(model),
     capabilities,
     allCapabilities.value
   )

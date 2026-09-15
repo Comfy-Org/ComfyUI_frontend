@@ -38,6 +38,7 @@ const {
 }>()
 
 const capabilities = defineModel<string[]>('capabilities', { required: true })
+const providers = defineModel<string[]>('providers', { default: () => [] })
 const modalities = defineModel<string[]>('modalities', { required: true })
 const useCases = defineModel<string[]>('useCases', { default: () => [] })
 
@@ -99,8 +100,10 @@ const groups = computed<FacetSheetGroup[]>(() => [
   }
 ])
 
-const selectedCount = computed(() =>
-  groups.value.reduce((total, group) => total + group.selected.length, 0)
+const selectedCount = computed(
+  () =>
+    groups.value.reduce((total, group) => total + group.selected.length, 0) +
+    providers.value.length
 )
 
 function toggle(facet: string, value: string) {
@@ -114,6 +117,7 @@ function clearAll() {
   capabilities.value = []
   modalities.value = []
   useCases.value = []
+  providers.value = []
 }
 
 const sheetLabels = computed(() => ({
@@ -197,6 +201,7 @@ const sheetLabels = computed(() => ({
           <FacetSheet
             :groups
             :labels="sheetLabels"
+            :applied-count="selectedCount"
             :result-count
             @toggle="toggle"
             @clear-all="clearAll"

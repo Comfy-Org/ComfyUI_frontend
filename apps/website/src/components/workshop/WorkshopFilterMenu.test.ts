@@ -2,7 +2,7 @@ import '@testing-library/jest-dom/vitest'
 import userEvent from '@testing-library/user-event'
 import { render, screen, waitFor, within } from '@testing-library/vue'
 import { describe, expect, it } from 'vitest'
-import { defineComponent, h, ref } from 'vue'
+import { defineComponent, h, nextTick, ref } from 'vue'
 
 import WorkshopFilterMenu from './WorkshopFilterMenu.vue'
 
@@ -21,6 +21,7 @@ const useCaseOptions = [
 
 function mountMenu(withUseCases = false) {
   const capabilities = ref<string[]>([])
+  const providers = ref<string[]>([])
   const modalities = ref<string[]>([])
   const useCases = ref<string[]>([])
   render(
@@ -32,6 +33,7 @@ function mountMenu(withUseCases = false) {
           useCaseOptions: withUseCases ? useCaseOptions : undefined,
           resultCount: 12,
           capabilities: capabilities.value,
+          providers: providers.value,
           modalities: modalities.value,
           useCases: useCases.value,
           'onUpdate:useCases': (value: string[]) => {
@@ -40,13 +42,16 @@ function mountMenu(withUseCases = false) {
           'onUpdate:capabilities': (value: string[]) => {
             capabilities.value = value
           },
+          'onUpdate:providers': (value: string[]) => {
+            providers.value = value
+          },
           'onUpdate:modalities': (value: string[]) => {
             modalities.value = value
           }
         })
     })
   )
-  return { capabilities, modalities, useCases }
+  return { capabilities, providers, modalities, useCases }
 }
 
 describe('WorkshopFilterMenu', () => {
@@ -116,6 +121,23 @@ describe('WorkshopFilterMenu', () => {
     await user.click(screen.getByTestId('workshop-filter-clear'))
     expect(useCases.value).toEqual([])
     expect(screen.queryByTestId('workshop-filter-count')).toBeNull()
+  })
+
+  it('counts and clears a provider it offers no way to choose', async () => {
+    // The homepage links to /models?provider=<name>; on desktop this menu is
+    // the only always-visible way back out of one.
+    const user = userEvent.setup()
+    const { providers } = mountMenu()
+    providers.value = ['Kling']
+    await nextTick()
+
+    expect(screen.getByTestId('workshop-filter-count').textContent.trim()).toBe(
+      '1'
+    )
+    expect(screen.queryByRole('tab', { name: 'Models' })).toBeNull()
+    await user.click(screen.getByTestId('workshop-filter'))
+    await user.click(screen.getByTestId('workshop-filter-clear'))
+    expect(providers.value).toEqual([])
   })
 
   it('clears every facet at once', async () => {
