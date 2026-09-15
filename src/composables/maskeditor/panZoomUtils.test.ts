@@ -71,18 +71,20 @@ describe('panZoomUtils', () => {
   })
 
   describe('getWheelZoomFactor', () => {
-    it('returns 1.1 for negative deltaY (scroll up = zoom in)', () => {
-      expect(getWheelZoomFactor(-100)).toBe(1.1)
-      expect(getWheelZoomFactor(-1)).toBe(1.1)
+    it('preserves the conventional wheel step for a 100px delta', () => {
+      expect(getWheelZoomFactor(-100)).toBeCloseTo(1.1)
+      expect(getWheelZoomFactor(100)).toBeCloseTo(0.9)
     })
 
-    it('returns 0.9 for positive deltaY (scroll down = zoom out)', () => {
-      expect(getWheelZoomFactor(100)).toBe(0.9)
-      expect(getWheelZoomFactor(1)).toBe(0.9)
+    it('scales small deltas instead of applying a full wheel step', () => {
+      expect(getWheelZoomFactor(-1)).toBeGreaterThan(1)
+      expect(getWheelZoomFactor(-1)).toBeLessThan(1.1)
+      expect(getWheelZoomFactor(1)).toBeLessThan(1)
+      expect(getWheelZoomFactor(1)).toBeGreaterThan(0.9)
     })
 
-    it('returns 0.9 for zero deltaY', () => {
-      expect(getWheelZoomFactor(0)).toBe(0.9)
+    it('returns 1 for zero deltaY', () => {
+      expect(getWheelZoomFactor(0)).toBe(1)
     })
   })
 
