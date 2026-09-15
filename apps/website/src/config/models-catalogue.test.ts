@@ -1,0 +1,552 @@
+import { describe, expect, it } from 'vitest'
+
+import generatedModels from './workshop-models.generated.json'
+import catalog from '../content/workshop-models.json'
+import display from '../content/workshop-display.json'
+import availability from '../data/workshop-router-availability.json'
+import { routerAliasById, workshopModels } from './workshop-browse-content'
+import { workshopContract } from './workshop-contract-catalog'
+import { workshopContentInputs } from './workshop-content-inputs'
+import { isWorkshopModelDisabled } from './workshop-model-availability'
+import { modelOrderRank } from './workshop-model-order'
+import { getRouterWorkshopModelDetail as getWorkshopModelDetail } from './workshop-router-content'
+import { schemaForModel } from './workshop-playground'
+import type { GeneratedField, WorkshopModel } from './models-catalogue'
+import { decodeGeneratedModels } from './workshop-generated-models'
+import {
+  USE_CASES,
+  countByFacet,
+  countByUseCase,
+  catalogSearch,
+  filterWorkshopModels,
+  parseCatalogSearch,
+  isRouterModel,
+  sortOrdersFor,
+  sortWorkshopModels,
+  splitTask,
+  summaryFor,
+  capabilitiesFor,
+  taskFor,
+  useCaseFor,
+  useCasesFor
+} from './models-catalogue'
+
+const fixture: WorkshopModel[] = [
+  {
+    slug: 'a',
+    name: 'Kling AI',
+    workflowCount: 3,
+    href: '/a',
+    routerId: 'kling/a',
+    capabilities: [],
+    provider: 'Kling',
+    modality: 'video',
+    task: 'text-to-video'
+  },
+  {
+    slug: 'b',
+    name: 'Flux',
+    workflowCount: 2,
+    href: '/b',
+    routerId: 'bfl/b',
+    capabilities: ['Upscale', 'Inpainting'],
+    provider: 'Black Forest Labs',
+    modality: 'image',
+    task: 'image-to-image'
+  },
+  {
+    slug: 'c',
+    name: 'Mystery',
+    workflowCount: 1,
+    href: '/c',
+    routerId: 'comfy/c',
+    capabilities: []
+  }
+]
+
+type DisplayEntry = (typeof display)[number]
+
+function resolvedRouterId(entry: DisplayEntry): string | undefined {
+  const contentInput = workshopContentInputs.get(entry.id)
+  if (contentInput?.routerId) return contentInput.routerId
+  return routerAliasById.get(entry.modelId)?.routerId
+}
+
+function pageIsAvailable(entry: DisplayEntry): boolean {
+  const unavailableReason = workshopContentInputs.get(
+    entry.id
+  )?.unavailableReason
+  return !unavailableReason && !isWorkshopModelDisabled(entry.slug)
+}
+
+function routerIsAvailable(routerId: string | undefined): routerId is string {
+  if (!routerId || !workshopContract(routerId)) return false
+  return !Object.hasOwn(availability, routerId)
+}
+
+function expectedPublishedRouterId(entry: DisplayEntry): string | undefined {
+  if (!pageIsAvailable(entry)) return
+  const routerId = resolvedRouterId(entry)
+  if (!routerIsAvailable(routerId)) return
+  return routerId
+}
+
+it('keeps generated video ahead of animated-image use cases', () => {
+  expect(USE_CASES.indexOf('generate-videos')).toBeLessThan(
+    USE_CASES.indexOf('animate-images')
+  )
+})
+
+describe('filterWorkshopModels', () => {
+  it('matches name or provider, case-insensitively', () => {
+    expect(filterWorkshopModels(fixture, { query: 'forest' })).toEqual([
+      fixture[1]
+    ])
+    expect(filterWorkshopModels(fixture, { query: 'KLING' })).toEqual([
+      fixture[0]
+    ])
+  })
+
+  it('also matches the category and the task in words', () => {
+    expect(filterWorkshopModels(fixture, { query: 'image to image' })).toEqual([
+      fixture[1]
+    ])
+    expect(filterWorkshopModels(fixture, { query: 'video' })).toEqual([
+      fixture[0]
+    ])
+  })
+
+  it('also matches the use case in words', () => {
+    expect(filterWorkshopModels(fixture, { query: 'generate videos' })).toEqual(
+      [fixture[0]]
+    )
+  })
+
+  it('filters by use case and lists unplaced models only under all', () => {
+    expect(
+      filterWorkshopModels(fixture, { query: '', useCase: 'generate-videos' })
+    ).toEqual([fixture[0]])
+    expect(
+      filterWorkshopModels(fixture, { query: '', useCase: 'all' })
+    ).toEqual(fixture)
+    expect(
+      USE_CASES.flatMap((useCase) =>
+        filterWorkshopModels(fixture, { query: '', useCase })
+      )
+    ).not.toContain(fixture[2])
+  })
+
+  it('combines query and use case', () => {
+    expect(
+      filterWorkshopModels(fixture, {
+        query: 'flux',
+        useCase: 'generate-videos'
+      })
+    ).toEqual([])
+  })
+
+  it('groups text, 3d, and audio models under other formats', () => {
+    const formats: WorkshopModel[] = [
+      { ...fixture[0], slug: 'text', modality: 'text', task: 'text-to-text' },
+      { ...fixture[0], slug: '3d', modality: '3d', task: 'text-to-3d' },
+      {
+        ...fixture[0],
+        slug: 'audio',
+        modality: 'audio',
+        task: 'text-to-audio'
+      },
+      {
+        ...fixture[0],
+        slug: 'image',
+        modality: 'image',
+        task: 'text-to-image'
+      },
+      { ...fixture[0], slug: 'video', modality: 'video', task: 'text-to-video' }
+    ]
+
+    expect(
+      filterWorkshopModels(formats, { query: '', useCase: 'other' }).map(
+        (model) => model.slug
+      )
+    ).toEqual(['text', '3d', 'audio'])
+  })
+})
+
+describe('filterWorkshopModels facets', () => {
+  it('filters by provider and by capability', () => {
+    expect(
+      filterWorkshopModels(fixture, { query: '', providers: ['Kling'] })
+    ).toEqual([fixture[0]])
+    expect(
+      filterWorkshopModels(fixture, { query: '', capabilities: ['Upscale'] })
+    ).toEqual([fixture[1]])
+    expect(filterWorkshopModels(fixture, { query: 'inpaint' })).toEqual([
+      fixture[1]
+    ])
+    expect(
+      filterWorkshopModels(fixture, {
+        query: '',
+        useCase: 'generate-videos',
+        capabilities: ['Upscale']
+      })
+    ).toEqual([])
+  })
+
+  it('filters by any selected use case', () => {
+    const matches = filterWorkshopModels(fixture, {
+      query: '',
+      useCases: ['generate-videos', 'edit-images']
+    })
+    expect(matches).toHaveLength(2)
+    expect(new Set(matches.map((model) => model.slug))).toEqual(
+      new Set(['a', 'b'])
+    )
+  })
+
+  it('treats no selected use cases as unrestricted', () => {
+    expect(filterWorkshopModels(fixture, { query: '', useCases: [] })).toEqual(
+      fixture
+    )
+  })
+
+  it('returns no models when none match the selected use case', () => {
+    expect(
+      filterWorkshopModels(fixture, { query: '', useCases: ['audio'] })
+    ).toEqual([])
+  })
+})
+
+describe('sortWorkshopModels', () => {
+  it('orders by popularity, name or price without mutating the input', () => {
+    const priced = fixture.map((model, index) => ({
+      ...model,
+      creditsPerRun: index === 2 ? undefined : (index + 1) * 10
+    }))
+    const names = (list: WorkshopModel[]) => list.map((m) => m.name)
+    expect(names(sortWorkshopModels(priced, 'popular'))).toEqual([
+      'Kling AI',
+      'Flux',
+      'Mystery'
+    ])
+    expect(names(sortWorkshopModels(priced, 'name'))).toEqual([
+      'Flux',
+      'Kling AI',
+      'Mystery'
+    ])
+    expect(names(sortWorkshopModels(priced, 'priceAsc'))).toEqual([
+      'Kling AI',
+      'Flux',
+      'Mystery'
+    ])
+    expect(names(sortWorkshopModels(priced, 'priceDesc'))).toEqual([
+      'Flux',
+      'Kling AI',
+      'Mystery'
+    ])
+    expect(names(priced)).toEqual(['Kling AI', 'Flux', 'Mystery'])
+  })
+
+  it('leads with the models people run, whatever their example count', () => {
+    const [first, second] = [...modelOrderRank.keys()]
+    const list = [
+      { ...fixture[0], slug: second, recommendedRank: 1, workflowCount: 6 },
+      { ...fixture[1], slug: first, recommendedRank: 0, workflowCount: 0 },
+      { ...fixture[2], slug: 'never-run', workflowCount: 6 }
+    ]
+    expect(
+      sortWorkshopModels(list, 'popular').map((model) => model.slug)
+    ).toEqual([first, second, 'never-run'])
+  })
+})
+
+describe('sortOrdersFor', () => {
+  it('withholds the price orders while no model carries a price', () => {
+    expect(sortOrdersFor(fixture)).toEqual(['popular', 'name'])
+  })
+
+  it('offers them again as soon as one model does', () => {
+    expect(
+      sortOrdersFor([{ ...fixture[0], creditsPerRun: 10 }, ...fixture.slice(1)])
+    ).toEqual(['popular', 'name', 'priceAsc', 'priceDesc'])
+  })
+})
+
+describe('countByFacet', () => {
+  it('counts each value, skips models without one, most common first', () => {
+    const list = [...fixture, { ...fixture[1], slug: 'd' }]
+    expect(countByFacet(list, 'provider')).toEqual([
+      { value: 'Black Forest Labs', count: 2 },
+      { value: 'Kling', count: 1 }
+    ])
+    expect(countByFacet(list, 'capabilities')).toEqual([
+      { value: 'Inpainting', count: 2 },
+      { value: 'Upscale', count: 2 }
+    ])
+  })
+})
+
+describe('taskFor', () => {
+  const upload = (required: boolean): GeneratedField => ({
+    kind: 'file',
+    name: 'image',
+    label: 'Image',
+    accept: 'image',
+    required
+  })
+
+  it('uses a required upload as the input, text otherwise', () => {
+    expect(taskFor([upload(true)], 'video')).toBe('image-to-video')
+    expect(taskFor([upload(false)], 'video')).toBe('text-to-video')
+    expect(taskFor([], undefined)).toBe('text-to-other')
+  })
+
+  it('splits only well-formed tasks', () => {
+    expect(splitTask('image-to-video')).toEqual({
+      input: 'image',
+      output: 'video'
+    })
+    expect(splitTask('text-to-all')).toBeUndefined()
+    expect(splitTask('nonsense')).toBeUndefined()
+    expect(splitTask('image-to-video-to-audio')).toBeUndefined()
+  })
+})
+
+describe('useCaseFor', () => {
+  it('places a model by what it produces and leaves unknown ones unplaced', () => {
+    expect(useCaseFor(fixture[0])).toBe('generate-videos')
+    expect(useCaseFor(fixture[1])).toBe('edit-images')
+    expect(
+      useCaseFor({ ...fixture[1], modality: 'image', task: 'text-to-image' })
+    ).toBe('generate-images')
+    expect(useCaseFor({ ...fixture[0], task: 'image-to-video' })).toBe(
+      'animate-images'
+    )
+    expect(useCaseFor({ ...fixture[0], task: 'video-to-video' })).toBe(
+      'edit-videos'
+    )
+    expect(useCaseFor({ ...fixture[2], modality: 'video' })).toBe(
+      'generate-videos'
+    )
+    expect(useCaseFor({ ...fixture[2], modality: '3d' })).toBe('3d')
+    expect(useCaseFor(fixture[2])).toBeUndefined()
+  })
+})
+
+describe('capabilitiesFor', () => {
+  it('keeps the tags that describe a capability, merged and sorted', () => {
+    const example = (tags: string[]) => ({
+      name: 'x',
+      title: 'x',
+      description: '',
+      tags,
+      thumbnailUrl: '',
+      values: {}
+    })
+    expect(
+      capabilitiesFor([
+        example(['API', 'Image Upscale', 'Image']),
+        example(['Video Upscale', 'Lip Sync', 'Text to Video'])
+      ])
+    ).toEqual(['Lip sync', 'Upscale'])
+    expect(capabilitiesFor([])).toEqual([])
+  })
+})
+
+describe('countByUseCase', () => {
+  it('counts every use case including all and other', () => {
+    expect(countByUseCase(fixture)).toEqual({
+      all: 3,
+      'generate-images': 0,
+      'edit-images': 1,
+      'generate-videos': 1,
+      'animate-images': 0,
+      'edit-videos': 0,
+      '3d': 0,
+      audio: 0,
+      text: 0
+    })
+  })
+
+  it('counts a model in every explicit editorial use case', () => {
+    const multiUseCase: WorkshopModel = {
+      ...fixture[0],
+      useCases: ['generate-videos', 'animate-images']
+    }
+    expect(useCasesFor(multiUseCase)).toEqual([
+      'generate-videos',
+      'animate-images'
+    ])
+    expect(countByUseCase([multiUseCase])).toMatchObject({
+      all: 1,
+      'generate-videos': 1,
+      'animate-images': 1
+    })
+  })
+})
+
+describe('workshopModels', () => {
+  it('publishes the available content/input-schema intersection with unique use-case links', () => {
+    const ids = new Set(
+      display.flatMap((entry) => {
+        const routerId = expectedPublishedRouterId(entry)
+        return routerId ? [routerId] : []
+      })
+    )
+    expect(new Set(workshopModels.map((model) => model.routerId))).toEqual(ids)
+    expect(new Set(workshopModels.map((model) => model.slug)).size).toBe(
+      workshopModels.length
+    )
+    expect(
+      workshopModels.every((model) => model.href === `/models/${model.slug}/`)
+    ).toBe(true)
+  })
+
+  it('joins every model to its fields, use cases, media and examples', () => {
+    let exampleCount = 0
+    for (const model of workshopModels) {
+      const detail = getWorkshopModelDetail(model.slug)
+      if (!detail) throw new Error('Missing joined detail')
+      expect(schemaForModel(detail).length > 0).toBe(!model.incompleteReason)
+      if (catalog.some((entry) => entry.id === model.routerId))
+        expect(useCasesFor(model).length).toBeGreaterThan(0)
+      exampleCount += detail.examples.length
+    }
+    const sourceAssets = new Set(
+      display.flatMap((entry) =>
+        entry.media.thumbnail ? [entry.media.thumbnail.url] : []
+      )
+    )
+    for (const model of workshopModels)
+      if (model.thumbnail)
+        expect(sourceAssets.has(model.thumbnail.url)).toBe(true)
+    expect(exampleCount).toBe(
+      workshopModels.reduce((count, model) => count + model.workflowCount, 0)
+    )
+  })
+
+  it('retains the legacy registry predicate for its remaining callers', () => {
+    expect(
+      isRouterModel({
+        slug: 'x',
+        name: 'x',
+        displayName: 'x',
+        directory: 'partner_nodes',
+        canonicalSlug: 'y',
+        huggingFaceUrl: '',
+        featured: false,
+        workflowCount: 0
+      })
+    ).toBe(false)
+  })
+})
+
+describe('decodeGeneratedModels', () => {
+  it('keeps well-formed records and drops the rest', () => {
+    const prompt = {
+      kind: 'text',
+      name: 'prompt',
+      label: 'Prompt',
+      multiline: true,
+      required: true
+    }
+    const example = {
+      name: 'demo',
+      title: 'Demo',
+      description: '',
+      tags: ['video'],
+      thumbnailUrl: 'https://example.com/demo.webp',
+      values: { prompt: 'a capybara', steps: 20, hd: true }
+    }
+    const good = {
+      fields: [prompt],
+      defaults: { prompt: 'hello' },
+      examples: [example]
+    }
+    expect(
+      decodeGeneratedModels({
+        good,
+        badFields: { ...good, fields: 'nope' },
+        badKind: {
+          ...good,
+          fields: [{ kind: 'color', name: 'x', label: 'X' }]
+        },
+        halfNumber: {
+          ...good,
+          fields: [{ kind: 'number', name: 'steps', label: 'Steps', min: 1 }]
+        },
+        badDefaults: { ...good, defaults: { seed: null } },
+        badExample: { ...good, examples: [{ name: 'x' }] },
+        missing: null
+      })
+    ).toEqual({ good })
+    expect(decodeGeneratedModels('not a manifest')).toEqual({})
+  })
+
+  it('accepts every record the generator wrote', () => {
+    expect(Object.keys(decodeGeneratedModels(generatedModels))).toEqual(
+      Object.keys(generatedModels)
+    )
+  })
+})
+
+describe('catalog deep links', () => {
+  it('round-trips a filter through the query string', () => {
+    const search = catalogSearch({
+      useCase: 'edit-images',
+      query: 'upscale'
+    })
+    expect(parseCatalogSearch(search)).toEqual({
+      query: 'upscale',
+      useCase: 'edit-images',
+      modalities: [],
+      providers: [],
+      capabilities: []
+    })
+  })
+
+  it('keeps retired facets working for existing links', () => {
+    expect(
+      parseCatalogSearch(
+        '?useCase=nonsense&provider=Kling&capability=Upscale&modality=video'
+      )
+    ).toEqual({
+      query: '',
+      useCase: 'all',
+      modalities: ['video'],
+      providers: ['Kling'],
+      capabilities: ['Upscale']
+    })
+    expect(catalogSearch({ useCase: 'all' })).toBe('')
+  })
+})
+
+describe('summaryFor', () => {
+  const example = {
+    name: 'n',
+    title: 't',
+    tags: [],
+    thumbnailUrl: '',
+    values: {}
+  }
+
+  it('keeps the second sentence while the pair stays short', () => {
+    expect(
+      summaryFor([
+        { ...example, description: 'Generates video. Audio comes with it.' }
+      ])
+    ).toBe('Generates video. Audio comes with it.')
+  })
+
+  it('stops at the first sentence when the pair would run long', () => {
+    const first =
+      'Generates up to four megapixel photorealistic images with multi-reference consistency, professional text rendering and precise control over lighting.'
+    const second = 'It also inpaints and outpaints at full resolution too.'
+    expect(
+      summaryFor([{ ...example, description: `${first} ${second}` }])
+    ).toBe(first)
+  })
+
+  it('has nothing to say without an example', () => {
+    expect(summaryFor([])).toBeUndefined()
+  })
+})

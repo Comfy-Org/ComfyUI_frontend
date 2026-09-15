@@ -1,14 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type * as LGraphCanvasModule from '@/lib/litegraph/src/LGraphCanvas'
+import type { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
 import { LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { CanvasPointerEvent } from '@/lib/litegraph/src/types/events'
 import type { IComboWidget } from '@/lib/litegraph/src/types/widgets'
 import { ComboWidget } from '@/lib/litegraph/src/widgets/ComboWidget'
 
-const { LGraphCanvas } = await vi.importActual<typeof LGraphCanvasModule>(
-  '@/lib/litegraph/src/LGraphCanvas'
-)
 type LGraphCanvasType = InstanceType<typeof LGraphCanvas>
 
 interface MockWidgetConfig extends Omit<IComboWidget, 'options'> {
@@ -462,7 +459,7 @@ describe('ComboWidget', () => {
       const mockContextMenu = vi
         .fn<typeof LiteGraph.ContextMenu>()
         .mockImplementation(function (_values, options) {
-          capturedCallback = options.callback
+          capturedCallback = options?.callback
         })
       LiteGraph.ContextMenu = mockContextMenu as Partial<
         typeof LiteGraph.ContextMenu
@@ -506,7 +503,7 @@ describe('ComboWidget', () => {
       const mockContextMenu = vi
         .fn<typeof LiteGraph.ContextMenu>()
         .mockImplementation(function (_values, options) {
-          capturedCallback = options.callback
+          capturedCallback = options?.callback
         })
       LiteGraph.ContextMenu = mockContextMenu as Partial<
         typeof LiteGraph.ContextMenu
@@ -834,7 +831,7 @@ describe('ComboWidget', () => {
         const mockContextMenu = vi
           .fn<typeof LiteGraph.ContextMenu>()
           .mockImplementation(function (_values, options) {
-            capturedCallback = options.callback
+            capturedCallback = options?.callback
             this.addItem = mockAddItem
           })
         LiteGraph.ContextMenu = mockContextMenu as Partial<
@@ -889,7 +886,7 @@ describe('ComboWidget', () => {
         const mockContextMenu = vi
           .fn<typeof LiteGraph.ContextMenu>()
           .mockImplementation(function (_values, options) {
-            capturedCallback = options.callback
+            capturedCallback = options?.callback
             this.addItem = mockAddItem
           })
         LiteGraph.ContextMenu = mockContextMenu as Partial<
@@ -1056,7 +1053,7 @@ describe('ComboWidget', () => {
       expect(widget.canDecrement()).toBe(false)
     })
 
-    it('should throw error when values is null in getValues', () => {
+    it('should ignore clicks when values is null', () => {
       widget = new ComboWidget(
         createMockWidgetConfig({
           name: 'mode',
@@ -1071,10 +1068,16 @@ describe('ComboWidget', () => {
       const mockEvent = { canvasX: 150 } as CanvasPointerEvent
       node.pos = [50, 50]
       node.size = [200, 30]
+      const consoleError = vi
+        .spyOn(console, 'error')
+        .mockImplementation(() => {})
 
-      expect(() => {
-        widget.onClick({ e: mockEvent, node, canvas: mockCanvas })
-      }).toThrow('[ComboWidget]: values is required')
+      widget.onClick({ e: mockEvent, node, canvas: mockCanvas })
+
+      expect(consoleError).toHaveBeenCalledWith(
+        '[ComboWidget]: values is required'
+      )
+      expect(widget.value).toBe('test')
     })
 
     it('should default to first value when incrementing from invalid value', () => {

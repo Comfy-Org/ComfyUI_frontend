@@ -1,6 +1,6 @@
 ---
 name: writing-storybook-stories
-description: 'Write or update Storybook stories for Vue components in ComfyUI_frontend. Use when adding, modifying, reviewing, or debugging `.stories.ts` files, Storybook docs, component demos, or visual catalog entries in `src/` or `apps/desktop-ui/`.'
+description: 'Write or update Storybook stories for Vue components in ComfyUI_frontend. Use when adding, modifying, reviewing, or debugging `.stories.ts` files, Storybook docs, component demos, or visual catalog entries.'
 ---
 
 # Write Storybook Stories for ComfyUI_frontend
@@ -20,7 +20,7 @@ description: 'Write or update Storybook stories for Vue components in ComfyUI_fr
 ## Match Local Conventions
 
 - Copy the closest neighboring story instead of forcing one universal template.
-- Most repo stories use `@storybook/vue3-vite`. Some stories under `apps/desktop-ui` still use `@storybook/vue3`; keep the local convention for that area.
+- Most repo stories use `@storybook/vue3-vite`.
 - Add `tags: ['autodocs']` unless the surrounding stories in that area intentionally omit it.
 - Use `ComponentPropsAndSlots<typeof Component>` when it helps with prop and slot typing.
 - Keep `render` functions stateful when needed. Use `ref()`, `computed()`, and `toRefs(args)` instead of mutating Storybook args directly.
@@ -32,16 +32,14 @@ description: 'Write or update Storybook stories for Vue components in ComfyUI_fr
 
 Do not invent titles from scratch when a close sibling story already exists. Match the nearest domain pattern.
 
-| Component area                                          | Typical title pattern                |
-| ------------------------------------------------------- | ------------------------------------ |
-| `src/components/ui/button/Button.vue`                   | `Components/Button/Button`           |
-| `src/components/ui/input/Input.vue`                     | `Components/Input`                   |
-| `src/components/ui/search-input/SearchInput.vue`        | `Components/Input/SearchInput`       |
-| `src/components/common/SearchBox.vue`                   | `Components/Input/SearchBox`         |
-| `src/renderer/extensions/vueNodes/widgets/components/*` | `Widgets/<WidgetName>`               |
-| `src/platform/assets/components/*`                      | `Platform/Assets/<ComponentName>`    |
-| `apps/desktop-ui/src/components/*`                      | `Desktop/Components/<ComponentName>` |
-| `apps/desktop-ui/src/views/*`                           | `Desktop/Views/<ViewName>`           |
+| Component area                                          | Typical title pattern             |
+| ------------------------------------------------------- | --------------------------------- |
+| `src/components/ui/button/Button.vue`                   | `Components/Button/Button`        |
+| `src/components/ui/input/Input.vue`                     | `Components/Input`                |
+| `src/components/ui/search-input/SearchInput.vue`        | `Components/Input/SearchInput`    |
+| `src/components/common/SearchBox.vue`                   | `Components/Input/SearchBox`      |
+| `src/renderer/extensions/vueNodes/widgets/components/*` | `Widgets/<WidgetName>`            |
+| `src/platform/assets/components/*`                      | `Platform/Assets/<ComponentName>` |
 
 If multiple patterns seem plausible, follow the closest sibling story in the same folder tree.
 

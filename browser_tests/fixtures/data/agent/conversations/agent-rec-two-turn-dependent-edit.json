@@ -1,0 +1,433 @@
+{
+  "schema_version": "agent-conversation.v2",
+  "source": {
+    "repo": "Comfy-Org/ComfyUI_frontend",
+    "suite": "agent",
+    "case_id": "agent-rec-two-turn-dependent-edit",
+    "response_side": "recorded",
+    "note": "RECORDED from Comfy-Org/cloud services/agent running NON-standalone local full stack (Postgres + doc host, M2M identity headers) at http://127.0.0.1:8086 (frames: redis SUBSCRIBE channel:ws:<workspace>:u:<user>); NOT a production capture. cloud commit 9dc1da7dae2a1d40a9ca1f2a1f91cd9fd9e10900; model claude-opus-5; thread 6cafa19d-11f0-45e9-bcf1-e52529eb9ebb; messages 445f7340-ea9c-4456-8ffa-5d37ea6c7b98, 07fc770a-df43-42d8-8f2c-07bf9c2db9f8; workflow d8c3e6c4-dd9f-4e19-8c7c-8cdcbb491447 (seeded by throwaway turn af193614-a407-4987-99a5-97a04d52eb35; turn 1 opens on a fresh workflow and switches to it first because the replay subscribes only on an agent_active_tab frame); agent_tool_calls parent rows 42fbcd91-26cb-415a-b471-8daa44a8bd6c, 55c090e2-11f7-48b7-93dc-5fa9fd73e1ac, abbd53d0-2352-4d5d-bfd0-0bd2601a23ce, b5bde96e-939a-4b5b-992d-5fc9ece40a96, da2d0551-1fcb-435d-9dd1-745a451d75f9, f7084475-8dd0-4789-a14f-0a2cd47379dc; rows agent-rec-two-turn-dependent-edit.m1.rows.1.json, agent-rec-two-turn-dependent-edit.m1.rows.2.json; raw capture sha256 49a64b8ac694b4778b78b3df03a372eaed59e60baca70299ee5cee867b23be43",
+    "capture": {
+      "backend": "Comfy-Org/cloud",
+      "thread_id": "6cafa19d-11f0-45e9-bcf1-e52529eb9ebb",
+      "exported_at": "2026-09-03T16:03:42.552Z"
+    }
+  },
+  "workflow": {
+    "id": "d8c3e6c4-dd9f-4e19-8c7c-8cdcbb491447",
+    "name": "Text to image",
+    "catalog": {
+      "types": {
+        "CheckpointLoaderSimple": {
+          "widget_order": ["ckpt_name"]
+        },
+        "CLIPTextEncode": {
+          "widget_order": ["text"]
+        },
+        "KSampler": {
+          "widget_order": [
+            "seed",
+            "control_after_generate",
+            "steps",
+            "cfg",
+            "sampler_name",
+            "scheduler",
+            "denoise"
+          ]
+        },
+        "VAEDecode": {
+          "widget_order": []
+        },
+        "SaveImage": {
+          "widget_order": ["filename_prefix"]
+        },
+        "PrimitiveStringMultiline": {
+          "widget_order": ["value"]
+        },
+        "EmptyLatentImage": {
+          "widget_order": ["width", "height", "batch_size"]
+        }
+      }
+    },
+    "seed": {
+      "nodes": [
+        {
+          "id": 4,
+          "type": "CheckpointLoaderSimple",
+          "pos": [0, 0],
+          "size": [315, 98],
+          "inputs": [],
+          "outputs": [
+            {
+              "name": "MODEL",
+              "type": "MODEL",
+              "links": [3]
+            },
+            {
+              "name": "CLIP",
+              "type": "CLIP",
+              "links": [1]
+            },
+            {
+              "name": "VAE",
+              "type": "VAE",
+              "links": [5]
+            }
+          ],
+          "widgets_values": ["sd_xl_base_1.0.safetensors"]
+        },
+        {
+          "id": 6,
+          "type": "CLIPTextEncode",
+          "title": "Positive prompt",
+          "pos": [400, 0],
+          "size": [400, 200],
+          "inputs": [
+            {
+              "name": "clip",
+              "type": "CLIP",
+              "link": 1
+            },
+            {
+              "name": "text",
+              "type": "STRING",
+              "widget": {
+                "name": "text"
+              },
+              "link": null
+            }
+          ],
+          "outputs": [
+            {
+              "name": "CONDITIONING",
+              "type": "CONDITIONING",
+              "links": [2]
+            }
+          ],
+          "widgets_values": ["a photo of a pier"]
+        },
+        {
+          "id": 3,
+          "type": "KSampler",
+          "pos": [850, 0],
+          "size": [315, 262],
+          "inputs": [
+            {
+              "name": "model",
+              "type": "MODEL",
+              "link": 3
+            },
+            {
+              "name": "positive",
+              "type": "CONDITIONING",
+              "link": 2
+            },
+            {
+              "name": "negative",
+              "type": "CONDITIONING",
+              "link": null
+            },
+            {
+              "name": "latent_image",
+              "type": "LATENT",
+              "link": null
+            }
+          ],
+          "outputs": [
+            {
+              "name": "LATENT",
+              "type": "LATENT",
+              "links": [4]
+            }
+          ],
+          "widgets_values": [0, "randomize", 20, 7, "euler", "normal", 1]
+        },
+        {
+          "id": 8,
+          "type": "VAEDecode",
+          "pos": [1200, 0],
+          "size": [210, 46],
+          "inputs": [
+            {
+              "name": "samples",
+              "type": "LATENT",
+              "link": 4
+            },
+            {
+              "name": "vae",
+              "type": "VAE",
+              "link": 5
+            }
+          ],
+          "outputs": [
+            {
+              "name": "IMAGE",
+              "type": "IMAGE",
+              "links": [6]
+            }
+          ],
+          "widgets_values": []
+        },
+        {
+          "id": 9,
+          "type": "SaveImage",
+          "pos": [1450, 0],
+          "size": [315, 270],
+          "inputs": [
+            {
+              "name": "images",
+              "type": "IMAGE",
+              "link": 6
+            }
+          ],
+          "outputs": [],
+          "widgets_values": ["ComfyUI"]
+        }
+      ],
+      "links": [
+        [1, 4, 1, 6, 0, "CLIP"],
+        [2, 6, 0, 3, 1, "CONDITIONING"],
+        [3, 4, 0, 3, 0, "MODEL"],
+        [4, 3, 0, 8, 0, "LATENT"],
+        [5, 4, 2, 8, 1, "VAE"],
+        [6, 8, 0, 9, 0, "IMAGE"]
+      ]
+    }
+  },
+  "turns": [
+    {
+      "message_id": "445f7340-ea9c-4456-8ffa-5d37ea6c7b98",
+      "request": {
+        "content": "Switch to the tab 'Text to image', then add a second CLIPTextEncode node fed from the checkpoint loader's CLIP output and give it the text 'blurry, low quality'."
+      },
+      "response": [
+        {
+          "kind": "event",
+          "event": {
+            "type": "agent_thinking",
+            "data": {
+              "delta": "I'll switch to that tab and take a look at the graph first."
+            }
+          },
+          "at_ms": 0
+        },
+        {
+          "kind": "event",
+          "event": {
+            "type": "agent_active_tab",
+            "data": {
+              "name": "Text to image",
+              "workflow_id": "d8c3e6c4-dd9f-4e19-8c7c-8cdcbb491447"
+            }
+          },
+          "at_ms": 6
+        },
+        {
+          "kind": "event",
+          "event": {
+            "type": "agent_tool_call",
+            "data": {
+              "duration_ms": 8,
+              "status": "success",
+              "tool_call_id": "toolu_01WdrFCAxyg6dbYLfwVHfPTD",
+              "tool_name": "switch_tab"
+            }
+          },
+          "at_ms": 8
+        },
+        {
+          "kind": "event",
+          "event": {
+            "type": "agent_tool_call",
+            "data": {
+              "duration_ms": 752,
+              "status": "success",
+              "tool_call_id": "toolu_01E4tYHkXrhtb6ktKRki4z4r",
+              "tool_name": "print_workflow"
+            }
+          },
+          "at_ms": 2435
+        },
+        {
+          "kind": "graph_ops",
+          "ops": [
+            {
+              "op": "add_node",
+              "pos": [715, 280],
+              "node": {
+                "id": 3337990138003756,
+                "pos": [715, 280],
+                "mode": 0,
+                "size": [240, 86],
+                "type": "CLIPTextEncode",
+                "flags": {},
+                "order": 0,
+                "inputs": [
+                  {
+                    "link": null,
+                    "name": "clip",
+                    "type": "CLIP"
+                  }
+                ],
+                "outputs": [
+                  {
+                    "name": "CONDITIONING",
+                    "type": "CONDITIONING",
+                    "links": []
+                  }
+                ],
+                "properties": {},
+                "widgets_values": [null]
+              },
+              "node_id": 3337990138003756,
+              "class_type": "CLIPTextEncode"
+            },
+            {
+              "op": "connect",
+              "link_id": 2557345504960691,
+              "to_node": 3337990138003756,
+              "to_slot": 0,
+              "from_node": 4,
+              "from_slot": 1,
+              "link_type": "CLIP"
+            },
+            {
+              "op": "set_widget",
+              "old": null,
+              "value": "blurry, low quality",
+              "widget": "text",
+              "node_id": 3337990138003756
+            }
+          ],
+          "at_ms": 7788
+        },
+        {
+          "kind": "event",
+          "event": {
+            "type": "agent_tool_call",
+            "data": {
+              "duration_ms": 195,
+              "status": "success",
+              "tool_call_id": "toolu_013FPeYq4Ya1M9VJKsMPJE4j",
+              "tool_name": "apply_ops"
+            }
+          },
+          "at_ms": 7788
+        },
+        {
+          "kind": "event",
+          "event": {
+            "type": "agent_tool_call",
+            "data": {
+              "duration_ms": 196,
+              "status": "success",
+              "tool_call_id": "toolu_01RL1yma6QfBbL3cZQs3qsf6",
+              "tool_name": "print_workflow"
+            }
+          },
+          "at_ms": 11731
+        },
+        {
+          "kind": "event",
+          "event": {
+            "type": "agent_message_delta",
+            "data": {
+              "delta": "I'm on the \"Text to image\" tab now, and the second text box is added with \"blurry, low quality\" and fed from the checkpoint loader.\n\nOne thing worth flagging: it isn't connected to anything downstream yet, so it has no effect on the image. The sampler's negative input is currently empty (and its latent input too) — say the word and I'll wire this new text into the negative slot."
+            }
+          },
+          "at_ms": 15233
+        },
+        {
+          "kind": "event",
+          "event": {
+            "type": "agent_message_done",
+            "data": {
+              "usage": {
+                "cache_creation_input_tokens": 2013,
+                "cache_read_input_tokens": 192537,
+                "input_tokens": 10,
+                "output_tokens": 822,
+                "total_tokens": 832
+              }
+            }
+          },
+          "at_ms": 15235
+        }
+      ]
+    },
+    {
+      "message_id": "07fc770a-df43-42d8-8f2c-07bf9c2db9f8",
+      "request": {
+        "content": "Now connect that new CLIPTextEncode node to the KSampler's negative input."
+      },
+      "response": [
+        {
+          "kind": "graph_ops",
+          "ops": [
+            {
+              "op": "connect",
+              "link_id": 1795569972720099,
+              "to_node": 3,
+              "to_slot": 2,
+              "from_node": 3337990138003756,
+              "from_slot": 0,
+              "link_type": "CONDITIONING"
+            }
+          ],
+          "at_ms": 0
+        },
+        {
+          "kind": "event",
+          "event": {
+            "type": "agent_tool_call",
+            "data": {
+              "duration_ms": 298,
+              "status": "success",
+              "tool_call_id": "toolu_016EPZQoQXsKsbm5qAzKPHGD",
+              "tool_name": "connect"
+            }
+          },
+          "at_ms": 0
+        },
+        {
+          "kind": "event",
+          "event": {
+            "type": "agent_tool_call",
+            "data": {
+              "duration_ms": 200,
+              "status": "success",
+              "tool_call_id": "toolu_01RZH4jfk5SdpGS1xF2dMfvw",
+              "tool_name": "print_workflow"
+            }
+          },
+          "at_ms": 4272
+        },
+        {
+          "kind": "event",
+          "event": {
+            "type": "agent_message_delta",
+            "data": {
+              "delta": "Connected — the \"blurry, low quality\" text now feeds the negative input.\n\nThe graph still won't run as-is: nothing is feeding the sampler's latent input, so it needs an empty latent (which is also where the image size gets set). Want me to add one?"
+            }
+          },
+          "at_ms": 8606
+        },
+        {
+          "kind": "event",
+          "event": {
+            "type": "agent_message_done",
+            "data": {
+              "usage": {
+                "cache_creation_input_tokens": 1542,
+                "cache_read_input_tokens": 115114,
+                "input_tokens": 6,
+                "output_tokens": 376,
+                "total_tokens": 382
+              }
+            }
+          },
+          "at_ms": 8610
+        }
+      ]
+    }
+  ]
+}

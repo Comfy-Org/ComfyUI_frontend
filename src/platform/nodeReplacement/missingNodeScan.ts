@@ -25,7 +25,7 @@ function scanMissingNodes(rootGraph: LGraph): MissingNodeType[] {
     )
       continue
 
-    const originalType = node.last_serialization?.type ?? node.type ?? 'Unknown'
+    const originalType = node.last_serialization?.type ?? node.type
 
     if (originalType in LiteGraph.registered_node_types) continue
 

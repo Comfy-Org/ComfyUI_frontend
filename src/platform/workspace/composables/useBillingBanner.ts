@@ -19,50 +19,42 @@ export interface BillingBannerInputs {
   v1PaymentRecovery: boolean
   isTeamPlan: boolean
   isLoaded: boolean
-  isActiveSubscription: boolean
+  canAccessSubscriptionFeatures: boolean
   billingStatus: BillingStatus | null
   hasFunds: boolean | null
   isCancelled: boolean
   endDate: string | null
-  scheduledPlanSlug: string | null
-  changeAt: string | null
   canManage: boolean
   outOfCreditsDismissed: boolean
+  hasScheduledChange: boolean
 }
 
 // The single billing banner slot, in priority order: paused > paymentFailed >
-// outOfCredits > ending > planChange. Payment recovery and billing-control
-// notices have independent rollout gates.
+// outOfCredits > ending > planChange. Payment recovery and the existing
+// billing-control notices have independent rollout gates.
 export function deriveBillingBanner(
   inputs: BillingBannerInputs
 ): BillingBannerKind | null {
   if (!inputs.isLoaded) return null
 
-  if (inputs.isTeamPlan && inputs.v1PaymentRecovery) {
-    if (inputs.billingStatus === 'paused') return 'paused'
+  if (inputs.v1PaymentRecovery) {
+    if (inputs.isTeamPlan && inputs.billingStatus === 'paused') return 'paused'
     if (inputs.billingStatus === 'payment_failed' && inputs.canManage) {
       return 'paymentFailed'
     }
   }
 
-  if (!inputs.isActiveSubscription) return null
+  if (!inputs.isTeamPlan) return null
+  if (!inputs.canAccessSubscriptionFeatures) return null
+  if (!inputs.billingControlEnabled) return null
 
-  if (inputs.isTeamPlan && inputs.billingControlEnabled) {
-    if (inputs.hasFunds === false && !inputs.outOfCreditsDismissed) {
-      return 'outOfCredits'
-    }
-    if (inputs.isCancelled && inputs.endDate && inputs.canManage) {
-      return 'ending'
-    }
+  if (inputs.hasFunds === false && !inputs.outOfCreditsDismissed) {
+    return 'outOfCredits'
   }
-
-  if (
-    inputs.billingControlEnabled &&
-    !inputs.isCancelled &&
-    inputs.scheduledPlanSlug &&
-    inputs.changeAt &&
-    inputs.canManage
-  ) {
+  if (inputs.isCancelled && inputs.endDate && inputs.canManage) {
+    return 'ending'
+  }
+  if (inputs.hasScheduledChange && !inputs.isCancelled) {
     return 'planChange'
   }
 
@@ -71,7 +63,7 @@ export function deriveBillingBanner(
 
 function useBillingBannerInternal() {
   const {
-    isActiveSubscription,
+    canAccessSubscriptionFeatures,
     billingStatus,
     subscription,
     isTeamPlan,
@@ -90,15 +82,14 @@ function useBillingBannerInternal() {
       v1PaymentRecovery: flags.v1PaymentRecovery,
       isTeamPlan: isTeamPlan.value,
       isLoaded: subscription.value !== null,
-      isActiveSubscription: isActiveSubscription.value,
+      canAccessSubscriptionFeatures: canAccessSubscriptionFeatures.value,
       billingStatus: billingStatus.value,
       hasFunds: subscription.value?.hasFunds ?? null,
       isCancelled: subscription.value?.isCancelled ?? false,
       endDate: subscription.value?.endDate ?? null,
-      scheduledPlanSlug: subscription.value?.scheduledPlanSlug ?? null,
-      changeAt: subscription.value?.changeAt ?? null,
       canManage: permissions.value.canManageSubscription,
-      outOfCreditsDismissed: dismissed.value
+      outOfCreditsDismissed: dismissed.value,
+      hasScheduledChange: subscription.value?.scheduledChange != null
     })
   })
 

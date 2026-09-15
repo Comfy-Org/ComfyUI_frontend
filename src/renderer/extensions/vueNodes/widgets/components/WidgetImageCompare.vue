@@ -154,13 +154,13 @@ watch(
 const beforeImage = computed(() => {
   const value = props.widget.value
   if (isSingleImage(value)) return value
-  return value?.beforeImages?.[beforeIndex.value] ?? ''
+  return value.beforeImages?.[beforeIndex.value] ?? ''
 })
 
 const afterImage = computed(() => {
   const value = props.widget.value
   if (isSingleImage(value)) return ''
-  return value?.afterImages?.[afterIndex.value] ?? ''
+  return value.afterImages?.[afterIndex.value] ?? ''
 })
 
 const hasCompareImages = computed(() =>
@@ -169,14 +169,14 @@ const hasCompareImages = computed(() =>
 
 const beforeAlt = computed(() => {
   const value = props.widget.value
-  return !isSingleImage(value) && value?.beforeAlt
+  return !isSingleImage(value) && value.beforeAlt
     ? value.beforeAlt
     : 'Before image'
 })
 
 const afterAlt = computed(() => {
   const value = props.widget.value
-  return !isSingleImage(value) && value?.afterAlt
+  return !isSingleImage(value) && value.afterAlt
     ? value.afterAlt
     : 'After image'
 })

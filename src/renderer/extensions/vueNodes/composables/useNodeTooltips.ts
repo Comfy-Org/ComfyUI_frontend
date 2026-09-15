@@ -5,9 +5,9 @@ import type {
 import { computed, ref, unref } from 'vue'
 import type { MaybeRef } from 'vue'
 
-import type { SafeWidgetData } from '@/composables/graph/useGraphNodeManager'
 import { resolveNodeDefSlotText, resolveNodeDefText } from '@/i18n'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { cn } from '@comfyorg/tailwind-utils'
 
@@ -98,7 +98,9 @@ export function useNodeTooltips(nodeType: MaybeRef<string>) {
   )
 
   // Get node definition for tooltip data
-  const nodeDef = computed(() => nodeDefStore.nodeDefsByName[unref(nodeType)])
+  const findNodeDef = (type: string): ComfyNodeDefImpl | undefined =>
+    nodeDefStore.nodeDefsByName[type]
+  const nodeDef = computed(() => findNodeDef(unref(nodeType)))
 
   /**
    * Get tooltip text for node description (header hover)
@@ -123,7 +125,7 @@ export function useNodeTooltips(nodeType: MaybeRef<string>) {
       'tooltip',
       unref(nodeType),
       slotName,
-      nodeDef.value.inputs?.[slotName]?.tooltip
+      nodeDef.value.inputs[slotName]?.tooltip
     )
   }
 
@@ -137,18 +139,18 @@ export function useNodeTooltips(nodeType: MaybeRef<string>) {
       'tooltip',
       unref(nodeType),
       slotIndex,
-      nodeDef.value.outputs?.[slotIndex]?.tooltip
+      nodeDef.value.outputs[slotIndex]?.tooltip
     )
   }
 
   /**
    * Get tooltip text for widgets
    */
-  const getWidgetTooltip = (widget: SafeWidgetData) => {
+  const getWidgetTooltip = (widget: { name: string; tooltip?: string }) => {
     if (!tooltipsEnabled.value || !nodeDef.value) return ''
 
     // First try widget-specific tooltip
-    const widgetTooltip = (widget as { tooltip?: string }).tooltip
+    const widgetTooltip = widget.tooltip
     if (widgetTooltip) return widgetTooltip
 
     // Then try input-based tooltip lookup
@@ -156,7 +158,7 @@ export function useNodeTooltips(nodeType: MaybeRef<string>) {
       'tooltip',
       unref(nodeType),
       widget.name,
-      nodeDef.value.inputs?.[widget.name]?.tooltip
+      nodeDef.value.inputs[widget.name]?.tooltip
     )
   }
 
@@ -170,7 +172,7 @@ export function useNodeTooltips(nodeType: MaybeRef<string>) {
 
     return {
       value: tooltipText,
-      showDelay: tooltipDelay as number,
+      showDelay: tooltipDelay,
       hideDelay: 0, // Immediate hiding
       disabled:
         !tooltipsEnabled.value ||

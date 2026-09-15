@@ -1,19 +1,24 @@
-import { setActivePinia } from 'pinia'
-import { createTestingPinia } from '@pinia/testing'
-import { describe, expect, test, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
 import {
   addAutogrow,
   addDynamicCombo
 } from '@/core/graph/widgets/__fixtures__/dynamicInputHelpers'
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { useLitegraphService } from '@/services/litegraphService'
+import { useLinkStore } from '@/stores/linkStore'
 
-setActivePinia(createTestingPinia())
+const originalNamedValuesRestore = LiteGraph.namedValuesRestore
+afterEach(() => {
+  LiteGraph.namedValuesRestore = originalNamedValuesRestore
+})
 type TestAutogrowNode = LGraphNode & {
   comfyDynamic: { autogrow: Record<string, unknown> }
 }
 
-const { addNodeInput } = useLitegraphService()
+let addNodeInput: ReturnType<typeof useLitegraphService>['addNodeInput']
+beforeEach(() => {
+  ;({ addNodeInput } = useLitegraphService())
+})
 
 function nextTick() {
   return new Promise<void>((r) => requestAnimationFrame(() => r()))
@@ -96,7 +101,7 @@ describe('Dynamic Combos', () => {
     }
     for (const source of removedSources) {
       if (!source) throw new Error('Removed link source node not found')
-      expect(source.outputs[0].links).toEqual([])
+      expect(source.isOutputConnected(0)).toBe(false)
     }
     const disconnectedLinks = onConnectionsChange.mock.calls
       .filter(([, , connected]) => !connected)
@@ -140,12 +145,86 @@ describe('Dynamic Combos', () => {
       node.inputs[1]
     )
   })
+  test('Restoring serialised state preserves the saved node height', () => {
+    const node = testNode()
+    node.serialize_widgets = true
+    addDynamicCombo(node, [['INT'], ['INT', 'STRING']])
+    node.widgets[0].value = '1'
+    node.setSize([node.size[0], 500])
+    const data = node.serialize()
+
+    const restored = testNode()
+    addDynamicCombo(restored, [['INT'], ['INT', 'STRING']])
+    restored.configure(data)
+
+    expect(restored.widgets[0].value).toBe('1')
+    expect(restored.widgets.length).toBe(3)
+    expect(restored.size[1]).toBe(500)
+  })
+  test('Interactive combo selection still refits the node height', () => {
+    const node = testNode()
+    addDynamicCombo(node, [['INT'], ['INT', 'STRING']])
+    node.setSize([node.size[0], 500])
+    node.widgets[0].value = '1'
+    node.widgets[0].callback?.('1')
+    expect(node.size[1]).toBeLessThan(500)
+  })
   test('Dynamically added widgets have tooltips', () => {
     const node = testNode()
     addDynamicCombo(node, [['INT'], ['STRING']])
     expect.soft(node.widgets[1].tooltip).toBe('0')
     node.widgets[0].value = '1'
     expect.soft(node.widgets[1].tooltip).toBe('1')
+  })
+  test('An edited nested value survives toggling the combo away and back after load (#16006)', () => {
+    LiteGraph.namedValuesRestore = true
+    const node = testNode()
+    node.serialize_widgets = true
+    addDynamicCombo(node, [['INT'], ['INT']])
+
+    node.widgets[0].value = '1'
+    node.widgets[1].value = 0.8
+    const serialized = node.serialize()
+
+    const reloaded = testNode()
+    addDynamicCombo(reloaded, [['INT'], ['INT']])
+    reloaded.configure(serialized)
+    expect(reloaded.widgets[1].value).toBe(0.8)
+
+    reloaded.widgets[1].value = 0.3
+
+    reloaded.widgets[0].value = '0'
+    reloaded.widgets[0].value = '1'
+
+    expect(reloaded.widgets[1].value).toBe(0.3)
+  })
+  test('Same-name children keep separate values across options', () => {
+    const node = testNode()
+    addDynamicCombo(node, [['INT'], ['INT']])
+
+    node.widgets[1].value = 3
+    node.widgets[0].value = '1'
+    expect(node.widgets[1].value).not.toBe(3)
+    node.widgets[1].value = 7
+
+    node.widgets[0].value = '0'
+    expect(node.widgets[1].value).toBe(3)
+    node.widgets[0].value = '1'
+    expect(node.widgets[1].value).toBe(7)
+    node.widgets[0].value = '0'
+    expect(node.widgets[1].value).toBe(3)
+  })
+  test('Nested child keeps its value when its parent option is recreated', () => {
+    const node = testNode()
+    addDynamicCombo(node, [[[[], ['INT']]], ['INT']])
+    node.widgets[1].value = '1'
+    node.widgets[2].value = 7
+
+    node.widgets[0].value = '1'
+    node.widgets[0].value = '0'
+
+    expect(node.widgets[1].value).toBe('1')
+    expect(node.widgets[2].value).toBe(7)
   })
 })
 describe('Autogrow', () => {
@@ -215,6 +294,57 @@ describe('Autogrow', () => {
     node.disconnectInput(0)
     await nextTick()
     expect(node.inputs.length).toBe(5)
+  })
+  test('Autogrow compaction never emits a negative input slot', async () => {
+    const graph = new LGraph()
+    const node = testNode()
+    const onConnectionsChange = vi.fn()
+    node.onConnectionsChange = onConnectionsChange
+    graph.add(node)
+    addAutogrow(node, { min: 4, input: inputsSpec, prefix: 'test' })
+    connectInput(node, 3, graph)
+    connectInput(node, 4, graph)
+    connectInput(node, 5, graph)
+    onConnectionsChange.mockClear()
+
+    node.disconnectInput(4)
+    await nextTick()
+
+    const inputCalls = onConnectionsChange.mock.calls.filter(
+      ([type]) => type === LiteGraph.INPUT
+    )
+    expect(inputCalls.every(([, slot]) => slot >= 0)).toBe(true)
+    expect(inputCalls.filter(([, , connected]) => !connected)).toHaveLength(1)
+  })
+  test('Rejected autogrow compaction preserves its input layout', async () => {
+    const graph = new LGraph()
+    const node = testNode()
+    const onConnectionsChange = vi.fn()
+    node.onConnectionsChange = onConnectionsChange
+    graph.add(node)
+    addAutogrow(node, { min: 1, input: inputsSpec, prefix: 'test' })
+    connectInput(node, 0, graph)
+    connectInput(node, 1, graph)
+    connectInput(node, 2, graph)
+    const updateEndpoints = vi
+      .spyOn(useLinkStore(), 'updateEndpoints')
+      .mockReturnValue({
+        ok: false,
+        error: { code: 'occupied-target', message: 'Target is occupied' }
+      })
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
+
+    node.disconnectInput(1)
+    const inputNames = node.inputs.map(({ name }) => name)
+    const widgetNames = node.widgets.map(({ name }) => name)
+    onConnectionsChange.mockClear()
+    await nextTick()
+
+    expect(updateEndpoints).toHaveBeenCalled()
+    expect(node.inputs.map(({ name }) => name)).toEqual(inputNames)
+    expect(node.widgets.map(({ name }) => name)).toEqual(widgetNames)
+    expect(onConnectionsChange).not.toHaveBeenCalled()
+    consoleError.mockRestore()
   })
   test('Removing a connection ignores stale autogrow callbacks after group removal', () => {
     const graph = new LGraph()
@@ -305,7 +435,7 @@ describe('Autogrow', () => {
     const serialized = graph.serialize()
     graph.clear()
     graph.configure(serialized)
-    const newNode = graph.nodes[0]!
+    const newNode = graph.nodes[0]
 
     expect(newNode.inputs.map((i) => i.name)).toStrictEqual([
       '0.a0',
@@ -316,5 +446,12 @@ describe('Autogrow', () => {
       '2.b2',
       'aa'
     ])
+    for (const slot of [0, 1, 3, 4]) {
+      expect.soft(newNode.isInputConnected(slot)).toBe(true)
+      expect.soft(newNode.getInputLink(slot)?.target_slot).toBe(slot)
+    }
+    for (const slot of [2, 5, 6]) {
+      expect.soft(newNode.isInputConnected(slot)).toBe(false)
+    }
   })
 })

@@ -8,15 +8,14 @@ const funded: BillingBannerInputs = {
   v1PaymentRecovery: true,
   isTeamPlan: true,
   isLoaded: true,
-  isActiveSubscription: true,
+  canAccessSubscriptionFeatures: true,
   billingStatus: 'paid',
   hasFunds: true,
   isCancelled: false,
   endDate: null,
-  scheduledPlanSlug: null,
-  changeAt: null,
   canManage: true,
-  outOfCreditsDismissed: false
+  outOfCreditsDismissed: false,
+  hasScheduledChange: false
 }
 
 // The backend folds billing_status into is_active, so every spend-denying status
@@ -25,12 +24,12 @@ const funded: BillingBannerInputs = {
 // cannot emit, and pass no matter where the check sits.
 const paused: Partial<BillingBannerInputs> = {
   billingStatus: 'paused',
-  isActiveSubscription: false
+  canAccessSubscriptionFeatures: false
 }
 
 const paymentFailed: Partial<BillingBannerInputs> = {
   billingStatus: 'payment_failed',
-  isActiveSubscription: false
+  canAccessSubscriptionFeatures: false
 }
 
 function derive(overrides: Partial<BillingBannerInputs>) {
@@ -42,8 +41,15 @@ describe('deriveBillingBanner', () => {
     expect(derive({})).toBeNull()
   })
 
-  it('does not show team funding states outside a team plan', () => {
+  it('keeps team billing-control notices out of personal plans', () => {
     expect(derive({ isTeamPlan: false, hasFunds: false })).toBeNull()
+    expect(derive({ ...paused, isTeamPlan: false })).toBeNull()
+  })
+
+  it('shows payment failed to personal workspace owners', () => {
+    expect(derive({ ...paymentFailed, isTeamPlan: false })).toBe(
+      'paymentFailed'
+    )
   })
 
   it('hides existing notices when billing control is rolled back', () => {
@@ -132,46 +138,56 @@ describe('deriveBillingBanner', () => {
     ).toBeNull()
   })
 
-  it('surfaces a scheduled plan change for a personal plan owner', () => {
+  it('shows no banner for an inactive subscription (that is a run-lock modal)', () => {
     expect(
       derive({
-        isTeamPlan: false,
-        scheduledPlanSlug: 'creator-annual',
-        changeAt: '2026-08-03T00:00:00Z'
+        canAccessSubscriptionFeatures: false,
+        billingStatus: 'inactive'
       })
-    ).toBe('planChange')
+    ).toBeNull()
   })
 
-  it('requires complete scheduled plan details and billing permission', () => {
-    expect(derive({ scheduledPlanSlug: 'creator-annual' })).toBeNull()
-    expect(derive({ changeAt: '2026-08-03T00:00:00Z' })).toBeNull()
+  it('shows the plan change banner when the server reports a scheduled change', () => {
+    expect(derive({ hasScheduledChange: true })).toBe('planChange')
+  })
+
+  it('shows the plan change banner to members, since it has no action', () => {
+    expect(derive({ hasScheduledChange: true, canManage: false })).toBe(
+      'planChange'
+    )
+  })
+
+  it('keeps recovery notices ahead of a scheduled change', () => {
+    expect(derive({ ...paused, hasScheduledChange: true })).toBe('paused')
+    expect(derive({ ...paymentFailed, hasScheduledChange: true })).toBe(
+      'paymentFailed'
+    )
+  })
+
+  it('prefers the ending banner when the plan is cancelled, not changing', () => {
     expect(
       derive({
-        scheduledPlanSlug: 'creator-annual',
-        changeAt: '2026-08-03T00:00:00Z',
+        hasScheduledChange: true,
+        isCancelled: true,
+        endDate: '2026-08-01T00:00:00Z'
+      })
+    ).toBe('ending')
+  })
+
+  it('shows no plan change banner to a member whose plan is cancelled', () => {
+    expect(
+      derive({
+        hasScheduledChange: true,
+        isCancelled: true,
+        endDate: '2026-08-01T00:00:00Z',
         canManage: false
       })
     ).toBeNull()
   })
 
-  it('prioritizes cancellation and credit warnings over a scheduled plan change', () => {
-    const scheduledChange = {
-      scheduledPlanSlug: 'creator-annual',
-      changeAt: '2026-08-03T00:00:00Z'
-    }
-    expect(derive({ ...scheduledChange, hasFunds: false })).toBe('outOfCredits')
-    expect(
-      derive({
-        ...scheduledChange,
-        isCancelled: true,
-        endDate: '2026-08-03T00:00:00Z'
-      })
-    ).toBe('ending')
-  })
-
-  it('shows no banner for an inactive subscription (that is a run-lock modal)', () => {
-    expect(
-      derive({ isActiveSubscription: false, billingStatus: 'inactive' })
-    ).toBeNull()
+  it('keeps out-of-credits ahead of a scheduled change', () => {
+    expect(derive({ hasScheduledChange: true, hasFunds: false })).toBe(
+      'outOfCredits'
+    )
   })
 })

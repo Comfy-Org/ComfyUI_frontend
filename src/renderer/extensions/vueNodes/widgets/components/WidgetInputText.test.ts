@@ -17,7 +17,7 @@ describe('WidgetInputText Value Binding', () => {
     options: Partial<InputTextProps> & IWidgetOptions = {},
     callback?: (value: string) => void
   ) =>
-    createMockWidget<string>({
+    createMockWidget({
       value,
       name: 'test_input',
       options,
@@ -167,6 +167,23 @@ describe('WidgetInputText Value Binding', () => {
       // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
       const textarea = container.querySelector('textarea')
       expect(textarea).not.toBeInTheDocument()
+    })
+
+    it('marks the text input as invalid', () => {
+      const widget = createInputTextWidget('invalid value')
+      renderComponent(widget, 'invalid value', { invalid: true })
+
+      expect(screen.getByRole('textbox')).toHaveAttribute(
+        'aria-invalid',
+        'true'
+      )
+    })
+
+    it('does not mark a valid text input as invalid', () => {
+      const widget = createInputTextWidget('valid value')
+      renderComponent(widget, 'valid value', { invalid: false })
+
+      expect(screen.getByRole('textbox')).not.toHaveAttribute('aria-invalid')
     })
   })
 

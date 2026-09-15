@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import SafeRichText from '@/components/common/SafeRichTextContent'
 import Button from '../ui/button/Button.vue'
 
 type Asset = {
@@ -21,16 +22,17 @@ defineProps<{
 </script>
 
 <template>
-  <section class="max-w-9xl mx-auto px-6 py-16 lg:py-24">
+  <section class="mx-auto max-w-9xl px-6 py-16 lg:py-24">
     <div class="mx-auto max-w-6xl text-center">
       <h2
         class="text-4xl font-light tracking-tight text-primary-comfy-canvas lg:text-6xl"
       >
         {{ heading }}
       </h2>
-      <p
+      <SafeRichText
+        as="p"
         class="mx-auto mt-4 max-w-2xl text-base text-primary-comfy-canvas/70"
-        v-html="subheading"
+        :html="subheading"
       />
     </div>
 
@@ -40,7 +42,7 @@ defineProps<{
       <li
         v-for="asset in assets"
         :key="asset.id"
-        class="bg-transparency-white-t4 flex flex-col overflow-hidden rounded-4xl border border-primary-comfy-canvas/10"
+        class="flex flex-col overflow-hidden rounded-4xl border border-primary-comfy-canvas/10 bg-transparency-white-t4"
       >
         <div
           class="flex aspect-video items-center justify-center overflow-hidden bg-primary-comfy-ink/40 p-6"

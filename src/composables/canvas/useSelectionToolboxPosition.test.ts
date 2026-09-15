@@ -11,15 +11,16 @@ import {
   LiteGraph
 } from '@/lib/litegraph/src/litegraph'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import { toGroupId } from '@/types/groupId'
 import { toNodeId } from '@/types/nodeId'
 
 const mockApp = vi.hoisted(() => ({
   canvas: null
 }))
 
-vi.mock('@/scripts/app', () => ({ app: mockApp }))
+vi.mock<unknown>(import('@/scripts/app'), () => ({ app: mockApp }))
 
-vi.mock('@/composables/useVueFeatureFlags', () => ({
+vi.mock<unknown>(import('@/composables/useVueFeatureFlags'), () => ({
   useVueFeatureFlags: () => ({
     shouldRenderVueNodes: { value: false }
   })
@@ -63,7 +64,7 @@ describe('useSelectionToolboxPosition', () => {
   }
 
   it('positions groups from their unchanged bounds', () => {
-    const group = new LGraphGroup('Group', 1)
+    const group = new LGraphGroup('Group', toGroupId(1))
     group.pos = [100, 200]
     group.size = [160, 80]
 

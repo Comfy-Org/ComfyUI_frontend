@@ -5,7 +5,7 @@ import { ref } from 'vue'
 
 import PopupSlider from '@/components/load3d/controls/PopupSlider.vue'
 
-vi.mock('@/components/ui/slider/Slider.vue')
+vi.mock(import('@/components/ui/slider/Slider.vue'))
 
 function renderComponent(
   props: {

@@ -19,6 +19,7 @@
           )
         "
         :aria-label="widget.name"
+        :aria-invalid="invalid || undefined"
         :readonly="isReadOnly"
         size="small"
         :pt="{ root: 'truncate min-w-[4ch]' }"

@@ -11,8 +11,7 @@ export function resolveSubscriptionTierKey(
 
 export function formatSubscriptionDate(
   isoDate: string | null | undefined,
-  locale: string,
-  options: { month?: 'short' | 'long'; year?: boolean } = {}
+  locale: string
 ): string {
   if (!isoDate) return ''
   const calendarDate = /^(\d{4})-(\d{2})-(\d{2})T/.exec(isoDate)
@@ -33,9 +32,8 @@ export function formatSubscriptionDate(
   if (Number.isNaN(date.getTime())) return ''
 
   return date.toLocaleDateString(locale, {
-    month: options.month ?? 'short',
+    month: 'short',
     day: 'numeric',
-    year: options.year === false ? undefined : 'numeric',
-    timeZone: 'UTC'
+    year: 'numeric'
   })
 }

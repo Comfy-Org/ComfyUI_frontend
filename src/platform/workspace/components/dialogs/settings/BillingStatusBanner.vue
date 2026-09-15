@@ -38,7 +38,11 @@
           size="lg"
           @click="handleAddCredits"
         >
-          {{ $t('workspacePanel.billingStatus.outOfCredits.addCredits') }}
+          {{
+            canTopUp
+              ? $t('workspacePanel.billingStatus.outOfCredits.addCredits')
+              : $t('subscription.upgradeToAddCredits')
+          }}
         </Button>
         <Button
           v-else-if="banner.action === 'reactivate'"
@@ -69,98 +73,38 @@ import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
-import { formatSubscriptionDate } from '@/platform/workspace/components/subscriptionPanelWorkspace.logic'
 import { useBillingBanner } from '@/platform/workspace/composables/useBillingBanner'
+import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 import { useResubscribe } from '@/platform/workspace/composables/useResubscribe'
-import { useWorkspaceTierLabel } from '@/platform/workspace/composables/useWorkspaceTierLabel'
+import { useScheduledPlanChange } from '@/platform/workspace/composables/useScheduledPlanChange'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import { useDialogService } from '@/services/dialogService'
 
 type BannerAction = 'addCredits' | 'reactivate' | 'updatePayment'
 
-const { t, d, n, locale } = useI18n()
-const {
-  renewalDate,
-  subscription,
-  plans,
-  teamCreditStops,
-  currentTeamCreditStop,
-  manageSubscription
-} = useBillingContext()
-const { permissions } = useWorkspaceUI()
+const { t, d } = useI18n()
+const { renewalDate, subscription, manageSubscription } = useBillingContext()
+const { permissions, canReactivatePlan } = useWorkspaceUI()
+const { canTopUp, canSubscribeSelfServe } = useBillingCapabilities()
 const { kind, dismiss } = useBillingBanner()
 const { isResubscribing, handleResubscribe } = useResubscribe()
-const { formatTierName } = useWorkspaceTierLabel()
+const {
+  planName: scheduledPlanName,
+  formattedDate: scheduledChangeDate,
+  isDisplayable: canShowScheduledChange
+} = useScheduledPlanChange()
 const dialogService = useDialogService()
 
 const canManage = computed(() => permissions.value.canManageSubscription)
-const canManageLifecycle = computed(
-  () => permissions.value.canManageSubscriptionLifecycle
-)
-const canTopUp = computed(() => permissions.value.canTopUp)
-
 const cycleResetDate = computed(() => {
   const raw = renewalDate.value
+  return raw ? d(new Date(raw), { month: 'short', day: 'numeric' }) : ''
+})
+const planEndDate = computed(() => {
+  const raw = subscription.value?.endDate
   return raw
-    ? d(new Date(raw), { month: 'short', day: 'numeric', timeZone: 'UTC' })
+    ? d(new Date(raw), { year: 'numeric', month: 'long', day: 'numeric' })
     : ''
-})
-const planEndDate = computed(() =>
-  formatSubscriptionDate(subscription.value?.endDate, locale.value, {
-    month: 'long'
-  })
-)
-const scheduledPlanSlug = computed(
-  () => subscription.value?.scheduledPlanSlug ?? ''
-)
-const scheduledPlan = computed(() =>
-  plans.value.find(({ slug }) => slug === scheduledPlanSlug.value)
-)
-const isScheduledPerCreditTeamPlan = computed(() =>
-  scheduledPlanSlug.value.startsWith('team_per_credit_')
-)
-const isScheduledTeamPlan = computed(
-  () =>
-    isScheduledPerCreditTeamPlan.value ||
-    scheduledPlan.value?.slug.startsWith('team')
-)
-const planChangeDate = computed(() =>
-  formatSubscriptionDate(subscription.value?.changeAt, locale.value, {
-    month: 'long'
-  })
-)
-const scheduledPlanName = computed(() => {
-  if (isScheduledTeamPlan.value) return t('subscription.teamPlanName')
-  return formatTierName(
-    scheduledPlan.value?.tier,
-    scheduledPlan.value?.duration === 'ANNUAL'
-  )
-})
-const scheduledPlanAmountCents = computed(() => {
-  if (!isScheduledPerCreditTeamPlan.value) {
-    return isScheduledTeamPlan.value
-      ? scheduledPlan.value?.seat_summary?.total_cost_cents
-      : scheduledPlan.value?.price_cents
-  }
-
-  const stop = teamCreditStops.value?.stops.find(
-    ({ id }) => id === currentTeamCreditStop.value?.id
-  )
-  if (!stop) return undefined
-  return scheduledPlanSlug.value.endsWith('_annual')
-    ? stop.yearly.price_cents * 12
-    : stop.monthly.price_cents
-})
-const scheduledPlanCharge = computed(() => {
-  const amountCents = scheduledPlanAmountCents.value
-  return amountCents === undefined
-    ? ''
-    : n(amountCents / 100, {
-        style: 'currency',
-        currency: 'USD',
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2
-      })
 })
 
 interface BannerView {
@@ -200,8 +144,11 @@ const banner = computed<BannerView | null>(() => {
           ? cycleResetDate.value
             ? t(`${bs}.outOfCredits.body`, { date: cycleResetDate.value })
             : t(`${bs}.outOfCredits.bodyNoDate`)
-          : t(`${bs}.outOfCredits.memberBody`),
-        action: canTopUp.value ? 'addCredits' : null,
+          : canSubscribeSelfServe.value
+            ? t(`${bs}.outOfCredits.upgradeBody`)
+            : t(`${bs}.outOfCredits.memberBody`),
+        action:
+          canTopUp.value || canSubscribeSelfServe.value ? 'addCredits' : null,
         dismissible: true
       }
     case 'ending':
@@ -209,26 +156,18 @@ const banner = computed<BannerView | null>(() => {
         muted: true,
         title: t(`${bs}.ending.title`, { date: planEndDate.value }),
         body: t(`${bs}.ending.body`),
-        action: canManageLifecycle.value ? 'reactivate' : null,
+        action: canReactivatePlan.value ? 'reactivate' : null,
         dismissible: false
       }
     case 'planChange':
-      if (
-        !scheduledPlanName.value ||
-        !planChangeDate.value ||
-        !scheduledPlanCharge.value
-      ) {
-        return null
-      }
+      if (!canShowScheduledChange.value) return null
       return {
         muted: true,
         title: t(`${bs}.planChange.title`, {
           plan: scheduledPlanName.value,
-          date: planChangeDate.value
+          date: scheduledChangeDate.value
         }),
-        body: t(`${bs}.planChange.body`, {
-          amount: scheduledPlanCharge.value
-        }),
+        body: t(`${bs}.planChange.body`),
         action: null,
         dismissible: false
       }

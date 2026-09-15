@@ -6,7 +6,7 @@
       {{ t('auth.login.termsText') }}
       <br />
       <a
-        href="https://www.comfy.org/terms-of-service"
+        href="https://comfy.org/terms-of-service/"
         target="_blank"
         rel="noopener noreferrer"
         class="text-primary-comfy-canvas underline"
@@ -15,7 +15,7 @@
       </a>
       {{ t('auth.login.andText') }}
       <a
-        href="https://www.comfy.org/privacy-policy"
+        href="https://comfy.org/privacy-policy/"
         target="_blank"
         rel="noopener noreferrer"
         class="text-primary-comfy-canvas underline"

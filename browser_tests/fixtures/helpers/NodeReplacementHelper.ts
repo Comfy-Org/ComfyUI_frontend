@@ -26,12 +26,6 @@ export async function setupNodeReplacement(
     route.fulfill({ json: replacements })
   )
 
-  await comfyPage.settings.setSetting(
-    'Comfy.RightSidePanel.ShowErrorsTab',
-    true
-  )
-  await comfyPage.settings.setSetting('Comfy.NodeReplacement.Enabled', true)
-
   await comfyPage.page.addInitScript(() => {
     const proto = window.WebSocket.prototype
     const originalAdd = proto.addEventListener
@@ -59,15 +53,15 @@ export async function setupNodeReplacement(
                   origin: msgEvent.origin,
                   lastEventId: msgEvent.lastEventId
                 })
-                return (listener as EventListener).call(this, patched)
+                return listener.call(this, patched)
               }
             } catch {
               // not JSON or not a feature_flags message - pass through
             }
           }
-          return (listener as EventListener).call(this, event)
+          return listener.call(this, event)
         }
-        return originalAdd.call(this, type, wrapped as EventListener, options)
+        return originalAdd.call(this, type, wrapped, options)
       }
       return originalAdd.call(
         this,

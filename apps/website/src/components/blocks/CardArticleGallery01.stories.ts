@@ -37,7 +37,16 @@ const meta: Meta<typeof CardArticleGallery01> = {
       item('c', 'Comfy Spring Hackathon: Winning Projects', 'hackathon'),
       item('d', 'Comfy Community Meetup: Tokyo', 'community'),
       item('e', 'Krea X Comfy: Founders Live', 'livestream'),
-      item('f', 'June Launches | Desktop, MCP & Core Engine', 'livestream')
+      item('f', 'June Launches | Desktop, MCP & Core Engine', 'livestream'),
+      // No media: exercises the gradient stand-in art.
+      {
+        ...item('g', 'ComfyUI Official NYC Meet-Up', 'community'),
+        media: undefined
+      },
+      {
+        ...item('h', 'ComfyUI Meetup at ZeroSpace', 'community'),
+        media: undefined
+      }
     ]
   }
 }

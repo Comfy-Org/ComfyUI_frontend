@@ -400,14 +400,14 @@ const { saveWorkflow, loadWorkflow } = useWorkflowService()
 describe('useWorkflowService', () => {
   beforeEach(() => {
     // Mock external dependencies
-    vi.mock('@/stores/settingStore', () => ({
+    vi.mock('@/platform/settings/settingStore', () => ({
       useSettingStore: () => ({
         get: vi.fn().mockReturnValue(true),
         set: vi.fn()
       })
     }))
 
-    vi.mock('@/stores/toastStore', () => ({
+    vi.mock('@/platform/updates/common/toastStore', () => ({
       useToastStore: () => ({
         add: vi.fn()
       })
@@ -506,7 +506,7 @@ describe('newUserService', () => {
 
 ```typescript
 // Mock stores
-vi.mock('@/stores/settingStore', () => ({
+vi.mock('@/platform/settings/settingStore', () => ({
   useSettingStore: () => ({
     get: vi.fn(),
     set: vi.fn()

@@ -36,10 +36,10 @@ const {
 }>()
 
 const labels = computed(() => ({
-  trigger: t('events.upcoming.addToCalendar', locale),
-  google: t('events.upcoming.calendarGoogle', locale),
-  apple: t('events.upcoming.calendarApple', locale),
-  outlook: t('events.upcoming.calendarOutlook', locale)
+  trigger: t('events.calendar.addToCalendar', locale),
+  google: t('events.calendar.google', locale),
+  apple: t('events.calendar.apple', locale),
+  outlook: t('events.calendar.outlook', locale)
 }))
 
 const externalRel = resolveRel({ target: '_blank' })
@@ -59,20 +59,25 @@ const itemClass =
 <template>
   <DropdownMenuRoot>
     <DropdownMenuTrigger as-child>
-      <Button
-        variant="outline"
-        :size
-        :prepend-icon="CalendarPlus"
-        :append-icon="ChevronDown"
-      >
-        {{ labels.trigger }}
-      </Button>
+      <!-- Callers that need a different affordance (the events directory's
+      compact SAVE THE DATE? chip) replace the trigger; the slot must resolve to
+      a single element for `as-child` to forward the menu's props onto it. -->
+      <slot name="trigger" :label="labels.trigger">
+        <Button
+          variant="outline"
+          :size
+          :prepend-icon="CalendarPlus"
+          :append-icon="ChevronDown"
+        >
+          {{ labels.trigger }}
+        </Button>
+      </slot>
     </DropdownMenuTrigger>
     <DropdownMenuPortal :disabled="portalDisabled">
       <DropdownMenuContent
         align="start"
         :side-offset="8"
-        class="bg-site-dropdown border-primary-comfy-ink-light z-50 min-w-56 rounded-2xl border p-2 shadow-lg data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:animate-in data-[state=open]:fade-in-0"
+        class="z-50 min-w-56 rounded-2xl border border-primary-comfy-ink-light bg-site-dropdown p-2 shadow-lg data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:animate-in data-[state=open]:fade-in-0"
       >
         <DropdownMenuItem as-child>
           <a
