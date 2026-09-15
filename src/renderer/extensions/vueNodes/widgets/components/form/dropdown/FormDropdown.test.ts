@@ -1,5 +1,6 @@
+import { useToast } from '@/components/ui/toast'
 import { getActivePinia } from 'pinia'
-import { useToastStore } from '@/platform/updates/common/toastStore'
+
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 
@@ -17,6 +18,10 @@ function createItem(id: string, name: string): FormDropdownItem {
 }
 
 const i18n = createI18n({ legacy: false, locale: 'en', messages: { en: {} } })
+
+beforeEach(() => {
+  vi.mocked(useToast().warning).mockImplementation(vi.fn())
+})
 
 const transformState = vi.hoisted(() => ({ camera: { x: 0, y: 0, z: 1 } }))
 
@@ -142,10 +147,6 @@ async function openDropdown(user: ReturnType<typeof userEvent.setup>) {
   await user.click(screen.getByRole('button', { name: 'Open' }))
   await flushPromises()
 }
-
-beforeEach(() => {
-  vi.mocked(useToastStore().addAlert).mockImplementation(() => undefined)
-})
 
 describe('FormDropdown', () => {
   beforeEach(() => {

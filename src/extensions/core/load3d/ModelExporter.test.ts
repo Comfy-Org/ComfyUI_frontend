@@ -1,7 +1,6 @@
+import { useToast } from '@/components/ui/toast'
 import * as THREE from 'three'
 import { describe, expect, it, vi } from 'vitest'
-
-import { useToastStore } from '@/platform/updates/common/toastStore'
 
 import { ModelExporter } from './ModelExporter'
 
@@ -140,9 +139,9 @@ describe('ModelExporter', () => {
       await expect(
         ModelExporter.downloadFromURL('http://example.com/cube.glb', 'cube.glb')
       ).rejects.toThrow('network')
-      expect(useToastStore().addAlert).toHaveBeenCalledWith(
-        'toastMessages.failedToDownloadFile'
-      )
+      expect(useToast().warning).toHaveBeenCalledWith('Alert', {
+        description: 'toastMessages.failedToDownloadFile'
+      })
       vi.unstubAllGlobals()
     })
 
@@ -161,9 +160,9 @@ describe('ModelExporter', () => {
         ModelExporter.downloadFromURL('http://example.com/cube.glb', 'cube.glb')
       ).rejects.toThrow('HTTP 404')
       expect(downloadBlobMock).not.toHaveBeenCalled()
-      expect(useToastStore().addAlert).toHaveBeenCalledWith(
-        'toastMessages.failedToDownloadFile'
-      )
+      expect(useToast().warning).toHaveBeenCalledWith('Alert', {
+        description: 'toastMessages.failedToDownloadFile'
+      })
       vi.unstubAllGlobals()
     })
   })
@@ -222,9 +221,9 @@ describe('ModelExporter', () => {
       const assertion = expect(promise).rejects.toThrow('parse fail')
       await vi.runAllTimersAsync()
       await assertion
-      expect(useToastStore().addAlert).toHaveBeenCalledWith(
-        'toastMessages.failedToExportModel:{"format":"GLB"}'
-      )
+      expect(useToast().warning).toHaveBeenCalledWith('Alert', {
+        description: 'toastMessages.failedToExportModel:{"format":"GLB"}'
+      })
     })
   })
 
@@ -270,9 +269,9 @@ describe('ModelExporter', () => {
       const assertion = expect(promise).rejects.toThrow('obj fail')
       await vi.runAllTimersAsync()
       await assertion
-      expect(useToastStore().addAlert).toHaveBeenCalledWith(
-        'toastMessages.failedToExportModel:{"format":"OBJ"}'
-      )
+      expect(useToast().warning).toHaveBeenCalledWith('Alert', {
+        description: 'toastMessages.failedToExportModel:{"format":"OBJ"}'
+      })
     })
   })
 
@@ -318,9 +317,9 @@ describe('ModelExporter', () => {
       const assertion = expect(promise).rejects.toThrow('stl fail')
       await vi.runAllTimersAsync()
       await assertion
-      expect(useToastStore().addAlert).toHaveBeenCalledWith(
-        'toastMessages.failedToExportModel:{"format":"STL"}'
-      )
+      expect(useToast().warning).toHaveBeenCalledWith('Alert', {
+        description: 'toastMessages.failedToExportModel:{"format":"STL"}'
+      })
     })
   })
 
@@ -349,7 +348,7 @@ describe('ModelExporter', () => {
         ModelExporter.exportDirect(null, 'out.spz', 'spz')
       ).rejects.toThrow('No source file available to export as spz')
       expect(downloadBlobMock).not.toHaveBeenCalled()
-      expect(useToastStore().addAlert).not.toHaveBeenCalled()
+      expect(useToast().warning).not.toHaveBeenCalled()
     })
   })
 
@@ -394,9 +393,9 @@ describe('ModelExporter', () => {
       const assertion = expect(promise).rejects.toThrow('fbx fail')
       await vi.runAllTimersAsync()
       await assertion
-      expect(useToastStore().addAlert).toHaveBeenCalledWith(
-        'toastMessages.failedToExportModel:{"format":"FBX"}'
-      )
+      expect(useToast().warning).toHaveBeenCalledWith('Alert', {
+        description: 'toastMessages.failedToExportModel:{"format":"FBX"}'
+      })
     })
   })
 })

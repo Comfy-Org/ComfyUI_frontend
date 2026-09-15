@@ -1,8 +1,8 @@
+import { useToast } from '@/components/ui/toast'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { CameraState } from '@/extensions/core/load3d/interfaces'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import { useToastStore } from '@/platform/updates/common/toastStore'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 import { app } from '@/scripts/app'
 
@@ -118,10 +118,6 @@ vi.mock('@/i18n', () => ({
 
 vi.mock('@/utils/litegraphUtil', () => ({
   isLoad3dNode: vi.fn(() => true)
-}))
-
-vi.mock('@/lib/litegraph/src/litegraph', () => ({
-  LiteGraph: { ContextMenu: vi.fn() }
 }))
 
 await import('@/extensions/core/load3d')
@@ -437,9 +433,9 @@ describe('Comfy.Preview3D.nodeCreated', () => {
     await preview3DExt.nodeCreated!(node, app)
     node.onExecuted!({ result: [] })
 
-    expect(useToastStore().addAlert).toHaveBeenCalledWith(
-      'toastMessages.unableToGetModelFilePath'
-    )
+    expect(useToast().warning).toHaveBeenCalledWith('Alert', {
+      description: 'toastMessages.unableToGetModelFilePath'
+    })
   })
 })
 
@@ -961,9 +957,9 @@ describe('Comfy.Preview3DAdvanced.nodeCreated', () => {
     await preview3DAdvancedExt.nodeCreated!(node, app)
     node.onExecuted!({ result: [] })
 
-    expect(useToastStore().addAlert).toHaveBeenCalledWith(
-      'toastMessages.unableToGetModelFilePath'
-    )
+    expect(useToast().warning).toHaveBeenCalledWith('Alert', {
+      description: 'toastMessages.unableToGetModelFilePath'
+    })
     expect(configureForSaveMeshMock).not.toHaveBeenCalled()
   })
 })

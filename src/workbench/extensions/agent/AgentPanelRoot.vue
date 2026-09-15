@@ -51,7 +51,7 @@ import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useWorkflowTabActivityStore } from '@/stores/workflowTabActivityStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 import { isLGraphNode } from '@/utils/litegraphUtil'
-import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useToast } from '@/components/ui/toast'
 import { toOwningGraphId, toRootGraphId } from '@/types/graphScopeId'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useAccountPreconditionDialog } from '@/platform/cloud/subscription/composables/useAccountPreconditionDialog'
@@ -106,7 +106,7 @@ const CrdtDevPanel = defineAsyncComponent(
 )
 
 const { t } = useI18n()
-const toast = useToastStore()
+const toast = useToast()
 const { open: openAccountPrecondition } = useAccountPreconditionDialog()
 const { workspaceRole } = useWorkspaceUI()
 const { tier: subscriptionTier } = useBillingContext()
@@ -430,11 +430,7 @@ function onWorkflowAdopted(
 }
 
 function warnWorkflowUnavailable(): void {
-  toast.add({
-    severity: 'warn',
-    detail: t('agent.targetNavigationUnavailable'),
-    life: 5000
-  })
+  toast.warning(t('agent.targetNavigationUnavailable'), { duration: 5000 })
 }
 
 const {
@@ -763,7 +759,7 @@ function buildTranscriptMarkdown(entries: ConversationEntry[]): string {
 
 function onCopyMarkdown(id: string): void {
   if (id === history.activeId) void copy(buildTranscriptMarkdown(entries.value))
-  else toast.add({ severity: 'info', summary: t('agent.copyUnavailable') })
+  else toast.info(t('agent.copyUnavailable'))
 }
 
 const { submit: onSend } = useAgentDraftSubmission({
@@ -936,8 +932,7 @@ const attachment = useAttachment({
   },
   // A rejected file is the user's problem to fix, not an agent failure, so it
   // must not raise the server-error overlay.
-  onError: (message) =>
-    toast.add({ severity: 'warn', detail: message, life: 5000 }),
+  onError: (message) => toast.warning(message, { duration: 5000 }),
   stage: composerStore.addAttachment,
   update: composerStore.updateAttachment,
   remove: composerStore.removeAttachment
@@ -1011,11 +1006,7 @@ function onPanelDragLeave(): void {
 async function attachDroppedAsset(event: DragEvent): Promise<void> {
   const asset = event.dataTransfer && getDroppedAsset(event.dataTransfer)
   if (!asset) {
-    toast.add({
-      severity: 'warn',
-      detail: t('agent.assetNotAttachable'),
-      life: 5000
-    })
+    toast.warning(t('agent.assetNotAttachable'), { duration: 5000 })
     return
   }
 
@@ -1033,12 +1024,7 @@ async function attachDroppedAsset(event: DragEvent): Promise<void> {
     const file = await fetchDroppedAsset(asset)
     return file && isAgentAttachable(file) ? file : undefined
   })
-  if (!file)
-    toast.add({
-      severity: 'warn',
-      detail: t('agent.assetNotAttachable'),
-      life: 5000
-    })
+  if (!file) toast.warning(t('agent.assetNotAttachable'), { duration: 5000 })
 }
 
 function onPanelDragOver(event: DragEvent): void {

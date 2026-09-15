@@ -10,9 +10,9 @@ import {
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import { useToast } from '@/components/ui/toast'
 import { buildAgentTooltipConfig } from '@/composables/useTooltipConfig'
 import { reportError } from '@/platform/telemetry/reportError'
-import { useToastStore } from '@/platform/updates/common/toastStore'
 
 import type { AgentRunModeValue } from '../../../stores/agent/agentRunModeStore'
 import {
@@ -23,7 +23,7 @@ import { cn } from '@comfyorg/tailwind-utils'
 
 const { t } = useI18n()
 const store = useAgentRunModeStore()
-const toast = useToastStore()
+const toast = useToast()
 
 const open = ref(false)
 const saving = ref(false)
@@ -48,7 +48,7 @@ async function saveChanges(): Promise<void> {
     open.value = false
   } catch (error) {
     reportError(error, { errorType: 'agent_run_mode_save_failure' })
-    toast.add({ severity: 'error', detail: t('agent.runModeSaveFailed') })
+    toast.error(t('agent.runModeSaveFailed'))
   } finally {
     saving.value = false
   }

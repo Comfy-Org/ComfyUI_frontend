@@ -135,7 +135,7 @@
 
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import { useToast } from 'primevue/usetoast'
+import { useToast } from '@/components/ui/toast'
 import { useI18n } from 'vue-i18n'
 import { useObjectUrl } from '@vueuse/core'
 
@@ -205,10 +205,8 @@ async function handleCreate() {
     })
     onProfileCreated(profile)
   } catch (error) {
-    toast.add({
-      severity: 'error',
-      summary: t('g.error'),
-      detail: error instanceof Error ? error.message : t('g.error')
+    toast.error(t('g.error'), {
+      description: error instanceof Error ? error.message : t('g.error')
     })
   } finally {
     isCreating.value = false

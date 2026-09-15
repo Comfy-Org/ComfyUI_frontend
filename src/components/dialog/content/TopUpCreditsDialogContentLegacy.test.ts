@@ -1,3 +1,4 @@
+import { useToast } from '@/components/ui/toast'
 import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -67,13 +68,26 @@ vi.mock<unknown>(import('@/composables/useExternalLink'), () => ({
   })
 }))
 
-vi.mock<unknown>(
-  import('primevue/usetoast'), // eslint-disable-line primevue-removal/no-imports
-
-  () => ({
-    useToast: () => ({ add: mockToastAdd })
-  })
-)
+beforeEach(() => {
+  vi.mocked(useToast().success).mockImplementation((...args: unknown[]) =>
+    mockToastAdd('success', ...args)
+  )
+  vi.mocked(useToast().error).mockImplementation((...args: unknown[]) =>
+    mockToastAdd('error', ...args)
+  )
+  vi.mocked(useToast().info).mockImplementation((...args: unknown[]) =>
+    mockToastAdd('info', ...args)
+  )
+  vi.mocked(useToast().warning).mockImplementation((...args: unknown[]) =>
+    mockToastAdd('warning', ...args)
+  )
+  vi.mocked(useToast().loading).mockImplementation((...args: unknown[]) =>
+    mockToastAdd('loading', ...args)
+  )
+  vi.mocked(useToast().custom).mockImplementation((...args: unknown[]) =>
+    mockToastAdd('custom', ...args)
+  )
+})
 
 vi.mock(import('@/base/credits/comfyCredits'), () => ({
   creditsToUsd: (credits: number) => credits,
@@ -191,12 +205,9 @@ describe('TopUpCreditsDialogContentLegacy', () => {
       outcome: 'failure',
       failure_category: 'unknown'
     })
-    expect(mockToastAdd).toHaveBeenCalledWith(
-      expect.objectContaining({
-        severity: 'error',
-        summary: 'Purchase Failed'
-      })
-    )
+    expect(mockToastAdd).toHaveBeenCalledWith('error', 'Purchase Failed', {
+      description: 'Failed to purchase credits: declined for person@example.com'
+    })
     expect(mockShowSettings).not.toHaveBeenCalled()
   })
 

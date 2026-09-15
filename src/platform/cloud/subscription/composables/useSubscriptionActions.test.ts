@@ -1,4 +1,4 @@
-import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useToast } from '@/components/ui/toast'
 import { useCommandStore } from '@/stores/commandStore'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -20,6 +20,27 @@ const { mockReportError } = vi.hoisted(() => ({
 vi.mock(import('@/platform/telemetry/reportError'), () => ({
   reportError: mockReportError
 }))
+
+beforeEach(() => {
+  vi.mocked(useToast().success).mockImplementation((...args: unknown[]) =>
+    mockToastAdd('success', ...args)
+  )
+  vi.mocked(useToast().error).mockImplementation((...args: unknown[]) =>
+    mockToastAdd('error', ...args)
+  )
+  vi.mocked(useToast().info).mockImplementation((...args: unknown[]) =>
+    mockToastAdd('info', ...args)
+  )
+  vi.mocked(useToast().warning).mockImplementation((...args: unknown[]) =>
+    mockToastAdd('warning', ...args)
+  )
+  vi.mocked(useToast().loading).mockImplementation((...args: unknown[]) =>
+    mockToastAdd('loading', ...args)
+  )
+  vi.mocked(useToast().custom).mockImplementation((...args: unknown[]) =>
+    mockToastAdd('custom', ...args)
+  )
+})
 
 vi.mock<unknown>(import('@/composables/auth/useAuthActions'), () => ({
   useAuthActions: () => ({
@@ -69,7 +90,6 @@ Object.defineProperty(window, 'open', {
 })
 
 beforeEach(() => {
-  vi.mocked(useToastStore().add).mockImplementation(mockToastAdd)
   vi.mocked(useCommandStore().execute).mockImplementation(mockExecute)
 })
 
@@ -134,10 +154,9 @@ describe('useSubscriptionActions', () => {
 
       expect(isLoadingSupport.value).toBe(false)
       expect(mockToastAdd).toHaveBeenCalledWith(
-        expect.objectContaining({
-          severity: 'error',
-          detail: 'Command failed'
-        })
+        'error',
+        expect.any(String),
+        expect.objectContaining({ description: 'Command failed' })
       )
     })
 

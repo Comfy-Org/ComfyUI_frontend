@@ -1,9 +1,18 @@
 import userEvent from '@testing-library/user-event'
 import { render, screen, waitFor, within } from '@testing-library/vue'
+import { useClipboard } from '@vueuse/core'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 
 import { i18n } from '@/i18n'
+
+vi.hoisted(() => {
+  globalThis.ResizeObserver = class {
+    observe() {}
+    unobserve() {}
+    disconnect() {}
+  }
+})
 
 import type { ReplyAsset } from '../../../utils/replyAssets'
 import MessageFeedback from './MessageFeedback.vue'
@@ -14,7 +23,8 @@ const fetchApi = vi.hoisted(() => vi.fn())
 vi.mock<unknown>(import('@/scripts/api'), () => ({
   api: {
     apiURL: (route: string) => '/api' + route,
-    fetchApi
+    fetchApi,
+    addEventListener: vi.fn()
   }
 }))
 
@@ -23,14 +33,7 @@ vi.mock(import('@/platform/assets/utils/assetPreviewUtil'), () => ({
   findOutputAsset: async () => undefined
 }))
 
-vi.mock<unknown>(import('@vueuse/core'), () => ({
-  useClipboard: () => ({
-    copy: clipboard.copy,
-    copied: ref(false),
-    isSupported: ref(true),
-    text: ref('')
-  })
-}))
+vi.mock(import('@vueuse/core'), { spy: true })
 
 const markdownSource = '# Title\n\n**bold** move'
 
@@ -47,6 +50,13 @@ describe('MessageFeedback', () => {
   beforeEach(() => {
     clipboard.copy.mockClear()
     fetchApi.mockReset()
+    vi.mocked(useClipboard).mockReturnValue({
+      copy: clipboard.copy,
+      copied: ref(false),
+      copyPending: ref(false),
+      isSupported: computed(() => true),
+      text: ref('')
+    })
   })
 
   it('emits the vote, then null when the same vote is clicked again', async () => {
