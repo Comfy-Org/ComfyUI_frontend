@@ -24,6 +24,7 @@
       <Badge
         v-if="showNodeBadgeText"
         :value="nodeBadgeText"
+        variant="badge"
         severity="secondary"
         class="leaf-count-badge"
       />
@@ -38,10 +39,10 @@
 
 <script setup lang="ts" generic="T">
 import { setCustomNativeDragPreview } from '@atlaskit/pragmatic-drag-and-drop/element/set-custom-native-drag-preview'
-import Badge from 'primevue/badge'
 import { computed, inject, ref } from 'vue'
 
 import EditableText from '@/components/common/EditableText.vue'
+import Badge from '@/components/ui/badge/Badge.vue'
 import {
   usePragmaticDraggable,
   usePragmaticDroppable

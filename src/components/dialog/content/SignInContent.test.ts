@@ -94,8 +94,7 @@ function renderSignInContent() {
         SignUpForm: { template: '<form data-testid="signup-form" />' },
         SignInForm: { template: '<form data-testid="signin-form" />' },
         ApiKeyForm: true,
-        Divider: true,
-        Message: { template: '<div><slot /></div>' }
+        Divider: true
       }
     }
   })
