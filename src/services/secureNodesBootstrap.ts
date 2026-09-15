@@ -17,6 +17,8 @@
  * for the same reason.
  */
 import { provideExtensionHost } from '@/services/extensionHostProvider'
+import { provideComboOptionPreviewSource } from '@/lib/litegraph/src/widgets/comboOptionPreview'
+import { registerSecureLocalizationCatalog } from '@/i18n'
 
 const OVERLAY_ENTRY = '/secure-nodes/src/host-entry.mjs'
 const GUEST_BOOTSTRAP = '/secure-nodes/src/guest.mjs'
@@ -66,7 +68,14 @@ function isEnabled(): boolean {
   }
 }
 
-export async function installSecureNodesHost(): Promise<void> {
+export interface SecureNodesHostFacilities {
+  /** Host-owned, saved-format snapshot of the active workflow. */
+  workflowSnapshot?: () => unknown | Promise<unknown>
+}
+
+export async function installSecureNodesHost(
+  facilities: SecureNodesHostFacilities = {}
+): Promise<void> {
   if (!isEnabled()) return
   try {
     // The overlay is served statically from public/, so it is NOT part of
@@ -81,8 +90,11 @@ export async function installSecureNodesHost(): Promise<void> {
     }
     const host = await mod.install({
       provideExtensionHost,
+      provideComboOptionPreviewSource,
+      registerLocalizationCatalog: registerSecureLocalizationCatalog,
       comfy: (globalThis as Record<string, unknown>).comfy,
       bootstrapUrl: GUEST_BOOTSTRAP,
+      ...facilities,
       // POC: take over every third-party extension. End state: driven by the
       // pack's sealed manifest / registry tier.
       match: () => true

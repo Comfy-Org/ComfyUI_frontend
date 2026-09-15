@@ -225,6 +225,7 @@ import {
 } from '@/utils/eventUtils'
 import { getWorkflowDataFromFile } from '@/scripts/metadata/parser'
 import { SUPPORTED_MESH_EXTENSIONS } from '@comfyorg/viewport3d/load3d/constants'
+import { currentExtensionHost } from '@/services/extensionHostProvider'
 import Load3dUtils from '@/extensions/core/load3d/Load3dUtils'
 import {
   pasteAudioNode,
@@ -260,6 +261,18 @@ export function sanitizeNodeName(string: string) {
 async function finishWorkflowLoad(): Promise<void> {
   await useExtensionService().invokeExtensionsAsync('afterLoadGraph')
   notifyWorkflowLoaded()
+}
+
+async function importHostedFile(file: File) {
+  try {
+    return await currentExtensionHost()?.importFile?.(file)
+  } catch (error) {
+    reportError(error, {
+      surface: 'extensions',
+      errorType: 'failure_importing_extension_file'
+    })
+    return undefined
+  }
 }
 
 function createNodeOutputsMutationView(
@@ -2185,7 +2198,8 @@ export class ComfyApp implements IComfyApp {
     })
     let workflowData: Awaited<ReturnType<typeof getWorkflowDataFromFile>>
     try {
-      workflowData = await getWorkflowDataFromFile(file)
+      workflowData =
+        (await importHostedFile(file)) ?? (await getWorkflowDataFromFile(file))
     } catch (error) {
       await previousDiscovery
       releaseDiscovery()
