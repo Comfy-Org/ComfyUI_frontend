@@ -8786,17 +8786,17 @@ Enterprise`
     'zh-CN': '更高的可用性，更低的价格，路由由你选择。'
   },
   'platform.router.section2.body': {
-    en: 'Run the same model on fal, Replicate, or another supported provider, and switch with one parameter when one is rate limited or another is cheaper. Comfy never switches the route for you, and every job reports the provider that ran it.',
+    en: 'Run the same model on Fal, Replicate, or another supported provider, and switch with one parameter when one is rate limited or another is cheaper. Comfy never switches the route for you, and every job reports the provider that ran it.',
     'zh-CN':
-      '在 fal、Replicate 或其他受支持的供应商上运行同一个模型，当某个供应商限流或另一个更便宜时，只需修改一个参数即可切换。Comfy 不会替你切换路由，每个任务都会返回实际运行它的供应商。'
+      '在 Fal、Replicate 或其他受支持的供应商上运行同一个模型，当某个供应商限流或另一个更便宜时，只需修改一个参数即可切换。Comfy 不会替你切换路由，每个任务都会返回实际运行它的供应商。'
   },
   'platform.router.section2.providersLabel': {
     en: 'Supported providers',
     'zh-CN': '受支持的供应商'
   },
   'platform.router.section2.providers': {
-    en: 'fal · Wavespeed · Runware · Pika · Replicate',
-    'zh-CN': 'fal · Wavespeed · Runware · Pika · Replicate'
+    en: 'Fal · Wavespeed · Runware · Pika · Replicate',
+    'zh-CN': 'Fal · Wavespeed · Runware · Pika · Replicate'
   },
   'platform.router.section2.calloutHeading': {
     en: 'Hit a concurrency limit? Queue the job.',
@@ -8941,6 +8941,14 @@ Enterprise`
     en: 'Comfy Router draws on your Comfy credits, the same balance that covers model calls across Comfy. Per-model pricing is listed with each model.',
     'zh-CN':
       'Comfy Router 使用你的 Comfy 积分，与 Comfy 平台其他模型调用共用同一份余额。每个模型页面都列出了对应的价格。'
+  },
+  'platform.router.faq.11.q': {
+    en: 'Do I need a Comfy subscription?',
+    'zh-CN': '我需要订阅 Comfy 吗？'
+  },
+  'platform.router.faq.11.a': {
+    en: 'No. Router runs on credits. Add credits and start calling models.',
+    'zh-CN': '不需要。Router 基于积分运行，充值积分即可开始调用模型。'
   },
   'platform.router.closing.headingAfterBadge': {
     en: 'Start building with Comfy Router today.',
