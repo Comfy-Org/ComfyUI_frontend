@@ -53,12 +53,32 @@ install, install and start Docker, then run:
 pnpm container:start
 ```
 
-The command mounts `tools/devtools` and starts ComfyUI at `localhost:8188`.
+The command mounts `tools/devtools`, the published node API example packs under
+`examples/node-api`, and starts ComfyUI at `localhost:8188`.
 Leave it running. Use another terminal for `pnpm dev` and a third for
 `pnpm test:browser:local`.
 
 Run browser tests against port 5173 when using this container. Port 8188 serves
 the frontend bundled into the container, not the current frontend checkout.
+
+### Testing custom-node packs
+
+The dev server answers `/api/extensions` with an empty list, because pack
+scripts are served by the backend and not by Vite. Port 5173 therefore loads no
+pack at all, and a test that drives one passes vacuously or fails for the wrong
+reason. To exercise a pack, serve your own build from the container instead:
+
+```bash
+pnpm build
+COMFYUI_FRONTEND_ROOT="$PWD/dist" pnpm container:start
+PLAYWRIGHT_TEST_URL=http://localhost:8188 \
+  PLAYWRIGHT_SETUP_API_URL=http://localhost:8188 \
+  pnpm exec playwright test <spec> --project=chromium
+```
+
+Both URLs matter: `.env` pins `PLAYWRIGHT_SETUP_API_URL` to another port, and
+without overriding it every test dies in fixture setup with a 405 that looks
+like a product failure.
 
 If the image is not cached, the launcher tries to pull it from GHCR. It uses
 `GH_TOKEN` and gets the matching username from `gh api user`.
