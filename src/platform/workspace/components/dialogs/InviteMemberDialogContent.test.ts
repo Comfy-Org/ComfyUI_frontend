@@ -5,28 +5,22 @@ import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
+import { useTelemetry } from '@/platform/telemetry'
+
 import InviteMemberDialogContent from './InviteMemberDialogContent.vue'
 
 import type { WorkspacePendingInvite } from '@/platform/workspace/stores/teamWorkspaceStore'
 
-const {
-  mockToastAdd,
-  mockTrackInviteSent,
-  mockTrackInviteFailed,
-  mockFetchStatus,
-  mockMaxSeats,
-  mockOccupiedSeats
-} = vi.hoisted(() => {
-  const nullableNumber = (value: number | null) => ({ value })
-  return {
-    mockToastAdd: vi.fn(),
-    mockTrackInviteSent: vi.fn(),
-    mockTrackInviteFailed: vi.fn(),
-    mockFetchStatus: vi.fn(),
-    mockMaxSeats: nullableNumber(73),
-    mockOccupiedSeats: nullableNumber(0)
-  }
-})
+const { mockToastAdd, mockFetchStatus, mockMaxSeats, mockOccupiedSeats } =
+  vi.hoisted(() => {
+    const nullableNumber = (value: number | null) => ({ value })
+    return {
+      mockToastAdd: vi.fn(),
+      mockFetchStatus: vi.fn(),
+      mockMaxSeats: nullableNumber(73),
+      mockOccupiedSeats: nullableNumber(0)
+    }
+  })
 
 vi.mock<unknown>(import('@/composables/billing/useBillingContext'), () => ({
   useBillingContext: () => ({
@@ -36,12 +30,7 @@ vi.mock<unknown>(import('@/composables/billing/useBillingContext'), () => ({
   })
 }))
 
-vi.mock<unknown>(import('@/platform/telemetry'), () => ({
-  useTelemetry: () => ({
-    trackWorkspaceInviteSent: mockTrackInviteSent,
-    trackWorkspaceInviteFailed: mockTrackInviteFailed
-  })
-}))
+vi.mock(import('@/platform/telemetry'))
 
 vi.mock<unknown>(
   import('primevue/usetoast'), // eslint-disable-line primevue-removal/no-imports
@@ -205,7 +194,7 @@ describe('InviteMemberDialogContent', () => {
     expect(useTeamWorkspaceStore().createInvite).toHaveBeenCalledTimes(2)
     expect(useTeamWorkspaceStore().createInvite).toHaveBeenCalledWith('a@b.com')
     expect(useTeamWorkspaceStore().createInvite).toHaveBeenCalledWith('c@d.com')
-    expect(mockTrackInviteSent).toHaveBeenCalledWith({
+    expect(useTelemetry()?.trackWorkspaceInviteSent).toHaveBeenCalledWith({
       source: 'settings_members',
       count: 2
     })
@@ -240,7 +229,7 @@ describe('InviteMemberDialogContent', () => {
     expect(mockToastAdd).toHaveBeenCalledWith(
       expect.objectContaining({ severity: 'error' })
     )
-    expect(mockTrackInviteSent).toHaveBeenCalledWith({
+    expect(useTelemetry()?.trackWorkspaceInviteSent).toHaveBeenCalledWith({
       source: 'settings_members',
       count: 1
     })
@@ -267,7 +256,7 @@ describe('InviteMemberDialogContent', () => {
     expect(mockToastAdd).toHaveBeenCalledWith(
       expect.objectContaining({ severity: 'error' })
     )
-    expect(mockTrackInviteSent).not.toHaveBeenCalled()
+    expect(useTelemetry()?.trackWorkspaceInviteSent).not.toHaveBeenCalled()
     expect(inviteButton()).toBeEnabled()
   })
 

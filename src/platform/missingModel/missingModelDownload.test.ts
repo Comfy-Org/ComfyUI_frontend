@@ -18,14 +18,18 @@ const { fetchMock, mockIsDesktop, mockStartDownload } = vi.hoisted(() => ({
   mockStartDownload: vi.fn()
 }))
 
-vi.mock<unknown>(import('@/platform/distribution/types'), () => ({
-  DISTRIBUTION: 'localhost',
-  isCloud: false,
-  get isDesktop() {
-    return mockIsDesktop.value
-  },
-  isNightly: false
-}))
+vi.mock(
+  import('@/platform/distribution/types'),
+  () =>
+    ({
+      DISTRIBUTION: 'localhost',
+      isCloud: false,
+      get isDesktop() {
+        return mockIsDesktop.value
+      },
+      isNightly: false
+    }) as const
+)
 
 beforeEach(() => {
   mockIsDesktop.value = false

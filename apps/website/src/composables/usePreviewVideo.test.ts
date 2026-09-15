@@ -1,5 +1,3 @@
-// @vitest-environment happy-dom
-import '@testing-library/jest-dom/vitest'
 import { render, screen } from '@testing-library/vue'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, h, nextTick, ref } from 'vue'

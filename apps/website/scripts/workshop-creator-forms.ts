@@ -427,6 +427,74 @@ export function creatorFormFor(
         options: model.options
       }
       break
+    case 'kling-omni-video': {
+      const mode = model.options.mode
+      addRoot([
+        'image_list',
+        'mode',
+        'multi_shot',
+        'shot_type',
+        'sound',
+        'video_list',
+        ...(mode === 'edit' ? ['aspect_ratio', 'duration'] : []),
+        ...(mode === 'first-last' ? ['aspect_ratio'] : []),
+        ...(mode === 'reference-video' ? ['duration'] : [])
+      ])
+      required.add('prompt')
+      if (mode === 'reference-video')
+        add(
+          'duration',
+          {
+            ...schemaAt(source, 'duration'),
+            enum: ['3', '4', '5', '6', '7', '8', '9', '10'],
+            default: '3'
+          },
+          { label: 'Duration', help: '', advanced: false }
+        )
+      add(
+        'resolution',
+        { type: 'string', enum: ['720p', '1080p'], default: '1080p' },
+        { label: 'Resolution', help: '', advanced: false }
+      )
+      if (
+        id === 'kling/kling-v3-omni' &&
+        ['text', 'image', 'first-last'].includes(mode)
+      )
+        add(
+          'generate_audio',
+          { type: 'boolean', default: false },
+          { label: 'Generate audio', help: '', advanced: false }
+        )
+      if (mode === 'first-last') {
+        url('first_frame_url', 'First frame', true)
+        url('last_frame_url', 'Last frame')
+      }
+      const referenceCount =
+        mode === 'image' ? 7 : mode === 'first-last' ? 6 : 4
+      if (mode !== 'text')
+        for (let index = 1; index <= referenceCount; index++)
+          url(
+            index === 1
+              ? 'reference_image_url'
+              : `reference_image_url_${index}`,
+            index === 1 ? 'Reference image' : `Reference image ${index}`,
+            mode === 'image' && index === 1
+          )
+      if (mode === 'edit' || mode === 'reference-video') {
+        url('video_url', 'Source video', true, 'video')
+        add(
+          'keep_original_sound',
+          { type: 'boolean', default: true },
+          { label: 'Keep original sound', help: '', advanced: false }
+        )
+      }
+      request = {
+        kind: 'callback',
+        callback: 'kling-omni-video',
+        options: model.options
+      }
+      break
+    }
     case 'flat':
       addRoot(['multi_shot', 'shot_type', 'type'])
       if (Object.hasOwn(properties, 'prompt')) required.add('prompt')

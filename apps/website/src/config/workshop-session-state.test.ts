@@ -1,4 +1,3 @@
-// @vitest-environment happy-dom
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 import type { Ref } from 'vue'
@@ -8,9 +7,7 @@ import type { WorkshopSession } from './workshop-session-state'
 const h = vi.hoisted(() => {
   const state = {
     initialFlag: true,
-    initialSettled: true,
     flag: undefined as Ref<boolean> | undefined,
-    settled: undefined as Ref<boolean> | undefined,
     listeners: new Set<(snapshot: unknown) => void>(),
     snapshot: {
       phase: 'signed-out',
@@ -18,6 +15,7 @@ const h = vi.hoisted(() => {
       session: undefined
     } as unknown,
     firebaseEvaluated: vi.fn(),
+    identifyWorkshopUser: vi.fn(),
     attachIdentity: vi.fn(() => () => undefined),
     ensureFresh: vi.fn(),
     remint: vi.fn(),
@@ -32,8 +30,8 @@ const h = vi.hoisted(() => {
 
 vi.mock<unknown>(import('../scripts/posthog'), () => {
   return {
-    useWorkshopAuthFlag: () => h.flag,
-    useWorkshopAuthFlagSettled: () => h.settled
+    identifyWorkshopUser: h.identifyWorkshopUser,
+    useWorkshopAuthFlag: () => h.flag
   }
 })
 
@@ -85,7 +83,6 @@ function authenticatedSnapshot() {
 async function importFresh() {
   vi.resetModules()
   h.flag = ref(h.initialFlag)
-  h.settled = ref(h.initialSettled)
   const mod = await import('./workshop-session-state')
   const session = mod.useWorkshopSession()
   if (h.initialFlag) {
@@ -95,12 +92,14 @@ async function importFresh() {
 }
 
 beforeEach(() => {
+  window.localStorage.removeItem('workshop:workspace')
+  h.remint.mockReset()
   h.initialFlag = true
-  h.initialSettled = true
   h.listeners.clear()
   h.snapshot = { phase: 'signed-out', user: null, session: undefined }
   h.firebaseEvaluated.mockClear()
   h.attachIdentity.mockClear()
+  h.ensureFresh.mockReset()
   h.clearStoredCredential.mockClear()
 })
 
@@ -121,6 +120,10 @@ describe('useWorkshopSession', () => {
     h.publish(authenticatedSnapshot())
 
     await vi.waitFor(() => expect(s.session.value).toEqual(okSession))
+
+    expect(h.identifyWorkshopUser).toHaveBeenLastCalledWith(
+      expect.objectContaining({ uid: 'user-1' })
+    )
     expect(s.signedIn.value).toBe(true)
   })
 
@@ -150,7 +153,218 @@ describe('useWorkshopSession', () => {
 
     await s.ensureFresh(popupUser)
 
-    expect(h.ensureFresh).toHaveBeenCalledWith(popupUser)
+    expect(h.ensureFresh).toHaveBeenCalledWith(
+      popupUser,
+      expect.objectContaining({ workspaceId: undefined })
+    )
+  })
+
+  it('restores the remembered workspace after a reload lands on personal', async () => {
+    window.localStorage.setItem(
+      'workshop:workspace',
+      JSON.stringify({ uid: 'user-1', workspaceId: 'team-9' })
+    )
+    h.remint.mockResolvedValue({ status: 'ok' })
+    await importFresh()
+
+    h.publish({
+      phase: 'authenticated',
+      user: { uid: 'user-1' },
+      session: okSession,
+      settled: true
+    })
+
+    await vi.waitFor(() =>
+      expect(h.remint).toHaveBeenCalledWith(undefined, {
+        workspaceId: 'team-9',
+        preserveCredentialOnTransientFailure: true
+      })
+    )
+  })
+
+  it('holds the boot snapshot back while the restore is in flight', async () => {
+    window.localStorage.setItem(
+      'workshop:workspace',
+      JSON.stringify({ uid: 'user-1', workspaceId: 'team-9' })
+    )
+    let releaseRemint!: (value: unknown) => void
+    h.remint.mockImplementation(
+      () => new Promise((resolve) => (releaseRemint = resolve))
+    )
+    const s = await importFresh()
+
+    h.publish({
+      phase: 'authenticated',
+      user: { uid: 'user-1' },
+      session: okSession,
+      settled: true
+    })
+
+    await vi.waitFor(() => expect(h.remint).toHaveBeenCalledOnce())
+    expect(s.session.value, 'the personal boot must not flash').toBeUndefined()
+    expect(h.identifyWorkshopUser).toHaveBeenLastCalledWith(
+      expect.objectContaining({ uid: 'user-1' })
+    )
+
+    const restored = {
+      ...okSession,
+      workspace: { id: 'team-9', name: 'Studio', type: 'team' as const }
+    }
+    h.publish({
+      phase: 'authenticated',
+      user: { uid: 'user-1' },
+      session: restored,
+      settled: true
+    })
+    releaseRemint({ status: 'ok', session: restored })
+
+    await vi.waitFor(() => expect(s.session.value?.workspace.id).toBe('team-9'))
+  })
+
+  it('publishes only the client-owned fallback after a remembered workspace is refused', async () => {
+    window.localStorage.setItem(
+      'workshop:workspace',
+      JSON.stringify({ uid: 'user-1', workspaceId: 'team-9' })
+    )
+    h.remint
+      .mockImplementationOnce(async () => {
+        h.publish({
+          phase: 'error',
+          user: { uid: 'user-1' },
+          session: undefined,
+          failure: { status: 'error', code: 'ACCESS_DENIED' }
+        })
+        return { status: 'error', code: 'ACCESS_DENIED' }
+      })
+      .mockImplementationOnce(async () => {
+        h.publish(authenticatedSnapshot())
+        return { status: 'ok', session: okSession }
+      })
+    const s = await importFresh()
+
+    h.publish(authenticatedSnapshot())
+
+    await vi.waitFor(() => expect(h.remint).toHaveBeenCalledTimes(2))
+    expect(h.remint).toHaveBeenNthCalledWith(2, undefined, {
+      workspaceId: 'ws',
+      preserveCredentialOnTransientFailure: true
+    })
+    expect(s.session.value).toEqual(okSession)
+    expect(h.snapshot).toEqual(authenticatedSnapshot())
+  })
+
+  it('keeps a client-owned boot session after a transient restore failure', async () => {
+    window.localStorage.setItem(
+      'workshop:workspace',
+      JSON.stringify({ uid: 'user-1', workspaceId: 'team-9' })
+    )
+    h.remint.mockResolvedValue({
+      status: 'error',
+      code: 'TOKEN_EXCHANGE_FAILED'
+    })
+    const s = await importFresh()
+
+    h.publish(authenticatedSnapshot())
+
+    await vi.waitFor(() => expect(s.session.value).toEqual(okSession))
+    expect(window.localStorage.getItem('workshop:workspace')).toBe(
+      JSON.stringify({ uid: 'user-1', workspaceId: 'team-9' })
+    )
+  })
+
+  it('remembers the workspace each authenticated snapshot names', async () => {
+    window.localStorage.removeItem('workshop:workspace')
+    await importFresh()
+
+    h.publish({
+      phase: 'authenticated',
+      user: { uid: 'user-1' },
+      session: {
+        ...okSession,
+        workspace: { id: 'team-3', name: 'Studio', type: 'team' }
+      },
+      settled: true
+    })
+
+    await vi.waitFor(() =>
+      expect(window.localStorage.getItem('workshop:workspace')).toBe(
+        JSON.stringify({ uid: 'user-1', workspaceId: 'team-3' })
+      )
+    )
+    expect(h.remint).not.toHaveBeenCalled()
+  })
+
+  it('keeps the first workspace the user intentionally switches to', async () => {
+    const s = await importFresh()
+    h.publish(authenticatedSnapshot())
+    await vi.waitFor(() => expect(s.session.value).toEqual(okSession))
+    h.remint.mockResolvedValue({ status: 'ok' })
+
+    const team = {
+      ...okSession,
+      workspace: { id: 'team-3', name: 'Studio', type: 'team' as const }
+    }
+    h.publish({
+      phase: 'authenticated',
+      user: { uid: 'user-1' },
+      session: team
+    })
+
+    await vi.waitFor(() => expect(s.session.value).toEqual(team))
+    expect(
+      h.remint,
+      'an intentional switch must not be mistaken for a boot-time restore'
+    ).not.toHaveBeenCalled()
+    expect(window.localStorage.getItem('workshop:workspace')).toBe(
+      JSON.stringify({ uid: 'user-1', workspaceId: 'team-3' })
+    )
+  })
+
+  it('does not resurrect the held boot session after sign-out wins a restore race', async () => {
+    window.localStorage.setItem(
+      'workshop:workspace',
+      JSON.stringify({ uid: 'user-1', workspaceId: 'team-9' })
+    )
+    let finishRestore!: (value: undefined) => void
+    h.remint.mockImplementation(
+      () => new Promise((resolve) => (finishRestore = resolve))
+    )
+    const s = await importFresh()
+    h.publish(authenticatedSnapshot())
+    await vi.waitFor(() => expect(h.remint).toHaveBeenCalledOnce())
+
+    h.publish({ phase: 'signed-out', user: null, session: undefined })
+    finishRestore(undefined)
+
+    await vi.waitFor(() => expect(s.session.value).toBeUndefined())
+    expect(s.signedIn.value).toBe(false)
+  })
+
+  it('refreshes an errored session for its remembered workspace', async () => {
+    const s = await importFresh()
+    const team = {
+      ...okSession,
+      workspace: { id: 'team-3', name: 'Studio', type: 'team' as const }
+    }
+    h.publish({
+      phase: 'authenticated',
+      user: { uid: 'user-1' },
+      session: team
+    })
+    await vi.waitFor(() => expect(s.session.value).toEqual(team))
+    h.publish({
+      phase: 'error',
+      user: { uid: 'user-1' },
+      session: undefined,
+      failure: { status: 'error', code: 'TOKEN_EXCHANGE_FAILED' }
+    })
+
+    await s.ensureFresh()
+
+    expect(h.ensureFresh).toHaveBeenCalledWith(
+      undefined,
+      expect.objectContaining({ workspaceId: 'team-3' })
+    )
   })
 
   it('clears the session on sign-out', async () => {
@@ -162,53 +376,7 @@ describe('useWorkshopSession', () => {
 
     await vi.waitFor(() => expect(s.session.value).toBeUndefined())
     expect(s.signedIn.value).toBe(false)
-  })
-
-  it('keeps the cached credential on a cold load while the flag is still unanswered', async () => {
-    h.initialFlag = false
-    h.initialSettled = false
-
-    await importFresh()
-
-    expect(
-      h.clearStoredCredential,
-      'the flag starts false until PostHog answers; wiping the cache here re-mints on every reload'
-    ).not.toHaveBeenCalled()
-  })
-
-  it('clears the cached credential once the flag settles off without ever turning on', async () => {
-    h.initialFlag = false
-    h.initialSettled = false
-    await importFresh()
-
-    h.settled!.value = true
-
-    await vi.waitFor(() =>
-      expect(
-        h.clearStoredCredential,
-        'a settled-off flag means Workshop is disabled; the cache must go even with no on->off transition'
-      ).toHaveBeenCalled()
-    )
-  })
-
-  it('keeps the live session when the flag settles on without ever turning off', async () => {
-    h.initialSettled = false
-    const s = await importFresh()
-    h.publish(authenticatedSnapshot())
-    await vi.waitFor(() => expect(s.session.value).toEqual(okSession))
-    const attachesBefore = h.attachIdentity.mock.calls.length
-
-    h.settled!.value = true
-
-    await vi.waitFor(() => expect(h.settled!.value).toBe(true))
-    expect(
-      h.attachIdentity.mock.calls.length,
-      'a settlement-only change while enabled stays on must not re-attach the identity listener'
-    ).toBe(attachesBefore)
-    expect(
-      s.session.value,
-      'the live session must survive a settlement-only change; restarting would reset it to PENDING'
-    ).toEqual(okSession)
+    expect(h.identifyWorkshopUser).toHaveBeenLastCalledWith(null)
   })
 
   it('clears the cache when the flag turns off', async () => {
@@ -223,5 +391,74 @@ describe('useWorkshopSession', () => {
         'flag-off must drop the cached credential'
       ).toBeGreaterThan(callsBefore)
     )
+  })
+
+  it('allows remembered-workspace restoration after the flag settles off and turns on again', async () => {
+    const s = await importFresh()
+    h.publish(authenticatedSnapshot())
+    await vi.waitFor(() => expect(s.session.value).toEqual(okSession))
+    h.flag!.value = false
+    await vi.waitFor(() => expect(h.clearStoredCredential).toHaveBeenCalled())
+    // The real identity detach resets the client snapshot; this test double does not.
+    h.snapshot = { phase: 'pending', user: null, session: undefined }
+
+    h.remint.mockResolvedValue({ status: 'ok', session: okSession })
+    h.flag!.value = true
+    await vi.waitFor(() => expect(h.attachIdentity).toHaveBeenCalledTimes(2))
+    h.publish({
+      phase: 'authenticated',
+      user: { uid: 'user-1' },
+      session: {
+        ...okSession,
+        workspace: { id: 'personal', name: 'Default', type: 'personal' }
+      }
+    })
+
+    await vi.waitFor(() =>
+      expect(
+        h.remint,
+        'settling off ends one auth lifecycle; the next lifecycle must be allowed to restore the remembered workspace for the same uid'
+      ).toHaveBeenCalledWith(undefined, {
+        workspaceId: 'ws',
+        preserveCredentialOnTransientFailure: true
+      })
+    )
+  })
+
+  it('does not resurrect a torn-down session when a restore resolves after the flag turns off', async () => {
+    window.localStorage.setItem(
+      'workshop:workspace',
+      JSON.stringify({ uid: 'user-1', workspaceId: 'team-9' })
+    )
+    let signalRemintStarted!: () => void
+    const remintStarted = new Promise<void>((resolve) => {
+      signalRemintStarted = resolve
+    })
+    let releaseRemint!: (value: unknown) => void
+    h.remint.mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          signalRemintStarted()
+          releaseRemint = resolve
+        })
+    )
+    const s = await importFresh()
+
+    h.publish(authenticatedSnapshot())
+    await remintStarted
+
+    const flag = h.flag
+    if (!flag) throw new Error('workshop auth flag was not initialized')
+    flag.value = false
+    await vi.waitFor(() => expect(s.settled.value).toBe(false))
+
+    releaseRemint({ status: 'error', code: 'TOKEN_EXCHANGE_FAILED' })
+    await Promise.resolve()
+    await Promise.resolve()
+
+    expect(
+      s.session.value,
+      'a restore the flag flip abandoned must not publish for a lifecycle that no longer owns the outcome'
+    ).toBeUndefined()
   })
 })

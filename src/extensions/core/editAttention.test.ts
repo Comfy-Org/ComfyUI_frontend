@@ -1,10 +1,13 @@
+import { fromPartial } from '@total-typescript/shoehorn'
 import { describe, expect, it, vi } from 'vitest'
 
-vi.mock('@/scripts/app', () => ({
-  app: {
+import type { ComfyApp } from '@/scripts/app'
+
+vi.mock(import('@/scripts/app'), () => ({
+  app: fromPartial<ComfyApp>({
     registerExtension: vi.fn(),
     ui: { settings: { addSetting: vi.fn() } }
-  }
+  })
 }))
 
 import {

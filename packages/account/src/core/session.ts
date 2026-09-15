@@ -46,10 +46,10 @@ export type {
   CrossTabRefreshPort,
   MintHandle,
   RefreshSchedulerOptions,
+  ScheduledRefreshReport,
   SessionErrorCode,
   SessionFailure,
   SessionRefreshOutcome,
-  SessionRefreshResult,
   SessionResult
 } from './sessionContracts.js'
 export { isPermanentSessionError } from './sessionContracts.js'

@@ -61,29 +61,22 @@ export type SessionResult =
 
 export type SessionFailure = Extract<SessionResult, { status: 'error' }>
 
-export type SessionRefreshResult =
-  | {
-      readonly outcome: 'succeeded'
-      readonly failure?: never
-    }
-  | {
-      readonly outcome: 'retry_scheduled'
-      readonly failure?: never
-    }
-  | {
-      readonly outcome: 'retries_exhausted'
-      readonly failure?: never
-    }
-  | {
-      readonly outcome: 'permanent_failure'
-      readonly failure: SessionFailure
-    }
-  | {
-      readonly outcome: 'expired'
-      readonly failure: SessionFailure
-    }
+/**
+ * The result of one SCHEDULED refresh attempt as a single tagged value: the
+ * outcomes that committed a failure carry it and the rest structurally cannot,
+ * so a permanent failure without its error — or a success with one — cannot be
+ * represented.
+ */
+export type ScheduledRefreshReport =
+  | { readonly outcome: 'succeeded' }
+  | { readonly outcome: 'retry_scheduled' }
+  | { readonly outcome: 'retries_exhausted' }
+  | { readonly outcome: 'permanent_failure'; readonly failure: SessionFailure }
+  /** Retries ran out and the credential reached expiry; the client failed closed. */
+  | { readonly outcome: 'expired'; readonly failure: SessionFailure }
 
-export type SessionRefreshOutcome = SessionRefreshResult['outcome']
+/** The outcome discriminants a scheduled refresh can report. */
+export type SessionRefreshOutcome = ScheduledRefreshReport['outcome']
 
 export interface MintHandle {
   readonly mintId: number
@@ -141,11 +134,11 @@ export interface RefreshSchedulerOptions {
     readonly onCredentialAdopted?: (credential: AccountCredential) => void
   }
   /**
-   * Called with the outcome of every SCHEDULED refresh attempt (never a
+   * Called with the result of every SCHEDULED refresh attempt (never a
    * login or caller-initiated mint), so a host can feed its refresh
    * telemetry without owning the scheduler. A permanent failure and an
    * expiry carry the failure the client committed, so the host never has
    * to read it back out of the snapshot.
    */
-  readonly onScheduledOutcome?: (result: SessionRefreshResult) => void
+  readonly onScheduledOutcome?: (report: ScheduledRefreshReport) => void
 }

@@ -10,7 +10,7 @@ import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 
 const mockCaptureCanvasState = vi.hoisted(() => vi.fn())
 
-vi.mock<unknown>(import('@/scripts/api'))
+vi.mock(import('@/scripts/api'))
 
 function createItems(...names: string[]): FormDropdownItem[] {
   return names.map((name, i) => ({

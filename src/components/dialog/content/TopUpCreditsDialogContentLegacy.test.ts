@@ -3,6 +3,8 @@ import { render, screen } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
+import { useTelemetry } from '@/platform/telemetry'
+
 import { AuthStoreError } from '@/stores/authStore'
 import { useDialogStore } from '@/stores/dialogStore'
 
@@ -11,8 +13,7 @@ import TopUpCreditsDialogContentLegacy from './TopUpCreditsDialogContentLegacy.v
 const mockPurchaseCreditsDirect = vi.fn()
 const mockShowSettings = vi.fn()
 const mockToastAdd = vi.fn()
-const mockTrackTopUpPurchase = vi.fn()
-const mockTrackBillingEvent = vi.fn()
+
 const mockIsSubscriptionEnabled = vi.fn(() => true)
 const mockShouldUseWorkspaceBilling = vi.hoisted(() => ({ value: false }))
 
@@ -48,12 +49,7 @@ vi.mock<unknown>(
   })
 )
 
-vi.mock<unknown>(import('@/platform/telemetry'), () => ({
-  useTelemetry: () => ({
-    trackApiCreditTopupButtonPurchaseClicked: mockTrackTopUpPurchase,
-    trackBillingEvent: mockTrackBillingEvent
-  })
-}))
+vi.mock(import('@/platform/telemetry'))
 
 const mockClearPendingTopup = vi.hoisted(() => vi.fn())
 vi.mock<unknown>(import('@/composables/billing/usePendingTopup'), () => ({
@@ -185,7 +181,7 @@ describe('TopUpCreditsDialogContentLegacy', () => {
     renderDialog()
     await clickBuyCredits()
 
-    expect(mockTrackBillingEvent).toHaveBeenCalledWith({
+    expect(useTelemetry()?.trackBillingEvent).toHaveBeenCalledWith({
       operation: 'topup',
       stage: 'failed',
       outcome: 'failure',
@@ -210,7 +206,7 @@ describe('TopUpCreditsDialogContentLegacy', () => {
     renderDialog()
     await clickBuyCredits()
 
-    expect(mockTrackBillingEvent).toHaveBeenCalledWith({
+    expect(useTelemetry()?.trackBillingEvent).toHaveBeenCalledWith({
       operation: 'topup',
       stage: 'failed',
       outcome: 'failure',
@@ -225,7 +221,7 @@ describe('TopUpCreditsDialogContentLegacy', () => {
     renderDialog()
     await clickBuyCredits()
 
-    expect(mockTrackBillingEvent).toHaveBeenCalledWith({
+    expect(useTelemetry()?.trackBillingEvent).toHaveBeenCalledWith({
       operation: 'topup',
       stage: 'failed',
       outcome: 'failure',
@@ -239,7 +235,7 @@ describe('TopUpCreditsDialogContentLegacy', () => {
     renderDialog()
     await clickBuyCredits()
 
-    expect(mockTrackBillingEvent).toHaveBeenCalledWith({
+    expect(useTelemetry()?.trackBillingEvent).toHaveBeenCalledWith({
       operation: 'topup',
       stage: 'failed',
       outcome: 'failure',

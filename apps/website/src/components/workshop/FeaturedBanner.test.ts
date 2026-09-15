@@ -1,4 +1,3 @@
-// @vitest-environment happy-dom
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { nextTick } from 'vue'
@@ -65,9 +64,21 @@ describe('FeaturedBanner', () => {
     render(FeaturedBanner, { props: { models: [base, kling] } })
     expect(screen.getByRole('heading', { level: 2 }).textContent).toBe('Flux')
     expect(screen.getByText('Text to Image')).toBeTruthy()
-    expect(screen.getByTestId('featured-slide').getAttribute('href')).toBe(
+    expect(screen.getByTestId('featured-slide-link').getAttribute('href')).toBe(
       '/models/flux/'
     )
+  })
+
+  it('localizes the task without leaving its English suffix in the model name', () => {
+    render(FeaturedBanner, {
+      props: {
+        locale: 'zh-CN',
+        models: [{ ...kling, name: 'Kling Image to Video' }]
+      }
+    })
+
+    expect(screen.getByRole('heading', { level: 2 }).textContent).toBe('Kling')
+    expect(screen.getByText('图像转视频')).toBeTruthy()
   })
 
   it('shows the model a pagination bar names', async () => {
@@ -78,9 +89,31 @@ describe('FeaturedBanner', () => {
 
     expect(screen.getByRole('heading', { level: 2 }).textContent).toBe('Kling')
     expect(screen.getByText(kling.summary ?? '')).toBeTruthy()
-    expect(screen.getByTestId('featured-slide').getAttribute('href')).toBe(
+    expect(screen.getByTestId('featured-slide-link').getAttribute('href')).toBe(
       '/models/kling/'
     )
+  })
+
+  it('shows the docs button only when the provider has a docs section', async () => {
+    const user = userEvent.setup()
+    const undocumented: WorkshopModel = {
+      ...kling,
+      slug: 'magnific',
+      name: 'Magnific',
+      href: '/models/magnific/',
+      provider: 'Magnific',
+      routerId: 'magnific/upscale'
+    }
+    render(FeaturedBanner, { props: { models: [base, undocumented] } })
+
+    const docs = screen.getByTestId('featured-docs-link')
+    expect(docs.getAttribute('href')).toBe(
+      'https://docs.comfy.org/development/comfy-router/models#black-forest-labs'
+    )
+    expect(docs.getAttribute('target')).toBe('_blank')
+
+    await user.click(screen.getByRole('button', { name: 'Magnific' }))
+    expect(screen.queryByTestId('featured-docs-link')).toBeNull()
   })
 
   it('drops the pagination when there is nothing to page through', () => {

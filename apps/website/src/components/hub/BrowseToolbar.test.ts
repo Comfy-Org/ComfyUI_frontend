@@ -1,4 +1,3 @@
-// @vitest-environment happy-dom
 import { render, screen } from '@testing-library/vue'
 import { beforeEach, describe, expect, it } from 'vitest'
 
@@ -18,7 +17,8 @@ const labels = {
   selected: '{n} selected',
   typeAll: 'All types',
   showResults: 'Show results',
-  showModels: 'Show models'
+  showModels: 'Show models',
+  resize: 'Resize filters'
 }
 
 describe('BrowseToolbar', () => {

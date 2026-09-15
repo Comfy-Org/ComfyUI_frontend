@@ -479,6 +479,41 @@ describe('FE-GAP-1 — a seq jump means a dropped frame and forces a resync', ()
     expect(transport.framesOfType('doc_subscribe')).toHaveLength(1)
   })
 
+  it.for([
+    { label: 'absent seq', ack: {} },
+    { label: 'seq 0', ack: { seq: 0 } }
+  ])(
+    'treats a doc_subscribed ok ack with $label as a valid baseline-0 subscription',
+    ({ ack }) => {
+      const { transport, bridge, projected } = wire()
+      transport.open = true
+      bridge.subscribe(WORKFLOW_ID)
+      transport.deliver('doc_subscribed', {
+        v: 1,
+        workflow_id: WORKFLOW_ID,
+        ok: true,
+        ...ack
+      })
+
+      // Cloud emits DocSubscribedFrame.Seq with json:"omitempty", so an
+      // unminted doc's seq-0 success ack arrives with no seq at all. That is
+      // a subscribed baseline, not a malformed ack: no unsubscribe, no retry.
+      expect(bridge.subscribedWorkflowId).toBe(WORKFLOW_ID)
+      expect(bridge.hasPendingSubscribe).toBe(false)
+      expect(bridge.lastSequence).toBe(0)
+      expect(transport.framesOfType('doc_unsubscribe')).toHaveLength(0)
+      expect(transport.framesOfType('doc_subscribe')).toHaveLength(1)
+
+      transport.deliver(
+        'doc_update',
+        docUpdateFrame(hostDocUpdate(), WORKFLOW_ID, 1)
+      )
+      expect(projected).toHaveLength(1)
+      expect(bridge.lastSequence).toBe(1)
+      expect(transport.framesOfType('doc_subscribe')).toHaveLength(1)
+    }
+  )
+
   it('arms the gap detector from the ack: a first frame beyond ack+1 forces a resync', () => {
     const { transport, bridge, projected } = wire()
     transport.open = true

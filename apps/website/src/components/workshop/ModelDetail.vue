@@ -1,12 +1,14 @@
 <script setup lang="ts">
-import { Download } from '@lucide/vue'
-import { useMounted, useTimestamp } from '@vueuse/core'
+import { Download, ExternalLink, Play } from '@lucide/vue'
+import { useEventListener, useMounted, useTimestamp } from '@vueuse/core'
 import { computed, onUnmounted, ref, useSlots, watch } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
 import Button from '@/components/ui/button/Button.vue'
+import CopyTextButton from '@/components/ui/copy-text-button/CopyTextButton.vue'
 import { useWorkshopFormDraft } from '../../composables/useWorkshopFormDraft'
+import { sameFormValues } from '../../lib/workshop/form-values'
 import { leaveForSignIn } from '../../config/workshop-return'
 import { useSignInHref } from '../../composables/useSignInHref'
 import { useTablist } from '../../composables/useTablist'
@@ -32,24 +34,31 @@ import {
   refreshWorkshopCredits,
   useWorkshopCredits
 } from '../../config/workshop-credits'
-import { WORKSHOP_CREDITS_URL } from '../../config/workshop-env'
+import { requestWorkshopBuyCredits } from '../../config/workshop-buy-credits'
 import { router_render } from '../../config/router-render'
 import { createWorkshopUrlUploader } from '../../config/workshop-url-upload'
 import { WorkshopRouterError } from '../../config/workshop-router-errors'
 import { releaseRouterOutputs } from '../../config/workshop-response'
 import { retainRunHistory } from '../../config/workshop-run-history'
+import { modelDocsHref } from '../../lib/workshop/model-docs'
+import { linkLeavingPage } from '../../lib/workshop/leaving-link'
 import { useWorkshopSession } from '../../config/workshop-session-state'
 import { workshopIdempotencyKey } from '../../config/workshop-snippets'
 import type { Locale, TranslationKey } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 import {
-  useWorkshopAuthFlag,
-  useWorkshopAuthFlagSettled
+  captureWorkshopEvent,
+  useWorkshopEnabled,
+  useWorkshopAuthFlag
 } from '../../scripts/posthog'
+import { workshopModelAnalytics } from '../../scripts/workshop-analytics'
+import type { WorkshopRunAnalytics } from '../../scripts/workshop-analytics'
 import ApiTab from './ApiTab.vue'
 import ExamplesTab from './ExamplesTab.vue'
 import PlaygroundForm from './PlaygroundForm.vue'
 import PlaygroundOutput from './PlaygroundOutput.vue'
+import ExampleReplaceDialog from './ExampleReplaceDialog.vue'
+import RunLeaveDialog from './RunLeaveDialog.vue'
 import ModelSupport from './ModelSupport.vue'
 
 const {
@@ -66,6 +75,7 @@ const {
 }>()
 
 const slots = useSlots()
+const modelAnalytics = workshopModelAnalytics(model)
 
 type Section = 'playground' | 'details' | 'api'
 const sections = computed<readonly Section[]>(() =>
@@ -146,6 +156,26 @@ const { pending: draftPending, restoreFailed } = useWorkshopFormDraft(
   nativeJson,
   !!model.execution && model.execution.inputs === undefined
 )
+// The marks are what the page itself put on the form, taken before anything
+// else can write. A restored draft is a reader's own work carried across a
+// sign-in, so the restore moving the form away from these marks is exactly
+// what makes it worth asking about.
+//
+// An example lands on the form and takes the reader there, so it can spend
+// work typed in either editor whichever one is open. Both records are read,
+// and writing anywhere is enough to be asked about.
+const settledValues = ref<FormValues>(fieldValues.value)
+const settledJson = ref<FormValues>(jsonValues.value)
+const inputsEdited = computed(
+  () =>
+    !sameFormValues(fieldValues.value, settledValues.value) ||
+    !sameFormValues(jsonValues.value, settledJson.value)
+)
+function markSettled(): void {
+  settledValues.value = fieldValues.value
+  settledJson.value = jsonValues.value
+}
+
 const runState = ref<RunState>(
   firstExample
     ? { status: 'example', output: exampleOutput(firstExample) }
@@ -163,21 +193,37 @@ const revealed = ref(false)
 const { user, session, sessionFailure, settled, ensureFresh, remint } =
   useWorkshopSession()
 const { balance } = useWorkshopCredits()
+const workshopEnabled = useWorkshopEnabled()
 const authEnabled = useWorkshopAuthFlag()
-const authFlagSettled = useWorkshopAuthFlagSettled()
 const mounted = useMounted()
 const signInHref = useSignInHref(locale)
+const docsHref = modelDocsHref(model)
+
+watch(
+  () => mounted.value && workshopEnabled.value,
+  (visible) => {
+    if (visible) {
+      captureWorkshopEvent({ name: 'model_viewed', properties: modelAnalytics })
+    }
+  },
+  { once: true }
+)
+watch([activeSection, workshopEnabled], ([section, enabled]) => {
+  if (enabled && section === 'api') {
+    captureWorkshopEvent({ name: 'api_viewed', properties: modelAnalytics })
+  }
+})
+const canRunModel = computed(
+  () =>
+    !model.incompleteReason &&
+    import.meta.env.PUBLIC_WORKSHOP_ROUTER_RUN === '1' &&
+    !!model.execution &&
+    !activeExample.value?.fields &&
+    !clone
+)
 const gate = computed(() => {
-  if (
-    model.incompleteReason ||
-    import.meta.env.PUBLIC_WORKSHOP_ROUTER_RUN !== '1' ||
-    !model.execution ||
-    activeExample.value?.fields ||
-    clone
-  )
-    return 'unavailable'
-  if (!mounted.value || draftPending.value || !authFlagSettled.value)
-    return 'pending'
+  if (!workshopEnabled.value || !canRunModel.value) return 'unavailable'
+  if (!mounted.value || draftPending.value) return 'pending'
   if (!authEnabled.value || sessionFailure.value) return 'unavailable'
   if (!settled.value || (user.value && !session.value)) return 'pending'
   if (!session.value) return 'signedOut'
@@ -193,22 +239,156 @@ const errors = computed<FieldErrors>(() =>
   runState.value.status === 'failed' ? runState.value.fieldErrors : {}
 )
 const isRunning = computed(() => runState.value.status === 'running')
+const protectedHistoryIndex = ref<number>()
+let approvedTraversal = false
+let restoringTraversal = false
+
+function historyIndex(state: unknown): number | undefined {
+  if (typeof state !== 'object' || state === null || !('index' in state))
+    return undefined
+  const index = Reflect.get(state, 'index')
+  return typeof index === 'number' && Number.isInteger(index)
+    ? index
+    : undefined
+}
+
+watch(
+  isRunning,
+  (running) => {
+    protectedHistoryIndex.value = running
+      ? historyIndex(globalThis.window?.history.state)
+      : undefined
+    approvedTraversal = false
+    restoringTraversal = false
+  },
+  { flush: 'sync' }
+)
+
+// A run in flight is money and minutes: leaving the page throws both away, so
+// the browser asks first. The listener only exists while the run does, since a
+// standing one costs the idle page its place in the back/forward cache.
+// globalThis.window, not window: on the server the island has neither.
+useEventListener(
+  () => (isRunning.value ? globalThis.window : undefined),
+  'beforeunload',
+  (event: BeforeUnloadEvent) => event.preventDefault()
+)
+
+// Browser history moves before popstate. Intercept it ahead of Astro's bubble
+// listener: declining restores the prior entry without unmounting this island;
+// accepting lets Astro finish the traversal and cancel the run on unmount.
+useEventListener(
+  () => (isRunning.value ? globalThis.window : undefined),
+  'popstate',
+  (event: PopStateEvent) => {
+    if (restoringTraversal) {
+      restoringTraversal = false
+      event.stopImmediatePropagation()
+      return
+    }
+    const from = protectedHistoryIndex.value
+    const to = historyIndex(event.state)
+    if (from === undefined || to === undefined || from === to) return
+    if (globalThis.window.confirm(t('workshop.run.leavePage', locale))) {
+      protectedHistoryIndex.value = to
+      approvedTraversal = true
+      queueMicrotask(() => {
+        approvedTraversal = false
+      })
+      return
+    }
+    event.stopImmediatePropagation()
+    restoringTraversal = true
+    globalThis.window.history.go(from - to)
+  },
+  { capture: true }
+)
+
+// Caught before the client router sees the click, nothing has moved yet, so
+// this one route off the page can be asked in our own words. The rest still
+// reach the guards above.
+const leavingTo = ref<string>()
+useEventListener(
+  () => (isRunning.value ? globalThis.document : undefined),
+  'click',
+  (event: MouseEvent) => {
+    const href = linkLeavingPage(event, location)
+    if (!href) return
+    event.preventDefault()
+    leavingTo.value = href
+  },
+  { capture: true }
+)
+function leaveForLink() {
+  const href = leavingTo.value
+  leavingTo.value = undefined
+  if (!href) return
+  cancelRun()
+  location.assign(href)
+}
+
+// A push/replace has not moved history yet, so native fallback is safe and the
+// beforeunload guard owns its confirmation. An approved traversal is the one
+// exception: it was already confirmed in the capture-phase popstate handler.
+useEventListener(
+  () => (isRunning.value ? globalThis.document : undefined),
+  'astro:before-preparation',
+  (event: Event) => {
+    const navigationType = Reflect.get(event, 'navigationType')
+    if (navigationType === 'traverse' && approvedTraversal) {
+      approvedTraversal = false
+      return
+    }
+    event.preventDefault()
+  }
+)
 const requestId = ref<string | null>(null)
-let controller: AbortController | undefined
+let activeRun:
+  | {
+      controller: AbortController
+      analytics: WorkshopRunAnalytics
+      startedAt: number
+    }
+  | undefined
 let pendingRequest: { fingerprint: string; key: string } | undefined
 const uploadUrl = createWorkshopUrlUploader()
 
 const now = useTimestamp({ interval: 1000 })
 
 function cancelRun() {
-  controller?.abort()
-  controller = undefined
+  if (activeRun) {
+    activeRun.controller.abort()
+    captureWorkshopEvent({
+      name: 'run_finished',
+      properties: {
+        ...activeRun.analytics,
+        status: 'cancelled',
+        duration_ms: Date.now() - activeRun.startedAt
+      }
+    })
+    activeRun = undefined
+  }
   runState.value = transition(runState.value, { type: 'cancel' })
 }
 
+const personalSwitchPending = ref(false)
+const personalSwitchError = ref(false)
+
 async function switchToPersonal() {
-  const result = await remint()
-  if (result?.status === 'ok') await refreshWorkshopCredits({ force: true })
+  if (personalSwitchPending.value) return
+  personalSwitchPending.value = true
+  personalSwitchError.value = false
+  try {
+    const result = await remint(undefined, {
+      preserveCredentialOnTransientFailure: true
+    })
+    if (result?.status === 'ok') await refreshWorkshopCredits({ force: true })
+    else if (result?.status === 'error') personalSwitchError.value = true
+  } catch {
+    personalSwitchError.value = true
+  } finally {
+    personalSwitchPending.value = false
+  }
 }
 
 onUnmounted(() => {
@@ -240,6 +420,10 @@ async function run() {
     return
   const fieldErrors = validateForm(schema.value, values.value)
   if (Object.keys(fieldErrors).length) {
+    captureWorkshopEvent({
+      name: 'run_validation_failed',
+      properties: modelAnalytics
+    })
     runState.value = transition(runState.value, {
       type: 'fail',
       reason: 'validation',
@@ -249,9 +433,17 @@ async function run() {
   }
   const startedFor = session.value
   const active = new AbortController()
-  controller = active
+  const startedAt = Date.now()
+  const analytics: WorkshopRunAnalytics = {
+    ...modelAnalytics,
+    user_id: startedFor.uid,
+    workspace_id: startedFor.workspace.id,
+    attempt_id: workshopIdempotencyKey()
+  }
+  activeRun = { controller: active, analytics, startedAt }
+  captureWorkshopEvent({ name: 'run_started', properties: analytics })
   requestId.value = null
-  runState.value = transition(runState.value, { type: 'start', at: Date.now() })
+  runState.value = transition(runState.value, { type: 'start', at: startedAt })
   async function freshCredential() {
     const credential = await ensureFresh(undefined, { signal: active.signal })
     active.signal.throwIfAborted()
@@ -295,7 +487,7 @@ async function run() {
         }
       }
     )
-    if (controller !== active || active.signal.aborted) {
+    if (activeRun?.controller !== active || active.signal.aborted) {
       releaseRouterOutputs(result.outputs)
       return
     }
@@ -317,8 +509,18 @@ async function run() {
       output,
       nsfw: output.nsfw === true
     })
+    captureWorkshopEvent({
+      name: 'run_finished',
+      properties: {
+        ...analytics,
+        status: 'succeeded',
+        duration_ms: Date.now() - startedAt,
+        request_id: result.requestId ?? undefined,
+        output_count: result.outputs.length
+      }
+    })
   } catch (error) {
-    if (controller !== active || active.signal.aborted) return
+    if (activeRun?.controller !== active || active.signal.aborted) return
     const failure =
       error instanceof WorkshopRouterError
         ? error
@@ -329,10 +531,27 @@ async function run() {
       reason: failure.reason,
       fieldErrors: failure.fieldErrors
     })
+    captureWorkshopEvent({
+      name: 'run_finished',
+      properties: {
+        ...analytics,
+        status: 'failed',
+        reason: failure.reason,
+        duration_ms: Date.now() - startedAt,
+        request_id: failure.requestId ?? undefined
+      }
+    })
   } finally {
-    if (controller === active) controller = undefined
+    if (activeRun?.controller === active) activeRun = undefined
     void refreshWorkshopCredits({ force: true })
   }
+}
+
+function captureOutputDownload(kind: RunOutput['kind']) {
+  captureWorkshopEvent({
+    name: 'output_download_clicked',
+    properties: { ...modelAnalytics, output_kind: kind }
+  })
 }
 
 function reset() {
@@ -340,16 +559,36 @@ function reset() {
   runState.value = IDLE
 }
 
-function openExample(example: PlaygroundExample) {
-  if (isRunning.value || draftPending.value) return
+function applyExample(example: PlaygroundExample) {
   if (!example.sampleOnly) {
     nativeJson.value = false
     activeExample.value = example.fields ? example : undefined
     values.value = workshopExampleState(model, example).values
+    // Agreeing settles both records: the reader has let the example win.
+    markSettled()
   }
   activeExampleId.value = example.id
   runState.value = { status: 'example', output: exampleOutput(example) }
   activeSection.value = 'playground'
+}
+
+// An example overwrites the whole form, so where there is writing to lose the
+// reader decides, instead of finding it gone.
+const replacing = ref<PlaygroundExample>()
+
+function openExample(example: PlaygroundExample) {
+  if (isRunning.value || draftPending.value) return
+  if (!example.sampleOnly && inputsEdited.value) {
+    replacing.value = example
+    return
+  }
+  applyExample(example)
+}
+
+function replaceWithExample() {
+  const example = replacing.value
+  replacing.value = undefined
+  if (example) applyExample(example)
 }
 
 function useInCode() {
@@ -360,34 +599,49 @@ function useInCode() {
 <template>
   <div class="flex flex-col gap-10" data-testid="model-detail">
     <div
-      role="tablist"
-      :aria-label="t('workshop.title', locale)"
-      class="flex scrollbar-hide gap-8 overflow-x-auto border-b border-transparency-white-t8 max-sm:gap-5"
-      data-testid="model-tabs"
-      @keydown="onTabKeydown"
+      class="flex items-center gap-8 border-b border-transparency-white-t8 max-sm:gap-5"
     >
-      <button
-        v-for="section in sections"
-        :id="`tab-${section}`"
-        :key="section"
-        type="button"
-        role="tab"
-        :aria-selected="section === activeSection"
-        :aria-controls="`panel-${section}`"
-        :tabindex="section === activeSection ? 0 : -1"
-        :data-testid="`tab-${section}`"
-        :class="
-          cn(
-            'cursor-pointer border-b-2 pb-3 text-sm font-bold tracking-wider uppercase transition-colors',
-            section === activeSection
-              ? 'border-primary-comfy-yellow text-primary-warm-white'
-              : 'border-transparent text-primary-warm-gray hover:text-primary-warm-white'
-          )
-        "
-        @click="activeSection = section"
+      <div
+        role="tablist"
+        :aria-label="t('workshop.title', locale)"
+        class="scrollbar-hide flex min-w-0 gap-8 overflow-x-auto max-sm:gap-5"
+        data-testid="model-tabs"
+        @keydown="onTabKeydown"
       >
-        {{ t(sectionLabel[section], locale) }}
-      </button>
+        <button
+          v-for="section in sections"
+          :id="`tab-${section}`"
+          :key="section"
+          type="button"
+          role="tab"
+          :aria-selected="section === activeSection"
+          :aria-controls="`panel-${section}`"
+          :tabindex="section === activeSection ? 0 : -1"
+          :data-testid="`tab-${section}`"
+          :class="
+            cn(
+              'cursor-pointer border-b-2 pb-3 text-sm font-bold tracking-wider uppercase transition-colors',
+              section === activeSection
+                ? 'border-primary-comfy-yellow text-primary-warm-white'
+                : 'border-transparent text-primary-warm-gray hover:text-primary-warm-white'
+            )
+          "
+          @click="activeSection = section"
+        >
+          {{ t(sectionLabel[section], locale) }}
+        </button>
+      </div>
+      <a
+        v-if="docsHref"
+        :href="docsHref"
+        target="_blank"
+        rel="noopener noreferrer"
+        class="ml-auto inline-flex shrink-0 items-center gap-1.5 pb-3 text-sm leading-none font-bold tracking-wider whitespace-nowrap text-primary-warm-white uppercase transition-colors hover:text-primary-comfy-yellow"
+        data-testid="model-docs-link"
+      >
+        {{ t('workshop.hub.docs', locale) }}
+        <ExternalLink class="size-4" aria-hidden="true" />
+      </a>
     </div>
 
     <section
@@ -399,7 +653,7 @@ function useInCode() {
       data-testid="playground-tab"
     >
       <div
-        class="bg-transparency-white-t4 flex min-w-0 flex-col rounded-2xl border border-transparency-white-t8 lg:col-span-5"
+        class="flex min-w-0 flex-col rounded-2xl border border-transparency-white-t8 bg-transparency-white-t4 lg:col-span-5"
         data-testid="playground-input"
       >
         <header
@@ -426,7 +680,7 @@ function useInCode() {
           settles in instead of snapping. -->
         <div
           :key="activeExampleId"
-          class="animate-soft-in flex flex-col gap-6 p-5"
+          class="flex animate-soft-in flex-col gap-6 p-5"
         >
           <ModelSupport
             v-if="model.incompleteReason"
@@ -454,7 +708,7 @@ function useInCode() {
         <!-- Run follows the form down the page, so a long list of inputs never
           pushes it past the bottom of a laptop screen. -->
         <div
-          class="bg-page/85 sticky bottom-0 z-10 mt-auto flex flex-col gap-2 rounded-b-2xl border-t border-transparency-white-t8 p-3 backdrop-blur-sm"
+          class="sticky bottom-0 z-10 mt-auto flex flex-col gap-2 rounded-b-2xl border-t border-transparency-white-t8 bg-page/85 p-3 backdrop-blur-sm"
         >
           <Button
             v-if="gate === 'signedOut'"
@@ -468,27 +722,72 @@ function useInCode() {
           >
             {{ t('workshop.run.signIn', locale) }}
           </Button>
-          <Button
-            v-else-if="gate === 'noCredits'"
-            as="a"
-            :href="WORKSHOP_CREDITS_URL"
-            target="_blank"
-            rel="noopener noreferrer"
-            size="lg"
-            class="w-full px-5"
-            data-testid="run-button"
-            data-gate="noCredits"
-          >
-            {{ t('nav.buyCredits', locale) }}
-          </Button>
-          <Button
-            v-else-if="gate === 'memberNoCredits'"
-            size="lg"
-            class="w-full px-5"
-            @click="switchToPersonal"
-          >
-            {{ t('workshop.run.switchPersonal', locale) }}
-          </Button>
+          <!-- The MVP rail (DES-1015): buying happens on platform, in a new
+               tab, so this page and its inputs stay alive and the return is a
+               balance re-read. Naming the workspace is what makes topping up
+               the wrong wallet visible before it happens. -->
+          <template v-else-if="gate === 'noCredits'">
+            <p
+              class="mb-2 text-sm font-bold text-content-secondary"
+              data-testid="gate-note"
+            >
+              {{
+                t('workshop.error.noCreditsCloud', locale).replace(
+                  '{workspace}',
+                  () => session?.workspace.name ?? ''
+                )
+              }}
+            </p>
+            <Button
+              size="lg"
+              class="w-full px-5"
+              data-testid="run-button"
+              data-gate="noCredits"
+              @click="requestWorkshopBuyCredits"
+            >
+              {{ t('workshop.run.buyCredits', locale) }}
+            </Button>
+          </template>
+          <template v-else-if="gate === 'memberNoCredits'">
+            <div class="mb-2 flex flex-col gap-1" data-testid="gate-note">
+              <p class="text-sm font-bold text-content-secondary">
+                {{ t('workshop.error.creditsTitle', locale) }}
+              </p>
+              <p class="text-xs text-content-secondary">
+                {{
+                  t('workshop.error.memberNoCredits', locale).replace(
+                    '{workspace}',
+                    () => session?.workspace.name ?? ''
+                  )
+                }}
+              </p>
+            </div>
+            <Button
+              variant="outline"
+              size="lg"
+              class="w-full px-5"
+              :disabled="personalSwitchPending"
+              data-testid="run-button"
+              data-gate="memberNoCredits"
+              @click="switchToPersonal"
+            >
+              {{
+                t(
+                  personalSwitchPending
+                    ? 'workshop.run.preparingSession'
+                    : 'workshop.run.switchPersonal',
+                  locale
+                )
+              }}
+            </Button>
+            <p
+              v-if="personalSwitchError"
+              class="text-xs text-red-400"
+              role="alert"
+            >
+              {{ t('nav.workspaceSwitchError', locale) }}
+            </p>
+          </template>
           <Button
             v-else-if="gate === 'ready'"
             size="lg"
@@ -497,6 +796,9 @@ function useInCode() {
             data-gate="ready"
             @click="isRunning ? cancelRun() : run()"
           >
+            <template v-if="!isRunning" #prepend>
+              <Play class="size-5 fill-current" aria-hidden="true" />
+            </template>
             {{
               t(isRunning ? 'workshop.run.cancel' : 'workshop.run.run', locale)
             }}
@@ -504,7 +806,7 @@ function useInCode() {
           <Button
             v-else
             size="lg"
-            class="w-full px-5"
+            class="h-auto min-h-14 w-full px-5 py-3 text-center whitespace-normal"
             disabled
             data-testid="run-button"
             :data-gate="gate"
@@ -520,20 +822,6 @@ function useInCode() {
               )
             }}
           </Button>
-          <p
-            v-if="gate === 'noCredits' || gate === 'memberNoCredits'"
-            role="status"
-            class="text-center text-sm text-primary-warm-gray"
-          >
-            {{
-              gate === 'memberNoCredits'
-                ? t('workshop.error.memberNoCredits', locale).replace(
-                    '{workspace}',
-                    session?.workspace.name ?? ''
-                  )
-                : t('workshop.error.noCredits', locale)
-            }}
-          </p>
         </div>
       </div>
 
@@ -541,27 +829,53 @@ function useInCode() {
         class="flex min-w-0 flex-col gap-4 lg:sticky lg:top-26 lg:col-span-7 lg:self-start"
       >
         <PlaygroundOutput
+          v-if="workshopEnabled || isRunning"
           v-model:revealed="revealed"
           :state="runState"
           :earlier
           :attachments
           :now
+          :model-name="model.name"
           :modality="model.modality"
           :locale
           :member-workspace="
             session?.role === 'member' ? session.workspace.name : undefined
           "
           @switch-personal="switchToPersonal"
+          @buy-credits="requestWorkshopBuyCredits"
           @retry="gate === 'ready' ? run() : reset()"
           @use-in-code="useInCode"
+          @download="captureOutputDownload"
         />
-        <p
-          v-if="requestId"
-          class="text-xs break-all text-primary-warm-gray"
-          data-testid="router-request-id"
+        <div
+          v-if="runState.status === 'succeeded' || requestId"
+          class="flex flex-col gap-1"
         >
-          {{ t('workshop.run.requestId', locale) }} {{ requestId }}
-        </p>
+          <p
+            v-if="runState.status === 'succeeded'"
+            class="text-xs text-primary-warm-gray"
+            data-testid="output-expires"
+          >
+            {{ t('workshop.output.expires', locale) }}
+          </p>
+          <!-- The id is for the rare conversation with support, so it keeps
+            to itself and the copy comes to hand when the reader reaches for
+            it. A screen that cannot hover keeps the button in view. -->
+          <div v-if="requestId" class="group/request flex items-center gap-1">
+            <p
+              class="text-2xs break-all text-primary-warm-gray/70"
+              data-testid="router-request-id"
+            >
+              {{ t('workshop.run.requestId', locale) }} {{ requestId }}
+            </p>
+            <CopyTextButton
+              :value="requestId"
+              :label="t('workshop.run.copyRequestId', locale)"
+              :copied-label="t('workshop.api.copied', locale)"
+              class="h-7 min-w-7 rounded-lg px-1.5 transition-opacity can-hover:opacity-0 can-hover:group-focus-within/request:opacity-100 can-hover:group-hover/request:opacity-100"
+            />
+          </div>
+        </div>
 
         <!-- Once the result is in view, taking the workflow home is the other
           thing to do with it, and it should not shout over the run's own
@@ -610,5 +924,19 @@ function useInCode() {
     >
       <ApiTab :contract="model.execution" :values :locale />
     </section>
+
+    <RunLeaveDialog
+      :open="leavingTo !== undefined"
+      :locale
+      @update:open="(value: boolean) => !value && (leavingTo = undefined)"
+      @leave="leaveForLink"
+    />
+
+    <ExampleReplaceDialog
+      :open="replacing !== undefined"
+      :locale
+      @update:open="(value: boolean) => !value && (replacing = undefined)"
+      @replace="replaceWithExample"
+    />
   </div>
 </template>

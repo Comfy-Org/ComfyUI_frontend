@@ -17,6 +17,7 @@ import { OTHER_FORMAT_USE_CASES } from '../../config/workshop-sections'
 import type { Locale, TranslationKey } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 import { groupModels } from '../../config/model-family'
+import { rememberShelf } from '../../lib/workshop/shelf-memory'
 import CardRow from './CardRow.vue'
 import WorkshopModelCard from './WorkshopModelCard.vue'
 
@@ -38,10 +39,16 @@ const emit = defineEmits<{ open: [UseCase | 'other'] }>()
 
 const GROUPED = OTHER_FORMAT_USE_CASES
 
-// The row title is the way into its category, so it carries the chevron and
-// the count rather than handing them to a second control beside it.
 const titleClass =
-  'group hover:text-primary-comfy-yellow focus-visible:ring-primary-comfy-yellow/50 inline-flex cursor-pointer items-baseline gap-2 rounded-lg text-xl font-medium text-primary-warm-white transition-colors outline-none focus-visible:ring-3'
+  'hover:text-primary-comfy-yellow focus-visible:ring-primary-comfy-yellow/50 cursor-pointer rounded-lg text-xl font-medium text-primary-warm-white transition-colors outline-none focus-visible:ring-3'
+
+// The count belongs to the screen the link opens, not to the row, which loads
+// eight whatever the total says.
+const seeAllClass =
+  'group hover:text-primary-comfy-yellow focus-visible:ring-primary-comfy-yellow/50 inline-flex shrink-0 cursor-pointer items-center gap-1 rounded-lg text-sm font-medium text-primary-warm-gray transition-colors outline-none focus-visible:ring-3'
+
+const cardClass =
+  'w-60 shrink-0 snap-start sm:w-[calc((100cqw-2*1.25rem)/2.5)] md:w-[calc((100cqw-3*1.25rem)/3.5)] lg:w-[calc((100cqw-4*1.25rem)/4.5)] xl:w-[calc((100cqw-5*1.25rem)/5.5)]'
 
 const sections = computed(() =>
   USE_CASES.filter((useCase) => !GROUPED.includes(useCase))
@@ -74,6 +81,22 @@ const unplaced = computed(() =>
     )
   )
 )
+
+function rememberModel(
+  shelf: UseCase | 'all' | 'other',
+  model: WorkshopModel,
+  event: MouseEvent
+) {
+  if (
+    event.button !== 0 ||
+    event.metaKey ||
+    event.ctrlKey ||
+    event.shiftKey ||
+    event.altKey
+  )
+    return
+  rememberShelf(shelf, model.href)
+}
 </script>
 
 <template>
@@ -94,23 +117,42 @@ const unplaced = computed(() =>
               @click="emit('open', section.useCase)"
             >
               {{ t(labelKey[section.useCase], locale) }}
-              <span class="text-sm text-primary-warm-gray tabular-nums">
-                {{ section.total }}
-              </span>
-              <ChevronRight
-                class="size-5 transition-transform group-hover:translate-x-0.5"
-                aria-hidden="true"
-              />
             </button>
           </h2>
+        </template>
+
+        <template #actions>
+          <button
+            type="button"
+            :class="seeAllClass"
+            :data-testid="`section-${section.useCase}-see-all`"
+            @click="emit('open', section.useCase)"
+          >
+            <span class="tabular-nums">
+              {{
+                t('workshop.sections.seeAll', locale).replace(
+                  '{n}',
+                  `${section.total}`
+                )
+              }}
+            </span>
+            <ChevronRight
+              class="size-4 transition-transform group-hover:translate-x-0.5"
+              aria-hidden="true"
+            />
+          </button>
         </template>
 
         <li
           v-for="family in section.shown"
           :key="family.key"
-          class="w-58 shrink-0 snap-start"
+          :class="cardClass"
         >
-          <WorkshopModelCard :model="family.latest" :locale />
+          <WorkshopModelCard
+            :model="family.latest"
+            :locale
+            @click="rememberModel(section.useCase, family.latest, $event)"
+          />
         </li>
       </CardRow>
     </section>
@@ -130,23 +172,42 @@ const unplaced = computed(() =>
               @click="emit('open', 'other')"
             >
               {{ t('workshop.sections.otherFormats', locale) }}
-              <span class="text-sm text-primary-warm-gray tabular-nums">
-                {{ otherFormats.length }}
-              </span>
-              <ChevronRight
-                class="size-5 transition-transform group-hover:translate-x-0.5"
-                aria-hidden="true"
-              />
             </button>
           </h2>
+        </template>
+
+        <template #actions>
+          <button
+            type="button"
+            :class="seeAllClass"
+            data-testid="section-other-formats-see-all"
+            @click="emit('open', 'other')"
+          >
+            <span class="tabular-nums">
+              {{
+                t('workshop.sections.seeAll', locale).replace(
+                  '{n}',
+                  `${otherFormats.length}`
+                )
+              }}
+            </span>
+            <ChevronRight
+              class="size-4 transition-transform group-hover:translate-x-0.5"
+              aria-hidden="true"
+            />
+          </button>
         </template>
 
         <li
           v-for="family in otherFormats.slice(0, ROW_LIMIT)"
           :key="family.key"
-          class="w-58 shrink-0 snap-start"
+          :class="cardClass"
         >
-          <WorkshopModelCard :model="family.latest" :locale />
+          <WorkshopModelCard
+            :model="family.latest"
+            :locale
+            @click="rememberModel('other', family.latest, $event)"
+          />
         </li>
       </CardRow>
     </section>
@@ -169,7 +230,11 @@ const unplaced = computed(() =>
         class="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
       >
         <li v-for="family in unplaced" :key="family.key">
-          <WorkshopModelCard :model="family.latest" :locale />
+          <WorkshopModelCard
+            :model="family.latest"
+            :locale
+            @click="rememberModel('all', family.latest, $event)"
+          />
         </li>
       </ul>
     </section>
