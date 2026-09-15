@@ -14,7 +14,7 @@ import { cn } from '@comfyorg/tailwind-utils'
 import type { WorkshopSession } from '../../config/workshop-session-state'
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
-import { initialsOf } from '../../lib/workshop/initials'
+import { initialsOf, workspaceInitialsOf } from '../../lib/workshop/initials'
 import type { WorkspaceWithRole } from '../../lib/workshop/workspaces'
 import HeaderWorkspaceMenu from './HeaderWorkspaceMenu.vue'
 
@@ -61,7 +61,9 @@ const workspacesOpen = defineModel<boolean>('workspacesOpen', {
 })
 
 const accountInitials = computed(() => initialsOf(accountName))
-const workspaceInitials = computed(() => initialsOf(session.workspace.name))
+const workspaceInitials = computed(() =>
+  workspaceInitialsOf(session.workspace.name)
+)
 
 // The plan would cost a workspace list the menu does not otherwise need, and
 // would arrive late enough to swap under the name. The standing the session

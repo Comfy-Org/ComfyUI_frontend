@@ -248,6 +248,7 @@ describe('HeaderAccount menu', () => {
     expect(identity.textContent).toContain('a@b.co')
     expect(identity.textContent).not.toContain('Personal')
     expect(active.textContent).toContain('Personal')
+    expect(active.textContent).toContain('Owner')
     expect(active.textContent).not.toContain('Ada')
   })
 
@@ -346,6 +347,9 @@ describe('HeaderAccount menu', () => {
 
     await screen.findByTestId('account-workspace')
     expect(screen.queryByTestId('account-add-credits')).toBeNull()
+    expect(
+      screen.getByTestId('account-workspace-current').textContent
+    ).toContain('Member')
   })
 
   it('closes on Escape and hands focus back to the trigger', async () => {

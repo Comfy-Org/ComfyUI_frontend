@@ -13,7 +13,7 @@ import { cn } from '@comfyorg/tailwind-utils'
 import type { WorkshopSession } from '../../config/workshop-session-state'
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
-import { initialsOf } from '../../lib/workshop/initials'
+import { workspaceInitialsOf } from '../../lib/workshop/initials'
 import type { WorkspaceWithRole } from '../../lib/workshop/workspaces'
 
 const {
@@ -111,7 +111,7 @@ const surfaceClass =
               class="grid size-9 shrink-0 place-items-center rounded-lg bg-transparency-white-t8 text-sm font-bold text-primary-warm-white"
               aria-hidden="true"
             >
-              {{ initialsOf(workspace.name) }}
+              {{ workspaceInitialsOf(workspace.name) }}
             </span>
             <span class="min-w-0 flex-1">
               <span class="block truncate">{{ workspace.name }}</span>

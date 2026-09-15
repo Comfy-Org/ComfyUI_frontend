@@ -117,7 +117,7 @@
   --color-hub-muted: #8a8a8a;
   /* The workspace monogram, from the Cloud design system, so one workspace
      reads the same wherever it is shown. */
-  --color-workspace-mark: #2f687a;
+  --color-workspace-mark: var(--color-ocean-600);
 }
 
 @utility ppformula-text-center-sm {
