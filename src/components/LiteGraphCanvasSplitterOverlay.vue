@@ -1,18 +1,16 @@
 <template>
   <div
-    class="pointer-events-none absolute top-0 left-0 z-999 flex size-full flex-row"
+    class="pointer-events-none absolute top-0 left-0 z-999 flex size-full flex-col"
   >
-    <div
-      class="pointer-events-none flex min-w-0 flex-1 flex-col overflow-hidden"
-    >
-      <slot name="workflow-tabs" />
+    <slot name="workflow-tabs" />
 
+    <div class="pointer-events-none flex min-h-0 flex-1 flex-row">
       <div
         :class="
-          cn('pointer-events-none flex flex-1 overflow-hidden', {
-            'flex-row': sidebarLocation === 'left',
-            'flex-row-reverse': sidebarLocation === 'right'
-          })
+          cn(
+            'pointer-events-none flex min-w-0 flex-1 overflow-hidden',
+            sidebarLocation === 'left' ? 'flex-row' : 'flex-row-reverse'
+          )
         "
       >
         <div class="side-toolbar-container">
@@ -130,9 +128,12 @@
           </SplitterPanel>
         </Splitter>
       </div>
-    </div>
 
-    <slot name="agent-panel" />
+      <slot
+        name="agent-panel"
+        :has-opaque-neighbor="agentPanelHasOpaqueNeighbor"
+      />
+    </div>
   </div>
 </template>
 
@@ -188,6 +189,19 @@ const { isVisible: agentPanelOpen } = storeToRefs(agentPanelStore)
 // not an offside trigger; it only discriminates the saved layout key below.
 const showOffsideSplitter = computed(
   () => rightSidePanelVisible.value || isSelectMode.value
+)
+
+/**
+ * The agent panel docks to the right of this row. It only meets the bare
+ * canvas when nothing opaque is drawn between the two: a right-hand sidebar
+ * always is, and an offside panel is when it is drawn at all.
+ */
+const agentPanelHasOpaqueNeighbor = computed(
+  () =>
+    sidebarLocation.value === 'right' ||
+    (showOffsideSplitter.value &&
+      !agentNodeSelectionActive.value &&
+      !focusMode.value)
 )
 
 const sidebarPanelVisible = computed(

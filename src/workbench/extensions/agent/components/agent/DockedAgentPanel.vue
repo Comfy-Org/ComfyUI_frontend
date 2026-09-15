@@ -14,9 +14,17 @@
       @pointerdown="onResizeStart"
       @lostpointercapture="isResizing = false"
     />
+    <!-- Against the canvas the panel floats as a card and the graph shows
+         through its gutter. An opaque neighbour needs a surface and a seam. -->
     <div
       data-testid="docked-agent-panel-shell"
-      class="bg-agent-surface size-full border-l border-interface-stroke p-2"
+      :class="
+        cn(
+          'size-full p-2',
+          hasOpaqueNeighbor &&
+            'bg-agent-surface border-l border-interface-stroke'
+        )
+      "
     >
       <div
         class="size-full overflow-hidden rounded-lg border border-interface-stroke"
@@ -28,6 +36,7 @@
 </template>
 
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
 import { useEventListener } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
 import { defineAsyncComponent, defineComponent, h, ref } from 'vue'
@@ -63,6 +72,11 @@ const AgentPanelRoot = defineAsyncComponent({
     fail()
   }
 })
+
+/** Set by the parent that lays out both this panel and its left neighbour. */
+const { hasOpaqueNeighbor = false } = defineProps<{
+  hasOpaqueNeighbor?: boolean
+}>()
 
 const agentPanelStore = useAgentPanelStore()
 const { isVisible: docked, width } = storeToRefs(agentPanelStore)
