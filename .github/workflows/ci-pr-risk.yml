@@ -2,7 +2,7 @@ name: CI - PR Risk Grade
 
 # Thin caller for the shared ADVISORY PR risk grader (shadow check). Grades
 # every PR against .github/risk.json (read from the BASE ref) and syncs exactly
-# one `risk:low` .. `risk:xhigh` label — nothing gates, routes, or merges on it.
+# one `risk:low` .. `risk:xhigh` label used by advisory feature-flag policy.
 # The existing `risk-dispute` label remains a marker. A named
 # `risk-dispute:low` .. `risk-dispute:xhigh` label overrides the visible grade.
 
@@ -74,3 +74,42 @@ jobs:
       label_map: 'R0=risk:low,R1=risk:medium,R2=risk:high,R3=risk:xhigh,unknown=risk:unknown'
       pr_number: ${{ inputs.pr_number }}
       pr_numbers: ${{ inputs.pr_numbers }}
+
+  flag-policy-request:
+    needs: pr-risk
+    if: ${{ !cancelled() }}
+    name: Request feature flag advice after grading
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      pull-requests: read
+    steps:
+      - name: Capture graded PR targets
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBERS: ${{ inputs.pr_numbers || inputs.pr_number }}
+        run: |
+          if [ "$GITHUB_EVENT_NAME" = pull_request ]; then
+            jq '[{pr_number: .pull_request.number, head_sha: .pull_request.head.sha}]' \
+              "$GITHUB_EVENT_PATH" > "$RUNNER_TEMP/feature-flag-request.json"
+          else
+            targets=$(jq -en --arg targets "$PR_NUMBERS" \
+              '$targets | split(",") | map(gsub("^\\s+|\\s+$"; "")) |
+               if length > 0 and all(.[]; test("^[1-9][0-9]*$"))
+               then unique else error("Invalid PR numbers") end')
+            while IFS= read -r pr; do
+              gh api "repos/$GITHUB_REPOSITORY/pulls/$pr" \
+                --jq '{pr_number: .number, head_sha: .head.sha}'
+            done < <(jq -r '.[]' <<< "$targets") \
+              > "$RUNNER_TEMP/feature-flag-targets.jsonl"
+            jq -s '.' "$RUNNER_TEMP/feature-flag-targets.jsonl" \
+              > "$RUNNER_TEMP/feature-flag-request.json"
+          fi
+
+      - name: Upload request
+        uses: actions/upload-artifact@v6
+        with:
+          name: feature-flag-request
+          path: ${{ runner.temp }}/feature-flag-request.json
+          retention-days: 1
+          if-no-files-found: error

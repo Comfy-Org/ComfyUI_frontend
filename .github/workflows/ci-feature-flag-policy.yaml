@@ -1,0 +1,30 @@
+name: 'CI: Feature Flag Policy'
+
+on:
+  pull_request:
+    types: [edited]
+
+permissions: {}
+
+concurrency:
+  group: feature-flag-request-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  request:
+    name: Request feature flag advice
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Capture request metadata
+        run: |
+          jq '[{pr_number: .pull_request.number, head_sha: .pull_request.head.sha}]' \
+            "$GITHUB_EVENT_PATH" > "$RUNNER_TEMP/feature-flag-request.json"
+
+      - name: Upload request
+        uses: actions/upload-artifact@v6
+        with:
+          name: feature-flag-request
+          path: ${{ runner.temp }}/feature-flag-request.json
+          retention-days: 1
+          if-no-files-found: error
