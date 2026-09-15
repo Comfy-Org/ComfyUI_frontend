@@ -401,6 +401,19 @@ describe('HeaderAccount workspace switcher', () => {
     ]
   }
 
+  it('names the sign out control in text, not only to a screen reader', async () => {
+    signIn()
+    const user = userEvent.setup()
+    render(HeaderAccount)
+
+    await user.click(screen.getByTestId('header-account'))
+
+    // The icon alone left sighted readers guessing what the door meant.
+    expect(await screen.findByTestId('account-sign-out')).toHaveTextContent(
+      'Log out'
+    )
+  })
+
   async function openSwitcher(user: ReturnType<typeof userEvent.setup>) {
     await user.click(screen.getByTestId('header-account'))
     await screen.findByTestId('account-workspace')
