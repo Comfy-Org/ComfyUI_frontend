@@ -2196,12 +2196,16 @@
     "hideGizmos": "Hide gizmos",
     "lookThrough": "Camera view",
     "exitLookThrough": "Exit camera view",
+    "outputView": "Output view",
+    "lockCamera": "Lock camera",
+    "unlockCamera": "Unlock camera",
     "transformGizmo": {
       "label": "Edit",
       "none": "None",
       "target": "Target",
       "cameraTranslate": "Cam pos",
-      "cameraRotate": "Cam rot"
+      "cameraRotate": "Cam rot",
+      "lightPosition": "Light pos"
     },
     "showGrid": "Show Grid",
     "backgroundColor": "Background Color",
@@ -2342,6 +2346,22 @@
   "curveWidget": {
     "monotone_cubic": "Smooth",
     "linear": "Linear"
+  },
+  "lightInfo": {
+    "addLight": "Add light",
+    "removeLight": "Remove light",
+    "noLights": "Add a light to get started.",
+    "directional": "Directional",
+    "point": "Point",
+    "spot": "Spot",
+    "color": "Color",
+    "intensity": "Intensity",
+    "range": "Range",
+    "innerCone": "Inner cone",
+    "outerCone": "Outer cone",
+    "castShadow": "Cast shadow",
+    "size": "Size",
+    "angle": "Angle"
   },
   "boundingBoxes": {
     "clearAll": "Clear all",

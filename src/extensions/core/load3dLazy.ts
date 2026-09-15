@@ -40,7 +40,8 @@ async function loadLoad3dExtensions(): Promise<ComfyExtension[]> {
       import('./load3dAdvanced'),
       import('./load3dPreviewExtensions'),
       import('./saveMesh'),
-      import('./cameraInfo')
+      import('./cameraInfo'),
+      import('./lightInfo')
     ])
     load3dExtensionsLoaded = true
     return useExtensionStore().enabledExtensions.filter(

@@ -25,5 +25,7 @@ export const isLoad3dResultViewerNode = (nodeType: string): boolean =>
 export const isLoad3dNode = (nodeType: string): boolean =>
   LOAD3D_ALL_NODES.has(nodeType)
 
+const THREEJS_INFO_NODES = new Set(['CreateCameraInfo', 'CreateLightInfo'])
+
 export const isThreeJsNode = (nodeType: string): boolean =>
-  isLoad3dNode(nodeType) || nodeType === 'CreateCameraInfo'
+  isLoad3dNode(nodeType) || THREEJS_INFO_NODES.has(nodeType)
