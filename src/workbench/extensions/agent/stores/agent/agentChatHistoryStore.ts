@@ -2,6 +2,11 @@ import { useLocalStorage, useTimestamp } from '@vueuse/core'
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 
+import {
+  getWorkspaceId,
+  StorageKeys
+} from '@/platform/workflow/persistence/base/storageKeys'
+
 export interface ChatSession {
   id: string
   title: string
@@ -48,15 +53,22 @@ export const useAgentChatHistoryStore = defineStore('agentChatHistory', () => {
   const sessions = ref<ChatSession[]>([])
   const activeId = ref<string | null>(null)
   const now = useTimestamp({ interval: 60_000 })
+  const workspaceId = getWorkspaceId()
+
+  localStorage.removeItem('Comfy.Agent.ChatTitles')
+  localStorage.removeItem('Comfy.Agent.DeletedThreads')
 
   // The server owns thread titles but has no rename or delete endpoint yet
   // (BE-3130), so renames live in a local overlay applied over the server
   // titles and deletes in a local tombstone set filtered out of every refresh.
   const customTitles = useLocalStorage<Partial<Record<string, string>>>(
-    'Comfy.Agent.ChatTitles',
+    StorageKeys.agentChatTitles(workspaceId),
     {}
   )
-  const deletedIds = useLocalStorage<string[]>('Comfy.Agent.DeletedThreads', [])
+  const deletedIds = useLocalStorage<string[]>(
+    StorageKeys.agentDeletedThreads(workspaceId),
+    []
+  )
 
   const titled = computed(() =>
     sessions.value.map((session) => {

@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it } from 'vitest'
 import { nextTick } from 'vue'
 
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import { StorageKeys } from '@/platform/workflow/persistence/base/storageKeys'
 
 import { useAgentWorkflowTabBindingStore } from './agentWorkflowTabBindingStore'
 
@@ -15,7 +16,7 @@ describe('agentWorkflowTabBindingStore', () => {
     async (timing) => {
       const path = 'workflows/Agent draft.json'
       localStorage.setItem(
-        'Comfy.Agent.WorkflowTabBindings',
+        StorageKeys.agentWorkflowTabBindings('personal'),
         JSON.stringify({ 'wf-minted': path })
       )
       const workflows = useWorkflowStore()
@@ -88,6 +89,32 @@ describe('agentWorkflowTabBindingStore', () => {
 
     expect(reloaded.tabPathFor('wf-1')).toBe('workflows/a.json')
     expect(reloaded.workflowIdFor('workflows/a.json')).toBe('wf-1')
+  })
+
+  it('ignores legacy unscoped bindings', () => {
+    localStorage.setItem(
+      'Comfy.Agent.WorkflowTabBindings',
+      JSON.stringify({ 'wf-other-account': 'workflows/private.json' })
+    )
+
+    const store = useAgentWorkflowTabBindingStore()
+
+    expect(store.tabPathFor('wf-other-account')).toBeUndefined()
+    expect(localStorage.getItem('Comfy.Agent.WorkflowTabBindings')).toBeNull()
+  })
+
+  it('does not restore bindings from another workspace', () => {
+    localStorage.setItem(
+      StorageKeys.agentWorkflowTabBindings('workspace-a'),
+      JSON.stringify({ 'wf-a': 'workflows/a.json' })
+    )
+
+    const store = useAgentWorkflowTabBindingStore()
+
+    expect(store.tabPathFor('wf-a')).toBeUndefined()
+    expect(
+      localStorage.getItem(StorageKeys.agentWorkflowTabBindings('workspace-a'))
+    ).not.toBeNull()
   })
 
   it('does not resolve prototype-inherited names as bindings', () => {

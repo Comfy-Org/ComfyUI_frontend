@@ -1,5 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 
+import { StorageKeys } from '@/platform/workflow/persistence/base/storageKeys'
+
 import type { ChatSession } from './agentChatHistoryStore'
 import {
   groupSessionsByRecency,
@@ -119,5 +121,53 @@ describe('useAgentChatHistoryStore', () => {
     store.remove('b')
 
     expect(store.activeId).toBe('a')
+  })
+
+  it('restores titles and tombstones only from the current scope', () => {
+    localStorage.setItem(
+      StorageKeys.agentChatTitles('personal'),
+      JSON.stringify({ a: 'Scoped title' })
+    )
+    localStorage.setItem(
+      StorageKeys.agentDeletedThreads('personal'),
+      JSON.stringify(['deleted'])
+    )
+    localStorage.setItem(
+      'Comfy.Agent.ChatTitles',
+      JSON.stringify({ a: 'Legacy title' })
+    )
+    localStorage.setItem(
+      'Comfy.Agent.DeletedThreads',
+      JSON.stringify(['visible'])
+    )
+
+    const store = useAgentChatHistoryStore()
+    store.replaceAll([
+      session('a', 1),
+      session('deleted', 2),
+      session('visible', 3)
+    ])
+
+    expect(store.titleFor('a')).toBe('Scoped title')
+    expect(store.sessions.map(({ id }) => id)).toEqual(['a', 'visible'])
+    expect(localStorage.getItem('Comfy.Agent.ChatTitles')).toBeNull()
+    expect(localStorage.getItem('Comfy.Agent.DeletedThreads')).toBeNull()
+  })
+
+  it('does not apply titles or tombstones from another workspace', () => {
+    localStorage.setItem(
+      StorageKeys.agentChatTitles('workspace-a'),
+      JSON.stringify({ a: 'Workspace A title' })
+    )
+    localStorage.setItem(
+      StorageKeys.agentDeletedThreads('workspace-a'),
+      JSON.stringify(['a'])
+    )
+
+    const store = useAgentChatHistoryStore()
+    store.replaceAll([session('a', 1)])
+
+    expect(store.titleFor('a')).toBeUndefined()
+    expect(store.sessions.map(({ id }) => id)).toEqual(['a'])
   })
 })

@@ -32,7 +32,7 @@ import {
 import { PERSIST_DEBOUNCE_MS } from '../base/draftTypes'
 import type { StartupOutcome } from '../base/draftTypes'
 import {
-  clearAllWorkflowStorage,
+  clearAllWorkspaceStorage,
   completeWorkflowLogoutTransition,
   prepareWorkflowLogoutTransition,
   registerWorkflowPersistenceFlush
@@ -152,7 +152,7 @@ export function useWorkflowPersistenceV2() {
     stopPendingWorkspaceReadinessWatcher()
     debouncedPersist.cancel()
     prepareWorkflowLogoutTransition()
-    clearAllWorkflowStorage()
+    clearAllWorkspaceStorage()
   })
   onUserResolved(() => {
     if (!isCloud) return
