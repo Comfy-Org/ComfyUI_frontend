@@ -27,7 +27,7 @@ defineEmits<{ click: [] }>()
 <template>
   <div class="group block cursor-pointer" @click="$emit('click')">
     <div
-      class="rounded-4.5xl relative overflow-hidden"
+      class="relative overflow-hidden rounded-4.5xl"
       :style="{ aspectRatio: aspect }"
     >
       <video
@@ -62,7 +62,7 @@ defineEmits<{ click: [] }>()
             </p>
           </div>
           <span
-            class="bg-primary-comfy-yellow flex size-8 shrink-0 items-center justify-center rounded-full"
+            class="flex size-8 shrink-0 items-center justify-center rounded-full bg-primary-comfy-yellow"
           >
             <svg
               width="14"

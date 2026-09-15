@@ -168,7 +168,7 @@ function remove(index: number) {
     :aria-label="field.label"
     :class="
       cn(
-        'has-focus-visible:ring-primary-comfy-yellow flex min-w-0 flex-col gap-3 rounded-2xl has-focus-visible:ring-2',
+        'flex min-w-0 flex-col gap-3 rounded-2xl has-focus-visible:ring-2 has-focus-visible:ring-primary-comfy-yellow',
         disabled && 'opacity-50'
       )
     "
@@ -188,7 +188,7 @@ function remove(index: number) {
       :for="`field-${field.name}`"
       :class="
         cn(
-          'hover:bg-transparency-white-t4 flex min-h-28 cursor-pointer flex-col items-center justify-center gap-2 rounded-2xl border border-dashed text-xs text-primary-warm-gray',
+          'flex min-h-28 cursor-pointer flex-col items-center justify-center gap-2 rounded-2xl border border-dashed text-xs text-primary-warm-gray hover:bg-transparency-white-t4',
           dropZoneActive
             ? 'border-primary-comfy-yellow'
             : 'border-transparency-white-t20',
@@ -224,7 +224,7 @@ function remove(index: number) {
       v-if="rejection"
       :id="`selection-error-${field.name}`"
       role="alert"
-      class="text-primary-comfy-red px-3 pb-3 text-xs"
+      class="px-3 pb-3 text-xs text-primary-comfy-red"
     >
       {{ rejectionMessage }}
     </p>

@@ -608,6 +608,93 @@ video::-webkit-media-controls-panel {
   color: color-mix(in srgb, var(--color-primary-warm-white) 30%, transparent);
 }
 
+/* The cluster popup (MapPins01) is Leaflet-rendered DOM, styled here for the
+   same reason as the zoom control above. */
+.map-pins .map-pins-popup .leaflet-popup-content-wrapper {
+  border: 1px solid var(--color-transparency-white-t8);
+  border-radius: 1rem;
+  background-color: var(--color-primary-comfy-ink-light);
+  color: var(--color-primary-warm-white);
+  box-shadow: 0 8px 24px rgb(0 0 0 / 0.45);
+}
+
+.map-pins .map-pins-popup .leaflet-popup-content {
+  margin: 0.75rem;
+  max-height: 16rem;
+  overflow-y: auto;
+  font-family: inherit;
+  line-height: 1.4;
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-primary-comfy-yellow)
+    color-mix(in srgb, var(--color-primary-warm-white) 25%, transparent);
+}
+
+.map-pins .map-pins-popup .leaflet-popup-content::-webkit-scrollbar {
+  width: 4px;
+}
+
+.map-pins .map-pins-popup .leaflet-popup-content::-webkit-scrollbar-track {
+  border-radius: 9999px;
+  background: color-mix(
+    in srgb,
+    var(--color-primary-warm-white) 25%,
+    transparent
+  );
+}
+
+.map-pins .map-pins-popup .leaflet-popup-content::-webkit-scrollbar-thumb {
+  border-radius: 9999px;
+  background: var(--color-primary-comfy-yellow);
+}
+
+.map-pins .map-pins-popup .leaflet-popup-tip {
+  background-color: var(--color-primary-comfy-ink-light);
+}
+
+.map-pins .map-pins-popup .leaflet-popup-close-button {
+  color: color-mix(in srgb, var(--color-primary-warm-white) 60%, transparent);
+}
+
+.map-pins .map-pins-popup .leaflet-popup-close-button:hover {
+  color: var(--color-primary-comfy-yellow);
+}
+
+.map-pins .map-pins-popup-title {
+  margin: 0 0 0.5rem;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-primary-comfy-yellow);
+}
+
+.map-pins .map-pins-popup-entry {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+  width: 100%;
+  padding: 0.375rem 0.5rem;
+  border-radius: 0.75rem;
+  text-align: left;
+  cursor: pointer;
+}
+
+.map-pins .map-pins-popup-entry:hover,
+.map-pins .map-pins-popup-entry:focus-visible {
+  background-color: var(--color-transparency-white-t8);
+}
+
+.map-pins .map-pins-popup-entry-title {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--color-primary-warm-white);
+}
+
+.map-pins .map-pins-popup-meta {
+  font-size: 0.75rem;
+  color: color-mix(in srgb, var(--color-primary-warm-white) 65%, transparent);
+}
+
 @keyframes soft-in {
   from {
     opacity: 0;

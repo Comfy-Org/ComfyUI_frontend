@@ -11,7 +11,7 @@ const { locale = 'en', audioGallery } = defineProps<{
 </script>
 
 <template>
-  <section class="max-w-9xl mx-auto px-4 py-16 lg:px-20 lg:py-24">
+  <section class="mx-auto max-w-9xl px-4 py-16 lg:px-20 lg:py-24">
     <div
       class="mx-auto grid max-w-7xl grid-cols-1 gap-x-6 gap-y-10 md:grid-cols-2"
     >

@@ -96,7 +96,7 @@ const surfaceClass =
         >
           <span>{{ t('nav.workspacesError', locale) }}</span>
           <span
-            class="text-primary-comfy-yellow shrink-0 cursor-pointer font-bold"
+            class="shrink-0 cursor-pointer font-bold text-primary-comfy-yellow"
           >
             {{ t('workshop.error.retry', locale) }}
           </span>
@@ -133,7 +133,7 @@ const surfaceClass =
             </span>
             <Check
               v-if="workspace.id === session.workspace.id"
-              class="text-primary-comfy-yellow size-4 shrink-0"
+              class="size-4 shrink-0 text-primary-comfy-yellow"
               aria-hidden="true"
             />
           </DropdownMenuItem>
