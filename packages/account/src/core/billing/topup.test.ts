@@ -20,8 +20,12 @@ import { OPERATION_POLL_TIMING } from './operationPolicy.js'
 import type { BillingOpStatus } from './operationState.js'
 import type { BillingStatusData } from './status.js'
 import { createBillingStatusReader } from './status.js'
-import type { TopupResult } from './topup.js'
-import { TOPUP_ROUTE, createTopupCommand } from './topup.js'
+import type { HostedTopupCheckoutResult, TopupResult } from './topup.js'
+import {
+  TOPUP_CHECKOUT_ROUTE,
+  TOPUP_ROUTE,
+  createTopupCommand
+} from './topup.js'
 
 const NOW = 1_000_000
 
@@ -221,6 +225,7 @@ function harness(
     )
   )
   answer('POST', TOPUP_ROUTE, httpOk(topupResponse()))
+  answer('POST', TOPUP_CHECKOUT_ROUTE, httpOk(checkoutResponse()))
   answer(
     'GET',
     operationRoute('op-1'),
@@ -236,8 +241,20 @@ function harness(
     calls,
     answer,
     routes,
-    topup: () => command.createTopupCheckout({ amountCents: 1000 })
+    topup: () => command.createTopupCheckout({ amountCents: 1000 }),
+    hosted: () =>
+      command.createHostedTopupCheckout({
+        amountCents: 1000,
+        returnUrl: RETURN_URL
+      })
   }
+}
+
+const RETURN_URL = 'https://comfy.org/models?topup=attempt-1'
+const CHECKOUT_URL = 'https://checkout.stripe.com/c/pay/cs_test_123'
+
+function checkoutResponse(overrides: Record<string, unknown> = {}) {
+  return { checkout_url: CHECKOUT_URL, session_id: 'cs_test_123', ...overrides }
 }
 
 /** Lets every read, the POST, and the first poll cadence settle. */
@@ -541,6 +558,150 @@ describe('createTopupCommand', () => {
     expect(
       routes().filter((route) => route === 'GET /billing/balance')
     ).toHaveLength(3)
+  })
+})
+
+describe('createHostedTopupCheckout', () => {
+  it('returns the hosted session with the pre-purchase baseline and observes no operation', async () => {
+    const { hosted, lifecycle, routes, calls } = harness()
+
+    await expect(hosted()).resolves.toEqual({
+      status: 'ok',
+      url: CHECKOUT_URL,
+      sessionId: 'cs_test_123',
+      baselineMicros: BASELINE_MICROS
+    })
+    expect(routes()).toEqual([
+      'GET /billing/capabilities',
+      'GET /billing/balance',
+      `POST ${TOPUP_CHECKOUT_ROUTE}`
+    ])
+    expect(lifecycle.getSnapshot()).toEqual([])
+    expect(postedBodies(calls)).toEqual([
+      {
+        body: {
+          amount_cents: 1000,
+          return_url: RETURN_URL,
+          idempotency_key: 'key-1'
+        },
+        idempotencyKey: 'key-1'
+      }
+    ])
+  })
+
+  it('refuses when the server resolved can_top_up false, without a POST', async () => {
+    const { hosted, routes } = harness({
+      capabilities: {
+        capabilities: { ...CAPABILITIES, can_top_up: false },
+        denied_reasons: { can_top_up: 'tier_not_self_serve' }
+      }
+    })
+
+    await expect(hosted()).resolves.toEqual({
+      status: 'error',
+      code: 'ACCESS_DENIED',
+      denial: 'tier_not_self_serve'
+    })
+    expect(routes()).toEqual(['GET /billing/capabilities'])
+  })
+
+  it('rejects an amount or return URL outside the generated contract without sending anything', async () => {
+    const { command, calls } = harness()
+
+    await expect(
+      command.createHostedTopupCheckout({
+        amountCents: 100,
+        returnUrl: RETURN_URL
+      })
+    ).resolves.toEqual({ status: 'error', code: 'INVALID_AMOUNT' })
+    await expect(
+      command.createHostedTopupCheckout({
+        amountCents: 1000,
+        returnUrl: 'models?topup=1'
+      })
+    ).resolves.toEqual({ status: 'error', code: 'INVALID_RETURN_URL' })
+    expect(calls).toHaveLength(0)
+  })
+
+  it('maps a 404 to NOT_AVAILABLE so a host keeps its legacy path', async () => {
+    const { hosted, answer } = harness()
+    answer('POST', TOPUP_CHECKOUT_ROUTE, httpStatus(404))
+
+    await expect(hosted()).resolves.toEqual({
+      status: 'error',
+      code: 'NOT_AVAILABLE'
+    })
+  })
+
+  it('reports a session outside the generated contract or off https as MALFORMED_RESPONSE', async () => {
+    const { hosted, answer } = harness()
+
+    answer('POST', TOPUP_CHECKOUT_ROUTE, httpOk({ session_id: 'cs_test_123' }))
+    await expect(hosted()).resolves.toEqual({
+      status: 'error',
+      code: 'MALFORMED_RESPONSE',
+      httpStatus: 200
+    })
+
+    answer(
+      'POST',
+      TOPUP_CHECKOUT_ROUTE,
+      httpOk(checkoutResponse({ checkout_url: 'http://checkout.stripe.com/c' }))
+    )
+    await expect(hosted()).resolves.toEqual({
+      status: 'error',
+      code: 'MALFORMED_RESPONSE',
+      httpStatus: 200
+    })
+  })
+
+  it('omits what it could not learn: no session id, no baseline', async () => {
+    const { hosted, answer } = harness()
+    answer('GET', '/billing/balance', httpStatus(503))
+    const { session_id: _omitted, ...withoutSession } = checkoutResponse()
+    answer('POST', TOPUP_CHECKOUT_ROUTE, httpOk(withoutSession))
+
+    await expect(hosted()).resolves.toEqual({
+      status: 'ok',
+      url: CHECKOUT_URL
+    })
+  })
+
+  it('hands the baseline to a balance watch that settles once the host returns', async () => {
+    const { hosted, credits, routes } = harness({
+      balances: [BASELINE_MICROS, TOPPED_UP_MICROS]
+    })
+    const session = await hosted()
+    if (session.status !== 'ok') throw new Error(session.code)
+
+    const watch = createBalanceWatch({
+      credits,
+      baselineMicros: session.baselineMicros
+    })
+    watch.wake()
+    await vi.advanceTimersByTimeAsync(0)
+
+    await expect(watch.outcome).resolves.toBe('reconciled')
+    expect(
+      routes().filter((route) => route === 'GET /billing/balance')
+    ).toHaveLength(2)
+  })
+
+  it('carries no server or provider text on any path', async () => {
+    const { hosted, answer } = harness()
+    answer(
+      'POST',
+      TOPUP_CHECKOUT_ROUTE,
+      httpStatus(400, {
+        code: 'INVALID_RETURN_URL',
+        message: 'stripe: return_url origin not allowlisted'
+      })
+    )
+
+    const result: HostedTopupCheckoutResult = await hosted()
+
+    expect(result).toMatchObject({ status: 'error', code: 'REQUEST_FAILED' })
+    expect(JSON.stringify(result)).not.toMatch(/stripe|allowlisted/i)
   })
 })
 

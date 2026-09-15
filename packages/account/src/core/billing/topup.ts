@@ -11,6 +11,8 @@
  * observed so a host reads the coded decline and recovery action from it.
  */
 import {
+  zCreateTopupCheckoutRequest,
+  zCreateTopupCheckoutResponse,
   zCreateTopupRequest,
   zCreateTopupResponse
 } from '@comfyorg/ingest-types/zod'
@@ -31,10 +33,16 @@ import type {
   BillingOperationState,
   FailedBillingOperation
 } from './operationState.js'
-import { isTerminal } from './operationState.js'
+import { isTerminal, validateActionUrl } from './operationState.js'
 import { readValidatedBillingResponse } from './sharedRead.js'
 
 export const TOPUP_ROUTE = '/billing/topup'
+/**
+ * The hosted variant: a provider-hosted Checkout session with no operation to
+ * observe. The purchase happens on the returned page and the credits land
+ * through a webhook, so completion is the host's return plus a balance watch.
+ */
+export const TOPUP_CHECKOUT_ROUTE = '/billing/topup/checkout'
 
 /** The one coded error body this command acts on; every other code stays a `BillingFailure`. */
 const NO_PAYMENT_METHOD_SERVER_CODE = 'NO_PAYMENT_METHOD'
@@ -104,6 +112,46 @@ export type TopupResult =
   | TopupUnsettled
   | TopupFailure
 
+/** The return URL fails the generated request contract; nothing was sent. */
+export interface TopupInvalidReturnUrl {
+  readonly status: 'error'
+  readonly code: 'INVALID_RETURN_URL'
+}
+
+/**
+ * A hosted Checkout session the host now sends the customer to. There is no
+ * operation and none is invented: the host executes its `OpenUrlMode` on
+ * `url`, and on return arms `createBalanceWatch` with `baselineMicros` to
+ * learn that the credits landed.
+ */
+export interface HostedTopupCheckout {
+  readonly status: 'ok'
+  /** The provider-hosted Checkout page; https only. */
+  readonly url: string
+  /** The provider's session id, for support and log correlation. */
+  readonly sessionId?: string
+  /** The balance read before the session was created; absent when that read failed. */
+  readonly baselineMicros?: number
+}
+
+export type HostedTopupCheckoutFailure =
+  | BillingFailure
+  | TopupDenied
+  | TopupNotAvailable
+  | TopupInvalidAmount
+  | TopupInvalidReturnUrl
+
+export type HostedTopupCheckoutResult =
+  | HostedTopupCheckout
+  | HostedTopupCheckoutFailure
+
+export interface CreateHostedTopupCheckoutInput {
+  readonly amountCents: number
+  /** Where the provider returns the customer; the backend allowlists its origin. */
+  readonly returnUrl: string
+  readonly signal?: AbortSignal
+}
+
 export interface CreateTopupCheckoutInput {
   readonly amountCents: number
   /**
@@ -124,12 +172,42 @@ export interface TopupCommandOptions {
 
 export interface TopupCommand {
   createTopupCheckout: (input: CreateTopupCheckoutInput) => Promise<TopupResult>
+  /**
+   * The route Workshop and Platform ship on today. Unlike
+   * `createTopupCheckout` it resolves as soon as the session exists, because
+   * nothing about the purchase can be observed until the customer returns.
+   */
+  createHostedTopupCheckout: (
+    input: CreateHostedTopupCheckoutInput
+  ) => Promise<HostedTopupCheckoutResult>
 }
 
 const INVALID_AMOUNT = {
   status: 'error',
   code: 'INVALID_AMOUNT'
 } as const satisfies TopupInvalidAmount
+
+const INVALID_RETURN_URL = {
+  status: 'error',
+  code: 'INVALID_RETURN_URL'
+} as const satisfies TopupInvalidReturnUrl
+
+const NOT_AVAILABLE = {
+  status: 'error',
+  code: 'NOT_AVAILABLE'
+} as const satisfies TopupNotAvailable
+
+function validateHostedCheckoutInput(
+  input: CreateHostedTopupCheckoutInput
+): TopupInvalidAmount | TopupInvalidReturnUrl | undefined {
+  const parsed = zCreateTopupCheckoutRequest.safeParse({
+    amount_cents: input.amountCents,
+    return_url: input.returnUrl
+  })
+  if (parsed.success) return undefined
+  const fields = new Set(parsed.error.issues.map((issue) => issue.path[0]))
+  return fields.has('amount_cents') ? INVALID_AMOUNT : INVALID_RETURN_URL
+}
 
 const SUPERSEDED = {
   status: 'error',
@@ -144,9 +222,7 @@ function commandFailure(failure: BillingFailure): TopupFailure {
       recoveryAction: 'replace_payment_method'
     }
   }
-  if (failure.httpStatus === 404) {
-    return { status: 'error', code: 'NOT_AVAILABLE' }
-  }
+  if (failure.httpStatus === 404) return NOT_AVAILABLE
   return failure
 }
 
@@ -221,7 +297,7 @@ export function createTopupCommand(options: TopupCommandOptions): TopupCommand {
 
   async function readTopupEligibility(
     signal: AbortSignal | undefined
-  ): Promise<TopupFailure | undefined> {
+  ): Promise<BillingFailure | TopupDenied | undefined> {
     const allowed = await capabilities.read(
       signal === undefined ? {} : { signal }
     )
@@ -268,5 +344,66 @@ export function createTopupCommand(options: TopupCommandOptions): TopupCommand {
     return conclude(await settled, baselineMicros)
   }
 
-  return { createTopupCheckout }
+  async function issueHostedCheckout(
+    input: CreateHostedTopupCheckoutInput
+  ): Promise<BillingResult<Pick<HostedTopupCheckout, 'url' | 'sessionId'>>> {
+    const body = {
+      amount_cents: input.amountCents,
+      return_url: input.returnUrl,
+      idempotency_key: idempotencyKey()
+    }
+    const response = await readValidatedBillingResponse(
+      transport,
+      {
+        method: 'POST',
+        route: TOPUP_CHECKOUT_ROUTE,
+        body,
+        idempotencyKey: body.idempotency_key,
+        ...(input.signal === undefined ? {} : { signal: input.signal })
+      },
+      (raw) => zCreateTopupCheckoutResponse.safeParse(raw)
+    )
+    if (response.status === 'error') return response
+
+    // The generated contract only requires a URL; the page a host will open
+    // on the customer's behalf has to be https as well, like every
+    // continuation the lifecycle hands out.
+    const { data, httpStatus } = response.value
+    const url = validateActionUrl(data.checkout_url)
+    if (url === undefined) {
+      return { status: 'error', code: 'MALFORMED_RESPONSE', httpStatus }
+    }
+    return {
+      status: 'ok',
+      value: {
+        url,
+        ...(data.session_id === undefined ? {} : { sessionId: data.session_id })
+      }
+    }
+  }
+
+  async function createHostedTopupCheckout(
+    input: CreateHostedTopupCheckoutInput
+  ): Promise<HostedTopupCheckoutResult> {
+    const invalid = validateHostedCheckoutInput(input)
+    if (invalid) return invalid
+
+    const refused = await readTopupEligibility(input.signal)
+    if (refused) return refused
+
+    const baseline = await credits.read()
+    const session = await issueHostedCheckout(input)
+    if (session.status === 'error') {
+      return session.httpStatus === 404 ? NOT_AVAILABLE : session
+    }
+    return {
+      status: 'ok',
+      ...session.value,
+      ...(baseline.status === 'ok'
+        ? { baselineMicros: baseline.value.balance.amount_micros }
+        : {})
+    }
+  }
+
+  return { createTopupCheckout, createHostedTopupCheckout }
 }
