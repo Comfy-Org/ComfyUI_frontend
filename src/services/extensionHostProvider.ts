@@ -18,8 +18,17 @@
  *     Returning false falls through to the normal `import()` path, so a
  *     provider can take over a subset and leave the rest untouched.
  *   - `load(url)` resolves once the extension has been loaded (or rejects).
+ *   - `importFile(file)`, when present, may return a workflow or API prompt
+ *     extracted by an extension host. Returning `undefined` falls through to
+ *     the frontend's native metadata parser and normal media handling.
  *   - With no provider registered, behaviour is exactly as before.
  */
+interface ExtensionImportedFileData {
+  workflow?: string | object
+  prompt?: string | object
+  [key: string]: string | object | undefined
+}
+
 export interface ExtensionHostProvider {
   /** Human-readable name, for diagnostics. */
   readonly name: string
@@ -27,6 +36,8 @@ export interface ExtensionHostProvider {
   canLoad(extensionUrl: string): boolean
   /** Load the extension. Resolves when it is ready. */
   load(extensionUrl: string): Promise<void>
+  /** Optionally extract closed workflow data from a user-selected file. */
+  importFile?(file: File): Promise<ExtensionImportedFileData | undefined>
 }
 
 let provider: ExtensionHostProvider | null = null
@@ -50,6 +61,11 @@ export function resolveExtensionHost(
     // A provider that throws while deciding must not break extension loading.
     return null
   }
+}
+
+/** The installed provider, for host-wide optional facilities such as import. */
+export function currentExtensionHost(): ExtensionHostProvider | null {
+  return provider
 }
 
 /** Whether any provider is installed (diagnostics/tests). */
