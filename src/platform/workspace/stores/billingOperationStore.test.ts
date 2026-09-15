@@ -164,7 +164,7 @@ describe('billingOperationStore', () => {
       )
     })
 
-    it('does not expose checkout recovery while awaiting invoice payment', async () => {
+    it('does not expose checkout recovery from an invoice phase without an action URL', async () => {
       const store = await pollPhase('awaiting_invoice_payment')
 
       await vi.waitFor(() =>
@@ -1903,6 +1903,44 @@ describe('billingOperationStore', () => {
   })
 
   describe('polling timeout', () => {
+    it('keeps checkout recovery pending at a parked cadence until the long timeout', async () => {
+      const startedAt = Date.now()
+      vi.mocked(workspaceApi.getBillingOpStatus).mockResolvedValue({
+        id: 'op-checkout',
+        status: 'pending',
+        phase: 'awaiting_payment_method',
+        started_at: new Date(startedAt).toISOString()
+      })
+
+      const store = useBillingOperationStore()
+      const terminal = store.startOperation('op-checkout', 'subscription')
+      await vi.advanceTimersByTimeAsync(0)
+
+      await vi.advanceTimersByTimeAsync(29_999)
+      expect(workspaceApi.getBillingOpStatus).toHaveBeenCalledTimes(1)
+      await vi.advanceTimersByTimeAsync(1)
+      expect(workspaceApi.getBillingOpStatus).toHaveBeenCalledTimes(2)
+
+      await vi.advanceTimersByTimeAsync(5 * 60_000)
+      expect(store.subscriptionActionOperation).toMatchObject({
+        opId: 'op-checkout',
+        status: 'pending',
+        phase: 'awaiting_payment_method',
+        actionUrl: null
+      })
+      expect(mockTrackBillingEvent).not.toHaveBeenCalledWith(
+        expect.objectContaining({ stage: 'timeout' })
+      )
+
+      vi.setSystemTime(startedAt + 23 * 60 * 60_000 - 30_000)
+      await vi.advanceTimersByTimeAsync(30_000)
+      expect(store.subscriptionActionOperation?.status).toBe('pending')
+
+      await vi.advanceTimersByTimeAsync(30_000)
+      expect((await terminal).status).toBe('timeout')
+      expect(store.subscriptionActionOperation).toBeUndefined()
+    })
+
     it('times out a subscription while its workspace is inactive', async () => {
       vi.mocked(workspaceApi.getBillingOpStatus).mockResolvedValue({
         id: 'op-1',
