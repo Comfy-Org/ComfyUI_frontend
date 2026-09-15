@@ -154,12 +154,24 @@ describe('MessageFeedback', () => {
       }
     ])
 
-    await user.click(screen.getByRole('button', { name: 'Download assets' }))
+    const download = screen.getByRole('button', { name: 'Download assets' })
+    await user.click(download)
 
-    await waitFor(() => expect(fetchApi).toHaveBeenCalledTimes(2))
+    // The button is disabled for the whole sequential loop and re-enabled in
+    // its `finally`, so waiting on that is the end-of-run signal. Polling the
+    // call count instead races the second download and reports 1 of 2 on a
+    // slow runner.
+    await waitFor(() => expect(download).toBeEnabled())
+
+    // Belt and braces: if the disabled state is ever dropped, the wait above
+    // becomes a no-op, so the count keeps its own bounded retry rather than
+    // silently going back to racing the second download.
+    await waitFor(() => expect(fetchApi).toHaveBeenCalledTimes(2), {
+      timeout: 5000
+    })
     expect(fetchApi).toHaveBeenCalledWith('/view?filename=a.png')
     expect(fetchApi).toHaveBeenCalledWith('/view?filename=mesh.glb')
-    await waitFor(() => expect(revokeObjectURL).toHaveBeenCalledTimes(2))
+    expect(revokeObjectURL).toHaveBeenCalledTimes(2)
   })
 
   it('Escape closes the markdown menu without copying', async () => {
