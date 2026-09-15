@@ -8,6 +8,7 @@ import {
   jsonLdId,
   pageContext,
 } from '../../../utils/jsonLd'
+import { directoryLabel, modelSearchText } from './_search'
 
 const title = t('models.index.title')
 const subtitle = t('models.index.subtitle')
@@ -25,21 +26,6 @@ const modelList = itemListNode(
   })),
 )
 
-const dirLabel: Record<string, string> = {
-  diffusion_models: 'Diffusion',
-  checkpoints: 'Checkpoint',
-  loras: 'LoRA',
-  controlnet: 'ControlNet',
-  clip_vision: 'CLIP Vision',
-  model_patches: 'Patch',
-  vae: 'VAE',
-  text_encoders: 'Text Encoder',
-  audio_encoders: 'Audio Encoder',
-  latent_upscale_models: 'Latent Upscale',
-  upscale_models: 'Upscale',
-  style_models: 'Style',
-  partner_nodes: 'Partner Node'
-}
 ---
 
 <BaseLayout
@@ -66,11 +52,57 @@ const dirLabel: Record<string, string> = {
       <p class="mt-4 max-w-2xl text-lg text-primary-comfy-canvas/70">
         {subtitle}
       </p>
+
+      <div class="relative mt-8">
+        <label for="model-search" class="sr-only">
+          {t('models.index.searchLabel')}
+        </label>
+        <svg
+          class="pointer-events-none absolute top-1/2 left-4 size-4 -translate-y-1/2 text-primary-warm-gray"
+          aria-hidden="true"
+          xmlns="http://www.w3.org/2000/svg"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        >
+          <circle cx="11" cy="11" r="8"></circle>
+          <path d="m21 21-4.3-4.3"></path>
+        </svg>
+        <input
+          id="model-search"
+          type="search"
+          placeholder={t('models.index.searchLabel')}
+          autocomplete="off"
+          aria-keyshortcuts="/"
+          class="h-12 w-full rounded-full bg-transparency-white-t4 pr-12 pl-11 text-sm text-primary-comfy-canvas outline-none placeholder:text-primary-warm-gray focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow/50 max-sm:text-base [&::-webkit-search-cancel-button]:hidden"
+        />
+        <kbd
+          class="pointer-events-none absolute top-1/2 right-4 hidden size-6 -translate-y-1/2 place-items-center rounded-full bg-white/10 text-xs text-primary-comfy-canvas/50 sm:grid"
+        >
+          /
+        </kbd>
+      </div>
     </header>
 
-    <ul class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+    <p
+      id="model-search-empty"
+      role="status"
+      class="hidden text-primary-comfy-canvas/70"
+    >
+      {t('models.index.noResults')}
+    </p>
+
+    <ul
+      id="model-grid"
+      class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
+    >
       {models.map((model) => (
-        <li>
+        <li
+          data-search={modelSearchText(model)}
+        >
           <a
             href={`/p/supported-models/${model.slug}/`}
             class="flex h-full flex-col gap-3 rounded-xl border border-white/10 p-5 transition-colors hover:border-white/25 hover:bg-white/5"
@@ -80,7 +112,7 @@ const dirLabel: Record<string, string> = {
                 {model.displayName}
               </span>
               <span class="shrink-0 rounded-full bg-white/10 px-2 py-0.5 text-xs font-medium text-primary-comfy-canvas/70">
-                {dirLabel[model.directory] ?? model.directory}
+                {directoryLabel[model.directory] ?? model.directory}
               </span>
             </div>
             <p class="mt-auto text-xs text-primary-comfy-canvas/50">
@@ -92,3 +124,50 @@ const dirLabel: Record<string, string> = {
     </ul>
   </div>
 </BaseLayout>
+
+<script>
+  function filterModels(query: string) {
+    const grid = document.getElementById('model-grid')
+    const empty = document.getElementById('model-search-empty')
+    if (!grid || !empty) return
+    const needle = query.trim().toLowerCase()
+    let visible = 0
+    for (const item of grid.querySelectorAll<HTMLElement>(
+      ':scope > li[data-search]'
+    )) {
+      const match = (item.dataset.search ?? '').includes(needle)
+      item.classList.toggle('hidden', !match)
+      if (match) visible += 1
+    }
+    empty.classList.toggle('hidden', visible > 0)
+  }
+
+  document.addEventListener('input', (event) => {
+    if (
+      event.target instanceof HTMLInputElement &&
+      event.target.id === 'model-search'
+    )
+      filterModels(event.target.value)
+  })
+
+  document.addEventListener('keydown', (event) => {
+    const input = document.getElementById('model-search')
+    if (!(input instanceof HTMLInputElement)) return
+    if (event.key === '/' && document.activeElement !== input) {
+      const active = document.activeElement
+      if (
+        active instanceof HTMLElement &&
+        (active instanceof HTMLInputElement ||
+          active instanceof HTMLTextAreaElement ||
+          active.isContentEditable)
+      )
+        return
+      event.preventDefault()
+      input.focus()
+    } else if (event.key === 'Escape' && document.activeElement === input) {
+      input.value = ''
+      filterModels('')
+      input.blur()
+    }
+  })
+</script>
