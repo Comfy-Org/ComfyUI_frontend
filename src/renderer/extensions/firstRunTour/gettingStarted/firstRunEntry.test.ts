@@ -391,6 +391,31 @@ describe('useFirstRunEntry', () => {
       }
     )
 
+    it('is spent by a link that delivers the tour instead of the screen', async () => {
+      requestOnboardingReplay()
+      const entry = useFirstRunEntry()
+
+      await entry.handleStartupOutcome('url-intent')
+      await entry.handleUrlWorkflow('url-intent', 'image_z_image_turbo')
+
+      expect(mocks.beginTour).toHaveBeenCalled()
+      expect(
+        isFirstRunReplayRequested(),
+        'the replay was served as a tour, so a later reload must not re-offer it'
+      ).toBe(false)
+    })
+
+    it('stands when the link refused to start a tour, which served nothing', async () => {
+      requestOnboardingReplay()
+      mocks.beginTour.mockResolvedValue(false)
+      const entry = useFirstRunEntry()
+
+      await entry.handleStartupOutcome('url-intent')
+      await entry.handleUrlWorkflow('url-intent', 'image_z_image_turbo')
+
+      expect(isFirstRunReplayRequested()).toBe(true)
+    })
+
     it('leaves the invariant intact for everyone who did not ask', async () => {
       const entry = useFirstRunEntry()
 

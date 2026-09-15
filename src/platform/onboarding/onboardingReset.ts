@@ -59,8 +59,11 @@ export async function resetOnboardingState(): Promise<void> {
     )
   }
 
-  // The direct write leaves the store's copy stale, and `markTourSeen` is a
+  // The write above leaves the store's copy stale, and `markTourSeen` is a
   // read-modify-write off it: a reset the user then declines to reload away
-  // from would be undone by the next coachmark dismissal.
-  useSettingStore().settingValues[TOUR_SEEN_SETTING] = []
+  // from would be undone by the next coachmark dismissal. Repeating the write
+  // through the store is what refreshes that copy in its own write ordering;
+  // the redundant request is idempotent, and the server is already correct if
+  // it fails.
+  await useSettingStore().set(TOUR_SEEN_SETTING, [])
 }

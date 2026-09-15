@@ -134,7 +134,9 @@ describe('onboarding replay', () => {
 
   test('submitting spends the replay, so the survey does not immediately re-open', async () => {
     requestOnboardingReplay()
-    fetchApi.mockResolvedValueOnce(mockResponse({ ok: true, status: 200 }))
+    fetchApi.mockResolvedValueOnce(
+      mockResponse({ ok: true, status: 200, body: { value: { q1: 'stored' } } })
+    )
 
     await submitSurvey({ q1: 'a' })
 
@@ -162,20 +164,74 @@ describe('onboarding replay', () => {
   })
 
   test('the stored answers survive a replayed pass end to end', async () => {
-    const stored = { q1: 'original', q2: 'kept' }
+    // A stateful fake, so a write during the replay would be visible in the
+    // read that follows it rather than masked by a queued mock.
+    let stored: Record<string, unknown> | undefined = {
+      q1: 'original',
+      q2: 'kept'
+    }
+    fetchApi.mockImplementation(
+      async (_path: string, init?: { method?: string; body?: string }) => {
+        if ((init?.method ?? 'GET') === 'GET') {
+          return stored === undefined
+            ? mockResponse({ ok: false, status: 404 })
+            : mockResponse({ ok: true, status: 200, body: { value: stored } })
+        }
+        stored = JSON.parse(init?.body ?? '{}').onboarding_survey
+        return mockResponse({ ok: true, status: 200 })
+      }
+    )
     requestOnboardingReplay()
 
     await expect(getSurveyCompletedStatus()).resolves.toBe(false)
-
-    fetchApi.mockResolvedValueOnce(
-      mockResponse({ ok: true, status: 200, body: { value: stored } })
-    )
     await submitSurvey({ q1: 'replayed', q2: 'replaced' })
-
-    fetchApi.mockResolvedValueOnce(
-      mockResponse({ ok: true, status: 200, body: { value: stored } })
-    )
     await expect(getSurveyCompletedStatus()).resolves.toBe(true)
+
+    expect(stored).toEqual({ q1: 'original', q2: 'kept' })
+  })
+
+  test.for([401, 403, 500] as const)(
+    'keeps the replay and writes nothing when the stored answers read %s',
+    async (status) => {
+      fetchApi.mockResolvedValueOnce(mockResponse({ ok: false, status }))
+      requestOnboardingReplay()
+
+      await expect(submitSurvey({ q1: 'a' })).rejects.toThrow(
+        'Could not read the stored survey answers'
+      )
+
+      expect(
+        isSurveyReplayRequested(),
+        'an unserved replay must survive so the survey can be retried'
+      ).toBe(true)
+      expect(
+        fetchApi.mock.calls.every(
+          ([, init]) => (init?.method ?? 'GET') === 'GET'
+        ),
+        'refusing to guess means refusing to write'
+      ).toBe(true)
+    }
+  )
+
+  test('keeps the replay and writes nothing when the stored answers cannot be read', async () => {
+    fetchApi.mockRejectedValueOnce(new TypeError('Network request failed'))
+    requestOnboardingReplay()
+
+    await expect(submitSurvey({ q1: 'a' })).rejects.toThrow(
+      'Could not read the stored survey answers'
+    )
+
+    expect(isSurveyReplayRequested()).toBe(true)
+  })
+
+  test('keeps the replay when the first-time write it fell through to fails', async () => {
+    fetchApi.mockResolvedValueOnce(mockResponse({ ok: false, status: 404 }))
+    fetchApi.mockResolvedValueOnce(mockResponse({ ok: false, status: 500 }))
+    requestOnboardingReplay()
+
+    await expect(submitSurvey({ q1: 'a' })).rejects.toThrow()
+
+    expect(isSurveyReplayRequested()).toBe(true)
   })
 
   test('a replay with nothing stored keeps the pass, which is the account real first one', async () => {

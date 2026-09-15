@@ -3624,6 +3624,8 @@
       "placeholder": "Survey questions placeholder",
       "intro": "A few quick questions so we can set up ComfyUI for you.",
       "otherPlaceholder": "Tell us more",
+      "submitFailed": "Could not submit the survey",
+      "submitFailedDetail": "Your answers were not saved. Please try again.",
       "errors": {
         "chooseAnOption": "Please choose an option.",
         "selectAtLeastOne": "Please select at least one option.",

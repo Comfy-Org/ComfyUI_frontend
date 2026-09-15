@@ -35,10 +35,11 @@ describe('resetOnboardingState', () => {
     expect(api.storeSetting).toHaveBeenCalledWith(TOUR_SEEN_SETTING, [])
   })
 
-  it('writes nothing else, so no other onboarding state can be left half-applied', async () => {
+  it('writes no other key, so no further onboarding state can be left half-applied', async () => {
     await resetOnboardingState()
 
-    expect(api.storeSetting).toHaveBeenCalledTimes(1)
+    const keys = vi.mocked(api.storeSetting).mock.calls.map(([key]) => key)
+    expect(new Set(keys)).toEqual(new Set([TOUR_SEEN_SETTING]))
   })
 
   it('never writes the survey key, whose stored answers a write would destroy', async () => {
