@@ -1,5 +1,7 @@
+import type BuilderSaveDialogContent from './BuilderSaveDialogContent.vue'
+import { useDialogService } from '@/services/dialogService'
 import { fromPartial } from '@total-typescript/shoehorn'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 
 import { useTelemetry } from '@/platform/telemetry'
@@ -22,7 +24,7 @@ const mockSaveWorkflow = vi.hoisted(() => vi.fn<() => Promise<void>>())
 const mockSaveWorkflowAs = vi.hoisted(() =>
   vi.fn<() => Promise<boolean | null>>()
 )
-const mockShowLayoutDialog = vi.hoisted(() => vi.fn())
+
 const mockShowConfirmDialog = vi.hoisted(() => vi.fn())
 
 vi.mock<unknown>(import('@/composables/useAppMode'), () => ({
@@ -51,9 +53,7 @@ vi.mock<unknown>(
   })
 )
 
-vi.mock<unknown>(import('@/services/dialogService'), () => ({
-  useDialogService: () => ({ showLayoutDialog: mockShowLayoutDialog })
-}))
+vi.mock(import('@/services/dialogService'))
 
 vi.mock(import('@/components/dialog/confirm/confirmDialog'), () => ({
   showConfirmDialog: mockShowConfirmDialog
@@ -148,7 +148,7 @@ describe('useBuilderSave', () => {
 
       saveAs()
 
-      expect(mockShowLayoutDialog).not.toHaveBeenCalled()
+      expect(useDialogService().showLayoutDialog).not.toHaveBeenCalled()
     })
 
     it('opens save dialog with correct defaultFilename and defaultOpenAsApp', () => {
@@ -160,12 +160,14 @@ describe('useBuilderSave', () => {
 
       saveAs()
 
-      expect(mockShowLayoutDialog).toHaveBeenCalledOnce()
-      const { key, props, dialogComponentProps } =
-        mockShowLayoutDialog.mock.calls[0][0]
+      expect(useDialogService().showLayoutDialog).toHaveBeenCalledOnce()
+      const { key, props, dialogComponentProps } = vi.mocked(
+        useDialogService().showLayoutDialog<typeof BuilderSaveDialogContent>
+      ).mock.calls[0][0]
       expect(key).toBe(SAVE_DIALOG_KEY)
       expect(props.defaultFilename).toBe('my-workflow')
       expect(props.defaultOpenAsApp).toBe(true)
+      assert.exists(dialogComponentProps)
       expect(dialogComponentProps.useAutomaticLabeling).toBe(true)
     })
 
@@ -178,7 +180,9 @@ describe('useBuilderSave', () => {
 
       saveAs()
 
-      const { props } = mockShowLayoutDialog.mock.calls[0][0]
+      const { props } = vi.mocked(
+        useDialogService().showLayoutDialog<typeof BuilderSaveDialogContent>
+      ).mock.calls[0][0]
       expect(props.defaultOpenAsApp).toBe(false)
     })
   })
@@ -191,7 +195,9 @@ describe('useBuilderSave', () => {
       })
       const { saveAs } = useBuilderSave()
       saveAs()
-      return mockShowLayoutDialog.mock.calls[0][0].props as {
+      return vi.mocked(
+        useDialogService().showLayoutDialog<typeof BuilderSaveDialogContent>
+      ).mock.calls[0][0].props as {
         onSave: (filename: string, openAsApp: boolean) => Promise<void>
         onClose: () => void
       }
@@ -322,7 +328,9 @@ describe('useBuilderSave', () => {
       mockSaveWorkflowAs.mockResolvedValueOnce(true)
       const { saveAs } = useBuilderSave()
       saveAs()
-      const { onSave } = mockShowLayoutDialog.mock.calls[0][0].props as {
+      const { onSave } = vi.mocked(
+        useDialogService().showLayoutDialog<typeof BuilderSaveDialogContent>
+      ).mock.calls[0][0].props as {
         onSave: (filename: string, openAsApp: boolean) => Promise<void>
       }
       await onSave('new-name', false)

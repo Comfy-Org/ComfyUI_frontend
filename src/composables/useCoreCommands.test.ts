@@ -1,3 +1,4 @@
+import { useDialogService } from '@/services/dialogService'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -105,12 +106,7 @@ vi.mock<unknown>(
   })
 )
 
-const mockDialogService = vi.hoisted(() => ({
-  prompt: vi.fn()
-}))
-vi.mock<unknown>(import('@/services/dialogService'), () => ({
-  useDialogService: vi.fn(() => mockDialogService)
-}))
+vi.mock(import('@/services/dialogService'))
 
 const mockResetView = vi.hoisted(() => vi.fn())
 vi.mock<unknown>(import('@/services/litegraphService'), () => ({
@@ -402,12 +398,14 @@ describe('useCoreCommands', () => {
 
         await setDescCommand.function()
 
-        expect(mockDialogService.prompt).not.toHaveBeenCalled()
+        expect(useDialogService().prompt).not.toHaveBeenCalled()
       })
 
       it('should set description on subgraph.extra', async () => {
         app.canvas.subgraph = mockSubgraph
-        mockDialogService.prompt.mockResolvedValue('Test description')
+        vi.mocked(useDialogService().prompt).mockResolvedValue(
+          'Test description'
+        )
 
         const commands = useCoreCommands()
         const setDescCommand = commands.find(
@@ -416,14 +414,14 @@ describe('useCoreCommands', () => {
 
         await setDescCommand.function()
 
-        expect(mockDialogService.prompt).toHaveBeenCalled()
+        expect(useDialogService().prompt).toHaveBeenCalled()
         expect(mockSubgraph.extra.BlueprintDescription).toBe('Test description')
         expect(mockChangeTracker.captureCanvasState).toHaveBeenCalled()
       })
 
       it('should not set description when user cancels', async () => {
         app.canvas.subgraph = mockSubgraph
-        mockDialogService.prompt.mockResolvedValue(null)
+        vi.mocked(useDialogService().prompt).mockResolvedValue(null)
 
         const commands = useCoreCommands()
         const setDescCommand = commands.find(
@@ -448,12 +446,14 @@ describe('useCoreCommands', () => {
 
         await setAliasesCommand.function()
 
-        expect(mockDialogService.prompt).not.toHaveBeenCalled()
+        expect(useDialogService().prompt).not.toHaveBeenCalled()
       })
 
       it('should set search aliases on subgraph.extra', async () => {
         app.canvas.subgraph = mockSubgraph
-        mockDialogService.prompt.mockResolvedValue('alias1, alias2, alias3')
+        vi.mocked(useDialogService().prompt).mockResolvedValue(
+          'alias1, alias2, alias3'
+        )
 
         const commands = useCoreCommands()
         const setAliasesCommand = commands.find(
@@ -462,7 +462,7 @@ describe('useCoreCommands', () => {
 
         await setAliasesCommand.function()
 
-        expect(mockDialogService.prompt).toHaveBeenCalled()
+        expect(useDialogService().prompt).toHaveBeenCalled()
         expect(mockSubgraph.extra.BlueprintSearchAliases).toEqual([
           'alias1',
           'alias2',
@@ -473,7 +473,9 @@ describe('useCoreCommands', () => {
 
       it('should trim whitespace and filter empty strings', async () => {
         app.canvas.subgraph = mockSubgraph
-        mockDialogService.prompt.mockResolvedValue('  alias1  ,  , alias2 ,  ')
+        vi.mocked(useDialogService().prompt).mockResolvedValue(
+          '  alias1  ,  , alias2 ,  '
+        )
 
         const commands = useCoreCommands()
         const setAliasesCommand = commands.find(
@@ -490,7 +492,7 @@ describe('useCoreCommands', () => {
 
       it('should set undefined when empty input', async () => {
         app.canvas.subgraph = mockSubgraph
-        mockDialogService.prompt.mockResolvedValue('')
+        vi.mocked(useDialogService().prompt).mockResolvedValue('')
 
         const commands = useCoreCommands()
         const setAliasesCommand = commands.find(
@@ -504,7 +506,7 @@ describe('useCoreCommands', () => {
 
       it('should not set aliases when user cancels', async () => {
         app.canvas.subgraph = mockSubgraph
-        mockDialogService.prompt.mockResolvedValue(null)
+        vi.mocked(useDialogService().prompt).mockResolvedValue(null)
 
         const commands = useCoreCommands()
         const setAliasesCommand = commands.find(
