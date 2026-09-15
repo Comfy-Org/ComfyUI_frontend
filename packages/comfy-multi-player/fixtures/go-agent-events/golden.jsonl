@@ -1,0 +1,9 @@
+{"type":"draft_patch","data":{"workflow_id":"wf-1","content":{"nodes":[]},"version":2,"base_version":1,"thread_id":"th-1","message_id":"m-1"}}
+{"type":"draft_version","data":{"workflow_id":"wf-1","version":2}}
+{"type":"agent_message_delta","data":{"thread_id":"th-1","message_id":"m-1","delta":"hello"}}
+{"type":"agent_tool_call","data":{"thread_id":"th-1","message_id":"m-1","tool_call_id":"tc-1","tool_name":"comfy","status":"success","duration_ms":12}}
+{"type":"agent_message_done","data":{"thread_id":"th-1","message_id":"m-1","usage":{"input":10,"output":20}}}
+{"type":"agent_ask","data":{"thread_id":"th-1","message_id":"m-1","ask_id":"a-1","prompt":"Continue?","options":[{"id":"yes","label":"Yes"}],"min_selections":1,"max_selections":1,"allow_other":false}}
+{"type":"agent_ask_resolved","data":{"thread_id":"th-1","message_id":"m-1","ask_id":"a-1","status":"answered","selected":["yes"]}}
+{"type":"agent_active_tab","data":{"workflow_id":"wf-2","name":"Video","thread_id":"th-1","message_id":"m-1"}}
+{"type":"agent_asset","data":{"hash":"blake3:abc","asset_id":"asset-1","media_type":"image","name":"koala.png","thread_id":"th-1","message_id":"m-1"}}

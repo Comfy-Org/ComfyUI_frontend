@@ -608,6 +608,160 @@
         "count": 1
       }
     },
+    "packages/comfy-multi-player/scripts/bench-read.mjs": {
+      "complexity_critical": {
+        "count": 1
+      },
+      "crap_critical": {
+        "count": 1
+      },
+      "crap_high": {
+        "count": 2
+      },
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "packages/comfy-multi-player/scripts/check-pins.mjs": {
+      "crap_high": {
+        "count": 1
+      },
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "packages/comfy-multi-player/scripts/check-purity.mjs": {
+      "crap_critical": {
+        "count": 1
+      },
+      "crap_high": {
+        "count": 1
+      }
+    },
+    "packages/comfy-multi-player/scripts/gen-coderabbit-config.mjs": {
+      "crap_high": {
+        "count": 2
+      },
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "packages/comfy-multi-player/src/applier.ts": {
+      "complexity_critical": {
+        "count": 2
+      },
+      "complexity_high": {
+        "count": 3
+      },
+      "complexity_moderate": {
+        "count": 1
+      },
+      "crap_critical": {
+        "count": 2
+      },
+      "crap_high": {
+        "count": 4
+      },
+      "crap_moderate": {
+        "count": 6
+      }
+    },
+    "packages/comfy-multi-player/src/doc.ts": {
+      "complexity_moderate": {
+        "count": 1
+      },
+      "crap_critical": {
+        "count": 1
+      }
+    },
+    "packages/comfy-multi-player/src/limits.ts": {
+      "complexity_high": {
+        "count": 1
+      }
+    },
+    "packages/comfy-multi-player/src/mint.ts": {
+      "complexity_high": {
+        "count": 1
+      },
+      "crap_high": {
+        "count": 1
+      }
+    },
+    "packages/comfy-multi-player/src/read.ts": {
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "packages/comfy-multi-player/test/connect-delete-equivalence.permutation.test.ts": {
+      "complexity_critical": {
+        "count": 1
+      },
+      "crap_critical": {
+        "count": 1
+      },
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "packages/comfy-multi-player/test/convergence.test.ts": {
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "packages/comfy-multi-player/test/duplicate-link-id.permutation.test.ts": {
+      "complexity_high": {
+        "count": 1
+      },
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "packages/comfy-multi-player/test/encoding-survival.regression.test.ts": {
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "packages/comfy-multi-player/test/event-schema-drift.test.ts": {
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "packages/comfy-multi-player/test/full-op-pool.permutation.test.ts": {
+      "complexity_critical": {
+        "count": 1
+      },
+      "complexity_high": {
+        "count": 2
+      },
+      "complexity_moderate": {
+        "count": 2
+      },
+      "crap_critical": {
+        "count": 1
+      },
+      "crap_high": {
+        "count": 2
+      },
+      "crap_moderate": {
+        "count": 3
+      }
+    },
+    "packages/comfy-multi-player/test/graph-invariant-oracle.ts": {
+      "complexity_critical": {
+        "count": 1
+      },
+      "crap_critical": {
+        "count": 1
+      }
+    },
+    "packages/comfy-multi-player/test/nested-encoding-loss.regression.test.ts": {
+      "complexity_moderate": {
+        "count": 1
+      },
+      "crap_moderate": {
+        "count": 1
+      }
+    },
     "scripts/bundle-categories.js": {
       "crap_moderate": {
         "count": 1

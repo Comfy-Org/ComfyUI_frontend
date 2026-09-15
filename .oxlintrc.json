@@ -6,6 +6,7 @@
     "components.d.ts",
     "coverage/*",
     "dist/*",
+    "packages/comfy-multi-player/**",
     "packages/registry-types/src/comfyRegistryTypes.ts",
     "playwright-report/*",
     "scripts/patch-playwright-agents.js",

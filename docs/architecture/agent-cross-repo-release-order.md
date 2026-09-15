@@ -3,17 +3,18 @@
 Agent protocol and applier changes must move in this order:
 
 ```text
-comfy-multi-player merge + immutable release
+frontend workspace source merge + immutable comfy-multi-player release
   -> cloud pin + tests + dark deploy + runtime proof
-  -> frontend pin + tests + flag-off deploy
+  -> same frontend revision + tests + flag-off deploy
   -> flags on + authenticated browser canvas/reconnect proof
   -> stable promotion of the exact tested combination
 ```
 
-Frontend is the second consumer. Update `package.json` and `pnpm-lock.yaml` only after the accepted
-`@comfyorg/comfy-multi-player` version is installable and the compatible cloud consumer has deployed.
-Run package-pin/parity checks, unit and browser tests, and prove both product-flag states before
-normal frontend review and merge.
+The frontend consumes `packages/comfy-multi-player/src/index.ts` through the pnpm workspace, so a
+frontend merge is also the package source merge. Tag that exact frontend commit as
+`comfy-multi-player-v<version>` and publish its immutable npm artifact before updating the cloud
+consumer's exact version. Run package-source/parity checks, unit and browser tests, and prove both
+product-flag states before widening exposure.
 
 Deploy the frontend with user exposure off. The integration receipt names exact frontend/cloud
 revisions, the shared package version, and flag values. `agent-in-app-experience` is the
@@ -33,3 +34,4 @@ may merge independently if the PR explains why. Documentation-only changes may p
 - **Dark deploy:** compatible code deployed while user exposure is disabled.
 - **Integrated receipt:** exact revisions, package version, flags, and browser-visible proof.
 - **Consumer pin:** the exact shared-package version recorded in the manifest and lockfile.
+- **Workspace source:** the canonical package TypeScript imported directly by frontend Vite.

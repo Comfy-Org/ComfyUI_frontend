@@ -1,0 +1,17 @@
+{
+  "format_version": 1,
+  "comment": "Canonical WIRE layout of the multiplayer Y.Doc (schema §1). `roots` maps each logical role to the Y.Doc ROOT TYPE NAME as it is spelled inside an encoded Yjs update; `reserved_node_keys` names the per-node keys the doc owns. These strings are a cross-implementation contract, not an internal detail: two replicas that disagree about them cannot exchange a document, because a follower forking from the bootstrap snapshot (KA-10) resolves roots by name. Renaming any of them is a layout break: schema §10 requires a SCHEMA_VERSION bump, a migration step, updated fixtures or a fixture-format note, an amendment section in the schema document, and FE sign-off, plus a matching edit here and in docs/INVARIANTS.md KA-3. test/wire-layout-contract.test.ts holds the four-way name agreement and the SCHEMA_VERSION triple's consistency; it does NOT enforce the bump itself, so read §10 rather than treating a green suite as permission. A second implementation should read this file rather than transcribing the names.",
+  "schema_version": 2,
+  "roots": {
+    "nodes": "nodes",
+    "links": "links",
+    "definitions": "definitions",
+    "meta": "meta",
+    "applied": "__applied",
+    "stamps": "__stamps"
+  },
+  "reserved_node_keys": {
+    "opaque_widgets": "__widgets_opaque",
+    "node_incarnation": "__incarnation"
+  }
+}

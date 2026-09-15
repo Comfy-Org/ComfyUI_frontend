@@ -3,8 +3,9 @@
 # Exits non-zero when any are found and prints fix instructions.
 set -euo pipefail
 
-base_sha="${1:?usage: check-ai-co-authors.sh <base_sha> <head_sha>}"
-head_sha="${2:?usage: check-ai-co-authors.sh <base_sha> <head_sha>}"
+base_sha="${1:?usage: check-ai-co-authors.sh <base_sha> <head_sha> [excluded_revision ...]}"
+head_sha="${2:?usage: check-ai-co-authors.sh <base_sha> <head_sha> [excluded_revision ...]}"
+shift 2
 
 # Known AI coding-agent trailer patterns (case-insensitive).
 # Each entry is an extended-regex fragment matched against Co-authored-by lines.
@@ -68,7 +69,7 @@ done
 
 commit_trailers="$(
     git log --format='  %h: %(trailers:key=Co-authored-by,separator=%x09)' \
-        "${base_sha}..${head_sha}"
+        "${base_sha}..${head_sha}" "$@"
 )"
 violations="$(grep -iE "$regex" <<<"$commit_trailers" || true)"
 

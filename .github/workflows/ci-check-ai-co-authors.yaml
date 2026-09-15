@@ -17,4 +17,10 @@ jobs:
           fetch-depth: 0
 
       - name: Check commits for AI co-author trailers
-        run: bash .github/scripts/check-ai-co-authors.sh "${{ github.event.pull_request.base.sha }}" "${{ github.event.pull_request.head.sha }}"
+        # Preserve the imported comfy-multi-player history byte-for-byte while
+        # continuing to reject AI trailers on commits authored in this repo.
+        run: >-
+          bash .github/scripts/check-ai-co-authors.sh
+          "${{ github.event.pull_request.base.sha }}"
+          "${{ github.event.pull_request.head.sha }}"
+          "^2361050c3e3cc6d210086acdfdf6c35c44cf280c"
