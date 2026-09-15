@@ -76,7 +76,14 @@ vi.mock<unknown>(
 
 const apps: App<Element>[] = []
 
+function mockBillingContext() {
+  const billing = useBillingContext()
+  vi.mocked(useBillingContext).mockReturnValue(billing)
+  return billing
+}
+
 function useResubscribe(): ReturnType<typeof createResubscribe> {
+  mockBillingContext()
   let result: ReturnType<typeof createResubscribe> | undefined
   const app = createApp(
     defineComponent({
@@ -113,7 +120,7 @@ describe('useResubscribe', () => {
 
     await handleResubscribe()
 
-    expect(useBillingContext().resubscribe).not.toHaveBeenCalled()
+    expect(mockBillingContext().resubscribe).not.toHaveBeenCalled()
     expect(useTelemetry()?.trackResubscribeClicked).not.toHaveBeenCalled()
     expect(state.toastAdd).not.toHaveBeenCalled()
     expect(isResubscribing.value).toBe(false)
@@ -127,7 +134,7 @@ describe('useResubscribe', () => {
 
     await handleResubscribe()
 
-    expect(useBillingContext().resubscribe).not.toHaveBeenCalled()
+    expect(mockBillingContext().resubscribe).not.toHaveBeenCalled()
     expect(useTelemetry()?.trackResubscribeClicked).not.toHaveBeenCalled()
     expect(state.toastAdd).not.toHaveBeenCalled()
     expect(isResubscribing.value).toBe(false)
@@ -143,7 +150,7 @@ describe('useResubscribe', () => {
 
     await handleResubscribe()
 
-    expect(useBillingContext().resubscribe).toHaveBeenCalled()
+    expect(mockBillingContext().resubscribe).toHaveBeenCalled()
   })
 
   it('refuses whenever the policy denies it', async () => {
@@ -155,7 +162,7 @@ describe('useResubscribe', () => {
 
     await handleResubscribe()
 
-    expect(useBillingContext().resubscribe).not.toHaveBeenCalled()
+    expect(mockBillingContext().resubscribe).not.toHaveBeenCalled()
   })
 
   it('fires a started event before resubscribe resolves', async () => {
@@ -181,7 +188,7 @@ describe('useResubscribe', () => {
 
     await handleResubscribe()
 
-    expect(useBillingContext().resubscribe).toHaveBeenCalledOnce()
+    expect(mockBillingContext().resubscribe).toHaveBeenCalledOnce()
     expect(useTelemetry()?.trackResubscribeClicked).toHaveBeenCalledOnce()
     expect(useTelemetry()?.trackBillingEvent).not.toHaveBeenCalledWith(
       expect.objectContaining({ stage: 'succeeded' })
@@ -201,14 +208,14 @@ describe('useResubscribe', () => {
   })
 
   it('shows an error and resets loading when resubscription fails', async () => {
-    vi.mocked(useBillingContext().resubscribe).mockRejectedValueOnce(
+    vi.mocked(mockBillingContext().resubscribe).mockRejectedValueOnce(
       new Error('Resubscribe failed for person@example.com')
     )
     const { handleResubscribe, isResubscribing } = useResubscribe()
 
     await handleResubscribe()
 
-    expect(useBillingContext().resubscribe).toHaveBeenCalledOnce()
+    expect(mockBillingContext().resubscribe).toHaveBeenCalledOnce()
     expect(state.toastAdd).toHaveBeenCalledWith(
       expect.objectContaining({
         severity: 'error',
@@ -231,7 +238,7 @@ describe('useResubscribe', () => {
       'checkout initiation rejected',
       500
     )
-    vi.mocked(useBillingContext().resubscribe).mockRejectedValueOnce(
+    vi.mocked(mockBillingContext().resubscribe).mockRejectedValueOnce(
       authStoreError
     )
     const { handleResubscribe } = useResubscribe()
@@ -253,7 +260,7 @@ describe('useResubscribe', () => {
   it('categorizes an AuthStoreError with no status as a network failure, not an api rejection', async () => {
     state.shouldUseWorkspaceBilling = false
     const authStoreError = new AuthStoreError('offline')
-    vi.mocked(useBillingContext().resubscribe).mockRejectedValueOnce(
+    vi.mocked(mockBillingContext().resubscribe).mockRejectedValueOnce(
       authStoreError
     )
     const { handleResubscribe } = useResubscribe()
@@ -271,7 +278,7 @@ describe('useResubscribe', () => {
 
   it('emits started before the awaited resubscribe call resolves', async () => {
     const callOrder: string[] = []
-    vi.mocked(useBillingContext().resubscribe).mockImplementation(async () => {
+    vi.mocked(mockBillingContext().resubscribe).mockImplementation(async () => {
       callOrder.push('resubscribe')
     })
     vi.mocked(useTelemetry()?.trackBillingEvent)?.mockImplementation(

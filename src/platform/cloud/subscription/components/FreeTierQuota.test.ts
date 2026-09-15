@@ -37,10 +37,9 @@ const i18n = createI18n({
 
 describe('FreeTierQuota', () => {
   beforeEach(() => {
-    vi.mocked(useBillingContext).mockReturnValue({
-      ...useBillingContext(),
-      isFreeTier: computed(() => mockIsFreeTier.value)
-    } as const)
+    const billing = useBillingContext()
+    billing.isFreeTier = computed(() => mockIsFreeTier.value)
+    vi.mocked(useBillingContext).mockReturnValue(billing)
 
     mockIsFreeTier.value = true
     mockAvailable.value = 3

@@ -57,16 +57,20 @@ describe('useAccountPreconditionDialog', () => {
   })
 
   it('refreshes the billing snapshot on a credit precondition so exhausted-state surfaces converge', () => {
+    const billing = useBillingContext()
+    vi.mocked(useBillingContext).mockReturnValue(billing)
     useAccountPreconditionDialog().open('credits')
 
-    expect(useBillingContext().fetchStatus).toHaveBeenCalledTimes(1)
-    expect(useBillingContext().fetchBalance).toHaveBeenCalledTimes(1)
+    expect(billing.fetchStatus).toHaveBeenCalledTimes(1)
+    expect(billing.fetchBalance).toHaveBeenCalledTimes(1)
   })
 
   it('does not touch billing state for non-credit preconditions', () => {
+    const billing = useBillingContext()
+    vi.mocked(useBillingContext).mockReturnValue(billing)
     useAccountPreconditionDialog().open('subscription')
 
-    expect(useBillingContext().fetchStatus).not.toHaveBeenCalled()
-    expect(useBillingContext().fetchBalance).not.toHaveBeenCalled()
+    expect(billing.fetchStatus).not.toHaveBeenCalled()
+    expect(billing.fetchBalance).not.toHaveBeenCalled()
   })
 })

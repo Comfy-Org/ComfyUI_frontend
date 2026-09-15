@@ -173,10 +173,9 @@ function mountRunButton(
 }
 
 beforeEach(() => {
-  vi.mocked(useBillingContext).mockReturnValue({
-    ...useBillingContext(),
-    canRunWorkflows: computed(() => mocks.canRunWorkflows.value)
-  } as const)
+  const billing = useBillingContext()
+  billing.canRunWorkflows = computed(() => mocks.canRunWorkflows.value)
+  vi.mocked(useBillingContext).mockReturnValue(billing)
 
   Object.assign(useOnboardingTourStore(), {
     activeTour:

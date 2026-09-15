@@ -118,11 +118,12 @@ function renderTeamCard(props: Record<string, unknown> = {}) {
 
 describe('SubscriptionSuccessWorkspace', () => {
   beforeEach(() => {
-    vi.mocked(useBillingContext).mockReturnValue({
-      ...useBillingContext(),
+    const billing = useBillingContext()
+    Object.assign(billing, {
       maxSeats: computed(() => mockMaxSeats.value),
       occupiedSeats: computed(() => mockOccupiedSeats.value)
-    } as const)
+    })
+    vi.mocked(useBillingContext).mockReturnValue(billing)
 
     mockInviteSubmit.mockReset()
     mockMaxSeats.value = 73

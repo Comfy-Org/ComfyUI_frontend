@@ -451,6 +451,8 @@ describe('billingOperationStore', () => {
     })
 
     it('updates status and shows toast on success', async () => {
+      const billing = useBillingContext()
+      vi.mocked(useBillingContext).mockReturnValue(billing)
       vi.mocked(workspaceApi.getBillingOpStatus).mockResolvedValue({
         id: 'op-1',
         status: 'succeeded',
@@ -467,11 +469,9 @@ describe('billingOperationStore', () => {
       expect(store.hasPendingOperations).toBe(false)
       expect(mockRefreshCapabilities).toHaveBeenCalledOnce()
 
-      expect(
-        useBillingContext().reconcileSubscriptionSuccess
-      ).toHaveBeenCalledOnce()
-      expect(useBillingContext().fetchStatus).not.toHaveBeenCalled()
-      expect(useBillingContext().fetchBalance).not.toHaveBeenCalled()
+      expect(billing.reconcileSubscriptionSuccess).toHaveBeenCalledOnce()
+      expect(billing.fetchStatus).not.toHaveBeenCalled()
+      expect(billing.fetchBalance).not.toHaveBeenCalled()
 
       expect(useToastStore().add).toHaveBeenCalledWith({
         severity: 'success',
@@ -880,16 +880,18 @@ describe('billingOperationStore', () => {
     })
 
     it('resolves the terminal promise even if reconciliation throws synchronously', async () => {
+      const billing = useBillingContext()
+      vi.mocked(useBillingContext).mockReturnValue(billing)
       vi.mocked(workspaceApi.getBillingOpStatus).mockResolvedValue({
         id: 'op-1',
         status: 'succeeded',
         started_at: new Date().toISOString()
       })
-      vi.mocked(
-        useBillingContext().reconcileSubscriptionSuccess
-      ).mockImplementationOnce(() => {
-        throw new Error('reconcile failed')
-      })
+      vi.mocked(billing.reconcileSubscriptionSuccess).mockImplementationOnce(
+        () => {
+          throw new Error('reconcile failed')
+        }
+      )
 
       const store = useBillingOperationStore()
       const terminal = store.startOperation('op-1', 'subscription')
@@ -2456,6 +2458,8 @@ describe('billingOperationStore', () => {
     })
 
     it('resolves with the succeeded operation and refreshes status', async () => {
+      const billing = useBillingContext()
+      vi.mocked(useBillingContext).mockReturnValue(billing)
       vi.mocked(workspaceApi.getBillingOpStatus).mockResolvedValue({
         id: 'op-1',
         status: 'succeeded',
@@ -2469,7 +2473,7 @@ describe('billingOperationStore', () => {
       const operation = await terminal
 
       expect(operation.status).toBe('succeeded')
-      expect(useBillingContext().fetchStatus).toHaveBeenCalled()
+      expect(billing.fetchStatus).toHaveBeenCalled()
       expect(
         useTeamWorkspaceStore().updateActiveWorkspace
       ).toHaveBeenCalledWith({
@@ -2486,7 +2490,9 @@ describe('billingOperationStore', () => {
     })
 
     it('resolves the terminal outcome even when the post-success refresh fails', async () => {
-      vi.mocked(useBillingContext().fetchStatus).mockRejectedValueOnce(
+      const billing = useBillingContext()
+      vi.mocked(useBillingContext).mockReturnValue(billing)
+      vi.mocked(billing.fetchStatus).mockRejectedValueOnce(
         new Error('refresh failed')
       )
       vi.mocked(workspaceApi.getBillingOpStatus).mockResolvedValue({
