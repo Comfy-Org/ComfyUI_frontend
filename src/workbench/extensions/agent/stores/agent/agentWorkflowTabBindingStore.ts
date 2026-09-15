@@ -83,6 +83,10 @@ export const useAgentWorkflowTabBindingStore = defineStore(
       return undefined
     }
 
-    return { bind, unbind, matchesWorkflow, tabPathFor, workflowIdFor }
+    function clear(): void {
+      tabByWorkflow.value = {}
+    }
+
+    return { bind, unbind, matchesWorkflow, tabPathFor, workflowIdFor, clear }
   }
 )

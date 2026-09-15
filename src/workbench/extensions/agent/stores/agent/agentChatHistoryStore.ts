@@ -98,6 +98,13 @@ export const useAgentChatHistoryStore = defineStore('agentChatHistory', () => {
     activeId.value = id
   }
 
+  function clear(): void {
+    sessions.value = []
+    activeId.value = null
+    customTitles.value = {}
+    deletedIds.value = []
+  }
+
   return {
     sessions,
     activeId,
@@ -106,6 +113,7 @@ export const useAgentChatHistoryStore = defineStore('agentChatHistory', () => {
     rename,
     remove,
     replaceAll,
-    setActive
+    setActive,
+    clear
   }
 })
