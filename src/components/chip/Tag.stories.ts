@@ -16,13 +16,15 @@ const meta: Meta<typeof Tag> = {
       control: 'select',
       options: ['default', 'unselected', 'selected']
     },
-    removable: { control: 'boolean' }
+    removable: { control: 'boolean' },
+    interactive: { control: 'boolean' }
   },
   args: {
     label: 'Tag',
     shape: 'square',
     state: 'default',
-    removable: false
+    removable: false,
+    interactive: false
   }
 }
 
@@ -49,6 +51,19 @@ export const Removable: Story = {
   args: {
     label: 'Tag',
     removable: true
+  }
+}
+
+export const Interactive: Story = {
+  render: (args) => ({
+    components: { Tag },
+    setup: () => ({ args }),
+    template: '<Tag v-bind="args" role="button" tabindex="0" />'
+  }),
+  args: {
+    label: 'A workflow reference with a long descriptive name',
+    interactive: true,
+    class: 'max-w-48'
   }
 }
 
