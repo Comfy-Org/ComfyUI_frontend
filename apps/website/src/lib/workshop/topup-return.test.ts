@@ -125,12 +125,15 @@ describe('announceTopUpReturnFromLocation', () => {
     expect(closeChannel).toHaveBeenCalledOnce()
   })
 
-  it('falls back to storage when direct messaging is unavailable', () => {
-    vi.stubGlobal('BroadcastChannel', undefined)
-    onTestFinished(() => {
-      vi.unstubAllGlobals()
-      vi.restoreAllMocks()
-    })
+  it('falls back to storage when channel messaging throws', () => {
+    vi.stubGlobal(
+      'BroadcastChannel',
+      class {
+        constructor() {
+          throw new Error('blocked')
+        }
+      }
+    )
     const setItem = vi.spyOn(Storage.prototype, 'setItem')
     const removeItem = vi.spyOn(Storage.prototype, 'removeItem')
     window.history.replaceState(
