@@ -55,6 +55,8 @@ function isTeamPlanSlug(planSlug: string | null | undefined): boolean {
  *
  * @example
  * ```typescript
+ * import { formatCreditsFromCents } from '@/base/credits/comfyCredits'
+ *
  * const {
  *   type,
  *   subscription,
@@ -72,10 +74,10 @@ function isTeamPlanSlug(planSlug: string | null | undefined): boolean {
  *   console.log(`Tier: ${subscription.value.tier}`)
  * }
  *
- * // Check balance
+ * // Check balance (the *Micros fields are cents - see BalanceInfo)
  * if (balance.value) {
- *   const dollars = balance.value.amountMicros / 1_000_000
- *   console.log(`Balance: $${dollars.toFixed(2)}`)
+ *   const credits = formatCreditsFromCents({ cents: balance.value.amountMicros })
+ *   console.log(`Balance: ${credits} credits`)
  * }
  * ```
  */
