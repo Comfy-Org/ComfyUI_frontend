@@ -30,7 +30,10 @@ watch(
   >
     <slot />
   </div>
-  <div v-if="!mounted || (settled && !enabled)">
+  <div v-if="!mounted || !settled">
+    <slot name="loading" />
+  </div>
+  <div v-else-if="!enabled">
     <slot name="fallback" />
   </div>
 </template>

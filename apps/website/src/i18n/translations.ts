@@ -9820,6 +9820,11 @@ Enterprise`
   'workshop.run.cancel': { en: 'Cancel', 'zh-CN': '取消' },
   'workshop.run.running': { en: 'Generating…', 'zh-CN': '生成中…' },
   'workshop.load.pending': { en: 'Loading Models', 'zh-CN': '正在加载模型' },
+  'workshop.load.models': { en: 'Loading models', 'zh-CN': '正在加载模型' },
+  'workshop.load.playground': {
+    en: 'Loading your playground',
+    'zh-CN': '正在加载你的工作台'
+  },
   'workshop.load.failed': {
     en: 'Models did not load.',
     'zh-CN': '模型未能加载。'

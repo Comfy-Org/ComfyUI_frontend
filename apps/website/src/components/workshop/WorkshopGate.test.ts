@@ -31,6 +31,7 @@ describe('WorkshopGate', () => {
             {
               default: () =>
                 h('a', { href: '/models/private/' }, 'Private catalogue'),
+              loading: () => h('h1', 'Loading'),
               fallback: () => h('h1', 'Public models')
             }
           )
@@ -42,7 +43,6 @@ describe('WorkshopGate', () => {
       `<html><body><main>${html}</main></body></html>`,
       'https://comfy.org/'
     )
-    expect(page.body).toContain('Public models')
     expect(page.body).not.toContain('Private catalogue')
     expect(page.body).not.toContain('/models/private/')
   })
@@ -51,9 +51,11 @@ describe('WorkshopGate', () => {
     render(WorkshopGate, {
       slots: {
         default: '<h1>Instant render</h1>',
+        loading: '<h1>Loading</h1>',
         fallback: '<h1>Public models</h1>'
       }
     })
+    await nextTick()
     expect(screen.getByRole('heading').textContent).toBe('Public models')
     expect(screen.queryByText('Instant render')).toBeNull()
     enabled.value = true
@@ -65,21 +67,37 @@ describe('WorkshopGate', () => {
     expect(screen.queryByRole('heading', { name: 'Instant render' })).toBeNull()
   })
 
-  it('shows neither branch while a staff visibility answer is pending', async () => {
+  it('shows the loading slot, not the fallback, while a visibility answer is pending', async () => {
     settled.value = false
     render(WorkshopGate, {
       slots: {
         default: '<h1>Instant render</h1>',
+        loading: '<h1>Loading</h1>',
         fallback: '<h1>Public models</h1>'
       }
     })
     await nextTick()
-    expect(screen.queryByRole('heading')).toBeNull()
+    expect(screen.getByRole('heading').textContent).toBe('Loading')
+    expect(screen.queryByText('Public models')).toBeNull()
+    expect(screen.queryByText('Instant render')).toBeNull()
 
     enabled.value = true
     settled.value = true
     await nextTick()
     expect(screen.getByRole('heading').textContent).toBe('Instant render')
+  })
+
+  it('shows the public fallback, not the loading slot, once the answer settles to disabled', async () => {
+    render(WorkshopGate, {
+      slots: {
+        default: '<h1>Instant render</h1>',
+        loading: '<h1>Loading</h1>',
+        fallback: '<h1>Public models</h1>'
+      }
+    })
+    await nextTick()
+    expect(screen.getByRole('heading').textContent).toBe('Public models')
+    expect(screen.queryByText('Loading')).toBeNull()
   })
 
   it('removes portalled catalogue controls when access is revoked', async () => {
