@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
 import { useClipboard, useEventListener } from '@vueuse/core'
+import type { AcceptableValue } from 'reka-ui'
 import type { ComponentPublicInstance } from 'vue'
 import {
   computed,
@@ -181,6 +182,12 @@ function focusButton(
         ? control.$el
         : null
   button?.focus()
+}
+
+function selectTab(value: AcceptableValue | AcceptableValue[]): void {
+  if (value === 'status' || value === 'log' || value === 'merge') {
+    tab.value = value
+  }
 }
 
 function readOpen(): boolean {
@@ -745,10 +752,11 @@ function fmtTime(at: number): string {
       </header>
 
       <ToggleGroup
-        v-model="tab"
+        :model-value="tab"
         type="single"
         class="shrink-0 border-b border-component-node-border p-1"
         :aria-label="t(`${i18nKey}.tabs`)"
+        @update:model-value="selectTab"
       >
         <ToggleGroupItem
           v-for="entry in tabs"

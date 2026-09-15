@@ -107,6 +107,22 @@ describe('CrdtDevPanel', () => {
     expect(sheet()).toHaveTextContent('7')
   })
 
+  it('keeps the active tab selected when activated again', async () => {
+    const user = userEvent.setup()
+    renderPanel()
+    await user.click(chip()!)
+
+    const statusTab = screen.getByTestId('crdt-dev-panel-tab-status')
+    await user.click(statusTab)
+    expect(statusTab).toHaveAttribute('aria-pressed', 'true')
+    expect(sheet()).toHaveTextContent('doc-1')
+
+    statusTab.focus()
+    await user.keyboard(' ')
+    expect(statusTab).toHaveAttribute('aria-pressed', 'true')
+    expect(sheet()).toHaveTextContent('doc-1')
+  })
+
   it('moves focus into the panel and restores it after Escape closes', async () => {
     const user = userEvent.setup()
     renderPanel()
