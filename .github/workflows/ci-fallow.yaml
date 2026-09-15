@@ -59,11 +59,20 @@ jobs:
           RESULTS: fallow-results.json
         run: |
           set -euo pipefail
+          # An audit that never completed is not a finding against the PR, so it
+          # reports withheld rather than fail — the same distinction the
+          # renderer already makes for an error envelope.
+          completed=true
           if [ -s "$RESULTS" ]; then
             npx tsx scripts/cicd/fallow-findings.ts "$RESULTS" > fallow-findings.md
+            if grep -q '"error"[[:space:]]*:[[:space:]]*true' "$RESULTS"; then
+              completed=false
+            fi
           else
+            completed=false
             printf 'Fallow produced no results file — the audit step failed before it could write one.\n' > fallow-findings.md
           fi
+          echo "completed=$completed" >> "$GITHUB_OUTPUT"
           cat fallow-findings.md
 
       - name: Explain the verdict
@@ -73,7 +82,7 @@ jobs:
           slug: fallow
           title: Fallow
           icon: '🌾'
-          status: ${{ steps.audit.outcome == 'success' && 'pass' || 'fail' }}
+          status: ${{ steps.findings.outputs.completed == 'false' && 'withheld' || steps.audit.outcome == 'success' && 'pass' || 'fail' }}
           headline: >-
             Fallow audits the diff for duplication, complexity and dead code.
             It gates on **new** findings only, so when the audit completes, a
