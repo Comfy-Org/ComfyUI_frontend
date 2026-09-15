@@ -17,7 +17,9 @@
         <slot name="name-suffix" />
       </span>
     </div>
-    <div class="form-input flex justify-end">
+    <div
+      class="form-input flex justify-end [&_.input-knob_.knob-part]:w-32 [&_.input-slider_.slider-part]:w-20 [&>input]:w-44"
+    >
       <component
         :is="markRaw(getFormComponent(props.item))"
         :id="props.id"
@@ -130,17 +132,3 @@ function getFormComponent(item: FormItem): Component {
   }
 }
 </script>
-
-<style scoped>
-.form-input :deep(.input-slider) .slider-part {
-  width: 5rem;
-}
-
-.form-input :deep(.input-knob) .knob-part {
-  width: 8rem;
-}
-
-.form-input > input {
-  width: 11rem;
-}
-</style>

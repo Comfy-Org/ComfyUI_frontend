@@ -61,6 +61,8 @@ import { computed, ref, useId, watch } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
+import { formatNumberInput } from './formatNumberInput'
+
 const {
   min = 0,
   max = Infinity,
@@ -117,36 +119,6 @@ function clamp(value: number, minVal: number, maxVal: number): number {
   return Math.min(Math.max(value, minVal), maxVal)
 }
 
-function formatWithCursor(
-  value: string,
-  cursorPos: number,
-  num: number
-): { formatted: string; newCursor: number } {
-  const formatted = formatNumber(num)
-
-  const digitsBeforeCursor = value
-    .slice(0, cursorPos)
-    .replace(/[^0-9]/g, '').length
-
-  let digitCount = 0
-  let newCursor = 0
-  for (let i = 0; i < formatted.length; i++) {
-    if (/[0-9]/.test(formatted[i])) {
-      digitCount++
-    }
-    if (digitCount >= digitsBeforeCursor) {
-      newCursor = i + 1
-      break
-    }
-  }
-
-  if (digitCount < digitsBeforeCursor) {
-    newCursor = formatted.length
-  }
-
-  return { formatted, newCursor }
-}
-
 function getStepAmount(): number {
   return typeof step === 'function' ? step(modelValue.value) : step
 }
@@ -177,11 +149,13 @@ function handleInputChange(e: Event) {
     return
   }
 
-  const { formatted, newCursor } = formatWithCursor(
-    wasClamped ? formatNumber(clamped) : raw,
-    wasClamped ? formatNumber(clamped).length : cursorPos,
-    clamped
-  )
+  const { formatted, newCursor } = formatNumberInput({
+    raw,
+    cursor: cursorPos,
+    value: clamped,
+    formatOptions,
+    resetCursor: wasClamped
+  })
   inputValue.value = formatted
 
   requestAnimationFrame(() => {
