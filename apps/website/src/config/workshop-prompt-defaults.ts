@@ -28,7 +28,7 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 }
 
 const INTERNAL_PLACEHOLDER =
-  /\b(?:billing|payment|api|integration|smoke)\s+(?:verification|validation)?\s*test\b|\btest\s+(?:prompt|string|placeholder|value|input)\b|\bverification\s+test\b|\bplaceholder\s+text\b|\blorem\s+ipsum\b/i
+  /^\s*this\s+is\s+(?:a|an|the)\b[^.?!]*\b(?:billing|payment|verification|validation|integration|smoke|load|api|qa)\s+test\b|\b(?:test\s+(?:prompt|string|input)|placeholder\s+(?:text|value)|dummy\s+text|lorem\s+ipsum)\b/i
 
 function isPrompt(value: unknown): value is string {
   return typeof value === 'string' && value.trim().length > 0

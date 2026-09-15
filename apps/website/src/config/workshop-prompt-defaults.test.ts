@@ -113,6 +113,13 @@ describe('starter prompts', () => {
     expect(validateForm(schemaForModel(ttsModel), defaults)).toEqual({})
   })
 
+  it('keeps a creative prompt that merely mentions a test', () => {
+    const prompt = 'A scientist runs an integration test in a neon-lit lab.'
+    expect(workshopPromptDefaults(model, [display(prompt)])).toEqual({
+      promptText: prompt
+    })
+  })
+
   it('uses a predefined prompt when an example is missing or blank, without inventing media', () => {
     const defaults = workshopPromptDefaults(model, [display('   ')])
     const schema = schemaForModel(model)
