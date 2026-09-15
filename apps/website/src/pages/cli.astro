@@ -1,0 +1,48 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro'
+import AIModelsSection from '../components/product/shared/AIModelsSection.vue'
+import ProductCardsSection from '../components/common/ProductCardsSection.vue'
+import HeroSection from '../templates/cli/HeroSection.vue'
+import SetupSection from '../templates/cli/SetupSection.vue'
+import SessionSection from '../templates/cli/SessionSection.vue'
+import SkillsSection from '../templates/cli/SkillsSection.vue'
+import AgentsSection from '../templates/cli/AgentsSection.vue'
+import WhySection from '../templates/cli/WhySection.vue'
+import HowItWorksSection from '../templates/cli/HowItWorksSection.vue'
+import FAQSection from '../templates/cli/FAQSection.vue'
+import { cliPageJsonLd } from '../templates/cli/jsonLd'
+import { cliModelCards } from '../templates/cli/modelCards'
+import { t } from '../i18n/translations'
+import { absoluteUrl, pageContext } from '../utils/jsonLd'
+
+const { siteUrl, locale, url } = pageContext(
+  Astro.site,
+  Astro.url.pathname,
+  Astro.currentLocale,
+)
+const { softwareId, nodes: cliJsonLd } = cliPageJsonLd(siteUrl, url, locale)
+---
+
+<BaseLayout
+  title={t('cli.meta.title', 'en')}
+  description={t('cli.meta.description', 'en')}
+  mainEntityId={softwareId}
+  breadcrumbs={[
+    { name: t('breadcrumb.home', locale), url: absoluteUrl(Astro.site, '/') },
+    { name: t('breadcrumb.cli', locale) },
+  ]}
+  extraJsonLd={cliJsonLd}
+  keywords={['comfy cli', 'comfyui cli', 'comfyui command line', 'comfyui terminal', 'comfyui automation', 'comfyui ci', 'ai cli for coding agents', 'claude code image generation', 'comfyui batch generation']}
+  ogImage="https://media.comfy.org/website/cli/og-v2.jpg"
+>
+  <HeroSection locale="en" client:load />
+  <SetupSection locale="en" client:visible />
+  <SessionSection locale="en" client:visible />
+  <SkillsSection locale="en" client:visible />
+  <AIModelsSection locale="en" cards={cliModelCards} client:visible />
+  <AgentsSection locale="en" />
+  <WhySection locale="en" />
+  <HowItWorksSection locale="en" />
+  <ProductCardsSection locale="en" label-key="products.labelProducts" />
+  <FAQSection client:visible locale="en" />
+</BaseLayout>

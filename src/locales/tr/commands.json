@@ -278,9 +278,6 @@
   "Comfy_Subgraph_SetSearchAliases": {
     "label": "Alt Grafik Arama Takma Adlarını Ayarla"
   },
-  "Comfy_ToggleAssetAPI": {
-    "label": "Deneysel: AssetAPI'yi Etkinleştir"
-  },
   "Comfy_ToggleCanvasInfo": {
     "label": "Tuval Performansı"
   },

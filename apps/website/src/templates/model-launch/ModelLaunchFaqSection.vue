@@ -12,8 +12,8 @@ const { locale = 'en', faq } = defineProps<{
 
 const faqs = faq.items.map((item) => ({
   id: item.id,
-  question: item.question[locale],
-  answer: item.answer[locale]
+  question: item.question[locale] || item.question.en,
+  answer: item.answer[locale] || item.answer.en
 }))
 </script>
 

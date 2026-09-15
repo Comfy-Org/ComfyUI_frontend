@@ -11,10 +11,15 @@ defineProps<{ item: NavColumnItem; locale: Locale }>()
 <template>
   <span class="flex items-center gap-2">
     <span class="ppformula-text-center">{{ item.label }}</span>
-    <NewBadge v-if="item.badge" :locale="locale" size="xs" />
+    <NewBadge
+      v-if="item.badge"
+      :locale="locale"
+      size="xs"
+      :label="item.badge"
+    />
     <ArrowUpRight
       v-if="item.external"
-      class="text-primary-comfy-yellow size-4"
+      class="size-4 text-primary-comfy-yellow"
     />
   </span>
 </template>

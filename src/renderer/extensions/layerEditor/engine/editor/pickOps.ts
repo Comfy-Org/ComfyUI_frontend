@@ -1,5 +1,5 @@
 import type { ContentStore } from '../content'
-import type { GroupData, RasterData, SceneNode, Vec2 } from '../node'
+import type { RasterData, SceneNode, Vec2 } from '../node'
 import { toLocalFrame } from '../tools/transformMath'
 
 export const PICK_OPACITY_THRESHOLD = 0.25
@@ -10,31 +10,23 @@ export type AlphaSampler = (
   y: number
 ) => number
 
-const sampleCache = new WeakMap<
-  HTMLCanvasElement,
-  CanvasRenderingContext2D | null
->()
-
 function defaultAlphaSampler(
   canvas: HTMLCanvasElement,
   x: number,
   y: number
 ): number {
-  let ctx = sampleCache.get(canvas)
-  if (ctx === undefined) {
-    try {
-      ctx = canvas.getContext('2d', { willReadFrequently: true })
-    } catch {
-      ctx = null
-    }
-    sampleCache.set(canvas, ctx)
+  let ctx: CanvasRenderingContext2D | null
+  try {
+    ctx = canvas.getContext('2d', { willReadFrequently: true })
+  } catch {
+    ctx = null
   }
   if (!ctx) return 1
   try {
     const px = Math.max(0, Math.min(canvas.width - 1, Math.floor(x)))
     const py = Math.max(0, Math.min(canvas.height - 1, Math.floor(y)))
     const data = ctx.getImageData(px, py, 1, 1).data
-    return (data[3] ?? 255) / 255
+    return (data.at(3) ?? 255) / 255
   } catch {
     return 1
   }
@@ -74,14 +66,14 @@ export function layerOpacityAt(
   switch (node.kind) {
     case 'group': {
       let best = 0
-      for (const child of (node as GroupData).children) {
+      for (const child of node.children) {
         best = Math.max(best, layerOpacityAt(child, pt, content, sample))
         if (best >= 1) break
       }
-      return best
+      return best * node.opacity
     }
     case 'raster':
-      return rasterAlphaAt(node as RasterData, pt, content, sample)
+      return rasterAlphaAt(node, pt, content, sample)
     default:
       return boxAlphaAt(node, pt)
   }

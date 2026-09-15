@@ -111,9 +111,7 @@ export async function runMissingModelPipeline({
 
   const getDirectory = (nodeType: string) =>
     useModelToNodeStore().getCategoryForNodeType(nodeType)
-  const isAssetBrowserWidget = isCloud
-    ? assetService.shouldUseAssetBrowser
-    : () => false
+  const isAssetBrowserWidget = assetService.shouldUseWidgetAssetPicker
 
   const candidates = scanAllModelCandidates(
     graph,
@@ -173,7 +171,7 @@ export async function runMissingModelPipeline({
             severity: 'warn',
             summary: st(
               'toastMessages.missingModelVerificationFailed',
-              'Failed to verify missing models. Some models may not be shown in the Errors tab.'
+              'Failed to verify missing models. Some models may not be shown in the Issues tab.'
             ),
             life: 5000
           })

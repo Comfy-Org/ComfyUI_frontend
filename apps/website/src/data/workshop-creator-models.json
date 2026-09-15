@@ -1,0 +1,337 @@
+{
+  "models": {
+    "beeble/switchx": { "family": "flat" },
+    "bfl/flux-3-video": {
+      "family": "bfl-video"
+    },
+    "bria/fibo": {
+      "family": "bria-edit"
+    },
+    "bria/image-edit-expand": {
+      "family": "bria-expand"
+    },
+    "byteplus/dreamina-seedance-2-0-fast-260128": {
+      "family": "seedance",
+      "options": {
+        "mode": "mixed"
+      }
+    },
+    "byteplus/dreamina-seedance-2-0-mini": {
+      "family": "seedance",
+      "options": {
+        "mode": "mixed"
+      }
+    },
+    "byteplus/dreamina-seedance-2-5-260628": {
+      "family": "seedance",
+      "options": {
+        "mode": "mixed"
+      }
+    },
+    "byteplus/seed-audio-1.0": {
+      "family": "flat"
+    },
+    "byteplus/seed-2-0-lite-260228": {
+      "family": "text-input"
+    },
+    "byteplus/seed-2-0-mini-260215": {
+      "family": "text-input"
+    },
+    "byteplus/seed-2-0-pro-260328": {
+      "family": "text-input"
+    },
+    "byteplus/seed-audio-1.0-multilingual": {
+      "family": "flat"
+    },
+    "byteplus/seedance-1-0-lite-i2v-250428": {
+      "family": "seedance",
+      "options": {
+        "mode": "image"
+      }
+    },
+    "byteplus/seedance-1-0-lite-t2v-250428": {
+      "family": "seedance",
+      "options": {
+        "mode": "text"
+      }
+    },
+    "byteplus/seedream-3-0-t2i-250415": {
+      "family": "seedream"
+    },
+    "byteplus/seedream-4-0-250828": {
+      "family": "seedream"
+    },
+    "byteplus/seedream-4-5-251128": {
+      "family": "seedream"
+    },
+    "byteplus/seedream-5-0-260128": {
+      "family": "seedream"
+    },
+    "byteplus/seedream-5-0-pro-260628": {
+      "family": "seedream"
+    },
+    "elevenlabs/eleven_v3": {
+      "family": "dialogue"
+    },
+    "gemini-interactions/gemini-omni-1.1-flash": {
+      "family": "gemini-video"
+    },
+    "gemini-interactions/gemini-omni-flash-preview": {
+      "family": "gemini-video"
+    },
+    "ideogram/ideogram-v3": {
+      "family": "flat"
+    },
+    "ideogram/ideogram-v4": {
+      "family": "ideogram"
+    },
+    "kling/kling-3.0-turbo": {
+      "family": "nested-settings"
+    },
+    "kling/kling-v1": {
+      "family": "flat"
+    },
+    "kling/kling-v1-5": {
+      "family": "flat"
+    },
+    "kling/kling-v2-5-turbo": {
+      "family": "flat"
+    },
+    "kling/kling-v2-6": {
+      "family": "flat"
+    },
+    "kling/kling-v3": {
+      "family": "flat"
+    },
+    "kling/videos-avatar-image2video": {
+      "family": "kling-avatar"
+    },
+    "kling/videos-lip-sync": {
+      "family": "kling-lip-sync"
+    },
+    "krea/krea-2-large": {
+      "family": "flat"
+    },
+    "krea/krea-2-medium": {
+      "family": "flat"
+    },
+    "krea/krea-2-medium-turbo": {
+      "family": "flat"
+    },
+    "luma/photon-1": {
+      "family": "luma-image"
+    },
+    "luma/photon-flash-1": {
+      "family": "luma-image"
+    },
+    "luma/ray-2": {
+      "family": "luma-video"
+    },
+    "luma/ray-flash-2": {
+      "family": "luma-video"
+    },
+    "luma_2/uni-1": {
+      "family": "luma-image",
+      "options": { "agents": true }
+    },
+    "luma_2/uni-1-max": {
+      "family": "luma-image",
+      "options": { "agents": true }
+    },
+    "meshy/animations": {
+      "family": "flat"
+    },
+    "meshy/remesh": {
+      "family": "meshy-source"
+    },
+    "meshy/rigging": {
+      "family": "meshy-source"
+    },
+    "qwen/qwen-image-3.0": {
+      "family": "qwen-image"
+    },
+    "qwen/qwen-image-3.0-pro": {
+      "family": "qwen-image"
+    },
+    "recraft/recraftv3": {
+      "family": "flat"
+    },
+    "recraft/recraftv4": {
+      "family": "flat"
+    },
+    "recraft/recraftv4_1": {
+      "family": "flat"
+    },
+    "recraft/recraftv4_1_pro": {
+      "family": "flat"
+    },
+    "recraft/recraftv4_1_pro_vector": {
+      "family": "flat"
+    },
+    "recraft/recraftv4_1_utility": {
+      "family": "flat"
+    },
+    "recraft/recraftv4_1_utility_pro": {
+      "family": "flat"
+    },
+    "recraft/recraftv4_1_utility_pro_vector": {
+      "family": "flat"
+    },
+    "recraft/recraftv4_1_utility_vector": {
+      "family": "flat"
+    },
+    "recraft/recraftv4_1_vector": {
+      "family": "flat"
+    },
+    "recraft/recraftv4_pro": {
+      "family": "flat"
+    },
+    "runway/aleph2": {
+      "family": "flat"
+    },
+    "runway/gen4_image": {
+      "family": "runway-image",
+      "options": {
+        "mode": "reference"
+      }
+    },
+    "runway/gen4_turbo": {
+      "family": "runway-image",
+      "options": {
+        "mode": "first-frame"
+      }
+    },
+    "tencent/hunyuan-3d-part": {
+      "family": "tencent-file",
+      "options": {
+        "field": "File"
+      }
+    },
+    "tencent/hunyuan-3d-smart-topology": {
+      "family": "tencent-file",
+      "options": {
+        "field": "File3D"
+      }
+    },
+    "tencent/hunyuan-3d-texture-edit": {
+      "family": "tencent-file",
+      "options": {
+        "field": "File3D"
+      }
+    },
+    "tencent/hunyuan-3d-uv": {
+      "family": "tencent-file",
+      "options": {
+        "field": "File"
+      }
+    },
+    "veo/veo-3.1-generate-001": {
+      "family": "veo"
+    },
+    "vertexai/gemini-2.5-flash-image": {
+      "family": "gemini-image"
+    },
+    "vertexai/gemini-3-pro-image": {
+      "family": "gemini-image"
+    },
+    "vertexai/gemini-3.1-flash-image": {
+      "family": "gemini-image"
+    },
+    "wan/happyhorse-1.0-video-edit": {
+      "family": "wan-media",
+      "options": {
+        "mode": "edit"
+      }
+    },
+    "wan/happyhorse-1.1-i2v": {
+      "family": "wan-media",
+      "options": {
+        "mode": "image"
+      }
+    },
+    "wan/happyhorse-1.1-r2v": {
+      "family": "wan-media",
+      "options": {
+        "mode": "reference"
+      }
+    },
+    "wan/happyhorse-1.1-t2v": {
+      "family": "wan-media",
+      "options": {
+        "mode": "text"
+      }
+    },
+    "wan/wan2.5-i2i-preview": {
+      "family": "wan-media",
+      "options": {
+        "mode": "image-edit"
+      }
+    },
+    "wan/wan2.5-t2i-preview": {
+      "family": "wan-media",
+      "options": {
+        "mode": "text"
+      }
+    },
+    "wan/wan2.6-i2v": {
+      "family": "wan-media",
+      "options": {
+        "mode": "image"
+      }
+    },
+    "wan/wan2.6-r2v": {
+      "family": "wan-media",
+      "options": {
+        "mode": "reference-video"
+      }
+    },
+    "wan/wan2.6-t2v": {
+      "family": "wan-media",
+      "options": {
+        "mode": "text"
+      }
+    },
+    "wan/wan2.7-i2v": {
+      "family": "wan-media",
+      "options": {
+        "mode": "image"
+      }
+    },
+    "wan/wan2.7-r2v": {
+      "family": "wan-media",
+      "options": {
+        "mode": "reference"
+      }
+    },
+    "wan/wan2.7-t2v": {
+      "family": "wan-media",
+      "options": {
+        "mode": "text"
+      }
+    },
+    "wan/wan2.7-videoedit": {
+      "family": "wan-media",
+      "options": {
+        "mode": "edit"
+      }
+    },
+    "wan/wan3.0-video": {
+      "family": "wan-media",
+      "options": {
+        "mode": "text"
+      }
+    },
+    "wan/wan3.0-video-prime": {
+      "family": "wan-media",
+      "options": {
+        "mode": "text"
+      }
+    },
+    "xai/grok-imagine-video": {
+      "family": "grok-video"
+    },
+    "xai/grok-imagine-video-1.5": {
+      "family": "grok-video"
+    }
+  }
+}

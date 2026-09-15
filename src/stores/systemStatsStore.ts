@@ -34,7 +34,7 @@ export const useSystemStatsStore = defineStore('systemStats', () => {
       return 'cloud'
     }
 
-    if (!systemStats.value?.system?.os) {
+    if (!systemStats.value?.system.os) {
       return 'other'
     }
 

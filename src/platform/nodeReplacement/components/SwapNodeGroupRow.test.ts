@@ -1,4 +1,4 @@
-import { createTestingPinia } from '@pinia/testing'
+import { getActivePinia } from 'pinia'
 import { fromAny } from '@total-typescript/shoehorn'
 import { render, screen, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
@@ -61,7 +61,7 @@ function renderRow(
       ...props
     },
     global: {
-      plugins: [createTestingPinia({ createSpy: vi.fn }), PrimeVue, i18n],
+      plugins: [getActivePinia()!, PrimeVue, i18n],
       stubs: {
         TransitionCollapse: { template: '<div><slot /></div>' }
       }

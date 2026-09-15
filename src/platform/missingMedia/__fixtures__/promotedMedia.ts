@@ -132,9 +132,11 @@ function addPromotedMediaSource(
   value: string,
   options: string[]
 ): LGraphNode {
-  const sourceNode = new LGraphNode(promotedMediaNodeType)
+  const sourceNode = new LGraphNode(
+    promotedMediaNodeType,
+    promotedMediaNodeType
+  )
   sourceNode.id = toNodeId(id)
-  sourceNode.type = promotedMediaNodeType
   const sourceInput = sourceNode.addInput('image', 'COMBO')
   const sourceWidget = sourceNode.addWidget(
     'combo',
@@ -214,7 +216,6 @@ export function createPromotedMediaRuntime({
     })
     rootGraph.add(host)
     const hostWidget = host.widgets[0]
-    if (!hostWidget) throw new Error('Expected promoted image host widget')
     hostWidget.value = hostValue
     hostWidget.options.values = [...(hostOptions ?? sourceOptions)]
     return host

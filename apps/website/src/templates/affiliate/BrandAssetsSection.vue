@@ -12,7 +12,7 @@ const routes = getRoutes(locale)
 
 const assets = affiliateBrandAssets.map((asset) => ({
   id: asset.id,
-  title: asset.title[locale],
+  title: asset.title[locale] || asset.title.en,
   preview: asset.preview
 }))
 </script>

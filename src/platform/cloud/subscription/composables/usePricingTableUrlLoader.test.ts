@@ -12,7 +12,7 @@ const preservedQueryMocks = vi.hoisted(() => ({
 }))
 
 vi.mock(
-  '@/platform/navigation/preservedQueryManager',
+  import('@/platform/navigation/preservedQueryManager'),
   () => preservedQueryMocks
 )
 
@@ -21,7 +21,7 @@ const mockRouteQuery = vi.hoisted(() => ({
 }))
 const mockRouterReplace = vi.hoisted(() => vi.fn(async () => undefined))
 
-vi.mock('vue-router', () => ({
+vi.mock<unknown>(import('vue-router'), () => ({
   useRoute: () => ({
     query: mockRouteQuery.value
   }),
@@ -32,8 +32,8 @@ vi.mock('vue-router', () => ({
 
 const mockShowPricingTable = vi.hoisted(() => vi.fn())
 
-vi.mock(
-  '@/platform/cloud/subscription/composables/useSubscriptionDialog',
+vi.mock<unknown>(
+  import('@/platform/cloud/subscription/composables/useSubscriptionDialog'),
   () => ({
     useSubscriptionDialog: () => ({
       showPricingTable: mockShowPricingTable
@@ -49,16 +49,36 @@ const mockTeamCreditStops = vi.hoisted(() => ({
 }))
 const mockFetchPlans = vi.hoisted(() => vi.fn())
 
-vi.mock('@/composables/billing/useBillingContext', () => ({
+vi.mock<unknown>(import('@/composables/billing/useBillingContext'), () => ({
   useBillingContext: () => ({
     teamCreditStops: mockTeamCreditStops,
     fetchPlans: mockFetchPlans
   })
 }))
 
-vi.mock('@/platform/workspace/composables/useWorkspaceUI', () => ({
-  useWorkspaceUI: () => ({ permissions: mockPermissions })
-}))
+const mockCanOpenPricingSurface = vi.hoisted(() => ({ value: true }))
+const mockInitializeCapabilities = vi.hoisted(() =>
+  vi.fn(async () => undefined)
+)
+
+vi.mock<unknown>(
+  import('@/platform/workspace/composables/useWorkspaceUI'),
+  () => ({
+    useWorkspaceUI: () => ({
+      permissions: mockPermissions,
+      canOpenPricingSurface: mockCanOpenPricingSurface
+    })
+  })
+)
+
+vi.mock<unknown>(
+  import('@/platform/workspace/composables/useBillingCapabilities'),
+  () => ({
+    useBillingCapabilities: () => ({
+      initialize: mockInitializeCapabilities
+    })
+  })
+)
 
 const TEAM_CREDIT_STOPS = {
   default_stop_index: 2,
@@ -80,6 +100,9 @@ describe('usePricingTableUrlLoader', () => {
   beforeEach(() => {
     mockRouteQuery.value = {}
     mockPermissions.value = { canManageSubscription: true }
+    mockCanOpenPricingSurface.value = true
+    mockInitializeCapabilities.mockClear()
+    mockInitializeCapabilities.mockResolvedValue(undefined)
     mockTeamCreditStops.value = TEAM_CREDIT_STOPS
     mockFetchPlans.mockResolvedValue(undefined)
     mockShowPricingTable.mockResolvedValue(undefined)
@@ -106,6 +129,31 @@ describe('usePricingTableUrlLoader', () => {
       expect.objectContaining({ reason: 'deep_link' })
     )
     expect(mockRouterReplace).toHaveBeenCalledWith({ query: {} })
+  })
+
+  it('never opens for a sales-managed workspace, even from a deep link', async () => {
+    mockRouteQuery.value = { pricing: '1' }
+    mockCanOpenPricingSurface.value = false
+
+    const { loadPricingTableFromUrl } = usePricingTableUrlLoader()
+    await loadPricingTableFromUrl()
+
+    expect(mockShowPricingTable).not.toHaveBeenCalled()
+    expect(mockRouterReplace).toHaveBeenCalledWith({ query: {} })
+  })
+
+  it('resolves the capability snapshot before deciding', async () => {
+    mockRouteQuery.value = { pricing: '1' }
+    mockCanOpenPricingSurface.value = true
+    mockInitializeCapabilities.mockImplementation(async () => {
+      mockCanOpenPricingSurface.value = false
+    })
+
+    const { loadPricingTableFromUrl } = usePricingTableUrlLoader()
+    await loadPricingTableFromUrl()
+
+    expect(mockInitializeCapabilities).toHaveBeenCalledOnce()
+    expect(mockShowPricingTable).not.toHaveBeenCalled()
   })
 
   it('opens on the team tab for ?pricing=team', async () => {

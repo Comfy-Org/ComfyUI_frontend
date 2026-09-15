@@ -33,7 +33,8 @@ export function flattenInputSpecs(
     if (!Array.isArray(options)) {
       assert(
         false,
-        `flattenInputSpecs: expected an options array on dynamic combo "${spec.name}"`
+        'flattenInputSpecs: expected an options array on dynamic combo',
+        { specName: spec.name }
       )
       continue
     }

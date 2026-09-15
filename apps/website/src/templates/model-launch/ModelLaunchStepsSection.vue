@@ -1,9 +1,12 @@
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
+
 import type { Locale } from '../../i18n/translations'
 import type { ModelLaunchSteps } from './types'
 
 import BrandButton from '../../components/common/BrandButton.vue'
 import { t } from '../../i18n/translations'
+import { parseFaqAnswer } from '../../utils/faqAnswer'
 
 const { locale = 'en', steps } = defineProps<{
   steps: ModelLaunchSteps
@@ -11,10 +14,16 @@ const { locale = 'en', steps } = defineProps<{
 }>()
 
 const stepNumber = (index: number) => String(index + 1).padStart(2, '0')
+
+// Step descriptions are plain strings, same as FAQ answers, so a `[label](url)`
+// link (e.g. the MiniMax H3 design-page backlink on /minimax/license) parses
+// and renders the same way FAQSplit01 renders FAQ answers.
+const descriptionParts = (step: ModelLaunchSteps['items'][number]) =>
+  parseFaqAnswer(step.description?.[locale] || step.description?.en || '')
 </script>
 
 <template>
-  <section class="max-w-9xl mx-auto px-6 py-16 lg:px-20 lg:py-24">
+  <section class="mx-auto max-w-9xl px-6 py-16 lg:px-20 lg:py-24">
     <div class="mx-auto flex max-w-3xl flex-col items-center text-center">
       <h2
         class="text-3xl font-light tracking-tight text-primary-comfy-canvas lg:text-5xl/tight"
@@ -24,23 +33,49 @@ const stepNumber = (index: number) => String(index + 1).padStart(2, '0')
     </div>
 
     <ol
-      class="rounded-5xl bg-transparency-white-t4 mt-12 grid grid-cols-1 gap-4 p-4 md:grid-cols-3 lg:gap-2 lg:p-2"
+      :class="
+        cn(
+          'mt-12 grid grid-cols-1 gap-4 rounded-5xl bg-transparency-white-t4 p-4 lg:gap-2 lg:p-2',
+          steps.items.length === 2 ? 'md:grid-cols-2' : 'md:grid-cols-3'
+        )
+      "
     >
       <li
         v-for="(step, index) in steps.items"
         :key="step.id"
-        class="rounded-4.5xl flex flex-col gap-8 bg-primary-comfy-ink p-6"
+        class="flex flex-col gap-8 rounded-4.5xl bg-primary-comfy-ink p-6"
       >
         <p
-          class="text-primary-comfy-yellow text-sm/tight font-extrabold tracking-wider uppercase"
+          class="text-sm/tight font-extrabold tracking-wider text-primary-comfy-yellow uppercase"
         >
           {{ t(steps.stepLabelKey, locale) }} {{ stepNumber(index) }}
         </p>
         <p class="text-2xl/snug font-medium text-primary-warm-white">
-          {{ step.title[locale] }}
+          {{ step.title[locale] || step.title.en }}
         </p>
-        <p class="text-[17px]/relaxed font-light text-primary-comfy-canvas">
-          {{ step.description[locale] }}
+        <p
+          v-if="step.description"
+          class="text-[17px]/relaxed font-light text-primary-comfy-canvas"
+        >
+          <template
+            v-for="(part, partIndex) in descriptionParts(step)"
+            :key="partIndex"
+          >
+            <a
+              v-if="part.type === 'link'"
+              :href="part.value"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="text-primary-comfy-yellow underline underline-offset-2 transition-opacity hover:opacity-70"
+              >{{ part.label ?? part.value }}</a
+            >
+            <strong
+              v-else-if="part.type === 'strong'"
+              class="font-semibold text-primary-warm-white"
+              >{{ part.value }}</strong
+            >
+            <template v-else>{{ part.value }}</template>
+          </template>
         </p>
       </li>
     </ol>

@@ -35,7 +35,7 @@ const { stop } = useIntersectionObserver(
 <template>
   <section
     ref="sectionRef"
-    class="max-w-9xl mx-auto px-4 py-16 lg:px-20 lg:py-24"
+    class="mx-auto max-w-9xl px-4 py-16 lg:px-20 lg:py-24"
   >
     <div class="mx-auto flex max-w-3xl flex-col items-center text-center">
       <h2
@@ -50,13 +50,13 @@ const { stop } = useIntersectionObserver(
     >
       <article v-for="card in gallery.cards" :key="card.id">
         <div
-          class="group rounded-4.5xl relative block aspect-19/10 overflow-hidden bg-black/40"
+          class="group relative block aspect-19/10 overflow-hidden rounded-4.5xl bg-black/40"
         >
           <video
             v-if="card.media.kind === 'video'"
             :src="shouldLoadVideos ? card.media.src : undefined"
             :poster="card.media.posterSrc"
-            :aria-label="card.name[locale]"
+            :aria-label="card.name[locale] || card.name.en"
             class="size-full object-cover transition-transform duration-300 group-hover:scale-105"
             autoplay
             loop
@@ -67,7 +67,7 @@ const { stop } = useIntersectionObserver(
           <img
             v-else
             :src="card.media.src"
-            :alt="card.name[locale]"
+            :alt="card.name[locale] || card.name.en"
             class="size-full object-cover transition-transform duration-300 group-hover:scale-105"
             loading="lazy"
             decoding="async"
@@ -83,7 +83,7 @@ const { stop } = useIntersectionObserver(
             class="absolute inset-x-8 top-8 flex items-start justify-end"
           >
             <div
-              class="group-hover:bg-primary-comfy-yellow flex size-10 items-center justify-center rounded-2xl bg-transparency-white-t20 text-primary-warm-white backdrop-blur-sm transition-colors group-hover:text-primary-comfy-ink"
+              class="flex size-10 items-center justify-center rounded-2xl bg-transparency-white-t20 text-primary-warm-white backdrop-blur-sm transition-colors group-hover:bg-primary-comfy-yellow group-hover:text-primary-comfy-ink"
             >
               <span
                 class="inline-block size-6 bg-current"
@@ -108,7 +108,7 @@ const { stop } = useIntersectionObserver(
               }}
             </Badge>
             <span class="text-xs text-primary-warm-gray">
-              {{ card.note[locale] }}
+              {{ card.note[locale] || card.note.en }}
             </span>
           </div>
 
@@ -117,14 +117,14 @@ const { stop } = useIntersectionObserver(
             :href="card.href"
             target="_blank"
             rel="noopener"
-            :aria-label="card.name[locale]"
+            :aria-label="card.name[locale] || card.name.en"
             size="sm"
             :class="
               cn(
                 'rounded-xl text-primary-comfy-ink hover:text-primary-comfy-ink',
                 gallery.ctaVariant === 'accent'
                   ? 'bg-primary-comfy-yellow hover:opacity-90'
-                  : 'hover:bg-primary-comfy-yellow bg-primary-warm-gray'
+                  : 'bg-primary-warm-gray hover:bg-primary-comfy-yellow'
               )
             "
           >
@@ -133,7 +133,7 @@ const { stop } = useIntersectionObserver(
         </div>
 
         <p class="mt-3 text-sm font-light text-primary-comfy-canvas">
-          {{ card.description[locale] }}
+          {{ card.description[locale] || card.description.en }}
         </p>
 
         <div
@@ -144,11 +144,11 @@ const { stop } = useIntersectionObserver(
           <p
             class="line-clamp-5 flex-1 text-sm/relaxed font-light whitespace-pre-line text-primary-warm-gray"
           >
-            {{ card.prompt[locale] }}
+            {{ card.prompt[locale] || card.prompt.en }}
           </p>
           <CopyTextButton
             class="-mr-2 -mb-2"
-            :value="card.prompt[locale]"
+            :value="card.prompt[locale] || card.prompt.en"
             :label="t('modelLaunch.copyPrompt', locale)"
             :copied-label="t('ui.copied', locale)"
           />

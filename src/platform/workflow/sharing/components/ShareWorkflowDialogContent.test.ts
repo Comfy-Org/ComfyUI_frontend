@@ -1,31 +1,15 @@
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { nextTick, reactive } from 'vue'
+import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import ShareWorkflowDialogContent from '@/platform/workflow/sharing/components/ShareWorkflowDialogContent.vue'
 
-const mockWorkflowStore = reactive<{
-  activeWorkflow: {
-    path: string
-    directory: string
-    filename: string
-    isTemporary: boolean
-    isModified: boolean
-    lastModified: number
-  } | null
-}>({
-  activeWorkflow: null
-})
-
-vi.mock('@/platform/workflow/management/stores/workflowStore', () => ({
-  useWorkflowStore: () => mockWorkflowStore
-}))
-
 const mockTrackShareFlow = vi.hoisted(() => vi.fn())
 
-vi.mock('@/platform/telemetry', () => ({
+vi.mock<unknown>(import('@/platform/telemetry'), () => ({
   useTelemetry: () => ({
     trackShareFlow: mockTrackShareFlow
   })
@@ -33,11 +17,15 @@ vi.mock('@/platform/telemetry', () => ({
 
 const mockToast = vi.hoisted(() => ({ add: vi.fn() }))
 
-vi.mock('primevue/usetoast', () => ({
-  useToast: () => mockToast
-}))
+vi.mock<unknown>(
+  import('primevue/usetoast'), // eslint-disable-line primevue-removal/no-imports
 
-vi.mock('@formkit/auto-animate/vue', () => ({
+  () => ({
+    useToast: () => mockToast
+  })
+)
+
+vi.mock(import('@formkit/auto-animate/vue'), () => ({
   vAutoAnimate: {}
 }))
 
@@ -48,14 +36,14 @@ const mockFlags = vi.hoisted(() => ({
 
 const mockShowPublishDialog = vi.hoisted(() => vi.fn())
 
-vi.mock('@/composables/useFeatureFlags', () => ({
+vi.mock<unknown>(import('@/composables/useFeatureFlags'), () => ({
   useFeatureFlags: () => ({
     flags: mockFlags
   })
 }))
 
-vi.mock(
-  '@/platform/workflow/sharing/composables/useComfyHubPublishDialog',
+vi.mock<unknown>(
+  import('@/platform/workflow/sharing/composables/useComfyHubPublishDialog'),
   () => ({
     useComfyHubPublishDialog: () => ({
       show: mockShowPublishDialog
@@ -63,12 +51,15 @@ vi.mock(
   })
 )
 
-vi.mock('@/platform/workflow/core/services/workflowService', () => ({
-  useWorkflowService: () => ({
-    saveWorkflow: vi.fn(),
-    renameWorkflow: vi.fn()
+vi.mock<unknown>(
+  import('@/platform/workflow/core/services/workflowService'),
+  () => ({
+    useWorkflowService: () => ({
+      saveWorkflow: vi.fn(),
+      renameWorkflow: vi.fn()
+    })
   })
-}))
+)
 
 const mockShareServiceData = vi.hoisted(() => ({
   items: [
@@ -97,13 +88,16 @@ const mockGetPublishStatus = vi.hoisted(() => vi.fn())
 const mockPublishWorkflow = vi.hoisted(() => vi.fn())
 const mockGetShareableAssets = vi.hoisted(() => vi.fn())
 
-vi.mock('@/platform/workflow/sharing/services/workflowShareService', () => ({
-  useWorkflowShareService: () => ({
-    getPublishStatus: mockGetPublishStatus,
-    publishWorkflow: mockPublishWorkflow,
-    getShareableAssets: mockGetShareableAssets
+vi.mock<unknown>(
+  import('@/platform/workflow/sharing/services/workflowShareService'),
+  () => ({
+    useWorkflowShareService: () => ({
+      getPublishStatus: mockGetPublishStatus,
+      publishWorkflow: mockPublishWorkflow,
+      getShareableAssets: mockGetShareableAssets
+    })
   })
-}))
+)
 
 const i18n = createI18n({
   legacy: false,
@@ -151,14 +145,16 @@ describe('ShareWorkflowDialogContent', () => {
   const onClose = vi.fn()
 
   beforeEach(() => {
-    mockWorkflowStore.activeWorkflow = {
-      path: 'workflows/test.json',
-      directory: 'workflows',
-      filename: 'test.json',
-      isTemporary: false,
-      isModified: false,
-      lastModified: 1000
-    }
+    Object.assign(useWorkflowStore(), {
+      activeWorkflow: {
+        path: 'workflows/test.json',
+        directory: 'workflows',
+        filename: 'test.json',
+        isTemporary: false,
+        isModified: false,
+        lastModified: 1000
+      }
+    })
     mockGetPublishStatus.mockResolvedValue({
       isPublished: false,
       shareId: null,
@@ -220,14 +216,16 @@ describe('ShareWorkflowDialogContent', () => {
   }
 
   it('renders in unsaved state when workflow is modified', async () => {
-    mockWorkflowStore.activeWorkflow = {
-      path: 'workflows/test.json',
-      directory: 'workflows',
-      filename: 'test.json',
-      isTemporary: false,
-      isModified: true,
-      lastModified: 1000
-    }
+    Object.assign(useWorkflowStore(), {
+      activeWorkflow: {
+        path: 'workflows/test.json',
+        directory: 'workflows',
+        filename: 'test.json',
+        isTemporary: false,
+        isModified: true,
+        lastModified: 1000
+      }
+    })
     const { container } = renderComponent()
     await flushPromises()
 
@@ -416,14 +414,16 @@ describe('ShareWorkflowDialogContent', () => {
     const publishedAt = new Date('2026-01-15T00:00:00Z')
     const savedAfterPublishMs = publishedAt.getTime() + 60_000
 
-    mockWorkflowStore.activeWorkflow = {
-      path: 'workflows/test.json',
-      directory: 'workflows',
-      filename: 'test.json',
-      isTemporary: false,
-      isModified: false,
-      lastModified: savedAfterPublishMs
-    }
+    Object.assign(useWorkflowStore(), {
+      activeWorkflow: {
+        path: 'workflows/test.json',
+        directory: 'workflows',
+        filename: 'test.json',
+        isTemporary: false,
+        isModified: false,
+        lastModified: savedAfterPublishMs
+      }
+    })
     mockGetPublishStatus.mockResolvedValue({
       isPublished: true,
       shareId: 'abc-123',
@@ -442,14 +442,16 @@ describe('ShareWorkflowDialogContent', () => {
     const publishedAt = new Date('2026-01-15T00:00:00Z')
     const savedBeforePublishMs = publishedAt.getTime() - 60_000
 
-    mockWorkflowStore.activeWorkflow = {
-      path: 'workflows/test.json',
-      directory: 'workflows',
-      filename: 'test.json',
-      isTemporary: false,
-      isModified: false,
-      lastModified: savedBeforePublishMs
-    }
+    Object.assign(useWorkflowStore(), {
+      activeWorkflow: {
+        path: 'workflows/test.json',
+        directory: 'workflows',
+        filename: 'test.json',
+        isTemporary: false,
+        isModified: false,
+        lastModified: savedBeforePublishMs
+      }
+    })
     mockGetPublishStatus.mockResolvedValue({
       isPublished: true,
       shareId: 'abc-123',
@@ -466,14 +468,16 @@ describe('ShareWorkflowDialogContent', () => {
 
   describe('error and edge cases', () => {
     it('renders unsaved state when workflow is temporary', async () => {
-      mockWorkflowStore.activeWorkflow = {
-        path: 'workflows/Unsaved Workflow.json',
-        directory: 'workflows',
-        filename: 'Unsaved Workflow.json',
-        isTemporary: true,
-        isModified: false,
-        lastModified: 1000
-      }
+      Object.assign(useWorkflowStore(), {
+        activeWorkflow: {
+          path: 'workflows/Unsaved Workflow.json',
+          directory: 'workflows',
+          filename: 'Unsaved Workflow.json',
+          isTemporary: true,
+          isModified: false,
+          lastModified: 1000
+        }
+      })
       const { container } = renderComponent()
       await flushPromises()
 
@@ -519,7 +523,7 @@ describe('ShareWorkflowDialogContent', () => {
     })
 
     it('renders unsaved state when no active workflow exists', async () => {
-      mockWorkflowStore.activeWorkflow = null
+      Object.assign(useWorkflowStore(), { activeWorkflow: null })
       const { container } = renderComponent()
       await flushPromises()
 
@@ -534,7 +538,7 @@ describe('ShareWorkflowDialogContent', () => {
       renderComponent()
       await flushPromises()
 
-      mockWorkflowStore.activeWorkflow = null
+      Object.assign(useWorkflowStore(), { activeWorkflow: null })
 
       const publishButton = screen.getByRole('button', {
         name: /Create link/i

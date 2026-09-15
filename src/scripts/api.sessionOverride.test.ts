@@ -34,7 +34,6 @@ describe('api.getServerFeature session override outside component setup', () => 
 
   afterEach(() => {
     api.serverFeatureFlags.value = {}
-    vi.restoreAllMocks()
   })
 
   it('applies a numeric override to a flag that never routes through resolveFlag', () => {

@@ -25,9 +25,6 @@ export class SidebarTab {
     await this.tabButton.click()
   }
   async close() {
-    if (!this.tabButton.isVisible()) {
-      return
-    }
     await this.tabButton.click()
   }
 }
@@ -54,10 +51,6 @@ export class NodeLibrarySidebarTab extends SidebarTab {
   }
 
   override async close() {
-    if (!this.tabButton.isVisible()) {
-      return
-    }
-
     await this.tabButton.click()
     await this.nodeLibraryTree.waitFor({ state: 'hidden' })
   }
@@ -198,7 +191,7 @@ export class WorkflowsSidebarTab extends SidebarTab {
     await this.page.waitForFunction(
       () =>
         !(window.app?.extensionManager as WorkspaceStore | undefined)?.workflow
-          ?.isBusy,
+          .isBusy,
       undefined,
       { timeout: 3000 }
     )
@@ -476,21 +469,18 @@ export class AssetsSidebarTab extends SidebarTab {
   async openSettingsMenu() {
     await this.dismissToasts()
     await this.settingsButton.click()
-    // Wait for popover content to render
-    await this.listViewOption
-      .or(this.gridSmallOption)
-      .or(this.gridLargeOption)
-      .first()
-      .waitFor({ state: 'visible', timeout: 3000 })
+    await expect(
+      this.listViewOption
+        .or(this.gridSmallOption)
+        .or(this.gridLargeOption)
+        .first()
+    ).toBeVisible()
   }
 
   async openFilterMenu() {
     await this.dismissToasts()
     await this.filterButton.click()
-    await this.mediaTypeFilterMenuItem.waitFor({
-      state: 'visible',
-      timeout: 3000
-    })
+    await expect(this.mediaTypeFilterMenuItem).toBeVisible()
   }
 
   async closeFilterMenu() {
@@ -508,10 +498,7 @@ export class AssetsSidebarTab extends SidebarTab {
       return
     }
     await this.mediaTypeFilterMenuItem.click()
-    await this.filterCheckbox('Image').waitFor({
-      state: 'visible',
-      timeout: 3000
-    })
+    await expect(this.filterCheckbox('Image')).toBeVisible()
   }
 
   async toggleMediaTypeFilter(

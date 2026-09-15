@@ -1,14 +1,20 @@
 ---
 import BaseLayout from "../layouts/BaseLayout.astro";
 import ProductCardsSection from "../components/home/ProductCardsSection.vue";
-import HeroSection from "../components/home/HeroSection.vue";
-import ModelReleaseSection from "../components/home/ModelReleaseSection.vue";
+import HeroGraphSection from "../components/hero/HeroGraphSection.vue";
 import SocialProofBarSection from "../components/common/SocialProofBarSection.vue";
+import MinimaxLicenseHeroSection from "../components/common/MinimaxLicenseHeroSection.vue";
+import DeveloperPlatformSection from "../components/home/DeveloperPlatformSection.vue";
+import IndustriesSection from "../components/home/IndustriesSection.vue";
+import ModelReleaseSection from "../components/home/ModelReleaseSection.vue";
+import ModelDiscoverySection from "../components/home/ModelDiscoverySection.vue";
 import ProductShowcaseSection from "../components/home/ProductShowcaseSection.vue";
-import UseCaseSection from "../components/home/UseCaseSection.vue";
+import FeaturedWorkflowsSection from "../components/home/FeaturedWorkflowsSection.vue";
 import CaseStudySpotlightSection from "../components/home/CaseStudySpotlightSection.vue";
 import GetStartedSection from "../components/home/GetStartedSection.vue";
-import BuildWhatSection from "../components/home/BuildWhatSection.vue";
+import { isWorkshopInBuild } from "../config/workshop-release";
+import { modelReleaseLinks } from "../config/model-release-links";
+import { resolveDiscoveryProviders } from "../components/home/modelDiscoveryProviders";
 import { t } from "../i18n/translations";
 import {
   comfyUiApplicationNode,
@@ -22,6 +28,8 @@ const { siteUrl } = pageContext(
   Astro.url.pathname,
   Astro.currentLocale,
 );
+
+const discoveryProviders = await resolveDiscoveryProviders(isWorkshopInBuild());
 ---
 
 <BaseLayout
@@ -44,13 +52,16 @@ const { siteUrl } = pageContext(
     "generative ai workflows",
   ]}
 >
-  <HeroSection client:load />
+  <HeroGraphSection client:load />
   <SocialProofBarSection />
-  <ModelReleaseSection client:visible />
+  <DeveloperPlatformSection client:visible />
+  <MinimaxLicenseHeroSection client:visible />
+  {isWorkshopInBuild() && <ModelDiscoverySection providers={discoveryProviders} client:load />}
+  <FeaturedWorkflowsSection client:load />
   <ProductShowcaseSection client:load />
-  <UseCaseSection client:load />
+  <IndustriesSection client:load />
   <GetStartedSection />
   <ProductCardsSection />
   <CaseStudySpotlightSection client:load />
-  <BuildWhatSection />
+  <ModelReleaseSection modelLinks={await modelReleaseLinks(isWorkshopInBuild())} client:visible />
 </BaseLayout>

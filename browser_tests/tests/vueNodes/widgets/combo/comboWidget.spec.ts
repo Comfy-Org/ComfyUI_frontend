@@ -81,8 +81,6 @@ test.describe('Vue Combo Widget', { tag: ['@vue-nodes', '@widget'] }, () => {
 
   async function getMixedGraphSamplerCombos(comfyPage: ComfyPage) {
     await comfyPage.workflow.loadWorkflow('groups/mixed_graph_items')
-    await comfyPage.vueNodes.waitForNodes(3)
-
     const nodes = comfyPage.vueNodes.getNodeByTitle('KSampler')
     await expect(nodes).toHaveCount(3)
 
@@ -265,12 +263,8 @@ test.describe('Vue Combo Widget', { tag: ['@vue-nodes', '@widget'] }, () => {
 
     const serialized = await comfyPage.workflow.getExportedWorkflow()
     await comfyPage.workflow.loadGraphData(serialized)
-    await comfyPage.vueNodes.waitForNodes()
 
-    const [ksamplerNode] = await comfyPage.nodeOps.getNodeRefsByType('KSampler')
-    if (!ksamplerNode) {
-      throw new Error('KSampler node not found after reload')
-    }
+    const ksamplerNode = await comfyPage.nodeOps.getNodeRefByType('KSampler')
 
     const schedulerWidget = await ksamplerNode.getWidgetByName('scheduler')
     await expect.poll(() => schedulerWidget.getValue()).toBe('karras')
@@ -279,6 +273,47 @@ test.describe('Vue Combo Widget', { tag: ['@vue-nodes', '@widget'] }, () => {
       .getNodeByTitle('KSampler')
       .getByRole('combobox', { name: 'scheduler', exact: true })
     await expect(schedulerComboAfterReload).toContainText('karras')
+  })
+
+  test('a combo value tracks undo and redo', async ({ comfyPage }) => {
+    await comfyPage.workflow.loadWorkflow('vueNodes/linked-int-widget')
+
+    // Read the value off the graph rather than the combobox label. The row is
+    // about what the workflow carries, and a history bug that leaves the
+    // control showing the right text while the node still holds the old value
+    // is precisely the failure worth catching.
+    const scheduler = async () => {
+      const ksampler = await comfyPage.nodeOps.getNodeRefByType('KSampler')
+      return (await ksampler.getWidgetByName('scheduler')).getValue()
+    }
+
+    const original = await scheduler()
+    expect(original, 'fixture should start on a known scheduler').toBe('simple')
+
+    await comfyPage.vueNodes.selectComboOption(
+      'KSampler',
+      'scheduler',
+      'karras'
+    )
+    // Precondition: the selection reached the graph. Without it, "undo restored
+    // the original" also holds for a selection that never applied at all.
+    await expect.poll(scheduler).toBe('karras')
+
+    // Keystrokes go to the page, not to the canvas locator. `keyboard.undo()`
+    // defaults to `canvas.press()`, which runs actionability checks against a
+    // canvas the Vue transform pane covers — the click is then intercepted by
+    // whichever node sits under it (here the combobox itself).
+    await comfyPage.page.keyboard.press('Escape')
+    await comfyPage.page.keyboard.press('ControlOrMeta+z')
+    await expect.poll(scheduler).toBe(original)
+
+    await comfyPage.page.keyboard.press('ControlOrMeta+Shift+z')
+    await expect.poll(scheduler).toBe('karras')
+
+    // The redo must not have pushed an entry of its own: one more undo has to
+    // land back on the original, not on an intermediate copy of 'karras'.
+    await comfyPage.page.keyboard.press('ControlOrMeta+z')
+    await expect.poll(scheduler).toBe(original)
   })
 
   test('Dropdown displays over Selection Toolbox', async ({ comfyPage }) => {

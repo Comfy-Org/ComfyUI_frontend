@@ -10,7 +10,6 @@
  */
 import { createSharedComposable } from '@vueuse/core'
 
-import { useVueNodeLifecycle } from '@/composables/graph/useVueNodeLifecycle'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
 import { useNodeZIndex } from '@/renderer/extensions/vueNodes/composables/useNodeZIndex'
@@ -19,12 +18,11 @@ import type { NodeId } from '@/types/nodeId'
 
 function useNodeEventHandlersIndividual() {
   const canvasStore = useCanvasStore()
-  const { nodeManager } = useVueNodeLifecycle()
   const { bringNodeToFront } = useNodeZIndex()
   const { shouldHandleNodePointerEvents } = useCanvasInteractions()
 
   function getNode(nodeId: NodeId) {
-    return nodeManager.value?.getNode(nodeId)
+    return canvasStore.currentGraph?.getNodeById(nodeId) ?? undefined
   }
 
   /**
@@ -56,7 +54,7 @@ function useNodeEventHandlersIndividual() {
 
     // Bring node to front when clicked (similar to LiteGraph behavior)
     // Skip if node is pinned to avoid unwanted movement
-    if (!node.flags?.pinned) {
+    if (!node.flags.pinned) {
       bringNodeToFront(nodeId)
     }
 
@@ -75,7 +73,7 @@ function useNodeEventHandlersIndividual() {
     if (!node) return
 
     // Use LiteGraph's collapse method if the state needs to change
-    const currentCollapsed = node.flags?.collapsed ?? false
+    const currentCollapsed = node.flags.collapsed ?? false
     if (currentCollapsed !== collapsed) {
       node.collapse()
     }
@@ -95,7 +93,7 @@ function useNodeEventHandlersIndividual() {
     node.title = newTitle
 
     // If this is a subgraph node, sync the subgraph name for breadcrumb reactivity
-    if (node.isSubgraphNode?.()) {
+    if (node.isSubgraphNode()) {
       node.subgraph.name = newTitle
     }
   }
@@ -140,7 +138,7 @@ function useNodeEventHandlersIndividual() {
       canvasStore.canvas.select(node)
       canvasStore.updateSelectedItems()
       // Bring node to front when selected (unless pinned)
-      if (!node.flags?.pinned) {
+      if (!node.flags.pinned) {
         bringNodeToFront(nodeId)
       }
       return
@@ -151,7 +149,7 @@ function useNodeEventHandlersIndividual() {
     } else {
       canvasStore.canvas.select(node)
       // Bring node to front when selected (unless pinned)
-      if (!node.flags?.pinned) {
+      if (!node.flags.pinned) {
         bringNodeToFront(nodeId)
       }
     }

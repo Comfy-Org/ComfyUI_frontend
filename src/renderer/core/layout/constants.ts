@@ -4,8 +4,6 @@
  * Centralized configuration values for the layout system.
  * These values control spatial indexing, performance, and behavior.
  */
-import { LayoutSource } from '@/renderer/core/layout/types'
-
 /**
  * QuadTree configuration for spatial indexing
  */
@@ -38,13 +36,11 @@ export const PERFORMANCE_CONFIG = {
 } as const
 
 /**
- * Actor and source identifiers
+ * Actor identifiers
  */
 export const ACTOR_CONFIG = {
   /** Prefix for auto-generated actor IDs */
   USER_PREFIX: 'user-',
   /** Length of random suffix for actor IDs */
-  ID_LENGTH: 9,
-  /** Default source when not specified */
-  DEFAULT_SOURCE: LayoutSource.External
+  ID_LENGTH: 9
 } as const

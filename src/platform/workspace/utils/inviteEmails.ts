@@ -10,11 +10,10 @@ export function isValidEmail(email: string): boolean {
   return EMAIL_REGEX.test(email)
 }
 
-/** Normalize, drop blanks, dedupe (case-insensitive), then clamp to `maxSeats`. */
 export function sanitizeInviteEmails(
   values: string[],
-  maxSeats: number
+  limit: number
 ): string[] {
   const unique = [...new Set(values.map(normalizeEmail).filter(Boolean))]
-  return unique.length > maxSeats ? unique.slice(0, maxSeats) : unique
+  return unique.length > limit ? unique.slice(0, limit) : unique
 }

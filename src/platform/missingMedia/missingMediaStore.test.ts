@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, it } from 'vitest'
 
 import { createNodeExecutionId } from '@/types/nodeIdentification'
 
@@ -6,19 +6,14 @@ import { useMissingMediaStore } from './missingMediaStore'
 import type { MissingMediaCandidate } from './types'
 
 // Mock dependencies
-vi.mock('@/renderer/core/canvas/canvasStore', () => ({
-  useCanvasStore: () => ({
-    currentGraph: null
-  })
-}))
 
-vi.mock('@/scripts/app', () => ({
+vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: {
     rootGraph: null
   }
 }))
 
-vi.mock('@/utils/graphTraversalUtil', () => ({
+vi.mock(import('@/utils/graphTraversalUtil'), () => ({
   getActiveGraphNodeIds: () => new Set<string>()
 }))
 
@@ -210,8 +205,6 @@ describe('useMissingMediaStore', () => {
       expect(store.missingMediaCandidates).toBeNull()
     })
 
-    // The sibling removeMissingMediaByPrefix matches on prefix, so exact
-    // matching here is easy to regress into.
     it('does not remove a node whose id only shares a numeric prefix', () => {
       const store = useMissingMediaStore()
       store.setMissingMedia([

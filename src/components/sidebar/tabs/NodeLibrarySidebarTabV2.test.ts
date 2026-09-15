@@ -1,6 +1,7 @@
-import { createTestingPinia } from '@pinia/testing'
+import { getActivePinia } from 'pinia'
 import userEvent from '@testing-library/user-event'
 import { fireEvent, render, screen } from '@testing-library/vue'
+import { useLocalStorage } from '@vueuse/core'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 import { createI18n } from 'vue-i18n'
@@ -11,23 +12,15 @@ const hoisted = vi.hoisted(() => ({
   mockSearchNode: vi.fn<(query: string) => unknown[]>(() => [])
 }))
 
-vi.mock('@/services/nodeSearchService', () => ({
+vi.mock<unknown>(import('@/services/nodeSearchService'), () => ({
   NodeSearchService: class {
     searchNode = hoisted.mockSearchNode
   }
 }))
 
-vi.mock('@vueuse/core', async () => {
-  const actual = await vi.importActual('@vueuse/core')
-  return {
-    ...actual,
-    useLocalStorage: vi.fn((_key: string, defaultValue: unknown) =>
-      ref(defaultValue)
-    )
-  }
-})
+vi.mock(import('@vueuse/core'), { spy: true })
 
-vi.mock('@/composables/node/useNodeDragToCanvas', () => ({
+vi.mock<unknown>(import('@/composables/node/useNodeDragToCanvas'), () => ({
   useNodeDragToCanvas: () => ({
     isDragging: { value: false },
     draggedNode: { value: null },
@@ -36,7 +29,7 @@ vi.mock('@/composables/node/useNodeDragToCanvas', () => ({
   })
 }))
 
-vi.mock('@/services/nodeOrganizationService', () => ({
+vi.mock<unknown>(import('@/services/nodeOrganizationService'), () => ({
   DEFAULT_TAB_ID: 'essentials',
   DEFAULT_SORTING_ID: 'alphabetical',
   nodeOrganizationService: {
@@ -45,7 +38,7 @@ vi.mock('@/services/nodeOrganizationService', () => ({
   }
 }))
 
-vi.mock('./nodeLibrary/AllNodesPanel.vue', () => ({
+vi.mock<unknown>(import('./nodeLibrary/AllNodesPanel.vue'), () => ({
   default: {
     name: 'AllNodesPanel',
     template: '<div data-testid="all-panel"><slot /></div>',
@@ -53,7 +46,7 @@ vi.mock('./nodeLibrary/AllNodesPanel.vue', () => ({
   }
 }))
 
-vi.mock('./nodeLibrary/EssentialNodesPanel.vue', () => ({
+vi.mock<unknown>(import('./nodeLibrary/EssentialNodesPanel.vue'), () => ({
   default: {
     name: 'EssentialNodesPanel',
     template: '<div data-testid="essential-panel"><slot /></div>',
@@ -61,19 +54,22 @@ vi.mock('./nodeLibrary/EssentialNodesPanel.vue', () => ({
   }
 }))
 
-vi.mock('@/components/ui/search-input/SearchInput.vue', () => ({
-  default: {
-    name: 'SearchBox',
-    template:
-      '<input data-testid="search-box" :value="modelValue" @input="$emit(\'update:modelValue\', $event.target.value)" />',
-    props: ['modelValue', 'placeholder'],
-    emits: ['update:modelValue', 'search'],
-    setup() {
-      return { focus: vi.fn() }
-    },
-    expose: ['focus']
-  }
-}))
+vi.mock<unknown>(
+  import('@/components/ui/search-input/SearchInput.vue'),
+  () => ({
+    default: {
+      name: 'SearchBox',
+      template:
+        '<input data-testid="search-box" :value="modelValue" @input="$emit(\'update:modelValue\', $event.target.value)" />',
+      props: ['modelValue', 'placeholder'],
+      emits: ['update:modelValue', 'search'],
+      setup() {
+        return { focus: vi.fn() }
+      },
+      expose: ['focus']
+    }
+  })
+)
 
 const i18n = createI18n({
   legacy: false,
@@ -91,13 +87,16 @@ const i18n = createI18n({
 
 describe('NodeLibrarySidebarTabV2', () => {
   beforeEach(() => {
+    vi.mocked(useLocalStorage).mockImplementation((_key, defaultValue) =>
+      ref(defaultValue)
+    )
     hoisted.mockSearchNode.mockReturnValue([])
   })
 
   function renderComponent() {
     return render(NodeLibrarySidebarTabV2, {
       global: {
-        plugins: [createTestingPinia({ stubActions: false }), i18n],
+        plugins: [getActivePinia()!, i18n],
         stubs: {
           teleport: true
         }

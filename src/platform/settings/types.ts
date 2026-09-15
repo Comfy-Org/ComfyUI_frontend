@@ -84,7 +84,6 @@ export type SettingPanelType =
   | 'keybinding'
   | 'secrets'
   | 'server-config'
-  | 'subscription'
   | 'user'
   | 'workspace'
   | 'workspace-allowlist'

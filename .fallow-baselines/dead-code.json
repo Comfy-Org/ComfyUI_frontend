@@ -585,10 +585,7 @@
   "unused_svelte_events": [],
   "unused_server_actions": [],
   "unused_load_data_keys": [],
-  "unresolved_imports": [
-    "index.html:./materialdesignicons.min.css",
-    "packages/comfyui-desktop-bridge-types/index.d.ts:./comfyDesktopBridge.js"
-  ],
+  "unresolved_imports": ["index.html:./materialdesignicons.min.css"],
   "unlisted_dependencies": [],
   "duplicate_exports": [
     "Bounds|src/renderer/core/layout/types.ts|src/renderer/core/spatial/QuadTree.ts",
