@@ -1,57 +1,63 @@
 <template>
-  <Button
-    v-tooltip="{
+  <Tooltip
+    :config="{
       value: computedTooltip,
       showDelay: 300,
       hideDelay: 300
     }"
-    :class="
-      cn(
-        'side-bar-button cursor-pointer border-none',
-        selected && 'side-bar-button-selected'
-      )
-    "
-    variant="muted-textonly"
-    :aria-label="computedTooltip"
-    @click="emit('click', $event)"
+    side="right"
   >
-    <div class="side-bar-button-content flex flex-col items-center gap-2">
-      <slot name="icon">
-        <div class="sidebar-icon-wrapper relative">
-          <i
-            v-if="typeof icon === 'string'"
-            :class="icon + ' side-bar-button-icon'"
-          />
-          <component
-            :is="icon"
-            v-else-if="typeof icon === 'object'"
-            class="side-bar-button-icon"
-          />
-          <span
-            v-if="shouldShowBadge"
-            :class="
-              cn(
-                'sidebar-icon-badge absolute min-w-[16px] rounded-full bg-primary-background py-0.25 text-2xs leading-[14px] font-medium text-base-foreground',
-                badgeClass || '-top-1 -right-1'
-              )
-            "
-          >
-            {{ overlayValue }}
-          </span>
-        </div>
-      </slot>
-      <!-- w-max sizes the label to the rail instead of the padding-inset
+    <Button
+      :class="
+        cn(
+          'side-bar-button cursor-pointer border-none',
+          selected && 'side-bar-button-selected'
+        )
+      "
+      variant="muted-textonly"
+      :aria-label="computedTooltip"
+      @click="emit('click', $event)"
+    >
+      <div class="side-bar-button-content flex flex-col items-center gap-2">
+        <slot name="icon">
+          <div class="sidebar-icon-wrapper relative">
+            <i
+              v-if="typeof icon === 'string'"
+              :class="icon + ' side-bar-button-icon'"
+            />
+            <component
+              :is="icon"
+              v-else-if="typeof icon === 'object'"
+              class="side-bar-button-icon"
+            />
+            <span
+              v-if="shouldShowBadge"
+              :class="
+                cn(
+                  'sidebar-icon-badge absolute min-w-[16px] rounded-full bg-primary-background py-0.25 text-2xs leading-[14px] font-medium text-base-foreground',
+                  badgeClass || '-top-1 -right-1'
+                )
+              "
+            >
+              {{ overlayValue }}
+            </span>
+          </div>
+        </slot>
+        <!-- w-max sizes the label to the rail instead of the padding-inset
            button content box, which is too narrow for one-line labels -->
-      <span
-        v-if="label && !isSmall"
-        class="side-bar-button-label line-clamp-2 w-max max-w-[calc(var(--sidebar-width)-var(--sidebar-padding))] text-center text-2xs wrap-break-word whitespace-normal"
-        >{{ st(label, label) }}</span
-      >
-    </div>
-  </Button>
+        <span
+          v-if="label && !isSmall"
+          class="side-bar-button-label line-clamp-2 w-max max-w-[calc(var(--sidebar-width)-var(--sidebar-padding))] text-center text-2xs wrap-break-word whitespace-normal"
+          >{{ st(label, label) }}</span
+        >
+      </div>
+    </Button>
+  </Tooltip>
 </template>
 
 <script setup lang="ts">
+import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
+
 import { computed } from 'vue'
 import type { Component } from 'vue'
 

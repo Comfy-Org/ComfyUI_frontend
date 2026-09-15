@@ -40,8 +40,6 @@ test.describe('Vue Node Widget Tooltip', { tag: '@vue-nodes' }, () => {
     // the node definition store boots from.
     await comfyPage.workflow.reloadAndWaitForApp()
 
-    // Enable tooltips before the widget mounts: the v-tooltip directive reads
-    // its disabled state once at mount, so the setting must be on beforehand.
     await comfyPage.settings.setSetting('Comfy.EnableTooltips', true)
     await comfyPage.workflow.loadWorkflow('inputs/string_input')
 

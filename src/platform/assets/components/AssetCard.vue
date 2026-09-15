@@ -39,15 +39,16 @@
           )
         "
       >
-        <Button
-          v-tooltip.bottom="$t('assetBrowser.modelInfo.title')"
-          :aria-label="$t('assetBrowser.modelInfo.title')"
-          variant="secondary"
-          size="sm"
-          @click.stop="$emit('showInfo', asset)"
-        >
-          <i class="icon-[lucide--info]" />
-        </Button>
+        <Tooltip :config="$t('assetBrowser.modelInfo.title')" side="bottom">
+          <Button
+            :aria-label="$t('assetBrowser.modelInfo.title')"
+            variant="secondary"
+            size="sm"
+            @click.stop="$emit('showInfo', asset)"
+          >
+            <i class="icon-[lucide--info]" />
+          </Button>
+        </Tooltip>
         <MoreButton
           v-if="showAssetOptions"
           ref="dropdown-menu-button"
@@ -68,29 +69,37 @@
       </IconGroup>
     </div>
     <div class="flex max-h-32 flex-auto flex-col justify-between gap-2">
-      <h3
-        :id="titleId"
-        v-tooltip.top="{ value: displayName, showDelay: tooltipDelay }"
-        :class="
-          cn(
-            'm-0 line-clamp-2 text-sm font-semibold wrap-anywhere',
-            'text-base-foreground'
-          )
-        "
+      <Tooltip
+        :config="{ value: displayName, showDelay: tooltipDelay }"
+        side="top"
       >
-        {{ displayName }}
-      </h3>
-      <p
-        :id="descId"
-        v-tooltip.top="{ value: asset.secondaryText, showDelay: tooltipDelay }"
-        :class="
-          cn(
-            'm-0 line-clamp-2 [display:-webkit-box] text-sm text-muted-foreground [-webkit-box-orient:vertical] [-webkit-line-clamp:2]'
-          )
-        "
+        <h3
+          :id="titleId"
+          :class="
+            cn(
+              'm-0 line-clamp-2 text-sm font-semibold wrap-anywhere',
+              'text-base-foreground'
+            )
+          "
+        >
+          {{ displayName }}
+        </h3>
+      </Tooltip>
+      <Tooltip
+        :config="{ value: asset.secondaryText, showDelay: tooltipDelay }"
+        side="top"
       >
-        {{ asset.secondaryText }}
-      </p>
+        <p
+          :id="descId"
+          :class="
+            cn(
+              'm-0 line-clamp-2 [display:-webkit-box] text-sm text-muted-foreground [-webkit-box-orient:vertical] [-webkit-line-clamp:2]'
+            )
+          "
+        >
+          {{ asset.secondaryText }}
+        </p>
+      </Tooltip>
       <div class="mt-auto flex items-center justify-between gap-2">
         <div class="flex gap-3 text-xs text-muted-foreground">
           <span v-if="asset.stats.stars" class="flex items-center gap-1">
@@ -129,6 +138,8 @@
 </template>
 
 <script setup lang="ts">
+import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
+
 import { computed, ref, toValue, useId, useTemplateRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 

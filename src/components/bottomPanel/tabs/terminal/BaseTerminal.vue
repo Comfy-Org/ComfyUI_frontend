@@ -11,28 +11,34 @@
         class="terminal-host h-full"
       />
     </div>
-    <Button
-      v-tooltip.left="{
+    <Tooltip
+      :config="{
         value: tooltipText,
         showDelay: 300
       }"
-      data-testid="terminal-copy-button"
-      variant="secondary"
-      size="sm"
-      :class="
-        cn('absolute top-2 right-8 transition-opacity', {
-          'pointer-events-none opacity-0 select-none': !isHovered
-        })
-      "
-      :aria-label="tooltipText"
-      @click="handleCopy"
+      side="left"
     >
-      <i class="pi pi-copy" />
-    </Button>
+      <Button
+        data-testid="terminal-copy-button"
+        variant="secondary"
+        size="sm"
+        :class="
+          cn('absolute top-2 right-8 transition-opacity', {
+            'pointer-events-none opacity-0 select-none': !isHovered
+          })
+        "
+        :aria-label="tooltipText"
+        @click="handleCopy"
+      >
+        <i class="pi pi-copy" />
+      </Button>
+    </Tooltip>
   </div>
 </template>
 
 <script setup lang="ts">
+import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
+
 import { useElementHover, useEventListener } from '@vueuse/core'
 import type { IDisposable } from '@xterm/xterm'
 import type { Ref } from 'vue'
