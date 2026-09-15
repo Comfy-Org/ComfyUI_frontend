@@ -1,5 +1,5 @@
 import userEvent from '@testing-library/user-event'
-import { render, screen } from '@testing-library/vue'
+import { fireEvent, render, screen } from '@testing-library/vue'
 import { describe, expect, it } from 'vitest'
 import { defineComponent, h } from 'vue'
 import { createI18n } from 'vue-i18n'
@@ -78,6 +78,7 @@ function renderPanel(props: Partial<PanelProps> = {}) {
     props: {
       features: ['trim', 'crop'],
       videoUrl: '/api/view?filename=clip.mp4',
+      hasSource: true,
       thumbnail: 'data:image/jpeg;base64,one',
       totalFrames: 100,
       duration: 10,
@@ -111,7 +112,7 @@ function renderPanel(props: Partial<PanelProps> = {}) {
 
 describe('VideoEditPanel', () => {
   it('shows an empty state without a video source', () => {
-    renderPanel({ videoUrl: undefined })
+    renderPanel({ videoUrl: undefined, hasSource: false })
 
     expect(screen.getByTestId('video-edit-empty')).toBeTruthy()
     expect(screen.queryByTestId('video-preview')).toBeNull()
@@ -155,6 +156,14 @@ describe('VideoEditPanel', () => {
     await userEvent.click(screen.getByTestId('video-preview-retry'))
 
     expect(retries).toHaveLength(1)
+  })
+
+  it('emits loadError when the preview video fails to load', async () => {
+    const { emitted } = renderPanel({ hasSource: true, videoUrl: 'clip.mp4' })
+
+    await fireEvent.error(screen.getByTestId('video-preview'))
+
+    expect(emitted().loadError).toHaveLength(1)
   })
 
   it('describes canvas failures separately from load failures', () => {
@@ -258,7 +267,7 @@ describe('VideoEditPanel', () => {
   })
 
   it('hides the playback controls without a video source', () => {
-    renderPanel({ videoUrl: undefined })
+    renderPanel({ videoUrl: undefined, hasSource: false })
 
     expect(screen.queryByTestId('video-playback-controls')).toBeNull()
   })
