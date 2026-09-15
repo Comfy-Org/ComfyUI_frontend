@@ -8740,8 +8740,8 @@ Enterprise`
     'zh-CN': '使用最先进的图像、视频、3D 和音频模型。生产环境就绪。'
   },
   'platform.builderHero.heading': {
-    en: 'Share ComfyUI Builds with your team',
-    'zh-CN': '与团队共享 ComfyUI Builds'
+    en: 'Package ComfyUI Builds for your team',
+    'zh-CN': '为团队打包 ComfyUI Builds'
   },
   'platform.builderHero.subtitle': {
     en: 'A Build lets you share ComfyUI custom nodes, LoRAs, models, and Python dependencies without hassle. Run them on your workstation, server, or datacenter.',
@@ -8779,8 +8779,8 @@ Enterprise`
     'zh-CN': '一个积分池'
   },
   'platform.modelsFeatures.3.description': {
-    en: 'Pay per use from one credit pool for your team. No subscription required.',
-    'zh-CN': '按用量付费，团队共用同一积分池。无需订阅。'
+    en: 'Pay per use from one credit pool for your team.',
+    'zh-CN': '按用量付费，团队共用同一积分池。'
   },
   'platform.modelsFeatures.5.title': {
     en: 'No setup',
