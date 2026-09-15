@@ -119,4 +119,20 @@ describe('FacetSheet', () => {
       screen.getByRole('tab', { name: /^Provider/, selected: true })
     ).toBeTruthy()
   })
+
+  it('leaves the lone group out of the tab order it no longer needs', async () => {
+    const view = render(FacetSheet, {
+      props: { groups, labels, resultCount: 2 }
+    })
+    const user = userEvent.setup()
+    await user.click(screen.getByRole('tab', { name: /^Media/ }))
+    expect(screen.getByRole('tab', { name: /^Media/ })).toBeEnabled()
+
+    await view.rerender({ groups: [groups[1]], labels, resultCount: 1 })
+
+    // The tab is clipped from sight, so it is not somewhere a keyboard should
+    // land, but it still names the panel under it.
+    expect(screen.getByRole('tab', { name: /^Media/ })).toBeDisabled()
+    expect(screen.getByRole('tabpanel', { name: /^Media/ })).toBeTruthy()
+  })
 })

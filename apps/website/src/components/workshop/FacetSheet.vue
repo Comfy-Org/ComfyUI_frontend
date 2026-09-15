@@ -210,7 +210,8 @@ function visibleOptions(group: FacetSheetGroup) {
     <TabsRoot v-model="activeKey" class="flex min-h-0 flex-col max-sm:flex-1">
       <!-- One group has nothing to be chosen between, so its name is a
         heading over the only thing there is. It stays in the accessibility
-        tree, because the panel below is named by it. -->
+        tree, because the panel below is named by it, and out of the tab order,
+        because a clipped control is not somewhere to land. -->
       <TabsList
         :class="
           cn(
@@ -223,6 +224,7 @@ function visibleOptions(group: FacetSheetGroup) {
           v-for="group in groups"
           :key="group.key"
           :value="group.key"
+          :disabled="groups.length < 2"
           :data-testid="`workshop-facet-${group.key}`"
           class="inline-flex flex-1 cursor-pointer items-center justify-center gap-1.5 rounded-lg px-2 py-1.5 text-xs font-semibold tracking-wider whitespace-nowrap text-content-secondary uppercase transition-colors outline-none hover:bg-white/5 hover:text-content focus-visible:ring-2 focus-visible:ring-brand data-[state=active]:bg-white/8 data-[state=active]:text-content"
         >
