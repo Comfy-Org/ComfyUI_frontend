@@ -13,6 +13,20 @@ export class UserDataHelper {
     private readonly baseUrl: string
   ) {}
 
+  async write(file: string, body: string | Buffer): Promise<void> {
+    const res = await this.request.post(
+      `${this.baseUrl}/api/userdata/${encodeURIComponent(file)}`,
+      {
+        data: body,
+        headers: { 'Comfy-User': this.userId }
+      }
+    )
+    if (!res.ok())
+      throw new Error(
+        `Failed to write userdata file "${file}": HTTP ${res.status()}`
+      )
+  }
+
   async delete(file: string): Promise<void> {
     const res = await this.request.fetch(
       `${this.baseUrl}/api/userdata/${encodeURIComponent(file)}`,
