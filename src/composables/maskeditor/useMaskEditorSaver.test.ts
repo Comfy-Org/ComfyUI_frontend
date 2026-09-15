@@ -200,6 +200,34 @@ describe('useMaskEditorSaver', () => {
     )
   })
 
+  it('shows an instant local preview before the upload finishes', async () => {
+    let imgsDuringUpload: LGraphNode['imgs']
+    vi.mocked(api.fetchApi).mockImplementation(async () => {
+      imgsDuringUpload = mockNode.imgs
+      return {
+        ok: true,
+        json: () =>
+          Promise.resolve({
+            name: 'clipspace-painted-masked-123.png',
+            subfolder: 'clipspace',
+            type: 'input'
+          })
+      } as Response
+    })
+
+    await useMaskEditorSaver().save()
+
+    // Before the first layer upload starts, the node's preview already
+    // shows the freshly-painted result rather than waiting on the network.
+    expect(imgsDuringUpload).toHaveLength(1)
+    expect(imgsDuringUpload?.[0]).toBeInstanceOf(Image)
+    expect(app.canvas.setDirty).toHaveBeenCalledWith(true)
+
+    // Once the server reference lands, the transient local preview is
+    // cleared in favor of the persisted node-output image.
+    expect(mockNode.imgs).toBeUndefined()
+  })
+
   it('replaces a stale clipspace image with the saved image', async () => {
     mockNode.images = [
       {
