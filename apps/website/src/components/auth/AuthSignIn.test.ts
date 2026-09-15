@@ -1342,6 +1342,56 @@ describe('AuthSignIn controller lifecycle', () => {
     expect(handles.session!.value).toBeUndefined()
   })
 
+  it('recovers the controls with a message when a prior rollback sign-out never settles', async () => {
+    const events: string[] = []
+    let resolveMint: ((value: unknown) => void) | undefined
+    handles.google.mockImplementation(() => {
+      events.push('authenticate')
+      return Promise.resolve(socialUser)
+    })
+    handles.ensureFresh.mockImplementationOnce(
+      () => new Promise((resolve) => (resolveMint = resolve))
+    )
+    // The abandoned attempt's rollback sign-out hangs and never settles.
+    handles.signOut.mockReturnValue(new Promise<void>(() => {}))
+    render(AuthSignIn)
+
+    await clickGoogle()
+    await waitFor(() => expect(handles.ensureFresh).toHaveBeenCalledOnce())
+
+    handles.flag!.value = false
+    resolveMint!({ status: 'ok', session: { token: 'workspace-jwt' } })
+    await flush()
+    await waitFor(() => expect(handles.signOut).toHaveBeenCalledOnce())
+
+    // The first attempt's own bounded rollback wait recovers its controls.
+    handles.flag!.value = true
+    await vi.advanceTimersByTimeAsync(16_000)
+    await waitFor(() =>
+      expect(googleButton()).toHaveProperty('disabled', false)
+    )
+
+    // The retry starts while that sign-out is still pending; the bounded wait
+    // must free the controls at the deadline instead of hanging on it forever.
+    await clickGoogle()
+    await vi.advanceTimersByTimeAsync(16_000)
+    await flush()
+
+    expect(
+      googleButton(),
+      'a never-settling rollback sign-out must not pin the controls: the bounded wait recovers them'
+    ).toHaveProperty('disabled', false)
+    expect(
+      toasts.value,
+      'the timed-out retry surfaces the failure copy rather than going silently idle'
+    ).toHaveLength(1)
+    expect(
+      events,
+      'the retry must not authenticate into the still-live global sign-out'
+    ).toEqual(['authenticate'])
+    expect(replace).not.toHaveBeenCalled()
+  })
+
   it('serializes a rollback sign-out that outran its deadline before the retry authenticates, so the stale sign-out cannot clear the new identity', async () => {
     const events: string[] = []
     let resolveSignOut: (() => void) | undefined

@@ -289,10 +289,17 @@ export function useAuthSignInController(options: AuthSignInControllerOptions) {
       toastSignInFailure({ kind: 'unknown' })
     }
     try {
-      // Wait out a prior attempt's rollback whose sign-out outran its deadline:
-      // authenticating into an in-flight global sign-out would let it clear this
-      // attempt's credential.
-      if (pendingRollback) await pendingRollback
+      // Wait out a prior rollback before authenticating, or its global sign-out
+      // could clear this credential; bounded so a never-settling sign-out can't
+      // pin the controls (on expiry, recover with a message and keep guarding).
+      if (pendingRollback) {
+        const rolledBack = await withinOperationDeadline(pendingRollback)
+        if (rolledBack === OPERATION_TIMED_OUT) {
+          if (!live()) await abandon()
+          else await recoverFromTimeout()
+          return
+        }
+      }
       const loaded = await withinOperationDeadline(loadWorkshopFirebase())
       // The rollout flag turning off (or flickering) mid-flight must halt the
       // in-flight auth, not merely hide the UI: no sign-in, provisioning,
