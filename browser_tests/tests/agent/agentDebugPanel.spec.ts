@@ -34,11 +34,17 @@ test.describe('Agent debug log', { tag: ['@cloud', '@agent', '@ui'] }, () => {
       await page.getByTestId('crdt-dev-panel-tab-log').click()
 
       const filter = page.getByTestId('crdt-dev-panel-filter')
-      await filter.selectOption('agent_node_adapters_materialized')
-      await expect(filter).toHaveValue('agent_node_adapters_materialized')
+      await filter.click()
+      await page
+        .getByRole('option', { name: 'agent_node_adapters_materialized' })
+        .click()
+      await expect(filter).toContainText('agent_node_adapters_materialized')
 
-      await filter.selectOption('')
-      await expect(filter).toHaveValue('')
+      await filter.click()
+      await page
+        .getByRole('option', { name: enMessages.agent.crdtDevPanel.allKinds })
+        .click()
+      await expect(filter).toContainText(enMessages.agent.crdtDevPanel.allKinds)
     }
   )
 })
