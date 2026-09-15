@@ -73,7 +73,7 @@ vi.mock<unknown>(import('@/composables/auth/useCurrentUser'), () => ({
   })
 }))
 
-vi.mock<unknown>(import('@/platform/remoteConfig/remoteConfig'), async () => {
+vi.mock(import('@/platform/remoteConfig/remoteConfig'), async () => {
   hoisted.refs.remoteConfig = ref<RemoteConfig>({})
   return { remoteConfig: hoisted.refs.remoteConfig }
 })

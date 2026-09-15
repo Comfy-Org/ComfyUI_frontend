@@ -1,5 +1,5 @@
 vi.mock(import('firebase/auth'))
-vi.mock<unknown>(import('vuefire'), () => ({ useFirebaseAuth: vi.fn() }))
+vi.mock(import('vuefire'), () => ({ useFirebaseAuth: vi.fn() }))
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'

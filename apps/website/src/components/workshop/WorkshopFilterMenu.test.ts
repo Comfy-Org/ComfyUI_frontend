@@ -1,57 +1,33 @@
-import '@testing-library/jest-dom/vitest'
 import userEvent from '@testing-library/user-event'
 import { render, screen, waitFor, within } from '@testing-library/vue'
 import { describe, expect, it } from 'vitest'
-import { defineComponent, h, nextTick, ref } from 'vue'
+import { defineComponent, h, ref } from 'vue'
 
+import type { UseCase } from '../../config/models-catalogue'
+import type { FacetMenuOption } from './WorkshopFilterMenu.vue'
 import WorkshopFilterMenu from './WorkshopFilterMenu.vue'
 
-const capabilityOptions = [
-  { value: 'text-to-image', label: 'text-to-image', count: 3 },
-  { value: 'image-to-video', label: 'image-to-video', count: 2 }
-]
-const modalityOptions = [
-  { value: 'video', label: 'Video', count: 3 },
-  { value: 'image', label: 'Image', count: 2 }
-]
-const useCaseOptions = [
+const useCaseOptions: FacetMenuOption[] = [
   { value: 'generate-images', label: 'Generate images', count: 4 },
   { value: '3d', label: '3D', count: 2 }
 ]
 
-function mountMenu(withUseCases = false) {
-  const capabilities = ref<string[]>([])
-  const providers = ref<string[]>([])
-  const modalities = ref<string[]>([])
-  const useCases = ref<string[]>([])
+function mountMenu() {
+  const useCases = ref<UseCase[]>([])
   render(
     defineComponent({
       setup: () => () =>
         h(WorkshopFilterMenu, {
-          capabilityOptions,
-          modalityOptions,
-          useCaseOptions: withUseCases ? useCaseOptions : undefined,
+          useCaseOptions,
           resultCount: 12,
-          capabilities: capabilities.value,
-          providers: providers.value,
-          modalities: modalities.value,
           useCases: useCases.value,
-          'onUpdate:useCases': (value: string[]) => {
+          'onUpdate:useCases': (value: UseCase[]) => {
             useCases.value = value
-          },
-          'onUpdate:capabilities': (value: string[]) => {
-            capabilities.value = value
-          },
-          'onUpdate:providers': (value: string[]) => {
-            providers.value = value
-          },
-          'onUpdate:modalities': (value: string[]) => {
-            modalities.value = value
           }
         })
     })
   )
-  return { capabilities, providers, modalities, useCases }
+  return { useCases }
 }
 
 describe('WorkshopFilterMenu', () => {
@@ -61,97 +37,56 @@ describe('WorkshopFilterMenu', () => {
     const trigger = screen.getByRole('button', { name: 'Filter' })
     await user.click(trigger)
     const dialog = await screen.findByRole('dialog')
-    const category = within(dialog).getByRole('button', {
-      name: 'text-to-image 3'
+    const useCase = within(dialog).getByRole('button', {
+      name: 'Generate images 4'
     })
-    category.focus()
+    useCase.focus()
     await user.keyboard(' ')
-    expect(category.getAttribute('aria-pressed')).toBe('true')
+    expect(useCase.getAttribute('aria-pressed')).toBe('true')
     await user.keyboard('{Escape}')
     await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull())
-    await waitFor(() => expect(trigger).toHaveFocus())
+    await waitFor(() => expect(trigger.matches(':focus')).toBe(true))
   })
 
-  it('switches facets, toggles an option and counts it on the button and tab', async () => {
+  it('toggles a use case and counts it on the button and tab', async () => {
     const user = userEvent.setup()
-    const { modalities } = mountMenu()
+    const { useCases } = mountMenu()
 
     await user.click(screen.getByTestId('workshop-filter'))
-    expect(
-      await screen.findByTestId('filter-capability-text-to-image')
-    ).toBeTruthy()
-    expect(screen.queryByTestId('filter-modality-video')).toBeNull()
-
-    await user.click(screen.getByTestId('workshop-facet-modality'))
-    await user.click(await screen.findByTestId('filter-modality-video'))
-    expect(modalities.value).toEqual(['video'])
+    await user.click(
+      await screen.findByTestId('filter-useCase-generate-images')
+    )
+    expect(useCases.value).toEqual(['generate-images'])
     expect(screen.getByTestId('workshop-filter-count').textContent.trim()).toBe(
       '1'
     )
     expect(
-      screen.getByTestId('workshop-facet-modality-count').textContent.trim()
+      screen.getByTestId('workshop-facet-useCase-count').textContent.trim()
     ).toBe('1')
   })
 
   it('narrows a facet with its search box', async () => {
     const user = userEvent.setup()
-    const { capabilities } = mountMenu()
+    const { useCases } = mountMenu()
 
     await user.click(screen.getByTestId('workshop-filter'))
     await user.type(
-      await screen.findByTestId('workshop-filter-capability-search'),
-      'video'
+      await screen.findByTestId('workshop-filter-useCase-search'),
+      'generate'
     )
-    expect(screen.queryByTestId('filter-capability-text-to-image')).toBeNull()
-    await user.click(screen.getByTestId('filter-capability-image-to-video'))
-    expect(capabilities.value).toEqual(['image-to-video'])
+    expect(screen.queryByTestId('filter-useCase-3d')).toBeNull()
+    await user.click(screen.getByTestId('filter-useCase-generate-images'))
+    expect(useCases.value).toEqual(['generate-images'])
   })
 
-  it('counts a chosen use case, so it can be cleared like any other filter', async () => {
+  it('clears selected use cases', async () => {
     const user = userEvent.setup()
-    const { useCases } = mountMenu(true)
+    const { useCases } = mountMenu()
 
     await user.click(screen.getByTestId('workshop-filter'))
     await user.click(await screen.findByTestId('filter-useCase-3d'))
-    expect(useCases.value).toEqual(['3d'])
-    expect(screen.getByTestId('workshop-filter-count').textContent.trim()).toBe(
-      '1'
-    )
-
     await user.click(screen.getByTestId('workshop-filter-clear'))
     expect(useCases.value).toEqual([])
     expect(screen.queryByTestId('workshop-filter-count')).toBeNull()
-  })
-
-  it('counts and clears a provider it offers no way to choose', async () => {
-    // The homepage links to /models?provider=<name>; on desktop this menu is
-    // the only always-visible way back out of one.
-    const user = userEvent.setup()
-    const { providers } = mountMenu()
-    providers.value = ['Kling']
-    await nextTick()
-
-    expect(screen.getByTestId('workshop-filter-count').textContent.trim()).toBe(
-      '1'
-    )
-    expect(screen.queryByRole('tab', { name: 'Models' })).toBeNull()
-    await user.click(screen.getByTestId('workshop-filter'))
-    await user.click(screen.getByTestId('workshop-filter-clear'))
-    expect(providers.value).toEqual([])
-  })
-
-  it('clears every facet at once', async () => {
-    const user = userEvent.setup()
-    const { capabilities, modalities } = mountMenu()
-
-    await user.click(screen.getByTestId('workshop-filter'))
-    await user.click(
-      await screen.findByTestId('filter-capability-text-to-image')
-    )
-    await user.click(screen.getByTestId('workshop-facet-modality'))
-    await user.click(await screen.findByTestId('filter-modality-video'))
-    await user.click(screen.getByTestId('workshop-filter-clear'))
-    expect(capabilities.value).toEqual([])
-    expect(modalities.value).toEqual([])
   })
 })

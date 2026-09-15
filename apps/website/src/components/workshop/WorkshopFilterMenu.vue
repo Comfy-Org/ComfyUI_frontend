@@ -8,39 +8,30 @@ import { FocusScope } from 'reka-ui'
 import { cn } from '@comfyorg/tailwind-utils'
 
 import { useVisualViewport } from '../../composables/useVisualViewport'
+import type { UseCase } from '../../config/models-catalogue'
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 import type { FacetSheetGroup } from './FacetSheet.vue'
 import FacetSheet from './FacetSheet.vue'
 
 export interface FacetMenuOption {
-  readonly value: string
+  readonly value: UseCase
   readonly label: string
   readonly count: number
 }
 
-type Facet = 'capability' | 'modality' | 'useCase'
-
 const {
-  capabilityOptions,
-  modalityOptions,
   useCaseOptions,
   resultCount,
   locale = 'en'
 } = defineProps<{
-  capabilityOptions: readonly FacetMenuOption[]
-  modalityOptions: readonly FacetMenuOption[]
-  /** Only where the use-case row has no room of its own, on a phone. */
-  useCaseOptions?: readonly FacetMenuOption[]
+  useCaseOptions: readonly FacetMenuOption[]
   /** What the catalogue holds under the current choices, for the way out. */
   resultCount: number
   locale?: Locale
 }>()
 
-const capabilities = defineModel<string[]>('capabilities', { required: true })
-const providers = defineModel<string[]>('providers', { default: () => [] })
-const modalities = defineModel<string[]>('modalities', { required: true })
-const useCases = defineModel<string[]>('useCases', { default: () => [] })
+const useCases = defineModel<UseCase[]>('useCases', { required: true })
 
 const open = ref(false)
 // A dropdown anchored to a crowded toolbar leaves a phone no room, so there
@@ -68,56 +59,29 @@ watchEffect((onCleanup) => {
   onCleanup(() => (document.body.style.overflow = previous))
 })
 
-const selectedFor = (facet: Facet) =>
-  facet === 'capability'
-    ? capabilities
-    : facet === 'modality'
-      ? modalities
-      : useCases
-
 const groups = computed<FacetSheetGroup[]>(() => [
-  ...(useCaseOptions
-    ? [
-        {
-          key: 'useCase',
-          label: t('workshop.launch.label', locale),
-          options: useCaseOptions,
-          selected: useCases.value
-        }
-      ]
-    : []),
   {
-    key: 'capability',
-    label: t('workshop.filter.categoryGroup', locale),
-    options: capabilityOptions,
-    selected: capabilities.value
-  },
-  {
-    key: 'modality',
-    label: t('workshop.filter.outputGroup', locale),
-    options: modalityOptions,
-    selected: modalities.value
+    key: 'useCase',
+    label: t('workshop.launch.label', locale),
+    options: useCaseOptions,
+    selected: useCases.value
   }
 ])
 
-const selectedCount = computed(
-  () =>
-    groups.value.reduce((total, group) => total + group.selected.length, 0) +
-    providers.value.length
+const selectedCount = computed(() =>
+  groups.value.reduce((total, group) => total + group.selected.length, 0)
 )
 
-function toggle(facet: string, value: string) {
-  const selected = selectedFor(facet as Facet)
-  selected.value = selected.value.includes(value)
-    ? selected.value.filter((item) => item !== value)
-    : [...selected.value, value]
+function toggle(_facet: string, value: string) {
+  const useCase = useCaseOptions.find((option) => option.value === value)?.value
+  if (!useCase) return
+  useCases.value = useCases.value.includes(useCase)
+    ? useCases.value.filter((item) => item !== useCase)
+    : [...useCases.value, useCase]
 }
 
 function clearAll() {
-  capabilities.value = []
-  modalities.value = []
   useCases.value = []
-  providers.value = []
 }
 
 const sheetLabels = computed(() => ({
@@ -201,7 +165,6 @@ const sheetLabels = computed(() => ({
           <FacetSheet
             :groups
             :labels="sheetLabels"
-            :applied-count="selectedCount"
             :result-count
             @toggle="toggle"
             @clear-all="clearAll"

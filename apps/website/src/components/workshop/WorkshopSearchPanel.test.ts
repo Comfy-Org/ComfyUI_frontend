@@ -13,7 +13,7 @@ const models: WorkshopModel[] = [
     routerId: 'b/zeta',
     href: '/models/zeta/',
     workflowCount: 6,
-    capabilities: ['text-to-image', 'kling']
+    capabilities: ['Upscale']
   },
   {
     slug: 'alpha',
@@ -22,15 +22,18 @@ const models: WorkshopModel[] = [
     routerId: 'a/alpha',
     href: '/models/alpha/',
     workflowCount: 1,
-    capabilities: ['text-to-image', 'premium']
+    capabilities: ['Upscale']
   }
 ]
 
 describe('WorkshopSearchPanel', () => {
-  it('names matching models once a search has been typed', () => {
-    render(WorkshopSearchPanel, {
-      props: { models, query: 'text-to-image', capabilities: [] }
+  it('shows matching models only after a query is entered', async () => {
+    const { rerender } = render(WorkshopSearchPanel, {
+      props: { models, query: '' }
     })
+    expect(screen.queryByRole('button')).toBeNull()
+
+    await rerender({ query: 'upscale' })
     expect(
       screen.getAllByRole('button', { name: /^(Alpha|Zeta) Provider/ })
     ).toEqual([
@@ -40,40 +43,20 @@ describe('WorkshopSearchPanel', () => {
     expect(screen.queryByText(/popular|\d+.*runs/i)).toBeNull()
   })
 
-  it('offers categories but no model list before anything is typed', () => {
+  it('shows an empty state for a query without matches', () => {
     render(WorkshopSearchPanel, {
-      props: { models, query: '  ', capabilities: [] }
+      props: { models, query: 'missing' }
     })
-    expect(screen.queryByTestId('workshop-search-model')).toBeNull()
-    expect(screen.queryByRole('img')).toBeNull()
-    expect(screen.queryByText(/no results/i)).toBeNull()
-    expect(screen.getByRole('button', { name: 'text-to-image 2' })).toBeTruthy()
+    expect(screen.getByText(/no match/i)).toBeTruthy()
   })
 
-  it('withholds the maker and the version from the categories', () => {
-    render(WorkshopSearchPanel, {
-      props: { models, query: '', capabilities: [] }
+  it.for(['{Enter}', ' '])('activates a model result with %s', async (key) => {
+    const user = userEvent.setup()
+    const { emitted } = render(WorkshopSearchPanel, {
+      props: { models, query: 'alpha' }
     })
-    expect(
-      screen
-        .getAllByTestId('workshop-search-capability')
-        .map((chip) => chip.textContent.trim())
-    ).toEqual(['text-to-image 2'])
+    screen.getByRole('button', { name: 'Alpha Provider A' }).focus()
+    await user.keyboard(key)
+    expect(emitted().pick).toEqual([[models[1]]])
   })
-
-  it.for(['{Enter}', ' '])(
-    'activates model and category buttons with %s',
-    async (key) => {
-      const user = userEvent.setup()
-      const { emitted } = render(WorkshopSearchPanel, {
-        props: { models, query: 'a', capabilities: [] }
-      })
-      screen.getByRole('button', { name: 'Alpha Provider A' }).focus()
-      await user.keyboard(key)
-      expect(emitted().pick).toEqual([[models[1]]])
-      screen.getByRole('button', { name: 'text-to-image 2' }).focus()
-      await user.keyboard(key)
-      expect(emitted().toggleCapability).toEqual([['text-to-image']])
-    }
-  )
 })

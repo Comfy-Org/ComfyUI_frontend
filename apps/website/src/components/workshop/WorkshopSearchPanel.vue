@@ -1,11 +1,10 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
 import type { WorkshopModel } from '../../config/models-catalogue'
 import {
-  categoriesFor,
   filterWorkshopModels,
   sortWorkshopModels
 } from '../../config/models-catalogue'
@@ -15,13 +14,11 @@ import { t } from '../../i18n/translations'
 const {
   models,
   query,
-  capabilities,
   variant = 'dropdown',
   locale = 'en'
 } = defineProps<{
   models: readonly WorkshopModel[]
   query: string
-  capabilities: readonly string[]
   /** On a phone the same panel fills the screen instead of hanging off a
    * field. */
   variant?: 'dropdown' | 'sheet'
@@ -30,76 +27,17 @@ const {
 
 const emit = defineEmits<{
   pick: [model: WorkshopModel]
-  toggleCapability: [capability: string]
 }>()
 
 const SUGGESTIONS = 4
-const CHIPS = 6
 
-const searching = computed(() => query.trim() !== '')
 const matching = computed(() => filterWorkshopModels(models, { query }))
 
-// Named models answer a search. With nothing typed the same list is the first
-// four of the catalogue in alphabetical order, which recommends nothing and
-// loads four thumbnails to say it.
 const suggestions = computed(() =>
-  searching.value
+  query.trim()
     ? sortWorkshopModels(matching.value, 'name').slice(0, SUGGESTIONS)
     : []
 )
-
-// A provider or capability is worth offering only while it still leads
-// somewhere: the chips narrow what the search already found.
-const chipsFrom = (
-  values: (model: WorkshopModel) => readonly string[],
-  chosen: readonly string[],
-  showAll: boolean
-) => {
-  const counts = new Map<string, number>()
-  for (const model of matching.value)
-    for (const value of values(model))
-      counts.set(value, (counts.get(value) ?? 0) + 1)
-  const ranked = [...counts].sort(
-    ([a, left], [b, right]) => right - left || a.localeCompare(b)
-  )
-  return {
-    chips: (showAll ? ranked : ranked.slice(0, CHIPS)).map(
-      ([value, count]) => ({
-        value,
-        count,
-        selected: chosen.includes(value)
-      })
-    ),
-    hidden: Math.max(ranked.length - CHIPS, 0)
-  }
-}
-
-const allCapabilities = ref(false)
-
-const capabilityChips = computed(() =>
-  chipsFrom(
-    (model) => categoriesFor(model),
-    capabilities,
-    allCapabilities.value
-  )
-)
-
-// Opening the rest of the chips is undoable: the same button folds them back.
-const moreLabel = (expanded: boolean, hidden: number) =>
-  expanded
-    ? t('workshop.hub.facets.less', locale)
-    : t('workshop.search.more', locale).replace('{n}', `${hidden}`)
-
-const moreClass =
-  'hover:text-primary-comfy-yellow focus-visible:ring-primary-comfy-yellow/50 cursor-pointer rounded-lg text-xs text-primary-warm-gray transition-colors outline-none focus-visible:ring-3'
-
-const chipClass = (selected: boolean) =>
-  cn(
-    'inline-flex h-8 cursor-pointer items-center gap-1.5 rounded-2xl border px-3 text-xs transition-colors',
-    selected
-      ? 'border-primary-comfy-yellow text-primary-comfy-yellow'
-      : 'hover:border-primary-comfy-yellow hover:text-primary-comfy-yellow border-transparency-white-t20 text-primary-comfy-canvas'
-  )
 </script>
 
 <template>
@@ -156,42 +94,8 @@ const chipClass = (selected: boolean) =>
       </button>
     </section>
 
-    <p v-else-if="searching" class="p-2 text-sm text-primary-warm-gray">
+    <p v-else-if="query.trim()" class="p-2 text-sm text-primary-warm-gray">
       {{ t('workshop.hub.facets.noResults', locale) }}
     </p>
-
-    <section
-      v-if="capabilityChips.chips.length"
-      class="flex flex-wrap items-baseline gap-2"
-    >
-      <p
-        class="text-[11px] font-bold tracking-wider text-primary-warm-gray uppercase"
-      >
-        {{ t('workshop.hub.categories', locale) }}
-      </p>
-      <button
-        v-for="chip in capabilityChips.chips"
-        :key="chip.value"
-        type="button"
-        :aria-pressed="chip.selected"
-        :class="chipClass(chip.selected)"
-        data-testid="workshop-search-capability"
-        @mousedown.prevent
-        @click="emit('toggleCapability', chip.value)"
-      >
-        {{ chip.value }}
-        <span class="tabular-nums opacity-60">{{ chip.count }}</span>
-      </button>
-      <button
-        v-if="capabilityChips.hidden > 0"
-        type="button"
-        :class="moreClass"
-        data-testid="workshop-search-capability-more"
-        @mousedown.prevent
-        @click="allCapabilities = !allCapabilities"
-      >
-        {{ moreLabel(allCapabilities, capabilityChips.hidden) }}
-      </button>
-    </section>
   </div>
 </template>

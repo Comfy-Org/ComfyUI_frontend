@@ -15,7 +15,6 @@ import type { GeneratedField, WorkshopModel } from './models-catalogue'
 import { decodeGeneratedModels } from './workshop-generated-models'
 import {
   USE_CASES,
-  categoriesFor,
   countByFacet,
   countByUseCase,
   catalogSearch,
@@ -69,39 +68,6 @@ it('keeps generated video ahead of animated-image use cases', () => {
   expect(USE_CASES.indexOf('generate-videos')).toBeLessThan(
     USE_CASES.indexOf('animate-images')
   )
-})
-
-describe('categoriesFor', () => {
-  it('names the task of a model whose tags never spell it out', () => {
-    // FLUX.1 Kontext Max is tagged image-edit, never image-to-image: 101 of the
-    // catalogue's 268 models carry no shaped tag at all.
-    expect(
-      categoriesFor({ ...fixture[1], capabilities: ['image-edit', 'premium'] })
-    ).toEqual(['image-to-image'])
-  })
-
-  it('keeps a shaped tag that names a second thing the model does', () => {
-    expect(
-      categoriesFor({
-        ...fixture[1],
-        capabilities: ['text-to-image', 'flux']
-      })
-    ).toEqual(['image-to-image', 'text-to-image'])
-  })
-
-  it('reaches a model the facet counted but its tags do not name', () => {
-    const tagged = { ...fixture[1], capabilities: ['image-edit'] }
-    expect(
-      filterWorkshopModels([tagged], { capabilities: ['image-to-image'] })
-    ).toEqual([tagged])
-  })
-
-  it('still resolves a raw-tag deep link such as ?capability=flux', () => {
-    const tagged = { ...fixture[1], capabilities: ['flux'] }
-    expect(filterWorkshopModels([tagged], { capabilities: ['flux'] })).toEqual([
-      tagged
-    ])
-  })
 })
 
 describe('filterWorkshopModels', () => {
@@ -196,6 +162,29 @@ describe('filterWorkshopModels facets', () => {
         useCase: 'generate-videos',
         capabilities: ['Upscale']
       })
+    ).toEqual([])
+  })
+
+  it('filters by any selected use case', () => {
+    const matches = filterWorkshopModels(fixture, {
+      query: '',
+      useCases: ['generate-videos', 'edit-images']
+    })
+    expect(matches).toHaveLength(2)
+    expect(new Set(matches.map((model) => model.slug))).toEqual(
+      new Set(['a', 'b'])
+    )
+  })
+
+  it('treats no selected use cases as unrestricted', () => {
+    expect(filterWorkshopModels(fixture, { query: '', useCases: [] })).toEqual(
+      fixture
+    )
+  })
+
+  it('returns no models when none match the selected use case', () => {
+    expect(
+      filterWorkshopModels(fixture, { query: '', useCases: ['audio'] })
     ).toEqual([])
   })
 })
@@ -483,22 +472,30 @@ describe('catalog deep links', () => {
   it('round-trips a filter through the query string', () => {
     const search = catalogSearch({
       useCase: 'edit-images',
-      capabilities: ['Upscale', 'Image editing'],
-      providers: ['Kling'],
-      modalities: ['video']
+      query: 'upscale'
     })
     expect(parseCatalogSearch(search)).toEqual({
-      query: '',
+      query: 'upscale',
       useCase: 'edit-images',
-      capabilities: ['Upscale', 'Image editing'],
-      providers: ['Kling'],
-      modalities: ['video']
+      modalities: [],
+      providers: [],
+      capabilities: []
     })
   })
 
-  it('ignores unknown use cases and yields no query string when empty', () => {
-    expect(parseCatalogSearch('?useCase=nonsense').useCase).toBe('all')
-    expect(catalogSearch({ useCase: 'all', capabilities: [] })).toBe('')
+  it('keeps retired facets working for existing links', () => {
+    expect(
+      parseCatalogSearch(
+        '?useCase=nonsense&provider=Kling&capability=Upscale&modality=video'
+      )
+    ).toEqual({
+      query: '',
+      useCase: 'all',
+      modalities: ['video'],
+      providers: ['Kling'],
+      capabilities: ['Upscale']
+    })
+    expect(catalogSearch({ useCase: 'all' })).toBe('')
   })
 })
 

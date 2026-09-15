@@ -302,6 +302,7 @@ export function modalityOf(
 export interface WorkshopFilter {
   readonly query?: string
   readonly useCase?: UseCase | 'all' | 'other'
+  readonly useCases?: readonly UseCase[]
   readonly modalities?: readonly string[]
   readonly providers?: readonly string[]
   readonly capabilities?: readonly string[]
@@ -328,23 +329,57 @@ function matchesFacet(
   )
 }
 
-// Deep links into the catalog: `?useCase=edit-images&capability=Upscale&provider=Kling`.
-export function catalogSearch(filter: Partial<WorkshopFilter>): string {
+function matchesUseCases(
+  selected: readonly UseCase[],
+  model: WorkshopModel
+): boolean {
+  return (
+    selected.length === 0 ||
+    selected.some((value) => useCasesFor(model).includes(value))
+  )
+}
+
+function matchesModalities(
+  selected: readonly string[],
+  model: WorkshopModel
+): boolean {
+  return (
+    selected.length === 0 ||
+    (model.modalities ?? [modalityOf(model)]).some((value) =>
+      selected.includes(value)
+    )
+  )
+}
+
+function matchesCapabilities(
+  selected: readonly string[],
+  model: WorkshopModel
+): boolean {
+  return (
+    selected.length === 0 ||
+    selected.some((value) => model.capabilities.includes(value))
+  )
+}
+
+type CatalogLocation = Pick<WorkshopFilter, 'query' | 'useCase'>
+
+interface ParsedCatalogLocation extends CatalogLocation {
+  readonly modalities: readonly string[]
+  readonly providers: readonly string[]
+  readonly capabilities: readonly string[]
+}
+
+// Deep links into the catalog: `?useCase=edit-images&q=upscale`.
+export function catalogSearch(filter: CatalogLocation): string {
   const params = new URLSearchParams()
   if (filter.query) params.set('q', filter.query)
   if (filter.useCase && filter.useCase !== 'all')
     params.set('useCase', filter.useCase)
-  for (const capability of filter.capabilities ?? [])
-    params.append('capability', capability)
-  for (const provider of filter.providers ?? [])
-    params.append('provider', provider)
-  for (const modality of filter.modalities ?? [])
-    params.append('modality', modality)
   const search = params.toString()
   return search ? `?${search}` : ''
 }
 
-export function parseCatalogSearch(search: string): WorkshopFilter {
+export function parseCatalogSearch(search: string): ParsedCatalogLocation {
   const params = new URLSearchParams(search)
   const useCase = params.get('useCase')
   return {
@@ -352,9 +387,9 @@ export function parseCatalogSearch(search: string): WorkshopFilter {
     useCase:
       USE_CASES.find((value) => value === useCase) ??
       (useCase === 'other' ? 'other' : 'all'),
-    capabilities: params.getAll('capability'),
-    providers: params.getAll('provider'),
-    modalities: params.getAll('modality')
+    modalities: params.getAll('modality').filter(Boolean),
+    providers: params.getAll('provider').filter(Boolean),
+    capabilities: params.getAll('capability').filter(Boolean)
   }
 }
 
@@ -363,6 +398,7 @@ export function filterWorkshopModels(
   {
     query = '',
     useCase = 'all',
+    useCases = [],
     modalities = [],
     providers = [],
     capabilities = []
@@ -372,17 +408,10 @@ export function filterWorkshopModels(
   return list.filter(
     (model) =>
       matchesUseCase(useCase, model) &&
-      (modalities.length === 0 ||
-        (model.modalities ?? [modalityOf(model)]).some((modality) =>
-          modalities.includes(modality)
-        )) &&
+      matchesUseCases(useCases, model) &&
+      matchesModalities(modalities, model) &&
       matchesFacet(providers, model.provider) &&
-      (capabilities.length === 0 ||
-        capabilities.some(
-          (value) =>
-            model.capabilities.includes(value) ||
-            categoriesFor(model).includes(value)
-        )) &&
+      matchesCapabilities(capabilities, model) &&
       (needle === '' || searchText(model).includes(needle))
   )
 }
@@ -453,25 +482,6 @@ export function sortWorkshopModels(
 export interface FacetOption {
   readonly value: string
   readonly count: number
-}
-
-// Router tags name the maker, the version and the sales pitch beside the task:
-// `kling`, `v4.1` and `premium` sit in the same list as `text-to-image`. A tag
-// shaped input-to-output is the only one that names what a visitor came to
-// narrow by, so the catalogue offers those and leaves the rest to search.
-function isCategoryTag(tag: string): boolean {
-  return tag.includes('-to-')
-}
-
-// 101 of the 268 models carry no shaped tag at all: FLUX.1 Kontext Max is
-// tagged `image-edit`, never `image-to-image`. Its normalized task says the
-// same thing and says it for every model, so the task leads and a shaped tag
-// only adds a second category the tags happen to name.
-export function categoriesFor(model: WorkshopModel): readonly string[] {
-  const shaped = model.capabilities.filter(isCategoryTag)
-  return model.task && !shaped.includes(model.task)
-    ? [model.task, ...shaped]
-    : shaped
 }
 
 export function countByFacet(
