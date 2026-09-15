@@ -578,7 +578,9 @@
   ],
   "unprovided_injects": [],
   "unrendered_components": [],
-  "unused_component_props": [],
+  "unused_component_props": [
+    "apps/website/src/components/common/JsonLdGraph.astro:graph"
+  ],
   "unused_component_emits": [],
   "unused_component_inputs": [],
   "unused_component_outputs": [],

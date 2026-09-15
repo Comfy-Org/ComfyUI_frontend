@@ -421,6 +421,11 @@
         "count": 1
       }
     },
+    "apps/website/src/pages/pixal3d-trellis2.astro": {
+      "complexity_critical": {
+        "count": 1
+      }
+    },
     "apps/website/src/scripts/smoothScroll.ts": {
       "crap_moderate": {
         "count": 2
