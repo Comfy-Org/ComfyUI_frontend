@@ -24,7 +24,7 @@ test.describe('Workflow Tab Thumbnails', { tag: '@workflow' }, () => {
     const tab = await getTab(comfyPage, index)
     await tab.hover()
 
-    const popover = comfyPage.page.locator('.workflow-popover-fade')
+    const popover = comfyPage.menu.topbar.workflowTabPopover.root
     await expect(popover).toHaveCount(1)
     await expect(popover).toBeVisible()
     if (name) {
@@ -38,9 +38,8 @@ test.describe('Workflow Tab Thumbnails', { tag: '@workflow' }, () => {
     index: number,
     name?: string
   ) {
-    const popover = await getTabPopover(comfyPage, index, name)
-    const thumbnailImg = popover.locator('.workflow-preview-thumbnail img')
-    return thumbnailImg
+    await getTabPopover(comfyPage, index, name)
+    return comfyPage.menu.topbar.workflowTabPopover.thumbnail
   }
 
   async function getNodeThumbnailBase64(comfyPage: ComfyPage, index: number) {
@@ -83,15 +82,7 @@ test.describe('Workflow Tab Thumbnails', { tag: '@workflow' }, () => {
   })
 
   async function addNode(comfyPage: ComfyPage, category: string, node: string) {
-    const canvasArea = await comfyPage.canvas.boundingBox()
-
-    await comfyPage.page.mouse.move(
-      canvasArea!.x + canvasArea!.width / 2,
-      canvasArea!.y + canvasArea!.height / 2
-    )
-    await expect(comfyPage.page.locator('.workflow-popover-fade')).toHaveCount(
-      0
-    )
+    await comfyPage.menu.topbar.workflowTabPopover.dismiss()
 
     await comfyPage.canvasOps.rightClick(200, 200)
     await comfyPage.page.getByText('Add Node').click()

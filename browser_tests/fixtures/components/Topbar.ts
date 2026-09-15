@@ -1,7 +1,7 @@
 import type { Locator, Page } from '@playwright/test'
-import { expect } from '@playwright/test'
 
 import type { WorkspaceStore } from '@e2e/types/globals'
+import { WorkflowTabPopover } from '@e2e/fixtures/components/WorkflowTabPopover'
 import { TestIds } from '@e2e/fixtures/selectors'
 import { VueNodeHelpers } from '@e2e/fixtures/VueNodeHelpers'
 
@@ -9,10 +9,12 @@ export class Topbar {
   private readonly menuLocator: Locator
   private readonly menuTrigger: Locator
   readonly newWorkflowButton: Locator
+  readonly workflowTabPopover: WorkflowTabPopover
   readonly workflowTabs: Locator
   readonly integratedTabBarActions: Locator
 
   constructor(public readonly page: Page) {
+    this.workflowTabPopover = new WorkflowTabPopover(page)
     this.menuLocator = page.locator('.comfy-command-menu')
     this.menuTrigger = page.locator('.comfy-menu-button-wrapper')
     this.newWorkflowButton = page.locator('.new-blank-workflow-button')
@@ -127,7 +129,7 @@ export class Topbar {
   }
 
   async openTopbarMenu() {
-    await this.dismissWorkflowTabPopover()
+    await this.workflowTabPopover.dismiss()
 
     // If menu is already open, close it first to reset state
     const isAlreadyOpen = await this.menuLocator.isVisible()
@@ -138,23 +140,6 @@ export class Topbar {
     await this.menuTrigger.click()
     await this.menuLocator.waitFor({ state: 'visible' })
     return this.menuLocator
-  }
-
-  private async dismissWorkflowTabPopover() {
-    const popover = this.page.locator('.workflow-popover-fade')
-    await expect(async () => {
-      const box = await this.page.locator('#graph-canvas').boundingBox()
-      if (box) {
-        await this.page.mouse.move(
-          box.x + box.width / 2,
-          box.y + box.height / 2
-        )
-      }
-      if (await popover.isVisible()) {
-        await this.page.keyboard.press('Escape')
-      }
-      await expect(popover).toBeHidden({ timeout: 500 })
-    }).toPass({ timeout: 5000 })
   }
 
   async closeTopbarMenu() {
