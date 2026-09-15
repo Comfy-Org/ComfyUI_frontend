@@ -34,12 +34,17 @@ vi.mock<unknown>(import('@/platform/workspace/api/workspaceApi'), () => ({
     }
   }
 }))
-vi.mock<unknown>(import('@/platform/telemetry'), () => ({
-  useTelemetry: () => ({
-    trackBeginCheckout: mockTrackBeginCheckout,
-    trackBillingEvent: mockTrackBillingEvent
-  })
-}))
+vi.mock(import('@/platform/telemetry'), async () => {
+  const { createTelemetryMock } =
+    await import('@/platform/telemetry/__mocks__/telemetry')
+  return {
+    useTelemetry: () =>
+      createTelemetryMock({
+        trackBeginCheckout: mockTrackBeginCheckout,
+        trackBillingEvent: mockTrackBillingEvent
+      })
+  }
+})
 
 import { performTeamSubscriptionCheckout } from './teamSubscriptionCheckoutUtil'
 

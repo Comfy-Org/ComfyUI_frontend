@@ -23,8 +23,8 @@ vi.mock(
 vi.mock(import('@comfyorg/account/webviewDetection'), () => ({
   isEmbeddedWebView: () => false
 }))
-vi.mock<unknown>(import('@/platform/telemetry'), () => ({
-  useTelemetry: () => undefined
+vi.mock(import('@/platform/telemetry'), () => ({
+  useTelemetry: () => null
 }))
 
 const inChina = vi.hoisted(() => ({

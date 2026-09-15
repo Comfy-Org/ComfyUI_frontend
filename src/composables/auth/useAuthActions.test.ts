@@ -77,11 +77,17 @@ vi.mock(import('@/platform/distribution/types'), () => ({
   }
 }))
 
-vi.mock<unknown>(import('@/platform/telemetry'), () => ({
-  useTelemetry: vi.fn(() => ({
-    trackAuthFailed: mockTrackAuthFailed
-  }))
-}))
+vi.mock(import('@/platform/telemetry'), async () => {
+  const { createTelemetryMock } =
+    await import('@/platform/telemetry/__mocks__/telemetry')
+  return {
+    useTelemetry: vi.fn(() =>
+      createTelemetryMock({
+        trackAuthFailed: mockTrackAuthFailed
+      })
+    )
+  }
+})
 
 vi.mock<unknown>(import('@/composables/billing/usePendingTopup'), () => ({
   usePendingTopup: () => ({ startPendingTopup: mockStartPendingTopup })

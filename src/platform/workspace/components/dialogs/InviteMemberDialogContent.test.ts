@@ -36,12 +36,17 @@ vi.mock<unknown>(import('@/composables/billing/useBillingContext'), () => ({
   })
 }))
 
-vi.mock<unknown>(import('@/platform/telemetry'), () => ({
-  useTelemetry: () => ({
-    trackWorkspaceInviteSent: mockTrackInviteSent,
-    trackWorkspaceInviteFailed: mockTrackInviteFailed
-  })
-}))
+vi.mock(import('@/platform/telemetry'), async () => {
+  const { createTelemetryMock } =
+    await import('@/platform/telemetry/__mocks__/telemetry')
+  return {
+    useTelemetry: () =>
+      createTelemetryMock({
+        trackWorkspaceInviteSent: mockTrackInviteSent,
+        trackWorkspaceInviteFailed: mockTrackInviteFailed
+      })
+  }
+})
 
 vi.mock<unknown>(
   import('primevue/usetoast'), // eslint-disable-line primevue-removal/no-imports

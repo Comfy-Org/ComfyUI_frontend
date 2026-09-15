@@ -96,13 +96,18 @@ vi.mock<unknown>(
   })
 )
 
-vi.mock<unknown>(import('@/platform/telemetry'), () => ({
-  useTelemetry: () => ({
-    trackApiCreditTopupButtonPurchaseClicked: mockTrackTopUpPurchase,
-    trackBillingEvent: mockTrackBillingEvent,
-    trackCheckoutJourneyEvent: mockTrackCheckoutJourneyEvent
-  })
-}))
+vi.mock(import('@/platform/telemetry'), async () => {
+  const { createTelemetryMock } =
+    await import('@/platform/telemetry/__mocks__/telemetry')
+  return {
+    useTelemetry: () =>
+      createTelemetryMock({
+        trackApiCreditTopupButtonPurchaseClicked: mockTrackTopUpPurchase,
+        trackBillingEvent: mockTrackBillingEvent,
+        trackCheckoutJourneyEvent: mockTrackCheckoutJourneyEvent
+      })
+  }
+})
 
 vi.mock(import('firebase/auth'), { spy: true })
 

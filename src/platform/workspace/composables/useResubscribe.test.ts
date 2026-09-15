@@ -67,12 +67,17 @@ vi.mock<unknown>(
   })
 )
 
-vi.mock<unknown>(import('@/platform/telemetry'), () => ({
-  useTelemetry: () => ({
-    trackResubscribeClicked: state.trackResubscribeClicked,
-    trackBillingEvent: state.trackBillingEvent
-  })
-}))
+vi.mock(import('@/platform/telemetry'), async () => {
+  const { createTelemetryMock } =
+    await import('@/platform/telemetry/__mocks__/telemetry')
+  return {
+    useTelemetry: () =>
+      createTelemetryMock({
+        trackResubscribeClicked: state.trackResubscribeClicked,
+        trackBillingEvent: state.trackBillingEvent
+      })
+  }
+})
 
 vi.mock<unknown>(
   import('primevue/usetoast'), // eslint-disable-line primevue-removal/no-imports

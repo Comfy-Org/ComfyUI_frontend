@@ -381,15 +381,20 @@ const mockTrackResubscribeClicked = vi.hoisted(() => vi.fn())
 const mockTrackMonthlySubscriptionSucceeded = vi.hoisted(() => vi.fn())
 const mockTrackCheckoutJourneyEvent = vi.hoisted(() => vi.fn())
 
-vi.mock<unknown>(import('@/platform/telemetry'), () => ({
-  useTelemetry: () => ({
-    trackBillingEvent: mockTrackBillingEvent,
-    trackResubscribeClicked: mockTrackResubscribeClicked,
-    trackBeginCheckout: mockTrackBeginCheckout,
-    trackMonthlySubscriptionSucceeded: mockTrackMonthlySubscriptionSucceeded,
-    trackCheckoutJourneyEvent: mockTrackCheckoutJourneyEvent
-  })
-}))
+vi.mock(import('@/platform/telemetry'), async () => {
+  const { createTelemetryMock } =
+    await import('@/platform/telemetry/__mocks__/telemetry')
+  return {
+    useTelemetry: () =>
+      createTelemetryMock({
+        trackBillingEvent: mockTrackBillingEvent,
+        trackResubscribeClicked: mockTrackResubscribeClicked,
+        trackBeginCheckout: mockTrackBeginCheckout,
+        trackMonthlySubscriptionSucceeded: mockTrackMonthlySubscriptionSucceeded,
+        trackCheckoutJourneyEvent: mockTrackCheckoutJourneyEvent
+      })
+  }
+})
 
 vi.mock(import('@/platform/telemetry/reportError'), () => ({
   reportError: mockReportError

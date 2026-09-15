@@ -12,9 +12,14 @@ import type { SpotlightStep } from './onboardingTours'
 import { useOnboardingTourStore } from './onboardingTourStore'
 
 const telemetry = vi.hoisted(() => ({ track: vi.fn() }))
-vi.mock<unknown>(import('@/platform/telemetry'), () => ({
-  useTelemetry: () => ({ trackOnboardingTour: telemetry.track })
-}))
+vi.mock(import('@/platform/telemetry'), async () => {
+  const { createTelemetryMock } =
+    await import('@/platform/telemetry/__mocks__/telemetry')
+  return {
+    useTelemetry: () =>
+      createTelemetryMock({ trackOnboardingTour: telemetry.track })
+  }
+})
 
 const appModeMock = vi.hoisted(() => ({ mode: null as Ref<AppMode> | null }))
 vi.mock<unknown>(import('@/composables/useAppMode'), async () => {

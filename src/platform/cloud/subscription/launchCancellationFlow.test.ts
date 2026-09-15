@@ -39,11 +39,16 @@ vi.mock(import('@/platform/cloud/churnkey/churnkeyClient'), () => ({
   prepareChurnkey: mocks.prepare
 }))
 
-vi.mock<unknown>(import('@/platform/telemetry'), () => ({
-  useTelemetry: () => ({
-    trackSubscriptionCancellation: mocks.trackCancellation
-  })
-}))
+vi.mock(import('@/platform/telemetry'), async () => {
+  const { createTelemetryMock } =
+    await import('@/platform/telemetry/__mocks__/telemetry')
+  return {
+    useTelemetry: () =>
+      createTelemetryMock({
+        trackSubscriptionCancellation: mocks.trackCancellation
+      })
+  }
+})
 
 import { launchCancellationFlow } from './launchCancellationFlow'
 

@@ -13,11 +13,17 @@ const { trackSettingChanged } = vi.hoisted(() => ({
   trackSettingChanged: vi.fn()
 }))
 
-vi.mock<unknown>(import('@/platform/telemetry'), () => ({
-  useTelemetry: vi.fn(() => ({
-    trackSettingChanged
-  }))
-}))
+vi.mock(import('@/platform/telemetry'), async () => {
+  const { createTelemetryMock } =
+    await import('@/platform/telemetry/__mocks__/telemetry')
+  return {
+    useTelemetry: vi.fn(() =>
+      createTelemetryMock({
+        trackSettingChanged
+      })
+    )
+  }
+})
 
 // Mock the api
 vi.mock<unknown>(import('@/scripts/api'), () => ({

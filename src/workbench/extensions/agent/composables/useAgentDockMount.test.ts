@@ -4,8 +4,8 @@ import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/ag
 
 import { useAgentDockMount } from './useAgentDockMount'
 
-vi.mock<unknown>(import('@/platform/telemetry'), () => ({
-  useTelemetry: () => undefined
+vi.mock(import('@/platform/telemetry'), () => ({
+  useTelemetry: () => null
 }))
 const { loadDockedAgentPanel } = vi.hoisted(() => ({
   loadDockedAgentPanel: vi.fn(() => ({ name: 'DockedAgentPanel' }))

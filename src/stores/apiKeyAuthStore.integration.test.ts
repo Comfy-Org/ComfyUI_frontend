@@ -30,9 +30,13 @@ vi.mock<unknown>(import('@/composables/useFeatureFlags'), () => ({
   })
 }))
 
-vi.mock<unknown>(import('@/platform/telemetry'), () => ({
-  useTelemetry: () => ({ trackAuth: vi.fn() })
-}))
+vi.mock(import('@/platform/telemetry'), async () => {
+  const { createTelemetryMock } =
+    await import('@/platform/telemetry/__mocks__/telemetry')
+  return {
+    useTelemetry: () => createTelemetryMock({ trackAuth: vi.fn() })
+  }
+})
 
 vi.mock<unknown>(import('@/services/dialogService'), () => ({
   useDialogService: () => ({ showErrorDialog: vi.fn() })

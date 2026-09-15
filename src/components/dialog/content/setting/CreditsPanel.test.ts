@@ -47,9 +47,14 @@ vi.mock(
   })
 )
 
-vi.mock<unknown>(import('@/platform/telemetry'), () => ({
-  useTelemetry: () => ({ trackHelpResourceClicked: vi.fn() })
-}))
+vi.mock(import('@/platform/telemetry'), async () => {
+  const { createTelemetryMock } =
+    await import('@/platform/telemetry/__mocks__/telemetry')
+  return {
+    useTelemetry: () =>
+      createTelemetryMock({ trackHelpResourceClicked: vi.fn() })
+  }
+})
 
 vi.mock<unknown>(import('@/composables/useExternalLink'), () => ({
   useExternalLink: () => ({

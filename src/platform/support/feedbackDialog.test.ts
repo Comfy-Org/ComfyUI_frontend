@@ -15,9 +15,13 @@ vi.mock(import('@/platform/surveys/openTypeformDialog'), () => ({
 }))
 
 const trackUiButtonClicked = vi.fn()
-vi.mock<unknown>(import('@/platform/telemetry'), () => ({
-  useTelemetry: vi.fn(() => ({ trackUiButtonClicked }))
-}))
+vi.mock(import('@/platform/telemetry'), async () => {
+  const { createTelemetryMock } =
+    await import('@/platform/telemetry/__mocks__/telemetry')
+  return {
+    useTelemetry: vi.fn(() => createTelemetryMock({ trackUiButtonClicked }))
+  }
+})
 
 const userEmail = vi.hoisted((): { value: string | undefined } => ({
   value: undefined

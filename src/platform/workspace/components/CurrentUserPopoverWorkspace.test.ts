@@ -127,8 +127,8 @@ vi.mock<unknown>(import('@/services/dialogService'), () => ({
   })
 }))
 
-vi.mock<unknown>(import('@/platform/telemetry'), () => ({
-  useTelemetry: () => undefined
+vi.mock(import('@/platform/telemetry'), () => ({
+  useTelemetry: () => null
 }))
 
 vi.mock<unknown>(import('@/composables/useExternalLink'), () => ({

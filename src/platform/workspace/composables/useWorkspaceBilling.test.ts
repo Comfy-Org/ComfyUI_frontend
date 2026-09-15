@@ -85,11 +85,16 @@ vi.mock(import('@/platform/telemetry/reportError'), () => ({
 
 const mockTrackBillingEvent = vi.hoisted(() => vi.fn())
 
-vi.mock<unknown>(import('@/platform/telemetry'), () => ({
-  useTelemetry: () => ({
-    trackBillingEvent: mockTrackBillingEvent
-  })
-}))
+vi.mock(import('@/platform/telemetry'), async () => {
+  const { createTelemetryMock } =
+    await import('@/platform/telemetry/__mocks__/telemetry')
+  return {
+    useTelemetry: () =>
+      createTelemetryMock({
+        trackBillingEvent: mockTrackBillingEvent
+      })
+  }
+})
 
 let scope: ReturnType<typeof effectScope> | undefined
 

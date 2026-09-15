@@ -117,13 +117,19 @@ vi.mock<unknown>(import('@/services/litegraphService'), () => ({
 }))
 
 const mockTrackHelpResourceClicked = vi.hoisted(() => vi.fn())
-vi.mock<unknown>(import('@/platform/telemetry'), () => ({
-  useTelemetry: vi.fn(() => ({
-    trackHelpResourceClicked: mockTrackHelpResourceClicked,
-    trackRunButton: vi.fn(),
-    trackWorkflowExecution: vi.fn()
-  }))
-}))
+vi.mock(import('@/platform/telemetry'), async () => {
+  const { createTelemetryMock } =
+    await import('@/platform/telemetry/__mocks__/telemetry')
+  return {
+    useTelemetry: vi.fn(() =>
+      createTelemetryMock({
+        trackHelpResourceClicked: mockTrackHelpResourceClicked,
+        trackRunButton: vi.fn(),
+        trackWorkflowExecution: vi.fn()
+      })
+    )
+  }
+})
 
 const mockShowAbout = vi.hoisted(() => vi.fn())
 const mockShowSettings = vi.hoisted(() => vi.fn())

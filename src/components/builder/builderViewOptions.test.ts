@@ -9,9 +9,14 @@ const mockTrackDefaultViewSet = vi.hoisted(() => vi.fn())
 
 vi.mock(import('@/i18n'), () => ({ t: (key: string) => key }))
 
-vi.mock<unknown>(import('@/platform/telemetry'), () => ({
-  useTelemetry: () => ({ trackDefaultViewSet: mockTrackDefaultViewSet })
-}))
+vi.mock(import('@/platform/telemetry'), async () => {
+  const { createTelemetryMock } =
+    await import('@/platform/telemetry/__mocks__/telemetry')
+  return {
+    useTelemetry: () =>
+      createTelemetryMock({ trackDefaultViewSet: mockTrackDefaultViewSet })
+  }
+})
 
 vi.mock<unknown>(import('@/scripts/app'), () => {
   const rootGraph = { extra: {} }

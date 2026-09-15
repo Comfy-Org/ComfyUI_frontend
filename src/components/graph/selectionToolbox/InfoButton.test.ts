@@ -19,11 +19,16 @@ vi.mock<unknown>(import('@/composables/graph/useSelectionState'), () => ({
   })
 }))
 
-vi.mock<unknown>(import('@/platform/telemetry'), () => ({
-  useTelemetry: () => ({
-    trackUiButtonClicked: trackUiButtonClickedMock
-  })
-}))
+vi.mock(import('@/platform/telemetry'), async () => {
+  const { createTelemetryMock } =
+    await import('@/platform/telemetry/__mocks__/telemetry')
+  return {
+    useTelemetry: () =>
+      createTelemetryMock({
+        trackUiButtonClicked: trackUiButtonClickedMock
+      })
+  }
+})
 
 describe('InfoButton', () => {
   const i18n = createI18n({

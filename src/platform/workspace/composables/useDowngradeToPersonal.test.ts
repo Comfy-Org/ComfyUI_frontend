@@ -104,11 +104,16 @@ vi.mock(import('@/config/comfyApi'), () => ({
   getComfyPlatformBaseUrl: () => 'https://platform.test'
 }))
 
-vi.mock<unknown>(import('@/platform/telemetry'), () => ({
-  useTelemetry: () => ({
-    trackBillingEvent: mockTrackBillingEvent
-  })
-}))
+vi.mock(import('@/platform/telemetry'), async () => {
+  const { createTelemetryMock } =
+    await import('@/platform/telemetry/__mocks__/telemetry')
+  return {
+    useTelemetry: () =>
+      createTelemetryMock({
+        trackBillingEvent: mockTrackBillingEvent
+      })
+  }
+})
 
 function createMember(
   overrides: Partial<WorkspaceMember> = {}

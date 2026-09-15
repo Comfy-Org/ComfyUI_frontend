@@ -57,14 +57,19 @@ vi.mock(import('@/platform/distribution/types'), () => ({
   isCloud: true
 }))
 
-vi.mock<unknown>(import('@/platform/telemetry'), () => ({
-  useTelemetry: () => ({
-    trackExecutionError: mockTrackExecutionError,
-    trackExecutionOutcome: mockTrackExecutionOutcome,
-    trackExecutionSuccess: mockTrackExecutionSuccess,
-    trackSharedWorkflowRun: mockTrackSharedWorkflowRun
-  })
-}))
+vi.mock(import('@/platform/telemetry'), async () => {
+  const { createTelemetryMock } =
+    await import('@/platform/telemetry/__mocks__/telemetry')
+  return {
+    useTelemetry: () =>
+      createTelemetryMock({
+        trackExecutionError: mockTrackExecutionError,
+        trackExecutionOutcome: mockTrackExecutionOutcome,
+        trackExecutionSuccess: mockTrackExecutionSuccess,
+        trackSharedWorkflowRun: mockTrackSharedWorkflowRun
+      })
+  }
+})
 
 // Remove any previous global types
 declare global {

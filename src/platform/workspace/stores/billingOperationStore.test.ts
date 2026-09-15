@@ -83,12 +83,17 @@ vi.mock(import('@/platform/settings/composables/useSettingsDialog'), () => ({
 const mockTrackBillingEvent = vi.fn()
 const mockTrackMonthlySubscriptionSucceeded = vi.fn()
 
-vi.mock<unknown>(import('@/platform/telemetry'), () => ({
-  useTelemetry: () => ({
-    trackBillingEvent: mockTrackBillingEvent,
-    trackMonthlySubscriptionSucceeded: mockTrackMonthlySubscriptionSucceeded
-  })
-}))
+vi.mock(import('@/platform/telemetry'), async () => {
+  const { createTelemetryMock } =
+    await import('@/platform/telemetry/__mocks__/telemetry')
+  return {
+    useTelemetry: () =>
+      createTelemetryMock({
+        trackBillingEvent: mockTrackBillingEvent,
+        trackMonthlySubscriptionSucceeded: mockTrackMonthlySubscriptionSucceeded
+      })
+  }
+})
 
 import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
 

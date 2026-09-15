@@ -48,12 +48,17 @@ vi.mock<unknown>(
   })
 )
 
-vi.mock<unknown>(import('@/platform/telemetry'), () => ({
-  useTelemetry: () => ({
-    trackApiCreditTopupButtonPurchaseClicked: mockTrackTopUpPurchase,
-    trackBillingEvent: mockTrackBillingEvent
-  })
-}))
+vi.mock(import('@/platform/telemetry'), async () => {
+  const { createTelemetryMock } =
+    await import('@/platform/telemetry/__mocks__/telemetry')
+  return {
+    useTelemetry: () =>
+      createTelemetryMock({
+        trackApiCreditTopupButtonPurchaseClicked: mockTrackTopUpPurchase,
+        trackBillingEvent: mockTrackBillingEvent
+      })
+  }
+})
 
 const mockClearPendingTopup = vi.hoisted(() => vi.fn())
 vi.mock<unknown>(import('@/composables/billing/usePendingTopup'), () => ({

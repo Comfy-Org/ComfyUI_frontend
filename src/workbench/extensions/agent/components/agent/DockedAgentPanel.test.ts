@@ -13,8 +13,8 @@ import { useAgentRunModeStore } from '@/workbench/extensions/agent/stores/agent/
 
 import DockedAgentPanel from './DockedAgentPanel.vue'
 
-vi.mock<unknown>(import('@/platform/telemetry'), () => ({
-  useTelemetry: () => undefined
+vi.mock(import('@/platform/telemetry'), () => ({
+  useTelemetry: () => null
 }))
 vi.mock(import('@/platform/telemetry/reportError'), () => ({
   reportError: vi.fn()

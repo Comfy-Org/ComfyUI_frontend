@@ -11,8 +11,8 @@ import DockedAgentPanel from './DockedAgentPanel.vue'
 vi.mock(import('@/platform/telemetry/reportError'), () => ({
   reportError: vi.fn()
 }))
-vi.mock<unknown>(import('@/platform/telemetry'), () => ({
-  useTelemetry: () => undefined
+vi.mock(import('@/platform/telemetry'), () => ({
+  useTelemetry: () => null
 }))
 
 // The mocked module factory throws, so the dynamic import itself rejects -

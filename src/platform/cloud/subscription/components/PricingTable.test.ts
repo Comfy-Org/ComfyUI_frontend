@@ -114,12 +114,17 @@ vi.mock<unknown>(import('@/composables/useErrorHandling'), () => ({
   })
 }))
 
-vi.mock<unknown>(import('@/platform/telemetry'), () => ({
-  useTelemetry: () => ({
-    trackBeginCheckout: mockTrackBeginCheckout,
-    trackBillingEvent: mockTrackBillingEvent
-  })
-}))
+vi.mock(import('@/platform/telemetry'), async () => {
+  const { createTelemetryMock } =
+    await import('@/platform/telemetry/__mocks__/telemetry')
+  return {
+    useTelemetry: () =>
+      createTelemetryMock({
+        trackBeginCheckout: mockTrackBeginCheckout,
+        trackBillingEvent: mockTrackBillingEvent
+      })
+  }
+})
 
 vi.mock<unknown>(
   import('@/platform/telemetry/utils/checkoutAttribution'),

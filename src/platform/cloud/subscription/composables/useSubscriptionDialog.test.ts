@@ -105,9 +105,14 @@ vi.mock<unknown>(import('@/composables/billing/useBillingContext'), () => ({
   })
 }))
 
-vi.mock<unknown>(import('@/platform/telemetry'), () => ({
-  useTelemetry: () => ({ trackSubscription: mockTrackSubscription })
-}))
+vi.mock(import('@/platform/telemetry'), async () => {
+  const { createTelemetryMock } =
+    await import('@/platform/telemetry/__mocks__/telemetry')
+  return {
+    useTelemetry: () =>
+      createTelemetryMock({ trackSubscription: mockTrackSubscription })
+  }
+})
 
 vi.mock<unknown>(
   import('@/platform/workspace/composables/useWorkspaceUI'),

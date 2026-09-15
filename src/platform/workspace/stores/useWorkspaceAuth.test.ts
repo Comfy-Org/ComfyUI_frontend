@@ -70,11 +70,16 @@ vi.mock<unknown>(import('@/platform/auth/session/useSessionCookie'), () => ({
   })
 }))
 
-vi.mock<unknown>(import('@/platform/telemetry'), () => ({
-  useTelemetry: () => ({
-    trackUnifiedAuthRefresh: mockTrackUnifiedAuthRefresh
-  })
-}))
+vi.mock(import('@/platform/telemetry'), async () => {
+  const { createTelemetryMock } =
+    await import('@/platform/telemetry/__mocks__/telemetry')
+  return {
+    useTelemetry: () =>
+      createTelemetryMock({
+        trackUnifiedAuthRefresh: mockTrackUnifiedAuthRefresh
+      })
+  }
+})
 
 vi.mock(import('@/platform/workspace/api/workspaceApiUrl'), () => ({
   workspaceApiUrl: (route: string) => `https://api.example.com/api${route}`

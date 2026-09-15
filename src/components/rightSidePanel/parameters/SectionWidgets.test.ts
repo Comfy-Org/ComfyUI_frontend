@@ -31,11 +31,16 @@ const setDirty = vi.fn()
 const getNodeById = vi.fn()
 const animateToBounds = vi.fn()
 
-vi.mock<unknown>(import('@/platform/telemetry'), () => ({
-  useTelemetry: () => ({
-    trackUiButtonClicked: mockTrackUiButtonClicked
-  })
-}))
+vi.mock(import('@/platform/telemetry'), async () => {
+  const { createTelemetryMock } =
+    await import('@/platform/telemetry/__mocks__/telemetry')
+  return {
+    useTelemetry: () =>
+      createTelemetryMock({
+        trackUiButtonClicked: mockTrackUiButtonClicked
+      })
+  }
+})
 
 const WidgetItemStub = defineComponent({
   inheritAttrs: false,

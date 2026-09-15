@@ -20,11 +20,16 @@ vi.mock(import('@/services/hdrViewerService'), () => ({
 }))
 
 const mockTrackImageLoadFailed = vi.fn()
-vi.mock<unknown>(import('@/platform/telemetry'), () => ({
-  useTelemetry: () => ({
-    trackImageLoadFailed: mockTrackImageLoadFailed
-  })
-}))
+vi.mock(import('@/platform/telemetry'), async () => {
+  const { createTelemetryMock } =
+    await import('@/platform/telemetry/__mocks__/telemetry')
+  return {
+    useTelemetry: () =>
+      createTelemetryMock({
+        trackImageLoadFailed: mockTrackImageLoadFailed
+      })
+  }
+})
 
 const i18n = createI18n({
   legacy: false,

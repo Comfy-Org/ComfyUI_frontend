@@ -32,8 +32,8 @@ vi.mock(import('@/composables/graph/useGraphHierarchy'), () => ({
   useGraphHierarchy: () => ({ findParentGroup: vi.fn(() => null) })
 }))
 
-vi.mock<unknown>(import('@/platform/telemetry'), () => ({
-  useTelemetry: () => undefined
+vi.mock(import('@/platform/telemetry'), () => ({
+  useTelemetry: () => null
 }))
 
 function createPanelI18n() {

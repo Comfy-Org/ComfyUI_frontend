@@ -14,11 +14,16 @@ const { mockRemint, mockTrackUnifiedAuthRetry, flagState } = vi.hoisted(() => ({
   flagState: { unifiedCloudAuthEnabled: true }
 }))
 
-vi.mock<unknown>(import('@/platform/telemetry'), () => ({
-  useTelemetry: () => ({
-    trackUnifiedAuthRetry: mockTrackUnifiedAuthRetry
-  })
-}))
+vi.mock(import('@/platform/telemetry'), async () => {
+  const { createTelemetryMock } =
+    await import('@/platform/telemetry/__mocks__/telemetry')
+  return {
+    useTelemetry: () =>
+      createTelemetryMock({
+        trackUnifiedAuthRetry: mockTrackUnifiedAuthRetry
+      })
+  }
+})
 
 vi.mock<unknown>(import('@/composables/useFeatureFlags'), () => ({
   useFeatureFlags: () => ({

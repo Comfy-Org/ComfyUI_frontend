@@ -49,11 +49,16 @@ vi.mock<unknown>(import('@/composables/useAppMode'), () => ({
   })
 }))
 
-vi.mock<unknown>(import('@/platform/telemetry'), () => ({
-  useTelemetry: () => ({
-    trackShareLinkOpened: mockTrackShareLinkOpened
-  })
-}))
+vi.mock(import('@/platform/telemetry'), async () => {
+  const { createTelemetryMock } =
+    await import('@/platform/telemetry/__mocks__/telemetry')
+  return {
+    useTelemetry: () =>
+      createTelemetryMock({
+        trackShareLinkOpened: mockTrackShareLinkOpened
+      })
+  }
+})
 
 vi.mock<unknown>(
   import('@/platform/workflow/sharing/services/workflowShareService'),

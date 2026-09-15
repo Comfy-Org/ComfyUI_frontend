@@ -6,9 +6,14 @@ const hoisted = vi.hoisted(() => ({
   trackSearchQuery: vi.fn()
 }))
 
-vi.mock<unknown>(import('@/platform/telemetry'), () => ({
-  useTelemetry: () => ({ trackSearchQuery: hoisted.trackSearchQuery })
-}))
+vi.mock(import('@/platform/telemetry'), async () => {
+  const { createTelemetryMock } =
+    await import('@/platform/telemetry/__mocks__/telemetry')
+  return {
+    useTelemetry: () =>
+      createTelemetryMock({ trackSearchQuery: hoisted.trackSearchQuery })
+  }
+})
 
 import { useSearchQueryTracking } from './useSearchQueryTracking'
 

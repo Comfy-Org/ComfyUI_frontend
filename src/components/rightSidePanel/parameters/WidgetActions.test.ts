@@ -26,11 +26,16 @@ vi.mock(import('@/core/graph/subgraph/promotionUtils'), () => ({
   promoteWidget: vi.fn()
 }))
 
-vi.mock<unknown>(import('@/platform/telemetry'), () => ({
-  useTelemetry: () => ({
-    trackWidgetFavoriteToggled: mockTrackWidgetFavoriteToggled
-  })
-}))
+vi.mock(import('@/platform/telemetry'), async () => {
+  const { createTelemetryMock } =
+    await import('@/platform/telemetry/__mocks__/telemetry')
+  return {
+    useTelemetry: () =>
+      createTelemetryMock({
+        trackWidgetFavoriteToggled: mockTrackWidgetFavoriteToggled
+      })
+  }
+})
 
 vi.mock<unknown>(import('@/services/dialogService'), () => ({
   useDialogService: () => ({

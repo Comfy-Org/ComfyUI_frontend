@@ -40,9 +40,14 @@ vi.mock<unknown>(
   })
 )
 
-vi.mock<unknown>(import('@/platform/telemetry'), () => ({
-  useTelemetry: () => ({ trackOnboardingTour: mocks.trackOnboardingTour })
-}))
+vi.mock(import('@/platform/telemetry'), async () => {
+  const { createTelemetryMock } =
+    await import('@/platform/telemetry/__mocks__/telemetry')
+  return {
+    useTelemetry: () =>
+      createTelemetryMock({ trackOnboardingTour: mocks.trackOnboardingTour })
+  }
+})
 
 const i18n = createI18n({
   legacy: false,

@@ -17,8 +17,8 @@ vi.mock(import('@/i18n'), () => ({
   t: (key: string) => key
 }))
 
-vi.mock<unknown>(import('@/platform/telemetry'), () => ({
-  useTelemetry: () => ({ trackEvent: vi.fn() })
+vi.mock(import('@/platform/telemetry'), () => ({
+  useTelemetry: () => null
 }))
 
 const mockIsCloud = vi.hoisted(() => ({ value: true }))

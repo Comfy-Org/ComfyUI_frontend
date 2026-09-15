@@ -95,11 +95,16 @@ vi.mock(import('vuefire'), () => ({
 vi.mock(import('firebase/auth'))
 
 const mockTrackAuth = vi.fn()
-vi.mock<unknown>(import('@/platform/telemetry'), () => ({
-  useTelemetry: () => ({
-    trackAuth: mockTrackAuth
-  })
-}))
+vi.mock(import('@/platform/telemetry'), async () => {
+  const { createTelemetryMock } =
+    await import('@/platform/telemetry/__mocks__/telemetry')
+  return {
+    useTelemetry: () =>
+      createTelemetryMock({
+        trackAuth: mockTrackAuth
+      })
+  }
+})
 
 let mockResetSocket: Mock
 

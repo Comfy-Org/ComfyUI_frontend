@@ -38,12 +38,17 @@ vi.mock<unknown>(import('@/composables/useErrorHandling'), () => ({
   useErrorHandling: () => ({ toastErrorHandler: mockToastErrorHandler })
 }))
 
-vi.mock<unknown>(import('@/platform/telemetry'), () => ({
-  useTelemetry: () => ({
-    trackEnterLinear: mockTrackEnterLinear,
-    trackDefaultViewSet: mockTrackDefaultViewSet
-  })
-}))
+vi.mock(import('@/platform/telemetry'), async () => {
+  const { createTelemetryMock } =
+    await import('@/platform/telemetry/__mocks__/telemetry')
+  return {
+    useTelemetry: () =>
+      createTelemetryMock({
+        trackEnterLinear: mockTrackEnterLinear,
+        trackDefaultViewSet: mockTrackDefaultViewSet
+      })
+  }
+})
 
 vi.mock<unknown>(
   import('@/platform/workflow/core/services/workflowService'),

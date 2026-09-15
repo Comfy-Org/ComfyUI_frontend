@@ -9,11 +9,16 @@ import ShareWorkflowDialogContent from '@/platform/workflow/sharing/components/S
 
 const mockTrackShareFlow = vi.hoisted(() => vi.fn())
 
-vi.mock<unknown>(import('@/platform/telemetry'), () => ({
-  useTelemetry: () => ({
-    trackShareFlow: mockTrackShareFlow
-  })
-}))
+vi.mock(import('@/platform/telemetry'), async () => {
+  const { createTelemetryMock } =
+    await import('@/platform/telemetry/__mocks__/telemetry')
+  return {
+    useTelemetry: () =>
+      createTelemetryMock({
+        trackShareFlow: mockTrackShareFlow
+      })
+  }
+})
 
 const mockToast = vi.hoisted(() => ({ add: vi.fn() }))
 

@@ -101,11 +101,16 @@ vi.mock<unknown>(
   })
 )
 
-vi.mock<unknown>(import('@/platform/telemetry'), () => ({
-  useTelemetry: () => ({
-    trackSubscriptionCancellation: mockTrackCancellation
-  })
-}))
+vi.mock(import('@/platform/telemetry'), async () => {
+  const { createTelemetryMock } =
+    await import('@/platform/telemetry/__mocks__/telemetry')
+  return {
+    useTelemetry: () =>
+      createTelemetryMock({
+        trackSubscriptionCancellation: mockTrackCancellation
+      })
+  }
+})
 
 vi.mock<unknown>(
   import('primevue/usetoast'), // eslint-disable-line primevue-removal/no-imports

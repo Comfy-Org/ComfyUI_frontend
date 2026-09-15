@@ -39,9 +39,14 @@ vi.mock(import('@/platform/distribution/types'), () => ({
   isNightly: false
 }))
 
-vi.mock<unknown>(import('@/platform/telemetry'), () => ({
-  useTelemetry: () => ({ trackUiButtonClicked: spies.trackUiButtonClicked })
-}))
+vi.mock(import('@/platform/telemetry'), async () => {
+  const { createTelemetryMock } =
+    await import('@/platform/telemetry/__mocks__/telemetry')
+  return {
+    useTelemetry: () =>
+      createTelemetryMock({ trackUiButtonClicked: spies.trackUiButtonClicked })
+  }
+})
 
 const i18n = createI18n({
   legacy: false,

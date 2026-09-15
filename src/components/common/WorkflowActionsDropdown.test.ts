@@ -26,9 +26,14 @@ const spies = vi.hoisted(() => ({
   markAsSeen: vi.fn()
 }))
 
-vi.mock<unknown>(import('@/platform/telemetry'), () => ({
-  useTelemetry: () => ({ trackUiButtonClicked: spies.trackUiButtonClicked })
-}))
+vi.mock(import('@/platform/telemetry'), async () => {
+  const { createTelemetryMock } =
+    await import('@/platform/telemetry/__mocks__/telemetry')
+  return {
+    useTelemetry: () =>
+      createTelemetryMock({ trackUiButtonClicked: spies.trackUiButtonClicked })
+  }
+})
 
 vi.mock<unknown>(import('@/composables/useWorkflowActionsMenu'), async () => {
   const { ref } = await import('vue')
