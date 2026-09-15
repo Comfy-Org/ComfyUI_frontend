@@ -2,7 +2,7 @@ import { ZIndex } from '@primeuix/utils/zindex'
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { ref } from 'vue'
+import { nextTick, ref } from 'vue'
 
 import AccessibleTooltip from './AccessibleTooltip.vue'
 
@@ -47,6 +47,25 @@ function renderInCard(
 }
 
 describe('AccessibleTooltip', () => {
+  it('suppresses a disabled tooltip without disabling its trigger', async () => {
+    const { rerender } = render(AccessibleTooltip, {
+      props: { label: 'Stop the current run', disabled: true },
+      slots: { trigger: '<button>Stop</button>' }
+    })
+    const trigger = screen.getByRole('button', { name: 'Stop' })
+    trigger.focus()
+    await nextTick()
+    expect(trigger).toBeEnabled()
+    expect(screen.queryByTestId('disclosure-tooltip')).not.toBeInTheDocument()
+
+    trigger.blur()
+    await rerender({ disabled: false })
+    trigger.focus()
+    expect(await screen.findByTestId('disclosure-tooltip')).toHaveTextContent(
+      'Stop the current run'
+    )
+  })
+
   it('reveals the label on hover', async () => {
     const { user, unmount } = renderInCard()
     expect(screen.queryByText('Kling, Luma')).not.toBeInTheDocument()

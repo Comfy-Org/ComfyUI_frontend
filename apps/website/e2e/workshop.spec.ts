@@ -166,11 +166,13 @@ test.describe('Models catalog', () => {
     const sections = page.getByTestId('workshop-sections')
     await expect(sections).toBeVisible()
     const videos = page.getByTestId('section-generate-videos')
-    const rowHeading = await videos
-      .getByRole('heading', { level: 2 })
+    const rowLabel = (
+      await videos.getByRole('heading', { level: 2 }).innerText()
+    ).trim()
+    const seeAll = await videos
+      .getByTestId('section-generate-videos-see-all')
       .innerText()
-    const promisedCount = Number(rowHeading.match(/(\d+)\s*$/)?.[1])
-    const rowLabel = rowHeading.replace(/\s*\d+\s*$/, '').trim()
+    const promisedCount = Number(seeAll.match(/(\d+)/)?.[1])
     expect(promisedCount).toBeGreaterThan(0)
     await videos.getByTestId('section-generate-videos-open').click()
     const cards = page
@@ -370,6 +372,45 @@ test.describe('Models catalog', () => {
       '/models/byteplus--seedance-2-5-text-to-video--generate-videos/'
     )
   })
+
+  test('the row arrow sits level with the middle of a card', async ({
+    page
+  }) => {
+    for (const width of [1440, 820, 420]) {
+      await page.setViewportSize({ width, height: 1000 })
+      await page.goto('/models/')
+      const row = page.getByTestId('section-generate-images')
+      const card = row.getByTestId('workshop-model-card').first()
+      await expect(card).toBeVisible()
+      await card.hover()
+      const cardBox = await card.boundingBox()
+      const arrowBox = await row.getByTestId('card-row-next').boundingBox()
+      if (!cardBox || !arrowBox) throw new Error('the row did not lay out')
+      const middleOf = (box: { y: number; height: number }) =>
+        box.y + box.height / 2
+      expect(Math.abs(middleOf(arrowBox) - middleOf(cardBox))).toBeLessThan(1)
+    }
+  })
+
+  test('the fade reaches both ends of the scrolling row', async ({ page }) => {
+    await page.goto('/models/')
+    const row = page.getByTestId('section-generate-images')
+    await expect(row.getByTestId('workshop-model-card').first()).toBeVisible()
+    await row.hover()
+    const edges = await row.evaluate((section) => {
+      const span = (selector: string) => {
+        const element = section.querySelector(selector)
+        if (!element) return undefined
+        const { x, width } = element.getBoundingClientRect()
+        return { left: x, right: x + width }
+      }
+      return {
+        scroller: span('ul'),
+        fades: span('[data-testid="card-row-arrows"]')
+      }
+    })
+    expect(edges.fades).toEqual(edges.scroller)
+  })
 })
 
 test.describe('Model playground', () => {
@@ -427,7 +468,7 @@ test.describe('Model playground', () => {
     await expect(page.getByTestId('run-button')).toBeEnabled()
     const [chooser] = await Promise.all([
       page.waitForEvent('filechooser'),
-      page.getByText('Choose images or drop them here', { exact: true }).click()
+      page.getByText(/^Select or drop /).click()
     ])
     await chooser.setFiles('e2e/assets/placeholder-1x1.webp')
     await expect(
@@ -473,7 +514,7 @@ test.describe('Model playground', () => {
     await page.goto('/models/byteplus--seedream-4-5--edit-images/')
     const [chooser] = await Promise.all([
       page.waitForEvent('filechooser'),
-      page.getByText('Choose images or drop them here', { exact: true }).click()
+      page.getByText(/^Select or drop /).click()
     ])
     await chooser.setFiles('e2e/assets/placeholder-1x1.webp')
     await page.getByRole('tab', { name: 'API', exact: true }).click()

@@ -84,7 +84,7 @@ describe('workflow reference clipboard', () => {
     expect(editor.textContent).toBe('')
     expect(store.workflowReferences).toEqual([])
 
-    await user.type(editor, 'New: ')
+    await user.paste('New: ')
     await user.paste(clipboard)
     expect(editor.textContent).toBe('New: Before 参考 🐈 between Missing after')
     expect(store.workflowReferences).toEqual([

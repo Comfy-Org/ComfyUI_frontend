@@ -16,7 +16,7 @@ const emit = defineEmits<{ leave: [] }>()
   <Dialog v-model:open="open">
     <DialogContent
       :close-label="t('workshop.run.leaveStay', locale)"
-      class="flex flex-col gap-6 sm:max-w-md"
+      class="flex flex-col gap-6 sm:max-w-xl"
       data-testid="run-leave-dialog"
     >
       <div class="flex flex-col gap-2">
@@ -28,7 +28,9 @@ const emit = defineEmits<{ leave: [] }>()
         </DialogDescription>
       </div>
 
-      <div class="flex flex-wrap items-center justify-end gap-3">
+      <div
+        class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-end"
+      >
         <Button
           variant="outline"
           size="lg"

@@ -1,3 +1,4 @@
+// @vitest-environment happy-dom
 import userEvent from '@testing-library/user-event'
 import { fireEvent, render, screen, within } from '@testing-library/vue'
 import { IDBFactory } from 'fake-indexeddb'
@@ -656,6 +657,16 @@ describe('ModelDetail', () => {
     expect(auth.ensureFresh).toHaveBeenCalled()
     expect(screen.getByTestId('router-request-id').textContent).toContain(
       'request-123'
+    )
+    expect(screen.getByTestId('output-expires').textContent).toContain(
+      'expire 24 hours'
+    )
+    const copyRequestId = screen.getByRole('button', {
+      name: 'Copy request ID'
+    })
+    await user().click(copyRequestId)
+    await vi.waitFor(() =>
+      expect(copyRequestId.textContent).toContain('Copied')
     )
     expect(refreshWorkshopCredits).toHaveBeenCalledWith({ force: true })
   })
@@ -1699,7 +1710,6 @@ describe('ModelDetail', () => {
       expect(
         screen.getByRole('heading', { name: 'Sample outputs' })
       ).toBeTruthy()
-      expect(screen.getByText(/without touching your inputs/)).toBeTruthy()
       if (nativeJson)
         await user().click(screen.getByRole('button', { name: 'Native JSON' }))
       const input = screen.getByTestId<HTMLTextAreaElement>(

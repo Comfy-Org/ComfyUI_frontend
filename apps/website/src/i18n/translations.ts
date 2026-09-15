@@ -9335,6 +9335,10 @@ Enterprise`
     'zh-CN': 'V2 · 工作流、应用与模型'
   },
   'workshop.sections.featured': { en: 'Featured', 'zh-CN': '精选' },
+  'workshop.sections.seeAll': {
+    en: 'See all ({n})',
+    'zh-CN': '查看全部 ({n})'
+  },
   'workshop.sections.otherFormats': {
     en: 'Other formats',
     'zh-CN': '其他格式'
@@ -9411,7 +9415,6 @@ Enterprise`
   'workshop.filter.noMatches': { en: 'No matches', 'zh-CN': '没有匹配项' },
   'workshop.filter.clearAll': { en: 'Clear filters', 'zh-CN': '清除筛选' },
   'workshop.filter.applied': { en: '{n} selected', 'zh-CN': '已选 {n} 项' },
-  'workshop.filter.providerGroup': { en: 'Models', 'zh-CN': '模型' },
   'workshop.launch.label': {
     en: 'Use cases',
     'zh-CN': '用例'
@@ -9675,21 +9678,25 @@ Enterprise`
   'workshop.field.format': { en: 'Format', 'zh-CN': '格式' },
   'workshop.field.maxTokens': { en: 'Max tokens', 'zh-CN': '最大 token 数' },
   'workshop.field.upload': { en: 'Upload', 'zh-CN': '上传' },
-  'workshop.field.chooseOrDropImages': {
-    en: 'Choose images or drop them here',
-    'zh-CN': '选择图片或拖放到此处'
+  'workshop.field.selectOrDropImage': {
+    en: 'Select or drop an image',
+    'zh-CN': '选择或拖入一张图片'
   },
-  'workshop.field.replaceOrDropImage': {
-    en: 'Choose a replacement or drop it here',
-    'zh-CN': '选择替换图片或拖放到此处'
+  'workshop.field.selectOrDropImages': {
+    en: 'Select or drop up to {count} images',
+    'zh-CN': '选择或拖入最多 {count} 张图片'
   },
-  'workshop.field.chooseOrDropFiles': {
-    en: 'Choose files or drop them here',
-    'zh-CN': '选择文件或拖放到此处'
+  'workshop.field.selectOrDropFile': {
+    en: 'Select or drop a file',
+    'zh-CN': '选择或拖入一个文件'
   },
-  'workshop.field.replaceOrDropFile': {
-    en: 'Choose a replacement or drop it here',
-    'zh-CN': '选择替换文件或拖放到此处'
+  'workshop.field.selectOrDropFiles': {
+    en: 'Select or drop up to {count} files',
+    'zh-CN': '选择或拖入最多 {count} 个文件'
+  },
+  'workshop.field.selectOrDropReplacement': {
+    en: 'Select or drop to replace',
+    'zh-CN': '选择或拖入以替换'
   },
   'workshop.field.file': { en: 'File', 'zh-CN': '文件' },
   'workshop.field.replaceFile': {
@@ -9806,7 +9813,6 @@ Enterprise`
     'zh-CN': '此模型尚未启用 Comfy Router 执行。'
   },
   'workshop.model.incomplete': { en: 'Incomplete', 'zh-CN': '尚未完善' },
-  'workshop.model.viewDetails': { en: 'View details', 'zh-CN': '查看详情' },
   'workshop.model.notSupported': {
     en: 'Run not yet supported',
     'zh-CN': '暂不支持运行'
@@ -9857,6 +9863,7 @@ Enterprise`
 
   // Workshop – output
   'workshop.output.title': { en: 'Output', 'zh-CN': '输出' },
+  'workshop.output.files': { en: 'Output files', 'zh-CN': '输出文件' },
   'workshop.output.kindImage': { en: 'Image', 'zh-CN': '图片' },
   'workshop.output.kindVideo': { en: 'Video', 'zh-CN': '视频' },
   'workshop.output.kindAudio': { en: 'Audio', 'zh-CN': '音频' },
@@ -9908,6 +9915,10 @@ Enterprise`
   'workshop.output.useInCode': {
     en: 'Use these settings in code',
     'zh-CN': '在代码中使用这些设置'
+  },
+  'workshop.run.copyRequestId': {
+    en: 'Copy request ID',
+    'zh-CN': '复制请求 ID'
   },
   'workshop.output.expires': {
     en: 'Output links expire 24 hours after a run. Download anything you want to keep.',
@@ -10057,11 +10068,6 @@ Enterprise`
     en: 'Sample outputs',
     'zh-CN': '输出样例'
   },
-  'workshop.examples.samplesSubtitle': {
-    en: 'See a sample without touching your inputs. These samples cannot be loaded into the form yet.',
-    'zh-CN':
-      '查看样例不会更改你的输入。这些样例尚无已验证的 Comfy Router 参数预设。'
-  },
   'workshop.examples.view': {
     en: 'View sample',
     'zh-CN': '查看样例'
@@ -10191,8 +10197,8 @@ Enterprise`
     'zh-CN': '无法启动结账，请重试。'
   },
   'workshop.error.noCreditsCloud': {
-    en: 'Add credits to {workspace} to keep running models.',
-    'zh-CN': '为 {workspace} 添加积分以继续运行模型。'
+    en: 'Not enough credits in {workspace}.',
+    'zh-CN': '{workspace} 的积分不足。'
   },
   'workshop.error.noCreditsPlatform': {
     en: 'Add credits to {workspace} on platform.comfy.org',
