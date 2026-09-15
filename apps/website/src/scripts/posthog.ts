@@ -108,7 +108,11 @@ const WORKSHOP_TURNSTILE_FLAG = 'workshop-signup-turnstile'
 const VISIBILITY_OVERRIDE =
   WORKSHOP_LOCAL_DEV && import.meta.env.PUBLIC_WORKSHOP_ENABLED === '1'
 const workshopEnabled = ref(VISIBILITY_OVERRIDE)
-const workshopEnabledSettled = ref(VISIBILITY_OVERRIDE)
+// Default to the resolved public experience. The gate only leaves it once
+// `awaitFlagAnswer()` starts a real flag fetch (and arms the timeout), so an
+// environment that never initializes PostHog — local dev, no key, SSR — shows
+// the public site instead of stranding on the loading frame.
+const workshopEnabledSettled = ref(true)
 let workshopUser: WorkshopIdentity | null | undefined
 
 // If PostHog never answers (blocked, offline), resolve to the default-off
@@ -187,10 +191,10 @@ export function identifyWorkshopUser(user: WorkshopIdentity | null): void {
   if (workshopUser !== undefined && workshopUser?.uid === user?.uid) return
   const previous = workshopUser
   workshopUser = user
-  if (!initialized) {
-    workshopEnabledSettled.value = VISIBILITY_OVERRIDE
-    return
-  }
+  // Before init, visibility stays at its resolved default; initPostHog owns the
+  // transition into awaiting an answer, so an identity arriving first must not
+  // strand the gate by unsettling without a resolver.
+  if (!initialized) return
   try {
     const uid = user?.uid ?? null
     const persistedUid = posthog.get_property('$user_id') ?? previous?.uid
@@ -225,6 +229,10 @@ export function useWorkshopTurnstileMode(): Readonly<Ref<TurnstileMode>> {
 
 export function initPostHog() {
   if (initialized || typeof window === 'undefined' || !POSTHOG_KEY) return
+  // Enter the awaiting state before init can throw, so the gate holds the
+  // loader (not the public page) through the whole fetch and the timeout is
+  // always armed the moment visibility becomes unresolved.
+  if (!VISIBILITY_OVERRIDE) awaitFlagAnswer()
   try {
     posthog.init(POSTHOG_KEY, {
       api_host: POSTHOG_API_HOST,
@@ -236,11 +244,6 @@ export function initPostHog() {
       before_send: createPostHogBeforeSend()
     })
     initialized = true
-    if (!workshopEnabledSettled.value)
-      flagResolutionTimer = setTimeout(
-        markFlagResolved,
-        FLAG_RESOLUTION_TIMEOUT_MS
-      )
     const persistedAnswer = posthog.isFeatureEnabled(WORKSHOP_ENABLED_FLAG, {
       send_event: false
     })

@@ -357,9 +357,18 @@ describe('workshop-enabled settles only on an observed answer', () => {
     hoisted.mockIsFeatureEnabled.mockReturnValue(undefined)
   })
 
-  it('is unsettled before init so the gate shows loading, not the public site', async () => {
-    const { useWorkshopEnabledSettled } = await import('./posthog')
-    expect(useWorkshopEnabledSettled().value).toBe(false)
+  it('settles to the public site when PostHog never initializes', async () => {
+    const { useWorkshopEnabledSettled, useWorkshopEnabled } =
+      await import('./posthog')
+    expect(useWorkshopEnabledSettled().value).toBe(true)
+    expect(useWorkshopEnabled().value).toBe(false)
+  })
+
+  it('an identity arriving before init does not strand the gate', async () => {
+    const { identifyWorkshopUser, useWorkshopEnabledSettled } =
+      await import('./posthog')
+    identifyWorkshopUser({ uid: 'x' })
+    expect(useWorkshopEnabledSettled().value).toBe(true)
   })
 
   it('is settled at load under the local dev override', async () => {
