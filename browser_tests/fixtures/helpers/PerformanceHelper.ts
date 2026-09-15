@@ -34,6 +34,8 @@ export interface PerfMeasurement {
   allFrameDurationsMs: number[]
 }
 
+const MAX_SAMPLED_FRAMES = 10_000
+
 export class PerformanceHelper {
   private cdp: CDPSession | null = null
   private snapshot: PerfSnapshot | null = null
@@ -101,36 +103,50 @@ export class PerformanceHelper {
   }
 
   /**
-   * Measure individual frame durations via rAF timing over a sample window.
-   * Returns all per-frame durations so callers can compute avg, p95, etc.
+   * Start recording rAF timestamps so frame durations cover the measurement
+   * window itself rather than an idle sample taken after the workload ends.
    */
-  private async measureFrameDurations(sampleFrames = 30): Promise<number[]> {
-    return this.page.evaluate((frames) => {
-      return new Promise<number[]>((resolve) => {
-        const timeout = setTimeout(() => resolve([]), 5000)
-        const timestamps: number[] = []
-        let count = 0
-        function tick(ts: number) {
-          timestamps.push(ts)
-          count++
-          if (count <= frames) {
-            requestAnimationFrame(tick)
-          } else {
-            clearTimeout(timeout)
-            if (timestamps.length < 2) {
-              resolve([])
-              return
-            }
-            const durations: number[] = []
-            for (let i = 1; i < timestamps.length; i++) {
-              durations.push(timestamps[i] - timestamps[i - 1])
-            }
-            resolve(durations)
-          }
-        }
-        requestAnimationFrame(tick)
-      })
-    }, sampleFrames)
+  private async startFrameSampling(): Promise<void> {
+    await this.page.evaluate((maxFrames) => {
+      const win = window as unknown as Record<string, unknown>
+      const previous = win.__perfFrameState as
+        | { handle: number; timestamps: number[] }
+        | undefined
+      if (previous) cancelAnimationFrame(previous.handle)
+
+      const state: { handle: number; timestamps: number[] } = {
+        handle: 0,
+        timestamps: []
+      }
+      function tick(ts: number) {
+        if (state.timestamps.length < maxFrames) state.timestamps.push(ts)
+        state.handle = requestAnimationFrame(tick)
+      }
+      state.handle = requestAnimationFrame(tick)
+      win.__perfFrameState = state
+    }, MAX_SAMPLED_FRAMES)
+  }
+
+  /**
+   * Stop the sampler started by {@link startFrameSampling} and return the
+   * per-frame durations observed while the measurement window was open.
+   */
+  private async stopFrameSampling(): Promise<number[]> {
+    return this.page.evaluate(() => {
+      const win = window as unknown as Record<string, unknown>
+      const state = win.__perfFrameState as
+        | { handle: number; timestamps: number[] }
+        | undefined
+      if (!state) return []
+      cancelAnimationFrame(state.handle)
+      delete win.__perfFrameState
+
+      const durations: number[] = []
+      for (let i = 1; i < state.timestamps.length; i++) {
+        durations.push(state.timestamps[i] - state.timestamps[i - 1])
+      }
+      return durations
+    })
   }
 
   async startMeasuring(): Promise<void> {
@@ -168,10 +184,12 @@ export class PerformanceHelper {
       state.observer.takeRecords()
     })
     this.snapshot = await this.getSnapshot()
+    await this.startFrameSampling()
   }
 
   async stopMeasuring(name: string): Promise<PerfMeasurement> {
     if (!this.snapshot) throw new Error('Call startMeasuring() first')
+    const allFrameDurationsMs = await this.stopFrameSampling()
     const after = await this.getSnapshot()
     const before = this.snapshot
     this.snapshot = null
@@ -180,10 +198,7 @@ export class PerformanceHelper {
       return after[key] - before[key]
     }
 
-    const [totalBlockingTimeMs, allFrameDurationsMs] = await Promise.all([
-      this.collectTBT(),
-      this.measureFrameDurations()
-    ])
+    const totalBlockingTimeMs = await this.collectTBT()
 
     const frameDurationMs =
       allFrameDurationsMs.length > 0
