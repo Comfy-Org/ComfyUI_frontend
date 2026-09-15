@@ -212,7 +212,7 @@ describe('AuthForgotPassword', () => {
   })
 
   it('drops a send abandoned by a flag flicker even after the flag returns, staying retryable', async () => {
-    let release!: () => void
+    let release: (() => void) | undefined
     h.sendReset.mockImplementation(
       () => new Promise<void>((resolve) => (release = resolve))
     )
@@ -220,10 +220,13 @@ describe('AuthForgotPassword', () => {
     await typeEmail('user@example.com')
     await clickSend()
 
-    h.flag!.value = false
-    h.flag!.value = true
+    const flag = h.flag
+    if (!flag) throw new Error('workshop auth flag was not initialized')
+    flag.value = false
+    flag.value = true
     await nextTick()
 
+    if (!release) throw new Error('sendReset was not called')
     release()
     await flushMicrotasks()
 
