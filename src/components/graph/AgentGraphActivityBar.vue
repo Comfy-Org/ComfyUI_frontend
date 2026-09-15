@@ -44,6 +44,9 @@ const marksBeforeTurn = ref(agentGeneratedNodes.markCount)
 /** The finished turn's nodes, held until the next turn or a dismissal. */
 const report = ref<NodeLocatorId[] | null>(null)
 
+/** The tab the turn is writing to, taken as its first node lands. */
+const turnTabPath = ref<string | null>(null)
+
 /**
  * How long idle has to hold before the turn counts as over. The panel reports
  * one message at a time, so a turn that writes, thinks and writes again dips to
@@ -64,8 +67,18 @@ watch(
   () => tabActivity.agentRunning,
   (running) => {
     settle.stop()
-    if (running) turnRunning.value = true
-    else settle.start()
+    if (!running) {
+      settle.start()
+      return
+    }
+    // Only a turn that starts from idle takes a new baseline. Coming back
+    // inside the settle is the same turn, and it keeps the one it began with.
+    if (!turnRunning.value) {
+      marksBeforeTurn.value = agentGeneratedNodes.markCount
+      turnTabPath.value = null
+      report.value = null
+    }
+    turnRunning.value = true
   }
 )
 
@@ -94,9 +107,6 @@ const holdingWorking = refAutoReset(false, MIN_WORKING_MS)
 
 const activeTabPath = computed(() => workflowStore.activeWorkflow?.path ?? null)
 
-/** The tab the turn is writing to, taken as its first node lands. */
-const turnTabPath = ref<string | null>(null)
-
 watch(isWritingGraph, (writing) => {
   if (!writing) return
   turnTabPath.value = activeTabPath.value
@@ -121,12 +131,7 @@ const isShowing = computed(
 )
 
 watch(turnRunning, (running) => {
-  if (running) {
-    marksBeforeTurn.value = agentGeneratedNodes.markCount
-    turnTabPath.value = null
-    report.value = null
-    return
-  }
+  if (running) return
   // Report only a turn that actually reached the graph.
   const added = agentGeneratedNodes.markedNodesAfter(marksBeforeTurn.value)
   report.value = added.length > 0 ? added : null
