@@ -11,6 +11,7 @@ import type {
   AuthMetadata,
   BeginCheckoutMetadata,
   BillingTelemetryEvent,
+  CheckoutJourneyTelemetryEvent,
   DefaultViewSetMetadata,
   EnterLinearMetadata,
   ExecutionErrorMetadata,
@@ -179,6 +180,10 @@ export class TelemetryRegistry implements TelemetryDispatcher {
 
   trackBillingEvent(event: BillingTelemetryEvent): void {
     this.dispatch((provider) => provider.trackBillingEvent?.(event))
+  }
+
+  trackCheckoutJourneyEvent(event: CheckoutJourneyTelemetryEvent): void {
+    this.dispatch((provider) => provider.trackCheckoutJourneyEvent?.(event))
   }
 
   trackRunButton(properties: RunButtonProperties): void {
