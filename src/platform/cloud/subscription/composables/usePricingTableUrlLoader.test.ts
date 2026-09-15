@@ -71,7 +71,7 @@ vi.mock<unknown>(
 
 vi.mock(import('@/platform/workspace/composables/useBillingCapabilities'))
 
-let capabilities: ReturnType<typeof useBillingCapabilities>
+const capabilities = useBillingCapabilities()
 
 const TEAM_CREDIT_STOPS = {
   default_stop_index: 2,
@@ -91,9 +91,6 @@ const TEAM_CREDIT_STOPS = {
 
 describe('usePricingTableUrlLoader', () => {
   beforeEach(() => {
-    capabilities = useBillingCapabilities()
-    vi.mocked(useBillingCapabilities).mockReturnValue(capabilities)
-
     mockRouteQuery.value = {}
     mockPermissions.value = { canManageSubscription: true }
     mockCanOpenPricingSurface.value = true

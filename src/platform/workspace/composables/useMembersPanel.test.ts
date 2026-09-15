@@ -403,15 +403,15 @@ vi.mock(import('@/platform/distribution/types'), () => ({ isCloud: true }))
 
 vi.mock(import('@/platform/workspace/composables/useBillingCapabilities'))
 
+const capabilities = useBillingCapabilities()
+
 beforeEach(() => {
-  const capabilities = useBillingCapabilities()
   vi.spyOn(capabilities.canChangeSeats, 'value', 'get').mockImplementation(
     () => mockCanChangeSeats.value
   )
   vi.spyOn(capabilities.canInviteMembers, 'value', 'get').mockImplementation(
     () => mockCanInviteMembers.value
   )
-  vi.mocked(useBillingCapabilities).mockReturnValue(capabilities)
 })
 
 vi.mock<unknown>(import('@/composables/auth/useCurrentUser'), () => ({

@@ -312,8 +312,9 @@ vi.mock(import('@/platform/distribution/types'), () => ({ isCloud: true }))
 
 vi.mock(import('@/platform/workspace/composables/useBillingCapabilities'))
 
+const capabilities = useBillingCapabilities()
+
 beforeEach(() => {
-  const capabilities = useBillingCapabilities()
   vi.spyOn(
     capabilities.canSubscribeSelfServe,
     'value',
@@ -330,7 +331,6 @@ beforeEach(() => {
     'value',
     'get'
   ).mockImplementation(() => mockCapabilities.value.canDowngradeToPersonal)
-  vi.mocked(useBillingCapabilities).mockReturnValue(capabilities)
 })
 
 vi.mock<unknown>(import('@/services/dialogService'), () => ({

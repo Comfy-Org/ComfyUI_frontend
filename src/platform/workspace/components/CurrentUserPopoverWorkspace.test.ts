@@ -86,6 +86,8 @@ vi.mock<unknown>(
 
 vi.mock(import('@/platform/workspace/composables/useBillingCapabilities'))
 
+const capabilities = useBillingCapabilities()
+
 vi.mock<unknown>(import('@/composables/billing/useBillingRouting'), () => ({
   useBillingRouting: () => ({
     shouldUseWorkspaceBilling: computed(() => state.shouldUseWorkspaceBilling)
@@ -199,13 +201,17 @@ function renderComponent(
 
 describe('CurrentUserPopoverWorkspace', () => {
   beforeEach(() => {
-    const capabilities = useBillingCapabilities()
-    capabilities.canTopUp = computed(() => state.canTopUp)
-    capabilities.canSubscribeSelfServe = computed(
-      () => state.canSubscribeSelfServe
+    vi.spyOn(capabilities.canTopUp, 'value', 'get').mockImplementation(
+      () => state.canTopUp
     )
-    capabilities.canReactivate = computed(() => state.canReactivate)
-    vi.mocked(useBillingCapabilities).mockReturnValue(capabilities)
+    vi.spyOn(
+      capabilities.canSubscribeSelfServe,
+      'value',
+      'get'
+    ).mockImplementation(() => state.canSubscribeSelfServe)
+    vi.spyOn(capabilities.canReactivate, 'value', 'get').mockImplementation(
+      () => state.canReactivate
+    )
 
     state.isCloud = true
     state.billingStatus = 'paid'

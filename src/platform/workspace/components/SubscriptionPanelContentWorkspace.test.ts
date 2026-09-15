@@ -250,6 +250,8 @@ vi.mock<unknown>(
 
 vi.mock(import('@/platform/workspace/composables/useBillingCapabilities'))
 
+const capabilities = useBillingCapabilities()
+
 vi.mock<unknown>(import('@/services/dialogService'), () => ({
   useDialogService: () => ({
     showCancelSubscriptionFlow: mockShowCancelSubscriptionFlow,
@@ -329,7 +331,6 @@ function renderComponent({ stubFooter = true } = {}) {
 
 describe('SubscriptionPanelContentWorkspace', () => {
   beforeEach(() => {
-    const capabilities = useBillingCapabilities()
     vi.spyOn(capabilities.canCancel, 'value', 'get').mockImplementation(
       () => mockCanCancel.value
     )
@@ -344,7 +345,6 @@ describe('SubscriptionPanelContentWorkspace', () => {
       'value',
       'get'
     ).mockImplementation(() => mockCanSubscribeSelfServe.value)
-    vi.mocked(useBillingCapabilities).mockReturnValue(capabilities)
 
     mockDistributionState.isCloud = true
     mockSubscriptionStatus.value = 'active'

@@ -58,7 +58,7 @@ vi.mock<unknown>(import('@/platform/workspace/api/workspaceApi'), () => ({
 
 vi.mock(import('@/platform/workspace/composables/useBillingCapabilities'))
 
-let capabilities: ReturnType<typeof useBillingCapabilities>
+const capabilities = useBillingCapabilities()
 
 vi.mock<unknown>(
   import('@/platform/cloud/subscription/composables/useBillingPlans'),
@@ -182,9 +182,6 @@ beforeEach(() => {
 
 describe('useWorkspaceBilling', () => {
   beforeEach(() => {
-    capabilities = useBillingCapabilities()
-    vi.mocked(useBillingCapabilities).mockReturnValue(capabilities)
-
     Object.assign(useTeamWorkspaceStore(), {
       activeWorkspace: { id: 'workspace-1' }
     })

@@ -62,7 +62,7 @@ vi.mock<unknown>(import('@/composables/useFeatureFlags'), () => ({
 
 vi.mock(import('@/platform/workspace/composables/useBillingCapabilities'))
 
-let capabilities: ReturnType<typeof useBillingCapabilities>
+const capabilities = useBillingCapabilities()
 
 const mockIsCloud = vi.hoisted(() => ({ value: true }))
 vi.mock(import('@/platform/distribution/types'), () => ({
@@ -88,9 +88,6 @@ beforeEach(() => {
 
 describe('WorkspaceAuthGate', () => {
   beforeEach(() => {
-    capabilities = useBillingCapabilities()
-    vi.mocked(useBillingCapabilities).mockReturnValue(capabilities)
-
     mockIsCloud.value = true
     Object.assign(useAuthStore(), { isInitialized: false })
     Object.assign(useAuthStore(), { currentUser: null })

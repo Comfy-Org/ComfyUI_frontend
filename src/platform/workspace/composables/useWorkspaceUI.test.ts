@@ -28,16 +28,7 @@ vi.mock<unknown>(import('@/composables/billing/useBillingRouting'), () => ({
   })
 }))
 
-vi.mock<unknown>(
-  import('@/platform/workspace/composables/useBillingCapabilities'),
-  () => ({
-    useBillingCapabilities: () => ({
-      canReactivate: computed(() => mockCanReactivate.value),
-      canSubscribeSelfServe: computed(() => mockCanSubscribeSelfServe.value),
-      snapshotAuthoritative: computed(() => mockSnapshotAuthoritative.value)
-    })
-  })
-)
+vi.mock(import('@/platform/workspace/composables/useBillingCapabilities'))
 
 vi.mock<unknown>(import('@/composables/billing/useBillingContext'), () => ({
   useBillingContext: () => ({
@@ -91,6 +82,22 @@ const teamMemberWorkspace: WorkspaceWithRole = {
 }
 
 async function loadComposable() {
+  const { useBillingCapabilities } =
+    await import('@/platform/workspace/composables/useBillingCapabilities')
+  const capabilities = useBillingCapabilities()
+  vi.spyOn(capabilities.canReactivate, 'value', 'get').mockImplementation(
+    () => mockCanReactivate.value
+  )
+  vi.spyOn(
+    capabilities.canSubscribeSelfServe,
+    'value',
+    'get'
+  ).mockImplementation(() => mockCanSubscribeSelfServe.value)
+  vi.spyOn(
+    capabilities.snapshotAuthoritative,
+    'value',
+    'get'
+  ).mockImplementation(() => mockSnapshotAuthoritative.value)
   const module = await import('@/platform/workspace/composables/useWorkspaceUI')
   return module.useWorkspaceUI()
 }

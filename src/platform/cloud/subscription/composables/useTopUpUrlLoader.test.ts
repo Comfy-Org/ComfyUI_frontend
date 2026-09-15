@@ -44,7 +44,7 @@ const mockCanSubscribeSelfServe = vi.hoisted(() => ({ value: false }))
 
 vi.mock(import('@/platform/workspace/composables/useBillingCapabilities'))
 
-let capabilities: ReturnType<typeof useBillingCapabilities>
+const capabilities = useBillingCapabilities()
 
 const mockTrackAddApiCreditButtonClicked = vi.hoisted(() => vi.fn())
 
@@ -56,7 +56,6 @@ vi.mock<unknown>(import('@/platform/telemetry'), () => ({
 
 describe('useTopUpUrlLoader', () => {
   beforeEach(() => {
-    capabilities = useBillingCapabilities()
     vi.spyOn(capabilities.canTopUp, 'value', 'get').mockImplementation(
       () => mockCanTopUp.value
     )
@@ -65,7 +64,6 @@ describe('useTopUpUrlLoader', () => {
       'value',
       'get'
     ).mockImplementation(() => mockCanSubscribeSelfServe.value)
-    vi.mocked(useBillingCapabilities).mockReturnValue(capabilities)
 
     mockRouteQuery.value = {}
     mockCanTopUp.value = true

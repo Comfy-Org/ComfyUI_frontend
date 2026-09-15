@@ -90,6 +90,8 @@ vi.mock<unknown>(import('@/composables/billing/useBillingContext'), () => ({
 
 vi.mock(import('@/platform/workspace/composables/useBillingCapabilities'))
 
+const capabilities = useBillingCapabilities()
+
 vi.mock<unknown>(import('@/components/common/UserAvatar.vue'), () => ({
   default: {
     name: 'UserAvatarMock',
@@ -120,7 +122,6 @@ vi.mock<unknown>(import('@/platform/telemetry'), () => ({
 
 describe('CurrentUserPopoverLegacy', () => {
   beforeEach(() => {
-    const capabilities = useBillingCapabilities()
     vi.spyOn(capabilities.canTopUp, 'value', 'get').mockImplementation(
       () => mockCanTopUp.value
     )
@@ -129,7 +130,6 @@ describe('CurrentUserPopoverLegacy', () => {
       'value',
       'get'
     ).mockImplementation(() => mockCanSubscribeSelfServe.value)
-    vi.mocked(useBillingCapabilities).mockReturnValue(capabilities)
 
     mockCanAccessSubscriptionFeatures.value = true
     mockTier.value = 'CREATOR'

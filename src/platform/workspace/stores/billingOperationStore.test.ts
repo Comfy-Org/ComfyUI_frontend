@@ -36,7 +36,7 @@ vi.mock<unknown>(import('@/composables/billing/useBillingContext'), () => ({
 
 vi.mock(import('@/platform/workspace/composables/useBillingCapabilities'))
 
-let capabilities: ReturnType<typeof useBillingCapabilities>
+const capabilities = useBillingCapabilities()
 
 vi.mock<unknown>(import('@/composables/useFeatureFlags'), () => ({
   useFeatureFlags: () => ({
@@ -98,9 +98,6 @@ beforeEach(() => {
 
 describe('billingOperationStore', () => {
   beforeEach(() => {
-    capabilities = useBillingCapabilities()
-    vi.mocked(useBillingCapabilities).mockReturnValue(capabilities)
-
     mockDistributionTypes.isCloud = true
     Object.assign(useTeamWorkspaceStore(), { activeWorkspaceId: 'workspace-1' })
     mockFeatureFlags.embeddedCheckoutEnabled = true

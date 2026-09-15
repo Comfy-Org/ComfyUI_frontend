@@ -73,6 +73,8 @@ vi.mock(import('@/platform/distribution/types'), () => ({ isCloud: true }))
 
 vi.mock(import('@/platform/workspace/composables/useBillingCapabilities'))
 
+const capabilities = useBillingCapabilities()
+
 vi.mock<unknown>(import('@/composables/billing/useBillingContext'), () => ({
   useBillingContext: () => ({
     subscribe: mockSubscribe,
@@ -140,13 +142,11 @@ describe('useDowngradeToPersonal', () => {
   let windowOpen: ReturnType<typeof vi.spyOn>
 
   beforeEach(() => {
-    const capabilities = useBillingCapabilities()
     vi.spyOn(
       capabilities.canDowngradeToPersonal,
       'value',
       'get'
     ).mockImplementation(() => mockCanDowngradeToPersonal.value)
-    vi.mocked(useBillingCapabilities).mockReturnValue(capabilities)
 
     const pinia = getActivePinia()!
     workspaceStore = useTeamWorkspaceStore(pinia)

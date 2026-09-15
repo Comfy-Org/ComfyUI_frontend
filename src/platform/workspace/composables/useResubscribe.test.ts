@@ -37,6 +37,8 @@ vi.mock(import('@/platform/distribution/types'), () => ({ isCloud: true }))
 
 vi.mock(import('@/platform/workspace/composables/useBillingCapabilities'))
 
+const capabilities = useBillingCapabilities()
+
 vi.mock<unknown>(
   import('@/platform/workspace/composables/useWorkspaceUI'),
   () => ({
@@ -96,11 +98,10 @@ afterEach(() => {
 
 describe('useResubscribe', () => {
   beforeEach(() => {
-    const capabilities = useBillingCapabilities()
     vi.spyOn(capabilities.canReactivate, 'value', 'get').mockImplementation(
       () => state.canReactivate
     )
-    vi.mocked(useBillingCapabilities).mockReturnValue(capabilities)
+
     state.shouldUseWorkspaceBilling = true
     state.canManageSubscriptionLifecycle = true
     state.canReactivate = true

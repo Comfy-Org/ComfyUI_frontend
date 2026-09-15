@@ -37,6 +37,8 @@ vi.mock<unknown>(import('@/composables/billing/useBillingContext'), () => ({
 
 vi.mock(import('@/platform/workspace/composables/useBillingCapabilities'))
 
+const capabilities = useBillingCapabilities()
+
 const showSubscriptionDialog = vi.hoisted(() => vi.fn())
 
 vi.mock<unknown>(
@@ -49,10 +51,7 @@ vi.mock<unknown>(
 import { useDialogService } from '@/services/dialogService'
 
 describe('showTopUpCreditsDialog', () => {
-  let capabilities: ReturnType<typeof useBillingCapabilities>
-
   beforeEach(() => {
-    capabilities = useBillingCapabilities()
     vi.spyOn(capabilities.canTopUp, 'value', 'get').mockImplementation(
       () => state.canTopUp
     )
@@ -64,7 +63,7 @@ describe('showTopUpCreditsDialog', () => {
     vi.spyOn(capabilities.isReady, 'value', 'get').mockImplementation(
       () => state.isReady
     )
-    vi.mocked(useBillingCapabilities).mockReturnValue(capabilities)
+
     state.type = 'workspace'
     state.canTopUp = true
     state.canSubscribeSelfServe = false

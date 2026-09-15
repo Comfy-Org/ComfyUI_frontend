@@ -79,6 +79,8 @@ vi.mock(import('@/platform/distribution/types'), () => mockDistributionTypes)
 
 vi.mock(import('@/platform/workspace/composables/useBillingCapabilities'))
 
+const capabilities = useBillingCapabilities()
+
 vi.mock<unknown>(
   import('@/platform/workspace/composables/useWorkspaceUI'),
   () => ({
@@ -136,11 +138,9 @@ function renderComponent(
 
 describe('CancelSubscriptionDialogContent', () => {
   beforeEach(() => {
-    const capabilities = useBillingCapabilities()
     vi.spyOn(capabilities.canCancel, 'value', 'get').mockImplementation(
       () => mockCanCancel.value
     )
-    vi.mocked(useBillingCapabilities).mockReturnValue(capabilities)
 
     mockTier.value = 'STANDARD'
     mockShouldUseWorkspaceBilling.value = false

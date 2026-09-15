@@ -51,6 +51,8 @@ vi.mock(import('@/platform/distribution/types'), () => ({ isCloud: true }))
 
 vi.mock(import('@/platform/workspace/composables/useBillingCapabilities'))
 
+const capabilities = useBillingCapabilities()
+
 vi.mock<unknown>(
   import('@/platform/workspace/composables/useWorkspaceUI'),
   () => ({
@@ -113,11 +115,9 @@ afterEach(() => {
 
 describe('useWorkspaceMenuItems', () => {
   beforeEach(() => {
-    const capabilities = useBillingCapabilities()
     vi.spyOn(capabilities.canCancel, 'value', 'get').mockImplementation(
       () => state.canCancel
     )
-    vi.mocked(useBillingCapabilities).mockReturnValue(capabilities)
 
     state.billingStatus = 'paid'
     state.canCancel = false
