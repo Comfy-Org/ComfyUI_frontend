@@ -8,6 +8,7 @@ import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 type GraphSnapshot = {
   nodes: Array<{
     id: string
+    type: string
     position: [number, number]
     widgets: unknown[]
   }>
@@ -24,6 +25,7 @@ async function getGraphSnapshot(comfyPage: ComfyPage): Promise<GraphSnapshot> {
     nodes: window
       .app!.graph.nodes.map((node) => ({
         id: String(node.id),
+        type: node.type,
         position: [node.pos[0], node.pos[1]] as [number, number],
         widgets: (node.widgets ?? []).map((widget) => widget.value)
       }))
@@ -224,7 +226,10 @@ test.describe(
       const sourceLink = sourceSnapshot.links.find(
         ({ originId, targetId }) => originId === '3' && targetId === '8'
       )
-      expect(sourceNodes).toHaveLength(2)
+      expect(sourceNodes.map(({ type }) => type)).toEqual([
+        'KSampler',
+        'VAEDecode'
+      ])
       expect(sourceLink).toEqual({
         originId: '3',
         originSlot: 0,
@@ -249,8 +254,16 @@ test.describe(
       const pastedNodes = pastedSnapshot.nodes.filter(({ id }) =>
         pastedIds.includes(id)
       )
-      expect(pastedNodes.map(({ widgets }) => widgets)).toEqual(
-        sourceNodes.map(({ widgets }) => widgets)
+      const pastedBySourceId = new Map(
+        sourceNodes.map((source) => [
+          source.id,
+          pastedNodes.find(({ type }) => type === source.type)
+        ])
+      )
+      expect([...pastedBySourceId.values()]).toEqual(
+        sourceNodes.map(({ type, widgets }) =>
+          expect.objectContaining({ type, widgets })
+        )
       )
       expect(
         pastedSnapshot.links.filter(
@@ -259,9 +272,9 @@ test.describe(
         )
       ).toEqual([
         {
-          originId: pastedIds[0],
+          originId: pastedBySourceId.get(sourceLink!.originId)!.id,
           originSlot: sourceLink!.originSlot,
-          targetId: pastedIds[1],
+          targetId: pastedBySourceId.get(sourceLink!.targetId)!.id,
           targetSlot: sourceLink!.targetSlot
         }
       ])
