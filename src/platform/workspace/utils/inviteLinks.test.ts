@@ -28,6 +28,14 @@ describe('buildInviteLink', () => {
 })
 
 describe('formatInviteLinksForCopy', () => {
+  it('returns the bare URL for a single row', () => {
+    expect(
+      formatInviteLinksForCopy([
+        { email: 'a@b.com', url: 'https://x/?invite=t' }
+      ])
+    ).toBe('https://x/?invite=t')
+  })
+
   it('joins rows as tab-separated email/url pairs, one per line', () => {
     expect(
       formatInviteLinksForCopy([

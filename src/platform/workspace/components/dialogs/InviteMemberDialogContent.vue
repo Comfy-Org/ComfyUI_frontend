@@ -100,14 +100,18 @@
 
       <div class="flex items-center justify-end gap-4 p-4">
         <Button
-          v-if="copyableRows.length >= 2"
+          v-if="copyableRows.length >= 1"
           variant="muted-textonly"
           @click="copyAllLinks"
         >
           {{
             copiedAll
               ? $t('workspacePanel.inviteLinks.copied')
-              : $t('workspacePanel.inviteLinks.copyAll')
+              : $t(
+                  'workspacePanel.inviteLinks.copyAll',
+                  { count: copyableRows.length },
+                  copyableRows.length
+                )
           }}
         </Button>
         <Button variant="secondary" size="lg" @click="onClose">

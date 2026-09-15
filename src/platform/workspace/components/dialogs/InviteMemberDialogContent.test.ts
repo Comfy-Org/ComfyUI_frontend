@@ -7,6 +7,8 @@ import { createI18n } from 'vue-i18n'
 
 import InviteMemberDialogContent from './InviteMemberDialogContent.vue'
 
+import { buildInviteLink } from '@/platform/workspace/utils/inviteLinks'
+
 import type { WorkspacePendingInvite } from '@/platform/workspace/stores/teamWorkspaceStore'
 
 const {
@@ -367,18 +369,23 @@ describe('InviteMemberDialogContent', () => {
 
       await waitFor(() => expect(copyLinkButtons()).toHaveLength(1))
       expect(screen.getByText('c@d.com')).toBeInTheDocument()
-      // Only one copyable row, so the bulk action stays hidden too.
-      expect(copyAllButton()).not.toBeInTheDocument()
+      // One copyable row: the footer action stays, in its singular form.
+      expect(copyAllButton()).toBeInTheDocument()
     })
 
-    it('omits Copy all links for a single invite', async () => {
+    it('copies the bare URL from the singular footer action', async () => {
       mockInviteListAfterSend([pendingInviteFor('a@b.com', 'tok-a')])
       const { user } = renderDialog()
 
       await inviteAndConfirm(user, 'a@b.com{Enter}')
 
-      await waitFor(() => expect(copyLinkButtons()).toHaveLength(1))
-      expect(copyAllButton()).not.toBeInTheDocument()
+      await waitFor(() => expect(copyAllButton()).toBeInTheDocument())
+      await user.click(copyAllButton()!)
+      await waitFor(async () => {
+        expect(await navigator.clipboard.readText()).toBe(
+          buildInviteLink('tok-a')
+        )
+      })
     })
 
     it('renders rows without Copy actions when the invite list fetch fails', async () => {
