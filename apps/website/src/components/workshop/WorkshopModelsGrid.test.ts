@@ -48,7 +48,7 @@ function cardNames() {
 }
 
 async function search() {
-  const field = screen.getByRole('combobox', {
+  const field = screen.getByRole('searchbox', {
     name: 'Search models, providers, and categories'
   })
   await waitFor(() => expect(field).not.toHaveProperty('disabled', true))
@@ -83,23 +83,12 @@ describe('WorkshopModelsGrid', () => {
     )
   })
 
-  it('does not show default search options', async () => {
-    const user = userEvent.setup()
-    render(WorkshopModelsGrid, { props: { models } })
-
-    await user.click(await search())
-    expect(screen.queryByTestId('workshop-search-panel')).toBeNull()
-  })
-
-  it('fills the search from a matching model', async () => {
+  it('does not show a duplicate search results panel', async () => {
     const user = userEvent.setup()
     render(WorkshopModelsGrid, { props: { models } })
 
     await user.type(await search(), 'flux')
-    await user.click(
-      screen.getByRole('button', { name: 'Flux Black Forest Labs' })
-    )
-    expect(cardNames()).toEqual([expect.stringContaining('Flux')])
+    expect(screen.queryByTestId('workshop-search-panel')).toBeNull()
   })
 
   it('narrows the grid to one use case', async () => {

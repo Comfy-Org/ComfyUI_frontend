@@ -30,8 +30,6 @@ const {
 const query = defineModel<string>({ required: true })
 const mounted = useMounted()
 
-const open = ref(false)
-const panelOpen = computed(() => open.value && query.value.trim() !== '')
 const sheetOpen = ref(false)
 const sheetInput = useTemplateRef<HTMLInputElement>('sheetInput')
 const sheetTrigger = useTemplateRef<HTMLButtonElement>('sheetTrigger')
@@ -44,23 +42,6 @@ const sheetStyle = computed(() =>
         transform: `translateY(${screenTop.value}px)`
       }
 )
-
-// Focus moving to the clear button or into the panel itself is still inside
-// the search, so only a move out of the wrapper closes it.
-function closeOnLeave(event: FocusEvent) {
-  const wrapper = event.currentTarget
-  const moved = event.relatedTarget
-  if (
-    wrapper instanceof HTMLElement &&
-    (!(moved instanceof Node) || !wrapper.contains(moved))
-  )
-    open.value = false
-}
-
-function pickModel(model: WorkshopModel) {
-  query.value = model.name
-  open.value = false
-}
 
 // The sheet applies as you tap, so its button is a way out that says what is
 // waiting behind it.
@@ -85,7 +66,7 @@ const clearButtonClass =
 </script>
 
 <template>
-  <div class="relative" @focusout="closeOnLeave">
+  <div class="relative">
     <button
       v-if="compact"
       ref="sheetTrigger"
@@ -123,12 +104,6 @@ const clearButtonClass =
         :aria-label="t('workshop.search.label', locale)"
         data-testid="workshop-search"
         :class="fieldClass"
-        role="combobox"
-        :aria-controls="panelOpen ? `${inputId}-panel` : undefined"
-        :aria-expanded="panelOpen"
-        @focus="open = true"
-        @input="open = true"
-        @keydown.escape.prevent="open = false"
       />
       <button
         v-if="query"
@@ -140,15 +115,6 @@ const clearButtonClass =
       >
         <X class="size-4" aria-hidden="true" />
       </button>
-
-      <WorkshopSearchPanel
-        v-if="panelOpen"
-        :id="`${inputId}-panel`"
-        :models
-        :query
-        :locale
-        @pick="pickModel"
-      />
     </div>
 
     <DialogRoot v-model:open="sheetOpen">
