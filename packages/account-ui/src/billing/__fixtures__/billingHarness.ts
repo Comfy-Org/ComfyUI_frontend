@@ -46,7 +46,11 @@ function credential(): AccountCredential {
 }
 
 /** The readers and the lifecycle consult only the snapshot and its changes. */
-type SessionFake = Pick<SessionClient, 'getSnapshot' | 'subscribe'>
+function outsideBillingContract(member: string) {
+  return () => {
+    throw new Error(`billing harness session: ${member} is never called`)
+  }
+}
 
 function fakeSession(): SessionClient {
   const session = credential()
@@ -55,11 +59,16 @@ function fakeSession(): SessionClient {
     user: { uid: session.uid, getIdToken: async () => 'id-token' },
     session
   }
-  const fake: SessionFake = {
+  return {
     getSnapshot: () => snapshot,
-    subscribe: () => () => {}
+    subscribe: () => () => {},
+    attachIdentity: outsideBillingContract('attachIdentity'),
+    getToken: outsideBillingContract('getToken'),
+    ensureFresh: outsideBillingContract('ensureFresh'),
+    remint: outsideBillingContract('remint'),
+    invalidate: outsideBillingContract('invalidate'),
+    clearStoredCredential: outsideBillingContract('clearStoredCredential')
   }
-  return fake as SessionClient
 }
 
 const STATUS_DATA: BillingStatusData = {
@@ -178,6 +187,7 @@ export function createBillingHarness(options: HarnessOptions = {}) {
     lifecycle,
     capabilities,
     credits,
+    status: statusReader,
     topup: createTopupCommand({
       transport,
       lifecycle,

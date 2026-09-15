@@ -15,8 +15,10 @@ describe('disposeBillingClient', () => {
     const { client } = createBillingHarness()
     await client.credits.read()
     await client.capabilities.read()
+    await client.status.read()
     expect(client.credits.getSnapshot()).toBeDefined()
     expect(client.capabilities.getSnapshot()).toBeDefined()
+    expect(client.status.getSnapshot()).toBeDefined()
 
     disposeBillingClient(client)
 
@@ -25,8 +27,24 @@ describe('disposeBillingClient', () => {
       'a retained balance belongs to the previous account'
     ).toBeUndefined()
     expect(client.capabilities.getSnapshot()).toBeUndefined()
+    expect(client.status.getSnapshot()).toBeUndefined()
     await expect(client.credits.read()).resolves.toEqual(SUPERSEDED)
     await expect(client.capabilities.read()).resolves.toEqual(SUPERSEDED)
+    await expect(client.status.read()).resolves.toEqual(SUPERSEDED)
+  })
+
+  it("stops subscribe reading the disposed scope's status", async () => {
+    const { client, routes } = createBillingHarness()
+
+    disposeBillingClient(client)
+
+    await expect(
+      client.commands.subscribe({
+        plan_slug: 'pro-monthly',
+        confirmation_token: 'ctoken_123'
+      })
+    ).resolves.toEqual(SUPERSEDED)
+    expect(routes()).toEqual([])
   })
 
   it('supersedes the lifecycle so no further operation is issued on the old scope', async () => {

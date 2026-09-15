@@ -9,6 +9,7 @@ import type { InjectionKey } from 'vue'
 import type {
   BillingCommands,
   BillingOperationLifecycle,
+  BillingStatusReader,
   CapabilitiesReader,
   CreditsReader,
   TopupCommand
@@ -20,12 +21,13 @@ import type {
  * component unmounts first, so when the session scope ends — sign-out, an
  * account or workspace switch — the host must call `disposeBillingClient`.
  * A retained reader goes on serving the scope it was built for, which is the
- * previous account's balance and capabilities.
+ * previous account's balance, capabilities and subscription status.
  */
 export interface BillingClient {
   readonly lifecycle: BillingOperationLifecycle
   readonly capabilities: CapabilitiesReader
   readonly credits: CreditsReader
+  readonly status: BillingStatusReader
   readonly topup: TopupCommand
   readonly commands: BillingCommands
 }
@@ -47,6 +49,7 @@ export function disposeBillingClient(client: BillingClient): void {
   client.lifecycle.dispose()
   client.capabilities.dispose()
   client.credits.dispose()
+  client.status.dispose()
 }
 
 export function useBillingClient<K extends keyof BillingClient>(
