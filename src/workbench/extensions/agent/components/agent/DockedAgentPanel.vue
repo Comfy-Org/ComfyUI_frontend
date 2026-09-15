@@ -20,7 +20,7 @@
         cn(
           'size-full p-2',
           hasOpaqueNeighbor &&
-            'bg-agent-surface border-l border-interface-stroke'
+            'border-l border-interface-stroke bg-base-background'
         )
       "
     >
