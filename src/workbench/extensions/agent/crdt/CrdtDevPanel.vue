@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
 import { useClipboard, useEventListener } from '@vueuse/core'
+import type { ComponentPublicInstance } from 'vue'
 import {
   computed,
   nextTick,
@@ -13,6 +14,13 @@ import {
 } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import Button from '@/components/ui/button/Button.vue'
+import SingleSelect from '@/components/ui/single-select/SingleSelect.vue'
+import Switch from '@/components/ui/switch/Switch.vue'
+import Textarea from '@/components/ui/textarea/Textarea.vue'
+import ToggleGroup from '@/components/ui/toggle-group/ToggleGroup.vue'
+import ToggleGroupItem from '@/components/ui/toggle-group/ToggleGroupItem.vue'
+import type { SelectOption } from '@/components/ui/select/types'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { resolveDeployEnv } from '@/platform/telemetry/initDatadogRum'
 import { reportError } from '@/platform/telemetry/reportError'
@@ -24,7 +32,6 @@ import { useExecutionStore } from '@/stores/executionStore'
 import { useQueueStore } from '@/stores/queueStore'
 
 import { useAgentConversationStore } from '../stores/agent/agentConversationStore'
-import type { CrdtLogLevel } from './crdtDebugGate'
 import { CRDT_LOG_LEVELS, crdtLogLevel, setCrdtLogLevel } from './crdtDebugGate'
 import type {
   CrdtDebugReportInput,
@@ -80,90 +87,67 @@ const { status, snapshot } = defineProps<{
 }>()
 
 const { t } = useI18n()
+const i18nKey = 'agent.crdtDevPanel'
 
-// Script-side strings: this is a dev instrument, deliberately kept out of
-// src/locales so it cannot leak into the product's translation surface.
-const S = {
-  title: 'CRDT debug',
-  close: 'Close',
-  hide: 'Hide until re-enabled',
-  open: 'Open CRDT debug panel',
-  restore: 'Show CRDT debug',
-  tabStatus: 'Status',
-  tabLog: 'Log',
-  tabMerge: 'Merge lab',
-  simulated: 'Simulated — not this session',
-  none: '—',
-  yes: 'yes',
-  no: 'no',
-  allScopes: 'all layers',
-  allLevels: 'all levels',
-  allKinds: 'all kinds',
-  clear: 'Clear',
-  copy: 'Copy',
-  copyDocumentId: 'Copy document id',
-  copyLogDetail: 'Copy log detail',
-  copyLog: 'Copy log',
-  copyReport: 'Copy full report',
-  copying: 'Collecting…',
-  copied: 'Copied',
-  copyFailed: 'Copy failed',
-  events: 'events',
-  sectionDoc: 'Document',
-  sectionFollower: 'Follower',
-  sectionProxy: 'Backend',
-  sectionVocab: 'What the words mean',
-  sectionOutcome: 'Result after the whole sequence',
-  sectionByRegister: 'Grouped by contested register',
-  sectionLifecycle: 'Node lifecycle',
-  run: 'Run sequence',
-  question: 'Question',
-  notePrompt:
-    'Does this feel wrong? Describe the rule you would rather have. It is included verbatim in the copied report.',
-  notePlaceholder:
-    'e.g. "re-adding a node should restore the widget edit made while it was deleted"',
-  survivingNodes: 'nodes left',
-  survivingWidgets: 'widget values left',
-  verbosity: 'console',
-  includeLogs: 'Server logs',
-  includeSettings: 'Settings',
-  includeWorkflow: 'Workflow JSON',
-  includeHint:
-    'These can carry prompts, file paths and API keys. Read the report before pasting it anywhere.'
-} as const
+const reportSourceLabels = computed<
+  readonly { key: keyof ReportSources; label: string }[]
+>(() => [
+  { key: 'serverLogs', label: t(`${i18nKey}.includeLogs`) },
+  { key: 'settings', label: t(`${i18nKey}.includeSettings`) },
+  { key: 'workflow', label: t(`${i18nKey}.includeWorkflow`) }
+])
 
-const REPORT_SOURCE_LABELS: readonly {
-  key: keyof ReportSources
-  label: string
-}[] = [
-  { key: 'serverLogs', label: S.includeLogs },
-  { key: 'settings', label: S.includeSettings },
-  { key: 'workflow', label: S.includeWorkflow }
-]
-
-const STATUS_ROWS = [
-  ['doc id', () => status.workflowId ?? S.none],
-  ['connected', () => (status.connected ? S.yes : S.no)],
-  ['updates applied', () => String(status.updatesApplied)],
-  [
-    'outcomes (recv/applied/skip/err/gap/reset/drop)',
-    () => {
-      const o = status.outcomes
-      return [
-        o.received,
-        o.applied,
-        o.skipped,
-        o.errored,
-        o.gap,
-        o.reset,
-        o.dropped
+const statusRows = computed<readonly (readonly [string, string])[]>(() => {
+  const outcomes = status.outcomes
+  return [
+    [t(`${i18nKey}.documentId`), status.workflowId ?? t(`${i18nKey}.none`)],
+    [
+      t(`${i18nKey}.connected`),
+      status.connected ? t(`${i18nKey}.yes`) : t(`${i18nKey}.no`)
+    ],
+    [t(`${i18nKey}.updatesApplied`), String(status.updatesApplied)],
+    [
+      t(`${i18nKey}.outcomes`),
+      [
+        outcomes.received,
+        outcomes.applied,
+        outcomes.skipped,
+        outcomes.errored,
+        outcomes.gap,
+        outcomes.reset,
+        outcomes.dropped
       ].join('/')
-    }
-  ],
-  ['last frame', () => status.lastFrameType ?? S.none]
-] as const
+    ],
+    [t(`${i18nKey}.lastFrame`), status.lastFrameType ?? t(`${i18nKey}.none`)]
+  ]
+})
+
+const tabs = computed(() => [
+  { value: 'status', label: t(`${i18nKey}.tabStatus`) },
+  { value: 'log', label: t(`${i18nKey}.tabLog`) },
+  { value: 'merge', label: t(`${i18nKey}.tabMerge`) }
+])
+
+function selectOptions(values: readonly string[]): SelectOption[] {
+  return values.map((value) => ({ name: value, value }))
+}
+
+const verbosityOptions = selectOptions(CRDT_LOG_LEVELS)
 
 const SCOPES: readonly CrdtLogScope[] = ['wire', 'doc']
+
+const scopeOptions = computed(() => [
+  { name: t(`${i18nKey}.allScopes`), value: 'all' },
+  ...selectOptions(SCOPES)
+])
+const levelOptions = computed(() => [
+  { name: t(`${i18nKey}.allLevels`), value: 'all' },
+  ...verbosityOptions
+])
+const kindOptions = computed(() => [
+  { name: t(`${i18nKey}.allKinds`), value: 'all' },
+  ...selectOptions(DEV_EVENT_KINDS)
+])
 
 const VERDICT_TONE: Record<string, string> = {
   applied: 'text-success-background border-success-background',
@@ -180,8 +164,24 @@ const HIDDEN_KEY = 'Comfy.Agent.CrdtDevPanel.hidden'
 const open = ref(readOpen())
 const tab = ref<'status' | 'log' | 'merge'>('status')
 const dismissed = ref(readHidden())
-const chipButton = useTemplateRef<HTMLButtonElement>('chipButton')
-const closeButton = useTemplateRef<HTMLButtonElement>('closeButton')
+const chipButton = useTemplateRef<ComponentPublicInstance | HTMLButtonElement>(
+  'chipButton'
+)
+const closeButton = useTemplateRef<ComponentPublicInstance | HTMLButtonElement>(
+  'closeButton'
+)
+
+function focusButton(
+  control: ComponentPublicInstance | HTMLButtonElement | null
+): void {
+  const button =
+    control instanceof HTMLButtonElement
+      ? control
+      : control?.$el instanceof HTMLButtonElement
+        ? control.$el
+        : null
+  button?.focus()
+}
 
 function readOpen(): boolean {
   try {
@@ -254,14 +254,14 @@ watch(
   open,
   (value) => {
     const control = value ? closeButton.value : chipButton.value
-    control?.focus()
+    focusButton(control)
   },
   { flush: 'post' }
 )
 watch(
   closeButton,
   (button) => {
-    if (open.value) button?.focus()
+    if (open.value) focusButton(button)
   },
   { flush: 'post' }
 )
@@ -269,31 +269,40 @@ watch(tab, poll)
 
 const docRows = computed<readonly (readonly [string, string])[]>(() => {
   const state = docState.value
-  if (!state) return [['document', S.none]] as const
+  if (!state) return [[t(`${i18nKey}.document`), t(`${i18nKey}.none`)]] as const
   return [
-    ['schema error', state.schemaError ?? S.none],
-    ['schema version', String(state.meta.schema_version ?? S.none)],
-    ['last seq', state.lastSeq === null ? S.none : String(state.lastSeq)],
-    ['tab id', state.tabId ?? S.none],
-    ['nodes', `${state.nodeIds.length}: ${state.nodeIds.join(', ') || S.none}`],
-    ['links', String(state.linkIds.length)],
-    ['applied op ids', String(state.appliedOpIds.length)],
-    ['stamped registers', String(Object.keys(state.stamps).length)]
+    [t(`${i18nKey}.schemaError`), state.schemaError ?? t(`${i18nKey}.none`)],
+    [
+      t(`${i18nKey}.schemaVersion`),
+      String(state.meta.schema_version ?? t(`${i18nKey}.none`))
+    ],
+    [
+      t(`${i18nKey}.lastSequence`),
+      state.lastSeq === null ? t(`${i18nKey}.none`) : String(state.lastSeq)
+    ],
+    [t(`${i18nKey}.tabId`), state.tabId ?? t(`${i18nKey}.none`)],
+    [
+      t(`${i18nKey}.nodes`),
+      `${state.nodeIds.length}: ${state.nodeIds.join(', ') || t(`${i18nKey}.none`)}`
+    ],
+    [t(`${i18nKey}.links`), String(state.linkIds.length)],
+    [t(`${i18nKey}.appliedOperationIds`), String(state.appliedOpIds.length)],
+    [t(`${i18nKey}.stampedRegisters`), String(Object.keys(state.stamps).length)]
   ] as const
 })
 
 // ── event log ─────────────────────────────────────────────────────────────
-const scopeFilter = ref<'' | CrdtLogScope>('')
-const levelFilter = ref<'' | CrdtLogLevel>('')
-const kindFilter = ref<'' | DevEventKind>('')
+const scopeFilter = ref('all')
+const levelFilter = ref('all')
+const kindFilter = ref('all')
 const expanded = ref<number | null>(null)
 
 const matchingEvents = computed<readonly DevEvent[]>(() =>
   devEvents.value.filter(
     (event) =>
-      (!scopeFilter.value || event.scope === scopeFilter.value) &&
-      (!levelFilter.value || event.level === levelFilter.value) &&
-      (!kindFilter.value || event.kind === kindFilter.value)
+      (scopeFilter.value === 'all' || event.scope === scopeFilter.value) &&
+      (levelFilter.value === 'all' || event.level === levelFilter.value) &&
+      (kindFilter.value === 'all' || event.kind === kindFilter.value)
   )
 )
 
@@ -319,16 +328,21 @@ const visibleLogRows = computed<readonly LogRow[]>(() =>
     })
 )
 
-const level = ref<CrdtLogLevel>(crdtLogLevel())
+const level = ref<string | undefined>(crdtLogLevel())
 
-function onLevelChange(next: CrdtLogLevel) {
-  level.value = next
-  setCrdtLogLevel(next)
+function onLevelChange(next: string | undefined) {
+  const value = CRDT_LOG_LEVELS.find((candidate) => candidate === next)
+  if (value) setCrdtLogLevel(value)
 }
 
 // ── merge lab ─────────────────────────────────────────────────────────────
 const mergeScenarios = getMergeScenarios()
 const scenario = shallowRef<MergeScenario>(mergeScenarios[0])
+const scenarioId = ref<string | undefined>(scenario.value.id)
+const scenarioOptions = mergeScenarios.map(({ id, title }) => ({
+  name: title,
+  value: id
+}))
 const simulation = shallowRef<MergeSimulation | null>(null)
 const NOTE_KEY = 'Comfy.Agent.CrdtDevPanel.note'
 
@@ -350,7 +364,8 @@ watch(testerNote, (next) => {
   }
 })
 
-function selectScenario(id: string) {
+function selectScenario(id: string | undefined) {
+  if (!id) return
   const next = mergeScenarios.find((candidate) => candidate.id === id)
   if (!next) return
   scenario.value = next
@@ -370,11 +385,19 @@ const lifecycle = computed(() =>
 )
 
 function registerLine(entry: MergeTraceEntry): string {
-  return `${entry.registerLabel} · stamp v${entry.stamp[0]}`
+  return t(`${i18nKey}.registerStamp`, {
+    register: entry.registerLabel,
+    version: entry.stamp[0]
+  })
 }
 
 function lifecycleLine(row: NodeLifecycleRow): string {
-  return `node ${row.nodeId} #${row.incarnation} · ${row.entry.kind} · ${verdictLabel(row.entry)}`
+  return t(`${i18nKey}.lifecycleLine`, {
+    nodeId: row.nodeId,
+    incarnation: row.incarnation,
+    kind: row.entry.kind,
+    verdict: verdictLabel(row.entry)
+  })
 }
 
 function verdictLabel(entry: MergeTraceEntry): string {
@@ -396,17 +419,17 @@ const reportSources = ref<ReportSources>({ ...DEFAULT_REPORT_SOURCES })
 const { copy } = useClipboard({ legacy: true })
 
 const copyReportLabel = computed(() => {
-  if (reportCopyState.value.status === 'busy') return S.copying
-  if (reportCopyState.value.status === 'done') return S.copied
+  if (reportCopyState.value.status === 'busy') return t(`${i18nKey}.copying`)
+  if (reportCopyState.value.status === 'done') return t(`${i18nKey}.copied`)
   if (reportCopyState.value.status === 'failed')
     return t('agent.diagnosticReport.retry')
-  return S.copyReport
+  return t(`${i18nKey}.copyReport`)
 })
 
 const copyLogLabel = computed(() => {
-  if (logCopyState.value === 'done') return S.copied
-  if (logCopyState.value === 'failed') return S.copyFailed
-  return S.copyLog
+  if (logCopyState.value === 'done') return t(`${i18nKey}.copied`)
+  if (logCopyState.value === 'failed') return t(`${i18nKey}.copyFailed`)
+  return t(`${i18nKey}.copyLog`)
 })
 
 async function writeClipboard(text: string): Promise<boolean> {
@@ -425,9 +448,14 @@ async function copyItem(key: string, text: string) {
   itemCopyReset = setTimeout(() => (itemCopy.value = null), 1600)
 }
 
-function itemCopyLabel(key: string, idle: string = S.copy): string {
+function itemCopyLabel(
+  key: string,
+  idle: string = t(`${i18nKey}.copy`)
+): string {
   if (itemCopy.value?.key !== key) return idle
-  return itemCopy.value.state === 'done' ? S.copied : S.copyFailed
+  return itemCopy.value.state === 'done'
+    ? t(`${i18nKey}.copied`)
+    : t(`${i18nKey}.copyFailed`)
 }
 
 function flashLogCopyState(ok: boolean) {
@@ -596,8 +624,11 @@ function restore() {
 
 const proxyTarget = computed(() => api.apiURL(''))
 
-const chipLabel = computed(
-  () => `CRDT ${status.connected ? 'live' : 'off'} · ${status.updatesApplied}`
+const chipLabel = computed(() =>
+  t(`${i18nKey}.chip`, {
+    status: status.connected ? t(`${i18nKey}.live`) : t(`${i18nKey}.off`),
+    count: status.updatesApplied
+  })
 )
 
 function stringifyDetail(detail: unknown): string {
@@ -633,24 +664,26 @@ function fmtTime(at: number): string {
 
 <template>
   <div class="relative flex max-h-1/2 min-h-0 flex-col font-mono text-xs">
-    <button
+    <Button
       v-if="dismissed"
-      type="button"
-      :title="S.restore"
-      class="mr-4 mb-1 flex h-6 cursor-pointer items-center gap-1 self-end rounded-full border border-component-node-border bg-secondary-background px-2 text-muted-foreground transition-colors hover:bg-secondary-background-hover hover:text-base-foreground"
+      variant="outline"
+      size="sm"
+      :title="t(`${i18nKey}.restore`)"
+      class="mr-4 mb-1 self-end rounded-full"
       data-testid="crdt-dev-panel-restore"
       @click="restore"
     >
       <span class="icon-[lucide--eye] size-3" />
-      {{ S.restore }}
-    </button>
+      {{ t(`${i18nKey}.restore`) }}
+    </Button>
 
-    <button
+    <Button
       v-else-if="!open"
       ref="chipButton"
-      type="button"
-      :title="S.open"
-      class="mr-4 mb-1 flex h-6 cursor-pointer items-center gap-1 self-end rounded-full border border-component-node-border bg-secondary-background px-2 text-muted-foreground transition-colors hover:bg-secondary-background-hover hover:text-base-foreground"
+      variant="outline"
+      size="sm"
+      :title="t(`${i18nKey}.open`)"
+      class="mr-4 mb-1 self-end rounded-full"
       data-testid="crdt-dev-panel-chip"
       @click="setOpen(true)"
     >
@@ -665,7 +698,7 @@ function fmtTime(at: number): string {
         "
       />
       {{ chipLabel }}
-    </button>
+    </Button>
 
     <section
       v-else
@@ -673,96 +706,92 @@ function fmtTime(at: number): string {
       data-testid="crdt-dev-panel"
     >
       <header
-        class="flex h-8 shrink-0 items-center gap-2 border-b border-component-node-border px-2"
+        class="flex h-10 shrink-0 items-center gap-2 border-b border-component-node-border px-2"
       >
-        <span class="font-bold">{{ S.title }}</span>
+        <span class="font-bold">{{ t(`${i18nKey}.title`) }}</span>
         <label class="ml-auto flex items-center gap-1 text-muted-foreground">
-          {{ S.verbosity }}
-          <select
+          {{ t(`${i18nKey}.verbosity`) }}
+          <SingleSelect
             v-model="level"
-            class="rounded-sm border border-component-node-border bg-secondary-background px-1 py-0.5"
+            :label="t(`${i18nKey}.verbosity`)"
+            :options="verbosityOptions"
+            size="md"
+            class="w-24"
             data-testid="crdt-dev-panel-verbosity"
-            @change="onLevelChange(level)"
-          >
-            <option
-              v-for="option in CRDT_LOG_LEVELS"
-              :key="option"
-              :value="option"
-            >
-              {{ option }}
-            </option>
-          </select>
+            @update:model-value="onLevelChange"
+          />
         </label>
-        <button
-          type="button"
-          :title="S.hide"
-          class="cursor-pointer text-muted-foreground hover:text-destructive-background"
+        <Button
+          variant="destructive-textonly"
+          size="icon-sm"
+          :title="t(`${i18nKey}.hide`)"
+          :aria-label="t(`${i18nKey}.hide`)"
           data-testid="crdt-dev-panel-dismiss"
           @click="dismiss"
         >
           <span class="icon-[lucide--eye-off] size-4" />
-        </button>
-        <button
+        </Button>
+        <Button
           ref="closeButton"
-          type="button"
-          :title="S.close"
-          class="cursor-pointer text-muted-foreground hover:text-base-foreground"
+          variant="muted-textonly"
+          size="icon-sm"
+          :title="t(`${i18nKey}.close`)"
+          :aria-label="t(`${i18nKey}.close`)"
           data-testid="crdt-dev-panel-close"
           @click="setOpen(false)"
         >
           <span class="icon-[lucide--x] size-4" />
-        </button>
+        </Button>
       </header>
 
-      <nav class="flex shrink-0 border-b border-component-node-border">
-        <button
-          v-for="entry in [
-            ['status', S.tabStatus],
-            ['log', S.tabLog],
-            ['merge', S.tabMerge]
-          ] as const"
-          :key="entry[0]"
-          type="button"
-          :class="
-            cn(
-              'flex-1 cursor-pointer px-2 py-1 transition-colors',
-              tab === entry[0]
-                ? 'border-b-2 border-primary-background text-base-foreground'
-                : 'text-muted-foreground hover:text-base-foreground'
-            )
-          "
-          :data-testid="`crdt-dev-panel-tab-${entry[0]}`"
-          @click="tab = entry[0]"
+      <ToggleGroup
+        v-model="tab"
+        type="single"
+        class="shrink-0 border-b border-component-node-border p-1"
+        :aria-label="t(`${i18nKey}.tabs`)"
+      >
+        <ToggleGroupItem
+          v-for="entry in tabs"
+          :key="entry.value"
+          :value="entry.value"
+          size="sm"
+          :data-testid="`crdt-dev-panel-tab-${entry.value}`"
         >
-          {{ entry[1] }}
-        </button>
-      </nav>
+          {{ entry.label }}
+        </ToggleGroupItem>
+      </ToggleGroup>
 
       <div class="min-h-0 flex-1 space-y-3 overflow-y-auto p-2">
         <template v-if="tab === 'status'">
           <section>
             <div class="mb-1 font-bold text-muted-foreground">
-              {{ S.sectionFollower }}
+              {{ t(`${i18nKey}.sectionFollower`) }}
             </div>
-            <table class="w-full">
+            <table class="w-full table-fixed">
               <tbody>
-                <tr v-for="row in STATUS_ROWS" :key="row[0]">
-                  <td class="pr-2 align-top text-muted-foreground">
+                <tr v-for="row in statusRows" :key="row[0]">
+                  <td
+                    class="w-1/2 pr-2 align-top wrap-break-word text-muted-foreground"
+                  >
                     {{ row[0] }}
                   </td>
                   <td class="break-all">
-                    {{ row[1]() }}
-                    <button
-                      v-if="row[0] === 'doc id' && status.workflowId"
-                      type="button"
-                      class="ml-1 cursor-pointer rounded-sm border border-component-node-border px-1.5 py-0.5 hover:bg-secondary-background-hover"
-                      :aria-label="S.copyDocumentId"
+                    {{ row[1] }}
+                    <Button
+                      v-if="
+                        row[0] === t(`${i18nKey}.documentId`) &&
+                        status.workflowId
+                      "
+                      variant="outline"
+                      size="sm"
+                      class="ml-1"
+                      :aria-label="t(`${i18nKey}.copyDocumentId`)"
                       @click="
                         copyItem(`doc:${status.workflowId}`, status.workflowId)
                       "
                     >
                       {{ itemCopyLabel(`doc:${status.workflowId}`) }}
-                    </button>
+                    </Button>
                   </td>
                 </tr>
               </tbody>
@@ -771,7 +800,7 @@ function fmtTime(at: number): string {
 
           <section>
             <div class="mb-1 font-bold text-muted-foreground">
-              {{ S.sectionDoc }}
+              {{ t(`${i18nKey}.sectionDoc`) }}
             </div>
             <table class="w-full">
               <tbody>
@@ -787,7 +816,7 @@ function fmtTime(at: number): string {
 
           <section>
             <div class="mb-1 font-bold text-muted-foreground">
-              {{ S.sectionProxy }}
+              {{ t(`${i18nKey}.sectionProxy`) }}
             </div>
             <div class="break-all text-muted-foreground">{{ proxyTarget }}</div>
           </section>
@@ -795,49 +824,36 @@ function fmtTime(at: number): string {
 
         <template v-else-if="tab === 'log'">
           <div class="flex flex-wrap items-center gap-1">
-            <select
+            <SingleSelect
               v-model="scopeFilter"
-              class="rounded-sm border border-component-node-border bg-secondary-background px-1 py-0.5"
+              :label="t(`${i18nKey}.scopeFilter`)"
+              :options="scopeOptions"
+              size="md"
+              class="w-28"
               data-testid="crdt-dev-panel-scope-filter"
-            >
-              <option value="">{{ S.allScopes }}</option>
-              <option v-for="scope in SCOPES" :key="scope" :value="scope">
-                {{ scope }}
-              </option>
-            </select>
-            <select
+            />
+            <SingleSelect
               v-model="levelFilter"
-              class="rounded-sm border border-component-node-border bg-secondary-background px-1 py-0.5"
-            >
-              <option value="">{{ S.allLevels }}</option>
-              <option
-                v-for="option in CRDT_LOG_LEVELS"
-                :key="option"
-                :value="option"
-              >
-                {{ option }}
-              </option>
-            </select>
-            <select
+              :label="t(`${i18nKey}.levelFilter`)"
+              :options="levelOptions"
+              size="md"
+              class="w-28"
+              data-testid="crdt-dev-panel-level-filter"
+            />
+            <SingleSelect
               v-model="kindFilter"
-              class="rounded-sm border border-component-node-border bg-secondary-background px-1 py-0.5"
+              :label="t(`${i18nKey}.kindFilter`)"
+              :options="kindOptions"
+              size="md"
+              class="min-w-32 flex-1"
               data-testid="crdt-dev-panel-filter"
-            >
-              <option value="">{{ S.allKinds }}</option>
-              <option v-for="kind in DEV_EVENT_KINDS" :key="kind" :value="kind">
-                {{ kind }}
-              </option>
-            </select>
-            <span class="ml-auto text-muted-foreground"
-              >{{ matchingEvents.length }} {{ S.events }}</span
-            >
-            <button
-              type="button"
-              class="cursor-pointer rounded-sm border border-component-node-border px-1.5 py-0.5 hover:bg-secondary-background-hover"
-              @click="clearDevEvents()"
-            >
-              {{ S.clear }}
-            </button>
+            />
+            <span class="ml-auto text-muted-foreground">{{
+              t(`${i18nKey}.eventCount`, matchingEvents.length)
+            }}</span>
+            <Button variant="outline" size="sm" @click="clearDevEvents()">
+              {{ t(`${i18nKey}.clear`) }}
+            </Button>
           </div>
 
           <div class="space-y-1" data-testid="crdt-dev-panel-log">
@@ -846,9 +862,10 @@ function fmtTime(at: number): string {
               :key="row.event.seq"
               class="border-b border-component-node-border pb-1"
             >
-              <button
-                type="button"
-                class="block w-full cursor-pointer text-left hover:bg-secondary-background-hover"
+              <Button
+                variant="muted-textonly"
+                size="unset"
+                class="block w-full rounded-none p-1 text-left font-mono text-xs whitespace-normal"
                 @click="
                   expanded = expanded === row.event.seq ? null : row.event.seq
                 "
@@ -876,30 +893,30 @@ function fmtTime(at: number): string {
                       : row.excerpt
                   }}
                 </div>
-              </button>
+              </Button>
               <div
                 v-if="row.detail || row.nodeIds.length"
                 class="mt-1 flex flex-wrap gap-1"
               >
-                <button
+                <Button
                   v-if="row.detail"
-                  type="button"
-                  class="cursor-pointer rounded-sm border border-component-node-border px-1.5 py-0.5 hover:bg-secondary-background-hover"
-                  :aria-label="S.copyLogDetail"
+                  variant="outline"
+                  size="sm"
+                  :aria-label="t(`${i18nKey}.copyLogDetail`)"
                   @click="copyItem(`detail:${row.event.seq}`, row.detail)"
                 >
                   {{ itemCopyLabel(`detail:${row.event.seq}`) }}
-                </button>
-                <button
+                </Button>
+                <Button
                   v-for="nodeId in row.nodeIds"
                   :key="nodeId"
-                  type="button"
-                  class="cursor-pointer rounded-sm border border-component-node-border px-1.5 py-0.5 hover:bg-secondary-background-hover"
-                  :aria-label="`${S.copy} node id ${nodeId}`"
+                  variant="outline"
+                  size="sm"
+                  :aria-label="t(`${i18nKey}.copyNodeId`, { nodeId })"
                   @click="copyItem(`node:${row.event.seq}:${nodeId}`, nodeId)"
                 >
                   {{ itemCopyLabel(`node:${row.event.seq}:${nodeId}`, nodeId) }}
-                </button>
+                </Button>
               </div>
             </div>
           </div>
@@ -910,36 +927,30 @@ function fmtTime(at: number): string {
             class="rounded-sm border border-component-node-border bg-secondary-background px-2 py-1 font-bold text-muted-foreground"
             data-testid="crdt-dev-panel-simulation-label"
           >
-            {{ S.simulated }}
+            {{ t(`${i18nKey}.simulated`) }}
           </div>
 
-          <select
-            class="w-full rounded-sm border border-component-node-border bg-secondary-background p-1"
+          <SingleSelect
+            v-model="scenarioId"
+            :label="t(`${i18nKey}.scenario`)"
+            :options="scenarioOptions"
+            class="w-full"
             data-testid="crdt-dev-panel-scenario"
-            @change="selectScenario(($event.target as HTMLSelectElement).value)"
-          >
-            <option
-              v-for="option in mergeScenarios"
-              :key="option.id"
-              :value="option.id"
-              :selected="option.id === scenario.id"
-            >
-              {{ option.title }}
-            </option>
-          </select>
+            @update:model-value="selectScenario"
+          />
 
           <p class="text-muted-foreground">
-            {{ S.question }}: {{ scenario.question }}
+            {{ t(`${i18nKey}.question`) }}: {{ scenario.question }}
           </p>
 
-          <button
-            type="button"
-            class="w-full cursor-pointer rounded-sm border border-primary-background px-2 py-1 text-base-foreground hover:bg-secondary-background-hover"
+          <Button
+            variant="primary"
+            class="w-full"
             data-testid="crdt-dev-panel-run"
             @click="run"
           >
-            {{ S.run }}
-          </button>
+            {{ t(`${i18nKey}.run`) }}
+          </Button>
 
           <template v-if="simulation">
             <ol
@@ -976,14 +987,20 @@ function fmtTime(at: number): string {
 
             <section>
               <div class="mb-1 font-bold text-muted-foreground">
-                {{ S.sectionOutcome }}
+                {{ t(`${i18nKey}.sectionOutcome`) }}
               </div>
               <div>
-                {{ simulation.survivingNodeIds.length }} {{ S.survivingNodes }}:
-                {{ simulation.survivingNodeIds.join(', ') || S.none }}
+                {{
+                  t(`${i18nKey}.survivingNodes`, {
+                    count: simulation.survivingNodeIds.length
+                  })
+                }}:
+                {{
+                  simulation.survivingNodeIds.join(', ') || t(`${i18nKey}.none`)
+                }}
               </div>
               <div class="break-all text-muted-foreground">
-                {{ S.survivingWidgets }}:
+                {{ t(`${i18nKey}.survivingWidgets`) }}:
                 {{
                   truncateDetail(stringifyDetail(simulation.survivingWidgets))
                 }}
@@ -992,7 +1009,7 @@ function fmtTime(at: number): string {
 
             <section v-if="registerGroups.length">
               <div class="mb-1 font-bold text-muted-foreground">
-                {{ S.sectionByRegister }}
+                {{ t(`${i18nKey}.sectionByRegister`) }}
               </div>
               <div v-for="group in registerGroups" :key="group.register">
                 <div class="font-bold">{{ group.label }}</div>
@@ -1009,7 +1026,7 @@ function fmtTime(at: number): string {
 
             <section v-if="lifecycle.length">
               <div class="mb-1 font-bold text-muted-foreground">
-                {{ S.sectionLifecycle }}
+                {{ t(`${i18nKey}.sectionLifecycle`) }}
               </div>
               <div
                 v-for="row in lifecycle"
@@ -1023,7 +1040,7 @@ function fmtTime(at: number): string {
 
           <section>
             <div class="mb-1 font-bold text-muted-foreground">
-              {{ S.sectionVocab }}
+              {{ t(`${i18nKey}.sectionVocab`) }}
             </div>
             <dl class="space-y-1">
               <div v-for="item in MERGE_VOCABULARY" :key="item.term">
@@ -1037,14 +1054,13 @@ function fmtTime(at: number): string {
             <label
               for="crdt-tester-note"
               class="mb-1 block font-bold text-muted-foreground"
-              >{{ S.notePrompt }}</label
+              >{{ t(`${i18nKey}.notePrompt`) }}</label
             >
-            <textarea
+            <Textarea
               id="crdt-tester-note"
               v-model="testerNote"
               rows="3"
-              :placeholder="S.notePlaceholder"
-              class="w-full rounded-sm border border-component-node-border bg-secondary-background p-1 text-base-foreground"
+              :placeholder="t(`${i18nKey}.notePlaceholder`)"
               data-testid="crdt-dev-panel-note"
             />
           </section>
@@ -1055,55 +1071,36 @@ function fmtTime(at: number): string {
         <div class="mb-1 text-muted-foreground">
           {{ t('agent.diagnosticReport.includedSources') }}
         </div>
-        <div class="mb-1 flex flex-wrap gap-1">
-          <button
-            v-for="source in REPORT_SOURCE_LABELS"
+        <div class="mb-1 flex flex-wrap gap-2">
+          <label
+            v-for="source in reportSourceLabels"
             :key="source.key"
-            type="button"
-            role="switch"
-            :aria-checked="reportSources[source.key]"
-            :class="
-              cn(
-                'flex cursor-pointer items-center gap-1 rounded-full border px-2 py-0.5 transition-colors',
-                reportSources[source.key]
-                  ? 'border-primary-background text-base-foreground'
-                  : 'border-component-node-border text-muted-foreground'
-              )
-            "
-            :data-testid="`crdt-dev-panel-include-${String(source.key)}`"
-            @click="reportSources[source.key] = !reportSources[source.key]"
+            class="flex items-center gap-1 text-muted-foreground"
           >
-            <span
-              :class="
-                cn(
-                  'size-3 shrink-0',
-                  reportSources[source.key]
-                    ? 'icon-[lucide--check]'
-                    : 'icon-[lucide--minus] opacity-50'
-                )
-              "
-            />
             {{ source.label }}
-          </button>
+            <Switch
+              v-model="reportSources[source.key]"
+              :aria-label="source.label"
+              :data-testid="`crdt-dev-panel-include-${String(source.key)}`"
+            />
+          </label>
         </div>
-        <p class="mt-0 mb-2 text-muted-foreground">{{ S.includeHint }}</p>
+        <p class="mt-0 mb-2 text-muted-foreground">
+          {{ t(`${i18nKey}.includeHint`) }}
+        </p>
         <div class="flex gap-1">
-          <button
-            type="button"
-            class="flex-1 cursor-pointer rounded-sm border border-component-node-border px-2 py-1 hover:bg-secondary-background-hover"
-            @click="copyLog"
-          >
+          <Button variant="outline" class="flex-1" @click="copyLog">
             {{ copyLogLabel }}
-          </button>
-          <button
-            type="button"
-            :disabled="reportCopyState.status === 'busy'"
-            class="flex-2 cursor-pointer rounded-sm border border-primary-background px-2 py-1 hover:bg-secondary-background-hover disabled:cursor-default"
+          </Button>
+          <Button
+            variant="primary"
+            :loading="reportCopyState.status === 'busy'"
+            class="flex-2"
             data-testid="crdt-dev-panel-copy-report"
             @click="copyReport"
           >
             {{ copyReportLabel }}
-          </button>
+          </Button>
         </div>
         <div v-if="reportCopyState.status === 'failed'" class="mt-2">
           <p role="alert" class="text-danger m-0">
@@ -1113,13 +1110,13 @@ function fmtTime(at: number): string {
                 : t('agent.diagnosticReport.clipboardFailed')
             }}
           </p>
-          <textarea
+          <Textarea
             v-if="reportCopyState.report !== null"
             :aria-label="t('agent.diagnosticReport.manualCopy')"
-            :value="reportCopyState.report"
+            :model-value="reportCopyState.report"
             readonly
             rows="3"
-            class="mt-1 w-full rounded-sm border border-component-node-border bg-secondary-background p-1 text-base-foreground"
+            class="mt-1"
           />
         </div>
       </footer>
