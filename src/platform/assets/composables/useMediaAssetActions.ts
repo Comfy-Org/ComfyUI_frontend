@@ -39,6 +39,7 @@ import { useAssetExportStore } from '@/stores/assetExportStore'
 import type { AssetId, AssetItem } from '../schemas/assetSchema'
 import { MediaAssetKey } from '../schemas/mediaAssetSchema'
 import { assetService } from '../services/assetService'
+import { useAssetDownload } from './useAssetDownload'
 
 const EXCLUDED_TAGS = new Set(['models', 'input', 'output'])
 
@@ -95,6 +96,7 @@ export function useMediaAssetActions() {
   const workflowActions = useWorkflowActionsService()
   const litegraphService = useLitegraphService()
   const nodeDefStore = useNodeDefStore()
+  const { downloadFiles } = useAssetDownload()
 
   /**
    * Download one or more assets.
@@ -839,6 +841,7 @@ export function useMediaAssetActions() {
 
   return {
     downloadAssets,
+    downloadFiles,
     deleteAssets,
     copyJobId,
     addWorkflow,

@@ -4,6 +4,7 @@ import { useAssetExportStore } from '@/stores/assetExportStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import { useToastStore } from '@/platform/updates/common/toastStore'
 import type { CreateAssetExportData } from '@comfyorg/ingest-types'
 import { fromAny, fromPartial } from '@total-typescript/shoehorn'
 import { useToast } from 'primevue/usetoast'
@@ -25,8 +26,15 @@ import { useMediaAssetActions as createMediaAssetActions } from './useMediaAsset
 const mockIsCloud = vi.hoisted(() => ({ value: false }))
 
 const mockDownloadFile = vi.hoisted(() => vi.fn())
+const mockDownloadFileAsBlob = vi.hoisted(() => vi.fn())
 vi.mock(import('@/base/common/downloadUtil'), () => ({
-  downloadFile: mockDownloadFile
+  downloadFile: mockDownloadFile,
+  downloadFileAsBlob: mockDownloadFileAsBlob
+}))
+
+const mockReportError = vi.hoisted(() => vi.fn())
+vi.mock(import('@/platform/telemetry/reportError'), () => ({
+  reportError: mockReportError
 }))
 
 vi.mock(import('@/platform/distribution/types'), () => ({
@@ -317,6 +325,51 @@ describe('useMediaAssetActions', () => {
     mockGetAssetType.mockReturnValue('input')
     mockResolveOutputAssetItems.mockResolvedValue([])
     mockInputAssets.items = []
+  })
+
+  describe('downloadFiles', () => {
+    it('reports failed files while preserving successful downloads', async () => {
+      const fetchFile = vi.fn<(url: string) => Promise<Response>>()
+      const failure = new Error('request failed')
+      mockDownloadFileAsBlob
+        .mockResolvedValueOnce(undefined)
+        .mockRejectedValueOnce(failure)
+      const actions = useMediaAssetActions()
+
+      await actions.downloadFiles([
+        { url: '/a', filename: 'a.png', fetch: fetchFile },
+        { url: '/b', filename: 'b.png', fetch: fetchFile }
+      ])
+
+      expect(mockDownloadFileAsBlob).toHaveBeenNthCalledWith(
+        1,
+        '/a',
+        'a.png',
+        fetchFile
+      )
+      expect(mockDownloadFileAsBlob).toHaveBeenNthCalledWith(
+        2,
+        '/b',
+        'b.png',
+        fetchFile
+      )
+      expect(useToastStore().add).toHaveBeenCalledWith(
+        expect.objectContaining({
+          severity: 'success',
+          detail: 'Started downloading 1 file'
+        })
+      )
+      expect(useToastStore().add).toHaveBeenCalledWith(
+        expect.objectContaining({
+          severity: 'error',
+          detail: '1 download failed'
+        })
+      )
+      expect(mockReportError).toHaveBeenCalledWith(failure, {
+        errorType: 'error_downloading_asset',
+        context: { filename: 'b.png' }
+      })
+    })
   })
 
   describe('addWorkflow', () => {

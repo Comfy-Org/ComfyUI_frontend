@@ -42,7 +42,7 @@ export function downloadFile(url: string, filename?: string): void {
 
   if (isCloud) {
     // Assets from cross-origin (e.g., GCS) cannot be downloaded this way
-    void downloadViaBlobFetch(url, inferredFilename).catch((error) => {
+    void downloadFileAsBlob(url, inferredFilename).catch((error) => {
       console.error('Failed to download file', error)
     })
     return
@@ -120,19 +120,25 @@ export function extractFilenameFromContentDisposition(
  * Fetch a URL and return its body as a Blob.
  * Shared by download and open-in-new-tab cloud paths.
  */
-async function fetchAsBlob(url: string): Promise<Response> {
-  const response = await fetch(url)
+async function fetchAsBlob(
+  url: string,
+  fetchFile: (url: string) => Promise<Response> = fetch
+): Promise<Response> {
+  const response = await fetchFile(url)
   if (!response.ok) {
     throw new Error(`Failed to fetch ${url}: ${response.status}`)
   }
   return response
 }
 
-async function downloadViaBlobFetch(
-  href: string,
-  fallbackFilename: string
+export async function downloadFileAsBlob(
+  url: string,
+  filename?: string,
+  fetchFile: (url: string) => Promise<Response> = fetch
 ): Promise<void> {
-  const response = await fetchAsBlob(href)
+  const fallbackFilename =
+    filename || extractFilenameFromUrl(url) || DEFAULT_DOWNLOAD_FILENAME
+  const response = await fetchAsBlob(url, fetchFile)
 
   // Try to get filename from Content-Disposition header (set by backend)
   const contentDisposition = response.headers.get('Content-Disposition')
