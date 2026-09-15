@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { ChevronRight } from '@lucide/vue'
 import { computed, useTemplateRef } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
@@ -148,72 +147,44 @@ const pillClass =
     </div>
 
     <div class="flex flex-col gap-2 px-3">
-      <div class="flex items-center justify-between gap-2">
-        <span class="flex min-w-0 items-center gap-2 text-content-secondary">
-          <!-- With the mark over the thumbnail, repeating it here would say the
+      <div class="flex min-w-0 items-center gap-2 text-content-secondary">
+        <!-- With the mark over the thumbnail, repeating it here would say the
             same thing twice. -->
-          <span
-            v-if="!providerBadge && logo"
-            role="img"
-            :aria-label="providerName"
-            class="grid size-5 shrink-0 place-items-center"
-            data-testid="model-card-logo"
-          >
-            <span
-              class="size-5 bg-content-secondary mask-contain mask-center mask-no-repeat"
-              :style="{ maskImage: `url(${logo})` }"
-            />
-          </span>
-          <span
-            v-else-if="!providerBadge"
-            class="grid size-5 shrink-0 place-items-center rounded-full bg-brand text-2xs font-bold text-page"
-            aria-hidden="true"
-          >
-            {{ providerName.charAt(0).toUpperCase() }}
-          </span>
-          <span
-            v-if="providerBadge"
-            class="ppformula-text-center-sm truncate text-sm"
-            data-testid="model-card-provider"
-          >
-            {{ providerName }}
-          </span>
-          <!-- The name reads better beside the mark than over the artwork, and
-            the mark says the provider without spending a line on it. -->
-          <h3
-            v-else
-            class="truncate text-sm font-medium text-content-bright"
-            data-testid="model-card-name"
-          >
-            {{ model.name }}
-          </h3>
-        </span>
         <span
-          class="relative isolate inline-flex h-10 w-fit shrink-0 items-center overflow-hidden rounded-2xl bg-transparent ps-9 pe-0 text-sm font-bold tracking-wider text-nowrap text-content uppercase transition-all duration-500 group-hover:bg-primary-comfy-yellow group-hover:pe-5 group-hover:text-primary-comfy-ink group-focus-visible:bg-primary-comfy-yellow group-focus-visible:pe-5 group-focus-visible:text-primary-comfy-ink"
+          v-if="!providerBadge && logo"
+          role="img"
+          :aria-label="providerName"
+          class="grid size-5 shrink-0 place-items-center"
+          data-testid="model-card-logo"
         >
           <span
-            class="grid grid-cols-[0fr] transition-[grid-template-columns] duration-500 group-hover:grid-cols-[1fr] group-focus-visible:grid-cols-[1fr]"
-          >
-            <span class="overflow-hidden">
-              <span class="ppformula-text-center relative leading-none">
-                {{
-                  t(
-                    model.incompleteReason
-                      ? 'workshop.model.viewDetails'
-                      : 'workshop.hub.tryNow',
-                    locale
-                  )
-                }}
-              </span>
-            </span>
-          </span>
-          <span
-            class="absolute top-1/2 left-1 z-10 flex size-8 -translate-y-1/2 items-center justify-center rounded-xl bg-white/20 text-white transition-all duration-500 group-hover:bg-primary-comfy-yellow group-hover:text-primary-comfy-ink group-focus-visible:bg-primary-comfy-yellow group-focus-visible:text-primary-comfy-ink"
-            aria-hidden="true"
-          >
-            <ChevronRight class="size-4" :stroke-width="2" />
-          </span>
+            class="size-5 bg-content-secondary mask-contain mask-center mask-no-repeat"
+            :style="{ maskImage: `url(${logo})` }"
+          />
         </span>
+        <span
+          v-else-if="!providerBadge"
+          class="grid size-5 shrink-0 place-items-center rounded-full bg-brand text-2xs font-bold text-page"
+          aria-hidden="true"
+        >
+          {{ providerName.charAt(0).toUpperCase() }}
+        </span>
+        <span
+          v-if="providerBadge"
+          class="ppformula-text-center-sm truncate text-sm"
+          data-testid="model-card-provider"
+        >
+          {{ providerName }}
+        </span>
+        <!-- The name reads better beside the mark than over the artwork, and
+            the mark says the provider without spending a line on it. -->
+        <h3
+          v-else
+          class="truncate text-sm font-medium text-content-bright"
+          data-testid="model-card-name"
+        >
+          {{ model.name }}
+        </h3>
       </div>
       <div class="flex h-6 min-w-0 items-center gap-1.5 overflow-hidden">
         <span :class="pillClass" data-testid="model-card-task">
