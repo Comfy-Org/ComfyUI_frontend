@@ -160,11 +160,32 @@ function identifyInPostHog(user: WorkshopIdentity): void {
   else posthog.identify(user.uid)
 }
 
+function refreshFlagForSameIdentity(user: WorkshopIdentity | null): void {
+  const cachedAnswer =
+    user &&
+    posthog.isFeatureEnabled(WORKSHOP_ENABLED_FLAG, { send_event: false })
+  if (cachedAnswer !== undefined) return
+  awaitFlagAnswer()
+  posthog.reloadFeatureFlags()
+}
+
+function adoptNewIdentity(
+  user: WorkshopIdentity | null,
+  persistedUid: string | undefined,
+  waitForIdentityAnswer: boolean
+): void {
+  workshopEnabled.value = VISIBILITY_OVERRIDE
+  if (waitForIdentityAnswer) awaitFlagAnswer()
+  else markFlagResolved()
+  if (persistedUid) posthog.reset()
+  if (user) identifyInPostHog(user)
+  posthog.reloadFeatureFlags()
+}
+
 export function identifyWorkshopUser(user: WorkshopIdentity | null): void {
   if (workshopUser !== undefined && workshopUser?.uid === user?.uid) return
   const previous = workshopUser
   workshopUser = user
-  const waitForIdentityAnswer = !VISIBILITY_OVERRIDE && user !== null
   if (!initialized) {
     workshopEnabledSettled.value = VISIBILITY_OVERRIDE
     return
@@ -172,24 +193,9 @@ export function identifyWorkshopUser(user: WorkshopIdentity | null): void {
   try {
     const uid = user?.uid ?? null
     const persistedUid = posthog.get_property('$user_id') ?? previous?.uid
-    if (uid === persistedUid || (!uid && !persistedUid)) {
-      if (
-        user &&
-        posthog.isFeatureEnabled(WORKSHOP_ENABLED_FLAG, {
-          send_event: false
-        }) === undefined
-      ) {
-        awaitFlagAnswer()
-        posthog.reloadFeatureFlags()
-      }
-      return
-    }
-    workshopEnabled.value = VISIBILITY_OVERRIDE
-    if (waitForIdentityAnswer) awaitFlagAnswer()
-    else markFlagResolved()
-    if (persistedUid) posthog.reset()
-    if (user) identifyInPostHog(user)
-    posthog.reloadFeatureFlags()
+    if (uid === persistedUid || (!uid && !persistedUid))
+      return refreshFlagForSameIdentity(user)
+    adoptNewIdentity(user, persistedUid, !VISIBILITY_OVERRIDE && user !== null)
   } catch (error) {
     workshopUser = previous
     workshopEnabled.value = VISIBILITY_OVERRIDE
