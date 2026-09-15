@@ -224,7 +224,8 @@ export function useAgentSession(deps: AgentSessionDeps) {
     text: string,
     attachments?: SentAttachment[],
     tags?: SentTag[],
-    workflowReferences?: WorkflowReference[]
+    workflowReferences?: WorkflowReference[],
+    selectionWorkflowId?: () => string | undefined
   ): Promise<boolean> {
     if (sending.value) {
       conversationStore.recordFailedSend(
@@ -266,6 +267,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
       const tabs = workflow?.tabs?.(origin)
       async function postTurn(threadId: string) {
         const draft = workflow?.draft?.(origin)
+        const selectedWorkflowId = selectionWorkflowId?.()
         // An unsaved tab now yields a context carrying only its tabPath, so a
         // merely-defined wfContext no longer implies the tab has a workflow the
         // thread could own. An existing thread takes a draft only from a tab
@@ -285,7 +287,12 @@ export function useAgentSession(deps: AgentSessionDeps) {
             })),
           selection:
             tags !== undefined && tags.length > 0
-              ? { node_ids: tags.map((tag) => tag.id) }
+              ? {
+                  node_ids: tags.map((tag) => tag.id),
+                  ...(selectedWorkflowId !== undefined
+                    ? { workflow_id: selectedWorkflowId }
+                    : {})
+                }
               : undefined,
           attachments: attachments?.map((attachment) => attachment.ref),
           ...(shouldSendDraft ? { draft } : {})

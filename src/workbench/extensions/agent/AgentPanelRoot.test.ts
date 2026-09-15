@@ -4018,9 +4018,16 @@ describe('AgentPanelRoot workflow binding', () => {
       })
     )
 
-    await renderAndSend('first message')
+    await startVueNodeSelection()
+    await sendFromComposer('first message')
 
-    expect(bodies[0]).toMatchObject({ workflow_id: 'wf-cloud-current' })
+    expect(bodies[0]).toMatchObject({
+      workflow_id: 'wf-cloud-current',
+      selection: {
+        node_ids: ['9', '12'],
+        workflow_id: 'wf-cloud-current'
+      }
+    })
   })
 
   it('does not resolve two same-named open saved tabs to one cloud id', async () => {
