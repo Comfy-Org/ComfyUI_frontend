@@ -420,7 +420,6 @@ test.describe(
       )
       await comfyPage.settings.setSetting('Comfy.Canvas.SelectionToolbox', true)
       await comfyPage.command.executeCommand('Comfy.NewBlankWorkflow')
-      await comfyPage.searchBoxV2.ensureV2Search()
       await comfyPage.searchBoxV2.addNode('Empty Im', {
         position: { x: 220, y: 220 }
       })
