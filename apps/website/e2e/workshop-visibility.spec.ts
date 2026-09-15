@@ -77,6 +77,21 @@ test('keeps the public Models page when the flag is disabled', async ({
   ).toBeVisible()
 })
 
+test('never strands the gate on the loader when no flag answer arrives', async ({
+  context,
+  page
+}) => {
+  await context.route('**/t.comfy.org/**', (route) =>
+    route.abort('blockedbyclient')
+  )
+  await page.goto('/models/')
+  await expect(page.getByTestId('workshop-loading')).toHaveCount(0)
+  await expect(
+    page.getByRole('link', { name: /Grok Imagine/i }).first()
+  ).toBeVisible()
+  await expect(page.getByTestId('workshop-search')).toHaveCount(0)
+})
+
 test('does not initialize Firebase on public pages', async ({
   context,
   page
