@@ -122,6 +122,12 @@ export const useImageUploadWidget = () => {
         isAnimated
       })
       node.graph?.setDirtyCanvas(true)
+      // When this node is inside a subgraph, also dirty the root canvas so
+      // the parent SubgraphNode redraws with the new preview.
+      const rootGraph = node.graph?.rootGraph
+      if (rootGraph && rootGraph !== node.graph) {
+        rootGraph.setDirtyCanvas(true)
+      }
     }
 
     // On load if we have a value then render the image
