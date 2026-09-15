@@ -176,6 +176,8 @@ describe('devPanelLog', () => {
     recordDevEvent('doc_subscribed', {
       accessToken: 'secret-camel',
       'x-api-key': 'secret-header',
+      widgetsValues: ['secret-widget'],
+      Value: 'secret-value',
       token_count: 3,
       context: 'kept-context',
       prompt_id: 'kept-prompt-id',
@@ -185,6 +187,8 @@ describe('devPanelLog', () => {
     expect(devEvents.value[0]?.detail).toEqual({
       accessToken: '[REDACTED]',
       'x-api-key': '[REDACTED]',
+      widgetsValues: '[REDACTED]',
+      Value: '[REDACTED]',
       token_count: 3,
       context: 'kept-context',
       prompt_id: 'kept-prompt-id',

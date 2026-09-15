@@ -65,6 +65,7 @@ const CONTENT_KEYS = new Set([
   'old',
   'widgets_values',
   'widgets_values_named',
+  'signed_url',
   'node',
   'workflow'
 ])
@@ -72,12 +73,42 @@ const CONTENT_KEYS = new Set([
 let nextSeq = 1
 let buffer: DevEvent[] | undefined
 
-function isSensitiveKey(key: string): boolean {
-  const normalized = key
+function normalizeKey(key: string): string {
+  return key
     .replace(/([a-z0-9])([A-Z])/g, '$1_$2')
     .replace(/[^a-zA-Z0-9]+/g, '_')
     .toLowerCase()
-  return SENSITIVE_KEY.test(normalized)
+}
+
+function sanitizeObject(
+  value: object,
+  depth: number,
+  ancestors: readonly object[]
+): unknown {
+  const nextAncestors = [...ancestors, value]
+  if (Array.isArray(value)) {
+    return value.map((item) => sanitizeDetail(item, depth + 1, nextAncestors))
+  }
+  if (value instanceof Error)
+    return { name: value.name, message: value.message }
+  if (value instanceof Map) return `Map(${value.size})`
+  if (value instanceof Set) return `Set(${value.size})`
+  if (value instanceof Date) {
+    return Number.isNaN(value.getTime()) ? null : value.toISOString()
+  }
+
+  return Object.fromEntries(
+    Object.entries(value).map(([key, item]) => {
+      const normalizedKey = normalizeKey(key)
+      if (
+        SENSITIVE_KEY.test(normalizedKey) ||
+        CONTENT_KEYS.has(normalizedKey)
+      ) {
+        return [key, REDACTED]
+      }
+      return [key, sanitizeDetail(item, depth + 1, nextAncestors)]
+    })
+  )
 }
 
 function sanitizeDetail(
@@ -95,27 +126,7 @@ function sanitizeDetail(
   if (value === null || typeof value !== 'object') return value
   if (ancestors.includes(value)) return '[Circular]'
 
-  const nextAncestors = [...ancestors, value]
-  if (Array.isArray(value)) {
-    return value.map((item) => sanitizeDetail(item, depth + 1, nextAncestors))
-  }
-  if (value instanceof Error) {
-    return { name: value.name, message: value.message }
-  }
-  if (value instanceof Map) return `Map(${value.size})`
-  if (value instanceof Set) return `Set(${value.size})`
-  if (value instanceof Date) {
-    return Number.isNaN(value.getTime()) ? null : value.toISOString()
-  }
-
-  return Object.fromEntries(
-    Object.entries(value).map(([key, item]) => {
-      if (isSensitiveKey(key) || CONTENT_KEYS.has(key)) {
-        return [key, REDACTED]
-      }
-      return [key, sanitizeDetail(item, depth + 1, nextAncestors)]
-    })
-  )
+  return sanitizeObject(value, depth, ancestors)
 }
 
 /**
@@ -139,14 +150,14 @@ export function recordDevEvent(
     kind,
     scope: options.scope ?? 'doc',
     level: options.level ?? 'info',
-    detail: sanitizeDetailSafely(detail)
+    detail: sanitizeDevEventDetail(detail)
   })
   if (events.length > CAPACITY) events.splice(0, events.length - CAPACITY)
   if (devEvents.value !== events) devEvents.value = events
   else triggerRef(devEvents)
 }
 
-function sanitizeDetailSafely(detail: unknown): unknown {
+export function sanitizeDevEventDetail(detail: unknown): unknown {
   try {
     return sanitizeDetail(detail)
   } catch {

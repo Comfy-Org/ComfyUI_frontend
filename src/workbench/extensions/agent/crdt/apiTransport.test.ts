@@ -6,7 +6,7 @@ vi.mock<unknown>(import('@/scripts/api'), () => ({ api: { socket: null } }))
 import { api } from '@/scripts/api'
 
 import { createLoggedTransport } from './agentCrdtTransport'
-import { setCrdtDebugEnabled } from './crdtDebugGate'
+import { setCrdtDebugEnabled, setCrdtLogLevel } from './crdtDebugGate'
 import { clearDevEvents, devEvents } from './devPanelLog'
 import { apiTransport } from './useAgentCrdtFollower'
 
@@ -66,5 +66,34 @@ describe('createLoggedTransport.send', () => {
       delivered: true,
       frame: { type: 'doc_ops' }
     })
+  })
+
+  it('redacts outbound frame content in both console and stored events', () => {
+    setCrdtDebugEnabled(true)
+    setCrdtLogLevel('trace')
+    const debug = vi.spyOn(console, 'debug').mockImplementation(() => {})
+    const sensitiveFrame = JSON.stringify({
+      type: 'doc_ops',
+      token: 'secret-token',
+      data: { value: 'secret-prompt', signed_url: 'secret-url' }
+    })
+
+    expect(createLoggedTransport().send(sensitiveFrame)).toBe(true)
+
+    expect(debug.mock.calls.at(-1)?.at(-1)).toEqual({
+      delivered: true,
+      frame: {
+        type: 'doc_ops',
+        token: '[REDACTED]',
+        data: { value: '[REDACTED]', signed_url: '[REDACTED]' }
+      }
+    })
+    expect(devEvents.value.at(-1)?.detail).toEqual(
+      debug.mock.calls.at(-1)?.at(-1)
+    )
+    expect(JSON.stringify(debug.mock.calls)).not.toContain('secret-prompt')
+    expect(JSON.stringify(debug.mock.calls)).not.toContain('secret-url')
+    expect(JSON.stringify(devEvents.value)).not.toContain('secret-prompt')
+    debug.mockRestore()
   })
 })
