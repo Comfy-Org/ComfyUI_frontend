@@ -373,6 +373,56 @@ describe('InviteMemberDialogContent', () => {
       expect(copyAllButton()).toBeInTheDocument()
     })
 
+    it('keeps the copy affordance when the clipboard write fails', async () => {
+      mockInviteListAfterSend([pendingInviteFor('a@b.com', 'tok-a')])
+      const { user } = renderDialog()
+      await inviteAndConfirm(user, 'a@b.com{Enter}')
+      await waitFor(() => expect(copyLinkButtons()).toHaveLength(1))
+
+      const writeText = vi
+        .spyOn(navigator.clipboard, 'writeText')
+        .mockRejectedValueOnce(new Error('denied'))
+      await user.click(copyLinkButtons()[0])
+
+      expect(
+        screen.queryByRole('button', {
+          name: 'workspacePanel.inviteLinks.copied'
+        })
+      ).not.toBeInTheDocument()
+      expect(copyLinkButtons()).toHaveLength(1)
+      writeText.mockRestore()
+    })
+
+    it('reverts Copied back to the copy affordance after the reset window', async () => {
+      vi.useFakeTimers()
+      try {
+        mockInviteListAfterSend([pendingInviteFor('a@b.com', 'tok-a')])
+        const user = userEvent.setup({
+          advanceTimers: vi.advanceTimersByTime
+        })
+        renderDialog()
+        await inviteAndConfirm(user, 'a@b.com{Enter}')
+        await waitFor(() => expect(copyLinkButtons()).toHaveLength(1))
+
+        await user.click(copyLinkButtons()[0])
+        expect(
+            await screen.findByRole('button', {
+              name: 'workspacePanel.inviteLinks.copied'
+            })
+          ).toBeInTheDocument()
+
+        await vi.advanceTimersByTimeAsync(2100)
+        expect(
+          screen.queryByRole('button', {
+            name: 'workspacePanel.inviteLinks.copied'
+          })
+        ).not.toBeInTheDocument()
+        expect(copyLinkButtons()).toHaveLength(1)
+      } finally {
+        vi.useRealTimers()
+      }
+    })
+
     it('copies the bare URL from the singular footer action', async () => {
       mockInviteListAfterSend([pendingInviteFor('a@b.com', 'tok-a')])
       const { user } = renderDialog()
