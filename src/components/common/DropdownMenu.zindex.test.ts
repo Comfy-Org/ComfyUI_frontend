@@ -1,10 +1,10 @@
 import { ZIndex } from '@primeuix/utils/zindex'
 import { render, screen, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import type { MenuItem } from 'primevue/menuitem'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
+import type { MenuItem } from '@/components/ui/menu/types'
 import enMessages from '@/locales/en/main.json'
 
 import DropdownMenu from './DropdownMenu.vue'

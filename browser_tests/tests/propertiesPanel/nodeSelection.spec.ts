@@ -80,7 +80,11 @@ test.describe('Properties panel - Node selection', () => {
       { tag: '@vue-nodes' },
       async ({ comfyPage }) => {
         await comfyPage.contextMenu
-          .openFor(comfyPage.vueNodes.getNodeByTitle('KSampler'))
+          .openForVueNode(
+            comfyPage.vueNodes
+              .getNodeByTitle('KSampler')
+              .getByTestId('node-title')
+          )
           .then((m) => m.clickMenuItemExact('Convert to Subgraph'))
 
         await panel.contentArea
