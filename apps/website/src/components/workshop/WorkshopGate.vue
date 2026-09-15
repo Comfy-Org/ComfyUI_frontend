@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { useMounted } from '@vueuse/core'
-import { ref, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
 
 import {
   useWorkshopEnabled,
@@ -11,12 +11,20 @@ const { keepMounted = false } = defineProps<{ keepMounted?: boolean }>()
 const enabled = useWorkshopEnabled()
 const settled = useWorkshopEnabledSettled()
 const mounted = useMounted()
-const activated = ref(false)
 
+const view = computed(() =>
+  !mounted.value || !settled.value
+    ? 'loading'
+    : enabled.value
+      ? 'granted'
+      : 'denied'
+)
+
+const granted = ref(false)
 watch(
-  () => mounted.value && enabled.value,
-  (visible) => {
-    if (visible) activated.value = true
+  () => view.value === 'granted',
+  (isGranted) => {
+    if (isGranted) granted.value = true
   },
   { once: true }
 )
@@ -24,13 +32,16 @@ watch(
 
 <template>
   <div
-    v-if="activated && (enabled || keepMounted)"
+    v-if="granted && (enabled || keepMounted)"
     v-show="enabled"
     :aria-hidden="!enabled"
   >
     <slot />
   </div>
-  <div v-if="!mounted || (settled && !enabled)">
+  <div v-if="view === 'loading'">
+    <slot name="loading" />
+  </div>
+  <div v-else-if="view === 'denied'">
     <slot name="fallback" />
   </div>
 </template>
