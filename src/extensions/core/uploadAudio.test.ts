@@ -33,7 +33,6 @@ const {
 
 type FileHandler = (files: File[]) => Promise<unknown>
 let capturedDragDrop: FileHandler | undefined
-let capturedFileSelect: ((files: File[]) => void) | undefined
 let capturedPaste: FileHandler | undefined
 
 vi.mock(import('extendable-media-recorder'), () => ({
@@ -60,10 +59,7 @@ vi.mock(import('@/composables/node/useNodeDragAndDrop'), () => ({
 }))
 
 vi.mock(import('@/composables/node/useNodeFileInput'), () => ({
-  useNodeFileInput: (_node, options) => {
-    capturedFileSelect = options.onSelect
-    return { openFileSelection: vi.fn() }
-  }
+  useNodeFileInput: () => ({ openFileSelection: vi.fn() })
 }))
 
 vi.mock(import('@/composables/node/useNodePaste'), () => ({
@@ -180,7 +176,6 @@ async function loadAudioUploadWidget() {
 describe('Comfy.UploadAudio AUDIOUPLOAD widget', () => {
   beforeEach(() => {
     capturedDragDrop = undefined
-    capturedFileSelect = undefined
     capturedPaste = undefined
   })
 
@@ -288,7 +283,7 @@ describe('Comfy.UploadAudio AUDIOUPLOAD widget', () => {
     const { node } = createAudioNode()
     AUDIOUPLOAD(node, 'upload')
 
-    const result = await capturedFileSelect!([])
+    const result = await capturedDragDrop!([])
 
     expect(result).toEqual([])
     expect(node.isUploading).toBe(false)
