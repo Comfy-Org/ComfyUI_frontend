@@ -38,6 +38,7 @@
     "@testing-library/vue": "catalog:",
     "@types/node": "catalog:",
     "@vitejs/plugin-vue": "catalog:",
+    "@vitest/coverage-v8": "catalog:",
     "@vueuse/core": "catalog:",
     "firebase": "catalog:",
     "happy-dom": "catalog:",

@@ -40,16 +40,16 @@ jobs:
         run: pnpm test:coverage
 
       - name: Run account package unit tests
-        run: pnpm --filter @comfyorg/account test
+        run: pnpm --filter @comfyorg/account exec vitest run --coverage
 
       - name: Run object-info-parser package unit tests
-        run: pnpm --filter @comfyorg/object-info-parser test
+        run: pnpm --filter @comfyorg/object-info-parser exec vitest run --coverage
 
       - name: Run shared-frontend-utils package unit tests
-        run: pnpm --filter @comfyorg/shared-frontend-utils test
+        run: pnpm --filter @comfyorg/shared-frontend-utils exec vitest run --coverage
 
       - name: Run design-system package unit tests
-        run: pnpm --filter @comfyorg/design-system test
+        run: pnpm --filter @comfyorg/design-system exec vitest run --coverage
 
       - name: Upload unit coverage artifact
         if: always() && github.event_name == 'push'
@@ -64,7 +64,7 @@ jobs:
         if: always()
         uses: codecov/codecov-action@fb8b3582c8e4def4969c97caa2f19720cb33a72f # v7.0.0
         with:
-          files: coverage/lcov.info
+          files: coverage/lcov.info,packages/account/coverage/lcov.info,packages/object-info-parser/coverage/lcov.info,packages/shared-frontend-utils/coverage/lcov.info,packages/design-system/coverage/lcov.info
           flags: unit
           token: ${{ secrets.CODECOV_TOKEN }}
           fail_ci_if_error: false
