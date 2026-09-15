@@ -47,8 +47,13 @@ const slots = useSlots()
           subtitleKey ? 'justify-between' : 'justify-end'
         )
       "
+      data-testid="workshop-hero-row"
     >
-      <p v-if="subtitleKey" class="text-lg text-primary-comfy-canvas/70">
+      <p
+        v-if="subtitleKey"
+        class="text-lg text-primary-comfy-canvas/70"
+        data-testid="workshop-hero-subtitle"
+      >
         <SplitReveal
           :text="t(subtitleKey, locale)"
           :delay="260"
