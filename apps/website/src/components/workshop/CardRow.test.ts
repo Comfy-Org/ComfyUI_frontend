@@ -83,6 +83,18 @@ describe('CardRow', () => {
     ])
   })
 
+  it('keeps focus in the row when it stops overflowing and both arrows go', async () => {
+    renderRow()
+    await scrollRow(300, 900, 300)
+    screen.getByTestId('card-row-next').focus()
+
+    await scrollRow(300, 300, 0)
+    await nextTick()
+
+    expect(screen.queryByTestId('card-row-arrows')).toBeNull()
+    expect(screen.getByTestId('card-row')).toHaveFocus()
+  })
+
   it('leaves focus alone when the reader is not standing on the arrow', async () => {
     renderRow()
     await scrollRow(300, 900, 300)

@@ -37,13 +37,15 @@ const nextArrow = useTemplateRef<HTMLButtonElement>('nextArrow')
 // Paging to an end spends the arrow the reader is standing on. Letting it
 // unmount under them drops focus to the document, and the row's other arrow,
 // which is only shown while the row holds focus, goes with it. So the row hands
-// focus across first, and a reader who arrived by keyboard can turn back.
+// focus across first, and a reader who arrived by keyboard can turn back. When
+// the row stops overflowing there is no arrow left to hand to, and the row
+// itself takes the focus, which keeps the reader where they were standing.
 function handOver(
   spent: HTMLElement | null,
   survivor: () => HTMLElement | null
 ) {
   if (document.activeElement !== spent) return
-  void nextTick(() => survivor()?.focus())
+  void nextTick(() => (survivor() ?? row.value)?.focus())
 }
 watch(atEnd, (spent) => {
   if (spent) handOver(nextArrow.value, () => prevArrow.value)
@@ -85,8 +87,9 @@ const revealClass =
     <div class="group/row relative">
       <ul
         ref="row"
+        tabindex="-1"
         data-testid="card-row"
-        class="-mx-1 scrollbar-hide flex snap-x snap-mandatory gap-5 overflow-x-auto px-1 pb-2"
+        class="-mx-1 scrollbar-hide flex snap-x snap-mandatory gap-5 overflow-x-auto rounded-xl px-1 pb-2 outline-none focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow/50"
         @scroll="measure"
       >
         <slot />
