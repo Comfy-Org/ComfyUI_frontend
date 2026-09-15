@@ -130,7 +130,7 @@ const status = computed(() => {
     }
   if (composing.value)
     return {
-      icon: 'text-agent-fg-subtle icon-[lucide--loader-circle] animate-spin',
+      icon: 'text-muted-foreground icon-[lucide--loader-circle] animate-spin',
       text: t('agent.working')
     }
   return null
@@ -178,10 +178,10 @@ const status = computed(() => {
         :role="group.part.level === 'error' ? 'alert' : 'status'"
         :class="
           cn(
-            'rounded-agent flex items-start gap-2 border px-3 py-2 text-sm',
+            'flex items-start gap-2 rounded-xl border px-3 py-2 text-sm',
             group.part.level === 'error'
-              ? 'border-agent-danger/40 text-agent-danger'
-              : 'border-agent-border text-agent-fg-muted'
+              ? 'border-destructive-background/40 text-destructive-background'
+              : 'border-component-node-border text-muted-foreground'
           )
         "
       >
@@ -192,7 +192,7 @@ const status = computed(() => {
 
     <div
       v-if="status"
-      class="text-agent-fg-muted flex h-8 items-center gap-2 rounded-lg px-2 text-sm/5 font-normal"
+      class="flex h-8 items-center gap-2 rounded-lg px-2 text-sm/5 font-normal text-muted-foreground"
     >
       <span :class="cn('size-4 shrink-0', status.icon)" />
       <span class="agent-shimmer-text min-w-0 truncate">{{ status.text }}</span>

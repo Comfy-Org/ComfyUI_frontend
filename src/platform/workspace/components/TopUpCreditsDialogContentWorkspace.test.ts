@@ -1,4 +1,17 @@
+import {
+  onAuthStateChanged,
+  onIdTokenChanged,
+  setPersistence
+} from 'firebase/auth'
+
 import { useBillingOperationStore } from '@/platform/workspace/stores/billingOperationStore'
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
+import {
+  clearCheckoutJourney,
+  getActiveCheckoutJourney,
+  resolveCheckoutJourney
+} from '@/platform/workspace/utils/checkoutJourney'
+import { useAuthStore } from '@/stores/authStore'
 import { useDialogStore } from '@/stores/dialogStore'
 import { render, screen, waitFor } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
@@ -31,6 +44,7 @@ const mockToastAdd = vi.fn()
 
 const mockTrackTopUpPurchase = vi.fn()
 const mockTrackBillingEvent = vi.fn()
+const mockTrackCheckoutJourneyEvent = vi.hoisted(() => vi.fn())
 const mockCanTopUp = vi.hoisted(() => ({
   ref: undefined as { value: boolean } | undefined
 }))
@@ -85,9 +99,12 @@ vi.mock<unknown>(
 vi.mock<unknown>(import('@/platform/telemetry'), () => ({
   useTelemetry: () => ({
     trackApiCreditTopupButtonPurchaseClicked: mockTrackTopUpPurchase,
-    trackBillingEvent: mockTrackBillingEvent
+    trackBillingEvent: mockTrackBillingEvent,
+    trackCheckoutJourneyEvent: mockTrackCheckoutJourneyEvent
   })
 }))
+
+vi.mock(import('firebase/auth'), { spy: true })
 
 const mockClearPendingTopup = vi.hoisted(() => vi.fn())
 vi.mock<unknown>(import('@/composables/billing/usePendingTopup'), () => ({
@@ -177,7 +194,18 @@ async function clickAddCredits() {
 }
 
 beforeEach(() => {
+  vi.mocked(setPersistence).mockResolvedValue(undefined)
+  vi.mocked(onAuthStateChanged).mockReturnValue(vi.fn())
+  vi.mocked(onIdTokenChanged).mockReturnValue(vi.fn())
+})
+
+beforeEach(() => {
   vi.mocked(useDialogStore().closeDialog).mockImplementation(() => {})
+  Object.assign(useAuthStore(), { userId: 'user-1' })
+  Object.assign(useTeamWorkspaceStore(), { activeWorkspaceId: 'workspace-1' })
+  mockTrackCheckoutJourneyEvent.mockClear()
+  sessionStorage.clear()
+  clearCheckoutJourney()
 })
 
 beforeEach(() => {
@@ -236,6 +264,83 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
       outcome: 'pending',
       operation_type: 'topup'
     })
+  })
+
+  it('enters a topup journey on mount and correlates the purchase', async () => {
+    mockTopup.mockResolvedValue(topupResponse('pending'))
+
+    renderDialog()
+    await waitFor(() =>
+      expect(mockTrackCheckoutJourneyEvent).toHaveBeenCalledWith(
+        expect.objectContaining({ phase: 'entered', entry_flow: 'topup' })
+      )
+    )
+
+    await clickAddCredits()
+    await userEvent.click(screen.getByRole('button', { name: 'Pay $50.00' }))
+
+    await waitFor(() =>
+      expect(mockTrackCheckoutJourneyEvent).toHaveBeenCalledWith(
+        expect.objectContaining({
+          phase: 'operation_linked',
+          billing_op_id: 'op-1'
+        })
+      )
+    )
+    const phases = mockTrackCheckoutJourneyEvent.mock.calls.map(
+      ([event]) => event.phase
+    )
+    expect(phases.indexOf('submitted')).toBeLessThan(
+      phases.indexOf('operation_linked')
+    )
+    expect(phases.filter((phase) => phase === 'entered')).toHaveLength(1)
+
+    // One denominator: every phase of a top-up must carry the same journey.
+    const journeyIds = new Set(
+      mockTrackCheckoutJourneyEvent.mock.calls.map(
+        ([event]) => event.checkout_journey_id
+      )
+    )
+    expect(journeyIds.size).toBe(1)
+  })
+
+  it('does not correlate the operation to a journey replaced mid-request', async () => {
+    let resolveTopup: (value: CreateTopupResponse) => void = () => {}
+    mockTopup.mockReturnValue(
+      new Promise<CreateTopupResponse>((resolve) => {
+        resolveTopup = resolve
+      })
+    )
+
+    renderDialog()
+    await clickAddCredits()
+    await userEvent.click(screen.getByRole('button', { name: 'Pay $50.00' }))
+    await waitFor(() =>
+      expect(mockTrackCheckoutJourneyEvent).toHaveBeenCalledWith(
+        expect.objectContaining({ phase: 'submitted' })
+      )
+    )
+
+    // A different journey takes the slot while the request is pending, so the
+    // response must not bind to whatever happens to be active when it lands.
+    clearCheckoutJourney()
+    const replacement = resolveCheckoutJourney({
+      actorUid: 'user-1',
+      workspaceId: 'workspace-1',
+      entryFlow: 'initial_subscription',
+      entrySource: 'pricing',
+      assignment: { status: 'unavailable' }
+    })
+    resolveTopup(topupResponse('completed'))
+    await waitFor(() => expect(mockFetchBalance).toHaveBeenCalled())
+
+    const phases = mockTrackCheckoutJourneyEvent.mock.calls.map(
+      ([event]) => event.phase
+    )
+    expect(phases).toContain('submitted')
+    expect(phases).not.toContain('operation_linked')
+    expect(replacement.status).toBe('active')
+    expect(getActiveCheckoutJourney()?.billing_op_id).toBeUndefined()
   })
 
   it('reports failure telemetry when topup resolves with no response', async () => {

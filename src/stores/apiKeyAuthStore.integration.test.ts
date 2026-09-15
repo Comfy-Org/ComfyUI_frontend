@@ -14,11 +14,15 @@ vi.mock(import('vuefire'), () => ({
 
 vi.mock(import('firebase/auth'))
 
-vi.mock<unknown>(import('@/platform/distribution/types'), () => ({
-  DISTRIBUTION: 'cloud',
-  isCloud: true,
-  isDesktop: false
-}))
+vi.mock(
+  import('@/platform/distribution/types'),
+  () =>
+    ({
+      DISTRIBUTION: 'cloud',
+      isCloud: true,
+      isDesktop: false
+    }) as const
+)
 
 vi.mock<unknown>(import('@/composables/useFeatureFlags'), () => ({
   useFeatureFlags: () => ({

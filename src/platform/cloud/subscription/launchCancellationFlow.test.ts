@@ -31,7 +31,7 @@ vi.mock<unknown>(import('@/composables/billing/useBillingContext'), () => ({
   })
 }))
 
-vi.mock<unknown>(import('@/i18n'), () => ({
+vi.mock(import('@/i18n'), () => ({
   t: (key: string) => key
 }))
 

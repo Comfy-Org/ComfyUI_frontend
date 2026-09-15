@@ -26,7 +26,7 @@ const { copy, copied } = useClipboard({ copiedDuring: 2000 })
         'inline-flex h-11 min-w-11 shrink-0 cursor-pointer items-center justify-center gap-2 rounded-xl px-3 transition-colors',
         copied
           ? 'text-primary-comfy-yellow'
-          : 'hover:text-primary-comfy-yellow text-primary-warm-gray'
+          : 'text-primary-warm-gray hover:text-primary-comfy-yellow'
       )
     "
     @click="void copy(value)"

@@ -95,23 +95,23 @@ function execute(
 }
 
 describe('SDK snippets', () => {
-  it('uses embedded media bytes directly and through SDK assets without requiring a local file', () => {
+  it('reads local media for native bytes and SDK assets', () => {
+    const cwd = directory()
     const sourceDataUrl = 'data:image/webp;base64,' + image.toString('base64')
     const files: SnippetFile[] = [
       {
         token: 'inline',
         name: 'image.webp',
-        mimeType: 'image/webp',
-        sourceDataUrl
+        mimeType: 'image/webp'
       },
       {
         token: 'upload',
         name: 'mask.webp',
         mimeType: 'image/webp',
-        sourceDataUrl,
         encoding: 'url'
       }
     ]
+    for (const file of files) writeFileSync(join(cwd, file.name), image)
     const result = JSON.parse(
       execute(
         buildSnippet(
@@ -122,7 +122,8 @@ describe('SDK snippets', () => {
             image: 'upload'
           },
           { files }
-        )
+        ),
+        cwd
       )
     )
     expect(result.runs[0].body).toEqual({

@@ -37,7 +37,7 @@ const pill =
         side="top"
         align="end"
         :side-offset="6"
-        class="bg-site-dropdown z-50 flex max-w-64 flex-col gap-1.5 rounded-2xl border border-white/10 p-2 shadow-2xl shadow-black/50 outline-none"
+        class="z-50 flex max-w-64 flex-col gap-1.5 rounded-2xl border border-white/10 bg-site-dropdown p-2 shadow-2xl shadow-black/50 outline-none"
         data-testid="model-tags-rest-list"
       >
         <a
@@ -47,7 +47,7 @@ const pill =
           :class="
             cn(
               pill,
-              'hover:text-primary-comfy-yellow w-full justify-start text-primary-comfy-canvas transition-colors hover:bg-transparency-white-t20'
+              'w-full justify-start text-primary-comfy-canvas transition-colors hover:bg-transparency-white-t20 hover:text-primary-comfy-yellow'
             )
           "
         >

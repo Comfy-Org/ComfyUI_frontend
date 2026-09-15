@@ -239,19 +239,19 @@ const controlClass =
 // rather than a row you find behind a tab.
 const chipClass = (active: boolean) =>
   cn(
-    'focus-visible:ring-brand inline-flex cursor-pointer items-center gap-2 rounded-full border px-4 py-2 text-sm transition-colors outline-none focus-visible:ring-2',
+    'inline-flex cursor-pointer items-center gap-2 rounded-full border px-4 py-2 text-sm transition-colors outline-none focus-visible:ring-2 focus-visible:ring-brand',
     active
-      ? 'border-brand bg-brand text-page font-medium'
-      : 'text-content border-white/15 hover:border-white/40'
+      ? 'border-brand bg-brand font-medium text-page'
+      : 'border-white/15 text-content hover:border-white/40'
   )
 
 // One choice out of a short list reads as a single control, so the options
 // share a border instead of each carrying their own.
 const segmentClass = (active: boolean) =>
   cn(
-    'focus-visible:ring-brand cursor-pointer rounded-full px-4 py-2 text-sm whitespace-nowrap transition-colors outline-none focus-visible:ring-2',
+    'cursor-pointer rounded-full px-4 py-2 text-sm whitespace-nowrap transition-colors outline-none focus-visible:ring-2 focus-visible:ring-brand',
     active
-      ? 'bg-brand text-page font-medium'
+      ? 'bg-brand font-medium text-page'
       : 'text-content hover:text-primary-warm-white'
   )
 
@@ -303,7 +303,7 @@ function phoneToggle(key: string, value: string) {
       <TabsRoot
         ref="tabs"
         :model-value="store.activeTab.value"
-        class="flex scrollbar-hide min-w-0 shrink-0 overflow-x-auto"
+        class="scrollbar-hide flex min-w-0 shrink-0 overflow-x-auto"
         @update:model-value="store.setTab($event as HubTab)"
       >
         <TabsList
@@ -323,7 +323,7 @@ function phoneToggle(key: string, value: string) {
             :value="tab.key"
             :aria-label="labels[tab.labelKey]"
             :data-testid="`hub-tab-${tab.key}`"
-            class="group text-content-muted hover:text-content focus-visible:ring-brand focus-visible:ring-offset-page data-[state=active]:text-page relative z-10 inline-flex h-8 cursor-pointer items-center justify-center gap-1.5 rounded-lg px-2.5 text-xs font-semibold whitespace-nowrap transition-colors outline-none hover:bg-white/8 focus-visible:ring-2 focus-visible:ring-offset-1 sm:px-3.5"
+            class="group relative z-10 inline-flex h-8 cursor-pointer items-center justify-center gap-1.5 rounded-lg px-2.5 text-xs font-semibold whitespace-nowrap text-content-muted transition-colors outline-none hover:bg-white/8 hover:text-content focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-1 focus-visible:ring-offset-page data-[state=active]:text-page sm:px-3.5"
           >
             <component
               :is="tab.icon"
@@ -351,7 +351,7 @@ function phoneToggle(key: string, value: string) {
               controlClass,
               totalActiveFilters > 0
                 ? 'bg-brand text-page hover:bg-brand/90'
-                : 'text-content-secondary hover:text-content bg-white/8 hover:bg-white/12'
+                : 'bg-white/8 text-content-secondary hover:bg-white/12 hover:text-content'
             )
           "
           @click="filterOpen = !filterOpen"
@@ -362,7 +362,7 @@ function phoneToggle(key: string, value: string) {
           }}</span>
           <span
             v-if="totalActiveFilters > 0"
-            class="bg-page/15 ml-0.5 inline-flex min-w-4 items-center justify-center rounded-full px-1 text-2xs font-bold tabular-nums"
+            class="ml-0.5 inline-flex min-w-4 items-center justify-center rounded-full bg-page/15 px-1 text-2xs font-bold tabular-nums"
             data-testid="hub-filter-count"
           >
             {{ totalActiveFilters }}
@@ -385,7 +385,7 @@ function phoneToggle(key: string, value: string) {
             :class="
               cn(
                 controlClass,
-                'text-content-secondary hover:text-content bg-white/8 hover:bg-white/12'
+                'bg-white/8 text-content-secondary hover:bg-white/12 hover:text-content'
               )
             "
           >
@@ -398,7 +398,7 @@ function phoneToggle(key: string, value: string) {
             <DropdownMenuContent
               align="end"
               :side-offset="8"
-              class="bg-site-dropdown z-50 w-56 rounded-2xl border border-white/10 p-2 shadow-lg"
+              class="z-50 w-56 rounded-2xl border border-white/10 bg-site-dropdown p-2 shadow-lg"
             >
               <DropdownMenuRadioGroup
                 :model-value="store.sortBy.value"
@@ -411,9 +411,9 @@ function phoneToggle(key: string, value: string) {
                   :data-testid="`hub-sort-${option.value}`"
                   :class="
                     cn(
-                      'text-content-secondary hover:text-content flex cursor-pointer items-center rounded-xl px-3 py-2 text-sm outline-none select-none hover:bg-white/5 focus-visible:bg-white/5',
+                      'flex cursor-pointer items-center rounded-xl px-3 py-2 text-sm text-content-secondary outline-none select-none hover:bg-white/5 hover:text-content focus-visible:bg-white/5',
                       store.sortBy.value === option.value &&
-                        'text-content bg-white/8'
+                        'bg-white/8 text-content'
                     )
                   "
                 >
@@ -442,7 +442,7 @@ function phoneToggle(key: string, value: string) {
         :style="{
           bottom: phoneBottom !== undefined ? `${phoneBottom}px` : undefined
         }"
-        class="bg-site-dropdown z-40 flex scrollbar-thin flex-col gap-7 overflow-y-auto border border-white/10 shadow-2xl max-sm:fixed max-sm:inset-x-0 max-sm:bottom-0 max-sm:max-h-dvh max-sm:gap-4 max-sm:rounded-t-3xl sm:absolute sm:top-full sm:right-0 sm:mt-3 sm:max-h-[75vh] sm:w-full sm:max-w-4xl sm:rounded-3xl sm:p-8"
+        class="z-40 flex scrollbar-thin flex-col gap-7 overflow-y-auto border border-white/10 bg-site-dropdown shadow-2xl max-sm:fixed max-sm:inset-x-0 max-sm:bottom-0 max-sm:max-h-dvh max-sm:gap-4 max-sm:rounded-t-3xl sm:absolute sm:top-full sm:right-0 sm:mt-3 sm:max-h-[75vh] sm:w-full sm:max-w-4xl sm:rounded-3xl sm:p-8"
         data-testid="hub-filter-menu"
       >
         <FacetSheet
@@ -526,7 +526,7 @@ function phoneToggle(key: string, value: string) {
             <button
               v-if="hiddenCount(group) > 0 || expanded[group.key]"
               type="button"
-              class="text-brand hover:text-brand/80 focus-visible:ring-brand inline-flex cursor-pointer items-center gap-1.5 rounded-lg text-sm font-medium transition-colors outline-none focus-visible:ring-2"
+              class="inline-flex cursor-pointer items-center gap-1.5 rounded-lg text-sm font-medium text-brand transition-colors outline-none hover:text-brand/80 focus-visible:ring-2 focus-visible:ring-brand"
               :data-testid="`hub-facet-more-${group.key}`"
               @click="expanded[group.key] = !expanded[group.key]"
             >
@@ -554,7 +554,7 @@ function phoneToggle(key: string, value: string) {
               <PopoverTrigger as-child>
                 <button
                   type="button"
-                  class="focus-visible:ring-brand flex cursor-pointer items-center justify-between gap-3 rounded-2xl border border-white/15 px-5 py-3.5 text-left text-base transition-colors outline-none hover:border-white/30 focus-visible:ring-2"
+                  class="flex cursor-pointer items-center justify-between gap-3 rounded-2xl border border-white/15 px-5 py-3.5 text-left text-base transition-colors outline-none hover:border-white/30 focus-visible:ring-2 focus-visible:ring-brand"
                   :data-testid="`hub-facet-${group.key}`"
                 >
                   <span
@@ -569,7 +569,7 @@ function phoneToggle(key: string, value: string) {
                   <ChevronDown
                     :class="
                       cn(
-                        'text-content-muted size-4 transition-transform',
+                        'size-4 text-content-muted transition-transform',
                         expanded[group.key] && 'rotate-180'
                       )
                     "
@@ -582,7 +582,7 @@ function phoneToggle(key: string, value: string) {
                 <PopoverContent
                   align="start"
                   :side-offset="8"
-                  class="bg-site-dropdown z-50 flex w-(--reka-popover-trigger-width) flex-col gap-3 rounded-2xl border border-white/10 p-4 shadow-2xl"
+                  class="z-50 flex w-(--reka-popover-trigger-width) flex-col gap-3 rounded-2xl border border-white/10 bg-site-dropdown p-4 shadow-2xl"
                 >
                   <input
                     v-if="group.values.length > SEARCH_THRESHOLD"
@@ -590,7 +590,7 @@ function phoneToggle(key: string, value: string) {
                     type="search"
                     :placeholder="labels.searchPlaceholder"
                     :data-testid="`hub-facet-search-${group.key}`"
-                    class="text-content placeholder:text-content-muted focus-visible:ring-brand w-full rounded-xl bg-white/5 px-4 py-2.5 text-sm outline-none focus-visible:ring-2 [&::-webkit-search-cancel-button]:hidden"
+                    class="w-full rounded-xl bg-white/5 px-4 py-2.5 text-sm text-content outline-none placeholder:text-content-muted focus-visible:ring-2 focus-visible:ring-brand [&::-webkit-search-cancel-button]:hidden"
                   />
                   <div
                     class="flex max-h-64 scrollbar-thin flex-wrap content-start gap-2 overflow-y-auto"
@@ -615,7 +615,7 @@ function phoneToggle(key: string, value: string) {
                     </button>
                     <p
                       v-if="matchingValues(group).length === 0"
-                      class="text-content-muted py-1 text-sm"
+                      class="py-1 text-sm text-content-muted"
                     >
                       {{ labels.noResults }}
                     </p>
@@ -632,7 +632,7 @@ function phoneToggle(key: string, value: string) {
           <button
             v-if="resultCount > 0"
             type="button"
-            class="text-content-secondary hover:text-content shrink-0 cursor-pointer rounded-lg text-base whitespace-nowrap transition-colors max-sm:text-sm"
+            class="shrink-0 cursor-pointer rounded-lg text-base whitespace-nowrap text-content-secondary transition-colors hover:text-content max-sm:text-sm"
             data-testid="hub-filter-clear"
             @click="clearAll"
           >
@@ -640,7 +640,7 @@ function phoneToggle(key: string, value: string) {
           </button>
           <button
             type="button"
-            class="bg-brand text-page hover:bg-brand/90 focus-visible:ring-brand cursor-pointer rounded-full px-8 py-3.5 text-base font-bold whitespace-nowrap transition-colors outline-none focus-visible:ring-2 max-sm:flex-1 max-sm:px-4 max-sm:py-3 max-sm:text-sm"
+            class="cursor-pointer rounded-full bg-brand px-8 py-3.5 text-base font-bold whitespace-nowrap text-page transition-colors outline-none hover:bg-brand/90 focus-visible:ring-2 focus-visible:ring-brand max-sm:flex-1 max-sm:px-4 max-sm:py-3 max-sm:text-sm"
             data-testid="hub-filter-show"
             @click="resultCount > 0 ? (filterOpen = false) : clearAll()"
           >

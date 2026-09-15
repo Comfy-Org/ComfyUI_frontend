@@ -422,11 +422,11 @@ const stepperClass =
           </DialogDescription>
         </div>
         <p
-          class="bg-transparency-white-t4 flex items-center gap-3 rounded-2xl px-4 py-3 text-sm text-primary-comfy-canvas"
+          class="flex items-center gap-3 rounded-2xl bg-transparency-white-t4 px-4 py-3 text-sm text-primary-comfy-canvas"
           data-testid="buy-credits-polling"
         >
           <Loader2
-            class="text-primary-comfy-yellow size-4 animate-spin"
+            class="size-4 animate-spin text-primary-comfy-yellow"
             aria-hidden="true"
           />
           {{ t('workshop.credits.waitingPolling', locale) }}
@@ -453,7 +453,7 @@ const stepperClass =
 
       <template v-else-if="step === 'landed'">
         <span
-          class="border-primary-comfy-yellow text-primary-comfy-yellow -mb-2 grid size-16 shrink-0 place-items-center self-center rounded-full border-2"
+          class="-mb-2 grid size-16 shrink-0 place-items-center self-center rounded-full border-2 border-primary-comfy-yellow text-primary-comfy-yellow"
           aria-hidden="true"
         >
           <Check class="size-7" :stroke-width="2.5" />
@@ -479,7 +479,7 @@ const stepperClass =
           </DialogDescription>
         </div>
         <dl
-          class="bg-transparency-white-t4 flex flex-col gap-2 rounded-2xl px-4 py-3 text-sm"
+          class="flex flex-col gap-2 rounded-2xl bg-transparency-white-t4 px-4 py-3 text-sm"
           data-testid="buy-credits-ledger"
         >
           <div class="flex items-baseline justify-between">
@@ -541,7 +541,7 @@ const stepperClass =
         </div>
         <div
           v-if="lastCheckout?.sessionId"
-          class="bg-transparency-white-t4 flex flex-col gap-1 rounded-2xl px-4 py-3"
+          class="flex flex-col gap-1 rounded-2xl bg-transparency-white-t4 px-4 py-3"
         >
           <span class="text-xs text-primary-warm-gray">
             {{ t('workshop.credits.heldSupport', locale) }}
@@ -613,7 +613,7 @@ const stepperClass =
           </div>
 
           <div
-            class="bg-transparency-white-t4 flex items-center justify-between gap-3 rounded-2xl px-4 py-3"
+            class="flex items-center justify-between gap-3 rounded-2xl bg-transparency-white-t4 px-4 py-3"
             data-testid="buy-credits-custom"
           >
             <span class="text-sm text-primary-warm-gray">

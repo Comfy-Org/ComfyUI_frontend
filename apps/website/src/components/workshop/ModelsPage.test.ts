@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/vue'
+import { render, screen, within } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createSSRApp, h, nextTick } from 'vue'
 import { renderToString } from 'vue/server-renderer'
@@ -78,6 +78,11 @@ describe('Models page entry', () => {
       expect(screen.getByTestId('related-models').textContent).toContain(
         'Browse all'
       )
+      expect(
+        within(screen.getByTestId('model-hero')).getByRole('link', {
+          name: 'Generate images'
+        })
+      ).toHaveAttribute('href', '/models?useCase=generate-images')
     }
     enabled.value = false
     await nextTick()

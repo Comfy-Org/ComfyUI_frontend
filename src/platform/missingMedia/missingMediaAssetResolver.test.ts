@@ -28,7 +28,7 @@ vi.mock<unknown>(import('@/platform/assets/services/assetService'), () => ({
   }
 }))
 
-vi.mock<unknown>(import('@/platform/remote/comfyui/jobs/fetchJobs'), () => ({
+vi.mock(import('@/platform/remote/comfyui/jobs/fetchJobs'), () => ({
   fetchHistoryPage: mockFetchHistoryPage
 }))
 

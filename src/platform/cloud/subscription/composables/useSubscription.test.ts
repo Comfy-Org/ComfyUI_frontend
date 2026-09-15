@@ -133,7 +133,7 @@ vi.mock<unknown>(import('@/composables/useErrorHandling'), () => ({
   }))
 }))
 
-vi.mock<unknown>(import('@/platform/distribution/types'), () => ({
+vi.mock(import('@/platform/distribution/types'), () => ({
   get isCloud() {
     return mockIsCloud.value
   }
