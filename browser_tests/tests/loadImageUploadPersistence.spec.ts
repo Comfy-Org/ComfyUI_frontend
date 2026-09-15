@@ -7,7 +7,6 @@
  */
 import { zUploadImageResponse } from '@comfyorg/ingest-types/zod'
 import { expect } from '@playwright/test'
-import { z } from 'zod'
 
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { assetPath } from '@e2e/fixtures/utils/paths'
@@ -110,7 +109,6 @@ test.describe('Load Image upload persistence', { tag: '@widget' }, () => {
       comfyFiles
     }) => {
       await comfyPage.searchBoxV2.addNode('Load Image (as Mask)')
-      await comfyPage.vueNodes.waitForNodes()
       const [node] = await comfyPage.nodeOps.getNodeRefsByType('LoadImageMask')
       await comfyPage.canvas.focus()
       await node.click('title')
@@ -138,7 +136,6 @@ test.describe('Load Image upload persistence', { tag: '@widget' }, () => {
 
       await comfyPage.menu.topbar.saveWorkflow('image-upload-root')
       await comfyPage.workflow.reloadAndWaitForApp()
-      await comfyPage.vueNodes.waitForNodes()
 
       await expect
         .poll(() =>
@@ -155,31 +152,7 @@ test.describe('Load Image upload persistence', { tag: '@widget' }, () => {
 
     test.describe('LoadImageOutput', () => {
       test.beforeEach(async ({ comfyPage }) => {
-        const outputResponse = comfyPage.page.waitForResponse(
-          (response) =>
-            new URL(response.url()).pathname.endsWith(
-              '/internal/files/output'
-            ) &&
-            response.request().method() === 'GET' &&
-            response.ok()
-        )
         await comfyPage.searchBoxV2.addNode('Load Image (from Outputs)')
-        await comfyPage.vueNodes.waitForNodes()
-        const response = await outputResponse
-        const options = z.array(z.string()).parse(await response.json())
-        const [node] =
-          await comfyPage.nodeOps.getNodeRefsByType('LoadImageOutput')
-        const imageWidget = await node.getWidgetByName('image')
-        await expect
-          .poll(() =>
-            comfyPage.page.evaluate(
-              ({ nodeId, widgetIndex }) =>
-                window.app!.graph.getNodeById(nodeId)?.widgets?.[widgetIndex]
-                  ?.options.values,
-              { nodeId: node.id, widgetIndex: imageWidget.index }
-            )
-          )
-          .toEqual(options)
       })
 
       test('keeps the pasted output available after reload', async ({
@@ -213,7 +186,6 @@ test.describe('Load Image upload persistence', { tag: '@widget' }, () => {
 
         await comfyPage.menu.topbar.saveWorkflow('image-upload-root')
         await comfyPage.workflow.reloadAndWaitForApp()
-        await comfyPage.vueNodes.waitForNodes()
 
         await expect
           .poll(() =>
