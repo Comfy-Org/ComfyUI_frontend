@@ -5226,6 +5226,32 @@ describe('AgentPanelRoot workflow binding', () => {
     ).toBe(false)
   })
 
+  async function removeAttachmentAfterSend(
+    nextAction: string,
+    composer: ReturnType<typeof useAgentComposerStore>
+  ): Promise<void> {
+    if (nextAction !== 'removed-attachment') return
+    composer.addAttachment({
+      id: 'upload-2',
+      name: 'new.png',
+      ref: 'new.png'
+    })
+    await userEvent.click(
+      await screen.findByRole('button', {
+        name: i18n.global.t('agent.remove')
+      })
+    )
+  }
+
+  const modifiedDraftAfterFailure: Record<string, string> = {
+    'new-draft': 'New input',
+    'cleared-draft': '',
+    'removed-reference': ' ',
+    'removed-attachment': ' ',
+    'new-chat': '',
+    history: ''
+  }
+
   it.for([
     ...[
       'untouched',
@@ -5346,18 +5372,7 @@ describe('AgentPanelRoot workflow binding', () => {
           screen.getByRole('button', { name: 'Remove reference reference' })
         )
       }
-      if (nextAction === 'removed-attachment') {
-        composer.addAttachment({
-          id: 'upload-2',
-          name: 'new.png',
-          ref: 'new.png'
-        })
-        await userEvent.click(
-          await screen.findByRole('button', {
-            name: i18n.global.t('agent.remove')
-          })
-        )
-      }
+      await removeAttachmentAfterSend(nextAction, composer)
       if (nextAction === 'new-chat')
         await userEvent.click(
           screen.getByRole('button', { name: i18n.global.t('agent.newChat') })
@@ -5421,12 +5436,7 @@ describe('AgentPanelRoot workflow binding', () => {
         })
       } else {
         expect(useAgentComposerStore().draft).toBe(
-          nextAction === 'new-draft'
-            ? 'New input'
-            : nextAction === 'removed-reference' ||
-                nextAction === 'removed-attachment'
-              ? ' '
-              : ''
+          modifiedDraftAfterFailure[nextAction]
         )
         expect(composer.attachments).toEqual([])
         expect(

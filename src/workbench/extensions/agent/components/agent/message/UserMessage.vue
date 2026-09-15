@@ -15,9 +15,9 @@ import type {
 } from '../../../types/workflowReference'
 import type { ReplyAsset } from '../../../utils/replyAssets'
 import { agentMessageText } from '../../../utils/agentMessageText'
-import { workflowReferenceParts } from '../../../utils/workflowReferenceParts'
 import AgentTooltip from '../AgentTooltip.vue'
 import ReplyAssetGroup from './ReplyAssetGroup.vue'
+import UserMessageContent from './UserMessageContent.vue'
 import {
   selectedUserMessageClipboard,
   userMessageClipboard
@@ -42,9 +42,6 @@ const emit = defineEmits<{
 }>()
 
 const { t } = useI18n()
-const promptParts = computed(() =>
-  workflowReferenceParts(text, workflowReferences)
-)
 const readableText = computed(() =>
   agentMessageText({ text, workflowReferences, tags, attachments })
 )
@@ -54,6 +51,16 @@ const richClipboard = useClipboardItems({ copiedDuring: 2000 })
 const copied = computed(
   () => plainClipboard.copied.value || richClipboard.copied.value
 )
+const copyLabel = computed(() =>
+  copied.value ? t('agent.copied') : t('agent.copy')
+)
+const copyIcon = computed(() =>
+  copied.value ? 'icon-[lucide--check]' : 'icon-[lucide--copy]'
+)
+const hasMessageContent = computed(() =>
+  Boolean(text || workflowReferences.length)
+)
+const canEdit = computed(() => editable && hasMessageContent.value)
 
 async function copyMessage(): Promise<void> {
   if (
@@ -96,9 +103,11 @@ function copySelection(event: ClipboardEvent): void {
   event.stopPropagation()
 }
 
-function openReference(reference: WorkflowReference): void {
-  if (reference.unavailable) return
-  emit('openReferenceWorkflow', reference.id, reference.name)
+function onOpenReferenceWorkflow(
+  workflowId: string,
+  workflowName: string
+): void {
+  emit('openReferenceWorkflow', workflowId, workflowName)
 }
 
 /* The shared map's 'other' glyph is a checkmark, which reads as a status
@@ -178,62 +187,22 @@ const splitAttachments = computed(() => {
       </figure>
     </div>
     <div
-      v-if="text || workflowReferences.length"
+      v-if="hasMessageContent"
       ref="bubble"
       data-testid="user-message-bubble"
       class="border-agent-border bg-agent-surface-raised text-agent-fg-muted w-fit max-w-full rounded-[10px] border px-2.5 py-1.5 text-sm/5 font-normal wrap-break-word whitespace-pre-wrap"
     >
-      <template v-for="(part, index) in promptParts" :key="index">
-        <span
-          v-if="part.type === 'workflow'"
-          role="button"
-          tabindex="0"
-          :aria-label="
-            part.reference.unavailable
-              ? t('agent.unavailableWorkflowReference', {
-                  name: part.reference.name
-                })
-              : t('agent.openWorkflowTab', { name: part.reference.name })
-          "
-          data-testid="workflow-reference-chip"
-          data-comfy-workflow="1"
-          :data-workflow-id="part.reference.id"
-          :data-workflow-unavailable="
-            part.reference.unavailable ? 'true' : undefined
-          "
-          :aria-disabled="part.reference.unavailable"
-          :aria-description="
-            part.reference.unavailable
-              ? t('agent.workflowReferenceUnavailableReason')
-              : undefined
-          "
-          :title="
-            part.reference.unavailable
-              ? t('agent.workflowReferenceUnavailableReason')
-              : undefined
-          "
-          class="inline cursor-pointer rounded-sm bg-primary-background/30 box-decoration-clone px-1 py-0.5 font-inter text-xs/[15px] font-normal break-all whitespace-normal text-primary-background-hover ring-1 ring-primary-background/30 ring-inset focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-background aria-disabled:cursor-not-allowed aria-disabled:opacity-50"
-          @click="openReference(part.reference)"
-          @keydown.enter.prevent="openReference(part.reference)"
-          @keydown.space.prevent
-          @keyup.space.prevent="openReference(part.reference)"
-        >
-          <span
-            class="mr-1 icon-[comfy--workflow] inline-block size-3 align-middle"
-          />
-          <span>{{ part.reference.name }}</span>
-        </span>
-        <template v-else>{{ part.text }}</template>
-      </template>
+      <UserMessageContent
+        :text
+        :workflow-references
+        @open-reference-workflow="onOpenReferenceWorkflow"
+      />
     </div>
     <div
       v-if="readableText"
       class="text-agent-fg-subtle flex opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100 touch:opacity-100"
     >
-      <AgentTooltip
-        v-if="editable && (text || workflowReferences.length)"
-        :label="t('g.edit')"
-      >
+      <AgentTooltip v-if="canEdit" :label="t('g.edit')">
         <button
           type="button"
           :aria-label="t('g.edit')"
@@ -243,21 +212,14 @@ const splitAttachments = computed(() => {
           <span class="icon-[lucide--pencil] size-3" />
         </button>
       </AgentTooltip>
-      <AgentTooltip :label="copied ? t('agent.copied') : t('agent.copy')">
+      <AgentTooltip :label="copyLabel">
         <button
           type="button"
-          :aria-label="copied ? t('agent.copied') : t('agent.copy')"
+          :aria-label="copyLabel"
           class="hover:bg-agent-surface-hover hover:text-agent-fg flex size-6 cursor-pointer items-center justify-center rounded-lg p-1 transition-colors"
           @click="copyMessage"
         >
-          <span
-            :class="
-              cn(
-                'size-3',
-                copied ? 'icon-[lucide--check]' : 'icon-[lucide--copy]'
-              )
-            "
-          />
+          <span :class="cn('size-3', copyIcon)" />
         </button>
       </AgentTooltip>
     </div>
