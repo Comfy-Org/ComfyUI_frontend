@@ -44,7 +44,9 @@ type ToastMessage = Parameters<ReturnType<typeof useToastStore>['add']>[0]
 
 async function loadChallengePort(): Promise<EmbeddedChallengePort | undefined> {
   const publishableKey = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY
-  const stripe = publishableKey ? await loadStripe(publishableKey) : null
+  const stripe = publishableKey
+    ? await loadStripe(publishableKey).catch(() => null)
+    : null
   if (!stripe) return undefined
   return {
     handleNextAction: (clientSecret) =>

@@ -613,34 +613,46 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
     ).not.toHaveBeenCalled()
   })
 
-  it('lets the customer start over after a failed challenge', async () => {
-    mockTopup.mockResolvedValue(topupResponse('pending'))
+  it.for([
+    {
+      rail: 'resolves at issue',
+      issue: () => Promise.resolve(topupResponse('pending'))
+    },
+    {
+      rail: 'resolves only at settlement',
+      issue: () => new Promise<CreateTopupResponse>(() => {})
+    }
+  ])(
+    'lets the customer start over after a failed challenge when the purchase $rail',
+    async ({ issue }) => {
+      mockTopup.mockImplementation(issue)
 
-    renderDialog()
-    await clickAddCredits()
-    await userEvent.click(screen.getByRole('button', { name: 'Pay $50.00' }))
-    await nextTick()
+      renderDialog()
+      await clickAddCredits()
+      await userEvent.click(screen.getByRole('button', { name: 'Pay $50.00' }))
+      await nextTick()
 
-    setTopupActionOperation({
-      opId: 'op-1',
-      status: 'pending',
-      actionUrl: null,
-      authenticationState: 'failed_retryable',
-      errorMessage: 'Your bank rejected the verification.'
-    })
-    await nextTick()
+      setTopupActionOperation({
+        opId: 'op-1',
+        status: 'pending',
+        actionUrl: null,
+        authenticationState: 'failed_retryable',
+        errorMessage: 'Your bank rejected the verification.'
+      })
+      await nextTick()
 
-    await userEvent.click(screen.getByRole('button', { name: 'Start over' }))
-    await nextTick()
+      await userEvent.click(screen.getByRole('button', { name: 'Start over' }))
+      await nextTick()
 
-    expect(useBillingOperationStore().dismissOperation).toHaveBeenCalledWith(
-      'op-1'
-    )
-    expect(
-      screen.queryByText('Your bank rejected the verification.')
-    ).not.toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Add credits' })).toBeEnabled()
-  })
+      expect(useBillingOperationStore().dismissOperation).toHaveBeenCalledWith(
+        'op-1'
+      )
+      expect(
+        screen.queryByText('Your bank rejected the verification.')
+      ).not.toBeInTheDocument()
+      expect(screen.getByRole('button', { name: 'Add credits' })).toBeEnabled()
+    }
+  )
 
   it('keeps a top-up locked when reconciliation needs support', () => {
     setTopupActionOperation({

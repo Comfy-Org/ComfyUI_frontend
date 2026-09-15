@@ -35,7 +35,7 @@ export interface BillingSdkOptions {
   readonly pointerStorage?: BillingOperationPointerStorage
   readonly embeddedCheckoutAvailable: () => boolean
   readonly onTelemetry: (event: BillingOperationTelemetryEvent) => void
-  /** The payment-provider port, loaded on first use; undefined when it cannot load. */
+  /** The payment-provider port, loaded on first use; undefined or a rejection when it cannot load. */
   readonly challengePort: () => Promise<EmbeddedChallengePort | undefined>
   readonly fetchImpl?: typeof fetch
 }
@@ -103,7 +103,8 @@ export function createBillingSdk(options: BillingSdkOptions): BillingSdk {
       driveEmbeddedChallenge(
         lifecycle,
         operationId,
-        (await challengePort()) ?? UNAVAILABLE_CHALLENGE_PORT
+        (await challengePort().catch(() => undefined)) ??
+          UNAVAILABLE_CHALLENGE_PORT
       ),
     dispose: () => {
       lifecycle.dispose()

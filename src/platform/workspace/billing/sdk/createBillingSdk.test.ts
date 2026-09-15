@@ -241,23 +241,35 @@ describe('createBillingSdk', () => {
     await expect(settled).resolves.toMatchObject({ status: 'ok' })
   })
 
-  it('fails the challenge, not the operation, when the port cannot load', async () => {
-    const { sdk, requireChallenge } = harness({
-      embeddedCheckoutAvailable: () => true
-    })
-    requireChallenge()
-    void sdk.topup.createTopupCheckout({ amountCents: 1000 })
-    await vi.waitFor(() =>
-      expect(sdk.lifecycle.get('op-1')).toMatchObject({
-        challenge: { status: 'required' }
+  it.for([
+    { loader: 'resolves undefined', challengePort: async () => undefined },
+    {
+      loader: 'rejects',
+      challengePort: async () => {
+        throw new Error('payment provider script blocked')
+      }
+    }
+  ])(
+    'fails the challenge, not the operation, when the port loader $loader',
+    async ({ challengePort }) => {
+      const { sdk, requireChallenge } = harness({
+        embeddedCheckoutAvailable: () => true,
+        challengePort
       })
-    )
+      requireChallenge()
+      void sdk.topup.createTopupCheckout({ amountCents: 1000 })
+      await vi.waitFor(() =>
+        expect(sdk.lifecycle.get('op-1')).toMatchObject({
+          challenge: { status: 'required' }
+        })
+      )
 
-    await expect(sdk.driveChallenge('op-1')).resolves.toBe('failed')
+      await expect(sdk.driveChallenge('op-1')).resolves.toBe('failed')
 
-    expect(sdk.lifecycle.get('op-1')).toMatchObject({
-      phase: 'pending',
-      authenticationState: 'failed_retryable'
-    })
-  })
+      expect(sdk.lifecycle.get('op-1')).toMatchObject({
+        phase: 'pending',
+        authenticationState: 'failed_retryable'
+      })
+    }
+  )
 })

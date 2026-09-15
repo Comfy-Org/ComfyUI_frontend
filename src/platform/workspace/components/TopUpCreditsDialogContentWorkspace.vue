@@ -453,6 +453,7 @@ const paymentLocked = computed(
 watch(
   [isAddingCredits, topupOperation, canTopUp],
   ([addingCredits, operation, allowed]) => {
+    if (addingCredits || operation) loading.value = false
     if (step.value === 'verifying' && !addingCredits && !operation) {
       step.value = 'amount'
       return

@@ -66,6 +66,11 @@ vi.mock<unknown>(import('@/composables/useFeatureFlags'), () => ({
 
 vi.mock(import('@/platform/distribution/types'), () => ({ isCloud: true }))
 
+const mockLoadStripe = vi.hoisted(() => vi.fn())
+vi.mock<unknown>(import('@stripe/stripe-js/pure'), () => ({
+  loadStripe: mockLoadStripe
+}))
+
 let harness: ReturnType<typeof fakeBillingSdk>
 let options: BillingSdkOptions
 
@@ -309,6 +314,20 @@ describe('useBillingSdkStore', () => {
       })
     )
   })
+
+  it.for([
+    { outcome: 'rejects', load: () => Promise.reject(new Error('blocked')) },
+    { outcome: 'yields nothing', load: () => Promise.resolve(null) }
+  ])(
+    'offers no challenge port when the payment provider script $outcome',
+    async ({ load }) => {
+      vi.stubEnv('VITE_STRIPE_PUBLISHABLE_KEY', 'pk_test_challenge')
+      mockLoadStripe.mockImplementation(load)
+      useBillingSdkStore()
+
+      await expect(options.challengePort()).resolves.toBeUndefined()
+    }
+  )
 
   it('polls every pending operation when the tab returns', () => {
     useBillingSdkStore()
