@@ -8,8 +8,10 @@ import RouterCapabilitiesSection from '../../templates/platform/RouterCapabiliti
 import RouterCodeSection from '../../templates/platform/RouterCodeSection.vue'
 import RouterProofStripSection from '../../templates/platform/RouterProofStripSection.vue'
 import RouterRoadmapSection from '../../templates/platform/RouterRoadmapSection.vue'
-import { externalLinks } from '../../config/routes'
+import { externalLinks, getRoutes } from '../../config/routes'
 import { t } from '../../i18n/translations'
+
+const routes = getRoutes('en')
 ---
 
 <BaseLayout
@@ -25,13 +27,18 @@ import { t } from '../../i18n/translations'
     locale="en"
     headingKey="platform.router.faq.heading"
     faqPrefix="platform.router.faq"
-    faqCount={10}
+    faqCount={11}
   />
   <ClosingCtaSection
     locale="en"
     heading-after-badge={t('platform.router.closing.headingAfterBadge', 'en')}
     subtitle={t('platform.router.closing.subtitle', 'en')}
     primary-href={externalLinks.apiKeys}
+    primary-label={t('platform.router.cta.getApiKey', 'en')}
+    secondary-cta={{
+      label: t('platform.router.cta.browseModels', 'en'),
+      href: routes.models
+    }}
     client:visible
   />
   <ProductCardsSection
