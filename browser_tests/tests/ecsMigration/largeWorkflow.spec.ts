@@ -169,18 +169,8 @@ test.describe(
                 labelBounds
               ),
               unstablePixels:
-                countChangedPixels(painted, unchanged, {
-                  left: 0,
-                  top: 0,
-                  right: canvas.canvas.width,
-                  bottom: canvas.canvas.height
-                }) +
-                countChangedPixels(painted, restored, {
-                  left: 0,
-                  top: 0,
-                  right: canvas.canvas.width,
-                  bottom: canvas.canvas.height
-                })
+                countChangedPixels(painted, unchanged, labelBounds) +
+                countChangedPixels(painted, restored, labelBounds)
             })
           }
         } finally {
