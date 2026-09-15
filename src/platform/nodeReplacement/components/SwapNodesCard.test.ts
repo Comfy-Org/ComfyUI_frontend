@@ -1,6 +1,6 @@
+import { getActivePinia } from 'pinia'
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { createTestingPinia } from '@pinia/testing'
 import PrimeVue from 'primevue/config'
 import { describe, expect, it, vi } from 'vitest'
 
@@ -45,7 +45,7 @@ function mountCard(
       ...(callbacks?.onReplace ? { onReplace: callbacks.onReplace } : {})
     },
     global: {
-      plugins: [createTestingPinia({ createSpy: vi.fn }), PrimeVue]
+      plugins: [getActivePinia()!, PrimeVue]
     }
   })
 }

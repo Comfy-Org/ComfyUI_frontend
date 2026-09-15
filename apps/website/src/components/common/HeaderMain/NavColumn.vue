@@ -11,7 +11,7 @@ defineProps<{ column: NavColumn; locale: Locale; currentPath: string }>()
 
 <template>
   <li class="flex flex-col space-y-4">
-    <p class="font-formula text-primary-warm-gray pl-2 text-sm font-medium">
+    <p class="pl-2 font-formula text-sm font-medium text-primary-warm-gray">
       {{ column.header }}
     </p>
     <ul class="flex flex-col">

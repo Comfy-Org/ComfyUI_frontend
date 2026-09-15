@@ -1,28 +1,13 @@
-import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { reactive } from 'vue'
+import { render, screen } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
 import TopBarHeader from '@/components/maskeditor/dialog/TopBarHeader.vue'
+import { useDialogStore } from '@/stores/dialogStore'
+import { useMaskEditorStore } from '@/stores/maskEditorStore'
 
-const mockCanvasHistory = vi.hoisted(() => ({
-  undo: vi.fn(),
-  redo: vi.fn()
-}))
-
-const initialMock = () =>
-  reactive({
-    canvasHistory: mockCanvasHistory,
-    brushVisible: true,
-    triggerClear: vi.fn()
-  })
-
-let mockStore: ReturnType<typeof initialMock>
-
-const mockDialogStore = vi.hoisted(() => ({
-  closeDialog: vi.fn()
-}))
+let mockStore: ReturnType<typeof useMaskEditorStore>
 
 const mockCanvasTools = vi.hoisted(() => ({
   invertMask: vi.fn(),
@@ -38,14 +23,6 @@ const mockCanvasTransform = vi.hoisted(() => ({
 
 const mockSaver = vi.hoisted(() => ({
   save: vi.fn().mockResolvedValue(undefined)
-}))
-
-vi.mock<unknown>(import('@/stores/maskEditorStore'), () => ({
-  useMaskEditorStore: () => mockStore
-}))
-
-vi.mock<unknown>(import('@/stores/dialogStore'), () => ({
-  useDialogStore: () => mockDialogStore
 }))
 
 vi.mock<unknown>(import('@/composables/maskeditor/useCanvasTools'), () => ({
@@ -98,7 +75,9 @@ const renderHeader = () => render(TopBarHeader, { global: { plugins: [i18n] } })
 
 describe('TopBarHeader', () => {
   beforeEach(() => {
-    mockStore = initialMock()
+    mockStore = useMaskEditorStore()
+    vi.spyOn(mockStore.canvasHistory, 'undo').mockImplementation(() => {})
+    vi.spyOn(mockStore.canvasHistory, 'redo').mockImplementation(() => {})
   })
 
   describe('title', () => {
@@ -115,7 +94,7 @@ describe('TopBarHeader', () => {
 
       await user.click(screen.getByRole('button', { name: 'Undo' }))
 
-      expect(mockCanvasHistory.undo).toHaveBeenCalledTimes(1)
+      expect(vi.mocked(mockStore.canvasHistory).undo).toHaveBeenCalledTimes(1)
     })
 
     it('should call canvasHistory.redo when redo button is clicked', async () => {
@@ -124,7 +103,7 @@ describe('TopBarHeader', () => {
 
       await user.click(screen.getByRole('button', { name: 'Redo' }))
 
-      expect(mockCanvasHistory.redo).toHaveBeenCalledTimes(1)
+      expect(vi.mocked(mockStore.canvasHistory).redo).toHaveBeenCalledTimes(1)
     })
   })
 
@@ -201,7 +180,7 @@ describe('TopBarHeader', () => {
 
       expect(mockStore.brushVisible).toBe(false)
       expect(mockSaver.save).toHaveBeenCalledTimes(1)
-      expect(mockDialogStore.closeDialog).toHaveBeenCalledTimes(1)
+      expect(useDialogStore().closeDialog).toHaveBeenCalledTimes(1)
     })
 
     it('should switch the button text to "Saving" and disable the button while saving', async () => {
@@ -237,7 +216,7 @@ describe('TopBarHeader', () => {
         '[TopBarHeader] Save failed:',
         expect.any(Error)
       )
-      expect(mockDialogStore.closeDialog).not.toHaveBeenCalled()
+      expect(useDialogStore().closeDialog).not.toHaveBeenCalled()
       // After failure, the Save button reads "Save" again (not "Saving")
       expect(
         screen.getByRole('button', { name: /save/i }).textContent.trim()
@@ -253,7 +232,7 @@ describe('TopBarHeader', () => {
 
       await user.click(screen.getByRole('button', { name: 'Cancel' }))
 
-      expect(mockDialogStore.closeDialog).toHaveBeenCalledWith({
+      expect(useDialogStore().closeDialog).toHaveBeenCalledWith({
         key: 'global-mask-editor'
       })
     })

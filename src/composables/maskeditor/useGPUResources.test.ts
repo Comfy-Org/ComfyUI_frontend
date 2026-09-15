@@ -1,6 +1,7 @@
+import { useMaskEditorStore } from '@/stores/maskEditorStore'
 import { fromPartial } from '@total-typescript/shoehorn'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { effectScope, nextTick, reactive } from 'vue'
+import { effectScope, nextTick } from 'vue'
 import type { EffectScope } from 'vue'
 
 vi.mock<unknown>(import('typegpu'), () => ({
@@ -28,36 +29,7 @@ vi.mock<unknown>(import('./gpu/GPUBrushRenderer'), () => ({
   )
 }))
 
-const tgpuRoot: unknown = null
-const mockStore = reactive({
-  tgpuRoot,
-  maskCanvas: null as HTMLCanvasElement | null,
-  rgbCanvas: null as HTMLCanvasElement | null,
-  maskCtx: null as CanvasRenderingContext2D | null,
-  rgbCtx: null as CanvasRenderingContext2D | null,
-  clearTrigger: 0,
-  canvasHistory: { currentStateIndex: 0 },
-  gpuTexturesNeedRecreation: false,
-  gpuTextureWidth: 0,
-  gpuTextureHeight: 0,
-  pendingGPUMaskData: null,
-  pendingGPURgbData: null,
-  brushSettings: {
-    size: 20,
-    hardness: 0.9,
-    opacity: 1,
-    stepSize: 5,
-    type: 'arc'
-  },
-  activeLayer: 'mask',
-  currentTool: 'pen',
-  maskColor: { r: 0, g: 0, b: 0 },
-  rgbColor: '#FF0000'
-})
-
-vi.mock<unknown>(import('@/stores/maskEditorStore'), () => ({
-  useMaskEditorStore: vi.fn(() => mockStore)
-}))
+let mockStore: ReturnType<typeof useMaskEditorStore>
 
 import { resetDirtyRect } from './brushDrawingUtils'
 import { useGPUResources } from './useGPUResources'
@@ -70,6 +42,7 @@ function setup() {
 }
 
 beforeEach(() => {
+  mockStore = useMaskEditorStore()
   mockStore.tgpuRoot = null
   mockStore.maskCanvas = null
   mockStore.rgbCanvas = null
@@ -186,7 +159,9 @@ describe('watchers', () => {
 describe('initGPUResources with pre-existing tgpuRoot', () => {
   it('returns early with a warning when canvas contexts are not ready', async () => {
     const { initGPUResources, hasRenderer } = setup()
-    mockStore.tgpuRoot = { device: {} }
+    mockStore.tgpuRoot = fromPartial<NonNullable<typeof mockStore.tgpuRoot>>({
+      device: {}
+    })
     await initGPUResources()
     expect(hasRenderer.value).toBe(false)
   })
@@ -235,12 +210,16 @@ describe('gpuRender', () => {
         writeTexture: vi.fn()
       }
     }
-    mockStore.tgpuRoot = { device: gpuDevice }
+    mockStore.tgpuRoot = fromPartial<NonNullable<typeof mockStore.tgpuRoot>>({
+      device: gpuDevice
+    })
     mockStore.maskCanvas = fromPartial<HTMLCanvasElement>({
+      getContext: vi.fn().mockReturnValue(context),
       width: 4,
       height: 4
     })
     mockStore.rgbCanvas = fromPartial<HTMLCanvasElement>({
+      getContext: vi.fn().mockReturnValue(context),
       width: 4,
       height: 4
     })

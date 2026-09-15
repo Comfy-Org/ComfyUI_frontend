@@ -1,43 +1,29 @@
-import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
+import { render, screen } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
-import type { ViewMode } from '@/utils/appMode'
+import { KeybindingImpl } from '@/platform/keybindings/keybinding'
+import { useKeybindingStore } from '@/platform/keybindings/keybindingStore'
+import { useAppModeStore } from '@/stores/appModeStore'
+import { useCommandStore } from '@/stores/commandStore'
 
 import WorkflowActionsDropdown from './WorkflowActionsDropdown.vue'
 
-const spies = vi.hoisted(() => ({
-  execute: vi.fn(),
-  trackUiButtonClicked: vi.fn(),
-  markAsSeen: vi.fn()
-}))
-
-const viewState = vi.hoisted(() => ({
-  viewMode: 'graph' as ViewMode,
-  displayViewMode: 'graph' as ViewMode
-}))
-
-vi.mock<unknown>(import('@/stores/appModeStore'), async () => {
-  const { computed, reactive } = await import('vue')
-  return {
-    useAppModeStore: () =>
-      reactive({
-        viewMode: computed(() => viewState.viewMode),
-        displayViewMode: computed(() => viewState.displayViewMode)
-      })
-  }
+beforeEach(() => {
+  vi.mocked(useCommandStore().execute).mockResolvedValue(undefined)
+  useKeybindingStore().addDefaultKeybinding(
+    new KeybindingImpl({
+      commandId: 'Comfy.ToggleLinear',
+      combo: { key: 'l', ctrl: true }
+    })
+  )
 })
 
-vi.mock<unknown>(import('@/stores/commandStore'), () => ({
-  useCommandStore: () => ({ execute: spies.execute, commands: [] })
-}))
-
-vi.mock<unknown>(import('@/platform/keybindings/keybindingStore'), () => ({
-  useKeybindingStore: () => ({
-    getKeybindingByCommandId: () => ({ combo: { toString: () => 'Ctrl+L' } })
-  })
+const spies = vi.hoisted(() => ({
+  trackUiButtonClicked: vi.fn(),
+  markAsSeen: vi.fn()
 }))
 
 vi.mock<unknown>(import('@/platform/telemetry'), () => ({
@@ -96,8 +82,8 @@ function renderDropdown() {
 
 describe('WorkflowActionsDropdown', () => {
   beforeEach(() => {
-    viewState.viewMode = 'graph'
-    viewState.displayViewMode = 'graph'
+    Object.assign(useAppModeStore(), { viewMode: 'graph' })
+    useAppModeStore().displayViewMode = 'graph'
     // A prior test's segment switch arms the module-level focus handoff;
     // a throwaway mount consumes it so it cannot steal focus mid-test.
     renderDropdown().unmount()
@@ -123,8 +109,8 @@ describe('WorkflowActionsDropdown', () => {
   })
 
   it('flips the segment roles when app mode is active', () => {
-    viewState.viewMode = 'app'
-    viewState.displayViewMode = 'app'
+    Object.assign(useAppModeStore(), { viewMode: 'app' })
+    useAppModeStore().displayViewMode = 'app'
     renderDropdown()
 
     const active = screen.getByRole('button', { name: /workflow actions/ })
@@ -136,8 +122,8 @@ describe('WorkflowActionsDropdown', () => {
 
   it('derives the active segment from the real mode, not the lagged display mode', () => {
     // Mid-animation: the mode has flipped to app but the display still lags.
-    viewState.viewMode = 'app'
-    viewState.displayViewMode = 'graph'
+    Object.assign(useAppModeStore(), { viewMode: 'app' })
+    useAppModeStore().displayViewMode = 'graph'
     renderDropdown()
 
     const active = screen.getByRole('button', { name: /workflow actions/ })
@@ -163,9 +149,12 @@ describe('WorkflowActionsDropdown', () => {
 
     await user.click(screen.getByRole('button', { name: 'Enter app mode' }))
 
-    expect(spies.execute).toHaveBeenCalledWith('Comfy.ToggleLinear', {
-      metadata: { source: 'test' }
-    })
+    expect(vi.mocked(useCommandStore().execute)).toHaveBeenCalledWith(
+      'Comfy.ToggleLinear',
+      {
+        metadata: { source: 'test' }
+      }
+    )
     // The switch must not also open the menu as a side effect.
     expect(
       screen.getByRole('button', { name: /workflow actions/ })
@@ -180,7 +169,7 @@ describe('WorkflowActionsDropdown', () => {
 
     await user.click(active)
 
-    expect(spies.execute).not.toHaveBeenCalled()
+    expect(vi.mocked(useCommandStore().execute)).not.toHaveBeenCalled()
     expect(active).toHaveAttribute('aria-expanded', 'true')
     expect(spies.markAsSeen).toHaveBeenCalled()
     expect(spies.trackUiButtonClicked).toHaveBeenCalledWith({
@@ -206,9 +195,12 @@ describe('WorkflowActionsDropdown', () => {
     inactive.focus()
     await user.keyboard('{Enter}')
 
-    expect(spies.execute).toHaveBeenCalledWith('Comfy.ToggleLinear', {
-      metadata: { source: 'test' }
-    })
+    expect(vi.mocked(useCommandStore().execute)).toHaveBeenCalledWith(
+      'Comfy.ToggleLinear',
+      {
+        metadata: { source: 'test' }
+      }
+    )
     // The keydown must not reach the trigger and open the menu.
     expect(
       screen.getByRole('button', { name: /workflow actions/ })
@@ -239,7 +231,7 @@ describe('WorkflowActionsDropdown', () => {
     active.focus()
     await user.keyboard('{Enter}')
 
-    expect(spies.execute).not.toHaveBeenCalled()
+    expect(vi.mocked(useCommandStore().execute)).not.toHaveBeenCalled()
     expect(active).toHaveAttribute('aria-expanded', 'true')
   })
 
@@ -272,8 +264,8 @@ describe('WorkflowActionsDropdown', () => {
     // The mode flip unmounts this instance and mounts a fresh one in the
     // other mode's host.
     unmount()
-    viewState.viewMode = 'app'
-    viewState.displayViewMode = 'app'
+    Object.assign(useAppModeStore(), { viewMode: 'app' })
+    useAppModeStore().displayViewMode = 'app'
     renderDropdown()
     await nextTick()
 

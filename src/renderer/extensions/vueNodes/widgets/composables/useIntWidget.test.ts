@@ -11,12 +11,6 @@ vi.mock(import('@/scripts/widgets'), () => ({
   addValueControlWidget: vi.fn()
 }))
 
-vi.mock<unknown>(import('@/platform/settings/settingStore'), () => ({
-  useSettingStore: () => ({
-    get: vi.fn(() => false)
-  })
-}))
-
 const { onValueChange } = _for_testing
 
 describe('useIntWidget', () => {

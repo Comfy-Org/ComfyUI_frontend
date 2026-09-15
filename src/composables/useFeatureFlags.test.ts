@@ -196,6 +196,23 @@ describe('useFeatureFlags', () => {
     })
   })
 
+  describe('hostedBillingWebEnabled', () => {
+    it('stays disabled when only the development URL is configured', () => {
+      vi.stubEnv('VITE_BILLING_WEB_URL', 'http://localhost:5174')
+      vi.mocked(api.getServerFeature).mockImplementation(
+        (_path, defaultValue) => defaultValue
+      )
+
+      const { flags } = useFeatureFlags()
+
+      expect(flags.hostedBillingWebEnabled).toBe(false)
+      expect(api.getServerFeature).toHaveBeenCalledWith(
+        ServerFeatureFlag.HOSTED_BILLING_WEB_ENABLED,
+        false
+      )
+    })
+  })
+
   describe('linearToggleEnabled', () => {
     afterEach(() => {
       vi.mocked(distributionTypes).isNightly = false
@@ -308,6 +325,26 @@ describe('useFeatureFlags', () => {
       const { flags } = useFeatureFlags()
       expect(flags.nodeLibraryEssentialsEnabled).toBe(false)
     })
+  })
+
+  describe('assetsEnabled', () => {
+    it.for([
+      ['stable cohort without the flag', undefined, false],
+      ['beta cohort with the flag', true, true],
+      ['beta cohort after the kill switch', false, false]
+    ] as const)(
+      'maps the %s response to the expected state',
+      ([, servedValue, expected]) => {
+        vi.mocked(api.getServerFeature).mockImplementation(
+          (path, defaultValue) =>
+            path === 'assets' && servedValue !== undefined
+              ? servedValue
+              : defaultValue
+        )
+
+        expect(useFeatureFlags().flags.assetsEnabled).toBe(expected)
+      }
+    )
   })
 
   describe('partnerNodeGovernanceEnabled', () => {

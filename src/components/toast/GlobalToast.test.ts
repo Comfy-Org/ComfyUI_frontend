@@ -1,4 +1,4 @@
-import { createTestingPinia } from '@pinia/testing'
+import { getActivePinia } from 'pinia'
 import { cleanup, render } from '@testing-library/vue'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
@@ -24,7 +24,7 @@ vi.mock<unknown>(
 function renderToast() {
   return render(GlobalToast, {
     global: {
-      plugins: [createTestingPinia({ createSpy: vi.fn })],
+      plugins: [getActivePinia()!],
       stubs: { Toast: true }
     }
   })

@@ -16,6 +16,9 @@
           v-else-if="workflowOption.workflow.initialMode === 'app'"
           class="icon-[lucide--panels-top-left] bg-primary-background"
         />
+        <WorkflowAgentTargetIndicator
+          :workflow-path="workflowOption.workflow.path"
+        />
         <span
           class="workflow-label inline-block max-w-[150px] truncate font-inter text-sm leading-none font-normal text-inherit"
         >
@@ -129,6 +132,7 @@ import type { WorkflowMenuItem } from '@/types/workflowMenuItem'
 import { cn } from '@comfyorg/tailwind-utils'
 
 import WorkflowTabPopover from './WorkflowTabPopover.vue'
+import WorkflowAgentTargetIndicator from './WorkflowAgentTargetIndicator.vue'
 
 defineOptions({ inheritAttrs: false })
 
