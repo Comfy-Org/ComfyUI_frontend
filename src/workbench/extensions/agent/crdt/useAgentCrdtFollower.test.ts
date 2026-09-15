@@ -687,7 +687,7 @@ describe('useAgentCrdtFollower', () => {
       unmount()
     })
 
-    it('counts reset while the target is inactive, since the bridge replaced its doc regardless', () => {
+    it('does not count an ignored reset while the target is inactive', () => {
       const { unmount, status } = mountFollower('wf-a', false)
 
       dispatchFrame('doc_reset', {
@@ -696,7 +696,7 @@ describe('useAgentCrdtFollower', () => {
         seq: 43
       })
 
-      expect(status().outcomes.reset).toBe(1)
+      expect(status().outcomes.reset).toBe(0)
       expect(adapterState.clearForReset).not.toHaveBeenCalled()
       unmount()
     })

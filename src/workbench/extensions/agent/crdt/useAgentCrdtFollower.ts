@@ -270,7 +270,6 @@ export function useAgentCrdtFollower(
             seq?: number
           })
         : undefined
-    outcomes.value = { ...outcomes.value, reset: outcomes.value.reset + 1 }
     const resetWorkflowId = detail?.workflowId
     if (
       !isTargetActive.value ||
@@ -278,6 +277,7 @@ export function useAgentCrdtFollower(
       resetWorkflowId !== subscribedWorkflowId.value
     )
       return
+    outcomes.value = { ...outcomes.value, reset: outcomes.value.reset + 1 }
     const context: RemoteMutationContext = {
       source: 'agent-remote',
       actor: detail?.actor ?? 'agent-reset',
