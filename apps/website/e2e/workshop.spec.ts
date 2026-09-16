@@ -79,30 +79,35 @@ test.describe('Models catalog', () => {
     expect(recommended).toEqual([
       '/models/byteplus--seedream-5-pro--generate-images/',
       '/models/openai--gpt-image-2--generate-images/',
-      '/models/byteplus--seedream-4--generate-images/'
+      '/models/openai--gpt-image-2.5-flare--generate-images/'
     ])
     expect(await recommendedIn('generate-videos', 7)).toEqual([
       '/models/byteplus--seedance-2-5-text-to-video--generate-videos/',
+      '/models/byteplus--seedance-2-text-to-video--generate-videos/',
+      '/models/byteplus--seedance-2-reference--generate-videos/',
       '/models/kling--kling-3.0-turbo-text-to-video--generate-videos/',
       '/models/xai--grok-imagine-video-1.5--generate-videos/',
-      '/models/xai--grok-imagine-video--generate-videos/',
-      '/models/byteplus--seedance-2-fast-reference--generate-videos/',
-      '/models/gemini--omni-1.1-flash--generate-videos/',
-      '/models/kling--v3--generate-videos/'
+      '/models/wan--text-to-video-3.0--generate-videos/',
+      '/models/xai--grok-imagine-video--generate-videos/'
     ])
     expect(await recommendedIn('animate-images', 5)).toEqual([
       '/models/byteplus--seedance-2-5-reference--generate-videos/',
       '/models/byteplus--seedance-2-5-first-last-frame--animate-images/',
+      '/models/byteplus--seedance-2-image-to-video--animate-images/',
       '/models/xai--grok-imagine-video--animate-images/',
-      '/models/wan--image-to-video-3.0--animate-images/',
-      '/models/wan--reference-to-video-3.0--animate-images/'
+      '/models/wan--image-to-video-3.0--animate-images/'
+    ])
+    expect(await recommendedIn('edit-images', 3)).toEqual([
+      '/models/openai--gpt-image-2--edit-images/',
+      '/models/openai--gpt-image-2.5-sunburst--edit-images/',
+      '/models/openai--gpt-image-2.5-flare--edit-images/'
     ])
     expect(await recommendedIn('other-formats', 1)).toEqual([
       '/models/byteplus--seed-audio-1.0--audio/'
     ])
     expect(await recommendedIn('edit-videos', 2)).toEqual([
-      '/models/gemini--omni-1.1-flash--edit-videos/',
-      '/models/runway--aleph2-video-to-video--edit-videos/'
+      '/models/byteplus--seedance-2-5-edit-video--edit-videos/',
+      '/models/gemini--omni-1.1-flash--edit-videos/'
     ])
 
     await sort.click()
