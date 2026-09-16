@@ -109,3 +109,14 @@ test('BRIA Expand previews its source image instead of showing a URL textbox', a
     source.getByLabel('Source image', { exact: true })
   ).toHaveAttribute('type', 'file')
 })
+
+test('Magnific Skin Enhancer uploads a source image instead of asking for a URL', async ({
+  page
+}) => {
+  await page.goto('/models/freepik--magnific-skin-enhancer--edit-images/')
+  const source = page.getByRole('group', { name: 'Source image', exact: true })
+  await expect(source.getByRole('textbox')).toHaveCount(0)
+  await expect(
+    source.getByLabel('Source image', { exact: true })
+  ).toHaveAttribute('type', 'file')
+})
