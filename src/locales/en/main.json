@@ -3293,6 +3293,7 @@
         "creditsUsed": "Monthly credits"
       },
       "actions": {
+        "copyInviteLink": "Copy invite link",
         "resendInvite": "Resend invite",
         "cancelInvite": "Cancel invite",
         "changeRole": "Change role",
@@ -3426,6 +3427,13 @@
       "pendingInviteSingle": "This person already has a pending invite",
       "pendingInviteCount": "{count} of these people already have a pending invite. They'll be skipped.",
       "seatLimitExceeded": "This workspace is capped at {max} members. Remove {overage} to continue."
+    },
+    "inviteLinks": {
+      "sentTitle": "{count} invite sent | {count} invites sent",
+      "sentLead": "Each invite has a personal link you can share directly:",
+      "copyLink": "Copy invite link",
+      "copied": "Copied!",
+      "copyAll": "Copy invite link | Copy all links ({count})"
     },
     "createWorkspaceDialog": {
       "title": "Create a new workspace",
@@ -5172,6 +5180,13 @@
   },
   "agent": {
     "title": "Comfy Agent",
+    "diagnosticReport": {
+      "retry": "Retry copy report",
+      "clipboardFailed": "Clipboard access failed. Select and copy the report below, or retry.",
+      "collectionFailed": "Could not collect the report. Retry, or turn off optional sources and retry.",
+      "manualCopy": "Report to copy",
+      "includedSources": "Include in the report (on by default)"
+    },
     "loadFailed": "The agent panel failed to load.",
     "askComfyAgent": "Ask Comfy Agent",
     "feedbackCaption": "Share feedback",
@@ -5269,9 +5284,9 @@
     "credits": "credits",
     "saveChanges": "Save changes",
     "runModeSaveFailed": "Could not save run permissions. Please try again.",
-    "addPromptToSend": "Add a prompt to send",
     "send": "Send",
     "stop": "Stop",
+    "stopShortcut": "Esc",
     "thinking": "Thinking...",
     "working": "Working...",
     "helpful": "Helpful",
@@ -5291,6 +5306,15 @@
     "sendFailed": "Message failed to send",
     "sendBusy": "A message is already being sent",
     "malformedEvent": "The agent sent an event this panel could not read",
+    "coachProgress": "{current} of {total}",
+    "coachTitle": "Meet your Comfy Agent",
+    "coachBody": "Describe your ideas, ask it to build and run workflows. It sees your canvas and files.",
+    "coachWorkflowTitle": "Select a workflow for your agent to edit",
+    "coachWorkflowBody": "The agent edits only the workflow you choose. You can also upload reference files or mention other workflows.",
+    "coachGraphTitle": "Let the agent run while you edit",
+    "coachGraphBody": "You can still edit the graph or switch tabs while the agent is working.",
+    "coachHistoryTitle": "Pick up where you left off",
+    "coachHistoryBody": "Previous chats are saved here. Open one to review it or continue working with the agent.",
     "downloadAssets": "Download assets",
     "toolOpenedNewTab": "Opened a new tab",
     "toolOpeningNewTab": "Opening a new tab",

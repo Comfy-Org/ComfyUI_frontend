@@ -3,13 +3,12 @@ import { useAuthStore } from '@/stores/authStore'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { effectScope } from 'vue'
 
+import { useAuthActions } from '@/composables/auth/useAuthActions'
 import { useSubscription } from '@/platform/cloud/subscription/composables/useSubscription'
 import { PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY } from '@/platform/cloud/subscription/utils/subscriptionCheckoutTracker'
 
 const {
   mockIsLoggedIn,
-  mockReportError,
-  mockAccessBillingPortal,
   mockShowSubscriptionRequiredDialog,
   mockGetAuthHeader,
   mockGetCheckoutAttribution,
@@ -28,8 +27,6 @@ const {
   mockGetBillingStatus: vi.fn(),
 
   mockSetWorkspaceBillingRail: vi.fn(),
-  mockReportError: vi.fn(),
-  mockAccessBillingPortal: vi.fn(),
   mockShowSubscriptionRequiredDialog: vi.fn(),
   mockGetAuthHeader: vi.fn(() =>
     Promise.resolve({ Authorization: 'Bearer test-token' as const })
@@ -108,12 +105,7 @@ vi.mock<unknown>(import('@/platform/telemetry'), () => ({
   useTelemetry: vi.fn(() => mockTelemetry)
 }))
 
-vi.mock<unknown>(import('@/composables/auth/useAuthActions'), () => ({
-  useAuthActions: vi.fn(() => ({
-    reportError: mockReportError,
-    accessBillingPortal: mockAccessBillingPortal
-  }))
-}))
+vi.mock(import('@/composables/auth/useAuthActions'))
 
 vi.mock<unknown>(import('@/composables/useErrorHandling'), () => ({
   useErrorHandling: vi.fn(() => ({
@@ -190,7 +182,6 @@ describe('useSubscription', () => {
 
     mockLocalStorage.__reset()
     mockIsLoggedIn.value = false
-    mockAccessBillingPortal.mockResolvedValue(true)
     Object.assign(useAuthStore(), { userId: 'user-123' })
     mockIsCloud.value = true
     Object.assign(useAuthStore(), { isInitialized: true })
@@ -532,7 +523,7 @@ describe('useSubscription', () => {
       const { subscribeDirect } = useSubscriptionWithScope()
 
       await expect(subscribeDirect()).rejects.toThrow()
-      expect(mockReportError).not.toHaveBeenCalled()
+      expect(useAuthActions().reportError).not.toHaveBeenCalled()
     })
 
     it('tags the pending attempt as a resubscribe when called with operation/source', async () => {
@@ -924,7 +915,7 @@ describe('useSubscription', () => {
 
       await handleInvoiceHistory()
 
-      expect(mockAccessBillingPortal).toHaveBeenCalled()
+      expect(useAuthActions().accessBillingPortal).toHaveBeenCalled()
     })
 
     it('should call accessBillingPortal for manage subscription', async () => {
@@ -932,12 +923,14 @@ describe('useSubscription', () => {
 
       await manageSubscription()
 
-      expect(mockAccessBillingPortal).toHaveBeenCalled()
+      expect(useAuthActions().accessBillingPortal).toHaveBeenCalled()
     })
 
     it('does not start cancellation watching when the billing portal does not open', async () => {
       mockIsLoggedIn.value = true
-      mockAccessBillingPortal.mockResolvedValueOnce(false)
+      vi.mocked(useAuthActions().accessBillingPortal).mockResolvedValueOnce(
+        false
+      )
 
       mockGetBillingStatus.mockResolvedValue({
         is_active: true,
