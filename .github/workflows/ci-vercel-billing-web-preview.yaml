@@ -11,12 +11,16 @@ on:
       - 'apps/billing-web/**'
       - 'packages/design-system/**'
       - 'packages/tailwind-utils/**'
+      - 'public/fonts/**'
+      - 'pnpm-workspace.yaml'
   push:
     branches: [main]
     paths:
       - 'apps/billing-web/**'
       - 'packages/design-system/**'
       - 'packages/tailwind-utils/**'
+      - 'public/fonts/**'
+      - 'pnpm-workspace.yaml'
 
 env:
   VERCEL_ORG_ID: ${{ secrets.VERCEL_BILLING_WEB_ORG_ID }}
