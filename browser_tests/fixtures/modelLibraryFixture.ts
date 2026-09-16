@@ -1,7 +1,7 @@
-import { comfyPageFixture } from '@e2e/fixtures/ComfyPage'
 import { ModelLibraryHelper } from '@e2e/fixtures/helpers/ModelLibraryHelper'
+import { networkIsolationFixture as base } from '@e2e/fixtures/networkIsolationFixture'
 
-export const modelLibraryFixture = comfyPageFixture.extend<{
+export const modelLibraryFixture = base.extend<{
   initialModelFolders: Record<string, string[]>
   modelLibraryMocks: ModelLibraryHelper
 }>({

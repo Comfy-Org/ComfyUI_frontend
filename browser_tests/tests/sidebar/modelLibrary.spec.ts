@@ -1,6 +1,9 @@
-import { expect } from '@playwright/test'
+import { expect, mergeTests } from '@playwright/test'
 
-import { modelLibraryFixture as test } from '@e2e/fixtures/modelLibraryFixture'
+import { comfyPageFixture } from '@e2e/fixtures/ComfyPage'
+import { modelLibraryFixture } from '@e2e/fixtures/modelLibraryFixture'
+
+const test = mergeTests(comfyPageFixture, modelLibraryFixture)
 
 const MOCK_FOLDERS: Record<string, string[]> = {
   checkpoints: [
