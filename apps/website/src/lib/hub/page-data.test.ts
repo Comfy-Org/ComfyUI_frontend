@@ -67,20 +67,6 @@ describe('relatedCardViews', () => {
     expect(view.needsCustomNodes).toBe(true)
   })
 
-  it('crosses a related card to the model page inside the catalogue', () => {
-    const [view] = relatedCardViews(
-      [template({ models: ['Flux'], tags: ['API'] })],
-      [model()],
-      new Set()
-    )
-
-    expect(view.crossing).toEqual({
-      to: 'model',
-      name: 'Flux',
-      href: '/playground/model/flux/'
-    })
-  })
-
   it('reads an app as an app', () => {
     const [view] = relatedCardViews([template({ isApp: true })], [], new Set())
 

@@ -30,9 +30,7 @@ function entry(overrides: Partial<BrowseEntry> = {}): BrowseEntry {
       media: undefined,
       hoverMedia: undefined,
       maker: { label: 'BFL', logo: undefined },
-      action: 'run',
       price: undefined,
-      crossing: undefined,
       needsCustomNodes: overrides.needsCustomNodes ?? false,
       tags: [],
       ...overrides.card

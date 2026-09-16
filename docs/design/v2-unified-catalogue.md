@@ -72,29 +72,34 @@ were grouped.
 ## 4. The card
 
 One skeleton, so it reads as one catalogue: media at 4:3, the title over the
-media, a type badge at top left, a row underneath carrying the maker and the
-action.
+media, a type badge at top left, the maker underneath, then the price and the
+tags.
 
-Five things differ, and all five have to:
+**The card says what a thing is and opens it. Nothing on it is an action.** A
+shelf is read by the dozen, and a verb on every tile is a page's worth of
+decisions taken before the reader has looked at anything. So the button and the
+line naming the other side of the catalogue both live on the page behind the
+card, where the reader can act on them: `Run` is the playground on the model
+page, `Save to Cloud` is the workflow page's primary action, `Runs on ‹model›`
+is a section of the workflow page, and the workflows built on a model are a
+section of its own.
+
+Three things still differ between the kinds, and all three have to:
 
 - **The badge is a mark that opens into a word.** The icon sits on the media at
   rest and the word slides out to its right on hover, so the type is available
   without a label standing over every thumbnail. The word stays in the markup
   throughout, so a screen reader always has it; hovering only decides whether it
-  takes room. Where there is no hover, the verb underneath still says the type.
-- **The verb says the type again.** `Run` on a model, `Save to Cloud` on a
-  workflow or an app. Redundant on purpose: a badge can be missed, a button
-  cannot.
+  takes room.
 - **Only models carry a price.** Credits per run, from the Router. A workflow
   shows nothing in that slot. The prototype invented a price, a rating and a
   rating count for the 538 that cannot run here, and that is the part not to
   repeat.
 - **Provenance differs.** A model shows its provider's mark; a workflow shows
   the author's handle.
-- **The crossing line.** A workflow that resolves says `Runs on ‹model›` and
-  links. A model with workflows says `‹n› workflows` and links. This is the one
-  element that tells a reader those two cards are a capability and a use of it
-  rather than two products with one name.
+
+One warning stays on the card, because it is not an action: a workflow that
+needs custom nodes says so before the reader spends a click on it.
 
 ## 5. Filters and sort
 
@@ -213,8 +218,7 @@ Yes, and the data says how much weight the connection can carry.
 **Model to workflows.** Only 18 of the 122 model names have any workflow naming
 them, and the counts fall away fast: 42, 14, 8, 7, 5, 4, then twos and ones. So
 the section is a real feature on a handful of pages and absent on the rest. It
-must be absent rather than empty, and the card's `‹n› workflows` line must not
-appear as `0 workflows` on 104 cards.
+must be absent rather than empty, never a heading over nothing.
 
 **Workflow to model.** 72 of 610 resolve today. On most workflow pages the
 `Runs on` list therefore holds names we cannot link, and 226 hold nothing we
@@ -223,6 +227,11 @@ carry at all.
 That asymmetry is the answer: the crossing is worth building and is worth
 nothing structural. It is an enhancement that is usually missing, so no layout
 may depend on it, and every place it appears must survive its absence.
+
+Both sides of it are read on the pages rather than on the cards, so the
+asymmetry costs the grid nothing: a model with no workflows simply has no such
+section, and a workflow naming a model we do not carry shows the name without a
+link.
 
 It is also the strongest argument for catalogue coverage. 126 of the 226 name a
 family, an operation or a provider we already carry under another name, and
@@ -233,18 +242,18 @@ connection into the thing that makes one catalogue worth having.
 
 | #   | Case                                                     | What the interface does                                               |
 | --- | -------------------------------------------------------- | --------------------------------------------------------------------- |
-| 1   | A model with no workflows (104 of 122)                   | No count line on the card, no section on the page                     |
-| 2   | A model with 42 workflows                                | Count on the card, section on the page, ordered by usage              |
+| 1   | A model with no workflows (104 of 122)                   | No section on the page; the card never said anything about it         |
+| 2   | A model with 42 workflows                                | A section on the page, ordered by usage                               |
 | 3   | A model listed under several operations (21 names)       | One card, operations chosen inside the page                           |
-| 4   | A workflow that resolves to a model (72)                 | `Runs on ‹model›`, linked, on card and page                           |
+| 4   | A workflow that resolves to a model (72)                 | `Runs on ‹model›`, linked, on the workflow page                       |
 | 5   | A workflow naming a model we do not carry (226)          | The name as plain text, no link, no promise                           |
 | 6   | A workflow naming several models (179)                   | Every name listed, each linked only if we carry it                    |
 | 7   | A workflow naming a model but no single destination (33) | Links to the model name, never to an operation                        |
-| 8   | A local workflow (279)                                   | No `Runs here`; `Save to Cloud` and the weights it needs              |
+| 8   | A local workflow (279)                                   | No `Runs here`; the page offers `Save to Cloud` and the weights       |
 | 9   | A workflow needing custom nodes (78)                     | Named before the download, on the card as a `Needs custom nodes` mark |
 | 10  | A workflow titled after its own model (37)               | Folded onto the model page, not a card in the grid                    |
 | 11  | A title that is a model name letter for letter (2)       | Same fold; the collision cannot occur                                 |
-| 12  | An app (18)                                              | App badge, form first, graph second, `Save to Cloud`                  |
+| 12  | An app (18)                                              | App badge on the card; form first, graph second, `Save to Cloud`      |
 | 13  | An app running local weights (8)                         | Nothing implies it runs here                                          |
 | 14  | A search matching both kinds                             | One list, models first, then the workflows that use them              |
 | 15  | A filter combination with no results                     | The empty state names which filter to drop                            |

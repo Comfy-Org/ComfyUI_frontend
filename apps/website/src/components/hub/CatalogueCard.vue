@@ -1,12 +1,10 @@
 <script setup lang="ts">
-import { ArrowRight, Blocks, Coins } from '@lucide/vue'
-import { computed, useTemplateRef } from 'vue'
-
-import { cn } from '@comfyorg/tailwind-utils'
+import { Blocks, Coins } from '@lucide/vue'
+import { useTemplateRef } from 'vue'
 
 import { usePreviewVideo } from '../../composables/usePreviewVideo'
-import type { Locale, TranslationKey } from '../../i18n/translations'
-import { t, tPlural } from '../../i18n/translations'
+import type { Locale } from '../../i18n/translations'
+import { t } from '../../i18n/translations'
 import type { CardView } from '../../lib/hub/catalogue-card'
 import TagRow from './TagRow.vue'
 import HubTypeBadge from './HubTypeBadge.vue'
@@ -16,25 +14,9 @@ const { view, locale = 'en' } = defineProps<{
   locale?: Locale
 }>()
 
-const actionLabels: Record<CardView['action'], TranslationKey> = {
-  run: 'workshop.v2.action.run',
-  open: 'workshop.v2.action.open'
-}
-
 const video = useTemplateRef<HTMLVideoElement>('video')
 const previewSrc = usePreviewVideo(video, () =>
   view.media?.kind === 'video' ? view.media.url : undefined
-)
-
-const crossingLabel = computed(() =>
-  view.crossing?.to === 'model'
-    ? t('workshop.v2.card.runsOn', locale).replace(
-        '{model}',
-        view.crossing.name
-      )
-    : view.crossing
-      ? tPlural('workshop.v2.card.usedBy', view.crossing.count, locale)
-      : ''
 )
 </script>
 
@@ -122,7 +104,7 @@ const crossingLabel = computed(() =>
     </div>
 
     <div class="flex flex-col gap-2 px-3">
-      <div class="flex items-center justify-between gap-3">
+      <div class="flex items-center gap-3">
         <span
           class="flex min-w-0 items-center gap-2 text-content-secondary"
           data-testid="catalogue-card-maker"
@@ -142,37 +124,7 @@ const crossingLabel = computed(() =>
           </span>
           <span class="truncate text-sm">{{ view.maker.label }}</span>
         </span>
-
-        <!-- The verb says the type a second time. A badge can be missed; the
-          thing you are about to press cannot. -->
-        <span
-          :class="
-            cn(
-              'inline-flex h-7 shrink-0 items-center gap-1.5 rounded-xl px-3 text-2xs/none font-bold tracking-wider uppercase',
-              view.action === 'run'
-                ? 'bg-brand/15 text-brand'
-                : 'bg-transparency-white-t8 text-content-secondary'
-            )
-          "
-          data-testid="catalogue-card-action"
-        >
-          {{ t(actionLabels[view.action], locale) }}
-          <ArrowRight class="size-3" aria-hidden="true" />
-        </span>
       </div>
-
-      <p
-        v-if="view.crossing"
-        class="flex items-center gap-1 text-xs text-content-muted"
-        data-testid="catalogue-card-crossing"
-      >
-        <a
-          :href="view.crossing.href"
-          class="relative z-20 underline decoration-dotted underline-offset-4 hover:text-content-bright"
-        >
-          {{ crossingLabel }}
-        </a>
-      </p>
 
       <div class="flex h-6 min-w-0 items-center gap-2 overflow-hidden">
         <span

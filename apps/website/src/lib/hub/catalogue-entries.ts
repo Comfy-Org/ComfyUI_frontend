@@ -36,8 +36,6 @@ export type CatalogueEntry = ModelEntry | WorkflowEntry
 const normalize = (value: string) =>
   value.toLowerCase().replace(/[^a-z0-9]/g, '')
 
-export const modelGroupKey = normalize
-
 function groupByName(
   models: readonly WorkshopModel[]
 ): Map<string, WorkshopModel[]> {

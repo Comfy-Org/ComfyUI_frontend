@@ -126,8 +126,6 @@ test.describe('V2 catalogue', () => {
     ).toHaveAttribute('href', /workflow_templates/)
   })
 
-  // The card's crossing is navigation and stays in V2; this button is the run
-  // itself, so it goes to the page that can actually perform one.
   test('sends a partner workflow to the model that can run it', async ({
     page
   }) => {

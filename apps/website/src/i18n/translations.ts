@@ -10281,10 +10281,6 @@ Enterprise`
     en: 'Runs on {model}',
     'zh-CN': '运行于 {model}'
   },
-  'workshop.v2.card.usedBy': {
-    en: '{count} workflow uses this|{count} workflows use this',
-    'zh-CN': '{count} 个工作流使用'
-  },
   'workshop.v2.card.customNodes': {
     en: 'Custom nodes',
     'zh-CN': '自定义节点'

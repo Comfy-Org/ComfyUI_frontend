@@ -71,7 +71,6 @@ describe('browseEntries', () => {
       credits: 12,
       card: expect.objectContaining({
         kind: 'model',
-        action: 'run',
         price: '12 credits/Run',
         href: '/playground/model/flux/'
       })
@@ -93,7 +92,6 @@ describe('browseEntries', () => {
     )
 
     expect(routed.runsHere).toBe(true)
-    expect(routed.card.action).toBe('open')
     expect(local.runsHere).toBe(false)
   })
 

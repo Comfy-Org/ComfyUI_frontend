@@ -72,7 +72,6 @@ describe('cardViewFor', () => {
       kind: 'model',
       href: '/playground/model/flux/',
       title: 'Flux',
-      action: 'run',
       price: '12 credits',
       needsCustomNodes: false
     })
@@ -100,51 +99,16 @@ describe('cardViewFor', () => {
     expect(view.price).toBe('12 credits')
   })
 
-  it('leaves off the crossing when no workflow uses the model', () => {
-    expect(
-      cardViewFor(modelEntry(), noNodes, noPrices).crossing
-    ).toBeUndefined()
-  })
-
-  it('counts the workflows that use a model and filters the grid to them', () => {
-    const view = cardViewFor(
-      modelEntry({ workflows: [template(), template({ name: 'other' })] }),
-      noNodes,
-      noPrices
-    )
-
-    expect(view.crossing).toEqual({
-      to: 'workflows',
-      count: 2,
-      href: '?model=Flux'
-    })
-  })
-
   it('opens a workflow at the workflow page, never at the model behind it', () => {
     const view = cardViewFor(workflowEntry(), noNodes, noPrices)
 
     expect(view).toMatchObject({
       kind: 'workflow',
       href: '/playground/workflow/poster/',
-      action: 'open',
       price: undefined
     })
     expect(view.media).toEqual({ url: 'first.png', kind: 'image' })
     expect(view.hoverMedia).toBe('second.png')
-  })
-
-  it('keeps a workflow crossing inside the catalogue', () => {
-    const view = cardViewFor(
-      workflowEntry({ runsOn: model({ name: 'Seedance 2.5' }) }),
-      noNodes,
-      noPrices
-    )
-
-    expect(view.crossing).toEqual({
-      to: 'model',
-      name: 'Seedance 2.5',
-      href: '/playground/model/seedance25/'
-    })
   })
 
   it('marks a workflow that needs custom nodes installed', () => {
