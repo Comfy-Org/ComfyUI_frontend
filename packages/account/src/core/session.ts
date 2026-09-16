@@ -18,17 +18,18 @@
  * different signed-in user.
  */
 import type { CredentialStorage } from './credentialCache.js'
-import { createCredentialCache, decodeAdopted } from './credentialCache.js'
+import {
+  DEFAULT_FRESH_MARGIN_MS,
+  createCredentialCache,
+  decodeAdopted,
+  isCredentialFresh,
+  selectFreshCredential
+} from './credentialCache.js'
 import type { AccountIdentity } from './identity.js'
 import { isAccountIdentity } from './identity.js'
 import { abortable, exchangeToken } from './exchange.js'
 import type { MintDispatch } from './mintCoordinator.js'
-import {
-  DEFAULT_FRESH_MARGIN_MS,
-  createMintCoordinator,
-  isCredentialFresh,
-  selectFreshCredential
-} from './mintCoordinator.js'
+import { createMintCoordinator } from './mintCoordinator.js'
 import type { RefreshHost } from './refreshScheduler.js'
 import { createRefreshScheduler } from './refreshScheduler.js'
 import type {
@@ -65,8 +66,7 @@ export type {
   SessionResult
 } from './sessionContracts.js'
 export { isPermanentSessionError } from './sessionContracts.js'
-export type { CredentialStorage } from './credentialCache.js'
-export { isCredentialFresh } from './mintCoordinator.js'
+export { type CredentialStorage, isCredentialFresh } from './credentialCache.js'
 
 /**
  * The session error codes, keys only. Hosts own the copy (the cloud app's

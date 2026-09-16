@@ -79,6 +79,49 @@ interface CredentialCache {
   clear: () => void
 }
 
+export const DEFAULT_FRESH_MARGIN_MS = 5 * 60 * 1000
+
+export function isCredentialFresh(
+  session: AccountCredential,
+  now: number,
+  freshMarginMs: number = DEFAULT_FRESH_MARGIN_MS
+): boolean {
+  return session.expiresAt - now > freshMarginMs
+}
+
+interface CredentialCandidate {
+  readonly credential: AccountCredential | undefined
+  readonly target: string | undefined
+}
+
+/**
+ * The live credential is authoritative; storage is recovery state, not a
+ * competing source. Candidates are consulted in the order given (memory
+ * first, then storage) for this exact uid and target, and the first fresh one
+ * wins — expiry must not override this (a rejected token can outlive its
+ * shorter-lived replacement), and a target-less read must never adopt a team
+ * session.
+ */
+export function selectFreshCredential(
+  candidates: readonly (CredentialCandidate | undefined)[],
+  uid: string,
+  target: string | undefined,
+  now: number,
+  freshMarginMs: number
+): AccountCredential | undefined {
+  return candidates
+    .map((candidate) =>
+      candidate?.credential?.uid === uid && candidate.target === target
+        ? candidate.credential
+        : undefined
+    )
+    .find(
+      (candidate): candidate is AccountCredential =>
+        candidate !== undefined &&
+        isCredentialFresh(candidate, now, freshMarginMs)
+    )
+}
+
 export function createCredentialCache(
   storage: CredentialStorage
 ): CredentialCache {
