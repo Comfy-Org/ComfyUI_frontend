@@ -455,7 +455,7 @@ test.describe('Learning page (zh-CN) @smoke', () => {
     await expect(
       page.getByRole('link', {
         name: thumbnailLinkName(
-          firstTutorial.title['zh-CN'] ?? firstTutorial.title.en,
+          firstTutorial.title['zh-CN'] || firstTutorial.title.en,
           'zh-CN'
         )
       })
