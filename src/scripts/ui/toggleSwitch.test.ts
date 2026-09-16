@@ -1,7 +1,6 @@
 import { fromAny, fromPartial } from '@total-typescript/shoehorn'
 import { describe, expect, it, vi } from 'vitest'
 
-import type { ComfyApi } from '../api'
 import type { ComfyApp } from '../app'
 
 import { toggleSwitch } from './toggleSwitch'
@@ -10,18 +9,7 @@ vi.mock(import('../app'), () => ({
   ComfyApp: fromAny(class {}),
   app: fromPartial<ComfyApp>({})
 }))
-
-vi.mock(import('../api'), () => ({
-  api: fromPartial<ComfyApi>({ addEventListener: vi.fn() })
-}))
-
-vi.mock(import('./dialog'), () => ({
-  ComfyDialog: fromAny(class {})
-}))
-
-vi.mock(import('./settings'), () => ({
-  ComfySettingsDialog: fromAny(class {})
-}))
+vi.mock(import('../api'))
 
 function readState(container: HTMLElement) {
   const labels = [...container.querySelectorAll('label')]
