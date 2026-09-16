@@ -6,6 +6,10 @@ test.describe(
   'custom-drawn pack widget persistence @custom-nodes',
   { tag: ['@oss', '@node', '@widget', '@vue-nodes'] },
   () => {
+    test.afterEach(async ({ comfyPage }) => {
+      await comfyPage.canvasOps.resetView()
+    })
+
     test('rgthree comparer pointer selection survives save and full reload in Nodes 2.0', async ({
       comfyPage,
       savedWorkflows
