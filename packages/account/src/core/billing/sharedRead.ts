@@ -33,11 +33,11 @@ const ABANDONED = {
   code: 'REQUEST_FAILED'
 } as const satisfies BillingResult<never>
 
-type ParsedBody<T> =
+export type ParsedBillingBody<T> =
   | { readonly success: true; readonly data: T }
   | { readonly success: false }
 
-interface ValidatedBillingResponse<T> {
+export interface ValidatedBillingResponse<T> {
   readonly data: T
   readonly body: unknown
   readonly httpStatus: number
@@ -56,7 +56,7 @@ export function matchesScopedRead<
 export async function readValidatedBillingResponse<T>(
   transport: BillingTransport,
   request: BillingRequest,
-  parse: (body: unknown) => ParsedBody<T>
+  parse: (body: unknown) => ParsedBillingBody<T>
 ): Promise<BillingResult<ValidatedBillingResponse<T>>> {
   const response = await transport(request)
   if (response.status === 'error') return response

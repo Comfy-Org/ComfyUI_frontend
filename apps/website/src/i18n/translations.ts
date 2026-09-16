@@ -24,12 +24,12 @@ const translations = {
   },
   'workshop.hero.eyebrow': { en: 'Models', 'zh-CN': '模型' },
   'workshop.hero.heading': {
-    en: 'Run models in your browser',
-    'zh-CN': '运行顶尖模型'
+    en: 'What will you make next?',
+    'zh-CN': '接下来你想创造什么？'
   },
   'workshop.hero.subtitle': {
-    en: 'The latest AI models, ready to run. Nothing to install.',
-    'zh-CN': '最新 AI 模型，即开即用。无需安装配置。'
+    en: 'Try the latest AI models with your own ideas, right in your browser.',
+    'zh-CN': '用你自己的创意试用最新的 AI 模型，就在浏览器中。'
   },
   'workshop.search.label': {
     en: 'Search models, providers, and categories',
@@ -9885,6 +9885,18 @@ Enterprise`
   },
   'workshop.run.leaveStay': { en: 'Stay on this page', 'zh-CN': '留在此页面' },
   'workshop.run.leaveAnyway': { en: 'Leave and cancel', 'zh-CN': '离开并取消' },
+  'workshop.run.switchBody': {
+    en: 'If you switch workspace, the run is cancelled and you will not get back the credits it has already used.',
+    'zh-CN': '切换工作区会取消生成，已消耗的积分不会退回。'
+  },
+  'workshop.run.switchStay': {
+    en: 'Stay in this workspace',
+    'zh-CN': '留在此工作区'
+  },
+  'workshop.run.switchAnyway': {
+    en: 'Switch and cancel',
+    'zh-CN': '切换并取消'
+  },
   'workshop.examples.replaceTitle': {
     en: 'Replace your inputs?',
     'zh-CN': '要替换你的输入吗？'

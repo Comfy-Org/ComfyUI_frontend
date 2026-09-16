@@ -108,6 +108,20 @@ top-up endpoint called directly from the site.
    explicit comparison; aligning the balance reader is a separate
    change against a hardened path, not a docs edit.
 
+   A scope guard keeps a stale response from being published. It does
+   not, on its own, keep that response from clearing state a newer read
+   has already published: "do not publish stale data" and "do not let
+   stale data destroy fresh data" are separate rules and each needs its
+   own guard. A reader that answers `SUPERSEDED` by clearing its own
+   state therefore needs a generation check too, or a read condemned by
+   a scope change wipes the balance produced for the scope the host
+   moved to. `useCredits` stamps each refresh and publishes only the
+   newest one (#17824). The publish half of the same rule has been
+   closed independently in the core reader, at the host ownership
+   boundary (#17662), and in the composables that read through it
+   (#17799), so a composable added later takes both halves deliberately
+   rather than inheriting either.
+
 4. **No new local copies.** This ADR authorizes exactly the two
    existing modules. Further billing surfaces — subscriptions,
    embedded checkout, retention — do not get a site-local

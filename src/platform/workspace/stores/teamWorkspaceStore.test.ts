@@ -1864,6 +1864,7 @@ describe('useTeamWorkspaceStore', () => {
       expect(result).toHaveLength(1)
       expect(store.pendingInvites).toHaveLength(1)
       expect(store.pendingInvites[0].email).toBe('invite@test.com')
+      expect(store.pendingInvites[0].token).toBe('token-abc')
     })
 
     it('createInvite adds to local list', async () => {
@@ -1893,6 +1894,34 @@ describe('useTeamWorkspaceStore', () => {
       expect(result.email).toBe('new@test.com')
       expect(store.pendingInvites).toContainEqual(
         expect.objectContaining({ email: 'new@test.com' })
+      )
+    })
+
+    it('createInvite keeps the token from the create response', async () => {
+      // The invite link the confirmation step offers is built from this token,
+      // so the mapper must carry it through whenever the API returns one.
+      mockWorkspaceApi.createInvite.mockResolvedValue({
+        id: 'inv-new',
+        email: 'new@test.com',
+        token: 'token-new',
+        invited_at: '2024-01-01T00:00:00Z',
+        expires_at: '2024-01-08T00:00:00Z'
+      })
+      vi.mocked(useWorkspaceAuthStore().initializeFromSession).mockReturnValue(
+        true
+      )
+      Object.assign(useWorkspaceAuthStore(), {
+        currentWorkspace: mockTeamWorkspace
+      })
+
+      const store = useTeamWorkspaceStore()
+      await store.initialize()
+
+      const result = await store.createInvite('new@test.com')
+
+      expect(result.token).toBe('token-new')
+      expect(store.pendingInvites).toContainEqual(
+        expect.objectContaining({ email: 'new@test.com', token: 'token-new' })
       )
     })
 
@@ -1971,6 +2000,44 @@ describe('useTeamWorkspaceStore', () => {
       expect(store.pendingInvites[0].expiryDate).toEqual(
         new Date('2024-02-08T00:00:00Z')
       )
+    })
+
+    it('resendInvite keeps the token from the resend response', async () => {
+      // A resend issues a fresh token, so the pending row's copy-link action
+      // has to follow the refreshed value rather than the seeded one.
+      mockWorkspaceApi.listInvites.mockResolvedValue({
+        invites: [
+          {
+            id: 'inv-1',
+            email: 'one@test.com',
+            token: 'token-1',
+            invited_at: '2024-01-01T00:00:00Z',
+            expires_at: '2024-01-08T00:00:00Z'
+          }
+        ]
+      })
+      mockWorkspaceApi.resendInvite.mockResolvedValue({
+        id: 'inv-1',
+        email: 'one@test.com',
+        token: 'token-2',
+        invited_at: '2024-02-01T00:00:00Z',
+        expires_at: '2024-02-08T00:00:00Z'
+      })
+      vi.mocked(useWorkspaceAuthStore().initializeFromSession).mockReturnValue(
+        true
+      )
+      Object.assign(useWorkspaceAuthStore(), {
+        currentWorkspace: mockTeamWorkspace
+      })
+
+      const store = useTeamWorkspaceStore()
+      await store.initialize()
+      await store.fetchPendingInvites()
+
+      const result = await store.resendInvite('inv-1')
+
+      expect(result.token).toBe('token-2')
+      expect(store.pendingInvites[0].token).toBe('token-2')
     })
 
     it('resendInvite propagates a 404 and leaves the original invite unchanged', async () => {

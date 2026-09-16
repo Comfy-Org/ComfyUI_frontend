@@ -14,7 +14,10 @@ const Body = z.object({ ok: z.literal(true) })
 function answering(
   httpStatus: number,
   body: unknown,
-  extra: Pick<BillingHttpResponse, 'authenticationRetrySkipped'> = {}
+  extra: Pick<
+    BillingHttpResponse,
+    'authenticationRetrySkipped' | 'authenticationNotRenewable'
+  > = {}
 ): BillingTransport {
   const answer: BillingResult<BillingHttpResponse> = {
     status: 'ok',
@@ -53,6 +56,11 @@ describe('readValidatedBillingResponse', () => {
       name: 'a 401 the transport could not replay is transient',
       extra: { authenticationRetrySkipped: true as const },
       code: 'REQUEST_FAILED'
+    },
+    {
+      name: 'a 401 on a transport with no credential to re-prove ended the session',
+      extra: { authenticationNotRenewable: true as const },
+      code: 'NOT_AUTHENTICATED'
     }
   ])('$name', async ({ extra, code }) => {
     const result = await readValidatedBillingResponse(

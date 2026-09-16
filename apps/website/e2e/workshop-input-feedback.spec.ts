@@ -64,8 +64,13 @@ test('Beeble displays readable options while the API keeps its native values', a
 })
 
 test('HeyGen offers named language and locale choices and uses the supported voice without exposing its account-specific ID', async ({
+  context,
   page
 }) => {
+  await context.route(
+    'https://media.comfy.org/website/workshop/heygen/starfish-tts/harbour-radio-signs-off.mp3',
+    (route) => route.fulfill({ contentType: 'audio/mpeg', body: '' })
+  )
   await page.goto('/models/heygen--starfish-tts--audio/')
   await expect(
     page.getByRole('combobox', { name: 'Language', exact: true })

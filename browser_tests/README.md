@@ -22,6 +22,10 @@ to a section below.
 
 ## Prerequisites
 
+For real Cloud billing E2E setup and account prerequisites, see [Cloud billing E2E coverage](../docs/testing/cloud-billing-e2e.md).
+Its dedicated runner requires real authentication and a dedicated sandbox account;
+the live suite is excluded from the ordinary browser test configurations.
+
 **CRITICAL**: Start the ComfyUI backend with `--multi-user`:
 
 ```bash
@@ -129,6 +133,9 @@ network isolation. See `fixtures/releaseNotificationFixture.ts` and
 tracking.
 
 ### Network isolation
+
+The live Cloud routing infrastructure spec requires `openssl` on PATH to generate
+a disposable localhost TLS certificate; it does not use a live account.
 
 The shared fixtures allow HTTP and real WebSockets only to the configured
 frontend/backend origins: `PLAYWRIGHT_TEST_URL`, `PLAYWRIGHT_SETUP_API_URL`,
