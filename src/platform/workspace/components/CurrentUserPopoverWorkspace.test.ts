@@ -327,6 +327,7 @@ describe('CurrentUserPopoverWorkspace', () => {
 
   it('keeps Plans & pricing in-app when hosted billing is disabled', async () => {
     const user = userEvent.setup()
+    const open = vi.spyOn(window, 'open').mockReturnValue(null)
     state.canOpenPricingSurface = true
     renderComponent('team')
 
@@ -335,26 +336,10 @@ describe('CurrentUserPopoverWorkspace', () => {
     expect(state.showPricingTable).toHaveBeenCalledWith({
       reason: 'avatar_menu_plans'
     })
+    expect(open).not.toHaveBeenCalled()
   })
 
-  it('opens hosted billing when its feature flag is enabled', async () => {
-    const user = userEvent.setup()
-    const open = vi.spyOn(window, 'open').mockReturnValue(window)
-    state.canOpenPricingSurface = true
-    state.hostedBillingDestination = 'billing_web'
-    renderComponent('team')
-
-    await user.click(screen.getByTestId('plans-pricing-menu-item'))
-
-    expect(open).toHaveBeenCalledWith(
-      'http://localhost:5174/v1/pricing?product=comfyui&return_to=comfyui_workspace',
-      '_blank',
-      'noopener,noreferrer'
-    )
-    expect(state.showPricingTable).not.toHaveBeenCalled()
-  })
-
-  it('keeps Plans & pricing in-app when the hosted tab is blocked', async () => {
+  it('opens hosted billing alone when its feature flag is enabled', async () => {
     const user = userEvent.setup()
     const open = vi.spyOn(window, 'open').mockReturnValue(null)
     state.canOpenPricingSurface = true
@@ -364,9 +349,12 @@ describe('CurrentUserPopoverWorkspace', () => {
     await user.click(screen.getByTestId('plans-pricing-menu-item'))
 
     expect(open).toHaveBeenCalledOnce()
-    expect(state.showPricingTable).toHaveBeenCalledWith({
-      reason: 'avatar_menu_plans'
-    })
+    expect(open).toHaveBeenCalledWith(
+      'http://localhost:5174/v1/pricing?product=comfyui&return_to=comfyui_workspace',
+      '_blank',
+      'noopener,noreferrer'
+    )
+    expect(state.showPricingTable).not.toHaveBeenCalled()
   })
 
   it('keeps Plans & pricing in-app when the hosted URL is unavailable', async () => {

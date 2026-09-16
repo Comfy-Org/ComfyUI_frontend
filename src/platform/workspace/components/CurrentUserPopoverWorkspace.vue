@@ -394,11 +394,9 @@ const handleOpenWorkspaceSettings = () => {
 
 const handleOpenPlansAndPricing = () => {
   const route = hostedBillingRoute(flags.hostedBillingDestination, 'pricing')
-  const hostedTab =
-    route.kind === 'billing_web'
-      ? window.open(route.url.href, '_blank', 'noopener,noreferrer')
-      : null
-  if (!hostedTab) {
+  if (route.kind === 'billing_web') {
+    window.open(route.url.href, '_blank', 'noopener,noreferrer')
+  } else {
     subscriptionDialog.showPricingTable({ reason: 'avatar_menu_plans' })
   }
   emit('close')
