@@ -1,6 +1,7 @@
 import type {
   BillingDeclineReason,
   BillingOperationIdentity,
+  BillingOperationKind,
   BillingOperationLifecycle,
   BillingOperationState,
   FailedBillingOperation,
@@ -34,6 +35,28 @@ export function failedTopup(
   declineReason: BillingDeclineReason = 'card_declined'
 ): FailedBillingOperation {
   return { ...IDENTITY, phase: 'failed', declineReason, retryable: true }
+}
+
+/** A settled subscription-rail operation, for a command result's `operation`. */
+export function settledOperation<
+  P extends 'succeeded' | 'timed_out' | 'reconciliation_needed'
+>(
+  phase: P,
+  kind: BillingOperationKind = 'cancel'
+): BillingOperationIdentity & { readonly phase: P } {
+  return { ...IDENTITY, kind, phase }
+}
+
+export function failedOperation(
+  kind: BillingOperationKind = 'cancel'
+): FailedBillingOperation {
+  return {
+    ...IDENTITY,
+    kind,
+    phase: 'failed',
+    declineReason: 'generic',
+    retryable: false
+  }
 }
 
 export function settledTopup<
@@ -83,6 +106,13 @@ export function fakeBillingSdk() {
     topup: {
       createTopupCheckout: vi.fn(),
       createHostedTopupCheckout: vi.fn()
+    },
+    commands: {
+      subscribe: vi.fn(),
+      previewSubscribe: vi.fn(),
+      resubscribe: vi.fn(),
+      cancelSubscription: vi.fn(),
+      openPaymentPortal: vi.fn()
     },
     driveChallenge: vi.fn(async () => 'completed' as const),
     dispose: vi.fn()
