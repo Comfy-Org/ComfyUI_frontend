@@ -20,21 +20,8 @@ import { isCloud } from '@/platform/distribution/types'
 import * as Sentry from '@sentry/vue'
 import { useTelemetry } from '@/platform/telemetry'
 import { useToastStore } from '@/platform/updates/common/toastStore'
-import type { ShareableAssetsResponse } from '@/schemas/apiSchema'
-import {
-  zEmbeddingsResponse,
-  zShareableAssetsResponse
-} from '@/schemas/apiSchema'
 import type {
-  TemplateIncludeOnDistributionEnum,
-  WorkflowTemplates
-} from '@/platform/workflow/templates/types/template'
-import type {
-  ComfyApiWorkflow,
-  ComfyWorkflowJSON
-} from '@/platform/workflow/validation/schemas/workflowSchema'
-import type { SerializedNodeId } from '@/types/nodeId'
-import type {
+  ShareableAssetsResponse,
   AssetDownloadWsMessage,
   AssetExportWsMessage,
   CustomNodesI18n,
@@ -63,6 +50,19 @@ import type {
   User,
   UserDataFullInfo
 } from '@/schemas/apiSchema'
+import {
+  zEmbeddingsResponse,
+  zShareableAssetsResponse
+} from '@/schemas/apiSchema'
+import type {
+  TemplateIncludeOnDistributionEnum,
+  WorkflowTemplates
+} from '@/platform/workflow/templates/types/template'
+import type {
+  ComfyApiWorkflow,
+  ComfyWorkflowJSON
+} from '@/platform/workflow/validation/schemas/workflowSchema'
+import type { SerializedNodeId } from '@/types/nodeId'
 import type {
   JobAssetsResult,
   JobDetail,
@@ -298,7 +298,7 @@ type ApiToEventType<T = ApiCalls> = {
 }
 
 /** Dictionary of types used in the detail for a custom event */
-type ApiEventTypes = ApiToEventType<ApiCalls>
+type ApiEventTypes = ApiToEventType
 
 /** Dictionary of API events: `[name]: CustomEvent<Type>` */
 type ApiEvents = AsCustomEvents<ApiEventTypes>
@@ -788,7 +788,7 @@ export class ComfyApi extends EventTarget {
     const generation = ++this.socketGeneration
 
     let opened = false
-    let existingSession = window.name
+    const existingSession = window.name
 
     // Build WebSocket URL with query parameters
     const params = new URLSearchParams()
@@ -946,7 +946,7 @@ export class ComfyApi extends EventTarget {
               const metadata = JSON.parse(decoder4.decode(metadataBytes))
               const imageData4 = event.data.slice(8 + metadataLength)
 
-              let imageMime4 = metadata.image_type
+              const imageMime4 = metadata.image_type
 
               const imageBlob4 = new Blob([imageData4], {
                 type: imageMime4
@@ -1618,7 +1618,7 @@ export class ComfyApi extends EventTarget {
     if (!subgraph?.data) {
       throw new Error(`Global subgraph '${id}' returned empty data`)
     }
-    return subgraph.data as string
+    return subgraph.data
   }
   async getGlobalSubgraphs(): Promise<Record<string, GlobalSubgraphData>> {
     const resp = await api.fetchApi('/global_subgraphs')
@@ -1632,7 +1632,10 @@ export class ComfyApi extends EventTarget {
 
   async getLogs(): Promise<string> {
     const url = isCloud ? this.apiURL('/logs') : this.internalURL('/logs')
-    return (await axios.get(url)).data
+    const { data } = await axios.get<unknown>(url)
+    return typeof data === 'string'
+      ? data
+      : (JSON.stringify(data, null, 2) ?? '')
   }
 
   async getRawLogs(): Promise<LogsRawResponse> {

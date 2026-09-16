@@ -16,6 +16,7 @@ import { isHttpImageSource } from '../../config/workshop-image-source'
 import { workshopExampleFile } from '../../config/workshop-example-file'
 import type { Locale, TranslationKey } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
+import InfoTooltip from '@/components/ui/tooltip/InfoTooltip.vue'
 import FileSourceInput from './FileSourceInput.vue'
 import DialogueInput from './DialogueInput.vue'
 
@@ -62,9 +63,6 @@ const fieldError = computed(() =>
     : errors[field.name]
 )
 const invalid = () => fieldError.value !== undefined
-const declaredDefault = computed(() =>
-  field.kind === 'file' ? undefined : field.defaultValue
-)
 const describedBy = computed(
   () =>
     [
@@ -111,6 +109,18 @@ const isSlider = computed(
     field.min !== undefined &&
     field.max !== undefined &&
     field.defaultValue !== undefined
+)
+// A select preselects its default, a toggle renders its state and a slider
+// prints its value beside the label, so spelling the default out under them
+// restates what the control is already showing. Only a control that starts
+// empty leaves the default invisible.
+const declaredDefault = computed(() =>
+  field.kind === 'file' ||
+  field.kind === 'select' ||
+  field.kind === 'toggle' ||
+  isSlider.value
+    ? undefined
+    : field.defaultValue
 )
 const selectedFiles = computed({
   get() {
@@ -227,6 +237,11 @@ function booleanValue(fallback = false): boolean {
               *
             </span>
           </label>
+          <InfoTooltip
+            v-if="field.hint"
+            :text="field.hint"
+            :label="field.hint"
+          />
         </div>
         <span
           v-if="field.kind === 'number' && isSlider"
@@ -235,11 +250,7 @@ function booleanValue(fallback = false): boolean {
           {{ numberValue(field.defaultValue) }}
         </span>
       </div>
-      <p
-        v-if="field.hint"
-        :id="`help-${field.name}`"
-        class="text-xs text-primary-warm-gray"
-      >
+      <p v-if="field.hint" :id="`help-${field.name}`" class="sr-only">
         {{ field.hint }}
       </p>
       <p
@@ -367,7 +378,7 @@ function booleanValue(fallback = false): boolean {
       :style="{
         '--slider-fill': `linear-gradient(to right, var(--color-primary-comfy-yellow) 0 ${sliderFill({ min: field.min, max: field.max, defaultValue: field.defaultValue })}, transparent 0 100%)`
       }"
-      class="focus-visible:ring-primary-comfy-yellow/50 [&::-moz-range-thumb]:bg-primary-comfy-yellow [&::-moz-range-track]:bg-transparency-white-t4 [&::-moz-range-progress]:bg-primary-comfy-yellow [&::-webkit-slider-runnable-track]:bg-transparency-white-t4 [&::-webkit-slider-thumb]:bg-primary-comfy-yellow h-4 w-full cursor-pointer appearance-none rounded-full bg-transparent outline-none focus-visible:ring-3 disabled:opacity-50 [&::-moz-range-progress]:h-2 [&::-moz-range-progress]:rounded-full [&::-moz-range-thumb]:size-4 [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:border-0 [&::-moz-range-track]:h-2 [&::-moz-range-track]:rounded-full [&::-moz-range-track]:border [&::-moz-range-track]:border-transparency-white-t8 [&::-webkit-slider-runnable-track]:h-2 [&::-webkit-slider-runnable-track]:rounded-full [&::-webkit-slider-runnable-track]:border [&::-webkit-slider-runnable-track]:border-transparency-white-t8 [&::-webkit-slider-runnable-track]:[background-image:var(--slider-fill)] [&::-webkit-slider-runnable-track]:bg-no-repeat [&::-webkit-slider-thumb]:-mt-1 [&::-webkit-slider-thumb]:size-4 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:rounded-full"
+      class="h-4 w-full cursor-pointer appearance-none rounded-full bg-transparent outline-none focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow/50 disabled:opacity-50 [&::-moz-range-progress]:h-2 [&::-moz-range-progress]:rounded-full [&::-moz-range-progress]:bg-primary-comfy-yellow [&::-moz-range-thumb]:size-4 [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:border-0 [&::-moz-range-thumb]:bg-primary-comfy-yellow [&::-moz-range-track]:h-2 [&::-moz-range-track]:rounded-full [&::-moz-range-track]:border [&::-moz-range-track]:border-transparency-white-t8 [&::-moz-range-track]:bg-transparency-white-t4 [&::-webkit-slider-runnable-track]:h-2 [&::-webkit-slider-runnable-track]:rounded-full [&::-webkit-slider-runnable-track]:border [&::-webkit-slider-runnable-track]:border-transparency-white-t8 [&::-webkit-slider-runnable-track]:bg-transparency-white-t4 [&::-webkit-slider-runnable-track]:[background-image:var(--slider-fill)] [&::-webkit-slider-runnable-track]:bg-no-repeat [&::-webkit-slider-thumb]:-mt-1 [&::-webkit-slider-thumb]:size-4 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-primary-comfy-yellow"
       @input="onNumber"
     />
 
@@ -470,7 +481,7 @@ function booleanValue(fallback = false): boolean {
     <p
       v-if="fieldError"
       :id="`error-${field.name}`"
-      class="text-primary-comfy-red text-xs"
+      class="text-xs text-primary-comfy-red"
       role="alert"
       :data-testid="`error-${field.name}`"
     >

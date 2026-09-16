@@ -33,9 +33,7 @@ vi.mock(import('vuefire'), () => ({
 
 vi.mock(import('firebase/auth'))
 
-vi.mock<unknown>(import('@/platform/telemetry'), () => ({
-  useTelemetry: () => ({ trackAuth: vi.fn() })
-}))
+vi.mock(import('@/platform/telemetry'))
 
 vi.mock(import('@/services/dialogService'))
 vi.mock(import('@/platform/distribution/types'), () => mockDistributionTypes)

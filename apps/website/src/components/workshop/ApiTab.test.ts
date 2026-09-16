@@ -1,4 +1,3 @@
-// @vitest-environment happy-dom
 import userEvent from '@testing-library/user-event'
 import { render, screen, waitFor } from '@testing-library/vue'
 import { describe, expect, it, vi } from 'vitest'
@@ -101,19 +100,21 @@ describe('ApiTab', () => {
     })
     expect(screen.queryByTestId('snippet')).toBeNull()
     expect(screen.getByRole('status').textContent).toContain(
-      'Complete valid model inputs'
+      'Fill in the Playground inputs'
     )
     await rerender({ contract: undefined, values })
     await waitFor(() =>
       expect(screen.getByRole('status').textContent).toContain(
-        'has not been verified'
+        'We have not verified'
       )
     )
     expect(screen.queryByRole('button', { name: 'Copy snippet' })).toBeNull()
   })
 
-  it('preserves native Base64 inputs without reading local bytes into the page', async () => {
+  it('uses local file examples for Base64 inputs without exposing embedded bytes', async () => {
     const visitor = userEvent.setup()
+    const encoded = btoa('private pixels')
+    const sourceDataUrl = `data:image/png;base64,${encoded}`
     const file = new File(['private pixels'], 'image.png', {
       type: 'image/png'
     })
@@ -127,7 +128,8 @@ describe('ApiTab', () => {
             file,
             name: file.name,
             size: file.size,
-            type: file.type
+            type: file.type,
+            sourceDataUrl
           }
         }
       }
@@ -135,10 +137,19 @@ describe('ApiTab', () => {
     const snippet = await screen.findByTestId('snippet')
     expect(snippet.textContent).toContain('Path("image.png").read_bytes()')
     expect(snippet.textContent).toContain('input_image')
-    expect(snippet.textContent).not.toContain(btoa('private pixels'))
+    expect(snippet.textContent).not.toContain(encoded)
+    expect(snippet.textContent).not.toContain(sourceDataUrl)
+    await visitor.click(screen.getByRole('button', { name: 'Copy snippet' }))
+    const copied = await navigator.clipboard.readText()
+    expect(copied).toBe(snippet.textContent)
+    expect(copied).not.toContain(encoded)
+    expect(copied).not.toContain(sourceDataUrl)
     await visitor.click(screen.getByTestId('snippet-typescript'))
     expect(snippet.textContent).toContain('readFile("image.png")')
     expect(snippet.textContent).toContain('.toString("base64")')
+    expect(snippet.textContent).not.toContain(encoded)
+    await visitor.click(screen.getByTestId('snippet-curl'))
+    expect(snippet.textContent).not.toContain(encoded)
     expect(read).not.toHaveBeenCalled()
   })
 
