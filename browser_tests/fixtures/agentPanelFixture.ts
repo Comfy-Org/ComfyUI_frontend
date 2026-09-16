@@ -29,6 +29,8 @@ interface BootAgentAppOptions {
   settings?: Record<string, unknown>
   /** `'server'` loads real node definitions instead of the empty catalog. */
   objectInfo?: 'server'
+  /** Preserve existing tests by default; onboarding specs opt into the tour. */
+  onboardingCompleted?: boolean
 }
 
 async function mockAgentBoot(
@@ -91,6 +93,12 @@ export async function bootAgentApp(
   agentFlag: boolean,
   options: BootAgentAppOptions = {}
 ): Promise<void> {
+  const { onboardingCompleted = true } = options
+  await page.addInitScript((completed) => {
+    if (localStorage.getItem('Comfy.AgentPanel.onboarded') === null) {
+      localStorage.setItem('Comfy.AgentPanel.onboarded', String(completed))
+    }
+  }, onboardingCompleted)
   await mockAgentBoot(page, { agentFlag, ...options })
   await bootCloud(page)
   await page.goto(APP_URL)
