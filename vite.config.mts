@@ -204,13 +204,6 @@ const DEV_SERVER_COMFYUI_URL =
   DEV_SERVER_COMFYUI_ENV_URL || DEV_SEVER_FALLBACK_URL
 const DEV_AGENT_URL = process.env.DEV_AGENT_URL
 const DEV_AGENT_SESSION_TOKEN = process.env.DEV_AGENT_SESSION_TOKEN
-// The caller's Comfy credential, forwarded to the standalone agent as X-Comfy-Token so a local
-// turn can authenticate to the model proxy. It is a DIFFERENT credential from the session token
-// above: the session token authorizes the /agent routes, while this one is the user's own Comfy
-// credential that the agent passes upstream (a `comfyui-` API key rides X-API-Key, a Firebase or
-// Cloud JWT rides Authorization). In the cloud deployment ingest supplies this header; standalone
-// has no ingest, so without it every turn reaches the model round unauthenticated and the proxy
-// answers 401.
 const DEV_AGENT_COMFY_TOKEN = process.env.DEV_AGENT_COMFY_TOKEN
 
 if (Boolean(DEV_AGENT_URL) !== Boolean(DEV_AGENT_SESSION_TOKEN)) {
@@ -219,27 +212,9 @@ if (Boolean(DEV_AGENT_URL) !== Boolean(DEV_AGENT_SESSION_TOKEN)) {
   )
 }
 
-if (DEV_AGENT_COMFY_TOKEN && !DEV_AGENT_URL) {
-  throw new Error(
-    'DEV_AGENT_COMFY_TOKEN requires DEV_AGENT_URL; it is forwarded to the agent, not used locally.'
-  )
-}
-
 if (process.env.VITE_AGENT_STANDALONE === 'true' && !DEV_AGENT_URL) {
   throw new Error(
     'VITE_AGENT_STANDALONE requires DEV_AGENT_URL and DEV_AGENT_SESSION_TOKEN; start via scripts/dev-agent-integration.ts.'
-  )
-}
-
-// Deliberately a warning rather than a throw: the panel, the document protocol and every canvas
-// assertion work without a Comfy credential, and only the model round needs one. Failing the whole
-// dev server would block the harness cases that never reach a model. The warning exists because the
-// alternative failure is a 401 several layers away from its cause.
-if (process.env.VITE_AGENT_STANDALONE === 'true' && !DEV_AGENT_COMFY_TOKEN) {
-  console.warn(
-    '[dev-agent] DEV_AGENT_COMFY_TOKEN is not set: the panel will load, but an agent turn will fail ' +
-      'at the model proxy with 401 because no X-Comfy-Token is forwarded. Set it to a Comfy API key ' +
-      'issued for the environment this agent targets.'
   )
 }
 
@@ -356,7 +331,11 @@ const vuePluginOptions = process.env.VITEST
 export default defineConfig({
   base: DISTRIBUTION === 'cloud' ? '/' : '',
   server: {
-    host: VITE_REMOTE_DEV ? '0.0.0.0' : undefined,
+    host: DEV_AGENT_COMFY_TOKEN
+      ? undefined
+      : VITE_REMOTE_DEV
+        ? '0.0.0.0'
+        : undefined,
     allowedHosts: process.env.AMP_ORB ? true : undefined,
     watch: {
       ignored: [

@@ -63,23 +63,6 @@ function standaloneEnv(
   }
 }
 
-function frontendEnv(
-  agentUrl: string,
-  token: string,
-  comfyUrl: string
-): NodeJS.ProcessEnv {
-  return {
-    ...process.env,
-    DEV_AGENT_SESSION_TOKEN: token,
-    DEV_AGENT_URL: agentUrl,
-    ...(process.env.DEV_AGENT_COMFY_TOKEN
-      ? { DEV_AGENT_COMFY_TOKEN: process.env.DEV_AGENT_COMFY_TOKEN }
-      : {}),
-    DEV_SERVER_COMFYUI_URL: comfyUrl,
-    VITE_AGENT_STANDALONE: 'true'
-  }
-}
-
 async function run(options: Options): Promise<number> {
   await assertWorkspacePackage()
   await access(options.airBin, constants.X_OK)
@@ -120,7 +103,13 @@ async function run(options: Options): Promise<number> {
         '--strictPort'
       ],
       PROJECT_ROOT,
-      frontendEnv(agentUrl, token, options.comfyUrl)
+      {
+        ...process.env,
+        DEV_AGENT_SESSION_TOKEN: token,
+        DEV_AGENT_URL: agentUrl,
+        DEV_SERVER_COMFYUI_URL: options.comfyUrl,
+        VITE_AGENT_STANDALONE: 'true'
+      }
     )
     supervisor.watch(frontend)
     const frontendStartupResult = await waitForStartup(

@@ -84,31 +84,15 @@ Paste the recorder command it prints, one `--prompt` per turn.
 4. Start a local ComfyUI backend at `http://127.0.0.1:8188`.
 5. Export `ANTHROPIC_API_KEY`. `ANTHROPIC_BASE_URL` may be used instead for a local
    compatible model endpoint.
-6. Optionally export `DEV_AGENT_COMFY_TOKEN` to complete a turn through the Comfy model
-   proxy without logging in through the browser. See below.
+6. To complete a turn through the Comfy model proxy without a browser login, start the
+   harness with a Comfy API key:
 
-### Completing a turn without a browser login
+   ```bash
+   DEV_AGENT_COMFY_TOKEN=comfyui-… pnpm tsx scripts/dev-agent-integration.ts
+   ```
 
-The agent forwards the caller's Comfy credential to the model proxy as `X-Comfy-Token`. In
-the cloud deployment ingest supplies that header; standalone has no ingest, so the dev proxy
-supplies it from `DEV_AGENT_COMFY_TOKEN`:
-
-```bash
-DEV_AGENT_COMFY_TOKEN=comfyui-… pnpm dev:agent
-```
-
-The value is a Comfy API key, which is long lived, so a harness run does not re-authenticate
-on a schedule and no token exchange or OAuth round trip is involved. The key must be issued
-for the environment the agent targets: a production key does not authenticate against a test
-environment. A `comfyui-`-prefixed key is sent upstream as `X-API-Key`; a Firebase or Cloud
-JWT is sent as a bearer token.
-
-Leaving it unset is supported. The panel, the document protocol and canvas behaviour all work
-without it, and only the model round fails, with a 401 from the proxy. Vite warns at startup
-so that 401 is traceable to the missing variable rather than debugged from the network tab.
-
-For a run that drives the agent directly rather than through the dev server, send the same
-`X-Comfy-Token` header on the request; the agent preserves it and passes it upstream.
+   Vite forwards it to the standalone agent as `X-Comfy-Token`. Without it, the panel
+   starts but model requests return 401.
 
 The root dependency on `@comfyorg/comfy-multi-player` may use the published npm
 package or `workspace:`. The launcher warns that package source edits will not
