@@ -944,9 +944,24 @@ importers:
 
   apps/billing-web:
     dependencies:
+      '@comfyorg/account':
+        specifier: workspace:*
+        version: link:../../packages/account
+      '@comfyorg/account-ui':
+        specifier: workspace:*
+        version: link:../../packages/account-ui
       '@comfyorg/design-system':
         specifier: workspace:*
         version: link:../../packages/design-system
+      '@comfyorg/tailwind-utils':
+        specifier: workspace:*
+        version: link:../../packages/tailwind-utils
+      '@vueuse/core':
+        specifier: 'catalog:'
+        version: 14.4.0(vue@3.5.42(typescript@6.0.3))
+      firebase:
+        specifier: 'catalog:'
+        version: 11.10.0
       vue:
         specifier: 'catalog:'
         version: 3.5.42(typescript@6.0.3)
