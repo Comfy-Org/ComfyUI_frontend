@@ -32,6 +32,7 @@ import {
   WorkspaceApiError,
   workspaceApi
 } from '@/platform/workspace/api/workspaceApi'
+import { hostedBillingRoute } from '@/platform/workspace/billing/hostedBillingRoutes'
 import { useBillingSdkStore } from '@/platform/workspace/billing/sdk/billingSdkStore'
 import type { SubscriptionRailOutcome } from '@/platform/workspace/billing/sdk/subscriptionOperationView'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
@@ -537,7 +538,19 @@ export function useWorkspaceBilling(): BillingState & BillingActions {
     if (portalWindow) refreshOnPortalReturn()
   }
 
+  // Layer C before Layer A: where the customer lands is the server's call, so
+  // the rail the host would otherwise take never gets asked for a portal URL
+  // it would not open.
   async function manageSubscription(): Promise<void> {
+    const hosted = hostedBillingRoute(
+      flags.hostedBillingDestination,
+      'payment-methods'
+    )
+    if (hosted.kind === 'billing_web') {
+      openPortalWindow(hosted.url.href)
+      return
+    }
+
     const rail = useSubscriptionRail()
     if (rail) {
       const url = await onSubscriptionRail(() =>

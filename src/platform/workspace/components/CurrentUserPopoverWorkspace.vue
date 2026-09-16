@@ -267,11 +267,11 @@ import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useExternalLink } from '@/composables/useExternalLink'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
-import { getBillingWebUrl } from '@/config/billingWeb'
 import SubscribeButton from '@/platform/cloud/subscription/components/SubscribeButton.vue'
 import { useSubscriptionDialog } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
 import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
+import { hostedBillingRoute } from '@/platform/workspace/billing/hostedBillingRoutes'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
@@ -393,10 +393,10 @@ const handleOpenWorkspaceSettings = () => {
 }
 
 const handleOpenPlansAndPricing = () => {
-  const billingWebUrl = getBillingWebUrl()
+  const route = hostedBillingRoute(flags.hostedBillingDestination, 'pricing')
   const hostedTab =
-    flags.hostedBillingWebEnabled && billingWebUrl
-      ? window.open(billingWebUrl.href, '_blank', 'noopener,noreferrer')
+    route.kind === 'billing_web'
+      ? window.open(route.url.href, '_blank', 'noopener,noreferrer')
       : null
   if (!hostedTab) {
     subscriptionDialog.showPricingTable({ reason: 'avatar_menu_plans' })

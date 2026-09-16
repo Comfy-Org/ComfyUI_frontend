@@ -35,7 +35,7 @@ const state = vi.hoisted(() => {
     canReactivatePlan: false,
     canOpenPricingSurface: false,
     shouldUseWorkspaceBilling: true,
-    hostedBillingWebEnabled: false,
+    hostedBillingDestination: 'stripe',
     billingWebUrl: initialBillingWebUrl(),
     showCreateWorkspaceDialog: vi.fn(),
     showTopUpCreditsDialog: vi.fn(),
@@ -139,8 +139,8 @@ vi.mock<unknown>(import('@/composables/useExternalLink'), () => ({
 vi.mock<unknown>(import('@/composables/useFeatureFlags'), () => ({
   useFeatureFlags: () => ({
     flags: {
-      get hostedBillingWebEnabled() {
-        return state.hostedBillingWebEnabled
+      get hostedBillingDestination() {
+        return state.hostedBillingDestination
       }
     }
   })
@@ -217,7 +217,7 @@ describe('CurrentUserPopoverWorkspace', () => {
     state.canOpenPricingSurface = false
     state.canReactivate = false
     state.shouldUseWorkspaceBilling = true
-    state.hostedBillingWebEnabled = false
+    state.hostedBillingDestination = 'stripe'
     state.billingWebUrl = new URL('http://localhost:5174')
   })
 
@@ -341,13 +341,13 @@ describe('CurrentUserPopoverWorkspace', () => {
     const user = userEvent.setup()
     const open = vi.spyOn(window, 'open').mockReturnValue(window)
     state.canOpenPricingSurface = true
-    state.hostedBillingWebEnabled = true
+    state.hostedBillingDestination = 'billing_web'
     renderComponent('team')
 
     await user.click(screen.getByTestId('plans-pricing-menu-item'))
 
     expect(open).toHaveBeenCalledWith(
-      'http://localhost:5174/',
+      'http://localhost:5174/v1/pricing?product=comfyui&return_to=comfyui_workspace',
       '_blank',
       'noopener,noreferrer'
     )
@@ -358,7 +358,7 @@ describe('CurrentUserPopoverWorkspace', () => {
     const user = userEvent.setup()
     const open = vi.spyOn(window, 'open').mockReturnValue(null)
     state.canOpenPricingSurface = true
-    state.hostedBillingWebEnabled = true
+    state.hostedBillingDestination = 'billing_web'
     renderComponent('team')
 
     await user.click(screen.getByTestId('plans-pricing-menu-item'))
@@ -373,7 +373,7 @@ describe('CurrentUserPopoverWorkspace', () => {
     const user = userEvent.setup()
     const open = vi.spyOn(window, 'open').mockImplementation(() => null)
     state.canOpenPricingSurface = true
-    state.hostedBillingWebEnabled = true
+    state.hostedBillingDestination = 'billing_web'
     state.billingWebUrl = null
     renderComponent('team')
 
@@ -630,7 +630,7 @@ describe('CurrentUserPopoverWorkspace', () => {
     state.canManageSubscriptionLifecycle = true
     state.canReactivatePlan = true
     state.canOpenPricingSurface = true
-    state.hostedBillingWebEnabled = true
+    state.hostedBillingDestination = 'billing_web'
     renderComponent('team')
 
     expect(screen.getByTestId('add-credits-button')).toBeInTheDocument()
