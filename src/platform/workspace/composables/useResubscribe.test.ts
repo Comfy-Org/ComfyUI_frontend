@@ -6,6 +6,7 @@ import { createI18n } from 'vue-i18n'
 import { useTelemetry } from '@/platform/telemetry'
 
 import { AuthStoreError } from '@/stores/authStore'
+import { mockBillingContext } from '@/utils/__tests__/mockBillingContext'
 
 import { useResubscribe as createResubscribe } from './useResubscribe'
 
@@ -14,13 +15,10 @@ const state = vi.hoisted(() => ({
   canManageSubscriptionLifecycle: true,
   canReactivate: true,
   canReactivatePlan: true,
-  resubscribe: vi.fn(),
   toastAdd: vi.fn()
 }))
 
-vi.mock<unknown>(import('@/composables/billing/useBillingContext'), () => ({
-  useBillingContext: () => ({ resubscribe: state.resubscribe })
-}))
+vi.mock(import('@/composables/billing/useBillingContext'))
 
 vi.mock<unknown>(import('@/composables/billing/useBillingRouting'), () => ({
   useBillingRouting: () => ({
@@ -79,6 +77,7 @@ vi.mock<unknown>(
 const apps: App<Element>[] = []
 
 function useResubscribe(): ReturnType<typeof createResubscribe> {
+  mockBillingContext()
   let result: ReturnType<typeof createResubscribe> | undefined
   const app = createApp(
     defineComponent({
@@ -105,7 +104,6 @@ describe('useResubscribe', () => {
     state.canManageSubscriptionLifecycle = true
     state.canReactivate = true
     state.canReactivatePlan = true
-    state.resubscribe.mockResolvedValue(undefined)
   })
 
   it('does not resubscribe after the workspace role loses permission', async () => {
@@ -116,7 +114,7 @@ describe('useResubscribe', () => {
 
     await handleResubscribe()
 
-    expect(state.resubscribe).not.toHaveBeenCalled()
+    expect(mockBillingContext().resubscribe).not.toHaveBeenCalled()
     expect(useTelemetry()?.trackResubscribeClicked).not.toHaveBeenCalled()
     expect(state.toastAdd).not.toHaveBeenCalled()
     expect(isResubscribing.value).toBe(false)
@@ -130,7 +128,7 @@ describe('useResubscribe', () => {
 
     await handleResubscribe()
 
-    expect(state.resubscribe).not.toHaveBeenCalled()
+    expect(mockBillingContext().resubscribe).not.toHaveBeenCalled()
     expect(useTelemetry()?.trackResubscribeClicked).not.toHaveBeenCalled()
     expect(state.toastAdd).not.toHaveBeenCalled()
     expect(isResubscribing.value).toBe(false)
@@ -146,7 +144,7 @@ describe('useResubscribe', () => {
 
     await handleResubscribe()
 
-    expect(state.resubscribe).toHaveBeenCalled()
+    expect(mockBillingContext().resubscribe).toHaveBeenCalled()
   })
 
   it('refuses whenever the policy denies it', async () => {
@@ -158,7 +156,7 @@ describe('useResubscribe', () => {
 
     await handleResubscribe()
 
-    expect(state.resubscribe).not.toHaveBeenCalled()
+    expect(mockBillingContext().resubscribe).not.toHaveBeenCalled()
   })
 
   it('fires a started event before resubscribe resolves', async () => {
@@ -184,7 +182,7 @@ describe('useResubscribe', () => {
 
     await handleResubscribe()
 
-    expect(state.resubscribe).toHaveBeenCalledOnce()
+    expect(mockBillingContext().resubscribe).toHaveBeenCalledOnce()
     expect(useTelemetry()?.trackResubscribeClicked).toHaveBeenCalledOnce()
     expect(useTelemetry()?.trackBillingEvent).not.toHaveBeenCalledWith(
       expect.objectContaining({ stage: 'succeeded' })
@@ -204,14 +202,14 @@ describe('useResubscribe', () => {
   })
 
   it('shows an error and resets loading when resubscription fails', async () => {
-    state.resubscribe.mockRejectedValueOnce(
+    vi.mocked(mockBillingContext().resubscribe).mockRejectedValueOnce(
       new Error('Resubscribe failed for person@example.com')
     )
     const { handleResubscribe, isResubscribing } = useResubscribe()
 
     await handleResubscribe()
 
-    expect(state.resubscribe).toHaveBeenCalledOnce()
+    expect(mockBillingContext().resubscribe).toHaveBeenCalledOnce()
     expect(state.toastAdd).toHaveBeenCalledWith(
       expect.objectContaining({
         severity: 'error',
@@ -234,7 +232,9 @@ describe('useResubscribe', () => {
       'checkout initiation rejected',
       500
     )
-    state.resubscribe.mockRejectedValueOnce(authStoreError)
+    vi.mocked(mockBillingContext().resubscribe).mockRejectedValueOnce(
+      authStoreError
+    )
     const { handleResubscribe } = useResubscribe()
 
     await handleResubscribe()
@@ -254,7 +254,9 @@ describe('useResubscribe', () => {
   it('categorizes an AuthStoreError with no status as a network failure, not an api rejection', async () => {
     state.shouldUseWorkspaceBilling = false
     const authStoreError = new AuthStoreError('offline')
-    state.resubscribe.mockRejectedValueOnce(authStoreError)
+    vi.mocked(mockBillingContext().resubscribe).mockRejectedValueOnce(
+      authStoreError
+    )
     const { handleResubscribe } = useResubscribe()
 
     await handleResubscribe()
@@ -270,7 +272,7 @@ describe('useResubscribe', () => {
 
   it('emits started before the awaited resubscribe call resolves', async () => {
     const callOrder: string[] = []
-    state.resubscribe.mockImplementation(async () => {
+    vi.mocked(mockBillingContext().resubscribe).mockImplementation(async () => {
       callOrder.push('resubscribe')
     })
     vi.mocked(useTelemetry()?.trackBillingEvent)?.mockImplementation(
