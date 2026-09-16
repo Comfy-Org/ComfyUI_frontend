@@ -89,7 +89,14 @@ export type PaymentPortalResult =
   | { readonly status: 'ok'; readonly value: { readonly url: string } }
   | BillingFailure
 
-/** The quote the server returns for a plan change, in the generated field names. */
+/**
+ * The quote the server returns for a plan change, in the generated field names.
+ *
+ * Its strings are product copy, not `serverCode`'s kind of machine identifier:
+ * a `discounts[]` entry describes a discount the server applied, and a
+ * `promotion` one carries back the very `promotionCode` the caller sent, so a
+ * host renders `code` and `name` rather than matching them.
+ */
 export type SubscriptionPreview = z.infer<typeof zPreviewSubscribeResponse>
 
 export interface PreviewSubscribeInput {

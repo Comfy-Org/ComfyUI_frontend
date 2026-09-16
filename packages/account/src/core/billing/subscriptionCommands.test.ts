@@ -503,7 +503,7 @@ describe('createBillingCommands', () => {
       slug: 'pro-monthly',
       tier: 'PRO'
     }
-    const quote = http(200, {
+    const QUOTE_BODY = {
       allowed: true,
       cost_next_period_cents: 2000,
       cost_today_cents: 1500,
@@ -513,7 +513,8 @@ describe('createBillingCommands', () => {
       is_immediate: true,
       new_plan: PREVIEW_PLAN,
       transition_type: 'upgrade'
-    })
+    }
+    const quote = http(200, QUOTE_BODY)
 
     it('decodes the quote and sends every field snake_cased without an idempotency key', async () => {
       const h = harness({ status: FREE, script: { [POST_PREVIEW]: [quote] } })
@@ -546,6 +547,47 @@ describe('createBillingCommands', () => {
         })
       ])
       expect(h.posts()[0]?.idempotencyKey).toBeUndefined()
+    })
+
+    it('hands the applied discounts back, echoing the promotion code it sent', async () => {
+      const discounted = http(200, {
+        ...QUOTE_BODY,
+        discounts: [
+          {
+            amount_off_cents: 500,
+            code: 'LAUNCH',
+            kind: 'promotion',
+            name: 'Launch offer'
+          },
+          { code: 'pro-annual-bundle', kind: 'plan' }
+        ],
+        promotion_code: 'LAUNCH'
+      })
+      const h = harness({
+        status: FREE,
+        script: { [POST_PREVIEW]: [discounted] }
+      })
+
+      const result = await h.commands.previewSubscribe({
+        planSlug: 'pro-monthly',
+        promotionCode: 'LAUNCH'
+      })
+
+      expect(result).toEqual({
+        status: 'ok',
+        value: expect.objectContaining({
+          discounts: [
+            {
+              amount_off_cents: 500n,
+              code: 'LAUNCH',
+              kind: 'promotion',
+              name: 'Launch offer'
+            },
+            { code: 'pro-annual-bundle', kind: 'plan' }
+          ],
+          promotion_code: 'LAUNCH'
+        })
+      })
     })
 
     it('omits the optional fields the caller left out, issuing no operation', async () => {
