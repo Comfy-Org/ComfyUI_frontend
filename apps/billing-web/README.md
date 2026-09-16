@@ -38,7 +38,11 @@ pnpm --filter @comfyorg/billing-web build
 ## Deployment
 
 The app deploys to Vercel as a static SPA from
-`apps/billing-web/vercel.json`. `.github/workflows/ci-vercel-billing-web-preview.yaml`
+`apps/billing-web/vercel.json`. Vercel hosts the MVP only;
+[ADR-BILLING-WEB-0031](../../docs/adr/BILLING-WEB-0031-static-spa-boundary.md)
+targets self-hosted nginx for production billing traffic, so keep the build a
+plain directory of static files and express hosting behavior in ways an nginx
+rule can reproduce. `.github/workflows/ci-vercel-billing-web-preview.yaml`
 builds and deploys it: a preview per pull request that touches
 `apps/billing-web`, `packages/design-system`, or `packages/tailwind-utils`,
 and production on merge to `main`.
