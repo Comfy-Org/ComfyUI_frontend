@@ -22,6 +22,7 @@ import {
 } from '@/lib/litegraph/src/litegraph'
 import { snapPoint } from '@/lib/litegraph/src/measure'
 import type { Vector2 } from '@/lib/litegraph/src/litegraph'
+import type { SerialisableGraph } from '@/lib/litegraph/src/litegraph'
 import type {
   IBaseWidget,
   TWidgetValue
@@ -179,6 +180,17 @@ import {
 
 export const ANIM_PREVIEW_WIDGET = '$$comfy_animation_preview'
 
+interface QueueItem {
+  number: number
+  batchCount: number
+  requestId: number
+  queueNodeIds?: NodeExecutionId[]
+  workflow: LoadedComfyWorkflow | null
+  workflowState: ComfyWorkflowJSON
+  detachedGraph?: LGraph
+  workflowQueueIntent?: WorkflowQueueIntent
+}
+
 function isMeshModelFile(file: File): boolean {
   const name = file.name.toLowerCase()
   return SUPPORTED_MESH_EXTENSIONS.has(name.slice(name.lastIndexOf('.')))
@@ -245,6 +257,7 @@ type Clipspace = {
 export interface QueuePromptOptions {
   queueNodeIds?: NodeExecutionId[]
   intent?: WorkflowQueueIntent
+  workflow?: LoadedComfyWorkflow | null
 }
 
 function createNodeOutputsMutationView(
@@ -292,13 +305,7 @@ export class ComfyApp {
   /**
    * List of entries to queue
    */
-  private queueItems: {
-    number: number
-    batchCount: number
-    requestId: number
-    queueNodeIds?: NodeExecutionId[]
-    workflowQueueIntent?: WorkflowQueueIntent
-  }[] = []
+  private queueItems: QueueItem[] = []
   private nextQueueRequestId = 1
   /**
    * If the queue is currently being processed
@@ -1651,6 +1658,36 @@ export class ComfyApp {
     })
   }
 
+  private getGraphForQueueItem(item: QueueItem): LGraph {
+    if (!item.workflow) return this.rootGraph
+
+    const activeWorkflow = useWorkspaceStore().workflow.activeWorkflow
+    if (activeWorkflow?.path === item.workflow.path) return this.rootGraph
+    if (item.detachedGraph) return item.detachedGraph
+
+    item.detachedGraph ??= new LGraph(
+      clone(item.workflowState) as unknown as SerialisableGraph
+    )
+    return item.detachedGraph
+  }
+
+  private syncQueueGraphState(item: QueueItem, graph: LGraph) {
+    const activeState = clone(
+      graph.asSerialisable()
+    ) as unknown as ComfyWorkflowJSON
+    item.workflowState = activeState
+
+    if (!item.workflow?.changeTracker || graph === this.rootGraph) return
+    const activeWorkflow = useWorkspaceStore().workflow.activeWorkflow
+    if (activeWorkflow?.path === item.workflow.path) return
+
+    item.workflow.changeTracker.activeState = activeState
+    item.workflow.isModified = !ChangeTracker.graphEqual(
+      item.workflow.changeTracker.initialState,
+      activeState
+    )
+  }
+
   async queuePrompt(
     number: number,
     batchCount?: number,
@@ -1669,7 +1706,7 @@ export class ComfyApp {
     const options = Array.isArray(optionsOrQueueNodeIds)
       ? { queueNodeIds: optionsOrQueueNodeIds }
       : optionsOrQueueNodeIds
-    const { queueNodeIds, intent } = options
+    const { queueNodeIds, intent, workflow } = options
     if (
       intent?.trigger_source === 'auto_queue' &&
       partnerRunGateBlocksAutoQueue()
@@ -1677,11 +1714,24 @@ export class ComfyApp {
       return false
     }
     const requestId = this.nextQueueRequestId++
+    const activeWorkflow = useWorkspaceStore().workflow.activeWorkflow
+    const queuedWorkflow = workflow ?? activeWorkflow
+    const workflowState =
+      queuedWorkflow && activeWorkflow?.path !== queuedWorkflow.path
+        ? (clone(queuedWorkflow.activeState) as unknown as ComfyWorkflowJSON)
+        : (clone(
+            this.rootGraph.asSerialisable()
+          ) as unknown as ComfyWorkflowJSON)
     this.queueItems.push({
       number,
+
       batchCount,
+
       queueNodeIds,
+
       requestId,
+      workflow: queuedWorkflow,
+      workflowState,
       workflowQueueIntent: intent
     })
     api.dispatchCustomEvent('promptQueueing', {
@@ -1753,13 +1803,14 @@ export class ComfyApp {
 
     try {
       while (this.queueItems.length) {
+        const item = this.queueItems.pop()!
         const {
           number,
           batchCount,
           queueNodeIds,
           requestId,
           workflowQueueIntent
-        } = this.queueItems.pop()!
+        } = item
         let queuedCount = 0
         const workflowExecutionIntent: WorkflowExecutionIntent = {
           trigger_source: normalizeExecutionTriggerSource(
@@ -1772,6 +1823,7 @@ export class ComfyApp {
 
         const isPartialExecution = !!queueNodeIds?.length
         for (let i = 0; i < batchCount; i++) {
+          const queueGraph = this.getGraphForQueueItem(item)
           let executionContext: ExecutionContext | undefined
           if (telemetry) {
             try {
@@ -1786,22 +1838,24 @@ export class ComfyApp {
 
           // Allow widgets to run callbacks before a prompt has been queued
           // e.g. random seed before every gen
-          forEachNode(this.rootGraph, (node) => {
+          forEachNode(queueGraph, (node) => {
             for (const widget of node.widgets ?? []) {
               widget.beforeQueued?.({ isPartialExecution })
             }
             applyPromotedWidgetControl(node, 'beforeQueued')
           })
+          this.syncQueueGraphState(item, queueGraph)
 
           // Capture workflow and mode before await — both may change if the
           // user switches tabs or toggles app/graph mode while the request is
           // in flight.
-          const queuedWorkflow = useWorkspaceStore().workflow
-            .activeWorkflow as ComfyWorkflow
+          const queuedWorkflow =
+            item.workflow ??
+            (useWorkspaceStore().workflow.activeWorkflow as ComfyWorkflow)
           const queuedRunErrorKey = executionErrorStore.captureRunErrorKey()
           const queuedMode = getWorkflowMode(queuedWorkflow)
           const startTime = performance.now()
-          const p = await this.graphToPrompt(this.rootGraph).catch(
+          const p = await this.graphToPrompt(queueGraph).catch(
             (error: unknown) => {
               telemetry?.trackExecutionOutcome({
                 startTime,
@@ -1813,7 +1867,7 @@ export class ComfyApp {
               throw error
             }
           )
-          const queuedNodes = collectAllNodes(this.rootGraph)
+          const queuedNodes = collectAllNodes(queueGraph)
           let workflowContext: WorkflowExecutionContext | undefined
           if (executionContext) {
             workflowContext = toWorkflowExecutionContext(executionContext, {
@@ -1928,7 +1982,7 @@ export class ComfyApp {
               error.response.error?.type === 'missing_node_type'
             ) {
               // Re-scan the full graph instead of using the server's single-node response.
-              rescanAndSurfaceMissingNodes(this.rootGraph)
+              rescanAndSurfaceMissingNodes(queueGraph)
             } else if (
               error instanceof PromptExecutionError &&
               error.status === 403 &&
@@ -2003,12 +2057,19 @@ export class ComfyApp {
 
           // Allow widgets to run callbacks after a prompt has been queued
           // e.g. random seed after every gen
-          executeWidgetsCallback(queuedNodes, 'afterQueued', {
+          const afterQueueGraph = this.getGraphForQueueItem(item)
+          const afterQueuedNodes =
+            afterQueueGraph === queueGraph
+              ? queuedNodes
+              : collectAllNodes(afterQueueGraph)
+
+          executeWidgetsCallback(afterQueuedNodes, 'afterQueued', {
             isPartialExecution
           })
-          for (const node of queuedNodes) {
+          for (const node of afterQueuedNodes) {
             applyPromotedWidgetControl(node, 'afterQueued')
           }
+          this.syncQueueGraphState(item, afterQueueGraph)
           useFreeTierQuota().trackRun()
           this.canvas.draw(true, true)
           await this.ui.queue.update()

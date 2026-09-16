@@ -1,11 +1,13 @@
 import { partnerRunGateBlocksAutoQueue } from '@/composables/billing/usePartnerNodesRunGate'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
+import type { LoadedComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import {
   isInstantRunningMode,
   useQueueSettingsStore
 } from '@/stores/queueSettingsStore'
 import { useQueuePendingTaskCountStore } from '@/stores/queueStore'
+import { useWorkspaceStore } from '@/stores/workspaceStore'
 
 export function setupAutoQueueHandler() {
   const queueCountStore = useQueuePendingTaskCountStore()
@@ -13,6 +15,19 @@ export function setupAutoQueueHandler() {
 
   let graphHasChanged = false
   let internalCount = 0 // Use an internal counter here so it is instantly updated when re-queuing
+  let instantWorkflow: LoadedComfyWorkflow | null = null
+
+  queueSettingsStore.$subscribe(
+    (_, state) => {
+      if (isInstantRunningMode(state.mode)) {
+        instantWorkflow ??= useWorkspaceStore().workflow.activeWorkflow
+      } else {
+        instantWorkflow = null
+      }
+    },
+    { detached: true, flush: 'sync' }
+  )
+
   api.addEventListener('autoQueueGraphChanged', () => {
     // Skip the whole submission while gated: never enqueue a prompt the gate
     // would drop, and never treat queuePrompt's false as gate rejection — it
@@ -46,7 +61,10 @@ export function setupAutoQueueHandler() {
         ) {
           graphHasChanged = false
           await app.queuePrompt(0, queueSettingsStore.batchCount, {
-            intent: { trigger_source: 'auto_queue' }
+            intent: { trigger_source: 'auto_queue' },
+            ...(isInstantRunningMode(queueSettingsStore.mode)
+              ? { workflow: instantWorkflow }
+              : {})
           })
         }
       }
