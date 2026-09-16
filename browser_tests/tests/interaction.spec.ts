@@ -953,30 +953,13 @@ test.describe('Load workflow', { tag: '@screenshot' }, () => {
   }) => {
     await comfyPage.workflow.loadWorkflow('nodes/single_ksampler')
     const node = (await comfyPage.nodeOps.getFirstNodeRef())!
+    const modifiedSince = Date.now()
     await node.click('collapse')
     await comfyPage.canvasOps.clickEmptySpace()
     await expect(comfyPage.canvas).toHaveScreenshot(
       'single_ksampler_modified.png'
     )
-    // Wait for V2 persistence debounce to save the modified workflow
-    const start = Date.now()
-    await comfyPage.page.waitForFunction((since) => {
-      for (let i = 0; i < window.localStorage.length; i++) {
-        const key = window.localStorage.key(i)
-        if (!key?.startsWith('Comfy.Workflow.DraftIndex.v2:')) continue
-        const json = window.localStorage.getItem(key)
-        if (!json) continue
-        try {
-          const index = JSON.parse(json)
-          if (typeof index.updatedAt === 'number' && index.updatedAt >= since) {
-            return true
-          }
-        } catch {
-          // ignore
-        }
-      }
-      return false
-    }, start)
+    await comfyPage.workflow.waitForDraftIndexUpdatedSince(modifiedSince)
     // oxlint-disable-next-line comfy/no-comfy-page-setup-call -- pre-existing call, tracked by evfail-23; not fixed in this pass
     await comfyPage.setup({ clearStorage: false })
     await expect(comfyPage.canvas).toHaveScreenshot(
