@@ -280,7 +280,7 @@ describe('collectCrdtDebugReport', () => {
     expect(report).toContain('- Workflow: collected')
   })
 
-  it('distinguishes failed, disabled and unavailable sources in collection status', async () => {
+  it('distinguishes failed, turned off and unavailable sources in collection status', async () => {
     getLogs.mockRejectedValue(new Error('offline'))
     const report = await collectCrdtDebugReport({
       crdt: SNAPSHOT,
