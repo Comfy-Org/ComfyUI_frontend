@@ -22,3 +22,28 @@ it('keeps the audio transport separate from the preset action', async () => {
   await user.click(preset)
   expect(emitted().open).toEqual([[example]])
 })
+
+// happy-dom lays nothing out, so the width can only be read off the class here.
+// That it comes out to a judgeable size on a real phone is the @mobile spec in
+// e2e/workshop.spec.ts; this pins which of the two widths each case picks.
+it.for([
+  [1, 'w-full'],
+  [3, 'w-72']
+] as const)('gives %i sample(s) the %s phone width', ([count, width]) => {
+  render(ExamplesTab, {
+    props: {
+      examples: Array.from({ length: count }, (_, index) => ({
+        id: `sample-${index}`,
+        title: `Sample ${index}`,
+        specs: [],
+        values: {},
+        outputUrl: `https://assets.example/sample-${index}.png`,
+        mediaKind: 'image' as const
+      }))
+    }
+  })
+
+  const items = screen.getAllByTestId('example-item')
+  expect(items).toHaveLength(count)
+  expect(items.every((item) => item.className.includes(width))).toBe(true)
+})

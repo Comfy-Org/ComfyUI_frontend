@@ -603,6 +603,23 @@ test.describe('Model playground', () => {
       })
       .toBe(true)
   })
+
+  test('a phone sample is big enough to judge @mobile', async ({ page }) => {
+    await page.goto('/models/krea--krea-2-medium-turbo--generate-images/')
+    const cards = page.getByTestId('example-card')
+    await expect(cards).toHaveCount(3)
+
+    // A sample exists to be judged. Below this it is a thumbnail of a
+    // thumbnail, which is what it was.
+    await expect
+      .poll(async () => (await cards.first().boundingBox())?.width ?? 0)
+      .toBeGreaterThan(260)
+
+    const list = page.getByTestId('examples-tab').locator('ul')
+    await expect
+      .poll(() => list.evaluate((el) => el.scrollWidth > el.clientWidth))
+      .toBe(true)
+  })
 })
 
 test.describe('Filter sheet @mobile', () => {
