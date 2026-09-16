@@ -1,4 +1,5 @@
 import axios from 'axios'
+import { shallowReactive } from 'vue'
 
 import { useChainCallback } from '@/composables/functional/useChainCallback'
 import type { ComboWidgetInventoryStatus } from '@/core/graph/widgets/comboWidgetInventory'
@@ -33,7 +34,7 @@ async function getAuthHeaders() {
   return {}
 }
 
-const dataCache = new Map<string, CacheEntry<unknown>>()
+const dataCache = shallowReactive(new Map<string, CacheEntry<unknown>>())
 
 const createCacheKey = (config: RemoteWidgetConfig): string => {
   const { route, query_params = {}, refresh = 0 } = config
@@ -150,9 +151,9 @@ export function useRemoteWidget<
     if (isValid || isBackingOff(entry) || isFetching(entry))
       return entry!.data as T
 
-    const currentEntry: CacheEntry<T> = (entry as
-      | CacheEntry<T>
-      | undefined) || { data: defaultValue }
+    const currentEntry: CacheEntry<T> = shallowReactive(
+      (entry as CacheEntry<T> | undefined) || { data: defaultValue }
+    )
     dataCache.set(cacheKey, currentEntry)
 
     try {
