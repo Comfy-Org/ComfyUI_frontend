@@ -89,11 +89,18 @@ test.describe(
           )
           .toBe('Enable Renamed source')
 
+        await expect(
+          comfyPage.vueNodes.getNodeLocator(String(source.id))
+        ).toHaveCSS('opacity', '1')
         await comfyPage.page.evaluate((controlId) => {
           window.app!.graph.getNodeById(controlId)!.widgets![0].callback!(
             undefined
           )
         }, control.id)
+
+        await expect(
+          comfyPage.vueNodes.getNodeLocator(String(source.id))
+        ).toHaveCSS('opacity', '0.5')
         await expect
           .poll(() =>
             comfyPage.page.evaluate(
@@ -167,7 +174,27 @@ test.describe(
             )
             throw error
           })
-        await renderedToggle.click()
+
+        await comfyPage.page.evaluate((sourceId) => {
+          const sourceNode = window.app!.graph.getNodeById(sourceId)!
+          sourceNode.title = 'Renamed source'
+          sourceNode.setDirtyCanvas(true, true)
+        }, source.id)
+
+        const renamedToggle = comfyPage.vueNodes.getWidgetByName(
+          modeControl.type,
+          'Enable Renamed source'
+        )
+        await expect(renamedToggle).toBeVisible()
+
+        await expect(
+          comfyPage.vueNodes.getNodeLocator(String(source.id))
+        ).toHaveCSS('opacity', '1')
+        await renamedToggle.click()
+
+        await expect(
+          comfyPage.vueNodes.getNodeLocator(String(source.id))
+        ).toHaveCSS('opacity', '0.5')
         await expect
           .poll(() =>
             comfyPage.page.evaluate(
