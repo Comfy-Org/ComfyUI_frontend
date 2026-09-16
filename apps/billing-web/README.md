@@ -56,6 +56,11 @@ those paths.
 
 Vercel project settings:
 
+- Project Name: `billing-web`, under the `comfyui` team. Ingest matches
+  `billing-web-<hash>-comfyui.vercel.app` and
+  `billing-web-git-<branch>-comfyui.vercel.app` by pattern
+  (`services/ingest/server/server.go` in `Comfy-Org/cloud`), so a rename
+  CORS-blocks every preview until those patterns change with it.
 - Root Directory: `apps/billing-web`, with **Include source files outside of
   the Root Directory** enabled — the build resolves workspace packages.
 - Framework Preset: Other. `vercel.json` supplies the install, build, and
