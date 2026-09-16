@@ -53,9 +53,30 @@ const models: WorkshopBrowseModel[] = [
 
 describe('Workshop catalog', () => {
   it('contains every model in the committed Router snapshot', () => {
-    expect(collection).toHaveLength(268)
-    expect(new Set(collection.map((model) => model.id)).size).toBe(268)
+    // 268 from the partner export plus the ten entries authored on
+    // 2026-09-16 (GPT Image 2.5 Flare/Sunburst, Seedance 2.0 ×3,
+    // Seedance 2.5 edit video, Wan 3.0 / Prime text-to-video, Grok Imagine
+    // Image 2.0 generate + edit) minus the two withdrawn Kling Camera Control tasks.
+    expect(collection).toHaveLength(276)
+    expect(new Set(collection.map((model) => model.id)).size).toBe(276)
   })
+
+  it.for(['wan/text-to-video-3.0', 'wan/text-to-video-3.0-prime'])(
+    'describes the full Router duration contract for %s',
+    (id) => {
+      const model = collection.find((entry) => entry.id === id)
+      expect(model?.description).toContain('30 seconds')
+      expect(model?.parameters).toMatchObject({
+        properties: {
+          model: { enum: [id] },
+          duration: {
+            default: -1,
+            maximum: 30
+          }
+        }
+      })
+    }
+  )
 
   it('projects a card without the model input schema', () => {
     // The browse island receives these over the wire, and `parameters` is the

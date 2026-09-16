@@ -13,9 +13,11 @@ export type {
   BillingHttpResponse,
   BillingRequest,
   BillingResult,
+  BillingServerCode,
   BillingSession,
   BillingTransport
 } from './billingContracts.js'
+export { matchesServerCode, unwrapServerCode } from './billingContracts.js'
 export type { SessionBillingTransportOptions } from './transport.js'
 export { createSessionBillingTransport } from './transport.js'
 export type { CredentialedBillingTransportOptions } from './credentialedTransport.js'
@@ -51,6 +53,27 @@ export type {
   CreditsSnapshot
 } from './credits.js'
 export { CREDITS_ROUTE, createCreditsReader } from './credits.js'
+export type {
+  BillingPlansData,
+  PlansReadOptions,
+  PlansReader,
+  PlansReaderOptions,
+  PlansScope,
+  PlansSnapshot
+} from './plans.js'
+export { PLANS_ROUTE, createPlansReader } from './plans.js'
+export type {
+  PaymentMethodsReadOptions,
+  PaymentMethodsReader,
+  PaymentMethodsReaderOptions,
+  PaymentMethodsScope,
+  PaymentMethodsSnapshot,
+  SavedPaymentMethod
+} from './paymentMethods.js'
+export {
+  PAYMENT_METHODS_ROUTE,
+  createPaymentMethodsReader
+} from './paymentMethods.js'
 export type {
   BillingStatusData,
   BillingStatusReader,

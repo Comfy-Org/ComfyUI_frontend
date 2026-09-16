@@ -22,6 +22,7 @@ import type {
   BillingResult,
   BillingTransport
 } from './billingContracts.js'
+import { matchesServerCode } from './billingContracts.js'
 import type { CapabilitiesReader } from './capabilities.js'
 import type { CapabilityDenialReason } from './capabilityDenials.js'
 import type { CreditsReader } from './credits.js'
@@ -215,7 +216,7 @@ const SUPERSEDED = {
 } as const satisfies BillingFailure
 
 function commandFailure(failure: BillingFailure): TopupFailure {
-  if (failure.serverCode === NO_PAYMENT_METHOD_SERVER_CODE) {
+  if (matchesServerCode(failure, NO_PAYMENT_METHOD_SERVER_CODE)) {
     return {
       status: 'error',
       code: 'NO_PAYMENT_METHOD',

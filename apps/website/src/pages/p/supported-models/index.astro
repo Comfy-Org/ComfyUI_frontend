@@ -6,7 +6,7 @@ import {
   absoluteUrl,
   itemListNode,
   jsonLdId,
-  pageContext,
+  pageContext
 } from '../../../utils/jsonLd'
 
 const title = t('models.index.title')
@@ -15,14 +15,14 @@ const subtitle = t('models.index.subtitle')
 const { url, locale } = pageContext(
   Astro.site,
   Astro.url.pathname,
-  Astro.currentLocale,
+  Astro.currentLocale
 )
 const modelList = itemListNode(
   url,
   title,
   models.map((model) => ({
-    url: absoluteUrl(Astro.site, `/p/supported-models/${model.slug}`),
-  })),
+    url: absoluteUrl(Astro.site, `/p/supported-models/${model.slug}`)
+  }))
 )
 
 const dirLabel: Record<string, string> = {
@@ -49,7 +49,7 @@ const dirLabel: Record<string, string> = {
   mainEntityId={jsonLdId(url, 'itemlist')}
   breadcrumbs={[
     { name: t('breadcrumb.home', locale), url: absoluteUrl(Astro.site, '/') },
-    { name: title },
+    { name: title }
   ]}
   extraJsonLd={[modelList]}
 >
@@ -69,26 +69,28 @@ const dirLabel: Record<string, string> = {
     </header>
 
     <ul class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-      {models.map((model) => (
-        <li>
-          <a
-            href={`/p/supported-models/${model.slug}/`}
-            class="flex h-full flex-col gap-3 rounded-xl border border-white/10 p-5 transition-colors hover:border-white/25 hover:bg-white/5"
-          >
-            <div class="flex items-start justify-between gap-2">
-              <span class="text-base/tight font-semibold text-primary-comfy-canvas">
-                {model.displayName}
-              </span>
-              <span class="shrink-0 rounded-full bg-white/10 px-2 py-0.5 text-xs font-medium text-primary-comfy-canvas/70">
-                {dirLabel[model.directory] ?? model.directory}
-              </span>
-            </div>
-            <p class="mt-auto text-xs text-primary-comfy-canvas/50">
-              {model.workflowCount} workflows
-            </p>
-          </a>
-        </li>
-      ))}
+      {models.map((model) => <li>
+        <a
+          href={`/p/supported-models/${model.slug}/`}
+          class="flex h-full flex-col gap-3 rounded-xl border border-white/10 p-5 transition-colors hover:border-white/25 hover:bg-white/5"
+        >
+          <div class="flex items-start justify-between gap-2">
+            <span
+              class="text-base/tight font-semibold text-primary-comfy-canvas"
+            >
+              {model.displayName}
+            </span>
+            <span
+              class="shrink-0 rounded-full bg-white/10 px-2 py-0.5 text-xs font-medium text-primary-comfy-canvas/70"
+            >
+              {dirLabel[model.directory] ?? model.directory}
+            </span>
+          </div>
+          <p class="mt-auto text-xs text-primary-comfy-canvas/50">
+            {model.workflowCount} workflows
+          </p>
+        </a>
+      </li>)}
     </ul>
   </div>
 </BaseLayout>

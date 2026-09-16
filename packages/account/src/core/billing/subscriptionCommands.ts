@@ -23,6 +23,7 @@ import {
 import type { z } from 'zod'
 
 import type { BillingFailure, BillingTransport } from './billingContracts.js'
+import { matchesServerCode } from './billingContracts.js'
 import type { CapabilitiesReader } from './capabilities.js'
 import type { CreditsReader } from './credits.js'
 import type {
@@ -181,7 +182,7 @@ function alreadyInRequestedState(
   serverCode: string
 ): boolean {
   return (
-    failure.serverCode === serverCode &&
+    matchesServerCode(failure, serverCode) &&
     failure.httpStatus !== undefined &&
     failure.httpStatus >= 400 &&
     failure.httpStatus < 500
@@ -195,7 +196,7 @@ function mapServerCode(
   if (alreadyInRequestedState(failure, alreadyHeldCode)) {
     return { status: 'already_held' }
   }
-  return failure.serverCode === NO_ACTIVE_SUBSCRIPTION_SERVER_CODE
+  return matchesServerCode(failure, NO_ACTIVE_SUBSCRIPTION_SERVER_CODE)
     ? coded('NO_ACTIVE_SUBSCRIPTION')
     : failure
 }
@@ -291,8 +292,10 @@ export function createBillingCommands(
       key
     )
     if (response.status === 'error') {
-      return response.serverCode ===
+      return matchesServerCode(
+        response,
         REACTIVATION_CONFIRMATION_REQUIRED_SERVER_CODE
+      )
         ? coded('REACTIVATION_CONFIRMATION_REQUIRED')
         : response
     }
