@@ -445,7 +445,6 @@ export class ComfyUI {
         }
       ],
       {
-        // @ts-expect-error fixme ts strict error
         onChange: (value) => {
           this.autoQueueMode = value.item.value
         }
@@ -720,8 +719,7 @@ export class ComfyUI {
 
     this.restoreMenuPosition = dragElement(this.menuContainer)
 
-    // @ts-expect-error
-    this.setStatus({ exec_info: { queue_remaining: 'X' } })
+    this.queueSize.textContent = 'Queue size: X'
   }
 
   setStatus(status: StatusWsMessageStatus | null) {

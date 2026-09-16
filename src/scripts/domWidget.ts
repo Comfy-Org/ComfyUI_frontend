@@ -117,6 +117,20 @@ export const isComponentWidget = <V extends object | string>(
   widget: IBaseWidget
 ): widget is ComponentWidget<V> => 'component' in widget && !!widget.component
 
+interface BaseDOMWidgetInit<V extends object | string> {
+  node: LGraphNode
+  name: string
+  type: string
+  options: DOMWidgetOptions<V>
+}
+
+interface DOMWidgetInit<
+  T extends HTMLElement,
+  V extends object | string
+> extends BaseDOMWidgetInit<V> {
+  element: T
+}
+
 abstract class BaseDOMWidgetImpl<V extends object | string>
   extends LegacyWidget<IBaseWidget<V, string, DOMWidgetOptions<V>>>
   implements BaseDOMWidget<V>
@@ -126,12 +140,7 @@ abstract class BaseDOMWidgetImpl<V extends object | string>
 
   readonly id: string
 
-  constructor(obj: {
-    node: LGraphNode
-    name: string
-    type: string
-    options: DOMWidgetOptions<V>
-  }) {
+  constructor(obj: BaseDOMWidgetInit<V>) {
     const { node, name, type, options } = obj
     super({ y: 0, name, type, options }, node)
 
@@ -194,9 +203,9 @@ abstract class BaseDOMWidgetImpl<V extends object | string>
   }
 
   override createCopyForNode(node: LGraphNode): this {
-    // @ts-expect-error
-    const cloned: this = new (this.constructor as typeof this)({
-      node: node,
+    const Widget = this.constructor as new (init: BaseDOMWidgetInit<V>) => this
+    const cloned = new Widget({
+      node,
       name: this.name,
       type: this.type,
       options: this.options
@@ -215,24 +224,18 @@ export class DOMWidgetImpl<T extends HTMLElement, V extends object | string>
 {
   override readonly element: T
 
-  constructor(obj: {
-    node: LGraphNode
-    name: string
-    type: string
-    element: T
-    options: DOMWidgetOptions<V>
-  }) {
+  constructor(obj: DOMWidgetInit<T, V>) {
     super(obj)
     this.element = obj.element
   }
 
   override createCopyForNode(node: LGraphNode): this {
-    // @ts-expect-error
-    const cloned: this = new (this.constructor as typeof this)({
-      node: node,
+    const Widget = this.constructor as new (init: DOMWidgetInit<T, V>) => this
+    const cloned = new Widget({
+      node,
       name: this.name,
       type: this.type,
-      element: this.element, // Include the element!
+      element: this.element,
       options: this.options
     })
     cloned.value = this.value
@@ -243,7 +246,7 @@ export class DOMWidgetImpl<T extends HTMLElement, V extends object | string>
   }
 
   /** Extract DOM widget size info */
-  override computeLayoutSize(node: LGraphNode) {
+  override computeLayoutSize() {
     if (this.type === 'hidden') {
       return {
         minHeight: 0,
@@ -260,21 +263,15 @@ export class DOMWidgetImpl<T extends HTMLElement, V extends object | string>
       this.options.getMaxHeight?.() ??
       parseInt(styles.getPropertyValue('--comfy-widget-max-height'))
 
-    let prefHeight: string | number =
+    const prefHeight: string | number =
       this.options.getHeight?.() ??
       styles.getPropertyValue('--comfy-widget-height')
 
-    if (typeof prefHeight === 'string' && prefHeight.endsWith?.('%')) {
-      prefHeight =
-        node.size[1] *
-        (parseFloat(prefHeight.substring(0, prefHeight.length - 1)) / 100)
-    } else {
-      prefHeight =
+    const isPercentageHeight =
+      typeof prefHeight === 'string' && prefHeight.endsWith?.('%')
+    if (!isPercentageHeight && isNaN(minHeight)) {
+      minHeight =
         typeof prefHeight === 'number' ? prefHeight : parseInt(prefHeight)
-
-      if (isNaN(minHeight)) {
-        minHeight = prefHeight
-      }
     }
 
     return {
@@ -329,10 +326,7 @@ export class ComponentWidgetImpl<
   }
 }
 
-export const addWidget = <W extends BaseDOMWidget>(
-  node: LGraphNode,
-  widget: W
-) => {
+export const addWidget = (node: LGraphNode, widget: BaseDOMWidget) => {
   node.addCustomWidget(widget)
 
   if (node.graph) {

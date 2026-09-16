@@ -210,13 +210,13 @@ describe('api.fetchApi', () => {
         '/userdata/private%20workflow.json?directory=secret',
         { method: 'post' }
       )
-      const rejection = expect(request).rejects.toMatchObject({
+      const failure = request.catch((error: unknown) => error)
+      await vi.advanceTimersByTimeAsync(60_000)
+
+      expect(await failure).toMatchObject({
         name: 'TimeoutError',
         message: 'Fetch timeout'
       })
-      await vi.advanceTimersByTimeAsync(60_000)
-
-      await rejection
       expect(trackFetchTimeout).toHaveBeenCalledExactlyOnceWith({
         route: '/userdata/:resource',
         method: 'POST',
@@ -234,12 +234,13 @@ describe('api.fetchApi', () => {
       mockPendingFetch()
 
       const request = api.fetchApi('/private-name/secret-id')
-      const rejection = expect(request).rejects.toMatchObject({
-        name: 'TimeoutError'
-      })
+      const failure = request.catch((error: unknown) => error)
       await vi.advanceTimersByTimeAsync(60_000)
 
-      await rejection
+      expect(await failure).toMatchObject({
+        name: 'TimeoutError',
+        message: 'Fetch timeout'
+      })
       expect(trackFetchTimeout).toHaveBeenCalledExactlyOnceWith({
         route: '/other',
         method: 'GET',
@@ -251,12 +252,13 @@ describe('api.fetchApi', () => {
       mockPendingFetch()
 
       const request = api.fetchApi('/video_metadata?filename=private.mp4')
-      const rejection = expect(request).rejects.toMatchObject({
-        name: 'TimeoutError'
-      })
+      const failure = request.catch((error: unknown) => error)
       await vi.advanceTimersByTimeAsync(60_000)
 
-      await rejection
+      expect(await failure).toMatchObject({
+        name: 'TimeoutError',
+        message: 'Fetch timeout'
+      })
       expect(trackFetchTimeout).toHaveBeenCalledExactlyOnceWith({
         route: '/video_metadata',
         method: 'GET',
@@ -270,16 +272,16 @@ describe('api.fetchApi', () => {
       const request = api.fetchApi('/upload/image', {
         timeoutMs: 120_000
       })
-      const rejection = expect(request).rejects.toMatchObject({
-        name: 'TimeoutError',
-        message: 'Fetch timeout'
-      })
+      const failure = request.catch((error: unknown) => error)
       await vi.advanceTimersByTimeAsync(60_000)
 
       expect(trackFetchTimeout).not.toHaveBeenCalled()
 
       await vi.advanceTimersByTimeAsync(60_000)
-      await rejection
+      expect(await failure).toMatchObject({
+        name: 'TimeoutError',
+        message: 'Fetch timeout'
+      })
       expect(trackFetchTimeout).toHaveBeenCalledExactlyOnceWith({
         route: '/upload/:resource',
         method: 'GET',
@@ -292,12 +294,13 @@ describe('api.fetchApi', () => {
       const controller = new AbortController()
 
       const request = api.fetchApi('/assets', { signal: controller.signal })
-      const rejection = expect(request).rejects.toMatchObject({
-        name: 'TimeoutError'
-      })
+      const failure = request.catch((error: unknown) => error)
       await vi.advanceTimersByTimeAsync(60_000)
 
-      await rejection
+      expect(await failure).toMatchObject({
+        name: 'TimeoutError',
+        message: 'Fetch timeout'
+      })
       expect(trackFetchTimeout).toHaveBeenCalledExactlyOnceWith({
         route: '/assets',
         method: 'GET',

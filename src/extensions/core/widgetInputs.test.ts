@@ -146,7 +146,7 @@ describe('PrimitiveNode', () => {
     expect(primitive.widgets?.[0].value).toBe(333)
   })
 
-  it.each([
+  it.for([
     { label: 'null', value: null },
     { label: 'undefined', value: undefined }
   ])('restores an explicit $label value', ({ value }) => {

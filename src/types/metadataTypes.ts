@@ -66,20 +66,6 @@ export type GltfChunkHeader = {
   chunkTypeIdentifier: number
 }
 
-type GltfExtras = {
-  workflow?: string | object
-  prompt?: string | object
-  [key: string]: unknown
-}
-
-export type GltfJsonData = {
-  asset?: {
-    extras?: GltfExtras
-    [key: string]: unknown
-  }
-  [key: string]: unknown
-}
-
 /**
  * Represents the content range [start, end) of an ISOBMFF box, excluding its header.
  * Null if the box was not found.

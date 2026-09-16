@@ -1279,11 +1279,11 @@ describe('ChangeTracker', () => {
       return modal
     }
 
-    it.each([
+    it.for<[string, () => HTMLElement]>([
       ['a reka dialog', createRekaDialog],
       ['a native dialog', createNativeDialog],
       ['a legacy comfy modal', createLegacyComfyModal]
-    ])('does not undo while %s is open', async (_kind, createModal) => {
+    ])('does not undo while %s is open', async ([, createModal]) => {
       const previousState = createState(1)
       const currentState = createState(2)
       const tracker = createTracker(currentState)

@@ -195,23 +195,21 @@ export class GroupNodeConfig {
       )
         continue
 
-      const srcId = Number(sourceNodeId)
       const srcSlot = Number(sourceNodeSlot)
-      const tgtId = Number(targetNodeId)
       const tgtSlot = Number(targetNodeSlot)
 
-      if (!this.linksFrom[srcId]) {
-        this.linksFrom[srcId] = {}
+      if (!this.linksFrom[sourceNodeId]) {
+        this.linksFrom[sourceNodeId] = {}
       }
-      if (!this.linksFrom[srcId][srcSlot]) {
-        this.linksFrom[srcId][srcSlot] = []
+      if (!this.linksFrom[sourceNodeId][srcSlot]) {
+        this.linksFrom[sourceNodeId][srcSlot] = []
       }
-      this.linksFrom[srcId][srcSlot].push(link)
+      this.linksFrom[sourceNodeId][srcSlot].push(link)
 
-      if (!this.linksTo[tgtId]) {
-        this.linksTo[tgtId] = {}
+      if (!this.linksTo[targetNodeId]) {
+        this.linksTo[targetNodeId] = {}
       }
-      this.linksTo[tgtId][tgtSlot] = link
+      this.linksTo[targetNodeId][tgtSlot] = link
     }
 
     if (this.nodeData.external) {
@@ -266,7 +264,7 @@ export class GroupNodeConfig {
         const source = output?.widget?.name
         const nodeIdx = linksFrom[0]?.[0]?.[2]
         if (source && nodeIdx != null) {
-          const fromTypeName = this.nodeData.nodes[Number(nodeIdx)]?.type
+          const fromTypeName = this.nodeData.nodes[nodeIdx]?.type
           if (fromTypeName) {
             const fromType = globalDefs[fromTypeName]
             const input =
@@ -307,7 +305,7 @@ export class GroupNodeConfig {
           const id = link[2]
           const slot = link[3]
           if (id == null || slot == null) continue
-          const targetNode = this.nodeData.nodes[Number(id)]
+          const targetNode = this.nodeData.nodes[id]
           const input = targetNode?.inputs?.[Number(slot)] as
             | GroupNodeInput
             | undefined
@@ -343,14 +341,13 @@ export class GroupNodeConfig {
           const id = link[0]
           const slot = link[1]
           if (id != null && slot != null) {
-            const outputType =
-              this.nodeData.nodes[Number(id)]?.outputs?.[Number(slot)]
+            const outputType = this.nodeData.nodes[id]?.outputs?.[Number(slot)]
             if (
               outputType &&
               typeof outputType === 'object' &&
               'type' in outputType
             ) {
-              rerouteType = String((outputType as GroupNodeOutput).type ?? '*')
+              rerouteType = (outputType as GroupNodeOutput).type ?? '*'
             }
           }
         }
@@ -504,11 +501,11 @@ export class GroupNodeConfig {
   ) {
     const linkSourceIdx = link[0]
     if (linkSourceIdx == null) return
-    const sourceNode = this.nodeData.nodes[Number(linkSourceIdx)]
+    const sourceNode = this.nodeData.nodes[linkSourceIdx]
     if (sourceNode?.type === 'PrimitiveNode') {
       // Merge link configurations
-      const sourceNodeId = Number(link[0])
-      const targetNodeId = Number(link[2])
+      const sourceNodeId = link[0]
+      const targetNodeId = link[2]
       const primitiveDef = this.primitiveDefs[sourceNodeId]
       if (!primitiveDef) return
       const targetWidget = inputs[inputName]
@@ -606,7 +603,7 @@ export class GroupNodeConfig {
   ) {
     // Add converted widgets sorted into their index order (ordered as they were converted) so link ids match up
     const convertedSlots = [...converted.keys()]
-      .sort()
+      .sort((a, b) => a - b)
       .map((k) => converted.get(k))
     for (let i = 0; i < convertedSlots.length; i++) {
       const inputName = convertedSlots[i]
@@ -743,7 +740,7 @@ export class GroupNodeConfig {
         }
       }
 
-      let name: string = String(label ?? `output_${outputId}`)
+      let name = label ?? `output_${outputId}`
       if (name in seenOutputs) {
         const prefix = `${node.title ?? node.type} `
         name = `${prefix}${label ?? outputId}`
@@ -1090,7 +1087,7 @@ const ext: ComfyExtension = {
       const instanceIndicesByGroup = new Map<string, number[]>()
       const groupTypePrefix = `${PREFIX}${SEPARATOR}`
       for (const [nodeIndex, n] of graphData.nodes.entries()) {
-        const type = String(n.type ?? '')
+        const type = n.type ?? ''
         if (!type.startsWith(groupTypePrefix)) continue
         const groupName = type.slice(groupTypePrefix.length)
         const indices = instanceIndicesByGroup.get(groupName) ?? []

@@ -11,8 +11,6 @@
     "scripts/patch-playwright-agents.js",
     "scripts/registry-census/detection-proof/**",
     "src/__ecs_matrix__/**",
-    "src/extensions/core/*",
-    "src/scripts/*",
     "src/types/generatedManagerTypes.ts",
     "src/types/vue-shim.d.ts",
     "test-results/*",
@@ -274,6 +272,13 @@
         "playwright/valid-expect": "error",
         "playwright/valid-expect-in-promise": "error",
         "playwright/valid-title": "error"
+      }
+    },
+    {
+      "files": ["src/extensions/core/**", "src/scripts/**"],
+      "rules": {
+        "typescript/no-floating-promises": "off",
+        "typescript/no-unnecessary-condition": "off"
       }
     }
   ]

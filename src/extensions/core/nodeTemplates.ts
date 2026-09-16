@@ -40,7 +40,7 @@ interface NodeTemplate {
 class ManageTemplates extends ComfyDialog {
   templates: NodeTemplate[] = []
   draggedEl: HTMLElement | null
-  saveVisualCue: number | null
+  saveVisualCue: ReturnType<typeof setTimeout> | null
   emptyImg: HTMLImageElement
   importInput: HTMLInputElement
 
@@ -275,8 +275,6 @@ class ManageTemplates extends ComfyDialog {
                         this.store()
                         el.style.backgroundColor = 'rgb(40, 95, 40)'
                         el.style.transitionDuration = '0s'
-                        // @ts-expect-error
-                        // In browser env the return value is number.
                         this.saveVisualCue = setTimeout(function () {
                           el.style.transitionDuration = '.7s'
                           el.style.backgroundColor = 'var(--comfy-input-bg)'

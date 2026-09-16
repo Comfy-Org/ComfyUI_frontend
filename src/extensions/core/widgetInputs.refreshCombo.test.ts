@@ -121,10 +121,10 @@ function defsWithSpec(
 }
 
 describe('PrimitiveNode.refreshComboInNode', () => {
-  it.each<[string, InputSpec]>([
+  it.for<[string, InputSpec]>([
     ['V1', [FRESH_OPTIONS, {}]],
     ['V2', ['COMBO', { options: FRESH_OPTIONS }]]
-  ])('updates options from fresh %s definitions', (_, inputSpec) => {
+  ])('updates options from fresh %s definitions', ([, inputSpec]) => {
     const { node, widget } = setupComboNode()
 
     node.refreshComboInNode(defsWithSpec(inputSpec))

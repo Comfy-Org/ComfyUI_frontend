@@ -106,7 +106,6 @@ app.registerExtension({
             }
           } else {
             // This path has no input node
-            currentNode = null
             break
           }
         }

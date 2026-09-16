@@ -28,9 +28,12 @@ function buildLoad3dDeps(container: HTMLElement): Load3dDeps {
   // without depending on construction order.
   const adapterRef = createAdapterRef()
 
-  let cameraManager: CameraManager
-  let controlsManager: ControlsManager
-  let gizmoManager: GizmoManager
+  const cameraManager = new CameraManager(renderer, eventManager)
+  const controlsManager = new ControlsManager(
+    container,
+    cameraManager.activeCamera
+  )
+  cameraManager.setControls(controlsManager.controls)
 
   const getActiveCamera = (): THREE.Camera => cameraManager.activeCamera
   const getControls = () => controlsManager.controls
@@ -41,10 +44,6 @@ function buildLoad3dDeps(container: HTMLElement): Load3dDeps {
     getControls,
     eventManager
   )
-
-  cameraManager = new CameraManager(renderer, eventManager)
-  controlsManager = new ControlsManager(container, cameraManager.activeCamera)
-  cameraManager.setControls(controlsManager.controls)
 
   const lightingManager = new LightingManager(sceneManager.scene, eventManager)
   const hdriManager = new HDRIManager(
@@ -87,7 +86,7 @@ function buildLoad3dDeps(container: HTMLElement): Load3dDeps {
   )
   const animationManager = new AnimationManager(eventManager)
 
-  gizmoManager = new GizmoManager(
+  const gizmoManager = new GizmoManager(
     sceneManager.scene,
     container,
     controlsManager.controls,

@@ -229,9 +229,9 @@ describe('ModelExporter', () => {
       )
 
       const promise = ModelExporter.exportGLB(new THREE.Object3D(), 'out.glb')
-      const assertion = expect(promise).rejects.toThrow('parse fail')
+      const failure = promise.catch((error: unknown) => error)
       await vi.runAllTimersAsync()
-      await assertion
+      expect(await failure).toMatchObject({ message: 'parse fail' })
       expect(useToastStore().addAlert).toHaveBeenCalledWith(
         'toastMessages.failedToExportModel:{"format":"GLB"}'
       )
@@ -277,9 +277,9 @@ describe('ModelExporter', () => {
       })
 
       const promise = ModelExporter.exportOBJ(new THREE.Object3D(), 'out.obj')
-      const assertion = expect(promise).rejects.toThrow('obj fail')
+      const failure = promise.catch((error: unknown) => error)
       await vi.runAllTimersAsync()
-      await assertion
+      expect(await failure).toMatchObject({ message: 'obj fail' })
       expect(useToastStore().addAlert).toHaveBeenCalledWith(
         'toastMessages.failedToExportModel:{"format":"OBJ"}'
       )
@@ -325,9 +325,9 @@ describe('ModelExporter', () => {
       })
 
       const promise = ModelExporter.exportSTL(new THREE.Object3D(), 'out.stl')
-      const assertion = expect(promise).rejects.toThrow('stl fail')
+      const failure = promise.catch((error: unknown) => error)
       await vi.runAllTimersAsync()
-      await assertion
+      expect(await failure).toMatchObject({ message: 'stl fail' })
       expect(useToastStore().addAlert).toHaveBeenCalledWith(
         'toastMessages.failedToExportModel:{"format":"STL"}'
       )
@@ -401,9 +401,9 @@ describe('ModelExporter', () => {
       fbxParseAsyncMock.mockRejectedValue(new Error('fbx fail'))
 
       const promise = ModelExporter.exportFBX(new THREE.Object3D(), 'out.fbx')
-      const assertion = expect(promise).rejects.toThrow('fbx fail')
+      const failure = promise.catch((error: unknown) => error)
       await vi.runAllTimersAsync()
-      await assertion
+      expect(await failure).toMatchObject({ message: 'fbx fail' })
       expect(useToastStore().addAlert).toHaveBeenCalledWith(
         'toastMessages.failedToExportModel:{"format":"FBX"}'
       )
