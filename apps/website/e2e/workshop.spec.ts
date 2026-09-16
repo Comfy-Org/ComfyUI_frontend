@@ -82,15 +82,16 @@ test.describe('Models catalog', () => {
       '/models/byteplus--seedream-4--generate-images/'
     ])
     expect(await recommendedIn('generate-videos', 7)).toEqual([
-      '/models/byteplus--seedance-2-5-reference--generate-videos/',
       '/models/byteplus--seedance-2-5-text-to-video--generate-videos/',
       '/models/kling--kling-3.0-turbo-text-to-video--generate-videos/',
       '/models/xai--grok-imagine-video-1.5--generate-videos/',
       '/models/xai--grok-imagine-video--generate-videos/',
       '/models/byteplus--seedance-2-fast-reference--generate-videos/',
-      '/models/gemini--omni-1.1-flash--generate-videos/'
+      '/models/gemini--omni-1.1-flash--generate-videos/',
+      '/models/kling--v3--generate-videos/'
     ])
-    expect(await recommendedIn('animate-images', 4)).toEqual([
+    expect(await recommendedIn('animate-images', 5)).toEqual([
+      '/models/byteplus--seedance-2-5-reference--generate-videos/',
       '/models/byteplus--seedance-2-5-first-last-frame--animate-images/',
       '/models/xai--grok-imagine-video--animate-images/',
       '/models/wan--image-to-video-3.0--animate-images/',
@@ -321,8 +322,8 @@ test.describe('Models catalog', () => {
         '[data-testid="workshop-model-card"][href="/models/bfl--flux-2-max--generate-images/"]'
       )
     ).toHaveCount(0)
-    await expect(page.getByTestId('workshop-facet-useCase-count')).toHaveText(
-      '1'
+    await expect(page.getByTestId('workshop-filter-applied')).toHaveText(
+      '1 selected'
     )
     await expect(page.getByTestId('workshop-filter-count')).toHaveText('1')
     await page.getByTestId('workshop-filter-clear').click()

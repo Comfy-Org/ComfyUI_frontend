@@ -13,6 +13,7 @@ export type {
   BillingHttpResponse,
   BillingRequest,
   BillingResult,
+  BillingSession,
   BillingTransport
 } from './billingContracts.js'
 export type { SessionBillingTransportOptions } from './transport.js'

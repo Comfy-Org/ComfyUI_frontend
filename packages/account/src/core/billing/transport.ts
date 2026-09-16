@@ -15,7 +15,7 @@
  * reported as SUPERSEDED instead of being handed to a caller that would
  * attribute it to the wrong account.
  */
-import type { SessionClient, SessionRequestOptions } from '../session.js'
+import type { SessionRequestOptions } from '../session.js'
 import type {
   AccountCredential,
   SessionErrorCode,
@@ -27,6 +27,7 @@ import type {
   BillingHttpResponse,
   BillingRequest,
   BillingResult,
+  BillingSession,
   BillingTransport
 } from './billingContracts.js'
 
@@ -54,7 +55,7 @@ function startRequestBudget(
 }
 
 export interface SessionBillingTransportOptions {
-  readonly session: SessionClient
+  readonly session: BillingSession
   /**
    * Resolves a route to an absolute URL. The cloud app's own resolver
    * (`workspaceApiUrl`) differs per distribution, so the host owns it.
