@@ -705,6 +705,9 @@ export const useDialogService = () => {
   async function showInviteWrongAccountDialog(props: { inviteToken: string }) {
     const { default: component } =
       await import('@/platform/workspace/components/dialogs/InviteWrongAccountDialogContent.vue')
+    // showDialog keeps an existing entry's props; close first so a repeat 403
+    // carries the fresh token instead of replaying the previous one.
+    dialogStore.closeDialog({ key: 'invite-wrong-account' })
     return dialogStore.showDialog({
       key: 'invite-wrong-account',
       component,

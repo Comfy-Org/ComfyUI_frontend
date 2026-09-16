@@ -3459,7 +3459,8 @@
       "invalidDismiss": "Got it",
       "wrongAccountTitle": "This invite was sent to a different email",
       "wrongAccountBody": "You're signed in as {email}. Sign in with the email that received this invite to accept it.",
-      "switchAccount": "Switch account"
+      "switchAccount": "Switch account",
+      "wrongAccountBodyGeneric": "This invite was sent to a different email address than the one you're signed in with. Sign in with the email that received it."
     },
     "createWorkspaceDialog": {
       "title": "Create a new workspace",

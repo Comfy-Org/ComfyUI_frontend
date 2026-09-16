@@ -20,9 +20,11 @@
     <div class="p-4">
       <p class="m-0 text-sm text-muted-foreground">
         {{
-          $t('workspacePanel.inviteLinks.wrongAccountBody', {
-            email: authStore.userEmail
-          })
+          authStore.userEmail
+            ? $t('workspacePanel.inviteLinks.wrongAccountBody', {
+                email: authStore.userEmail
+              })
+            : $t('workspacePanel.inviteLinks.wrongAccountBodyGeneric')
         }}
       </p>
     </div>
@@ -42,6 +44,7 @@
 import { ref } from 'vue'
 
 import Button from '@/components/ui/button/Button.vue'
+import { useAuthActions } from '@/composables/auth/useAuthActions'
 import { capturePreservedQuery } from '@/platform/navigation/preservedQueryManager'
 import { PRESERVED_QUERY_NAMESPACES } from '@/platform/navigation/preservedQueryNamespaces'
 import { useAuthStore } from '@/stores/authStore'
@@ -52,6 +55,7 @@ const { inviteToken } = defineProps<{
 }>()
 
 const authStore = useAuthStore()
+const authActions = useAuthActions()
 const dialogStore = useDialogStore()
 const loading = ref(false)
 
@@ -62,14 +66,16 @@ function onDismiss() {
 async function onSwitchAccount() {
   loading.value = true
   try {
-    // Re-stash the token so the accept re-runs after the next sign-in.
+    // Stash before signing out so the accept re-runs after the next sign-in.
+    // If the user cancels the logout's unsaved-changes prompt, the stashed
+    // token re-presents this dialog on the next load — the invite is still
+    // pending, so that is the honest state.
     capturePreservedQuery(
       PRESERVED_QUERY_NAMESPACES.INVITE,
       { invite: inviteToken },
       ['invite']
     )
-    await authStore.logout()
-    dialogStore.closeDialog({ key: 'invite-wrong-account' })
+    await authActions.logout()
   } finally {
     loading.value = false
   }
