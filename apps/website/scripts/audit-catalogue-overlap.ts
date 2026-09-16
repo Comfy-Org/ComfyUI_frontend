@@ -212,9 +212,11 @@ export function auditCatalogueOverlap(
   }
 }
 
-function report(overlap: CatalogueOverlap): string {
+export function reportCatalogueOverlap(overlap: CatalogueOverlap): string {
   const share = (part: number) =>
-    `${((part / overlap.templates) * 100).toFixed(1)}%`
+    overlap.templates === 0
+      ? '0.0%'
+      : `${((part / overlap.templates) * 100).toFixed(1)}%`
   const list = (entries: readonly CountedName[]) =>
     entries.map((entry) => `${entry.name} ${entry.count}`).join(', ')
   return [
@@ -236,7 +238,7 @@ function report(overlap: CatalogueOverlap): string {
 
 if (isDirectExecution(process.argv[1], import.meta.filename))
   console.warn(
-    report(
+    reportCatalogueOverlap(
       auditCatalogueOverlap(
         hubTemplatesSchema.parse(hubTemplates),
         workshopModels,

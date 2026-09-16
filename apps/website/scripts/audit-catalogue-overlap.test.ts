@@ -4,7 +4,10 @@ import { describe, expect, it } from 'vitest'
 
 import type { WorkshopModel } from '../src/config/models-catalogue'
 import type { HubTemplate } from '../src/lib/hub/types'
-import { auditCatalogueOverlap } from './audit-catalogue-overlap'
+import {
+  auditCatalogueOverlap,
+  reportCatalogueOverlap
+} from './audit-catalogue-overlap'
 
 const flux: WorkshopModel = {
   slug: 'bfl--flux--generate-images',
@@ -188,6 +191,12 @@ describe('auditCatalogueOverlap', () => {
     expect(overlap.apiRoutable).toBe(1)
     expect(overlap.apiOffCatalogue).toBe(1)
     expect(overlap.apiAmbiguous).toBe(1)
+  })
+
+  it('reports a share of nothing as nothing, not as NaN', () => {
+    expect(reportCatalogueOverlap(audit([]))).toContain(
+      'runnable here 0 (0.0%)'
+    )
   })
 
   it('keeps a title that only differs in case out of the collisions', () => {
