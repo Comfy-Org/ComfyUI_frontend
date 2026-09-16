@@ -59,6 +59,19 @@ export function pendingTopup(
   }
 }
 
+/** A subscribe the lifecycle is still driving, for the store's own effects. */
+export function pendingSubscription(
+  overrides: Partial<PendingBillingOperation> = {}
+): PendingBillingOperation {
+  return {
+    ...IDENTITY,
+    kind: 'subscription',
+    phase: 'pending',
+    customerActionSeen: false,
+    ...overrides
+  }
+}
+
 export function failedTopup(
   declineReason: BillingDeclineReason = 'card_declined'
 ): FailedBillingOperation {

@@ -7,6 +7,11 @@ import {
   watch
 } from 'vue'
 
+import type {
+  PreviewSubscribeInput,
+  SubscribeInput
+} from '@comfyorg/account-core/billing'
+
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useBillingPlans } from '@/platform/cloud/subscription/composables/useBillingPlans'
 import { useSubscriptionDialog } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
@@ -114,6 +119,51 @@ async function resyncQuietly(refresh: () => Promise<unknown>): Promise<void> {
 
 /** The SDK rail refusing an action, distinct from any value it could return. */
 const DECLINED = Symbol('subscription rail declined')
+
+/**
+ * The host's options as the generated request body, field for field, including
+ * the two the workspace client drops when they arrive empty: JSON keeps `''`,
+ * so an empty credential would reach the server as present but meaningless.
+ *
+ * `SubscribeOptions` carries nothing the generated body lacks. `SubscribeInput`
+ * also has `checkout_attempt_id` and `idempotency_key`, which no host caller
+ * sets: the SDK mints the key itself, and the checkout attempt is carried on
+ * the quote rather than the subscribe.
+ */
+function subscribeInputFrom(
+  planSlug: string,
+  options: SubscribeOptions = {}
+): SubscribeInput {
+  return {
+    plan_slug: planSlug,
+    confirmation_token: options.confirmationToken || undefined,
+    saved_payment_method_id: options.savedPaymentMethodId || undefined,
+    promotion_code: options.promotionCode,
+    quote_id: options.quoteId,
+    quote_version: options.quoteVersion,
+    return_url: options.returnUrl,
+    cancel_url: options.cancelUrl,
+    team_credit_stop_id: options.teamCreditStopId,
+    billing_cycle: options.billingCycle,
+    confirm_reactivation: options.confirmReactivation,
+    proration_at: options.prorationAt
+  }
+}
+
+function previewSubscribeInputFrom(
+  planSlug: string,
+  options: PreviewSubscribeOptions = {}
+): PreviewSubscribeInput {
+  return {
+    planSlug,
+    ...(options.promotionCode === undefined
+      ? {}
+      : { promotionCode: options.promotionCode }),
+    ...(options.teamCreditStopId === undefined
+      ? {}
+      : { teamCreditStopId: options.teamCreditStopId })
+  }
+}
 
 interface SeatCapacity {
   maxSeats: number
@@ -372,6 +422,16 @@ export function useWorkspaceBilling(): BillingState & BillingActions {
     planSlug: string,
     options?: SubscribeOptions
   ): Promise<SubscribeResponse> {
+    const rail = useSubscriptionRail()
+    if (rail) {
+      const response = await onSubscriptionRail(() =>
+        rail.subscribe(subscribeInputFrom(planSlug, options))
+      )
+      // The SDK waited for the operation, so the refresh the legacy path fires
+      // and forgets has already run on the rail.
+      if (response !== DECLINED) return response
+    }
+
     isLoading.value = true
     error.value = null
     try {
@@ -390,6 +450,14 @@ export function useWorkspaceBilling(): BillingState & BillingActions {
     planSlug: string,
     options?: PreviewSubscribeOptions
   ): Promise<PreviewSubscribeResponse | null> {
+    const rail = useSubscriptionRail()
+    if (rail) {
+      const quote = await onSubscriptionRail(() =>
+        rail.previewSubscribe(previewSubscribeInputFrom(planSlug, options))
+      )
+      if (quote !== DECLINED) return quote
+    }
+
     isLoading.value = true
     error.value = null
     try {
