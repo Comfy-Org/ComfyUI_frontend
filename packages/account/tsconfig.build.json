@@ -1,0 +1,30 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "noEmit": false,
+    "allowImportingTsExtensions": false,
+    "declaration": true,
+    "declarationMap": false,
+    "sourceMap": false,
+    "incremental": false,
+    "noEmitOnError": true,
+    "types": []
+  },
+  "include": [
+    "src/core/**/*.ts",
+    "src/firebase/index.ts",
+    "src/web/crossTabRefresh.ts",
+    "src/testing.ts",
+    "src/signInSchemas.ts",
+    "src/turnstile.ts",
+    "src/turnstileScript.ts",
+    "src/loadExternalScript.ts",
+    "src/region.ts",
+    "src/firebaseAuthError.ts",
+    "src/provisioning.ts",
+    "src/redirect.ts",
+    "src/telemetry.ts",
+    "src/webviewDetection.ts"
+  ],
+  "exclude": ["src/**/*.test.ts", "src/**/__fixtures__/**"]
+}

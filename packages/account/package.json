@@ -42,6 +42,8 @@
     "access": "public"
   },
   "scripts": {
+    "build": "pnpm run clean && tsc -p tsconfig.build.json",
+    "clean": "node --input-type=module -e \"import { rmSync } from 'node:fs'; rmSync('dist', { recursive: true, force: true })\"",
     "lint": "oxlint src --type-aware && eslint src",
     "smoke:pack": "tsx scripts/smokePack.ts",
     "test": "vitest run",
