@@ -2,6 +2,7 @@ import { fireEvent, render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
+import { createI18n } from 'vue-i18n'
 
 import WaveAudioPlayer from './WaveAudioPlayer.vue'
 
@@ -19,7 +20,15 @@ const RETRY_DELAYS_MS = [500, 1000, 2000, 4000, 8000]
 const DURATION_SECONDS = 10
 const SEEK_WIDTH_PX = 100
 
-const globalConfig = { mocks: { $t: (key: string) => key } }
+const i18n = createI18n({
+  legacy: false,
+  locale: 'en',
+  messages: { en: {} },
+  missingWarn: false,
+  fallbackWarn: false
+})
+
+const globalConfig = { plugins: [i18n] }
 
 async function settle() {
   for (let i = 0; i < 6; i += 1) {

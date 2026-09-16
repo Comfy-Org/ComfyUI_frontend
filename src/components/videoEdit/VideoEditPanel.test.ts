@@ -271,4 +271,20 @@ describe('VideoEditPanel', () => {
 
     expect(screen.queryByTestId('video-playback-controls')).toBeNull()
   })
+
+  it('hides the controls once the video has terminally failed to load', () => {
+    renderPanel({ error: 'load-failed' })
+
+    expect(screen.queryByTestId('video-playback-controls')).toBeNull()
+    expect(screen.queryByTestId('stub-filmstrip')).toBeNull()
+    expect(screen.queryByTestId('stub-bounding-box')).toBeNull()
+  })
+
+  it('keeps the controls when only the filmstrip canvas is unavailable', () => {
+    renderPanel({ error: 'canvas-unavailable' })
+
+    expect(screen.getByTestId('video-playback-controls')).toBeTruthy()
+    expect(screen.getByTestId('stub-filmstrip')).toBeTruthy()
+    expect(screen.getByTestId('stub-bounding-box')).toBeTruthy()
+  })
 })

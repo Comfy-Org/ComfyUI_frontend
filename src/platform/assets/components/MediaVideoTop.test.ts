@@ -2,6 +2,7 @@ import { fromPartial } from '@total-typescript/shoehorn'
 
 import { describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
+import { createI18n } from 'vue-i18n'
 
 import { fireEvent, render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
@@ -9,7 +10,15 @@ import userEvent from '@testing-library/user-event'
 import type { AssetMeta } from '../schemas/mediaAssetSchema'
 import MediaVideoTop from './MediaVideoTop.vue'
 
-const globalConfig = { mocks: { $t: (key: string) => key } }
+const i18n = createI18n({
+  legacy: false,
+  locale: 'en',
+  messages: { en: {} },
+  missingWarn: false,
+  fallbackWarn: false
+})
+
+const globalConfig = { plugins: [i18n] }
 
 function createVideoAsset(
   src: string,
@@ -72,6 +81,26 @@ describe('MediaVideoTop', () => {
     expect(video).toHaveAttribute('src', 'https://example.com/thumb.jpg')
     // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access -- assert the failed-state fallback is absent
     expect(container.querySelector('[role="img"]')).not.toBeInTheDocument()
+  })
+
+  it('restores the play overlay when the video errors mid-playback', async () => {
+    const { container } = render(MediaVideoTop, {
+      props: {
+        asset: createVideoAsset('https://example.com/thumb.jpg')
+      },
+      global: globalConfig
+    })
+
+    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access -- <video> has no ARIA role in happy-dom
+    const video = container.querySelector('video')!
+    await fireEvent.play(video)
+    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access -- the paused overlay has no ARIA role
+    expect(container.querySelector('.bg-black\\/15')).not.toBeInTheDocument()
+
+    await fireEvent.error(video)
+
+    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access -- the paused overlay has no ARIA role
+    expect(container.querySelector('.bg-black\\/15')).toBeInTheDocument()
   })
 
   it('shows a failed state once the retries are exhausted', async () => {

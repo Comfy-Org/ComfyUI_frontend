@@ -82,7 +82,7 @@
     </div>
 
     <div
-      v-if="hasSource"
+      v-if="hasSource && error !== 'load-failed'"
       data-testid="video-playback-controls"
       class="flex h-8 items-center gap-2 px-1"
     >
@@ -154,7 +154,7 @@
     </div>
 
     <div
-      v-if="hasSource"
+      v-if="hasSource && error !== 'load-failed'"
       class="grid grid-cols-[minmax(80px,min-content)_minmax(125px,1fr)] gap-1"
     >
       <VideoFilmstripTrim

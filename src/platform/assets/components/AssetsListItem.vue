@@ -1,6 +1,9 @@
 <template>
   <div
     class="relative flex items-center gap-2 overflow-hidden rounded-lg p-2 select-none"
+    :aria-describedby="
+      videoStatus === 'failed' ? videoFailedDescriptionId : undefined
+    "
   >
     <div
       v-if="hasAnyProgressPercent(progressTotalPercent, progressCurrentPercent)"
@@ -138,10 +141,20 @@
         />
       </Button>
     </div>
+
+    <span
+      v-if="videoStatus === 'failed'"
+      :id="videoFailedDescriptionId"
+      class="sr-only"
+    >
+      {{ $t('g.videoFailedToLoad') }}
+    </span>
   </div>
 </template>
 
 <script setup lang="ts">
+import { useId } from 'vue'
+
 import { useRetryableMediaSrc } from '@/composables/media/useRetryableMediaSrc'
 import { useProgressBarBackground } from '@/composables/useProgressBarBackground'
 import Button from '@/components/ui/button/Button.vue'
@@ -191,6 +204,8 @@ const {
   status: videoStatus,
   onError: onVideoError
 } = useRetryableMediaSrc(() => (isVideoPreview ? previewUrl : undefined))
+
+const videoFailedDescriptionId = useId()
 
 const {
   progressBarContainerClass,

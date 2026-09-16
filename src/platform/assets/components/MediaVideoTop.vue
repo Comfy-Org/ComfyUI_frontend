@@ -17,7 +17,7 @@
       @click="onVideoClick"
       @play="onVideoPlay"
       @pause="onVideoPause"
-      @error="onError"
+      @error="handleVideoError"
     ></video>
     <div
       v-else
@@ -63,6 +63,11 @@ const onVideoPlay = () => {
 
 const onVideoPause = () => {
   isPlaying.value = false
+}
+
+const handleVideoError = () => {
+  isPlaying.value = false
+  onError()
 }
 
 async function onVideoClick(event: MouseEvent) {
