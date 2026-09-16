@@ -34,7 +34,8 @@
     "./provisioning": "./src/provisioning.ts",
     "./redirect": "./src/redirect.ts",
     "./telemetry": "./src/telemetry.ts",
-    "./webviewDetection": "./src/webviewDetection.ts"
+    "./webviewDetection": "./src/webviewDetection.ts",
+    "./package.json": "./package.json"
   },
   "publishConfig": {
     "access": "public"

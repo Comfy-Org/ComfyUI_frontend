@@ -130,7 +130,7 @@ function assertPublishable(source: Manifest, packed: PackResult): void {
 }
 
 const CONSUMER_SOURCE = `
-import { existsSync, readFileSync } from 'node:fs'
+import { existsSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { createLazyIdentity } from '@comfyorg/account/lazyIdentity'
 import type { AccountUser } from '@comfyorg/account/session'
@@ -167,8 +167,10 @@ if (beforeActivation !== 'pending' || afterActivation !== 'signed-out') {
 }
 console.log(\`session client: \${beforeActivation} -> \${afterActivation}\`)
 
-const subpaths: string[] = JSON.parse(readFileSync('entries.json', 'utf8'))
-for (const subpath of subpaths) {
+const { default: manifest } = await import('@comfyorg/account/package.json', {
+  with: { type: 'json' }
+})
+for (const subpath of Object.keys(manifest.exports)) {
   const specifier = subpath.replace(/^\\./, '@comfyorg/account')
   const target = fileURLToPath(import.meta.resolve(specifier))
   if (!existsSync(target)) throw new Error(\`\${specifier} resolves to a missing file\`)
@@ -176,7 +178,8 @@ for (const subpath of subpaths) {
     console.log(\`\${specifier}: resolved (Vue SFC, needs a bundler to load)\`)
     continue
   }
-  await import(specifier)
+  if (target.endsWith('.json')) await import(specifier, { with: { type: 'json' } })
+  else await import(specifier)
   console.log(\`\${specifier}: imported\`)
 }
 `
@@ -225,10 +228,6 @@ function main(): void {
       consumerDir
     )
 
-    writeFileSync(
-      join(consumerDir, 'entries.json'),
-      JSON.stringify(Object.keys(source.exports))
-    )
     writeFileSync(join(consumerDir, 'consumer.ts'), CONSUMER_SOURCE)
     const tsx = join(workspaceRoot, 'node_modules', '.bin', 'tsx')
     process.stdout.write(run(tsx, ['consumer.ts'], consumerDir))
