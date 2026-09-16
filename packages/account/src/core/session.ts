@@ -37,7 +37,11 @@ import type {
   SessionFailure,
   SessionResult
 } from './sessionContracts.js'
-import type { SessionEffect, SessionEvent } from './sessionState.js'
+import type {
+  SessionEffect,
+  SessionEvent,
+  SessionTransition
+} from './sessionState.js'
 import {
   arbitrateMint,
   initialSessionState,
@@ -377,18 +381,10 @@ export function createSessionClient<TUser extends AccountUser = AccountUser>(
     return clientOptions.now?.() ?? Date.now()
   }
 
-  function withCredential(
-    use: (session: AccountCredential, target: string | undefined) => void
-  ): void {
-    if (state.credential !== undefined) {
-      use(state.credential, state.credentialTarget)
-    }
-  }
-
   function runEffect(effect: SessionEffect, now: () => number): void {
-    switch (effect) {
+    switch (effect.type) {
       case 'persist':
-        withCredential(persistCredential)
+        persistCredential(effect.session, effect.target)
         return
       case 'clearStorage':
         safeClear()
@@ -397,12 +393,9 @@ export function createSessionClient<TUser extends AccountUser = AccountUser>(
         scheduler?.stop()
         return
       case 'armScheduler':
-        withCredential((session) => scheduler?.armAfterCommit(session, now()))
+        scheduler?.armAfterCommit(effect.session, now())
         return
       case 'abandonInFlight':
-        // A sign-out or a different user makes the running mint unjoinable: it
-        // was started with the previous identity's token, and a caller arriving
-        // after the event must mint for itself.
         inFlight = undefined
         return
       case 'publish':
@@ -411,15 +404,16 @@ export function createSessionClient<TUser extends AccountUser = AccountUser>(
     }
   }
 
+  function apply(next: SessionTransition<TUser>, now: () => number): void {
+    state = next.state
+    for (const effect of next.effects) runEffect(effect, now)
+  }
+
   function commit(
     event: SessionEvent<TUser>,
     now: () => number = hostNow
-  ): boolean {
-    const next = transition(state, event)
-    const changed = next.state !== state
-    state = next.state
-    for (const effect of next.effects) runEffect(effect, now)
-    return changed
+  ): void {
+    apply(transition(state, event), now)
   }
 
   // `joined` marks a caller that awaits another owner's in-flight mint rather
@@ -512,32 +506,36 @@ export function createSessionClient<TUser extends AccountUser = AccountUser>(
             scheduledMintHolds(state, guards, user.uid, mintId),
           mint: (user) =>
             sharedMint(user, { workspaceId: state.credentialTarget }, true),
-          commitRefreshed: (session) => {
+          commitRefreshed: (session, mintId) => {
             const mismatch = targetMismatch(session, state.credentialTarget)
             if (mismatch) {
               commit({
                 type: 'mint-rejected',
                 origin: 'scheduler',
-                failure: mismatch,
-                preserveCredentialOnTransientFailure: false
+                failure: mismatch
               })
               return mismatch
             }
-            commit({ type: 'mint-committed', origin: 'scheduler', session })
+            commit({
+              type: 'mint-committed',
+              origin: 'scheduler',
+              session,
+              mintId
+            })
             return undefined
           },
           commitPermanentFailure: (failure) => {
-            commit({
-              type: 'mint-rejected',
-              origin: 'scheduler',
-              failure,
-              preserveCredentialOnTransientFailure: false
-            })
+            commit({ type: 'mint-rejected', origin: 'scheduler', failure })
           },
-          commitExpired: (expiring) =>
-            commit({ type: 'credential-expired', expiring })
-              ? state.failure
-              : undefined,
+          commitExpired: (expiring) => {
+            const next = transition(state, {
+              type: 'credential-expired',
+              expiring
+            })
+            if (next.state === state) return undefined
+            apply(next, hostNow)
+            return next.state.failure
+          },
           parseAdopted: (message) => {
             const parsed = CachedCredentialSchema.safeParse(message)
             if (!parsed.success) return undefined

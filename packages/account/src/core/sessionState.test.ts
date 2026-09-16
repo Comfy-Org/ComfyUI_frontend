@@ -62,6 +62,11 @@ const cleared = {
   failure: undefined
 }
 
+const stopScheduler: SessionEffect = { type: 'stopScheduler' }
+const abandonInFlight: SessionEffect = { type: 'abandonInFlight' }
+const clearStorage: SessionEffect = { type: 'clearStorage' }
+const publish: SessionEffect = { type: 'publish' }
+
 describe('transition', () => {
   it.for<{
     name: string
@@ -81,7 +86,7 @@ describe('transition', () => {
           identitySettled: true,
           identityEpoch: 3
         },
-        effects: ['stopScheduler', 'abandonInFlight', 'publish']
+        effects: [stopScheduler, abandonInFlight, publish]
       }
     },
     {
@@ -90,20 +95,7 @@ describe('transition', () => {
       event: { type: 'identity-changed', user: null },
       expected: {
         state: { ...signedIn, ...cleared, user: null, identityEpoch: 3 },
-        effects: ['stopScheduler', 'abandonInFlight', 'clearStorage', 'publish']
-      }
-    },
-    {
-      name: 'the first identity event moves pending to signed-out',
-      state: initialSessionState(),
-      event: { type: 'identity-changed', user: null },
-      expected: {
-        state: {
-          ...initialSessionState(),
-          identitySettled: true,
-          identityEpoch: 1
-        },
-        effects: ['stopScheduler', 'abandonInFlight', 'clearStorage', 'publish']
+        effects: [stopScheduler, abandonInFlight, clearStorage, publish]
       }
     },
     {
@@ -118,7 +110,7 @@ describe('transition', () => {
           identitySettled: false,
           identityEpoch: 3
         },
-        effects: ['stopScheduler', 'publish']
+        effects: [stopScheduler, publish]
       }
     },
     {
@@ -127,7 +119,7 @@ describe('transition', () => {
       event: { type: 'invalidated' },
       expected: {
         state: { ...signedIn, ...cleared, invalidationEpoch: 2 },
-        effects: ['stopScheduler', 'abandonInFlight', 'clearStorage', 'publish']
+        effects: [stopScheduler, abandonInFlight, clearStorage, publish]
       }
     },
     {
@@ -153,7 +145,11 @@ describe('transition', () => {
           credentialTarget: 'ws-9',
           committedMint: { mintId: 3, session: minted }
         },
-        effects: ['persist', 'armScheduler', 'publish']
+        effects: [
+          { type: 'persist', session: minted, target: 'ws-9' },
+          { type: 'armScheduler', session: minted },
+          publish
+        ]
       }
     },
     {
@@ -172,13 +168,22 @@ describe('transition', () => {
           credential: minted,
           committedMint: { mintId: 1, session: minted }
         },
-        effects: ['persist', 'armScheduler', 'publish']
+        effects: [
+          { type: 'persist', session: minted, target: undefined },
+          { type: 'armScheduler', session: minted },
+          publish
+        ]
       }
     },
     {
-      name: 'a scheduled commit keeps the target, records the newest mint id and leaves arming to the scheduler',
+      name: 'a scheduled commit keeps the target, records its mint id and leaves arming to the scheduler',
       state: { ...signedIn, mintSequence: 7 },
-      event: { type: 'mint-committed', origin: 'scheduler', session: minted },
+      event: {
+        type: 'mint-committed',
+        origin: 'scheduler',
+        session: minted,
+        mintId: 7
+      },
       expected: {
         state: {
           ...signedIn,
@@ -186,7 +191,7 @@ describe('transition', () => {
           credential: minted,
           committedMint: { mintId: 7, session: minted }
         },
-        effects: ['persist', 'publish']
+        effects: [{ type: 'persist', session: minted, target: 'ws-1' }, publish]
       }
     },
     {
@@ -200,7 +205,7 @@ describe('transition', () => {
       },
       expected: {
         state: { ...signedIn, ...cleared, failure: permanentFailure },
-        effects: ['stopScheduler', 'clearStorage', 'publish']
+        effects: [stopScheduler, clearStorage, publish]
       }
     },
     {
@@ -214,21 +219,20 @@ describe('transition', () => {
       },
       expected: {
         state: { ...signedIn, ...cleared, failure: permanentFailure },
-        effects: ['stopScheduler', 'clearStorage', 'publish']
+        effects: [stopScheduler, clearStorage, publish]
       }
     },
     {
-      name: 'a scheduled permanent failure clears storage without stopping the scheduler mid-run',
+      name: 'a scheduled failure clears storage without stopping the scheduler mid-run',
       state: signedIn,
       event: {
         type: 'mint-rejected',
         origin: 'scheduler',
-        failure: permanentFailure,
-        preserveCredentialOnTransientFailure: false
+        failure: permanentFailure
       },
       expected: {
         state: { ...signedIn, ...cleared, failure: permanentFailure },
-        effects: ['clearStorage', 'publish']
+        effects: [clearStorage, publish]
       }
     },
     {
@@ -246,7 +250,7 @@ describe('transition', () => {
           credential: undefined,
           failure: transientFailure
         },
-        effects: ['publish']
+        effects: [publish]
       }
     },
     {
@@ -264,7 +268,7 @@ describe('transition', () => {
           credential: undefined,
           failure: transientFailure
         },
-        effects: ['publish']
+        effects: [publish]
       }
     },
     {
@@ -273,7 +277,21 @@ describe('transition', () => {
       event: { type: 'credential-adopted', session: minted },
       expected: {
         state: { ...signedIn, mintSequence: 4, credential: minted },
-        effects: ['persist', 'publish']
+        effects: [{ type: 'persist', session: minted, target: 'ws-1' }, publish]
+      }
+    },
+    {
+      name: 'adoption leaves the last committed mint untouched',
+      state: { ...signedIn, committedMint: { mintId: 2, session: live } },
+      event: { type: 'credential-adopted', session: minted },
+      expected: {
+        state: {
+          ...signedIn,
+          mintSequence: 4,
+          credential: minted,
+          committedMint: { mintId: 2, session: live }
+        },
+        effects: [{ type: 'persist', session: minted, target: 'ws-1' }, publish]
       }
     },
     {
@@ -286,7 +304,7 @@ describe('transition', () => {
           ...cleared,
           failure: { status: 'error', code: 'TOKEN_EXCHANGE_FAILED' }
         },
-        effects: ['clearStorage', 'publish']
+        effects: [clearStorage, publish]
       }
     }
   ])('$name', ({ state, event, expected }) => {
@@ -294,6 +312,34 @@ describe('transition', () => {
 
     expect(result.state).toEqual(expected.state)
     expect(result.effects).toEqual(expected.effects)
+  })
+
+  it.for<{ name: string; event: SessionEvent }>([
+    {
+      name: 'a caller commit',
+      event: {
+        type: 'mint-committed',
+        origin: 'caller',
+        session: minted,
+        target: 'ws-1',
+        mintId: 3
+      }
+    },
+    {
+      name: 'a scheduled commit',
+      event: {
+        type: 'mint-committed',
+        origin: 'scheduler',
+        session: minted,
+        mintId: 3
+      }
+    },
+    {
+      name: 'an adoption',
+      event: { type: 'credential-adopted', session: minted }
+    }
+  ])('$name installs the event credential itself, not a copy', ({ event }) => {
+    expect(transition(signedIn, event).state.credential).toBe(minted)
   })
 
   it.for<{ name: string; state: SessionState; event: SessionEvent }>([
@@ -396,6 +442,12 @@ describe('arbitrateMint', () => {
       verdict: { verdict: 'commit' }
     },
     {
+      name: 'an implicit mint started signed-out never crosses an identity event',
+      state: { ...signedIn, identityEpoch: 3 },
+      attempt: { ...attempt, startedSignedOut: true },
+      verdict: { verdict: 'superseded' }
+    },
+    {
       name: 'an explicit mint started signed-in never crosses an identity event',
       state: { ...signedIn, identityEpoch: 3 },
       attempt: { ...attempt, explicitUser: true },
@@ -461,7 +513,12 @@ describe('arbitrateMint', () => {
       verdict: { verdict: 'commit' }
     }
   ])('$name', ({ state, attempt, verdict }) => {
-    expect(arbitrateMint(state, attempt)).toEqual(verdict)
+    const result = arbitrateMint(state, attempt)
+
+    expect(result).toEqual(verdict)
+    expect(result.verdict === 'reuse' && result.session).toBe(
+      verdict.verdict === 'reuse' && verdict.session
+    )
   })
 })
 

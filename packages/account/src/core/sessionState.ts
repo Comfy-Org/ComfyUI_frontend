@@ -56,8 +56,6 @@ export function initialSessionState<
   }
 }
 
-type MintOrigin = 'caller' | 'scheduler'
-
 export type SessionEvent<TUser extends AccountUser = AccountUser> =
   | { readonly type: 'identity-changed'; readonly user: TUser | null }
   | { readonly type: 'identity-detached' }
@@ -74,12 +72,18 @@ export type SessionEvent<TUser extends AccountUser = AccountUser> =
       readonly type: 'mint-committed'
       readonly origin: 'scheduler'
       readonly session: AccountCredential
+      readonly mintId: number
     }
   | {
       readonly type: 'mint-rejected'
-      readonly origin: MintOrigin
+      readonly origin: 'caller'
       readonly failure: SessionFailure
       readonly preserveCredentialOnTransientFailure: boolean
+    }
+  | {
+      readonly type: 'mint-rejected'
+      readonly origin: 'scheduler'
+      readonly failure: SessionFailure
     }
   | { readonly type: 'credential-adopted'; readonly session: AccountCredential }
   | {
@@ -88,22 +92,26 @@ export type SessionEvent<TUser extends AccountUser = AccountUser> =
     }
 
 export type SessionEffect =
-  | 'persist'
-  | 'clearStorage'
-  | 'stopScheduler'
-  | 'armScheduler'
-  | 'abandonInFlight'
-  | 'publish'
+  | {
+      readonly type: 'persist'
+      readonly session: AccountCredential
+      readonly target: string | undefined
+    }
+  | { readonly type: 'armScheduler'; readonly session: AccountCredential }
+  | { readonly type: 'clearStorage' }
+  | { readonly type: 'stopScheduler' }
+  | { readonly type: 'abandonInFlight' }
+  | { readonly type: 'publish' }
 
 export interface SessionTransition<TUser extends AccountUser = AccountUser> {
   readonly state: SessionState<TUser>
   readonly effects: readonly SessionEffect[]
 }
 
-const EXPIRED_FAILURE: SessionFailure = {
-  status: 'error',
-  code: 'TOKEN_EXCHANGE_FAILED'
-}
+const clearStorage: SessionEffect = { type: 'clearStorage' }
+const stopScheduler: SessionEffect = { type: 'stopScheduler' }
+const abandonInFlight: SessionEffect = { type: 'abandonInFlight' }
+const publish: SessionEffect = { type: 'publish' }
 
 export function transition<TUser extends AccountUser>(
   state: SessionState<TUser>,
@@ -111,7 +119,6 @@ export function transition<TUser extends AccountUser>(
 ): SessionTransition<TUser> {
   switch (event.type) {
     case 'identity-changed':
-      // A same-uid re-auth must not adopt a mint started under the prior identity.
       return {
         state: {
           ...state,
@@ -122,10 +129,14 @@ export function transition<TUser extends AccountUser>(
           credentialTarget: undefined,
           failure: undefined
         },
+        // A sign-out or a different user makes the running mint unjoinable: it
+        // was started with the previous identity's token, and a caller arriving
+        // after the event must mint for itself. A same-uid re-auth must not
+        // adopt it either.
         effects:
           event.user === null
-            ? ['stopScheduler', 'abandonInFlight', 'clearStorage', 'publish']
-            : ['stopScheduler', 'abandonInFlight', 'publish']
+            ? [stopScheduler, abandonInFlight, clearStorage, publish]
+            : [stopScheduler, abandonInFlight, publish]
       }
     case 'identity-detached':
       return {
@@ -138,7 +149,7 @@ export function transition<TUser extends AccountUser>(
           credentialTarget: undefined,
           failure: undefined
         },
-        effects: ['stopScheduler', 'publish']
+        effects: [stopScheduler, publish]
       }
     case 'invalidated':
       // A mint still running belongs to the scope being discarded; a caller
@@ -151,38 +162,46 @@ export function transition<TUser extends AccountUser>(
           credentialTarget: undefined,
           failure: undefined
         },
-        effects: ['stopScheduler', 'abandonInFlight', 'clearStorage', 'publish']
+        effects: [stopScheduler, abandonInFlight, clearStorage, publish]
       }
     case 'mint-started':
       return {
         state: { ...state, mintSequence: state.mintSequence + 1 },
         effects: []
       }
-    case 'mint-committed':
-      return event.origin === 'caller'
-        ? {
-            state: {
-              ...state,
-              credential: event.session,
-              credentialTarget: event.target,
-              committedMint: { mintId: event.mintId, session: event.session },
-              failure: undefined
-            },
-            effects: ['persist', 'armScheduler', 'publish']
-          }
-        : {
-            state: {
-              ...state,
-              credential: event.session,
-              committedMint: {
-                mintId: state.mintSequence,
-                session: event.session
-              },
-              failure: undefined
-            },
-            effects: ['persist', 'publish']
-          }
+    case 'mint-committed': {
+      const target =
+        event.origin === 'caller' ? event.target : state.credentialTarget
+      return {
+        state: {
+          ...state,
+          credential: event.session,
+          credentialTarget: target,
+          committedMint: { mintId: event.mintId, session: event.session },
+          failure: undefined
+        },
+        effects:
+          event.origin === 'caller'
+            ? [
+                { type: 'persist', session: event.session, target },
+                { type: 'armScheduler', session: event.session },
+                publish
+              ]
+            : [{ type: 'persist', session: event.session, target }, publish]
+      }
+    }
     case 'mint-rejected': {
+      if (event.origin === 'scheduler') {
+        return {
+          state: {
+            ...state,
+            credential: undefined,
+            credentialTarget: undefined,
+            failure: event.failure
+          },
+          effects: [clearStorage, publish]
+        }
+      }
       const permanent = isPermanentSessionError(event.failure.code)
       if (
         !permanent &&
@@ -194,7 +213,7 @@ export function transition<TUser extends AccountUser>(
       if (!permanent) {
         return {
           state: { ...state, credential: undefined, failure: event.failure },
-          effects: ['publish']
+          effects: [publish]
         }
       }
       // A caller-initiated permanent failure must retire the armed scheduler
@@ -206,10 +225,7 @@ export function transition<TUser extends AccountUser>(
           credentialTarget: undefined,
           failure: event.failure
         },
-        effects:
-          event.origin === 'caller'
-            ? ['stopScheduler', 'clearStorage', 'publish']
-            : ['clearStorage', 'publish']
+        effects: [stopScheduler, clearStorage, publish]
       }
     }
     case 'credential-adopted':
@@ -222,7 +238,14 @@ export function transition<TUser extends AccountUser>(
           credential: event.session,
           failure: undefined
         },
-        effects: ['persist', 'publish']
+        effects: [
+          {
+            type: 'persist',
+            session: event.session,
+            target: state.credentialTarget
+          },
+          publish
+        ]
       }
     case 'credential-expired':
       if (state.credential !== event.expiring) return { state, effects: [] }
@@ -231,9 +254,9 @@ export function transition<TUser extends AccountUser>(
           ...state,
           credential: undefined,
           credentialTarget: undefined,
-          failure: EXPIRED_FAILURE
+          failure: { status: 'error', code: 'TOKEN_EXCHANGE_FAILED' }
         },
-        effects: ['clearStorage', 'publish']
+        effects: [clearStorage, publish]
       }
   }
 }
