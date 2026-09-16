@@ -1,12 +1,18 @@
 import { vi } from 'vitest'
+import { computed } from 'vue'
 
 import type * as realFeatureFlags from '../useFeatureFlags'
 
 export const { ServerFeatureFlag } =
   await vi.importActual<typeof realFeatureFlags>('../useFeatureFlags')
 
+function createWatchHandle() {
+  const stop = vi.fn()
+  return Object.assign(stop, { pause: vi.fn(), resume: vi.fn(), stop })
+}
+
 export const startFeatureFlagTelemetry =
-  vi.fn<typeof realFeatureFlags.startFeatureFlagTelemetry>()
+  vi.fn<typeof realFeatureFlags.startFeatureFlagTelemetry>(createWatchHandle)
 
 function createFeatureFlagsMock(): ReturnType<
   typeof realFeatureFlags.useFeatureFlags
@@ -47,7 +53,7 @@ function createFeatureFlagsMock(): ReturnType<
       onboardingTourEnabled: false,
       assetsEnabled: false
     },
-    featureFlag: vi.fn()
+    featureFlag: vi.fn((_, defaultValue) => computed(() => defaultValue))
   }
 }
 
