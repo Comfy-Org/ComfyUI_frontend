@@ -2,13 +2,16 @@ import { zBillingStatusResponse } from '@comfyorg/ingest-types/zod'
 import type { BrowserContext, Page } from '@playwright/test'
 
 import { FeatureFlagHelper } from '@e2e/fixtures/helpers/FeatureFlagHelper'
+import type { NetworkPolicy } from '@e2e/fixtures/networkIsolationFixture'
+import type { LiveCloudBillingConfig } from '@e2e/fixtures/utils/liveCloudBillingConfig'
 import { loadLiveCloudBillingConfig } from '@e2e/fixtures/utils/liveCloudBillingConfig'
+import { isLiveCloudMutationAllowed } from '@e2e/fixtures/utils/liveCloudBillingPolicy'
 
 export async function installLiveCloudBillingRouting(
   context: BrowserContext,
-  networkPolicy: { origins: Set<string>; unexpected: Set<string> }
+  networkPolicy: NetworkPolicy,
+  config: LiveCloudBillingConfig
 ) {
-  const config = loadLiveCloudBillingConfig()
   await context.route('**/*', async (route) => {
     const request = route.request()
     const url = new URL(request.url())
@@ -26,6 +29,16 @@ export async function installLiveCloudBillingRouting(
       !networkPolicy.origins.has(url.origin)
     ) {
       networkPolicy.unexpected.add(`Navigation ${url.origin}${url.pathname}`)
+      await route.abort('blockedbyclient')
+      return
+    }
+    if (
+      networkPolicy.origins.has(url.origin) &&
+      !isLiveCloudMutationAllowed(url, request.method())
+    ) {
+      networkPolicy.unexpected.add(
+        `Mutation ${request.method()} ${url.origin}${url.pathname}`
+      )
       await route.abort('blockedbyclient')
       return
     }

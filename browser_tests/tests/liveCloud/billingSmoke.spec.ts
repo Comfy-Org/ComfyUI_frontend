@@ -6,7 +6,8 @@ test.describe('Real Cloud billing connection', { tag: ['@cloud-live'] }, () => {
   test('signs in and reads the account billing state', async ({
     comfyPage
   }) => {
-    await expect(comfyPage.page).not.toHaveURL(/\/cloud\/login/)
+    await comfyPage.waitForAppReady()
+    await expect(comfyPage.canvas).toBeVisible()
     await comfyPage.attachScreenshot('billing-smoke.png', { runInCI: true })
   })
 })

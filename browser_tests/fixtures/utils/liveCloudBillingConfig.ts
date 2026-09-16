@@ -44,6 +44,10 @@ export const liveCloudBillingConfigSchema = z
     }
   })
 
+export type LiveCloudBillingConfig = z.infer<
+  typeof liveCloudBillingConfigSchema
+>
+
 export function loadLiveCloudBillingConfig() {
   const result = liveCloudBillingConfigSchema.safeParse(process.env)
   if (!result.success) {
