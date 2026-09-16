@@ -1,25 +1,45 @@
 import generatedModels from './generated-models.json'
 import { modelMetadata } from './model-metadata'
 
-type ModelDirectory =
-  | 'diffusion_models'
-  | 'checkpoints'
-  | 'loras'
-  | 'controlnet'
-  | 'clip_vision'
-  | 'model_patches'
-  | 'vae'
-  | 'text_encoders'
-  | 'audio_encoders'
-  | 'latent_upscale_models'
-  | 'upscale_models'
-  | 'style_models'
-  | 'geometry_estimation'
-  | 'background_removal'
-  | 'detection'
-  | 'frame_interpolation'
-  | 'optical_flow'
-  | 'partner_nodes'
+export const MODEL_DIRECTORIES = [
+  'diffusion_models',
+  'checkpoints',
+  'loras',
+  'controlnet',
+  'clip_vision',
+  'model_patches',
+  'vae',
+  'text_encoders',
+  'audio_encoders',
+  'latent_upscale_models',
+  'upscale_models',
+  'style_models',
+  'partner_nodes',
+  'background_removal',
+  'detection',
+  'frame_interpolation',
+  'geometry_estimation',
+  'optical_flow'
+] as const
+
+export type ModelDirectory = (typeof MODEL_DIRECTORIES)[number]
+
+const MODEL_DIRECTORY_SET: ReadonlySet<string> = new Set(MODEL_DIRECTORIES)
+
+export function isModelDirectory(value: string): value is ModelDirectory {
+  return MODEL_DIRECTORY_SET.has(value)
+}
+
+function toModelDirectory(value: string, slug: string): ModelDirectory {
+  if (!isModelDirectory(value)) {
+    throw new Error(
+      `Unknown model directory ${JSON.stringify(value)} for model "${slug}". ` +
+        `Add it to MODEL_DIRECTORIES in src/config/models.ts and give it a ` +
+        `label and description on the supported-models pages.`
+    )
+  }
+  return value
+}
 
 export interface Model {
   readonly slug: string
@@ -54,7 +74,7 @@ export const models: readonly Model[] = (
   ...(m.canonicalSlug ? { canonicalSlug: m.canonicalSlug } : {}),
   name: m.name,
   displayName: m.displayName,
-  directory: m.directory as ModelDirectory,
+  directory: toModelDirectory(m.directory, m.slug),
   huggingFaceUrl: m.huggingFaceUrl,
   ...(m.docsUrl ? { docsUrl: m.docsUrl } : {}),
   ...(m.thumbnailUrl ? { thumbnailUrl: m.thumbnailUrl } : {}),
