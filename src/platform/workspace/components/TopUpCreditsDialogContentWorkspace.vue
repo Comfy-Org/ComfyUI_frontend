@@ -319,6 +319,7 @@ import type { CheckoutJourneyRecord } from '@/platform/workspace/utils/checkoutJ
 import { api } from '@/scripts/api'
 import { useAuthStore } from '@/stores/authStore'
 import { useDialogStore } from '@/stores/dialogStore'
+import { createUuidv4 } from '@/utils/uuid'
 import { cn } from '@comfyorg/tailwind-utils'
 
 const { isInsufficientCredits = false } = defineProps<{
@@ -406,6 +407,7 @@ const payAmount = ref(50)
 const showCeilingWarning = ref(false)
 const loading = ref(false)
 const paymentSubmitted = ref(false)
+let topupIdempotencyKey: string | undefined
 const step = ref<'amount' | 'confirm' | 'verifying'>(
   topupOperation.value && canTopUp.value ? 'verifying' : 'amount'
 )
@@ -428,6 +430,7 @@ const creditsModel = computed({
   set: (newCredits: number) => {
     payAmount.value = Math.round(creditsToUsd(newCredits))
     selectedPreset.value = null
+    topupIdempotencyKey = undefined
   }
 })
 
@@ -490,12 +493,14 @@ function handlePayAmountChange(value: number) {
   payAmount.value = value
   selectedPreset.value = null
   showCeilingWarning.value = false
+  topupIdempotencyKey = undefined
 }
 
 function handlePresetClick(amount: number) {
   showCeilingWarning.value = false
   payAmount.value = amount
   selectedPreset.value = amount
+  topupIdempotencyKey = undefined
 }
 
 function handlePrimaryAction() {
@@ -533,6 +538,7 @@ function startOverTopup() {
   const operation = topupOperation.value
   if (operation) dismissOperation(operation.opId)
   paymentSubmitted.value = false
+  topupIdempotencyKey = undefined
   step.value = 'amount'
 }
 
@@ -574,7 +580,8 @@ async function handleBuy() {
     }
 
     const amountCents = payAmount.value * 100
-    const response = await topup(amountCents)
+    topupIdempotencyKey ??= createUuidv4()
+    const response = await topup(amountCents, topupIdempotencyKey)
     if (!response) {
       if (isCurrentAttempt()) paymentSubmitted.value = false
       telemetry?.trackBillingEvent({
@@ -662,7 +669,10 @@ async function handleBuy() {
         })
     } else {
       // Synchronous 'failed' here means the charge was declined, not rejected pre-attempt.
-      if (isCurrentAttempt()) paymentSubmitted.value = false
+      if (isCurrentAttempt()) {
+        paymentSubmitted.value = false
+        topupIdempotencyKey = undefined
+      }
       telemetry?.trackBillingEvent({
         operation: 'topup',
         stage: 'failed',

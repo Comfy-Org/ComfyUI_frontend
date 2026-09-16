@@ -77,7 +77,10 @@ export interface BillingActions {
    * Pass-through by design: the caller owns the completed/pending follow-up
    * (balance refresh or billing-op polling), so this does not refresh.
    */
-  topup: (amountCents: number) => Promise<CreateTopupResponse | void>
+  topup: (
+    amountCents: number,
+    idempotencyKey?: string
+  ) => Promise<CreateTopupResponse | void>
   fetchPlans: () => Promise<void>
   /**
    * Ensures billing is initialized and subscription is active.

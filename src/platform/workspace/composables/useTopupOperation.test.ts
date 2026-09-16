@@ -126,7 +126,10 @@ describe('useTopupOperation', () => {
     }
     mockContextTopup.mockResolvedValue(response)
 
-    await expect(useTopupOperation().topup(1000)).resolves.toBe(response)
+    await expect(useTopupOperation().topup(1000, 'retry-key')).resolves.toBe(
+      response
+    )
+    expect(mockContextTopup).toHaveBeenCalledWith(1000, 'retry-key')
 
     expect(mockCreateBillingSdk).not.toHaveBeenCalled()
   })

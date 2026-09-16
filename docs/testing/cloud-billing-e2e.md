@@ -82,3 +82,11 @@ Traces start after permanent-account sign-in and contain authenticated network
 traffic. Keep reports private. Disposable accounts require no reusable credentials.
 Completed-payment assertions verify saved cards through the real hosted billing
 portal, because Staging disables the embedded-checkout saved-card API.
+
+## Saved-card top-ups
+
+PR #17538 depends only on #17481. Run `--project=cloud-live-paid` with a
+dedicated Creator account and saved Stripe test card. The top-up driver, exact
+balance/operation assertions, retry-key fix, and top-up endpoint permission belong
+to this PR. Payment tests reject production. The existing Staging test account
+reports Free, so it does not currently satisfy the live test prerequisite.

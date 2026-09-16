@@ -29,9 +29,12 @@ export function useTopupOperation() {
       : operationStore.topupActionOperation
   )
 
-  function topup(amountCents: number): Promise<CreateTopupResponse | void> {
+  function topup(
+    amountCents: number,
+    idempotencyKey?: string
+  ): Promise<CreateTopupResponse | void> {
     if (sdkStore) return sdkStore.createTopup(amountCents)
-    return billingContext.topup(amountCents)
+    return billingContext.topup(amountCents, idempotencyKey)
   }
 
   function retryPaymentAuthentication(operationId: string): Promise<boolean> {

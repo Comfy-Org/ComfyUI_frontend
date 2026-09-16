@@ -383,3 +383,19 @@ describe('Disposable payment permissions', () => {
     ).toBe(false)
   })
 })
+
+describe('paid top-up environment boundary', () => {
+  it.for([
+    { backend: 'https://stagingcloud.comfy.org', allowed: true },
+    { backend: 'https://testcloud.comfy.org', allowed: true },
+    { backend: 'https://cloud.comfy.org', allowed: false }
+  ])('$backend top-up allowed=$allowed', ({ backend, allowed }) => {
+    expect(
+      isLiveCloudMutationAllowed(
+        new URL('/api/billing/topup', backend),
+        'POST',
+        { ...config, PLAYWRIGHT_SETUP_API_URL: backend, allowPayments: true }
+      )
+    ).toBe(allowed)
+  })
+})
