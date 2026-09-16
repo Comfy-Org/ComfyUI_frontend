@@ -10,7 +10,8 @@ const SIGNED_OUT = {
 } as const
 
 const mocks = vi.hoisted(() => ({
-  attachIdentity: vi.fn<() => () => void>(),
+  activate: vi.fn(async () => undefined),
+  subscribeAuthRefreshTelemetry: vi.fn(() => () => undefined),
   remint: vi.fn(),
   subscribers: new Set<(snapshot: unknown) => void>(),
   emittedSnapshot: undefined as unknown,
@@ -26,16 +27,6 @@ vi.mock<unknown>(import('../scripts/posthog'), async () => {
   }
 })
 
-vi.mock<unknown>(import('./workshop-firebase'), async () => {
-  const { createTestIdentity } = await import('@comfyorg/account/testing')
-  return {
-    workshopIdentity: createTestIdentity({
-      onUserChanged: () => () => undefined
-    }),
-    signOutWorkshop: vi.fn()
-  }
-})
-
 vi.mock<unknown>(import('./workshop-account'), () => ({
   workshopSessionClient: {
     subscribe: (listener: (snapshot: unknown) => void) => {
@@ -43,14 +34,14 @@ vi.mock<unknown>(import('./workshop-account'), () => ({
       listener(mocks.emittedSnapshot)
       return () => mocks.subscribers.delete(listener)
     },
-    attachIdentity: mocks.attachIdentity,
     ensureFresh: vi.fn(),
     remint: mocks.remint,
     clearStoredCredential: vi.fn(),
     getSnapshot: () => mocks.liveSnapshot,
     getToken: vi.fn()
   },
-  subscribeAuthRefreshTelemetry: () => () => undefined
+  workshopIdentity: { activate: mocks.activate, deactivate: vi.fn() },
+  subscribeAuthRefreshTelemetry: mocks.subscribeAuthRefreshTelemetry
 }))
 
 const bootSession: WorkshopSession = {
@@ -72,7 +63,6 @@ beforeEach(() => {
   vi.resetModules()
   window.localStorage.removeItem('workshop:workspace')
   mocks.subscribers.clear()
-  mocks.attachIdentity.mockReset()
   mocks.remint.mockReset()
   mocks.emittedSnapshot = SIGNED_OUT
   mocks.liveSnapshot = SIGNED_OUT
@@ -80,11 +70,7 @@ beforeEach(() => {
 
 describe('useWorkshopSession initialization failure', () => {
   it('cleans up and retries on the next use instead of latching the failure', async () => {
-    mocks.attachIdentity
-      .mockImplementationOnce(() => {
-        throw new Error('attach exploded')
-      })
-      .mockImplementation(() => () => undefined)
+    mocks.activate.mockRejectedValueOnce(new Error('activate exploded'))
     const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
     const sessionModule = await import('./workshop-session-state')
 
@@ -99,8 +85,8 @@ describe('useWorkshopSession initialization failure', () => {
 
     await vi.waitFor(() =>
       expect(
-        mocks.attachIdentity,
-        'the latch must reopen so a later caller retries the attachment'
+        mocks.activate,
+        'the latch must reopen so a later caller retries the activation'
       ).toHaveBeenCalledTimes(2)
     )
     expect(mocks.subscribers.size).toBe(1)
@@ -120,8 +106,8 @@ describe('useWorkshopSession initialization failure', () => {
     mocks.remint.mockImplementation(
       () => new Promise((resolve) => (finishRestore = resolve))
     )
-    mocks.attachIdentity.mockImplementation(() => {
-      throw new Error('attach exploded')
+    mocks.subscribeAuthRefreshTelemetry.mockImplementation(() => {
+      throw new Error('telemetry exploded')
     })
     const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
     const sessionModule = await import('./workshop-session-state')

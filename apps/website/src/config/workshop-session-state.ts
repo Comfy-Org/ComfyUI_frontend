@@ -26,6 +26,7 @@ import { createLifecycleScope } from '@comfyorg/account/vue/lifecycleScope'
 import { identifyWorkshopUser, useWorkshopAuthFlag } from '../scripts/posthog'
 import {
   subscribeAuthRefreshTelemetry,
+  workshopIdentity,
   workshopSessionClient
 } from './workshop-account'
 
@@ -44,17 +45,15 @@ const snapshot = shallowRef<SessionSnapshot<User>>(PENDING)
 let running = false
 const lifecycle = createLifecycleScope()
 const operation = createBoundedOperation()
-let detachIdentity: (() => void) | undefined
 let stopSnapshot: (() => void) | undefined
 let stopTelemetry: (() => void) | undefined
 let stopFocusListener: (() => void) | undefined
 
 function stopListeners(): void {
   running = false
-  detachIdentity?.()
-  detachIdentity = undefined
   stopSnapshot?.()
   stopSnapshot = undefined
+  workshopIdentity.deactivate()
   stopTelemetry?.()
   stopTelemetry = undefined
   stopFocusListener?.()
@@ -212,7 +211,7 @@ function holdsForRestore(next: SessionSnapshot<User>): boolean {
 }
 
 async function begin(attempt: OperationHandle): Promise<void> {
-  const firebase = await import('./workshop-firebase')
+  await workshopIdentity.activate()
   if (!attempt.live()) return
 
   running = true
@@ -224,9 +223,6 @@ async function begin(attempt: OperationHandle): Promise<void> {
     snapshot.value = next
     keepWorkspaceRemembered()
   })
-  detachIdentity = workshopSessionClient.attachIdentity(
-    firebase.workshopIdentity
-  )
   // Auth-refresh telemetry starts and stops with this lifecycle; credits and
   // billing stay a separate consumer.
   stopTelemetry = subscribeAuthRefreshTelemetry()

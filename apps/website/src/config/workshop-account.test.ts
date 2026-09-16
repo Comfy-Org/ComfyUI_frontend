@@ -2,17 +2,35 @@ import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 
 import type { User } from 'firebase/auth'
 
-import type { AccountUser, SessionClient } from '@comfyorg/account/session'
+import type { LazyIdentity } from '@comfyorg/account/lazyIdentity'
+import type { AccountUser } from '@comfyorg/account/session'
 
 const h = vi.hoisted(() => ({
   captureSucceeded: vi.fn(),
-  captureFailed: vi.fn()
+  captureFailed: vi.fn(),
+  firebaseEvaluated: vi.fn(),
+  deliver: undefined as ((user: User | null) => void) | undefined
 }))
 
 vi.mock<unknown>(import('../scripts/posthog'), () => ({
   captureAuthRefreshSucceeded: h.captureSucceeded,
   captureAuthRefreshFailed: h.captureFailed
 }))
+
+vi.mock<unknown>(import('./workshop-firebase'), async () => {
+  const { createTestIdentity } = await import('@comfyorg/account/testing')
+  h.firebaseEvaluated()
+  return {
+    workshopIdentity: createTestIdentity<User>({
+      onUserChanged: (callback) => {
+        h.deliver = callback
+        return () => {
+          h.deliver = undefined
+        }
+      }
+    })
+  }
+})
 
 const STORAGE_KEY = 'comfy.workshop.session.v1'
 
@@ -49,6 +67,7 @@ async function importFresh() {
   const mod = await import('./workshop-account')
   return {
     client: mod.workshopSessionClient,
+    identity: mod.workshopIdentity,
     startTelemetry: mod.subscribeAuthRefreshTelemetry
   }
 }
@@ -103,26 +122,27 @@ describe('workshop session storage adapter', () => {
   })
 })
 
+describe('workshop identity', () => {
+  it('leaves the Firebase module unloaded until the identity is activated', async () => {
+    const { identity } = await importFresh()
+
+    expect(h.firebaseEvaluated).not.toHaveBeenCalled()
+    await identity.activate()
+    expect(h.firebaseEvaluated).toHaveBeenCalledOnce()
+  })
+})
+
 describe('auth refresh telemetry', () => {
-  async function attachManualPort(client: SessionClient<User>) {
-    const { createTestIdentity } = await import('@comfyorg/account/testing')
-    let deliver: ((user: User | null) => void) | undefined
-    client.attachIdentity(
-      createTestIdentity<User>({
-        onUserChanged: (callback) => {
-          deliver = callback
-          return () => undefined
-        }
-      })
-    )
-    return (user: User | null) => deliver?.(user)
+  async function activateIdentity(identity: LazyIdentity<User>) {
+    await identity.activate()
+    return (user: User | null) => h.deliver?.(user)
   }
 
   it('reports one succeeded outcome per minted token', async () => {
     vi.stubGlobal('fetch', okFetch())
-    const { client, startTelemetry } = await importFresh()
+    const { identity, startTelemetry } = await importFresh()
     onTestFinished(startTelemetry())
-    const fire = await attachManualPort(client)
+    const fire = await activateIdentity(identity)
 
     fire(testFirebaseUser())
 
@@ -132,9 +152,9 @@ describe('auth refresh telemetry', () => {
 
   it('does not repeat the outcome for a cached read of the same token', async () => {
     vi.stubGlobal('fetch', okFetch())
-    const { client, startTelemetry } = await importFresh()
+    const { client, identity, startTelemetry } = await importFresh()
     onTestFinished(startTelemetry())
-    const fire = await attachManualPort(client)
+    const fire = await activateIdentity(identity)
 
     fire(testFirebaseUser())
     await vi.waitFor(() => expect(h.captureSucceeded).toHaveBeenCalledOnce())
@@ -151,9 +171,9 @@ describe('auth refresh telemetry', () => {
 
   it('reports a permanent failure outcome', async () => {
     vi.stubGlobal('fetch', statusFetch(403))
-    const { client, startTelemetry } = await importFresh()
+    const { identity, startTelemetry } = await importFresh()
     onTestFinished(startTelemetry())
-    const fire = await attachManualPort(client)
+    const fire = await activateIdentity(identity)
 
     fire(testFirebaseUser())
 
@@ -167,9 +187,9 @@ describe('auth refresh telemetry', () => {
 
   it('stays silent on a transient failure', async () => {
     vi.stubGlobal('fetch', statusFetch(503))
-    const { client, startTelemetry } = await importFresh()
+    const { client, identity, startTelemetry } = await importFresh()
     onTestFinished(startTelemetry())
-    const fire = await attachManualPort(client)
+    const fire = await activateIdentity(identity)
 
     fire(testFirebaseUser())
 

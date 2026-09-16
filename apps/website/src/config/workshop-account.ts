@@ -8,6 +8,8 @@
  */
 import type { User } from 'firebase/auth'
 
+import type { LazyIdentity } from '@comfyorg/account/lazyIdentity'
+import { createLazyIdentity } from '@comfyorg/account/lazyIdentity'
 import type { SessionClient } from '@comfyorg/account/session'
 import {
   createSessionClient,
@@ -48,11 +50,20 @@ const storage = {
   }
 }
 
+/** Activated by the session lifecycle; the Firebase chunk loads only then. */
+export const workshopIdentity: LazyIdentity<User> = createLazyIdentity<User>(
+  () =>
+    import('./workshop-firebase').then((firebase) => firebase.workshopIdentity)
+)
+
 export const workshopSessionClient: SessionClient<User> =
-  createSessionClient<User>({
-    exchangeUrl: `${WORKSHOP_CLOUD_BASE_URL}/api/auth/token`,
-    storage
-  })
+  createSessionClient<User>(
+    {
+      exchangeUrl: `${WORKSHOP_CLOUD_BASE_URL}/api/auth/token`,
+      storage
+    },
+    workshopIdentity
+  )
 
 export const workshopBalanceReader = createBalanceReader(
   workshopSessionClient,
