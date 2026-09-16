@@ -262,6 +262,7 @@ describe('CrdtDevPanel', () => {
     await user.click(copyReportButton)
     expect(collectSpy).toHaveBeenCalledTimes(2)
     expect(copyReportButton).toHaveTextContent('Copied')
+    expect(await navigator.clipboard.readText()).toBe('# recovered report')
     expect(screen.queryByRole('alert')).not.toBeInTheDocument()
 
     collectSpy.mockRestore()
