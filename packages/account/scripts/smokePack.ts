@@ -290,9 +290,9 @@ export interface Types {
   turnstileGate: ReturnType<typeof useTurnstileGate>
   lifecycleScope: LifecycleScope
   useGenerationGuard: ReturnType<typeof useGenerationGuard>
-  passwordRules: InstanceType<typeof PasswordRules>['$props']
-  socialAuthButtons: InstanceType<typeof SocialAuthButtons>['$props']
-  turnstileWidget: InstanceType<typeof TurnstileWidget>['$props']
+  passwordRules: InstanceType<typeof PasswordRules>['$props']['password']
+  socialAuthButtons: InstanceType<typeof SocialAuthButtons>['$props']['googleLabel']
+  turnstileWidget: InstanceType<typeof TurnstileWidget>['$props']['siteKey']
   ingestTypes: ExchangeTokenResponse
 }
 
