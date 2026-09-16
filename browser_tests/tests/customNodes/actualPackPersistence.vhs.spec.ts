@@ -2,6 +2,7 @@ import { readFile } from 'node:fs/promises'
 
 import { comfyExpect as expect } from '@e2e/fixtures/ComfyPage'
 import { packPersistenceTest as test } from '@e2e/fixtures/customNode/packPersistenceFixture'
+import { openWorkflowFromSidebar } from '@e2e/fixtures/utils/builderTestUtils'
 import { hasInstalledPack } from '@e2e/fixtures/utils/customNodeSuite'
 import { assetPath } from '@e2e/fixtures/utils/paths'
 
@@ -63,14 +64,20 @@ test.describe(
       test(
         `VHS uploads and combines a real video with format controls (${renderer.name} renderer)`,
         { tag: renderer.tags },
-        async ({ comfyFiles, comfyPage, packPersistence }, testInfo) => {
+        async (
+          { comfyFiles, comfyPage, packPersistence, savedWorkflows },
+          testInfo
+        ) => {
           test.slow()
           const useVueNodes = renderer.name === 'Vue'
           await comfyPage.settings.setSetting(
             'Comfy.VueNodes.Enabled',
             useVueNodes
           )
+          await comfyPage.workflow.setupWorkflowsDirectory({})
           await comfyPage.workflow.reloadAndWaitForApp()
+          await comfyPage.command.executeCommand('Comfy.NewBlankWorkflow')
+          await comfyPage.workflow.waitForWorkflowIdle()
           await comfyPage.nodeOps.clearGraph()
 
           const ids = await comfyPage.page.evaluate(() => {
@@ -382,6 +389,43 @@ test.describe(
           expect(result.executedNodes).toEqual(
             expect.arrayContaining([ids.load, ids.combine])
           )
+
+          const workflowName = `vhs-persistence-${crypto.randomUUID()}`
+          savedWorkflows.track(workflowName)
+          await comfyPage.menu.topbar.saveWorkflow(workflowName)
+          await comfyPage.workflow.reloadAndWaitForApp()
+          await openWorkflowFromSidebar(comfyPage, workflowName)
+
+          await expect
+            .poll(() => packPersistence.projectInputLinks(ids.combine))
+            .toEqual([[ids.load, 0, ids.combine, 0]])
+          await expect
+            .poll(() =>
+              comfyPage.page.evaluate(({ load, combine }) => {
+                const nodes = window.app!.graph.nodes
+                return [load, combine].map((id) => {
+                  const node = nodes.find((node) => String(node.id) === id)
+                  return {
+                    type: node?.type,
+                    widgets: Object.fromEntries(
+                      (node?.widgets ?? [])
+                        .filter(
+                          ({ name }) =>
+                            name === (id === load ? 'video' : 'format')
+                        )
+                        .map(({ name, value }) => [name, value])
+                    )
+                  }
+                })
+              }, ids)
+            )
+            .toEqual([
+              { type: 'VHS_LoadVideo', widgets: { video: videoName } },
+              {
+                type: 'VHS_VideoCombine',
+                widgets: { format: 'video/h264-mp4' }
+              }
+            ])
         }
       )
     }
