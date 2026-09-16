@@ -44,15 +44,17 @@ targets self-hosted nginx for production billing traffic, so keep the build a
 plain directory of static files and express hosting behavior in ways an nginx
 rule can reproduce. `.github/workflows/ci-vercel-billing-web-preview.yaml`
 builds and deploys it: a preview for a pull request carrying the
-`billing-preview` label, and production on merge to `main`.
+`billing-preview` label, and production for every push to `main` that touches
+the same paths — a merge commit and a direct push alike.
 
 Previews are opt-in. The workflow triggers on pull requests touching
-`apps/billing-web`, `packages/design-system`, or `packages/tailwind-utils`, but
-the deploy job runs only while the `billing-preview` label is on the pull
-request. Adding the label deploys the current head; removing it stops
-subsequent deploys. The path filter keeps the workflow off unrelated pull
-requests, so the label alone will not deploy a branch that changes none of
-those paths.
+`apps/billing-web/**`, `packages/design-system/**`,
+`packages/tailwind-utils/**`, `public/fonts/**` or `pnpm-workspace.yaml`, and
+never on one targeting `core/**` or `cloud/**`. The deploy job then runs only
+while the `billing-preview` label is on the pull request, and never from a
+fork. Adding the label deploys the current head; removing it stops subsequent
+deploys. The path filter keeps the workflow off unrelated pull requests, so the
+label alone will not deploy a branch that changes none of those paths.
 
 Vercel project settings:
 
