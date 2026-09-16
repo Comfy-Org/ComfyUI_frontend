@@ -52,5 +52,7 @@ describe('CodeTabs', () => {
     expect(await navigator.clipboard.readText()).toBe(
       'run("model-a")\nsecond\nthird'
     )
+    expect(screen.getByRole('button', { name: 'Copied' })).toBeTruthy()
+    expect(screen.queryByText('Copied')).toBeNull()
   })
 })
