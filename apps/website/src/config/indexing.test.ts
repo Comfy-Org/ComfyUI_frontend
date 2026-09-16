@@ -27,6 +27,18 @@ describe('indexing policy', () => {
     }
   )
 
+  it.for(['0', '1'])(
+    'keeps the V2 catalogue proposal out of the sitemap (%s)',
+    (value) => {
+      vi.stubEnv('WORKSHOP_IN_BUILD', value)
+      expect(isExcludedFromSitemap('https://comfy.org/models-v2/')).toBe(true)
+      expect(
+        isExcludedFromSitemap('https://comfy.org/models-v2/workflow/a/')
+      ).toBe(true)
+      expect(isNoindexPathname('/models-v2/')).toBe(true)
+    }
+  )
+
   it('excludes only the disabled Workshop route tree', () => {
     vi.stubEnv('WORKSHOP_IN_BUILD', '0')
     expect(
