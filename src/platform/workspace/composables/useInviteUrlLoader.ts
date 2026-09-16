@@ -101,6 +101,10 @@ export function useInviteUrlLoader() {
       // BE cannot distinguish them, so one dialog covers all three (DES-1010).
       if (error instanceof WorkspaceApiError && error.status === 404) {
         await dialogService.showInviteLinkInvalidDialog()
+      } else if (error instanceof WorkspaceApiError && error.status === 403) {
+        await dialogService.showInviteWrongAccountDialog({
+          inviteToken: inviteParam
+        })
       } else {
         toast.add({
           severity: 'error',
