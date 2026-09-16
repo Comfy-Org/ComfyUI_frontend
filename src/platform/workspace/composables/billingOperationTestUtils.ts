@@ -22,6 +22,7 @@ export function billingOperation(
     workspaceId: 'workspace-1',
     autoHandleRequiresAction: false,
     phase: null,
+    awaitingPaymentMethodSeen: false,
     dismissed: false,
     ...overrides
   }

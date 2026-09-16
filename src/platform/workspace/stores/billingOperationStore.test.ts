@@ -1976,6 +1976,85 @@ describe('billingOperationStore', () => {
   })
 
   describe('polling timeout', () => {
+    const PARKED_DEADLINE_MS = 23 * 60 * 60_000
+
+    async function parkOnCardEntry() {
+      const response: BillingOpStatusResponse = {
+        id: 'op-parked',
+        status: 'pending',
+        phase: 'awaiting_payment_method',
+        started_at: new Date().toISOString()
+      }
+      vi.mocked(workspaceApi.getBillingOpStatus).mockResolvedValue(response)
+      const store = useBillingOperationStore()
+      const terminal = store.startOperation('op-parked', 'subscription')
+      await vi.advanceTimersByTimeAsync(6 * 60_000)
+      return { store, terminal, response }
+    }
+
+    it.for(['in_progress', 'awaiting_invoice_payment'] as const)(
+      'keeps a checkout pending after leaving a six-minute card-entry park for %s',
+      async (phase) => {
+        const { store, terminal, response } = await parkOnCardEntry()
+        expect(store.getOperation('op-parked')).toMatchObject({
+          actionUrl: null,
+          authenticationState: null
+        })
+
+        vi.mocked(workspaceApi.getBillingOpStatus).mockResolvedValue({
+          ...response,
+          phase
+        })
+        await vi.advanceTimersToNextTimerAsync()
+        expect(store.getOperation('op-parked')?.phase).toBe(phase)
+
+        vi.mocked(workspaceApi.getBillingOpStatus).mockClear()
+        await vi.advanceTimersByTimeAsync(8_000)
+        expect(workspaceApi.getBillingOpStatus).toHaveBeenCalledOnce()
+        expect(store.getOperation('op-parked')?.status).toBe('pending')
+        expect(useTelemetry()?.trackBillingEvent).not.toHaveBeenCalledWith(
+          expect.objectContaining({ stage: 'timeout' })
+        )
+
+        vi.mocked(workspaceApi.getBillingOpStatus).mockResolvedValue({
+          ...response,
+          status: 'succeeded'
+        })
+        await vi.advanceTimersByTimeAsync(8_000)
+        expect((await terminal).status).toBe('succeeded')
+      }
+    )
+
+    it('keeps the original 23-hour deadline after leaving a card-entry park', async () => {
+      const adoptedAt = Date.now()
+      const { store, terminal, response } = await parkOnCardEntry()
+
+      vi.mocked(workspaceApi.getBillingOpStatus).mockResolvedValue({
+        ...response,
+        phase: 'in_progress'
+      })
+      await vi.advanceTimersToNextTimerAsync()
+      expect(store.getOperation('op-parked')?.phase).toBe('in_progress')
+
+      vi.setSystemTime(adoptedAt + PARKED_DEADLINE_MS)
+      store.pollPendingOperations()
+      await vi.advanceTimersByTimeAsync(0)
+      expect(store.getOperation('op-parked')?.status).toBe('pending')
+      expect(useTelemetry()?.trackBillingEvent).not.toHaveBeenCalledWith(
+        expect.objectContaining({ stage: 'timeout' })
+      )
+
+      await vi.advanceTimersByTimeAsync(8_000)
+      expect((await terminal).status).toBe('timeout')
+      expect(useTelemetry()?.trackBillingEvent).toHaveBeenCalledWith(
+        expect.objectContaining({
+          stage: 'timeout',
+          failure_category: 'poll_timeout',
+          duration_ms: PARKED_DEADLINE_MS + 8_000
+        })
+      )
+    })
+
     it('times out a subscription while its workspace is inactive', async () => {
       vi.mocked(workspaceApi.getBillingOpStatus).mockResolvedValue({
         id: 'op-1',
