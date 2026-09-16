@@ -7,11 +7,8 @@ test.describe(
   'DynamicGroup',
   { tag: ['@widget', '@vue-nodes', '@oss'] },
   () => {
-    test.use({ initialSettings: { 'Comfy.VueNodes.Enabled': true } })
-
     test.beforeEach(async ({ comfyPage }) => {
       await comfyPage.workflow.loadWorkflow('inputs/dynamic_group')
-      await comfyPage.vueNodes.waitForNodes()
       await expect(comfyPage.vueNodes.nodes).toHaveCount(2)
     })
 
@@ -37,7 +34,7 @@ test.describe(
             .getByRole('option', { name: 'B.safetensors', exact: true })
             .click()
         }
-        await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', false)
+        await comfyPage.menu.topbar.setVueNodesEnabled(false)
         await expect(comfyPage.vueNodes.nodes).toHaveCount(0)
         await comfyPage.page.evaluate(() => {
           const node = window.app!.graph.nodes.find(
@@ -78,8 +75,7 @@ test.describe(
         const legacyNode = await comfyPage.nodeOps.getNodeRefById('1')
         await (await legacyNode.getWidgetByName('loras.$notice')).click()
 
-        await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', true)
-        await comfyPage.vueNodes.waitForNodes()
+        await comfyPage.menu.topbar.setVueNodesEnabled(true)
         await expect(
           node.getByRole('combobox', { name: 'lora_name', exact: true })
         ).toHaveCount(rowCount)
@@ -169,7 +165,6 @@ test.describe(
       await expect
         .poll(() => comfyPage.workflow.getActiveWorkflowPath())
         .toContain('dynamic-group-rows')
-      await comfyPage.vueNodes.waitForNodes()
       await expect(comfyPage.vueNodes.nodes).toHaveCount(2)
       await comfyPage.menu.workflowsTab.close()
       await expect(node.getByLabel('before', { exact: true })).toHaveValue(
