@@ -1,3 +1,4 @@
+import type { Page } from '@playwright/test'
 import { expect } from '@playwright/test'
 
 import type {
@@ -31,10 +32,7 @@ const WORKSPACES: ListWorkspacesResponse = {
 
 const TEAM = WORKSPACES.workspaces[1]
 
-test('switching workspace during a run asks before it throws the run away', async ({
-  page,
-  modelsAccount
-}) => {
+async function mockWorkspaces(page: Page) {
   await page.route('**/api/workspaces', (route) =>
     route.fulfill({
       status: 200,
@@ -63,34 +61,56 @@ test('switching workspace during a run asks before it throws the run away', asyn
       } satisfies ExchangeTokenResponse)
     })
   })
-  // The run never answers, so it is still going when the workspace changes.
-  await page.route('**/v2/models/**', () => {})
+}
 
+async function signIn(
+  page: Page,
+  account: { email: string; password: string }
+) {
   await page.goto('/login/')
   await page.getByRole('button', { name: 'Use email instead' }).click()
-  await page.getByLabel('Email').fill(modelsAccount.email)
-  await page
-    .getByLabel('Password', { exact: true })
-    .fill(modelsAccount.password)
+  await page.getByLabel('Email').fill(account.email)
+  await page.getByLabel('Password', { exact: true }).fill(account.password)
   await page.getByRole('button', { name: 'Sign in', exact: true }).click()
   await expect(page).toHaveURL('/')
+}
 
+async function startRun(page: Page) {
   await page.goto(MODEL_PATH)
   await page.getByTestId('field-prompt').fill('A teapot')
   await page.getByTestId('run-button').click()
   const output = page.getByTestId('playground-output')
   await expect(output).toHaveAttribute('data-state', 'running')
+  return output
+}
 
-  const account = page
+function accountMenu(page: Page) {
+  const trigger = page
     .getByTestId('desktop-nav-cta')
     .getByTestId('header-account')
-  const otherWorkspace = async () => {
-    await account.click()
-    await page.getByTestId('account-workspace').click()
-    await page.getByTestId('account-workspace-ws-team').click()
+  return {
+    open: () => trigger.click(),
+    pickTeam: async () => {
+      await trigger.click()
+      await page.getByTestId('account-workspace').click()
+      await page.getByTestId(`account-workspace-${TEAM.id}`).click()
+    }
   }
+}
 
-  await otherWorkspace()
+test('switching workspace during a run asks before it throws the run away', async ({
+  page,
+  modelsAccount
+}) => {
+  await mockWorkspaces(page)
+  // The run never answers, so it is still going when the workspace changes.
+  await page.route('**/v2/models/**', () => {})
+
+  await signIn(page, modelsAccount)
+  const output = await startRun(page)
+  const menu = accountMenu(page)
+
+  await menu.pickTeam()
   const dialog = page.getByTestId('run-leave-dialog')
   await expect(dialog).toBeVisible()
 
@@ -98,11 +118,50 @@ test('switching workspace during a run asks before it throws the run away', asyn
   await expect(dialog).toBeHidden()
   await expect(output).toHaveAttribute('data-state', 'running')
 
-  await otherWorkspace()
+  await menu.pickTeam()
   await page.getByTestId('run-leave-confirm').click()
   await expect(output).toHaveAttribute('data-state', 'cancelled')
 
-  await account.click()
+  await menu.open()
+  await expect(page.getByTestId('account-workspace-current')).toContainText(
+    TEAM.name
+  )
+})
+
+test('a run that ends under the question answers it', async ({
+  page,
+  modelsAccount
+}) => {
+  await mockWorkspaces(page)
+  // The run is held until the dialog is up, then it ends on its own.
+  let land = () => {}
+  const held = new Promise<void>((resolve) => {
+    land = resolve
+  })
+  await page.route('**/v2/models/**', async (route) => {
+    await held
+    await route.fulfill({
+      status: 503,
+      headers: { 'X-Comfy-Error-Type': 'provider_error' },
+      contentType: 'application/json',
+      body: JSON.stringify({ detail: 'Temporary provider error' })
+    })
+  })
+
+  await signIn(page, modelsAccount)
+  const output = await startRun(page)
+  const menu = accountMenu(page)
+
+  await menu.pickTeam()
+  const dialog = page.getByTestId('run-leave-dialog')
+  await expect(dialog).toBeVisible()
+
+  land()
+
+  await expect(output).toHaveAttribute('data-state', 'failed')
+  await expect(dialog).toBeHidden()
+
+  await menu.open()
   await expect(page.getByTestId('account-workspace-current')).toContainText(
     TEAM.name
   )
