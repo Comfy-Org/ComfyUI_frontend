@@ -2,7 +2,7 @@ import { useSettingStore } from '@/platform/settings/settingStore'
 
 const MISSING_WARNING_SETTING_IDS = {
   nodes: 'Comfy.Workflow.ShowMissingNodesWarning',
-  models: 'Comfy.Workflow.ShowMissingModelsWarning',
+  models: 'Comfy.ErrorSystem.ShowMissingModels',
   media: 'Comfy.Workflow.ShowMissingMediaWarning'
 } as const
 

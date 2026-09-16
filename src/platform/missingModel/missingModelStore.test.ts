@@ -82,8 +82,7 @@ describe('missingModelStore', () => {
       store.setMissingModels([makeModelCandidate('model_a.safetensors')])
       expect(store.hasMissingModels).toBe(true)
 
-      settingStore.settingValues['Comfy.Workflow.ShowMissingModelsWarning'] =
-        false
+      settingStore.settingValues['Comfy.ErrorSystem.ShowMissingModels'] = false
 
       expect(store.missingModelCandidates).toHaveLength(1)
       expect(store.visibleMissingModelCandidates).toBeNull()
@@ -91,8 +90,7 @@ describe('missingModelStore', () => {
       expect(store.missingModelCount).toBe(0)
       expect(store.missingModelNodeIds.size).toBe(0)
 
-      settingStore.settingValues['Comfy.Workflow.ShowMissingModelsWarning'] =
-        true
+      settingStore.settingValues['Comfy.ErrorSystem.ShowMissingModels'] = true
 
       expect(store.hasMissingModels).toBe(true)
     })

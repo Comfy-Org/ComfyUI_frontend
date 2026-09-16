@@ -12,6 +12,7 @@ import {
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { app } from '@/scripts/app'
+import { useDialogStore } from '@/stores/dialogStore'
 import {
   createNodeExecutionId,
   createNodeLocatorId
@@ -21,7 +22,7 @@ beforeEach(() => {
   const settings = useSettingStore().settingValues
   settings['Comfy.RightSidePanel.ShowErrorsTab'] = false
   settings['Comfy.Workflow.ShowMissingNodesWarning'] = true
-  settings['Comfy.Workflow.ShowMissingModelsWarning'] = true
+  settings['Comfy.ErrorSystem.ShowMissingModels'] = true
   settings['Comfy.Workflow.ShowMissingMediaWarning'] = true
 })
 
@@ -693,7 +694,7 @@ describe('per-kind visibility', () => {
   it.for([
     {
       kind: 'models',
-      settingId: 'Comfy.Workflow.ShowMissingModelsWarning' as const,
+      settingId: 'Comfy.ErrorSystem.ShowMissingModels' as const,
       surface: (store: ReturnType<typeof useExecutionErrorStore>) =>
         store.surfaceMissingModels([
           fromAny({
@@ -871,6 +872,38 @@ describe('hasMissingError', () => {
 
     expect(executionErrorStore.hasMissingError).toBe(false)
   })
+})
+
+it('opens the runtime error dialog with details when the Issues tab is disabled', () => {
+  const store = useExecutionErrorStore()
+  store.showExecutionError({
+    prompt_id: 'test',
+    timestamp: 0,
+    node_id: '1',
+    node_type: 'KSampler',
+    executed: [],
+    exception_message: 'Not enough memory',
+    exception_type: 'RuntimeError',
+    traceback: ['first frame', 'second frame']
+  })
+
+  expect(store.isErrorOverlayOpen).toBe(false)
+  expect(useDialogStore().dialogStack).toEqual([
+    expect.objectContaining({
+      key: 'global-execution-error',
+      visible: true,
+      contentProps: {
+        error: {
+          exceptionType: 'RuntimeError',
+          exceptionMessage: 'Not enough memory',
+          nodeId: '1',
+          nodeType: 'KSampler',
+          traceback: 'first frame\nsecond frame',
+          reportType: 'graphExecutionError'
+        }
+      }
+    })
+  ])
 })
 
 describe('clearRunErrors', () => {

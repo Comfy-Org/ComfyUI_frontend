@@ -1045,8 +1045,7 @@ describe('useErrorGroups', () => {
       await nextTick()
       expect(groups.missingModelGroups.value).toHaveLength(1)
 
-      settingStore.settingValues['Comfy.Workflow.ShowMissingModelsWarning'] =
-        false
+      settingStore.settingValues['Comfy.ErrorSystem.ShowMissingModels'] = false
       await nextTick()
 
       expect(groups.missingModelGroups.value).toEqual([])
@@ -1054,8 +1053,7 @@ describe('useErrorGroups', () => {
         groups.allErrorGroups.value.some((g) => g.type === 'missing_model')
       ).toBe(false)
 
-      settingStore.settingValues['Comfy.Workflow.ShowMissingModelsWarning'] =
-        true
+      settingStore.settingValues['Comfy.ErrorSystem.ShowMissingModels'] = true
       await nextTick()
 
       expect(groups.missingModelGroups.value).toHaveLength(1)

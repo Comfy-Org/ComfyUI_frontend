@@ -1301,7 +1301,7 @@ export const CORE_SETTINGS: SettingParams[] = [
     versionAdded: '1.55.0'
   },
   {
-    id: 'Comfy.Workflow.ShowMissingModelsWarning',
+    id: 'Comfy.ErrorSystem.ShowMissingModels',
     category: ['Comfy', 'Error System', 'MissingModels'],
     sortOrder: -2,
     name: 'Show missing models in the issues tab',
@@ -1309,7 +1309,7 @@ export const CORE_SETTINGS: SettingParams[] = [
       'When disabled, model files that are not found are not listed in the issues tab and their nodes are not highlighted.',
     type: 'boolean',
     defaultValue: true,
-    versionModified: '1.55.0'
+    versionAdded: '1.55.0'
   },
   {
     id: 'Comfy.Workflow.ShowMissingMediaWarning',
