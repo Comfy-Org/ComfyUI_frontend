@@ -3,6 +3,12 @@
  * Cloud's /api/features, decided once per signed-in uid. Signed out, a failed
  * request, a missing key, and a non-boolean value are all false, so the
  * rollout can only add the SDK path and never take the site's own away.
+ *
+ * The cache keys on uid alone on purpose: a rollout flag is evaluated per
+ * user, not per workspace, so switching workspace does not re-read it. A
+ * failed read stays false for that uid until sign-out, which is the safe
+ * direction — the flag can only add the SDK path — and keeps a wedged
+ * /features from being re-hammered once per dialog.
  */
 import { z } from 'zod'
 

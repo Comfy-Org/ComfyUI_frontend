@@ -35,6 +35,8 @@ function httpStatusOf(failure: HostedTopupCheckoutFailure): number {
 async function hostedCheckout(
   options: CreateTopUpCheckoutOptions
 ): Promise<TopUpCheckoutSession | undefined> {
+  // The idempotency key is the command's own — the attempt id only correlates
+  // the return announce — so a re-mint replays the same request.
   const result = await workshopTopupCommand().createHostedTopupCheckout({
     amountCents: options.amountCents,
     returnUrl: topUpCheckoutReturnUrl(options),
