@@ -13,6 +13,30 @@ const RUM_NOISE_HOSTS = [
   'googletagmanager.com'
 ]
 
+/**
+ * Browser/environment error messages that carry zero engineering signal.
+ * Each entry is matched against the RUM `error.message` and is dropped in
+ * `beforeSend`. Keep this list small and explicit — add one predicate per line
+ * with a comment so every future addition is a deliberate, auditable choice.
+ */
+const RUM_NOISE_MESSAGE_MATCHERS: ((message: string) => boolean)[] = [
+  // Benign Chrome interventions, e.g. "Ignored attempt to cancel a touchmove
+  // event" and "Blocked attempt to create a WebMediaPlayer".
+  (message) => message.startsWith('intervention:'),
+  // Classic benign layout warning ("ResizeObserver loop completed with
+  // undelivered notifications") with no actionable stack.
+  (message) => message.includes('ResizeObserver loop'),
+  // Failed <img> loads surface as uncaught non-Error events whose target is an
+  // HTMLImageElement (e.g. "Uncaught {…HTMLImageElement…}") — by far the #1
+  // entry in the error stream and pure browser noise, not an app failure.
+  (message) => message.includes('HTMLImageElement'),
+  // PostHog's client-side rate-limit notice — analytics plumbing, not an error.
+  (message) =>
+    message.includes(
+      '[PostHog.js] This capture call is ignored due to client rate limiting'
+    )
+]
+
 const FIRST_PARTY_EXTENSION_FOLDERS = new Set(['cloud', 'core'])
 
 const FIREBASE_PENDING_PROMISE_ASSERTION =
@@ -76,8 +100,9 @@ function shouldKeepRumEvent(event: Parameters<RumBeforeSend>[0]): boolean {
   if (isConsoleEchoOfReportedError(event)) return false
 
   const message = event.error.message
-  if (message.startsWith('intervention:')) return false
-  if (message.includes('ResizeObserver loop')) return false
+  if (RUM_NOISE_MESSAGE_MATCHERS.some((matches) => matches(message))) {
+    return false
+  }
 
   const isNetworkNoise =
     message.includes('csp_violation') || message.includes('Failed to fetch')

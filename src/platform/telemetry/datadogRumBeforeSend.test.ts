@@ -38,6 +38,45 @@ describe('rumBeforeSend', () => {
     expect(rumBeforeSend(event, fromPartial({}))).toBe(false)
   })
 
+  it.for([
+    [
+      'a Chrome touchmove intervention',
+      'intervention: Ignored attempt to cancel a touchmove event, cancelable=false'
+    ],
+    [
+      'a Chrome WebMediaPlayer intervention',
+      'intervention: Blocked attempt to create a WebMediaPlayer as there are too many WebMediaPlayers already in existence'
+    ],
+    [
+      'a ResizeObserver loop warning',
+      'ResizeObserver loop completed with undelivered notifications.'
+    ],
+    [
+      'a failed <img> load surfaced as an uncaught event',
+      'Uncaught {"isTrusted":true,"target":"HTMLImageElement"}'
+    ],
+    [
+      'the PostHog client rate-limit notice',
+      '[PostHog.js] This capture call is ignored due to client rate limiting'
+    ]
+  ])('drops non-actionable browser/environment noise: %s', ([, message]) => {
+    const event = createErrorEvent(message)
+
+    expect(rumBeforeSend(event, fromPartial({}))).toBe(false)
+  })
+
+  it('keeps first-party errors that merely mention a browser noise term', () => {
+    const event = createErrorEvent(
+      'Widget resize handler threw before the ResizeObserver was attached',
+      'at render (https://cloud.comfy.org/assets/app.js:1:2)'
+    )
+
+    // A real "ResizeObserver loop" warning is dropped, but this application
+    // error only references resize handling and must survive.
+    expect(event.error.message.includes('ResizeObserver loop')).toBe(false)
+    expect(rumBeforeSend(event, fromPartial({}))).toBe(true)
+  })
+
   it('drops the console echo of an assertion the reporter also reports', () => {
     const event = createErrorEvent(
       '[Assertion failed]: graph is corrupt',
