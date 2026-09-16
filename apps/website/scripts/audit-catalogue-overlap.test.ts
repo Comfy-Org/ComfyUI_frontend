@@ -191,6 +191,11 @@ describe('auditCatalogueOverlap', () => {
     expect(overlap.apiRoutable).toBe(1)
     expect(overlap.apiOffCatalogue).toBe(1)
     expect(overlap.apiAmbiguous).toBe(1)
+    // The three are the whole of the API workflows, and each one is counted
+    // once: the split is a partition, not three overlapping questions.
+    expect(
+      overlap.apiRoutable + overlap.apiOffCatalogue + overlap.apiAmbiguous
+    ).toBe(overlap.apiWorkflows)
   })
 
   it('reports a share of nothing as nothing, not as NaN', () => {

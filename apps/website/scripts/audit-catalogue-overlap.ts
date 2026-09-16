@@ -138,13 +138,15 @@ function tallyApiReach(
   const names = (template: HubTemplate) =>
     template.models.map(normalize).some((name) => catalogued.has(name))
   const routable = api.filter((template) => partnerModelFor(template, models))
+  // The three add up to the API workflows, which they only do if the ones the
+  // join table rescues are counted once. Six of them name nothing the
+  // catalogue carries and still resolve.
+  const rest = api.filter((template) => !partnerModelFor(template, models))
   return {
     apiWorkflows: api.length,
     apiRoutable: routable.length,
-    apiOffCatalogue: api.filter((template) => !names(template)).length,
-    apiAmbiguous: api.filter(
-      (template) => names(template) && !partnerModelFor(template, models)
-    ).length
+    apiOffCatalogue: rest.filter((template) => !names(template)).length,
+    apiAmbiguous: rest.filter(names).length
   }
 }
 

@@ -33,7 +33,7 @@ runnable here 72 (11.8%)
 runnable apps 5 of 18
 naming a catalogue model 101 across 18 models: Nano Banana Pro 42,
   Nano Banana 2 14, Kling 3.0 8, Seedance 2.5 7, Gemini Omni 1.1 Flash 5
-api workflows 331: routable 72, naming a model the catalogue lacks 232,
+api workflows 331: routable 72, naming a model the catalogue lacks 226,
   naming one without a single destination 33
 need custom nodes 78
 models cited 21: Nano Banana Pro 30, Nano Banana 2 9, Gemini Omni 1.1 Flash 4,
@@ -55,11 +55,12 @@ distinct models.
 **What 11.8% is, and what it is not.** It is not a ceiling on what could run
 here, and it is not a statement that the rest are local-only workflows. 331 of
 the 610 templates carry the `API` tag, so more than half call a partner model
-already. Of those 331 only 72 resolve: 232 name a model the catalogue does not
+already. Of those 331 only 72 resolve: 226 name a model the catalogue does not
 carry under that name, either because it is absent (MiniMax H3, PixVerse) or
 because the workflow names a family while the catalogue lists operations (`Wan
-3.0` against `Wan 3.0 Image-to-Video`), and 33 name a catalogue model but carry
-more than one task tag, so no single destination is safe. The figure therefore
+3.0` against `Wan 3.0 Image-to-Video`), and 33 name a catalogue model but land
+nowhere single, 19 of them because the catalogue itself lists that model once
+per operation. The figure therefore
 measures today's catalogue coverage and the strictness of the join, and both
 are V2 work rather than facts of nature. Even for the 72, running the model is
 not running the workflow: the site runs the capability underneath, not the
@@ -109,9 +110,11 @@ is defined separately once V1 ships.
   renders it, so a card shipped today links to a 404. Porting that page is the
   first piece of V2 work this decision implies.
 - The join is load-bearing now. It is what keeps a model and its workflows from
-  reading as alternatives, so its coverage is a product concern: the 232
+  reading as alternatives, so its coverage is a product concern: the 226
   templates that name a model the catalogue does not carry are the gap to close
-  first, and the 33 multi-tag misses are the join's own.
+  first, and 126 of them name a family, an operation or a provider we already
+  carry under another name. The 33 that land nowhere single are mostly ours: 19
+  fail because one model is listed as several rows.
 - `Open in ComfyUI` needs a real destination. Today it points back at the hub
   this work replaces.
 - The catalogue needs a type facet with counts, and sort orders that mean
@@ -142,14 +145,20 @@ badge does.
    titled after their own model, so running them from a workflow page mostly
    duplicates the model page. Meanwhile only 5 of the 18 Comfy Apps can run,
    and apps are where running in the browser would earn its place.
-2. **What happens to Comfy Apps?** 13 of the 18 need multi-model orchestration
-   the site does not have.
+2. **What happens to Comfy Apps?** 5 of the 18 resolve. Of the other 13, eight
+   are not partner workflows at all and run local weights; two name models the
+   catalogue does not carry; two name a model it lists twice, once to generate
+   and once to edit, and tag no task that would choose; one names a model whose
+   page covers a different task. Only 5 of the 18 name more than one model, so
+   the gap is not multi-model orchestration.
 3. **Templates or workflows?** The hub says workflows, the repo data says
    templates, the interface says both. Worth settling the noun once.
 4. **Where does `Open in ComfyUI` go?**
 5. **How far does catalogue coverage go before V2 ships?** The merged
    catalogue reads better the more of the 331 API workflows point at a model
-   that exists.
+   that exists. 126 of the 226 name a family, an operation or a provider the
+   catalogue already carries under another name, so half the gap is a mapping
+   rather than a model.
 
 ## Implementation
 
