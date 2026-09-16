@@ -135,26 +135,20 @@ export function approvedLayer(
  *
  * This is where "the AI fills only what is absent" is enforced. Approved values
  * are excluded because they win at resolve time regardless, so translating them
- * would spend money and reviewer attention on strings no reader can ever see.
+ * would spend money on strings no reader can ever see.
  * Keys the model already translated on a previous run are excluded too; a
  * changed English string re-enters this set via `pruneStaleKeys`.
- *
- * `rejected` holds keys the reviewer refused under the English now in force
- * (see `rejectedUnderCurrentEnglish`). They are absent from the machine layer
- * by design, and asking for them again would only buy the same verdict.
  */
 export function pendingSource(
   entries: SourceEntry[],
   locale: Locale,
-  machine: TranslationLayer,
-  rejected: ReadonlySet<string> = new Set()
+  machine: TranslationLayer
 ): EnglishSource {
   const approved = approvedLayer(entries, locale)
   const pending: EnglishSource = {}
   for (const [key, english] of Object.entries(buildEnglishSource(entries))) {
     if (Object.hasOwn(approved, key)) continue
     if (Object.hasOwn(machine, key)) continue
-    if (rejected.has(key)) continue
     pending[key] = english
   }
   return pending

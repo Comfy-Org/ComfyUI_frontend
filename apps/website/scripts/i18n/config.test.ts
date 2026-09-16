@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import { LOCALIZED_CODES } from '../../src/config/locales'
-import { localeRubric, parsePreserveTerms } from './config'
+import { localeVoice, parsePreserveTerms } from './config'
 
 /**
  * The glossary is injected into the translation prompt and is also what the
@@ -35,23 +35,16 @@ describe('parsePreserveTerms', () => {
   })
 })
 
-/**
- * The shared `OutputLocale` type makes `guidance` optional, because the app UI's
- * locales have none. On the website it is not optional: it is half of what the
- * translator is told, and half of the rubric the reviewer's verdicts are
- * fingerprinted against. A locale silently missing it would be translated to no
- * particular voice and reviewed against no particular standard.
- */
-describe('localeRubric', () => {
+describe('localeVoice', () => {
   it('carries a name and voice guidance for every locale the site serves', () => {
     for (const locale of LOCALIZED_CODES) {
-      const rubric = localeRubric(locale)
-      expect(rubric.name).not.toBe('')
-      expect(rubric.guidance.trim()).not.toBe('')
+      const voice = localeVoice(locale)
+      expect(voice.name).not.toBe('')
+      expect(voice.guidance.trim()).not.toBe('')
     }
   })
 
   it('refuses a locale the pipeline does not translate', () => {
-    expect(() => localeRubric('en')).toThrow(/OUTPUT_LOCALES/)
+    expect(() => localeVoice('en')).toThrow(/OUTPUT_LOCALES/)
   })
 })

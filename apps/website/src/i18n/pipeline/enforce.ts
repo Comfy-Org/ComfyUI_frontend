@@ -1,15 +1,3 @@
-/**
- * Removes translations that failed a check, rather than trying to fix them.
- *
- * This is what makes publishing on the AI pass safe. A flagged string is dropped,
- * so the key becomes absent, the resolver falls back to English, and the reader
- * sees English instead of a translation the reviewer rejected. Nothing incorrect
- * is ever published; a later run, or a person, fills the gap.
- *
- * The hub states the same rule in `enforce-translations.ts`: "Nothing incorrect
- * is ever published; the dropped fields show English until a later run (or a
- * human review) fills them in."
- */
 import type { TranslationLayer } from './types'
 import type { Violation } from './validate'
 

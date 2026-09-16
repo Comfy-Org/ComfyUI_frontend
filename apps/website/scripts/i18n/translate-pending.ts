@@ -7,12 +7,6 @@
  * Reads  src/i18n/pending/{locale}.json   what the source build says is missing
  * Writes src/i18n/incoming/{locale}.json  raw model output, NOT yet published
  *
- * Staging matters. `incoming` is what the reviewer and `enforce` operate on, and
- * only what survives both reaches `content/{locale}.json`, which is the layer the
- * site actually reads. Nothing the model produces is published without passing
- * through that gate.
- *
- * The translation itself is the repo's existing app-UI translator, unmodified.
  */
 // Loads apps/website/.env so a local run picks up OPENAI_API_KEY without the
 // key living in shell history. The file is gitignored; CI passes the key as an

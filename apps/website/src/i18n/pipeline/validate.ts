@@ -1,9 +1,7 @@
 /**
  * The deterministic quality gate for machine translations.
  *
- * We own quality, not the model. Everything checkable without judgement is
- * checked here and fails CI; everything needing judgement goes to the AI
- * reviewer. Ported from the hub's `validate-translations.ts`, with the checks
+ * Ported from the hub's `validate-translations.ts`, with the checks
  * retargeted at marketing copy: single-brace placeholders and line structure
  * matter here, where the hub cared about array lengths and FAQ shapes.
  *
@@ -27,12 +25,6 @@ export interface Violation {
     | 'script'
     | 'brand-voice'
     | 'unknown-key'
-    /**
-     * Raised by the AI reviewer in `review.ts`, never by `collectViolations`.
-     * A kind of its own rather than reusing `glossary`, so the deterministic
-     * counts this file reports stay counts of deterministic failures.
-     */
-    | 'ai-review'
   detail: string
 }
 

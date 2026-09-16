@@ -6,11 +6,6 @@
  * tooling into the page bundle.
  */
 
-/**
- * Which layer answered. The pipeline needs this, not just the string: it decides
- * whether a value may be re-translated, whether the reviewer may prune it, and
- * whether a page that used it is complete enough to be indexed.
- */
 type Provenance = 'approved' | 'machine' | 'english'
 
 export interface Resolved {

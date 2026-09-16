@@ -10,20 +10,15 @@ import fs from 'node:fs'
 import path from 'node:path'
 
 import { LOCALES, LOCALIZED_CODES } from '../../src/config/locales'
-import { localeRubric, OUTPUT_LOCALES, preserveTerms } from './config'
+import { localeVoice, OUTPUT_LOCALES, preserveTerms } from './config'
 
 const I18N_DIR = path.join(process.cwd(), 'src', 'i18n')
 
-function checkRubrics(problems: string[]): void {
-  // 3. Voice guidance is optional in the shared `OutputLocale` type, because the
-  //    app UI's locales have none. Here it is half of what the translator is
-  //    told and half of the rubric the reviewer's verdicts are fingerprinted
-  //    against, so a locale missing it would be translated to no particular
-  //    voice and reviewed against no particular standard.
+function checkVoices(problems: string[]): void {
   for (const locale of LOCALIZED_CODES) {
     if (!OUTPUT_LOCALES[locale]) continue
     try {
-      localeRubric(locale)
+      localeVoice(locale)
     } catch (error) {
       problems.push((error as Error).message)
     }
@@ -56,7 +51,7 @@ function checkLocales(problems: string[]): void {
 
   checkOutputLocales(problems)
 
-  checkRubrics(problems)
+  checkVoices(problems)
 }
 
 function checkContentFiles(problems: string[]): void {

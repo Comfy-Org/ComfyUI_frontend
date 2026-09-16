@@ -1,31 +1,3 @@
-/**
- * enforce-translations — the gate between what the model produced and what the
- * site publishes.
- *
- * Run: `WEBSITE_I18N_LOCALE=ja pnpm i18n:enforce` (no API key needed).
- *
- * Reads  src/i18n/incoming/{locale}.json   raw model output
- *        src/i18n/review/{locale}.json     the AI reviewer's verdicts
- * Writes src/i18n/content/{locale}.json    the layer the site actually reads
- *
- * Anything failing a deterministic check, or graded critical or major by the
- * reviewer, is DROPPED, not corrected. The key becomes absent, the resolver
- * falls back to English, and the reader sees English rather than a translation
- * that failed review. That is what makes publishing on the AI pass safe.
- *
- * Both kinds of failure prune here, through one path, so a key dropped for bad
- * grammar behaves exactly like one dropped for a lost brand name. The reviewer
- * writes verdicts and nothing else; it owns no gate of its own.
- *
- * A key dropped on review is also recorded in `review/{locale}.json` under the
- * English it was judged against, so the next source build holds it back rather
- * than listing it as untranslated and paying for the same verdict again. The
- * hold lifts when the English or the rubric moves, or when the key publishes.
- *
- * Existing entries in `content` are merged with, never replaced, so a run that
- * translates ten new keys cannot discard the hundred already there.
- */
-import fs from 'node:fs'
 import path from 'node:path'
 
 import { isLocale } from '../../src/config/locales'
@@ -35,50 +7,13 @@ import {
   isSystemicFailure,
   isUsableEnglishSource
 } from '../../src/i18n/pipeline/enforce'
-import {
-  glossaryFingerprint,
-  loadReviewState,
-  reviewViolations,
-  serializeReviewState,
-  withRejections
-} from '../../src/i18n/pipeline/review'
-import type { ReviewState } from '../../src/i18n/pipeline/review'
-import type { Violation } from '../../src/i18n/pipeline/validate'
 import type { EnglishSource } from '../../src/i18n/pipeline/types'
+import type { Violation } from '../../src/i18n/pipeline/validate'
 import { collectViolations } from '../../src/i18n/pipeline/validate'
-import { localeRubric, OUTPUT_LOCALES, preserveTerms } from './config'
+import { OUTPUT_LOCALES, preserveTerms } from './config'
 import { writeSortedJson } from './write-json'
 
 const I18N_DIR = path.join(process.cwd(), 'src', 'i18n')
-
-/**
- * The stored verdicts, which `loadReviewState` validates in full. Absence is
- * normal before the reviewer has run for a locale.
- */
-function readReviewState(file: string): unknown {
-  try {
-    return JSON.parse(fs.readFileSync(file, 'utf8'))
-  } catch (error) {
-    if ((error as NodeJS.ErrnoException).code === 'ENOENT') return null
-    throw error
-  }
-}
-
-/**
- * Rejections are the one thing enforcement writes back to the review file.
- *
- * The verdicts stay the reviewer's. What enforcement adds is which of them it
- * acted on, keyed to the English at the time, so the next source build does
- * not list the key as untranslated and pay for the same verdict again.
- */
-function writeReviewState(file: string, state: ReviewState): void {
-  fs.mkdirSync(path.dirname(file), { recursive: true })
-  fs.writeFileSync(
-    file,
-    `${JSON.stringify(serializeReviewState(state), null, 2)}\n`,
-    'utf8'
-  )
-}
 
 function reportDeterministicResult(
   locale: string,
@@ -106,39 +41,6 @@ function reportDeterministicResult(
   }
 }
 
-function reportReviewResult(
-  locale: string,
-  merged: EnglishSource,
-  findings: Violation[],
-  rejected: string[],
-  rejectedShare: number
-): void {
-  process.stdout.write(
-    rejected
-      .map((key) => {
-        const why =
-          findings.find((finding) => finding.key === key)?.detail ?? ''
-        return `  rejected ${key} (${why})\n`
-      })
-      .join('')
-  )
-
-  if (
-    isSystemicFailure({
-      dropped: rejected.length,
-      total: Object.keys(merged).length
-    })
-  ) {
-    console.error(
-      `[i18n] ${locale}: the reviewer rejected ${Math.round(rejectedShare * 100)}% ` +
-        `of the locale (${rejected.length} of ${Object.keys(merged).length}). ` +
-        `That is a broken rubric or reviewer, not a weak tail. Publishing this ` +
-        `would revert the locale to English.`
-    )
-    process.exit(1)
-  }
-}
-
 function configuredLocale() {
   const locale = process.env.WEBSITE_I18N_LOCALE
   const output = isLocale(locale) ? OUTPUT_LOCALES[locale] : undefined
@@ -151,11 +53,6 @@ function configuredLocale() {
   return { locale, output }
 }
 
-/**
- * The English content-of-record. An absent layer reads as `{}`, which would
- * pass every translation rather than fail the run: there is no key left to
- * disagree with.
- */
 function requireEnglish(): EnglishSource {
   const englishFile = path.join(I18N_DIR, 'content', 'en.json')
   const english: EnglishSource = readTranslationLayer(englishFile)
@@ -165,26 +62,6 @@ function requireEnglish(): EnglishSource {
     )
   }
   return english
-}
-
-/**
- * Remember what was rejected, and only when there is a decision to remember.
- * A run with nothing rejected and nothing on record leaves the reviewer's
- * file as it wrote it.
- */
-function recordRejections(
-  reviewFile: string,
-  reviewState: ReviewState,
-  english: EnglishSource,
-  rejected: readonly string[],
-  published: readonly string[]
-): void {
-  const onRecord = Object.keys(reviewState.rejected ?? {}).length > 0
-  if (rejected.length === 0 && !onRecord) return
-  writeReviewState(
-    reviewFile,
-    withRejections(reviewState, english, rejected, published)
-  )
 }
 
 function main(): void {
@@ -205,59 +82,20 @@ function main(): void {
 
   reportDeterministicResult(locale, incoming, violations, dropped, droppedShare)
 
-  // The AI reviewer's critical and major findings prune through this same path,
-  // so a key dropped for bad grammar behaves exactly like one dropped for a lost
-  // brand name: absent, English at render, one threshold.
-  //
-  // Against the merged layer rather than this run's staging, because a verdict
-  // may be about copy published weeks ago — the reviewer reads what is live, not
-  // only what is new. Absent review state contributes nothing, so the
-  // deterministic floor keeps working on its own exactly as before.
-  //
-  // The rubric fingerprint is recomputed here rather than trusting the file: if
-  // the glossary or the locale's voice guidance has moved since the verdicts
-  // were reached, they describe a rule that is no longer in force, and pruning
-  // real copy on them would be worse than not pruning at all.
-  const merged = { ...existing, ...kept }
-  const reviewFile = path.join(I18N_DIR, 'review', `${locale}.json`)
-  const reviewState = loadReviewState(
-    readReviewState(reviewFile),
-    glossaryFingerprint(terms, localeRubric(locale).guidance)
-  )
-  const findings = reviewViolations(locale, reviewState, english, merged)
-
-  // Nothing translated tonight and nothing rejected on review: there is no
-  // decision to record, so leave the published layer untouched rather than
-  // rewriting it to prove it did not change.
-  if (Object.keys(incoming).length === 0 && findings.length === 0) {
+  if (Object.keys(incoming).length === 0) {
     process.stdout.write(
-      `[i18n] ${locale}: nothing staged in ${incomingFile}, no review findings.\n`
+      `[i18n] ${locale}: nothing staged in ${incomingFile}.\n`
     )
     return
   }
 
-  const {
-    kept: published,
-    dropped: rejected,
-    droppedShare: rejectedShare
-  } = enforceTranslations(merged, findings)
-
-  reportReviewResult(locale, merged, findings, rejected, rejectedShare)
-
+  const published = { ...existing, ...kept }
   writeSortedJson(contentFile, published)
-  recordRejections(
-    reviewFile,
-    reviewState,
-    english,
-    rejected,
-    Object.keys(published)
-  )
 
   process.stdout.write(
     `[i18n] ${locale}: published ${Object.keys(kept).length}, ` +
-      `dropped ${dropped.length} to English, ` +
-      `rejected ${rejected.length} on review` +
-      `; content now holds ${Object.keys(published).length} key(s).\n`
+      `dropped ${dropped.length} to English; ` +
+      `content now holds ${Object.keys(published).length} key(s).\n`
   )
 }
 

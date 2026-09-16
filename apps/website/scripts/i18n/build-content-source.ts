@@ -19,16 +19,10 @@
  * All decisions live in `src/i18n/pipeline/source.ts` as pure, unit-tested
  * functions. This file only does IO, mirroring how the hub splits the two.
  */
-import fs from 'node:fs'
 import path from 'node:path'
 
 import { LOCALIZED_CODES } from '../../src/config/locales'
 import { readTranslationLayer } from '../../src/i18n/pipeline/artifacts'
-import {
-  glossaryFingerprint,
-  loadReviewState,
-  rejectedUnderCurrentEnglish
-} from '../../src/i18n/pipeline/review'
 import { dataAdapter } from '../../src/i18n/pipeline/adapters/data'
 import { faqAdapter } from '../../src/i18n/pipeline/adapters/faq'
 import { storyAdapter } from '../../src/i18n/pipeline/adapters/story'
@@ -44,7 +38,6 @@ import {
   translatableEntries
 } from '../../src/i18n/pipeline/source'
 import type { SourceAdapter } from '../../src/i18n/pipeline/types'
-import { localeRubric, OUTPUT_LOCALES, preserveTerms } from './config'
 import { writeSortedJson } from './write-json'
 
 /**
@@ -63,34 +56,6 @@ const I18N_DIR = path.join(process.cwd(), 'src', 'i18n')
 const CONTENT_DIR = path.join(I18N_DIR, 'content')
 const PENDING_DIR = path.join(I18N_DIR, 'pending')
 const MANIFEST_FILE = path.join(I18N_DIR, 'manifest.json')
-const REVIEW_DIR = path.join(I18N_DIR, 'review')
-
-/**
- * Keys the reviewer rejected under the English and rubric now in force, which
- * the work list must leave out. Read with the rubric fingerprint, so a changed
- * glossary or voice lifts every rejection at once rather than a night later.
- * A locale the pipeline does not translate has no rubric and no rejections.
- */
-function rejectedKeys(
-  locale: string,
-  english: Record<string, string>
-): ReadonlySet<string> {
-  if (!OUTPUT_LOCALES[locale]) return new Set()
-  let stored: unknown = null
-  try {
-    stored = JSON.parse(
-      fs.readFileSync(path.join(REVIEW_DIR, `${locale}.json`), 'utf8')
-    )
-  } catch (error) {
-    if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error
-  }
-  const state = loadReviewState(
-    stored,
-    glossaryFingerprint(preserveTerms(), localeRubric(locale).guidance)
-  )
-  return rejectedUnderCurrentEnglish(state, english)
-}
-
 function updateMachineLayers(
   entriesToTranslate: ReturnType<typeof translatableEntries>,
   currentKeys: Set<string>,
@@ -107,21 +72,14 @@ function updateMachineLayers(
     )
     writeSortedJson(machineFile, machine)
 
-    const rejected = rejectedKeys(
-      locale,
-      buildEnglishSource(entriesToTranslate)
-    )
-    const pending = pendingSource(entriesToTranslate, locale, machine, rejected)
+    const pending = pendingSource(entriesToTranslate, locale, machine)
     writeSortedJson(path.join(PENDING_DIR, `${locale}.json`), pending)
 
     const dropped = Object.keys(before).length - Object.keys(machine).length
     summary.push(
       `  ${locale}: ${Object.keys(machine).length} translated, ` +
         `${Object.keys(pending).length} pending` +
-        (dropped > 0 ? `, ${dropped} dropped as stale or orphaned` : '') +
-        (rejected.size > 0
-          ? `, ${rejected.size} held back as rejected on review`
-          : '')
+        (dropped > 0 ? `, ${dropped} dropped as stale or orphaned` : '')
     )
   }
 }

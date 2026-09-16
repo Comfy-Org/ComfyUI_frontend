@@ -132,7 +132,7 @@ describe('translatableEntries', () => {
    * Pages that are structured but deliberately not sent to the model: a one-off
    * launch page, and a page whose own description calls it temporary. Extracting
    * their copy makes them locale-generic like every other page; translating them
-   * would spend money and reviewer time on copy nobody asked to see in another
+   * would spend money on copy nobody asked to see in another
    * language.
    */
   it.for([
@@ -167,7 +167,7 @@ describe('pendingSource', () => {
    *
    * Approved values are excluded, so the model is never asked to produce a
    * string that could not be displayed anyway (approved always wins at resolve
-   * time). That also keeps the reviewer's budget off strings nobody will see.
+   * time).
    */
   it('asks for only what the locale is missing', () => {
     expect(pendingSource(entries, 'zh-CN', {})).toEqual({
@@ -190,18 +190,6 @@ describe('pendingSource', () => {
     ).toEqual({
       'hero.brand': 'ComfyUI',
       'hero.new': 'Brand new'
-    })
-  })
-
-  /**
-   * A key the reviewer rejected is absent from the machine layer by design.
-   * Listing it as pending would buy the same translation and the same verdict
-   * again every night.
-   */
-  it('leaves out a key held back as rejected on review', () => {
-    expect(pendingSource(entries, 'ja', {}, new Set(['hero.new']))).toEqual({
-      'hero.title': 'Build anything',
-      'hero.brand': 'ComfyUI'
     })
   })
 

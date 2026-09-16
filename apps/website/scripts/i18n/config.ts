@@ -105,17 +105,7 @@ export const OUTPUT_LOCALES: Record<string, OutputLocale | undefined> = {
   }
 }
 
-/**
- * The name and voice a locale is both translated to and judged against.
- *
- * `OutputLocale.guidance` is optional in the shared type because the app UI's
- * locales have none. On the website it is not optional: it is half of what the
- * translator is told, and half of the rubric the reviewer's verdicts are
- * fingerprinted against. A locale silently missing it would be translated to no
- * particular voice and reviewed against no particular standard, so this refuses
- * rather than substituting an empty string.
- */
-export function localeRubric(locale: string): {
+export function localeVoice(locale: string): {
   name: string
   guidance: string
 } {
@@ -126,8 +116,7 @@ export function localeRubric(locale: string): {
   const guidance = output.guidance?.trim()
   if (!guidance) {
     throw new Error(
-      `[i18n] OUTPUT_LOCALES["${locale}"] has no voice guidance, which both ` +
-        `the translator and the reviewer need.`
+      `[i18n] OUTPUT_LOCALES["${locale}"] has no voice guidance for the translator.`
     )
   }
   return { name: output.name, guidance }

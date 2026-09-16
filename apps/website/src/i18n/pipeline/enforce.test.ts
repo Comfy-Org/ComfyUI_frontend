@@ -15,12 +15,6 @@ const violation = (key: string): Violation => ({
 })
 
 describe('enforceTranslations', () => {
-  /**
-   * The mechanism that makes publishing on the AI pass safe. A flagged string is
-   * removed, not corrected: the key becomes absent, the resolver falls back to
-   * English, and the page shows English rather than a translation the reviewer
-   * rejected. Nothing wrong is ever published.
-   */
   it('drops a flagged translation instead of publishing it', () => {
     const result = enforceTranslations({ good: 'よい', bad: 'わるい' }, [
       violation('bad')
