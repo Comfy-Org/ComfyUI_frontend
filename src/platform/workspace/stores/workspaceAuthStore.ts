@@ -876,6 +876,7 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
         })
       }
     },
+    // Observer order against authStore is not load-bearing: unifiedUser() waits for the port's user and fails closed on the ceiling.
     firebaseIdentity
   )
 
