@@ -8,6 +8,7 @@
   "type": "module",
   "exports": {
     "./boundedOperation": "./src/core/boundedOperation.ts",
+    "./lazyIdentity": "./src/core/lazyIdentity.ts",
     "./session": "./src/core/session.ts",
     "./billing": "./src/core/billing/index.ts",
     "./firebase": "./src/firebase/index.ts",
