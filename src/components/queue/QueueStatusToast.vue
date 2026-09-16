@@ -1,8 +1,21 @@
 <template>
-  <div class="relative inline-flex flex-col items-end">
+  <div
+    :class="
+      cn(
+        'relative inline-flex flex-col',
+        alignStart ? 'items-start' : 'items-end'
+      )
+    "
+  >
     <div
       v-if="showToast"
-      class="pointer-events-auto flex flex-col items-end gap-1"
+      :class="
+        cn(
+          'pointer-events-auto flex gap-1',
+          above ? 'flex-col-reverse' : 'flex-col',
+          alignStart ? 'items-start' : 'items-end'
+        )
+      "
       @pointerenter="openStack"
       @pointerleave="scheduleCloseStack"
     >
@@ -10,27 +23,40 @@
         :label="pillLabel"
         :badge="pillBadge"
         :progress="pillProgress"
-        :expanded="expanded"
+        :expanded="panelOpen"
         :terminal-kind="pillTerminalKind"
         :stack="peekDepth"
         @activate="onPillActivate"
       />
 
-      <QueueStatusPanel
-        v-if="panelOpen"
-        :rows="panelRows"
-        :queued-count="queuedCount"
-        @cancel="handleCancel"
-        @clear-queue="handleClearQueue"
-        @cancel-all="handleCancelAll"
-      />
+      <Transition
+        enter-active-class="transition-[translate,scale,opacity] duration-250 ease-[cubic-bezier(0.32,0.72,0,1)]"
+        leave-active-class="transition-[translate,scale,opacity] duration-150 ease-in"
+        :enter-from-class="panelHiddenClass"
+        :leave-to-class="panelHiddenClass"
+      >
+        <QueueStatusPanel
+          v-if="panelOpen"
+          :rows="panelRows"
+          :queued-count="queuedCount"
+          :results="recentResults"
+          :above="above"
+          :align-start="alignStart"
+          @cancel="handleCancel"
+          @clear-queue="handleClearQueue"
+          @cancel-all="handleCancelAll"
+          @view="handleViewResult"
+          @history="handleGoToHistory"
+        />
+      </Transition>
     </div>
 
     <QueueStatusIdle
       v-else
       v-model:open="idleOpen"
-      :label="activeJobsLabel"
+      :label="idleLabel"
       :results="recentResults"
+      :align="alignStart ? 'start' : 'end'"
       @view="handleViewResult"
       @history="handleGoToHistory"
     />
@@ -43,6 +69,7 @@
 </template>
 
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
 import { computed, nextTick, onUnmounted, reactive, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -63,6 +90,7 @@ import { api } from '@/scripts/api'
 import { useExecutionStore } from '@/stores/executionStore'
 import type { TaskItemImpl } from '@/stores/queueStore'
 import type { AugmentedResultItem } from '@/utils/resultItem'
+import { formatShortMonthDay, isToday } from '@/utils/dateTimeUtil'
 import { isVideoResult } from '@/utils/resultItem'
 import { resultItemPreviewUrl } from '@/utils/resultItemUrl'
 import { useQueueStore } from '@/stores/queueStore'
@@ -75,6 +103,11 @@ const RECENT_JOB_LIMIT = 4
 let popoverAutoOpened = false
 const JOB_POPOVER_AUTO_OPEN_MS = 4000
 
+const { above = false, alignStart = false } = defineProps<{
+  above?: boolean
+  alignStart?: boolean
+}>()
+
 const { t, n, locale } = useI18n()
 const queueStore = useQueueStore()
 const executionStore = useExecutionStore()
@@ -82,7 +115,8 @@ const { wrapWithErrorHandlingAsync } = useErrorHandling()
 const { jobItems } = useJobList()
 const rightSidePanelStore = useRightSidePanelStore()
 
-const expanded = ref(false)
+/** The user folded the deck; jobs stay visible until they do. */
+const collapsed = ref(false)
 const idleOpen = ref(false)
 let autoOpenTimer: number | undefined
 let completedTimer: number | undefined
@@ -159,7 +193,6 @@ watch(activeCount, (count, prev) => {
     lastActiveIds.clear()
     cancelIntent.value = false
     completedFlash.value = true
-    expanded.value = false
     if (completedTimer !== undefined) window.clearTimeout(completedTimer)
     completedTimer = window.setTimeout(() => {
       completedTimer = undefined
@@ -213,9 +246,7 @@ function scheduleCloseStack() {
 }
 
 const stackCount = computed(() => Math.min(activeCount.value - 1, 2))
-const fanned = computed(
-  () => !isTerminal.value && (hovered.value || expanded.value)
-)
+const fanned = computed(() => !isTerminal.value && hovered.value)
 
 const headlineProgress = computed(() => runningJobs.value[0]?.progress ?? 0)
 
@@ -227,11 +258,8 @@ const pillLabel = computed(() => {
       : t('queueStatus.completed')
   }
   if (runningCount.value > 1)
-    return t('queueStatus.processingCount', { count: runningCount.value })
-  if (runningCount.value === 1)
-    return queuedCount.value > 0
-      ? t('queueStatus.running')
-      : t('queueStatus.processing')
+    return t('queueStatus.runningCount', { count: runningCount.value })
+  if (runningCount.value === 1) return t('queueStatus.running')
   return t('g.queued')
 })
 
@@ -245,7 +273,7 @@ const showProgressLine = computed(
   () => runningCount.value === 1 && !isTerminal.value
 )
 
-const activeJobsLabel = computed(() => {
+const idleLabel = computed(() => {
   const count = queueStore.activeJobsCount
   return t(
     'sideToolbar.queueProgressOverlay.activeJobsShort',
@@ -276,10 +304,13 @@ function jobSubtitle(job: JobView): string {
     ? t('queueStatus.queuedNextUp')
     : t('queueStatus.queuedPosition', { position: job.queuePosition })
 }
-const peekDepth = computed(() =>
-  isTerminal.value || fanned.value ? 0 : stackCount.value
+const peekDepth = computed(() => (panelOpen.value ? 0 : stackCount.value))
+const panelOpen = computed(
+  () => !isTerminal.value && (!collapsed.value || fanned.value)
 )
-const panelOpen = computed(() => expanded.value || fanned.value)
+const panelHiddenClass = computed(() =>
+  cn('scale-[0.98] opacity-0', above ? 'translate-y-2' : '-translate-y-2')
+)
 const pillBadge = computed(() => queuedBadge.value ?? undefined)
 const pillProgress = computed(() =>
   showProgressLine.value ? headlineProgress.value : undefined
@@ -288,8 +319,12 @@ const pillTerminalKind = computed(() =>
   isTerminal.value ? terminalKind.value : null
 )
 function onPillActivate() {
-  if (isTerminal.value) onCompletedChipClick()
-  else expanded.value = !expanded.value
+  if (!isTerminal.value) {
+    collapsed.value = !collapsed.value
+    return
+  }
+  if (terminalKind.value === 'completed') void onCompletedChipClick()
+  else onTerminalChipClickToHistory()
 }
 const panelRows = computed(() =>
   jobs.value.map((job) => ({ job, subtitle: jobSubtitle(job) }))
@@ -330,10 +365,7 @@ const cancelJobIds = wrapWithErrorHandlingAsync(async (ids: string[]) => {
 })
 
 function handleCancel(job: JobView) {
-  if (jobs.value.length <= 1) {
-    cancelIntent.value = true
-    expanded.value = false
-  }
+  if (jobs.value.length <= 1) cancelIntent.value = true
   void cancelJobById(job.id)
 }
 function handleClearQueue() {
@@ -342,7 +374,6 @@ function handleClearQueue() {
 }
 function handleCancelAll() {
   cancelIntent.value = true
-  expanded.value = false
   void cancelJobIds(jobs.value.map((job) => job.id))
 }
 
@@ -366,6 +397,14 @@ function handleGoToHistory() {
   idleOpen.value = false
   rightSidePanelStore.openPanel('job-history')
 }
+function onTerminalChipClickToHistory() {
+  if (completedTimer !== undefined) {
+    window.clearTimeout(completedTimer)
+    completedTimer = undefined
+  }
+  completedFlash.value = false
+  handleGoToHistory()
+}
 
 const jobThumbnail = (job: JobListItem): AugmentedResultItem | undefined =>
   job.taskRef?.previewOutput
@@ -374,6 +413,18 @@ const recentJobs = computed(() =>
     .filter((job) => job.state === 'completed')
     .slice(0, RECENT_JOB_LIMIT)
 )
+const completedMeta = (job: JobListItem): string => {
+  const ts = job.taskRef?.executionEndTimestamp ?? job.taskRef?.job.create_time
+  if (!ts) return t('queueStatus.completed')
+  const time = new Intl.DateTimeFormat(locale.value, {
+    hour: 'numeric',
+    minute: '2-digit'
+  }).format(new Date(ts))
+  const when = isToday(ts)
+    ? time
+    : `${formatShortMonthDay(ts, locale.value)}, ${time}`
+  return `${t('queueStatus.completed')} · ${when}`
+}
 const recentResults = computed<RecentResult[]>(() =>
   recentJobs.value.map((job) => {
     const thumb = jobThumbnail(job)
@@ -381,7 +432,7 @@ const recentResults = computed<RecentResult[]>(() =>
       id: job.id,
       job,
       name: thumb?.display_name?.trim() || thumb?.filename || job.title,
-      meta: t('queueStatus.recentCompleted'),
+      meta: completedMeta(job),
       thumbSrc: thumb ? resultItemPreviewUrl(thumb) : undefined,
       isVideo: thumb ? isVideoResult(thumb) : false
     }
@@ -402,14 +453,14 @@ onUnmounted(() => {
 
 <style scoped>
 :deep(.job-toast-row) {
-  animation: job-toast-row-in 260ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation: job-toast-row-in 240ms cubic-bezier(0.32, 0.72, 0, 1) both;
   animation-delay: var(--row-delay, 0ms);
 }
 
 @keyframes job-toast-row-in {
   from {
     opacity: 0;
-    transform: translateY(-10px) scale(0.94);
+    transform: translateY(-6px) scale(0.97);
   }
 }
 

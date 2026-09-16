@@ -1,9 +1,9 @@
 <template>
   <div class="relative isolate flex items-center">
     <span
-      v-for="depth in stack"
+      v-for="depth in PEEK_MAX"
       :key="depth"
-      :class="cn(PEEK_BASE, PEEK_DEPTH[depth] ?? PEEK_DEPTH[2])"
+      :class="cn(PEEK_BASE, depth <= stack ? PEEK_DEPTH[depth] : PEEK_HIDDEN)"
       aria-hidden
     />
     <button
@@ -12,7 +12,7 @@
       data-testid="queue-status-toast"
       :class="
         cn(
-          'relative z-2 flex h-9 cursor-pointer items-stretch overflow-hidden rounded-[10px] border border-base-foreground/9 bg-base-background/80 p-0 text-left shadow-[0_4px_16px_rgba(0,0,0,0.3)] backdrop-blur-xl transition-colors hover:bg-secondary-background/80',
+          'relative z-2 flex h-9 cursor-pointer items-stretch overflow-hidden rounded-lg border border-base-foreground/9 bg-base-background/80 p-0 text-left shadow-interface backdrop-blur-xl transition-colors hover:bg-secondary-background/80',
           terminalKind ? 'items-center px-3' : 'min-w-[176px]'
         )
       "
@@ -40,21 +40,22 @@
         </span>
 
         <span
-          class="truncate text-[13.5px] leading-none font-normal whitespace-nowrap text-base-foreground tabular-nums"
+          class="truncate text-sm leading-none font-normal whitespace-nowrap text-base-foreground tabular-nums"
+          aria-live="polite"
         >
           {{ label }}
         </span>
 
         <span
           v-if="badge"
-          class="shrink-0 rounded-full bg-base-foreground/8 px-1.5 py-1 text-[10px] leading-none font-medium tracking-wide text-muted-foreground uppercase"
+          class="shrink-0 rounded-full bg-base-foreground/8 px-2 py-1 text-xs leading-none font-medium text-muted-foreground"
         >
           {{ badge }}
         </span>
 
         <div
           v-if="progress !== undefined"
-          class="pointer-events-none absolute bottom-0 left-0 h-px bg-base-foreground/70 transition-[width] duration-200 ease-out"
+          class="pointer-events-none absolute bottom-0 left-0 h-0.5 bg-base-foreground/70 transition-[width] duration-200 ease-out"
           :style="{ width: `${progress}%` }"
           aria-hidden
         />
@@ -90,11 +91,14 @@ const {
 const emit = defineEmits<{ activate: [] }>()
 
 const PEEK_BASE =
-  'pointer-events-none absolute inset-x-0 top-0 h-9 rounded-[10px] border border-base-foreground/9 bg-base-background/75 backdrop-blur-xl transition-all duration-200 ease-out'
+  'pointer-events-none absolute inset-x-0 top-0 h-9 rounded-lg border border-base-foreground/12 bg-base-background/90 shadow-interface backdrop-blur-xl transition-[translate,scale,opacity] duration-250 ease-[cubic-bezier(0.32,0.72,0,1)]'
+const PEEK_MAX = 2
 const PEEK_DEPTH: Record<number, string> = {
-  1: 'z-1 translate-y-[6px] scale-[0.97] opacity-90',
-  2: 'z-0 translate-y-[12px] scale-[0.94] opacity-70'
+  1: 'z-1 translate-y-[10px] scale-[0.95]',
+  2: 'z-0 translate-y-[19px] scale-[0.9] opacity-85'
 }
+/** Slides back under the pill instead of vanishing when the deck fans out. */
+const PEEK_HIDDEN = 'z-0 translate-y-0 scale-100 opacity-0'
 
 const TERMINAL_ICON: Record<TerminalKind, string> = {
   completed: 'icon-[lucide--check] text-base-foreground',
