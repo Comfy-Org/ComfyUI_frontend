@@ -499,22 +499,22 @@ export function createSessionClient<TUser extends AccountUser = AccountUser>(
       )
     }
     detachCurrent?.()
-    let active = true
-    const unsubscribe = port.onUserChanged((next) => {
-      if (!active) return
-      commit({ type: 'identity-changed', user: next })
-      if (next && autoMint) {
-        void refreshWith(ensureCore, next)
-      }
-    })
+    let unsubscribe: () => void = () => undefined
     const detach = () => {
-      if (!active) return
-      active = false
+      if (detachCurrent !== detach) return
       detachCurrent = undefined
       unsubscribe()
       commit({ type: 'identity-detached' })
     }
     detachCurrent = detach
+    unsubscribe = port.onUserChanged((next) => {
+      if (detachCurrent !== detach) return
+      commit({ type: 'identity-changed', user: next })
+      if (detachCurrent === detach && next && autoMint) {
+        void refreshWith(ensureCore, next)
+      }
+    })
+    if (detachCurrent !== detach) unsubscribe()
     return detach
   }
 
