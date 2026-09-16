@@ -30,7 +30,7 @@ const samplesOnly = computed(
 // and several take four fifths of it, so the next one peeks in at every width
 // the phone layout covers, up to the 18rem past which a card gains nothing.
 const phoneWidth = computed(() =>
-  examples.length === 1 ? 'w-full' : 'w-4/5 max-w-72'
+  examples.length === 1 ? 'w-full' : 'w-4/5 max-sm:max-w-72'
 )
 const desktopGridColumns = computed(() =>
   examples.length === 3
