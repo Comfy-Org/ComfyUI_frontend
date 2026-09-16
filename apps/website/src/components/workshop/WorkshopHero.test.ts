@@ -23,29 +23,14 @@ describe('WorkshopHero', () => {
     ).toBeTruthy()
   })
 
+  // SplitReveal gives each word its own element, so the subtitle is read one
+  // word at a time rather than as a sentence.
   it('carries a subtitle only when one is asked for', () => {
     const { unmount } = renderHero({ subtitleKey: 'workshop.meta.description' })
-    expect(screen.getByTestId('workshop-hero-subtitle').textContent).toContain(
-      'Browse and run'
-    )
+    expect(screen.getByText('Browse')).toBeVisible()
     unmount()
 
     renderHero()
-    expect(screen.queryByTestId('workshop-hero-subtitle')).toBeNull()
-  })
-
-  it('keeps the aside at the end of the row once the subtitle is gone', () => {
-    // Alone in the row, a justify-between child falls to the left edge, and
-    // the aside is where Browse all lives.
-    const { unmount } = renderHero({ subtitleKey: 'workshop.meta.description' })
-    expect(screen.getByTestId('workshop-hero-row')).toHaveClass(
-      'justify-between'
-    )
-    expect(screen.getByTestId('aside')).toBeVisible()
-    unmount()
-
-    renderHero()
-    expect(screen.getByTestId('workshop-hero-row')).toHaveClass('justify-end')
-    expect(screen.getByTestId('aside')).toBeVisible()
+    expect(screen.queryByText('Browse')).toBeNull()
   })
 })

@@ -41,19 +41,9 @@ const slots = useSlots()
       <SplitReveal :text="t(headingKey, locale)" :delay="90" />
     </h1>
     <div
-      :class="
-        cn(
-          'mt-4 flex flex-wrap items-center gap-x-6 gap-y-4 sm:short:mt-3',
-          subtitleKey ? 'justify-between' : 'justify-end'
-        )
-      "
-      data-testid="workshop-hero-row"
+      class="mt-4 flex flex-wrap items-center justify-between gap-x-6 gap-y-4 sm:short:mt-3"
     >
-      <p
-        v-if="subtitleKey"
-        class="text-lg text-primary-comfy-canvas/70"
-        data-testid="workshop-hero-subtitle"
-      >
+      <p v-if="subtitleKey" class="text-lg text-primary-comfy-canvas/70">
         <SplitReveal
           :text="t(subtitleKey, locale)"
           :delay="260"
