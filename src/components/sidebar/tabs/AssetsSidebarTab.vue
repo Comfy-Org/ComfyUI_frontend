@@ -108,26 +108,22 @@
       >
         <AssetsSidebarListView
           v-if="isListView"
-          :asset-items="listViewAssetItems"
-          :is-selected="isSelected"
+          :asset-items="pagedListViewAssets"
+          :is-selected
           :selectable-assets="listViewSelectableAssets"
           :is-stack-expanded="isListViewStackExpanded"
           :toggle-stack="toggleListViewStack"
-          :on-load-more="loadMoreAssets"
-          :can-load-more="canLoadMoreAssets"
           @select-asset="handleAssetSelect"
           @preview-asset="handleZoomClick"
           @context-menu="handleAssetContextMenu"
         />
         <div v-else class="size-full">
           <AssetsSidebarGridView
-            :assets="displayAssets"
+            :assets="isInFolderView ? filteredAssets : pagedFilteredAssets"
             :is-selected
             :show-output-count
             :get-output-count
             :grid-mode
-            :on-load-more="loadMoreAssets"
-            :can-load-more="canLoadMoreAssets"
             @select-asset="handleAssetSelect"
             @toggle-asset-selection="handleAssetSelectionToggle"
             @context-menu="handleAssetContextMenu"
@@ -245,6 +241,7 @@ import {
   isPreviewableMediaType
 } from '@/utils/formatUtil'
 import type { AugmentedResultItem } from '@/utils/resultItem'
+import { WrappedList } from '@/utils/pagedList'
 
 const Load3dViewerContent = defineAsyncComponent(
   () => import('@/components/load3d/Load3dViewerContent.vue')
@@ -380,21 +377,23 @@ const baseAssets = computed(() => {
 const { searchQuery, sortBy, dateFilter, mediaTypeFilters, filteredAssets } =
   useMediaAssetFiltering(baseAssets)
 
-const displayAssets = computed(() => {
-  return filteredAssets.value
-})
-
 const {
   assetItems: listViewAssetItems,
   selectableAssets: listViewSelectableAssets,
   isStackExpanded: isListViewStackExpanded,
   toggleStack: toggleListViewStack
 } = useOutputStacks({
-  assets: computed(() => displayAssets.value)
+  assets: filteredAssets
 })
+const pagedListViewAssets = computed(
+  () => new WrappedList(currentAssets.value, () => listViewAssetItems.value)
+)
+const pagedFilteredAssets = computed(
+  () => new WrappedList(currentAssets.value, () => filteredAssets.value)
+)
 
 const visibleAssets = computed(() => {
-  if (!isListView.value) return displayAssets.value
+  if (!isListView.value) return filteredAssets.value
   return listViewSelectableAssets.value
 })
 
@@ -430,7 +429,8 @@ const isFolderLoading = computed(
 
 const showLoadingState = computed(
   () =>
-    (loading.value || isFolderLoading.value) && displayAssets.value.length === 0
+    (loading.value || isFolderLoading.value) &&
+    filteredAssets.value.length === 0
 )
 
 const showEmptyState = computed(
@@ -438,7 +438,7 @@ const showEmptyState = computed(
     !loading.value &&
     !isFolderLoading.value &&
     !canLoadMoreAssets.value &&
-    displayAssets.value.length === 0
+    filteredAssets.value.length === 0
 )
 
 watch(visibleAssets, (newAssets) => {
@@ -669,7 +669,6 @@ const copyJobId = async () => {
   }
 }
 
-const loadMoreAssets = () => currentAssets.value.loadMore()
 const canLoadMoreAssets = computed(
   () => !isInFolderView.value && toValue(currentAssets.value.hasMore)
 )

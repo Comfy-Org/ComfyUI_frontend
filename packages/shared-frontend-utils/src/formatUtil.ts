@@ -123,7 +123,7 @@ export function formatNumberWithSuffix(
   return `${formattedNum}${suffixes[exp]}`
 }
 
-export function formatSize(value?: number) {
+export function formatSize(value?: number | null) {
   if (value === null || value === undefined) {
     return '-'
   }
@@ -338,7 +338,7 @@ function normalizeFilePathSeparators(filepath: string): string {
  * @param filepath The filepath to parse
  * @returns Object containing filename and subfolder
  */
-export function parseFilePath(filepath: string): {
+export function parseFilePath(filepath?: string): {
   filename: string
   subfolder: string
 } {
@@ -630,16 +630,19 @@ export function formatDuration(milliseconds: number): string {
 }
 
 const IMAGE_EXTENSIONS = [
-  'png',
-  'jpg',
-  'jpeg',
-  'gif',
-  'webp',
-  'bmp',
   'avif',
+  'bmp',
+  'exr',
+  'hdr',
+  'ico',
+  'gif',
+  'jpeg',
+  'jpg',
+  'png',
+  'svg',
   'tif',
   'tiff',
-  'svg'
+  'webp'
 ] as const
 const VIDEO_EXTENSIONS = ['mp4', 'm4v', 'webm', 'mov', 'avi', 'mkv'] as const
 const AUDIO_EXTENSIONS = ['mp3', 'wav', 'ogg', 'flac', 'opus', 'm4a'] as const

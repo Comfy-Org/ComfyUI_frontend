@@ -18,6 +18,8 @@ import type {
   OwnershipFilterOption,
   OwnershipOption
 } from '@/platform/assets/types/filterTypes'
+import { isPaged, pagedItems, WrappedList } from '@/utils/pagedList'
+import type { MaybePaged } from '@/utils/pagedList'
 
 import FormDropdownInput from './FormDropdownInput.vue'
 import FormDropdownMenu from './FormDropdownMenu.vue'
@@ -29,9 +31,7 @@ import {
 import type { FormDropdownItem, LayoutMode, SortOption } from './types'
 
 interface Props {
-  items: FormDropdownItem[]
-  /** Items used for display in the input field. Falls back to items if not provided. */
-  displayItems?: FormDropdownItem[]
+  items: MaybePaged<FormDropdownItem>
   placeholder?: string
   /**
    * If true, allows multiple selections. If a number is provided,
@@ -48,9 +48,6 @@ interface Props {
   ownershipOptions?: OwnershipFilterOption[]
   showBaseModelFilter?: boolean
   baseModelOptions?: FilterOption[]
-  loadingMore?: boolean
-  onLoadMore?: () => unknown
-  canLoadMore?: boolean
   isSelected?: (
     selected: Set<string>,
     item: FormDropdownItem,
@@ -59,9 +56,9 @@ interface Props {
   isUploading?: boolean
   searcher?: (
     query: string,
-    items: FormDropdownItem[],
+    items: readonly FormDropdownItem[],
     onCleanup: (cleanupFn: () => void) => void
-  ) => Promise<FormDropdownItem[]>
+  ) => Promise<readonly FormDropdownItem[]>
 }
 
 const { t } = useI18n()
@@ -78,7 +75,6 @@ const {
   ownershipOptions,
   showBaseModelFilter,
   baseModelOptions,
-  loadingMore = false,
   isSelected = (selected, item, _index) => selected.has(item.id),
   searcher = defaultSearcher,
   items
@@ -126,11 +122,11 @@ const isSingleSelect = computed(() => maxSelectable.value === 1)
 
 const debouncedSearchQuery = refDebounced(searchQuery, 250, { maxWait: 1000 })
 
-const filteredItems = computedAsync(
-  async (onCancel) => {
+const filteredItems = computedAsync<readonly FormDropdownItem[]>(
+  async (onCancel): Promise<readonly FormDropdownItem[]> => {
     if (!isOpen.value) {
       displayedSearchQuery.value = ''
-      return items
+      return pagedItems(items)
     }
 
     const query = debouncedSearchQuery.value
@@ -141,13 +137,13 @@ const filteredItems = computedAsync(
       cleanupFn?.()
     })
 
-    const result = await searcher(query, items, (cb) => {
+    const result = await searcher(query, pagedItems(items), (cb) => {
       cleanupFn = cb
     })
     if (!cancelled) displayedSearchQuery.value = query
     return result
   },
-  items,
+  pagedItems(items),
   {
     evaluating: isFiltering
   }
@@ -164,11 +160,10 @@ const selectedSorter = computed<SortOption['sorter']>(() => {
   )?.sorter
   return sorter || defaultSorter.value
 })
-const sortedItems = computed(() => {
+const sortedItems = computed((): readonly FormDropdownItem[] => {
   if (!isOpen.value) {
-    return items
+    return pagedItems(items)
   }
-
   return selectedSorter.value({ items: filteredItems.value }) || []
 })
 const isShowingCurrentSearchResults = computed(
@@ -294,15 +289,12 @@ async function getTopSearchResult() {
   const query = searchQuery.value
   if (query.trim() === '') return
 
-  const sourceItems = items
   const matches =
     isShowingCurrentSearchResults.value && displayedSearchQuery.value === query
       ? filteredItems.value
-      : await searcher(query, sourceItems, () => {})
+      : await searcher(query, pagedItems(items), () => {})
 
-  if (query !== searchQuery.value || sourceItems !== items || !isOpen.value) {
-    return
-  }
+  if (query !== searchQuery.value || !isOpen.value) return
 
   return selectedSorter.value({ items: matches })[0]
 }
@@ -326,6 +318,11 @@ function showPicker() {
   triggerRef.value!.showPicker()
   closeDropdown()
 }
+const dropdownItems = computed(() =>
+  isPaged(items)
+    ? new WrappedList(items, () => sortedItems.value)
+    : sortedItems.value
+)
 </script>
 
 <template>
@@ -335,10 +332,8 @@ function showPicker() {
       :files
       :is-open
       :placeholder="placeholderText"
-      :items
-      :display-items
+      :selected-items="pagedItems(items).filter(internalIsSelected)"
       :max-selectable
-      :selected
       :uploadable
       :disabled
       :accept
@@ -377,14 +372,11 @@ function showPicker() {
         :show-base-model-filter
         :base-model-options
         :disabled
-        :items="sortedItems"
+        :items="dropdownItems"
         :candidate-index
         :candidate-label
         :is-selected="internalIsSelected"
         :max-selectable
-        :loading-more
-        :on-load-more
-        :can-load-more
         @close="closeDropdown"
         @search-enter="handleSearchEnter"
         @item-click="handleSelection"

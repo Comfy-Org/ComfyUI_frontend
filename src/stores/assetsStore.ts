@@ -27,8 +27,10 @@ import {
   useAssetsQuery,
   invalidateAll
 } from '@/platform/assets/composables/useAssetsQuery'
+import { getOutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
 import { assetService } from '@/platform/assets/services/assetService'
 import type { AssetPaginationOptions } from '@/platform/assets/services/assetService'
+import { resolveOutputAssetItems } from '@/platform/assets/utils/outputAssetUtil'
 import type { JobListItem } from '@/platform/remote/comfyui/jobs/jobTypes'
 import { api } from '@/scripts/api'
 import { WrappedList } from '@/utils/pagedList'
@@ -144,13 +146,14 @@ export const useAssetsStore = defineStore('assets', () => {
     loadNew: async () => undefined
   }
 
-  function useHistoryAssets(): PagedList<AssetItem> {
+  function useHistoryAssets(): [PagedList<AssetItem>, PagedList<AssetItem>] {
     // Pagination state
     const historyOffset = ref(0)
     const hasMoreHistory = ref(true)
     const isLoadingMore = ref(false)
     const allHistoryItems = ref<AssetItem[]>([])
     const loadedIds = shallowReactive(new Set<string>())
+    const resolvedAssetsCache = ref<Partial<Record<string, AssetItem[]>>>({})
 
     /**
      * Fetch history assets with pagination support
@@ -229,6 +232,7 @@ export const useAssetsStore = defineStore('assets', () => {
      * Initial load of history assets
      */
     const updateHistory = async () => {
+      resolvedAssetsCache.value = {}
       historyLoading.value = true
       historyError.value = null
       try {
@@ -271,7 +275,7 @@ export const useAssetsStore = defineStore('assets', () => {
       }
     }
 
-    return {
+    const outputAssets = {
       hasMore: hasMoreHistory,
       invalidate: updateHistory,
       isLoading: computed(() => historyLoading.value || isLoadingMore.value),
@@ -279,10 +283,37 @@ export const useAssetsStore = defineStore('assets', () => {
       loadMore: loadMoreHistory,
       loadNew: updateHistory
     }
+    watch(
+      () => allHistoryItems.value.length,
+      () => {
+        const currentAssetsCache = resolvedAssetsCache.value
+        for (const asset of allHistoryItems.value) {
+          const metadata = getOutputAssetMetadata(asset.user_metadata)
+          const jobId = metadata?.jobId
+          if (!jobId || currentAssetsCache[jobId]) continue
+
+          void resolveOutputAssetItems(metadata).then(
+            (assets) => (currentAssetsCache[jobId] = assets)
+          )
+        }
+      },
+      { immediate: true }
+    )
+    const flatOutputs = new WrappedList(outputAssets, () =>
+      allHistoryItems.value.flatMap((asset) => {
+        const jobId = getOutputAssetMetadata(asset.user_metadata)?.jobId
+        if (!jobId) return [asset]
+        return resolvedAssetsCache.value[jobId] ?? [asset]
+      })
+    )
+    void loadMoreHistory()
+    return [outputAssets, flatOutputs]
   }
 
   const inputAssets = ref<PagedList<AssetItem>>(undefined!)
   const outputAssets = ref<PagedList<AssetItem>>(undefined!)
+  const flatOutputAssets = ref<PagedList<AssetItem>>(undefined!)
+  const allAssets = ref<PagedList<AssetItem>>(undefined!)
   let assetsScope: EffectScope | undefined
   watch(
     () => flags.assetsEnabled,
@@ -294,15 +325,25 @@ export const useAssetsStore = defineStore('assets', () => {
         assetsScope = effectScope()
         assetsScope.run(() => {
           inputAssets.value = useAssetsQuery({ tags_any: ['input'] })
-          const flatAssets = useAssetsQuery({ tags_any: ['output', 'temp'] })
+          flatOutputAssets.value = useAssetsQuery({
+            tags_any: ['output', 'temp']
+          })
           outputAssets.value = new WrappedList(
-            flatAssets,
+            flatOutputAssets.value,
             unflattenOutputAssets
           )
+          allAssets.value = useAssetsQuery({
+            tags_any: ['input', 'output', 'temp']
+          })
         })
       } else {
         inputAssets.value = historyInputs
-        outputAssets.value = useHistoryAssets()
+        ;[outputAssets.value, flatOutputAssets.value] = useHistoryAssets()
+        allAssets.value = new WrappedList(
+          flatOutputAssets.value,
+          (outputItems) => [...toValue(historyInputs.items), ...outputItems]
+        )
+        void executeUpdateInputs()
       }
     },
     { immediate: true }
@@ -912,6 +953,8 @@ export const useAssetsStore = defineStore('assets', () => {
 
   return {
     // States
+    allAssets,
+    flatOutputAssets,
     inputAssets,
     outputAssets,
     invalidateAll,
