@@ -26,6 +26,11 @@ export const useWidgetStore = defineStore('widget', () => {
     return widgets.value.has(type)
   }
 
+  /** Drops a registration, so a pack can retire the type it declared. */
+  function unregisterCustomWidget(type: string) {
+    customWidgets.value.delete(type)
+  }
+
   function registerCustomWidgets(
     newWidgets: Record<string, CustomComfyWidgetConstructor> | null | undefined
   ) {
@@ -43,6 +48,7 @@ export const useWidgetStore = defineStore('widget', () => {
     coreWidgets,
     widgets,
     inputIsWidget,
-    registerCustomWidgets
+    registerCustomWidgets,
+    unregisterCustomWidget
   }
 })
