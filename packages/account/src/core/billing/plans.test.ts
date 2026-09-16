@@ -281,6 +281,22 @@ describe('createPlansReader', () => {
       expect(second).toEqual({ status: 'error', code: 'REQUEST_FAILED' })
       expect(reader.getSnapshot()?.data.plans).toHaveLength(1)
     })
+
+    it('drops the published catalog when a later read is denied', async () => {
+      const { scopeSource } = fakeSession()
+      const { transport } = fakeTransport([httpOk(CATALOG), httpStatus(403)])
+      const reader = createPlansReader({ transport, scopeSource })
+
+      await reader.read()
+      const result = await reader.read()
+
+      expect(result).toEqual({
+        status: 'error',
+        code: 'ACCESS_DENIED',
+        httpStatus: 403
+      })
+      expect(reader.getSnapshot()).toBeUndefined()
+    })
   })
 
   it('clears the catalog and rejects an in-flight result after dispose', async () => {
