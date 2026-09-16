@@ -1,5 +1,4 @@
 import { comfyExpect as expect } from '@e2e/fixtures/ComfyPage'
-import { LocalDesktopTarget } from '@e2e/fixtures/customNode/ComfyTarget'
 import { packPersistenceTest as test } from '@e2e/fixtures/customNode/packPersistenceFixture'
 import { customNodeSuiteSettings } from '@e2e/fixtures/utils/customNodeSuite'
 
@@ -116,7 +115,7 @@ test.describe(
           )
           .toEqual(expectedLinks)
 
-        const result = await new LocalDesktopTarget().runWorkflow(
+        const result = await packPersistence.target.runWorkflow(
           comfyPage.page,
           {
             expectedNodeIds: [ids.first, ids.second, ids.list, ids.preview],
