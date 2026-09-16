@@ -38,14 +38,14 @@ const PREVIEW_BORDER_COLOR = 0x2a2a2a
 const LOOK_THROUGH_SENSITIVITY = 0.005
 
 type DragHandleType = OrbitHandleType | 'roll'
-const DRAG_HANDLE_TYPES: ReadonlySet<string> = new Set<DragHandleType>([
-  'yaw',
-  'pitch',
-  'distance',
-  'roll'
-])
+const DRAG_HANDLE_TYPES: Record<DragHandleType, true> = {
+  yaw: true,
+  pitch: true,
+  distance: true,
+  roll: true
+}
 const isDragHandleType = (value: string): value is DragHandleType =>
-  DRAG_HANDLE_TYPES.has(value)
+  Object.hasOwn(DRAG_HANDLE_TYPES, value)
 
 export type TransformGizmoMode =
   | 'none'

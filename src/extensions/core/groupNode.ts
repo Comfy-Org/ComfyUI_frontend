@@ -1,12 +1,13 @@
 import { PREFIX, SEPARATOR } from '@/constants/groupNodeConstants'
 import { t } from '@/i18n'
-import type { SerialisedLLinkArray } from '@/lib/litegraph/src/LLink'
+import type { ISlotType } from '@/lib/litegraph/src/interfaces'
 import type {
   LGraphNodeConstructor,
   LGraphNode
 } from '@/lib/litegraph/src/litegraph'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { outputLinks } from '@/lib/litegraph/src/node/slotLinks'
+import type { SerializedNodeId } from '@/types/nodeId'
 import { parseNodeId } from '@/types/nodeId'
 import type {
   ComfyNode,
@@ -41,7 +42,14 @@ function markGroupNodeType(typeName: string, config: GroupNodeConfig): void {
   if (ctor?.nodeData) ctor.nodeData[GROUP] = config
 }
 
-type GroupNodeLink = SerialisedLLinkArray
+export type GroupNodeLink = [
+  sourceNodeIndex: number,
+  sourceSlot: number,
+  targetNodeIndex: number,
+  targetSlot: number,
+  sourceNodeId: SerializedNodeId,
+  type: ISlotType
+]
 type LinksFromMap = Record<number, Record<number, GroupNodeLink[]>>
 type LinksToMap = Record<number, Record<number, GroupNodeLink>>
 type ExternalFromMap = Record<number, Record<number, string | number>>
@@ -68,7 +76,7 @@ interface GroupNodeConfigEntry {
 
 export interface GroupNodeWorkflowData {
   external: (number | string)[][]
-  links: SerialisedLLinkArray[]
+  links: GroupNodeLink[]
   nodes: {
     index?: number
     type?: string
@@ -184,32 +192,29 @@ export class GroupNodeConfig {
 
     // Extract links for easy lookup
     for (const link of this.nodeData.links) {
-      const [sourceNodeId, sourceNodeSlot, targetNodeId, targetNodeSlot] = link
+      const [sourceNodeIndex, sourceSlot, targetNodeIndex, targetSlot] = link
 
       // Skip links outside the copy config
       if (
-        sourceNodeId == null ||
-        sourceNodeSlot == null ||
-        targetNodeId == null ||
-        targetNodeSlot == null
+        sourceNodeIndex == null ||
+        sourceSlot == null ||
+        targetNodeIndex == null ||
+        targetSlot == null
       )
         continue
 
-      const srcSlot = Number(sourceNodeSlot)
-      const tgtSlot = Number(targetNodeSlot)
+      if (!this.linksFrom[sourceNodeIndex]) {
+        this.linksFrom[sourceNodeIndex] = {}
+      }
+      if (!this.linksFrom[sourceNodeIndex][sourceSlot]) {
+        this.linksFrom[sourceNodeIndex][sourceSlot] = []
+      }
+      this.linksFrom[sourceNodeIndex][sourceSlot].push(link)
 
-      if (!this.linksFrom[sourceNodeId]) {
-        this.linksFrom[sourceNodeId] = {}
+      if (!this.linksTo[targetNodeIndex]) {
+        this.linksTo[targetNodeIndex] = {}
       }
-      if (!this.linksFrom[sourceNodeId][srcSlot]) {
-        this.linksFrom[sourceNodeId][srcSlot] = []
-      }
-      this.linksFrom[sourceNodeId][srcSlot].push(link)
-
-      if (!this.linksTo[targetNodeId]) {
-        this.linksTo[targetNodeId] = {}
-      }
-      this.linksTo[targetNodeId][tgtSlot] = link
+      this.linksTo[targetNodeIndex][targetSlot] = link
     }
 
     if (this.nodeData.external) {
@@ -306,9 +311,7 @@ export class GroupNodeConfig {
           const slot = link[3]
           if (id == null || slot == null) continue
           const targetNode = this.nodeData.nodes[id]
-          const input = targetNode?.inputs?.[Number(slot)] as
-            | GroupNodeInput
-            | undefined
+          const input = targetNode?.inputs?.[slot] as GroupNodeInput | undefined
           if (input?.type && rerouteType === '*') {
             rerouteType = input.type
           }
@@ -341,7 +344,7 @@ export class GroupNodeConfig {
           const id = link[0]
           const slot = link[1]
           if (id != null && slot != null) {
-            const outputType = this.nodeData.nodes[id]?.outputs?.[Number(slot)]
+            const outputType = this.nodeData.nodes[id]?.outputs?.[slot]
             if (
               outputType &&
               typeof outputType === 'object' &&
