@@ -5,7 +5,7 @@
  * a full build. A guard nobody has watched fail is not a guard, and two of these
  * rules exist because the first version of the crawler passed a broken cluster.
  */
-import type { Alternate } from './hreflangRoutes'
+import type { ParsedAlternate } from './hreflangRoutes'
 
 import {
   JA_HREFLANG,
@@ -18,7 +18,7 @@ import {
 
 export interface BuiltSite {
   /** Every built route, mapped to the alternates its HTML emits. */
-  pages: Map<string, Alternate[]>
+  pages: Map<string, ParsedAlternate[]>
   /**
    * Sitemap URL -> the alternates it advertises, in document order. `null` when
    * the sitemap is absent.
@@ -27,7 +27,7 @@ export interface BuiltSite {
    * names alone accepts a sitemap whose `zh-CN` link points at the English URL,
    * which is the same lie the page-side rules already refuse.
    */
-  sitemap: Map<string, Alternate[]> | null
+  sitemap: Map<string, ParsedAlternate[]> | null
   /**
    * Routes whose page canonicals to ITSELF.
    *
@@ -90,7 +90,7 @@ function expectedAlternates(
  */
 function clusterErrors(
   route: string,
-  alternates: Alternate[],
+  alternates: ParsedAlternate[],
   origin: string,
   source: string,
   selfCanonical: ReadonlySet<string>

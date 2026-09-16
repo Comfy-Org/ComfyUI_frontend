@@ -1,13 +1,13 @@
 import { describe, expect, it } from 'vitest'
 
-import type { Alternate } from './hreflangRoutes'
+import type { ParsedAlternate } from './hreflangRoutes'
 
 import { auditBuiltSite, sitemapChunkNames } from './hreflangAudit'
 
 const ORIGIN = 'https://comfy.org'
 
 /** The alternates a healthy cluster emits, identical on both twins. */
-function cluster(path: string): Alternate[] {
+function cluster(path: string): ParsedAlternate[] {
   return [
     { hreflang: 'en', href: `${ORIGIN}${path}` },
     { hreflang: 'zh-CN', href: `${ORIGIN}/zh-CN${path}` },
@@ -19,12 +19,12 @@ function cluster(path: string): Alternate[] {
 function healthySite() {
   return {
     origin: ORIGIN,
-    pages: new Map<string, Alternate[]>([
+    pages: new Map<string, ParsedAlternate[]>([
       ['/about/', cluster('/about/')],
       ['/zh-CN/about/', cluster('/about/')],
       ['/affiliates/', []]
     ]),
-    sitemap: new Map<string, Alternate[]>([
+    sitemap: new Map<string, ParsedAlternate[]>([
       ['/about/', cluster('/about/')],
       ['/zh-CN/about/', cluster('/about/')],
       ['/affiliates/', []]
@@ -249,14 +249,14 @@ describe('a locale that is built but not ready', () => {
   function siteWithFallbackJapanese() {
     return {
       origin: ORIGIN,
-      pages: new Map<string, Alternate[]>([
+      pages: new Map<string, ParsedAlternate[]>([
         ['/about/', cluster('/about/')],
         ['/zh-CN/about/', cluster('/about/')],
         // Built by the fallback: canonical points home to English, and it
         // advertises no cluster of its own.
         ['/ja/about/', []]
       ]),
-      sitemap: new Map<string, Alternate[]>([
+      sitemap: new Map<string, ParsedAlternate[]>([
         ['/about/', cluster('/about/')],
         ['/zh-CN/about/', cluster('/about/')]
       ]),
@@ -288,7 +288,7 @@ describe('a locale that is built but not ready', () => {
    * keys for instance, would satisfy both and never be noticed.
    */
   it('accepts a Japanese page that is genuinely published', () => {
-    const withJapanese = (path: string): Alternate[] => [
+    const withJapanese = (path: string): ParsedAlternate[] => [
       ...cluster(path),
       { hreflang: 'ja', href: `${ORIGIN}/ja${path}` }
     ]
@@ -296,12 +296,12 @@ describe('a locale that is built but not ready', () => {
     expect(
       auditBuiltSite({
         origin: ORIGIN,
-        pages: new Map<string, Alternate[]>([
+        pages: new Map<string, ParsedAlternate[]>([
           ['/about/', withJapanese('/about/')],
           ['/zh-CN/about/', withJapanese('/about/')],
           ['/ja/about/', withJapanese('/about/')]
         ]),
-        sitemap: new Map<string, Alternate[]>([
+        sitemap: new Map<string, ParsedAlternate[]>([
           ['/about/', withJapanese('/about/')],
           ['/zh-CN/about/', withJapanese('/about/')],
           ['/ja/about/', withJapanese('/about/')]

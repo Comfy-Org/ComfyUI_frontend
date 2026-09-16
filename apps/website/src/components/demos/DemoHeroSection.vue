@@ -15,11 +15,11 @@ const {
   title: string
   description: string
   difficulty: 'beginner' | 'intermediate' | 'advanced'
-  estimatedTime: string
+  estimatedTime: TranslationKey
   locale?: Locale
 }>()
 
-const difficultyKey = `demos.difficulty.${difficulty}` as TranslationKey
+const difficultyKey: TranslationKey = `demos.difficulty.${difficulty}`
 </script>
 
 <template>
@@ -52,7 +52,7 @@ const difficultyKey = `demos.difficulty.${difficulty}` as TranslationKey
         <span
           class="rounded-full bg-transparency-white-t4 px-3 py-1 text-xs font-semibold text-primary-comfy-canvas"
         >
-          {{ t(estimatedTime as TranslationKey, locale) }}
+          {{ t(estimatedTime, locale) }}
         </span>
       </div>
     </div>

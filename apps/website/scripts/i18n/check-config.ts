@@ -26,8 +26,6 @@ function checkVoices(problems: string[]): void {
 }
 
 function checkOutputLocales(problems: string[]): void {
-  // 2. And nothing may be configured for translation that the site does not
-  //    serve, which would spend money producing text no page can display.
   for (const code of Object.keys(OUTPUT_LOCALES)) {
     if (!(code in LOCALES)) {
       problems.push(
@@ -38,8 +36,6 @@ function checkOutputLocales(problems: string[]): void {
 }
 
 function checkLocales(problems: string[]): void {
-  // 1. Every locale the site serves must be translatable, or the pipeline
-  //    silently skips it and the locale stays English forever.
   for (const locale of LOCALIZED_CODES) {
     if (!OUTPUT_LOCALES[locale]) {
       problems.push(
@@ -54,19 +50,7 @@ function checkLocales(problems: string[]): void {
   checkVoices(problems)
 }
 
-function checkContentFiles(problems: string[]): void {
-  // 5. A machine layer file must exist for every locale, because `translations.ts`
-  //    imports them statically and a missing file is a build error rather than an
-  //    empty layer.
-  for (const locale of LOCALIZED_CODES) {
-    const file = path.join(I18N_DIR, 'content', `${locale}.json`)
-    if (!fs.existsSync(file)) {
-      problems.push(`missing machine layer ${file}`)
-    }
-  }
-
-  // 6. The content-of-record must exist, or every other step is a green tick
-  //    over nothing.
+function checkEnglishSource(problems: string[]): void {
   if (!fs.existsSync(path.join(I18N_DIR, 'content', 'en.json'))) {
     problems.push(
       'no content/en.json; run `pnpm i18n:build-source` before anything else'
@@ -79,7 +63,7 @@ function main(): void {
 
   checkLocales(problems)
 
-  // 4. A short preserve term used to match inside ordinary words. `Wan` is a
+  // A short preserve term used to match inside ordinary words. `Wan` is a
   //    video model and also the first three letters of `Want`, which made 51
   //    real strings impossible to validate. A term now has to equal a whole
   //    visible text node to count (`isTranslatable` in `utils/pageCoverage.ts`
@@ -100,7 +84,7 @@ function main(): void {
     )
   }
 
-  checkContentFiles(problems)
+  checkEnglishSource(problems)
 
   if (problems.length > 0) {
     console.error('[i18n] configuration problems:')

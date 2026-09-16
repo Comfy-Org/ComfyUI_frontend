@@ -51,11 +51,12 @@ jobs:
       # so it can neither inject shell nor request a locale the site cannot serve.
       - name: Resolve target locales
         id: locales
+        working-directory: apps/website
         env:
           INPUT_LOCALE: ${{ github.event.inputs.locale }}
         run: |
           set -euo pipefail
-          supported="ja zh-CN"
+          supported="$(pnpm exec tsx -e "import { OUTPUT_LOCALES } from './scripts/i18n/config.ts'; console.log(Object.keys(OUTPUT_LOCALES).join(' '))")"
           if [ -z "${INPUT_LOCALE}" ]; then
             echo "targets=${supported}" >> "$GITHUB_OUTPUT"
           elif echo "${supported}" | tr ' ' '\n' | grep -qx -- "${INPUT_LOCALE}"; then

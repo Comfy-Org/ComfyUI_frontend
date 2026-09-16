@@ -8,7 +8,7 @@
  * This file only gathers what was built; `hreflangAudit.ts` holds the rules, so
  * they can be tested against fixtures rather than a full build.
  */
-import type { Alternate } from '../src/utils/hreflangRoutes'
+import type { ParsedAlternate } from '../src/utils/hreflangRoutes'
 
 import { existsSync, readdirSync, readFileSync } from 'node:fs'
 import { join, relative, sep } from 'node:path'
@@ -33,8 +33,8 @@ function routeOf(file: string): string {
   return `/${withoutIndex}`.replace(/\/{2,}/g, '/')
 }
 
-function alternatesIn(html: string): Alternate[] {
-  const out: Alternate[] = []
+function alternatesIn(html: string): ParsedAlternate[] {
+  const out: ParsedAlternate[] = []
   const re = /<link\s+rel="alternate"\s+hreflang="([^"]+)"\s+href="([^"]+)"/g
   for (const match of html.matchAll(re))
     out.push({ hreflang: match[1], href: match[2] })
@@ -61,11 +61,11 @@ function sitemapFiles(): string[] {
   return existsSync(single) ? [single] : []
 }
 
-function sitemapAlternates(): Map<string, Alternate[]> | null {
+function sitemapAlternates(): Map<string, ParsedAlternate[]> | null {
   const files = sitemapFiles()
   if (!files.length) return null
 
-  const entries = new Map<string, Alternate[]>()
+  const entries = new Map<string, ParsedAlternate[]>()
   const xml = files.map((file) => readFileSync(file, 'utf-8')).join('')
   for (const entry of xml.matchAll(/<url>(.*?)<\/url>/gs)) {
     const block = entry[1]
@@ -82,7 +82,7 @@ function sitemapAlternates(): Map<string, Alternate[]> | null {
 }
 
 const files = htmlFiles(DIST)
-const pages = new Map<string, Alternate[]>()
+const pages = new Map<string, ParsedAlternate[]>()
 /**
  * Routes whose page names ITSELF as the canonical.
  *

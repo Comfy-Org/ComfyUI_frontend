@@ -5,7 +5,7 @@ import { computed } from 'vue'
 import { LOCALES, isLocale } from '../../config/locales'
 import type { Locale } from '../../config/locales'
 import { t } from '../../i18n/translations'
-import type { Alternate } from '../../utils/hreflangRoutes'
+import type { Alternate } from '../../lib/hreflang'
 
 /**
  * Switching language on the page you are reading, as plain links.

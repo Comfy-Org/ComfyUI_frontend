@@ -2,9 +2,11 @@
 import { render, screen } from '@testing-library/vue'
 import { describe, expect, it } from 'vitest'
 
+import type { Alternate } from '../../lib/hreflang'
+
 import LanguageSwitcher from './LanguageSwitcher.vue'
 
-const clustered = [
+const clustered: Alternate[] = [
   { hreflang: 'en', href: 'https://comfy.org/download/' },
   { hreflang: 'zh-CN', href: 'https://comfy.org/zh-CN/download/' },
   { hreflang: 'ja', href: 'https://comfy.org/ja/download/' },
@@ -97,7 +99,7 @@ describe('LanguageSwitcher', () => {
    * can see, where a crash on every page is a production incident.
    */
   it('skips an alternate whose URL cannot be parsed', () => {
-    const damaged = [
+    const damaged: Alternate[] = [
       { hreflang: 'en', href: 'https://comfy.org/pricing' },
       { hreflang: 'zh-CN', href: 'not a url' },
       { hreflang: 'ja', href: 'https://comfy.org/ja/pricing' }

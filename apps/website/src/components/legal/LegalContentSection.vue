@@ -37,35 +37,32 @@ function escapeRegex(s: string): string {
 
 function buildSections(): LegalSection[] {
   const labelRegex = new RegExp(`^${escapeRegex(prefix)}\\.([^.]+)\\.label$`)
-  const sectionIds: string[] = []
+  const sections: { id: string; labelKey: TranslationKey }[] = []
   for (const key of translationKeys) {
     const match = key.match(labelRegex)
-    if (match && !sectionIds.includes(match[1])) sectionIds.push(match[1])
+    if (match) sections.push({ id: match[1], labelKey: key })
   }
 
-  return sectionIds.map((id) => {
+  return sections.map(({ id, labelKey }) => {
     const blockRegex = new RegExp(
       `^${escapeRegex(prefix)}\\.${escapeRegex(id)}\\.block\\.(\\d+)$`
     )
-    const indices: number[] = []
+    const indexedKeys: { index: number; key: TranslationKey }[] = []
     for (const key of translationKeys) {
       const match = key.match(blockRegex)
-      if (match) indices.push(parseInt(match[1]))
+      if (match) indexedKeys.push({ index: parseInt(match[1]), key })
     }
-    indices.sort((a, b) => a - b)
+    indexedKeys.sort((a, b) => a.index - b.index)
 
-    const blocks: Block[] = indices.map((i) => {
-      const key = `${prefix}.${id}.block.${i}` as TranslationKey
+    const blocks: Block[] = indexedKeys.map(({ key }) => {
       const value = t(key, locale)
       return { type: value.includes('\n') ? 'list' : 'paragraph', key }
     })
 
-    const titleKey = `${prefix}.${id}.title` as TranslationKey
+    const titleKey = `${prefix}.${id}.title`
     return {
       id,
-      title: hasKey(titleKey)
-        ? t(titleKey, locale)
-        : t(`${prefix}.${id}.label` as TranslationKey, locale),
+      title: hasKey(titleKey) ? t(titleKey, locale) : t(labelKey, locale),
       blocks
     }
   })

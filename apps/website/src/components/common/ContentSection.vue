@@ -7,7 +7,7 @@ import {
 } from '@vueuse/core'
 import { computed, onMounted, ref } from 'vue'
 
-import type { Locale, TranslationKey } from '../../i18n/translations'
+import type { Locale } from '../../i18n/translations'
 
 import { hasKey, t } from '../../i18n/translations'
 import { scrollTo } from '../../scripts/smoothScroll'
@@ -30,13 +30,14 @@ const {
 
 const sections = deriveSections(prefix, locale)
 
-function key(sectionId: string, suffix: string): TranslationKey {
-  return `${prefix}.${sectionId}.${suffix}` as TranslationKey
+function sectionText(sectionId: string, suffix: string): string {
+  const key = `${prefix}.${sectionId}.${suffix}`
+  return hasKey(key) ? t(key, locale) : ''
 }
 
 const categories = computed(() =>
   sections.map((s) => ({
-    label: t(key(s.id, 'label'), locale),
+    label: sectionText(s.id, 'label'),
     value: s.id
   }))
 )
@@ -144,7 +145,7 @@ function scrollToSection(id: string) {
             v-if="section.hasTitle"
             class="mb-6 text-2xl font-light text-primary-comfy-canvas"
           >
-            {{ t(key(section.id, 'title'), locale) }}
+            {{ sectionText(section.id, 'title') }}
           </h2>
 
           <template v-for="(block, i) in section.blocks" :key="i">
@@ -153,7 +154,7 @@ function scrollToSection(id: string) {
               v-if="block.type === 'paragraph'"
               as="p"
               class="mt-4 text-sm/relaxed text-primary-comfy-canvas"
-              :html="t(key(section.id, `block.${i}`), locale)"
+              :html="sectionText(section.id, `block.${i}`)"
             />
 
             <!-- Heading (h3) -->
@@ -161,7 +162,7 @@ function scrollToSection(id: string) {
               v-else-if="block.type === 'heading'"
               class="mt-6 mb-2 text-lg font-semibold text-primary-comfy-yellow italic"
             >
-              {{ t(key(section.id, `block.${i}.heading`), locale) }}
+              {{ sectionText(section.id, `block.${i}.heading`) }}
             </h3>
 
             <!-- Bullet list -->
@@ -170,10 +171,9 @@ function scrollToSection(id: string) {
               class="mt-4 space-y-1 pl-5 text-sm"
             >
               <li
-                v-for="(item, j) in t(
-                  key(section.id, `block.${i}`),
-                  locale
-                ).split('\n')"
+                v-for="(item, j) in sectionText(section.id, `block.${i}`).split(
+                  '\n'
+                )"
                 :key="j"
                 class="flex items-start gap-2 text-primary-comfy-canvas"
               >
@@ -190,9 +190,9 @@ function scrollToSection(id: string) {
               class="mt-4 space-y-1 pl-1 text-sm"
             >
               <li
-                v-for="(item, j) in t(
-                  key(section.id, `block.${i}.ol`),
-                  locale
+                v-for="(item, j) in sectionText(
+                  section.id,
+                  `block.${i}.ol`
                 ).split('\n')"
                 :key="j"
                 class="flex items-start gap-3 text-primary-comfy-canvas"
@@ -209,14 +209,14 @@ function scrollToSection(id: string) {
             <!-- Image with caption -->
             <figure v-else-if="block.type === 'image'" class="my-8">
               <img
-                :src="t(key(section.id, `block.${i}.src`), locale)"
-                :alt="t(key(section.id, `block.${i}.alt`), locale)"
+                :src="sectionText(section.id, `block.${i}.src`)"
+                :alt="sectionText(section.id, `block.${i}.alt`)"
                 loading="lazy"
                 decoding="async"
                 class="aspect-video w-full rounded-2xl object-cover"
               />
               <figcaption class="mt-3 text-xs text-primary-comfy-canvas">
-                {{ t(key(section.id, `block.${i}.caption`), locale) }}
+                {{ sectionText(section.id, `block.${i}.caption`) }}
               </figcaption>
             </figure>
 
@@ -233,10 +233,10 @@ function scrollToSection(id: string) {
               <p
                 class="text-lg/relaxed font-light text-primary-comfy-canvas italic"
               >
-                "{{ t(key(section.id, `block.${i}.text`), locale) }}"
+                "{{ sectionText(section.id, `block.${i}.text`) }}"
               </p>
               <p class="mt-4 text-sm font-semibold text-primary-comfy-yellow">
-                {{ t(key(section.id, `block.${i}.name`), locale) }}
+                {{ sectionText(section.id, `block.${i}.name`) }}
               </p>
             </blockquote>
 
@@ -246,20 +246,22 @@ function scrollToSection(id: string) {
               :class="cn('mt-8 rounded-2xl p-6', 'bg-(--site-bg-soft)')"
             >
               <SectionLabel>
-                {{ t(key(section.id, `block.${i}.label`), locale) }}
+                {{ sectionText(section.id, `block.${i}.label`) }}
               </SectionLabel>
               <p class="mt-2 text-sm font-semibold text-primary-comfy-canvas">
-                {{ t(key(section.id, `block.${i}.name`), locale) }}
+                {{ sectionText(section.id, `block.${i}.name`) }}
               </p>
               <p class="text-xs text-primary-comfy-canvas">
-                {{ t(key(section.id, `block.${i}.role`), locale) }}
+                {{ sectionText(section.id, `block.${i}.role`) }}
               </p>
-              <template v-if="hasKey(key(section.id, `block.${i}.name2`))">
+              <template
+                v-if="hasKey(`${prefix}.${section.id}.block.${i}.name2`)"
+              >
                 <p class="mt-4 text-sm font-semibold text-primary-comfy-canvas">
-                  {{ t(key(section.id, `block.${i}.name2`), locale) }}
+                  {{ sectionText(section.id, `block.${i}.name2`) }}
                 </p>
                 <p class="text-xs text-primary-comfy-canvas">
-                  {{ t(key(section.id, `block.${i}.role2`), locale) }}
+                  {{ sectionText(section.id, `block.${i}.role2`) }}
                 </p>
               </template>
             </div>
@@ -270,7 +272,7 @@ function scrollToSection(id: string) {
         <div v-if="readMoreHref" class="mt-8 flex justify-center">
           <BrandButton :href="readMoreHref" variant="solid" size="lg">
             <span class="ppformula-text-center flex items-center gap-2">
-              {{ t('customers.story.readMore' as TranslationKey, locale) }}
+              {{ t('customers.story.readMore', locale) }}
               <span class="text-base">↗</span>
             </span>
           </BrandButton>

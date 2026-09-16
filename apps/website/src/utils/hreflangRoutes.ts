@@ -39,7 +39,7 @@ export function routeOf(file: string): string {
   return withoutIndex === '' ? '/' : `${withoutIndex}/`
 }
 
-export interface Alternate {
+export interface ParsedAlternate {
   hreflang: string
   href: string
 }

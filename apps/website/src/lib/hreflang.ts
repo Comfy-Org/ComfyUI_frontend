@@ -142,25 +142,13 @@ export function ogLocale(locale: string): string {
     : LOCALES[DEFAULT_LOCALE].ogLocale
 }
 
-/**
- * The OG identifier for the other language, when this page has one.
- *
- * Open Graph takes a single alternate here, so a localized page names English
- * and English names Chinese. Testing for `en` rather than `zh-CN` matters now
- * that a third locale exists: the old form sent Japanese pages to `zh_CN`,
- * pairing them with a language they have nothing to do with.
- */
-export function ogLocaleAlternate(
-  locale: string,
-  alternates: Alternate[]
-): string | null {
-  // The target has to be in this page's own cluster. A non-empty cluster was
-  // not enough: an English-only route still carries `en` and `x-default`, so
-  // every one of them advertised a Chinese alternate for a page that does not
-  // exist. No page does that today, but nothing stopped it.
-  const target = locale === 'en' ? 'zh-CN' : 'en'
-  if (!alternates.some((alternate) => alternate.hreflang === target)) {
-    return null
-  }
-  return target === 'zh-CN' ? 'zh_CN' : 'en_US'
+export function ogLocaleAlternates(
+  locale: Locale,
+  alternates: readonly Alternate[]
+): string[] {
+  return alternates.flatMap(({ hreflang }) =>
+    hreflang === 'x-default' || hreflang === locale
+      ? []
+      : [LOCALES[hreflang].ogLocale]
+  )
 }

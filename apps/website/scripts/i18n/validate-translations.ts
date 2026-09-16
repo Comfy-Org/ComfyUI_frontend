@@ -10,19 +10,18 @@
  * `src/i18n/pipeline/validate.ts` so they can be tested against fixtures rather
  * than a full pipeline run.
  */
-import fs from 'node:fs'
 import path from 'node:path'
 
 import { LOCALIZED_CODES } from '../../src/config/locales'
 import { readTranslationLayer } from '../../src/i18n/pipeline/artifacts'
+import { isUsableEnglishSource } from '../../src/i18n/pipeline/enforce'
 import { collectViolations } from '../../src/i18n/pipeline/validate'
-import { parsePreserveTerms } from './config'
+import { preserveTerms } from './config'
 import type { Violation } from '../../src/i18n/pipeline/validate'
 import type { EnglishSource } from '../../src/i18n/pipeline/types'
 
 const I18N_DIR = path.join(process.cwd(), 'src', 'i18n')
 const CONTENT_DIR = path.join(I18N_DIR, 'content')
-const TERMS_FILE = path.join(I18N_DIR, 'glossary', 'preserve-terms.json')
 
 function reportViolations(all: Violation[]): void {
   const byKind = new Map<string, number>()
@@ -41,7 +40,7 @@ function main(): void {
   const english: EnglishSource = readTranslationLayer(
     path.join(CONTENT_DIR, 'en.json')
   )
-  if (Object.keys(english).length === 0) {
+  if (!isUsableEnglishSource(english)) {
     // An empty content-of-record means the source build never ran, so passing
     // here would be a green tick over nothing at all.
     console.error(
@@ -50,12 +49,11 @@ function main(): void {
     process.exit(1)
   }
 
-  const preserveTerms = parsePreserveTerms(
-    fs.readFileSync(TERMS_FILE, 'utf8'),
-    TERMS_FILE
-  )
-  if (preserveTerms.length === 0) {
-    console.error(`[i18n] no preserve terms found at ${TERMS_FILE}`)
+  const terms = preserveTerms()
+  if (terms.length === 0) {
+    console.error(
+      '[i18n] no preserve terms found in glossary/preserve-terms.json'
+    )
     process.exit(1)
   }
 
@@ -63,13 +61,13 @@ function main(): void {
     const translated = readTranslationLayer(
       path.join(CONTENT_DIR, `${locale}.json`)
     )
-    return collectViolations(english, translated, locale, preserveTerms)
+    return collectViolations(english, translated, locale, terms)
   })
 
   if (all.length === 0) {
     process.stdout.write(
       `[i18n] validated ${Object.keys(english).length} keys across ` +
-        `${LOCALIZED_CODES.length} locale(s) against ${preserveTerms.length} ` +
+        `${LOCALIZED_CODES.length} locale(s) against ${terms.length} ` +
         `preserve terms: no violations.\n`
     )
     return

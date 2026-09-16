@@ -4,7 +4,7 @@ import { computed, reactive } from 'vue'
 
 import type { Locale, TranslationKey } from '../../i18n/translations'
 
-import { t } from '../../i18n/translations'
+import { hasKey, t } from '../../i18n/translations'
 import SafeRichText from './SafeRichTextContent'
 
 const {
@@ -21,13 +21,11 @@ const {
   footerKey?: TranslationKey
 }>()
 
-const faqKeys: Array<{ q: TranslationKey; a: TranslationKey }> = Array.from(
-  { length: faqCount },
-  (_, i) => ({
-    q: `${faqPrefix}.${i + 1}.q` as TranslationKey,
-    a: `${faqPrefix}.${i + 1}.a` as TranslationKey
-  })
-)
+const faqKeys = Array.from({ length: faqCount }).flatMap((_, i) => {
+  const q = `${faqPrefix}.${i + 1}.q`
+  const a = `${faqPrefix}.${i + 1}.a`
+  return hasKey(q) && hasKey(a) ? [{ q, a }] : []
+})
 
 const faqs = computed(() =>
   faqKeys.map(({ q, a }) => ({
