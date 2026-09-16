@@ -94,12 +94,12 @@ const ACTIVE_STATES: ReadonlySet<JobListItem['state']> = new Set([
 const activeJobs = computed(() =>
   jobItems.value.filter((job) => ACTIVE_STATES.has(job.state)).reverse()
 )
-/** Active on the last tick, so the drain is judged by how each job ended. */
-let lastActiveIds: string[] = []
+/** Every job of the current batch, so the drain is judged by how each ended. */
+const lastActiveIds = new Set<string>()
 watch(
   activeJobs,
   (current) => {
-    if (current.length > 0) lastActiveIds = current.map((job) => job.id)
+    for (const job of current) lastActiveIds.add(job.id)
   },
   { immediate: true }
 )
@@ -154,7 +154,8 @@ const outcomeOf = (ids: string[]): typeof terminalKind.value => {
 
 watch(activeCount, (count, prev) => {
   if (count === 0 && (prev ?? 0) > 0) {
-    terminalKind.value = outcomeOf(lastActiveIds)
+    terminalKind.value = outcomeOf([...lastActiveIds])
+    lastActiveIds.clear()
     cancelIntent.value = false
     completedFlash.value = true
     expanded.value = false
