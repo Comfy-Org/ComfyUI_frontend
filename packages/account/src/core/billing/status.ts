@@ -1,12 +1,12 @@
 import { zBillingStatusResponse } from '@comfyorg/ingest-types/zod'
 import type { z } from 'zod'
 
+import type { BillingResult, BillingTransport } from './billingContracts.js'
 import type {
-  BillingResult,
-  BillingSession,
-  BillingTransport
-} from './billingContracts.js'
-import type { BillingScope, BillingScopeContext } from './billingScope.js'
+  BillingScope,
+  BillingScopeContext,
+  BillingScopeSource
+} from './billingScope.js'
 import { createBillingScopeTracker } from './billingScope.js'
 import {
   matchesScopedRead,
@@ -40,7 +40,8 @@ export interface BillingStatusReader {
 
 export interface BillingStatusReaderOptions {
   readonly transport: BillingTransport
-  readonly session: BillingSession
+  /** Where the core learns which user, workspace, and role it runs as. */
+  readonly scopeSource: BillingScopeSource
   readonly now?: () => number
 }
 
@@ -52,12 +53,12 @@ interface InFlightRead {
 export function createBillingStatusReader(
   options: BillingStatusReaderOptions
 ): BillingStatusReader {
-  const { transport, session, now = Date.now } = options
+  const { transport, scopeSource, now = Date.now } = options
 
   let snapshot: BillingStatusSnapshot | undefined
   let inFlight: InFlightRead | undefined
   const lifetime = { disposed: false }
-  const scopeTracker = createBillingScopeTracker(session, () => {
+  const scopeTracker = createBillingScopeTracker(scopeSource, () => {
     snapshot = undefined
     inFlight = undefined
   })
@@ -97,18 +98,16 @@ export function createBillingStatusReader(
       context,
       promise: (async () => {
         const result = await requestStatus(scope)
-        if (result.status !== 'ok') {
-          if (
-            result.code === 'ACCESS_DENIED' &&
-            scopeTracker.isCurrent(context)
-          ) {
-            snapshot = undefined
-          }
-          return result
-        }
-
+        // A status that arrives after the host moved to another workspace
+        // describes neither, and a failure says nothing about the scope that
+        // has since taken over.
         if (lifetime.disposed || !scopeTracker.isCurrent(context)) {
           return { status: 'error', code: 'SUPERSEDED' }
+        }
+
+        if (result.status !== 'ok') {
+          if (result.code === 'ACCESS_DENIED') snapshot = undefined
+          return result
         }
 
         snapshot = result.value
