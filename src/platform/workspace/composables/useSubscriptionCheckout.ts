@@ -1089,8 +1089,10 @@ export function useSubscriptionCheckout(
       )
       activeCheckoutAttemptStartedAt = undefined
     } catch (error) {
-      if (hasErrorCode(error, 'REACTIVATION_CONFIRMATION_REQUIRED')) {
-        await refreshPreviewOnReactivationBlock(planSlug)
+      if (
+        hasErrorCode(error, 'REACTIVATION_CONFIRMATION_REQUIRED') &&
+        (await refreshPreviewOnReactivationBlock(planSlug))
+      ) {
         return
       }
       trackSubscriptionFailure(
@@ -1618,10 +1620,12 @@ export function useSubscriptionCheckout(
       )
       activeCheckoutAttemptStartedAt = undefined
     } catch (error) {
-      if (hasErrorCode(error, 'REACTIVATION_CONFIRMATION_REQUIRED')) {
-        await refreshPreviewOnReactivationBlock(planSlug, {
+      if (
+        hasErrorCode(error, 'REACTIVATION_CONFIRMATION_REQUIRED') &&
+        (await refreshPreviewOnReactivationBlock(planSlug, {
           teamCreditStopId: stop.id
-        })
+        }))
+      ) {
         return
       }
       trackSubscriptionFailure(
