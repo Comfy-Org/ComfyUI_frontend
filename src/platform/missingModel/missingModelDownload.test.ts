@@ -35,7 +35,6 @@ vi.mock(
 
 beforeEach(() => {
   mockIsDesktop.value = false
-  mockStartDownload.mockReset()
   vi.spyOn(useElectronDownloadStore(), 'start').mockImplementation(
     mockStartDownload
   )
