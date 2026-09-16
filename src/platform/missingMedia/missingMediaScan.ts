@@ -16,6 +16,7 @@ import type {
 } from './types'
 import type { LGraph } from '@/lib/litegraph/src/LGraph'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import type { NodeExecutionId } from '@/types/nodeIdentification'
 import type {
   IBaseWidget,
   IComboWidget
@@ -91,6 +92,39 @@ export function scanAllMediaCandidates(
   return candidates
 }
 
+function resolveMediaMissingState(
+  widget: IComboWidget,
+  value: string,
+  isCloud: boolean
+): boolean | undefined {
+  if (isCloud) return undefined
+  const options = resolveComboValues(widget)
+  if (getAnnotatedMediaPathTypeForDetection(value) === 'output') {
+    return options.includes(value) ? false : undefined
+  }
+  return !getMediaPathDetectionNames(value).some((name) =>
+    options.includes(name)
+  )
+}
+
+function resolvePromotedMediaSources(
+  node: LGraphNode,
+  executionId: NodeExecutionId,
+  widgetName: string
+) {
+  return resolveActivePromotedWidgetConsumers(node, widgetName).flatMap(
+    ({ nodePath, widget }) => {
+      const sourceExecutionId = buildPromotedSourceExecutionId(
+        executionId,
+        nodePath
+      )
+      return sourceExecutionId
+        ? [{ executionId: sourceExecutionId, widgetName: widget.name }]
+        : []
+    }
+  )
+}
+
 /** Scan a single node for missing media candidates (OSS immediate resolution). */
 export function scanNodeMediaCandidates(
   rootGraph: LGraph,
@@ -118,22 +152,7 @@ export function scanNodeMediaCandidates(
     const value = widget.value
     if (typeof value !== 'string' || !value.trim()) continue
 
-    let isMissing: boolean | undefined
-    if (isCloud) {
-      isMissing = undefined
-    } else {
-      const options = resolveComboValues(widget)
-      const type = getAnnotatedMediaPathTypeForDetection(value)
-      if (type === 'output') {
-        isMissing = options.includes(value) ? false : undefined
-      } else {
-        const detectionNames = getMediaPathDetectionNames(value)
-        const existsInOptions = detectionNames.some((name) =>
-          options.includes(name)
-        )
-        isMissing = !existsInOptions
-      }
-    }
+    const isMissing = resolveMediaMissingState(widget, value, isCloud)
 
     // Label only, and leaf-derived to match missingModelScan: the overlay
     // formats nodeType directly and a SubgraphNode's own type is a UUID.
@@ -149,18 +168,11 @@ export function scanNodeMediaCandidates(
       isMissing
     }
     if (node.isSubgraphNode()) {
-      candidate.promotedSources = resolveActivePromotedWidgetConsumers(
+      candidate.promotedSources = resolvePromotedMediaSources(
         node,
+        executionId,
         widget.name
-      ).flatMap(({ nodePath, widget: sourceWidget }) => {
-        const sourceExecutionId = buildPromotedSourceExecutionId(
-          executionId,
-          nodePath
-        )
-        return sourceExecutionId
-          ? [{ executionId: sourceExecutionId, widgetName: sourceWidget.name }]
-          : []
-      })
+      )
     }
     candidates.push(candidate)
   }

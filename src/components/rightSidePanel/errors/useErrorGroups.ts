@@ -468,23 +468,23 @@ export function useErrorGroups(searchQuery: MaybeRefOrGetter<string>) {
             nodeDisplayName
           })
         }
-        if (nodeId) {
-          addNodeErrorToGroup(
-            groupsMap,
-            nodeId,
-            nodeError.class_type,
-            'node',
-            cataloguedError,
-            filterBySelection
-          )
-        } else {
+        if (!nodeId) {
           addUnlocatedErrorToGroup(
             groupsMap,
             `node-${rawNodeId}`,
             nodeError.class_type,
             cataloguedError
           )
+          continue
         }
+        addNodeErrorToGroup(
+          groupsMap,
+          nodeId,
+          nodeError.class_type,
+          'node',
+          cataloguedError,
+          filterBySelection
+        )
       }
     }
 

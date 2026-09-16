@@ -277,6 +277,15 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
     { flush: 'sync' }
   )
 
+  function matchesMissingResource(
+    surfaces: ValidationErrorSurface[],
+    { models, media }: MissingResourceCandidates
+  ) {
+    return surfaces.some(({ executionId, error }) =>
+      classifyValidationErrorAbsorption(models, media, error, executionId)
+    )
+  }
+
   /**
    * The model/media analog of the missing-node retirement above: when a
    * candidate leaves the store (installed + refreshed, node deleted or
@@ -297,8 +306,8 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
     )
       return
     const state = activeRunErrors.value
-    const record = state?.nodeErrors
-    if (!state || !record) return
+    if (!state?.nodeErrors) return
+    const record = state.nodeErrors
 
     const possiblyMissingModels =
       models?.map((candidate) =>
@@ -313,6 +322,32 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
           : candidate
       ) ?? null
 
+    const current = { models, media }
+    const possiblyMissing = {
+      models: possiblyMissingModels,
+      media: possiblyMissingMedia
+    }
+    const updated = filterNodeErrors(record, (surfaces, error) => {
+      const rawError = toRaw(error)
+      if (matchesMissingResource(surfaces, current)) {
+        state.absorbedValidationErrors.add(rawError)
+        return true
+      }
+      const wasAbsorbed = previous
+        ? matchesMissingResource(surfaces, previous)
+        : state.absorbedValidationErrors.has(rawError)
+      return !wasAbsorbed || matchesMissingResource(surfaces, possiblyMissing)
+    })
+    if (updated !== record) updateRunErrors({ nodeErrors: updated }, key)
+  }
+
+  function filterNodeErrors(
+    record: Record<string, NodeError>,
+    keep: (
+      surfaces: ValidationErrorSurface[],
+      error: NodeValidationError
+    ) => boolean
+  ): Record<string, NodeError> | null {
     let changed = false
     const updated: Record<string, NodeError> = {}
     for (const [rawNodeId, nodeError] of Object.entries(record)) {
@@ -321,40 +356,12 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
         updated[rawNodeId] = nodeError
         continue
       }
-      const remaining = nodeError.errors.filter((error) => {
-        const surfaces = resolveValidationErrorSurfaces(
-          executionId,
-          nodeError,
+      const remaining = nodeError.errors.filter((error) =>
+        keep(
+          resolveValidationErrorSurfaces(executionId, nodeError, error),
           error
         )
-        const isAbsorbed = surfaces.some(({ executionId, error }) =>
-          classifyValidationErrorAbsorption(models, media, error, executionId)
-        )
-        const rawError = toRaw(error)
-        if (isAbsorbed) {
-          state.absorbedValidationErrors.add(rawError)
-          return true
-        }
-        const wasAbsorbed = previous
-          ? surfaces.some(({ executionId, error }) =>
-              classifyValidationErrorAbsorption(
-                previous.models,
-                previous.media,
-                error,
-                executionId
-              )
-            )
-          : state.absorbedValidationErrors.has(rawError)
-        if (!wasAbsorbed) return true
-        return surfaces.some(({ executionId, error }) =>
-          classifyValidationErrorAbsorption(
-            possiblyMissingModels,
-            possiblyMissingMedia,
-            error,
-            executionId
-          )
-        )
-      })
+      )
       if (remaining.length === nodeError.errors.length) {
         updated[rawNodeId] = nodeError
       } else {
@@ -363,12 +370,8 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
           updated[rawNodeId] = { ...nodeError, errors: remaining }
       }
     }
-    if (changed) {
-      updateRunErrors(
-        { nodeErrors: Object.keys(updated).length ? updated : null },
-        key
-      )
-    }
+    if (!changed) return record
+    return Object.keys(updated).length ? updated : null
   }
 
   function retireResolvedMissingResourceErrors(
