@@ -2,6 +2,7 @@ import { clsx } from 'clsx'
 import type { ClassArray } from 'clsx'
 import { extendTailwindMerge } from 'tailwind-merge'
 
+// Mirrors packages/tailwind-utils/src/index.ts; keep both configs in sync
 const twMerge = extendTailwindMerge({
   extend: {
     classGroups: {

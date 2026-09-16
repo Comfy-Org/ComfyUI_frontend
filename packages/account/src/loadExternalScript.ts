@@ -1,3 +1,4 @@
+// Copy of packages/shared-frontend-utils/src/loadExternalScript.ts (three app callers keep that one); keep both in sync
 const POLL_INTERVAL_MS = 50
 
 /**
