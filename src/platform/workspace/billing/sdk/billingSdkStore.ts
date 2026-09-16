@@ -293,7 +293,8 @@ export const useBillingSdkStore = defineStore('billingSdk', () => {
 
   function cancelSubscription(): Promise<SubscriptionRailOutcome> {
     return runSubscriptionCommand(
-      async () => projectSubscriptionResult(await sdk.commands.cancelSubscription()),
+      async () =>
+        projectSubscriptionResult(await sdk.commands.cancelSubscription()),
       refreshAfterCancel
     )
   }

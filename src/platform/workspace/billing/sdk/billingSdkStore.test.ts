@@ -466,9 +466,9 @@ describe('useBillingSdkStore subscription commands', () => {
     await expect(
       store.openPaymentPortal('https://app.example/')
     ).resolves.toEqual({ status: 'unavailable' })
-    await expect(
-      store.subscribe({ plan_slug: 'pro-yearly' })
-    ).resolves.toEqual({ status: 'unavailable' })
+    await expect(store.subscribe({ plan_slug: 'pro-yearly' })).resolves.toEqual(
+      { status: 'unavailable' }
+    )
     await expect(
       store.previewSubscribe({ planSlug: 'pro-yearly' })
     ).resolves.toEqual({ status: 'unavailable' })

@@ -6,11 +6,10 @@
  * stay in the lifecycle. `previewSubscribe` sits beside them without a
  * lifecycle: it only quotes a change.
  *
- * Eligibility is decided from the server's own status fields, never from a
- * client-side notion of the plan, and it only ever picks the route — it never
- * refuses (`../../../docs/billing-command-eligibility.md`). Server codes are
- * matched against the closed set named here; a code outside it reaches the
- * caller only as the transport's coded failure.
+ * No command decides for the server whether a transition is allowed
+ * (`../../../docs/billing-command-eligibility.md`). Server codes are matched
+ * against the closed set named here; a code outside it reaches the caller only
+ * as the transport's coded failure.
  */
 import {
   zCancelSubscriptionResponse2,
@@ -40,7 +39,7 @@ import type {
 } from './operationState.js'
 import { validateActionUrl } from './operationState.js'
 import { readValidatedBillingResponse } from './sharedRead.js'
-import type { BillingStatusData, BillingStatusReader } from './status.js'
+import type { BillingStatusReader } from './status.js'
 
 export const SUBSCRIBE_ROUTE = '/billing/subscribe'
 export const RESUBSCRIBE_ROUTE = '/billing/subscription/resubscribe'
@@ -194,17 +193,6 @@ const ALREADY_HELD: SubscriptionCommandResult = {
 
 function coded(code: SubscriptionCommandCode): SubscriptionCommandFailure {
   return { status: 'error', code }
-}
-
-type Eligibility = 'free' | 'active' | 'canceled'
-
-function eligibilityOf(status: BillingStatusData): Eligibility {
-  const paid =
-    status.is_active &&
-    status.subscription_tier !== undefined &&
-    status.subscription_tier !== 'FREE'
-  if (!paid) return 'free'
-  return status.subscription_status === 'canceled' ? 'canceled' : 'active'
 }
 
 /**
@@ -402,18 +390,7 @@ export function createBillingCommands(
       return coded('INVALID_REQUEST')
     }
 
-    const status = await statusReader.read()
-    if (status.status === 'error') return status
-    switch (eligibilityOf(status.value.status)) {
-      case 'canceled':
-        return resubscribe()
-      // A plan change is a subscribe against a live subscription, and only the
-      // server can price one. Refusing it here on the client would deny every
-      // upgrade, downgrade and duration change the host already allows.
-      case 'active':
-      case 'free':
-        return settle('subscription', () => issueSubscribe(request))
-    }
+    return settle('subscription', () => issueSubscribe(request))
   }
 
   async function previewSubscribe(

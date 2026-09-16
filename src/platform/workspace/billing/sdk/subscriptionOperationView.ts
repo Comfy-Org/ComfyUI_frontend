@@ -130,22 +130,21 @@ export function projectSubscriptionResult(
  * the response's `needs_payment_method` or `pending_payment`, both of which
  * the lifecycle drove to a conclusion first.
  *
- * `billing_op_id` is empty when the server answered that the requested state
- * already held: nothing was issued, so there is no operation to attribute the
- * success to. Both callers read the id only to report telemetry, and both
- * treat an absent response as a failure — which this is not.
+ * An outcome carries no operation only when the server answered that the
+ * requested state already held, which subscribe never reaches: the route
+ * documents no already-held code.
  */
 export function projectSubscribeResult(
   result: SubscriptionCommandResult
 ): SubscriptionRailOutcome<SubscribeResponse> {
   if (result.status === 'error') return projectFailure(result)
   const { phase, operation } = result.value
-  if (phase !== 'succeeded') {
+  if (phase !== 'succeeded' || operation === undefined) {
     return { status: 'error', error: new Error(`phase: ${phase}`) }
   }
   return {
     status: 'ok',
-    value: { billing_op_id: operation?.id ?? '', status: 'subscribed' }
+    value: { billing_op_id: operation.id, status: 'subscribed' }
   }
 }
 

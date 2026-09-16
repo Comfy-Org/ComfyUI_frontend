@@ -253,7 +253,7 @@ beforeEach(() => {
 })
 
 describe('createBillingCommands', () => {
-  describe('eligibility from the status snapshot', () => {
+  describe('each command against the subscription state', () => {
     it('FREE: subscribe issues the checkout and settles the operation', async () => {
       const h = harness({
         status: FREE,
@@ -393,40 +393,50 @@ describe('createBillingCommands', () => {
       expect(h.invalidate).toHaveBeenCalledOnce()
     })
 
-    it('PRO canceled: subscribe routes to the resubscribe endpoint', async () => {
+    it('PRO canceled: subscribe carries the requested plan to the subscribe route', async () => {
       const h = harness({
         status: PRO_CANCELED,
-        script: {
-          [POST_RESUBSCRIBE]: [
-            http(200, { billing_op_id: 'op-1', status: 'active' })
-          ],
-          [GET_OP]: settledOk
-        }
+        script: { [POST_SUBSCRIBE]: [subscribed], [GET_OP]: settledOk }
       })
 
-      const result = await h.commands.subscribe(PLAN)
+      const result = await h.commands.subscribe({
+        plan_slug: 'pro-yearly',
+        confirm_reactivation: true
+      })
 
       expect(result).toMatchObject({
         status: 'ok',
-        value: { phase: 'succeeded', operation: { kind: 'subscription' } }
+        value: { phase: 'succeeded', operation: { id: 'op-1' } }
       })
-      expect(h.posts().map((call) => call.route)).toEqual([RESUBSCRIBE_ROUTE])
+      expect(h.posts()).toEqual([
+        expect.objectContaining({
+          route: SUBSCRIBE_ROUTE,
+          body: {
+            plan_slug: 'pro-yearly',
+            confirm_reactivation: true,
+            idempotency_key: 'key-1'
+          }
+        })
+      ])
     })
 
-    it('PRO canceled: subscribe reports the already-held code as a success', async () => {
+    it('PRO canceled: subscribe hands the server its reactivation block back', async () => {
       const h = harness({
         status: PRO_CANCELED,
         script: {
-          [POST_RESUBSCRIBE]: [
-            serverError(409, 'NOT_SCHEDULED_FOR_CANCELLATION')
+          [POST_SUBSCRIBE]: [
+            serverError(409, 'REACTIVATION_CONFIRMATION_REQUIRED')
           ]
         }
       })
 
       const result = await h.commands.subscribe(PLAN)
 
-      expect(result).toEqual({ status: 'ok', value: { phase: 'succeeded' } })
-      expect(h.invalidate).toHaveBeenCalledOnce()
+      expect(result).toEqual({
+        status: 'error',
+        code: 'REACTIVATION_CONFIRMATION_REQUIRED'
+      })
+      expect(h.posts().map((call) => call.route)).toEqual([SUBSCRIBE_ROUTE])
     })
 
     it('PRO canceled: resubscribe settles a pending reactivation through the lifecycle', async () => {
