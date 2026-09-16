@@ -14,6 +14,7 @@ import { useWorkflowStore } from '@/platform/workflow/management/stores/workflow
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { app } from '@/scripts/app'
 import { defaultGraph } from '@/scripts/defaultGraph'
+import { useMinimapLayerStore } from '@/stores/minimapLayerStore'
 import { graphScopeOf } from '@/types/graphScopeId'
 import { createNodeLocatorId } from '@/types/nodeIdentification'
 import { toNodeId } from '@/types/nodeId'
@@ -98,7 +99,9 @@ describe('AgentGraphActivityBar', () => {
     addReportedNode(root, 1)
     addReportedNode(root, 2)
     await nextTick()
+    expect(useMinimapLayerStore().layers).toHaveLength(1)
     first.unmount()
+    expect(useMinimapLayerStore().layers).toHaveLength(1)
 
     renderBar()
 

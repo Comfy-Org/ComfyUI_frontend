@@ -1,19 +1,25 @@
 import { usePreferredReducedMotion } from '@vueuse/core'
 import { computed, onScopeDispose, ref, watch } from 'vue'
+import type { WatchSource } from 'vue'
 
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useMinimapLayerStore } from '@/stores/minimapLayerStore'
 import type { MinimapLayer } from '@/stores/minimapLayerStore'
 import { graphScopeOf } from '@/types/graphScopeId'
-import { useAgentGeneratedNodesStore } from '@/workbench/extensions/agent/stores/agentGeneratedNodesStore'
+import type { useAgentGeneratedNodesStore } from '../stores/agentGeneratedNodesStore'
 
 import {
   AGENT_MINIMAP_ANIMATION_MS,
   agentMinimapGrowth,
   drawAgentMinimapHighlight
 } from './agentMinimapHighlight'
-export function useAgentMinimapLayer(): void {
-  const generatedNodes = useAgentGeneratedNodesStore()
+export function useAgentMinimapLayer(
+  generatedNodes: Pick<
+    ReturnType<typeof useAgentGeneratedNodesStore>,
+    'generatedAtFor' | 'latestMarkAt'
+  >,
+  provenance: WatchSource
+): void {
   const settingStore = useSettingStore()
   const revision = ref(0)
   const reducedMotion = usePreferredReducedMotion()
@@ -26,9 +32,13 @@ export function useAgentMinimapLayer(): void {
       reducedMotion.value !== 'reduce'
   )
 
-  const stopStoreSubscription = generatedNodes.$subscribe(() => {
-    revision.value++
-  })
+  const stopProvenanceWatch = watch(
+    provenance,
+    () => {
+      revision.value++
+    },
+    { deep: true }
+  )
   const stopPreferenceWatch = watch(animationsEnabled, () => {
     revision.value++
     if (!animationsEnabled.value) animationEndsAt = 0
@@ -72,7 +82,7 @@ export function useAgentMinimapLayer(): void {
   const unregister = useMinimapLayerStore().register(layer)
   onScopeDispose(() => {
     unregister()
-    stopStoreSubscription()
+    stopProvenanceWatch()
     stopPreferenceWatch()
   })
 }

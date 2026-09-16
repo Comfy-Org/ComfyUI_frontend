@@ -14,6 +14,7 @@ import type { NodeId } from '@/types/nodeId'
 import { createNodeLocatorId } from '@/types/nodeIdentification'
 import type { NodeLocatorId } from '@/types/nodeIdentification'
 
+import { useAgentMinimapLayer } from '../minimap/useAgentMinimapLayer'
 import type { TurnId } from '../schemas/agentApiSchema'
 
 interface GeneratedNode {
@@ -132,6 +133,14 @@ export const useAgentGeneratedNodesStore = defineStore(
       return latestByOwner.get(ownerKey(scope)) ?? 0
     }
 
+    function generatedAtFor(
+      scope: GraphScope,
+      nodeId: NodeId
+    ): number | undefined {
+      return roots.value.get(scope.rootGraphId)?.get(locatorFor(scope, nodeId))
+        ?.at
+    }
+
     function markGenerated(
       scope: GraphScope,
       nodeId: NodeId,
@@ -144,12 +153,11 @@ export const useAgentGeneratedNodesStore = defineStore(
           ? Math.min(Math.max(now, latest + 90), now + 900)
           : now
       const locator = locatorFor(scope, nodeId)
-      let marks = roots.value.get(scope.rootGraphId)
-      if (!marks) {
-        roots.value.set(scope.rootGraphId, new Map())
-        marks = roots.value.get(scope.rootGraphId)!
-      }
+      const marks =
+        roots.value.get(scope.rootGraphId) ??
+        new Map<NodeLocatorId, GeneratedNode>()
       marks.set(locator, { scope, nodeId, at })
+      roots.value.set(scope.rootGraphId, marks)
       latestByOwner.set(ownerKey(scope), Math.max(latest, at))
       const currentTurn = turn.value
       if (!currentTurn) return
@@ -166,18 +174,19 @@ export const useAgentGeneratedNodesStore = defineStore(
         scheduleCompletion(scope.rootGraphId, currentTurn.id)
     }
 
-    useExtensionStore().registerExtension({
+    const unregisterLifecycle = useExtensionStore().registerExtension({
       name: 'Comfy.AgentGeneratedNodesLifecycle',
       beforeLoadGraph() {
         const workflow = workflowStore.activeWorkflow
         const graph = workflow?.activeState
         if (!workflow || !graph) return
-        snapshots.set(workflow, {
-          graph: structuredClone(toRaw(graph)),
-          roots: new Map(roots.value),
-          activities: new Map(activities.value),
-          latestByOwner: new Map(latestByOwner)
-        })
+        if (!snapshots.has(workflow))
+          snapshots.set(workflow, {
+            graph: structuredClone(toRaw(graph)),
+            roots: new Map(roots.value),
+            activities: new Map(activities.value),
+            latestByOwner: new Map(latestByOwner)
+          })
         roots.value.clear()
         activities.value.clear()
         latestByOwner.clear()
@@ -248,7 +257,10 @@ export const useAgentGeneratedNodesStore = defineStore(
       }
     }, true)
 
+    useAgentMinimapLayer({ generatedAtFor, latestMarkAt }, roots)
+
     onScopeDispose(() => {
+      unregisterLifecycle()
       unregisterOverlay()
       unsubscribe()
       for (const timer of timers) clearTimeout(timer)
@@ -260,8 +272,7 @@ export const useAgentGeneratedNodesStore = defineStore(
       beginTurn,
       finishTurn,
       latestMarkAt,
-      generatedAtFor: (scope: GraphScope, nodeId: NodeId) =>
-        roots.value.get(scope.rootGraphId)?.get(locatorFor(scope, nodeId))?.at,
+      generatedAtFor,
       dismiss: (rootId: RootGraphId) => {
         activities.value.delete(rootId)
         for (const snapshot of snapshotsForOpenWorkflows())

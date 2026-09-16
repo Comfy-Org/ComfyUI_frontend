@@ -1,4 +1,4 @@
-import { effectScope, nextTick } from 'vue'
+import { nextTick } from 'vue'
 import { describe, expect, it, vi } from 'vitest'
 
 import { LGraph } from '@/lib/litegraph/src/litegraph'
@@ -13,7 +13,6 @@ import {
 } from '@/utils/__tests__/litegraphTestUtils'
 
 import { useAgentGeneratedNodesStore } from '../stores/agentGeneratedNodesStore'
-import { useAgentMinimapLayer } from './useAgentMinimapLayer'
 
 describe('useAgentMinimapLayer', () => {
   it.for([
@@ -36,17 +35,15 @@ describe('useAgentMinimapLayer', () => {
       settings.settingValues['Comfy.Appearance.DisableAnimations'] = disabled
       const graph = new LGraph()
       const graphScope = graphScopeOf(graph)
-      useAgentGeneratedNodesStore()
+      const generatedNodes = useAgentGeneratedNodesStore()
       const nodeId = toNodeId(1)
       useNodeDataStore().registerNode(
         graphScope,
         createNodeState({ id: nodeId, graphId: graphScope.owningGraphId }),
         { source: 'agent-remote', actor: 'agent:test', opId: 'op-1' }
       )
-      const lifetime = effectScope()
       const layers = useMinimapLayerStore()
       try {
-        lifetime.run(useAgentMinimapLayer)
         await nextTick()
         const layer = layers.layers[0]
         const ctx = createMockCanvas2DContext()
@@ -69,7 +66,7 @@ describe('useAgentMinimapLayer', () => {
         layer.draw({ ...frame, now: 1_010 })
         expect(ctx.fillRect).toHaveBeenLastCalledWith(10, 20, 10, 20)
       } finally {
-        lifetime.stop()
+        generatedNodes.$dispose()
       }
       expect(layers.layers).toHaveLength(0)
     }

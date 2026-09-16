@@ -123,6 +123,26 @@ async function switchWorkflow(
 }
 
 describe('agentGeneratedNodesStore', () => {
+  it('recreates its lifecycle registration after disposal', () => {
+    useAgentGeneratedNodesStore().$dispose()
+    expect(
+      useExtensionStore().isExtensionInstalled(
+        'Comfy.AgentGeneratedNodesLifecycle'
+      )
+    ).toBe(false)
+
+    const recreated = useAgentGeneratedNodesStore()
+    expect(
+      useExtensionStore().isExtensionInstalled(
+        'Comfy.AgentGeneratedNodesLifecycle'
+      )
+    ).toBe(true)
+    graphMutations().addNode(payload(1), agentContext)
+    expect(recreated.generatedAtFor(rootScope, toNodeId(1))).toBeTypeOf(
+      'number'
+    )
+  })
+
   it.for([
     {
       name: 'live agent',
