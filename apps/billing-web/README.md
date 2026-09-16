@@ -12,17 +12,17 @@ over it. The checkout component owns the payment-summary and success layouts
 and emits host events for the Billing SDK adapter. It does not contain:
 
 - a server runtime or BFF
-- hosted billing views over the SDK client
 - a cookie-backed session transport
 - Stripe Elements initialization
 - production deployment configuration
 
-The payment action stays disabled in the hosted shell until the subscription
-views land. Billing data, quotes, commands, and operation state come from the
-shared `@comfyorg/account` Billing SDK; `src/session/billingWebClient.ts` is
-the single place the core is constructed. The billing backend remains owned by
-the Cloud repository. The existing frontend Pinia, workspace API, and dialog
-orchestration are not copied into this app.
+The hosted views read the SDK client, but the checkout's confirm action stays
+disabled until the payment slice connects it. Billing data, quotes, commands,
+and operation state come from the shared `@comfyorg/account` Billing SDK;
+`src/session/billingWebClient.ts` is the single place the core is constructed.
+The billing backend remains owned by the Cloud repository. The existing
+frontend Pinia, workspace API, and dialog orchestration are not copied into
+this app.
 
 ## Authentication
 

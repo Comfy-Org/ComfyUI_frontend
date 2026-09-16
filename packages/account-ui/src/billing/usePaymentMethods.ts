@@ -50,9 +50,15 @@ export function usePaymentMethods(
   const loading = ref(false)
   const failure = ref<BillingFailure | undefined>()
 
+  // A read that settles after a later one started says nothing about the list
+  // that one published, and its `SUPERSEDED` would drop it.
+  let latestAttempt = 0
+
   async function refresh() {
+    const attempt = ++latestAttempt
     loading.value = true
     const result = await reader.read()
+    if (attempt !== latestAttempt) return result
     loading.value = false
     if (result.status === 'ok') {
       methods.value = result.value.methods
@@ -68,6 +74,7 @@ export function usePaymentMethods(
 
   function invalidateAndRefresh() {
     reader.invalidate()
+    methods.value = undefined
     return refresh()
   }
 

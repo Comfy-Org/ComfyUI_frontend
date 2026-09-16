@@ -24,9 +24,6 @@ const APP_ENTRY_PATH = '/'
 
 const SIGN_IN_PATH = '/sign-in'
 
-/** Neither path carries a product's request, so neither disturbs the entry. */
-const ENTRYLESS_PATHS: readonly string[] = [APP_ENTRY_PATH, SIGN_IN_PATH]
-
 const INTENT_VIEWS: Record<BillingIntent, Component> = {
   pricing: SubscriptionView,
   subscription: SubscriptionView,
@@ -72,7 +69,10 @@ export type BillingWebSessionPhase = SessionSnapshot['phase']
  *
  * The entry is read before the guard runs, so a link we cannot read explains
  * itself even to a visitor the guard turns away: that failure is the link's,
- * and signing in would not repair it.
+ * and signing in would not repair it. The sign-in page is the one route that
+ * leaves the entry alone, because it is where that visitor was sent. The app's
+ * own entry path carries no product request and clears what a previous link
+ * left behind.
  */
 export function createBillingRouter(
   history: RouterHistory = createWebHistory(import.meta.env.BASE_URL),
@@ -81,7 +81,9 @@ export function createBillingRouter(
   const router = createRouter({ history, routes })
 
   router.beforeEach((to) => {
-    if (!ENTRYLESS_PATHS.includes(to.path)) {
+    if (to.path === APP_ENTRY_PATH) {
+      recordBillingEntry(undefined)
+    } else if (to.path !== SIGN_IN_PATH) {
       recordBillingEntry(parseBillingEntry(to.fullPath))
     }
     if (to.path === SIGN_IN_PATH || readPhase() === 'authenticated') return true

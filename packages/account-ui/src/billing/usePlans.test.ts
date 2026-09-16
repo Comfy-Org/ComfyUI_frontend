@@ -1,10 +1,12 @@
 import { PLANS_ROUTE } from '@comfyorg/account/billing'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import type { Answer } from './__fixtures__/billingHarness'
 import {
   NOW,
   NO_RESPONSE,
-  createBillingHarness
+  createBillingHarness,
+  httpOk
 } from './__fixtures__/billingHarness'
 import { usePlans } from './usePlans'
 
@@ -71,5 +73,27 @@ describe('usePlans', () => {
     await plans.refresh()
 
     expect(plans.plans.value).toMatchObject(CATALOG)
+  })
+
+  it('keeps the catalog of the workspace the host moved to when the read it left settles last', async () => {
+    const { client, answer, moveToWorkspace } = createBillingHarness()
+    const plans = usePlans({ client, immediate: false })
+    let settleLeft!: (answer: Answer) => void
+    const left = new Promise<Answer>((resolve) => {
+      settleLeft = resolve
+    })
+    const movedTo = { current_plan_slug: 'creator_monthly', plans: [] }
+    answer('GET', PLANS_ROUTE, left, httpOk(movedTo))
+
+    const stale = plans.refresh()
+    moveToWorkspace('ws-2')
+    await plans.refresh()
+    settleLeft(httpOk({ current_plan_slug: 'free', plans: [] }))
+
+    await expect(stale).resolves.toEqual({
+      status: 'error',
+      code: 'SUPERSEDED'
+    })
+    expect(plans.plans.value).toMatchObject(movedTo)
   })
 })

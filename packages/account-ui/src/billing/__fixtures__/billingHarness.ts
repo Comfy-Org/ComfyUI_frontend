@@ -191,17 +191,15 @@ export const SCOPE_CHANGED: BillingResult<BillingHttpResponse> = {
   code: 'SUPERSEDED'
 }
 
-type Answer =
-  | BillingResult<BillingHttpResponse>
-  | Promise<BillingResult<BillingHttpResponse>>
+export type Answer = BillingResult<BillingHttpResponse>
 
-/**
- * Answers per route are consumed in order; the last one repeats. A promise
- * answer holds its request open until the test resolves it.
- */
+/** A pending answer lets a test settle two reads out of the order they began. */
+type QueuedAnswer = Answer | Promise<Answer>
+
+/** Answers per route are consumed in order; the last one repeats. */
 function fakeTransport() {
   const calls: BillingRequest[] = []
-  const queues = new Map<string, Answer[]>()
+  const queues = new Map<string, QueuedAnswer[]>()
   const keyOf = (method: string, route: string) => `${method} ${route}`
   const transport: BillingTransport = vi.fn(async (request) => {
     calls.push(request)
@@ -215,7 +213,7 @@ function fakeTransport() {
   return {
     transport,
     calls,
-    answer(method: 'GET' | 'POST', route: string, ...answers: Answer[]) {
+    answer(method: 'GET' | 'POST', route: string, ...answers: QueuedAnswer[]) {
       queues.set(keyOf(method, route), answers)
     },
     routes: () => calls.map((call) => `${call.method} ${call.route}`)

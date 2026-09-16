@@ -38,9 +38,15 @@ export function usePlans(options: PlansOptions = {}): Plans {
   const loading = ref(false)
   const failure = ref<BillingFailure | undefined>()
 
+  // A read that settles after a later one started says nothing about the
+  // catalog that one published, and its `SUPERSEDED` would drop it.
+  let latestAttempt = 0
+
   async function refresh() {
+    const attempt = ++latestAttempt
     loading.value = true
     const result = await reader.read()
+    if (attempt !== latestAttempt) return result
     loading.value = false
     if (result.status === 'ok') {
       plans.value = result.value.data

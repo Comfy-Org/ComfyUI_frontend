@@ -2,6 +2,7 @@ import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
 import { createMemoryHistory } from 'vue-router'
 
+import type { SignInState } from '@/auth/signInState'
 import { createBillingI18n } from '@/i18n'
 import { createBillingRouter } from '@/router'
 import SignInView from '@/views/SignInView.vue'
@@ -13,11 +14,11 @@ const h = vi.hoisted(() => ({
   retryMint: vi.fn()
 }))
 
-vi.mock<unknown>(import('@/auth/useSignInController'), async () => {
+vi.mock(import('@/auth/useSignInController'), async () => {
   const { computed, ref } = await import('vue')
   return {
     useSignInController: () => ({
-      state: ref({ step: 'idle' }),
+      state: ref<SignInState>({ step: 'idle' }),
       busy: computed(() => false),
       leaving: computed(() => false),
       errorMessage: computed(() => ''),
@@ -90,10 +91,34 @@ describe('SignInView', () => {
       screen.getByRole('button', { name: 'Sign in with Google' })
     ).toBeDisabled()
     expect(
-      screen.getByRole('button', { name: 'Sign in with Github' })
+      screen.getByRole('button', { name: 'Sign in with GitHub' })
     ).toBeDisabled()
     expect(
       screen.getByRole('button', { name: 'Use email instead' })
     ).toBeDisabled()
   })
+
+  it.for([
+    {
+      block: 'the email form',
+      clicks: ['Use email instead'],
+      focused: () => screen.getByRole('textbox', { name: 'Email' })
+    },
+    {
+      block: 'the provider buttons',
+      clicks: ['Use email instead', 'Sign in with Google or GitHub instead'],
+      focused: () => screen.getByRole('button', { name: 'Sign in with Google' })
+    }
+  ])(
+    'moves focus into $block when it swaps in',
+    async ({ clicks, focused }) => {
+      await renderSignIn()
+
+      for (const name of clicks) {
+        await userEvent.click(screen.getByRole('button', { name }))
+      }
+
+      expect(focused()).toHaveFocus()
+    }
+  )
 })

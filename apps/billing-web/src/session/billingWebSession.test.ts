@@ -42,15 +42,17 @@ function hungFetch() {
   return vi.fn<typeof fetch>(() => new Promise<Response>(() => {}))
 }
 
-async function freshSession() {
+async function freshSession({ configured = true } = {}) {
   vi.resetModules()
   const { createTestIdentity } = await import('@comfyorg/account/testing')
-  h.identity = createTestIdentity<AccountUser>({
-    onUserChanged: (callback) => {
-      h.deliver = callback
-      return () => undefined
-    }
-  })
+  h.identity = configured
+    ? createTestIdentity<AccountUser>({
+        onUserChanged: (callback) => {
+          h.deliver = callback
+          return () => undefined
+        }
+      })
+    : undefined
   const module = await import('@/session/billingWebSession')
   const session = module.useBillingWebSession()
   return {
@@ -79,6 +81,18 @@ describe('useBillingWebSession', () => {
 
     expect(projection()).toEqual({
       phase: 'pending',
+      uid: null,
+      hasSession: false
+    })
+  })
+
+  it('settles signed out when the deployment has no identity configuration', async () => {
+    vi.stubGlobal('fetch', hungFetch())
+
+    const { projection } = await freshSession({ configured: false })
+
+    expect(projection()).toEqual({
+      phase: 'signed-out',
       uid: null,
       hasSession: false
     })

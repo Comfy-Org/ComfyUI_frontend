@@ -14,6 +14,7 @@ const emit = defineEmits<{
 }>()
 
 const { t } = useI18n()
+const emailField = ref<HTMLInputElement>()
 const email = ref('')
 const password = ref('')
 const revealed = ref(false)
@@ -52,6 +53,8 @@ const passwordError = computed(() =>
 const fieldClass =
   'h-11 w-full rounded-lg border border-interface-stroke bg-input-surface px-3 text-base-foreground placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-base-foreground focus-visible:outline-none aria-invalid:border-destructive-background'
 
+defineExpose({ focus: () => emailField.value?.focus() })
+
 function submit(): void {
   emailTouched.value = true
   passwordTouched.value = true
@@ -68,6 +71,7 @@ function submit(): void {
       </label>
       <input
         id="sign-in-email"
+        ref="emailField"
         v-model="email"
         type="text"
         name="email"

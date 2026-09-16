@@ -22,6 +22,13 @@ import { createSessionClient } from '@comfyorg/account/session'
 import { CLOUD_BASE_URL } from '@/config/env'
 import { billingWebIdentity } from '@/config/firebase'
 
+/**
+ * Script-readable by design: an injected script on this origin could read the
+ * cached credential, but it could equally mint a fresh one from the identity it
+ * would already control, so memory-only storage moves the exposure rather than
+ * removing it. What bounds the damage is the credential's own lifetime, which
+ * is short, tab-scoped and keyed by uid, as the Cloud app caches it too.
+ */
 const STORAGE_KEY = 'comfy.billing-web.session.v1'
 
 const storage = {
@@ -65,6 +72,13 @@ const PENDING: SessionSnapshot<User> = {
   session: undefined
 }
 
+/** A deployment with no identity configuration has nobody to sign in. */
+const NO_IDENTITY: SessionSnapshot<User> = {
+  phase: 'signed-out',
+  user: null,
+  session: undefined
+}
+
 const snapshot = shallowRef<SessionSnapshot<User>>(PENDING)
 let listening = false
 
@@ -75,7 +89,12 @@ function listen(): void {
   session.subscribe((next) => {
     snapshot.value = next
   })
-  if (billingWebIdentity) session.attachIdentity(billingWebIdentity)
+  // `pending` promises an answer from an identity; without one, none is coming.
+  if (!billingWebIdentity) {
+    snapshot.value = NO_IDENTITY
+    return
+  }
+  session.attachIdentity(billingWebIdentity)
 }
 
 /** The router guard's read; starts the identity listener on first call. */

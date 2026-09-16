@@ -197,4 +197,15 @@ describe('hosted billing entry routing', () => {
     ).toBeInTheDocument()
     expect(useBillingEntry().error.value).toBeUndefined()
   })
+
+  it('drops the error of a link the visitor has navigated away from', async () => {
+    const router = await arriveAt(`/v1/refunds?${ENTRY_QUERY}`)
+
+    await router.push('/')
+
+    expect(
+      await screen.findByRole('heading', { name: 'Confirm your payment' })
+    ).toBeInTheDocument()
+    expect(useBillingEntry().error.value).toBeUndefined()
+  })
 })

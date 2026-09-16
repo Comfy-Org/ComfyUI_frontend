@@ -1,6 +1,7 @@
 import { PAYMENT_METHODS_ROUTE } from '@comfyorg/account/billing'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import type { Answer } from './__fixtures__/billingHarness'
 import {
   NOW,
   SAVED_CARDS,
@@ -69,13 +70,37 @@ describe('usePaymentMethods', () => {
     const reread = paymentMethods.invalidateAndRefresh()
 
     expect(
-      usePaymentMethods({ client, immediate: false }).methods.value,
-      'the portal may have removed a card the dropped list still names'
+      paymentMethods.methods.value,
+      'the portal may have removed a card the published list still names'
+    ).toBeUndefined()
+    expect(
+      usePaymentMethods({ client, immediate: false }).methods.value
     ).toBeUndefined()
     await reread
     expect(paymentMethods.methods.value).toEqual([ADDED_CARD])
     expect(
       routes().filter((route) => route.endsWith(PAYMENT_METHODS_ROUTE))
     ).toHaveLength(2)
+  })
+
+  it('keeps the cards of the workspace the host moved to when the read it left settles last', async () => {
+    const { client, answer, moveToWorkspace } = createBillingHarness()
+    const paymentMethods = usePaymentMethods({ client, immediate: false })
+    let settleLeft!: (answer: Answer) => void
+    const left = new Promise<Answer>((resolve) => {
+      settleLeft = resolve
+    })
+    answer('GET', PAYMENT_METHODS_ROUTE, left, httpOk([ADDED_CARD]))
+
+    const stale = paymentMethods.refresh()
+    moveToWorkspace('ws-2')
+    await paymentMethods.refresh()
+    settleLeft(httpOk(SAVED_CARDS))
+
+    await expect(stale).resolves.toEqual({
+      status: 'error',
+      code: 'SUPERSEDED'
+    })
+    expect(paymentMethods.methods.value).toEqual([ADDED_CARD])
   })
 })

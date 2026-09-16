@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
-import { computed, ref } from 'vue'
+import { computed, nextTick, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 
@@ -28,6 +28,20 @@ const {
 })
 
 const showEmailForm = ref(false)
+const emailForm = ref<InstanceType<typeof SignInEmailForm>>()
+const providerGroup = ref<HTMLDivElement>()
+
+/**
+ * The block that held focus unmounts, so focus would fall to the document
+ * body and make a keyboard user traverse the page again to reach the form.
+ */
+async function showEmail(show: boolean): Promise<void> {
+  showEmailForm.value = show
+  await nextTick()
+  if (show) emailForm.value?.focus()
+  else providerGroup.value?.querySelector('button')?.focus()
+}
+
 // `isSecureContext` is absent in some runtimes; only an explicit false is insecure.
 const secureContext = window.isSecureContext ?? true
 
@@ -76,31 +90,38 @@ const alertClass = 'rounded-lg bg-base-background p-3 text-sm'
 
       <div class="mt-8 flex flex-col gap-4">
         <template v-if="!showEmailForm">
-          <SocialAuthButtons
-            :google-label="t('auth.signIn.google')"
-            :github-label="t('auth.signIn.github')"
-            button-class="flex h-12 w-full cursor-pointer items-center justify-center gap-3 rounded-lg border border-border-default bg-base-background font-medium text-base-foreground transition-colors hover:bg-secondary-background-hover focus-visible:ring-2 focus-visible:ring-base-foreground focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
-            :disabled="blocked"
-            @google="signInWith('google')"
-            @github="signInWith('github')"
-          />
+          <!-- `contents` keeps both provider buttons as items of this flex column. -->
+          <div ref="providerGroup" class="contents">
+            <SocialAuthButtons
+              :google-label="t('auth.signIn.google')"
+              :github-label="t('auth.signIn.github')"
+              button-class="flex h-12 w-full cursor-pointer items-center justify-center gap-3 rounded-lg border border-border-default bg-base-background font-medium text-base-foreground transition-colors hover:bg-secondary-background-hover focus-visible:ring-2 focus-visible:ring-base-foreground focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
+              :disabled="blocked"
+              @google="signInWith('google')"
+              @github="signInWith('github')"
+            />
+          </div>
           <button
             type="button"
             :class="linkButtonClass"
             :disabled="blocked"
-            @click="showEmailForm = true"
+            @click="showEmail(true)"
           >
             {{ t('auth.signIn.useEmailInstead') }}
           </button>
         </template>
 
         <template v-else>
-          <SignInEmailForm :loading="busy" @submit="submitEmail" />
+          <SignInEmailForm
+            ref="emailForm"
+            :loading="busy"
+            @submit="submitEmail"
+          />
           <button
             type="button"
             :class="linkButtonClass"
             :disabled="busy"
-            @click="showEmailForm = false"
+            @click="showEmail(false)"
           >
             {{ t('auth.signIn.backToSocial') }}
           </button>
