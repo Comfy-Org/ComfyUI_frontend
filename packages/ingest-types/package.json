@@ -17,10 +17,11 @@
   "scripts": {
     "generate": "openapi-ts && node -e \"const fs=require('fs'); ['src/zod.gen.ts'].forEach(f => fs.writeFileSync(f, fs.readFileSync(f,'utf8').replaceAll(\\\"from 'zod/v3'\\\", \\\"from 'zod'\\\")));\""
   },
-  "dependencies": {
+  "devDependencies": {
+    "@hey-api/openapi-ts": "0.97.3",
     "zod": "catalog:"
   },
-  "devDependencies": {
-    "@hey-api/openapi-ts": "0.97.3"
+  "peerDependencies": {
+    "zod": "^3.23.8"
   }
 }
