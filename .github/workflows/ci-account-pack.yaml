@@ -136,10 +136,5 @@ jobs:
       - name: Setup frontend
         uses: ./.github/actions/setup-frontend
 
-      - name: Build packages
-        run: |
-          pnpm --filter @comfyorg/ingest-types build
-          pnpm --filter @comfyorg/account build
-
       - name: Install the packed tarballs into a clean consumer and import every entry
         run: pnpm --filter @comfyorg/account smoke:pack

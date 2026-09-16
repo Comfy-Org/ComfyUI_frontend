@@ -141,6 +141,7 @@
   "scripts": {
     "build": "pnpm run clean && vue-tsc -p tsconfig.build.json && tsx scripts/copyVueSources.ts",
     "clean": "node --input-type=module -e \"import { rmSync } from 'node:fs'; rmSync('dist', { recursive: true, force: true })\"",
+    "prepack": "pnpm run build",
     "lint": "oxlint src --type-aware && eslint src",
     "smoke:pack": "tsx scripts/smokePack.ts",
     "test": "vitest run",

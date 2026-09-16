@@ -30,6 +30,7 @@
   "scripts": {
     "build": "pnpm run clean && tsc -p tsconfig.build.json",
     "clean": "node --input-type=module -e \"import { rmSync } from 'node:fs'; rmSync('dist', { recursive: true, force: true })\"",
+    "prepack": "pnpm run build",
     "generate": "openapi-ts && node -e \"const fs=require('fs'); ['src/zod.gen.ts'].forEach(f => fs.writeFileSync(f, fs.readFileSync(f,'utf8').replaceAll(\\\"from 'zod/v3'\\\", \\\"from 'zod'\\\")));\"",
     "typecheck": "tsc --noEmit"
   },
