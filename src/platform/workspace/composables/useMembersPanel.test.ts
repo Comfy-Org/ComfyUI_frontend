@@ -276,9 +276,7 @@ const {
   mockIsTeamPlan,
   mockSubscriptionStatus,
   mockWorkspaceRole,
-  mockSubscription,
-  mockCanChangeSeats,
-  mockCanInviteMembers
+  mockSubscription
 } = vi.hoisted(() => {
   // eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/consistent-type-imports
   const { ref } = require('vue') as typeof import('vue')
@@ -314,8 +312,6 @@ const {
     mockIsTeamPlan: ref(true),
     mockSubscriptionStatus: ref<string | null>('active'),
     mockWorkspaceRole: ref<'owner' | 'member'>('owner'),
-    mockCanChangeSeats: ref(true),
-    mockCanInviteMembers: ref(true),
     mockSubscription: ref<{ tier: string; isCancelled?: boolean } | null>({
       tier: 'PRO',
       isCancelled: false
@@ -402,14 +398,6 @@ vi.mock<unknown>(
 vi.mock(import('@/platform/distribution/types'), () => ({ isCloud: true }))
 
 vi.mock(import('@/platform/workspace/composables/useBillingCapabilities'))
-
-beforeEach(() => {
-  vi.mocked(useBillingCapabilities).mockReturnValue({
-    ...useBillingCapabilities(),
-    canChangeSeats: computed(() => mockCanChangeSeats.value),
-    canInviteMembers: computed(() => mockCanInviteMembers.value)
-  })
-})
 
 vi.mock<unknown>(import('@/composables/auth/useCurrentUser'), () => ({
   useCurrentUser: () => ({
@@ -499,8 +487,11 @@ describe('useMembersPanel', () => {
     mockIsTeamPlan.value = true
     mockSubscriptionStatus.value = 'active'
     mockWorkspaceRole.value = 'owner'
-    mockCanChangeSeats.value = true
-    mockCanInviteMembers.value = true
+    vi.mocked(useBillingCapabilities).mockReturnValue({
+      ...useBillingCapabilities(),
+      canChangeSeats: computed(() => true),
+      canInviteMembers: computed(() => true)
+    })
     mockSubscription.value = { tier: 'PRO', isCancelled: false }
     mockPermissions.value = {
       canViewOtherMembers: true,
@@ -880,7 +871,10 @@ describe('useMembersPanel', () => {
 
     it('returns no actions without member-management permission', async () => {
       mockWorkspaceRole.value = 'member'
-      mockCanChangeSeats.value = false
+      vi.mocked(useBillingCapabilities).mockReturnValue({
+        ...useBillingCapabilities(),
+        canChangeSeats: computed(() => false)
+      })
       const panel = await setup()
 
       expect(panel.memberMenuItems(createMember())).toEqual([])
@@ -1068,13 +1062,19 @@ describe('useMembersPanel', () => {
 
     it('hides the invite button for workspace members', async () => {
       mockWorkspaceRole.value = 'member'
-      mockCanInviteMembers.value = false
+      vi.mocked(useBillingCapabilities).mockReturnValue({
+        ...useBillingCapabilities(),
+        canInviteMembers: computed(() => false)
+      })
       const panel = await setup()
       expect(panel.showInviteButton.value).toBe(false)
     })
 
     it('hides invite actions when the server denies invitations', async () => {
-      mockCanInviteMembers.value = false
+      vi.mocked(useBillingCapabilities).mockReturnValue({
+        ...useBillingCapabilities(),
+        canInviteMembers: computed(() => false)
+      })
       const panel = await setup()
 
       expect(panel.showInviteButton.value).toBe(false)
@@ -1088,7 +1088,10 @@ describe('useMembersPanel', () => {
     })
 
     it('hides member management when the server denies seat changes', async () => {
-      mockCanChangeSeats.value = false
+      vi.mocked(useBillingCapabilities).mockReturnValue({
+        ...useBillingCapabilities(),
+        canChangeSeats: computed(() => false)
+      })
       const panel = await setup()
       const member = createMember({ id: 'member-1' })
 

@@ -83,10 +83,6 @@ vi.mock<unknown>(
 
 vi.mock(import('@/platform/workspace/composables/useBillingCapabilities'))
 
-const mockCanTopUp = ref(false)
-const mockCanSubscribeSelfServe = ref(false)
-const mockCanReactivate = ref(false)
-
 vi.mock<unknown>(import('@/composables/billing/useBillingRouting'), () => ({
   useBillingRouting: () => ({
     shouldUseWorkspaceBilling: computed(() => state.shouldUseWorkspaceBilling)
@@ -198,24 +194,20 @@ function renderComponent(
 
 describe('CurrentUserPopoverWorkspace', () => {
   beforeEach(() => {
-    vi.mocked(useBillingCapabilities).mockReturnValue({
-      ...useBillingCapabilities(),
-      canTopUp: computed(() => mockCanTopUp.value),
-      canSubscribeSelfServe: computed(() => mockCanSubscribeSelfServe.value),
-      canReactivate: computed(() => mockCanReactivate.value)
-    })
-
     state.isCloud = true
     state.billingStatus = 'paid'
     state.canAccessSubscriptionFeatures = true
     state.isCancelled = false
     state.planSlug = 'pro-monthly'
-    mockCanTopUp.value = false
-    mockCanSubscribeSelfServe.value = false
+    vi.mocked(useBillingCapabilities).mockReturnValue({
+      ...useBillingCapabilities(),
+      canTopUp: computed(() => false)
+    })
+
     state.canManageSubscription = false
     state.canManageSubscriptionLifecycle = false
     state.canOpenPricingSurface = false
-    mockCanReactivate.value = false
+
     state.shouldUseWorkspaceBilling = true
     state.hostedBillingWebEnabled = false
     state.billingWebUrl = new URL('http://localhost:5174')
@@ -387,7 +379,10 @@ describe('CurrentUserPopoverWorkspace', () => {
 
   it('offers subscription when top-up is denied but self-serve is allowed', async () => {
     const user = userEvent.setup()
-    mockCanSubscribeSelfServe.value = true
+    vi.mocked(useBillingCapabilities).mockReturnValue({
+      ...useBillingCapabilities(),
+      canSubscribeSelfServe: computed(() => true)
+    })
     renderComponent('team')
 
     await user.click(screen.getByTestId('upgrade-to-add-credits-button'))
@@ -417,7 +412,10 @@ describe('CurrentUserPopoverWorkspace', () => {
     state.billingStatus = 'payment_failed'
     state.canAccessSubscriptionFeatures = false
     state.canManageSubscription = true
-    mockCanSubscribeSelfServe.value = true
+    vi.mocked(useBillingCapabilities).mockReturnValue({
+      ...useBillingCapabilities(),
+      canSubscribeSelfServe: computed(() => true)
+    })
     state.planSlug = null
 
     renderComponent('team')
@@ -459,7 +457,10 @@ describe('CurrentUserPopoverWorkspace', () => {
     const user = userEvent.setup()
     state.isCloud = false
     state.canAccessSubscriptionFeatures = false
-    mockCanTopUp.value = true
+    vi.mocked(useBillingCapabilities).mockReturnValue({
+      ...useBillingCapabilities(),
+      canTopUp: computed(() => true)
+    })
 
     renderComponent('personal')
 
@@ -473,8 +474,11 @@ describe('CurrentUserPopoverWorkspace', () => {
 
   it('offers add-credits alongside Subscribe for an unsubscribed Cloud owner', () => {
     state.canAccessSubscriptionFeatures = false
-    mockCanTopUp.value = true
-    mockCanSubscribeSelfServe.value = true
+    vi.mocked(useBillingCapabilities).mockReturnValue({
+      ...useBillingCapabilities(),
+      canTopUp: computed(() => true),
+      canSubscribeSelfServe: computed(() => true)
+    })
     state.canManageSubscription = true
 
     renderComponent('personal')
@@ -490,7 +494,10 @@ describe('CurrentUserPopoverWorkspace', () => {
 
   it('offers add-credits instead of the upgrade upsell on the Local free tier', () => {
     state.isCloud = false
-    mockCanTopUp.value = true
+    vi.mocked(useBillingCapabilities).mockReturnValue({
+      ...useBillingCapabilities(),
+      canTopUp: computed(() => true)
+    })
 
     renderComponent('personal')
 
@@ -502,8 +509,10 @@ describe('CurrentUserPopoverWorkspace', () => {
 
   it('shows one subscription CTA on the Cloud free tier', () => {
     state.canAccessSubscriptionFeatures = false
-    mockCanTopUp.value = false
-    mockCanSubscribeSelfServe.value = true
+    vi.mocked(useBillingCapabilities).mockReturnValue({
+      ...useBillingCapabilities(),
+      canSubscribeSelfServe: computed(() => true)
+    })
 
     renderComponent('personal')
 
@@ -520,7 +529,10 @@ describe('CurrentUserPopoverWorkspace', () => {
     state.isCloud = false
     state.isCancelled = true
     state.canManageSubscriptionLifecycle = true
-    mockCanReactivate.value = true
+    vi.mocked(useBillingCapabilities).mockReturnValue({
+      ...useBillingCapabilities(),
+      canReactivate: computed(() => true)
+    })
 
     renderComponent('team')
 
@@ -608,8 +620,11 @@ describe('CurrentUserPopoverWorkspace', () => {
       state.canManageSubscription = canManageSubscription
       state.canManageSubscriptionLifecycle = canManageSubscriptionLifecycle
       state.canReactivatePlan = canReactivate
-      mockCanSubscribeSelfServe.value = canSubscribeSelfServe
-      mockCanTopUp.value = canTopUp
+      vi.mocked(useBillingCapabilities).mockReturnValue({
+        ...useBillingCapabilities(),
+        canSubscribeSelfServe: computed(() => canSubscribeSelfServe),
+        canTopUp: computed(() => canTopUp)
+      })
 
       renderComponent('team')
 
@@ -625,7 +640,10 @@ describe('CurrentUserPopoverWorkspace', () => {
   it('keeps billing controls and resubscribe available to a promoted owner', async () => {
     const user = userEvent.setup()
     state.isCancelled = true
-    mockCanTopUp.value = true
+    vi.mocked(useBillingCapabilities).mockReturnValue({
+      ...useBillingCapabilities(),
+      canTopUp: computed(() => true)
+    })
     state.canManageSubscription = true
     state.canManageSubscriptionLifecycle = true
     state.canReactivatePlan = true
@@ -660,7 +678,6 @@ describe('CurrentUserPopoverWorkspace', () => {
     state.isCancelled = true
     state.canManageSubscription = true
     state.canManageSubscriptionLifecycle = true
-    mockCanReactivate.value = false
     state.canReactivatePlan = false
     renderComponent('team')
 
@@ -675,7 +692,6 @@ describe('CurrentUserPopoverWorkspace', () => {
     // The legacy rail resolves can_reactivate false but still permits
     // reactivation, so the button must follow canReactivatePlan. Rail
     // selection itself is covered in useWorkspaceUI.test.ts.
-    mockCanReactivate.value = false
     state.canReactivatePlan = true
 
     renderComponent('personal')

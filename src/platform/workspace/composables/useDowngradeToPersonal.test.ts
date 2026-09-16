@@ -33,7 +33,6 @@ const mockPermissions = vi.hoisted(() => ({
     canDowngradeToPersonal: true
   }
 }))
-const mockCanDowngradeToPersonal = ref(true)
 
 let workspaceStore: ReturnType<typeof useTeamWorkspaceStore> & {
   activeWorkspaceId: string | null
@@ -137,11 +136,6 @@ describe('useDowngradeToPersonal', () => {
   let windowOpen: ReturnType<typeof vi.spyOn>
 
   beforeEach(() => {
-    vi.mocked(useBillingCapabilities).mockReturnValue({
-      ...useBillingCapabilities(),
-      canDowngradeToPersonal: computed(() => mockCanDowngradeToPersonal.value)
-    })
-
     const pinia = getActivePinia()!
     workspaceStore = useTeamWorkspaceStore(pinia)
     vi.mocked(workspaceStore.removeMember).mockImplementation(mockRemoveMember)
@@ -166,7 +160,10 @@ describe('useDowngradeToPersonal', () => {
       canManageSubscription: true,
       canDowngradeToPersonal: true
     }
-    mockCanDowngradeToPersonal.value = true
+    vi.mocked(useBillingCapabilities).mockReturnValue({
+      ...useBillingCapabilities(),
+      canDowngradeToPersonal: computed(() => true)
+    })
     windowOpen = vi.spyOn(window, 'open').mockReturnValue({} as Window)
   })
 
@@ -230,7 +227,10 @@ describe('useDowngradeToPersonal', () => {
   describe('downgradeToPersonal', () => {
     it('rejects a promoted owner before previewing or removing members', async () => {
       mockPermissions.value.canDowngradeToPersonal = false
-      mockCanDowngradeToPersonal.value = false
+      vi.mocked(useBillingCapabilities).mockReturnValue({
+        ...useBillingCapabilities(),
+        canDowngradeToPersonal: computed(() => false)
+      })
       mockMembers.value = teamWithOwnerAnd('m1')
       const { downgradeToPersonal } = useDowngradeToPersonal()
 
@@ -244,7 +244,10 @@ describe('useDowngradeToPersonal', () => {
 
     it('rejects a client-side owner when the server denies the downgrade', async () => {
       mockPermissions.value.canDowngradeToPersonal = true
-      mockCanDowngradeToPersonal.value = false
+      vi.mocked(useBillingCapabilities).mockReturnValue({
+        ...useBillingCapabilities(),
+        canDowngradeToPersonal: computed(() => false)
+      })
       mockMembers.value = teamWithOwnerAnd('m1')
       const { downgradeToPersonal } = useDowngradeToPersonal()
 
@@ -257,10 +260,16 @@ describe('useDowngradeToPersonal', () => {
     })
 
     it('stops before member removal when downgrade access is revoked during preview', async () => {
+      const canDowngradeToPersonal = ref(true)
+      vi.mocked(useBillingCapabilities).mockReturnValue({
+        ...useBillingCapabilities(),
+        canDowngradeToPersonal: computed(() => canDowngradeToPersonal.value)
+      })
+
       mockMembers.value = teamWithOwnerAnd('m1')
       mockPreviewSubscribe.mockImplementation(async () => {
         mockPermissions.value.canDowngradeToPersonal = false
-        mockCanDowngradeToPersonal.value = false
+        canDowngradeToPersonal.value = false
         return { allowed: true }
       })
       const { downgradeToPersonal } = useDowngradeToPersonal()
@@ -273,10 +282,16 @@ describe('useDowngradeToPersonal', () => {
     })
 
     it('stops before submit when downgrade access is revoked during member removal', async () => {
+      const canDowngradeToPersonal = ref(true)
+      vi.mocked(useBillingCapabilities).mockReturnValue({
+        ...useBillingCapabilities(),
+        canDowngradeToPersonal: computed(() => canDowngradeToPersonal.value)
+      })
+
       mockMembers.value = teamWithOwnerAnd('m1', 'm2')
       mockRemoveMember.mockImplementation(async () => {
         mockPermissions.value.canDowngradeToPersonal = false
-        mockCanDowngradeToPersonal.value = false
+        canDowngradeToPersonal.value = false
       })
       const { downgradeToPersonal } = useDowngradeToPersonal()
 
@@ -974,7 +989,10 @@ describe('useDowngradeToPersonal', () => {
         canManageSubscription: false,
         canDowngradeToPersonal: false
       }
-      mockCanDowngradeToPersonal.value = false
+      vi.mocked(useBillingCapabilities).mockReturnValue({
+        ...useBillingCapabilities(),
+        canDowngradeToPersonal: computed(() => false)
+      })
       const { refreshMembers } = useDowngradeToPersonal()
 
       await expect(refreshMembers()).rejects.toThrow(
@@ -985,7 +1003,10 @@ describe('useDowngradeToPersonal', () => {
 
     it('rejects a promoted owner after refreshing the original-owner signal', async () => {
       mockPermissions.value.canDowngradeToPersonal = false
-      mockCanDowngradeToPersonal.value = false
+      vi.mocked(useBillingCapabilities).mockReturnValue({
+        ...useBillingCapabilities(),
+        canDowngradeToPersonal: computed(() => false)
+      })
       const { refreshMembers } = useDowngradeToPersonal()
 
       await expect(refreshMembers()).rejects.toThrow(

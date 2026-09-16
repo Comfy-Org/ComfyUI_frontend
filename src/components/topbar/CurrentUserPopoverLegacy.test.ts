@@ -86,8 +86,6 @@ const mockSubscription = ref<SubscriptionInfo | null>(makeSubscription())
 const mockBalance = ref<BalanceInfo | null>(null)
 const mockIsLoading = ref(false)
 const mockIsTeamPlan = ref(false)
-const mockCanTopUp = ref(true)
-const mockCanSubscribeSelfServe = ref(false)
 
 vi.mock(import('@/composables/billing/useBillingContext'))
 
@@ -119,12 +117,6 @@ vi.mock(import('@/platform/telemetry'))
 
 describe('CurrentUserPopoverLegacy', () => {
   beforeEach(() => {
-    vi.mocked(useBillingCapabilities).mockReturnValue({
-      ...useBillingCapabilities(),
-      canTopUp: computed(() => mockCanTopUp.value),
-      canSubscribeSelfServe: computed(() => mockCanSubscribeSelfServe.value)
-    })
-
     mockCanAccessSubscriptionFeatures.value = true
     mockTier.value = 'CREATOR'
     mockSubscription.value = makeSubscription()
@@ -134,8 +126,6 @@ describe('CurrentUserPopoverLegacy', () => {
       currency: 'usd'
     }
     mockIsLoading.value = false
-    mockCanTopUp.value = true
-    mockCanSubscribeSelfServe.value = false
   })
 
   function renderComponent(teamWorkspaceState?: Record<string, unknown>) {
@@ -489,7 +479,10 @@ describe('CurrentUserPopoverLegacy', () => {
 
     it('keeps credits visible but hides top-up for workspace members', () => {
       mockCanAccessSubscriptionFeatures.value = false
-      mockCanTopUp.value = false
+      vi.mocked(useBillingCapabilities).mockReturnValue({
+        ...useBillingCapabilities(),
+        canTopUp: computed(() => false)
+      })
       renderComponent({
         ...readyWorkspaceState,
         activeWorkspaceId: 'ws-team'

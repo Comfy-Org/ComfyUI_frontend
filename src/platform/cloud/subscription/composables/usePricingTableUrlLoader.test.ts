@@ -65,8 +65,6 @@ vi.mock<unknown>(
 
 vi.mock(import('@/platform/workspace/composables/useBillingCapabilities'))
 
-const { initialize } = vi.mocked(useBillingCapabilities())
-
 const TEAM_CREDIT_STOPS = {
   default_stop_index: 2,
   stops: [200, 400, 700, 1400, 2500].map((usd, index) => ({
@@ -135,14 +133,18 @@ describe('usePricingTableUrlLoader', () => {
   it('resolves the capability snapshot before deciding', async () => {
     mockRouteQuery.value = { pricing: '1' }
     mockCanOpenPricingSurface.value = true
-    initialize.mockImplementation(async () => {
-      mockCanOpenPricingSurface.value = false
-    })
+    vi.mocked(useBillingCapabilities().initialize).mockImplementation(
+      async () => {
+        mockCanOpenPricingSurface.value = false
+      }
+    )
 
     const { loadPricingTableFromUrl } = usePricingTableUrlLoader()
     await loadPricingTableFromUrl()
 
-    expect(initialize).toHaveBeenCalledOnce()
+    expect(
+      vi.mocked(useBillingCapabilities().initialize)
+    ).toHaveBeenCalledOnce()
     expect(mockShowPricingTable).not.toHaveBeenCalled()
   })
 

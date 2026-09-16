@@ -33,11 +33,6 @@ vi.mock<unknown>(import('@/composables/billing/useBillingContext'), () => ({
 
 vi.mock(import('@/platform/workspace/composables/useBillingCapabilities'))
 
-const mockCanTopUp = ref(true)
-const mockCanSubscribeSelfServe = ref(false)
-const mockIsReady = ref(true)
-const { initialize } = vi.mocked(useBillingCapabilities())
-
 const showSubscriptionDialog = vi.hoisted(() => vi.fn())
 
 vi.mock<unknown>(
@@ -51,17 +46,8 @@ import { useDialogService } from '@/services/dialogService'
 
 describe('showTopUpCreditsDialog', () => {
   beforeEach(() => {
-    vi.mocked(useBillingCapabilities).mockReturnValue({
-      ...useBillingCapabilities(),
-      canTopUp: computed(() => mockCanTopUp.value),
-      canSubscribeSelfServe: computed(() => mockCanSubscribeSelfServe.value),
-      isReady: computed(() => mockIsReady.value)
-    })
-
     state.type = 'workspace'
-    mockCanTopUp.value = true
-    mockCanSubscribeSelfServe.value = false
-    mockIsReady.value = true
+
     mockIsCloud.value = true
   })
 
@@ -72,12 +58,16 @@ describe('showTopUpCreditsDialog', () => {
 
     const [args] = vi.mocked(useDialogStore().showDialog).mock.calls[0]
     expect(args.key).toBe('top-up-credits')
-    expect(initialize).not.toHaveBeenCalled()
+    expect(
+      vi.mocked(useBillingCapabilities().initialize)
+    ).not.toHaveBeenCalled()
   })
 
   it('shows the contact-admin notice to team members instead of the purchase dialog', async () => {
-    mockCanTopUp.value = false
-    mockCanSubscribeSelfServe.value = false
+    vi.mocked(useBillingCapabilities).mockReturnValue({
+      ...useBillingCapabilities(),
+      canTopUp: computed(() => false)
+    })
 
     await useDialogService().showTopUpCreditsDialog({
       isInsufficientCredits: true
@@ -100,7 +90,6 @@ describe('showTopUpCreditsDialog', () => {
 
   it('uses the server capability on legacy billing', async () => {
     state.type = 'legacy'
-    mockCanTopUp.value = true
 
     await useDialogService().showTopUpCreditsDialog()
 
@@ -110,7 +99,10 @@ describe('showTopUpCreditsDialog', () => {
 
   it('does not show workspace-admin copy for denied legacy billing', async () => {
     state.type = 'legacy'
-    mockCanTopUp.value = false
+    vi.mocked(useBillingCapabilities).mockReturnValue({
+      ...useBillingCapabilities(),
+      canTopUp: computed(() => false)
+    })
 
     await useDialogService().showTopUpCreditsDialog()
 
@@ -119,11 +111,17 @@ describe('showTopUpCreditsDialog', () => {
   })
 
   it('awaits an in-flight capability read instead of dropping the request', async () => {
-    mockCanTopUp.value = false
-    mockIsReady.value = false
-    initialize.mockImplementation(() => {
-      mockCanTopUp.value = true
-      mockIsReady.value = true
+    const canTopUp = ref(false)
+    const isReady = ref(false)
+    vi.mocked(useBillingCapabilities).mockReturnValue({
+      ...useBillingCapabilities(),
+      canTopUp: computed(() => canTopUp.value),
+      isReady: computed(() => isReady.value)
+    })
+
+    vi.mocked(useBillingCapabilities().initialize).mockImplementation(() => {
+      canTopUp.value = true
+      isReady.value = true
       return Promise.resolve()
     })
 
@@ -131,25 +129,35 @@ describe('showTopUpCreditsDialog', () => {
       isInsufficientCredits: true
     })
 
-    expect(initialize).toHaveBeenCalledOnce()
+    expect(
+      vi.mocked(useBillingCapabilities().initialize)
+    ).toHaveBeenCalledOnce()
     const [args] = vi.mocked(useDialogStore().showDialog).mock.calls[0]
     expect(args.key).toBe('top-up-credits')
   })
 
   it('does not route when capabilities stay unresolved after initializing', async () => {
-    mockCanTopUp.value = false
-    mockIsReady.value = false
+    vi.mocked(useBillingCapabilities).mockReturnValue({
+      ...useBillingCapabilities(),
+      canTopUp: computed(() => false),
+      isReady: computed(() => false)
+    })
 
     await useDialogService().showTopUpCreditsDialog()
 
-    expect(initialize).toHaveBeenCalledOnce()
+    expect(
+      vi.mocked(useBillingCapabilities().initialize)
+    ).toHaveBeenCalledOnce()
     expect(vi.mocked(useDialogStore().showDialog)).not.toHaveBeenCalled()
     expect(showSubscriptionDialog).not.toHaveBeenCalled()
   })
 
   it('routes self-serve subscribers to the subscription-required flow', async () => {
-    mockCanTopUp.value = false
-    mockCanSubscribeSelfServe.value = true
+    vi.mocked(useBillingCapabilities).mockReturnValue({
+      ...useBillingCapabilities(),
+      canTopUp: computed(() => false),
+      canSubscribeSelfServe: computed(() => true)
+    })
 
     await useDialogService().showTopUpCreditsDialog()
 

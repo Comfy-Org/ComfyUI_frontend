@@ -33,8 +33,6 @@ vi.mock(import('@/platform/distribution/types'), () => ({ isCloud: true }))
 
 vi.mock(import('@/platform/workspace/composables/useBillingCapabilities'))
 
-const mockCanReactivate = ref(true)
-
 vi.mock<unknown>(
   import('@/platform/workspace/composables/useWorkspaceUI'),
   () => ({
@@ -90,21 +88,25 @@ afterEach(() => {
 
 describe('useResubscribe', () => {
   beforeEach(() => {
-    vi.mocked(useBillingCapabilities).mockReturnValue({
-      ...useBillingCapabilities(),
-      canReactivate: computed(() => mockCanReactivate.value)
-    })
-
     state.shouldUseWorkspaceBilling = true
     state.canManageSubscriptionLifecycle = true
-    mockCanReactivate.value = true
+    vi.mocked(useBillingCapabilities).mockReturnValue({
+      ...useBillingCapabilities(),
+      canReactivate: computed(() => true)
+    })
     state.canReactivatePlan = true
   })
 
   it('does not resubscribe after the workspace role loses permission', async () => {
+    const canReactivate = ref(true)
+    vi.mocked(useBillingCapabilities).mockReturnValue({
+      ...useBillingCapabilities(),
+      canReactivate: computed(() => canReactivate.value)
+    })
+
     const { handleResubscribe, isResubscribing } = useResubscribe()
     state.canManageSubscriptionLifecycle = false
-    mockCanReactivate.value = false
+    canReactivate.value = false
     state.canReactivatePlan = false
 
     await handleResubscribe()
@@ -117,7 +119,10 @@ describe('useResubscribe', () => {
 
   it('does not resubscribe when the server denies reactivation to a client-side owner', async () => {
     state.canManageSubscriptionLifecycle = true
-    mockCanReactivate.value = false
+    vi.mocked(useBillingCapabilities).mockReturnValue({
+      ...useBillingCapabilities(),
+      canReactivate: computed(() => false)
+    })
     state.canReactivatePlan = false
     const { handleResubscribe, isResubscribing } = useResubscribe()
 
@@ -133,7 +138,10 @@ describe('useResubscribe', () => {
     // The legacy rail resolves can_reactivate false while the workspace may
     // still reactivate; this composable must follow the derived policy. Which
     // rail produces which value is covered in useWorkspaceUI.test.ts.
-    mockCanReactivate.value = false
+    vi.mocked(useBillingCapabilities).mockReturnValue({
+      ...useBillingCapabilities(),
+      canReactivate: computed(() => false)
+    })
     state.canReactivatePlan = true
     const { handleResubscribe } = useResubscribe()
 
@@ -145,7 +153,10 @@ describe('useResubscribe', () => {
   it('refuses whenever the policy denies it', async () => {
     // Behaviour change: the old gate short-circuited on the legacy rail and ran
     // no membership check, so a denial there never reached this branch.
-    mockCanReactivate.value = false
+    vi.mocked(useBillingCapabilities).mockReturnValue({
+      ...useBillingCapabilities(),
+      canReactivate: computed(() => false)
+    })
     state.canReactivatePlan = false
     const { handleResubscribe } = useResubscribe()
 

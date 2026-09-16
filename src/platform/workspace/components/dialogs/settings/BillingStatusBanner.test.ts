@@ -2,7 +2,7 @@ import { useBillingCapabilities } from '@/platform/workspace/composables/useBill
 import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { computed, ref } from 'vue'
+import { computed } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import type { SubscriptionInfo } from '@/composables/billing/types'
@@ -96,10 +96,6 @@ vi.mock<unknown>(
 )
 
 vi.mock(import('@/platform/workspace/composables/useBillingCapabilities'))
-
-const mockCanTopUp = ref(true)
-const mockCanSubscribeSelfServe = ref(false)
-const mockCanReactivate = ref(true)
 
 vi.mock(import('@/platform/workspace/composables/useResubscribe'), () => ({
   useResubscribe: () => ({
@@ -221,13 +217,6 @@ function paymentFailedState() {
 
 describe('BillingStatusBanner', () => {
   beforeEach(() => {
-    vi.mocked(useBillingCapabilities).mockReturnValue({
-      ...useBillingCapabilities(),
-      canTopUp: computed(() => mockCanTopUp.value),
-      canSubscribeSelfServe: computed(() => mockCanSubscribeSelfServe.value),
-      canReactivate: computed(() => mockCanReactivate.value)
-    })
-
     state.billingControlEnabled = true
     state.v1PaymentRecovery = true
     state.canAccessSubscriptionFeatures = true
@@ -243,10 +232,11 @@ describe('BillingStatusBanner', () => {
     state.workspaceType = 'team'
     state.canManageSubscription = true
     state.canManageSubscriptionLifecycle = true
-    mockCanReactivate.value = true
+    vi.mocked(useBillingCapabilities).mockReturnValue({
+      ...useBillingCapabilities(),
+      canReactivate: computed(() => true)
+    })
     state.shouldUseWorkspaceBilling = true
-    mockCanTopUp.value = true
-    mockCanSubscribeSelfServe.value = false
   })
 
   it('renders nothing for a healthy funded team', () => {
@@ -282,8 +272,11 @@ describe('BillingStatusBanner', () => {
 
   it('offers an upgrade when self-serve subscription is available', () => {
     exhausted()
-    mockCanTopUp.value = false
-    mockCanSubscribeSelfServe.value = true
+    vi.mocked(useBillingCapabilities).mockReturnValue({
+      ...useBillingCapabilities(),
+      canTopUp: computed(() => false),
+      canSubscribeSelfServe: computed(() => true)
+    })
 
     renderBanner()
 
@@ -306,7 +299,10 @@ describe('BillingStatusBanner', () => {
       scheduledChange: null
     }
     state.canManageSubscription = false
-    mockCanTopUp.value = false
+    vi.mocked(useBillingCapabilities).mockReturnValue({
+      ...useBillingCapabilities(),
+      canTopUp: computed(() => false)
+    })
     renderBanner()
 
     expect(screen.getByRole('status')).toHaveTextContent(
@@ -358,7 +354,10 @@ describe('BillingStatusBanner', () => {
   it('shows the paused member notice without an action', () => {
     pausedState()
     state.canManageSubscription = false
-    mockCanTopUp.value = false
+    vi.mocked(useBillingCapabilities).mockReturnValue({
+      ...useBillingCapabilities(),
+      canTopUp: computed(() => false)
+    })
     renderBanner()
 
     expect(screen.getByRole('status')).toHaveTextContent(
@@ -443,7 +442,10 @@ describe('BillingStatusBanner', () => {
     // Cloud personal on legacy_stripe: handleResubscribe skips its capability
     // guard, so the affordance must follow the client permission instead.
     state.shouldUseWorkspaceBilling = false
-    mockCanReactivate.value = false
+    vi.mocked(useBillingCapabilities).mockReturnValue({
+      ...useBillingCapabilities(),
+      canReactivate: computed(() => false)
+    })
     state.canManageSubscriptionLifecycle = true
     state.subscription = {
       hasFunds: true,
@@ -468,7 +470,10 @@ describe('BillingStatusBanner', () => {
     }
     state.canManageSubscription = false
     state.canManageSubscriptionLifecycle = false
-    mockCanReactivate.value = false
+    vi.mocked(useBillingCapabilities).mockReturnValue({
+      ...useBillingCapabilities(),
+      canReactivate: computed(() => false)
+    })
     renderBanner()
 
     expect(screen.queryByRole('status')).not.toBeInTheDocument()

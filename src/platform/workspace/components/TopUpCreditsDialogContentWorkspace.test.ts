@@ -17,7 +17,6 @@ import { render, screen, waitFor } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, nextTick, ref } from 'vue'
-import type { Ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import { useTelemetry } from '@/platform/telemetry'
@@ -42,7 +41,6 @@ vi.mock(import('@/platform/telemetry/reportError'), () => ({
 const mockShowSettings = vi.fn()
 const mockToastAdd = vi.fn()
 
-let canTopUp: Ref<boolean>
 const mockDistributionTypes = vi.hoisted(() => ({ isCloud: true }))
 
 vi.mock(import('@/platform/distribution/types'), () => mockDistributionTypes)
@@ -197,13 +195,6 @@ beforeEach(() => {
 
 describe('TopUpCreditsDialogContentWorkspace', () => {
   beforeEach(() => {
-    canTopUp = ref(true)
-
-    vi.mocked(useBillingCapabilities).mockReturnValue({
-      ...useBillingCapabilities(),
-      canTopUp: computed(() => canTopUp.value)
-    })
-
     mockDistributionTypes.isCloud = true
     setIsAddingCredits(false)
     setTopupActionOperation(undefined)
@@ -515,7 +506,10 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
   })
 
   it('hides topup verification after permission is revoked', () => {
-    canTopUp.value = false
+    vi.mocked(useBillingCapabilities).mockReturnValue({
+      ...useBillingCapabilities(),
+      canTopUp: computed(() => false)
+    })
     setTopupActionOperation({
       opId: 'op-action',
       status: 'pending',
@@ -530,7 +524,12 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
   })
 
   it('enters verification once permission resolves after an operation already exists', async () => {
-    canTopUp.value = false
+    const canTopUp = ref(false)
+    vi.mocked(useBillingCapabilities).mockReturnValue({
+      ...useBillingCapabilities(),
+      canTopUp: computed(() => canTopUp.value)
+    })
+
     setTopupActionOperation({
       opId: 'op-action',
       status: 'pending',
@@ -901,6 +900,12 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
   })
 
   it('does not top up after the server capability is revoked', async () => {
+    const canTopUp = ref(true)
+    vi.mocked(useBillingCapabilities).mockReturnValue({
+      ...useBillingCapabilities(),
+      canTopUp: computed(() => canTopUp.value)
+    })
+
     renderDialog()
     await clickAddCredits()
     canTopUp.value = false

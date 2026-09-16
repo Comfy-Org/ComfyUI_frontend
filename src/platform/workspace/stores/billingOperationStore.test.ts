@@ -35,8 +35,6 @@ vi.mock(import('@/composables/billing/useBillingContext'))
 
 vi.mock(import('@/platform/workspace/composables/useBillingCapabilities'))
 
-const { refresh } = vi.mocked(useBillingCapabilities())
-
 vi.mock<unknown>(import('@/composables/useFeatureFlags'), () => ({
   useFeatureFlags: () => ({
     flags: mockFeatureFlags
@@ -461,7 +459,7 @@ describe('billingOperationStore', () => {
       const operation = store.getOperation('op-1')
       expect(operation?.status).toBe('succeeded')
       expect(store.hasPendingOperations).toBe(false)
-      expect(refresh).toHaveBeenCalledOnce()
+      expect(vi.mocked(useBillingCapabilities().refresh)).toHaveBeenCalledOnce()
 
       expect(billing.reconcileSubscriptionSuccess).toHaveBeenCalledOnce()
       expect(billing.fetchStatus).not.toHaveBeenCalled()

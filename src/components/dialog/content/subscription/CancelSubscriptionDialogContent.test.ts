@@ -59,7 +59,7 @@ const mockToastAdd = vi.hoisted(() => vi.fn())
 const mockTier = vi.hoisted(() => ({ value: 'STANDARD' as string | null }))
 
 const mockShouldUseWorkspaceBilling = vi.hoisted(() => ({ value: false }))
-const mockCanCancel = ref(true)
+
 const mockCanManageSubscriptionLifecycle = vi.hoisted(() => ({ value: true }))
 const mockDistributionTypes = vi.hoisted(() => ({ isCloud: true }))
 
@@ -135,14 +135,12 @@ function renderComponent(
 
 describe('CancelSubscriptionDialogContent', () => {
   beforeEach(() => {
-    vi.mocked(useBillingCapabilities).mockReturnValue({
-      ...useBillingCapabilities(),
-      canCancel: computed(() => mockCanCancel.value)
-    })
-
     mockTier.value = 'STANDARD'
     mockShouldUseWorkspaceBilling.value = false
-    mockCanCancel.value = true
+    vi.mocked(useBillingCapabilities).mockReturnValue({
+      ...useBillingCapabilities(),
+      canCancel: computed(() => true)
+    })
     mockCanManageSubscriptionLifecycle.value = true
     mockDistributionTypes.isCloud = true
   })
@@ -323,12 +321,17 @@ describe('CancelSubscriptionDialogContent', () => {
     })
 
     it('does not cancel after the workspace role loses permission', async () => {
+      const canCancel = ref(true)
+      vi.mocked(useBillingCapabilities).mockReturnValue({
+        ...useBillingCapabilities(),
+        canCancel: computed(() => canCancel.value)
+      })
+
       mockSubscription.value = null
       mockShouldUseWorkspaceBilling.value = true
-      mockCanCancel.value = true
 
       renderComponent()
-      mockCanCancel.value = false
+      canCancel.value = false
       await userEvent.click(
         screen.getByRole('button', { name: /^cancel subscription$/i })
       )
@@ -345,7 +348,10 @@ describe('CancelSubscriptionDialogContent', () => {
       mockSubscription.value = null
       mockShouldUseWorkspaceBilling.value = true
       mockDistributionTypes.isCloud = false
-      mockCanCancel.value = false
+      vi.mocked(useBillingCapabilities).mockReturnValue({
+        ...useBillingCapabilities(),
+        canCancel: computed(() => false)
+      })
       mockCanManageSubscriptionLifecycle.value = true
       mockCancelSubscription.mockResolvedValueOnce(undefined)
 
@@ -361,7 +367,6 @@ describe('CancelSubscriptionDialogContent', () => {
       mockSubscription.value = null
       mockShouldUseWorkspaceBilling.value = true
       mockDistributionTypes.isCloud = false
-      mockCanCancel.value = true
       mockCanManageSubscriptionLifecycle.value = false
 
       renderComponent()
