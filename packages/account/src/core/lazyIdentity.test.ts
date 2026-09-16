@@ -293,6 +293,58 @@ describe('createLazyIdentity', () => {
     expect(inner.subscribed()).toBe(0)
   })
 
+  it('drops a loader rejection that lands after deactivate; the interrupted activation stays resolved', async () => {
+    let fail!: (error: Error) => void
+    const load = vi.fn(
+      () =>
+        new Promise<AccountIdentity>((_resolve, reject) => {
+          fail = reject
+        })
+    )
+    const port = createLazyIdentity(load)
+    const activation = port.activate()
+
+    port.deactivate()
+    fail(new Error('chunk failed'))
+
+    await expect(activation).resolves.toBeUndefined()
+  })
+
+  it('subscribes once when a re-activation shares the interrupted load promise', async () => {
+    const { inner, release, load } = deferredLoader()
+    const port = createLazyIdentity(load)
+    const listener = vi.fn()
+    port.onUserChanged(listener)
+    void port.activate()
+    port.deactivate()
+
+    const second = port.activate()
+    release()
+    await inner.whenSubscribed()
+    inner.fire(alice)
+    await second
+
+    expect(load).toHaveBeenCalledTimes(2)
+    expect(
+      inner.subscriptions(),
+      'a cached import() resolves both activations with one identity; only the live one may subscribe'
+    ).toBe(1)
+    expect(listener.mock.calls).toEqual([[alice]])
+  })
+
+  it('treats a second consecutive deactivate as a no-op', async () => {
+    const { inner, release, load } = deferredLoader()
+    const port = createLazyIdentity(load)
+    const listener = vi.fn()
+    port.onUserChanged(listener)
+    await activated(port, release, inner, alice)
+
+    port.deactivate()
+    port.deactivate()
+
+    expect(listener.mock.calls).toEqual([[alice], [null]])
+  })
+
   it('is accepted by createSessionClient, which stays pending until activation delivers', async () => {
     const { inner, release, load } = deferredLoader()
     const port = createLazyIdentity(load)

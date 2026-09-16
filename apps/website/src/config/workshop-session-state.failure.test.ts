@@ -93,7 +93,7 @@ describe('useWorkshopSession initialization failure', () => {
     errorSpy.mockRestore()
   })
 
-  it('abandons an in-flight workspace restore captured before begin threw', async () => {
+  it('abandons an in-flight workspace restore when a begin step fails after activation', async () => {
     // A remembered workspace that differs from the boot session makes the
     // synchronous authenticated emit capture a restore handle mid-begin.
     window.localStorage.setItem(

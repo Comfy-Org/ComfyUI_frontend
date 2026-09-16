@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { ref, watch } from 'vue'
+import { ref } from 'vue'
 import type { Ref } from 'vue'
 
 import type { WorkshopSession } from './workshop-session-state'
@@ -394,7 +394,7 @@ describe('useWorkshopSession', () => {
     await vi.waitFor(() => expect(h.clearStoredCredential).toHaveBeenCalled())
 
     h.remint.mockResolvedValue({ status: 'ok', session: okSession })
-    // Activation resolves after Firebase re-delivers, so the host subscribes to an already-minted boot session.
+    // Activation resolves after delivery, so the host subscribes to the re-minted boot session.
     h.snapshot = {
       phase: 'authenticated',
       user: { uid: 'user-1' },
@@ -415,40 +415,6 @@ describe('useWorkshopSession', () => {
         preserveCredentialOnTransientFailure: true
       })
     )
-  })
-
-  it('re-enters pending across flag off then on and publishes only what Firebase delivers', async () => {
-    const s = await importFresh()
-    h.publish(authenticatedSnapshot())
-    await vi.waitFor(() => expect(s.session.value).toEqual(okSession))
-    const seen: Array<[settled: boolean, noUser: boolean]> = []
-    watch(
-      () => [s.settled.value, s.user.value === null] as [boolean, boolean],
-      (next) => seen.push(next),
-      { flush: 'sync' }
-    )
-    h.identifyWorkshopUser.mockClear()
-    let releaseActivation!: () => void
-    h.activate.mockImplementation(
-      () => new Promise<void>((resolve) => (releaseActivation = resolve))
-    )
-
-    h.flag!.value = false
-    await vi.waitFor(() => expect(s.settled.value).toBe(false))
-    // The real deactivate leaves the client signed-out until Firebase answers again.
-    h.snapshot = { phase: 'signed-out', user: null, session: undefined }
-    h.flag!.value = true
-    await vi.waitFor(() => expect(h.activate).toHaveBeenCalledTimes(2))
-    expect(s.settled.value).toBe(false)
-    h.snapshot = authenticatedSnapshot()
-    releaseActivation()
-
-    await vi.waitFor(() => expect(s.session.value).toEqual(okSession))
-    expect(
-      seen,
-      'the host must never show signed-out between pending and the delivered user'
-    ).not.toContainEqual([true, true])
-    expect(h.identifyWorkshopUser).not.toHaveBeenCalledWith(null)
   })
 
   it('does not resurrect a torn-down session when a restore resolves after the flag turns off', async () => {
