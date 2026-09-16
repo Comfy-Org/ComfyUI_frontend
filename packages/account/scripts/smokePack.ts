@@ -126,7 +126,7 @@ function assertPublishable(source: Manifest, packed: PackResult): void {
         .join('\n')}`
     )
   }
-  log(`packed ${shipped.size} files, specifiers rewritten`)
+  log(`packed ${source.name}: ${shipped.size} files, specifiers rewritten`)
 }
 
 const CONSUMER_SOURCE = `
@@ -198,10 +198,11 @@ function main(): void {
       workspacePackageDirs()
     )
     const overrides = Object.fromEntries(
-      [...siblings].map(([name, dir]) => [
-        name,
-        `file:${pack(dir, tarballDir).filename}`
-      ])
+      [...siblings].map(([name, dir]) => {
+        const packedSibling = pack(dir, tarballDir)
+        assertPublishable(readManifest(dir), packedSibling)
+        return [name, `file:${packedSibling.filename}`]
+      })
     )
     const peers = packedManifest(packed.filename).peerDependencies ?? {}
     writeFileSync(
