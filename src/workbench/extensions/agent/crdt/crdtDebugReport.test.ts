@@ -329,29 +329,36 @@ describe('collectCrdtDebugReport', () => {
 
   it.for([
     {
-      delimiter: 'double',
+      case: 'escaped double-quote',
       workflowError: String.raw`"apiKey":"escaped\"double-do-not-leak"`,
       redacted: '"apiKey":"[redacted by the debug report]"'
     },
     {
-      delimiter: 'single',
+      case: 'escaped single-quote',
       workflowError: String.raw`'secret':'escaped\'single-do-not-leak'`,
       redacted: "'secret':'[redacted by the debug report]'"
+    },
+    {
+      case: 'multiline double-quote',
+      workflowError: '"apiKey":"first-line\ndouble-do-not-leak"',
+      redacted: '"apiKey":"[redacted by the debug report]"'
+    },
+    {
+      case: 'multiline single-quote',
+      workflowError: "'secret':'first-line\nsingle-do-not-leak'",
+      redacted: "'secret':'[redacted by the debug report]'"
     }
-  ])(
-    'redacts quoted secrets containing escaped $delimiter quotes',
-    async ({ workflowError, redacted }) => {
-      const report = await collectCrdtDebugReport({
-        crdt: SNAPSHOT,
-        events: [],
-        sources: ALL_SOURCES,
-        workflowError
-      })
+  ])('redacts $case secrets', async ({ workflowError, redacted }) => {
+    const report = await collectCrdtDebugReport({
+      crdt: SNAPSHOT,
+      events: [],
+      sources: ALL_SOURCES,
+      workflowError
+    })
 
-      expect(report).not.toContain('do-not-leak')
-      expect(report).toContain(redacted)
-    }
-  )
+    expect(report).not.toContain('do-not-leak')
+    expect(report).toContain(redacted)
+  })
 
   it('reports a thrown workflow JSON conversion as failed', async () => {
     const workflow = Object.defineProperty({}, 'broken', {
