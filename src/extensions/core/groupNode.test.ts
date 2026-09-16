@@ -1,4 +1,4 @@
-import { fromPartial } from '@total-typescript/shoehorn'
+import { fromAny, fromPartial } from '@total-typescript/shoehorn'
 import { describe, expect, it, vi } from 'vitest'
 
 import { t } from '@/i18n'
@@ -9,6 +9,7 @@ import { LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { ComfyNode } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
+import type { ComfyApp } from '@/scripts/app'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 
 import type { ComfyExtension, MissingNodeType } from '@/types/comfy'
@@ -19,24 +20,24 @@ const extensionState = vi.hoisted(() => ({
   ext: undefined as ComfyExtension | undefined,
   configuringGraph: false,
   rootGraph: {
-    extra: {} as Record<string, unknown>,
+    extra: {},
     nodes: [] as { id: string | number }[]
   },
   registerNodeDef:
     vi.fn<(typeName: string, nodeDef: ComfyNodeDef) => Promise<void>>()
 }))
 
-vi.mock('@/scripts/app', () => ({
-  app: {
+vi.mock(import('@/scripts/app'), () => ({
+  app: fromPartial<ComfyApp>({
     get configuringGraph() {
       return extensionState.configuringGraph
     },
-    rootGraph: extensionState.rootGraph,
+    rootGraph: fromAny(extensionState.rootGraph),
     registerNodeDef: extensionState.registerNodeDef,
     registerExtension: (ext: ComfyExtension) => {
       extensionState.ext = ext
     }
-  }
+  })
 }))
 
 import {

@@ -12,13 +12,13 @@ const { mockFromEquirectangular, mockDisposePMREM } = vi.hoisted(() => ({
   mockDisposePMREM: vi.fn()
 }))
 
-vi.mock('./Load3dUtils', () => ({
-  default: {
+vi.mock(import('./Load3dUtils'), () => ({
+  default: fromAny({
     getFilenameExtension: vi.fn()
-  }
+  })
 }))
 
-vi.mock('three', { spy: true })
+vi.mock(import('three'), { spy: true })
 
 beforeEach(() => {
   vi.spyOn(THREE, 'PMREMGenerator').mockImplementation(function () {
@@ -30,7 +30,7 @@ beforeEach(() => {
   })
 })
 
-vi.mock('three/examples/jsm/loaders/EXRLoader', () => {
+vi.mock(import('three/examples/jsm/loaders/EXRLoader'), () => {
   class EXRLoader {
     load(
       _url: string,
@@ -41,10 +41,10 @@ vi.mock('three/examples/jsm/loaders/EXRLoader', () => {
       resolve(new THREE.DataTexture(new Uint8Array(4), 1, 1))
     }
   }
-  return { EXRLoader }
+  return { EXRLoader: fromAny(EXRLoader) }
 })
 
-vi.mock('three/examples/jsm/loaders/RGBELoader', () => {
+vi.mock(import('three/examples/jsm/loaders/RGBELoader'), () => {
   class RGBELoader {
     load(
       _url: string,
@@ -55,7 +55,7 @@ vi.mock('three/examples/jsm/loaders/RGBELoader', () => {
       resolve(new THREE.DataTexture(new Uint8Array(4), 1, 1))
     }
   }
-  return { RGBELoader }
+  return { RGBELoader: fromAny(RGBELoader) }
 })
 
 function makeMockEventManager() {

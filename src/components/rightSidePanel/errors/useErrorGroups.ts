@@ -321,7 +321,8 @@ export function useErrorGroups(searchQuery: MaybeRefOrGetter<string>) {
     const map = new Map<string, LGraphNode>()
     const rootGraph = app.rootGraphOrUndefined
     if (!rootGraph) return map
-    const nodeTypes = missingNodesStore.missingNodesError?.nodeTypes ?? []
+    const nodeTypes =
+      missingNodesStore.visibleMissingNodesError?.nodeTypes ?? []
     for (const nodeType of nodeTypes) {
       if (typeof nodeType === 'string') continue
       if (nodeType.nodeId == null) continue
@@ -600,7 +601,8 @@ export function useErrorGroups(searchQuery: MaybeRefOrGetter<string>) {
   )
 
   const missingPackGroups = computed<MissingPackGroup[]>(() => {
-    const nodeTypes = missingNodesStore.missingNodesError?.nodeTypes ?? []
+    const nodeTypes =
+      missingNodesStore.visibleMissingNodesError?.nodeTypes ?? []
     const map = new Map<
       string | null,
       { nodeTypes: MissingNodeType[]; isResolving: boolean }
@@ -662,7 +664,8 @@ export function useErrorGroups(searchQuery: MaybeRefOrGetter<string>) {
   })
 
   const swapNodeGroups = computed<SwapNodeGroup[]>(() => {
-    const nodeTypes = missingNodesStore.missingNodesError?.nodeTypes ?? []
+    const nodeTypes =
+      missingNodesStore.visibleMissingNodesError?.nodeTypes ?? []
     const map = new Map<string, SwapNodeGroup>()
 
     for (const nodeType of nodeTypes) {
@@ -693,7 +696,7 @@ export function useErrorGroups(searchQuery: MaybeRefOrGetter<string>) {
     blockedLastRun: boolean,
     includeGroup: (nodeTypes: MissingNodeType[]) => boolean = () => true
   ): ErrorGroup[] {
-    const error = missingNodesStore.missingNodesError
+    const error = missingNodesStore.visibleMissingNodesError
     if (!error) return []
 
     const groups: ErrorGroup[] = []
@@ -743,7 +746,7 @@ export function useErrorGroups(searchQuery: MaybeRefOrGetter<string>) {
 
   const missingModelGroups = computed<MissingModelGroup[]>(() => {
     return groupMissingModelCandidates(
-      missingModelStore.missingModelCandidates,
+      missingModelStore.visibleMissingModelCandidates,
       isCloud
     )
   })
@@ -770,7 +773,7 @@ export function useErrorGroups(searchQuery: MaybeRefOrGetter<string>) {
   }
 
   const missingMediaGroups = computed<MissingMediaGroup[]>(() => {
-    const candidates = missingMediaStore.missingMediaCandidates
+    const candidates = missingMediaStore.visibleMissingMediaCandidates
     if (!candidates?.length) return []
     return groupCandidatesByMediaType(candidates)
   })
@@ -827,7 +830,7 @@ export function useErrorGroups(searchQuery: MaybeRefOrGetter<string>) {
   /** Model groups narrowed to the selection, for emphasis derivation only. */
   const missingModelGroupsForSelection = computed(() => {
     if (!hasSelection.value) return []
-    const candidates = missingModelStore.missingModelCandidates
+    const candidates = missingModelStore.visibleMissingModelCandidates
     if (!candidates?.length) return []
     const matched = candidates.filter(
       (c) =>
@@ -842,7 +845,7 @@ export function useErrorGroups(searchQuery: MaybeRefOrGetter<string>) {
   /** Media groups narrowed to the selection, for emphasis derivation only. */
   const missingMediaGroupsForSelection = computed(() => {
     if (!hasSelection.value) return []
-    const candidates = missingMediaStore.missingMediaCandidates
+    const candidates = missingMediaStore.visibleMissingMediaCandidates
     if (!candidates?.length) return []
     const matched = candidates.filter((c) =>
       isAssetCandidateInSelection(c.nodeId)
@@ -947,11 +950,11 @@ export function useErrorGroups(searchQuery: MaybeRefOrGetter<string>) {
    */
   const assetNodeIdsWithError = computed<string[]>(() => {
     const candidateIds = [
-      ...(missingModelStore.missingModelCandidates ?? []),
-      ...(missingMediaStore.missingMediaCandidates ?? [])
+      ...(missingModelStore.visibleMissingModelCandidates ?? []),
+      ...(missingMediaStore.visibleMissingMediaCandidates ?? [])
     ].map((candidate) => candidate.nodeId)
     const missingNodeTypeIds = (
-      missingNodesStore.missingNodesError?.nodeTypes ?? []
+      missingNodesStore.visibleMissingNodesError?.nodeTypes ?? []
     ).map((nodeType) =>
       typeof nodeType === 'string' ? undefined : nodeType.nodeId
     )

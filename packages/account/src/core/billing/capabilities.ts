@@ -19,9 +19,12 @@ import {
 } from '@comfyorg/ingest-types/zod'
 import { z } from 'zod'
 
-import type { SessionClient } from '../session.js'
 import type { BillingResult, BillingTransport } from './billingContracts.js'
-import type { BillingScope, BillingScopeContext } from './billingScope.js'
+import type {
+  BillingScope,
+  BillingScopeContext,
+  BillingScopeSource
+} from './billingScope.js'
 import { createBillingScopeTracker, sameBillingScope } from './billingScope.js'
 import type { CapabilityDenials } from './capabilityDenials.js'
 import { decodeCapabilityDenials } from './capabilityDenials.js'
@@ -104,13 +107,14 @@ export interface CapabilitiesReader {
    * refetch forever.
    */
   invalidate: (revision?: number) => void
-  /** Detaches the session subscription. */
+  /** Detaches the scope subscription. */
   dispose: () => void
 }
 
 export interface CapabilitiesReaderOptions {
   readonly transport: BillingTransport
-  readonly session: SessionClient
+  /** Where the core learns which user, workspace, and role it runs as. */
+  readonly scopeSource: BillingScopeSource
   readonly now?: () => number
 }
 
@@ -165,12 +169,12 @@ interface InFlightRead {
 export function createCapabilitiesReader(
   options: CapabilitiesReaderOptions
 ): CapabilitiesReader {
-  const { transport, session, now = Date.now } = options
+  const { transport, scopeSource, now = Date.now } = options
 
   let snapshot: CapabilitiesSnapshot | undefined
   let inFlight: InFlightRead | undefined
   const lifetime = { disposed: false }
-  const scopeTracker = createBillingScopeTracker(session, () => {
+  const scopeTracker = createBillingScopeTracker(scopeSource, () => {
     snapshot = undefined
     inFlight = undefined
   })

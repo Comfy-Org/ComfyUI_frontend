@@ -2,6 +2,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { Auth, User, UserCredential } from 'firebase/auth'
 
+import type { FirebaseIdentityConfig } from './index.js'
+
 const sdk = vi.hoisted(() => {
   const unsubscribe = vi.fn()
   const listeners: Array<(user: unknown) => void> = []
@@ -59,15 +61,31 @@ async function makeIdentity() {
 
 const hostAuth = { name: 'host-auth' } as Partial<Auth> as Auth
 
-async function makeHostBoundIdentity(actionTimeoutMs?: number) {
+async function makeHostBoundIdentity() {
   const { createFirebaseIdentity } = await import('./index.js')
-  return createFirebaseIdentity({ auth: hostAuth, actionTimeoutMs })
+  return createFirebaseIdentity({ auth: hostAuth })
 }
 
 const testUser = { uid: 'user-1' } as Partial<User> as User
 const testCredential = {
   user: testUser
 } as Partial<UserCredential> as UserCredential
+
+interface Deferred<T> {
+  promise: Promise<T>
+  resolve: (value: T) => void
+  reject: (reason: unknown) => void
+}
+
+function deferred<T>(): Deferred<T> {
+  let resolve!: (value: T) => void
+  let reject!: (reason: unknown) => void
+  const promise = new Promise<T>((res, rej) => {
+    resolve = res
+    reject = rej
+  })
+  return { promise, resolve, reject }
+}
 
 beforeEach(() => {
   sdk.listeners.length = 0
@@ -102,48 +120,52 @@ describe('createFirebaseIdentity over a host-owned Auth', () => {
       )
     }
   })
-
-  it('applies the ceiling the host asks for', async () => {
-    const identity = await makeHostBoundIdentity(2_000)
-    const outcome = vi.fn()
-    identity.sendPasswordReset('a@b.example').catch(outcome)
-
-    await vi.advanceTimersByTimeAsync(2_000 + 10)
-
-    expect(outcome).toHaveBeenCalledOnce()
-  })
 })
 
-describe('createFirebaseIdentity action ceilings', () => {
+describe('createFirebaseIdentity state-changing calls stay pending until the SDK settles', () => {
   it.for([['signInWithEmail'], ['sendPasswordReset']] as const)(
-    'leaves %s unbounded by default, as the cloud app runs it',
+    'keeps the %s caller pending past any deadline until the SDK op settles (FE-2172)',
     async ([method]) => {
+      const call = deferred<UserCredential>()
+      const sdkCall =
+        method === 'sendPasswordReset'
+          ? sdk.sendPasswordResetEmail
+          : sdk.signInWithEmailAndPassword
+      sdkCall.mockReturnValueOnce(call.promise)
       const identity = await makeIdentity()
-      const pending =
+
+      const attempt =
         method === 'sendPasswordReset'
           ? identity.sendPasswordReset('a@b.example')
-          : identity[method]('a@b.example', 'hunter22!')
+          : identity.signInWithEmail('a@b.example', 'stalled')
       const settled = vi.fn()
-      pending.then(settled, settled)
+      attempt.then(settled, settled)
 
       await vi.advanceTimersByTimeAsync(15_000 * 10)
 
-      expect(settled).not.toHaveBeenCalled()
+      expect(
+        settled,
+        'the caller must not be released on any deadline while the SDK op is still running'
+      ).not.toHaveBeenCalled()
+
+      call.resolve(testCredential)
+      await vi.advanceTimersByTimeAsync(0)
+
+      expect(
+        settled,
+        'the caller settles only once the underlying SDK op does'
+      ).toHaveBeenCalledOnce()
     }
   )
 
-  it('never bounds account creation, even when a host asks for a ceiling', async () => {
-    const { createFirebaseIdentity } = await import('./index.js')
-    const identity = createFirebaseIdentity({
-      options: { apiKey: 'test' },
-      actionTimeoutMs: 2_000
-    })
+  it('never bounds account creation: a released caller with a live SDK call orphans the account', async () => {
+    const identity = await makeIdentity()
     const settled = vi.fn()
     identity
       .createUserWithEmail('a@b.example', 'hunter22!')
       .then(settled, settled)
 
-    await vi.advanceTimersByTimeAsync(2_000 * 10)
+    await vi.advanceTimersByTimeAsync(15_000 * 10)
 
     expect(
       settled,
@@ -151,21 +173,7 @@ describe('createFirebaseIdentity action ceilings', () => {
     ).not.toHaveBeenCalled()
   })
 
-  it('applies the ceiling a host asks for', async () => {
-    const { createFirebaseIdentity } = await import('./index.js')
-    const identity = createFirebaseIdentity({
-      options: { apiKey: 'test' },
-      actionTimeoutMs: 2_000
-    })
-    const outcome = vi.fn()
-    identity.signInWithEmail('a@b.example', 'hunter22!').catch(outcome)
-
-    await vi.advanceTimersByTimeAsync(2_000 + 10)
-
-    expect(outcome).toHaveBeenCalledOnce()
-  })
-
-  it('leaves the interactive popup unbounded', async () => {
+  it('leaves the interactive popup pending on the caller', async () => {
     const identity = await makeIdentity()
     const settled = vi.fn()
     identity.signInWithGoogle().then(settled, settled)
@@ -176,6 +184,21 @@ describe('createFirebaseIdentity action ceilings', () => {
       settled,
       'a user may legitimately take minutes in the popup; the SDK owns its cancellation errors'
     ).not.toHaveBeenCalled()
+  })
+})
+
+describe('createFirebaseIdentity exclusive config', () => {
+  it('cannot represent a config carrying both a host Auth and package app options', () => {
+    const both = { auth: hostAuth, options: { apiKey: 'test' } }
+    const asConfig = (config: FirebaseIdentityConfig): FirebaseIdentityConfig =>
+      config
+    // @ts-expect-error a config cannot carry both a host Auth and package app options
+    asConfig(both)
+
+    expect(
+      both,
+      'compile-time exclusivity guard; the runtime body only anchors the @ts-expect-error'
+    ).toBeDefined()
   })
 })
 

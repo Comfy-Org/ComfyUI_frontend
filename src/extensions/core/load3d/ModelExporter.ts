@@ -1,5 +1,5 @@
 import { FBXExporter } from '@comfyorg/fbx-exporter-three'
-import * as THREE from 'three'
+import type * as THREE from 'three'
 import { GLTFExporter } from 'three/examples/jsm/exporters/GLTFExporter'
 import { OBJExporter } from 'three/examples/jsm/exporters/OBJExporter'
 import { STLExporter } from 'three/examples/jsm/exporters/STLExporter'

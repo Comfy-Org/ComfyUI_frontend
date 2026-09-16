@@ -1,3 +1,5 @@
+import type { ExecutionError } from '@comfyorg/ingest-types'
+
 import type { NodeValidationError } from '@/utils/executionErrorUtil'
 
 /** The webserver sends node ids in either form; the cloud ingest spec narrows to string. */
@@ -17,20 +19,14 @@ export interface NodeError {
   dependent_outputs: unknown[]
 }
 
-/**
- * WS execution-error message. Hand-written rather than extending the ingest
- * ExecutionError: the webserver's node ids diverge from the cloud spec's
- * string-only ids.
- */
-export interface ExecutionErrorWsMessage {
+export interface ExecutionErrorWsMessage extends Pick<
+  ExecutionError,
+  'node_type' | 'exception_message' | 'exception_type' | 'traceback'
+> {
   prompt_id: string
   timestamp: number
   node_id?: WsNodeId | null
-  node_type: string
   executed: WsNodeId[]
-  exception_message: string
-  exception_type: string
-  traceback: string[]
   current_inputs?: unknown
   current_outputs?: unknown
 }

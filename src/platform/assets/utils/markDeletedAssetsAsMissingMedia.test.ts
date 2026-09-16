@@ -10,7 +10,7 @@ import { useMissingMediaStore } from '@/platform/missingMedia/missingMediaStore'
 
 import { markDeletedAssetsAsMissingMedia } from './markDeletedAssetsAsMissingMedia'
 
-vi.mock<unknown>(import('@/platform/distribution/types'), () => ({
+vi.mock(import('@/platform/distribution/types'), () => ({
   isCloud: true
 }))
 

@@ -1,16 +1,6 @@
-// @vitest-environment jsdom
 import { render, screen, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
-// jsdom lacks ResizeObserver, which the asset-preview import chain references.
-vi.hoisted(() => {
-  globalThis.ResizeObserver = class {
-    observe(): void {}
-    unobserve(): void {}
-    disconnect(): void {}
-  }
-})
-
 import { i18n } from '@/i18n'
 import type { TurnId } from '../../../schemas/agentApiSchema'
 import { createAgentEventTransport } from '../../../services/agent/agentEventTransport'

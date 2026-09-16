@@ -33,7 +33,7 @@ const promptIcons = [
           />
         </div>
         <div
-          class="text-agent-fg flex max-w-sm flex-col items-center text-base/snug font-semibold tracking-tight @min-[570px]:text-2xl/snug"
+          class="flex max-w-sm flex-col items-center text-base/snug font-semibold tracking-tight text-base-foreground @min-[570px]:text-2xl/snug"
         >
           <p class="my-0">
             {{ t('agent.greeting', { name: userName ?? t('agent.friend') }) }}
@@ -51,13 +51,13 @@ const promptIcons = [
           v-for="(prompt, index) in prompts"
           :key="index"
           type="button"
-          class="bg-agent-surface-raised text-agent-fg hover:bg-agent-surface-hover focus-visible:ring-agent-accent flex h-8 w-full max-w-full min-w-0 cursor-pointer items-center justify-start gap-2 rounded-full px-3 text-sm whitespace-nowrap transition-colors focus-visible:ring-2 focus-visible:outline-none @min-[460px]:w-auto"
+          class="flex h-8 w-full max-w-full min-w-0 cursor-pointer items-center justify-start gap-2 rounded-full bg-secondary-background px-3 text-sm whitespace-nowrap text-base-foreground transition-colors hover:bg-secondary-background-hover focus-visible:ring-2 focus-visible:ring-primary-background focus-visible:outline-none @min-[460px]:w-auto"
           @click="emit('insert', prompt)"
         >
           <span
             :class="
               cn(
-                'text-agent-fg-muted size-3 shrink-0',
+                'size-3 shrink-0 text-muted-foreground',
                 promptIcons[index] ?? 'icon-[lucide--sparkles]'
               )
             "
