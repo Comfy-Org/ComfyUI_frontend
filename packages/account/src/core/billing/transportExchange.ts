@@ -49,30 +49,30 @@ export async function exchangeBillingRequest(
   request: BillingRequest,
   exchange: BillingExchange
 ): Promise<BillingResult<BillingHttpResponse>> {
+  // Called detached: the browser's fetch refuses any receiver but its global.
+  const { fetchImpl, url, signal, headers, credentials } = exchange
   let response: Response
   try {
-    response = await exchange.fetchImpl(exchange.url, {
+    response = await fetchImpl(url, {
       method: request.method,
       headers: {
         'Content-Type': 'application/json',
         ...(request.idempotencyKey === undefined
           ? {}
           : { 'Idempotency-Key': request.idempotencyKey }),
-        ...exchange.headers
+        ...headers
       },
       ...(request.method === 'GET' || request.body === undefined
         ? {}
         : { body: JSON.stringify(request.body) }),
-      ...(exchange.credentials === undefined
-        ? {}
-        : { credentials: exchange.credentials }),
-      signal: exchange.signal
+      ...(credentials === undefined ? {} : { credentials }),
+      signal
     })
   } catch {
     return { status: 'error', code: 'REQUEST_FAILED' }
   }
 
-  return shapeResponse(response, exchange.signal)
+  return shapeResponse(response, signal)
 }
 
 async function shapeResponse(

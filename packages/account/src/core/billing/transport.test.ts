@@ -765,3 +765,66 @@ describe('createCredentialedBillingTransport', () => {
     })
   })
 })
+
+/**
+ * The browser refuses `fetch` any receiver but its own global: calling it as
+ * a method on an options object throws `Illegal invocation`, and every
+ * billing request fails before it leaves the page. happy-dom does not
+ * enforce that, so this fake does.
+ */
+function globalOnlyFetch(): typeof fetch {
+  return function (
+    this: unknown,
+    _input: RequestInfo | URL,
+    _init?: RequestInit
+  ) {
+    if (this !== undefined && this !== globalThis) {
+      throw new TypeError(
+        "Failed to execute 'fetch' on 'Window': Illegal invocation"
+      )
+    }
+    return Promise.resolve(jsonResponse(200, { ok: true }))
+  }
+}
+
+describe('every billing transport', () => {
+  it.for([
+    {
+      name: 'createSessionBillingTransport',
+      create: (fetchImpl: typeof fetch) =>
+        createSessionBillingTransport({
+          session: fakeSession({
+            ensureFresh: { status: 'ok', session: credential() }
+          }).session,
+          resolveUrl: (route) => `${BASE}${route}`,
+          fetchImpl
+        })
+    },
+    {
+      name: 'createCredentialedBillingTransport',
+      create: (fetchImpl: typeof fetch) =>
+        createCredentialedBillingTransport({
+          resolveUrl: (route) => `${BASE}${route}`,
+          scopeSource: {
+            getScope: () => ({
+              userId: 'uid-1',
+              workspaceId: 'ws-1',
+              role: 'owner'
+            }),
+            subscribe: () => () => {}
+          },
+          fetchImpl
+        })
+    }
+  ])(
+    '$name calls fetch as a browser allows it to be called',
+    async ({ create }) => {
+      const result = await create(globalOnlyFetch())({
+        method: 'GET',
+        route: '/billing/status'
+      })
+
+      expect(unwrapAnswer(result).httpStatus).toBe(200)
+    }
+  )
+})
