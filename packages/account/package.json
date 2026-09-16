@@ -38,8 +38,9 @@
   },
   "scripts": {
     "lint": "oxlint src --type-aware && eslint src",
+    "smoke:pack": "tsx scripts/smokePack.ts",
     "test": "vitest run",
-    "typecheck": "vue-tsc --noEmit"
+    "typecheck": "vue-tsc --noEmit && vue-tsc --noEmit --project scripts/tsconfig.json"
   },
   "dependencies": {
     "@comfyorg/ingest-types": "workspace:*",
