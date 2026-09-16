@@ -7837,6 +7837,32 @@ Enterprise`
     en: 'GET STARTED',
     'zh-CN': '开始使用'
   },
+  'qwenImage21.announcement.meta.title': {
+    en: 'Qwen Image 2.1 on Comfy: Coming Soon',
+    'zh-CN': 'Comfy 上的 Qwen Image 2.1：即将上线'
+  },
+  'qwenImage21.announcement.meta.description': {
+    en: 'Qwen Image 2.1 is coming to ComfyUI and Comfy Cloud. Generation and editing in one open-weight model, with accurate text rendering, ready to run the day it ships.',
+    'zh-CN':
+      'Qwen Image 2.1 即将登陆 ComfyUI 与 Comfy Cloud。生成与编辑合一的开源权重模型，文字渲染精准，发布当天即可运行。'
+  },
+  'qwenImage21.announcement.breadcrumb.updated': {
+    en: 'Announced September 2026',
+    'zh-CN': '2026 年 9 月发布预告'
+  },
+  'qwenImage21.announcement.hero.eyebrow': {
+    en: 'Coming soon',
+    'zh-CN': '即将上线'
+  },
+  'qwenImage21.announcement.hero.description': {
+    en: 'The next Qwen image model is coming to ComfyUI and Comfy Cloud. Generation and editing in one open-weight model, with the words exactly where you wrote them, ready to run the day it ships.',
+    'zh-CN':
+      '新一代 Qwen 图像模型即将登陆 ComfyUI 与 Comfy Cloud。生成与编辑合一的开源权重模型，文字精准落在你写下的位置，发布当天即可运行。'
+  },
+  'qwenImage21.announcement.hero.primaryCta': {
+    en: 'GET NOTIFIED',
+    'zh-CN': '获取通知'
+  },
   'footer.qwenImage21': {
     en: 'Qwen Image 2.1',
     'zh-CN': 'Qwen Image 2.1'

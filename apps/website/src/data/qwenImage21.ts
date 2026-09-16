@@ -20,15 +20,53 @@ const media = {
     src: `${mediaBase}/hero.mp4`,
     posterSrc: `${mediaBase}/hero-poster.webp`
   },
-  poster: { kind: 'image', src: `${mediaBase}/typographic-poster.webp` },
   infographic: { kind: 'image', src: `${mediaBase}/infographic.webp` },
-  portrait: { kind: 'image', src: `${mediaBase}/studio-portrait.webp` },
-  storefront: { kind: 'image', src: `${mediaBase}/night-storefront.webp` },
-  comic: { kind: 'image', src: `${mediaBase}/comic-page.webp` },
-  interior: { kind: 'image', src: `${mediaBase}/interior-relight.webp` }
+  stoop: { kind: 'image', src: `${mediaBase}/harlem-stoop.webp` },
+  holi: { kind: 'image', src: `${mediaBase}/holi-powder.webp` },
+  game: { kind: 'image', src: `${mediaBase}/game-environment.webp` },
+  character: { kind: 'image', src: `${mediaBase}/character-sheet.webp` },
+  interior: { kind: 'image', src: `${mediaBase}/interior-archviz.webp` }
 } as const satisfies Record<string, ModelLaunchMedia>
 
 const freeNote = { en: 'Included free', 'zh-CN': '免费包含' }
+
+const runOptions = {
+  headingKey: 'qwenImage21.runOptions.heading',
+  subtitleKey: 'qwenImage21.runOptions.subtitle',
+  ctaKey: 'qwenImage21.runOptions.cta'
+} as const
+
+const reviews = {
+  headingKey: 'qwenImage21.reviews.heading',
+  highlight: {
+    titleKey: 'qwenImage21.reviews.highlightTitle',
+    descriptionKey: 'qwenImage21.reviews.highlightDescription',
+    ctaKey: 'qwenImage21.reviews.highlightCta'
+  }
+} as const
+
+// Live until launch day; the route stubs point here. Swapping them to
+// qwenImage21Page turns on the full hero, gallery, pricing and FAQ.
+export const qwenImage21AnnouncementPage: ModelLaunchPage = {
+  metaTitleKey: 'qwenImage21.announcement.meta.title',
+  metaDescriptionKey: 'qwenImage21.announcement.meta.description',
+  breadcrumbLabelKey: 'qwenImage21.breadcrumb.model',
+  breadcrumbUpdatedKey: 'qwenImage21.announcement.breadcrumb.updated',
+  hero: {
+    layout: 'overlay',
+    placeholderImageSrc: '/images/models/qwen-image-2-1-placeholder.webp',
+    eyebrowKey: 'qwenImage21.announcement.hero.eyebrow',
+    titleKey: 'qwenImage21.breadcrumb.model',
+    descriptionKey: 'qwenImage21.announcement.hero.description',
+    primaryCta: {
+      labelKey: 'qwenImage21.announcement.hero.primaryCta',
+      href: externalLinks.cloudCta('qwen_image_2_1_announcement'),
+      target: '_blank'
+    }
+  },
+  runOptions,
+  reviews
+}
 
 export const qwenImage21Page: ModelLaunchPage = {
   metaTitleKey: 'qwenImage21.meta.title',
@@ -65,92 +103,96 @@ export const qwenImage21Page: ModelLaunchPage = {
     ctaVariant: 'accent',
     cards: [
       {
-        id: 'typographic-poster',
-        name: {
-          en: 'Typographic concert poster generated with Qwen Image 2.1',
-          'zh-CN': '使用 Qwen Image 2.1 生成的文字排版演出海报'
-        },
-        tier: 'free',
-        note: freeNote,
-        description: {
-          en: 'A layered gig poster with every line of copy rendered legibly in a single pass.',
-          'zh-CN': '层次丰富的演出海报，所有文案一次生成即清晰可读。'
-        },
-        media: media.poster,
-        href: qwenImage21Links.cloud
-      },
-      {
         id: 'infographic',
         name: {
-          en: 'Product infographic generated with Qwen Image 2.1',
-          'zh-CN': '使用 Qwen Image 2.1 生成的产品信息图'
+          en: 'Coffee infographic generated with Qwen Image 2.1',
+          'zh-CN': '使用 Qwen Image 2.1 生成的咖啡信息图'
         },
         tier: 'free',
         note: freeNote,
         description: {
-          en: 'A four-panel explainer laid out from a long brief: headings, callouts, and icons in place.',
-          'zh-CN': '根据长篇简报排版的四格说明图，标题、标注与图标各就各位。'
+          en: 'A five-step "From Cherry to Cup" explainer with every heading, number, and label set cleanly in one pass.',
+          'zh-CN':
+            '五步"从咖啡果到咖啡杯"说明图，标题、编号与标签一次生成即工整清晰。'
         },
         media: media.infographic,
         href: qwenImage21Links.cloud
       },
       {
-        id: 'studio-portrait',
+        id: 'harlem-stoop',
         name: {
-          en: 'Studio portrait generated with Qwen Image 2.1',
-          'zh-CN': '使用 Qwen Image 2.1 生成的棚拍人像'
+          en: 'Editorial portrait on a Harlem stoop generated with Qwen Image 2.1',
+          'zh-CN': '使用 Qwen Image 2.1 生成的哈莱姆门廊人像'
         },
         tier: 'free',
         note: freeNote,
         description: {
-          en: 'A natural 2K portrait with soft key light, true skin tones, and fine fabric detail.',
-          'zh-CN': '自然的 2K 人像，柔和主光、真实肤色与细腻布料质感。'
-        },
-        media: media.portrait,
-        href: qwenImage21Links.cloud
-      },
-      {
-        id: 'night-storefront',
-        name: {
-          en: 'Neon storefront at night generated with Qwen Image 2.1',
-          'zh-CN': '使用 Qwen Image 2.1 生成的夜间霓虹店面'
-        },
-        tier: 'free',
-        note: freeNote,
-        description: {
-          en: 'Rain-slick street, bilingual neon signage, and reflections that hold up at full resolution.',
+          en: 'Denim on denim, wrought iron, and warm brick: a natural portrait with true skin tones and fabric detail.',
           'zh-CN':
-            '雨后街道、中英双语霓虹招牌，全分辨率下依然经得起细看的倒影。'
+            '牛仔套装、铸铁栏杆与暖色砖墙：肤色真实、布料细节丰富的自然人像。'
         },
-        media: media.storefront,
+        media: media.stoop,
         href: qwenImage21Links.cloud
       },
       {
-        id: 'comic-page',
+        id: 'holi-powder',
         name: {
-          en: 'Comic page generated with Qwen Image 2.1',
-          'zh-CN': '使用 Qwen Image 2.1 生成的漫画页'
+          en: 'Holi colour powder burst generated with Qwen Image 2.1',
+          'zh-CN': '使用 Qwen Image 2.1 生成的洒红节彩粉'
         },
         tier: 'free',
         note: freeNote,
         description: {
-          en: 'A six-panel page with consistent characters and dialogue set cleanly inside each balloon.',
-          'zh-CN': '六格漫画页，角色前后一致，对白工整地排在每个气泡里。'
+          en: 'Magenta, gold, and cobalt powder frozen mid-air against clean white, every grain sharp.',
+          'zh-CN':
+            '洋红、金黄与钴蓝彩粉在纯白背景前凝固半空，每一粒都清晰锐利。'
         },
-        media: media.comic,
+        media: media.holi,
         href: qwenImage21Links.cloud
       },
       {
-        id: 'interior-relight',
+        id: 'game-environment',
         name: {
-          en: 'Relit interior edited with Qwen Image 2.1',
-          'zh-CN': '使用 Qwen Image 2.1 重新打光的室内场景'
+          en: 'Floating island game environment generated with Qwen Image 2.1',
+          'zh-CN': '使用 Qwen Image 2.1 生成的浮空岛游戏场景'
         },
         tier: 'free',
         note: freeNote,
         description: {
-          en: 'The same living room moved from midday to golden hour with one edit instruction.',
-          'zh-CN': '一句编辑指令，把同一间客厅从正午带到黄昏。'
+          en: 'A waterfall citadel and rope bridges in a painterly concept-art style, ready for a level brief.',
+          'zh-CN': '瀑布城堡与绳桥构成的绘画风概念场景，可直接用于关卡设定。'
+        },
+        media: media.game,
+        href: qwenImage21Links.cloud
+      },
+      {
+        id: 'character-sheet',
+        name: {
+          en: 'Character turnaround sheet generated with Qwen Image 2.1',
+          'zh-CN': '使用 Qwen Image 2.1 生成的角色三视图'
+        },
+        tier: 'free',
+        note: freeNote,
+        description: {
+          en: 'Four consistent views of the same character, from goggles to boots, on a clean white sheet.',
+          'zh-CN':
+            '同一角色四个视角保持一致，从护目镜到靴子，呈现在干净的白底上。'
+        },
+        media: media.character,
+        href: qwenImage21Links.cloud
+      },
+      {
+        id: 'interior-archviz',
+        name: {
+          en: 'Interior architectural visualization generated with Qwen Image 2.1',
+          'zh-CN': '使用 Qwen Image 2.1 生成的室内建筑可视化'
+        },
+        tier: 'free',
+        note: freeNote,
+        description: {
+          en: 'A calm living room in soft daylight: oak, linen, paper lantern, and birch forest beyond the glass.',
+          'zh-CN':
+            '柔和日光中的静谧客厅：橡木、亚麻、纸灯笼，以及窗外的白桦林。'
         },
         media: media.interior,
         href: qwenImage21Links.cloud
@@ -245,17 +287,6 @@ export const qwenImage21Page: ModelLaunchPage = {
       }
     ]
   },
-  runOptions: {
-    headingKey: 'qwenImage21.runOptions.heading',
-    subtitleKey: 'qwenImage21.runOptions.subtitle',
-    ctaKey: 'qwenImage21.runOptions.cta'
-  },
-  reviews: {
-    headingKey: 'qwenImage21.reviews.heading',
-    highlight: {
-      titleKey: 'qwenImage21.reviews.highlightTitle',
-      descriptionKey: 'qwenImage21.reviews.highlightDescription',
-      ctaKey: 'qwenImage21.reviews.highlightCta'
-    }
-  }
+  runOptions,
+  reviews
 }
