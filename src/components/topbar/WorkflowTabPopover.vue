@@ -1,6 +1,8 @@
 <template>
   <div
     ref="positionRef"
+    data-testid="workflow-tab-popover-anchor"
+    :data-show-pending="showTimeout !== null"
     class="absolute bottom-0 left-1/2 -translate-x-1/2"
   ></div>
   <Popover
@@ -9,7 +11,8 @@
     :pt="{
       root: {
         class: 'workflow-popover-fade fit-content',
-        'data-popover-id': id
+        'data-popover-id': id,
+        'data-testid': 'workflow-tab-popover'
       }
     }"
     @mouseenter="cancelHidePopover"
@@ -50,7 +53,7 @@ const { thumbnailUrl, isActiveTab } = toRefs(props)
 const popoverRef = ref<InstanceType<typeof Popover> | null>(null)
 const positionRef = ref<HTMLElement | null>(null)
 let hideTimeout: ReturnType<typeof setTimeout> | null = null
-let showTimeout: ReturnType<typeof setTimeout> | null = null
+const showTimeout = ref<ReturnType<typeof setTimeout> | null>(null)
 const id = useId()
 
 const showPopover = (event: Event) => {
@@ -59,13 +62,14 @@ const showPopover = (event: Event) => {
     clearTimeout(hideTimeout)
     hideTimeout = null
   }
-  if (showTimeout) {
-    clearTimeout(showTimeout)
-    showTimeout = null
+  if (showTimeout.value) {
+    clearTimeout(showTimeout.value)
+    showTimeout.value = null
   }
 
   // Show popover after a short delay
-  showTimeout = setTimeout(async () => {
+  showTimeout.value = setTimeout(async () => {
+    showTimeout.value = null
     if (popoverRef.value && positionRef.value) {
       popoverRef.value.show(event, positionRef.value)
       await nextTick()
@@ -114,9 +118,9 @@ const cancelHidePopover = () => {
 
 const hidePopover = () => {
   // Clear show timeout if mouse leaves before popover appears
-  if (showTimeout) {
-    clearTimeout(showTimeout)
-    showTimeout = null
+  if (showTimeout.value) {
+    clearTimeout(showTimeout.value)
+    showTimeout.value = null
   }
 
   hideTimeout = setTimeout(() => {
