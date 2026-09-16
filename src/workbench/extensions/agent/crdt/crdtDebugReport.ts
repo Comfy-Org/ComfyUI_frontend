@@ -500,16 +500,18 @@ function agentToolSection(messages: readonly AssistantMessage[] | undefined) {
       })
     }
   }
-  const body = json(redactSecrets(calls.reverse()))
-  const limited = total > calls.length || body.length > MAX_SECTION_CHARS
+  calls.reverse()
+  let body = json(redactSecrets(calls))
+  while (body.length > MAX_SECTION_CHARS && calls.length > 0) {
+    calls.shift()
+    body = json(redactSecrets(calls))
+  }
   return {
-    section: [context, fence('json', truncate(body, MAX_SECTION_CHARS))].join(
-      '\n\n'
-    ),
+    section: [context, fence('json', body)].join('\n\n'),
     status:
       total === 0
         ? 'no retained calls'
-        : `${limited ? 'truncated' : 'collected'} (${calls.length}/${total} retained calls)`
+        : `${total > calls.length ? 'truncated' : 'collected'} (${calls.length}/${total} retained calls)`
   }
 }
 
