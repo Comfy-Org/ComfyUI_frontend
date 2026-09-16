@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ArrowLeftRight, Check } from '@lucide/vue'
+import { onMounted, ref, useTemplateRef } from 'vue'
 import {
   DropdownMenuItem,
   DropdownMenuPortal,
@@ -13,19 +14,18 @@ import { cn } from '@comfyorg/tailwind-utils'
 import type { WorkshopSession } from '../../config/workshop-session-state'
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
+import { workspaceInitialsOf } from '../../lib/workshop/initials'
 import type { WorkspaceWithRole } from '../../lib/workshop/workspaces'
 
 const {
   session,
   workspaces,
   switching,
-  workspaceSwitchError,
   locale = 'en'
 } = defineProps<{
   session: WorkshopSession
   workspaces: 'loading' | 'error' | readonly WorkspaceWithRole[]
   switching?: string
-  workspaceSwitchError: boolean
   locale?: Locale
 }>()
 
@@ -36,15 +36,6 @@ const emit = defineEmits<{
 
 const open = defineModel<boolean>('open', { required: true })
 
-function initialsOf(name: string): string {
-  return name
-    .split(' ')
-    .map((part) => part[0])
-    .slice(0, 2)
-    .join('')
-    .toUpperCase()
-}
-
 function workspaceTier(workspace: WorkspaceWithRole): string {
   if (workspace.subscription_tier)
     return workspace.subscription_tier.split('_').join(' ')
@@ -54,6 +45,20 @@ function workspaceTier(workspace: WorkspaceWithRole): string {
   )
 }
 
+const GAP = 12
+const trigger = useTemplateRef<{ $el: HTMLElement }>('trigger')
+const sideOffset = ref(GAP)
+
+// The switcher is a button inside the menu, so a submenu placed beside it lands
+// on top of the menu. It is offset to the menu's own left edge instead.
+onMounted(() => {
+  const el = trigger.value?.$el
+  const panel = el?.closest('[data-testid="header-account-menu"]')
+  if (!el || !panel) return
+  sideOffset.value =
+    el.getBoundingClientRect().left - panel.getBoundingClientRect().left + GAP
+})
+
 const itemClass =
   'flex w-full cursor-pointer items-center gap-3 rounded-xl px-3 py-3 text-sm text-primary-comfy-canvas outline-none hover:bg-transparency-white-t4 focus-visible:bg-transparency-white-t4'
 const surfaceClass =
@@ -62,18 +67,19 @@ const surfaceClass =
 
 <template>
   <DropdownMenuSub v-model:open="open">
-    <DropdownMenuSubTrigger data-testid="account-workspace" :class="itemClass">
-      <ArrowLeftRight
-        class="size-5 text-primary-warm-gray"
-        aria-hidden="true"
-      />
-      <span class="flex-1">{{ t('nav.workspaces', locale) }}</span>
+    <DropdownMenuSubTrigger
+      ref="trigger"
+      data-testid="account-workspace"
+      :aria-label="t('nav.workspaces', locale)"
+      class="grid size-8 shrink-0 cursor-pointer place-items-center rounded-lg text-primary-warm-gray outline-none hover:bg-transparency-white-t8 hover:text-primary-warm-white focus-visible:bg-transparency-white-t8 focus-visible:text-primary-warm-white"
+    >
+      <ArrowLeftRight class="size-4" aria-hidden="true" />
     </DropdownMenuSubTrigger>
     <DropdownMenuPortal>
       <DropdownMenuSubContent
         side="left"
         align="start"
-        :side-offset="12"
+        :side-offset="sideOffset"
         :class="cn(surfaceClass, 'w-72')"
         data-testid="account-workspaces"
       >
@@ -121,7 +127,7 @@ const surfaceClass =
               class="grid size-9 shrink-0 place-items-center rounded-lg bg-transparency-white-t8 text-sm font-bold text-primary-warm-white"
               aria-hidden="true"
             >
-              {{ initialsOf(workspace.name) }}
+              {{ workspaceInitialsOf(workspace.name) }}
             </span>
             <span class="min-w-0 flex-1">
               <span class="block truncate">{{ workspace.name }}</span>
@@ -141,13 +147,4 @@ const surfaceClass =
       </DropdownMenuSubContent>
     </DropdownMenuPortal>
   </DropdownMenuSub>
-
-  <p
-    v-if="workspaceSwitchError"
-    class="px-3 py-2 text-xs text-red-400"
-    role="alert"
-    data-testid="account-workspace-switch-error"
-  >
-    {{ t('nav.workspaceSwitchError', locale) }}
-  </p>
 </template>

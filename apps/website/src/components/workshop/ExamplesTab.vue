@@ -56,9 +56,6 @@ function actionFor(example: PlaygroundExample, active = false) {
           )
         }}
       </h2>
-      <p v-if="samplesOnly" class="text-sm text-primary-warm-gray">
-        {{ t('workshop.examples.samplesSubtitle', locale) }}
-      </p>
     </div>
 
     <p v-if="!examples.length" class="text-sm text-primary-warm-gray">

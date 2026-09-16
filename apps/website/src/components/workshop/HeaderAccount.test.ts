@@ -230,7 +230,7 @@ describe('HeaderAccount menu', () => {
     h.balance!.value = { status: 'ok', credits: 42 }
   }
 
-  it('shows the user identity instead of the personal workspace in its lead card', async () => {
+  it('shows the mail beside sign out and the workspace above the credits', async () => {
     signIn()
     h.user!.value = {
       uid: 'user-1',
@@ -242,14 +242,32 @@ describe('HeaderAccount menu', () => {
     render(HeaderAccount)
 
     await user.click(screen.getByTestId('header-account'))
-    const card = await screen.findByTestId('account-identity')
+    const identity = await screen.findByTestId('account-identity')
+    const active = screen.getByTestId('account-workspace-current')
 
-    expect(card.textContent).toContain('Ada')
-    expect(card.textContent).toContain('a@b.co')
-    expect(card.textContent).not.toContain('Personal')
-    expect(screen.getByTestId('account-menu-avatar').getAttribute('src')).toBe(
-      'https://example.com/ada.jpg'
-    )
+    expect(identity.textContent).toContain('a@b.co')
+    expect(identity.textContent).not.toContain('Personal')
+    expect(active.textContent).toContain('Personal')
+    expect(active.textContent).toContain('Owner')
+    expect(active.textContent).not.toContain('Ada')
+  })
+
+  it('marks the workspace with its own name, not with the word workspace', async () => {
+    signIn()
+    h.session!.value = {
+      token: 'jwt',
+      uid: 'user-1',
+      workspace: { id: 'ws', name: 'Ada Studio Workspace', type: 'team' },
+      role: 'owner'
+    }
+    const user = userEvent.setup()
+    render(HeaderAccount)
+
+    await user.click(screen.getByTestId('header-account'))
+    const active = await screen.findByTestId('account-workspace-current')
+
+    expect(active.textContent).toContain('AS')
+    expect(active.textContent).toContain('Ada Studio Workspace')
   })
 
   it('uses the user ID when profile fields are empty', async () => {
@@ -329,6 +347,9 @@ describe('HeaderAccount menu', () => {
 
     await screen.findByTestId('account-workspace')
     expect(screen.queryByTestId('account-add-credits')).toBeNull()
+    expect(
+      screen.getByTestId('account-workspace-current').textContent
+    ).toContain('Member')
   })
 
   it('closes on Escape and hands focus back to the trigger', async () => {
@@ -379,6 +400,19 @@ describe('HeaderAccount workspace switcher', () => {
       }
     ]
   }
+
+  it('names the sign out control in text, not only to a screen reader', async () => {
+    signIn()
+    const user = userEvent.setup()
+    render(HeaderAccount)
+
+    await user.click(screen.getByTestId('header-account'))
+
+    // The icon alone left sighted readers guessing what the door meant.
+    expect(await screen.findByTestId('account-sign-out')).toHaveTextContent(
+      'Log out'
+    )
+  })
 
   async function openSwitcher(user: ReturnType<typeof userEvent.setup>) {
     await user.click(screen.getByTestId('header-account'))
@@ -451,7 +485,7 @@ describe('HeaderAccount workspace switcher', () => {
     await waitFor(() => expect(screen.queryByRole('menu')).toBeNull())
     await user.click(screen.getByTestId('header-account'))
     const account = await screen.findByTestId('account-identity')
-    expect(account.textContent).toContain('Ada')
+    expect(account.textContent).toContain('a@b.co')
     expect(account.textContent).not.toContain('Comfy team')
   })
 

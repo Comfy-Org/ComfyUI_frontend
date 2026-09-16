@@ -1,3 +1,4 @@
+import { fromPartial } from '@total-typescript/shoehorn'
 vi.mock(import('firebase/auth'))
 vi.mock(import('vuefire'), () => ({ useFirebaseAuth: vi.fn() }))
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -8,6 +9,9 @@ let setupScope: EffectScope
 import { useAgentConsentStore } from '@/workbench/extensions/agent/stores/agent/agentConsentStore'
 
 import type { ComfyExtension } from '@/types/comfy'
+import type { useCurrentUser } from '@/composables/auth/useCurrentUser'
+import type { useExtensionService } from '@/services/extensionService'
+import type { PostHog } from 'posthog-js'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
@@ -25,11 +29,12 @@ let consentStore: ReturnType<typeof useAgentConsentStore>
 
 const currentUser = ref<{ id: string } | null>({ id: 'account-a' })
 
-vi.mock<unknown>(import('@/composables/auth/useCurrentUser'), () => ({
-  useCurrentUser: () => ({
-    resolvedUserInfo: currentUser,
-    isLoggedIn: computed(() => currentUser.value !== null)
-  })
+vi.mock(import('@/composables/auth/useCurrentUser'), () => ({
+  useCurrentUser: () =>
+    fromPartial<ReturnType<typeof useCurrentUser>>({
+      resolvedUserInfo: currentUser,
+      isLoggedIn: computed(() => currentUser.value !== null)
+    })
 }))
 
 vi.mock(import('@/platform/telemetry/reportError'), () => ({
@@ -46,15 +51,16 @@ const mocks = vi.hoisted(() => ({
   registerTracker: vi.fn(() => () => {})
 }))
 
-vi.mock('@/services/extensionService', () => ({
-  useExtensionService: () => ({
-    registerExtension: (ext: ComfyExtension) => {
-      mocks.capturedExtensions.push(ext)
-    }
-  })
+vi.mock(import('@/services/extensionService'), () => ({
+  useExtensionService: () =>
+    fromPartial<ReturnType<typeof useExtensionService>>({
+      registerExtension: (ext: ComfyExtension) => {
+        mocks.capturedExtensions.push(ext)
+      }
+    })
 }))
 
-vi.mock('@/workbench/extensions/agent/crdt/mintPortWiring', () => ({
+vi.mock(import('@/workbench/extensions/agent/crdt/mintPortWiring'), () => ({
   notifyMintPortsAfterGraphConfigure: mocks.notifyAfterGraphConfigure,
   notifyMintPortsBeforeGraphLoad: mocks.notifyBeforeGraphLoad
 }))
@@ -63,20 +69,20 @@ vi.mock(import('@/utils/litegraphUtil'), { spy: true })
 vi.mock(import('@/utils/graphTraversalUtil'), { spy: true })
 
 vi.mock(
-  '@/workbench/extensions/agent/services/agent/workflowTabActivityTracker',
+  import('@/workbench/extensions/agent/services/agent/workflowTabActivityTracker'),
   () => ({
     registerWorkflowTabActivityTracker: mocks.registerTracker
   })
 )
 
-vi.mock('posthog-js', () => ({
-  default: {
+vi.mock(import('posthog-js'), () => ({
+  default: fromPartial<PostHog>({
     isFeatureEnabled: () => mocks.flagEnabled,
     onFeatureFlags: (listener: () => void) => {
       mocks.flagListener = listener
       return () => {}
     }
-  }
+  })
 }))
 
 const flush = (): Promise<void> =>

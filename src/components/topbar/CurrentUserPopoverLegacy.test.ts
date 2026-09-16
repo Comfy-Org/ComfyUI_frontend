@@ -1,3 +1,4 @@
+import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { getActivePinia } from 'pinia'
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
@@ -26,6 +27,19 @@ vi.mock(import('@/platform/settings/composables/useSettingsDialog'), () => ({
 
 const originalWindowOpen = window.open
 beforeEach(() => {
+  const billing = useBillingContext()
+  Object.assign(billing, {
+    canAccessSubscriptionFeatures: computed(
+      () => mockCanAccessSubscriptionFeatures.value
+    ),
+    tier: computed(() => mockTier.value),
+    subscription: computed(() => mockSubscription.value),
+    balance: computed(() => mockBalance.value),
+    isLoading: mockIsLoading,
+    isTeamPlan: computed(() => mockIsTeamPlan.value)
+  })
+  vi.mocked(useBillingContext).mockReturnValue(billing)
+
   window.open = vi.fn()
 })
 
@@ -58,7 +72,6 @@ function makeSubscription(
   }
 }
 
-const mockFetchBalance = vi.fn().mockResolvedValue(undefined)
 const mockCanAccessSubscriptionFeatures = ref(true)
 const mockTier = ref<SubscriptionInfo['tier']>('CREATOR')
 const mockSubscription = ref<SubscriptionInfo | null>(makeSubscription())
@@ -68,17 +81,7 @@ const mockIsTeamPlan = ref(false)
 const mockCanTopUp = ref(true)
 const mockCanSubscribeSelfServe = ref(false)
 
-vi.mock<unknown>(import('@/composables/billing/useBillingContext'), () => ({
-  useBillingContext: vi.fn(() => ({
-    canAccessSubscriptionFeatures: mockCanAccessSubscriptionFeatures,
-    tier: mockTier,
-    subscription: mockSubscription,
-    balance: mockBalance,
-    isLoading: mockIsLoading,
-    isTeamPlan: mockIsTeamPlan,
-    fetchBalance: mockFetchBalance
-  }))
-}))
+vi.mock(import('@/composables/billing/useBillingContext'))
 
 vi.mock<unknown>(
   import('@/platform/workspace/composables/useBillingCapabilities'),
@@ -112,11 +115,7 @@ vi.mock<unknown>(import('@/composables/useExternalLink'), () => ({
   }))
 }))
 
-vi.mock<unknown>(import('@/platform/telemetry'), () => ({
-  useTelemetry: vi.fn(() => ({
-    trackAddApiCreditButtonClicked: vi.fn()
-  }))
-}))
+vi.mock(import('@/platform/telemetry'))
 
 describe('CurrentUserPopoverLegacy', () => {
   beforeEach(() => {
@@ -176,7 +175,7 @@ describe('CurrentUserPopoverLegacy', () => {
   it('fetches the balance through the billing facade on mount', () => {
     renderComponent()
 
-    expect(mockFetchBalance).toHaveBeenCalled()
+    expect(useBillingContext().fetchBalance).toHaveBeenCalled()
   })
 
   describe('subscription tier badge', () => {

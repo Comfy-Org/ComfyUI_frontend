@@ -61,6 +61,10 @@ vi.mock(import('../../config/workshop-credits'), async () => {
   }
 })
 
+vi.mock(import('../../config/workshop-features'), () => ({
+  readBillingSdkTopupEnabled: () => Promise.resolve(false)
+}))
+
 vi.mock(import('../../config/workshop-session-state'), async () => {
   const { computed, ref } = await import('vue')
   const user = ref<WorkshopUser>(null)
@@ -115,6 +119,15 @@ function claimTab() {
   return tab
 }
 
+function returnFromCheckout(id: string = attemptId) {
+  window.dispatchEvent(
+    new MessageEvent('message', {
+      origin: window.location.origin,
+      data: { type: 'workshop-topup-return', attemptId: id }
+    })
+  )
+}
+
 function stubCheckout(
   body: unknown = {
     checkout_url: 'https://checkout.stripe.com/c/session_1',
@@ -124,15 +137,17 @@ function stubCheckout(
 ) {
   const fetchCheckout = vi
     .fn<typeof fetch>()
-    .mockResolvedValue(new Response(JSON.stringify(body), { status }))
+    .mockImplementation(() =>
+      Promise.resolve(new Response(JSON.stringify(body), { status }))
+    )
   vi.stubGlobal('fetch', fetchCheckout)
   return fetchCheckout
 }
 
-function renderOpenDialog() {
+function renderOpenDialog(locale: 'en' | 'zh-CN' = 'en') {
   return render(
     defineComponent({
-      setup: () => () => h(BuyCreditsDialog, { open: true })
+      setup: () => () => h(BuyCreditsDialog, { open: true, locale })
     })
   )
 }
@@ -200,12 +215,12 @@ describe('BuyCreditsDialog', () => {
     expect(credits.topUp!.value).toEqual({ status: 'idle' })
   })
 
-  it('keeps the payment receipt open until the user resumes', async () => {
-    renderOpenDialog()
+  it('auto-closes an untouched payment receipt after 3.6 seconds', async () => {
     vi.useFakeTimers()
     onTestFinished(() => {
       vi.useRealTimers()
     })
+    const { isOpen } = renderControlledDialog()
 
     credits.topUp!.value = {
       status: 'landed',
@@ -216,10 +231,81 @@ describe('BuyCreditsDialog', () => {
     await nextTick()
     expect(screen.getByTestId('buy-credits-done')).toBeTruthy()
 
-    await vi.advanceTimersByTimeAsync(60_000)
+    await vi.advanceTimersByTimeAsync(3_000)
+    expect(isOpen.value).toBe(true)
+    await vi.advanceTimersByTimeAsync(600)
 
-    expect(screen.getByTestId('buy-credits-done')).toBeTruthy()
+    expect(isOpen.value).toBe(false)
+    expect(credits.topUp!.value).toEqual({ status: 'idle' })
+  })
+
+  it('cancels receipt auto-close after dialog interaction', async () => {
+    vi.useFakeTimers()
+    onTestFinished(() => {
+      vi.useRealTimers()
+    })
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
+    const { isOpen } = renderControlledDialog()
+    credits.topUp!.value = {
+      status: 'landed',
+      ...topUpScope,
+      newCredits: 5_375,
+      landedAt: Date.now()
+    }
+    await nextTick()
+
+    await user.click(screen.getByTestId('buy-credits-ledger'))
+    await vi.advanceTimersByTimeAsync(3_600)
+
+    expect(isOpen.value).toBe(true)
     expect(credits.topUp!.value.status).toBe('landed')
+  })
+
+  it('cancels receipt auto-close after keyboard interaction', async () => {
+    vi.useFakeTimers()
+    onTestFinished(() => {
+      vi.useRealTimers()
+    })
+    const { isOpen } = renderControlledDialog()
+    credits.topUp!.value = {
+      status: 'landed',
+      ...topUpScope,
+      newCredits: 5_375,
+      landedAt: Date.now()
+    }
+    await nextTick()
+
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab' }))
+    await vi.advanceTimersByTimeAsync(3_600)
+
+    expect(isOpen.value).toBe(true)
+    expect(credits.topUp!.value.status).toBe('landed')
+  })
+
+  it('starts receipt auto-close only when the tab becomes visible', async () => {
+    vi.useFakeTimers()
+    onTestFinished(() => {
+      vi.useRealTimers()
+    })
+    let hidden = true
+    vi.spyOn(document, 'hidden', 'get').mockImplementation(() => hidden)
+    const { isOpen } = renderControlledDialog()
+    credits.topUp!.value = {
+      status: 'landed',
+      ...topUpScope,
+      newCredits: 5_375,
+      landedAt: Date.now()
+    }
+    await nextTick()
+    await vi.advanceTimersByTimeAsync(3_600)
+
+    expect(isOpen.value).toBe(true)
+
+    hidden = false
+    document.dispatchEvent(new Event('visibilitychange'))
+    await vi.advanceTimersByTimeAsync(3_600)
+
+    expect(isOpen.value).toBe(false)
   })
 
   it('acknowledges a displayed receipt when the dialog is dismissed', async () => {
@@ -342,6 +428,7 @@ describe('BuyCreditsDialog', () => {
     await user.click(await screen.findByTestId('buy-credits-pack-50'))
     await user.click(screen.getByTestId('buy-credits-continue'))
 
+    expect(window.open).toHaveBeenCalledWith('/checkout-opening', '_blank')
     await vi.waitFor(() =>
       expect(tab.location.assign).toHaveBeenCalledWith(
         'https://checkout.stripe.com/c/session_1'
@@ -369,40 +456,71 @@ describe('BuyCreditsDialog', () => {
       amount_cents: 5_000,
       idempotency_key: attemptId
     })
-    expect(returnUrl.origin + returnUrl.pathname).toBe(
-      window.location.origin + window.location.pathname
+    expect(returnUrl.toString()).toBe(
+      new URL(
+        `/checkout-return?workshopTopUpReturn=${attemptId}`,
+        window.location.origin
+      ).toString()
     )
-    expect(returnUrl.searchParams.get('workshopTopUpReturn')).toBe(attemptId)
     expect(credits.watchForTopUp).not.toHaveBeenCalled()
     expect(await screen.findByTestId('buy-credits-open-checkout')).toBeTruthy()
   })
 
-  it('starts balance confirmation only after the matching checkout returns', async () => {
+  it('starts confirmation only after the matching checkout returns', async () => {
     const user = userEvent.setup()
-    claimTab()
+    const tab = claimTab()
     stubCheckout()
     renderOpenDialog()
 
     await user.click(await screen.findByTestId('buy-credits-continue'))
-    await screen.findByTestId('buy-credits-open-checkout')
-    window.dispatchEvent(
-      new MessageEvent('message', {
-        origin: window.location.origin,
-        data: { type: 'workshop-topup-return', attemptId: 'another-attempt' }
-      })
-    )
+    await vi.waitFor(() => expect(tab.location.assign).toHaveBeenCalledOnce())
+    vi.useFakeTimers()
+    onTestFinished(() => {
+      vi.useRealTimers()
+    })
+
+    await vi.advanceTimersByTimeAsync(120_000)
+    returnFromCheckout('another-attempt')
     expect(credits.watchForTopUp).not.toHaveBeenCalled()
 
-    window.dispatchEvent(
-      new MessageEvent('message', {
-        origin: window.location.origin,
-        data: { type: 'workshop-topup-return', attemptId }
-      })
-    )
+    returnFromCheckout()
+    expect(credits.watchForTopUp).toHaveBeenCalledWith(topUpScope)
+  })
 
-    expect(credits.watchForTopUp).toHaveBeenCalledWith({
-      ...topUpScope
-    })
+  it('restores an outstanding checkout when the dialog reopens', async () => {
+    const user = userEvent.setup()
+    const tab = claimTab()
+    const fetchCheckout = stubCheckout()
+    const { isOpen } = renderControlledDialog()
+
+    await user.click(await screen.findByTestId('buy-credits-continue'))
+    await vi.waitFor(() => expect(tab.location.assign).toHaveBeenCalledOnce())
+    await user.click(screen.getByTestId('buy-credits-checkout-close'))
+    await vi.waitFor(() => expect(isOpen.value).toBe(false))
+
+    isOpen.value = true
+    await nextTick()
+
+    expect(await screen.findByTestId('buy-credits-open-checkout')).toBeTruthy()
+    expect(screen.queryByTestId('buy-credits-packs')).toBeNull()
+    expect(fetchCheckout).toHaveBeenCalledOnce()
+
+    returnFromCheckout()
+    expect(credits.watchForTopUp).toHaveBeenCalledWith(topUpScope)
+  })
+
+  it('opens the localized checkout handoff for Chinese', async () => {
+    const user = userEvent.setup()
+    claimTab()
+    stubCheckout()
+    renderOpenDialog('zh-CN')
+
+    await user.click(await screen.findByTestId('buy-credits-continue'))
+
+    expect(window.open).toHaveBeenCalledWith(
+      '/zh-CN/checkout-opening',
+      '_blank'
+    )
   })
 
   it('keeps an explicit checkout link when the popup is blocked', async () => {
@@ -417,13 +535,17 @@ describe('BuyCreditsDialog', () => {
     expect(link.getAttribute('href')).toBe(
       'https://checkout.stripe.com/c/session_1'
     )
+    expect(link.getAttribute('rel')).toBe('opener')
     expect(credits.watchForTopUp).not.toHaveBeenCalled()
   })
 
   it('uses the Cloud credits page only for an explicit rollout miss', async () => {
     const user = userEvent.setup()
     const tab = claimTab()
-    stubCheckout({ code: 'NOT_FOUND', message: 'Not found' }, 404)
+    const fetchCheckout = stubCheckout(
+      { code: 'NOT_FOUND', message: 'Not found' },
+      404
+    )
     renderOpenDialog()
 
     await user.click(await screen.findByTestId('buy-credits-continue'))
@@ -433,6 +555,7 @@ describe('BuyCreditsDialog', () => {
     )
     expect(screen.queryByTestId('checkout-error')).toBeNull()
     expect(credits.watchForTopUp).not.toHaveBeenCalled()
+    expect(fetchCheckout).toHaveBeenCalledTimes(2)
   })
 
   it('keeps the rollout fallback link when the claimed tab cannot navigate', async () => {

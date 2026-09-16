@@ -4,7 +4,7 @@
   "note": "Curated recommendation order, no figures. Rows follow the 30-day template executions in the model content audit where a card exists; the rest keep their earlier curated place. Unlisted active models retain the catalogue fallback order.",
   "slugs": [
     "byteplus--seedream-5-pro--generate-images",
-    "openai--gpt-image-2--edit-images",
+    "openai--gpt-image-2--generate-images",
     "byteplus--seedream-4--generate-images",
     "xai--grok-imagine-image--generate-images",
     "vertexai--gemini-nano-banana-2--generate-images",

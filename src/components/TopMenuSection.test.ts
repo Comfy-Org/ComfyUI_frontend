@@ -11,6 +11,8 @@ import type { Component } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
+import { useTelemetry } from '@/platform/telemetry'
+
 import QueueNotificationBannerHost from '@/components/queue/QueueNotificationBannerHost.vue'
 import TopMenuSection from '@/components/TopMenuSection.vue'
 import type {
@@ -79,13 +81,7 @@ vi.mock<unknown>(import('@/scripts/app'), () => ({
   }
 }))
 
-const mockTrackUiButtonClicked = vi.hoisted(() => vi.fn())
-
-vi.mock<unknown>(import('@/platform/telemetry'), () => ({
-  useTelemetry: () => ({
-    trackUiButtonClicked: mockTrackUiButtonClicked
-  })
-}))
+vi.mock(import('@/platform/telemetry'))
 
 type WrapperOptions = {
   pinia?: Pinia
@@ -283,7 +279,7 @@ describe('TopMenuSection', () => {
       screen.getByRole('button', { name: 'Toggle properties panel' })
     )
 
-    expect(mockTrackUiButtonClicked).toHaveBeenCalledWith({
+    expect(useTelemetry()?.trackUiButtonClicked).toHaveBeenCalledWith({
       button_id: 'right_side_panel_opened',
       element_group: 'top_menu'
     })

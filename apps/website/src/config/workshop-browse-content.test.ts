@@ -41,6 +41,30 @@ describe('canonical model display names', () => {
       )?.name
     ).toBe('Seedance 2.0 Fast Text-to-Video')
   })
+
+  it('places reference and corrected text-to-image models in their intended use cases', () => {
+    const placements = [
+      'byteplus--seedance-2-5-reference--generate-videos',
+      'openai--gpt-image-2--generate-images'
+    ].map((slug) => {
+      const model = workshopModels.find((item) => item.slug === slug)
+      return [model?.useCases, model?.task]
+    })
+
+    expect(placements).toEqual([
+      [['animate-images'], 'image-to-video'],
+      [['generate-images'], 'text-to-image']
+    ])
+  })
+
+  it('keeps unqualified redirects on a generation role when split pages have examples', () => {
+    expect(
+      getRouterWorkshopModelDetail('byteplus--seedream-5-0-pro-260628')?.slug
+    ).toBe('byteplus--seedream-5-pro--generate-images')
+    expect(getRouterWorkshopModelDetail('xai--grok-imagine-video')?.slug).toBe(
+      'xai--grok-imagine-video--generate-videos'
+    )
+  })
 })
 
 describe('model availability', () => {

@@ -19,17 +19,13 @@ import {
 } from '@comfyorg/ingest-types/zod'
 import { z } from 'zod'
 
-import type { SessionClient } from '../session.js'
 import type { BillingResult, BillingTransport } from './billingContracts.js'
-import type { BillingScope, BillingScopeContext } from './billingScope.js'
-import { createBillingScopeTracker, sameBillingScope } from './billingScope.js'
+import type { BillingScope, BillingScopeSource } from './billingScope.js'
+import { sameBillingScope } from './billingScope.js'
 import type { CapabilityDenials } from './capabilityDenials.js'
 import { decodeCapabilityDenials } from './capabilityDenials.js'
-import {
-  matchesScopedRead,
-  readValidatedBillingResponse,
-  releaseOnAbort
-} from './sharedRead.js'
+import { createScopedReader } from './scopedReader.js'
+import type { ValidatedBillingResponse } from './sharedRead.js'
 
 export const CAPABILITIES_ROUTE = '/billing/capabilities'
 
@@ -68,6 +64,8 @@ const CapabilitiesBodySchema = z.object({
   rollout_defaults_applied: zBillingCapabilityRolloutDefaults
 })
 
+type CapabilitiesBody = z.infer<typeof CapabilitiesBodySchema>
+
 export type CapabilityScope = BillingScope
 
 export interface CapabilitiesSnapshot {
@@ -104,13 +102,14 @@ export interface CapabilitiesReader {
    * refetch forever.
    */
   invalidate: (revision?: number) => void
-  /** Detaches the session subscription. */
+  /** Detaches the scope subscription. */
   dispose: () => void
 }
 
 export interface CapabilitiesReaderOptions {
   readonly transport: BillingTransport
-  readonly session: SessionClient
+  /** Where the core learns which user, workspace, and role it runs as. */
+  readonly scopeSource: BillingScopeSource
   readonly now?: () => number
 }
 
@@ -156,40 +155,16 @@ function snapshotAfterInvalidation(
   return invalidated ? { ...snapshot, freshUntil: 0 } : snapshot
 }
 
-interface InFlightRead {
-  readonly context: BillingScopeContext
-  readonly promise: Promise<BillingResult<CapabilitiesSnapshot>>
-  readonly pending: { invalidated: boolean }
-}
-
 export function createCapabilitiesReader(
   options: CapabilitiesReaderOptions
 ): CapabilitiesReader {
-  const { transport, session, now = Date.now } = options
+  const { transport, scopeSource, now = Date.now } = options
 
-  let snapshot: CapabilitiesSnapshot | undefined
-  let inFlight: InFlightRead | undefined
-  const lifetime = { disposed: false }
-  const scopeTracker = createBillingScopeTracker(session, () => {
-    snapshot = undefined
-    inFlight = undefined
-  })
-
-  const requestCapabilities = async (
+  function projectCapabilities(
+    response: ValidatedBillingResponse<CapabilitiesBody>,
     scope: CapabilityScope
-  ): Promise<BillingResult<CapabilitiesSnapshot>> => {
-    const response = await readValidatedBillingResponse(
-      transport,
-      {
-        method: 'GET',
-        route: CAPABILITIES_ROUTE,
-        timeoutMs: CAPABILITIES_TIMEOUT_MS
-      },
-      (body) => CapabilitiesBodySchema.safeParse(body)
-    )
-    if (response.status === 'error') return response
-
-    const { data, body, httpStatus } = response.value
+  ): BillingResult<CapabilitiesSnapshot> {
+    const { data, body, httpStatus } = response
 
     // Capabilities resolve per (user, workspace), so both halves have to
     // match. Checking only the workspace would accept another member's answer
@@ -224,94 +199,37 @@ export function createCapabilitiesReader(
     }
   }
 
-  const read = async (
-    readOptions?: CapabilitiesReadOptions
-  ): Promise<BillingResult<CapabilitiesSnapshot>> => {
-    if (lifetime.disposed) return { status: 'error', code: 'SUPERSEDED' }
-
-    const context = scopeTracker.capture()
-    if (context === undefined) {
-      return { status: 'error', code: 'NOT_AUTHENTICATED' }
-    }
-    const { scope } = context
-
-    const currentSnapshot = freshSnapshot(
-      snapshot,
-      scope,
-      readOptions?.forceRefresh === true,
-      now()
-    )
-    if (currentSnapshot !== undefined) {
-      return { status: 'ok', value: currentSnapshot }
-    }
-
-    // One read per scope. A caller arriving mid-flight for the same scope
-    // joins rather than issuing a second identical request; a caller for a
-    // different scope starts its own, and the older one can no longer publish.
-    if (matchesScopedRead(inFlight, context)) {
-      return releaseOnAbort(inFlight.promise, readOptions?.signal)
-    }
-
-    // The invalidation flag lives outside the attempt so the read body can
-    // consult it without referencing the object that holds its own promise.
-    const pending = { invalidated: false }
-    // No caller signal reaches the shared request: it is bounded by its own
-    // timeout, and one caller walking away must not fail the readers still
-    // waiting on it. Each caller's signal releases only that caller, below.
-    const promise = (async (): Promise<BillingResult<CapabilitiesSnapshot>> => {
-      const result = await requestCapabilities(scope)
-      if (result.status !== 'ok') {
-        if (
-          result.code === 'ACCESS_DENIED' &&
-          scopeTracker.isCurrent(context)
-        ) {
-          snapshot = undefined
-        }
-        return result
-      }
-
-      // The publish guard. Between issuing the request and settling it the
-      // host may have changed workspace or signed out, and a snapshot cached
-      // now would be attributed to whoever is signed in next.
-      if (lifetime.disposed || !scopeTracker.isCurrent(context)) {
-        return { status: 'error', code: 'SUPERSEDED' }
-      }
-
-      // A mutation committed while this read was in flight, and the revision
-      // the read returns cannot rule out having missed it: the server mints
-      // that number when it serializes, not when it read. The value is still
-      // the best available, so it is published — as already stale, so the
-      // next read refetches instead of serving it.
-      snapshot = snapshotAfterInvalidation(result.value, pending.invalidated)
-      return { status: 'ok', value: snapshot }
-    })()
-
-    const attempt: InFlightRead = { context, promise, pending }
-    inFlight = attempt
-    // The slot is released when the request settles, not when this caller
-    // stops waiting, so an abandoned read still serves whoever joined it.
-    const release = () => {
-      if (inFlight === attempt) inFlight = undefined
-    }
-    promise.then(release, release)
-
-    return releaseOnAbort(promise, readOptions?.signal)
-  }
+  const reader = createScopedReader<
+    CapabilitiesBody,
+    CapabilitiesSnapshot,
+    CapabilitiesReadOptions
+  >({
+    transport,
+    scopeSource,
+    route: CAPABILITIES_ROUTE,
+    parse: (body) => CapabilitiesBodySchema.safeParse(body),
+    timeoutMs: () => CAPABILITIES_TIMEOUT_MS,
+    cached: (snapshot, scope, readOptions) =>
+      freshSnapshot(snapshot, scope, readOptions?.forceRefresh === true, now()),
+    project: projectCapabilities,
+    // A mutation committed while this read was in flight, and the revision the
+    // read returns cannot rule out having missed it: the server mints that
+    // number when it serializes, not when it read. The value is still the best
+    // available, so it is published — as already stale, so the next read
+    // refetches instead of serving it.
+    publish: snapshotAfterInvalidation
+  })
 
   return {
-    read,
-    getSnapshot: () => snapshot,
+    read: reader.read,
+    getSnapshot: reader.getSnapshot,
     invalidate: (revision?: number) => {
-      if (inFlight !== undefined) inFlight.pending.invalidated = true
+      reader.fenceInFlight()
+      const snapshot = reader.getSnapshot()
       if (snapshot === undefined) return
       if (revision !== undefined && snapshot.revision === revision) return
-      snapshot = { ...snapshot, freshUntil: 0 }
+      reader.setSnapshot({ ...snapshot, freshUntil: 0 })
     },
-    dispose: () => {
-      lifetime.disposed = true
-      snapshot = undefined
-      inFlight = undefined
-      scopeTracker.dispose()
-    }
+    dispose: reader.dispose
   }
 }
