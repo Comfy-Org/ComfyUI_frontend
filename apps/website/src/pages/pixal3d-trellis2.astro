@@ -346,14 +346,14 @@ const faqJsonLd = {
   <section class="mx-auto max-w-9xl px-5 pt-16 sm:px-6 lg:px-20">
     <div class="flex flex-wrap items-center justify-between gap-4">
       <nav class="flex w-fit max-w-full items-center gap-0.5 overflow-x-auto rounded-2xl p-1.5 ring-2 ring-primary-warm-white/20" role="tablist" aria-label="Model page sections">
-        <button type="button" role="tab" data-tab="playground" data-state="on" aria-controls="panel-playground" aria-selected="true" class={tab}><span class="ppformula-text-center">{isImageTo3d ? 'Examples' : 'Playground'}</span></button>
-        <button type="button" role="tab" data-tab="api" data-state="off" aria-controls="panel-api" aria-selected="false" class={tab}><span class="ppformula-text-center">API</span></button>
-        {!isImageTo3d && <button type="button" role="tab" data-tab="gallery" data-state="off" aria-controls="panel-gallery" aria-selected="false" class={tab}><span class="ppformula-text-center">Examples</span></button>}
+        <button type="button" role="tab" data-tab="playground" data-state="on" aria-controls="panel-playground" aria-selected="true" class={tab}><span class="inline-block">{isImageTo3d ? 'Examples' : 'Playground'}</span></button>
+        <button type="button" role="tab" data-tab="api" data-state="off" aria-controls="panel-api" aria-selected="false" class={tab}><span class="inline-block">API</span></button>
+        {!isImageTo3d && <button type="button" role="tab" data-tab="gallery" data-state="off" aria-controls="panel-gallery" aria-selected="false" class={tab}><span class="inline-block">Examples</span></button>}
       </nav>
       {!isImageTo3d && <div class="hidden gap-2 sm:flex">
         <div class="relative" id="llms-wrap">
           <div class="inline-flex items-stretch divide-x divide-transparency-white-t20 overflow-hidden rounded-lg border border-transparency-white-t20 bg-transparency-white-t4 text-xs font-normal text-primary-comfy-canvas">
-            <button id="llms-copy" class="cursor-pointer px-3 py-2.5 transition-colors hover:bg-transparency-white-t8"><span class="ppformula-text-center">Copy markdown<span id="llms-copied" class="hidden pl-2 text-primary-comfy-yellow">✓</span></span></button>
+            <button id="llms-copy" class="cursor-pointer px-3 py-2.5 transition-colors hover:bg-transparency-white-t8"><span class="inline-block">Copy markdown<span id="llms-copied" class="hidden pl-2 text-primary-comfy-yellow">✓</span></span></button>
             <button id="llms-btn" aria-haspopup="menu" aria-expanded="false" aria-label="More formats for LLMs" class="cursor-pointer px-2 transition-colors hover:bg-transparency-white-t8">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="size-4"><path d="m6 9 6 6 6-6"/></svg>
             </button>
@@ -374,7 +374,7 @@ const faqJsonLd = {
         </div>
         <div class="relative" id="graph-wrap">
           <div class="inline-flex items-stretch divide-x divide-transparency-white-t20 overflow-hidden rounded-lg border border-transparency-white-t20 bg-transparency-white-t4 text-xs font-normal text-primary-comfy-canvas">
-            <a href="https://cloud.comfy.org?utm_source=models_v2_preview" class="px-3 py-2.5 transition-colors hover:bg-transparency-white-t8"><span class="ppformula-text-center">Open the full graph</span></a>
+            <a href="https://cloud.comfy.org?utm_source=models_v2_preview" class="px-3 py-2.5 transition-colors hover:bg-transparency-white-t8"><span class="inline-block">Open the full graph</span></a>
             <button id="graph-btn" aria-haspopup="menu" aria-expanded="false" aria-label="More ways to open this model" class="cursor-pointer px-2 transition-colors hover:bg-transparency-white-t8">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="size-4"><path d="m6 9 6 6 6-6"/></svg>
             </button>
@@ -462,7 +462,7 @@ const faqJsonLd = {
                   value={defaultSeed}
                   class="w-full rounded-lg border border-transparency-white-t20 bg-transparency-white-t4 px-3 py-2.5 text-xs text-primary-comfy-canvas focus:border-primary-comfy-yellow/60 focus:outline-none"
                 />
-                <button id="seed-shuffle" type="button" class="shrink-0 cursor-pointer rounded-lg border border-transparency-white-t20 bg-transparency-white-t4 px-3 py-2.5 text-xs font-normal text-primary-comfy-canvas transition-colors hover:bg-transparency-white-t8"><span class="ppformula-text-center">Shuffle</span></button>
+                <button id="seed-shuffle" type="button" class="shrink-0 cursor-pointer rounded-lg border border-transparency-white-t20 bg-transparency-white-t4 px-3 py-2.5 text-xs font-normal text-primary-comfy-canvas transition-colors hover:bg-transparency-white-t8"><span class="inline-block">Shuffle</span></button>
               </div>
               <p class:list={[helperCopy, 'mt-1.5']}>Change value for a different output.</p>
             </>
@@ -473,7 +473,7 @@ const faqJsonLd = {
               <input id="ref-file" type="file" accept="image/*" class="hidden" />
               <div class="mt-2 flex flex-col items-start gap-3 sm:flex-row">
                 <div id="dropzone" role="button" tabindex="0" aria-controls="ref-file" class="flex min-h-40 w-full min-w-0 cursor-pointer flex-col items-center justify-center gap-3 rounded-xl border border-dashed border-transparency-white-t20 bg-transparency-white-t4 px-4 py-6 text-center transition-colors hover:border-primary-comfy-yellow/40 hover:bg-transparency-white-t8 focus:border-primary-comfy-yellow/60 focus:outline-none data-dragging:border-primary-comfy-yellow/40 data-dragging:bg-transparency-white-t8 sm:flex-1">
-                  <button id="add-image-btn" type="button" class="cursor-pointer rounded-lg border border-transparency-white-t20 bg-transparency-white-t4 px-3 py-2.5 text-xs font-normal text-primary-comfy-canvas transition-colors hover:bg-transparency-white-t8"><span class="ppformula-text-center">Choose image</span></button>
+                  <button id="add-image-btn" type="button" class="cursor-pointer rounded-lg border border-transparency-white-t20 bg-transparency-white-t4 px-3 py-2.5 text-xs font-normal text-primary-comfy-canvas transition-colors hover:bg-transparency-white-t8"><span class="inline-block">Choose image</span></button>
                   <span class="text-xs font-light text-primary-warm-gray">or drag and drop PNG, JPG, or WebP</span>
                 </div>
 
@@ -707,8 +707,8 @@ const faqJsonLd = {
         </div>
         <button id="sdk-copy" type="button" data-copy="sdk-python" class="group flex cursor-pointer items-center gap-2 rounded-lg px-3 py-2 text-xs text-primary-warm-gray transition-colors hover:bg-transparency-white-t4 hover:text-primary-warm-white">
           <CopyIcon class="size-4 group-data-copied:hidden" aria-hidden="true" />
-          <span class="ppformula-text-center group-data-copied:hidden">Copy</span>
-          <span class="inline-block text-primary-comfy-yellow group-data-copied:inline">Copied</span>
+          <span class="group-data-copied:hidden">Copy</span>
+          <span class="hidden text-primary-comfy-yellow group-data-copied:inline">Copied</span>
         </button>
       </div>
       {highlightedSdkExamples.map((example, index) => (
