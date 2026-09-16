@@ -1,5 +1,20 @@
 import { describe, expect, it, vi } from 'vitest'
 
+import { useAuthActions } from '@/composables/auth/useAuthActions'
+
+vi.mock(import('@/composables/auth/useAuthActions'))
+
+describe.sequential('shared mock state reset', () => {
+  it('lets a test dirty writable mock state', () => {
+    useAuthActions().accessError.value = true
+    expect(useAuthActions().accessError.value).toBe(true)
+  })
+
+  it('restores the mock module defaults before the next test', () => {
+    expect(useAuthActions().accessError.value).toBe(false)
+  })
+})
+
 describe.sequential('registered LiteGraph type cleanup', () => {
   it('tracks a singleton registered after a module reset', async () => {
     vi.resetModules()
