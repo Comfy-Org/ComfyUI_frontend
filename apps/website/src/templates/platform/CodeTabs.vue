@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
+import { Check, Copy } from '@lucide/vue'
 import {
+  useClipboard,
   useDocumentVisibility,
   useElementVisibility,
   useIntervalFn
@@ -8,7 +10,6 @@ import {
 import { TabsContent, TabsList, TabsRoot, TabsTrigger } from 'reka-ui'
 import { computed, ref, useTemplateRef, watchEffect } from 'vue'
 
-import CopyTextButton from '../../components/ui/copy-text-button/CopyTextButton.vue'
 import { prefersReducedMotion } from '../../composables/useReducedMotion'
 
 /**
@@ -97,6 +98,8 @@ function cycleValue(values: string[]): string {
   return values[cycleIndex.value % values.length]
 }
 
+const { copy, copied } = useClipboard({ copiedDuring: 2000 })
+
 function codeText(tab: CodeTab): string {
   return tab.segments
     .map((segment) =>
@@ -143,13 +146,15 @@ function codeText(tab: CodeTab): string {
       :value="tabId"
       class="relative mt-4 block"
     >
-      <CopyTextButton
+      <button
         v-if="copyLabel && copiedLabel"
-        :value="codeText(tab)"
-        :label="copyLabel"
-        :copied-label="copiedLabel"
-        class="absolute top-2 right-2 z-10"
-      />
+        type="button"
+        :aria-label="copied ? copiedLabel : copyLabel"
+        class="absolute top-4 right-4 z-10 cursor-pointer text-primary-warm-gray transition-colors hover:text-primary-comfy-canvas lg:top-5 lg:right-5"
+        @click="void copy(codeText(tab))"
+      >
+        <component :is="copied ? Check : Copy" class="size-4" />
+      </button>
       <pre
         :class="
           cn(
