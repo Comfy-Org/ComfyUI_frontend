@@ -2152,6 +2152,7 @@ describe('useTeamWorkspaceStore', () => {
 
       const store = useTeamWorkspaceStore()
       await store.initialize()
+      vi.mocked(reportError).mockImplementation(() => undefined)
       mockWorkspaceApi.list.mockClear()
       mockWorkspaceApi.list.mockRejectedValueOnce(
         new mockWorkspaceApiError('Service unavailable', 503)
