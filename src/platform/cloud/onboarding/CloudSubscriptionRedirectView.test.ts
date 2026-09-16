@@ -2,6 +2,7 @@ import { render, screen } from '@testing-library/vue'
 import { beforeEach, describe, expect, test, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
+import { useAuthActions } from '@/composables/auth/useAuthActions'
 import type { TeamCreditStops } from '@/platform/workspace/api/workspaceApi'
 
 import CloudSubscriptionRedirectView from './CloudSubscriptionRedirectView.vue'
@@ -22,14 +23,7 @@ vi.mock<unknown>(import('vue-router'), () => ({
 }))
 
 // Firebase / subscription mocks
-const authActionMocks = vi.hoisted(() => ({
-  reportError: vi.fn(),
-  accessBillingPortal: vi.fn()
-}))
-
-vi.mock<unknown>(import('@/composables/auth/useAuthActions'), () => ({
-  useAuthActions: () => authActionMocks
-}))
+vi.mock(import('@/composables/auth/useAuthActions'))
 
 vi.mock<unknown>(import('@/composables/useErrorHandling'), () => ({
   useErrorHandling: () => ({
@@ -191,7 +185,7 @@ describe('CloudSubscriptionRedirectView', () => {
 
     expect(mockRouterPush).not.toHaveBeenCalledWith('/')
     expect(subscriptionMocks.manageSubscription).toHaveBeenCalledTimes(1)
-    expect(authActionMocks.accessBillingPortal).not.toHaveBeenCalled()
+    expect(useAuthActions().accessBillingPortal).not.toHaveBeenCalled()
     expect(mockShowPricingTable).not.toHaveBeenCalled()
   })
 
@@ -240,7 +234,7 @@ describe('CloudSubscriptionRedirectView', () => {
 
     await mountView({ tier: 'team', stop: 'team_700', cycle: 'yearly' })
 
-    expect(authActionMocks.reportError).toHaveBeenCalledWith(plansError)
+    expect(useAuthActions().reportError).toHaveBeenCalledWith(plansError)
     expect(mockShowPricingTable).toHaveBeenCalledWith({
       reason: 'deep_link',
       planMode: 'team',
@@ -275,7 +269,7 @@ describe('CloudSubscriptionRedirectView', () => {
     await mountView({ tier: 'creator', cycle: 'yearly' })
 
     expect(subscriptionMocks.manageSubscription).toHaveBeenCalledTimes(1)
-    expect(authActionMocks.accessBillingPortal).not.toHaveBeenCalled()
+    expect(useAuthActions().accessBillingPortal).not.toHaveBeenCalled()
     expect(
       legacyCheckoutMocks.performSubscriptionCheckout
     ).not.toHaveBeenCalled()
