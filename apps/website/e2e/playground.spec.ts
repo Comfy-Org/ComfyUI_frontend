@@ -121,22 +121,35 @@ test.describe('V2 catalogue', () => {
     await expect(page.getByTestId('workflow-kind')).toContainText(/Workflow/i)
     await expect(page.getByTestId('workflow-outputs')).toBeVisible()
     await expect(page.getByTestId('workflow-needs')).toBeVisible()
+    await expect(page.getByTestId('workflow-graph')).toBeVisible()
+  })
+
+  // The way out and the way to keep it are both offered, and the graph opens
+  // in the reader's own Cloud rather than downloading.
+  test('a workflow page opens its graph in the Cloud and offers the file', async ({
+    page
+  }) => {
+    await page.goto('/playground/workflow/video_minimax_h3_i2v/')
+
+    const actions = page.getByTestId('workflow-actions')
+    await expect(actions.getByTestId('workflow-open-cloud')).toHaveAttribute(
+      'href',
+      /cloud\.comfy\.org\/\?template=video_minimax_h3_i2v/
+    )
     await expect(
-      page.getByTestId('workflow-actions').getByRole('link').first()
+      actions.getByRole('link', { name: /Download the JSON/ })
     ).toHaveAttribute('href', /workflow_templates/)
   })
 
-  test('sends a partner workflow to the model that can run it', async ({
-    page
-  }) => {
+  // A workflow that is one call to a model the catalogue carries is that
+  // model with its graph around it, so the page runs rather than sending the
+  // reader somewhere else.
+  test('runs a partner workflow on its own page', async ({ page }) => {
     await page.goto('/playground/workflow/api_nano_banana_pro/')
 
-    const destination = page.getByTestId('workflow-destination')
-    await expect(destination).toBeVisible()
-    await expect(destination.getByRole('link')).toHaveAttribute(
-      'href',
-      /^\/(models|workshop)\//
-    )
+    await expect(page.getByTestId('workflow-run')).toBeVisible()
+    await expect(page.getByTestId('workflow-kind')).toContainText(/Runs here/i)
+    await expect(page.getByTestId('workflow-destination')).toHaveCount(0)
   })
 
   test('the prototype asks not to be indexed', async ({ request }) => {

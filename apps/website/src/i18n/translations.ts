@@ -10366,15 +10366,6 @@ Enterprise`
     en: 'Nothing to download. This one calls a partner model.',
     'zh-CN': '无需下载。此工作流调用合作方模型。'
   },
-  'workshop.v2.workflow.runHere': {
-    en: 'Run {model} here',
-    'zh-CN': '在此运行 {model}'
-  },
-  'workshop.v2.workflow.runHereNote': {
-    en: 'The graph opens in ComfyUI. The model underneath it runs here.',
-    'zh-CN':
-      '工作流是一张节点图，需在 ComfyUI 中打开。此处运行的是它背后的模型。'
-  },
   'workshop.v2.workflow.form': {
     en: 'What the app asks for',
     'zh-CN': '应用需要的输入'

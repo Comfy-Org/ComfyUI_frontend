@@ -3,6 +3,7 @@ import { computed, onMounted, ref, useTemplateRef } from 'vue'
 
 import type { GraphPicture } from '../../lib/hub/workflow-graph'
 import { linkPath, readGraphPicture } from '../../lib/hub/workflow-graph'
+import WorkflowGraphNode from './WorkflowGraphNode.vue'
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 
@@ -103,64 +104,7 @@ const control =
           stroke-width="2.5"
           stroke-opacity="0.65"
         />
-        <g v-for="node in picture.nodes" :key="node.id">
-          <rect
-            :x="node.x"
-            :y="node.y"
-            :width="node.width"
-            :height="node.height"
-            rx="10"
-            fill="#1e1e22"
-            stroke="#ffffff1f"
-          />
-          <path
-            :d="`M ${node.x} ${node.y + 10} a 10 10 0 0 1 10 -10 h ${node.width - 20} a 10 10 0 0 1 10 10 v 24 h ${-node.width} z`"
-            :fill="node.accent"
-            fill-opacity="0.28"
-          />
-          <text
-            :x="node.x + 12"
-            :y="node.y + 22"
-            fill="#f5f5f5"
-            font-size="14"
-            font-weight="600"
-          >
-            {{ node.title }}
-          </text>
-          <g v-for="slot in node.inputs" :key="`in-${slot.name}-${slot.y}`">
-            <circle
-              :cx="node.x"
-              :cy="node.y + slot.y"
-              r="4.5"
-              :fill="slot.color"
-            />
-            <text
-              :x="node.x + 12"
-              :y="node.y + slot.y + 4"
-              fill="#c9c9c9"
-              font-size="11"
-            >
-              {{ slot.name }}
-            </text>
-          </g>
-          <g v-for="slot in node.outputs" :key="`out-${slot.name}-${slot.y}`">
-            <circle
-              :cx="node.x + node.width"
-              :cy="node.y + slot.y"
-              r="4.5"
-              :fill="slot.color"
-            />
-            <text
-              :x="node.x + node.width - 12"
-              :y="node.y + slot.y + 4"
-              fill="#c9c9c9"
-              font-size="11"
-              text-anchor="end"
-            >
-              {{ slot.name }}
-            </text>
-          </g>
-        </g>
+        <WorkflowGraphNode v-for="node in picture.nodes" :key="node.id" :node />
       </g>
     </svg>
 

@@ -106,37 +106,53 @@ function slotY(index: number): number {
   return SLOT_TOP + index * SLOT_HEIGHT
 }
 
+function drawnSlots(
+  slots: readonly { name: string; type: string }[]
+): GraphSlot[] {
+  return slots.map((slot, index) => ({
+    name: slot.name,
+    color: colorForType(slot.type),
+    y: slotY(index)
+  }))
+}
+
+/** Wide enough to read, and tall enough for whichever side has more rows. */
+function boxFor(
+  size: readonly [number, number] | undefined,
+  rows: number
+): { width: number; height: number } {
+  return {
+    width: Math.max(size?.[0] ?? MIN_WIDTH, MIN_WIDTH),
+    height: Math.max(size?.[1] ?? 0, slotY(rows) + 8)
+  }
+}
+
+function identity(record: Record<string, unknown>): string | undefined {
+  const { id } = record
+  return typeof id === 'number' || typeof id === 'string'
+    ? String(id)
+    : undefined
+}
+
 function nodeFrom(value: unknown): GraphNode | undefined {
   if (!value || typeof value !== 'object') return undefined
   const record = value as Record<string, unknown>
-  const id = record.id
-  if (typeof id !== 'number' && typeof id !== 'string') return undefined
+  const id = identity(record)
   const position = readPair(record.pos)
-  if (!position) return undefined
+  if (!id || !position) return undefined
 
   const inputs = readSlots(record.inputs)
   const outputs = readSlots(record.outputs)
-  const size = readPair(record.size)
-  const rows = Math.max(inputs.length, outputs.length)
 
   return {
-    id: String(id),
+    id,
     title: readTitle(record),
     x: position[0],
     y: position[1],
-    width: Math.max(size?.[0] ?? MIN_WIDTH, MIN_WIDTH),
-    height: Math.max(size?.[1] ?? 0, slotY(rows) + 8),
+    ...boxFor(readPair(record.size), Math.max(inputs.length, outputs.length)),
     accent: colorForType(outputs.at(0)?.type),
-    inputs: inputs.map((slot, index) => ({
-      name: slot.name,
-      color: colorForType(slot.type),
-      y: slotY(index)
-    })),
-    outputs: outputs.map((slot, index) => ({
-      name: slot.name,
-      color: colorForType(slot.type),
-      y: slotY(index)
-    }))
+    inputs: drawnSlots(inputs),
+    outputs: drawnSlots(outputs)
   }
 }
 
@@ -148,37 +164,81 @@ interface LinkEnds {
   readonly type: string
 }
 
-/**
- * Litegraph has stored a link as a positional array for years and as an object
- * since the schema rewrite; a template on disk may be either.
- */
-function linkEndsFrom(value: unknown): LinkEnds | undefined {
-  if (Array.isArray(value) && value.length >= 5) {
-    const [, from, fromSlot, to, toSlot, type] = value
-    if (typeof fromSlot !== 'number' || typeof toSlot !== 'number')
-      return undefined
-    return {
-      from: String(from),
-      fromSlot,
-      to: String(to),
-      toSlot,
-      type: typeof type === 'string' ? type : ''
-    }
+function text(value: unknown): string {
+  return typeof value === 'string' ? value : ''
+}
+
+function slot(value: unknown): number {
+  return typeof value === 'number' ? value : 0
+}
+
+/** Litegraph's positional link: id, origin, slot, target, slot, type. */
+function linkEndsFromRow(row: readonly unknown[]): LinkEnds | undefined {
+  const [, from, fromSlot, to, toSlot, type] = row
+  if (typeof fromSlot !== 'number' || typeof toSlot !== 'number')
+    return undefined
+  return {
+    from: String(from),
+    fromSlot,
+    to: String(to),
+    toSlot,
+    type: text(type)
   }
-  if (!value || typeof value !== 'object') return undefined
-  const record = value as Record<string, unknown>
+}
+
+/** The same link after the schema rewrite, with its ends named. */
+function linkEndsFromRecord(
+  record: Record<string, unknown>
+): LinkEnds | undefined {
   const from = record.origin_id ?? record.source_id
   const to = record.target_id
-  const fromSlot = record.origin_slot ?? record.source_slot
-  const toSlot = record.target_slot
   if (from === undefined || to === undefined) return undefined
   return {
     from: String(from),
-    fromSlot: typeof fromSlot === 'number' ? fromSlot : 0,
+    fromSlot: slot(record.origin_slot ?? record.source_slot),
     to: String(to),
-    toSlot: typeof toSlot === 'number' ? toSlot : 0,
-    type: typeof record.type === 'string' ? record.type : ''
+    toSlot: slot(record.target_slot),
+    type: text(record.type)
   }
+}
+
+/** A template on disk may hold either shape. */
+function linkEndsFrom(value: unknown): LinkEnds | undefined {
+  if (Array.isArray(value))
+    return value.length >= 5 ? linkEndsFromRow(value) : undefined
+  return value && typeof value === 'object'
+    ? linkEndsFromRecord(value as Record<string, unknown>)
+    : undefined
+}
+
+function linkBetween(
+  ends: LinkEnds,
+  from: GraphNode,
+  to: GraphNode,
+  index: number
+): GraphLink {
+  const output = from.outputs.at(ends.fromSlot)
+  const input = to.inputs.at(ends.toSlot)
+  return {
+    id: `${ends.from}-${ends.fromSlot}-${ends.to}-${ends.toSlot}-${index}`,
+    color: output?.color ?? colorForType(ends.type),
+    x1: from.x + from.width,
+    y1: from.y + (output?.y ?? slotY(ends.fromSlot)),
+    x2: to.x,
+    y2: to.y + (input?.y ?? slotY(ends.toSlot))
+  }
+}
+
+function drawnLinks(
+  rows: readonly unknown[],
+  byId: ReadonlyMap<string, GraphNode>
+): GraphLink[] {
+  return rows.flatMap((row, index) => {
+    const ends = linkEndsFrom(row)
+    const from = ends && byId.get(ends.from)
+    const to = ends && byId.get(ends.to)
+    return ends && from && to ? [linkBetween(ends, from, to, index)] : []
+  })
 }
 
 export function readGraphPicture(source: unknown): GraphPicture {
@@ -189,31 +249,15 @@ export function readGraphPicture(source: unknown): GraphPicture {
   const nodes = Array.isArray(record.nodes)
     ? record.nodes.flatMap((entry) => nodeFrom(entry) ?? [])
     : []
-  const byId = new Map(nodes.map((node) => [node.id, node]))
 
-  const links = (Array.isArray(record.links) ? record.links : []).flatMap(
-    (entry, index): GraphLink[] => {
-      const ends = linkEndsFrom(entry)
-      if (!ends) return []
-      const from = byId.get(ends.from)
-      const to = byId.get(ends.to)
-      if (!from || !to) return []
-      const output = from.outputs.at(ends.fromSlot)
-      const input = to.inputs.at(ends.toSlot)
-      return [
-        {
-          id: `${ends.from}-${ends.fromSlot}-${ends.to}-${ends.toSlot}-${index}`,
-          color: output?.color ?? colorForType(ends.type),
-          x1: from.x + from.width,
-          y1: from.y + (output?.y ?? slotY(ends.fromSlot)),
-          x2: to.x,
-          y2: to.y + (input?.y ?? slotY(ends.toSlot))
-        }
-      ]
-    }
-  )
-
-  return { nodes, links, viewBox: viewBoxFor(nodes) }
+  return {
+    nodes,
+    links: drawnLinks(
+      Array.isArray(record.links) ? record.links : [],
+      new Map(nodes.map((node) => [node.id, node]))
+    ),
+    viewBox: viewBoxFor(nodes)
+  }
 }
 
 export function viewBoxFor(nodes: readonly GraphNode[]): string {

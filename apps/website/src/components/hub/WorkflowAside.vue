@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import type { WorkshopModel } from '../../config/models-catalogue'
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 
@@ -13,7 +12,6 @@ const {
   weights,
   customNodes,
   callsPartnerModel,
-  destination,
   locale = 'en'
 } = defineProps<{
   /** Comfy Cloud, opened on this template. */
@@ -27,7 +25,6 @@ const {
   weights: string | undefined
   customNodes: readonly string[]
   callsPartnerModel: boolean
-  destination: WorkshopModel | undefined
   locale?: Locale
 }>()
 
@@ -112,28 +109,6 @@ const secondary =
           </ul>
         </li>
       </ul>
-    </div>
-
-    <!-- The one crossing back to a model, and the sentence that keeps it
-      honest: the graph opens in ComfyUI, the model is what runs here. -->
-    <div v-if="destination" :class="panel" data-testid="workflow-destination">
-      <h2 :class="sectionTitle">
-        {{
-          t('workshop.v2.workflow.runHere', locale).replace(
-            '{model}',
-            destination.name
-          )
-        }}
-      </h2>
-      <p class="mt-2 text-sm text-content-muted">
-        {{ t('workshop.v2.workflow.runHereNote', locale) }}
-      </p>
-      <a
-        :href="destination.href"
-        class="mt-4 inline-flex h-10 items-center justify-center rounded-2xl border border-primary-comfy-yellow px-5 text-xs font-bold tracking-wider text-primary-comfy-yellow uppercase transition-colors hover:bg-primary-comfy-yellow hover:text-primary-comfy-ink"
-      >
-        {{ t('workshop.v2.action.run', locale) }}
-      </a>
     </div>
   </aside>
 </template>

@@ -1,19 +1,7 @@
-import { render, screen, within } from '@testing-library/vue'
+import { render, screen } from '@testing-library/vue'
 import { describe, expect, it } from 'vitest'
 
-import type { WorkshopModel } from '../../config/models-catalogue'
 import WorkflowAside from './WorkflowAside.vue'
-
-const flux: WorkshopModel = {
-  slug: 'bfl--flux--generate-images',
-  name: 'Flux',
-  workflowCount: 0,
-  href: '/models/bfl--flux--generate-images/',
-  routerId: 'bfl/flux',
-  provider: 'BFL',
-  modality: 'image',
-  capabilities: []
-}
 
 const props = (overrides = {}) => ({
   cloudUrl: 'https://cloud.example.test/?template=poster',
@@ -23,7 +11,6 @@ const props = (overrides = {}) => ({
   weights: undefined,
   customNodes: [],
   callsPartnerModel: false,
-  destination: undefined,
   ...overrides
 })
 
@@ -99,21 +86,5 @@ describe('WorkflowAside', () => {
 
     render(WorkflowAside, { props: props() })
     expect(screen.queryByTestId('workflow-custom-nodes')).toBeNull()
-  })
-
-  it('offers a run only where one model can answer for the workflow', () => {
-    const { unmount } = render(WorkflowAside, {
-      props: props({ destination: flux })
-    })
-    const panel = screen.getByTestId('workflow-destination')
-    expect(panel.textContent).toMatch(/Run Flux here/)
-    expect(within(panel).getByRole('link')).toHaveProperty(
-      'href',
-      expect.stringContaining('/models/bfl--flux--generate-images/')
-    )
-    unmount()
-
-    render(WorkflowAside, { props: props() })
-    expect(screen.queryByTestId('workflow-destination')).toBeNull()
   })
 })
