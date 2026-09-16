@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { SessionClient, SessionSnapshot } from '../session.js'
 import type { AccountCredential } from '../sessionContracts.js'
+import { sessionBillingScopeSource } from './billingScope.js'
 import type {
   BillingHttpResponse,
   BillingRequest,
@@ -74,7 +75,7 @@ function fakeSession(initial: SessionSnapshot = authenticated(credential())) {
     }
   }
   return {
-    session: fake as SessionClient,
+    scopeSource: sessionBillingScopeSource(fake),
     moveTo(next: SessionSnapshot) {
       snapshot = next
       for (const listener of [...listeners]) listener(snapshot)
@@ -200,7 +201,7 @@ function harness(options: {
   const telemetry: BillingOperationTelemetryEvent[] = []
   const lifecycleOptions: BillingOperationLifecycleOptions = {
     transport,
-    session: session.session,
+    scopeSource: session.scopeSource,
     statusReader: status.reader,
     pointerStorage: storage,
     embeddedCheckoutAvailable: () => options.embedded === true,

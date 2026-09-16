@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from 'vitest'
 
 import type { SessionClient, SessionSnapshot } from '../session.js'
 import type { AccountCredential } from '../sessionContracts.js'
+import { sessionBillingScopeSource } from './billingScope.js'
 import type {
   BillingHttpResponse,
   BillingRequest,
@@ -51,7 +52,7 @@ function fakeSession(initial: SessionSnapshot = authenticated(credential())) {
     }
   }
   return {
-    session: fake as SessionClient,
+    scopeSource: sessionBillingScopeSource(fake),
     moveTo(next: SessionSnapshot) {
       snapshot = next
       for (const listener of [...listeners]) listener(snapshot)
@@ -101,12 +102,12 @@ function fakeTransport(answers: BillingResult<BillingHttpResponse>[]) {
 
 describe('createBillingStatusReader', () => {
   it('reads and validates the authoritative billing status', async () => {
-    const { session } = fakeSession()
+    const { scopeSource } = fakeSession()
     const { transport, calls } = fakeTransport([httpOk(STATUS)])
 
     const result = await createBillingStatusReader({
       transport,
-      session
+      scopeSource
     }).read()
 
     expect(calls).toEqual([{ method: 'GET', route: '/billing/status' }])
@@ -122,9 +123,9 @@ describe('createBillingStatusReader', () => {
   })
 
   it('deduplicates concurrent reads but refetches on a later read', async () => {
-    const { session } = fakeSession()
+    const { scopeSource } = fakeSession()
     const { transport } = fakeTransport([httpOk(STATUS)])
-    const reader = createBillingStatusReader({ transport, session })
+    const reader = createBillingStatusReader({ transport, scopeSource })
 
     const [first, second] = await Promise.all([reader.read(), reader.read()])
     await reader.read()
@@ -134,7 +135,7 @@ describe('createBillingStatusReader', () => {
   })
 
   it('releases an aborted caller without cancelling the shared read', async () => {
-    const { session } = fakeSession()
+    const { scopeSource } = fakeSession()
     let release = () => {}
     const gate = new Promise<void>((resolve) => {
       release = resolve
@@ -143,7 +144,7 @@ describe('createBillingStatusReader', () => {
       await gate
       return httpOk(STATUS)
     })
-    const reader = createBillingStatusReader({ transport, session })
+    const reader = createBillingStatusReader({ transport, scopeSource })
 
     const controller = new AbortController()
     const abandoned = reader.read({ signal: controller.signal })
@@ -168,7 +169,7 @@ describe('createBillingStatusReader', () => {
     })
     const reader = createBillingStatusReader({
       transport,
-      session: host.session
+      scopeSource: host.scopeSource
     })
 
     const pending = reader.read()
@@ -188,7 +189,7 @@ describe('createBillingStatusReader', () => {
     const { transport } = fakeTransport([httpOk(STATUS)])
     const reader = createBillingStatusReader({
       transport,
-      session: host.session
+      scopeSource: host.scopeSource
     })
 
     await reader.read()
@@ -207,24 +208,24 @@ describe('createBillingStatusReader', () => {
     [409, 'CONFLICT'],
     [503, 'REQUEST_FAILED']
   ] as const)('maps %i to %s', async ([status, code]) => {
-    const { session } = fakeSession()
+    const { scopeSource } = fakeSession()
     const { transport } = fakeTransport([httpStatus(status)])
 
     const result = await createBillingStatusReader({
       transport,
-      session
+      scopeSource
     }).read()
 
     expect(result).toEqual({ status: 'error', code, httpStatus: status })
   })
 
   it('reports a malformed successful response without replacing the last snapshot', async () => {
-    const { session } = fakeSession()
+    const { scopeSource } = fakeSession()
     const { transport } = fakeTransport([
       httpOk(STATUS),
       httpOk({ ...STATUS, pending_billing_op_type: 'refund' })
     ])
-    const reader = createBillingStatusReader({ transport, session })
+    const reader = createBillingStatusReader({ transport, scopeSource })
 
     await reader.read()
     const result = await reader.read()
@@ -240,12 +241,12 @@ describe('createBillingStatusReader', () => {
   })
 
   it('passes transport failures through without replacing the last snapshot', async () => {
-    const { session } = fakeSession()
+    const { scopeSource } = fakeSession()
     const { transport } = fakeTransport([
       httpOk(STATUS),
       { status: 'error', code: 'REQUEST_FAILED' }
     ])
-    const reader = createBillingStatusReader({ transport, session })
+    const reader = createBillingStatusReader({ transport, scopeSource })
 
     await reader.read()
     const result = await reader.read()
@@ -255,9 +256,9 @@ describe('createBillingStatusReader', () => {
   })
 
   it('drops the last status snapshot when a later read is denied', async () => {
-    const { session } = fakeSession()
+    const { scopeSource } = fakeSession()
     const { transport } = fakeTransport([httpOk(STATUS), httpStatus(403)])
-    const reader = createBillingStatusReader({ transport, session })
+    const reader = createBillingStatusReader({ transport, scopeSource })
 
     await reader.read()
     const result = await reader.read()
@@ -271,21 +272,21 @@ describe('createBillingStatusReader', () => {
   })
 
   it('normalizes a throwing host transport to a coded failure', async () => {
-    const { session } = fakeSession()
+    const { scopeSource } = fakeSession()
     const transport: BillingTransport = vi.fn(() => {
       throw new TypeError('host transport failed')
     })
 
     const result = await createBillingStatusReader({
       transport,
-      session
+      scopeSource
     }).read()
 
     expect(result).toEqual({ status: 'error', code: 'REQUEST_FAILED' })
   })
 
   it('clears account data and rejects an in-flight result after dispose', async () => {
-    const { session } = fakeSession()
+    const { scopeSource } = fakeSession()
     let release = () => {}
     const gate = new Promise<void>((resolve) => {
       release = resolve
@@ -296,7 +297,7 @@ describe('createBillingStatusReader', () => {
       if (calls === 2) await gate
       return httpOk(STATUS)
     })
-    const reader = createBillingStatusReader({ transport, session })
+    const reader = createBillingStatusReader({ transport, scopeSource })
 
     await reader.read()
     const pending = reader.read()

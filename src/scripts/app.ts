@@ -2412,61 +2412,79 @@ export class ComfyApp {
       }
     }
 
+    const unresolvedInputs: (() => boolean)[] = []
     const processNodeInputs = (id: string) => {
       const data = apiData[id]
       const currentNodeId = importedNodeIds.get(id) ?? toNodeId(id)
       const node = app.rootGraph.getNodeById(currentNodeId)
       if (!node) return
+      const targetNode = node
 
       for (const input in data.inputs ?? {}) {
         const value = data.inputs[input]
         if (value instanceof Array) {
-          const [fromId, fromSlot] = value
-          const fromNode = app.rootGraph.getNodeById(
-            importedNodeIds.get(String(fromId)) ?? toNodeId(fromId)
-          )
-          if (!fromNode) continue
+          function connectInput() {
+            const [fromId, fromSlot] = value
+            const fromNode = app.rootGraph.getNodeById(
+              importedNodeIds.get(String(fromId)) ?? toNodeId(fromId)
+            )
+            if (!fromNode?.outputs?.[fromSlot]) return false
 
-          let toSlot = node.inputs?.findIndex((inp) => inp.name === input) ?? -1
-          if (toSlot === -1) {
-            try {
-              const widget = node.widgets?.find((w) => w.name === input)
-              const convertFn = (
-                node as LGraphNode & {
-                  convertWidgetToInput?: (w: IBaseWidget) => boolean
+            let toSlot =
+              targetNode.inputs?.findIndex((inp) => inp.name === input) ?? -1
+            if (toSlot === -1) {
+              try {
+                const widget = targetNode.widgets?.find((w) => w.name === input)
+                const convertFn = (
+                  targetNode as LGraphNode & {
+                    convertWidgetToInput?: (w: IBaseWidget) => boolean
+                  }
+                ).convertWidgetToInput
+                if (widget && convertFn?.(widget)) {
+                  // Re-find the target slot by name after conversion
+                  toSlot =
+                    targetNode.inputs?.findIndex((inp) => inp.name === input) ??
+                    -1
                 }
-              ).convertWidgetToInput
-              if (widget && convertFn?.(widget)) {
-                // Re-find the target slot by name after conversion
-                toSlot =
-                  node.inputs?.findIndex((inp) => inp.name === input) ?? -1
+              } catch (_error) {
+                // Ignore conversion errors
               }
-            } catch (_error) {
-              // Ignore conversion errors
             }
+            if (toSlot === -1) return false
+
+            fromNode.connect(fromSlot, targetNode, toSlot)
+            return true
           }
-          if (toSlot !== -1) {
-            fromNode.connect(fromSlot, node, toSlot)
-          }
+          if (!connectInput()) unresolvedInputs.push(connectInput)
         } else {
-          const widget = node.widgets?.find((w) => w.name === input)
-          if (widget) {
+          function applyWidgetValue() {
+            const widget = targetNode.widgets?.find((w) => w.name === input)
+            if (!widget) return false
             const widgetValue = unwrapExportedWidgetValue(value) as TWidgetValue
             widget.value = widgetValue
             widget.callback?.(widgetValue)
+            return true
           }
+          if (!applyWidgetValue()) unresolvedInputs.push(applyWidgetValue)
         }
-      }
-      if (node.last_serialization) {
-        node.last_serialization.inputs = node.inputs.map((input, i) =>
-          inputAsSerialisable(input, node, i)
-        )
       }
     }
 
     for (const id of ids) processNodeInputs(id)
-    app.rootGraph.arrange()
-    for (const id of ids) processNodeInputs(id)
+    let pendingInputs = unresolvedInputs
+    while (pendingInputs.length > 0) {
+      const remainingInputs = pendingInputs.filter(
+        (applyInput) => !applyInput()
+      )
+      if (remainingInputs.length === pendingInputs.length) break
+      pendingInputs = remainingInputs
+    }
+    for (const node of app.rootGraph.nodes) {
+      if (!node.last_serialization) continue
+      node.last_serialization.inputs = node.inputs.map((input, i) =>
+        inputAsSerialisable(input, node, i)
+      )
+    }
     app.rootGraph.arrange()
 
     // Intentionally no beforeConfigureGraph: API JSON builds nodes directly
