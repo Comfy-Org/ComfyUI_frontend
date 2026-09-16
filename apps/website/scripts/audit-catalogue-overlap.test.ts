@@ -16,6 +16,16 @@ const flux: WorkshopModel = {
   capabilities: []
 }
 
+const kontext: WorkshopModel = {
+  slug: 'bfl--kontext--generate-images',
+  name: 'Kontext',
+  workflowCount: 0,
+  href: '/models/bfl--kontext--generate-images/',
+  routerId: 'bfl/kontext',
+  modality: 'image',
+  capabilities: []
+}
+
 function template(overrides: Partial<HubTemplate> = {}): HubTemplate {
   return {
     name: 'api_flux_t2i',
@@ -36,7 +46,7 @@ function template(overrides: Partial<HubTemplate> = {}): HubTemplate {
 const audit = (
   templates: readonly HubTemplate[],
   details: Record<string, { requiresCustomNodes?: readonly string[] }> = {}
-) => auditCatalogueOverlap(templates, [flux], details)
+) => auditCatalogueOverlap(templates, [flux, kontext], details)
 
 describe('auditCatalogueOverlap', () => {
   it('counts what the site can run here, apps apart from the rest', () => {
@@ -115,14 +125,56 @@ describe('auditCatalogueOverlap', () => {
     expect(overlap.unclassified).toEqual([])
   })
 
-  it('ranks the most cited models by how many workflows run on them', () => {
+  it('ranks the cited models, most run on first', () => {
     const overlap = audit([
       template(),
       template({ name: 'api_flux_b' }),
-      template({ name: 'api_flux_c' })
+      template({
+        name: 'api_kontext',
+        title: 'Kontext: Text to Image',
+        models: ['Kontext']
+      })
     ])
 
-    expect(overlap.citedModels).toBe(1)
-    expect(overlap.mostCited).toEqual([{ name: 'Flux', count: 3 }])
+    expect(overlap.citedModels).toBe(2)
+    expect(overlap.mostCited).toEqual([
+      { name: 'Flux', count: 2 },
+      { name: 'Kontext', count: 1 }
+    ])
+  })
+
+  it('ranks the named models separately from the ones it can route to', () => {
+    const overlap = audit([
+      template(),
+      template({
+        name: 'local_flux_lora',
+        title: 'Flux LoRA',
+        tags: ['Image']
+      }),
+      template({
+        name: 'api_kontext',
+        title: 'Kontext: Text to Image',
+        models: ['Kontext']
+      })
+    ])
+
+    expect(overlap.mostCited).toEqual([
+      { name: 'Flux', count: 1 },
+      { name: 'Kontext', count: 1 }
+    ])
+    expect(overlap.mostMentioned).toEqual([
+      { name: 'Flux', count: 2 },
+      { name: 'Kontext', count: 1 }
+    ])
+  })
+
+  it('keeps a title that only differs in case out of the collisions', () => {
+    const overlap = audit([
+      template({ name: 'api_flux_exact', title: 'Flux' }),
+      template({ name: 'api_flux_cased', title: 'FLUX' })
+    ])
+
+    expect(overlap.titleCollisions).toEqual(['Flux'])
+    expect(overlap.nearMissTitles).toEqual(['FLUX'])
   })
 })

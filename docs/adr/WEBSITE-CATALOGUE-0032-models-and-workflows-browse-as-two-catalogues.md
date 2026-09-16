@@ -23,12 +23,13 @@ templates 610, of them apps 18
 models 145
 runnable here 72 (11.8%)
 runnable apps 5 of 18
-naming a catalogue model 101 across 18 models
+naming a catalogue model 101 across 18 models: Nano Banana Pro 42,
+  Nano Banana 2 14, Kling 3.0 8, Seedance 2.5 7, Gemini Omni 1.1 Flash 5
 need custom nodes 78
 models cited 21: Nano Banana Pro 30, Nano Banana 2 9, Gemini Omni 1.1 Flash 4,
   Seedream 5.0 Pro 3, Seed Audio 1.0 3
-titles that are a model name: Nano Banana Pro, Nano Banana, Flux.1 Kontext Pro,
-  Flux.1 Kontext Max
+titles that are a model name: Nano Banana Pro, Nano Banana
+titles that differ from one only by case: Flux.1 Kontext Pro, Flux.1 Kontext Max
 runnable titles echoing their model 28
 use cases edit-images 151, generate-images 136, animate-images 113,
   generate-videos 77, edit-videos 42, 3d 39, audio 35, text 17
@@ -48,9 +49,11 @@ What the numbers mean for a merged list:
   in the same list. Nano Banana Pro is named by 42 of them. Filtering a merged
   catalogue by _generate images_ puts the model and the workflows that run on
   it side by side, as if they were alternatives to each other.
-- **Names collide.** Four workflow titles are a model name letter for letter,
-  including `Nano Banana Pro`. One string, two meanings, two different next
-  steps.
+- **Names collide.** Two workflow titles are a model name letter for letter,
+  `Nano Banana Pro` and `Nano Banana`, and two more differ from one only in
+  case: `Flux.1 Kontext Pro` against the catalogue's `FLUX.1 Kontext Pro`. One
+  string, two meanings, two different next steps, and the case is not a
+  difference a reader's eye keeps.
 - **The sizes do not match.** The model is _Seedance 2.5_; the workflows are
   _Seedance 2.5: Text to Video_, _1080P: Image to Video_, _FLF2V_, _Video
   Extend_. Those are configurations of one capability, not competitors to it.

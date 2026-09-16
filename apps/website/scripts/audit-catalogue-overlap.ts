@@ -16,12 +16,12 @@ import {
   partnerModelFor,
   useCaseForTemplate
 } from '../src/lib/hub/template-use-case'
-import type { HubTemplate } from '../src/lib/hub/types'
+import type { HubTemplate, HubTemplateDetails } from '../src/lib/hub/types'
+import {
+  hubTemplateDetailsSchema,
+  hubTemplatesSchema
+} from '../src/lib/hub/types'
 import { isDirectExecution } from './script-entry-point'
-
-export interface TemplateRequirements {
-  readonly requiresCustomNodes?: readonly string[]
-}
 
 export interface CountedName {
   readonly name: string
@@ -42,12 +42,15 @@ export interface CatalogueOverlap {
    */
   readonly mentioning: number
   readonly mentionedModels: number
+  readonly mostMentioned: readonly CountedName[]
   readonly needCustomNodes: number
   /** Models named by at least one runnable template. */
   readonly citedModels: number
   readonly mostCited: readonly CountedName[]
   /** Workflow titles that are also a model name, letter for letter. */
   readonly titleCollisions: readonly string[]
+  /** Workflow titles that match a model name except for their case. */
+  readonly nearMissTitles: readonly string[]
   /** Runnable templates whose title opens with their own model's name. */
   readonly echoes: number
   readonly useCases: readonly CountedName[]
@@ -93,18 +96,27 @@ function tallyMentions(
   templates: readonly HubTemplate[],
   models: readonly WorkshopModel[]
 ) {
-  const catalogued = new Set(models.map((model) => normalize(model.name)))
-  const mentioned = new Set<string>()
+  const catalogued = new Map(
+    models.map((model) => [normalize(model.name), model.name])
+  )
+  const mentioned = new Map<string, number>()
   let mentioning = 0
   for (const template of templates) {
-    const named = template.models
-      .map(normalize)
-      .filter((name) => catalogued.has(name))
-    if (named.length === 0) continue
+    const named = new Set(
+      template.models.map(normalize).filter((name) => catalogued.has(name))
+    )
+    if (named.size === 0) continue
     mentioning++
-    for (const name of named) mentioned.add(name)
+    for (const name of named) {
+      const model = catalogued.get(name) ?? name
+      mentioned.set(model, (mentioned.get(model) ?? 0) + 1)
+    }
   }
-  return { mentioning, mentionedModels: mentioned.size }
+  return {
+    mentioning,
+    mentionedModels: mentioned.size,
+    mostMentioned: counted(mentioned).slice(0, 5)
+  }
 }
 
 function tallyUseCases(
@@ -121,19 +133,24 @@ function tallyUseCases(
   return { useCases: counted(useCases), unclassified }
 }
 
-function collidingTitles(
+function titlesAgainstModelNames(
   templates: readonly HubTemplate[],
   models: readonly WorkshopModel[]
-): readonly string[] {
-  const names = new Set(models.map((model) => model.name.toLowerCase()))
-  return templates
-    .filter((template) => names.has(template.title.toLowerCase()))
-    .map((template) => template.title)
+) {
+  const exact = new Set(models.map((model) => model.name))
+  const cased = new Set(models.map((model) => model.name.toLowerCase()))
+  const titles = templates.map((template) => template.title)
+  return {
+    titleCollisions: titles.filter((title) => exact.has(title)),
+    nearMissTitles: titles.filter(
+      (title) => !exact.has(title) && cased.has(title.toLowerCase())
+    )
+  }
 }
 
 function countingCustomNodes(
   templates: readonly HubTemplate[],
-  details: Readonly<Record<string, TemplateRequirements>>
+  details: HubTemplateDetails
 ): number {
   return templates.filter(
     (template) => (details[template.name]?.requiresCustomNodes ?? []).length > 0
@@ -143,7 +160,7 @@ function countingCustomNodes(
 export function auditCatalogueOverlap(
   templates: readonly HubTemplate[],
   models: readonly WorkshopModel[],
-  details: Readonly<Record<string, TemplateRequirements>>
+  details: HubTemplateDetails
 ): CatalogueOverlap {
   const { runnable, runnableApps, echoes, cited } = tallyRunnable(
     templates,
@@ -159,7 +176,7 @@ export function auditCatalogueOverlap(
     needCustomNodes: countingCustomNodes(templates, details),
     citedModels: cited.size,
     mostCited: counted(cited).slice(0, 5),
-    titleCollisions: collidingTitles(templates, models),
+    ...titlesAgainstModelNames(templates, models),
     echoes,
     ...tallyUseCases(templates, models)
   }
@@ -175,10 +192,11 @@ function report(overlap: CatalogueOverlap): string {
     `models ${overlap.models}`,
     `runnable here ${overlap.runnable} (${share(overlap.runnable)})`,
     `runnable apps ${overlap.runnableApps} of ${overlap.apps}`,
-    `naming a catalogue model ${overlap.mentioning} across ${overlap.mentionedModels} models`,
+    `naming a catalogue model ${overlap.mentioning} across ${overlap.mentionedModels} models: ${list(overlap.mostMentioned)}`,
     `need custom nodes ${overlap.needCustomNodes}`,
     `models cited ${overlap.citedModels}: ${list(overlap.mostCited)}`,
     `titles that are a model name: ${overlap.titleCollisions.join(', ')}`,
+    `titles that differ from one only by case: ${overlap.nearMissTitles.join(', ')}`,
     `runnable titles echoing their model ${overlap.echoes}`,
     `use cases ${list(overlap.useCases)}`,
     `unclassified ${overlap.unclassified.length}`
@@ -189,9 +207,9 @@ if (isDirectExecution(process.argv[1], import.meta.filename))
   console.warn(
     report(
       auditCatalogueOverlap(
-        hubTemplates as readonly HubTemplate[],
+        hubTemplatesSchema.parse(hubTemplates),
         workshopModels,
-        hubTemplateDetails as Readonly<Record<string, TemplateRequirements>>
+        hubTemplateDetailsSchema.parse(hubTemplateDetails)
       )
     )
   )
