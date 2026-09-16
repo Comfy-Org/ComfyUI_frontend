@@ -131,6 +131,16 @@ interface DOMWidgetInit<
   element: T
 }
 
+interface ComponentWidgetInit<
+  V extends object | string,
+  P extends ComponentWidgetCustomProps
+> extends Omit<BaseDOMWidgetInit<V>, 'type'> {
+  component: Component
+  inputSpec: InputSpec
+  props?: P
+  type?: string
+}
+
 abstract class BaseDOMWidgetImpl<V extends object | string>
   extends LegacyWidget<IBaseWidget<V, string, DOMWidgetOptions<V>>>
   implements BaseDOMWidget<V>
@@ -200,21 +210,6 @@ abstract class BaseDOMWidgetImpl<V extends object | string>
 
   override onRemove(): void {
     useDomWidgetStore().unregisterWidget(this.id)
-  }
-
-  override createCopyForNode(node: LGraphNode): this {
-    const Widget = this.constructor as new (init: BaseDOMWidgetInit<V>) => this
-    const cloned = new Widget({
-      node,
-      name: this.name,
-      type: this.type,
-      options: this.options
-    })
-    cloned.value = this.value
-    // Preserve the Y position from the original widget to maintain proper positioning
-    // when widgets are promoted through subgraph nesting
-    cloned.y = this.y
-    return cloned
   }
 }
 
@@ -293,15 +288,7 @@ export class ComponentWidgetImpl<
   readonly inputSpec: InputSpec
   readonly props?: P
 
-  constructor(obj: {
-    node: LGraphNode
-    name: string
-    component: Component
-    inputSpec: InputSpec
-    props?: P
-    options: DOMWidgetOptions<V>
-    type?: string
-  }) {
+  constructor(obj: ComponentWidgetInit<V, P>) {
     super({
       type: 'custom',
       ...obj
@@ -309,6 +296,26 @@ export class ComponentWidgetImpl<
     this.component = obj.component
     this.inputSpec = obj.inputSpec
     this.props = obj.props
+  }
+
+  override createCopyForNode(node: LGraphNode): this {
+    const Widget = this.constructor as new (
+      init: ComponentWidgetInit<V, P>
+    ) => this
+    const cloned = new Widget({
+      node,
+      name: this.name,
+      type: this.type,
+      component: this.component,
+      inputSpec: this.inputSpec,
+      props: this.props,
+      options: this.options
+    })
+    cloned.value = this.value
+    // Preserve the Y position from the original widget to maintain proper positioning
+    // when widgets are promoted through subgraph nesting
+    cloned.y = this.y
+    return cloned
   }
 
   override computeLayoutSize() {

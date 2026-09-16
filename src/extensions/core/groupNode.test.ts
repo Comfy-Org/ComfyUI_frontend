@@ -163,6 +163,33 @@ describe('GroupNodeConfig.processInputSlots', () => {
   })
 })
 
+describe('GroupNodeConfig.processConvertedWidgets', () => {
+  it('orders converted widgets by numeric slot index, not lexically', () => {
+    const config = new GroupNodeConfig('group', {
+      nodes: [{ index: 0, type: 'KSampler' }],
+      links: [],
+      external: []
+    })
+    const inputMap: Record<string, number> = {}
+
+    config.processConvertedWidgets(
+      { seed: ['INT'], steps: ['INT'], cfg: ['FLOAT'] },
+      { index: 0, type: 'KSampler' },
+      [],
+      new Map([
+        [10, 'cfg'],
+        [2, 'steps'],
+        [1, 'seed']
+      ]),
+      {},
+      inputMap,
+      {}
+    )
+
+    expect(inputMap).toEqual({ seed: 0, steps: 1, cfg: 2 })
+  })
+})
+
 describe('GroupNodeConfig.registerFromWorkflow', () => {
   function groupWithMissingInnerNodes(
     types: string[] = ['NotInstalledNode']

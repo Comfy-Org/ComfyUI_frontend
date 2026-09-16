@@ -62,6 +62,11 @@ vi.mock(import('@comfyorg/fbx-exporter-three'), () => ({
   )
 }))
 
+const rejectedWith = (message: string) => ({
+  status: 'rejected',
+  reason: { message }
+})
+
 describe('ModelExporter', () => {
   describe('detectFormatFromURL', () => {
     it('extracts the lowercase extension from the filename query parameter', () => {
@@ -229,9 +234,9 @@ describe('ModelExporter', () => {
       )
 
       const promise = ModelExporter.exportGLB(new THREE.Object3D(), 'out.glb')
-      const failure = promise.catch((error: unknown) => error)
+      const settled = Promise.allSettled([promise])
       await vi.runAllTimersAsync()
-      expect(await failure).toMatchObject({ message: 'parse fail' })
+      expect(await settled).toMatchObject([rejectedWith('parse fail')])
       expect(useToastStore().addAlert).toHaveBeenCalledWith(
         'toastMessages.failedToExportModel:{"format":"GLB"}'
       )
@@ -277,9 +282,9 @@ describe('ModelExporter', () => {
       })
 
       const promise = ModelExporter.exportOBJ(new THREE.Object3D(), 'out.obj')
-      const failure = promise.catch((error: unknown) => error)
+      const settled = Promise.allSettled([promise])
       await vi.runAllTimersAsync()
-      expect(await failure).toMatchObject({ message: 'obj fail' })
+      expect(await settled).toMatchObject([rejectedWith('obj fail')])
       expect(useToastStore().addAlert).toHaveBeenCalledWith(
         'toastMessages.failedToExportModel:{"format":"OBJ"}'
       )
@@ -325,9 +330,9 @@ describe('ModelExporter', () => {
       })
 
       const promise = ModelExporter.exportSTL(new THREE.Object3D(), 'out.stl')
-      const failure = promise.catch((error: unknown) => error)
+      const settled = Promise.allSettled([promise])
       await vi.runAllTimersAsync()
-      expect(await failure).toMatchObject({ message: 'stl fail' })
+      expect(await settled).toMatchObject([rejectedWith('stl fail')])
       expect(useToastStore().addAlert).toHaveBeenCalledWith(
         'toastMessages.failedToExportModel:{"format":"STL"}'
       )
@@ -401,9 +406,9 @@ describe('ModelExporter', () => {
       fbxParseAsyncMock.mockRejectedValue(new Error('fbx fail'))
 
       const promise = ModelExporter.exportFBX(new THREE.Object3D(), 'out.fbx')
-      const failure = promise.catch((error: unknown) => error)
+      const settled = Promise.allSettled([promise])
       await vi.runAllTimersAsync()
-      expect(await failure).toMatchObject({ message: 'fbx fail' })
+      expect(await settled).toMatchObject([rejectedWith('fbx fail')])
       expect(useToastStore().addAlert).toHaveBeenCalledWith(
         'toastMessages.failedToExportModel:{"format":"FBX"}'
       )
