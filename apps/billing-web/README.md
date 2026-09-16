@@ -63,6 +63,10 @@ Vercel project settings:
 - Git integration disabled (`github.enabled: false`); the workflow owns
   deploys.
 
+Both deploy jobs sit behind a `preflight` job that checks the three Vercel
+secrets below. While any of them is missing the deploys skip with a notice
+instead of failing, so the workflow can merge before the Vercel project exists.
+
 Required GitHub Actions secrets:
 
 | Secret                          | Value                                        |
