@@ -1,3 +1,4 @@
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { usePartnerNodeGovernanceStore } from '@/platform/workspace/stores/partnerNodeGovernanceStore'
 import { fromPartial } from '@total-typescript/shoehorn'
 
@@ -16,8 +17,6 @@ const env = vi.hoisted(() => {
   const state = {
     isCloud: false,
     isDesktop: false,
-    partnerNodeGovernanceEnabled: false,
-    userSecretsEnabled: false,
     workspaceRole: 'owner' as 'owner' | 'member',
     partnerNodeGovernanceStatus: 'inactive' as
       | 'inactive'
@@ -38,18 +37,7 @@ const env = vi.hoisted(() => {
 
 vi.mock(import('@/composables/auth/useCurrentUser'))
 
-vi.mock<unknown>(import('@/composables/useFeatureFlags'), () => ({
-  useFeatureFlags: () => ({
-    flags: {
-      get partnerNodeGovernanceEnabled() {
-        return env.state.partnerNodeGovernanceEnabled
-      },
-      get userSecretsEnabled() {
-        return env.state.userSecretsEnabled
-      }
-    }
-  })
-}))
+vi.mock(import('@/composables/useFeatureFlags'))
 
 vi.mock<unknown>(import('@/composables/useVueFeatureFlags'), () => ({
   useVueFeatureFlags: () => ({ shouldRenderVueNodes: ref(false) })
@@ -104,6 +92,8 @@ function useSettingUI(
 
 beforeEach(() => {
   useCurrentUser().isLoggedIn = computed(() => false)
+  vi.mocked(useFeatureFlags().flags).partnerNodeGovernanceEnabled = false
+  vi.mocked(useFeatureFlags().flags).userSecretsEnabled = false
   vi.spyOn(usePartnerNodeGovernanceStore(), 'status', 'get').mockImplementation(
     () => {
       return env.state.partnerNodeGovernanceStatus
@@ -148,8 +138,6 @@ describe('useSettingUI', () => {
     Object.assign(env.state, {
       isCloud: false,
       isDesktop: false,
-      partnerNodeGovernanceEnabled: false,
-      userSecretsEnabled: false,
       workspaceRole: 'owner',
       partnerNodeGovernanceStatus: 'inactive',
       partnerNodeGovernanceProviders: []
@@ -222,9 +210,7 @@ describe('useSettingUI', () => {
   describe('workspace panels', () => {
     beforeEach(() => {
       useCurrentUser().isLoggedIn = computed(() => true)
-      Object.assign(env.state, {
-        userSecretsEnabled: true
-      })
+      vi.mocked(useFeatureFlags().flags).userSecretsEnabled = true
     })
 
     it('shows Plan & Credits and Members on cloud', () => {
@@ -309,10 +295,8 @@ describe('useSettingUI', () => {
 
     beforeEach(() => {
       useCurrentUser().isLoggedIn = computed(() => true)
-      Object.assign(env.state, {
-        isCloud: true,
-        partnerNodeGovernanceEnabled: true
-      })
+      env.state.isCloud = true
+      vi.mocked(useFeatureFlags().flags).partnerNodeGovernanceEnabled = true
     })
 
     it('exposes workspace sections as Plan & Credits, Members, and Allowlist', () => {
@@ -337,7 +321,7 @@ describe('useSettingUI', () => {
     })
 
     it('hides Allowlist when governance is unavailable', () => {
-      env.state.partnerNodeGovernanceEnabled = false
+      vi.mocked(useFeatureFlags().flags).partnerNodeGovernanceEnabled = false
 
       const { navGroups } = useSettingUI()
 

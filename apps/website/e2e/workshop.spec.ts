@@ -296,7 +296,7 @@ test.describe('Models catalog', () => {
       /\/models\/bfl--flux-2-max--generate-images\/$/
     )
     await expect(page.getByRole('heading', { level: 1 })).toHaveText(
-      'FLUX 2 Max'
+      'FLUX 2 Max Text-to-Image'
     )
   })
 
@@ -459,17 +459,18 @@ test.describe('Model playground', () => {
       .getByRole('navigation', { name: 'Main navigation', exact: true })
       .getByRole('link', { name: 'Models', exact: true })
       .click()
-    await page
-      .getByTestId('section-generate-images')
-      .getByRole('link', { name: /Seedream 4\.5/ })
-      .click()
+    await page.getByTestId('workshop-search').fill('Seedream 4.5 Image Edit')
+    await page.getByRole('link', { name: /Seedream 4\.5 Image Edit/ }).click()
     await expect(page.getByRole('heading', { level: 1 })).toHaveText(
-      'Seedream 4.5'
+      'Seedream 4.5 Image Edit'
     )
     await expect(page.getByTestId('run-button')).toBeEnabled()
     const [chooser] = await Promise.all([
       page.waitForEvent('filechooser'),
-      page.getByText(/^Select or drop /).click()
+      page
+        .getByRole('button', { name: /^Replace / })
+        .first()
+        .click()
     ])
     await chooser.setFiles('e2e/assets/placeholder-1x1.webp')
     await expect(
@@ -601,6 +602,23 @@ test.describe('Model playground', () => {
           ) < 2
         )
       })
+      .toBe(true)
+  })
+
+  test('a phone sample is big enough to judge @mobile', async ({ page }) => {
+    await page.goto('/models/krea--krea-2-medium-turbo--generate-images/')
+    const cards = page.getByTestId('example-card')
+    await expect(cards).toHaveCount(3)
+
+    // A sample exists to be judged. Below this it is a thumbnail of a
+    // thumbnail, which is what it was.
+    await expect
+      .poll(async () => (await cards.first().boundingBox())?.width ?? 0)
+      .toBeGreaterThan(260)
+
+    const list = page.getByTestId('examples-tab').locator('ul')
+    await expect
+      .poll(() => list.evaluate((el) => el.scrollWidth > el.clientWidth))
       .toBe(true)
   })
 })
