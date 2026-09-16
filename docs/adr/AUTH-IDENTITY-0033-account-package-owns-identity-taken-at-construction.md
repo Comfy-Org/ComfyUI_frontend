@@ -6,10 +6,10 @@ Date: 2026-09-16
 
 Accepted
 
-Supersedes the transitional rules of
-[AUTH-IDENTITY-0028](AUTH-IDENTITY-0028-account-package-firebase-entry-delivers-cloud-identity.md):
-the Pinia identity adapter and the `attachIdentity` seam it was built on.
-Rules 1–5 of that ADR, as amended, stand.
+Supersedes the original transitional text of
+[AUTH-IDENTITY-0028](AUTH-IDENTITY-0028-account-package-firebase-entry-delivers-cloud-identity.md)
+(the Pinia identity adapter and the `attachIdentity` seam); rules 1–5 of
+0028 as amended on 2026-09-16 stand.
 
 ## Context
 
@@ -56,8 +56,9 @@ inert behind `unified_cloud_auth`:
    `main.ts` calls `initialize()` explicitly after remote config loads.
 6. **Seam deletion (this slice).** `attachIdentity`, `AttachIdentityOptions`,
    and the `isAccountIdentity` runtime gate are removed. The `AccountIdentity`
-   brand, mintable only by the package's Firebase entry and the `testing`
-   seam, makes a hand-rolled port a compile error; no runtime check remains.
+   brand, mintable only by the package's Firebase entry, `createLazyIdentity`,
+   and the `testing` seam, makes a hand-rolled port a compile error; no
+   runtime check remains.
    Re-attaching or replacing an identity is no longer a behavior the client
    has.
 
