@@ -95,3 +95,13 @@ localStorage.setItem('ff:hosted_billing_destination', '"billing_web"')
 Reload the Cloud frontend after changing the override. Existing Subscribe,
 Resubscribe, and embedded-checkout actions remain in the core frontend until
 the hosted app reaches feature parity.
+
+## Vercel previews
+
+The Vercel project is `billing-web` under the `comfyui` team, so every
+deployment answers on `billing-web-<hash>-comfyui.vercel.app` and every branch
+on `billing-web-git-<branch>-comfyui.vercel.app`; CI also aliases each pull
+request to `comfy-billing-web-preview-pr-<N>.vercel.app`. Ingest's non-prod
+`CORS_ORIGIN` and `TOPUP_CHECKOUT_RETURN_HOSTS` sentinels are derived from
+those three hostname shapes, so renaming the project or the team is a breaking
+change for the Cloud overlays, not a dashboard-only edit.
