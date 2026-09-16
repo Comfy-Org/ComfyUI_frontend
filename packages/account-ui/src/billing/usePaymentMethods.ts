@@ -22,7 +22,12 @@ export interface PaymentMethods {
   readonly methods: Readonly<Ref<readonly SavedPaymentMethod[] | undefined>>
   readonly defaultMethod: ComputedRef<SavedPaymentMethod | undefined>
   readonly loading: Readonly<Ref<boolean>>
-  /** The last read's failure; a failed refresh keeps the previous list on screen. */
+  /**
+   * The last read's failure; a failed refresh keeps the previous list on
+   * screen. A scope change is not surfaced as one: it drops the list, which
+   * names cards the workspace the host moved to cannot charge, and leaves
+   * nothing for the user to retry.
+   */
   readonly failure: Readonly<Ref<BillingFailure | undefined>>
   readonly refresh: () => Promise<BillingResult<PaymentMethodsSnapshot>>
   /**
@@ -51,6 +56,9 @@ export function usePaymentMethods(
     loading.value = false
     if (result.status === 'ok') {
       methods.value = result.value.methods
+      failure.value = undefined
+    } else if (result.code === 'SUPERSEDED') {
+      methods.value = undefined
       failure.value = undefined
     } else {
       failure.value = result

@@ -21,7 +21,12 @@ export interface Plans {
   /** The catalog the server resolved for this actor; nothing is filtered, ranked or priced here. */
   readonly plans: Readonly<Ref<BillingPlansData | undefined>>
   readonly loading: Readonly<Ref<boolean>>
-  /** The last read's failure; a failed refresh keeps the previous catalog on screen. */
+  /**
+   * The last read's failure; a failed refresh keeps the previous catalog on
+   * screen. A scope change is not surfaced as one: it drops the catalog,
+   * which was resolved for an actor the host has left, and leaves nothing for
+   * the user to retry.
+   */
   readonly failure: Readonly<Ref<BillingFailure | undefined>>
   readonly refresh: () => Promise<BillingResult<PlansSnapshot>>
 }
@@ -39,6 +44,9 @@ export function usePlans(options: PlansOptions = {}): Plans {
     loading.value = false
     if (result.status === 'ok') {
       plans.value = result.value.data
+      failure.value = undefined
+    } else if (result.code === 'SUPERSEDED') {
+      plans.value = undefined
       failure.value = undefined
     } else {
       failure.value = result

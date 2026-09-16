@@ -37,6 +37,29 @@ describe('usePlans', () => {
     expect(plans.failure.value).toEqual(NO_RESPONSE)
   })
 
+  it('drops the catalog without reporting a failure when the host changes workspace', async () => {
+    const { client, moveToWorkspace } = createBillingHarness()
+    const plans = usePlans({ client })
+    await vi.advanceTimersByTimeAsync(0)
+    expect(plans.plans.value).toMatchObject(CATALOG)
+
+    const superseded = plans.refresh()
+    moveToWorkspace('ws-2')
+    await expect(superseded).resolves.toEqual({
+      status: 'error',
+      code: 'SUPERSEDED'
+    })
+
+    expect(
+      plans.plans.value,
+      'a catalog priced for the workspace the host left is not this one'
+    ).toBeUndefined()
+    expect(
+      plans.failure.value,
+      'the user did not cause the switch and has nothing to retry'
+    ).toBeUndefined()
+  })
+
   it('leaves the first read to the host when it is not immediate', async () => {
     const { client, routes } = createBillingHarness()
 

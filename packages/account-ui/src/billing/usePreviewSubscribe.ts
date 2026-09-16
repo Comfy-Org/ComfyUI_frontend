@@ -19,6 +19,10 @@ export interface SubscriptionQuote {
   /** The latest quote the server returned; money stays in its fields, unformatted. */
   readonly preview: Readonly<Ref<SubscriptionPreview | undefined>>
   readonly loading: Readonly<Ref<boolean>>
+  /**
+   * The last quote's failure. A scope change is not surfaced as one: it drops
+   * the quote, which was priced for a workspace the host has left.
+   */
   readonly failure: Readonly<Ref<SubscriptionCommandFailure | undefined>>
   /**
    * Quotes a plan change. A newer call abandons the one before it, so a slow
@@ -60,6 +64,9 @@ export function usePreviewSubscribe(
     loading.value = false
     if (result.status === 'ok') {
       preview.value = result.value
+      failure.value = undefined
+    } else if (result.code === 'SUPERSEDED') {
+      preview.value = undefined
       failure.value = undefined
     } else {
       failure.value = result

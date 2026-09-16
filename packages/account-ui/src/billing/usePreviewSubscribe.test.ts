@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import {
   NOW,
   NO_RESPONSE,
+  SCOPE_CHANGED,
   createBillingHarness,
   httpOk
 } from './__fixtures__/billingHarness'
@@ -81,6 +82,27 @@ describe('usePreviewSubscribe', () => {
       'a price for the plan the host moved off never lands on screen'
     ).toBeUndefined()
     expect(preview.failure.value).toEqual(NO_RESPONSE)
+  })
+
+  it('drops the quote without reporting a failure when the scope moves under it', async () => {
+    const { client, answer } = createBillingHarness()
+    answer('POST', PREVIEW_SUBSCRIBE_ROUTE, httpOk(PRO))
+    const preview = usePreviewSubscribe({ client })
+    await preview.quote({ planSlug: 'pro_monthly' })
+
+    answer('POST', PREVIEW_SUBSCRIBE_ROUTE, SCOPE_CHANGED)
+    await expect(
+      preview.quote({ planSlug: 'creator_monthly' })
+    ).resolves.toEqual(SCOPE_CHANGED)
+
+    expect(
+      preview.preview.value,
+      'a price for the workspace the host left is not this one'
+    ).toBeUndefined()
+    expect(
+      preview.failure.value,
+      'the user did not cause the switch and has nothing to retry'
+    ).toBeUndefined()
   })
 
   it('surfaces a rejected quote without dropping the one on screen', async () => {

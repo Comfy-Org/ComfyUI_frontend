@@ -36,6 +36,30 @@ describe('usePaymentMethods', () => {
     expect(paymentMethods.loading.value).toBe(false)
   })
 
+  it('drops the cards without reporting a failure when the host changes workspace', async () => {
+    const { client, moveToWorkspace } = createBillingHarness()
+    const paymentMethods = usePaymentMethods({ client })
+    await vi.advanceTimersByTimeAsync(0)
+    expect(paymentMethods.methods.value).toEqual(SAVED_CARDS)
+
+    const superseded = paymentMethods.refresh()
+    moveToWorkspace('ws-2')
+    await expect(superseded).resolves.toEqual({
+      status: 'error',
+      code: 'SUPERSEDED'
+    })
+
+    expect(
+      paymentMethods.methods.value,
+      'the workspace the host moved to cannot charge these cards'
+    ).toBeUndefined()
+    expect(paymentMethods.defaultMethod.value).toBeUndefined()
+    expect(
+      paymentMethods.failure.value,
+      'the user did not cause the switch and has nothing to retry'
+    ).toBeUndefined()
+  })
+
   it('drops the cards it holds and re-reads them after a portal round trip', async () => {
     const { client, answer, routes } = createBillingHarness()
     const paymentMethods = usePaymentMethods({ client })
