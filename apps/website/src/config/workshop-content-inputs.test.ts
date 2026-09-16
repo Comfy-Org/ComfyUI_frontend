@@ -138,37 +138,175 @@ describe('use-case input contracts', () => {
     expect(body).not.toHaveProperty('medias')
   })
 
-  it('keeps Seedance modes distinct, including both frame roles and multiple reference images', async () => {
-    const stem = 'byteplus--seedance-2-fast-'
-    const firstLast = detail(`${stem}first-last-frame--animate-images`)
-    const reference = detail(`${stem}reference--generate-videos`)
-    const single = detail(`${stem}text-to-video--generate-videos`)
-    expect(new Set([firstLast.name, reference.name, single.name]).size).toBe(3)
-    const body = await request(firstLast.slug, {
-      first_frame_url: image,
-      last_frame_url: lastImage
-    })
-    expect(body.content).toEqual([
-      { type: 'text', text: expect.any(String) },
-      { type: 'image_url', role: 'first_frame', image_url: { url: image } },
-      { type: 'image_url', role: 'last_frame', image_url: { url: lastImage } }
-    ])
-    const refs = await request(reference.slug, {
-      reference_image_url: image,
-      reference_image_url_2: lastImage
-    })
-    expect(refs.content).toEqual([
-      { type: 'text', text: expect.any(String) },
-      { type: 'image_url', role: 'reference_image', image_url: { url: image } },
-      {
-        type: 'image_url',
-        role: 'reference_image',
-        image_url: { url: lastImage }
+  it.for(['byteplus--seedance-2-fast-', 'byteplus--seedance-2-5-'])(
+    'keeps %s role pages distinct, including both frame roles and multiple reference images',
+    async (stem) => {
+      const firstLast = detail(`${stem}first-last-frame--animate-images`)
+      const reference = detail(`${stem}reference--generate-videos`)
+      const single = detail(`${stem}text-to-video--generate-videos`)
+      expect(new Set([firstLast.name, reference.name, single.name]).size).toBe(
+        3
+      )
+      const body = await request(firstLast.slug, {
+        first_frame_url: image,
+        last_frame_url: lastImage
+      })
+      expect(body.content).toEqual([
+        { type: 'text', text: expect.any(String) },
+        { type: 'image_url', role: 'first_frame', image_url: { url: image } },
+        { type: 'image_url', role: 'last_frame', image_url: { url: lastImage } }
+      ])
+      const refs = await request(reference.slug, {
+        reference_image_url: image,
+        reference_image_url_2: lastImage
+      })
+      expect(refs.content).toEqual([
+        { type: 'text', text: expect.any(String) },
+        {
+          type: 'image_url',
+          role: 'reference_image',
+          image_url: { url: image }
+        },
+        {
+          type: 'image_url',
+          role: 'reference_image',
+          image_url: { url: lastImage }
+        }
+      ])
+      expect(
+        schemaForModel(reference).map((field) => field.name)
+      ).not.toContain('first_frame_url')
+      expect(schemaForModel(single).map((field) => field.name)).not.toContain(
+        'reference_image_url'
+      )
+    }
+  )
+
+  it.for([
+    {
+      slug: 'kling--omni-pro-edit-video--edit-videos',
+      routerId: 'kling/kling-v3-omni',
+      values: {
+        keep_original_sound: false,
+        reference_image_url: image,
+        resolution: '720p',
+        video_url: video
+      },
+      expected: {
+        mode: 'std',
+        sound: undefined,
+        image_list: [{ image_url: image }],
+        video_list: [
+          {
+            video_url: video,
+            refer_type: 'base',
+            keep_original_sound: 'no'
+          }
+        ]
       }
+    },
+    {
+      slug: 'kling--omni-pro-first-last-frame--animate-images',
+      routerId: 'kling/kling-v3-omni',
+      values: { first_frame_url: image, last_frame_url: lastImage },
+      expected: {
+        mode: 'pro',
+        sound: 'off',
+        image_list: [
+          { image_url: image, type: 'first_frame' },
+          { image_url: lastImage, type: 'end_frame' }
+        ],
+        video_list: undefined
+      }
+    },
+    {
+      slug: 'kling--omni-pro-image-to-video--animate-images',
+      routerId: 'kling/kling-video-o1',
+      values: { reference_image_url: image },
+      expected: {
+        mode: 'pro',
+        sound: undefined,
+        image_list: [{ image_url: image }],
+        video_list: undefined
+      }
+    },
+    {
+      slug: 'kling--omni-pro-text-to-video--generate-videos',
+      routerId: 'kling/kling-video-o1',
+      values: {},
+      expected: {
+        mode: 'std',
+        sound: undefined,
+        image_list: undefined,
+        video_list: undefined
+      }
+    },
+    {
+      slug: 'kling--omni-pro-video-to-video--edit-videos',
+      routerId: 'kling/kling-video-o1',
+      values: { reference_image_url: image, video_url: video },
+      expected: {
+        mode: 'pro',
+        sound: undefined,
+        image_list: [{ image_url: image }],
+        video_list: [
+          {
+            video_url: video,
+            refer_type: 'feature',
+            keep_original_sound: 'yes'
+          }
+        ]
+      }
+    }
+  ])(
+    'keeps $slug as a role-specific page on its shared Router endpoint',
+    async ({ slug, routerId, values, expected }) => {
+      expect(detail(slug).execution.id).toBe(routerId)
+      const body = await request(slug, values)
+      expect({
+        mode: body.mode,
+        sound: body.sound,
+        image_list: body.image_list,
+        video_list: body.video_list
+      }).toEqual(expected)
+    }
+  )
+
+  it('rejects Kling reference images combined with an end frame', async () => {
+    await expect(
+      request('kling--omni-pro-first-last-frame--animate-images', {
+        first_frame_url: image,
+        last_frame_url: lastImage,
+        reference_image_url: image
+      })
+    ).rejects.toMatchObject({
+      fieldErrors: { reference_image_url: 'rejected' }
+    })
+  })
+
+  it('offers Kling native audio only on the V3 Omni role that supports it', () => {
+    const fields = (slug: string) =>
+      schemaForModel(detail(slug)).map((field) => field.name)
+    expect(
+      fields('kling--omni-pro-first-last-frame--animate-images')
+    ).toContain('generate_audio')
+    for (const slug of [
+      'kling--omni-pro-image-to-video--animate-images',
+      'kling--omni-pro-text-to-video--generate-videos'
     ])
-    expect(schemaForModel(single).map((field) => field.name)).not.toContain(
-      'last_frame_url'
-    )
+      expect(fields(slug)).not.toContain('generate_audio')
+  })
+
+  it('binds the authored LTX Pro page without exposing its old variant selector', async () => {
+    const slug = 'ltx--text-to-video-v2--generate-videos'
+    expect(detail(slug).execution.id).toBe('ltx/ltx-2-5-pro')
+    const body = await request(slug)
+    expect(body).toMatchObject({
+      prompt: expect.stringMatching(/\S/),
+      resolution: '1280x720'
+    })
+    expect(body).not.toHaveProperty('variant')
+    expect(body).not.toHaveProperty('model')
   })
 
   it.for([

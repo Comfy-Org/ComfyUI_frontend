@@ -247,7 +247,7 @@ export function createRefreshScheduler(
         const committed = host.commitExpired(expiring)
         if (!committed) return
         stopScheduledRefresh()
-        reportOutcome?.('expired', committed)
+        reportOutcome?.({ outcome: 'expired', failure: committed })
       },
       Math.max(0, expiring.expiresAt - now)
     )
@@ -279,18 +279,18 @@ export function createRefreshScheduler(
     if (result.status === 'ok') {
       const rejected = host.commitRefreshed(result.session)
       if (rejected) {
-        reportOutcome?.('permanent_failure', rejected)
+        reportOutcome?.({ outcome: 'permanent_failure', failure: rejected })
         return
       }
       clearExpiry()
       armScheduledRefresh(result.session.expiresAt, host.now())
       publishToSiblings(result.session)
-      reportOutcome?.('succeeded')
+      reportOutcome?.({ outcome: 'succeeded' })
       return
     }
     if (isPermanentSessionError(result.code)) {
       host.commitPermanentFailure(result)
-      reportOutcome?.('permanent_failure', result)
+      reportOutcome?.({ outcome: 'permanent_failure', failure: result })
       return
     }
     if (scheduledRetryCount >= maxRetries) {
@@ -301,7 +301,7 @@ export function createRefreshScheduler(
       // adopt what that sibling mints or be promoted back if nobody does.
       teardownCoordination()
       ensureCoordination()
-      reportOutcome?.('retries_exhausted')
+      reportOutcome?.({ outcome: 'retries_exhausted' })
       return
     }
     const delay = retryBaseMs * 2 ** scheduledRetryCount
@@ -311,7 +311,7 @@ export function createRefreshScheduler(
       scheduledTimer = undefined
       void runScheduledRefresh()
     }, delay)
-    reportOutcome?.('retry_scheduled')
+    reportOutcome?.({ outcome: 'retry_scheduled' })
   }
 
   return {

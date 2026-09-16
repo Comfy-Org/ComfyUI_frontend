@@ -27,7 +27,7 @@ const mockDownloadList = vi.fn(
   >[] => []
 )
 
-vi.mock<unknown>(import('@/platform/distribution/types'), () => ({
+vi.mock(import('@/platform/distribution/types'), () => ({
   isCloud: false
 }))
 
