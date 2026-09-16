@@ -845,34 +845,41 @@ describe('ComboWidget', () => {
         expect(mockGetOptionLabel).not.toHaveBeenCalled()
       })
 
-      it('should handle getOptionLabel error gracefully', () => {
-        const mockGetOptionLabel = vi.fn().mockImplementation(function () {
-          throw new Error('Formatting failed')
-        })
-        const consoleErrorSpy = vi
-          .spyOn(console, 'error')
-          .mockImplementation(() => {})
+      it.for([
+        [HASH_FILENAME, HASH_FILENAME],
+        [0, '0'],
+        [null, ''],
+        [undefined, '']
+      ] as const)(
+        'keeps a safe label when the formatter throws for %j',
+        ([value, expected]) => {
+          const mockGetOptionLabel = vi.fn().mockImplementation(function () {
+            throw new Error('Formatting failed')
+          })
+          const consoleErrorSpy = vi
+            .spyOn(console, 'error')
+            .mockImplementation(() => {})
 
-        widget = new ComboWidget(
-          createMockWidgetConfig({
-            name: 'image',
-            value: HASH_FILENAME,
-            options: {
-              values: [HASH_FILENAME],
-              getOptionLabel: mockGetOptionLabel
-            }
-          }),
-          node
-        )
+          widget = new ComboWidget(
+            createMockWidgetConfig({
+              name: 'image',
+              value: HASH_FILENAME,
+              options: {
+                values: [HASH_FILENAME],
+                getOptionLabel: mockGetOptionLabel
+              }
+            }),
+            node
+          )
 
-        expect(widget._displayValue).toBe(HASH_FILENAME)
-        expect(consoleErrorSpy).toHaveBeenCalledWith(
-          'Failed to map value:',
-          expect.any(Error)
-        )
-
-        consoleErrorSpy.mockRestore()
-      })
+          Reflect.set(widget, 'value', value)
+          expect(widget._displayValue).toBe(expected)
+          expect(consoleErrorSpy).toHaveBeenCalledWith(
+            'Failed to map value:',
+            expect.any(Error)
+          )
+        }
+      )
 
       it('should format non-hash filenames using getOptionLabel', () => {
         const mockGetOptionLabel = vi.fn((value) => `Formatted ${value}`)

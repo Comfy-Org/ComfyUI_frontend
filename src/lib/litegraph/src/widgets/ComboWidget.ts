@@ -54,7 +54,7 @@ export class ComboWidget
         return getOptionLabel(stringValue || null)
       } catch (e) {
         console.error('Failed to map value:', e)
-        return stringValue
+        return extensionValue(stringValue) ?? ''
       }
     }
 
