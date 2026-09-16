@@ -1,9 +1,9 @@
 /**
  * The app's one composition of `@comfyorg/account/billing`: the session-backed
- * transport, the three readers, the operation lifecycle, and the top-up
- * command, wired once over ports the host supplies. Everything browser-bound
- * (storage, the payment-provider script, the document listeners) stays with
- * the caller; this module only assembles.
+ * transport, the readers, the operation lifecycle, and the top-up command,
+ * wired once over ports the host supplies. Everything browser-bound (storage,
+ * the payment-provider script, the document listeners) stays with the caller;
+ * this module only assembles.
  */
 import type {
   BillingOperationLifecycle,
@@ -15,6 +15,8 @@ import type {
   CreditsReader,
   EmbeddedChallengeOutcome,
   EmbeddedChallengePort,
+  PaymentMethodsReader,
+  PlansReader,
   TopupCommand
 } from '@comfyorg/account/billing'
 import {
@@ -22,6 +24,8 @@ import {
   createBillingStatusReader,
   createCapabilitiesReader,
   createCreditsReader,
+  createPaymentMethodsReader,
+  createPlansReader,
   createSessionBillingTransport,
   createTopupCommand,
   driveEmbeddedChallenge,
@@ -46,6 +50,8 @@ export interface BillingSdk {
   readonly status: BillingStatusReader
   readonly credits: CreditsReader
   readonly capabilities: CapabilitiesReader
+  readonly plans: PlansReader
+  readonly paymentMethods: PaymentMethodsReader
   readonly topup: TopupCommand
   readonly driveChallenge: (
     operationId: string
@@ -80,6 +86,8 @@ export function createBillingSdk(options: BillingSdkOptions): BillingSdk {
   const status = createBillingStatusReader({ transport, scopeSource })
   const credits = createCreditsReader({ transport, scopeSource })
   const capabilities = createCapabilitiesReader({ transport, scopeSource })
+  const plans = createPlansReader({ transport, scopeSource })
+  const paymentMethods = createPaymentMethodsReader({ transport, scopeSource })
   const lifecycle = createBillingOperationLifecycle({
     transport,
     scopeSource,
@@ -100,6 +108,8 @@ export function createBillingSdk(options: BillingSdkOptions): BillingSdk {
     status,
     credits,
     capabilities,
+    plans,
+    paymentMethods,
     topup,
     driveChallenge: async (operationId) =>
       driveEmbeddedChallenge(
@@ -115,6 +125,8 @@ export function createBillingSdk(options: BillingSdkOptions): BillingSdk {
       status.dispose()
       credits.dispose()
       capabilities.dispose()
+      plans.dispose()
+      paymentMethods.dispose()
     }
   }
 }
