@@ -54,11 +54,10 @@ ESLint rule enforces the Testing Library query rule. Do not disable it.
 
 #### Mock state that `mockReset` does not touch
 
-`mockReset` restores `vi.fn` implementations and call history. It does not
-restore plain fields, `reactive()` objects, or `ref` values, so a test that
-writes `useFeatureFlags().flags.assetsEnabled = true` leaks it into every
-later test in the file unless something restores it. The mock module owns
-that restore:
+`mockReset` restores `vi.fn` implementations and call history, not plain
+fields, `reactive()` objects, or `ref` values. A test that writes
+`useFeatureFlags().flags.assetsEnabled = true` leaks it into every later test
+unless the mock module registers a restore:
 
 ```ts
 import { resetBeforeEachTest } from '@/utils/__tests__/mockStateReset'
@@ -77,35 +76,28 @@ resetBeforeEachTest(() => Object.assign(featureFlags.flags, defaultFlags()))
 export const useFeatureFlags = vi.fn(() => featureFlags)
 ```
 
-- Restore in place: `Object.assign(reactiveObject, defaults())` and
-  `someRef.value = default`. Writes through the reactive proxy notify every
-  consumer `computed`; replacing the object or ref does not.
-- Do not call `beforeEach` inside a mock module. It binds to whichever file
-  is being collected, so it silently stops running when the module is cached
-  (`isolate: false`) or re-imported after `vi.resetModules()`.
-- Test files do not repeat the reset. They configure state in `beforeEach` or
-  in the test, never at module scope, because the reset runs before the first
-  test just as it does for stubs and spies.
+Restore in place (`Object.assign(reactiveObject, defaults())`,
+`someRef.value = default`) so consumer `computed`s are notified. Do not call
+`beforeEach` inside a mock module: it binds to the file being collected and
+stops running once the module is cached or re-imported after
+`vi.resetModules()`. Test files configure state in `beforeEach` or in the
+test, never at module scope, because the reset runs before the first test.
 
-#### Reactive fields: writable, derived, or derived with a mutator
+#### Reactive fields: match the real contract
 
-Match the real contract:
-
-- Writable in the contract (`flags.x`, `enableAppBuilder`): back it with
-  `reactive()` or `ref` in the mock and assign it in the test. When the
-  contract types the field `readonly` but the mock backs it with a writable
-  `reactive()`, write through `vi.mocked(useFeatureFlags().flags).x = true`.
-- Derived in the contract with a real mutator (`mode` set by `setMode`):
-  derive every `computed` from one private source in the mock and implement
-  the mutator against it, so related fields cannot disagree. Tests drive the
-  state through the contract and register the source for reset:
+- Writable (`flags.x`, `enableAppBuilder`): back it with `reactive()` or
+  `ref` and assign it in the test. When the contract types it `readonly`,
+  write through `vi.mocked(useFeatureFlags().flags).x = true`.
+- Derived with a real mutator (`mode` set by `setMode`): derive every
+  `computed` from one private source and implement the mutator against it, so
+  related fields cannot disagree. Tests call the mutator; the mock registers
+  the source for reset:
 
   ```ts
   const mode = ref<AppMode>('graph')
   const appMode: ReturnType<typeof realUseAppMode> = {
     mode: computed(() => mode.value),
     isArrangeMode: computed(() => mode.value === 'builder:arrange'),
-    // …every other derived field reads `mode` the same way
     setMode: vi.fn((next) => {
       mode.value = next
     })
@@ -115,12 +107,11 @@ Match the real contract:
   })
   ```
 
-- Derived in the contract with no mutator (`isLoggedIn`, `canTopUp`):
-  override it in the test with `vi.spyOn(x, 'value', 'get')`. `restoreMocks`
-  removes the spy, so nothing is registered for reset. Use
-  `mockReturnValue` for a fixed value. When the value changes during the
-  test, use `mockImplementation(() => testRef.value)`: Vue does not track a
-  spy's fixed return, so a consumer `computed` caches the first read.
+- Derived with no mutator (`isLoggedIn`, `canTopUp`): spy on the getter in
+  the test; `restoreMocks` removes it. Use `mockReturnValue` for a fixed
+  value. When the value changes mid-test, read a `ref` inside
+  `mockImplementation`, because Vue does not track a spy's fixed return and
+  a consumer `computed` caches the first read:
 
   ```ts
   const loggedIn = ref(false)
@@ -129,8 +120,8 @@ Match the real contract:
   )
   ```
 
-  Never assign `useCurrentUser().isLoggedIn = computed(() => true)`. It
-  leaks, and a consumer created earlier keeps the old computed.
+Never assign `useCurrentUser().isLoggedIn = computed(() => true)`: it leaks,
+and a consumer created earlier keeps the old computed.
 
 ## No Real Network
 
