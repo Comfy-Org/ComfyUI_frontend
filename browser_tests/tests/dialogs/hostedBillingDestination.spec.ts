@@ -18,10 +18,11 @@ import {
 /**
  * Hosted billing destination — FE-2218, Layer C of the billing rollout.
  *
- * `hosted_billing_destination` decides where Billing & invoices lands, and
- * nothing else does: on `stripe` the app opens the URL `/billing/payment-portal`
- * handed back, on `billing_web` it mints the contract's `/v1/payment-methods`
- * entry and never asks the server for a portal link.
+ * `hosted_billing_destination` decides where Billing & invoices and Plans and
+ * pricing land, and nothing else does: on `stripe` the app opens the URL
+ * `/billing/payment-portal` handed back and shows the in-app pricing table, on
+ * `billing_web` it mints the contract's `/v1/payment-methods` and `/v1/pricing`
+ * entries and never asks the server for a portal link.
  *
  * Drives a raw `page` so the cloud app boots against fully mocked endpoints,
  * the same pattern as creditsTile.spec.ts.
@@ -122,10 +123,12 @@ async function bootApp(page: Page) {
   await page.addInitScript(() => {
     localStorage.setItem('Comfy.userId', 'test-user-e2e')
     // Records the destination instead of opening a tab the test would have to
-    // dismiss; returning a window keeps the app's portal-return refresh armed.
-    window.open = (url) => {
+    // dismiss. The handle follows the spec: a `noopener` open always yields
+    // null, while a plain one returns a window and keeps the app's
+    // portal-return refresh armed.
+    window.open = (url, _target, features) => {
       document.documentElement.dataset.openedUrl = String(url)
-      return window
+      return (features ?? '').includes('noopener') ? null : window
     }
   })
   await page.goto(APP_URL)
@@ -153,6 +156,23 @@ async function openPlanAndCredits(page: Page) {
 function openedUrl(page: Page) {
   return page.locator('html').getAttribute('data-opened-url')
 }
+
+/** The avatar menu's Plans and pricing entry. */
+async function clickPlansAndPricing(page: Page) {
+  await page.getByRole('button', { name: 'Current user' }).click()
+  await page.getByTestId('plans-pricing-menu-item').click()
+}
+
+const pricingHeading = (page: Page) =>
+  page.getByRole('heading', { name: 'Choose a Plan' })
+
+/**
+ * The in-app pricing dialog's frame. Pushed synchronously by the click
+ * handler, unlike its lazily imported contents, so its absence right after
+ * the handler ran is a settled answer rather than a race.
+ */
+const pricingDialog = (page: Page) =>
+  page.locator('[data-dialog-key="subscription-required"]')
 
 test.describe('Hosted billing destination (FE-2218)', { tag: '@cloud' }, () => {
   test('opens the provider portal while the destination is stripe', async ({
@@ -188,5 +208,39 @@ test.describe('Hosted billing destination (FE-2218)', { tag: '@cloud' }, () => {
         `${BILLING_WEB_ORIGIN}/v1/payment-methods?product=comfyui&return_to=comfyui_workspace`
       )
     expect(portalRequests).toHaveLength(0)
+  })
+
+  test('opens the in-app pricing table from the avatar menu while the destination is stripe', async ({
+    page
+  }) => {
+    test.setTimeout(60_000)
+    await mockCloudBoot(page)
+    await bootApp(page)
+
+    await clickPlansAndPricing(page)
+
+    await expect(pricingHeading(page)).toBeVisible()
+    expect(await openedUrl(page)).toBeNull()
+  })
+
+  test('opens the billing-web pricing entry alone from the avatar menu while the destination is billing_web', async ({
+    page
+  }) => {
+    test.setTimeout(60_000)
+    await mockCloudBoot(page)
+    await bootApp(page)
+    await new FeatureFlagHelper(page).setServerFlagsPersistent({
+      hosted_billing_destination: 'billing_web'
+    })
+
+    await clickPlansAndPricing(page)
+
+    await expect
+      .poll(() => openedUrl(page))
+      .toBe(
+        `${BILLING_WEB_ORIGIN}/v1/pricing?product=comfyui&return_to=comfyui_workspace`
+      )
+    await expect(pricingDialog(page)).toHaveCount(0)
+    await expect(pricingHeading(page)).toBeHidden()
   })
 })
