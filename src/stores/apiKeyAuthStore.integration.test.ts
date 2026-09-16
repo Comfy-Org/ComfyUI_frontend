@@ -24,15 +24,9 @@ vi.mock(
     }) as const
 )
 
-vi.mock<unknown>(import('@/composables/useFeatureFlags'), () => ({
-  useFeatureFlags: () => ({
-    flags: { unifiedCloudAuthEnabled: false }
-  })
-}))
+vi.mock(import('@/composables/useFeatureFlags'))
 
-vi.mock<unknown>(import('@/platform/telemetry'), () => ({
-  useTelemetry: () => ({ trackAuth: vi.fn() })
-}))
+vi.mock(import('@/platform/telemetry'))
 
 vi.mock<unknown>(import('@/services/dialogService'), () => ({
   useDialogService: () => ({ showErrorDialog: vi.fn() })

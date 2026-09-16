@@ -211,6 +211,40 @@ describe('AuthForgotPassword', () => {
     ).not.toHaveBeenCalled()
   })
 
+  it('drops a send abandoned by a flag flicker even after the flag returns, staying retryable', async () => {
+    let release: (() => void) | undefined
+    h.sendReset.mockImplementation(
+      () => new Promise<void>((resolve) => (release = resolve))
+    )
+    render(AuthForgotPassword)
+    await typeEmail('user@example.com')
+    await clickSend()
+
+    const flag = h.flag
+    if (!flag) throw new Error('workshop auth flag was not initialized')
+    flag.value = false
+    flag.value = true
+    await nextTick()
+
+    if (!release) throw new Error('sendReset was not called')
+    release()
+    await flushMicrotasks()
+
+    expect(
+      toasts.value,
+      'the flag returns before the send resolves, so only the generation guard - not the still-true enabled flag - can drop the stale resolve: it must not toast success'
+    ).toEqual([])
+    expect(
+      screen.getByRole('button', { name: /send/i }).hasAttribute('disabled'),
+      'the abandoned attempt left the form idle, so the returned flag makes it retryable, not stuck sending'
+    ).toBe(false)
+    await vi.advanceTimersByTimeAsync(3000)
+    expect(
+      assign,
+      'and an abandoned attempt must not schedule a redirect'
+    ).not.toHaveBeenCalled()
+  })
+
   it('drops a send abandoned by unmount: no success toast when it resolves late', async () => {
     let release!: () => void
     h.sendReset.mockImplementation(
@@ -277,8 +311,11 @@ describe('AuthForgotPassword', () => {
     ).toEqual([])
   })
 
-  it('re-enables the send after a stalled reset so it stays retryable', async () => {
-    h.sendReset.mockImplementation(() => new Promise<void>(() => {}))
+  it('re-enables the send after a stalled reset, then drops its late resolve', async () => {
+    let release!: () => void
+    h.sendReset.mockImplementation(
+      () => new Promise<void>((resolve) => (release = resolve))
+    )
     render(AuthForgotPassword)
     await typeEmail('user@example.com')
     await clickSend()
@@ -290,8 +327,21 @@ describe('AuthForgotPassword', () => {
 
     expect(
       send.hasAttribute('disabled'),
-      'a reset that never resolves must not leave the control disabled forever'
+      'a reset that stalls past the bound must not leave the control disabled forever'
     ).toBe(false)
+
+    release()
+    await flushMicrotasks()
+
+    expect(
+      toasts.value,
+      'a send that resolves after the bounding timeout was abandoned and must not toast success'
+    ).toEqual([])
+    await vi.advanceTimersByTimeAsync(3000)
+    expect(
+      assign,
+      'and an abandoned late resolve must not schedule a redirect back to login'
+    ).not.toHaveBeenCalled()
   })
 
   it('re-enables the send after a stalled Firebase load so it stays retryable', async () => {

@@ -1,4 +1,5 @@
 import * as THREE from 'three'
+import { fromAny } from '@total-typescript/shoehorn'
 import type { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -21,7 +22,7 @@ const { viewHelperInstances, mockHandleClick } = vi.hoisted(() => ({
   mockHandleClick: vi.fn()
 }))
 
-vi.mock('three/examples/jsm/helpers/ViewHelper', () => {
+vi.mock(import('three/examples/jsm/helpers/ViewHelper'), () => {
   class ViewHelper {
     animating = false
     visible = true
@@ -33,10 +34,10 @@ vi.mock('three/examples/jsm/helpers/ViewHelper', () => {
       public camera: THREE.Camera,
       public domElement: HTMLElement
     ) {
-      viewHelperInstances.push(this as unknown as MockViewHelperInstance)
+      viewHelperInstances.push(this)
     }
   }
-  return { ViewHelper }
+  return { ViewHelper: fromAny(ViewHelper) }
 })
 
 function makeMockEventManager() {

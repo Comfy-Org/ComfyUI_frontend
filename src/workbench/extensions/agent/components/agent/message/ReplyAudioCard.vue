@@ -37,7 +37,7 @@ function download(): void {
 
 <template>
   <div
-    class="group/audio border-agent-border flex w-full items-center gap-2.5 rounded-[10px] border px-3 py-2.5"
+    class="group/audio flex w-full items-center gap-2.5 rounded-lg border border-component-node-border px-3 py-2.5"
   >
     <audio
       :ref="(el) => (audioRef = el as HTMLAudioElement)"
@@ -49,7 +49,7 @@ function download(): void {
     <button
       type="button"
       :aria-label="isPlaying ? t('g.pause') : t('g.play')"
-      class="border-agent-border bg-agent-surface-raised text-agent-fg-muted hover:bg-agent-surface-hover hover:text-agent-fg flex size-10 shrink-0 cursor-pointer items-center justify-center rounded-md border transition-colors"
+      class="flex size-10 shrink-0 cursor-pointer items-center justify-center rounded-md border border-component-node-border bg-secondary-background text-muted-foreground transition-colors hover:bg-secondary-background-hover hover:text-base-foreground"
       @click="togglePlayPause"
     >
       <span
@@ -62,12 +62,12 @@ function download(): void {
       />
     </button>
     <div class="flex min-w-0 flex-1 flex-col">
-      <span class="text-agent-fg truncate text-sm/4 font-medium">{{
+      <span class="truncate text-sm/4 font-medium text-base-foreground">{{
         title
       }}</span>
       <div class="flex h-6 items-center gap-4">
         <span
-          class="text-agent-fg-subtle text-xs whitespace-nowrap tabular-nums"
+          class="text-xs whitespace-nowrap text-muted-foreground tabular-nums"
         >
           {{ formattedCurrentTime }} / {{ formattedDuration }}
         </span>
@@ -83,7 +83,7 @@ function download(): void {
           <button
             type="button"
             :aria-label="muted ? t('g.unmute') : t('g.mute')"
-            class="hover:bg-agent-surface-hover hover:text-agent-fg focus-visible:ring-agent-accent text-agent-fg-muted flex size-6 cursor-pointer items-center justify-center rounded-lg transition-colors focus-visible:ring-2 focus-visible:outline-none"
+            class="flex size-6 cursor-pointer items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-secondary-background-hover hover:text-base-foreground focus-visible:ring-2 focus-visible:ring-primary-background focus-visible:outline-none"
             @click="toggleMute"
           >
             <span :class="cn('size-4', volumeIcon)" />
@@ -91,7 +91,7 @@ function download(): void {
           <button
             type="button"
             :aria-label="t('g.download')"
-            class="hover:bg-agent-surface-hover hover:text-agent-fg focus-visible:ring-agent-accent text-agent-fg-muted flex size-6 cursor-pointer items-center justify-center rounded-lg transition-colors focus-visible:ring-2 focus-visible:outline-none"
+            class="flex size-6 cursor-pointer items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-secondary-background-hover hover:text-base-foreground focus-visible:ring-2 focus-visible:ring-primary-background focus-visible:outline-none"
             @click="download"
           >
             <span class="icon-[lucide--download] size-4" />

@@ -1,3 +1,4 @@
+// @vitest-environment happy-dom
 import { describe, expect, it, vi } from 'vitest'
 import type { MockedFunction } from 'vitest'
 
@@ -7,9 +8,22 @@ import type {
   SessionSnapshot
 } from '../session.js'
 import type { AccountCredential, SessionResult } from '../sessionContracts.js'
+import type { BillingHttpResponse, BillingResult } from './billingContracts.js'
+import type { BillingScope, BillingScopeSource } from './billingScope.js'
+import { createCredentialedBillingTransport } from './credentialedTransport.js'
+import { codeForHttpStatus } from './httpStatus.js'
 import { createSessionBillingTransport } from './transport.js'
 
 const BASE = 'https://cloud.test/api'
+
+function unwrapAnswer(
+  result: BillingResult<BillingHttpResponse>
+): BillingHttpResponse {
+  if (result.status !== 'ok') {
+    throw new Error(`expected an HTTP answer, got ${result.code}`)
+  }
+  return result.value
+}
 
 const PERSONAL_CREDENTIAL = {
   token: 'workspace-jwt',
@@ -569,4 +583,248 @@ describe('createSessionBillingTransport', () => {
       code: 'REQUEST_FAILED'
     })
   })
+})
+
+describe('createCredentialedBillingTransport', () => {
+  const SCOPE: BillingScope = {
+    userId: 'uid-1',
+    workspaceId: 'ws-1',
+    role: 'owner'
+  }
+
+  function fakeScopeSource(initial: BillingScope | undefined) {
+    let scope = initial
+    const source: BillingScopeSource = {
+      getScope: () => scope,
+      subscribe: () => () => {}
+    }
+    return {
+      source,
+      moveTo(next: BillingScope | undefined) {
+        scope = next
+      }
+    }
+  }
+
+  function makeTransport(
+    options: {
+      initialScope?: BillingScope | undefined
+      credentials?: RequestCredentials
+      responses?: Response[]
+      fetchImpl?: MockedFunction<typeof fetch>
+    } = {}
+  ) {
+    const scope = fakeScopeSource(
+      'initialScope' in options ? options.initialScope : SCOPE
+    )
+    const queue = [...(options.responses ?? [jsonResponse(200, { ok: true })])]
+    const fetchImpl =
+      options.fetchImpl ??
+      vi.fn<typeof fetch>(async () => queue.shift() ?? jsonResponse(200, {}))
+    const transport = createCredentialedBillingTransport({
+      resolveUrl: (route) => `${BASE}${route}`,
+      scopeSource: scope.source,
+      fetchImpl,
+      ...(options.credentials === undefined
+        ? {}
+        : { credentials: options.credentials })
+    })
+    return { transport, fetchImpl, moveTo: scope.moveTo }
+  }
+
+  it.for([
+    [undefined, 'include'],
+    ['same-origin', 'same-origin'],
+    ['omit', 'omit']
+  ] as const)(
+    'sends the host credentials %s as %s and never an Authorization header',
+    async ([credentials, expected]) => {
+      const { transport, fetchImpl } = makeTransport(
+        credentials === undefined ? {} : { credentials }
+      )
+
+      await transport({ method: 'GET', route: '/billing/status' })
+
+      expect(fetchImpl.mock.calls[0]?.[0]).toBe(`${BASE}/billing/status`)
+      expect(fetchImpl.mock.calls[0]?.[1]?.credentials).toBe(expected)
+      expect(sentHeaders(fetchImpl).get('Authorization')).toBeNull()
+    }
+  )
+
+  it('forwards a write body and the key the backend deduplicates it by', async () => {
+    const { transport, fetchImpl } = makeTransport()
+
+    await transport({
+      method: 'POST',
+      route: '/billing/topup',
+      body: { amount_cents: 500 },
+      idempotencyKey: 'key-1'
+    })
+
+    expect(fetchImpl.mock.calls[0]?.[1]?.body).toBe('{"amount_cents":500}')
+    expect(sentHeaders(fetchImpl).get('Idempotency-Key')).toBe('key-1')
+  })
+
+  it('reports NOT_AUTHENTICATED without sending a request when no scope is established', async () => {
+    const { transport, fetchImpl } = makeTransport({ initialScope: undefined })
+
+    const result = await transport({ method: 'GET', route: '/billing/status' })
+
+    expect(result).toEqual({ status: 'error', code: 'NOT_AUTHENTICATED' })
+    expect(fetchImpl).not.toHaveBeenCalled()
+  })
+
+  it.for([
+    { moved: 'to another workspace', next: { ...SCOPE, workspaceId: 'ws-2' } },
+    { moved: 'to no scope', next: undefined }
+  ])(
+    'refuses to attribute a response to a scope the host has left, $moved',
+    async ({ next }: { next: BillingScope | undefined }) => {
+      const scope = fakeScopeSource(SCOPE)
+      const transport = createCredentialedBillingTransport({
+        resolveUrl: (route) => `${BASE}${route}`,
+        scopeSource: scope.source,
+        fetchImpl: vi.fn<typeof fetch>(async () => {
+          scope.moveTo(next)
+          return jsonResponse(200, { ok: true })
+        })
+      })
+
+      const result = await transport({
+        method: 'GET',
+        route: '/billing/status'
+      })
+
+      expect(result).toEqual({ status: 'error', code: 'SUPERSEDED' })
+    }
+  )
+
+  it('marks a 401 as an ended session, having nothing to re-mint', async () => {
+    const { transport, fetchImpl } = makeTransport({
+      responses: [jsonResponse(401, { message: 'expired' })]
+    })
+
+    const result = await transport({ method: 'GET', route: '/billing/status' })
+
+    expect(result).toEqual({
+      status: 'ok',
+      value: {
+        httpStatus: 401,
+        body: { message: 'expired' },
+        authenticationNotRenewable: true,
+        header: expect.any(Function)
+      }
+    })
+    expect(codeForHttpStatus(unwrapAnswer(result))).toBe('NOT_AUTHENTICATED')
+    expect(fetchImpl).toHaveBeenCalledOnce()
+  })
+
+  it('leaves a 403 as the refusal it is', async () => {
+    const { transport } = makeTransport({
+      responses: [jsonResponse(403, { message: 'no' })]
+    })
+
+    const result = await transport({ method: 'GET', route: '/billing/status' })
+
+    const answer = unwrapAnswer(result)
+    expect(answer.authenticationNotRenewable).toBeUndefined()
+    expect(codeForHttpStatus(answer)).toBe('ACCESS_DENIED')
+  })
+
+  it('times out a body that never arrives', async () => {
+    const { transport } = makeTransport({ fetchImpl: stallingFetch() })
+
+    const pending = transport({
+      method: 'GET',
+      route: '/billing/status',
+      timeoutMs: 1_000
+    })
+    await vi.advanceTimersByTimeAsync(1_000)
+
+    await expect(pending).resolves.toEqual({
+      status: 'error',
+      code: 'REQUEST_FAILED'
+    })
+  })
+
+  it('cancels a body that never arrives when the caller aborts', async () => {
+    const { transport } = makeTransport({ fetchImpl: stallingFetch() })
+    const caller = new AbortController()
+
+    const pending = transport({
+      method: 'GET',
+      route: '/billing/status',
+      signal: caller.signal
+    })
+    await vi.advanceTimersByTimeAsync(0)
+    caller.abort()
+
+    await expect(pending).resolves.toEqual({
+      status: 'error',
+      code: 'REQUEST_FAILED'
+    })
+  })
+})
+
+/**
+ * The browser refuses `fetch` any receiver but its own global: calling it as
+ * a method on an options object throws `Illegal invocation`, and every
+ * billing request fails before it leaves the page. happy-dom does not
+ * enforce that, so this fake does.
+ */
+function globalOnlyFetch(): typeof fetch {
+  return function (
+    this: unknown,
+    _input: RequestInfo | URL,
+    _init?: RequestInit
+  ) {
+    if (this !== undefined && this !== globalThis) {
+      throw new TypeError(
+        "Failed to execute 'fetch' on 'Window': Illegal invocation"
+      )
+    }
+    return Promise.resolve(jsonResponse(200, { ok: true }))
+  }
+}
+
+describe('every billing transport', () => {
+  it.for([
+    {
+      name: 'createSessionBillingTransport',
+      create: (fetchImpl: typeof fetch) =>
+        createSessionBillingTransport({
+          session: fakeSession({
+            ensureFresh: { status: 'ok', session: credential() }
+          }).session,
+          resolveUrl: (route) => `${BASE}${route}`,
+          fetchImpl
+        })
+    },
+    {
+      name: 'createCredentialedBillingTransport',
+      create: (fetchImpl: typeof fetch) =>
+        createCredentialedBillingTransport({
+          resolveUrl: (route) => `${BASE}${route}`,
+          scopeSource: {
+            getScope: () => ({
+              userId: 'uid-1',
+              workspaceId: 'ws-1',
+              role: 'owner'
+            }),
+            subscribe: () => () => {}
+          },
+          fetchImpl
+        })
+    }
+  ])(
+    '$name calls fetch as a browser allows it to be called',
+    async ({ create }) => {
+      const result = await create(globalOnlyFetch())({
+        method: 'GET',
+        route: '/billing/status'
+      })
+
+      expect(unwrapAnswer(result).httpStatus).toBe(200)
+    }
+  )
 })
