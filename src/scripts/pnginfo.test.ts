@@ -1,8 +1,10 @@
 import fs from 'fs'
 import path from 'path'
+import { fromPartial } from '@total-typescript/shoehorn'
 import { describe, expect, it, vi } from 'vitest'
 
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
+import type { ComfyApi } from './api'
 
 import { api } from './api'
 import { getFromAvifFile } from './metadata/avif'
@@ -17,20 +19,19 @@ import {
   importA1111
 } from './pnginfo'
 
-vi.mock('./api', async (importOriginal) => ({
-  ...(await importOriginal<typeof import('./api')>()),
-  api: {
+vi.mock(import('./api'), () => ({
+  api: fromPartial<ComfyApi>({
     getEmbeddings: vi.fn()
-  }
+  })
 }))
 
-vi.mock('./metadata/png', () => ({
+vi.mock(import('./metadata/png'), () => ({
   getFromPngFile: vi.fn()
 }))
-vi.mock('./metadata/flac', () => ({
+vi.mock(import('./metadata/flac'), () => ({
   getFromFlacFile: vi.fn()
 }))
-vi.mock('./metadata/avif', () => ({
+vi.mock(import('./metadata/avif'), () => ({
   getFromAvifFile: vi.fn()
 }))
 
@@ -316,6 +317,28 @@ describe('importA1111', () => {
       'Failed to load embeddings for A1111 import:',
       expect.any(TypeError)
     )
+  })
+
+  it('awaits the pre-clear hook before mutating the graph', async () => {
+    const graph = new LGraph()
+    const clear = vi.spyOn(graph, 'clear')
+    vi.mocked(api.getEmbeddings).mockResolvedValue([])
+    mockAvailableCoreNodes(graph)
+    let release: (() => void) | undefined
+    const beforeGraphClear = vi.fn(
+      () =>
+        new Promise<void>((resolve) => {
+          release = resolve
+        })
+    )
+
+    const imported = importA1111(graph, parameters, beforeGraphClear)
+    await vi.waitFor(() => expect(beforeGraphClear).toHaveBeenCalledOnce())
+    expect(clear).not.toHaveBeenCalled()
+
+    release?.()
+    await expect(imported).resolves.toBe('imported')
+    expect(clear).toHaveBeenCalledOnce()
   })
 
   it.each([

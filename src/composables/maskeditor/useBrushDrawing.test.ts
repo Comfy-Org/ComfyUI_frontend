@@ -1,33 +1,15 @@
+import { useMaskEditorStore } from '@/stores/maskEditorStore'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { effectScope, ref } from 'vue'
 import type { EffectScope } from 'vue'
+import { BrushShape, Tools } from '@/extensions/core/maskeditor/types'
 
-// vi.hoisted runs before imports — only vi.fn() is safe here (no Vue)
-const saveStateSpy = vi.hoisted(() => vi.fn())
+let saveStateSpy: ReturnType<typeof vi.spyOn>
 
-const mockStoreDef = vi.hoisted(() => ({
-  brushSettings: {
-    size: 20,
-    hardness: 0.9,
-    opacity: 1,
-    stepSize: 5,
-    type: 'arc' as string
-  },
-  currentTool: 'pen' as string,
-  activeLayer: 'mask' as string,
-  maskCanvas: null as HTMLCanvasElement | null,
-  maskCtx: null as CanvasRenderingContext2D | null,
-  rgbCanvas: null as HTMLCanvasElement | null,
-  rgbCtx: null as CanvasRenderingContext2D | null,
-  maskBlendMode: 'black',
-  maskOpacity: 0.8,
-  maskColor: { r: 0, g: 0, b: 0 },
-  rgbColor: '#FF0000',
-  canvasHistory: { saveState: saveStateSpy }
-}))
+let mockStoreDef: ReturnType<typeof useMaskEditorStore>
 
 // vi.mock factory runs after hoisting — ref/computed from Vue are available
-vi.mock('./useGPUResources', () => {
+vi.mock(import('./useGPUResources'), () => {
   // Singletons shared across all calls to useGPUResources() in this test file
   const isSavingHistory = ref(false)
   const dirtyRect = ref({
@@ -64,28 +46,24 @@ vi.mock('./useGPUResources', () => {
   }
 })
 
-vi.mock('./useCoordinateTransform', () => ({
+vi.mock<unknown>(import('./useCoordinateTransform'), () => ({
   useCoordinateTransform: () => ({
     screenToCanvas: vi.fn(({ x, y }: { x: number; y: number }) => ({ x, y }))
   })
 }))
 
-vi.mock('./useBrushPersistence', () => ({
+vi.mock(import('./useBrushPersistence'), () => ({
   useBrushPersistence: () => ({ loadAndApply: vi.fn(), save: vi.fn() })
 }))
 
-vi.mock('./useBrushAdjustment', () => ({
+vi.mock(import('./useBrushAdjustment'), () => ({
   useBrushAdjustment: () => ({
     startBrushAdjustment: vi.fn(),
     handleBrushAdjustment: vi.fn()
   })
 }))
 
-vi.mock('@/stores/maskEditorStore', () => ({
-  useMaskEditorStore: vi.fn(() => mockStoreDef)
-}))
-
-vi.mock('@/scripts/app', () => ({
+vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: { registerExtension: vi.fn() }
 }))
 
@@ -128,8 +106,20 @@ function setup() {
 }
 
 beforeEach(() => {
+  mockStoreDef = useMaskEditorStore()
+  mockStoreDef.brushSettings = {
+    size: 20,
+    hardness: 0.9,
+    opacity: 1,
+    stepSize: 5,
+    type: BrushShape.Arc
+  }
+  saveStateSpy = vi
+    .spyOn(mockStoreDef.canvasHistory, 'saveState')
+    .mockImplementation(() => {})
   const mockCtx = makeMockCtx()
   const mockCanvas = {
+    getContext: vi.fn().mockImplementation(() => mockStoreDef.rgbCtx),
     width: 200,
     height: 200,
     style: { opacity: '' }
@@ -139,7 +129,7 @@ beforeEach(() => {
   mockStoreDef.maskCtx = mockCtx
   mockStoreDef.rgbCanvas = mockCanvas
   mockStoreDef.rgbCtx = mockCtx
-  mockStoreDef.currentTool = 'pen'
+  mockStoreDef.currentTool = Tools.MaskPen
   mockStoreDef.activeLayer = 'mask'
 
   const gpu = useGPUResources()
@@ -167,7 +157,7 @@ describe('startDrawing', () => {
   })
 
   it('sets DestinationOut composition when tool is eraser', async () => {
-    mockStoreDef.currentTool = 'eraser'
+    mockStoreDef.currentTool = Tools.Eraser
     const { startDrawing } = setup()
     await startDrawing(makePointerEvent(50, 50))
     expect(mockStoreDef.maskCtx!.globalCompositeOperation).toBe(
@@ -233,7 +223,7 @@ describe('handleDrawing', () => {
   })
 
   it('sets DestinationOut composition when tool is eraser during move', async () => {
-    mockStoreDef.currentTool = 'eraser'
+    mockStoreDef.currentTool = Tools.Eraser
     vi.spyOn(window, 'requestAnimationFrame').mockImplementation((cb) => {
       cb(0)
       return 0
@@ -266,6 +256,7 @@ describe('drawEnd canvas visibility', () => {
   it('restores rgb canvas opacity when activeLayer is rgb', async () => {
     mockStoreDef.activeLayer = 'rgb'
     const mockRgbCanvas = {
+      getContext: vi.fn().mockImplementation(() => mockStoreDef.rgbCtx),
       width: 200,
       height: 200,
       style: { opacity: '' }
@@ -308,7 +299,7 @@ describe('drawEnd', () => {
   })
 
   it('passes isErasing=true to compositeStroke when tool is eraser', async () => {
-    mockStoreDef.currentTool = 'eraser'
+    mockStoreDef.currentTool = Tools.Eraser
     const { startDrawing, drawEnd } = setup()
     await startDrawing(makePointerEvent(50, 50))
     await drawEnd(makePointerEvent(60, 60))
@@ -318,6 +309,7 @@ describe('drawEnd', () => {
   it('restores mask canvas opacity after drawing on mask layer', async () => {
     mockStoreDef.activeLayer = 'mask'
     const mockMaskCanvas = {
+      getContext: vi.fn().mockImplementation(() => mockStoreDef.maskCtx),
       width: 200,
       height: 200,
       style: { opacity: '' }

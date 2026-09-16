@@ -53,9 +53,7 @@ function applyWidgetValues(node: LGraphNode, values: WidgetValues) {
 }
 
 function isOverCanvas(clientX: number, clientY: number): boolean {
-  const canvasElement = useCanvasStore().canvas?.canvas as
-    | HTMLCanvasElement
-    | undefined
+  const canvasElement = useCanvasStore().canvas?.canvas
   if (!canvasElement) return false
   const rect = canvasElement.getBoundingClientRect()
   return (

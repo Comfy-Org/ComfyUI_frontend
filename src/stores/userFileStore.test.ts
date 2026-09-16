@@ -4,7 +4,7 @@ import { api } from '@/scripts/api'
 import { UserFile, useUserFileStore } from '@/stores/userFileStore'
 
 // Mock the api
-vi.mock('@/scripts/api', () => ({
+vi.mock<unknown>(import('@/scripts/api'), () => ({
   api: {
     listUserDataFullInfo: vi.fn(),
     getUserData: vi.fn(),

@@ -1,40 +1,66 @@
+import { useSettingStore } from '@/platform/settings/settingStore'
 import { fromAny } from '@total-typescript/shoehorn'
-import { nextTick, ref } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { nextTick, ref } from 'vue'
 
+import { SubgraphNode } from '@/lib/litegraph/src/litegraph'
+import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { createBoundaryLinkedSubgraph } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
+import type { MissingMediaCandidate } from '@/platform/missingMedia/types'
+import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import { useExecutionErrorStore } from '@/stores/executionErrorStore'
+import type { useComfyRegistryService } from '@/services/comfyRegistryService'
 import type { MissingNodeType } from '@/types/comfy'
 import type { NodeExecutionId } from '@/types/nodeIdentification'
-import type * as GraphTraversalUtil from '@/utils/graphTraversalUtil'
+import { toNodeId } from '@/types/nodeId'
+import { nodeError, validationError } from '@/utils/__tests__/nodeErrorHelpers'
+import {
+  forEachNode,
+  getExecutionIdByNode,
+  getNodeByExecutionId,
+  getRootParentNode,
+  mapAllNodes
+} from '@/utils/graphTraversalUtil'
+import { isLGraphNode } from '@/utils/litegraphUtil'
 
-vi.mock('@/scripts/app', () => ({
+import { useErrorGroups } from './useErrorGroups'
+
+vi.mock(import('@/services/comfyRegistryService'), () => ({
+  useComfyRegistryService: () =>
+    fromAny<ReturnType<typeof useComfyRegistryService>, unknown>({
+      inferPackFromNodeName: vi.fn(async () => null),
+      listAllPacks: vi.fn(async () => ({ nodes: [] })),
+      getPackById: vi.fn()
+    })
+}))
+
+vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: {
     isGraphReady: true,
     rootGraph: {
       serialize: vi.fn(() => ({})),
       getNodeById: vi.fn()
+    },
+    get rootGraphOrUndefined() {
+      return this.rootGraph
     }
   }
 }))
 
-vi.mock('@/utils/graphTraversalUtil', () => ({
-  getNodeByExecutionId: vi.fn(),
-  getExecutionIdByNode: vi.fn(),
-  getRootParentNode: vi.fn(() => null),
-  forEachNode: vi.fn(),
-  mapAllNodes: vi.fn(() => [])
-}))
+vi.mock(import('@/utils/graphTraversalUtil'), { spy: true })
 
 const mockIsCloud = vi.hoisted(() => ({ value: false }))
 const unknownValidationMessage = vi.hoisted(
   () => 'A node returned a validation error ComfyUI does not recognize.'
 )
-vi.mock('@/platform/distribution/types', () => ({
+vi.mock(import('@/platform/distribution/types'), () => ({
   get isCloud() {
     return mockIsCloud.value
   }
 }))
 
-vi.mock('@/i18n', () => {
+vi.mock<unknown>(import('@/i18n'), () => {
   const messages: Record<string, string> = {
     'errorCatalog.validationErrors.required_input_missing.title':
       'Missing connection',
@@ -64,6 +90,9 @@ vi.mock('@/i18n', () => {
       'Prompt has no outputs',
     'errorCatalog.promptErrors.prompt_no_outputs.desc':
       'The workflow does not contain any output nodes (e.g. Save Image, Preview Image) to produce a result.',
+    'errorCatalog.promptErrors.apply_failed.title': 'Agent edit failed',
+    'errorCatalog.promptErrors.apply_failed.desc':
+      'An agent edit could not be applied to the workflow document.',
     'errorCatalog.runtimeErrors.execution_failed.title': 'Execution failed',
     'errorCatalog.runtimeErrors.execution_failed.message':
       'Node threw an error during execution.',
@@ -103,41 +132,20 @@ vi.mock('@/i18n', () => {
   }
 })
 
-vi.mock('@/stores/comfyRegistryStore', () => ({
-  useComfyRegistryStore: () => ({
-    inferPackFromNodeName: vi.fn()
-  })
-}))
-
-vi.mock('@/utils/nodeTitleUtil', () => ({
+vi.mock(import('@/utils/nodeTitleUtil'), () => ({
   resolveNodeDisplayName: vi.fn(() => '')
 }))
 
-vi.mock('@/utils/litegraphUtil', () => ({
+vi.mock<unknown>(import('@/utils/litegraphUtil'), () => ({
   isLGraphNode: vi.fn(() => false)
 }))
 
-vi.mock(
-  '@/platform/missingModel/composables/useMissingModelInteractions',
+vi.mock<unknown>(
+  import('@/platform/missingModel/composables/useMissingModelInteractions'),
   () => ({
     clearMissingModelState: vi.fn()
   })
 )
-
-import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import { useExecutionErrorStore } from '@/stores/executionErrorStore'
-import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
-import { isLGraphNode } from '@/utils/litegraphUtil'
-import { nodeError, validationError } from '@/utils/__tests__/nodeErrorHelpers'
-import { createBoundaryLinkedSubgraph } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
-import {
-  getExecutionIdByNode,
-  getNodeByExecutionId
-} from '@/utils/graphTraversalUtil'
-import { SubgraphNode } from '@/lib/litegraph/src/litegraph'
-import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import { useErrorGroups } from './useErrorGroups'
-import type { MissingMediaCandidate } from '@/platform/missingMedia/types'
 
 function makeMissingNodeType(
   type: string,
@@ -214,6 +222,10 @@ describe('useErrorGroups', () => {
   beforeEach(() => {
     mockIsCloud.value = false
     vi.mocked(isLGraphNode).mockReturnValue(false)
+    vi.mocked(forEachNode).mockImplementation(() => {})
+    vi.mocked(mapAllNodes).mockReturnValue([])
+    vi.mocked(getRootParentNode).mockReturnValue(null)
+    vi.mocked(getNodeByExecutionId).mockReturnValue(null)
   })
 
   describe('missingPackGroups', () => {
@@ -536,12 +548,12 @@ describe('useErrorGroups', () => {
       const { rootGraph, host } = createBoundaryLinkedSubgraph({
         interiorType: 'InteriorClass'
       })
-      const { getNodeByExecutionId: actualGetNodeByExecutionId } =
-        await vi.importActual<typeof GraphTraversalUtil>(
-          '@/utils/graphTraversalUtil'
-        )
       vi.mocked(getNodeByExecutionId).mockImplementation((_, nodeId) => {
-        return actualGetNodeByExecutionId(rootGraph, String(nodeId))
+        const [hostId, interiorId] = nodeId.split(':').map(Number)
+        const subgraphNode = rootGraph.getNodeById(toNodeId(hostId))
+        return interiorId && subgraphNode instanceof SubgraphNode
+          ? (subgraphNode.subgraph.getNodeById(toNodeId(interiorId)) ?? null)
+          : subgraphNode
       })
       store.recordNodeErrors({
         '12:5': nodeError(
@@ -642,7 +654,6 @@ describe('useErrorGroups', () => {
         (g) => g.type === 'execution'
       )
       expect(execGroups.length).toBeGreaterThan(0)
-      if (execGroups[0].type !== 'execution') return
       expect(execGroups[0].cards[0].errors[0]).toMatchObject({
         message: 'RuntimeError: mat1 and mat2 shapes cannot be multiplied',
         details: 'line 1\nline 2',
@@ -706,6 +717,26 @@ describe('useErrorGroups', () => {
           g.type === 'execution' && g.displayTitle === 'Prompt has no outputs'
       )
       expect(promptGroup).toBeDefined()
+    })
+
+    it('carries prompt error details onto the card item', async () => {
+      const { store, groups } = createErrorGroups()
+      store.recordPromptError({
+        type: 'apply_failed',
+        message: 'An agent edit could not be applied to the workflow document.',
+        details: 'op_rejected: unknown_widget at seed'
+      })
+      await nextTick()
+
+      const promptGroup = groups.allErrorGroups.value.find(
+        (g) => g.groupKey === 'execution:prompt:apply_failed'
+      )
+      expect(promptGroup).toBeDefined()
+      const details =
+        promptGroup && 'cards' in promptGroup
+          ? promptGroup.cards[0]?.errors[0]?.details
+          : undefined
+      expect(details).toBe('op_rejected: unknown_widget at seed')
     })
 
     it('includes prompt error when a node is selected', async () => {
@@ -865,7 +896,6 @@ describe('useErrorGroups', () => {
         (g) => g.type === 'execution'
       )
       for (const group of executionGroups) {
-        if (group.type !== 'execution') continue
         const hasMatch = group.cards.some(
           (c) =>
             c.title.toLowerCase().includes('sampler') ||
@@ -1006,6 +1036,27 @@ describe('useErrorGroups', () => {
         (g) => g.directory === null && !g.isAssetSupported
       )
       expect(unsupported).toBeUndefined()
+    })
+
+    it('drops the missing_model group while its warning is off and restores it when on', async () => {
+      const { store, groups } = createErrorGroups()
+      const settingStore = useSettingStore()
+      store.surfaceMissingModels([makeModel('model_a.safetensors')])
+      await nextTick()
+      expect(groups.missingModelGroups.value).toHaveLength(1)
+
+      settingStore.settingValues['Comfy.ErrorSystem.ShowMissingModels'] = false
+      await nextTick()
+
+      expect(groups.missingModelGroups.value).toEqual([])
+      expect(
+        groups.allErrorGroups.value.some((g) => g.type === 'missing_model')
+      ).toBe(false)
+
+      settingStore.settingValues['Comfy.ErrorSystem.ShowMissingModels'] = true
+      await nextTick()
+
+      expect(groups.missingModelGroups.value).toHaveLength(1)
     })
 
     it('includes missing_model group in allErrorGroups', async () => {
@@ -1172,7 +1223,7 @@ describe('useErrorGroups', () => {
       const selectedNode = { id: '1' }
       vi.mocked(getNodeByExecutionId).mockImplementation((_, nodeId) =>
         fromAny<LGraphNode, unknown>(
-          String(nodeId) === '1' ? selectedNode : { id: String(nodeId) }
+          nodeId === '1' ? selectedNode : { id: nodeId }
         )
       )
       canvasStore.selectedItems = fromAny<
@@ -1205,7 +1256,7 @@ describe('useErrorGroups', () => {
         (g) => g.type === 'execution'
       )
       const displayedCardIds = executionGroups.flatMap((g) =>
-        g.type === 'execution' ? g.cards.map((c) => c.id) : []
+        g.cards.map((c) => c.id)
       )
       expect(displayedCardIds).toContain('node-1')
       expect(displayedCardIds).toContain('node-2')
@@ -1217,7 +1268,7 @@ describe('useErrorGroups', () => {
       const canvasStore = useCanvasStore()
       vi.mocked(isLGraphNode).mockReturnValue(true)
       vi.mocked(getNodeByExecutionId).mockImplementation((_, nodeId) =>
-        fromAny<LGraphNode, unknown>({ id: String(nodeId) })
+        fromAny<LGraphNode, unknown>({ id: nodeId })
       )
       canvasStore.selectedItems = fromAny<
         typeof canvasStore.selectedItems,
@@ -1250,7 +1301,7 @@ describe('useErrorGroups', () => {
       const canvasStore = useCanvasStore()
       vi.mocked(isLGraphNode).mockReturnValue(true)
       vi.mocked(getNodeByExecutionId).mockImplementation((_, nodeId) =>
-        fromAny<LGraphNode, unknown>({ id: String(nodeId) })
+        fromAny<LGraphNode, unknown>({ id: nodeId })
       )
       canvasStore.selectedItems = fromAny<
         typeof canvasStore.selectedItems,
@@ -1281,7 +1332,7 @@ describe('useErrorGroups', () => {
       const selectedNode = { id: '7' }
       vi.mocked(getNodeByExecutionId).mockImplementation((_, nodeId) =>
         fromAny<LGraphNode, unknown>(
-          String(nodeId) === '2:5' ? selectedNode : undefined
+          nodeId === '2:5' ? selectedNode : undefined
         )
       )
       canvasStore.selectedItems = fromAny<

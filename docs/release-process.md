@@ -92,20 +92,151 @@ The rotation itself lives in Datadog On-Call ("Frontend Team – Oncall
 Schedule", layer "Release Sheriff") and is read at execution time, so handovers
 need no commit.
 
-Datadog exposes no GitHub identity, and GitHub only resolves commit emails its
-users chose to publish, so the two have to be bridged explicitly. That bridge
-lives on the Datadog schedule as tags, one per sheriff:
+### Mapping a Datadog user to a GitHub login
 
-```text
-github:<datadog-email-local-part>:<github-login>
+Datadog exposes no GitHub identity, and GitHub only resolves commit emails its
+users chose to publish, so the two have to be bridged explicitly. That bridge is
+the repo **secret** `RELEASE_SHERIFF_DIRECTORY`, a JSON array read straight from
+the environment by `parseGithubLogins`:
+
+```json
+[{ "datadog_email": "ben@comfy.org", "github_login": "benceruleanlu" }]
 ```
 
-So `ben@comfy.org` → GitHub `benceruleanlu` is the tag `github:ben:benceruleanlu`.
-**Adding someone to the rotation therefore means adding their tag in the Datadog
-UI — no commit.** Tags are only settable at schedule-creation time over the API,
-so edit them in the on-call UI. Datadog rejects `@` and `+` in tags and
-lower-cases what it accepts; GitHub logins are case-insensitive, so a
-lower-cased login still resolves.
+Entries are keyed by the email's local part, lower-cased; GitHub logins are
+case-insensitive, so the login's own case does not matter. Unknown fields are
+ignored, so the file can carry more than this script needs.
+
+The secret's source of truth is `rosters/release-sheriff-directory.json` in the
+private repo **`Comfy-Org/github-workflows-ops`**. Adding someone to the rotation
+is therefore two steps: add them to the Datadog layer, and open a PR adding their
+entry to that file, then run that repo's sync script to push the file into this
+repo's secret. The file is out of this repo because this repo is public, and it
+is in a repo rather than a Datadog field so a change is reviewed.
+
+It has to be a **secret**, never an Actions variable: Actions prints a step's
+`env:` block before the step runs and this repo's run logs are public, so a
+variable would publish the whole map. Secret values are masked.
+
+It used to live on the Datadog schedule as `github:<user>:<login>` tags, and the
+`PUT` full-replace trap described below is why it no longer does: one
+tags-unaware rotation edit deleted every entry at once. Those tags are now
+vestigial and can be deleted from the schedule.
+
+### Editing the schedule over the API
+
+Rotation membership and order are normally edited in the on-call UI. The
+scripted procedure below is scoped to **tags-only edits** (e.g. deleting the
+vestigial `github:<user>:<login>` tags after the directory moved to a secret):
+its guard aborts unless every field except `tags` matches the original. A
+broader runbook that safely scripts rotation membership changes is tracked as a
+follow-up; until then, use the UI for those. Note that
+**`PUT /api/v2/on-call/schedules/{id}` is a full replace** — `PATCH` answers
+`{"errors":["Not found"]}` even for a schedule that `GET` returns fine — so read
+the schedule first and edit what comes back rather than composing a body by
+hand. Any field the body omits is wiped, the call returns 200, and nothing
+warns.
+
+The workflow's `DATADOG_APP_KEY` repo secret must remain read-only with the
+`on_call_read` permission. A manual `PUT` requires a separate local application
+key with `on_call_write`; export it as `DATADOG_WRITE_APP_KEY`, and never widen
+or reuse the CI secret for this destructive operation.
+
+`PUT` is a full replace, so read the schedule first and edit what comes back
+rather than composing a body by hand:
+
+```bash
+set -euo pipefail
+umask 077
+
+BASE=https://api.us5.datadoghq.com/api/v2/on-call/schedules
+SCHEDULE_ID=f3258942-c040-4c33-8228-63a03e9092d6
+WORK_DIR=$(mktemp -d "${TMPDIR:-/tmp}/release-sheriff.XXXXXX")
+trap 'rm -rf "$WORK_DIR"' EXIT
+READ_CONFIG="$WORK_DIR/read.curl"
+WRITE_CONFIG="$WORK_DIR/write.curl"
+PUT_FILTER="$WORK_DIR/to-put.jq"
+printf 'header = "DD-API-KEY: %s"\nheader = "DD-APPLICATION-KEY: %s"\n' \
+  "$DATADOG_API_KEY" "$DATADOG_APP_KEY" >"$READ_CONFIG"
+printf 'header = "DD-API-KEY: %s"\nheader = "DD-APPLICATION-KEY: %s"\n' \
+  "$DATADOG_API_KEY" "$DATADOG_WRITE_APP_KEY" >"$WRITE_CONFIG"
+
+cat >"$PUT_FILTER" <<'JQ'
+  . as $response
+  | .data as $schedule
+  | {
+      data: {
+        id: $schedule.id,
+        type: $schedule.type,
+        attributes: (
+          $schedule.attributes
+          | .layers = [
+              $schedule.relationships.layers.data[] as $layer_ref
+              | $response.included[]
+              | select(.type == "layers" and .id == $layer_ref.id)
+              | . as $layer
+              | $layer.attributes + {
+                  id: $layer.id,
+                  members: [
+                    $layer.relationships.members.data[] as $member_ref
+                    | $response.included[]
+                    | select(.type == "members" and .id == $member_ref.id)
+                    | {user: {id: .relationships.user.data.id}}
+                  ]
+                }
+            ]
+        ),
+        relationships: {teams: $schedule.relationships.teams}
+      }
+    }
+JQ
+
+curl --fail-with-body -sS --config "$READ_CONFIG" \
+  "$BASE/$SCHEDULE_ID?include=teams,layers,layers.members,layers.members.user" \
+  --output "$WORK_DIR/schedule.response.original.json"
+jq -f "$PUT_FILTER" "$WORK_DIR/schedule.response.original.json" \
+  >"$WORK_DIR/schedule.put.original.json"
+cp "$WORK_DIR/schedule.put.original.json" \
+  "$WORK_DIR/schedule.put.edited.json"
+"${EDITOR:?Set EDITOR before running this procedure}" \
+  "$WORK_DIR/schedule.put.edited.json"
+
+curl --fail-with-body -sS --config "$READ_CONFIG" \
+  "$BASE/$SCHEDULE_ID?include=teams,layers,layers.members,layers.members.user" \
+  --output "$WORK_DIR/schedule.response.latest.json"
+jq -f "$PUT_FILTER" "$WORK_DIR/schedule.response.latest.json" \
+  >"$WORK_DIR/schedule.put.latest.json"
+diff -u "$WORK_DIR/schedule.put.original.json" \
+  "$WORK_DIR/schedule.put.latest.json"
+diff -u \
+  <(jq -S 'del(.data.attributes.tags)' \
+    "$WORK_DIR/schedule.put.original.json") \
+  <(jq -S 'del(.data.attributes.tags)' \
+    "$WORK_DIR/schedule.put.edited.json")
+jq -e '.data.attributes.tags | type == "array"' \
+  "$WORK_DIR/schedule.put.edited.json" >/dev/null
+
+curl --fail-with-body -sS -X PUT --config "$WRITE_CONFIG" \
+  -H 'Content-Type: application/json' \
+  "$BASE/$SCHEDULE_ID" -d @"$WORK_DIR/schedule.put.edited.json"
+```
+
+The GET response is JSON:API: layers and members live in `included`. The `jq`
+step converts them to the PUT shape under `data.attributes.layers` and maps
+each member to `{ "user": { "id": "..." } }`. Edit only `tags` in
+`$WORK_DIR/schedule.put.edited.json`; the untouched response and transformed
+PUT body remain beside it until the shell exits. The conversion preserves the
+schedule's `name`, `time_zone`, `tags`, and team references; every layer's
+complete attributes and `id`; and member order.
+
+Datadog offers no optimistic-concurrency token for this endpoint. After the
+editor closes, the procedure immediately fetches the schedule again and stops
+if anything changed. It also stops unless `tags` is still an array and every
+other field in the edited body exactly matches the original.
+
+Although the GitHub mapping no longer depends on tags, preserving the complete
+schedule payload remains important: a partial `PUT` can still silently remove
+rotation data.
 
 Only `scheduleId`, `datadogSite` and `fallbackGithubLogin` stay in the `CONFIG`
 object of `scripts/release-sheriff/release-sheriff.ts`. Note `datadogSite` is
@@ -113,18 +244,19 @@ object of `scripts/release-sheriff/release-sheriff.ts`. Note `datadogSite` is
 `api.datadoghq.com` returns 403.
 
 Requires repo secrets `DATADOG_API_KEY` and `DATADOG_APP_KEY` (scope:
-`on_call_read`).
+`on_call_read`) plus `RELEASE_SHERIFF_DIRECTORY`.
 
-If the on-call user cannot be mapped — a missing tag, missing secrets, an
+If the on-call user cannot be mapped — a missing directory entry, a directory
+secret that is absent or not valid JSON, missing Datadog credentials, an
 unreachable Datadog — the job still assigns `fallbackGithubLogin` so PRs are
 never left unowned, but **exits non-zero** so the degradation is visible. A
 green run means a real sheriff was resolved from Datadog.
 
-Tag coverage is checked for the **whole rotation**, not just whoever is on call,
-and a member without one fails the run. Someone added to the layer without a tag
-otherwise works fine until their own shift begins — the breakage surfaces weeks
-after the cause, on whoever happens to be sheriff. This is a configuration
-check, so it fails even when today's assignment succeeded.
+Directory coverage is checked for the **whole rotation**, not just whoever is on
+call, and a member without an entry fails the run. Someone added to the layer
+without one otherwise works fine until their own shift begins — the breakage
+surfaces weeks after the cause, on whoever happens to be sheriff. This is a
+configuration check, so it fails even when today's assignment succeeded.
 
 A failed run also posts to **#frontend-releases** with the reason, because a
 failing scheduled workflow otherwise only notifies whoever last pushed to
@@ -148,7 +280,7 @@ Only scheduled runs **alert**, for the same reason: a run can recognise a
 duplicate only within the history it reads, so the runs that post have to be
 the runs that get read back. While the two sets differed, every PR-triggered
 failure was invisible to every other one — five posts in nine minutes when a
-rotation member turned up without a `github:` tag. PR-triggered runs still go
+rotation member turned up without a GitHub login. PR-triggered runs still go
 red on the PR itself; the alert rides the hourly sweep instead, so a new
 breakage is announced within the hour rather than on the spot.
 

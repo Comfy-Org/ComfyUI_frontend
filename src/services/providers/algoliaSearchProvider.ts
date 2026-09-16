@@ -19,11 +19,9 @@ import type {
 import type { components } from '@/types/comfyRegistryTypes'
 import type {
   NodePackSearchProvider,
-  SearchPacksResult,
-  SortableField
+  SearchPacksResult
 } from '@/types/searchServiceTypes'
 import { paramsToCacheKey } from '@/utils/formatUtil'
-import { SortableAlgoliaField } from '@/workbench/extensions/manager/types/comfyManagerTypes'
 
 type RegistryNodePack = components['schemas']['Node']
 
@@ -193,55 +191,8 @@ export const useAlgoliaSearchProvider = (): NodePackSearchProvider => {
     searchPacksCache.clear()
   }
 
-  const getSortValue = (
-    pack: RegistryNodePack,
-    sortField: string
-  ): string | number => {
-    // For Algolia, we rely on the default sorting behavior
-    // The results are already sorted by the index configuration
-    // This is mainly used for re-sorting after results are fetched
-    switch (sortField) {
-      case SortableAlgoliaField.Downloads:
-        return pack.downloads ?? 0
-      case SortableAlgoliaField.Created: {
-        const createTime = pack.created_at
-        return createTime ? new Date(createTime).getTime() : 0
-      }
-      case SortableAlgoliaField.Updated:
-        return pack.latest_version?.createdAt
-          ? new Date(pack.latest_version.createdAt).getTime()
-          : 0
-      case SortableAlgoliaField.Publisher:
-        return pack.publisher?.name ?? ''
-      case SortableAlgoliaField.Name:
-        return pack.name ?? ''
-      default:
-        return 0
-    }
-  }
-
-  const getSortableFields = (): SortableField[] => {
-    return [
-      {
-        id: SortableAlgoliaField.Downloads,
-        label: 'Downloads',
-        direction: 'desc'
-      },
-      { id: SortableAlgoliaField.Created, label: 'Created', direction: 'desc' },
-      { id: SortableAlgoliaField.Updated, label: 'Updated', direction: 'desc' },
-      {
-        id: SortableAlgoliaField.Publisher,
-        label: 'Publisher',
-        direction: 'asc'
-      },
-      { id: SortableAlgoliaField.Name, label: 'Name', direction: 'asc' }
-    ]
-  }
-
   return {
     searchPacks,
-    clearSearchCache,
-    getSortValue,
-    getSortableFields
+    clearSearchCache
   }
 }

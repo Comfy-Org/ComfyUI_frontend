@@ -1,12 +1,17 @@
-import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
+import { render, screen } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import Load3dViewerContent from '@/components/load3d/Load3dViewerContent.vue'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import { useDialogStore } from '@/stores/dialogStore'
 import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
+
+beforeEach(() => {
+  vi.mocked(useDialogStore().closeDialog).mockImplementation(() => {})
+})
 
 class NoopMutationObserver {
   observe() {}
@@ -20,25 +25,24 @@ const {
   viewerState,
   dragState,
   capturedDragOptions,
-  dialogCloseMock,
   serviceSourceLoad3d,
   getLoad3dAsyncMock
-} = vi.hoisted(() => ({
-  viewerState: {
-    current: null as ReturnType<typeof buildViewerStub> | null
-  },
-  dragState: {
-    current: null as ReturnType<typeof buildDragStub> | null
-  },
-  capturedDragOptions: {
-    current: null as { onModelDrop?: (file: File) => Promise<void> } | null
-  },
-  dialogCloseMock: vi.fn(),
-  serviceSourceLoad3d: {
-    current: null as unknown
-  },
-  getLoad3dAsyncMock: vi.fn()
-}))
+} = vi.hoisted(() => {
+  const serviceSourceLoad3d: { current: unknown } = { current: null }
+  return {
+    viewerState: {
+      current: null as ReturnType<typeof buildViewerStub> | null
+    },
+    dragState: {
+      current: null as ReturnType<typeof buildDragStub> | null
+    },
+    capturedDragOptions: {
+      current: null as { onModelDrop?: (file: File) => Promise<void> } | null
+    },
+    serviceSourceLoad3d,
+    getLoad3dAsyncMock: vi.fn()
+  }
+})
 
 function buildViewerStub() {
   return {
@@ -92,26 +96,22 @@ function buildDragStub() {
   }
 }
 
-vi.mock('@/composables/useLoad3dViewer', () => ({
+vi.mock<unknown>(import('@/composables/useLoad3dViewer'), () => ({
   useLoad3dViewer: () => viewerState.current
 }))
 
-vi.mock('@/composables/useLoad3dDrag', () => ({
+vi.mock<unknown>(import('@/composables/useLoad3dDrag'), () => ({
   useLoad3dDrag: (opts: { onModelDrop?: (file: File) => Promise<void> }) => {
     capturedDragOptions.current = opts
     return dragState.current
   }
 }))
 
-vi.mock('@/services/load3dService', () => ({
+vi.mock<unknown>(import('@/services/load3dService'), () => ({
   useLoad3dService: () => ({
     getOrCreateViewerSync: () => viewerState.current,
     getLoad3dAsync: getLoad3dAsyncMock
   })
-}))
-
-vi.mock('@/stores/dialogStore', () => ({
-  useDialogStore: () => ({ closeDialog: dialogCloseMock })
 }))
 
 const i18n = createI18n({
@@ -340,7 +340,7 @@ describe('Load3dViewerContent', () => {
       await user.click(screen.getByRole('button', { name: /Cancel/ }))
 
       expect(viewer.restoreInitialState).toHaveBeenCalledOnce()
-      expect(dialogCloseMock).toHaveBeenCalledOnce()
+      expect(useDialogStore().closeDialog).toHaveBeenCalledOnce()
     })
 
     it('closes the dialog in standalone mode without touching initial state', async () => {
@@ -351,7 +351,7 @@ describe('Load3dViewerContent', () => {
       await user.click(screen.getByRole('button', { name: /Cancel/ }))
 
       expect(viewer.restoreInitialState).not.toHaveBeenCalled()
-      expect(dialogCloseMock).toHaveBeenCalledOnce()
+      expect(useDialogStore().closeDialog).toHaveBeenCalledOnce()
     })
   })
 })

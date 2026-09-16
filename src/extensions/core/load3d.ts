@@ -3,7 +3,6 @@ import { nextTick } from 'vue'
 import Load3D from '@/components/load3d/Load3D.vue'
 import Load3DViewerContent from '@/components/load3d/Load3dViewerContent.vue'
 import {
-  type Load3dCachedOutput,
   getLoad3dOutputCache,
   isLoad3dSceneDirty,
   markLoad3dSceneDirty,
@@ -11,6 +10,7 @@ import {
   setLoad3dOutputCache,
   useLoad3d
 } from '@/composables/useLoad3d'
+import type { Load3dCachedOutput } from '@/composables/useLoad3d'
 import { createExportMenuItems } from '@/extensions/core/load3d/exportMenuHelper'
 import type {
   CameraConfig,
@@ -263,7 +263,6 @@ useExtensionService().registerExtension({
         if (!isLoad3dNode(selectedNode)) return
 
         ComfyApp.copyToClipspace(selectedNode)
-        // @ts-expect-error clipspace_return_node is an extension property added at runtime
         ComfyApp.clipspace_return_node = selectedNode
 
         const props = { node: selectedNode }
@@ -277,7 +276,7 @@ useExtensionService().registerExtension({
             renderer: 'reka',
             size: 'full',
             contentClass:
-              'w-[80vw] max-w-[80vw] sm:max-w-[80vw] h-[80vh] max-h-[80vh]',
+              'left-1/2 w-[80vw] sm:max-w-[80vw] h-[80vh] max-h-[80vh]',
             maximizable: true,
             onClose: async () => {
               await useLoad3dService().handleViewerClose(props.node)

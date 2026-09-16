@@ -1,7 +1,7 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useCommandStore } from '@/stores/commandStore'
 import { api } from '@/scripts/api'
 import { useSystemStatsStore } from '@/stores/systemStatsStore'
 import {
@@ -11,9 +11,9 @@ import {
 } from '@/workbench/extensions/manager/composables/useManagerState'
 
 // Mock dependencies that are not stores
-vi.mock('@/i18n', () => ({ t: (key: string) => key }))
+vi.mock(import('@/i18n'), () => ({ t: (key: string) => key }))
 
-vi.mock('@/scripts/api', () => ({
+vi.mock<unknown>(import('@/scripts/api'), () => ({
   api: {
     getClientFeatureFlags: vi.fn(),
     getServerFeature: vi.fn(),
@@ -21,7 +21,7 @@ vi.mock('@/scripts/api', () => ({
   }
 }))
 
-vi.mock('@/composables/useFeatureFlags', () => {
+vi.mock<unknown>(import('@/composables/useFeatureFlags'), () => {
   const featureFlag = vi.fn()
   return {
     useFeatureFlags: vi.fn(() => ({
@@ -31,7 +31,7 @@ vi.mock('@/composables/useFeatureFlags', () => {
   }
 })
 
-vi.mock('@/platform/settings/composables/useSettingsDialog', () => ({
+vi.mock(import('@/platform/settings/composables/useSettingsDialog'), () => ({
   useSettingsDialog: vi.fn(() => ({
     show: vi.fn(),
     hide: vi.fn(),
@@ -39,32 +39,20 @@ vi.mock('@/platform/settings/composables/useSettingsDialog', () => ({
   }))
 }))
 
-vi.mock('@/stores/commandStore', () => ({
-  useCommandStore: vi.fn(() => ({
-    execute: vi.fn()
-  }))
-}))
+vi.mock(
+  import('@/workbench/extensions/manager/composables/useManagerDialog'),
 
-const { toastAddMock } = vi.hoisted(() => ({
-  toastAddMock: vi.fn()
-}))
-
-vi.mock('@/platform/updates/common/toastStore', () => ({
-  useToastStore: vi.fn(() => ({
-    add: toastAddMock
-  }))
-}))
-
-vi.mock('@/workbench/extensions/manager/composables/useManagerDialog', () => {
-  const show = vi.fn()
-  const hide = vi.fn()
-  return {
-    useManagerDialog: vi.fn(() => ({
-      show,
-      hide
-    }))
+  () => {
+    const show = vi.fn()
+    const hide = vi.fn()
+    return {
+      useManagerDialog: vi.fn(() => ({
+        show,
+        hide
+      }))
+    }
   }
-})
+)
 
 /**
  * Helper to build a minimal systemStats argv-only fixture.
@@ -105,15 +93,7 @@ describe('useManagerState', () => {
   let systemStatsStore: ReturnType<typeof useSystemStatsStore>
 
   beforeEach(() => {
-    // Create a fresh testing pinia and activate it for each test
-    setActivePinia(
-      createTestingPinia({
-        stubActions: false,
-        createSpy: vi.fn
-      })
-    )
-
-    // Initialize stores
+    vi.mocked(useCommandStore().execute).mockResolvedValue(undefined)
     systemStatsStore = useSystemStatsStore()
 
     // Reset all mocks
@@ -319,8 +299,8 @@ describe('useManagerState', () => {
       useManagerState()
       useManagerState()
 
-      expect(toastAddMock).toHaveBeenCalledTimes(1)
-      expect(toastAddMock).toHaveBeenCalledWith({
+      expect(useToastStore().add).toHaveBeenCalledTimes(1)
+      expect(useToastStore().add).toHaveBeenCalledWith({
         severity: 'warn',
         summary: 'manager.incompatibleVersion.title',
         detail: 'manager.incompatibleVersion.message',
@@ -339,12 +319,12 @@ describe('useManagerState', () => {
       mockServerFeatures({ supports_v4: true, supports_csrf_post: false })
 
       const managerState = useManagerState()
-      expect(toastAddMock).toHaveBeenCalledTimes(1)
+      expect(useToastStore().add).toHaveBeenCalledTimes(1)
 
       await managerState.openManager()
-      expect(toastAddMock).toHaveBeenCalledTimes(2)
+      expect(useToastStore().add).toHaveBeenCalledTimes(2)
       // second call must still be the upgrade toast, not an error toast
-      expect(toastAddMock).toHaveBeenLastCalledWith({
+      expect(useToastStore().add).toHaveBeenLastCalledWith({
         severity: 'warn',
         summary: 'manager.incompatibleVersion.title',
         detail: 'manager.incompatibleVersion.message',
@@ -363,7 +343,7 @@ describe('useManagerState', () => {
       mockServerFeatures({ supports_v4: true, supports_csrf_post: true })
 
       useManagerState()
-      expect(toastAddMock).not.toHaveBeenCalled()
+      expect(useToastStore().add).not.toHaveBeenCalled()
     })
   })
 

@@ -9,7 +9,6 @@ import {
   isSubgraphOutput
 } from '@/lib/litegraph/src/litegraph'
 import type {
-  LinkNetwork,
   NodeInputSlot,
   NodeOutputSlot
 } from '@/lib/litegraph/src/litegraph'
@@ -192,11 +191,7 @@ describe('Subgraph slot connections', () => {
       const connector = new LinkConnector(setConnectingLinks)
 
       // Now try to drag from the input slot
-      connector.moveInputLink(
-        subgraph as LinkNetwork,
-        internalNode,
-        internalNode.inputs[0]
-      )
+      connector.moveInputLink(subgraph, internalNode, internalNode.inputs[0])
 
       // Verify that we're dragging the existing link
       expect(connector.isConnecting).toBe(true)

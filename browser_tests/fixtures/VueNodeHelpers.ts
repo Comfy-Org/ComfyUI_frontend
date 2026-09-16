@@ -217,14 +217,19 @@ export class VueNodeHelpers {
   /**
    * Wait for Vue nodes to be rendered
    */
-  async waitForNodes(expectedCount?: number): Promise<void> {
-    if (expectedCount !== undefined) {
-      await this.page.waitForFunction(
-        (count) => document.querySelectorAll('[data-node-id]').length >= count,
-        expectedCount
-      )
+  async waitForNodes(): Promise<void> {
+    await this.page.waitForFunction(
+      () => window.app?.extensionManager && window.app.canvas.graph
+    )
+    const expectsNodes = await this.page.evaluate(
+      () =>
+        window.app!.extensionManager.setting.get('Comfy.VueNodes.Enabled') &&
+        window.app!.canvas.graph!.nodes.length > 0
+    )
+    if (expectsNodes) {
+      await expect(this.nodes.first()).toBeVisible()
     } else {
-      await this.page.locator('[data-node-id]').first().waitFor()
+      await expect(this.nodes).toHaveCount(0)
     }
   }
 
@@ -318,7 +323,7 @@ export class VueNodeHelpers {
     const nodeId = toNodeId(rawNodeId)
     return await this.page.evaluate(
       ([nodeId, type, slotId]) => {
-        const node = app?.canvas?.graph?.getNodeById(nodeId)
+        const node = app?.canvas.graph?.getNodeById(nodeId)
         if (!node) return false
 
         return type === 'in'

@@ -1,5 +1,4 @@
 <script setup lang="ts">
-/* eslint-disable vue/no-unused-properties -- props forwarded via v-bind */
 import type { DialogOverlayProps } from 'reka-ui'
 import type { HTMLAttributes } from 'vue'
 import { reactiveOmit } from '@vueuse/core'
@@ -18,7 +17,7 @@ const delegatedProps = reactiveOmit(props, 'class')
     data-slot="dialog-overlay"
     :class="
       cn(
-        'bg-transparency-ink-t80 fixed inset-0 z-50 backdrop-blur-sm data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:animate-in data-[state=open]:fade-in-0',
+        'fixed inset-0 z-50 bg-transparency-ink-t80 backdrop-blur-sm data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:animate-in data-[state=open]:fade-in-0',
         props.class
       )
     "

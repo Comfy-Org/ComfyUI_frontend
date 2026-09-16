@@ -1,11 +1,9 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { LGraph, LGraphCanvas, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { createMockCanvasRenderingContext2D } from '@/utils/__tests__/litegraphTestUtils'
 
-vi.mock('@/renderer/core/layout/store/layoutStore')
+vi.mock(import('@/renderer/core/layout/store/layoutStore'))
 
 interface DirtyRequest {
   foreground: boolean
@@ -37,18 +35,20 @@ class InvalidationProbe {
     )
 
     const drawForeground = canvas.drawFrontCanvas.bind(canvas)
-    vi.spyOn(canvas, 'drawFrontCanvas').mockImplementation(() => {
-      this.foregroundDraw()
-      this.drawSequence.push('foreground')
-      drawForeground()
-    })
+    vi.spyOn(canvas, 'drawFrontCanvas').mockImplementation(
+      (nodesInFrameOrder, nodesGraph) => {
+        this.foregroundDraw()
+        this.drawSequence.push('foreground')
+        drawForeground(nodesInFrameOrder, nodesGraph)
+      }
+    )
 
     const drawBackground = canvas.drawBackCanvas.bind(canvas)
     vi.spyOn(canvas, 'drawBackCanvas').mockImplementation(
-      (redrawFrontCanvas) => {
+      (redrawFrontCanvas, nodesInFrameOrder, nodesGraph) => {
         this.backgroundDraw()
         this.drawSequence.push('background')
-        drawBackground(redrawFrontCanvas)
+        drawBackground(redrawFrontCanvas, nodesInFrameOrder, nodesGraph)
       }
     )
   }
@@ -105,7 +105,6 @@ describe('LGraphCanvas invalidation scheduling baseline', () => {
   let probe: InvalidationProbe
 
   beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
     ;({ canvas, graph } = createCanvas())
     canvas.draw()
     probe = new InvalidationProbe(canvas)
@@ -332,5 +331,15 @@ describe('LGraphCanvas invalidation scheduling baseline', () => {
     expect(probe.backgroundDraw).toHaveBeenCalledTimes(2)
     expect(canvas.dirty_canvas).toBe(false)
     expect(canvas.dirty_bgcanvas).toBe(false)
+  })
+
+  it('preserves the public drawBackCanvas redraw boolean', () => {
+    canvas.dirty_canvas = false
+
+    canvas.drawBackCanvas(false)
+    expect(canvas.dirty_canvas).toBe(false)
+
+    canvas.drawBackCanvas(true)
+    expect(canvas.dirty_canvas).toBe(true)
   })
 })

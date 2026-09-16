@@ -83,6 +83,29 @@ test.describe('Mask Editor load/save', { tag: '@vue-nodes' }, () => {
       .toBe(savedMask)
   })
 
+  test('Saving immediately refreshes the node preview', async ({
+    maskEditor
+  }) => {
+    const dialog = await maskEditor.openDialog()
+    const originalPreview = await maskEditor.previewImage.getAttribute('src')
+    await maskEditor.drawStrokeAndExpectPixels(dialog)
+
+    await dialog.getByRole('button', { name: 'Save' }).click()
+
+    await expect(dialog).toBeHidden()
+    await expect(maskEditor.previewImage).not.toHaveAttribute(
+      'src',
+      originalPreview ?? ''
+    )
+    await expect
+      .poll(() =>
+        maskEditor.previewImage.evaluate((image) =>
+          image instanceof HTMLImageElement ? image.naturalWidth : 0
+        )
+      )
+      .toBeGreaterThan(0)
+  })
+
   test('Saving preserves image colors under the mask', async ({
     comfyPage,
     maskEditor

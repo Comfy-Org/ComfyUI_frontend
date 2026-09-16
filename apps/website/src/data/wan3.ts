@@ -8,7 +8,7 @@ const wan3Links = {
   cloudRunTextToVideo: 'https://cloud.comfy.org/?template=api_wan3_0_t2v',
   cloudRunImageToVideo: 'https://cloud.comfy.org/?template=api_wan3_0_i2v',
   cloudRunReferenceToVideo: 'https://cloud.comfy.org/?template=api_wan3_0_r2v',
-  hubModel: `${externalLinks.workflows}/model/wan`
+  hubModel: new URL('model/wan/', externalLinks.workflows).href
 } as const
 
 // The hero clip is ~10 MB, so below 768px ModelLaunchHeroSection plays this

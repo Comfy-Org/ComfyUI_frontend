@@ -1,6 +1,4 @@
-import { createTestingPinia } from '@pinia/testing'
-import { fromPartial } from '@total-typescript/shoehorn'
-import { getActivePinia, setActivePinia } from 'pinia'
+import { fromAny, fromPartial } from '@total-typescript/shoehorn'
 import { describe, expect, it, vi } from 'vitest'
 
 import { t } from '@/i18n'
@@ -11,6 +9,7 @@ import { LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { ComfyNode } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
+import type { ComfyApp } from '@/scripts/app'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 
 import type { ComfyExtension, MissingNodeType } from '@/types/comfy'
@@ -21,24 +20,24 @@ const extensionState = vi.hoisted(() => ({
   ext: undefined as ComfyExtension | undefined,
   configuringGraph: false,
   rootGraph: {
-    extra: {} as Record<string, unknown>,
+    extra: {},
     nodes: [] as { id: string | number }[]
   },
   registerNodeDef:
     vi.fn<(typeName: string, nodeDef: ComfyNodeDef) => Promise<void>>()
 }))
 
-vi.mock('@/scripts/app', () => ({
-  app: {
+vi.mock(import('@/scripts/app'), () => ({
+  app: fromPartial<ComfyApp>({
     get configuringGraph() {
       return extensionState.configuringGraph
     },
-    rootGraph: extensionState.rootGraph,
+    rootGraph: fromAny(extensionState.rootGraph),
     registerNodeDef: extensionState.registerNodeDef,
     registerExtension: (ext: ComfyExtension) => {
       extensionState.ext = ext
     }
-  }
+  })
 }))
 
 import {
@@ -240,8 +239,6 @@ describe('GroupNodeConfig.registerFromWorkflow', () => {
   it('removes a prior same-name group type before reporting missing nodes', async () => {
     const groupType = 'workflow>MyGroup'
     const missing: MissingNodeType[] = []
-    const previousPinia = getActivePinia()
-    setActivePinia(createTestingPinia({ stubActions: false }))
     extensionState.registerNodeDef.mockImplementation(
       async (typeName, nodeDef) => {
         class PreviousGroupNode extends LGraphNode {
@@ -282,10 +279,6 @@ describe('GroupNodeConfig.registerFromWorkflow', () => {
       ])
     } finally {
       extensionState.registerNodeDef.mockReset()
-      setActivePinia(previousPinia)
-      if (groupType in LiteGraph.registered_node_types) {
-        LiteGraph.unregisterNodeType(groupType)
-      }
     }
   })
 
@@ -385,19 +378,12 @@ describe('group node extension beforeConfigureGraph', () => {
         expect.objectContaining({ nodeId: '8', type: 'workflow>MyGroup' })
       ])
 
-      const previousPinia = getActivePinia()
-      setActivePinia(createTestingPinia({ stubActions: false }))
-      try {
-        const store = useMissingNodesErrorStore()
-        store.setMissingNodeTypes(missingNodeTypes)
-        store.removeMissingNodesByNodeId('7')
-
-        expect(store.missingNodesError?.nodeTypes).toStrictEqual([
-          expect.objectContaining({ nodeId: '8', type: 'workflow>MyGroup' })
-        ])
-      } finally {
-        setActivePinia(previousPinia)
-      }
+      const store = useMissingNodesErrorStore()
+      store.setMissingNodeTypes(missingNodeTypes)
+      store.removeMissingNodesByNodeId('7')
+      expect(store.missingNodesError?.nodeTypes).toStrictEqual([
+        expect.objectContaining({ nodeId: '8', type: 'workflow>MyGroup' })
+      ])
     } finally {
       extensionState.rootGraph.nodes = []
     }

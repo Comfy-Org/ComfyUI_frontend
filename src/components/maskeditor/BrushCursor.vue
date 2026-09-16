@@ -27,7 +27,7 @@
 
 <script setup lang="ts">
 import { useElementBounding } from '@vueuse/core'
-import { computed } from 'vue'
+import { computed, watch } from 'vue'
 
 import {
   getEffectiveBrushSize,
@@ -41,8 +41,13 @@ const { containerRef } = defineProps<{
 }>()
 
 const store = useMaskEditorStore()
-const { left: containerOffsetLeft, top: containerOffsetTop } =
-  useElementBounding(() => containerRef)
+const {
+  left: containerOffsetLeft,
+  top: containerOffsetTop,
+  update: updateContainerOffset
+} = useElementBounding(() => containerRef)
+
+watch(() => store.cursorPoint, updateContainerOffset, { flush: 'sync' })
 
 const brushOpacity = computed(() => {
   return store.brushVisible ? 1 : 0

@@ -94,7 +94,7 @@ export function outputAsSerialisable(
         : null
     : serialisesLegacyLinkPresence(slot)
       ? slot._serialiseLinkIds([])
-      : (slot.links ?? null)
+      : null
 
   return {
     ...shallowCloneCommonProps(slot),

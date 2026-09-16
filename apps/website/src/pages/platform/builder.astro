@@ -1,0 +1,26 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro'
+import ProductCardsSection from '../../components/common/ProductCardsSection.vue'
+import BuilderEnterpriseSection from '../../templates/platform/BuilderEnterpriseSection.vue'
+import BuilderHero from '../../templates/platform/BuilderHero.vue'
+import BuilderPillarsSection from '../../templates/platform/BuilderPillarsSection.vue'
+import BuilderProblemSection from '../../templates/platform/BuilderProblemSection.vue'
+import ClosingCtaSection from '../../templates/platform/ClosingCtaSection.vue'
+import { t } from '../../i18n/translations'
+---
+
+<BaseLayout
+  title={`${t('platform.products.builder.title', 'en')} · ${t('platform.meta.title', 'en')}`}
+  description={t('platform.products.builder.description', 'en')}
+>
+  <BuilderHero locale="en" client:load />
+  <BuilderProblemSection locale="en" />
+  <BuilderPillarsSection locale="en" />
+  <BuilderEnterpriseSection locale="en" />
+  <ClosingCtaSection
+    locale="en"
+    heading-after-badge={t('platform.closing.headingAfterBadge', 'en')}
+    client:visible
+  />
+  <ProductCardsSection locale="en" label-key="products.labelProducts" />
+</BaseLayout>

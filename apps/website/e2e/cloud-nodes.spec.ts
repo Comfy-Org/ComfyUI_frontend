@@ -47,14 +47,6 @@ test.describe('Cloud nodes page @smoke', () => {
     await expect(page.getByTestId('cloud-node-pack-detail')).toBeVisible()
   })
 
-  test('direct pack detail route renders node entries', async ({ page }) => {
-    await page.goto('/cloud/supported-nodes/comfyui-impact-pack')
-    await expect(page.getByTestId('cloud-node-pack-detail')).toBeVisible()
-    await expect(
-      page.getByTestId('cloud-node-pack-detail-node').first()
-    ).toBeVisible()
-  })
-
   test('search with no matches shows empty state', async ({ page }) => {
     await page
       .getByTestId('cloud-nodes-search')
@@ -103,6 +95,31 @@ test.describe('Cloud nodes page @smoke', () => {
     ).toBeVisible()
   })
 
+  test('JSON-LD ItemList is emitted on the index page', async ({ page }) => {
+    const jsonLd = page.locator('script[type="application/ld+json"]')
+    const ldBlocks = await jsonLd.allTextContents()
+    expect(ldBlocks.some((b) => b.includes('"@type":"ItemList"'))).toBeTruthy()
+  })
+
+  test('JSON-LD payload escapes <-sequences', async ({ page }) => {
+    const ldBlocks = await page
+      .locator('script[type="application/ld+json"]')
+      .allTextContents()
+    for (const block of ldBlocks) {
+      expect(block).not.toContain('</script')
+    }
+  })
+})
+
+test.describe('Cloud node detail pages @smoke', () => {
+  test('direct pack detail route renders node entries', async ({ page }) => {
+    await page.goto('/cloud/supported-nodes/comfyui-impact-pack')
+    await expect(page.getByTestId('cloud-node-pack-detail')).toBeVisible()
+    await expect(
+      page.getByTestId('cloud-node-pack-detail-node').first()
+    ).toBeVisible()
+  })
+
   test('clicking the back link returns to the index from a detail page', async ({
     page
   }) => {
@@ -128,21 +145,6 @@ test.describe('Cloud nodes page @smoke', () => {
       '/cloud/supported-nodes/this-pack-does-not-exist'
     )
     expect(response?.status()).toBe(404)
-  })
-
-  test('JSON-LD ItemList is emitted on the index page', async ({ page }) => {
-    const jsonLd = page.locator('script[type="application/ld+json"]')
-    const ldBlocks = await jsonLd.allTextContents()
-    expect(ldBlocks.some((b) => b.includes('"@type":"ItemList"'))).toBeTruthy()
-  })
-
-  test('JSON-LD payload escapes <-sequences', async ({ page }) => {
-    const ldBlocks = await page
-      .locator('script[type="application/ld+json"]')
-      .allTextContents()
-    for (const block of ldBlocks) {
-      expect(block).not.toContain('</script')
-    }
   })
 })
 

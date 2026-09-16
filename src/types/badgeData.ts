@@ -1,7 +1,7 @@
-/** Legacy canvas joins the core parts into a single badge in this order. */
-export const CORE_JOIN_ORDER = ['id', 'lifecycle', 'source'] as const
+/** The display order shared by badge renderers. */
+export const CORE_PART_ORDER = ['id', 'lifecycle', 'source'] as const
 
-export type CoreBadgePart = (typeof CORE_JOIN_ORDER)[number]
+export type CoreBadgePart = (typeof CORE_PART_ORDER)[number]
 
 export interface CoreBadgeData {
   kind: 'core'
@@ -21,8 +21,8 @@ interface CreditsBadgeData {
 /**
  * A badge row: plain presentation data projected from its sources
  * (settings, node definition, palette, pricing, connectivity).
- * Core rows carry raw source text plus which projection part they are,
- * so each renderer applies its own ordering, joining, and trimming.
+ * Core rows carry raw source text plus which projection part they are.
+ * They are emitted in display order; renderers only join and trim them.
  * Extension badges are not rows — they live on `node.badges`.
  * Never serialized.
  */

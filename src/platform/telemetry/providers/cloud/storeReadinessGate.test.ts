@@ -38,11 +38,11 @@ const hoisted = vi.hoisted(() => {
   }
 })
 
-vi.mock('@/platform/telemetry/reportError', () => ({
+vi.mock(import('@/platform/telemetry/reportError'), () => ({
   reportError: hoisted.reportError
 }))
 
-vi.mock('@/composables/auth/useCurrentUser', () => ({
+vi.mock<unknown>(import('@/composables/auth/useCurrentUser'), () => ({
   useCurrentUser: () => ({
     userEmail: hoisted.userEmail,
     resolvedUserInfo: hoisted.resolvedUserInfo,
@@ -51,7 +51,7 @@ vi.mock('@/composables/auth/useCurrentUser', () => ({
   })
 }))
 
-vi.mock('posthog-js', () => ({
+vi.mock<unknown>(import('posthog-js'), () => ({
   default: {
     init: hoisted.posthogInit,
     capture: vi.fn(),
@@ -62,7 +62,7 @@ vi.mock('posthog-js', () => ({
   }
 }))
 
-vi.mock('mixpanel-browser', () => ({
+vi.mock<unknown>(import('mixpanel-browser'), () => ({
   default: {
     init: hoisted.mixpanelInit,
     track: vi.fn(),
@@ -72,17 +72,17 @@ vi.mock('mixpanel-browser', () => ({
   }
 }))
 
-vi.mock('@customerio/cdp-analytics-browser', () => ({
+vi.mock<unknown>(import('@customerio/cdp-analytics-browser'), () => ({
   AnalyticsBrowser: { load: hoisted.customerIoLoad },
   InAppPlugin: vi.fn(() => ({ name: 'Customer.io In-App Plugin' }))
 }))
 
-vi.mock('@/platform/remoteConfig/remoteConfig', async () => {
+vi.mock<unknown>(import('@/platform/remoteConfig/remoteConfig'), async () => {
   const { ref } = await vi.importActual<typeof VueModule>('vue')
   return { remoteConfig: ref(null) }
 })
 
-vi.mock('@/composables/billing/useBillingContext', async () => {
+vi.mock<unknown>(import('@/composables/billing/useBillingContext'), async () => {
   const { ref } = await vi.importActual<typeof VueModule>('vue')
   return { useBillingContext: () => ({ tier: ref(null) }) }
 })
