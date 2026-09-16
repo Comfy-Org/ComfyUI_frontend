@@ -1,7 +1,8 @@
-# V2: the unified catalogue, in detail
+# V2: the Playground, in detail
 
-How models, workflows and apps browse as one catalogue, what each page holds,
-and how the two kinds cross. The decision itself is
+How models, workflows and apps browse as one catalogue under the use case the
+visitor came for, what each page holds, and how the two kinds cross. The page
+is called Playground. The decision itself is
 [ADR-WEBSITE-CATALOGUE-0033](../adr/WEBSITE-CATALOGUE-0033-models-and-workflows-browse-as-one-catalogue.md);
 this is the shape that decision takes.
 
@@ -15,7 +16,7 @@ is refreshed.
 | --------------- | ------------------------- | ---------------------------------------- | ------------------------ |
 | What it is      | A capability we host      | A node graph, a JSON file                | A node graph with a form |
 | How many        | 145 entries, 122 names    | 592                                      | 18                       |
-| Next step       | Run here, against credits | Open in ComfyUI                          | Open in ComfyUI          |
+| Next step       | Run here, against credits | Save to Cloud                            | Save to Cloud            |
 | Needs           | An account and credits    | ComfyUI, weights, sometimes custom nodes | the same                 |
 | Carries a price | Yes                       | No                                       | No                       |
 | Carries a date  | No                        | Yes                                      | Yes                      |
@@ -43,10 +44,15 @@ three shapes, and one of them is ours:
 
 The third is the one to fix first, because it is the only one we caused.
 
-## 3. The decision: one catalogue, three ranks
+## 3. The decision: use cases first, then three ranks
 
-Rank is not navigation. One page, one search, one filter panel. Rank is what a
-row in the grid _is_.
+The visitor arrives knowing what they want to make, not which kind of run it
+takes. So the catalogue opens on one shelf per use case, and each shelf holds
+both halves of the answer: the capabilities that do it, and the workflows built
+on them. Type is a tab inside the shelf, never the way in.
+
+Rank is not navigation either. One page, one search, one filter panel. Rank is
+what a row in the grid _is_.
 
 **Rank 1, the model.** One card per model _name_, not per operation. Operations
 live inside the model page as a choice, not beside it as rivals. 145 cards
@@ -74,7 +80,7 @@ Five things differ, and all five have to:
 - **The badge is readable at rest.** Today it is an icon that opens into a word
   on hover. A type that only appears on hover is a type the reader does not
   have when they need it.
-- **The verb says the type again.** `Run` on a model, `Open in ComfyUI` on a
+- **The verb says the type again.** `Run` on a model, `Save to Cloud` on a
   workflow or an app. Redundant on purpose: a badge can be missed, a button
   cannot.
 - **Only models carry a price.** Credits per run, from the Router. A workflow
@@ -92,8 +98,9 @@ Five things differ, and all five have to:
 
 One panel for both kinds.
 
-- **Type** — All, Models, Workflows, Apps, with counts that respect the rest of
-  the filters.
+- **Type** — All, Models, Workflows, Apps, as tabs inside the use case, with
+  counts that respect the rest of the filters. A tab narrows the answer the
+  shelf already gave; it is not a way into the catalogue.
 - **Use case** — the same eight for both kinds. All 610 workflows classify, none
   unclassified, which is what makes the merge cheap.
 - **Output** — image, video, audio, 3D.
@@ -118,12 +125,12 @@ someone set; a workflow's is an install count. Interleaving them would be a
 number invented to make the sort look uniform. So the default order reads
 capabilities first and then what is built on them.
 
-Taken literally that gives 122 model cards before the first workflow, which is
-two catalogues stacked rather than one. So the mixed view leads with **six**
-models and then runs the workflows, with a line above the grid saying how many
-models are held back and a link that opens them. Choosing Models shows all of
-them; choosing A to Z interleaves everything and the cap lifts. The cap is a
-reading decision, not a filter: nothing is hidden, and the line says so.
+Taken literally that gives every model before the first workflow, which on a
+shelf of eight means no workflow ever reaches the row. So a shelf leads with
+**four** models, gives the rest of the row to what people built on them, and
+backfills from whichever side still has entries. The row is a reading decision,
+not a filter: the count beside the shelf says how many there are altogether, and
+opening it shows all of them.
 
 **An order only one kind can honour sets the type facet** instead of
 disappearing from the menu. The chip that appears is the explanation.
@@ -135,16 +142,22 @@ tag and an author. Results come back in the default order, which reads models
 first, so a search for _nano banana_ answers with the capability before the
 workflows that use it rather than burying it under 42 of them.
 
+The field belongs to the catalogue rather than to the list, so it sits in the
+page header and is there before anything has been asked. Typing in it is one of
+the three things that turn the shelves into a list, beside choosing a use case
+and setting a facet.
+
 ## 7. The pages
 
 ### 7.1 Model page
 
 Three sections, and two of them only exist because of rank 1:
 
-- **Operations.** The registry rows sharing this name, each with its task, its
-  price and its own Run. This is where the 21 duplicated names go. The
-  prototype route keeps the existing V1 model page behind each Run, so nothing
-  about the playground changes.
+- **The playground.** The model runs on its own page. The operations sharing
+  this name are a row of tabs above it, each with its task and its price, and
+  the playground under them is the live one, mounted whole rather than linked
+  to. This is where the 21 duplicated names go. Switching operation remounts it,
+  because the playground reads its schema and its example once.
 - **This model's own workflows.** The ones titled after it, folded out of the
   grid. Present only where there are any.
 - **Workflows that use this model.** The rest of the join, ordered by usage.
@@ -168,9 +181,10 @@ Shows, all of it real:
 - Tags, linking back into the catalogue.
 - The weights it will pull, in GB, for the workflows that run locally. 588 of
   the 610 carry a size, and it is the honest counterweight to "runs here".
-- `Open in ComfyUI` as the primary action, `Download the JSON` as the secondary.
-  Both resolve to the same file today, because the destination is undecided;
-  see the open questions.
+- `Save to Cloud` as the primary action, `Download the JSON` as the secondary.
+  The PRD settles the destination: the user's own Cloud account runs the
+  workflow, and Local or Desktop is not the first 1P path. Both resolve to the
+  same file today, because the Cloud hand-off is not wired yet.
 - `Run ‹model› here` where the workflow resolves, with the sentence that keeps
   it honest: the graph opens in ComfyUI, and what runs here is the model
   underneath it.
@@ -224,24 +238,24 @@ connection into the thing that makes one catalogue worth having.
 | 5   | A workflow naming a model we do not carry (226)          | The name as plain text, no link, no promise                           |
 | 6   | A workflow naming several models (179)                   | Every name listed, each linked only if we carry it                    |
 | 7   | A workflow naming a model but no single destination (33) | Links to the model name, never to an operation                        |
-| 8   | A local workflow (279)                                   | No `Runs here`; `Open in ComfyUI` and the weights it needs            |
+| 8   | A local workflow (279)                                   | No `Runs here`; `Save to Cloud` and the weights it needs              |
 | 9   | A workflow needing custom nodes (78)                     | Named before the download, on the card as a `Needs custom nodes` mark |
 | 10  | A workflow titled after its own model (37)               | Folded onto the model page, not a card in the grid                    |
 | 11  | A title that is a model name letter for letter (2)       | Same fold; the collision cannot occur                                 |
-| 12  | An app (18)                                              | App badge, form first, graph second, `Open in ComfyUI`                |
+| 12  | An app (18)                                              | App badge, form first, graph second, `Save to Cloud`                  |
 | 13  | An app running local weights (8)                         | Nothing implies it runs here                                          |
-| 14  | A search matching both kinds                             | Models first, at most five, then workflows                            |
+| 14  | A search matching both kinds                             | One list, models first, then the workflows that use them              |
 | 15  | A filter combination with no results                     | The empty state names which filter to drop                            |
 | 16  | A workflow with no thumbnail                             | The placeholder already in the card, never a blank tile               |
 
 ## 10. What this leaves open
 
-- Where `Open in ComfyUI` goes: the JSON file, a deep link into the desktop app,
-  or ComfyUI Cloud. The workflow page's primary action is undecided, and it
-  changes what the page is for. The prototype points it at the file, which is
-  what works today and is not what the label promises.
-- Whether Run ever appears on a workflow page. It cannot today: the site calls
-  one model per request, and 179 workflows name more than one.
+- Whether Run ever appears on a workflow page. The site calls one model per
+  request today, and 179 workflows name more than one. But 293 of the 610 pull
+  nothing down, and of 44 sampled from those, 29 hold only loaders, savers and
+  partner calls: roughly 190 workflows are a chain of Router calls and nothing
+  else. What is missing is a small client-side runner that walks that chain, not
+  Comfy Cloud. This is the question worth taking to the team.
 - Whether the model page's operations are tabs, a select, or separate sections.
   Rank 1 says they live on one page; it does not say in what shape.
 - The noun. The hub says workflows, the repo data says templates, the interface
@@ -254,6 +268,6 @@ connection into the thing that makes one catalogue worth having.
 
 ## 11. Where to see it
 
-The prototype answers at `/playground/`, with `/playground/model/<name>/`
+The Playground answers at `/playground/`, with `/playground/model/<name>/`
 and `/playground/workflow/<name>/` behind it. The live catalogue at
 `/workshop` is untouched.

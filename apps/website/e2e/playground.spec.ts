@@ -91,7 +91,7 @@ test.describe('V2 catalogue', () => {
 
     await card.getByTestId('catalogue-card-link').click()
     await expect(page).toHaveURL(new RegExp(`${href}$`))
-    await expect(page.getByTestId('model-operations')).toBeVisible()
+    await expect(page.getByTestId('model-run')).toBeVisible()
   })
 
   test('a workflow page names what it loads, needs and produces', async ({

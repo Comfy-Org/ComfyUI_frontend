@@ -26,11 +26,13 @@ const props = (overrides = {}) => ({
 })
 
 describe('WorkflowAside', () => {
-  it('offers the graph to open and to download', () => {
+  // The PRD's confirmed path: the workflow goes to the reader's Cloud account,
+  // and the file stays available for the people who want it locally.
+  it('offers the graph to the Cloud and to download', () => {
     render(WorkflowAside, { props: props() })
 
     expect(
-      screen.getAllByRole('link', { name: /Open in ComfyUI|Download the JSON/ })
+      screen.getAllByRole('link', { name: /Save to Cloud|Download the JSON/ })
     ).toHaveLength(2)
     expect(screen.queryByRole('link', { name: /tutorial/i })).toBeNull()
   })

@@ -101,34 +101,36 @@ const narrowedLabel = () =>
       </select>
     </div>
 
-    <div class="flex flex-wrap items-center gap-2">
-      <div
-        class="flex flex-wrap items-center gap-1 rounded-2xl bg-transparency-white-t4 p-1"
-        data-testid="catalogue-type-facet"
+    <!-- The second division, under the use case: within "generate videos",
+      the models that do it or the workflows built on them. -->
+    <div
+      class="mb-4 flex flex-wrap items-center gap-6 border-b border-transparency-white-t8"
+      data-testid="catalogue-type-facet"
+    >
+      <button
+        v-for="option in TYPES"
+        :key="option.value"
+        type="button"
+        :class="
+          cn(
+            '-mb-px inline-flex cursor-pointer items-center gap-2 border-b-2 pb-3 text-sm transition-colors',
+            type === option.value
+              ? 'border-primary-comfy-yellow text-primary-comfy-canvas'
+              : 'border-transparent text-content-secondary hover:text-content-bright'
+          )
+        "
+        :aria-pressed="type === option.value"
+        :data-active="type === option.value"
+        @click="type = option.value"
       >
-        <button
-          v-for="option in TYPES"
-          :key="option.value"
-          type="button"
-          :class="
-            cn(
-              'inline-flex h-8 cursor-pointer items-center gap-2 rounded-xl px-3 text-sm transition-colors',
-              type === option.value
-                ? 'bg-primary-comfy-yellow text-primary-comfy-ink'
-                : 'text-content-secondary hover:text-content-bright'
-            )
-          "
-          :aria-pressed="type === option.value"
-          :data-active="type === option.value"
-          @click="type = option.value"
-        >
-          {{ t(option.label, locale) }}
-          <span class="text-2xs tabular-nums opacity-70">
-            {{ counts[option.value] }}
-          </span>
-        </button>
-      </div>
+        {{ t(option.label, locale) }}
+        <span class="text-2xs tabular-nums opacity-70">
+          {{ counts[option.value] }}
+        </span>
+      </button>
+    </div>
 
+    <div class="flex flex-wrap items-center gap-2">
       <label class="sr-only" for="catalogue-needs">
         {{ t('workshop.v2.filter.needs', locale) }}
       </label>

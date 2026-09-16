@@ -41,6 +41,14 @@ const secondary =
       >
         {{ t('workshop.v2.action.open', locale) }}
       </a>
+      <!-- The PRD's confirmed path for a 1P workflow: the user's own Cloud
+        account runs it, and Desktop is not the first stop. -->
+      <p
+        class="mt-3 text-xs text-content-muted"
+        data-testid="workflow-save-note"
+      >
+        {{ t('workshop.v2.workflow.saveNote', locale) }}
+      </p>
       <div class="mt-4 flex flex-wrap items-center gap-x-5 gap-y-2 text-sm">
         <a :href="downloadUrl" download :class="secondary">
           {{ t('workshop.v2.workflow.download', locale) }}

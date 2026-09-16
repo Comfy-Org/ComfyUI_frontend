@@ -1,8 +1,10 @@
 ---
 import CatalogueCard from '../../../components/hub/CatalogueCard.vue'
+import ModelRun from '../../../components/hub/ModelRun.vue'
 import { useCaseFor } from '../../../config/models-catalogue'
 import { workshopModels } from '../../../config/workshop-browse-content'
 import { estimateWorkshopNodePrice } from '../../../config/workshop-node-pricing'
+import { getRouterWorkshopModelDetail } from '../../../config/workshop-router-content'
 import hubTemplateDetails from '../../../data/hubTemplateDetails.json'
 import {
   getModelGroupPage,
@@ -29,6 +31,15 @@ const { name, provider, operations, uses, operationsFromWorkflows } = page
 const operationRows = await pricedOperations(operations, (model) =>
   estimateWorkshopNodePrice(model, useCaseFor(model))
 )
+
+// The playground itself, not a link to it: a model page that cannot run the
+// model is a page about a capability rather than the capability.
+const runnable = operationRows.flatMap((row) => {
+  const detail = getRouterWorkshopModelDetail(row.model.slug)
+  return detail
+    ? [{ slug: row.model.slug, task: row.task, price: row.price, detail }]
+    : []
+})
 
 const needsCustomNodes = customNodeNamesFrom(hubTemplateDetails)
 const ownViews = relatedCardViews(
@@ -77,36 +88,19 @@ const sectionTitle =
       }
     </header>
 
-    <section class="mb-16" data-testid="model-operations">
-      <h2 class={sectionTitle}>{t('workshop.v2.model.operations')}</h2>
-      <p class="mt-2 max-w-xl text-sm text-content-muted">
-        {t('workshop.v2.model.operationsNote')}
-      </p>
-      <ul class="mt-5 flex flex-col divide-y divide-transparency-white-t8">
-        {
-          operationRows.map((operation) => (
-            <li class="flex flex-wrap items-center justify-between gap-4 py-4">
-              <div class="flex min-w-0 flex-col gap-1">
-                <span class="text-base text-primary-comfy-canvas">
-                  {operation.task}
-                </span>
-                {operation.price && (
-                  <span class="font-mono text-xs text-primary-warm-gray">
-                    {operation.price}
-                  </span>
-                )}
-              </div>
-              <a
-                href={operation.model.href}
-                class="inline-flex h-9 shrink-0 items-center rounded-2xl border border-primary-comfy-yellow px-5 text-xs font-bold tracking-wider text-primary-comfy-yellow uppercase transition-colors hover:bg-primary-comfy-yellow hover:text-primary-comfy-ink"
-              >
-                {t('workshop.v2.action.run')}
-              </a>
-            </li>
-          ))
-        }
-      </ul>
-    </section>
+    {
+      runnable.length > 0 ? (
+        <section class="mb-16">
+          <ModelRun operations={runnable} client:load />
+        </section>
+      ) : (
+        <section class="mb-16" data-testid="model-unrunnable">
+          <p class="text-sm text-content-muted">
+            {t('workshop.v2.model.noRun')}
+          </p>
+        </section>
+      )
+    }
 
     {
       operationsFromWorkflows.length > 0 && (

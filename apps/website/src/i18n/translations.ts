@@ -10273,8 +10273,8 @@ Enterprise`
   'workshop.v2.kind.apps': { en: 'Apps', 'zh-CN': '应用' },
   'workshop.v2.action.run': { en: 'Run', 'zh-CN': '运行' },
   'workshop.v2.action.open': {
-    en: 'Open in ComfyUI',
-    'zh-CN': '在 ComfyUI 中打开'
+    en: 'Save to Cloud',
+    'zh-CN': '保存到 Cloud'
   },
   'workshop.v2.card.credits': { en: '{n} credits', 'zh-CN': '{n} 积分' },
   'workshop.v2.card.runsOn': {
@@ -10396,6 +10396,10 @@ Enterprise`
     en: 'Download the JSON',
     'zh-CN': '下载 JSON'
   },
+  'workshop.v2.workflow.saveNote': {
+    en: 'Runs in your Comfy Cloud account. Nothing to install.',
+    'zh-CN': '在你的 Comfy Cloud 账户中运行，无需安装。'
+  },
   'workshop.v2.workflow.tutorial': {
     en: 'Read the tutorial',
     'zh-CN': '查看教程'
@@ -10411,6 +10415,10 @@ Enterprise`
   'workshop.v2.workflow.relatedApps': {
     en: 'Apps like this one',
     'zh-CN': '相似的应用'
+  },
+  'workshop.v2.model.noRun': {
+    en: 'The Router does not carry a runnable operation for this model yet.',
+    'zh-CN': 'Router 尚未提供该模型可运行的操作。'
   },
   'workshop.v2.model.operations': { en: 'Operations', 'zh-CN': '操作' },
   'workshop.v2.model.operationsNote': {
