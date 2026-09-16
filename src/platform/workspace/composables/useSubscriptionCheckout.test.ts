@@ -82,6 +82,13 @@ function errorWithCode(code: string, message = 'error') {
   return Object.assign(new Error(message), { code })
 }
 
+type QuoteFields = Readonly<
+  Pick<
+    PreviewSubscribeResponse,
+    'cost_today_cents' | 'amount_due_cents' | 'currency'
+  >
+>
+
 interface ReactivationPreviewPlanInput {
   slug: string
   tier: PreviewSubscribeResponse['new_plan']['tier']
@@ -1032,12 +1039,14 @@ describe('useSubscriptionCheckout', () => {
       expect(checkout.reactivationRequired.value).toBe(false)
     })
 
-    it('fails closed when an embedded preview omits the reactivation decision', async () => {
+    it('fails closed when an embedded preview omits the reactivation decision for a cancelled subscription', async () => {
       mockIncompleteEmbeddedPreview.value = true
+      mockSubscription.value = { isCancelled: true }
       mockPreviewSubscribe.mockResolvedValue({
         allowed: true,
-        transition_type: 'new_subscription',
-        is_immediate: true
+        transition_type: 'upgrade',
+        is_immediate: true,
+        current_plan: { period_end: '2026-08-29T00:00:00Z' }
       })
       const checkout = await setup()
 
@@ -1050,9 +1059,241 @@ describe('useSubscriptionCheckout', () => {
 
       await checkout.handleConfirmTransition()
 
-      expect(checkout.reactivationRequired.value).toBe(false)
-      expect(checkout.checkoutStep.value).toBe('pricing')
       expect(mockSubscribe).not.toHaveBeenCalled()
+    })
+
+    it('subscribes a first-time buyer when an embedded preview omits the reactivation decision', async () => {
+      mockIncompleteEmbeddedPreview.value = true
+      mockSubscription.value = null
+      mockPreviewSubscribe.mockResolvedValue({
+        allowed: true,
+        transition_type: 'new_subscription',
+        is_immediate: true
+      })
+      const checkout = await setup()
+
+      await checkout.handleSubscribeClick({
+        tierKey: 'standard',
+        billingCycle: 'yearly'
+      })
+
+      expect(checkout.reactivationRequired.value).toBe(false)
+
+      await checkout.handleConfirmTransition()
+
+      expect(mockSubscribe).toHaveBeenCalled()
+    })
+
+    async function confirmRefreshedNewSubscription(
+      installedQuote: QuoteFields,
+      refreshedQuote: QuoteFields
+    ) {
+      mockSubscription.value = null
+      mockPreviewSubscribe.mockResolvedValueOnce({
+        allowed: true,
+        transition_type: 'upgrade',
+        is_immediate: true,
+        requires_reactivation_confirmation: true,
+        ...installedQuote,
+        current_plan: { period_end: '2026-08-29T00:00:00Z' }
+      })
+      const checkout = await setup()
+
+      await checkout.handleSubscribeClick({
+        tierKey: 'standard',
+        billingCycle: 'yearly'
+      })
+
+      const refreshedPreview = {
+        allowed: true,
+        transition_type: 'new_subscription',
+        is_immediate: true,
+        requires_reactivation_confirmation: false,
+        ...refreshedQuote
+      }
+      mockPreviewSubscribe.mockResolvedValueOnce(refreshedPreview)
+      mockToastAdd.mockClear()
+
+      await checkout.handleConfirmTransition()
+
+      return { checkout, refreshedPreview }
+    }
+
+    it.for([
+      [
+        'the payable amount is unchanged',
+        { cost_today_cents: 1600 },
+        { cost_today_cents: 1600 }
+      ],
+      [
+        'an exact quote replaces a legacy one at the same payable amount',
+        { cost_today_cents: 1600 },
+        { cost_today_cents: 1600, amount_due_cents: 1600, currency: 'usd' }
+      ]
+    ] as const)(
+      'installs the refreshed preview and subscribes when %s',
+      async ([, installedQuote, refreshedQuote]) => {
+        const { checkout, refreshedPreview } =
+          await confirmRefreshedNewSubscription(installedQuote, refreshedQuote)
+
+        expect(checkout.previewData.value).toStrictEqual(refreshedPreview)
+        expect(checkout.checkoutStep.value).not.toBe('pricing')
+        expect(mockSubscribe).toHaveBeenCalled()
+      }
+    )
+
+    it.for([
+      [
+        'the legacy cost rises',
+        { cost_today_cents: 1600 },
+        { cost_today_cents: 2400 }
+      ],
+      [
+        'the amount due rises behind an unchanged legacy cost',
+        { cost_today_cents: 1600, amount_due_cents: 1600 },
+        { cost_today_cents: 1600, amount_due_cents: 2400 }
+      ],
+      [
+        'the currency changes',
+        { cost_today_cents: 1600, amount_due_cents: 1600, currency: 'usd' },
+        { cost_today_cents: 1600, amount_due_cents: 1600, currency: 'eur' }
+      ]
+    ] as const)(
+      'returns to confirmation when %s',
+      async ([, installedQuote, refreshedQuote]) => {
+        const { checkout, refreshedPreview } =
+          await confirmRefreshedNewSubscription(installedQuote, refreshedQuote)
+
+        expect(mockSubscribe).not.toHaveBeenCalled()
+        expect(checkout.previewData.value).toStrictEqual(refreshedPreview)
+        expect(checkout.checkoutStep.value).not.toBe('pricing')
+        expect(mockToastAdd).toHaveBeenCalledWith(
+          expect.objectContaining({ detail: 'Reactivation amount changed' })
+        )
+      }
+    )
+
+    it('subscribes after a failed plan-picker preview leaves no preview installed', async () => {
+      mockIncompleteEmbeddedPreview.value = true
+      mockSubscription.value = null
+      mockPreviewSubscribe.mockRejectedValueOnce(
+        errorWithCode('BILLING_UNAVAILABLE', 'Billing system unavailable')
+      )
+      const checkout = await setup()
+
+      await checkout.handleSubscribeClick({
+        tierKey: 'standard',
+        billingCycle: 'yearly'
+      })
+
+      expect(checkout.previewData.value).toBeNull()
+
+      mockPreviewSubscribe.mockResolvedValue({
+        allowed: true,
+        transition_type: 'new_subscription',
+        is_immediate: true
+      })
+
+      await checkout.handleConfirmTransition()
+
+      expect(mockSubscribe).toHaveBeenCalled()
+    })
+
+    it('surfaces the rejection when a subscribe reactivation block clears on refresh', async () => {
+      mockSubscription.value = null
+      mockPreviewSubscribe.mockResolvedValueOnce({
+        allowed: true,
+        transition_type: 'new_subscription',
+        is_immediate: true,
+        requires_reactivation_confirmation: false
+      })
+      const checkout = await setup()
+
+      await checkout.handleSubscribeClick({
+        tierKey: 'standard',
+        billingCycle: 'yearly'
+      })
+      mockSubscribe.mockRejectedValueOnce(
+        errorWithCode('REACTIVATION_CONFIRMATION_REQUIRED', 'Reactivate first')
+      )
+      mockPreviewSubscribe.mockResolvedValueOnce({
+        allowed: true,
+        transition_type: 'new_subscription',
+        is_immediate: true,
+        requires_reactivation_confirmation: false
+      })
+
+      await checkout.handleConfirmTransition()
+
+      expect(checkout.reactivationRequired.value).toBe(false)
+      expect(mockToastAdd).toHaveBeenCalledWith(
+        expect.objectContaining({ detail: 'Reactivate first' })
+      )
+    })
+
+    it('returns to confirmation without an error when a subscribe reactivation block stands', async () => {
+      mockSubscription.value = { isCancelled: true }
+      mockPreviewSubscribe.mockResolvedValueOnce({
+        allowed: true,
+        transition_type: 'upgrade',
+        is_immediate: true,
+        requires_reactivation_confirmation: false,
+        current_plan: { period_end: '2026-08-29T00:00:00Z' }
+      })
+      const checkout = await setup()
+
+      await checkout.handleSubscribeClick({
+        tierKey: 'standard',
+        billingCycle: 'yearly'
+      })
+      mockSubscribe.mockRejectedValueOnce(
+        errorWithCode('REACTIVATION_CONFIRMATION_REQUIRED', 'Reactivate first')
+      )
+      mockPreviewSubscribe.mockResolvedValueOnce({
+        allowed: true,
+        transition_type: 'upgrade',
+        is_immediate: true,
+        requires_reactivation_confirmation: true,
+        current_plan: { period_end: '2026-08-29T00:00:00Z' }
+      })
+
+      await checkout.handleConfirmTransition()
+
+      expect(checkout.reactivationRequired.value).toBe(true)
+      expect(mockToastAdd).not.toHaveBeenCalledWith(
+        expect.objectContaining({ detail: 'Reactivate first' })
+      )
+    })
+
+    it('surfaces the rejection when a team subscribe reactivation block clears on refresh', async () => {
+      mockSubscription.value = null
+      const checkout = await setup()
+
+      await checkout.handleSubscribeTeamClick({
+        stop: {
+          id: 'team_700',
+          usd: 700,
+          credits: 147_700,
+          discountedUsd: 665
+        },
+        billingCycle: 'monthly'
+      })
+      mockSubscribe.mockRejectedValueOnce(
+        errorWithCode('REACTIVATION_CONFIRMATION_REQUIRED', 'Reactivate first')
+      )
+      mockPreviewSubscribe.mockResolvedValueOnce({
+        allowed: true,
+        transition_type: 'new_subscription',
+        is_immediate: true,
+        requires_reactivation_confirmation: false
+      })
+
+      await checkout.handleTeamSubscribe()
+
+      expect(checkout.reactivationRequired.value).toBe(false)
+      expect(mockToastAdd).toHaveBeenCalledWith(
+        expect.objectContaining({ detail: 'Reactivate first' })
+      )
     })
 
     it('shows error toast when preview is disallowed', async () => {
