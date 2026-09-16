@@ -149,47 +149,54 @@ test.describe('Image Compare', { tag: ['@widget', '@vue-nodes'] }, () => {
     }
   )
 
-  test('Comparison survives a workflow tab switch', async ({ comfyPage }) => {
-    test.info().annotations.push({
-      type: 'regression',
-      description:
-        'Compare images lived on the non-serialized widget value, so switching tabs emptied the widget'
+  test.describe('Workflow tab switching', () => {
+    test.use({
+      initialSettings: { 'Comfy.Workflow.WorkflowTabsPosition': 'Sidebar' }
     })
 
-    const tab = comfyPage.menu.workflowsTab
-    await tab.open()
-    await comfyPage.menu.topbar.saveWorkflow('image-compare-tab-switch')
+    test('Comparison survives a workflow tab switch', async ({ comfyPage }) => {
+      test.info().annotations.push({
+        type: 'regression',
+        description:
+          'Compare images lived on the non-serialized widget value, so switching tabs emptied the widget'
+      })
 
-    await setSavedImages(comfyPage, {
-      beforeImages: [testImage('Before', '#c00')],
-      afterImages: [testImage('After', '#00c')]
+      const tab = comfyPage.menu.workflowsTab
+      await tab.open()
+      await comfyPage.menu.topbar.saveWorkflow('image-compare-tab-switch')
+
+      await setSavedImages(comfyPage, {
+        beforeImages: [testImage('Before', '#c00')],
+        afterImages: [testImage('After', '#00c')]
+      })
+      await comfyPage.page.evaluate(() => {
+        const em = window.app!.extensionManager as unknown as Record<
+          string,
+          { activeWorkflow?: { changeTracker: { captureCanvasState(): void } } }
+        >
+        em.workflow.activeWorkflow?.changeTracker.captureCanvasState()
+      })
+
+      const node = comfyPage.vueNodes.getNodeLocator('1')
+      await expect(node.locator('img')).toHaveCount(2)
+
+      await comfyPage.command.executeCommand('Comfy.NewBlankWorkflow')
+      await comfyPage.workflow.waitForWorkflowIdle()
+
+      await expect(tab.getOpenedItem('image-compare-tab-switch')).toBeVisible()
+      await tab.switchToWorkflow('image-compare-tab-switch')
+      await comfyPage.workflow.waitForWorkflowIdle()
+
+      const restored = comfyPage.vueNodes.getNodeLocator('1')
+      await expect(restored.locator('img[alt="Before image"]')).toHaveAttribute(
+        'src',
+        srcOf(testImage('Before', '#c00'))
+      )
+      await expect(restored.locator('img[alt="After image"]')).toHaveAttribute(
+        'src',
+        srcOf(testImage('After', '#00c'))
+      )
     })
-    await comfyPage.page.evaluate(() => {
-      const em = window.app!.extensionManager as unknown as Record<
-        string,
-        { activeWorkflow?: { changeTracker: { captureCanvasState(): void } } }
-      >
-      em.workflow.activeWorkflow?.changeTracker.captureCanvasState()
-    })
-
-    const node = comfyPage.vueNodes.getNodeLocator('1')
-    await expect(node.locator('img')).toHaveCount(2)
-
-    await comfyPage.command.executeCommand('Comfy.NewBlankWorkflow')
-    await comfyPage.workflow.waitForWorkflowIdle()
-
-    await tab.switchToWorkflow('image-compare-tab-switch')
-    await comfyPage.workflow.waitForWorkflowIdle()
-
-    const restored = comfyPage.vueNodes.getNodeLocator('1')
-    await expect(restored.locator('img[alt="Before image"]')).toHaveAttribute(
-      'src',
-      srcOf(testImage('Before', '#c00'))
-    )
-    await expect(restored.locator('img[alt="After image"]')).toHaveAttribute(
-      'src',
-      srcOf(testImage('After', '#00c'))
-    )
   })
 
   test(
