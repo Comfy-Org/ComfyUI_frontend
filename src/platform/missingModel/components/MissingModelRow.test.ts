@@ -181,6 +181,7 @@ describe('MissingModelRow', () => {
     mockApiListeners.clear()
     mockUploadContext.resolver = undefined
     mockUploadCallbacks.onUploadSuccess = undefined
+    mockCopyToClipboard.mockReset()
     mockDownloadModel.mockResolvedValue(undefined)
     mockFetchModelMetadata.mockResolvedValue({
       fileSize: null,
@@ -438,7 +439,7 @@ describe('MissingModelRow', () => {
     )
   })
 
-  it('offers declared ModelScope and Civitai sources and downloads the selected one', async () => {
+  it('uses the selected source for metadata, actions, links, and downloads', async () => {
     mockIsCloud.value = false
     const user = userEvent.setup()
     const model = makeModel([{ nodeId: '1', widgetName: 'ckpt_name' }])
@@ -452,6 +453,16 @@ describe('MissingModelRow', () => {
       { provider: 'modelscope', url: modelScopeUrl },
       { provider: 'civitai', url: civitaiUrl }
     ]
+    mockFetchModelMetadata.mockImplementation(async (url) => ({
+      fileSize:
+        url === huggingFaceUrl
+          ? 1024
+          : url === modelScopeUrl
+            ? 2 * 1024 ** 3
+            : 3 * 1024 ** 3,
+      gatedRepoUrl:
+        url === huggingFaceUrl ? 'https://huggingface.co/org/model' : null
+    }))
 
     renderRow(model, vi.fn(), false)
 
@@ -459,6 +470,38 @@ describe('MissingModelRow', () => {
     expect(sourceSelect).toHaveValue(huggingFaceUrl)
     expect(sourceSelect).toHaveDisplayValue('Hugging Face')
     expect(screen.getAllByRole('option')).toHaveLength(3)
+    await waitFor(() => {
+      expect(mockFetchModelMetadata).toHaveBeenCalledWith(huggingFaceUrl)
+      expect(
+        screen.getByTestId('missing-model-gated-access')
+      ).toBeInTheDocument()
+    })
+
+    await user.click(screen.getByRole('button', { name: 'Copy URL' }))
+    expect(mockCopyToClipboard).toHaveBeenLastCalledWith(
+      'https://huggingface.co/org/model/blob/main/model.safetensors'
+    )
+
+    await user.selectOptions(sourceSelect, modelScopeUrl)
+    await waitFor(() => {
+      expect(mockFetchModelMetadata).toHaveBeenCalledWith(modelScopeUrl)
+      expect(screen.getByText('checkpoints · 2 GB')).toBeInTheDocument()
+    })
+    expect(
+      screen.queryByTestId('missing-model-gated-access')
+    ).not.toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Copy URL' }))
+    expect(mockCopyToClipboard).toHaveBeenLastCalledWith(modelScopeUrl)
+
+    await user.selectOptions(sourceSelect, civitaiUrl)
+    await waitFor(() => {
+      expect(mockFetchModelMetadata).toHaveBeenCalledWith(civitaiUrl)
+      expect(screen.getByText('checkpoints · 3 GB')).toBeInTheDocument()
+    })
+    await user.click(screen.getByRole('button', { name: 'Copy URL' }))
+    expect(mockCopyToClipboard).toHaveBeenLastCalledWith(
+      'https://civitai.com/models/12345'
+    )
 
     await user.selectOptions(sourceSelect, modelScopeUrl)
     await user.click(screen.getByTestId('missing-model-download'))
