@@ -2,6 +2,10 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed } from 'vue'
 
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import {
+  createTestSubgraph,
+  createTestSubgraphNode
+} from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 
 import { useImageCompareImages } from './useImageCompareImages'
@@ -152,6 +156,34 @@ describe('useImageCompareImages', () => {
 
     expect(beforeImages.value).toEqual([
       '/api/view?filename=compare_a.png&type=temp'
+    ])
+  })
+
+  it('resolves a producer that sits behind a subgraph boundary', () => {
+    const { graph, compare } = buildGraph()
+    const subgraph = createTestSubgraph({
+      rootGraph: graph,
+      outputs: [{ name: 'IMAGE', type: 'IMAGE' }]
+    })
+    const inner = new LGraphNode('LoadImage')
+    inner.addOutput('IMAGE', 'IMAGE')
+    subgraph.add(inner)
+    subgraph.outputNode.slots[0].connect(inner.outputs[0], inner)
+
+    const subgraphNode = createTestSubgraphNode(subgraph, {
+      parentGraph: graph
+    })
+    graph.add(subgraphNode)
+    subgraphNode.connect(0, compare, 0)
+
+    outputStore.nodeOutputs[`${subgraph.id}:${inner.id}`] = {
+      images: [{ filename: 'inner.png', type: 'input' }]
+    }
+
+    const { beforeImages } = useImageCompareImages(computed(() => compare))
+
+    expect(beforeImages.value).toEqual([
+      '/api/view?filename=inner.png&type=input'
     ])
   })
 
