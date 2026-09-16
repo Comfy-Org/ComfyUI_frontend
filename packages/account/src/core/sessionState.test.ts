@@ -448,6 +448,12 @@ describe('arbitrateMint', () => {
       verdict: { verdict: 'superseded' }
     },
     {
+      name: 'a popup mint that crossed two identity events is superseded even when the uid matches again',
+      state: { ...signedIn, identityEpoch: 4 },
+      attempt: { ...attempt, explicitUser: true, startedSignedOut: true },
+      verdict: { verdict: 'superseded' }
+    },
+    {
       name: 'an explicit mint started signed-in never crosses an identity event',
       state: { ...signedIn, identityEpoch: 3 },
       attempt: { ...attempt, explicitUser: true },

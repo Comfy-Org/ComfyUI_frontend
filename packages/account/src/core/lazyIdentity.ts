@@ -31,27 +31,27 @@ export function createLazyIdentity<TUser extends AccountUser>(
     listeners.forEach((listener) => listener(user))
   }
 
+  async function subscribe(started: number, resolve: () => void) {
+    const identity = await load()
+    if (started !== generation) return
+    unsubscribe = identity.onUserChanged((user) => {
+      if (started !== generation) return
+      resolve()
+      deliver(user)
+    })
+  }
+
   function activate(): Promise<void> {
     if (activation) return activation
     const started = ++generation
     activation = new Promise<void>((resolve, reject) => {
       settleActivation = resolve
-      load().then(
-        (identity) => {
-          if (started !== generation) return
-          unsubscribe = identity.onUserChanged((user) => {
-            if (started !== generation) return
-            deliver(user)
-            resolve()
-          })
-        },
-        (error: unknown) => {
-          if (started !== generation) return
-          activation = undefined
-          settleActivation = undefined
-          reject(error)
-        }
-      )
+      subscribe(started, resolve).catch((error: unknown) => {
+        if (started !== generation) return
+        activation = undefined
+        settleActivation = undefined
+        reject(error)
+      })
     })
     return activation
   }

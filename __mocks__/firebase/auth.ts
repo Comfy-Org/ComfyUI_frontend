@@ -27,6 +27,12 @@ export class GithubAuthProvider implements ProviderMethods {
 export const browserLocalPersistence = {
   type: 'LOCAL'
 } satisfies FirebaseAuth.Persistence
+export const browserSessionPersistence = {
+  type: 'SESSION'
+} satisfies FirebaseAuth.Persistence
+export const indexedDBLocalPersistence = {
+  type: 'LOCAL'
+} satisfies FirebaseAuth.Persistence
 export const browserPopupRedirectResolver =
   {} satisfies FirebaseAuth.PopupRedirectResolver
 export const createUserWithEmailAndPassword =
