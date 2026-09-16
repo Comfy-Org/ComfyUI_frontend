@@ -79,6 +79,29 @@ describe('firebaseIdentity', () => {
     expect(initializeApp).not.toHaveBeenCalled()
   })
 
+  it('boots on the build-time fallback config, without asserting, when the config fetch failed', async () => {
+    const {
+      firebaseIdentity,
+      initializeApp,
+      initializeAuth,
+      remoteConfig,
+      remoteConfigState
+    } = await loadFresh()
+    vi.mocked(initializeApp).mockReturnValue(defaultApp)
+    vi.mocked(initializeAuth).mockReturnValue(fromPartial<Auth>({}))
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
+    remoteConfigState.value = 'error'
+    remoteConfig.value = {}
+
+    firebaseIdentity.initialize()
+
+    expect(initializeApp).toHaveBeenCalledWith(
+      expect.objectContaining({ projectId: 'dreamboothy-dev' }),
+      '[DEFAULT]'
+    )
+    expect(consoleError).not.toHaveBeenCalled()
+  })
+
   it('reuses an existing [DEFAULT] app through getAuth without initializing Auth again', async () => {
     const {
       firebaseIdentity,

@@ -67,8 +67,12 @@ is not a contract to build on.
    else in `src/` creates a Firebase app or `Auth`. `main.ts` calls
    `initialize()` after remote config has loaded, so the config is the
    server's; the module refuses to resolve while remote config is still
-   unloaded. `currentUser()` never initializes, so a feature-flag read before
-   that point fails closed instead of booting Firebase early.
+   unloaded. In DEV that early resolution throws; in production it reports
+   through the assert reporter and boots on the build-time fallback, which
+   is then cached for the session, so the `main.ts` ordering is the real
+   invariant and the cloud e2e set is what proves it. `currentUser()` never
+   initializes, so a feature-flag read before that point fails closed
+   instead of booting Firebase early.
 
 The contract is pinned by the "unified identity source" test in
 `authStore.test.ts`, the identity-driven cases in `useWorkspaceAuth.test.ts`
