@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { SessionClient, SessionSnapshot } from '../session.js'
 import type { AccountCredential } from '../sessionContracts.js'
 import { createBalanceWatch } from './balanceWatch.js'
+import { sessionBillingScopeSource } from './billingScope.js'
 import type {
   BillingHttpResponse,
   BillingRequest,
@@ -67,7 +68,7 @@ function fakeSession() {
     }
   }
   return {
-    session: fake as SessionClient,
+    scopeSource: sessionBillingScopeSource(fake),
     moveTo(next: SessionSnapshot) {
       snapshot = next
       for (const listener of [...listeners]) listener(snapshot)
@@ -193,12 +194,12 @@ function harness(
 ) {
   const session = fakeSession()
   const { transport, calls, answer, routes } = fakeTransport()
-  const readerOptions = { transport, session: session.session }
+  const readerOptions = { transport, scopeSource: session.scopeSource }
   const capabilities = createCapabilitiesReader(readerOptions)
   const credits = createCreditsReader(readerOptions)
   const lifecycle = createBillingOperationLifecycle({
     transport,
-    session: session.session,
+    scopeSource: session.scopeSource,
     statusReader: createBillingStatusReader(readerOptions),
     embeddedCheckoutAvailable: () => options.embedded === true
   })
