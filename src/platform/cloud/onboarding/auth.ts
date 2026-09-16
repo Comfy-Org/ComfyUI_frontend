@@ -1,6 +1,10 @@
 import { addBreadcrumb } from '@sentry/vue'
 import { isEmpty } from 'es-toolkit/compat'
 
+import {
+  consumeSurveyReplayRequest,
+  isSurveyReplayRequested
+} from '@/platform/onboarding/onboardingReplay'
 import { reportError } from '@/platform/telemetry/reportError'
 import { api } from '@/scripts/api'
 import { toError } from '@/utils/errorUtil'
@@ -10,6 +14,13 @@ interface UserCloudStatus {
 }
 
 const ONBOARDING_SURVEY_KEY = 'onboarding_survey'
+
+class SurveyStateUnknownError extends Error {
+  constructor(message: string) {
+    super(message)
+    this.name = 'SurveyStateUnknownError'
+  }
+}
 
 function captureApiError(
   error: Error,
@@ -76,6 +87,24 @@ export async function getUserCloudStatus(): Promise<UserCloudStatus> {
 }
 
 export async function getSurveyCompletedStatus(): Promise<boolean> {
+  // A replay re-opens the gate here rather than by clearing the stored answers,
+  // which `/api/settings` could only overwrite, never restore.
+  if (isSurveyReplayRequested()) return false
+
+  // A transient failure reads as completed rather than bouncing a working user
+  // to /cloud/survey.
+  return (await readStoredSurvey()) !== 'absent'
+}
+
+/**
+ * `unknown` is kept distinct from `absent` because the two callers need
+ * opposite fallbacks: the gate may treat "don't know" as completed and let a
+ * working user through, but a decision about whether to overwrite the answers
+ * may not, since guessing wrong either destroys them or discards the pass.
+ */
+type StoredSurvey = 'present' | 'absent' | 'unknown'
+
+async function readStoredSurvey(): Promise<StoredSurvey> {
   try {
     const response = await api.fetchApi(`/settings/${ONBOARDING_SURVEY_KEY}`, {
       method: 'GET',
@@ -87,11 +116,9 @@ export async function getSurveyCompletedStatus(): Promise<boolean> {
     // reachable after a successful authenticated read (a stale token returns
     // 401, never 404), so it can't be a transient-auth false signal.
     if (response.status === 404) {
-      return false
+      return 'absent'
     }
     if (!response.ok) {
-      // Other non-ok (401/403/5xx): treat as completed so a transient failure
-      // never bounces a working user to /cloud/survey.
       addBreadcrumb({
         category: 'auth',
         message: 'Survey status check returned non-ok response',
@@ -101,12 +128,11 @@ export async function getSurveyCompletedStatus(): Promise<boolean> {
           endpoint: `/settings/${ONBOARDING_SURVEY_KEY}`
         }
       })
-      return true
+      return 'unknown'
     }
     const data = await response.json()
-    return !isEmpty(data.value)
+    return isEmpty(data.value) ? 'absent' : 'present'
   } catch (error) {
-    // Network/parse failure: same fail-safe policy as a non-ok response.
     reportError(error, {
       errorType: 'network_error',
       tags: { api_endpoint: '/settings/{key}' },
@@ -116,13 +142,37 @@ export async function getSurveyCompletedStatus(): Promise<boolean> {
       },
       level: 'warning'
     })
-    return true
+    return 'unknown'
   }
 }
 
+/** Whether the answers were stored, which a replayed pass declines to do. */
 export async function submitSurvey(
   survey: Record<string, unknown>
-): Promise<void> {
+): Promise<boolean> {
+  // A replay exercises the flow rather than re-profiling the user, so it keeps
+  // the answers already on the account: submitting is the only way out of the
+  // survey, and this POST would replace them wholesale. With nothing stored to
+  // preserve there is nothing to decline, so the pass is the account's real
+  // first one and is written normally.
+  //
+  // Read before spending the request, and refuse to guess: writing over
+  // answers that might be there would destroy them, and skipping a write that
+  // was needed would discard the pass silently.
+  const replaying = isSurveyReplayRequested()
+  if (replaying) {
+    const stored = await readStoredSurvey()
+    if (stored === 'unknown') {
+      throw new SurveyStateUnknownError(
+        'Could not read the stored survey answers, so the replayed submission was not written'
+      )
+    }
+    if (stored === 'present') {
+      consumeSurveyReplayRequest()
+      return false
+    }
+  }
+
   try {
     addBreadcrumb({
       category: 'auth',
@@ -159,12 +209,18 @@ export async function submitSurvey(
       throw error
     }
 
+    // Spent only now: a replay that failed to write has not been served, and
+    // must still be able to reach the survey on a retry.
+    if (replaying) consumeSurveyReplayRequest()
+
     // Log successful survey submission
     addBreadcrumb({
       category: 'auth',
       message: 'Survey submitted successfully',
       level: 'info'
     })
+
+    return true
   } catch (error) {
     // Only capture network errors (not HTTP errors we already captured)
     if (!isHttpError(error, 'Failed to submit survey:')) {
