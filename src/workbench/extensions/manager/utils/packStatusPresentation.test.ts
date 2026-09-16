@@ -33,18 +33,18 @@ describe('resolvePackStatusPresentation', () => {
   })
 
   it.for([
-    ['NodeVersionStatusFlagged', 'flagged'],
-    ['NodeVersionStatusBanned', 'banned'],
-    ['NodeStatusBanned', 'banned']
+    ['NodeVersionStatusFlagged', 'flagged', 'warn'],
+    ['NodeVersionStatusBanned', 'banned', 'error'],
+    ['NodeStatusBanned', 'banned', 'error']
   ] as const)(
-    'keeps the %s label when compatibility issues are also present',
-    ([statusType, label]) => {
+    'keeps the %s presentation when compatibility issues are also present',
+    ([statusType, label, severity]) => {
       expect(
         resolvePackStatusPresentation({
           statusType,
           hasCompatibilityIssues: true
-        }).label
-      ).toBe(label)
+        })
+      ).toEqual({ label, severity })
     }
   )
 
