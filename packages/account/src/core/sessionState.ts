@@ -372,8 +372,8 @@ function crossedIdentityEvent<TUser extends AccountUser>(
 
 // The one mint allowed to cross an identity event: an explicit-user
 // mint started while signed out, for the user the port then
-// delivered (the popup path). Everything else was minted for an
-// identity that is gone, even when the uid matches again.
+// delivered (the popup path) as the single event since. Everything else
+// was minted for an identity that is gone, even when the uid matches again.
 function popupSettled<TUser extends AccountUser>(
   state: SessionState<TUser>,
   attempt: MintAttempt
@@ -381,6 +381,7 @@ function popupSettled<TUser extends AccountUser>(
   return (
     attempt.explicitUser &&
     attempt.startedSignedOut &&
+    state.identityEpoch === attempt.startEpoch + 1 &&
     state.user?.uid === attempt.userUid
   )
 }
