@@ -68,7 +68,10 @@ function liftValidationError(
   })
   const lifted = liftNodeErrorsToBoundary(rootGraph, {
     [liftedSourceNodeId]: nodeError([error])
-  })[liftedHostNodeId]?.errors[0]
+  })[liftedHostNodeId]?.errors.at(0)
+  if (!lifted) {
+    throw new Error('Expected validation error to be lifted')
+  }
   return lifted
 }
 

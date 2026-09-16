@@ -255,13 +255,13 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
    * transition reruns it.
    */
   function retireResolvedMissingNodePromptError() {
-    if (missingNodesStore.hasMissingNodes) return
+    if (missingNodesStore.missingNodesError?.nodeTypes.length) return
     if (!isMissingNodePromptError(lastPromptError.value)) return
     updateRunErrors({ promptError: null }, activeRunErrorKey.value)
   }
 
   whenever(
-    () => !missingNodesStore.hasMissingNodes,
+    () => !missingNodesStore.missingNodesError?.nodeTypes.length,
     () => {
       if (ChangeTracker.isLoadingGraph) return
       retireResolvedMissingNodePromptError()

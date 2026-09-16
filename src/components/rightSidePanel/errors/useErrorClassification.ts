@@ -18,8 +18,8 @@ export function useErrorClassification() {
       promptError: executionErrorStore.lastPromptError,
       executionError: executionErrorStore.lastExecutionError,
       nodeErrors: executionErrorStore.surfacedNodeErrors,
-      missingModels: missingModelStore.missingModelCandidates,
-      missingMedia: missingMediaStore.missingMediaCandidates,
+      missingModels: missingModelStore.visibleMissingModelCandidates,
+      missingMedia: missingMediaStore.visibleMissingMediaCandidates,
       hasMissingNodes: missingNodesStore.hasMissingNodes
     })
   )

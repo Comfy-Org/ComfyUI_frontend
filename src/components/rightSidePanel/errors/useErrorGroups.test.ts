@@ -1229,6 +1229,77 @@ describe('useErrorGroups', () => {
   })
 
   describe('missing resource absorption', () => {
+    it.for([
+      { kind: 'models', settingId: 'Comfy.ErrorSystem.ShowMissingModels' },
+      { kind: 'media', settingId: 'Comfy.Workflow.ShowMissingMediaWarning' }
+    ] as const)(
+      'keeps execution errors visible when $kind warnings are disabled',
+      async ({ kind, settingId }) => {
+        const { store, groups } = createErrorGroups()
+        const hasBlockingError = useHasBlockingError()
+        const inputName = kind === 'models' ? 'ckpt_name' : 'image'
+        if (kind === 'models') {
+          store.surfaceMissingModels([makeModel('missing.safetensors')])
+        } else {
+          store.surfaceMissingMedia([makeMedia('missing.png', { nodeId: '1' })])
+        }
+        store.recordNodeErrors({
+          '1': nodeError([validationError('value_not_in_list', inputName)])
+        })
+        await nextTick()
+        expect(hasBlockingError.value).toBe(false)
+
+        useSettingStore().settingValues[settingId] = false
+        await nextTick()
+
+        expect(hasBlockingError.value).toBe(true)
+        expect(groups.allErrorGroups.value).toEqual([
+          expect.objectContaining({ type: 'execution', severity: 'error' })
+        ])
+        expect(store.lastNodeErrors).not.toBeNull()
+
+        useSettingStore().settingValues[settingId] = true
+        await nextTick()
+        expect(hasBlockingError.value).toBe(false)
+        expect(groups.allErrorGroups.value).toEqual([
+          expect.objectContaining({ severity: 'missing', blockedLastRun: true })
+        ])
+      }
+    )
+
+    it('keeps unresolved prompt errors when the missing-node warning is disabled', async () => {
+      const { store, groups } = createErrorGroups()
+      const missingNodesStore = useMissingNodesErrorStore()
+      const hasBlockingError = useHasBlockingError()
+      missingNodesStore.setMissingNodeTypes([
+        makeMissingNodeType('MissingNode', { cnrId: 'missing-pack' })
+      ])
+      const promptError = {
+        type: 'missing_node_type',
+        message: 'MissingNode is unavailable',
+        details: ''
+      }
+      store.recordPromptError(promptError)
+      await nextTick()
+
+      useSettingStore().settingValues[
+        'Comfy.Workflow.ShowMissingNodesWarning'
+      ] = false
+      store.retireResolvedMissingNodePromptError()
+      await nextTick()
+
+      expect(store.lastPromptError).toEqual(promptError)
+      expect(hasBlockingError.value).toBe(true)
+      expect(groups.allErrorGroups.value).toEqual([
+        expect.objectContaining({ type: 'execution', severity: 'error' })
+      ])
+
+      missingNodesStore.removeMissingNodesByType(['MissingNode'])
+      await nextTick()
+      expect(store.lastPromptError).toBeNull()
+      expect(hasBlockingError.value).toBe(false)
+    })
+
     it('absorbs a tracked missing-node prompt error into its pack group', async () => {
       const { store, groups } = createErrorGroups()
       const missingNodesStore = useMissingNodesErrorStore()
