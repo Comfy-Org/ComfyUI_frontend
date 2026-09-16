@@ -6,7 +6,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useTelemetry } from '@/platform/telemetry'
 
-import { mockFeatureFlag } from '@/utils/__tests__/mockFeatureFlag'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import type { SubscriptionInfo } from '@/composables/billing/types'
 import type {
   BillingSubscriptionStatus,
@@ -74,7 +74,6 @@ vi.mock<unknown>(import('@/composables/billing/useBillingRouting'), () => ({
 }))
 
 vi.mock(import('@/composables/useFeatureFlags'))
-
 vi.mock(import('@/platform/distribution/types'), () => ({
   get isCloud() {
     return mockIsCloud.value
@@ -344,7 +343,10 @@ describe('useSubscriptionDialog', () => {
 
     it('enables embedded checkout only for the exact server flag', () => {
       mockShouldUseWorkspaceBilling.value = true
-      mockFeatureFlag('embeddedCheckoutEnabled', true)
+      const featureFlags = useFeatureFlags().flags
+      vi.spyOn(featureFlags, 'embeddedCheckoutEnabled', 'get').mockReturnValue(
+        true
+      )
       const { showPricingTable } = useSubscriptionDialog()
 
       showPricingTable()

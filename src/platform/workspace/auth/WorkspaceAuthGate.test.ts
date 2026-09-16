@@ -13,7 +13,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
 import { useAuthActions } from '@/composables/auth/useAuthActions'
-import { mockFeatureFlag } from '@/utils/__tests__/mockFeatureFlag'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import {
   remoteConfigErrorStatus,
@@ -47,7 +47,6 @@ vi.mock(import('@/platform/remoteConfig/refreshRemoteConfig'), () => ({
 }))
 
 vi.mock(import('@/composables/useFeatureFlags'))
-
 const mockBillingCapabilitiesInitialize = vi.hoisted(() => vi.fn())
 
 vi.mock<unknown>(
@@ -295,7 +294,12 @@ describe('WorkspaceAuthGate', () => {
 
     it('mints unified auth after refreshing authenticated flags', async () => {
       mockRefreshRemoteConfig.mockImplementation(async () => {
-        mockFeatureFlag('unifiedCloudAuthEnabled', true)
+        const featureFlags = useFeatureFlags().flags
+        vi.spyOn(
+          featureFlags,
+          'unifiedCloudAuthEnabled',
+          'get'
+        ).mockReturnValue(true)
       })
 
       mountComponent()
@@ -467,7 +471,10 @@ describe('WorkspaceAuthGate', () => {
     })
 
     it('shows a recoverable error when unified auth initialization fails', async () => {
-      mockFeatureFlag('unifiedCloudAuthEnabled', true)
+      const featureFlags = useFeatureFlags().flags
+      vi.spyOn(featureFlags, 'unifiedCloudAuthEnabled', 'get').mockReturnValue(
+        true
+      )
       vi.mocked(useWorkspaceAuthStore().mintAtLogin).mockResolvedValue(false)
 
       mountComponent()
@@ -509,7 +516,10 @@ describe('WorkspaceAuthGate', () => {
     })
 
     it('shows a recoverable error when workspace setup clears unified auth', async () => {
-      mockFeatureFlag('unifiedCloudAuthEnabled', true)
+      const featureFlags = useFeatureFlags().flags
+      vi.spyOn(featureFlags, 'unifiedCloudAuthEnabled', 'get').mockReturnValue(
+        true
+      )
       vi.mocked(useWorkspaceAuthStore().getUnifiedToken).mockReturnValue(
         undefined
       )

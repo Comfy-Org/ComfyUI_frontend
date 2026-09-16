@@ -54,16 +54,12 @@ vi.mock<unknown>(import('@/composables/billing/useBillingRouting'), () => ({
 vi.mock(import('@/platform/distribution/types'), () => ({ isCloud: true }))
 
 vi.mock(import('@/composables/useFeatureFlags'))
-
 beforeEach(() => {
-  const featureFlags = useFeatureFlags()
-  vi.mocked(useFeatureFlags).mockReturnValue(featureFlags)
-  vi.spyOn(
-    featureFlags.flags,
-    'billingControlEnabled',
-    'get'
-  ).mockImplementation(() => state.billingControlEnabled)
-  vi.spyOn(featureFlags.flags, 'v1PaymentRecovery', 'get').mockImplementation(
+  const featureFlags = useFeatureFlags().flags
+  vi.spyOn(featureFlags, 'billingControlEnabled', 'get').mockImplementation(
+    () => state.billingControlEnabled
+  )
+  vi.spyOn(featureFlags, 'v1PaymentRecovery', 'get').mockImplementation(
     () => state.v1PaymentRecovery
   )
 })

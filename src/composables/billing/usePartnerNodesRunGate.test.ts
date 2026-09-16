@@ -47,17 +47,9 @@ vi.mock<unknown>(import('@/composables/auth/useCurrentUser'), async () => {
 
 vi.mock(import('@/composables/useFeatureFlags'))
 
-const mockPartnerRunGateEnabled = ref(true)
-
 beforeEach(() => {
-  mockPartnerRunGateEnabled.value = true
-  const featureFlags = useFeatureFlags()
-  vi.mocked(useFeatureFlags).mockReturnValue(featureFlags)
-  vi.spyOn(
-    featureFlags.flags,
-    'partnerRunGateEnabled',
-    'get'
-  ).mockImplementation(() => mockPartnerRunGateEnabled.value)
+  const featureFlags = useFeatureFlags().flags
+  vi.spyOn(featureFlags, 'partnerRunGateEnabled', 'get').mockReturnValue(true)
 })
 
 const mockReportError = vi.hoisted(() => vi.fn())
@@ -182,12 +174,16 @@ describe('usePartnerNodesRunGate', () => {
   })
 
   it('stays inert when the feature flag is off, even for a gated graph', async () => {
+    const partnerRunGateEnabled = ref(false)
+    const featureFlags = useFeatureFlags().flags
+    vi.spyOn(featureFlags, 'partnerRunGateEnabled', 'get').mockImplementation(
+      () => partnerRunGateEnabled.value
+    )
     state.hasPartnerNodes.value = true
-    mockPartnerRunGateEnabled.value = false
     const { gate } = setup()
     expect(gate.value).toBe('none')
 
-    mockPartnerRunGateEnabled.value = true
+    partnerRunGateEnabled.value = true
     await nextTick()
     expect(gate.value, 'flag flips back on without a reload').toBe('sign-in')
   })
@@ -219,8 +215,11 @@ describe('partnerRunGateBlocksAutoQueue', () => {
   })
 
   it('never blocks while the feature flag is off', () => {
+    const featureFlags = useFeatureFlags().flags
+    vi.spyOn(featureFlags, 'partnerRunGateEnabled', 'get').mockReturnValue(
+      false
+    )
     state.partnerNodes.value = [{ nodeName: 'Kling', displayName: 'Kling' }]
-    mockPartnerRunGateEnabled.value = false
     expect(partnerRunGateBlocksAutoQueue()).toBe(false)
   })
 

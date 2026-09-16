@@ -1,7 +1,7 @@
 import { fromAny, fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { mockFeatureFlag } from '@/utils/__tests__/mockFeatureFlag'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { assetService } from '@/platform/assets/services/assetService'
 import { fetchHistoryPage } from '@/platform/remote/comfyui/jobs/fetchJobs'
@@ -12,9 +12,9 @@ import {
 } from './missingMediaAssetResolver'
 
 vi.mock(import('@/composables/useFeatureFlags'))
-
 beforeEach(() => {
-  mockFeatureFlag('assetsEnabled', true)
+  const featureFlags = useFeatureFlags().flags
+  vi.spyOn(featureFlags, 'assetsEnabled', 'get').mockReturnValue(true)
 })
 
 vi.mock(import('@/platform/assets/services/assetService'))

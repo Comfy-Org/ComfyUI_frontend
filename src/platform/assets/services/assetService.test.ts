@@ -3,7 +3,7 @@ import { useModelToNodeStore } from '@/stores/modelToNodeStore'
 import { useAssetsStore } from '@/stores/assetsStore'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { mockFeatureFlag } from '@/utils/__tests__/mockFeatureFlag'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import type {
   AssetItem,
   AssetResponse
@@ -23,7 +23,6 @@ vi.mock(import('@/platform/distribution/types'), () => ({
 }))
 
 vi.mock(import('@/composables/useFeatureFlags'))
-
 const mockInvalidateInputAssets = vi.hoisted(() => vi.fn())
 
 vi.mock<unknown>(import('@/scripts/api'), () => ({
@@ -390,7 +389,8 @@ describe('assetResponseSchema accepts real API shapes', () => {
 describe(assetService.getAssetModels, () => {
   beforeEach(() => {
     assetService.invalidateModelBuckets()
-    mockFeatureFlag('supportsModelTypeTags', true)
+    const featureFlags = useFeatureFlags().flags
+    vi.spyOn(featureFlags, 'supportsModelTypeTags', 'get').mockReturnValue(true)
   })
 
   it('walks the models tag once, excluding missing assets', async () => {
@@ -439,7 +439,10 @@ describe(assetService.getAssetModels, () => {
   })
 
   it('buckets by bare tags when model_type tags are unsupported', async () => {
-    mockFeatureFlag('supportsModelTypeTags', false)
+    const featureFlags = useFeatureFlags().flags
+    vi.spyOn(featureFlags, 'supportsModelTypeTags', 'get').mockReturnValue(
+      false
+    )
     fetchApiMock.mockResolvedValueOnce(
       buildAssetListResponse([
         validAsset({
@@ -459,7 +462,10 @@ describe(assetService.getAssetModels, () => {
     // The flag arrives asynchronously over the websocket handshake. A first
     // walk before it lands (flag still false) buckets a model_type: tag as a
     // literal folder, so 'checkpoints' comes back empty.
-    mockFeatureFlag('supportsModelTypeTags', false)
+    const featureFlags = useFeatureFlags().flags
+    vi.spyOn(featureFlags, 'supportsModelTypeTags', 'get').mockReturnValue(
+      false
+    )
     fetchApiMock.mockResolvedValueOnce(
       buildAssetListResponse([
         validAsset({
@@ -473,7 +479,7 @@ describe(assetService.getAssetModels, () => {
 
     // Once the flag lands, the stale cache must be discarded and re-walked so
     // the asset buckets under 'checkpoints' instead of staying invisible.
-    mockFeatureFlag('supportsModelTypeTags', true)
+    vi.spyOn(featureFlags, 'supportsModelTypeTags', 'get').mockReturnValue(true)
     fetchApiMock.mockResolvedValueOnce(
       buildAssetListResponse([
         validAsset({
@@ -592,7 +598,10 @@ describe(assetService.getAssetModels, () => {
   })
 
   it('groups slashed bare tags by their top-level segment', async () => {
-    mockFeatureFlag('supportsModelTypeTags', false)
+    const featureFlags = useFeatureFlags().flags
+    vi.spyOn(featureFlags, 'supportsModelTypeTags', 'get').mockReturnValue(
+      false
+    )
     fetchApiMock.mockResolvedValueOnce(
       buildAssetListResponse([
         validAsset({
@@ -609,7 +618,10 @@ describe(assetService.getAssetModels, () => {
   })
 
   it('falls back to filename metadata then name on bare-tag backends', async () => {
-    mockFeatureFlag('supportsModelTypeTags', false)
+    const featureFlags = useFeatureFlags().flags
+    vi.spyOn(featureFlags, 'supportsModelTypeTags', 'get').mockReturnValue(
+      false
+    )
     fetchApiMock.mockResolvedValueOnce(
       buildAssetListResponse([
         validAsset({

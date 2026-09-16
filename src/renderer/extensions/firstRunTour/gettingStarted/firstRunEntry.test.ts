@@ -5,7 +5,7 @@ import * as VueUse from '@vueuse/core'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed } from 'vue'
 
-import { mockFeatureFlag } from '@/utils/__tests__/mockFeatureFlag'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import type { StartupOutcome } from '@/platform/workflow/persistence/base/draftTypes'
 import type { SharedWorkflowUrlLoadStatus } from '@/platform/workflow/sharing/composables/useSharedWorkflowUrlLoader'
 
@@ -63,7 +63,6 @@ vi.mock<unknown>(import('@/services/useNewUserService'), () => ({
 }))
 
 vi.mock(import('@/composables/useFeatureFlags'))
-
 vi.mock<unknown>(import('../tour/useFirstRunTourController'), () => ({
   useFirstRunTourController: () => ({ beginTour: mocks.beginTour })
 }))
@@ -87,7 +86,8 @@ describe('useFirstRunEntry', () => {
     mocks.isDesktopWidth = true
     mocks.subscriptionEnabled = true
     mocks.isNewUser = true
-    mockFeatureFlag('onboardingTourEnabled', true)
+    const featureFlags = useFeatureFlags().flags
+    vi.spyOn(featureFlags, 'onboardingTourEnabled', 'get').mockReturnValue(true)
     useSettingStore().settingValues = {}
     vi.mocked(useSettingStore().set).mockImplementation(async (key, value) => {
       useSettingStore().settingValues[key] = value
@@ -107,7 +107,15 @@ describe('useFirstRunEntry', () => {
     ['below the md breakpoint', () => void (mocks.isDesktopWidth = false)],
     ['subscription disabled', () => void (mocks.subscriptionEnabled = false)],
     ['new-user state undetermined', () => void (mocks.isNewUser = null)],
-    ['the tour flag off', () => mockFeatureFlag('onboardingTourEnabled', false)]
+    [
+      'the tour flag off',
+      () => {
+        const featureFlags = useFeatureFlags().flags
+        vi.spyOn(featureFlags, 'onboardingTourEnabled', 'get').mockReturnValue(
+          false
+        )
+      }
+    ]
   ] as const
 
   describe('what a fresh user sees', () => {

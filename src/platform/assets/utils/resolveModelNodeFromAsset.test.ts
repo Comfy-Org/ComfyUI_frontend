@@ -1,14 +1,13 @@
 import { useModelToNodeStore } from '@/stores/modelToNodeStore'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { mockFeatureFlag } from '@/utils/__tests__/mockFeatureFlag'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { resolveModelNodeFromAsset } from '@/platform/assets/utils/resolveModelNodeFromAsset'
 
 const mockGetNodeProvider = vi.hoisted(() => vi.fn())
 
 vi.mock(import('@/composables/useFeatureFlags'))
-
 function createMockAsset(overrides: Partial<AssetItem> = {}): AssetItem {
   return {
     id: 'asset-123',
@@ -75,7 +74,10 @@ describe('resolveModelNodeFromAsset', () => {
     })
 
     it('strips the model_type: prefix when resolving the provider in model_type mode', () => {
-      mockFeatureFlag('supportsModelTypeTags', true)
+      const featureFlags = useFeatureFlags().flags
+      vi.spyOn(featureFlags, 'supportsModelTypeTags', 'get').mockReturnValue(
+        true
+      )
       mockProvider(createMockNodeProvider())
       const result = resolveModelNodeFromAsset(
         createMockAsset({ tags: ['models', 'model_type:vae'] })
@@ -86,7 +88,10 @@ describe('resolveModelNodeFromAsset', () => {
     })
 
     it('skips an unresolvable incidental tag and resolves via the model_type value', () => {
-      mockFeatureFlag('supportsModelTypeTags', true)
+      const featureFlags = useFeatureFlags().flags
+      vi.spyOn(featureFlags, 'supportsModelTypeTags', 'get').mockReturnValue(
+        true
+      )
       mockGetNodeProvider.mockImplementation((category: string) =>
         category === 'vae' ? createMockNodeProvider() : undefined
       )
@@ -100,7 +105,10 @@ describe('resolveModelNodeFromAsset', () => {
     })
 
     it('prefers the deepest resolvable path over a flat model_type value', () => {
-      mockFeatureFlag('supportsModelTypeTags', true)
+      const featureFlags = useFeatureFlags().flags
+      vi.spyOn(featureFlags, 'supportsModelTypeTags', 'get').mockReturnValue(
+        true
+      )
       mockGetNodeProvider.mockImplementation((category: string) =>
         category === 'LLM/Qwen-VL/Qwen3-0.6B'
           ? createMockNodeProvider()

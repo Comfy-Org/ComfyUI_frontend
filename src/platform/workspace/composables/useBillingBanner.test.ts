@@ -19,20 +19,10 @@ vi.mock(import('@/platform/distribution/types'), () => ({ isCloud: true }))
 
 vi.mock(import('@/composables/useFeatureFlags'))
 
-const billingControlEnabled = ref(true)
-const v1PaymentRecovery = ref(true)
-
 beforeEach(() => {
-  const featureFlags = useFeatureFlags()
-  vi.mocked(useFeatureFlags).mockReturnValue(featureFlags)
-  vi.spyOn(
-    featureFlags.flags,
-    'billingControlEnabled',
-    'get'
-  ).mockImplementation(() => billingControlEnabled.value)
-  vi.spyOn(featureFlags.flags, 'v1PaymentRecovery', 'get').mockImplementation(
-    () => v1PaymentRecovery.value
-  )
+  const featureFlags = useFeatureFlags().flags
+  vi.spyOn(featureFlags, 'billingControlEnabled', 'get').mockReturnValue(true)
+  vi.spyOn(featureFlags, 'v1PaymentRecovery', 'get').mockReturnValue(true)
 })
 
 vi.mock<unknown>(
@@ -85,13 +75,16 @@ describe('useBillingBanner', () => {
     b.isTeamPlan.value = true
     b.billingStatus.value = 'paid'
     b.subscription.value = { hasFunds: true }
-    billingControlEnabled.value = true
-    v1PaymentRecovery.value = true
   })
 
   afterEach(() => scope.stop())
 
   it('suppresses the banner entirely when billing control is rolled back', async () => {
+    const billingControlEnabled = ref(true)
+    const featureFlags = useFeatureFlags().flags
+    vi.spyOn(featureFlags, 'billingControlEnabled', 'get').mockImplementation(
+      () => billingControlEnabled.value
+    )
     const b = mocks.billing!
     const { kind } = useBillingBanner()
 
@@ -136,6 +129,11 @@ describe('useBillingBanner', () => {
   })
 
   it('does not refresh payment recovery on focus when the flag is off', async () => {
+    const v1PaymentRecovery = ref(true)
+    const featureFlags = useFeatureFlags().flags
+    vi.spyOn(featureFlags, 'v1PaymentRecovery', 'get').mockImplementation(
+      () => v1PaymentRecovery.value
+    )
     const b = mocks.billing!
     useBillingBanner()
     b.billingStatus.value = 'payment_failed'

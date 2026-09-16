@@ -1,7 +1,7 @@
 import type { ChurnkeyAuthResponse } from '@comfyorg/ingest-types'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { mockFeatureFlag } from '@/utils/__tests__/mockFeatureFlag'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import type { ChurnkeyInitConfig } from './types'
 
 const mocks = vi.hoisted(() => ({
@@ -12,7 +12,6 @@ const mocks = vi.hoisted(() => ({
 }))
 
 vi.mock(import('@/composables/useFeatureFlags'))
-
 vi.mock(import('@/i18n'), () => ({ t: (key: string) => key }))
 
 vi.mock<unknown>(import('@/platform/workspace/api/workspaceApi'), () => ({
@@ -39,7 +38,8 @@ function capturedConfig(): ChurnkeyInitConfig {
 
 describe('churnkeyClient', () => {
   beforeEach(() => {
-    mockFeatureFlag('churnkeyAppId', 'app_test')
+    const featureFlags = useFeatureFlags().flags
+    vi.spyOn(featureFlags, 'churnkeyAppId', 'get').mockReturnValue('app_test')
     mocks.getChurnkeyAuth.mockResolvedValue(authResponse())
     window.churnkey = {
       init: mocks.init,
@@ -97,7 +97,8 @@ describe('churnkeyClient', () => {
   })
 
   it('does not request a session when the app ID is empty', async () => {
-    mockFeatureFlag('churnkeyAppId', '')
+    const featureFlags = useFeatureFlags().flags
+    vi.spyOn(featureFlags, 'churnkeyAppId', 'get').mockReturnValue('')
 
     await expect(prepareChurnkey()).resolves.toBeNull()
     expect(mocks.getChurnkeyAuth).not.toHaveBeenCalled()

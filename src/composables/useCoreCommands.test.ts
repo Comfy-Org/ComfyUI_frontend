@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useTelemetry } from '@/platform/telemetry'
 
-import { mockFeatureFlag } from '@/utils/__tests__/mockFeatureFlag'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useCoreCommands } from '@/composables/useCoreCommands'
 import { useExternalLink } from '@/composables/useExternalLink'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
@@ -134,7 +134,6 @@ vi.mock<unknown>(
 )
 
 vi.mock(import('@/composables/useFeatureFlags'))
-
 const mockAssetBrowse = vi.hoisted(() =>
   vi.fn<(options: { onAssetSelected?: (asset: AssetItem) => void }) => void>()
 )
@@ -765,7 +764,8 @@ describe('useCoreCommands', () => {
       useCoreCommands().find((cmd) => cmd.id === 'Comfy.BrowseModelAssets')!
 
     async function selectAssetFromBrowser() {
-      mockFeatureFlag('assetsEnabled', true)
+      const featureFlags = useFeatureFlags().flags
+      vi.spyOn(featureFlags, 'assetsEnabled', 'get').mockReturnValue(true)
 
       await browseModelAssets().function()
 

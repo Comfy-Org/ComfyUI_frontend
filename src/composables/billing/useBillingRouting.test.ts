@@ -4,7 +4,7 @@ import { storeToRefs } from 'pinia'
 import type { Ref } from 'vue'
 import { fromPartial } from '@total-typescript/shoehorn'
 
-import { mockFeatureFlag } from '@/utils/__tests__/mockFeatureFlag'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import type { BillingRail } from '@/platform/workspace/api/workspaceApi'
 
 import { useBillingRouting } from './useBillingRouting'
@@ -17,7 +17,6 @@ let mockActiveWorkspace: Ref<
 let mockActiveWorkspaceBillingRail: Ref<BillingRail | null>
 
 vi.mock(import('@/composables/useFeatureFlags'))
-
 vi.mock(import('@/platform/distribution/types'), () => ({
   get isCloud() {
     return mockIsCloud.value
@@ -80,7 +79,12 @@ describe('useBillingRouting', () => {
   })
 
   it('migrates legacy Stripe personal workspaces behind the rollout flag', () => {
-    mockFeatureFlag('legacyBillingMigrationEnabled', true)
+    const featureFlags = useFeatureFlags().flags
+    vi.spyOn(
+      featureFlags,
+      'legacyBillingMigrationEnabled',
+      'get'
+    ).mockReturnValue(true)
     mockActiveWorkspaceBillingRail.value = 'legacy_stripe'
 
     const { type, shouldUseWorkspaceBilling } = useBillingRouting()

@@ -7,7 +7,7 @@ import { createI18n } from 'vue-i18n'
 
 import { useTelemetry } from '@/platform/telemetry'
 
-import { mockFeatureFlag } from '@/utils/__tests__/mockFeatureFlag'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import ShareWorkflowDialogContent from '@/platform/workflow/sharing/components/ShareWorkflowDialogContent.vue'
 
 vi.mock(import('@/platform/telemetry'))
@@ -29,7 +29,6 @@ vi.mock(import('@formkit/auto-animate/vue'), () => ({
 const mockShowPublishDialog = vi.hoisted(() => vi.fn())
 
 vi.mock(import('@/composables/useFeatureFlags'))
-
 vi.mock<unknown>(
   import('@/platform/workflow/sharing/composables/useComfyHubPublishDialog'),
   () => ({
@@ -133,7 +132,10 @@ describe('ShareWorkflowDialogContent', () => {
   const onClose = vi.fn()
 
   beforeEach(() => {
-    mockFeatureFlag('comfyHubProfileGateEnabled', true)
+    const featureFlags = useFeatureFlags().flags
+    vi.spyOn(featureFlags, 'comfyHubProfileGateEnabled', 'get').mockReturnValue(
+      true
+    )
     Object.assign(useWorkflowStore(), {
       activeWorkflow: {
         path: 'workflows/test.json',
@@ -224,7 +226,8 @@ describe('ShareWorkflowDialogContent', () => {
   })
 
   it('renders share-link and publish tabs when comfy hub upload is enabled', async () => {
-    mockFeatureFlag('comfyHubUploadEnabled', true)
+    const featureFlags = useFeatureFlags().flags
+    vi.spyOn(featureFlags, 'comfyHubUploadEnabled', 'get').mockReturnValue(true)
     const { container } = renderComponent()
     await flushPromises()
 
@@ -244,7 +247,8 @@ describe('ShareWorkflowDialogContent', () => {
   })
 
   it('shows publish intro panel in the share dialog', async () => {
-    mockFeatureFlag('comfyHubUploadEnabled', true)
+    const featureFlags = useFeatureFlags().flags
+    vi.spyOn(featureFlags, 'comfyHubUploadEnabled', 'get').mockReturnValue(true)
     renderComponent()
     await flushPromises()
 
@@ -257,7 +261,8 @@ describe('ShareWorkflowDialogContent', () => {
   })
 
   it('shows start publishing CTA in the publish intro panel', async () => {
-    mockFeatureFlag('comfyHubUploadEnabled', true)
+    const featureFlags = useFeatureFlags().flags
+    vi.spyOn(featureFlags, 'comfyHubUploadEnabled', 'get').mockReturnValue(true)
     renderComponent()
     await flushPromises()
 
@@ -272,7 +277,8 @@ describe('ShareWorkflowDialogContent', () => {
   })
 
   it('opens publish dialog from intro cta and closes share dialog', async () => {
-    mockFeatureFlag('comfyHubUploadEnabled', true)
+    const featureFlags = useFeatureFlags().flags
+    vi.spyOn(featureFlags, 'comfyHubUploadEnabled', 'get').mockReturnValue(true)
     renderComponent()
     await flushPromises()
 

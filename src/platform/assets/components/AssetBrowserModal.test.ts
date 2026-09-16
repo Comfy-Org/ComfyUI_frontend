@@ -3,7 +3,7 @@ import { render, screen, waitFor } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { mockFeatureFlag } from '@/utils/__tests__/mockFeatureFlag'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { i18n } from '@/i18n'
 import AssetBrowserModal from '@/platform/assets/components/AssetBrowserModal.vue'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
@@ -13,7 +13,6 @@ const mockAssetsByKey = vi.hoisted(() => new Map<string, AssetItem[]>())
 const mockLoadingByKey = vi.hoisted(() => new Map<string, boolean>())
 
 vi.mock(import('@/composables/useFeatureFlags'))
-
 vi.mock<unknown>(import('@/platform/assets/composables/useModelTypes'), () => ({
   useModelTypes: () => ({
     fetchModelTypes: vi.fn().mockResolvedValue(undefined)
@@ -393,7 +392,10 @@ describe('AssetBrowserModal', () => {
     })
 
     it('strips the model_type: prefix from the title when the flag is on', async () => {
-      mockFeatureFlag('supportsModelTypeTags', true)
+      const featureFlags = useFeatureFlags().flags
+      vi.spyOn(featureFlags, 'supportsModelTypeTags', 'get').mockReturnValue(
+        true
+      )
       const assets = [
         createTestAsset('asset1', 'Model A', 'model_type:checkpoints')
       ]

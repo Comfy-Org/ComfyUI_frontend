@@ -42,16 +42,14 @@ vi.mock<unknown>(import('@/composables/auth/useCurrentUser'), () => ({
 }))
 
 vi.mock(import('@/composables/useFeatureFlags'))
-
 beforeEach(() => {
-  const featureFlags = useFeatureFlags()
-  vi.mocked(useFeatureFlags).mockReturnValue(featureFlags)
+  const featureFlags = useFeatureFlags().flags
   vi.spyOn(
-    featureFlags.flags,
+    featureFlags,
     'partnerNodeGovernanceEnabled',
     'get'
   ).mockImplementation(() => env.state.partnerNodeGovernanceEnabled)
-  vi.spyOn(featureFlags.flags, 'userSecretsEnabled', 'get').mockImplementation(
+  vi.spyOn(featureFlags, 'userSecretsEnabled', 'get').mockImplementation(
     () => env.state.userSecretsEnabled
   )
 })

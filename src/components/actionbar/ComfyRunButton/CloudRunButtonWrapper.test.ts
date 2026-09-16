@@ -7,7 +7,7 @@ import { createI18n } from 'vue-i18n'
 
 import TopbarSubscribeButton from '@/components/topbar/TopbarSubscribeButton.vue'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
-import { mockFeatureFlag } from '@/utils/__tests__/mockFeatureFlag'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import type { BillingStatus } from '@/platform/workspace/api/workspaceApi'
 import { useDialogStore } from '@/stores/dialogStore'
 
@@ -64,7 +64,6 @@ vi.mock<unknown>(
 )
 
 vi.mock(import('@/composables/useFeatureFlags'))
-
 vi.mock<unknown>(import('@/composables/useErrorHandling'), () => ({
   useErrorHandling: () => ({ toastErrorHandler: state.toastErrorHandler })
 }))
@@ -125,7 +124,8 @@ describe('CloudRunButtonWrapper', () => {
     mockIsInitialized.value = true
     mockBillingStatus.value = 'paid'
     mockSubscriptionTier.value = null
-    mockFeatureFlag('v1PaymentRecovery', true)
+    const featureFlags = useFeatureFlags().flags
+    vi.spyOn(featureFlags, 'v1PaymentRecovery', 'get').mockReturnValue(true)
     state.canManageSubscription = true
     mockIsFreeTier.value = true
   })
@@ -572,7 +572,8 @@ describe('CloudRunButtonWrapper', () => {
   it('does not fall back to Subscribe to Run for payment failure when recovery flag is disabled', () => {
     mockCanRunWorkflows.value = false
     mockBillingStatus.value = 'payment_failed'
-    mockFeatureFlag('v1PaymentRecovery', false)
+    const featureFlags = useFeatureFlags().flags
+    vi.spyOn(featureFlags, 'v1PaymentRecovery', 'get').mockReturnValue(false)
     renderWrapper()
 
     expect(screen.getByTestId('queue-button')).toHaveTextContent(
@@ -586,7 +587,8 @@ describe('CloudRunButtonWrapper', () => {
   it('keeps generic inactive behavior when payment recovery is disabled', () => {
     mockCanRunWorkflows.value = false
     mockBillingStatus.value = 'paused'
-    mockFeatureFlag('v1PaymentRecovery', false)
+    const featureFlags = useFeatureFlags().flags
+    vi.spyOn(featureFlags, 'v1PaymentRecovery', 'get').mockReturnValue(false)
     renderWrapper()
 
     expect(screen.getByTestId('subscribe-to-run-button')).toBeInTheDocument()

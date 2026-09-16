@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 
-import { mockFeatureFlag } from '@/utils/__tests__/mockFeatureFlag'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import ComfyHubPublishWizardContent from './ComfyHubPublishWizardContent.vue'
 import type { ComfyHubPublishFormData } from '@/platform/workflow/sharing/types/comfyHubTypes'
 
@@ -35,7 +35,6 @@ vi.mock<unknown>(import('@/composables/useErrorHandling'), () => ({
 }))
 
 vi.mock(import('@/composables/useFeatureFlags'))
-
 function createDefaultFormData(): ComfyHubPublishFormData {
   return {
     name: 'Test Workflow',
@@ -70,7 +69,10 @@ describe('ComfyHubPublishWizardContent', () => {
   const onGateClose = vi.fn()
 
   beforeEach(() => {
-    mockFeatureFlag('comfyHubProfileGateEnabled', true)
+    const featureFlags = useFeatureFlags().flags
+    vi.spyOn(featureFlags, 'comfyHubProfileGateEnabled', 'get').mockReturnValue(
+      true
+    )
     onPublish.mockResolvedValue(undefined)
     mockCheckProfile.mockResolvedValue(true)
     mockHasProfile.value = true
@@ -205,7 +207,12 @@ describe('ComfyHubPublishWizardContent', () => {
     })
 
     it('calls onPublish directly when profile gate is disabled', async () => {
-      mockFeatureFlag('comfyHubProfileGateEnabled', false)
+      const featureFlags = useFeatureFlags().flags
+      vi.spyOn(
+        featureFlags,
+        'comfyHubProfileGateEnabled',
+        'get'
+      ).mockReturnValue(false)
 
       renderComponent()
       await userEvent.click(screen.getByTestId('publish-btn'))
@@ -303,7 +310,12 @@ describe('ComfyHubPublishWizardContent', () => {
     })
 
     it('enables publish when gate is disabled regardless of profile', () => {
-      mockFeatureFlag('comfyHubProfileGateEnabled', false)
+      const featureFlags = useFeatureFlags().flags
+      vi.spyOn(
+        featureFlags,
+        'comfyHubProfileGateEnabled',
+        'get'
+      ).mockReturnValue(false)
       mockHasProfile.value = null
       renderComponent()
 

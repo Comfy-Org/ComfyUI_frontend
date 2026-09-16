@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { mockFeatureFlag } from '@/utils/__tests__/mockFeatureFlag'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import {
   getAssetFileUrl,
@@ -17,7 +17,6 @@ vi.mock<unknown>(import('@/scripts/api'), () => ({
 }))
 
 vi.mock(import('@/composables/useFeatureFlags'))
-
 function createAsset(overrides: Partial<AssetItem> = {}): AssetItem {
   return {
     id: 'asset-1',
@@ -81,7 +80,8 @@ describe('getAssetUrl', () => {
 describe('getAssetFileUrl', () => {
   describe('with the assets API enabled', () => {
     beforeEach(() => {
-      mockFeatureFlag('assetsEnabled', true)
+      const featureFlags = useFeatureFlags().flags
+      vi.spyOn(featureFlags, 'assetsEnabled', 'get').mockReturnValue(true)
     })
 
     it('addresses the file by asset id without any path inference', () => {

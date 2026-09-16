@@ -2,7 +2,7 @@ import type { ComfyApp } from '@/scripts/app'
 import { useAssetsStore } from '@/stores/assetsStore'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { mockFeatureFlag } from '@/utils/__tests__/mockFeatureFlag'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import {
   findOutputAsset,
   findServerPreviewUrl,
@@ -28,7 +28,6 @@ vi.mock<unknown>(import('@/scripts/api'), () => ({
 }))
 
 vi.mock(import('@/composables/useFeatureFlags'))
-
 vi.mock<unknown>(import('@/platform/assets/services/assetService'), () => ({
   assetService: {
     uploadAssetFromBase64: mockUploadAssetFromBase64,
@@ -87,7 +86,8 @@ beforeEach(() => {
 
 describe('isAssetPreviewSupported', () => {
   it('returns true when the assets feature flag is enabled', () => {
-    mockFeatureFlag('assetsEnabled', true)
+    const featureFlags = useFeatureFlags().flags
+    vi.spyOn(featureFlags, 'assetsEnabled', 'get').mockReturnValue(true)
     expect(isAssetPreviewSupported()).toBe(true)
   })
 

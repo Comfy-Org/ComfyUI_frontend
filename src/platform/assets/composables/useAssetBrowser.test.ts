@@ -2,13 +2,12 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { App } from 'vue'
 import { createApp, defineComponent, nextTick, ref } from 'vue'
 
-import { mockFeatureFlag } from '@/utils/__tests__/mockFeatureFlag'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { i18n } from '@/i18n'
 import { useAssetBrowser as createAssetBrowser } from '@/platform/assets/composables/useAssetBrowser'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 
 vi.mock(import('@/composables/useFeatureFlags'))
-
 const apps: App<Element>[] = []
 
 function useAssetBrowser(...args: Parameters<typeof createAssetBrowser>) {
@@ -139,7 +138,10 @@ describe('useAssetBrowser', () => {
     })
 
     it('strips the model_type: prefix from the badge when the flag is on', () => {
-      mockFeatureFlag('supportsModelTypeTags', true)
+      const featureFlags = useFeatureFlags().flags
+      vi.spyOn(featureFlags, 'supportsModelTypeTags', 'get').mockReturnValue(
+        true
+      )
       const apiAsset = createApiAsset({
         tags: ['models', 'model_type:checkpoints', 'sdxl']
       })
@@ -688,7 +690,10 @@ describe('useAssetBrowser', () => {
     })
 
     it('groups by model_type:* value and ignores other tags when the flag is on', () => {
-      mockFeatureFlag('supportsModelTypeTags', true)
+      const featureFlags = useFeatureFlags().flags
+      vi.spyOn(featureFlags, 'supportsModelTypeTags', 'get').mockReturnValue(
+        true
+      )
       const assets = [
         createApiAsset({ tags: ['models', 'model_type:checkpoints', 'sdxl'] }),
         createApiAsset({ tags: ['models', 'model_type:LLM'] })

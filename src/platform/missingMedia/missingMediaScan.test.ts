@@ -1,7 +1,7 @@
 import { fromAny, fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { mockFeatureFlag } from '@/utils/__tests__/mockFeatureFlag'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { LGraphEventMode } from '@/lib/litegraph/src/types/globalEnums'
 import type { IComboWidget } from '@/lib/litegraph/src/types/widgets'
@@ -67,9 +67,9 @@ vi.mock<unknown>(import('@/utils/graphTraversalUtil'), () => {
 })
 
 vi.mock(import('@/composables/useFeatureFlags'))
-
 beforeEach(() => {
-  mockFeatureFlag('assetsEnabled', true)
+  const featureFlags = useFeatureFlags().flags
+  vi.spyOn(featureFlags, 'assetsEnabled', 'get').mockReturnValue(true)
 })
 
 vi.mock(import('@/platform/assets/services/assetService'))

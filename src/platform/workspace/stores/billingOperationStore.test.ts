@@ -11,7 +11,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useTelemetry } from '@/platform/telemetry'
 
-import { mockFeatureFlag } from '@/utils/__tests__/mockFeatureFlag'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import type { BillingOpStatusResponse } from '@/platform/workspace/api/workspaceApi'
 import { mockBillingContext } from '@/utils/__tests__/mockBillingContext'
 
@@ -41,7 +41,6 @@ vi.mock<unknown>(
 )
 
 vi.mock(import('@/composables/useFeatureFlags'))
-
 const mockReportError = vi.hoisted(() => vi.fn())
 
 vi.mock(import('@/platform/telemetry/reportError'), () => ({
@@ -92,7 +91,10 @@ describe('billingOperationStore', () => {
   beforeEach(() => {
     mockDistributionTypes.isCloud = true
     Object.assign(useTeamWorkspaceStore(), { activeWorkspaceId: 'workspace-1' })
-    mockFeatureFlag('embeddedCheckoutEnabled', true)
+    const featureFlags = useFeatureFlags().flags
+    vi.spyOn(featureFlags, 'embeddedCheckoutEnabled', 'get').mockReturnValue(
+      true
+    )
     vi.stubEnv('VITE_STRIPE_PUBLISHABLE_KEY', 'pk_test_3ds')
     mockHandleNextAction.mockResolvedValue({})
     mockLoadStripe.mockResolvedValue({
@@ -1199,7 +1201,10 @@ describe('billingOperationStore', () => {
 
   describe('payment authentication recovery', () => {
     it('does not initialize embedded recovery while the flag is off', async () => {
-      mockFeatureFlag('embeddedCheckoutEnabled', false)
+      const featureFlags = useFeatureFlags().flags
+      vi.spyOn(featureFlags, 'embeddedCheckoutEnabled', 'get').mockReturnValue(
+        false
+      )
       vi.mocked(workspaceApi.getBillingOpStatus)
         .mockResolvedValueOnce({
           id: 'op-3ds',
@@ -1926,7 +1931,10 @@ describe('billingOperationStore', () => {
     })
 
     it('terminates polling for reconciliation_needed while the embedded flag is off', async () => {
-      mockFeatureFlag('embeddedCheckoutEnabled', false)
+      const featureFlags = useFeatureFlags().flags
+      vi.spyOn(featureFlags, 'embeddedCheckoutEnabled', 'get').mockReturnValue(
+        false
+      )
       vi.mocked(workspaceApi.getBillingOpStatus).mockResolvedValue({
         id: 'op-reconcile-legacy',
         status: 'reconciliation_needed',

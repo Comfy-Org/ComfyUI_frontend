@@ -1,7 +1,7 @@
 import { nextTick } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { mockFeatureFlag } from '@/utils/__tests__/mockFeatureFlag'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useCommandStore } from '@/stores/commandStore'
 import { useMenuItemStore } from '@/stores/menuItemStore'
@@ -10,7 +10,6 @@ import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 const mockOpenModelLibraryBrowser = vi.hoisted(() => vi.fn())
 
 vi.mock(import('@/composables/useFeatureFlags'))
-
 vi.mock(
   import('@/platform/assets/composables/openModelLibraryBrowser'),
   () => ({
@@ -157,7 +156,8 @@ describe('useSidebarTabStore', () => {
 
     it('toggles the sidebar tab when the asset view is disabled', async () => {
       useAssetBrowserSetting(false)
-      mockFeatureFlag('assetsEnabled', true)
+      const featureFlags = useFeatureFlags().flags
+      vi.spyOn(featureFlags, 'assetsEnabled', 'get').mockReturnValue(true)
 
       const store = useSidebarTabStore()
       store.registerCoreSidebarTabs()
@@ -170,7 +170,8 @@ describe('useSidebarTabStore', () => {
 
     it('opens the asset browser when the asset view and the assets capability are both enabled', async () => {
       useAssetBrowserSetting(true)
-      mockFeatureFlag('assetsEnabled', true)
+      const featureFlags = useFeatureFlags().flags
+      vi.spyOn(featureFlags, 'assetsEnabled', 'get').mockReturnValue(true)
 
       const store = useSidebarTabStore()
       store.registerCoreSidebarTabs()
