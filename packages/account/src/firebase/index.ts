@@ -32,7 +32,7 @@ import {
 } from 'firebase/auth'
 
 import type { AccountIdentity } from '../core/identity.js'
-import { identityBrand } from '../core/identity.js'
+import { brandIdentity } from '../core/identity.js'
 import { isFirebaseAuthErrorLike } from '../firebaseAuthError.js'
 
 export interface FirebaseIdentityAppConfig {
@@ -157,8 +157,9 @@ export function createFirebaseIdentity(
   const { resolve: auth, peek } = authResolver(config)
 
   return {
-    [identityBrand]: true,
-    onUserChanged: (callback) => onAuthStateChanged(auth(), callback),
+    ...brandIdentity<User>({
+      onUserChanged: (callback) => onAuthStateChanged(auth(), callback)
+    }),
     onTokenChanged: (callback) => onIdTokenChanged(auth(), callback),
     initialize: () => {
       auth()

@@ -112,9 +112,9 @@ export interface SessionClientOptions extends SessionRequestOptions {
 }
 
 /**
- * `pending` is the initial phase, before the identity has delivered
- * even once, so a host can tell "Firebase has not answered yet" (pending)
- * from "nobody is signed in" (a delivered null) without wrapping the port.
+ * `pending` is the initial phase, before the identity has delivered even
+ * once, so a host can tell "Firebase has not answered yet" (pending) from
+ * "nobody is signed in" (a delivered null) without wrapping the port.
  */
 export type SessionSnapshot<TUser extends AccountUser = AccountUser> =
   | {
@@ -208,7 +208,8 @@ export function createSessionClient<TUser extends AccountUser = AccountUser>(
   const {
     exchangeUrl,
     storage,
-    freshMarginMs = DEFAULT_FRESH_MARGIN_MS
+    freshMarginMs = DEFAULT_FRESH_MARGIN_MS,
+    autoMint = true
   } = clientOptions
 
   let state = initialSessionState<TUser>()
@@ -475,7 +476,6 @@ export function createSessionClient<TUser extends AccountUser = AccountUser>(
   }
 
   function subscribeIdentity(port: AccountIdentity<TUser>): () => void {
-    const autoMint = clientOptions.autoMint !== false
     let active = true
     const unsubscribe = port.onUserChanged((next) => {
       if (!active) return
