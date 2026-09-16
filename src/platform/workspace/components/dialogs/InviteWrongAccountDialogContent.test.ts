@@ -16,6 +16,11 @@ import InviteWrongAccountDialogContent from './InviteWrongAccountDialogContent.v
 
 vi.mock(import('firebase/auth'), { spy: true })
 
+const mockLogout = vi.hoisted(() => vi.fn<() => Promise<void>>())
+vi.mock<unknown>(import('@/composables/auth/useAuthActions'), () => ({
+  useAuthActions: () => ({ logout: mockLogout })
+}))
+
 vi.mock(import('@/platform/navigation/preservedQueryManager'), {
   spy: true
 })
@@ -40,10 +45,10 @@ describe('InviteWrongAccountDialogContent', () => {
     vi.mocked(setPersistence).mockResolvedValue(undefined)
     vi.mocked(onAuthStateChanged).mockImplementation(vi.fn())
     vi.mocked(onIdTokenChanged).mockImplementation(vi.fn())
-    vi.mocked(useAuthStore().logout).mockResolvedValue()
+    mockLogout.mockResolvedValue()
   })
 
-  it('re-stashes the invite token and signs out on Switch account', async () => {
+  it('re-stashes the invite token before the app-level sign-out on Switch account', async () => {
     renderComponent()
 
     await userEvent.click(
@@ -57,10 +62,11 @@ describe('InviteWrongAccountDialogContent', () => {
       { invite: 'tok-403' },
       ['invite']
     )
-    expect(vi.mocked(useAuthStore().logout)).toHaveBeenCalled()
-    expect(vi.mocked(useDialogStore().closeDialog)).toHaveBeenCalledWith({
-      key: 'invite-wrong-account'
-    })
+    expect(mockLogout).toHaveBeenCalled()
+    expect(
+      vi.mocked(capturePreservedQuery).mock.invocationCallOrder[0]
+    ).toBeLessThan(mockLogout.mock.invocationCallOrder[0])
+    expect(vi.mocked(useAuthStore().logout)).not.toHaveBeenCalled()
   })
 
   it('dismisses without signing out on Got it', async () => {
@@ -72,7 +78,7 @@ describe('InviteWrongAccountDialogContent', () => {
       })
     )
 
-    expect(vi.mocked(useAuthStore().logout)).not.toHaveBeenCalled()
+    expect(mockLogout).not.toHaveBeenCalled()
     expect(vi.mocked(capturePreservedQuery)).not.toHaveBeenCalled()
     expect(vi.mocked(useDialogStore().closeDialog)).toHaveBeenCalledWith({
       key: 'invite-wrong-account'

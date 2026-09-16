@@ -2145,6 +2145,23 @@ describe('useTeamWorkspaceStore', () => {
       expect(result.workspaceName).toBe('Joined Workspace')
       expect(mockWorkspaceApi.list).toHaveBeenCalledTimes(2)
     })
+
+    it('acceptInvite still resolves when the workspace refresh fails', async () => {
+      mockWorkspaceApi.acceptInvite.mockResolvedValue({
+        workspace_id: 'ws-joined',
+        workspace_name: 'Joined Workspace'
+      })
+
+      const store = useTeamWorkspaceStore()
+      await store.initialize()
+      mockWorkspaceApi.list.mockRejectedValueOnce(
+        new mockWorkspaceApiError('Service unavailable', 503)
+      )
+
+      const result = await store.acceptInvite('invite-token')
+
+      expect(result.workspaceId).toBe('ws-joined')
+    })
   })
 
   describe('cleanup', () => {
