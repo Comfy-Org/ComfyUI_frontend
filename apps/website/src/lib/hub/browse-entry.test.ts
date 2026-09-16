@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
-import { browseRequestFrom } from './browse-entry'
+import type { BrowseEntry, CatalogueOrder } from './browse-entry'
+import { browseRequestFrom, sortBrowseEntries } from './browse-entry'
 
 describe('browseRequestFrom', () => {
   it('opens on everything when the link asks for nothing', () => {
@@ -39,5 +40,93 @@ describe('browseRequestFrom', () => {
 
   it('lets the model link win over a type the same link names', () => {
     expect(browseRequestFrom('?model=Flux&type=model').type).toBe('workflow')
+  })
+})
+
+describe('sortBrowseEntries', () => {
+  const entry = (overrides: Partial<BrowseEntry>): BrowseEntry => ({
+    key: overrides.title ?? 'x',
+    kind: 'workflow',
+    title: 'x',
+    useCases: [],
+    outputs: [],
+    provider: undefined,
+    runsHere: false,
+    needsCustomNodes: false,
+    models: [],
+    standing: 0,
+    date: undefined,
+    credits: undefined,
+    card: {} as BrowseEntry['card'],
+    ...overrides
+  })
+
+  const order = (entries: readonly BrowseEntry[], by: CatalogueOrder) =>
+    sortBrowseEntries(entries, by).map((entry) => entry.title)
+
+  // A rank and an install count share no scale, so "popular" reads the
+  // capabilities first and then what is built on them, each by its own measure.
+  it('ranks models ahead of workflows and each by its own measure', () => {
+    const entries = [
+      entry({ title: 'Busy workflow', standing: 900 }),
+      entry({ title: 'Second model', kind: 'model', standing: 2 }),
+      entry({ title: 'Quiet workflow', standing: 4 }),
+      entry({ title: 'First model', kind: 'model', standing: 1 })
+    ]
+
+    expect(order(entries, 'popular')).toEqual([
+      'First model',
+      'Second model',
+      'Busy workflow',
+      'Quiet workflow'
+    ])
+  })
+
+  it('breaks a tie by title rather than by input order', () => {
+    const entries = [
+      entry({ title: 'Beta', standing: 5 }),
+      entry({ title: 'Alpha', standing: 5 })
+    ]
+
+    expect(order(entries, 'popular')).toEqual(['Alpha', 'Beta'])
+    expect(order(entries, 'name')).toEqual(['Alpha', 'Beta'])
+  })
+
+  it('reads newest by date and sends the undated to the back', () => {
+    const entries = [
+      entry({ title: 'Undated' }),
+      entry({ title: 'Older', date: '2026-01-01' }),
+      entry({ title: 'Newer', date: '2026-09-01' })
+    ]
+
+    expect(order(entries, 'newest')).toEqual(['Newer', 'Older', 'Undated'])
+  })
+
+  // Something with no price is neither the cheapest nor the dearest, so it
+  // waits at the end of both readings rather than winning one of them.
+  it('keeps the unpriced out of both ends of a price order', () => {
+    const entries = [
+      entry({ title: 'Free of charge' }),
+      entry({ title: 'Dear', credits: 90 }),
+      entry({ title: 'Cheap', credits: 10 })
+    ]
+
+    expect(order(entries, 'priceAsc')).toEqual([
+      'Cheap',
+      'Dear',
+      'Free of charge'
+    ])
+    expect(order(entries, 'priceDesc')).toEqual([
+      'Dear',
+      'Cheap',
+      'Free of charge'
+    ])
+  })
+
+  it('leaves the list it was given alone', () => {
+    const entries = [entry({ title: 'B' }), entry({ title: 'A' })]
+    sortBrowseEntries(entries, 'name')
+
+    expect(entries.map((entry) => entry.title)).toEqual(['B', 'A'])
   })
 })
