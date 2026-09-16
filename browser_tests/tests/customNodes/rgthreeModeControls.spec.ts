@@ -131,8 +131,16 @@ test.describe(
             .toBe(true)
         })
 
-        const source = await comfyPage.nodeOps.addNode('PrimitiveInt')
-        const control = await comfyPage.nodeOps.addNode(modeControl.type)
+        const source = await comfyPage.nodeOps.addNode(
+          'PrimitiveInt',
+          undefined,
+          { x: 100, y: 100 }
+        )
+        const control = await comfyPage.nodeOps.addNode(
+          modeControl.type,
+          undefined,
+          { x: 500, y: 100 }
+        )
         await comfyPage.page.evaluate(
           ({ sourceId, controlId }) => {
             const graph = window.app!.graph
@@ -179,6 +187,7 @@ test.describe(
         const sourceFixture = new VueNodeFixture(
           comfyPage.vueNodes.getNodeLocator(String(source.id))
         )
+        await source.centerOnNode()
         await sourceFixture.setTitle('Renamed source')
 
         const renamedToggle = comfyPage.vueNodes.getWidgetByName(
