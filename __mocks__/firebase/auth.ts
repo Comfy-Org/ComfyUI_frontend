@@ -27,10 +27,14 @@ export class GithubAuthProvider implements ProviderMethods {
 export const browserLocalPersistence = {
   type: 'LOCAL'
 } satisfies FirebaseAuth.Persistence
+export const browserPopupRedirectResolver =
+  {} satisfies FirebaseAuth.PopupRedirectResolver
 export const createUserWithEmailAndPassword =
   vi.fn<typeof FirebaseAuth.createUserWithEmailAndPassword>()
 export const getAdditionalUserInfo =
   vi.fn<typeof FirebaseAuth.getAdditionalUserInfo>()
+export const getAuth = vi.fn<typeof FirebaseAuth.getAuth>()
+export const initializeAuth = vi.fn<typeof FirebaseAuth.initializeAuth>()
 export const onAuthStateChanged =
   vi.fn<typeof FirebaseAuth.onAuthStateChanged>()
 export const onIdTokenChanged = vi.fn<typeof FirebaseAuth.onIdTokenChanged>()

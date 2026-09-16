@@ -1,11 +1,13 @@
+import { fromPartial } from '@total-typescript/shoehorn'
 import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore' // eslint-disable-line import-x/no-restricted-paths
 import { useWorkflowDraftStoreV2 } from '@/platform/workflow/persistence/stores/workflowDraftStoreV2'
 import { useDomWidgetStore } from '@/stores/domWidgetStore'
+import type { Auth } from 'firebase/auth'
 import {
+  initializeAuth,
   onAuthStateChanged,
-  onIdTokenChanged,
-  setPersistence
+  onIdTokenChanged
 } from 'firebase/auth'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -42,7 +44,7 @@ import { t } from '@/i18n'
 vi.mock(import('firebase/auth'), { spy: true })
 
 beforeEach(() => {
-  vi.mocked(setPersistence).mockResolvedValue(undefined)
+  vi.mocked(initializeAuth).mockReturnValue(fromPartial<Auth>({}))
   vi.mocked(onAuthStateChanged).mockImplementation(vi.fn())
   vi.mocked(onIdTokenChanged).mockImplementation(vi.fn())
 })

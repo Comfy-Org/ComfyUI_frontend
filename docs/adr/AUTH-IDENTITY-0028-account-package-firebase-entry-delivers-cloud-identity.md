@@ -9,6 +9,9 @@ Proposed
 Amended 2026-09-16: rules 1 and 4 follow the session client taking identity at
 construction (FE-2196).
 
+Amended 2026-09-16: rule 5 follows the package initializing the cloud app's
+Firebase, replacing vuefire (FE-2196, C4).
+
 ## Context
 
 The cloud app holds two consumers of Firebase identity:
@@ -57,12 +60,14 @@ is not a contract to build on.
    credential and stops the scheduler and cross-tab lease, so no unified
    token, network call or timer exists. The residue is the snapshot's user
    and a `minting`/`pending` phase that no flag-off consumer reads.
-5. Nothing in `src/` may initialize a second Firebase app through
-   `createFirebaseIdentity({ options })` while the app runs on vuefire; a
-   second auth instance diverges the session. Package-initialized Firebase
-   for the cloud app (dropping the `VueFire` plugin and `useFirebaseAuth`)
-   is a separate migration and the one remaining divergence from the TDD's
-   "the package initializes Firebase".
+5. The package initializes the cloud app's Firebase: the identity module
+   (`src/platform/auth/firebaseIdentity.ts`) is the one entry, created from
+   `getFirebaseConfig()` under the default app name (`[DEFAULT]`, the name
+   persisted sessions are keyed by) with `browserLocalPersistence`. Nothing
+   else in `src/` creates a Firebase app or `Auth`; `authStore`,
+   `sessionFeatureFlagOverride` and `main.ts` read identity through that
+   module, and the app's first use of it happens after remote config has
+   loaded so the config is the server's.
 
 The contract is pinned by the "unified identity source" test in
 `authStore.test.ts`, the identity-driven cases in `useWorkspaceAuth.test.ts`
@@ -78,8 +83,9 @@ The contract is pinned by the "unified identity source" test in
   to re-deliver.
 - **A reactive `watch` on `authStore.currentUser`**: rejected, it keeps
   Pinia as the messenger and reintroduces ordering ambiguity.
-- **Package-initialized Firebase now**: rejected at this stage for the
-  vuefire coupling in rule 5; it supersedes rule 5 when it lands.
+- **Package-initialized Firebase now**: deferred at first for the vuefire
+  coupling; landed as the amended rule 5 once the entry passed the popup
+  resolver alongside a host persistence.
 
 ## Consequences
 
@@ -89,5 +95,6 @@ The contract is pinned by the "unified identity source" test in
 - Token reads go through the Firebase `User` directly; a transient read
   failure is a retried transient exchange failure, not a permanent
   not-authenticated error.
-- The `comfy-account` named app stays unused by the cloud app until the
-  package-initialized migration.
+- The cloud app runs on the package-initialized `[DEFAULT]` app, not the
+  package's `comfy-account` default name, so persisted sessions and the e2e
+  seed keep their IndexedDB key.

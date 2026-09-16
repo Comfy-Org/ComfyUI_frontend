@@ -1,3 +1,4 @@
+import { fromPartial } from '@total-typescript/shoehorn'
 import { render } from '@testing-library/vue'
 import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed } from 'vue'
@@ -5,10 +6,11 @@ import { billingOperation } from './billingOperationTestUtils'
 import type { BillingOperation } from './billingOperationTestUtils'
 import { useBillingOperationStore } from '@/platform/workspace/stores/billingOperationStore'
 import { useAuthStore } from '@/stores/authStore'
+import type { Auth } from 'firebase/auth'
 import {
+  initializeAuth,
   onAuthStateChanged,
-  onIdTokenChanged,
-  setPersistence
+  onIdTokenChanged
 } from 'firebase/auth'
 import { createI18n } from 'vue-i18n'
 
@@ -35,7 +37,7 @@ import {
 vi.mock(import('firebase/auth'), { spy: true })
 
 beforeEach(() => {
-  vi.mocked(setPersistence).mockResolvedValue(undefined)
+  vi.mocked(initializeAuth).mockReturnValue(fromPartial<Auth>({}))
   vi.mocked(onAuthStateChanged).mockImplementation(vi.fn())
   vi.mocked(onIdTokenChanged).mockImplementation(vi.fn())
 })

@@ -1,12 +1,14 @@
+import { fromPartial } from '@total-typescript/shoehorn'
 import { useAuthStore } from '@/stores/authStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import type { BillingCapabilitiesResponse } from '@comfyorg/ingest-types'
 import type { AxiosResponse, InternalAxiosRequestConfig } from 'axios'
 import axios, { AxiosError, AxiosHeaders } from 'axios'
+import type { Auth } from 'firebase/auth'
 import {
+  initializeAuth,
   onAuthStateChanged,
-  onIdTokenChanged,
-  setPersistence
+  onIdTokenChanged
 } from 'firebase/auth'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { effectScope, nextTick } from 'vue'
@@ -19,7 +21,7 @@ import { useBillingCapabilities } from './useBillingCapabilities'
 vi.mock(import('firebase/auth'), { spy: true })
 
 beforeEach(() => {
-  vi.mocked(setPersistence).mockResolvedValue(undefined)
+  vi.mocked(initializeAuth).mockReturnValue(fromPartial<Auth>({}))
   vi.mocked(onAuthStateChanged).mockImplementation(vi.fn())
   vi.mocked(onIdTokenChanged).mockImplementation(vi.fn())
 })

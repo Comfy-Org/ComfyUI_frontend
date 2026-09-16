@@ -1,11 +1,12 @@
+import { fromPartial } from '@total-typescript/shoehorn'
 import { useAuthStore } from '@/stores/authStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useToastStore } from '@/platform/updates/common/toastStore'
-import type { User } from 'firebase/auth'
+import type { Auth, User } from 'firebase/auth'
 import {
+  initializeAuth,
   onAuthStateChanged,
-  onIdTokenChanged,
-  setPersistence
+  onIdTokenChanged
 } from 'firebase/auth'
 import { storeToRefs } from 'pinia'
 import { nextTick } from 'vue'
@@ -141,7 +142,7 @@ function expectedExpiresAtMs(expiresAt: string): string {
 }
 
 beforeEach(() => {
-  vi.mocked(setPersistence).mockResolvedValue(undefined)
+  vi.mocked(initializeAuth).mockReturnValue(fromPartial<Auth>({}))
   vi.mocked(onAuthStateChanged).mockImplementation(vi.fn())
   vi.mocked(onIdTokenChanged).mockImplementation(vi.fn())
 

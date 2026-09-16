@@ -1,7 +1,9 @@
+import { fromPartial } from '@total-typescript/shoehorn'
+import type { Auth } from 'firebase/auth'
 import {
+  initializeAuth,
   onAuthStateChanged,
-  onIdTokenChanged,
-  setPersistence
+  onIdTokenChanged
 } from 'firebase/auth'
 
 import { useBillingOperationStore } from '@/platform/workspace/stores/billingOperationStore'
@@ -176,7 +178,7 @@ async function clickAddCredits() {
 }
 
 beforeEach(() => {
-  vi.mocked(setPersistence).mockResolvedValue(undefined)
+  vi.mocked(initializeAuth).mockReturnValue(fromPartial<Auth>({}))
   vi.mocked(onAuthStateChanged).mockReturnValue(vi.fn())
   vi.mocked(onIdTokenChanged).mockReturnValue(vi.fn())
 })

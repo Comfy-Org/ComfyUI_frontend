@@ -5,20 +5,18 @@ import {
   captureMessage,
   init as sentryInit
 } from '@sentry/vue'
-import { initializeApp } from 'firebase/app'
 import { createPinia } from 'pinia'
 import 'primeicons/primeicons.css'
 import PrimeVue from 'primevue/config'
 import ToastService from 'primevue/toastservice'
 import Tooltip from 'primevue/tooltip'
 import { createApp } from 'vue'
-import { VueFire, VueFireAuth } from 'vuefire'
 
 import { setAssertReporter } from '@/base/assert'
-import { getFirebaseConfig } from '@/config/firebase'
 import { flushProxyWidgetMigration } from '@/core/graph/subgraph/migration/proxyWidgetMigration'
 import { autoExposeKnownPreviewNodes } from '@/core/graph/subgraph/promotionUtils'
 import { LGraph } from '@/lib/litegraph/src/litegraph'
+import { firebaseIdentity } from '@/platform/auth/firebaseIdentity'
 import {
   configValueOrDefault,
   remoteConfig
@@ -46,8 +44,8 @@ if (isCloud) stripPaymentReturnParams()
 
 bootstrapTracer.armWatchdog()
 
-// Load remote config before initializeApp() below, so getFirebaseConfig() resolves
-// against the server's runtime values instead of the build-time defaults.
+// Load remote config before the Firebase app resolves below, so getFirebaseConfig()
+// resolves against the server's runtime values instead of the build-time defaults.
 await bootstrapTracer.settle('startup/remote-config', async () => {
   const { refreshRemoteConfig } =
     await import('@/platform/remoteConfig/refreshRemoteConfig')
@@ -80,7 +78,7 @@ const ComfyUIPreset = definePreset(Aura, {
 })
 
 const phaseFirebase = bootstrapTracer.startPhase('startup/firebase-init')
-const firebaseApp = initializeApp(getFirebaseConfig())
+firebaseIdentity.currentUser()
 phaseFirebase.stop()
 
 const app = createApp(App)
@@ -177,10 +175,6 @@ app
   .use(ToastService)
   .use(pinia)
   .use(i18n)
-  .use(VueFire, {
-    firebaseApp,
-    modules: [VueFireAuth()]
-  })
 
 if (isCloud && hasHostTelemetryBridge) {
   syncHostUserIdWithFirebaseAuth()

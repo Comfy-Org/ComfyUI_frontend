@@ -11,10 +11,10 @@ vi.mock(import('@/platform/distribution/types'), () => mockDistribution)
 type MockUser = { email: string | null; emailVerified: boolean }
 
 const mockCurrentUser = vi.hoisted(() => ({
-  value: null as MockUser | null | undefined
+  value: null as MockUser | null
 }))
-vi.mock<unknown>(import('vuefire'), () => ({
-  useCurrentUser: vi.fn(() => mockCurrentUser)
+vi.mock<unknown>(import('@/platform/auth/firebaseIdentity'), () => ({
+  firebaseIdentity: { currentUser: () => mockCurrentUser.value }
 }))
 
 const COMFY_EMPLOYEE = { email: 'dev@comfy.org', emailVerified: true }
@@ -158,10 +158,7 @@ describe('getSessionOverride', () => {
   })
 
   describe('employee gate', () => {
-    const blockedIdentities: [
-      label: string,
-      currentUser: MockUser | null | undefined
-    ][] = [
+    const blockedIdentities: [label: string, currentUser: MockUser | null][] = [
       [
         'a lookalike domain',
         { email: 'dev@notcomfy.org', emailVerified: true }
@@ -170,8 +167,7 @@ describe('getSessionOverride', () => {
         'an unverified address',
         { email: 'dev@comfy.org', emailVerified: false }
       ],
-      ['a signed-out session', null],
-      ['a session where auth has not resolved yet', undefined]
+      ['a signed-out session', null]
     ]
 
     it.for(blockedIdentities)(
@@ -185,7 +181,7 @@ describe('getSessionOverride', () => {
     )
 
     it('applies the override once auth resolves mid-session', () => {
-      mockCurrentUser.value = undefined
+      mockCurrentUser.value = null
       visit('/?ff=onboarding_tour_enabled')
       expect(getSessionOverride('onboarding_tour_enabled')).toBeUndefined()
 

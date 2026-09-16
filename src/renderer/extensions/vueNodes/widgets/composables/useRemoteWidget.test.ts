@@ -1,9 +1,11 @@
+import { fromPartial } from '@total-typescript/shoehorn'
 import { useAuthStore } from '@/stores/authStore'
 import axios from 'axios'
+import type { Auth } from 'firebase/auth'
 import {
+  initializeAuth,
   onAuthStateChanged,
-  onIdTokenChanged,
-  setPersistence
+  onIdTokenChanged
 } from 'firebase/auth'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -30,7 +32,7 @@ const mockCloudAuth = vi.hoisted(() => ({
 
 vi.mock(import('axios'), { spy: true })
 vi.mock(import('firebase/auth'), { spy: true })
-vi.mocked(setPersistence).mockResolvedValue(undefined)
+vi.mocked(initializeAuth).mockReturnValue(fromPartial<Auth>({}))
 vi.mocked(onAuthStateChanged).mockReturnValue(vi.fn())
 vi.mocked(onIdTokenChanged).mockReturnValue(vi.fn())
 
@@ -92,7 +94,7 @@ async function getResolvedValue(hook: ReturnType<typeof useRemoteWidget>) {
 }
 
 beforeEach(() => {
-  vi.mocked(setPersistence).mockResolvedValue(undefined)
+  vi.mocked(initializeAuth).mockReturnValue(fromPartial<Auth>({}))
   vi.mocked(onAuthStateChanged).mockReturnValue(vi.fn())
   vi.mocked(onIdTokenChanged).mockReturnValue(vi.fn())
   vi.mocked(useAuthStore().getAuthHeader).mockImplementation(

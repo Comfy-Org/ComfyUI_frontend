@@ -1,5 +1,4 @@
-import { useCurrentUser } from 'vuefire'
-
+import { firebaseIdentity } from '@/platform/auth/firebaseIdentity'
 import { isCloud } from '@/platform/distribution/types'
 
 const STORAGE_KEY = 'Comfy.FeatureFlagOverride'
@@ -14,12 +13,13 @@ type OverrideMap = Record<string, unknown>
  * the only thing standing between a `?ff=` link and the app's behaviour, so it
  * fails closed.
  *
- * Reads VueFire rather than `authStore`, which imports `useFeatureFlags` and
- * would drag the whole app module graph into every feature flag read.
+ * Reads the identity module rather than `authStore`, which imports
+ * `useFeatureFlags` and would drag the whole app module graph into every
+ * feature flag read.
  */
 function isComfyEmployee(): boolean {
   try {
-    const user = useCurrentUser().value
+    const user = firebaseIdentity.currentUser()
     if (!user?.emailVerified) return false
 
     return user.email?.toLowerCase().endsWith(EMPLOYEE_EMAIL_DOMAIN) ?? false

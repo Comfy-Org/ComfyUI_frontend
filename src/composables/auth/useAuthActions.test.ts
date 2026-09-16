@@ -4,11 +4,11 @@ import { useWorkflowStore } from '@/platform/workflow/management/stores/workflow
 import { FirebaseError } from 'firebase/app'
 import {
   AuthErrorCodes,
+  initializeAuth,
   onAuthStateChanged,
-  onIdTokenChanged,
-  setPersistence
+  onIdTokenChanged
 } from 'firebase/auth'
-import type { UserCredential } from 'firebase/auth'
+import type { Auth, UserCredential } from 'firebase/auth'
 import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -135,7 +135,7 @@ function makeWorkflow(path: string): ModifiedWorkflow {
 }
 
 beforeEach(() => {
-  vi.mocked(setPersistence).mockResolvedValue(undefined)
+  vi.mocked(initializeAuth).mockReturnValue(fromPartial<Auth>({}))
   vi.mocked(onAuthStateChanged).mockImplementation(vi.fn())
   vi.mocked(onIdTokenChanged).mockImplementation(vi.fn())
   mockAuthStore = useAuthStore()

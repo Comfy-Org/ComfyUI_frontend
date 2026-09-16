@@ -1,19 +1,10 @@
 import { FirebaseError } from 'firebase/app'
-import {
-  AuthErrorCodes,
-  browserLocalPersistence,
-  getAdditionalUserInfo,
-  onAuthStateChanged,
-  onIdTokenChanged,
-  setPersistence
-} from 'firebase/auth'
+import { AuthErrorCodes, getAdditionalUserInfo } from 'firebase/auth'
 import type { User, UserCredential } from 'firebase/auth'
 import { defineStore } from 'pinia'
 import { computed, markRaw, ref } from 'vue'
-import { useFirebaseAuth } from 'vuefire'
 
 import { fetchWithCustomerRecovery as fetchHealingMissingCustomer } from '@comfyorg/account/customerRecovery'
-import { createFirebaseIdentity } from '@comfyorg/account/firebase'
 import {
   signUpWithProvisioning,
   socialSignInWithProvisioning
@@ -21,6 +12,7 @@ import {
 
 import { getComfyApiBaseUrl } from '@/config/comfyApi'
 import { t } from '@/i18n'
+import { firebaseIdentity } from '@/platform/auth/firebaseIdentity'
 import { fetchWithUnifiedRemint } from '@/platform/auth/unified/remintRetry'
 import { DISTRIBUTION, isCloud } from '@/platform/distribution/types'
 import {
@@ -118,19 +110,11 @@ export const useAuthStore = defineStore('auth', () => {
     return shareId ? { share_id: shareId } : {}
   }
 
-  // Get auth from VueFire and listen for auth state changes
-  // From useFirebaseAuth docs:
-  // Retrieves the Firebase Auth instance. Returns `null` on the server.
-  // When using this function on the client in TypeScript, you can force the type with `useFirebaseAuth()!`.
-  const auth = useFirebaseAuth()!
-  // The package's identity entry over this same instance, no second app:
-  // sign-in actions here, the session client's identity source in
-  // workspaceAuthStore.
-  const identity = createFirebaseIdentity({ auth })
-  // Set persistence to localStorage (works in both browser and Electron)
-  void setPersistence(auth, browserLocalPersistence)
+  // The package's identity entry over the app's one Firebase Auth: sign-in
+  // actions here, the session client's identity source in workspaceAuthStore.
+  const identity = firebaseIdentity
 
-  onAuthStateChanged(auth, (user) => {
+  identity.onUserChanged((user) => {
     const previousUserId = currentUser.value?.uid ?? null
     const identityChanged =
       previousUserId !== null && previousUserId !== (user?.uid ?? null)
@@ -174,7 +158,7 @@ export const useAuthStore = defineStore('auth', () => {
   })
 
   // Listen for token refresh events
-  onIdTokenChanged(auth, (user) => {
+  identity.onTokenChanged((user) => {
     if (user && isCloud) {
       // Skip initial token change
       if (lastTokenUserId.value !== user.uid) {

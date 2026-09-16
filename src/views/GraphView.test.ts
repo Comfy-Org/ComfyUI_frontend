@@ -65,7 +65,9 @@ vi.mock<unknown>(import('firebase/auth'), () => {
     GoogleAuthProvider: AuthProvider,
     GithubAuthProvider: AuthProvider,
     browserLocalPersistence: {},
-    setPersistence: vi.fn(async () => {}),
+    browserPopupRedirectResolver: {},
+    getAuth: vi.fn(() => ({})),
+    initializeAuth: vi.fn(() => ({})),
     onAuthStateChanged: vi.fn(() => () => {}),
     onIdTokenChanged: vi.fn(() => () => {})
   }
