@@ -81,6 +81,7 @@ function actionFor(example: PlaygroundExample, active = false) {
         v-for="example in examples"
         :key="example.id"
         :class="cn('shrink-0 snap-start sm:w-auto', phoneWidth)"
+        data-testid="example-item"
       >
         <button
           type="button"
