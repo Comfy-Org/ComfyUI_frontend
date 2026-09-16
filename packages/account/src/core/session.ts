@@ -303,16 +303,14 @@ export function createSessionClient<TUser extends AccountUser = AccountUser>(
     }
   }
 
-  function apply(next: SessionTransition<TUser>, now: () => number): void {
-    state = next.state
-    for (const effect of next.effects) runEffect(effect, now)
-  }
-
   function commit(
     event: SessionEvent<TUser>,
     now: () => number = hostNow
-  ): void {
-    apply(transition(state, event), now)
+  ): SessionTransition<TUser> {
+    const next = transition(state, event)
+    state = next.state
+    for (const effect of next.effects) runEffect(effect, now)
+    return next
   }
 
   function sharedMint(
@@ -397,13 +395,9 @@ export function createSessionClient<TUser extends AccountUser = AccountUser>(
             commit({ type: 'mint-rejected', origin: 'scheduler', failure })
           },
           commitExpired: (expiring) => {
-            const next = transition(state, {
-              type: 'credential-expired',
-              expiring
-            })
-            if (next.state === state) return undefined
-            apply(next, hostNow)
-            return next.state.failure
+            const previous = state
+            const next = commit({ type: 'credential-expired', expiring })
+            return next.state === previous ? undefined : next.state.failure
           },
           parseAdopted: decodeAdopted,
           commitAdopted: (session) => {
