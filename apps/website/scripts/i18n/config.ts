@@ -62,24 +62,6 @@ export function preserveTerms(): string[] {
   )
 }
 
-/**
- * Brand voice, shared across locales.
- *
- * The hype ban is not decoration: `validate-translations` fails CI on any of
- * these words appearing in a translation whose English did not use it, so the
- * model is told up front rather than being caught afterwards.
- */
-function glossaryText(): string {
-  return `This is marketing and SEO copy for comfy.org, the site for ComfyUI, a node-based interface for generative AI.
-
-Translate for how each market actually searches, not word for word. Common technique terms (inpainting, upscaling, image to video) should become the natural local term.
-
-Tone: direct, factual, creator-first. The person directs the model; never phrase it as the AI creating for the user. Never introduce hype the English did not claim: no local equivalent of stunning, powerful, seamless, effortless, unlock, revolutionary, game-changing, cutting-edge or unleash.
-
-Keep these untranslated, byte for byte:
-${preserveTerms().join(', ')}`
-}
-
 const japaneseGuidance = `Use natural Japanese for a professional creative-software audience. Prefer です・ます form for body copy and noun-ending phrases for headings and buttons, as Japanese software marketing does.
 Keep widely recognised technical terms in katakana or Latin script rather than inventing translations: ワークフロー, ノード, モデル, API, GPU.
 Do not pad sentences. Japanese marketing copy is shorter than the English; a literal translation reads as machine output.`
@@ -135,7 +117,7 @@ export const websiteTranslationConfig = {
   maxTruncationSplitDepth: 3,
   requestConcurrency: 2,
   maxTranslationRounds: 3,
-  get glossary(): string {
-    return glossaryText()
-  }
+  glossary: `This is marketing copy for comfy.org. Use natural local search
+terminology and a direct, factual voice. Preserve the creator's
+agency and the source's claims without adding hype.`
 }
