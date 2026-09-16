@@ -28,9 +28,8 @@ const translations = {
     'zh-CN': '接下来你想创造什么？'
   },
   'workshop.hero.subtitle': {
-    en: 'Try the latest AI models with your own ideas. Nothing to install: they run on Comfy Cloud.',
-    'zh-CN':
-      '用你自己的创意试用最新的 AI 模型。无需安装，模型在 Comfy Cloud 上运行。'
+    en: 'Try the latest AI models with your own ideas, right in your browser.',
+    'zh-CN': '用你自己的创意试用最新的 AI 模型，就在浏览器中。'
   },
   'workshop.search.label': {
     en: 'Search models, providers, and categories',
