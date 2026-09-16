@@ -1,0 +1,71 @@
+[
+  {
+    "name": "video_ltx2_3_ia2v",
+    "models": ["LTX-2.3"],
+    "author": "ComfyUI",
+    "examples": [
+      "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/90c71fb78b3726392d010ff62a8e79e92d7296ad/templates/video_ltx2_3_ia2v-1.webp"
+    ]
+  },
+  {
+    "name": "video_wan_animate2",
+    "models": ["Wan Animate"],
+    "author": "ComfyUI",
+    "examples": [
+      "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/90c71fb78b3726392d010ff62a8e79e92d7296ad/templates/video_wan_animate2-1.webp"
+    ]
+  },
+  {
+    "name": "image_qwen_image_edit_2511",
+    "models": ["Qwen-Image-Edit"],
+    "author": "ComfyUI",
+    "examples": [
+      "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/90c71fb78b3726392d010ff62a8e79e92d7296ad/templates/image_qwen_image_edit_2511-1.webp",
+      "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/90c71fb78b3726392d010ff62a8e79e92d7296ad/templates/image_qwen_image_edit_2511-2.webp"
+    ]
+  },
+  {
+    "name": "flux_fill_outpaint_example",
+    "models": ["Flux.1", "Flux"],
+    "author": "ComfyUI",
+    "examples": [
+      "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/90c71fb78b3726392d010ff62a8e79e92d7296ad/templates/flux_fill_outpaint_example-1.webp",
+      "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/90c71fb78b3726392d010ff62a8e79e92d7296ad/templates/flux_fill_outpaint_example-2.webp"
+    ]
+  },
+  {
+    "name": "templates-qwen_multiangle.app",
+    "models": ["Qwen-Image-Edit"],
+    "author": "ComfyUI",
+    "examples": [
+      "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/90c71fb78b3726392d010ff62a8e79e92d7296ad/templates/templates-qwen_multiangle.app-1.webp"
+    ]
+  },
+  {
+    "name": "templates_rob_portrait_light_migration.app",
+    "models": ["Qwen-Image-Edit"],
+    "author": "hellorob",
+    "examples": [
+      "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/90c71fb78b3726392d010ff62a8e79e92d7296ad/templates/templates_rob_portrait_light_migration.app-1.webp",
+      "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/90c71fb78b3726392d010ff62a8e79e92d7296ad/templates/templates_rob_portrait_light_migration.app-2.webp"
+    ]
+  },
+  {
+    "name": "templates-product_scene_relight",
+    "models": ["ByteDance", "Seedream"],
+    "author": "hellorob",
+    "examples": [
+      "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/90c71fb78b3726392d010ff62a8e79e92d7296ad/templates/templates-product_scene_relight-1.webp",
+      "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/90c71fb78b3726392d010ff62a8e79e92d7296ad/templates/templates-product_scene_relight-2.webp"
+    ]
+  },
+  {
+    "name": "utility_seedvr2_image_upscale",
+    "models": ["SeedVR2"],
+    "author": "ComfyUI",
+    "examples": [
+      "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/90c71fb78b3726392d010ff62a8e79e92d7296ad/templates/utility_seedvr2_image_upscale-1.webp",
+      "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/90c71fb78b3726392d010ff62a8e79e92d7296ad/templates/utility_seedvr2_image_upscale-2.webp"
+    ]
+  }
+]

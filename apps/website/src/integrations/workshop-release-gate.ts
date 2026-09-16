@@ -26,6 +26,14 @@ export function modelsBuildRoutes(enabled: boolean) {
     },
     ...(enabled
       ? [
+          {
+            pattern: '/models/workflows',
+            entrypoint: entry('workflows.astro')
+          },
+          {
+            pattern: '/models/workflows/[workflow]',
+            entrypoint: entry('workflow.astro')
+          },
           { pattern: '/models/[slug]', entrypoint: entry('[slug].astro') },
           { pattern: '/models/showcase', entrypoint: entry('showcase.astro') },
           {

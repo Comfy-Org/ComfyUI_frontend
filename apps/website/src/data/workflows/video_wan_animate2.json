@@ -1,0 +1,570 @@
+{
+  "189": {
+    "inputs": {
+      "image": "pink_hair_mech_arms_ref.png"
+    },
+    "class_type": "LoadImage",
+    "_meta": {
+      "title": "Load Image (Reference Image)"
+    }
+  },
+  "240": {
+    "inputs": {
+      "file": "street_dance_drive.mp4"
+    },
+    "class_type": "LoadVideo",
+    "_meta": {
+      "title": "Load Video (Pose Video)"
+    }
+  },
+  "245": {
+    "inputs": {
+      "bit_depth": 8,
+      "color_space": "sRGB",
+      "codec": "none",
+      "images": ["289", 0],
+      "fps": ["288", 2],
+      "audio": ["288", 1]
+    },
+    "class_type": "CreateVideo",
+    "_meta": {
+      "title": "Create Video"
+    }
+  },
+  "246": {
+    "inputs": {
+      "filename_prefix": "video/ComfyUI",
+      "format": "auto",
+      "video": ["245", 0],
+      "format.codec": "auto"
+    },
+    "class_type": "SaveVideo",
+    "_meta": {
+      "title": "Save Video"
+    }
+  },
+  "288": {
+    "inputs": {
+      "video": ["240", 0]
+    },
+    "class_type": "GetVideoComponents",
+    "_meta": {
+      "title": "Get Video Components"
+    }
+  },
+  "289": {
+    "inputs": {
+      "images.image0": ["261:299", 0]
+    },
+    "class_type": "BatchImagesNode",
+    "_meta": {
+      "title": "Batch Images"
+    }
+  },
+  "292": {
+    "inputs": {
+      "filename_prefix": "video/ComfyUI",
+      "format": "auto",
+      "video": ["291:80", 0],
+      "format.codec": "auto"
+    },
+    "class_type": "SaveVideo",
+    "_meta": {
+      "title": "Save Video"
+    }
+  },
+  "536": {
+    "inputs": {
+      "expression": "a / 81",
+      "values.a": ["537", 2]
+    },
+    "class_type": "ComfyMathExpression",
+    "_meta": {
+      "title": "Math Expression"
+    }
+  },
+  "537": {
+    "inputs": {
+      "image": ["288", 0]
+    },
+    "class_type": "GetImageSize",
+    "_meta": {
+      "title": "Get Image Size"
+    }
+  },
+  "538": {
+    "inputs": {
+      "source": ["536", 0]
+    },
+    "class_type": "PreviewAny",
+    "_meta": {
+      "title": "Preview as Text"
+    }
+  },
+  "261:239": {
+    "inputs": {
+      "unet_name": "wan_animate_2_int8_convrot.safetensors",
+      "weight_dtype": "default"
+    },
+    "class_type": "UNETLoader",
+    "_meta": {
+      "title": "Load Diffusion Model"
+    }
+  },
+  "261:11": {
+    "inputs": {
+      "lora_name": "lightx2v_I2V_14B_480p_cfg_step_distill_rank64_bf16.safetensors",
+      "strength_model": 1,
+      "model": ["261:239", 0]
+    },
+    "class_type": "LoraLoaderModelOnly",
+    "_meta": {
+      "title": "Load LoRA"
+    }
+  },
+  "261:9": {
+    "inputs": {
+      "clip_name": "umt5_xxl_fp8_e4m3fn_scaled.safetensors",
+      "type": "wan",
+      "device": "default"
+    },
+    "class_type": "CLIPLoader",
+    "_meta": {
+      "title": "Load CLIP"
+    }
+  },
+  "261:4": {
+    "inputs": {
+      "text": "色调艳丽，过曝，静态，细节模糊不清，字幕，风格，作品，画作，画面，静止，整体发灰，最差质量，低质量，JPEG压缩残留，丑陋的，残缺的，多余的手指，画得不好的手部，画得不好的脸部，畸形的，毁容的，形态畸形的肢体，手指融合，静止不动的画面，杂乱的背景，三条腿，背景人很多，倒着走",
+      "clip": ["261:9", 0]
+    },
+    "class_type": "CLIPTextEncode",
+    "_meta": {
+      "title": "CLIP Text Encode (Negative Prompt)"
+    }
+  },
+  "261:3": {
+    "inputs": {
+      "text": "Character Description: Cartoon character lost\nBackground description: The background is an empty white room",
+      "clip": ["261:9", 0]
+    },
+    "class_type": "CLIPTextEncode",
+    "_meta": {
+      "title": "CLIP Text Encode (Positive Prompt)"
+    }
+  },
+  "261:75": {
+    "inputs": {
+      "clip_name": "clip_vision_h.safetensors"
+    },
+    "class_type": "CLIPVisionLoader",
+    "_meta": {
+      "title": "Load CLIP Vision"
+    }
+  },
+  "261:7": {
+    "inputs": {
+      "vae_name": "Wan2_1_VAE_bf16.safetensors"
+    },
+    "class_type": "VAELoader",
+    "_meta": {
+      "title": "Load VAE"
+    }
+  },
+  "261:222": {
+    "inputs": {
+      "text": "一只穿着制服的小猫做动作的参考视频",
+      "clip": ["261:9", 0]
+    },
+    "class_type": "CLIPTextEncode",
+    "_meta": {
+      "title": "CLIP Text Encode (Prompt)"
+    }
+  },
+  "261:257": {
+    "inputs": {
+      "context_length": 21,
+      "context_overlap": 8,
+      "context_schedule": "standard_static",
+      "context_stride": 1,
+      "closed_loop": false,
+      "fuse_method": "pyramid",
+      "dim": 2,
+      "freenoise": true,
+      "cond_retain_index_list": "0",
+      "split_conds_to_windows": false,
+      "latent_retain_index_list": "",
+      "causal_window_fix": true,
+      "model": ["261:11", 0]
+    },
+    "class_type": "ContextWindowsManual",
+    "_meta": {
+      "title": "Context Windows (Manual)"
+    }
+  },
+  "261:247": {
+    "inputs": {
+      "length": 81,
+      "batch_size": 1,
+      "video_frame_offset": 0,
+      "pose_strength": 1,
+      "pose_start_percent": 0,
+      "pose_end_percent": 1,
+      "reference_image_strength": 1,
+      "positive": ["261:3", 0],
+      "negative": ["261:4", 0],
+      "vae": ["261:7", 0],
+      "width": ["261:256", 0],
+      "height": ["261:256", 1],
+      "reference_image": ["261:244", 0],
+      "pose_video": ["261:243", 0],
+      "clip_vision_output": ["261:76", 0],
+      "positive_pose": ["261:222", 0],
+      "clip_vision_output_pose": ["261:220", 0]
+    },
+    "class_type": "WanAnimate2ToVideo",
+    "_meta": {
+      "title": "WanAnimate2ToVideo"
+    }
+  },
+  "261:258": {
+    "inputs": {
+      "switch": false,
+      "on_false": ["261:11", 0],
+      "on_true": ["261:257", 0]
+    },
+    "class_type": "ComfySwitchNode",
+    "_meta": {
+      "title": "If/Else Switch"
+    }
+  },
+  "261:76": {
+    "inputs": {
+      "crop": "none",
+      "clip_vision": ["261:75", 0],
+      "image": ["261:244", 0]
+    },
+    "class_type": "CLIPVisionEncode",
+    "_meta": {
+      "title": "CLIP Vision Encode"
+    }
+  },
+  "261:244": {
+    "inputs": {
+      "resize_type": "scale dimensions",
+      "scale_method": "area",
+      "input": ["189", 0],
+      "resize_type.crop": "center",
+      "resize_type.width": ["261:256", 0],
+      "resize_type.height": ["261:256", 1]
+    },
+    "class_type": "ResizeImageMaskNode",
+    "_meta": {
+      "title": "Resize Image/Mask"
+    }
+  },
+  "261:18": {
+    "inputs": {
+      "scheduler": "simple",
+      "steps": 6,
+      "denoise": 1,
+      "model": ["261:224", 0]
+    },
+    "class_type": "BasicScheduler",
+    "_meta": {
+      "title": "BasicScheduler"
+    }
+  },
+  "261:95": {
+    "inputs": {
+      "shift": 5,
+      "model": ["261:224", 0]
+    },
+    "class_type": "ModelSamplingSD3",
+    "_meta": {
+      "title": "ModelSamplingSD3"
+    }
+  },
+  "261:27": {
+    "inputs": {
+      "sampler_name": "lcm"
+    },
+    "class_type": "KSamplerSelect",
+    "_meta": {
+      "title": "KSamplerSelect"
+    }
+  },
+  "261:224": {
+    "inputs": {
+      "device": "gpu",
+      "dtype": "int8",
+      "model": ["261:258", 0]
+    },
+    "class_type": "WanAnimate2Cache",
+    "_meta": {
+      "title": "WanAnimate2Cache"
+    }
+  },
+  "261:241": {
+    "inputs": {
+      "video": ["240", 0]
+    },
+    "class_type": "GetVideoComponents",
+    "_meta": {
+      "title": "Get Video Components"
+    }
+  },
+  "261:256": {
+    "inputs": {
+      "image": ["261:243", 0]
+    },
+    "class_type": "GetImageSize",
+    "_meta": {
+      "title": "Get Image Size"
+    }
+  },
+  "261:19": {
+    "inputs": {
+      "add_noise": true,
+      "noise_seed": 2,
+      "cfg": 1,
+      "model": ["261:95", 0],
+      "positive": ["261:247", 0],
+      "negative": ["261:247", 1],
+      "sampler": ["261:27", 0],
+      "sigmas": ["261:18", 0],
+      "latent_image": ["261:247", 2]
+    },
+    "class_type": "SamplerCustom",
+    "_meta": {
+      "title": "SamplerCustom"
+    }
+  },
+  "261:220": {
+    "inputs": {
+      "crop": "none",
+      "clip_vision": ["261:75", 0],
+      "image": ["261:236", 0]
+    },
+    "class_type": "CLIPVisionEncode",
+    "_meta": {
+      "title": "CLIP Vision Encode"
+    }
+  },
+  "261:236": {
+    "inputs": {
+      "batch_index": 0,
+      "length": 1,
+      "image": ["261:243", 0]
+    },
+    "class_type": "ImageFromBatch",
+    "_meta": {
+      "title": "Get Image from Batch"
+    }
+  },
+  "261:243": {
+    "inputs": {
+      "resize_type": "scale dimensions",
+      "scale_method": "area",
+      "input": ["261:241", 0],
+      "resize_type.width": 482,
+      "resize_type.height": 854,
+      "resize_type.crop": "center"
+    },
+    "class_type": "ResizeImageMaskNode",
+    "_meta": {
+      "title": "Resize Image/Mask"
+    }
+  },
+  "261:6": {
+    "inputs": {
+      "samples": ["261:223", 0],
+      "vae": ["261:7", 0]
+    },
+    "class_type": "VAEDecode",
+    "_meta": {
+      "title": "VAE Decode"
+    }
+  },
+  "261:223": {
+    "inputs": {
+      "samples": ["261:19", 0],
+      "trim_amount": ["261:247", 3]
+    },
+    "class_type": "TrimVideoLatent",
+    "_meta": {
+      "title": "Trim Video Latent"
+    }
+  },
+  "261:297": {
+    "inputs": {
+      "value": false
+    },
+    "class_type": "PrimitiveBoolean",
+    "_meta": {
+      "title": "Boolean"
+    }
+  },
+  "261:298": {
+    "inputs": {
+      "batch_index": 1,
+      "length": 4096,
+      "image": ["261:6", 0]
+    },
+    "class_type": "ImageFromBatch",
+    "_meta": {
+      "title": "Get Image from Batch"
+    }
+  },
+  "261:299": {
+    "inputs": {
+      "switch": ["261:297", 0],
+      "on_false": ["261:6", 0],
+      "on_true": ["261:298", 0]
+    },
+    "class_type": "ComfySwitchNode",
+    "_meta": {
+      "title": "If/Else Switch"
+    }
+  },
+  "291:78": {
+    "inputs": {
+      "video": ["240", 0]
+    },
+    "class_type": "GetVideoComponents",
+    "_meta": {
+      "title": "Get Video Components"
+    }
+  },
+  "291:77": {
+    "inputs": {
+      "video": ["246", 0]
+    },
+    "class_type": "GetVideoComponents",
+    "_meta": {
+      "title": "Get Video Components"
+    }
+  },
+  "291:90": {
+    "inputs": {
+      "image": ["291:79", 0]
+    },
+    "class_type": "GetImageSize",
+    "_meta": {
+      "title": "Get Image Size"
+    }
+  },
+  "291:80": {
+    "inputs": {
+      "bit_depth": 8,
+      "color_space": "sRGB",
+      "codec": "none",
+      "images": ["291:97", 0],
+      "fps": ["291:77", 2],
+      "audio": ["291:77", 1]
+    },
+    "class_type": "CreateVideo",
+    "_meta": {
+      "title": "Create Video"
+    }
+  },
+  "291:290": {
+    "inputs": {
+      "expression": "a & ~1",
+      "values.a": ["291:90", 0]
+    },
+    "class_type": "ComfyMathExpression",
+    "_meta": {
+      "title": "Math Expression"
+    }
+  },
+  "291:96": {
+    "inputs": {
+      "expression": "a & ~1",
+      "values.a": ["291:90", 1]
+    },
+    "class_type": "ComfyMathExpression",
+    "_meta": {
+      "title": "Math Expression"
+    }
+  },
+  "291:79": {
+    "inputs": {
+      "direction": "right",
+      "match_image_size": true,
+      "spacing_width": 0,
+      "spacing_color": "white",
+      "image1": ["291:417", 0],
+      "image2": ["291:573", 0]
+    },
+    "class_type": "ImageStitch",
+    "_meta": {
+      "title": "Stitch Images"
+    }
+  },
+  "291:97": {
+    "inputs": {
+      "resize_type": "scale dimensions",
+      "scale_method": "area",
+      "input": ["291:79", 0],
+      "resize_type.crop": "center",
+      "resize_type.width": ["291:290", 1],
+      "resize_type.height": ["291:96", 1]
+    },
+    "class_type": "ResizeImageMaskNode",
+    "_meta": {
+      "title": "Resize Image/Mask"
+    }
+  },
+  "291:416": {
+    "inputs": {
+      "image": ["291:77", 0]
+    },
+    "class_type": "GetImageSize",
+    "_meta": {
+      "title": "Get Image Size"
+    }
+  },
+  "291:417": {
+    "inputs": {
+      "batch_index": 0,
+      "image": ["291:77", 0],
+      "length": ["291:572", 1]
+    },
+    "class_type": "ImageFromBatch",
+    "_meta": {
+      "title": "Get Image from Batch"
+    }
+  },
+  "291:571": {
+    "inputs": {
+      "image": ["291:78", 0]
+    },
+    "class_type": "GetImageSize",
+    "_meta": {
+      "title": "Get Image Size"
+    }
+  },
+  "291:572": {
+    "inputs": {
+      "expression": "min(a,b)",
+      "values.a": ["291:416", 2],
+      "values.b": ["291:571", 2]
+    },
+    "class_type": "ComfyMathExpression",
+    "_meta": {
+      "title": "Math Expression"
+    }
+  },
+  "291:573": {
+    "inputs": {
+      "batch_index": 0,
+      "image": ["291:78", 0],
+      "length": ["291:572", 1]
+    },
+    "class_type": "ImageFromBatch",
+    "_meta": {
+      "title": "Get Image from Batch"
+    }
+  }
+}
