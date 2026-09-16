@@ -117,29 +117,22 @@ export const isComponentWidget = <V extends object | string>(
   widget: IBaseWidget
 ): widget is ComponentWidget<V> => 'component' in widget && !!widget.component
 
-interface BaseDOMWidgetInit<V extends object | string> {
-  node: LGraphNode
-  name: string
-  type: string
-  options: DOMWidgetOptions<V>
-}
+type BaseDOMWidgetInit<V extends object | string> = Pick<
+  BaseDOMWidget<V>,
+  'node' | 'name' | 'type' | 'options'
+>
 
-interface DOMWidgetInit<
+type DOMWidgetInit<
   T extends HTMLElement,
   V extends object | string
-> extends BaseDOMWidgetInit<V> {
-  element: T
-}
+> = BaseDOMWidgetInit<V> & Pick<DOMWidget<T, V>, 'element'>
 
-interface ComponentWidgetInit<
+type ComponentWidgetInit<
   V extends object | string,
   P extends ComponentWidgetCustomProps
-> extends Omit<BaseDOMWidgetInit<V>, 'type'> {
-  component: Component
-  inputSpec: InputSpec
-  props?: P
+> = Omit<BaseDOMWidgetInit<V>, 'type'> & {
   type?: string
-}
+} & Pick<ComponentWidget<V, P>, 'component' | 'inputSpec' | 'props'>
 
 abstract class BaseDOMWidgetImpl<V extends object | string>
   extends LegacyWidget<IBaseWidget<V, string, DOMWidgetOptions<V>>>

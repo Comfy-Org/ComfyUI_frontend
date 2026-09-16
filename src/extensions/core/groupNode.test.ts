@@ -125,7 +125,7 @@ describe('GroupNodeConfig.getLinks', () => {
 
   it('skips links that have a null endpoint', () => {
     const valid = [1, 1, 2, 0, 4, 'CLIP'] satisfies GroupNodeLink
-    const broken = [null, 1, 2, 0, 4, 'CLIP'] as unknown as GroupNodeLink
+    const broken = [null, 1, 2, 0, 4, 'CLIP'] satisfies GroupNodeLink
     const config = configFrom([valid, broken])
 
     expect(config.linksFrom[1][1]).toEqual([valid])
