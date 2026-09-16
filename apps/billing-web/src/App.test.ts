@@ -7,7 +7,10 @@ import { createBillingRouter } from '@/router'
 
 describe('billing app', () => {
   it('boots on the billing route', async () => {
-    const router = createBillingRouter(createMemoryHistory())
+    const router = createBillingRouter(
+      createMemoryHistory(),
+      () => 'authenticated'
+    )
 
     await router.push('/')
     await router.isReady()
@@ -27,7 +30,10 @@ describe('billing app', () => {
   })
 
   it('recovers unknown static-host paths to the app entry route', async () => {
-    const router = createBillingRouter(createMemoryHistory())
+    const router = createBillingRouter(
+      createMemoryHistory(),
+      () => 'authenticated'
+    )
 
     await router.push('/unknown-path')
     await router.isReady()

@@ -1,4 +1,47 @@
 {
+  "auth": {
+    "signIn": {
+      "heading": "Sign in to your account",
+      "subtitle": "Sign in to manage your Comfy plan and credits.",
+      "google": "Sign in with Google",
+      "github": "Sign in with Github",
+      "useEmailInstead": "Use email instead",
+      "backToSocial": "Sign in with Google or Github instead",
+      "submit": "Sign in",
+      "forgotPassword": "Forgot password?",
+      "pending": "Finish signing in from the pop-up window.",
+      "signingIn": "Signing you in…",
+      "insecureContextWarning": "This connection is insecure (HTTP) - your credentials may be intercepted by attackers if you proceed to login.",
+      "unavailable": "Sign-in is unavailable: this deployment has no identity configuration.",
+      "sessionError": "You are signed in, but your workspace session could not be started. Retry, or sign in again with another account.",
+      "retry": "Retry session"
+    },
+    "email": {
+      "label": "Email",
+      "placeholder": "Enter your email"
+    },
+    "password": {
+      "label": "Password",
+      "placeholder": "Enter your password",
+      "show": "Show password",
+      "hide": "Hide password"
+    }
+  },
+  "validation": {
+    "invalidEmail": "Invalid email address",
+    "required": "Required",
+    "minLength": "Must be at least {length} characters",
+    "maxLength": "Must be no more than {length} characters",
+    "length": "Must be {length} characters",
+    "prefix": "Must start with {prefix}",
+    "password": {
+      "uppercase": "Must contain at least one uppercase letter",
+      "lowercase": "Must contain at least one lowercase letter",
+      "number": "Must contain at least one number",
+      "special": "Must contain at least one special character",
+      "match": "Passwords must match"
+    }
+  },
   "checkout": {
     "confirmPayment": "Confirm your payment",
     "back": "Back",
