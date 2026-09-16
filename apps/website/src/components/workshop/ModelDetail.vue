@@ -1,7 +1,14 @@
 <script setup lang="ts">
 import { Download, ExternalLink, Play } from '@lucide/vue'
 import { useEventListener, useMounted, useTimestamp } from '@vueuse/core'
-import { computed, onUnmounted, ref, useSlots, watch } from 'vue'
+import {
+  computed,
+  onScopeDispose,
+  onUnmounted,
+  ref,
+  useSlots,
+  watch
+} from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
@@ -40,6 +47,7 @@ import { createWorkshopUrlUploader } from '../../config/workshop-url-upload'
 import { WorkshopRouterError } from '../../config/workshop-router-errors'
 import { releaseRouterOutputs } from '../../config/workshop-response'
 import { retainRunHistory } from '../../config/workshop-run-history'
+import { reportWorkshopRun } from '../../config/workshop-run-state'
 import { modelDocsHref } from '../../lib/workshop/model-docs'
 import { linkLeavingPage } from '../../lib/workshop/leaving-link'
 import { useWorkshopSession } from '../../config/workshop-session-state'
@@ -354,6 +362,13 @@ let pendingRequest: { fingerprint: string; key: string } | undefined
 const uploadUrl = createWorkshopUrlUploader()
 
 const now = useTimestamp({ interval: 1000 })
+
+// The header is its own island and switching workspace is not a navigation,
+// so none of the guards above see it. This is how it learns there is a run.
+watch(isRunning, (running) =>
+  reportWorkshopRun(running ? cancelRun : undefined)
+)
+onScopeDispose(() => reportWorkshopRun(undefined))
 
 function cancelRun() {
   if (activeRun) {

@@ -9,11 +9,16 @@ import { requestWorkshopBuyCredits } from '../../config/workshop-buy-credits'
 import { leaveForSignIn } from '../../config/workshop-return'
 import type { WorkspaceWithRole } from '../../lib/workshop/workspaces'
 import { listWorkspaces } from '../../lib/workshop/workspaces'
+import {
+  cancelWorkshopRun,
+  workshopRunInFlight
+} from '../../config/workshop-run-state'
 import { useWorkshopSession } from '../../config/workshop-session-state'
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 import { useWorkshopAuthFlag } from '../../scripts/posthog'
 import HeaderAccountMenu from './HeaderAccountMenu.vue'
+import RunLeaveDialog from './RunLeaveDialog.vue'
 
 const { locale = 'en' } = defineProps<{
   locale?: Locale
@@ -157,13 +162,33 @@ async function restorePreviousWorkspace(
   }
 }
 
-async function switchWorkspace(workspaceId: string) {
+// A run belongs to the workspace that is paying for it, so switching ends it.
+// The playground guards every way off the page; this is the way off the
+// workspace, and it has to ask the same question before it takes the credits.
+const switchPending = ref<string>()
+
+function confirmSwitch() {
+  const workspaceId = switchPending.value
+  switchPending.value = undefined
+  if (!workspaceId) return
+  cancelWorkshopRun()
+  void switchWorkspace(workspaceId, { runAlreadyCancelled: true })
+}
+
+async function switchWorkspace(
+  workspaceId: string,
+  options?: { runAlreadyCancelled?: boolean }
+) {
   if (switching.value) return
   const previous = session.value
   if (!previous) return
   const previousWorkspaceId = previous.workspace.id
   if (workspaceId === previousWorkspaceId) {
     menuOpen.value = false
+    return
+  }
+  if (workshopRunInFlight.value && !options?.runAlreadyCancelled) {
+    switchPending.value = workspaceId
     return
   }
   workspaceSwitchError.value = false
@@ -295,6 +320,14 @@ async function signOutFromMenu() {
       @switch-workspace="switchWorkspace"
       @buy-credits="requestWorkshopBuyCredits"
       @sign-out="signOutFromMenu"
+    />
+
+    <RunLeaveDialog
+      :open="switchPending !== undefined"
+      action="switchWorkspace"
+      :locale
+      @update:open="(value: boolean) => !value && (switchPending = undefined)"
+      @leave="confirmSwitch"
     />
   </div>
 </template>
