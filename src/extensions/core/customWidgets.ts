@@ -1,4 +1,4 @@
-import { computed, ref, shallowReactive, watch } from 'vue'
+import { computed, shallowReactive, watch } from 'vue'
 
 import { useChainCallback } from '@/composables/functional/useChainCallback'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
@@ -154,29 +154,17 @@ function onCustomComboCreated(this: LGraphNode) {
   addOption(this)
 }
 
-const renameTrigger = ref(0)
 function onBranchSelectorCreated(this: LGraphNode) {
   this.applyToGraph = applyToGraph
 
-  const connectionsTrigger = ref(0)
   this.widgets?.pop()
-  const labels = computed(() => {
-    void renameTrigger.value
-    void connectionsTrigger.value
-    return this.inputs.slice(0, -2).map((inp) => inp.label)
-  })
+  const labels = computed(() =>
+    this.inputs.slice(0, -2).map((inp) => inp.label)
+  )
 
   const comboWidget = this.addWidget('combo', 'branch', '', () => {}, {
     values: () => labels.value
   })
-  const stopWatch = watch([renameTrigger, connectionsTrigger], () => {
-    if (app.configuringGraph || labels.value.includes(`${comboWidget.value}`))
-      return
-
-    comboWidget.value = labels.value[0] ?? ''
-    comboWidget.callback?.(comboWidget.value)
-  })
-  this.onRemoved = useChainCallback(this.onRemoved, stopWatch)
 
   const namesIndex = this.inputs.findIndex((inp) => inp.name === 'branch_names')
   if (namesIndex !== -1) this.removeInput(namesIndex)
@@ -190,13 +178,17 @@ function onBranchSelectorCreated(this: LGraphNode) {
     value: [],
     y: 0
   })
-  watch(labels, () => (names_widget.value = labels.value))
 
-  // Refresh on connection changes (add/remove inputs)
-  this.onConnectionsChange = useChainCallback(
-    this.onConnectionsChange,
-    () => connectionsTrigger.value++
-  )
+  const stopWatch = watch(labels, () => {
+    if (app.configuringGraph) return
+    names_widget.value = labels.value
+
+    if (labels.value.includes(`${comboWidget.value}`)) return
+
+    comboWidget.value = labels.value[0] ?? ''
+    comboWidget.callback?.(comboWidget.value)
+  })
+  this.onRemoved = useChainCallback(this.onRemoved, stopWatch)
 }
 
 function onCustomIntCreated(this: LGraphNode) {
@@ -317,11 +309,5 @@ app.registerExtension({
         nodeType.prototype.onNodeCreated,
         onCustomFloatCreated
       )
-  },
-  init() {
-    app.graph.onTrigger = useChainCallback(app.graph.onTrigger, (e) => {
-      if (e.type !== 'node:slot-label:changed') return
-      renameTrigger.value++
-    })
   }
 })
