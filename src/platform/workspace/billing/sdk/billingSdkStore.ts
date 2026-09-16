@@ -9,7 +9,8 @@ import type {
   BillingOperationState,
   BillingOperationTelemetryEvent,
   EmbeddedChallengePort,
-  PendingBillingOperation
+  PendingBillingOperation,
+  SubscriptionCommandResult
 } from '@comfyorg/account-core/billing'
 import { BILLING_OPERATION_TELEMETRY_EVENT } from '@comfyorg/account-core/billing'
 import { loadStripe } from '@stripe/stripe-js/pure'
@@ -33,6 +34,11 @@ import { useDialogStore } from '@/stores/dialogStore'
 
 import { toBillingTelemetryEvent } from './billingSdkTelemetry'
 import { createBillingSdk } from './createBillingSdk'
+import type { SubscriptionRailOutcome } from './subscriptionOperationView'
+import {
+  projectPaymentPortalResult,
+  projectSubscriptionResult
+} from './subscriptionOperationView'
 import {
   declineDetail,
   projectTopupOperation,
@@ -110,10 +116,15 @@ export const useBillingSdkStore = defineStore('billingSdk', () => {
 
   // A top-up the dialog issued is reported by the dialog, exactly as before;
   // the lifecycle's events stand in for the poller's only on an operation
-  // this tab reattached to.
+  // this tab reattached to. A cancel or resubscribe has no such second
+  // reporter on this rail — the poller owned both ends of it on the legacy
+  // one — so the lifecycle's events are the only ones it emits.
   function reportTelemetry(event: BillingOperationTelemetryEvent) {
-    if (!event.resumed) return
-    if (event.name === BILLING_OPERATION_TELEMETRY_EVENT.started) {
+    if (event.operation_type === 'topup' && !event.resumed) return
+    if (
+      event.resumed &&
+      event.name === BILLING_OPERATION_TELEMETRY_EVENT.started
+    ) {
       resumedOperations.add(event.billing_op_id)
     }
     useTelemetry()?.trackBillingEvent(toBillingTelemetryEvent(event))
@@ -208,6 +219,69 @@ export const useBillingSdkStore = defineStore('billingSdk', () => {
     return projectTopupResult(result, amountCents)
   }
 
+  // The backend gate on these routes is independent of the client flag, so a
+  // 404 means the rail is on too early. One answer settles it for the tab:
+  // every later action goes straight to the legacy call.
+  let subscriptionRouteAvailable = true
+
+  async function runSubscriptionCommand(
+    command: () => Promise<SubscriptionCommandResult>,
+    refresh: () => Promise<void>
+  ): Promise<SubscriptionRailOutcome> {
+    if (!subscriptionRouteAvailable) return { status: 'unavailable' }
+    const outcome = projectSubscriptionResult(await command())
+    if (outcome.status === 'unavailable') subscriptionRouteAvailable = false
+    if (outcome.status === 'ok') await refresh()
+    return outcome
+  }
+
+  // What the poller refreshes when one of its operations succeeds, so the
+  // panels read the same state whichever rail settled the operation.
+  async function refreshAfterCancel(): Promise<void> {
+    const billingContext = useBillingContext()
+    await Promise.allSettled([
+      billingContext.fetchStatus(),
+      billingContext.fetchBalance(),
+      useBillingCapabilities().refresh()
+    ])
+  }
+
+  async function refreshAfterResubscribe(): Promise<void> {
+    const billingContext = useBillingContext()
+    await Promise.allSettled([
+      billingContext.reconcileSubscriptionSuccess(),
+      useBillingCapabilities().refresh()
+    ])
+  }
+
+  function cancelSubscription(): Promise<SubscriptionRailOutcome> {
+    return runSubscriptionCommand(
+      () => sdk.commands.cancelSubscription(),
+      refreshAfterCancel
+    )
+  }
+
+  function resubscribe(): Promise<SubscriptionRailOutcome> {
+    return runSubscriptionCommand(
+      () => sdk.commands.resubscribe(),
+      refreshAfterResubscribe
+    )
+  }
+
+  async function openPaymentPortal(
+    returnUrl: string
+  ): Promise<SubscriptionRailOutcome<string>> {
+    if (!subscriptionRouteAvailable) return { status: 'unavailable' }
+    const outcome = projectPaymentPortalResult(
+      await sdk.commands.openPaymentPortal({ returnUrl })
+    )
+    if (outcome.status === 'unavailable') subscriptionRouteAvailable = false
+    // The portal may add or remove a card and says nothing on the way back, so
+    // handing the URL out is the last moment this tab's list is known good.
+    if (outcome.status === 'ok') sdk.paymentMethods.invalidate()
+    return outcome
+  }
+
   function recover() {
     void sdk.lifecycle.recover()
   }
@@ -228,6 +302,9 @@ export const useBillingSdkStore = defineStore('billingSdk', () => {
     isAddingCredits,
     topupActionOperation,
     createTopup,
+    cancelSubscription,
+    resubscribe,
+    openPaymentPortal,
     recover,
     retryPaymentAuthentication,
     dismissOperation

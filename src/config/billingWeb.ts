@@ -1,4 +1,4 @@
-import type { HostedBillingDestination } from '@comfyorg/account/billing'
+import type { HostedBillingDestination } from '@comfyorg/account-core/billing'
 
 const LOCAL_HOSTNAMES = new Set(['localhost', '127.0.0.1', '[::1]'])
 

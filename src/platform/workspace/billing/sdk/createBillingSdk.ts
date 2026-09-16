@@ -1,11 +1,12 @@
 /**
  * The app's one composition of `@comfyorg/account-core/billing`: the session-backed
- * transport, the readers, the operation lifecycle, and the top-up command,
+ * transport, the readers, the operation lifecycle, and the payment commands,
  * wired once over ports the host supplies. Everything browser-bound (storage,
  * the payment-provider script, the document listeners) stays with the caller;
  * this module only assembles.
  */
 import type {
+  BillingCommands,
   BillingOperationLifecycle,
   BillingOperationPointerStorage,
   BillingOperationTelemetryEvent,
@@ -21,6 +22,7 @@ import type {
   TopupCommand
 } from '@comfyorg/account-core/billing'
 import {
+  createBillingCommands,
   createBillingOperationLifecycle,
   createBillingStatusReader,
   createCapabilitiesReader,
@@ -56,6 +58,7 @@ export interface BillingSdk {
   readonly plans: PlansReader
   readonly paymentMethods: PaymentMethodsReader
   readonly topup: TopupCommand
+  readonly commands: BillingCommands
   readonly driveChallenge: (
     operationId: string
   ) => Promise<EmbeddedChallengeOutcome>
@@ -107,6 +110,13 @@ export function createBillingSdk(options: BillingSdkOptions): BillingSdk {
     capabilities,
     credits
   })
+  const commands = createBillingCommands({
+    transport,
+    lifecycle,
+    statusReader: status,
+    capabilities,
+    credits
+  })
 
   return {
     lifecycle,
@@ -116,6 +126,7 @@ export function createBillingSdk(options: BillingSdkOptions): BillingSdk {
     plans,
     paymentMethods,
     topup,
+    commands,
     driveChallenge: async (operationId) =>
       driveEmbeddedChallenge(
         lifecycle,
