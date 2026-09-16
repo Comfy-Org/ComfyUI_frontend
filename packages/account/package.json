@@ -139,7 +139,7 @@
     "access": "public"
   },
   "scripts": {
-    "build": "pnpm run clean && vue-tsc -p tsconfig.build.json && node --input-type=module -e \"import { copyFileSync, readdirSync, rmSync } from 'node:fs'; for (const name of readdirSync('src/vue')) { if (!name.endsWith('.vue')) continue; rmSync('dist/vue/' + name + '.js', { force: true }); copyFileSync('src/vue/' + name, 'dist/vue/' + name) }\"",
+    "build": "pnpm run clean && vue-tsc -p tsconfig.build.json && tsx scripts/copyVueSources.ts",
     "clean": "node --input-type=module -e \"import { rmSync } from 'node:fs'; rmSync('dist', { recursive: true, force: true })\"",
     "lint": "oxlint src --type-aware && eslint src",
     "smoke:pack": "tsx scripts/smokePack.ts",
