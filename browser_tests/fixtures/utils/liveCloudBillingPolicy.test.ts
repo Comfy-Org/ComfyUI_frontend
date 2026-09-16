@@ -5,12 +5,17 @@ import {
   isLiveCloudMutationAllowed
 } from '@e2e/fixtures/utils/liveCloudBillingPolicy'
 
+const config = {
+  PLAYWRIGHT_TEST_URL: 'http://localhost:5173',
+  PLAYWRIGHT_SETUP_API_URL: 'https://testcloud.comfy.org'
+}
+
 describe('live Cloud mutation policy', () => {
   it.for([
     { method: 'GET', path: '/api/billing/status', allowed: true },
     { method: 'HEAD', path: '/api/billing/status', allowed: true },
     { method: 'OPTIONS', path: '/api/billing/status', allowed: true },
-    { method: 'POST', path: '/customers', allowed: true },
+    { method: 'POST', path: '/customers', allowed: false },
     { method: 'POST', path: '/api/auth/token', allowed: true },
     { method: 'POST', path: '/api/auth/session', allowed: true },
     { method: 'POST', path: '/api/billing/subscribe', allowed: false },
@@ -25,7 +30,8 @@ describe('live Cloud mutation policy', () => {
     expect(
       isLiveCloudMutationAllowed(
         new URL(path, 'https://testcloud.comfy.org'),
-        method
+        method,
+        config
       )
     ).toBe(allowed)
   })
@@ -46,8 +52,61 @@ describe('live Cloud mutation policy', () => {
     },
     { url: 'https://securetoken.googleapis.com/customers', allowed: false }
   ])('auth POST $url allowed=$allowed', ({ url, allowed }) => {
-    expect(isLiveCloudMutationAllowed(new URL(url), 'POST')).toBe(allowed)
+    expect(isLiveCloudMutationAllowed(new URL(url), 'POST', config)).toBe(
+      allowed
+    )
   })
+})
+
+describe('live Cloud mutation origins', () => {
+  it.for([
+    'https://dreamboothy-dev.firebaseapp.com/customers',
+    'https://dreamboothy-dev.firebaseapp.com/api/auth/token',
+    'https://dreamboothy-dev.firebaseapp.com/api/auth/session',
+    'http://localhost:5173/customers',
+    'http://localhost:5173/api/auth/token',
+    'http://localhost:5173/api/auth/session',
+    'https://testapi.comfy.org/api/auth/token',
+    'https://testapi.comfy.org/api/auth/session',
+    'https://stagingapi.comfy.org/customers',
+    'https://stagingcloud.comfy.org/api/auth/token'
+  ])('rejects POST %s for the selected test sandbox', (url) => {
+    expect(isLiveCloudMutationAllowed(new URL(url), 'POST', config)).toBe(false)
+  })
+
+  it.for([
+    {
+      cloud: 'https://testcloud.comfy.org',
+      customer: 'https://testapi.comfy.org'
+    },
+    {
+      cloud: 'https://stagingcloud.comfy.org',
+      customer: 'https://stagingapi.comfy.org'
+    },
+    {
+      cloud: 'https://pr-123.testenvs.comfy.org',
+      customer: 'https://pr-123-registry.testenvs.comfy.org'
+    }
+  ])(
+    'allows customer provisioning only at $customer for $cloud',
+    ({ cloud, customer }) => {
+      const selected = { ...config, PLAYWRIGHT_SETUP_API_URL: cloud }
+      expect(
+        isLiveCloudMutationAllowed(
+          new URL('/customers', customer),
+          'POST',
+          selected
+        )
+      ).toBe(true)
+      expect(
+        isLiveCloudMutationAllowed(
+          new URL('/customers', cloud),
+          'POST',
+          selected
+        )
+      ).toBe(false)
+    }
+  )
 })
 
 describe('live Cloud destinations', () => {

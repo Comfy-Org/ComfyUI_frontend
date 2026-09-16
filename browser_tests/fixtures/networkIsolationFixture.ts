@@ -5,7 +5,10 @@ import { config as dotenvConfig } from 'dotenv'
 import { HERO_SLIDES } from '@/platform/cloud/onboarding/constants/heroSlides'
 import type { LiveCloudBillingConfig } from '@e2e/fixtures/utils/liveCloudBillingConfig'
 import { installLiveCloudBillingRouting } from '@e2e/fixtures/utils/liveCloudBillingContext'
-import { isLiveCloudMutationAllowed } from '@e2e/fixtures/utils/liveCloudBillingPolicy'
+import {
+  getLiveCloudCustomerOrigin,
+  isLiveCloudMutationAllowed
+} from '@e2e/fixtures/utils/liveCloudBillingPolicy'
 import { assetPath } from '@e2e/fixtures/utils/paths'
 
 dotenvConfig()
@@ -35,7 +38,11 @@ function guardApiRequests(
       (typeof urlOrRequest === 'string' ? 'GET' : urlOrRequest.method())
     if (
       liveCloudBillingConfig &&
-      !isLiveCloudMutationAllowed(url, method.toUpperCase())
+      !isLiveCloudMutationAllowed(
+        url,
+        method.toUpperCase(),
+        liveCloudBillingConfig
+      )
     ) {
       const message = `Mutation ${method} ${url.origin}${url.pathname}`
       unexpected.add(message)
@@ -58,14 +65,16 @@ export const networkIsolationFixture = base.extend<{
     async ({ baseURL, liveCloudBillingConfig }, use, testInfo) => {
       const frontend =
         process.env.PLAYWRIGHT_TEST_URL || 'http://localhost:8188'
+      const customerOrigin =
+        liveCloudBillingConfig &&
+        getLiveCloudCustomerOrigin(
+          liveCloudBillingConfig.PLAYWRIGHT_SETUP_API_URL
+        )
       const origins = liveCloudBillingConfig
         ? new Set([
             liveCloudBillingConfig.PLAYWRIGHT_TEST_URL,
             liveCloudBillingConfig.PLAYWRIGHT_SETUP_API_URL,
-            ...(liveCloudBillingConfig.PLAYWRIGHT_SETUP_API_URL ===
-            'https://testcloud.comfy.org'
-              ? ['https://testapi.comfy.org']
-              : []),
+            ...(customerOrigin ? [customerOrigin] : []),
             'https://identitytoolkit.googleapis.com',
             'https://securetoken.googleapis.com',
             'https://dreamboothy-dev.firebaseapp.com'

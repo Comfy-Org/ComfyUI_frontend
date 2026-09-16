@@ -28,9 +28,15 @@ export async function installLiveCloudBillingRouting(
       await route.abort('blockedbyclient')
       return
     }
+    const isCloudProxyRequest =
+      url.origin === config.PLAYWRIGHT_TEST_URL &&
+      /^\/(api|internal)(\/|$)/.test(url.pathname)
+    const targetUrl = isCloudProxyRequest
+      ? new URL(url.pathname + url.search, config.PLAYWRIGHT_SETUP_API_URL)
+      : url
     if (
       networkPolicy.origins.has(url.origin) &&
-      !isLiveCloudMutationAllowed(url, request.method())
+      !isLiveCloudMutationAllowed(targetUrl, request.method(), config)
     ) {
       networkPolicy.unexpected.add(
         `Mutation ${request.method()} ${url.origin}${url.pathname}`
@@ -38,16 +44,10 @@ export async function installLiveCloudBillingRouting(
       await route.abort('blockedbyclient')
       return
     }
-    if (
-      url.origin === config.PLAYWRIGHT_TEST_URL &&
-      /^\/(api|internal)(\/|$)/.test(url.pathname)
-    ) {
+    if (isCloudProxyRequest) {
       try {
         const response = await route.fetch({
-          url: new URL(
-            url.pathname + url.search,
-            config.PLAYWRIGHT_SETUP_API_URL
-          ).href,
+          url: targetUrl.href,
           maxRedirects: 0
         })
         await route.fulfill({ response })

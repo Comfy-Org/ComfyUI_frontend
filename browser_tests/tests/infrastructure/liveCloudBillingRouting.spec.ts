@@ -12,27 +12,31 @@ test.use({
 })
 
 test.describe('Live Cloud network boundary', { tag: '@smoke' }, () => {
-  test('blocks a billing mutation and fails even when the app catches it', async ({
-    page,
-    networkPolicy
-  }) => {
-    await page.route('https://frontend.invalid/', (route) =>
-      route.fulfill({ contentType: 'text/html', body: '<html></html>' })
-    )
-    await page.goto('https://frontend.invalid/')
-    expect(
-      await page.evaluate(() =>
-        fetch('/api/billing/subscribe', { method: 'POST' }).then(
-          () => 'sent',
-          () => 'blocked'
-        )
+  for (const path of ['/api/billing/subscribe', '/customers']) {
+    test(`blocks POST ${path} and fails even when the app catches it`, async ({
+      page,
+      networkPolicy
+    }) => {
+      await page.route('https://frontend.invalid/', (route) =>
+        route.fulfill({ contentType: 'text/html', body: '<html></html>' })
       )
-    ).toBe('blocked')
-    expect([...networkPolicy.unexpected]).toEqual([
-      'Mutation POST https://frontend.invalid/api/billing/subscribe'
-    ])
-    test.fail(true, 'The recorded mutation must fail fixture teardown')
-  })
+      await page.goto('https://frontend.invalid/')
+      expect(
+        await page.evaluate(
+          (path) =>
+            fetch(path, { method: 'POST' }).then(
+              () => 'sent',
+              () => 'blocked'
+            ),
+          path
+        )
+      ).toBe('blocked')
+      expect([...networkPolicy.unexpected]).toEqual([
+        `Mutation POST https://frontend.invalid${path}`
+      ])
+      test.fail(true, 'The recorded mutation must fail fixture teardown')
+    })
+  }
 
   for (const client of ['request', 'context.request'] as const) {
     test(`${client} retains the API origin and mutation guards`, async ({
@@ -47,9 +51,13 @@ test.describe('Live Cloud network boundary', { tag: '@smoke' }, () => {
       await expect(
         api.post('https://backend.invalid/internal/reset')
       ).rejects.toThrow('Forbidden live Cloud request')
+      await expect(
+        api.post('https://frontend.invalid/api/auth/token')
+      ).rejects.toThrow('Forbidden live Cloud request')
       expect([...networkPolicy.unexpected]).toEqual([
         'API https://external.invalid/api',
-        'Mutation POST https://backend.invalid/internal/reset'
+        'Mutation POST https://backend.invalid/internal/reset',
+        'Mutation POST https://frontend.invalid/api/auth/token'
       ])
       test.fail(true, 'The recorded API violations must fail fixture teardown')
     })

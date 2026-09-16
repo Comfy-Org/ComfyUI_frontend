@@ -61,6 +61,9 @@ describe('Live billing opt-in', () => {
         })
         .parse(JSON.parse(result.stdout))
       expect(
+        report.config.projects.some((project) => project.name === 'cloud-live')
+      ).toBe(enabled === '1')
+      expect(
         report.config.projects.every((project) => project.name === 'cloud-live')
       ).toBe(!hooks)
       const suites = z
