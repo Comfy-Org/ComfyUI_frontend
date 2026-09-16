@@ -188,7 +188,6 @@ describe('BuyCreditsDialog', () => {
       credits.topUp!.value = { status: 'idle' }
     })
     credits.refresh.mockReset().mockResolvedValue(undefined)
-    vi.mocked(captureWorkshopEvent).mockReset()
     vi.spyOn(crypto, 'randomUUID').mockReturnValue(attemptId)
   })
 
@@ -647,6 +646,37 @@ describe('BuyCreditsDialog', () => {
     expect(await screen.findByTestId('checkout-error')).toBeTruthy()
     expect(fetchCheckout).not.toHaveBeenCalled()
     expect(tab.close).toHaveBeenCalled()
+    expect(captureWorkshopEvent).not.toHaveBeenCalled()
+  })
+
+  it('does not report checkout failure if the session changes while credentials are pending', async () => {
+    const user = userEvent.setup()
+    const tab = claimTab()
+    const fetchCheckout = stubCheckout()
+    let resolveCredential!: (value: {
+      status: 'ok'
+      session: typeof credential
+    }) => void
+    auth.ensureFresh.mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          resolveCredential = resolve
+        })
+    )
+    renderOpenDialog()
+
+    await user.click(await screen.findByTestId('buy-credits-continue'))
+    await vi.waitFor(() => expect(auth.ensureFresh).toHaveBeenCalledOnce())
+    auth.session!.value = {
+      ...credential,
+      workspace: { ...credential.workspace, id: 'workspace-2', name: 'Team B' }
+    }
+    resolveCredential({ status: 'ok', session: credential })
+
+    expect(await screen.findByTestId('checkout-error')).toBeTruthy()
+    expect(fetchCheckout).not.toHaveBeenCalled()
+    expect(tab.close).toHaveBeenCalled()
+    expect(captureWorkshopEvent).not.toHaveBeenCalled()
   })
 
   it('refuses checkout when the fresh credential belongs to another workspace', async () => {
@@ -718,6 +748,7 @@ describe('BuyCreditsDialog', () => {
     expect(await screen.findByTestId('checkout-error')).toBeTruthy()
     expect(tab.location.assign).not.toHaveBeenCalled()
     expect(tab.close).toHaveBeenCalled()
+    expect(captureWorkshopEvent).not.toHaveBeenCalled()
   })
 
   it('aborts an in-flight checkout when the dialog unmounts', async () => {

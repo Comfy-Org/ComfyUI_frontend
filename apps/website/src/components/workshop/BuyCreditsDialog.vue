@@ -360,7 +360,7 @@ function handleCheckoutFailure(
     navigateCheckoutTab(tab, WORKSHOP_CREDITS_URL)
     return
   }
-  if (!controller.signal.aborted) {
+  if (!controller.signal.aborted && checkoutScopeIsCurrent(scope)) {
     captureWorkshopEvent({
       name: 'checkout_failed',
       properties: {
