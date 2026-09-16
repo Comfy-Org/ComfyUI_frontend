@@ -82,7 +82,7 @@ const inChina = vi.hoisted(() => ({
   }
 }))
 const isInChina = vi.hoisted(() => vi.fn())
-vi.mock<unknown>(import('@comfyorg/shared-frontend-utils/networkUtil'), () => ({
+vi.mock<unknown>(import('@comfyorg/account/region'), () => ({
   isInChina
 }))
 

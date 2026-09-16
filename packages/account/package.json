@@ -33,6 +33,7 @@
     "./firebaseAuthError": "./src/firebaseAuthError.ts",
     "./provisioning": "./src/provisioning.ts",
     "./redirect": "./src/redirect.ts",
+    "./region": "./src/region.ts",
     "./telemetry": "./src/telemetry.ts",
     "./webviewDetection": "./src/webviewDetection.ts",
     "./package.json": "./package.json"
