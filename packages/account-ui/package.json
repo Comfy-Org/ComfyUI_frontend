@@ -18,6 +18,7 @@
     "@comfyorg/account": "workspace:*"
   },
   "devDependencies": {
+    "@testing-library/user-event": "catalog:",
     "@testing-library/vue": "catalog:",
     "@types/node": "catalog:",
     "@vitejs/plugin-vue": "catalog:",
