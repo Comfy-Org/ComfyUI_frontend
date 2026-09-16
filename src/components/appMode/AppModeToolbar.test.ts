@@ -37,6 +37,7 @@ function renderToolbar() {
 
 describe('AppModeToolbar', () => {
   beforeEach(() => {
+    useAppMode().enableAppBuilder.value = true
     Object.assign(useAppModeStore(), { hasNodes: true })
     vi.mocked(useAppModeStore().enterBuilder).mockResolvedValue(undefined)
   })
@@ -60,9 +61,7 @@ describe('AppModeToolbar', () => {
   })
 
   it('hides the build button when app building is disabled', () => {
-    vi.spyOn(useAppMode().enableAppBuilder, 'value', 'get').mockReturnValue(
-      false
-    )
+    useAppMode().enableAppBuilder.value = false
     renderToolbar()
 
     expect(

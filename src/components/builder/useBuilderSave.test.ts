@@ -1,5 +1,6 @@
 import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { computed } from 'vue'
 
 import { useAppMode } from '@/composables/useAppMode'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
@@ -9,8 +10,8 @@ import { useDialogStore } from '@/stores/dialogStore'
 import { useBuilderSave } from './useBuilderSave'
 
 beforeEach(() => {
-  vi.spyOn(useAppMode().mode, 'value', 'get').mockReturnValue('builder:inputs')
-  vi.spyOn(useAppMode().isBuilderMode, 'value', 'get').mockReturnValue(true)
+  useAppMode().mode = computed(() => 'builder:inputs')
+  useAppMode().isBuilderMode = computed(() => true)
   vi.mocked(useAppModeStore().exitBuilder).mockImplementation(() => {})
   vi.mocked(useDialogStore().closeDialog).mockImplementation(() => {})
 })

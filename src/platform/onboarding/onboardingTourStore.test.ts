@@ -2,7 +2,7 @@ import { useAppModeStore } from '@/stores/appModeStore'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import type { DetachedWindowAPI } from 'happy-dom'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { nextTick, ref } from 'vue'
+import { computed, nextTick, ref } from 'vue'
 import type { Ref } from 'vue'
 
 import { useAppMode } from '@/composables/useAppMode'
@@ -70,15 +70,12 @@ function shownCount(coachId?: CoachId) {
 
 beforeEach(() => {
   appMode = ref<AppMode>('graph')
-  const context = useAppMode()
-  vi.spyOn(context.mode, 'value', 'get').mockImplementation(() => appMode.value)
-  vi.spyOn(context.isAppMode, 'value', 'get').mockImplementation(
-    () => appMode.value === 'app'
-  )
-  vi.spyOn(context.isBuilderMode, 'value', 'get').mockImplementation(() =>
+  useAppMode().mode = computed(() => appMode.value)
+  useAppMode().isAppMode = computed(() => appMode.value === 'app')
+  useAppMode().isBuilderMode = computed(() =>
     appMode.value.startsWith('builder:')
   )
-  vi.spyOn(context.isSelectMode, 'value', 'get').mockImplementation(
+  useAppMode().isSelectMode = computed(
     () =>
       appMode.value === 'builder:inputs' || appMode.value === 'builder:outputs'
   )

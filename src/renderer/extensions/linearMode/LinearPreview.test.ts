@@ -2,7 +2,7 @@ import { fromPartial } from '@total-typescript/shoehorn'
 
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { defineComponent } from 'vue'
+import { computed, defineComponent } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
@@ -102,6 +102,8 @@ function renderPreview(
 
 describe('LinearPreview', () => {
   beforeEach(() => {
+    useAppMode().isBuilderMode = computed(() => false)
+    useAppMode().isArrangeMode = computed(() => false)
     outputHistoryState.isWorkflowActive = false
   })
 
@@ -113,7 +115,7 @@ describe('LinearPreview', () => {
   })
 
   it('hides the output history in builder mode', () => {
-    vi.spyOn(useAppMode().isBuilderMode, 'value', 'get').mockReturnValue(true)
+    useAppMode().isBuilderMode = computed(() => true)
 
     renderPreview()
 
@@ -121,7 +123,7 @@ describe('LinearPreview', () => {
   })
 
   it('shows the arrange view in arrange mode', () => {
-    vi.spyOn(useAppMode().isArrangeMode, 'value', 'get').mockReturnValue(true)
+    useAppMode().isArrangeMode = computed(() => true)
 
     renderPreview()
 

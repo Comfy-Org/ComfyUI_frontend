@@ -5,7 +5,7 @@ import { useJobPreviewStore } from '@/stores/jobPreviewStore'
 import { toNodeId } from '@/types/nodeId'
 import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import type { Ref } from 'vue'
 
 import { useAppMode } from '@/composables/useAppMode'
@@ -52,9 +52,7 @@ describe('linearOutputStore', () => {
 
   beforeEach(() => {
     isAppModeRef = ref(true)
-    vi.spyOn(useAppMode().isAppMode, 'value', 'get').mockImplementation(
-      () => isAppModeRef.value
-    )
+    useAppMode().isAppMode = computed(() => isAppModeRef.value)
     useExecutionStore().activeJobId = null
     useJobPreviewStore().clearAllPreviews()
     useWorkflowStore().activeWorkflow = fromPartial({

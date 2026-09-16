@@ -1,6 +1,7 @@
 import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { computed } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import { useAppMode } from '@/composables/useAppMode'
@@ -16,7 +17,7 @@ vi.mock(import('firebase/auth'))
 vi.mock(import('vuefire'), () => ({ useFirebaseAuth: vi.fn() }))
 
 beforeEach(() => {
-  vi.spyOn(useAppMode().isAppMode, 'value', 'get').mockReturnValue(true)
+  useAppMode().isAppMode = computed(() => true)
   vi.mocked(useCommandStore().execute).mockResolvedValue(undefined)
   vi.mocked(useWorkflowStore().syncWorkflows).mockResolvedValue(undefined)
   vi.mocked(useWorkflowBookmarkStore().loadBookmarks).mockResolvedValue(
