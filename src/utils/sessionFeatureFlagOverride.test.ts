@@ -191,11 +191,18 @@ describe('getSessionOverride', () => {
 
     it('withholds a stored override before Auth has resolved and does not initialize Firebase', async () => {
       vi.resetModules()
-      const [{ getSessionOverride: readFresh }, { initializeApp }] =
-        await Promise.all([
-          import('@/utils/sessionFeatureFlagOverride'),
-          import('firebase/app')
-        ])
+      const [
+        { getSessionOverride: readFresh },
+        { getApps, initializeApp },
+        { remoteConfigState }
+      ] = await Promise.all([
+        import('@/utils/sessionFeatureFlagOverride'),
+        import('firebase/app'),
+        import('@/platform/remoteConfig/remoteConfig')
+      ])
+      vi.mocked(initializeApp).mockClear()
+      vi.mocked(getApps).mockReturnValue([])
+      remoteConfigState.value = 'anonymous'
       visit('/?ff=onboarding_tour_enabled')
 
       expect(readFresh('onboarding_tour_enabled')).toBeUndefined()
