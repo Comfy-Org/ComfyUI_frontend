@@ -4,21 +4,36 @@
   "description": "Comfy Cloud Ingest API TypeScript types and Zod schemas",
   "license": "MIT",
   "files": [
-    "src"
+    "dist"
   ],
   "type": "module",
   "exports": {
     ".": "./src/index.ts",
-    "./zod": "./src/zod.gen.ts"
+    "./zod": "./src/zod.gen.ts",
+    "./package.json": "./package.json"
   },
   "publishConfig": {
+    "exports": {
+      ".": {
+        "types": "./dist/index.d.ts",
+        "import": "./dist/index.js"
+      },
+      "./zod": {
+        "types": "./dist/zod.gen.d.ts",
+        "import": "./dist/zod.gen.js"
+      },
+      "./package.json": "./package.json"
+    },
     "access": "public"
   },
   "scripts": {
+    "build": "pnpm run clean && tsc -p tsconfig.build.json",
+    "clean": "node --input-type=module -e \"import { rmSync } from 'node:fs'; rmSync('dist', { recursive: true, force: true })\"",
     "generate": "openapi-ts && node -e \"const fs=require('fs'); ['src/zod.gen.ts'].forEach(f => fs.writeFileSync(f, fs.readFileSync(f,'utf8').replaceAll(\\\"from 'zod/v3'\\\", \\\"from 'zod'\\\")));\""
   },
   "devDependencies": {
     "@hey-api/openapi-ts": "0.97.3",
+    "typescript": "catalog:",
     "zod": "catalog:"
   },
   "peerDependencies": {

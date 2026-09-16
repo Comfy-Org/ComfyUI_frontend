@@ -1,0 +1,15 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "noEmit": false,
+    "allowImportingTsExtensions": false,
+    "declaration": true,
+    "declarationMap": false,
+    "sourceMap": false,
+    "incremental": false,
+    "noEmitOnError": true,
+    "types": []
+  },
+  "include": ["src/index.ts", "src/zod.gen.ts", "src/types.gen.ts"],
+  "exclude": ["src/**/*.test.ts"]
+}

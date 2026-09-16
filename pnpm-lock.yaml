@@ -1309,6 +1309,9 @@ importers:
       '@hey-api/openapi-ts':
         specifier: 0.97.3
         version: 0.97.3(magicast@0.5.4)(typescript@6.0.3)
+      typescript:
+        specifier: 'catalog:'
+        version: 6.0.3
       zod:
         specifier: 'catalog:'
         version: 3.25.76
