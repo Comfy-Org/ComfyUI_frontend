@@ -2154,12 +2154,14 @@ describe('useTeamWorkspaceStore', () => {
 
       const store = useTeamWorkspaceStore()
       await store.initialize()
+      mockWorkspaceApi.list.mockClear()
       mockWorkspaceApi.list.mockRejectedValueOnce(
         new mockWorkspaceApiError('Service unavailable', 503)
       )
 
       const result = await store.acceptInvite('invite-token')
 
+      expect(mockWorkspaceApi.list).toHaveBeenCalledTimes(1)
       expect(result.workspaceId).toBe('ws-joined')
     })
   })

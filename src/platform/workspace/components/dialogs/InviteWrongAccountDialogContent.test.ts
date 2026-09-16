@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/vue'
+import { render, screen, waitFor } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import {
   onAuthStateChanged,
@@ -67,6 +67,33 @@ describe('InviteWrongAccountDialogContent', () => {
       vi.mocked(capturePreservedQuery).mock.invocationCallOrder[0]
     ).toBeLessThan(mockLogout.mock.invocationCallOrder[0])
     expect(vi.mocked(useAuthStore().logout)).not.toHaveBeenCalled()
+  })
+
+  it('renders the generic body when no signed-in email is available', () => {
+    renderComponent()
+
+    expect(
+      screen.getByText('workspacePanel.inviteLinks.wrongAccountBodyGeneric')
+    ).toBeInTheDocument()
+  })
+
+  it('disables Switch account while the sign-out is pending', async () => {
+    let resolveLogout!: () => void
+    mockLogout.mockImplementation(
+      () => new Promise<void>((resolve) => (resolveLogout = resolve))
+    )
+    renderComponent()
+
+    const switchButton = screen.getByRole('button', {
+      name: 'workspacePanel.inviteLinks.switchAccount'
+    })
+    await userEvent.click(switchButton)
+
+    expect(switchButton).toBeDisabled()
+    expect(switchButton).toHaveAttribute('aria-busy', 'true')
+
+    resolveLogout()
+    await waitFor(() => expect(switchButton).not.toBeDisabled())
   })
 
   it('dismisses without signing out on Got it', async () => {
