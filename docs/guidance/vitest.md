@@ -78,10 +78,11 @@ export const useFeatureFlags = vi.fn(() => featureFlags)
 
 Restore in place (`Object.assign(reactiveObject, defaults())`,
 `someRef.value = default`) so consumer `computed`s are notified. Do not call
-`beforeEach` inside a mock module: it binds to the file being collected and
-stops running once the module is cached or re-imported after
-`vi.resetModules()`. Test files configure state in `beforeEach` or in the
-test, never at module scope, because the reset runs before the first test.
+`beforeEach` inside a mock module: it binds to the file being collected, so a
+cached module (`isolate: false`) registers no hook for later files, and a
+re-import after `vi.resetModules()` registers a duplicate. Test files
+configure state in `beforeEach` or in the test, never at module scope,
+because the reset runs before the first test.
 
 #### Reactive fields: match the real contract
 
