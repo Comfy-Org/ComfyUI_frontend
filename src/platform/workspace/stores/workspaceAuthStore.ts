@@ -36,6 +36,7 @@ import { isCloud } from '@/platform/distribution/types'
 import { workspaceApiUrl } from '@/platform/workspace/api/workspaceApiUrl'
 
 export { WorkspaceAuthError }
+// The e2e fixtures import this type from the store path.
 export type { WorkspaceTokenResponse }
 
 const UNIFIED_REFRESH_RETRY_BASE_MS = 5000
@@ -106,19 +107,6 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
     { ownerUid: string; targetKey: string; expiresAt: number }
   >()
 
-  // Getters
-  const isAuthenticated = computed(
-    () => currentWorkspace.value !== null && hasValidWorkspaceToken()
-  )
-
-  function currentUserUid(): string | null {
-    return useAuthStore().currentUser?.uid ?? null
-  }
-
-  function isCurrentUser(ownerUid: string): boolean {
-    return currentUserUid() === ownerUid
-  }
-
   const {
     workspaceToken,
     initializeFromSession,
@@ -147,6 +135,19 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
     clearSessionStorage,
     surfacePermanentAuthError
   })
+
+  // Getters
+  const isAuthenticated = computed(
+    () => currentWorkspace.value !== null && hasValidWorkspaceToken()
+  )
+
+  function currentUserUid(): string | null {
+    return useAuthStore().currentUser?.uid ?? null
+  }
+
+  function isCurrentUser(ownerUid: string): boolean {
+    return currentUserUid() === ownerUid
+  }
 
   function persistWorkspaceIdentity(workspace: WorkspaceIdentity): void {
     try {
