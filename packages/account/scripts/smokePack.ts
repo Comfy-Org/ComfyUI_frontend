@@ -63,19 +63,28 @@ function workspacePackageDirs(): Map<string, string> {
   )
 }
 
+function workspaceDependencies(
+  dir: string,
+  dirsByName: Map<string, string>
+): Array<[string, string]> {
+  return Object.entries(readManifest(dir).dependencies ?? {})
+    .filter(([, specifier]) => specifier.startsWith('workspace:'))
+    .map(([name]) => [
+      name,
+      dirsByName.get(name) ?? fail(`workspace dependency ${name} not found`)
+    ])
+}
+
 function workspaceDependencyClosure(
   dir: string,
-  dirsByName: Map<string, string>,
-  closure = new Map<string, string>()
+  dirsByName: Map<string, string>
 ): Map<string, string> {
-  for (const [name, specifier] of Object.entries(
-    readManifest(dir).dependencies ?? {}
-  )) {
-    if (!specifier.startsWith('workspace:') || closure.has(name)) continue
-    const depDir = dirsByName.get(name)
-    if (!depDir) throw new Error(`workspace dependency ${name} not found`)
+  const closure = new Map<string, string>()
+  const queue = workspaceDependencies(dir, dirsByName)
+  for (const [name, depDir] of queue) {
+    if (closure.has(name)) continue
     closure.set(name, depDir)
-    workspaceDependencyClosure(depDir, dirsByName, closure)
+    queue.push(...workspaceDependencies(depDir, dirsByName))
   }
   return closure
 }
