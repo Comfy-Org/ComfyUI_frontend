@@ -13,6 +13,7 @@ import { frameBounds } from '@/utils/frameBoundsUtil'
 import { getNodeByLocatorId } from '@/utils/graphTraversalUtil'
 import { visibleCanvasViewport } from '@/composables/canvas/visibleCanvasViewport'
 
+import { useAgentMinimapLayer } from '../../minimap/useAgentMinimapLayer'
 import { useAgentGeneratedNodesStore } from '../../stores/agentGeneratedNodesStore'
 
 defineOptions({ inheritAttrs: false })
@@ -21,6 +22,7 @@ const { t } = useI18n()
 const workflowStore = useWorkflowStore()
 const navigationStore = useSubgraphNavigationStore()
 const generatedNodes = useAgentGeneratedNodesStore()
+useAgentMinimapLayer()
 
 const rootId = computed(() => {
   const id = workflowStore.activeWorkflow?.activeState?.id
@@ -45,6 +47,7 @@ async function viewNodes(locators: readonly NodeLocatorId[]): Promise<void> {
   if (canvas.graph !== owner && !(await navigationStore.navigateToGraph(owner)))
     return
 
+  if (rootId.value !== activeRootId || app.rootGraph.id !== activeRootId) return
   const bounds = frameBounds(resolved.filter((node) => node.graph === owner))
   if (bounds)
     canvas.animateToBounds(bounds, { viewport: visibleCanvasViewport(canvas) })

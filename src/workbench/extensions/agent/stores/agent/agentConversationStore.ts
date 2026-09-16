@@ -274,8 +274,13 @@ export const useAgentConversationStore = defineStore(
     }
 
     function hydrate(history: AgentMessages): void {
-      clearActive()
       const transcript = normalizeAgentTranscript(history)
+      if (
+        activeTurnId.value &&
+        activeTurnId.value !== transcript.pending?.messageId
+      )
+        graphActivity.finishTurn(activeTurnId.value)
+      clearActive()
       messages.value = transcript.messages
       userTexts.value = transcript.userTexts
       userTags.value = new Map()

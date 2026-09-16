@@ -30,7 +30,6 @@ import {
   hasVideoType
 } from '@/utils/eventUtils'
 import { useAssetsStore } from '@/stores/assetsStore'
-import { useCanvasOverlayStore } from '@/stores/canvasOverlayStore'
 import { AGENT_ATTACH_ACCEPT, isAgentAttachable } from './utils/attachableFiles'
 import { getNodeByLocatorId } from '@/utils/graphTraversalUtil'
 // eslint-disable-next-line import-x/no-restricted-paths
@@ -60,8 +59,6 @@ import { useBillingCapabilities } from '@/platform/workspace/composables/useBill
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 
 import AgentPanel from './components/agent/AgentPanel.vue'
-import AgentGraphActivityBar from './components/agent/AgentGraphActivityBar.vue'
-import { useAgentMinimapLayer } from './minimap/useAgentMinimapLayer'
 import {
   MAX_ATTACHMENT_BYTES,
   useAttachment
@@ -189,10 +186,6 @@ const {
   warnWorkflowUnavailable
 })
 const tabActivity = useWorkflowTabActivityStore()
-const unregisterGraphActivity = useCanvasOverlayStore().register(
-  AgentGraphActivityBar
-)
-useAgentMinimapLayer()
 const CREATING_TAB_MIN_DURATION_MS = 500
 // Opens at the template's view so the follower's first nodes land on screen.
 const agentTabGraph: ComfyWorkflowJSON = {
@@ -704,7 +697,6 @@ start()
 void refreshCloudWorkflowIds()
 onBeforeUnmount(() => {
   ++activeTabGeneration
-  unregisterGraphActivity()
   mintPortWiring.detach()
   exitNodeSelectionMode()
   stop()

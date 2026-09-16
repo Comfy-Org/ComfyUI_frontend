@@ -62,12 +62,17 @@
         "
         class="pointer-events-auto"
       />
-      <component
-        :is="overlay"
-        v-for="(overlay, index) in canvasOverlayStore.components"
-        :key="index"
-        :panel-el="canvasPanelBoundsRef ?? undefined"
-      />
+      <div
+        v-if="showUI && !isBuilderMode"
+        class="contents"
+        @wheel="canvasInteractions.forwardEventToCanvas"
+      >
+        <component
+          :is="overlay"
+          v-for="(overlay, index) in canvasOverlayStore.components"
+          :key="index"
+        />
+      </div>
       <NodeSelectionModeBanner />
     </template>
   </LiteGraphCanvasSplitterOverlay>

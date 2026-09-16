@@ -1,7 +1,12 @@
+import { isEqual } from 'es-toolkit'
 import { defineStore } from 'pinia'
-import { onScopeDispose, ref } from 'vue'
+import { defineAsyncComponent, onScopeDispose, ref, toRaw } from 'vue'
 
 import { useSettingStore } from '@/platform/settings/settingStore'
+import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import { useCanvasOverlayStore } from '@/stores/canvasOverlayStore'
+import { useExtensionStore } from '@/stores/extensionStore'
 import { useNodeDataStore } from '@/stores/nodeDataStore'
 import { toRootGraphId } from '@/types/graphScopeId'
 import type { GraphScope, RootGraphId } from '@/types/graphScopeId'
@@ -24,6 +29,13 @@ interface GraphActivity {
   shownAt: number
 }
 
+interface WorkflowSnapshot {
+  graph: ComfyWorkflowJSON
+  roots: Map<RootGraphId, Map<NodeLocatorId, GeneratedNode>>
+  activities: Map<RootGraphId, GraphActivity>
+  latestByOwner: Map<string, number>
+}
+
 function locatorFor(scope: GraphScope, nodeId: NodeId): NodeLocatorId {
   return createNodeLocatorId(
     String(scope.rootGraphId) === scope.owningGraphId
@@ -38,37 +50,77 @@ export const useAgentGeneratedNodesStore = defineStore(
   () => {
     const roots = ref(new Map<RootGraphId, Map<NodeLocatorId, GeneratedNode>>())
     const activities = ref(new Map<RootGraphId, GraphActivity>())
+    const latestByOwner = new Map<string, number>()
     const turn = ref<{ phase: 'working' | 'complete'; id: TurnId } | null>(null)
     const timers = new Set<ReturnType<typeof setTimeout>>()
+    const snapshots = new WeakMap<object, WorkflowSnapshot>()
+    let incomingGraph: ComfyWorkflowJSON | null = null
     const nodeStore = useNodeDataStore()
     const settingStore = useSettingStore()
+    const workflowStore = useWorkflowStore()
+    const unregisterOverlay = useCanvasOverlayStore().register(
+      defineAsyncComponent(
+        () => import('../components/agent/AgentGraphActivityBar.vue')
+      )
+    )
+
+    function ownerKey(scope: GraphScope): string {
+      return `${scope.rootGraphId}:${scope.owningGraphId}`
+    }
+
+    function scheduleCompletion(rootId: RootGraphId, id: TurnId): void {
+      const activity = activities.value.get(rootId)
+      if (!activity) return
+      const timer = setTimeout(
+        () => {
+          timers.delete(timer)
+          const current = activities.value.get(rootId)
+          if (current?.turnId === id)
+            activities.value.set(rootId, { ...current, phase: 'complete' })
+        },
+        Math.max(0, activity.shownAt + 1200 - performance.now())
+      )
+      timers.add(timer)
+    }
 
     function beginTurn(id: TurnId): void {
       if (turn.value?.id === id) return
       turn.value = { phase: 'working', id }
       activities.value.clear()
+      for (const snapshot of snapshotsForOpenWorkflows())
+        snapshot.activities.clear()
     }
 
     function finishTurn(id: TurnId): void {
       if (turn.value?.id !== id) return
       turn.value = { phase: 'complete', id }
-      for (const [rootId, activity] of activities.value) {
-        const timer = setTimeout(
-          () => {
-            timers.delete(timer)
-            const current = activities.value.get(rootId)
-            if (current?.turnId === id)
-              activities.value.set(rootId, { ...current, phase: 'complete' })
-          },
-          Math.max(0, activity.shownAt + 1200 - performance.now())
-        )
-        timers.add(timer)
-      }
+      for (const rootId of activities.value.keys())
+        scheduleCompletion(rootId, id)
+      for (const snapshot of snapshotsForOpenWorkflows())
+        for (const activity of snapshot.activities.values())
+          if (activity.turnId === id) activity.phase = 'complete'
+    }
+
+    function snapshotsForOpenWorkflows(): WorkflowSnapshot[] {
+      return workflowStore.openWorkflows.flatMap((workflow) => {
+        const snapshot = snapshots.get(workflow)
+        return snapshot ? [snapshot] : []
+      })
     }
 
     function forget(scope: GraphScope, nodeId: NodeId): void {
       const locator = locatorFor(scope, nodeId)
+      const removedAt = roots.value.get(scope.rootGraphId)?.get(locator)?.at
       roots.value.get(scope.rootGraphId)?.delete(locator)
+      const key = ownerKey(scope)
+      if (removedAt !== undefined && latestByOwner.get(key) === removedAt) {
+        let latest = 0
+        for (const entry of roots.value.get(scope.rootGraphId)?.values() ?? [])
+          if (entry.scope.owningGraphId === scope.owningGraphId)
+            latest = Math.max(latest, entry.at)
+        if (latest) latestByOwner.set(key, latest)
+        else latestByOwner.delete(key)
+      }
       const activity = activities.value.get(scope.rootGraphId)
       if (!activity) return
       const nodes = activity.nodes.filter((id) => id !== locator)
@@ -77,12 +129,7 @@ export const useAgentGeneratedNodesStore = defineStore(
     }
 
     function latestMarkAt(scope: GraphScope): number {
-      let latest = 0
-      for (const entry of roots.value.get(scope.rootGraphId)?.values() ?? []) {
-        if (entry.scope.owningGraphId === scope.owningGraphId)
-          latest = Math.max(latest, entry.at)
-      }
-      return latest
+      return latestByOwner.get(ownerKey(scope)) ?? 0
     }
 
     function markGenerated(
@@ -103,18 +150,65 @@ export const useAgentGeneratedNodesStore = defineStore(
         marks = roots.value.get(scope.rootGraphId)!
       }
       marks.set(locator, { scope, nodeId, at })
+      latestByOwner.set(ownerKey(scope), Math.max(latest, at))
       const currentTurn = turn.value
       if (!currentTurn) return
       const previous = activities.value.get(scope.rootGraphId)
       activities.value.set(scope.rootGraphId, {
-        phase: currentTurn.phase,
+        phase: 'working',
         turnId: currentTurn.id,
         nodes: [...new Set([...(previous?.nodes ?? []), locator])],
         shownAt: previous?.shownAt ?? now
       })
       if (!previous && !settingStore.get('Comfy.Minimap.Visible'))
         void settingStore.set('Comfy.Minimap.Visible', true)
+      if (currentTurn.phase === 'complete')
+        scheduleCompletion(scope.rootGraphId, currentTurn.id)
     }
+
+    useExtensionStore().registerExtension({
+      name: 'Comfy.AgentGeneratedNodesLifecycle',
+      beforeLoadGraph() {
+        const workflow = workflowStore.activeWorkflow
+        const graph = workflow?.activeState
+        if (!workflow || !graph) return
+        snapshots.set(workflow, {
+          graph: structuredClone(toRaw(graph)),
+          roots: new Map(roots.value),
+          activities: new Map(activities.value),
+          latestByOwner: new Map(latestByOwner)
+        })
+        roots.value.clear()
+        activities.value.clear()
+        latestByOwner.clear()
+      },
+      beforeConfigureGraph(graph) {
+        incomingGraph = structuredClone(toRaw(graph))
+      },
+      afterLoadGraph() {
+        const workflow = workflowStore.activeWorkflow
+        const snapshot = workflow ? snapshots.get(workflow) : undefined
+        if (snapshot && isEqual(snapshot.graph, incomingGraph)) {
+          roots.value = new Map(snapshot.roots)
+          activities.value = new Map(snapshot.activities)
+          latestByOwner.clear()
+          for (const [key, at] of snapshot.latestByOwner)
+            latestByOwner.set(key, at)
+          for (const [rootId, activity] of activities.value) {
+            if (activity.turnId !== turn.value?.id) {
+              activities.value.delete(rootId)
+            } else if (turn.value.phase === 'complete') {
+              scheduleCompletion(rootId, activity.turnId)
+            }
+          }
+        }
+        if (workflow) snapshots.delete(workflow)
+        incomingGraph = null
+      },
+      onGraphLoadError() {
+        incomingGraph = null
+      }
+    })
 
     const unsubscribe = nodeStore.$onAction(({ name, args, after }) => {
       if (name === 'registerNode') {
@@ -143,13 +237,19 @@ export const useAgentGeneratedNodesStore = defineStore(
       } else if (name === 'clearGraph') {
         const rootId = toRootGraphId(args[0])
         after(() => {
+          const hadMarks = roots.value.has(rootId)
           roots.value.delete(rootId)
           activities.value.delete(rootId)
+          for (const key of latestByOwner.keys())
+            if (key.startsWith(`${rootId}:`)) latestByOwner.delete(key)
+          const workflow = workflowStore.activeWorkflow
+          if (hadMarks && workflow) snapshots.delete(workflow)
         })
       }
     }, true)
 
     onScopeDispose(() => {
+      unregisterOverlay()
       unsubscribe()
       for (const timer of timers) clearTimeout(timer)
     })
@@ -162,7 +262,11 @@ export const useAgentGeneratedNodesStore = defineStore(
       latestMarkAt,
       generatedAtFor: (scope: GraphScope, nodeId: NodeId) =>
         roots.value.get(scope.rootGraphId)?.get(locatorFor(scope, nodeId))?.at,
-      dismiss: (rootId: RootGraphId) => activities.value.delete(rootId)
+      dismiss: (rootId: RootGraphId) => {
+        activities.value.delete(rootId)
+        for (const snapshot of snapshotsForOpenWorkflows())
+          snapshot.activities.delete(rootId)
+      }
     }
   }
 )

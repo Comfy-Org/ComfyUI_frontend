@@ -1,6 +1,5 @@
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { fromPartial } from '@total-typescript/shoehorn'
 import { getActivePinia } from 'pinia'
 import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
@@ -11,25 +10,34 @@ import { createGraphMutations } from '@/core/graph/graphMutations'
 import { LGraph, LGraphCanvas, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { createTestSubgraphData } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
-import type { LoadedComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { app } from '@/scripts/app'
-import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
+import { defaultGraph } from '@/scripts/defaultGraph'
 import { graphScopeOf } from '@/types/graphScopeId'
 import { createNodeLocatorId } from '@/types/nodeIdentification'
 import { toNodeId } from '@/types/nodeId'
 import { createMockCanvasRenderingContext2D } from '@/utils/__tests__/litegraphTestUtils'
 
-import { toTurnId } from '../../schemas/agentApiSchema'
-import { useAgentGeneratedNodesStore } from '../../stores/agentGeneratedNodesStore'
-import AgentGraphActivityBar from './AgentGraphActivityBar.vue'
+import { toTurnId } from '@/workbench/extensions/agent/schemas/agentApiSchema'
+import { useAgentGeneratedNodesStore } from '@/workbench/extensions/agent/stores/agentGeneratedNodesStore'
+import AgentGraphActivityBar from '@/workbench/extensions/agent/components/agent/AgentGraphActivityBar.vue'
 
 function renderBar() {
+  const router = createRouter({
+    history: createMemoryHistory(),
+    routes: [
+      {
+        path: '/:pathMatch(.*)*',
+        component: { template: '<div />' }
+      }
+    ]
+  })
   return render(AgentGraphActivityBar, {
     global: {
       plugins: [
         getActivePinia()!,
-        createRouter({ history: createMemoryHistory(), routes: [] }),
+        router,
         createI18n({
           legacy: false,
           locale: 'en',
@@ -40,11 +48,14 @@ function renderBar() {
   })
 }
 
-function activate(root: LGraph): void {
+async function activate(root: LGraph, name = `${root.id}.json`) {
   Reflect.set(app, 'rootGraphInternal', root)
-  useWorkflowStore().activeWorkflow = fromPartial<LoadedComfyWorkflow>({
-    activeState: { id: root.id }
-  })
+  const graph = { ...structuredClone(defaultGraph), id: root.id }
+  const workflow = useWorkflowStore().createTemporary(name, graph)
+  const loaded = await workflow.load()
+  useWorkflowStore().attachWorkflow(loaded)
+  useWorkflowStore().activeWorkflow = loaded
+  return loaded
 }
 
 function addReportedNode(root: LGraph, id: number): LGraphNode {
@@ -64,9 +75,9 @@ function addReportedNode(root: LGraph, id: number): LGraphNode {
 describe('AgentGraphActivityBar', () => {
   let root: LGraph
 
-  beforeEach(() => {
+  beforeEach(async () => {
     root = new LGraph()
-    activate(root)
+    await activate(root)
   })
 
   it('includes an arrival in the same task as turn start', async () => {
@@ -102,10 +113,7 @@ describe('AgentGraphActivityBar', () => {
     useAgentGeneratedNodesStore().beginTurn(toTurnId('turn-1'))
     addReportedNode(root, 1)
     const other = new LGraph()
-    useWorkflowStore().activeWorkflow = fromPartial<LoadedComfyWorkflow>({
-      path: recipient?.path,
-      activeState: { id: other.id }
-    })
+    await activate(other)
     await nextTick()
 
     expect(screen.queryByTestId('agent-graph-activity-bar')).toBeNull()
@@ -142,6 +150,7 @@ describe('AgentGraphActivityBar', () => {
       .spyOn(canvas, 'animateToBounds')
       .mockImplementation(vi.fn())
     app.canvas = canvas
+    useCanvasStore().canvas = canvas
     const activity = useAgentGeneratedNodesStore()
     activity.activities.set(graphScopeOf(root).rootGraphId, {
       phase: 'working',
@@ -154,16 +163,63 @@ describe('AgentGraphActivityBar', () => {
       ]
     })
     renderBar()
-    vi.mocked(useSubgraphNavigationStore().navigateToGraph).mockResolvedValue(
-      true
-    )
-
     await userEvent.click(screen.getByTestId('agent-graph-view-working'))
 
-    expect(useSubgraphNavigationStore().navigateToGraph).toHaveBeenCalledWith(
-      subgraph
-    )
+    expect(canvas.graph).toBe(subgraph)
     expect(animate).toHaveBeenCalledWith([60, 160, 450, 460], {
+      viewport: expect.any(Array)
+    })
+  })
+
+  it('returns from a subgraph and updates the live union as root nodes arrive', async () => {
+    const first = new LGraphNode('First', 'First')
+    first.id = toNodeId(1)
+    first.pos = [10, 20]
+    first.size = [30, 40]
+    root.add(first)
+    const second = new LGraphNode('Second', 'Second')
+    second.id = toNodeId(2)
+    second.pos = [100, 120]
+    second.size = [50, 60]
+    root.add(second)
+    const subgraph = root.createSubgraph(createTestSubgraphData())
+    const canvasElement = document.createElement('canvas')
+    canvasElement.getContext = vi
+      .fn()
+      .mockReturnValue(createMockCanvasRenderingContext2D())
+    const canvas = new LGraphCanvas(canvasElement, root, { skip_render: true })
+    canvas.setGraph(subgraph)
+    const animate = vi
+      .spyOn(canvas, 'animateToBounds')
+      .mockImplementation(vi.fn())
+    app.canvas = canvas
+    useCanvasStore().canvas = canvas
+    const activities = useAgentGeneratedNodesStore().activities
+    const rootId = graphScopeOf(root).rootGraphId
+    const report = {
+      phase: 'working' as const,
+      turnId: toTurnId('turn-1'),
+      shownAt: 0,
+      nodes: [createNodeLocatorId(null, first.id)]
+    }
+    activities.set(rootId, report)
+    renderBar()
+
+    await userEvent.click(screen.getByRole('button', { name: /^View node$/ }))
+
+    expect(canvas.graph).toBe(root)
+    expect(animate).toHaveBeenLastCalledWith([-30, -20, 110, 120], {
+      viewport: expect.any(Array)
+    })
+    activities.set(rootId, {
+      ...report,
+      nodes: [...report.nodes, createNodeLocatorId(null, second.id)]
+    })
+    await nextTick()
+    await userEvent.click(screen.getByRole('button', { name: 'View nodes' }))
+
+    expect(canvas.graph).toBe(root)
+    expect(animate).toHaveBeenLastCalledWith([-30, -20, 220, 240], {
       viewport: expect.any(Array)
     })
   })

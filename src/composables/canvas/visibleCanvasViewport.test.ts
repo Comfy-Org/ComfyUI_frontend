@@ -1,6 +1,7 @@
-import { afterEach, describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 
-import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
+import { LGraph, LGraphCanvas } from '@/lib/litegraph/src/litegraph'
+import { createMockCanvasRenderingContext2D } from '@/utils/__tests__/litegraphTestUtils'
 
 import { visibleCanvasViewport } from './visibleCanvasViewport'
 
@@ -13,7 +14,10 @@ function elementWithBounds(bounds: DOMRect): HTMLElement {
 function createCanvas(bounds: DOMRect): LGraphCanvas {
   const canvas = document.createElement('canvas')
   canvas.getBoundingClientRect = () => bounds
-  return { canvas } as LGraphCanvas
+  canvas.getContext = vi
+    .fn()
+    .mockReturnValue(createMockCanvasRenderingContext2D())
+  return new LGraphCanvas(canvas, new LGraph(), { skip_render: true })
 }
 
 function mountGeometry(viewport: DOMRect, occluders: readonly DOMRect[]): void {
