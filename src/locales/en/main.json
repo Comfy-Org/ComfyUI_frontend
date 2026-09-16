@@ -5051,13 +5051,10 @@
     "running": "Running…"
   },
   "queueStatus": {
-    "activeGenerations": "Active generations",
     "cancelAll": "Cancel all",
     "nothingRunning": "Nothing running yet",
     "cancel": "Stop this run",
     "recentResults": "Recent results",
-    "viewResult": "Open result",
-    "goToHistory": "View all history",
     "processing": "Processing",
     "processingCount": "Processing ({count})",
     "running": "Running",
@@ -5065,7 +5062,6 @@
     "cancelled": "Cancelled",
     "queuedBadge": "Queued {count}",
     "clearQueue": "Clear queue",
-    "viewResults": "View results",
     "goToHistoryShort": "Go to history",
     "recentCompleted": "Completed · Today",
     "queuedNextUp": "Queued · next up",

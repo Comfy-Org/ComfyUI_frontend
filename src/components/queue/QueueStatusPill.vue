@@ -9,7 +9,6 @@
     <button
       type="button"
       :aria-expanded="terminalKind ? undefined : expanded"
-      :aria-label="ariaLabel"
       data-testid="queue-status-toast"
       :class="
         cn(
@@ -48,7 +47,7 @@
 
         <span
           v-if="badge"
-          class="shrink-0 rounded-full bg-white/8 px-1.5 py-1 text-[10px] leading-none font-medium tracking-wide text-muted-foreground uppercase"
+          class="shrink-0 rounded-full bg-base-foreground/8 px-1.5 py-1 text-[10px] leading-none font-medium tracking-wide text-muted-foreground uppercase"
         >
           {{ badge }}
         </span>
@@ -66,8 +65,6 @@
 
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
-import { computed } from 'vue'
-import { useI18n } from 'vue-i18n'
 
 import type { TerminalKind } from './queueStatusTypes'
 
@@ -92,8 +89,6 @@ const {
 
 const emit = defineEmits<{ activate: [] }>()
 
-const { t } = useI18n()
-
 const PEEK_BASE =
   'pointer-events-none absolute inset-x-0 top-0 h-9 rounded-[10px] border border-base-foreground/9 bg-base-background/75 backdrop-blur-xl transition-all duration-200 ease-out'
 const PEEK_DEPTH: Record<number, string> = {
@@ -106,9 +101,4 @@ const TERMINAL_ICON: Record<TerminalKind, string> = {
   cancelled: 'icon-[lucide--circle-slash] text-muted-foreground',
   failed: 'icon-[lucide--circle-alert] text-destructive-background'
 }
-
-const ariaLabel = computed(() => {
-  if (!terminalKind) return t('queueStatus.activeGenerations')
-  return terminalKind === 'completed' ? t('queueStatus.viewResults') : undefined
-})
 </script>

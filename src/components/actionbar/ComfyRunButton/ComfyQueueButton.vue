@@ -36,32 +36,38 @@
             :side-offset="4"
             class="z-1000 w-40 rounded-lg border border-border-subtle bg-base-background p-1 shadow-interface"
           >
-            <DropdownMenuItem
-              v-for="item in queueModeMenuItems"
-              :key="item.key"
-              as-child
-              @select="item.command"
-            >
-              <Button
-                variant="textonly"
-                size="sm"
-                :class="
-                  cn(
-                    queueMenuItemButtonClass,
-                    item.key === selectedQueueMode && 'bg-secondary-background'
-                  )
-                "
+            <DropdownMenuRadioGroup :model-value="selectedQueueMode">
+              <DropdownMenuRadioItem
+                v-for="item in queueModeMenuItems"
+                :key="item.key"
+                :value="item.key"
+                as-child
+                @select="item.command"
               >
-                <i :class="cn(item.icon, 'size-4 shrink-0')" />
-                <span class="mr-auto">{{ item.label }}</span>
-                <i
-                  v-if="item.description"
-                  v-tooltip.bottom="buildModeInfoTooltip(item)"
-                  class="icon-[lucide--info] size-4 shrink-0 text-muted-foreground"
-                  @click.stop
-                />
-              </Button>
-            </DropdownMenuItem>
+                <Button
+                  v-tooltip.bottom="
+                    item.description ? buildModeInfoTooltip(item) : undefined
+                  "
+                  variant="textonly"
+                  size="sm"
+                  :class="
+                    cn(
+                      queueMenuItemButtonClass,
+                      item.key === selectedQueueMode &&
+                        'bg-secondary-background'
+                    )
+                  "
+                >
+                  <i :class="cn(item.icon, 'size-4 shrink-0')" />
+                  <span class="mr-auto">{{ item.label }}</span>
+                  <i
+                    v-if="item.description"
+                    class="icon-[lucide--info] size-4 shrink-0 text-muted-foreground"
+                    aria-hidden
+                  />
+                </Button>
+              </DropdownMenuRadioItem>
+            </DropdownMenuRadioGroup>
           </DropdownMenuContent>
         </DropdownMenuPortal>
       </DropdownMenuRoot>
@@ -72,8 +78,9 @@
 <script setup lang="ts">
 import {
   DropdownMenuContent,
-  DropdownMenuItem,
   DropdownMenuPortal,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
   DropdownMenuRoot,
   DropdownMenuTrigger
 } from 'reka-ui'

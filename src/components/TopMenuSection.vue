@@ -137,7 +137,7 @@
 
     <div class="flex flex-col items-end gap-1 pr-1">
       <Teleport
-        v-if="isActionbarEnabled && isStatusToastEnabled"
+        v-if="showStatusToast"
         :to="queueStatusToastTarget ?? 'body'"
         :disabled="!queueStatusToastTarget"
       >
@@ -277,7 +277,10 @@ const { isQueuePanelV2Enabled, isRunProgressBarEnabled } =
 const isStatusToastEnabled = computed(() =>
   settingStore.get('Comfy.Queue.StatusToast')
 )
-const showLegacyQueueUi = computed(() => !isStatusToastEnabled.value)
+const showStatusToast = computed(
+  () => isActionbarEnabled.value && isStatusToastEnabled.value
+)
+const showLegacyQueueUi = computed(() => !showStatusToast.value)
 const isQueueProgressOverlayEnabled = computed(
   () => !isQueuePanelV2Enabled.value
 )

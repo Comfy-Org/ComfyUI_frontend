@@ -94,6 +94,8 @@ const ACTIVE_STATES: ReadonlySet<JobListItem['state']> = new Set([
 const activeJobs = computed(() =>
   jobItems.value.filter((job) => ACTIVE_STATES.has(job.state)).reverse()
 )
+/** Active on the last tick, so the drain is judged by how each job ended. */
+let lastActiveIds: string[] = []
 watch(
   activeJobs,
   (current) => {
@@ -104,7 +106,7 @@ watch(
 const isRunningState = (state: JobListItem['state']) =>
   state === 'running' || state === 'initialization'
 
-const liveJobs = computed<JobView[]>(() => {
+const jobs = computed<JobView[]>(() => {
   const running = activeJobs.value.filter((job) => isRunningState(job.state))
   const queued = activeJobs.value.filter((job) => job.state === 'pending')
   return [
@@ -125,8 +127,6 @@ const liveJobs = computed<JobView[]>(() => {
   ]
 })
 
-const jobs = computed<JobView[]>(() => liveJobs.value)
-
 const runningJobs = computed(() =>
   jobs.value.filter((job) => job.status === 'running')
 )
@@ -140,8 +140,6 @@ const activeCount = computed(() => jobs.value.length)
 const completedFlash = ref(false)
 const terminalKind = ref<TerminalKind>('completed')
 const cancelIntent = ref(false)
-/** Active on the last tick, so the drain is judged by how each job ended. */
-let lastActiveIds: string[] = []
 
 const outcomeOf = (ids: string[]): typeof terminalKind.value => {
   // JobState folds Cancelled into failed, so read the task's display status.
@@ -256,7 +254,7 @@ const activeJobsLabel = computed(() => {
 
 const startedLabels = reactive<Record<string, string>>({})
 watch(
-  () => jobs.value.map((job) => job.id),
+  () => runningJobs.value.map((job) => job.id),
   (ids) => {
     for (const id of ids) {
       if (!startedLabels[id]) {
@@ -401,7 +399,7 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
-.job-toast-row {
+:deep(.job-toast-row) {
   animation: job-toast-row-in 260ms cubic-bezier(0.22, 1, 0.36, 1) both;
   animation-delay: var(--row-delay, 0ms);
 }
@@ -414,7 +412,7 @@ onUnmounted(() => {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .job-toast-row {
+  :deep(.job-toast-row) {
     animation-duration: 1ms;
     animation-delay: 0ms;
   }

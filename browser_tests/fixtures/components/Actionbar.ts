@@ -171,11 +171,11 @@ class ComfyQueueButtonOptions {
 
   constructor(public readonly page: Page) {
     this.menu = page.getByRole('menu')
-    this.modeItems = this.menu.getByRole('menuitem')
+    this.modeItems = this.menu.getByRole('menuitemradio')
   }
 
   public modeItem(name: string) {
-    return this.menu.getByRole('menuitem', { name, exact: true })
+    return this.menu.getByRole('menuitemradio', { name, exact: true })
   }
 
   public async selectMode(name: string) {
