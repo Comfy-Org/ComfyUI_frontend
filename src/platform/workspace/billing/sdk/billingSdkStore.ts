@@ -26,6 +26,7 @@ import { useTelemetry } from '@/platform/telemetry'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import type { CreateTopupResponse } from '@/platform/workspace/api/workspaceApi'
 import { workspaceApiUrl } from '@/platform/workspace/api/workspaceApiUrl'
+import { needsCustomerAttention } from '@/platform/workspace/billing/customerAttention'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 import { useWorkspaceAuthStore } from '@/platform/workspace/stores/workspaceAuthStore'
 import { useDialogStore } from '@/stores/dialogStore'
@@ -34,7 +35,6 @@ import { toBillingTelemetryEvent } from './billingSdkTelemetry'
 import { createBillingSdk } from './createBillingSdk'
 import {
   declineDetail,
-  needsCustomerAttention,
   projectTopupOperation,
   projectTopupResult
 } from './topupOperationView'
