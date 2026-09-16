@@ -1,6 +1,7 @@
 import { t } from '@/i18n'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+import { VueOnlyWidget } from '@/lib/litegraph/src/widgets/VueOnlyWidget'
 import {
   captureInputLayout,
   replaceNodeInputs
@@ -53,6 +54,24 @@ export function dynamicGroupWidget(
     hidden: true,
     options: { min, max, socketless: true, serialize: false }
   })
+  node.addCustomWidget(
+    new DynamicGroupNoticeWidget(
+      {
+        name: `${inputName}.$notice`,
+        label: group_name,
+        type: 'dynamic_group_notice',
+        value: undefined,
+        y: 0,
+        serialize: false,
+        options: {
+          socketless: true,
+          serialize: false,
+          surfaces: { canvas: 'shown', vueNode: 'never', panel: 'never' }
+        }
+      },
+      node
+    )
+  )
   const initialCount = controller.value
   let rowCount = 0
   const add: IBaseWidget = node.addCustomWidget({
@@ -241,4 +260,10 @@ export function dynamicGroupWidget(
   })
   controller.value = initialCount
   return { widget: controller }
+}
+
+class DynamicGroupNoticeWidget extends VueOnlyWidget<IBaseWidget> {
+  protected get vueOnlyLabel(): string {
+    return this.label ?? this.name
+  }
 }
