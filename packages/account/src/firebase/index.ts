@@ -14,7 +14,7 @@
  */
 import type { FirebaseOptions } from 'firebase/app'
 import { getApps, initializeApp } from 'firebase/app'
-import type { Auth, Persistence, User, UserCredential } from 'firebase/auth'
+import type { Auth, Dependencies, User, UserCredential } from 'firebase/auth'
 import {
   GithubAuthProvider,
   GoogleAuthProvider,
@@ -39,8 +39,8 @@ export interface FirebaseIdentityAppConfig {
   readonly options: FirebaseOptions | (() => FirebaseOptions)
   /** Named app: never contend with a default app another script creates. */
   readonly appName?: string
-  /** Host-selected persistence; Firebase's default when omitted. */
-  readonly persistence?: Persistence
+  /** One persistence or an ordered hierarchy, handed to `initializeAuth` as is; Firebase's default when omitted. */
+  readonly persistence?: Dependencies['persistence']
   /** A host-owned `Auth` and package-owned app options are exclusive. */
   readonly auth?: never
 }

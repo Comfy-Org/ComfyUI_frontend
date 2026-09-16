@@ -1,4 +1,8 @@
-import { browserLocalPersistence } from 'firebase/auth'
+import {
+  browserLocalPersistence,
+  browserSessionPersistence,
+  indexedDBLocalPersistence
+} from 'firebase/auth'
 
 import { createFirebaseIdentity } from '@comfyorg/account/firebase'
 
@@ -14,9 +18,20 @@ function loadedFirebaseConfig() {
   return getFirebaseConfig()
 }
 
-/** `[DEFAULT]` keeps the IndexedDB session key persisted sign-ins and the e2e seed are stored under. */
+/**
+ * `[DEFAULT]` keeps the session key persisted sign-ins and the e2e seed are
+ * stored under. Firebase reads an existing user from every listed persistence
+ * in order and migrates it into the first available one, so a session that
+ * vuefire's IndexedDB default persisted (the e2e seed too) is restored and
+ * settles in localStorage, where `setPersistence(auth, browserLocalPersistence)`
+ * used to move it.
+ */
 export const firebaseIdentity = createFirebaseIdentity({
   options: loadedFirebaseConfig,
   appName: '[DEFAULT]',
-  persistence: browserLocalPersistence
+  persistence: [
+    browserLocalPersistence,
+    indexedDBLocalPersistence,
+    browserSessionPersistence
+  ]
 })

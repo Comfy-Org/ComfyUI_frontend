@@ -1,7 +1,7 @@
 import { fromPartial } from '@total-typescript/shoehorn'
 import type { FirebaseApp } from 'firebase/app'
 import type { Auth, User } from 'firebase/auth'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 
 vi.mock(import('firebase/app'), { spy: true })
 vi.mock(import('firebase/auth'))
@@ -39,12 +39,14 @@ describe('firebaseIdentity', () => {
     window.history.replaceState({}, '', '/')
   })
 
-  it('initializes the default app from the remote config present at initialize(), not at import, with local persistence and the popup resolver', async () => {
+  it('initializes the default app from the remote config present at initialize(), not at import, reading localStorage, then the IndexedDB store vuefire persisted sessions in, then session storage, with the popup resolver', async () => {
     const {
       firebaseIdentity,
       initializeApp,
       initializeAuth,
       browserLocalPersistence,
+      browserSessionPersistence,
+      indexedDBLocalPersistence,
       browserPopupRedirectResolver,
       remoteConfig,
       remoteConfigState
@@ -63,9 +65,18 @@ describe('firebaseIdentity', () => {
 
     expect(initializeApp).toHaveBeenCalledWith(RUNTIME_CONFIG, '[DEFAULT]')
     expect(initializeAuth).toHaveBeenCalledWith(defaultApp, {
-      persistence: browserLocalPersistence,
+      persistence: [
+        browserLocalPersistence,
+        indexedDBLocalPersistence,
+        browserSessionPersistence
+      ],
       popupRedirectResolver: browserPopupRedirectResolver
     })
+    const persistence =
+      vi.mocked(initializeAuth).mock.lastCall?.[1]?.persistence
+    assert(Array.isArray(persistence))
+    expect(persistence[0]).toBe(browserLocalPersistence)
+    expect(persistence[1]).toBe(indexedDBLocalPersistence)
     expect(firebaseIdentity.currentUser()).toBe(signedIn)
   })
 
