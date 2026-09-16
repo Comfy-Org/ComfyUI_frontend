@@ -13,8 +13,6 @@ import {
   projectSubscriptionResult
 } from './subscriptionOperationView'
 
-const FAILURE_MESSAGE = 'Failed to cancel subscription'
-
 describe('projectSubscriptionResult', () => {
   it('reports a settled command as done', () => {
     const result: SubscriptionCommandResult = {
@@ -22,7 +20,7 @@ describe('projectSubscriptionResult', () => {
       value: { phase: 'succeeded', operation: settledOperation('succeeded') }
     }
 
-    expect(projectSubscriptionResult(result, FAILURE_MESSAGE)).toEqual({
+    expect(projectSubscriptionResult(result)).toEqual({
       status: 'ok',
       value: undefined
     })
@@ -30,51 +28,51 @@ describe('projectSubscriptionResult', () => {
 
   it('reports a request the server refused as already satisfied', () => {
     expect(
-      projectSubscriptionResult(
-        { status: 'ok', value: { phase: 'succeeded' } },
-        FAILURE_MESSAGE
-      )
+      projectSubscriptionResult({ status: 'ok', value: { phase: 'succeeded' } })
     ).toEqual({ status: 'ok', value: undefined })
   })
 
   it.for([
-    { phase: 'failed', operation: failedOperation() },
+    { phase: 'failed', operation: failedOperation(), detail: 'phase: failed' },
     {
       phase: 'timed_out',
-      operation: settledOperation('timed_out')
+      operation: settledOperation('timed_out'),
+      detail: 'phase: timed_out'
     },
     {
       phase: 'reconciliation_needed',
-      operation: settledOperation('reconciliation_needed')
+      operation: settledOperation('reconciliation_needed'),
+      detail: 'phase: reconciliation_needed'
     }
   ] as const)(
     'reports a $phase operation as a failure the caller surfaces',
-    ({ phase, operation }) => {
-      const outcome = projectSubscriptionResult(
-        { status: 'ok', value: { phase, operation } },
-        FAILURE_MESSAGE
-      )
+    ({ phase, operation, detail }) => {
+      const outcome = projectSubscriptionResult({
+        status: 'ok',
+        value: { phase, operation }
+      })
 
       expect(outcome).toMatchObject({ status: 'error' })
       expect(
         outcome.status === 'error' ? outcome.error.message : undefined
-      ).toBe(FAILURE_MESSAGE)
+      ).toBe(detail)
     }
   )
 
   it('hands a missing route back so the caller keeps its legacy path', () => {
     expect(
-      projectSubscriptionResult(
-        { status: 'error', code: 'NOT_FOUND', httpStatus: 404 },
-        FAILURE_MESSAGE
-      )
+      projectSubscriptionResult({
+        status: 'error',
+        code: 'NOT_FOUND',
+        httpStatus: 404
+      })
     ).toEqual({ status: 'unavailable' })
   })
 
   it.for([
     [
       { status: 'error', code: 'REQUEST_FAILED', httpStatus: 503 },
-      { status: 503, code: 'REQUEST_FAILED' }
+      { status: 503, code: 'REQUEST_FAILED', message: 'REQUEST_FAILED (503)' }
     ],
     [
       {
@@ -83,51 +81,56 @@ describe('projectSubscriptionResult', () => {
         httpStatus: 409,
         serverCode: serverCode('SUBSCRIPTION_LOCKED')
       },
-      { status: 409, code: 'SUBSCRIPTION_LOCKED' }
+      { status: 409, code: 'SUBSCRIPTION_LOCKED', message: 'CONFLICT (409)' }
     ],
     [
       { status: 'error', code: 'SUPERSEDED' },
-      { status: undefined, code: 'SUPERSEDED' }
+      { status: undefined, code: 'SUPERSEDED', message: 'SUPERSEDED' }
     ]
   ] as const)('surfaces %o as a workspace error', ([failure, expected]) => {
-    const outcome = projectSubscriptionResult(failure, FAILURE_MESSAGE)
+    const outcome = projectSubscriptionResult(failure)
 
     expect(outcome.status).toBe('error')
     const error = outcome.status === 'error' ? outcome.error : undefined
     expect(error).toBeInstanceOf(WorkspaceApiError)
     expect(error).toMatchObject(expected)
-    expect(error?.message).toBe(FAILURE_MESSAGE)
   })
 })
 
 describe('projectPaymentPortalResult', () => {
   it('hands back the portal URL the host opens', () => {
     expect(
-      projectPaymentPortalResult(
-        { status: 'ok', value: { url: 'https://portal.example/session' } },
-        'Failed to open billing portal'
-      )
+      projectPaymentPortalResult({
+        status: 'ok',
+        value: { url: 'https://portal.example/session' }
+      })
     ).toEqual({ status: 'ok', value: 'https://portal.example/session' })
   })
 
   it('hands a missing route back so the caller keeps its legacy path', () => {
     expect(
-      projectPaymentPortalResult(
-        { status: 'error', code: 'NOT_FOUND', httpStatus: 404 },
-        'Failed to open billing portal'
-      )
+      projectPaymentPortalResult({
+        status: 'error',
+        code: 'NOT_FOUND',
+        httpStatus: 404
+      })
     ).toEqual({ status: 'unavailable' })
   })
 
   it('surfaces a refusal as a workspace error', () => {
-    const outcome = projectPaymentPortalResult(
-      { status: 'error', code: 'ACCESS_DENIED', httpStatus: 403 },
-      'Failed to open billing portal'
-    )
+    const outcome = projectPaymentPortalResult({
+      status: 'error',
+      code: 'ACCESS_DENIED',
+      httpStatus: 403
+    })
 
     expect(outcome.status).toBe('error')
     expect(
       outcome.status === 'error' ? outcome.error : undefined
-    ).toMatchObject({ status: 403, code: 'ACCESS_DENIED' })
+    ).toMatchObject({
+      status: 403,
+      code: 'ACCESS_DENIED',
+      message: 'ACCESS_DENIED (403)'
+    })
   })
 })

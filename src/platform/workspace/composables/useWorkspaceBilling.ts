@@ -473,10 +473,7 @@ export function useWorkspaceBilling(): BillingState & BillingActions {
     const rail = useSubscriptionRail()
     if (rail) {
       const url = await onSubscriptionRail(() =>
-        rail.openPaymentPortal(
-          window.location.href,
-          'Failed to open billing portal'
-        )
+        rail.openPaymentPortal(window.location.href)
       )
       if (url !== DECLINED) {
         openPortalWindow(url)
@@ -503,9 +500,7 @@ export function useWorkspaceBilling(): BillingState & BillingActions {
     const rail = useSubscriptionRail()
     if (
       rail &&
-      (await onSubscriptionRail(() =>
-        rail.cancelSubscription('Failed to cancel subscription')
-      )) !== DECLINED
+      (await onSubscriptionRail(() => rail.cancelSubscription())) !== DECLINED
     ) {
       return
     }
@@ -577,9 +572,7 @@ export function useWorkspaceBilling(): BillingState & BillingActions {
     const rail = useSubscriptionRail()
     if (
       rail &&
-      (await onSubscriptionRail(() =>
-        rail.resubscribe('Failed to resubscribe')
-      )) !== DECLINED
+      (await onSubscriptionRail(() => rail.resubscribe())) !== DECLINED
     ) {
       return
     }

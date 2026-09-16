@@ -408,9 +408,10 @@ describe('useBillingSdkStore subscription commands', () => {
       SETTLED
     )
 
-    await expect(
-      useBillingSdkStore().cancelSubscription('Failed to cancel subscription')
-    ).resolves.toEqual({ status: 'ok', value: undefined })
+    await expect(useBillingSdkStore().cancelSubscription()).resolves.toEqual({
+      status: 'ok',
+      value: undefined
+    })
     expect(mockFetchStatus).toHaveBeenCalledOnce()
     expect(mockFetchBalance).toHaveBeenCalledOnce()
     expect(mockCapabilitiesRefresh).toHaveBeenCalledOnce()
@@ -419,9 +420,10 @@ describe('useBillingSdkStore subscription commands', () => {
   it('reconciles the subscription after a resubscribe settles', async () => {
     vi.mocked(harness.sdk.commands.resubscribe).mockResolvedValue(SETTLED)
 
-    await expect(
-      useBillingSdkStore().resubscribe('Failed to resubscribe')
-    ).resolves.toEqual({ status: 'ok', value: undefined })
+    await expect(useBillingSdkStore().resubscribe()).resolves.toEqual({
+      status: 'ok',
+      value: undefined
+    })
     expect(mockReconcileSubscription).toHaveBeenCalledOnce()
     expect(mockCapabilitiesRefresh).toHaveBeenCalledOnce()
   })
@@ -432,16 +434,13 @@ describe('useBillingSdkStore subscription commands', () => {
     )
     const store = useBillingSdkStore()
 
-    await store.cancelSubscription('Failed to cancel subscription')
-    await store.cancelSubscription('Failed to cancel subscription')
-    await expect(store.resubscribe('Failed to resubscribe')).resolves.toEqual({
+    await store.cancelSubscription()
+    await store.cancelSubscription()
+    await expect(store.resubscribe()).resolves.toEqual({
       status: 'unavailable'
     })
     await expect(
-      store.openPaymentPortal(
-        'https://app.example/',
-        'Failed to open billing portal'
-      )
+      store.openPaymentPortal('https://app.example/')
     ).resolves.toEqual({ status: 'unavailable' })
 
     expect(harness.sdk.commands.cancelSubscription).toHaveBeenCalledOnce()
@@ -457,10 +456,7 @@ describe('useBillingSdkStore subscription commands', () => {
     })
 
     await expect(
-      useBillingSdkStore().openPaymentPortal(
-        'https://app.example/',
-        'Failed to open billing portal'
-      )
+      useBillingSdkStore().openPaymentPortal('https://app.example/')
     ).resolves.toEqual({
       status: 'ok',
       value: 'https://portal.example/session'

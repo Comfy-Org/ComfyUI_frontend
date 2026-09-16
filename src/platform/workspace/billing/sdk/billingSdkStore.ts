@@ -226,11 +226,10 @@ export const useBillingSdkStore = defineStore('billingSdk', () => {
 
   async function runSubscriptionCommand(
     command: () => Promise<SubscriptionCommandResult>,
-    failureMessage: string,
     refresh: () => Promise<void>
   ): Promise<SubscriptionRailOutcome> {
     if (!subscriptionRouteAvailable) return { status: 'unavailable' }
-    const outcome = projectSubscriptionResult(await command(), failureMessage)
+    const outcome = projectSubscriptionResult(await command())
     if (outcome.status === 'unavailable') subscriptionRouteAvailable = false
     if (outcome.status === 'ok') await refresh()
     return outcome
@@ -255,34 +254,26 @@ export const useBillingSdkStore = defineStore('billingSdk', () => {
     ])
   }
 
-  function cancelSubscription(
-    failureMessage: string
-  ): Promise<SubscriptionRailOutcome> {
+  function cancelSubscription(): Promise<SubscriptionRailOutcome> {
     return runSubscriptionCommand(
       () => sdk.commands.cancelSubscription(),
-      failureMessage,
       refreshAfterCancel
     )
   }
 
-  function resubscribe(
-    failureMessage: string
-  ): Promise<SubscriptionRailOutcome> {
+  function resubscribe(): Promise<SubscriptionRailOutcome> {
     return runSubscriptionCommand(
       () => sdk.commands.resubscribe(),
-      failureMessage,
       refreshAfterResubscribe
     )
   }
 
   async function openPaymentPortal(
-    returnUrl: string,
-    failureMessage: string
+    returnUrl: string
   ): Promise<SubscriptionRailOutcome<string>> {
     if (!subscriptionRouteAvailable) return { status: 'unavailable' }
     const outcome = projectPaymentPortalResult(
-      await sdk.commands.openPaymentPortal({ returnUrl }),
-      failureMessage
+      await sdk.commands.openPaymentPortal({ returnUrl })
     )
     if (outcome.status === 'unavailable') subscriptionRouteAvailable = false
     return outcome

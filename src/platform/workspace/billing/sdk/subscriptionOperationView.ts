@@ -27,13 +27,10 @@ export type SubscriptionRailOutcome<T = void> =
  * the host opens.
  */
 export interface SubscriptionRail {
-  cancelSubscription: (
-    failureMessage: string
-  ) => Promise<SubscriptionRailOutcome>
-  resubscribe: (failureMessage: string) => Promise<SubscriptionRailOutcome>
+  cancelSubscription: () => Promise<SubscriptionRailOutcome>
+  resubscribe: () => Promise<SubscriptionRailOutcome>
   openPaymentPortal: (
-    returnUrl: string,
-    failureMessage: string
+    returnUrl: string
   ) => Promise<SubscriptionRailOutcome<string>>
 }
 
@@ -42,13 +39,22 @@ const UNAVAILABLE = { status: 'unavailable' } as const
 const SETTLED: SubscriptionRailOutcome = { status: 'ok', value: undefined }
 
 /**
- * The failure as the adapter's own error. The SDK's codes never carry server
- * text, so the message is the host's; `serverCode` lands where the adapter
- * already keeps `WorkspaceApiError.code`.
+ * What the host renders under its own localized summary, so the two lines do
+ * not repeat each other. The SDK's failures carry no server text, so this is
+ * the code the command settled on plus the status the server answered with —
+ * `serverCode` stays out of it, being unbounded in shape and a value to match
+ * rather than to show.
+ */
+function describeFailure(code: string, httpStatus: number | undefined): string {
+  return httpStatus === undefined ? code : `${code} (${httpStatus})`
+}
+
+/**
+ * The failure as the adapter's own error. `serverCode` lands where the
+ * adapter already keeps `WorkspaceApiError.code`.
  */
 function projectFailure(
-  failure: SubscriptionCommandFailure,
-  failureMessage: string
+  failure: SubscriptionCommandFailure
 ): SubscriptionRailOutcome<never> {
   const httpStatus = 'httpStatus' in failure ? failure.httpStatus : undefined
   if (httpStatus === 404) return UNAVAILABLE
@@ -57,7 +63,7 @@ function projectFailure(
   return {
     status: 'error',
     error: new WorkspaceApiError(
-      failureMessage,
+      describeFailure(failure.code, httpStatus),
       httpStatus,
       serverCode ?? failure.code
     )
@@ -69,19 +75,17 @@ function projectFailure(
  * exactly as a poller operation that ends in any other status does.
  */
 export function projectSubscriptionResult(
-  result: SubscriptionCommandResult,
-  failureMessage: string
+  result: SubscriptionCommandResult
 ): SubscriptionRailOutcome {
-  if (result.status === 'error') return projectFailure(result, failureMessage)
+  if (result.status === 'error') return projectFailure(result)
   return result.value.phase === 'succeeded'
     ? SETTLED
-    : { status: 'error', error: new Error(failureMessage) }
+    : { status: 'error', error: new Error(`phase: ${result.value.phase}`) }
 }
 
 export function projectPaymentPortalResult(
-  result: PaymentPortalResult,
-  failureMessage: string
+  result: PaymentPortalResult
 ): SubscriptionRailOutcome<string> {
-  if (result.status === 'error') return projectFailure(result, failureMessage)
+  if (result.status === 'error') return projectFailure(result)
   return { status: 'ok', value: result.value.url }
 }

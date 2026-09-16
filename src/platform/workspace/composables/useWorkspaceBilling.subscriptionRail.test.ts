@@ -171,11 +171,14 @@ describe('cancel subscription on the billing SDK rail', () => {
   })
 
   it.for([
-    ['REQUEST_FAILED', { status: 'error', code: 'REQUEST_FAILED' }],
-    ['SUPERSEDED', { status: 'error', code: 'SUPERSEDED' }]
+    [
+      { status: 'error', code: 'REQUEST_FAILED', httpStatus: 500 },
+      'REQUEST_FAILED (500)'
+    ],
+    [{ status: 'error', code: 'SUPERSEDED' }, 'SUPERSEDED']
   ] as const)(
-    'reports a %s refusal instead of retrying on legacy',
-    async ([, failure]) => {
+    'reports %o as its own detail instead of retrying on legacy',
+    async ([failure, detail]) => {
       flagState.billingSdkSubscriptionEnabled = true
       vi.mocked(harness.sdk.commands.cancelSubscription).mockResolvedValue(
         failure
@@ -185,7 +188,7 @@ describe('cancel subscription on the billing SDK rail', () => {
       await expect(billing.cancelSubscription()).rejects.toBeInstanceOf(
         WorkspaceApiError
       )
-      expect(billing.error.value).toBe('Failed to cancel subscription')
+      expect(billing.error.value).toBe(detail)
       expect(workspaceApi.cancelSubscription).not.toHaveBeenCalled()
     }
   )
@@ -201,7 +204,7 @@ describe('cancel subscription on the billing SDK rail', () => {
     })
 
     await expect(setupBilling().cancelSubscription()).rejects.toThrow(
-      'Failed to cancel subscription'
+      'phase: timed_out'
     )
     expect(workspaceApi.cancelSubscription).not.toHaveBeenCalled()
   })
