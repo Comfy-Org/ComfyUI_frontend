@@ -55,6 +55,7 @@ export const qwenImage21AnnouncementPage: ModelLaunchPage = {
   hero: {
     layout: 'overlay',
     placeholderImageSrc: '/images/models/qwen-image-2-1-placeholder.webp',
+    logoMaskImageSrc: '/images/models/qwen-image-2-1-logo-mask.webp',
     eyebrowKey: 'qwenImage21.announcement.hero.eyebrow',
     titleKey: 'qwenImage21.breadcrumb.model',
     descriptionKey: 'qwenImage21.announcement.hero.description',
@@ -62,7 +63,12 @@ export const qwenImage21AnnouncementPage: ModelLaunchPage = {
       labelKey: 'qwenImage21.announcement.hero.primaryCta',
       href: externalLinks.cloudCta('qwen_image_2_1_announcement'),
       target: '_blank'
-    }
+    },
+    badgeKeys: [
+      'qwenImage21.hero.tagOpenSource',
+      'qwenImage21.hero.tagTextToImage',
+      'qwenImage21.hero.tagImageEditing'
+    ]
   },
   runOptions,
   reviews

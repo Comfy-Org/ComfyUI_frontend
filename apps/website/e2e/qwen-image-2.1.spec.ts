@@ -25,3 +25,53 @@ test.describe('Qwen Image 2.1 announcement page — zh-CN', () => {
     await expect(page.getByRole('link', { name: '获取通知' })).toBeVisible()
   })
 })
+
+test.describe('Qwen Image 2.1 launch preview', () => {
+  test('shows every supplied image in the model gallery', async ({ page }) => {
+    await page.goto('/qwen-image-2.1/launch-preview')
+
+    await expect(page.locator('meta[name="robots"]')).toHaveAttribute(
+      'content',
+      /noindex/
+    )
+    const galleryHeading = page.getByRole('heading', {
+      level: 2,
+      name: 'Made with Qwen Image 2.1'
+    })
+    await galleryHeading.scrollIntoViewIfNeeded()
+    await expect(galleryHeading).toBeVisible()
+
+    const galleryImages = [
+      {
+        name: 'Coffee infographic generated with Qwen Image 2.1',
+        src: 'https://media.comfy.org/website/qwen-image-2.1/infographic.webp'
+      },
+      {
+        name: 'Editorial portrait on a Harlem stoop generated with Qwen Image 2.1',
+        src: 'https://media.comfy.org/website/qwen-image-2.1/harlem-stoop.webp'
+      },
+      {
+        name: 'Holi colour powder burst generated with Qwen Image 2.1',
+        src: 'https://media.comfy.org/website/qwen-image-2.1/holi-powder.webp'
+      },
+      {
+        name: 'Floating island game environment generated with Qwen Image 2.1',
+        src: 'https://media.comfy.org/website/qwen-image-2.1/game-environment.webp'
+      },
+      {
+        name: 'Character turnaround sheet generated with Qwen Image 2.1',
+        src: 'https://media.comfy.org/website/qwen-image-2.1/character-sheet.webp'
+      },
+      {
+        name: 'Interior architectural visualization generated with Qwen Image 2.1',
+        src: 'https://media.comfy.org/website/qwen-image-2.1/interior-archviz.webp'
+      }
+    ]
+
+    for (const expectedImage of galleryImages) {
+      await expect(
+        page.getByRole('img', { name: expectedImage.name })
+      ).toHaveAttribute('src', expectedImage.src)
+    }
+  })
+})
