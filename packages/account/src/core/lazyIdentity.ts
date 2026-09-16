@@ -10,9 +10,9 @@ import type { AccountUser } from './sessionContracts.js'
 export interface LazyIdentity<
   TUser extends AccountUser
 > extends AccountIdentity<TUser> {
-  /** Loads and subscribes the real identity; resolves once the identity has delivered its current user (or on deactivate); idempotent while pending or active; rejects if the loader rejects. */
+  /** Resolves once the loaded identity has delivered its current user. */
   activate: () => Promise<void>
-  /** Unsubscribes the real identity and, if it had delivered, delivers null (signed-out) to subscribers; no-op when inactive. */
+  /** Unsubscribes the real identity, signing subscribers out if it had delivered. */
   deactivate: () => void
 }
 
@@ -45,10 +45,9 @@ export function createLazyIdentity<TUser extends AccountUser>(
           })
         },
         (error: unknown) => {
-          if (started === generation) {
-            activation = undefined
-            settleActivation = undefined
-          }
+          if (started !== generation) return
+          activation = undefined
+          settleActivation = undefined
           reject(error)
         }
       )
