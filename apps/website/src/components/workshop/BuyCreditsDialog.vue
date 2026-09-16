@@ -34,7 +34,10 @@ import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 import { captureWorkshopEvent } from '../../scripts/posthog'
 import type { WorkshopCheckoutFailureStage } from '../../scripts/workshop-analytics'
-import { workshopHttpStatus } from '../../scripts/workshop-analytics'
+import {
+  workshopCheckoutErrorCode,
+  workshopHttpStatus
+} from '../../scripts/workshop-analytics'
 import type { TopUpCheckoutSession } from '../../lib/workshop/buy-credits'
 import { TopUpCheckoutError } from '../../lib/workshop/buy-credits'
 import { createWorkshopTopUpCheckout } from '../../lib/workshop/buy-credits-sdk'
@@ -337,9 +340,7 @@ function checkoutEndpointIsUnavailable(error: unknown): boolean {
 function checkoutErrorDetails(error: unknown) {
   if (!(error instanceof TopUpCheckoutError)) return {}
   const httpStatus = workshopHttpStatus(error.status)
-  const errorCode = /^[A-Z][A-Z0-9_]{0,63}$/.test(error.code ?? '')
-    ? error.code
-    : undefined
+  const errorCode = workshopCheckoutErrorCode(error.code)
   return {
     ...(httpStatus === undefined ? {} : { http_status: httpStatus }),
     ...(errorCode === undefined ? {} : { error_code: errorCode })

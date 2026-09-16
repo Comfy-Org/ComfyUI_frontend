@@ -652,6 +652,34 @@ describe('BuyCreditsDialog', () => {
     })
   })
 
+  it('omits an unrecognized checkout error code from analytics', async () => {
+    const user = userEvent.setup()
+    const tab = claimTab()
+    stubCheckout(
+      { code: 'PRIVATE_CUSTOMER_STATE', message: 'Private account detail' },
+      500
+    )
+    renderOpenDialog()
+
+    await user.click(await screen.findByTestId('buy-credits-continue'))
+
+    expect(await screen.findByTestId('checkout-error')).toBeTruthy()
+    expect(tab.close).toHaveBeenCalled()
+    expect(captureWorkshopEvent).toHaveBeenCalledExactlyOnceWith({
+      name: 'checkout_failed',
+      properties: {
+        attempt_id: attemptId,
+        user_id: credential.uid,
+        workspace_id: credential.workspace.id,
+        stage: 'checkout',
+        http_status: 500
+      }
+    })
+    expect(
+      JSON.stringify(vi.mocked(captureWorkshopEvent).mock.calls)
+    ).not.toContain('PRIVATE_CUSTOMER_STATE')
+  })
+
   it('refuses checkout when the scoped balance is unavailable', async () => {
     const user = userEvent.setup()
     const tab = claimTab()

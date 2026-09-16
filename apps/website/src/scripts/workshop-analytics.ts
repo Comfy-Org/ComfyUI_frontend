@@ -16,6 +16,35 @@ export interface WorkshopRunAnalytics extends WorkshopModelAnalytics {
 
 export type WorkshopCheckoutFailureStage = 'balance' | 'credential' | 'checkout'
 
+export type WorkshopCheckoutErrorCode =
+  | 'ACCESS_DENIED'
+  | 'CONFLICT'
+  | 'INVALID_AMOUNT'
+  | 'INVALID_RESPONSE'
+  | 'INVALID_RETURN_URL'
+  | 'MALFORMED_RESPONSE'
+  | 'NOT_AUTHENTICATED'
+  | 'NOT_AVAILABLE'
+  | 'NOT_FOUND'
+  | 'REQUEST_FAILED'
+  | 'SUPERSEDED'
+
+const WORKSHOP_CHECKOUT_ERROR_CODES: Readonly<
+  Record<string, WorkshopCheckoutErrorCode>
+> = {
+  ACCESS_DENIED: 'ACCESS_DENIED',
+  CONFLICT: 'CONFLICT',
+  INVALID_AMOUNT: 'INVALID_AMOUNT',
+  INVALID_RESPONSE: 'INVALID_RESPONSE',
+  INVALID_RETURN_URL: 'INVALID_RETURN_URL',
+  MALFORMED_RESPONSE: 'MALFORMED_RESPONSE',
+  NOT_AUTHENTICATED: 'NOT_AUTHENTICATED',
+  NOT_AVAILABLE: 'NOT_AVAILABLE',
+  NOT_FOUND: 'NOT_FOUND',
+  REQUEST_FAILED: 'REQUEST_FAILED',
+  SUPERSEDED: 'SUPERSEDED'
+}
+
 export type WorkshopRouterErrorType =
   | 'content_policy_violation'
   | 'deadline_exceeded'
@@ -56,7 +85,7 @@ export type WorkshopAnalyticsEvent =
         workspace_id: string
         stage: WorkshopCheckoutFailureStage
         http_status?: number
-        error_code?: string
+        error_code?: WorkshopCheckoutErrorCode
       }
     }
   | {
@@ -101,4 +130,12 @@ export function workshopRouterErrorType(
     default:
       return undefined
   }
+}
+
+export function workshopCheckoutErrorCode(
+  errorCode: string | undefined
+): WorkshopCheckoutErrorCode | undefined {
+  return errorCode === undefined
+    ? undefined
+    : WORKSHOP_CHECKOUT_ERROR_CODES[errorCode]
 }
