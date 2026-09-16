@@ -159,7 +159,7 @@ function onBranchSelectorCreated(this: LGraphNode) {
 
   this.widgets?.pop()
   const labels = computed(() =>
-    this.inputs.slice(0, -2).map((inp) => inp.label)
+    this.inputs.slice(0, -2).map((inp) => inp.label || inp.localized_name)
   )
 
   const comboWidget = this.addWidget('combo', 'branch', '', () => {}, {
