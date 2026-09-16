@@ -5,15 +5,7 @@ import { createI18n } from 'vue-i18n'
 
 import SignInContent from '@/components/dialog/content/SignInContent.vue'
 
-vi.mock<unknown>(import('@/composables/auth/useAuthActions'), () => ({
-  useAuthActions: () => ({
-    signInWithGoogle: vi.fn(),
-    signInWithGithub: vi.fn(),
-    signInWithEmail: vi.fn(),
-    signUpWithEmail: vi.fn(),
-    accessError: ref(false)
-  })
-}))
+vi.mock(import('@/composables/auth/useAuthActions'))
 
 vi.mock(import('@comfyorg/account/webviewDetection'), () => ({
   isEmbeddedWebView: () => false
