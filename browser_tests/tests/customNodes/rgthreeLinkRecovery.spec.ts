@@ -1,7 +1,43 @@
+import { z } from 'zod'
+
 import { openWorkflowFromSidebar } from '@e2e/fixtures/utils/builderTestUtils'
 import { comfyExpect as expect } from '@e2e/fixtures/ComfyPage'
-import { packPersistenceTest as test } from '@e2e/fixtures/customNode/packPersistenceFixture'
+import { packPersistenceTest } from '@e2e/fixtures/customNode/packPersistenceFixture'
 import { hasInstalledPack } from '@e2e/fixtures/utils/customNodeSuite'
+
+const test = packPersistenceTest.extend({
+  comfyPage: async ({ comfyPage }, use) => {
+    const configUrl = new URL('/rgthree/api/config', comfyPage.apiUrl).href
+    const response = await comfyPage.request.get(configUrl)
+    expect(response.ok()).toBe(true)
+    const config = z
+      .object({
+        features: z.object({ show_alerts_for_corrupt_workflows: z.boolean() })
+      })
+      .parse(await response.json())
+    const key = 'features.show_alerts_for_corrupt_workflows'
+
+    try {
+      const enabled = await comfyPage.request.post(configUrl, {
+        multipart: { json: JSON.stringify({ [key]: true }) }
+      })
+      expect(enabled.ok()).toBe(true)
+      expect(await enabled.json()).toEqual({ status: 'ok' })
+      await comfyPage.workflow.reloadAndWaitForApp()
+      await use(comfyPage)
+    } finally {
+      const restored = await comfyPage.request.post(configUrl, {
+        multipart: {
+          json: JSON.stringify({
+            [key]: config.features.show_alerts_for_corrupt_workflows
+          })
+        }
+      })
+      expect(restored.ok()).toBe(true)
+      expect(await restored.json()).toEqual({ status: 'ok' })
+    }
+  }
+})
 
 test.describe(
   'rgthree link recovery @custom-nodes',
