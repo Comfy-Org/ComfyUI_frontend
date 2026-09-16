@@ -41,7 +41,11 @@ const { copy, copied } = useClipboard({ copiedDuring: 2000 })
     "
     @click="void copy(value)"
   >
-    <component :is="copied ? Check : Copy" :class="cn('size-5', iconClass)" />
+    <component
+      :is="copied ? Check : Copy"
+      :class="cn('size-5', iconClass)"
+      data-testid="copy-text-icon"
+    />
     <span v-if="copied" class="text-sm whitespace-nowrap">
       {{ copiedLabel }}
     </span>
