@@ -41,6 +41,7 @@ interface RunMissingModelPipelineOptions {
   graphData: MissingModelWorkflowData
   missingModelStore: MissingModelPipelineStore
   missingNodeTypes?: MissingNodeType[]
+  onVerified?: (candidates: MissingModelCandidate[]) => void
   silent?: boolean
 }
 
@@ -105,7 +106,8 @@ export async function runMissingModelPipeline({
   graphData,
   missingModelStore,
   missingNodeTypes,
-  silent = false
+  silent = false,
+  onVerified
 }: RunMissingModelPipelineOptions): Promise<MissingModelPipelineResult> {
   const controller = missingModelStore.createVerificationAbortController()
 
@@ -160,6 +162,11 @@ export async function runMissingModelPipeline({
             { silent }
           )
           cacheModelCandidates(activeWf, confirmedAfterReverify)
+          onVerified?.(
+            enrichedCandidates.filter((candidate) =>
+              isCandidateScopeActive(graph, candidate)
+            )
+          )
         })
         .catch((err) => {
           if (controller.signal.aborted) return
@@ -179,6 +186,7 @@ export async function runMissingModelPipeline({
     } else {
       if (!confirmedCandidates.length) {
         clearMissingModels(activeWf, silent)
+        onVerified?.(enrichedCandidates)
         return { missingModels, confirmedCandidates }
       }
 
@@ -200,6 +208,7 @@ export async function runMissingModelPipeline({
             silent
           })
           cacheModelCandidates(activeWf, confirmedCandidates)
+          onVerified?.(enrichedCandidates)
         })
 
       const missingModelMetadata =
@@ -217,6 +226,7 @@ export async function runMissingModelPipeline({
     }
   } else {
     clearMissingModels(activeWf, silent)
+    onVerified?.([])
   }
 
   return { missingModels, confirmedCandidates }

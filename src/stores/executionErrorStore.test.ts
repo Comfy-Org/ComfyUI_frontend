@@ -1049,8 +1049,83 @@ describe('absorbed-error retirement on candidate resolution', () => {
     store.recordNodeErrors({ '1': nodeError([absorbedError()]) })
     await nextTick()
 
+    modelStore.setMissingModels([])
     modelStore.setMissingModels([absorbedModelCandidate()])
     await nextTick()
+
+    expect(store.lastNodeErrors?.['1'].errors).toEqual([absorbedError()])
+  })
+
+  it('retires resolved absorbed errors when a workflow is loaded again', async () => {
+    const store = useExecutionErrorStore()
+    const modelStore = useMissingModelStore()
+    const graphA = '11111111-1111-4111-8111-111111111111'
+    const graphB = '22222222-2222-4222-8222-222222222222'
+    store.setActiveGraph(graphA)
+    modelStore.setMissingModels([absorbedModelCandidate()])
+    store.recordNodeErrors({
+      '1': nodeError([absorbedError(), blockingError()])
+    })
+    await nextTick()
+
+    ChangeTracker.isLoadingGraph = true
+    try {
+      store.setActiveGraph(graphB)
+      modelStore.setMissingModels([])
+      await nextTick()
+    } finally {
+      ChangeTracker.isLoadingGraph = false
+    }
+    store.retireResolvedMissingResourceErrors({ models: [], media: [] })
+    expect(store.lastNodeErrors).toBeNull()
+
+    ChangeTracker.isLoadingGraph = true
+    try {
+      store.setActiveGraph(graphA)
+      modelStore.setMissingModels([])
+      await nextTick()
+      expect(store.lastNodeErrors?.['1'].errors).toEqual([
+        absorbedError(),
+        blockingError()
+      ])
+    } finally {
+      ChangeTracker.isLoadingGraph = false
+    }
+    store.retireResolvedMissingResourceErrors({ models: [], media: [] })
+
+    expect(store.lastNodeErrors?.['1'].errors).toEqual([blockingError()])
+  })
+
+  it('keeps previously absorbed errors while verification is inconclusive', () => {
+    const store = useExecutionErrorStore()
+    const modelStore = useMissingModelStore()
+    modelStore.setMissingModels([absorbedModelCandidate()])
+    store.recordNodeErrors({ '1': nodeError([absorbedError()]) })
+
+    store.retireResolvedMissingResourceErrors({
+      models: [{ ...absorbedModelCandidate(), isMissing: undefined }],
+      media: []
+    })
+    expect(store.lastNodeErrors?.['1'].errors).toEqual([absorbedError()])
+
+    store.retireResolvedMissingResourceErrors({
+      models: [{ ...absorbedModelCandidate(), isMissing: false }],
+      media: []
+    })
+    expect(store.lastNodeErrors).toBeNull()
+  })
+
+  it('ignores verification completed for a different workflow', () => {
+    const store = useExecutionErrorStore()
+    const previousKey = store.captureRunErrorKey()
+    store.setActiveGraph('22222222-2222-4222-8222-222222222222')
+    useMissingModelStore().setMissingModels([absorbedModelCandidate()])
+    store.recordNodeErrors({ '1': nodeError([absorbedError()]) })
+
+    store.retireResolvedMissingResourceErrors(
+      { models: [], media: [] },
+      previousKey
+    )
 
     expect(store.lastNodeErrors?.['1'].errors).toEqual([absorbedError()])
   })
@@ -1119,8 +1194,12 @@ describe('absorbed-error retirement on candidate resolution', () => {
         nodeId: '12',
         nodeType: 'LoadImage',
         widgetName: 'seed',
-        sourceExecutionId: createNodeExecutionId([toNodeId(12), toNodeId(5)]),
-        sourceWidgetName: 'seed_input',
+        promotedSources: [
+          {
+            executionId: createNodeExecutionId([toNodeId(12), toNodeId(5)]),
+            widgetName: 'seed_input'
+          }
+        ],
         mediaType: 'image',
         name: 'portrait.png',
         isMissing: true

@@ -41,6 +41,45 @@ async function startPendingWorkflowLoadMediaVerification(
 }
 
 describe('runMissingMediaPipeline', () => {
+  it.for(['verified', 'failed', 'aborted'] as const)(
+    'reports verification completion only for a successful scan: %s',
+    async (outcome) => {
+      const {
+        rootGraph,
+        hosts: [host]
+      } = createPromotedMediaRuntime()
+      const candidate = {
+        ...createPromotedMissingMediaCandidate(host),
+        isMissing: undefined
+      }
+      vi.spyOn(missingMediaScan, 'scanAllMediaCandidates').mockReturnValue([
+        candidate
+      ])
+      let finishVerification = () => {}
+      const pending = new Promise<void>((resolve) => {
+        finishVerification = resolve
+      })
+      vi.spyOn(missingMediaScan, 'verifyMediaCandidates').mockImplementation(
+        async () => {
+          await pending
+          if (outcome === 'failed') throw new Error('asset service unavailable')
+        }
+      )
+      const onVerified = vi.fn()
+
+      await runMissingMediaPipeline({ rootGraph, silent: true, onVerified })
+      expect(onVerified).not.toHaveBeenCalled()
+      if (outcome === 'aborted') useMissingMediaStore().clearMissingMedia()
+      finishVerification()
+      await pending
+      await new Promise((resolve) => setTimeout(resolve, 0))
+
+      if (outcome === 'verified')
+        expect(onVerified).toHaveBeenCalledWith([candidate])
+      else expect(onVerified).not.toHaveBeenCalled()
+    }
+  )
+
   it('surfaces workflow-load media when another fanout consumer stays active during verification', async () => {
     const {
       rootGraph,

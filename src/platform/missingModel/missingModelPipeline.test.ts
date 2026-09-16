@@ -36,6 +36,7 @@ const { mockHandles } = vi.hoisted(() => {
   return {
     mockHandles: {
       state,
+      distribution: { isCloud: false },
       scanAllModelCandidates: vi.fn(
         (
           _graph: LGraph,
@@ -71,9 +72,7 @@ const { mockHandles } = vi.hoisted(() => {
   }
 })
 
-vi.mock(import('@/platform/distribution/types'), () => ({
-  isCloud: false
-}))
+vi.mock(import('@/platform/distribution/types'), () => mockHandles.distribution)
 
 vi.mock<unknown>(import('@/platform/assets/services/assetService'), () => ({
   assetService: {
@@ -146,6 +145,7 @@ function createGraph(graphData = createWorkflowGraphData()): LGraph {
 
 describe('missingModelPipeline', () => {
   beforeEach(() => {
+    mockHandles.distribution.isCloud = false
     mockHandles.state.enrichedCandidates = []
     useMissingModelStore().missingModelCandidates = null
     useWorkflowStore().activeWorkflow = null
@@ -173,6 +173,54 @@ describe('missingModelPipeline', () => {
     )
     mockHandles.isMissingCandidateActive.mockReturnValue(true)
   })
+
+  it.for(['verified', 'failed', 'aborted'] as const)(
+    'reports cloud verification completion without waiting in the load: %s',
+    async (outcome) => {
+      mockHandles.distribution.isCloud = true
+      const candidate: MissingModelCandidate = {
+        nodeId: createNodeExecutionId([1]),
+        nodeType: 'CheckpointLoaderSimple',
+        widgetName: 'ckpt_name',
+        name: 'model.safetensors',
+        isAssetSupported: true,
+        isMissing: undefined
+      }
+      mockHandles.state.enrichedCandidates = [candidate]
+      let finishVerification = () => {}
+      const pending = new Promise<void>((resolve) => {
+        finishVerification = resolve
+      })
+      mockHandles.verifyAssetSupportedCandidates.mockImplementationOnce(
+        async () => {
+          await pending
+          if (outcome === 'failed') throw new Error('asset service unavailable')
+        }
+      )
+      const controller = new AbortController()
+      const missingModelStore = useMissingModelStore()
+      vi.mocked(
+        missingModelStore.createVerificationAbortController
+      ).mockReturnValue(controller)
+      const onVerified = vi.fn()
+
+      await runMissingModelPipeline({
+        graph: createGraph(),
+        graphData: createWorkflowGraphData(),
+        missingModelStore,
+        onVerified
+      })
+      expect(onVerified).not.toHaveBeenCalled()
+      if (outcome === 'aborted') controller.abort()
+      finishVerification()
+      await pending
+      await new Promise((resolve) => setTimeout(resolve, 0))
+
+      if (outcome === 'verified')
+        expect(onVerified).toHaveBeenCalledWith([candidate])
+      else expect(onVerified).not.toHaveBeenCalled()
+    }
+  )
 
   describe('refreshMissingModelPipeline', () => {
     it('reloads node definitions before scanning the current graph', async () => {

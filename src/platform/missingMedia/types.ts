@@ -11,13 +11,10 @@ export interface MissingMediaCandidate {
   nodeId: SerializedNodeId
   nodeType: string
   widgetName: string
-  /**
-   * For a promoted widget, the interior node and widget the value really
-   * belongs to. Node-level validation errors are never lifted to the host, so
-   * matching them needs the source identity the host name hides.
-   */
-  sourceExecutionId?: NodeExecutionId
-  sourceWidgetName?: string
+  promotedSources?: {
+    executionId: NodeExecutionId
+    widgetName: string
+  }[]
   mediaType: MediaType
   /** Display name (plain filename for OSS, asset hash for cloud). */
   name: string

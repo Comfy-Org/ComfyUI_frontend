@@ -12,6 +12,12 @@ import {
 import type { MissingMediaCandidate } from '@/platform/missingMedia/types'
 import type { MissingModelCandidate } from '@/platform/missingModel/types'
 import { scanAllModelCandidates } from '@/platform/missingModel/missingModelScan'
+import {
+  createPromotedMediaRuntime,
+  seedMediaNodeDefs
+} from '@/platform/missingMedia/__fixtures__/promotedMedia'
+import { scanAllMediaCandidates } from '@/platform/missingMedia/missingMediaScan'
+import { getExecutionIdByNode } from '@/utils/graphTraversalUtil'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { createNodeExecutionId } from '@/types/nodeIdentification'
 import { toNodeId } from '@/types/nodeId'
@@ -517,3 +523,40 @@ describe('missing resource validation error absorption', () => {
     ).toBeNull()
   })
 })
+
+it.for([1, 2] as const)(
+  'absorbs image errors from every active promoted consumer at depth %i',
+  (depth) => {
+    seedMediaNodeDefs()
+    const { rootGraph, sourceNodes } = createPromotedMediaRuntime({
+      sourceIds: [42, 43, 44],
+      depth
+    })
+    const candidates = scanAllMediaCandidates(rootGraph, false)
+    expect(candidates).toHaveLength(1)
+
+    for (const node of sourceNodes) {
+      const executionId = getExecutionIdByNode(rootGraph, node)
+      if (!executionId) throw new Error('Expected a source execution id')
+      const errors = liftNodeErrorsToBoundary(rootGraph, {
+        [executionId]: nodeError([
+          validationError(
+            'custom_validation_failed',
+            'image',
+            {},
+            'Invalid image file'
+          )
+        ])
+      })
+      const classification = classifyPanelErrors({
+        promptError: null,
+        executionError: null,
+        nodeErrors: errors,
+        missingModels: null,
+        missingMedia: candidates,
+        hasMissingNodes: false
+      })
+      expect.soft(classification.hasBlockingError, executionId).toBe(false)
+    }
+  }
+)

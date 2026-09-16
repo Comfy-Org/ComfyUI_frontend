@@ -74,11 +74,10 @@ interface PromotedWidgetSource {
 }
 
 function matchesPromotedSource(
-  source: PromotedWidgetSource | undefined,
+  source: PromotedWidgetSource,
   error: NodeValidationError,
   nodeId: NodeExecutionId
 ): boolean {
-  if (!source) return false
   if (String(source.executionId) !== String(nodeId)) return false
   return source.widgetName === error.extra_info?.input_name
 }
@@ -90,12 +89,18 @@ function matchesCandidate(
   isMissing: boolean | undefined,
   error: NodeValidationError,
   nodeId: NodeExecutionId,
-  promotedSource?: PromotedWidgetSource
+  promotedSources: readonly PromotedWidgetSource[] = []
 ): boolean {
   if (isMissing !== true) return false
   // Checked before the host-identity gate: an unlifted interior error never
   // carries the host id the candidate is keyed by.
-  if (matchesPromotedSource(promotedSource, error, nodeId)) return true
+  if (
+    promotedSources.some((source) =>
+      matchesPromotedSource(source, error, nodeId)
+    )
+  ) {
+    return true
+  }
 
   const liftedSource = getLiftedErrorSource(error)
   if (!matchesErrorNodeId(candidateNodeIds, liftedSource, nodeId)) {
@@ -145,12 +150,7 @@ function matchesMissingMedia(
     candidate.isMissing,
     error,
     nodeId,
-    candidate.sourceExecutionId && candidate.sourceWidgetName
-      ? {
-          executionId: candidate.sourceExecutionId,
-          widgetName: candidate.sourceWidgetName
-        }
-      : undefined
+    candidate.promotedSources
   )
 }
 

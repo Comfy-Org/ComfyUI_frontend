@@ -44,6 +44,11 @@ import {
 } from '@/composables/usePaste'
 import Load3dUtils from '@/extensions/core/load3d/Load3dUtils'
 import { getWorkflowDataFromFile } from '@/scripts/metadata/parser'
+import { runMissingModelPipeline } from '@/platform/missingModel/missingModelPipeline'
+import * as missingMediaPipeline from '@/platform/missingMedia/missingMediaPipeline'
+import type { MissingMediaCandidate } from '@/platform/missingMedia/types'
+import type { MissingModelCandidate } from '@/platform/missingModel/types'
+import { nodeError, validationError } from '@/utils/__tests__/nodeErrorHelpers'
 import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
 import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
 import { installErrorClearingHooks } from '@/composables/graph/useErrorClearingHooks'
@@ -272,6 +277,78 @@ describe('ComfyApp', () => {
   })
 
   describe('loadGraphData', () => {
+    it.for(['immediate', 'deferred', 'unverified', 'skipped'] as const)(
+      'retires reloaded resource errors only after successful verification: %s',
+      async (verification) => {
+        app.canvasElRef.value = document.createElement('canvas')
+        Reflect.set(app, 'rootGraphInternal', new LGraph())
+        const store = useExecutionErrorStore()
+        const graphId = '11111111-1111-4111-8111-111111111111'
+        store.setActiveGraph(graphId)
+        useMissingModelStore().setMissingModels([
+          {
+            nodeId: createNodeExecutionId([1]),
+            nodeType: 'CheckpointLoaderSimple',
+            widgetName: 'ckpt_name',
+            name: 'model.safetensors',
+            isAssetSupported: false,
+            isMissing: true
+          }
+        ])
+        const absorbed = validationError('value_not_in_list', 'ckpt_name', {
+          received_value: 'model.safetensors'
+        })
+        const unrelated = validationError('required_input_missing', 'positive')
+        store.recordNodeErrors({ '1': nodeError([absorbed, unrelated]) })
+        mockWorkflowService.afterLoadNewGraph.mockImplementation(async () => {
+          store.setActiveGraph(graphId)
+        })
+        let finishModels:
+          | ((candidates: MissingModelCandidate[]) => void)
+          | undefined
+        let finishMedia:
+          | ((candidates: MissingMediaCandidate[]) => void)
+          | undefined
+        vi.mocked(runMissingModelPipeline).mockImplementation(
+          async ({ onVerified }) => {
+            finishModels = onVerified
+            if (verification === 'immediate') onVerified?.([])
+            return { missingModels: [], confirmedCandidates: [] }
+          }
+        )
+        vi.spyOn(
+          missingMediaPipeline,
+          'runMissingMediaPipeline'
+        ).mockImplementation(async ({ onVerified }) => {
+          finishMedia = onVerified
+          if (verification === 'immediate') onVerified?.([])
+        })
+
+        await app.loadGraphData(createWorkflowGraphData(), false, true, null, {
+          skipAssetScans: verification === 'skipped'
+        })
+
+        if (verification === 'immediate') {
+          expect(store.lastNodeErrors?.['1'].errors).toEqual([unrelated])
+          return
+        }
+        expect(store.lastNodeErrors?.['1'].errors).toEqual([
+          absorbed,
+          unrelated
+        ])
+        if (verification !== 'deferred') return
+        expect(finishModels).toBeTypeOf('function')
+        expect(finishMedia).toBeTypeOf('function')
+        finishModels?.([])
+        expect(store.lastNodeErrors?.['1'].errors).toEqual([
+          absorbed,
+          unrelated
+        ])
+        finishMedia?.([])
+        expect(store.lastNodeErrors?.['1'].errors).toEqual([unrelated])
+      }
+    )
+
     it('forwards clean and navigation intent to workflow navigation', async () => {
       app.canvasElRef.value = document.createElement('canvas')
       Reflect.set(app, 'rootGraphInternal', new LGraph())

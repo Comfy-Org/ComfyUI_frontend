@@ -61,7 +61,13 @@ interface ValidationErrorSurface {
   error: NodeValidationError
 }
 
+interface MissingResourceCandidates {
+  models: MissingModelCandidate[] | null
+  media: MissingMediaCandidate[] | null
+}
+
 interface RunErrorState {
+  absorbedValidationErrors: WeakSet<NodeValidationError>
   nodeErrors: Record<string, NodeError> | null
   executionError: ExecutionErrorWsMessage | null
   promptError: PromptError | null
@@ -104,6 +110,7 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
     if (key === null) return
 
     const next: RunErrorState = {
+      absorbedValidationErrors: new WeakSet(),
       nodeErrors: null,
       executionError: null,
       promptError: null,
@@ -111,7 +118,7 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
       ...patch
     }
 
-    if (Object.values(next).every((value) => value === null)) {
+    if (!next.nodeErrors && !next.executionError && !next.promptError) {
       runErrorsByWorkflow.value.delete(key)
     } else {
       runErrorsByWorkflow.value.set(key, next)
@@ -278,68 +285,108 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
    * Matching is by content, so a rescan that rebuilds equivalent candidates
    * retires nothing.
    */
-  watch(
-    () =>
-      [
-        missingModelStore.missingModelCandidates,
-        missingMediaStore.missingMediaCandidates
-      ] as const,
-    ([nextModels, nextMedia], [prevModels, prevMedia]) => {
-      if (ChangeTracker.isLoadingGraph) return
+  function reconcileAbsorbedErrors(
+    { models, media }: MissingResourceCandidates,
+    key: string | null,
+    previous?: MissingResourceCandidates
+  ) {
+    if (
+      ChangeTracker.isLoadingGraph ||
+      key === null ||
+      key !== activeRunErrorKey.value
+    )
+      return
+    const state = activeRunErrors.value
+    const record = state?.nodeErrors
+    if (!state || !record) return
 
-      const key = activeRunErrorKey.value
-      if (key === null) return
+    const possiblyMissingModels =
+      models?.map((candidate) =>
+        candidate.isMissing === undefined
+          ? { ...candidate, isMissing: true }
+          : candidate
+      ) ?? null
+    const possiblyMissingMedia =
+      media?.map((candidate) =>
+        candidate.isMissing === undefined
+          ? { ...candidate, isMissing: true }
+          : candidate
+      ) ?? null
 
-      const record = lastNodeErrors.value
-      if (!record) return
-
-      let changed = false
-      const updated: Record<string, NodeError> = {}
-      for (const [rawNodeId, nodeError] of Object.entries(record)) {
-        const executionId = tryNormalizeNodeExecutionId(rawNodeId)
-        if (!executionId) {
-          updated[rawNodeId] = nodeError
-          continue
-        }
-        const remaining = nodeError.errors.filter((error) => {
-          const surfaces = resolveValidationErrorSurfaces(
-            executionId,
-            nodeError,
-            error
-          )
-          const wasAbsorbed = surfaces.some(({ executionId, error }) =>
-            classifyValidationErrorAbsorption(
-              prevModels ?? null,
-              prevMedia ?? null,
-              error,
-              executionId
-            )
-          )
-          if (!wasAbsorbed) return true
-          return surfaces.some(({ executionId, error }) =>
-            classifyValidationErrorAbsorption(
-              nextModels ?? null,
-              nextMedia ?? null,
-              error,
-              executionId
-            )
-          )
-        })
-        if (remaining.length === nodeError.errors.length) {
-          updated[rawNodeId] = nodeError
-        } else {
-          changed = true
-          if (remaining.length > 0) {
-            updated[rawNodeId] = { ...nodeError, errors: remaining }
-          }
-        }
+    let changed = false
+    const updated: Record<string, NodeError> = {}
+    for (const [rawNodeId, nodeError] of Object.entries(record)) {
+      const executionId = tryNormalizeNodeExecutionId(rawNodeId)
+      if (!executionId) {
+        updated[rawNodeId] = nodeError
+        continue
       }
-      if (changed) {
-        updateRunErrors(
-          { nodeErrors: Object.keys(updated).length > 0 ? updated : null },
-          key
+      const remaining = nodeError.errors.filter((error) => {
+        const surfaces = resolveValidationErrorSurfaces(
+          executionId,
+          nodeError,
+          error
         )
+        const isAbsorbed = surfaces.some(({ executionId, error }) =>
+          classifyValidationErrorAbsorption(models, media, error, executionId)
+        )
+        const rawError = toRaw(error)
+        if (isAbsorbed) {
+          state.absorbedValidationErrors.add(rawError)
+          return true
+        }
+        const wasAbsorbed = previous
+          ? surfaces.some(({ executionId, error }) =>
+              classifyValidationErrorAbsorption(
+                previous.models,
+                previous.media,
+                error,
+                executionId
+              )
+            )
+          : state.absorbedValidationErrors.has(rawError)
+        if (!wasAbsorbed) return true
+        return surfaces.some(({ executionId, error }) =>
+          classifyValidationErrorAbsorption(
+            possiblyMissingModels,
+            possiblyMissingMedia,
+            error,
+            executionId
+          )
+        )
+      })
+      if (remaining.length === nodeError.errors.length) {
+        updated[rawNodeId] = nodeError
+      } else {
+        changed = true
+        if (remaining.length > 0)
+          updated[rawNodeId] = { ...nodeError, errors: remaining }
       }
+    }
+    if (changed) {
+      updateRunErrors(
+        { nodeErrors: Object.keys(updated).length ? updated : null },
+        key
+      )
+    }
+  }
+
+  function retireResolvedMissingResourceErrors(
+    candidates: MissingResourceCandidates,
+    key: string | null = activeRunErrorKey.value
+  ) {
+    reconcileAbsorbedErrors(candidates, key)
+  }
+
+  watch(
+    () => ({
+      key: activeRunErrorKey.value,
+      models: missingModelStore.missingModelCandidates,
+      media: missingMediaStore.missingMediaCandidates
+    }),
+    (next, previous) => {
+      if (next.key !== previous.key) return
+      reconcileAbsorbedErrors(next, next.key, previous)
     }
   )
 
@@ -357,9 +404,19 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
   ) {
     const record =
       nodeErrors && Object.keys(nodeErrors).length > 0 ? nodeErrors : null
-    updateRunErrors({ nodeErrors: record }, key)
+    updateRunErrors(
+      { nodeErrors: record, absorbedValidationErrors: new WeakSet() },
+      key
+    )
     if (record && key !== null && key === activeRunErrorKey.value) {
       captureValidationErrorSurfaces(record)
+      reconcileAbsorbedErrors(
+        {
+          models: missingModelStore.missingModelCandidates,
+          media: missingMediaStore.missingMediaCandidates
+        },
+        key
+      )
     }
   }
 
@@ -862,6 +919,7 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
     clearExecutionStartErrors,
     clearPromptError,
     retireResolvedMissingNodePromptError,
+    retireResolvedMissingResourceErrors,
 
     // Overlay UI
     isErrorOverlayOpen,

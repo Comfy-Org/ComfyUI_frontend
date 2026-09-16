@@ -1,5 +1,9 @@
 import { groupBy } from 'es-toolkit'
-import { hasActivePromotedWidgetConsumer } from '@/core/graph/subgraph/resolveConcretePromotedWidget'
+import {
+  buildPromotedSourceExecutionId,
+  hasActivePromotedWidgetConsumer,
+  resolveActivePromotedWidgetConsumers
+} from '@/core/graph/subgraph/resolveConcretePromotedWidget'
 import { resolvePromotedWidgetSource } from '@/core/graph/subgraph/resolvePromotedWidgetSource'
 import { isComboInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import type { InputSpec as InputSpecV2 } from '@/schemas/nodeDef/nodeDefSchemaV2'
@@ -136,20 +140,29 @@ export function scanNodeMediaCandidates(
     const promotedSource = resolvePromotedWidgetSource(rootGraph, node, widget)
     const labelNode = promotedSource?.sourceNode ?? node
 
-    candidates.push({
+    const candidate: MissingMediaCandidate = {
       nodeId: executionId,
       nodeType: labelNode.type,
       widgetName: widget.name,
-      ...(promotedSource?.sourceExecutionId
-        ? {
-            sourceExecutionId: promotedSource.sourceExecutionId,
-            sourceWidgetName: promotedSource.sourceWidgetName
-          }
-        : {}),
       mediaType,
       name: value,
       isMissing
-    })
+    }
+    if (node.isSubgraphNode()) {
+      candidate.promotedSources = resolveActivePromotedWidgetConsumers(
+        node,
+        widget.name
+      ).flatMap(({ nodePath, widget: sourceWidget }) => {
+        const sourceExecutionId = buildPromotedSourceExecutionId(
+          executionId,
+          nodePath
+        )
+        return sourceExecutionId
+          ? [{ executionId: sourceExecutionId, widgetName: sourceWidget.name }]
+          : []
+      })
+    }
+    candidates.push(candidate)
   }
 
   return candidates
