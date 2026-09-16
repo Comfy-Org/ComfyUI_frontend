@@ -2,11 +2,11 @@ import { useAppModeStore } from '@/stores/appModeStore'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import type { DetachedWindowAPI } from 'happy-dom'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { computed, nextTick, ref } from 'vue'
-import type { Ref } from 'vue'
+import { nextTick } from 'vue'
 
 import { useAppMode } from '@/composables/useAppMode'
 import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 import type { AppMode } from '@/utils/appMode'
 
@@ -23,10 +23,6 @@ const telemetry = vi.hoisted(() => ({ track: vi.fn() }))
 vi.mock<unknown>(import('@/platform/telemetry'), () => ({
   useTelemetry: () => ({ trackOnboardingTour: telemetry.track })
 }))
-
-vi.mock(import('@/composables/useAppMode'))
-
-let appMode: Ref<AppMode>
 
 const APP_MODE_TARGETS: CoachId[] = [
   'inputs-list',
@@ -68,17 +64,10 @@ function shownCount(coachId?: CoachId) {
   ).length
 }
 
-beforeEach(() => {
-  appMode = ref<AppMode>('graph')
-  useAppMode().mode = computed(() => appMode.value)
-  useAppMode().isAppMode = computed(() => appMode.value === 'app')
-  useAppMode().isBuilderMode = computed(() =>
-    appMode.value.startsWith('builder:')
-  )
-  useAppMode().isSelectMode = computed(
-    () =>
-      appMode.value === 'builder:inputs' || appMode.value === 'builder:outputs'
-  )
+beforeEach(async () => {
+  useWorkflowStore().activeWorkflow = await useWorkflowStore()
+    .createTemporary('test.json')
+    .load()
   useSettingStore().settingValues[TOUR_SEEN_SETTING] = []
   vi.mocked(useSettingStore().set).mockImplementation(
     (key: string, value: unknown) => {
@@ -124,7 +113,7 @@ describe('onboardingTourStore', () => {
   }
 
   function enterApp(mode: AppMode, hasOutputs: boolean) {
-    appMode.value = mode
+    useAppMode().setMode(mode)
     Object.assign(useAppModeStore(), { hasOutputs })
   }
 
