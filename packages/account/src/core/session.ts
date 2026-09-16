@@ -454,6 +454,15 @@ export function createSessionClient<TUser extends AccountUser = AccountUser>(
     if (arbitration.verdict === 'reuse') {
       return { status: 'ok', session: arbitration.session }
     }
+    return commitCallerMint(result, mintId, requestedTarget, options)
+  }
+
+  function commitCallerMint(
+    result: SessionResult,
+    mintId: number,
+    requestedTarget: string | undefined,
+    options: SessionRequestOptions
+  ): SessionResult {
     const rejectMint = (failure: SessionFailure): SessionFailure => {
       commit({
         type: 'mint-rejected',

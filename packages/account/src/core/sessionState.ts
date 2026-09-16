@@ -113,151 +113,211 @@ const stopScheduler: SessionEffect = { type: 'stopScheduler' }
 const abandonInFlight: SessionEffect = { type: 'abandonInFlight' }
 const publish: SessionEffect = { type: 'publish' }
 
+type EventOf<
+  TUser extends AccountUser,
+  TType extends SessionEvent<TUser>['type']
+> = Extract<SessionEvent<TUser>, { type: TType }>
+
+function dropSession<TUser extends AccountUser>(
+  state: SessionState<TUser>
+): SessionState<TUser> {
+  return {
+    ...state,
+    credential: undefined,
+    credentialTarget: undefined,
+    failure: undefined
+  }
+}
+
+function applyIdentityChanged<TUser extends AccountUser>(
+  state: SessionState<TUser>,
+  event: EventOf<TUser, 'identity-changed'>
+): SessionTransition<TUser> {
+  return {
+    state: {
+      ...dropSession(state),
+      user: event.user,
+      identitySettled: true,
+      identityEpoch: state.identityEpoch + 1
+    },
+    // A sign-out or a different user makes the running mint unjoinable: it
+    // was started with the previous identity's token, and a caller arriving
+    // after the event must mint for itself. A same-uid re-auth must not
+    // adopt it either.
+    effects:
+      event.user === null
+        ? [stopScheduler, abandonInFlight, clearStorage, publish]
+        : [stopScheduler, abandonInFlight, publish]
+  }
+}
+
+function applyIdentityDetached<TUser extends AccountUser>(
+  state: SessionState<TUser>
+): SessionTransition<TUser> {
+  return {
+    state: {
+      ...dropSession(state),
+      user: null,
+      identitySettled: false,
+      identityEpoch: state.identityEpoch + 1
+    },
+    effects: [stopScheduler, publish]
+  }
+}
+
+function applyInvalidated<TUser extends AccountUser>(
+  state: SessionState<TUser>
+): SessionTransition<TUser> {
+  // A mint still running belongs to the scope being discarded; a caller
+  // arriving after this must start its own rather than join it.
+  return {
+    state: {
+      ...dropSession(state),
+      invalidationEpoch: state.invalidationEpoch + 1
+    },
+    effects: [stopScheduler, abandonInFlight, clearStorage, publish]
+  }
+}
+
+function applyMintStarted<TUser extends AccountUser>(
+  state: SessionState<TUser>
+): SessionTransition<TUser> {
+  return {
+    state: { ...state, mintSequence: state.mintSequence + 1 },
+    effects: []
+  }
+}
+
+function applyMintCommitted<TUser extends AccountUser>(
+  state: SessionState<TUser>,
+  event: EventOf<TUser, 'mint-committed'>
+): SessionTransition<TUser> {
+  const target =
+    event.origin === 'caller' ? event.target : state.credentialTarget
+  const persist: SessionEffect = {
+    type: 'persist',
+    session: event.session,
+    target
+  }
+  return {
+    state: {
+      ...state,
+      credential: event.session,
+      credentialTarget: target,
+      committedMint: { mintId: event.mintId, session: event.session },
+      failure: undefined
+    },
+    effects:
+      event.origin === 'caller'
+        ? [persist, { type: 'armScheduler', session: event.session }, publish]
+        : [persist, publish]
+  }
+}
+
+function applySchedulerRejection<TUser extends AccountUser>(
+  state: SessionState<TUser>,
+  failure: SessionFailure
+): SessionTransition<TUser> {
+  return {
+    state: { ...dropSession(state), failure },
+    effects: [clearStorage, publish]
+  }
+}
+
+function applyCallerRejection<TUser extends AccountUser>(
+  state: SessionState<TUser>,
+  event: EventOf<TUser, 'mint-rejected'> & { readonly origin: 'caller' }
+): SessionTransition<TUser> {
+  const permanent = isPermanentSessionError(event.failure.code)
+  if (
+    !permanent &&
+    event.preserveCredentialOnTransientFailure &&
+    state.credential !== undefined
+  ) {
+    return { state, effects: [] }
+  }
+  if (!permanent) {
+    return {
+      state: { ...state, credential: undefined, failure: event.failure },
+      effects: [publish]
+    }
+  }
+  // A caller-initiated permanent failure must retire the armed scheduler
+  // and target too, or its old timer could resurrect the dead session.
+  return {
+    state: { ...dropSession(state), failure: event.failure },
+    effects: [stopScheduler, clearStorage, publish]
+  }
+}
+
+function applyMintRejected<TUser extends AccountUser>(
+  state: SessionState<TUser>,
+  event: EventOf<TUser, 'mint-rejected'>
+): SessionTransition<TUser> {
+  return event.origin === 'scheduler'
+    ? applySchedulerRejection(state, event.failure)
+    : applyCallerRejection(state, event)
+}
+
+function applyCredentialAdopted<TUser extends AccountUser>(
+  state: SessionState<TUser>,
+  event: EventOf<TUser, 'credential-adopted'>
+): SessionTransition<TUser> {
+  // Adoption is a commit: it supersedes any in-flight mint of this
+  // tab's own, exactly like a newer mint would.
+  return {
+    state: {
+      ...state,
+      mintSequence: state.mintSequence + 1,
+      credential: event.session,
+      failure: undefined
+    },
+    effects: [
+      {
+        type: 'persist',
+        session: event.session,
+        target: state.credentialTarget
+      },
+      publish
+    ]
+  }
+}
+
+function applyCredentialExpired<TUser extends AccountUser>(
+  state: SessionState<TUser>,
+  event: EventOf<TUser, 'credential-expired'>
+): SessionTransition<TUser> {
+  if (state.credential !== event.expiring) return { state, effects: [] }
+  return {
+    state: {
+      ...dropSession(state),
+      failure: { status: 'error', code: 'TOKEN_EXCHANGE_FAILED' }
+    },
+    effects: [clearStorage, publish]
+  }
+}
+
 export function transition<TUser extends AccountUser>(
   state: SessionState<TUser>,
   event: SessionEvent<TUser>
 ): SessionTransition<TUser> {
   switch (event.type) {
     case 'identity-changed':
-      return {
-        state: {
-          ...state,
-          user: event.user,
-          identitySettled: true,
-          identityEpoch: state.identityEpoch + 1,
-          credential: undefined,
-          credentialTarget: undefined,
-          failure: undefined
-        },
-        // A sign-out or a different user makes the running mint unjoinable: it
-        // was started with the previous identity's token, and a caller arriving
-        // after the event must mint for itself. A same-uid re-auth must not
-        // adopt it either.
-        effects:
-          event.user === null
-            ? [stopScheduler, abandonInFlight, clearStorage, publish]
-            : [stopScheduler, abandonInFlight, publish]
-      }
+      return applyIdentityChanged(state, event)
     case 'identity-detached':
-      return {
-        state: {
-          ...state,
-          user: null,
-          identitySettled: false,
-          identityEpoch: state.identityEpoch + 1,
-          credential: undefined,
-          credentialTarget: undefined,
-          failure: undefined
-        },
-        effects: [stopScheduler, publish]
-      }
+      return applyIdentityDetached(state)
     case 'invalidated':
-      // A mint still running belongs to the scope being discarded; a caller
-      // arriving after this must start its own rather than join it.
-      return {
-        state: {
-          ...state,
-          invalidationEpoch: state.invalidationEpoch + 1,
-          credential: undefined,
-          credentialTarget: undefined,
-          failure: undefined
-        },
-        effects: [stopScheduler, abandonInFlight, clearStorage, publish]
-      }
+      return applyInvalidated(state)
     case 'mint-started':
-      return {
-        state: { ...state, mintSequence: state.mintSequence + 1 },
-        effects: []
-      }
-    case 'mint-committed': {
-      const target =
-        event.origin === 'caller' ? event.target : state.credentialTarget
-      return {
-        state: {
-          ...state,
-          credential: event.session,
-          credentialTarget: target,
-          committedMint: { mintId: event.mintId, session: event.session },
-          failure: undefined
-        },
-        effects:
-          event.origin === 'caller'
-            ? [
-                { type: 'persist', session: event.session, target },
-                { type: 'armScheduler', session: event.session },
-                publish
-              ]
-            : [{ type: 'persist', session: event.session, target }, publish]
-      }
-    }
-    case 'mint-rejected': {
-      if (event.origin === 'scheduler') {
-        return {
-          state: {
-            ...state,
-            credential: undefined,
-            credentialTarget: undefined,
-            failure: event.failure
-          },
-          effects: [clearStorage, publish]
-        }
-      }
-      const permanent = isPermanentSessionError(event.failure.code)
-      if (
-        !permanent &&
-        event.preserveCredentialOnTransientFailure &&
-        state.credential !== undefined
-      ) {
-        return { state, effects: [] }
-      }
-      if (!permanent) {
-        return {
-          state: { ...state, credential: undefined, failure: event.failure },
-          effects: [publish]
-        }
-      }
-      // A caller-initiated permanent failure must retire the armed scheduler
-      // and target too, or its old timer could resurrect the dead session.
-      return {
-        state: {
-          ...state,
-          credential: undefined,
-          credentialTarget: undefined,
-          failure: event.failure
-        },
-        effects: [stopScheduler, clearStorage, publish]
-      }
-    }
+      return applyMintStarted(state)
+    case 'mint-committed':
+      return applyMintCommitted(state, event)
+    case 'mint-rejected':
+      return applyMintRejected(state, event)
     case 'credential-adopted':
-      // Adoption is a commit: it supersedes any in-flight mint of this
-      // tab's own, exactly like a newer mint would.
-      return {
-        state: {
-          ...state,
-          mintSequence: state.mintSequence + 1,
-          credential: event.session,
-          failure: undefined
-        },
-        effects: [
-          {
-            type: 'persist',
-            session: event.session,
-            target: state.credentialTarget
-          },
-          publish
-        ]
-      }
+      return applyCredentialAdopted(state, event)
     case 'credential-expired':
-      if (state.credential !== event.expiring) return { state, effects: [] }
-      return {
-        state: {
-          ...state,
-          credential: undefined,
-          credentialTarget: undefined,
-          failure: { status: 'error', code: 'TOKEN_EXCHANGE_FAILED' }
-        },
-        effects: [clearStorage, publish]
-      }
+      return applyCredentialExpired(state, event)
   }
 }
 
@@ -278,54 +338,89 @@ export type MintVerdict =
   | { readonly verdict: 'reuse'; readonly session: AccountCredential }
   | { readonly verdict: 'superseded' }
 
+const SUPERSEDED: MintVerdict = { verdict: 'superseded' }
+
+function supersededByInvalidation<TUser extends AccountUser>(
+  state: SessionState<TUser>,
+  attempt: MintAttempt
+): boolean {
+  return state.invalidationEpoch !== attempt.startInvalidation
+}
+
+// The newest mint won, but when it committed a credential for this
+// caller's exact target, that credential answers the request — a lost
+// race is not a failure. A different target (or none) stays undefined.
+function lostRace<TUser extends AccountUser>(
+  state: SessionState<TUser>,
+  attempt: MintAttempt
+): MintVerdict | undefined {
+  if (attempt.mintId === state.mintSequence) return undefined
+  const answered =
+    state.credential !== undefined &&
+    state.credential.uid === attempt.userUid &&
+    state.user?.uid === attempt.userUid &&
+    attempt.requestedTarget === state.credentialTarget
+  return answered ? { verdict: 'reuse', session: state.credential } : SUPERSEDED
+}
+
+function crossedIdentityEvent<TUser extends AccountUser>(
+  state: SessionState<TUser>,
+  attempt: MintAttempt
+): boolean {
+  return state.identityEpoch !== attempt.startEpoch
+}
+
+// The one mint allowed to cross an identity event: an explicit-user
+// mint started while signed out, for the user the port then
+// delivered (the popup path). Everything else was minted for an
+// identity that is gone, even when the uid matches again.
+function popupSettled<TUser extends AccountUser>(
+  state: SessionState<TUser>,
+  attempt: MintAttempt
+): boolean {
+  return (
+    attempt.explicitUser &&
+    attempt.startedSignedOut &&
+    state.user?.uid === attempt.userUid
+  )
+}
+
+// The explicit-user bypass is the popup path, valid only before the
+// identity port has ever fired; a settled null identity blocks it.
+function mintedForAnotherUser<TUser extends AccountUser>(
+  state: SessionState<TUser>,
+  attempt: MintAttempt
+): boolean {
+  return (
+    state.user?.uid !== attempt.userUid &&
+    (!attempt.explicitUser || state.user !== null || state.identitySettled)
+  )
+}
+
+function joinerReuse<TUser extends AccountUser>(
+  state: SessionState<TUser>,
+  attempt: MintAttempt
+): MintVerdict | undefined {
+  return attempt.joined &&
+    state.committedMint !== undefined &&
+    state.committedMint.mintId === attempt.mintId &&
+    state.credential === state.committedMint.session
+    ? { verdict: 'reuse', session: state.committedMint.session }
+    : undefined
+}
+
 export function arbitrateMint<TUser extends AccountUser>(
   state: SessionState<TUser>,
   attempt: MintAttempt
 ): MintVerdict {
-  if (state.invalidationEpoch !== attempt.startInvalidation) {
-    return { verdict: 'superseded' }
-  }
-  if (attempt.mintId !== state.mintSequence) {
-    // The newest mint won, but when it committed a credential for this
-    // caller's exact target, that credential answers the request — a lost
-    // race is not a failure. A different target (or none) stays undefined.
-    if (
-      state.credential !== undefined &&
-      state.credential.uid === attempt.userUid &&
-      state.user?.uid === attempt.userUid &&
-      attempt.requestedTarget === state.credentialTarget
-    ) {
-      return { verdict: 'reuse', session: state.credential }
-    }
-    return { verdict: 'superseded' }
-  }
-  if (state.identityEpoch !== attempt.startEpoch) {
-    // The one mint allowed to cross an identity event: an explicit-user
-    // mint started while signed out, for the user the port then
-    // delivered (the popup path). Everything else was minted for an
-    // identity that is gone, even when the uid matches again.
-    const popupSettled =
-      attempt.explicitUser &&
-      attempt.startedSignedOut &&
-      state.user?.uid === attempt.userUid
-    if (!popupSettled) return { verdict: 'superseded' }
-  } else if (
-    state.user?.uid !== attempt.userUid &&
-    // The explicit-user bypass is the popup path, valid only before the
-    // identity port has ever fired; a settled null identity blocks it.
-    (!attempt.explicitUser || state.user !== null || state.identitySettled)
-  ) {
-    return { verdict: 'superseded' }
-  }
-  if (
-    attempt.joined &&
-    state.committedMint !== undefined &&
-    state.committedMint.mintId === attempt.mintId &&
-    state.credential === state.committedMint.session
-  ) {
-    return { verdict: 'reuse', session: state.committedMint.session }
-  }
-  return { verdict: 'commit' }
+  if (supersededByInvalidation(state, attempt)) return SUPERSEDED
+  const raced = lostRace(state, attempt)
+  if (raced) return raced
+  const stale = crossedIdentityEvent(state, attempt)
+    ? !popupSettled(state, attempt)
+    : mintedForAnotherUser(state, attempt)
+  if (stale) return SUPERSEDED
+  return joinerReuse(state, attempt) ?? { verdict: 'commit' }
 }
 
 export function scheduledMintHolds<TUser extends AccountUser>(
