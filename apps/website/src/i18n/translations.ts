@@ -61,12 +61,6 @@ function isLocale(value: string): value is Locale {
  *
  * In a browser that is the page's own `<html lang>`, which `BaseLayout` writes
  * from the same `Locale` union, so exactly one dictionary is ever fetched.
- *
- * There is no browser case where a component asks for a different locale than
- * its page: all 61 calls that name a locale literally are in `.astro` files,
- * which run here on the server. `t()` still takes a locale so those keep
- * working, and so a mismatch would surface as a missing key rather than as
- * silently wrong text.
  */
 function documentLocale(): Locale {
   const lang = document.documentElement.lang
@@ -157,10 +151,7 @@ function dictionaryFor(locale: Locale): TranslationLayer {
   return dictionary
 }
 
-export function t(
-  key: TranslationKey,
-  locale: Locale = DEFAULT_LOCALE
-): string {
+export function t(key: TranslationKey, locale: Locale): string {
   return dictionaryFor(locale)[key]
 }
 
@@ -184,7 +175,7 @@ export function t(
 export function tPlural(
   key: TranslationKey,
   count: number,
-  locale: Locale = DEFAULT_LOCALE
+  locale: Locale
 ): string {
   const forms = t(key, locale).split('|')
   const form =

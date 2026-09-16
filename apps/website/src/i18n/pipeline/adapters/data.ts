@@ -1,9 +1,6 @@
 /**
  * The `src/data/*.ts` source adapter.
  *
- * 464 `LocalizedText` literals across 17 files — event listings, launch pages,
- * tutorials, affiliate copy. Chinese is complete; Japanese has two.
- *
  * Read through the TypeScript AST rather than by importing the modules. Two
  * reasons: several of them import `../config/routes` and build values at
  * runtime, so importing would execute code and yield strings that are not in

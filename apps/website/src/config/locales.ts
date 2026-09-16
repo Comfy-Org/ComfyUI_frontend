@@ -105,22 +105,7 @@ export function isLocale(value: string | undefined): value is Locale {
  * Chinese is absent because it is fully translated, so it gets a blanket yes and
  * `LOCALE_INVARIANT_PATHS` carves out the exceptions.
  *
- * P3 changed what this set means. It used to record which Japanese pages
- * existed, because only one did; Astro's fallback now builds all 560, so the
- * question is which of them we publish. It is the only lever, gating indexing,
- * the sitemap, and whether any link on the site points there.
- *
- * Japanese is 99% translated as of P4, and publishes tier 1: the home page plus
- * `/download`, `/cloud`, `/platform` and `/about`. The long tail follows in its
- * own change rather than all at once, which is the pattern Google's
- * scaled-content-abuse policy targets.
- *
- * `/pricing` joined once the FAQ had Japanese. It was held back because its 21
- * FAQ items come from an MDX collection that had none, so the page rendered
- * English where most of a pricing page's substance lives. All 21 are Japanese
- * now.
- *
- * What is still English there is the MiniMax licence comparison table, which is
+ * The MiniMax licence comparison table on `/pricing` stays English, which is
  * deliberate: `minimaxLicense` is on the never-translated list, so a person
  * writes those rows or they stay English. That was weighed and accepted rather
  * than overlooked — a mostly-Japanese pricing page beats sending Japanese

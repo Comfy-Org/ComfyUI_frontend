@@ -28,7 +28,7 @@
  * something unrelated to translation. Missing CONTENT is failed on by
  * `pnpm check:localized-pages`, which runs after the build in CI.
  */
-import { existsSync, readFileSync } from 'node:fs'
+import { existsSync } from 'node:fs'
 import { join } from 'node:path'
 
 import { LOCALIZED_CODES } from '../../src/config/locales'
@@ -38,6 +38,7 @@ import { translationsAdapter } from '../../src/i18n/pipeline/adapters/translatio
 import { resolveTranslation } from '../../src/i18n/source'
 import type { TranslationKey } from '../../src/i18n/source'
 import { localizedBuildPages } from '../lib/built-pages'
+import { preserveTerms } from './config'
 
 interface Coverage {
   total: number
@@ -141,16 +142,14 @@ function reportPages(): void {
     return
   }
 
-  const preserveTerms = JSON.parse(
-    readFileSync(
-      join(process.cwd(), 'src', 'i18n', 'glossary', 'preserve-terms.json'),
-      'utf8'
-    )
-  ) as string[]
+  const terms = preserveTerms()
 
   const scores = new Map<string, Map<string, number>>()
   for (const page of localizedBuildPages(DIST)) {
-    const { translated, total } = comparePage({ ...page, preserveTerms })
+    const { translated, total } = comparePage({
+      ...page,
+      preserveTerms: terms
+    })
     if (total === 0) continue
     recordPageScore(scores, page.route, page.locale, translated)
   }

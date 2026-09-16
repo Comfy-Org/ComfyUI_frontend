@@ -18,6 +18,7 @@ import fs from 'node:fs'
 import path from 'node:path'
 
 import type { OutputLocale } from '../../../../scripts/i18n/config'
+import { BANNED_HYPE } from '../../src/i18n/pipeline/validate'
 
 const GLOSSARY_FILE = path.join(
   process.cwd(),
@@ -119,5 +120,6 @@ export const websiteTranslationConfig = {
   maxTranslationRounds: 3,
   glossary: `This is marketing copy for comfy.org. Use natural local search
 terminology and a direct, factual voice. Preserve the creator's
-agency and the source's claims without adding hype.`
+agency and the source's claims without adding hype.
+Do not introduce these words unless present in the source: ${BANNED_HYPE.join(', ')}.`
 }

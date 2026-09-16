@@ -38,7 +38,7 @@ const SCRIPT_RANGES: Partial<Record<Locale, RegExp>> = {
 
 /** English hype the brand voice bans. Introducing it is a translation defect
  * even when the meaning survives, because the English never claimed it. */
-const BANNED_HYPE = [
+export const BANNED_HYPE = [
   'stunning',
   'powerful',
   'seamless',
@@ -61,17 +61,6 @@ function matches(value: string, pattern: RegExp): string[] {
   return [...value.matchAll(pattern)].map((m) => m[0]).sort()
 }
 
-/**
- * Whether a preserve term appears as a WORD, not merely as a substring.
- *
- * `Wan` is a video model and also the first three letters of `Want`, so a
- * substring test demanded that the Japanese for "Want to build tools" contain
- * "Wan". That is impossible, so the key could never pass: a permanent CI
- * failure on 51 strings. Brand names are words, and the check has to say so.
- *
- * Boundaries are only applied at ends that are word characters, so terms like
- * `Wan 3.0` and `SOC 2` still match correctly.
- */
 const MARKDOWN_LINK = /\]\(([^)\s]+)/g
 
 /**
@@ -109,6 +98,16 @@ export function localizeMarkdownLinks(
   )
 }
 
+/**
+ * Whether a preserve term appears as a WORD, not merely as a substring.
+ *
+ * `Wan` is a video model and also the first three letters of `Want`, so a
+ * substring test demanded that the Japanese for "Want to build tools" contain
+ * "Wan". Brand names are words, and the check has to say so.
+ *
+ * Boundaries are only applied at ends that are word characters, so terms like
+ * `Wan 3.0` and `SOC 2` still match correctly.
+ */
 export function containsTerm(value: string, term: string): boolean {
   const escaped = term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
   const prefix = /^\w/.test(term) ? '\\b' : ''

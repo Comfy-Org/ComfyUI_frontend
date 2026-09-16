@@ -1,10 +1,6 @@
 /**
  * The FAQ MDX source adapter.
  *
- * 26 English answers — 21 on `/pricing`, 5 on `/enterprise` — each a small file
- * of `question` frontmatter and a markdown body. Chinese is complete; Japanese
- * does not exist, which is why `/pricing` was held out of the Japanese tier.
- *
  * Unlike `src/data/*.ts`, nothing here needs writing back into a hand-written
  * file. `PricingFaq.astro` already selects entries by a `<category>/<locale>/`
  * id prefix, so a Japanese answer is a new file in a new folder and no page or

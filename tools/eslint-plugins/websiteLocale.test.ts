@@ -19,14 +19,8 @@ async function localeMessages(code: string, filePath = astroFile) {
 
 describe('website locale lint policy', () => {
   it.for([
-    { expression: "t('key')", reports: 1 },
-    { expression: 't("key")', reports: 1 },
-    { expression: 't(`key`)', reports: 1 },
-    { expression: 't(key)', reports: 1 },
-    { expression: 't(key(section, index))', reports: 1 },
     { expression: 't("key", "en")', reports: 1 },
     { expression: 't(key(section, index), `ja`)', reports: 1 },
-    { expression: 'tPlural("key", count)', reports: 1 },
     { expression: 'tPlural("key", count, "en")', reports: 1 },
     { expression: 't(key(section, index), locale)', reports: 0 },
     { expression: 'tPlural("key", count, locale)', reports: 0 }
@@ -67,10 +61,10 @@ describe('website locale lint policy', () => {
     'apps/website/src/components/pricing/PricingFaq.astro',
     'apps/website/src/templates/events/EventPage.astro',
     'apps/website/src/routes/models/index.astro'
-  ])('requires a locale outside pages in %s', async (file) => {
+  ])('rejects literal locales outside pages in %s', async (file) => {
     expect(
       await localeMessages(
-        '---\nconst label = t("key")\n---\n<p>{label}</p>',
+        '---\nconst label = t("key", "en")\n---\n<p>{label}</p>',
         file
       )
     ).toHaveLength(1)
@@ -79,12 +73,12 @@ describe('website locale lint policy', () => {
   it.for([
     {
       file: 'apps/website/src/config/contentSections.ts',
-      code: 'const label = t("key")',
+      code: 'const label = t("key", "en")',
       reports: 1
     },
     {
       file: 'apps/website/src/components/common/ContentSection.vue',
-      code: '<script setup lang="ts">const label = t("key")</script><template>{{ t("key") }}</template>',
+      code: '<script setup lang="ts">const label = t("key", "en")</script><template>{{ t("key", "en") }}</template>',
       reports: 2
     },
     {

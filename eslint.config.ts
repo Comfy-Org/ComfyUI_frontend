@@ -166,28 +166,18 @@ const noZodForRemoteApiTypes = {
 } as const
 
 const websiteLocaleRestrictions = [
+  ['t', 1],
+  ['tPlural', 2]
+].flatMap(([name, index]) => [
   {
-    selector: "CallExpression[callee.name='t'][arguments.length<2]",
-    message: 'Pass the page locale to t().'
+    selector: `CallExpression[callee.name='${name}'][arguments.${index}.type='Literal']`,
+    message: 'Use the page locale instead of a literal locale.'
   },
   {
-    selector: "CallExpression[callee.name='tPlural'][arguments.length<3]",
-    message: 'Pass the page locale to tPlural().'
-  },
-  ...[
-    ['t', 1],
-    ['tPlural', 2]
-  ].flatMap(([name, index]) => [
-    {
-      selector: `CallExpression[callee.name='${name}'][arguments.${index}.type='Literal']`,
-      message: 'Use the page locale instead of a literal locale.'
-    },
-    {
-      selector: `CallExpression[callee.name='${name}'][arguments.${index}.type='TemplateLiteral'][arguments.${index}.expressions.length=0]`,
-      message: 'Use the page locale instead of a literal locale.'
-    }
-  ])
-]
+    selector: `CallExpression[callee.name='${name}'][arguments.${index}.type='TemplateLiteral'][arguments.${index}.expressions.length=0]`,
+    message: 'Use the page locale instead of a literal locale.'
+  }
+])
 const outsideStaticPaths =
   ":not(FunctionDeclaration[id.name='getStaticPaths'] *):not(VariableDeclarator[id.name='getStaticPaths'] *)"
 
