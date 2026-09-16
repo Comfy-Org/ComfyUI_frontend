@@ -79,16 +79,6 @@ export function projectTopupOperation(
   }
 }
 
-/** The poller's rule for which top-up the dialog must show instead of the amount step. */
-export function needsCustomerAttention(view: TopupOperationView): boolean {
-  return (
-    view.status === 'reconciliation_needed' ||
-    view.actionUrl !== null ||
-    view.authenticationState === 'requires_action' ||
-    view.authenticationState === 'failed_retryable'
-  )
-}
-
 function topupFailureError(failure: TopupFailure): WorkspaceApiError {
   return new WorkspaceApiError(
     t('credits.topUp.unknownError'),
