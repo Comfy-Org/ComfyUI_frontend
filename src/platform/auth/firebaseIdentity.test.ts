@@ -1,7 +1,7 @@
 import { fromPartial } from '@total-typescript/shoehorn'
 import type { FirebaseApp } from 'firebase/app'
 import type { Auth, User } from 'firebase/auth'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 
 vi.mock(import('firebase/app'), { spy: true })
 vi.mock(import('firebase/auth'))
@@ -39,12 +39,14 @@ describe('firebaseIdentity', () => {
     window.history.replaceState({}, '', '/')
   })
 
-  it('initializes the default app from the remote config present at initialize(), not at import, with local persistence and the popup resolver', async () => {
+  it('initializes the default app from the remote config present at initialize(), not at import, reading localStorage, then the IndexedDB store vuefire persisted sessions in, then session storage, with the popup resolver', async () => {
     const {
       firebaseIdentity,
       initializeApp,
       initializeAuth,
       browserLocalPersistence,
+      browserSessionPersistence,
+      indexedDBLocalPersistence,
       browserPopupRedirectResolver,
       remoteConfig,
       remoteConfigState
@@ -63,9 +65,18 @@ describe('firebaseIdentity', () => {
 
     expect(initializeApp).toHaveBeenCalledWith(RUNTIME_CONFIG, '[DEFAULT]')
     expect(initializeAuth).toHaveBeenCalledWith(defaultApp, {
-      persistence: browserLocalPersistence,
+      persistence: [
+        browserLocalPersistence,
+        indexedDBLocalPersistence,
+        browserSessionPersistence
+      ],
       popupRedirectResolver: browserPopupRedirectResolver
     })
+    const persistence =
+      vi.mocked(initializeAuth).mock.lastCall?.[1]?.persistence
+    assert(Array.isArray(persistence))
+    expect(persistence[0]).toBe(browserLocalPersistence)
+    expect(persistence[1]).toBe(indexedDBLocalPersistence)
     expect(firebaseIdentity.currentUser()).toBe(signedIn)
   })
 
@@ -74,6 +85,16 @@ describe('firebaseIdentity', () => {
       await loadFresh()
     remoteConfigState.value = 'unloaded'
     vi.spyOn(console, 'error').mockImplementation(() => {})
+
+    expect(() => firebaseIdentity.initialize()).toThrow(/remote config/)
+    expect(initializeApp).not.toHaveBeenCalled()
+  })
+
+  it('refuses to resolve while remote config is unloaded outside DEV too, where a soft assertion would report and boot on build-time config', async () => {
+    vi.stubEnv('DEV', false)
+    const { firebaseIdentity, initializeApp, remoteConfigState } =
+      await loadFresh()
+    remoteConfigState.value = 'unloaded'
 
     expect(() => firebaseIdentity.initialize()).toThrow(/remote config/)
     expect(initializeApp).not.toHaveBeenCalled()
@@ -102,24 +123,35 @@ describe('firebaseIdentity', () => {
     expect(consoleError).not.toHaveBeenCalled()
   })
 
-  it('reuses an existing [DEFAULT] app through getAuth without initializing Auth again', async () => {
+  it('initializes Auth on an existing [DEFAULT] app with the same persistence list and popup resolver instead of taking whatever its creator chose', async () => {
     const {
       firebaseIdentity,
       getApps,
       getAuth,
       initializeApp,
-      initializeAuth
+      initializeAuth,
+      browserLocalPersistence,
+      browserSessionPersistence,
+      indexedDBLocalPersistence,
+      browserPopupRedirectResolver
     } = await loadFresh()
     vi.mocked(getApps).mockReturnValue([defaultApp])
-    vi.mocked(getAuth).mockReturnValue(
+    vi.mocked(initializeAuth).mockReturnValue(
       fromPartial<Auth>({ currentUser: signedIn })
     )
 
     firebaseIdentity.initialize()
 
-    expect(getAuth).toHaveBeenCalledWith(defaultApp)
+    expect(initializeAuth).toHaveBeenCalledWith(defaultApp, {
+      persistence: [
+        browserLocalPersistence,
+        indexedDBLocalPersistence,
+        browserSessionPersistence
+      ],
+      popupRedirectResolver: browserPopupRedirectResolver
+    })
     expect(firebaseIdentity.currentUser()).toBe(signedIn)
     expect(initializeApp).not.toHaveBeenCalled()
-    expect(initializeAuth).not.toHaveBeenCalled()
+    expect(getAuth).not.toHaveBeenCalled()
   })
 })

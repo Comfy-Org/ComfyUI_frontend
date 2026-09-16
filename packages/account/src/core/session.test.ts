@@ -783,6 +783,29 @@ describe('storage outage', () => {
   })
 })
 
+describe('stored credential reads', () => {
+  it('serves a fresh in-memory credential without touching storage', async () => {
+    const storage = memoryStorage()
+    const read = vi.spyOn(storage, 'read')
+    const identity = manualIdentity()
+    const { client } = makeClient(
+      { fetchImpl: okFetch(), storage, autoMint: false },
+      identity.port
+    )
+    const user = testUser()
+    identity.fire(user)
+    await client.ensureFresh(user, {})
+    read.mockClear()
+
+    await client.ensureFresh(user, {})
+
+    expect(
+      read,
+      'a fresh live credential must not cost a storage read, parse and schema check on every call'
+    ).not.toHaveBeenCalled()
+  })
+})
+
 describe('stale storage', () => {
   it('serves the fresh in-memory credential when the stored record is stale because its write failed', async () => {
     const storage = memoryStorage()
