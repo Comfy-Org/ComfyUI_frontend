@@ -161,7 +161,7 @@ describe('Router catalog form projection', () => {
     if (!model?.execution) throw new Error('Missing model')
     const prompt = routerContentById
       .get(model.routerId)
-      ?.filter(({ alias }) => !alias.contentIssue)
+      ?.filter(({ binding }) => !binding.contentIssue)
       .flatMap(({ overlay }) => overlay.examples)
       .map((example) => example.values.prompt)
       .find((value) => typeof value === 'string' && value.trim())

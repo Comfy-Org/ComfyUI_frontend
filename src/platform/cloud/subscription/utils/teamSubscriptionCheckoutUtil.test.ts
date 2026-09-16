@@ -1,16 +1,11 @@
 import { useAuthStore } from '@/stores/authStore'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-const {
-  mockIsCloud,
-  mockSubscribe,
-  mockTrackBeginCheckout,
-  mockTrackBillingEvent
-} = vi.hoisted(() => ({
+import { useTelemetry } from '@/platform/telemetry'
+
+const { mockIsCloud, mockSubscribe } = vi.hoisted(() => ({
   mockIsCloud: { value: true },
-  mockSubscribe: vi.fn(),
-  mockTrackBeginCheckout: vi.fn(),
-  mockTrackBillingEvent: vi.fn()
+  mockSubscribe: vi.fn()
 }))
 
 vi.mock(import('@/platform/distribution/types'), () => ({
@@ -34,12 +29,7 @@ vi.mock<unknown>(import('@/platform/workspace/api/workspaceApi'), () => ({
     }
   }
 }))
-vi.mock<unknown>(import('@/platform/telemetry'), () => ({
-  useTelemetry: () => ({
-    trackBeginCheckout: mockTrackBeginCheckout,
-    trackBillingEvent: mockTrackBillingEvent
-  })
-}))
+vi.mock(import('@/platform/telemetry'))
 
 import { performTeamSubscriptionCheckout } from './teamSubscriptionCheckoutUtil'
 
@@ -82,7 +72,7 @@ describe('performTeamSubscriptionCheckout', () => {
       teamCreditStopId: 'team_700'
     })
     expect(assignedHref).toBe('https://stripe.test/pay')
-    expect(mockTrackBeginCheckout).toHaveBeenCalledWith({
+    expect(useTelemetry()?.trackBeginCheckout).toHaveBeenCalledWith({
       user_id: 'user-1',
       tier: 'team',
       cycle: 'yearly',
@@ -119,7 +109,7 @@ describe('performTeamSubscriptionCheckout', () => {
     ).rejects.toThrow(/payment URL/)
 
     expect(assignedHref).toBeUndefined()
-    expect(mockTrackBillingEvent).toHaveBeenCalledWith({
+    expect(useTelemetry()?.trackBillingEvent).toHaveBeenCalledWith({
       operation: 'subscription_checkout',
       stage: 'failed',
       outcome: 'failure',
@@ -140,8 +130,8 @@ describe('performTeamSubscriptionCheckout', () => {
       })
     ).rejects.toThrow('subscribe failed')
 
-    expect(mockTrackBeginCheckout).not.toHaveBeenCalled()
-    expect(mockTrackBillingEvent).toHaveBeenCalledWith({
+    expect(useTelemetry()?.trackBeginCheckout).not.toHaveBeenCalled()
+    expect(useTelemetry()?.trackBillingEvent).toHaveBeenCalledWith({
       operation: 'subscription_checkout',
       stage: 'failed',
       outcome: 'failure',

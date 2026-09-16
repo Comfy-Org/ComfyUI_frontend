@@ -2,10 +2,10 @@ import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useCommandStore } from '@/stores/commandStore'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { useAuthActions } from '@/composables/auth/useAuthActions'
 import { useSubscriptionActions } from '@/platform/cloud/subscription/composables/useSubscriptionActions'
 
 const mockBillingFetchBalance = vi.fn()
-const mockAuthFetchBalance = vi.fn()
 const mockFetchStatus = vi.fn()
 const mockShowTopUpCreditsDialog = vi.fn()
 const mockExecute = vi.fn<ReturnType<typeof useCommandStore>['execute']>(
@@ -21,11 +21,7 @@ vi.mock(import('@/platform/telemetry/reportError'), () => ({
   reportError: mockReportError
 }))
 
-vi.mock<unknown>(import('@/composables/auth/useAuthActions'), () => ({
-  useAuthActions: () => ({
-    fetchBalance: mockAuthFetchBalance
-  })
-}))
+vi.mock(import('@/composables/auth/useAuthActions'))
 
 vi.mock<unknown>(import('@/composables/billing/useBillingContext'), () => ({
   useBillingContext: () => ({
@@ -176,7 +172,7 @@ describe('useSubscriptionActions', () => {
 
       expect(mockBillingFetchBalance).toHaveBeenCalledOnce()
       expect(mockFetchStatus).toHaveBeenCalledOnce()
-      expect(mockAuthFetchBalance).not.toHaveBeenCalled()
+      expect(useAuthActions().fetchBalance).not.toHaveBeenCalled()
     })
 
     it('swallows refresh failures without surfacing a toast', async () => {

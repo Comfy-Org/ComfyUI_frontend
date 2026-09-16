@@ -99,19 +99,19 @@ function onProseClick(event: MouseEvent): void {
 }
 
 const proseClass = cn(
-  'text-agent-fg text-sm wrap-break-word',
+  'text-sm wrap-break-word text-base-foreground',
   '[&_img]:mt-2 [&_img]:block [&_img]:h-auto [&_img]:max-w-full [&_img]:cursor-pointer [&_img]:object-contain',
-  '[&_a]:text-agent-accent [&_a]:cursor-pointer [&_a]:underline',
+  '[&_a]:cursor-pointer [&_a]:text-primary-background [&_a]:underline',
   '[&_p]:my-0 [&_p]:pt-4 [&_p:first-child]:pt-0 [&_strong]:font-semibold',
   '[&_h1]:mt-0 [&_h1]:pt-4 [&_h1]:pb-2 [&_h1]:text-2xl [&_h1]:font-semibold',
   '[&_h2]:pt-3.5 [&_h2]:pb-1.5 [&_h2]:text-base [&_h2]:font-semibold [&_h3]:pt-2 [&_h3]:font-semibold',
   '[&_ol]:my-0 [&_ol]:list-decimal [&_ol]:pt-1 [&_ol]:pb-2 [&_ol]:pl-5',
   '[&_ul]:my-0 [&_ul]:list-disc [&_ul]:pt-1 [&_ul]:pb-2 [&_ul]:pl-5',
-  '[&_:not(pre)>code]:bg-agent-surface-hover [&_:not(pre)>code]:border-agent-border-strong [&_:not(pre)>code]:rounded-sm [&_:not(pre)>code]:border [&_:not(pre)>code]:px-1.5 [&_:not(pre)>code]:py-0.5 [&_:not(pre)>code]:text-[0.875em]',
-  '[&_blockquote]:border-agent-border-strong [&_blockquote]:text-agent-fg-muted [&_blockquote]:my-2 [&_blockquote]:border-l-[3px] [&_blockquote]:py-1.5 [&_blockquote]:pl-3.5',
-  '[&_table]:bg-agent-surface-raised [&_table]:my-2 [&_table]:w-full [&_table]:border-collapse [&_table]:overflow-hidden [&_table]:rounded-lg',
-  '[&_th]:border-agent-border-strong [&_th]:bg-agent-surface-hover [&_th]:border-b [&_th]:px-4 [&_th]:py-2.5 [&_th]:text-left [&_th]:font-semibold',
-  '[&_td]:border-agent-border-strong [&_td]:border-b [&_td]:px-4 [&_td]:py-2.5'
+  '[&_:not(pre)>code]:rounded-sm [&_:not(pre)>code]:border [&_:not(pre)>code]:border-border-default [&_:not(pre)>code]:bg-secondary-background-hover [&_:not(pre)>code]:px-1.5 [&_:not(pre)>code]:py-0.5 [&_:not(pre)>code]:text-[0.875em]',
+  '[&_blockquote]:my-2 [&_blockquote]:border-l-[3px] [&_blockquote]:border-border-default [&_blockquote]:py-1.5 [&_blockquote]:pl-3.5 [&_blockquote]:text-muted-foreground',
+  '[&_table]:my-2 [&_table]:w-full [&_table]:border-collapse [&_table]:overflow-hidden [&_table]:rounded-lg [&_table]:bg-secondary-background',
+  '[&_th]:border-b [&_th]:border-border-default [&_th]:bg-secondary-background-hover [&_th]:px-4 [&_th]:py-2.5 [&_th]:text-left [&_th]:font-semibold',
+  '[&_td]:border-b [&_td]:border-border-default [&_td]:px-4 [&_td]:py-2.5'
 )
 </script>
 

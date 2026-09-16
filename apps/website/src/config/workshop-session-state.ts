@@ -15,11 +15,13 @@
 import { z } from 'zod'
 
 import type { User } from 'firebase/auth'
-import { computed, effectScope, shallowRef, watch } from 'vue'
-import type { EffectScope } from 'vue'
+import { computed, shallowRef, watch } from 'vue'
 
+import type { OperationHandle } from '@comfyorg/account/boundedOperation'
+import { createBoundedOperation } from '@comfyorg/account/boundedOperation'
 import type { SessionSnapshot } from '@comfyorg/account/session'
 import { isPermanentSessionError } from '@comfyorg/account/session'
+import { createLifecycleScope } from '@comfyorg/account/vue/lifecycleScope'
 
 import { identifyWorkshopUser, useWorkshopAuthFlag } from '../scripts/posthog'
 import {
@@ -39,10 +41,9 @@ const PENDING: SessionSnapshot<User> = {
 }
 
 const snapshot = shallowRef<SessionSnapshot<User>>(PENDING)
-let started = false
 let running = false
-let lifecycle: EffectScope | undefined
-let generation = 0
+const lifecycle = createLifecycleScope()
+const operation = createBoundedOperation()
 let detachIdentity: (() => void) | undefined
 let stopSnapshot: (() => void) | undefined
 let stopTelemetry: (() => void) | undefined
@@ -168,7 +169,7 @@ async function settleFailedWorkspaceRestore(
 async function restoreRememberedWorkspace(
   next: AuthenticatedSnapshot,
   remembered: string,
-  restoreGeneration: number
+  attempt: OperationHandle
 ): Promise<void> {
   let result: Awaited<ReturnType<typeof workshopSessionClient.remint>>
   try {
@@ -179,7 +180,7 @@ async function restoreRememberedWorkspace(
   } catch {
     return
   }
-  if (result?.status !== 'error' || generation !== restoreGeneration) return
+  if (result?.status !== 'error' || !attempt.live()) return
   await settleFailedWorkspaceRestore(next, isPermanentSessionError(result.code))
 }
 
@@ -206,14 +207,13 @@ function holdsForRestore(next: SessionSnapshot<User>): boolean {
   restoredForUid = uid
   const remembered = rememberedWorkspace(uid)
   if (!remembered || remembered === workspace.id) return false
-  const restoreGeneration = generation
-  void restoreRememberedWorkspace(next, remembered, restoreGeneration)
+  void restoreRememberedWorkspace(next, remembered, operation.capture())
   return true
 }
 
-async function begin(expectedGeneration: number): Promise<void> {
+async function begin(attempt: OperationHandle): Promise<void> {
   const firebase = await import('./workshop-firebase')
-  if (generation !== expectedGeneration) return
+  if (!attempt.live()) return
 
   running = true
   stopSnapshot = workshopSessionClient.subscribe((next) => {
@@ -237,18 +237,14 @@ async function begin(expectedGeneration: number): Promise<void> {
 }
 
 function start(): void {
-  if (started || typeof window === 'undefined') return
-  started = true
-  // This detached scope gives the module singleton its own lifetime instead
-  // of binding its watcher to whichever component calls this first.
-  lifecycle = effectScope(true)
-  const enabled = useWorkshopAuthFlag()
-  lifecycle.run(() => {
+  lifecycle.start(() => {
+    const enabled = useWorkshopAuthFlag()
     watch(
       enabled,
       (on) => {
         if (on && running) return
-        const expectedGeneration = ++generation
+        operation.abandon()
+        const attempt = operation.capture()
         stopListeners()
         snapshot.value = PENDING
         if (!on) {
@@ -256,15 +252,15 @@ function start(): void {
           workshopSessionClient.clearStoredCredential()
           return
         }
-        void begin(expectedGeneration).catch((error: unknown) => {
-          if (generation !== expectedGeneration) return
+        void begin(attempt).catch((error: unknown) => {
+          if (!attempt.live()) return
           console.error('Workshop auth initialization failed', error)
-          // Nothing half-installed survives, and the latch opens again so
-          // the next caller retries instead of waiting out the timeout.
+          // Nothing half-installed survives: abandon invalidates a restore
+          // captured before begin threw, and the latch reopens so the next
+          // caller retries instead of waiting out the timeout.
+          operation.abandon()
           stopListeners()
-          lifecycle?.stop()
-          lifecycle = undefined
-          started = false
+          lifecycle.stop()
         })
       },
       { immediate: true }

@@ -27,4 +27,7 @@ const { model } = page
   <ModelsPage slug={model.slug} client:load>
     <ModelsShowcase slot="fallback" />
   </ModelsPage>
+  <noscript>
+    <ModelsShowcase />
+  </noscript>
 </BaseLayout>

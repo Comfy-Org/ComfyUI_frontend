@@ -218,14 +218,14 @@ const menuItemClass =
       v-if="browsing && featured.length"
       :models="featured"
       :locale
-      class="short:mb-6 mb-10"
+      class="mb-10 short:mb-6"
     />
 
     <div class="min-w-0">
       <button
         v-if="inSection"
         type="button"
-        class="hover:text-primary-comfy-yellow focus-visible:ring-primary-comfy-yellow/50 -ml-1 inline-flex cursor-pointer items-center gap-1 rounded-lg px-1 text-sm font-medium text-primary-warm-gray opacity-60 transition hover:opacity-100 focus-visible:opacity-100 focus-visible:ring-3"
+        class="-ml-1 inline-flex cursor-pointer items-center gap-1 rounded-lg px-1 text-sm font-medium text-primary-warm-gray opacity-60 transition hover:text-primary-comfy-yellow hover:opacity-100 focus-visible:opacity-100 focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow/50"
         data-testid="section-back"
         @click="leaveSection"
       >
@@ -235,7 +235,7 @@ const menuItemClass =
 
       <div
         ref="toolbar"
-        class="bg-page sticky top-20 z-30 -mx-1 mb-8 flex scroll-mt-20 flex-wrap items-center justify-end gap-3 px-1 py-4 max-sm:mb-4 max-sm:py-2 lg:top-26 lg:scroll-mt-26"
+        class="sticky top-20 z-30 -mx-1 mb-8 flex scroll-mt-20 flex-wrap items-center justify-end gap-3 bg-page px-1 py-4 max-sm:mb-4 max-sm:py-2 sm:flex-nowrap lg:top-26 lg:scroll-mt-26"
       >
         <h1
           v-if="inSection"
@@ -256,7 +256,7 @@ const menuItemClass =
           compact
           :class="
             cn(
-              'max-sm:min-w-0 max-sm:flex-1 sm:w-full sm:max-w-xl',
+              'min-w-0 flex-1 sm:max-w-xl sm:min-w-32',
               !inSection && 'sm:mr-auto'
             )
           "
@@ -275,7 +275,7 @@ const menuItemClass =
             <DropdownMenuTrigger
               data-testid="workshop-sort"
               :aria-label="t('workshop.sort.label', locale)"
-              class="bg-transparency-white-t4 focus-visible:ring-primary-comfy-yellow/50 group inline-flex h-11 cursor-pointer items-center gap-2 rounded-2xl px-4 text-sm font-medium text-primary-comfy-canvas transition-colors outline-none hover:bg-transparency-white-t8 focus-visible:ring-3 max-sm:size-10 max-sm:justify-center max-sm:rounded-xl max-sm:bg-white/8 max-sm:px-0"
+              class="group inline-flex h-11 cursor-pointer items-center gap-2 rounded-2xl bg-transparency-white-t4 px-4 text-sm font-medium text-primary-comfy-canvas transition-colors outline-none hover:bg-transparency-white-t8 focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow/50 max-sm:size-10 max-sm:justify-center max-sm:rounded-xl max-sm:bg-white/8 max-sm:px-0"
             >
               <ArrowUpDown class="size-4 shrink-0" aria-hidden="true" />
               <span class="max-sm:hidden">{{
@@ -290,7 +290,7 @@ const menuItemClass =
               <DropdownMenuContent
                 align="end"
                 :side-offset="8"
-                class="border-primary-comfy-ink-light bg-site-dropdown z-50 w-64 rounded-2xl border p-2 shadow-lg data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:animate-in data-[state=open]:fade-in-0"
+                class="z-50 w-64 rounded-2xl border border-primary-comfy-ink-light bg-site-dropdown p-2 shadow-lg data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:animate-in data-[state=open]:fade-in-0"
               >
                 <DropdownMenuRadioGroup v-model="sort">
                   <DropdownMenuRadioItem
@@ -328,7 +328,7 @@ const menuItemClass =
 
         <button
           type="button"
-          class="group hover:border-primary-comfy-yellow hover:text-primary-comfy-yellow focus-visible:ring-primary-comfy-yellow/50 mx-auto mt-12 flex w-fit cursor-pointer items-center justify-center gap-2 rounded-2xl border border-transparency-white-t8 px-8 py-4 text-sm font-medium text-primary-comfy-canvas transition-colors outline-none focus-visible:ring-3 max-sm:w-full"
+          class="group mx-auto mt-12 flex w-fit cursor-pointer items-center justify-center gap-2 rounded-2xl border border-transparency-white-t8 px-8 py-4 text-sm font-medium text-primary-comfy-canvas transition-colors outline-none hover:border-primary-comfy-yellow hover:text-primary-comfy-yellow focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow/50 max-sm:w-full"
           data-testid="browse-all-end"
           @click="browseAll = true"
         >
