@@ -26,7 +26,6 @@ import {
   selectFreshCredential
 } from './credentialCache.js'
 import type { AccountIdentity } from './identity.js'
-import { isAccountIdentity } from './identity.js'
 import { abortable, exchangeToken } from './exchange.js'
 import type { MintDispatch } from './mintCoordinator.js'
 import { createMintCoordinator } from './mintCoordinator.js'
@@ -105,12 +104,15 @@ export interface SessionClientOptions extends SessionRequestOptions {
   readonly storage: CredentialStorage
   readonly freshMarginMs?: number
   readonly refreshScheduler?: RefreshSchedulerOptions
-  /** Applies to the identity passed at construction; see `AttachIdentityOptions.autoMint`. */
+  /**
+   * When false, an identity event sets the user and publishes without
+   * starting a warm-up mint — for hosts that drive every mint explicitly.
+   */
   readonly autoMint?: boolean
 }
 
 /**
- * `pending` is the initial phase, before the attached identity has delivered
+ * `pending` is the initial phase, before the identity has delivered
  * even once, so a host can tell "Firebase has not answered yet" (pending)
  * from "nobody is signed in" (a delivered null) without wrapping the port.
  */
@@ -142,21 +144,8 @@ export type SessionSnapshot<TUser extends AccountUser = AccountUser> =
       readonly failure: SessionFailure
     }
 
-export interface AttachIdentityOptions {
-  /**
-   * When false, an identity event sets the user and publishes without
-   * starting a warm-up mint — for hosts that drive every mint explicitly.
-   */
-  readonly autoMint?: boolean
-}
-
 export interface SessionClient<TUser extends AccountUser = AccountUser> {
-  /** @deprecated Transitional Pinia-adapter seam; pass the identity as `createSessionClient`'s second argument instead (FE-2171, PoC #16639). */
-  attachIdentity: (
-    identity: AccountIdentity<TUser>,
-    options?: AttachIdentityOptions
-  ) => () => void
-  /** Detaches the current identity; the persisted credential stays until `clearStoredCredential`. */
+  /** Detaches the constructed identity; the persisted credential stays until `clearStoredCredential`. */
   dispose: () => void
   getSnapshot: () => SessionSnapshot<TUser>
   subscribe: (
@@ -199,7 +188,7 @@ export interface SessionClient<TUser extends AccountUser = AccountUser> {
   invalidate: () => void
   /**
    * Drops only the persisted copy of the credential. The published session
-   * stays live; a host that must end it detaches or invalidates as well.
+   * stays live; a host that must end it disposes or invalidates as well.
    */
   clearStoredCredential: () => void
 }
@@ -223,7 +212,6 @@ export function createSessionClient<TUser extends AccountUser = AccountUser>(
   } = clientOptions
 
   let state = initialSessionState<TUser>()
-  let detachCurrent: (() => void) | undefined
   const listeners = new Set<(snapshot: SessionSnapshot<TUser>) => void>()
   const cache = createCredentialCache(storage)
   const mints = createMintCoordinator()
@@ -486,16 +474,8 @@ export function createSessionClient<TUser extends AccountUser = AccountUser>(
     return result
   }
 
-  function subscribeIdentity(
-    port: AccountIdentity<TUser>,
-    autoMint: boolean
-  ): () => void {
-    if (!isAccountIdentity(port)) {
-      throw new Error(
-        'the session client needs the identity from @comfyorg/account/firebase (or /testing)'
-      )
-    }
-    detachCurrent?.()
+  function subscribeIdentity(port: AccountIdentity<TUser>): () => void {
+    const autoMint = clientOptions.autoMint !== false
     let active = true
     const unsubscribe = port.onUserChanged((next) => {
       if (!active) return
@@ -504,24 +484,19 @@ export function createSessionClient<TUser extends AccountUser = AccountUser>(
         void refreshWith(ensureCore, next)
       }
     })
-    const detach = () => {
+    return () => {
       if (!active) return
       active = false
-      detachCurrent = undefined
       unsubscribe()
       commit({ type: 'identity-detached' })
     }
-    detachCurrent = detach
-    return detach
   }
 
-  if (identity) subscribeIdentity(identity, clientOptions.autoMint !== false)
+  const detachIdentity = identity ? subscribeIdentity(identity) : undefined
 
   return {
-    attachIdentity: (port, attachOptions) =>
-      subscribeIdentity(port, attachOptions?.autoMint !== false),
     dispose() {
-      detachCurrent?.()
+      detachIdentity?.()
     },
     getSnapshot,
     subscribe(listener) {

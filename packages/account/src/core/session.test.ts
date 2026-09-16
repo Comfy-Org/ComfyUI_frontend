@@ -3,6 +3,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { createTestIdentity } from '../testing.js'
 import type {
   AccountCredential,
+  AccountIdentity,
   AccountUser,
   CredentialStorage,
   SessionClientOptions,
@@ -31,13 +32,15 @@ function memoryStorage(): CredentialStorage & { raw: () => string | null } {
   }
 }
 
-function makeClient(overrides: Partial<SessionClientOptions> = {}) {
+function makeClient(
+  overrides: Partial<SessionClientOptions> = {},
+  identity?: AccountIdentity
+) {
   const storage = memoryStorage()
-  const client = createSessionClient({
-    exchangeUrl: EXCHANGE_URL,
-    storage,
-    ...overrides
-  })
+  const client = createSessionClient(
+    { exchangeUrl: EXCHANGE_URL, storage, ...overrides },
+    identity
+  )
   return { client, storage }
 }
 
@@ -528,9 +531,11 @@ describe('ensureFresh', () => {
           })
         )
       )
-    const { client, storage } = makeClient({ fetchImpl })
     const identity = manualIdentity()
-    client.attachIdentity(identity.port, { autoMint: false })
+    const { client, storage } = makeClient(
+      { fetchImpl, autoMint: false },
+      identity.port
+    )
     const user = testUser()
     identity.fire(user)
 
@@ -566,9 +571,8 @@ describe('ensureFresh', () => {
       .mockImplementationOnce(async () =>
         jsonResponse(200, mintBody({ token: 'newer-jwt' }))
       )
-    const { client } = makeClient({ fetchImpl })
     const identity = manualIdentity()
-    client.attachIdentity(identity.port, { autoMint: false })
+    const { client } = makeClient({ fetchImpl, autoMint: false }, identity.port)
     const user = testUser()
     identity.fire(user)
 
@@ -685,9 +689,8 @@ describe('remint', () => {
       .mockImplementationOnce(async () =>
         jsonResponse(200, mintBody({ token: 'forced-jwt' }))
       )
-    const { client, storage } = makeClient({ fetchImpl })
     const identity = manualIdentity()
-    client.attachIdentity(identity.port)
+    const { client, storage } = makeClient({ fetchImpl }, identity.port)
 
     identity.fire(testUser())
     await vi.waitFor(() => expect(fetchImpl).toHaveBeenCalledOnce())
@@ -713,9 +716,11 @@ describe('remint', () => {
 
 describe('clearStoredCredential', () => {
   it('drops the stored copy and leaves the published session live', async () => {
-    const { client, storage } = makeClient({ fetchImpl: okFetch() })
     const identity = manualIdentity()
-    client.attachIdentity(identity.port)
+    const { client, storage } = makeClient(
+      { fetchImpl: okFetch() },
+      identity.port
+    )
     identity.fire(testUser())
     await vi.waitFor(() => expect(client.getToken()).toBe('workspace-jwt'))
 
@@ -740,9 +745,8 @@ describe('invalidate() and an in-flight mint', () => {
       .mockImplementationOnce(async () =>
         jsonResponse(200, mintBody({ token: 'post-invalidate-jwt' }))
       )
-    const { client } = makeClient({ fetchImpl })
     const identity = manualIdentity()
-    client.attachIdentity(identity.port)
+    const { client } = makeClient({ fetchImpl }, identity.port)
     const user = testUser()
     identity.fire(user)
     await vi.waitFor(() => expect(fetchImpl).toHaveBeenCalledOnce())
@@ -768,9 +772,8 @@ describe('invalidate() and an in-flight mint', () => {
       .mockImplementationOnce(async () =>
         jsonResponse(200, mintBody({ token: 'new-jwt' }))
       )
-    const { client } = makeClient({ fetchImpl })
     const identity = manualIdentity()
-    client.attachIdentity(identity.port)
+    const { client } = makeClient({ fetchImpl }, identity.port)
 
     identity.fire(testUser('uid-1'))
     await vi.waitFor(() => expect(fetchImpl).toHaveBeenCalledOnce())
@@ -796,20 +799,22 @@ describe('invalidate() and an in-flight mint', () => {
 describe('storage outage', () => {
   it('serves the published credential when storage cannot be read, instead of re-minting on every read', async () => {
     const fetchImpl = okFetch()
-    const { client } = makeClient({
-      fetchImpl,
-      storage: {
-        read: () => {
-          throw new Error('blocked')
-        },
-        write: () => {
-          throw new Error('blocked')
-        },
-        clear: () => undefined
-      }
-    })
     const identity = manualIdentity()
-    client.attachIdentity(identity.port)
+    const { client } = makeClient(
+      {
+        fetchImpl,
+        storage: {
+          read: () => {
+            throw new Error('blocked')
+          },
+          write: () => {
+            throw new Error('blocked')
+          },
+          clear: () => undefined
+        }
+      },
+      identity.port
+    )
     const user = testUser()
     identity.fire(user)
     await vi.waitFor(() => expect(client.getToken()).toBe('workspace-jwt'))
@@ -836,9 +841,11 @@ describe('stale storage', () => {
       clear: storage.clear
     }
     const fetchImpl = okFetch('fresh-jwt')
-    const { client } = makeClient({ fetchImpl, storage: failingWrites })
     const identity = manualIdentity()
-    client.attachIdentity(identity.port)
+    const { client } = makeClient(
+      { fetchImpl, storage: failingWrites },
+      identity.port
+    )
     identity.fire(testUser('uid-1'))
     await vi.waitFor(() => expect(client.getToken()).toBe('fresh-jwt'))
 
@@ -854,9 +861,8 @@ describe('stale storage', () => {
   it('keeps the live credential when a fresh but older stored record would otherwise shadow it', async () => {
     const storage = memoryStorage()
     const fetchImpl = okFetch('new-jwt')
-    const { client } = makeClient({ fetchImpl, storage })
     const identity = manualIdentity()
-    client.attachIdentity(identity.port)
+    const { client } = makeClient({ fetchImpl, storage }, identity.port)
     identity.fire(testUser('uid-1'))
     await vi.waitFor(() => expect(client.getToken()).toBe('new-jwt'))
 
@@ -886,9 +892,8 @@ describe('stale storage', () => {
         })
       )
     )
-    const { client } = makeClient({ fetchImpl, storage })
     const identity = manualIdentity()
-    client.attachIdentity(identity.port)
+    const { client } = makeClient({ fetchImpl, storage }, identity.port)
     identity.fire(testUser('uid-1'))
     await vi.waitFor(() => expect(client.getToken()).toBe('live-jwt'))
 
@@ -969,9 +974,8 @@ describe('identity epoch commits', () => {
       .mockImplementationOnce(async () =>
         jsonResponse(200, mintBody({ token: 'new-jwt' }))
       )
-    const { client } = makeClient({ fetchImpl })
     const identity = manualIdentity()
-    client.attachIdentity(identity.port)
+    const { client } = makeClient({ fetchImpl }, identity.port)
 
     identity.fire(testUser('uid-1'))
     await vi.waitFor(() => expect(fetchImpl).toHaveBeenCalledOnce())
@@ -995,33 +999,19 @@ describe('identity epoch commits', () => {
   })
 })
 
-describe('identity brand', () => {
-  it('refuses a port that did not come from the package entry or the testing seam', () => {
-    const { client } = makeClient({ fetchImpl: okFetch() })
-
-    expect(() =>
-      client.attachIdentity(
-        // @ts-expect-error an unbranded port is not an AccountIdentity
-        { onUserChanged: () => () => undefined }
-      )
-    ).toThrow('the session client needs the identity')
-  })
-
-  it('stays pending until the port delivers, signs out on null, and re-pends after detach', async () => {
-    const { client } = makeClient({ fetchImpl: okFetch() })
+describe('identity delivery', () => {
+  it('stays pending until the port delivers, signs out on null, and re-pends after dispose', () => {
     const identity = manualIdentity()
-    expect(client.getSnapshot().phase).toBe('pending')
-
-    const detach = client.attachIdentity(identity.port)
+    const { client } = makeClient({ fetchImpl: okFetch() }, identity.port)
     expect(
       client.getSnapshot().phase,
-      'attached is not delivered; Firebase has not answered yet'
+      'constructed is not delivered; Firebase has not answered yet'
     ).toBe('pending')
 
     identity.fire(null)
     expect(client.getSnapshot().phase).toBe('signed-out')
 
-    detach()
+    client.dispose()
     expect(client.getSnapshot().phase).toBe('pending')
   })
 })
@@ -1112,12 +1102,11 @@ describe('identity token failures', () => {
   })
 })
 
-describe('attachIdentity without auto-mint', () => {
+describe('construction without auto-mint', () => {
   it('sets the user and publishes, but leaves minting to the host', async () => {
     const fetchImpl = okFetch('host-driven-jwt')
-    const { client } = makeClient({ fetchImpl })
     const identity = manualIdentity()
-    client.attachIdentity(identity.port, { autoMint: false })
+    const { client } = makeClient({ fetchImpl, autoMint: false }, identity.port)
     const user = testUser()
 
     identity.fire(user)
@@ -1148,9 +1137,8 @@ describe('host-driven invalidation', () => {
       .mockImplementationOnce(async () =>
         jsonResponse(200, mintBody({ token: 'post-invalidate-jwt' }))
       )
-    const { client } = makeClient({ fetchImpl })
     const identity = manualIdentity()
-    client.attachIdentity(identity.port)
+    const { client } = makeClient({ fetchImpl }, identity.port)
     const user = testUser()
 
     identity.fire(user)
@@ -1175,9 +1163,11 @@ describe('host-driven invalidation', () => {
   })
 
   it('invalidate() clears the credential cache, not only memory', async () => {
-    const { client, storage } = makeClient({ fetchImpl: okFetch() })
     const identity = manualIdentity()
-    client.attachIdentity(identity.port)
+    const { client, storage } = makeClient(
+      { fetchImpl: okFetch() },
+      identity.port
+    )
     identity.fire(testUser())
     await vi.waitFor(() => expect(client.getToken()).toBe('workspace-jwt'))
     expect(storage.raw()).not.toBeNull()
@@ -1197,9 +1187,8 @@ describe('host-driven invalidation', () => {
       .mockImplementationOnce(async () =>
         jsonResponse(200, mintBody({ token: 'post-invalidate-jwt' }))
       )
-    const { client } = makeClient({ fetchImpl })
     const identity = manualIdentity()
-    client.attachIdentity(identity.port)
+    const { client } = makeClient({ fetchImpl }, identity.port)
     const user = testUser()
     identity.fire(user)
     await vi.waitFor(() => expect(client.getToken()).toBe('workspace-jwt'))
@@ -1227,9 +1216,8 @@ describe('host-driven invalidation', () => {
     const fetchImpl = vi.fn<typeof fetch>(
       () => new Promise<Response>((resolve) => (release = resolve))
     )
-    const { client, storage } = makeClient({ fetchImpl })
     const identity = manualIdentity()
-    client.attachIdentity(identity.port)
+    const { client, storage } = makeClient({ fetchImpl }, identity.port)
     identity.fire(testUser())
     await vi.waitFor(() => expect(fetchImpl).toHaveBeenCalledOnce())
 
@@ -1254,9 +1242,8 @@ describe('transient-failure credential preservation', () => {
       .mockImplementationOnce(async () => jsonResponse(200, mintBody()))
       .mockImplementationOnce(async () => jsonResponse(503, {}))
       .mockImplementationOnce(async () => jsonResponse(401, {}))
-    const { client } = makeClient({ fetchImpl })
     const identity = manualIdentity()
-    client.attachIdentity(identity.port)
+    const { client } = makeClient({ fetchImpl }, identity.port)
     const user = testUser()
 
     identity.fire(user)
@@ -1288,9 +1275,8 @@ describe('re-mint observability', () => {
     const fetchImpl = vi.fn<typeof fetch>(async () =>
       jsonResponse(200, mintBody({ token: `jwt-${(minted += 1)}` }))
     )
-    const { client } = makeClient({ fetchImpl })
     const identity = manualIdentity()
-    client.attachIdentity(identity.port)
+    const { client } = makeClient({ fetchImpl }, identity.port)
     const seenTokens: string[] = []
     client.subscribe((snapshot) => {
       if (snapshot.phase === 'authenticated') {
@@ -1311,11 +1297,13 @@ describe('re-mint observability', () => {
 
 describe('sign-in state ownership', () => {
   it('publishes an error phase when the initial mint fails', async () => {
-    const { client } = makeClient({
-      fetchImpl: vi.fn<typeof fetch>(async () => jsonResponse(503, {}))
-    })
     const identity = manualIdentity()
-    client.attachIdentity(identity.port)
+    const { client } = makeClient(
+      {
+        fetchImpl: vi.fn<typeof fetch>(async () => jsonResponse(503, {}))
+      },
+      identity.port
+    )
 
     identity.fire(testUser())
 
@@ -1332,9 +1320,11 @@ describe('sign-in state ownership', () => {
   })
 
   it('clears the cache and publishes signed-out on sign-out', async () => {
-    const { client, storage } = makeClient({ fetchImpl: okFetch() })
     const identity = manualIdentity()
-    client.attachIdentity(identity.port)
+    const { client, storage } = makeClient(
+      { fetchImpl: okFetch() },
+      identity.port
+    )
 
     identity.fire(testUser())
     await vi.waitFor(() => {
@@ -1347,9 +1337,8 @@ describe('sign-in state ownership', () => {
   })
 
   it('discards a mint that lands after the signed-in user changed', async () => {
-    const { client } = makeClient({ fetchImpl: okFetch() })
     const identity = manualIdentity()
-    client.attachIdentity(identity.port)
+    const { client } = makeClient({ fetchImpl: okFetch() }, identity.port)
 
     const result = client.ensureFresh(testUser(), {})
     identity.fire(testUser('uid-2', 'id-token-2'))
@@ -1357,16 +1346,18 @@ describe('sign-in state ownership', () => {
     expect(await result).toBeUndefined()
   })
 
-  it('getToken is sync, uid-guarded, and empty after detach', async () => {
-    const { client } = makeClient({ fetchImpl: okFetch('jwt-sync') })
+  it('getToken is sync, uid-guarded, and empty after dispose', async () => {
     const identity = manualIdentity()
-    const detach = client.attachIdentity(identity.port)
+    const { client } = makeClient(
+      { fetchImpl: okFetch('jwt-sync') },
+      identity.port
+    )
 
     identity.fire(testUser())
     await vi.waitFor(() => {
       expect(client.getToken()).toBe('jwt-sync')
     })
-    detach()
+    client.dispose()
 
     expect(client.getToken()).toBeUndefined()
     expect(client.getSnapshot().phase).toBe('pending')
@@ -1377,9 +1368,8 @@ describe('sign-in state ownership', () => {
     const fetchImpl = vi.fn<typeof fetch>(
       () => new Promise<Response>((resolve) => (release = resolve))
     )
-    const { client } = makeClient({ fetchImpl })
     const identity = manualIdentity()
-    client.attachIdentity(identity.port)
+    const { client } = makeClient({ fetchImpl }, identity.port)
     const user = testUser()
 
     identity.fire(user)
@@ -1397,9 +1387,11 @@ describe('sign-in state ownership', () => {
   })
 
   it('still publishes an explicit-user popup mint when the listener has not settled yet', async () => {
-    const { client } = makeClient({ fetchImpl: okFetch('popup-jwt') })
     const identity = manualIdentity()
-    client.attachIdentity(identity.port)
+    const { client } = makeClient(
+      { fetchImpl: okFetch('popup-jwt') },
+      identity.port
+    )
 
     const result = await client.ensureFresh(testUser(), {})
 
@@ -1411,9 +1403,8 @@ describe('sign-in state ownership', () => {
 
   it('exposes a popup mint through the snapshot only once the identity port delivers the user', async () => {
     const fetchImpl = okFetch('popup-jwt')
-    const { client } = makeClient({ fetchImpl })
     const identity = manualIdentity()
-    client.attachIdentity(identity.port)
+    const { client } = makeClient({ fetchImpl }, identity.port)
     const user = testUser()
 
     const result = await client.ensureFresh(user, {})
@@ -1436,39 +1427,6 @@ describe('sign-in state ownership', () => {
       'the listener settles from the cached popup credential, not a second mint'
     ).toHaveBeenCalledOnce()
   })
-
-  it('ignores a stale detach from a superseded attachIdentity call', async () => {
-    const { client } = makeClient({ fetchImpl: okFetch('jwt-b') })
-    const identityA = manualIdentity()
-    const identityB = manualIdentity()
-    const detachA = client.attachIdentity(identityA.port)
-    client.attachIdentity(identityB.port)
-
-    identityB.fire(testUser('uid-2', 'id-token-2'))
-    await vi.waitFor(() => {
-      expect(client.getSnapshot().phase).toBe('authenticated')
-    })
-    detachA()
-
-    expect(
-      client.getSnapshot().phase,
-      'a superseded detach must not clear the live identity'
-    ).toBe('authenticated')
-    expect(client.getToken()).toBe('jwt-b')
-  })
-
-  it('ignores a callback from an identity port that was already detached', async () => {
-    const fetchImpl = vi.fn<typeof fetch>()
-    const { client } = makeClient({ fetchImpl })
-    const identity = manualIdentity()
-    const detach = client.attachIdentity(identity.port)
-
-    detach()
-    identity.fire(testUser())
-
-    expect(client.getSnapshot().phase).toBe('pending')
-    expect(fetchImpl).not.toHaveBeenCalled()
-  })
 })
 
 describe('storage writes after identity changes', () => {
@@ -1480,9 +1438,8 @@ describe('storage writes after identity changes', () => {
       .mockImplementationOnce(
         () => new Promise<Response>((resolve) => (release = resolve))
       )
-    const { client, storage } = makeClient({ fetchImpl })
     const identity = manualIdentity()
-    client.attachIdentity(identity.port)
+    const { client, storage } = makeClient({ fetchImpl }, identity.port)
     const user = testUser()
 
     identity.fire(user)
@@ -1500,7 +1457,7 @@ describe('storage writes after identity changes', () => {
     ).toBeNull()
   })
 
-  it('never writes a credential minted before a detach', async () => {
+  it('never writes a credential minted before a dispose', async () => {
     let release!: (response: Response) => void
     const fetchImpl = vi
       .fn<typeof fetch>()
@@ -1508,18 +1465,17 @@ describe('storage writes after identity changes', () => {
       .mockImplementationOnce(
         () => new Promise<Response>((resolve) => (release = resolve))
       )
-    const { client, storage } = makeClient({ fetchImpl })
     const identity = manualIdentity()
-    const detach = client.attachIdentity(identity.port)
+    const { client, storage } = makeClient({ fetchImpl }, identity.port)
     const user = testUser()
 
     identity.fire(user)
     await vi.waitFor(() => expect(client.getToken()).toBe('workspace-jwt'))
     const late = client.remint(user, {})
     await vi.waitFor(() => expect(fetchImpl).toHaveBeenCalledTimes(2))
-    detach()
+    client.dispose()
     client.clearStoredCredential()
-    release(jsonResponse(200, mintBody({ token: 'stale-after-detach' })))
+    release(jsonResponse(200, mintBody({ token: 'stale-after-dispose' })))
     await late
 
     expect(
@@ -1572,19 +1528,21 @@ describe('storage resilience', () => {
   })
 
   it('still publishes signed-out when the sign-out cache clear throws', async () => {
-    const client = createSessionClient({
-      exchangeUrl: EXCHANGE_URL,
-      fetchImpl: okFetch(),
-      storage: {
-        read: () => null,
-        write: () => undefined,
-        clear: () => {
-          throw new Error('storage unavailable')
-        }
-      }
-    })
     const identity = manualIdentity()
-    client.attachIdentity(identity.port)
+    const client = createSessionClient(
+      {
+        exchangeUrl: EXCHANGE_URL,
+        fetchImpl: okFetch(),
+        storage: {
+          read: () => null,
+          write: () => undefined,
+          clear: () => {
+            throw new Error('storage unavailable')
+          }
+        }
+      },
+      identity.port
+    )
 
     identity.fire(testUser())
     await vi.waitFor(() => {
@@ -1608,9 +1566,11 @@ describe('getToken freshness', () => {
         })
       )
     )
-    const { client } = makeClient({ fetchImpl, now: () => clock })
     const identity = manualIdentity()
-    client.attachIdentity(identity.port, { autoMint: false })
+    const { client } = makeClient(
+      { fetchImpl, now: () => clock, autoMint: false },
+      identity.port
+    )
     const user = testUser()
     identity.fire(user)
 
@@ -1648,9 +1608,8 @@ describe('cached credential validation', () => {
 describe('settled sign-out blocks an explicit remint', () => {
   it('never commits an explicit-user mint once identity has settled signed out', async () => {
     const fetchImpl = okFetch('stale-jwt')
-    const { client, storage } = makeClient({ fetchImpl })
     const identity = manualIdentity()
-    client.attachIdentity(identity.port)
+    const { client, storage } = makeClient({ fetchImpl }, identity.port)
 
     identity.fire(null)
     const result = await client.remint(testUser('stale-uid'), {})

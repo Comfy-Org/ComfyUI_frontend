@@ -3,8 +3,8 @@ import type { AccountUser } from './sessionContracts.js'
 /**
  * The identity boundary. An internal port, not a host adapter: real hosts
  * get their implementation from `@comfyorg/account/firebase`; tests brand a
- * fake through `@comfyorg/account/testing`. `attachIdentity` accepts only
- * the branded form.
+ * fake through `@comfyorg/account/testing`. `createSessionClient` accepts
+ * only the branded form.
  */
 export interface IdentityPort<TUser extends AccountUser = AccountUser> {
   onUserChanged: (callback: (user: TUser | null) => void) => () => void
@@ -27,13 +27,4 @@ export function brandIdentity<TUser extends AccountUser>(
   port: IdentityPort<TUser>
 ): AccountIdentity<TUser> {
   return { ...port, [identityBrand]: true }
-}
-
-export function isAccountIdentity(value: unknown): value is AccountIdentity {
-  if (typeof value !== 'object' || value === null) return false
-  const candidate = value as Record<PropertyKey, unknown>
-  return (
-    candidate[identityBrand] === true &&
-    typeof candidate.onUserChanged === 'function'
-  )
 }

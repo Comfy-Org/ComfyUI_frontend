@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type {
   AccountCredential,
+  AccountIdentity,
   AccountUser,
   CredentialStorage,
   CrossTabRefreshPort,
@@ -29,13 +30,19 @@ function memoryStorage(): CredentialStorage {
   }
 }
 
-function makeClient(overrides: Partial<SessionClientOptions> = {}) {
-  return createSessionClient({
-    exchangeUrl: EXCHANGE_URL,
-    storage: memoryStorage(),
-    refreshScheduler: {},
-    ...overrides
-  })
+function makeClient(
+  overrides: Partial<SessionClientOptions> = {},
+  identity?: AccountIdentity
+) {
+  return createSessionClient(
+    {
+      exchangeUrl: EXCHANGE_URL,
+      storage: memoryStorage(),
+      refreshScheduler: {},
+      ...overrides
+    },
+    identity
+  )
 }
 
 function testUser(uid = 'uid-1'): AccountUser {
@@ -79,9 +86,8 @@ describe('opt-in refresh scheduler', () => {
     const fetchImpl = vi.fn<typeof fetch>(async () =>
       mintResponse(`jwt-${(minted += 1)}`)
     )
-    const client = makeClient({ fetchImpl })
     const identity = manualIdentity()
-    client.attachIdentity(identity.port)
+    const client = makeClient({ fetchImpl }, identity.port)
 
     identity.fire(testUser())
     await vi.waitFor(() => {
@@ -106,9 +112,8 @@ describe('opt-in refresh scheduler', () => {
       .mockImplementationOnce(async () => new Response('{}', { status: 503 }))
       .mockImplementationOnce(async () => new Response('{}', { status: 503 }))
       .mockImplementationOnce(async () => mintResponse('jwt-2'))
-    const client = makeClient({ fetchImpl })
     const identity = manualIdentity()
-    client.attachIdentity(identity.port)
+    const client = makeClient({ fetchImpl }, identity.port)
 
     identity.fire(testUser())
     await vi.waitFor(() => {
@@ -132,14 +137,16 @@ describe('opt-in refresh scheduler', () => {
       .fn<typeof fetch>()
       .mockImplementationOnce(async () => mintResponse('jwt-1'))
       .mockImplementation(async () => new Response('{}', { status: 503 }))
-    const client = makeClient({
-      fetchImpl,
-      refreshScheduler: {
-        onScheduledOutcome: (report) => outcomes.push(report.outcome)
-      }
-    })
     const identity = manualIdentity()
-    client.attachIdentity(identity.port)
+    const client = makeClient(
+      {
+        fetchImpl,
+        refreshScheduler: {
+          onScheduledOutcome: (report) => outcomes.push(report.outcome)
+        }
+      },
+      identity.port
+    )
 
     identity.fire(testUser())
     await vi.waitFor(() => {
@@ -184,9 +191,8 @@ describe('opt-in refresh scheduler', () => {
           { status: 200 }
         )
     )
-    const client = makeClient({ fetchImpl })
     const identity = manualIdentity()
-    client.attachIdentity(identity.port)
+    const client = makeClient({ fetchImpl }, identity.port)
 
     identity.fire(testUser())
     await vi.waitFor(() => {
@@ -201,9 +207,8 @@ describe('opt-in refresh scheduler', () => {
 
   it('stops scheduling on sign-out', async () => {
     const fetchImpl = vi.fn<typeof fetch>(async () => mintResponse('jwt-1'))
-    const client = makeClient({ fetchImpl })
     const identity = manualIdentity()
-    client.attachIdentity(identity.port)
+    const client = makeClient({ fetchImpl }, identity.port)
 
     identity.fire(testUser())
     await vi.waitFor(() => {
@@ -224,9 +229,8 @@ describe('opt-in refresh scheduler', () => {
       .fn<typeof fetch>()
       .mockImplementationOnce(async () => mintResponse('jwt-1'))
       .mockImplementation(async () => new Response('{}', { status: 401 }))
-    const client = makeClient({ fetchImpl })
     const identity = manualIdentity()
-    client.attachIdentity(identity.port)
+    const client = makeClient({ fetchImpl }, identity.port)
 
     identity.fire(testUser())
     await vi.waitFor(() => {
@@ -248,9 +252,8 @@ describe('opt-in refresh scheduler', () => {
       .mockImplementationOnce(async () => mintResponse('jwt-1'))
       .mockImplementationOnce(async () => new Response('{}', { status: 401 }))
       .mockImplementation(async () => mintResponse('jwt-resurrected'))
-    const client = makeClient({ fetchImpl })
     const identity = manualIdentity()
-    client.attachIdentity(identity.port)
+    const client = makeClient({ fetchImpl }, identity.port)
 
     identity.fire(testUser())
     await vi.waitFor(() => {
@@ -290,9 +293,8 @@ describe('opt-in refresh scheduler', () => {
       .mockImplementation(async () =>
         workspaceResponse('jwt-wrong', 'ws-other')
       )
-    const client = makeClient({ fetchImpl })
     const identity = manualIdentity()
-    client.attachIdentity(identity.port, { autoMint: false })
+    const client = makeClient({ fetchImpl, autoMint: false }, identity.port)
     const user = testUser()
 
     identity.fire(user)
@@ -319,14 +321,16 @@ describe('opt-in refresh scheduler', () => {
       .mockImplementationOnce(async () => new Response('{}', { status: 503 }))
       .mockImplementationOnce(async () => mintResponse('jwt-2'))
       .mockImplementation(async () => new Response('{}', { status: 503 }))
-    const client = makeClient({
-      fetchImpl,
-      refreshScheduler: {
-        onScheduledOutcome: (report) => outcomes.push(report.outcome)
-      }
-    })
     const identity = manualIdentity()
-    client.attachIdentity(identity.port)
+    const client = makeClient(
+      {
+        fetchImpl,
+        refreshScheduler: {
+          onScheduledOutcome: (report) => outcomes.push(report.outcome)
+        }
+      },
+      identity.port
+    )
 
     identity.fire(testUser())
     await vi.waitFor(() => {
@@ -362,14 +366,16 @@ describe('opt-in refresh scheduler', () => {
       .fn<typeof fetch>()
       .mockImplementationOnce(async () => mintResponse('jwt-1'))
       .mockImplementation(async () => new Response('{}', { status: 403 }))
-    const client = makeClient({
-      fetchImpl,
-      refreshScheduler: {
-        onScheduledOutcome: (report) => reported.push(report)
-      }
-    })
     const identity = manualIdentity()
-    client.attachIdentity(identity.port)
+    const client = makeClient(
+      {
+        fetchImpl,
+        refreshScheduler: {
+          onScheduledOutcome: (report) => reported.push(report)
+        }
+      },
+      identity.port
+    )
     identity.fire(testUser())
     await vi.waitFor(() => {
       expect(client.getToken()).toBe('jwt-1')
@@ -389,14 +395,16 @@ describe('opt-in refresh scheduler', () => {
       .fn<typeof fetch>()
       .mockImplementationOnce(async () => mintResponse('jwt-1'))
       .mockImplementation(async () => mintResponse('jwt-2'))
-    const client = makeClient({
-      fetchImpl,
-      refreshScheduler: {
-        onScheduledOutcome: (report) => reported.push(report)
-      }
-    })
     const identity = manualIdentity()
-    client.attachIdentity(identity.port)
+    const client = makeClient(
+      {
+        fetchImpl,
+        refreshScheduler: {
+          onScheduledOutcome: (report) => reported.push(report)
+        }
+      },
+      identity.port
+    )
     identity.fire(testUser())
     await vi.waitFor(() => {
       expect(client.getToken()).toBe('jwt-1')
@@ -443,14 +451,16 @@ describe('opt-in refresh scheduler', () => {
       .fn<typeof fetch>()
       .mockImplementationOnce(async () => mintResponse('jwt-1'))
       .mockImplementation(async () => new Response('{}', { status: 401 }))
-    const client = makeClient({
-      fetchImpl,
-      refreshScheduler: {
-        onScheduledOutcome: (report) => outcomes.push(report.outcome)
-      }
-    })
     const identity = manualIdentity()
-    client.attachIdentity(identity.port)
+    const client = makeClient(
+      {
+        fetchImpl,
+        refreshScheduler: {
+          onScheduledOutcome: (report) => outcomes.push(report.outcome)
+        }
+      },
+      identity.port
+    )
 
     identity.fire(testUser())
     await vi.waitFor(() => {
@@ -475,9 +485,8 @@ describe('opt-in refresh scheduler', () => {
           { status: 200 }
         )
     )
-    const client = makeClient({ fetchImpl })
     const identity = manualIdentity()
-    client.attachIdentity(identity.port, { autoMint: false })
+    const client = makeClient({ fetchImpl, autoMint: false }, identity.port)
     const user = testUser()
 
     identity.fire(user)
@@ -516,9 +525,8 @@ describe('opt-in refresh scheduler', () => {
             { status: 200 }
           )
       )
-    const client = makeClient({ fetchImpl })
     const identity = manualIdentity()
-    client.attachIdentity(identity.port)
+    const client = makeClient({ fetchImpl }, identity.port)
     const user = testUser()
 
     identity.fire(user)
@@ -547,9 +555,11 @@ describe('opt-in refresh scheduler', () => {
 
   it('arms nothing without the opt-in', async () => {
     const fetchImpl = vi.fn<typeof fetch>(async () => mintResponse('jwt-1'))
-    const client = makeClient({ fetchImpl, refreshScheduler: undefined })
     const identity = manualIdentity()
-    client.attachIdentity(identity.port)
+    const client = makeClient(
+      { fetchImpl, refreshScheduler: undefined },
+      identity.port
+    )
 
     identity.fire(testUser())
     await vi.waitFor(() => {
@@ -573,9 +583,8 @@ describe('opt-in refresh scheduler', () => {
         ? Promise.resolve(mintResponse('jwt-1'))
         : new Promise<Response>((resolve) => (releaseScheduled = resolve))
     })
-    const client = makeClient({ fetchImpl })
     const identity = manualIdentity()
-    client.attachIdentity(identity.port)
+    const client = makeClient({ fetchImpl }, identity.port)
     identity.fire(testUser())
     await vi.waitFor(() => {
       expect(client.getToken()).toBe('jwt-1')
@@ -677,12 +686,14 @@ describe('cross-tab refresh coordination', () => {
       mintResponse(`jwt-${(minted += 1)}`)
     )
     const tab = fakeCrossTabPort()
-    const client = makeClient({
-      fetchImpl,
-      refreshScheduler: { crossTab: { port: tab.port } }
-    })
     const identity = manualIdentity()
-    client.attachIdentity(identity.port)
+    const client = makeClient(
+      {
+        fetchImpl,
+        refreshScheduler: { crossTab: { port: tab.port } }
+      },
+      identity.port
+    )
 
     identity.fire(testUser())
     await vi.waitFor(() => {
@@ -708,12 +719,14 @@ describe('cross-tab refresh coordination', () => {
   it('a follower adopts the published credential instead of minting', async () => {
     const fetchImpl = vi.fn<typeof fetch>(async () => mintResponse('jwt-own'))
     const tab = fakeCrossTabPort()
-    const client = makeClient({
-      fetchImpl,
-      refreshScheduler: { crossTab: { port: tab.port } }
-    })
     const identity = manualIdentity()
-    client.attachIdentity(identity.port)
+    const client = makeClient(
+      {
+        fetchImpl,
+        refreshScheduler: { crossTab: { port: tab.port } }
+      },
+      identity.port
+    )
 
     identity.fire(testUser())
     await vi.waitFor(() => {
@@ -739,14 +752,16 @@ describe('cross-tab refresh coordination', () => {
       mintResponse(`jwt-${(minted += 1)}`)
     )
     const tab = fakeCrossTabPort()
-    const client = makeClient({
-      fetchImpl,
-      refreshScheduler: {
-        crossTab: { port: tab.port, followerJitterMs: 10_000 }
-      }
-    })
     const identity = manualIdentity()
-    client.attachIdentity(identity.port)
+    const client = makeClient(
+      {
+        fetchImpl,
+        refreshScheduler: {
+          crossTab: { port: tab.port, followerJitterMs: 10_000 }
+        }
+      },
+      identity.port
+    )
 
     identity.fire(testUser())
     await vi.waitFor(() => {
@@ -774,14 +789,16 @@ describe('cross-tab refresh coordination', () => {
     )
     vi.spyOn(Math, 'random').mockReturnValue(0.999)
     const tab = fakeCrossTabPort()
-    const client = makeClient({
-      fetchImpl,
-      refreshScheduler: {
-        crossTab: { port: tab.port, followerJitterMs: 60_000 }
-      }
-    })
     const identity = manualIdentity()
-    client.attachIdentity(identity.port)
+    const client = makeClient(
+      {
+        fetchImpl,
+        refreshScheduler: {
+          crossTab: { port: tab.port, followerJitterMs: 60_000 }
+        }
+      },
+      identity.port
+    )
 
     identity.fire(testUser())
     await vi.waitFor(() => {
@@ -819,15 +836,17 @@ describe('cross-tab refresh coordination', () => {
       publishCredential: vi.fn(),
       onCredential: () => vi.fn()
     }
-    const client = makeClient({
-      fetchImpl,
-      refreshScheduler: {
-        crossTab: { port },
-        onScheduledOutcome: (report) => outcomes.push(report.outcome)
-      }
-    })
     const identity = manualIdentity()
-    client.attachIdentity(identity.port)
+    const client = makeClient(
+      {
+        fetchImpl,
+        refreshScheduler: {
+          crossTab: { port },
+          onScheduledOutcome: (report) => outcomes.push(report.outcome)
+        }
+      },
+      identity.port
+    )
 
     identity.fire(testUser())
     await vi.waitFor(() => {
@@ -847,12 +866,14 @@ describe('cross-tab refresh coordination', () => {
   it('ignores a leadership grant for an abandoned same-key request', async () => {
     const fetchImpl = vi.fn<typeof fetch>(async () => mintResponse('jwt-1'))
     const tab = fakeCrossTabPort()
-    const client = makeClient({
-      fetchImpl,
-      refreshScheduler: { crossTab: { port: tab.port } }
-    })
     const identity = manualIdentity()
-    client.attachIdentity(identity.port)
+    const client = makeClient(
+      {
+        fetchImpl,
+        refreshScheduler: { crossTab: { port: tab.port } }
+      },
+      identity.port
+    )
     const user = testUser()
 
     identity.fire(user)
@@ -891,12 +912,14 @@ describe('cross-tab refresh coordination', () => {
       .mockImplementationOnce(async () => new Response('{}', { status: 503 }))
       .mockImplementation(async () => mintResponse('jwt-2'))
     const tab = fakeCrossTabPort()
-    const client = makeClient({
-      fetchImpl,
-      refreshScheduler: { crossTab: { port: tab.port, followerJitterMs: 0 } }
-    })
     const identity = manualIdentity()
-    client.attachIdentity(identity.port)
+    const client = makeClient(
+      {
+        fetchImpl,
+        refreshScheduler: { crossTab: { port: tab.port, followerJitterMs: 0 } }
+      },
+      identity.port
+    )
 
     identity.fire(testUser())
     await vi.waitFor(() => {
@@ -931,17 +954,19 @@ describe('cross-tab refresh coordination', () => {
       .mockImplementationOnce(async () => mintResponse('jwt-1'))
       .mockImplementation(async () => new Response('{}', { status: 503 }))
     const tab = fakeCrossTabPort()
-    const client = makeClient({
-      fetchImpl,
-      refreshScheduler: {
-        crossTab: {
-          port: tab.port,
-          onCredentialAdopted: (credential) => adopted.push(credential)
-        }
-      }
-    })
     const identity = manualIdentity()
-    client.attachIdentity(identity.port)
+    const client = makeClient(
+      {
+        fetchImpl,
+        refreshScheduler: {
+          crossTab: {
+            port: tab.port,
+            onCredentialAdopted: (credential) => adopted.push(credential)
+          }
+        }
+      },
+      identity.port
+    )
     identity.fire(testUser())
     await vi.waitFor(() => {
       expect(client.getToken()).toBe('jwt-1')
@@ -986,15 +1011,17 @@ describe('cross-tab refresh coordination', () => {
       publishCredential: () => undefined,
       onCredential: () => () => undefined
     }
-    const client = makeClient({
-      fetchImpl,
-      refreshScheduler: {
-        crossTab: { port },
-        onScheduledOutcome: (report) => outcomes.push(report.outcome)
-      }
-    })
     const identity = manualIdentity()
-    client.attachIdentity(identity.port)
+    const client = makeClient(
+      {
+        fetchImpl,
+        refreshScheduler: {
+          crossTab: { port },
+          onScheduledOutcome: (report) => outcomes.push(report.outcome)
+        }
+      },
+      identity.port
+    )
     identity.fire(testUser())
     await vi.waitFor(() => {
       expect(client.getToken()).toBe('jwt-1')
@@ -1019,17 +1046,19 @@ describe('cross-tab refresh coordination', () => {
     const adopted: string[] = []
     const fetchImpl = vi.fn<typeof fetch>(async () => mintResponse('jwt-own'))
     const tab = fakeCrossTabPort()
-    const client = makeClient({
-      fetchImpl,
-      refreshScheduler: {
-        crossTab: {
-          port: tab.port,
-          onCredentialAdopted: (credential) => adopted.push(credential.token)
-        }
-      }
-    })
     const identity = manualIdentity()
-    client.attachIdentity(identity.port)
+    const client = makeClient(
+      {
+        fetchImpl,
+        refreshScheduler: {
+          crossTab: {
+            port: tab.port,
+            onCredentialAdopted: (credential) => adopted.push(credential.token)
+          }
+        }
+      },
+      identity.port
+    )
     identity.fire(testUser())
     await vi.waitFor(() => {
       expect(client.getToken()).toBe('jwt-own')
@@ -1055,12 +1084,15 @@ describe('cross-tab refresh coordination', () => {
         )
     )
     const tab = fakeCrossTabPort()
-    const client = makeClient({
-      fetchImpl,
-      refreshScheduler: { crossTab: { port: tab.port } }
-    })
     const identity = manualIdentity()
-    client.attachIdentity(identity.port, { autoMint: false })
+    const client = makeClient(
+      {
+        fetchImpl,
+        refreshScheduler: { crossTab: { port: tab.port } },
+        autoMint: false
+      },
+      identity.port
+    )
     const user = testUser()
     identity.fire(user)
     await client.ensureFresh(user, { workspaceId: 'ws-team' })
@@ -1091,12 +1123,14 @@ describe('cross-tab refresh coordination', () => {
       mintResponse(`jwt-${(minted += 1)}`)
     )
     const tab = fakeCrossTabPort()
-    const client = makeClient({
-      fetchImpl,
-      refreshScheduler: { crossTab: { port: tab.port } }
-    })
     const identity = manualIdentity()
-    client.attachIdentity(identity.port)
+    const client = makeClient(
+      {
+        fetchImpl,
+        refreshScheduler: { crossTab: { port: tab.port } }
+      },
+      identity.port
+    )
     const user = testUser()
 
     identity.fire(user)
@@ -1116,12 +1150,14 @@ describe('cross-tab refresh coordination', () => {
   it('never adopts a credential for another user or a malformed message', async () => {
     const fetchImpl = vi.fn<typeof fetch>(async () => mintResponse('jwt-own'))
     const tab = fakeCrossTabPort()
-    const client = makeClient({
-      fetchImpl,
-      refreshScheduler: { crossTab: { port: tab.port } }
-    })
     const identity = manualIdentity()
-    client.attachIdentity(identity.port)
+    const client = makeClient(
+      {
+        fetchImpl,
+        refreshScheduler: { crossTab: { port: tab.port } }
+      },
+      identity.port
+    )
 
     identity.fire(testUser())
     await vi.waitFor(() => {
@@ -1147,14 +1183,16 @@ describe('cross-tab refresh coordination', () => {
         () => new Promise<Response>((resolve) => (releaseOwn = resolve))
       )
     const tab = fakeCrossTabPort()
-    const client = makeClient({
-      fetchImpl,
-      refreshScheduler: {
-        crossTab: { port: tab.port, followerJitterMs: 10_000 }
-      }
-    })
     const identity = manualIdentity()
-    client.attachIdentity(identity.port)
+    const client = makeClient(
+      {
+        fetchImpl,
+        refreshScheduler: {
+          crossTab: { port: tab.port, followerJitterMs: 10_000 }
+        }
+      },
+      identity.port
+    )
 
     identity.fire(testUser())
     await vi.waitFor(() => {
@@ -1177,12 +1215,14 @@ describe('cross-tab refresh coordination', () => {
   it('never adopts a broadcast credential with a non-finite expiry', async () => {
     const fetchImpl = vi.fn<typeof fetch>(async () => mintResponse('jwt-own'))
     const tab = fakeCrossTabPort()
-    const client = makeClient({
-      fetchImpl,
-      refreshScheduler: { crossTab: { port: tab.port } }
-    })
     const identity = manualIdentity()
-    client.attachIdentity(identity.port)
+    const client = makeClient(
+      {
+        fetchImpl,
+        refreshScheduler: { crossTab: { port: tab.port } }
+      },
+      identity.port
+    )
 
     identity.fire(testUser())
     await vi.waitFor(() => {
@@ -1218,12 +1258,15 @@ describe('cross-tab refresh coordination', () => {
       onCredential: () => vi.fn()
     }
     const snapshots: SessionSnapshot[] = []
-    const client = makeClient({
-      fetchImpl,
-      refreshScheduler: { crossTab: { port } }
-    })
     const identity = manualIdentity()
-    client.attachIdentity(identity.port, { autoMint: false })
+    const client = makeClient(
+      {
+        fetchImpl,
+        refreshScheduler: { crossTab: { port } },
+        autoMint: false
+      },
+      identity.port
+    )
     client.subscribe((snapshot) => snapshots.push(snapshot))
 
     identity.fire(testUser())
@@ -1260,12 +1303,15 @@ describe('cross-tab refresh coordination', () => {
       onCredential: () => stopCredentialFeed
     }
     const snapshots: SessionSnapshot[] = []
-    const client = makeClient({
-      fetchImpl,
-      refreshScheduler: { crossTab: { port } }
-    })
     const identity = manualIdentity()
-    client.attachIdentity(identity.port, { autoMint: false })
+    const client = makeClient(
+      {
+        fetchImpl,
+        refreshScheduler: { crossTab: { port } },
+        autoMint: false
+      },
+      identity.port
+    )
     client.subscribe((snapshot) => snapshots.push(snapshot))
 
     identity.fire(testUser())
@@ -1307,12 +1353,15 @@ describe('cross-tab refresh coordination', () => {
       publishCredential: vi.fn(),
       onCredential: () => stopCredentialFeed
     }
-    const client = makeClient({
-      fetchImpl,
-      refreshScheduler: { crossTab: { port } }
-    })
     const identity = manualIdentity()
-    client.attachIdentity(identity.port, { autoMint: false })
+    const client = makeClient(
+      {
+        fetchImpl,
+        refreshScheduler: { crossTab: { port } },
+        autoMint: false
+      },
+      identity.port
+    )
 
     identity.fire(testUser())
 

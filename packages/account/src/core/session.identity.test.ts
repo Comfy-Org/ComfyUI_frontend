@@ -123,16 +123,6 @@ describe('constructing with identity', () => {
     expect(seen).toEqual(['pending', 'signed-out'])
     expect(fetchImpl).not.toHaveBeenCalled()
   })
-
-  it('refuses a port that did not come from the package entry or the testing seam', () => {
-    expect(() =>
-      createSessionClient(
-        { exchangeUrl: EXCHANGE_URL, storage: memoryStorage() },
-        // @ts-expect-error an unbranded port is not an AccountIdentity
-        { onUserChanged: () => () => undefined }
-      )
-    ).toThrow('the session client needs the identity')
-  })
 })
 
 describe('dispose', () => {
@@ -211,36 +201,5 @@ describe('dispose', () => {
 
     expect(client.getSnapshot().phase).toBe('pending')
     expect(client.getToken()).toBeUndefined()
-  })
-
-  it('leaves the client attachable again, like a detach', async () => {
-    const { client, identity } = makeClient({ fetchImpl: okFetch('jwt-b') })
-    client.dispose()
-    const replacement = manualIdentity()
-
-    client.attachIdentity(replacement.port)
-    replacement.fire(testUser('uid-2'))
-
-    await vi.waitFor(() => expect(client.getToken()).toBe('jwt-b'))
-    expect(identity.unsubscribe).toHaveBeenCalledOnce()
-  })
-})
-
-describe('attachIdentity on a client constructed with identity', () => {
-  it('replaces the constructed subscription', async () => {
-    const { client, identity } = makeClient({ fetchImpl: okFetch('jwt-b') })
-    const replacement = manualIdentity()
-
-    client.attachIdentity(replacement.port)
-    replacement.fire(testUser('uid-2'))
-    await vi.waitFor(() => expect(client.getToken()).toBe('jwt-b'))
-    identity.fire(null)
-
-    expect(identity.unsubscribe).toHaveBeenCalledOnce()
-    expect(
-      client.getSnapshot().phase,
-      'the constructed port is superseded; its events must not sign the client out'
-    ).toBe('authenticated')
-    expect(client.getToken()).toBe('jwt-b')
   })
 })
