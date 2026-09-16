@@ -90,7 +90,7 @@ const { onKeydown: onTabKeydown } = useTablist(
   activeSection
 )
 
-const initialPageState = initialWorkshopPageState(model)
+const initialPageState = initialWorkshopPageState(model, locale)
 const examples = initialPageState.examples
 // A workflow page describes one workflow, so the model's other examples would
 // be beside the point there.
@@ -103,17 +103,20 @@ const activeExampleId = ref(firstExample?.id)
 const nativeJson = ref(false)
 const schema = computed(() =>
   nativeJson.value && model.execution
-    ? schemaForModel({
-        fields: [],
-        form: {
-          source: 'router',
-          raw: true,
-          parameters: model.execution.inputSchema,
-          roles: [],
-          advancedFields: []
-        }
-      })
-    : workshopPageSchema(model, activeExample.value)
+    ? schemaForModel(
+        {
+          fields: [],
+          form: {
+            source: 'router',
+            raw: true,
+            parameters: model.execution.inputSchema,
+            roles: [],
+            advancedFields: []
+          }
+        },
+        locale
+      )
+    : workshopPageSchema(model, activeExample.value, locale)
 )
 
 function exampleOutput(example: PlaygroundExample): RunOutput {
@@ -541,7 +544,7 @@ function openExample(example: PlaygroundExample) {
   if (!example.sampleOnly) {
     nativeJson.value = false
     activeExample.value = example.fields ? example : undefined
-    values.value = workshopExampleState(model, example).values
+    values.value = workshopExampleState(model, example, locale).values
   }
   activeExampleId.value = example.id
   runState.value = { status: 'example', output: exampleOutput(example) }
