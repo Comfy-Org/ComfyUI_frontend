@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ArrowLeftRight, Check } from '@lucide/vue'
 import { useEventListener } from '@vueuse/core'
-import { onMounted, ref, useTemplateRef } from 'vue'
+import { ref, useTemplateRef, watch } from 'vue'
 import {
   DropdownMenuItem,
   DropdownMenuPortal,
@@ -51,8 +51,10 @@ const GAP = 12
 const trigger = useTemplateRef<{ $el: HTMLElement }>('trigger')
 const sideOffset = ref(GAP)
 
-// The menu has a maximum width the viewport constrains, so its left edge moves
-// when the window does and the measurement has to follow.
+// The switcher is a button inside the menu, so a submenu placed beside it lands
+// on top of the menu. It is offset to the menu's own left edge instead, and
+// measured each time the list opens, since the menu has a maximum width the
+// viewport constrains and its left edge moves when the window does.
 function measure() {
   const el = trigger.value?.$el
   if (!el) return
@@ -64,7 +66,9 @@ function measure() {
   )
 }
 
-onMounted(measure)
+watch(open, (isOpen) => {
+  if (isOpen) measure()
+})
 useEventListener(
   () => (open.value ? globalThis.window : undefined),
   'resize',

@@ -92,7 +92,7 @@
     "options": { "mode": "first-last" }
   },
   "kling--omni-pro-image-to-video--animate-images": {
-    "routerId": "kling/kling-video-o1",
+    "routerId": "kling/kling-v3-omni",
     "options": { "mode": "image" }
   },
   "kling--omni-pro-text-to-video--generate-videos": {
@@ -100,8 +100,12 @@
     "options": { "mode": "text" }
   },
   "kling--omni-pro-video-to-video--edit-videos": {
-    "routerId": "kling/kling-video-o1",
+    "routerId": "kling/kling-v3-omni",
     "options": { "mode": "reference-video" }
+  },
+  "openai--gpt-image-2--edit-images": {
+    "routerId": "openai/gpt-image-2",
+    "unavailableReason": "The current Router route exposes image generation only; it has no image or mask inputs for editing."
   },
   "kling--v3--animate-images": {
     "routerId": "kling/kling-v3",
