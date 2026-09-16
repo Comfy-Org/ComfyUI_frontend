@@ -122,13 +122,13 @@ describe('telemetry providers wait for Pinia before touching stores', () => {
   function configureCustomerIo(): void {
     window.__CONFIG__ = {
       customer_io: { write_key: 'cdp_test_write_key', site_id: 'site_test' }
-    } as typeof window.__CONFIG__
+    }
   }
 
   it('gates PostHog user identification', async () => {
     window.__CONFIG__ = {
       posthog_project_token: 'phc_test_token'
-    } as typeof window.__CONFIG__
+    }
 
     new PostHogTelemetryProvider()
     await vi.waitFor(() => expect(hoisted.posthogInit).toHaveBeenCalled())
@@ -142,7 +142,7 @@ describe('telemetry providers wait for Pinia before touching stores', () => {
   it('gates Mixpanel user identification', async () => {
     window.__CONFIG__ = {
       mixpanel_token: 'mp_test_token'
-    } as typeof window.__CONFIG__
+    }
 
     new MixpanelTelemetryProvider()
     await vi.waitFor(() => expect(hoisted.mixpanelInit).toHaveBeenCalled())
