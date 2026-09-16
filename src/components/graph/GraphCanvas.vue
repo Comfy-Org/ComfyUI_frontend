@@ -62,11 +62,17 @@
         "
         class="pointer-events-auto"
       />
-      <!-- DockedAgentPanel is the distribution seam: no agent, no activity. -->
-      <AgentGraphActivityBar
-        v-if="showUI && !isBuilderMode && DockedAgentPanel"
-        :panel-el="canvasPanelBoundsRef ?? undefined"
-      />
+      <div
+        v-if="showUI && !isBuilderMode"
+        class="contents"
+        @wheel="canvasInteractions.forwardEventToCanvas"
+      >
+        <component
+          :is="overlay"
+          v-for="(overlay, index) in canvasOverlayStore.components"
+          :key="index"
+        />
+      </div>
       <NodeSelectionModeBanner />
     </template>
   </LiteGraphCanvasSplitterOverlay>
@@ -152,7 +158,6 @@ import AppBuilder from '@/components/builder/AppBuilder.vue'
 import VueNodeSwitchPopup from '@/components/builder/VueNodeSwitchPopup.vue'
 import ExtensionSlot from '@/components/common/ExtensionSlot.vue'
 import DomWidgets from '@/components/graph/DomWidgets.vue'
-import AgentGraphActivityBar from '@/components/graph/AgentGraphActivityBar.vue'
 import GraphCanvasMenu from '@/components/graph/GraphCanvasMenu.vue'
 import { createNodeProgressCanvasSync } from '@/components/graph/nodeProgressCanvasSync'
 import LinkOverlayCanvas from '@/components/graph/LinkOverlayCanvas.vue'
@@ -192,6 +197,7 @@ import { useWorkflowStore } from '@/platform/workflow/management/stores/workflow
 import { useWorkflowAutoSave } from '@/platform/workflow/persistence/composables/useWorkflowAutoSave'
 import { useWorkflowPersistenceV2 as useWorkflowPersistence } from '@/platform/workflow/persistence/composables/useWorkflowPersistenceV2'
 import { useNodeDataStore } from '@/stores/nodeDataStore'
+import { useCanvasOverlayStore } from '@/stores/canvasOverlayStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
 import { arrangeForLegacyRender } from '@/renderer/core/canvas/litegraph/arrangeForLegacyRender'
@@ -236,6 +242,7 @@ const nodeSearchboxPopoverRef = shallowRef<InstanceType<
   typeof NodeSearchboxPopover
 > | null>(null)
 const settingStore = useSettingStore()
+const canvasOverlayStore = useCanvasOverlayStore()
 const nodeDefStore = useNodeDefStore()
 const workspaceStore = useWorkspaceStore()
 const { isBuilderMode } = useAppMode()

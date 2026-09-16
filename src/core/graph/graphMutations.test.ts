@@ -1,16 +1,13 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { useAgentGeneratedNodesStore } from '@/stores/agentGeneratedNodesStore'
 import { useLinkPresentationStore } from '@/stores/linkPresentationStore'
 import { useLinkStore } from '@/stores/linkStore'
 import { useNodeDataStore } from '@/stores/nodeDataStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
-import { useWorkflowTabActivityStore } from '@/stores/workflowTabActivityStore'
 import { toOwningGraphId, toRootGraphId } from '@/types/graphScopeId'
 import type { RemoteMutationContext } from '@/types/graphMutationContext'
 import { toLinkId } from '@/types/linkId'
 import { toNodeId } from '@/types/nodeId'
-import { createNodeLocatorId } from '@/types/nodeIdentification'
 import { widgetId } from '@/types/widgetId'
 
 import { createGraphMutations } from './graphMutations'
@@ -80,75 +77,6 @@ describe('graphMutations', () => {
       },
       context
     )
-  })
-
-  it('records agent-authored nodes so the minimap can mark them as new', () => {
-    mutations().addNode(node(7), context)
-
-    expect(
-      useAgentGeneratedNodesStore().generatedAtFor(
-        createNodeLocatorId(null, toNodeId(7))
-      )
-    ).toBeTypeOf('number')
-  })
-
-  it('leaves human edits and catch-up frames unmarked', () => {
-    mutations().addNode(node(8), { ...context, actor: 'human:someone:tab-1' })
-    mutations().addNode(node(9), { ...context, hydration: true })
-
-    const agentNodes = useAgentGeneratedNodesStore()
-    expect(
-      agentNodes.generatedAtFor(createNodeLocatorId(null, toNodeId(8)))
-    ).toBeUndefined()
-    expect(
-      agentNodes.generatedAtFor(createNodeLocatorId(null, toNodeId(9)))
-    ).toBeUndefined()
-  })
-
-  it('marks a catch-up that lands while a turn is running', () => {
-    useWorkflowTabActivityStore().setAgentRunning(true)
-
-    mutations().addNode(node(11), { ...context, hydration: true })
-
-    expect(
-      useAgentGeneratedNodesStore().generatedAtFor(
-        createNodeLocatorId(null, toNodeId(11))
-      )
-    ).toBeTypeOf('number')
-  })
-
-  it('forgets the mark when the node is deleted', () => {
-    const agentNodes = useAgentGeneratedNodesStore()
-    mutations().addNode(node(20), context)
-
-    mutations().deleteNode(toNodeId(20), [], context)
-
-    expect(
-      agentNodes.generatedAtFor(createNodeLocatorId(null, toNodeId(20)))
-    ).toBeUndefined()
-  })
-
-  it('drops a stale mark when a human takes the id', () => {
-    const agentNodes = useAgentGeneratedNodesStore()
-    const locatorId = createNodeLocatorId(null, toNodeId(21))
-    agentNodes.markGenerated(locatorId)
-
-    mutations().addNode(node(21), {
-      ...context,
-      actor: 'human:someone:tab-1'
-    })
-
-    expect(agentNodes.generatedAtFor(locatorId)).toBeUndefined()
-  })
-
-  it('marks a node whose frame carried no op ids', () => {
-    mutations().addNode(node(10), { ...context, opId: 'replay' })
-
-    expect(
-      useAgentGeneratedNodesStore().generatedAtFor(
-        createNodeLocatorId(null, toNodeId(10))
-      )
-    ).toBeTypeOf('number')
   })
 
   it('retains supplied link ids and atomically displaces the target occupant', () => {

@@ -115,6 +115,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
   const notices = ref<SessionNotice[]>([])
   const promptEditState = ref<PromptEditState>({ phase: 'idle' })
   const sending = ref(false)
+  const restoration = ref<'pending' | 'ready'>('pending')
   const answeringAskIds = ref<ReadonlySet<string>>(new Set())
 
   function setAskAnswering(askId: string, answering: boolean): void {
@@ -163,8 +164,10 @@ export function useAgentSession(deps: AgentSessionDeps) {
         generation === loadGeneration && ownedGeneration === sessionGeneration
       conversationStore.stashActiveTurn()
       void hydrateFromServer(surviving, isCurrent).then(() => {
-        if (isCurrent() && conversationStore.threadId === surviving)
+        if (!isCurrent()) return
+        if (conversationStore.threadId === surviving)
           conversationStore.resumeBackgroundTurn()
+        restoration.value = 'ready'
       })
       return
     }
@@ -173,20 +176,22 @@ export function useAgentSession(deps: AgentSessionDeps) {
       if (stored !== null) {
         const generation = ++loadGeneration
         conversationStore.setThreadId(stored)
-        void hydrateFromServer(
-          stored,
-          () =>
-            generation === loadGeneration &&
-            ownedGeneration === sessionGeneration
-        )
+        const isCurrent = () =>
+          generation === loadGeneration && ownedGeneration === sessionGeneration
+        void hydrateFromServer(stored, isCurrent).then(() => {
+          if (isCurrent()) restoration.value = 'ready'
+        })
+        return
       }
     }
+    restoration.value = 'ready'
   }
 
   async function hydrateFromServer(
     threadId: string,
     isCurrent: () => boolean = () => true
   ): Promise<boolean> {
+    restoration.value = 'pending'
     try {
       const history = await rest.getMessages(threadId)
       if (conversationStore.threadId !== threadId || !isCurrent()) return false
@@ -430,6 +435,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
 
   function newChat(): void {
     loadGeneration++
+    restoration.value = 'ready'
     promptEditState.value = { phase: 'idle' }
     conversationStore.stashActiveTurn()
     conversationStore.reset()
@@ -454,6 +460,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     localStorage.setItem(THREAD_STORAGE_KEY, threadId)
     const hydrated = await hydrateFromServer(threadId, isCurrent)
     if (hydrated && isCurrent()) conversationStore.resumeBackgroundTurn()
+    if (isCurrent()) restoration.value = 'ready'
   }
 
   function onRaw(raw: unknown): void {
@@ -534,6 +541,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
 
   return {
     boundWorkflowId: computed(() => boundWorkflowId.value),
+    restorationReady: computed(() => restoration.value === 'ready'),
     bindWorkflow,
     isSending,
     editableTurnId,

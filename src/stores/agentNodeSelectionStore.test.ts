@@ -31,6 +31,9 @@ function stubCanvas(nodes: unknown[], selected: unknown[] = []) {
   const element = document.createElement('canvas')
   element.width = 1600
   element.height = 900
+  vi.spyOn(element, 'getBoundingClientRect').mockReturnValue(
+    new DOMRect(0, 0, 1600, 900)
+  )
   useCanvasStore().canvas = {
     graph: { nodes },
     selectedItems,

@@ -12,19 +12,9 @@ export const useWorkflowTabActivityStore = defineStore(
     const editingTabPath = ref<string | null>(null)
     const creatingTab = ref(false)
     const unseenModifiedPaths = ref<Set<string>>(new Set())
-    /**
-     * Whether a turn is live, regardless of which tab it can be attributed to.
-     * `editingTabPath` drives the per-tab spinner and stays null for a turn the
-     * panel cannot pin to a tab, so the canvas cannot read activity from it.
-     */
-    const agentRunning = ref(false)
 
     function setEditing(path: string | null): void {
       editingTabPath.value = path
-    }
-
-    function setAgentRunning(running: boolean): void {
-      agentRunning.value = running
     }
 
     function setCreating(creating: boolean): void {
@@ -49,7 +39,6 @@ export const useWorkflowTabActivityStore = defineStore(
 
     function clearAgentActivity(): void {
       editingTabPath.value = null
-      agentRunning.value = false
       creatingTab.value = false
       unseenModifiedPaths.value.clear()
     }
@@ -58,9 +47,7 @@ export const useWorkflowTabActivityStore = defineStore(
       editingTabPath,
       creatingTab,
       unseenModifiedPaths,
-      agentRunning,
       setEditing,
-      setAgentRunning,
       setCreating,
       markModified,
       markSeen,

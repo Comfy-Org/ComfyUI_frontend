@@ -3,8 +3,6 @@ import type {
   ISerialisableNodeOutput,
   ISerialisedNode
 } from '@/lib/litegraph/src/types/serialisation'
-import { useAgentGeneratedNodesStore } from '@/stores/agentGeneratedNodesStore'
-import { useWorkflowTabActivityStore } from '@/stores/workflowTabActivityStore'
 import { useLinkPresentationStore } from '@/stores/linkPresentationStore'
 import { useLinkStore } from '@/stores/linkStore'
 import { useNodeDataStore } from '@/stores/nodeDataStore'
@@ -16,7 +14,6 @@ import { toLinkId } from '@/types/linkId'
 import type { LinkTopology } from '@/types/linkTopology'
 import type { NodeId } from '@/types/nodeId'
 import { toNodeId } from '@/types/nodeId'
-import { createNodeLocatorId } from '@/types/nodeIdentification'
 import type { NodeState } from '@/types/nodeState'
 import type { WidgetValue } from '@/types/simplifiedWidget'
 import { isWidgetId, widgetId } from '@/types/widgetId'
@@ -312,44 +309,6 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
   const linkStore = useLinkStore()
   const linkPresentationStore = useLinkPresentationStore()
   const widgetStore = useWidgetValueStore()
-  const agentGeneratedNodes = useAgentGeneratedNodesStore()
-  const tabActivity = useWorkflowTabActivityStore()
-
-  /**
-   * Frames a human authored are mirrored back through this same stream, and a
-   * subscription's catch-up replays nodes that landed long before this tab
-   * opened, so neither counts as the agent generating something now. A catch-up
-   * during a live turn is the agent's own work arriving: a workflow it builds
-   * from scratch opens its tab blank and lands entire in that first frame.
-   */
-  function locatorFor(scope: GraphScope, nodeId: NodeId) {
-    const subgraphUuid =
-      scope.owningGraphId === String(scope.rootGraphId)
-        ? null
-        : scope.owningGraphId
-    return createNodeLocatorId(subgraphUuid, nodeId)
-  }
-
-  function markAgentGenerated(
-    scope: GraphScope,
-    nodeId: NodeId,
-    context: RemoteMutationContext
-  ): void {
-    const locatorId = locatorFor(scope, nodeId)
-    if (!locatorId) return
-
-    // A node a human placed is theirs, even at an id the agent once held.
-    if (context.actor.startsWith('human:')) {
-      agentGeneratedNodes.forget(locatorId)
-      return
-    }
-    if (context.hydration && !tabActivity.agentRunning) return
-
-    // A catch-up lands the whole workflow at once, so its nodes pop in sequence.
-    agentGeneratedNodes.markGenerated(locatorId, {
-      cascade: context.hydration === true
-    })
-  }
 
   function fail(message: string): false {
     console.error(`[agent-crdt] graph mutation rejected: ${message}`)
@@ -661,8 +620,6 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
     widgetStore.clearNode(scope.rootGraphId, nodeId, context)
     if (node) nodeStore.deleteNode(scope, node, context)
     deps.layout.deleteNodes(scope, [nodeId], context)
-    const locatorId = locatorFor(scope, nodeId)
-    if (locatorId) agentGeneratedNodes.forget(locatorId)
   }
 
   function commit(
@@ -715,7 +672,6 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
               mutation.node.layout,
               context
             )
-            markAgentGenerated(scope, mutation.node.state.id, context)
           }
           break
         }

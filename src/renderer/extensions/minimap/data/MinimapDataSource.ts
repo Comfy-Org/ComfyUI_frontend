@@ -1,6 +1,5 @@
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
 import { calculateNodeBounds } from '@/renderer/core/spatial/boundsCalculator'
-import { useAgentGeneratedNodesStore } from '@/stores/agentGeneratedNodesStore'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useLinkStore } from '@/stores/linkStore'
 import { graphScopeOf } from '@/types/graphScopeId'
@@ -28,7 +27,6 @@ export class MinimapDataSource {
     if (!graph) return []
 
     const nodeProgressStates = useExecutionStore().nodeLocationProgressStates
-    const agentGeneratedNodes = useAgentGeneratedNodesStore()
     const containingSubgraphId = graph.isRootGraph ? null : graph.id
 
     return graph._nodes.map((node) => {
@@ -47,8 +45,7 @@ export class MinimapDataSource {
         bgcolor: node.bgcolor,
         mode: node.mode,
         hasErrors: node.has_errors,
-        executionState,
-        agentGeneratedAt: agentGeneratedNodes.generatedAtFor(locatorId)
+        executionState
       }
     })
   }

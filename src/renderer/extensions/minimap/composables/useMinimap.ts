@@ -6,9 +6,8 @@ import type { LGraph } from '@/lib/litegraph/src/litegraph'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import { useAgentGeneratedNodesStore } from '@/stores/agentGeneratedNodesStore'
+import { useMinimapLayerStore } from '@/stores/minimapLayerStore'
 
-import { AGENT_POP_MS } from '../agentHighlight'
 import type { MinimapCanvas, MinimapSettingsKey } from '../types'
 import { useMinimapGraph } from './useMinimapGraph'
 import { useMinimapInteraction } from './useMinimapInteraction'
@@ -29,7 +28,7 @@ export function useMinimap({
   const canvasStore = useCanvasStore()
   const workflowStore = useWorkflowStore()
   const settingStore = useSettingStore()
-  const agentGeneratedNodes = useAgentGeneratedNodesStore()
+  const minimapLayerStore = useMinimapLayerStore()
 
   const minimapRef = ref<HTMLElement | null>(null)
   const canvasRef = canvasRefMaybe ?? shallowRef(null)
@@ -149,25 +148,39 @@ export function useMinimap({
     { immediate: true }
   )
 
-  // A node pops in on wall-clock time, which no digest can report: the graph is
-  // unchanged between the frame the node lands and the frame it settles. Once
-  // the newest mark has finished popping the treatment is static again, and the
-  // ordinary change detection is enough to keep drawing it.
-  const agentFrames = useRafFn(
+  const layerFrames = useRafFn(
     () => {
-      renderer.renderFrame()
-      if (Date.now() - agentGeneratedNodes.latestMarkAt >= AGENT_POP_MS) {
-        agentFrames.pause()
+      const now = performance.now()
+      renderer.draw()
+      if (!minimapLayerStore.layers.some((layer) => layer.isAnimating(now))) {
+        layerFrames.pause()
       }
     },
     { immediate: false }
   )
 
   watch(
-    () => (shouldPoll.value ? agentGeneratedNodes.latestMarkAt : 0),
-    (latestMarkAt) => {
-      if (latestMarkAt > 0) agentFrames.resume()
-      else agentFrames.pause()
+    [
+      shouldPoll,
+      graph,
+      () => minimapLayerStore.layers,
+      () => minimapLayerStore.layers.map((layer) => layer.revision.value)
+    ],
+    ([active]) => {
+      if (!active) {
+        layerFrames.pause()
+        return
+      }
+      renderer.draw()
+      if (
+        minimapLayerStore.layers.some((layer) =>
+          layer.isAnimating(performance.now())
+        )
+      ) {
+        layerFrames.resume()
+      } else {
+        layerFrames.pause()
+      }
     },
     { immediate: true }
   )
@@ -200,7 +213,7 @@ export function useMinimap({
 
   const destroy = () => {
     pauseChangeDetection()
-    agentFrames.pause()
+    layerFrames.pause()
     viewport.stopViewportSync()
     graphManager.destroy()
 
