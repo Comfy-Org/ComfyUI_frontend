@@ -10,9 +10,7 @@ const lines = t('hero.title', locale).split('\n')
 // whatever context renders it (canvas overlay or mobile flow).
 const cap = '-mx-px h-full w-auto self-stretch'
 
-// PP Formula Narrow sits high in its em box; nudge the glyphs down so they
-// read optically centred between the caps.
-const inner = 'inline-block translate-y-[0.11em] whitespace-nowrap'
+const inner = 'inline-block whitespace-nowrap'
 </script>
 
 <template>

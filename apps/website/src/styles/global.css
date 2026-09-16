@@ -135,11 +135,6 @@
   --color-workspace-mark: var(--color-transparency-white-t20);
 }
 
-@utility ppformula-text-center-sm {
-  position: relative;
-  top: 0.12em;
-}
-
 @utility content-auto {
   content-visibility: auto;
   contain-intrinsic-size: auto 340px;
@@ -542,8 +537,6 @@
    inline-block's bounding box, so button/badge sizes are unaffected. */
 @utility ppformula-text-center {
   display: inline-block;
-  position: relative;
-  top: 0.1em;
 }
 
 /* Hide native play-button overlay iOS Safari shows when autoplay is blocked
