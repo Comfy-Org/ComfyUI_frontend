@@ -4,17 +4,27 @@ import { getActivePinia } from 'pinia'
 import type { Pinia } from 'pinia'
 import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
+import type { MenuItem } from 'primevue/menuitem'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { computed, nextTick, ref } from 'vue'
+import { computed, defineComponent, h, nextTick, onMounted, ref } from 'vue'
 import type { Component } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import { useTelemetry } from '@/platform/telemetry'
 
+import QueueNotificationBannerHost from '@/components/queue/QueueNotificationBannerHost.vue'
 import TopMenuSection from '@/components/TopMenuSection.vue'
+import type {
+  JobListItem,
+  JobStatus
+} from '@/platform/remote/comfyui/jobs/jobTypes'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useReleaseStore } from '@/platform/updates/common/releaseStore'
 import { useAgentNodeSelectionStore } from '@/stores/agentNodeSelectionStore'
+import { useCommandStore } from '@/stores/commandStore'
+import { useExecutionStore } from '@/stores/executionStore'
+import { TaskItemImpl, useQueueStore } from '@/stores/queueStore'
+import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 vi.mock(import('firebase/auth'))
 vi.mock(import('vuefire'), () => ({ useFirebaseAuth: vi.fn() }))
 
@@ -153,16 +163,33 @@ function getLegacyCommandsContainer(container: Element): HTMLElement {
   return legacyContainer
 }
 
+function createJob(id: string, status: JobStatus): JobListItem {
+  return {
+    id,
+    status,
+    create_time: 0,
+    priority: 0
+  }
+}
+
+function createTask(id: string, status: JobStatus): TaskItemImpl {
+  return new TaskItemImpl(createJob(id, status))
+}
+
+function createComfyActionbarStub(actionbarTarget: HTMLElement) {
+  return defineComponent({
+    name: 'ComfyActionbar',
+    setup(_, { emit }) {
+      onMounted(() => {
+        emit('update:progressTarget', actionbarTarget)
+      })
+      return () => h('div')
+    }
+  })
+}
+
 describe('TopMenuSection', () => {
   beforeEach(() => {
-    // The queue status toast instantiates systemStatsStore, which fetches on
-    // creation; answer that one request so it does not escape the sandbox.
-    const realFetch = globalThis.fetch
-    vi.spyOn(globalThis, 'fetch').mockImplementation((input, init) =>
-      String(input).includes('/system_stats')
-        ? Promise.resolve(new Response('{}', { status: 200 }))
-        : realFetch(input, init)
-    )
     mockData.isLoggedIn = false
     mockData.setShowConflictRedDot(false)
   })
@@ -204,6 +231,22 @@ describe('TopMenuSection', () => {
     })
   })
 
+  it('shows the active jobs label with the current count', async () => {
+    createWrapper()
+    const queueStore = useQueueStore()
+    queueStore.pendingTasks = [createTask('pending-1', 'pending')]
+    queueStore.runningTasks = [
+      createTask('running-1', 'in_progress'),
+      createTask('running-2', 'in_progress')
+    ]
+
+    await nextTick()
+
+    const queueButton = screen.getByTestId('queue-overlay-toggle')
+    expect(queueButton.textContent).toContain('3 active')
+    expect(screen.getByTestId('active-jobs-indicator')).toBeTruthy()
+  })
+
   it('hides the active jobs indicator when no jobs are active', () => {
     createWrapper()
 
@@ -243,7 +286,153 @@ describe('TopMenuSection', () => {
     })
   })
 
-  describe('queue status', () => {
+  it('hides queue progress overlay when QPO V2 is enabled', async () => {
+    const pinia = getActivePinia()!
+    const settingStore = useSettingStore(pinia)
+    vi.mocked(settingStore.get).mockImplementation((key) =>
+      key === 'Comfy.Queue.QPOV2' ? true : undefined
+    )
+    const { container } = createWrapper({ pinia })
+
+    await nextTick()
+
+    expect(screen.getByTestId('queue-overlay-toggle')).toBeTruthy()
+    expect(container.querySelector('queue-progress-overlay-stub')).toBeNull()
+  })
+
+  it('toggles the queue progress overlay when QPO V2 is disabled', async () => {
+    const pinia = getActivePinia()!
+    const settingStore = useSettingStore(pinia)
+    vi.mocked(settingStore.get).mockImplementation((key) =>
+      key === 'Comfy.Queue.QPOV2' ? false : undefined
+    )
+    const { user } = createWrapper({ pinia })
+    const commandStore = useCommandStore(pinia)
+
+    await user.click(screen.getByTestId('queue-overlay-toggle'))
+
+    expect(commandStore.execute).toHaveBeenCalledWith(
+      'Comfy.Queue.ToggleOverlay'
+    )
+  })
+
+  it('opens the job history sidebar tab when QPO V2 is enabled', async () => {
+    const pinia = getActivePinia()!
+    const settingStore = useSettingStore(pinia)
+    vi.mocked(settingStore.get).mockImplementation((key) =>
+      key === 'Comfy.Queue.QPOV2' ? true : undefined
+    )
+    const { user } = createWrapper({ pinia })
+    const sidebarTabStore = useSidebarTabStore(pinia)
+
+    await user.click(screen.getByTestId('queue-overlay-toggle'))
+
+    expect(sidebarTabStore.activeSidebarTabId).toBe('job-history')
+  })
+
+  it('toggles the job history sidebar tab when QPO V2 is enabled', async () => {
+    const pinia = getActivePinia()!
+    const settingStore = useSettingStore(pinia)
+    vi.mocked(settingStore.get).mockImplementation((key) =>
+      key === 'Comfy.Queue.QPOV2' ? true : undefined
+    )
+    const { user } = createWrapper({ pinia })
+    const sidebarTabStore = useSidebarTabStore(pinia)
+    const toggleButton = screen.getByTestId('queue-overlay-toggle')
+
+    await user.click(toggleButton)
+    expect(sidebarTabStore.activeSidebarTabId).toBe('job-history')
+
+    await user.click(toggleButton)
+    expect(sidebarTabStore.activeSidebarTabId).toBe(null)
+  })
+
+  describe('inline progress summary', () => {
+    const configureSettings = (
+      pinia: Pinia,
+      qpoV2Enabled: boolean,
+      showRunProgressBar = true
+    ) => {
+      const settingStore = useSettingStore(pinia)
+      vi.mocked(settingStore.get).mockImplementation((key) => {
+        if (key === 'Comfy.Queue.QPOV2') return qpoV2Enabled
+        if (key === 'Comfy.Queue.ShowRunProgressBar') return showRunProgressBar
+        if (key === 'Comfy.UseNewMenu') return 'Top'
+        return undefined
+      })
+    }
+
+    it('renders inline progress summary when QPO V2 is enabled', async () => {
+      const pinia = getActivePinia()!
+      configureSettings(pinia, true)
+
+      const { container } = createWrapper({ pinia })
+
+      await nextTick()
+
+      expect(
+        container.querySelector('queue-inline-progress-summary-stub')
+      ).not.toBeNull()
+    })
+
+    it('does not render inline progress summary when QPO V2 is disabled', async () => {
+      const pinia = getActivePinia()!
+      configureSettings(pinia, false)
+
+      const { container } = createWrapper({ pinia })
+
+      await nextTick()
+
+      expect(
+        container.querySelector('queue-inline-progress-summary-stub')
+      ).toBeNull()
+    })
+
+    it('does not render inline progress summary when run progress bar is disabled', async () => {
+      const pinia = getActivePinia()!
+      configureSettings(pinia, true, false)
+
+      const { container } = createWrapper({ pinia })
+
+      await nextTick()
+
+      expect(
+        container.querySelector('queue-inline-progress-summary-stub')
+      ).toBeNull()
+    })
+
+    it('teleports inline progress summary when actionbar is floating', async () => {
+      localStorage.setItem('Comfy.MenuPosition.Docked', 'false')
+      const actionbarTarget = document.createElement('div')
+      document.body.appendChild(actionbarTarget)
+      const pinia = getActivePinia()!
+      configureSettings(pinia, true)
+      const executionStore = useExecutionStore(pinia)
+      executionStore.activeJobId = 'job-1'
+
+      const ComfyActionbarStub = createComfyActionbarStub(actionbarTarget)
+
+      const { unmount } = createWrapper({
+        pinia,
+        attachTo: document.body,
+        stubs: {
+          ComfyActionbar: ComfyActionbarStub,
+          QueueInlineProgressSummary: false
+        }
+      })
+
+      try {
+        await nextTick()
+
+        expect(actionbarTarget.querySelector('[role="status"]')).not.toBeNull()
+      } finally {
+        unmount()
+        actionbarTarget.remove()
+      }
+    })
+  })
+
+  describe(QueueNotificationBannerHost, () => {
     const configureSettings = (pinia: Pinia, qpoV2Enabled: boolean) => {
       const settingStore = useSettingStore(pinia)
       vi.mocked(settingStore.get).mockImplementation((key) => {
@@ -254,33 +443,139 @@ describe('TopMenuSection', () => {
       })
     }
 
-    it.for([true, false])(
-      'renders the queue status toast in place of the legacy queue UI (QPO V2: %s)',
-      async (qpoV2Enabled) => {
-        const pinia = getActivePinia()!
-        configureSettings(pinia, qpoV2Enabled)
+    it('renders queue notification banners when QPO V2 is enabled', async () => {
+      const pinia = getActivePinia()!
+      configureSettings(pinia, true)
 
-        const { container } = createWrapper({
-          pinia,
-          stubs: { QueueStatusToast: true }
-        })
+      const { container } = createWrapper({ pinia })
 
+      await nextTick()
+
+      expect(
+        container.querySelector('queue-notification-banner-host-stub')
+      ).not.toBeNull()
+    })
+
+    it('renders queue notification banners when QPO V2 is disabled', async () => {
+      const pinia = getActivePinia()!
+      configureSettings(pinia, false)
+
+      const { container } = createWrapper({ pinia })
+
+      await nextTick()
+
+      expect(
+        container.querySelector('queue-notification-banner-host-stub')
+      ).not.toBeNull()
+    })
+
+    it('renders inline summary above banners when both are visible', async () => {
+      const pinia = getActivePinia()!
+      configureSettings(pinia, true)
+      const { container } = createWrapper({ pinia })
+
+      await nextTick()
+
+      const html = container.innerHTML
+      const inlineSummaryIndex = html.indexOf(
+        'queue-inline-progress-summary-stub'
+      )
+      const queueBannerIndex = html.indexOf(
+        'queue-notification-banner-host-stub'
+      )
+
+      expect(inlineSummaryIndex).toBeGreaterThan(-1)
+      expect(queueBannerIndex).toBeGreaterThan(-1)
+      expect(inlineSummaryIndex).toBeLessThan(queueBannerIndex)
+    })
+
+    it('does not teleport queue notification banners when actionbar is floating', async () => {
+      localStorage.setItem('Comfy.MenuPosition.Docked', 'false')
+      const actionbarTarget = document.createElement('div')
+      document.body.appendChild(actionbarTarget)
+      const pinia = getActivePinia()!
+      configureSettings(pinia, true)
+      const executionStore = useExecutionStore(pinia)
+      executionStore.activeJobId = 'job-1'
+
+      const ComfyActionbarStub = createComfyActionbarStub(actionbarTarget)
+
+      const { container, unmount } = createWrapper({
+        pinia,
+        attachTo: document.body,
+        stubs: {
+          ComfyActionbar: ComfyActionbarStub,
+          QueueNotificationBannerHost: true
+        }
+      })
+
+      try {
         await nextTick()
 
         expect(
-          container.querySelector('queue-status-toast-stub')
-        ).not.toBeNull()
-        expect(
-          container.querySelector('queue-progress-overlay-stub')
-        ).toBeNull()
-        expect(
-          container.querySelector('queue-inline-progress-summary-stub')
+          actionbarTarget.querySelector('queue-notification-banner-host-stub')
         ).toBeNull()
         expect(
           container.querySelector('queue-notification-banner-host-stub')
-        ).toBeNull()
+        ).not.toBeNull()
+      } finally {
+        unmount()
+        actionbarTarget.remove()
       }
-    )
+    })
+  })
+
+  it('disables the clear queue context menu item when no queued jobs exist', () => {
+    const { container } = createWrapper()
+    const menuEl = container.querySelector('[data-testid="context-menu"]')
+    const model = JSON.parse(
+      menuEl?.getAttribute('data-model') ?? '[]'
+    ) as MenuItem[]
+    expect(model[0]?.label).toBe('Clear queue')
+    expect(model[0]?.disabled).toBe(true)
+  })
+
+  it('enables the clear queue context menu item when queued jobs exist', async () => {
+    const { container } = createWrapper()
+    const queueStore = useQueueStore()
+    queueStore.pendingTasks = [createTask('pending-1', 'pending')]
+
+    await nextTick()
+
+    const menuEl = container.querySelector('[data-testid="context-menu"]')
+    const model = JSON.parse(
+      menuEl?.getAttribute('data-model') ?? '[]'
+    ) as MenuItem[]
+    expect(model[0]?.disabled).toBe(false)
+  })
+
+  describe('queue status toast', () => {
+    it('renders the toast in place of the legacy queue UI when enabled', async () => {
+      const pinia = getActivePinia()!
+      const settingStore = useSettingStore(pinia)
+      vi.mocked(settingStore.get).mockImplementation((key) => {
+        if (key === 'Comfy.Queue.StatusToast') return true
+        if (key === 'Comfy.Queue.ShowRunProgressBar') return true
+        if (key === 'Comfy.UseNewMenu') return 'Top'
+        return undefined
+      })
+
+      const { container } = createWrapper({
+        pinia,
+        stubs: { QueueStatusToast: true }
+      })
+
+      await nextTick()
+
+      expect(container.querySelector('queue-status-toast-stub')).not.toBeNull()
+      expect(container.querySelector('queue-progress-overlay-stub')).toBeNull()
+      expect(
+        container.querySelector('queue-inline-progress-summary-stub')
+      ).toBeNull()
+      expect(
+        container.querySelector('queue-notification-banner-host-stub')
+      ).toBeNull()
+    })
   })
 
   it('shows manager red dot only for manager conflicts', async () => {
