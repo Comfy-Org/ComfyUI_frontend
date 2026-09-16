@@ -1,4 +1,5 @@
 import { render, screen } from '@testing-library/vue'
+import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick, ref } from 'vue'
 import { captureWorkshopEvent } from '../../scripts/posthog'
@@ -46,4 +47,16 @@ describe('ModelsCatalogue', () => {
       expect(screen.getByTestId('workshop-sections')).toBeTruthy()
     }
   )
+
+  it('gives the hero away to the section the reader opened', async () => {
+    const user = userEvent.setup()
+    render(ModelsCatalogue, { props: { models: [] } })
+    expect(screen.getByTestId('workshop-hero')).toBeTruthy()
+
+    // Inside a section the page is about that section, and the heading over it
+    // belongs to the whole catalogue.
+    await user.click(screen.getByTestId('browse-all'))
+
+    expect(screen.queryByTestId('workshop-hero')).toBeNull()
+  })
 })

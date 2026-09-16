@@ -24,12 +24,13 @@ const translations = {
   },
   'workshop.hero.eyebrow': { en: 'Models', 'zh-CN': '模型' },
   'workshop.hero.heading': {
-    en: 'Run models in your browser',
-    'zh-CN': '运行顶尖模型'
+    en: 'What will you make next?',
+    'zh-CN': '接下来你想创造什么？'
   },
   'workshop.hero.subtitle': {
-    en: 'The latest AI models, ready to run. Nothing to install.',
-    'zh-CN': '最新 AI 模型，即开即用。无需安装配置。'
+    en: 'Try the latest AI models with your own ideas. Nothing to install: they run on Comfy Cloud.',
+    'zh-CN':
+      '用你自己的创意试用最新的 AI 模型。无需安装，模型在 Comfy Cloud 上运行。'
   },
   'workshop.search.label': {
     en: 'Search models, providers, and categories',
