@@ -11,6 +11,7 @@ import type { AssistantMessage } from '../../services/agent/agentMessageParts'
 import { createAssistantMessage } from '../../services/agent/agentMessageParts'
 import { normalizeAgentTranscript } from '../../services/agent/agentTranscript'
 import type { WorkflowReference } from '../../types/workflowReference'
+import { useAgentGeneratedNodesStore } from '../agentGeneratedNodesStore'
 
 export type ConversationStatus = 'idle' | 'thinking' | 'streaming'
 
@@ -43,6 +44,7 @@ interface BackgroundTurn {
 export const useAgentConversationStore = defineStore(
   'agentConversation',
   () => {
+    const graphActivity = useAgentGeneratedNodesStore()
     const messages = ref<AssistantMessage[]>([])
     const activeTurnId = ref<TurnId | null>(null)
     const threadId = ref<string | null>(null)
@@ -113,6 +115,7 @@ export const useAgentConversationStore = defineStore(
 
     function startTurn(turnId: TurnId): void {
       if (transport) abortActiveTurn()
+      graphActivity.beginTurn(turnId)
       const message = createAssistantMessage(turnId)
       liveMessage = message
       activeIndex.value = messages.value.push(message) - 1
@@ -124,6 +127,7 @@ export const useAgentConversationStore = defineStore(
       if (transport && event.data.message_id === activeTurnId.value) {
         if (event.type === 'agent_message_done') {
           transport.settle()
+          graphActivity.finishTurn(activeTurnId.value)
           clearActive()
           return
         }
@@ -147,6 +151,7 @@ export const useAgentConversationStore = defineStore(
       if (!entry || entry.messageId !== event.data.message_id) return
       if (event.type === 'agent_message_done') {
         entry.transport.settle()
+        graphActivity.finishTurn(entry.messageId)
         entry.settled = true
         return
       }
@@ -156,6 +161,7 @@ export const useAgentConversationStore = defineStore(
     function abortActiveTurn(): void {
       if (!transport) return
       transport.settle()
+      if (activeTurnId.value) graphActivity.finishTurn(activeTurnId.value)
       clearActive()
     }
 
@@ -214,6 +220,7 @@ export const useAgentConversationStore = defineStore(
       if (entry.settled) return
       activeIndex.value = index
       activeTurnId.value = entry.messageId
+      graphActivity.beginTurn(entry.messageId)
       transport = entry.transport
       liveMessage = entry.message
     }
@@ -222,13 +229,17 @@ export const useAgentConversationStore = defineStore(
       for (const [key, entry] of backgroundTurns) {
         if (entry.messageId !== turnId) continue
         entry.transport.settle()
+        graphActivity.finishTurn(entry.messageId)
         backgroundTurns.delete(key)
         return
       }
     }
 
     function dropBackgroundTurns(): void {
-      for (const entry of backgroundTurns.values()) entry.transport.settle()
+      for (const entry of backgroundTurns.values()) {
+        entry.transport.settle()
+        graphActivity.finishTurn(entry.messageId)
+      }
       backgroundTurns.clear()
     }
 
@@ -249,6 +260,7 @@ export const useAgentConversationStore = defineStore(
     }
 
     function reset(): void {
+      if (activeTurnId.value) graphActivity.finishTurn(activeTurnId.value)
       messages.value = []
       userTexts.value = new Map()
       userTags.value = new Map()
@@ -276,6 +288,7 @@ export const useAgentConversationStore = defineStore(
         liveMessage = transcript.pending.message
         activeIndex.value = messages.value.indexOf(transcript.pending.message)
         activeTurnId.value = transcript.pending.messageId
+        graphActivity.beginTurn(transcript.pending.messageId)
         transport = createAgentEventTransport(
           transcript.pending.message,
           replaceActive

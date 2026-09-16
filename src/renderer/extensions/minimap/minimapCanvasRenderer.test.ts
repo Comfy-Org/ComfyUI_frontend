@@ -1,12 +1,13 @@
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
+import { ref } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
 import { LGraphEventMode } from '@/lib/litegraph/src/litegraph'
 import { renderMinimapToCanvas } from '@/renderer/extensions/minimap/minimapCanvasRenderer'
 import type { MinimapRenderContext } from '@/renderer/extensions/minimap/types'
-import { useAgentGeneratedNodesStore } from '@/stores/agentGeneratedNodesStore'
 import { useLinkStore } from '@/stores/linkStore'
+import { useMinimapLayerStore } from '@/stores/minimapLayerStore'
 import { adjustColor } from '@/utils/colorUtil'
 import {
   createMockLGraph,
@@ -16,7 +17,6 @@ import {
 import { toOwningGraphId, toRootGraphId } from '@/types/graphScopeId'
 import { toLinkId } from '@/types/linkId'
 import { toNodeId } from '@/types/nodeId'
-import { createNodeLocatorId } from '@/types/nodeIdentification'
 import type { UUID } from '@/utils/uuid'
 
 vi.mock(import('@/utils/colorUtil'), () => ({
@@ -349,89 +349,35 @@ describe('minimapCanvasRenderer', () => {
     expect(mockContext.fillRect).toHaveBeenCalled()
   })
 
-  describe('agent-generated nodes', () => {
-    const AGENT_COLOR_DARK = '#FDAB34'
-
-    /** Fill colors in the order they were painted, one entry per fillRect. */
-    function recordFills(): string[] {
-      const fills: string[] = []
-      let currentStyle = ''
-      Object.defineProperty(mockContext, 'fillStyle', {
-        configurable: true,
-        get: () => currentStyle,
-        set: (value: string) => {
-          currentStyle = value
-        }
-      })
-      vi.mocked(mockContext.fillRect).mockImplementation(() => {
-        fills.push(currentStyle)
-      })
-      return fills
-    }
-
-    function renderWithAgentNode(
-      generatedAt: number,
-      { marked = true }: { marked?: boolean } = {}
-    ): string[] {
-      const graph = createMockLGraph({
-        _nodes: [
-          createMockLGraphNode({
-            id: '1',
-            pos: [100, 100],
-            size: [150, 80],
-            outputs: []
-          })
-        ],
-        _groups: [],
-        id: GRAPH_ID,
-        isRootGraph: true,
-        rootGraph: { id: GRAPH_ID } as LGraph,
-        getNodeById: vi.fn()
-      })
-      if (marked) {
-        useAgentGeneratedNodesStore().markGenerated(
-          createNodeLocatorId(null, toNodeId('1')),
-          { at: generatedAt }
-        )
-      }
-
-      const fills = recordFills()
-      renderMinimapToCanvas(mockCanvas, graph, {
-        bounds: { minX: 0, minY: 0, width: 500, height: 400 },
-        scale: 0.5,
-        settings: {
-          nodeColors: false,
-          showLinks: false,
-          showGroups: false,
-          renderBypass: false,
-          renderError: false
-        },
-        width: 250,
-        height: 200
-      })
-      return fills
-    }
-
-    beforeEach(() => {
-      vi.useFakeTimers()
-      vi.setSystemTime(new Date('2026-01-01T00:00:00Z'))
-      useAgentGeneratedNodesStore().clear()
+  it('paints ordinary fills, extension layers, then node status', () => {
+    const paints: string[] = []
+    vi.mocked(mockContext.fillRect).mockImplementation(() =>
+      paints.push('fill')
+    )
+    vi.mocked(mockContext.strokeRect).mockImplementation(() =>
+      paints.push('status')
+    )
+    const unregister = useMinimapLayerStore().register({
+      revision: ref(0),
+      isAnimating: () => false,
+      draw: () => paints.push('layer')
     })
 
-    it('paints a freshly generated node in the agent color', () => {
-      expect(renderWithAgentNode(Date.now())).toContain(AGENT_COLOR_DARK)
+    renderMinimapToCanvas(mockCanvas, mockGraph, {
+      bounds: { minX: 0, minY: 0, width: 500, height: 400 },
+      scale: 0.5,
+      settings: {
+        nodeColors: false,
+        showLinks: false,
+        showGroups: false,
+        renderBypass: false,
+        renderError: true
+      },
+      width: 250,
+      height: 200
     })
+    unregister()
 
-    it('keeps marking the node long after the agent placed it', () => {
-      const anHourAgo = Date.now() - 60 * 60_000
-      expect(renderWithAgentNode(anHourAgo)).toContain(AGENT_COLOR_DARK)
-    })
-
-    it('leaves nodes a human placed in the ordinary fill', () => {
-      useAgentGeneratedNodesStore().clear()
-      expect(renderWithAgentNode(Date.now(), { marked: false })).not.toContain(
-        AGENT_COLOR_DARK
-      )
-    })
+    expect(paints).toEqual(['fill', 'fill', 'layer', 'status'])
   })
 })

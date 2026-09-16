@@ -5,20 +5,20 @@ import * as Y from 'yjs'
 
 import { createGraphMutations } from '@/core/graph/graphMutations'
 import type { GraphMutations } from '@/core/graph/graphMutations'
-import { useAgentGeneratedNodesStore } from '@/stores/agentGeneratedNodesStore'
 import { useLinkStore } from '@/stores/linkStore'
 import { useNodeDataStore } from '@/stores/nodeDataStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import type { GraphScope } from '@/types/graphScopeId'
 import { toOwningGraphId, toRootGraphId } from '@/types/graphScopeId'
 import { toLinkId } from '@/types/linkId'
 import type { NodeId } from '@/types/nodeId'
 import { toNodeId } from '@/types/nodeId'
-import { createNodeLocatorId } from '@/types/nodeIdentification'
 import { widgetId } from '@/types/widgetId'
 
 import type { DocUpdate } from './docFrameClient'
 import { EcsFollowerAdapter } from './ecsFollowerAdapter'
 import { FollowerDoc } from './followerDoc'
+import { useAgentGeneratedNodesStore } from '../stores/agentGeneratedNodesStore'
 
 const catalog: WidgetCatalog = {
   types: {
@@ -1106,6 +1106,7 @@ describe('EcsFollowerAdapter integration', () => {
   })
 
   it('marks only the nodes the agent adds after the catch-up frame', () => {
+    const agentNodes = useAgentGeneratedNodesStore()
     const host = mint(
       { nodes: [{ id: 1, type: 'Source', pos: [0, 0] }], links: [] },
       catalog
@@ -1152,13 +1153,68 @@ describe('EcsFollowerAdapter integration', () => {
       actor: 'agent:relay:session'
     })
 
+    expect(agentNodes.generatedAtFor(scope, toNodeId(1))).toBeUndefined()
+    expect(agentNodes.generatedAtFor(scope, toNodeId(2))).toBeTypeOf('number')
+
+    adapter.destroy()
+    follower.destroy()
+    host.destroy()
+  })
+
+  it('keeps a retried first frame historical before marking the next live frame', () => {
     const agentNodes = useAgentGeneratedNodesStore()
+    const host = mint(
+      { nodes: [{ id: 1, type: 'Source', pos: [0, 0] }], links: [] },
+      catalog
+    )
+    const follower = new FollowerDoc()
+    let activeScope: GraphScope | null = null
+    const mutations = createGraphMutations({
+      getScope: () => activeScope,
+      layout: { createNode: vi.fn(), deleteNodes: vi.fn() }
+    })
+    const adapter = new EcsFollowerAdapter(mutations)
+    adapter.bind('wf', follower)
+    const catchUp = Y.encodeStateAsUpdate(host)
+    follower.applyRemoteUpdate(catchUp)
+    const firstFrame = {
+      workflowId: 'wf',
+      seq: 1,
+      update: catchUp,
+      actor: 'agent:relay:session'
+    }
+
+    expect(adapter.applyFrame(firstFrame)).toBe(false)
+    activeScope = scope
+    expect(adapter.applyFrame({ ...firstFrame, seq: 2 })).toBe(true)
+    expect(agentNodes.generatedAtFor(scope, toNodeId(1))).toBeUndefined()
+
+    const before = Y.encodeStateVector(host)
+    applyOps(
+      host,
+      [
+        op('add-2', 2, {
+          op: 'add_node',
+          node_id: 2,
+          class_type: 'Sink',
+          pos: [300, 20],
+          node: { id: 2, type: 'Sink', pos: [300, 20] }
+        })
+      ] as Parameters<typeof applyOps>[1],
+      catalog
+    )
+    const live = Y.encodeStateAsUpdate(host, before)
+    follower.applyRemoteUpdate(live)
+
     expect(
-      agentNodes.generatedAtFor(createNodeLocatorId(null, toNodeId(1)))
-    ).toBeUndefined()
-    expect(
-      agentNodes.generatedAtFor(createNodeLocatorId(null, toNodeId(2)))
-    ).toBeTypeOf('number')
+      adapter.applyFrame({
+        workflowId: 'wf',
+        seq: 3,
+        update: live,
+        actor: 'agent:relay:session'
+      })
+    ).toBe(true)
+    expect(agentNodes.generatedAtFor(scope, toNodeId(2))).toBeTypeOf('number')
 
     adapter.destroy()
     follower.destroy()

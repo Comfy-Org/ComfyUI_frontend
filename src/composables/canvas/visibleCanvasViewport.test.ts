@@ -1,38 +1,77 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it } from 'vitest'
 
 import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
-import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 
 import { visibleCanvasViewport } from './visibleCanvasViewport'
 
-vi.mock<unknown>(import('@/platform/telemetry'), () => ({
-  useTelemetry: () => undefined
-}))
+function elementWithBounds(bounds: DOMRect): HTMLElement {
+  const element = document.createElement('div')
+  element.getBoundingClientRect = () => bounds
+  return element
+}
+
+function createCanvas(bounds: DOMRect): LGraphCanvas {
+  const canvas = document.createElement('canvas')
+  canvas.getBoundingClientRect = () => bounds
+  return { canvas } as LGraphCanvas
+}
+
+function mountGeometry(viewport: DOMRect, occluders: readonly DOMRect[]): void {
+  const viewportElement = elementWithBounds(viewport)
+  viewportElement.dataset.graphViewport = ''
+  document.body.append(viewportElement)
+
+  for (const bounds of occluders) {
+    const occluder = elementWithBounds(bounds)
+    occluder.dataset.graphViewportOccluder = ''
+    document.body.append(occluder)
+  }
+}
 
 describe('visibleCanvasViewport', () => {
-  beforeEach(() => {
-    localStorage.clear()
-    vi.stubGlobal('devicePixelRatio', 2)
+  afterEach(() => {
+    document.body.replaceChildren()
   })
 
-  it('uses the full CSS-pixel canvas while the Agent panel is closed', () => {
-    const canvas = {
-      canvas: { width: 1600, height: 900 }
-    } as LGraphCanvas
+  it.for([
+    {
+      name: 'uses the graph panel relative to the canvas',
+      occluders: [],
+      expected: [50, 20, 600, 400]
+    },
+    {
+      name: 'excludes occluders intersecting the left and right edges',
+      occluders: [
+        new DOMRect(80, 50, 100, 300),
+        new DOMRect(600, 50, 150, 300)
+      ],
+      expected: [130, 20, 420, 400]
+    },
+    {
+      name: 'ignores horizontally disjoint occluders',
+      occluders: [new DOMRect(700, 50, 40, 300)],
+      expected: [50, 20, 600, 400]
+    },
+    {
+      name: 'ignores vertically disjoint occluders',
+      occluders: [new DOMRect(100, 450, 150, 40)],
+      expected: [50, 20, 600, 400]
+    },
+    {
+      name: 'returns a zero-width viewport when the panel is fully covered',
+      occluders: [new DOMRect(100, 50, 600, 400)],
+      expected: [650, 20, 0, 400]
+    }
+  ])('$name', ({ occluders, expected }) => {
+    mountGeometry(new DOMRect(100, 50, 600, 400), occluders)
+    const canvas = createCanvas(new DOMRect(50, 30, 800, 500))
 
-    expect(visibleCanvasViewport(canvas)).toEqual([0, 0, 800, 450])
+    expect(visibleCanvasViewport(canvas)).toEqual(expected)
   })
 
-  it('T-06 / PM-669 / FE-1633 excludes the docked Agent panel width from Fit View', () => {
-    const panel = useAgentPanelStore()
-    panel.enabled = true
-    panel.consentAccepted = true
-    panel.isOpen = true
-    panel.setWidth(500)
-    const canvas = {
-      canvas: { width: 1600, height: 900 }
-    } as LGraphCanvas
+  it('uses the canvas bounds when no graph viewport owner is mounted', () => {
+    const canvas = createCanvas(new DOMRect(50, 30, 800, 500))
 
-    expect(visibleCanvasViewport(canvas)).toEqual([0, 0, 300, 450])
+    expect(visibleCanvasViewport(canvas)).toEqual([0, 0, 800, 500])
   })
 })

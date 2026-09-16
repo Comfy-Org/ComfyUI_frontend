@@ -115,6 +115,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
   const notices = ref<SessionNotice[]>([])
   const promptEditState = ref<PromptEditState>({ phase: 'idle' })
   const sending = ref(false)
+  const restoration = ref<'pending' | 'ready'>('pending')
   const answeringAskIds = ref<ReadonlySet<string>>(new Set())
 
   function setAskAnswering(askId: string, answering: boolean): void {
@@ -179,14 +180,17 @@ export function useAgentSession(deps: AgentSessionDeps) {
             generation === loadGeneration &&
             ownedGeneration === sessionGeneration
         )
+        return
       }
     }
+    restoration.value = 'ready'
   }
 
   async function hydrateFromServer(
     threadId: string,
     isCurrent: () => boolean = () => true
   ): Promise<boolean> {
+    restoration.value = 'pending'
     try {
       const history = await rest.getMessages(threadId)
       if (conversationStore.threadId !== threadId || !isCurrent()) return false
@@ -204,6 +208,8 @@ export function useAgentSession(deps: AgentSessionDeps) {
       }
       pushError(error instanceof Error ? error.message : String(error))
       return false
+    } finally {
+      if (isCurrent()) restoration.value = 'ready'
     }
   }
 
@@ -534,6 +540,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
 
   return {
     boundWorkflowId: computed(() => boundWorkflowId.value),
+    restorationReady: computed(() => restoration.value === 'ready'),
     bindWorkflow,
     isSending,
     editableTurnId,

@@ -5271,7 +5271,7 @@
     "stop": "Stop",
     "updatingGraph": "The agent is updating the graph",
     "editWhileWorking": "You can keep editing while it works",
-    "nodesAdded": "1 node added to the graph by agent | {count} nodes added to the graph by agent",
+    "nodesAdded": "1 node added to the graph by the agent | {count} nodes added to the graph by the agent",
     "viewAddedNodes": "View node | View nodes",
     "thinking": "Thinking...",
     "working": "Working...",

@@ -69,14 +69,6 @@ export function useMinimapRenderer(
     updateFlags.value.connections = false
   }
 
-  /**
-   * Repaint regardless of the change digests, for state that animates on its
-   * own clock rather than on an edit to the graph.
-   */
-  const renderFrame = () => {
-    draw()
-  }
-
   const updateMinimap = (
     updateBounds: () => void,
     updateViewport: () => void
@@ -116,8 +108,8 @@ export function useMinimapRenderer(
   return {
     needsFullRedraw,
     needsBoundsUpdate,
+    draw,
     renderMinimap,
-    renderFrame,
     updateMinimap,
     forceFullRedraw
   }
