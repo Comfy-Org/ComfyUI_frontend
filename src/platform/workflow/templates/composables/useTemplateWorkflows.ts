@@ -145,7 +145,7 @@ export function useTemplateWorkflows() {
     sourceModule: string,
     signal: AbortSignal
   ) {
-    const json = await fetchTemplateJson(id, sourceModule)
+    const json = await fetchTemplateJson(id, sourceModule, signal)
     signal.throwIfAborted()
     const template = workflowTemplatesStore.enhancedTemplates.find(
       (template) =>
@@ -159,8 +159,11 @@ export function useTemplateWorkflows() {
   }
 
   async function loadWorkflowTemplate(id: string, sourceModule: string) {
-    if (!isTemplatesLoaded.value || pendingLoad.value?.phase === 'loading')
+    if (!isTemplatesLoaded.value) {
+      showTemplateError(t('templateWorkflows.error.loading'))
       return false
+    }
+    if (pendingLoad.value?.phase === 'loading') return false
 
     const controller = workflowTemplatesStore.startTemplateLoad()
     pendingLoad.value = { id, controller, phase: 'preparing' }
@@ -203,13 +206,20 @@ export function useTemplateWorkflows() {
   /**
    * Fetches template JSON from the appropriate endpoint
    */
-  const fetchTemplateJson = async (id: string, sourceModule: string) => {
+  const fetchTemplateJson = async (
+    id: string,
+    sourceModule: string,
+    signal: AbortSignal
+  ) => {
     if (sourceModule === 'default') {
       // Default templates provided by frontend are served on this separate endpoint
-      return fetch(api.fileURL(`/templates/${id}.json`)).then((r) => r.json())
+      return fetch(api.fileURL(`/templates/${id}.json`), { signal }).then((r) =>
+        r.json()
+      )
     } else {
       return fetch(
-        api.apiURL(`/workflow_templates/${sourceModule}/${id}.json`)
+        api.apiURL(`/workflow_templates/${sourceModule}/${id}.json`),
+        { signal }
       ).then((r) => r.json())
     }
   }
