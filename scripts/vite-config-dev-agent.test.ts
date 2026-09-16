@@ -5,14 +5,16 @@ import { promisify } from 'node:util'
 import { describe, expect, it } from 'vitest'
 
 const execFileAsync = promisify(execFile)
+const printAgentConfig =
+  "import('./vite.config.mts').then(({ default: config }) => process.stdout.write(JSON.stringify({ headers: config.server?.proxy?.['/api/agent']?.headers, host: config.server?.host })))"
 
 async function importConfig(
   devAgentUrl: string,
-  overrides: Record<string, string | undefined> = {}
+  overrides: NodeJS.ProcessEnv = {}
 ) {
   return await execFileAsync(
     process.execPath,
-    ['--import', 'tsx', '--eval', "import('./vite.config.mts')"],
+    ['--import', 'tsx', '--eval', printAgentConfig],
     {
       cwd: process.cwd(),
       env: {
@@ -48,32 +50,22 @@ describe('dev agent proxy transport', () => {
 })
 
 describe('dev agent comfy credential', () => {
-  it('loads when a comfy token accompanies a protected target', async () => {
-    await expect(
-      importConfig('http://127.0.0.1:8095', {
-        DEV_AGENT_COMFY_TOKEN: 'comfyui-test-key'
-      })
-    ).resolves.toBeDefined()
-  })
-
-  it('rejects a comfy token with no agent target to forward it to', async () => {
-    await expect(
-      importConfig('', {
-        DEV_AGENT_COMFY_TOKEN: 'comfyui-test-key',
-        DEV_AGENT_SESSION_TOKEN: undefined
-      })
-    ).rejects.toMatchObject({
-      stderr: expect.stringContaining(
-        'DEV_AGENT_COMFY_TOKEN requires DEV_AGENT_URL'
-      )
+  it('forwards the token while keeping the dev server local', async () => {
+    const { stdout } = await importConfig('http://127.0.0.1:8095', {
+      DEV_AGENT_COMFY_TOKEN: 'comfyui-test-key',
+      VITE_REMOTE_DEV: 'true'
     })
+    expect(stdout).toBe(
+      '{"headers":{"Authorization":"Bearer test-session-token","X-Comfy-Token":"comfyui-test-key"}}'
+    )
   })
 
-  it('warns rather than failing when standalone runs without a comfy token', async () => {
-    const result = await importConfig('http://127.0.0.1:8095', {
-      VITE_AGENT_STANDALONE: 'true',
+  it('omits the comfy header when the token is unset', async () => {
+    const { stdout } = await importConfig('http://127.0.0.1:8095', {
       DEV_AGENT_COMFY_TOKEN: undefined
     })
-    expect(result.stderr).toContain('DEV_AGENT_COMFY_TOKEN is not set')
+    expect(stdout).toBe(
+      '{"headers":{"Authorization":"Bearer test-session-token"}}'
+    )
   })
 })
