@@ -64,7 +64,8 @@ export default defineConfig({
       name: 'chromium',
       use: { ...devices['Desktop Chrome'] },
       timeout: 15000,
-      grepInvert: /@mobile|@perf|@audit|@cloud|@custom-nodes|@agent-harness/
+      grepInvert:
+        /@mobile|@perf|@audit|@cloud|@custom-nodes|@agent-harness|@local-agent/
     },
 
     // Runs only against the local agent integration harness
@@ -76,6 +77,16 @@ export default defineConfig({
       use: { ...devices['Desktop Chrome'] },
       timeout: 180000,
       grep: /@agent-harness/
+    },
+
+    // Manual release proof for the local-product follower stack. The three
+    // loopback services are intentionally not part of ordinary frontend CI.
+    {
+      name: 'local-agent',
+      use: { ...devices['Desktop Chrome'] },
+      timeout: 120000,
+      grep: /@local-agent/,
+      fullyParallel: false
     },
 
     // The custom-node suite needs the manifest packs installed and a quiet
