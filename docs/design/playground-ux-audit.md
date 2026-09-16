@@ -47,6 +47,19 @@ the description now sits under the title.
 
 **An orphan tag row** sat after the ports with no heading. It has one.
 
+**The two detail pages opened differently.** A model page led with one pill and
+the provider's bare name; a workflow page led with pills, a byline, and a
+sentence about the run wedged between the description and the tab bar. Both now
+open the same way: pills that say what it is and whether it runs here, the
+title, who made it, what it does, then the playground.
+
+**Neither page said what a run costs** where the model has a single operation —
+the price only appeared on the operation buttons, which are hidden when there is
+nothing to choose. It is a pill in the header on both pages now.
+
+**The run bar was a pane the form showed through.** `bg-page/85` with a light
+blur left the prompt legible behind "Sign in to run". It reads as a bar now.
+
 ## Open, and not mine to decide
 
 **Only 72 of the 610 workflow pages get a playground.** The join runs on model
