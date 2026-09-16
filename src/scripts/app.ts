@@ -2421,7 +2421,7 @@ export class ComfyApp {
       }
     }
 
-    const unresolvedConnections: (() => boolean)[] = []
+    const unresolvedInputs: (() => boolean)[] = []
     const processNodeInputs = (id: string) => {
       const data = apiData[id]
       const currentNodeId = importedNodeIds.get(id) ?? toNodeId(id)
@@ -2464,31 +2464,35 @@ export class ComfyApp {
             fromNode.connect(fromSlot, targetNode, toSlot)
             return true
           }
-          if (!connectInput()) unresolvedConnections.push(connectInput)
+          if (!connectInput()) unresolvedInputs.push(connectInput)
         } else {
-          const widget = node.widgets?.find((w) => w.name === input)
-          if (widget) {
+          function applyWidgetValue() {
+            const widget = targetNode.widgets?.find((w) => w.name === input)
+            if (!widget) return false
             const widgetValue = unwrapExportedWidgetValue(value) as TWidgetValue
             widget.value = widgetValue
             widget.callback?.(widgetValue)
+            return true
           }
+          if (!applyWidgetValue()) unresolvedInputs.push(applyWidgetValue)
         }
-      }
-      if (node.last_serialization) {
-        node.last_serialization.inputs = node.inputs.map((input, i) =>
-          inputAsSerialisable(input, node, i)
-        )
       }
     }
 
     for (const id of ids) processNodeInputs(id)
-    let pendingConnections = unresolvedConnections
-    while (pendingConnections.length > 0) {
-      const remainingConnections = pendingConnections.filter(
-        (connectInput) => !connectInput()
+    let pendingInputs = unresolvedInputs
+    while (pendingInputs.length > 0) {
+      const remainingInputs = pendingInputs.filter(
+        (applyInput) => !applyInput()
       )
-      if (remainingConnections.length === pendingConnections.length) break
-      pendingConnections = remainingConnections
+      if (remainingInputs.length === pendingInputs.length) break
+      pendingInputs = remainingInputs
+    }
+    for (const node of app.rootGraph.nodes) {
+      if (!node.last_serialization) continue
+      node.last_serialization.inputs = node.inputs.map((input, i) =>
+        inputAsSerialisable(input, node, i)
+      )
     }
     app.rootGraph.arrange()
 
