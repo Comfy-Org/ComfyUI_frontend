@@ -124,12 +124,19 @@ function stampPlatformAxes(event: CaptureResult | null): CaptureResult | null {
   return event
 }
 
-function readDesktopEntryProps(): DesktopEntryProps | null {
+function readDesktopEntryProps(posthog: PostHog): DesktopEntryProps | null {
   const params = new URLSearchParams(window.location.search)
-  if (params.get('utm_source') !== 'comfy.desktop') return null
+  const isDesktopEntry = params.get('utm_source') === 'comfy.desktop'
+  if (!isDesktopEntry && posthog.get_property('source_app') !== 'desktop') {
+    return null
+  }
   const props: DesktopEntryProps = { source_app: 'desktop' }
-  const deviceId = params.get('desktop_device_id')
-  if (deviceId) props.desktop_device_id = deviceId
+  const deviceId: unknown = isDesktopEntry
+    ? params.get('desktop_device_id')
+    : posthog.get_property('desktop_device_id')
+  if (typeof deviceId === 'string' && deviceId) {
+    props.desktop_device_id = deviceId
+  }
   return props
 }
 
@@ -190,7 +197,7 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
             })
             this.isInitialized = true
             this.flushEventQueue()
-            this.desktopEntryProps = readDesktopEntryProps()
+            this.desktopEntryProps = readDesktopEntryProps(this.posthog)
             this.registerDesktopEntryProps()
 
             const currentUser = useCurrentUser()
