@@ -51,6 +51,14 @@
     "routerId": "byteplus/dreamina-seedance-2-5-260628",
     "options": { "mode": "first-last", "urlMedia": true }
   },
+  "byteplus--seedance-2-5-reference--generate-videos": {
+    "routerId": "byteplus/dreamina-seedance-2-5-260628",
+    "options": { "mode": "reference", "urlMedia": true }
+  },
+  "byteplus--seedance-2-5-text-to-video--generate-videos": {
+    "routerId": "byteplus/dreamina-seedance-2-5-260628",
+    "options": { "mode": "text", "urlMedia": true }
+  },
   "gemini--omni-1.1-flash--animate-images": {
     "routerId": "gemini-interactions/gemini-omni-1.1-flash",
     "options": { "mode": "image_to_video" }
@@ -75,9 +83,33 @@
     "routerId": "gemini-interactions/gemini-omni-flash-preview",
     "options": { "mode": "text_to_video" }
   },
+  "kling--omni-pro-edit-video--edit-videos": {
+    "routerId": "kling/kling-v3-omni",
+    "options": { "mode": "edit" }
+  },
+  "kling--omni-pro-first-last-frame--animate-images": {
+    "routerId": "kling/kling-v3-omni",
+    "options": { "mode": "first-last" }
+  },
+  "kling--omni-pro-image-to-video--animate-images": {
+    "routerId": "kling/kling-video-o1",
+    "options": { "mode": "image" }
+  },
+  "kling--omni-pro-text-to-video--generate-videos": {
+    "routerId": "kling/kling-video-o1",
+    "options": { "mode": "text" }
+  },
+  "kling--omni-pro-video-to-video--edit-videos": {
+    "routerId": "kling/kling-video-o1",
+    "options": { "mode": "reference-video" }
+  },
   "kling--v3--animate-images": {
     "routerId": "kling/kling-v3",
     "unavailableReason": "The current Router route exposes Kling text-to-video only; it has no image input."
+  },
+  "ltx--text-to-video-v2--generate-videos": {
+    "routerId": "ltx/ltx-2-5-pro",
+    "options": {}
   },
   "luma--ray-2-image-to-video--animate-images": {
     "routerId": "luma/ray-2",

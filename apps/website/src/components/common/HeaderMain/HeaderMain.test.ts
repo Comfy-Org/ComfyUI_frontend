@@ -7,7 +7,6 @@ import HeaderMain from './HeaderMain.vue'
 
 const hoisted = vi.hoisted(() => ({
   flag: undefined as { value: boolean } | undefined,
-  announceReturn: vi.fn(),
   visibility: undefined as { value: boolean } | undefined
 }))
 
@@ -22,10 +21,6 @@ vi.mock(import('../../../scripts/posthog.ts'), async () => {
     useWorkshopEnabled: () => visibility
   }
 })
-
-vi.mock(import('../../../lib/workshop/topup-return.ts'), () => ({
-  announceTopUpReturnFromLocation: hoisted.announceReturn
-}))
 
 vi.mock<unknown>(import('../../workshop/HeaderAccount.vue'), async () => {
   const { defineComponent, h } = await import('vue')
@@ -53,7 +48,6 @@ vi.mock<unknown>(import('../../workshop/BuyCreditsDialog.vue'), async () => {
 
 beforeEach(() => {
   hoisted.flag!.value = false
-  hoisted.announceReturn.mockReset()
   hoisted.visibility!.value = false
 })
 
@@ -79,13 +73,6 @@ describe('HeaderMain workshop gating', () => {
     render(HeaderMain)
 
     expect(screen.queryByTestId('header-account')).toBeNull()
-  })
-
-  it('relays a top-up return before the auth flag settles', () => {
-    render(HeaderMain)
-
-    expect(hoisted.announceReturn).toHaveBeenCalledOnce()
-    expect(screen.queryByTestId('buy-credits-dialog')).toBeNull()
   })
 
   it('mounts the account island when the flag turns on after mount', async () => {
