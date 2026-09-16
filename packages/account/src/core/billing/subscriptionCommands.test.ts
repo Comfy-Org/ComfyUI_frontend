@@ -29,6 +29,7 @@ import type {
 import {
   CANCEL_SUBSCRIPTION_ROUTE,
   PAYMENT_PORTAL_ROUTE,
+  PREVIEW_SUBSCRIBE_ROUTE,
   RESUBSCRIBE_ROUTE,
   SUBSCRIBE_ROUTE,
   createBillingCommands
@@ -234,6 +235,7 @@ const POST_SUBSCRIBE = `POST ${SUBSCRIBE_ROUTE}`
 const POST_RESUBSCRIBE = `POST ${RESUBSCRIBE_ROUTE}`
 const POST_CANCEL = `POST ${CANCEL_SUBSCRIPTION_ROUTE}`
 const POST_PORTAL = `POST ${PAYMENT_PORTAL_ROUTE}`
+const POST_PREVIEW = `POST ${PREVIEW_SUBSCRIBE_ROUTE}`
 const GET_OP = `GET ${operationRoute('op-1')}`
 
 const subscribed = http(200, { billing_op_id: 'op-1', status: 'subscribed' })
@@ -485,6 +487,210 @@ describe('createBillingCommands', () => {
         status: 'error',
         code: 'MALFORMED_RESPONSE',
         httpStatus: 200
+      })
+    })
+  })
+
+  describe('preview', () => {
+    const PREVIEW_PLAN = {
+      credits_cents: 2000,
+      duration: 'MONTHLY',
+      price_cents: 2000,
+      seat_summary: {
+        seat_count: 1,
+        total_cost_cents: 2000,
+        total_credits_cents: 2000
+      },
+      slug: 'pro-monthly',
+      tier: 'PRO'
+    }
+    const QUOTE_BODY = {
+      allowed: true,
+      cost_next_period_cents: 2000,
+      cost_today_cents: 1500,
+      credits_next_period_cents: 2000,
+      credits_today_cents: 1500,
+      effective_at: '2026-09-15T00:00:00.000Z',
+      is_immediate: true,
+      new_plan: PREVIEW_PLAN,
+      transition_type: 'upgrade'
+    }
+    const quote = http(200, QUOTE_BODY)
+
+    it('decodes the quote and sends every field snake_cased without an idempotency key', async () => {
+      const h = harness({ status: FREE, script: { [POST_PREVIEW]: [quote] } })
+
+      const result = await h.commands.previewSubscribe({
+        planSlug: 'pro-monthly',
+        promotionCode: 'LAUNCH',
+        teamCreditStopId: 'stop-1',
+        checkoutAttemptId: 'attempt-1'
+      })
+
+      expect(result).toMatchObject({
+        status: 'ok',
+        value: {
+          allowed: true,
+          cost_today_cents: 1500n,
+          new_plan: { slug: 'pro-monthly', price_cents: 2000n },
+          transition_type: 'upgrade'
+        }
+      })
+      expect(h.posts()).toEqual([
+        expect.objectContaining({
+          route: PREVIEW_SUBSCRIBE_ROUTE,
+          body: {
+            plan_slug: 'pro-monthly',
+            promotion_code: 'LAUNCH',
+            team_credit_stop_id: 'stop-1',
+            checkout_attempt_id: 'attempt-1'
+          }
+        })
+      ])
+      expect(h.posts()[0]?.idempotencyKey).toBeUndefined()
+    })
+
+    it('hands the applied discounts back, echoing the promotion code it sent', async () => {
+      const discounted = http(200, {
+        ...QUOTE_BODY,
+        discounts: [
+          {
+            amount_off_cents: 500,
+            code: 'LAUNCH',
+            kind: 'promotion',
+            name: 'Launch offer'
+          },
+          { code: 'pro-annual-bundle', kind: 'plan' }
+        ],
+        promotion_code: 'LAUNCH'
+      })
+      const h = harness({
+        status: FREE,
+        script: { [POST_PREVIEW]: [discounted] }
+      })
+
+      const result = await h.commands.previewSubscribe({
+        planSlug: 'pro-monthly',
+        promotionCode: 'LAUNCH'
+      })
+
+      expect(result).toEqual({
+        status: 'ok',
+        value: expect.objectContaining({
+          discounts: [
+            {
+              amount_off_cents: 500n,
+              code: 'LAUNCH',
+              kind: 'promotion',
+              name: 'Launch offer'
+            },
+            { code: 'pro-annual-bundle', kind: 'plan' }
+          ],
+          promotion_code: 'LAUNCH'
+        })
+      })
+    })
+
+    it('omits the optional fields the caller left out, issuing no operation', async () => {
+      const h = harness({ status: FREE, script: { [POST_PREVIEW]: [quote] } })
+
+      await h.commands.previewSubscribe({ planSlug: 'pro-monthly' })
+
+      expect(h.posts()[0]?.body).toEqual({ plan_slug: 'pro-monthly' })
+      expect(h.lifecycle.getSnapshot()).toEqual([])
+      expect(h.invalidate).not.toHaveBeenCalled()
+      expect(h.status.read).not.toHaveBeenCalled()
+    })
+
+    it('rejects a preview without a plan slug before any request', async () => {
+      const h = harness({ status: FREE })
+
+      // @ts-expect-error a preview without a plan slug does not type-check either
+      const result = await h.commands.previewSubscribe({})
+
+      expect(result).toEqual({ status: 'error', code: 'INVALID_REQUEST' })
+      expect(h.calls).toEqual([])
+    })
+
+    it.for([
+      {
+        name: 'a 401 the transport could not replay is transient',
+        answer: http(401, {}, { authenticationRetrySkipped: true }),
+        httpStatus: 401,
+        code: 'REQUEST_FAILED'
+      },
+      {
+        name: 'a 401 it did replay is a denial',
+        answer: http(401),
+        httpStatus: 401,
+        code: 'ACCESS_DENIED'
+      },
+      {
+        name: 'a 403 is a denial',
+        answer: http(403),
+        httpStatus: 403,
+        code: 'ACCESS_DENIED'
+      },
+      {
+        name: 'a 404 is not found',
+        answer: http(404),
+        httpStatus: 404,
+        code: 'NOT_FOUND'
+      },
+      {
+        name: 'a 409 is a conflict',
+        answer: http(409),
+        httpStatus: 409,
+        code: 'CONFLICT'
+      },
+      {
+        name: 'a 5xx is transient',
+        answer: http(500),
+        httpStatus: 500,
+        code: 'REQUEST_FAILED'
+      }
+    ])('$name', async ({ answer, httpStatus, code }) => {
+      const h = harness({ status: FREE, script: { [POST_PREVIEW]: [answer] } })
+
+      await expect(
+        h.commands.previewSubscribe({ planSlug: 'pro-monthly' })
+      ).resolves.toEqual({ status: 'error', code, httpStatus })
+    })
+
+    it('reports a 2xx outside the generated contract as MALFORMED_RESPONSE', async () => {
+      const h = harness({
+        status: FREE,
+        script: { [POST_PREVIEW]: [http(200, { allowed: true })] }
+      })
+
+      await expect(
+        h.commands.previewSubscribe({ planSlug: 'pro-monthly' })
+      ).resolves.toEqual({
+        status: 'error',
+        code: 'MALFORMED_RESPONSE',
+        httpStatus: 200
+      })
+    })
+
+    it('forwards the caller signal and timeout, releasing an abandoned read as transient', async () => {
+      const controller = new AbortController()
+      const h = harness({
+        status: FREE,
+        script: {
+          [POST_PREVIEW]: [{ status: 'error', code: 'REQUEST_FAILED' }]
+        }
+      })
+      controller.abort()
+
+      await expect(
+        h.commands.previewSubscribe(
+          { planSlug: 'pro-monthly' },
+          { signal: controller.signal, timeoutMs: 5_000 }
+        )
+      ).resolves.toEqual({ status: 'error', code: 'REQUEST_FAILED' })
+      expect(h.posts()[0]).toMatchObject({
+        signal: controller.signal,
+        timeoutMs: 5_000
       })
     })
   })
