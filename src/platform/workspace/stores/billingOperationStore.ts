@@ -115,6 +115,9 @@ interface BillingOperation {
   // than keep waiting. Null while unknown — the field is optional in the
   // contract, and absent is explicitly no claim, never an implied in_progress.
   phase: BillingOperationPhase | null
+  // Sticky: reading `phase` directly would drop back to the discovery budget
+  // the moment the card is accepted, timing out a healthy operation.
+  awaitingPaymentMethodSeen: boolean
   downgradeToPersonal?: StartOperationMetadata['downgradeToPersonal']
   // Set when the customer walked away from this operation in the UI (e.g.
   // "Start over" after a failed challenge). The operation itself is not
@@ -264,6 +267,7 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
       paymentIntentSource: metadata?.paymentIntentSource,
       autoHandleRequiresAction: metadata?.autoHandleRequiresAction ?? false,
       phase: null,
+      awaitingPaymentMethodSeen: false,
       downgradeToPersonal: metadata?.downgradeToPersonal,
       dismissed: false
     }
@@ -430,7 +434,11 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
 
   function hasTimedOut(operation: BillingOperation): boolean {
     const elapsed = Date.now() - operation.startedAt
-    if (operation.type !== 'cancel' && operation.authenticationRequiredSeen) {
+    if (
+      operation.type !== 'cancel' &&
+      (operation.authenticationRequiredSeen ||
+        operation.awaitingPaymentMethodSeen)
+    ) {
       return elapsed > AUTHENTICATION_TIMEOUT_MS
     }
     return operation.type === 'subscription'
@@ -634,9 +642,11 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
     ) {
       return
     }
-    operations.value = new Map(operations.value).set(opId, {
-      ...operation,
-      phase
+    updateOperation(opId, {
+      phase,
+      awaitingPaymentMethodSeen:
+        operation.awaitingPaymentMethodSeen ||
+        phase === 'awaiting_payment_method'
     })
   }
 
