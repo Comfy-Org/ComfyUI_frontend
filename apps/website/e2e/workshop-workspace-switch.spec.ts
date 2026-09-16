@@ -1,6 +1,9 @@
 import { expect } from '@playwright/test'
 
-import type { ListWorkspacesResponse } from '@comfyorg/ingest-types'
+import type {
+  ExchangeTokenResponse,
+  ListWorkspacesResponse
+} from '@comfyorg/ingest-types'
 
 import { MODEL_PATH, test } from './fixtures/modelsAccount'
 
@@ -25,6 +28,8 @@ const WORKSPACES: ListWorkspacesResponse = {
   ]
 }
 
+const TEAM = WORKSPACES.workspaces[1]
+
 test('switching workspace during a run asks before it throws the run away', async ({
   page,
   modelsAccount
@@ -36,6 +41,26 @@ test('switching workspace during a run asks before it throws the run away', asyn
       body: JSON.stringify(WORKSPACES)
     })
   )
+  // The fixture mints the personal workspace for every exchange, so the one
+  // that asks for the team needs an answer of its own or the switch lands
+  // back where it started and says nothing.
+  await page.route('**/api/auth/token', (route) => {
+    const asked = route.request().postDataJSON() as {
+      workspace_id?: string
+    } | null
+    if (asked?.workspace_id !== TEAM.id) return route.fallback()
+    return route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        token: 'mock-team-jwt',
+        expires_at: new Date(Date.now() + 60 * 60 * 1000).toISOString(),
+        workspace: { id: TEAM.id, name: TEAM.name, type: TEAM.type },
+        role: TEAM.role,
+        permissions: []
+      } satisfies ExchangeTokenResponse)
+    })
+  })
   // The run never answers, so it is still going when the workspace changes.
   await page.route('**/v2/models/**', () => {})
 
@@ -74,4 +99,9 @@ test('switching workspace during a run asks before it throws the run away', asyn
   await otherWorkspace()
   await page.getByTestId('run-leave-confirm').click()
   await expect(output).toHaveAttribute('data-state', 'cancelled')
+
+  await account.click()
+  await expect(page.getByTestId('account-workspace-current')).toContainText(
+    TEAM.name
+  )
 })
