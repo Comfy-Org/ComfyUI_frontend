@@ -1474,6 +1474,10 @@ describe('ComfyApp', () => {
                   ...inputs,
                   [`${prefix}.${indices.at(-1)}.strength`]: ['2', 0],
                   [`${prefix}.10`]: 'malformed',
+                  [prefix]: 0,
+                  [`${prefix}.$add`]: 0,
+                  [`${prefix}.$notice`]: 'not an input',
+                  [`${prefix}.0`]: 0,
                   ...(nested ? { mode: 'on' } : {})
                 },
                 _meta: { title: nodeType }

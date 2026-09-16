@@ -15,6 +15,7 @@ export function restoreDynamicGroupInputs(
   const definition = useNodeDefStore().fromLGraphNode(node)
   const names = new Map<string, string>()
   const restoredCombos = new Set<string>()
+  const groups: string[] = []
 
   function restore(specs: ComfyInputsSpec, prefix = '') {
     for (const [key, spec] of Object.entries({
@@ -39,6 +40,7 @@ export function restoreDynamicGroupInputs(
       }
       const group = zDynamicGroupInputSpec.safeParse(spec).data
       if (!group) continue
+      groups.push(name)
       const fields = {
         ...group[1].template.required,
         ...group[1].template.optional
@@ -71,7 +73,14 @@ export function restoreDynamicGroupInputs(
   if (definition) restore(definition.input)
   return Object.fromEntries(
     Object.entries(inputs)
-      .filter(([name]) => !restoredCombos.has(name))
+      .filter(
+        ([name]) =>
+          !restoredCombos.has(name) &&
+          (names.has(name) ||
+            !groups.some(
+              (group) => name === group || name.startsWith(`${group}.`)
+            ))
+      )
       .map(([name, value]) => [names.get(name) ?? name, value])
   )
 }
