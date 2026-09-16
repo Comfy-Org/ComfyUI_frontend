@@ -74,6 +74,12 @@ export interface PaymentMethodsReaderOptions {
 interface InFlightRead {
   readonly context: BillingScopeContext
   readonly promise: Promise<BillingResult<PaymentMethodsSnapshot>>
+  /**
+   * Set when the host invalidates while this request is in flight. The list it
+   * returns was resolved before the change the host is reporting, so it may be
+   * served to the callers already waiting on it but must not be published.
+   */
+  readonly pending: { invalidated: boolean }
 }
 
 export function createPaymentMethodsReader(
@@ -126,44 +132,44 @@ export function createPaymentMethodsReader(
       return releaseOnAbort(inFlight.promise, readOptions?.signal)
     }
 
+    // The invalidation flag lives outside the attempt so the read body can
+    // consult it without referencing the object that holds its own promise.
+    const pending = { invalidated: false }
     // No caller signal reaches the shared request: it is bounded by its own
     // timeout, and one caller walking away must not fail the readers still
     // waiting on it. Each caller's signal releases only that caller, below.
-    const attempt: InFlightRead = {
-      context,
-      promise: (async () => {
-        const result = await requestPaymentMethods(
-          scope,
-          readOptions?.timeoutMs
-        )
-        if (result.status !== 'ok') {
-          if (
-            result.code === 'ACCESS_DENIED' &&
-            scopeTracker.isCurrent(context)
-          ) {
-            snapshot = undefined
-          }
-          return result
+    const promise = (async (): Promise<
+      BillingResult<PaymentMethodsSnapshot>
+    > => {
+      const result = await requestPaymentMethods(scope, readOptions?.timeoutMs)
+      if (result.status !== 'ok') {
+        if (
+          result.code === 'ACCESS_DENIED' &&
+          scopeTracker.isCurrent(context)
+        ) {
+          snapshot = undefined
         }
-
-        // A list that arrives after the host moved to another workspace names
-        // cards the current one cannot charge.
-        if (lifetime.disposed || !scopeTracker.isCurrent(context)) {
-          return { status: 'error', code: 'SUPERSEDED' }
-        }
-
-        snapshot = result.value
         return result
-      })()
-    }
+      }
 
+      // A list that arrives after the host moved to another workspace names
+      // cards the current one cannot charge.
+      if (lifetime.disposed || !scopeTracker.isCurrent(context)) {
+        return { status: 'error', code: 'SUPERSEDED' }
+      }
+
+      if (!pending.invalidated) snapshot = result.value
+      return result
+    })()
+
+    const attempt: InFlightRead = { context, promise, pending }
     inFlight = attempt
     const release = () => {
       if (inFlight === attempt) inFlight = undefined
     }
-    attempt.promise.then(release, release)
+    promise.then(release, release)
 
-    return releaseOnAbort(attempt.promise, readOptions?.signal)
+    return releaseOnAbort(promise, readOptions?.signal)
   }
 
   return {
@@ -171,6 +177,14 @@ export function createPaymentMethodsReader(
     getSnapshot: () => snapshot,
     invalidate: () => {
       snapshot = undefined
+      // A request issued before this call resolved the list the host is
+      // reporting as wrong, so it is fenced off from publishing and its slot
+      // released: the read that follows an invalidation must issue its own
+      // request rather than join the one that predates it.
+      if (inFlight !== undefined) {
+        inFlight.pending.invalidated = true
+        inFlight = undefined
+      }
     },
     dispose: () => {
       lifetime.disposed = true

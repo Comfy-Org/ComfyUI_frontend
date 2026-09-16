@@ -186,6 +186,39 @@ describe('createPaymentMethodsReader', () => {
     expect(reader.getSnapshot()?.methods[0].id).toBe('pm_2')
   })
 
+  it('fences a request that predates an invalidation from publishing', async () => {
+    const { scopeSource } = fakeSession()
+    let releaseStale = () => {}
+    const staleGate = new Promise<void>((resolve) => {
+      releaseStale = resolve
+    })
+    let calls = 0
+    const transport: BillingTransport = vi.fn(async () => {
+      calls++
+      if (calls > 1) return httpOk([{ ...CARD, id: 'pm_2', last4: '1881' }])
+      await staleGate
+      return httpOk(METHODS)
+    })
+    const reader = createPaymentMethodsReader({ transport, scopeSource })
+
+    const stale = reader.read()
+    reader.invalidate()
+    const fresh = reader.read()
+
+    // The read that follows an invalidation issues its own request rather than
+    // joining the one that resolved the list the host just reported as wrong.
+    expect(transport).toHaveBeenCalledTimes(2)
+    const result = await fresh
+    expect(result.status).toBe('ok')
+    if (result.status !== 'ok') return
+    expect(result.value.methods[0].id).toBe('pm_2')
+
+    releaseStale()
+    await stale
+
+    expect(reader.getSnapshot()?.methods[0].id).toBe('pm_2')
+  })
+
   describe('scope safety', () => {
     it('reports SUPERSEDED and caches nothing when the workspace changed in flight', async () => {
       const host = fakeSession()
@@ -297,6 +330,22 @@ describe('createPaymentMethodsReader', () => {
 
       expect(second).toEqual({ status: 'error', code: 'REQUEST_FAILED' })
       expect(reader.getSnapshot()?.methods[0].id).toBe('pm_1')
+    })
+
+    it('drops the published list when a later read is denied', async () => {
+      const { scopeSource } = fakeSession()
+      const { transport } = fakeTransport([httpOk(METHODS), httpStatus(403)])
+      const reader = createPaymentMethodsReader({ transport, scopeSource })
+
+      await reader.read()
+      const result = await reader.read()
+
+      expect(result).toEqual({
+        status: 'error',
+        code: 'ACCESS_DENIED',
+        httpStatus: 403
+      })
+      expect(reader.getSnapshot()).toBeUndefined()
     })
   })
 
