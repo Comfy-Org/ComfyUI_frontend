@@ -54,12 +54,14 @@ const TRANSITION_TYPES = [
   'duration_change'
 ] as const satisfies readonly PreviewResponse['transition_type'][]
 
-/** Every amount the quote always carries, each one the host formats as money. */
+/** Every amount the quote can carry, each one the host formats as money. */
 const MONEY_FIELDS = [
+  'amount_due_cents',
   'cost_next_period_cents',
   'cost_today_cents',
   'credits_next_period_cents',
-  'credits_today_cents'
+  'credits_today_cents',
+  'renewal_amount_cents'
 ] as const satisfies readonly (keyof PreviewResponseBody)[]
 
 const INT64_MIN = -9223372036854775808n
@@ -133,14 +135,25 @@ describe('preview subscribe contract', () => {
     expectTypeOf<
       PreviewResponse['credits_next_period_cents']
     >().toEqualTypeOf<bigint>()
+    expectTypeOf<PreviewResponse['amount_due_cents']>().toEqualTypeOf<
+      bigint | undefined
+    >()
+    expectTypeOf<PreviewResponse['renewal_amount_cents']>().toEqualTypeOf<
+      bigint | undefined
+    >()
   })
 
-  it('coerces the JSON numbers the wire actually carries for those amounts', () => {
-    const wireBody = { ...previewResponse(), cost_today_cents: 3000 }
-    const parsed = zPreviewSubscribeResponse.safeParse(wireBody)
+  it.for(MONEY_FIELDS)(
+    'coerces the JSON number the wire actually carries for %s',
+    (field) => {
+      const parsed = zPreviewSubscribeResponse.safeParse({
+        ...previewResponse(),
+        [field]: 3000
+      })
 
-    expect(parsed.success && parsed.data.cost_today_cents).toBe(3000n)
-  })
+      expect(parsed.success && parsed.data[field]).toBe(3000n)
+    }
+  )
 
   it.for(MONEY_FIELDS)('bounds %s to the int64 range', (field) => {
     const parseAmount = (amount: bigint) =>
