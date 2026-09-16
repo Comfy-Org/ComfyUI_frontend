@@ -144,13 +144,13 @@ function agentFeatures(agentFlag: boolean): RemoteConfig {
 async function mockAgentBoot(
   page: Page,
   {
-    agentFlagEnabled,
-    crdtDebugEnabled,
-    postedMessages,
     agentConsentAccepted,
-    agentPanelInitiallyOpen,
     agentConsentSave,
-    agentConsentWrites
+    agentConsentWrites,
+    agentFlagEnabled,
+    agentPanelInitiallyOpen,
+    crdtDebugEnabled,
+    postedMessages
   }: Omit<AgentFixtures, 'agentPanel'>
 ): Promise<void> {
   let consentAccepted = agentConsentAccepted
@@ -339,55 +339,55 @@ async function mockAgentBoot(
 }
 
 type AgentFixtures = {
-  agentPanel: AgentPanel
-  agentFlagEnabled: boolean
-  crdtDebugEnabled: boolean
   agentConsentAccepted: boolean
-  agentPanelInitiallyOpen: boolean
   agentConsentSave: { status: number; pending?: Promise<void> }
   agentConsentWrites: boolean[]
+  agentFlagEnabled: boolean
+  agentPanel: AgentPanel
+  agentPanelInitiallyOpen: boolean
+  crdtDebugEnabled: boolean
   postedMessages: string[]
 }
 
 export const agentTest = comfyPageFixture.extend<AgentFixtures>({
-  agentPanel: async ({ page }, use) => {
-    await use(new AgentPanel(page))
-  },
-  agentFlagEnabled: [true, { option: true }],
-  crdtDebugEnabled: [false, { option: true }],
   agentConsentAccepted: [true, { option: true }],
-  agentPanelInitiallyOpen: [false, { option: true }],
   agentConsentSave: async ({ agentFlagEnabled: _agentFlagEnabled }, use) => {
     await use({ status: 200 })
   },
   agentConsentWrites: async ({ agentFlagEnabled: _agentFlagEnabled }, use) => {
     await use([])
   },
-  postedMessages: async ({ agentFlagEnabled: _agentFlagEnabled }, use) => {
-    await use([])
+  agentFlagEnabled: [true, { option: true }],
+  agentPanel: async ({ page }, use) => {
+    await use(new AgentPanel(page))
   },
+  agentPanelInitiallyOpen: [false, { option: true }],
+  crdtDebugEnabled: [false, { option: true }],
   page: async (
     {
-      page,
-      agentFlagEnabled,
-      crdtDebugEnabled,
-      postedMessages,
       agentConsentAccepted,
-      agentPanelInitiallyOpen,
       agentConsentSave,
-      agentConsentWrites
+      agentConsentWrites,
+      agentFlagEnabled,
+      agentPanelInitiallyOpen,
+      crdtDebugEnabled,
+      page,
+      postedMessages
     },
     use
   ) => {
     await mockAgentBoot(page, {
-      agentFlagEnabled,
-      postedMessages,
       agentConsentAccepted,
+      agentConsentSave,
+      agentConsentWrites,
+      agentFlagEnabled,
       agentPanelInitiallyOpen,
       crdtDebugEnabled,
-      agentConsentSave,
-      agentConsentWrites
+      postedMessages
     })
     await use(page)
+  },
+  postedMessages: async ({ agentFlagEnabled: _agentFlagEnabled }, use) => {
+    await use([])
   }
 })
