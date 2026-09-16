@@ -5,11 +5,10 @@ import type { Middleware } from '@floating-ui/vue'
 import {
   useElementBounding,
   useEventListener,
-  useMutationObserver,
   useWindowSize
 } from '@vueuse/core'
 import { FocusScope } from 'reka-ui'
-import { computed, nextTick, ref, useId, watch } from 'vue'
+import { computed, nextTick, onBeforeUnmount, ref, useId, watch } from 'vue'
 
 import { vRekaZIndex } from '@/components/dialog/vRekaZIndex'
 import Button from '@/components/ui/button/Button.vue'
@@ -34,6 +33,16 @@ const card = ref<HTMLElement | null>(null)
 const bounds = useElementBounding(target)
 const toolbarBounds = useElementBounding(toolbar)
 const { width, height } = useWindowSize()
+let targetRetryTimer: ReturnType<typeof setTimeout> | undefined
+
+function scheduleTargetRetry(): void {
+  clearTimeout(targetRetryTimer)
+  if (!active.value || target.value) return
+  targetRetryTimer = setTimeout(() => {
+    resolveTargets()
+    scheduleTargetRetry()
+  }, 50)
+}
 
 function resolveTargets(): void {
   const nextTarget = active.value
@@ -47,11 +56,17 @@ function resolveTargets(): void {
   if (toolbar.value !== nextToolbar) toolbar.value = nextToolbar
   bounds.update()
   toolbarBounds.update()
+  scheduleTargetRetry()
 }
 
-useMutationObserver(document.body, resolveTargets, {
+const targetObserver = new MutationObserver(resolveTargets)
+targetObserver.observe(document.body, {
   childList: true,
   subtree: true
+})
+onBeforeUnmount(() => {
+  targetObserver.disconnect()
+  clearTimeout(targetRetryTimer)
 })
 
 watch(

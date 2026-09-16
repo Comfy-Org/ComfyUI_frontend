@@ -227,22 +227,26 @@ describe('OnboardingCoach', () => {
   })
 
   it('waits for a late target without letting Escape complete an unseen tour', async () => {
+    const storageKey = 'coach-late-target-test'
+    const lateSteps = [{ ...STEPS[0], target: '#late-panel' }]
     render(OnboardingCoach, {
-      props: { steps: STEPS, storageKey: KEY },
+      props: { steps: lateSteps, storageKey },
       global: { plugins: [i18n] }
     })
     await nextTick()
     await nextTick()
 
     await userEvent.keyboard('{Escape}')
-    expect(localStorage.getItem(KEY)).toBe('false')
+    expect(localStorage.getItem(storageKey)).toBe('false')
     expect(screen.queryByRole('dialog')).toBeNull()
 
     const target = document.createElement('div')
-    target.id = 'panel'
-    document.body.append(target)
+    target.id = 'late-panel'
+    document.body.appendChild(target)
 
-    const dialog = await screen.findByRole('dialog', { name: STEPS[0].title })
+    const dialog = await screen.findByRole('dialog', {
+      name: lateSteps[0].title
+    })
     await waitFor(() => expect(dialog).toBeVisible())
   })
 })
