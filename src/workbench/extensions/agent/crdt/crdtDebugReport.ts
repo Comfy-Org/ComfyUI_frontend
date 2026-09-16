@@ -299,16 +299,19 @@ type SystemStats = Awaited<ReturnType<typeof api.getSystemStats>>
  */
 const PRIVATE_VALUE_PATTERN =
   /(^|=)(\/|~|[A-Za-z]:[\\/]|\\\\|\.{1,2}[\\/])|:\/\//
+const BEARER_VALUE_PATTERN = /^(\s*bearer\s+)\S+\s*$/i
 const SECRET_VALUE_PATTERN =
   /((?:["']?)(?:token|secret|password|passwd|credential|api[-_]?key|apikey|authorization|auth|bearer|session|cookie|private)(?:["']?)\s*[:=]\s*)(?:bearer\s+)?(?:(['"])(?:\\[\s\S]|(?!\2)[\s\S])*\2|[^\s,;]+)/gi
 
 function redactPrivateValue(value: string): string {
   if (PRIVATE_VALUE_PATTERN.test(value)) return REDACTED
-  return value.replace(
-    SECRET_VALUE_PATTERN,
-    (_match, prefix: string, quote: string | undefined) =>
-      `${prefix}${quote ?? ''}${REDACTED}${quote ?? ''}`
-  )
+  return value
+    .replace(BEARER_VALUE_PATTERN, `$1${REDACTED}`)
+    .replace(
+      SECRET_VALUE_PATTERN,
+      (_match, prefix: string, quote: string | undefined) =>
+        `${prefix}${quote ?? ''}${REDACTED}${quote ?? ''}`
+    )
 }
 
 function redactArgv(argv: readonly string[]): string {

@@ -2,6 +2,7 @@ import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 import { useExtensionStore } from '@/stores/extensionStore'
 
 import { toTurnId } from '../schemas/agentApiSchema'
+import type { MessagePart, ToolPart } from '../services/agent/agentMessageParts'
 import { createAssistantMessage } from '../services/agent/agentMessageParts'
 
 const { getSystemStats, getLogs, getSettings } = vi.hoisted(() => ({
@@ -297,22 +298,30 @@ describe('collectCrdtDebugReport', () => {
     expect(report).toContain('Server logs unavailable: Error: offline')
   })
 
-  it.for([
-    { messages: undefined, status: 'unavailable' },
-    { messages: [], status: 'no retained calls' }
-  ])(
-    'reports $status tool metadata explicitly',
-    async ({ messages, status }) => {
-      const report = await collectCrdtDebugReport({
-        crdt: SNAPSHOT,
-        events: [],
-        agentMessages: messages
-      })
+  it('reports unavailable tool metadata explicitly', async () => {
+    const report = await collectCrdtDebugReport({
+      crdt: SNAPSHOT,
+      events: []
+    })
 
-      expect(report).toContain(`- Agent tool calls: ${status}`)
-      expect(report).toContain('Restored history may omit tool calls')
-    }
-  )
+    expect(report).toContain('- Agent tool calls: unavailable')
+    expect(report).toContain('Restored history may omit tool calls')
+  })
+
+  it('reports an empty retained tool-call array explicitly', async () => {
+    const report = await collectCrdtDebugReport({
+      crdt: SNAPSHOT,
+      events: [],
+      agentMessages: []
+    })
+
+    expect(report).toContain('- Agent tool calls: no retained calls')
+    const serialized = report
+      .split('## Agent tool calls\n\n')[1]
+      ?.match(/```json\n([\s\S]*?)\n```/)?.[1]
+    assert.exists(serialized)
+    expect(JSON.parse(serialized)).toEqual([])
+  })
 
   it('correlates tool outcomes and backend durations without conversation content', async () => {
     const report = await collectCrdtDebugReport({
@@ -424,13 +433,23 @@ describe('collectCrdtDebugReport', () => {
           },
           {
             ...createAssistantMessage(toTurnId('turn-many-2')),
-            parts: Array.from({ length: count - 30 }, (_, index) => ({
-              type: 'tool',
-              callId: `call-${index + 30}`,
-              name: 'inspect_workflow',
-              state: 'done',
-              ok: true
-            }))
+            parts: [
+              ...Array.from(
+                { length: count - 30 },
+                (_, index): ToolPart => ({
+                  type: 'tool',
+                  callId: `call-${index + 30}`,
+                  name: 'inspect_workflow',
+                  state: 'done',
+                  ok: true
+                })
+              ),
+              {
+                type: 'text',
+                text: 'private text after the newest tool call',
+                state: 'done'
+              }
+            ] satisfies MessagePart[]
           }
         ]
       })
@@ -448,6 +467,7 @@ describe('collectCrdtDebugReport', () => {
           (_, index) => `call-${index + Math.max(0, count - 50)}`
         )
       )
+      expect(report).not.toContain('private text after the newest tool call')
     }
   )
 
@@ -461,7 +481,7 @@ describe('collectCrdtDebugReport', () => {
           parts: [
             {
               type: 'tool',
-              callId: 'apiKey="private-call"',
+              callId: 'Bearer private-call',
               name: '/home/private-tool',
               state: 'done',
               ok: false
