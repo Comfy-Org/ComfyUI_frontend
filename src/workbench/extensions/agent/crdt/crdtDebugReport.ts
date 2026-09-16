@@ -18,6 +18,8 @@
  * is exactly when a report matters most, and a failed `getLogs()` must
  * degrade to a note in the log section rather than abort the whole bundle.
  */
+import { takeRight } from 'es-toolkit'
+
 import { DISTRIBUTION } from '@/platform/distribution/types'
 import { reportError } from '@/platform/telemetry/reportError'
 import { api } from '@/scripts/api'
@@ -492,24 +494,19 @@ function fitToolCalls(calls: readonly RetainedToolCall[]) {
 }
 
 function collectAgentToolCalls(messages: readonly AssistantMessage[]) {
-  const calls: RetainedToolCall[] = []
-  let total = 0
-  for (const message of messages.toReversed()) {
-    for (const part of message.parts.toReversed()) {
-      if (part.type !== 'tool') continue
-      total++
-      if (calls.length === MAX_TOOL_CALLS) continue
-      calls.push({
-        turnId: message.id,
-        callId: part.callId,
-        name: part.name,
-        state: part.state,
-        ok: part.ok,
-        durationMs: part.durationMs
-      })
-    }
-  }
-  return { calls: calls.toReversed(), total }
+  const calls = messages.flatMap(({ id: turnId, parts }) =>
+    parts
+      .filter((part) => part.type === 'tool')
+      .map(({ callId, name, state, ok, durationMs }) => ({
+        turnId,
+        callId,
+        name,
+        state,
+        ok,
+        durationMs
+      }))
+  )
+  return { calls: takeRight(calls, MAX_TOOL_CALLS), total: calls.length }
 }
 
 function agentToolSection(messages: readonly AssistantMessage[] | undefined) {
