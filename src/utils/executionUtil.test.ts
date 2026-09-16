@@ -129,7 +129,7 @@ describe('graphToPrompt _meta pack identity', () => {
     })
     expect(output[String(auxNode.id)]._meta).toEqual({
       title: 'AuxNode',
-      cnr_id: 'aux/pack'
+      aux_id: 'aux/pack'
     })
     expect(output[String(bareNode.id)]._meta).toEqual({ title: 'BareNode' })
   })
@@ -150,7 +150,7 @@ describe('graphToPrompt _meta pack identity', () => {
   })
 
   it.for([123, ''])(
-    'falls back to a valid aux_id when cnr_id is %j',
+    'preserves aux_id separately when cnr_id is %j',
     async (cnrId) => {
       const graph = new LGraph()
       const node = addNode(graph, 'FallbackIdentityNode', {
@@ -162,7 +162,7 @@ describe('graphToPrompt _meta pack identity', () => {
 
       expect(output[String(node.id)]._meta).toEqual({
         title: 'FallbackIdentityNode',
-        cnr_id: 'aux/pack'
+        aux_id: 'aux/pack'
       })
     }
   )

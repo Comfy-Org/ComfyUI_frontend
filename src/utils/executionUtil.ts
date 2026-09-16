@@ -12,7 +12,7 @@ import type {
   ComfyWorkflowJSON
 } from '@/platform/workflow/validation/schemas/workflowSchema'
 
-import { getCnrIdFromProperties } from '@/platform/nodeReplacement/cnrIdUtil'
+import { zNodePackMetadata } from '@/platform/workflow/validation/schemas/workflowSchema'
 
 import { compressWidgetInputSlots } from './litegraphUtil'
 
@@ -169,9 +169,15 @@ export const graphToPrompt = async (
       ]
     }
 
-    const cnrId = getCnrIdFromProperties(node.properties)
-    const packVersion =
-      typeof node.properties.ver === 'string' ? node.properties.ver : undefined
+    const cnrId = zNodePackMetadata.shape.cnr_id.safeParse(
+      node.properties.cnr_id
+    ).data
+    const auxId = zNodePackMetadata.shape.aux_id.safeParse(
+      node.properties.aux_id
+    ).data
+    const packVersion = zNodePackMetadata.shape.ver.safeParse(
+      node.properties.ver
+    ).data
     output[node.id] = {
       inputs,
       // TODO(huchenlei): Filter out all nodes that cannot be mapped to a
@@ -182,6 +188,7 @@ export const graphToPrompt = async (
       _meta: {
         title: node.title,
         ...(cnrId && { cnr_id: cnrId }),
+        ...(auxId && { aux_id: auxId }),
         ...(packVersion && { ver: packVersion })
       }
     }

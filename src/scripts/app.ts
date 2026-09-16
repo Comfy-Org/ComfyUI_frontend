@@ -59,6 +59,7 @@ import type {
   ComfyWorkflowJSON
 } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { toNodeId } from '@/types/nodeId'
+import { zNodePackMetadata } from '@/platform/workflow/validation/schemas/workflowSchema'
 import type { NodeId, SerializedNodeId } from '@/types/nodeId'
 import {
   collectSubgraphDefinitions,
@@ -2369,14 +2370,15 @@ export class ComfyApp {
         | Extract<MissingNodeType, { type: string }>
         | undefined
       if (!node) {
-        const cnrId =
-          typeof data._meta?.cnr_id === 'string' && data._meta.cnr_id.length > 0
-            ? data._meta.cnr_id
-            : undefined
-        const packVersion =
-          typeof data._meta?.ver === 'string' && data._meta.ver.length > 0
-            ? data._meta.ver
-            : undefined
+        const cnrId = zNodePackMetadata.shape.cnr_id.safeParse(
+          data._meta?.cnr_id
+        ).data
+        const auxId = zNodePackMetadata.shape.aux_id.safeParse(
+          data._meta?.aux_id
+        ).data
+        const packVersion = zNodePackMetadata.shape.ver.safeParse(
+          data._meta?.ver
+        ).data
         const missingNode = new LGraphNode(
           data._meta?.title ?? data.class_type,
           sanitizeNodeName(data.class_type)
@@ -2395,6 +2397,9 @@ export class ComfyApp {
             widgetValuesNamed[input] = widgetValue
           }
         }
+        if (cnrId) node.properties.cnr_id = cnrId
+        if (auxId) node.properties.aux_id = auxId
+        if (packVersion) node.properties.ver = packVersion
         node.last_serialization = {
           id: nodeId,
           type: data.class_type,
@@ -2407,6 +2412,7 @@ export class ComfyApp {
           inputs: node.inputs.map((input, i) =>
             inputAsSerialisable(input, missingNode, i)
           ),
+          properties: { ...node.properties },
           widgets_values: widgetValues,
           widgets_values_named: widgetValuesNamed
         }
@@ -2415,17 +2421,11 @@ export class ComfyApp {
         )
         placeholderEntry = {
           type: data.class_type,
-          cnrId,
+          cnrId: getCnrIdFromProperties(node.properties),
           isReplaceable: replacement !== null,
           replacement: replacement ?? undefined
         }
         missingNodeTypes.push(placeholderEntry)
-        if (cnrId) {
-          node.properties.cnr_id = cnrId
-        }
-        if (packVersion) {
-          node.properties.ver = packVersion
-        }
       }
       node.id = nodeId
       node.title = data._meta?.title ?? node.title

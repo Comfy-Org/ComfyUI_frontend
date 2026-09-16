@@ -31,7 +31,9 @@ import { useNodeReplacementStore } from '@/platform/nodeReplacement/nodeReplacem
 import type { NodeReplacement } from '@/platform/nodeReplacement/types'
 import type { NodeExecutionOutput } from '@/schemas/apiSchema'
 import { ComfyApp, app as singletonApp } from './app'
-import { createNode } from '@/utils/litegraphUtil'
+import { createNode, executeWidgetsCallback } from '@/utils/litegraphUtil'
+import { graphToPrompt } from '@/utils/executionUtil'
+import { zComfyWorkflow } from '@/platform/workflow/validation/schemas/workflowSchema'
 import {
   pasteAudioNode,
   pasteAudioNodes,
@@ -91,13 +93,7 @@ const {
   }
 }))
 
-vi.mock('@/utils/litegraphUtil', () => ({
-  createNode: vi.fn(),
-  isImageNode: vi.fn(),
-  isVideoNode: vi.fn(),
-  isAudioNode: vi.fn(),
-  executeWidgetsCallback: vi.fn()
-}))
+vi.mock(import('@/utils/litegraphUtil'), { spy: true })
 
 vi.mock('@/composables/usePaste', () => ({
   pasteAudioNode: vi.fn(),
@@ -214,6 +210,8 @@ describe('ComfyApp', () => {
   let mockCanvas: LGraphCanvas
 
   beforeEach(() => {
+    vi.mocked(createNode).mockResolvedValue(null)
+    vi.mocked(executeWidgetsCallback).mockImplementation(() => {})
     vi.mocked(useWorkflowService).mockReturnValue(
       fromPartial<WorkflowService>(mockWorkflowService)
     )
@@ -1412,53 +1410,62 @@ describe('ComfyApp', () => {
       expect(mockCanvas.subgraph).toBeNull()
     })
 
-    it('picks up _meta pack identity for API JSON placeholders', async () => {
-      const graph = new LGraph()
-      Reflect.set(app, 'rootGraphInternal', graph)
-      Reflect.set(singletonApp, 'rootGraphInternal', graph)
-      const cleanupErrorHooks = installErrorClearingHooks(graph)
-      const missingNodesStore = useMissingNodesErrorStore()
-      const nodeReplacementStore = useNodeReplacementStore()
-      vi.spyOn(nodeReplacementStore, 'load').mockResolvedValue()
-
-      try {
-        await app.loadApiJson(
-          {
-            '1': {
-              class_type: 'UninstalledPackNode',
-              inputs: {},
-              _meta: {
-                title: 'Uninstalled',
-                cnr_id: 'some-pack',
-                ver: '9.9.9'
-              }
-            }
-          },
-          ''
-        )
-
-        const [placeholder] = graph.nodes
-        expect(placeholder?.properties).toMatchObject({
-          cnr_id: 'some-pack',
-          ver: '9.9.9'
+    it.for([
+      { cnr_id: 'some-pack', ver: '9.9.9' },
+      { aux_id: 'someuser/some-repo', ver: 'abcdef12' },
+      { cnr_id: 'some-pack', aux_id: 'someuser/some-repo', ver: '9.9.9' }
+    ])(
+      'preserves pack identity through API import and workflow reload: %j',
+      async (properties) => {
+        const sourceGraph = new LGraph()
+        const source = new LGraphNode('Uninstalled')
+        source.comfyClass = 'UninstalledPackNode'
+        Object.assign(source.properties, properties)
+        sourceGraph.add(source)
+        const { output } = await graphToPrompt(sourceGraph)
+        expect(output[String(source.id)]._meta).toEqual({
+          title: 'Uninstalled',
+          ...properties
         })
-        expect(missingNodesStore.missingNodesError?.nodeTypes).toEqual([
-          expect.objectContaining({
-            type: 'UninstalledPackNode',
-            cnrId: 'some-pack'
-          })
-        ])
-      } finally {
-        cleanupErrorHooks()
-      }
-    })
 
-    it.each([
-      ['non-string', {}, []],
-      ['empty', '', '']
+        const graph = new LGraph()
+        Reflect.set(app, 'rootGraphInternal', graph)
+        Reflect.set(singletonApp, 'rootGraphInternal', graph)
+        const nodeReplacementStore = useNodeReplacementStore()
+        vi.spyOn(nodeReplacementStore, 'load').mockResolvedValue()
+
+        const cleanup = installErrorClearingHooks(graph)
+        try {
+          await app.loadApiJson(output, '')
+          expect(
+            useMissingNodesErrorStore().missingNodesError?.nodeTypes
+          ).toEqual([
+            expect.objectContaining({
+              type: 'UninstalledPackNode',
+              cnrId: properties.cnr_id ?? properties.aux_id
+            })
+          ])
+
+          const saved = graph.serialize()
+          expect(saved.nodes[0].properties).toEqual(properties)
+          expect(zComfyWorkflow.safeParse(saved).success).toBe(true)
+          const reloaded = new LGraph()
+          reloaded.configure({ ...saved, id: reloaded.id })
+          expect(reloaded.nodes[0].properties).toEqual(properties)
+          expect(reloaded.serialize().nodes[0].properties).toEqual(properties)
+        } finally {
+          cleanup()
+        }
+      }
+    )
+
+    it.for([
+      ['non-string', {}, [], {}],
+      ['empty', '', '', ''],
+      ['invalid format', 'owner/repo', 'not a version', 'missing-slash']
     ])(
       'ignores %s _meta pack identity for API JSON placeholders',
-      async (_, cnrId, packVersion) => {
+      async ([, cnrId, packVersion, auxId]) => {
         const graph = new LGraph()
         Reflect.set(app, 'rootGraphInternal', graph)
         Reflect.set(singletonApp, 'rootGraphInternal', graph)
@@ -1473,6 +1480,7 @@ describe('ComfyApp', () => {
             _meta: {
               title: 'Uninstalled',
               cnr_id: cnrId,
+              aux_id: auxId,
               ver: packVersion
             }
           }
@@ -1485,6 +1493,7 @@ describe('ComfyApp', () => {
           const [placeholder] = graph.nodes
           expect(placeholder?.properties).not.toHaveProperty('cnr_id')
           expect(placeholder?.properties).not.toHaveProperty('ver')
+          expect(placeholder?.properties).not.toHaveProperty('aux_id')
           const [missingNodeType] =
             missingNodesStore.missingNodesError?.nodeTypes ?? []
           expect(
