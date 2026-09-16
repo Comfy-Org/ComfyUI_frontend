@@ -80,8 +80,7 @@ describe('getAssetUrl', () => {
 describe('getAssetFileUrl', () => {
   describe('with the assets API enabled', () => {
     beforeEach(() => {
-      const featureFlags = useFeatureFlags().flags
-      vi.spyOn(featureFlags, 'assetsEnabled', 'get').mockReturnValue(true)
+      vi.mocked(useFeatureFlags().flags).assetsEnabled = true
     })
 
     it('addresses the file by asset id without any path inference', () => {
@@ -132,6 +131,10 @@ describe('getAssetFileUrl', () => {
   })
 
   describe('with history-backed assets', () => {
+    beforeEach(() => {
+      vi.mocked(useFeatureFlags().flags).assetsEnabled = false
+    })
+
     it('uses preview_url, which already points at the file', () => {
       const asset = createAsset({
         preview_url: '/api/view?filename=clip.webm&type=output&subfolder=vid'

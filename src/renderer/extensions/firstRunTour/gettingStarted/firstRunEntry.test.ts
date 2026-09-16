@@ -86,8 +86,7 @@ describe('useFirstRunEntry', () => {
     mocks.isDesktopWidth = true
     mocks.subscriptionEnabled = true
     mocks.isNewUser = true
-    const featureFlags = useFeatureFlags().flags
-    vi.spyOn(featureFlags, 'onboardingTourEnabled', 'get').mockReturnValue(true)
+    vi.mocked(useFeatureFlags().flags).onboardingTourEnabled = true
     useSettingStore().settingValues = {}
     vi.mocked(useSettingStore().set).mockImplementation(async (key, value) => {
       useSettingStore().settingValues[key] = value
@@ -110,10 +109,7 @@ describe('useFirstRunEntry', () => {
     [
       'the tour flag off',
       () => {
-        const featureFlags = useFeatureFlags().flags
-        vi.spyOn(featureFlags, 'onboardingTourEnabled', 'get').mockReturnValue(
-          false
-        )
+        vi.mocked(useFeatureFlags().flags).onboardingTourEnabled = false
       }
     ]
   ] as const

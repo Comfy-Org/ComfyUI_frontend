@@ -102,12 +102,6 @@ vi.mock<unknown>(
   () => mockDistributionTypes
 )
 vi.mock(import('@/composables/useFeatureFlags'))
-beforeEach(() => {
-  const featureFlags = useFeatureFlags().flags
-  vi.spyOn(featureFlags, 'unifiedCloudAuthEnabled', 'get').mockReturnValue(
-    false
-  )
-})
 
 // Mock apiKeyAuthStore
 
@@ -126,6 +120,7 @@ describe('useAuthStore', () => {
   } as Partial<User> as MockUser
 
   beforeEach(() => {
+    vi.mocked(useFeatureFlags().flags).unifiedCloudAuthEnabled = false
     mockResetSocket = vi.spyOn(api, 'resetSocket').mockResolvedValue(undefined)
     vi.stubGlobal('fetch', mockFetch)
     clearPreservedQuery(PRESERVED_QUERY_NAMESPACES.SHARE_AUTH)
@@ -220,10 +215,7 @@ describe('useAuthStore', () => {
     })
 
     it('does not increment on a Firebase token refresh when unified_cloud_auth is ON', () => {
-      const featureFlags = useFeatureFlags().flags
-      vi.spyOn(featureFlags, 'unifiedCloudAuthEnabled', 'get').mockReturnValue(
-        true
-      )
+      vi.mocked(useFeatureFlags().flags).unifiedCloudAuthEnabled = true
       idTokenCallback(mockUser) // initial event (always skipped)
       idTokenCallback(mockUser) // refresh — gated off; the unified lifecycle drives rotation
       expect(store.tokenRefreshTrigger).toBe(0)
@@ -351,10 +343,7 @@ describe('useAuthStore', () => {
 
   describe('unified identity source', () => {
     it('the session client listens to the same Auth instance through the package port', async () => {
-      const featureFlags = useFeatureFlags().flags
-      vi.spyOn(featureFlags, 'unifiedCloudAuthEnabled', 'get').mockReturnValue(
-        true
-      )
+      vi.mocked(useFeatureFlags().flags).unifiedCloudAuthEnabled = true
       vi.mocked(firebaseAuth.onAuthStateChanged).mockClear()
 
       await useWorkspaceAuthStore().mintAtLogin()
@@ -2357,6 +2346,7 @@ describe('useAuthStore in local/desktop distribution', () => {
   } as Partial<User> as MockUser
 
   beforeEach(() => {
+    vi.mocked(useFeatureFlags().flags).unifiedCloudAuthEnabled = false
     mockDistributionTypes.isCloud = false
     mockDistributionTypes.isDesktop = false
     mockDistributionTypes.DISTRIBUTION = 'localhost'

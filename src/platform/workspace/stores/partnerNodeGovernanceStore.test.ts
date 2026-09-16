@@ -59,12 +59,7 @@ describe('partnerNodeGovernanceStore', () => {
   let store: ReturnType<typeof usePartnerNodeGovernanceStore> | undefined
 
   beforeEach(() => {
-    const featureFlags = useFeatureFlags().flags
-    vi.spyOn(
-      featureFlags,
-      'partnerNodeGovernanceEnabled',
-      'get'
-    ).mockReturnValue(true)
+    vi.mocked(useFeatureFlags().flags).partnerNodeGovernanceEnabled = true
     mockGetPartnerProviders.mockResolvedValue(providers)
     mockGetPartnerNodePolicy.mockResolvedValue(null)
     activateWorkspace('workspace-one')
@@ -479,12 +474,7 @@ describe('partnerNodeGovernanceStore', () => {
   })
 
   it('stays inactive when partner-provider governance is disabled', async () => {
-    const featureFlags = useFeatureFlags().flags
-    vi.spyOn(
-      featureFlags,
-      'partnerNodeGovernanceEnabled',
-      'get'
-    ).mockReturnValue(false)
+    vi.mocked(useFeatureFlags().flags).partnerNodeGovernanceEnabled = false
 
     store = usePartnerNodeGovernanceStore()
     await nextTick()

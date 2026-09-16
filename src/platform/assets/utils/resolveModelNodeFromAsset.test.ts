@@ -46,6 +46,7 @@ function mockProvider(
 }
 
 beforeEach(() => {
+  vi.mocked(useFeatureFlags().flags).supportsModelTypeTags = false
   vi.mocked(useModelToNodeStore().getNodeProvider).mockImplementation(
     mockGetNodeProvider
   )
@@ -74,10 +75,7 @@ describe('resolveModelNodeFromAsset', () => {
     })
 
     it('strips the model_type: prefix when resolving the provider in model_type mode', () => {
-      const featureFlags = useFeatureFlags().flags
-      vi.spyOn(featureFlags, 'supportsModelTypeTags', 'get').mockReturnValue(
-        true
-      )
+      vi.mocked(useFeatureFlags().flags).supportsModelTypeTags = true
       mockProvider(createMockNodeProvider())
       const result = resolveModelNodeFromAsset(
         createMockAsset({ tags: ['models', 'model_type:vae'] })
@@ -88,10 +86,7 @@ describe('resolveModelNodeFromAsset', () => {
     })
 
     it('skips an unresolvable incidental tag and resolves via the model_type value', () => {
-      const featureFlags = useFeatureFlags().flags
-      vi.spyOn(featureFlags, 'supportsModelTypeTags', 'get').mockReturnValue(
-        true
-      )
+      vi.mocked(useFeatureFlags().flags).supportsModelTypeTags = true
       mockGetNodeProvider.mockImplementation((category: string) =>
         category === 'vae' ? createMockNodeProvider() : undefined
       )
@@ -105,10 +100,7 @@ describe('resolveModelNodeFromAsset', () => {
     })
 
     it('prefers the deepest resolvable path over a flat model_type value', () => {
-      const featureFlags = useFeatureFlags().flags
-      vi.spyOn(featureFlags, 'supportsModelTypeTags', 'get').mockReturnValue(
-        true
-      )
+      vi.mocked(useFeatureFlags().flags).supportsModelTypeTags = true
       mockGetNodeProvider.mockImplementation((category: string) =>
         category === 'LLM/Qwen-VL/Qwen3-0.6B'
           ? createMockNodeProvider()

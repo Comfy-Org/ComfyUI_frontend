@@ -38,8 +38,7 @@ function capturedConfig(): ChurnkeyInitConfig {
 
 describe('churnkeyClient', () => {
   beforeEach(() => {
-    const featureFlags = useFeatureFlags().flags
-    vi.spyOn(featureFlags, 'churnkeyAppId', 'get').mockReturnValue('app_test')
+    vi.mocked(useFeatureFlags().flags).churnkeyAppId = 'app_test'
     mocks.getChurnkeyAuth.mockResolvedValue(authResponse())
     window.churnkey = {
       init: mocks.init,
@@ -97,8 +96,7 @@ describe('churnkeyClient', () => {
   })
 
   it('does not request a session when the app ID is empty', async () => {
-    const featureFlags = useFeatureFlags().flags
-    vi.spyOn(featureFlags, 'churnkeyAppId', 'get').mockReturnValue('')
+    vi.mocked(useFeatureFlags().flags).churnkeyAppId = ''
 
     await expect(prepareChurnkey()).resolves.toBeNull()
     expect(mocks.getChurnkeyAuth).not.toHaveBeenCalled()

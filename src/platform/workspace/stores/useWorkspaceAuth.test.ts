@@ -8,7 +8,7 @@ import {
   setPersistence
 } from 'firebase/auth'
 import { storeToRefs } from 'pinia'
-import { nextTick, ref } from 'vue'
+import { nextTick } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
@@ -88,12 +88,6 @@ vi.mock(import('@/i18n'), () => ({
 }))
 
 vi.mock(import('@/composables/useFeatureFlags'))
-beforeEach(() => {
-  const featureFlags = useFeatureFlags().flags
-  vi.spyOn(featureFlags, 'unifiedCloudAuthEnabled', 'get').mockReturnValue(
-    false
-  )
-})
 
 const mockWorkspace = {
   id: 'workspace-123',
@@ -119,6 +113,7 @@ function expectedExpiresAtMs(expiresAt: string): string {
 }
 
 beforeEach(() => {
+  vi.mocked(useFeatureFlags().flags).unifiedCloudAuthEnabled = false
   vi.mocked(setPersistence).mockResolvedValue(undefined)
   vi.mocked(onAuthStateChanged).mockImplementation(vi.fn())
   vi.mocked(onIdTokenChanged).mockImplementation(vi.fn())
@@ -2040,17 +2035,11 @@ describe('useWorkspaceAuthStore', () => {
     }
 
     beforeEach(() => {
-      const featureFlags = useFeatureFlags().flags
-      vi.spyOn(featureFlags, 'unifiedCloudAuthEnabled', 'get').mockReturnValue(
-        true
-      )
+      vi.mocked(useFeatureFlags().flags).unifiedCloudAuthEnabled = true
     })
 
     it('mintAtLogin is a no-op and returns false when the flag is OFF', async () => {
-      const featureFlags = useFeatureFlags().flags
-      vi.spyOn(featureFlags, 'unifiedCloudAuthEnabled', 'get').mockReturnValue(
-        false
-      )
+      vi.mocked(useFeatureFlags().flags).unifiedCloudAuthEnabled = false
       vi.mocked(useAuthStore().getIdToken).mockResolvedValue(
         'firebase-token-xyz'
       )
@@ -2136,13 +2125,8 @@ describe('useWorkspaceAuthStore', () => {
     })
 
     it('attaches and mints the current target when the flag flips on', async () => {
-      const unifiedCloudAuthEnabled = ref(false)
-      const featureFlags = useFeatureFlags().flags
-      vi.spyOn(
-        featureFlags,
-        'unifiedCloudAuthEnabled',
-        'get'
-      ).mockImplementation(() => unifiedCloudAuthEnabled.value)
+      vi.mocked(useFeatureFlags().flags).unifiedCloudAuthEnabled = false
+
       vi.mocked(useAuthStore().getIdToken).mockResolvedValue(
         'firebase-token-xyz'
       )
@@ -2155,7 +2139,7 @@ describe('useWorkspaceAuthStore', () => {
       const store = useWorkspaceAuthStore()
       const { unifiedToken } = storeToRefs(store)
 
-      unifiedCloudAuthEnabled.value = true
+      vi.mocked(useFeatureFlags().flags).unifiedCloudAuthEnabled = true
       await vi.waitFor(() => {
         expect(unifiedToken.value).toBe('unified-token-1')
       })
@@ -2645,10 +2629,7 @@ describe('useWorkspaceAuthStore', () => {
     })
 
     it('remintUnifiedOnce returns null without minting when the flag is OFF', async () => {
-      const featureFlags = useFeatureFlags().flags
-      vi.spyOn(featureFlags, 'unifiedCloudAuthEnabled', 'get').mockReturnValue(
-        false
-      )
+      vi.mocked(useFeatureFlags().flags).unifiedCloudAuthEnabled = false
       vi.mocked(useAuthStore().getIdToken).mockResolvedValue(
         'firebase-token-xyz'
       )
@@ -2880,13 +2861,8 @@ describe('useWorkspaceAuthStore', () => {
     })
 
     it('destroy stops the flag watcher so a later flag flip cannot reattach or mint', async () => {
-      const unifiedCloudAuthEnabled = ref(true)
-      const featureFlags = useFeatureFlags().flags
-      vi.spyOn(
-        featureFlags,
-        'unifiedCloudAuthEnabled',
-        'get'
-      ).mockImplementation(() => unifiedCloudAuthEnabled.value)
+      vi.mocked(useFeatureFlags().flags).unifiedCloudAuthEnabled = true
+
       vi.mocked(useAuthStore().getIdToken).mockResolvedValue(
         'firebase-token-xyz'
       )
@@ -2906,9 +2882,9 @@ describe('useWorkspaceAuthStore', () => {
       )
 
       mockFetch.mockClear()
-      unifiedCloudAuthEnabled.value = false
+      vi.mocked(useFeatureFlags().flags).unifiedCloudAuthEnabled = false
       await nextTick()
-      unifiedCloudAuthEnabled.value = true
+      vi.mocked(useFeatureFlags().flags).unifiedCloudAuthEnabled = true
       await nextTick()
       await vi.advanceTimersByTimeAsync(0)
 
@@ -2924,13 +2900,8 @@ describe('useWorkspaceAuthStore', () => {
     })
 
     it('turning the flag OFF detaches the identity, clears the slot, and stops refreshing', async () => {
-      const unifiedCloudAuthEnabled = ref(true)
-      const featureFlags = useFeatureFlags().flags
-      vi.spyOn(
-        featureFlags,
-        'unifiedCloudAuthEnabled',
-        'get'
-      ).mockImplementation(() => unifiedCloudAuthEnabled.value)
+      vi.mocked(useFeatureFlags().flags).unifiedCloudAuthEnabled = true
+
       vi.mocked(useAuthStore().getIdToken).mockResolvedValue(
         'firebase-token-xyz'
       )
@@ -2951,7 +2922,7 @@ describe('useWorkspaceAuthStore', () => {
       expect(unifiedToken.value).toBe('unified-token-1')
       expect(portListeners.size).toBe(1)
 
-      unifiedCloudAuthEnabled.value = false
+      vi.mocked(useFeatureFlags().flags).unifiedCloudAuthEnabled = false
       await nextTick()
 
       expect(unifiedToken.value, 'the slot must empty on rollback').toBeNull()
@@ -2968,10 +2939,7 @@ describe('useWorkspaceAuthStore', () => {
     })
 
     it('is fully dormant under the flag OFF: no unified network, timer, or rotation', async () => {
-      const featureFlags = useFeatureFlags().flags
-      vi.spyOn(featureFlags, 'unifiedCloudAuthEnabled', 'get').mockReturnValue(
-        false
-      )
+      vi.mocked(useFeatureFlags().flags).unifiedCloudAuthEnabled = false
       vi.mocked(useAuthStore().getIdToken).mockResolvedValue(
         'firebase-token-xyz'
       )
@@ -3503,10 +3471,7 @@ describe('useWorkspaceAuthStore', () => {
     })
 
     it('never toasts from the unified lifecycle when the flag is OFF', async () => {
-      const featureFlags = useFeatureFlags().flags
-      vi.spyOn(featureFlags, 'unifiedCloudAuthEnabled', 'get').mockReturnValue(
-        false
-      )
+      vi.mocked(useFeatureFlags().flags).unifiedCloudAuthEnabled = false
       vi.mocked(useAuthStore().getIdToken).mockResolvedValue(
         'firebase-token-xyz'
       )

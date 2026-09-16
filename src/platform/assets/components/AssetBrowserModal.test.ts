@@ -127,6 +127,7 @@ const flushPromises = () =>
   new Promise<void>((resolve) => setTimeout(resolve, 0))
 
 beforeEach(() => {
+  vi.mocked(useFeatureFlags().flags).supportsModelTypeTags = false
   vi.mocked(useModelToNodeStore().getCategoryForNodeType).mockImplementation(
     () => 'checkpoints'
   )
@@ -392,10 +393,7 @@ describe('AssetBrowserModal', () => {
     })
 
     it('strips the model_type: prefix from the title when the flag is on', async () => {
-      const featureFlags = useFeatureFlags().flags
-      vi.spyOn(featureFlags, 'supportsModelTypeTags', 'get').mockReturnValue(
-        true
-      )
+      vi.mocked(useFeatureFlags().flags).supportsModelTypeTags = true
       const assets = [
         createTestAsset('asset1', 'Model A', 'model_type:checkpoints')
       ]

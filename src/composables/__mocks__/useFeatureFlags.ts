@@ -1,21 +1,15 @@
 import { vi } from 'vitest'
-import { computed } from 'vue'
+import { computed, reactive, watchEffect } from 'vue'
 
 import type * as realFeatureFlags from '../useFeatureFlags'
 
 export const { ServerFeatureFlag } =
   await vi.importActual<typeof realFeatureFlags>('../useFeatureFlags')
 
-function createWatchHandle() {
-  const stop = vi.fn()
-  return Object.assign(stop, { pause: vi.fn(), resume: vi.fn(), stop })
-}
-
-export const startFeatureFlagTelemetry =
-  vi.fn<typeof realFeatureFlags.startFeatureFlagTelemetry>(createWatchHandle)
+export const startFeatureFlagTelemetry = vi.fn(() => watchEffect(() => {}))
 
 const featureFlags: ReturnType<typeof realFeatureFlags.useFeatureFlags> = {
-  flags: {
+  flags: reactive({
     supportsPreviewMetadata: false,
     maxUploadSize: 0,
     supportsManagerV4: false,
@@ -49,10 +43,8 @@ const featureFlags: ReturnType<typeof realFeatureFlags.useFeatureFlags> = {
     supportsModelTypeTags: false,
     onboardingTourEnabled: false,
     assetsEnabled: false
-  },
+  }),
   featureFlag: vi.fn((_, defaultValue) => computed(() => defaultValue))
 }
 
-export const useFeatureFlags = vi.fn<typeof realFeatureFlags.useFeatureFlags>(
-  () => featureFlags
-)
+export const useFeatureFlags = vi.fn(() => featureFlags)

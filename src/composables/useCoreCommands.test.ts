@@ -242,6 +242,7 @@ describe('useCoreCommands', () => {
   const mockSubgraph = createMockSubgraph()!
 
   beforeEach(() => {
+    vi.mocked(useFeatureFlags().flags).assetsEnabled = false
     mockWorkflowStore = useWorkflowStore()
     mockWorkflowStore.activeWorkflow = fromPartial<
       NonNullable<typeof mockWorkflowStore.activeWorkflow>
@@ -764,8 +765,7 @@ describe('useCoreCommands', () => {
       useCoreCommands().find((cmd) => cmd.id === 'Comfy.BrowseModelAssets')!
 
     async function selectAssetFromBrowser() {
-      const featureFlags = useFeatureFlags().flags
-      vi.spyOn(featureFlags, 'assetsEnabled', 'get').mockReturnValue(true)
+      vi.mocked(useFeatureFlags().flags).assetsEnabled = true
 
       await browseModelAssets().function()
 

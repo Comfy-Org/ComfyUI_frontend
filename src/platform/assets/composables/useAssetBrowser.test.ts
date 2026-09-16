@@ -27,7 +27,10 @@ function useAssetBrowser(...args: Parameters<typeof createAssetBrowser>) {
   return result
 }
 
-afterEach(() => apps.splice(0).forEach((app) => app.unmount()))
+afterEach(() => {
+  apps.splice(0).forEach((app) => app.unmount())
+  vi.mocked(useFeatureFlags().flags).supportsModelTypeTags = false
+})
 
 describe('useAssetBrowser', () => {
   // Test fixtures - minimal data focused on functionality being tested
@@ -138,10 +141,7 @@ describe('useAssetBrowser', () => {
     })
 
     it('strips the model_type: prefix from the badge when the flag is on', () => {
-      const featureFlags = useFeatureFlags().flags
-      vi.spyOn(featureFlags, 'supportsModelTypeTags', 'get').mockReturnValue(
-        true
-      )
+      vi.mocked(useFeatureFlags().flags).supportsModelTypeTags = true
       const apiAsset = createApiAsset({
         tags: ['models', 'model_type:checkpoints', 'sdxl']
       })
@@ -690,10 +690,7 @@ describe('useAssetBrowser', () => {
     })
 
     it('groups by model_type:* value and ignores other tags when the flag is on', () => {
-      const featureFlags = useFeatureFlags().flags
-      vi.spyOn(featureFlags, 'supportsModelTypeTags', 'get').mockReturnValue(
-        true
-      )
+      vi.mocked(useFeatureFlags().flags).supportsModelTypeTags = true
       const assets = [
         createApiAsset({ tags: ['models', 'model_type:checkpoints', 'sdxl'] }),
         createApiAsset({ tags: ['models', 'model_type:LLM'] })

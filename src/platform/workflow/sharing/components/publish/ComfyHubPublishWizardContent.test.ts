@@ -69,10 +69,7 @@ describe('ComfyHubPublishWizardContent', () => {
   const onGateClose = vi.fn()
 
   beforeEach(() => {
-    const featureFlags = useFeatureFlags().flags
-    vi.spyOn(featureFlags, 'comfyHubProfileGateEnabled', 'get').mockReturnValue(
-      true
-    )
+    vi.mocked(useFeatureFlags().flags).comfyHubProfileGateEnabled = true
     onPublish.mockResolvedValue(undefined)
     mockCheckProfile.mockResolvedValue(true)
     mockHasProfile.value = true
@@ -207,12 +204,7 @@ describe('ComfyHubPublishWizardContent', () => {
     })
 
     it('calls onPublish directly when profile gate is disabled', async () => {
-      const featureFlags = useFeatureFlags().flags
-      vi.spyOn(
-        featureFlags,
-        'comfyHubProfileGateEnabled',
-        'get'
-      ).mockReturnValue(false)
+      vi.mocked(useFeatureFlags().flags).comfyHubProfileGateEnabled = false
 
       renderComponent()
       await userEvent.click(screen.getByTestId('publish-btn'))
@@ -310,12 +302,7 @@ describe('ComfyHubPublishWizardContent', () => {
     })
 
     it('enables publish when gate is disabled regardless of profile', () => {
-      const featureFlags = useFeatureFlags().flags
-      vi.spyOn(
-        featureFlags,
-        'comfyHubProfileGateEnabled',
-        'get'
-      ).mockReturnValue(false)
+      vi.mocked(useFeatureFlags().flags).comfyHubProfileGateEnabled = false
       mockHasProfile.value = null
       renderComponent()
 

@@ -12,10 +12,6 @@ import {
 } from './missingMediaAssetResolver'
 
 vi.mock(import('@/composables/useFeatureFlags'))
-beforeEach(() => {
-  const featureFlags = useFeatureFlags().flags
-  vi.spyOn(featureFlags, 'assetsEnabled', 'get').mockReturnValue(true)
-})
 
 vi.mock(import('@/platform/assets/services/assetService'))
 vi.mock(import('@/platform/remote/comfyui/jobs/fetchJobs'))
@@ -74,6 +70,7 @@ function makeAssetPage(
 
 describe('resolveMissingMediaAssetSources', () => {
   beforeEach(() => {
+    vi.mocked(useFeatureFlags().flags).assetsEnabled = true
     vi.mocked(assetService.getAllAssetsByTag).mockResolvedValue([])
     vi.mocked(assetService.getAssetsPageByTag).mockResolvedValue(
       makeAssetPage([])

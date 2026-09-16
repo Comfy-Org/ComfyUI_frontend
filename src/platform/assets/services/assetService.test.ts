@@ -88,6 +88,7 @@ function validAsset(overrides: Partial<AssetItem> = {}): AssetItem {
 }
 
 beforeEach(() => {
+  vi.mocked(useFeatureFlags().flags).supportsModelTypeTags = false
   const registeredNodeTypes: Record<string, string> = {
     CheckpointLoaderSimple: 'ckpt_name',
     LoraLoader: 'lora_name'
@@ -389,8 +390,7 @@ describe('assetResponseSchema accepts real API shapes', () => {
 describe(assetService.getAssetModels, () => {
   beforeEach(() => {
     assetService.invalidateModelBuckets()
-    const featureFlags = useFeatureFlags().flags
-    vi.spyOn(featureFlags, 'supportsModelTypeTags', 'get').mockReturnValue(true)
+    vi.mocked(useFeatureFlags().flags).supportsModelTypeTags = true
   })
 
   it('walks the models tag once, excluding missing assets', async () => {
@@ -439,10 +439,7 @@ describe(assetService.getAssetModels, () => {
   })
 
   it('buckets by bare tags when model_type tags are unsupported', async () => {
-    const featureFlags = useFeatureFlags().flags
-    vi.spyOn(featureFlags, 'supportsModelTypeTags', 'get').mockReturnValue(
-      false
-    )
+    vi.mocked(useFeatureFlags().flags).supportsModelTypeTags = false
     fetchApiMock.mockResolvedValueOnce(
       buildAssetListResponse([
         validAsset({
@@ -462,10 +459,7 @@ describe(assetService.getAssetModels, () => {
     // The flag arrives asynchronously over the websocket handshake. A first
     // walk before it lands (flag still false) buckets a model_type: tag as a
     // literal folder, so 'checkpoints' comes back empty.
-    const featureFlags = useFeatureFlags().flags
-    vi.spyOn(featureFlags, 'supportsModelTypeTags', 'get').mockReturnValue(
-      false
-    )
+    vi.mocked(useFeatureFlags().flags).supportsModelTypeTags = false
     fetchApiMock.mockResolvedValueOnce(
       buildAssetListResponse([
         validAsset({
@@ -479,7 +473,7 @@ describe(assetService.getAssetModels, () => {
 
     // Once the flag lands, the stale cache must be discarded and re-walked so
     // the asset buckets under 'checkpoints' instead of staying invisible.
-    vi.spyOn(featureFlags, 'supportsModelTypeTags', 'get').mockReturnValue(true)
+    vi.mocked(useFeatureFlags().flags).supportsModelTypeTags = true
     fetchApiMock.mockResolvedValueOnce(
       buildAssetListResponse([
         validAsset({
@@ -598,10 +592,7 @@ describe(assetService.getAssetModels, () => {
   })
 
   it('groups slashed bare tags by their top-level segment', async () => {
-    const featureFlags = useFeatureFlags().flags
-    vi.spyOn(featureFlags, 'supportsModelTypeTags', 'get').mockReturnValue(
-      false
-    )
+    vi.mocked(useFeatureFlags().flags).supportsModelTypeTags = false
     fetchApiMock.mockResolvedValueOnce(
       buildAssetListResponse([
         validAsset({
@@ -618,10 +609,7 @@ describe(assetService.getAssetModels, () => {
   })
 
   it('falls back to filename metadata then name on bare-tag backends', async () => {
-    const featureFlags = useFeatureFlags().flags
-    vi.spyOn(featureFlags, 'supportsModelTypeTags', 'get').mockReturnValue(
-      false
-    )
+    vi.mocked(useFeatureFlags().flags).supportsModelTypeTags = false
     fetchApiMock.mockResolvedValueOnce(
       buildAssetListResponse([
         validAsset({

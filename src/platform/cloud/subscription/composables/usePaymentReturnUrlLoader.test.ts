@@ -11,15 +11,13 @@ vi.mock(import('@/composables/billing/useBillingContext'))
 vi.mock(import('@/composables/useFeatureFlags'))
 describe('usePaymentReturnUrlLoader', () => {
   beforeEach(() => {
+    vi.mocked(useFeatureFlags().flags).embeddedCheckoutEnabled = false
     window.history.replaceState({}, '', '/')
   })
 
   it('refreshes billing after bootstrap strips Stripe return params', async () => {
     const billing = mockBillingContext()
-    const featureFlags = useFeatureFlags().flags
-    vi.spyOn(featureFlags, 'embeddedCheckoutEnabled', 'get').mockReturnValue(
-      true
-    )
+    vi.mocked(useFeatureFlags().flags).embeddedCheckoutEnabled = true
     window.history.replaceState(
       {},
       '',
@@ -46,10 +44,7 @@ describe('usePaymentReturnUrlLoader', () => {
 
   it('does not start embedded recovery while the flag is off', async () => {
     const billing = mockBillingContext()
-    const featureFlags = useFeatureFlags().flags
-    vi.spyOn(featureFlags, 'embeddedCheckoutEnabled', 'get').mockReturnValue(
-      false
-    )
+    vi.mocked(useFeatureFlags().flags).embeddedCheckoutEnabled = false
     window.history.replaceState(
       {},
       '',

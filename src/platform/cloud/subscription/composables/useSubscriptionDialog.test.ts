@@ -124,6 +124,7 @@ function expectRekaPricingDialogProps(
 }
 
 beforeEach(() => {
+  vi.mocked(useFeatureFlags().flags).embeddedCheckoutEnabled = false
   Object.assign(useAuthStore(), { userId: 'user-1' })
   vi.mocked(useDialogStore().closeDialog).mockImplementation(mockCloseDialog)
 
@@ -343,10 +344,7 @@ describe('useSubscriptionDialog', () => {
 
     it('enables embedded checkout only for the exact server flag', () => {
       mockShouldUseWorkspaceBilling.value = true
-      const featureFlags = useFeatureFlags().flags
-      vi.spyOn(featureFlags, 'embeddedCheckoutEnabled', 'get').mockReturnValue(
-        true
-      )
+      vi.mocked(useFeatureFlags().flags).embeddedCheckoutEnabled = true
       const { showPricingTable } = useSubscriptionDialog()
 
       showPricingTable()

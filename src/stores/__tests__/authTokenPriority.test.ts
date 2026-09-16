@@ -18,12 +18,6 @@ const { mockDistributionTypes } = vi.hoisted(() => ({
 }))
 
 vi.mock(import('@/composables/useFeatureFlags'))
-beforeEach(() => {
-  const featureFlags = useFeatureFlags().flags
-  vi.spyOn(featureFlags, 'unifiedCloudAuthEnabled', 'get').mockReturnValue(
-    false
-  )
-})
 
 vi.mock(import('vuefire'), () => ({
   useFirebaseAuth: vi.fn()
@@ -51,6 +45,7 @@ describe('auth token priority chain', () => {
   } as Partial<User> as MockUser
 
   beforeEach(() => {
+    vi.mocked(useFeatureFlags().flags).unifiedCloudAuthEnabled = false
     mockDistributionTypes.isCloud = true
     vi.mocked(vuefire.useFirebaseAuth).mockReturnValue(
       mockAuth as unknown as ReturnType<typeof vuefire.useFirebaseAuth>
@@ -63,7 +58,7 @@ describe('auth token priority chain', () => {
       }
     )
     store = useAuthStore()
-    useWorkspaceAuthStore().unifiedToken = null
+    useWorkspaceAuthStore().destroy()
     Object.assign(useTeamWorkspaceStore(), { activeWorkspaceId: null })
     useTeamWorkspaceStore().initState = 'ready'
     vi.mocked(useWorkspaceAuthStore().getWorkspaceAuthHeader).mockReturnValue(
@@ -442,10 +437,7 @@ describe('auth token priority chain', () => {
 
   describe('unified cloud auth (flag ON)', () => {
     beforeEach(() => {
-      const featureFlags = useFeatureFlags().flags
-      vi.spyOn(featureFlags, 'unifiedCloudAuthEnabled', 'get').mockReturnValue(
-        true
-      )
+      vi.mocked(useFeatureFlags().flags).unifiedCloudAuthEnabled = true
     })
 
     it('getAuthHeader returns only the unified Cloud JWT, never Firebase or API key', async () => {

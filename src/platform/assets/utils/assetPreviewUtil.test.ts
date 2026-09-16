@@ -79,6 +79,7 @@ const localAssetWithPreview = {
 }
 
 beforeEach(() => {
+  vi.mocked(useFeatureFlags().flags).assetsEnabled = false
   vi.spyOn(useAssetsStore().outputAssets, 'invalidate').mockImplementation(
     mockInvalidateOutputAssets
   )
@@ -86,8 +87,7 @@ beforeEach(() => {
 
 describe('isAssetPreviewSupported', () => {
   it('returns true when the assets feature flag is enabled', () => {
-    const featureFlags = useFeatureFlags().flags
-    vi.spyOn(featureFlags, 'assetsEnabled', 'get').mockReturnValue(true)
+    vi.mocked(useFeatureFlags().flags).assetsEnabled = true
     expect(isAssetPreviewSupported()).toBe(true)
   })
 

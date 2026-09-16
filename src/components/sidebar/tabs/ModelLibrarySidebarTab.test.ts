@@ -163,6 +163,7 @@ const i18n = createI18n({
 
 describe('ModelLibrarySidebarTab', () => {
   beforeEach(() => {
+    vi.mocked(useFeatureFlags().flags).assetsEnabled = false
     resetRoot()
     useAssetDownloadStore().lastCompletedDownload = null
     useSettingStore().settingValues['Comfy.ModelLibrary.AutoLoadAll'] = false
@@ -423,8 +424,7 @@ describe('ModelLibrarySidebarTab', () => {
   describe('asset mode', () => {
     it('surfaces an error toast when the eager load fails on mount', async () => {
       const error = vi.spyOn(console, 'error').mockImplementation(() => {})
-      const featureFlags = useFeatureFlags().flags
-      vi.spyOn(featureFlags, 'assetsEnabled', 'get').mockReturnValue(true)
+      vi.mocked(useFeatureFlags().flags).assetsEnabled = true
       vi.mocked(useModelStore().loadModels).mockRejectedValueOnce(
         new Error('walk failed')
       )
@@ -443,8 +443,7 @@ describe('ModelLibrarySidebarTab', () => {
     })
 
     it('hides the load-all button and eager-loads models on mount', async () => {
-      const featureFlags = useFeatureFlags().flags
-      vi.spyOn(featureFlags, 'assetsEnabled', 'get').mockReturnValue(true)
+      vi.mocked(useFeatureFlags().flags).assetsEnabled = true
       renderComponent()
       await nextTick()
 

@@ -132,10 +132,8 @@ describe('ShareWorkflowDialogContent', () => {
   const onClose = vi.fn()
 
   beforeEach(() => {
-    const featureFlags = useFeatureFlags().flags
-    vi.spyOn(featureFlags, 'comfyHubProfileGateEnabled', 'get').mockReturnValue(
-      true
-    )
+    vi.mocked(useFeatureFlags().flags).comfyHubUploadEnabled = false
+    vi.mocked(useFeatureFlags().flags).comfyHubProfileGateEnabled = true
     Object.assign(useWorkflowStore(), {
       activeWorkflow: {
         path: 'workflows/test.json',
@@ -226,8 +224,7 @@ describe('ShareWorkflowDialogContent', () => {
   })
 
   it('renders share-link and publish tabs when comfy hub upload is enabled', async () => {
-    const featureFlags = useFeatureFlags().flags
-    vi.spyOn(featureFlags, 'comfyHubUploadEnabled', 'get').mockReturnValue(true)
+    vi.mocked(useFeatureFlags().flags).comfyHubUploadEnabled = true
     const { container } = renderComponent()
     await flushPromises()
 
@@ -247,8 +244,7 @@ describe('ShareWorkflowDialogContent', () => {
   })
 
   it('shows publish intro panel in the share dialog', async () => {
-    const featureFlags = useFeatureFlags().flags
-    vi.spyOn(featureFlags, 'comfyHubUploadEnabled', 'get').mockReturnValue(true)
+    vi.mocked(useFeatureFlags().flags).comfyHubUploadEnabled = true
     renderComponent()
     await flushPromises()
 
@@ -261,8 +257,7 @@ describe('ShareWorkflowDialogContent', () => {
   })
 
   it('shows start publishing CTA in the publish intro panel', async () => {
-    const featureFlags = useFeatureFlags().flags
-    vi.spyOn(featureFlags, 'comfyHubUploadEnabled', 'get').mockReturnValue(true)
+    vi.mocked(useFeatureFlags().flags).comfyHubUploadEnabled = true
     renderComponent()
     await flushPromises()
 
@@ -277,8 +272,7 @@ describe('ShareWorkflowDialogContent', () => {
   })
 
   it('opens publish dialog from intro cta and closes share dialog', async () => {
-    const featureFlags = useFeatureFlags().flags
-    vi.spyOn(featureFlags, 'comfyHubUploadEnabled', 'get').mockReturnValue(true)
+    vi.mocked(useFeatureFlags().flags).comfyHubUploadEnabled = true
     renderComponent()
     await flushPromises()
 

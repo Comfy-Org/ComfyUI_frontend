@@ -480,8 +480,7 @@ describe('useMembersPanel', () => {
     workspaceMembers = []
     workspacePendingInvites = []
     updateWorkspaceStore()
-    const featureFlags = useFeatureFlags().flags
-    vi.spyOn(featureFlags, 'billingControlEnabled', 'get').mockReturnValue(true)
+    vi.mocked(useFeatureFlags().flags).billingControlEnabled = true
     mockMaxSeats.value = 73
     mockOccupiedSeats.value = 0
     mockCanAccessSubscriptionFeatures.value = true
@@ -887,10 +886,7 @@ describe('useMembersPanel', () => {
     })
 
     it('omits the credit-limit action when the flag is disabled', async () => {
-      const featureFlags = useFeatureFlags().flags
-      vi.spyOn(featureFlags, 'billingControlEnabled', 'get').mockReturnValue(
-        false
-      )
+      vi.mocked(useFeatureFlags().flags).billingControlEnabled = false
       const panel = await setup()
 
       expect(panel.memberMenuItems(createMember()).map((i) => i.label)).toEqual(
@@ -902,10 +898,7 @@ describe('useMembersPanel', () => {
     })
 
     it('keeps the creator menu hidden when the flag is disabled', async () => {
-      const featureFlags = useFeatureFlags().flags
-      vi.spyOn(featureFlags, 'billingControlEnabled', 'get').mockReturnValue(
-        false
-      )
+      vi.mocked(useFeatureFlags().flags).billingControlEnabled = false
       setOriginalOwner()
       const panel = await setup()
 

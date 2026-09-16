@@ -25,6 +25,7 @@ import WorkspaceAuthGate from './WorkspaceAuthGate.vue'
 vi.mock(import('firebase/auth'), { spy: true })
 
 beforeEach(() => {
+  vi.mocked(useFeatureFlags().flags).unifiedCloudAuthEnabled = false
   vi.mocked(setPersistence).mockResolvedValue(undefined)
   vi.mocked(onAuthStateChanged).mockImplementation(vi.fn())
   vi.mocked(onIdTokenChanged).mockImplementation(vi.fn())
@@ -66,6 +67,7 @@ vi.mock(import('@/platform/distribution/types'), () => ({
 }))
 
 beforeEach(() => {
+  useWorkspaceAuthStore().destroy()
   vi.mocked(useWorkspaceAuthStore().mintAtLogin).mockResolvedValue(false)
   vi.mocked(useWorkspaceAuthStore().getUnifiedToken).mockReturnValue(undefined)
 })
@@ -294,12 +296,7 @@ describe('WorkspaceAuthGate', () => {
 
     it('mints unified auth after refreshing authenticated flags', async () => {
       mockRefreshRemoteConfig.mockImplementation(async () => {
-        const featureFlags = useFeatureFlags().flags
-        vi.spyOn(
-          featureFlags,
-          'unifiedCloudAuthEnabled',
-          'get'
-        ).mockReturnValue(true)
+        vi.mocked(useFeatureFlags().flags).unifiedCloudAuthEnabled = true
       })
 
       mountComponent()
@@ -471,10 +468,7 @@ describe('WorkspaceAuthGate', () => {
     })
 
     it('shows a recoverable error when unified auth initialization fails', async () => {
-      const featureFlags = useFeatureFlags().flags
-      vi.spyOn(featureFlags, 'unifiedCloudAuthEnabled', 'get').mockReturnValue(
-        true
-      )
+      vi.mocked(useFeatureFlags().flags).unifiedCloudAuthEnabled = true
       vi.mocked(useWorkspaceAuthStore().mintAtLogin).mockResolvedValue(false)
 
       mountComponent()
@@ -516,10 +510,7 @@ describe('WorkspaceAuthGate', () => {
     })
 
     it('shows a recoverable error when workspace setup clears unified auth', async () => {
-      const featureFlags = useFeatureFlags().flags
-      vi.spyOn(featureFlags, 'unifiedCloudAuthEnabled', 'get').mockReturnValue(
-        true
-      )
+      vi.mocked(useFeatureFlags().flags).unifiedCloudAuthEnabled = true
       vi.mocked(useWorkspaceAuthStore().getUnifiedToken).mockReturnValue(
         undefined
       )

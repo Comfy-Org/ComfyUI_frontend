@@ -84,6 +84,7 @@ vi.mock(
 
 describe('useSidebarTabStore', () => {
   beforeEach(() => {
+    vi.mocked(useFeatureFlags().flags).assetsEnabled = false
     vi.mocked(useMenuItemStore().registerCommands).mockImplementation(() => {})
     mockOpenModelLibraryBrowser.mockClear()
   })
@@ -156,8 +157,7 @@ describe('useSidebarTabStore', () => {
 
     it('toggles the sidebar tab when the asset view is disabled', async () => {
       useAssetBrowserSetting(false)
-      const featureFlags = useFeatureFlags().flags
-      vi.spyOn(featureFlags, 'assetsEnabled', 'get').mockReturnValue(true)
+      vi.mocked(useFeatureFlags().flags).assetsEnabled = true
 
       const store = useSidebarTabStore()
       store.registerCoreSidebarTabs()
@@ -170,8 +170,7 @@ describe('useSidebarTabStore', () => {
 
     it('opens the asset browser when the asset view and the assets capability are both enabled', async () => {
       useAssetBrowserSetting(true)
-      const featureFlags = useFeatureFlags().flags
-      vi.spyOn(featureFlags, 'assetsEnabled', 'get').mockReturnValue(true)
+      vi.mocked(useFeatureFlags().flags).assetsEnabled = true
 
       const store = useSidebarTabStore()
       store.registerCoreSidebarTabs()

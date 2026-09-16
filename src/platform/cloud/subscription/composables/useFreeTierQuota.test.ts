@@ -38,12 +38,7 @@ describe('useFreeTierQuota', () => {
   let scope: EffectScope
 
   function createQuota() {
-    const featureFlags = useFeatureFlags().flags
-    vi.spyOn(
-      featureFlags,
-      'freeTierJobAllowanceEnabled',
-      'get'
-    ).mockReturnValue(true)
+    vi.mocked(useFeatureFlags().flags).freeTierJobAllowanceEnabled = true
     const quota = scope.run(() => useFreeTierQuota())
     if (!quota) throw new Error('Failed to create free tier quota')
     return quota

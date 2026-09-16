@@ -124,8 +124,7 @@ describe('CloudRunButtonWrapper', () => {
     mockIsInitialized.value = true
     mockBillingStatus.value = 'paid'
     mockSubscriptionTier.value = null
-    const featureFlags = useFeatureFlags().flags
-    vi.spyOn(featureFlags, 'v1PaymentRecovery', 'get').mockReturnValue(true)
+    vi.mocked(useFeatureFlags().flags).v1PaymentRecovery = true
     state.canManageSubscription = true
     mockIsFreeTier.value = true
   })
@@ -572,8 +571,7 @@ describe('CloudRunButtonWrapper', () => {
   it('does not fall back to Subscribe to Run for payment failure when recovery flag is disabled', () => {
     mockCanRunWorkflows.value = false
     mockBillingStatus.value = 'payment_failed'
-    const featureFlags = useFeatureFlags().flags
-    vi.spyOn(featureFlags, 'v1PaymentRecovery', 'get').mockReturnValue(false)
+    vi.mocked(useFeatureFlags().flags).v1PaymentRecovery = false
     renderWrapper()
 
     expect(screen.getByTestId('queue-button')).toHaveTextContent(
@@ -587,8 +585,7 @@ describe('CloudRunButtonWrapper', () => {
   it('keeps generic inactive behavior when payment recovery is disabled', () => {
     mockCanRunWorkflows.value = false
     mockBillingStatus.value = 'paused'
-    const featureFlags = useFeatureFlags().flags
-    vi.spyOn(featureFlags, 'v1PaymentRecovery', 'get').mockReturnValue(false)
+    vi.mocked(useFeatureFlags().flags).v1PaymentRecovery = false
     renderWrapper()
 
     expect(screen.getByTestId('subscribe-to-run-button')).toBeInTheDocument()

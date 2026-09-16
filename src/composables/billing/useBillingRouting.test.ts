@@ -32,6 +32,7 @@ const team = fromPartial<
 
 describe('useBillingRouting', () => {
   beforeEach(() => {
+    vi.mocked(useFeatureFlags().flags).legacyBillingMigrationEnabled = false
     const refs = storeToRefs(useTeamWorkspaceStore())
     mockActiveWorkspace = refs.activeWorkspace
     mockActiveWorkspaceBillingRail = refs.activeWorkspaceBillingRail
@@ -79,12 +80,7 @@ describe('useBillingRouting', () => {
   })
 
   it('migrates legacy Stripe personal workspaces behind the rollout flag', () => {
-    const featureFlags = useFeatureFlags().flags
-    vi.spyOn(
-      featureFlags,
-      'legacyBillingMigrationEnabled',
-      'get'
-    ).mockReturnValue(true)
+    vi.mocked(useFeatureFlags().flags).legacyBillingMigrationEnabled = true
     mockActiveWorkspaceBillingRail.value = 'legacy_stripe'
 
     const { type, shouldUseWorkspaceBilling } = useBillingRouting()
