@@ -90,18 +90,24 @@ describe('ComboWidget', () => {
       expect(widget._displayValue).toBe('')
     })
 
-    it('should convert number values to string before display', () => {
-      widget = new ComboWidget(
-        createMockWidgetConfig({
-          name: 'index',
-          value: 42,
-          options: { values: ['0', '1', '42'] }
-        }),
-        node
-      )
+    it.for([
+      { source: 'static', values: ['0', '1', '42'] },
+      { source: 'callback', values: () => [0, 1, 42] }
+    ])(
+      'converts numeric values from $source options to display text',
+      ({ values }) => {
+        widget = new ComboWidget(
+          createMockWidgetConfig({
+            name: 'index',
+            value: 42,
+            options: { values }
+          }),
+          node
+        )
 
-      expect(widget._displayValue).toBe('42')
-    })
+        expect(widget._displayValue).toBe('42')
+      }
+    )
 
     it('renders numeric zero without an option label formatter', () => {
       widget = new ComboWidget(

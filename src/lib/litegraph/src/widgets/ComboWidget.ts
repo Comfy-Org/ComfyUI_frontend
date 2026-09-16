@@ -24,9 +24,9 @@ import type { WidgetEventOptions } from './BaseWidget'
 type Values =
   | Exclude<
       ComboWidgetValues,
-      (widget?: IComboWidget, node?: LGraphNode) => string[]
+      (widget?: IComboWidget, node?: LGraphNode) => (string | number)[]
     >
-  | ((widget?: ComboWidget, node?: LGraphNode) => string[])
+  | ((widget?: ComboWidget, node?: LGraphNode) => (string | number)[])
 
 function toArray(values: Values): (string | number)[] {
   return Array.isArray(values) ? values : Object.keys(values)
