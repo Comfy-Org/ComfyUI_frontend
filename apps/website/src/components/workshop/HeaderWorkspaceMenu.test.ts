@@ -112,6 +112,9 @@ async function placeAt(testId: string, left: number, width: number) {
   }
   element.getBoundingClientRect = () => rect as DOMRect
   return {
+    watchers: () =>
+      FakeResizeObserver.observed.filter((entry) => entry.target === element)
+        .length,
     // The menu hangs off the avatar, so narrowing it moves its left edge and
     // leaves its right one where it was.
     narrowTo: (narrower: number) => {
@@ -157,5 +160,22 @@ describe('HeaderWorkspaceMenu', () => {
     panel.narrowTo(PANEL_WIDTH - (NARROWER_PANEL_LEFT - PANEL_LEFT))
 
     await waitFor(() => expect(submenuEdge()).toBe(NARROWER_PANEL_LEFT - GAP))
+  })
+
+  it('watches the menu only while the submenu is open', async () => {
+    const open = renderMenu()
+    const panel = await placeAt('header-account-menu', PANEL_LEFT, PANEL_WIDTH)
+    await placeAt('account-workspace', TRIGGER_LEFT, 32)
+
+    // The menu is its own floating element, so it arrives already watched.
+    const others = panel.watchers()
+
+    open.value = true
+    await nextTick()
+    expect(panel.watchers()).toBe(others + 1)
+
+    open.value = false
+    await nextTick()
+    expect(panel.watchers()).toBe(others)
   })
 })
