@@ -1,6 +1,7 @@
 import axios from 'axios'
 
 import { useChainCallback } from '@/composables/functional/useChainCallback'
+import type { ComboWidgetInventoryStatus } from '@/core/graph/widgets/comboWidgetInventory'
 import type { IWidget, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { isCloud } from '@/platform/distribution/types'
 import type { RemoteWidgetConfig } from '@/schemas/nodeDefSchema'
@@ -131,8 +132,9 @@ export function useRemoteWidget<
 
   const onFirstLoad = (data: T | T[]) => {
     isLoaded = true
-    const nextValue =
-      Array.isArray(data) && data.length > 0 ? data[0] : undefined
+    const nextValue = Array.isArray(data)
+      ? (data.find((value) => value === widget.value) ?? data[0])
+      : undefined
     widget.value = nextValue ?? (Array.isArray(data) ? defaultValue : data)
     widget.callback?.(widget.value)
     node.graph?.setDirtyCanvas(true)
@@ -208,6 +210,28 @@ export function useRemoteWidget<
     return dataCache.get(cacheKey)?.data as T
   }
 
+  function getInventoryStatus(): ComboWidgetInventoryStatus {
+    const entry = dataCache.get(cacheKey)
+    const isFresh =
+      isInitialized(entry) && (isPermanent || !isStale(entry, refresh))
+    if (isFresh) return isLoaded ? 'ready' : 'loading'
+    if (isFetching(entry)) return 'loading'
+    if (isFailed(entry) || entry?.error) return 'error'
+    return 'loading'
+  }
+
+  async function waitForInventory(signal?: AbortSignal): Promise<void> {
+    while (!signal?.aborted) {
+      const inFlight = dataCache.get(cacheKey)?.fetchPromise
+      if (inFlight) {
+        await inFlight.catch(() => undefined)
+        continue
+      }
+      await new Promise<void>((resolve) => getValue(resolve))
+      if (!dataCache.get(cacheKey)?.fetchPromise) return
+    }
+  }
+
   /**
    * Getter of the remote property of the widget (e.g., options.values, value, etc.).
    * Starts the fetch process then returns the cached value immediately.
@@ -221,8 +245,8 @@ export function useRemoteWidget<
           onRefresh()
           refreshQueued = false
         }
-        onFulfilled?.()
       })
+      .finally(() => onFulfilled?.())
       .catch((err) => {
         console.error(err)
       })
@@ -291,6 +315,8 @@ export function useRemoteWidget<
     refreshValue: widget.refresh,
     addRefreshButton,
     getCacheEntry: () => dataCache.get(cacheKey),
+    getInventoryStatus,
+    waitForInventory,
 
     cacheKey
   }
