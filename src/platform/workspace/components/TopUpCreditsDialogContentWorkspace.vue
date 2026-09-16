@@ -30,7 +30,7 @@
       <button
         class="focus-visible:ring-secondary-foreground cursor-pointer rounded-sm border-none bg-transparent p-0 text-muted-foreground transition-colors hover:text-base-foreground focus-visible:ring-1 focus-visible:outline-none"
         :aria-label="$t('g.close')"
-        @click="() => handleClose()"
+        @click="() => handleClose(!topupIsParkedWithoutLink)"
       >
         <i class="icon-[lucide--x] size-6" />
       </button>
@@ -228,7 +228,7 @@
           variant="secondary"
           size="lg"
           class="h-10 w-full justify-center"
-          @click="() => handleClose()"
+          @click="() => handleClose(false)"
         >
           {{ $t('g.ok') }}
         </Button>
@@ -398,6 +398,9 @@ const topupIsFailedRetryable = computed(
 // Parked on the customer with no link to send them to. The operation stays open
 // server-side, and that also refuses a replacement purchase, so this state
 // explains the wait rather than offering a restart that would be rejected.
+// Leaving this screen keeps the pending-top-up marker: the copy sends the
+// customer off to pay elsewhere, and the marker outlives the wait, so it is
+// what refreshes the balance when they come back to a settled purchase.
 const topupIsParkedWithoutLink = computed(
   () =>
     !topupActionUrl.value &&

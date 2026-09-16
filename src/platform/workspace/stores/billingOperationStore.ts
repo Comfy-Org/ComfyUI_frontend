@@ -362,7 +362,11 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
         return
       }
 
-      if (stopIfTimedOut(opId, operation)) return
+      // The phase can widen the budget, so it is applied before the decision,
+      // which then reads the updated operation. The action URL stays after it:
+      // a link landing on an operation already out of budget is not retained.
+      updateOperationPhase(opId, response.phase ?? null)
+      if (stopIfTimedOut(opId, operations.value.get(opId) ?? operation)) return
 
       const pollingPaused = flags.embeddedCheckoutEnabled
         ? await updateAuthenticationState(
@@ -372,7 +376,6 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
             response.decline_reason
           )
         : false
-      updateOperationPhase(opId, response.phase ?? null)
       updateOperationActionUrl(opId, validateActionUrl(response.action_url))
       if (pollingPaused) return
       scheduleNextPoll(opId)

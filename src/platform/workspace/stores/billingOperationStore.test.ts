@@ -2521,6 +2521,40 @@ describe('billingOperationStore', () => {
       )
     })
 
+    // The response that widens the budget is the one being judged: a slow first
+    // read is the whole reason the short budget elapsed, so discarding it takes
+    // away the link the customer needs.
+    it('keeps a parked first response that lands after the short budget', async () => {
+      const actionUrl = 'https://invoice.example/authenticate'
+      let resolveStatus!: (response: BillingOpStatusResponse) => void
+      vi.mocked(workspaceApi.getBillingOpStatus).mockImplementationOnce(
+        () =>
+          new Promise((resolve) => {
+            resolveStatus = resolve
+          })
+      )
+
+      const store = useBillingOperationStore()
+      void store.startOperation('op-topup', 'topup')
+      await vi.advanceTimersByTimeAsync(120_000 + 1)
+
+      resolveStatus({
+        id: 'op-topup',
+        status: 'pending',
+        started_at: new Date().toISOString(),
+        phase: 'awaiting_invoice_payment',
+        action_url: actionUrl
+      })
+      await vi.advanceTimersByTimeAsync(0)
+
+      expect(store.topupActionOperation).toMatchObject({
+        opId: 'op-topup',
+        status: 'pending',
+        phase: 'awaiting_invoice_payment',
+        actionUrl
+      })
+    })
+
     it('accepts a terminal response received after the discovery deadline', async () => {
       let resolveStatus!: (response: BillingOpStatusResponse) => void
       vi.mocked(workspaceApi.getBillingOpStatus).mockImplementationOnce(
