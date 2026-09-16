@@ -19,7 +19,7 @@ test.describe(
       await comfyPage.canvasOps.resetView()
     })
 
-    test('VHS format-dependent widgets survive graph reload', async ({
+    test('VHS format-dependent widgets survive graph.configure()', async ({
       comfyPage
     }) => {
       await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', true)
