@@ -38,13 +38,6 @@ function authenticated(session: AccountCredential): SessionSnapshot {
     session
   }
 }
-
-const SIGNED_OUT: SessionSnapshot = {
-  phase: 'signed-out',
-  user: null,
-  session: undefined
-}
-
 /**
  * The two members a reader is allowed to reach for. Anything else is left
  * undefined at runtime rather than quietly answered, so reaching past them
@@ -113,16 +106,6 @@ function httpOk(
   }
 }
 
-function httpStatus(
-  status: number,
-  body: unknown = {}
-): BillingResult<BillingHttpResponse> {
-  return {
-    status: 'ok',
-    value: { httpStatus: status, body, header: () => null }
-  }
-}
-
 /** A transport that answers each call from the queue, then repeats the last. */
 function fakeTransport(answers: BillingResult<BillingHttpResponse>[]) {
   const calls: BillingRequest[] = []
@@ -134,11 +117,6 @@ function fakeTransport(answers: BillingResult<BillingHttpResponse>[]) {
     return answer
   })
   return { transport, calls }
-}
-
-interface SupersedeContext {
-  readonly host: ReturnType<typeof fakeSession>
-  readonly reader: ReturnType<typeof createCapabilitiesReader>
 }
 
 describe('createCapabilitiesReader', () => {
@@ -174,22 +152,6 @@ describe('createCapabilitiesReader', () => {
   })
 
   describe('deduplication', () => {
-    it('serves concurrent readers of one scope from a single request', async () => {
-      const { scopeSource } = fakeSession()
-      const { transport } = fakeTransport([httpOk(capabilitiesBody())])
-      const reader = createCapabilitiesReader({ transport, scopeSource })
-
-      const [first, second, third] = await Promise.all([
-        reader.read(),
-        reader.read(),
-        reader.read()
-      ])
-
-      expect(transport).toHaveBeenCalledTimes(1)
-      expect(first).toEqual(second)
-      expect(second).toEqual(third)
-    })
-
     it('does not join a read belonging to another scope', async () => {
       const host = fakeSession()
       const { transport } = fakeTransport([
@@ -226,74 +188,6 @@ describe('createCapabilitiesReader', () => {
       await reader.read()
 
       expect(transport).toHaveBeenCalledTimes(1)
-    })
-
-    it('releases a joining caller that aborts, without disturbing the shared read', async () => {
-      const { scopeSource } = fakeSession()
-      let release = () => {}
-      const gate = new Promise<void>((resolve) => {
-        release = resolve
-      })
-      const transport: BillingTransport = vi.fn(async () => {
-        await gate
-        return httpOk(capabilitiesBody())
-      })
-      const reader = createCapabilitiesReader({ transport, scopeSource })
-
-      const first = reader.read()
-      const joiner = new AbortController()
-      const second = reader.read({ signal: joiner.signal })
-      joiner.abort()
-
-      expect(await second).toEqual({
-        status: 'error',
-        code: 'REQUEST_FAILED'
-      })
-
-      release()
-      // The joiner walking away must not cancel the request the first caller
-      // is still waiting on.
-      const result = await first
-      expect(result.status).toBe('ok')
-      expect(reader.getSnapshot()).toBeDefined()
-    })
-
-    it('keeps joined callers alive when the initiating caller aborts', async () => {
-      const { scopeSource } = fakeSession()
-      let release = () => {}
-      const gate = new Promise<void>((resolve) => {
-        release = resolve
-      })
-      const transport: BillingTransport = vi.fn(async () => {
-        await gate
-        return httpOk(capabilitiesBody())
-      })
-      const reader = createCapabilitiesReader({ transport, scopeSource })
-
-      const initiator = new AbortController()
-      const first = reader.read({ signal: initiator.signal })
-      const second = reader.read()
-      initiator.abort()
-
-      expect(await first).toEqual({ status: 'error', code: 'REQUEST_FAILED' })
-
-      release()
-      // The initiator's signal belongs to the initiator, not to the shared
-      // request: whoever joined it still gets the answer.
-      const result = await second
-      expect(result.status).toBe('ok')
-      if (result.status !== 'ok') return
-      expect(result.value.revision).toBe(42)
-    })
-
-    it('releases a caller whose signal was already aborted', async () => {
-      const { scopeSource } = fakeSession()
-      const { transport } = fakeTransport([httpOk(capabilitiesBody())])
-      const reader = createCapabilitiesReader({ transport, scopeSource })
-
-      const result = await reader.read({ signal: AbortSignal.abort() })
-
-      expect(result).toEqual({ status: 'error', code: 'REQUEST_FAILED' })
     })
 
     it('refetches when the caller forces a refresh', async () => {
@@ -380,77 +274,6 @@ describe('createCapabilitiesReader', () => {
   })
 
   describe('scope safety', () => {
-    it('reports SUPERSEDED and caches nothing when the workspace changed in flight', async () => {
-      const host = fakeSession()
-      let release = () => {}
-      const gate = new Promise<void>((resolve) => {
-        release = resolve
-      })
-      const transport: BillingTransport = vi.fn(async () => {
-        await gate
-        return httpOk(capabilitiesBody())
-      })
-      const reader = createCapabilitiesReader({
-        transport,
-        scopeSource: host.scopeSource
-      })
-
-      const pending = reader.read()
-      host.moveTo(
-        authenticated(
-          credential({ workspace: { id: 'ws-2', name: 'Team', type: 'team' } })
-        )
-      )
-      release()
-      const result = await pending
-
-      expect(result).toEqual({ status: 'error', code: 'SUPERSEDED' })
-      expect(reader.getSnapshot()).toBeUndefined()
-    })
-
-    it('reports SUPERSEDED and caches nothing when the host signed out in flight', async () => {
-      const host = fakeSession()
-      let release = () => {}
-      const gate = new Promise<void>((resolve) => {
-        release = resolve
-      })
-      const transport: BillingTransport = vi.fn(async () => {
-        await gate
-        return httpOk(capabilitiesBody())
-      })
-      const reader = createCapabilitiesReader({
-        transport,
-        scopeSource: host.scopeSource
-      })
-
-      const pending = reader.read()
-      host.moveTo(SIGNED_OUT)
-      release()
-
-      expect(await pending).toEqual({ status: 'error', code: 'SUPERSEDED' })
-      expect(reader.getSnapshot()).toBeUndefined()
-    })
-
-    it('drops a cached snapshot when the host changes workspace', async () => {
-      const host = fakeSession()
-      const { transport } = fakeTransport([httpOk(capabilitiesBody())])
-      const reader = createCapabilitiesReader({
-        transport,
-        scopeSource: host.scopeSource
-      })
-
-      await reader.read()
-      expect(reader.getSnapshot()).toBeDefined()
-
-      host.moveTo(
-        authenticated(
-          credential({ workspace: { id: 'ws-2', name: 'Team', type: 'team' } })
-        )
-      )
-
-      expect(reader.getSnapshot()).toBeUndefined()
-    })
-
     it('drops owner capabilities when the role changes in place', async () => {
       const host = fakeSession()
       const { transport } = fakeTransport([httpOk(capabilitiesBody())])
@@ -516,58 +339,9 @@ describe('createCapabilitiesReader', () => {
       })
       expect(reader.getSnapshot()).toBeUndefined()
     })
-
-    it('reports NOT_AUTHENTICATED without asking when nobody is signed in', async () => {
-      const { scopeSource } = fakeSession(SIGNED_OUT)
-      const { transport } = fakeTransport([httpOk(capabilitiesBody())])
-
-      const result = await createCapabilitiesReader({
-        transport,
-        scopeSource
-      }).read()
-
-      expect(result).toEqual({ status: 'error', code: 'NOT_AUTHENTICATED' })
-      expect(transport).not.toHaveBeenCalled()
-    })
   })
 
   describe('failures', () => {
-    it.for([
-      [401, 'ACCESS_DENIED'],
-      [403, 'ACCESS_DENIED'],
-      [404, 'NOT_FOUND'],
-      [409, 'CONFLICT'],
-      [500, 'REQUEST_FAILED'],
-      [503, 'REQUEST_FAILED']
-    ] as const)('maps %i to %s', async ([status, code]) => {
-      const { scopeSource } = fakeSession()
-      const { transport } = fakeTransport([httpStatus(status)])
-
-      const result = await createCapabilitiesReader({
-        transport,
-        scopeSource
-      }).read()
-
-      expect(result).toEqual({ status: 'error', code, httpStatus: status })
-    })
-
-    it('reports a 2xx body that does not match the contract as malformed', async () => {
-      const { scopeSource } = fakeSession()
-      const { transport } = fakeTransport([
-        httpOk({ capabilities: { can_top_up: 'yes' } })
-      ])
-      const reader = createCapabilitiesReader({ transport, scopeSource })
-
-      const result = await reader.read()
-
-      expect(result).toEqual({
-        status: 'error',
-        code: 'MALFORMED_RESPONSE',
-        httpStatus: 200
-      })
-      expect(reader.getSnapshot()).toBeUndefined()
-    })
-
     it('passes a transport failure through without inventing a status', async () => {
       const { scopeSource } = fakeSession()
       const { transport } = fakeTransport([
@@ -580,66 +354,6 @@ describe('createCapabilitiesReader', () => {
       }).read()
 
       expect(result).toEqual({ status: 'error', code: 'REQUEST_FAILED' })
-    })
-
-    it.for([
-      [
-        'the workspace changes',
-        ({ host }: SupersedeContext) =>
-          host.moveTo(
-            authenticated(
-              credential({
-                workspace: { id: 'ws-2', name: 'Team', type: 'team' }
-              })
-            )
-          )
-      ],
-      [
-        'the reader is disposed',
-        ({ reader }: SupersedeContext) => reader.dispose()
-      ]
-    ] as const)(
-      'reports SUPERSEDED when a failure lands after %s',
-      async ([, supersede]) => {
-        const host = fakeSession()
-        let release = () => {}
-        const gate = new Promise<void>((resolve) => {
-          release = resolve
-        })
-        const transport: BillingTransport = vi.fn(async () => {
-          await gate
-          return httpStatus(500)
-        })
-        const reader = createCapabilitiesReader({
-          transport,
-          scopeSource: host.scopeSource
-        })
-
-        const pending = reader.read()
-        supersede({ host, reader })
-        release()
-
-        expect(await pending).toEqual({ status: 'error', code: 'SUPERSEDED' })
-      }
-    )
-
-    it('drops a prior snapshot when the server denies the current actor', async () => {
-      const { scopeSource } = fakeSession()
-      const { transport } = fakeTransport([
-        httpOk(capabilitiesBody()),
-        httpStatus(403)
-      ])
-      const reader = createCapabilitiesReader({ transport, scopeSource })
-
-      await reader.read()
-      const result = await reader.read({ forceRefresh: true })
-
-      expect(result).toEqual({
-        status: 'error',
-        code: 'ACCESS_DENIED',
-        httpStatus: 403
-      })
-      expect(reader.getSnapshot()).toBeUndefined()
     })
   })
 
@@ -793,33 +507,6 @@ describe('createCapabilitiesReader', () => {
       await reader.read()
       expect(transport).toHaveBeenCalledTimes(2)
     })
-  })
-
-  it('clears account data and rejects an in-flight result after dispose', async () => {
-    const { scopeSource } = fakeSession()
-    let release = () => {}
-    const gate = new Promise<void>((resolve) => {
-      release = resolve
-    })
-    let calls = 0
-    const transport: BillingTransport = vi.fn(async () => {
-      calls++
-      if (calls === 2) await gate
-      return httpOk(capabilitiesBody())
-    })
-    const reader = createCapabilitiesReader({
-      transport,
-      scopeSource
-    })
-
-    await reader.read()
-    const pending = reader.read({ forceRefresh: true })
-    reader.dispose()
-
-    expect(reader.getSnapshot()).toBeUndefined()
-    release()
-    expect(await pending).toEqual({ status: 'error', code: 'SUPERSEDED' })
-    expect(reader.getSnapshot()).toBeUndefined()
   })
 })
 

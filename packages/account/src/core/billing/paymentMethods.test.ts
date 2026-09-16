@@ -1,3 +1,8 @@
+/**
+ * What only the saved payment methods read does — its route, its projection,
+ * and the invalidation the host drives. The scope fence, the shared request,
+ * and the publish rules it inherits are proved once in `scopedReader.test.ts`.
+ */
 import { describe, expect, it, vi } from 'vitest'
 
 import type { SessionClient, SessionSnapshot } from '../session.js'
@@ -33,33 +38,14 @@ function authenticated(session: AccountCredential): SessionSnapshot {
   }
 }
 
-const SIGNED_OUT: SessionSnapshot = {
-  phase: 'signed-out',
-  user: null,
-  session: undefined
-}
-
-const TEAM = { id: 'ws-2', name: 'Team', type: 'team' } as const
-
 type SessionFake = Pick<SessionClient, 'getSnapshot' | 'subscribe'>
 
-function fakeSession(initial: SessionSnapshot = authenticated(credential())) {
-  let snapshot = initial
-  const listeners = new Set<(next: SessionSnapshot) => void>()
+function fakeSession(snapshot: SessionSnapshot = authenticated(credential())) {
   const fake: SessionFake = {
     getSnapshot: () => snapshot,
-    subscribe: (listener) => {
-      listeners.add(listener)
-      return () => listeners.delete(listener)
-    }
+    subscribe: () => () => {}
   }
-  return {
-    scopeSource: sessionBillingScopeSource(fake),
-    moveTo(next: SessionSnapshot) {
-      snapshot = next
-      for (const listener of [...listeners]) listener(snapshot)
-    }
-  }
+  return { scopeSource: sessionBillingScopeSource(fake) }
 }
 
 const CARD = {
@@ -72,6 +58,8 @@ const CARD = {
 
 const METHODS = [CARD]
 
+const REPLACEMENT_CARD = { ...CARD, id: 'pm_2', last4: '1881' }
+
 function httpOk(body: unknown): BillingResult<BillingHttpResponse> {
   return {
     status: 'ok',
@@ -79,13 +67,10 @@ function httpOk(body: unknown): BillingResult<BillingHttpResponse> {
   }
 }
 
-function httpStatus(
-  status: number,
-  extra: { readonly authenticationRetrySkipped?: true } = {}
-): BillingResult<BillingHttpResponse> {
+function httpStatus(status: number): BillingResult<BillingHttpResponse> {
   return {
     status: 'ok',
-    value: { httpStatus: status, body: {}, header: () => null, ...extra }
+    value: { httpStatus: status, body: {}, header: () => null }
   }
 }
 
@@ -101,9 +86,22 @@ function fakeTransport(answers: BillingResult<BillingHttpResponse>[]) {
   return { transport, calls }
 }
 
-interface SupersedeContext {
-  readonly host: ReturnType<typeof fakeSession>
-  readonly reader: ReturnType<typeof createPaymentMethodsReader>
+/** Holds the first answer open so an invalidation can land mid-flight. */
+function transportWithSlowFirstAnswer(
+  first: BillingResult<BillingHttpResponse>
+) {
+  let release = () => {}
+  const gate = new Promise<void>((resolve) => {
+    release = resolve
+  })
+  let calls = 0
+  const transport: BillingTransport = vi.fn(async () => {
+    calls++
+    if (calls > 1) return httpOk([REPLACEMENT_CARD])
+    await gate
+    return first
+  })
+  return { transport, release: () => release() }
 }
 
 describe('createPaymentMethodsReader', () => {
@@ -156,22 +154,11 @@ describe('createPaymentMethodsReader', () => {
     expect(calls[0].timeoutMs).toBe(5_000)
   })
 
-  it('serves concurrent readers of one scope from a single request', async () => {
-    const { scopeSource } = fakeSession()
-    const { transport } = fakeTransport([httpOk(METHODS)])
-    const reader = createPaymentMethodsReader({ transport, scopeSource })
-
-    const [first, second] = await Promise.all([reader.read(), reader.read()])
-
-    expect(transport).toHaveBeenCalledTimes(1)
-    expect(first).toEqual(second)
-  })
-
   it('drops the published list on invalidate and republishes on the next read', async () => {
     const { scopeSource } = fakeSession()
     const { transport } = fakeTransport([
       httpOk(METHODS),
-      httpOk([{ ...CARD, id: 'pm_2', last4: '1881' }])
+      httpOk([REPLACEMENT_CARD])
     ])
     const reader = createPaymentMethodsReader({ transport, scopeSource })
 
@@ -193,17 +180,7 @@ describe('createPaymentMethodsReader', () => {
 
   it('fences a request that predates an invalidation from publishing', async () => {
     const { scopeSource } = fakeSession()
-    let releaseStale = () => {}
-    const staleGate = new Promise<void>((resolve) => {
-      releaseStale = resolve
-    })
-    let calls = 0
-    const transport: BillingTransport = vi.fn(async () => {
-      calls++
-      if (calls > 1) return httpOk([{ ...CARD, id: 'pm_2', last4: '1881' }])
-      await staleGate
-      return httpOk(METHODS)
-    })
+    const { transport, release } = transportWithSlowFirstAnswer(httpOk(METHODS))
     const reader = createPaymentMethodsReader({ transport, scopeSource })
 
     const stale = reader.read()
@@ -218,7 +195,7 @@ describe('createPaymentMethodsReader', () => {
     if (result.status !== 'ok') return
     expect(result.value.methods[0].id).toBe('pm_2')
 
-    releaseStale()
+    release()
     await stale
 
     expect(reader.getSnapshot()?.methods[0].id).toBe('pm_2')
@@ -226,17 +203,7 @@ describe('createPaymentMethodsReader', () => {
 
   it('keeps the fresh list when an invalidated request is denied late', async () => {
     const { scopeSource } = fakeSession()
-    let releaseStale = () => {}
-    const staleGate = new Promise<void>((resolve) => {
-      releaseStale = resolve
-    })
-    let calls = 0
-    const transport: BillingTransport = vi.fn(async () => {
-      calls++
-      if (calls > 1) return httpOk([{ ...CARD, id: 'pm_2', last4: '1881' }])
-      await staleGate
-      return httpStatus(403)
-    })
+    const { transport, release } = transportWithSlowFirstAnswer(httpStatus(403))
     const reader = createPaymentMethodsReader({ transport, scopeSource })
 
     const stale = reader.read()
@@ -245,201 +212,9 @@ describe('createPaymentMethodsReader', () => {
 
     expect(reader.getSnapshot()?.methods[0].id).toBe('pm_2')
 
-    releaseStale()
+    release()
     await stale
 
     expect(reader.getSnapshot()?.methods[0].id).toBe('pm_2')
-  })
-
-  describe('scope safety', () => {
-    it('reports SUPERSEDED and caches nothing when the workspace changed in flight', async () => {
-      const host = fakeSession()
-      let release = () => {}
-      const gate = new Promise<void>((resolve) => {
-        release = resolve
-      })
-      const transport: BillingTransport = vi.fn(async () => {
-        await gate
-        return httpOk(METHODS)
-      })
-      const reader = createPaymentMethodsReader({
-        transport,
-        scopeSource: host.scopeSource
-      })
-
-      const pending = reader.read()
-      host.moveTo(authenticated(credential({ workspace: TEAM })))
-      release()
-
-      expect(await pending).toEqual({ status: 'error', code: 'SUPERSEDED' })
-      expect(reader.getSnapshot()).toBeUndefined()
-    })
-
-    it('drops a published list when the host changes workspace', async () => {
-      const host = fakeSession()
-      const { transport } = fakeTransport([httpOk(METHODS)])
-      const reader = createPaymentMethodsReader({
-        transport,
-        scopeSource: host.scopeSource
-      })
-
-      await reader.read()
-      expect(reader.getSnapshot()).toBeDefined()
-
-      host.moveTo(authenticated(credential({ workspace: TEAM })))
-
-      // Naming one workspace's card as chargeable by another is the failure
-      // this guards.
-      expect(reader.getSnapshot()).toBeUndefined()
-    })
-
-    it('reports NOT_AUTHENTICATED without asking when nobody is signed in', async () => {
-      const { scopeSource } = fakeSession(SIGNED_OUT)
-      const { transport } = fakeTransport([httpOk(METHODS)])
-
-      const result = await createPaymentMethodsReader({
-        transport,
-        scopeSource
-      }).read()
-
-      expect(result).toEqual({ status: 'error', code: 'NOT_AUTHENTICATED' })
-      expect(transport).not.toHaveBeenCalled()
-    })
-  })
-
-  describe('failures', () => {
-    it.for([
-      [401, false, 'ACCESS_DENIED'],
-      [401, true, 'REQUEST_FAILED'],
-      [403, false, 'ACCESS_DENIED'],
-      [404, false, 'NOT_FOUND'],
-      [500, false, 'REQUEST_FAILED']
-    ] as const)(
-      'maps %i (retry skipped: %s) to %s',
-      async ([status, retrySkipped, code]) => {
-        const { scopeSource } = fakeSession()
-        const { transport } = fakeTransport([
-          httpStatus(
-            status,
-            retrySkipped ? { authenticationRetrySkipped: true } : {}
-          )
-        ])
-
-        const result = await createPaymentMethodsReader({
-          transport,
-          scopeSource
-        }).read()
-
-        expect(result).toEqual({ status: 'error', code, httpStatus: status })
-      }
-    )
-
-    it('reports a 2xx body that does not match the contract as malformed', async () => {
-      const { scopeSource } = fakeSession()
-      const { transport } = fakeTransport([httpOk([{ ...CARD, id: 'card_1' }])])
-      const reader = createPaymentMethodsReader({ transport, scopeSource })
-
-      const result = await reader.read()
-
-      expect(result).toEqual({
-        status: 'error',
-        code: 'MALFORMED_RESPONSE',
-        httpStatus: 200
-      })
-      expect(reader.getSnapshot()).toBeUndefined()
-    })
-
-    it('keeps the last good list when a later read fails', async () => {
-      const { scopeSource } = fakeSession()
-      const { transport } = fakeTransport([
-        httpOk(METHODS),
-        { status: 'error', code: 'REQUEST_FAILED' }
-      ])
-      const reader = createPaymentMethodsReader({ transport, scopeSource })
-
-      await reader.read()
-      const second = await reader.read()
-
-      expect(second).toEqual({ status: 'error', code: 'REQUEST_FAILED' })
-      expect(reader.getSnapshot()?.methods[0].id).toBe('pm_1')
-    })
-
-    it.for([
-      [
-        'the workspace changes',
-        ({ host }: SupersedeContext) =>
-          host.moveTo(authenticated(credential({ workspace: TEAM })))
-      ],
-      [
-        'the reader is disposed',
-        ({ reader }: SupersedeContext) => reader.dispose()
-      ]
-    ] as const)(
-      'reports SUPERSEDED when a failure lands after %s',
-      async ([, supersede]) => {
-        const host = fakeSession()
-        let release = () => {}
-        const gate = new Promise<void>((resolve) => {
-          release = resolve
-        })
-        const transport: BillingTransport = vi.fn(async () => {
-          await gate
-          return httpStatus(500)
-        })
-        const reader = createPaymentMethodsReader({
-          transport,
-          scopeSource: host.scopeSource
-        })
-
-        const pending = reader.read()
-        supersede({ host, reader })
-        release()
-
-        expect(await pending).toEqual({ status: 'error', code: 'SUPERSEDED' })
-      }
-    )
-
-    it('drops the published list when a later read is denied', async () => {
-      const { scopeSource } = fakeSession()
-      const { transport } = fakeTransport([httpOk(METHODS), httpStatus(403)])
-      const reader = createPaymentMethodsReader({ transport, scopeSource })
-
-      await reader.read()
-      const result = await reader.read()
-
-      expect(result).toEqual({
-        status: 'error',
-        code: 'ACCESS_DENIED',
-        httpStatus: 403
-      })
-      expect(reader.getSnapshot()).toBeUndefined()
-    })
-  })
-
-  it('clears the list and rejects an in-flight result after dispose', async () => {
-    const { scopeSource } = fakeSession()
-    let release = () => {}
-    const gate = new Promise<void>((resolve) => {
-      release = resolve
-    })
-    let calls = 0
-    const transport: BillingTransport = vi.fn(async () => {
-      calls++
-      if (calls === 2) await gate
-      return httpOk(METHODS)
-    })
-    const reader = createPaymentMethodsReader({ transport, scopeSource })
-
-    await reader.read()
-    const pending = reader.read()
-    reader.dispose()
-
-    expect(reader.getSnapshot()).toBeUndefined()
-    release()
-    expect(await pending).toEqual({ status: 'error', code: 'SUPERSEDED' })
-    expect(await reader.read()).toEqual({
-      status: 'error',
-      code: 'SUPERSEDED'
-    })
   })
 })
