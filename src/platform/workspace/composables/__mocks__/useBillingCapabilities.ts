@@ -17,6 +17,4 @@ const capabilities: ReturnType<typeof realUseBillingCapabilities> = {
   refresh: vi.fn(async () => undefined)
 }
 
-export const useBillingCapabilities = vi.fn<typeof realUseBillingCapabilities>(
-  () => capabilities
-)
+export const useBillingCapabilities = vi.fn(() => capabilities)
