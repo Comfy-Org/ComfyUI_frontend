@@ -200,6 +200,53 @@ describe('useMaskEditorSaver', () => {
     )
   })
 
+  it('shows an instant local preview before the upload finishes, then hands off to the persisted output', async () => {
+    let previewSrcDuringUpload: string | undefined
+    let dirtyBeforeUpload = false
+    let expectedPreviewUrl: string | undefined
+    let releaseUpload: (() => void) | undefined
+    const uploadGate = new Promise<void>((resolve) => {
+      releaseUpload = resolve
+    })
+
+    vi.mocked(api.fetchApi).mockImplementation(async () => {
+      if (previewSrcDuringUpload === undefined) {
+        previewSrcDuringUpload = mockNode.imgs?.[0]?.src
+        dirtyBeforeUpload = vi
+          .mocked(app.canvas.setDirty)
+          .mock.calls.some(([dirty]) => dirty)
+        expectedPreviewUrl =
+          mockDataStore.outputData?.paintedMaskedImage.canvas.toDataURL(
+            'image/png'
+          )
+        await uploadGate
+      }
+      return new Response(
+        JSON.stringify({
+          name: 'clipspace-painted-masked-123.png',
+          subfolder: 'clipspace',
+          type: 'input'
+        }),
+        { status: 200 }
+      )
+    })
+
+    const savePromise = useMaskEditorSaver().save()
+
+    await vi.waitFor(() => {
+      if (previewSrcDuringUpload === undefined) throw new Error('pending')
+    })
+
+    expect(previewSrcDuringUpload).toBe(expectedPreviewUrl)
+    expect(dirtyBeforeUpload).toBe(true)
+    expect(mockNode.imgs).toHaveLength(1)
+
+    releaseUpload?.()
+    await savePromise
+
+    expect(mockNode.imgs).toBeUndefined()
+  })
+
   it('replaces a stale clipspace image with the saved image', async () => {
     mockNode.images = [
       {
