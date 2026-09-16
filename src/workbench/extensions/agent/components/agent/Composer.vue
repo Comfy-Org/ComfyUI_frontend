@@ -251,6 +251,16 @@ function onComposerKeydown(event: KeyboardEvent): void {
     }
   }
   if (event.key === 'Enter') onEnter(event)
+  if (
+    event.key === 'Escape' &&
+    running.value &&
+    !event.isComposing &&
+    !event.repeat
+  ) {
+    event.preventDefault()
+    event.stopPropagation()
+    emit('stop')
+  }
 }
 
 const CARET_KEYS = ['ArrowLeft', 'ArrowRight', 'Home', 'End']
@@ -276,19 +286,22 @@ const placeholderHint = computed(() => {
 
 const composer = useComposer({
   onSend: (text, attachments) => emit('send', text, attachments),
-  isStreaming: () => streaming,
+  isRunning: () => running.value,
   onStop: () => emit('stop')
 })
 
 function onEnter(event: KeyboardEvent): void {
   if (event.isComposing || event.shiftKey) return
   event.preventDefault()
+  if (running.value) return
   composer.submit()
 }
 
 const running = computed(() => streaming || submitting)
 const primaryActionTooltip = computed(() =>
-  composer.canSend.value
+  running.value
+    ? `${t('agent.stop')} ${t('agent.stopShortcut')}`
+    : composer.canSend.value
     ? t('agent.send')
     : t('agent.addPromptToSend', 'Add a prompt to send')
 )
@@ -545,7 +558,7 @@ defineExpose({
 
         <div class="flex items-center gap-1">
           <RunModePopover />
-          <AgentTooltip :label="primaryActionTooltip" :disabled="running">
+          <AgentTooltip :label="primaryActionTooltip">
             <button
               type="button"
               :aria-label="running ? t('agent.stop') : t('agent.send')"
