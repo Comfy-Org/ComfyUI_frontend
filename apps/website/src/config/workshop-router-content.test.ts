@@ -1,10 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 
-import {
-  workshopModels,
-  routerContentById,
-  routerContentBySlug
-} from './workshop-browse-content'
+import { workshopModels, routerContentBySlug } from './workshop-browse-content'
 import { deriveWorkshopFields } from './workshop-fields'
 import { getRouterWorkshopModelDetail } from './workshop-router-content'
 import {
@@ -147,7 +143,7 @@ describe('Router catalog form projection', () => {
         model.examples.every((example) => example.name.startsWith(model.slug))
       ).toBe(true)
     }
-    expect(edit.examples.every((example) => example.sampleOnly)).toBe(true)
+    expect(edit.examples.every((example) => !example.sampleOnly)).toBe(true)
     expect(edit.examples.map((example) => example.name)).not.toEqual(
       create.examples.map((example) => example.name)
     )
@@ -159,11 +155,9 @@ describe('Router catalog form projection', () => {
   it("starts a native request with Rob's prompt without importing legacy settings", async () => {
     const model = getRouterWorkshopModelDetail('bfl--flux-3-video')
     if (!model?.execution) throw new Error('Missing model')
-    const prompt = routerContentById
-      .get(model.routerId)
-      ?.filter(({ binding }) => !binding.contentIssue)
-      .flatMap(({ overlay }) => overlay.examples)
-      .map((example) => example.values.prompt)
+    const prompt = routerContentBySlug
+      .get(model.slug)
+      ?.overlay.examples.map((example) => example.values.prompt)
       .find((value) => typeof value === 'string' && value.trim())
     expect(typeof prompt).toBe('string')
     const body = await prepareWorkshopRouterInput(
@@ -182,14 +176,15 @@ describe('Router catalog form projection', () => {
       'byteplus--dreamina-seedance-2-0-fast-260128'
     )
     if (!model?.execution) throw new Error('Missing model')
+    const values = defaultValues(schemaForModel(model), model.defaults)
     const body = await prepareWorkshopRouterInput(
       model.execution,
-      defaultValues(schemaForModel(model), model.defaults),
+      values,
       new AbortController().signal
     )
     expect(body.content).toEqual([{ type: 'text', text: expect.any(String) }])
     expect(JSON.stringify(body.content)).not.toContain('image_url')
-    expect(body.duration).toBe(5)
+    expect(body.duration).toBe(values.duration)
     expect(body).not.toHaveProperty('callback_url')
   })
 

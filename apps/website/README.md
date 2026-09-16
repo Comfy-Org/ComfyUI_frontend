@@ -259,6 +259,7 @@ All event names below have the prefix `website:workshop_`:
 | `run_validation_failed`   | Local form validation rejects a Run action.                                    |
 | `run_started`             | A validated Run action begins, including uploads and credential refresh.       |
 | `run_finished`            | The attempt succeeds, fails, or is cancelled, with `status` and `duration_ms`. |
+| `checkout_failed`         | A top-up attempt fails during balance, credential, or checkout setup.          |
 | `output_download_clicked` | The user requests an output download.                                          |
 
 The basic funnel is catalogue view → model view → run started → run finished
@@ -266,7 +267,9 @@ with `status=succeeded` → output download clicked. Model events include slug,
 Router ID, provider, and modality. Run events also retain the initiating
 `user_id`, `workspace_id`, and a unique `attempt_id` across their start and
 finish. Finished requests include `request_id` when available; success counts
-returned artifacts, and failures include only a bounded reason code.
+returned artifacts, and failures include a bounded reason plus allowlisted HTTP
+status and Router error type when available. Checkout failures include their
+stage and bounded SDK error code, plus a real HTTP status when one exists.
 
 Retries get new attempt IDs even when they reuse a Router idempotency key.
 Cancellation describes the browser stopping its wait, not a billing outcome.

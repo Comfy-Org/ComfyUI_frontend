@@ -13,11 +13,17 @@ export type {
   BillingHttpResponse,
   BillingRequest,
   BillingResult,
+  BillingServerCode,
   BillingSession,
   BillingTransport
 } from './billingContracts.js'
+export { matchesServerCode, unwrapServerCode } from './billingContracts.js'
 export type { SessionBillingTransportOptions } from './transport.js'
 export { createSessionBillingTransport } from './transport.js'
+export type { CredentialedBillingTransportOptions } from './credentialedTransport.js'
+export { createCredentialedBillingTransport } from './credentialedTransport.js'
+export type { BillingScope, BillingScopeSource } from './billingScope.js'
+export { sessionBillingScopeSource } from './billingScope.js'
 export type {
   BillingCapabilities,
   CapabilitiesReadOptions,
@@ -47,6 +53,27 @@ export type {
   CreditsSnapshot
 } from './credits.js'
 export { CREDITS_ROUTE, createCreditsReader } from './credits.js'
+export type {
+  BillingPlansData,
+  PlansReadOptions,
+  PlansReader,
+  PlansReaderOptions,
+  PlansScope,
+  PlansSnapshot
+} from './plans.js'
+export { PLANS_ROUTE, createPlansReader } from './plans.js'
+export type {
+  PaymentMethodsReadOptions,
+  PaymentMethodsReader,
+  PaymentMethodsReaderOptions,
+  PaymentMethodsScope,
+  PaymentMethodsSnapshot,
+  SavedPaymentMethod
+} from './paymentMethods.js'
+export {
+  PAYMENT_METHODS_ROUTE,
+  createPaymentMethodsReader
+} from './paymentMethods.js'
 export type {
   BillingStatusData,
   BillingStatusReader,
@@ -120,16 +147,21 @@ export type {
   BillingCommands,
   BillingCommandsOptions,
   PaymentPortalResult,
+  PreviewSubscribeInput,
+  PreviewSubscribeOptions,
+  PreviewSubscribeResult,
   SubscribeInput,
   SubscriptionCommandCode,
   SubscriptionCommandFailure,
   SubscriptionCommandOutcome,
   SubscriptionCommandResult,
+  SubscriptionPreview,
   TerminalBillingOperation
 } from './subscriptionCommands.js'
 export {
   CANCEL_SUBSCRIPTION_ROUTE,
   PAYMENT_PORTAL_ROUTE,
+  PREVIEW_SUBSCRIBE_ROUTE,
   RESUBSCRIBE_ROUTE,
   SUBSCRIBE_ROUTE,
   createBillingCommands

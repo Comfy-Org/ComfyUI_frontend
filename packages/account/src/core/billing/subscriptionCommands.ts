@@ -3,7 +3,8 @@
  * resubscribe, cancel, and the payment portal. Each one encodes its request
  * against the generated contract, issues it through `lifecycle.begin`, and
  * waits for the settled operation; polling, routing, recovery, and telemetry
- * stay in the lifecycle.
+ * stay in the lifecycle. `previewSubscribe` sits beside them without a
+ * lifecycle: it only quotes a change.
  *
  * Eligibility is decided from the server's own status fields, never from a
  * client-side notion of the plan (`docs/billing-command-eligibility.md`).
@@ -13,6 +14,8 @@
 import {
   zCancelSubscriptionResponse2,
   zPaymentPortalResponse,
+  zPreviewSubscribeRequest,
+  zPreviewSubscribeResponse,
   zResubscribeResponse,
   zSubscribeRequest,
   zSubscribeResponse
@@ -20,6 +23,7 @@ import {
 import type { z } from 'zod'
 
 import type { BillingFailure, BillingTransport } from './billingContracts.js'
+import { matchesServerCode } from './billingContracts.js'
 import type { CapabilitiesReader } from './capabilities.js'
 import type { CreditsReader } from './credits.js'
 import type {
@@ -39,6 +43,7 @@ export const SUBSCRIBE_ROUTE = '/billing/subscribe'
 export const RESUBSCRIBE_ROUTE = '/billing/subscription/resubscribe'
 export const CANCEL_SUBSCRIPTION_ROUTE = '/billing/subscription/cancel'
 export const PAYMENT_PORTAL_ROUTE = '/billing/payment-portal'
+export const PREVIEW_SUBSCRIBE_ROUTE = '/billing/preview-subscribe'
 
 /** The closed set of `serverCode` values these commands act on. */
 const NO_ACTIVE_SUBSCRIPTION_SERVER_CODE = 'NO_ACTIVE_SUBSCRIPTION'
@@ -57,6 +62,7 @@ export type TerminalBillingOperation = Exclude<
 
 /** Outcomes a subscription command adds to the shared `BillingErrorCode` set. */
 export type SubscriptionCommandCode =
+  /** The input fails the generated request contract; nothing was sent. */
   | 'INVALID_REQUEST'
   /** `confirmation_token` and `saved_payment_method_id` were both given. */
   | 'CONFLICTING_PAYMENT_METHOD'
@@ -84,6 +90,32 @@ export type PaymentPortalResult =
   | { readonly status: 'ok'; readonly value: { readonly url: string } }
   | BillingFailure
 
+/**
+ * The quote the server returns for a plan change, in the generated field names.
+ *
+ * Its strings are product copy, not `serverCode`'s kind of machine identifier:
+ * a `discounts[]` entry describes a discount the server applied, and a
+ * `promotion` one carries back the very `promotionCode` the caller sent, so a
+ * host renders `code` and `name` rather than matching them.
+ */
+export type SubscriptionPreview = z.infer<typeof zPreviewSubscribeResponse>
+
+export interface PreviewSubscribeInput {
+  readonly planSlug: string
+  readonly promotionCode?: string
+  readonly teamCreditStopId?: string
+  readonly checkoutAttemptId?: string
+}
+
+export interface PreviewSubscribeOptions {
+  readonly signal?: AbortSignal
+  readonly timeoutMs?: number
+}
+
+export type PreviewSubscribeResult =
+  | { readonly status: 'ok'; readonly value: SubscriptionPreview }
+  | SubscriptionCommandFailure
+
 export interface BillingCommandsOptions {
   readonly transport: BillingTransport
   readonly lifecycle: BillingOperationLifecycle
@@ -96,6 +128,16 @@ export interface BillingCommandsOptions {
 
 export interface BillingCommands {
   subscribe: (input: SubscribeInput) => Promise<SubscriptionCommandResult>
+  /**
+   * Quotes a plan change without issuing an operation or touching the
+   * capability cache: a read the backend happens to shape as a POST. It sends
+   * no idempotency key, so a stale token surfaces as the transient
+   * `REQUEST_FAILED` that callers already retry rather than as a denial.
+   */
+  previewSubscribe: (
+    input: PreviewSubscribeInput,
+    options?: PreviewSubscribeOptions
+  ) => Promise<PreviewSubscribeResult>
   resubscribe: () => Promise<SubscriptionCommandResult>
   cancelSubscription: () => Promise<SubscriptionCommandResult>
   /** Returns the portal URL; the host decides how to open it. */
@@ -140,7 +182,7 @@ function alreadyInRequestedState(
   serverCode: string
 ): boolean {
   return (
-    failure.serverCode === serverCode &&
+    matchesServerCode(failure, serverCode) &&
     failure.httpStatus !== undefined &&
     failure.httpStatus >= 400 &&
     failure.httpStatus < 500
@@ -154,13 +196,27 @@ function mapServerCode(
   if (alreadyInRequestedState(failure, alreadyHeldCode)) {
     return { status: 'already_held' }
   }
-  return failure.serverCode === NO_ACTIVE_SUBSCRIPTION_SERVER_CODE
+  return matchesServerCode(failure, NO_ACTIVE_SUBSCRIPTION_SERVER_CODE)
     ? coded('NO_ACTIVE_SUBSCRIPTION')
     : failure
 }
 
 function dropEmpty(value: string | undefined): string | undefined {
   return value === '' ? undefined : value
+}
+
+function previewRequestBody(input: PreviewSubscribeInput): unknown {
+  const { planSlug, promotionCode, teamCreditStopId, checkoutAttemptId } = input
+  return {
+    plan_slug: planSlug,
+    ...(promotionCode === undefined ? {} : { promotion_code: promotionCode }),
+    ...(teamCreditStopId === undefined
+      ? {}
+      : { team_credit_stop_id: teamCreditStopId }),
+    ...(checkoutAttemptId === undefined
+      ? {}
+      : { checkout_attempt_id: checkoutAttemptId })
+  }
 }
 
 export function createBillingCommands(
@@ -236,8 +292,10 @@ export function createBillingCommands(
       key
     )
     if (response.status === 'error') {
-      return response.serverCode ===
+      return matchesServerCode(
+        response,
         REACTIVATION_CONFIRMATION_REQUIRED_SERVER_CODE
+      )
         ? coded('REACTIVATION_CONFIRMATION_REQUIRED')
         : response
     }
@@ -321,6 +379,32 @@ export function createBillingCommands(
     }
   }
 
+  async function previewSubscribe(
+    input: PreviewSubscribeInput,
+    options: PreviewSubscribeOptions = {}
+  ): Promise<PreviewSubscribeResult> {
+    const body = previewRequestBody(input)
+    if (!zPreviewSubscribeRequest.safeParse(body).success) {
+      return coded('INVALID_REQUEST')
+    }
+    const response = await readValidatedBillingResponse(
+      transport,
+      {
+        method: 'POST',
+        route: PREVIEW_SUBSCRIBE_ROUTE,
+        body,
+        ...(options.signal === undefined ? {} : { signal: options.signal }),
+        ...(options.timeoutMs === undefined
+          ? {}
+          : { timeoutMs: options.timeoutMs })
+      },
+      (raw) => zPreviewSubscribeResponse.safeParse(raw)
+    )
+    return response.status === 'error'
+      ? response
+      : { status: 'ok', value: response.value.data }
+  }
+
   async function openPaymentPortal(input: {
     readonly returnUrl?: string
   }): Promise<PaymentPortalResult> {
@@ -343,6 +427,7 @@ export function createBillingCommands(
 
   return {
     subscribe,
+    previewSubscribe,
     resubscribe,
     cancelSubscription: () => settle('cancel', issueCancel),
     openPaymentPortal
