@@ -15,7 +15,6 @@ events for the future Billing SDK adapter. It does not contain:
 - Billing API calls
 - Billing SDK command, quote, or operation state wiring
 - Stripe Elements initialization
-- production deployment configuration
 
 The payment action stays disabled in the hosted shell until Account/Auth and
 subscription Billing SDK integration lands. Billing data, quotes, commands,
@@ -35,6 +34,45 @@ pnpm --filter @comfyorg/billing-web typecheck
 pnpm --filter @comfyorg/billing-web test:unit
 pnpm --filter @comfyorg/billing-web build
 ```
+
+## Deployment
+
+The app deploys to Vercel as a static SPA from
+`apps/billing-web/vercel.json`. `.github/workflows/ci-vercel-billing-web-preview.yaml`
+builds and deploys it: a preview per pull request that touches
+`apps/billing-web`, `packages/design-system`, or `packages/tailwind-utils`,
+and production on merge to `main`.
+
+Vercel project settings:
+
+- Root Directory: `apps/billing-web`, with **Include source files outside of
+  the Root Directory** enabled — the build resolves workspace packages.
+- Framework Preset: Other. `vercel.json` supplies the install, build, and
+  output settings.
+- Git integration disabled (`github.enabled: false`); the workflow owns
+  deploys.
+
+Required GitHub Actions secrets:
+
+| Secret                          | Value                                        |
+| ------------------------------- | -------------------------------------------- |
+| `VERCEL_BILLING_WEB_ORG_ID`     | Vercel team ID for the `comfyui` scope       |
+| `VERCEL_BILLING_WEB_PROJECT_ID` | Project ID of the billing-web Vercel project |
+| `VERCEL_BILLING_WEB_TOKEN`      | Vercel access token scoped to that project   |
+
+Client-side routes fall back to `index.html` through the `rewrites` rule. The
+rule matches extensionless paths only, so a missing file stays a 404 instead of
+returning the HTML shell under a script, style, or font URL. The design-system
+stylesheet still carries absolute `/fonts/*.woff2` sources that this app does
+not host; they 404 and the browser falls through to the hashed `/assets/` faces
+in the same `@font-face` rule.
+
+A custom host is a separate step. `comfy.org` DNS is on Cloudflare, so
+`billing.comfy.org` needs a `CNAME` to `cname.vercel-dns.com` there plus the
+domain added to the Vercel project. Until that exists, the deployment is
+reachable at its `*.vercel.app` host, and the core frontend's
+`VITE_BILLING_WEB_URL` must point at whichever origin is live — it accepts
+`https` only outside local development.
 
 ## Path-prefixed hosting
 
