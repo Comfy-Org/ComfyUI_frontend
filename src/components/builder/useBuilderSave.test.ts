@@ -1,80 +1,72 @@
+import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 
+import { useTelemetry } from '@/platform/telemetry'
+
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import { useAppModeStore } from '@/stores/appModeStore'
+import { useDialogStore } from '@/stores/dialogStore'
+
 import { useBuilderSave } from './useBuilderSave'
+
+beforeEach(() => {
+  vi.mocked(useAppModeStore().exitBuilder).mockImplementation(() => {})
+  vi.mocked(useDialogStore().closeDialog).mockImplementation(() => {})
+})
 
 const mockSetMode = vi.hoisted(() => vi.fn())
 const mockToastErrorHandler = vi.hoisted(() => vi.fn())
-const mockTrackEnterLinear = vi.hoisted(() => vi.fn())
-const mockTrackDefaultViewSet = vi.hoisted(() => vi.fn())
+
 const mockSaveWorkflow = vi.hoisted(() => vi.fn<() => Promise<void>>())
 const mockSaveWorkflowAs = vi.hoisted(() =>
   vi.fn<() => Promise<boolean | null>>()
 )
 const mockShowLayoutDialog = vi.hoisted(() => vi.fn())
 const mockShowConfirmDialog = vi.hoisted(() => vi.fn())
-const mockCloseDialog = vi.hoisted(() => vi.fn())
-const mockExitBuilder = vi.hoisted(() => vi.fn())
 
-const mockActiveWorkflow = ref<{
-  filename: string
-  initialMode?: string | null
-} | null>(null)
-
-vi.mock('@/composables/useAppMode', () => ({
-  useAppMode: () => ({ setMode: mockSetMode })
+vi.mock<unknown>(import('@/composables/useAppMode'), () => ({
+  useAppMode: () => ({
+    setMode: mockSetMode,
+    mode: ref('builder:inputs'),
+    isAppMode: ref(false),
+    isBuilderMode: ref(true),
+    isSelectMode: ref(false)
+  })
 }))
 
-vi.mock('@/composables/useErrorHandling', () => ({
+vi.mock<unknown>(import('@/composables/useErrorHandling'), () => ({
   useErrorHandling: () => ({ toastErrorHandler: mockToastErrorHandler })
 }))
 
-vi.mock('@/platform/telemetry', () => ({
-  useTelemetry: () => ({
-    trackEnterLinear: mockTrackEnterLinear,
-    trackDefaultViewSet: mockTrackDefaultViewSet
-  })
-}))
+vi.mock(import('@/platform/telemetry'))
 
-vi.mock('@/platform/workflow/core/services/workflowService', () => ({
-  useWorkflowService: () => ({
-    saveWorkflow: mockSaveWorkflow,
-    saveWorkflowAs: mockSaveWorkflowAs
+vi.mock<unknown>(
+  import('@/platform/workflow/core/services/workflowService'),
+  () => ({
+    useWorkflowService: () => ({
+      saveWorkflow: mockSaveWorkflow,
+      saveWorkflowAs: mockSaveWorkflowAs
+    })
   })
-}))
+)
 
-vi.mock('@/platform/workflow/management/stores/workflowStore', () => ({
-  useWorkflowStore: () => ({
-    get activeWorkflow() {
-      return mockActiveWorkflow.value
-    }
-  })
-}))
-
-vi.mock('@/services/dialogService', () => ({
+vi.mock<unknown>(import('@/services/dialogService'), () => ({
   useDialogService: () => ({ showLayoutDialog: mockShowLayoutDialog })
 }))
 
-vi.mock('@/stores/appModeStore', () => ({
-  useAppModeStore: () => ({ exitBuilder: mockExitBuilder })
-}))
-
-vi.mock('@/stores/dialogStore', () => ({
-  useDialogStore: () => ({ closeDialog: mockCloseDialog })
-}))
-
-vi.mock('@/components/dialog/confirm/confirmDialog', () => ({
+vi.mock(import('@/components/dialog/confirm/confirmDialog'), () => ({
   showConfirmDialog: mockShowConfirmDialog
 }))
 
-vi.mock('@/i18n', () => ({
+vi.mock<unknown>(import('@/i18n'), () => ({
   t: (key: string, params?: Record<string, string>) => {
     if (params) return `${key}:${JSON.stringify(params)}`
     return key
   }
 }))
 
-vi.mock('./BuilderSaveDialogContent.vue', () => ({
+vi.mock<unknown>(import('./BuilderSaveDialogContent.vue'), () => ({
   default: { template: '<div />' }
 }))
 
@@ -83,7 +75,7 @@ const SUCCESS_DIALOG_KEY = 'builder-save-success'
 
 describe('useBuilderSave', () => {
   beforeEach(() => {
-    mockActiveWorkflow.value = null
+    useWorkflowStore().activeWorkflow = null
   })
 
   describe('save()', () => {
@@ -96,7 +88,10 @@ describe('useBuilderSave', () => {
     })
 
     it('saves workflow directly without showing a dialog', async () => {
-      mockActiveWorkflow.value = { filename: 'my-workflow', initialMode: 'app' }
+      useWorkflowStore().activeWorkflow = fromPartial({
+        filename: 'my-workflow',
+        initialMode: 'app'
+      })
       mockSaveWorkflow.mockResolvedValueOnce(undefined)
       const { save } = useBuilderSave()
 
@@ -107,7 +102,10 @@ describe('useBuilderSave', () => {
     })
 
     it('toasts error on failure', async () => {
-      mockActiveWorkflow.value = { filename: 'my-workflow', initialMode: 'app' }
+      useWorkflowStore().activeWorkflow = fromPartial({
+        filename: 'my-workflow',
+        initialMode: 'app'
+      })
       const error = new Error('save failed')
       mockSaveWorkflow.mockRejectedValueOnce(error)
       const { save } = useBuilderSave()
@@ -119,7 +117,10 @@ describe('useBuilderSave', () => {
     })
 
     it('prevents concurrent saves', async () => {
-      mockActiveWorkflow.value = { filename: 'my-workflow', initialMode: 'app' }
+      useWorkflowStore().activeWorkflow = fromPartial({
+        filename: 'my-workflow',
+        initialMode: 'app'
+      })
       let resolveSave!: () => void
       mockSaveWorkflow.mockReturnValueOnce(
         new Promise<void>((r) => {
@@ -142,7 +143,7 @@ describe('useBuilderSave', () => {
 
   describe('saveAs()', () => {
     it('does nothing when there is no active workflow', () => {
-      mockActiveWorkflow.value = null
+      useWorkflowStore().activeWorkflow = null
       const { saveAs } = useBuilderSave()
 
       saveAs()
@@ -151,7 +152,10 @@ describe('useBuilderSave', () => {
     })
 
     it('opens save dialog with correct defaultFilename and defaultOpenAsApp', () => {
-      mockActiveWorkflow.value = { filename: 'my-workflow', initialMode: 'app' }
+      useWorkflowStore().activeWorkflow = fromPartial({
+        filename: 'my-workflow',
+        initialMode: 'app'
+      })
       const { saveAs } = useBuilderSave()
 
       saveAs()
@@ -166,10 +170,10 @@ describe('useBuilderSave', () => {
     })
 
     it('passes defaultOpenAsApp: false when initialMode is graph', () => {
-      mockActiveWorkflow.value = {
+      useWorkflowStore().activeWorkflow = fromPartial({
         filename: 'my-workflow',
         initialMode: 'graph'
-      }
+      })
       const { saveAs } = useBuilderSave()
 
       saveAs()
@@ -181,7 +185,10 @@ describe('useBuilderSave', () => {
 
   describe('save dialog callbacks', () => {
     function getSaveDialogProps() {
-      mockActiveWorkflow.value = { filename: 'my-workflow', initialMode: 'app' }
+      useWorkflowStore().activeWorkflow = fromPartial({
+        filename: 'my-workflow',
+        initialMode: 'app'
+      })
       const { saveAs } = useBuilderSave()
       saveAs()
       return mockShowLayoutDialog.mock.calls[0][0].props as {
@@ -197,13 +204,13 @@ describe('useBuilderSave', () => {
       await onSave('new-name', true)
 
       expect(mockSaveWorkflowAs).toHaveBeenCalledWith(
-        mockActiveWorkflow.value,
+        useWorkflowStore().activeWorkflow,
         {
           filename: 'new-name',
           isApp: true
         }
       )
-      expect(mockTrackDefaultViewSet).toHaveBeenCalledWith({
+      expect(useTelemetry()?.trackDefaultViewSet).toHaveBeenCalledWith({
         default_view: 'app'
       })
     })
@@ -215,13 +222,13 @@ describe('useBuilderSave', () => {
       await onSave('new-name', false)
 
       expect(mockSaveWorkflowAs).toHaveBeenCalledWith(
-        mockActiveWorkflow.value,
+        useWorkflowStore().activeWorkflow,
         {
           filename: 'new-name',
           isApp: false
         }
       )
-      expect(mockTrackDefaultViewSet).toHaveBeenCalledWith({
+      expect(useTelemetry()?.trackDefaultViewSet).toHaveBeenCalledWith({
         default_view: 'graph'
       })
     })
@@ -232,8 +239,8 @@ describe('useBuilderSave', () => {
 
       await onSave('new-name', false)
 
-      expect(mockTrackDefaultViewSet).not.toHaveBeenCalled()
-      expect(mockCloseDialog).not.toHaveBeenCalled()
+      expect(useTelemetry()?.trackDefaultViewSet).not.toHaveBeenCalled()
+      expect(useDialogStore().closeDialog).not.toHaveBeenCalled()
     })
 
     it('onSave closes dialog and shows success dialog after successful save', async () => {
@@ -242,7 +249,9 @@ describe('useBuilderSave', () => {
 
       await onSave('new-name', true)
 
-      expect(mockCloseDialog).toHaveBeenCalledWith({ key: SAVE_DIALOG_KEY })
+      expect(useDialogStore().closeDialog).toHaveBeenCalledWith({
+        key: SAVE_DIALOG_KEY
+      })
       expect(mockShowConfirmDialog).toHaveBeenCalledOnce()
       const successCall = mockShowConfirmDialog.mock.calls[0][0]
       expect(successCall.key).toBe(SUCCESS_DIALOG_KEY)
@@ -280,7 +289,9 @@ describe('useBuilderSave', () => {
       await onSave('new-name', false)
 
       expect(mockToastErrorHandler).toHaveBeenCalledWith(error)
-      expect(mockCloseDialog).toHaveBeenCalledWith({ key: SAVE_DIALOG_KEY })
+      expect(useDialogStore().closeDialog).toHaveBeenCalledWith({
+        key: SAVE_DIALOG_KEY
+      })
     })
 
     it('prevents concurrent handleSaveAs calls', async () => {
@@ -304,7 +315,10 @@ describe('useBuilderSave', () => {
 
   describe('graph success dialog callbacks', () => {
     async function getGraphSuccessDialogProps() {
-      mockActiveWorkflow.value = { filename: 'my-workflow', initialMode: 'app' }
+      useWorkflowStore().activeWorkflow = fromPartial({
+        filename: 'my-workflow',
+        initialMode: 'app'
+      })
       mockSaveWorkflowAs.mockResolvedValueOnce(true)
       const { saveAs } = useBuilderSave()
       saveAs()
@@ -323,8 +337,10 @@ describe('useBuilderSave', () => {
 
       onConfirm()
 
-      expect(mockCloseDialog).toHaveBeenCalledWith({ key: SUCCESS_DIALOG_KEY })
-      expect(mockExitBuilder).toHaveBeenCalledOnce()
+      expect(useDialogStore().closeDialog).toHaveBeenCalledWith({
+        key: SUCCESS_DIALOG_KEY
+      })
+      expect(useAppModeStore().exitBuilder).toHaveBeenCalledOnce()
     })
 
     it('onCancel closes dialog and switches to app mode', async () => {
@@ -332,8 +348,10 @@ describe('useBuilderSave', () => {
 
       onCancel()
 
-      expect(mockCloseDialog).toHaveBeenCalledWith({ key: SUCCESS_DIALOG_KEY })
-      expect(mockTrackEnterLinear).toHaveBeenCalledWith({
+      expect(useDialogStore().closeDialog).toHaveBeenCalledWith({
+        key: SUCCESS_DIALOG_KEY
+      })
+      expect(useTelemetry()?.trackEnterLinear).toHaveBeenCalledWith({
         source: 'app_builder'
       })
       expect(mockSetMode).toHaveBeenCalledWith('app')

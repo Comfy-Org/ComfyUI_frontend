@@ -5,10 +5,6 @@ import { SignInDialog } from '@e2e/fixtures/components/SignInDialog'
 import { TestIds } from '@e2e/fixtures/selectors'
 
 test.describe('Login Button', { tag: ['@ui'] }, () => {
-  test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.setup()
-  })
-
   test.describe('Visibility', () => {
     test('button is visible', async ({ comfyPage }) => {
       await expect(

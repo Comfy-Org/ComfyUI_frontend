@@ -1,25 +1,31 @@
+import { getActivePinia } from 'pinia'
+import { useBillingOperationStore } from '@/platform/workspace/stores/billingOperationStore'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 
-import { WorkspaceApiError } from '@/platform/workspace/api/workspaceApi'
-import type { WorkspaceMember } from '@/platform/workspace/stores/teamWorkspaceStore'
+import { useTelemetry } from '@/platform/telemetry'
 
+import { WorkspaceApiError } from '@/platform/workspace/api/workspaceApi'
+import type { ListMembersParams } from '@/platform/workspace/api/workspaceApi'
+import type { WorkspaceMember } from '@/platform/workspace/stores/teamWorkspaceStore'
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
+
+import { billingOperation } from './billingOperationTestUtils'
 import {
   ReactivationConfirmationRequiredError,
   useDowngradeToPersonal
 } from './useDowngradeToPersonal'
 
-const mockMembers = ref<WorkspaceMember[]>([])
 const mockUserEmail = ref<string | null>(null)
 const mockSubscription = ref<{ isCancelled: boolean } | null>(null)
 const mockIsInitialized = ref(true)
-const mockRemoveMember = vi.hoisted(() => vi.fn())
-const mockFetchMembers = vi.hoisted(() => vi.fn())
+const mockRemoveMember = vi.fn<(userId: string) => Promise<void>>()
+const mockFetchMembers =
+  vi.fn<(params?: ListMembersParams) => Promise<WorkspaceMember[]>>()
 const mockSubscribe = vi.hoisted(() => vi.fn())
 const mockPreviewSubscribe = vi.hoisted(() => vi.fn())
 const mockFetchStatus = vi.hoisted(() => vi.fn())
-const mockStartOperation = vi.hoisted(() => vi.fn())
-const mockTrackBillingEvent = vi.hoisted(() => vi.fn())
+
 const mockPermissions = vi.hoisted(() => ({
   value: {
     canManageSubscription: true,
@@ -28,41 +34,53 @@ const mockPermissions = vi.hoisted(() => ({
 }))
 const mockCanDowngradeToPersonal = vi.hoisted(() => ({ value: true }))
 
-vi.mock('pinia', async (importOriginal) => {
-  const actual = await importOriginal()
-  return {
-    ...(actual as object),
-    storeToRefs: (store: Record<string, unknown>) => store
+let workspaceStore: ReturnType<typeof useTeamWorkspaceStore> & {
+  activeWorkspaceId: string | null
+}
+
+const mockMembers = {
+  get value() {
+    return workspaceStore.members
+  },
+  set value(members: WorkspaceMember[]) {
+    workspaceStore.workspaces = [
+      {
+        id: 'workspace-one',
+        name: 'Team workspace',
+        type: 'team',
+        role: 'owner',
+        created_at: '2025-01-01',
+        joined_at: '2025-01-01',
+        isSubscribed: true,
+        subscriptionPlan: null,
+        subscriptionTier: 'PRO',
+        members,
+        pendingInvites: []
+      }
+    ]
+    workspaceStore.activeWorkspaceId = 'workspace-one'
   }
-})
+}
 
-vi.mock('@/platform/workspace/stores/teamWorkspaceStore', () => ({
-  useTeamWorkspaceStore: () => ({
-    members: mockMembers,
-    removeMember: mockRemoveMember,
-    fetchMembers: mockFetchMembers
+vi.mock<unknown>(
+  import('@/platform/workspace/composables/useWorkspaceUI'),
+  () => ({
+    useWorkspaceUI: () => ({ permissions: mockPermissions })
   })
-}))
+)
 
-vi.mock('@/platform/workspace/stores/billingOperationStore', () => ({
-  useBillingOperationStore: () => ({
-    startOperation: mockStartOperation
+vi.mock(import('@/platform/distribution/types'), () => ({ isCloud: true }))
+
+vi.mock<unknown>(
+  import('@/platform/workspace/composables/useBillingCapabilities'),
+  () => ({
+    useBillingCapabilities: () => ({
+      canDowngradeToPersonal: mockCanDowngradeToPersonal
+    })
   })
-}))
+)
 
-vi.mock('@/platform/workspace/composables/useWorkspaceUI', () => ({
-  useWorkspaceUI: () => ({ permissions: mockPermissions })
-}))
-
-vi.mock('@/platform/distribution/types', () => ({ isCloud: true }))
-
-vi.mock('@/platform/workspace/composables/useBillingCapabilities', () => ({
-  useBillingCapabilities: () => ({
-    canDowngradeToPersonal: mockCanDowngradeToPersonal
-  })
-}))
-
-vi.mock('@/composables/billing/useBillingContext', () => ({
+vi.mock<unknown>(import('@/composables/billing/useBillingContext'), () => ({
   useBillingContext: () => ({
     subscribe: mockSubscribe,
     previewSubscribe: mockPreviewSubscribe,
@@ -72,26 +90,22 @@ vi.mock('@/composables/billing/useBillingContext', () => ({
   })
 }))
 
-vi.mock('@/composables/auth/useCurrentUser', () => ({
+vi.mock<unknown>(import('@/composables/auth/useCurrentUser'), () => ({
   useCurrentUser: () => ({
     userEmail: mockUserEmail
   })
 }))
 
-vi.mock('@/i18n', () => ({
+vi.mock<unknown>(import('@/i18n'), () => ({
   t: (key: string, params?: Record<string, unknown>) =>
     params ? `${key} ${JSON.stringify(params)}` : key
 }))
 
-vi.mock('@/config/comfyApi', () => ({
+vi.mock(import('@/config/comfyApi'), () => ({
   getComfyPlatformBaseUrl: () => 'https://platform.test'
 }))
 
-vi.mock('@/platform/telemetry', () => ({
-  useTelemetry: () => ({
-    trackBillingEvent: mockTrackBillingEvent
-  })
-}))
+vi.mock(import('@/platform/telemetry'))
 
 function createMember(
   overrides: Partial<WorkspaceMember> = {}
@@ -119,11 +133,23 @@ function teamWithOwnerAnd(...memberIds: string[]) {
   ]
 }
 
+beforeEach(() => {
+  vi.mocked(useBillingOperationStore().startOperation).mockResolvedValue(
+    billingOperation()
+  )
+})
+
 describe('useDowngradeToPersonal', () => {
   let windowOpen: ReturnType<typeof vi.spyOn>
 
   beforeEach(() => {
+    const pinia = getActivePinia()!
+    workspaceStore = useTeamWorkspaceStore(pinia)
+    vi.mocked(workspaceStore.removeMember).mockImplementation(mockRemoveMember)
+    vi.mocked(workspaceStore.fetchMembers).mockImplementation(mockFetchMembers)
     mockMembers.value = []
+    mockRemoveMember.mockResolvedValue()
+    mockFetchMembers.mockResolvedValue([])
     mockUserEmail.value = null
     // Once loaded (isInitialized true), subscription is never null in
     // production — it's at least a FREE-tier record. Default to that
@@ -474,15 +500,17 @@ describe('useDowngradeToPersonal', () => {
         calls.push('remove')
         return Promise.resolve()
       })
-      mockTrackBillingEvent.mockImplementation((event) => {
-        if (
-          event.stage === 'started' &&
-          (event.operation === 'subscription_checkout' ||
-            event.operation === 'operation')
-        ) {
-          calls.push(`${event.operation}-start`)
+      vi.mocked(useTelemetry()?.trackBillingEvent)?.mockImplementation(
+        (event) => {
+          if (
+            event.stage === 'started' &&
+            (event.operation === 'subscription_checkout' ||
+              event.operation === 'operation')
+          ) {
+            calls.push(`${event.operation}-start`)
+          }
         }
-      })
+      )
       mockSubscribe.mockImplementation(() => {
         calls.push('subscribe')
         return Promise.resolve({ billing_op_id: 'op-1', status: 'subscribed' })
@@ -534,7 +562,7 @@ describe('useDowngradeToPersonal', () => {
       const result = await downgradeToPersonal('creator-annual')
 
       expect(result).toStrictEqual({ preview, response })
-      expect(mockTrackBillingEvent).toHaveBeenCalledWith({
+      expect(useTelemetry()?.trackBillingEvent).toHaveBeenCalledWith({
         operation: 'downgrade_to_personal',
         stage: 'succeeded',
         outcome: 'success',
@@ -575,18 +603,22 @@ describe('useDowngradeToPersonal', () => {
         'https://pay.test/method',
         '_blank'
       )
-      expect(mockStartOperation).toHaveBeenCalledWith('op-2', 'subscription', {
-        tier: undefined,
-        cycle: undefined,
-        checkoutType: 'change',
-        downgradeToPersonal: {
-          memberRemovalCount: 1,
-          memberRemovalFailures: 0,
-          targetTier: undefined,
-          startedAt: expect.any(Number)
-        },
-        attemptStartedAt: expect.any(Number)
-      })
+      expect(useBillingOperationStore().startOperation).toHaveBeenCalledWith(
+        'op-2',
+        'subscription',
+        {
+          tier: undefined,
+          cycle: undefined,
+          checkoutType: 'change',
+          downgradeToPersonal: {
+            memberRemovalCount: 1,
+            memberRemovalFailures: 0,
+            targetTier: undefined,
+            startedAt: expect.any(Number)
+          },
+          attemptStartedAt: expect.any(Number)
+        }
+      )
     })
 
     it('falls back to the generic message when the transition is disallowed without a reason', async () => {
@@ -612,7 +644,7 @@ describe('useDowngradeToPersonal', () => {
       await expect(downgradeToPersonal('founder-monthly')).rejects.toThrow(
         'subscription.downgrade.paymentPageBlocked'
       )
-      expect(mockStartOperation).not.toHaveBeenCalled()
+      expect(useBillingOperationStore().startOperation).not.toHaveBeenCalled()
     })
 
     it('throws when a payment method is needed but no url is provided', async () => {
@@ -626,7 +658,7 @@ describe('useDowngradeToPersonal', () => {
       await expect(downgradeToPersonal('founder-monthly')).rejects.toThrow(
         'subscription.downgrade.paymentMethodRequired'
       )
-      expect(mockStartOperation).not.toHaveBeenCalled()
+      expect(useBillingOperationStore().startOperation).not.toHaveBeenCalled()
     })
 
     it('polls without opening a tab when the payment is pending', async () => {
@@ -640,19 +672,23 @@ describe('useDowngradeToPersonal', () => {
       await downgradeToPersonal('founder-monthly')
 
       expect(windowOpen).not.toHaveBeenCalled()
-      expect(mockStartOperation).toHaveBeenCalledWith('op-4', 'subscription', {
-        tier: undefined,
-        cycle: undefined,
-        checkoutType: 'change',
-        downgradeToPersonal: {
-          memberRemovalCount: 1,
-          memberRemovalFailures: 0,
-          targetTier: undefined,
-          startedAt: expect.any(Number)
-        },
-        attemptStartedAt: expect.any(Number)
-      })
-      expect(mockTrackBillingEvent).not.toHaveBeenCalledWith(
+      expect(useBillingOperationStore().startOperation).toHaveBeenCalledWith(
+        'op-4',
+        'subscription',
+        {
+          tier: undefined,
+          cycle: undefined,
+          checkoutType: 'change',
+          downgradeToPersonal: {
+            memberRemovalCount: 1,
+            memberRemovalFailures: 0,
+            targetTier: undefined,
+            startedAt: expect.any(Number)
+          },
+          attemptStartedAt: expect.any(Number)
+        }
+      )
+      expect(useTelemetry()?.trackBillingEvent).not.toHaveBeenCalledWith(
         expect.objectContaining({ stage: 'succeeded' })
       )
     })
@@ -700,7 +736,7 @@ describe('useDowngradeToPersonal', () => {
 
       await downgradeToPersonal('founder-monthly')
 
-      expect(mockTrackBillingEvent).toHaveBeenCalledWith({
+      expect(useTelemetry()?.trackBillingEvent).toHaveBeenCalledWith({
         operation: 'downgrade_to_personal',
         stage: 'started',
         outcome: 'pending',
@@ -720,7 +756,7 @@ describe('useDowngradeToPersonal', () => {
         'm2@example.com'
       )
 
-      expect(mockTrackBillingEvent).toHaveBeenCalledWith({
+      expect(useTelemetry()?.trackBillingEvent).toHaveBeenCalledWith({
         operation: 'downgrade_to_personal',
         stage: 'failed',
         outcome: 'failure',
@@ -731,7 +767,7 @@ describe('useDowngradeToPersonal', () => {
         error_code: 'member_removal_failed',
         duration_ms: expect.any(Number)
       })
-      expect(mockTrackBillingEvent).not.toHaveBeenCalledWith(
+      expect(useTelemetry()?.trackBillingEvent).not.toHaveBeenCalledWith(
         expect.objectContaining({ stage: 'succeeded' })
       )
     })
@@ -743,7 +779,7 @@ describe('useDowngradeToPersonal', () => {
 
       await expect(downgradeToPersonal('founder-monthly')).rejects.toBe('boom')
 
-      expect(mockTrackBillingEvent).toHaveBeenCalledWith({
+      expect(useTelemetry()?.trackBillingEvent).toHaveBeenCalledWith({
         operation: 'downgrade_to_personal',
         stage: 'failed',
         outcome: 'failure',
@@ -766,7 +802,7 @@ describe('useDowngradeToPersonal', () => {
         'offline'
       )
 
-      expect(mockTrackBillingEvent).toHaveBeenCalledWith({
+      expect(useTelemetry()?.trackBillingEvent).toHaveBeenCalledWith({
         operation: 'downgrade_to_personal',
         stage: 'failed',
         outcome: 'failure',
@@ -787,7 +823,7 @@ describe('useDowngradeToPersonal', () => {
         'offline'
       )
 
-      expect(mockTrackBillingEvent).toHaveBeenCalledWith({
+      expect(useTelemetry()?.trackBillingEvent).toHaveBeenCalledWith({
         operation: 'downgrade_to_personal',
         stage: 'failed',
         outcome: 'failure',
@@ -808,7 +844,7 @@ describe('useDowngradeToPersonal', () => {
         'm1@example.com'
       )
 
-      expect(mockTrackBillingEvent).toHaveBeenCalledWith({
+      expect(useTelemetry()?.trackBillingEvent).toHaveBeenCalledWith({
         operation: 'downgrade_to_personal',
         stage: 'failed',
         outcome: 'failure',

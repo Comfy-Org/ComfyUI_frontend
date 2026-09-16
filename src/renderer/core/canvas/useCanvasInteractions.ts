@@ -10,6 +10,10 @@ import { useSettingStore } from '@/platform/settings/settingStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { app } from '@/scripts/app'
 
+function currentCanvasElement(): HTMLCanvasElement | null {
+  return app.canvas.canvas
+}
+
 /**
  * Composable for handling canvas interactions from Vue components.
  * This provides a unified way to forward events to the LiteGraph canvas.
@@ -39,7 +43,7 @@ export function useCanvasInteractions() {
   const wheelCapturedByFocusedElement = (event: WheelEvent): boolean => {
     const target = event.target as HTMLElement | null
     const captureElement = target?.closest('[data-capture-wheel="true"]')
-    const active = document.activeElement as Element | null
+    const active = document.activeElement
 
     return !!(captureElement && active && captureElement.contains(active))
   }
@@ -91,10 +95,7 @@ export function useCanvasInteractions() {
   }
 
   const handleLeftButtonReadOnlyPointer = (event: PointerEvent) => {
-    // Check if canvas exists using established pattern
     const canvas = getCanvas()
-    if (!canvas) return
-
     if (canvas.read_only && event.buttons === 1) {
       event.preventDefault()
       event.stopPropagation()
@@ -126,7 +127,7 @@ export function useCanvasInteractions() {
     // Honor wheel capture only when the element is focused
     if (event instanceof WheelEvent && !shouldForwardWheelEvent(event)) return
 
-    const canvasEl = app.canvas?.canvas
+    const canvasEl = currentCanvasElement()
     if (!canvasEl) return
     event.preventDefault()
     event.stopPropagation()

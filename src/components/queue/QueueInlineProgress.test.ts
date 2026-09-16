@@ -10,7 +10,7 @@ const mockProgress = vi.hoisted(() => ({
   currentNodePercent: null! as Ref<number>
 }))
 
-vi.mock('@/composables/queue/useQueueProgress', () => ({
+vi.mock<unknown>(import('@/composables/queue/useQueueProgress'), () => ({
   useQueueProgress: () => ({
     totalPercent: mockProgress.totalPercent,
     currentNodePercent: mockProgress.currentNodePercent

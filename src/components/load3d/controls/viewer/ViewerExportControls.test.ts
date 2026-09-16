@@ -5,11 +5,11 @@ import { createI18n } from 'vue-i18n'
 
 import ViewerExportControls from '@/components/load3d/controls/viewer/ViewerExportControls.vue'
 
-vi.mock('@/components/ui/select/Select.vue')
-vi.mock('@/components/ui/select/SelectContent.vue')
-vi.mock('@/components/ui/select/SelectItem.vue')
-vi.mock('@/components/ui/select/SelectTrigger.vue')
-vi.mock('@/components/ui/select/SelectValue.vue')
+vi.mock(import('@/components/ui/select/Select.vue'))
+vi.mock(import('@/components/ui/select/SelectContent.vue'))
+vi.mock(import('@/components/ui/select/SelectItem.vue'))
+vi.mock(import('@/components/ui/select/SelectTrigger.vue'))
+vi.mock(import('@/components/ui/select/SelectValue.vue'))
 
 const i18n = createI18n({
   legacy: false,
@@ -39,9 +39,7 @@ describe('ViewerExportControls', () => {
 
   it('defaults the export format to obj', () => {
     renderComponent()
-    expect((screen.getByRole('combobox') as HTMLSelectElement).value).toBe(
-      'obj'
-    )
+    expect(screen.getByRole<HTMLSelectElement>('combobox').value).toBe('obj')
   })
 
   it('emits exportModel with the currently selected format when the button is clicked', async () => {

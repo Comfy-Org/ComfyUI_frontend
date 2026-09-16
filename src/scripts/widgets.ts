@@ -1,5 +1,6 @@
 import { t } from '@/i18n'
-import { type LGraphNode, isComboWidget } from '@/lib/litegraph/src/litegraph'
+import { isComboWidget } from '@/lib/litegraph/src/litegraph'
+import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type {
   IBaseWidget,
   IComboWidget,
@@ -25,6 +26,7 @@ import { useIntWidget } from '@/renderer/extensions/vueNodes/widgets/composables
 import { useMarkdownWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useMarkdownWidget'
 import { usePainterWidget } from '@/renderer/extensions/vueNodes/widgets/composables/usePainterWidget'
 import { useRangeWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useRangeWidget'
+import { useResolutionPreviewWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useResolutionPreviewWidget'
 import { useStringWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useStringWidget'
 import { useTextareaWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useTextareaWidget'
 import { useVideoEditWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useVideoEditWidget'
@@ -51,6 +53,17 @@ export type ComfyWidgetConstructor = (
   app: ComfyApp,
   widgetName?: string
 ) => { widget: IBaseWidget; minWidth?: number; minHeight?: number }
+
+export type CustomComfyWidgetConstructor = (
+  ...args: Parameters<ComfyWidgetConstructor>
+) =>
+  | {
+      widget?: IBaseWidget
+      minWidth?: number
+      minHeight?: number
+    }
+  | IBaseWidget
+  | undefined
 
 /**
  * Transforms a V2 widget constructor to a V1 widget constructor.
@@ -142,7 +155,7 @@ export function addValueControlWidgets(
     {
       values: ['fixed', 'increment', 'decrement', 'randomize'],
       serialize: false, // Don't include this in prompt.
-      canvasOnly: true
+      surfaces: { canvas: 'shown', vueNode: 'never', panel: 'never' }
     }
   ) as IComboWidget
 
@@ -240,6 +253,9 @@ export const ComfyWidgets = {
   CURVE: transformWidgetConstructorV2ToV1(useCurveWidget()),
   RANGE: transformWidgetConstructorV2ToV1(useRangeWidget()),
   VIDEO_EDIT: transformWidgetConstructorV2ToV1(useVideoEditWidget()),
+  RESOLUTION_PREVIEW: transformWidgetConstructorV2ToV1(
+    useResolutionPreviewWidget()
+  ),
   BOUNDING_BOXES: transformWidgetConstructorV2ToV1(useBoundingBoxesWidget()),
   COLORS: transformWidgetConstructorV2ToV1(useColorsWidget()),
   ...dynamicWidgets

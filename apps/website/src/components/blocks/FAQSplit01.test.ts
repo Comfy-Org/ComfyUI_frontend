@@ -1,4 +1,3 @@
-// @vitest-environment happy-dom
 import userEvent from '@testing-library/user-event'
 import { render, screen, within } from '@testing-library/vue'
 import { describe, expect, it } from 'vitest'
@@ -61,5 +60,25 @@ describe('FAQSplit01', () => {
       )
     ).toBeDefined()
     expect(panelWith(faqs[1].answer).hasAttribute('hidden')).toBe(true)
+  })
+
+  it('renders a bold phrase in an answer as emphasis', () => {
+    render(FAQSplit01, {
+      props: {
+        heading: 'FAQ',
+        faqs: [
+          {
+            id: 'parity',
+            question: 'Is it more expensive here?',
+            answer: 'No. **We match their price**, always.'
+          }
+        ]
+      }
+    })
+
+    expect(screen.getByText('We match their price').tagName).toBe('STRONG')
+    expect(panelWith('We match their price').textContent).toBe(
+      'No. We match their price, always.'
+    )
   })
 })

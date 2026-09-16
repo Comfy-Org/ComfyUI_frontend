@@ -1,7 +1,6 @@
-import { createTestingPinia } from '@pinia/testing'
+import { getActivePinia } from 'pinia'
 import { fireEvent, render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { setActivePinia } from 'pinia'
 import PrimeVue from 'primevue/config'
 import InputText from 'primevue/inputtext'
 import { describe, expect, it, vi } from 'vitest'
@@ -33,8 +32,7 @@ const makeNodeData = (overrides: Partial<NodeState> = {}): NodeState => ({
 })
 
 const setupMockStores = () => {
-  const pinia = createTestingPinia({ stubActions: false })
-  setActivePinia(pinia)
+  const pinia = getActivePinia()!
 
   const settingStore = useSettingStore()
   const nodeDefStore = useNodeDefStore()

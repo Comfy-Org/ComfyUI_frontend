@@ -1,3 +1,4 @@
+import { fromAny, fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type Load3d from '@/extensions/core/load3d/Load3d'
@@ -5,6 +6,8 @@ import Load3DConfiguration, {
   parseAnnotatedFilename
 } from '@/extensions/core/load3d/Load3DConfiguration'
 import Load3dUtils from '@/extensions/core/load3d/Load3dUtils'
+import type { ComfyApi } from '@/scripts/api'
+import type { ComfyApp } from '@/scripts/app'
 import type {
   CameraConfig,
   GizmoConfig,
@@ -15,37 +18,32 @@ import type {
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import type { Dictionary } from '@/lib/litegraph/src/interfaces'
 import type { NodeProperty } from '@/lib/litegraph/src/LGraphNode'
+import { useSettingStore } from '@/platform/settings/settingStore'
 
-const { settingsGetMock } = vi.hoisted(() => ({
-  settingsGetMock: vi.fn()
-}))
-
-vi.mock('@/platform/settings/settingStore', () => ({
-  useSettingStore: () => ({ get: settingsGetMock })
-}))
-
-vi.mock('@/scripts/api', () => ({
-  api: {
+vi.mock(import('@/scripts/api'), () => ({
+  api: fromPartial<ComfyApi>({
     apiURL: (p: string) => p,
     addEventListener: vi.fn(),
     removeEventListener: vi.fn(),
     dispatchCustomEvent: vi.fn(),
     fetchApi: vi.fn(),
     getSystemStats: vi.fn()
-  }
+  })
 }))
 
-vi.mock('@/scripts/app', () => ({
-  app: { rootGraph: { extra: {} } }
+vi.mock(import('@/scripts/app'), () => ({
+  app: fromPartial<ComfyApp>({ rootGraph: { extra: {} } })
 }))
 
-vi.mock('@/extensions/core/load3d/Load3d', () => ({ default: class {} }))
+vi.mock(import('@/extensions/core/load3d/Load3d'), () => ({
+  default: fromAny(class {})
+}))
 
-vi.mock('@/extensions/core/load3d/Load3dUtils', () => ({
-  default: {
+vi.mock(import('@/extensions/core/load3d/Load3dUtils'), () => ({
+  default: fromAny({
     splitFilePath: vi.fn(),
     getResourceURL: vi.fn()
-  }
+  })
 }))
 
 type WithPrivate = {
@@ -61,7 +59,7 @@ function createConfig(properties?: Dictionary<NodeProperty | undefined>) {
 }
 
 function stubSettings(values: Record<string, unknown>) {
-  settingsGetMock.mockImplementation((key: string) => values[key])
+  vi.mocked(useSettingStore().get).mockImplementation((key) => values[key])
 }
 
 const defaultGizmo: GizmoConfig = {
@@ -372,7 +370,7 @@ describe('Load3DConfiguration.loadSceneConfig', () => {
     })
 
     expect(createConfig(properties).loadSceneConfig()).toEqual(stored)
-    expect(settingsGetMock).not.toHaveBeenCalled()
+    expect(useSettingStore().get).not.toHaveBeenCalled()
   })
 
   it('falls back to settings and prepends # to the background color', () => {
@@ -401,7 +399,7 @@ describe('Load3DConfiguration.loadCameraConfig', () => {
     stubSettings({ 'Comfy.Load3D.CameraType': 'perspective' })
 
     expect(createConfig(properties).loadCameraConfig()).toEqual(stored)
-    expect(settingsGetMock).not.toHaveBeenCalled()
+    expect(useSettingStore().get).not.toHaveBeenCalled()
   })
 
   it('falls back to settings and a default fov of 35', () => {

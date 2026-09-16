@@ -4,19 +4,19 @@ import { join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import {
-  assertAssetApiGate,
+  assertWidgetAssetPickerGate,
   assertBuildProvenance,
   assertNoTestFixtures,
   checkAssetsFlagArtifact
 } from './checkAssetsFlagArtifact'
 
-describe('assertAssetApiGate', () => {
+describe('assertWidgetAssetPickerGate', () => {
   it.for(['localhost', 'desktop'])(
-    'accepts a disabled %s Asset API gate',
+    'accepts a disabled %s widget asset-picker gate',
     (distribution) => {
       expect(() =>
-        assertAssetApiGate(
-          ['function isAssetAPIEnabled() {\n  return false;\n}'],
+        assertWidgetAssetPickerGate(
+          ['function isWidgetAssetPickerEnabled() {\n  return false;\n}'],
           distribution
         )
       ).not.toThrow()
@@ -27,92 +27,90 @@ describe('assertAssetApiGate', () => {
     'accepts a compact disabled %s gate',
     (distribution) => {
       expect(() =>
-        assertAssetApiGate(
-          ['function isAssetAPIEnabled(){return!1}'],
+        assertWidgetAssetPickerGate(
+          ['function isWidgetAssetPickerEnabled(){return!1}'],
           distribution
         )
       ).not.toThrow()
     }
   )
 
-  it('accepts a Cloud gate controlled by the opt-in setting', () => {
+  it('accepts a Cloud gate folded to a static true', () => {
     expect(() =>
-      assertAssetApiGate(
-        [
-          'function isAssetAPIEnabled() {\n  return !!useSettingStore().get("Comfy.Assets.UseAssetAPI");\n}'
-        ],
+      assertWidgetAssetPickerGate(
+        ['function isWidgetAssetPickerEnabled() {\n  return true;\n}'],
         'cloud'
       )
     ).not.toThrow()
   })
 
-  it('accepts a minified Cloud gate with a renamed getter and re-quoted key', () => {
+  it('accepts a minified Cloud gate spelling true as !0', () => {
     expect(() =>
-      assertAssetApiGate(
-        [
-          'function isAssetAPIEnabled(){return!!$().get(`Comfy.Assets.UseAssetAPI`)}'
-        ],
+      assertWidgetAssetPickerGate(
+        ['function isWidgetAssetPickerEnabled(){return!0}'],
         'cloud'
       )
     ).not.toThrow()
   })
 
   it.for([
-    'function isAssetAPIEnabled() {\n  return true;\n  return !!useSettingStore().get("Comfy.Assets.UseAssetAPI");\n}',
-    'function isAssetAPIEnabled() {\n  /* Comfy.Assets.UseAssetAPI */\n  return true;\n}'
-  ])('rejects a Cloud gate that enables beside the setting: %s', (gate) => {
-    expect(() => assertAssetApiGate([gate], 'cloud')).toThrow(
-      'Built Asset API gate is invalid for cloud'
+    'function isWidgetAssetPickerEnabled() {\n  track();\n  return true;\n}',
+    'function isWidgetAssetPickerEnabled() {\n  return isCloud;\n}'
+  ])('rejects a Cloud gate that is not a static constant: %s', (gate) => {
+    expect(() => assertWidgetAssetPickerGate([gate], 'cloud')).toThrow(
+      'Built widget asset-picker gate is invalid for cloud'
     )
   })
 
   it.for([
-    'function isAssetAPIEnabled() {\n  if (!api.getServerFeature("assets", false)) return false;\n  return true;\n}',
-    'function isAssetAPIEnabled() {\n  if (false) return false;\n  return true;\n}'
+    'function isWidgetAssetPickerEnabled() {\n  if (!api.getServerFeature("assets", false)) return false;\n  return true;\n}',
+    'function isWidgetAssetPickerEnabled() {\n  if (false) return false;\n  return true;\n}'
   ])('rejects a localhost gate that can still enable: %s', (gate) => {
-    expect(() => assertAssetApiGate([gate], 'localhost')).toThrow(
-      'Built Asset API gate is invalid for localhost'
+    expect(() => assertWidgetAssetPickerGate([gate], 'localhost')).toThrow(
+      'Built widget asset-picker gate is invalid for localhost'
     )
   })
 
-  it('rejects a localhost artifact that still carries the Cloud setting gate', () => {
+  it('rejects a localhost artifact that still carries the Cloud branch', () => {
     expect(() =>
-      assertAssetApiGate(
+      assertWidgetAssetPickerGate(
         [
-          'function isAssetAPIEnabled() {\n  if (!isCloud) return false;\n  return !!useSettingStore().get("Comfy.Assets.UseAssetAPI");\n}'
+          'function isWidgetAssetPickerEnabled() {\n  if (!isCloud) return false;\n  return true;\n}'
         ],
         'localhost'
       )
-    ).toThrow('Built Asset API gate is invalid for localhost')
+    ).toThrow('Built widget asset-picker gate is invalid for localhost')
   })
 
-  it('rejects a Cloud build that enables the Asset API unconditionally', () => {
+  it('rejects a Cloud build whose gate folded to a static false', () => {
+    // Pins that the deliberately weak cloud leg is not vacuous: it rejects a
+    // constant of the wrong polarity, it does not accept any constant at all.
     expect(() =>
-      assertAssetApiGate(
-        ['function isAssetAPIEnabled() {\n  return true;\n}'],
+      assertWidgetAssetPickerGate(
+        ['function isWidgetAssetPickerEnabled() {\n  return false;\n}'],
         'cloud'
       )
-    ).toThrow('Built Asset API gate is invalid for cloud')
+    ).toThrow('Built widget asset-picker gate is invalid for cloud')
   })
 
-  it('rejects a build without exactly one Asset API gate', () => {
-    expect(() => assertAssetApiGate([], 'localhost')).toThrow(
-      'Expected one Asset API gate in the build, found 0'
+  it('rejects a build without exactly one widget asset-picker gate', () => {
+    expect(() => assertWidgetAssetPickerGate([], 'localhost')).toThrow(
+      'Expected one widget asset-picker gate in the build, found 0'
     )
   })
 
   it('rejects a build carrying the gate in more than one chunk', () => {
-    const gate = 'function isAssetAPIEnabled() {\n  return false;\n}'
+    const gate = 'function isWidgetAssetPickerEnabled() {\n  return false;\n}'
 
-    expect(() => assertAssetApiGate([gate, gate], 'localhost')).toThrow(
-      'Expected one Asset API gate in the build, found 2'
-    )
+    expect(() =>
+      assertWidgetAssetPickerGate([gate, gate], 'localhost')
+    ).toThrow('Expected one widget asset-picker gate in the build, found 2')
   })
 
   it('rejects an unsupported distribution rather than assuming non-cloud', () => {
     expect(() =>
-      assertAssetApiGate(
-        ['function isAssetAPIEnabled() {\n  return false;\n}'],
+      assertWidgetAssetPickerGate(
+        ['function isWidgetAssetPickerEnabled() {\n  return false;\n}'],
         'Cloud'
       )
     ).toThrow('Unsupported distribution: Cloud')
@@ -120,13 +118,31 @@ describe('assertAssetApiGate', () => {
 
   it('reports a gate with a nested block through its matching brace', () => {
     expect(() =>
-      assertAssetApiGate(
+      assertWidgetAssetPickerGate(
         [
-          'function isAssetAPIEnabled() {\n  if (!isCloud) {\n    return false\n  }\n  return !!useSettingStore().get("Comfy.Assets.UseAssetAPI")\n}'
+          'function isWidgetAssetPickerEnabled() {\n  if (!isCloud) {\n    return false\n  }\n  return true\n}'
         ],
         'cloud'
       )
-    ).toThrow('return !!useSettingStore().get("Comfy.Assets.UseAssetAPI")\n}')
+    ).toThrow('  }\n  return true\n}')
+  })
+
+  it('does not desync the brace counter on a brace inside a string literal', () => {
+    // The gate body contains an unbalanced `{` inside a string. A
+    // string-unaware brace counter would count that stray `{` as real,
+    // never return to depth 0 within this gate's own body, and run off the
+    // end of the chunk - so `assetApiGates` would report "found 0" instead
+    // of correctly extracting the one real gate below (which is then
+    // rejected on its own merits, for having an extra statement, not for
+    // failing to be found at all).
+    expect(() =>
+      assertWidgetAssetPickerGate(
+        [
+          'function isWidgetAssetPickerEnabled() {\n  const label = "{unbalanced"\n  return false\n}'
+        ],
+        'localhost'
+      )
+    ).toThrow('Built widget asset-picker gate is invalid for localhost')
   })
 })
 
@@ -150,7 +166,9 @@ describe('assertBuildProvenance', () => {
         commit,
         'desktop'
       )
-    ).toThrow(`Build does not contain expected frontend commit ${commit}`)
+    ).toThrow(
+      `Build does not contain expected frontend commit ${commit}, found old`
+    )
   })
 
   it('rejects an artifact built for another distribution', () => {
@@ -192,23 +210,47 @@ describe('assertBuildProvenance', () => {
 })
 
 describe('assertNoTestFixtures', () => {
-  it('accepts production chunks', () => {
+  it('accepts production chunks and sourcemap sources', () => {
     expect(() =>
-      assertNoTestFixtures(['const endpoint="/api/assets"'])
+      assertNoTestFixtures(
+        ['const endpoint="/api/assets"'],
+        ['../../src/platform/assets/services/assetService.ts']
+      )
+    ).not.toThrow()
+  })
+
+  it('accepts a production chunk that merely mentions a path marker in text', () => {
+    // A path marker is only meaningful as a module path (a sourcemap
+    // `sources` entry). A comment or string in bundled production source that
+    // happens to contain the same substring must not fail the build.
+    expect(() =>
+      assertNoTestFixtures([
+        '// see browser_tests/fixtures/ for the fixture format'
+      ])
     ).not.toThrow()
   })
 
   it.for([
-    ['browser_tests/fixtures/assets', 'browser_tests/fixtures/'],
-    ['/__fixtures__/asset', '/__fixtures__/'],
-    [
-      'COMFY_PRODUCTION_FORBIDDEN_MOCK_ASSET_SENTINEL',
-      'COMFY_PRODUCTION_FORBIDDEN_MOCK_ASSET_SENTINEL'
-    ]
-  ])('rejects leaked test marker %s', ([chunkMarker, reportedMarker]) => {
+    ['browser_tests/fixtures/assets.ts', 'browser_tests/fixtures/'],
+    ['/__fixtures__/asset.ts', '/__fixtures__/'],
+    ['ui-mock-assets/index.ts', 'ui-mock-assets']
+  ])(
+    'rejects a sourcemap source path carrying %s',
+    ([sourcePath, reportedMarker]) => {
+      expect(() => assertNoTestFixtures([], [sourcePath])).toThrow(
+        `Build contains test fixture marker: ${reportedMarker}`
+      )
+    }
+  )
+
+  it('rejects the sentinel anywhere in chunk text', () => {
     expect(() =>
-      assertNoTestFixtures([`const fixture="${chunkMarker}"`])
-    ).toThrow(`Build contains test fixture marker: ${reportedMarker}`)
+      assertNoTestFixtures([
+        'const fixture="COMFY_PRODUCTION_FORBIDDEN_MOCK_ASSET_SENTINEL"'
+      ])
+    ).toThrow(
+      'Build contains test fixture marker: COMFY_PRODUCTION_FORBIDDEN_MOCK_ASSET_SENTINEL'
+    )
   })
 })
 
@@ -225,7 +267,7 @@ describe('checkAssetsFlagArtifact', () => {
     )
     writeFileSync(
       join(directory, 'assets', 'chunk.js'),
-      'function isAssetAPIEnabled() {\n  return false;\n}'
+      'function isWidgetAssetPickerEnabled() {\n  return false;\n}'
     )
     writeFileSync(
       join(directory, 'assets', 'chunk.js.map'),
@@ -250,7 +292,7 @@ describe('checkAssetsFlagArtifact', () => {
         version: 3,
         sources: ['../../src/platform/assets/services/assetService.ts'],
         sourcesContent: [
-          'function isAssetAPIEnabled() {\n  if (!isCloud) return false\n  return !!useSettingStore().get("Comfy.Assets.UseAssetAPI")\n}'
+          'function isWidgetAssetPickerEnabled() {\n  if (!isCloud) return false\n  return true\n}'
         ]
       })
     )
@@ -286,6 +328,14 @@ describe('checkAssetsFlagArtifact', () => {
 
     expect(() => checkAssetsFlagArtifact(directory)).toThrow(
       'EXPECTED_FRONTEND_COMMIT is required'
+    )
+  })
+
+  it('requires the expected distribution even when the commit is set', () => {
+    vi.stubEnv('EXPECTED_DISTRIBUTION', '')
+
+    expect(() => checkAssetsFlagArtifact(directory)).toThrow(
+      'EXPECTED_DISTRIBUTION is required'
     )
   })
 })

@@ -34,8 +34,8 @@ function makeWidget(
     value: { labels: [], datasets: [] },
     name: 'test_chart',
     type: 'chart',
-    options: options as ChartWidgetOptions
-  }) as SimplifiedWidget<ChartData, ChartWidgetOptions>
+    options: options
+  })
 }
 
 function renderChart(

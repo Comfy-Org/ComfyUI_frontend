@@ -43,7 +43,7 @@ async function mountCarousel(slideCount: number) {
 }
 
 afterEach(() => {
-  scope?.stop()
+  scope.stop()
 })
 
 describe('useVideoCarousel', () => {

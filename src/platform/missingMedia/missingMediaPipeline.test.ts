@@ -1,3 +1,4 @@
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
@@ -11,23 +12,17 @@ import { runMissingMediaPipeline } from '@/platform/missingMedia/missingMediaPip
 import * as missingMediaScan from '@/platform/missingMedia/missingMediaScan'
 import { useMissingMediaStore } from '@/platform/missingMedia/missingMediaStore'
 import type { MissingMediaCandidate } from '@/platform/missingMedia/types'
-import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
+import { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 
-const { activeWorkflow } = vi.hoisted(() => {
-  const activeWorkflow: Pick<ComfyWorkflow, 'pendingWarnings'> = {
-    pendingWarnings: null
-  }
-  return { activeWorkflow }
-})
-
-// The real store reaches authStore -> firebase setPersistence, which has no
-// config under vitest. Mirrors missingModelPipeline.test.ts.
-vi.mock('@/stores/workspaceStore', () => ({
-  useWorkspaceStore: () => ({ workflow: { activeWorkflow } })
-}))
+let activeWorkflow: ComfyWorkflow
 
 beforeEach(() => {
-  activeWorkflow.pendingWarnings = null
+  activeWorkflow = new ComfyWorkflow({
+    path: 'test.json',
+    modified: 0,
+    size: 0
+  })
+  Object.assign(useWorkflowStore(), { activeWorkflow })
 })
 
 async function startPendingWorkflowLoadMediaVerification(
@@ -110,7 +105,7 @@ describe('runMissingMediaPipeline', () => {
       pendingCandidate
     )
 
-    const hostWidget = host.widgets?.[0]
+    const hostWidget = host.widgets.at(0)
     if (!hostWidget) throw new Error('Expected promoted image host widget')
     hostWidget.value = 'user-picked-valid.png'
     resolveVerification()
@@ -120,3 +115,4 @@ describe('runMissingMediaPipeline', () => {
     expect(activeWorkflow.pendingWarnings).toBeNull()
   })
 })
+vi.mock(import('firebase/auth'))

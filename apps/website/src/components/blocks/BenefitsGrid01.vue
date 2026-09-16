@@ -10,9 +10,16 @@ type Cta = {
   target?: '_blank' | '_self' | '_parent' | '_top'
 }
 
-defineProps<{
+const {
+  columns = 4,
+  numbered = true,
+  contained = true
+} = defineProps<{
   heading: string
   benefits: readonly Benefit[]
+  columns?: 2 | 4
+  numbered?: boolean
+  contained?: boolean
   footnote?: string
   primaryCta?: Cta
   secondaryCta?: Cta
@@ -20,22 +27,35 @@ defineProps<{
 </script>
 
 <template>
-  <section class="max-w-9xl mx-auto px-6 py-16 lg:py-24">
+  <section class="mx-auto max-w-9xl px-6 py-16 lg:py-24">
     <h2
       class="mb-12 text-center text-4xl font-light tracking-tight text-primary-comfy-canvas lg:mb-16 lg:text-6xl"
     >
       {{ heading }}
     </h2>
 
-    <GlassCard class="mx-auto max-w-7xl">
-      <div class="grid grid-cols-1 gap-2 md:grid-cols-2 lg:grid-cols-4">
+    <component :is="contained ? GlassCard : 'div'" class="mx-auto max-w-7xl">
+      <div
+        :class="[
+          'grid grid-cols-1',
+          contained ? 'gap-2' : 'gap-4 lg:gap-6',
+          'md:grid-cols-2',
+          columns === 2 ? 'lg:grid-cols-2' : 'lg:grid-cols-4'
+        ]"
+      >
         <article
           v-for="(benefit, index) in benefits"
           :key="benefit.id"
-          class="flex flex-col gap-6 rounded-4xl bg-primary-comfy-ink p-6 lg:p-8"
+          :class="[
+            'flex flex-col gap-6 rounded-4xl',
+            contained
+              ? 'bg-primary-comfy-ink p-6 lg:p-8'
+              : 'bg-primary-comfy-ink-light p-8 lg:p-12'
+          ]"
         >
           <span
-            class="text-primary-comfy-yellow font-mono text-sm font-bold tracking-wide"
+            v-if="numbered"
+            class="font-mono text-sm font-bold tracking-wide text-primary-comfy-yellow"
           >
             {{ String(index + 1).padStart(2, '0') }}
           </span>
@@ -56,7 +76,7 @@ defineProps<{
           </p>
         </article>
       </div>
-    </GlassCard>
+    </component>
 
     <p
       v-if="footnote"

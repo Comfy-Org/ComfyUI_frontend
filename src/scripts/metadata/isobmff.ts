@@ -1,16 +1,14 @@
-import {
-  type ComfyApiWorkflow,
-  type ComfyWorkflowJSON
+import type {
+  ComfyApiWorkflow,
+  ComfyWorkflowJSON
 } from '@/platform/workflow/validation/schemas/workflowSchema'
-import {
-  ASCII,
-  type ComfyMetadata,
-  ComfyMetadataTags,
-  type IsobmffBoxContentRange
+import { ASCII, ComfyMetadataTags } from '@/types/metadataTypes'
+import type {
+  ComfyMetadata,
+  IsobmffBoxContentRange
 } from '@/types/metadataTypes'
+import { readFileAsArrayBuffer } from '@/utils/fileUtil'
 import { parseJsonWithNonFinite } from '@/utils/jsonUtil'
-
-import { readFileAsArrayBuffer } from './readFile'
 
 // Set max read high, as atoms are stored near end of file
 // while search is made to be efficient.

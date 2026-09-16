@@ -87,15 +87,16 @@ export function watchForTopupBalanceUpdate(): void {
     // beforehand. Only the retry schedule is withheld; the lifetime timer is
     // the sole terminal condition.
     const gaps = runs > MAX_SCHEDULED_RUNS ? [0] : RETRY_GAPS_MS
+    const isStopped = () => stopped
 
     for (const gap of gaps) {
       await wait(gap)
-      if (stopped) return
+      if (isStopped()) return
       if (await refresh()) {
         stop()
         return
       }
-      if (stopped) return
+      if (isStopped()) return
     }
 
     running = false

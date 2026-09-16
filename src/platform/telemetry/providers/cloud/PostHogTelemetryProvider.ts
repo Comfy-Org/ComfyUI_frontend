@@ -26,6 +26,8 @@ import type {
   UnifiedAuthRetryMetadata,
   BeginCheckoutMetadata,
   BillingTelemetryEvent,
+  BootstrapCompleteMetadata,
+  CheckoutJourneyTelemetryEvent,
   DefaultViewSetMetadata,
   EnterLinearMetadata,
   ExecutionErrorMetadata,
@@ -36,6 +38,7 @@ import type {
   HelpCenterClosedMetadata,
   HelpCenterOpenedMetadata,
   HelpResourceClickedMetadata,
+  LinkDedupDropMetadata,
   NamedValuesShadowDiffMismatchMetadata,
   NamedValuesShadowDiffSummaryMetadata,
   NodeAddedMetadata,
@@ -73,8 +76,11 @@ import type {
 } from '../../types'
 import {
   CANCELLATION_STAGE_EVENTS,
+  CHECKOUT_JOURNEY_EVENT_NAME_BY_PHASE,
   getBillingTelemetryEventName,
   getBillingTelemetryEventPayload,
+  getCheckoutJourneyTelemetryEventName,
+  getCheckoutJourneyTelemetryEventPayload,
   OnboardingTourEvents,
   TelemetryEvents
 } from '../../types'
@@ -94,9 +100,10 @@ const DEFAULT_DISABLED_EVENTS = [
   TelemetryEvents.WORKFLOW_CREATED
 ] as const satisfies TelemetryEventName[]
 
-const TELEMETRY_EVENT_SET = new Set<TelemetryEventName>(
-  Object.values(TelemetryEvents) as TelemetryEventName[]
-)
+const TELEMETRY_EVENT_SET = new Set<string>([
+  ...Object.values(TelemetryEvents),
+  ...Object.values(CHECKOUT_JOURNEY_EVENT_NAME_BY_PHASE)
+])
 
 interface QueuedEvent {
   eventName: TelemetryEventName
@@ -138,9 +145,7 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
   private stopSubscriptionTierWatch: WatchStopHandle | null = null
 
   constructor() {
-    this.configureDisabledEvents(
-      (window.__CONFIG__ as Partial<RemoteConfig> | undefined) ?? null
-    )
+    const windowConfig = window.__CONFIG__
     watch(
       remoteConfig,
       (config) => {
@@ -150,17 +155,16 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
     )
 
     const apiKey =
-      window.__CONFIG__?.posthog_project_token ??
+      windowConfig?.posthog_project_token ??
       import.meta.env.VITE_POSTHOG_PROJECT_TOKEN
     if (apiKey) {
       try {
         void import('posthog-js')
           .then((posthogModule) => {
             this.posthog = posthogModule.default
-            const serverConfig = remoteConfig.value?.posthog_config ?? {}
-            this.posthog!.init(apiKey, {
-              api_host:
-                window.__CONFIG__?.posthog_api_host || 'https://t.comfy.org',
+            const serverConfig = remoteConfig.value.posthog_config ?? {}
+            this.posthog.init(apiKey, {
+              api_host: windowConfig?.posthog_api_host || 'https://t.comfy.org',
               ui_host: 'https://us.posthog.com',
               autocapture: false,
               capture_pageview: 'history_change',
@@ -295,19 +299,23 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
     } else {
       this.eventQueue.push({
         eventName,
-        properties: properties as TelemetryEventProperties
+        properties
       })
     }
   }
 
-  private configureDisabledEvents(config: Partial<RemoteConfig> | null): void {
+  private configureDisabledEvents(
+    config: Pick<RemoteConfig, 'telemetry_disabled_events'> | null | undefined
+  ): void {
     const disabledSource =
       config?.telemetry_disabled_events ?? DEFAULT_DISABLED_EVENTS
 
     this.disabledEvents = this.buildEventSet(disabledSource)
   }
 
-  private buildEventSet(values: TelemetryEventName[]): Set<TelemetryEventName> {
+  private buildEventSet(
+    values: readonly TelemetryEventName[]
+  ): Set<TelemetryEventName> {
     return new Set(
       values.filter((value) => {
         const isValid = TELEMETRY_EVENT_SET.has(value)
@@ -412,6 +420,10 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
     this.trackEvent(TelemetryEvents.IMAGE_LOAD_FAILED, metadata)
   }
 
+  trackBootstrapComplete(metadata: BootstrapCompleteMetadata): void {
+    this.trackEvent(TelemetryEvents.BOOTSTRAP_COMPLETE, metadata)
+  }
+
   trackUserLoggedIn(): void {
     this.trackEvent(TelemetryEvents.USER_LOGGED_IN)
   }
@@ -479,6 +491,13 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
     this.trackEvent(
       getBillingTelemetryEventName(event),
       getBillingTelemetryEventPayload(event)
+    )
+  }
+
+  trackCheckoutJourneyEvent(event: CheckoutJourneyTelemetryEvent): void {
+    this.trackEvent(
+      getCheckoutJourneyTelemetryEventName(event),
+      getCheckoutJourneyTelemetryEventPayload(event)
     )
   }
 
@@ -705,6 +724,10 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
 
   trackWidgetFavoriteToggled(metadata: WidgetFavoriteToggledMetadata): void {
     this.trackEvent(TelemetryEvents.WIDGET_FAVORITE_TOGGLED, metadata)
+  }
+
+  trackLinkDedupDrop(metadata: LinkDedupDropMetadata): void {
+    this.trackEvent(TelemetryEvents.LINK_DEDUP_DROP, metadata)
   }
 
   trackNamedValuesShadowDiffMismatch(

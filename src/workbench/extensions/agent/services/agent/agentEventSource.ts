@@ -39,7 +39,7 @@ export function createAgentEventSource(host: AgentEventHost): AgentEventSource {
       const onUp = (): void => listener(true)
       host.addEventListener('reconnecting', onDown)
       host.addEventListener('reconnected', onUp)
-      if (host.socket?.readyState === OPEN) listener(true)
+      listener(host.socket?.readyState === OPEN)
       return () => {
         host.removeEventListener('reconnecting', onDown)
         host.removeEventListener('reconnected', onUp)

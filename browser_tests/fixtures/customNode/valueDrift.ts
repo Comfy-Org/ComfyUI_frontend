@@ -32,21 +32,18 @@ export const ROUNDTRIP_VALUE_ALLOWED_INDICES_VUE: Record<
   }
 }
 
-const VHS_ROUNDTRIP_VALUE_KEYS_LITEGRAPH = {
-  VHS_VAEDecodeBatched: 'per_batch',
-  VHS_VAEEncodeBatched: 'per_batch'
-}
+// VHS_VAEDecodeBatched.per_batch / VHS_VAEEncodeBatched.per_batch no longer
+// drift on save/reload; the ComfyUI-VideoHelperSuite entry was removed here
+// (see ROUNDTRIP_VALUE_ALLOWLIST in allNodesRoundtripTier.ts) — qax-19/valuedrift-1.
+export const ROUNDTRIP_VALUE_ALLOWED_KEYS_LITEGRAPH: Record<
+  string,
+  Record<string, string>
+> = {}
 
-export const ROUNDTRIP_VALUE_ALLOWED_KEYS_LITEGRAPH = {
-  'ComfyUI-VideoHelperSuite': VHS_ROUNDTRIP_VALUE_KEYS_LITEGRAPH
-}
-
-export const ROUNDTRIP_VALUE_ALLOWED_KEYS_VUE = {
-  'ComfyUI-VideoHelperSuite': {
-    VHS_VAEDecodeBatched: 'per_batch',
-    VHS_VAEEncodeBatched: 'per_batch'
-  }
-}
+export const ROUNDTRIP_VALUE_ALLOWED_KEYS_VUE: Record<
+  string,
+  Record<string, string>
+> = {}
 
 export type RoundtripInitializationSignal =
   | { property: string; predicate: 'defined' }
@@ -246,22 +243,22 @@ export function rendererLedgerFor<T>(
 }
 
 export function staleValueDriftIndices(
-  allowed: Record<string, number[]>,
+  allowed: Partial<Record<string, number[]>>,
   observed: Record<string, number[]>
 ): string[] {
   return Object.entries(allowed).flatMap(([node, indices]) =>
-    indices
+    (indices ?? [])
       .filter((index) => !observed[node]?.includes(index))
       .map((index) => `${node}[${index}]`)
   )
 }
 
 export function staleValueDriftKeys(
-  allowed: Record<string, string[]>,
+  allowed: Partial<Record<string, string[]>>,
   observed: Record<string, string[]>
 ): string[] {
   return Object.entries(allowed).flatMap(([node, keys]) =>
-    keys
+    (keys ?? [])
       .filter((key) => !observed[node]?.includes(key))
       .map((key) => `${node}.${key}`)
   )
@@ -278,7 +275,7 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 }
 
 export function declaredInputNamesForTypes(
-  defs: Record<string, RawNodeDef>,
+  defs: Partial<Record<string, RawNodeDef>>,
   types: readonly string[]
 ): Record<string, string[]> {
   return Object.fromEntries(
@@ -293,6 +290,32 @@ export function declaredInputNamesForTypes(
         ]
       ]
     })
+  )
+}
+
+/** Returns names aligned with positional widgets_values serialization. */
+export function serializedWidgetNames(
+  widgets: readonly { name: string; serialize?: boolean }[]
+): string[] {
+  return widgets
+    .filter((widget) => widget.serialize !== false)
+    .map((widget) => widget.name)
+}
+
+/**
+ * Whether the pair swapped between the positional array and the name-keyed
+ * record, which carries the same values in a different container. An absent
+ * value is excluded: it already compares equal to an empty array.
+ */
+export function isWidgetValuesContainerSwap(
+  before: unknown,
+  after: unknown
+): boolean {
+  const isNamed = (value: unknown) =>
+    typeof value === 'object' && value !== null && !Array.isArray(value)
+  return (
+    (Array.isArray(before) && isNamed(after)) ||
+    (isNamed(before) && Array.isArray(after))
   )
 }
 

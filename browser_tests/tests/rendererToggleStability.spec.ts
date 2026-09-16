@@ -61,28 +61,22 @@ async function expectNodePositionStable(
     .toBeCloseTo(initial.y, 1)
 }
 
-async function setVueMode(comfyPage: ComfyPage, enabled: boolean) {
-  await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', enabled)
-  if (enabled) {
-    await comfyPage.vueNodes.waitForNodes()
-  }
-  await comfyPage.nextFrame()
-}
-
 test.describe(
   'Renderer toggle stability',
-  { tag: ['@node', '@canvas'] },
+  { tag: ['@node', '@canvas', '@vue-nodes'] },
   () => {
     test('node positions do not drift when toggling between Vue and LiteGraph renderers', async ({
       comfyPage
     }) => {
       const TOGGLE_COUNT = 5
 
+      await comfyPage.menu.topbar.setVueNodesEnabled(false)
       const initialPositions = await getAllNodePositions(comfyPage)
       expect(initialPositions.length).toBeGreaterThan(0)
 
       for (let i = 0; i < TOGGLE_COUNT; i++) {
-        await setVueMode(comfyPage, true)
+        await comfyPage.menu.topbar.setVueNodesEnabled(true)
+        await comfyPage.nextFrame()
         for (const initial of initialPositions) {
           await expectNodePositionStable(
             comfyPage,
@@ -91,7 +85,8 @@ test.describe(
           )
         }
 
-        await setVueMode(comfyPage, false)
+        await comfyPage.menu.topbar.setVueNodesEnabled(false)
+        await comfyPage.nextFrame()
         for (const initial of initialPositions) {
           await expectNodePositionStable(
             comfyPage,

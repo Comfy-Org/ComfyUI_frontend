@@ -114,14 +114,14 @@ onUnmounted(() => {
     class="relative flex size-full flex-col rounded-[1.25em] border border-white/12 bg-[#242428]"
   >
     <div class="flex h-[2.25em] shrink-0 items-center px-[1.05em]">
-      <span class="bg-primary-comfy-yellow size-[0.55em] rounded-full" />
+      <span class="size-[0.55em] rounded-full bg-primary-comfy-yellow" />
       <span class="ml-auto flex items-center gap-[0.5em]">
         <span
-          class="font-formula ppformula-text-center text-[0.75em] leading-[1.1] font-bold tracking-[-0.01em] text-primary-comfy-canvas"
+          class="ppformula-text-center font-formula text-[0.75em] leading-[1.1] font-bold tracking-[-0.01em] text-primary-comfy-canvas"
         >
           3D ANGLE
         </span>
-        <span class="bg-primary-comfy-yellow size-[0.55em] rounded-full" />
+        <span class="size-[0.55em] rounded-full bg-primary-comfy-yellow" />
       </span>
     </div>
 

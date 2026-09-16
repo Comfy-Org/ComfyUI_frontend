@@ -14,9 +14,7 @@ export function getAllNestedItems(
   items: ReadonlySet<Positionable>
 ): Set<Positionable> {
   const allItems = new Set<Positionable>()
-  if (items) {
-    for (const item of items) addRecursively(item, allItems)
-  }
+  for (const item of items) addRecursively(item, allItems)
   return allItems
 
   function addRecursively(
@@ -84,7 +82,7 @@ export function findFreeSlotOfType<T extends { type: ISlotType }>(
   type: ISlotType,
   hasNoLinks: (slot: T, index: number) => boolean
 ) {
-  if (!slots?.length) return
+  if (!slots.length) return
 
   let occupiedSlot: FreeSlotResult<T>
   let wildSlot: FreeSlotResult<T>

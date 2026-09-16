@@ -2,7 +2,6 @@ import { render, screen } from '@testing-library/vue'
 import { describe, expect, it } from 'vitest'
 import type { DirectiveBinding } from 'vue'
 
-import * as tooltipConfig from '@/composables/useTooltipConfig'
 import { i18n } from '@/i18n'
 
 import PanelHeader from './PanelHeader.vue'
@@ -28,13 +27,12 @@ function mount(isMaximized = false) {
 }
 
 describe('PanelHeader', () => {
-  it('passes the full tooltip config to the button directive', () => {
+  it('exposes the heading id the dock landmark labels', () => {
     mount()
 
-    const button = screen.getByRole('button', { name: 'New chat' })
-    expect(tooltipBindings.get(button)).toEqual(
-      tooltipConfig.buildAgentTooltipConfig('New chat')
-    )
+    expect(
+      screen.getByRole('heading', { name: 'Comfy Agent' })
+    ).toHaveAttribute('id', 'agent-panel-title')
   })
 
   it.for([
@@ -46,8 +44,6 @@ describe('PanelHeader', () => {
     mount(isMaximized)
 
     const button = screen.getByRole('button', { name: label })
-    expect(tooltipBindings.get(button)).toEqual(
-      tooltipConfig.buildAgentTooltipConfig(label)
-    )
+    expect(tooltipBindings.get(button)).toMatchObject({ value: label })
   })
 })

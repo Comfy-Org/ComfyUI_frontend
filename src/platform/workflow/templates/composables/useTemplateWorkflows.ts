@@ -77,8 +77,7 @@ export function useTemplateWorkflows() {
    * Gets formatted template title
    */
   const getTemplateTitle = (template: TemplateInfo, sourceModule: string) => {
-    const fallback =
-      template.title ?? template.name ?? `${sourceModule} Template`
+    const fallback = template.title ?? template.name
     return sourceModule === 'default'
       ? (template.localizedTitle ?? fallback)
       : fallback
@@ -88,11 +87,9 @@ export function useTemplateWorkflows() {
    * Gets formatted template description
    */
   const getTemplateDescription = (template: TemplateInfo) => {
-    return (
-      (template.localizedDescription || template.description)
-        ?.replace(/[-_]/g, ' ')
-        .trim() ?? ''
-    )
+    return (template.localizedDescription || template.description)
+      .replace(/[-_]/g, ' ')
+      .trim()
   }
 
   /**

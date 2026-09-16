@@ -35,17 +35,15 @@ function buildDrawObjects(rows: readonly BadgeData[]): LGraphBadge[] {
 
   const coreRows = rows.filter((row) => row.kind === 'core')
   const [firstCore] = coreRows
-  if (firstCore) {
-    const coreText = joinedCoreText(coreRows)
-    if (coreText) {
-      badges.push(
-        new LGraphBadge({
-          text: coreText,
-          fgColor: firstCore.fgColor,
-          bgColor: firstCore.bgColor
-        })
-      )
-    }
+  const coreText = joinedCoreText(coreRows)
+  if (coreText) {
+    badges.push(
+      new LGraphBadge({
+        text: coreText,
+        fgColor: firstCore.fgColor,
+        bgColor: firstCore.bgColor
+      })
+    )
   }
 
   for (const row of rows) {
