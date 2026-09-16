@@ -216,16 +216,24 @@ test('the workspace list opens beside the account menu, not over it', async ({
   const workspaces = page.getByTestId('account-workspaces')
   await expect(workspaces).toBeVisible()
 
-  await expect
-    .poll(async () => {
-      const [menuBox, listBox] = await Promise.all([
-        menu.boundingBox(),
-        workspaces.boundingBox()
-      ])
-      if (!menuBox || !listBox) return false
-      return listBox.x + listBox.width <= menuBox.x
-    })
-    .toBe(true)
+  const clearsTheMenu = async () =>
+    expect
+      .poll(async () => {
+        const [menuBox, listBox] = await Promise.all([
+          menu.boundingBox(),
+          workspaces.boundingBox()
+        ])
+        if (!menuBox || !listBox) return false
+        return listBox.x + listBox.width <= menuBox.x
+      })
+      .toBe(true)
+
+  await clearsTheMenu()
+
+  // The menu has a maximum width the viewport constrains, so a narrower window
+  // moves the edge the list is placed against while the list is already open.
+  await page.setViewportSize({ width: 900, height: 720 })
+  await clearsTheMenu()
 })
 
 test.describe('Narrow account menu', () => {
