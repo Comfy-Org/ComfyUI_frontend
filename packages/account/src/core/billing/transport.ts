@@ -30,29 +30,11 @@ import type {
   BillingSession,
   BillingTransport
 } from './billingContracts.js'
-
-const DEFAULT_TIMEOUT_MS = 30_000
-
-function startRequestBudget(
-  callerSignal: AbortSignal | undefined,
-  timeoutMs: number
-) {
-  const controller = new AbortController()
-  const abort = () => controller.abort()
-  if (callerSignal?.aborted === true) {
-    controller.abort()
-  } else {
-    callerSignal?.addEventListener('abort', abort, { once: true })
-  }
-  const timeout = setTimeout(abort, timeoutMs)
-  return {
-    signal: controller.signal,
-    close: () => {
-      clearTimeout(timeout)
-      callerSignal?.removeEventListener('abort', abort)
-    }
-  }
-}
+import {
+  DEFAULT_BILLING_TIMEOUT_MS,
+  exchangeBillingRequest,
+  startRequestBudget
+} from './transportExchange.js'
 
 export interface SessionBillingTransportOptions {
   readonly session: BillingSession
@@ -86,17 +68,6 @@ function billingFailureForSession(failure: SessionFailure): BillingFailure {
   }
 }
 
-/** A body that is absent, empty, or not JSON reaches callers as undefined. */
-async function readBody(response: Response): Promise<unknown> {
-  const text = await response.text()
-  if (text === '') return undefined
-  try {
-    return JSON.parse(text)
-  } catch {
-    return undefined
-  }
-}
-
 export function createSessionBillingTransport(
   options: SessionBillingTransportOptions
 ): BillingTransport {
@@ -105,7 +76,7 @@ export function createSessionBillingTransport(
     resolveUrl,
     workspaceId,
     fetchImpl = fetch,
-    defaultTimeoutMs = DEFAULT_TIMEOUT_MS
+    defaultTimeoutMs = DEFAULT_BILLING_TIMEOUT_MS
   } = options
 
   /**
@@ -134,53 +105,17 @@ export function createSessionBillingTransport(
     return { status: 'ok', value: minted.session }
   }
 
-  async function send(
+  function send(
     request: BillingRequest,
     token: string,
     signal: AbortSignal
   ): Promise<BillingResult<BillingHttpResponse>> {
-    let response: Response
-    try {
-      response = await fetchImpl(resolveUrl(request.route), {
-        method: request.method,
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json',
-          ...(request.idempotencyKey === undefined
-            ? {}
-            : { 'Idempotency-Key': request.idempotencyKey })
-        },
-        ...(request.method === 'GET' || request.body === undefined
-          ? {}
-          : { body: JSON.stringify(request.body) }),
-        signal
-      })
-    } catch {
-      return { status: 'error', code: 'REQUEST_FAILED' }
-    }
-
-    try {
-      return {
-        status: 'ok',
-        value: {
-          httpStatus: response.status,
-          body: await readBody(response),
-          header: (name) => response.headers.get(name)
-        }
-      }
-    } catch {
-      if (signal.aborted) {
-        return { status: 'error', code: 'REQUEST_FAILED' }
-      }
-      return {
-        status: 'ok',
-        value: {
-          httpStatus: response.status,
-          body: undefined,
-          header: (name) => response.headers.get(name)
-        }
-      }
-    }
+    return exchangeBillingRequest(request, {
+      fetchImpl,
+      url: resolveUrl(request.route),
+      signal,
+      headers: { Authorization: `Bearer ${token}` }
+    })
   }
 
   async function retryUnauthorized(
