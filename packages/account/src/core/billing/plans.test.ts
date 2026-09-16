@@ -2,42 +2,18 @@
  * What only the plans read does. The scope fence, the shared request, and the
  * publish rules it inherits are proved once in `scopedReader.test.ts`.
  */
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, it } from 'vitest'
 
-import type { SessionClient, SessionSnapshot } from '../session.js'
-import type { AccountCredential } from '../sessionContracts.js'
+import type { SessionSnapshot } from '../session.js'
 import { sessionBillingScopeSource } from './billingScope.js'
-import type {
-  BillingHttpResponse,
-  BillingRequest,
-  BillingResult,
-  BillingTransport
-} from './billingContracts.js'
 import { createPlansReader } from './plans.js'
-
-function credential(
-  overrides: Partial<AccountCredential> = {}
-): AccountCredential {
-  return {
-    token: 'workspace-jwt',
-    expiresAt: Date.now() + 60 * 60 * 1000,
-    uid: 'uid-1',
-    workspace: { id: 'ws-1', name: 'Personal', type: 'personal' },
-    role: 'owner',
-    permissions: ['workspace:read'],
-    ...overrides
-  }
-}
-
-function authenticated(session: AccountCredential): SessionSnapshot {
-  return {
-    phase: 'authenticated',
-    user: { uid: session.uid, getIdToken: async () => 'id-token' },
-    session
-  }
-}
-
-type SessionFake = Pick<SessionClient, 'getSnapshot' | 'subscribe'>
+import {
+  authenticated,
+  credential,
+  fakeTransport,
+  httpOk
+} from './__fixtures__/billingTestFixtures.js'
+import type { SessionFake } from './__fixtures__/billingTestFixtures.js'
 
 function fakeSession(snapshot: SessionSnapshot = authenticated(credential())) {
   const fake: SessionFake = {
@@ -63,25 +39,6 @@ const PLAN = {
 }
 
 const CATALOG = { current_plan_slug: 'free', plans: [PLAN] }
-
-function httpOk(body: unknown): BillingResult<BillingHttpResponse> {
-  return {
-    status: 'ok',
-    value: { httpStatus: 200, body, header: () => null }
-  }
-}
-
-function fakeTransport(answers: BillingResult<BillingHttpResponse>[]) {
-  const calls: BillingRequest[] = []
-  let index = 0
-  const transport: BillingTransport = vi.fn(async (request) => {
-    calls.push(request)
-    const answer = answers[Math.min(index, answers.length - 1)]
-    index++
-    return answer
-  })
-  return { transport, calls }
-}
 
 describe('createPlansReader', () => {
   it('reads the catalog from the billing plans route', async () => {

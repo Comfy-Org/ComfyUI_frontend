@@ -1,49 +1,22 @@
 import { describe, expect, it, vi } from 'vitest'
 
-import type { SessionClient, SessionSnapshot } from '../session.js'
+import type { SessionSnapshot } from '../session.js'
 import type { AccountCredential } from '../sessionContracts.js'
 import { sessionBillingScopeSource } from './billingScope.js'
-import type {
-  BillingHttpResponse,
-  BillingRequest,
-  BillingResult,
-  BillingSession,
-  BillingTransport
-} from './billingContracts.js'
+import type { BillingSession, BillingTransport } from './billingContracts.js'
 import {
   CAPABILITY_REVISION_HEADER,
   createCapabilitiesReader,
   readCapabilityRevision
 } from './capabilities.js'
 import { createSessionBillingTransport } from './transport.js'
-
-function credential(
-  overrides: Partial<AccountCredential> = {}
-): AccountCredential {
-  return {
-    token: 'workspace-jwt',
-    expiresAt: Date.now() + 60 * 60 * 1000,
-    uid: 'uid-1',
-    workspace: { id: 'ws-1', name: 'Personal', type: 'personal' },
-    role: 'owner',
-    permissions: ['workspace:read'],
-    ...overrides
-  }
-}
-
-function authenticated(session: AccountCredential): SessionSnapshot {
-  return {
-    phase: 'authenticated',
-    user: { uid: session.uid, getIdToken: async () => 'id-token' },
-    session
-  }
-}
-/**
- * The two members a reader is allowed to reach for. Anything else is left
- * undefined at runtime rather than quietly answered, so reaching past them
- * fails the test that does it.
- */
-type SessionFake = Pick<SessionClient, 'getSnapshot' | 'subscribe'>
+import {
+  authenticated,
+  credential,
+  fakeTransport,
+  httpOk
+} from './__fixtures__/billingTestFixtures.js'
+import type { SessionFake } from './__fixtures__/billingTestFixtures.js'
 
 function fakeSession(initial: SessionSnapshot = authenticated(credential())) {
   let snapshot = initial
@@ -90,33 +63,6 @@ function capabilitiesBody(overrides: Record<string, unknown> = {}) {
     rollout_defaults_applied: ROLLOUT_DEFAULTS,
     ...overrides
   }
-}
-
-function httpOk(
-  body: unknown,
-  headers: Record<string, string> = {}
-): BillingResult<BillingHttpResponse> {
-  return {
-    status: 'ok',
-    value: {
-      httpStatus: 200,
-      body,
-      header: (name) => headers[name] ?? null
-    }
-  }
-}
-
-/** A transport that answers each call from the queue, then repeats the last. */
-function fakeTransport(answers: BillingResult<BillingHttpResponse>[]) {
-  const calls: BillingRequest[] = []
-  let index = 0
-  const transport: BillingTransport = vi.fn(async (request) => {
-    calls.push(request)
-    const answer = answers[Math.min(index, answers.length - 1)]
-    index++
-    return answer
-  })
-  return { transport, calls }
 }
 
 describe('createCapabilitiesReader', () => {

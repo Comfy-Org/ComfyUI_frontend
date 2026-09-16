@@ -6,11 +6,9 @@
  */
 import { describe, expect, it, vi } from 'vitest'
 
-import type { SessionClient, SessionSnapshot } from '../session.js'
-import type { AccountCredential } from '../sessionContracts.js'
+import type { SessionSnapshot } from '../session.js'
 import type {
   BillingHttpResponse,
-  BillingRequest,
   BillingResult,
   BillingTransport
 } from './billingContracts.js'
@@ -21,28 +19,14 @@ import { createCreditsReader } from './credits.js'
 import { createPaymentMethodsReader } from './paymentMethods.js'
 import { createPlansReader } from './plans.js'
 import { createBillingStatusReader } from './status.js'
-
-function credential(
-  overrides: Partial<AccountCredential> = {}
-): AccountCredential {
-  return {
-    token: 'workspace-jwt',
-    expiresAt: Date.now() + 60 * 60 * 1000,
-    uid: 'uid-1',
-    workspace: { id: 'ws-1', name: 'Personal', type: 'personal' },
-    role: 'owner',
-    permissions: ['workspace:read'],
-    ...overrides
-  }
-}
-
-function authenticated(session: AccountCredential): SessionSnapshot {
-  return {
-    phase: 'authenticated',
-    user: { uid: session.uid, getIdToken: async () => 'id-token' },
-    session
-  }
-}
+import {
+  authenticated,
+  credential,
+  fakeTransport,
+  httpOk,
+  httpStatus
+} from './__fixtures__/billingTestFixtures.js'
+import type { SessionFake } from './__fixtures__/billingTestFixtures.js'
 
 const SIGNED_OUT: SessionSnapshot = {
   phase: 'signed-out',
@@ -51,8 +35,6 @@ const SIGNED_OUT: SessionSnapshot = {
 }
 
 const TEAM = { id: 'ws-2', name: 'Team', type: 'team' } as const
-
-type SessionFake = Pick<SessionClient, 'getSnapshot' | 'subscribe'>
 
 function fakeSession(initial: SessionSnapshot = authenticated(credential())) {
   let snapshot = initial
@@ -74,32 +56,6 @@ function fakeSession(initial: SessionSnapshot = authenticated(credential())) {
       this.moveTo(authenticated(credential({ workspace: TEAM })))
     }
   }
-}
-
-function httpOk(body: unknown): BillingResult<BillingHttpResponse> {
-  return {
-    status: 'ok',
-    value: { httpStatus: 200, body, header: () => null }
-  }
-}
-
-function httpStatus(status: number): BillingResult<BillingHttpResponse> {
-  return {
-    status: 'ok',
-    value: { httpStatus: status, body: {}, header: () => null }
-  }
-}
-
-function fakeTransport(answers: BillingResult<BillingHttpResponse>[]) {
-  const calls: BillingRequest[] = []
-  let index = 0
-  const transport: BillingTransport = vi.fn(async (request) => {
-    calls.push(request)
-    const answer = answers[Math.min(index, answers.length - 1)]
-    index++
-    return answer
-  })
-  return { transport, calls }
 }
 
 /** A transport whose every answer waits on a gate this test opens. */
