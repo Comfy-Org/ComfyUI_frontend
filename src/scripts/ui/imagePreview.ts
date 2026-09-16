@@ -18,8 +18,8 @@ export function calculateImageGrid(
   shiftX: number
 } {
   let best = 0
-  let w = imgs[0].naturalWidth
-  let h = imgs[0].naturalHeight
+  const w = imgs[0].naturalWidth
+  const h = imgs[0].naturalHeight
   const numImages = imgs.length
 
   let cellWidth, cellHeight, cols, rows, shiftX

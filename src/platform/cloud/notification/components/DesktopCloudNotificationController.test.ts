@@ -17,12 +17,16 @@ const electron = {
 
 const errorReporter = vi.hoisted(() => vi.fn())
 
-vi.mock<unknown>(import('@/platform/distribution/types'), () => ({
-  DISTRIBUTION: 'desktop',
-  isCloud: false,
-  isDesktop: true,
-  isNightly: false
-}))
+vi.mock(
+  import('@/platform/distribution/types'),
+  () =>
+    ({
+      DISTRIBUTION: 'desktop',
+      isCloud: false,
+      isDesktop: true,
+      isNightly: false
+    }) as const
+)
 
 vi.mock(import('@/platform/telemetry/reportError'), () => ({
   reportError: errorReporter

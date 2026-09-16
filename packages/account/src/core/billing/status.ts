@@ -1,8 +1,11 @@
 import { zBillingStatusResponse } from '@comfyorg/ingest-types/zod'
 import type { z } from 'zod'
 
-import type { SessionClient } from '../session.js'
-import type { BillingResult, BillingTransport } from './billingContracts.js'
+import type {
+  BillingResult,
+  BillingSession,
+  BillingTransport
+} from './billingContracts.js'
 import type { BillingScope, BillingScopeContext } from './billingScope.js'
 import { createBillingScopeTracker } from './billingScope.js'
 import {
@@ -37,7 +40,7 @@ export interface BillingStatusReader {
 
 export interface BillingStatusReaderOptions {
   readonly transport: BillingTransport
-  readonly session: SessionClient
+  readonly session: BillingSession
   readonly now?: () => number
 }
 

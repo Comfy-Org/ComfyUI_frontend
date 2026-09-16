@@ -1,30 +1,34 @@
+import { fromPartial } from '@total-typescript/shoehorn'
 import { describe, expect, it, vi } from 'vitest'
 
-import type { ComfyExtension } from '@/types/comfy'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import type { ComfyApp } from '@/scripts/app'
+import type { useExtensionService } from '@/services/extensionService'
+import type { ComfyExtension } from '@/types/comfy'
 
 const { addTextPreviewWidgets, updateTextPreviewWidgets } = vi.hoisted(() => ({
   addTextPreviewWidgets: vi.fn(),
   updateTextPreviewWidgets: vi.fn()
 }))
 
-vi.mock('@/extensions/core/textPreviewWidgets', () => ({
+vi.mock(import('@/extensions/core/textPreviewWidgets'), () => ({
   addTextPreviewWidgets,
   updateTextPreviewWidgets
 }))
 
-vi.mock('@/scripts/app', () => ({
-  app: { rootGraph: {} }
+vi.mock(import('@/scripts/app'), () => ({
+  app: fromPartial<ComfyApp>({ rootGraph: {} })
 }))
 
 const capturedExtensions: ComfyExtension[] = []
 
-vi.mock('@/services/extensionService', () => ({
-  useExtensionService: () => ({
-    registerExtension: (ext: ComfyExtension) => {
-      capturedExtensions.push(ext)
-    }
-  })
+vi.mock(import('@/services/extensionService'), () => ({
+  useExtensionService: () =>
+    fromPartial<ReturnType<typeof useExtensionService>>({
+      registerExtension: (ext: ComfyExtension) => {
+        capturedExtensions.push(ext)
+      }
+    })
 }))
 
 type BeforeRegister = NonNullable<ComfyExtension['beforeRegisterNodeDef']>

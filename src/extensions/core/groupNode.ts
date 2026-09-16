@@ -1,8 +1,11 @@
 import { PREFIX, SEPARATOR } from '@/constants/groupNodeConstants'
 import { t } from '@/i18n'
 import type { SerialisedLLinkArray } from '@/lib/litegraph/src/LLink'
-import type { LGraphNodeConstructor } from '@/lib/litegraph/src/litegraph'
-import { LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
+import type {
+  LGraphNodeConstructor,
+  LGraphNode
+} from '@/lib/litegraph/src/litegraph'
+import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { outputLinks } from '@/lib/litegraph/src/node/slotLinks'
 import { parseNodeId } from '@/types/nodeId'
 import type {
@@ -95,11 +98,6 @@ interface GroupNodeDef {
   output: unknown[]
   output_name: string[]
   output_is_list: boolean[]
-}
-
-interface NodeConfigEntry {
-  input?: Record<string, { name?: string; visible?: boolean }>
-  output?: Record<number, { name?: string; visible?: boolean }>
 }
 
 export class GroupNodeConfig {
@@ -402,9 +400,7 @@ export class GroupNodeConfig {
     config: unknown[],
     extra?: Record<string, unknown>
   ) {
-    const nodeConfig = this.nodeData.config?.[node.index ?? -1] as
-      | NodeConfigEntry
-      | undefined
+    const nodeConfig = this.nodeData.config?.[node.index ?? -1]
     const customConfig = nodeConfig?.input?.[inputName]
     let name =
       customConfig?.name ??
@@ -714,9 +710,7 @@ export class GroupNodeConfig {
       // If this output is linked internally we flag it to hide
       const hasLink =
         linksFrom?.[outputId] && !this.externalFrom[nodeIndex]?.[outputId]
-      const outputConfig = this.nodeData.config?.[node.index ?? -1] as
-        | NodeConfigEntry
-        | undefined
+      const outputConfig = this.nodeData.config?.[node.index ?? -1]
       const customConfig = outputConfig?.output?.[outputId]
       const visible = customConfig?.visible ?? !hasLink
       this.outputVisibility.push(visible)

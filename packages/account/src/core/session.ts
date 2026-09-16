@@ -46,6 +46,7 @@ export type {
   CrossTabRefreshPort,
   MintHandle,
   RefreshSchedulerOptions,
+  ScheduledRefreshReport,
   SessionErrorCode,
   SessionFailure,
   SessionRefreshOutcome,

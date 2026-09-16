@@ -1,25 +1,26 @@
-// @vitest-environment happy-dom
 import { render, screen, waitFor, within } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { nextTick } from 'vue'
 
 import { requestWorkshopBuyCredits } from '../../../config/workshop-buy-credits'
 import HeaderMain from './HeaderMain.vue'
 
 const hoisted = vi.hoisted(() => ({
   flag: undefined as { value: boolean } | undefined,
-  announceReturn: vi.fn()
+  visibility: undefined as { value: boolean } | undefined
 }))
 
 vi.mock(import('../../../scripts/posthog.ts'), async () => {
   const { ref } = await import('vue')
   const flag = ref(false)
   hoisted.flag = flag
-  return { useWorkshopAuthFlag: () => flag }
+  const visibility = ref(false)
+  hoisted.visibility = visibility
+  return {
+    useWorkshopAuthFlag: () => flag,
+    useWorkshopEnabled: () => visibility
+  }
 })
-
-vi.mock(import('../../../lib/workshop/topup-return.ts'), () => ({
-  announceTopUpReturnFromLocation: hoisted.announceReturn
-}))
 
 vi.mock<unknown>(import('../../workshop/HeaderAccount.vue'), async () => {
   const { defineComponent, h } = await import('vue')
@@ -47,17 +48,20 @@ vi.mock<unknown>(import('../../workshop/BuyCreditsDialog.vue'), async () => {
 
 beforeEach(() => {
   hoisted.flag!.value = false
-  hoisted.announceReturn.mockReset()
+  hoisted.visibility!.value = false
 })
 
 describe('HeaderMain workshop gating', () => {
   it.for([
-    { workshopInBuild: false, modelsAvailable: false },
-    { workshopInBuild: true, modelsAvailable: true }
+    { workshopInBuild: false, enabled: true, modelsAvailable: false },
+    { workshopInBuild: true, enabled: false, modelsAvailable: false },
+    { workshopInBuild: true, enabled: true, modelsAvailable: true }
   ])(
     'renders Models availability as $modelsAvailable when workshopInBuild is $workshopInBuild',
-    ({ workshopInBuild, modelsAvailable }) => {
+    async ({ workshopInBuild, enabled, modelsAvailable }) => {
+      hoisted.visibility!.value = enabled
       render(HeaderMain, { props: { workshopInBuild } })
+      await nextTick()
 
       expect(screen.queryByRole('link', { name: /^Models\b/i }) !== null).toBe(
         modelsAvailable
@@ -71,15 +75,9 @@ describe('HeaderMain workshop gating', () => {
     expect(screen.queryByTestId('header-account')).toBeNull()
   })
 
-  it('relays a top-up return before the auth flag settles', () => {
-    render(HeaderMain)
-
-    expect(hoisted.announceReturn).toHaveBeenCalledOnce()
-    expect(screen.queryByTestId('buy-credits-dialog')).toBeNull()
-  })
-
   it('mounts the account island when the flag turns on after mount', async () => {
-    render(HeaderMain)
+    hoisted.visibility!.value = true
+    render(HeaderMain, { props: { workshopInBuild: true } })
     expect(screen.queryByTestId('header-account')).toBeNull()
 
     hoisted.flag!.value = true
@@ -94,7 +92,8 @@ describe('HeaderMain workshop gating', () => {
 
   it('mounts the account island in the mobile row as well as the desktop row', async () => {
     hoisted.flag!.value = true
-    render(HeaderMain)
+    hoisted.visibility!.value = true
+    render(HeaderMain, { props: { workshopInBuild: true } })
 
     await waitFor(() => {
       expect(
@@ -113,7 +112,8 @@ describe('HeaderMain workshop gating', () => {
 
   it('owns one credits dialog for both account placements and page requests', async () => {
     hoisted.flag!.value = true
-    render(HeaderMain)
+    hoisted.visibility!.value = true
+    render(HeaderMain, { props: { workshopInBuild: true } })
     await waitFor(() =>
       expect(screen.getAllByTestId('header-account')).toHaveLength(2)
     )
@@ -127,15 +127,17 @@ describe('HeaderMain workshop gating', () => {
 
   it('replays a request made before the header island mounts', async () => {
     hoisted.flag!.value = true
+    hoisted.visibility!.value = true
     requestWorkshopBuyCredits()
 
-    render(HeaderMain)
+    render(HeaderMain, { props: { workshopInBuild: true } })
 
     expect(await screen.findByTestId('buy-credits-dialog')).toBeTruthy()
   })
 
   it('does not latch requests while auth is disabled', async () => {
-    render(HeaderMain)
+    hoisted.visibility!.value = true
+    render(HeaderMain, { props: { workshopInBuild: true } })
 
     requestWorkshopBuyCredits()
     hoisted.flag!.value = true
@@ -148,7 +150,8 @@ describe('HeaderMain workshop gating', () => {
 
   it('keeps an active checkout mounted through a flag refresh', async () => {
     hoisted.flag!.value = true
-    render(HeaderMain)
+    hoisted.visibility!.value = true
+    render(HeaderMain, { props: { workshopInBuild: true } })
     requestWorkshopBuyCredits()
     expect(await screen.findByTestId('buy-credits-dialog')).toBeTruthy()
 
@@ -163,5 +166,38 @@ describe('HeaderMain workshop gating', () => {
     )
 
     expect(screen.getByTestId('buy-credits-dialog')).toBeTruthy()
+  })
+
+  it('ignores credits requests while Models is hidden', async () => {
+    hoisted.flag!.value = true
+    render(HeaderMain, { props: { workshopInBuild: true } })
+    await nextTick()
+
+    requestWorkshopBuyCredits()
+    await nextTick()
+    expect(screen.queryByTestId('buy-credits-dialog')).toBeNull()
+
+    hoisted.visibility!.value = true
+    await waitFor(() =>
+      expect(screen.getAllByTestId('header-account')).toHaveLength(2)
+    )
+    expect(screen.queryByTestId('buy-credits-dialog')).toBeNull()
+
+    requestWorkshopBuyCredits()
+    expect(await screen.findByTestId('buy-credits-dialog')).toBeTruthy()
+  })
+
+  it('updates navigation and removes the account controls when access is revoked', async () => {
+    hoisted.flag!.value = true
+    render(HeaderMain, { props: { workshopInBuild: true } })
+    expect(screen.queryByRole('link', { name: /^Models\b/i })).toBeNull()
+    expect(screen.queryByTestId('header-account')).toBeNull()
+
+    hoisted.visibility!.value = true
+    await screen.findByRole('link', { name: /^Models\b/i })
+    hoisted.visibility!.value = false
+    await nextTick()
+    expect(screen.queryByRole('link', { name: /^Models\b/i })).toBeNull()
+    expect(screen.queryByTestId('header-account')).toBeNull()
   })
 })

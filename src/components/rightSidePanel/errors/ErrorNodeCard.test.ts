@@ -5,6 +5,8 @@ import PrimeVue from 'primevue/config'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
+import { useTelemetry } from '@/platform/telemetry'
+
 import { resolveRunErrorMessage } from '@/platform/errorCatalog/errorMessageResolver'
 import { useCommandStore } from '@/stores/commandStore'
 import { useSystemStatsStore } from '@/stores/systemStatsStore'
@@ -39,14 +41,7 @@ vi.mock(import('@/utils/errorReportUtil'), () => ({
   generateErrorReport: (data: unknown) => mockGenerateErrorReport(data)
 }))
 
-const mockTrackHelpResourceClicked = vi.fn()
-
-vi.mock<unknown>(import('@/platform/telemetry'), () => ({
-  useTelemetry: vi.fn(() => ({
-    trackUiButtonClicked: vi.fn(),
-    trackHelpResourceClicked: mockTrackHelpResourceClicked
-  }))
-}))
+vi.mock(import('@/platform/telemetry'))
 
 vi.mock<unknown>(import('@/composables/useExternalLink'), () => ({
   useExternalLink: vi.fn(() => ({
@@ -404,7 +399,7 @@ describe('ErrorNodeCard.vue', () => {
     expect(useCommandStore().execute).toHaveBeenCalledWith(
       'Comfy.ContactSupport'
     )
-    expect(mockTrackHelpResourceClicked).toHaveBeenCalledWith(
+    expect(useTelemetry()?.trackHelpResourceClicked).toHaveBeenCalledWith(
       expect.objectContaining({
         resource_type: 'help_feedback',
         source: 'error_dialog'

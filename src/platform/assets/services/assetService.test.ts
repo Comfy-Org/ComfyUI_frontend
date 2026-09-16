@@ -16,7 +16,7 @@ import { api } from '@/scripts/api'
 const mockDistributionState = vi.hoisted(() => ({ isCloud: false }))
 const mockSupportsModelTypeTags = vi.hoisted(() => ({ value: true }))
 
-vi.mock<unknown>(import('@/platform/distribution/types'), () => ({
+vi.mock(import('@/platform/distribution/types'), () => ({
   get isCloud() {
     return mockDistributionState.isCloud
   }
@@ -43,7 +43,7 @@ vi.mock<unknown>(import('@/scripts/api'), () => ({
   }
 }))
 
-vi.mock<unknown>(import('@/i18n'), () => ({
+vi.mock(import('@/i18n'), () => ({
   t: (key: string) => key,
   st: vi.fn((_key: string, fallback: string) => fallback)
 }))

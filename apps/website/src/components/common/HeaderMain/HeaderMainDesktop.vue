@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { computed } from 'vue'
 import NavigationMenu from '@/components/ui/navigation-menu/NavigationMenu.vue'
 import NavigationMenuContent from '@/components/ui/navigation-menu/NavigationMenuContent.vue'
 import NavigationMenuItem from '@/components/ui/navigation-menu/NavigationMenuItem.vue'
@@ -24,12 +25,14 @@ const { locale = 'en', workshopInBuild = false } = defineProps<{
   locale?: Locale
   workshopInBuild?: boolean
 }>()
-const mainNavigation = getMainNavigation(locale, workshopInBuild)
+const mainNavigation = computed(() =>
+  getMainNavigation(locale, workshopInBuild)
+)
 const currentPath = useCurrentPath()
 
 function isNavItemActive(navItem: NavItem, path: string): boolean {
   if (navItem.href) return isHrefActive(navItem.href, path)
-  const onLeafPage = mainNavigation.some(
+  const onLeafPage = mainNavigation.value.some(
     (item) => item.href && isHrefActive(item.href, path)
   )
   return (
