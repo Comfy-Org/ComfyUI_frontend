@@ -61,6 +61,10 @@ vi.mock(import('../../config/workshop-credits'), async () => {
   }
 })
 
+vi.mock(import('../../config/workshop-features'), () => ({
+  readBillingSdkTopupEnabled: () => Promise.resolve(false)
+}))
+
 vi.mock(import('../../config/workshop-session-state'), async () => {
   const { computed, ref } = await import('vue')
   const user = ref<WorkshopUser>(null)
