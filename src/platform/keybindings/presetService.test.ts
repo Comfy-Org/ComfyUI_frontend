@@ -186,7 +186,7 @@ describe('useKeybindingPresetService', () => {
         'keybindings/vim.json'
       )
       expect(store.currentPresetName).toBe('default')
-      expect(Object.keys(store.getUserKeybindings())).toHaveLength(0)
+      expect(store.getUserKeybindings()).toHaveLength(0)
     })
 
     it('throws when deleteUserData response is not ok', async () => {
@@ -292,7 +292,7 @@ describe('useKeybindingPresetService', () => {
         { overwrite: true, stringify: false }
       )
       expect(store.currentPresetName).toBe('imported')
-      expect(Object.keys(store.getUserKeybindings())).toHaveLength(1)
+      expect(store.getUserKeybindings()).toHaveLength(1)
     })
   })
 
@@ -421,9 +421,9 @@ describe('useKeybindingPresetService', () => {
       expect(store.savedPresetData?.name).toBe('vim')
       expect(store.savedPresetData?.newBindings).toHaveLength(1)
       expect(store.savedPresetData?.newBindings[0].commandId).toBe('new.cmd')
-      expect(Object.keys(store.getUserKeybindings())).toHaveLength(1)
+      expect(store.getUserKeybindings()).toHaveLength(1)
       expect(
-        store.getUserKeybindingValues().map(({ commandId }) => commandId)
+        store.getUserKeybindings().map(({ commandId }) => commandId)
       ).toEqual(['new.cmd'])
     })
 
@@ -448,7 +448,7 @@ describe('useKeybindingPresetService', () => {
 
       expect(store.currentPresetName).toBe('vim')
       expect(
-        store.getUserUnsetKeybindingValues().map(({ commandId }) => commandId)
+        store.getUserUnsetKeybindings().map(({ commandId }) => commandId)
       ).toEqual(['test.selectAll'])
     })
   })
@@ -734,7 +734,7 @@ describe('useKeybindingPresetService', () => {
       const service = await getPresetService()
       await service.switchToDefaultPreset()
 
-      expect(Object.keys(store.getUserKeybindings())).toHaveLength(0)
+      expect(store.getUserKeybindings()).toHaveLength(0)
       expect(store.currentPresetName).toBe('default')
       expect(store.savedPresetData).toBeNull()
       expect(mockPersistUserKeybindings).toHaveBeenCalled()
@@ -756,7 +756,7 @@ describe('useKeybindingPresetService', () => {
       const service = await getPresetService()
       await service.switchToDefaultPreset({ resetBindings: false })
 
-      expect(Object.keys(store.getUserKeybindings())).toHaveLength(1)
+      expect(store.getUserKeybindings()).toHaveLength(1)
       expect(store.currentPresetName).toBe('default')
       expect(store.savedPresetData).toBeNull()
     })
