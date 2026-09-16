@@ -90,6 +90,16 @@ describe('firebaseIdentity', () => {
     expect(initializeApp).not.toHaveBeenCalled()
   })
 
+  it('refuses to resolve while remote config is unloaded outside DEV too, where a soft assertion would report and boot on build-time config', async () => {
+    vi.stubEnv('DEV', false)
+    const { firebaseIdentity, initializeApp, remoteConfigState } =
+      await loadFresh()
+    remoteConfigState.value = 'unloaded'
+
+    expect(() => firebaseIdentity.initialize()).toThrow(/remote config/)
+    expect(initializeApp).not.toHaveBeenCalled()
+  })
+
   it('boots on the build-time fallback config, without asserting, when the config fetch failed', async () => {
     const {
       firebaseIdentity,

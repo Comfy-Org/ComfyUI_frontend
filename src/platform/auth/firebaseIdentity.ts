@@ -6,15 +6,22 @@ import {
 
 import { createFirebaseIdentity } from '@comfyorg/account/firebase'
 
-import { assert } from '@/base/assert'
 import { getFirebaseConfig } from '@/config/firebase'
 import { remoteConfigState } from '@/platform/remoteConfig/remoteConfig'
 
+class FirebaseBeforeRemoteConfigError extends Error {
+  constructor() {
+    super(
+      'Firebase resolved before remote config loaded: initialize() belongs after the startup/remote-config phase'
+    )
+    this.name = 'FirebaseBeforeRemoteConfigError'
+  }
+}
+
 function loadedFirebaseConfig() {
-  assert(
-    remoteConfigState.value !== 'unloaded',
-    'Firebase resolved before remote config loaded: initialize() belongs after the startup/remote-config phase'
-  )
+  if (remoteConfigState.value === 'unloaded') {
+    throw new FirebaseBeforeRemoteConfigError()
+  }
   return getFirebaseConfig()
 }
 
