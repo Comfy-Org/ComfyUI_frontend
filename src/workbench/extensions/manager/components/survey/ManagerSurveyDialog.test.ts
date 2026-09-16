@@ -1,17 +1,15 @@
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { computed, nextTick, ref } from 'vue'
+import { computed, nextTick } from 'vue'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import type { RemoteConfig } from '@/platform/remoteConfig/types'
 
 const mocks = vi.hoisted<{
   remoteConfig: { value: RemoteConfig }
-  resolvedUserInfo: { value: { id: string } | null }
 }>(() => ({
-  remoteConfig: { value: {} },
-  resolvedUserInfo: { value: null }
+  remoteConfig: { value: {} }
 }))
 
 vi.mock<unknown>(import('@/platform/remoteConfig/remoteConfig'), async () => {
@@ -35,15 +33,13 @@ function renderDialog(onClose = vi.fn()) {
 
 describe('ManagerSurveyDialog', () => {
   beforeEach(() => {
-    const resolvedUserInfo = ref<{ id: string } | null>(null)
-    mocks.resolvedUserInfo = resolvedUserInfo
-    useCurrentUser().resolvedUserInfo = computed(() => resolvedUserInfo.value)
+    useCurrentUser().resolvedUserInfo = computed(() => null)
     mocks.remoteConfig.value = {}
   })
 
   it('embeds the configured survey URL with the logged-in user', () => {
     mocks.remoteConfig.value = { manager_survey_url: SURVEY_URL }
-    mocks.resolvedUserInfo.value = { id: 'user-123' }
+    useCurrentUser().resolvedUserInfo = computed(() => ({ id: 'user-123' }))
 
     renderDialog()
 

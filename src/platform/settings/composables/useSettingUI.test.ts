@@ -16,7 +16,6 @@ const env = vi.hoisted(() => {
   const state = {
     isCloud: false,
     isDesktop: false,
-    isLoggedIn: false,
     partnerNodeGovernanceEnabled: false,
     userSecretsEnabled: false,
     workspaceRole: 'owner' as 'owner' | 'member',
@@ -104,7 +103,7 @@ function useSettingUI(
 }
 
 beforeEach(() => {
-  useCurrentUser().isLoggedIn = computed(() => env.state.isLoggedIn)
+  useCurrentUser().isLoggedIn = computed(() => false)
   vi.spyOn(usePartnerNodeGovernanceStore(), 'status', 'get').mockImplementation(
     () => {
       return env.state.partnerNodeGovernanceStatus
@@ -149,7 +148,6 @@ describe('useSettingUI', () => {
     Object.assign(env.state, {
       isCloud: false,
       isDesktop: false,
-      isLoggedIn: false,
       partnerNodeGovernanceEnabled: false,
       userSecretsEnabled: false,
       workspaceRole: 'owner',
@@ -223,8 +221,8 @@ describe('useSettingUI', () => {
 
   describe('workspace panels', () => {
     beforeEach(() => {
+      useCurrentUser().isLoggedIn = computed(() => true)
       Object.assign(env.state, {
-        isLoggedIn: true,
         userSecretsEnabled: true
       })
     })
@@ -310,9 +308,9 @@ describe('useSettingUI', () => {
       groups.flatMap((group) => group.items.map((item) => item.id))
 
     beforeEach(() => {
+      useCurrentUser().isLoggedIn = computed(() => true)
       Object.assign(env.state, {
         isCloud: true,
-        isLoggedIn: true,
         partnerNodeGovernanceEnabled: true
       })
     })

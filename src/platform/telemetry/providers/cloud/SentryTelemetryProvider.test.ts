@@ -11,7 +11,6 @@ const mocks = vi.hoisted(() => ({
   addBreadcrumb: vi.fn(),
   setContext: vi.fn(),
   setUser: vi.fn(),
-  resolvedUserId: 'existing-user' as string | undefined,
   workflowIsModified: true,
   executionContext: {
     is_template: false,
@@ -52,9 +51,7 @@ const shellLayout: ShellLayoutMetadata = {
 }
 
 beforeEach(() => {
-  useCurrentUser().resolvedUserInfo = computed(() =>
-    mocks.resolvedUserId ? { id: mocks.resolvedUserId } : null
-  )
+  useCurrentUser().resolvedUserInfo = computed(() => ({ id: 'existing-user' }))
   useWorkflowStore().activeWorkflow = fromPartial({
     isModified: mocks.workflowIsModified
   })
@@ -62,7 +59,6 @@ beforeEach(() => {
 
 describe('SentryTelemetryProvider', () => {
   beforeEach(() => {
-    mocks.resolvedUserId = 'existing-user'
     mocks.workflowIsModified = true
   })
 

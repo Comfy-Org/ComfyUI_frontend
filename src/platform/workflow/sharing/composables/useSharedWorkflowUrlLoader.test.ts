@@ -36,7 +36,6 @@ vi.mock<unknown>(import('vue-router'), () => ({
 }))
 
 const mockImportPublishedAssets = vi.fn()
-const mockIsLoggedIn = vi.hoisted(() => ({ value: false }))
 
 vi.mock(import('@/composables/auth/useCurrentUser'))
 
@@ -195,7 +194,7 @@ function createDeferred() {
 }
 
 beforeEach(() => {
-  useCurrentUser().isLoggedIn = computed(() => mockIsLoggedIn.value)
+  useCurrentUser().isLoggedIn = computed(() => false)
   Object.assign(useDialogStore(), { dialogStack: [] })
   vi.mocked(useDialogStore().closeDialog).mockImplementation(() => {})
   vi.mocked(useDialogStore().updateDialog).mockReturnValue(false)
@@ -204,7 +203,6 @@ beforeEach(() => {
 describe('useSharedWorkflowUrlLoader', () => {
   beforeEach(() => {
     mockQueryParams = {}
-    mockIsLoggedIn.value = false
     mockDialogStack.length = 0
     mockShowLayoutDialog.mockImplementation(createDialogInstance)
     vi.mocked(useDialogStore().updateDialog).mockImplementation(
@@ -283,7 +281,7 @@ describe('useSharedWorkflowUrlLoader', () => {
 
   it('does not capture share auth attribution for authenticated users', async () => {
     mockQueryParams = { share: 'share-id-1' }
-    mockIsLoggedIn.value = true
+    useCurrentUser().isLoggedIn = computed(() => true)
     mockShowLayoutDialog.mockImplementation(() => {
       resolveDialogWithConfirm(makePayload())
     })

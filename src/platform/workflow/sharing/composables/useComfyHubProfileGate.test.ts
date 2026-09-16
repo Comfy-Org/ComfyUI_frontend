@@ -9,7 +9,6 @@ const mockRequestAssetUploadUrl = vi.hoisted(() => vi.fn())
 const mockUploadFileToPresignedUrl = vi.hoisted(() => vi.fn())
 const mockCreateProfile = vi.hoisted(() => vi.fn())
 const mockToastErrorHandler = vi.hoisted(() => vi.fn())
-const mockResolvedUserInfo = ref({ id: 'user-a' })
 
 vi.mock<unknown>(
   import('@/platform/workflow/sharing/services/comfyHubService'),
@@ -56,10 +55,7 @@ describe('useComfyHubProfileGate', () => {
   let gate: ReturnType<typeof useComfyHubProfileGate>
 
   beforeEach(() => {
-    useCurrentUser().resolvedUserInfo = computed(
-      () => mockResolvedUserInfo.value
-    )
-    mockResolvedUserInfo.value = { id: 'user-a' }
+    useCurrentUser().resolvedUserInfo = computed(() => ({ id: 'user-a' }))
     setCurrentWorkspace('workspace-1')
     mockGetMyProfile.mockResolvedValue(mockProfile)
     mockRequestAssetUploadUrl.mockResolvedValue({
@@ -89,11 +85,14 @@ describe('useComfyHubProfileGate', () => {
     })
 
     it('reuses cached profile state per user', async () => {
+      const resolvedUserInfo = ref({ id: 'user-a' })
+      useCurrentUser().resolvedUserInfo = computed(() => resolvedUserInfo.value)
+      const gate = useComfyHubProfileGate()
       await gate.fetchProfile()
       await gate.fetchProfile()
       expect(mockGetMyProfile).toHaveBeenCalledTimes(1)
 
-      mockResolvedUserInfo.value = { id: 'user-b' }
+      resolvedUserInfo.value = { id: 'user-b' }
       await gate.fetchProfile()
 
       expect(mockGetMyProfile).toHaveBeenCalledTimes(2)

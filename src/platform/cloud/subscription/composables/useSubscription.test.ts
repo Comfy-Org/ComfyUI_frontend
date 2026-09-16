@@ -9,7 +9,6 @@ import { useSubscription } from '@/platform/cloud/subscription/composables/useSu
 import { PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY } from '@/platform/cloud/subscription/utils/subscriptionCheckoutTracker'
 
 const {
-  mockIsLoggedIn,
   mockShowSubscriptionRequiredDialog,
   mockGetAuthHeader,
   mockGetCheckoutAttribution,
@@ -22,7 +21,6 @@ const {
   mockSetWorkspaceBillingRail,
   mockLocalStorage
 } = vi.hoisted(() => ({
-  mockIsLoggedIn: { value: false },
   mockIsCloud: { value: true },
 
   mockGetBillingStatus: vi.fn(),
@@ -151,7 +149,7 @@ vi.mock<unknown>(import('@/services/dialogService'), () => ({
 global.fetch = vi.fn()
 
 beforeEach(() => {
-  useCurrentUser().isLoggedIn = computed(() => mockIsLoggedIn.value)
+  useCurrentUser().isLoggedIn = computed(() => false)
   Object.assign(useAuthStore(), { isInitialized: true, userId: 'user-123' })
   vi.mocked(useAuthStore().getFirebaseAuthHeader).mockImplementation(
     mockGetAuthHeader
@@ -179,7 +177,6 @@ describe('useSubscription', () => {
     setDistribution('cloud')
 
     mockLocalStorage.__reset()
-    mockIsLoggedIn.value = false
     Object.assign(useAuthStore(), { userId: 'user-123' })
     mockIsCloud.value = true
     Object.assign(useAuthStore(), { isInitialized: true })
@@ -214,7 +211,7 @@ describe('useSubscription', () => {
         renewal_date: '2025-11-16'
       })
 
-      mockIsLoggedIn.value = true
+      useCurrentUser().isLoggedIn = computed(() => true)
       const { canAccessSubscriptionFeatures, fetchStatus } =
         useSubscriptionWithScope()
 
@@ -231,7 +228,7 @@ describe('useSubscription', () => {
         renewal_date: '2025-11-16'
       })
 
-      mockIsLoggedIn.value = true
+      useCurrentUser().isLoggedIn = computed(() => true)
       const { canAccessSubscriptionFeatures, fetchStatus } =
         useSubscriptionWithScope()
 
@@ -246,7 +243,7 @@ describe('useSubscription', () => {
         renewal_date: '2025-11-16T12:00:00Z'
       })
 
-      mockIsLoggedIn.value = true
+      useCurrentUser().isLoggedIn = computed(() => true)
       const { formattedRenewalDate, fetchStatus } = useSubscriptionWithScope()
 
       await fetchStatus()
@@ -270,7 +267,7 @@ describe('useSubscription', () => {
         renewal_date: '2025-11-16T12:00:00Z'
       })
 
-      mockIsLoggedIn.value = true
+      useCurrentUser().isLoggedIn = computed(() => true)
       const { subscriptionTier, fetchStatus } = useSubscriptionWithScope()
 
       await fetchStatus()
@@ -310,7 +307,7 @@ describe('useSubscription', () => {
 
       mockGetBillingStatus.mockResolvedValue(mockStatus)
 
-      mockIsLoggedIn.value = true
+      useCurrentUser().isLoggedIn = computed(() => true)
       const { fetchStatus } = useSubscriptionWithScope()
 
       await fetchStatus()
@@ -572,7 +569,7 @@ describe('useSubscription', () => {
         renewal_date: '2025-11-16'
       })
 
-      mockIsLoggedIn.value = true
+      useCurrentUser().isLoggedIn = computed(() => true)
       useSubscriptionWithScope()
 
       await vi.waitFor(() => {
@@ -617,7 +614,7 @@ describe('useSubscription', () => {
         renewal_date: '2025-11-16'
       })
 
-      mockIsLoggedIn.value = true
+      useCurrentUser().isLoggedIn = computed(() => true)
       useSubscriptionWithScope()
 
       await vi.waitFor(() => {
@@ -658,7 +655,7 @@ describe('useSubscription', () => {
         renewal_date: '2025-11-16'
       })
 
-      mockIsLoggedIn.value = true
+      useCurrentUser().isLoggedIn = computed(() => true)
       useSubscriptionWithScope()
 
       await vi.waitFor(() => {
@@ -691,7 +688,7 @@ describe('useSubscription', () => {
         renewal_date: '2025-11-16'
       })
 
-      mockIsLoggedIn.value = true
+      useCurrentUser().isLoggedIn = computed(() => true)
       useSubscriptionWithScope()
 
       await vi.waitFor(() => {
@@ -703,7 +700,7 @@ describe('useSubscription', () => {
     })
 
     it('rechecks pending checkout attempts when the document becomes visible', async () => {
-      mockIsLoggedIn.value = true
+      useCurrentUser().isLoggedIn = computed(() => true)
       const visibilityStateSpy = vi
         .spyOn(document, 'visibilityState', 'get')
         .mockReturnValue('visible')
@@ -769,7 +766,7 @@ describe('useSubscription', () => {
 
     it('does not clear pending attempts before auth initialization resolves', async () => {
       Object.assign(useAuthStore(), { isInitialized: false })
-      mockIsLoggedIn.value = false
+      useCurrentUser().isLoggedIn = computed(() => false)
 
       localStorage.setItem(
         PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY,
@@ -803,7 +800,7 @@ describe('useSubscription', () => {
         })
       )
 
-      mockIsLoggedIn.value = false
+      useCurrentUser().isLoggedIn = computed(() => false)
       useSubscriptionWithScope()
 
       await vi.waitFor(() => {
@@ -847,7 +844,7 @@ describe('useSubscription', () => {
   describe('non-cloud environments', () => {
     it('should not fetch subscription status when not on cloud', async () => {
       mockIsCloud.value = false
-      mockIsLoggedIn.value = true
+      useCurrentUser().isLoggedIn = computed(() => true)
 
       useSubscriptionWithScope()
 
@@ -925,7 +922,7 @@ describe('useSubscription', () => {
     })
 
     it('does not start cancellation watching when the billing portal does not open', async () => {
-      mockIsLoggedIn.value = true
+      useCurrentUser().isLoggedIn = computed(() => true)
       vi.mocked(useAuthActions().accessBillingPortal).mockResolvedValueOnce(
         false
       )
@@ -951,7 +948,7 @@ describe('useSubscription', () => {
     })
 
     it('tracks cancellation after manage subscription when status flips', async () => {
-      mockIsLoggedIn.value = true
+      useCurrentUser().isLoggedIn = computed(() => true)
 
       const activeStatus = {
         is_active: true,
@@ -983,7 +980,7 @@ describe('useSubscription', () => {
     })
 
     it('handles rapid focus events during cancellation polling', async () => {
-      mockIsLoggedIn.value = true
+      useCurrentUser().isLoggedIn = computed(() => true)
 
       const activeStatus = {
         is_active: true,

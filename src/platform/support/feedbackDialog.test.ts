@@ -19,9 +19,6 @@ vi.mock(import('@/platform/surveys/openTypeformDialog'), () => ({
 
 vi.mock(import('@/platform/telemetry'))
 
-const userEmail = vi.hoisted((): { value: string | undefined } => ({
-  value: undefined
-}))
 vi.mock(import('@/composables/auth/useCurrentUser'))
 
 vi.mock(import('@/platform/distribution/types'), () => ({
@@ -31,8 +28,7 @@ vi.mock(import('@/platform/distribution/types'), () => ({
 
 describe('openFeedbackDialog', () => {
   beforeEach(() => {
-    useCurrentUser().userEmail = computed(() => userEmail.value)
-    userEmail.value = undefined
+    useCurrentUser().userEmail = computed(() => undefined)
   })
 
   it('opens the feedback form tagged with distribution and source', () => {
@@ -47,7 +43,7 @@ describe('openFeedbackDialog', () => {
   })
 
   it('includes the logged-in user email as a hidden field', () => {
-    userEmail.value = 'user@example.com'
+    useCurrentUser().userEmail = computed(() => 'user@example.com')
 
     openFeedbackDialog('action-bar')
 

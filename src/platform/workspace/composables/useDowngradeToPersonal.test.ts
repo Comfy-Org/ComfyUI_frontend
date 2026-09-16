@@ -17,7 +17,6 @@ import {
   useDowngradeToPersonal
 } from './useDowngradeToPersonal'
 
-const mockUserEmail = ref<string | null>(null)
 const mockSubscription = ref<{ isCancelled: boolean } | null>(null)
 const mockIsInitialized = ref(true)
 const mockRemoveMember = vi.fn<(userId: string) => Promise<void>>()
@@ -131,7 +130,7 @@ function teamWithOwnerAnd(...memberIds: string[]) {
 }
 
 beforeEach(() => {
-  useCurrentUser().userEmail = computed(() => mockUserEmail.value)
+  useCurrentUser().userEmail = computed(() => null)
   vi.mocked(useBillingOperationStore().startOperation).mockResolvedValue(
     billingOperation()
   )
@@ -148,7 +147,6 @@ describe('useDowngradeToPersonal', () => {
     mockMembers.value = []
     mockRemoveMember.mockResolvedValue()
     mockFetchMembers.mockResolvedValue([])
-    mockUserEmail.value = null
     // Once loaded (isInitialized true), subscription is never null in
     // production — it's at least a FREE-tier record. Default to that
     // loaded-and-active shape; tests that need "not loaded yet" set
@@ -200,7 +198,7 @@ describe('useDowngradeToPersonal', () => {
     })
 
     it('falls back to protecting owners and the current user when the flag is absent', () => {
-      mockUserEmail.value = 'me@example.com'
+      useCurrentUser().userEmail = computed(() => 'me@example.com')
       mockMembers.value = [
         createMember({
           id: 'owner',

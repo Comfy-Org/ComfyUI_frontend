@@ -1,6 +1,6 @@
 vi.mock(import('firebase/auth'))
 vi.mock(import('vuefire'), () => ({ useFirebaseAuth: vi.fn() }))
-import { computed } from 'vue'
+import { computed, reactive, ref } from 'vue'
 import type { GlobalSetting } from '@comfyorg/ingest-types'
 import { useAuthStore } from '@/stores/authStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
@@ -14,13 +14,6 @@ import { i18n } from '@/i18n'
 
 import { useAgentConsent } from './useAgentConsent'
 
-const authState = await vi.hoisted(async () => {
-  const { reactive } = await import('vue')
-  return reactive<{ loggedIn: boolean; identity: string | null }>({
-    loggedIn: false,
-    identity: 'account-a'
-  })
-})
 vi.mock(import('@/composables/auth/useCurrentUser'))
 
 vi.mock(import('@/config/comfyApi'), () => ({
@@ -97,13 +90,9 @@ async function startConsent() {
 
 describe('useAgentConsent', () => {
   beforeEach(() => {
-    useCurrentUser().isLoggedIn = computed(() => authState.loggedIn)
-    useCurrentUser().resolvedUserInfo = computed(() =>
-      authState.identity ? { id: authState.identity } : null
-    )
+    useCurrentUser().isLoggedIn = computed(() => true)
+    useCurrentUser().resolvedUserInfo = computed(() => ({ id: 'account-a' }))
     localStorage.clear()
-    authState.loggedIn = true
-    authState.identity = 'account-a'
     Object.assign(useTeamWorkspaceStore(), { activeWorkspaceId: 'workspace-a' })
     Object.assign(useTeamWorkspaceStore(), { workspaceTransitionGeneration: 0 })
     vi.mocked(useTeamWorkspaceStore().initialize).mockResolvedValue(undefined)
@@ -259,11 +248,13 @@ describe('useAgentConsent', () => {
   })
 
   it('does not apply an open consent card to a different account', async () => {
+    const identity = ref('account-a')
+    useCurrentUser().resolvedUserInfo = computed(() => ({ id: identity.value }))
     const onOpen = vi.fn()
     const request = useAgentConsent().withConsent(onOpen)
     const dialog = await waitForConsentDialog()
 
-    authState.identity = 'account-b'
+    identity.value = 'account-b'
     ;(dialog.contentProps.onAccept as () => void)()
     await request
 
@@ -274,8 +265,14 @@ describe('useAgentConsent', () => {
   })
 
   it('authenticates signed-out Local users before saving to their account', async () => {
-    authState.loggedIn = false
-    authState.identity = null
+    const authState = reactive<{ loggedIn: boolean; identity: string | null }>({
+      loggedIn: false,
+      identity: null
+    })
+    useCurrentUser().isLoggedIn = computed(() => authState.loggedIn)
+    useCurrentUser().resolvedUserInfo = computed(() =>
+      authState.identity ? { id: authState.identity } : null
+    )
     Object.assign(useTeamWorkspaceStore(), { activeWorkspaceId: null })
     vi.mocked(useTeamWorkspaceStore().initialize).mockImplementationOnce(
       async () => {
@@ -312,8 +309,8 @@ describe('useAgentConsent', () => {
   })
 
   it('writes nothing when a signed-out Local user cancels sign-in', async () => {
-    authState.loggedIn = false
-    authState.identity = null
+    useCurrentUser().isLoggedIn = computed(() => false)
+    useCurrentUser().resolvedUserInfo = computed(() => null)
     showSignInDialog.mockResolvedValueOnce(false)
     const onOpen = vi.fn()
 
@@ -329,8 +326,14 @@ describe('useAgentConsent', () => {
   })
 
   it('reports sign-in loading failure without saving or opening and allows another attempt', async () => {
-    authState.loggedIn = false
-    authState.identity = null
+    const authState = reactive<{ loggedIn: boolean; identity: string | null }>({
+      loggedIn: false,
+      identity: null
+    })
+    useCurrentUser().isLoggedIn = computed(() => authState.loggedIn)
+    useCurrentUser().resolvedUserInfo = computed(() =>
+      authState.identity ? { id: authState.identity } : null
+    )
     const error = new Error('Sign-in chunk could not load')
     showSignInDialog.mockRejectedValueOnce(error)
     const onOpen = vi.fn()
