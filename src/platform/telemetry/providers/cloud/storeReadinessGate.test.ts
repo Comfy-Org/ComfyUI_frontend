@@ -1,6 +1,6 @@
 import { setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import type * as VueModule from 'vue'
+import { ref } from 'vue'
 
 const hoisted = vi.hoisted(() => {
   const customerIoTrack = vi.fn(
@@ -77,15 +77,13 @@ vi.mock<unknown>(import('@customerio/cdp-analytics-browser'), () => ({
   InAppPlugin: vi.fn(() => ({ name: 'Customer.io In-App Plugin' }))
 }))
 
-vi.mock<unknown>(import('@/platform/remoteConfig/remoteConfig'), async () => {
-  const { ref } = await vi.importActual<typeof VueModule>('vue')
-  return { remoteConfig: ref(null) }
-})
+vi.mock<unknown>(import('@/platform/remoteConfig/remoteConfig'), () => ({
+  remoteConfig: ref({})
+}))
 
-vi.mock<unknown>(import('@/composables/billing/useBillingContext'), async () => {
-  const { ref } = await vi.importActual<typeof VueModule>('vue')
-  return { useBillingContext: () => ({ tier: ref(null) }) }
-})
+vi.mock<unknown>(import('@/composables/billing/useBillingContext'), () => ({
+  useBillingContext: () => ({ tier: ref(null) })
+}))
 
 import {
   markStoresPending,
