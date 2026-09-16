@@ -25,13 +25,17 @@ type PreparationResult = {
   errors: unknown[]
 }
 
-function getInputBinding(node: ComfyNode) {
+function getInputBinding(node: ComfyNode, restoreNamed: boolean) {
   const widget = INPUT_WIDGETS[node.type]
   if (!widget) return
   const values = zValues.parse(node.widgets_values ?? [])
   const named = zNamedValues.optional().parse(node.widgets_values_named)
   const file =
-    named?.[widget] ?? (Array.isArray(values) ? values[0] : values[widget])
+    restoreNamed && named
+      ? named[widget]
+      : Array.isArray(values)
+        ? values[0]
+        : values[widget]
   if (typeof file !== 'string') return
   return { node, widget, file, values, named }
 }
@@ -122,13 +126,14 @@ export async function prepareTemplateInputs(
   workflow: ComfyWorkflowJSON,
   inputs: unknown,
   signal: AbortSignal,
+  restoreNamed: boolean,
   onStart?: () => void
 ): Promise<PreparationResult> {
   const errors: unknown[] = []
   const prepared = structuredClone(workflow)
   const bindings = prepared.nodes.flatMap((node) => {
     try {
-      const binding = getInputBinding(node)
+      const binding = getInputBinding(node, restoreNamed)
       return binding ? [binding] : []
     } catch (error) {
       errors.push(error)

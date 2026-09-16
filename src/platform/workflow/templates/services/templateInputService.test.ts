@@ -42,9 +42,10 @@ function input(file = 'kitten_cop.mp4') {
 function prepare(
   graph = workflow(),
   inputs: unknown = [input()],
-  signal = new AbortController().signal
+  signal = new AbortController().signal,
+  restoreNamed = false
 ) {
-  return prepareTemplateInputs(graph, inputs, signal)
+  return prepareTemplateInputs(graph, inputs, signal, restoreNamed)
 }
 
 beforeEach(() => {
@@ -136,29 +137,54 @@ describe('template input preparation', () => {
     expect(api.fetchApi).toHaveBeenCalledTimes(1)
   })
 
-  it('preserves positional-only and legacy name-keyed widget serialization', async () => {
-    const positional = videoNode()
-    delete positional.widgets_values_named
-    const keyed: ComfyNode = {
-      ...videoNode(36),
-      widgets_values: { file: 'kitten_cop.mp4' }
+  it.for([false, true])(
+    'preserves positional-only and legacy name-keyed widget serialization (named restoration: %s)',
+    async (restoreNamed) => {
+      const positional = videoNode()
+      delete positional.widgets_values_named
+      const keyed: ComfyNode = {
+        ...videoNode(36),
+        widgets_values: { file: 'kitten_cop.mp4' }
+      }
+      delete keyed.widgets_values_named
+      vi.mocked(api.fetchApi).mockResolvedValue(
+        Response.json({ name: 'saved.mp4', subfolder: 'examples' })
+      )
+
+      const result = await prepare(
+        workflow([positional, keyed]),
+        [input()],
+        new AbortController().signal,
+        restoreNamed
+      )
+
+      expect(result.workflow.nodes[0].widgets_values).toEqual([
+        'examples/saved.mp4',
+        'image'
+      ])
+      expect(result.workflow.nodes[0].widgets_values_named).toBeUndefined()
+      expect(result.workflow.nodes[1].widgets_values).toEqual({
+        file: 'examples/saved.mp4'
+      })
     }
-    delete keyed.widgets_values_named
-    vi.mocked(api.fetchApi).mockResolvedValue(
-      Response.json({ name: 'saved.mp4', subfolder: 'examples' })
-    )
+  )
 
-    const result = await prepare(workflow([positional, keyed]))
+  it.for([{}, { file: null }])(
+    'does not fall back to positional media when the named value is missing: %j',
+    async (named) => {
+      const graph = workflow([{ ...videoNode(), widgets_values_named: named }])
+      const result = await prepare(
+        graph,
+        [input()],
+        new AbortController().signal,
+        true
+      )
 
-    expect(result.workflow.nodes[0].widgets_values).toEqual([
-      'examples/saved.mp4',
-      'image'
-    ])
-    expect(result.workflow.nodes[0].widgets_values_named).toBeUndefined()
-    expect(result.workflow.nodes[1].widgets_values).toEqual({
-      file: 'examples/saved.mp4'
-    })
-  })
+      expect(result).toEqual({ workflow: graph, errors: [] })
+      expect(fetch).not.toHaveBeenCalled()
+      expect(api.fetchApi).not.toHaveBeenCalled()
+    }
+  )
 
   it.for([undefined, null, 'main', 'v1.0.0', '0123456', '../main', 42])(
     'opens without downloading when the catalog has no immutable revision: %s',
@@ -295,6 +321,7 @@ describe('template input preparation', () => {
         workflow(),
         inputs,
         new AbortController().signal,
+        false,
         onStart
       )
       expect(onStart).not.toHaveBeenCalled()
@@ -312,6 +339,7 @@ describe('template input preparation', () => {
       workflow(),
       [input()],
       new AbortController().signal,
+      false,
       onStart
     )
     expect(result.errors).toEqual([])

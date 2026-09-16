@@ -2,6 +2,7 @@ import { computed, onScopeDispose, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { isCloud } from '@/platform/distribution/types'
+import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@/platform/telemetry'
 import { reportError } from '@/platform/telemetry/reportError'
 import { useToastStore } from '@/platform/updates/common/toastStore'
@@ -173,6 +174,7 @@ export function useTemplateWorkflows() {
         workflow,
         template.io.inputs,
         signal,
+        useSettingStore().get('Comfy.Workflow.NamedValuesRestore'),
         () => {
           toast.add(progress)
         }
