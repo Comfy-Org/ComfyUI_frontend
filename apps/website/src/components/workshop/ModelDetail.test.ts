@@ -8,7 +8,7 @@ import { computed, defineComponent, h, nextTick, ref } from 'vue'
 import type {
   AccountCredential,
   SessionFailure
-} from '@comfyorg/account/session'
+} from '@comfyorg/account-core/session'
 
 import type { WorkshopModelDetail } from '../../config/models-catalogue'
 import type { Locale } from '../../i18n/translations'

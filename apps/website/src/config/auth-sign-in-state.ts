@@ -8,11 +8,11 @@ import {
   authErrorMessage,
   classifyAuthError,
   unauthorizedDomainMessage
-} from '@comfyorg/account/firebaseAuthError'
+} from '@comfyorg/account-core/firebaseAuthError'
 import type {
   AuthCopyLocale,
   AuthErrorClassification
-} from '@comfyorg/account/firebaseAuthError'
+} from '@comfyorg/account-core/firebaseAuthError'
 
 import type { TranslationKey } from '../i18n/translations'
 

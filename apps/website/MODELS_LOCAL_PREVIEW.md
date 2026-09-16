@@ -11,7 +11,7 @@ The combined preview now builds on `maanil/auth-stack-combined` (#17283),
 commit `957a2403112291d666a8a1fa8ba4bc98b3d98f19`, rather than the older
 `throwaway/christian-closure-2026-09-09` snapshot. This is committed auth work,
 not a claim that its PR is merged or review-approved. The account package is
-unchanged from that base; Models uses its current `@comfyorg/account/session`
+unchanged from that base; Models uses its current `@comfyorg/account-core/session`
 entry instead of restoring the removed core barrel.
 
 The earlier September 10 rebase preserved the assembled prototype/content/Router
