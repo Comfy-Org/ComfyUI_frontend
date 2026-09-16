@@ -264,21 +264,17 @@ export function createCapabilitiesReader(
     // waiting on it. Each caller's signal releases only that caller, below.
     const promise = (async (): Promise<BillingResult<CapabilitiesSnapshot>> => {
       const result = await requestCapabilities(scope)
-      if (result.status !== 'ok') {
-        if (
-          result.code === 'ACCESS_DENIED' &&
-          scopeTracker.isCurrent(context)
-        ) {
-          snapshot = undefined
-        }
-        return result
-      }
-
       // The publish guard. Between issuing the request and settling it the
-      // host may have changed workspace or signed out, and a snapshot cached
-      // now would be attributed to whoever is signed in next.
+      // host may have changed workspace or signed out, so a snapshot cached
+      // now would be attributed to whoever is signed in next, and a failure
+      // says nothing about the scope that has since taken over.
       if (lifetime.disposed || !scopeTracker.isCurrent(context)) {
         return { status: 'error', code: 'SUPERSEDED' }
+      }
+
+      if (result.status !== 'ok') {
+        if (result.code === 'ACCESS_DENIED') snapshot = undefined
+        return result
       }
 
       // A mutation committed while this read was in flight, and the revision
