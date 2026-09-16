@@ -1,5 +1,4 @@
 import { zGlobalSettingValue } from '@comfyorg/ingest-types/zod'
-import { expect } from '@playwright/test'
 import type { Page, Route } from '@playwright/test'
 
 import type {
@@ -10,7 +9,6 @@ import type {
 
 import { comfyPageFixture } from '@e2e/fixtures/ComfyPage'
 
-import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import type { UserDataFullInfo } from '@/schemas/apiSchema'
 import type { RemoteConfig } from '@/platform/remoteConfig/types'
 import { AGENT_CONSENT_SETTING_ID } from '@/platform/settings/constants/agent'
@@ -20,6 +18,7 @@ import type {
   AgentWsEvent
 } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 
+import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 import { mockBilling } from '@e2e/fixtures/utils/cloudBillingMocks'
 import { mockCloudBootRoutes } from '@e2e/fixtures/utils/cloudBootMocks'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
@@ -152,7 +151,7 @@ async function mockAgentBoot(
     crdtDebugEnabled,
     agentConsentSave,
     agentConsentWrites
-  }: AgentFixtures
+  }: Omit<AgentFixtures, 'agentPanel'>
 ): Promise<void> {
   let consentAccepted = agentConsentAccepted
 
@@ -340,6 +339,7 @@ async function mockAgentBoot(
 }
 
 type AgentFixtures = {
+  agentPanel: AgentPanel
   agentFlagEnabled: boolean
   agentConsentAccepted: boolean
   agentPanelInitiallyOpen: boolean
@@ -350,6 +350,9 @@ type AgentFixtures = {
 }
 
 export const agentTest = comfyPageFixture.extend<AgentFixtures>({
+  agentPanel: async ({ page }, use) => {
+    await use(new AgentPanel(page))
+  },
   agentFlagEnabled: [true, { option: true }],
   agentConsentAccepted: [true, { option: true }],
   agentPanelInitiallyOpen: [false, { option: true }],
@@ -388,14 +391,3 @@ export const agentTest = comfyPageFixture.extend<AgentFixtures>({
     await use(page)
   }
 })
-
-export async function selectAgentWorkflow(page: Page): Promise<void> {
-  const picker = page.locator('#agent-panel-root').getByRole('button', {
-    name: enMessages.agent.switchWorkflow
-  })
-  await picker.click()
-  await page
-    .getByRole('menuitemradio', { name: 'Unsaved Workflow', exact: true })
-    .click()
-  await expect(picker).toHaveText('Unsaved Workflow')
-}

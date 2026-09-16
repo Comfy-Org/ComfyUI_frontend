@@ -85,6 +85,17 @@ export class ClipboardHelper {
     await this.keyboard.ctrlSend('KeyV', locator ?? null)
   }
 
+  async readText(): Promise<string> {
+    return await this.page.evaluate(() => navigator.clipboard.readText())
+  }
+
+  async writeText(text: string): Promise<void> {
+    await this.page.evaluate(
+      (clipboardText) => navigator.clipboard.writeText(clipboardText),
+      text
+    )
+  }
+
   async pasteFile(
     filePath: string,
     { mode = 'keyboard' }: PasteFileOptions = {}
