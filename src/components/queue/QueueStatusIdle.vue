@@ -4,7 +4,6 @@
       <button
         type="button"
         data-testid="queue-status-idle"
-        :aria-label="t('queueStatus.nothingRunning')"
         :aria-expanded="open"
         class="group pointer-events-auto flex cursor-pointer items-center gap-1 rounded-lg border border-solid border-base-foreground/9 bg-transparent px-2 py-1 text-sm/5 text-base-foreground transition-colors hover:bg-secondary-background data-[state=open]:bg-secondary-background"
       >
@@ -46,13 +45,12 @@
             :key="result.id"
             type="button"
             class="relative flex cursor-pointer items-center gap-2.5 overflow-hidden rounded-[8px] border-none bg-transparent px-1.5 py-2 text-left transition-colors hover:bg-secondary-background"
-            :aria-label="t('queueStatus.viewResult')"
             data-testid="queue-status-recent-job"
             @click="emit('view', result.job)"
           >
             <span
               v-if="result.thumbSrc"
-              class="relative flex size-9 shrink-0 items-center justify-center overflow-hidden rounded-[6px] bg-base-background outline-1 outline-white/10"
+              class="relative flex size-9 shrink-0 items-center justify-center overflow-hidden rounded-[6px] bg-base-background outline-1 outline-base-foreground/10"
             >
               <img
                 :src="result.thumbSrc"

@@ -141,7 +141,8 @@ const stubs = {
   DropdownMenuTrigger: { template: '<div><slot /></div>' },
   DropdownMenuPortal: { template: '<div><slot /></div>' },
   DropdownMenuContent: { template: '<div><slot /></div>' },
-  DropdownMenuItem: { template: '<div><slot /></div>' }
+  DropdownMenuRadioGroup: { template: '<div><slot /></div>' },
+  DropdownMenuRadioItem: { template: '<div><slot /></div>' }
 }
 
 function renderQueueButton(
