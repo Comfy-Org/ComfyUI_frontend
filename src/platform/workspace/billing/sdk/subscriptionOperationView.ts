@@ -9,12 +9,19 @@
  */
 import type {
   PaymentPortalResult,
+  PreviewSubscribeInput,
+  PreviewSubscribeResult,
+  SubscribeInput,
   SubscriptionCommandFailure,
   SubscriptionCommandOutcome,
   SubscriptionCommandResult
 } from '@comfyorg/account-core/billing'
 
 import { t } from '@/i18n'
+import type {
+  PreviewSubscribeResponse,
+  SubscribeResponse
+} from '@/platform/workspace/api/workspaceApi'
 import { WorkspaceApiError } from '@/platform/workspace/api/workspaceApi'
 
 import { declineDetail } from './topupOperationView'
@@ -26,11 +33,18 @@ export type SubscriptionRailOutcome<T = void> =
   | { readonly status: 'unavailable' }
 
 /**
- * The three subscription actions the host routes through the SDK. Cancel and
+ * The subscription actions the host routes through the SDK. Cancel and
  * resubscribe report only whether they settled; the portal hands back the URL
- * the host opens.
+ * the host opens; subscribe and its quote hand back the bodies the checkout
+ * already reads.
  */
 export interface SubscriptionRail {
+  subscribe: (
+    input: SubscribeInput
+  ) => Promise<SubscriptionRailOutcome<SubscribeResponse>>
+  previewSubscribe: (
+    input: PreviewSubscribeInput
+  ) => Promise<SubscriptionRailOutcome<PreviewSubscribeResponse>>
   cancelSubscription: () => Promise<SubscriptionRailOutcome>
   resubscribe: () => Promise<SubscriptionRailOutcome>
   openPaymentPortal: (
@@ -107,6 +121,40 @@ export function projectSubscriptionResult(
   return result.value.phase === 'succeeded'
     ? SETTLED
     : projectUnsuccessfulSettle(result.value)
+}
+
+/**
+ * A settled subscribe as the body `handleSubscribeResponse` already handles.
+ * The SDK waits for the operation, so by the time this projects there is
+ * nothing left to poll: the status is always the settled `subscribed`, never
+ * the response's `needs_payment_method` or `pending_payment`, both of which
+ * the lifecycle drove to a conclusion first.
+ *
+ * `billing_op_id` is empty when the server answered that the requested state
+ * already held: nothing was issued, so there is no operation to attribute the
+ * success to. Both callers read the id only to report telemetry, and both
+ * treat an absent response as a failure — which this is not.
+ */
+export function projectSubscribeResult(
+  result: SubscriptionCommandResult
+): SubscriptionRailOutcome<SubscribeResponse> {
+  if (result.status === 'error') return projectFailure(result)
+  const { phase, operation } = result.value
+  if (phase !== 'succeeded') {
+    return { status: 'error', error: new Error(`phase: ${phase}`) }
+  }
+  return {
+    status: 'ok',
+    value: { billing_op_id: operation?.id ?? '', status: 'subscribed' }
+  }
+}
+
+export function projectPreviewSubscribeResult(
+  result: PreviewSubscribeResult
+): SubscriptionRailOutcome<PreviewSubscribeResponse> {
+  return result.status === 'error'
+    ? projectFailure(result)
+    : { status: 'ok', value: result.value }
 }
 
 export function projectPaymentPortalResult(

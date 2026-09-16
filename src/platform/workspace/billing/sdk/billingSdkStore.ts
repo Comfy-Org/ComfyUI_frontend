@@ -10,7 +10,8 @@ import type {
   BillingOperationTelemetryEvent,
   EmbeddedChallengePort,
   PendingBillingOperation,
-  SubscriptionCommandResult
+  PreviewSubscribeInput,
+  SubscribeInput
 } from '@comfyorg/account-core/billing'
 import { BILLING_OPERATION_TELEMETRY_EVENT } from '@comfyorg/account-core/billing'
 import { loadStripe } from '@stripe/stripe-js/pure'
@@ -25,7 +26,11 @@ import { isCloud } from '@/platform/distribution/types'
 import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
 import { useTelemetry } from '@/platform/telemetry'
 import { useToastStore } from '@/platform/updates/common/toastStore'
-import type { CreateTopupResponse } from '@/platform/workspace/api/workspaceApi'
+import type {
+  CreateTopupResponse,
+  PreviewSubscribeResponse,
+  SubscribeResponse
+} from '@/platform/workspace/api/workspaceApi'
 import { workspaceApiUrl } from '@/platform/workspace/api/workspaceApiUrl'
 import { needsCustomerAttention } from '@/platform/workspace/billing/customerAttention'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
@@ -37,6 +42,8 @@ import { createBillingSdk } from './createBillingSdk'
 import type { SubscriptionRailOutcome } from './subscriptionOperationView'
 import {
   projectPaymentPortalResult,
+  projectPreviewSubscribeResult,
+  projectSubscribeResult,
   projectSubscriptionResult
 } from './subscriptionOperationView'
 import {
@@ -69,6 +76,7 @@ export const useBillingSdkStore = defineStore('billingSdk', () => {
   const dismissed = shallowRef<ReadonlySet<string>>(new Set())
   const resumedOperations = new Set<string>()
   const drivenChallenges = new Set<string>()
+  const openedActions = new Set<string>()
   const progressToasts = new Map<
     string,
     { kind: ProgressKind; message: ToastMessage }
@@ -90,6 +98,7 @@ export const useBillingSdkStore = defineStore('billingSdk', () => {
   sdk.lifecycle.subscribe((state) => {
     operations.value = sdk.lifecycle.getSnapshot()
     if (state.kind === 'topup') onTopupChanged(state)
+    else onSubscriptionChanged(state)
   })
 
   const wake = () => {
@@ -175,6 +184,27 @@ export const useBillingSdkStore = defineStore('billingSdk', () => {
     progressToasts.delete(operationId)
   }
 
+  // A subscribe the SDK settles has no dialog watching it, so the two customer
+  // steps the checkout performs for the legacy response — driving the in-page
+  // challenge and opening the hosted payment page — are performed here, or the
+  // operation waits on a customer who was never shown anything.
+  function onSubscriptionChanged(state: BillingOperationState) {
+    if (state.phase !== 'pending') return
+    void driveRequiredChallenge(state)
+    openHostedAction(state)
+  }
+
+  function openHostedAction(state: PendingBillingOperation) {
+    if (state.actionUrl === undefined || openedActions.has(state.id)) return
+    openedActions.add(state.id)
+    if (window.open(state.actionUrl, '_blank')) return
+    toastStore.add({
+      severity: 'warn',
+      summary: t('g.warning'),
+      detail: t('subscription.preview.paymentPopupBlocked')
+    })
+  }
+
   // One in-page challenge per operation, as the poller drives it: a later
   // challenge for the same operation waits for the customer's retry.
   async function driveRequiredChallenge(state: PendingBillingOperation) {
@@ -224,13 +254,20 @@ export const useBillingSdkStore = defineStore('billingSdk', () => {
   // every later action goes straight to the legacy call.
   let subscriptionRouteAvailable = true
 
-  async function runSubscriptionCommand(
-    command: () => Promise<SubscriptionCommandResult>,
-    refresh: () => Promise<void>
-  ): Promise<SubscriptionRailOutcome> {
+  async function onSubscriptionRoute<T>(
+    run: () => Promise<SubscriptionRailOutcome<T>>
+  ): Promise<SubscriptionRailOutcome<T>> {
     if (!subscriptionRouteAvailable) return { status: 'unavailable' }
-    const outcome = projectSubscriptionResult(await command())
+    const outcome = await run()
     if (outcome.status === 'unavailable') subscriptionRouteAvailable = false
+    return outcome
+  }
+
+  async function runSubscriptionCommand<T>(
+    command: () => Promise<SubscriptionRailOutcome<T>>,
+    refresh: () => Promise<void>
+  ): Promise<SubscriptionRailOutcome<T>> {
+    const outcome = await onSubscriptionRoute(command)
     if (outcome.status === 'ok') await refresh()
     return outcome
   }
@@ -246,7 +283,7 @@ export const useBillingSdkStore = defineStore('billingSdk', () => {
     ])
   }
 
-  async function refreshAfterResubscribe(): Promise<void> {
+  async function refreshAfterSubscriptionChange(): Promise<void> {
     const billingContext = useBillingContext()
     await Promise.allSettled([
       billingContext.reconcileSubscriptionSuccess(),
@@ -256,26 +293,45 @@ export const useBillingSdkStore = defineStore('billingSdk', () => {
 
   function cancelSubscription(): Promise<SubscriptionRailOutcome> {
     return runSubscriptionCommand(
-      () => sdk.commands.cancelSubscription(),
+      async () => projectSubscriptionResult(await sdk.commands.cancelSubscription()),
       refreshAfterCancel
     )
   }
 
   function resubscribe(): Promise<SubscriptionRailOutcome> {
     return runSubscriptionCommand(
-      () => sdk.commands.resubscribe(),
-      refreshAfterResubscribe
+      async () => projectSubscriptionResult(await sdk.commands.resubscribe()),
+      refreshAfterSubscriptionChange
+    )
+  }
+
+  function subscribe(
+    input: SubscribeInput
+  ): Promise<SubscriptionRailOutcome<SubscribeResponse>> {
+    return runSubscriptionCommand(
+      async () => projectSubscribeResult(await sdk.commands.subscribe(input)),
+      refreshAfterSubscriptionChange
+    )
+  }
+
+  // A quote changes nothing, so it refreshes nothing; it shares the route
+  // latch because the backend gates it with the rest of them.
+  async function previewSubscribe(
+    input: PreviewSubscribeInput
+  ): Promise<SubscriptionRailOutcome<PreviewSubscribeResponse>> {
+    return onSubscriptionRoute(async () =>
+      projectPreviewSubscribeResult(await sdk.commands.previewSubscribe(input))
     )
   }
 
   async function openPaymentPortal(
     returnUrl: string
   ): Promise<SubscriptionRailOutcome<string>> {
-    if (!subscriptionRouteAvailable) return { status: 'unavailable' }
-    const outcome = projectPaymentPortalResult(
-      await sdk.commands.openPaymentPortal({ returnUrl })
+    const outcome = await onSubscriptionRoute(async () =>
+      projectPaymentPortalResult(
+        await sdk.commands.openPaymentPortal({ returnUrl })
+      )
     )
-    if (outcome.status === 'unavailable') subscriptionRouteAvailable = false
     // The portal may add or remove a card and says nothing on the way back, so
     // handing the URL out is the last moment this tab's list is known good.
     if (outcome.status === 'ok') sdk.paymentMethods.invalidate()
@@ -302,6 +358,8 @@ export const useBillingSdkStore = defineStore('billingSdk', () => {
     isAddingCredits,
     topupActionOperation,
     createTopup,
+    subscribe,
+    previewSubscribe,
     cancelSubscription,
     resubscribe,
     openPaymentPortal,
