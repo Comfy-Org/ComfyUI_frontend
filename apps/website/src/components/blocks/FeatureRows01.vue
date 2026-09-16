@@ -36,7 +36,7 @@ const {
   locale = 'en',
   rows
 } = defineProps<{
-  heading: string
+  heading?: string
   eyebrow?: string
   locale?: Locale
   rows: readonly FeatureRow[]
@@ -45,7 +45,7 @@ const {
 
 <template>
   <section class="mx-auto max-w-9xl px-6 py-16 lg:py-24">
-    <SectionHeader :label="eyebrow" max-width="xl">
+    <SectionHeader v-if="heading" :label="eyebrow" max-width="xl">
       {{ heading }}
     </SectionHeader>
 
@@ -53,7 +53,7 @@ const {
       <slot name="media" />
     </div>
 
-    <div class="mt-16 flex flex-col gap-4 lg:gap-6">
+    <div :class="cn('flex flex-col gap-4 lg:gap-6', heading && 'mt-16')">
       <GlassCard
         v-for="(row, i) in rows"
         :key="row.id"

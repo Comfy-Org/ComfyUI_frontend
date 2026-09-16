@@ -18,7 +18,7 @@ const routes = getRoutes(locale)
     beta
     :badge-text="t('platform.router.badge.label', locale)"
     :title="t('platform.modelsHero.heading', locale)"
-    title-class="text-primary-comfy-yellow text-3xl/tight font-bold tracking-[-1.44px] md:text-4xl/tight lg:text-5xl/tight"
+    title-class="text-primary-comfy-yellow text-3xl/tight font-light tracking-[-1.44px] md:text-4xl/tight lg:text-5xl/tight"
     media-wrapper-class="hidden min-w-0 lg:block"
     :subtitle="t('platform.modelsHero.subtitle', locale)"
     :primary-cta="{

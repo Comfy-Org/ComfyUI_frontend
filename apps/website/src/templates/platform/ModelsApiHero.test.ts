@@ -8,6 +8,8 @@ describe('ModelsApiHero', () => {
   it('presents the Comfy Router title, beta badge, and code tabs', () => {
     render(ModelsApiHero, { props: { locale: 'en' } })
 
+    expect(screen.getByText('ROUTER', { exact: true })).toBeTruthy()
+    expect(screen.queryByText('Comfy Router', { exact: true })).toBeNull()
     expect(
       screen.getByRole('heading', {
         name: t('platform.modelsHero.heading', 'en')
