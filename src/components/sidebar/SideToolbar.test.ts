@@ -1,29 +1,37 @@
-import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
+import { render, screen } from '@testing-library/vue'
 import PrimeVue from 'primevue/config'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { ComponentProps } from 'vue-component-type-helpers'
 import { createI18n } from 'vue-i18n'
 
-import SideToolbar from './SideToolbar.vue'
+import { useTelemetry } from '@/platform/telemetry'
 
-interface TestTab {
-  id: string
-  icon: string
-  tooltip: string
-  label: string
-  title: string
-}
+import { useSettingStore } from '@/platform/settings/settingStore'
+import { useCommandStore } from '@/stores/commandStore'
+import { useUserStore } from '@/stores/userStore'
+import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
+import type { SidebarTabExtension } from '@/types/extensionTypes'
+
+import SideToolbar from './SideToolbar.vue'
+vi.mock(import('firebase/auth'))
+vi.mock(import('vuefire'), () => ({ useFirebaseAuth: vi.fn() }))
+
+beforeEach(() => {
+  useSettingStore().$patch({
+    settingValues: {
+      'Comfy.Sidebar.Size': 'normal',
+      'Comfy.Sidebar.Location': 'left'
+    }
+  })
+  useCommandStore().registerCommand({
+    id: 'Workspace.ToggleSidebarTab.assets',
+    function: spies.toggleAssets
+  })
+})
 
 const spies = vi.hoisted(() => ({
-  trackUiButtonClicked: vi.fn(),
   toggleAssets: vi.fn()
-}))
-
-const state = vi.hoisted(() => ({
-  isMultiUserServer: false,
-  sidebarTabs: [] as TestTab[],
-  activeSidebarTab: null as { id: string } | null
 }))
 
 vi.mock(import('@/platform/distribution/types'), () => ({
@@ -32,50 +40,7 @@ vi.mock(import('@/platform/distribution/types'), () => ({
   isNightly: false
 }))
 
-vi.mock<unknown>(import('@/stores/workspaceStore'), () => ({
-  useWorkspaceStore: () => ({
-    getSidebarTabs: () => state.sidebarTabs,
-    sidebarTab: { activeSidebarTab: state.activeSidebarTab }
-  })
-}))
-
-vi.mock<unknown>(import('@/platform/settings/settingStore'), () => ({
-  useSettingStore: () => ({
-    get: (key: string) => {
-      if (key === 'Comfy.Sidebar.Size') return 'large'
-      if (key === 'Comfy.Sidebar.Location') return 'left'
-      return 'floating'
-    }
-  })
-}))
-
-vi.mock<unknown>(import('@/stores/userStore'), () => ({
-  useUserStore: () => ({ isMultiUserServer: state.isMultiUserServer })
-}))
-
-vi.mock<unknown>(import('@/stores/commandStore'), () => ({
-  useCommandStore: () => ({
-    commands: [
-      { id: 'Workspace.ToggleSidebarTab.assets', function: spies.toggleAssets }
-    ]
-  })
-}))
-
-vi.mock<unknown>(
-  import('@/renderer/core/canvas/canvasStore'),
-
-  () => ({
-    useCanvasStore: () => ({ canvas: null })
-  })
-)
-
-vi.mock<unknown>(import('@/platform/keybindings/keybindingStore'), () => ({
-  useKeybindingStore: () => ({ getKeybindingByCommandId: () => undefined })
-}))
-
-vi.mock<unknown>(import('@/platform/telemetry'), () => ({
-  useTelemetry: () => ({ trackUiButtonClicked: spies.trackUiButtonClicked })
-}))
+vi.mock(import('@/platform/telemetry'))
 
 const i18n = createI18n({
   legacy: false,
@@ -109,7 +74,9 @@ function renderToolbar(props: SideToolbarProps = {}) {
   })
 }
 
-const assetsTab: TestTab = {
+const assetsTab: SidebarTabExtension = {
+  type: 'custom',
+  render: () => {},
   id: 'assets',
   icon: 'pi pi-image',
   tooltip: 'Assets',
@@ -117,7 +84,9 @@ const assetsTab: TestTab = {
   title: 'Assets'
 }
 
-const workflowsTab: TestTab = {
+const workflowsTab: SidebarTabExtension = {
+  type: 'custom',
+  render: () => {},
   id: 'workflows',
   icon: 'pi pi-folder',
   tooltip: 'Workflows',
@@ -127,9 +96,9 @@ const workflowsTab: TestTab = {
 
 describe('SideToolbar', () => {
   beforeEach(() => {
-    state.isMultiUserServer = false
-    state.sidebarTabs = [assetsTab, workflowsTab]
-    state.activeSidebarTab = null
+    Object.assign(useUserStore(), { isMultiUserServer: false })
+    useSidebarTabStore().sidebarTabs = [assetsTab, workflowsTab]
+    useSidebarTabStore().activeSidebarTabId = null
   })
 
   it('renders only the tabs listed in visibleTabIds', () => {
@@ -178,7 +147,7 @@ describe('SideToolbar', () => {
 
     await user.click(screen.getByRole('button', { name: 'Assets' }))
 
-    expect(spies.trackUiButtonClicked).toHaveBeenCalledWith({
+    expect(useTelemetry()?.trackUiButtonClicked).toHaveBeenCalledWith({
       button_id: 'sidebar_tab_assets_media_selected',
       element_group: 'sidebar'
     })
@@ -190,7 +159,7 @@ describe('SideToolbar', () => {
     expect(screen.queryByTestId('logout')).not.toBeInTheDocument()
     unmount()
 
-    state.isMultiUserServer = true
+    Object.assign(useUserStore(), { isMultiUserServer: true })
     renderToolbar()
     expect(screen.getByTestId('logout')).toBeInTheDocument()
   })

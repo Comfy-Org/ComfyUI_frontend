@@ -1,6 +1,4 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
@@ -14,10 +12,6 @@ import { app } from '@/scripts/app'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 
 describe('reconcileNodeErrorFlags (via lastNodeErrors watcher)', () => {
-  beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-  })
-
   function setupGraphWithStore() {
     const graph = new LGraph()
     const nodeA = new LGraphNode('KSampler')

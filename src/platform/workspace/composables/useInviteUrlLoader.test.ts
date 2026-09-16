@@ -1,3 +1,4 @@
+import { useTeamWorkspaceStore } from '../stores/teamWorkspaceStore'
 import { fromAny } from '@total-typescript/shoehorn'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createApp, defineComponent } from 'vue'
@@ -52,13 +53,6 @@ vi.mock<unknown>(
   })
 )
 
-const mockAcceptInvite = vi.hoisted(() => vi.fn())
-vi.mock<unknown>(import('../stores/teamWorkspaceStore'), () => ({
-  useTeamWorkspaceStore: () => ({
-    acceptInvite: mockAcceptInvite
-  })
-}))
-
 const apps: App<Element>[] = []
 
 function useInviteUrlLoader(): ReturnType<typeof createInviteUrlLoader> {
@@ -110,7 +104,7 @@ describe('useInviteUrlLoader', () => {
       const { loadInviteFromUrl } = useInviteUrlLoader()
       await loadInviteFromUrl()
 
-      expect(mockAcceptInvite).not.toHaveBeenCalled()
+      expect(useTeamWorkspaceStore().acceptInvite).not.toHaveBeenCalled()
       expect(mockToastAdd).not.toHaveBeenCalled()
       expect(mockRouterReplace).not.toHaveBeenCalled()
     })
@@ -120,7 +114,7 @@ describe('useInviteUrlLoader', () => {
       preservedQueryMocks.mergePreservedQueryIntoQuery.mockReturnValue({
         invite: 'preserved-token'
       })
-      mockAcceptInvite.mockResolvedValue({
+      vi.mocked(useTeamWorkspaceStore().acceptInvite).mockResolvedValue({
         workspaceId: 'ws-123',
         workspaceName: 'Test Workspace'
       })
@@ -134,12 +128,14 @@ describe('useInviteUrlLoader', () => {
       expect(mockRouterReplace).toHaveBeenCalledWith({
         query: { invite: 'preserved-token' }
       })
-      expect(mockAcceptInvite).toHaveBeenCalledWith('preserved-token')
+      expect(useTeamWorkspaceStore().acceptInvite).toHaveBeenCalledWith(
+        'preserved-token'
+      )
     })
 
     it('accepts invite and shows success toast on success', async () => {
       mockRouteQuery.value = { invite: 'valid-token' }
-      mockAcceptInvite.mockResolvedValue({
+      vi.mocked(useTeamWorkspaceStore().acceptInvite).mockResolvedValue({
         workspaceId: 'ws-123',
         workspaceName: 'Test Workspace'
       })
@@ -147,7 +143,9 @@ describe('useInviteUrlLoader', () => {
       const { loadInviteFromUrl } = useInviteUrlLoader()
       await loadInviteFromUrl()
 
-      expect(mockAcceptInvite).toHaveBeenCalledWith('valid-token')
+      expect(useTeamWorkspaceStore().acceptInvite).toHaveBeenCalledWith(
+        'valid-token'
+      )
       expect(mockToastAdd).toHaveBeenCalledWith({
         severity: 'success',
         summary: 'Invite Accepted',
@@ -163,12 +161,16 @@ describe('useInviteUrlLoader', () => {
 
     it('shows error toast when invite acceptance fails', async () => {
       mockRouteQuery.value = { invite: 'invalid-token' }
-      mockAcceptInvite.mockRejectedValue(new Error('Invalid invite'))
+      vi.mocked(useTeamWorkspaceStore().acceptInvite).mockRejectedValue(
+        new Error('Invalid invite')
+      )
 
       const { loadInviteFromUrl } = useInviteUrlLoader()
       await loadInviteFromUrl()
 
-      expect(mockAcceptInvite).toHaveBeenCalledWith('invalid-token')
+      expect(useTeamWorkspaceStore().acceptInvite).toHaveBeenCalledWith(
+        'invalid-token'
+      )
       expect(mockToastAdd).toHaveBeenCalledWith({
         severity: 'error',
         summary: 'Failed to Accept Invite',
@@ -178,7 +180,7 @@ describe('useInviteUrlLoader', () => {
 
     it('cleans up URL after processing invite', async () => {
       mockRouteQuery.value = { invite: 'valid-token', other: 'param' }
-      mockAcceptInvite.mockResolvedValue({
+      vi.mocked(useTeamWorkspaceStore().acceptInvite).mockResolvedValue({
         workspaceId: 'ws-123',
         workspaceName: 'Test Workspace'
       })
@@ -194,7 +196,7 @@ describe('useInviteUrlLoader', () => {
 
     it('clears preserved query after processing', async () => {
       mockRouteQuery.value = { invite: 'valid-token' }
-      mockAcceptInvite.mockResolvedValue({
+      vi.mocked(useTeamWorkspaceStore().acceptInvite).mockResolvedValue({
         workspaceId: 'ws-123',
         workspaceName: 'Test Workspace'
       })
@@ -209,7 +211,9 @@ describe('useInviteUrlLoader', () => {
 
     it('clears preserved query even on error', async () => {
       mockRouteQuery.value = { invite: 'invalid-token' }
-      mockAcceptInvite.mockRejectedValue(new Error('Invalid invite'))
+      vi.mocked(useTeamWorkspaceStore().acceptInvite).mockRejectedValue(
+        new Error('Invalid invite')
+      )
 
       const { loadInviteFromUrl } = useInviteUrlLoader()
       await loadInviteFromUrl()
@@ -221,13 +225,17 @@ describe('useInviteUrlLoader', () => {
 
     it('sends any token format to backend for validation', async () => {
       mockRouteQuery.value = { invite: 'any-token-format==' }
-      mockAcceptInvite.mockRejectedValue(new Error('Invalid token'))
+      vi.mocked(useTeamWorkspaceStore().acceptInvite).mockRejectedValue(
+        new Error('Invalid token')
+      )
 
       const { loadInviteFromUrl } = useInviteUrlLoader()
       await loadInviteFromUrl()
 
       // Token is sent to backend, which validates and rejects
-      expect(mockAcceptInvite).toHaveBeenCalledWith('any-token-format==')
+      expect(useTeamWorkspaceStore().acceptInvite).toHaveBeenCalledWith(
+        'any-token-format=='
+      )
       expect(mockToastAdd).toHaveBeenCalledWith({
         severity: 'error',
         summary: 'Failed to Accept Invite',
@@ -241,7 +249,7 @@ describe('useInviteUrlLoader', () => {
       const { loadInviteFromUrl } = useInviteUrlLoader()
       await loadInviteFromUrl()
 
-      expect(mockAcceptInvite).not.toHaveBeenCalled()
+      expect(useTeamWorkspaceStore().acceptInvite).not.toHaveBeenCalled()
     })
 
     it('ignores non-string invite param', async () => {
@@ -252,7 +260,7 @@ describe('useInviteUrlLoader', () => {
       const { loadInviteFromUrl } = useInviteUrlLoader()
       await loadInviteFromUrl()
 
-      expect(mockAcceptInvite).not.toHaveBeenCalled()
+      expect(useTeamWorkspaceStore().acceptInvite).not.toHaveBeenCalled()
     })
   })
 })

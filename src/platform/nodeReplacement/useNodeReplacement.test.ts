@@ -1,4 +1,6 @@
-import { fromAny } from '@total-typescript/shoehorn'
+import { fromPartial, fromAny } from '@total-typescript/shoehorn'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import { useToastStore } from '@/platform/updates/common/toastStore'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { CustomEventTarget } from '@/lib/litegraph/src/infrastructure/CustomEventTarget'
@@ -10,7 +12,6 @@ import {
 import type { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { NodeSlotType } from '@/lib/litegraph/src/types/globalEnums'
-import type { PendingWarnings } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { useLinkStore } from '@/stores/linkStore'
 import { usePreviewExposureStore } from '@/stores/previewExposureStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
@@ -22,16 +23,9 @@ import { widgetId } from '@/types/widgetId'
 import type { UUID } from '@/utils/uuid'
 import type { NodeReplacement } from './types'
 
-vi.mock(import('@/lib/litegraph/src/litegraph'), async (importOriginal) => {
-  const actual = await importOriginal()
-  return {
-    ...actual,
-    LiteGraph: Object.assign({}, actual.LiteGraph, {
-      createNode: vi.fn(),
-      registered_node_types: {}
-    })
-  }
-})
+vi.mock(import('@/lib/litegraph/src/litegraph'), { spy: true })
+LiteGraph.createNode = vi.fn()
+LiteGraph.registered_node_types = {}
 
 vi.mock(import('@/core/graph/nodeShell/nodeShellState'), () => ({
   canTransferReplacementOwnership: vi.fn(() => true),
@@ -55,42 +49,10 @@ vi.mock(import('@/utils/graphTraversalUtil'), () => ({
 
 const { mockToastAdd } = vi.hoisted(() => ({ mockToastAdd: vi.fn() }))
 
-vi.mock<unknown>(import('@/platform/updates/common/toastStore'), () => ({
-  useToastStore: vi.fn(() => ({
-    add: mockToastAdd
-  }))
-}))
-
-vi.mock<unknown>(
-  import('@/platform/workflow/management/stores/workflowStore'),
-  () => ({
-    ComfyWorkflow: class {},
-    useWorkflowStore: vi.fn(() => workflowMocks)
-  })
-)
-
 vi.mock<unknown>(import('@/i18n'), () => ({
   st: (_key: string, fallback: string) => fallback,
   t: (key: string, params?: Record<string, unknown>) =>
     params ? `${key}:${JSON.stringify(params)}` : key
-}))
-
-interface ActiveWorkflowMock {
-  pendingWarnings: PendingWarnings | null
-  changeTracker: {
-    beforeChange: () => void
-    afterChange: () => void
-  }
-}
-
-const workflowMocks = vi.hoisted(() => ({
-  activeWorkflow: {
-    pendingWarnings: null,
-    changeTracker: {
-      beforeChange: vi.fn(),
-      afterChange: vi.fn()
-    }
-  } as ActiveWorkflowMock | null
 }))
 
 import { app } from '@/scripts/app'
@@ -99,13 +61,13 @@ import { collectAllNodes } from '@/utils/graphTraversalUtil'
 import { useNodeReplacement } from './useNodeReplacement'
 
 beforeEach(() => {
-  workflowMocks.activeWorkflow = {
+  useWorkflowStore().activeWorkflow = fromPartial({
     pendingWarnings: null,
     changeTracker: {
       beforeChange: vi.fn(),
       afterChange: vi.fn()
     }
-  }
+  })
 })
 
 function createMockLink(
@@ -262,7 +224,7 @@ function makeMissingNodeType(
 }
 
 function getActiveWorkflowMock() {
-  const activeWorkflow = workflowMocks.activeWorkflow
+  const activeWorkflow = useWorkflowStore().activeWorkflow
   if (!activeWorkflow) throw new Error('Expected an active workflow')
   return activeWorkflow
 }
@@ -271,6 +233,10 @@ function seedMissingNodeTypes(types: MissingNodeType[]): void {
   getActiveWorkflowMock().pendingWarnings = { missingNodeTypes: types }
   useMissingNodesErrorStore().setMissingNodeTypes(types)
 }
+
+beforeEach(() => {
+  vi.mocked(useToastStore().add).mockImplementation(mockToastAdd)
+})
 
 describe('useNodeReplacement', () => {
   describe('replaceNodesInPlace', () => {
@@ -1577,7 +1543,7 @@ describe('useNodeReplacement', () => {
         oldNodeType,
         'OtherNode'
       ])
-      workflowMocks.activeWorkflow = null
+      useWorkflowStore().activeWorkflow = null
 
       const { replaceGroup } = useNodeReplacement()
       replaceGroup({

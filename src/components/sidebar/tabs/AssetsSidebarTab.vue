@@ -231,8 +231,8 @@ import { getOutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataS
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { getAssetDisplayName } from '@/platform/assets/utils/assetMetadataUtils'
 import {
-  getAssetSubfolder,
-  getAssetUrl
+  getAssetFileUrl,
+  getAssetSubfolder
 } from '@/platform/assets/utils/assetUrlUtil'
 import type { MediaKind } from '@/platform/assets/schemas/mediaAssetSchema'
 import { resolveOutputAssetItems } from '@/platform/assets/utils/outputAssetUtil'
@@ -572,7 +572,7 @@ const handleZoomClick = (asset: AssetItem) => {
       title: getAssetDisplayName(asset),
       component: Load3dViewerContent,
       props: {
-        modelUrl: asset.preview_url || getAssetUrl(asset)
+        modelUrl: getAssetFileUrl(asset)
       },
       dialogComponentProps: {
         renderer: 'reka',

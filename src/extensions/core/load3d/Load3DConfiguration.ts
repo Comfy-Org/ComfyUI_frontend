@@ -1,5 +1,5 @@
 import { LOAD3D_NONE_MODEL } from '@/extensions/core/load3d/constants'
-import Load3d from '@/extensions/core/load3d/Load3d'
+import type Load3d from '@/extensions/core/load3d/Load3d'
 import Load3dUtils from '@/extensions/core/load3d/Load3dUtils'
 import type {
   CameraConfig,
@@ -184,7 +184,7 @@ class Load3DConfiguration {
       backgroundColor:
         '#' + useSettingStore().get('Comfy.Load3D.BackgroundColor'),
       backgroundImage: ''
-    } as SceneConfig
+    }
   }
 
   private loadCameraConfig(): CameraConfig {
@@ -195,7 +195,7 @@ class Load3DConfiguration {
     return {
       cameraType: useSettingStore().get('Comfy.Load3D.CameraType'),
       fov: 35
-    } as CameraConfig
+    }
   }
 
   private loadLightConfig(): LightConfig {
@@ -211,13 +211,13 @@ class Load3DConfiguration {
       return {
         intensity:
           saved.intensity ??
-          (useSettingStore().get('Comfy.Load3D.LightIntensity') as number),
+          useSettingStore().get('Comfy.Load3D.LightIntensity'),
         hdri: { ...hdriDefaults, ...(saved.hdri ?? {}) }
       }
     }
 
     return {
-      intensity: useSettingStore().get('Comfy.Load3D.LightIntensity') as number,
+      intensity: useSettingStore().get('Comfy.Load3D.LightIntensity'),
       hdri: hdriDefaults
     }
   }

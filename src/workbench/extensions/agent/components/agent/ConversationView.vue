@@ -3,7 +3,7 @@ import { useIntersectionObserver } from '@vueuse/core'
 import { computed, nextTick, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import { buildAgentTooltipConfig } from '@/composables/useTooltipConfig'
+import { buildTooltipConfig } from '@/composables/useTooltipConfig'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
@@ -14,6 +14,7 @@ import type {
 } from '@/workbench/extensions/agent/services/agent/agentPaywallPresentation'
 import type { ConversationEntry } from '../../stores/agent/agentConversationStore'
 import type { TurnId } from '../../schemas/agentApiSchema'
+import type { PromptSnapshot } from '../../types/workflowReference'
 
 import AgentMessage from './message/AgentMessage.vue'
 import UserMessage from './message/UserMessage.vue'
@@ -31,9 +32,10 @@ const {
 }>()
 const emit = defineEmits<{
   feedback: [turnId: string, vote: 'up' | 'down' | null]
-  editPrompt: [text: string]
+  editPrompt: [prompt: PromptSnapshot]
   answerAsk: [askId: string, selection: 'run' | 'cancel']
   openWorkflow: [workflowId: string, workflowName?: string]
+  openReferenceWorkflow: [workflowId: string, workflowName: string]
   paywallAction: [action: AgentPaywallAction]
 }>()
 
@@ -95,14 +97,19 @@ watch(
               :text="entry.text"
               :attachments="entry.attachments"
               :tags="entry.tags"
+              :workflow-references="entry.workflowReferences"
               :editable="entry.id === editableTurnId"
               @edit="emit('editPrompt', $event)"
+              @open-reference-workflow="
+                (workflowId: string, workflowName: string) =>
+                  emit('openReferenceWorkflow', workflowId, workflowName)
+              "
             />
             <AgentMessage
               v-else
               :message="entry"
-              :answering-ask-ids="answeringAskIds"
-              :paywall-presentation="paywallPresentation"
+              :answering-ask-ids
+              :paywall-presentation
               @feedback="emit('feedback', entry.id, $event)"
               @answer-ask="
                 (askId: string, selection: 'run' | 'cancel') =>
@@ -122,7 +129,7 @@ watch(
 
     <button
       v-if="!atBottom"
-      v-tooltip.top="buildAgentTooltipConfig(t('agent.latest'))"
+      v-tooltip.top="buildTooltipConfig(t('agent.latest'))"
       type="button"
       :aria-label="t('agent.latest')"
       class="text-secondary-foreground absolute bottom-2 left-1/2 flex size-8 -translate-x-1/2 cursor-pointer items-center justify-center rounded-full border-none bg-secondary-background shadow-md ring-1 ring-muted-foreground transition-colors hover:bg-secondary-background-hover"

@@ -3,7 +3,7 @@ import { expect } from '@playwright/test'
 import { assetPath } from '@e2e/fixtures/utils/paths'
 import { load3dViewerTest as test } from '@e2e/fixtures/helpers/Load3DFixtures'
 
-test.describe('Load3D Viewer', () => {
+test.describe('Load3D Viewer', { tag: '@vue-nodes' }, () => {
   test.beforeEach(async ({ comfyPage, load3d }) => {
     // Upload cube.obj so the node has a model loaded
     const uploadResponsePromise = comfyPage.page.waitForResponse(

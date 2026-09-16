@@ -1,5 +1,3 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { LGraph, LGraphCanvas } from '@/lib/litegraph/src/litegraph'
@@ -12,7 +10,6 @@ describe('LGraphCanvas link drag auto-pan', () => {
   let canvasElement: HTMLCanvasElement
 
   beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
     vi.useFakeTimers()
 
     canvasElement = document.createElement('canvas')

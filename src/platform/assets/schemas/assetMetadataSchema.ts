@@ -14,6 +14,7 @@ export interface OutputAssetMetadata extends Record<string, unknown> {
   workflow?: ComfyWorkflowJSON
   outputCount?: number
   allOutputs?: AugmentedResultItem[]
+  assetId?: string
 }
 
 /**

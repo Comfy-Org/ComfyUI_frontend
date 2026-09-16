@@ -1,5 +1,6 @@
 import { t } from '@/i18n'
-import { type LGraphNode, isComboWidget } from '@/lib/litegraph/src/litegraph'
+import { isComboWidget } from '@/lib/litegraph/src/litegraph'
+import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type {
   IBaseWidget,
   IComboWidget,
@@ -154,7 +155,7 @@ export function addValueControlWidgets(
     {
       values: ['fixed', 'increment', 'decrement', 'randomize'],
       serialize: false, // Don't include this in prompt.
-      canvasOnly: true
+      surfaces: { canvas: 'shown', vueNode: 'never', panel: 'never' }
     }
   ) as IComboWidget
 

@@ -1,15 +1,22 @@
-import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
+import { render, screen } from '@testing-library/vue'
+import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
+import BuilderFooterToolbar from '@/components/builder/BuilderFooterToolbar.vue'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import { useAppModeStore } from '@/stores/appModeStore'
+import { toNodeId } from '@/types/nodeId'
 import type { AppMode } from '@/utils/appMode'
 
-import BuilderFooterToolbar from '@/components/builder/BuilderFooterToolbar.vue'
+beforeEach(() => {
+  vi.mocked(useAppModeStore().exitBuilder).mockImplementation(() => {})
+})
 
 const mockSetMode = vi.hoisted(() => vi.fn())
-const mockExitBuilder = vi.hoisted(() => vi.fn())
+
 const mockSave = vi.hoisted(() => vi.fn())
 const mockSaveAs = vi.hoisted(() => vi.fn())
 
@@ -21,46 +28,11 @@ vi.mock<unknown>(import('@/composables/useAppMode'), () => ({
   useAppMode: () => ({
     mode: computed(() => mockState.mode),
     isBuilderMode: ref(true),
+    isAppMode: ref(false),
+    isSelectMode: ref(false),
     setMode: mockSetMode
   })
 }))
-
-const mockHasOutputs = ref(true)
-
-vi.mock<unknown>(import('@/stores/appModeStore'), () => ({
-  useAppModeStore: () => ({
-    exitBuilder: mockExitBuilder,
-    hasOutputs: mockHasOutputs,
-    $id: 'appMode'
-  })
-}))
-
-vi.mock<unknown>(import('@/stores/dialogStore'), () => ({
-  useDialogStore: () => ({
-    dialogStack: []
-  })
-}))
-
-const mockActiveWorkflow = ref<{
-  isTemporary: boolean
-  initialMode?: string
-  isModified?: boolean
-  changeTracker?: { captureCanvasState: () => void }
-} | null>({
-  isTemporary: true,
-  initialMode: 'app'
-})
-
-vi.mock<unknown>(
-  import('@/platform/workflow/management/stores/workflowStore'),
-  () => ({
-    useWorkflowStore: () => ({
-      get activeWorkflow() {
-        return mockActiveWorkflow.value
-      }
-    })
-  })
-)
 
 vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: { rootGraph: { extra: {} } }
@@ -102,8 +74,11 @@ const i18n = createI18n({
 describe('BuilderFooterToolbar', () => {
   beforeEach(() => {
     mockState.mode = 'builder:inputs'
-    mockHasOutputs.value = true
-    mockActiveWorkflow.value = { isTemporary: true, initialMode: 'app' }
+    useAppModeStore().selectedOutputs = [toNodeId('1')]
+    useWorkflowStore().activeWorkflow = fromPartial({
+      isTemporary: true,
+      initialMode: 'app'
+    })
   })
 
   function renderComponent() {
@@ -137,7 +112,7 @@ describe('BuilderFooterToolbar', () => {
 
   it('disables next on arrange step when no outputs', () => {
     mockState.mode = 'builder:arrange'
-    mockHasOutputs.value = false
+    useAppModeStore().selectedOutputs = []
     renderComponent()
     expect(screen.getByRole('button', { name: /next/i })).toBeDisabled()
   })
@@ -165,7 +140,7 @@ describe('BuilderFooterToolbar', () => {
   it('calls exitBuilder on exit button click', async () => {
     const { user } = renderComponent()
     await user.click(screen.getByRole('button', { name: /exit app builder/i }))
-    expect(mockExitBuilder).toHaveBeenCalledOnce()
+    expect(useAppModeStore().exitBuilder).toHaveBeenCalledOnce()
   })
 
   it('calls setMode app on view app click', async () => {
@@ -175,39 +150,45 @@ describe('BuilderFooterToolbar', () => {
   })
 
   it('shows "Save as" when workflow is temporary', () => {
-    mockActiveWorkflow.value = { isTemporary: true }
+    useWorkflowStore().activeWorkflow = fromPartial({ isTemporary: true })
     renderComponent()
     expect(screen.getByRole('button', { name: 'Save as' })).toBeDefined()
   })
 
   it('shows "Save" when workflow is saved', () => {
-    mockActiveWorkflow.value = { isTemporary: false }
+    useWorkflowStore().activeWorkflow = fromPartial({ isTemporary: false })
     renderComponent()
     expect(screen.getByRole('button', { name: 'Save' })).toBeDefined()
   })
 
   it('calls saveAs when workflow is temporary', async () => {
-    mockActiveWorkflow.value = { isTemporary: true }
+    useWorkflowStore().activeWorkflow = fromPartial({ isTemporary: true })
     const { user } = renderComponent()
     await user.click(screen.getByRole('button', { name: 'Save as' }))
     expect(mockSaveAs).toHaveBeenCalledOnce()
   })
 
   it('calls save when workflow is saved and modified', async () => {
-    mockActiveWorkflow.value = { isTemporary: false, isModified: true }
+    useWorkflowStore().activeWorkflow = fromPartial({
+      isTemporary: false,
+      isModified: true
+    })
     const { user } = renderComponent()
     await user.click(screen.getByRole('button', { name: 'Save' }))
     expect(mockSave).toHaveBeenCalledOnce()
   })
 
   it('disables save button when workflow has no unsaved changes', () => {
-    mockActiveWorkflow.value = { isTemporary: false, isModified: false }
+    useWorkflowStore().activeWorkflow = fromPartial({
+      isTemporary: false,
+      isModified: false
+    })
     renderComponent()
     expect(screen.getByRole('button', { name: 'Save' })).toBeDisabled()
   })
 
   it('does not call save when no outputs', async () => {
-    mockHasOutputs.value = false
+    useAppModeStore().selectedOutputs = []
     const { user } = renderComponent()
     await user.click(screen.getByRole('button', { name: 'Save as' }))
     expect(mockSave).not.toHaveBeenCalled()
