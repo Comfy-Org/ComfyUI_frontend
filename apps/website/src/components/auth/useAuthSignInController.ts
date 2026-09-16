@@ -12,18 +12,12 @@ import {
 import type { AuthErrorClassification } from '@comfyorg/account/firebaseAuthError'
 import { until } from '@vueuse/core'
 import type { UserCredential } from 'firebase/auth'
-import {
-  computed,
-  onBeforeUnmount,
-  onMounted,
-  onUnmounted,
-  readonly,
-  ref,
-  watch
-} from 'vue'
+import { computed, onBeforeUnmount, onMounted, readonly, ref, watch } from 'vue'
 
-import type { RegionGateStatus } from '@comfyorg/account/vue'
-import { useRegionGate } from '@comfyorg/account/vue'
+import type { OperationHandle } from '@comfyorg/account/boundedOperation'
+import { useGenerationGuard } from '@comfyorg/account/vue/useGenerationGuard'
+import type { RegionGateStatus } from '@comfyorg/account/vue/regionGate'
+import { useRegionGate } from '@comfyorg/account/vue/regionGate'
 import { isEmbeddedWebView } from '@comfyorg/account/webviewDetection'
 
 import type {
@@ -134,22 +128,13 @@ export function useAuthSignInController(options: AuthSignInControllerOptions) {
   // Any rollout-flag transition invalidates an in-flight attempt, so a disable
   // (or an off->on flicker) mid-popup cannot still provision, publish, or mint.
   // Sync so even a same-tick flicker is counted, not collapsed to no-change.
-  let signInGeneration = 0
-  watch(
-    enabled,
-    () => {
-      signInGeneration += 1
-    },
-    { flush: 'sync' }
-  )
-  // Teardown invalidates the attempt too, so auth, provisioning, and minting
-  // all stop instead of continuing to publish and redirect after the page left.
-  onUnmounted(() => {
-    signInGeneration += 1
-  })
+  // The guard also abandons on scope disposal, so teardown stops auth,
+  // provisioning, and minting too.
+  const signIn = useGenerationGuard()
+  watch(enabled, signIn.abandon, { flush: 'sync' })
 
-  const liveSince = (attempt: number) => () =>
-    attempt === signInGeneration && enabled.value
+  const liveWhile = (attempt: OperationHandle) => () =>
+    attempt.live() && enabled.value
   const abandonAttempt = () => dispatch({ type: 'signInAbandoned' })
 
   // Held from a successful provisioning until the mint actually commits, so an
@@ -260,8 +245,7 @@ export function useAuthSignInController(options: AuthSignInControllerOptions) {
   ) {
     if (state.value.step === 'pending' || state.value.step === 'minting') return
     dispatch({ type: 'signInStarted', provider })
-    const attempt = signInGeneration
-    const live = liveSince(attempt)
+    const live = liveWhile(signIn.capture())
     let firebase: WorkshopFirebase | undefined
     let authenticated = false
     // Roll a persisted identity back before the reducer leaves `pending`, so no
@@ -426,7 +410,7 @@ export function useAuthSignInController(options: AuthSignInControllerOptions) {
 
   async function retryMint(): Promise<void> {
     dispatch({ type: 'mintRetried' })
-    await runMint(undefined, liveSince(signInGeneration), abandonAttempt)
+    await runMint(undefined, liveWhile(signIn.capture()), abandonAttempt)
   }
 
   const stopUserWatch = watch(
@@ -445,7 +429,7 @@ export function useAuthSignInController(options: AuthSignInControllerOptions) {
       if (before !== state.value.step && state.value.step === 'minting') {
         // No user argument: `restored` is a readonly proxy, and the client
         // already holds the raw current user.
-        void runMint(undefined, liveSince(signInGeneration), abandonAttempt)
+        void runMint(undefined, liveWhile(signIn.capture()), abandonAttempt)
       }
     },
     { immediate: true }

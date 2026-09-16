@@ -102,6 +102,36 @@ beforeEach(() => {
 
 describe('useRemoteWidget', () => {
   describe('initialization', () => {
+    it('preserves a saved non-first option and initializes its callback once', async () => {
+      const options = createMockOptions({ control_after_refresh: 'first' })
+      options.widget.callback = vi.fn()
+      const hook = useRemoteWidget(options)
+      options.widget.value = 'optionB'
+      mockAxiosResponse(['optionA', 'optionB'])
+
+      await getResolvedValue(hook)
+      await getResolvedValue(hook)
+
+      expect(options.widget.value).toBe('optionB')
+      expect(options.widget.callback).toHaveBeenCalledWith('optionB')
+      expect(options.widget.callback).toHaveBeenCalledTimes(1)
+    })
+
+    it('selects the first option when the saved value is unavailable', async () => {
+      const options = createMockOptions()
+      options.widget = createMockWidget({
+        value: 'unavailable',
+        callback: vi.fn()
+      })
+      const hook = useRemoteWidget(options)
+      mockAxiosResponse(['optionA', 'optionB'])
+
+      await getResolvedValue(hook)
+
+      expect(options.widget.value).toBe('optionA')
+      expect(options.widget.callback).toHaveBeenCalledWith('optionA')
+    })
+
     it('should create hook with default values', () => {
       const hook = useRemoteWidget(createMockOptions())
       expect(hook.getCachedValue()).toBeUndefined()
@@ -166,8 +196,15 @@ describe('useRemoteWidget', () => {
     })
 
     it('should handle empty array responses', async () => {
-      const { result } = await setupHookWithResponse([])
+      const options = createMockOptions()
+      options.widget.value = 'unavailable'
+      const hook = useRemoteWidget(options)
+      mockAxiosResponse([])
+
+      const result = await getResolvedValue(hook)
+
       expect(result).toEqual([])
+      expect(options.widget.value).toBe(DEFAULT_VALUE)
     })
 
     it('should handle malformed response data', async () => {
@@ -715,6 +752,47 @@ describe('useRemoteWidget', () => {
     })
   })
   describe('inventory', () => {
+    it('does not start a request for an already cancelled inventory check', async () => {
+      const hook = useRemoteWidget(createMockOptions())
+      const controller = new AbortController()
+      controller.abort()
+
+      await hook.waitForInventory(controller.signal)
+
+      expect(axios.get).not.toHaveBeenCalled()
+    })
+
+    it('stops a cancelled wait without following or aborting a replacement request', async () => {
+      let resolveOriginal: (value: { data: string[] }) => void = () => undefined
+      let resolveReplacement: (value: { data: string[] }) => void = () =>
+        undefined
+      const original = new Promise<{ data: string[] }>((resolve) => {
+        resolveOriginal = resolve
+      })
+      const replacement = new Promise<{ data: string[] }>((resolve) => {
+        resolveReplacement = resolve
+      })
+      vi.mocked(axios.get)
+        .mockReturnValueOnce(original)
+        .mockReturnValueOnce(replacement)
+      const hook = useRemoteWidget(createMockOptions())
+      hook.getValue()
+      const controller = new AbortController()
+      const waiting = hook.waitForInventory(controller.signal)
+      controller.abort()
+      hook.refreshValue()
+      resolveOriginal({ data: ['original'] })
+
+      await waiting
+
+      expect(axios.get).toHaveBeenCalledTimes(2)
+      expect(vi.mocked(axios.get).mock.calls[1][1]?.signal?.aborted).toBe(false)
+      resolveReplacement({ data: ['replacement'] })
+      await hook.waitForInventory()
+      expect(hook.getCachedValue()).toEqual(['replacement'])
+      expect(hook.getInventoryStatus()).toBe('ready')
+    })
+
     it('reports loading until the in-flight request settles', async () => {
       const hook = createHookWithData(['option1'])
       hook.getValue()
@@ -808,7 +886,7 @@ describe('useRemoteWidget', () => {
       await hook.waitForInventory()
 
       expect(hook.getInventoryStatus()).toBe('ready')
-      expect(options.widget.value).toBe('first')
+      expect(options.widget.value).toBe('restored')
       expect(vi.mocked(axios.get)).toHaveBeenCalledTimes(1)
     })
 

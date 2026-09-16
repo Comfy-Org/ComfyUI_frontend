@@ -13,6 +13,7 @@ export type {
   BillingHttpResponse,
   BillingRequest,
   BillingResult,
+  BillingSession,
   BillingTransport
 } from './billingContracts.js'
 export type { SessionBillingTransportOptions } from './transport.js'
@@ -55,3 +56,129 @@ export type {
   BillingStatusSnapshot
 } from './status.js'
 export { BILLING_STATUS_ROUTE, createBillingStatusReader } from './status.js'
+export type {
+  BillingAuthenticationState,
+  BillingDeclineReason,
+  BillingOpStatus,
+  BillingOperationEvent,
+  BillingOperationIdentity,
+  BillingOperationKind,
+  BillingOperationPhase,
+  BillingOperationServerPhase,
+  BillingOperationState,
+  BillingPresentation,
+  BillingRecoveryAction,
+  EmbeddedChallenge,
+  FailedBillingOperation,
+  PendingBillingOperation
+} from './operationState.js'
+export {
+  isTerminal,
+  reduceBillingOperation,
+  validateActionUrl
+} from './operationState.js'
+export {
+  OPERATION_POLL_BUDGET,
+  OPERATION_POLL_TIMING,
+  hasExhaustedPollBudget,
+  isParkedOnCustomer,
+  nextPollDelayMs,
+  pollBudgetMs
+} from './operationPolicy.js'
+export type {
+  BillingOperationPointer,
+  BillingOperationPointerStorage,
+  OperationPointerStore
+} from './operationPointer.js'
+export {
+  OPERATION_POINTER_MAX_AGE_MS,
+  createOperationPointerStore,
+  operationPointerKey
+} from './operationPointer.js'
+export type { PresentationRoutingInput } from './presentation.js'
+export { selectBillingPresentation } from './presentation.js'
+export type {
+  BillingOperationFailureCategory,
+  BillingOperationLifecycle,
+  BillingOperationLifecycleOptions,
+  BillingOperationTelemetryEvent,
+  IssuedBillingOperation,
+  PresentationSwitchOutcome
+} from './operationLifecycle.js'
+export {
+  createBillingOperationLifecycle,
+  operationRoute
+} from './operationLifecycle.js'
+export { BILLING_OPERATION_TELEMETRY_EVENT } from '../../telemetry.js'
+export type {
+  EmbeddedChallengeOutcome,
+  EmbeddedChallengePort
+} from './challengeDriver.js'
+export { driveEmbeddedChallenge } from './challengeDriver.js'
+export { readBillingErrorCode } from './billingErrorBody.js'
+export type {
+  BillingCommands,
+  BillingCommandsOptions,
+  PaymentPortalResult,
+  SubscribeInput,
+  SubscriptionCommandCode,
+  SubscriptionCommandFailure,
+  SubscriptionCommandOutcome,
+  SubscriptionCommandResult,
+  TerminalBillingOperation
+} from './subscriptionCommands.js'
+export {
+  CANCEL_SUBSCRIPTION_ROUTE,
+  PAYMENT_PORTAL_ROUTE,
+  RESUBSCRIBE_ROUTE,
+  SUBSCRIBE_ROUTE,
+  createBillingCommands
+} from './subscriptionCommands.js'
+export type {
+  HostPaymentStep,
+  PaymentProjection,
+  PaymentReasonKey,
+  PaymentStep
+} from './paymentProjection.js'
+export { projectPaymentStep } from './paymentProjection.js'
+export type { PaymentCopyKey, PaymentCopyKeys } from './paymentCopy.js'
+export {
+  DEFAULT_PAYMENT_COPY,
+  createPaymentCopy,
+  paymentCopyKeys
+} from './paymentCopy.js'
+export type {
+  CreateHostedTopupCheckoutInput,
+  CreateTopupCheckoutInput,
+  HostedTopupCheckout,
+  HostedTopupCheckoutFailure,
+  HostedTopupCheckoutResult,
+  TopupCommand,
+  TopupCommandOptions,
+  TopupDeclined,
+  TopupDenied,
+  TopupFailure,
+  TopupInvalidAmount,
+  TopupInvalidReturnUrl,
+  TopupNoPaymentMethod,
+  TopupNotAvailable,
+  TopupResult,
+  TopupSucceeded,
+  TopupUnsettled
+} from './topup.js'
+export {
+  TOPUP_CHECKOUT_ROUTE,
+  TOPUP_ROUTE,
+  createTopupCommand
+} from './topup.js'
+export type {
+  BalanceWatch,
+  BalanceWatchOptions,
+  BalanceWatchOutcome
+} from './balanceWatch.js'
+export {
+  BALANCE_WATCH_LIFETIME_MS,
+  BALANCE_WATCH_MAX_SCHEDULED_RUNS,
+  BALANCE_WATCH_RETRY_GAPS_MS,
+  createBalanceWatch
+} from './balanceWatch.js'

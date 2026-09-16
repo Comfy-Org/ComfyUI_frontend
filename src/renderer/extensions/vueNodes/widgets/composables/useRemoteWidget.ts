@@ -1,4 +1,5 @@
 import axios from 'axios'
+import { shallowReactive } from 'vue'
 
 import { useChainCallback } from '@/composables/functional/useChainCallback'
 import type { ComboWidgetInventoryStatus } from '@/core/graph/widgets/comboWidgetInventory'
@@ -33,7 +34,7 @@ async function getAuthHeaders() {
   return {}
 }
 
-const dataCache = new Map<string, CacheEntry<unknown>>()
+const dataCache = shallowReactive(new Map<string, CacheEntry<unknown>>())
 
 const createCacheKey = (config: RemoteWidgetConfig): string => {
   const { route, query_params = {}, refresh = 0 } = config
@@ -132,8 +133,9 @@ export function useRemoteWidget<
 
   const onFirstLoad = (data: T | T[]) => {
     isLoaded = true
-    const nextValue =
-      Array.isArray(data) && data.length > 0 ? data[0] : undefined
+    const nextValue = Array.isArray(data)
+      ? (data.find((value) => value === widget.value) ?? data[0])
+      : undefined
     widget.value = nextValue ?? (Array.isArray(data) ? defaultValue : data)
     widget.callback?.(widget.value)
     node.graph?.setDirtyCanvas(true)
@@ -149,9 +151,9 @@ export function useRemoteWidget<
     if (isValid || isBackingOff(entry) || isFetching(entry))
       return entry!.data as T
 
-    const currentEntry: CacheEntry<T> = (entry as
-      | CacheEntry<T>
-      | undefined) || { data: defaultValue }
+    const currentEntry: CacheEntry<T> = shallowReactive(
+      (entry as CacheEntry<T> | undefined) || { data: defaultValue }
+    )
     dataCache.set(cacheKey, currentEntry)
 
     try {
@@ -219,14 +221,16 @@ export function useRemoteWidget<
     return 'loading'
   }
 
-  async function waitForInventory(): Promise<void> {
+  async function waitForInventory(signal?: AbortSignal): Promise<void> {
+    if (signal?.aborted) return
     let inFlight = dataCache.get(cacheKey)?.fetchPromise
     while (inFlight) {
       await inFlight.catch(() => undefined)
+      if (signal?.aborted) return
       inFlight = dataCache.get(cacheKey)?.fetchPromise
     }
     await new Promise<void>((resolve) => getValue(resolve))
-    if (dataCache.get(cacheKey)?.fetchPromise) await waitForInventory()
+    if (dataCache.get(cacheKey)?.fetchPromise) await waitForInventory(signal)
   }
 
   /**

@@ -1,4 +1,5 @@
 import * as THREE from 'three'
+import { fromAny } from '@total-typescript/shoehorn'
 import { describe, expect, it, vi } from 'vitest'
 
 import { useToastStore } from '@/platform/updates/common/toastStore'
@@ -19,37 +20,46 @@ const {
   fbxParseAsyncMock: vi.fn()
 }))
 
-vi.mock('@/base/common/downloadUtil', () => ({
+vi.mock(import('@/base/common/downloadUtil'), () => ({
   downloadBlob: downloadBlobMock
 }))
 
-vi.mock('@/i18n', () => ({
-  t: (key: string, vars?: Record<string, unknown>) =>
+vi.mock(import('@/i18n'), () => ({
+  t: fromAny((key: string, vars?: unknown) =>
     vars ? `${key}:${JSON.stringify(vars)}` : key
+  )
 }))
 
-vi.mock('three/examples/jsm/exporters/GLTFExporter', () => ({
-  GLTFExporter: class {
-    parse = gltfParseMock
-  }
+vi.mock(import('three/examples/jsm/exporters/GLTFExporter'), () => ({
+  GLTFExporter: fromAny(
+    class {
+      parse = gltfParseMock
+    }
+  )
 }))
 
-vi.mock('three/examples/jsm/exporters/OBJExporter', () => ({
-  OBJExporter: class {
-    parse = objParseMock
-  }
+vi.mock(import('three/examples/jsm/exporters/OBJExporter'), () => ({
+  OBJExporter: fromAny(
+    class {
+      parse = objParseMock
+    }
+  )
 }))
 
-vi.mock('three/examples/jsm/exporters/STLExporter', () => ({
-  STLExporter: class {
-    parse = stlParseMock
-  }
+vi.mock(import('three/examples/jsm/exporters/STLExporter'), () => ({
+  STLExporter: fromAny(
+    class {
+      parse = stlParseMock
+    }
+  )
 }))
 
-vi.mock('@comfyorg/fbx-exporter-three', () => ({
-  FBXExporter: class {
-    parseAsync = fbxParseAsyncMock
-  }
+vi.mock(import('@comfyorg/fbx-exporter-three'), () => ({
+  FBXExporter: fromAny(
+    class {
+      parseAsync = fbxParseAsyncMock
+    }
+  )
 }))
 
 describe('ModelExporter', () => {

@@ -4,7 +4,7 @@ export type ComboWidgetInventoryStatus = 'loading' | 'ready' | 'error'
 
 export interface ComboWidgetInventory {
   getStatus(): ComboWidgetInventoryStatus
-  waitForSettled(): Promise<void>
+  waitForSettled(signal?: AbortSignal): Promise<void>
 }
 
 const inventories = new WeakMap<IComboWidget, ComboWidgetInventory>()

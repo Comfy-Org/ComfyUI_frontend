@@ -8740,8 +8740,8 @@ Enterprise`
     'zh-CN': '使用最先进的图像、视频、3D 和音频模型。生产环境就绪。'
   },
   'platform.builderHero.heading': {
-    en: 'Share ComfyUI Builds with your team',
-    'zh-CN': '与团队共享 ComfyUI Builds'
+    en: 'Package ComfyUI Builds for your team',
+    'zh-CN': '为团队打包 ComfyUI Builds'
   },
   'platform.builderHero.subtitle': {
     en: 'A Build lets you share ComfyUI custom nodes, LoRAs, models, and Python dependencies without hassle. Run them on your workstation, server, or datacenter.',
@@ -8779,8 +8779,8 @@ Enterprise`
     'zh-CN': '一个积分池'
   },
   'platform.modelsFeatures.3.description': {
-    en: 'Pay per use from one credit pool for your team. No subscription required.',
-    'zh-CN': '按用量付费，团队共用同一积分池。无需订阅。'
+    en: 'Pay per use from one credit pool for your team.',
+    'zh-CN': '按用量付费，团队共用同一积分池。'
   },
   'platform.modelsFeatures.5.title': {
     en: 'No setup',
@@ -9127,9 +9127,9 @@ Enterprise`
     'zh-CN': '需要特定的订阅计划吗？'
   },
   'platform.faq.9.a': {
-    en: 'The platform and Builder are included with any Comfy subscription. A Team or Enterprise plan is only needed to share builds with teammates; governance over models and partner nodes is Enterprise-only.',
+    en: 'The platform and Builder are included with any Comfy subscription. An Enterprise plan is needed to share builds with teammates; governance over models and partner nodes is Enterprise-only.',
     'zh-CN':
-      '任何 Comfy 订阅都包含平台和 Builder。只有与队友共享构建才需要 Team 或 Enterprise 计划；模型与合作伙伴节点的治理功能仅限 Enterprise。'
+      '任何 Comfy 订阅都包含平台和 Builder。只有与队友共享构建才需要企业版计划；模型与合作伙伴节点的治理功能仅限 Enterprise。'
   },
   'platform.faq.10.q': {
     en: 'What are the limits during beta?',
@@ -9335,6 +9335,10 @@ Enterprise`
     'zh-CN': 'V2 · 工作流、应用与模型'
   },
   'workshop.sections.featured': { en: 'Featured', 'zh-CN': '精选' },
+  'workshop.sections.seeAll': {
+    en: 'See all ({n})',
+    'zh-CN': '查看全部 ({n})'
+  },
   'workshop.sections.otherFormats': {
     en: 'Other formats',
     'zh-CN': '其他格式'
@@ -9411,7 +9415,6 @@ Enterprise`
   'workshop.filter.noMatches': { en: 'No matches', 'zh-CN': '没有匹配项' },
   'workshop.filter.clearAll': { en: 'Clear filters', 'zh-CN': '清除筛选' },
   'workshop.filter.applied': { en: '{n} selected', 'zh-CN': '已选 {n} 项' },
-  'workshop.filter.providerGroup': { en: 'Models', 'zh-CN': '模型' },
   'workshop.launch.label': {
     en: 'Use cases',
     'zh-CN': '用例'
@@ -9619,6 +9622,47 @@ Enterprise`
     en: 'Checkout reference',
     'zh-CN': '结账参考编号'
   },
+  'workshop.credits.openingLabel': {
+    en: 'Secure checkout',
+    'zh-CN': '安全结账'
+  },
+  'workshop.credits.openingMetaTitle': {
+    en: 'Opening checkout - Comfy',
+    'zh-CN': '正在打开结账页 - Comfy'
+  },
+  'workshop.credits.openingMetaDescription': {
+    en: 'Taking you to the secure checkout.',
+    'zh-CN': '正在带你前往安全结账页。'
+  },
+  'workshop.credits.openingTitle': {
+    en: 'Taking you to Stripe',
+    'zh-CN': '正在前往 Stripe'
+  },
+  'workshop.credits.openingBody': {
+    en: 'Finish your purchase here. The page you came from is still open, and your credits will appear there.',
+    'zh-CN': '请在此完成购买。你来时的页面仍然打开，积分会显示在那里。'
+  },
+  'workshop.credits.returnLabel': {
+    en: 'Checkout return',
+    'zh-CN': '结账返回'
+  },
+  'workshop.credits.returnMetaTitle': {
+    en: 'Returning to your model - Comfy',
+    'zh-CN': '正在返回模型页面 - Comfy'
+  },
+  'workshop.credits.returnMetaDescription': {
+    en: 'Returning you to the page where checkout started.',
+    'zh-CN': '正在返回发起结账的页面。'
+  },
+  'workshop.credits.returnTitle': {
+    en: 'Returning to your model',
+    'zh-CN': '正在返回模型页面'
+  },
+  'workshop.credits.returnBody': {
+    en: 'You can close this tab and continue on the page you came from. Your credit balance will update there if the payment completed.',
+    'zh-CN':
+      '你可以关闭此标签页，并在来时的页面继续。如果付款已完成，积分余额会在那里更新。'
+  },
   'workshop.credits.checkoutOpenedTitle': {
     en: 'Continue to checkout',
     'zh-CN': '继续结账'
@@ -9675,21 +9719,25 @@ Enterprise`
   'workshop.field.format': { en: 'Format', 'zh-CN': '格式' },
   'workshop.field.maxTokens': { en: 'Max tokens', 'zh-CN': '最大 token 数' },
   'workshop.field.upload': { en: 'Upload', 'zh-CN': '上传' },
-  'workshop.field.chooseOrDropImages': {
-    en: 'Choose images or drop them here',
-    'zh-CN': '选择图片或拖放到此处'
+  'workshop.field.selectOrDropImage': {
+    en: 'Select or drop an image',
+    'zh-CN': '选择或拖入一张图片'
   },
-  'workshop.field.replaceOrDropImage': {
-    en: 'Choose a replacement or drop it here',
-    'zh-CN': '选择替换图片或拖放到此处'
+  'workshop.field.selectOrDropImages': {
+    en: 'Select or drop up to {count} images',
+    'zh-CN': '选择或拖入最多 {count} 张图片'
   },
-  'workshop.field.chooseOrDropFiles': {
-    en: 'Choose files or drop them here',
-    'zh-CN': '选择文件或拖放到此处'
+  'workshop.field.selectOrDropFile': {
+    en: 'Select or drop a file',
+    'zh-CN': '选择或拖入一个文件'
   },
-  'workshop.field.replaceOrDropFile': {
-    en: 'Choose a replacement or drop it here',
-    'zh-CN': '选择替换文件或拖放到此处'
+  'workshop.field.selectOrDropFiles': {
+    en: 'Select or drop up to {count} files',
+    'zh-CN': '选择或拖入最多 {count} 个文件'
+  },
+  'workshop.field.selectOrDropReplacement': {
+    en: 'Select or drop to replace',
+    'zh-CN': '选择或拖入以替换'
   },
   'workshop.field.file': { en: 'File', 'zh-CN': '文件' },
   'workshop.field.replaceFile': {
@@ -9806,7 +9854,6 @@ Enterprise`
     'zh-CN': '此模型尚未启用 Comfy Router 执行。'
   },
   'workshop.model.incomplete': { en: 'Incomplete', 'zh-CN': '尚未完善' },
-  'workshop.model.viewDetails': { en: 'View details', 'zh-CN': '查看详情' },
   'workshop.model.notSupported': {
     en: 'Run not yet supported',
     'zh-CN': '暂不支持运行'
@@ -9819,7 +9866,7 @@ Enterprise`
   'workshop.run.requestId': { en: 'Request ID:', 'zh-CN': '请求 ID：' },
   'workshop.run.cancel': { en: 'Cancel', 'zh-CN': '取消' },
   'workshop.run.running': { en: 'Generating…', 'zh-CN': '生成中…' },
-  'workshop.load.pending': { en: 'Loading Models', 'zh-CN': '正在加载模型' },
+  'workshop.load.pending': { en: 'Loading', 'zh-CN': '加载中' },
   'workshop.load.failed': {
     en: 'Models did not load.',
     'zh-CN': '模型未能加载。'
@@ -9838,6 +9885,22 @@ Enterprise`
   },
   'workshop.run.leaveStay': { en: 'Stay on this page', 'zh-CN': '留在此页面' },
   'workshop.run.leaveAnyway': { en: 'Leave and cancel', 'zh-CN': '离开并取消' },
+  'workshop.examples.replaceTitle': {
+    en: 'Replace your inputs?',
+    'zh-CN': '要替换你的输入吗？'
+  },
+  'workshop.examples.replaceBody': {
+    en: 'This example comes with its own inputs. What you wrote will be replaced.',
+    'zh-CN': '该示例自带输入内容，你填写的内容将被替换。'
+  },
+  'workshop.examples.replaceKeep': {
+    en: 'Keep mine',
+    'zh-CN': '保留我的内容'
+  },
+  'workshop.examples.replaceConfirm': {
+    en: 'Use the example',
+    'zh-CN': '使用该示例'
+  },
   'workshop.run.policy': {
     en: 'Disabled by your workspace policy',
     'zh-CN': '已被工作区策略禁用'
@@ -9857,6 +9920,7 @@ Enterprise`
 
   // Workshop – output
   'workshop.output.title': { en: 'Output', 'zh-CN': '输出' },
+  'workshop.output.files': { en: 'Output files', 'zh-CN': '输出文件' },
   'workshop.output.kindImage': { en: 'Image', 'zh-CN': '图片' },
   'workshop.output.kindVideo': { en: 'Video', 'zh-CN': '视频' },
   'workshop.output.kindAudio': { en: 'Audio', 'zh-CN': '音频' },
@@ -9908,6 +9972,10 @@ Enterprise`
   'workshop.output.useInCode': {
     en: 'Use these settings in code',
     'zh-CN': '在代码中使用这些设置'
+  },
+  'workshop.run.copyRequestId': {
+    en: 'Copy request ID',
+    'zh-CN': '复制请求 ID'
   },
   'workshop.output.expires': {
     en: 'Output links expire 24 hours after a run. Download anything you want to keep.',
@@ -10057,11 +10125,6 @@ Enterprise`
     en: 'Sample outputs',
     'zh-CN': '输出样例'
   },
-  'workshop.examples.samplesSubtitle': {
-    en: 'See a sample without touching your inputs. These samples cannot be loaded into the form yet.',
-    'zh-CN':
-      '查看样例不会更改你的输入。这些样例尚无已验证的 Comfy Router 参数预设。'
-  },
   'workshop.examples.view': {
     en: 'View sample',
     'zh-CN': '查看样例'
@@ -10191,8 +10254,8 @@ Enterprise`
     'zh-CN': '无法启动结账，请重试。'
   },
   'workshop.error.noCreditsCloud': {
-    en: 'Add credits to {workspace} to keep running models.',
-    'zh-CN': '为 {workspace} 添加积分以继续运行模型。'
+    en: 'Not enough credits in {workspace}.',
+    'zh-CN': '{workspace} 的积分不足。'
   },
   'workshop.error.noCreditsPlatform': {
     en: 'Add credits to {workspace} on platform.comfy.org',

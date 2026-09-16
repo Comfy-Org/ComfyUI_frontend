@@ -332,7 +332,7 @@ function scanComboWidget(
   const inventory = getComboWidgetInventory(target.definitionWidget)
   if (inventory && inventory.getStatus() !== 'ready') {
     pendingVerifications.set(candidate, async (signal) => {
-      await untilSettledOrAborted(inventory.waitForSettled(), signal)
+      await untilSettledOrAborted(inventory.waitForSettled(signal), signal)
       if (signal?.aborted || inventory.getStatus() !== 'ready') {
         return undefined
       }
