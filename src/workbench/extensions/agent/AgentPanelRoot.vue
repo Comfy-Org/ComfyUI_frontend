@@ -56,6 +56,7 @@ import { toOwningGraphId, toRootGraphId } from '@/types/graphScopeId'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useAccountPreconditionDialog } from '@/platform/cloud/subscription/composables/useAccountPreconditionDialog'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
+import { useOnboardingTourStore } from '@/platform/onboarding/onboardingTourStore'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 
 import AgentPanel from './components/agent/AgentPanel.vue'
@@ -198,6 +199,7 @@ const agentTabGraph: ComfyWorkflowJSON = {
 
 const canvasStore = useCanvasStore()
 const { accepted: consentAccepted } = storeToRefs(useAgentConsentStore())
+const { activeTour } = storeToRefs(useOnboardingTourStore())
 const graphMutationsByWorkflow = new Map<
   string,
   ReturnType<typeof createGraphMutations>
@@ -1172,7 +1174,7 @@ function onPanelDrop(event: DragEvent): void {
       </template>
     </AgentPanel>
     <OnboardingCoach
-      v-if="consentAccepted && !canvasStore.linearMode"
+      v-if="consentAccepted && !canvasStore.linearMode && activeTour === null"
       :steps="coachSteps"
       storage-key="Comfy.AgentPanel.onboarded"
     />

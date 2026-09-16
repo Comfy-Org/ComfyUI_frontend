@@ -5,6 +5,7 @@ import type { Middleware } from '@floating-ui/vue'
 import {
   useElementBounding,
   useEventListener,
+  useMutationObserver,
   useWindowSize
 } from '@vueuse/core'
 import { FocusScope } from 'reka-ui'
@@ -34,19 +35,30 @@ const bounds = useElementBounding(target)
 const toolbarBounds = useElementBounding(toolbar)
 const { width, height } = useWindowSize()
 
+function resolveTargets(): void {
+  const nextTarget = active.value
+    ? document.querySelector<HTMLElement>(step.value.target)
+    : null
+  const nextToolbar =
+    active.value && step.value.toolbarTarget
+      ? document.querySelector<HTMLElement>(step.value.toolbarTarget)
+      : null
+  if (target.value !== nextTarget) target.value = nextTarget
+  if (toolbar.value !== nextToolbar) toolbar.value = nextToolbar
+  bounds.update()
+  toolbarBounds.update()
+}
+
+useMutationObserver(document.body, resolveTargets, {
+  childList: true,
+  subtree: true
+})
+
 watch(
   [active, step],
   async () => {
     await nextTick()
-    target.value = active.value
-      ? document.querySelector(step.value.target)
-      : null
-    toolbar.value =
-      active.value && step.value.toolbarTarget
-        ? document.querySelector(step.value.toolbarTarget)
-        : null
-    bounds.update()
-    toolbarBounds.update()
+    resolveTargets()
   },
   { immediate: true, flush: 'post' }
 )
@@ -106,7 +118,7 @@ useEventListener(
   document,
   'keydown',
   (event) => {
-    if (!active.value || event.key !== 'Escape') return
+    if (!active.value || !target.value || event.key !== 'Escape') return
     event.preventDefault()
     event.stopPropagation()
     finish()

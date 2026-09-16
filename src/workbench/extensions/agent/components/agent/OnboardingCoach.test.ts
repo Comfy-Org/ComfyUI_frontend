@@ -225,4 +225,24 @@ describe('OnboardingCoach', () => {
     expect(screen.queryByRole('dialog')).toBeNull()
     expect(localStorage.getItem(KEY)).toBe('false')
   })
+
+  it('waits for a late target without letting Escape complete an unseen tour', async () => {
+    render(OnboardingCoach, {
+      props: { steps: STEPS, storageKey: KEY },
+      global: { plugins: [i18n] }
+    })
+    await nextTick()
+    await nextTick()
+
+    await userEvent.keyboard('{Escape}')
+    expect(localStorage.getItem(KEY)).toBe('false')
+    expect(screen.queryByRole('dialog')).toBeNull()
+
+    const target = document.createElement('div')
+    target.id = 'panel'
+    document.body.append(target)
+
+    const dialog = await screen.findByRole('dialog', { name: STEPS[0].title })
+    await waitFor(() => expect(dialog).toBeVisible())
+  })
 })

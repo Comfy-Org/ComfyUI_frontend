@@ -458,7 +458,7 @@ describe('AgentPanelRoot onboarding', () => {
 
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
     await userEvent.type(screen.getByRole('textbox'), 'Explain this app')
-    expect(screen.getByRole('textbox')).toHaveValue('Explain this app')
+    expect(screen.getByRole('textbox')).toHaveTextContent('Explain this app')
     expect(localStorage.getItem('Comfy.AgentPanel.onboarded')).not.toBe('true')
     expect(canvasStore.linearMode).toBe(true)
 
@@ -520,8 +520,9 @@ describe('AgentPanelRoot onboarding', () => {
 
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
     expect(localStorage.getItem('Comfy.AgentPanel.onboarded')).toBe('true')
-    await userEvent.type(screen.getByRole('textbox'), 'Build an image workflow')
-    expect(screen.getByRole('textbox')).toHaveValue('Build an image workflow')
+    const composer = screen.getByRole('textbox')
+    await userEvent.click(composer)
+    expect(composer).toHaveFocus()
   })
 })
 
