@@ -127,35 +127,42 @@ test.describe(
         comfyPage,
         'Right-Click Menu Group'
       )
-      await comfyPage.page.mouse.click(groupPos.x, groupPos.y)
-      await comfyPage.nextFrame()
-      await expect(comfyPage.selectionToolbox).toBeVisible()
 
-      await comfyPage.page.mouse.click(groupPos.x, groupPos.y, {
-        button: 'right'
+      await test.step('Select the group and show its toolbar', async () => {
+        await comfyPage.page.mouse.click(groupPos.x, groupPos.y)
+        await comfyPage.nextFrame()
+        await expect(comfyPage.selectionToolbox).toBeVisible()
       })
-      await expect(comfyPage.contextMenu.primeVueMenu).toBeVisible()
-      await comfyPage.page.getByText('Color', { exact: true }).click()
-      const redSwatch = comfyPage.page.getByTitle('Red').first()
-      await expect(redSwatch).toBeVisible()
-      await redSwatch.click()
 
-      await expect(comfyPage.selectionToolbox).toBeVisible()
-      await expect(
-        comfyPage.page.getByTestId(
-          TestIds.selectionToolbox.colorPickerCurrentColor
-        )
-      ).toHaveCSS('color', RED_NODE_COLOR)
-      await expect
-        .poll(() =>
-          comfyPage.page.evaluate(
-            () =>
-              window.app!.graph.groups.find(
-                (group) => group.title === 'Right-Click Menu Group'
-              )?.color
+      await test.step('Change the group color through its context menu', async () => {
+        await comfyPage.page.mouse.click(groupPos.x, groupPos.y, {
+          button: 'right'
+        })
+        await expect(comfyPage.contextMenu.primeVueMenu).toBeVisible()
+        await comfyPage.page.getByText('Color', { exact: true }).click()
+        const redSwatch = comfyPage.page.getByTitle('Red').first()
+        await expect(redSwatch).toBeVisible()
+        await redSwatch.click()
+      })
+
+      await test.step('Refresh the toolbar swatch without reselecting the group', async () => {
+        await expect(comfyPage.selectionToolbox).toBeVisible()
+        await expect(
+          comfyPage.page.getByTestId(
+            TestIds.selectionToolbox.colorPickerCurrentColor
           )
-        )
-        .toBe(RED_GROUP_COLOR)
+        ).toHaveCSS('color', RED_NODE_COLOR)
+        await expect
+          .poll(() =>
+            comfyPage.page.evaluate(
+              () =>
+                window.app!.graph.groups.find(
+                  (group) => group.title === 'Right-Click Menu Group'
+                )?.color
+            )
+          )
+          .toBe(RED_GROUP_COLOR)
+      })
     })
   }
 )

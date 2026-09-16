@@ -1,11 +1,17 @@
+import type { GroupId } from '@/types/groupId'
+import type { NodeId } from '@/types/nodeId'
+import type { RerouteId } from '@/types/rerouteId'
+
 export type SelectableKind = 'node' | 'group' | 'reroute' | 'io'
 
 /** `kind:id` identity of one selectable canvas item within a graph scope. */
 export type SelectableKey = string & { readonly __brand: 'SelectableKey' }
 
 export function toSelectableKey(
-  kind: SelectableKind,
-  id: string | number
+  ...[kind, id]:
+    | [kind: 'node' | 'io', id: NodeId]
+    | [kind: 'group', id: GroupId]
+    | [kind: 'reroute', id: RerouteId]
 ): SelectableKey {
   return `${kind}:${id}` as SelectableKey
 }

@@ -1,7 +1,15 @@
 import { fromPartial } from '@total-typescript/shoehorn'
 import { nextTick, ref } from 'vue'
 import type { Ref } from 'vue'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import {
+  assert,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  onTestFinished,
+  vi
+} from 'vitest'
 
 import { LGraphGroup } from '@/lib/litegraph/src/LGraphGroup'
 import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
@@ -9,7 +17,13 @@ import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { selectableKeyOf } from '@/lib/litegraph/src/utils/selectableItems'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useSelectionStore } from '@/renderer/core/canvas/selectionStore'
+import { useNodeDataStore } from '@/stores/nodeDataStore'
 import { graphScopeOf } from '@/types/graphScopeId'
+import {
+  createMockCanvasRenderingContext2D,
+  createTestCanvas
+} from '@/utils/__tests__/litegraphTestUtils'
+import { reconcileAgentAdapters } from '@/workbench/extensions/agent/crdt/agentNodeMaterializer'
 
 const { appModeState } = vi.hoisted(() => ({
   appModeState: {} as { isAppMode: Ref<boolean> }
@@ -103,44 +117,70 @@ describe('useCanvasStore', () => {
   })
 
   describe('node:before-removed selection cleanup', () => {
-    it('removes the node from store.selectedItems before its onRemoved fires', async () => {
-      const graph = new LGraph()
-      const node = new LGraphNode('test')
-      graph.add(node)
+    it.for(['direct', 'materialized'] as const)(
+      'clears selection before onRemoved during %s replacement',
+      async (mode) => {
+        const graph = new LGraph()
+        const node = new LGraphNode('test')
+        node.type = 'test-node'
+        graph.add(node)
 
-      const scope = graphScopeOf(graph)
-      const selectionStore = useSelectionStore()
-      const fakeCanvas = {
-        canvas: document.createElement('canvas'),
-        graph,
-        deselect: vi.fn((item: LGraphNode) => {
-          selectionStore.apply(scope, {
-            type: 'selection.remove',
-            key: selectableKeyOf(item)
-          })
+        const scope = graphScopeOf(graph)
+        const selectionStore = useSelectionStore()
+        const canvas = createTestCanvas(
+          graph,
+          createMockCanvasRenderingContext2D()
+        )
+        document.body.append(canvas.canvas)
+        onTestFinished(() => {
+          canvas.unbindEvents()
+          canvas.canvas.remove()
         })
+        store.canvas = canvas
+        await nextTick()
+        canvas.select(node)
+        expect(store.selectedItems).toContain(node)
+
+        let stillSelectedInOnRemoved: boolean | undefined
+        node.onRemoved = () => {
+          stillSelectedInOnRemoved = store.selectedItems.includes(node)
+        }
+
+        const replace = {
+          direct: () => {
+            graph.remove(node)
+            const replacement = new LGraphNode('replacement')
+            replacement.id = node.id
+            graph.add(replacement)
+          },
+          materialized: () => {
+            const nodes = useNodeDataStore()
+            const state = nodes.getNode(scope.rootGraphId, node.id)
+            assert.exists(state)
+            const replacement = {
+              ...state,
+              lastSerialization: node.serialize()
+            }
+            nodes.deleteNode(scope, state)
+            nodes.registerNode(scope, replacement)
+            reconcileAgentAdapters(graph)
+          }
+        }
+        replace[mode]()
+
+        expect(
+          stillSelectedInOnRemoved,
+          'selectedItems must not contain the node when onRemoved fires'
+        ).toBe(false)
+        expect(store.selectedItems).toEqual([])
+        const replacement = graph.getNodeById(node.id)
+        assert.exists(replacement)
+        expect(replacement).not.toBe(node)
+        expect(selectionStore.selectedKeys(scope)).toEqual([])
+        expect([...canvas.selectedItems]).toEqual([])
+        expect(replacement.selected).toBeFalsy()
       }
-      store.canvas = fakeCanvas as unknown as LGraphCanvas
-      await nextTick()
-      selectionStore.apply(scope, {
-        type: 'selection.add',
-        key: selectableKeyOf(node)
-      })
-      expect(store.selectedItems).toContain(node)
-
-      let stillSelectedInOnRemoved: boolean | undefined
-      node.onRemoved = () => {
-        stillSelectedInOnRemoved = store.selectedItems.includes(node)
-      }
-
-      graph.remove(node)
-
-      expect(
-        stillSelectedInOnRemoved,
-        'selectedItems must not contain the node when onRemoved fires'
-      ).toBe(false)
-      expect(store.selectedItems).toEqual([])
-    })
+    )
   })
 
   describe('rootGraphId', () => {

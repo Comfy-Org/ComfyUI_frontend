@@ -9,6 +9,8 @@ import type {
 import { useSelectionStore } from '@/renderer/core/canvas/selectionStore'
 import { toOwningGraphId, toRootGraphId } from '@/types/graphScopeId'
 import type { GraphScope } from '@/types/graphScopeId'
+import { toGroupId } from '@/types/groupId'
+import { toNodeId } from '@/types/nodeId'
 
 const root = toRootGraphId('root')
 const rootScope: GraphScope = {
@@ -23,9 +25,9 @@ const otherRootScope: GraphScope = {
   rootGraphId: toRootGraphId('other'),
   owningGraphId: toOwningGraphId('other')
 }
-const node = toSelectableKey('node', 1)
-const group = toSelectableKey('group', 2)
-const otherNode = toSelectableKey('node', 3)
+const node = toSelectableKey('node', toNodeId(1))
+const group = toSelectableKey('group', toGroupId(2))
+const otherNode = toSelectableKey('node', toNodeId(3))
 
 describe('useSelectionStore', () => {
   it.for<{

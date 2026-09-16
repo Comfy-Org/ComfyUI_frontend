@@ -4620,7 +4620,11 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
   deselect<TPositionable extends Positionable = LGraphNode>(
     item: TPositionable
   ): void {
-    if (!ownsSelectable(this, item)) return
+    if (
+      !ownsSelectable(this, item) &&
+      !(item instanceof LGraphNode && this.graph?.nodes.includes(item))
+    )
+      return
     if (!item.selected && !this.selectedItems.has(item)) return
 
     setCanvasItemSelected(this, item, false)
@@ -4764,47 +4768,47 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     if (!selected.size) return
 
     const initialSelectionSize = selected.size
-    let wasSelected: Positionable | undefined
-    for (const sel of selected) {
-      if (sel === keepSelected) {
-        wasSelected = sel
-        continue
-      }
-      sel.onDeselected?.()
-      sel.selected = false
-    }
-    selected.clear()
-    if (wasSelected) selected.add(wasSelected)
-    const keptKey = wasSelected && selectableKeyOf(wasSelected)
+    const kept =
+      keepSelected &&
+      ownsSelectable(this, keepSelected) &&
+      selected.has(keepSelected)
+        ? keepSelected
+        : undefined
+    const deselected = [...selected].filter(
+      (item) => item !== kept && ownsSelectable(this, item)
+    )
+    const keptKey = kept && selectableKeyOf(kept)
     applyCanvasSelection(
       this,
       keptKey
         ? { type: 'selection.replace', keys: [keptKey] }
         : { type: 'selection.clear' }
     )
+    for (const item of deselected) item.selected = false
+    selected.clear()
+    if (kept) selected.add(kept)
 
     this.setDirty(true)
 
     // Legacy code
-    const oldNode =
-      keepSelected?.id == null ? null : this.selected_nodes[keepSelected.id]
+    const oldNode = kept?.id == null ? null : this.selected_nodes[kept.id]
     this.selected_nodes = {}
     this.current_node = null
     this.highlighted_links = {}
 
-    if (keepSelected instanceof LGraphNode) {
+    if (kept instanceof LGraphNode) {
       // Handle old object lookup
       if (oldNode) this.selected_nodes[oldNode.id] = oldNode
 
       // Highlight links
       const { graph: rehighlightGraph } = this
-      for (const [i] of keepSelected.inputs.entries()) {
-        const linkId = inputLinkId(rehighlightGraph, keepSelected.id, i)
+      for (const [i] of kept.inputs.entries()) {
+        const linkId = inputLinkId(rehighlightGraph, kept.id, i)
         if (linkId == null) continue
         this.highlighted_links[linkId] = true
       }
-      for (const id of keepSelected.outputs.flatMap((_, i) =>
-        outputLinkIds(rehighlightGraph, keepSelected.id, i)
+      for (const id of kept.outputs.flatMap((_, i) =>
+        outputLinkIds(rehighlightGraph, kept.id, i)
       )) {
         this.highlighted_links[id] = true
       }
@@ -4812,6 +4816,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
 
     // Only set selectionChanged if selection actually changed
     const finalSelectionSize = selected.size
+    for (const item of deselected) item.onDeselected?.()
     if (initialSelectionSize !== finalSelectionSize) {
       this.state.selectionChanged = true
       this.onSelectionChange?.(this.selected_nodes)

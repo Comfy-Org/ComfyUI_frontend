@@ -257,6 +257,60 @@ describe('LGraphCanvas selection', () => {
       ])
     })
 
+    it.for(['single', 'all'] as const)(
+      '%s deselection publishes before synchronous hooks',
+      (mode) => {
+        canvas.selectItems([a, b])
+        const store = useSelectionStore()
+        const scope = graphScopeOf(graph)
+        const selections: string[][] = []
+        const capture = () => selections.push([...store.selectedKeys(scope)])
+        a.onDeselected = capture
+        canvas.onNodeDeselected = capture
+        canvas.onSelectionChange = capture
+
+        const deselect = {
+          single: () => canvas.deselect(a),
+          all: () => canvas.deselectAll(b)
+        }
+        deselect[mode]()
+
+        expect(selections).toEqual([[`node:${b.id}`], [`node:${b.id}`]])
+      }
+    )
+
+    it('keeps selection made by a synchronous deselection hook', () => {
+      canvas.select(a)
+      a.onDeselected = () => canvas.select(b)
+
+      canvas.deselectAll()
+
+      expect(canvas.selectedItems).toEqual(new Set([b]))
+      expect(a.selected).toBe(false)
+      expect(b.selected).toBe(true)
+      expect(canvas.selected_nodes).toEqual({ [b.id]: b })
+      expect(useSelectionStore().selectedKeys(graphScopeOf(graph))).toEqual([
+        `node:${b.id}`
+      ])
+    })
+
+    it('does not retain a foreign legacy item as a local selection', () => {
+      const foreignGraph = new LGraph()
+      const foreign = addNode(foreignGraph, 'Foreign', 0, 0)
+      expect(foreign.id).toBe(a.id)
+      foreign.selected = true
+      canvas.select(a)
+      canvas.selectedItems.add(foreign)
+
+      canvas.deselectAll(foreign)
+
+      expect(canvas.selectedItems.size).toBe(0)
+      expect(canvas.selected_nodes).toEqual({})
+      expect(useSelectionStore().selectedKeys(graphScopeOf(graph))).toEqual([])
+      expect(a.selected).toBe(false)
+      expect(foreign.selected).toBe(true)
+    })
+
     it('bulk selection does at most linear key insertion work', () => {
       const count = 128
       const nodes = Array.from({ length: count }, (_, index) =>
