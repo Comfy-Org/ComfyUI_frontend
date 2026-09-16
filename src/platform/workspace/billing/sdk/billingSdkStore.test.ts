@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
-import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useToast } from '@/components/ui/toast'
 import { WorkspaceApiError } from '@/platform/workspace/api/workspaceApi'
 import { workspaceApiUrl } from '@/platform/workspace/api/workspaceApiUrl'
 import { useWorkspaceAuthStore } from '@/platform/workspace/stores/workspaceAuthStore'
@@ -202,27 +202,28 @@ describe('useBillingSdkStore', () => {
 
   it('keeps the progress toast in step with the verification the server asks for', () => {
     useBillingSdkStore()
-    const toasts = useToastStore()
+    const toast = useToast()
 
     harness.publish(pendingTopup())
-    expect(toasts.messagesToAdd).toEqual([
+    expect(toast.toasts).toEqual([
       expect.objectContaining({
-        severity: 'info',
-        summary: 'Processing payment — adding credits...'
+        kind: 'info',
+        title: 'Processing payment — adding credits...',
+        duration: Number.POSITIVE_INFINITY
       })
     ])
 
     harness.publish(pendingTopup({ actionUrl: 'https://verify.example/op-1' }))
-    expect(toasts.messagesToRemove).toEqual([
-      expect.objectContaining({ severity: 'info' })
+    expect(toast.toasts).toEqual([
+      expect.objectContaining({
+        kind: 'warning',
+        title: 'Verify your payment to add your credits',
+        duration: Number.POSITIVE_INFINITY
+      })
     ])
-    expect(toasts.messagesToAdd.at(-1)).toMatchObject({
-      severity: 'warn',
-      summary: 'Verify your payment to add your credits'
-    })
 
     harness.publish(settledTopup('succeeded'))
-    expect(toasts.messagesToRemove.at(-1)).toMatchObject({ severity: 'warn' })
+    expect(toast.toasts).toEqual([])
   })
 
   it('drives a required in-page challenge once per operation', () => {
@@ -283,10 +284,11 @@ describe('useBillingSdkStore', () => {
     expect(useDialogStore().closeDialog).toHaveBeenCalledWith({
       key: 'top-up-credits'
     })
-    expect(useToastStore().messagesToAdd).toContainEqual(
+    expect(useToast().toasts).toContainEqual(
       expect.objectContaining({
-        severity: 'success',
-        summary: 'Credits added successfully'
+        kind: 'success',
+        title: 'Credits added successfully',
+        duration: 5000
       })
     )
     expect(mockTrackBillingEvent).toHaveBeenCalledWith({
@@ -320,7 +322,7 @@ describe('useBillingSdkStore', () => {
     expect(mockTrackBillingEvent).not.toHaveBeenCalled()
     expect(mockShowSettings).not.toHaveBeenCalled()
     expect(mockFetchStatus).not.toHaveBeenCalled()
-    expect(useToastStore().messagesToAdd).toEqual([])
+    expect(useToast().toasts).toEqual([])
   })
 
   it('reports the decline of a reattached top-up with its coded reason', () => {
@@ -329,11 +331,12 @@ describe('useBillingSdkStore', () => {
     options.onTelemetry(startedEvent(true))
     harness.publish(failedTopup('expired_card'))
 
-    expect(useToastStore().messagesToAdd).toContainEqual(
+    expect(useToast().toasts).toContainEqual(
       expect.objectContaining({
-        severity: 'error',
-        summary: 'Top-up failed',
-        detail: 'This card has expired. Use a different payment method.'
+        kind: 'error',
+        title: 'Top-up failed',
+        description: 'This card has expired. Use a different payment method.',
+        duration: 7000
       })
     )
   })
@@ -343,10 +346,11 @@ describe('useBillingSdkStore', () => {
 
     harness.publish(settledTopup('timed_out'))
 
-    expect(useToastStore().messagesToAdd).toContainEqual(
+    expect(useToast().toasts).toContainEqual(
       expect.objectContaining({
-        severity: 'error',
-        summary: 'Top-up verification timed out'
+        kind: 'error',
+        title: 'Top-up verification timed out',
+        duration: Number.POSITIVE_INFINITY
       })
     )
   })

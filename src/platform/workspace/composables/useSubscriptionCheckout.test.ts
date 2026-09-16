@@ -1223,9 +1223,9 @@ describe('useSubscriptionCheckout', () => {
         expect(mockSubscribe).not.toHaveBeenCalled()
         expect(checkout.previewData.value).toStrictEqual(refreshedPreview)
         expect(checkout.checkoutStep.value).not.toBe('pricing')
-        expect(mockToastAdd).toHaveBeenCalledWith(
-          expect.objectContaining({ detail: 'Reactivation amount changed' })
-        )
+        expect(mockToastAdd).toHaveBeenCalledWith('error', 'Error', {
+          description: 'Reactivation amount changed'
+        })
       }
     )
 
@@ -1282,9 +1282,9 @@ describe('useSubscriptionCheckout', () => {
       await checkout.handleConfirmTransition()
 
       expect(checkout.reactivationRequired.value).toBe(false)
-      expect(mockToastAdd).toHaveBeenCalledWith(
-        expect.objectContaining({ detail: 'Reactivate first' })
-      )
+      expect(mockToastAdd).toHaveBeenCalledWith('error', 'Error', {
+        description: 'Reactivate first'
+      })
     })
 
     it('returns to confirmation without an error when a subscribe reactivation block stands', async () => {
@@ -1316,9 +1316,9 @@ describe('useSubscriptionCheckout', () => {
       await checkout.handleConfirmTransition()
 
       expect(checkout.reactivationRequired.value).toBe(true)
-      expect(mockToastAdd).not.toHaveBeenCalledWith(
-        expect.objectContaining({ detail: 'Reactivate first' })
-      )
+      expect(mockToastAdd).not.toHaveBeenCalledWith('error', 'Error', {
+        description: 'Reactivate first'
+      })
     })
 
     it('surfaces the rejection when a team subscribe reactivation block clears on refresh', async () => {
@@ -1347,9 +1347,9 @@ describe('useSubscriptionCheckout', () => {
       await checkout.handleTeamSubscribe()
 
       expect(checkout.reactivationRequired.value).toBe(false)
-      expect(mockToastAdd).toHaveBeenCalledWith(
-        expect.objectContaining({ detail: 'Reactivate first' })
-      )
+      expect(mockToastAdd).toHaveBeenCalledWith('error', 'Error', {
+        description: 'Reactivate first'
+      })
     })
 
     it('shows error toast when preview is disallowed', async () => {
