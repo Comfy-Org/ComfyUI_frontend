@@ -1,6 +1,6 @@
 import type { Locator } from '@playwright/test'
 
-import type { PromptResponse } from '@/schemas/apiSchema'
+import type { PromptResponse } from '@/platform/remote/comfyui/types'
 
 import {
   comfyExpect as expect,

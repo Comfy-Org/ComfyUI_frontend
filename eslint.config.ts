@@ -909,16 +909,12 @@ export default defineConfig([
   // @comfyorg/ingest-types instead. Uses no-restricted-syntax so it
   // composes with other file-scoped no-restricted-imports blocks above
   // (flat-config rules of the same key override rather than merge).
-  // Warn severity: ~80 files still import apiSchema during migration;
-  // elevate to error once the count is near zero. Scoped to src/ to
-  // avoid overriding the stricter no-restricted-syntax rules on
-  // browser_tests/fixtures/data and .spec/.test files.
   {
     files: ['src/**/*.{ts,vue}'],
     ignores: ['src/**/*.test.ts', 'src/**/*.spec.ts', 'src/**/*.stories.ts'],
     rules: {
       'no-restricted-syntax': [
-        'warn',
+        'error',
         {
           selector:
             "ImportDeclaration[source.value='@/schemas/apiSchema'], ExportNamedDeclaration[source.value='@/schemas/apiSchema'], ExportAllDeclaration[source.value='@/schemas/apiSchema']",

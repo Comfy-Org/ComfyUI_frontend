@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { TaskResponse } from '@/platform/tasks/services/taskService'
 import { taskService } from '@/platform/tasks/services/taskService'
-import type { AssetDownloadWsMessage } from '@/schemas/apiSchema'
+import type { AssetDownloadWsMessage } from '@/platform/remote/comfyui/execution/types'
 import { useAssetDownloadStore } from '@/stores/assetDownloadStore'
 
 type DownloadEventHandler = (e: CustomEvent<AssetDownloadWsMessage>) => void

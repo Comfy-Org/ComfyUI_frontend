@@ -7,7 +7,10 @@ import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
-import type { NodeOutputWith, ResultItem } from '@/schemas/apiSchema'
+import type {
+  NodeOutputWith,
+  ResultItem
+} from '@/platform/remote/comfyui/execution/types'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'

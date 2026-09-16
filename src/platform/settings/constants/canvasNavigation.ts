@@ -1,4 +1,4 @@
-import type { Settings } from '@/schemas/apiSchema'
+import type { Settings } from '@/platform/settings/schemas/settingsSchema'
 
 /**
  * The Left Mouse Click Behavior and Mouse Wheel Scroll values each Navigation

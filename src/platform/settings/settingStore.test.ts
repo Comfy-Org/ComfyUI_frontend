@@ -7,7 +7,7 @@ import {
   useSettingStore
 } from '@/platform/settings/settingStore'
 import type { SettingParams } from '@/platform/settings/types'
-import type { Settings } from '@/schemas/apiSchema'
+import type { Settings } from '@/platform/settings/schemas/settingsSchema'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 

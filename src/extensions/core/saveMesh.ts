@@ -10,7 +10,7 @@ import type {
   NodeExecutionOutput,
   NodeOutputWith,
   ResultItem
-} from '@/schemas/apiSchema'
+} from '@/platform/remote/comfyui/execution/types'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 
 type SaveMeshOutput = NodeOutputWith<{

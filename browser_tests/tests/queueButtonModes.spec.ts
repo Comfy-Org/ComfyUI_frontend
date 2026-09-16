@@ -1,6 +1,6 @@
 import { expect } from '@playwright/test'
 
-import type { PromptResponse } from '@/schemas/apiSchema'
+import type { PromptResponse } from '@/platform/remote/comfyui/types'
 
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 

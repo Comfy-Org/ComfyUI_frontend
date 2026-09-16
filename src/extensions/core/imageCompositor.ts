@@ -6,7 +6,7 @@ import {
   setCompositorLayers
 } from '@/renderer/extensions/compositor/composables/useCompositorLayers'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import type { NodeOutputWith } from '@/schemas/apiSchema'
+import type { NodeOutputWith } from '@/platform/remote/comfyui/execution/types'
 import { useExtensionService } from '@/services/extensionService'
 
 type ImageCompositorOutput = NodeOutputWith<{

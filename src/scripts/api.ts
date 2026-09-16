@@ -21,11 +21,13 @@ import * as Sentry from '@sentry/vue'
 import { useTelemetry } from '@/platform/telemetry'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import type {
-  ShareableAssetsResponse,
+  WorkflowApiAssetsResponse as ShareableAssetsResponse,
+  GetEmbeddingsResponse as EmbeddingsResponse,
+  GetExtensionsResponse as ExtensionsResponse
+} from '@comfyorg/ingest-types'
+import type {
   AssetDownloadWsMessage,
   AssetExportWsMessage,
-  CustomNodesI18n,
-  EmbeddingsResponse,
   ExecutedWsMessage,
   ExecutingWsMessage,
   ExecutionCachedWsMessage,
@@ -33,27 +35,31 @@ import type {
   ExecutionInterruptedWsMessage,
   ExecutionStartWsMessage,
   ExecutionSuccessWsMessage,
-  ExtensionsResponse,
   FeatureFlagsWsMessage,
   LogsRawResponse,
   LogsWsMessage,
   NotificationWsMessage,
-  PreviewMethod,
   ProgressStateWsMessage,
   ProgressTextWsMessage,
   ProgressWsMessage,
-  PromptResponse,
-  Settings,
   StatusWsMessage,
-  StatusWsMessageStatus,
+  StatusWsMessageStatus
+} from '@/platform/remote/comfyui/execution/types'
+import type {
+  CustomNodesI18n,
+  PromptResponse,
   SystemStats,
   User,
   UserDataFullInfo
-} from '@/schemas/apiSchema'
+} from '@/platform/remote/comfyui/types'
+import type {
+  PreviewMethod,
+  Settings
+} from '@/platform/settings/schemas/settingsSchema'
 import {
-  zEmbeddingsResponse,
-  zShareableAssetsResponse
-} from '@/schemas/apiSchema'
+  zGetEmbeddingsResponse as zEmbeddingsResponse,
+  zWorkflowApiAssetsResponse as zShareableAssetsResponse
+} from '@comfyorg/ingest-types/zod'
 import type {
   TemplateIncludeOnDistributionEnum,
   WorkflowTemplates

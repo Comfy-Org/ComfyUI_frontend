@@ -1,4 +1,5 @@
-import type { ExecutionErrorWsMessage, PromptError } from '@/schemas/apiSchema'
+import type { ExecutionErrorWsMessage } from '@/platform/remote/comfyui/execution/types'
+import type { PromptError } from '@/platform/remote/comfyui/types'
 import type { MissingMediaGroup } from '@/platform/missingMedia/types'
 import type { MissingModelGroup } from '@/platform/missingModel/types'
 import type { MissingNodeType } from '@/types/comfy'

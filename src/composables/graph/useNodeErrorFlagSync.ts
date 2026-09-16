@@ -6,7 +6,7 @@ import type { useMissingModelStore } from '@/platform/missingModel/missingModelS
 import type { useMissingMediaStore } from '@/platform/missingMedia/missingMediaStore'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { app } from '@/scripts/app'
-import type { NodeError } from '@/schemas/apiSchema'
+import type { NodeError } from '@/platform/remote/comfyui/types'
 import { getParentExecutionIds } from '@/types/nodeIdentification'
 import { hasErrorForSlot } from '@/utils/executionErrorUtil'
 import { forEachNode, getNodeByExecutionId } from '@/utils/graphTraversalUtil'

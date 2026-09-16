@@ -3,7 +3,7 @@ import type { LoadedComfyWorkflow } from '@/platform/workflow/management/stores/
 import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type { ComfyHubProfile } from '@/schemas/apiSchema'
+import type { ComfyHubProfile } from '@/platform/workflow/sharing/schemas/shareSchemas'
 import type { ComfyHubPublishFormData } from '@/platform/workflow/sharing/types/comfyHubTypes'
 
 const mockGetShareableAssets = vi.hoisted(() => vi.fn())

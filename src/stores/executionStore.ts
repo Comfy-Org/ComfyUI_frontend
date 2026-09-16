@@ -31,7 +31,7 @@ import type {
   ProgressStateWsMessage,
   ProgressTextWsMessage,
   ProgressWsMessage
-} from '@/schemas/apiSchema'
+} from '@/platform/remote/comfyui/execution/types'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'

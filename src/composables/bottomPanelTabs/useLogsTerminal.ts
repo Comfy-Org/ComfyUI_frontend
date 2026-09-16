@@ -4,7 +4,10 @@ import type { Ref } from 'vue'
 import { onMounted, onScopeDispose, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import type { LogEntry, LogsWsMessage } from '@/schemas/apiSchema'
+import type {
+  LogEntry,
+  LogsWsMessage
+} from '@/platform/remote/comfyui/execution/types'
 import { api } from '@/scripts/api'
 import { useExecutionStore } from '@/stores/executionStore'
 

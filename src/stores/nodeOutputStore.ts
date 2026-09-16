@@ -12,9 +12,9 @@ import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type {
   ExecutedWsMessage,
-  ResultItem,
-  ResultItemType
-} from '@/schemas/apiSchema'
+  ResultItem
+} from '@/platform/remote/comfyui/execution/types'
+import type { ResultItemType } from '@/schemas/resultItemTypeSchema'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import { clone } from '@/scripts/utils'

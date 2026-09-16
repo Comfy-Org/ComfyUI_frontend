@@ -1,6 +1,6 @@
 import type { Page } from '@playwright/test'
 
-import type { CustomNodesI18n } from '@/schemas/apiSchema'
+import type { CustomNodesI18n } from '@/platform/remote/comfyui/types'
 import {
   comfyExpect as expect,
   comfyPageFixture as test

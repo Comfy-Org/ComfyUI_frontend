@@ -9,7 +9,7 @@ import { CANVAS_NAVIGATION_PRESETS } from '@/platform/settings/constants/canvasN
 import type { SettingParams } from '@/platform/settings/types'
 import { useTelemetry } from '@/platform/telemetry'
 import type { SettingChangedMetadata } from '@/platform/telemetry/types'
-import type { Settings } from '@/schemas/apiSchema'
+import type { Settings } from '@/platform/settings/schemas/settingsSchema'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import type { TreeNode } from '@/types/treeExplorerTypes'

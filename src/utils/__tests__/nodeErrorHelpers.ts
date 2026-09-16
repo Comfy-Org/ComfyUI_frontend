@@ -1,4 +1,4 @@
-import type { NodeError } from '@/schemas/apiSchema'
+import type { NodeError } from '@/platform/remote/comfyui/types'
 import type { NodeValidationError } from '@/utils/executionErrorUtil'
 
 export function validationError(

@@ -7,7 +7,7 @@ import { createI18n } from 'vue-i18n'
 import { useErrorOverlayState } from './useErrorOverlayState'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useMissingMediaStore } from '@/platform/missingMedia/missingMediaStore'
-import type { NodeError } from '@/schemas/apiSchema'
+import type { NodeError } from '@/platform/remote/comfyui/types'
 import type {
   MissingPackGroup,
   SwapNodeGroup

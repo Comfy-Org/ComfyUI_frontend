@@ -14,7 +14,10 @@ import { t } from '@/i18n'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { IContextMenuValue } from '@/lib/litegraph/src/interfaces'
 import { useToastStore } from '@/platform/updates/common/toastStore'
-import type { NodeExecutionOutput, NodeOutputWith } from '@/schemas/apiSchema'
+import type {
+  NodeExecutionOutput,
+  NodeOutputWith
+} from '@/platform/remote/comfyui/execution/types'
 import { app } from '@/scripts/app'
 import { useExtensionService } from '@/services/extensionService'
 import { useLoad3dService } from '@/services/load3dService'
