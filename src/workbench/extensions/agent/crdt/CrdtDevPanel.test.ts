@@ -94,8 +94,7 @@ describe('CrdtDevPanel', () => {
           appliedOpIds: ['op-1'],
           stamps: { 'node:node-1': [7, 'actor-1', 'op-1'] }
         })
-      },
-      global: { plugins: [i18n] }
+      }
     })
 
     await user.click(chip()!)
