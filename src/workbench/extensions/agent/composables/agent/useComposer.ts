@@ -13,7 +13,7 @@ export interface ComposerAttachment {
 
 export interface UseComposerOptions {
   onSend: (text: string, attachments: ComposerAttachment[]) => void
-  isStreaming: () => boolean
+  isRunning: () => boolean
   onStop: () => void
 }
 
@@ -27,7 +27,7 @@ export function useComposer(options: UseComposerOptions) {
   )
 
   function submit(): void {
-    if (options.isStreaming()) {
+    if (options.isRunning()) {
       options.onStop()
       return
     }

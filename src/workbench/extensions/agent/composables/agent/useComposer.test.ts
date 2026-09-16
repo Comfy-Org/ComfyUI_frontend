@@ -4,14 +4,14 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { ComposerAttachment } from './useComposer'
 import { useComposer } from './useComposer'
 
-function setup(streaming = false) {
+function setup(running = false) {
   const onSend =
     vi.fn<(text: string, attachments: ComposerAttachment[]) => void>()
   const onStop = vi.fn()
   const composer = useComposer({
     onSend,
     onStop,
-    isStreaming: () => streaming
+    isRunning: () => running
   })
   return { composer, onSend, onStop }
 }
@@ -106,7 +106,7 @@ describe('useComposer', () => {
     expect(onSend).not.toHaveBeenCalled()
   })
 
-  it('routes submit to stop while streaming, without sending', () => {
+  it('routes submit to stop while running, without sending', () => {
     const { composer, onSend, onStop } = setup(true)
     composer.draft.value = 'ignored while streaming'
 

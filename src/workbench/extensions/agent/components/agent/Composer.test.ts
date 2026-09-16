@@ -167,6 +167,49 @@ describe('Composer', () => {
     expect(emitted().send).toBeUndefined()
   })
 
+  it('shows the Stop tooltip with the Esc shortcut while running', async () => {
+    mount({ streaming: true })
+    await userEvent.hover(screen.getByRole('button', { name: 'Stop' }))
+    expect(
+      await screen.findByRole('tooltip', { hidden: true })
+    ).toHaveTextContent('Stop Esc')
+  })
+
+  it('stops on Escape while running and ignores Enter and repeated Escape', async () => {
+    const { emitted } = mount({ submitting: true })
+    const box = screen.getByRole('textbox')
+    await userEvent.type(box, 'hello{Enter}')
+    expect(emitted().send).toBeUndefined()
+    expect(emitted().stop).toBeUndefined()
+
+    box.dispatchEvent(
+      new KeyboardEvent('keydown', {
+        key: 'Escape',
+        repeat: true,
+        bubbles: true,
+        cancelable: true
+      })
+    )
+    expect(emitted().stop).toBeUndefined()
+
+    await userEvent.type(box, '{Escape}')
+    expect(emitted().stop).toHaveLength(1)
+  })
+
+  it('does not stop on Escape during IME composition', () => {
+    const { emitted } = mount({ streaming: true })
+    const box = screen.getByRole('textbox')
+    box.dispatchEvent(
+      new KeyboardEvent('keydown', {
+        key: 'Escape',
+        isComposing: true,
+        bubbles: true,
+        cancelable: true
+      })
+    )
+    expect(emitted().stop).toBeUndefined()
+  })
+
   describe('run permissions popover', () => {
     beforeEach(() => {
       localStorage.clear()
