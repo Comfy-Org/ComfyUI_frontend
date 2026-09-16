@@ -8,11 +8,22 @@ import type {
   SessionSnapshot
 } from '../session.js'
 import type { AccountCredential, SessionResult } from '../sessionContracts.js'
+import type { BillingHttpResponse, BillingResult } from './billingContracts.js'
 import type { BillingScope, BillingScopeSource } from './billingScope.js'
 import { createCredentialedBillingTransport } from './credentialedTransport.js'
+import { codeForHttpStatus } from './httpStatus.js'
 import { createSessionBillingTransport } from './transport.js'
 
 const BASE = 'https://cloud.test/api'
+
+function unwrapAnswer(
+  result: BillingResult<BillingHttpResponse>
+): BillingHttpResponse {
+  if (result.status !== 'ok') {
+    throw new Error(`expected an HTTP answer, got ${result.code}`)
+  }
+  return result.value
+}
 
 const PERSONAL_CREDENTIAL = {
   token: 'workspace-jwt',
@@ -688,7 +699,7 @@ describe('createCredentialedBillingTransport', () => {
     }
   )
 
-  it('returns a refusal as the answer it is, with nothing to re-mint', async () => {
+  it('marks a 401 as an ended session, having nothing to re-mint', async () => {
     const { transport, fetchImpl } = makeTransport({
       responses: [jsonResponse(401, { message: 'expired' })]
     })
@@ -700,10 +711,24 @@ describe('createCredentialedBillingTransport', () => {
       value: {
         httpStatus: 401,
         body: { message: 'expired' },
+        authenticationNotRenewable: true,
         header: expect.any(Function)
       }
     })
+    expect(codeForHttpStatus(unwrapAnswer(result))).toBe('NOT_AUTHENTICATED')
     expect(fetchImpl).toHaveBeenCalledOnce()
+  })
+
+  it('leaves a 403 as the refusal it is', async () => {
+    const { transport } = makeTransport({
+      responses: [jsonResponse(403, { message: 'no' })]
+    })
+
+    const result = await transport({ method: 'GET', route: '/billing/status' })
+
+    const answer = unwrapAnswer(result)
+    expect(answer.authenticationNotRenewable).toBeUndefined()
+    expect(codeForHttpStatus(answer)).toBe('ACCESS_DENIED')
   })
 
   it('times out a body that never arrives', async () => {

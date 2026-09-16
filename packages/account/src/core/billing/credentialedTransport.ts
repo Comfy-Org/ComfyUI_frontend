@@ -6,13 +6,20 @@
  * host's scope source rather than from a minted credential.
  *
  * There is no 401 retry here, because there is nothing this client can
- * re-mint: a 401 is returned as an HTTP answer like any other and maps to
- * ACCESS_DENIED, the same as a 401 the session transport already re-minted
- * against. `authenticationRetrySkipped` stays unset; it means a replayable
- * retry was possible and skipped, which is never the case on this transport.
+ * re-mint. A 401 is returned as an HTTP answer like any other, marked
+ * `authenticationNotRenewable` so that `codeForHttpStatus` reads it as the
+ * host's session ending rather than a refusal: nothing was ever minted or
+ * proved, so it says the credential expired, not that the user lacks access.
+ * `authenticationRetrySkipped` stays unset; it means a replayable retry was
+ * possible and skipped, which is never the case on this transport.
  *
- * No CSRF header is sent. The backend has not named one; it is added here
- * when it does.
+ * No CSRF header is sent. What stands in for one is the JSON content type
+ * `exchangeBillingRequest` always sends: it makes every request non-simple,
+ * so a cross-site caller has to clear a preflight it cannot satisfy. That
+ * rests on the cookie's `SameSite` attribute and the backend's CORS
+ * allowlist, neither of which is enforced here — sending a form-encoded or
+ * otherwise CORS-simple request from this transport removes the protection.
+ * A CSRF header is added here when the backend names one.
  */
 import type {
   BillingHttpResponse,
@@ -54,6 +61,15 @@ function movedOutOfScope(
   return current === undefined || !sameBillingScope(captured, current)
 }
 
+/**
+ * A 401 reaching here means the host's credential is gone, not that access
+ * was refused: this transport never held one to re-prove with.
+ */
+function markSessionEnded(response: BillingHttpResponse): BillingHttpResponse {
+  if (response.httpStatus !== 401) return response
+  return { ...response, authenticationNotRenewable: true }
+}
+
 export function createCredentialedBillingTransport(
   options: CredentialedBillingTransportOptions
 ): BillingTransport {
@@ -88,7 +104,7 @@ export function createCredentialedBillingTransport(
       if (movedOutOfScope(scopeSource, captured)) {
         return { status: 'error', code: 'SUPERSEDED' }
       }
-      return response
+      return { status: 'ok', value: markSessionEnded(response.value) }
     } catch {
       return { status: 'error', code: 'REQUEST_FAILED' }
     } finally {
