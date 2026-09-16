@@ -1,6 +1,11 @@
-import type { UseCase } from '../../config/models-catalogue'
+import type { Modality, UseCase } from '../../config/models-catalogue'
+import { USE_CASES } from '../../config/models-catalogue'
 import type { CardView } from './catalogue-card'
 import type { EntryKind } from './catalogue-entries'
+
+export type TypeFilter = 'all' | EntryKind
+export type NeedsFilter = 'any' | 'runsHere' | 'comfyui' | 'customNodes'
+export type OutputFilter = 'all' | Modality
 
 /**
  * One card, projected for the browser. The catalogue itself never crosses the
@@ -71,4 +76,29 @@ export function sortBrowseEntries(
     priceDesc: (a, b) => credits(b, -1) - credits(a, -1) || byTitle(a, b)
   }
   return [...entries].sort(compare[order])
+}
+
+/** What the catalogue opens on, read off a link rather than off the browser. */
+export interface BrowseRequest {
+  readonly type: TypeFilter
+  readonly useCase: UseCase | 'all'
+  readonly usesModel: string
+  readonly query: string
+}
+
+const KINDS: readonly EntryKind[] = ['model', 'workflow', 'app']
+
+export function browseRequestFrom(search: string): BrowseRequest {
+  const params = new URLSearchParams(search)
+  const asked = params.get('type')
+  const model = params.get('model') ?? ''
+  const useCase = USE_CASES.find((value) => value === params.get('useCase'))
+  return {
+    // "N workflows use this" lands on that model's uses, so the link implies
+    // the type even when it does not name one.
+    type: model ? 'workflow' : (KINDS.find((kind) => kind === asked) ?? 'all'),
+    useCase: useCase ?? 'all',
+    usesModel: model,
+    query: params.get('q') ?? ''
+  }
 }

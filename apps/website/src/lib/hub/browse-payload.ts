@@ -5,12 +5,53 @@ import type { CatalogueEntry } from './catalogue-entries'
 import { buildCatalogue, entryUseCases } from './catalogue-entries'
 import type { FacetedTemplate } from './facet-fields'
 
-function outputsOf(entry: CatalogueEntry): readonly string[] {
-  if (entry.kind !== 'model') return [entry.template.mediaType]
-  return entry.operations.flatMap(
-    (model): readonly string[] =>
-      model.modalities ?? (model.modality ? [model.modality] : [])
-  )
+function modelEntry(
+  entry: Extract<CatalogueEntry, { kind: 'model' }>,
+  models: readonly WorkshopModel[],
+  prices: ReadonlyMap<string, string>
+): BrowseEntry {
+  const { model } = entry
+  return {
+    key: entry.key,
+    kind: 'model',
+    title: model.name,
+    useCases: entryUseCases(entry, models),
+    outputs: entry.operations.flatMap(
+      (operation): readonly string[] =>
+        operation.modalities ?? (operation.modality ? [operation.modality] : [])
+    ),
+    provider: model.provider,
+    runsHere: true,
+    needsCustomNodes: false,
+    models: [],
+    standing: model.recommendedRank ?? Number.POSITIVE_INFINITY,
+    date: undefined,
+    credits: model.creditsPerRun,
+    card: cardViewFor(entry, new Set(), prices)
+  }
+}
+
+function workflowEntry(
+  entry: Extract<CatalogueEntry, { kind: 'workflow' | 'app' }>,
+  models: readonly WorkshopModel[],
+  needsCustomNodes: ReadonlySet<string>
+): BrowseEntry {
+  const { template } = entry
+  return {
+    key: entry.key,
+    kind: entry.kind,
+    title: template.title,
+    useCases: entryUseCases(entry, models),
+    outputs: [template.mediaType],
+    provider: template.partner,
+    runsHere: entry.runsOn !== undefined,
+    needsCustomNodes: needsCustomNodes.has(template.name),
+    models: template.models,
+    standing: template.usage,
+    date: template.date,
+    credits: undefined,
+    card: cardViewFor(entry, needsCustomNodes, new Map())
+  }
 }
 
 export function browseEntries(
@@ -19,24 +60,9 @@ export function browseEntries(
   needsCustomNodes: ReadonlySet<string>,
   prices: ReadonlyMap<string, string>
 ): BrowseEntry[] {
-  return buildCatalogue(templates, models).map((entry) => ({
-    key: entry.key,
-    kind: entry.kind,
-    title: entry.kind === 'model' ? entry.model.name : entry.template.title,
-    useCases: entryUseCases(entry, models),
-    outputs: outputsOf(entry),
-    provider:
-      entry.kind === 'model' ? entry.model.provider : entry.template.partner,
-    runsHere: entry.kind === 'model' || entry.runsOn !== undefined,
-    needsCustomNodes:
-      entry.kind !== 'model' && needsCustomNodes.has(entry.template.name),
-    models: entry.kind === 'model' ? [] : entry.template.models,
-    standing:
-      entry.kind === 'model'
-        ? (entry.model.recommendedRank ?? Number.POSITIVE_INFINITY)
-        : entry.template.usage,
-    date: entry.kind === 'model' ? undefined : entry.template.date,
-    credits: entry.kind === 'model' ? entry.model.creditsPerRun : undefined,
-    card: cardViewFor(entry, needsCustomNodes, prices)
-  }))
+  return buildCatalogue(templates, models).map((entry) =>
+    entry.kind === 'model'
+      ? modelEntry(entry, models, prices)
+      : workflowEntry(entry, models, needsCustomNodes)
+  )
 }

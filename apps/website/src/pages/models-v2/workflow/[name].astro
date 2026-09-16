@@ -1,5 +1,8 @@
 ---
 import CatalogueCard from '../../../components/hub/CatalogueCard.vue'
+import WorkflowAside from '../../../components/hub/WorkflowAside.vue'
+import WorkflowPorts from '../../../components/hub/WorkflowPorts.vue'
+import WorkflowRunsOn from '../../../components/hub/WorkflowRunsOn.vue'
 import { workshopModels } from '../../../config/workshop-browse-content'
 import { cardViewFor } from '../../../lib/hub/catalogue-card'
 import { withFacetFields } from '../../../lib/hub/facet-fields'
@@ -23,29 +26,20 @@ const { name } = Astro.params
 const page = name ? getHubWorkflowPage(name) : undefined
 if (!page) return Astro.redirect('/models-v2/')
 
-const {
-  template,
-  mediaType,
-  details,
-  runsOn,
-  destination,
-  callsPartnerModel,
-  customNodes,
-  weightsBytes,
-  inputs,
-  outputs,
-  related,
-  downloadUrl
-} = page
+const { template, mediaType, details, runsOn, related } = page
 
 const author = template.username || 'ComfyUI'
-const weights = formatWeights(weightsBytes)
 const mediaLabels: Record<string, string> = {
   image: t('workshop.hub.io.image'),
   video: t('workshop.hub.io.video'),
   audio: t('workshop.hub.io.audio'),
   '3d': t('workshop.hub.io.3d')
 }
+const pills = [
+  template.isApp ? t('workshop.v2.kind.app') : t('workshop.v2.kind.workflow'),
+  mediaLabels[mediaType],
+  details.openSource ? t('workshop.v2.workflow.openWeights') : undefined
+].filter((label): label is string => Boolean(label))
 
 // An app is a graph someone wrapped in a form, so its inputs are the thing it
 // is; a node graph's inputs are what its loader nodes read off disk.
@@ -53,7 +47,7 @@ const inputsHeading = template.isApp
   ? t('workshop.v2.workflow.form')
   : t('workshop.v2.workflow.loads')
 
-const relatedViews = related.map((other) =>
+const relatedViews = related.slice(0, 4).map((other) =>
   cardViewFor(
     {
       kind: other.isApp ? 'app' : 'workflow',
@@ -66,12 +60,10 @@ const relatedViews = related.map((other) =>
   )
 )
 
-const sectionTitle =
-  'text-xs font-bold tracking-wider text-primary-comfy-canvas uppercase'
 const pill =
-  'inline-flex h-7 items-center rounded-full bg-transparency-white-t8 px-3 text-2xs leading-none font-bold tracking-wider text-primary-warm-white uppercase'
-const panel =
-  'rounded-2xl border border-transparency-white-t8 bg-transparency-white-t4 p-5'
+  'inline-flex h-7 items-center rounded-full bg-transparency-white-t8 px-3 text-2xs/none font-bold tracking-wider text-primary-warm-white uppercase'
+const tagClass =
+  'inline-flex h-7 items-center rounded-full bg-transparency-white-t8 px-3 text-xs text-primary-comfy-canvas transition-colors hover:bg-transparency-white-t20 hover:text-primary-comfy-yellow'
 ---
 
 <BaseLayout
@@ -89,33 +81,12 @@ const panel =
     </a>
 
     <header class="mb-10 flex flex-col gap-4">
-      <ul class="flex flex-wrap items-center gap-2">
-        <li>
-          <span class={pill} data-testid="workflow-kind">
-            {
-              template.isApp
-                ? t('workshop.v2.kind.app')
-                : t('workshop.v2.kind.workflow')
-            }
-          </span>
-        </li>
-        {
-          mediaLabels[mediaType] && (
-            <li>
-              <span class={pill}>{mediaLabels[mediaType]}</span>
-            </li>
-          )
-        }
-        {
-          details.openSource && (
-            <li>
-              <span class={pill}>{t('workshop.v2.workflow.openWeights')}</span>
-            </li>
-          )
-        }
+      <ul class="flex flex-wrap items-center gap-2" data-testid="workflow-kind">
+        {pills.map((label) => <li><span class={pill}>{label}</span></li>)}
       </ul>
-
-      <h1 class="max-w-3xl text-3xl font-bold text-primary-comfy-canvas lg:text-5xl">
+      <h1
+        class="max-w-3xl text-3xl font-bold text-primary-comfy-canvas lg:text-5xl"
+      >
         {template.title}
       </h1>
       <p class="text-sm text-content-secondary" data-testid="workflow-author">
@@ -149,73 +120,21 @@ const panel =
           )
         }
 
-        <section data-testid="workflow-runs-on">
-          <h2 class={sectionTitle}>{t('workshop.v2.workflow.runsOn')}</h2>
-          <p class="mt-2 max-w-xl text-sm text-content-muted">
-            {t('workshop.v2.workflow.runsOnNote')}
-          </p>
-          <ul class="mt-4 flex flex-wrap gap-2">
-            {
-              runsOn.map((ref) => (
-                <li>
-                  {ref.model ? (
-                    <a
-                      href={ref.model.href}
-                      class="inline-flex h-8 items-center gap-2 rounded-full bg-transparency-white-t8 px-4 text-sm text-primary-comfy-canvas transition-colors hover:bg-transparency-white-t20 hover:text-primary-comfy-yellow"
-                    >
-                      {ref.name}
-                    </a>
-                  ) : (
-                    /* A name we cannot open is a name, not a dead link. */
-                    <span
-                      class="inline-flex h-8 items-center gap-2 rounded-full border border-dashed border-transparency-white-t20 px-4 text-sm text-content-muted"
-                      data-testid="workflow-model-unlinked"
-                    >
-                      {ref.name}
-                      <span class="text-2xs opacity-70">
-                        {t('workshop.v2.workflow.notInCatalogue')}
-                      </span>
-                    </span>
-                  )
-                  }
-                </li>
-              ))
-            }
-          </ul>
-        </section>
+        <WorkflowRunsOn models={runsOn} />
 
         <section class="grid gap-6 sm:grid-cols-2">
           {
-            inputs.length > 0 && (
+            page.inputs.length > 0 && (
               <div data-testid="workflow-inputs">
-                <h2 class={sectionTitle}>{inputsHeading}</h2>
-                <dl class="mt-3 flex flex-col divide-y divide-transparency-white-t8">
-                  {inputs.map((row) => (
-                    <div class="flex items-center justify-between gap-3 py-2 text-sm">
-                      <dt class="text-primary-comfy-canvas">{row.name}</dt>
-                      <dd class="font-mono text-xs text-primary-warm-gray">
-                        {row.type}
-                      </dd>
-                    </div>
-                  ))}
-                </dl>
+                <WorkflowPorts heading={inputsHeading} rows={page.inputs} />
               </div>
             )
           }
           <div data-testid="workflow-outputs">
-            <h2 class={sectionTitle}>{t('workshop.v2.workflow.produces')}</h2>
-            <dl class="mt-3 flex flex-col divide-y divide-transparency-white-t8">
-              {
-                outputs.map((row) => (
-                  <div class="flex items-center justify-between gap-3 py-2 text-sm">
-                    <dt class="text-primary-comfy-canvas">{row.name}</dt>
-                    <dd class="font-mono text-xs text-primary-warm-gray">
-                      {row.type}
-                    </dd>
-                  </div>
-                ))
-              }
-            </dl>
+            <WorkflowPorts
+              heading={t('workshop.v2.workflow.produces')}
+              rows={page.outputs}
+            />
           </div>
         </section>
 
@@ -225,7 +144,7 @@ const panel =
               <li>
                 <a
                   href={`/models-v2/?q=${encodeURIComponent(tagDisplayName(tag))}`}
-                  class="inline-flex h-7 items-center rounded-full bg-transparency-white-t8 px-3 text-xs text-primary-comfy-canvas transition-colors hover:bg-transparency-white-t20 hover:text-primary-comfy-yellow"
+                  class={tagClass}
                 >
                   {tagDisplayName(tag)}
                 </a>
@@ -235,112 +154,28 @@ const panel =
         </ul>
       </div>
 
-      <aside
-        class="flex flex-col gap-5 lg:sticky lg:top-28 lg:col-span-5 lg:self-start"
-      >
-        <div class={panel} data-testid="workflow-actions">
-          <a
-            href={downloadUrl}
-            target="_blank"
-            rel="noopener"
-            class="inline-flex h-11 w-full items-center justify-center rounded-2xl bg-primary-comfy-yellow px-5 text-sm font-bold tracking-wider text-primary-comfy-ink uppercase transition-opacity hover:opacity-90"
-          >
-            {t('workshop.v2.action.open')}
-          </a>
-          <div class="mt-4 flex flex-wrap items-center gap-x-5 gap-y-2 text-sm">
-            <a
-              href={downloadUrl}
-              download
-              class="text-primary-warm-gray transition-colors hover:text-primary-warm-white"
-            >
-              {t('workshop.v2.workflow.download')}
-            </a>
-            {
-              details.tutorialUrl && (
-                <a
-                  href={details.tutorialUrl}
-                  target="_blank"
-                  rel="noopener"
-                  class="text-primary-warm-gray transition-colors hover:text-primary-warm-white"
-                >
-                  {t('workshop.v2.workflow.tutorial')}
-                </a>
-              )
-            }
-          </div>
-        </div>
-
-        <div class={panel} data-testid="workflow-needs">
-          <h2 class={sectionTitle}>{t('workshop.v2.workflow.needs')}</h2>
-          <ul class="mt-3 flex flex-col gap-2 text-sm text-primary-comfy-canvas/80">
-            <li>{t('workshop.v2.workflow.needsComfy')}</li>
-            {
-              weights ? (
-                <li data-testid="workflow-weights">
-                  {t('workshop.v2.workflow.needsWeights').replace(
-                    '{size}',
-                    weights
-                  )}
-                </li>
-              ) : (
-                callsPartnerModel && (
-                  <li>{t('workshop.v2.workflow.needsNothing')}</li>
-                )
-              )
-            }
-            {
-              customNodes.length > 0 && (
-                <li data-testid="workflow-custom-nodes">
-                  {t('workshop.v2.workflow.needsCustom')}
-                  <ul class="mt-2 flex flex-wrap gap-2">
-                    {customNodes.map((node) => (
-                      <li class="inline-flex h-7 items-center rounded-full bg-transparency-white-t8 px-3 font-mono text-xs text-primary-comfy-canvas">
-                        {node}
-                      </li>
-                    ))}
-                  </ul>
-                </li>
-              )
-            }
-          </ul>
-        </div>
-
-        {
-          destination && (
-            <div class={panel} data-testid="workflow-destination">
-              <h2 class={sectionTitle}>
-                {t('workshop.v2.workflow.runHere').replace(
-                  '{model}',
-                  destination.name
-                )}
-              </h2>
-              <p class="mt-2 text-sm text-content-muted">
-                {t('workshop.v2.workflow.runHereNote')}
-              </p>
-              <a
-                href={destination.href}
-                class="mt-4 inline-flex h-10 items-center justify-center rounded-2xl border border-primary-comfy-yellow px-5 text-xs font-bold tracking-wider text-primary-comfy-yellow uppercase transition-colors hover:bg-primary-comfy-yellow hover:text-primary-comfy-ink"
-              >
-                {t('workshop.v2.action.run')}
-              </a>
-            </div>
-          )
-        }
-      </aside>
+      <div class="lg:col-span-5">
+        <WorkflowAside
+          downloadUrl={page.downloadUrl}
+          tutorialUrl={details.tutorialUrl}
+          weights={formatWeights(page.weightsBytes)}
+          customNodes={page.customNodes}
+          callsPartnerModel={page.callsPartnerModel}
+          destination={page.destination}
+        />
+      </div>
     </div>
 
     {
       relatedViews.length > 0 && (
         <section class="mt-24 border-t border-transparency-white-t8 pt-12">
           <h2 class="mb-6 text-xl font-bold text-primary-comfy-canvas">
-            {
-              template.isApp
-                ? t('workshop.v2.workflow.relatedApps')
-                : t('workshop.v2.workflow.related')
-            }
+            {template.isApp
+              ? t('workshop.v2.workflow.relatedApps')
+              : t('workshop.v2.workflow.related')}
           </h2>
           <ul class="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
-            {relatedViews.slice(0, 4).map((view) => (
+            {relatedViews.map((view) => (
               <li>
                 <CatalogueCard view={view} />
               </li>
