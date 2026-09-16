@@ -5,6 +5,11 @@
   "description": "Shared account layer: a framework-free session core that exchanges a signed-in identity for the workspace-scoped Cloud JWT with valid-on-read freshness, the package-owned Firebase identity entry, and an optional Vue subpath for the shared sign-in pieces",
   "keywords": [],
   "license": "MIT",
+  "files": [
+    "src",
+    "!src/**/*.test.ts",
+    "!src/**/__fixtures__"
+  ],
   "type": "module",
   "exports": {
     "./boundedOperation": "./src/core/boundedOperation.ts",
