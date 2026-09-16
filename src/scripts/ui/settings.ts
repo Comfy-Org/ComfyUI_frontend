@@ -112,7 +112,9 @@ export class ComfySettingsDialog extends ComfyDialog<HTMLDialogElement> {
    * })
    * ```
    */
-  addSetting<K extends keyof Settings>(params: SettingParams & { id: K }) {
+  addSetting<K extends keyof Settings>(
+    params: SettingParams<Settings[K]> & { id: K }
+  ) {
     const settingStore = useSettingStore()
     settingStore.addSetting(params)
 

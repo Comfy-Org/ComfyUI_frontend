@@ -58,11 +58,13 @@ export interface ProgressStateWsMessage {
   nodes: Record<NodeId, NodeProgressState>
 }
 export interface ExecutingWsMessage {
-  node: NodeId
-  display_node: NodeId
+  node: NodeId | null
+  display_node?: NodeId
   prompt_id: JobId
 }
 export interface ExecutedWsMessage extends ExecutingWsMessage {
+  node: NodeId
+  display_node: NodeId
   output: NodeExecutionOutput
   merge?: boolean
 }

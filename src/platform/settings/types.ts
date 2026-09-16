@@ -231,7 +231,7 @@ export interface SettingParams<TValue = unknown> extends FormItem {
   category?: string[]
   experimental?: boolean
   deprecated?: boolean
-  migrateDeprecatedValue?: (value: TValue) => TValue
+  migrateDeprecatedValue?: (value: unknown) => TValue
   // Version of the setting when it was added
   versionAdded?: string
   // Version of the setting when it was last modified
