@@ -180,19 +180,17 @@ function onBranchSelectorCreated(this: LGraphNode) {
 
   const namesIndex = this.inputs.findIndex((inp) => inp.name === 'branch_names')
   if (namesIndex !== -1) this.removeInput(namesIndex)
-  this.addCustomWidget({
+  const names_widget = this.addCustomWidget({
     computeSize: () => [0, -4],
     draw: () => undefined,
     name: 'branch_names',
     options: { hidden: true },
     serialize: false,
     type: 'hidden',
-    get value() {
-      return labels.value
-    },
-    set value(_) {},
+    value: [],
     y: 0
   })
+  watch(labels, () => (names_widget.value = labels.value))
 
   // Refresh on connection changes (add/remove inputs)
   this.onConnectionsChange = useChainCallback(
