@@ -24,7 +24,8 @@ import {
   createCreditsReader,
   createSessionBillingTransport,
   createTopupCommand,
-  driveEmbeddedChallenge
+  driveEmbeddedChallenge,
+  sessionBillingScopeSource
 } from '@comfyorg/account/billing'
 
 export interface BillingSdkOptions {
@@ -75,12 +76,13 @@ export function createBillingSdk(options: BillingSdkOptions): BillingSdk {
     workspaceId,
     ...(fetchImpl === undefined ? {} : { fetchImpl })
   })
-  const status = createBillingStatusReader({ transport, session })
-  const credits = createCreditsReader({ transport, session })
-  const capabilities = createCapabilitiesReader({ transport, session })
+  const scopeSource = sessionBillingScopeSource(session)
+  const status = createBillingStatusReader({ transport, scopeSource })
+  const credits = createCreditsReader({ transport, scopeSource })
+  const capabilities = createCapabilitiesReader({ transport, scopeSource })
   const lifecycle = createBillingOperationLifecycle({
     transport,
-    session,
+    scopeSource,
     statusReader: status,
     ...(pointerStorage === undefined ? {} : { pointerStorage }),
     embeddedCheckoutAvailable,

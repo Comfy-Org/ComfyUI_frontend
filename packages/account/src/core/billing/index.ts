@@ -18,6 +18,10 @@ export type {
 } from './billingContracts.js'
 export type { SessionBillingTransportOptions } from './transport.js'
 export { createSessionBillingTransport } from './transport.js'
+export type { CredentialedBillingTransportOptions } from './credentialedTransport.js'
+export { createCredentialedBillingTransport } from './credentialedTransport.js'
+export type { BillingScope, BillingScopeSource } from './billingScope.js'
+export { sessionBillingScopeSource } from './billingScope.js'
 export type {
   BillingCapabilities,
   CapabilitiesReadOptions,
