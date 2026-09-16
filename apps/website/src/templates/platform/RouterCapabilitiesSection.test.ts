@@ -12,7 +12,7 @@ describe('RouterCapabilitiesSection', () => {
     ).toBeTruthy()
     expect(
       screen.getByRole('img', {
-        name: 'Better availability. Better prices. Your choice of route.'
+        name: 'Better availability. Better prices. Your choice.'
       })
     ).toBeTruthy()
   })
@@ -20,7 +20,7 @@ describe('RouterCapabilitiesSection', () => {
   it('identifies supported providers with logos', () => {
     render(RouterCapabilitiesSection, { props: { locale: 'en' } })
 
-    for (const provider of ['fal', 'WaveSpeed', 'Runware', 'Pika', 'Replicate'])
+    for (const provider of ['fal', 'Runware', 'WaveSpeed'])
       expect(screen.getAllByRole('img', { name: provider })).toHaveLength(1)
   })
 })

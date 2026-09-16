@@ -11,7 +11,7 @@ describe('FAQSection', () => {
         locale: 'en',
         headingKey: 'platform.router.faq.heading',
         faqPrefix: 'platform.router.faq',
-        faqCount: 11
+        faqCount: 12
       }
     })
 
