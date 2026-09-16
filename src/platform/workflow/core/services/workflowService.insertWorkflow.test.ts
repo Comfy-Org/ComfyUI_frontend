@@ -51,13 +51,7 @@ vi.mock<unknown>(
   })
 )
 
-vi.mock<unknown>(import('@/platform/telemetry'), () => ({
-  useTelemetry: () => ({
-    trackDefaultViewSet: vi.fn(),
-    trackWorkflowSaved: vi.fn(),
-    trackEnterLinear: vi.fn()
-  })
-}))
+vi.mock(import('@/platform/telemetry'))
 
 const PROBE_NODE_TYPE = 'test/insert-workflow-probe'
 

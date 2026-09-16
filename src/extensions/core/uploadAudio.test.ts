@@ -1,7 +1,10 @@
-import { fromAny } from '@total-typescript/shoehorn'
+import { fromAny, fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { ComfyApi } from '@/scripts/api'
+import type { ComfyApp } from '@/scripts/app'
+import type { useAudioService } from '@/services/audioService'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 
 const {
@@ -28,56 +31,44 @@ const {
   }
 })
 
-let capturedDragDrop: ((files: File[]) => Promise<File[] | never[]>) | undefined
-let capturedFileSelect:
-  | ((files: File[]) => Promise<File[] | never[]>)
-  | undefined
-let capturedPaste: ((files: File[]) => Promise<File[] | never[]>) | undefined
+type FileHandler = (files: File[]) => Promise<unknown>
+let capturedDragDrop: FileHandler | undefined
+let capturedPaste: FileHandler | undefined
 
-vi.mock('extendable-media-recorder', () => ({
-  MediaRecorder: class MockMediaRecorder {
-    start = mockMediaRecorderStart
-    stop = mockMediaRecorderStop
+vi.mock(import('extendable-media-recorder'), () => ({
+  MediaRecorder: fromAny(
+    class MockMediaRecorder {
+      start = mockMediaRecorderStart
+      stop = mockMediaRecorderStop
 
-    constructor() {
-      mockMediaRecorderConstruct()
+      constructor() {
+        mockMediaRecorderConstruct()
+      }
     }
-  }
+  )
 }))
 
-vi.mock('@/platform/telemetry/reportError', () => ({
+vi.mock(import('@/platform/telemetry/reportError'), () => ({
   reportError: mockReportError
 }))
 
-vi.mock('@/composables/node/useNodeDragAndDrop', () => ({
-  useNodeDragAndDrop: (
-    _node: LGraphNode,
-    options: { onDrop: typeof capturedDragDrop }
-  ) => {
+vi.mock(import('@/composables/node/useNodeDragAndDrop'), () => ({
+  useNodeDragAndDrop: (_node, options) => {
     capturedDragDrop = options.onDrop
   }
 }))
 
-vi.mock('@/composables/node/useNodeFileInput', () => ({
-  useNodeFileInput: (
-    _node: LGraphNode,
-    options: { onSelect: typeof capturedFileSelect }
-  ) => {
-    capturedFileSelect = options.onSelect
-    return { openFileSelection: vi.fn() }
-  }
+vi.mock(import('@/composables/node/useNodeFileInput'), () => ({
+  useNodeFileInput: () => ({ openFileSelection: vi.fn() })
 }))
 
-vi.mock('@/composables/node/useNodePaste', () => ({
-  useNodePaste: (
-    _node: LGraphNode,
-    options: { onPaste: typeof capturedPaste }
-  ) => {
+vi.mock(import('@/composables/node/useNodePaste'), () => ({
+  useNodePaste: (_node, options) => {
     capturedPaste = options.onPaste
   }
 }))
 
-vi.mock('@/i18n', () => ({
+vi.mock(import('@/i18n'), () => ({
   t: (key: string) => key
 }))
 
@@ -86,32 +77,38 @@ beforeEach(() => {
   mockAddAlert = useToastStore().addAlert
 })
 
-vi.mock('@/renderer/extensions/vueNodes/widgets/utils/audioUtils', () => ({
-  getResourceURL: (subfolder = '', filename = '', type = 'input') =>
-    `/view?filename=${filename}&subfolder=${subfolder}&type=${type}`,
-  splitFilePath: (path: string) => ['', path, 'input']
-}))
+vi.mock(
+  import('@/renderer/extensions/vueNodes/widgets/utils/audioUtils'),
+  () => ({
+    getResourceURL: (subfolder, filename, type = 'input') =>
+      `/view?filename=${filename}&subfolder=${subfolder}&type=${type}`,
+    splitFilePath: (path) => ['', path]
+  })
+)
 
-vi.mock('@/scripts/api', () => ({
-  api: {
+vi.mock(import('@/scripts/api'), () => ({
+  api: fromPartial<ComfyApi>({
     apiURL: mockApiURL,
     fetchApi: mockFetchApi
-  }
+  })
 }))
 
-vi.mock('@/scripts/app', () => ({
-  app: {
+vi.mock(import('@/scripts/app'), () => ({
+  app: fromPartial<ComfyApp>({
     registerExtension: extensions.registerExtension,
     rootGraph: { id: 'root' }
-  }
+  })
 }))
 
-vi.mock('@/utils/graphTraversalUtil', () => ({
+vi.mock(import('@/utils/graphTraversalUtil'), () => ({
   getNodeByLocatorId: vi.fn()
 }))
 
-vi.mock('@/services/audioService', () => ({
-  useAudioService: () => ({ stopAllTracks: mockStopAllTracks })
+vi.mock(import('@/services/audioService'), () => ({
+  useAudioService: () =>
+    fromPartial<ReturnType<typeof useAudioService>>({
+      stopAllTracks: mockStopAllTracks
+    })
 }))
 
 await import('./uploadAudio')
@@ -179,7 +176,6 @@ async function loadAudioUploadWidget() {
 describe('Comfy.UploadAudio AUDIOUPLOAD widget', () => {
   beforeEach(() => {
     capturedDragDrop = undefined
-    capturedFileSelect = undefined
     capturedPaste = undefined
   })
 
@@ -287,7 +283,7 @@ describe('Comfy.UploadAudio AUDIOUPLOAD widget', () => {
     const { node } = createAudioNode()
     AUDIOUPLOAD(node, 'upload')
 
-    const result = await capturedFileSelect!([])
+    const result = await capturedDragDrop!([])
 
     expect(result).toEqual([])
     expect(node.isUploading).toBe(false)
