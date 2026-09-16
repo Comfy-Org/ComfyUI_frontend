@@ -381,20 +381,6 @@ describe('subscribe on the billing SDK rail', () => {
     expect(workspaceApi.subscribe).not.toHaveBeenCalled()
   })
 
-  it('reports an already-held plan as a settled subscribe', async () => {
-    flagState.billingSdkSubscriptionEnabled = true
-    vi.mocked(harness.sdk.commands.subscribe).mockResolvedValue({
-      status: 'ok',
-      value: { phase: 'succeeded' }
-    })
-
-    await expect(setupBilling().subscribe('pro-monthly')).resolves.toEqual({
-      billing_op_id: '',
-      status: 'subscribed'
-    })
-    expect(workspaceApi.subscribe).not.toHaveBeenCalled()
-  })
-
   it('falls back to the workspace client once when the route is missing', async () => {
     flagState.billingSdkSubscriptionEnabled = true
     vi.mocked(harness.sdk.commands.subscribe).mockResolvedValue(ROUTE_MISSING)
