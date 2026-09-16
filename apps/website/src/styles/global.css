@@ -66,6 +66,7 @@
 }
 
 @custom-variant short (@media (max-height: 1100px));
+@custom-variant can-hover (@media (hover: hover));
 
 @theme {
   --color-site-dropdown: #332b38;
@@ -115,6 +116,9 @@
   --color-hub-surface: var(--color-transparency-white-t4);
   --color-hub-surface-hover: var(--color-transparency-white-t8);
   --color-hub-muted: #8a8a8a;
+  /* The workspace monogram, from the Cloud design system, so one workspace
+     reads the same wherever it is shown. */
+  --color-workspace-mark: var(--color-ocean-600);
 }
 
 @utility ppformula-text-center-sm {

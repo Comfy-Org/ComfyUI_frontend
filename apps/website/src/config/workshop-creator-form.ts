@@ -46,6 +46,7 @@ export const workshopCreatorFormSchema = z
           'meshy-source',
           'kling-avatar',
           'kling-lip-sync',
+          'kling-omni-video',
           'veo'
         ]),
         options: jsonObject.default({})

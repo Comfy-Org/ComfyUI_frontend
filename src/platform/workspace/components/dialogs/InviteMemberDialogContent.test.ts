@@ -1,3 +1,5 @@
+import { computed, ref } from 'vue'
+import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useDialogStore } from '@/stores/dialogStore'
 import { render, screen, waitFor } from '@testing-library/vue'
@@ -5,43 +7,19 @@ import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
+import { useTelemetry } from '@/platform/telemetry'
+
 import InviteMemberDialogContent from './InviteMemberDialogContent.vue'
 
 import type { WorkspacePendingInvite } from '@/platform/workspace/stores/teamWorkspaceStore'
 
-const {
-  mockToastAdd,
-  mockTrackInviteSent,
-  mockTrackInviteFailed,
-  mockFetchStatus,
-  mockMaxSeats,
-  mockOccupiedSeats
-} = vi.hoisted(() => {
-  const nullableNumber = (value: number | null) => ({ value })
-  return {
-    mockToastAdd: vi.fn(),
-    mockTrackInviteSent: vi.fn(),
-    mockTrackInviteFailed: vi.fn(),
-    mockFetchStatus: vi.fn(),
-    mockMaxSeats: nullableNumber(73),
-    mockOccupiedSeats: nullableNumber(0)
-  }
-})
+const mockToastAdd = vi.hoisted(() => vi.fn())
+const mockMaxSeats = ref<number | null>(73)
+const mockOccupiedSeats = ref<number | null>(0)
 
-vi.mock<unknown>(import('@/composables/billing/useBillingContext'), () => ({
-  useBillingContext: () => ({
-    fetchStatus: mockFetchStatus,
-    maxSeats: mockMaxSeats,
-    occupiedSeats: mockOccupiedSeats
-  })
-}))
+vi.mock(import('@/composables/billing/useBillingContext'))
 
-vi.mock<unknown>(import('@/platform/telemetry'), () => ({
-  useTelemetry: () => ({
-    trackWorkspaceInviteSent: mockTrackInviteSent,
-    trackWorkspaceInviteFailed: mockTrackInviteFailed
-  })
-}))
+vi.mock(import('@/platform/telemetry'))
 
 vi.mock<unknown>(
   import('primevue/usetoast'), // eslint-disable-line primevue-removal/no-imports
@@ -86,6 +64,13 @@ function inviteButton() {
 }
 
 beforeEach(() => {
+  const billing = useBillingContext()
+  Object.assign(billing, {
+    maxSeats: computed(() => mockMaxSeats.value),
+    occupiedSeats: computed(() => mockOccupiedSeats.value)
+  })
+  vi.mocked(useBillingContext).mockReturnValue(billing)
+
   Object.assign(useTeamWorkspaceStore(), { pendingInvites: [] })
   vi.mocked(useDialogStore().closeDialog).mockImplementation(() => {})
 })
@@ -94,7 +79,7 @@ describe('InviteMemberDialogContent', () => {
   beforeEach(() => {
     vi.useRealTimers()
     vi.mocked(useTeamWorkspaceStore().fetchPendingInvites).mockResolvedValue([])
-    mockFetchStatus.mockResolvedValue(undefined)
+    vi.mocked(useBillingContext().fetchStatus).mockResolvedValue(undefined)
     mockMaxSeats.value = 73
     mockOccupiedSeats.value = 0
     vi.mocked(useTeamWorkspaceStore().createInvite).mockImplementation(
@@ -205,7 +190,7 @@ describe('InviteMemberDialogContent', () => {
     expect(useTeamWorkspaceStore().createInvite).toHaveBeenCalledTimes(2)
     expect(useTeamWorkspaceStore().createInvite).toHaveBeenCalledWith('a@b.com')
     expect(useTeamWorkspaceStore().createInvite).toHaveBeenCalledWith('c@d.com')
-    expect(mockTrackInviteSent).toHaveBeenCalledWith({
+    expect(useTelemetry()?.trackWorkspaceInviteSent).toHaveBeenCalledWith({
       source: 'settings_members',
       count: 2
     })
@@ -240,7 +225,7 @@ describe('InviteMemberDialogContent', () => {
     expect(mockToastAdd).toHaveBeenCalledWith(
       expect.objectContaining({ severity: 'error' })
     )
-    expect(mockTrackInviteSent).toHaveBeenCalledWith({
+    expect(useTelemetry()?.trackWorkspaceInviteSent).toHaveBeenCalledWith({
       source: 'settings_members',
       count: 1
     })
@@ -267,7 +252,7 @@ describe('InviteMemberDialogContent', () => {
     expect(mockToastAdd).toHaveBeenCalledWith(
       expect.objectContaining({ severity: 'error' })
     )
-    expect(mockTrackInviteSent).not.toHaveBeenCalled()
+    expect(useTelemetry()?.trackWorkspaceInviteSent).not.toHaveBeenCalled()
     expect(inviteButton()).toBeEnabled()
   })
 

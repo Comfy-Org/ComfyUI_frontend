@@ -1,4 +1,4 @@
-import type { SessionClient } from '../session.js'
+import type { BillingSession } from './billingContracts.js'
 import type { AccountCredential } from '../sessionContracts.js'
 
 export interface BillingScope {
@@ -27,7 +27,7 @@ export function sameBillingScope(a: BillingScope, b: BillingScope): boolean {
 }
 
 export function createBillingScopeTracker(
-  session: SessionClient,
+  session: BillingSession,
   onChange: () => void
 ): BillingScopeTracker {
   let scope = readBillingScope(session)
@@ -59,7 +59,7 @@ export function createBillingScopeTracker(
   }
 }
 
-function readBillingScope(session: SessionClient): BillingScope | undefined {
+function readBillingScope(session: BillingSession): BillingScope | undefined {
   const state = session.getSnapshot()
   if (state.user === null || state.session === undefined) return undefined
   return {
