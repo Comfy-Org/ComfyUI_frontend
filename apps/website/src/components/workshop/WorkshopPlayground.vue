@@ -170,7 +170,7 @@ const languageLabels: Record<WorkshopSnippetLanguage, string> = {
               v-for="option in WORKSHOP_SNIPPET_LANGUAGES"
               :key="option"
               :value="option"
-              class="focus-visible:ring-primary-comfy-yellow/50 data-[state=active]:bg-primary-comfy-yellow cursor-pointer rounded-full px-4 py-2 text-sm text-primary-comfy-canvas/65 transition-colors hover:text-primary-comfy-canvas focus-visible:ring-2 focus-visible:outline-none data-[state=active]:text-primary-comfy-ink"
+              class="cursor-pointer rounded-full px-4 py-2 text-sm text-primary-comfy-canvas/65 transition-colors hover:text-primary-comfy-canvas focus-visible:ring-2 focus-visible:ring-primary-comfy-yellow/50 focus-visible:outline-none data-[state=active]:bg-primary-comfy-yellow data-[state=active]:text-primary-comfy-ink"
             >
               {{ languageLabels[option] }}
             </TabsTrigger>
@@ -178,7 +178,7 @@ const languageLabels: Record<WorkshopSnippetLanguage, string> = {
           <button
             type="button"
             :disabled="!canCopySnippet"
-            class="text-primary-comfy-yellow text-sm hover:underline disabled:cursor-not-allowed disabled:opacity-50"
+            class="text-sm text-primary-comfy-yellow hover:underline disabled:cursor-not-allowed disabled:opacity-50"
             @click="copySnippet"
           >
             {{
@@ -201,7 +201,7 @@ const languageLabels: Record<WorkshopSnippetLanguage, string> = {
           -->
           <pre
             tabindex="0"
-            class="focus-visible:ring-primary-comfy-yellow/50 mt-3 max-h-168 overflow-auto rounded-2xl border border-primary-comfy-canvas/10 bg-black p-6 text-sm/relaxed text-primary-comfy-canvas focus-visible:ring-2 focus-visible:outline-none"
+            class="mt-3 max-h-168 overflow-auto rounded-2xl border border-primary-comfy-canvas/10 bg-black p-6 text-sm/relaxed text-primary-comfy-canvas focus-visible:ring-2 focus-visible:ring-primary-comfy-yellow/50 focus-visible:outline-none"
           ><code>{{ option === language ? snippet : buildWorkshopSnippet(option, model.id, model.fields, values, idempotencyKey) }}</code></pre>
         </TabsContent>
       </TabsRoot>
@@ -209,7 +209,7 @@ const languageLabels: Record<WorkshopSnippetLanguage, string> = {
         :href="externalLinks.apiKeys"
         target="_blank"
         rel="noopener noreferrer"
-        class="text-primary-comfy-yellow mt-4 inline-flex text-sm font-medium hover:underline"
+        class="mt-4 inline-flex text-sm font-medium text-primary-comfy-yellow hover:underline"
       >
         {{ t('workshop.model.getApiKey', locale) }}
       </a>

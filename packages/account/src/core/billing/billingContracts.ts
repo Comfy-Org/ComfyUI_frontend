@@ -6,8 +6,25 @@
  * Billing reports failures as coded results rather than thrown errors, so a
  * caller cannot accidentally surface a server or payment-provider string to a
  * user. The codes carry no server text; the copy that belongs to each code is
- * owned by the billing core and localized by the host.
+ * owned by the billing core and localized by the host. The one server value
+ * that crosses this boundary is `serverCode`, a machine identifier and never
+ * copy: a command matches it against its own closed set, and a host stores it
+ * where it already keeps `WorkspaceApiError.code`. Its brand makes it
+ * unforgeable: only the response decoder mints one, and `unwrapServerCode`
+ * names the one sanctioned widening.
  */
+import type { SessionClient } from '../session.js'
+
+/**
+ * The session members the billing core reaches for. A host's client is typed
+ * for its own user, and the identity seam is contravariant in that user, so
+ * requiring the full client would reject every host whose user is more
+ * specific than the base.
+ */
+export type BillingSession = Pick<
+  SessionClient,
+  'getSnapshot' | 'subscribe' | 'ensureFresh' | 'remint'
+>
 
 /**
  * The failure buckets a billing request can produce, extracted from what the
@@ -30,11 +47,48 @@ export type BillingErrorCode =
   /** A 2xx whose body does not match the generated contract. */
   | 'MALFORMED_RESPONSE'
 
+declare const billingServerCodeBrand: unique symbol
+
+/**
+ * An unbounded server string that is only ever a machine identifier. Nothing
+ * outside `readBillingErrorCode` mints one, so a command cannot invent a code
+ * to match. The value stays a `string` underneath: `matchesServerCode` and
+ * `unwrapServerCode` name the sanctioned uses rather than making the string
+ * unreadable.
+ */
+export type BillingServerCode = string & {
+  readonly [billingServerCodeBrand]: true
+}
+
 export type BillingFailure = {
   readonly status: 'error'
   readonly code: BillingErrorCode
   /** Set only when the failure came from an HTTP response. */
   readonly httpStatus?: number
+  /**
+   * The coded `code` of a generated `ErrorResponse` body, when the server
+   * sent one. Its `message` is dropped on purpose: a command acts on codes
+   * it names, never on server text. Compare it through `matchesServerCode`,
+   * and widen it through `unwrapServerCode` at a host's error-store
+   * boundary. Never render it.
+   */
+  readonly serverCode?: BillingServerCode
+}
+
+/** Whether a failure carries the server code a command names. */
+export function matchesServerCode(
+  failure: Pick<BillingFailure, 'serverCode'>,
+  code: string
+): boolean {
+  return failure.serverCode === code
+}
+
+/**
+ * The one widening back to `string`, for a host storing the code beside the
+ * codes it already keeps. Rendering it is still a contract violation.
+ */
+export function unwrapServerCode(code: BillingServerCode): string {
+  return code
 }
 
 export type BillingResult<T> =
@@ -65,6 +119,11 @@ export interface BillingHttpResponse {
   readonly body: unknown
   /** True when a 401 could not be retried because the write was not replayable. */
   readonly authenticationRetrySkipped?: true
+  /**
+   * True when the transport holds no credential of its own to re-prove with,
+   * so a 401 is the host's session ending rather than a refusal.
+   */
+  readonly authenticationNotRenewable?: true
   /**
    * Response header reader. The capability revision a mutation reports
    * (`X-Capability-Revision`) reaches the capabilities cache through this,

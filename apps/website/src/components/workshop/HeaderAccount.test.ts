@@ -1,8 +1,9 @@
-import { render, screen, waitFor } from '@testing-library/vue'
+import { fireEvent, render, screen, waitFor } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 
 import { subscribeToWorkshopBuyCredits } from '../../config/workshop-buy-credits'
+import { reportWorkshopRun } from '../../config/workshop-run-state'
 import HeaderAccount from './HeaderAccount.vue'
 
 const h = vi.hoisted(() => ({
@@ -127,13 +128,21 @@ describe('HeaderAccount', () => {
   })
 
   it('shows the account control with the credits chip when signed in', () => {
-    h.user!.value = { email: 'a@b.co', displayName: 'Ada' }
+    h.user!.value = {
+      email: 'a@b.co',
+      displayName: 'Ada',
+      photoURL: 'https://example.com/ada.jpg'
+    }
     h.session!.value = { token: 'jwt', uid: 'user-1', workspace, role: 'owner' }
     h.balance!.value = { status: 'ok', credits: 1234 }
     render(HeaderAccount)
 
     expect(screen.getByRole('button', { name: /account/i })).toBeTruthy()
     expect(screen.getByText(/1,234/)).toBeTruthy()
+    expect(
+      screen.getByTestId('header-account-avatar').getAttribute('src')
+    ).toBe('https://example.com/ada.jpg')
+    expect(screen.queryByText('PW')).toBeNull()
   })
 
   it.for([0, 1234])(
@@ -222,6 +231,91 @@ describe('HeaderAccount menu', () => {
     h.balance!.value = { status: 'ok', credits: 42 }
   }
 
+  it('shows the mail beside sign out and the workspace above the credits', async () => {
+    signIn()
+    h.user!.value = {
+      uid: 'user-1',
+      email: 'a@b.co',
+      displayName: 'Ada',
+      photoURL: 'https://example.com/ada.jpg'
+    }
+    const user = userEvent.setup()
+    render(HeaderAccount)
+
+    await user.click(screen.getByTestId('header-account'))
+    const identity = await screen.findByTestId('account-identity')
+    const active = screen.getByTestId('account-workspace-current')
+
+    expect(identity.textContent).toContain('a@b.co')
+    expect(identity.textContent).not.toContain('Personal')
+    expect(active.textContent).toContain('Personal')
+    expect(active.textContent).toContain('Owner')
+    expect(active.textContent).not.toContain('Ada')
+  })
+
+  it('marks the workspace with its own name, not with the word workspace', async () => {
+    signIn()
+    h.session!.value = {
+      token: 'jwt',
+      uid: 'user-1',
+      workspace: { id: 'ws', name: 'Ada Studio Workspace', type: 'team' },
+      role: 'owner'
+    }
+    const user = userEvent.setup()
+    render(HeaderAccount)
+
+    await user.click(screen.getByTestId('header-account'))
+    const active = await screen.findByTestId('account-workspace-current')
+
+    expect(active.textContent).toContain('AS')
+    expect(active.textContent).toContain('Ada Studio Workspace')
+  })
+
+  it('uses the user ID when profile fields are empty', async () => {
+    signIn()
+    h.user!.value = {
+      uid: 'user-1',
+      email: null,
+      displayName: null,
+      photoURL: null
+    }
+    const user = userEvent.setup()
+    render(HeaderAccount)
+
+    await user.click(screen.getByTestId('header-account'))
+    const identity = await screen.findByTestId('account-identity')
+
+    expect(identity.textContent).toContain('user-1')
+    expect(identity.textContent).not.toContain('Personal')
+  })
+
+  it('falls back to initials and retries when the profile image changes', async () => {
+    signIn()
+    h.user!.value = {
+      uid: 'user-1',
+      email: 'a@b.co',
+      displayName: 'Ada',
+      photoURL: 'https://example.com/broken.jpg'
+    }
+    render(HeaderAccount)
+
+    await fireEvent.error(screen.getByTestId('header-account-avatar'))
+    expect(screen.queryByTestId('header-account-avatar')).toBeNull()
+    expect(screen.getByTestId('header-account').textContent).toContain('A')
+
+    h.user!.value = {
+      uid: 'user-1',
+      email: 'a@b.co',
+      displayName: 'Ada',
+      photoURL: 'https://example.com/ada.jpg'
+    }
+    await waitFor(() =>
+      expect(
+        screen.getByTestId('header-account-avatar').getAttribute('src')
+      ).toBe('https://example.com/ada.jpg')
+    )
+  })
+
   it('opens the amount picker from Add credits without inventing a settings destination', async () => {
     signIn()
     const requested = captureBuyCreditsRequest()
@@ -254,6 +348,9 @@ describe('HeaderAccount menu', () => {
 
     await screen.findByTestId('account-workspace')
     expect(screen.queryByTestId('account-add-credits')).toBeNull()
+    expect(
+      screen.getByTestId('account-workspace-current').textContent
+    ).toContain('Member')
   })
 
   it('closes on Escape and hands focus back to the trigger', async () => {
@@ -305,6 +402,19 @@ describe('HeaderAccount workspace switcher', () => {
     ]
   }
 
+  it('names the sign out control in text, not only to a screen reader', async () => {
+    signIn()
+    const user = userEvent.setup()
+    render(HeaderAccount)
+
+    await user.click(screen.getByTestId('header-account'))
+
+    // The icon alone left sighted readers guessing what the door meant.
+    expect(await screen.findByTestId('account-sign-out')).toHaveTextContent(
+      'Log out'
+    )
+  })
+
   async function openSwitcher(user: ReturnType<typeof userEvent.setup>) {
     await user.click(screen.getByTestId('header-account'))
     await screen.findByTestId('account-workspace')
@@ -341,6 +451,75 @@ describe('HeaderAccount workspace switcher', () => {
     })
   })
 
+  // A run belongs to the workspace paying for it. The playground guards every
+  // way off the page, and this is the way off the workspace.
+  it('asks before a switch throws away a run, and lets the reader stay', async () => {
+    signIn()
+    const cancel = vi.fn()
+    reportWorkshopRun(cancel)
+    onTestFinished(() => reportWorkshopRun(undefined))
+    vi.stubGlobal(
+      'fetch',
+      vi
+        .fn()
+        .mockResolvedValue(
+          new Response(JSON.stringify(listing), { status: 200 })
+        )
+    )
+    const user = userEvent.setup()
+    render(HeaderAccount)
+
+    await openSwitcher(user)
+    await user.click(await screen.findByTestId('account-workspace-team-1'))
+
+    expect(await screen.findByTestId('run-leave-dialog')).toBeTruthy()
+    expect(h.remint).not.toHaveBeenCalled()
+
+    await user.click(screen.getByTestId('run-leave-stay'))
+
+    expect(cancel).not.toHaveBeenCalled()
+    expect(h.remint).not.toHaveBeenCalled()
+  })
+
+  it('cancels the run and switches once the reader accepts', async () => {
+    signIn()
+    const cancel = vi.fn()
+    reportWorkshopRun(cancel)
+    onTestFinished(() => reportWorkshopRun(undefined))
+    vi.stubGlobal(
+      'fetch',
+      vi
+        .fn()
+        .mockResolvedValue(
+          new Response(JSON.stringify(listing), { status: 200 })
+        )
+    )
+    const team = {
+      token: 'team-jwt',
+      uid: 'user-1',
+      workspace: { id: 'team-1', name: 'Comfy team', type: 'team' as const },
+      role: 'member'
+    }
+    h.remint.mockImplementationOnce(async () => {
+      h.session!.value = team
+      return { status: 'ok', session: team }
+    })
+    const user = userEvent.setup()
+    render(HeaderAccount)
+
+    await openSwitcher(user)
+    await user.click(await screen.findByTestId('account-workspace-team-1'))
+    await user.click(await screen.findByTestId('run-leave-confirm'))
+
+    expect(cancel).toHaveBeenCalledOnce()
+    await waitFor(() =>
+      expect(h.remint).toHaveBeenCalledWith(undefined, {
+        workspaceId: 'team-1',
+        preserveCredentialOnTransientFailure: true
+      })
+    )
+  })
+
   it('switches by reminting for the picked workspace', async () => {
     signIn()
     vi.stubGlobal(
@@ -375,7 +554,9 @@ describe('HeaderAccount workspace switcher', () => {
     )
     await waitFor(() => expect(screen.queryByRole('menu')).toBeNull())
     await user.click(screen.getByTestId('header-account'))
-    expect(await screen.findByText('Comfy team')).toBeTruthy()
+    const account = await screen.findByTestId('account-identity')
+    expect(account.textContent).toContain('a@b.co')
+    expect(account.textContent).not.toContain('Comfy team')
   })
 
   it('keeps the switch pending until its remint settles', async () => {

@@ -27,18 +27,9 @@ import type {
   ModelFolderInfo
 } from '@/platform/assets/schemas/assetSchema'
 import { isCloud } from '@/platform/distribution/types'
-import * as Sentry from '@sentry/vue'
+import { addBreadcrumb } from '@sentry/vue'
 import { useTelemetry } from '@/platform/telemetry'
 import { useToastStore } from '@/platform/updates/common/toastStore'
-import type {
-  TemplateIncludeOnDistributionEnum,
-  WorkflowTemplates
-} from '@/platform/workflow/templates/types/template'
-import type {
-  ComfyApiWorkflow,
-  ComfyWorkflowJSON
-} from '@/platform/workflow/validation/schemas/workflowSchema'
-import type { SerializedNodeId } from '@/types/nodeId'
 import type {
   AssetDownloadWsMessage,
   AssetExportWsMessage,
@@ -66,6 +57,15 @@ import type {
   User,
   UserDataFullInfo
 } from '@/schemas/apiSchema'
+import type {
+  TemplateIncludeOnDistributionEnum,
+  WorkflowTemplates
+} from '@/platform/workflow/templates/types/template'
+import type {
+  ComfyApiWorkflow,
+  ComfyWorkflowJSON
+} from '@/platform/workflow/validation/schemas/workflowSchema'
+import type { SerializedNodeId } from '@/types/nodeId'
 import type {
   JobAssetsResult,
   JobDetail,
@@ -301,7 +301,7 @@ type ApiToEventType<T = ApiCalls> = {
 }
 
 /** Dictionary of types used in the detail for a custom event */
-type ApiEventTypes = ApiToEventType<ApiCalls>
+type ApiEventTypes = ApiToEventType
 
 /** Dictionary of API events: `[name]: CustomEvent<Type>` */
 type ApiEvents = AsCustomEvents<ApiEventTypes>
@@ -588,7 +588,7 @@ export class ComfyApi extends EventTarget {
           const method = (requestOptions.method ?? 'GET').toUpperCase()
           const routeTemplate = getFetchRouteTemplate(route)
 
-          Sentry.addBreadcrumb({
+          addBreadcrumb({
             category: 'fetch',
             message: `Timeout on ${method} ${routeTemplate}`,
             level: 'warning',
@@ -744,7 +744,7 @@ export class ComfyApi extends EventTarget {
    * @param type The type of event to emit
    * @param detail The detail property used for a custom event ({@link CustomEventInit.detail})
    */
-  dispatchCustomEvent<T extends SimpleApiEvents>(type: T): boolean
+  dispatchCustomEvent(type: SimpleApiEvents): boolean
   dispatchCustomEvent<T extends ComplexApiEvents>(
     type: T,
     detail: ApiEventTypes[T] | null
@@ -791,7 +791,7 @@ export class ComfyApi extends EventTarget {
     const generation = ++this.socketGeneration
 
     let opened = false
-    let existingSession = window.name
+    const existingSession = window.name
 
     // Build WebSocket URL with query parameters
     const params = new URLSearchParams()
@@ -884,7 +884,6 @@ export class ComfyApi extends EventTarget {
           const view = new DataView(event.data)
           const eventType = view.getUint32(0)
 
-          let imageMime
           switch (eventType) {
             case 3: {
               try {
@@ -924,24 +923,17 @@ export class ComfyApi extends EventTarget {
               }
               break
             }
-            case 1:
+            case 1: {
               const imageType = view.getUint32(4)
               const imageData = event.data.slice(8)
-              switch (imageType) {
-                case 2:
-                  imageMime = 'image/png'
-                  break
-                case 1:
-                default:
-                  imageMime = 'image/jpeg'
-                  break
-              }
+              const imageMime = imageType === 2 ? 'image/png' : 'image/jpeg'
               const imageBlob = new Blob([imageData], {
                 type: imageMime
               })
               this.dispatchCustomEvent('b_preview', imageBlob)
               break
-            case 4:
+            }
+            case 4: {
               // PREVIEW_IMAGE_WITH_METADATA
               const decoder4 = new TextDecoder()
               const metadataLength = view.getUint32(4)
@@ -949,7 +941,7 @@ export class ComfyApi extends EventTarget {
               const metadata = JSON.parse(decoder4.decode(metadataBytes))
               const imageData4 = event.data.slice(8 + metadataLength)
 
-              let imageMime4 = metadata.image_type
+              const imageMime4 = metadata.image_type
 
               const imageBlob4 = new Blob([imageData4], {
                 type: imageMime4
@@ -968,6 +960,7 @@ export class ComfyApi extends EventTarget {
               // Also dispatch legacy b_preview for backward compatibility
               this.dispatchCustomEvent('b_preview', imageBlob4)
               break
+            }
             default:
               console.error(
                 `Unknown binary websocket message of type ${eventType}`
@@ -1621,7 +1614,7 @@ export class ComfyApi extends EventTarget {
     if (!subgraph?.data) {
       throw new Error(`Global subgraph '${id}' returned empty data`)
     }
-    return subgraph.data as string
+    return subgraph.data
   }
   async getGlobalSubgraphs(): Promise<Record<string, GlobalSubgraphData>> {
     const resp = await api.fetchApi('/global_subgraphs')
@@ -1635,7 +1628,10 @@ export class ComfyApi extends EventTarget {
 
   async getLogs(): Promise<string> {
     const url = isCloud ? this.apiURL('/logs') : this.internalURL('/logs')
-    return (await axios.get(url)).data
+    const { data } = await axios.get<unknown>(url)
+    return typeof data === 'string'
+      ? data
+      : (JSON.stringify(data, null, 2) ?? '')
   }
 
   async getRawLogs(): Promise<LogsRawResponse> {

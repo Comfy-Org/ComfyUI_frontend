@@ -12,7 +12,7 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 
 <template>
   <section
-    class="max-w-9xl mx-auto flex flex-col items-center px-6 pt-6 pb-16 lg:px-10 2xl:max-w-none"
+    class="mx-auto flex max-w-9xl flex-col items-center px-6 pt-6 pb-16 lg:px-10 2xl:max-w-none"
   >
     <div class="hidden w-full md:block">
       <HeroGraph :locale />

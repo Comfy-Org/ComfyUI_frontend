@@ -60,7 +60,7 @@ const tabCount = (key: string) =>
 </script>
 
 <template>
-  <section :class="cn('max-w-9xl mx-auto px-6 py-16 lg:py-24', className)">
+  <section :class="cn('mx-auto max-w-9xl px-6 py-16 lg:py-24', className)">
     <h2
       v-if="title && !tabs"
       class="text-3xl font-light tracking-tight text-primary-warm-white lg:text-5xl"
@@ -140,7 +140,7 @@ const tabCount = (key: string) =>
     <div v-if="hasMore && loadMoreLabel" class="mt-10 flex justify-center">
       <button
         type="button"
-        class="border-primary-comfy-yellow text-primary-comfy-yellow hover:bg-primary-comfy-yellow focus-visible:ring-primary-comfy-yellow h-12 rounded-2xl border-2 px-5 text-sm font-bold tracking-wider uppercase transition-colors hover:text-primary-comfy-ink focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none"
+        class="h-12 rounded-2xl border-2 border-primary-comfy-yellow px-5 text-sm font-bold tracking-wider text-primary-comfy-yellow uppercase transition-colors hover:bg-primary-comfy-yellow hover:text-primary-comfy-ink focus-visible:ring-2 focus-visible:ring-primary-comfy-yellow focus-visible:ring-offset-2 focus-visible:outline-none"
         @click="showMore()"
       >
         {{ loadMoreLabel }}
