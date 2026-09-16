@@ -3,9 +3,12 @@ import type { WorkshopModel } from '../../config/models-catalogue'
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 
+import { cn } from '@comfyorg/tailwind-utils'
+
 const {
   cloudUrl,
   downloadUrl,
+  runsHere,
   tutorialUrl,
   weights,
   customNodes,
@@ -16,6 +19,9 @@ const {
   /** Comfy Cloud, opened on this template. */
   cloudUrl: string
   downloadUrl: string
+  /** Whether the model above already runs on the page, which then owns the
+    page's one filled action. */
+  runsHere: boolean
   tutorialUrl: string | undefined
   /** Rounded to what a reader decides on, or absent for a partner workflow. */
   weights: string | undefined
@@ -40,7 +46,14 @@ const secondary =
         :href="cloudUrl"
         target="_blank"
         rel="noopener"
-        class="inline-flex h-11 w-full items-center justify-center rounded-2xl bg-primary-comfy-yellow px-5 text-sm font-bold tracking-wider text-primary-comfy-ink uppercase transition-opacity hover:opacity-90"
+        :class="
+          cn(
+            'inline-flex h-11 w-full items-center justify-center rounded-2xl px-5 text-sm font-bold tracking-wider uppercase transition-colors',
+            runsHere
+              ? 'border border-primary-comfy-yellow text-primary-comfy-yellow hover:bg-primary-comfy-yellow hover:text-primary-comfy-ink'
+              : 'bg-primary-comfy-yellow text-primary-comfy-ink hover:opacity-90'
+          )
+        "
         data-testid="workflow-open-cloud"
       >
         {{ t('workshop.v2.workflow.openCloud', locale) }}

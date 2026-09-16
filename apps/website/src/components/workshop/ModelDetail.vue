@@ -708,7 +708,7 @@ function useInCode() {
         <!-- Run follows the form down the page, so a long list of inputs never
           pushes it past the bottom of a laptop screen. -->
         <div
-          class="sticky bottom-0 z-10 mt-auto flex flex-col gap-2 rounded-b-2xl border-t border-transparency-white-t8 bg-page/85 p-3 backdrop-blur-sm"
+          class="sticky bottom-0 z-10 mt-auto flex flex-col gap-2 rounded-b-2xl border-t border-transparency-white-t8 bg-page/95 p-3 backdrop-blur-md"
         >
           <Button
             v-if="gate === 'signedOut'"

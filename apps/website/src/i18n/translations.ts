@@ -10306,7 +10306,7 @@ Enterprise`
     'zh-CN': '价格由低到高'
   },
   'workshop.v2.sort.priceDesc': {
-    en: 'Dearest first',
+    en: 'Most expensive first',
     'zh-CN': '价格由高到低'
   },
   'workshop.v2.sort.narrowed': {
@@ -10323,7 +10323,7 @@ Enterprise`
   },
   'workshop.v2.loadMore': { en: 'Show more', 'zh-CN': '显示更多' },
   'workshop.v2.empty': {
-    en: 'Nothing matches all of those',
+    en: 'Nothing matches those filters',
     'zh-CN': '没有同时满足这些条件的结果'
   },
   'workshop.v2.emptyHint': {
@@ -10342,7 +10342,7 @@ Enterprise`
   },
   'workshop.v2.workflow.runsOn': { en: 'Runs on', 'zh-CN': '运行于' },
   'workshop.v2.workflow.runsOnNote': {
-    en: 'The models this workflow calls. Linked where the catalogue carries them.',
+    en: 'The models this workflow calls.',
     'zh-CN': '此工作流调用的模型。目录中收录的会附带链接。'
   },
   'workshop.v2.workflow.notInCatalogue': {
@@ -10371,7 +10371,7 @@ Enterprise`
     'zh-CN': '在此运行 {model}'
   },
   'workshop.v2.workflow.runHereNote': {
-    en: 'The workflow is a graph and opens in ComfyUI. What runs here is the model underneath it.',
+    en: 'The graph opens in ComfyUI. The model underneath it runs here.',
     'zh-CN':
       '工作流是一张节点图，需在 ComfyUI 中打开。此处运行的是它背后的模型。'
   },
@@ -10396,9 +10396,9 @@ Enterprise`
     en: 'Open weights',
     'zh-CN': '开放权重'
   },
-  'workshop.v2.workflow.graph': { en: 'Workflow', 'zh-CN': '工作流' },
+  'workshop.v2.workflow.graph': { en: 'The graph', 'zh-CN': '节点图' },
   'workshop.v2.workflow.graphNote': {
-    en: 'The node graph behind this workflow, read-only.',
+    en: 'Every node in it, and what feeds what.',
     'zh-CN': '此工作流背后的节点图，仅供查看。'
   },
   'workshop.v2.workflow.graphAlt': {
@@ -10425,13 +10425,10 @@ Enterprise`
     'zh-CN': '在 Comfy Cloud 中打开'
   },
   'workshop.v2.workflow.openCloudNote': {
-    en: 'Opens the graph in your own Cloud account, ready to run.',
+    en: 'Opens in your own Cloud account, ready to run.',
     'zh-CN': '在你自己的 Cloud 账户中打开该图，随时可运行。'
   },
-  'workshop.v2.workflow.runsHereNote': {
-    en: 'This workflow is a single call to {model}, so you can run it here.',
-    'zh-CN': '此工作流只调用 {model} 一次，因此可以直接在这里运行。'
-  },
+  'workshop.v2.workflow.tags': { en: 'Good for', 'zh-CN': '适用于' },
   'workshop.v2.workflow.related': {
     en: 'Workflows like this one',
     'zh-CN': '相似的工作流'
@@ -10441,12 +10438,12 @@ Enterprise`
     'zh-CN': '相似的应用'
   },
   'workshop.v2.model.noRun': {
-    en: 'The Router does not carry a runnable operation for this model yet.',
+    en: 'This model cannot be run here yet.',
     'zh-CN': 'Router 尚未提供该模型可运行的操作。'
   },
   'workshop.v2.model.operations': { en: 'Operations', 'zh-CN': '操作' },
   'workshop.v2.model.operationsNote': {
-    en: 'The registry lists this model once per operation. Here they are one card, and the operation is a choice.',
+    en: 'Pick what you want it to do.',
     'zh-CN':
       '注册表按操作逐条列出该模型。这里它们合并为一张卡片，操作是一个选项。'
   },
@@ -10455,11 +10452,11 @@ Enterprise`
     'zh-CN': '该模型自带的工作流'
   },
   'workshop.v2.model.ownWorkflowsNote': {
-    en: 'Titled after it, so they browse here rather than beside it in the grid.',
+    en: 'Shipped with the model, and named after it.',
     'zh-CN': '它们以该模型命名，因此在此展示，而非与其并列于网格中。'
   },
   'workshop.v2.model.usesNote': {
-    en: 'Built on it, with their own name and their own purpose.',
+    en: 'Built on this model, with their own purpose.',
     'zh-CN': '基于它构建，拥有各自的名称与用途。'
   },
   'workshop.v2.model.openModel': {

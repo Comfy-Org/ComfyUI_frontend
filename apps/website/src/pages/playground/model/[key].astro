@@ -53,6 +53,10 @@ const useViews = relatedCardViews(
   needsCustomNodes
 )
 
+const price = runnable.find((operation) => operation.price)?.price
+
+const pill =
+  'inline-flex h-7 items-center rounded-full bg-transparency-white-t8 px-3 text-2xs/none font-bold tracking-wider text-primary-warm-white uppercase'
 const sectionTitle =
   'text-xs font-bold tracking-wider text-primary-comfy-canvas uppercase'
 ---
@@ -70,19 +74,24 @@ const sectionTitle =
       {t('workshop.v2.workflow.back')}
     </a>
 
-    <header class="mb-12 flex flex-col gap-3">
-      <span
-        class="inline-flex h-7 w-fit items-center rounded-full bg-transparency-white-t8 px-3 text-2xs/none font-bold tracking-wider text-primary-warm-white uppercase"
-      >
-        {t('workshop.v2.kind.model')}
-      </span>
+    <header class="mb-12 flex flex-col gap-4">
+      <ul class="flex flex-wrap items-center gap-2" data-testid="model-kind">
+        <li><span class={pill}>{t('workshop.v2.kind.model')}</span></li>
+        {price && (
+          <li>
+            <span class={pill} data-testid="model-price">
+              {price}
+            </span>
+          </li>
+        )}
+      </ul>
       <h1 class="text-3xl font-bold text-primary-comfy-canvas lg:text-5xl">
         {name}
       </h1>
       {
         provider && (
           <p class="text-sm text-content-secondary" data-testid="model-provider">
-            {provider}
+            {t('workshop.workflow.by').replace('{author}', provider)}
           </p>
         )
       }

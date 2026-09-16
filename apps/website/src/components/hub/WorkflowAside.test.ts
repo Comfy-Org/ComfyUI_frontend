@@ -17,6 +17,7 @@ const flux: WorkshopModel = {
 
 const props = (overrides = {}) => ({
   cloudUrl: 'https://cloud.example.test/?template=poster',
+  runsHere: false,
   downloadUrl: 'https://example.test/graph.json',
   tutorialUrl: undefined,
   weights: undefined,
@@ -40,6 +41,24 @@ describe('WorkflowAside', () => {
     ).toHaveProperty('href', 'https://example.test/graph.json')
     expect(screen.queryByRole('link', { name: /tutorial/i })).toBeNull()
   })
+
+  // One filled action per page: where the model runs above, the Cloud link is
+  // the way out rather than the thing to do.
+  it.for([
+    [false, true],
+    [true, false]
+  ] as const)(
+    'fills the Cloud action only when nothing runs here',
+    ([runsHere, filled]) => {
+      render(WorkflowAside, { props: props({ runsHere }) })
+
+      expect(
+        screen
+          .getByTestId('workflow-open-cloud')
+          .classList.contains('bg-primary-comfy-yellow')
+      ).toBe(filled)
+    }
+  )
 
   it('links a tutorial only where the registry has one', () => {
     render(WorkflowAside, {
