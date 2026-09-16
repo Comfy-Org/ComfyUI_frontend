@@ -410,6 +410,7 @@ watch(
   }
 )
 
+// fallow-ignore-next-line complexity
 async function run() {
   if (
     isRunning.value ||
