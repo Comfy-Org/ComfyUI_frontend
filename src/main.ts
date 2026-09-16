@@ -50,6 +50,13 @@ if (isCloud) stripPaymentReturnParams()
 
 bootstrapTracer.armWatchdog()
 
+if (isCloud) {
+  const { startFeatureFlagTelemetry } =
+    await import('@/composables/useFeatureFlags')
+  const stopFeatureFlagTelemetry = startFeatureFlagTelemetry()
+  import.meta.hot?.dispose(stopFeatureFlagTelemetry)
+}
+
 // Load remote config before initializeApp() below, so getFirebaseConfig() resolves
 // against the server's runtime values instead of the build-time defaults.
 await bootstrapTracer.settle('startup/remote-config', async () => {
@@ -65,11 +72,6 @@ if (isCloud) {
     const { initTelemetry } = await import('@/platform/telemetry/initTelemetry')
     await initTelemetry()
   })
-
-  const { startFeatureFlagTelemetry } =
-    await import('@/composables/useFeatureFlags')
-  const stopFeatureFlagTelemetry = startFeatureFlagTelemetry()
-  import.meta.hot?.dispose(stopFeatureFlagTelemetry)
 }
 
 if (hasHostTelemetryBridge) {
