@@ -438,6 +438,42 @@ describe('MissingModelRow', () => {
     )
   })
 
+  it('offers declared ModelScope and Civitai sources and downloads the selected one', async () => {
+    mockIsCloud.value = false
+    const user = userEvent.setup()
+    const model = makeModel([{ nodeId: '1', widgetName: 'ckpt_name' }])
+    const huggingFaceUrl =
+      'https://huggingface.co/org/model/resolve/main/model.safetensors'
+    const modelScopeUrl =
+      'https://modelscope.cn/models/org/model/resolve/master/model.safetensors'
+    const civitaiUrl = 'https://civitai.com/api/download/models/12345'
+    model.representative.url = huggingFaceUrl
+    model.representative.sources = [
+      { provider: 'modelscope', url: modelScopeUrl },
+      { provider: 'civitai', url: civitaiUrl }
+    ]
+
+    renderRow(model, vi.fn(), false)
+
+    const sourceSelect = screen.getByTestId('missing-model-source-select')
+    expect(sourceSelect).toHaveValue(huggingFaceUrl)
+    expect(sourceSelect).toHaveDisplayValue('Hugging Face')
+    expect(screen.getAllByRole('option')).toHaveLength(3)
+
+    await user.selectOptions(sourceSelect, modelScopeUrl)
+    await user.click(screen.getByTestId('missing-model-download'))
+
+    expect(mockDownloadModel).toHaveBeenCalledWith(
+      {
+        name: 'model.safetensors',
+        url: modelScopeUrl,
+        directory: 'checkpoints',
+        sources: model.representative.sources
+      },
+      expect.any(Object)
+    )
+  })
+
   it('exposes gated browser access as a focus-described link', async () => {
     mockIsCloud.value = false
     const model = makeModel([{ nodeId: '1', widgetName: 'ckpt_name' }])

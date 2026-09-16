@@ -1,5 +1,6 @@
 import type { NodeExecutionId } from '@/types/nodeIdentification'
 import type { SerializedNodeId } from '@/types/nodeId'
+import type { ModelSource } from '@/platform/workflow/validation/schemas/workflowSchema'
 
 /**
  * A single (node, widget, model) binding detected by the missing model pipeline.
@@ -16,6 +17,7 @@ export interface MissingModelCandidate {
   name: string
   directory?: string
   url?: string
+  sources?: ModelSource[]
   hash?: string
   hashType?: string
 
