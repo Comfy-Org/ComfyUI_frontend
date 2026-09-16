@@ -443,6 +443,20 @@ describe('opt-in refresh scheduler', () => {
     ).toEqual(['ACCESS_DENIED', 'permanent_failure', 'succeeded'])
   })
 
+  it('rejects a success carrying a failure that reaches the contract through a variable', () => {
+    const builtElsewhere = {
+      outcome: 'succeeded' as const,
+      failure: { status: 'error' as const, code: 'ACCESS_DENIED' as const }
+    }
+    // @ts-expect-error a success cannot carry a failure payload
+    const laundered: ScheduledRefreshReport = builtElsewhere
+
+    expect(
+      laundered.outcome,
+      'the @ts-expect-error above is the coverage, and only failure?: never earns it; excess-property checking accepts an invalid report once it is no longer a fresh object literal'
+    ).toBe('succeeded')
+  })
+
   it('reports a permanent scheduled failure to the host hook', async () => {
     const outcomes: string[] = []
     const fetchImpl = vi
