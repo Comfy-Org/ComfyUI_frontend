@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest'
+import { assert, describe, expect, it, vi } from 'vitest'
 
 import content from '../content/workshop-display.json'
 import { workshopContentInputs } from './workshop-content-inputs'
@@ -452,6 +452,31 @@ describe('use-case input contracts', () => {
     await expect(request(slug, { video: undefined })).rejects.toMatchObject({
       fieldErrors: { video: 'required' }
     })
+  })
+
+  it.for([
+    { slug: 'freepik--magnific-skin-enhancer--edit-images' },
+    { slug: 'freepik--magnific-upscaler-precise-v2--edit-images' }
+  ])('uploads the Magnific source image for $slug', async ({ slug }) => {
+    const page = detail(slug)
+    const fields = schemaForModel(page)
+    const input = fields.find((field) => field.name === 'image')
+    assert(input)
+    expect(input.label).toBe('Source image')
+    expect(urlUploadField(input)?.accept).toContain('image/png')
+
+    const file = new File(['portrait'], 'portrait.png', { type: 'image/png' })
+    const upload = vi.fn(async () => image)
+    const body = await request(
+      slug,
+      {
+        image: { file, name: file.name, type: file.type, size: file.size }
+      },
+      upload
+    )
+
+    expect(upload).toHaveBeenCalledTimes(1)
+    expect(body).toHaveProperty('image', image)
   })
 
   it.for([
