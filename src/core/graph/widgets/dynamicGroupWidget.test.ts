@@ -11,6 +11,7 @@ import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 import { graphToPrompt } from '@/utils/executionUtil'
+import { isWidgetVisibleOnSurface } from '@/types/widgetVisibility'
 
 function setup(min = 0, max = 3) {
   const graph = new LGraph()
@@ -60,6 +61,34 @@ afterEach(() => {
 })
 
 describe('DynamicGroup widgets', () => {
+  it('keeps group controls off the canvas while preserving Vue editing and saved values', () => {
+    const { node, widget } = setup(1)
+    widget('loras.$add').callback?.(undefined)
+    widget('loras.1.lora_name').value = 'C'
+    const restored = setup(1)
+    restored.node.configure(node.serialize())
+
+    expect(restored.node.getLayoutWidgets().map((w) => w.name)).toEqual([
+      'before',
+      'after'
+    ])
+    for (const field of restored.node.widgets ?? []) {
+      if (!field.name.startsWith('loras.')) continue
+      expect(restored.node.isWidgetVisible(field)).toBe(false)
+      expect(restored.node.isWidgetRowVisible(field)).toBe(false)
+      if (!field.visibility) throw new Error('Missing widget visibility')
+      expect(
+        isWidgetVisibleOnSurface(field.visibility, 'vueNode', {
+          showAdvanced: false
+        })
+      ).toBe(true)
+    }
+    expect(restored.widget('loras.1.lora_name').value).toBe('C')
+    restored.widget('loras.0').callback?.(undefined)
+    expect(restored.widget('loras.0.lora_name').value).toBe('C')
+    expect(restored.widget('loras').value).toBe(1)
+  })
+
   it('rolls back a rejected row addition without losing existing values or links', () => {
     const { node, graph, widget } = setup()
     widget('loras').value = 1
@@ -117,6 +146,10 @@ describe('DynamicGroup widgets', () => {
       }
     })
     widget('remote').value = 2
+    expect(node.getLayoutWidgets().map((w) => w.name)).toEqual([
+      'before',
+      'after'
+    ])
     const first = widget('remote.0.model')
     const survivor = widget('remote.1.model')
     const firstRefresh = vi.spyOn(first, 'refresh').mockImplementation(() => {})
