@@ -53,7 +53,7 @@
       <PopoverTrigger as-child>
         <button
           type="button"
-          class="job-toast-row flex cursor-pointer items-center gap-1.5 rounded-lg border border-base-foreground/10 bg-base-background/60 px-3 py-1.5 text-xs font-medium text-muted-foreground shadow-interface backdrop-blur-2xl transition-colors hover:text-base-foreground data-[state=open]:text-base-foreground"
+          class="group job-toast-row flex cursor-pointer items-center gap-1.5 rounded-lg border border-base-foreground/10 bg-base-background/60 px-3 py-1.5 text-xs font-medium text-muted-foreground shadow-interface backdrop-blur-2xl transition-colors hover:text-base-foreground data-[state=open]:text-base-foreground"
           :style="{ '--row-delay': `${(rows.length + 1) * 35}ms` }"
           data-testid="queue-status-recents-trigger"
         >

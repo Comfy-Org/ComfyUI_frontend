@@ -342,39 +342,50 @@ const reconcileActiveJob = () => {
 
 const jobRef = (id: string) => activeJobs.value.find((job) => job.id === id)
 
-const cancelJobById = wrapWithErrorHandlingAsync(async (id: string) => {
-  const jobId = jobRef(id)?.taskRef?.jobId
-  if (!jobId) return
-  await api.cancelJob(String(jobId))
-  executionStore.clearInitializationByJobId(String(jobId))
-  await queueStore.update()
-  reconcileActiveJob()
-})
+/** `drainsQueue` marks the intent only once the backend accepted the cancel. */
+const cancelJobById = wrapWithErrorHandlingAsync(
+  async (id: string, drainsQueue: boolean) => {
+    const jobId = jobRef(id)?.taskRef?.jobId
+    if (!jobId) return
+    await api.cancelJob(String(jobId))
+    if (drainsQueue) cancelIntent.value = true
+    executionStore.clearInitializationByJobId(String(jobId))
+    await queueStore.update()
+    reconcileActiveJob()
+  }
+)
 
-const cancelJobIds = wrapWithErrorHandlingAsync(async (ids: string[]) => {
-  const jobIds = ids
-    .map((id) => jobRef(id)?.taskRef?.jobId)
-    .filter(
-      (jobId): jobId is string => typeof jobId === 'string' && jobId.length > 0
-    )
-  if (!jobIds.length) return
-  await api.cancelJobs(jobIds)
-  executionStore.clearInitializationByJobIds(jobIds)
-  await queueStore.update()
-  reconcileActiveJob()
-})
+const cancelJobIds = wrapWithErrorHandlingAsync(
+  async (ids: string[], drainsQueue: boolean) => {
+    const jobIds = ids
+      .map((id) => jobRef(id)?.taskRef?.jobId)
+      .filter(
+        (jobId): jobId is string =>
+          typeof jobId === 'string' && jobId.length > 0
+      )
+    if (!jobIds.length) return
+    await api.cancelJobs(jobIds)
+    if (drainsQueue) cancelIntent.value = true
+    executionStore.clearInitializationByJobIds(jobIds)
+    await queueStore.update()
+    reconcileActiveJob()
+  }
+)
 
 function handleCancel(job: JobView) {
-  if (jobs.value.length <= 1) cancelIntent.value = true
-  void cancelJobById(job.id)
+  void cancelJobById(job.id, jobs.value.length <= 1)
 }
 function handleClearQueue() {
-  if (runningCount.value === 0) cancelIntent.value = true
-  void cancelJobIds(queuedJobs.value.map((job) => job.id))
+  void cancelJobIds(
+    queuedJobs.value.map((job) => job.id),
+    runningCount.value === 0
+  )
 }
 function handleCancelAll() {
-  cancelIntent.value = true
-  void cancelJobIds(jobs.value.map((job) => job.id))
+  void cancelJobIds(
+    jobs.value.map((job) => job.id),
+    true
+  )
 }
 
 const { galleryActiveIndex, galleryItems, onViewItem } = useResultGallery(() =>
