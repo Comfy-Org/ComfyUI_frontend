@@ -8,32 +8,37 @@ import { useWorkflowStore } from '@/platform/workflow/management/stores/workflow
 import { app } from '@/scripts/app'
 import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
 import { toRootGraphId } from '@/types/graphScopeId'
+import type { RootGraphId } from '@/types/graphScopeId'
 import type { NodeLocatorId } from '@/types/nodeIdentification'
 import { frameBounds } from '@/utils/frameBoundsUtil'
 import { getNodeByLocatorId } from '@/utils/graphTraversalUtil'
 import { visibleCanvasViewport } from '@/composables/canvas/visibleCanvasViewport'
 
-import { useAgentGeneratedNodesStore } from '../../stores/agentGeneratedNodesStore'
+import type { GraphActivity } from '../../stores/agentGeneratedNodesStore'
 
 defineOptions({ inheritAttrs: false })
+
+const { activities } = defineProps<{
+  activities: ReadonlyMap<RootGraphId, GraphActivity>
+}>()
+const emit = defineEmits<{ dismiss: [rootId: RootGraphId] }>()
 
 const { t } = useI18n()
 const workflowStore = useWorkflowStore()
 const navigationStore = useSubgraphNavigationStore()
-const generatedNodes = useAgentGeneratedNodesStore()
 
 const rootId = computed(() => {
   const id = workflowStore.activeWorkflow?.activeState?.id
   return id ? toRootGraphId(id) : null
 })
 const activity = computed(() =>
-  rootId.value ? generatedNodes.activities.get(rootId.value) : undefined
+  rootId.value ? activities.get(rootId.value) : undefined
 )
 
 async function viewNodes(locators: readonly NodeLocatorId[]): Promise<void> {
   const canvas = app.canvas
   const activeRootId = rootId.value
-  if (!canvas || !activeRootId || app.rootGraph.id !== activeRootId) return
+  if (!canvas || app.rootGraph.id !== activeRootId) return
 
   const resolved = locators.flatMap((locator) => {
     const node = getNodeByLocatorId(app.rootGraph, locator)
@@ -42,8 +47,7 @@ async function viewNodes(locators: readonly NodeLocatorId[]): Promise<void> {
   const owner = resolved.at(-1)?.graph
   if (!owner) return
 
-  if (canvas.graph !== owner && !(await navigationStore.navigateToGraph(owner)))
-    return
+  if (!(await navigationStore.navigateToGraph(owner))) return
 
   if (rootId.value !== activeRootId || app.rootGraph.id !== activeRootId) return
   const bounds = frameBounds(resolved.filter((node) => node.graph === owner))
@@ -52,7 +56,7 @@ async function viewNodes(locators: readonly NodeLocatorId[]): Promise<void> {
 }
 
 function dismiss(): void {
-  if (rootId.value) generatedNodes.dismiss(rootId.value)
+  if (rootId.value) emit('dismiss', rootId.value)
 }
 </script>
 

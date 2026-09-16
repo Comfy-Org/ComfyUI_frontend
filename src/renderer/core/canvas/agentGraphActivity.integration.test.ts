@@ -14,6 +14,7 @@ import { useWorkflowStore } from '@/platform/workflow/management/stores/workflow
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { app } from '@/scripts/app'
 import { defaultGraph } from '@/scripts/defaultGraph'
+import { useCanvasOverlayStore } from '@/stores/canvasOverlayStore'
 import { useMinimapLayerStore } from '@/stores/minimapLayerStore'
 import { graphScopeOf } from '@/types/graphScopeId'
 import { createNodeLocatorId } from '@/types/nodeIdentification'
@@ -22,9 +23,9 @@ import { createMockCanvasRenderingContext2D } from '@/utils/__tests__/litegraphT
 
 import { toTurnId } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 import { useAgentGeneratedNodesStore } from '@/workbench/extensions/agent/stores/agentGeneratedNodesStore'
-import AgentGraphActivityBar from '@/workbench/extensions/agent/components/agent/AgentGraphActivityBar.vue'
 
-function renderBar() {
+async function renderBar() {
+  useAgentGeneratedNodesStore()
   const router = createRouter({
     history: createMemoryHistory(),
     routes: [
@@ -34,7 +35,7 @@ function renderBar() {
       }
     ]
   })
-  return render(AgentGraphActivityBar, {
+  const result = render(useCanvasOverlayStore().components[0], {
     global: {
       plugins: [
         getActivePinia()!,
@@ -47,6 +48,9 @@ function renderBar() {
       ]
     }
   })
+  await vi.dynamicImportSettled()
+  await nextTick()
+  return result
 }
 
 async function activate(root: LGraph, name = `${root.id}.json`) {
@@ -82,7 +86,7 @@ describe('AgentGraphActivityBar', () => {
   })
 
   it('includes an arrival in the same task as turn start', async () => {
-    renderBar()
+    await renderBar()
     useAgentGeneratedNodesStore().beginTurn(toTurnId('turn-1'), 'test')
     addReportedNode(root, 1)
     await nextTick()
@@ -94,7 +98,7 @@ describe('AgentGraphActivityBar', () => {
   })
 
   it('retains activity across a presentation remount', async () => {
-    const first = renderBar()
+    const first = await renderBar()
     useAgentGeneratedNodesStore().beginTurn(toTurnId('turn-1'), 'test')
     addReportedNode(root, 1)
     addReportedNode(root, 2)
@@ -103,16 +107,41 @@ describe('AgentGraphActivityBar', () => {
     first.unmount()
     expect(useMinimapLayerStore().layers).toHaveLength(1)
 
-    renderBar()
+    await renderBar()
 
     expect(screen.getByTestId('agent-graph-view-working')).toHaveTextContent(
       'View nodes'
     )
   })
 
+  it('renders a replaced activity map and dismisses its completed report', async () => {
+    await renderBar()
+    const generatedNodes = useAgentGeneratedNodesStore()
+    const rootId = graphScopeOf(root).rootGraphId
+    generatedNodes.activities = new Map([
+      [
+        rootId,
+        {
+          phase: 'complete',
+          turnId: toTurnId('turn-1'),
+          shownAt: 0,
+          nodes: [createNodeLocatorId(null, toNodeId(1))]
+        }
+      ]
+    ])
+
+    expect(
+      await screen.findByTestId('agent-graph-added-toast')
+    ).toHaveTextContent('1 node added')
+    await userEvent.click(screen.getByRole('button', { name: 'Close' }))
+
+    expect(generatedNodes.activities.has(rootId)).toBe(false)
+    expect(screen.queryByTestId('agent-graph-added-toast')).toBeNull()
+  })
+
   it('keeps activity with its root when the tab switches before flush', async () => {
     const recipient = useWorkflowStore().activeWorkflow
-    renderBar()
+    await renderBar()
     useAgentGeneratedNodesStore().beginTurn(toTurnId('turn-1'), 'test')
     addReportedNode(root, 1)
     const other = new LGraph()
@@ -165,7 +194,7 @@ describe('AgentGraphActivityBar', () => {
         createNodeLocatorId(subgraph.id, latest.id)
       ]
     })
-    renderBar()
+    await renderBar()
     await userEvent.click(screen.getByTestId('agent-graph-view-working'))
 
     expect(canvas.graph).toBe(subgraph)
@@ -206,7 +235,7 @@ describe('AgentGraphActivityBar', () => {
       nodes: [createNodeLocatorId(null, first.id)]
     }
     activities.set(rootId, report)
-    renderBar()
+    await renderBar()
 
     await userEvent.click(screen.getByRole('button', { name: /^View node$/ }))
 
