@@ -273,7 +273,7 @@ defineExpose({
       data-testid="agent-reference-menu"
       role="menu"
       :aria-label="t('agent.addToPrompt')"
-      class="absolute inset-x-0 bottom-full z-1100 mb-[-35px] max-h-64 overflow-y-auto rounded-lg border border-border-subtle bg-secondary-background p-1 font-inter shadow-md"
+      class="absolute inset-x-0 bottom-full z-1100 -mb-8.75 max-h-64 overflow-y-auto rounded-lg border border-border-subtle bg-secondary-background p-1 font-inter shadow-md"
       @mousedown.prevent
     >
       <div
@@ -491,11 +491,11 @@ defineExpose({
                   type="button"
                   :aria-disabled="!!nodeReferenceDisabledReason || undefined"
                   :aria-description="nodeReferenceDisabledReason"
-                  class="pointer-events-auto -ml-1 inline-flex h-[20px] shrink-0 cursor-pointer items-center gap-[4px] rounded-lg px-[4px] align-top text-[14px]/[20px] text-muted-foreground transition-colors hover:text-base-foreground focus-visible:text-base-foreground focus-visible:outline-1 focus-visible:outline-base-foreground aria-disabled:cursor-not-allowed aria-disabled:opacity-50"
+                  class="pointer-events-auto -ml-1 inline-flex h-5 shrink-0 cursor-pointer items-center gap-1 rounded-lg px-1 align-top text-[14px]/[20px] text-muted-foreground transition-colors hover:text-base-foreground focus-visible:text-base-foreground focus-visible:outline-1 focus-visible:outline-base-foreground aria-disabled:cursor-not-allowed aria-disabled:opacity-50"
                   @click="onSelectNodes"
                 >
                   <span
-                    class="icon-[lucide--mouse-pointer-click] size-[14px] shrink-0"
+                    class="icon-[lucide--mouse-pointer-click] size-3.5 shrink-0"
                   />
                   <span
                     class="underline decoration-dashed underline-offset-2"
@@ -522,7 +522,7 @@ defineExpose({
               side="top"
               align="start"
               :side-offset="4"
-              class="agent-scope z-1100 box-border w-max min-w-[186px] rounded-lg border border-border-subtle bg-secondary-background p-1 font-inter shadow-lg"
+              class="agent-scope z-1100 box-border w-max min-w-46.5 rounded-lg border border-border-subtle bg-secondary-background p-1 font-inter shadow-lg"
             >
               <AccessibleTooltip
                 :label="nodeReferenceDisabledReason ?? ''"
@@ -561,7 +561,7 @@ defineExpose({
                 <DropdownMenuPortal>
                   <DropdownMenuSubContent
                     :side-offset="4"
-                    class="agent-scope z-1100 box-border max-h-64 min-w-[186px] overflow-y-auto rounded-lg border border-border-subtle bg-secondary-background p-1 font-inter shadow-lg"
+                    class="agent-scope z-1100 box-border max-h-64 min-w-46.5 overflow-y-auto rounded-lg border border-border-subtle bg-secondary-background p-1 font-inter shadow-lg"
                   >
                     <DropdownMenuItem
                       class="mb-0.5 box-border flex h-7 w-full cursor-pointer items-center gap-1.5 rounded-lg px-1.5 py-1 text-[14px]/5 font-normal text-base-foreground outline-none data-highlighted:bg-secondary-background-hover"
@@ -615,7 +615,7 @@ defineExpose({
                 class="box-border flex h-7 w-full cursor-pointer items-center gap-1.5 rounded-lg px-1.5 py-1 text-[14px]/5 font-normal text-base-foreground outline-none data-highlighted:bg-secondary-background-hover"
                 @select="emit('attach')"
               >
-                <span class="icon-[lucide--paperclip] size-4 shrink-0" />
+                <i-lucide:paperclip class="size-4 shrink-0" />
                 <span class="whitespace-nowrap">{{
                   t('agent.attachFiles')
                 }}</span>
@@ -643,21 +643,13 @@ defineExpose({
                 "
                 @click="onPrimaryAction"
               >
-                <span
-                  :class="
-                    cn(
-                      'size-4',
-                      running
-                        ? 'icon-[lucide--square]'
-                        : 'icon-[lucide--arrow-up]'
-                    )
-                  "
-                />
+                <i-lucide:square v-if="running" class="size-4" />
+                <i-lucide:arrow-up v-else class="size-4" />
               </Button>
             </template>
             <template #content>
               {{ primaryActionTooltip }}
-              <span v-if="primaryActionShortcut" class="ml-1 text-white/50">{{
+              <span v-if="primaryActionShortcut" class="ml-1 opacity-50">{{
                 primaryActionShortcut
               }}</span>
             </template>
