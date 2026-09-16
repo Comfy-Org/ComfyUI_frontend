@@ -5050,26 +5050,14 @@
     "processingVideo": "Processing video…",
     "running": "Running…"
   },
-  "processToast": {
-    "expand": "Show details",
-    "collapse": "Hide details",
-    "failedCount": "{count} FAILED",
-    "stop": "Stop run"
-  },
   "queueStatus": {
     "activeGenerations": "Active generations",
     "cancelAll": "Cancel all",
     "nothingRunning": "Nothing running yet",
     "cancel": "Stop this run",
-    "starting": "Starting",
-    "queuedCount": "Queued {count}",
     "recentResults": "Recent results",
     "viewResult": "Open result",
     "goToHistory": "View all history",
-    "chooseRunToStop": "Choose which run to stop",
-    "resolveErrors": "Resolve errors",
-    "onCanvas": "Shown on canvas",
-    "queueHeading": "Queued · {count}",
     "processing": "Processing",
     "processingCount": "Processing ({count})",
     "running": "Running",
