@@ -175,6 +175,16 @@ function confirmSwitch() {
   void switchWorkspace(workspaceId, { runAlreadyCancelled: true })
 }
 
+// The question only exists because a run would be thrown away. A run that ends
+// on its own answers it: there is nothing left to cancel, so the switch the
+// reader already asked for goes through and the dialog closes with it.
+watch(workshopRunInFlight, (inFlight) => {
+  if (inFlight) return
+  const workspaceId = switchPending.value
+  switchPending.value = undefined
+  if (workspaceId) void switchWorkspace(workspaceId)
+})
+
 async function applySwitch(
   workspaceId: string,
   previous: ActiveWorkshopSession

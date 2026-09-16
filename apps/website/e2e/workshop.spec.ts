@@ -638,6 +638,42 @@ test.describe('Model playground', () => {
       .poll(() => list.evaluate((el) => el.scrollWidth > el.clientWidth))
       .toBe(true)
   })
+
+  // 320px is the narrowest phone the site supports, and it is where a fixed
+  // card width ran the next sample off the screen: a strip that scrolls with
+  // nothing showing past its edge reads as a single card.
+  test('the next sample shows past the edge at 320px @mobile', async ({
+    page
+  }) => {
+    const width = 320
+    await page.setViewportSize({ width, height: 720 })
+    await page.goto('/models/krea--krea-2-medium-turbo--generate-images/')
+    const cards = page.getByTestId('example-card')
+    await expect(cards).toHaveCount(3)
+
+    await expect
+      .poll(async () => (await cards.nth(1).boundingBox())?.x ?? width)
+      .toBeLessThan(width - 24)
+  })
+
+  test('a lone sample takes the phone row @mobile', async ({ page }) => {
+    await page.goto('/models/bfl--flux-2-pro--generate-images/')
+    const cards = page.getByTestId('example-card')
+    await expect(cards).toHaveCount(1)
+
+    // The strip runs edge to edge behind a gutter of 24px on each side.
+    const list = page.getByTestId('examples-tab').locator('ul')
+    await expect
+      .poll(async () => {
+        const [listBox, cardBox] = await Promise.all([
+          list.boundingBox(),
+          cards.first().boundingBox()
+        ])
+        if (!listBox || !cardBox) return false
+        return Math.abs(cardBox.width - (listBox.width - 48)) < 2
+      })
+      .toBe(true)
+  })
 })
 
 test.describe('Filter sheet @mobile', () => {

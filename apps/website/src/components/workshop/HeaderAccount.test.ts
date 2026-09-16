@@ -520,6 +520,40 @@ describe('HeaderAccount workspace switcher', () => {
     )
   })
 
+  it('carries the switch through when the run ends under the dialog', async () => {
+    signIn()
+    const cancel = vi.fn()
+    reportWorkshopRun(cancel)
+    onTestFinished(() => reportWorkshopRun(undefined))
+    vi.stubGlobal(
+      'fetch',
+      vi
+        .fn()
+        .mockResolvedValue(
+          new Response(JSON.stringify(listing), { status: 200 })
+        )
+    )
+    const user = userEvent.setup()
+    render(HeaderAccount)
+
+    await openSwitcher(user)
+    await user.click(await screen.findByTestId('account-workspace-team-1'))
+    expect(await screen.findByTestId('run-leave-dialog')).toBeTruthy()
+
+    reportWorkshopRun(undefined)
+
+    await waitFor(() =>
+      expect(h.remint).toHaveBeenCalledWith(undefined, {
+        workspaceId: 'team-1',
+        preserveCredentialOnTransientFailure: true
+      })
+    )
+    expect(cancel).not.toHaveBeenCalled()
+    await waitFor(() =>
+      expect(screen.queryByTestId('run-leave-dialog')).toBeNull()
+    )
+  })
+
   it('switches by reminting for the picked workspace', async () => {
     signIn()
     vi.stubGlobal(
