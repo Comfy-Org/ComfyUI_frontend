@@ -17,22 +17,13 @@ export function getLiveCloudDestinationViolation(
   }
 }
 
-export function getLiveCloudCustomerOrigin(
-  cloudOrigin: string
-): string | undefined {
-  if (cloudOrigin === 'https://testcloud.comfy.org')
-    return 'https://testapi.comfy.org'
-  if (cloudOrigin === 'https://stagingcloud.comfy.org')
-    return 'https://stagingapi.comfy.org'
-  if (/^https:\/\/pr-\d+\.testenvs\.comfy\.org$/.test(cloudOrigin)) {
-    return cloudOrigin.replace('.testenvs.', '-registry.testenvs.')
-  }
-}
-
 export function isLiveCloudMutationAllowed(
   url: URL,
   method: string,
-  config: Pick<LiveCloudBillingConfig, 'PLAYWRIGHT_SETUP_API_URL'>
+  config: Pick<
+    LiveCloudBillingConfig,
+    'PLAYWRIGHT_SETUP_API_URL' | 'customerOrigin'
+  >
 ): boolean {
   if (['GET', 'HEAD', 'OPTIONS'].includes(method)) return true
   if (method !== 'POST') return false
@@ -45,9 +36,7 @@ export function isLiveCloudMutationAllowed(
     return url.pathname === '/v1/token'
   }
   if (url.pathname === '/customers') {
-    return (
-      url.origin === getLiveCloudCustomerOrigin(config.PLAYWRIGHT_SETUP_API_URL)
-    )
+    return url.origin === config.customerOrigin
   }
   return (
     url.origin === config.PLAYWRIGHT_SETUP_API_URL &&

@@ -2,8 +2,8 @@ import { zBillingStatusResponse } from '@comfyorg/ingest-types/zod'
 import type { BrowserContext, Page } from '@playwright/test'
 
 import { FeatureFlagHelper } from '@e2e/fixtures/helpers/FeatureFlagHelper'
-import type { NetworkPolicy } from '@e2e/fixtures/networkIsolationFixture'
 import type { LiveCloudBillingConfig } from '@e2e/fixtures/utils/liveCloudBillingConfig'
+import type { NetworkPolicy } from '@e2e/fixtures/utils/networkPolicy'
 import { loadLiveCloudBillingConfig } from '@e2e/fixtures/utils/liveCloudBillingConfig'
 import {
   getLiveCloudDestinationViolation,

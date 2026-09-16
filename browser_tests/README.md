@@ -134,6 +134,9 @@ tracking.
 
 ### Network isolation
 
+The live Cloud routing infrastructure spec requires `openssl` on PATH to generate
+a disposable localhost TLS certificate; it does not use a live account.
+
 The shared fixtures allow HTTP and real WebSockets only to the configured
 frontend/backend origins: `PLAYWRIGHT_TEST_URL`, `PLAYWRIGHT_SETUP_API_URL`,
 `DEV_SERVER_COMFYUI_URL`, and Playwright's `baseURL`. Service workers are blocked.

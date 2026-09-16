@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
+import { liveCloudBillingConfigSchema } from '@e2e/fixtures/utils/liveCloudBillingConfig'
+
 import {
   getLiveCloudDestinationViolation,
   isLiveCloudMutationAllowed
@@ -7,7 +9,8 @@ import {
 
 const config = {
   PLAYWRIGHT_TEST_URL: 'http://localhost:5173',
-  PLAYWRIGHT_SETUP_API_URL: 'https://testcloud.comfy.org'
+  PLAYWRIGHT_SETUP_API_URL: 'https://testcloud.comfy.org',
+  customerOrigin: 'https://testapi.comfy.org'
 }
 
 describe('live Cloud mutation policy', () => {
@@ -90,7 +93,12 @@ describe('live Cloud mutation origins', () => {
   ])(
     'allows customer provisioning only at $customer for $cloud',
     ({ cloud, customer }) => {
-      const selected = { ...config, PLAYWRIGHT_SETUP_API_URL: cloud }
+      const selected = liveCloudBillingConfigSchema.parse({
+        ...config,
+        PLAYWRIGHT_SETUP_API_URL: cloud,
+        CLOUD_ACCOUNT_EMAIL: 'unused@example.com',
+        CLOUD_ACCOUNT_PASSWORD: 'unused'
+      })
       expect(
         isLiveCloudMutationAllowed(
           new URL('/customers', customer),
