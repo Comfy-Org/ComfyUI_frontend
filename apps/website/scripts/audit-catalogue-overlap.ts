@@ -63,65 +63,105 @@ function counted(tally: Map<string, number>): readonly CountedName[] {
   return [...tally].map(([name, count]) => ({ name, count })).sort(byCount)
 }
 
+interface RunnableTally {
+  readonly runnable: number
+  readonly runnableApps: number
+  readonly echoes: number
+  readonly cited: Map<string, number>
+}
+
+function tallyRunnable(
+  templates: readonly HubTemplate[],
+  models: readonly WorkshopModel[]
+): RunnableTally {
+  const cited = new Map<string, number>()
+  let runnable = 0
+  let runnableApps = 0
+  let echoes = 0
+  for (const template of templates) {
+    const partner = partnerModelFor(template, models)
+    if (!partner) continue
+    runnable++
+    if (template.isApp) runnableApps++
+    cited.set(partner.name, (cited.get(partner.name) ?? 0) + 1)
+    if (normalize(template.title).startsWith(normalize(partner.name))) echoes++
+  }
+  return { runnable, runnableApps, echoes, cited }
+}
+
+function tallyMentions(
+  templates: readonly HubTemplate[],
+  models: readonly WorkshopModel[]
+) {
+  const catalogued = new Set(models.map((model) => normalize(model.name)))
+  const mentioned = new Set<string>()
+  let mentioning = 0
+  for (const template of templates) {
+    const named = template.models
+      .map(normalize)
+      .filter((name) => catalogued.has(name))
+    if (named.length === 0) continue
+    mentioning++
+    for (const name of named) mentioned.add(name)
+  }
+  return { mentioning, mentionedModels: mentioned.size }
+}
+
+function tallyUseCases(
+  templates: readonly HubTemplate[],
+  models: readonly WorkshopModel[]
+) {
+  const useCases = new Map<string, number>()
+  const unclassified: string[] = []
+  for (const template of templates) {
+    const useCase = useCaseForTemplate(template, models)
+    if (useCase) useCases.set(useCase, (useCases.get(useCase) ?? 0) + 1)
+    else unclassified.push(template.name)
+  }
+  return { useCases: counted(useCases), unclassified }
+}
+
+function collidingTitles(
+  templates: readonly HubTemplate[],
+  models: readonly WorkshopModel[]
+): readonly string[] {
+  const names = new Set(models.map((model) => model.name.toLowerCase()))
+  return templates
+    .filter((template) => names.has(template.title.toLowerCase()))
+    .map((template) => template.title)
+}
+
+function countingCustomNodes(
+  templates: readonly HubTemplate[],
+  details: Readonly<Record<string, TemplateRequirements>>
+): number {
+  return templates.filter(
+    (template) => (details[template.name]?.requiresCustomNodes ?? []).length > 0
+  ).length
+}
+
 export function auditCatalogueOverlap(
   templates: readonly HubTemplate[],
   models: readonly WorkshopModel[],
   details: Readonly<Record<string, TemplateRequirements>>
 ): CatalogueOverlap {
-  const modelNames = new Set(models.map((model) => model.name.toLowerCase()))
-  const byNormalName = new Set(models.map((model) => normalize(model.name)))
-  const mentioned = new Set<string>()
-  const cited = new Map<string, number>()
-  let mentioning = 0
-  const useCases = new Map<string, number>()
-  const unclassified: string[] = []
-  const titleCollisions: string[] = []
-  let runnable = 0
-  let runnableApps = 0
-  let needCustomNodes = 0
-  let echoes = 0
-
-  for (const template of templates) {
-    const partner = partnerModelFor(template, models)
-    if (partner) {
-      runnable++
-      if (template.isApp) runnableApps++
-      cited.set(partner.name, (cited.get(partner.name) ?? 0) + 1)
-      if (normalize(template.title).startsWith(normalize(partner.name)))
-        echoes++
-    }
-    const named = template.models
-      .map(normalize)
-      .filter((name) => byNormalName.has(name))
-    if (named.length > 0) {
-      mentioning++
-      for (const name of named) mentioned.add(name)
-    }
-    if ((details[template.name]?.requiresCustomNodes ?? []).length > 0)
-      needCustomNodes++
-    if (modelNames.has(template.title.toLowerCase()))
-      titleCollisions.push(template.title)
-
-    const useCase = useCaseForTemplate(template, models)
-    if (useCase) useCases.set(useCase, (useCases.get(useCase) ?? 0) + 1)
-    else unclassified.push(template.name)
-  }
-
+  const { runnable, runnableApps, echoes, cited } = tallyRunnable(
+    templates,
+    models
+  )
   return {
     templates: templates.length,
     apps: templates.filter((template) => template.isApp).length,
     models: models.length,
     runnable,
     runnableApps,
-    mentioning,
-    mentionedModels: mentioned.size,
-    needCustomNodes,
+    ...tallyMentions(templates, models),
+    needCustomNodes: countingCustomNodes(templates, details),
     citedModels: cited.size,
     mostCited: counted(cited).slice(0, 5),
-    titleCollisions,
+    titleCollisions: collidingTitles(templates, models),
     echoes,
-    useCases: counted(useCases),
-    unclassified
+    ...tallyUseCases(templates, models)
   }
 }
 
