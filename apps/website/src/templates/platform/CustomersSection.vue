@@ -58,7 +58,7 @@ const tiers: Tier[] = [
 <template>
   <section
     id="customers"
-    class="max-w-9xl mx-auto scroll-mt-24 px-6 py-10 lg:scroll-mt-36 lg:py-14"
+    class="mx-auto max-w-9xl scroll-mt-24 px-6 py-10 lg:scroll-mt-36 lg:py-14"
   >
     <SectionHeader max-width="xl" heading-size="compact">
       {{ t('platform.customers.heading', locale) }}
@@ -79,7 +79,7 @@ const tiers: Tier[] = [
       <article
         v-for="tier in tiers"
         :key="tier.id"
-        class="bg-transparency-white-t4 flex flex-col rounded-3xl p-6 lg:p-8"
+        class="flex flex-col rounded-3xl bg-transparency-white-t4 p-6 lg:p-8"
       >
         <h3 class="text-base font-normal text-primary-warm-white lg:text-lg">
           {{ tier.title }}

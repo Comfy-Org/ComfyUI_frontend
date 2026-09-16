@@ -77,7 +77,7 @@ const more: Omit<Example, 'bg'>[] = [
 <template>
   <section
     id="examples"
-    class="max-w-9xl mx-auto scroll-mt-24 px-6 py-10 lg:scroll-mt-36 lg:py-14"
+    class="mx-auto max-w-9xl scroll-mt-24 px-6 py-10 lg:scroll-mt-36 lg:py-14"
   >
     <div class="flex flex-wrap items-end justify-between gap-x-8 gap-y-4">
       <SectionHeader max-width="xl" heading-size="compact" align="start">
@@ -107,7 +107,7 @@ const more: Omit<Example, 'bg'>[] = [
         :href="externalLinks.docsPlatformExamples"
         target="_blank"
         rel="noopener noreferrer"
-        class="focus-visible:ring-primary-comfy-yellow/50 group flex flex-col overflow-hidden rounded-3xl border border-white/10 transition-colors hover:border-white/25 focus-visible:ring-2 focus-visible:outline-none"
+        class="group flex flex-col overflow-hidden rounded-3xl border border-white/10 transition-colors hover:border-white/25 focus-visible:ring-2 focus-visible:ring-primary-comfy-yellow/50 focus-visible:outline-none"
       >
         <div
           :class="
@@ -127,7 +127,7 @@ const more: Omit<Example, 'bg'>[] = [
             </span>
           </div>
         </div>
-        <div class="bg-transparency-white-t4 flex flex-1 flex-col p-6">
+        <div class="flex flex-1 flex-col bg-transparency-white-t4 p-6">
           <h3 class="text-base font-normal text-primary-warm-white">
             {{ example.title }}
           </h3>
@@ -135,7 +135,7 @@ const more: Omit<Example, 'bg'>[] = [
             {{ example.description }}
           </p>
           <span
-            class="text-primary-comfy-yellow mt-auto pt-4 text-xs font-bold tracking-wider uppercase"
+            class="mt-auto pt-4 text-xs font-bold tracking-wider text-primary-comfy-yellow uppercase"
           >
             {{ t('platform.examples.cookbook', locale) }}
           </span>
@@ -151,7 +151,7 @@ const more: Omit<Example, 'bg'>[] = [
         :href="externalLinks.docsPlatformExamples"
         target="_blank"
         rel="noopener noreferrer"
-        class="focus-visible:ring-primary-comfy-yellow/50 bg-transparency-white-t4 flex flex-col rounded-3xl border border-white/10 p-5 transition-colors hover:border-white/25 focus-visible:ring-2 focus-visible:outline-none"
+        class="flex flex-col rounded-3xl border border-white/10 bg-transparency-white-t4 p-5 transition-colors hover:border-white/25 focus-visible:ring-2 focus-visible:ring-primary-comfy-yellow/50 focus-visible:outline-none"
       >
         <div class="flex flex-wrap gap-1.5">
           <span
