@@ -13,14 +13,7 @@ on:
       - 'packages/tailwind-utils/**'
       - 'public/fonts/**'
       - 'pnpm-workspace.yaml'
-  push:
-    branches: [main]
-    paths:
-      - 'apps/billing-web/**'
-      - 'packages/design-system/**'
-      - 'packages/tailwind-utils/**'
-      - 'public/fonts/**'
-      - 'pnpm-workspace.yaml'
+  workflow_dispatch:
 
 env:
   VERCEL_ORG_ID: ${{ secrets.VERCEL_BILLING_WEB_ORG_ID }}
@@ -136,11 +129,14 @@ jobs:
 
             <sub>This commit: ${{ steps.deploy.outputs.url }}</sub>
 
+  # Production never follows a merge. Someone dispatches this workflow against
+  # main when the hosted app should change for customers.
   deploy-production:
     needs: preflight
     if: >
       needs.preflight.outputs.configured == 'true' &&
-      github.event_name == 'push'
+      github.event_name == 'workflow_dispatch' &&
+      github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     permissions:
       contents: read

@@ -44,8 +44,14 @@ targets self-hosted nginx for production billing traffic, so keep the build a
 plain directory of static files and express hosting behavior in ways an nginx
 rule can reproduce. `.github/workflows/ci-vercel-billing-web-preview.yaml`
 builds and deploys it: a preview for a pull request carrying the
-`billing-preview` label, and production for every push to `main` that touches
-the same paths — a merge commit and a direct push alike.
+`billing-preview` label, and production only when someone dispatches the
+workflow against `main`.
+
+Production never follows a merge. Merging to `main` changes nothing that
+customers see; a person runs the workflow from the Actions tab (or
+`gh workflow run ci-vercel-billing-web-preview.yaml --ref main`) when the
+hosted app should change. The job refuses any ref other than `main`, so a
+dispatch from a feature branch cannot reach customers.
 
 Previews are opt-in. The workflow triggers on pull requests touching
 `apps/billing-web/**`, `packages/design-system/**`,
