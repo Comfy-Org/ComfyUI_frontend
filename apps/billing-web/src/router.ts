@@ -1,22 +1,92 @@
+import type { Component } from 'vue'
 import type { RouterHistory, RouteRecordRaw } from 'vue-router'
 import { createRouter, createWebHistory } from 'vue-router'
 
+import type { SessionSnapshot } from '@comfyorg/account/session'
+import type { BillingIntent } from '@comfyorg/billing-contract'
+import {
+  BILLING_INTENTS,
+  billingIntentPath,
+  parseBillingEntry
+} from '@comfyorg/billing-contract'
+
+import { recordBillingEntry } from '@/entry/billingEntry'
+import { billingWebSessionPhase } from '@/session/billingWebSession'
 import BillingHomeView from '@/views/BillingHomeView.vue'
+import ComingSoonView from '@/views/ComingSoonView.vue'
+import EntryErrorView from '@/views/EntryErrorView.vue'
+import PaymentMethodsView from '@/views/PaymentMethodsView.vue'
+import SignInView from '@/views/SignInView.vue'
+import SubscriptionView from '@/views/SubscriptionView.vue'
+
+/** The scaffold's static checkout page, which predates the entry contract. */
+const APP_ENTRY_PATH = '/'
+
+const SIGN_IN_PATH = '/sign-in'
+
+/** Neither path carries a product's request, so neither disturbs the entry. */
+const ENTRYLESS_PATHS: readonly string[] = [APP_ENTRY_PATH, SIGN_IN_PATH]
+
+const INTENT_VIEWS: Record<BillingIntent, Component> = {
+  pricing: SubscriptionView,
+  subscription: SubscriptionView,
+  checkout: BillingHomeView,
+  'payment-methods': PaymentMethodsView,
+  invoices: ComingSoonView,
+  result: ComingSoonView
+}
 
 const routes: RouteRecordRaw[] = [
   {
-    path: '/',
+    path: APP_ENTRY_PATH,
     name: 'billing',
     component: BillingHomeView
   },
   {
+    path: SIGN_IN_PATH,
+    name: 'sign-in',
+    component: SignInView
+  },
+  ...BILLING_INTENTS.map((intent) => ({
+    path: billingIntentPath(intent),
+    name: intent,
+    component: INTENT_VIEWS[intent]
+  })),
+  {
+    // A URL the contract does not describe is an entry error, not a redirect:
+    // bouncing a customer to another surface would hide the misdirected link.
+    // `App` renders the error surface for any failed parse, whatever route
+    // matched; this record keeps the table total so the router stays quiet.
     path: '/:pathMatch(.*)*',
-    redirect: '/'
+    name: 'entry-error',
+    component: EntryErrorView
   }
 ]
 
+export type BillingWebSessionPhase = SessionSnapshot['phase']
+
+/**
+ * Billing is never public: every route but the sign-in page needs a live
+ * workspace session, and `pending` is not one — a restored identity that
+ * mints afterwards is carried back by the sign-in page's own redirect.
+ *
+ * The entry is read before the guard runs, so a link we cannot read explains
+ * itself even to a visitor the guard turns away: that failure is the link's,
+ * and signing in would not repair it.
+ */
 export function createBillingRouter(
-  history: RouterHistory = createWebHistory(import.meta.env.BASE_URL)
+  history: RouterHistory = createWebHistory(import.meta.env.BASE_URL),
+  readPhase: () => BillingWebSessionPhase = billingWebSessionPhase
 ) {
-  return createRouter({ history, routes })
+  const router = createRouter({ history, routes })
+
+  router.beforeEach((to) => {
+    if (!ENTRYLESS_PATHS.includes(to.path)) {
+      recordBillingEntry(parseBillingEntry(to.fullPath))
+    }
+    if (to.path === SIGN_IN_PATH || readPhase() === 'authenticated') return true
+    return { path: SIGN_IN_PATH, query: { returnTo: to.fullPath } }
+  })
+
+  return router
 }
