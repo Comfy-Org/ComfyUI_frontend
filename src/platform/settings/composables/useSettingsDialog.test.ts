@@ -1,3 +1,6 @@
+import { computed } from 'vue'
+import { useBillingContext } from '@/composables/billing/useBillingContext'
+import { useDialogStore } from '@/stores/dialogStore'
 /**
  * Settings dialog migration regression net: `useSettingsDialog().show()` must
  * open the Reka-renderer path with sizing that matches the previous
@@ -7,49 +10,41 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const showDialog = vi.hoisted(() => vi.fn())
-const teamWorkspacesFlag = vi.hoisted(() => ({ value: false }))
 const isCloudRef = vi.hoisted(() => ({ value: false }))
 
-vi.mock('@/stores/dialogStore', () => ({
-  useDialogStore: () => ({ showDialog, closeDialog: vi.fn() })
-}))
-
-vi.mock('@/composables/useFeatureFlags', () => ({
-  useFeatureFlags: () => ({
-    flags: {
-      get teamWorkspacesEnabled() {
-        return teamWorkspacesFlag.value
-      }
-    }
-  })
-}))
-
-vi.mock('@/platform/distribution/types', () => ({
+vi.mock(import('@/platform/distribution/types'), () => ({
   get isCloud() {
     return isCloudRef.value
   }
 }))
 
-vi.mock('@/i18n', () => ({ t: (k: string) => k }))
-
-vi.mock('@/platform/telemetry', () => ({
-  useTelemetry: () => ({ trackEvent: vi.fn() })
+vi.mock(import('@/i18n'), () => ({
+  t: (k: string) => k
 }))
 
-vi.mock('@/composables/billing/useBillingContext', () => ({
-  useBillingContext: () => ({
-    isActiveSubscription: { value: true },
-    isFreeTier: { value: false },
-    type: { value: 'legacy' }
+vi.mock(import('@/platform/telemetry'))
+
+beforeEach(() => {
+  const billing = useBillingContext()
+  Object.assign(billing, {
+    canAccessSubscriptionFeatures: computed(() => true),
+    isFreeTier: computed(() => false),
+    type: computed(() => 'legacy')
   })
-}))
+  vi.mocked(useBillingContext).mockReturnValue(billing)
+})
+
+vi.mock(import('@/composables/billing/useBillingContext'))
 
 import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
 
+beforeEach(() => {
+  useDialogStore().showDialog = showDialog
+  vi.mocked(useDialogStore().closeDialog).mockImplementation(() => undefined)
+})
+
 describe('useSettingsDialog', () => {
   beforeEach(() => {
-    showDialog.mockReset()
-    teamWorkspacesFlag.value = false
     isCloudRef.value = false
   })
 
@@ -78,9 +73,8 @@ describe('useSettingsDialog', () => {
     expect(args.dialogComponentProps.overlayClass).toBeUndefined()
   })
 
-  it("show() sets overlayClass 'p-8' when isCloud && teamWorkspacesEnabled", () => {
+  it("show() sets overlayClass 'p-8' on Cloud", () => {
     isCloudRef.value = true
-    teamWorkspacesFlag.value = true
 
     useSettingsDialog().show()
     const [args] = showDialog.mock.calls[0]

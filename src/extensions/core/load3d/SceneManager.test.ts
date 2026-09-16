@@ -1,7 +1,8 @@
 import { SparkRenderer } from '@sparkjsdev/spark'
+import { fromAny } from '@total-typescript/shoehorn'
 import * as THREE from 'three'
 import type { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { RendererView } from '@/renderer/three/RendererView'
 import { createRendererViewState } from '@/renderer/three/sharedWebGLRenderer'
@@ -14,24 +15,25 @@ const { mockTextureLoad } = vi.hoisted(() => ({
   mockTextureLoad: vi.fn()
 }))
 
-vi.mock('./Load3dUtils', () => ({
-  default: {
+vi.mock(import('./Load3dUtils'), () => ({
+  default: fromAny({
     splitFilePath: vi.fn(),
     getResourceURL: vi.fn()
-  }
+  })
 }))
 
-vi.mock('three', async (importOriginal) => {
-  const actual = await importOriginal<typeof THREE>()
-  class StubTextureLoader {
-    load = mockTextureLoad
+vi.mock(import('three'), { spy: true })
+
+beforeEach(() => {
+  function MockTextureLoader() {
+    return { load: mockTextureLoad }
   }
-  return { ...actual, TextureLoader: StubTextureLoader }
+  vi.spyOn(THREE, 'TextureLoader').mockImplementation(MockTextureLoader)
 })
 
-vi.mock('three/examples/jsm/controls/OrbitControls', () => {
+vi.mock(import('three/examples/jsm/controls/OrbitControls'), () => {
   class OrbitControls {}
-  return { OrbitControls }
+  return { OrbitControls: fromAny(OrbitControls) }
 })
 
 function makeMockRenderer(pixelRatio = 1): THREE.WebGLRenderer {
@@ -144,7 +146,6 @@ describe('SceneManager', () => {
   let manager: SceneManager
 
   beforeEach(() => {
-    vi.clearAllMocks()
     renderer = makeRenderer()
     camera = new THREE.PerspectiveCamera()
     events = makeMockEventManager()
@@ -154,10 +155,6 @@ describe('SceneManager', () => {
       () => ({}) as unknown as OrbitControls,
       events
     )
-  })
-
-  afterEach(() => {
-    vi.restoreAllMocks()
   })
 
   describe('construction', () => {
@@ -628,22 +625,11 @@ function makeSceneManager(
   const view = makeView(renderer, viewSize?.width, viewSize?.height)
   const camera = cameraOverride ?? new THREE.PerspectiveCamera()
   const eventManager = makeMockEventManager()
-  const manager = new SceneManager(
-    view,
-    () => camera,
-    vi.fn() as unknown as () => InstanceType<
-      typeof import('three/examples/jsm/controls/OrbitControls').OrbitControls
-    >,
-    eventManager
-  )
+  const manager = new SceneManager(view, () => camera, vi.fn(), eventManager)
   return { manager, renderer, view, camera, eventManager }
 }
 
 describe('SceneManager.captureScene', () => {
-  beforeEach(() => {
-    vi.clearAllMocks()
-  })
-
   it('resolves with scene, mask, and normal data URLs', async () => {
     const { manager } = makeSceneManager()
     const result = await manager.captureScene(800, 600)

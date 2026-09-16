@@ -4,6 +4,9 @@
  */
 
 export const TestIds = {
+  app: {
+    loadingOverlay: 'app-loading-overlay'
+  },
   sidebar: {
     toolbar: 'side-toolbar',
     nodeLibrary: 'node-library-tree',
@@ -11,7 +14,8 @@ export const TestIds = {
     nodePreviewCard: 'node-preview-card',
     workflows: 'workflows-sidebar',
     workflowsRefreshButton: 'workflows-refresh-button',
-    modeToggle: 'mode-toggle'
+    modeToggle: 'mode-toggle',
+    tabButton: (tabId: string) => `${tabId}-tab-button`
   },
   tree: {
     folder: 'tree-folder',
@@ -108,7 +112,16 @@ export const TestIds = {
     workflowTabs: 'topbar-workflow-tabs',
     integratedTabBarActions: 'integrated-tab-bar-actions',
     actionBarButtons: 'action-bar-buttons',
-    freeTierQuota: 'free-tier-quota'
+    actionBarCard: 'action-bar-card',
+    freeTierQuota: 'free-tier-quota',
+    queueInlineProgress: 'queue-inline-progress',
+    queueInlineProgressNodeFill: 'queue-inline-progress-node-fill'
+  },
+  partnerNodes: {
+    signInToRunButton: 'partner-sign-in-to-run-button',
+    runGateCaption: 'partner-run-gate-caption',
+    educationCard: 'partner-nodes-education-card',
+    educationCardDismiss: 'partner-nodes-education-dismiss'
   },
   nodeLibrary: {
     bookmarksSection: 'node-library-bookmarks-section'
@@ -164,10 +177,11 @@ export const TestIds = {
   widgets: {
     container: 'node-widgets',
     widget: 'node-widget',
+    layoutFieldLabel: 'widget-layout-field-label',
+    formDropdownMenu: 'form-dropdown-menu',
     decrement: 'decrement',
     increment: 'increment',
     valueControl: 'value-control',
-    domWidgetTextarea: 'dom-widget-textarea',
     subgraphEnterButton: 'subgraph-enter-button',
     selectDefaultSearchInput: 'widget-select-default-search-input',
     selectDefaultViewport: 'widget-select-default-viewport'
@@ -260,6 +274,7 @@ export const TestIds = {
   queue: {
     jobHistorySidebar: 'job-history-sidebar',
     progressOverlay: 'queue-progress-overlay',
+    progressNodeFill: 'queue-progress-node-fill',
     overlayToggle: 'queue-overlay-toggle',
     dockedJobHistoryAction: 'docked-job-history-action',
     jobDetailsPopover: 'queue-job-details-popover',
@@ -288,6 +303,7 @@ export const TestIds = {
   },
   load3d: {
     categoryMenu: 'load3d-category-menu',
+    gizmoModeMenu: 'gizmo-mode-menu',
     recordingDuration: 'load3d-recording-duration'
   },
   load3dViewer: {

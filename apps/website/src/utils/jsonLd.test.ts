@@ -11,12 +11,14 @@ import {
   comfyUiApplicationNode,
   comfyUiSoftwareId,
   comfyUiSourceCodeNode,
+  faqPageNode,
   itemListNode,
   jsonLdId,
   organizationId,
   pageContext,
   productNode,
-  softwareApplicationNode
+  softwareApplicationNode,
+  videoObjectNode
 } from './jsonLd'
 
 const siteUrl = 'https://comfy.org'
@@ -42,6 +44,7 @@ describe('pageContext', () => {
       url: 'https://comfy.org/about/'
     })
     expect(pageContext(site, '/zh-CN/', 'zh-CN').locale).toBe('zh-CN')
+    expect(pageContext(site, '/ja/', 'ja').locale).toBe('ja')
   })
 })
 
@@ -55,6 +58,25 @@ describe('itemListNode', () => {
     const items = node.itemListElement as Record<string, unknown>[]
     expect('name' in items[0]).toBe(false)
     expect(items[1].name).toBe('Designer')
+  })
+})
+
+describe('faqPageNode', () => {
+  it('wraps each pair in a Question with its accepted answer', () => {
+    const node = faqPageNode('https://comfy.org/minimax/', [
+      { question: 'What is MiniMax H3?', answer: "MiniMax's video model." },
+      { question: 'Does it generate audio?', answer: 'Yes, native stereo.' }
+    ])
+    expect(node['@type']).toBe('FAQPage')
+    expect(node['@id']).toBe('https://comfy.org/minimax/#faq')
+    const questions = node.mainEntity as Record<string, unknown>[]
+    expect(questions).toHaveLength(2)
+    expect(questions[0]['@type']).toBe('Question')
+    expect(questions[0].name).toBe('What is MiniMax H3?')
+    expect(questions[1].acceptedAnswer).toEqual({
+      '@type': 'Answer',
+      text: 'Yes, native stereo.'
+    })
   })
 })
 
@@ -263,6 +285,29 @@ describe('buildPageGraph', () => {
   })
 })
 
+describe('videoObjectNode', () => {
+  const base = {
+    siteUrl,
+    id: `${siteUrl}/x/#video`,
+    pageUrl: `${siteUrl}/x/`,
+    name: 'A video',
+    description: 'A description',
+    thumbnailUrl: `${siteUrl}/poster.webp`,
+    locale: 'en' as const
+  }
+
+  it('includes duration when given an ISO 8601 value', () => {
+    const node = videoObjectNode({ ...base, duration: 'PT4M32S' })
+    expect(node.duration).toBe('PT4M32S')
+  })
+
+  it('omits duration and uploadDate rather than defaulting them', () => {
+    const node = videoObjectNode(base)
+    expect(node.duration).toBeUndefined()
+    expect(node.uploadDate).toBeUndefined()
+  })
+})
+
 describe('escapeJsonLd on a built graph', () => {
   it('neutralizes a </script> breakout in a page name', () => {
     const graph = buildPageGraph(
@@ -273,4 +318,25 @@ describe('escapeJsonLd on a built graph', () => {
     expect(serialized).not.toContain('</script>')
     expect(serialized).toContain('\\u003c')
   })
+
+  it.for([
+    { description: 'U+2028 line', separator: '\u2028', escaped: '\\u2028' },
+    {
+      description: 'U+2029 paragraph',
+      separator: '\u2029',
+      escaped: '\\u2029'
+    }
+  ] as const)(
+    'escapes a $description separator in a page name',
+    ({ separator, escaped }) => {
+      const name = `before${separator}after`
+      const graph = buildPageGraph(
+        { siteUrl, locale: 'en' },
+        { url: `${siteUrl}/x/`, name }
+      )
+      const serialized = escapeJsonLd(graph)
+      expect(serialized).not.toContain(separator)
+      expect(serialized).toContain(`before${escaped}after`)
+    }
+  )
 })

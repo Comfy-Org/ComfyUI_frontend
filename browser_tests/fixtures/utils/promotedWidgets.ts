@@ -1,4 +1,5 @@
 import type { NodeProperty } from '@/lib/litegraph/src/LGraphNode'
+import type { NodeId } from '@/types/nodeId'
 import { toNodeId } from '@/types/nodeId'
 
 import { parsePreviewExposures } from '@/core/schemas/previewExposureSchema'
@@ -7,6 +8,52 @@ import type { PreviewExposure } from '@/core/schemas/previewExposureSchema'
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 
 export type PromotedWidgetEntry = [string, string]
+
+export async function setPromotedHostWidgetValue(
+  comfyPage: ComfyPage,
+  hostNodeId: number | NodeId,
+  widgetName: string,
+  value: string,
+  { useSetValue = false }: { useSetValue?: boolean } = {}
+) {
+  const nodeId =
+    typeof hostNodeId === 'number' ? toNodeId(hostNodeId) : hostNodeId
+  return await comfyPage.page.evaluate(
+    ({ nodeId, widgetName, value, useSetValue }) => {
+      const hostNode = window.app?.graph.getNodeById(nodeId)
+      if (!hostNode) {
+        throw new Error(`Expected subgraph host node ${nodeId}`)
+      }
+
+      const widget = hostNode.widgets?.find(
+        (entry) => entry.name === widgetName
+      )
+      if (!widget) {
+        throw new Error(`Expected host ${widgetName} widget`)
+      }
+
+      const oldValue = widget.value
+      if (
+        useSetValue &&
+        'setValue' in widget &&
+        typeof widget.setValue === 'function'
+      ) {
+        widget.setValue(value, {
+          e: new PointerEvent('pointerup'),
+          node: hostNode,
+          canvas: window.app!.canvas
+        })
+        return widget.value
+      }
+
+      widget.value = value
+      widget.callback?.(value)
+      hostNode.onWidgetChanged?.(widget.name, value, oldValue, widget)
+      return widget.value
+    },
+    { nodeId, widgetName, value, useSetValue }
+  )
+}
 
 interface ResolvedWidgetSource {
   sourceNodeId: string
@@ -49,9 +96,9 @@ export async function getPromotedWidgets(
   const { widgetSources, previewExposures } = await comfyPage.page.evaluate(
     (id) => {
       const node = window.app!.canvas.graph!.getNodeById(id)
-      const previewExposures = node?.serialize()?.properties?.previewExposures
-      if (!node?.isSubgraphNode?.())
-        return { widgetSources: [], previewExposures }
+      if (!node) return { widgetSources: [], previewExposures: undefined }
+      const previewExposures = node.serialize().properties?.previewExposures
+      if (!node.isSubgraphNode()) return { widgetSources: [], previewExposures }
 
       const { subgraph } = node
       const resolveSource = (
@@ -70,7 +117,7 @@ export async function getPromotedWidgets(
             (entry) => entry.link === linkId
           )
           if (!targetInput) continue
-          if (inputNode.isSubgraphNode?.()) {
+          if (inputNode.isSubgraphNode()) {
             return {
               sourceNodeId: String(inputNode.id),
               sourceWidgetName: targetInput.name
@@ -86,7 +133,7 @@ export async function getPromotedWidgets(
         return undefined
       }
 
-      const widgetSources = (node.inputs ?? []).flatMap((input) => {
+      const widgetSources = node.inputs.flatMap((input) => {
         if (!input.widgetId) return []
         const source = resolveSource(input.name)
         return source ? [source] : []

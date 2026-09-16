@@ -1,34 +1,32 @@
 import userEvent from '@testing-library/user-event'
 import { fireEvent, render, screen } from '@testing-library/vue'
-import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
 import type { EssentialTile } from '@/constants/essentialsNodes'
+import { useSettingStore } from '@/platform/settings/settingStore'
 import type { ComfyNodeDef as ComfyNodeDefV1 } from '@/schemas/nodeDefSchema'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 
 import EssentialNodeCard from './EssentialNodeCard.vue'
 
-vi.mock('@/platform/settings/settingStore', () => ({
-  useSettingStore: () => ({
-    get: vi.fn().mockReturnValue('left')
-  })
-}))
+beforeEach(() => {
+  useSettingStore().settingValues['Comfy.Sidebar.Location'] = 'left'
+})
 
 const { mockStartDrag, mockHandleNativeDrop } = vi.hoisted(() => ({
   mockStartDrag: vi.fn(),
   mockHandleNativeDrop: vi.fn()
 }))
 
-vi.mock('@/composables/node/useNodeDragToCanvas', () => ({
+vi.mock<unknown>(import('@/composables/node/useNodeDragToCanvas'), () => ({
   useNodeDragToCanvas: () => ({
     startDrag: mockStartDrag,
     handleNativeDrop: mockHandleNativeDrop
   })
 }))
 
-vi.mock('@/components/node/NodePreviewCard.vue', () => ({
+vi.mock<unknown>(import('@/components/node/NodePreviewCard.vue'), () => ({
   default: {
     template: '<div class="mock-preview" data-testid="node-preview" />'
   }
@@ -74,8 +72,6 @@ const UNRESOLVED_TILE: EssentialTile = {
 
 describe('EssentialNodeCard', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
-    setActivePinia(createPinia())
     useNodeDefStore().updateNodeDefs([createNodeDef('LoadImage')])
   })
 

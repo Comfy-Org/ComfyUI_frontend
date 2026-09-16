@@ -3,15 +3,18 @@ import { extractWorkflow } from '@/platform/remote/comfyui/jobs/fetchJobs'
 import type { JobListItem } from '@/platform/remote/comfyui/jobs/jobTypes'
 import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import { runMintPortsIntentionalClear } from '@/workbench/extensions/agent/crdt/mintPortWiring'
 import { useTelemetry } from '@/platform/telemetry'
 import { WORKFLOW_ACCEPT_STRING } from '@/platform/workflow/core/types/formats'
-import { type StatusWsMessageStatus } from '@/schemas/apiSchema'
+import type { StatusWsMessageStatus } from '@/schemas/apiSchema'
 import { useLitegraphService } from '@/services/litegraphService'
 import { useCommandStore } from '@/stores/commandStore'
+import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 
 import { api } from './api'
-import { ComfyApp, app } from './app'
+import type { ComfyApp } from './app'
+import { app } from './app'
 import { ComfyDialog as _ComfyDialog } from './ui/dialog'
 import { ComfySettingsDialog } from './ui/settings'
 import { toggleSwitch } from './ui/toggleSwitch'
@@ -59,13 +62,7 @@ export function $el<TTag extends string>(
     if (Array.isArray(propsOrChildren)) {
       element.append(...propsOrChildren)
     } else {
-      const {
-        parent,
-        $: cb,
-        dataset,
-        style,
-        ...rest
-      } = propsOrChildren as Props
+      const { parent, $: cb, dataset, style, ...rest } = propsOrChildren
 
       if (rest.for) {
         element.setAttribute('for', rest.for)
@@ -98,7 +95,7 @@ export function $el<TTag extends string>(
 
 // @ts-expect-error fixme ts strict error
 function dragElement(dragEl): () => void {
-  var posDiffX = 0,
+  let posDiffX = 0,
     posDiffY = 0,
     posStartX = 0,
     posStartY = 0,
@@ -155,25 +152,41 @@ function dragElement(dragEl): () => void {
 
     // @ts-expect-error fixme ts strict error
     if (savePos) {
-      localStorage.setItem(
-        'Comfy.MenuPosition',
-        JSON.stringify({
-          x: dragEl.offsetLeft,
-          y: dragEl.offsetTop
-        })
-      )
+      try {
+        localStorage.setItem(
+          'Comfy.MenuPosition',
+          JSON.stringify({
+            x: dragEl.offsetLeft,
+            y: dragEl.offsetTop
+          })
+        )
+      } catch {
+        // Persisting the menu position is cosmetic; storage can be unavailable
+        // (private browsing, quota exceeded). Never let it break dragging.
+      }
     }
   }
 
   function restorePos() {
-    let posString = localStorage.getItem('Comfy.MenuPosition')
-    if (posString) {
-      const pos = JSON.parse(posString) as Position2D
-      newPosX = pos.x
-      newPosY = pos.y
-      positionElement()
-      ensureInBounds()
+    // `dragElement` is reached from ComfyUI's constructor, which runs at module
+    // scope via `export const app = new ComfyApp()` in app.ts. A throw here
+    // therefore breaks *importing* that module, not just the menu. Restoring a
+    // remembered position is cosmetic, so degrade quietly instead: localStorage
+    // may be absent or degraded outside a real browser (e.g. Node >= 25 without
+    // `--no-experimental-webstorage`), and the stored value may be corrupt.
+    let pos: Position2D
+    try {
+      const posString = localStorage.getItem('Comfy.MenuPosition')
+      if (!posString) return
+      pos = JSON.parse(posString) as Position2D
+    } catch {
+      return
     }
+
+    newPosX = pos.x
+    newPosY = pos.y
+    positionElement()
+    ensureInBounds()
   }
 
   // @ts-expect-error fixme ts strict error
@@ -292,10 +305,7 @@ class ComfyList {
                     const workflow = await extractWorkflow(job)
                     await app.loadGraphData(workflow, true, false)
                     if ('outputs' in job && job.outputs) {
-                      app.nodeOutputs = {}
-                      for (const [key, value] of Object.entries(job.outputs)) {
-                        app.nodeOutputs[key] = value
-                      }
+                      useNodeOutputStore().restoreOutputs(job.outputs)
                     }
                   }
                 }),
@@ -407,8 +417,14 @@ export class ComfyUI {
       onchange: async () => {
         const file = fileInput.files?.[0]
         if (file) {
-          await app.handleFile(file, 'file_button')
-          fileInput.value = ''
+          try {
+            await app.handleFile(file, 'file_button')
+          } catch (error) {
+            console.error('Failed to load file:', error)
+            app.showErrorOnFileLoad(file)
+          } finally {
+            fileInput.value = ''
+          }
         }
       }
     })
@@ -438,7 +454,7 @@ export class ComfyUI {
     autoQueueModeEl.style.display = 'none'
 
     api.addEventListener('autoQueueGraphChanged', () => {
-      if (this.autoQueueMode === 'change' && this.autoQueueEnabled === true) {
+      if (this.autoQueueMode === 'change' && this.autoQueueEnabled) {
         if (this.lastQueueSize === 0) {
           this.graphHasChanged = false
           app.queuePrompt(0, this.batchCount, {
@@ -671,7 +687,7 @@ export class ComfyUI {
               !useSettingStore().get('Comfy.ConfirmClear') ||
               confirm('Clear workflow?')
             ) {
-              app.clean()
+              runMintPortsIntentionalClear(() => app.clean())
               useLitegraphService().resetView()
               api.dispatchCustomEvent('graphCleared')
             }
@@ -709,23 +725,24 @@ export class ComfyUI {
   }
 
   setStatus(status: StatusWsMessageStatus | null) {
-    this.queueSize.textContent =
-      'Queue size: ' + (status ? status.exec_info.queue_remaining : 'ERR')
-    if (status) {
-      if (
-        this.lastQueueSize != 0 &&
-        status.exec_info.queue_remaining == 0 &&
-        this.autoQueueEnabled &&
-        (this.autoQueueMode === 'instant' || this.graphHasChanged) &&
-        !app.lastExecutionError
-      ) {
-        app.queuePrompt(0, this.batchCount, {
-          intent: { trigger_source: 'auto_queue' }
-        })
-        status.exec_info.queue_remaining += this.batchCount
-        this.graphHasChanged = false
-      }
-      this.lastQueueSize = status.exec_info.queue_remaining
+    const queueRemaining = status?.exec_info?.queue_remaining
+    if (queueRemaining == null) return
+
+    this.queueSize.textContent = 'Queue size: ' + queueRemaining
+    if (
+      this.lastQueueSize != 0 &&
+      queueRemaining == 0 &&
+      this.autoQueueEnabled &&
+      (this.autoQueueMode === 'instant' || this.graphHasChanged) &&
+      !app.lastExecutionError
+    ) {
+      app.queuePrompt(0, this.batchCount, {
+        intent: { trigger_source: 'auto_queue' }
+      })
+      this.graphHasChanged = false
+      this.lastQueueSize = queueRemaining + this.batchCount
+    } else {
+      this.lastQueueSize = queueRemaining
     }
   }
 }

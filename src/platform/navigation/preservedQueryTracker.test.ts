@@ -40,7 +40,6 @@ function createTestRouter(
 
 describe('installPreservedQueryTracker', () => {
   beforeEach(() => {
-    sessionStorage.clear()
     clearPreservedQuery(STRIPPED_NAMESPACE)
     clearPreservedQuery(SECOND_STRIPPED_NAMESPACE)
     clearPreservedQuery(PLAIN_NAMESPACE)

@@ -1,7 +1,7 @@
-import { createPinia, setActivePinia } from 'pinia'
+import { getActivePinia } from 'pinia'
 import { render, screen, waitFor } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
@@ -10,17 +10,21 @@ import type {
   UploadModelDialogContext,
   UploadModelSuccess
 } from '@/platform/assets/composables/useUploadModelWizard'
+import {
+  downloadModel,
+  fetchModelMetadata,
+  openGatedRepoPage
+} from '@/platform/missingModel/missingModelDownload'
 import type { MissingModelViewModel } from '@/platform/missingModel/types'
-import type * as MissingModelDownload from '@/platform/missingModel/missingModelDownload'
-import type * as GraphTraversalUtil from '@/utils/graphTraversalUtil'
 import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
 
 const mockIsCloud = vi.hoisted(() => ({ value: true }))
+const mockIsDesktop = vi.hoisted(() => ({ value: false }))
 const mockShowUploadDialog = vi.hoisted(() => vi.fn())
 const mockCopyToClipboard = vi.hoisted(() => vi.fn())
-const mockDownloadModel = vi.hoisted(() => vi.fn())
-const mockFetchModelMetadata = vi.hoisted(() => vi.fn())
-const mockOpenGatedRepoPage = vi.hoisted(() => vi.fn())
+const mockDownloadModel = vi.mocked(downloadModel)
+const mockFetchModelMetadata = vi.mocked(fetchModelMetadata)
+const mockOpenGatedRepoPage = vi.mocked(openGatedRepoPage)
 const mockRootGraph = vi.hoisted<{
   value: Record<string, never> | null
 }>(() => ({ value: null }))
@@ -38,7 +42,7 @@ const mockUploadCallbacks = vi.hoisted(() => ({
     | undefined
 }))
 
-vi.mock('@/scripts/app', () => ({
+vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: {
     get rootGraph() {
       return mockRootGraph.value
@@ -46,7 +50,7 @@ vi.mock('@/scripts/app', () => ({
   }
 }))
 
-vi.mock('@/scripts/api', () => ({
+vi.mock<unknown>(import('@/scripts/api'), () => ({
   api: {
     addEventListener: vi.fn(
       (event: string, handler: (event: CustomEvent) => void) => {
@@ -54,62 +58,55 @@ vi.mock('@/scripts/api', () => ({
       }
     ),
     apiURL: vi.fn((path: string) => path),
-    fetchApi: vi.fn()
+    fetchApi: vi.fn(),
+    getServerFeature: vi.fn(() => false)
   }
 }))
 
-vi.mock('@/utils/graphTraversalUtil', async () => {
-  const actual = await vi.importActual<typeof GraphTraversalUtil>(
-    '@/utils/graphTraversalUtil'
-  )
-  return {
-    ...actual,
-    getActiveGraphNodeIds: vi.fn(() => new Set()),
-    getNodeByExecutionId: mockGetNodeByExecutionId
-  }
-})
+vi.mock<unknown>(import('@/utils/graphTraversalUtil'), () => ({
+  getActiveGraphNodeIds: vi.fn(() => new Set()),
+  getNodeByExecutionId: mockGetNodeByExecutionId
+}))
 
-vi.mock('@/platform/distribution/types', () => ({
+vi.mock(import('@/platform/distribution/types'), () => ({
   get isCloud() {
     return mockIsCloud.value
+  },
+  get isDesktop() {
+    return mockIsDesktop.value
   }
 }))
 
-vi.mock('@/platform/assets/composables/useModelUpload', () => ({
-  useModelUpload: (
-    onUploadSuccess?: (
-      result: UploadModelSuccess
-    ) => Promise<unknown> | unknown,
-    uploadContext?: UploadModelDialogContext | UploadModelContextResolver
-  ) => {
-    mockUploadCallbacks.onUploadSuccess = onUploadSuccess
-    mockUploadContext.resolver =
-      typeof uploadContext === 'function' ? uploadContext : () => uploadContext
+vi.mock<unknown>(
+  import('@/platform/assets/composables/useModelUpload'),
+  () => ({
+    useModelUpload: (
+      onUploadSuccess?: (
+        result: UploadModelSuccess
+      ) => Promise<unknown> | unknown,
+      uploadContext?: UploadModelDialogContext | UploadModelContextResolver
+    ) => {
+      mockUploadCallbacks.onUploadSuccess = onUploadSuccess
+      mockUploadContext.resolver =
+        typeof uploadContext === 'function'
+          ? uploadContext
+          : () => uploadContext
 
-    return {
-      isUploadButtonEnabled: { value: true },
-      showUploadDialog: mockShowUploadDialog
+      return {
+        isUploadButtonEnabled: { value: true },
+        showUploadDialog: mockShowUploadDialog
+      }
     }
-  }
-}))
+  })
+)
 
-vi.mock('@/composables/useCopyToClipboard', () => ({
+vi.mock(import('@/composables/useCopyToClipboard'), () => ({
   useCopyToClipboard: () => ({
     copyToClipboard: mockCopyToClipboard
   })
 }))
 
-vi.mock('@/platform/missingModel/missingModelDownload', async () => {
-  const actual = await vi.importActual<typeof MissingModelDownload>(
-    '@/platform/missingModel/missingModelDownload'
-  )
-  return {
-    ...actual,
-    downloadModel: mockDownloadModel,
-    fetchModelMetadata: mockFetchModelMetadata,
-    openGatedRepoPage: mockOpenGatedRepoPage
-  }
-})
+vi.mock(import('@/platform/missingModel/missingModelDownload'), { spy: true })
 
 import MissingModelRow from './MissingModelRow.vue'
 
@@ -153,8 +150,7 @@ function renderRow(
   directory: string | null = 'checkpoints',
   canCloudImport = true
 ) {
-  const pinia = createPinia()
-  setActivePinia(pinia)
+  const pinia = getActivePinia()!
 
   render(MissingModelRow, {
     props: {
@@ -177,30 +173,29 @@ function renderRow(
 
 describe('MissingModelRow', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
     i18n.global.setLocaleMessage('en', enMessages)
     delete window.__comfyDesktop2
     mockIsCloud.value = true
+    mockIsDesktop.value = false
     mockRootGraph.value = null
     mockApiListeners.clear()
-    mockGetNodeByExecutionId.mockReset()
     mockUploadContext.resolver = undefined
     mockUploadCallbacks.onUploadSuccess = undefined
+    mockDownloadModel.mockResolvedValue(undefined)
     mockFetchModelMetadata.mockResolvedValue({
       fileSize: null,
       gatedRepoUrl: null
     })
   })
 
-  afterEach(() => {
-    vi.restoreAllMocks()
-  })
-
-  it('does not prefetch metadata for non-allowlisted URLs outside cloud', () => {
+  it('does not offer or probe arbitrary localhost URLs outside cloud', () => {
     mockIsCloud.value = false
+    const model = makeModel([{ nodeId: '1', widgetName: 'ckpt_name' }])
+    model.representative.url = 'http://localhost:6379/model.safetensors'
 
-    renderRow(makeModel([{ nodeId: '1', widgetName: 'ckpt_name' }]))
+    renderRow(model)
 
+    expect(screen.queryByTestId('missing-model-download')).toBeNull()
     expect(mockFetchModelMetadata).not.toHaveBeenCalled()
   })
 
@@ -443,7 +438,7 @@ describe('MissingModelRow', () => {
     )
   })
 
-  it('shows a gated HuggingFace access action without replacing download', async () => {
+  it('exposes gated browser access as a focus-described link', async () => {
     mockIsCloud.value = false
     const model = makeModel([{ nodeId: '1', widgetName: 'ckpt_name' }])
     model.representative.url =
@@ -463,20 +458,28 @@ describe('MissingModelRow', () => {
     })
 
     const gatedModelTooltip =
-      'This model is gated and requires you to be logged in to Hugging Face and to accept its license agreement.'
+      'This model is gated. Sign in to Hugging Face and accept its license agreement to access it.'
     const gatedModelDownloadTooltip =
-      'Download may require signing in to Hugging Face first.'
-    expect(screen.getByTestId('missing-model-gated-access')).toHaveAttribute(
-      'title',
+      'To download this gated model, sign in to Hugging Face and accept its license agreement.'
+    const gatedAccess = screen.getByRole('link', {
+      name: 'Open Hugging Face repository for model.safetensors in a new tab'
+    })
+    expect(gatedAccess).toHaveAttribute(
+      'href',
+      'https://huggingface.co/bfl/FLUX.1'
+    )
+    expect(gatedAccess).toHaveAttribute('target', '_blank')
+    expect(gatedAccess).toHaveAttribute('rel', 'noopener noreferrer')
+
+    gatedAccess.focus()
+    expect(await screen.findByTestId('disclosure-tooltip')).toHaveTextContent(
       gatedModelTooltip
     )
-    expect(screen.getByTestId('missing-model-download')).toHaveAttribute(
-      'title',
-      gatedModelDownloadTooltip
-    )
-    expect(
-      screen.getByTestId('missing-model-download')
-    ).toHaveAccessibleDescription(gatedModelDownloadTooltip)
+    expect(gatedAccess).toHaveAccessibleDescription(gatedModelTooltip)
+
+    const download = screen.getByTestId('missing-model-download')
+    expect(download).not.toHaveAttribute('title')
+    expect(download).toHaveAccessibleDescription(gatedModelDownloadTooltip)
   })
 
   it('uses parameterized accessible labels for gated model actions', async () => {
@@ -492,7 +495,7 @@ describe('MissingModelRow', () => {
         missingModels: {
           ...enMessages.rightSidePanel.missingModels,
           downloadModel: '{model} download action',
-          openHuggingFaceRepo: '{model} repository action'
+          openHuggingFaceRepoNewTab: '{model} repository action in a new tab'
         }
       }
     })
@@ -515,13 +518,13 @@ describe('MissingModelRow', () => {
     expect(
       screen.getByTestId('missing-model-gated-access')
     ).toHaveAccessibleName(
-      'SD1.5/v1-5-pruned-emaonly.safetensors repository action'
+      'SD1.5/v1-5-pruned-emaonly.safetensors repository action in a new tab'
     )
   })
 
-  it('opens gated repo action separately from the download action', async () => {
+  it('exposes legacy Electron gated access as a link', async () => {
     mockIsCloud.value = false
-    const user = userEvent.setup()
+    mockIsDesktop.value = true
     const model = makeModel([{ nodeId: '1', widgetName: 'ckpt_name' }])
     model.representative.url =
       'https://huggingface.co/bfl/FLUX.1/resolve/main/model.safetensors'
@@ -534,19 +537,73 @@ describe('MissingModelRow', () => {
     )
     await nextTick()
 
-    await user.click(screen.getByTestId('missing-model-gated-access'))
-    expect(mockOpenGatedRepoPage).toHaveBeenCalledWith(
+    const gatedAccess = screen.getByRole('link', {
+      name: 'Open Hugging Face repository for model.safetensors in a new tab'
+    })
+    expect(gatedAccess).toHaveAttribute(
+      'href',
       'https://huggingface.co/bfl/FLUX.1'
     )
+    expect(gatedAccess).toHaveAttribute('target', '_blank')
+    expect(gatedAccess).toHaveAttribute('rel', 'noopener noreferrer')
+    expect(
+      screen.queryByRole('button', {
+        name: /Open Hugging Face repository for model.safetensors/
+      })
+    ).not.toBeInTheDocument()
+    expect(mockOpenGatedRepoPage).not.toHaveBeenCalled()
+  })
 
-    await user.click(screen.getByTestId('missing-model-download'))
-    expect(mockDownloadModel).toHaveBeenCalledWith(
-      {
-        name: 'model.safetensors',
-        url: 'https://huggingface.co/bfl/FLUX.1/resolve/main/model.safetensors',
-        directory: 'checkpoints'
-      },
-      {}
+  it('ignores an untrusted gated repository URL from the store', async () => {
+    mockIsCloud.value = false
+    const model = makeModel([{ nodeId: '1', widgetName: 'ckpt_name' }])
+    model.representative.url =
+      'https://huggingface.co/comfy/test/resolve/main/model.safetensors'
+
+    renderRow(model, vi.fn(), false)
+    useMissingModelStore().setGatedRepoUrl(
+      model.representative.url,
+      'https://example.com/untrusted'
+    )
+    await nextTick()
+
+    expect(
+      screen.queryByTestId('missing-model-gated-access')
+    ).not.toBeInTheDocument()
+    const download = screen.getByTestId('missing-model-download')
+    expect(download).not.toHaveAttribute('aria-describedby')
+    expect(download).not.toHaveAccessibleDescription()
+  })
+
+  it('falls back from Desktop2 gated access while keeping button semantics', async () => {
+    mockIsCloud.value = false
+    const openModelAccessPage = vi.fn().mockResolvedValue(false)
+    window.__comfyDesktop2 = {
+      isRemote: () => false,
+      openModelAccessPage
+    }
+    const model = makeModel([{ nodeId: '1', widgetName: 'ckpt_name' }])
+    model.representative.url =
+      'https://huggingface.co/bfl/FLUX.1/resolve/main/model.safetensors'
+
+    renderRow(model, vi.fn(), false)
+    useMissingModelStore().setGatedRepoUrl(
+      model.representative.url,
+      'https://huggingface.co/bfl/FLUX.1'
+    )
+    await nextTick()
+
+    await userEvent.click(
+      screen.getByRole('button', {
+        name: 'Open Hugging Face repository for model.safetensors in the desktop app; may open in a new tab'
+      })
+    )
+
+    expect(openModelAccessPage).toHaveBeenCalledWith(
+      'https://huggingface.co/bfl/FLUX.1'
+    )
+    expect(mockOpenGatedRepoPage).toHaveBeenCalledWith(
+      'https://huggingface.co/bfl/FLUX.1'
     )
   })
 
@@ -595,7 +652,11 @@ describe('MissingModelRow', () => {
 
     renderRow(model, vi.fn(), false)
 
-    await user.click(screen.getByTestId('missing-model-download'))
+    const download = screen.getByTestId('missing-model-download')
+    expect(download).not.toHaveAttribute('aria-describedby')
+    expect(download).not.toHaveAccessibleDescription()
+
+    await user.click(download)
 
     expect(mockDownloadModel).toHaveBeenCalledWith(
       {

@@ -1,4 +1,4 @@
-import * as Sentry from '@sentry/vue'
+import { addBreadcrumb, setContext, setUser } from '@sentry/vue'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
@@ -31,7 +31,7 @@ export class SentryTelemetryProvider implements TelemetryProvider {
   }
 
   trackNodeAdded({ node_type, source }: NodeAddedMetadata): void {
-    Sentry.addBreadcrumb({
+    addBreadcrumb({
       category: 'workflow',
       message: 'node_added',
       level: 'info',
@@ -40,24 +40,24 @@ export class SentryTelemetryProvider implements TelemetryProvider {
   }
 
   trackWorkflowExecution(): void {
-    Sentry.addBreadcrumb({
+    addBreadcrumb({
       category: 'workflow.execution',
       message: 'started',
       level: 'info'
     })
-    Sentry.setContext('Workflow Execution', { status: 'running' })
+    setContext('Workflow Execution', { status: 'running' })
     this.updateAppContext()
   }
 
   trackExecutionError({ nodeType }: ExecutionErrorMetadata): void {
     const data = nodeType ? { node_type: nodeType } : undefined
-    Sentry.addBreadcrumb({
+    addBreadcrumb({
       category: 'workflow.execution',
       message: 'failed',
       level: 'error',
       data
     })
-    Sentry.setContext('Workflow Execution', {
+    setContext('Workflow Execution', {
       status: 'failure',
       ...data
     })
@@ -65,19 +65,19 @@ export class SentryTelemetryProvider implements TelemetryProvider {
   }
 
   trackExecutionSuccess(_metadata: ExecutionSuccessMetadata): void {
-    Sentry.addBreadcrumb({
+    addBreadcrumb({
       category: 'workflow.execution',
       message: 'succeeded',
       level: 'info'
     })
-    Sentry.setContext('Workflow Execution', { status: 'success' })
+    setContext('Workflow Execution', { status: 'success' })
     this.updateAppContext()
   }
 
   private setUser(userId: string | undefined): void {
     if (!userId) return
 
-    Sentry.setUser({ id: userId })
+    setUser({ id: userId })
     this.watchForLogout()
   }
 
@@ -86,7 +86,7 @@ export class SentryTelemetryProvider implements TelemetryProvider {
 
     this.isWatchingLogout = true
     useCurrentUser().onUserLogout(() => {
-      Sentry.setUser(null)
+      setUser(null)
     })
   }
 
@@ -103,7 +103,7 @@ export class SentryTelemetryProvider implements TelemetryProvider {
     } = getExecutionContext()
     const activeWorkflow = useWorkflowStore().activeWorkflow
 
-    Sentry.setContext('ComfyUI App State', {
+    setContext('ComfyUI App State', {
       ...(this.shellLayout ?? {}),
       workflow_is_modified: activeWorkflow?.isModified ?? false,
       is_template,

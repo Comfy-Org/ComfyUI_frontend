@@ -118,10 +118,6 @@ async function dragOnLocator(
 }
 
 test.describe('Image Crop', { tag: ['@widget', '@vue-nodes'] }, () => {
-  test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', true)
-  })
-
   test.describe('without source image', () => {
     test.beforeEach(async ({ comfyPage }) => {
       await comfyPage.workflow.loadWorkflow('widgets/image_crop_widget')
@@ -840,7 +836,7 @@ test.describe('Image Crop', { tag: ['@widget', '@vue-nodes'] }, () => {
             await route.abort('failed')
             return
           }
-          await route.continue()
+          await route.fallback()
         })
         try {
           failExamplePng = true
@@ -1207,20 +1203,19 @@ test.describe('Image Crop', { tag: ['@widget', '@vue-nodes'] }, () => {
         await comfyPage.page.route('**/api/view**', async (route) => {
           const url = route.request().url()
           if (!url.includes('example.png')) {
-            await route.continue()
+            await route.fallback()
             return
           }
           await new Promise<void>((resolve) => {
             setTimeout(resolve, 500)
           })
-          await route.continue()
+          await route.fallback()
         })
 
         try {
           await comfyPage.workflow.loadWorkflow(
             'widgets/image_crop_with_source'
           )
-          await comfyPage.vueNodes.waitForNodes()
           const node = comfyPage.vueNodes.getNodeLocator('2')
           const runDone = comfyPage.runButton.click()
           await expect(

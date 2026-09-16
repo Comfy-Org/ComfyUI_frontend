@@ -1,3 +1,5 @@
+import { fromPartial } from '@total-typescript/shoehorn'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { ExecutionContext, ShellLayoutMetadata } from '../../types'
@@ -25,13 +27,13 @@ const mocks = vi.hoisted(() => ({
   } satisfies ExecutionContext
 }))
 
-vi.mock('@sentry/vue', () => ({
+vi.mock(import('@sentry/vue'), () => ({
   addBreadcrumb: mocks.addBreadcrumb,
   setContext: mocks.setContext,
   setUser: mocks.setUser
 }))
 
-vi.mock('@/composables/auth/useCurrentUser', () => ({
+vi.mock<unknown>(import('@/composables/auth/useCurrentUser'), () => ({
   useCurrentUser: () => ({
     onUserLogout: mocks.onUserLogout,
     resolvedUserInfo: {
@@ -44,15 +46,7 @@ vi.mock('@/composables/auth/useCurrentUser', () => ({
   })
 }))
 
-vi.mock('@/platform/workflow/management/stores/workflowStore', () => ({
-  useWorkflowStore: () => ({
-    activeWorkflow: {
-      isModified: mocks.workflowIsModified
-    }
-  })
-}))
-
-vi.mock('../../utils/getExecutionContext', () => ({
+vi.mock(import('../../utils/getExecutionContext'), () => ({
   getExecutionContext: () => mocks.executionContext
 }))
 
@@ -67,9 +61,14 @@ const shellLayout: ShellLayoutMetadata = {
   open_workflow_tabs: 2
 }
 
+beforeEach(() => {
+  useWorkflowStore().activeWorkflow = fromPartial({
+    isModified: mocks.workflowIsModified
+  })
+})
+
 describe('SentryTelemetryProvider', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
     mocks.resolvedUserId = 'existing-user'
     mocks.workflowIsModified = true
   })

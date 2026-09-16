@@ -176,6 +176,9 @@
   "Comfy_Interrupt": {
     "label": "中断"
   },
+  "Comfy_LayerEditor_OpenLayerEditor": {
+    "label": "为选中节点打开图层编辑器"
+  },
   "Comfy_LoadDefaultWorkflow": {
     "label": "加载默认工作流"
   },
@@ -274,9 +277,6 @@
   },
   "Comfy_Subgraph_SetSearchAliases": {
     "label": "设置子图搜索别名"
-  },
-  "Comfy_ToggleAssetAPI": {
-    "label": "实验性：启用 AssetAPI"
   },
   "Comfy_ToggleCanvasInfo": {
     "label": "画布性能"

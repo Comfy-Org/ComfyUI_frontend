@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const hoisted = vi.hoisted(() => {
   const context: Record<string, unknown> = {}
@@ -14,10 +14,10 @@ const hoisted = vi.hoisted(() => {
   }
 })
 
-vi.mock('@datadog/browser-rum', () => ({
+vi.mock<unknown>(import('@datadog/browser-rum'), () => ({
   datadogRum: hoisted
 }))
-vi.mock('./manualRefreshTracker', () => ({
+vi.mock(import('./manualRefreshTracker'), () => ({
   trackUserManualRefresh: vi.fn()
 }))
 
@@ -27,7 +27,6 @@ import { trackUserManualRefresh } from './manualRefreshTracker'
 
 describe('initDatadogRum', () => {
   beforeEach(() => {
-    vi.resetAllMocks()
     for (const key of Object.keys(hoisted.context)) {
       delete hoisted.context[key]
     }
@@ -37,11 +36,6 @@ describe('initDatadogRum', () => {
     hoisted.fetch.mockResolvedValue(new Response(null, { status: 503 }))
     hoisted.getInitConfiguration.mockReturnValue(undefined)
     vi.stubGlobal('fetch', hoisted.fetch)
-  })
-
-  afterEach(() => {
-    vi.restoreAllMocks()
-    vi.unstubAllGlobals()
   })
 
   it.for([
@@ -64,6 +58,12 @@ describe('initDatadogRum', () => {
         beforeSend: rumBeforeSend,
         sessionSampleRate: 100,
         sessionReplaySampleRate: 0,
+        trackFeatureFlagsForEvents: [
+          'action',
+          'vital',
+          'long_task',
+          'resource'
+        ],
         allowedTracingUrls: [expect.any(RegExp)]
       })
     }

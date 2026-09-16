@@ -1,6 +1,6 @@
 import { render, screen, waitFor } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
 import NodeSearchTypeFilterPopover from '@/components/searchbox/v2/NodeSearchTypeFilterPopover.vue'
@@ -27,10 +27,6 @@ function createMockChip(
 }
 
 describe(NodeSearchTypeFilterPopover, () => {
-  beforeEach(() => {
-    vi.restoreAllMocks()
-  })
-
   function createRender(
     props: {
       chip?: FilterChip
@@ -82,7 +78,7 @@ describe(NodeSearchTypeFilterPopover, () => {
 
     const options = screen.getAllByRole('option')
     expect(options).toHaveLength(3)
-    const texts = options.map((o) => o.textContent?.trim())
+    const texts = options.map((o) => o.textContent.trim())
     expect(texts[0]).toContain('IMAGE')
     expect(texts[1]).toContain('LATENT')
     expect(texts[2]).toContain('MODEL')
@@ -100,7 +96,7 @@ describe(NodeSearchTypeFilterPopover, () => {
     await openPopover(user)
 
     const buttons = screen.getAllByRole('button')
-    const clearBtn = buttons.find((b) => b.textContent?.includes('Clear all'))
+    const clearBtn = buttons.find((b) => b.textContent.includes('Clear all'))
     expect(clearBtn).toBeUndefined()
   })
 
@@ -111,7 +107,7 @@ describe(NodeSearchTypeFilterPopover, () => {
     expect(
       screen
         .getAllByRole('button')
-        .find((b) => b.textContent?.includes('Clear all'))
+        .find((b) => b.textContent.includes('Clear all'))
     ).toBeTruthy()
   })
 
@@ -121,7 +117,7 @@ describe(NodeSearchTypeFilterPopover, () => {
 
     const clearBtn = screen
       .getAllByRole('button')
-      .find((b) => b.textContent?.includes('Clear all'))!
+      .find((b) => b.textContent.includes('Clear all'))!
     await user.click(clearBtn)
     await nextTick()
 

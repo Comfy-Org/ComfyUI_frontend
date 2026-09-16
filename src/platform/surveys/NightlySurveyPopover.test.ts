@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
@@ -12,7 +12,7 @@ const mockIsNightly = vi.hoisted(() => ({ value: true }))
 const mockIsCloud = vi.hoisted(() => ({ value: false }))
 const mockIsDesktop = vi.hoisted(() => ({ value: false }))
 
-vi.mock('@/platform/distribution/types', () => ({
+vi.mock(import('@/platform/distribution/types'), () => ({
   get isNightly() {
     return mockIsNightly.value
   },
@@ -44,19 +44,11 @@ describe('NightlySurveyPopover', () => {
   }
 
   beforeEach(() => {
-    localStorage.clear()
     vi.resetModules()
-    vi.useFakeTimers()
-    vi.setSystemTime(new Date('2024-06-15T12:00:00Z'))
 
     mockIsNightly.value = true
     mockIsCloud.value = false
     mockIsDesktop.value = false
-  })
-
-  afterEach(() => {
-    localStorage.clear()
-    vi.useRealTimers()
   })
 
   async function renderComponent(

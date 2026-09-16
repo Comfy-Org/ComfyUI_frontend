@@ -1,38 +1,24 @@
 import { render } from '@testing-library/vue'
-import { createPinia, setActivePinia } from 'pinia'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { Ref, ShallowRef } from 'vue'
 import { defineComponent, h, nextTick, ref, shallowRef } from 'vue'
 
 import { useBoundingBoxes } from './useBoundingBoxes'
 import type { BoundingBox } from '@/types/boundingBoxes'
 import { toNodeId } from '@/types/nodeId'
+import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 
-const { appState, outputState } = vi.hoisted(() => ({
-  appState: { node: null as unknown },
-  outputState: {
-    outputs: undefined as unknown,
-    nodeOutputs: null as { value: Record<string, unknown> } | null
+const appState = vi.hoisted(() => ({ node: null as MockNode | null }))
+let incomingOutputs: { input_bboxes: unknown } | undefined
+let outputStore: ReturnType<typeof useNodeOutputStore>
+
+vi.mock<unknown>(import('@/scripts/app'), () => ({
+  app: {
+    canvas: { graph: { getNodeById: () => appState.node } },
+    nodeOutputs: {},
+    nodePreviewImages: {}
   }
 }))
-
-vi.mock('@/scripts/app', () => ({
-  app: { canvas: { graph: { getNodeById: () => appState.node } } }
-}))
-
-vi.mock('@/stores/nodeOutputStore', async () => {
-  const { ref } = await import('vue')
-  const nodeOutputs = ref<Record<string, unknown>>({})
-  outputState.nodeOutputs = nodeOutputs
-  return {
-    useNodeOutputStore: () => ({
-      nodeOutputs,
-      nodePreviewImages: ref({}),
-      getNodeImageUrls: () => undefined,
-      getNodeOutputs: () => outputState.outputs
-    })
-  }
-})
 
 const ctx = {
   measureText: (s: string) => ({ width: s.length * 7 }),
@@ -61,18 +47,17 @@ function makeCanvas(): HTMLCanvasElement {
   Object.defineProperty(el, 'clientWidth', { value: 100, configurable: true })
   Object.defineProperty(el, 'clientHeight', { value: 100, configurable: true })
   el.getContext = (() => ctx) as unknown as HTMLCanvasElement['getContext']
-  el.getBoundingClientRect = () =>
-    ({
-      left: 0,
-      top: 0,
-      right: 100,
-      bottom: 100,
-      width: 100,
-      height: 100,
-      x: 0,
-      y: 0,
-      toJSON: () => ({})
-    }) as DOMRect
+  el.getBoundingClientRect = () => ({
+    left: 0,
+    top: 0,
+    right: 100,
+    bottom: 100,
+    width: 100,
+    height: 100,
+    x: 0,
+    y: 0,
+    toJSON: () => ({})
+  })
   el.focus = () => {}
   el.setPointerCapture = () => {}
   el.releasePointerCapture = () => {}
@@ -175,19 +160,17 @@ function makeConnectedNode(): MockNode {
 }
 
 beforeEach(() => {
-  setActivePinia(createPinia())
+  outputStore = useNodeOutputStore()
+  vi.mocked(outputStore.getNodeOutputs).mockImplementation(
+    () => incomingOutputs
+  )
   appState.node = makeNode()
-  outputState.outputs = undefined
-  if (outputState.nodeOutputs) outputState.nodeOutputs.value = {}
+  incomingOutputs = undefined
   vi.stubGlobal('requestAnimationFrame', (cb: FrameRequestCallback) => {
     void Promise.resolve().then(() => cb(0))
     return 1
   })
   vi.stubGlobal('cancelAnimationFrame', () => {})
-})
-
-afterEach(() => {
-  vi.unstubAllGlobals()
 })
 
 describe('useBoundingBoxes initialization', () => {
@@ -271,7 +254,7 @@ describe('useBoundingBoxes region editing', () => {
 describe('useBoundingBoxes inline editor', () => {
   it('opens on double click and commits the description', async () => {
     const c = setup([box()])
-    c.onDoubleClick(pe(30, 30) as unknown as MouseEvent)
+    c.onDoubleClick(pe(30, 30))
     await flush()
     expect(c.inlineEditor.value).not.toBeNull()
 
@@ -284,7 +267,7 @@ describe('useBoundingBoxes inline editor', () => {
 
   it('closes the inline editor on Escape', async () => {
     const c = setup([box()])
-    c.onDoubleClick(pe(30, 30) as unknown as MouseEvent)
+    c.onDoubleClick(pe(30, 30))
     await flush()
     c.onInlineKeyDown({ key: 'Escape' } as KeyboardEvent)
     expect(c.inlineEditor.value).toBeNull()
@@ -296,7 +279,7 @@ describe('useBoundingBoxes incoming bboxes input', () => {
     const node = makeConnectedNode()
     appState.node = node
     const incoming = [box({ x: 0, width: 100 })]
-    outputState.outputs = { input_bboxes: incoming }
+    incomingOutputs = { input_bboxes: incoming }
     const c = setup([box({ x: 200, width: 300 })])
     expect(modelBoxes(c)).toHaveLength(1)
     expect(modelBoxes(c)[0].width).toBe(300)
@@ -308,25 +291,38 @@ describe('useBoundingBoxes incoming bboxes input', () => {
     const incoming = [box({ x: 0, width: 100 })]
     setLastIncomingOf(node, incoming)
     appState.node = node
-    outputState.outputs = { input_bboxes: incoming }
+    incomingOutputs = { input_bboxes: incoming }
     const c = setup([box({ x: 200, width: 300 })])
-    outputState.nodeOutputs!.value = { updated: true }
+    outputStore.nodeOutputs = { output: { updated: true } }
     await flush()
     expect(modelBoxes(c)[0].width).toBe(300)
   })
 
   it('ignores incoming output when the input is not connected', () => {
-    outputState.outputs = { input_bboxes: [box({ x: 0, width: 100 })] }
+    incomingOutputs = { input_bboxes: [box({ x: 0, width: 100 })] }
     const c = setup([])
     expect(modelBoxes(c)).toHaveLength(0)
+  })
+
+  it('ignores an output containing an invalid bounding box', () => {
+    const node = makeConnectedNode()
+    appState.node = node
+    incomingOutputs = {
+      input_bboxes: [box(), { x: 1 }]
+    }
+
+    const c = setup([])
+
+    expect(modelBoxes(c)).toHaveLength(0)
+    expect(lastIncomingOf(node)).toEqual([])
   })
 
   it('repopulates from the next run after clearing the canvas', async () => {
     appState.node = makeConnectedNode()
     const c = setup([])
 
-    outputState.outputs = { input_bboxes: [box({ x: 0, width: 100 })] }
-    outputState.nodeOutputs!.value = { n: 1 }
+    incomingOutputs = { input_bboxes: [box({ x: 0, width: 100 })] }
+    outputStore.nodeOutputs = { n: { revision: 1 } }
     await flush()
     expect(modelBoxes(c)).toHaveLength(1)
 
@@ -334,7 +330,7 @@ describe('useBoundingBoxes incoming bboxes input', () => {
     await flush()
     expect(modelBoxes(c)).toHaveLength(0)
 
-    outputState.nodeOutputs!.value = { n: 2 }
+    outputStore.nodeOutputs = { n: { revision: 2 } }
     await flush()
     expect(modelBoxes(c)).toHaveLength(1)
     expect(modelBoxes(c)[0].width).toBe(100)
@@ -348,15 +344,15 @@ describe('useBoundingBoxes incoming bboxes input', () => {
     }
     const c = setup([])
 
-    outputState.outputs = { input_bboxes: [box({ x: 0, width: 100 })] }
-    outputState.nodeOutputs!.value = { n: 1 }
+    incomingOutputs = { input_bboxes: [box({ x: 0, width: 100 })] }
+    outputStore.nodeOutputs = { n: { revision: 1 } }
     await flush()
     expect(modelBoxes(c)).toHaveLength(1)
 
     c.clearAll()
     await flush()
     connected = false
-    outputState.nodeOutputs!.value = { n: 2 }
+    outputStore.nodeOutputs = { n: { revision: 2 } }
     await flush()
     expect(modelBoxes(c)).toHaveLength(0)
   })
@@ -368,10 +364,10 @@ describe('useBoundingBoxes incoming bboxes input', () => {
     c.onPointerDown(pe(10, 10))
     c.onCanvasPointerMove(pe(50, 50))
 
-    outputState.outputs = {
+    incomingOutputs = {
       input_bboxes: [box({ x: 0, width: 100, height: 100 })]
     }
-    outputState.nodeOutputs!.value = { n: 1 }
+    outputStore.nodeOutputs = { n: { revision: 1 } }
     await flush()
 
     c.onDocPointerUp(pe(50, 50))
@@ -387,8 +383,8 @@ describe('useBoundingBoxes incoming bboxes input', () => {
     expect(modelBoxes(c)).toHaveLength(0)
 
     const incoming = [box({ x: 0, width: 100 })]
-    outputState.outputs = { input_bboxes: incoming }
-    outputState.nodeOutputs!.value = { updated: true }
+    incomingOutputs = { input_bboxes: incoming }
+    outputStore.nodeOutputs = { output: { updated: true } }
     await flush()
 
     expect(modelBoxes(c)).toHaveLength(1)
@@ -403,8 +399,8 @@ describe('useBoundingBoxes incoming bboxes input', () => {
     const c = setup([box({ x: 200, width: 300 })])
 
     const changed = [box({ x: 64, width: 128 })]
-    outputState.outputs = { input_bboxes: changed }
-    outputState.nodeOutputs!.value = { n: 1 }
+    incomingOutputs = { input_bboxes: changed }
+    outputStore.nodeOutputs = { n: { revision: 1 } }
     await flush()
 
     expect(modelBoxes(c)[0].width).toBe(128)

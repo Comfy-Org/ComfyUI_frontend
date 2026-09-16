@@ -6,7 +6,7 @@ const { mockGetBillingPlans } = vi.hoisted(() => ({
   mockGetBillingPlans: vi.fn()
 }))
 
-vi.mock('@/platform/workspace/api/workspaceApi', () => ({
+vi.mock<unknown>(import('@/platform/workspace/api/workspaceApi'), () => ({
   workspaceApi: {
     getBillingPlans: mockGetBillingPlans
   }
@@ -39,7 +39,6 @@ describe('useBillingPlans', () => {
 
   beforeEach(() => {
     vi.resetModules()
-    mockGetBillingPlans.mockReset()
     consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
   })
 

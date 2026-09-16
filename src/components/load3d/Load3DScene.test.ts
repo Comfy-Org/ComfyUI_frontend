@@ -17,7 +17,7 @@ const dragState = vi.hoisted(() => ({
   } | null
 }))
 
-vi.mock('@/composables/useLoad3dDrag', () => ({
+vi.mock(import('@/composables/useLoad3dDrag'), () => ({
   useLoad3dDrag: (options: unknown) => {
     dragState.capturedOptions = options as typeof dragState.capturedOptions
     return {
@@ -30,7 +30,7 @@ vi.mock('@/composables/useLoad3dDrag', () => ({
   }
 }))
 
-vi.mock('@/components/common/LoadingOverlay.vue', () => ({
+vi.mock<unknown>(import('@/components/common/LoadingOverlay.vue'), () => ({
   default: {
     name: 'LoadingOverlayStub',
     props: ['loading', 'loadingMessage'],
@@ -74,9 +74,6 @@ describe('Load3DScene', () => {
   beforeEach(() => {
     dragState.isDragging = ref(false)
     dragState.dragMessage = ref('')
-    dragState.handleDragOver.mockReset()
-    dragState.handleDragLeave.mockReset()
-    dragState.handleDrop.mockReset()
     dragState.capturedOptions = null
   })
 

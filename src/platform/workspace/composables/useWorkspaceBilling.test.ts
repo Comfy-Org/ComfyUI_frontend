@@ -1,5 +1,10 @@
+import { billingOperation } from './billingOperationTestUtils'
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
+import { useBillingOperationStore } from '@/platform/workspace/stores/billingOperationStore'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { effectScope } from 'vue'
+
+import { useTelemetry } from '@/platform/telemetry'
 
 import type {
   BillingStatusResponse,
@@ -27,10 +32,8 @@ const mockBillingPlans = vi.hoisted(() => ({
 }))
 
 const mockShow = vi.hoisted(() => vi.fn())
-const mockStartOperation = vi.hoisted(() => vi.fn())
-const mockGetOperation = vi.hoisted(() => vi.fn())
-const mockSetWorkspaceBillingRail = vi.hoisted(() => vi.fn())
-const mockActiveWorkspaceId = vi.hoisted(() => ({ value: 'workspace-1' }))
+
+const mockReportError = vi.hoisted(() => vi.fn())
 
 // Hoisted so the vi.mock factory below can reference it: a plain top-level
 // const is in its temporal dead zone when the hoisted factory runs under
@@ -49,17 +52,28 @@ const mockWorkspaceApiError = vi.hoisted(
     }
 )
 
-vi.mock('@/platform/workspace/api/workspaceApi', () => ({
+vi.mock<unknown>(import('@/platform/workspace/api/workspaceApi'), () => ({
   workspaceApi: mockWorkspaceApi,
   WorkspaceApiError: mockWorkspaceApiError
 }))
 
-vi.mock('@/platform/cloud/subscription/composables/useBillingPlans', () => ({
-  useBillingPlans: () => mockBillingPlans
-}))
+const mockCapabilitiesRefresh = vi.hoisted(() => vi.fn(async () => undefined))
+vi.mock<unknown>(
+  import('@/platform/workspace/composables/useBillingCapabilities'),
+  () => ({
+    useBillingCapabilities: () => ({ refresh: mockCapabilitiesRefresh })
+  })
+)
 
-vi.mock(
-  '@/platform/cloud/subscription/composables/useSubscriptionDialog',
+vi.mock<unknown>(
+  import('@/platform/cloud/subscription/composables/useBillingPlans'),
+  () => ({
+    useBillingPlans: () => mockBillingPlans
+  })
+)
+
+vi.mock<unknown>(
+  import('@/platform/cloud/subscription/composables/useSubscriptionDialog'),
   () => ({
     useSubscriptionDialog: () => ({
       show: mockShow
@@ -67,21 +81,11 @@ vi.mock(
   })
 )
 
-vi.mock('@/platform/workspace/stores/billingOperationStore', () => ({
-  useBillingOperationStore: () => ({
-    getOperation: mockGetOperation,
-    startOperation: mockStartOperation
-  })
+vi.mock(import('@/platform/telemetry/reportError'), () => ({
+  reportError: mockReportError
 }))
 
-vi.mock('@/platform/workspace/stores/teamWorkspaceStore', () => ({
-  useTeamWorkspaceStore: () => ({
-    get activeWorkspace() {
-      return { id: mockActiveWorkspaceId.value }
-    },
-    setWorkspaceBillingRail: mockSetWorkspaceBillingRail
-  })
-}))
+vi.mock(import('@/platform/telemetry'))
 
 let scope: ReturnType<typeof effectScope> | undefined
 
@@ -107,7 +111,11 @@ function createDeferred<T>() {
 
 const activeStatus = {
   is_active: true,
+  max_seats: 73,
+  occupied_seats: 72,
   has_funds: true,
+  team_credit_stop: null,
+  scheduled_change: null,
   subscription_status: 'active' as const,
   subscription_tier: 'CREATOR' as const,
   subscription_duration: 'MONTHLY' as const,
@@ -117,7 +125,11 @@ const activeStatus = {
 
 const freeStatus = {
   is_active: true,
+  max_seats: 0,
+  occupied_seats: 100,
   has_funds: true,
+  team_credit_stop: null,
+  scheduled_change: null,
   subscription_tier: 'FREE' as const,
   plan_slug: 'free'
 }
@@ -151,10 +163,27 @@ const subscribeResponses = [
   }
 ] satisfies SubscribeResponse[]
 
+beforeEach(() => {
+  vi.mocked(useBillingOperationStore().getOperation).mockReturnValue(undefined)
+  vi.mocked(useBillingOperationStore().startOperation).mockResolvedValue(
+    billingOperation()
+  )
+})
+
+beforeEach(() => {
+  Object.assign(useTeamWorkspaceStore(), {
+    activeWorkspace: { id: 'workspace-1' }
+  })
+  vi.mocked(useTeamWorkspaceStore().setWorkspaceBillingRail).mockImplementation(
+    () => {}
+  )
+})
+
 describe('useWorkspaceBilling', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
-    mockActiveWorkspaceId.value = 'workspace-1'
+    Object.assign(useTeamWorkspaceStore(), {
+      activeWorkspace: { id: 'workspace-1' }
+    })
     mockBillingPlans.plans.value = []
     mockBillingPlans.currentPlanSlug.value = null
     mockBillingPlans.error.value = null
@@ -164,8 +193,6 @@ describe('useWorkspaceBilling', () => {
   afterEach(() => {
     scope?.stop()
     scope = undefined
-    vi.unstubAllGlobals()
-    vi.useRealTimers()
   })
 
   describe('initialize', () => {
@@ -181,6 +208,8 @@ describe('useWorkspaceBilling', () => {
       expect(mockBillingPlans.fetchPlans).toHaveBeenCalledTimes(1)
       expect(billing.isInitialized.value).toBe(true)
       expect(billing.isLoading.value).toBe(false)
+      expect(billing.maxSeats.value).toBe(73)
+      expect(billing.occupiedSeats.value).toBe(72)
     })
 
     it('is a no-op after first successful initialize', async () => {
@@ -228,7 +257,7 @@ describe('useWorkspaceBilling', () => {
     it('exposes a null subscription before any status fetch', () => {
       const billing = setupBilling()
       expect(billing.subscription.value).toBeNull()
-      expect(billing.isActiveSubscription.value).toBe(false)
+      expect(billing.canAccessSubscriptionFeatures.value).toBe(false)
       expect(billing.isFreeTier.value).toBe(false)
     })
 
@@ -237,9 +266,7 @@ describe('useWorkspaceBilling', () => {
         ...activeStatus,
         billing_rail: 'stripe',
         subscription_status: 'canceled',
-        cancel_at: '2026-06-01T00:00:00Z',
-        scheduled_plan_slug: 'pro-annual',
-        change_at: '2026-07-01T00:00:00Z'
+        cancel_at: '2026-06-01T00:00:00Z'
       })
 
       const billing = setupBilling()
@@ -250,18 +277,38 @@ describe('useWorkspaceBilling', () => {
         tier: 'CREATOR',
         duration: 'MONTHLY',
         planSlug: 'creator-monthly',
-        scheduledPlanSlug: 'pro-annual',
-        changeAt: '2026-07-01T00:00:00Z',
         renewalDate: '2026-05-01T00:00:00Z',
         endDate: '2026-06-01T00:00:00Z',
         isCancelled: true,
         hasFunds: true
       })
-      expect(billing.isActiveSubscription.value).toBe(true)
+      expect(billing.canAccessSubscriptionFeatures.value).toBe(true)
       expect(billing.isFreeTier.value).toBe(false)
-      expect(mockSetWorkspaceBillingRail).toHaveBeenCalledWith(
-        'workspace-1',
-        'stripe'
+      expect(
+        useTeamWorkspaceStore().setWorkspaceBillingRail
+      ).toHaveBeenCalledWith('workspace-1', 'stripe')
+    })
+
+    it('maps a scheduled plan change into subscription info', async () => {
+      const scheduledChange = {
+        plan_slug: 'team-annual',
+        effective_at: '2026-06-01T00:00:00Z',
+        team_credit_stop: {
+          id: 'team_2500',
+          credits_monthly: 527_500,
+          stop_usd: 2500
+        }
+      }
+      mockWorkspaceApi.getBillingStatus.mockResolvedValue({
+        ...activeStatus,
+        scheduled_change: scheduledChange
+      } satisfies BillingStatusResponse)
+
+      const billing = setupBilling()
+      await billing.fetchStatus()
+
+      expect(billing.subscription.value?.scheduledChange).toEqual(
+        scheduledChange
       )
     })
 
@@ -277,11 +324,85 @@ describe('useWorkspaceBilling', () => {
       const billing = setupBilling()
       await billing.fetchStatus()
 
-      expect(mockStartOperation).toHaveBeenCalledWith(
+      expect(useBillingOperationStore().startOperation).toHaveBeenCalledWith(
         'op-recovered',
         'subscription',
         undefined,
         actionUrl
+      )
+    })
+
+    it('recovers a pending subscription reported explicitly', async () => {
+      // What the server sends today for an initial subscription or a plan
+      // change — distinct from the older servers that send no type at all.
+      const actionUrl = 'https://invoice.stripe.com/sensitive-token'
+      mockWorkspaceApi.getBillingStatus.mockResolvedValue({
+        ...activeStatus,
+        billing_status: 'pending_payment',
+        pending_billing_op_id: 'op-sub',
+        pending_billing_op_type: 'subscription',
+        action_url: actionUrl
+      } satisfies BillingStatusResponse)
+
+      const billing = setupBilling()
+      await billing.fetchStatus()
+
+      expect(useBillingOperationStore().startOperation).toHaveBeenCalledWith(
+        'op-sub',
+        'subscription',
+        undefined,
+        actionUrl
+      )
+      expect(mockReportError).not.toHaveBeenCalled()
+    })
+
+    it('recovers a pending top-up as a top-up, not a subscription', async () => {
+      const actionUrl = 'https://invoice.stripe.com/sensitive-token'
+      mockWorkspaceApi.getBillingStatus.mockResolvedValue({
+        ...activeStatus,
+        billing_status: 'pending_payment',
+        pending_billing_op_id: 'op-topup',
+        pending_billing_op_type: 'topup',
+        action_url: actionUrl
+      } satisfies BillingStatusResponse)
+
+      const billing = setupBilling()
+      await billing.fetchStatus()
+
+      expect(useBillingOperationStore().startOperation).toHaveBeenCalledWith(
+        'op-topup',
+        'topup',
+        undefined,
+        actionUrl
+      )
+    })
+
+    it('reports a resume mode it does not recognize', async () => {
+      mockWorkspaceApi.getBillingStatus.mockResolvedValue({
+        ...activeStatus,
+        billing_status: 'pending_payment',
+        pending_billing_op_id: 'op-future',
+        // A server ahead of this bundle. Unrepresentable in the current union,
+        // which is why the branch cannot be left to the type system alone.
+        pending_billing_op_type: 'seat_change'
+      })
+
+      const billing = setupBilling()
+      await billing.fetchStatus()
+
+      expect(mockReportError).toHaveBeenCalledWith(
+        expect.objectContaining({
+          message: expect.stringContaining('seat_change')
+        }),
+        { errorType: 'billing_unknown_resume_mode' }
+      )
+      // Recovery is preserved deliberately: without it the customer has no way
+      // back to the payment page, while a wrong panel clears on reload.
+      expect(useBillingOperationStore().startOperation).toHaveBeenCalledWith(
+        'op-future',
+        'subscription',
+        undefined,
+        undefined
       )
     })
 
@@ -291,16 +412,16 @@ describe('useWorkspaceBilling', () => {
         billing_status: 'pending_payment',
         pending_billing_op_id: 'op-recovered'
       } satisfies BillingStatusResponse)
-      mockGetOperation
+      vi.mocked(useBillingOperationStore().getOperation)
         .mockReturnValueOnce(undefined)
-        .mockReturnValue({ status: 'pending' })
+        .mockReturnValue(billingOperation({ status: 'pending' }))
 
       const billing = setupBilling()
       await billing.fetchStatus()
       await billing.fetchStatus()
 
-      expect(mockStartOperation).toHaveBeenCalledOnce()
-      expect(mockStartOperation).toHaveBeenCalledWith(
+      expect(useBillingOperationStore().startOperation).toHaveBeenCalledOnce()
+      expect(useBillingOperationStore().startOperation).toHaveBeenCalledWith(
         'op-recovered',
         'subscription',
         undefined,
@@ -314,7 +435,9 @@ describe('useWorkspaceBilling', () => {
       const billing = setupBilling()
 
       const fetch = billing.fetchStatus()
-      mockActiveWorkspaceId.value = 'workspace-2'
+      Object.assign(useTeamWorkspaceStore(), {
+        activeWorkspace: { id: 'workspace-2' }
+      })
       status.resolve({
         ...activeStatus,
         billing_status: 'pending_payment',
@@ -323,7 +446,7 @@ describe('useWorkspaceBilling', () => {
       })
       await fetch
 
-      expect(mockStartOperation).not.toHaveBeenCalled()
+      expect(useBillingOperationStore().startOperation).not.toHaveBeenCalled()
       expect(billing.subscription.value).toBeNull()
     })
 
@@ -337,7 +460,7 @@ describe('useWorkspaceBilling', () => {
       await billing.fetchStatus()
 
       expect(billing.subscription.value?.isCancelled).toBe(false)
-      expect(billing.isActiveSubscription.value).toBe(true)
+      expect(billing.canAccessSubscriptionFeatures.value).toBe(true)
     })
 
     it('reports free tier when status tier is FREE', async () => {
@@ -347,7 +470,9 @@ describe('useWorkspaceBilling', () => {
       await billing.fetchStatus()
 
       expect(billing.isFreeTier.value).toBe(true)
-      expect(mockSetWorkspaceBillingRail).not.toHaveBeenCalled()
+      expect(
+        useTeamWorkspaceStore().setWorkspaceBillingRail
+      ).not.toHaveBeenCalled()
     })
 
     it('sets error and rethrows when fetchStatus fails', async () => {
@@ -357,6 +482,56 @@ describe('useWorkspaceBilling', () => {
 
       await expect(billing.fetchStatus()).rejects.toThrow('boom')
       expect(billing.error.value).toBe('boom')
+    })
+
+    it('keeps the last known capacity during refresh and after failure', async () => {
+      mockWorkspaceApi.getBillingStatus.mockResolvedValueOnce(activeStatus)
+      const billing = setupBilling()
+      await billing.fetchStatus()
+
+      const refreshedStatus = createDeferred<BillingStatusResponse>()
+      mockWorkspaceApi.getBillingStatus.mockReturnValueOnce(
+        refreshedStatus.promise
+      )
+      const refresh = billing.fetchStatus()
+
+      expect(billing.maxSeats.value).toBe(73)
+      expect(billing.occupiedSeats.value).toBe(72)
+
+      refreshedStatus.resolve({
+        ...activeStatus,
+        max_seats: 80,
+        occupied_seats: 75
+      })
+      await refresh
+      expect(billing.maxSeats.value).toBe(80)
+      expect(billing.occupiedSeats.value).toBe(75)
+
+      mockWorkspaceApi.getBillingStatus.mockRejectedValueOnce(
+        new Error('refresh failed')
+      )
+      await expect(billing.fetchStatus()).rejects.toThrow('refresh failed')
+      expect(billing.maxSeats.value).toBe(80)
+      expect(billing.occupiedSeats.value).toBe(75)
+    })
+
+    it('accepts missing seat capacity and clears the last known value', async () => {
+      mockWorkspaceApi.getBillingStatus.mockResolvedValueOnce(activeStatus)
+      const billing = setupBilling()
+      await billing.fetchStatus()
+
+      mockWorkspaceApi.getBillingStatus.mockResolvedValueOnce({
+        ...activeStatus,
+        subscription_tier: 'PRO',
+        max_seats: undefined,
+        occupied_seats: undefined
+      })
+
+      await billing.fetchStatus()
+      expect(billing.subscription.value?.tier).toBe('PRO')
+      expect(billing.maxSeats.value).toBeNull()
+      expect(billing.occupiedSeats.value).toBeNull()
+      expect(billing.error.value).toBeNull()
     })
 
     it('keeps the newest status when an older request resolves last', async () => {
@@ -722,6 +897,162 @@ describe('useWorkspaceBilling', () => {
       await expect(billing.manageSubscription()).rejects.toThrow('portal down')
       expect(billing.error.value).toBe('portal down')
     })
+
+    it('re-reads billing state once when the tab regains visibility after opening the portal', async () => {
+      vi.stubGlobal(
+        'open',
+        vi.fn(() => ({}) as Window)
+      )
+      mockWorkspaceApi.getPaymentPortalUrl.mockResolvedValue({
+        url: 'https://billing.example/portal'
+      })
+
+      const billing = setupBilling()
+      await billing.manageSubscription()
+
+      mockWorkspaceApi.getBillingStatus.mockClear()
+      mockWorkspaceApi.getBillingBalance.mockClear()
+      mockCapabilitiesRefresh.mockClear()
+
+      document.dispatchEvent(new Event('visibilitychange'))
+      expect(mockWorkspaceApi.getBillingStatus).toHaveBeenCalledTimes(1)
+      expect(mockWorkspaceApi.getBillingBalance).toHaveBeenCalledTimes(1)
+      expect(mockCapabilitiesRefresh).toHaveBeenCalledTimes(1)
+
+      // One-shot: switching tabs later must not keep refetching.
+      document.dispatchEvent(new Event('visibilitychange'))
+      expect(mockWorkspaceApi.getBillingStatus).toHaveBeenCalledTimes(1)
+    })
+
+    it('re-reads billing state when focus returns without a visibility change', async () => {
+      vi.stubGlobal(
+        'open',
+        vi.fn(() => ({}) as Window)
+      )
+      mockWorkspaceApi.getPaymentPortalUrl.mockResolvedValue({
+        url: 'https://billing.example/portal'
+      })
+
+      const billing = setupBilling()
+      await billing.manageSubscription()
+
+      mockWorkspaceApi.getBillingStatus.mockClear()
+      mockWorkspaceApi.getBillingBalance.mockClear()
+      mockCapabilitiesRefresh.mockClear()
+
+      window.dispatchEvent(new Event('focus'))
+      expect(mockWorkspaceApi.getBillingStatus).toHaveBeenCalledTimes(1)
+      expect(mockWorkspaceApi.getBillingBalance).toHaveBeenCalledTimes(1)
+      expect(mockCapabilitiesRefresh).toHaveBeenCalledTimes(1)
+
+      document.dispatchEvent(new Event('visibilitychange'))
+      expect(mockWorkspaceApi.getBillingStatus).toHaveBeenCalledTimes(1)
+    })
+
+    it('ignores hidden transitions and refreshes on the visible return', async () => {
+      vi.stubGlobal(
+        'open',
+        vi.fn(() => ({}) as Window)
+      )
+      mockWorkspaceApi.getPaymentPortalUrl.mockResolvedValue({
+        url: 'https://billing.example/portal'
+      })
+      const visibilitySpy = vi.spyOn(document, 'visibilityState', 'get')
+      visibilitySpy.mockReturnValue('hidden')
+
+      const billing = setupBilling()
+      await billing.manageSubscription()
+
+      mockWorkspaceApi.getBillingStatus.mockClear()
+      document.dispatchEvent(new Event('visibilitychange'))
+      expect(mockWorkspaceApi.getBillingStatus).not.toHaveBeenCalled()
+
+      visibilitySpy.mockReturnValue('visible')
+      document.dispatchEvent(new Event('visibilitychange'))
+      expect(mockWorkspaceApi.getBillingStatus).toHaveBeenCalledTimes(1)
+    })
+
+    it('replaces pending return listeners on repeated portal opens', async () => {
+      vi.stubGlobal(
+        'open',
+        vi.fn(() => ({}) as Window)
+      )
+      mockWorkspaceApi.getPaymentPortalUrl.mockResolvedValue({
+        url: 'https://billing.example/portal'
+      })
+
+      const billing = setupBilling()
+      await billing.manageSubscription()
+      await billing.manageSubscription()
+
+      mockWorkspaceApi.getBillingStatus.mockClear()
+      mockWorkspaceApi.getBillingBalance.mockClear()
+      mockCapabilitiesRefresh.mockClear()
+
+      window.dispatchEvent(new Event('focus'))
+      expect(mockWorkspaceApi.getBillingStatus).toHaveBeenCalledTimes(1)
+      expect(mockWorkspaceApi.getBillingBalance).toHaveBeenCalledTimes(1)
+      expect(mockCapabilitiesRefresh).toHaveBeenCalledTimes(1)
+    })
+
+    it('removes pending return listeners when its scope is disposed', async () => {
+      vi.stubGlobal(
+        'open',
+        vi.fn(() => ({}) as Window)
+      )
+      mockWorkspaceApi.getPaymentPortalUrl.mockResolvedValue({
+        url: 'https://billing.example/portal'
+      })
+
+      const billing = setupBilling()
+      await billing.manageSubscription()
+      scope?.stop()
+      scope = undefined
+
+      mockWorkspaceApi.getBillingStatus.mockClear()
+      mockCapabilitiesRefresh.mockClear()
+      window.dispatchEvent(new Event('focus'))
+      document.dispatchEvent(new Event('visibilitychange'))
+
+      expect(mockWorkspaceApi.getBillingStatus).not.toHaveBeenCalled()
+      expect(mockCapabilitiesRefresh).not.toHaveBeenCalled()
+    })
+
+    it('does not watch for a return when the portal window is blocked', async () => {
+      vi.stubGlobal(
+        'open',
+        vi.fn(() => null)
+      )
+      mockWorkspaceApi.getPaymentPortalUrl.mockResolvedValue({
+        url: 'https://billing.example/portal'
+      })
+
+      const billing = setupBilling()
+      await billing.manageSubscription()
+
+      mockWorkspaceApi.getBillingStatus.mockClear()
+      mockCapabilitiesRefresh.mockClear()
+      window.dispatchEvent(new Event('focus'))
+      document.dispatchEvent(new Event('visibilitychange'))
+
+      expect(mockWorkspaceApi.getBillingStatus).not.toHaveBeenCalled()
+      expect(mockCapabilitiesRefresh).not.toHaveBeenCalled()
+    })
+
+    it('does not watch for a return when no portal was opened', async () => {
+      vi.stubGlobal('open', vi.fn())
+      mockWorkspaceApi.getPaymentPortalUrl.mockResolvedValue({ url: '' })
+
+      const billing = setupBilling()
+      await billing.manageSubscription()
+
+      mockWorkspaceApi.getBillingStatus.mockClear()
+      mockCapabilitiesRefresh.mockClear()
+
+      document.dispatchEvent(new Event('visibilitychange'))
+      expect(mockWorkspaceApi.getBillingStatus).not.toHaveBeenCalled()
+      expect(mockCapabilitiesRefresh).not.toHaveBeenCalled()
+    })
   })
 
   describe('cancelSubscription', () => {
@@ -731,13 +1062,13 @@ describe('useWorkspaceBilling', () => {
         errorMessage: string | null
       }> = {}
     ) {
-      return {
+      return billingOperation({
         opId: 'op-cancel',
         type: 'cancel' as const,
         status: overrides.status ?? ('succeeded' as const),
         errorMessage: overrides.errorMessage ?? null,
         startedAt: 0
-      }
+      })
     }
 
     it('drives the shared billing operation poller with a cancel op', async () => {
@@ -745,12 +1076,20 @@ describe('useWorkspaceBilling', () => {
         billing_op_id: 'op-cancel',
         cancel_at: '2026-06-01T00:00:00Z'
       })
-      mockStartOperation.mockResolvedValue(operation())
+      vi.mocked(useBillingOperationStore().startOperation).mockResolvedValue(
+        operation()
+      )
 
       const billing = setupBilling()
       await billing.cancelSubscription()
 
-      expect(mockStartOperation).toHaveBeenCalledWith('op-cancel', 'cancel')
+      expect(useBillingOperationStore().startOperation).toHaveBeenCalledWith(
+        'op-cancel',
+        'cancel',
+        {
+          attemptStartedAt: expect.any(Number)
+        }
+      )
       expect(billing.error.value).toBeNull()
     })
 
@@ -759,8 +1098,11 @@ describe('useWorkspaceBilling', () => {
         billing_op_id: 'op-fail',
         cancel_at: '2026-06-01T00:00:00Z'
       })
-      mockStartOperation.mockResolvedValue(
-        operation({ status: 'failed', errorMessage: 'processor rejected' })
+      vi.mocked(useBillingOperationStore().startOperation).mockResolvedValue(
+        operation({
+          status: 'failed',
+          errorMessage: 'processor rejected'
+        })
       )
 
       const billing = setupBilling()
@@ -776,7 +1118,7 @@ describe('useWorkspaceBilling', () => {
         billing_op_id: 'op-timeout',
         cancel_at: '2026-06-01T00:00:00Z'
       })
-      mockStartOperation.mockResolvedValue(
+      vi.mocked(useBillingOperationStore().startOperation).mockResolvedValue(
         operation({
           status: 'timeout',
           errorMessage: 'billingOperation.cancelTimeout'
@@ -795,7 +1137,7 @@ describe('useWorkspaceBilling', () => {
         billing_op_id: 'op-noerr',
         cancel_at: '2026-06-01T00:00:00Z'
       })
-      mockStartOperation.mockResolvedValue(
+      vi.mocked(useBillingOperationStore().startOperation).mockResolvedValue(
         operation({ status: 'failed', errorMessage: null })
       )
 
@@ -815,7 +1157,82 @@ describe('useWorkspaceBilling', () => {
 
       await expect(billing.cancelSubscription()).rejects.toThrow('API down')
       expect(billing.error.value).toBe('API down')
-      expect(mockStartOperation).not.toHaveBeenCalled()
+      expect(useBillingOperationStore().startOperation).not.toHaveBeenCalled()
+    })
+
+    it('fires a started event before the cancel API call resolves', async () => {
+      mockWorkspaceApi.cancelSubscription.mockResolvedValue({
+        billing_op_id: 'op-cancel',
+        cancel_at: '2026-06-01T00:00:00Z'
+      })
+      vi.mocked(useBillingOperationStore().startOperation).mockResolvedValue(
+        operation()
+      )
+
+      const billing = setupBilling()
+      await billing.cancelSubscription()
+
+      expect(useTelemetry()?.trackBillingEvent).toHaveBeenCalledWith({
+        operation: 'operation',
+        stage: 'started',
+        outcome: 'pending',
+        operation_type: 'cancel'
+      })
+    })
+
+    it('fires billing telemetry directly when the initiating call fails before a billing_op_id exists', async () => {
+      mockWorkspaceApi.cancelSubscription.mockRejectedValue(
+        new mockWorkspaceApiError('Upstream failure', 502)
+      )
+
+      const billing = setupBilling()
+
+      await expect(billing.cancelSubscription()).rejects.toThrow(
+        'Upstream failure'
+      )
+      expect(useTelemetry()?.trackBillingEvent).toHaveBeenCalledWith({
+        operation: 'operation',
+        stage: 'failed',
+        outcome: 'failure',
+        operation_type: 'cancel',
+        failure_category: 'api_rejected',
+        duration_ms: expect.any(Number)
+      })
+    })
+
+    it('categorizes a status-less initiating failure as network', async () => {
+      mockWorkspaceApi.cancelSubscription.mockRejectedValue(
+        new mockWorkspaceApiError('Failed to fetch')
+      )
+
+      const billing = setupBilling()
+
+      await expect(billing.cancelSubscription()).rejects.toThrow()
+      expect(useTelemetry()?.trackBillingEvent).toHaveBeenCalledWith(
+        expect.objectContaining({ failure_category: 'network' })
+      )
+    })
+
+    it('does not duplicate telemetry for a poller failure once a billing_op_id exists', async () => {
+      mockWorkspaceApi.cancelSubscription.mockResolvedValue({
+        billing_op_id: 'op-fail',
+        cancel_at: '2026-06-01T00:00:00Z'
+      })
+      vi.mocked(useBillingOperationStore().startOperation).mockResolvedValue(
+        operation({
+          status: 'failed',
+          errorMessage: 'processor rejected'
+        })
+      )
+
+      const billing = setupBilling()
+
+      await expect(billing.cancelSubscription()).rejects.toThrow(
+        'processor rejected'
+      )
+      expect(useTelemetry()?.trackBillingEvent).not.toHaveBeenCalledWith(
+        expect.objectContaining({ stage: 'failed' })
+      )
     })
 
     it('falls back to a generic error message when cancel rejects with a non-Error', async () => {
@@ -849,8 +1266,24 @@ describe('useWorkspaceBilling', () => {
       // shows — the point of resyncing rather than reporting a failure.
       expect(billing.subscription.value?.endDate).toBe('2026-06-01T00:00:00Z')
       expect(billing.subscription.value?.tier).toBe('CREATOR')
-      expect(mockStartOperation).not.toHaveBeenCalled()
+      expect(useBillingOperationStore().startOperation).not.toHaveBeenCalled()
       expect(billing.isLoading.value).toBe(false)
+      expect(useTelemetry()?.trackBillingEvent).not.toHaveBeenCalledWith(
+        expect.objectContaining({ stage: 'failed' })
+      )
+      expect(useTelemetry()?.trackBillingEvent).toHaveBeenCalledWith({
+        operation: 'operation',
+        stage: 'started',
+        outcome: 'pending',
+        operation_type: 'cancel'
+      })
+      expect(useTelemetry()?.trackBillingEvent).toHaveBeenCalledWith({
+        operation: 'operation',
+        stage: 'succeeded',
+        outcome: 'success',
+        operation_type: 'cancel',
+        duration_ms: expect.any(Number)
+      })
     })
 
     it('stays a success when the follow-up status read also fails', async () => {
@@ -903,7 +1336,10 @@ describe('useWorkspaceBilling', () => {
 
   describe('resubscribe', () => {
     it('refreshes status and balance after a successful resubscribe', async () => {
-      mockWorkspaceApi.resubscribe.mockResolvedValue(undefined)
+      mockWorkspaceApi.resubscribe.mockResolvedValue({
+        billing_op_id: 'op-resub',
+        status: 'active'
+      })
       mockWorkspaceApi.getBillingStatus.mockResolvedValue(activeStatus)
       mockWorkspaceApi.getBillingBalance.mockResolvedValue(positiveBalance)
 
@@ -919,8 +1355,61 @@ describe('useWorkspaceBilling', () => {
       expect(billing.isLoading.value).toBe(false)
     })
 
+    it('waits for a pending resubscribe op to succeed before resolving', async () => {
+      mockWorkspaceApi.resubscribe.mockResolvedValue({
+        billing_op_id: 'op-resub-pending',
+        status: 'pending'
+      })
+      mockWorkspaceApi.getBillingStatus.mockResolvedValue(activeStatus)
+      mockWorkspaceApi.getBillingBalance.mockResolvedValue(positiveBalance)
+      vi.mocked(useBillingOperationStore().startOperation).mockResolvedValue(
+        billingOperation({
+          opId: 'op-resub-pending',
+          type: 'subscription',
+          status: 'succeeded',
+          errorMessage: null,
+          startedAt: 0
+        })
+      )
+
+      const billing = setupBilling()
+      await billing.resubscribe()
+
+      expect(useBillingOperationStore().startOperation).toHaveBeenCalledWith(
+        'op-resub-pending',
+        'subscription'
+      )
+      expect(billing.error.value).toBeNull()
+    })
+
+    it('throws when a pending resubscribe op fails', async () => {
+      mockWorkspaceApi.resubscribe.mockResolvedValue({
+        billing_op_id: 'op-resub-failed',
+        status: 'pending'
+      })
+      mockWorkspaceApi.getBillingStatus.mockResolvedValue(activeStatus)
+      mockWorkspaceApi.getBillingBalance.mockResolvedValue(positiveBalance)
+      vi.mocked(useBillingOperationStore().startOperation).mockResolvedValue(
+        billingOperation({
+          opId: 'op-resub-failed',
+          type: 'subscription',
+          status: 'failed',
+          errorMessage: 'card declined',
+          startedAt: 0
+        })
+      )
+
+      const billing = setupBilling()
+
+      await expect(billing.resubscribe()).rejects.toThrow('card declined')
+      expect(billing.error.value).toBe('card declined')
+    })
+
     it('keeps the mutation successful when reconciliation fails', async () => {
-      mockWorkspaceApi.resubscribe.mockResolvedValue(undefined)
+      mockWorkspaceApi.resubscribe.mockResolvedValue({
+        billing_op_id: 'op-resub',
+        status: 'active'
+      })
       mockWorkspaceApi.getBillingStatus.mockRejectedValue(
         new Error('status unavailable')
       )
@@ -975,7 +1464,7 @@ describe('useWorkspaceBilling', () => {
       // No scheduled cancellation left on the resynced subscription.
       expect(billing.subscription.value?.endDate).toBeNull()
       expect(billing.subscription.value?.tier).toBe('CREATOR')
-      expect(billing.isActiveSubscription.value).toBe(true)
+      expect(billing.canAccessSubscriptionFeatures.value).toBe(true)
       expect(billing.isLoading.value).toBe(false)
     })
 
@@ -1086,7 +1575,10 @@ describe('useWorkspaceBilling', () => {
 
   describe('resubscribe', () => {
     it('refreshes status and balance after a successful resubscribe', async () => {
-      mockWorkspaceApi.resubscribe.mockResolvedValue(undefined)
+      mockWorkspaceApi.resubscribe.mockResolvedValue({
+        billing_op_id: 'op-resub',
+        status: 'active'
+      })
       mockWorkspaceApi.getBillingStatus.mockResolvedValue(activeStatus)
       mockWorkspaceApi.getBillingBalance.mockResolvedValue(positiveBalance)
 

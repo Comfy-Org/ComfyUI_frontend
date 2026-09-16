@@ -5,22 +5,25 @@ import type { RemoteConfig } from '@/platform/remoteConfig/types'
 import { mockSystemStats } from '@e2e/fixtures/data/systemStats'
 import { CloudAuthHelper } from '@e2e/fixtures/helpers/CloudAuthHelper'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
+import { mockWorkspace, workspace } from '@e2e/fixtures/utils/workspaceMocks'
 
 interface CloudBootOptions {
   /** Remote-config payload for `/api/features` (enables the flags under test). */
   features: RemoteConfig
   /** Body for `/api/settings` (defaults to `{}`). */
   settings?: unknown
+  /** `'server'` lets `/api/object_info` reach the backend so real node definitions load. */
+  objectInfo?: 'server'
 }
 
 /**
- * Stub the core endpoints the cloud app hits on boot so a raw `page` reaches the
- * working app without falling through to the OSS devtools backend. Specs layer
- * their own feature- or flow-specific routes on top.
+ * Stub the endpoints every cloud boot path mocks the same way. Callers layer
+ * their own workspace, billing or flow routes on top; Playwright matches the
+ * most recently registered handler first, so those overrides still win.
  */
-export async function mockCloudBoot(
+export async function mockCloudBootRoutes(
   page: Page,
-  { features, settings = {} }: CloudBootOptions
+  { features, settings = {}, objectInfo }: CloudBootOptions
 ) {
   await page.route('**/api/features', (r) => r.fulfill(jsonRoute(features)))
   await page.route('**/api/system_stats', (r) =>
@@ -35,13 +38,11 @@ export async function mockCloudBoot(
       })
     )
   )
-  await page.route('**/api/user', (r) =>
-    r.fulfill(jsonRoute({ status: 'active' }))
-  )
   await page.route('**/api/settings', (r) => r.fulfill(jsonRoute(settings)))
   await page.route('**/api/userdata**', (r) => r.fulfill(jsonRoute([])))
   await page.route('**/api/extensions', (r) => r.fulfill(jsonRoute([])))
-  await page.route('**/api/object_info', (r) => r.fulfill(jsonRoute({})))
+  if (objectInfo !== 'server')
+    await page.route('**/api/object_info', (r) => r.fulfill(jsonRoute({})))
   await page.route('**/api/global_subgraphs', (r) => r.fulfill(jsonRoute({})))
   await page.route('**/api/i18n', (r) => r.fulfill(jsonRoute({})))
   await page.route('**/api/auth/session', (r) =>
@@ -51,14 +52,36 @@ export async function mockCloudBoot(
 }
 
 /**
+ * Stub the core endpoints the cloud app hits on boot so a raw `page` reaches the
+ * working app without falling through to the OSS devtools backend. Specs layer
+ * their own feature- or flow-specific routes on top.
+ */
+export async function mockCloudBoot(page: Page, options: CloudBootOptions) {
+  await mockCloudBootRoutes(page, options)
+  await page.route('**/api/user', (r) =>
+    r.fulfill(jsonRoute({ status: 'active' }))
+  )
+  await mockWorkspace(page, workspace('personal', 'owner'), [])
+}
+
+/**
+ * Pre-selects the multi-user server profile so the post-auth root guard lands
+ * on the app instead of `/user-select`. Both the signed-in `bootCloud` and the
+ * signed-out onboarding fixtures need it once a spec authenticates.
+ */
+export async function preselectCloudUser(page: Page) {
+  await page.addInitScript(() => {
+    localStorage.setItem('Comfy.userId', 'test-user-e2e')
+  })
+}
+
+/**
  * Mock Firebase auth and pre-select the e2e user so the cloud app boots
- * signed-in. The signed-in email (`e2e@test.comfy.org`) is what the
+ * signed-in. The signed-in email (`CLOUD_SELF_EMAIL`) is what the
  * original-owner gate matches against the members self-row.
  */
 export async function bootCloud(page: Page) {
   const auth = new CloudAuthHelper(page)
   await auth.mockAuth()
-  await page.addInitScript(() => {
-    localStorage.setItem('Comfy.userId', 'test-user-e2e')
-  })
+  await preselectCloudUser(page)
 }

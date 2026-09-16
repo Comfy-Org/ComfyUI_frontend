@@ -2,13 +2,14 @@
 /* eslint-disable testing-library/prefer-user-event -- fireEvent needed: fake timers require fireEvent for mouseEnter/mouseLeave */
 import { fireEvent, render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { defineComponent, nextTick } from 'vue'
-import type * as RekaUi from 'reka-ui'
+import { createI18n } from 'vue-i18n'
 
 import './testUtils/mockTanstackVirtualizer'
 
 import type { JobGroup, JobListItem } from '@/composables/queue/useJobList'
+import enMessages from '@/locales/en/main.json' with { type: 'json' }
 
 import JobAssetsList from './JobAssetsList.vue'
 
@@ -24,17 +25,23 @@ const hoisted = vi.hoisted(() => ({
   }
 }))
 
-vi.mock('@/components/queue/job/JobDetailsPopover.vue', () => ({
-  default: hoisted.jobDetailsPopoverStub
-}))
+vi.mock<unknown>(
+  import('@/components/queue/job/JobDetailsPopover.vue'),
+  () => ({
+    default: hoisted.jobDetailsPopoverStub
+  })
+)
 
-vi.mock('reka-ui', async (importOriginal) => {
-  const actual = await importOriginal<typeof RekaUi>()
+vi.mock<unknown>(import('reka-ui'), async () => {
   const { computed, defineComponent, h, inject, provide } = await import('vue')
   const popoverOpenKey = Symbol('popoverOpen')
 
   return {
-    ...actual,
+    useForwardPropsEmits: (props: object) => props,
+    Primitive: defineComponent({
+      name: 'Primitive',
+      template: '<button><slot /></button>'
+    }),
     PopoverContent: defineComponent({
       name: 'PopoverContent',
       props: {
@@ -135,26 +142,17 @@ const AssetsListItemStub = defineComponent({
   `
 })
 
-vi.mock('vue-i18n', () => {
-  return {
-    createI18n: () => ({
-      global: {
-        t: (key: string) => key,
-        te: () => true,
-        d: (value: string) => value
-      }
-    }),
-    useI18n: () => ({
-      t: (key: string) => key
-    })
-  }
+const i18n = createI18n({
+  legacy: false,
+  locale: 'en',
+  messages: { en: enMessages }
 })
 
 type TestPreviewOutput = {
+  filename: string
+  mediaType: string
   url: string
   previewUrl: string
-  isImage: boolean
-  isVideo: boolean
 }
 
 type TestTaskRef = {
@@ -176,10 +174,10 @@ const createPreviewOutput = (
 ): TestPreviewOutput => {
   const url = `/api/view/${filename}`
   return {
+    filename,
+    mediaType,
     url,
-    previewUrl: mediaType === 'images' ? `${url}?res=512` : url,
-    isImage: mediaType === 'images',
-    isVideo: mediaType === 'video'
+    previewUrl: mediaType === 'images' ? `${url}?res=512` : url
   }
 }
 
@@ -225,6 +223,7 @@ function renderJobAssetsList({
     },
     attrs,
     global: {
+      plugins: [i18n],
       stubs: {
         teleport: true,
         AssetsListItem: AssetsListItemStub
@@ -234,11 +233,6 @@ function renderJobAssetsList({
 
   return { ...result, user }
 }
-
-afterEach(() => {
-  vi.useRealTimers()
-  vi.restoreAllMocks()
-})
 
 describe('JobAssetsList', () => {
   it('renders grouped headers alongside job rows', () => {
@@ -379,14 +373,14 @@ describe('JobAssetsList', () => {
     const jobRow = container.querySelector(`[data-job-id="${job.id}"]`)!
     await fireEvent.mouseEnter(jobRow)
 
-    await fireEvent.click(screen.getByText('menuLabels.View'))
+    await fireEvent.click(screen.getByText('View'))
     await nextTick()
 
     expect(onViewItem).toHaveBeenCalledWith(job)
   })
 
   it('shows and hides the job details popover with hover delays', async () => {
-    vi.useFakeTimers()
+    vi.useFakeTimers({ shouldAdvanceTime: false })
     const job = buildJob()
     const { container } = renderJobAssetsList({ jobs: [job] })
 
@@ -416,7 +410,7 @@ describe('JobAssetsList', () => {
   })
 
   it('keeps the job details popover open while hovering the popover', async () => {
-    vi.useFakeTimers()
+    vi.useFakeTimers({ shouldAdvanceTime: false })
     const job = buildJob()
     const { container } = renderJobAssetsList({ jobs: [job] })
 
@@ -449,7 +443,6 @@ describe('JobAssetsList', () => {
   })
 
   it('anchors the popover to the active row through Reka', async () => {
-    vi.useFakeTimers()
     const job = buildJob()
     const { container } = renderJobAssetsList({ jobs: [job] })
 
@@ -469,7 +462,6 @@ describe('JobAssetsList', () => {
   })
 
   it('clears the previous popover when hovering a new row briefly and leaving the list', async () => {
-    vi.useFakeTimers()
     const firstJob = buildJob({ id: 'job-1' })
     const secondJob = buildJob({ id: 'job-2', title: 'Job 2' })
     const { container } = renderJobAssetsList({
@@ -499,7 +491,6 @@ describe('JobAssetsList', () => {
   })
 
   it('updates the visible popover without closing when hovering another row', async () => {
-    vi.useFakeTimers()
     const firstJob = buildJob({ id: 'job-1' })
     const secondJob = buildJob({ id: 'job-2', title: 'Job 2' })
     const { container } = renderJobAssetsList({
@@ -537,7 +528,6 @@ describe('JobAssetsList', () => {
   })
 
   it('does not show details if the hovered row disappears before the show delay ends', async () => {
-    vi.useFakeTimers()
     const job = buildJob()
     const { container, rerender } = renderJobAssetsList({ jobs: [job] })
 

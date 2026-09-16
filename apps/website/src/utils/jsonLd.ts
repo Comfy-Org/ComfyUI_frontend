@@ -57,7 +57,10 @@ export function pageContext(
 ): PageContext & { url: string } {
   return {
     siteUrl: siteUrlFrom(site),
-    locale: currentLocale === 'zh-CN' ? 'zh-CN' : 'en',
+    locale:
+      currentLocale === 'zh-CN' || currentLocale === 'ja'
+        ? currentLocale
+        : 'en',
     url: absoluteUrl(site, pathname)
   }
 }
@@ -140,6 +143,21 @@ export function itemListNode(
       position: index + 1,
       url: item.url,
       ...(item.name ? { name: item.name } : {})
+    }))
+  }
+}
+
+export function faqPageNode(
+  pageUrl: string,
+  items: readonly { question: string; answer: string }[]
+): JsonLdNode {
+  return {
+    '@type': 'FAQPage',
+    '@id': jsonLdId(pageUrl, 'faq'),
+    mainEntity: items.map((item) => ({
+      '@type': 'Question',
+      name: item.question,
+      acceptedAnswer: { '@type': 'Answer', text: item.answer }
     }))
   }
 }
@@ -398,10 +416,17 @@ export interface VideoObjectInput {
   name: string
   description: string
   thumbnailUrl: string
-  contentUrl: string
-  uploadDate: string
+  /** Self-hosted media URL; omit for embed-only videos (set embedUrl instead). */
+  contentUrl?: string
+  /** ISO 8601 date; required by VideoObjectInput but callers without a
+   * verified upload date should still omit `uploadDate` from the node —
+   * see videoObjectNode's `uploadDate` handling below. */
+  uploadDate?: string
   locale: Locale
   embedUrl?: string
+  /** ISO 8601 duration (e.g. "PT4M32S"); omit when unverified rather than
+   * estimating — see data/customerVideos.ts `isoDuration`. */
+  duration?: string
 }
 
 export function videoObjectNode(input: VideoObjectInput): JsonLdNode {
@@ -414,6 +439,7 @@ export function videoObjectNode(input: VideoObjectInput): JsonLdNode {
     contentUrl: input.contentUrl,
     embedUrl: input.embedUrl,
     uploadDate: input.uploadDate,
+    duration: input.duration,
     inLanguage: input.locale,
     publisher: { '@id': organizationId(input.siteUrl) },
     isPartOf: { '@id': jsonLdId(input.pageUrl, 'webpage') }

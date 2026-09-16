@@ -1,6 +1,6 @@
 import { render, screen, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { defineComponent, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
@@ -148,10 +148,6 @@ async function openPopover(user: TestUser, triggerName: string) {
 }
 
 describe('FormDropdownMenuActions', () => {
-  beforeEach(() => {
-    popoverHide.mockClear()
-  })
-
   describe('Search', () => {
     it('binds search input to v-model on initial render', () => {
       renderMenu({ searchQuery: 'seed' })

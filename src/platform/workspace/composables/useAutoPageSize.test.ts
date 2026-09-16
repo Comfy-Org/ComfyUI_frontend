@@ -65,8 +65,6 @@ function runInScope(container: Ref<HTMLElement | null>, min?: number) {
 describe('useAutoPageSize', () => {
   beforeEach(() => {
     resizeObserverState.callback = null
-    resizeObserverState.observe.mockClear()
-    resizeObserverState.disconnect.mockClear()
   })
 
   it('fits as many whole rows as the container height allows', () => {

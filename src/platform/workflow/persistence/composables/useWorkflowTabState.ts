@@ -8,6 +8,7 @@
 import type { ActivePathPointer, OpenPathsPointer } from '../base/draftTypes'
 import { getWorkspaceId } from '../base/storageKeys'
 import {
+  clearActivePath,
   readActivePath,
   readOpenPaths,
   writeActivePath,
@@ -55,6 +56,14 @@ export function useWorkflowTabState() {
     writeActivePath(clientId, pointer)
   }
 
+  /** Forgets the active workflow, so nothing is restored on the next boot. */
+  function clearActivePathPointer(): void {
+    const clientId = getClientId()
+    if (!clientId) return
+
+    clearActivePath(clientId, getWorkspaceId())
+  }
+
   /**
    * Gets the open workflow paths for the current tab.
    * Returns null if no pointer exists or workspaceId doesn't match.
@@ -89,6 +98,7 @@ export function useWorkflowTabState() {
   return {
     getActivePath,
     setActivePath,
+    clearActivePathPointer,
     getOpenPaths,
     setOpenPaths
   }

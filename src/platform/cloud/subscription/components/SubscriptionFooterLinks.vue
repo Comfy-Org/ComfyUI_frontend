@@ -1,15 +1,23 @@
 <template>
-  <div
-    class="flex items-center justify-between border-t border-interface-stroke pt-3"
-  >
+  <div class="flex items-center justify-between pt-3 pb-6">
     <div class="flex gap-2">
       <Button
+        v-if="showUsageActivity"
         variant="muted-textonly"
         class="text-xs text-text-secondary"
-        @click="handleLearnMoreClick"
+        @click="handleFullUsageActivity"
       >
-        <i class="pi pi-question-circle text-xs text-text-secondary" />
-        {{ $t('subscription.learnMore') }}
+        <i class="pi pi-external-link text-xs text-text-secondary" />
+        {{ $t('subscription.fullUsageActivity') }}
+      </Button>
+      <Button
+        v-if="showPlansLink"
+        variant="muted-textonly"
+        class="text-xs text-text-secondary"
+        @click="$emit('viewPlans')"
+      >
+        <i class="pi pi-external-link text-xs text-text-secondary" />
+        {{ $t('subscription.plansAndPricing') }}
       </Button>
       <Button
         variant="muted-textonly"
@@ -31,7 +39,7 @@
     </div>
 
     <Button
-      v-if="showInvoiceHistory"
+      v-if="!isCloud && showInvoiceHistory"
       variant="muted-textonly"
       class="text-xs text-text-secondary"
       @click="handleInvoiceHistory"
@@ -46,22 +54,39 @@
 import Button from '@/components/ui/button/Button.vue'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useExternalLink } from '@/composables/useExternalLink'
+import { getComfyPlatformBaseUrl } from '@/config/comfyApi'
 import { useSubscriptionActions } from '@/platform/cloud/subscription/composables/useSubscriptionActions'
+import { isCloud } from '@/platform/distribution/types'
 
-const { showInvoiceHistory = true } = defineProps<{
+const {
+  showInvoiceHistory = true,
+  showUsageActivity = true,
+  showPlansLink = false
+} = defineProps<{
   showInvoiceHistory?: boolean
+  showUsageActivity?: boolean
+  showPlansLink?: boolean
 }>()
+
+defineEmits<{ viewPlans: [] }>()
 
 const { buildDocsUrl, docsPaths } = useExternalLink()
 
 const { manageSubscription } = useBillingContext()
 
-const { isLoadingSupport, handleMessageSupport, handleLearnMoreClick } =
-  useSubscriptionActions()
+const { isLoadingSupport, handleMessageSupport } = useSubscriptionActions()
 
 async function handleInvoiceHistory() {
   if (!showInvoiceHistory) return
   await manageSubscription()
+}
+
+function handleFullUsageActivity() {
+  window.open(
+    `${getComfyPlatformBaseUrl()}/profile/usage`,
+    '_blank',
+    'noopener'
+  )
 }
 
 function handleOpenPartnerNodesInfo() {

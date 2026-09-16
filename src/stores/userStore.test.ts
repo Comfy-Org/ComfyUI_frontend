@@ -1,23 +1,16 @@
-import { createPinia, setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import { useUserStore } from './userStore'
 
 const getUserConfig = vi.fn()
 
-vi.mock('@/scripts/api', () => ({
+vi.mock<unknown>(import('@/scripts/api'), () => ({
   api: {
     getUserConfig: (...args: unknown[]) => getUserConfig(...args)
   }
 }))
 
 describe('userStore', () => {
-  beforeEach(() => {
-    setActivePinia(createPinia())
-    getUserConfig.mockReset()
-    localStorage.clear()
-  })
-
   describe('initialize', () => {
     it('fetches user config on first call', async () => {
       getUserConfig.mockResolvedValue({})

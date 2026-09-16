@@ -1,5 +1,4 @@
-import { createPinia, setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import { useDialogStore } from '@/stores/dialogStore'
 
@@ -7,10 +6,6 @@ import TypeformDialogContent from './TypeformDialogContent.vue'
 import { openTypeformDialog } from './openTypeformDialog'
 
 describe('openTypeformDialog', () => {
-  beforeEach(() => {
-    setActivePinia(createPinia())
-  })
-
   it('opens the form embed in a Reka dialog with the given id and hidden fields', () => {
     const showDialog = vi.spyOn(useDialogStore(), 'showDialog')
 

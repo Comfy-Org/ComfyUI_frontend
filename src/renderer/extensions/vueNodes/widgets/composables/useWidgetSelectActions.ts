@@ -32,7 +32,7 @@ export function useWidgetSelectActions(options: UseWidgetSelectActionsOptions) {
         : dropdownItems.value.find((item) => item.id === id)?.name
 
     modelValue.value = name
-    useWorkflowStore().activeWorkflow?.changeTracker?.captureCanvasState()
+    useWorkflowStore().activeWorkflow?.changeTracker.captureCanvasState()
   }
 
   async function uploadFile(
@@ -62,8 +62,7 @@ export function useWidgetSelectActions(options: UseWidgetSelectActionsOptions) {
     const data = await resp.json()
 
     if (formFields.type === 'input' || (!formFields.type && !isPasted)) {
-      const assetsStore = useAssetsStore()
-      await assetsStore.updateInputs()
+      await useAssetsStore().inputAssets.invalidate()
     }
 
     return data.subfolder ? `${data.subfolder}/${data.name}` : data.name
@@ -80,7 +79,7 @@ export function useWidgetSelectActions(options: UseWidgetSelectActionsOptions) {
 
   const handleFilesUpdate = wrapWithErrorHandlingAsync(
     async (files: File[]) => {
-      if (!files || files.length === 0) return
+      if (files.length === 0) return
 
       const uploadedPaths = await uploadFiles(files)
 
@@ -105,7 +104,7 @@ export function useWidgetSelectActions(options: UseWidgetSelectActionsOptions) {
         widget.callback(uploadedPaths[0])
       }
 
-      useWorkflowStore().activeWorkflow?.changeTracker?.captureCanvasState()
+      useWorkflowStore().activeWorkflow?.changeTracker.captureCanvasState()
     }
   )
 

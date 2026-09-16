@@ -36,8 +36,7 @@ export function filterByOwnership(ownership: OwnershipOption) {
     // is_immutable is optional; an asset omitting it counts as owned so it
     // never vanishes from both ownership views.
     if (ownership === 'my-models') return asset.is_immutable !== true
-    if (ownership === 'public-models') return asset.is_immutable === true
-    return true
+    return asset.is_immutable === true
   }
 }
 

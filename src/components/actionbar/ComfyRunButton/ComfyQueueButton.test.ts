@@ -1,38 +1,36 @@
-import { createTestingPinia } from '@pinia/testing'
+import userEvent from '@testing-library/user-event'
+import { render, screen } from '@testing-library/vue'
+import { getActivePinia } from 'pinia'
+import PrimeVue from 'primevue/config'
+import Tooltip from 'primevue/tooltip'
 import { describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
-import type {
-  JobListItem,
-  JobStatus
-} from '@/platform/remote/comfyui/jobs/jobTypes'
 import { useMissingMediaStore } from '@/platform/missingMedia/missingMediaStore'
 import type { MissingMediaCandidate } from '@/platform/missingMedia/types'
 import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
 import type { MissingModelCandidate } from '@/platform/missingModel/types'
 import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
+import type {
+  JobListItem,
+  JobStatus
+} from '@/platform/remote/comfyui/jobs/jobTypes'
 import { useCommandStore } from '@/stores/commandStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useQueueSettingsStore } from '@/stores/queueSettingsStore'
 import { TaskItemImpl, useQueueStore } from '@/stores/queueStore'
-import { render, screen } from '@testing-library/vue'
-import userEvent from '@testing-library/user-event'
 
 import ComfyQueueButton from './ComfyQueueButton.vue'
+vi.mock(import('firebase/auth'))
+vi.mock(import('vuefire'), () => ({ useFirebaseAuth: vi.fn() }))
 
-vi.mock('@/platform/distribution/types', () => ({
+vi.mock(import('@/platform/distribution/types'), () => ({
   isCloud: false
 }))
 
-vi.mock('@/platform/telemetry', () => ({
+vi.mock(import('@/platform/telemetry'), () => ({
   useTelemetry: () => null
-}))
-
-vi.mock('@/stores/workspaceStore', () => ({
-  useWorkspaceStore: () => ({
-    shiftDown: false
-  })
 }))
 
 const BatchCountEditStub = {
@@ -46,6 +44,7 @@ const i18n = createI18n({
     en: {
       menu: {
         run: 'Run',
+        runOptions: 'Run options',
         disabledTooltip: 'Disabled tooltip',
         onChange: 'On Change',
         onChangeTooltip: 'On change tooltip',
@@ -56,6 +55,15 @@ const i18n = createI18n({
         runWorkflow: 'Run workflow',
         runWorkflowFront: 'Run workflow front',
         runWorkflowMissingResources: 'Workflow contains missing resources'
+      },
+      subscription: {
+        paymentRecovery: {
+          ownerRunLabel: 'Update payment to run',
+          memberRunLabel: 'Run',
+          ownerRunTooltip: 'Update payment to restore this subscription',
+          memberRunTooltip:
+            'Ask your workspace owner to restore this subscription'
+        }
       }
     }
   }
@@ -136,18 +144,19 @@ const stubs = {
   DropdownMenuItem: { template: '<div><slot /></div>' }
 }
 
-function renderQueueButton() {
-  const pinia = createTestingPinia({
-    createSpy: vi.fn,
-    stubActions: (actionName) => actionName !== 'recordPromptError'
-  })
+function renderQueueButton(
+  props: { paymentRecoveryLock?: 'owner' | 'member' } = {}
+) {
+  const pinia = getActivePinia()!
+  vi.mocked(useCommandStore().execute).mockResolvedValue(undefined)
   const user = userEvent.setup()
 
   const result = render(ComfyQueueButton, {
+    props,
     global: {
-      plugins: [pinia, i18n],
+      plugins: [PrimeVue, pinia, i18n],
       directives: {
-        tooltip: () => {}
+        tooltip: Tooltip
       },
       stubs
     }
@@ -165,6 +174,34 @@ describe('ComfyQueueButton', () => {
     expect(controls[1]).toHaveAttribute('data-testid', 'queue-button')
   })
 
+  it.for([
+    {
+      paymentRecoveryLock: 'owner',
+      label: 'Update payment to run',
+      variant: 'subscribe'
+    },
+    { paymentRecoveryLock: 'member', label: 'Run', variant: 'secondary' }
+  ] as const)(
+    'keeps the queue group mounted for a paused $paymentRecoveryLock and blocks execution',
+    async ({ paymentRecoveryLock, label, variant }) => {
+      useQueueSettingsStore().mode = 'change'
+      const { user, emitted } = renderQueueButton({ paymentRecoveryLock })
+      const commandStore = useCommandStore()
+
+      expect(screen.getByTestId('batch-count-edit')).toBeInTheDocument()
+      expect(screen.getByTestId('queue-mode-menu-trigger')).toBeDisabled()
+      expect(useQueueSettingsStore().mode).toBe('disabled')
+      const button = screen.getByTestId('queue-button')
+      expect(button).toHaveTextContent(label)
+      expect(button).toHaveAttribute('data-variant', variant)
+
+      await user.click(button)
+
+      expect(commandStore.execute).not.toHaveBeenCalled()
+      expect(emitted()).toHaveProperty('paymentRecoveryClick')
+    }
+  )
+
   it.for(missingResourceCases)(
     'clears the warning icon when missing $label are resolved',
     async ({ setMissing, clearMissing }) => {
@@ -181,6 +218,21 @@ describe('ComfyQueueButton', () => {
       expect(getQueueButtonIcon()).toHaveClass('icon-[lucide--play]')
     }
   )
+
+  it('keeps Run enabled with the missing-resource warning and tooltip', async () => {
+    const { user } = renderQueueButton()
+    useMissingModelStore().missingModelCandidates = [missingModelCandidate]
+    await nextTick()
+
+    const queueButton = screen.getByTestId('queue-button')
+    expect(queueButton).toBeEnabled()
+
+    await user.hover(queueButton)
+
+    expect(await screen.findByRole('tooltip')).toHaveTextContent(
+      'Workflow contains missing resources'
+    )
+  })
 
   it('keeps the play icon for non-missing errors', async () => {
     renderQueueButton()

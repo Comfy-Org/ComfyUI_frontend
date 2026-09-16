@@ -1,29 +1,113 @@
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { fromPartial } from '@total-typescript/shoehorn'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+
+import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 
 import type { BillingTelemetryEvent } from '../../types'
 import { TelemetryEvents } from '../../types'
 import { DatadogRumTelemetryProvider } from './DatadogRumTelemetryProvider'
 
-const { addAction, addDurationVital, getInternalContext } = vi.hoisted(() => ({
+const {
+  addAction,
+  addDurationVital,
+  addFeatureFlagEvaluation,
+  getInternalContext,
+  setUser,
+  clearUser
+} = vi.hoisted(() => ({
   addAction: vi.fn(),
   addDurationVital: vi.fn(),
-  getInternalContext: vi.fn()
+  addFeatureFlagEvaluation: vi.fn(),
+  getInternalContext: vi.fn(),
+  setUser: vi.fn(),
+  clearUser: vi.fn()
 }))
 
-vi.mock('@datadog/browser-rum', () => ({
-  datadogRum: { addAction, addDurationVital, getInternalContext }
+vi.mock<unknown>(import('@datadog/browser-rum'), () => ({
+  datadogRum: {
+    addAction,
+    addDurationVital,
+    addFeatureFlagEvaluation,
+    getInternalContext,
+    setUser,
+    clearUser
+  }
 }))
+
+vi.mock(import('@/composables/auth/useCurrentUser'), () => ({
+  useCurrentUser: vi.fn()
+}))
+
+const onUserLogout = vi.fn<(callback: () => void) => void>()
+
+beforeEach(() => {
+  vi.mocked(useCurrentUser).mockReturnValue(
+    fromPartial({
+      resolvedUserInfo: { value: { id: 'restored-user' } },
+      userEmail: { value: 'restored@example.com' },
+      onUserLogout
+    })
+  )
+})
 
 const workflowExecutionIntent = {
   trigger_source: 'keybinding'
 } as const
 
-afterEach(() => {
-  vi.restoreAllMocks()
-  vi.clearAllMocks()
-})
-
 describe('DatadogRumTelemetryProvider', () => {
+  it('identifies restored sessions and replaces identity on account changes', () => {
+    const provider = new DatadogRumTelemetryProvider()
+    provider.trackUserLoggedIn()
+    provider.trackAuth({ user_id: 'new-user', email: 'new@example.com' })
+    provider.trackAuth({ user_id: 'user-without-email' })
+
+    expect(setUser).toHaveBeenNthCalledWith(1, {
+      id: 'restored-user',
+      email: 'restored@example.com'
+    })
+    expect(setUser).toHaveBeenNthCalledWith(2, {
+      id: 'new-user',
+      email: 'new@example.com'
+    })
+    expect(setUser).toHaveBeenNthCalledWith(3, { id: 'user-without-email' })
+    expect(onUserLogout).toHaveBeenCalledOnce()
+    onUserLogout.mock.calls[0][0]()
+    expect(clearUser).toHaveBeenCalledOnce()
+  })
+
+  it('does not identify an unresolved user or send email without an account ID', () => {
+    vi.mocked(useCurrentUser).mockReturnValue(
+      fromPartial({
+        resolvedUserInfo: { value: null },
+        userEmail: { value: null },
+        onUserLogout
+      })
+    )
+    const provider = new DatadogRumTelemetryProvider()
+    provider.trackUserLoggedIn()
+    provider.trackAuth({ email: 'unresolved@example.com' })
+
+    expect(setUser).not.toHaveBeenCalled()
+    expect(onUserLogout).not.toHaveBeenCalled()
+  })
+
+  it('records fetch timeouts as RUM actions', () => {
+    new DatadogRumTelemetryProvider().trackFetchTimeout({
+      route: '/userdata/:resource',
+      method: 'GET',
+      timeout_ms: 60_000
+    })
+
+    expect(addAction).toHaveBeenCalledExactlyOnceWith(
+      TelemetryEvents.FETCH_TIMEOUT,
+      {
+        route: '/userdata/:resource',
+        method: 'GET',
+        timeout_ms: 60_000
+      }
+    )
+  })
+
   it('records terminal unified auth retry outcomes without request data', () => {
     new DatadogRumTelemetryProvider().trackUnifiedAuthRetry({
       transport: 'axios',
@@ -43,6 +127,45 @@ describe('DatadogRumTelemetryProvider', () => {
     )
   })
 
+  it('records proactive unified refresh lifecycle outcomes', () => {
+    new DatadogRumTelemetryProvider().trackUnifiedAuthRefresh({
+      outcome: 'retries_exhausted',
+      retry_count: 3
+    })
+
+    expect(addAction).toHaveBeenCalledExactlyOnceWith(
+      TelemetryEvents.UNIFIED_AUTH_REFRESH_FAILED,
+      { outcome: 'retries_exhausted', retry_count: 3 }
+    )
+  })
+
+  it('records image load failures by source', () => {
+    new DatadogRumTelemetryProvider().trackImageLoadFailed({
+      source: 'node_image_preview'
+    })
+
+    expect(addAction).toHaveBeenCalledExactlyOnceWith(
+      TelemetryEvents.IMAGE_LOAD_FAILED,
+      { source: 'node_image_preview' }
+    )
+  })
+
+  it.for([
+    ['extension.manager:supports-v4', 'extension_manager_supports_v4'],
+    ['rollout(beta)[staff]', 'rollout_beta__staff_'],
+    [
+      'a+b=c&&d||e>f<g!h{i}^j"k“l”~m*n?o\\p',
+      'a_b_c__d__e_f_g_h_i__j_k_l__m_n_o_p'
+    ]
+  ])('normalizes feature flag key %s', ([key, normalizedKey]) => {
+    new DatadogRumTelemetryProvider().trackFeatureFlagEvaluation(key, true)
+
+    expect(addFeatureFlagEvaluation).toHaveBeenCalledExactlyOnceWith(
+      normalizedKey,
+      true
+    )
+  })
+
   it('records the same canonical billing name and context as PostHog', () => {
     const event: BillingTelemetryEvent = {
       operation: 'operation',
@@ -54,7 +177,8 @@ describe('DatadogRumTelemetryProvider', () => {
       cycle: 'monthly',
       checkout_type: 'new',
       payment_intent_source: 'subscribe_to_run',
-      failure_category: 'provider_decline'
+      failure_category: 'provider_decline',
+      duration_ms: 4200
     }
 
     new DatadogRumTelemetryProvider().trackBillingEvent(event)
@@ -156,7 +280,7 @@ describe('DatadogRumTelemetryProvider', () => {
         ...workflowExecutionIntent
       },
       duration: 20,
-      context: {
+      context: () => ({
         success: false,
         failure_reason: 'submission_rejected',
         terminal_stage: 'submission',
@@ -164,7 +288,7 @@ describe('DatadogRumTelemetryProvider', () => {
         workflow_ended_at_unix_ms: performance.timeOrigin + 62,
         submission_duration_ms: 20,
         trigger_source: 'keybinding'
-      }
+      })
     },
     {
       name: 'queue wait',
@@ -177,7 +301,7 @@ describe('DatadogRumTelemetryProvider', () => {
         ...workflowExecutionIntent
       },
       duration: 40,
-      context: {
+      context: () => ({
         success: false,
         failure_reason: 'execution_failed',
         terminal_stage: 'queue_wait',
@@ -187,7 +311,7 @@ describe('DatadogRumTelemetryProvider', () => {
         submission_duration_ms: 20,
         queue_wait_duration_ms: 20,
         trigger_source: 'keybinding'
-      }
+      })
     },
     {
       name: 'execution',
@@ -201,7 +325,7 @@ describe('DatadogRumTelemetryProvider', () => {
         ...workflowExecutionIntent
       },
       duration: 100,
-      context: {
+      context: () => ({
         success: false,
         failure_reason: 'execution_failed',
         terminal_stage: 'execution',
@@ -213,7 +337,7 @@ describe('DatadogRumTelemetryProvider', () => {
         queue_wait_duration_ms: 30,
         execution_duration_ms: 50,
         trigger_source: 'keybinding'
-      }
+      })
     }
   ] as const)(
     'records a failed workflow vital ending during $name',
@@ -225,7 +349,7 @@ describe('DatadogRumTelemetryProvider', () => {
       expect(addDurationVital).toHaveBeenCalledWith('workflow_execution', {
         startTime: performance.timeOrigin + 42,
         duration,
-        context
+        context: context()
       })
     }
   )

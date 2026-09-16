@@ -1,6 +1,11 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { fromPartial } from '@total-typescript/shoehorn'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
+import { useNodeOutputStore } from '@/stores/nodeOutputStore'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { markRaw, ref } from 'vue'
+
+vi.mock(import('@vueuse/router'), () => ({ useRouteHash: () => ref('') }))
 
 import {
   createNestedSubgraphs,
@@ -12,32 +17,21 @@ import {
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { ExportedSubgraph } from '@/lib/litegraph/src/types/serialisation'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
+import type { ComfyApi } from '@/scripts/api'
+import type { ComfyApp } from '@/scripts/app'
 import { validateComfyWorkflow } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { useQueueSettingsStore } from '@/stores/queueSettingsStore'
 
 const mockAssert = vi.hoisted(() => vi.fn())
 
-vi.mock('@/base/assert', () => ({
+vi.mock(import('@/base/assert'), () => ({
   assert: mockAssert
 }))
 
-const mockNodeOutputStore = vi.hoisted(() => ({
-  snapshotOutputs: vi.fn(() => ({})),
-  restoreOutputs: vi.fn()
-}))
-
-const mockSubgraphNavigationStore = vi.hoisted(() => ({
-  exportState: vi.fn(() => []),
-  restoreState: vi.fn()
-}))
-
-const mockWorkflowStore = vi.hoisted(() => ({
-  activeWorkflow: null as { changeTracker: unknown } | null,
-  getWorkflowByPath: vi.fn()
-}))
-
-vi.mock('@/scripts/app', () => ({
-  app: {
+vi.mock(import('@/scripts/app'), () => ({
+  app: fromPartial<ComfyApp>({
+    nodeOutputs: {},
+    nodePreviewImages: {},
     graph: {},
     rootGraph: {
       serialize: vi.fn(() => ({
@@ -59,28 +53,15 @@ vi.mock('@/scripts/app', () => ({
       autoQueueEnabled: false,
       autoQueueMode: 'instant'
     }
-  }
+  })
 }))
 
-vi.mock('@/scripts/api', () => ({
-  api: {
+vi.mock(import('@/scripts/api'), () => ({
+  api: fromPartial<ComfyApi>({
     dispatchCustomEvent: vi.fn(),
     addEventListener: vi.fn(),
     removeEventListener: vi.fn()
-  }
-}))
-
-vi.mock('@/stores/nodeOutputStore', () => ({
-  useNodeOutputStore: vi.fn(() => mockNodeOutputStore)
-}))
-
-vi.mock('@/stores/subgraphNavigationStore', () => ({
-  useSubgraphNavigationStore: vi.fn(() => mockSubgraphNavigationStore)
-}))
-
-vi.mock('@/platform/workflow/management/stores/workflowStore', () => ({
-  ComfyWorkflow: class {},
-  useWorkflowStore: vi.fn(() => mockWorkflowStore)
+  })
 }))
 
 import { app } from '@/scripts/app'
@@ -123,8 +104,10 @@ function createTracker(initialState?: ComfyWorkflowJSON): ChangeTracker {
   const workflow = {
     path: `/test/workflow-${++workflowPathCounter}.json`
   } as never
-  const tracker = new ChangeTracker(workflow, state)
-  mockWorkflowStore.activeWorkflow = { changeTracker: tracker }
+  const tracker = markRaw(new ChangeTracker(workflow, state))
+  useWorkflowStore().activeWorkflow = fromPartial({
+    changeTracker: tracker
+  })
   return tracker
 }
 
@@ -159,8 +142,7 @@ async function createSubgraphState(
     subgraph.addOutput('output', '*')
     const host = createTestSubgraphNode(subgraph, { id: 100 + index })
     rootGraph.add(host)
-    const interior = new LGraphNode('InteriorNode')
-    interior.type = 'InteriorNode'
+    const interior = new LGraphNode('InteriorNode', 'InteriorNode')
     interior.pos = [0, 0]
     interior.setSize([100, 50])
     interior.addWidget('number', 'value', 1 + index, () => undefined)
@@ -218,25 +200,20 @@ function omitOptionalSubgraphCollections(state: ComfyWorkflowJSON) {
 
 describe('ChangeTracker', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
-    vi.mocked(api.dispatchCustomEvent).mockReset()
-    vi.useFakeTimers()
-    setActivePinia(createTestingPinia({ stubActions: false }))
     resetSubgraphFixtureState()
     nodeIdCounter = 0
     ChangeTracker.isLoadingGraph = false
-    mockWorkflowStore.activeWorkflow = null
-    mockWorkflowStore.getWorkflowByPath.mockReturnValue(null)
-    vi.mocked(app.rootGraph.serialize).mockReset()
+    ChangeTracker.resetCheckStateWarningForTest()
+    useWorkflowStore().activeWorkflow = null
+    vi.mocked(useWorkflowStore().getWorkflowByPath).mockReturnValue(null)
     mockCanvasState(createState())
     useQueueSettingsStore().mode = 'change'
     app.ui.autoQueueEnabled = false
     app.ui.autoQueueMode = 'instant'
-  })
-
-  afterEach(() => {
-    vi.clearAllTimers()
-    vi.useRealTimers()
+    vi.mocked(useSubgraphNavigationStore().exportState).mockReturnValue([])
+    vi.mocked(useSubgraphNavigationStore().restoreState).mockImplementation(
+      () => {}
+    )
   })
 
   describe('captureCanvasState', () => {
@@ -282,14 +259,16 @@ describe('ChangeTracker', () => {
 
       it('is a no-op and calls assert when called on inactive tracker', () => {
         const tracker = createTracker()
-        mockWorkflowStore.activeWorkflow = { changeTracker: {} }
+        useWorkflowStore().activeWorkflow = fromPartial({
+          changeTracker: {}
+        })
 
         tracker.captureCanvasState()
 
         expect(app.rootGraph.serialize).not.toHaveBeenCalled()
         expect(mockAssert).toHaveBeenCalledWith(
           false,
-          expect.stringContaining('captureCanvasState')
+          'ChangeTracker.captureCanvasState() called on inactive tracker'
         )
       })
     })
@@ -371,6 +350,30 @@ describe('ChangeTracker', () => {
         )
       })
 
+      it('detects a change after a listener mutates the prior checkpoint', () => {
+        const initial = createState(1)
+        initial.nodes[0].widgets_values = [0]
+        const canvasState = structuredClone(initial)
+        canvasState.nodes[0].widgets_values = [1]
+        const tracker = createTracker(initial)
+        mockCanvasState(canvasState)
+        vi.mocked(api.dispatchCustomEvent).mockImplementationOnce((event) => {
+          if (event === 'graphChanged') {
+            tracker.activeState.nodes[0].widgets_values = [2]
+          }
+          return true
+        })
+
+        tracker.captureCanvasState()
+        vi.mocked(api.dispatchCustomEvent).mockClear()
+        mockCanvasState(canvasState)
+        tracker.captureCanvasState()
+
+        expect(api.dispatchCustomEvent).toHaveBeenCalledWith(
+          'autoQueueGraphChanged'
+        )
+      })
+
       it('decides execution relevance before graphChanged listeners run', () => {
         const initial = createState(1)
         initial.nodes[0].widgets_values = [1]
@@ -440,7 +443,9 @@ describe('ChangeTracker', () => {
         {
           name: 'tracker becomes inactive',
           blockSquash: () => {
-            mockWorkflowStore.activeWorkflow = { changeTracker: {} }
+            useWorkflowStore().activeWorkflow = fromPartial({
+              changeTracker: {}
+            })
           }
         },
         {
@@ -1174,8 +1179,8 @@ describe('ChangeTracker', () => {
       tracker.deactivate()
 
       expect(tracker.activeState).toEqual(changed)
-      expect(mockNodeOutputStore.snapshotOutputs).toHaveBeenCalled()
-      expect(mockSubgraphNavigationStore.exportState).toHaveBeenCalled()
+      expect(useNodeOutputStore().snapshotOutputs).toHaveBeenCalled()
+      expect(useSubgraphNavigationStore().exportState).toHaveBeenCalled()
     })
 
     it('skips captureCanvasState but still calls store during undo/redo', () => {
@@ -1185,20 +1190,22 @@ describe('ChangeTracker', () => {
       tracker.deactivate()
 
       expect(app.rootGraph.serialize).not.toHaveBeenCalled()
-      expect(mockNodeOutputStore.snapshotOutputs).toHaveBeenCalled()
+      expect(useNodeOutputStore().snapshotOutputs).toHaveBeenCalled()
     })
 
     it('is a full no-op and calls assert when called on inactive tracker', () => {
       const tracker = createTracker()
-      mockWorkflowStore.activeWorkflow = { changeTracker: {} }
+      useWorkflowStore().activeWorkflow = fromPartial({
+        changeTracker: {}
+      })
 
       tracker.deactivate()
 
       expect(app.rootGraph.serialize).not.toHaveBeenCalled()
-      expect(mockNodeOutputStore.snapshotOutputs).not.toHaveBeenCalled()
+      expect(useNodeOutputStore().snapshotOutputs).not.toHaveBeenCalled()
       expect(mockAssert).toHaveBeenCalledWith(
         false,
-        expect.stringContaining('deactivate')
+        'ChangeTracker.deactivate() called on inactive tracker'
       )
     })
   })
@@ -1217,7 +1224,9 @@ describe('ChangeTracker', () => {
     it('is a no-op when tracker is inactive', () => {
       const tracker = createTracker()
       const original = tracker.activeState
-      mockWorkflowStore.activeWorkflow = { changeTracker: {} }
+      useWorkflowStore().activeWorkflow = fromPartial({
+        changeTracker: {}
+      })
 
       tracker.prepareForSave()
 
@@ -1227,14 +1236,74 @@ describe('ChangeTracker', () => {
   })
 
   describe('checkState (deprecated)', () => {
-    it('delegates to captureCanvasState', () => {
+    it('captures each state and warns once across repeated calls', () => {
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined)
       const tracker = createTracker(createState(1))
-      const changed = createState(2)
-      mockCanvasState(changed)
+      const firstChanged = createState(2)
+      mockCanvasState(firstChanged)
 
       tracker.checkState()
 
-      expect(tracker.activeState).toEqual(changed)
+      expect(tracker.activeState).toEqual(firstChanged)
+
+      const secondChanged = createState(3)
+      mockCanvasState(secondChanged)
+      tracker.checkState()
+
+      expect(tracker.activeState).toEqual(secondChanged)
+      expect(warn).toHaveBeenCalledOnce()
+      expect(warn).toHaveBeenCalledWith(
+        'checkState() is deprecated — use captureCanvasState() instead.'
+      )
+    })
+  })
+
+  describe('keyboard shortcuts', () => {
+    function createRekaDialog() {
+      const dialog = document.createElement('div')
+      dialog.setAttribute('role', 'dialog')
+      dialog.setAttribute('data-state', 'open')
+      return dialog
+    }
+
+    function createNativeDialog() {
+      const dialog = document.createElement('dialog')
+      dialog.setAttribute('open', '')
+      return dialog
+    }
+
+    function createLegacyComfyModal() {
+      const modal = document.createElement('div')
+      modal.className = 'comfy-modal'
+      modal.style.display = 'flex'
+      return modal
+    }
+
+    it.each([
+      ['a reka dialog', createRekaDialog],
+      ['a native dialog', createNativeDialog],
+      ['a legacy comfy modal', createLegacyComfyModal]
+    ])('does not undo while %s is open', async (_kind, createModal) => {
+      const previousState = createState(1)
+      const currentState = createState(2)
+      const tracker = createTracker(currentState)
+      tracker.undoQueue.push(previousState)
+      const modal = createModal()
+      document.body.appendChild(modal)
+
+      try {
+        ChangeTracker.init()
+        window.dispatchEvent(
+          new KeyboardEvent('keydown', { key: 'z', ctrlKey: true })
+        )
+        await vi.runAllTimersAsync()
+
+        expect(app.loadGraphData).not.toHaveBeenCalled()
+        expect(tracker.activeState).toEqual(currentState)
+        expect(tracker.undoQueue).toEqual([previousState])
+      } finally {
+        document.body.removeChild(modal)
+      }
     })
   })
 })

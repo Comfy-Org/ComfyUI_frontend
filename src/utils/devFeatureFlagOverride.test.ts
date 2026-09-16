@@ -1,13 +1,8 @@
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import { getDevOverride } from '@/utils/devFeatureFlagOverride'
 
 describe('getDevOverride', () => {
-  afterEach(() => {
-    localStorage.clear()
-    vi.restoreAllMocks()
-  })
-
   it('returns undefined when no override is set', () => {
     expect(getDevOverride('some_flag')).toBeUndefined()
   })

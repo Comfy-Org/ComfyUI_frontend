@@ -15,7 +15,7 @@
  */
 
 /** @type {BundleCategory[]} */
-export const BUNDLE_CATEGORIES = [
+const BUNDLE_CATEGORIES = [
   {
     name: 'App Entry Points',
     description: 'Main entry bundles and manifests',

@@ -1,22 +1,16 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const getSurveyConfig = vi.hoisted(() =>
   vi.fn<(featureId: string) => { enabled: boolean } | undefined>()
 )
 
-vi.mock('./surveyRegistry', () => ({
+vi.mock<unknown>(import('./surveyRegistry'), () => ({
   getSurveyConfig
 }))
 
 describe('useSurveyFeatureTracking', () => {
   beforeEach(() => {
-    localStorage.clear()
     vi.resetModules()
-    getSurveyConfig.mockReset()
-  })
-
-  afterEach(() => {
-    localStorage.clear()
   })
 
   it('tracks usage when config is enabled', async () => {

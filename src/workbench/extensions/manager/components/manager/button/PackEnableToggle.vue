@@ -120,7 +120,8 @@ const showConflictModal = (skipModalDismissed: boolean) => {
 
 const handleEnable = () => {
   if (!nodePack.id) {
-    throw new Error('Node ID is required for enabling')
+    console.error('Node ID is required for enabling')
+    return
   }
   return enablePack({
     id: nodePack.id,
@@ -132,7 +133,8 @@ const handleEnable = () => {
 
 const handleDisable = () => {
   if (!nodePack.id) {
-    throw new Error('Node ID is required for disabling')
+    console.error('Node ID is required for disabling')
+    return
   }
   return disablePack({
     id: nodePack.id,

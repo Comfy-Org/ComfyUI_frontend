@@ -1,9 +1,9 @@
 /* eslint-disable testing-library/no-node-access */
-import { createTestingPinia } from '@pinia/testing'
 import { fireEvent, render, screen } from '@testing-library/vue'
 import { fromAny } from '@total-typescript/shoehorn'
 import userEvent from '@testing-library/user-event'
-import { describe, expect, it, vi } from 'vitest'
+import { getActivePinia } from 'pinia'
+import { describe, expect, it } from 'vitest'
 import { nextTick, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
@@ -74,7 +74,7 @@ function renderComponent(
 ) {
   return render(DisplayCarousel, {
     global: {
-      plugins: [createTestingPinia({ createSpy: vi.fn }), i18n]
+      plugins: [getActivePinia()!, i18n]
     },
     props: {
       widget,
@@ -467,7 +467,7 @@ describe('DisplayCarousel Grid Mode', () => {
     const widget = createGalleriaWidget([...TEST_IMAGES_SMALL])
     const { container, rerender } = render(DisplayCarousel, {
       global: {
-        plugins: [createTestingPinia({ createSpy: vi.fn }), i18n]
+        plugins: [getActivePinia()!, i18n]
       },
       props: { widget, modelValue: images.value }
     })
@@ -501,8 +501,10 @@ describe('DisplayCarousel Edge Cases', () => {
   })
 
   it('filters out malformed image objects without valid src', () => {
-    const malformedImages = [{}, { randomProp: 'value' }, null, undefined]
-    createGalleriaWrapper(malformedImages as string[])
+    const malformedImages: GalleryValue = JSON.parse(
+      '[{}, {"randomProp":"value"}, null, null]'
+    )
+    createGalleriaWrapper(malformedImages)
 
     // All filtered out: null/undefined removed, then objects without src filtered
     expect(screen.queryByRole('img')).not.toBeInTheDocument()

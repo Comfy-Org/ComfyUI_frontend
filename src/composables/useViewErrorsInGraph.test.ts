@@ -1,4 +1,3 @@
-import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
@@ -16,7 +15,7 @@ const apiMock = vi.hoisted(() => ({
   storeSettings: vi.fn()
 }))
 
-vi.mock('@/scripts/api', () => ({
+vi.mock<unknown>(import('@/scripts/api'), () => ({
   api: apiMock
 }))
 
@@ -32,7 +31,7 @@ const appMock = vi.hoisted(() => ({
   }
 }))
 
-vi.mock('@/scripts/app', () => ({
+vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: appMock
 }))
 
@@ -59,8 +58,6 @@ function createSelectedCanvas() {
 
 describe('useViewErrorsInGraph', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
-    setActivePinia(createPinia())
     apiMock.getSettings.mockResolvedValue({})
     apiMock.storeSetting.mockResolvedValue(undefined)
     apiMock.storeSettings.mockResolvedValue(undefined)

@@ -1,23 +1,27 @@
 /* eslint-disable testing-library/no-container, testing-library/no-node-access */
 /* eslint-disable testing-library/prefer-user-event */
-import { createTestingPinia } from '@pinia/testing'
 import { render, screen, fireEvent } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { getActivePinia } from 'pinia'
+import { describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
+
+import { useTelemetry } from '@/platform/telemetry'
 
 import { downloadFile } from '@/base/common/downloadUtil'
 import ImagePreview from '@/renderer/extensions/vueNodes/components/ImagePreview.vue'
 
 // Mock downloadFile to avoid DOM errors
-vi.mock('@/base/common/downloadUtil', () => ({
+vi.mock(import('@/base/common/downloadUtil'), () => ({
   downloadFile: vi.fn()
 }))
 
-vi.mock('@/services/hdrViewerService', () => ({
+vi.mock(import('@/services/hdrViewerService'), () => ({
   openHdrViewer: vi.fn()
 }))
+
+vi.mock(import('@/platform/telemetry'))
 
 const i18n = createI18n({
   legacy: false,
@@ -61,12 +65,7 @@ describe('ImagePreview', () => {
     return render(ImagePreview, {
       props: { ...defaultProps, ...props },
       global: {
-        plugins: [
-          createTestingPinia({
-            createSpy: vi.fn
-          }),
-          i18n
-        ],
+        plugins: [getActivePinia()!, i18n],
         stubs: {
           'i-lucide:venetian-mask': true,
           'i-lucide:download': true,
@@ -83,10 +82,6 @@ describe('ImagePreview', () => {
     await user.click(thumbnails[0])
     await nextTick()
   }
-
-  beforeEach(() => {
-    vi.clearAllMocks()
-  })
 
   it('does not render when no imageUrls provided', () => {
     const { container } = renderImagePreview({ imageUrls: [] })
@@ -172,6 +167,11 @@ describe('ImagePreview', () => {
     expect(
       screen.queryByRole('button', { name: 'Download image' })
     ).not.toBeInTheDocument()
+    expect(
+      useTelemetry()?.trackImageLoadFailed
+    ).toHaveBeenCalledExactlyOnceWith({
+      source: 'node_image_preview'
+    })
   })
 
   it('handles download button click', async () => {
@@ -484,119 +484,102 @@ describe('ImagePreview', () => {
 
   describe('batch cycling with identical URLs', () => {
     it('should not enter persistent loading state when cycling through identical images', async () => {
-      vi.useFakeTimers()
       const user = userEvent.setup({
         advanceTimers: vi.advanceTimersByTime
       })
-      try {
-        const sameUrl = '/api/view?filename=test.png&type=output'
-        const { container } = renderImagePreview({
-          imageUrls: [sameUrl, sameUrl, sameUrl]
-        })
-        await switchToGallery(user)
+      const sameUrl = '/api/view?filename=test.png&type=output'
+      const { container } = renderImagePreview({
+        imageUrls: [sameUrl, sameUrl, sameUrl]
+      })
+      await switchToGallery(user)
 
-        // Simulate initial image load
-        await fireEvent.load(screen.getByRole('img'))
-        await nextTick()
-        expect(
-          container.querySelector('[aria-busy="true"]')
-        ).not.toBeInTheDocument()
+      // Simulate initial image load
+      await fireEvent.load(screen.getByRole('img'))
+      await nextTick()
+      expect(
+        container.querySelector('[aria-busy="true"]')
+      ).not.toBeInTheDocument()
 
-        // Click second navigation dot to cycle
-        const dots = screen.getAllByRole('button', { name: /View image/ })
-        await user.click(dots[1])
-        await nextTick()
+      // Click second navigation dot to cycle
+      const dots = screen.getAllByRole('button', { name: /View image/ })
+      await user.click(dots[1])
+      await nextTick()
 
-        // Advance past the delayed loader timeout
-        await vi.advanceTimersByTimeAsync(300)
-        await nextTick()
+      // Advance past the delayed loader timeout
+      await vi.advanceTimersByTimeAsync(300)
+      await nextTick()
 
-        // Should NOT be in loading state since URL didn't change
-        expect(
-          container.querySelector('[aria-busy="true"]')
-        ).not.toBeInTheDocument()
-      } finally {
-        vi.useRealTimers()
-      }
+      // Should NOT be in loading state since URL didn't change
+      expect(
+        container.querySelector('[aria-busy="true"]')
+      ).not.toBeInTheDocument()
     })
   })
 
   describe('URL change detection', () => {
     it('should NOT reset loading state when imageUrls prop is reassigned with identical URLs', async () => {
-      vi.useFakeTimers()
       const user = userEvent.setup({
         advanceTimers: vi.advanceTimersByTime
       })
-      try {
-        const urls = ['/api/view?filename=test.png&type=output']
-        const { container, rerender } = renderImagePreview({
-          imageUrls: urls
-        })
-        void user
+      const urls = ['/api/view?filename=test.png&type=output']
+      const { container, rerender } = renderImagePreview({
+        imageUrls: urls
+      })
+      void user
 
-        // Simulate image load completing
-        await fireEvent.load(screen.getByRole('img'))
-        await nextTick()
+      // Simulate image load completing
+      await fireEvent.load(screen.getByRole('img'))
+      await nextTick()
 
-        // Verify loader is hidden after load
-        expect(
-          container.querySelector('[aria-busy="true"]')
-        ).not.toBeInTheDocument()
+      // Verify loader is hidden after load
+      expect(
+        container.querySelector('[aria-busy="true"]')
+      ).not.toBeInTheDocument()
 
-        // Reassign with new array reference but same content
-        await rerender({ imageUrls: [...urls] })
-        await nextTick()
+      // Reassign with new array reference but same content
+      await rerender({ imageUrls: [...urls] })
+      await nextTick()
 
-        // Advance past the 250ms delayed loader timeout
-        await vi.advanceTimersByTimeAsync(300)
-        await nextTick()
+      // Advance past the 250ms delayed loader timeout
+      await vi.advanceTimersByTimeAsync(300)
+      await nextTick()
 
-        // Loading state should NOT have been reset
-        expect(
-          container.querySelector('[aria-busy="true"]')
-        ).not.toBeInTheDocument()
-      } finally {
-        vi.useRealTimers()
-      }
+      // Loading state should NOT have been reset
+      expect(
+        container.querySelector('[aria-busy="true"]')
+      ).not.toBeInTheDocument()
     })
 
     it('should reset loading state when imageUrls prop changes to different URLs', async () => {
-      vi.useFakeTimers()
       const user = userEvent.setup({
         advanceTimers: vi.advanceTimersByTime
       })
-      try {
-        const urls = ['/api/view?filename=test.png&type=output']
-        const { container, rerender } = renderImagePreview({
-          imageUrls: urls
-        })
+      const urls = ['/api/view?filename=test.png&type=output']
+      const { container, rerender } = renderImagePreview({
+        imageUrls: urls
+      })
 
-        // Simulate image load completing
-        await fireEvent.load(screen.getByRole('img'))
-        await nextTick()
+      // Simulate image load completing
+      await fireEvent.load(screen.getByRole('img'))
+      await nextTick()
 
-        // Verify loader is hidden
-        expect(
-          container.querySelector('[aria-busy="true"]')
-        ).not.toBeInTheDocument()
+      // Verify loader is hidden
+      expect(
+        container.querySelector('[aria-busy="true"]')
+      ).not.toBeInTheDocument()
 
-        void user
-        // Change to different URL
-        await rerender({
-          imageUrls: ['/api/view?filename=different.png&type=output']
-        })
-        await nextTick()
+      void user
+      // Change to different URL
+      await rerender({
+        imageUrls: ['/api/view?filename=different.png&type=output']
+      })
+      await nextTick()
 
-        // Advance past the 250ms delayed loader timeout
-        await vi.advanceTimersByTimeAsync(300)
-        await nextTick()
+      // Advance past the 250ms delayed loader timeout
+      await vi.advanceTimersByTimeAsync(300)
+      await nextTick()
 
-        expect(
-          container.querySelector('[aria-busy="true"]')
-        ).toBeInTheDocument()
-      } finally {
-        vi.useRealTimers()
-      }
+      expect(container.querySelector('[aria-busy="true"]')).toBeInTheDocument()
     })
 
     it('should handle empty to non-empty URL transitions correctly', async () => {

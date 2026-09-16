@@ -27,16 +27,19 @@ describe('Button', () => {
     expect(onClick).toHaveBeenCalledTimes(1)
   })
 
-  it('hides slot content, shows a spinner, and disables the button while loading', () => {
+  // The label stays in the accessibility tree while loading, so the control is
+  // still announced by name rather than as an unlabelled button.
+  it('swaps slot content for a spinner and disables the button while loading', () => {
     const { container } = render(Button, {
       props: { loading: true },
       slots: { default: 'Submit' }
     })
 
-    expect(screen.queryByText('Submit')).not.toBeInTheDocument()
+    const button = screen.getByRole('button', { name: 'Submit' })
+    expect(button).toBeDisabled()
+    expect(button).toHaveAttribute('aria-busy', 'true')
     // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access -- PrimeVue spinner icon has no accessible role
     expect(container.querySelector('.pi-spin')).toBeInTheDocument()
-    expect(screen.getByRole('button')).toBeDisabled()
   })
 
   it('does not fire click when loading', async () => {

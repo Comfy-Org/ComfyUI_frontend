@@ -1,10 +1,10 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
-import type { SimplifiedWidget } from '@/types/simplifiedWidget'
+import type { SimplifiedWidget, WidgetValue } from '@/types/simplifiedWidget'
 
 import WidgetSelectDefault from './WidgetSelectDefault.vue'
 
@@ -30,6 +30,10 @@ const flushPromises = () =>
   new Promise<void>((resolve) => setTimeout(resolve, 0))
 
 describe('WidgetSelectDefault', () => {
+  beforeEach(() => {
+    vi.useRealTimers()
+  })
+
   const createWidget = (
     values: unknown,
     options: Record<string, unknown> = {}
@@ -37,12 +41,12 @@ describe('WidgetSelectDefault', () => {
     name: 'test_combo',
     type: 'combo',
     value: undefined,
-    options: { values, ...options } as SimplifiedWidget['options']
+    options: { values, ...options }
   })
 
   function renderComponent(
     widget: SimplifiedWidget<string | undefined>,
-    modelValue?: string,
+    modelValue?: WidgetValue,
     slots?: Record<string, string>
   ) {
     const onUpdate = vi.fn()
@@ -72,7 +76,7 @@ describe('WidgetSelectDefault', () => {
   }
 
   const optionLabels = () =>
-    screen.queryAllByRole('option').map((option) => option.textContent?.trim())
+    screen.queryAllByRole('option').map((option) => option.textContent.trim())
 
   async function expectHighlightedOption(name: string) {
     await waitFor(() => {
@@ -202,6 +206,27 @@ describe('WidgetSelectDefault', () => {
       await user.click(screen.getByRole('option', { name: 'b' }))
 
       expect(onUpdate).toHaveBeenCalledWith('b')
+    })
+
+    it('keeps numeric values numeric when an option is selected', async () => {
+      const { onUpdate, user } = renderComponent(createWidget([5, 10]), 5)
+
+      await openDropdown(user)
+      await user.click(screen.getByRole('option', { name: '10' }))
+
+      expect(onUpdate).toHaveBeenCalledWith(10)
+    })
+
+    it('keeps boolean values boolean when an option is selected', async () => {
+      const { onUpdate, user } = renderComponent(
+        createWidget([true, false]),
+        false
+      )
+
+      await openDropdown(user)
+      await user.click(screen.getByRole('option', { name: 'true' }))
+
+      expect(onUpdate).toHaveBeenCalledWith(true)
     })
 
     it('allows selecting an explicit empty string option', async () => {
@@ -335,6 +360,51 @@ describe('WidgetSelectDefault', () => {
       ).toHaveAttribute('data-capture-wheel', 'true')
     })
 
+    it('treats a null value like no selection instead of an invalid value', () => {
+      renderComponent(createWidget(['a', 'b']), null)
+
+      const trigger = screen.getByTestId('widget-select-default-trigger')
+      expect(trigger).not.toHaveAttribute('aria-invalid')
+      expect(trigger.textContent.trim()).toBe('')
+    })
+
+    it('selects the first option when the value is undefined', () => {
+      renderComponent(createWidget(['a', 'b']))
+
+      expect(
+        screen.getByTestId('widget-select-default-trigger')
+      ).toHaveTextContent('a')
+    })
+
+    it('marks only a matching value as selected in the dropdown', async () => {
+      const first = renderComponent(createWidget(['a', 'b']), null)
+
+      await openDropdown(first.user)
+
+      const options = screen.getAllByRole('option')
+      expect(options).toHaveLength(2)
+      expect(options.map((option) => option.textContent.trim())).toEqual(
+        expect.arrayContaining(['a', 'b'])
+      )
+      for (const option of options) {
+        expect(option).not.toHaveAttribute('aria-selected', 'true')
+      }
+      first.unmount()
+
+      const second = renderComponent(createWidget(['a', 'b']), 'a')
+
+      await openDropdown(second.user)
+
+      expect(screen.getByRole('option', { name: 'a' })).toHaveAttribute(
+        'aria-selected',
+        'true'
+      )
+      expect(screen.getByRole('option', { name: 'b' })).not.toHaveAttribute(
+        'aria-selected',
+        'true'
+      )
+    })
+
     it('shows invalid current values as the trigger label', () => {
       renderComponent(createWidget(['a', 'b']), 'missing')
 
@@ -344,6 +414,14 @@ describe('WidgetSelectDefault', () => {
       expect(
         screen.getByTestId('widget-select-default-trigger')
       ).toHaveAttribute('aria-invalid', 'true')
+    })
+
+    it('does not mark a valid numeric option as invalid', () => {
+      renderComponent(createWidget([5, 10]), 5)
+
+      const trigger = screen.getByTestId('widget-select-default-trigger')
+      expect(trigger).not.toHaveAttribute('aria-invalid')
+      expect(trigger).toHaveTextContent('5')
     })
 
     it('disables the trigger when widget options are disabled', () => {

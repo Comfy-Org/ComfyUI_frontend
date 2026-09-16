@@ -2,10 +2,13 @@ import type { ResolvedPromotedWidget } from '@/core/graph/subgraph/promotedWidge
 import { resolveSubgraphInputTarget } from '@/core/graph/subgraph/resolveSubgraphInputTarget'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
+import { LGraphEventMode } from '@/lib/litegraph/src/types/globalEnums'
 import type { NodeExecutionId } from '@/types/nodeIdentification'
 import { createNodeExecutionId } from '@/types/nodeIdentification'
 import { toNodeId } from '@/types/nodeId'
 import type { NodeId, SerializedNodeId } from '@/types/nodeId'
+
+import { hasPromotedWidgetTarget } from './hasPromotedWidgetTarget'
 
 type PromotedWidgetResolutionFailure =
   | 'invalid-host'
@@ -19,6 +22,55 @@ type PromotedWidgetResolutionResult =
   | { status: 'failure'; failure: PromotedWidgetResolutionFailure }
 
 const MAX_PROMOTED_WIDGET_CHAIN_DEPTH = 100
+
+function isNodeActive(node: LGraphNode): boolean {
+  return (
+    node.mode !== LGraphEventMode.NEVER && node.mode !== LGraphEventMode.BYPASS
+  )
+}
+
+export function hasActivePromotedWidgetConsumer(
+  hostNode: LGraphNode,
+  inputName: string
+): boolean {
+  if (!hostNode.isSubgraphNode()) return false
+  const input = hostNode.subgraph.inputNode.slots.find(
+    (slot) => slot.name === inputName
+  )
+  if (!input) return false
+  const root = { host: hostNode, input }
+
+  return hasPromotedWidgetTarget(
+    root,
+    MAX_PROMOTED_WIDGET_CHAIN_DEPTH,
+    ({ input }) => input,
+    ({ host, input }) => {
+      const nested: Array<typeof root> = []
+      let hasWidget = false
+      for (const linkId of input.linkIds) {
+        const link = host.subgraph.getLink(linkId)
+        if (!link) continue
+        const { inputNode } = link.resolve(host.subgraph)
+        if (!inputNode || !isNodeActive(inputNode)) continue
+        const targetInput = inputNode.inputs.find(
+          (entry) => entry.link === linkId
+        )
+        if (!targetInput) continue
+        if (!inputNode.isSubgraphNode()) {
+          hasWidget ||= Boolean(inputNode.getWidgetFromSlot(targetInput))
+          continue
+        }
+        const nestedInput = inputNode.subgraph.inputNode.slots.find(
+          (slot) => slot.name === targetInput.name
+        )
+        if (targetInput.widgetId && nestedInput) {
+          nested.push({ host: inputNode, input: nestedInput })
+        }
+      }
+      return { hasWidget, nested }
+    }
+  )
+}
 
 function traversePromotedWidgetChain(
   hostNode: SubgraphNode,

@@ -10,7 +10,7 @@ import type {
   WorkflowPublishResult,
   WorkflowPublishStatus
 } from '@/platform/workflow/sharing/types/shareTypes'
-import { assetService } from '@/platform/assets/services/assetService'
+import { useAssetsStore } from '@/stores/assetsStore'
 import type { ThumbnailType } from '@/platform/workflow/sharing/types/comfyHubTypes'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 import type { AssetInfo } from '@/schemas/apiSchema'
@@ -48,19 +48,30 @@ function extractPrefill(fields: HubWorkflowDetail): PublishPrefill | null {
   const name = fields.name
   const description = fields.description
   const tags = fields.tags?.map((tag) => tag.display_name)
+  const models = fields.models?.map((model) => model.name)
+  const customNodes = fields.custom_nodes?.map((node) => node.name)
   const thumbnailType = mapApiThumbnailType(fields.thumbnail_type)
   const thumbnailUrl = fields.thumbnail_url
   const thumbnailComparisonUrl = fields.thumbnail_comparison_url
   const sampleImageUrls = fields.sample_image_urls
+  const tutorialUrl = fields.tutorial_url
+  const metadata =
+    fields.metadata && Object.keys(fields.metadata).length > 0
+      ? fields.metadata
+      : undefined
 
   if (
     !name &&
     !description &&
     !tags?.length &&
+    !models?.length &&
+    !customNodes?.length &&
     !thumbnailType &&
     !thumbnailUrl &&
     !thumbnailComparisonUrl &&
-    !sampleImageUrls?.length
+    !sampleImageUrls?.length &&
+    !tutorialUrl &&
+    !metadata
   ) {
     return null
   }
@@ -69,10 +80,14 @@ function extractPrefill(fields: HubWorkflowDetail): PublishPrefill | null {
     name,
     description,
     tags,
+    models,
+    customNodes,
     thumbnailType,
     thumbnailUrl,
     thumbnailComparisonUrl,
-    sampleImageUrls
+    sampleImageUrls,
+    tutorialUrl,
+    metadata
   }
 }
 
@@ -105,7 +120,7 @@ function parsePublishedAt(value: string | null | undefined): Date | null {
 
 function normalizeShareUrl(shareId: string): string {
   const queryString = `share=${encodeURIComponent(shareId)}`
-  if (typeof window === 'undefined' || !window.location?.origin) {
+  if (typeof window === 'undefined' || !window.location.origin) {
     return `/?${queryString}`
   }
 
@@ -205,7 +220,7 @@ export function useWorkflowShareService() {
     if (!record || !record.shareId || !record.publishedAt) return UNPUBLISHED
 
     let prefill: PublishPrefill | null = record.prefill
-    if (!prefill && record.listed) {
+    if (shouldFetchPrefill(record.listed, prefill)) {
       try {
         prefill = await fetchHubWorkflowPrefill(record.shareId)
       } catch {
@@ -225,9 +240,9 @@ export function useWorkflowShareService() {
   async function getShareableAssets(
     includingPublic = false
   ): Promise<AssetInfo[]> {
-    const graph = app.rootGraph
-    if (!graph) return []
+    if (!app.isGraphReady) return []
 
+    const graph = app.rootGraph
     const { output } = await app.graphToPrompt(graph)
     const { assets } = await api.getShareableAssets(output)
 
@@ -280,7 +295,7 @@ export function useWorkflowShareService() {
       throw new Error(`Failed to import assets: ${response.status}`)
     }
 
-    assetService.invalidateInputAssetsIncludingPublic()
+    await useAssetsStore().inputAssets.invalidate()
   }
 
   return {
@@ -290,4 +305,8 @@ export function useWorkflowShareService() {
     getSharedWorkflow,
     importPublishedAssets
   }
+}
+
+function shouldFetchPrefill(listed: boolean, prefill: PublishPrefill | null) {
+  return listed && !prefill
 }

@@ -2,19 +2,12 @@ import { isCloud } from '@/platform/distribution/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useCommandStore } from '@/stores/commandStore'
 import { useDialogStore } from '@/stores/dialogStore'
+import { isModalOpen } from '@/utils/modalUtil'
 
 import { CORE_KEYBINDINGS } from './defaults'
 import { KeyComboImpl } from './keyCombo'
 import { KeybindingImpl } from './keybinding'
 import { useKeybindingStore } from './keybindingStore'
-
-function hasOpenRekaDialog(): boolean {
-  return Array.from(
-    document.querySelectorAll('[role="dialog"][data-state="open"]')
-  ).some(
-    (dialog) => dialog.closest('[data-reka-popper-content-wrapper]') === null
-  )
-}
 
 export function useKeybindingService() {
   const keybindingStore = useKeybindingStore()
@@ -29,6 +22,14 @@ export function useKeybindingService() {
     }
 
     const target = event.composedPath()[0] as HTMLElement
+    // Let the active menu own Escape without also triggering the global shortcut.
+    if (
+      event.key === 'Escape' &&
+      target.closest('[role="menu"], [role="menubar"]')
+    ) {
+      return
+    }
+
     if (
       keyCombo.isReservedByTextInput &&
       (target.tagName === 'TEXTAREA' ||
@@ -52,11 +53,11 @@ export function useKeybindingService() {
           return
         }
       }
-      if (
-        dialogStore.dialogStack.length > 0 ||
-        document.querySelector('[role="dialog"][aria-modal="true"]') ||
-        hasOpenRekaDialog()
-      ) {
+      if (isModalOpen(dialogStore.dialogStack.length)) {
+        // Bare keys still have to reach inputs inside the dialog.
+        if (keyCombo.ctrl) {
+          event.preventDefault()
+        }
         return
       }
 
@@ -133,12 +134,9 @@ export function useKeybindingService() {
 
   async function persistUserKeybindings() {
     await settingStore.setMany({
-      'Comfy.Keybinding.NewBindings': Object.values(
-        keybindingStore.getUserKeybindings()
-      ),
-      'Comfy.Keybinding.UnsetBindings': Object.values(
-        keybindingStore.getUserUnsetKeybindings()
-      )
+      'Comfy.Keybinding.NewBindings': keybindingStore.getUserKeybindingValues(),
+      'Comfy.Keybinding.UnsetBindings':
+        keybindingStore.getUserUnsetKeybindingValues()
     })
   }
 

@@ -138,8 +138,13 @@ function useBillingContextInternal(): BillingContext {
     toValue(activeContext.value.currentTeamCreditStop)
   )
 
-  const isActiveSubscription = computed(() =>
-    toValue(activeContext.value.isActiveSubscription)
+  const maxSeats = computed(() => toValue(activeContext.value.maxSeats))
+  const occupiedSeats = computed(() =>
+    toValue(activeContext.value.occupiedSeats)
+  )
+
+  const canAccessSubscriptionFeatures = computed(() =>
+    toValue(activeContext.value.canAccessSubscriptionFeatures)
   )
 
   const isFreeTier = computed(() => subscription.value?.tier === 'FREE')
@@ -148,16 +153,20 @@ function useBillingContextInternal(): BillingContext {
 
   const canRunWorkflows = computed(
     () =>
-      isActiveSubscription.value &&
+      canAccessSubscriptionFeatures.value &&
       (!isFreeTier.value ||
         !freeTierQuota.quotaEnabled.value ||
         freeTierQuota.freeTierExecutionPermitted.value)
   )
 
+  const showsSubscribeToRunPrompt = computed(
+    () => isInitialized.value && !canRunWorkflows.value
+  )
+
   const isLegacyTeamPlan = computed(
     () =>
       type.value === 'workspace' &&
-      isActiveSubscription.value &&
+      canAccessSubscriptionFeatures.value &&
       !isFreeTier.value &&
       currentTeamCreditStop.value === null &&
       (currentPlanSlug.value
@@ -168,9 +177,9 @@ function useBillingContextInternal(): BillingContext {
 
   // Plan identity, independent of subscription health: the per-credit Team plan
   // carries a credit stop, the retired seat-based ones a `team-` slug. Kept off
-  // isActiveSubscription on purpose — paused and payment_failed both force
-  // is_active=false, which is exactly when callers still need to know this is a
-  // team plan.
+  // canAccessSubscriptionFeatures on purpose — paused and payment_failed
+  // both force is_active=false, which is exactly when callers still need
+  // to know this is a team plan.
   const isTeamPlan = computed(
     () =>
       type.value === 'workspace' &&
@@ -228,9 +237,7 @@ function useBillingContextInternal(): BillingContext {
     error.value = null
   }
 
-  // type flips when the team-workspaces or consolidated-billing flag resolves
-  // from authenticated config, swapping the active backend. Reset then reinit
-  // on every workspace-id or type change.
+  // Reset and reinitialize when the active workspace or billing backend changes.
   watch(
     [() => store.activeWorkspace?.id, () => type.value],
     async ([newWorkspaceId]) => {
@@ -302,8 +309,10 @@ function useBillingContextInternal(): BillingContext {
     return activeContext.value.cancelSubscription()
   }
 
-  async function resubscribe() {
-    return activeContext.value.resubscribe()
+  async function resubscribe(
+    options?: Parameters<BillingActions['resubscribe']>[0]
+  ) {
+    return activeContext.value.resubscribe(options)
   }
 
   async function topup(amountCents: number) {
@@ -340,9 +349,12 @@ function useBillingContextInternal(): BillingContext {
     currentPlanSlug,
     teamCreditStops,
     currentTeamCreditStop,
+    maxSeats,
+    occupiedSeats,
     isLoading,
     error,
-    isActiveSubscription,
+    showsSubscribeToRunPrompt,
+    canAccessSubscriptionFeatures,
     canRunWorkflows,
     isFreeTier,
     isLegacyTeamPlan,

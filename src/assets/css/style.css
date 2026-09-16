@@ -1,5 +1,18 @@
 @import '@comfyorg/design-system/css/style.css';
 
+/* Toasts teleport to <body>. Reka's modal mode sets pointer-events: none on
+   the body, which left toast close buttons painted above dialogs but
+   unclickable — clicks fell through to whatever sat beneath (including the
+   payment dialog's X, closing the checkout mid-payment). Keep toasts
+   interactive regardless of modal state. */
+.p-toast {
+  pointer-events: none;
+}
+
+.p-toast-message {
+  pointer-events: auto;
+}
+
 /* Use 0.001ms instead of 0s so transitionend/animationend events still fire
    and JS listeners aren't broken. */
 .disable-animations *,

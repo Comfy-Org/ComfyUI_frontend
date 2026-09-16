@@ -1,5 +1,7 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { reactive } from 'vue'
+import { fromPartial } from '@total-typescript/shoehorn'
+import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useAuthStore } from '@/stores/authStore'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createMemoryHistory, createRouter } from 'vue-router'
 import type { RouteRecordRaw } from 'vue-router'
 
@@ -9,51 +11,25 @@ import type { RouteRecordRaw } from 'vue-router'
  * stash is the only carrier, and redemption fires from router.afterEach, an
  * auth watcher, and a delayed retry after a transient failure.
  *
- * The fake clock (installed for every test) keeps those retry timers from
- * leaking into later tests: afterEach discards them with vi.useRealTimers().
  */
 
 const mockConfirm = vi.hoisted(() => vi.fn())
-vi.mock('@/services/dialogService', () => ({
+vi.mock<unknown>(import('@/services/dialogService'), () => ({
   useDialogService: () => ({
     confirm: mockConfirm
   })
 }))
 
 const mockToastAdd = vi.hoisted(() => vi.fn())
-vi.mock('@/platform/updates/common/toastStore', () => ({
-  useToastStore: () => ({
-    add: mockToastAdd
-  })
-}))
-
-interface MockAuthStore {
-  currentUser: {
-    uid: string
-    getIdToken: (forceRefresh?: boolean) => Promise<string>
-  } | null
-  getIdToken: () => Promise<string>
-}
 
 const mockUserGetIdToken = vi.hoisted(() => vi.fn())
 const mockStoreGetIdToken = vi.hoisted(() => vi.fn())
 
-// Reactive so the module's watcher on currentUser fires without a navigation.
-// The mock factory is cached across vi.resetModules(), so it reads a holder
-// refilled per test; watchers leaked by earlier module generations stay
-// subscribed to earlier stores and remain dormant.
-const authStoreHolder = vi.hoisted(() => ({
-  store: null as MockAuthStore | null
-}))
-vi.mock('@/stores/authStore', () => ({
-  useAuthStore: () => authStoreHolder.store
-}))
-
-vi.mock('@/i18n', () => ({
+vi.mock(import('@/i18n'), () => ({
   t: (key: string) => key
 }))
 
-vi.mock('@/scripts/api', () => ({
+vi.mock<unknown>(import('@/scripts/api'), () => ({
   api: {
     apiURL: (path: string) => `/api${path}`
   }
@@ -68,7 +44,7 @@ const RETRY_DELAY_MS = 5_000
 
 const mockFetch = vi.fn()
 
-let mockAuthStore: MockAuthStore
+let mockAuthStore: ReturnType<typeof useAuthStore>
 
 function okResponse() {
   return new Response(JSON.stringify({ status: 'redeemed' }), { status: 200 })
@@ -78,7 +54,7 @@ function expectedFetchOptions(code: string) {
   return {
     method: 'POST',
     headers: {
-      Authorization: 'Bearer firebase-id-token',
+      Authorization: 'Bearer firebase-id-token' as const,
       'Content-Type': 'application/json'
     },
     body: JSON.stringify({ code }),
@@ -127,31 +103,23 @@ async function setup(
   }
 }
 
+beforeEach(() => {
+  vi.mocked(useToastStore().add).mockImplementation(mockToastAdd)
+})
+
 describe('installDesktopLoginRedemption', () => {
   beforeEach(() => {
     vi.resetModules()
-    vi.clearAllMocks()
-    vi.useFakeTimers()
-    sessionStorage.clear()
     vi.stubGlobal('fetch', mockFetch)
     vi.spyOn(console, 'warn').mockImplementation(() => {})
-    mockFetch.mockReset()
     mockConfirm.mockResolvedValue(true)
     mockUserGetIdToken.mockResolvedValue('firebase-id-token')
-    mockAuthStore = reactive({
-      currentUser: {
-        uid: 'user-1',
-        getIdToken: mockUserGetIdToken
-      },
-      getIdToken: mockStoreGetIdToken
+    mockAuthStore = useAuthStore()
+    mockAuthStore.currentUser = fromPartial({
+      uid: 'user-1',
+      getIdToken: mockUserGetIdToken
     })
-    authStoreHolder.store = mockAuthStore
-  })
-
-  afterEach(() => {
-    vi.useRealTimers()
-    vi.unstubAllGlobals()
-    vi.restoreAllMocks()
+    vi.mocked(mockAuthStore.getIdToken).mockImplementation(mockStoreGetIdToken)
   })
 
   it('does nothing on navigation when no code is stashed', async () => {
@@ -173,6 +141,7 @@ describe('installDesktopLoginRedemption', () => {
 
     expect(mockConfirm).toHaveBeenCalledTimes(1)
     expect(mockConfirm).toHaveBeenCalledWith({
+      key: 'global-desktop-login-confirm',
       title: 'desktopLogin.confirmSummary',
       message: 'desktopLogin.confirmMessage'
     })
@@ -278,10 +247,10 @@ describe('installDesktopLoginRedemption', () => {
     expect(mockConfirm).not.toHaveBeenCalled()
 
     // Signing in on the login page fires the auth watcher mid-handoff.
-    mockAuthStore.currentUser = {
+    mockAuthStore.currentUser = fromPartial({
       uid: 'user-1',
       getIdToken: mockUserGetIdToken
-    }
+    })
     await flushRedemption()
 
     expect(mockConfirm).not.toHaveBeenCalled()
@@ -512,10 +481,10 @@ describe('installDesktopLoginRedemption', () => {
 
     // A session appearing without any further navigation redeems via the
     // watcher.
-    mockAuthStore.currentUser = {
+    mockAuthStore.currentUser = fromPartial({
       uid: 'user-1',
       getIdToken: mockUserGetIdToken
-    }
+    })
 
     await vi.waitFor(() => expect(mockFetch).toHaveBeenCalledTimes(1))
     expect(mockFetch).toHaveBeenCalledWith(
@@ -586,10 +555,10 @@ describe('installDesktopLoginRedemption', () => {
 
     // The session changes to user-2 before the retry: user-1's approval must
     // not authorize redeeming with user-2's token.
-    mockAuthStore.currentUser = {
+    mockAuthStore.currentUser = fromPartial({
       uid: 'user-2',
       getIdToken: vi.fn().mockResolvedValue('second-user-token')
-    }
+    })
 
     await vi.waitFor(() => expect(mockConfirm).toHaveBeenCalledTimes(2))
     await vi.waitFor(() => expect(mockFetch).toHaveBeenCalledTimes(2))
@@ -597,7 +566,7 @@ describe('installDesktopLoginRedemption', () => {
       REDEEM_URL,
       expect.objectContaining({
         headers: expect.objectContaining({
-          Authorization: 'Bearer second-user-token'
+          Authorization: 'Bearer second-user-token' as const
         })
       })
     )
@@ -625,7 +594,7 @@ describe('installDesktopLoginRedemption', () => {
       uid: 'user-2',
       getIdToken: vi.fn().mockResolvedValue('second-user-token')
     }
-    mockAuthStore.currentUser = secondUser
+    mockAuthStore.currentUser = fromPartial(secondUser)
     await flushRedemption()
     approve(true)
     await flushRedemption()
@@ -636,7 +605,7 @@ describe('installDesktopLoginRedemption', () => {
       REDEEM_URL,
       expect.objectContaining({
         headers: expect.objectContaining({
-          Authorization: 'Bearer second-user-token'
+          Authorization: 'Bearer second-user-token' as const
         })
       })
     )
@@ -699,3 +668,4 @@ describe('installDesktopLoginRedemption', () => {
     expect(mockFetch).toHaveBeenCalledTimes(1)
   })
 })
+vi.mock(import('firebase/auth'))

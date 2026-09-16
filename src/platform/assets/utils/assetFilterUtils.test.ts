@@ -1,3 +1,5 @@
+import { fromPartial } from '@total-typescript/shoehorn'
+
 import { describe, expect, it } from 'vitest'
 
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
@@ -15,13 +17,13 @@ function createAsset(
   name: string,
   options: Partial<AssetItem> = {}
 ): AssetItem {
-  return {
+  return fromPartial({
     id: `asset-${name}`,
     name,
     tags: [],
     is_immutable: false,
     ...options
-  } satisfies AssetItem
+  })
 }
 
 describe('filterByCategory', () => {

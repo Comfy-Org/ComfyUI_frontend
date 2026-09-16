@@ -1,16 +1,15 @@
-import {
-  type ComfyApiWorkflow,
-  type ComfyWorkflowJSON
+import type {
+  ComfyApiWorkflow,
+  ComfyWorkflowJSON
 } from '@/platform/workflow/validation/schemas/workflowSchema'
-import {
-  ASCII,
-  type ComfyMetadata,
-  ComfyMetadataTags,
-  type GltfChunkHeader,
-  type GltfHeader,
-  type GltfJsonData,
-  GltfSizeBytes
+import { ASCII, ComfyMetadataTags, GltfSizeBytes } from '@/types/metadataTypes'
+import type {
+  ComfyMetadata,
+  GltfChunkHeader,
+  GltfHeader,
+  GltfJsonData
 } from '@/types/metadataTypes'
+import { readFileAsArrayBuffer } from '@/utils/fileUtil'
 import { parseJsonWithNonFinite } from '@/utils/jsonUtil'
 
 const MAX_READ_BYTES = 1 << 20
@@ -141,27 +140,15 @@ const processGltfFileBuffer = (buffer: ArrayBuffer): ComfyMetadata => {
 /**
  * Extract ComfyUI metadata from a GLTF binary file (GLB)
  */
-export function getGltfBinaryMetadata(file: File): Promise<ComfyMetadata> {
-  return new Promise<ComfyMetadata>((resolve) => {
-    if (!file) return Promise.resolve({})
+export async function getGltfBinaryMetadata(
+  file: File
+): Promise<ComfyMetadata> {
+  const buffer = await readFileAsArrayBuffer(file, MAX_READ_BYTES)
+  if (!buffer) return {}
 
-    const bytesToRead = Math.min(file.size, MAX_READ_BYTES)
-
-    const reader = new FileReader()
-    reader.onload = (event) => {
-      try {
-        if (!event.target?.result) {
-          resolve({})
-          return
-        }
-
-        resolve(processGltfFileBuffer(event.target.result as ArrayBuffer))
-      } catch {
-        resolve({})
-      }
-    }
-    reader.onerror = () => resolve({})
-    reader.onabort = () => resolve({})
-    reader.readAsArrayBuffer(file.slice(0, bytesToRead))
-  })
+  try {
+    return processGltfFileBuffer(buffer)
+  } catch {
+    return {}
+  }
 }

@@ -1,6 +1,6 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+
+import { useTelemetry } from '@/platform/telemetry'
 
 import {
   getSettingInfo,
@@ -11,18 +11,10 @@ import type { Settings } from '@/schemas/apiSchema'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 
-const { trackSettingChanged } = vi.hoisted(() => ({
-  trackSettingChanged: vi.fn()
-}))
-
-vi.mock('@/platform/telemetry', () => ({
-  useTelemetry: vi.fn(() => ({
-    trackSettingChanged
-  }))
-}))
+vi.mock(import('@/platform/telemetry'))
 
 // Mock the api
-vi.mock('@/scripts/api', () => ({
+vi.mock<unknown>(import('@/scripts/api'), () => ({
   api: {
     getSettings: vi.fn(),
     storeSetting: vi.fn(),
@@ -31,7 +23,7 @@ vi.mock('@/scripts/api', () => ({
 }))
 
 // Mock the app
-vi.mock('@/scripts/app', () => ({
+vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: {
     ui: {
       settings: {
@@ -45,9 +37,7 @@ describe('useSettingStore', () => {
   let store: ReturnType<typeof useSettingStore>
 
   beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
     store = useSettingStore()
-    vi.clearAllMocks()
   })
 
   it('should initialize with empty settings', () => {
@@ -66,6 +56,88 @@ describe('useSettingStore', () => {
 
       expect(store.settingValues).toEqual(mockSettings)
       expect(api.getSettings).toHaveBeenCalled()
+    })
+
+    describe('Canvas Navigation override migration', () => {
+      const NAV = 'Comfy.Canvas.NavigationMode'
+      const LEFT = 'Comfy.Canvas.LeftMouseClickBehavior'
+      const WHEEL = 'Comfy.Canvas.MouseWheelScroll'
+
+      const loadWith = async (persisted: Record<string, unknown>) => {
+        vi.mocked(api.getSettings).mockResolvedValue(persisted as Settings)
+        await store.load()
+      }
+
+      it('supplies both overrides for a stored preset', async () => {
+        await loadWith({ [NAV]: 'standard' })
+
+        expect(api.storeSettings).toHaveBeenCalledWith({
+          [LEFT]: 'select',
+          [WHEEL]: 'panning'
+        })
+        expect(store.settingValues).toMatchObject({
+          [NAV]: 'standard',
+          [LEFT]: 'select',
+          [WHEEL]: 'panning'
+        })
+      })
+
+      it('supplies only the override that is missing', async () => {
+        await loadWith({ [NAV]: 'standard', [WHEEL]: 'zoom' })
+
+        expect(api.storeSettings).toHaveBeenCalledWith({ [LEFT]: 'select' })
+        expect(store.settingValues[WHEEL]).toBe('zoom')
+      })
+
+      it('leaves a stored custom mode alone', async () => {
+        await loadWith({ [NAV]: 'custom' })
+
+        expect(api.storeSettings).not.toHaveBeenCalled()
+        expect(store.settingValues[LEFT]).toBeUndefined()
+      })
+
+      it('leaves a profile with both overrides alone', async () => {
+        await loadWith({
+          [NAV]: 'legacy',
+          [LEFT]: 'select',
+          [WHEEL]: 'panning'
+        })
+
+        expect(api.storeSettings).not.toHaveBeenCalled()
+      })
+
+      it('writes nothing for a profile with no stored mode', async () => {
+        await loadWith({})
+
+        expect(api.storeSettings).not.toHaveBeenCalled()
+      })
+
+      // GraphCanvas rethrows `error` before registering any core setting, so a
+      // rejection here would leave the app unable to start.
+      it('leaves the store loadable when the write fails', async () => {
+        vi.spyOn(console, 'warn').mockImplementation(() => {})
+        vi.mocked(api.storeSettings).mockRejectedValue(new Error('offline'))
+
+        await loadWith({ [NAV]: 'standard' })
+
+        expect(store.error).toBeUndefined()
+        expect(store.isReady).toBe(true)
+        expect(store.settingValues[LEFT]).toBe('select')
+      })
+    })
+
+    it('leaves the store loadable when the zoom threshold write fails', async () => {
+      vi.spyOn(console, 'warn').mockImplementation(() => {})
+      vi.mocked(api.storeSetting).mockRejectedValue(new Error('offline'))
+      vi.mocked(api.getSettings).mockResolvedValue({
+        'LiteGraph.Canvas.LowQualityRenderingZoomThreshold': 0.6
+      } as Partial<Settings> as Settings)
+
+      await store.load()
+
+      expect(store.error).toBeUndefined()
+      expect(store.isReady).toBe(true)
+      expect(store.settingValues['LiteGraph.Canvas.MinFontSizeForLOD']).toBe(8)
     })
 
     it('should set error if settings are loaded after registration', async () => {
@@ -235,6 +307,24 @@ describe('useSettingStore', () => {
       // No installed version, should use backward compatibility
       expect(result).toBe('regular-default')
     })
+
+    it.for([false, 0, ''])(
+      'should return a falsy versioned default (%j)',
+      (falsy) => {
+        const setting: SettingParams = {
+          id: 'test.setting',
+          name: 'Test Setting',
+          type: 'text',
+          defaultValue: 'regular-default',
+          defaultsByInstallVersion: {
+            '1.21.3': falsy
+          }
+        }
+        store.addSetting(setting)
+
+        expect(store.getDefaultValue('test.setting')).toBe(falsy)
+      }
+    )
 
     it('should handle function-based versioned defaults', () => {
       const setting: SettingParams = {
@@ -420,6 +510,109 @@ describe('useSettingStore', () => {
       )
     })
 
+    it('awaits an onChange handler before persisting the value', async () => {
+      const order: string[] = []
+      vi.mocked(api.storeSetting).mockImplementation(async () => {
+        order.push('storeSetting')
+        return new Response()
+      })
+      store.addSetting({
+        id: 'test.setting',
+        name: 'test.setting',
+        type: 'text',
+        defaultValue: 'default',
+        onChange: async (_value, old) => {
+          if (!old) return
+          await Promise.resolve()
+          order.push('onChange')
+        }
+      })
+
+      await store.set('test.setting', 'newvalue')
+
+      expect(order).toEqual(['onChange', 'storeSetting'])
+    })
+
+    // onChange is extension-facing, and set() persists only after awaiting it,
+    // so an unisolated failure would discard the user's change unsaved.
+    it.for([
+      {
+        label: 'rejects',
+        onChange: async () => {
+          throw new Error('extension blew up')
+        }
+      },
+      {
+        label: 'throws synchronously',
+        onChange: () => {
+          throw new Error('extension blew up')
+        }
+      }
+    ])('persists the value when a handler $label', async ({ onChange }) => {
+      vi.spyOn(console, 'warn').mockImplementation(() => {})
+      store.addSetting({
+        id: 'test.setting',
+        name: 'test.setting',
+        type: 'text',
+        defaultValue: 'default',
+        onChange
+      })
+
+      await expect(
+        store.set('test.setting', 'newvalue')
+      ).resolves.toBeUndefined()
+
+      expect(api.storeSetting).toHaveBeenCalledWith('test.setting', 'newvalue')
+      expect(store.get('test.setting')).toBe('newvalue')
+    })
+
+    it('does not persist a value a newer set() has superseded', async () => {
+      let releaseFirst = () => {}
+      const firstHandlerGate = new Promise<void>((resolve) => {
+        releaseFirst = resolve
+      })
+      let isFirstChange = true
+      store.addSetting({
+        id: 'test.setting',
+        name: 'test.setting',
+        type: 'text',
+        defaultValue: 'default',
+        onChange: async (_value, old) => {
+          if (!old || !isFirstChange) return
+          isFirstChange = false
+          await firstHandlerGate
+        }
+      })
+
+      const stalled = store.set('test.setting', 'first')
+      await store.set('test.setting', 'second')
+      releaseFirst()
+      await stalled
+
+      expect(store.get('test.setting')).toBe('second')
+      expect(api.storeSetting).toHaveBeenLastCalledWith(
+        'test.setting',
+        'second'
+      )
+    })
+
+    it('exposes the new value to onChange handlers', async () => {
+      const observed: unknown[] = []
+      store.addSetting({
+        id: 'test.setting',
+        name: 'test.setting',
+        type: 'text',
+        defaultValue: 'default',
+        onChange: () => {
+          observed.push(store.get('test.setting'))
+        }
+      })
+
+      await store.set('test.setting', 'newvalue')
+
+      expect(observed).toEqual(['default', 'newvalue'])
+    })
+
     it('tracks visible settings with values by default', async () => {
       store.addSetting({
         id: 'test.setting',
@@ -430,7 +623,7 @@ describe('useSettingStore', () => {
 
       await store.set('test.setting', 'newvalue')
 
-      expect(trackSettingChanged).toHaveBeenCalledWith({
+      expect(useTelemetry()?.trackSettingChanged).toHaveBeenCalledWith({
         setting_id: 'test.setting',
         previous_value: 'default',
         new_value: 'newvalue'
@@ -447,7 +640,7 @@ describe('useSettingStore', () => {
 
       await store.set('test.setting', 'newvalue')
 
-      expect(trackSettingChanged).not.toHaveBeenCalled()
+      expect(useTelemetry()?.trackSettingChanged).not.toHaveBeenCalled()
     })
 
     it('does not track visible settings that opt out', async () => {
@@ -461,7 +654,7 @@ describe('useSettingStore', () => {
 
       await store.set('test.setting', 'newvalue')
 
-      expect(trackSettingChanged).not.toHaveBeenCalled()
+      expect(useTelemetry()?.trackSettingChanged).not.toHaveBeenCalled()
     })
 
     it('tracks visible settings without values when values opt out', async () => {
@@ -475,7 +668,7 @@ describe('useSettingStore', () => {
 
       await store.set('test.setting', 'newvalue')
 
-      expect(trackSettingChanged).toHaveBeenCalledWith({
+      expect(useTelemetry()?.trackSettingChanged).toHaveBeenCalledWith({
         setting_id: 'test.setting'
       })
     })
@@ -490,13 +683,13 @@ describe('useSettingStore', () => {
       })
 
       await store.set('test.setting', 'newvalue')
-      expect(trackSettingChanged).toHaveBeenCalledWith({
+      expect(useTelemetry()?.trackSettingChanged).toHaveBeenCalledWith({
         setting_id: 'test.setting'
       })
 
       // Setting the same value again is a no-op and should not re-emit
       await store.set('test.setting', 'newvalue')
-      expect(trackSettingChanged).toHaveBeenCalledTimes(1)
+      expect(useTelemetry()?.trackSettingChanged).toHaveBeenCalledTimes(1)
     })
 
     it('ships previous/new values when the setting opts into includeValues', async () => {
@@ -510,7 +703,7 @@ describe('useSettingStore', () => {
 
       await store.set('Comfy.ColorPalette', 'light')
 
-      expect(trackSettingChanged).toHaveBeenCalledWith({
+      expect(useTelemetry()?.trackSettingChanged).toHaveBeenCalledWith({
         setting_id: 'Comfy.ColorPalette',
         previous_value: 'dark',
         new_value: 'light'
@@ -531,7 +724,7 @@ describe('useSettingStore', () => {
         'failed'
       )
 
-      expect(trackSettingChanged).not.toHaveBeenCalled()
+      expect(useTelemetry()?.trackSettingChanged).not.toHaveBeenCalled()
     })
 
     describe('object mutation prevention', () => {
@@ -681,8 +874,8 @@ describe('useSettingStore', () => {
         'Comfy.Release.Version': '1.0.0'
       })
 
-      expect(trackSettingChanged).toHaveBeenCalledTimes(1)
-      expect(trackSettingChanged).toHaveBeenCalledWith({
+      expect(useTelemetry()?.trackSettingChanged).toHaveBeenCalledTimes(1)
+      expect(useTelemetry()?.trackSettingChanged).toHaveBeenCalledWith({
         setting_id: 'Comfy.ColorPalette',
         previous_value: 'dark',
         new_value: 'light'
@@ -728,7 +921,7 @@ describe('useSettingStore', () => {
       await store.setMany({ 'Comfy.Release.Version': 'existing' })
 
       expect(api.storeSettings).not.toHaveBeenCalled()
-      expect(trackSettingChanged).not.toHaveBeenCalled()
+      expect(useTelemetry()?.trackSettingChanged).not.toHaveBeenCalled()
     })
   })
 })

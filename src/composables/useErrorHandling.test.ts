@@ -1,5 +1,3 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { ErrorRecoveryStrategy } from '@/composables/useErrorHandling'
@@ -11,8 +9,6 @@ describe('useErrorHandling', () => {
   let errorHandler: ReturnType<typeof useErrorHandling>
 
   beforeEach(() => {
-    vi.clearAllMocks()
-    setActivePinia(createTestingPinia())
     errorHandler = useErrorHandling()
   })
 

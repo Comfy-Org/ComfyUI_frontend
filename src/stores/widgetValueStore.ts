@@ -4,30 +4,230 @@ import { reactive, ref } from 'vue'
 import type { UUID } from '@/utils/uuid'
 import { parseNodeId } from '@/types/nodeId'
 import type { NodeId, SerializedNodeId } from '@/types/nodeId'
-import { isWidgetId, parseWidgetId } from '@/types/widgetId'
+import {
+  isWidgetId,
+  parseWidgetId,
+  widgetId as createWidgetId
+} from '@/types/widgetId'
 import type { WidgetId } from '@/types/widgetId'
+import type { WidgetValue } from '@/types/simplifiedWidget'
 import type { WidgetState, WidgetStateInit } from '@/types/widgetState'
+import {
+  applyLegacyHiddenWrite,
+  deriveWidgetVisibility,
+  setWidgetAdvanced,
+  setWidgetHiddenInPanel
+} from '@/types/widgetVisibility'
+import type { WidgetVisibilityComponent } from '@/types/widgetVisibility'
+import type { RemoteMutationContext } from '@/types/graphMutationContext'
+import type { IWidgetOptions } from '@/lib/litegraph/src/types/widgets'
+
+export interface WidgetRenderState {
+  hasLayoutSize?: boolean
+  isDOMWidget?: boolean
+  tooltip?: string
+}
+
+interface WidgetRestorationState {
+  positional: readonly WidgetValue[]
+  named?: Readonly<Record<string, WidgetValue>>
+  restoreNamed: boolean
+}
+
+interface WidgetEntity {
+  state: WidgetState
+  render: WidgetRenderState
+  visibility: WidgetVisibilityComponent
+}
+
+interface WidgetValueChange {
+  widgetId: WidgetId
+  value: WidgetValue
+  oldValue: WidgetValue
+  context?: RemoteMutationContext
+}
+
+function setNodeScoped<T>(
+  graphMap: Map<UUID, Map<NodeId, T>>,
+  graphId: UUID,
+  nodeId: NodeId,
+  value: T
+): void {
+  let nodeMap = graphMap.get(graphId)
+  if (!nodeMap) {
+    nodeMap = new Map()
+    graphMap.set(graphId, nodeMap)
+  }
+  nodeMap.set(nodeId, value)
+}
+
+function clearNodeScoped<T>(
+  graphMap: Map<UUID, Map<NodeId, T>>,
+  graphId: UUID,
+  nodeId: NodeId
+): void {
+  const nodeMap = graphMap.get(graphId)
+  if (!nodeMap) return
+  nodeMap.delete(nodeId)
+  if (nodeMap.size === 0) graphMap.delete(graphId)
+}
 
 export function stripGraphPrefix(scopedId: SerializedNodeId): NodeId | null {
   return parseNodeId(String(scopedId).replace(/^(.*:)+/, ''))
 }
 
 export const useWidgetValueStore = defineStore('widgetValue', () => {
-  const graphWidgetStates = ref(new Map<UUID, Map<WidgetId, WidgetState>>())
+  const graphWidgets = ref(new Map<UUID, Map<WidgetId, WidgetEntity>>())
+  const graphNodeWidgetOrders = ref(new Map<UUID, Map<NodeId, WidgetId[]>>())
+  const graphWidgetRestorations = new Map<
+    UUID,
+    Map<NodeId, WidgetRestorationState>
+  >()
 
-  function getGraphWidgetStates(graphId: UUID): Map<WidgetId, WidgetState> {
-    const widgetStates = graphWidgetStates.value.get(graphId)
-    if (widgetStates) return widgetStates
+  const valueChangeListeners = new Set<(change: WidgetValueChange) => void>()
+  const valueMutationContexts = new WeakMap<
+    WidgetState,
+    RemoteMutationContext
+  >()
 
-    const nextWidgetStates = reactive(new Map<WidgetId, WidgetState>())
-    graphWidgetStates.value.set(graphId, nextWidgetStates)
-    return nextWidgetStates
+  function observeValue<TValue extends WidgetValue>(
+    state: WidgetState<TValue>,
+    graphId: UUID
+  ): void {
+    let value = state.value
+    Object.defineProperty(state, 'value', {
+      configurable: true,
+      enumerable: true,
+      get: () => value,
+      set: (nextValue: TValue) => {
+        if (Object.is(value, nextValue)) return
+        const oldValue = value
+        value = nextValue
+        const widgetId = createWidgetId(graphId, state.nodeId, state.name)
+        if (getWidget(widgetId) !== state) return
+        const context = valueMutationContexts.get(state)
+        valueMutationContexts.delete(state)
+        for (const listener of valueChangeListeners) {
+          listener({ widgetId, value, oldValue, context })
+        }
+      }
+    })
   }
 
-  function registerWidget<TValue = unknown>(
+  function onValueChange(
+    listener: (change: WidgetValueChange) => void
+  ): () => void {
+    valueChangeListeners.add(listener)
+    return () => valueChangeListeners.delete(listener)
+  }
+
+  function setNodeWidgetRestoration(
+    graphId: UUID,
+    nodeId: NodeId,
+    restoration: WidgetRestorationState
+  ): void {
+    setNodeScoped(graphWidgetRestorations, graphId, nodeId, restoration)
+  }
+
+  function getRestoredWidgetValue(
+    graphId: UUID,
+    nodeId: NodeId,
+    name: string,
+    positionalIndex: number
+  ): { value: WidgetValue } | undefined {
+    const restoration = graphWidgetRestorations.get(graphId)?.get(nodeId)
+    if (!restoration) return
+    if (restoration.restoreNamed && restoration.named) {
+      return Object.hasOwn(restoration.named, name)
+        ? { value: restoration.named[name] }
+        : undefined
+    }
+    return positionalIndex < restoration.positional.length
+      ? { value: restoration.positional[positionalIndex] }
+      : undefined
+  }
+
+  function clearNodeWidgetRestoration(graphId: UUID, nodeId: NodeId): void {
+    clearNodeScoped(graphWidgetRestorations, graphId, nodeId)
+  }
+
+  function getGraphWidgets(graphId: UUID): Map<WidgetId, WidgetEntity> {
+    const widgets = graphWidgets.value.get(graphId)
+    if (widgets) return widgets
+
+    const nextWidgets = reactive(new Map<WidgetId, WidgetEntity>())
+    graphWidgets.value.set(graphId, nextWidgets)
+    return nextWidgets
+  }
+
+  function findGraphWidgets(
+    graphId: UUID
+  ): Map<WidgetId, WidgetEntity> | undefined {
+    return graphWidgets.value.get(graphId)
+  }
+
+  function getGraphNodeWidgetOrders(graphId: UUID): Map<NodeId, WidgetId[]> {
+    const widgetOrders = graphNodeWidgetOrders.value.get(graphId)
+    if (widgetOrders) return widgetOrders
+
+    const nextWidgetOrders = reactive(new Map<NodeId, WidgetId[]>())
+    graphNodeWidgetOrders.value.set(graphId, nextWidgetOrders)
+    return nextWidgetOrders
+  }
+
+  function getNodeWidgetOrder(graphId: UUID, nodeId: NodeId): WidgetId[] {
+    const graphOrders = getGraphNodeWidgetOrders(graphId)
+    const order = graphOrders.get(nodeId)
+    if (order) return order
+
+    const nextOrder = reactive<WidgetId[]>([])
+    graphOrders.set(nodeId, nextOrder)
+    return nextOrder
+  }
+
+  function appendNodeWidgetOrder(widgetId: WidgetId): void {
+    const { graphId, nodeId } = parseWidgetId(widgetId)
+    const order = getNodeWidgetOrder(graphId, nodeId)
+    if (!order.includes(widgetId)) order.push(widgetId)
+  }
+
+  function removeNodeWidgetOrder(widgetId: WidgetId): void {
+    const { graphId, nodeId } = parseWidgetId(widgetId)
+    const graphOrders = graphNodeWidgetOrders.value.get(graphId)
+    if (!graphOrders) return
+    const order = graphOrders.get(nodeId)
+    if (!order) return
+
+    const index = order.indexOf(widgetId)
+    if (index !== -1) order.splice(index, 1)
+    if (order.length === 0) graphOrders.delete(nodeId)
+  }
+
+  /**
+   * @returns The existing state for the same widget type, replacement state
+   * for a different type, or `undefined` for an invalid widget ID.
+   */
+  function registerWidget<
+    TValue extends WidgetValue = WidgetValue,
+    TType extends string = string,
+    TOptions extends IWidgetOptions = IWidgetOptions
+  >(
     widgetId: WidgetId,
-    init: WidgetStateInit<TValue>
-  ): WidgetState<TValue> | undefined {
+    init: WidgetStateInit<TValue, TType, TOptions>,
+    renderState?: WidgetRenderState,
+    visibility?: WidgetVisibilityComponent,
+    context?: RemoteMutationContext
+  ): WidgetState<TValue, TType, TOptions> | undefined
+  function registerWidget(
+    widgetId: WidgetId,
+    init: WidgetStateInit,
+    renderState: WidgetRenderState = {},
+    visibility: WidgetVisibilityComponent = deriveWidgetVisibility({
+      type: init.type,
+      options: init.options
+    }),
+    _context?: RemoteMutationContext
+  ): WidgetState | undefined {
     if (!isWidgetId(widgetId)) {
       console.warn(
         'widgetValueStore.registerWidget: ignoring un-keyable widget id',
@@ -36,34 +236,118 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
       return undefined
     }
 
-    const existing = getWidget(widgetId)
-    if (existing && existing.type === init.type) {
-      return existing as WidgetState<TValue>
+    const { graphId, nodeId, name: storageName } = parseWidgetId(widgetId)
+    const widgets = getGraphWidgets(graphId)
+    const existing = widgets.get(widgetId)
+    // WidgetId is `graphId:nodeId:name`. A node replacement can reuse the same
+    // numeric nodeId, so a stale entry from the previous occupant may survive in
+    // the store under the same key. The type check distinguishes a live
+    // re-registration (same widget, keep its value) from a recycled key (new
+    // widget type at an old address, overwrite). Without it a text widget
+    // rendered as the prior int type until the next full reload (#13073, #13773).
+    if (existing && existing.state.type === init.type) {
+      const value = existing.state.value
+      Object.assign(existing.state, init, {
+        name: init.name ?? storageName,
+        nodeId,
+        value,
+        y: init.y ?? existing.state.y
+      })
+      Object.assign(existing.render, renderState)
+      Object.assign(existing.visibility.surfaces, visibility.surfaces)
+      existing.visibility.suppression.byExtension =
+        visibility.suppression.byExtension
+      appendNodeWidgetOrder(widgetId)
+      return existing.state
     }
 
-    const { graphId, nodeId, name } = parseWidgetId(widgetId)
-    const state: WidgetState<TValue> = {
+    const state: WidgetState = {
       ...init,
       nodeId,
-      name,
+      name: init.name ?? storageName,
       y: init.y ?? 0
     }
-    const widgetStates = getGraphWidgetStates(graphId)
-    widgetStates.set(widgetId, state)
-    return widgetStates.get(widgetId) as WidgetState<TValue>
+    widgets.set(widgetId, {
+      state,
+      render: { ...renderState },
+      visibility: {
+        surfaces: { ...visibility.surfaces },
+        suppression: { ...visibility.suppression }
+      }
+    })
+    appendNodeWidgetOrder(widgetId)
+    const registered = widgets.get(widgetId)?.state
+    if (registered) observeValue(registered, graphId)
+    return registered
   }
 
   function getWidget(widgetId: WidgetId): WidgetState | undefined {
     if (!isWidgetId(widgetId)) return undefined
 
     const { graphId } = parseWidgetId(widgetId)
-    return getGraphWidgetStates(graphId).get(widgetId)
+    return graphWidgets.value.get(graphId)?.get(widgetId)?.state
   }
 
-  function setValue(widgetId: WidgetId, value: WidgetState['value']): boolean {
+  function getWidgetRenderState(
+    widgetId: WidgetId
+  ): WidgetRenderState | undefined {
+    if (!isWidgetId(widgetId)) return undefined
+
+    const { graphId } = parseWidgetId(widgetId)
+    return graphWidgets.value.get(graphId)?.get(widgetId)?.render
+  }
+
+  function getWidgetVisibility(
+    widgetId: WidgetId
+  ): WidgetVisibilityComponent | undefined {
+    if (!isWidgetId(widgetId)) return undefined
+
+    const { graphId } = parseWidgetId(widgetId)
+    return graphWidgets.value.get(graphId)?.get(widgetId)?.visibility
+  }
+
+  function setValue(
+    widgetId: WidgetId,
+    value: WidgetState['value'],
+    context?: RemoteMutationContext
+  ): boolean {
     const state = getWidget(widgetId)
     if (!state) return false
-    state.value = value
+    if (context) valueMutationContexts.set(state, context)
+    try {
+      state.value = value
+    } finally {
+      valueMutationContexts.delete(state)
+    }
+    return true
+  }
+
+  function setLabel(widgetId: WidgetId, label: string): boolean {
+    const state = getWidget(widgetId)
+    if (!state) return false
+    state.label = label
+    return true
+  }
+
+  function updateOptions(
+    widgetId: WidgetId,
+    options: Partial<WidgetState['options']>
+  ): boolean {
+    const state = getWidget(widgetId)
+    if (!state) return false
+    const visibility = getWidgetVisibility(widgetId)
+    if (visibility) {
+      if (options.hidden !== undefined) {
+        applyLegacyHiddenWrite(visibility, options.hidden)
+      }
+      if (options.hideInPanel !== undefined) {
+        setWidgetHiddenInPanel(visibility, options.hideInPanel)
+      }
+      if (options.advanced !== undefined) {
+        setWidgetAdvanced(visibility, options.advanced, ['vueNode', 'panel'])
+      }
+    }
+    state.options = { ...state.options, ...options }
     return true
   }
 
@@ -71,25 +355,180 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
     if (!isWidgetId(widgetId)) return false
 
     const { graphId } = parseWidgetId(widgetId)
-    return getGraphWidgetStates(graphId).delete(widgetId)
+    removeNodeWidgetOrder(widgetId)
+    return graphWidgets.value.get(graphId)?.delete(widgetId) ?? false
+  }
+
+  function renameWidget(
+    oldId: WidgetId,
+    newId: WidgetId
+  ): WidgetState | undefined {
+    if (!isWidgetId(oldId) || !isWidgetId(newId)) return undefined
+    if (oldId === newId) return getWidget(oldId)
+
+    const previous = parseWidgetId(oldId)
+    const next = parseWidgetId(newId)
+    if (previous.graphId !== next.graphId || previous.nodeId !== next.nodeId) {
+      return undefined
+    }
+
+    const { graphId, nodeId, name } = next
+    const widgets = findGraphWidgets(graphId)
+    if (!widgets) return undefined
+    const entity = widgets.get(oldId)
+    if (!entity || widgets.has(newId)) return undefined
+
+    const order = graphNodeWidgetOrders.value.get(graphId)?.get(nodeId)
+    if (!order) return undefined
+    const index = order.indexOf(oldId)
+
+    widgets.delete(oldId)
+    entity.state.name = name
+    widgets.set(newId, entity)
+    if (index === -1) order.push(newId)
+    else order.splice(index, 1, newId)
+
+    return entity.state
   }
 
   function getNodeWidgets(graphId: UUID, localNodeId: NodeId): WidgetState[] {
-    return [...getGraphWidgetStates(graphId).values()].filter(
-      (state) => state.nodeId === localNodeId
+    return getNodeWidgetIds(graphId, localNodeId).flatMap((id) => {
+      const state = getWidget(id)
+      return state ? [state] : []
+    })
+  }
+
+  /**
+   * Merges a requested widget order against the ids already tracked for the
+   * node: the request is filtered to tracked ids, then any tracked id the
+   * request omitted is appended. Tracked ids are never dropped here — only
+   * {@link removeNodeWidgetOrder} removes an id from the order.
+   */
+  function reconcileNodeWidgetOrder(
+    graphId: UUID,
+    localNodeId: NodeId,
+    orderedWidgetIds: readonly WidgetId[]
+  ): WidgetId[] {
+    const currentOrder = getNodeWidgetIds(graphId, localNodeId)
+    const currentIds = new Set(currentOrder)
+    const nextOrder = orderedWidgetIds.filter((id) => currentIds.has(id))
+    const nextIds = new Set(nextOrder)
+    return [...nextOrder, ...currentOrder.filter((id) => !nextIds.has(id))]
+  }
+
+  function getNodeWidgetIds(graphId: UUID, localNodeId: NodeId): WidgetId[] {
+    return [
+      ...(graphNodeWidgetOrders.value.get(graphId)?.get(localNodeId) ?? [])
+    ]
+  }
+
+  function setNodeWidgetOrder(
+    graphId: UUID,
+    localNodeId: NodeId,
+    orderedWidgetIds: readonly WidgetId[]
+  ): void {
+    const nextOrder = reconcileNodeWidgetOrder(
+      graphId,
+      localNodeId,
+      orderedWidgetIds
     )
+    const order = getNodeWidgetOrder(graphId, localNodeId)
+    order.splice(0, order.length, ...nextOrder)
+  }
+
+  function replaceNodeWidgetOrder(
+    graphId: UUID,
+    localNodeId: NodeId,
+    orderedWidgetIds: readonly WidgetId[]
+  ): void {
+    const widgets = findGraphWidgets(graphId)
+    const nextOrder = orderedWidgetIds.filter(
+      (id) => widgets?.get(id)?.state.nodeId === localNodeId
+    )
+    const graphOrders = getGraphNodeWidgetOrders(graphId)
+    const order = graphOrders.get(localNodeId)
+
+    if (nextOrder.length === 0) {
+      graphOrders.delete(localNodeId)
+    } else if (order) {
+      order.splice(0, order.length, ...nextOrder)
+    } else {
+      graphOrders.set(localNodeId, reactive([...nextOrder]))
+    }
+  }
+
+  /**
+   * Releases the widget ids tracked for a node, from the store's own record
+   * rather than the node's live widget list — the two diverge once a node drops
+   * widgets without unregistering them. `discardValues` also drops the widget
+   * states; retaining them lets a node that comes back keep what the user set.
+   */
+  function releaseNodeWidgets(
+    graphId: UUID,
+    localNodeId: NodeId,
+    { discardValues }: { discardValues: boolean }
+  ): void {
+    const graphOrders = graphNodeWidgetOrders.value.get(graphId)
+    if (!graphOrders) return
+
+    const order = graphOrders.get(localNodeId)
+    if (!order) return
+
+    if (discardValues) {
+      for (const widgetId of order) {
+        graphWidgets.value.get(graphId)?.delete(widgetId)
+      }
+    }
+    graphOrders.delete(localNodeId)
+  }
+
+  function clearNode(
+    graphId: UUID,
+    nodeId: NodeId,
+    _context?: RemoteMutationContext
+  ): void {
+    graphWidgetRestorations.get(graphId)?.delete(nodeId)
+    const widgets = graphWidgets.value.get(graphId)
+    if (widgets) {
+      for (const [id, entity] of widgets) {
+        if (entity.state.nodeId !== nodeId) continue
+        widgets.delete(id)
+      }
+      if (widgets.size === 0) graphWidgets.value.delete(graphId)
+    }
+
+    const widgetOrders = graphNodeWidgetOrders.value.get(graphId)
+    widgetOrders?.delete(nodeId)
+    if (widgetOrders?.size === 0) graphNodeWidgetOrders.value.delete(graphId)
   }
 
   function clearGraph(graphId: UUID): void {
-    graphWidgetStates.value.delete(graphId)
+    graphWidgets.value.delete(graphId)
+    graphNodeWidgetOrders.value.delete(graphId)
+    graphWidgetRestorations.delete(graphId)
   }
 
   return {
     registerWidget,
+    setNodeWidgetRestoration,
+    clearNodeWidgetRestoration,
+    getRestoredWidgetValue,
     getWidget,
+    getWidgetRenderState,
+    getWidgetVisibility,
+    onValueChange,
     setValue,
+    setLabel,
+    updateOptions,
     deleteWidget,
+    renameWidget,
     getNodeWidgets,
+    getNodeWidgetIds,
+    setNodeWidgetOrder,
+    replaceNodeWidgetOrder,
+    removeNodeWidgetOrder,
+    releaseNodeWidgets,
+    clearNode,
     clearGraph
   }
 })

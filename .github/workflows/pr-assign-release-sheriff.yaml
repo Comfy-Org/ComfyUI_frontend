@@ -33,19 +33,104 @@ jobs:
       contents: read
       issues: write
       pull-requests: write
+      # Reading this workflow's own run history, to alert only on the
+      # transition into failure rather than once an hour forever.
+      actions: read
 
     steps:
       # pull_request_target checks out the base branch, never PR head code.
       - name: Checkout repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Setup frontend
         uses: ./.github/actions/setup-frontend
 
       - name: Assign release sheriff
+        id: sheriff
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
           DATADOG_API_KEY: ${{ secrets.DATADOG_API_KEY }}
           DATADOG_APP_KEY: ${{ secrets.DATADOG_APP_KEY }}
+          # Datadog user -> GitHub login, as JSON. Must stay a secret and never
+          # become an Actions variable: Actions prints a step's env block before
+          # running it and this repo's run logs are public, so a variable would
+          # publish the whole map. Secret values are masked. Source of truth is
+          # rosters/release-sheriff-directory.json in Comfy-Org/github-workflows-ops.
+          RELEASE_SHERIFF_DIRECTORY: ${{ secrets.RELEASE_SHERIFF_DIRECTORY }}
         run: pnpm exec tsx scripts/release-sheriff/release-sheriff.ts
+
+      # A failed scheduled run only notifies whoever last pushed to main, which
+      # in practice is nobody — the reason the placeholder config went unnoticed
+      # for weeks. Post where the rotation actually watches instead.
+      # This job runs hourly, so a lasting breakage would otherwise post ~24
+      # times a day until someone fixed it — and a channel that cries wolf gets
+      # muted, which is the failure this alert exists to prevent. Alert on the
+      # transition into failure: skip if the previous decisive run already did.
+      # Skipped runs (the pull_request_target gate) are not decisive.
+      #
+      # Only scheduled runs alert, because only scheduled runs are read back.
+      # A run can recognise a duplicate only within the history it looks at,
+      # so alerting from a wider set than that history covers is how five
+      # pull_request_target failures posted in nine minutes, each blind to
+      # the last.
+      - name: Check whether this failure is already known
+        id: known
+        if: >-
+          failure() && github.event_name == 'schedule' &&
+          steps.sheriff.outcome == 'failure'
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          RUN_ID: ${{ github.run_id }}
+        run: |
+          set -euo pipefail
+          # The run's conclusion is the wrong signal: a run that died in
+          # checkout failed without ever reaching the sheriff, and counting it
+          # as "already alerted" would swallow the next real one. Read the
+          # step's own conclusion. Only scheduled runs are considered — the
+          # pull_request_target gate skips most others, so they are the ones
+          # dense in runs that actually decided something.
+          PREVIOUS=none
+          RUNS=$(gh api \
+            "repos/$REPO/actions/workflows/pr-assign-release-sheriff.yaml/runs?event=schedule&status=completed&per_page=15" \
+            --jq "[.workflow_runs[] | select(.id != ($RUN_ID|tonumber))] | .[].id")
+          for RUN in $RUNS; do
+            STEP=$(gh api "repos/$REPO/actions/runs/$RUN/jobs" \
+              --jq '[.jobs[].steps[]? | select(.name == "Assign release sheriff")]
+                    | first.conclusion // ""')
+            if [ "$STEP" = "success" ] || [ "$STEP" = "failure" ]; then
+              PREVIOUS=$STEP
+              break
+            fi
+          done
+          echo "previous=$PREVIOUS" >> "$GITHUB_OUTPUT"
+
+      # Scoped to this step, not the job: a checkout or pnpm blip is CI noise
+      # that is already visible elsewhere, and paging the rotation for it is
+      # how an alert channel gets muted.
+      - name: Report a degraded run to Slack
+        if: >-
+          failure() && github.event_name == 'schedule' &&
+          steps.sheriff.outcome == 'failure' &&
+          steps.known.outputs.previous != 'failure'
+        continue-on-error: true
+        env:
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+          SLACK_CHANNEL_ID: 'C09K9TPU2G7' # #frontend-releases
+          REASON: ${{ steps.sheriff.outputs.degraded }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          set -euo pipefail
+          DETAIL="${REASON:-The job failed before it could resolve a sheriff.}"
+          TEXT=":rotating_light: *Release sheriff assignment degraded.* ${DETAIL} <${RUN_URL}|View run>"
+          BODY=$(jq -n --arg ch "$SLACK_CHANNEL_ID" --arg text "$TEXT" '{channel: $ch, text: $text}')
+          RESPONSE=$(curl -sS -X POST \
+            --connect-timeout 10 \
+            --max-time 30 \
+            -H "Authorization: Bearer $SLACK_BOT_TOKEN" \
+            -H "Content-Type: application/json" \
+            -d "$BODY" \
+            https://slack.com/api/chat.postMessage)
+          echo "$RESPONSE" | jq -e '.ok == true' >/dev/null

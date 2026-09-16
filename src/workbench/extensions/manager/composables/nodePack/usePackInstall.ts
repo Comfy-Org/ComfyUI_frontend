@@ -23,20 +23,20 @@ export function usePackInstall(
   // Check if any of the packs are currently being installed
   const isInstalling = computed(() => {
     const nodePacks = getNodePacks()
-    if (!nodePacks?.length) return false
+    if (!nodePacks.length) return false
     return nodePacks.some((pack) => managerStore.isPackInstalling(pack.id))
   })
 
   const createPayload = (installItem: NodePack) => {
     if (!installItem.id) {
-      throw new Error(t('manager.packInstall.nodeIdRequired'))
+      console.error(t('manager.packInstall.nodeIdRequired'))
+      return
     }
 
     const isUnclaimedPack = installItem.publisher?.name === 'Unclaimed'
     const versionToInstall = isUnclaimedPack
       ? ('nightly' as ManagerComponents['schemas']['SelectedVersion'])
-      : (installItem.latest_version?.version ??
-        ('latest' as ManagerComponents['schemas']['SelectedVersion']))
+      : (installItem.latest_version?.version ?? 'latest')
 
     return {
       id: installItem.id,
@@ -48,8 +48,11 @@ export function usePackInstall(
     }
   }
 
-  const installPack = (item: NodePack) =>
-    managerStore.installPack.call(createPayload(item))
+  const installPack = (item: NodePack) => {
+    const payload = createPayload(item)
+    if (!payload) return Promise.resolve()
+    return managerStore.installPack.call(payload)
+  }
 
   const performInstallation = async (packs: NodePack[]) => {
     try {
@@ -70,7 +73,7 @@ export function usePackInstall(
 
   const installAllPacks = async () => {
     const nodePacks = getNodePacks()
-    if (!nodePacks?.length) return
+    if (!nodePacks.length) return
 
     const hasConflict = getHasConflict?.()
     const conflictInfo = getConflictInfo?.()

@@ -1,5 +1,3 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useReconnectQueueRefresh } from '@/composables/useReconnectQueueRefresh'
@@ -18,7 +16,7 @@ function makeJob(id: string, status: JobListItem['status']): JobListItem {
   }
 }
 
-vi.mock('@/scripts/api', () => ({
+vi.mock<unknown>(import('@/scripts/api'), () => ({
   api: {
     getQueue: vi.fn(),
     getHistory: vi.fn(),
@@ -30,8 +28,6 @@ vi.mock('@/scripts/api', () => ({
 
 describe('useReconnectQueueRefresh', () => {
   beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-    vi.restoreAllMocks()
     vi.mocked(api.getQueue).mockResolvedValue({ Running: [], Pending: [] })
     vi.mocked(api.getHistory).mockResolvedValue([])
   })

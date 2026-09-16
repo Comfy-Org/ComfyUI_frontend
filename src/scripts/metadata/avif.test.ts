@@ -1,6 +1,6 @@
 import fs from 'fs'
 import path from 'path'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import {
   EXPECTED_PROMPT,
@@ -16,8 +16,6 @@ const nanFixturePath = path.resolve(
   __dirname,
   '__fixtures__/with_nan_metadata.avif'
 )
-
-afterEach(() => vi.restoreAllMocks())
 
 describe('AVIF metadata', () => {
   it('extracts workflow and prompt from EXIF data in ISOBMFF boxes', async () => {
@@ -77,11 +75,14 @@ describe('AVIF metadata', () => {
       vi.spyOn(console, 'error').mockImplementation(() => {})
       mockFileReaderError('readAsArrayBuffer')
       expect(await getFromAvifFile(file)).toEqual({})
+      expect(console.error).not.toHaveBeenCalled()
     })
 
     it('resolves empty when the FileReader fires abort', async () => {
+      vi.spyOn(console, 'error').mockImplementation(() => {})
       mockFileReaderAbort('readAsArrayBuffer')
       expect(await getFromAvifFile(file)).toEqual({})
+      expect(console.error).not.toHaveBeenCalled()
     })
   })
 })
@@ -247,7 +248,7 @@ const buildAvifFile = (opts: BuildAvifOpts = {}): ArrayBuffer => {
 
   const ftyp = buildFtypBox(ftypBrand)
   if (omitMeta) {
-    return ftyp.slice().buffer as ArrayBuffer
+    return ftyp.slice().buffer
   }
 
   const exifData = buildExifBlob(exifEntries, endian)
@@ -274,7 +275,7 @@ const buildAvifFile = (opts: BuildAvifOpts = {}): ArrayBuffer => {
   buf.set(meta, p)
   p += meta.length
   buf.set(exifData, p)
-  return buf.slice().buffer as ArrayBuffer
+  return buf.slice().buffer
 }
 
 const fileFromBuffer = (buffer: ArrayBuffer, name = 'test.avif'): File =>

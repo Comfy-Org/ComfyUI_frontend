@@ -11,24 +11,17 @@ import {
   shouldRemintCloudRequest
 } from '@/platform/auth/unified/remintRetry'
 import { getDevOverride } from '@/utils/devFeatureFlagOverride'
+import { getSessionOverride } from '@/utils/sessionFeatureFlagOverride'
 import type {
   ModelFile,
   ModelFolderInfo
 } from '@/platform/assets/schemas/assetSchema'
 import { isCloud } from '@/platform/distribution/types'
+import * as Sentry from '@sentry/vue'
+import { useTelemetry } from '@/platform/telemetry'
 import { useToastStore } from '@/platform/updates/common/toastStore'
-import type { ShareableAssetsResponse } from '@/schemas/apiSchema'
-import { zShareableAssetsResponse } from '@/schemas/apiSchema'
 import type {
-  TemplateIncludeOnDistributionEnum,
-  WorkflowTemplates
-} from '@/platform/workflow/templates/types/template'
-import type {
-  ComfyApiWorkflow,
-  ComfyWorkflowJSON
-} from '@/platform/workflow/validation/schemas/workflowSchema'
-import type { SerializedNodeId } from '@/types/nodeId'
-import type {
+  ShareableAssetsResponse,
   AssetDownloadWsMessage,
   AssetExportWsMessage,
   CustomNodesI18n,
@@ -57,7 +50,21 @@ import type {
   User,
   UserDataFullInfo
 } from '@/schemas/apiSchema'
+import {
+  zEmbeddingsResponse,
+  zShareableAssetsResponse
+} from '@/schemas/apiSchema'
 import type {
+  TemplateIncludeOnDistributionEnum,
+  WorkflowTemplates
+} from '@/platform/workflow/templates/types/template'
+import type {
+  ComfyApiWorkflow,
+  ComfyWorkflowJSON
+} from '@/platform/workflow/validation/schemas/workflowSchema'
+import type { SerializedNodeId } from '@/types/nodeId'
+import type {
+  JobAssetsResult,
   JobDetail,
   JobListItem
 } from '@/platform/remote/comfyui/jobs/jobTypes'
@@ -67,6 +74,7 @@ import type { AuthHeader } from '@/types/authTypes'
 import type { NodeExecutionId } from '@/types/nodeIdentification'
 import {
   fetchHistory,
+  fetchJobAssets,
   fetchJobDetail,
   fetchQueue
 } from '@/platform/remote/comfyui/jobs/fetchJobs'
@@ -123,6 +131,58 @@ interface QueuePromptRequestBody {
   }
   front?: boolean
   number?: number
+}
+
+const FETCH_RESPONSE_HEADERS_TIMEOUT_MS = 60_000
+
+interface FetchApiOptions extends RequestInit {
+  timeoutMs?: number | null
+}
+
+const FETCH_ROUTE_GROUPS = new Set([
+  'assets',
+  'embeddings',
+  'experiment',
+  'extensions',
+  'features',
+  'files',
+  'folder_paths',
+  'free',
+  'global_subgraphs',
+  'history',
+  'hub',
+  'internal',
+  'interrupt',
+  'jobs',
+  'logs',
+  'models',
+  'node_replacements',
+  'object_info',
+  'prompt',
+  'providers',
+  'queue',
+  'secrets',
+  'settings',
+  'system_stats',
+  'upload',
+  'user',
+  'userdata',
+  'users',
+  'video_metadata',
+  'view',
+  'view_metadata',
+  'workflow_templates',
+  'workflows',
+  'workspace'
+])
+
+function getFetchRouteTemplate(route: string): string {
+  const segments = (route.split(/[?#]/)[0] ?? '').split('/').filter(Boolean)
+  const routeSegments = segments[0] === 'api' ? segments.slice(1) : segments
+  const [routeGroup, ...resources] = routeSegments
+
+  if (!routeGroup || !FETCH_ROUTE_GROUPS.has(routeGroup)) return '/other'
+  return `/${routeGroup}${resources.length ? '/:resource' : ''}`
 }
 
 /**
@@ -238,7 +298,7 @@ type ApiToEventType<T = ApiCalls> = {
 }
 
 /** Dictionary of types used in the detail for a custom event */
-type ApiEventTypes = ApiToEventType<ApiCalls>
+type ApiEventTypes = ApiToEventType
 
 /** Dictionary of API events: `[name]: CustomEvent<Type>` */
 type ApiEvents = AsCustomEvents<ApiEventTypes>
@@ -278,6 +338,24 @@ function addHeaderEntry(headers: HeadersInit, key: string, value: string) {
     headers.set(key, value)
   } else {
     headers[key] = value
+  }
+}
+
+/**
+ * Fire-and-forget: a telemetry chunk-load failure must never prevent the
+ * token-less WebSocket connect fallback from proceeding.
+ */
+async function trackWsTokenUnavailable(): Promise<void> {
+  try {
+    if (!(await shouldRemintCloudRequest())) return
+    const { useTelemetry } = await import('@/platform/telemetry')
+    useTelemetry()?.trackUnifiedAuthRetry({
+      transport: 'ws',
+      outcome: 'failed',
+      failure_reason: 'token_unavailable'
+    })
+  } catch (err) {
+    console.warn('Failed to report WebSocket token unavailability:', err)
   }
 }
 
@@ -466,8 +544,10 @@ export class ComfyApi extends EventTarget {
     }
   }
 
-  async fetchApi(route: string, options?: RequestInit) {
-    const headers: HeadersInit = options?.headers ?? {}
+  async fetchApi(route: string, options?: FetchApiOptions) {
+    const { timeoutMs = FETCH_RESPONSE_HEADERS_TIMEOUT_MS, ...requestOptions } =
+      options ?? {}
+    const headers: HeadersInit = requestOptions.headers ?? {}
     let unifiedRetryOn401 = false
 
     if (isCloud) {
@@ -495,11 +575,51 @@ export class ComfyApi extends EventTarget {
     }
 
     addHeaderEntry(headers, 'Comfy-User', this.user)
+
+    const timeout =
+      timeoutMs === null
+        ? null
+        : { controller: new AbortController(), duration: timeoutMs }
+    const timeoutId = timeout
+      ? setTimeout(() => {
+          const method = (requestOptions.method ?? 'GET').toUpperCase()
+          const routeTemplate = getFetchRouteTemplate(route)
+
+          Sentry.addBreadcrumb({
+            category: 'fetch',
+            message: `Timeout on ${method} ${routeTemplate}`,
+            level: 'warning',
+            data: { timeout_ms: timeout.duration }
+          })
+
+          useTelemetry()?.trackFetchTimeout({
+            route: routeTemplate,
+            method,
+            timeout_ms: timeout.duration
+          })
+
+          timeout.controller.abort(
+            new DOMException('Fetch timeout', 'TimeoutError')
+          )
+        }, timeout.duration)
+      : undefined
+    const signal =
+      requestOptions.signal && timeout
+        ? AbortSignal.any([requestOptions.signal, timeout.controller.signal])
+        : (requestOptions.signal ?? timeout?.controller.signal)
+
     return fetchWithUnifiedRemint(
       this.apiURL(route),
-      { cache: 'no-cache', ...options, headers },
+      {
+        cache: 'no-cache',
+        ...requestOptions,
+        headers,
+        signal
+      },
       unifiedRetryOn401
-    )
+    ).finally(() => {
+      if (timeoutId !== undefined) clearTimeout(timeoutId)
+    })
   }
 
   /**
@@ -668,7 +788,7 @@ export class ComfyApi extends EventTarget {
     const generation = ++this.socketGeneration
 
     let opened = false
-    let existingSession = window.name
+    const existingSession = window.name
 
     // Build WebSocket URL with query parameters
     const params = new URLSearchParams()
@@ -687,6 +807,7 @@ export class ComfyApi extends EventTarget {
           params.set('token', authToken)
         }
       } catch (error) {
+        void trackWsTokenUnavailable()
         // Continue without auth token if there's an error
         console.warn(
           'Could not get auth token for WebSocket connection:',
@@ -825,7 +946,7 @@ export class ComfyApi extends EventTarget {
               const metadata = JSON.parse(decoder4.decode(metadataBytes))
               const imageData4 = event.data.slice(8 + metadataLength)
 
-              let imageMime4 = metadata.image_type
+              const imageMime4 = metadata.image_type
 
               const imageBlob4 = new Blob([imageData4], {
                 type: imageMime4
@@ -845,9 +966,10 @@ export class ComfyApi extends EventTarget {
               this.dispatchCustomEvent('b_preview', imageBlob4)
               break
             default:
-              throw new Error(
+              console.error(
                 `Unknown binary websocket message of type ${eventType}`
               )
+              break
           }
         } else {
           const msg = JSON.parse(event.data) as ApiMessageUnion
@@ -889,12 +1011,7 @@ export class ComfyApi extends EventTarget {
               this.dispatchCustomEvent('autoQueueGraphChanged')
               break
             case 'feature_flags':
-              // Store server feature flags
               this.serverFeatureFlags.value = msg.data
-              console.log(
-                'Server feature flags received:',
-                this.serverFeatureFlags.value
-              )
               this.dispatchCustomEvent('feature_flags', msg.data)
               break
             default:
@@ -905,7 +1022,7 @@ export class ComfyApi extends EventTarget {
                 )
               } else if (!this.reportedUnknownMessageTypes.has(msg.type)) {
                 this.reportedUnknownMessageTypes.add(msg.type)
-                throw new Error(`Unknown message type ${msg.type}`)
+                console.error(`Unknown message type ${msg.type}`)
               }
           }
         }
@@ -999,10 +1116,14 @@ export class ComfyApi extends EventTarget {
 
   /**
    * Gets a list of embedding names
+   * @throws When the request fails or the response does not match the schema
    */
   async getEmbeddings(): Promise<EmbeddingsResponse> {
     const resp = await this.fetchApi('/embeddings', { cache: 'no-store' })
-    return await resp.json()
+    if (!resp.ok) {
+      throw new Error(`Failed to fetch /embeddings: ${resp.status}`)
+    }
+    return zEmbeddingsResponse.parse(await resp.json())
   }
 
   /**
@@ -1181,7 +1302,7 @@ export class ComfyApi extends EventTarget {
     Pending: JobListItem[]
   }> {
     try {
-      return await fetchQueue(this.fetchApi.bind(this))
+      return await fetchQueue(this.fetchApi.bind(this), options)
     } catch (error) {
       if (options?.throwOnError) throw error
       console.error('Failed to fetch queue:', error)
@@ -1216,6 +1337,17 @@ export class ComfyApi extends EventTarget {
    */
   async getJobDetail(jobId: string): Promise<JobDetail | undefined> {
     return fetchJobDetail(this.fetchApi.bind(this), jobId)
+  }
+
+  /**
+   * Gets a job's output assets, each resolved to a real asset entity with
+   * per-output node context. Returns an empty list when the endpoint is
+   * unavailable (e.g. non-cloud distributions).
+   * @param jobId The job ID
+   * @returns The job's output assets and whether the list is exhaustive
+   */
+  async getJobAssets(jobId: string): Promise<JobAssetsResult> {
+    return fetchJobAssets(this.fetchApi.bind(this), jobId)
   }
 
   /**
@@ -1486,7 +1618,7 @@ export class ComfyApi extends EventTarget {
     if (!subgraph?.data) {
       throw new Error(`Global subgraph '${id}' returned empty data`)
     }
-    return subgraph.data as string
+    return subgraph.data
   }
   async getGlobalSubgraphs(): Promise<Record<string, GlobalSubgraphData>> {
     const resp = await api.fetchApi('/global_subgraphs')
@@ -1500,7 +1632,10 @@ export class ComfyApi extends EventTarget {
 
   async getLogs(): Promise<string> {
     const url = isCloud ? this.apiURL('/logs') : this.internalURL('/logs')
-    return (await axios.get(url)).data
+    const { data } = await axios.get<unknown>(url)
+    return typeof data === 'string'
+      ? data
+      : (JSON.stringify(data, null, 2) ?? '')
   }
 
   async getRawLogs(): Promise<LogsRawResponse> {
@@ -1593,6 +1728,9 @@ export class ComfyApi extends EventTarget {
    * @returns true if the feature is supported, false otherwise
    */
   serverSupportsFeature(featureName: string): boolean {
+    const sessionOverride = getSessionOverride(featureName)
+    if (sessionOverride !== undefined) return sessionOverride === true
+
     const override = getDevOverride<boolean>(featureName)
     if (override !== undefined) return override
     return get(this.serverFeatureFlags.value, featureName) === true
@@ -1605,6 +1743,9 @@ export class ComfyApi extends EventTarget {
    * @returns The feature value or default
    */
   getServerFeature<T = unknown>(featureName: string, defaultValue?: T): T {
+    const sessionOverride = getSessionOverride<T>(featureName)
+    if (sessionOverride !== undefined) return sessionOverride
+
     const override = getDevOverride<T>(featureName)
     if (override !== undefined) return override
     return get(this.serverFeatureFlags.value, featureName, defaultValue) as T

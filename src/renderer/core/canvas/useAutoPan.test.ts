@@ -72,8 +72,6 @@ describe('AutoPanController', () => {
   let controller: AutoPanController
 
   beforeEach(() => {
-    vi.useFakeTimers()
-
     mockCanvas = fromPartial<HTMLCanvasElement>({
       getBoundingClientRect: () => ({
         left: 0,
@@ -101,7 +99,6 @@ describe('AutoPanController', () => {
 
   afterEach(() => {
     controller.stop()
-    vi.useRealTimers()
   })
 
   it('does not pan when pointer is in the center', () => {

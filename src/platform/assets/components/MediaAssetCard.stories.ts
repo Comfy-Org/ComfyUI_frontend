@@ -1,3 +1,5 @@
+import { fromPartial } from '@total-typescript/shoehorn'
+
 import type { Meta, StoryObj } from '@storybook/vue3-vite'
 
 import MediaLightbox from '@/components/sidebar/tabs/queue/MediaLightbox.vue'
@@ -61,7 +63,7 @@ const SAMPLE_MEDIA = {
   audio: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3'
 }
 
-const sampleAsset: AssetItem = {
+const sampleAsset: AssetItem = fromPartial({
   id: 'asset-1',
   name: 'sample-image.png',
   size: 2048576,
@@ -75,7 +77,7 @@ const sampleAsset: AssetItem = {
       height: 1080
     }
   }
-}
+})
 
 export const ImageAsset: Story = {
   decorators: [
@@ -232,7 +234,7 @@ export const WebMVideo: Story = {
     })
   ],
   args: {
-    asset: {
+    asset: fromPartial({
       id: 'asset-webm',
       name: 'animated-clip.webm',
       size: 3145728,
@@ -246,7 +248,7 @@ export const WebMVideo: Story = {
           height: 360
         }
       }
-    }
+    })
   }
 }
 
@@ -257,7 +259,7 @@ export const GifAnimation: Story = {
     })
   ],
   args: {
-    asset: {
+    asset: fromPartial({
       id: 'asset-gif',
       name: 'animation.gif',
       size: 1572864,
@@ -271,7 +273,7 @@ export const GifAnimation: Story = {
           height: 270
         }
       }
-    }
+    })
   }
 }
 
@@ -280,7 +282,7 @@ export const GridLayout: Story = {
     components: { MediaAssetCard },
     setup() {
       const assets: AssetItem[] = [
-        {
+        fromPartial({
           id: 'grid-1',
           name: 'image-file.jpg',
           size: 2097152,
@@ -291,8 +293,8 @@ export const GridLayout: Story = {
             duration: 4500,
             dimensions: { width: 1920, height: 1080 }
           }
-        },
-        {
+        }),
+        fromPartial({
           id: 'grid-2',
           name: 'image-file.jpg',
           size: 2097152,
@@ -303,8 +305,8 @@ export const GridLayout: Story = {
             duration: 4500,
             dimensions: { width: 1920, height: 1080 }
           }
-        },
-        {
+        }),
+        fromPartial({
           id: 'grid-3',
           name: 'video-file.mp4',
           size: 10485760,
@@ -315,8 +317,8 @@ export const GridLayout: Story = {
             duration: 13425,
             dimensions: { width: 1280, height: 720 }
           }
-        },
-        {
+        }),
+        fromPartial({
           id: 'grid-4',
           name: 'audio-file.mp3',
           size: 5242880,
@@ -326,8 +328,8 @@ export const GridLayout: Story = {
           user_metadata: {
             duration: 180
           }
-        },
-        {
+        }),
+        fromPartial({
           id: 'grid-5',
           name: 'animation.gif',
           size: 3145728,
@@ -339,8 +341,8 @@ export const GridLayout: Story = {
             duration: 1345,
             dimensions: { width: 480, height: 360 }
           }
-        },
-        {
+        }),
+        fromPartial({
           id: 'grid-6',
           name: 'Asset-3d-model.glb',
           size: 7340032,
@@ -350,8 +352,8 @@ export const GridLayout: Story = {
           user_metadata: {
             duration: 18023
           }
-        },
-        {
+        }),
+        fromPartial({
           id: 'grid-7',
           name: 'image-file.jpg',
           size: 2097152,
@@ -362,7 +364,7 @@ export const GridLayout: Story = {
             duration: 4500,
             dimensions: { width: 1920, height: 1080 }
           }
-        }
+        })
       ]
       return { assets }
     },

@@ -3,13 +3,17 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 const mockWriteText = vi.fn()
 const mockToastAdd = vi.fn()
 
-vi.mock('primevue/usetoast', () => ({
-  useToast: vi.fn(() => ({
-    add: mockToastAdd
-  }))
-}))
+vi.mock<unknown>(
+  import('primevue/usetoast'), // eslint-disable-line primevue-removal/no-imports
 
-vi.mock('@/i18n', () => ({
+  () => ({
+    useToast: vi.fn(() => ({
+      add: mockToastAdd
+    }))
+  })
+)
+
+vi.mock(import('@/i18n'), () => ({
   t: (key: string) => key
 }))
 
@@ -17,7 +21,6 @@ import { useCopyToClipboard } from '@/composables/useCopyToClipboard'
 
 describe('useCopyToClipboard', () => {
   beforeEach(() => {
-    vi.resetAllMocks()
     Object.defineProperty(navigator, 'clipboard', {
       configurable: true,
       value: { writeText: mockWriteText }

@@ -5,6 +5,10 @@ inputs:
     description: 'Include the build step to build the frontend. Set to true for workflows that need a built frontend'
     required: false
     default: 'false'
+  node_cache:
+    description: "Share the lockfile-keyed pnpm store cache. Set to 'false' in jobs that execute unreviewed third-party code: setup-node's post step writes the store AFTER the job body, and the same key is restored by the publish workflows, which hold NPM_TOKEN, PYPI_TOKEN and id-token: write."
+    required: false
+    default: 'true'
 runs:
   using: 'composite'
   steps:
@@ -12,13 +16,13 @@ runs:
 
     # Install pnpm, Node.js, build frontend
     - name: Install pnpm
-      uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320 # v4.4.0
+      uses: pnpm/action-setup@0ebf47130e4866e96fce0953f49152a61190b271 # v6.0.9
 
     - name: Setup Node.js
       uses: actions/setup-node@v6
       with:
         node-version-file: '.nvmrc'
-        cache: 'pnpm'
+        cache: ${{ inputs.node_cache == 'true' && 'pnpm' || '' }}
         cache-dependency-path: './pnpm-lock.yaml'
 
     - name: Install dependencies

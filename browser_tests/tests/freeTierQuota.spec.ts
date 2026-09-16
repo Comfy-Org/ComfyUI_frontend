@@ -15,8 +15,14 @@ test.describe('Free Tier Quota', { tag: ['@cloud', '@vue-nodes'] }, () => {
       free_tier_balance: { allowance: 5, remaining: 3, used: 0 }
     }
     await page.route('**/api/features', (r) => r.fulfill(jsonRoute(features)))
-    await page.route('**/customers/cloud-subscription-status', (r) =>
-      r.fulfill(jsonRoute({ is_active: true, subscription_tier: 'FREE' }))
+    await page.route('**/api/billing/status', (r) =>
+      r.fulfill(
+        jsonRoute({
+          is_active: true,
+          has_funds: true,
+          subscription_tier: 'FREE'
+        })
+      )
     )
   })
 

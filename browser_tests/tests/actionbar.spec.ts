@@ -21,7 +21,7 @@ webSocketTest.describe(
       async ({ comfyPage, getWebSocket }) => {
         await comfyPage.workflow.loadWorkflow('default')
         await comfyPage.page.evaluate(() => {
-          const sampler = window.app!.graph!._nodes.find(
+          const sampler = window.app!.graph._nodes.find(
             (node) => node.type === 'KSampler'
           )
           const control = sampler?.widgets?.find(
@@ -64,7 +64,7 @@ webSocketTest.describe(
         // Find and set the width on the latent node
         const triggerChange = async (value: number) => {
           return await comfyPage.page.evaluate((value) => {
-            const node = window.app!.graph!._nodes.find(
+            const node = window.app!.graph._nodes.find(
               (n) => n.type === 'EmptyLatentImage'
             )
             node!.widgets![0].value = value
@@ -99,11 +99,18 @@ webSocketTest.describe(
         const START = 32
         const END = 64
         const initialPromptRequests =
-          await comfyPage.actionbar.collectPromptRequestsDuring(async () => {
-            for (let i = START; i <= END; i += 8) {
-              await triggerChange(i)
+          await comfyPage.actionbar.collectPromptRequestsDuring(
+            async () => {
+              for (let i = START; i <= END; i += 8) {
+                await triggerChange(i)
+              }
+            },
+            {
+              minRequests: 1,
+              maxRequests: 2,
+              timeout: 2000
             }
-          }, 2000)
+          )
 
         expect(
           initialPromptRequests,
@@ -119,10 +126,17 @@ webSocketTest.describe(
 
         // Trigger a status update so auto-queue re-runs
         const deferredPromptRequests =
-          await comfyPage.actionbar.collectPromptRequestsDuring(async () => {
-            triggerStatus(1)
-            triggerStatus(0)
-          }, 2000)
+          await comfyPage.actionbar.collectPromptRequestsDuring(
+            async () => {
+              triggerStatus(1)
+              triggerStatus(0)
+            },
+            {
+              minRequests: 1,
+              maxRequests: 2,
+              timeout: 2000
+            }
+          )
 
         // Ensure the queued width is the last queued value
         expect(
@@ -164,10 +178,27 @@ test.describe('Actionbar', { tag: '@ui' }, () => {
     })
 
     test('Auto-queues after changing a widget', async ({ comfyPage }) => {
+      const latentNodes =
+        await comfyPage.nodeOps.getNodeRefsByType('EmptyLatentImage')
+      expect(
+        latentNodes,
+        'the default workflow should contain an EmptyLatentImage node'
+      ).toHaveLength(1)
+      const widthWidget = await latentNodes[0].getWidgetByName('width')
+      const { x, y } = await widthWidget.getPosition()
+
       const promptRequests =
-        await comfyPage.actionbar.collectPromptRequestsDuring(async () => {
-          await comfyPage.nodeOps.adjustEmptyLatentWidth()
-        })
+        await comfyPage.actionbar.collectPromptRequestsDuring(
+          async () => {
+            await comfyPage.page.mouse.click(x, y)
+            await comfyPage.nodeOps.fillLegacyWidgetDialog('128')
+          },
+          {
+            minRequests: 1,
+            maxRequests: 1,
+            timeout: 3000
+          }
+        )
 
       expect(
         promptRequests,
@@ -198,7 +229,14 @@ test.describe('Actionbar', { tag: '@ui' }, () => {
         )
       }
       const promptRequests =
-        await comfyPage.actionbar.collectPromptRequestsDuring(resizeLatentNode)
+        await comfyPage.actionbar.collectPromptRequestsDuring(
+          resizeLatentNode,
+          {
+            minRequests: 0,
+            maxRequests: 1,
+            timeout: 3000
+          }
+        )
 
       expect(
         await latentNode.getSize(),
@@ -212,7 +250,10 @@ test.describe('Actionbar', { tag: '@ui' }, () => {
     })
   })
 
-  test('Can dock actionbar into top menu', async ({ comfyPage }) => {
+  test('Can dock actionbar into top menu', async ({
+    comfyPage,
+    comfyMouse
+  }) => {
     await comfyPage.page.dragAndDrop(
       '.actionbar .drag-handle',
       '.actionbar-container',
@@ -221,8 +262,12 @@ test.describe('Actionbar', { tag: '@ui' }, () => {
         force: true
       }
     )
-    await expect(comfyPage.actionbar.root.locator('.actionbar')).toHaveClass(
-      /static/
-    )
+    await expect.poll(() => comfyPage.actionbar.isDocked()).toBe(true)
+
+    await comfyMouse.dragElementBy(comfyPage.actionbar.dragHandle, {
+      x: -100,
+      y: 100
+    })
+    await expect.poll(() => comfyPage.actionbar.isDocked()).toBe(false)
   })
 })

@@ -1,5 +1,5 @@
 import type * as THREE from 'three'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import { WebGLViewport } from './WebGLViewport'
 
@@ -13,8 +13,6 @@ function fakeRenderer() {
 }
 
 describe('WebGLViewport', () => {
-  afterEach(() => vi.unstubAllGlobals())
-
   it('releases the context via forceContextLoss before disposing', () => {
     const renderer = fakeRenderer()
     const dispatchSpy = vi.spyOn(renderer.domElement, 'dispatchEvent')

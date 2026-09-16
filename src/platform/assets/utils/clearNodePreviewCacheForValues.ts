@@ -42,8 +42,8 @@ export function clearNodePreviewCacheForValues(
 
 /**
  * Walk the graph hierarchy and yield each leaf node whose widget value matches
- * one of `deletedValues`. Used by both the preview-clearing path and the
- * missing-media-marking path so the two stay in lockstep.
+ * one of `deletedValues`. Shared by the preview-clearing and value-clearing
+ * paths.
  *
  * Skips subgraph wrapper nodes — only their interior nodes are inspected.
  */
@@ -55,7 +55,8 @@ export function findNodesReferencingValues(
   const matches: LGraphNode[] = []
   for (const node of collectAllNodes(rootGraph)) {
     if (!node.widgets?.length) continue
-    if (node.isSubgraphNode?.()) continue
+    if (typeof node.isSubgraphNode === 'function' && node.isSubgraphNode())
+      continue
     const referencesDeleted = node.widgets.some(
       (w) => typeof w.value === 'string' && deletedValues.has(w.value)
     )

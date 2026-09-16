@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const hoisted = vi.hoisted(() => {
   const analytics = {
@@ -40,12 +40,12 @@ const hoisted = vi.hoisted(() => {
   }
 })
 
-vi.mock('@customerio/cdp-analytics-browser', () => ({
+vi.mock<unknown>(import('@customerio/cdp-analytics-browser'), () => ({
   AnalyticsBrowser: { load: hoisted.load },
   InAppPlugin: hoisted.inAppPlugin
 }))
 
-vi.mock('@/composables/auth/useCurrentUser', () => ({
+vi.mock<unknown>(import('@/composables/auth/useCurrentUser'), () => ({
   useCurrentUser: () => ({
     userEmail: hoisted.userEmail,
     resolvedUserInfo: hoisted.resolvedUserInfo,
@@ -70,7 +70,7 @@ function createProvider(
     customer_io: { write_key: WRITE_KEY, site_id: SITE_ID }
   }
 ): CustomerIoTelemetryProvider {
-  window.__CONFIG__ = config as typeof window.__CONFIG__
+  window.__CONFIG__ = config
   return new CustomerIoTelemetryProvider()
 }
 
@@ -84,7 +84,6 @@ function createDeferred() {
 
 describe('CustomerIoTelemetryProvider', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
     hoisted.resetCallbacks()
     hoisted.load.mockReturnValue(hoisted.analytics)
     hoisted.analytics.identify.mockResolvedValue(undefined)
@@ -93,12 +92,7 @@ describe('CustomerIoTelemetryProvider', () => {
     hoisted.analytics.register.mockResolvedValue(undefined)
     hoisted.userEmail.value = null
     i18n.global.locale.value = 'en'
-    window.__CONFIG__ = {} as typeof window.__CONFIG__
-  })
-
-  afterEach(() => {
-    vi.restoreAllMocks()
-    vi.useRealTimers()
+    window.__CONFIG__ = {}
   })
 
   it('loads the client and registers the in-app plugin with the site id', async () => {
@@ -685,7 +679,6 @@ describe('CustomerIoTelemetryProvider', () => {
   })
 
   it('does not stall later events when identification never settles', async () => {
-    vi.useFakeTimers()
     vi.spyOn(console, 'error').mockImplementation(() => {})
     hoisted.analytics.identify.mockReturnValueOnce(new Promise(() => {}))
     const provider = createProvider()
