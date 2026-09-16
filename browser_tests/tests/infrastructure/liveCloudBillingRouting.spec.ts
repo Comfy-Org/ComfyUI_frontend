@@ -8,12 +8,13 @@ import { join } from 'node:path'
 import { promisify } from 'node:util'
 import type { Duplex } from 'node:stream'
 
-import { expect } from '@playwright/test'
-
-import { liveCloudBillingFixture } from '@e2e/fixtures/liveCloudBillingFixture'
+import {
+  expect,
+  liveCloudDisposableBillingFixture
+} from '@e2e/fixtures/liveCloudDisposableBillingFixture'
 import { liveCloudBillingConfigSchema } from '@e2e/fixtures/utils/liveCloudBillingConfig'
 
-const test = liveCloudBillingFixture.extend<{
+const test = liveCloudDisposableBillingFixture.extend<{
   sandboxProxy: { server: string; requests: string[] }
 }>({
   sandboxProxy: async ({ liveCloudBillingConfig }, use) => {
@@ -240,5 +241,64 @@ test.describe('Live Cloud network boundary', { tag: '@smoke' }, () => {
       'WebSocket wss://external.invalid/socket'
     ])
     test.fail(true, 'The recorded WebSocket must fail fixture teardown')
+  })
+})
+
+test.describe('Live Cloud checkout network boundary', () => {
+  test.use({
+    liveCloudBillingConfig: liveCloudBillingConfigSchema.parse({
+      PLAYWRIGHT_TEST_URL: 'http://localhost:5173',
+      PLAYWRIGHT_SETUP_API_URL: 'https://testcloud.comfy.org',
+      CLOUD_ACCOUNT_EMAIL: 'routing@example.com',
+      CLOUD_ACCOUNT_PASSWORD: 'unused',
+      allowCheckout: true
+    })
+  })
+
+  test('allows checkout handoff in browser and API clients', async ({
+    page,
+    request,
+    context,
+    sandboxProxy
+  }) => {
+    await page.route('http://localhost:5173/', (route) =>
+      route.fulfill({ contentType: 'text/html', body: '<html></html>' })
+    )
+    await page.goto('http://localhost:5173/')
+    expect(
+      await page.evaluate(() =>
+        fetch('/api/billing/subscribe', { method: 'POST' }).then((response) =>
+          response.text()
+        )
+      )
+    ).toBe('POST https://testcloud.comfy.org/api/billing/subscribe')
+    for (const api of [request, context.request]) {
+      const response = await api.post(
+        'https://testcloud.comfy.org/api/billing/subscribe'
+      )
+      expect(await response.text()).toBe(
+        'POST https://testcloud.comfy.org/api/billing/subscribe'
+      )
+    }
+    expect(sandboxProxy.requests).toEqual([
+      'POST https://testcloud.comfy.org/api/billing/subscribe',
+      'POST https://testcloud.comfy.org/api/billing/subscribe',
+      'POST https://testcloud.comfy.org/api/billing/subscribe'
+    ])
+  })
+
+  test('still rejects payment confirmation with checkout enabled', async ({
+    context,
+    networkPolicy
+  }) => {
+    await expect(
+      context.request.post(
+        'https://api.stripe.com/v1/payment_pages/cs_test_example/confirm'
+      )
+    ).rejects.toThrow('Forbidden live Cloud request')
+    expect([...networkPolicy.unexpected]).toEqual([
+      'Mutation POST https://api.stripe.com/v1/payment_pages/cs_test_example/confirm'
+    ])
+    test.fail(true, 'The recorded mutation must fail fixture teardown')
   })
 })

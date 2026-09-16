@@ -26,7 +26,8 @@ export const LIVE_CHECKOUT_ORIGINS = [
   'https://m.stripe.com',
   'https://r.stripe.com',
   'https://q.stripe.com',
-  'https://b.stripecdn.com'
+  'https://b.stripecdn.com',
+  'https://newassets.hcaptcha.com'
 ]
 
 const SAFE_METHODS = ['GET', 'HEAD', 'OPTIONS']
@@ -49,11 +50,40 @@ export function isLiveCloudMutationAllowed(
   method: string,
   config: Pick<
     LiveCloudBillingConfig,
-    'PLAYWRIGHT_SETUP_API_URL' | 'customerOrigin'
+    | 'PLAYWRIGHT_SETUP_API_URL'
+    | 'customerOrigin'
+    | 'allowCheckout'
+    | 'allowPayments'
+    | 'allowAccountCreation'
   >
 ): boolean {
   if (SAFE_METHODS.includes(method)) return true
   if (method !== 'POST') return false
+  if (
+    config.allowAccountCreation &&
+    config.PLAYWRIGHT_SETUP_API_URL !== 'https://cloud.comfy.org' &&
+    url.origin === 'https://identitytoolkit.googleapis.com' &&
+    url.pathname === '/v1/accounts:signUp'
+  )
+    return true
+  if (
+    config.allowPayments &&
+    config.PLAYWRIGHT_SETUP_API_URL !== 'https://cloud.comfy.org'
+  ) {
+    if (
+      url.origin === config.PLAYWRIGHT_SETUP_API_URL &&
+      url.pathname === '/api/billing/payment-portal'
+    )
+      return true
+    if (
+      url.origin === 'https://api.stripe.com' &&
+      (url.pathname === '/v1/payment_methods' ||
+        /^\/v1\/payment_pages\/cs_test_[A-Za-z0-9]+\/confirm$/.test(
+          url.pathname
+        ))
+    )
+      return true
+  }
   if (url.origin === 'https://identitytoolkit.googleapis.com') {
     return ['/v1/accounts:signInWithPassword', '/v1/accounts:lookup'].includes(
       url.pathname
@@ -62,6 +92,11 @@ export function isLiveCloudMutationAllowed(
   if (url.origin === 'https://securetoken.googleapis.com') {
     return url.pathname === '/v1/token'
   }
+  if (
+    config.allowCheckout &&
+    isCheckoutPostAllowed(url, config.PLAYWRIGHT_SETUP_API_URL)
+  )
+    return true
   if (url.pathname === '/customers') {
     return url.origin === config.customerOrigin
   }
@@ -72,5 +107,25 @@ export function isLiveCloudMutationAllowed(
       '/api/auth/session',
       '/api/settings/Comfy.InstalledVersion'
     ].includes(url.pathname)
+  )
+}
+
+function isCheckoutPostAllowed(url: URL, backend: string): boolean {
+  if (url.origin === backend) {
+    return [
+      '/api/billing/preview-subscribe',
+      '/api/billing/subscribe'
+    ].includes(url.pathname)
+  }
+  if (url.origin === 'https://api.stripe.com') {
+    const mode = backend === 'https://cloud.comfy.org' ? 'live' : 'test'
+    return new RegExp(`^/v1/payment_pages/cs_${mode}_[A-Za-z0-9]+/init$`).test(
+      url.pathname
+    )
+  }
+  return (
+    (url.origin === 'https://r.stripe.com' &&
+      ['/b', '/0'].includes(url.pathname)) ||
+    (url.origin === 'https://m.stripe.com' && url.pathname === '/6')
   )
 }

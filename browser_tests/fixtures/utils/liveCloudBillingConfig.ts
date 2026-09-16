@@ -27,10 +27,35 @@ export const liveCloudBillingConfigSchema = z
     PLAYWRIGHT_SETUP_API_URL: originURL.default(
       'https://stagingcloud.comfy.org'
     ),
-    CLOUD_ACCOUNT_EMAIL: z.string().email(),
-    CLOUD_ACCOUNT_PASSWORD: z.string().min(1)
+    CLOUD_ACCOUNT_EMAIL: z.string().email().optional(),
+    CLOUD_ACCOUNT_PASSWORD: z.string().min(1).optional(),
+    allowCheckout: z.boolean().default(false),
+    allowPayments: z.boolean().default(false),
+    allowAccountCreation: z.boolean().default(false)
   })
   .superRefine((config, ctx) => {
+    if (
+      (config.allowPayments || config.allowAccountCreation) &&
+      config.PLAYWRIGHT_SETUP_API_URL === 'https://cloud.comfy.org'
+    )
+      ctx.addIssue({
+        code: 'custom',
+        path: ['PLAYWRIGHT_SETUP_API_URL'],
+        message: 'Payment tests require a sandbox Cloud backend'
+      })
+    if (!config.allowAccountCreation) {
+      for (const field of [
+        'CLOUD_ACCOUNT_EMAIL',
+        'CLOUD_ACCOUNT_PASSWORD'
+      ] as const) {
+        if (!config[field])
+          ctx.addIssue({
+            code: 'custom',
+            path: [field],
+            message: 'Required for permanent-account tests'
+          })
+      }
+    }
     if (!URL.canParse(config.PLAYWRIGHT_TEST_URL)) return
     const frontend = new URL(config.PLAYWRIGHT_TEST_URL)
     const local =
@@ -66,8 +91,17 @@ export type LiveCloudBillingConfig = z.infer<
   typeof liveCloudBillingConfigSchema
 >
 
-export function loadLiveCloudBillingConfig() {
-  const result = liveCloudBillingConfigSchema.safeParse(process.env)
+export function loadLiveCloudBillingConfig(
+  options: {
+    allowPayments?: boolean
+    allowAccountCreation?: boolean
+    allowCheckout?: boolean
+  } = {}
+) {
+  const result = liveCloudBillingConfigSchema.safeParse({
+    ...process.env,
+    ...options
+  })
   if (!result.success) {
     throw new Error(
       `Cloud billing prerequisites: ${result.error.issues

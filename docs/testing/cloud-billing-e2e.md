@@ -58,6 +58,23 @@ Cloud auth tokens/session cookies, and the startup write to
 if the app catches the request error. The smoke fixture blocks checkout, payment, and reset mutations in both browser
 routing and Playwright API clients.
 
-Use a dedicated account. This setup checks authentication, billing reads, and
-canvas readiness. It does not submit checkout, payment, or reset requests.
-Checkout scenarios and account requirements belong to follow-up PRs.
+## Shared setup
+
+Use dedicated accounts for the selected environment. PRs #17870, #17538, #17543,
+#17548, and #17545 each depend directly on this setup PR, #17481.
+
+Shared support includes authenticated API reads/writes, disposable sandbox
+accounts, hosted checkout interaction, and paid-subscription provisioning used
+by checkout and lifecycle tests. Shared helpers do not add scenario specs here.
+Unpaid recovery, top-up assertions, decline recovery, lifecycle transitions, and
+3DS outcomes stay in their own PRs.
+
+The smoke fixture denies billing mutations. Scenario fixtures explicitly opt in
+to the permissions they need. Payment and disposable-account tests reject
+production; Staging remains the default backend. Select `cloud-live-paid` for
+saved-card tests and `cloud-live-disposable` for new-account tests. These projects
+collect tests only when their respective scenario PRs are present.
+
+Traces start after permanent-account sign-in and contain authenticated network
+traffic. Keep reports private. Disposable accounts require no reusable credentials.
+The saved-card endpoint must be available for completed-payment assertions.

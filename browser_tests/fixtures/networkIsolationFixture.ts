@@ -6,6 +6,7 @@ import { HERO_SLIDES } from '@/platform/cloud/onboarding/constants/heroSlides'
 import type { LiveCloudBillingConfig } from '@e2e/fixtures/utils/liveCloudBillingConfig'
 import { installLiveCloudBillingRouting } from '@e2e/fixtures/utils/liveCloudBillingContext'
 import {
+  LIVE_CHECKOUT_ORIGINS,
   getBlockedRequestViolation,
   isLiveCloudMutationAllowed,
   isReportedViolation
@@ -55,7 +56,7 @@ function guardApiRequests(
   }
 }
 
-export async function installContextNetworkIsolation(
+async function installContextNetworkIsolation(
   context: BrowserContext,
   networkPolicy: NetworkPolicy,
   baseURL?: string,
@@ -150,7 +151,19 @@ export const networkIsolationFixture = base.extend<{
             liveCloudBillingConfig.PLAYWRIGHT_SETUP_API_URL ===
             'https://cloud.comfy.org'
               ? 'https://dreamboothy.firebaseapp.com'
-              : 'https://dreamboothy-dev.firebaseapp.com'
+              : 'https://dreamboothy-dev.firebaseapp.com',
+            ...(liveCloudBillingConfig.allowPayments
+              ? [
+                  'https://pay.google.com',
+                  liveCloudBillingConfig.PLAYWRIGHT_SETUP_API_URL.replace(
+                    'cloud.comfy.org',
+                    'platform.comfy.org'
+                  )
+                ]
+              : []),
+            ...(liveCloudBillingConfig.allowCheckout
+              ? LIVE_CHECKOUT_ORIGINS
+              : [])
           ])
         : new Set(
             [

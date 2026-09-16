@@ -1,3 +1,4 @@
+import { globSync } from 'node:fs'
 import { spawnSync } from 'node:child_process'
 
 import { describe, expect, it } from 'vitest'
@@ -60,7 +61,14 @@ describe('Live billing opt-in', () => {
 
   it.for([
     { name: 'without a project filter', args: [] },
-    { name: 'with a project filter', args: ['--project=cloud-live'] }
+    {
+      name: 'with a project filter',
+      args: [
+        '--project=cloud-live',
+        '--project=cloud-live-disposable',
+        '--project=cloud-live-paid'
+      ]
+    }
   ])(
     'collects only live billing when enabled $name',
     { timeout: 90_000 },
@@ -68,14 +76,17 @@ describe('Live billing opt-in', () => {
       const { status, config, files } = collectLiveBilling('1', args)
       expect(status).toBe(0)
       expect(config.projects.map((project) => project.name)).toEqual([
-        'cloud-live'
+        'cloud-live',
+        'cloud-live-disposable',
+        'cloud-live-paid'
       ])
       expect(files.every((file) => file.startsWith('tests/liveCloud/'))).toBe(
         true
       )
-      expect(files).toEqual(
-        expect.arrayContaining(['tests/liveCloud/billingSmoke.spec.ts'])
-      )
+      const expectedFiles = globSync(
+        'browser_tests/tests/liveCloud/**/*.spec.ts'
+      ).map((file) => file.replace('browser_tests/', '').replaceAll('\\', '/'))
+      expect([...new Set(files)].sort()).toEqual(expectedFiles.sort())
       expect(config.globalSetup).toBeFalsy()
       expect(config.globalTeardown).toBeFalsy()
     }
