@@ -20,6 +20,80 @@ test.describe(
       await comfyPage.canvasOps.resetView()
     })
 
+    test('shows one legacy notice per group and preserves rows when returning to Node 2.0', async ({
+      comfyPage
+    }) => {
+      const node = comfyPage.vueNodes.getNodeByTitle('Node With Dynamic Group')
+      for (const rowCount of [0, 3]) {
+        for (let row = 0; row < rowCount; row++) {
+          await node.getByRole('button', { name: 'Add LoRA' }).click()
+        }
+        if (rowCount > 0) {
+          await node
+            .getByRole('combobox', { name: 'lora_name', exact: true })
+            .nth(1)
+            .click()
+          await comfyPage.page
+            .getByRole('option', { name: 'B.safetensors', exact: true })
+            .click()
+        }
+        await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', false)
+        await expect(comfyPage.vueNodes.nodes).toHaveCount(0)
+        await comfyPage.page.evaluate(() => {
+          const node = window.app!.graph.nodes.find(
+            (node) => String(node.id) === '1'
+          )!
+          const drawWidgets = node.drawWidgets
+          node.properties.drawnLabels = null
+          node.drawWidgets = function (ctx, options) {
+            const labels: string[] = []
+            const fillText = ctx.fillText
+            ctx.fillText = function (text, ...args) {
+              labels.push(text)
+              fillText.call(this, text, ...args)
+            }
+            try {
+              drawWidgets.call(this, ctx, options)
+              node.properties.drawnLabels = labels
+            } finally {
+              ctx.fillText = fillText
+              node.drawWidgets = drawWidgets
+            }
+          }
+          node.setDirtyCanvas(true, true)
+        })
+        await expect
+          .poll(() =>
+            comfyPage.page.evaluate(() => {
+              const labels = window.app!.graph.nodes.find(
+                (node) => String(node.id) === '1'
+              )!.properties.drawnLabels
+              return Array.isArray(labels)
+                ? labels.filter((label) => label === 'LoRA: Node 2.0 only')
+                    .length
+                : 0
+            })
+          )
+          .toBe(1)
+        const legacyNode = await comfyPage.nodeOps.getNodeRefById('1')
+        await (await legacyNode.getWidgetByName('loras.$notice')).click()
+
+        await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', true)
+        await comfyPage.vueNodes.waitForNodes()
+        await expect(
+          node.getByRole('combobox', { name: 'lora_name', exact: true })
+        ).toHaveCount(rowCount)
+        await expect(
+          node.getByText('LoRA: Node 2.0 only', { exact: true })
+        ).toHaveCount(0)
+        if (rowCount > 0) {
+          await expect(
+            node.getByRole('combobox', { name: 'lora_name', exact: true })
+          ).toHaveText(['A.safetensors', 'B.safetensors', 'A.safetensors'])
+        }
+      }
+    })
+
     test('executes an empty group as an empty list', async ({ comfyPage }) => {
       const node = comfyPage.vueNodes.getNodeByTitle('Node With Dynamic Group')
       await expect(node.getByRole('button', { name: 'Add LoRA' })).toBeVisible()
