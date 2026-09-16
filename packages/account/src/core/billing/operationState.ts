@@ -44,7 +44,7 @@ export type BillingOperationServerPhase = NonNullable<BillingOpStatus['phase']>
  * link to offer.
  */
 export function isBlockedOnCustomerPhase(
-  phase: BillingOperationServerPhase | undefined
+  phase: BillingOperationServerPhase | null | undefined
 ): boolean {
   return (
     phase === 'awaiting_payment_method' || phase === 'awaiting_invoice_payment'

@@ -2740,6 +2740,8 @@
       "payAmount": "Pay {amount}",
       "unknownError": "An unknown error occurred",
       "verifyBody": "Your bank requires additional verification to complete this payment.",
+      "awaitingBankApprovalBody": "Your bank needs to approve this payment before your credits are added. You can finish it from your bank's app or the payment link for this purchase. A new top-up can't be started until this one completes or expires.",
+      "changeInProgressError": "Another credit purchase is still open. Wait for it to complete or expire before starting a new one.",
       "verifyTitle": "Verify your payment",
       "startOver": "Start over",
       "viewPricing": "View pricing details",

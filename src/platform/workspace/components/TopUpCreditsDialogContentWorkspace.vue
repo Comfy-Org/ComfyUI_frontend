@@ -92,11 +92,7 @@
           {{ $t('credits.topUp.verifyTitle') }}
         </h2>
         <p class="m-0 text-sm text-balance text-muted-foreground">
-          {{
-            topupReconciliationOperationId
-              ? $t('billingOperation.reconciliationDetail')
-              : topupAuthenticationError || $t('credits.topUp.verifyBody')
-          }}
+          {{ verifyingBody }}
         </p>
         <span
           v-if="topupReconciliationOperationId"
@@ -219,13 +215,22 @@
           {{ $t('subscription.preview.completeVerification') }}
         </Button>
         <Button
-          v-else-if="topupIsFailedRetryable || topupIsParkedWithoutLink"
+          v-else-if="topupIsFailedRetryable"
           variant="primary"
           size="lg"
           class="h-10 w-full justify-center"
           @click="startOverTopup"
         >
           {{ $t('credits.topUp.startOver') }}
+        </Button>
+        <Button
+          v-else-if="topupIsParkedWithoutLink"
+          variant="secondary"
+          size="lg"
+          class="h-10 w-full justify-center"
+          @click="() => handleClose()"
+        >
+          {{ $t('g.ok') }}
         </Button>
         <Button
           v-else-if="!topupReconciliationOperationId"
@@ -390,9 +395,9 @@ const topupIsAuthenticating = computed(
 const topupIsFailedRetryable = computed(
   () => topupOperation.value?.authenticationState === 'failed_retryable'
 )
-// Parked on the customer with nothing to send them to: the server will hold the
-// operation for hours, so without a way out the purchase stays locked behind a
-// button that can never resolve. A link still arriving keeps the wait instead.
+// Parked on the customer with no link to send them to. The operation stays open
+// server-side, and that also refuses a replacement purchase, so this state
+// explains the wait rather than offering a restart that would be rejected.
 const topupIsParkedWithoutLink = computed(
   () =>
     !topupActionUrl.value &&
@@ -403,6 +408,16 @@ const topupReconciliationOperationId = computed(() =>
     ? topupOperation.value.opId
     : null
 )
+const verifyingBody = computed(() => {
+  if (topupReconciliationOperationId.value) {
+    return t('billingOperation.reconciliationDetail')
+  }
+  if (topupAuthenticationError.value) return topupAuthenticationError.value
+  if (topupIsParkedWithoutLink.value) {
+    return t('credits.topUp.awaitingBankApprovalBody')
+  }
+  return t('credits.topUp.verifyBody')
+})
 
 // Constants
 const PRESET_AMOUNTS = [10, 25, 50, 100]
@@ -730,19 +745,26 @@ function reportPurchaseError(
       error === undefined ? 'unknown' : categorizeBillingApiError(error),
     duration_ms: Date.now() - attemptStartedAt
   })
-  const missingPaymentMethod =
-    error instanceof WorkspaceApiError && error.code === 'NO_PAYMENT_METHOD'
   toast.add({
     severity: 'error',
     summary: t('credits.topUp.purchaseError'),
-    detail: missingPaymentMethod
-      ? t('credits.topUp.noPaymentMethodError')
-      : t('credits.topUp.purchaseErrorDetail', {
-          error:
-            error instanceof Error
-              ? error.message
-              : t('credits.topUp.unknownError')
-        })
+    detail: purchaseErrorDetail(error)
+  })
+}
+
+function purchaseErrorDetail(error?: unknown): string {
+  const code = error instanceof WorkspaceApiError ? error.code : undefined
+  if (code === 'NO_PAYMENT_METHOD') {
+    return t('credits.topUp.noPaymentMethodError')
+  }
+  // Only one billing operation is open at a time, so this refusal means the
+  // previous purchase has not settled or expired yet — not that anything failed.
+  if (code === 'SUBSCRIPTION_CHANGE_IN_PROGRESS') {
+    return t('credits.topUp.changeInProgressError')
+  }
+  return t('credits.topUp.purchaseErrorDetail', {
+    error:
+      error instanceof Error ? error.message : t('credits.topUp.unknownError')
   })
 }
 </script>

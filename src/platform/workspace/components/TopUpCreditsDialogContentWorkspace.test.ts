@@ -503,10 +503,10 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
     expect(screen.queryByText('Select amount')).not.toBeInTheDocument()
   })
 
-  // The server holds an invoice parked on the customer's bank for hours, and
-  // only a billing manager is served a link to it. Without a way out the
-  // purchase stays locked behind a button that can never resolve.
-  it('offers a way out of a top-up parked with no link to send the customer to', async () => {
+  // The server holds the invoice open and refuses a replacement purchase while
+  // it is, so a restart here would be rejected. Say what is true instead, and
+  // never offer an action the server will turn down.
+  it('explains a top-up parked with no link instead of offering a restart', async () => {
     setIsAddingCredits(true)
     setTopupActionOperation({
       opId: 'op-parked',
@@ -519,17 +519,46 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
 
     expect(screen.getByText('Verify your payment')).toBeInTheDocument()
     expect(
+      screen.getByText(/bank needs to approve this payment/)
+    ).toBeInTheDocument()
+    expect(
+      screen.getByText(/can't be started until this one completes/)
+    ).toBeInTheDocument()
+    expect(
       screen.queryByRole('button', { name: 'Complete verification' })
     ).not.toBeInTheDocument()
+    expect(
+      screen.queryByRole('button', { name: 'Start over' })
+    ).not.toBeInTheDocument()
 
-    await userEvent.click(screen.getByRole('button', { name: 'Start over' }))
-    await nextTick()
+    await userEvent.click(screen.getByRole('button', { name: 'OK' }))
 
-    expect(useBillingOperationStore().dismissOperation).toHaveBeenCalledWith(
-      'op-parked'
+    expect(useDialogStore().closeDialog).toHaveBeenCalledWith({
+      key: 'top-up-credits'
+    })
+    expect(useBillingOperationStore().dismissOperation).not.toHaveBeenCalled()
+  })
+
+  // Reachable whenever a purchase is submitted while the previous operation is
+  // still open — after Start over on a failed challenge, or from a second tab.
+  it('names the still-open purchase when the server refuses a replacement', async () => {
+    vi.mocked(mockBillingContext().topup).mockRejectedValue(
+      new WorkspaceApiError('conflict', 409, 'SUBSCRIPTION_CHANGE_IN_PROGRESS')
     )
-    expect(screen.getByText('Select amount')).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Add credits' })).toBeEnabled()
+
+    renderDialog()
+    await clickAddCredits()
+    await userEvent.click(screen.getByRole('button', { name: 'Pay $50.00' }))
+
+    await waitFor(() =>
+      expect(mockToastAdd).toHaveBeenCalledWith(
+        expect.objectContaining({
+          severity: 'error',
+          detail:
+            'Another credit purchase is still open. Wait for it to complete or expire before starting a new one.'
+        })
+      )
+    )
   })
 
   it('returns to amount selection when a reopened operation ends', async () => {
