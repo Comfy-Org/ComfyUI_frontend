@@ -8,6 +8,7 @@ import {
 import { TabsContent, TabsList, TabsRoot, TabsTrigger } from 'reka-ui'
 import { computed, ref, useTemplateRef, watchEffect } from 'vue'
 
+import CopyTextButton from '../../components/ui/copy-text-button/CopyTextButton.vue'
 import { prefersReducedMotion } from '../../composables/useReducedMotion'
 
 /**
@@ -35,6 +36,8 @@ const {
   contentClass?: string
   listClass?: string
   triggerClass?: string
+  copyLabel?: string
+  copiedLabel?: string
 }>()
 
 const activeTab = ref(Object.keys(tabs)[0])
@@ -93,6 +96,14 @@ watchEffect(() => {
 function cycleValue(values: string[]): string {
   return values[cycleIndex.value % values.length]
 }
+
+function codeText(tab: CodeTab): string {
+  return tab.segments
+    .map((segment) =>
+      typeof segment === 'string' ? segment : cycleValue(segment.values)
+    )
+    .join('')
+}
 </script>
 
 <template>
@@ -130,13 +141,21 @@ function cycleValue(values: string[]): string {
       v-for="(tab, tabId) in tabs"
       :key="tabId"
       :value="tabId"
-      class="mt-4 block"
+      class="relative mt-4 block"
     >
+      <CopyTextButton
+        v-if="copyLabel && copiedLabel"
+        :value="codeText(tab)"
+        :label="copyLabel"
+        :copied-label="copiedLabel"
+        class="absolute top-2 right-2 z-10"
+      />
       <pre
         :class="
           cn(
-            'scrollbar-none h-[calc(var(--code-panel-h)*0.9)] overflow-auto rounded-3xl p-4 font-mono text-2xs/relaxed whitespace-pre-wrap text-primary-comfy-canvas sm:p-5 sm:text-xs/relaxed sm:whitespace-pre lg:h-(--code-panel-h) lg:p-6 lg:text-sm/relaxed',
+            'scrollbar-none h-[calc(var(--code-panel-h)*0.9)] overflow-auto rounded-3xl p-4 font-mono text-2xs/relaxed whitespace-pre-wrap text-primary-comfy-canvas sm:p-5 sm:text-xs/relaxed lg:h-(--code-panel-h) lg:p-6 lg:text-sm/relaxed',
             tab.wrap && 'wrap-anywhere sm:whitespace-pre-wrap',
+            copyLabel && 'pr-14',
             contentClass
           )
         "

@@ -19,6 +19,8 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
         :tabs="routerCodeTabs"
         :label="t('platform.router.code.heading', locale)"
         content-class="bg-[#2a2230]"
+        :copy-label="t('ui.copy', locale)"
+        :copied-label="t('ui.copied', locale)"
       />
     </div>
     <p class="mt-6 text-center text-sm text-primary-comfy-canvas/70">
