@@ -30,6 +30,13 @@ interface EnhancedTemplate extends TemplateInfo {
 export const useWorkflowTemplatesStore = defineStore(
   'workflowTemplates',
   () => {
+    const templateLoadController = shallowRef<AbortController>()
+    function startTemplateLoad() {
+      templateLoadController.value?.abort()
+      const controller = new AbortController()
+      templateLoadController.value = controller
+      return controller
+    }
     const customTemplates = shallowRef<{ [moduleName: string]: string[] }>({})
     const coreTemplates = shallowRef<WorkflowTemplates[]>([])
     const englishTemplates = shallowRef<WorkflowTemplates[]>([])
@@ -581,6 +588,7 @@ export const useWorkflowTemplatesStore = defineStore(
       filterTemplatesByCategory,
       isLoaded,
       loadWorkflowTemplates,
+      startTemplateLoad,
       knownTemplateNames,
       getTemplateByName,
       getEnglishMetadata,

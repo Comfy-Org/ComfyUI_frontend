@@ -1227,6 +1227,7 @@
       "default": "Default"
     },
     "error": {
+      "loading": "Couldn't open the template. Please try again.",
       "templateNotFound": "Template \"{templateName}\" not found"
     }
   },
