@@ -1004,7 +1004,7 @@ describe('identity brand', () => {
         // @ts-expect-error an unbranded port is not an AccountIdentity
         { onUserChanged: () => () => undefined }
       )
-    ).toThrow('attachIdentity needs the identity')
+    ).toThrow('the session client needs the identity')
   })
 
   it('stays pending until the port delivers, signs out on null, and re-pends after detach', async () => {

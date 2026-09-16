@@ -104,10 +104,24 @@ describe('constructing with identity', () => {
     const user = testUser()
 
     identity.fire(user)
-
     await vi.waitFor(() => expect(seen).toEqual(phases))
+    await vi.advanceTimersByTimeAsync(0)
+
+    expect(seen).toEqual(phases)
     expect(client.getSnapshot().user?.uid).toBe(user.uid)
+    expect(user.getIdToken).toHaveBeenCalledTimes(mints)
     expect(fetchImpl).toHaveBeenCalledTimes(mints)
+  })
+
+  it('settles signed-out without a mint when the first delivery is null', () => {
+    const fetchImpl = okFetch()
+    const { client, identity } = makeClient({ fetchImpl })
+    const seen = phasesOf(client)
+
+    identity.fire(null)
+
+    expect(seen).toEqual(['pending', 'signed-out'])
+    expect(fetchImpl).not.toHaveBeenCalled()
   })
 
   it('refuses a port that did not come from the package entry or the testing seam', () => {
@@ -117,7 +131,7 @@ describe('constructing with identity', () => {
         // @ts-expect-error an unbranded port is not an AccountIdentity
         { onUserChanged: () => () => undefined }
       )
-    ).toThrow('attachIdentity needs the identity')
+    ).toThrow('the session client needs the identity')
   })
 })
 
@@ -185,6 +199,18 @@ describe('dispose', () => {
       storage.raw(),
       'a mint that outlives its identity must not repopulate the cache'
     ).toBeNull()
+  })
+
+  it('never publishes an explicit-user mint made after dispose', async () => {
+    const { client, identity } = makeClient({ fetchImpl: okFetch() })
+    identity.fire(testUser())
+    await vi.waitFor(() => expect(client.getToken()).toBe('workspace-jwt'))
+    client.dispose()
+
+    await client.ensureFresh(testUser())
+
+    expect(client.getSnapshot().phase).toBe('pending')
+    expect(client.getToken()).toBeUndefined()
   })
 
   it('leaves the client attachable again, like a detach', async () => {

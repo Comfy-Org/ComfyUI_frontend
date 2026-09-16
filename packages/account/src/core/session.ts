@@ -156,6 +156,7 @@ export interface SessionClient<TUser extends AccountUser = AccountUser> {
     identity: AccountIdentity<TUser>,
     options?: AttachIdentityOptions
   ) => () => void
+  /** Detaches the current identity; the persisted credential stays until `clearStoredCredential`. */
   dispose: () => void
   getSnapshot: () => SessionSnapshot<TUser>
   subscribe: (
@@ -491,7 +492,7 @@ export function createSessionClient<TUser extends AccountUser = AccountUser>(
   ): () => void {
     if (!isAccountIdentity(port)) {
       throw new Error(
-        'attachIdentity needs the identity from @comfyorg/account/firebase (or /testing)'
+        'the session client needs the identity from @comfyorg/account/firebase (or /testing)'
       )
     }
     detachCurrent?.()
