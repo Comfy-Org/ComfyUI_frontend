@@ -31,7 +31,12 @@ describe('needsCustomerAttention', () => {
       true
     ],
     ['leaves a merely processing operation alone', {}, false],
-    ['leaves a settled operation alone', { status: 'succeeded' }, false]
+    ['leaves a settled operation alone', { status: 'succeeded' }, false],
+    [
+      'leaves a settled operation alone once its verification link is stale',
+      { status: 'succeeded', actionUrl: 'https://verify.example' },
+      false
+    ]
   ] as const)('%s', ([, operation, expected]) => {
     expect(needsCustomerAttention({ ...processing, ...operation })).toBe(
       expected
