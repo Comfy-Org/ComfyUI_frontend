@@ -6,9 +6,7 @@
   "keywords": [],
   "license": "MIT",
   "files": [
-    "src",
-    "!src/**/*.test.ts",
-    "!src/**/__fixtures__"
+    "dist"
   ],
   "type": "module",
   "exports": {
@@ -39,10 +37,109 @@
     "./package.json": "./package.json"
   },
   "publishConfig": {
+    "exports": {
+      "./boundedOperation": {
+        "types": "./dist/core/boundedOperation.d.ts",
+        "import": "./dist/core/boundedOperation.js"
+      },
+      "./lazyIdentity": {
+        "types": "./dist/core/lazyIdentity.d.ts",
+        "import": "./dist/core/lazyIdentity.js"
+      },
+      "./session": {
+        "types": "./dist/core/session.d.ts",
+        "import": "./dist/core/session.js"
+      },
+      "./billing": {
+        "types": "./dist/core/billing/index.d.ts",
+        "import": "./dist/core/billing/index.js"
+      },
+      "./firebase": {
+        "types": "./dist/firebase/index.d.ts",
+        "import": "./dist/firebase/index.js"
+      },
+      "./web": {
+        "types": "./dist/web/crossTabRefresh.d.ts",
+        "import": "./dist/web/crossTabRefresh.js"
+      },
+      "./vue/PasswordRules": {
+        "types": "./dist/vue/PasswordRules.vue.d.ts",
+        "import": "./dist/vue/PasswordRules.vue"
+      },
+      "./vue/SocialAuthButtons": {
+        "types": "./dist/vue/SocialAuthButtons.vue.d.ts",
+        "import": "./dist/vue/SocialAuthButtons.vue"
+      },
+      "./vue/TurnstileWidget": {
+        "types": "./dist/vue/TurnstileWidget.vue.d.ts",
+        "import": "./dist/vue/TurnstileWidget.vue"
+      },
+      "./vue/regionGate": {
+        "types": "./dist/vue/regionGate.d.ts",
+        "import": "./dist/vue/regionGate.js"
+      },
+      "./vue/turnstileGate": {
+        "types": "./dist/vue/turnstileGate.d.ts",
+        "import": "./dist/vue/turnstileGate.js"
+      },
+      "./vue/lifecycleScope": {
+        "types": "./dist/vue/lifecycleScope.d.ts",
+        "import": "./dist/vue/lifecycleScope.js"
+      },
+      "./vue/useGenerationGuard": {
+        "types": "./dist/vue/useGenerationGuard.d.ts",
+        "import": "./dist/vue/useGenerationGuard.js"
+      },
+      "./testing": {
+        "types": "./dist/testing.d.ts",
+        "import": "./dist/testing.js"
+      },
+      "./customerRecovery": {
+        "types": "./dist/core/customerRecovery.d.ts",
+        "import": "./dist/core/customerRecovery.js"
+      },
+      "./signInSchemas": {
+        "types": "./dist/signInSchemas.d.ts",
+        "import": "./dist/signInSchemas.js"
+      },
+      "./turnstile": {
+        "types": "./dist/turnstile.d.ts",
+        "import": "./dist/turnstile.js"
+      },
+      "./turnstileScript": {
+        "types": "./dist/turnstileScript.d.ts",
+        "import": "./dist/turnstileScript.js"
+      },
+      "./firebaseAuthError": {
+        "types": "./dist/firebaseAuthError.d.ts",
+        "import": "./dist/firebaseAuthError.js"
+      },
+      "./provisioning": {
+        "types": "./dist/provisioning.d.ts",
+        "import": "./dist/provisioning.js"
+      },
+      "./redirect": {
+        "types": "./dist/redirect.d.ts",
+        "import": "./dist/redirect.js"
+      },
+      "./region": {
+        "types": "./dist/region.d.ts",
+        "import": "./dist/region.js"
+      },
+      "./telemetry": {
+        "types": "./dist/telemetry.d.ts",
+        "import": "./dist/telemetry.js"
+      },
+      "./webviewDetection": {
+        "types": "./dist/webviewDetection.d.ts",
+        "import": "./dist/webviewDetection.js"
+      },
+      "./package.json": "./package.json"
+    },
     "access": "public"
   },
   "scripts": {
-    "build": "pnpm run clean && tsc -p tsconfig.build.json",
+    "build": "pnpm run clean && vue-tsc -p tsconfig.build.json && node --input-type=module -e \"import { copyFileSync, readdirSync, rmSync } from 'node:fs'; for (const name of readdirSync('src/vue')) { if (!name.endsWith('.vue')) continue; rmSync('dist/vue/' + name + '.js', { force: true }); copyFileSync('src/vue/' + name, 'dist/vue/' + name) }\"",
     "clean": "node --input-type=module -e \"import { rmSync } from 'node:fs'; rmSync('dist', { recursive: true, force: true })\"",
     "lint": "oxlint src --type-aware && eslint src",
     "smoke:pack": "tsx scripts/smokePack.ts",

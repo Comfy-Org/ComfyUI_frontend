@@ -14,6 +14,8 @@
     "src/core/**/*.ts",
     "src/firebase/index.ts",
     "src/web/crossTabRefresh.ts",
+    "src/vue/*.ts",
+    "src/vue/*.vue",
     "src/testing.ts",
     "src/signInSchemas.ts",
     "src/turnstile.ts",
