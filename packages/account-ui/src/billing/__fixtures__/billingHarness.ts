@@ -35,12 +35,18 @@ import type { BillingClient } from '../billingClient'
 
 export const NOW = 1_000_000
 
-function credential(): AccountCredential {
+function credential(
+  workspace: AccountCredential['workspace'] = {
+    id: 'ws-1',
+    name: 'Personal',
+    type: 'personal'
+  }
+): AccountCredential {
   return {
     token: 'workspace-jwt',
     expiresAt: NOW + 60 * 60 * 1000,
     uid: 'uid-1',
-    workspace: { id: 'ws-1', name: 'Personal', type: 'personal' },
+    workspace,
     role: 'owner',
     permissions: ['workspace:read']
   }
@@ -53,22 +59,37 @@ function outsideBillingContract(member: string) {
   }
 }
 
-function fakeSession(): SessionClient {
-  const session = credential()
-  const snapshot: SessionSnapshot = {
+function authenticated(session: AccountCredential): SessionSnapshot {
+  return {
     phase: 'authenticated',
     user: { uid: session.uid, getIdToken: async () => 'id-token' },
     session
   }
-  return {
+}
+
+/** A host whose scope can move, so the readers report a real scope change. */
+function fakeSession() {
+  let snapshot = authenticated(credential())
+  const listeners = new Set<(next: SessionSnapshot) => void>()
+  const session: SessionClient = {
     getSnapshot: () => snapshot,
-    subscribe: () => () => {},
+    subscribe: (listener) => {
+      listeners.add(listener)
+      return () => listeners.delete(listener)
+    },
     attachIdentity: outsideBillingContract('attachIdentity'),
     getToken: outsideBillingContract('getToken'),
     ensureFresh: outsideBillingContract('ensureFresh'),
     remint: outsideBillingContract('remint'),
     invalidate: outsideBillingContract('invalidate'),
     clearStoredCredential: outsideBillingContract('clearStoredCredential')
+  }
+  return {
+    session,
+    moveTo(workspace: AccountCredential['workspace']) {
+      snapshot = authenticated(credential(workspace))
+      for (const listener of [...listeners]) listener(snapshot)
+    }
   }
 }
 
@@ -170,7 +191,8 @@ export interface HarnessOptions {
 }
 
 export function createBillingHarness(options: HarnessOptions = {}) {
-  const scopeSource = sessionBillingScopeSource(fakeSession())
+  const host = fakeSession()
+  const scopeSource = sessionBillingScopeSource(host.session)
   const { transport, calls, answer, routes } = fakeTransport()
   const readerOptions = { transport, scopeSource }
   const capabilities = createCapabilitiesReader(readerOptions)
@@ -235,7 +257,15 @@ export function createBillingHarness(options: HarnessOptions = {}) {
     httpOk(opStatus({ status: 'succeeded' }))
   )
 
-  return { client, calls, answer, routes }
+  return {
+    client,
+    calls,
+    answer,
+    routes,
+    /** Moves the host to another workspace, as the switcher does. */
+    moveToWorkspace: (id: string) =>
+      host.moveTo({ id, name: 'Team', type: 'team' })
+  }
 }
 
 /** Lets every read, the POST, and the first poll cadence settle. */

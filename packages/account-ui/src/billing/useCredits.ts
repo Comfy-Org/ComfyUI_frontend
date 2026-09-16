@@ -21,7 +21,12 @@ export interface Credits {
   /** Micros, as the core reports them; formatting is the host's, with its locale. */
   readonly balance: Readonly<Ref<BillingBalance | undefined>>
   readonly loading: Readonly<Ref<boolean>>
-  /** The last read's failure; a failed refresh keeps the previous balance on screen. */
+  /**
+   * The last read's failure; a failed refresh keeps the previous balance on
+   * screen. A scope change is not surfaced as one: it drops the balance,
+   * which states the credits of the workspace the host left, and leaves
+   * nothing for the user to retry.
+   */
   readonly failure: Readonly<Ref<BillingFailure | undefined>>
   readonly refresh: () => Promise<BillingResult<CreditsSnapshot>>
 }
@@ -41,6 +46,9 @@ export function useCredits(options: CreditsOptions = {}): Credits {
     loading.value = false
     if (result.status === 'ok') {
       balance.value = result.value.balance
+      failure.value = undefined
+    } else if (result.code === 'SUPERSEDED') {
+      balance.value = undefined
       failure.value = undefined
     } else {
       failure.value = result

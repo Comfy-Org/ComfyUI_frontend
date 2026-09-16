@@ -38,6 +38,32 @@ describe('useCredits', () => {
     expect(credits.failure.value).toEqual(NO_RESPONSE)
   })
 
+  it('drops the balance without reporting a failure when the host changes workspace', async () => {
+    const { client, moveToWorkspace } = createBillingHarness({
+      balances: [BASELINE_MICROS]
+    })
+
+    const credits = useCredits({ client })
+    await vi.advanceTimersByTimeAsync(0)
+    expect(credits.balance.value).toEqual(balance(BASELINE_MICROS))
+
+    const superseded = credits.refresh()
+    moveToWorkspace('ws-2')
+    await expect(superseded).resolves.toEqual({
+      status: 'error',
+      code: 'SUPERSEDED'
+    })
+
+    expect(
+      credits.balance.value,
+      'these credits belong to the workspace the host left'
+    ).toBeUndefined()
+    expect(
+      credits.failure.value,
+      'the user did not cause the switch and has nothing to retry'
+    ).toBeUndefined()
+  })
+
   it('resolves the client from the nearest provider when none is passed', async () => {
     const { client } = createBillingHarness({ balances: [BASELINE_MICROS] })
     const Child = defineComponent({
