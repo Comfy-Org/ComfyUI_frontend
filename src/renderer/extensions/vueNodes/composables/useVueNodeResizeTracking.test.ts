@@ -1,15 +1,15 @@
-import type * as VueUse from '@vueuse/core'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { fromPartial } from '@total-typescript/shoehorn'
-import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
-import { defineComponent, h, nextTick, ref, watch } from 'vue'
-import type { ComfyApp } from '@/scripts/app'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { defineComponent, h, nextTick, ref } from 'vue'
 
 import { render, screen } from '@testing-library/vue'
 
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
+import * as slotOffsets from '@/renderer/core/layout/slots/syncSlotOffsets'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import type { NodeLayout } from '@/renderer/core/layout/types'
+import type { ComfyApp } from '@/scripts/app'
 import { toNodeId } from '@/types/nodeId'
 import type { NodeId } from '@/types/nodeId'
 import { slotId } from '@/types/slotId'
@@ -54,7 +54,6 @@ const testState = vi.hoisted(() => {
   const contentSizes = new Map<string, { width: number; height: number }>()
 
   return {
-    visibility: null as { value: 'visible' | 'hidden' } | null,
     nodeLayouts: new Map<NodeId, NodeLayout>(),
     contentSizes,
     reportContentSize: vi.fn(
@@ -66,7 +65,6 @@ const testState = vi.hoisted(() => {
         contentSizes.set(`${rootGraphId}:${nodeId}`, size)
       }
     ),
-    syncSlotOffsets: vi.fn(),
     setDirty: vi.fn()
   }
 })
@@ -76,19 +74,6 @@ vi.mock(import('@/scripts/app'), async () => {
   return { app: fromPartial<ComfyApp>({ canvas: {}, nodePreviewImages: {} }) }
 })
 
-vi.mock(import('@vueuse/core'), async (importOriginal) => {
-  const { ref } = await import('vue')
-  return {
-    ...(await importOriginal<typeof VueUse>()),
-    useDocumentVisibility: () => {
-      const visibility = ref<'visible' | 'hidden'>('visible')
-      testState.visibility = visibility
-      return visibility
-    },
-    createSharedComposable: <T>(fn: T) => fn
-  }
-})
-
 vi.mock<unknown>(
   import('@/composables/element/useCanvasPositionConversion'),
   () => ({
@@ -96,23 +81,6 @@ vi.mock<unknown>(
       clientPosToCanvasPos: ([x, y]: [number, number]) => [x, y]
     })
   })
-)
-
-vi.mock(
-  import('@/renderer/core/layout/slots/syncSlotOffsets'),
-  async (importOriginal) => {
-    const { syncSlotOffsets } = await importOriginal()
-    return {
-      syncSlotOffsets: (
-        element: HTMLElement,
-        rootGraphId: UUID,
-        nodeId: NodeId
-      ) => {
-        testState.syncSlotOffsets(nodeId)
-        syncSlotOffsets(element, rootGraphId, nodeId)
-      }
-    }
-  }
 )
 
 import { useVueElementTracking } from './useVueNodeResizeTracking'
@@ -195,6 +163,7 @@ function seedNodeLayout(options: {
 beforeEach(() => {
   useCanvasStore().canvas = fromPartial({ setDirty: testState.setDirty })
   layoutStore.resetForTests()
+  vi.spyOn(slotOffsets, 'syncSlotOffsets')
   vi.spyOn(layoutStore, 'reportContentSize').mockImplementation(
     testState.reportContentSize
   )
@@ -211,7 +180,6 @@ describe('useVueNodeResizeTracking', () => {
   beforeEach(() => {
     useCanvasStore().linearMode = false
     Object.assign(useCanvasStore(), { rootGraphId: ROOT_GRAPH_ID })
-    if (testState.visibility) testState.visibility.value = 'visible'
     testState.nodeLayouts.clear()
     testState.contentSizes.clear()
   })
@@ -236,7 +204,7 @@ describe('useVueNodeResizeTracking', () => {
     resizeObserverState.callback?.([changed], createObserverMock())
 
     expect(testState.reportContentSize).not.toHaveBeenCalled()
-    expect(testState.syncSlotOffsets).not.toHaveBeenCalled()
+    expect(slotOffsets.syncSlotOffsets).not.toHaveBeenCalled()
   })
 
   it('reports a fresh measurement after root workflow replacement', () => {
@@ -258,7 +226,11 @@ describe('useVueNodeResizeTracking', () => {
         height: 180 - LiteGraph.NODE_TITLE_HEIGHT
       }
     )
-    expect(testState.syncSlotOffsets).toHaveBeenCalledWith(nodeId)
+    expect(slotOffsets.syncSlotOffsets).toHaveBeenCalledWith(
+      entry.target,
+      SECOND_GRAPH_ID,
+      nodeId
+    )
   })
 
   it('remounts root-flat node identities during same-root subgraph navigation', async () => {
@@ -338,7 +310,11 @@ describe('useVueNodeResizeTracking', () => {
         height: 180 - LiteGraph.NODE_TITLE_HEIGHT
       }
     )
-    expect(testState.syncSlotOffsets).toHaveBeenCalledWith(nodeId)
+    expect(slotOffsets.syncSlotOffsets).toHaveBeenCalledWith(
+      entry.target,
+      ROOT_GRAPH_ID,
+      nodeId
+    )
   })
 
   it('defers hidden entries and re-observes connected elements when visible', async () => {
@@ -346,22 +322,22 @@ describe('useVueNodeResizeTracking', () => {
     const { entry } = createResizeEntry({ nodeId })
     document.body.append(entry.target)
     seedNodeLayout({ nodeId, left: 100, top: 200, width: 240, height: 180 })
-    if (!testState.visibility) throw new Error('visibility ref not initialized')
-
     resizeObserverState.callback?.([entry], createObserverMock())
     expect(testState.reportContentSize).toHaveBeenCalledTimes(1)
     vi.clearAllMocks()
 
-    testState.visibility.value = 'hidden'
+    vi.spyOn(document, 'visibilityState', 'get').mockReturnValue('hidden')
+    document.dispatchEvent(new Event('visibilitychange'))
     await nextTick()
     resizeObserverState.callback?.([entry], createObserverMock())
 
     expect(resizeObserverState.unobserve).toHaveBeenCalledWith(entry.target)
     expect(testState.reportContentSize).not.toHaveBeenCalled()
-    expect(testState.syncSlotOffsets).not.toHaveBeenCalled()
+    expect(slotOffsets.syncSlotOffsets).not.toHaveBeenCalled()
 
     vi.clearAllMocks()
-    testState.visibility.value = 'visible'
+    vi.spyOn(document, 'visibilityState', 'get').mockReturnValue('visible')
+    document.dispatchEvent(new Event('visibilitychange'))
     await nextTick()
 
     expect(resizeObserverState.observe).toHaveBeenCalledWith(entry.target)
@@ -376,7 +352,11 @@ describe('useVueNodeResizeTracking', () => {
         height: 180 - LiteGraph.NODE_TITLE_HEIGHT
       }
     )
-    expect(testState.syncSlotOffsets).toHaveBeenCalledWith(nodeId)
+    expect(slotOffsets.syncSlotOffsets).toHaveBeenCalledWith(
+      entry.target,
+      ROOT_GRAPH_ID,
+      nodeId
+    )
     entry.target.remove()
   })
 
@@ -576,17 +556,21 @@ describe('useVueNodeResizeTracking', () => {
 
     resizeObserverState.callback?.([entry], createObserverMock())
 
-    expect(testState.syncSlotOffsets).toHaveBeenCalledWith(nodeId)
+    expect(slotOffsets.syncSlotOffsets).toHaveBeenCalledWith(
+      entry.target,
+      ROOT_GRAPH_ID,
+      nodeId
+    )
     expect(testState.reportContentSize).not.toHaveBeenCalled()
   })
 
   it('tracks reordered and replacement rows without accepting stale geometry', async () => {
     const nodeId = toNodeId('grid-node')
     const rows = ref([0, 1])
+    let reconcile!: () => void
     const Grid = defineComponent({
       setup() {
-        const { reconcile } = useVueElementTracking(nodeId, 'widgets-grid')
-        watch(rows, reconcile, { flush: 'post' })
+        reconcile = useVueElementTracking(nodeId, 'widgets-grid').reconcile
         return () =>
           h(
             'div',
@@ -601,8 +585,9 @@ describe('useVueNodeResizeTracking', () => {
           )
       }
     })
-    const { container, unmount } = render(Grid)
-    assert.instanceOf(container, HTMLElement)
+    const container = document.createElement('div')
+    document.body.append(container)
+    const { unmount } = render(Grid, { container })
     container.dataset.nodeId = nodeId
     Object.defineProperty(container, 'offsetWidth', { value: 200 })
     container.getBoundingClientRect = () => new DOMRect(0, 0, 200, 300)
@@ -637,12 +622,14 @@ describe('useVueNodeResizeTracking', () => {
 
     rows.value = [1, 0]
     await nextTick()
+    reconcile()
     measureRows()
     expect(stored(1)).toEqual({ x: 0, y: 74 })
     expect(stored(0)).toEqual({ x: 0, y: 114 })
 
     rows.value = [2]
     await nextTick()
+    reconcile()
     measureRows()
     expect(stored(2)).toEqual({ x: 0, y: 74 })
     expect(stored(0)).toBeNull()
