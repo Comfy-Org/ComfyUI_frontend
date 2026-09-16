@@ -2,13 +2,13 @@ import type {
   ComfyApiWorkflow,
   ComfyWorkflowJSON
 } from '@/platform/workflow/validation/schemas/workflowSchema'
-import {
-  type AvifIinfBox,
-  type AvifIlocBox,
-  type AvifInfeBox,
-  type ComfyMetadata,
-  ComfyMetadataTags,
-  type IsobmffBoxContentRange
+import { ComfyMetadataTags } from '@/types/metadataTypes'
+import type {
+  AvifIinfBox,
+  AvifIlocBox,
+  AvifInfeBox,
+  ComfyMetadata,
+  IsobmffBoxContentRange
 } from '@/types/metadataTypes'
 import { readFileAsArrayBuffer } from '@/utils/fileUtil'
 import { parseJsonWithNonFinite } from '@/utils/jsonUtil'
@@ -337,7 +337,7 @@ function parseExifData(exifData) {
   // Function to read 16-bit and 32-bit integers from binary data
   // @ts-expect-error fixme ts strict error
   function readInt(offset, isLittleEndian, length) {
-    let arr = exifData.slice(offset, offset + length)
+    const arr = exifData.slice(offset, offset + length)
     if (length === 2) {
       return new DataView(arr.buffer, arr.byteOffset, arr.byteLength).getUint16(
         0,

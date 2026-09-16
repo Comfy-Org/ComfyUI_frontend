@@ -1,3 +1,5 @@
+import { computed, ref } from 'vue'
+import { useBillingContext } from '@/composables/billing/useBillingContext'
 import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -6,20 +8,11 @@ import { createI18n } from 'vue-i18n'
 import type { PreviewSubscribeResponse } from '@/platform/workspace/api/workspaceApi'
 import SubscriptionSuccessWorkspace from './SubscriptionSuccessWorkspace.vue'
 
-const { mockInviteSubmit, mockMaxSeats, mockOccupiedSeats } = vi.hoisted(
-  () => ({
-    mockInviteSubmit: vi.fn(),
-    mockMaxSeats: { value: 73 },
-    mockOccupiedSeats: { value: 1 }
-  })
-)
+const mockInviteSubmit = vi.hoisted(() => vi.fn())
+const mockMaxSeats = ref(73)
+const mockOccupiedSeats = ref(1)
 
-vi.mock<unknown>(import('@/composables/billing/useBillingContext'), () => ({
-  useBillingContext: () => ({
-    maxSeats: mockMaxSeats,
-    occupiedSeats: mockOccupiedSeats
-  })
-}))
+vi.mock(import('@/composables/billing/useBillingContext'))
 
 vi.mock<unknown>(import('./InviteMembersForm.vue'), () => ({
   default: {
@@ -125,6 +118,13 @@ function renderTeamCard(props: Record<string, unknown> = {}) {
 
 describe('SubscriptionSuccessWorkspace', () => {
   beforeEach(() => {
+    const billing = useBillingContext()
+    Object.assign(billing, {
+      maxSeats: computed(() => mockMaxSeats.value),
+      occupiedSeats: computed(() => mockOccupiedSeats.value)
+    })
+    vi.mocked(useBillingContext).mockReturnValue(billing)
+
     mockInviteSubmit.mockReset()
     mockMaxSeats.value = 73
     mockOccupiedSeats.value = 1

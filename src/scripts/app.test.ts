@@ -1,3 +1,4 @@
+import { fromAny, fromPartial } from '@total-typescript/shoehorn'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
@@ -6,12 +7,12 @@ import { useSettingStore } from '@/platform/settings/settingStore'
 import { useAuthStore } from '@/stores/authStore'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { fromPartial } from '@total-typescript/shoehorn'
 import { ref } from 'vue'
 
 vi.mock(import('@vueuse/router'), () => ({ useRouteHash: () => ref('') }))
 
 import type { CurveData } from '@/components/curve/types'
+import type { useExtensionService } from '@/services/extensionService'
 import { t } from '@/i18n'
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
@@ -29,7 +30,7 @@ import { useWorkflowService } from '@/platform/workflow/core/services/workflowSe
 import { createMockChangeTracker } from '@/utils/__tests__/litegraphTestUtils'
 import { useNodeReplacementStore } from '@/platform/nodeReplacement/nodeReplacementStore'
 import type { NodeReplacement } from '@/platform/nodeReplacement/types'
-import type { NodeExecutionOutput } from '@/schemas/apiSchema'
+import type { NodeExecutionOutput, NodeError } from '@/schemas/apiSchema'
 import { ComfyApp, app as singletonApp } from './app'
 import { createNode } from '@/utils/litegraphUtil'
 import {
@@ -54,7 +55,6 @@ import { PromptExecutionError, api } from '@/scripts/api'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useDialogStore } from '@/stores/dialogStore'
-import type { NodeError } from '@/schemas/apiSchema'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 import { createNodeExecutionId } from '@/types/nodeIdentification'
 import { toNodeId } from '@/types/nodeId'
@@ -91,15 +91,15 @@ const {
   }
 }))
 
-vi.mock('@/utils/litegraphUtil', () => ({
+vi.mock(import('@/utils/litegraphUtil'), () => ({
   createNode: vi.fn(),
-  isImageNode: vi.fn(),
-  isVideoNode: vi.fn(),
-  isAudioNode: vi.fn(),
+  isImageNode: fromAny(vi.fn()),
+  isVideoNode: fromAny(vi.fn()),
+  isAudioNode: fromAny(vi.fn()),
   executeWidgetsCallback: vi.fn()
 }))
 
-vi.mock('@/composables/usePaste', () => ({
+vi.mock(import('@/composables/usePaste'), () => ({
   pasteAudioNode: vi.fn(),
   pasteAudioNodes: vi.fn(),
   pasteImageNode: vi.fn(),
@@ -108,37 +108,33 @@ vi.mock('@/composables/usePaste', () => ({
   pasteVideoNodes: vi.fn()
 }))
 
-vi.mock('@/scripts/metadata/parser', () => ({
+vi.mock(import('@/scripts/metadata/parser'), () => ({
   getWorkflowDataFromFile: vi.fn()
 }))
 
-vi.mock('@/utils/eventUtils', async (importOriginal) => {
-  const eventUtils = await importOriginal<typeof import('@/utils/eventUtils')>()
-  return {
-    ...eventUtils,
-    extractFilesFromDragEvent: vi.fn()
-  }
-})
+vi.mock(import('@/utils/eventUtils'), { spy: true })
 
-vi.mock('./pnginfo', () => ({
+vi.mock(import('./pnginfo'), () => ({
   importA1111: mockImportA1111
 }))
 
-vi.mock('@/platform/workflow/core/services/workflowService', () => ({
-  useWorkflowService: vi.fn(() => mockWorkflowService)
-}))
+vi.mock(import('@/platform/workflow/core/services/workflowService'), {
+  spy: true
+})
 
-vi.mock('@/extensions/core/load3d/Load3dUtils', () => ({
-  default: {
+vi.mock(import('@/extensions/core/load3d/Load3dUtils'), () => ({
+  default: fromAny({
     uploadFile: vi.fn()
-  }
+  })
 }))
 
-vi.mock('@/services/extensionService', () => ({
-  useExtensionService: vi.fn(() => mockExtensionService)
+vi.mock(import('@/services/extensionService'), () => ({
+  useExtensionService: vi.fn(() =>
+    fromPartial<ReturnType<typeof useExtensionService>>(mockExtensionService)
+  )
 }))
 
-vi.mock('@/platform/missingModel/missingModelPipeline', () => ({
+vi.mock(import('@/platform/missingModel/missingModelPipeline'), () => ({
   refreshMissingModelPipeline: mockRefreshMissingModelPipeline,
   runMissingModelPipeline: vi.fn()
 }))
@@ -177,12 +173,12 @@ function createTestFile(name: string, type: string): File {
  * Point the workflowService mock at the real implementation for tests that
  * exercise the load lifecycle itself rather than app.ts's calls into it.
  */
-const actualWorkflowService = await vi.importActual<
-  typeof import('@/platform/workflow/core/services/workflowService')
->('@/platform/workflow/core/services/workflowService')
-
 async function useRealWorkflowService(): Promise<WorkflowService> {
-  const real = actualWorkflowService.useWorkflowService()
+  vi.mocked(useWorkflowService).mockRestore()
+  const real = useWorkflowService()
+  vi.mocked(useWorkflowService).mockReturnValue(
+    fromPartial<WorkflowService>(mockWorkflowService)
+  )
   mockWorkflowService.beforeLoadNewGraph.mockImplementation(
     real.beforeLoadNewGraph
   )
@@ -220,9 +216,12 @@ describe('ComfyApp', () => {
   let mockCanvas: LGraphCanvas
 
   beforeEach(() => {
+    vi.mocked(useWorkflowService).mockReturnValue(
+      fromPartial<WorkflowService>(mockWorkflowService)
+    )
     app = new ComfyApp()
     mockCanvas = createMockCanvas() as LGraphCanvas
-    app.canvas = mockCanvas as LGraphCanvas
+    app.canvas = mockCanvas
     useWorkflowStore().activeWorkflow = null
     const temporaryWorkflow = new ComfyWorkflow({
       path: 'workflows/temporary.json',

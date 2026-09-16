@@ -18,7 +18,7 @@ import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMuta
 import { LayoutSource } from '@/renderer/core/layout/types'
 import { app } from '@/scripts/app'
 import type { NodeId } from '@/types/nodeId'
-import { isLGraphGroup, isLGraphNode, isReroute } from '@/utils/litegraphUtil'
+import { isLGraphNode } from '@/utils/litegraphUtil'
 
 function currentTransform(): LGraphCanvas['ds'] | null {
   return app.canvas.ds
@@ -97,10 +97,6 @@ export const useCanvasStore = defineStore('canvas', () => {
       originalOnChanged = undefined
     }
   }
-
-  const nodeSelected = computed(() => selectedItems.value.some(isLGraphNode))
-  const groupSelected = computed(() => selectedItems.value.some(isLGraphGroup))
-  const rerouteSelected = computed(() => selectedItems.value.some(isReroute))
 
   const getCanvas = () => {
     if (!canvas.value) throw new Error('getCanvas: canvas is null')
@@ -206,9 +202,6 @@ export const useCanvasStore = defineStore('canvas', () => {
     canvas,
     selectedItems,
     selectedNodeIds,
-    nodeSelected,
-    groupSelected,
-    rerouteSelected,
     appScalePercentage,
     linearMode,
     isReadOnly,

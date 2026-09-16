@@ -98,9 +98,12 @@
     "typescript/no-unnecessary-type-conversion": "error",
     "typescript/no-unnecessary-type-parameters": "error",
     "typescript/no-unsafe-declaration-merging": "off",
+    "typescript/require-array-sort-compare": "error",
+    "typescript/triple-slash-reference": "error",
     "typescript/no-unused-vars": "off",
     "unicorn/no-empty-file": "off",
     "vitest/require-mock-type-parameters": "off",
+    "vitest/valid-expect": "error",
     "vitest/hoisted-apis-on-top": "error",
     "vitest/prefer-import-in-mock": "error",
     "typescript/no-misused-spread": "error",
@@ -138,6 +141,16 @@
   },
   "overrides": [
     {
+      "files": [
+        "**/*.{test,spec}.{ts,tsx}",
+        "**/{__test__,__tests__,__fixtures__}/**/*.{ts,tsx}"
+      ],
+      "rules": {
+        "comfy/no-import-actual": "error",
+        "comfy/use-global-pinia": "error"
+      }
+    },
+    {
       "files": ["**/*.{stories,test,spec}.ts", "**/*.stories.vue"],
       "rules": {
         "no-console": "allow"
@@ -172,6 +185,12 @@
       "files": ["browser_tests/tests/**/*.spec.ts", "apps/*/e2e/**/*.spec.ts"],
       "rules": {
         "comfy/no-comfy-page-setup-call": "error"
+      }
+    },
+    {
+      "files": ["browser_tests/tests/**/*.spec.ts"],
+      "rules": {
+        "comfy/prefer-initial-settings": "error"
       }
     },
     {

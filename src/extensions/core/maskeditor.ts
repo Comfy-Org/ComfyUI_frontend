@@ -24,7 +24,7 @@ function openMaskEditor(node: LGraphNode): void {
 // Open mask editor from clipspace (for plugin compatibility)
 // This is called when ComfyApp.open_maskeditor() is invoked without arguments
 function openMaskEditorFromClipspace(): void {
-  const node = ComfyApp.clipspace_return_node as LGraphNode | null
+  const node = ComfyApp.clipspace_return_node
   if (!node) {
     console.error('[MaskEditor] No clipspace_return_node found')
     return

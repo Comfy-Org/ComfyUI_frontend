@@ -1,5 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 
+import { mockBillingContext } from '@/utils/__tests__/mockBillingContext'
+
 import { useAccountPreconditionDialog } from './useAccountPreconditionDialog'
 
 const mockDialogService = {
@@ -8,18 +10,11 @@ const mockDialogService = {
   showTopUpCreditsDialog: vi.fn()
 }
 
-const mockBilling = {
-  fetchStatus: vi.fn(),
-  fetchBalance: vi.fn()
-}
-
 vi.mock<unknown>(import('@/services/dialogService'), () => ({
   useDialogService: vi.fn(() => mockDialogService)
 }))
 
-vi.mock<unknown>(import('@/composables/billing/useBillingContext'), () => ({
-  useBillingContext: vi.fn(() => mockBilling)
-}))
+vi.mock(import('@/composables/billing/useBillingContext'))
 
 describe('useAccountPreconditionDialog', () => {
   it('routes a sign-in precondition to the API sign-in dialog with the node type', () => {
@@ -62,16 +57,18 @@ describe('useAccountPreconditionDialog', () => {
   })
 
   it('refreshes the billing snapshot on a credit precondition so exhausted-state surfaces converge', () => {
+    const billing = mockBillingContext()
     useAccountPreconditionDialog().open('credits')
 
-    expect(mockBilling.fetchStatus).toHaveBeenCalledTimes(1)
-    expect(mockBilling.fetchBalance).toHaveBeenCalledTimes(1)
+    expect(billing.fetchStatus).toHaveBeenCalledTimes(1)
+    expect(billing.fetchBalance).toHaveBeenCalledTimes(1)
   })
 
   it('does not touch billing state for non-credit preconditions', () => {
+    const billing = mockBillingContext()
     useAccountPreconditionDialog().open('subscription')
 
-    expect(mockBilling.fetchStatus).not.toHaveBeenCalled()
-    expect(mockBilling.fetchBalance).not.toHaveBeenCalled()
+    expect(billing.fetchStatus).not.toHaveBeenCalled()
+    expect(billing.fetchBalance).not.toHaveBeenCalled()
   })
 })

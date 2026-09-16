@@ -1,4 +1,3 @@
-// @vitest-environment happy-dom
 import userEvent from '@testing-library/user-event'
 import { fireEvent, render, screen } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -11,7 +10,7 @@ const hoisted = vi.hoisted(() => ({
   submit: vi.fn().mockResolvedValue(undefined)
 }))
 
-vi.mock('../../scripts/customerio', () => ({
+vi.mock(import('../../scripts/customerio'), () => ({
   get isDownloadLinkRequestEnabled() {
     return hoisted.isEnabled
   },

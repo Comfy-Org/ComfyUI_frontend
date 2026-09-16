@@ -2,30 +2,14 @@ import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, h } from 'vue'
+import type { Ref } from 'vue'
 import { createI18n } from 'vue-i18n'
+
+import { mockBillingContext } from '@/utils/__tests__/mockBillingContext'
 
 import CreditsPanel from './CreditsPanel.vue'
 
-const billingMocks = vi.hoisted(() => ({
-  usageLogsRefreshSignal: { value: 0 },
-  manageSubscription: vi.fn()
-}))
-vi.mock<unknown>(
-  import('@/composables/billing/useBillingContext'),
-  async () => {
-    const { ref } = await import('vue')
-    const usageLogsRefreshSignal = ref(0)
-    Object.defineProperty(billingMocks, 'usageLogsRefreshSignal', {
-      get: () => usageLogsRefreshSignal
-    })
-    return {
-      useBillingContext: () => ({
-        usageLogsRefreshSignal,
-        manageSubscription: billingMocks.manageSubscription
-      })
-    }
-  }
-)
+vi.mock(import('@/composables/billing/useBillingContext'))
 
 const refreshActivity = vi.hoisted(() => vi.fn())
 vi.mock<unknown>(import('./UsageLogsTable.vue'), async () => {
@@ -47,9 +31,7 @@ vi.mock(
   })
 )
 
-vi.mock<unknown>(import('@/platform/telemetry'), () => ({
-  useTelemetry: () => ({ trackHelpResourceClicked: vi.fn() })
-}))
+vi.mock(import('@/platform/telemetry'))
 
 vi.mock<unknown>(import('@/composables/useExternalLink'), () => ({
   useExternalLink: () => ({
@@ -77,7 +59,6 @@ const i18n = createI18n({
 
 describe('CreditsPanel', () => {
   beforeEach(() => {
-    billingMocks.usageLogsRefreshSignal.value = 0
     refreshActivity.mockClear()
   })
 
@@ -88,20 +69,22 @@ describe('CreditsPanel', () => {
   }
 
   it('opens the billing portal for the active billing rail', async () => {
+    const billing = mockBillingContext()
     const user = userEvent.setup()
     renderComponent()
 
     await user.click(screen.getByRole('button', { name: /Invoice History/ }))
 
-    expect(billingMocks.manageSubscription).toHaveBeenCalledOnce()
+    expect(billing.manageSubscription).toHaveBeenCalledOnce()
   })
 
   it('refreshes activity when the shared billing signal changes', async () => {
+    const billing = mockBillingContext()
     renderComponent()
     screen.getByTestId('usage-logs-table')
     expect(refreshActivity).not.toHaveBeenCalled()
 
-    billingMocks.usageLogsRefreshSignal.value++
+    ;(billing.usageLogsRefreshSignal as Ref<number>).value++
     await vi.waitFor(() => expect(refreshActivity).toHaveBeenCalledOnce())
   })
 })

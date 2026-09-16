@@ -1,9 +1,10 @@
-import type * as DistributionModule from '@/platform/distribution/types'
 import { useDialogStore } from '@/stores/dialogStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useBillingOperationStore } from '@/platform/workspace/stores/billingOperationStore'
 import { useAuthStore } from '@/stores/authStore'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+
+import { useTelemetry } from '@/platform/telemetry'
 
 import type { SubscriptionInfo } from '@/composables/billing/types'
 import type {
@@ -21,7 +22,6 @@ import { useSubscriptionDialog } from './useSubscriptionDialog'
 const mockCloseDialog = vi.fn()
 const mockShowLayoutDialog = vi.fn()
 const mockShowTeamWorkspacesDialog = vi.fn()
-const mockTrackSubscription = vi.hoisted(() => vi.fn())
 
 const mockIsFreeTier = vi.hoisted(() => ({ value: false }))
 const mockTier = vi.hoisted(() => ({ value: 'FREE' as string | null }))
@@ -84,8 +84,7 @@ vi.mock<unknown>(import('@/composables/useFeatureFlags'), () => ({
   })
 }))
 
-vi.mock(import('@/platform/distribution/types'), async (importOriginal) => ({
-  ...(await importOriginal<typeof DistributionModule>()),
+vi.mock(import('@/platform/distribution/types'), () => ({
   get isCloud() {
     return mockIsCloud.value
   }
@@ -107,9 +106,7 @@ vi.mock<unknown>(import('@/composables/billing/useBillingContext'), () => ({
   })
 }))
 
-vi.mock<unknown>(import('@/platform/telemetry'), () => ({
-  useTelemetry: () => ({ trackSubscription: mockTrackSubscription })
-}))
+vi.mock(import('@/platform/telemetry'))
 
 vi.mock<unknown>(
   import('@/platform/workspace/composables/useWorkspaceUI'),
@@ -335,7 +332,7 @@ describe('useSubscriptionDialog', () => {
       expect(props).not.toHaveProperty('initialCheckout')
       const { dialogComponentProps } = mockShowLayoutDialog.mock.calls[0][0]
       expectRekaPricingDialogProps(dialogComponentProps)
-      expect(mockTrackSubscription).toHaveBeenCalledWith(
+      expect(useTelemetry()?.trackSubscription).toHaveBeenCalledWith(
         'modal_opened',
         expect.objectContaining({ reason: 'deep_link' })
       )
@@ -433,10 +430,13 @@ describe('useSubscriptionDialog', () => {
 
       showPricingTable({ reason: 'upgrade_to_add_credits' })
 
-      expect(mockTrackSubscription).toHaveBeenCalledWith('modal_opened', {
-        current_tier: 'standard',
-        reason: 'upgrade_to_add_credits'
-      })
+      expect(useTelemetry()?.trackSubscription).toHaveBeenCalledWith(
+        'modal_opened',
+        {
+          current_tier: 'standard',
+          reason: 'upgrade_to_add_credits'
+        }
+      )
     })
 
     it('tracks modal_opened on the workspace (unified) path too', () => {
@@ -445,7 +445,7 @@ describe('useSubscriptionDialog', () => {
 
       showPricingTable({ reason: 'subscribe_to_run' })
 
-      expect(mockTrackSubscription).toHaveBeenCalledWith(
+      expect(useTelemetry()?.trackSubscription).toHaveBeenCalledWith(
         'modal_opened',
         expect.objectContaining({ reason: 'subscribe_to_run' })
       )
@@ -460,7 +460,7 @@ describe('useSubscriptionDialog', () => {
       showPricingTable({ reason: 'subscribe_to_run' })
 
       expect(mockShowLayoutDialog).toHaveBeenCalledTimes(1)
-      expect(mockTrackSubscription).not.toHaveBeenCalled()
+      expect(useTelemetry()?.trackSubscription).not.toHaveBeenCalled()
     })
 
     it('shows the read-only member dialog for out-of-credits too, not the pricing table', () => {
@@ -484,7 +484,7 @@ describe('useSubscriptionDialog', () => {
 
       showPricingTable({ reason: 'subscribe_to_run' })
 
-      expect(mockTrackSubscription).not.toHaveBeenCalled()
+      expect(useTelemetry()?.trackSubscription).not.toHaveBeenCalled()
     })
   })
 
@@ -513,7 +513,7 @@ describe('useSubscriptionDialog', () => {
       expect(mockShowLayoutDialog).toHaveBeenCalledWith(
         expect.objectContaining({ key: 'subscription-required' })
       )
-      expect(mockTrackSubscription).not.toHaveBeenCalled()
+      expect(useTelemetry()?.trackSubscription).not.toHaveBeenCalled()
     })
 
     it('falls back to the pricing table for a non-free-tier user', () => {
@@ -546,8 +546,8 @@ describe('useSubscriptionDialog', () => {
 
       show({ reason: 'out_of_credits' })
 
-      expect(mockTrackSubscription).toHaveBeenCalledTimes(1)
-      expect(mockTrackSubscription).toHaveBeenCalledWith(
+      expect(useTelemetry()?.trackSubscription).toHaveBeenCalledTimes(1)
+      expect(useTelemetry()?.trackSubscription).toHaveBeenCalledWith(
         'modal_opened',
         expect.objectContaining({ reason: 'out_of_credits' })
       )
@@ -909,10 +909,4 @@ describe('useSubscriptionDialog', () => {
     })
   })
 })
-
-vi.mock(import('firebase/auth'), async (importOriginal) => ({
-  ...(await importOriginal()),
-  setPersistence: vi.fn().mockResolvedValue(undefined),
-  onAuthStateChanged: vi.fn(),
-  onIdTokenChanged: vi.fn()
-}))
+vi.mock(import('firebase/auth'))

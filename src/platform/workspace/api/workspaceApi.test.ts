@@ -1,4 +1,9 @@
 import { useAuthStore } from '@/stores/authStore'
+import {
+  onAuthStateChanged,
+  onIdTokenChanged,
+  setPersistence
+} from 'firebase/auth'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type {
@@ -34,15 +39,17 @@ vi.mock(import('@/i18n'), () => ({
   t: vi.fn((key: string) => key)
 }))
 
-vi.mock(import('@/scripts/api'), async (importOriginal) => ({
-  api: Object.assign((await importOriginal()).api, {
-    apiURL: vi.fn((path: string) => `/api${path}`)
-  })
-}))
-
 vi.mock(import('./workspaceApiUrl'), () => ({
   workspaceApiUrl: (path: string) => `/api${path}`
 }))
+
+vi.mock(import('firebase/auth'), { spy: true })
+
+beforeEach(() => {
+  vi.mocked(setPersistence).mockResolvedValue(undefined)
+  vi.mocked(onAuthStateChanged).mockImplementation(vi.fn())
+  vi.mocked(onIdTokenChanged).mockImplementation(vi.fn())
+})
 
 import { workspaceApi } from './workspaceApi'
 
@@ -787,10 +794,3 @@ describe('workspaceApi', () => {
     })
   })
 })
-
-vi.mock(import('firebase/auth'), async (importOriginal) => ({
-  ...(await importOriginal()),
-  setPersistence: vi.fn().mockResolvedValue(undefined),
-  onAuthStateChanged: vi.fn(() => vi.fn()),
-  onIdTokenChanged: vi.fn(() => vi.fn())
-}))

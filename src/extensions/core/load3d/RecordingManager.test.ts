@@ -8,19 +8,17 @@ const { downloadBlobMock } = vi.hoisted(() => ({
   downloadBlobMock: vi.fn()
 }))
 
-vi.mock('@/base/common/downloadUtil', () => ({
+vi.mock(import('@/base/common/downloadUtil'), () => ({
   downloadBlob: downloadBlobMock
 }))
 
-vi.mock('three', async (importOriginal) => {
-  const actual = await importOriginal<typeof THREE>()
-  // Avoid TextureLoader -> ImageLoader -> new Image() in happy-dom.
-  class StubTextureLoader {
-    load() {
-      return new actual.Texture()
-    }
+vi.mock(import('three'), { spy: true })
+
+beforeEach(() => {
+  function MockTextureLoader() {
+    return { load: () => new THREE.Texture() }
   }
-  return { ...actual, TextureLoader: StubTextureLoader }
+  vi.spyOn(THREE, 'TextureLoader').mockImplementation(MockTextureLoader)
 })
 
 type DataAvailableHandler = (event: { data: Blob }) => void
@@ -289,10 +287,7 @@ describe('RecordingManager', () => {
       const sprite = scene.children.find(
         (c) => c instanceof THREE.Sprite
       ) as THREE.Sprite
-      const disposeSpy = vi.spyOn(
-        sprite.material as THREE.SpriteMaterial,
-        'dispose'
-      )
+      const disposeSpy = vi.spyOn(sprite.material, 'dispose')
 
       manager.dispose()
 
