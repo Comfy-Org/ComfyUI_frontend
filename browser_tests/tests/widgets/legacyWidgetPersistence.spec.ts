@@ -8,7 +8,6 @@ test.describe(
   { tag: ['@widget', '@workflow'] },
   () => {
     test.beforeEach(async ({ comfyPage }) => {
-      await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', false)
       await comfyPage.workflow.setupWorkflowsDirectory({})
     })
 
