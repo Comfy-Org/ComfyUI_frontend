@@ -7,6 +7,11 @@ import { test as base } from './blockExternalMedia'
 
 export const MODEL_PATH = '/models/bfl--flux-2-max--generate-images/'
 
+/** The identity this fixture signs in as, and the workspace its token mints. */
+export const MODELS_ACCOUNT_UID = 'e2e-models-user'
+export const MODELS_WORKSPACE_ID = 'ws-personal'
+const MODELS_WORKSPACE_TOKEN = 'mock-workspace-jwt'
+
 function jsonRoute(body: unknown, status = 200) {
   return { status, contentType: 'application/json', body: JSON.stringify(body) }
 }
@@ -40,10 +45,10 @@ export const test = base.extend<{
       await context.route('**/api/auth/token', (route) =>
         route.fulfill(
           jsonRoute({
-            token: 'mock-workspace-jwt',
+            token: MODELS_WORKSPACE_TOKEN,
             expires_at: new Date(Date.now() + 60 * 60 * 1000).toISOString(),
             workspace: {
-              id: 'ws-personal',
+              id: MODELS_WORKSPACE_ID,
               name: 'Personal',
               type: 'personal'
             },
@@ -68,7 +73,7 @@ export const test = base.extend<{
         if (route.request().url().includes('accounts:signInWithPassword'))
           return route.fulfill(
             jsonRoute({
-              localId: 'e2e-models-user',
+              localId: MODELS_ACCOUNT_UID,
               email,
               idToken: 'mock-firebase-id-token',
               registered: true,
@@ -80,7 +85,7 @@ export const test = base.extend<{
           return route.fulfill(
             jsonRoute({
               users: [
-                { localId: 'e2e-models-user', email, emailVerified: true }
+                { localId: MODELS_ACCOUNT_UID, email, emailVerified: true }
               ]
             })
           )
@@ -94,7 +99,7 @@ export const test = base.extend<{
             token_type: 'Bearer',
             refresh_token: 'mock-refresh-token',
             id_token: 'mock-firebase-id-token',
-            user_id: 'e2e-models-user',
+            user_id: MODELS_ACCOUNT_UID,
             project_id: 'dreamboothy-dev'
           })
         )
