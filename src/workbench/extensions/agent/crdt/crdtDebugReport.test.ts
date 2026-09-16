@@ -413,10 +413,20 @@ describe('collectCrdtDebugReport', () => {
         events: [],
         agentMessages: [
           {
-            ...createAssistantMessage(toTurnId('turn-many')),
-            parts: Array.from({ length: count }, (_, index) => ({
+            ...createAssistantMessage(toTurnId('turn-many-1')),
+            parts: Array.from({ length: 30 }, (_, index) => ({
               type: 'tool',
               callId: `call-${index}`,
+              name: 'inspect_workflow',
+              state: 'done',
+              ok: true
+            }))
+          },
+          {
+            ...createAssistantMessage(toTurnId('turn-many-2')),
+            parts: Array.from({ length: count - 30 }, (_, index) => ({
+              type: 'tool',
+              callId: `call-${index + 30}`,
               name: 'inspect_workflow',
               state: 'done',
               ok: true
@@ -428,7 +438,16 @@ describe('collectCrdtDebugReport', () => {
       expect(report).toContain(`- Agent tool calls: ${status}`)
       expect(report.includes('"callId": "call-0"')).toBe(includesOldest)
       expect(report).toContain(`"callId": "${newest}"`)
-      expect(report.match(/"callId":/g)).toHaveLength(50)
+      expect(
+        [...report.matchAll(/"callId": "(call-\d+)"/g)].map(
+          ([, callId]) => callId
+        )
+      ).toEqual(
+        Array.from(
+          { length: 50 },
+          (_, index) => `call-${index + Math.max(0, count - 50)}`
+        )
+      )
     }
   )
 
@@ -487,11 +506,22 @@ describe('collectCrdtDebugReport', () => {
     })
 
     expect(report).toContain(
-      '- Agent tool calls: truncated (2/2 retained calls)'
+      '- Agent tool calls: truncated (1/2 retained calls)'
     )
-    expect(report).toContain('earlier characters trimmed')
-    expect(report).toContain('"callId": "call-newest"')
-    expect(report).not.toContain('"callId": "call-oldest"')
+    const serialized = report
+      .split('## Agent tool calls\n\n')[1]
+      ?.match(/```json\n([\s\S]*?)\n```/)?.[1]
+    assert.exists(serialized)
+    expect(JSON.parse(serialized)).toEqual([
+      {
+        turnId: 'turn-large',
+        callId: 'call-newest',
+        name: 'inspect_workflow',
+        state: 'done',
+        ok: true,
+        durationMs: 41
+      }
+    ])
     expect(report.length).toBeLessThan(70_000)
   })
 
