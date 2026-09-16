@@ -1,5 +1,8 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 import { useExtensionStore } from '@/stores/extensionStore'
+
+import { toTurnId } from '../schemas/agentApiSchema'
+import { createAssistantMessage } from '../services/agent/agentMessageParts'
 
 const { getSystemStats, getLogs, getSettings } = vi.hoisted(() => ({
   getSystemStats: vi.fn(),
@@ -292,6 +295,204 @@ describe('collectCrdtDebugReport', () => {
     expect(report).toContain('- Settings: turned off')
     expect(report).toContain('- Workflow: unavailable')
     expect(report).toContain('Server logs unavailable: Error: offline')
+  })
+
+  it.for([
+    { messages: undefined, status: 'unavailable' },
+    { messages: [], status: 'no retained calls' }
+  ])(
+    'reports $status tool metadata explicitly',
+    async ({ messages, status }) => {
+      const report = await collectCrdtDebugReport({
+        crdt: SNAPSHOT,
+        events: [],
+        agentMessages: messages
+      })
+
+      expect(report).toContain(`- Agent tool calls: ${status}`)
+      expect(report).toContain('Restored history may omit tool calls')
+    }
+  )
+
+  it('correlates tool outcomes and backend durations without conversation content', async () => {
+    const report = await collectCrdtDebugReport({
+      crdt: SNAPSHOT,
+      events: [],
+      agentMessages: [
+        {
+          ...createAssistantMessage(toTurnId('turn-21')),
+          parts: [
+            { type: 'text', text: 'private assistant response', state: 'done' },
+            {
+              type: 'tool',
+              callId: 'call-success',
+              name: 'inspect_workflow',
+              state: 'done',
+              ok: true,
+              durationMs: 137
+            }
+          ]
+        },
+        {
+          ...createAssistantMessage(toTurnId('turn-43')),
+          parts: [
+            { type: 'thinking', text: 'private reasoning', state: 'done' },
+            {
+              type: 'tool',
+              callId: 'call-error',
+              name: 'edit_workflow',
+              state: 'done',
+              ok: false,
+              durationMs: 294
+            },
+            {
+              type: 'tool',
+              callId: 'call-unsettled',
+              name: 'run_workflow',
+              state: 'streaming'
+            }
+          ]
+        }
+      ]
+    })
+
+    expect(report).toContain(
+      '- Agent tool calls: collected (3/3 retained calls)'
+    )
+    const serialized = report
+      .split('## Agent tool calls\n\n')[1]
+      ?.match(/```json\n([\s\S]*?)\n```/)?.[1]
+    assert.exists(serialized)
+    const calls: unknown = JSON.parse(serialized)
+    expect(calls).toEqual([
+      {
+        turnId: 'turn-21',
+        callId: 'call-success',
+        name: 'inspect_workflow',
+        state: 'done',
+        ok: true,
+        durationMs: 137
+      },
+      {
+        turnId: 'turn-43',
+        callId: 'call-error',
+        name: 'edit_workflow',
+        state: 'done',
+        ok: false,
+        durationMs: 294
+      },
+      {
+        turnId: 'turn-43',
+        callId: 'call-unsettled',
+        name: 'run_workflow',
+        state: 'streaming'
+      }
+    ])
+    expect(report).not.toContain('private assistant response')
+    expect(report).not.toContain('private reasoning')
+  })
+
+  it.for([
+    {
+      count: 50,
+      status: 'collected (50/50 retained calls)',
+      includesOldest: true,
+      newest: 'call-49'
+    },
+    {
+      count: 51,
+      status: 'truncated (50/51 retained calls)',
+      includesOldest: false,
+      newest: 'call-50'
+    }
+  ])(
+    'bounds $count tool calls to the most recent 50',
+    async ({ count, status, includesOldest, newest }) => {
+      const report = await collectCrdtDebugReport({
+        crdt: SNAPSHOT,
+        events: [],
+        agentMessages: [
+          {
+            ...createAssistantMessage(toTurnId('turn-many')),
+            parts: Array.from({ length: count }, (_, index) => ({
+              type: 'tool',
+              callId: `call-${index}`,
+              name: 'inspect_workflow',
+              state: 'done',
+              ok: true
+            }))
+          }
+        ]
+      })
+
+      expect(report).toContain(`- Agent tool calls: ${status}`)
+      expect(report.includes('"callId": "call-0"')).toBe(includesOldest)
+      expect(report).toContain(`"callId": "${newest}"`)
+      expect(report.match(/"callId":/g)).toHaveLength(50)
+    }
+  )
+
+  it('redacts credential-shaped tool metadata', async () => {
+    const report = await collectCrdtDebugReport({
+      crdt: SNAPSHOT,
+      events: [],
+      agentMessages: [
+        {
+          ...createAssistantMessage(toTurnId('auth: Bearer private-turn')),
+          parts: [
+            {
+              type: 'tool',
+              callId: 'apiKey="private-call"',
+              name: '/home/private-tool',
+              state: 'done',
+              ok: false
+            }
+          ]
+        }
+      ]
+    })
+
+    expect(report).not.toContain('private-turn')
+    expect(report).not.toContain('private-call')
+    expect(report).not.toContain('private-tool')
+    expect(report).toContain('[redacted by the debug report]')
+    expect(report).toContain('"ok": false')
+  })
+
+  it('bounds oversized metadata and preserves the newest call in the excerpt', async () => {
+    const report = await collectCrdtDebugReport({
+      crdt: SNAPSHOT,
+      events: [],
+      agentMessages: [
+        {
+          ...createAssistantMessage(toTurnId('turn-large')),
+          parts: [
+            {
+              type: 'tool',
+              callId: 'call-oldest',
+              name: 'x'.repeat(70_000),
+              state: 'done'
+            },
+            {
+              type: 'tool',
+              callId: 'call-newest',
+              name: 'inspect_workflow',
+              state: 'done',
+              ok: true,
+              durationMs: 41
+            }
+          ]
+        }
+      ]
+    })
+
+    expect(report).toContain(
+      '- Agent tool calls: truncated (2/2 retained calls)'
+    )
+    expect(report).toContain('earlier characters trimmed')
+    expect(report).toContain('"callId": "call-newest"')
+    expect(report).not.toContain('"callId": "call-oldest"')
+    expect(report.length).toBeLessThan(70_000)
   })
 
   it.for([
