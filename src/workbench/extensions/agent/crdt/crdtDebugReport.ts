@@ -233,6 +233,16 @@ function json(value: unknown): string {
   }
 }
 
+function fitJsonArray(values: readonly unknown[], max: number) {
+  let start = 0
+  let body = json(redactSecrets(values))
+  while (body.length > max && start < values.length) {
+    start++
+    body = json(redactSecrets(values.slice(start)))
+  }
+  return { body, retained: values.length - start }
+}
+
 function redactEventPayloads(value: unknown): unknown {
   if (Array.isArray(value)) return value.map(redactEventPayloads)
   if (!isRecord(value)) return value
@@ -501,17 +511,13 @@ function agentToolSection(messages: readonly AssistantMessage[] | undefined) {
     }
   }
   calls.reverse()
-  let body = json(redactSecrets(calls))
-  while (body.length > MAX_SECTION_CHARS && calls.length > 0) {
-    calls.shift()
-    body = json(redactSecrets(calls))
-  }
+  const fitted = fitJsonArray(calls, MAX_SECTION_CHARS)
   return {
-    section: [context, fence('json', body)].join('\n\n'),
+    section: [context, fence('json', fitted.body)].join('\n\n'),
     status:
       total === 0
         ? 'no retained calls'
-        : `${total > calls.length ? 'truncated' : 'collected'} (${calls.length}/${total} retained calls)`
+        : `${total > fitted.retained ? 'truncated' : 'collected'} (${fitted.retained}/${total} retained calls)`
   }
 }
 
