@@ -36,6 +36,9 @@
     "./telemetry": "./src/telemetry.ts",
     "./webviewDetection": "./src/webviewDetection.ts"
   },
+  "publishConfig": {
+    "access": "public"
+  },
   "scripts": {
     "lint": "oxlint src --type-aware && eslint src",
     "smoke:pack": "tsx scripts/smokePack.ts",
