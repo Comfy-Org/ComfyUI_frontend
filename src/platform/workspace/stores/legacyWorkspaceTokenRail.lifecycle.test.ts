@@ -211,6 +211,8 @@ describe('minting a workspace token', () => {
     )
 
     const switching = rail.switchLegacyWorkspace('workspace-123')
+    await vi.advanceTimersByTimeAsync(1)
+    expect(mockFetch).toHaveBeenCalledOnce()
     expect(deps.isLoading.value).toBe(true)
     identity.uid = 'user-b'
     deliverToken(tokenResponse())
@@ -578,19 +580,26 @@ describe('refreshToken', () => {
     expect(vi.mocked(deps.endWorkspaceSession).mock.calls).toEqual([[]])
   })
 
-  it('ends the session once retries are exhausted and the held token has expired', async () => {
-    const { rail, deps } = createRail()
-    await rail.switchLegacyWorkspace('workspace-123')
-    mockFetch.mockResolvedValue(failedResponse(500))
-    vi.setSystemTime(Date.now() + expiresInMs + 1)
+  it.for([
+    { held: 'has expired', clockAdvanceMs: expiresInMs + 1, uid: 'user-a' },
+    { held: 'belongs to another user', clockAdvanceMs: 0, uid: 'user-b' }
+  ])(
+    'ends the session once retries are exhausted and the held token $held',
+    async ({ clockAdvanceMs, uid }) => {
+      const { rail, deps, identity } = createRail()
+      await rail.switchLegacyWorkspace('workspace-123')
+      mockFetch.mockResolvedValue(failedResponse(500))
+      vi.setSystemTime(Date.now() + clockAdvanceMs)
+      identity.uid = uid
 
-    const refreshing = rail.refreshToken()
-    await vi.advanceTimersByTimeAsync(retryBackoffTotalMs)
-    await refreshing
+      const refreshing = rail.refreshToken()
+      await vi.advanceTimersByTimeAsync(retryBackoffTotalMs)
+      await refreshing
 
-    expect(mockFetch).toHaveBeenCalledTimes(5)
-    expect(vi.mocked(deps.endWorkspaceSession).mock.calls).toEqual([[]])
-  })
+      expect(mockFetch).toHaveBeenCalledTimes(5)
+      expect(vi.mocked(deps.endWorkspaceSession).mock.calls).toEqual([[]])
+    }
+  )
 
   it('abandons the retry chain once the workspace context has moved on', async () => {
     const { rail, deps } = createRail()
