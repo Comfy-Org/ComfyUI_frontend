@@ -172,7 +172,7 @@ class Load3DConfiguration {
       },
       set(newValue) {
         currentValue = newValue
-        if (modelWidget.callback && newValue !== undefined && newValue !== '') {
+        if (modelWidget.callback && newValue !== undefined) {
           modelWidget.callback(newValue)
         }
       },

@@ -900,6 +900,34 @@ describe('Load3DConfiguration remote (agent) model updates', () => {
     expect(modelWidget.value).toBe('agent-model.glb')
   })
 
+  it('clears the model when the agent clears model_file via widgetValueStore', async () => {
+    const load3d = makeLoad3dMock()
+    const onSceneInvalidated = vi.fn()
+    const modelWidget = {
+      value: 'model.glb',
+      widgetId: 'widget-clear'
+    } as unknown as IBaseWidget
+    widgetValueStoreMock.widgets.set('widget-clear', modelWidget)
+
+    const config = new Load3DConfiguration(load3d)
+    config.configure({ modelWidget, loadFolder: 'input', onSceneInvalidated })
+    await flush()
+    vi.mocked(load3d.clearModel).mockClear()
+    onSceneInvalidated.mockClear()
+
+    widgetValueStoreMock.emit({
+      widgetId: 'widget-clear',
+      value: '',
+      oldValue: 'model.glb',
+      context: REMOTE_CONTEXT
+    })
+    await flush()
+
+    expect(load3d.clearModel).toHaveBeenCalledTimes(1)
+    expect(onSceneInvalidated).toHaveBeenCalledTimes(1)
+    expect(modelWidget.value).toBe('')
+  })
+
   it('ignores local (non-remote) store changes to avoid double-loading', async () => {
     const load3d = makeLoad3dMock()
     const modelWidget = {
