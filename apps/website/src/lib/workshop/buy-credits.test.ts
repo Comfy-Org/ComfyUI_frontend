@@ -207,6 +207,29 @@ describe('createTopUpCheckout', () => {
     })
   })
 
+  it('surfaces a 401 without reminting or retrying', async () => {
+    const fetchCheckout = vi
+      .fn()
+      .mockResolvedValue(
+        new Response(
+          JSON.stringify({ code: 'NOT_AUTHENTICATED', message: 'Expired' }),
+          { status: 401 }
+        )
+      )
+    vi.stubGlobal('fetch', fetchCheckout)
+
+    const result = createTopUpCheckout(options)
+    await expect(result).rejects.toBeInstanceOf(TopUpCheckoutError)
+    await expect(result).rejects.toMatchObject({
+      status: 401,
+      code: 'NOT_AUTHENTICATED'
+    })
+    await expect(result).rejects.not.toHaveProperty(
+      'authenticationRetrySkipped'
+    )
+    expect(fetchCheckout).toHaveBeenCalledTimes(1)
+  })
+
   it('does not infer a rollout code from an empty 404', async () => {
     vi.stubGlobal(
       'fetch',

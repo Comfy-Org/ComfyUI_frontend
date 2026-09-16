@@ -5,13 +5,7 @@ import { createMemoryHistory, createRouter } from 'vue-router'
 
 import CloudSignupView from '@/platform/cloud/onboarding/CloudSignupView.vue'
 
-vi.mock<unknown>(import('@/composables/auth/useAuthActions'), () => ({
-  useAuthActions: () => ({
-    signInWithGoogle: vi.fn(),
-    signInWithGithub: vi.fn(),
-    signUpWithEmail: vi.fn()
-  })
-}))
+vi.mock(import('@/composables/auth/useAuthActions'))
 
 vi.mock(
   import('@/platform/cloud/onboarding/composables/usePostAuthRedirect'),

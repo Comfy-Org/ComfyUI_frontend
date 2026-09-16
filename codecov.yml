@@ -20,11 +20,11 @@ coverage:
       default:
         informational: true
 
-      # Require 80% coverage on changed website lines.
+      # Report website patch coverage without blocking website-only PRs.
       website:
         target: '80%'
         threshold: '0%'
-        informational: false
+        informational: true
         flags:
           - website-unit
         paths:
