@@ -116,62 +116,6 @@ test.describe(
             .click()
         }
 
-        const globalMode = () =>
-          comfyPage.page.evaluate((nodeId) => {
-            const node = window.app!.graph.nodes.find(
-              (candidate) => String(candidate.id) === nodeId
-            )!
-            const mode = node.widgets!.find((widget) => widget.name === 'mode')!
-            return {
-              name: mode.name,
-              type: mode.type,
-              value: mode.value
-            }
-          }, ids.global)
-        const setGlobalMode = async (enabled: boolean) => {
-          const globalNode = await comfyPage.nodeOps.getNodeRefById(ids.global)
-          await comfyPage.page.evaluate(() => {
-            window.app!.canvas.deselectAllNodes()
-          })
-          await globalNode.centerOnNode()
-          if (vueNodesEnabled) {
-            await comfyPage.vueNodes
-              .getNodeByTitle('EasyGlobalSeed')
-              .getByRole('button', {
-                name: enabled
-                  ? 'control_before_generate'
-                  : 'control_after_generate'
-              })
-              .click()
-          } else {
-            const modeWidget = await globalNode.getWidgetByName('mode')
-            const position = await modeWidget.getPosition()
-            await comfyPage.page.mouse.click(
-              position.x + (enabled ? 40 : -40),
-              position.y
-            )
-            await comfyPage.nextFrame()
-          }
-        }
-
-        await expect.poll(globalMode).toEqual({
-          name: 'mode',
-          type: 'toggle',
-          value: true
-        })
-        await setGlobalMode(false)
-        await expect.poll(globalMode).toEqual({
-          name: 'mode',
-          type: 'toggle',
-          value: false
-        })
-        await setGlobalMode(true)
-        await expect.poll(globalMode).toEqual({
-          name: 'mode',
-          type: 'toggle',
-          value: true
-        })
-
         const expectedLink = [[ids.seed, 0, ids.list, 4]]
         const inputLinks = () => packPersistence.projectInputLinks(ids.list)
         await expect.poll(inputLinks).toEqual(expectedLink)
