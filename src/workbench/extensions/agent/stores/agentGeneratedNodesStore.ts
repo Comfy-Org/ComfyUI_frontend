@@ -8,6 +8,7 @@ import { useWorkflowStore } from '@/platform/workflow/management/stores/workflow
 import { useCanvasOverlayStore } from '@/stores/canvasOverlayStore'
 import { useExtensionStore } from '@/stores/extensionStore'
 import { useNodeDataStore } from '@/stores/nodeDataStore'
+import type { RemoteMutationContext } from '@/types/graphMutationContext'
 import { toRootGraphId } from '@/types/graphScopeId'
 import type { GraphScope, RootGraphId } from '@/types/graphScopeId'
 import type { NodeId } from '@/types/nodeId'
@@ -52,7 +53,11 @@ export const useAgentGeneratedNodesStore = defineStore(
     const roots = ref(new Map<RootGraphId, Map<NodeLocatorId, GeneratedNode>>())
     const activities = ref(new Map<RootGraphId, GraphActivity>())
     const latestByOwner = new Map<string, number>()
-    const turn = ref<{ phase: 'working' | 'complete'; id: TurnId } | null>(null)
+    const turn = ref<{
+      phase: 'working' | 'complete'
+      id: TurnId
+      threadId: string | null
+    } | null>(null)
     const timers = new Set<ReturnType<typeof setTimeout>>()
     const snapshots = new WeakMap<object, WorkflowSnapshot>()
     let incomingGraph: ComfyWorkflowJSON | null = null
@@ -84,9 +89,9 @@ export const useAgentGeneratedNodesStore = defineStore(
       timers.add(timer)
     }
 
-    function beginTurn(id: TurnId): void {
+    function beginTurn(id: TurnId, threadId: string | null): void {
       if (turn.value?.id === id) return
-      turn.value = { phase: 'working', id }
+      turn.value = { phase: 'working', id, threadId }
       activities.value.clear()
       for (const snapshot of snapshotsForOpenWorkflows())
         snapshot.activities.clear()
@@ -94,7 +99,7 @@ export const useAgentGeneratedNodesStore = defineStore(
 
     function finishTurn(id: TurnId): void {
       if (turn.value?.id !== id) return
-      turn.value = { phase: 'complete', id }
+      turn.value = { ...turn.value, phase: 'complete' }
       for (const rootId of activities.value.keys())
         scheduleCompletion(rootId, id)
       for (const snapshot of snapshotsForOpenWorkflows())
@@ -144,12 +149,12 @@ export const useAgentGeneratedNodesStore = defineStore(
     function markGenerated(
       scope: GraphScope,
       nodeId: NodeId,
-      cascade: boolean
+      context: RemoteMutationContext
     ): void {
       const now = performance.now()
       const latest = latestMarkAt(scope)
       const at =
-        cascade && latest > 0
+        context.hydration && latest > 0
           ? Math.min(Math.max(now, latest + 90), now + 900)
           : now
       const locator = locatorFor(scope, nodeId)
@@ -160,7 +165,12 @@ export const useAgentGeneratedNodesStore = defineStore(
       roots.value.set(scope.rootGraphId, marks)
       latestByOwner.set(ownerKey(scope), Math.max(latest, at))
       const currentTurn = turn.value
-      if (!currentTurn) return
+      const actorThread = /^agent:([^:]+):[^:]+$/.exec(context.actor)?.[1]
+      if (
+        !currentTurn ||
+        (actorThread !== undefined && actorThread !== currentTurn.threadId)
+      )
+        return
       const previous = activities.value.get(scope.rootGraphId)
       activities.value.set(scope.rootGraphId, {
         phase: 'working',
@@ -228,7 +238,7 @@ export const useAgentGeneratedNodesStore = defineStore(
           forget(scope, node.id)
           if (!context || context.actor.startsWith('human:')) return
           if (context.hydration && turn.value?.phase !== 'working') return
-          markGenerated(scope, node.id, context.hydration === true)
+          markGenerated(scope, node.id, context)
         })
       } else if (name === 'deleteNode') {
         const [scope, node] = args

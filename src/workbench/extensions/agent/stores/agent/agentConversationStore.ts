@@ -115,7 +115,7 @@ export const useAgentConversationStore = defineStore(
 
     function startTurn(turnId: TurnId): void {
       if (transport) abortActiveTurn()
-      graphActivity.beginTurn(turnId)
+      graphActivity.beginTurn(turnId, threadId.value)
       const message = createAssistantMessage(turnId)
       liveMessage = message
       activeIndex.value = messages.value.push(message) - 1
@@ -220,7 +220,7 @@ export const useAgentConversationStore = defineStore(
       if (entry.settled) return
       activeIndex.value = index
       activeTurnId.value = entry.messageId
-      graphActivity.beginTurn(entry.messageId)
+      graphActivity.beginTurn(entry.messageId, threadId.value)
       transport = entry.transport
       liveMessage = entry.message
     }
@@ -293,7 +293,7 @@ export const useAgentConversationStore = defineStore(
         liveMessage = transcript.pending.message
         activeIndex.value = messages.value.indexOf(transcript.pending.message)
         activeTurnId.value = transcript.pending.messageId
-        graphActivity.beginTurn(transcript.pending.messageId)
+        graphActivity.beginTurn(transcript.pending.messageId, threadId.value)
         transport = createAgentEventTransport(
           transcript.pending.message,
           replaceActive

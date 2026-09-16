@@ -74,7 +74,7 @@ describe('agent feedback through workflow loading', () => {
       const node = app.rootGraph.getNodeById(toNodeId(11))
       if (!activeA || !node) throw new Error('Expected workflow A and its node')
       const scope = graphScopeOf(app.rootGraph)
-      feedback.beginTurn(toTurnId('turn-a'))
+      feedback.beginTurn(toTurnId('turn-a'), 'test')
       useNodeDataStore().deleteNode(scope, node._state)
       useNodeDataStore().registerNode(scope, node._state, {
         source: 'agent-remote',

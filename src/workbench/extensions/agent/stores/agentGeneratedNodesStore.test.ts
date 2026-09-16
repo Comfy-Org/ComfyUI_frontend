@@ -181,7 +181,7 @@ describe('agentGeneratedNodesStore', () => {
     }
   ])('classifies $name registration', ({ actor, hydration, turn, marked }) => {
     const provenance = useAgentGeneratedNodesStore()
-    if (turn) provenance.beginTurn(toTurnId('turn-1'))
+    if (turn) provenance.beginTurn(toTurnId('turn-1'), 'test')
     const context = { ...agentContext, actor, ...(hydration && { hydration }) }
 
     expect(graphMutations().addNode(payload(1), context)).toBe(true)
@@ -194,7 +194,7 @@ describe('agentGeneratedNodesStore', () => {
   it('spaces a hydration cascade by 90ms and caps it 900ms ahead', () => {
     vi.spyOn(performance, 'now').mockReturnValue(1_000)
     const provenance = useAgentGeneratedNodesStore()
-    provenance.beginTurn(toTurnId('turn-1'))
+    provenance.beginTurn(toTurnId('turn-1'), 'test')
     const graph = graphMutations()
 
     for (let id = 1; id <= 12; id++)
@@ -214,7 +214,7 @@ describe('agentGeneratedNodesStore', () => {
     const now = vi.spyOn(performance, 'now').mockReturnValue(1_000)
     const provenance = useAgentGeneratedNodesStore()
     const graph = graphMutations()
-    provenance.beginTurn(toTurnId('turn-1'))
+    provenance.beginTurn(toTurnId('turn-1'), 'test')
     for (let id = 1; id <= 11; id++)
       graph.addNode(payload(id), { ...agentContext, hydration: true })
 
@@ -236,7 +236,7 @@ describe('agentGeneratedNodesStore', () => {
     vi.spyOn(performance, 'now').mockReturnValue(1_000)
     const provenance = useAgentGeneratedNodesStore()
     const turnId = toTurnId('turn-1')
-    provenance.beginTurn(turnId)
+    provenance.beginTurn(turnId, 'test')
 
     graphMutations().addNode(payload(1), agentContext)
 
@@ -259,7 +259,7 @@ describe('agentGeneratedNodesStore', () => {
     vi.spyOn(performance, 'now').mockReturnValue(1_000)
     const provenance = useAgentGeneratedNodesStore()
     const turnId = toTurnId('turn-1')
-    provenance.beginTurn(turnId)
+    provenance.beginTurn(turnId, 'test')
     graphMutations().addNode(payload(1), agentContext)
     provenance.finishTurn(turnId)
 
@@ -284,11 +284,11 @@ describe('agentGeneratedNodesStore', () => {
     vi.spyOn(performance, 'now').mockReturnValue(1_000)
     const provenance = useAgentGeneratedNodesStore()
     const first = toTurnId('turn-1')
-    provenance.beginTurn(first)
+    provenance.beginTurn(first, 'test')
     graphMutations().addNode(payload(1), agentContext)
     provenance.finishTurn(first)
     vi.advanceTimersByTime(600)
-    provenance.beginTurn(toTurnId('turn-2'))
+    provenance.beginTurn(toTurnId('turn-2'), 'test')
     graphMutations().addNode(payload(2), agentContext)
     vi.runOnlyPendingTimers()
 
@@ -310,7 +310,7 @@ describe('agentGeneratedNodesStore', () => {
     const canvasGraph = new LGraph()
     canvasGraph.configure(structuredClone(firstGraph))
     useWorkflowStore().activeWorkflow = first
-    provenance.beginTurn(toTurnId('turn-1'))
+    provenance.beginTurn(toTurnId('turn-1'), 'test')
     const node = canvasGraph.getNodeById(toNodeId(1))
     if (!node) throw new Error('Expected loaded node')
     useNodeDataStore().deleteNode(scope, node._state)

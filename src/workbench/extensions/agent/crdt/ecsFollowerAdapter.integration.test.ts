@@ -1134,14 +1134,18 @@ describe('EcsFollowerAdapter integration', () => {
     applyOps(
       host,
       [
-        op('add-2', 2, {
+        {
+          op_id: 'add-2',
+          actor: 'agent:test',
+          base_version: 2,
+          stamp: [2, 'agent:test'],
           op: 'add_node',
           node_id: 2,
           class_type: 'Sink',
           pos: [300, 20],
           node: { id: 2, type: 'Sink', pos: [300, 20] }
-        })
-      ] as Parameters<typeof applyOps>[1],
+        }
+      ],
       catalog
     )
     const live = Y.encodeStateAsUpdate(host, before)
@@ -1193,14 +1197,18 @@ describe('EcsFollowerAdapter integration', () => {
     applyOps(
       host,
       [
-        op('add-2', 2, {
+        {
+          op_id: 'add-2',
+          actor: 'agent:test',
+          base_version: 2,
+          stamp: [2, 'agent:test'],
           op: 'add_node',
           node_id: 2,
           class_type: 'Sink',
           pos: [300, 20],
           node: { id: 2, type: 'Sink', pos: [300, 20] }
-        })
-      ] as Parameters<typeof applyOps>[1],
+        }
+      ],
       catalog
     )
     const live = Y.encodeStateAsUpdate(host, before)

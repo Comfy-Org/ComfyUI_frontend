@@ -27,7 +27,17 @@ host geometry from generic DOM attributes.
 Marks use root graph, owning graph, and node identity. Workflow-load hooks retain
 marks across tab switches only for the same workflow object with unchanged
 incoming contents. Replacing contents or reopening a different object does not
-inherit the report. Presentation remounts do not reset activity.
+inherit the report. Failed-load rollback retains the pending snapshot until the
+original workflow loads again. Presentation remounts do not reset activity or
+unregister the minimap layer; the extension store owns both registrations.
+
+Live actors identify their thread separately from the frontend's message ID.
+Different threads may write the same workflow concurrently, so gold provenance
+includes both while a report excludes identified updates from other threads.
+The backend permits only one active turn per thread. We use thread identity
+because the send acknowledgment does not expose the backend turn UUID. Actorless
+catch-up cannot distinguish historical writers and retains the existing
+active-turn hydration behavior.
 
 View opens the latest reported node's owning graph and frames reported nodes in
 that graph. Combining bounds across graphs would combine unrelated coordinate

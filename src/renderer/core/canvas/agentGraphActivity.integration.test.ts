@@ -83,7 +83,7 @@ describe('AgentGraphActivityBar', () => {
 
   it('includes an arrival in the same task as turn start', async () => {
     renderBar()
-    useAgentGeneratedNodesStore().beginTurn(toTurnId('turn-1'))
+    useAgentGeneratedNodesStore().beginTurn(toTurnId('turn-1'), 'test')
     addReportedNode(root, 1)
     await nextTick()
 
@@ -95,7 +95,7 @@ describe('AgentGraphActivityBar', () => {
 
   it('retains activity across a presentation remount', async () => {
     const first = renderBar()
-    useAgentGeneratedNodesStore().beginTurn(toTurnId('turn-1'))
+    useAgentGeneratedNodesStore().beginTurn(toTurnId('turn-1'), 'test')
     addReportedNode(root, 1)
     addReportedNode(root, 2)
     await nextTick()
@@ -113,7 +113,7 @@ describe('AgentGraphActivityBar', () => {
   it('keeps activity with its root when the tab switches before flush', async () => {
     const recipient = useWorkflowStore().activeWorkflow
     renderBar()
-    useAgentGeneratedNodesStore().beginTurn(toTurnId('turn-1'))
+    useAgentGeneratedNodesStore().beginTurn(toTurnId('turn-1'), 'test')
     addReportedNode(root, 1)
     const other = new LGraph()
     await activate(other)

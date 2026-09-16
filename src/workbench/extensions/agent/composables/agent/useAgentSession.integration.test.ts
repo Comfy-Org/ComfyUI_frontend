@@ -1,4 +1,4 @@
-import { mint } from '@comfyorg/comfy-multi-player'
+import { applyOps, mint } from '@comfyorg/comfy-multi-player'
 import type { WidgetCatalog } from '@comfyorg/comfy-multi-player'
 import { describe, expect, it, vi } from 'vitest'
 import * as Y from 'yjs'
@@ -73,6 +73,90 @@ function restWithHistory(history: Promise<AgentMessages>): AgentRestClient {
 }
 
 describe('useAgentSession REST and CRDT composition', () => {
+  it('keeps background-thread nodes out of the foreground report for the same workflow', async () => {
+    const rest = restWithHistory(Promise.resolve([]))
+    vi.mocked(rest.postMessage)
+      .mockResolvedValueOnce({
+        thread_id: 'thread-a',
+        message_id: 'message-a',
+        workflow_id: 'workflow-1'
+      })
+      .mockResolvedValueOnce({
+        thread_id: 'thread-b',
+        message_id: 'message-b',
+        workflow_id: 'workflow-1'
+      })
+    const session = useAgentSession({
+      rest,
+      events,
+      workflow: {
+        current: () => ({ id: 'workflow-1', tabPath: 'shared.json' }),
+        adopted: () => undefined
+      }
+    })
+    const host = mint({ nodes: [], links: [] }, catalog)
+    const follower = new FollowerDoc()
+    const adapter = new EcsFollowerAdapter(
+      createGraphMutations({
+        getScope: () => scope,
+        layout: { createNode: vi.fn(), deleteNodes: vi.fn() }
+      })
+    )
+    adapter.bind('workflow-1', follower)
+    function deliver(update: Uint8Array, seq: number, actor?: string) {
+      follower.applyRemoteUpdate(update)
+      expect(
+        adapter.applyFrame({ workflowId: 'workflow-1', seq, update, actor })
+      ).toBe(true)
+    }
+    function add(id: number, actor: string) {
+      const before = Y.encodeStateVector(host)
+      const opId = `add-${id}`
+      applyOps(
+        host,
+        [
+          {
+            op: 'add_node',
+            op_id: opId,
+            actor,
+            base_version: id,
+            stamp: [id, actor],
+            node_id: id,
+            class_type: 'Source',
+            pos: [id * 37, id * 53],
+            node: { id, type: 'Source', pos: [id * 37, id * 53] }
+          }
+        ],
+        catalog
+      )
+      deliver(Y.encodeStateAsUpdate(host, before), id + 1, actor)
+    }
+
+    try {
+      session.start()
+      expect(await session.sendMessage('Start A')).toBe(true)
+      session.newChat()
+      expect(await session.sendMessage('Start B')).toBe(true)
+      expect(session.boundWorkflowId.value).toBe('workflow-1')
+      deliver(Y.encodeStateAsUpdate(host), 1)
+      add(17, 'agent:thread-a:backend-turn-a')
+      add(29, 'agent:thread-b:backend-turn-b')
+
+      const activity = useAgentGeneratedNodesStore()
+      expect(activity.generatedAtFor(scope, toNodeId(17))).toBeTypeOf('number')
+      expect(activity.generatedAtFor(scope, toNodeId(29))).toBeTypeOf('number')
+      expect(activity.activities.get(scope.rootGraphId)).toMatchObject({
+        turnId: 'message-b',
+        nodes: ['29']
+      })
+    } finally {
+      adapter.destroy()
+      follower.destroy()
+      host.destroy()
+      session.stop()
+    }
+  })
+
   it.for([true, false])(
     'attributes a catch-up frame to a remounted turn when catch-up precedes REST: %s',
     async (catchUpBeforeRest) => {
