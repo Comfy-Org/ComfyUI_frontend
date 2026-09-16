@@ -1,14 +1,11 @@
 import { vi } from 'vitest'
 import { computed, reactive, watchEffect } from 'vue'
 
-import type * as realFeatureFlags from '../useFeatureFlags'
-
-export const { ServerFeatureFlag } =
-  await vi.importActual<typeof realFeatureFlags>('../useFeatureFlags')
+import type { useFeatureFlags as realUseFeatureFlags } from '../useFeatureFlags'
 
 export const startFeatureFlagTelemetry = vi.fn(() => watchEffect(() => {}))
 
-const featureFlags: ReturnType<typeof realFeatureFlags.useFeatureFlags> = {
+const featureFlags: ReturnType<typeof realUseFeatureFlags> = {
   flags: reactive({
     supportsPreviewMetadata: false,
     maxUploadSize: 0,
