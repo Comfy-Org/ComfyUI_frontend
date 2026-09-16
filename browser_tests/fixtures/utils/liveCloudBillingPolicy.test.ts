@@ -23,6 +23,12 @@ describe('live Cloud mutation policy', () => {
     { method: 'POST', path: '/customers', allowed: false },
     { method: 'POST', path: '/api/auth/token', allowed: true },
     { method: 'POST', path: '/api/auth/session', allowed: true },
+    {
+      method: 'POST',
+      path: '/api/settings/Comfy.InstalledVersion',
+      allowed: true
+    },
+    { method: 'POST', path: '/api/settings/other', allowed: false },
     { method: 'POST', path: '/api/billing/subscribe', allowed: false },
     { method: 'POST', path: '/api/billing/payment-portal', allowed: false },
     { method: 'POST', path: '/customers/credit', allowed: false },
@@ -80,6 +86,10 @@ describe('live Cloud mutation origins', () => {
   })
 
   it.for([
+    {
+      cloud: 'https://cloud.comfy.org',
+      customer: 'https://api.comfy.org'
+    },
     {
       cloud: 'https://testcloud.comfy.org',
       customer: 'https://testapi.comfy.org'

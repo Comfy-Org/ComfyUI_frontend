@@ -122,7 +122,36 @@ test.describe('Live Cloud network boundary', { tag: '@smoke' }, () => {
     ])
   })
 
-  for (const path of ['/api/billing/subscribe', '/customers']) {
+  test('uses upstream responses for assets, location, Google auth, and flags', async ({
+    context,
+    sandboxProxy
+  }) => {
+    const page = await context.newPage()
+    await page.route('http://localhost:5173/', (route) =>
+      route.fulfill({ contentType: 'text/html', body: '<html></html>' })
+    )
+    await page.goto('http://localhost:5173/')
+    for (const url of [
+      'https://cloud.comfy.org/cdn-cgi/trace',
+      'https://apis.google.com/js/api.js',
+      'https://huggingface.co/example/resolve/main/model.safetensors',
+      'https://t.comfy.org/flags/'
+    ]) {
+      expect(
+        await page.evaluate(async (url) => {
+          const response = await fetch(url)
+          return await response.text()
+        }, url)
+      ).toBe(`GET ${url}`)
+    }
+    expect(sandboxProxy.requests).toContain('GET https://t.comfy.org/flags/')
+  })
+
+  for (const path of [
+    '/api/billing/subscribe',
+    '/customers',
+    'https://api.stripe.com/v1/payment_pages/cs_test_example/init'
+  ]) {
     test(`blocks POST ${path} and fails even when the app catches it`, async ({
       page,
       networkPolicy
@@ -142,7 +171,7 @@ test.describe('Live Cloud network boundary', { tag: '@smoke' }, () => {
         )
       ).toBe('blocked')
       expect([...networkPolicy.unexpected]).toEqual([
-        `Mutation POST http://localhost:5173${path}`
+        `Mutation POST ${new URL(path, 'http://localhost:5173').href}`
       ])
       test.fail(true, 'The recorded mutation must fail fixture teardown')
     })

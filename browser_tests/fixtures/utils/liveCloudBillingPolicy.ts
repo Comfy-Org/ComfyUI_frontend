@@ -17,6 +17,18 @@ export function getLiveCloudDestinationViolation(
   }
 }
 
+export const LIVE_CHECKOUT_ORIGINS = [
+  'https://checkout.stripe.com',
+  'https://checkout.comfy.org',
+  'https://api.stripe.com',
+  'https://js.stripe.com',
+  'https://m.stripe.network',
+  'https://m.stripe.com',
+  'https://r.stripe.com',
+  'https://q.stripe.com',
+  'https://b.stripecdn.com'
+]
+
 const SAFE_METHODS = ['GET', 'HEAD', 'OPTIONS']
 
 export function getBlockedRequestViolation(url: URL, method: string): string {
@@ -55,6 +67,10 @@ export function isLiveCloudMutationAllowed(
   }
   return (
     url.origin === config.PLAYWRIGHT_SETUP_API_URL &&
-    ['/api/auth/token', '/api/auth/session'].includes(url.pathname)
+    [
+      '/api/auth/token',
+      '/api/auth/session',
+      '/api/settings/Comfy.InstalledVersion'
+    ].includes(url.pathname)
   )
 }

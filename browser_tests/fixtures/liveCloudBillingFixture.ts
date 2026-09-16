@@ -10,8 +10,8 @@ export const liveCloudBillingFixture = base.extend<{
   liveCloudBillingConfig: async ({ liveCloudBillingConfig }, use) => {
     await use(liveCloudBillingConfig ?? loadLiveCloudBillingConfig())
   },
-  comfyPage: async ({ page, request }, use) => {
-    await signInToLiveCloud(page)
+  comfyPage: async ({ page, request, liveCloudBillingConfig }, use) => {
+    await signInToLiveCloud(page, liveCloudBillingConfig)
     await use(new ComfyPage(page, request))
   }
 })

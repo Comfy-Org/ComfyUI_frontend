@@ -14,7 +14,6 @@ const sandboxConfig = {
 
 describe('Live Cloud billing prerequisites', () => {
   it.for([
-    'https://cloud.comfy.org',
     'https://testcloud.comfy.org.example.com',
     'https://testcloud.comfy.org/redirect',
     'http://testcloud.comfy.org',
@@ -37,10 +36,16 @@ describe('Live Cloud billing prerequisites', () => {
     ).toBe(false)
   })
 
-  it('accepts a local frontend backed by test Cloud', () => {
-    expect(liveCloudBillingConfigSchema.safeParse(sandboxConfig).success).toBe(
-      true
-    )
+  it.for([
+    ['https://stagingcloud.comfy.org', 'https://stagingapi.comfy.org'],
+    ['https://testcloud.comfy.org', 'https://testapi.comfy.org'],
+    ['https://cloud.comfy.org', 'https://api.comfy.org']
+  ])('selects the matching customer API for %s', ([backend, customer]) => {
+    const selected = liveCloudBillingConfigSchema.parse({
+      ...sandboxConfig,
+      PLAYWRIGHT_SETUP_API_URL: backend
+    })
+    expect(selected.customerOrigin).toBe(customer)
   })
 
   it('accepts an isolated preview deployment', () => {

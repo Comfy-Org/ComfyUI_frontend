@@ -11,6 +11,7 @@ const originURL = z
   .transform((value) => new URL(value).origin)
 
 function getLiveCloudCustomerOrigin(cloudOrigin: string): string | undefined {
+  if (cloudOrigin === 'https://cloud.comfy.org') return 'https://api.comfy.org'
   if (cloudOrigin === 'https://testcloud.comfy.org')
     return 'https://testapi.comfy.org'
   if (cloudOrigin === 'https://stagingcloud.comfy.org')
@@ -23,7 +24,9 @@ function getLiveCloudCustomerOrigin(cloudOrigin: string): string | undefined {
 export const liveCloudBillingConfigSchema = z
   .object({
     PLAYWRIGHT_TEST_URL: originURL,
-    PLAYWRIGHT_SETUP_API_URL: originURL,
+    PLAYWRIGHT_SETUP_API_URL: originURL.default(
+      'https://stagingcloud.comfy.org'
+    ),
     CLOUD_ACCOUNT_EMAIL: z.string().email(),
     CLOUD_ACCOUNT_PASSWORD: z.string().min(1)
   })
@@ -40,7 +43,7 @@ export const liveCloudBillingConfigSchema = z
       ctx.addIssue({
         code: 'custom',
         path: ['PLAYWRIGHT_TEST_URL'],
-        message: 'Use localhost or the selected sandbox origin'
+        message: 'Use localhost or the selected Cloud origin'
       })
     }
   })
@@ -52,7 +55,7 @@ export const liveCloudBillingConfigSchema = z
       ctx.addIssue({
         code: 'custom',
         path: ['PLAYWRIGHT_SETUP_API_URL'],
-        message: 'Use a Cloud test, staging, or PR preview origin'
+        message: 'Use a Cloud production, staging, test, or PR preview origin'
       })
       return z.NEVER
     }

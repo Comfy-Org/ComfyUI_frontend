@@ -6,6 +6,7 @@ import type { LiveCloudBillingConfig } from '@e2e/fixtures/utils/liveCloudBillin
 import type { NetworkPolicy } from '@e2e/fixtures/utils/networkPolicy'
 import { loadLiveCloudBillingConfig } from '@e2e/fixtures/utils/liveCloudBillingConfig'
 import {
+  LIVE_CHECKOUT_ORIGINS,
   getLiveCloudDestinationViolation,
   isLiveCloudMutationAllowed
 } from '@e2e/fixtures/utils/liveCloudBillingPolicy'
@@ -35,7 +36,8 @@ export async function installLiveCloudBillingRouting(
       ? new URL(url.pathname + url.search, config.PLAYWRIGHT_SETUP_API_URL)
       : url
     if (
-      networkPolicy.origins.has(url.origin) &&
+      (networkPolicy.origins.has(url.origin) ||
+        LIVE_CHECKOUT_ORIGINS.includes(url.origin)) &&
       !isLiveCloudMutationAllowed(targetUrl, request.method(), config)
     ) {
       networkPolicy.unexpected.add(
@@ -52,6 +54,7 @@ export async function installLiveCloudBillingRouting(
         })
         await route.fulfill({ response })
       } catch {
+        if (request.frame().page().isClosed()) return
         throw new Error(`Cloud proxy request failed: ${url.pathname}`)
       }
       return
@@ -60,8 +63,10 @@ export async function installLiveCloudBillingRouting(
   })
 }
 
-export async function signInToLiveCloud(page: Page) {
-  const config = loadLiveCloudBillingConfig()
+export async function signInToLiveCloud(
+  page: Page,
+  config = loadLiveCloudBillingConfig()
+) {
   await new FeatureFlagHelper(page).seedFlags({
     onboarding_survey_enabled: false
   })
