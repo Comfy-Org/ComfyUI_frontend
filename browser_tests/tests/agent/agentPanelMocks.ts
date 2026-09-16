@@ -358,8 +358,8 @@ export const agentTest = comfyPageFixture.extend<AgentFixtures>({
     await use([])
   },
   agentFlagEnabled: [true, { option: true }],
-  agentPanel: async ({ page }, use) => {
-    await use(new AgentPanel(page))
+  agentPanel: async ({ comfyPage }, use) => {
+    await use(new AgentPanel(comfyPage.page))
   },
   agentPanelInitiallyOpen: [false, { option: true }],
   crdtDebugEnabled: [false, { option: true }],
