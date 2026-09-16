@@ -61,15 +61,9 @@ export function pendingTopup(
 
 /** A subscribe the lifecycle is still driving, for the store's own effects. */
 export function pendingSubscription(
-  overrides: Partial<PendingBillingOperation> = {}
+  overrides: PendingOverrides = {}
 ): PendingBillingOperation {
-  return {
-    ...IDENTITY,
-    kind: 'subscription',
-    phase: 'pending',
-    customerActionSeen: false,
-    ...overrides
-  }
+  return pendingTopup({ kind: 'subscription', ...overrides })
 }
 
 export function failedTopup(
