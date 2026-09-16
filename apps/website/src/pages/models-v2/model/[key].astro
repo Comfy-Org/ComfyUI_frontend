@@ -1,17 +1,17 @@
 ---
-import CatalogueCard from '../../../../components/hub/CatalogueCard.vue'
-import { useCaseFor } from '../../../../config/models-catalogue'
-import { workshopModels } from '../../../../config/workshop-browse-content'
-import { estimateWorkshopNodePrice } from '../../../../config/workshop-node-pricing'
-import { cardViewFor } from '../../../../lib/hub/catalogue-card'
+import CatalogueCard from '../../../components/hub/CatalogueCard.vue'
+import { useCaseFor } from '../../../config/models-catalogue'
+import { workshopModels } from '../../../config/workshop-browse-content'
+import { estimateWorkshopNodePrice } from '../../../config/workshop-node-pricing'
+import { cardViewFor } from '../../../lib/hub/catalogue-card'
 import {
   getModelGroupPage,
   listModelGroups
-} from '../../../../lib/hub/model-page'
-import { partnerModelFor } from '../../../../lib/hub/template-use-case'
-import { taskLabelFor } from '../../../../lib/workshop/task-label'
-import { t } from '../../../../i18n/translations'
-import BaseLayout from '../../../../layouts/BaseLayout.astro'
+} from '../../../lib/hub/model-page'
+import { partnerModelFor } from '../../../lib/hub/template-use-case'
+import { taskLabelFor } from '../../../lib/workshop/task-label'
+import { t } from '../../../i18n/translations'
+import BaseLayout from '../../../layouts/BaseLayout.astro'
 
 export function getStaticPaths() {
   return listModelGroups().map((entry) => ({ params: { key: entry.key } }))
@@ -19,7 +19,7 @@ export function getStaticPaths() {
 
 const { key } = Astro.params
 const page = key ? getModelGroupPage(key) : undefined
-if (!page) return Astro.redirect('/workshop/v2/')
+if (!page) return Astro.redirect('/models-v2/')
 
 const { name, provider, operations, uses, operationsFromWorkflows } = page
 
@@ -54,7 +54,7 @@ const sectionTitle =
 >
   <main class="mx-auto max-w-10xl px-6 py-10 lg:px-8 lg:py-16">
     <a
-      href="/workshop/v2/"
+      href="/models-v2/"
       class="mb-8 inline-flex items-center gap-2 text-sm text-content-muted transition-colors hover:text-content-bright"
     >
       {t('workshop.v2.workflow.back')}
@@ -143,7 +143,7 @@ const sectionTitle =
           </ul>
           {uses.length > 8 && (
             <a
-              href={`/workshop/v2/?model=${encodeURIComponent(name)}`}
+              href={`/models-v2/?model=${encodeURIComponent(name)}`}
               class="mt-6 inline-flex text-sm text-primary-comfy-yellow underline underline-offset-4"
             >
               {t('workshop.v2.loadMore')}

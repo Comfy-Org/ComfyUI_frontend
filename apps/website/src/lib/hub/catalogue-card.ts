@@ -1,7 +1,6 @@
 import type { CatalogueEntry, EntryKind } from './catalogue-entries'
-import { modelGroupPath } from './catalogue-entries'
+import { hubWorkflowPath, modelGroupPath } from './catalogue-entries'
 import { getLogoPath } from './model-logos'
-import { hubWorkflowPath } from './workflow-detail'
 
 interface CardMedia {
   readonly url: string

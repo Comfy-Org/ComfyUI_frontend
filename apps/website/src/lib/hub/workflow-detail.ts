@@ -50,9 +50,6 @@ export interface HubWorkflowPage {
   readonly downloadUrl: string
 }
 
-export const hubWorkflowPath = (name: string) =>
-  `/workshop/v2/workflows/${name}/`
-
 const templates = hubTemplatesSchema.parse(hubTemplates)
 const details: HubTemplateDetails =
   hubTemplateDetailsSchema.parse(hubTemplateDetails)

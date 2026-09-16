@@ -1,10 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
-import {
-  getHubWorkflowPage,
-  hubWorkflowPath,
-  listHubWorkflows
-} from './workflow-detail'
+import { hubWorkflowPath } from './catalogue-entries'
+import { getHubWorkflowPage, listHubWorkflows } from './workflow-detail'
 
 describe('getHubWorkflowPage', () => {
   it('returns nothing for an unknown template', () => {
@@ -14,7 +11,7 @@ describe('getHubWorkflowPage', () => {
   it('gives every template in the snapshot a page of its own', () => {
     expect(listHubWorkflows().length).toBeGreaterThan(600)
     expect(hubWorkflowPath('api_nano_banana_pro')).toBe(
-      '/workshop/v2/workflows/api_nano_banana_pro/'
+      '/models-v2/workflow/api_nano_banana_pro/'
     )
   })
 

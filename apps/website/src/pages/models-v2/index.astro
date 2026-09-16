@@ -1,0 +1,59 @@
+---
+import CatalogueBrowse from '../../components/hub/CatalogueBrowse.vue'
+import { useCaseFor } from '../../config/models-catalogue'
+import { workshopModels } from '../../config/workshop-browse-content'
+import { estimateWorkshopNodePrice } from '../../config/workshop-node-pricing'
+import hubTemplateDetails from '../../data/hubTemplateDetails.json'
+import hubTemplates from '../../data/hubTemplates.json'
+import { browseEntries } from '../../lib/hub/browse-payload'
+import { withFacetFields } from '../../lib/hub/facet-fields'
+import {
+  hubTemplateDetailsSchema,
+  hubTemplatesSchema
+} from '../../lib/hub/types'
+import { t } from '../../i18n/translations'
+import BaseLayout from '../../layouts/BaseLayout.astro'
+
+// A V2 proposal, not a shipped route: the live catalogue is untouched while
+// this one is argued over.
+
+// Everything resolves here. The island receives card-sized records, so the
+// model list and the template index never reach the browser.
+const templates = hubTemplatesSchema
+  .parse(hubTemplates)
+  .map((template) => withFacetFields(template, workshopModels))
+const details = hubTemplateDetailsSchema.parse(hubTemplateDetails)
+const needsCustomNodes = new Set(
+  Object.entries(details)
+    .filter(([, detail]) => (detail.requiresCustomNodes?.length ?? 0) > 0)
+    .map(([name]) => name)
+)
+const priced = await Promise.all(
+  workshopModels.map(
+    async (model) =>
+      [
+        model.slug,
+        await estimateWorkshopNodePrice(model, useCaseFor(model))
+      ] as const
+  )
+)
+const prices = new Map(
+  priced.filter((entry): entry is readonly [string, string] => Boolean(entry[1]))
+)
+const entries = browseEntries(
+  templates,
+  workshopModels,
+  needsCustomNodes,
+  prices
+)
+---
+
+<BaseLayout
+  title={t('workshop.v2.meta.title')}
+  description={t('workshop.v2.meta.description')}
+  noindex
+>
+  <main class="mx-auto max-w-10xl px-6 py-16 lg:px-8 lg:py-24">
+    <CatalogueBrowse entries={entries} client:load />
+  </main>
+</BaseLayout>

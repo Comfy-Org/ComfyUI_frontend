@@ -1,17 +1,17 @@
 ---
-import CatalogueCard from '../../../../components/hub/CatalogueCard.vue'
-import { workshopModels } from '../../../../config/workshop-browse-content'
-import { cardViewFor } from '../../../../lib/hub/catalogue-card'
-import { withFacetFields } from '../../../../lib/hub/facet-fields'
-import { tagDisplayName } from '../../../../lib/hub/tag-aliases'
+import CatalogueCard from '../../../components/hub/CatalogueCard.vue'
+import { workshopModels } from '../../../config/workshop-browse-content'
+import { cardViewFor } from '../../../lib/hub/catalogue-card'
+import { withFacetFields } from '../../../lib/hub/facet-fields'
+import { tagDisplayName } from '../../../lib/hub/tag-aliases'
 import {
   formatWeights,
   getHubWorkflowPage,
   listHubWorkflows
-} from '../../../../lib/hub/workflow-detail'
-import { partnerModelFor } from '../../../../lib/hub/template-use-case'
-import { t } from '../../../../i18n/translations'
-import BaseLayout from '../../../../layouts/BaseLayout.astro'
+} from '../../../lib/hub/workflow-detail'
+import { partnerModelFor } from '../../../lib/hub/template-use-case'
+import { t } from '../../../i18n/translations'
+import BaseLayout from '../../../layouts/BaseLayout.astro'
 
 export function getStaticPaths() {
   return listHubWorkflows().map((template) => ({
@@ -21,7 +21,7 @@ export function getStaticPaths() {
 
 const { name } = Astro.params
 const page = name ? getHubWorkflowPage(name) : undefined
-if (!page) return Astro.redirect('/workshop/v2/')
+if (!page) return Astro.redirect('/models-v2/')
 
 const {
   template,
@@ -82,7 +82,7 @@ const panel =
 >
   <main class="mx-auto max-w-10xl px-6 py-10 lg:px-8 lg:py-16">
     <a
-      href="/workshop/v2/"
+      href="/models-v2/"
       class="mb-8 inline-flex items-center gap-2 text-sm text-content-muted transition-colors hover:text-content-bright"
     >
       {t('workshop.v2.workflow.back')}
@@ -224,7 +224,7 @@ const panel =
             template.tags.map((tag) => (
               <li>
                 <a
-                  href={`/workshop/v2/?q=${encodeURIComponent(tagDisplayName(tag))}`}
+                  href={`/models-v2/?q=${encodeURIComponent(tagDisplayName(tag))}`}
                   class="inline-flex h-7 items-center rounded-full bg-transparency-white-t8 px-3 text-xs text-primary-comfy-canvas transition-colors hover:bg-transparency-white-t20 hover:text-primary-comfy-yellow"
                 >
                   {tagDisplayName(tag)}

@@ -5,7 +5,9 @@ import { partnerModelFor, useCaseForTemplate } from './template-use-case'
 
 export type EntryKind = 'model' | 'workflow' | 'app'
 
-export const modelGroupPath = (key: string) => `/workshop/v2/models/${key}/`
+export const modelGroupPath = (key: string) => `/models-v2/model/${key}/`
+
+export const hubWorkflowPath = (name: string) => `/models-v2/workflow/${name}/`
 
 export interface ModelEntry {
   readonly kind: 'model'
@@ -117,66 +119,4 @@ export function entryUseCases(
     return [...new Set(entry.operations.flatMap(useCasesFor))]
   const useCase = useCaseForTemplate(entry.template, models)
   return useCase ? [useCase] : []
-}
-
-export function entryProvider(entry: CatalogueEntry): string | undefined {
-  return entry.kind === 'model' ? entry.model.provider : entry.template.partner
-}
-
-export type CatalogueOrder =
-  | 'popular'
-  | 'name'
-  | 'newest'
-  | 'priceAsc'
-  | 'priceDesc'
-
-const byTitle = (a: CatalogueEntry, b: CatalogueEntry) =>
-  entryTitle(a).localeCompare(entryTitle(b))
-
-/**
- * A model's standing is a recommendation rank and a workflow's is an install
- * count, and the two share no scale, so "popular" cannot interleave them
- * honestly. It reads capabilities first and then what is built on them, each
- * in the order its own kind understands.
- */
-function byStanding(a: CatalogueEntry, b: CatalogueEntry): number {
-  if (a.kind === 'model' && b.kind === 'model') {
-    const ranked = (entry: ModelEntry) =>
-      entry.model.recommendedRank ?? Number.POSITIVE_INFINITY
-    return (
-      ranked(a) - ranked(b) ||
-      b.workflows.length - a.workflows.length ||
-      byTitle(a, b)
-    )
-  }
-  if (a.kind === 'model') return -1
-  if (b.kind === 'model') return 1
-  return b.template.usage - a.template.usage || byTitle(a, b)
-}
-
-const credits = (entry: CatalogueEntry, fallback: number) =>
-  entry.kind === 'model' ? (entry.model.creditsPerRun ?? fallback) : fallback
-
-export function sortCatalogue(
-  entries: readonly CatalogueEntry[],
-  order: CatalogueOrder
-): CatalogueEntry[] {
-  const compare: Record<
-    CatalogueOrder,
-    (a: CatalogueEntry, b: CatalogueEntry) => number
-  > = {
-    popular: byStanding,
-    name: byTitle,
-    newest: (a, b) =>
-      (entryDate(b) ?? '').localeCompare(entryDate(a) ?? '') || byTitle(a, b),
-    priceAsc: (a, b) =>
-      credits(a, Number.POSITIVE_INFINITY) -
-        credits(b, Number.POSITIVE_INFINITY) || byTitle(a, b),
-    priceDesc: (a, b) => credits(b, -1) - credits(a, -1) || byTitle(a, b)
-  }
-  return [...entries].sort(compare[order])
-}
-
-function entryDate(entry: CatalogueEntry): string | undefined {
-  return entry.kind === 'model' ? undefined : entry.template.date
 }

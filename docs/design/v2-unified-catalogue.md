@@ -254,6 +254,6 @@ connection into the thing that makes one catalogue worth having.
 
 ## 11. Where to see it
 
-The prototype answers at `/workshop/v2/`, with `/workshop/v2/models/<name>/`
-and `/workshop/v2/workflows/<name>/` behind it. The live catalogue at
+The prototype answers at `/models-v2/`, with `/models-v2/model/<name>/`
+and `/models-v2/workflow/<name>/` behind it. The live catalogue at
 `/workshop` is untouched.

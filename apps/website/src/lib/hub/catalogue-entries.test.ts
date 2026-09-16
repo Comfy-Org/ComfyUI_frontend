@@ -1,12 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import type { WorkshopModel } from '../../config/models-catalogue'
-import {
-  buildCatalogue,
-  entryTitle,
-  entryUseCases,
-  sortCatalogue
-} from './catalogue-entries'
+import { buildCatalogue, entryTitle, entryUseCases } from './catalogue-entries'
 import type { CatalogueEntry } from './catalogue-entries'
 import type { FacetedTemplate } from './facet-fields'
 
@@ -136,49 +131,5 @@ describe('buildCatalogue', () => {
 
     expect(routed.runsOn?.name).toBe('Flux')
     expect(unknown.runsOn).toBeUndefined()
-  })
-})
-
-describe('sortCatalogue', () => {
-  const entries = buildCatalogue(
-    [
-      template({
-        name: 'a',
-        title: 'Zebra graph',
-        usage: 5,
-        date: '2026-01-01'
-      }),
-      template({
-        name: 'b',
-        title: 'Alpha graph',
-        usage: 90,
-        date: '2026-08-01'
-      })
-    ],
-    [model({ name: 'Mid model', recommendedRank: 2 })]
-  )
-
-  it('reads capabilities first, since the two standings share no scale', () => {
-    expect(titles(sortCatalogue(entries, 'popular'))).toEqual([
-      'Mid model',
-      'Alpha graph',
-      'Zebra graph'
-    ])
-  })
-
-  it('mixes both kinds when the order is one they both answer', () => {
-    expect(titles(sortCatalogue(entries, 'name'))).toEqual([
-      'Alpha graph',
-      'Mid model',
-      'Zebra graph'
-    ])
-  })
-
-  it('puts a dateless model last when the order is by date', () => {
-    expect(titles(sortCatalogue(entries, 'newest'))).toEqual([
-      'Alpha graph',
-      'Zebra graph',
-      'Mid model'
-    ])
   })
 })

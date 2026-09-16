@@ -6,52 +6,22 @@ import { cn } from '@comfyorg/tailwind-utils'
 
 import type { Modality, UseCase } from '../../config/models-catalogue'
 import { USE_CASES } from '../../config/models-catalogue'
-import { workshopModels } from '../../config/workshop-browse-content'
-import hubTemplateDetails from '../../data/hubTemplateDetails.json'
-import hubTemplates from '../../data/hubTemplates.json'
 import type { Locale, TranslationKey } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
-import type {
-  CatalogueEntry,
-  CatalogueOrder,
-  EntryKind
-} from '../../lib/hub/catalogue-entries'
-import {
-  buildCatalogue,
-  entryProvider,
-  entryUseCases,
-  sortCatalogue
-} from '../../lib/hub/catalogue-entries'
-import { cardViewFor } from '../../lib/hub/catalogue-card'
-import { withFacetFields } from '../../lib/hub/facet-fields'
-import { tagDisplayName } from '../../lib/hub/tag-aliases'
-import {
-  hubTemplateDetailsSchema,
-  hubTemplatesSchema
-} from '../../lib/hub/types'
+import type { BrowseEntry, CatalogueOrder } from '../../lib/hub/browse-entry'
+import { sortBrowseEntries } from '../../lib/hub/browse-entry'
+import type { EntryKind } from '../../lib/hub/catalogue-entries'
 import { useCaseLabelKey } from '../../lib/workshop/use-case-label'
 import CatalogueCard from './CatalogueCard.vue'
 import HubUseCaseNav from './HubUseCaseNav.vue'
 
-// Prices come from the page: the Router's estimate is resolved at build
-// time, so a card never waits on 122 asynchronous lookups to show one.
-const { locale = 'en', prices = {} } = defineProps<{
+// The catalogue is resolved on the server and arrives card-sized: the browser
+// never receives the model list or the template index, only what the grid
+// draws and the facets read.
+const { entries, locale = 'en' } = defineProps<{
+  entries: readonly BrowseEntry[]
   locale?: Locale
-  prices?: Readonly<Record<string, string>>
 }>()
-
-const priceBySlug = computed(() => new Map(Object.entries(prices)))
-
-const templates = hubTemplatesSchema
-  .parse(hubTemplates)
-  .map((template) => withFacetFields(template, workshopModels))
-const details = hubTemplateDetailsSchema.parse(hubTemplateDetails)
-const needsCustomNodes = new Set(
-  Object.entries(details)
-    .filter(([, detail]) => (detail.requiresCustomNodes?.length ?? 0) > 0)
-    .map(([name]) => name)
-)
-const entries = buildCatalogue(templates, workshopModels)
 
 type TypeFilter = 'all' | EntryKind
 type NeedsFilter = 'any' | 'runsHere' | 'comfyui' | 'customNodes'
@@ -108,44 +78,38 @@ const OUTPUTS: readonly { value: OutputFilter; label: TranslationKey }[] = [
 const normalize = (value: string) =>
   value.toLowerCase().replace(/[^a-z0-9]/g, '')
 
-function outputsOf(entry: CatalogueEntry): readonly string[] {
-  if (entry.kind !== 'model') return [entry.template.mediaType]
-  return entry.operations.flatMap(
-    (model): readonly string[] =>
-      model.modalities ?? (model.modality ? [model.modality] : [])
-  )
-}
-
-function meetsNeeds(entry: CatalogueEntry, filter: NeedsFilter): boolean {
+function meetsNeeds(entry: BrowseEntry, filter: NeedsFilter): boolean {
   if (filter === 'any') return true
-  if (filter === 'runsHere')
-    return entry.kind === 'model' || entry.runsOn !== undefined
+  if (filter === 'runsHere') return entry.runsHere
   if (filter === 'comfyui') return entry.kind !== 'model'
-  return entry.kind !== 'model' && needsCustomNodes.has(entry.template.name)
+  return entry.needsCustomNodes
 }
 
-function matchesQuery(entry: CatalogueEntry, text: string): boolean {
-  if (text === '') return true
-  const haystack =
-    entry.kind === 'model'
-      ? [
-          entry.model.name,
-          entry.model.provider ?? '',
-          ...entry.model.capabilities
+// Built once from what the card already carries, rather than shipped a second
+// time as its own field.
+const haystacks = computed(
+  () =>
+    new Map(
+      entries.map((entry) => [
+        entry.key,
+        [
+          entry.title,
+          entry.card.maker.label,
+          ...entry.models,
+          ...entry.card.tags
         ]
-      : [
-          entry.template.title,
-          entry.template.username,
-          ...entry.template.models,
-          ...entry.template.tags.map(tagDisplayName)
-        ]
-  return haystack.some((value) => value.toLowerCase().includes(text))
-}
+          .join(' ')
+          .toLowerCase()
+      ])
+    )
+)
 
-const usesTheModel = (entry: CatalogueEntry, name: string) =>
+const matchesQuery = (entry: BrowseEntry, text: string) =>
+  text === '' || (haystacks.value.get(entry.key) ?? '').includes(text)
+
+const usesTheModel = (entry: BrowseEntry, name: string) =>
   name === '' ||
-  (entry.kind !== 'model' &&
-    entry.template.models.some((model) => normalize(model) === normalize(name)))
+  entry.models.some((model) => normalize(model) === normalize(name))
 
 // Everything but the type, so the type counts can say what choosing each one
 // would return rather than how many exist in the abstract.
@@ -153,11 +117,10 @@ const beforeType = computed(() => {
   const text = query.value.trim().toLowerCase()
   return entries.filter(
     (entry) =>
-      (useCase.value === 'all' ||
-        entryUseCases(entry, workshopModels).includes(useCase.value)) &&
+      (useCase.value === 'all' || entry.useCases.includes(useCase.value)) &&
       meetsNeeds(entry, needs.value) &&
-      (output.value === 'all' || outputsOf(entry).includes(output.value)) &&
-      (provider.value === 'all' || entryProvider(entry) === provider.value) &&
+      (output.value === 'all' || entry.outputs.includes(output.value)) &&
+      (provider.value === 'all' || entry.provider === provider.value) &&
       usesTheModel(entry, usesModel.value) &&
       matchesQuery(entry, text)
   )
@@ -181,7 +144,7 @@ const LEAD_MODELS = 6
 const mixed = computed(() => type.value === 'all' && order.value === 'popular')
 
 const sorted = computed(() => {
-  const list = sortCatalogue(matched.value, order.value)
+  const list = sortBrowseEntries(matched.value, order.value)
   if (!mixed.value) return list
   const models = list.filter((entry) => entry.kind === 'model')
   return [
@@ -196,18 +159,14 @@ const modelsHeld = computed(() =>
 )
 
 const providers = computed(() =>
-  [
-    ...new Set(entries.map(entryProvider).filter((name) => Boolean(name)))
-  ].sort()
+  [...new Set(entries.map((entry) => entry.provider).filter(Boolean))].sort()
 )
 
 const useCaseTabs = computed(() =>
   [
     'all' as const,
     ...USE_CASES.filter((value) =>
-      entries.some((entry) =>
-        entryUseCases(entry, workshopModels).includes(value)
-      )
+      entries.some((entry) => entry.useCases.includes(value))
     )
   ].map((value) => ({
     value,
@@ -484,7 +443,7 @@ const chipClass =
           <CatalogueCard
             v-for="entry in visible"
             :key="entry.key"
-            :view="cardViewFor(entry, needsCustomNodes, priceBySlug)"
+            :view="entry.card"
             :locale
           />
         </div>

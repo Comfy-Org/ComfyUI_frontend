@@ -15,7 +15,7 @@ import {
 import { workshopModels as defaultWorkshopModels } from '../../config/workshop-browse-content'
 import { groupModels } from '../../config/model-family'
 import hubTemplates from '../../data/hubTemplates.json'
-import { hubWorkflowPath } from '../../lib/hub/workflow-detail'
+import { hubWorkflowPath } from '../../lib/hub/catalogue-entries'
 import {
   partnerModelFor,
   useCaseForTemplate
