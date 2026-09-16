@@ -105,6 +105,8 @@ export interface SessionClientOptions extends SessionRequestOptions {
   readonly storage: CredentialStorage
   readonly freshMarginMs?: number
   readonly refreshScheduler?: RefreshSchedulerOptions
+  /** Applies to the identity passed at construction; see `AttachIdentityOptions.autoMint`. */
+  readonly autoMint?: boolean
 }
 
 /**
@@ -149,11 +151,12 @@ export interface AttachIdentityOptions {
 }
 
 export interface SessionClient<TUser extends AccountUser = AccountUser> {
-  /** @deprecated Transitional Pinia-adapter seam; package-owned identity replaces it (FE-2171, PoC #16639). */
+  /** @deprecated Transitional Pinia-adapter seam; pass the identity as `createSessionClient`'s second argument instead (FE-2171, PoC #16639). */
   attachIdentity: (
     identity: AccountIdentity<TUser>,
     options?: AttachIdentityOptions
   ) => () => void
+  dispose: () => void
   getSnapshot: () => SessionSnapshot<TUser>
   subscribe: (
     listener: (snapshot: SessionSnapshot<TUser>) => void
@@ -209,7 +212,8 @@ const DEFAULT_MINT_TIMEOUT_MS = 15_000
  * production's default branch.
  */
 export function createSessionClient<TUser extends AccountUser = AccountUser>(
-  clientOptions: SessionClientOptions
+  clientOptions: SessionClientOptions,
+  identity?: AccountIdentity<TUser>
 ): SessionClient<TUser> {
   const {
     exchangeUrl,
@@ -481,31 +485,42 @@ export function createSessionClient<TUser extends AccountUser = AccountUser>(
     return result
   }
 
+  function subscribeIdentity(
+    port: AccountIdentity<TUser>,
+    autoMint: boolean
+  ): () => void {
+    if (!isAccountIdentity(port)) {
+      throw new Error(
+        'attachIdentity needs the identity from @comfyorg/account/firebase (or /testing)'
+      )
+    }
+    detachCurrent?.()
+    let active = true
+    const unsubscribe = port.onUserChanged((next) => {
+      if (!active) return
+      commit({ type: 'identity-changed', user: next })
+      if (next && autoMint) {
+        void refreshWith(ensureCore, next)
+      }
+    })
+    const detach = () => {
+      if (!active) return
+      active = false
+      detachCurrent = undefined
+      unsubscribe()
+      commit({ type: 'identity-detached' })
+    }
+    detachCurrent = detach
+    return detach
+  }
+
+  if (identity) subscribeIdentity(identity, clientOptions.autoMint !== false)
+
   return {
-    attachIdentity(identity, attachOptions) {
-      if (!isAccountIdentity(identity)) {
-        throw new Error(
-          'attachIdentity needs the identity from @comfyorg/account/firebase (or /testing)'
-        )
-      }
+    attachIdentity: (port, attachOptions) =>
+      subscribeIdentity(port, attachOptions?.autoMint !== false),
+    dispose() {
       detachCurrent?.()
-      let active = true
-      const unsubscribe = identity.onUserChanged((next) => {
-        if (!active) return
-        commit({ type: 'identity-changed', user: next })
-        if (next && attachOptions?.autoMint !== false) {
-          void refreshWith(ensureCore, next)
-        }
-      })
-      const detach = () => {
-        if (!active) return
-        active = false
-        detachCurrent = undefined
-        unsubscribe()
-        commit({ type: 'identity-detached' })
-      }
-      detachCurrent = detach
-      return detach
     },
     getSnapshot,
     subscribe(listener) {
