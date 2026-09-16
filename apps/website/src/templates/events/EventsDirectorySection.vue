@@ -68,7 +68,14 @@ const rows = computed(() =>
 const markers = computed<MapPinMarker[]>(() =>
   rows.value.flatMap((row) =>
     row.event.coords
-      ? [{ id: row.event.id, coords: row.event.coords, label: row.title }]
+      ? [
+          {
+            id: row.event.id,
+            coords: row.event.coords,
+            label: row.title,
+            meta: [row.date, row.location].filter(Boolean).join(' · ')
+          }
+        ]
       : []
   )
 )
@@ -94,6 +101,13 @@ const clusterLabel = (labels: string[]) =>
   t('events.directory.clusterLabel', locale).replace(
     '{count}',
     String(labels.length)
+  )
+
+// Heading of the popup a still-coincident cluster opens on the map.
+const clusterPopupTitle = (count: number) =>
+  t('events.directory.clusterPopupTitle', locale).replace(
+    '{count}',
+    String(count)
   )
 
 // `t()` has neither interpolation nor plurals, so both are resolved here.
@@ -282,6 +296,7 @@ const caretClass =
         :markers
         :region-label="t('events.directory.mapLabel', locale)"
         :cluster-label="clusterLabel"
+        :popup-title="clusterPopupTitle"
         class="h-80 sm:h-96 lg:h-140"
         @select="pinnedId = $event"
       />

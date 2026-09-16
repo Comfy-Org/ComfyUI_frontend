@@ -1,3 +1,5 @@
+import { computed } from 'vue'
+import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useDialogStore } from '@/stores/dialogStore'
 /**
  * Settings dialog migration regression net: `useSettingsDialog().show()` must
@@ -20,17 +22,19 @@ vi.mock(import('@/i18n'), () => ({
   t: (k: string) => k
 }))
 
-vi.mock<unknown>(import('@/platform/telemetry'), () => ({
-  useTelemetry: () => ({ trackEvent: vi.fn() })
-}))
+vi.mock(import('@/platform/telemetry'))
 
-vi.mock<unknown>(import('@/composables/billing/useBillingContext'), () => ({
-  useBillingContext: () => ({
-    canAccessSubscriptionFeatures: { value: true },
-    isFreeTier: { value: false },
-    type: { value: 'legacy' }
+beforeEach(() => {
+  const billing = useBillingContext()
+  Object.assign(billing, {
+    canAccessSubscriptionFeatures: computed(() => true),
+    isFreeTier: computed(() => false),
+    type: computed(() => 'legacy')
   })
-}))
+  vi.mocked(useBillingContext).mockReturnValue(billing)
+})
+
+vi.mock(import('@/composables/billing/useBillingContext'))
 
 import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
 

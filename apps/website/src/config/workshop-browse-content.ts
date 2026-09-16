@@ -21,10 +21,17 @@ import {
 } from './workshop-model-availability'
 
 const routerIndex = workshopRouterIndexSchema.parse(indexJson)
+const legacyCatalog = (catalogJson as unknown[]).map((entry) =>
+  workshopModelSchema.parse(entry)
+)
 const correctedUseCases = new Map(
   Object.entries(useCaseOverrides).map(([id, value]): [string, UseCase] => {
     const useCase = USE_CASES.find((item) => item === value)
-    if (!useCase || !routerIndex.some((model) => model.id === id))
+    if (
+      !useCase ||
+      (!routerIndex.some((model) => model.id === id) &&
+        !legacyCatalog.some((model) => model.id === id))
+    )
       throw new Error(`Invalid Router use-case override: ${id}`)
     return [id, useCase]
   })
@@ -33,11 +40,17 @@ const canonicalNames = new Map(Object.entries(displayNames))
 for (const id of canonicalNames.keys())
   if (!routerIndex.some((entry) => entry.id === id))
     throw new Error(`Display name has no Router model: ${id}`)
+const routerAliases = workshopRouterAliasesSchema.parse(aliasesJson)
 export const routerAliasById = new Map(
-  workshopRouterAliasesSchema
-    .parse(aliasesJson)
-    .map((alias) => [alias.id, alias])
+  routerAliases.map((alias) => [alias.id, alias])
 )
+const identitySourceCommits = new Set(
+  routerAliases.map((alias) => alias.sourceCommit)
+)
+if (identitySourceCommits.size !== 1)
+  throw new Error('Router aliases must use one source commit')
+const identitySourceCommit = [...identitySourceCommits][0]
+if (!identitySourceCommit) throw new Error('Missing Router identity source')
 
 function modalityFor(model: WorkshopModelEntry): Modality {
   if (model.modality === 'music') return 'audio'
@@ -84,9 +97,6 @@ function taskForUseCases(useCases: readonly UseCase[]): WorkshopModel['task'] {
   return 'text-to-text'
 }
 
-const legacyCatalog = (catalogJson as unknown[]).map((entry) =>
-  workshopModelSchema.parse(entry)
-)
 const display = workshopDisplayEntriesSchema.parse(displayJson)
 const displaySlugs = new Set(display.map((entry) => entry.slug))
 for (const slug of modelOrderRank.keys())
@@ -99,18 +109,24 @@ for (const slug of workshopModelAvailability.keys())
     throw new Error(`Model availability names an unknown page: ${slug}`)
 const contentSources = display.flatMap((overlay) => {
   if (isWorkshopModelDisabled(overlay.slug)) return []
+  const input = workshopContentInputs.get(overlay.id)
+  if (input?.unavailableReason) return []
   const alias = routerAliasById.get(overlay.modelId)
-  if (!alias) return []
+  const binding = input
+    ? {
+        ...(alias?.routerId === input.routerId ? alias : {}),
+        id: overlay.modelId,
+        routerId: input.routerId,
+        sourceCommit: identitySourceCommit
+      }
+    : alias
+  if (!binding) return []
   const entry = catalogById.get(overlay.modelId)
-  const record = routerIndex.find((record) => record.id === alias.routerId)
+  const record = routerIndex.find((record) => record.id === binding.routerId)
   if (!entry || !record)
     throw new Error(`Invalid Router content join: ${overlay.id}`)
   if (record.incompleteReason || record.unavailableReason) return []
-  const input = workshopContentInputs.get(overlay.id)
-  if (input && input.routerId !== record.id)
-    throw new Error(`Wrong Router model for content inputs: ${overlay.id}`)
-  if (input?.unavailableReason) return []
-  return [{ alias, entry, overlay, record }]
+  return [{ binding, entry, overlay, record }]
 })
 const sharedNames = new Map<string, Set<string>>()
 for (const { overlay, record } of contentSources) {
@@ -125,20 +141,24 @@ export const routerContentBySlug = new Map(
 export const routerContentById = new Map(
   routerIndex.flatMap((record) => {
     const sources = contentSources.filter(
-      ({ alias }) => alias.routerId === record.id
+      ({ binding }) => binding.routerId === record.id
     )
     return sources.length ? [[record.id, sources] as const] : []
   })
 )
 
 const browseModels: readonly WorkshopModel[] = contentSources.map(
-  ({ entry, overlay, alias, record }) => {
-    const useCases = [correctedUseCases.get(record.id) ?? overlay.useCase]
+  ({ entry, overlay, binding, record }) => {
+    const useCases = [
+      correctedUseCases.get(entry.id) ??
+        correctedUseCases.get(record.id) ??
+        overlay.useCase
+    ]
     const exampleCount = Math.min(
       6,
-      alias.contentIssue ? 0 : (overlay.media.samples?.length ?? 0)
+      binding.contentIssue ? 0 : (overlay.media.samples?.length ?? 0)
     )
-    const thumbnail = alias.contentIssue ? undefined : overlay.media.thumbnail
+    const thumbnail = binding.contentIssue ? undefined : overlay.media.thumbnail
     const slug = overlay.slug
     const recommendedRank = modelOrderRank.get(slug)
     const name =
@@ -182,7 +202,7 @@ const browseModels: readonly WorkshopModel[] = contentSources.map(
 export const workshopModels = labelSharedThumbnails(browseModels)
 
 function primarySlug(sources: typeof contentSources): string {
-  const primary = sources.filter(({ alias }) => alias.displayPrimary)
+  const primary = sources.filter(({ binding }) => binding.displayPrimary)
   const candidates = primary.length ? primary : sources
   const withExamples = candidates.filter(({ overlay }) =>
     Boolean(overlay.examples.length)
@@ -197,14 +217,13 @@ function primarySlug(sources: typeof contentSources): string {
 export const routerModelSlugAliases = new Map<string, string>()
 for (const [routerId, sources] of routerContentById)
   routerModelSlugAliases.set(routerId.replace('/', '--'), primarySlug(sources))
-for (const alias of routerAliasById.values()) {
-  const sources = contentSources.filter(({ entry }) => entry.id === alias.id)
-  if (sources.length)
-    routerModelSlugAliases.set(
-      alias.id.replace('/', '--'),
-      primarySlug(sources)
-    )
+const sourcesByLegacyId = new Map<string, typeof contentSources>()
+for (const source of contentSources) {
+  const sources = sourcesByLegacyId.get(source.entry.id) ?? []
+  sourcesByLegacyId.set(source.entry.id, [...sources, source])
 }
+for (const [legacyId, sources] of sourcesByLegacyId)
+  routerModelSlugAliases.set(legacyId.replace('/', '--'), primarySlug(sources))
 for (const slug of routerModelSlugAliases.keys())
   if (routerContentBySlug.has(slug))
     throw new Error(`Content slug collides with a legacy redirect: ${slug}`)

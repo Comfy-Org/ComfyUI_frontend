@@ -202,7 +202,11 @@ export default defineConfig([
         ...commonParserOptions,
         projectService: {
           allowDefaultProject: [
+            'packages/account/vitest.config.ts',
+            'packages/account-ui/vitest.config.ts',
+            'packages/design-system/vitest.config.ts',
             'packages/object-info-parser/vitest.config.ts',
+            'packages/shared-frontend-utils/vitest.config.ts',
             'vite.electron.config.mts',
             'vite.types.config.mts',
             'vitest.matrix.config.mts',
@@ -270,7 +274,10 @@ export default defineConfig([
   {
     settings: {
       'better-tailwindcss': {
-        entryPoint: 'packages/design-system/src/css/style.css'
+        entryPoint: path.resolve(
+          import.meta.dirname,
+          'packages/design-system/src/css/style.css'
+        )
       }
     },
     rules: {
@@ -282,6 +289,17 @@ export default defineConfig([
       'better-tailwindcss/enforce-consistent-class-order': 'error',
       'better-tailwindcss/enforce-canonical-classes': 'error',
       'better-tailwindcss/no-deprecated-classes': 'error'
+    }
+  },
+  {
+    files: ['apps/billing-web/**/*.{ts,vue}'],
+    settings: {
+      'better-tailwindcss': {
+        entryPoint: path.resolve(
+          import.meta.dirname,
+          'apps/billing-web/src/styles.css'
+        )
+      }
     }
   },
   // Disables ESLint rules that conflict with formatters

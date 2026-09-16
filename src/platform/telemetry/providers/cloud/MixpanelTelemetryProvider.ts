@@ -41,7 +41,11 @@ import type {
 } from '../../types'
 import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
 import type { RemoteConfig } from '@/platform/remoteConfig/types'
-import { OnboardingTourEvents, TelemetryEvents } from '../../types'
+import {
+  CHECKOUT_JOURNEY_EVENT_NAME_BY_PHASE,
+  OnboardingTourEvents,
+  TelemetryEvents
+} from '../../types'
 import { normalizeSurveyResponses } from '../../utils/surveyNormalization'
 
 const DEFAULT_DISABLED_EVENTS = [
@@ -56,7 +60,10 @@ const DEFAULT_DISABLED_EVENTS = [
   TelemetryEvents.WORKFLOW_CREATED
 ] as const satisfies TelemetryEventName[]
 
-const TELEMETRY_EVENT_SET = new Set<string>(Object.values(TelemetryEvents))
+const TELEMETRY_EVENT_SET = new Set<string>([
+  ...Object.values(TelemetryEvents),
+  ...Object.values(CHECKOUT_JOURNEY_EVENT_NAME_BY_PHASE)
+])
 
 interface QueuedEvent {
   eventName: TelemetryEventName

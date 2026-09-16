@@ -11,12 +11,15 @@ export type MapPinMarker = {
   id: string
   coords: { lat: number; lng: number }
   label: string
+  /** Secondary line under the label in a cluster's popup (date, place). */
+  meta?: string
 }
 
 const {
   markers,
   regionLabel,
   clusterLabel = (labels: string[]) => labels.join(', '),
+  popupTitle = (count: number) => String(count),
   class: className
 } = defineProps<{
   markers: MapPinMarker[]
@@ -24,6 +27,8 @@ const {
   regionLabel: string
   /** Accessible name for a cluster badge, built from its pins' labels. */
   clusterLabel?: (labels: string[]) => string
+  /** Heading of the popup a still-coincident cluster opens. */
+  popupTitle?: (count: number) => string
   class?: HTMLAttributes['class']
 }>()
 
@@ -65,13 +70,6 @@ function pinHtml(count: number): string {
   }
   return `<div style="display:flex;align-items:center;justify-content:center;width:31px;height:31px;border-radius:10px;background:${CLUSTER_FILL};color:${CLUSTER_TEXT};font-weight:600;font-size:14px;box-shadow:0 1px 6px rgba(0,0,0,0.4)">${count}</div>`
 }
-
-// Events that share (near-)identical coordinates project to the same pixel at
-// every zoom, so their cluster badge can never split by zooming alone. Once a
-// click on such a badge is confirmed still-coincident after flying in, its
-// ids move here and `rebuildPins` fans them into a small ring of individually
-// clickable pins instead of re-clustering them.
-let spiderfiedIds = new Set<string>()
 
 type PixelGroup = { point: Leaflet.Point; items: MapPinMarker[] }
 
@@ -117,23 +115,49 @@ function addClusterMarker(L: typeof Leaflet, cluster: PixelGroup) {
   marker.addTo(pinLayer)
 }
 
-/** Fans a still-coincident group into a ring of leaf pins around its shared
- * point, connected by thin legs so the spiderfy reads as one expanded pin. */
-function addSpiderfiedGroup(L: typeof Leaflet, group: PixelGroup) {
-  if (!map || !pinLayer) return
-  const { point, items } = group
-  const radius = Math.max(28, Math.round((items.length * 14) / (2 * Math.PI)))
-  items.forEach((item, index) => {
-    const angle = (2 * Math.PI * index) / items.length - Math.PI / 2
-    const legEnd = point.add(
-      L.point(Math.cos(angle) * radius, Math.sin(angle) * radius)
-    )
-    L.polyline(
-      [map!.containerPointToLatLng(point), map!.containerPointToLatLng(legEnd)],
-      { color: PIN_FILL, weight: 1, opacity: 0.35, interactive: false }
-    ).addTo(pinLayer!)
-    addLeafMarker(L, legEnd, item)
+/** Builds the popup body for a still-coincident cluster: one entry per event
+ * with its title and date line. Assembled via DOM APIs so labels land in
+ * `textContent`, never in an HTML string. */
+function clusterPopupContent(items: MapPinMarker[]): HTMLElement {
+  const root = document.createElement('div')
+  const heading = document.createElement('p')
+  heading.className = 'map-pins-popup-title'
+  heading.textContent = popupTitle(items.length)
+  root.append(heading)
+  for (const item of items) {
+    const entry = document.createElement('button')
+    entry.type = 'button'
+    entry.className = 'map-pins-popup-entry'
+    const title = document.createElement('span')
+    title.className = 'map-pins-popup-entry-title'
+    title.textContent = item.label
+    entry.append(title)
+    if (item.meta) {
+      const meta = document.createElement('span')
+      meta.className = 'map-pins-popup-meta'
+      meta.textContent = item.meta
+      entry.append(meta)
+    }
+    entry.addEventListener('click', () => {
+      emit('select', item.id)
+      map?.closePopup()
+    })
+    root.append(entry)
+  }
+  return root
+}
+
+function openClusterPopup(L: typeof Leaflet, items: MapPinMarker[]) {
+  if (!map) return
+  L.popup({
+    className: 'map-pins-popup',
+    maxWidth: 320,
+    closeButton: true,
+    autoPanPadding: [24, 24]
   })
+    .setLatLng([items[0].coords.lat, items[0].coords.lng])
+    .setContent(clusterPopupContent(items))
+    .openOn(map)
 }
 
 // Astro hoists every CSS import reachable from an island — a dynamic
@@ -161,7 +185,7 @@ function prefersReducedMotion() {
 
 /** Moves to the cluster's bounds, then checks whether its members are still
  * pixel-coincident at the landed zoom (capped by `maxZoom`) — if so, flying
- * in further can never separate them, so spiderfy instead. */
+ * in further can never separate them, so open the event-list popup instead. */
 function onClusterClick(items: MapPinMarker[]) {
   const L = leaflet
   if (!L || !map) return
@@ -185,14 +209,27 @@ function onClusterClick(items: MapPinMarker[]) {
           .distanceTo(anchor) < 48
     )
     if (!stillCoincident) return
-    for (const item of items) spiderfiedIds.add(item.id)
-    rebuildPins()
+    if (leaflet) openClusterPopup(leaflet, items)
   }
   map.once('moveend', pendingClusterMoveEnd)
   const framing: Leaflet.FitBoundsOptions = { padding: [60, 60], maxZoom: 7 }
+  let moved = false
+  const noteMove = () => {
+    moved = true
+  }
+  map.on('movestart', noteMove)
   if (prefersReducedMotion())
     map.fitBounds(bounds, { ...framing, animate: false })
   else map.flyToBounds(bounds, framing)
+  map.off('movestart', noteMove)
+  // A fly with nowhere to go — the view already frames these bounds at the
+  // zoom cap — fires no movestart and no moveend, so the coincidence check
+  // must run now or the badge is a dead end.
+  if (!moved && pendingClusterMoveEnd) {
+    const landed = pendingClusterMoveEnd
+    map.off('moveend', landed)
+    landed()
+  }
 }
 
 /** Cluster by on-screen pixel distance at the current zoom. */
@@ -201,15 +238,9 @@ function rebuildPins() {
   if (!L || !map || !pinLayer) return
   pinLayer.clearLayers()
 
-  const clusterable = markers.filter((item) => !spiderfiedIds.has(item.id))
-  for (const group of groupByPixelDistance(map, clusterable)) {
+  for (const group of groupByPixelDistance(map, markers)) {
     if (group.items.length > 1) addClusterMarker(L, group)
     else addLeafMarker(L, group.point, group.items[0])
-  }
-
-  const spiderfied = markers.filter((item) => spiderfiedIds.has(item.id))
-  for (const group of groupByPixelDistance(map, spiderfied)) {
-    addSpiderfiedGroup(L, group)
   }
 }
 
@@ -269,7 +300,8 @@ async function mountMap() {
 watch(
   () => markers,
   () => {
-    spiderfiedIds = new Set()
+    // A filter change can drop events the open popup still lists.
+    map?.closePopup()
     rebuildPins()
   }
 )

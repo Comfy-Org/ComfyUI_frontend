@@ -95,14 +95,14 @@ describe('WorkshopModelsGrid', () => {
     const user = userEvent.setup()
     render(WorkshopModelsGrid, { props: { models } })
 
-    await user.click(screen.getByRole('button', { name: 'Edit images 1' }))
+    await user.click(screen.getByRole('button', { name: 'Edit images' }))
     expect(
       screen.getByRole('heading', { level: 1, name: 'Edit images 1' })
     ).toBeTruthy()
     expect(cardNames()).toEqual([expect.stringContaining('Flux')])
 
     await user.click(screen.getByRole('button', { name: /Back to/ }))
-    await user.click(screen.getByRole('button', { name: 'Generate videos 1' }))
+    await user.click(screen.getByRole('button', { name: 'Generate videos' }))
     expect(cardNames()).toEqual([expect.stringContaining('Kling AI')])
   })
 
@@ -113,7 +113,7 @@ describe('WorkshopModelsGrid', () => {
     const user = userEvent.setup()
     render(WorkshopModelsGrid, { props: { models } })
 
-    await user.click(screen.getByRole('button', { name: 'Edit images 1' }))
+    await user.click(screen.getByRole('button', { name: 'Edit images' }))
     await nextTick()
     await vi.waitFor(() => expect(scrollTo).toHaveBeenCalledWith({ top: 0 }))
 
@@ -147,7 +147,7 @@ describe('WorkshopModelsGrid', () => {
     const user = userEvent.setup()
     render(WorkshopModelsGrid, { props: { models } })
 
-    await user.click(screen.getByRole('button', { name: 'Edit images 1' }))
+    await user.click(screen.getByRole('button', { name: 'Edit images' }))
     await user.click(screen.getByRole('button', { name: 'Filter' }))
     const dialog = await screen.findByRole('dialog', { name: 'Filter' })
     await user.click(
