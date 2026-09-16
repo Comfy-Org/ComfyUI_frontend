@@ -21,7 +21,7 @@ coverage:
         threshold: '1%'
         informational: true
         flags:
-          - billing-web
+          - billing-web-unit
         paths:
           - apps/billing-web/src/**
         flag_coverage_not_uploaded_behavior: pass
@@ -47,7 +47,7 @@ coverage:
         threshold: '0%'
         informational: true
         flags:
-          - billing-web
+          - billing-web-unit
         paths:
           - apps/billing-web/src/**
         flag_coverage_not_uploaded_behavior: pass
@@ -83,7 +83,7 @@ flags:
       - apps/website/src/**
     carryforward: false
   # Likewise for billing-web.
-  billing-web:
+  billing-web-unit:
     paths:
       - apps/billing-web/src/**
     carryforward: false
