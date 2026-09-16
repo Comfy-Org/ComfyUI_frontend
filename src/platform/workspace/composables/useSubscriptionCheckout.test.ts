@@ -1077,6 +1077,37 @@ describe('useSubscriptionCheckout', () => {
       expect(mockSubscribe).toHaveBeenCalled()
     })
 
+    it('installs the refreshed preview and subscribes when it is a plain new subscription', async () => {
+      mockSubscription.value = null
+      mockPreviewSubscribe.mockResolvedValueOnce({
+        allowed: true,
+        transition_type: 'upgrade',
+        is_immediate: true,
+        requires_reactivation_confirmation: true,
+        current_plan: { period_end: '2026-08-29T00:00:00Z' }
+      })
+      const checkout = await setup()
+
+      await checkout.handleSubscribeClick({
+        tierKey: 'standard',
+        billingCycle: 'yearly'
+      })
+
+      const refreshedPreview = {
+        allowed: true,
+        transition_type: 'new_subscription',
+        is_immediate: true,
+        requires_reactivation_confirmation: false
+      }
+      mockPreviewSubscribe.mockResolvedValueOnce(refreshedPreview)
+
+      await checkout.handleConfirmTransition()
+
+      expect(checkout.previewData.value).toStrictEqual(refreshedPreview)
+      expect(checkout.checkoutStep.value).not.toBe('pricing')
+      expect(mockSubscribe).toHaveBeenCalled()
+    })
+
     it('subscribes after a failed plan-picker preview leaves no preview installed', async () => {
       mockIncompleteEmbeddedPreview.value = true
       mockSubscription.value = null
