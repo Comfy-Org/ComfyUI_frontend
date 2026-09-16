@@ -1032,12 +1032,14 @@ describe('useSubscriptionCheckout', () => {
       expect(checkout.reactivationRequired.value).toBe(false)
     })
 
-    it('fails closed when an embedded preview omits the reactivation decision', async () => {
+    it('fails closed when an embedded preview omits the reactivation decision for a cancelled subscription', async () => {
       mockIncompleteEmbeddedPreview.value = true
+      mockSubscription.value = { isCancelled: true }
       mockPreviewSubscribe.mockResolvedValue({
         allowed: true,
-        transition_type: 'new_subscription',
-        is_immediate: true
+        transition_type: 'upgrade',
+        is_immediate: true,
+        current_plan: { period_end: '2026-08-29T00:00:00Z' }
       })
       const checkout = await setup()
 
@@ -1050,9 +1052,55 @@ describe('useSubscriptionCheckout', () => {
 
       await checkout.handleConfirmTransition()
 
-      expect(checkout.reactivationRequired.value).toBe(false)
-      expect(checkout.checkoutStep.value).toBe('pricing')
       expect(mockSubscribe).not.toHaveBeenCalled()
+    })
+
+    it('subscribes a first-time buyer when an embedded preview omits the reactivation decision', async () => {
+      mockIncompleteEmbeddedPreview.value = true
+      mockSubscription.value = null
+      mockPreviewSubscribe.mockResolvedValue({
+        allowed: true,
+        transition_type: 'new_subscription',
+        is_immediate: true
+      })
+      const checkout = await setup()
+
+      await checkout.handleSubscribeClick({
+        tierKey: 'standard',
+        billingCycle: 'yearly'
+      })
+
+      expect(checkout.reactivationRequired.value).toBe(false)
+
+      await checkout.handleConfirmTransition()
+
+      expect(mockSubscribe).toHaveBeenCalled()
+    })
+
+    it('subscribes after a failed plan-picker preview leaves no preview installed', async () => {
+      mockIncompleteEmbeddedPreview.value = true
+      mockSubscription.value = null
+      mockPreviewSubscribe.mockRejectedValueOnce(
+        errorWithCode('BILLING_UNAVAILABLE', 'Billing system unavailable')
+      )
+      const checkout = await setup()
+
+      await checkout.handleSubscribeClick({
+        tierKey: 'standard',
+        billingCycle: 'yearly'
+      })
+
+      expect(checkout.previewData.value).toBeNull()
+
+      mockPreviewSubscribe.mockResolvedValue({
+        allowed: true,
+        transition_type: 'new_subscription',
+        is_immediate: true
+      })
+
+      await checkout.handleConfirmTransition()
+
+      expect(mockSubscribe).toHaveBeenCalled()
     })
 
     it('shows error toast when preview is disallowed', async () => {
