@@ -57,6 +57,9 @@ test.describe(
           }
         })
 
+        const globalNode = await comfyPage.nodeOps.getNodeRefById(ids.global)
+        await globalNode.centerOnNode()
+
         if (vueNodesEnabled) {
           await comfyPage.vueNodes.selectComboOption(
             'EasyGlobalSeed',
@@ -64,7 +67,6 @@ test.describe(
             'decrement for each node'
           )
         } else {
-          const globalNode = await comfyPage.nodeOps.getNodeRefById(ids.global)
           const actionWidget = await globalNode.getWidgetByName('action')
           await actionWidget.click()
           await comfyPage.page
