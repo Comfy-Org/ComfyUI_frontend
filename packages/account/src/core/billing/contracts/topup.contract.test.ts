@@ -74,6 +74,12 @@ describe('topup contract', () => {
     expectTypeOf<TopupResponse['billing_op_id']>().toEqualTypeOf<string>()
   })
 
+  it('carries exactly the three statuses a top-up settles into', () => {
+    expectTypeOf<TopupResponse['status']>().toEqualTypeOf<
+      (typeof TOPUP_STATUSES)[number]
+    >()
+  })
+
   it.for(TOPUP_STATUSES)(
     'adopts the operation regardless of the %s status',
     (status) => {

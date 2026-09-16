@@ -97,6 +97,14 @@ describe('billing capabilities contract', () => {
     ).toBe(false)
   })
 
+  it('rejects an expiry the reader could not pace freshness from', () => {
+    expect(
+      zBillingCapabilitiesResponse.safeParse(
+        capabilitiesBody({ expires_at: 'not-a-date' })
+      ).success
+    ).toBe(false)
+  })
+
   it('bounds the revision to the safe range the reader reads it back as a number over', () => {
     expectTypeOf<CapabilitiesResponse['revision']>().toEqualTypeOf<bigint>()
 
@@ -117,6 +125,7 @@ describe('billing capabilities contract', () => {
       denied_reasons: { can_subscribe_self_serve: 'not_workspace_owner' }
     })
 
+    expect(parsed).toMatchObject({ success: true })
     expect(parsed.success && 'denied_reasons' in parsed.data).toBe(false)
   })
 })

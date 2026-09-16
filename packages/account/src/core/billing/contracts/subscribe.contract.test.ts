@@ -74,7 +74,7 @@ describe('subscribe contract', () => {
 
   it('carries the three subscribe outcomes the command distinguishes', () => {
     expectTypeOf<SubscribeResponse['status']>().toEqualTypeOf<
-      'subscribed' | 'needs_payment_method' | 'pending_payment'
+      (typeof SUBSCRIBE_STATUSES)[number]
     >()
   })
 

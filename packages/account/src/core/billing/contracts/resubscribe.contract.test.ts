@@ -29,6 +29,12 @@ describe('resubscribe contract', () => {
     expectTypeOf<Resubscribe['billing_op_id']>().toEqualTypeOf<string>()
   })
 
+  it('carries exactly the two statuses a resubscribe settles into', () => {
+    expectTypeOf<Resubscribe['status']>().toEqualTypeOf<
+      (typeof RESUBSCRIBE_STATUSES)[number]
+    >()
+  })
+
   it.for(RESUBSCRIBE_STATUSES)(
     'adopts the operation regardless of the %s status',
     (status) => {

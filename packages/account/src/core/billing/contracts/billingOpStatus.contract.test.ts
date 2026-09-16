@@ -38,9 +38,17 @@ describe('billing operation status contract', () => {
     })
   })
 
+  it('rejects a start time the reducer could not order the operation by', () => {
+    expect(
+      zBillingOpStatusResponse.safeParse(
+        opStatusBody({ started_at: 'not-a-date' })
+      ).success
+    ).toBe(false)
+  })
+
   it('carries exactly the four statuses the reducer handles', () => {
     expectTypeOf<OpStatus['status']>().toEqualTypeOf<
-      'pending' | 'succeeded' | 'failed' | 'reconciliation_needed'
+      (typeof REDUCED_STATUSES)[number]
     >()
   })
 
@@ -52,12 +60,7 @@ describe('billing operation status contract', () => {
 
   it('carries exactly the five authentication states the reducer reads', () => {
     expectTypeOf<OpStatus['authentication_state']>().toEqualTypeOf<
-      | 'requires_action'
-      | 'processing'
-      | 'failed_retryable'
-      | 'succeeded'
-      | 'reconciliation_needed'
-      | undefined
+      (typeof AUTHENTICATION_STATES)[number] | undefined
     >()
   })
 

@@ -46,7 +46,7 @@ describe('billing status contract', () => {
 
   it('carries the three rails presentation routing distinguishes', () => {
     expectTypeOf<Status['billing_rail']>().toEqualTypeOf<
-      'legacy_stripe' | 'metronome' | 'stripe' | undefined
+      (typeof BILLING_RAILS)[number] | undefined
     >()
   })
 
@@ -61,7 +61,7 @@ describe('billing status contract', () => {
       string | undefined
     >()
     expectTypeOf<Status['pending_billing_op_type']>().toEqualTypeOf<
-      'subscription' | 'topup' | undefined
+      (typeof PENDING_OP_TYPES)[number] | undefined
     >()
   })
 
@@ -89,7 +89,7 @@ describe('billing status contract', () => {
   it('reports subscription eligibility as an active flag, a tier, and a status', () => {
     expectTypeOf<Status['is_active']>().toEqualTypeOf<boolean>()
     expectTypeOf<Status['subscription_status']>().toEqualTypeOf<
-      'active' | 'ended' | 'canceled' | undefined
+      (typeof SUBSCRIPTION_STATUSES)[number] | undefined
     >()
     expectTypeOf<Status['subscription_tier']>().toEqualTypeOf<
       | 'FREE'

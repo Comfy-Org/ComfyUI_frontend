@@ -54,6 +54,17 @@ const TRANSITION_TYPES = [
   'duration_change'
 ] as const satisfies readonly PreviewResponse['transition_type'][]
 
+/** Every amount the quote always carries, each one the host formats as money. */
+const MONEY_FIELDS = [
+  'cost_next_period_cents',
+  'cost_today_cents',
+  'credits_next_period_cents',
+  'credits_today_cents'
+] as const satisfies readonly (keyof PreviewResponseBody)[]
+
+const INT64_MIN = -9223372036854775808n
+const INT64_MAX = 9223372036854775807n
+
 describe('preview subscribe contract', () => {
   it('accepts the request the command builds from its camel-cased input', () => {
     const body = previewRequest({
@@ -83,6 +94,12 @@ describe('preview subscribe contract', () => {
     ).toMatchObject({ success: true })
   })
 
+  it('carries exactly the four transitions a host renders', () => {
+    expectTypeOf<PreviewResponse['transition_type']>().toEqualTypeOf<
+      (typeof TRANSITION_TYPES)[number]
+    >()
+  })
+
   it.for(TRANSITION_TYPES)('quotes the %s transition', (transition_type) => {
     const parsed = zPreviewSubscribeResponse.safeParse(
       previewResponse({ transition_type })
@@ -95,6 +112,14 @@ describe('preview subscribe contract', () => {
     expectTypeOf<PreviewResponse['allowed']>().toEqualTypeOf<boolean>()
     expectTypeOf<PreviewResponse['is_immediate']>().toEqualTypeOf<boolean>()
     expectTypeOf<PreviewResponse['effective_at']>().toEqualTypeOf<string>()
+  })
+
+  it('rejects an effective date a host could not read the change from', () => {
+    expect(
+      zPreviewSubscribeResponse.safeParse(
+        previewResponse({ effective_at: 'not-a-date' })
+      ).success
+    ).toBe(false)
   })
 
   it('reports money as an int64, so a host formats a bigint rather than a number', () => {
@@ -115,6 +140,19 @@ describe('preview subscribe contract', () => {
     const parsed = zPreviewSubscribeResponse.safeParse(wireBody)
 
     expect(parsed.success && parsed.data.cost_today_cents).toBe(3000n)
+  })
+
+  it.for(MONEY_FIELDS)('bounds %s to the int64 range', (field) => {
+    const parseAmount = (amount: bigint) =>
+      zPreviewSubscribeResponse.safeParse({
+        ...previewResponse(),
+        [field]: amount
+      })
+
+    expect(parseAmount(INT64_MIN)).toMatchObject({ success: true })
+    expect(parseAmount(INT64_MAX)).toMatchObject({ success: true })
+    expect(parseAmount(INT64_MIN - 1n).success).toBe(false)
+    expect(parseAmount(INT64_MAX + 1n).success).toBe(false)
   })
 
   it('describes discounts as product copy the host renders rather than matches', () => {

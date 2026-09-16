@@ -29,4 +29,13 @@ describe('cancel subscription contract', () => {
   it('carries the operation id on every member of the response union', () => {
     expectTypeOf<Cancel['billing_op_id']>().toEqualTypeOf<string>()
   })
+
+  it('rejects a scheduled cancellation dated by an unreadable timestamp', () => {
+    const parsed = zCancelSubscriptionResponse2.safeParse({
+      billing_op_id: 'op-1',
+      cancel_at: 'not-a-date'
+    })
+
+    expect(parsed.success).toBe(false)
+  })
 })
