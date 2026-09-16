@@ -64,6 +64,7 @@ import { useExecutionStore } from '@/stores/executionStore'
 import type { TaskItemImpl } from '@/stores/queueStore'
 import type { AugmentedResultItem } from '@/utils/resultItem'
 import { isVideoResult } from '@/utils/resultItem'
+import { resultItemPreviewUrl } from '@/utils/resultItemUrl'
 import { useQueueStore } from '@/stores/queueStore'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 
@@ -379,9 +380,9 @@ const recentResults = computed<RecentResult[]>(() =>
     return {
       id: job.id,
       job,
-      name: thumb?.filename || job.title,
+      name: thumb?.display_name?.trim() || thumb?.filename || job.title,
       meta: t('queueStatus.recentCompleted'),
-      thumbSrc: thumb?.previewUrl,
+      thumbSrc: thumb ? resultItemPreviewUrl(thumb) : undefined,
       isVideo: thumb ? isVideoResult(thumb) : false
     }
   })
