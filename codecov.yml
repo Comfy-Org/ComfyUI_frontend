@@ -61,3 +61,7 @@ flags:
     paths:
       - apps/website/src/**
     carryforward: false
+  billing-web:
+    paths:
+      - apps/billing-web/src/**
+    carryforward: false
