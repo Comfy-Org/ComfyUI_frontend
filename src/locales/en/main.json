@@ -5428,7 +5428,6 @@
       "survivingNodes": "{count} nodes left",
       "survivingWidgets": "widget values left",
       "verbosity": "console",
-      "sectionInclude": "Also include in the report (off by default)",
       "includeLogs": "Server logs",
       "includeSettings": "Settings",
       "includeWorkflow": "Workflow JSON",
