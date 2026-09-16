@@ -149,6 +149,7 @@ async function mockAgentBoot(
     agentConsentWrites,
     agentFlagEnabled,
     agentPanelInitiallyOpen,
+    agentOnboardingCompleted,
     crdtDebugEnabled,
     postedMessages
   }: Omit<AgentFixtures, 'agentPanel'>
@@ -156,17 +157,26 @@ async function mockAgentBoot(
   let consentAccepted = agentConsentAccepted
 
   await page.addInitScript(
-    ({ initiallyOpen, debugEnabled }) => {
+    ({ initiallyOpen, onboardingCompleted, debugEnabled }) => {
       if (localStorage.getItem('Comfy.AgentPanel.open') === null) {
         localStorage.setItem('Comfy.AgentPanel.open', String(initiallyOpen))
       }
-      localStorage.setItem('Comfy.AgentPanel.onboarded', 'true')
+      if (localStorage.getItem('Comfy.AgentPanel.onboarded') === null) {
+        localStorage.setItem(
+          'Comfy.AgentPanel.onboarded',
+          String(onboardingCompleted)
+        )
+      }
       if (debugEnabled) {
         localStorage.setItem('Comfy.Agent.CrdtDebug.enabled', 'true')
         localStorage.setItem('Comfy.Agent.CrdtDevPanel.open', 'true')
       }
     },
-    { initiallyOpen: agentPanelInitiallyOpen, debugEnabled: crdtDebugEnabled }
+    {
+      initiallyOpen: agentPanelInitiallyOpen,
+      onboardingCompleted: agentOnboardingCompleted,
+      debugEnabled: crdtDebugEnabled
+    }
   )
 
   await mockBilling(page)
@@ -346,6 +356,7 @@ type AgentFixtures = {
   agentFlagEnabled: boolean
   agentPanel: AgentPanel
   agentPanelInitiallyOpen: boolean
+  agentOnboardingCompleted: boolean
   crdtDebugEnabled: boolean
   postedMessages: string[]
 }
@@ -363,6 +374,7 @@ export const agentTest = comfyPageFixture.extend<AgentFixtures>({
     await use(new AgentPanel(comfyPage.page))
   },
   agentPanelInitiallyOpen: [false, { option: true }],
+  agentOnboardingCompleted: [true, { option: true }],
   crdtDebugEnabled: [false, { option: true }],
   page: async (
     {
@@ -371,6 +383,7 @@ export const agentTest = comfyPageFixture.extend<AgentFixtures>({
       agentConsentWrites,
       agentFlagEnabled,
       agentPanelInitiallyOpen,
+      agentOnboardingCompleted,
       crdtDebugEnabled,
       page,
       postedMessages
@@ -383,6 +396,7 @@ export const agentTest = comfyPageFixture.extend<AgentFixtures>({
       agentConsentWrites,
       agentFlagEnabled,
       agentPanelInitiallyOpen,
+      agentOnboardingCompleted,
       crdtDebugEnabled,
       postedMessages
     })
