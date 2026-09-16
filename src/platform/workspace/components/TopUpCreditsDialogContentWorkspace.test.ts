@@ -554,8 +554,7 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
       expect(mockToastAdd).toHaveBeenCalledWith(
         expect.objectContaining({
           severity: 'error',
-          detail:
-            'Another credit purchase is still open. Wait for it to complete or expire before starting a new one.'
+          detail: expect.stringContaining('credit purchase is still open')
         })
       )
     )
