@@ -25,7 +25,8 @@ import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
 import type {
   BillingAuthenticationState,
   BillingOperationPhase,
-  BillingDeclineReason
+  BillingDeclineReason,
+  BillingRecoveryAction
 } from '@/platform/workspace/api/workspaceApi'
 import { needsCustomerAttention } from '@/platform/workspace/billing/customerAttention'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
@@ -58,6 +59,15 @@ const UNMOVED_INTENT_STATUSES: ReadonlySet<PaymentIntent.Status> = new Set([
   'requires_action',
   'canceled'
 ])
+
+// The phases the contract defines as blocked on the customer. Neither advances
+// on its own, so the operation is held at the parked cadence rather than expired
+// under a short poll budget the customer cannot beat.
+function isBlockedOnCustomer(phase: BillingOperationPhase | null): boolean {
+  return (
+    phase === 'awaiting_payment_method' || phase === 'awaiting_invoice_payment'
+  )
+}
 
 type OperationType = 'subscription' | 'topup' | 'cancel'
 type OperationStatus =
@@ -331,7 +341,11 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
       }
 
       if (response.status === 'failed') {
-        handleFailure(opId, response.error_message ?? null)
+        handleFailure(
+          opId,
+          response.error_message ?? null,
+          response.recovery_action
+        )
         return
       }
 
@@ -386,7 +400,7 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
   // settled payment spinning for half a minute.
   function isParkedAwaitingCustomer(operation: BillingOperation): boolean {
     return (
-      operation.phase === 'awaiting_payment_method' ||
+      isBlockedOnCustomer(operation.phase) ||
       operation.authenticationState === 'requires_action' ||
       operation.actionUrl !== null ||
       (operation.authenticationState === 'failed_retryable' &&
@@ -428,7 +442,7 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
     if (
       operation.type !== 'cancel' &&
       (operation.authenticationRequiredSeen ||
-        operation.phase === 'awaiting_payment_method')
+        isBlockedOnCustomer(operation.phase))
     ) {
       return elapsed > AUTHENTICATION_TIMEOUT_MS
     }
@@ -804,13 +818,21 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
     }
   }
 
-  function handleFailure(opId: string, errorMessage: string | null) {
+  function handleFailure(
+    opId: string,
+    errorMessage: string | null,
+    recoveryAction?: BillingRecoveryAction
+  ) {
     const operation = operations.value.get(opId)
     if (!operation) return
 
     const superseded = errorMessage === CHECKOUT_SUPERSEDED_REASON
     const defaultMessage = failureMessage(operation.type)
-    const detail = billingFailureDetail(operation.type, errorMessage)
+    const detail = billingFailureDetail(
+      operation.type,
+      errorMessage,
+      recoveryAction
+    )
 
     updateOperationStatus(opId, 'failed', detail ?? defaultMessage)
     cleanup(opId)
@@ -1060,8 +1082,14 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
 
   function billingFailureDetail(
     type: OperationType,
-    errorMessage: string | null
+    errorMessage: string | null,
+    recoveryAction?: BillingRecoveryAction
   ) {
+    // A terminal operation carries no action_url, so this copy must send the
+    // customer back through the purchase rather than promise a link.
+    if (recoveryAction === 'authenticate_payment') {
+      return t('billingOperation.authenticatePaymentDetail')
+    }
     switch (errorMessage) {
       case 'insufficient_funds':
         return t('billingOperation.insufficientFundsDetail')

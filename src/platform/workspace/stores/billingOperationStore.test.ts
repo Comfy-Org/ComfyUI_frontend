@@ -1107,6 +1107,36 @@ describe('billingOperationStore', () => {
       })
     })
 
+    // The bank refused to approve the charge without the customer. A failed
+    // operation has no action_url to offer, so the copy has to point at a fresh
+    // attempt rather than a link — and it must not fall back to the generic
+    // unknown-error text a top-up otherwise gets.
+    it('asks for a fresh attempt when a failure reports authenticate_payment', async () => {
+      vi.mocked(workspaceApi.getBillingOpStatus).mockResolvedValue({
+        id: 'op-1',
+        status: 'failed',
+        recovery_action: 'authenticate_payment',
+        started_at: new Date().toISOString()
+      })
+
+      const store = useBillingOperationStore()
+      void store.startOperation('op-1', 'topup')
+
+      await vi.advanceTimersByTimeAsync(0)
+
+      expect(store.getOperation('op-1')).toMatchObject({
+        status: 'failed',
+        errorMessage: 'billingOperation.authenticatePaymentDetail',
+        actionUrl: null
+      })
+      expect(useToastStore().add).toHaveBeenCalledWith({
+        severity: 'error',
+        summary: 'billingOperation.topupFailed',
+        detail: 'billingOperation.authenticatePaymentDetail',
+        life: 7000
+      })
+    })
+
     it('categorizes a downgrade-to-personal poll failure as an api rejection, not a provider decline', async () => {
       // Downgrade-to-personal never touches a card, so a poll failure here
       // can't be a card decline regardless of the shared 'subscription' type.
@@ -2015,6 +2045,58 @@ describe('billingOperationStore', () => {
       await vi.advanceTimersByTimeAsync(30_000)
       expect((await terminal).status).toBe('timeout')
       expect(store.subscriptionActionOperation).toBeUndefined()
+    })
+
+    // A top-up parked on an invoice needing the bank's approval is blocked on
+    // the customer for as long as the server holds the invoice open. Expiring
+    // it under the short top-up budget clears actionUrl, which takes the
+    // authentication link away while it is still the only way to finish.
+    it('keeps a top-up parked on its invoice pending past the short top-up budget', async () => {
+      const actionUrl = 'https://invoice.example/authenticate'
+      vi.mocked(workspaceApi.getBillingOpStatus).mockResolvedValue({
+        id: 'op-topup',
+        status: 'pending',
+        phase: 'awaiting_invoice_payment',
+        action_url: actionUrl,
+        started_at: new Date().toISOString()
+      })
+
+      const store = useBillingOperationStore()
+      void store.startOperation('op-topup', 'topup')
+      await vi.advanceTimersByTimeAsync(0)
+
+      expect(store.topupActionOperation).toMatchObject({
+        opId: 'op-topup',
+        status: 'pending',
+        phase: 'awaiting_invoice_payment',
+        actionUrl
+      })
+
+      await vi.advanceTimersByTimeAsync(4 * 60 * 60_000)
+
+      expect(store.topupActionOperation?.actionUrl).toBe(actionUrl)
+      expect(useTelemetry()?.trackBillingEvent).not.toHaveBeenCalledWith(
+        expect.objectContaining({ stage: 'timeout' })
+      )
+    })
+
+    // The link is served only to billing managers, so the phase alone has to
+    // hold the operation open for everyone else watching it.
+    it('keeps a top-up parked on its invoice pending without an action URL', async () => {
+      vi.mocked(workspaceApi.getBillingOpStatus).mockResolvedValue({
+        id: 'op-topup',
+        status: 'pending',
+        phase: 'awaiting_invoice_payment',
+        started_at: new Date().toISOString()
+      })
+
+      const store = useBillingOperationStore()
+      void store.startOperation('op-topup', 'topup')
+      await vi.advanceTimersByTimeAsync(0)
+
+      await vi.advanceTimersByTimeAsync(4 * 60 * 60_000)
+
+      expect(store.getOperation('op-topup')?.status).toBe('pending')
     })
 
     it('times out a subscription while its workspace is inactive', async () => {
