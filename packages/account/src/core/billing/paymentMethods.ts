@@ -142,24 +142,21 @@ export function createPaymentMethodsReader(
       BillingResult<PaymentMethodsSnapshot>
     > => {
       const result = await requestPaymentMethods(scope, readOptions?.timeoutMs)
+      // A list that arrives after the host moved to another workspace names
+      // cards the current one cannot charge, and a failure says nothing about
+      // the scope that has since taken over.
+      if (lifetime.disposed || !scopeTracker.isCurrent(context)) {
+        return { status: 'error', code: 'SUPERSEDED' }
+      }
+
       if (result.status !== 'ok') {
         // The same fence the publish path carries: a denial that predates an
         // invalidation is no evidence about the list a later read published,
         // and clearing on it would drop a fresh list for a stale refusal.
-        if (
-          result.code === 'ACCESS_DENIED' &&
-          !pending.invalidated &&
-          scopeTracker.isCurrent(context)
-        ) {
+        if (result.code === 'ACCESS_DENIED' && !pending.invalidated) {
           snapshot = undefined
         }
         return result
-      }
-
-      // A list that arrives after the host moved to another workspace names
-      // cards the current one cannot charge.
-      if (lifetime.disposed || !scopeTracker.isCurrent(context)) {
-        return { status: 'error', code: 'SUPERSEDED' }
       }
 
       if (!pending.invalidated) snapshot = result.value
