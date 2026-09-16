@@ -33,13 +33,7 @@ vi.mock(import('@/platform/distribution/types'), () => ({
   }
 }))
 
-vi.mock<unknown>(import('@/platform/telemetry'), () => ({
-  useTelemetry: () => ({
-    trackHelpResourceClicked: vi.fn(),
-    trackHelpCenterOpened: vi.fn(),
-    trackHelpCenterClosed: vi.fn()
-  })
-}))
+vi.mock(import('@/platform/telemetry'))
 
 vi.mock<unknown>(import('@/utils/envUtil'), () => ({
   electronAPI: () => null
