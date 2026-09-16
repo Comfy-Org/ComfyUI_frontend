@@ -12,7 +12,6 @@ test.describe(
       await comfyPage.workflow.loadWorkflow(
         'subgraphs/basic-subgraph-zero-uuid'
       )
-      await comfyPage.vueNodes.waitForNodes()
 
       const assertInSubgraph = async (inSubgraph: boolean) => {
         await expect

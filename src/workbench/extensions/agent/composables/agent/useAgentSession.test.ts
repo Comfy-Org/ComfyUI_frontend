@@ -217,6 +217,7 @@ describe('useAgentSession (v1 composition root)', () => {
 
     expect(rest.postMessage).toHaveBeenCalledWith('new', {
       content: 'make me a cat',
+      workflowReferences: [],
       selection: undefined,
       attachments: undefined
     })
@@ -828,6 +829,7 @@ describe('useAgentSession (v1 composition root)', () => {
 
     expect(rest.postMessage).toHaveBeenCalledWith('new', {
       content: 'with files',
+      workflowReferences: [],
       selection: undefined,
       attachments: ['upload_a.png', 'upload_b.png']
     })
@@ -855,6 +857,58 @@ describe('useAgentSession (v1 composition root)', () => {
     await session.sendMessage('explain', undefined, tags)
     const body = vi.mocked(rest.postMessage).mock.calls[0][1]
     expect(body.selection).toEqual({ node_ids: ['5', '6'] })
+  })
+
+  it('(h3) sends workflow references separately and keeps them in the local turn', async () => {
+    const rest = fakeRest()
+    const session = useAgentSession({ rest, events: fakeEvents().source })
+    const references = [
+      { id: 'wf-context', name: 'Context workflow', textOffset: 0 }
+    ]
+    session.start()
+
+    await session.sendMessage('compare this', undefined, undefined, references)
+
+    expect(vi.mocked(rest.postMessage).mock.calls[0][1]).toEqual({
+      content: '[Context workflow](workflow://wf-context)compare this',
+      workflowReferences: [
+        { workflow_id: 'wf-context', name: 'Context workflow' }
+      ],
+      selection: undefined,
+      attachments: undefined
+    })
+    expect(useAgentConversationStore().entries[0]).toMatchObject({
+      role: 'user',
+      workflowReferences: references
+    })
+  })
+
+  it('sends inline workflow identities in sentence order while retaining the local chip draft', async () => {
+    const rest = fakeRest()
+    const session = useAgentSession({ rest, events: fakeEvents().source })
+    const references = [
+      { id: 'wf-a', name: 'A', textOffset: 5 },
+      { id: 'wf-b', name: 'B', textOffset: 11 }
+    ]
+    session.start()
+
+    await session.sendMessage('Copy  into .', undefined, undefined, references)
+
+    expect(rest.postMessage).toHaveBeenCalledWith(
+      'new',
+      expect.objectContaining({
+        content: 'Copy [A](workflow://wf-a) into [B](workflow://wf-b).',
+        workflowReferences: [
+          { workflow_id: 'wf-a', name: 'A' },
+          { workflow_id: 'wf-b', name: 'B' }
+        ]
+      })
+    )
+    expect(useAgentConversationStore().entries[0]).toMatchObject({
+      role: 'user',
+      text: 'Copy  into .',
+      workflowReferences: references
+    })
   })
 
   it('(h4) the turn post never carries a draft field (upload retired)', async () => {
@@ -934,6 +988,46 @@ describe('useAgentSession (v1 composition root)', () => {
 
     expect(vi.mocked(postMessage).mock.calls[0][1]).not.toHaveProperty('draft')
   })
+
+  it.for(['new-chat', 'history'])(
+    'cancels preparation after switching conversation: %s',
+    async (context) => {
+      const rest = fakeRest()
+      const { source } = fakeEvents()
+      let releasePrepare = () => {}
+      const prepare = vi.fn(
+        () =>
+          new Promise<void>((resolve) => {
+            releasePrepare = resolve
+          })
+      )
+      const adopted = vi.fn()
+      const session = useAgentSession({
+        rest,
+        events: source,
+        workflow: {
+          current: () => ({ id: 'wf-a', tabPath: 'tab-a' }),
+          prepare,
+          adopted
+        }
+      })
+      session.start()
+      const sending = session.sendMessage('Old draft')
+      expect(prepare).toHaveBeenCalledOnce()
+      if (context === 'new-chat') session.newChat()
+      else await session.loadThread('th-history')
+      releasePrepare()
+      expect(await sending).toBe(false)
+      expect(rest.postMessage).not.toHaveBeenCalled()
+      expect(adopted).not.toHaveBeenCalled()
+      expect(session.entries.value).toEqual([])
+      expect(session.threadId.value).toBe(
+        context === 'new-chat' ? null : 'th-history'
+      )
+      expect(session.isSending.value).toBe(false)
+      session.stop()
+    }
+  )
 
   it('(h7) a tab switch while prepare() is pending does not reattribute the send to the new tab', async () => {
     const postMessage = vi.fn(async () => ({
@@ -2084,6 +2178,98 @@ describe('thread resume (B17)', () => {
       role: 'user',
       text: 'build a duck'
     })
+  })
+
+  it('invalidates an in-flight workflow restoration when starting a new chat', async () => {
+    let finishRestore = () => {}
+    let stillCurrent = () => true
+    const restored = vi.fn(
+      async (_id: string | undefined, isCurrent: () => boolean) => {
+        stillCurrent = isCurrent
+        await new Promise<void>((resolve) => {
+          finishRestore = resolve
+        })
+      }
+    )
+    const session = useAgentSession({
+      rest: fakeRest({
+        getMessages: vi.fn(async () => [
+          historyRow(1, 'user', 'turn-a', 'Prompt')
+        ])
+      }),
+      events: fakeEvents().source,
+      workflow: { current: () => undefined, adopted: vi.fn(), restored }
+    })
+    session.start()
+    const first = session.loadThread('first')
+    await vi.waitFor(() => expect(restored).toHaveBeenCalledOnce())
+    expect(stillCurrent()).toBe(true)
+    session.newChat()
+    expect(stillCurrent()).toBe(false)
+    finishRestore()
+    await first
+  })
+
+  it('keeps the first restoration stale when a later thread finishes loading', async () => {
+    let releaseFirst = () => {}
+    let firstIsCurrent = () => true
+    const restored = vi
+      .fn(async (_id: string | undefined, _isCurrent: () => boolean) => {})
+      .mockImplementationOnce(
+        async (_id: string | undefined, isCurrent: () => boolean) => {
+          firstIsCurrent = isCurrent
+          await new Promise<void>((resolve) => {
+            releaseFirst = resolve
+          })
+        }
+      )
+    const session = useAgentSession({
+      rest: fakeRest({
+        getMessages: vi.fn(async () => [
+          historyRow(1, 'user', 'turn', 'Prompt')
+        ])
+      }),
+      events: fakeEvents().source,
+      workflow: { current: () => undefined, adopted: vi.fn(), restored }
+    })
+    session.start()
+    const first = session.loadThread('first')
+    await vi.waitFor(() => expect(restored).toHaveBeenCalledOnce())
+    await session.loadThread('second')
+    expect(firstIsCurrent()).toBe(false)
+    releaseFirst()
+    await first
+    expect(session.threadId.value).toBe('second')
+  })
+
+  it('restores the target from the latest persisted user message', async () => {
+    const older = historyRow(1, 'user', 'turn-a', 'First')
+    older.workflow_id = 'wf-a'
+    const latest = historyRow(3, 'user', 'turn-b', 'Second')
+    latest.workflow_id = 'wf-b'
+    const restored = vi.fn()
+    const session = useAgentSession({
+      rest: fakeRest({
+        getMessages: vi.fn(
+          async (): Promise<AgentMessages> => [
+            latest,
+            historyRow(2, 'assistant', 'turn-a', 'Done'),
+            older
+          ]
+        )
+      }),
+      events: fakeEvents().source,
+      workflow: {
+        current: () => undefined,
+        adopted: vi.fn(),
+        restored
+      }
+    })
+    session.start()
+
+    await session.loadThread('th-9')
+
+    expect(restored).toHaveBeenCalledWith('wf-b', expect.any(Function))
   })
 
   it('listThreads returns the REST client thread list', async () => {

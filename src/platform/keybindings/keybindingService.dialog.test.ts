@@ -34,12 +34,9 @@ beforeEach(() => {
 
 describe('keybindingService - dialog gate', () => {
   let keybindingService: ReturnType<typeof useKeybindingService>
-  let mockCommandExecute: ReturnType<typeof useCommandStore>['execute']
 
   beforeEach(() => {
-    const commandStore = useCommandStore()
-    mockCommandExecute = commandStore.execute
-    vi.mocked(mockCommandExecute).mockResolvedValue(undefined)
+    vi.mocked(useCommandStore().execute).mockResolvedValue(undefined)
 
     const dialogStore = useDialogStore()
     dialogStore.dialogStack.length = 0
@@ -67,7 +64,7 @@ describe('keybindingService - dialog gate', () => {
     const event = createKeyboardEvent('w')
     await keybindingService.keybindHandler(event)
 
-    expect(mockCommandExecute).toHaveBeenCalledWith(
+    expect(useCommandStore().execute).toHaveBeenCalledWith(
       'Workspace.ToggleSidebarTab.workflows'
     )
   })
@@ -79,7 +76,7 @@ describe('keybindingService - dialog gate', () => {
     const event = createKeyboardEvent('w')
     await keybindingService.keybindHandler(event)
 
-    expect(mockCommandExecute).not.toHaveBeenCalled()
+    expect(useCommandStore().execute).not.toHaveBeenCalled()
   })
 
   it('does NOT execute a global keybinding from inside an open dialog', async () => {
@@ -96,7 +93,7 @@ describe('keybindingService - dialog gate', () => {
       const event = createKeyboardEvent('w', inner)
       await keybindingService.keybindHandler(event)
 
-      expect(mockCommandExecute).not.toHaveBeenCalled()
+      expect(useCommandStore().execute).not.toHaveBeenCalled()
       expect(event.defaultPrevented).toBe(false)
     } finally {
       document.body.removeChild(dialog)
@@ -113,7 +110,7 @@ describe('keybindingService - dialog gate', () => {
       const event = createKeyboardEvent('w')
       await keybindingService.keybindHandler(event)
 
-      expect(mockCommandExecute).not.toHaveBeenCalled()
+      expect(useCommandStore().execute).not.toHaveBeenCalled()
       expect(event.defaultPrevented).toBe(false)
     } finally {
       document.body.removeChild(dialog)
@@ -131,7 +128,9 @@ describe('keybindingService - dialog gate', () => {
       const event = createKeyboardEvent('s', document.body, { ctrlKey: true })
       await keybindingService.keybindHandler(event)
 
-      expect(mockCommandExecute).toHaveBeenCalledWith('Comfy.SaveWorkflow')
+      expect(useCommandStore().execute).toHaveBeenCalledWith(
+        'Comfy.SaveWorkflow'
+      )
       expect(event.defaultPrevented).toBe(true)
     } finally {
       document.body.removeChild(dialog)
@@ -156,7 +155,9 @@ describe('keybindingService - dialog gate', () => {
         const event = createKeyboardEvent('s', document.body, { ctrlKey: true })
         await keybindingService.keybindHandler(event)
 
-        expect(mockCommandExecute).toHaveBeenCalledWith('Comfy.SaveWorkflow')
+        expect(useCommandStore().execute).toHaveBeenCalledWith(
+          'Comfy.SaveWorkflow'
+        )
         expect(event.defaultPrevented).toBe(true)
       } finally {
         document.body.removeChild(wrapper)
@@ -174,7 +175,7 @@ describe('keybindingService - dialog gate', () => {
       const event = createKeyboardEvent('w')
       await keybindingService.keybindHandler(event)
 
-      expect(mockCommandExecute).not.toHaveBeenCalled()
+      expect(useCommandStore().execute).not.toHaveBeenCalled()
       expect(event.defaultPrevented).toBe(false)
     } finally {
       document.body.removeChild(dialog)
@@ -193,7 +194,7 @@ describe('keybindingService - dialog gate', () => {
       const event = createKeyboardEvent('s', document.body, modifiers)
       await keybindingService.keybindHandler(event)
 
-      expect(mockCommandExecute).not.toHaveBeenCalled()
+      expect(useCommandStore().execute).not.toHaveBeenCalled()
       expect(event.defaultPrevented).toBe(true)
     }
   )
@@ -211,7 +212,7 @@ describe('keybindingService - dialog gate', () => {
       const event = createKeyboardEvent('w')
       await keybindingService.keybindHandler(event)
 
-      expect(mockCommandExecute).toHaveBeenCalledWith(
+      expect(useCommandStore().execute).toHaveBeenCalledWith(
         'Workspace.ToggleSidebarTab.workflows'
       )
     } finally {

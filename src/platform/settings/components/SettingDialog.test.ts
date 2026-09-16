@@ -1,10 +1,11 @@
 import userEvent from '@testing-library/user-event'
 import { fireEvent, render, screen } from '@testing-library/vue'
 import { beforeEach, expect, it, vi } from 'vitest'
-import { nextTick, reactive, ref } from 'vue'
+import { nextTick, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 import type { Ref } from 'vue'
 
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import type { NavGroupData } from '@/types/navTypes'
 
 import SettingDialog from './SettingDialog.vue'
@@ -23,7 +24,6 @@ const searchMocks = vi.hoisted(() => ({
   searchQuery: null as unknown as Ref<string>,
   searchResultsCategories: null as unknown as Ref<Set<string>>
 }))
-const mockFetchBalance = vi.hoisted(() => vi.fn())
 
 vi.mock<unknown>(
   import('@/platform/settings/composables/useSettingUI'),
@@ -65,9 +65,7 @@ vi.mock<unknown>(
   })
 )
 
-vi.mock<unknown>(import('@/composables/billing/useBillingContext'), () => ({
-  useBillingContext: () => ({ fetchBalance: mockFetchBalance })
-}))
+vi.mock(import('@/composables/billing/useBillingContext'))
 
 vi.mock(
   import('@/platform/telemetry/searchQuery/useSearchQueryTracking'),
@@ -76,14 +74,30 @@ vi.mock(
   })
 )
 
-vi.mock<unknown>(
-  import('@/platform/workspace/stores/teamWorkspaceStore'),
-  () => ({
-    useTeamWorkspaceStore: () => reactive({ workspaceName: ref('Acme Team') })
-  })
-)
-
 beforeEach(() => {
+  const workspaceStore: ReturnType<typeof useTeamWorkspaceStore> & {
+    activeWorkspaceId: string | null
+  } = useTeamWorkspaceStore()
+  workspaceStore.activeWorkspaceId = 'ws-acme'
+  workspaceStore.$patch({
+    workspaces: [
+      {
+        id: 'ws-acme',
+        name: 'Acme Team',
+        type: 'team',
+        role: 'owner',
+        created_at: '2026-01-01T00:00:00Z',
+        joined_at: '2026-01-01T00:00:00Z',
+        isSubscribed: true,
+        subscriptionPlan: null,
+        subscriptionTier: null,
+        members: [],
+        pendingInvites: [],
+        membersLoaded: true,
+        pendingInvitesLoaded: true
+      }
+    ]
+  })
   settingUiMocks.defaultCategory = ref({
     key: 'workspace-allowlist',
     label: 'Allowlist',

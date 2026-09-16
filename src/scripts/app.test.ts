@@ -1,3 +1,4 @@
+import { fromAny, fromPartial } from '@total-typescript/shoehorn'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
@@ -6,12 +7,13 @@ import { useSettingStore } from '@/platform/settings/settingStore'
 import { useAuthStore } from '@/stores/authStore'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { fromPartial } from '@total-typescript/shoehorn'
 import { ref } from 'vue'
 
 vi.mock(import('@vueuse/router'), () => ({ useRouteHash: () => ref('') }))
 
+import { addAutogrow } from '@/core/graph/widgets/__fixtures__/dynamicInputHelpers'
 import type { CurveData } from '@/components/curve/types'
+import type { useExtensionService } from '@/services/extensionService'
 import { t } from '@/i18n'
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
@@ -29,7 +31,7 @@ import { useWorkflowService } from '@/platform/workflow/core/services/workflowSe
 import { createMockChangeTracker } from '@/utils/__tests__/litegraphTestUtils'
 import { useNodeReplacementStore } from '@/platform/nodeReplacement/nodeReplacementStore'
 import type { NodeReplacement } from '@/platform/nodeReplacement/types'
-import type { NodeExecutionOutput } from '@/schemas/apiSchema'
+import type { NodeExecutionOutput, NodeError } from '@/schemas/apiSchema'
 import { ComfyApp, app as singletonApp } from './app'
 import { createNode } from '@/utils/litegraphUtil'
 import {
@@ -54,7 +56,6 @@ import { PromptExecutionError, api } from '@/scripts/api'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useDialogStore } from '@/stores/dialogStore'
-import type { NodeError } from '@/schemas/apiSchema'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 import { createNodeExecutionId } from '@/types/nodeIdentification'
 import { toNodeId } from '@/types/nodeId'
@@ -91,15 +92,15 @@ const {
   }
 }))
 
-vi.mock('@/utils/litegraphUtil', () => ({
+vi.mock(import('@/utils/litegraphUtil'), () => ({
   createNode: vi.fn(),
-  isImageNode: vi.fn(),
-  isVideoNode: vi.fn(),
-  isAudioNode: vi.fn(),
+  isImageNode: fromAny(vi.fn()),
+  isVideoNode: fromAny(vi.fn()),
+  isAudioNode: fromAny(vi.fn()),
   executeWidgetsCallback: vi.fn()
 }))
 
-vi.mock('@/composables/usePaste', () => ({
+vi.mock(import('@/composables/usePaste'), () => ({
   pasteAudioNode: vi.fn(),
   pasteAudioNodes: vi.fn(),
   pasteImageNode: vi.fn(),
@@ -108,37 +109,33 @@ vi.mock('@/composables/usePaste', () => ({
   pasteVideoNodes: vi.fn()
 }))
 
-vi.mock('@/scripts/metadata/parser', () => ({
+vi.mock(import('@/scripts/metadata/parser'), () => ({
   getWorkflowDataFromFile: vi.fn()
 }))
 
-vi.mock('@/utils/eventUtils', async (importOriginal) => {
-  const eventUtils = await importOriginal<typeof import('@/utils/eventUtils')>()
-  return {
-    ...eventUtils,
-    extractFilesFromDragEvent: vi.fn()
-  }
-})
+vi.mock(import('@/utils/eventUtils'), { spy: true })
 
-vi.mock('./pnginfo', () => ({
+vi.mock(import('./pnginfo'), () => ({
   importA1111: mockImportA1111
 }))
 
-vi.mock('@/platform/workflow/core/services/workflowService', () => ({
-  useWorkflowService: vi.fn(() => mockWorkflowService)
-}))
+vi.mock(import('@/platform/workflow/core/services/workflowService'), {
+  spy: true
+})
 
-vi.mock('@/extensions/core/load3d/Load3dUtils', () => ({
-  default: {
+vi.mock(import('@/extensions/core/load3d/Load3dUtils'), () => ({
+  default: fromAny({
     uploadFile: vi.fn()
-  }
+  })
 }))
 
-vi.mock('@/services/extensionService', () => ({
-  useExtensionService: vi.fn(() => mockExtensionService)
+vi.mock(import('@/services/extensionService'), () => ({
+  useExtensionService: vi.fn(() =>
+    fromPartial<ReturnType<typeof useExtensionService>>(mockExtensionService)
+  )
 }))
 
-vi.mock('@/platform/missingModel/missingModelPipeline', () => ({
+vi.mock(import('@/platform/missingModel/missingModelPipeline'), () => ({
   refreshMissingModelPipeline: mockRefreshMissingModelPipeline,
   runMissingModelPipeline: vi.fn()
 }))
@@ -177,12 +174,12 @@ function createTestFile(name: string, type: string): File {
  * Point the workflowService mock at the real implementation for tests that
  * exercise the load lifecycle itself rather than app.ts's calls into it.
  */
-const actualWorkflowService = await vi.importActual<
-  typeof import('@/platform/workflow/core/services/workflowService')
->('@/platform/workflow/core/services/workflowService')
-
 async function useRealWorkflowService(): Promise<WorkflowService> {
-  const real = actualWorkflowService.useWorkflowService()
+  vi.mocked(useWorkflowService).mockRestore()
+  const real = useWorkflowService()
+  vi.mocked(useWorkflowService).mockReturnValue(
+    fromPartial<WorkflowService>(mockWorkflowService)
+  )
   mockWorkflowService.beforeLoadNewGraph.mockImplementation(
     real.beforeLoadNewGraph
   )
@@ -220,9 +217,12 @@ describe('ComfyApp', () => {
   let mockCanvas: LGraphCanvas
 
   beforeEach(() => {
+    vi.mocked(useWorkflowService).mockReturnValue(
+      fromPartial<WorkflowService>(mockWorkflowService)
+    )
     app = new ComfyApp()
     mockCanvas = createMockCanvas() as LGraphCanvas
-    app.canvas = mockCanvas as LGraphCanvas
+    app.canvas = mockCanvas
     useWorkflowStore().activeWorkflow = null
     const temporaryWorkflow = new ComfyWorkflow({
       path: 'workflows/temporary.json',
@@ -1413,6 +1413,210 @@ describe('ComfyApp', () => {
       expect(mockCanvas.setGraph).toHaveBeenCalledWith(graph)
       expect(mockCanvas.graph).toBe(graph)
       expect(mockCanvas.subgraph).toBeNull()
+    })
+
+    it('restores late autogrow widgets and links without repeating callbacks', async () => {
+      const graph = new LGraph()
+      const previousAppGraph = Reflect.get(app, 'rootGraphInternal')
+      const previousSingletonGraph = Reflect.get(
+        singletonApp,
+        'rootGraphInternal'
+      )
+      Reflect.set(app, 'rootGraphInternal', graph)
+      Reflect.set(singletonApp, 'rootGraphInternal', graph)
+      const sourceType = 'test/ApiSourceNode'
+      const targetType = 'test/ApiTargetNode'
+      const targetConnectionChanges = vi.fn()
+      class ApiSourceNode extends LGraphNode {
+        constructor(title = 'ApiSourceNode') {
+          super(title)
+          this.addOutput('out', 'LATENT')
+        }
+      }
+      class ApiTargetNode extends LGraphNode {
+        constructor(title = 'ApiTargetNode') {
+          super(title)
+          this.widgets = []
+          addAutogrow(this, {
+            min: 0,
+            input: {
+              required: {
+                image: ['LATENT', {}],
+                weight: ['FLOAT', { default: 1 }]
+              }
+            }
+          })
+        }
+        override onConnectionsChange(...args: unknown[]) {
+          targetConnectionChanges(...args)
+        }
+      }
+      LiteGraph.registerNodeType(sourceType, ApiSourceNode)
+      LiteGraph.registerNodeType(targetType, ApiTargetNode)
+
+      try {
+        await app.loadApiJson(
+          {
+            '2': {
+              class_type: targetType,
+              inputs: {
+                '0.weight2': 0.5,
+                '0.image2': ['1', 0],
+                '0.image1': ['1', 0],
+                '0.image0': ['1', 0]
+              },
+              _meta: { title: 'Api Target' }
+            },
+            '1': {
+              class_type: sourceType,
+              inputs: {},
+              _meta: { title: 'Api Source' }
+            }
+          },
+          ''
+        )
+
+        expect(targetConnectionChanges).toHaveBeenCalledTimes(3)
+        expect(graph.links.size).toBe(3)
+        expect(
+          graph
+            .getNodeById(toNodeId(2))
+            ?.widgets?.find((widget) => widget.name === '0.weight2')?.value
+        ).toBe(0.5)
+      } finally {
+        Reflect.set(app, 'rootGraphInternal', previousAppGraph)
+        Reflect.set(singletonApp, 'rootGraphInternal', previousSingletonGraph)
+        LiteGraph.unregisterNodeType(sourceType)
+        LiteGraph.unregisterNodeType(targetType)
+      }
+    })
+
+    it('saves links connected on retry in missing-node snapshots', async () => {
+      const graph = new LGraph()
+      const previousAppGraph = Reflect.get(app, 'rootGraphInternal')
+      const previousSingletonGraph = Reflect.get(
+        singletonApp,
+        'rootGraphInternal'
+      )
+      Reflect.set(app, 'rootGraphInternal', graph)
+      Reflect.set(singletonApp, 'rootGraphInternal', graph)
+      vi.spyOn(useNodeReplacementStore(), 'load').mockResolvedValue()
+      const sourceType = 'test/ApiSnapshotSource'
+      const lateType = 'test/ApiLateOutput'
+      class SnapshotSource extends LGraphNode {
+        constructor() {
+          super('Snapshot source')
+          this.addOutput('out', 'LATENT')
+        }
+      }
+      class LateOutput extends LGraphNode {
+        constructor() {
+          super('Late output')
+          this.addInput('input', 'LATENT')
+        }
+        override onConnectionsChange(...args: unknown[]) {
+          if (args[2] && !this.outputs.length) this.addOutput('out', 'LATENT')
+        }
+      }
+      LiteGraph.registerNodeType(sourceType, SnapshotSource)
+      LiteGraph.registerNodeType(lateType, LateOutput)
+      try {
+        await app.loadApiJson(
+          {
+            '1': {
+              class_type: 'MissingRetryTarget',
+              inputs: { input: ['2', 0] },
+              _meta: { title: 'Missing' }
+            },
+            '2': {
+              class_type: lateType,
+              inputs: { input: ['3', 0] },
+              _meta: { title: 'Late output' }
+            },
+            '3': {
+              class_type: sourceType,
+              inputs: {},
+              _meta: { title: 'Source' }
+            }
+          },
+          ''
+        )
+        const placeholder = graph.getNodeById(toNodeId(1))
+        const link = placeholder?.getInputLink(0)?.id
+        expect(link).toBeDefined()
+        expect(link).not.toBeNull()
+        expect(placeholder?.last_serialization?.inputs?.[0].link).toBe(link)
+        const saved = graph.serialize()
+        const reloaded = new LGraph()
+        reloaded.configure({ ...saved, id: reloaded.id })
+        expect(reloaded.getNodeById(toNodeId(1))?.getInputLink(0)?.id).toBe(
+          link
+        )
+        expect(reloaded.links.size).toBe(2)
+      } finally {
+        Reflect.set(app, 'rootGraphInternal', previousAppGraph)
+        Reflect.set(singletonApp, 'rootGraphInternal', previousSingletonGraph)
+        LiteGraph.unregisterNodeType(sourceType)
+        LiteGraph.unregisterNodeType(lateType)
+      }
+    })
+
+    it('does not retry a connection vetoed by an extension callback', async () => {
+      const graph = new LGraph()
+      const previousAppGraph = Reflect.get(app, 'rootGraphInternal')
+      const previousSingletonGraph = Reflect.get(
+        singletonApp,
+        'rootGraphInternal'
+      )
+      Reflect.set(app, 'rootGraphInternal', graph)
+      Reflect.set(singletonApp, 'rootGraphInternal', graph)
+      const sourceType = 'test/ApiVetoSourceNode'
+      const targetType = 'test/ApiVetoTargetNode'
+      const connectionAttempts = vi.fn()
+      class ApiVetoSourceNode extends LGraphNode {
+        constructor(title = 'ApiVetoSourceNode') {
+          super(title)
+          this.addOutput('out', 'LATENT')
+        }
+      }
+      class ApiVetoTargetNode extends LGraphNode {
+        constructor(title = 'ApiVetoTargetNode') {
+          super(title)
+          this.addInput('input', 'LATENT')
+        }
+        override onConnectInput() {
+          connectionAttempts()
+          return false
+        }
+      }
+      LiteGraph.registerNodeType(sourceType, ApiVetoSourceNode)
+      LiteGraph.registerNodeType(targetType, ApiVetoTargetNode)
+
+      try {
+        await app.loadApiJson(
+          {
+            '2': {
+              class_type: targetType,
+              inputs: { input: ['1', 0] },
+              _meta: { title: 'API Veto Target' }
+            },
+            '1': {
+              class_type: sourceType,
+              inputs: {},
+              _meta: { title: 'API Veto Source' }
+            }
+          },
+          ''
+        )
+
+        expect(connectionAttempts).toHaveBeenCalledOnce()
+        expect(graph.links.size).toBe(0)
+      } finally {
+        Reflect.set(app, 'rootGraphInternal', previousAppGraph)
+        Reflect.set(singletonApp, 'rootGraphInternal', previousSingletonGraph)
+        LiteGraph.unregisterNodeType(sourceType)
+        LiteGraph.unregisterNodeType(targetType)
+      }
     })
 
     it('remaps flattened subgraph ids to colon-free local ids', async () => {

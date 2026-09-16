@@ -228,10 +228,7 @@ function scanSingleNodeModelsAndTypes(
   const modelCandidates = scanNodeModelCandidates(
     rootGraph,
     node,
-    isCloud
-      ? (nodeType, widgetName) =>
-          assetService.shouldUseAssetBrowser(nodeType, widgetName)
-      : () => false,
+    assetService.shouldUseWidgetAssetPicker,
     (nodeType) => useModelToNodeStore().getCategoryForNodeType(nodeType)
   )
   const confirmedModels = modelCandidates.filter((c) => c.isMissing === true)

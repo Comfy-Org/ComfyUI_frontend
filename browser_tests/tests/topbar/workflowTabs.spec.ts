@@ -4,12 +4,6 @@ import type { Locator, Page } from '@playwright/test'
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 
 test.describe('Workflow tabs', () => {
-  test.use({
-    initialSettings: {
-      'Comfy.Workflow.WorkflowTabsPosition': 'Topbar'
-    }
-  })
-
   // These Agent-adjacent path-identity cases are staged behind the stacked
   // workflow-tab slice: https://github.com/Comfy-Org/ComfyUI_frontend/pull/16184
   test.describe('Agent workflow-tab contract from slice 04', () => {

@@ -3,7 +3,7 @@
     content-title=""
     data-testid="settings-dialog"
     size="full"
-    content-padding="none"
+    :content-padding="isWorkspaceCategoryActive ? 'none' : 'default'"
     header-padding="symmetric"
     @content-scroll="handlePanelScroll"
   >
@@ -84,7 +84,14 @@
     </template>
 
     <template #content>
-      <div class="flex min-h-0 flex-1 flex-col px-6">
+      <div
+        :class="
+          cn(
+            'flex min-h-0 flex-1 flex-col',
+            isWorkspaceCategoryActive && 'px-6'
+          )
+        "
+      >
         <template v-if="activePanel">
           <Suspense>
             <component :is="activePanel.component" v-bind="activePanel.props" />
@@ -123,6 +130,7 @@ import NavItem from '@/components/widget/nav/NavItem.vue'
 import NavTitle from '@/components/widget/nav/NavTitle.vue'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useSettingsHeaderCollapse } from '@/platform/settings/composables/useSettingsHeaderCollapse'
+import { cn } from '@comfyorg/tailwind-utils'
 import WorkspaceProfilePic from '@/platform/workspace/components/WorkspaceProfilePic.vue'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import ColorPaletteMessage from '@/platform/settings/components/ColorPaletteMessage.vue'

@@ -150,7 +150,6 @@ export class AppModeHelper {
     return this.comfyPage.page
   }
 
-  /** Enable the linear mode feature flag and top menu. */
   async enableLinearMode() {
     await this.page.evaluate(() => {
       window.app!.api.serverFeatureFlags.value = {
@@ -158,23 +157,6 @@ export class AppModeHelper {
         linear_toggle_enabled: true
       }
     })
-    await this.comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
-  }
-
-  /** Set preference so the Vue node switch popup does not appear in builder. */
-  async suppressVueNodeSwitchPopup() {
-    await this.comfyPage.settings.setSetting(
-      'Comfy.AppBuilder.VueNodeSwitchDismissed',
-      true
-    )
-  }
-
-  /** Allow the Vue node switch popup so tests can assert its behavior. */
-  async allowVueNodeSwitchPopup() {
-    await this.comfyPage.settings.setSetting(
-      'Comfy.AppBuilder.VueNodeSwitchDismissed',
-      false
-    )
   }
 
   /** Enter builder mode via the "Workflow actions" dropdown. */
