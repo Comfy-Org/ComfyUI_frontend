@@ -143,8 +143,12 @@ export function createPaymentMethodsReader(
     > => {
       const result = await requestPaymentMethods(scope, readOptions?.timeoutMs)
       if (result.status !== 'ok') {
+        // The same fence the publish path carries: a denial that predates an
+        // invalidation is no evidence about the list a later read published,
+        // and clearing on it would drop a fresh list for a stale refusal.
         if (
           result.code === 'ACCESS_DENIED' &&
+          !pending.invalidated &&
           scopeTracker.isCurrent(context)
         ) {
           snapshot = undefined

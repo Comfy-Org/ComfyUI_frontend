@@ -219,6 +219,33 @@ describe('createPaymentMethodsReader', () => {
     expect(reader.getSnapshot()?.methods[0].id).toBe('pm_2')
   })
 
+  it('keeps the fresh list when an invalidated request is denied late', async () => {
+    const { scopeSource } = fakeSession()
+    let releaseStale = () => {}
+    const staleGate = new Promise<void>((resolve) => {
+      releaseStale = resolve
+    })
+    let calls = 0
+    const transport: BillingTransport = vi.fn(async () => {
+      calls++
+      if (calls > 1) return httpOk([{ ...CARD, id: 'pm_2', last4: '1881' }])
+      await staleGate
+      return httpStatus(403)
+    })
+    const reader = createPaymentMethodsReader({ transport, scopeSource })
+
+    const stale = reader.read()
+    reader.invalidate()
+    await reader.read()
+
+    expect(reader.getSnapshot()?.methods[0].id).toBe('pm_2')
+
+    releaseStale()
+    await stale
+
+    expect(reader.getSnapshot()?.methods[0].id).toBe('pm_2')
+  })
+
   describe('scope safety', () => {
     it('reports SUPERSEDED and caches nothing when the workspace changed in flight', async () => {
       const host = fakeSession()
