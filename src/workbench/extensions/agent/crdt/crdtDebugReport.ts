@@ -468,24 +468,24 @@ function formatSource<T>(
   result: Awaited<ReturnType<typeof attempt<T>>> | null,
   warning: string,
   renderValue: (value: T) => string
-): { status: string; section: string } {
+): { section: string; status: string } {
   if (result === null) {
     return {
-      status: 'turned off',
-      section: '_Not included. Turned off by the tester._'
+      section: '_Not included. Turned off by the tester._',
+      status: 'turned off'
     }
   }
   if (!result.ok) {
     return {
-      status: 'failed (see source section)',
       section: [warning, `_${result.label} unavailable: ${result.error}_`].join(
         '\n\n'
-      )
+      ),
+      status: 'failed (see source section)'
     }
   }
   return {
-    status: 'collected',
-    section: [warning, renderValue(result.value)].join('\n\n')
+    section: [warning, renderValue(result.value)].join('\n\n'),
+    status: 'collected'
   }
 }
 
