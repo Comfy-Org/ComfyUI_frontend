@@ -46,7 +46,11 @@ ESLint rule enforces the Testing Library query rule. Do not disable it.
 - A composable mock returns one stable object, so a test can configure it
   and then create the consumer that reads it. Never replace a field that
   holds a `ref`, `computed`, or object: a consumer that already destructured
-  it keeps the old one.
+  it keeps the old one. Because that object is shared by every test in the
+  file, tests that configure it must not run with `test.concurrent`.
+- Until an older mock that builds a fresh object per call (`useBillingContext`)
+  is converted, pin it in the test with
+  `vi.mocked(useX).mockReturnValue(useX())` before configuring the result.
 - Do not use `mock.results` or other call history as a cache. Keep shared
   result identity explicit in the test that needs it.
 - Override only the field the test needs. Do not rebuild a full result with
