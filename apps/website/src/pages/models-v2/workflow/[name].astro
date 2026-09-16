@@ -6,11 +6,10 @@ import WorkflowRunsOn from '../../../components/hub/WorkflowRunsOn.vue'
 import { workshopModels } from '../../../config/workshop-browse-content'
 import hubTemplateDetails from '../../../data/hubTemplateDetails.json'
 import {
-  customNodeNames,
+  customNodeNamesFrom,
   relatedCardViews
 } from '../../../lib/hub/page-data'
 import { tagDisplayName } from '../../../lib/hub/tag-aliases'
-import { hubTemplateDetailsSchema } from '../../../lib/hub/types'
 import {
   formatWeights,
   getHubWorkflowPage,
@@ -53,7 +52,7 @@ const inputsHeading = template.isApp
 const relatedViews = relatedCardViews(
   related.slice(0, 4),
   workshopModels,
-  customNodeNames(hubTemplateDetailsSchema.parse(hubTemplateDetails))
+  customNodeNamesFrom(hubTemplateDetails)
 )
 
 const pill =

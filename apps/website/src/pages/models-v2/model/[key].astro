@@ -9,11 +9,10 @@ import {
   listModelGroups
 } from '../../../lib/hub/model-page'
 import {
-  customNodeNames,
+  customNodeNamesFrom,
+  pricedOperations,
   relatedCardViews
 } from '../../../lib/hub/page-data'
-import { hubTemplateDetailsSchema } from '../../../lib/hub/types'
-import { taskLabelFor } from '../../../lib/workshop/task-label'
 import { t } from '../../../i18n/translations'
 import BaseLayout from '../../../layouts/BaseLayout.astro'
 
@@ -27,17 +26,11 @@ if (!page) return Astro.redirect('/models-v2/')
 
 const { name, provider, operations, uses, operationsFromWorkflows } = page
 
-const pricedOperations = await Promise.all(
-  operations.map(async (model) => ({
-    model,
-    task: taskLabelFor(model, 'en'),
-    price: await estimateWorkshopNodePrice(model, useCaseFor(model))
-  }))
+const operationRows = await pricedOperations(operations, (model) =>
+  estimateWorkshopNodePrice(model, useCaseFor(model))
 )
 
-const needsCustomNodes = customNodeNames(
-  hubTemplateDetailsSchema.parse(hubTemplateDetails)
-)
+const needsCustomNodes = customNodeNamesFrom(hubTemplateDetails)
 const ownViews = relatedCardViews(
   operationsFromWorkflows,
   workshopModels,
@@ -91,7 +84,7 @@ const sectionTitle =
       </p>
       <ul class="mt-5 flex flex-col divide-y divide-transparency-white-t8">
         {
-          pricedOperations.map((operation) => (
+          operationRows.map((operation) => (
             <li class="flex flex-wrap items-center justify-between gap-4 py-4">
               <div class="flex min-w-0 flex-col gap-1">
                 <span class="text-base text-primary-comfy-canvas">

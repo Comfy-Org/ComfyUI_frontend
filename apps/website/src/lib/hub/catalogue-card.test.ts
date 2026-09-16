@@ -79,6 +79,27 @@ describe('cardViewFor', () => {
     expect(view.maker.label).toBe('BFL')
   })
 
+  // One card stands for every operation under the name, so the first row the
+  // registry happens to list is not the one a reader decides on.
+  it('prices a collapsed name at its cheapest operation', () => {
+    const view = cardViewFor(
+      modelEntry({
+        model: model({ slug: 'flux--edit', creditsPerRun: 40 }),
+        operations: [
+          model({ slug: 'flux--edit', creditsPerRun: 40 }),
+          model({ slug: 'flux--generate', creditsPerRun: 12 })
+        ]
+      }),
+      noNodes,
+      new Map([
+        ['flux--edit', '40 credits'],
+        ['flux--generate', '12 credits']
+      ])
+    )
+
+    expect(view.price).toBe('12 credits')
+  })
+
   it('leaves off the crossing when no workflow uses the model', () => {
     expect(
       cardViewFor(modelEntry(), noNodes, noPrices).crossing
