@@ -20,6 +20,7 @@ import HeaderWorkspaceMenu from './HeaderWorkspaceMenu.vue'
 
 const GAP = 12
 const PANEL_LEFT = 100
+const PANEL_WIDTH = 300
 const NARROWER_PANEL_LEFT = 180
 const TRIGGER_LEFT = 360
 
@@ -111,8 +112,11 @@ async function placeAt(testId: string, left: number, width: number) {
   }
   element.getBoundingClientRect = () => rect as DOMRect
   return {
-    resizeTo: (edge: number) => {
-      Object.assign(rect, { x: edge, left: edge, right: edge + width })
+    // The menu hangs off the avatar, so narrowing it moves its left edge and
+    // leaves its right one where it was.
+    narrowTo: (narrower: number) => {
+      const left = rect.right - narrower
+      Object.assign(rect, { x: left, left, width: narrower })
       for (const entry of FakeResizeObserver.observed)
         if (entry.target === element) entry.report()
     }
@@ -132,7 +136,7 @@ function submenuEdge() {
 describe('HeaderWorkspaceMenu', () => {
   it('opens clear of the menu the switcher sits in', async () => {
     const open = renderMenu()
-    await placeAt('header-account-menu', PANEL_LEFT, 300)
+    await placeAt('header-account-menu', PANEL_LEFT, PANEL_WIDTH)
     await placeAt('account-workspace', TRIGGER_LEFT, 32)
 
     open.value = true
@@ -143,14 +147,14 @@ describe('HeaderWorkspaceMenu', () => {
 
   it('follows the menu edge when the menu is resized under it', async () => {
     const open = renderMenu()
-    const panel = await placeAt('header-account-menu', PANEL_LEFT, 300)
+    const panel = await placeAt('header-account-menu', PANEL_LEFT, PANEL_WIDTH)
     await placeAt('account-workspace', TRIGGER_LEFT, 32)
 
     open.value = true
     await nextTick()
     await waitFor(() => expect(submenuEdge()).toBe(PANEL_LEFT - GAP))
 
-    panel.resizeTo(NARROWER_PANEL_LEFT)
+    panel.narrowTo(PANEL_WIDTH - (NARROWER_PANEL_LEFT - PANEL_LEFT))
 
     await waitFor(() => expect(submenuEdge()).toBe(NARROWER_PANEL_LEFT - GAP))
   })
