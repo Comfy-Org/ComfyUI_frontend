@@ -1,331 +1,39 @@
 <template>
   <div class="relative inline-flex flex-col items-end">
-    <!-- ================= Active / terminal toast ================= -->
     <div
       v-if="showToast"
       class="pointer-events-auto flex flex-col items-end gap-1"
       @pointerenter="openStack"
       @pointerleave="scheduleCloseStack"
     >
-      <!-- One pill, one surface: the stop and the chevron live inside it,
-           and the deck behind only peeks out below. -->
-      <div class="relative isolate flex items-center">
-        <!-- Stacked cards peeking under the pill, Sonner-style -->
-        <template v-if="stackCount > 0 && !isTerminal && !fanned">
-          <span
-            v-for="depth in stackCount"
-            :key="depth"
-            :class="
-              cn(
-                'pointer-events-none absolute inset-x-0 top-0 h-9 rounded-[10px] border border-base-foreground/9 bg-base-background/75 backdrop-blur-xl transition-all duration-200 ease-out',
-                depth === 1
-                  ? 'z-1 translate-y-[6px] scale-[0.97] opacity-90'
-                  : 'z-0 translate-y-[12px] scale-[0.94] opacity-70'
-              )
-            "
-            aria-hidden
-          />
-        </template>
+      <QueueStatusPill
+        :label="pillLabel"
+        :badge="pillBadge"
+        :progress="pillProgress"
+        :expanded="expanded"
+        :terminal-kind="pillTerminalKind"
+        :stack="peekDepth"
+        @activate="onPillActivate"
+      />
 
-        <button
-          type="button"
-          :aria-expanded="isTerminal ? undefined : expanded"
-          :aria-label="
-            isTerminal
-              ? terminalKind === 'completed'
-                ? t('queueStatus.viewResults')
-                : undefined
-              : t('queueStatus.activeGenerations')
-          "
-          data-testid="queue-status-toast"
-          :class="
-            cn(
-              'relative z-2 flex h-9 cursor-pointer items-stretch overflow-hidden rounded-[10px] border border-base-foreground/9 bg-base-background/80 p-0 text-left shadow-[0_4px_16px_rgba(0,0,0,0.3)] backdrop-blur-xl transition-colors hover:bg-secondary-background/80',
-              isTerminal ? 'items-center px-3' : 'min-w-[176px]'
-            )
-          "
-          @click="isTerminal ? onCompletedChipClick() : (expanded = !expanded)"
-        >
-          <!-- The chip: status, verb, and the stop that belongs to it. -->
-          <div
-            :class="
-              cn(
-                'relative flex min-w-0 flex-1 items-center gap-2',
-                !isTerminal && 'pr-2 pl-2.5'
-              )
-            "
-          >
-            <span
-              class="relative flex size-4 shrink-0 items-center justify-center"
-            >
-              <span
-                v-if="!isTerminal"
-                class="inline-block size-[15px] animate-spin rounded-full border-2 border-base-foreground/20 border-t-base-foreground/80"
-                aria-hidden
-              />
-              <i
-                v-else-if="terminalKind === 'failed'"
-                class="icon-[lucide--circle-alert] size-4 text-destructive-background"
-                aria-hidden
-              />
-              <i
-                v-else-if="terminalKind === 'cancelled'"
-                class="icon-[lucide--circle-slash] size-4 text-muted-foreground"
-                aria-hidden
-              />
-              <!-- A bare check: the badge already frames it. -->
-              <i
-                v-else
-                class="icon-[lucide--check] size-4 text-base-foreground"
-                aria-hidden
-              />
-            </span>
-
-            <span
-              class="truncate text-[13.5px] leading-none font-normal whitespace-nowrap text-base-foreground tabular-nums"
-            >
-              {{ pillLabel }}
-            </span>
-
-            <span
-              v-if="queuedBadge"
-              class="shrink-0 rounded-full bg-white/8 px-1.5 py-1 text-[10px] leading-none font-medium tracking-wide text-muted-foreground uppercase"
-            >
-              {{ queuedBadge }}
-            </span>
-
-            <!-- Progress hugs the chip's bottom edge, as in the spec. -->
-            <div
-              v-if="showProgressLine"
-              class="pointer-events-none absolute bottom-0 left-0 h-px bg-base-foreground/70 transition-[width] duration-200 ease-out"
-              :style="{ width: `${headlineProgress}%` }"
-              aria-hidden
-            />
-          </div>
-        </button>
-      </div>
-
-      <!-- Expanding does not open a panel: the toasts behind the pill simply
-           become visible, each one its own card, the way a Sonner stack
-           unfurls. With runs in parallel every one keeps its own percent.
-           The 8px breathing room is PADDING, not a gap, so the hover region
-           runs continuously from the pill into the cards. -->
-      <div
-        v-if="expanded || fanned"
-        class="absolute top-full right-0 z-50 -mr-2 flex w-80 flex-col items-end gap-2 px-2 pt-2 pb-3"
-        data-testid="queue-status-panel"
-      >
-        <div
-          v-for="(job, index) in jobs"
-          :key="job.id"
-          class="job-toast-row relative w-full overflow-hidden rounded-[10px] border border-base-foreground/9 bg-base-background/75 px-3 py-2 shadow-[0_4px_16px_rgba(0,0,0,0.3)] backdrop-blur-xl transition-colors hover:bg-secondary-background/80"
-          :style="{ '--row-delay': `${index * 45}ms` }"
-          data-testid="queue-status-row"
-        >
-          <div class="flex items-center gap-2">
-            <span class="flex size-4 shrink-0 items-center justify-center">
-              <span
-                v-if="job.status === 'running'"
-                :class="
-                  cn(
-                    'inline-block size-[13px] rounded-full border-2 border-base-foreground/20 border-t-base-foreground/80',
-                    'animate-spin'
-                  )
-                "
-                aria-hidden
-              />
-              <span
-                v-else
-                class="size-1.5 rounded-full bg-muted-foreground"
-                aria-hidden
-              />
-            </span>
-
-            <div class="flex min-w-0 flex-1 flex-col gap-0.5">
-              <span
-                class="truncate text-[13px] leading-none text-base-foreground"
-              >
-                {{ job.title }}
-              </span>
-              <span
-                class="truncate text-[11px] leading-none text-muted-foreground"
-              >
-                {{ jobSubtitle(job) }}
-              </span>
-            </div>
-
-            <div class="flex shrink-0 items-center gap-0.5">
-              <button
-                type="button"
-                class="flex size-6 cursor-pointer items-center justify-center rounded-[6px] border-none bg-transparent p-0 text-muted-foreground transition-colors hover:bg-base-foreground/8 hover:text-base-foreground"
-                :aria-label="`${t('queueStatus.cancel')} ${job.title}`"
-                data-testid="queue-status-row-cancel"
-                @click="handleCancel(job)"
-              >
-                <span class="size-3 rounded-[2px] bg-current" aria-hidden />
-              </button>
-            </div>
-          </div>
-
-          <!-- Progress hugs the toast's bottom edge, as it does on the pill -->
-          <div
-            v-if="job.status === 'running'"
-            :class="
-              cn(
-                'pointer-events-none absolute bottom-0 left-0 h-px transition-[width] duration-200 ease-out',
-                'bg-base-foreground/70'
-              )
-            "
-            :style="{ width: `${job.progress}%` }"
-            aria-hidden
-          />
-        </div>
-
-        <!-- Batch verbs live at the foot of the stack, together. Each names its
-             own scope: pause the running work, drop what hasn't started, or
-             cancel everything. -->
-        <div
-          v-if="jobs.length > 1"
-          class="job-toast-row flex items-center gap-0.5 rounded-[10px] border border-base-foreground/10 bg-base-background/60 p-1 shadow-[0_2px_12px_rgba(0,0,0,0.25)] backdrop-blur-2xl"
-          :style="{ '--row-delay': `${jobs.length * 45}ms` }"
-        >
-          <button
-            v-if="queuedCount > 0"
-            type="button"
-            class="flex cursor-pointer items-center gap-1.5 rounded-[7px] border-none bg-transparent px-2 py-1.5 text-[11.5px] font-medium text-muted-foreground transition-colors hover:bg-base-foreground/8 hover:text-base-foreground"
-            data-testid="queue-status-clear-queue"
-            @click="handleClearQueue"
-          >
-            <i class="icon-[lucide--eraser] size-3" aria-hidden />
-            {{ t('queueStatus.clearQueue') }}
-          </button>
-          <button
-            type="button"
-            class="flex cursor-pointer items-center gap-1.5 rounded-[7px] border-none bg-transparent px-2 py-1.5 text-[11.5px] font-medium text-muted-foreground transition-colors hover:bg-base-foreground/8 hover:text-destructive-background"
-            data-testid="queue-status-cancel-all"
-            @click="handleCancelAll"
-          >
-            <span class="size-3 rounded-[2px] bg-current" aria-hidden />
-            {{ t('queueStatus.cancelAll') }}
-          </button>
-        </div>
-      </div>
+      <QueueStatusPanel
+        v-if="panelOpen"
+        :rows="panelRows"
+        :queued-count="queuedCount"
+        @cancel="handleCancel"
+        @clear-queue="handleClearQueue"
+        @cancel-all="handleCancelAll"
+      />
     </div>
 
-    <!-- ================= Idle: nothing queued or running ================= -->
-    <Popover v-else v-model:open="idleOpen">
-      <PopoverTrigger as-child>
-        <!-- The chevron is what tells people this opens something; without it
-             "0 active" reads as a bare status label, not a control. -->
-        <button
-          type="button"
-          data-testid="queue-status-idle"
-          :aria-label="t('queueStatus.nothingRunning')"
-          :aria-expanded="idleOpen"
-          class="group pointer-events-auto flex cursor-pointer items-center gap-1 rounded-lg border border-solid border-base-foreground/9 bg-transparent px-2 py-1 text-sm/5 text-base-foreground transition-colors hover:bg-secondary-background data-[state=open]:bg-secondary-background"
-        >
-          {{ activeJobsLabel }}
-          <i
-            class="icon-[lucide--chevron-down] size-3.5 text-muted-foreground transition-transform duration-200 group-data-[state=open]:rotate-180"
-            aria-hidden
-          />
-        </button>
-      </PopoverTrigger>
-      <!-- Same material as a toast card: identical width, border, surface and
-           shadow, so idle and active read as one family. -->
-      <PopoverContent
-        align="end"
-        side="bottom"
-        :side-offset="8"
-        data-testid="queue-status-idle-panel"
-        class="flex w-80 flex-col gap-2 rounded-[10px] border border-base-foreground/9 bg-base-background/80 p-2 shadow-[0_4px_18px_rgba(0,0,0,0.3)] backdrop-blur-xl"
-      >
-        <!-- Idle is exactly when someone goes looking for what they just
-             made, so recent runs live here rather than a tab away. -->
-        <div class="flex w-full flex-col gap-1">
-          <div class="flex items-center justify-between px-1.5 pt-0.5 pb-1">
-            <span
-              class="text-[11px] font-medium tracking-wide text-muted-foreground uppercase"
-            >
-              {{ t('queueStatus.recentResults') }}
-            </span>
-            <button
-              type="button"
-              class="flex size-3.5 cursor-pointer items-center justify-center border-none bg-transparent p-0 text-muted-foreground transition-colors hover:text-base-foreground"
-              :aria-label="t('queueStatus.goToHistoryShort')"
-              data-testid="queue-status-filter"
-              @click="handleGoToHistory"
-            >
-              <i class="icon-[lucide--list-filter] size-3.5" aria-hidden />
-            </button>
-          </div>
-
-          <template v-if="recentResults.length">
-            <button
-              v-for="result in recentResults"
-              :key="result.id"
-              type="button"
-              class="relative flex cursor-pointer items-center gap-2.5 overflow-hidden rounded-[8px] border-none bg-transparent px-1.5 py-2 text-left transition-colors hover:bg-secondary-background"
-              :aria-label="t('queueStatus.viewResult')"
-              data-testid="queue-status-recent-job"
-              @click="handleViewResult(result.job)"
-            >
-              <!-- Thumbnail leads, as it does in the jobs panel and on the
-                   toasts: one place for the picture, everywhere. -->
-              <span
-                v-if="result.thumbSrc"
-                class="relative flex size-9 shrink-0 items-center justify-center overflow-hidden rounded-[6px] bg-base-background outline-1 outline-white/10"
-              >
-                <img
-                  :src="result.thumbSrc"
-                  alt=""
-                  loading="lazy"
-                  class="size-full object-cover"
-                />
-                <i
-                  v-if="result.isVideo"
-                  class="absolute right-0.5 bottom-0.5 icon-[lucide--play] size-2.5 text-base-foreground drop-shadow-[0_1px_2px_rgba(0,0,0,0.6)]"
-                  aria-hidden
-                />
-              </span>
-              <span class="flex min-w-0 flex-1 flex-col gap-0.5">
-                <span
-                  class="truncate text-[13px] leading-none text-base-foreground"
-                >
-                  {{ result.name }}
-                </span>
-                <span
-                  class="truncate text-[11px] leading-none text-muted-foreground"
-                >
-                  {{ result.meta }}
-                </span>
-              </span>
-            </button>
-          </template>
-          <p
-            v-else
-            class="px-1.5 py-3 text-center text-[11.5px] text-muted-foreground"
-          >
-            {{ t('queueStatus.nothingRunning') }}
-          </p>
-        </div>
-
-        <!-- Same quiet verb treatment as the stack's footer actions. -->
-        <div
-          class="flex w-full items-center justify-end border-t border-base-foreground/6 pt-1.5"
-        >
-          <button
-            type="button"
-            class="flex cursor-pointer items-center gap-1.5 rounded-[7px] border-none bg-transparent px-2 py-1.5 text-[11.5px] font-medium text-muted-foreground transition-colors hover:bg-base-foreground/6 hover:text-base-foreground"
-            data-testid="queue-status-go-history"
-            @click="handleGoToHistory"
-          >
-            <i class="icon-[lucide--history] size-3" aria-hidden />
-            {{ t('queueStatus.goToHistoryShort') }}
-          </button>
-        </div>
-      </PopoverContent>
-    </Popover>
+    <QueueStatusIdle
+      v-else
+      v-model:open="idleOpen"
+      :label="activeJobsLabel"
+      :results="recentResults"
+      @view="handleViewResult"
+      @history="handleGoToHistory"
+    />
 
     <MediaLightbox
       v-model:active-index="galleryActiveIndex"
@@ -338,14 +46,18 @@
 import { computed, nextTick, onUnmounted, reactive, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import { PopoverTrigger } from 'reka-ui'
-
 import MediaLightbox from '@/components/sidebar/tabs/queue/MediaLightbox.vue'
-import Popover from '@/components/ui/popover/Popover.vue'
-import PopoverContent from '@/components/ui/popover/PopoverContent.vue'
+import QueueStatusIdle from '@/components/queue/QueueStatusIdle.vue'
+import QueueStatusPanel from '@/components/queue/QueueStatusPanel.vue'
+import QueueStatusPill from '@/components/queue/QueueStatusPill.vue'
 import { useJobList } from '@/composables/queue/useJobList'
 import type { JobListItem } from '@/composables/queue/useJobList'
 import { useResultGallery } from '@/composables/queue/useResultGallery'
+import type {
+  JobView,
+  RecentResult,
+  TerminalKind
+} from '@/components/queue/queueStatusTypes'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { api } from '@/scripts/api'
 import { useExecutionStore } from '@/stores/executionStore'
@@ -354,15 +66,6 @@ import type { AugmentedResultItem } from '@/utils/resultItem'
 import { isVideoResult } from '@/utils/resultItem'
 import { useQueueStore } from '@/stores/queueStore'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
-import { cn } from '@comfyorg/tailwind-utils'
-
-type JobView = {
-  id: string
-  title: string
-  status: 'running' | 'queued'
-  progress: number
-  queuePosition: number
-}
 
 /** How long the terminal "Completed"/"Cancelled" chip lingers before idle returns. */
 const COMPLETED_FLASH_MS = 3000
@@ -435,7 +138,7 @@ const queuedCount = computed(() => queuedJobs.value.length)
 const activeCount = computed(() => jobs.value.length)
 
 const completedFlash = ref(false)
-const terminalKind = ref<'completed' | 'cancelled' | 'failed'>('completed')
+const terminalKind = ref<TerminalKind>('completed')
 const cancelIntent = ref(false)
 /** Active on the last tick, so the drain is judged by how each job ended. */
 let lastActiveIds: string[] = []
@@ -573,6 +276,24 @@ function jobSubtitle(job: JobView): string {
     ? t('queueStatus.queuedNextUp')
     : t('queueStatus.queuedPosition', { position: job.queuePosition })
 }
+const peekDepth = computed(() =>
+  isTerminal.value || fanned.value ? 0 : stackCount.value
+)
+const panelOpen = computed(() => expanded.value || fanned.value)
+const pillBadge = computed(() => queuedBadge.value ?? undefined)
+const pillProgress = computed(() =>
+  showProgressLine.value ? headlineProgress.value : undefined
+)
+const pillTerminalKind = computed(() =>
+  isTerminal.value ? terminalKind.value : null
+)
+function onPillActivate() {
+  if (isTerminal.value) onCompletedChipClick()
+  else expanded.value = !expanded.value
+}
+const panelRows = computed(() =>
+  jobs.value.map((job) => ({ job, subtitle: jobSubtitle(job) }))
+)
 
 /** After a cancel, activeJobId can point at a job the backend never reports. */
 const reconcileActiveJob = () => {
@@ -653,7 +374,7 @@ const recentJobs = computed(() =>
     .filter((job) => job.state === 'completed')
     .slice(0, RECENT_JOB_LIMIT)
 )
-const recentResults = computed(() =>
+const recentResults = computed<RecentResult[]>(() =>
   recentJobs.value.map((job) => {
     const thumb = jobThumbnail(job)
     return {
