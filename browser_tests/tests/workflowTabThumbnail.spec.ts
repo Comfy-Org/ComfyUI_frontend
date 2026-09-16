@@ -1,7 +1,6 @@
 import { expect } from '@playwright/test'
 
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
-import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 
 test.describe('Workflow Tab Thumbnails', { tag: '@workflow' }, () => {
   test.beforeEach(async ({ comfyPage }) => {
@@ -9,100 +8,21 @@ test.describe('Workflow Tab Thumbnails', { tag: '@workflow' }, () => {
     await comfyPage.setup()
   })
 
-  async function getTab(comfyPage: ComfyPage, index: number) {
-    const tab = comfyPage.page
-      .locator(`.workflow-tabs .p-togglebutton`)
-      .nth(index)
-    return tab
-  }
-
-  async function getTabPopover(
-    comfyPage: ComfyPage,
-    index: number,
-    name?: string
-  ) {
-    const tab = await getTab(comfyPage, index)
-    await tab.hover()
-
-    const popover = comfyPage.page.locator('.workflow-popover-fade')
-    await expect(popover).toHaveCount(1)
-    await expect(popover).toBeVisible()
-    if (name) {
-      await expect(popover).toContainText(name)
-    }
-    return popover
-  }
-
-  async function getTabThumbnailImage(
-    comfyPage: ComfyPage,
-    index: number,
-    name?: string
-  ) {
-    const popover = await getTabPopover(comfyPage, index, name)
-    const thumbnailImg = popover.locator('.workflow-preview-thumbnail img')
-    return thumbnailImg
-  }
-
-  async function getNodeThumbnailBase64(comfyPage: ComfyPage, index: number) {
-    const thumbnailImg = await getTabThumbnailImage(comfyPage, index)
-    const src = (await thumbnailImg.getAttribute('src'))!
-
-    // Convert blob to base64, need to execute a script to get the base64
-    const base64 = await comfyPage.page.evaluate(async (src: string) => {
-      const blob = await fetch(src).then((res) => res.blob())
-      return new Promise((resolve, reject) => {
-        const reader = new FileReader()
-        reader.onloadend = () => resolve(reader.result)
-        reader.onerror = reject
-        reader.readAsDataURL(blob)
-      })
-    }, src)
-    return base64
-  }
-
   test('Should show thumbnail when hovering over a non-active tab', async ({
     comfyPage
   }) => {
     await comfyPage.menu.topbar.triggerTopbarCommand(['New'])
-    const thumbnailImg = await getTabThumbnailImage(
-      comfyPage,
-      0,
-      'Unsaved Workflow'
-    )
-    await expect(thumbnailImg).toBeVisible()
+    const popover = await comfyPage.menu.topbar.showWorkflowTabPopover(0)
+    await expect(popover.root).toContainText('Unsaved Workflow')
+    await expect(popover.thumbnail).toBeVisible()
   })
 
   test('Should not show thumbnail for active tab', async ({ comfyPage }) => {
     await comfyPage.menu.topbar.triggerTopbarCommand(['New'])
-    const thumbnailImg = await getTabThumbnailImage(
-      comfyPage,
-      1,
-      'Unsaved Workflow (2)'
-    )
-    await expect(thumbnailImg).toBeHidden()
+    const popover = await comfyPage.menu.topbar.showWorkflowTabPopover(1)
+    await expect(popover.root).toContainText('Unsaved Workflow (2)')
+    await expect(popover.thumbnail).toBeHidden()
   })
-
-  async function addNode(comfyPage: ComfyPage, category: string, node: string) {
-    const canvasArea = await comfyPage.canvas.boundingBox()
-
-    await comfyPage.page.mouse.move(
-      canvasArea!.x + canvasArea!.width / 2,
-      canvasArea!.y + canvasArea!.height / 2
-    )
-    await expect(comfyPage.page.locator('.workflow-popover-fade')).toHaveCount(
-      0
-    )
-
-    await comfyPage.canvasOps.rightClick(200, 200)
-    await comfyPage.page.getByText('Add Node').click()
-    await comfyPage.nextFrame()
-    await comfyPage.page.getByText('model', { exact: true }).click()
-    await comfyPage.nextFrame()
-    await comfyPage.page.getByText(category).click()
-    await comfyPage.nextFrame()
-    await comfyPage.page.getByText(node, { exact: true }).click()
-    await comfyPage.nextFrame()
-  }
 
   test('Thumbnail should update when switching tabs', async ({ comfyPage }) => {
     // Multiple workflow switches and thumbnail renders can exceed the default
@@ -120,43 +40,55 @@ test.describe('Workflow Tab Thumbnails', { tag: '@workflow' }, () => {
     // Tab 1 is currently active, so we can only get thumbnail for tab 0
 
     // Step 1: Different tabs should show different previews
-    const tab0ThumbnailWithNodes = await getNodeThumbnailBase64(comfyPage, 0)
+    await comfyPage.menu.topbar.showWorkflowTabPopover(0)
+    const tab0ThumbnailWithNodes =
+      await comfyPage.menu.topbar.workflowTabPopover.readThumbnailDataUrl()
 
     // Add a node to tab 1 (current active tab)
-    await addNode(comfyPage, 'loaders', 'Load Checkpoint')
+    await comfyPage.menu.topbar.workflowTabPopover.dismiss()
+    await comfyPage.nodeOps.addNode('CheckpointLoaderSimple', undefined, {
+      x: 200,
+      y: 200
+    })
     await comfyPage.nextFrame()
 
     // Switch to tab 0 so we can get tab 1's thumbnail
-    await (await getTab(comfyPage, 0)).click()
+    await comfyPage.menu.topbar.getTab(0).click()
     await comfyPage.nextFrame()
 
-    const tab1ThumbnailWithNode = await getNodeThumbnailBase64(comfyPage, 1)
+    await comfyPage.menu.topbar.showWorkflowTabPopover(1)
+    const tab1ThumbnailWithNode =
+      await comfyPage.menu.topbar.workflowTabPopover.readThumbnailDataUrl()
 
     // The thumbnails should be different
     expect(tab0ThumbnailWithNodes).not.toBe(tab1ThumbnailWithNode)
 
     // Step 2: Switching without changes shouldn't update thumbnail
-    const tab1ThumbnailBefore = await getNodeThumbnailBase64(comfyPage, 1)
+    await comfyPage.menu.topbar.showWorkflowTabPopover(1)
+    const tab1ThumbnailBefore =
+      await comfyPage.menu.topbar.workflowTabPopover.readThumbnailDataUrl()
 
     // Switch to tab 1 and back to tab 0 without making changes
-    await (await getTab(comfyPage, 1)).click()
+    await comfyPage.menu.topbar.getTab(1).click()
     await comfyPage.nextFrame()
-    await (await getTab(comfyPage, 0)).click()
+    await comfyPage.menu.topbar.getTab(0).click()
     await comfyPage.nextFrame()
 
-    const tab1ThumbnailAfter = await getNodeThumbnailBase64(comfyPage, 1)
+    await comfyPage.menu.topbar.showWorkflowTabPopover(1)
+    const tab1ThumbnailAfter =
+      await comfyPage.menu.topbar.workflowTabPopover.readThumbnailDataUrl()
     expect(tab1ThumbnailBefore).toBe(tab1ThumbnailAfter)
 
     // Step 3: Adding another node should cause thumbnail to change
-    // The nested context menu is already covered above; repeating it here made
-    // this thumbnail assertion depend on unrelated menu timing.
     await comfyPage.nodeOps.addNode('VAELoader', undefined, { x: 200, y: 200 })
     await comfyPage.nextFrame()
 
     // Switch to tab 1 and back to update tab 0's thumbnail
-    await (await getTab(comfyPage, 1)).click()
+    await comfyPage.menu.topbar.getTab(1).click()
 
-    const tab0ThumbnailAfterNewNode = await getNodeThumbnailBase64(comfyPage, 0)
+    await comfyPage.menu.topbar.showWorkflowTabPopover(0)
+    const tab0ThumbnailAfterNewNode =
+      await comfyPage.menu.topbar.workflowTabPopover.readThumbnailDataUrl()
 
     // The thumbnail should have changed after adding a node
     expect(tab0ThumbnailWithNodes).not.toBe(tab0ThumbnailAfterNewNode)

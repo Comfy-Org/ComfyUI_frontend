@@ -1,8 +1,10 @@
 import type { Locator, Page } from '@playwright/test'
+import { expect } from '@playwright/test'
 
 import type { WorkspaceStore } from '@e2e/types/globals'
 import { WorkflowTabPopover } from '@e2e/fixtures/components/WorkflowTabPopover'
 import { TestIds } from '@e2e/fixtures/selectors'
+import { nextFrame } from '@e2e/fixtures/utils/timing'
 import { VueNodeHelpers } from '@e2e/fixtures/VueNodeHelpers'
 
 export class Topbar {
@@ -71,6 +73,20 @@ export class Topbar {
 
   getTab(index: number): Locator {
     return this.page.locator('.workflow-tabs .p-togglebutton').nth(index)
+  }
+
+  async selectWorkflowTab(tabName: string) {
+    await this.getWorkflowTab(tabName).click()
+    await nextFrame(this.page)
+    await this.workflowTabPopover.dismiss()
+  }
+
+  async showWorkflowTabPopover(index: number) {
+    await this.workflowTabPopover.dismiss()
+    await this.getTab(index).hover()
+    await expect(this.workflowTabPopover.root).toHaveCount(1)
+    await expect(this.workflowTabPopover.root).toBeVisible()
+    return this.workflowTabPopover
   }
 
   getActiveTab(): Locator {

@@ -1,4 +1,3 @@
-import type { Locator } from '@playwright/test'
 import { expect } from '@playwright/test'
 import type { Position } from '@vueuse/core'
 
@@ -1193,17 +1192,6 @@ test.describe('Viewport settings', () => {
       offset: await comfyPage.canvasOps.getOffset()
     })
 
-    const changeTab = async (tab: Locator) => {
-      await tab.click()
-      await comfyPage.nextFrame()
-      await comfyMouse.move(DefaultGraphPositions.emptySpace)
-
-      // If tooltip is visible, wait for it to hide
-      await expect(
-        comfyPage.page.locator('.workflow-popover-fade')
-      ).toHaveCount(0)
-    }
-
     // Screenshot the canvas element
     await comfyPage.settings.setSetting('Comfy.Graph.CanvasMenu', true)
 
@@ -1220,18 +1208,17 @@ test.describe('Viewport settings', () => {
     await comfyPage.menu.topbar.saveWorkflowAs('Workflow B')
 
     await comfyPage.nextFrame()
-    const tabA = comfyPage.menu.topbar.getWorkflowTab('Workflow A')
-    await changeTab(tabA)
+    await comfyPage.menu.topbar.selectWorkflowTab('Workflow A')
 
     const viewportA = await getViewport()
 
-    const tabB = comfyPage.menu.topbar.getWorkflowTab('Workflow B')
-    await changeTab(tabB)
+    await comfyPage.menu.topbar.selectWorkflowTab('Workflow B')
 
     await comfyMouse.move(DefaultGraphPositions.emptySpace)
-    for (let i = 0; i < 4; i++) {
-      await comfyMouse.wheel(0, 60)
-    }
+    await comfyMouse.wheel(0, 60)
+    await comfyMouse.wheel(0, 60)
+    await comfyMouse.wheel(0, 60)
+    await comfyMouse.wheel(0, 60)
 
     await comfyPage.nextFrame()
     const viewportB = await getViewport()
@@ -1239,11 +1226,11 @@ test.describe('Viewport settings', () => {
     expect(viewportB).not.toEqual(viewportA)
 
     // Go back to Workflow A
-    await changeTab(tabA)
+    await comfyPage.menu.topbar.selectWorkflowTab('Workflow A')
     await expect.poll(getViewport).toEqual(viewportA)
 
     // And back to Workflow B
-    await changeTab(tabB)
+    await comfyPage.menu.topbar.selectWorkflowTab('Workflow B')
     await expect.poll(getViewport).toEqual(viewportB)
   })
 })
