@@ -1,6 +1,6 @@
 import { vi } from 'vitest'
 
-import { useAuthStore } from '@/stores/authStore'
+import { firebaseIdentity } from '@/platform/auth/firebaseIdentity'
 
 /**
  * Keeps the session client's construction-time port subscription off
@@ -8,7 +8,5 @@ import { useAuthStore } from '@/stores/authStore'
  * suite; hoisting keeps it there.
  */
 export function stubAccountIdentityPort() {
-  return vi
-    .spyOn(useAuthStore().identity, 'onUserChanged')
-    .mockReturnValue(() => {})
+  return vi.spyOn(firebaseIdentity, 'onUserChanged').mockReturnValue(() => {})
 }

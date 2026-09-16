@@ -58,10 +58,14 @@ describe('auth token priority chain', () => {
     vi.mocked(vuefire.useFirebaseAuth).mockReturnValue(
       mockAuth as unknown as ReturnType<typeof vuefire.useFirebaseAuth>
     )
+    const authStateObservers: Array<(user: User | null) => void> = []
+    authStateCallback = (user) =>
+      authStateObservers.forEach((observer) => observer(user))
     vi.mocked(firebaseAuth.onAuthStateChanged).mockImplementation(
       (_, callback) => {
-        authStateCallback = callback as (user: User | null) => void
-        ;(callback as (user: User | null) => void)(mockUser)
+        const observer = callback as (user: User | null) => void
+        authStateObservers.push(observer)
+        observer(mockUser)
         return vi.fn()
       }
     )

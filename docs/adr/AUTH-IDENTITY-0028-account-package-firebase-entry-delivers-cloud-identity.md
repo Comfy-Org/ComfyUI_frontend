@@ -32,11 +32,11 @@ is not a contract to build on.
 
 ## Decision
 
-1. Identity reaches the session client through the package entry bound to
-   the app's own `Auth` instance: `authStore` creates
-   `createFirebaseIdentity({ auth })` and `workspaceAuthStore` passes it to
-   `createSessionClient` at construction. No hand-rolled port exists in
-   `src/`.
+1. Identity reaches the session client through the package entry: the
+   identity module (`src/platform/auth/firebaseIdentity.ts`) creates it and
+   `workspaceAuthStore` passes it to `createSessionClient` at construction.
+   `authStore` subscribes to the same entry for its side effects and holds
+   no identity of its own. No hand-rolled port exists in `src/`.
 2. The Pinia `authStore` is a projection for app-wide side effects. It is
    not an identity authority for the session client and pushes nothing
    into it.
@@ -64,10 +64,11 @@ is not a contract to build on.
    (`src/platform/auth/firebaseIdentity.ts`) is the one entry, created from
    `getFirebaseConfig()` under the default app name (`[DEFAULT]`, the name
    persisted sessions are keyed by) with `browserLocalPersistence`. Nothing
-   else in `src/` creates a Firebase app or `Auth`; `authStore`,
-   `sessionFeatureFlagOverride` and `main.ts` read identity through that
-   module, and the app's first use of it happens after remote config has
-   loaded so the config is the server's.
+   else in `src/` creates a Firebase app or `Auth`. `main.ts` calls
+   `initialize()` after remote config has loaded, so the config is the
+   server's; the module refuses to resolve while remote config is still
+   unloaded. `currentUser()` never initializes, so a feature-flag read before
+   that point fails closed instead of booting Firebase early.
 
 The contract is pinned by the "unified identity source" test in
 `authStore.test.ts`, the identity-driven cases in `useWorkspaceAuth.test.ts`

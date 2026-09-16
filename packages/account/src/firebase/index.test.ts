@@ -168,6 +168,34 @@ describe('createFirebaseIdentity over package-initialized Firebase', () => {
     expect(sdk.getAuth).toHaveBeenCalledWith({ name: 'comfy-account' })
     expect(sdk.initializeAuth).not.toHaveBeenCalled()
   })
+
+  it('reads an options thunk only when the app first resolves, and once', async () => {
+    const options = vi.fn(() => ({ apiKey: 'from-thunk' }))
+    const { createFirebaseIdentity } = await import('./index.js')
+    const identity = createFirebaseIdentity({ options })
+
+    expect(options).not.toHaveBeenCalled()
+
+    identity.initialize()
+    identity.initialize()
+    identity.onUserChanged(() => {})
+
+    expect(options).toHaveBeenCalledOnce()
+    expect(app.initializeApp).toHaveBeenCalledWith(
+      { apiKey: 'from-thunk' },
+      'comfy-account'
+    )
+  })
+
+  it('resolves once no matter how often initialize() is called', async () => {
+    const identity = await makeIdentity()
+
+    identity.initialize()
+    identity.initialize()
+
+    expect(app.initializeApp).toHaveBeenCalledOnce()
+    expect(sdk.getAuth).toHaveBeenCalledOnce()
+  })
 })
 
 describe('createFirebaseIdentity over a host-owned Auth', () => {
@@ -440,13 +468,30 @@ describe('identity listener', () => {
     expect(sdk.unsubscribe).toHaveBeenCalledOnce()
   })
 
+  it('reports no user before Auth is resolved, without resolving it', async () => {
+    sdk.resolvedAuth.currentUser = testUser
+    const identity = await makeIdentity()
+
+    expect(
+      identity.currentUser(),
+      'a read-only query must not initialize the app: a host reads it before its config is loaded'
+    ).toBeNull()
+    expect(app.initializeApp).not.toHaveBeenCalled()
+    expect(sdk.getAuth).not.toHaveBeenCalled()
+  })
+
   it.for([
     ['nobody signed in', null],
     ['a signed-in user', testUser]
-  ] as const)('reads %s from the Auth instance', async ([, user]) => {
-    sdk.resolvedAuth.currentUser = user
-    const identity = await makeIdentity()
+  ] as const)(
+    'reads %s from the Auth instance once initialize() resolved it',
+    async ([, user]) => {
+      sdk.resolvedAuth.currentUser = user
+      const identity = await makeIdentity()
 
-    expect(identity.currentUser()).toBe(user)
-  })
+      identity.initialize()
+
+      expect(identity.currentUser()).toBe(user)
+    }
+  )
 })

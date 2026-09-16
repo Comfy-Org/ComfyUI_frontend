@@ -1,5 +1,9 @@
+import { fromPartial } from '@total-typescript/shoehorn'
+import type { Auth } from 'firebase/auth'
+import { initializeAuth } from 'firebase/auth'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { firebaseIdentity } from '@/platform/auth/firebaseIdentity'
 import { getSessionOverride } from '@/utils/sessionFeatureFlagOverride'
 
 const mockDistribution = vi.hoisted(() => ({
@@ -10,12 +14,15 @@ vi.mock(import('@/platform/distribution/types'), () => mockDistribution)
 
 type MockUser = { email: string | null; emailVerified: boolean }
 
-const mockCurrentUser = vi.hoisted(() => ({
-  value: null as MockUser | null
-}))
-vi.mock<unknown>(import('@/platform/auth/firebaseIdentity'), () => ({
-  firebaseIdentity: { currentUser: () => mockCurrentUser.value }
-}))
+const mockCurrentUser = { value: null as MockUser | null }
+vi.mock(import('firebase/app'), { spy: true })
+vi.mock(import('firebase/auth'))
+/** The Auth the identity resolves once for this file; reads the live scenario user. */
+const resolvedAuth = fromPartial<Auth>({
+  get currentUser() {
+    return mockCurrentUser.value
+  }
+})
 
 const COMFY_EMPLOYEE = { email: 'dev@comfy.org', emailVerified: true }
 const STORAGE_KEY = 'Comfy.FeatureFlagOverride'
@@ -28,6 +35,8 @@ describe('getSessionOverride', () => {
   beforeEach(() => {
     mockDistribution.isCloud = true
     mockCurrentUser.value = COMFY_EMPLOYEE
+    vi.mocked(initializeAuth).mockReturnValue(resolvedAuth)
+    firebaseIdentity.initialize()
   })
 
   it('reads a bare flag as boolean true', () => {
@@ -179,6 +188,19 @@ describe('getSessionOverride', () => {
         expect(getSessionOverride('onboarding_tour_enabled')).toBeUndefined()
       }
     )
+
+    it('withholds a stored override before Auth has resolved and does not initialize Firebase', async () => {
+      vi.resetModules()
+      const [{ getSessionOverride: readFresh }, { initializeApp }] =
+        await Promise.all([
+          import('@/utils/sessionFeatureFlagOverride'),
+          import('firebase/app')
+        ])
+      visit('/?ff=onboarding_tour_enabled')
+
+      expect(readFresh('onboarding_tour_enabled')).toBeUndefined()
+      expect(initializeApp).not.toHaveBeenCalled()
+    })
 
     it('applies the override once auth resolves mid-session', () => {
       mockCurrentUser.value = null

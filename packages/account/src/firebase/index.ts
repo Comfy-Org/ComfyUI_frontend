@@ -36,7 +36,7 @@ import { identityBrand } from '../core/identity.js'
 import { isFirebaseAuthErrorLike } from '../firebaseAuthError.js'
 
 export interface FirebaseIdentityAppConfig {
-  readonly options: FirebaseOptions
+  readonly options: FirebaseOptions | (() => FirebaseOptions)
   /** Named app: never contend with a default app another script creates. */
   readonly appName?: string
   /** Host-selected persistence; Firebase's default when omitted. */
@@ -68,6 +68,9 @@ export interface FirebaseIdentity extends AccountIdentity<User> {
   onUserChanged: (callback: (user: User | null) => void) => () => void
   /** Fires on every ID token change, refreshes included. */
   onTokenChanged: (callback: (user: User | null) => void) => () => void
+  /** Resolves the app and `Auth` now; a no-op once resolved. */
+  initialize: () => void
+  /** Null until `initialize()` or a subscribing/sign-in call has resolved `Auth`. */
   currentUser: () => User | null
   signInWithGoogle: () => Promise<UserCredential>
   signInWithGitHub: () => Promise<UserCredential>
@@ -108,29 +111,35 @@ function resolveUnknownEmailAsSent(error: unknown): void {
   throw error
 }
 
+interface AuthResolver {
+  resolve: () => Auth
+  peek: () => Auth | undefined
+}
+
 /**
- * Resolved once per identity. A named app this entry creates gets the
- * host's persistence through `initializeAuth`, which unlike `getAuth` wires
- * no popup resolver of its own, so the popup sign-ins would throw
- * `auth/argument-error` without one; an app another entry already created
- * keeps the persistence its creator chose, since Firebase allows one Auth
- * per app.
+ * A named app this entry creates gets the host's persistence through
+ * `initializeAuth`; an app another entry already created keeps the
+ * persistence its creator chose, since Firebase allows one Auth per app.
+ * Unlike `getAuth`, `initializeAuth` wires no popup resolver of its own, and
+ * popup sign-in throws `auth/argument-error` without one.
  */
-function authResolver(config: FirebaseIdentityConfig): () => Auth {
+function authResolver(config: FirebaseIdentityConfig): AuthResolver {
   if (config.auth) {
     const { auth } = config
-    return () => auth
+    return { resolve: () => auth, peek: () => auth }
   }
   const appName = config.appName ?? 'comfy-account'
   let resolved: Auth | undefined
-  return () => {
+  const resolve = (): Auth => {
     if (resolved) return resolved
     const existing = getApps().find((app) => app.name === appName)
     if (existing) {
       resolved = getAuth(existing)
       return resolved
     }
-    const app = initializeApp(config.options, appName)
+    const options =
+      typeof config.options === 'function' ? config.options() : config.options
+    const app = initializeApp(options, appName)
     resolved = config.persistence
       ? initializeAuth(app, {
           persistence: config.persistence,
@@ -139,18 +148,22 @@ function authResolver(config: FirebaseIdentityConfig): () => Auth {
       : getAuth(app)
     return resolved
   }
+  return { resolve, peek: () => resolved }
 }
 
 export function createFirebaseIdentity(
   config: FirebaseIdentityConfig
 ): FirebaseIdentity {
-  const auth = authResolver(config)
+  const { resolve: auth, peek } = authResolver(config)
 
   return {
     [identityBrand]: true,
     onUserChanged: (callback) => onAuthStateChanged(auth(), callback),
     onTokenChanged: (callback) => onIdTokenChanged(auth(), callback),
-    currentUser: () => auth().currentUser,
+    initialize: () => {
+      auth()
+    },
+    currentUser: () => peek()?.currentUser ?? null,
     signInWithGoogle: () => signInWithPopup(auth(), googleProvider()),
     signInWithGitHub: () => signInWithPopup(auth(), githubProvider()),
     signInWithEmail: (email, password) =>

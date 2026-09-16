@@ -2,7 +2,7 @@ import { FirebaseError } from 'firebase/app'
 import { AuthErrorCodes, getAdditionalUserInfo } from 'firebase/auth'
 import type { User, UserCredential } from 'firebase/auth'
 import { defineStore } from 'pinia'
-import { computed, markRaw, ref } from 'vue'
+import { computed, ref } from 'vue'
 
 import { fetchWithCustomerRecovery as fetchHealingMissingCustomer } from '@comfyorg/account/customerRecovery'
 import {
@@ -110,11 +110,7 @@ export const useAuthStore = defineStore('auth', () => {
     return shareId ? { share_id: shareId } : {}
   }
 
-  // The package's identity entry over the app's one Firebase Auth: sign-in
-  // actions here, the session client's identity source in workspaceAuthStore.
-  const identity = firebaseIdentity
-
-  identity.onUserChanged((user) => {
+  firebaseIdentity.onUserChanged((user) => {
     const previousUserId = currentUser.value?.uid ?? null
     const identityChanged =
       previousUserId !== null && previousUserId !== (user?.uid ?? null)
@@ -158,7 +154,7 @@ export const useAuthStore = defineStore('auth', () => {
   })
 
   // Listen for token refresh events
-  identity.onTokenChanged((user) => {
+  firebaseIdentity.onTokenChanged((user) => {
     if (user && isCloud) {
       // Skip initial token change
       if (lastTokenUserId.value !== user.uid) {
@@ -581,7 +577,7 @@ export const useAuthStore = defineStore('auth', () => {
     password: string
   ): Promise<UserCredential> => {
     const result = await executeAuthAction(
-      () => identity.signInWithEmail(email, password),
+      () => firebaseIdentity.signInWithEmail(email, password),
       { createCustomer: true }
     )
 
@@ -603,7 +599,7 @@ export const useAuthStore = defineStore('auth', () => {
   ): Promise<UserCredential> => {
     const result = await executeAuthAction(() =>
       signUpWithProvisioning({
-        createUser: () => identity.createUserWithEmail(email, password),
+        createUser: () => firebaseIdentity.createUserWithEmail(email, password),
         provisionCustomer: (credential) =>
           createCustomer(
             turnstileToken ? { turnstile_token: turnstileToken } : undefined,
@@ -651,7 +647,7 @@ export const useAuthStore = defineStore('auth', () => {
   }): Promise<UserCredential> => {
     const result = await executeAuthAction(() =>
       socialSignInWithProvisioning({
-        signIn: identity.signInWithGoogle,
+        signIn: firebaseIdentity.signInWithGoogle,
         provisionCustomer: (credential) =>
           provisionCustomerForSignedInUser(undefined, credential)
       })
@@ -674,7 +670,7 @@ export const useAuthStore = defineStore('auth', () => {
   }): Promise<UserCredential> => {
     const result = await executeAuthAction(() =>
       socialSignInWithProvisioning({
-        signIn: identity.signInWithGitHub,
+        signIn: firebaseIdentity.signInWithGitHub,
         provisionCustomer: (credential) =>
           provisionCustomerForSignedInUser(undefined, credential)
       })
@@ -692,17 +688,18 @@ export const useAuthStore = defineStore('auth', () => {
     return result
   }
 
-  const logout = async (): Promise<void> => executeAuthAction(identity.signOut)
+  const logout = async (): Promise<void> =>
+    executeAuthAction(firebaseIdentity.signOut)
 
   const sendPasswordReset = async (email: string): Promise<void> =>
-    executeAuthAction(() => identity.sendPasswordReset(email))
+    executeAuthAction(() => firebaseIdentity.sendPasswordReset(email))
 
   /** Update password for current user */
   const _updatePassword = async (newPassword: string): Promise<void> => {
     if (!currentUser.value) {
       throw new AuthStoreError(t('toastMessages.userNotAuthenticated'))
     }
-    await identity.updatePassword(newPassword)
+    await firebaseIdentity.updatePassword(newPassword)
   }
 
   const addCredits = async (
@@ -799,7 +796,6 @@ export const useAuthStore = defineStore('auth', () => {
     // State
     loading,
     currentUser,
-    identity: markRaw(identity),
     isInitialized,
     balance,
     lastBalanceUpdateTime,

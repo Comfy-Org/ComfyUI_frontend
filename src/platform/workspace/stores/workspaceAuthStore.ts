@@ -17,6 +17,7 @@ import {
 } from '@comfyorg/account/session'
 
 import { t } from '@/i18n'
+import { firebaseIdentity } from '@/platform/auth/firebaseIdentity'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import { useTelemetry } from '@/platform/telemetry'
 import type { UnifiedAuthRefreshOutcome } from '@/platform/telemetry/types'
@@ -875,9 +876,7 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
         })
       }
     },
-    // Firebase replays a new observer on a microtask, so authStore's setup
-    // completes before its listener can re-enter this store.
-    useAuthStore().identity
+    firebaseIdentity
   )
 
   const stopUnifiedSnapshot = unifiedSessionClient.subscribe((snapshot) => {

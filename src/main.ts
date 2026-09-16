@@ -78,7 +78,7 @@ const ComfyUIPreset = definePreset(Aura, {
 })
 
 const phaseFirebase = bootstrapTracer.startPhase('startup/firebase-init')
-firebaseIdentity.currentUser()
+firebaseIdentity.initialize()
 phaseFirebase.stop()
 
 const app = createApp(App)

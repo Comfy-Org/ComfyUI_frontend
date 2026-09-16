@@ -12,6 +12,7 @@ import { storeToRefs } from 'pinia'
 import { nextTick } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { firebaseIdentity } from '@/platform/auth/firebaseIdentity'
 import { useTelemetry } from '@/platform/telemetry'
 
 import {
@@ -151,13 +152,14 @@ beforeEach(() => {
 
 beforeEach(() => {
   portListeners.clear()
-  vi.spyOn(useAuthStore().identity, 'onUserChanged').mockImplementation(
-    (listener) => {
-      portListeners.add(listener)
-      listener(portUser(useAuthStore().currentUser))
-      return () => portListeners.delete(listener)
-    }
-  )
+  // authStore subscribes at construction; only the session client's later
+  // subscription goes through the fake port.
+  useAuthStore()
+  vi.spyOn(firebaseIdentity, 'onUserChanged').mockImplementation((listener) => {
+    portListeners.add(listener)
+    listener(portUser(useAuthStore().currentUser))
+    return () => portListeners.delete(listener)
+  })
   vi.mocked(useAuthStore().getIdToken).mockResolvedValue(undefined)
   vi.mocked(useAuthStore().notifyTokenRefreshed).mockImplementation(() => {})
   vi.mocked(
