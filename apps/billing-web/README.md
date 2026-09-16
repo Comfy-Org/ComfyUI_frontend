@@ -43,9 +43,16 @@ The app deploys to Vercel as a static SPA from
 targets self-hosted nginx for production billing traffic, so keep the build a
 plain directory of static files and express hosting behavior in ways an nginx
 rule can reproduce. `.github/workflows/ci-vercel-billing-web-preview.yaml`
-builds and deploys it: a preview per pull request that touches
-`apps/billing-web`, `packages/design-system`, or `packages/tailwind-utils`,
-and production on merge to `main`.
+builds and deploys it: a preview for a pull request carrying the
+`billing-preview` label, and production on merge to `main`.
+
+Previews are opt-in. The workflow triggers on pull requests touching
+`apps/billing-web`, `packages/design-system`, or `packages/tailwind-utils`, but
+the deploy job runs only while the `billing-preview` label is on the pull
+request. Adding the label deploys the current head; removing it stops
+subsequent deploys. The path filter keeps the workflow off unrelated pull
+requests, so the label alone will not deploy a branch that changes none of
+those paths.
 
 Vercel project settings:
 

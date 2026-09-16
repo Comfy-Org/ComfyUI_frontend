@@ -3,7 +3,7 @@ name: 'CI: Vercel Billing Web Preview'
 
 on:
   pull_request:
-    types: [opened, synchronize, reopened]
+    types: [opened, synchronize, reopened, labeled, unlabeled]
     branches-ignore:
       - 'core/**'
       - 'cloud/**'
@@ -30,7 +30,10 @@ concurrency:
 
 jobs:
   deploy-preview:
-    if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.fork == false
+    if: >
+      github.event_name == 'pull_request' &&
+      github.event.pull_request.head.repo.fork == false &&
+      contains(github.event.pull_request.labels.*.name, 'billing-preview')
     runs-on: ubuntu-latest
     permissions:
       contents: read
