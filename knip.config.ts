@@ -30,6 +30,9 @@ const config: KnipConfig = {
     'packages/account-ui': {
       project: ['src/**/*.{js,ts,vue}']
     },
+    'packages/billing-contract': {
+      project: ['src/**/*.ts']
+    },
     'packages/design-system': {
       project: ['src/**/*.{css,js,ts}']
     },
