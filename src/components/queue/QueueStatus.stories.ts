@@ -17,6 +17,7 @@ type QueueStatusArgs = {
   panelOpen?: boolean
   rows?: { job: JobView; subtitle: string }[]
   queuedCount?: number
+  results?: RecentResult[]
 }
 
 const meta: Meta<QueueStatusArgs> = {
@@ -40,6 +41,7 @@ const meta: Meta<QueueStatusArgs> = {
             v-if="args.panelOpen"
             :rows="args.rows ?? []"
             :queued-count="args.queuedCount ?? 0"
+            :results="args.results ?? []"
           />
         </div>
       </div>
@@ -75,7 +77,7 @@ export const Queued: Story = {
 }
 
 export const Running: Story = {
-  args: { label: 'Processing', progress: 64 }
+  args: { label: 'Running', progress: 64 }
 }
 
 export const RunningWithQueue: Story = {
@@ -83,17 +85,7 @@ export const RunningWithQueue: Story = {
 }
 
 export const ParallelCollapsed: Story = {
-  args: { label: 'Processing (2)', badge: 'Queued 2', stack: 2 }
-}
-
-export const ParallelFannedOut: Story = {
-  args: {
-    label: 'Processing (2)',
-    badge: 'Queued 2',
-    panelOpen: true,
-    rows: [...running, ...queued],
-    queuedCount: 2
-  }
+  args: { label: 'Running 2', badge: 'Queued 2', stack: 2 }
 }
 
 export const Completed: Story = {
@@ -123,7 +115,7 @@ const recentResults: RecentResult[] = [
     id: 'r1',
     job: historyJob('r1', 'Flux portrait'),
     name: 'Flux portrait',
-    meta: 'Completed · Today',
+    meta: 'Completed · 2:43 PM',
     thumbSrc: thumbnail('4dabf7'),
     isVideo: false
   },
@@ -131,7 +123,7 @@ const recentResults: RecentResult[] = [
     id: 'r2',
     job: historyJob('r2', 'Video draft'),
     name: 'Video draft',
-    meta: 'Completed · Today',
+    meta: 'Completed · 2:43 PM',
     thumbSrc: thumbnail('9775fa'),
     isVideo: true
   },
@@ -139,10 +131,21 @@ const recentResults: RecentResult[] = [
     id: 'r3',
     job: historyJob('r3', 'Inpaint test'),
     name: 'Inpaint test',
-    meta: 'Completed · Today',
+    meta: 'Completed · 2:43 PM',
     isVideo: false
   }
 ]
+
+export const ParallelFannedOut: Story = {
+  args: {
+    label: 'Running 2',
+    badge: 'Queued 2',
+    panelOpen: true,
+    rows: [...running, ...queued],
+    queuedCount: 2,
+    results: recentResults
+  }
+}
 
 type IdleArgs = { label: string; results: RecentResult[]; open: boolean }
 
