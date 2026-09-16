@@ -656,8 +656,20 @@ export function useSubscriptionCheckout(
       !isSubscriptionCancelled() &&
       !previewRequiresReactivation(freshPreview)
     ) {
+      // No installed quote means no amount the user has already seen; drop the
+      // `!!` and the empty-preview case this branch exists for compares a real
+      // amount against `undefined` and blocks again.
+      const amountChanged =
+        !!previewData.value &&
+        freshPreview.cost_today_cents !== previewData.value.cost_today_cents
       installPreview(freshPreview)
-      return false
+      if (!amountChanged) return false
+      toast.add({
+        severity: 'error',
+        summary: t('g.error'),
+        detail: t('subscription.preview.reactivation.amountChanged')
+      })
+      return true
     }
     reactivationRequired.value = false
     resetToPricing()

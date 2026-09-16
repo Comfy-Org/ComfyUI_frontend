@@ -1084,6 +1084,7 @@ describe('useSubscriptionCheckout', () => {
         transition_type: 'upgrade',
         is_immediate: true,
         requires_reactivation_confirmation: true,
+        cost_today_cents: 1600,
         current_plan: { period_end: '2026-08-29T00:00:00Z' }
       })
       const checkout = await setup()
@@ -1097,7 +1098,8 @@ describe('useSubscriptionCheckout', () => {
         allowed: true,
         transition_type: 'new_subscription',
         is_immediate: true,
-        requires_reactivation_confirmation: false
+        requires_reactivation_confirmation: false,
+        cost_today_cents: 1600
       }
       mockPreviewSubscribe.mockResolvedValueOnce(refreshedPreview)
 
@@ -1106,6 +1108,43 @@ describe('useSubscriptionCheckout', () => {
       expect(checkout.previewData.value).toStrictEqual(refreshedPreview)
       expect(checkout.checkoutStep.value).not.toBe('pricing')
       expect(mockSubscribe).toHaveBeenCalled()
+    })
+
+    it('returns to confirmation when the refreshed quote charges a different amount', async () => {
+      mockSubscription.value = null
+      mockPreviewSubscribe.mockResolvedValueOnce({
+        allowed: true,
+        transition_type: 'upgrade',
+        is_immediate: true,
+        requires_reactivation_confirmation: true,
+        cost_today_cents: 1600,
+        current_plan: { period_end: '2026-08-29T00:00:00Z' }
+      })
+      const checkout = await setup()
+
+      await checkout.handleSubscribeClick({
+        tierKey: 'standard',
+        billingCycle: 'yearly'
+      })
+
+      const refreshedPreview = {
+        allowed: true,
+        transition_type: 'new_subscription',
+        is_immediate: true,
+        requires_reactivation_confirmation: false,
+        cost_today_cents: 2400
+      }
+      mockPreviewSubscribe.mockResolvedValueOnce(refreshedPreview)
+      mockToastAdd.mockClear()
+
+      await checkout.handleConfirmTransition()
+
+      expect(mockSubscribe).not.toHaveBeenCalled()
+      expect(checkout.previewData.value).toStrictEqual(refreshedPreview)
+      expect(checkout.checkoutStep.value).not.toBe('pricing')
+      expect(mockToastAdd).toHaveBeenCalledWith(
+        expect.objectContaining({ detail: 'Reactivation amount changed' })
+      )
     })
 
     it('subscribes after a failed plan-picker preview leaves no preview installed', async () => {
