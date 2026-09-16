@@ -1,6 +1,11 @@
 import { render, screen } from '@testing-library/vue'
 import { beforeEach, describe, expect, test, vi } from 'vitest'
+import { computed, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
+
+import { useAuthActions } from '@/composables/auth/useAuthActions'
+import { useBillingContext } from '@/composables/billing/useBillingContext'
+import type { TeamCreditStops } from '@/platform/workspace/api/workspaceApi'
 
 import CloudSubscriptionRedirectView from './CloudSubscriptionRedirectView.vue'
 
@@ -10,7 +15,7 @@ const flushPromises = () => new Promise((resolve) => setTimeout(resolve, 0))
 let mockQuery: Record<string, unknown> = {}
 const mockRouterPush = vi.fn()
 
-vi.mock('vue-router', () => ({
+vi.mock<unknown>(import('vue-router'), () => ({
   useRoute: () => ({
     query: mockQuery
   }),
@@ -20,16 +25,9 @@ vi.mock('vue-router', () => ({
 }))
 
 // Firebase / subscription mocks
-const authActionMocks = vi.hoisted(() => ({
-  reportError: vi.fn(),
-  accessBillingPortal: vi.fn()
-}))
+vi.mock(import('@/composables/auth/useAuthActions'))
 
-vi.mock('@/composables/auth/useAuthActions', () => ({
-  useAuthActions: () => authActionMocks
-}))
-
-vi.mock('@/composables/useErrorHandling', () => ({
+vi.mock<unknown>(import('@/composables/useErrorHandling'), () => ({
   useErrorHandling: () => ({
     wrapWithErrorHandlingAsync:
       <T extends (...args: never[]) => unknown>(fn: T) =>
@@ -38,35 +36,61 @@ vi.mock('@/composables/useErrorHandling', () => ({
   })
 }))
 
-const subscriptionMocks = vi.hoisted(() => ({
-  canAccessSubscriptionFeatures: { value: false },
-  isInitialized: { value: true },
-  subscriptionStatus: { value: null }
-}))
+vi.mock(import('@/composables/billing/useBillingContext'))
 
-vi.mock('@/platform/cloud/subscription/composables/useSubscription', () => ({
-  useSubscription: () => subscriptionMocks
-}))
-
-vi.mock('@/composables/billing/useBillingContext', () => ({
-  useBillingContext: () => subscriptionMocks
-}))
-
-// Avoid real network / isCloud behavior
-const mockPerformSubscriptionCheckout = vi.fn()
-vi.mock('@/platform/cloud/subscription/utils/subscriptionCheckoutUtil', () => ({
-  performSubscriptionCheckout: (...args: unknown[]) =>
-    mockPerformSubscriptionCheckout(...args)
-}))
-
-const mockPerformTeamSubscriptionCheckout = vi.fn()
-vi.mock(
-  '@/platform/cloud/subscription/utils/teamSubscriptionCheckoutUtil',
+const mockShowPricingTable = vi.hoisted(() => vi.fn())
+vi.mock<unknown>(
+  import('@/platform/cloud/subscription/composables/useSubscriptionDialog'),
   () => ({
-    performTeamSubscriptionCheckout: (...args: unknown[]) =>
-      mockPerformTeamSubscriptionCheckout(...args)
+    useSubscriptionDialog: () => ({ showPricingTable: mockShowPricingTable })
   })
 )
+
+const legacyCheckoutMocks = vi.hoisted(() => ({
+  performSubscriptionCheckout: vi.fn(),
+  performTeamSubscriptionCheckout: vi.fn()
+}))
+
+vi.mock(
+  import('@/platform/cloud/subscription/utils/subscriptionCheckoutUtil'),
+  () => ({
+    performSubscriptionCheckout: legacyCheckoutMocks.performSubscriptionCheckout
+  })
+)
+
+vi.mock(
+  import('@/platform/cloud/subscription/utils/teamSubscriptionCheckoutUtil'),
+  () => ({
+    performTeamSubscriptionCheckout:
+      legacyCheckoutMocks.performTeamSubscriptionCheckout
+  })
+)
+
+const TEAM_CREDIT_STOPS = {
+  default_stop_index: 0,
+  stops: [
+    {
+      id: 'team_700',
+      credits: 147700,
+      monthly: { list_price_cents: 70000, price_cents: 69000 },
+      yearly: { list_price_cents: 70000, price_cents: 63000 }
+    }
+  ]
+} satisfies TeamCreditStops
+
+function installBillingContextFixture() {
+  const billing = useBillingContext()
+  const canAccessSubscriptionFeatures = ref(false)
+  const teamCreditStops = ref<TeamCreditStops | null>(TEAM_CREDIT_STOPS)
+  Object.assign(billing, {
+    isInitialized: ref(true),
+    canAccessSubscriptionFeatures: computed(
+      () => canAccessSubscriptionFeatures.value
+    ),
+    teamCreditStops: computed(() => teamCreditStops.value)
+  })
+  vi.mocked(useBillingContext).mockReturnValue(billing)
+}
 
 const createI18nInstance = () =>
   createI18n({
@@ -86,7 +110,8 @@ const createI18nInstance = () =>
           tiers: {
             standard: { name: 'Standard' },
             creator: { name: 'Creator' },
-            pro: { name: 'Pro' }
+            pro: { name: 'Pro' },
+            founder: { name: 'Founder' }
           }
         }
       }
@@ -110,8 +135,7 @@ const mountView = async (query: Record<string, unknown>) => {
 describe('CloudSubscriptionRedirectView', () => {
   beforeEach(() => {
     mockQuery = {}
-    subscriptionMocks.canAccessSubscriptionFeatures.value = false
-    subscriptionMocks.isInitialized.value = true
+    installBillingContextFixture()
   })
 
   test('redirects to home when subscriptionType is missing', async () => {
@@ -135,15 +159,18 @@ describe('CloudSubscriptionRedirectView', () => {
     // Shows copy under logo
     expect(screen.getByText('Subscribe to Creator')).toBeInTheDocument()
 
-    // Triggers checkout flow
-    expect(mockPerformSubscriptionCheckout).toHaveBeenCalledWith(
-      'creator',
-      'monthly',
-      {
-        openInNewTab: false,
-        paymentIntentSource: 'deep_link'
+    expect(mockShowPricingTable).toHaveBeenCalledWith({
+      reason: 'deep_link',
+      planMode: 'personal',
+      initialCheckout: {
+        planMode: 'personal',
+        tierKey: 'creator',
+        billingCycle: 'monthly'
       }
-    )
+    })
+    expect(
+      legacyCheckoutMocks.performSubscriptionCheckout
+    ).not.toHaveBeenCalled()
 
     // Shows loading affordances
     expect(
@@ -152,13 +179,16 @@ describe('CloudSubscriptionRedirectView', () => {
   })
 
   test('opens billing portal when subscription is already active', async () => {
-    subscriptionMocks.canAccessSubscriptionFeatures.value = true
+    Object.assign(useBillingContext(), {
+      canAccessSubscriptionFeatures: computed(() => true)
+    })
 
     await mountView({ tier: 'creator' })
 
     expect(mockRouterPush).not.toHaveBeenCalledWith('/')
-    expect(authActionMocks.accessBillingPortal).toHaveBeenCalledTimes(1)
-    expect(mockPerformSubscriptionCheckout).not.toHaveBeenCalled()
+    expect(useBillingContext().manageSubscription).toHaveBeenCalledTimes(1)
+    expect(useAuthActions().accessBillingPortal).not.toHaveBeenCalled()
+    expect(mockShowPricingTable).not.toHaveBeenCalled()
   })
 
   test('uses first value when subscriptionType is an array', async () => {
@@ -168,13 +198,10 @@ describe('CloudSubscriptionRedirectView', () => {
 
     expect(mockRouterPush).not.toHaveBeenCalledWith('/')
     expect(screen.getByText('Subscribe to Creator')).toBeInTheDocument()
-    expect(mockPerformSubscriptionCheckout).toHaveBeenCalledWith(
-      'creator',
-      'monthly',
-      {
-        openInNewTab: false,
-        paymentIntentSource: 'deep_link'
-      }
+    expect(mockShowPricingTable).toHaveBeenCalledWith(
+      expect.objectContaining({
+        initialCheckout: expect.objectContaining({ tierKey: 'creator' })
+      })
     )
   })
 
@@ -183,19 +210,99 @@ describe('CloudSubscriptionRedirectView', () => {
 
     expect(mockRouterPush).not.toHaveBeenCalledWith('/')
     expect(screen.getByText('Subscribe to Team Plan')).toBeInTheDocument()
-    expect(mockPerformTeamSubscriptionCheckout).toHaveBeenCalledWith(
-      'team_700',
-      'yearly',
-      { paymentIntentSource: 'deep_link' }
-    )
-    // Team never goes through the personal checkout path
-    expect(mockPerformSubscriptionCheckout).not.toHaveBeenCalled()
+    expect(mockShowPricingTable).toHaveBeenCalledWith({
+      reason: 'deep_link',
+      planMode: 'team',
+      initialCheckout: {
+        planMode: 'team',
+        stop: {
+          id: 'team_700',
+          credits: 147700,
+          usd: 700,
+          discountedUsd: 630
+        },
+        billingCycle: 'yearly'
+      }
+    })
+    expect(
+      legacyCheckoutMocks.performTeamSubscriptionCheckout
+    ).not.toHaveBeenCalled()
+  })
+
+  test('opens the generic team pricing table when plan loading fails', async () => {
+    Object.assign(useBillingContext(), {
+      teamCreditStops: computed(() => null)
+    })
+    const plansError = new Error('plans down')
+    vi.mocked(useBillingContext().fetchPlans).mockRejectedValue(plansError)
+
+    await mountView({ tier: 'team', stop: 'team_700', cycle: 'yearly' })
+
+    expect(useAuthActions().reportError).toHaveBeenCalledWith(plansError)
+    expect(mockShowPricingTable).toHaveBeenCalledWith({
+      reason: 'deep_link',
+      planMode: 'team',
+      initialCheckout: undefined
+    })
+    expect(mockRouterPush).not.toHaveBeenCalled()
+    expect(
+      legacyCheckoutMocks.performTeamSubscriptionCheckout
+    ).not.toHaveBeenCalled()
+  })
+
+  test('removes the pre-Vue splash loader on mount', async () => {
+    const splashLoader = document.createElement('div')
+    splashLoader.id = 'splash-loader'
+    document.body.append(splashLoader)
+
+    await mountView({ tier: 'creator' })
+
+    expect(splashLoader).not.toBeInTheDocument()
   })
 
   test('redirects to home for a team link with no stop', async () => {
     await mountView({ tier: 'team', cycle: 'yearly' })
 
     expect(mockRouterPush).toHaveBeenCalledWith('/')
-    expect(mockPerformTeamSubscriptionCheckout).not.toHaveBeenCalled()
+    expect(mockShowPricingTable).not.toHaveBeenCalled()
+  })
+
+  test('routes a personal tier in an active Team workspace to workspace subscription management', async () => {
+    Object.assign(useBillingContext(), {
+      canAccessSubscriptionFeatures: computed(() => true)
+    })
+
+    await mountView({ tier: 'creator', cycle: 'yearly' })
+
+    expect(useBillingContext().manageSubscription).toHaveBeenCalledTimes(1)
+    expect(useAuthActions().accessBillingPortal).not.toHaveBeenCalled()
+    expect(
+      legacyCheckoutMocks.performSubscriptionCheckout
+    ).not.toHaveBeenCalled()
+    expect(mockShowPricingTable).not.toHaveBeenCalled()
+  })
+
+  test('routes an active founder subscription to facade management', async () => {
+    Object.assign(useBillingContext(), {
+      canAccessSubscriptionFeatures: computed(() => true)
+    })
+
+    await mountView({ tier: 'founder' })
+
+    expect(useBillingContext().manageSubscription).toHaveBeenCalledTimes(1)
+    expect(mockRouterPush).not.toHaveBeenCalled()
+    expect(mockShowPricingTable).not.toHaveBeenCalled()
+  })
+
+  test('opens personal pricing without unsupported direct checkout for an inactive founder link', async () => {
+    await mountView({ tier: 'founder' })
+
+    expect(mockShowPricingTable).toHaveBeenCalledWith({
+      reason: 'deep_link',
+      planMode: 'personal'
+    })
+    expect(
+      legacyCheckoutMocks.performSubscriptionCheckout
+    ).not.toHaveBeenCalled()
   })
 })

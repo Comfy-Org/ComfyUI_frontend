@@ -1,13 +1,16 @@
 import { onMounted, ref } from 'vue'
 
-import { BANNER_DISMISS_ATTR, BANNER_STORAGE_KEY } from '../utils/banner'
-
-type ClosedBanners = Record<string, boolean>
+import type { ClosedBanners } from '../utils/banner'
+import {
+  BANNER_DISMISS_ATTR,
+  BANNER_STORAGE_KEY,
+  toClosedBanners
+} from '../utils/banner'
 
 function readClosedBanners(): ClosedBanners {
   try {
     const raw = localStorage.getItem(BANNER_STORAGE_KEY)
-    return raw ? (JSON.parse(raw) as ClosedBanners) : {}
+    return raw ? toClosedBanners(JSON.parse(raw)) : {}
   } catch {
     return {}
   }

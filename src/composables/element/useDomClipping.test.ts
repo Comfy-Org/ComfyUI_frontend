@@ -10,17 +10,14 @@ function createMockElement(rect: {
   height: number
 }): HTMLElement {
   return fromPartial<HTMLElement>({
-    getBoundingClientRect: vi.fn(
-      () =>
-        ({
-          ...rect,
-          x: rect.left,
-          y: rect.top,
-          right: rect.left + rect.width,
-          bottom: rect.top + rect.height,
-          toJSON: () => ({})
-        }) as DOMRect
-    )
+    getBoundingClientRect: vi.fn(() => ({
+      ...rect,
+      x: rect.left,
+      y: rect.top,
+      right: rect.left + rect.width,
+      bottom: rect.top + rect.height,
+      toJSON: () => ({})
+    }))
   })
 }
 
@@ -31,17 +28,14 @@ function createMockCanvas(rect: {
   height: number
 }): HTMLCanvasElement {
   return fromPartial<HTMLCanvasElement>({
-    getBoundingClientRect: vi.fn(
-      () =>
-        ({
-          ...rect,
-          x: rect.left,
-          y: rect.top,
-          right: rect.left + rect.width,
-          bottom: rect.top + rect.height,
-          toJSON: () => ({})
-        }) as DOMRect
-    )
+    getBoundingClientRect: vi.fn(() => ({
+      ...rect,
+      x: rect.left,
+      y: rect.top,
+      right: rect.left + rect.width,
+      bottom: rect.top + rect.height,
+      toJSON: () => ({})
+    }))
   })
 }
 

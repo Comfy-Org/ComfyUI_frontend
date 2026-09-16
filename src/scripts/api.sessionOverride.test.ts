@@ -1,18 +1,22 @@
+import { fromPartial } from '@total-typescript/shoehorn'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { api } from '@/scripts/api'
+import type { useCurrentUser } from 'vuefire'
 
 const mockDistribution = vi.hoisted(() => ({
   isCloud: true,
   isNightly: false
 }))
-vi.mock('@/platform/distribution/types', () => mockDistribution)
+vi.mock(import('@/platform/distribution/types'), () => mockDistribution)
 
 const mockCurrentUser = vi.hoisted(() => ({
   value: null as { email: string | null; emailVerified: boolean } | null
 }))
-vi.mock('vuefire', () => ({
-  useCurrentUser: vi.fn(() => mockCurrentUser)
+vi.mock(import('vuefire'), () => ({
+  useCurrentUser: vi.fn(() =>
+    fromPartial<ReturnType<typeof useCurrentUser>>(mockCurrentUser)
+  )
 }))
 
 /**
@@ -34,7 +38,6 @@ describe('api.getServerFeature session override outside component setup', () => 
 
   afterEach(() => {
     api.serverFeatureFlags.value = {}
-    vi.restoreAllMocks()
   })
 
   it('applies a numeric override to a flag that never routes through resolveFlag', () => {

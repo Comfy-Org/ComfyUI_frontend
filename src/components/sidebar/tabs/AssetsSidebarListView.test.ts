@@ -1,25 +1,20 @@
-import { fromPartial } from '@total-typescript/shoehorn'
-
 import { render, fireEvent } from '@testing-library/vue'
-import { defineComponent } from 'vue'
+import { fromPartial } from '@total-typescript/shoehorn'
 import { describe, expect, it, vi } from 'vitest'
+import { defineComponent } from 'vue'
+import { createI18n } from 'vue-i18n'
 
+import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import type { OutputStackListItem } from '@/platform/assets/composables/useOutputStacks'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 
 import AssetsSidebarListView from './AssetsSidebarListView.vue'
 
-vi.mock('vue-i18n', () => ({
-  useI18n: () => ({
-    t: (key: string) => key
-  })
-}))
-
-vi.mock('@/stores/assetsStore', () => ({
-  useAssetsStore: () => ({
-    isAssetDeleting: () => false
-  })
-}))
+const i18n = createI18n({
+  legacy: false,
+  locale: 'en',
+  messages: { en: enMessages }
+})
 
 const VirtualGridStub = defineComponent({
   name: 'VirtualGrid',
@@ -85,6 +80,7 @@ function renderListView(
       ...props
     },
     global: {
+      plugins: [i18n],
       stubs: {
         VirtualGrid: VirtualGridStub,
         AssetsListItem: AssetsListItemStub
@@ -108,10 +104,10 @@ describe('AssetsSidebarListView', () => {
     const assetListItem = stubs[stubs.length - 1]
 
     expect(assetListItem).toBeDefined()
-    expect(assetListItem?.getAttribute('data-preview-url')).toBe(
+    expect(assetListItem.getAttribute('data-preview-url')).toBe(
       '/api/view/clip.mp4'
     )
-    expect(assetListItem?.getAttribute('data-is-video-preview')).toBe('true')
+    expect(assetListItem.getAttribute('data-is-video-preview')).toBe('true')
   })
 
   it('uses icon fallback for text assets even when preview_url exists', () => {
@@ -128,8 +124,8 @@ describe('AssetsSidebarListView', () => {
     const assetListItem = stubs[stubs.length - 1]
 
     expect(assetListItem).toBeDefined()
-    expect(assetListItem?.getAttribute('data-preview-url')).toBe('')
-    expect(assetListItem?.getAttribute('data-is-video-preview')).toBe('false')
+    expect(assetListItem.getAttribute('data-preview-url')).toBe('')
+    expect(assetListItem.getAttribute('data-is-video-preview')).toBe('false')
   })
 
   it('emits preview-asset when item preview is clicked', async () => {

@@ -1,51 +1,42 @@
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { nextTick } from 'vue'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type * as PartnerNodePolicyApi from '@/platform/workspace/api/partnerNodePolicyApi'
 import type {
   PartnerNodePolicy,
   PartnerProvider
 } from '@/platform/workspace/api/partnerNodePolicyApi'
-import { PartnerNodePolicyApiError } from '@/platform/workspace/api/partnerNodePolicyApi'
 import { usePartnerNodeGovernanceStore } from '@/platform/workspace/stores/partnerNodeGovernanceStore'
-
-const mockTeamWorkspaceStore = vi.hoisted(() => ({
-  store: null as null | {
-    activeWorkspace: null | { id: string; type: 'personal' | 'team' }
-  }
-}))
-
-vi.mock('@/platform/workspace/stores/teamWorkspaceStore', async () => {
-  const { reactive } = await import('vue')
-  mockTeamWorkspaceStore.store = reactive({ activeWorkspace: null })
-  return {
-    useTeamWorkspaceStore: () => mockTeamWorkspaceStore.store
-  }
-})
 
 const mockGetPartnerNodePolicy = vi.hoisted(() => vi.fn())
 const mockGetPartnerProviders = vi.hoisted(() => vi.fn())
 const mockUpdatePartnerNodePolicy = vi.hoisted(() => vi.fn())
+const PartnerNodePolicyApiError = vi.hoisted(
+  () =>
+    class PartnerNodePolicyApiError extends Error {
+      constructor(
+        public readonly status: number,
+        message: string
+      ) {
+        super(message)
+        this.name = 'PartnerNodePolicyApiError'
+      }
+    }
+)
 const mockFlags = vi.hoisted(() => ({
   partnerNodeGovernanceEnabled: true
 }))
 
-vi.mock('@/composables/useFeatureFlags', () => ({
+vi.mock<unknown>(import('@/composables/useFeatureFlags'), () => ({
   useFeatureFlags: () => ({ flags: mockFlags })
 }))
 
-vi.mock(
-  '@/platform/workspace/api/partnerNodePolicyApi',
-  async (importOriginal) => {
-    const actual = await importOriginal<typeof PartnerNodePolicyApi>()
-    return {
-      ...actual,
-      getPartnerNodePolicy: mockGetPartnerNodePolicy,
-      getPartnerProviders: mockGetPartnerProviders,
-      updatePartnerNodePolicy: mockUpdatePartnerNodePolicy
-    }
-  }
-)
+vi.mock(import('@/platform/workspace/api/partnerNodePolicyApi'), () => ({
+  getPartnerNodePolicy: mockGetPartnerNodePolicy,
+  getPartnerProviders: mockGetPartnerProviders,
+  PartnerNodePolicyApiError,
+  updatePartnerNodePolicy: mockUpdatePartnerNodePolicy
+}))
 
 const providers: PartnerProvider[] = [
   {
@@ -61,9 +52,7 @@ const providers: PartnerProvider[] = [
 ]
 
 function activateWorkspace(id: string, type: 'personal' | 'team' = 'team') {
-  if (!mockTeamWorkspaceStore.store)
-    throw new Error('Workspace store not ready')
-  mockTeamWorkspaceStore.store.activeWorkspace = { id, type }
+  Object.assign(useTeamWorkspaceStore(), { activeWorkspace: { id, type } })
 }
 
 async function createLoadedStore() {
@@ -224,7 +213,7 @@ describe('partnerNodeGovernanceStore', () => {
     expect(store.policy).toBeNull()
   })
 
-  it('rejects an overlapping save after a same-workspace reload', async () => {
+  it('ignores an overlapping save after a same-workspace reload', async () => {
     let resolveSave!: (policy: PartnerNodePolicy) => void
     mockUpdatePartnerNodePolicy
       .mockReturnValueOnce(
@@ -250,7 +239,9 @@ describe('partnerNodeGovernanceStore', () => {
     await store.loadPolicy()
 
     expect(store.isSaving).toBe(true)
-    await expect(store.setProviderEnabled('openai', false)).rejects.toThrow(
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
+    await store.setProviderEnabled('openai', false)
+    expect(consoleError).toHaveBeenCalledWith(
       'Provider policy save already in progress'
     )
     const saveCallCount = mockUpdatePartnerNodePolicy.mock.calls.length
@@ -263,7 +254,7 @@ describe('partnerNodeGovernanceStore', () => {
     expect(store.isSaving).toBe(false)
   })
 
-  it('rejects an overlapping save after switching away and back', async () => {
+  it('ignores an overlapping save after switching away and back', async () => {
     let resolveSave!: (policy: PartnerNodePolicy) => void
     const acceptedPolicy: PartnerNodePolicy = {
       enforcementEnabled: true,
@@ -288,7 +279,9 @@ describe('partnerNodeGovernanceStore', () => {
     await vi.waitFor(() => expect(store?.status).toBe('unconfigured'))
 
     expect(store.isSaving).toBe(true)
-    await expect(store.setProviderEnabled('openai', false)).rejects.toThrow(
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
+    await store.setProviderEnabled('openai', false)
+    expect(consoleError).toHaveBeenCalledWith(
       'Provider policy save already in progress'
     )
     expect(mockUpdatePartnerNodePolicy).toHaveBeenCalledOnce()

@@ -1,6 +1,12 @@
 <template>
   <div v-if="renderError" class="node-error p-1 text-xs text-red-500">⚠️</div>
-  <div v-else v-tooltip.right="tooltipConfig" :class="slotWrapperClass">
+  <div
+    v-else
+    v-tooltip.right="tooltipConfig"
+    :class="slotWrapperClass"
+    @pointerenter="revealLinks"
+    @pointerleave="unrevealLinks"
+  >
     <div class="relative flex h-full min-w-0 items-center">
       <!-- Slot Name -->
       <span
@@ -16,7 +22,7 @@
     </div>
     <!-- Connection Dot -->
     <SlotConnectionDot
-      ref="connectionDotRef"
+      :slot-key
       class="w-3 translate-x-1/2"
       :slot-data
       @pointerdown="onPointerDown"
@@ -25,8 +31,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onErrorCaptured, ref, watchEffect } from 'vue'
-import type { ComponentPublicInstance } from 'vue'
+import { computed, onErrorCaptured, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { useErrorHandling } from '@/composables/useErrorHandling'
@@ -35,8 +40,8 @@ import { RenderShape } from '@/lib/litegraph/src/types/globalEnums'
 import { useSlotLinkDragUIState } from '@/renderer/core/canvas/links/slotLinkDragUIState'
 import { getSlotKey } from '@/renderer/core/layout/slots/slotIdentifier'
 import { useNodeTooltips } from '@/renderer/extensions/vueNodes/composables/useNodeTooltips'
-import { useSlotElementTracking } from '@/renderer/extensions/vueNodes/composables/useSlotElementTracking'
 import { useSlotLinkInteraction } from '@/renderer/extensions/vueNodes/composables/useSlotLinkInteraction'
+import { useSlotLinkReveal } from '@/renderer/extensions/vueNodes/composables/useSlotLinkReveal'
 import { cn } from '@comfyorg/tailwind-utils'
 import type { NodeId } from '@/types/nodeId'
 
@@ -60,7 +65,6 @@ const hasNoLabel = computed(
   () => !props.slotData.localized_name && props.slotData.name === ''
 )
 const dotOnly = computed(() => props.dotOnly || hasNoLabel.value)
-
 // Error boundary implementation
 const renderError = ref<string | null>(null)
 
@@ -81,7 +85,14 @@ const tooltipConfig = computed(() => {
   return createTooltipConfig(fallbackText + iterativeSuffix)
 })
 
+const { revealLinks, unrevealLinks } = useSlotLinkReveal({
+  nodeId: props.nodeId,
+  index: props.index,
+  type: 'output'
+})
+
 onErrorCaptured((error) => {
+  unrevealLinks()
   renderError.value = error.message
   toastErrorHandler(error)
   return false
@@ -89,11 +100,11 @@ onErrorCaptured((error) => {
 
 const { state: dragState } = useSlotLinkDragUIState()
 const slotKey = computed(() =>
-  props.nodeId ? getSlotKey(props.nodeId, props.index, false) : ''
+  props.nodeId ? getSlotKey(props.nodeId, props.index, false) : undefined
 )
 const shouldDim = computed(() => {
   if (!dragState.active) return false
-  return !dragState.compatible.get(slotKey.value)
+  return !slotKey.value || !dragState.compatible.get(slotKey.value)
 })
 
 const slotWrapperClass = computed(() =>
@@ -108,25 +119,6 @@ const slotWrapperClass = computed(() =>
     }
   )
 )
-
-const connectionDotRef = ref<ComponentPublicInstance<{
-  slotElRef: HTMLElement | undefined
-}> | null>(null)
-const slotElRef = ref<HTMLElement | null>(null)
-
-// Watch for when the child component's ref becomes available
-// Vue automatically unwraps the Ref when exposing it
-watchEffect(() => {
-  const el = connectionDotRef.value?.slotElRef
-  slotElRef.value = el || null
-})
-
-useSlotElementTracking({
-  nodeId: props.nodeId,
-  index: props.index,
-  type: 'output',
-  element: slotElRef
-})
 
 const { onPointerDown } = useSlotLinkInteraction({
   nodeId: props.nodeId,

@@ -1,39 +1,16 @@
-import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { reactive } from 'vue'
+import { render, screen } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
-import type { useToolManager } from '@/composables/maskeditor/useToolManager'
-
 import ToolPanel from '@/components/maskeditor/ToolPanel.vue'
+import type { useToolManager } from '@/composables/maskeditor/useToolManager'
 import { Tools, allTools } from '@/extensions/core/maskeditor/types'
+import { useMaskEditorStore } from '@/stores/maskEditorStore'
 
 type ToolManager = ReturnType<typeof useToolManager>
 
-vi.mock('@/extensions/core/maskeditor/constants', () => ({
-  iconsHtml: {
-    pen: '<svg data-testid="icon-pen" />',
-    rgbPaint: '<svg data-testid="icon-rgbPaint" />',
-    eraser: '<svg data-testid="icon-eraser" />',
-    paintBucket: '<svg data-testid="icon-paintBucket" />',
-    colorSelect: '<svg data-testid="icon-colorSelect" />'
-  }
-}))
-
-const initialMock = () =>
-  reactive({
-    currentTool: Tools.MaskPen as Tools,
-    displayZoomRatio: 1,
-    image: null as { width: number; height: number } | null,
-    resetZoom: vi.fn()
-  })
-
-let mockStore: ReturnType<typeof initialMock>
-
-vi.mock('@/stores/maskEditorStore', () => ({
-  useMaskEditorStore: () => mockStore
-}))
+let mockStore: ReturnType<typeof useMaskEditorStore>
 
 const i18n = createI18n({
   legacy: false,
@@ -66,7 +43,12 @@ const getToolButton = (tool: Tools): HTMLElement => {
 
 describe('ToolPanel', () => {
   beforeEach(() => {
-    mockStore = initialMock()
+    mockStore = useMaskEditorStore()
+    mockStore.$patch({
+      currentTool: Tools.MaskPen,
+      displayZoomRatio: 1,
+      image: null
+    })
   })
 
   describe('tool list rendering', () => {
@@ -75,7 +57,7 @@ describe('ToolPanel', () => {
       expect(screen.getAllByTestId('tool-button')).toHaveLength(allTools.length)
     })
 
-    it('should render the icon HTML for each tool', () => {
+    it('should render an SVG icon for each tool', () => {
       renderPanel()
       for (const tool of allTools) {
         expect(screen.getByTestId(`icon-${tool}`)).toBeInTheDocument()
@@ -129,7 +111,7 @@ describe('ToolPanel', () => {
     })
 
     it('should render image dimensions when an image is loaded', () => {
-      mockStore.image = { width: 800, height: 600 }
+      mockStore.image = new Image(800, 600)
       renderPanel()
 
       expect(screen.getByTestId('zoom-dimensions').textContent).toBe('800x600')

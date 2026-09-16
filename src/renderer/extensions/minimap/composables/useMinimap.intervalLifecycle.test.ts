@@ -1,3 +1,6 @@
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import { useSettingStore } from '@/platform/settings/settingStore'
+import { fromPartial } from '@total-typescript/shoehorn'
 /**
  * Lifecycle tests for the minimap's change-detection interval, run against the
  * real `useIntervalFn` with fake timers. The main useMinimap test file mocks
@@ -6,6 +9,12 @@
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick, shallowRef } from 'vue'
+import type {
+  LGraph,
+  LGraphNode,
+  LGraphCanvas
+} from '@/lib/litegraph/src/litegraph'
+import { toNodeId } from '@/types/nodeId'
 
 import {
   createMockCanvas2DContext,
@@ -13,50 +22,54 @@ import {
   createMockMinimapCanvas
 } from '@/utils/__tests__/litegraphTestUtils'
 
-const mockNodes = [
-  { id: 'node1', pos: [0, 0], size: [100, 50], outputs: [] },
-  { id: 'node2', pos: [200, 100], size: [150, 75], outputs: [] }
-]
+const mockNodes = fromPartial<LGraphNode[]>([
+  {
+    constructor: {},
+    id: toNodeId('node1'),
+    pos: [0, 0],
+    size: [100, 50],
+    renderingSize: [100, 50],
+    outputs: []
+  },
+  {
+    constructor: {},
+    id: toNodeId('node2'),
+    pos: [200, 100],
+    size: [150, 75],
+    renderingSize: [150, 75],
+    outputs: []
+  }
+])
 
-const mockGraph = {
+const mockGraph = fromPartial<LGraph>({
+  id: 'root',
+  rootGraph: { id: 'root' },
+  _groups: [],
   _nodes: mockNodes,
   links: createMockLinks([]),
   getNodeById: vi.fn((id: string) => mockNodes.find((n) => n.id === id)),
   setDirtyCanvas: vi.fn(),
-  onNodeAdded: null,
-  onNodeRemoved: null,
-  onConnectionChange: null,
   events: {
     addEventListener: vi.fn(),
     removeEventListener: vi.fn()
   }
-}
+})
 
-const mockCanvas = {
+const canvasElement = document.createElement('canvas')
+canvasElement.width = 1000
+canvasElement.height = 800
+Object.defineProperties(canvasElement, {
+  clientWidth: { value: 1000 },
+  clientHeight: { value: 800 }
+})
+const mockCanvas = fromPartial<LGraphCanvas>({
   graph: mockGraph,
-  canvas: { width: 1000, height: 800, clientWidth: 1000, clientHeight: 800 },
+  canvas: canvasElement,
   ds: { scale: 1, offset: [0, 0] },
   setDirty: vi.fn()
-}
+})
 
-vi.mock('@/renderer/core/canvas/canvasStore', () => ({
-  useCanvasStore: vi.fn(() => ({ canvas: mockCanvas }))
-}))
-
-vi.mock('@/platform/settings/settingStore', () => ({
-  useSettingStore: vi.fn(() => ({
-    get: vi.fn().mockReturnValue(true),
-    set: vi.fn().mockResolvedValue(undefined)
-  }))
-}))
-
-vi.mock('@/stores/workspace/colorPaletteStore', () => ({
-  useColorPaletteStore: vi.fn(() => ({
-    completedActivePalette: { light_theme: false }
-  }))
-}))
-
-vi.mock('@/scripts/api', () => ({
+vi.mock<unknown>(import('@/scripts/api'), () => ({
   api: {
     addEventListener: vi.fn(),
     removeEventListener: vi.fn(),
@@ -64,21 +77,25 @@ vi.mock('@/scripts/api', () => ({
   }
 }))
 
-vi.mock('@/scripts/app', () => ({
-  app: { canvas: { graph: mockGraph } }
-}))
-
-vi.mock('@/platform/workflow/management/stores/workflowStore', () => ({
-  useWorkflowStore: vi.fn(() => ({ activeSubgraph: null }))
-}))
-
-vi.mock('@/stores/executionStore', () => ({
-  useExecutionStore: vi.fn(() => ({ nodeProgressStates: {} }))
+vi.mock<unknown>(import('@/scripts/app'), () => ({
+  app: {
+    canvas: {
+      get graph() {
+        return mockGraph
+      }
+    }
+  }
 }))
 
 import { useMinimap } from '@/renderer/extensions/minimap/composables/useMinimap'
 
 const POLL_MS = 100
+
+beforeEach(() => {
+  useCanvasStore().canvas = fromPartial(mockCanvas)
+  vi.mocked(useSettingStore().get).mockReturnValue(true)
+  vi.mocked(useSettingStore().set).mockResolvedValue(undefined)
+})
 
 describe('useMinimap change-detection interval', () => {
   let context: CanvasRenderingContext2D
@@ -93,7 +110,7 @@ describe('useMinimap change-detection interval', () => {
         ) as HTMLCanvasElement['getContext']
     })
     const container = {
-      getBoundingClientRect: vi.fn(() => new DOMRect(0, 0, 250, 200) as DOMRect)
+      getBoundingClientRect: vi.fn(() => new DOMRect(0, 0, 250, 200))
     }
 
     const minimap = useMinimap({
@@ -131,7 +148,6 @@ describe('useMinimap change-detection interval', () => {
     // onto its callbacks, so tear down before the next test builds its own.
     active?.destroy()
     active = null
-    vi.useRealTimers()
   })
 
   it('polls on the interval and redraws when the graph changed', async () => {
@@ -235,7 +251,7 @@ describe('useMinimap change-detection interval', () => {
     // taken inside init() sees a null canvasRef and never starts the loop.
     const canvasRef = shallowRef<HTMLCanvasElement | null>(null)
     const container = {
-      getBoundingClientRect: vi.fn(() => new DOMRect(0, 0, 250, 200) as DOMRect)
+      getBoundingClientRect: vi.fn(() => new DOMRect(0, 0, 250, 200))
     }
     const minimap = useMinimap({
       containerRefMaybe: shallowRef(

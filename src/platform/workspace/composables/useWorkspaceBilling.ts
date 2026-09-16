@@ -1,10 +1,18 @@
-import { captureException } from '@sentry/vue'
-import { computed, ref, shallowRef, watch } from 'vue'
+import {
+  computed,
+  getCurrentScope,
+  onScopeDispose,
+  ref,
+  shallowRef,
+  watch
+} from 'vue'
 
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useBillingPlans } from '@/platform/cloud/subscription/composables/useBillingPlans'
 import { useSubscriptionDialog } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
 import type { SubscriptionDialogOptions } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
 import { useTelemetry } from '@/platform/telemetry'
+import { reportError } from '@/platform/telemetry/reportError'
 import { categorizeBillingApiError } from '@/platform/telemetry/utils/billingFailureCategory'
 import type {
   BillingBalanceResponse,
@@ -19,6 +27,8 @@ import {
   WorkspaceApiError,
   workspaceApi
 } from '@/platform/workspace/api/workspaceApi'
+import { useBillingSdkStore } from '@/platform/workspace/billing/sdk/billingSdkStore'
+import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 import { useBillingOperationStore } from '@/platform/workspace/stores/billingOperationStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 
@@ -52,11 +62,11 @@ function resumeModeFor(
       // callable toString/valueOf, and throwing out of the branch that exists
       // to absorb a bad value would abort recovery entirely. The value came
       // from a parsed response, so it cannot be circular.
-      captureException(
+      reportError(
         new Error(
           `Unknown pending billing op type: ${JSON.stringify(unexpected)}`
         ),
-        { tags: { error_type: 'billing_unknown_resume_mode' } }
+        { errorType: 'billing_unknown_resume_mode' }
       )
       // Reachable only against a newer server. Dropping recovery strands a
       // customer who cannot reach the payment page; a wrong panel clears on
@@ -100,6 +110,28 @@ async function resyncQuietly(refresh: () => Promise<unknown>): Promise<void> {
   }
 }
 
+interface SeatCapacity {
+  maxSeats: number
+  occupiedSeats: number
+}
+
+function seatCapacityFrom(status: BillingStatusResponse): SeatCapacity | null {
+  if (
+    typeof status.max_seats === 'number' &&
+    Number.isInteger(status.max_seats) &&
+    status.max_seats >= 0 &&
+    typeof status.occupied_seats === 'number' &&
+    Number.isInteger(status.occupied_seats) &&
+    status.occupied_seats >= 0
+  ) {
+    return {
+      maxSeats: status.max_seats,
+      occupiedSeats: status.occupied_seats
+    }
+  }
+  return null
+}
+
 /**
  * Adapter for workspace-scoped billing via /billing/* endpoints.
  * Used for team workspaces.
@@ -110,16 +142,14 @@ export function useWorkspaceBilling(): BillingState & BillingActions {
   const billingOperationStore = useBillingOperationStore()
   const workspaceStore = useTeamWorkspaceStore()
   const telemetry = useTelemetry()
+  const { flags } = useFeatureFlags()
 
   const isInitialized = ref(false)
   const isLoading = ref(false)
   const error = ref<string | null>(null)
 
   const statusData = shallowRef<BillingStatusResponse | null>(null)
-  const seatCapacity = shallowRef<{
-    maxSeats: number
-    occupiedSeats: number
-  } | null>(null)
+  const seatCapacity = shallowRef<SeatCapacity | null>(null)
   const balanceData = shallowRef<BillingBalanceResponse | null>(null)
   // Prevent older status and balance responses from overwriting newer state.
   const latestBillingReadIds = { status: 0, balance: 0 }
@@ -140,8 +170,7 @@ export function useWorkspaceBilling(): BillingState & BillingActions {
       tier: status.subscription_tier ?? null,
       duration: status.subscription_duration ?? null,
       planSlug: status.plan_slug ?? null,
-      scheduledPlanSlug: status.scheduled_plan_slug ?? null,
-      changeAt: status.change_at ?? null,
+      scheduledChange: status.scheduled_change ?? null,
       renewalDate: status.renewal_date ?? null,
       endDate: status.cancel_at ?? null,
       isCancelled: status.subscription_status === 'canceled',
@@ -211,6 +240,38 @@ export function useWorkspaceBilling(): BillingState & BillingActions {
     }
   }
 
+  function resumePendingOperation(status: BillingStatusResponse): void {
+    if (
+      !status.pending_billing_op_id ||
+      billingOperationStore.getOperation(status.pending_billing_op_id)
+    ) {
+      return
+    }
+    if (
+      flags.billingSdkTopupRailEnabled &&
+      status.pending_billing_op_type === 'topup'
+    ) {
+      useBillingSdkStore().recover()
+      return
+    }
+    void billingOperationStore.startOperation(
+      status.pending_billing_op_id,
+      resumeModeFor(status.pending_billing_op_type),
+      undefined,
+      status.action_url
+    )
+  }
+
+  function isStaleStatusRead(
+    requestId: number,
+    workspaceId: string | undefined
+  ): boolean {
+    return (
+      requestId !== latestBillingReadIds.status ||
+      workspaceId !== workspaceStore.activeWorkspace?.id
+    )
+  }
+
   async function fetchStatus(): Promise<void> {
     const requestId = ++latestBillingReadIds.status
     const workspaceId = workspaceStore.activeWorkspace?.id
@@ -218,44 +279,14 @@ export function useWorkspaceBilling(): BillingState & BillingActions {
     error.value = null
     try {
       const status = await workspaceApi.getBillingStatus()
-      if (
-        requestId !== latestBillingReadIds.status ||
-        workspaceId !== workspaceStore.activeWorkspace?.id
-      ) {
-        return
-      }
+      if (isStaleStatusRead(requestId, workspaceId)) return
 
-      if (
-        typeof status.max_seats === 'number' &&
-        Number.isInteger(status.max_seats) &&
-        status.max_seats >= 0 &&
-        typeof status.occupied_seats === 'number' &&
-        Number.isInteger(status.occupied_seats) &&
-        status.occupied_seats >= 0
-      ) {
-        seatCapacity.value = {
-          maxSeats: status.max_seats,
-          occupiedSeats: status.occupied_seats
-        }
-      } else {
-        seatCapacity.value = null
-      }
-
+      seatCapacity.value = seatCapacityFrom(status)
       statusData.value = status
       if (workspaceId && status.billing_rail) {
         workspaceStore.setWorkspaceBillingRail(workspaceId, status.billing_rail)
       }
-      if (
-        status.pending_billing_op_id &&
-        !billingOperationStore.getOperation(status.pending_billing_op_id)
-      ) {
-        void billingOperationStore.startOperation(
-          status.pending_billing_op_id,
-          resumeModeFor(status.pending_billing_op_type),
-          undefined,
-          status.action_url
-        )
-      }
+      resumePendingOperation(status)
     } catch (err) {
       if (requestId === latestBillingReadIds.status) {
         error.value =
@@ -367,6 +398,44 @@ export function useWorkspaceBilling(): BillingState & BillingActions {
     }
   }
 
+  // A cancellation or card change made in the portal tab or window never
+  // pushes back to this one — status has no return refetch and capability
+  // reads are paced — so the next return to the app re-reads everything the
+  // portal could have changed.
+  let stopPortalReturnRefresh: (() => void) | null = null
+  function refreshOnPortalReturn() {
+    stopPortalReturnRefresh?.()
+
+    const stopListening = () => {
+      document.removeEventListener('visibilitychange', onReturn)
+      window.removeEventListener('focus', onReturn)
+      stopPortalReturnRefresh = null
+    }
+    const onReturn = (event: Event) => {
+      if (
+        event.type === 'visibilitychange' &&
+        document.visibilityState !== 'visible'
+      ) {
+        return
+      }
+      stopListening()
+      void Promise.allSettled([
+        fetchStatus(),
+        fetchBalance(),
+        useBillingCapabilities().refresh()
+      ])
+    }
+    stopPortalReturnRefresh = stopListening
+    document.addEventListener('visibilitychange', onReturn)
+    window.addEventListener('focus', onReturn)
+  }
+
+  if (getCurrentScope()) {
+    onScopeDispose(() => {
+      stopPortalReturnRefresh?.()
+    })
+  }
+
   async function manageSubscription(): Promise<void> {
     isLoading.value = true
     error.value = null
@@ -374,7 +443,8 @@ export function useWorkspaceBilling(): BillingState & BillingActions {
       const returnUrl = window.location.href
       const response = await workspaceApi.getPaymentPortalUrl(returnUrl)
       if (response.url) {
-        window.open(response.url, '_blank')
+        const portalWindow = window.open(response.url, '_blank')
+        if (portalWindow) refreshOnPortalReturn()
       }
     } catch (err) {
       error.value =
@@ -489,7 +559,9 @@ export function useWorkspaceBilling(): BillingState & BillingActions {
     }
   }
 
-  async function topup(amountCents: number): Promise<CreateTopupResponse> {
+  async function topup(
+    amountCents: number
+  ): Promise<CreateTopupResponse | undefined> {
     isLoading.value = true
     error.value = null
     try {

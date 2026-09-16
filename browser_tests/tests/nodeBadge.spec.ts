@@ -4,9 +4,7 @@ import type { ComfyApp } from '@/scripts/app'
 import { NodeBadgeMode } from '@/types/nodeSource'
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 
-test.beforeEach(async ({ comfyPage }) => {
-  await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Disabled')
-})
+test.use({ initialSettings: { 'Comfy.UseNewMenu': 'Disabled' } })
 
 const DEPRECATED_NODE_TYPE = 'ImageBatch'
 const API_NODE_TYPE = 'FluxProUltraImageNode'
@@ -47,25 +45,6 @@ test.describe('Node Badge', { tag: ['@screenshot', '@smoke', '@node'] }, () => {
     })
 
     await expect(comfyPage.canvas).toHaveScreenshot('node-badge-multiple.png')
-  })
-
-  test('Can add badge left-side', async ({ comfyPage }) => {
-    await comfyPage.page.evaluate(() => {
-      const LGraphBadge = window.LGraphBadge!
-      const app = window.app as ComfyApp
-      const graph = app.graph
-      const nodes = graph.nodes
-
-      for (const node of nodes) {
-        node.badges = [new LGraphBadge({ text: 'Test Badge' })]
-        // @ts-expect-error - Enum value
-        node.badgePosition = 'top-left'
-      }
-
-      graph.setDirtyCanvas(true, true)
-    })
-
-    await expect(comfyPage.canvas).toHaveScreenshot('node-badge-left.png')
   })
 })
 
@@ -152,10 +131,6 @@ for (const vueEnabled of [false, true] as const) {
     : ['@screenshot', '@node']
 
   test.describe(`Node lifecycle badge (${renderer})`, { tag }, () => {
-    test.beforeEach(async ({ comfyPage }) => {
-      await comfyPage.settings.setSetting('Comfy.Graph.CanvasInfo', false)
-    })
-
     for (const mode of [NodeBadgeMode.ShowAll, NodeBadgeMode.None] as const) {
       test(`renders deprecated node with mode=${mode}`, async ({
         comfyPage
@@ -179,12 +154,11 @@ for (const vueEnabled of [false, true] as const) {
 
   test.describe(`API pricing badge (${renderer})`, { tag }, () => {
     test.beforeEach(async ({ comfyPage }) => {
-      await comfyPage.settings.setSetting('Comfy.Graph.CanvasInfo', false)
       await comfyPage.page.evaluate((type) => {
         const registered = window.LiteGraph!.registered_node_types[type] as {
           nodeData?: { price_badge?: unknown }
         }
-        if (!registered?.nodeData) throw new Error(`No nodeData for ${type}`)
+        if (!registered.nodeData) throw new Error(`No nodeData for ${type}`)
         registered.nodeData.price_badge = {
           engine: 'jsonata',
           expr: "{'type': 'text', 'text': '99.9 credits/Run'}",

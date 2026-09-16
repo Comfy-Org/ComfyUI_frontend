@@ -154,7 +154,7 @@ export function setBackendNodeText(
 ): void {
   backendNodeText.clear()
   for (const def of defs) {
-    if (typeof def?.name !== 'string') continue
+    if (typeof def.name !== 'string') continue
     const entry: Partial<Record<NodeDefTextField, string>> = {}
     if (typeof def.display_name === 'string' && def.display_name) {
       entry.display_name = def.display_name
@@ -167,25 +167,22 @@ export function setBackendNodeText(
   }
 }
 
-function customNodesProvide(
-  nodeName: string,
-  field: NodeDefTextField
-): boolean {
+function customNodesProvide(nodeName: string, path: string): boolean {
   const data = customNodesI18nData[i18n.global.locale.value]
   if (typeof data !== 'object' || data === null) return false
   const nodeDefs = (data as Record<string, unknown>)['nodeDefs']
   if (typeof nodeDefs !== 'object' || nodeDefs === null) return false
 
-  for (const path of nodeDefKeyCandidates(nodeName)) {
+  for (const candidate of nodeDefKeyCandidates(nodeName)) {
     let cursor: unknown = nodeDefs
-    for (const segment of path.split('.')) {
-      if (typeof cursor !== 'object' || cursor === null) break
+    for (const segment of `${candidate}.${path}`.split('.')) {
+      if (typeof cursor !== 'object' || cursor === null) {
+        cursor = undefined
+        break
+      }
       cursor = (cursor as Record<string, unknown>)[segment]
     }
-    if (typeof cursor === 'object' && cursor !== null) {
-      if (typeof (cursor as Record<string, unknown>)[field] === 'string')
-        return true
-    }
+    if (typeof cursor === 'string') return true
   }
   return false
 }
@@ -200,14 +197,20 @@ function nodeDefKeyCandidates(nodeName: string): string[] {
   return normalized === nodeName ? [normalized] : [normalized, nodeName]
 }
 
+/**
+ * Reads a resolved locale message. `st` compiles it; `stRaw` does not.
+ */
+type MessageReader = (key: string, fallbackMessage: string) => string
+
 function translateNodeDefText(
   nodeName: string,
-  field: NodeDefTextField,
-  fallback: string
+  path: string,
+  fallback: string,
+  read: MessageReader
 ): string {
-  for (const path of nodeDefKeyCandidates(nodeName)) {
-    const key = `nodeDefs.${path}.${field}`
-    if (te(key)) return st(key, fallback)
+  for (const candidate of nodeDefKeyCandidates(nodeName)) {
+    const key = `nodeDefs.${candidate}.${path}`
+    if (te(key)) return read(key, fallback)
   }
   return fallback
 }
@@ -222,6 +225,21 @@ function translateNodeDefText(
  * Other locales: translations stay authoritative, falling back to the live
  * backend value rather than the stale English snapshot.
  */
+function resolveNodeDefPath(
+  nodeName: string,
+  path: string,
+  backend: string | undefined,
+  fallback: string,
+  read: MessageReader
+): string {
+  if (customNodesProvide(nodeName, path)) {
+    return translateNodeDefText(nodeName, path, fallback, read)
+  }
+  if (i18n.global.locale.value === 'en' && backend !== undefined) return backend
+
+  return translateNodeDefText(nodeName, path, fallback, read)
+}
+
 export function resolveNodeDefText(
   field: NodeDefTextField,
   nodeName: string,
@@ -230,12 +248,40 @@ export function resolveNodeDefText(
   const backend = backendValue ?? backendNodeText.get(nodeName)?.[field]
   const fallback = backend ?? (field === 'display_name' ? nodeName : '')
 
-  if (customNodesProvide(nodeName, field)) {
-    return translateNodeDefText(nodeName, field, fallback)
-  }
-  if (i18n.global.locale.value === 'en' && backend !== undefined) return backend
+  return resolveNodeDefPath(nodeName, field, backend, fallback, st)
+}
 
-  return translateNodeDefText(nodeName, field, fallback)
+/** Slot fields the generated locales carry text for. */
+export type NodeDefSlotTextField = 'name' | 'tooltip'
+
+/**
+ * `name` is escaped by `scripts/nodeDefLocaleSerializer.ts` and has to be
+ * compiled back; `tooltip` is stored verbatim and must never reach the message
+ * compiler, or a literal `{'@'}` would render to the user.
+ */
+function slotMessageReader(field: NodeDefSlotTextField): MessageReader {
+  return field === 'tooltip' ? stRaw : st
+}
+
+export function resolveNodeDefSlotText(
+  field: NodeDefSlotTextField,
+  nodeName: string,
+  slot: string | number,
+  backendValue?: string,
+  fallbackValue = ''
+): string {
+  const slotPath =
+    typeof slot === 'string'
+      ? `inputs.${normalizeI18nKey(slot)}`
+      : `outputs.${slot}`
+
+  return resolveNodeDefPath(
+    nodeName,
+    `${slotPath}.${field}`,
+    backendValue,
+    backendValue ?? fallbackValue,
+    slotMessageReader(field)
+  )
 }
 
 // Only include English in the initial bundle; other locales lazy-load.

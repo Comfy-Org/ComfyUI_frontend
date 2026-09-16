@@ -162,6 +162,40 @@ describe('History — merging', () => {
     h.push(new MergingCommand('opacity'))
     expect(first.merged).toBe(0)
   })
+
+  it('a merged edit is one dirty step that a single undo clears', () => {
+    const h = new History()
+    h.push(new MergingCommand('opacity'))
+    h.push(new MergingCommand('opacity'))
+    h.push(new MergingCommand('opacity'))
+    expect(h.dirty()).toBe(true)
+    h.undo()
+    expect(h.dirty()).toBe(false)
+  })
+
+  it('redo after undoing a post-save merge reads dirty again', () => {
+    const h = new History()
+    h.push(new MergingCommand('opacity'))
+    h.push(new MergingCommand('opacity'))
+    h.markSaved()
+    h.push(new MergingCommand('opacity'))
+    h.undo()
+    expect(h.dirty()).toBe(false)
+    h.redo()
+    expect(h.dirty()).toBe(true)
+  })
+
+  it('never merges across a save point, so the new edit stays undoable to clean', () => {
+    const h = new History()
+    const first = new MergingCommand('opacity')
+    h.push(first)
+    h.markSaved()
+    h.push(new MergingCommand('opacity'))
+    expect(first.merged).toBe(0)
+    expect(h.dirty()).toBe(true)
+    h.undo()
+    expect(h.dirty()).toBe(false)
+  })
 })
 
 describe('History — dirty tracking and eviction', () => {
@@ -191,6 +225,19 @@ describe('History — dirty tracking and eviction', () => {
     for (let i = 0; i < 6; i++)
       h.push(new TestCommand(`c${i}`, Dirty.DRAWABLE, 64))
     expect(h.labels().undo).toHaveLength(3)
+  })
+
+  it('a branch that discards the save point stays dirty', () => {
+    const h = new History()
+    h.push(new TestCommand('a'))
+    h.markSaved()
+    h.undo()
+    h.push(new TestCommand('b'))
+    expect(h.dirty()).toBe(true)
+    h.undo()
+    expect(h.dirty()).toBe(true)
+    h.markSaved()
+    expect(h.dirty()).toBe(false)
   })
 
   it('an evicted history stays dirty until the next markSaved', () => {

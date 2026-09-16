@@ -1,5 +1,10 @@
 name: Setup Playwright
 description: Cache and install Playwright browsers with dependencies
+inputs:
+  install_deps:
+    description: Install Playwright operating-system dependencies
+    required: false
+    default: 'true'
 runs:
   using: composite
   steps:
@@ -10,19 +15,47 @@ runs:
         PLAYWRIGHT_VERSION=$(pnpm ls @playwright/test --json | jq --raw-output '.[0].devDependencies["@playwright/test"].version')
         echo "playwright-version=$PLAYWRIGHT_VERSION" >> $GITHUB_OUTPUT
 
-    - name: Cache Playwright Browsers
-      uses: actions/cache@v5 # v5.0.2
+    - name: Restore Playwright Browsers
+      uses: actions/cache/restore@v5 # v5.0.2
       id: cache-playwright-browsers
       with:
         path: '~/.cache/ms-playwright'
-        key: ${{ runner.os }}-playwright-browsers-${{ steps.detect-version.outputs.playwright-version }}
+        key: ${{ runner.os }}-playwright-browsers-v2-${{ steps.detect-version.outputs.playwright-version }}
 
-    - name: Install Playwright Browsers
+    - name: Bound Playwright dependency downloads
+      if: inputs.install_deps == 'true'
+      shell: bash
+      run: |
+        set -euo pipefail
+        printf '%s\n' \
+          'Acquire::Retries "3";' \
+          'Acquire::http::Timeout "60";' \
+          'Acquire::https::Timeout "60";' \
+          | sudo tee /etc/apt/apt.conf.d/80-playwright-ci >/dev/null
+
+    - name: Install Playwright browser and dependencies
+      shell: bash
+      env:
+        BROWSER_CACHE_HIT: ${{ steps.cache-playwright-browsers.outputs.cache-hit }}
+        INSTALL_DEPS: ${{ inputs.install_deps }}
+      run: |
+        set -euo pipefail
+        if [ "$INSTALL_DEPS" != true ]; then
+          playwright_args=(install chromium)
+        elif [ "$BROWSER_CACHE_HIT" = true ]; then
+          playwright_args=(install-deps chromium)
+        else
+          playwright_args=(install chromium --with-deps)
+        fi
+        for attempt in 1 2; do
+          pnpm exec playwright "${playwright_args[@]}" && exit 0
+          [ "$attempt" -lt 2 ] || exit 1
+          sleep 2
+        done
+
+    - name: Save Playwright Browsers
       if: steps.cache-playwright-browsers.outputs.cache-hit != 'true'
-      shell: bash
-      run: pnpm exec playwright install chromium --with-deps
-
-    - name: Install Playwright Browsers (operating system dependencies)
-      if: steps.cache-playwright-browsers.outputs.cache-hit == 'true'
-      shell: bash
-      run: pnpm exec playwright install-deps
+      uses: actions/cache/save@v5 # v5.0.2
+      with:
+        path: '~/.cache/ms-playwright'
+        key: ${{ runner.os }}-playwright-browsers-v2-${{ steps.detect-version.outputs.playwright-version }}

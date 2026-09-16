@@ -18,8 +18,7 @@ export const useNodeReplacementStore = defineStore('nodeReplacement', () => {
 
   async function load() {
     if (!isEnabled.value || isLoaded.value) return
-    if (!api.getServerFeature(ServerFeatureFlag.NODE_REPLACEMENTS, false))
-      return
+    if (!hasNodeReplacementFeature()) return
 
     try {
       replacements.value = await fetchNodeReplacements()
@@ -27,6 +26,10 @@ export const useNodeReplacementStore = defineStore('nodeReplacement', () => {
     } catch (error) {
       console.error('Failed to load node replacements:', error)
     }
+  }
+
+  function hasNodeReplacementFeature(): boolean {
+    return api.getServerFeature(ServerFeatureFlag.NODE_REPLACEMENTS, false)
   }
 
   function getReplacementFor(nodeType: string): NodeReplacement | null {

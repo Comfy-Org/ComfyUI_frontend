@@ -50,6 +50,12 @@ subgraphTest('should handle events', ({ simpleSubgraph, eventCapture }) => {
 - `createTestSubgraph(options?)` - Creates a fully configured Subgraph instance with root graph
 - `createTestSubgraphNode(subgraph, options?)` - Creates a SubgraphNode (instance of a subgraph)
 - `createNestedSubgraphs(options?)` - Creates nested subgraph hierarchies for testing deep structures
+- `enableSubgraphNodeCreation(rootGraph)` - Registers a SubgraphNode type for every subgraph created under `rootGraph`, so operations that rehydrate an instance by type (`convertToSubgraph`, clipboard paste, `configure`) can resolve one. Returns a disposer; pass it to `onTestFinished`, or rely on `resetSubgraphFixtureState()` if the file already calls that between tests.
+
+Generic node factories are **not** here — `createTestNode(graph, inputs?, outputs?, title?)` and
+`createTestWidgetNode(graph)` live in `src/lib/litegraph/src/__fixtures__/nodeHelpers.ts`, since
+they have no subgraph coupling. Reach for those instead of `new LGraphNode()` when a test needs a
+node whose type is resolvable through a serialize/configure round-trip.
 
 **Assertion & Validation:**
 

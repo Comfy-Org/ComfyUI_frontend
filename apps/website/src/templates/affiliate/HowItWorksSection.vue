@@ -9,8 +9,8 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 
 const steps = affiliateHowItWorksSteps.map((step) => ({
   id: step.id,
-  label: step.label[locale],
-  description: step.description[locale]
+  label: step.label[locale] || step.label.en,
+  description: step.description[locale] || step.description.en
 }))
 </script>
 

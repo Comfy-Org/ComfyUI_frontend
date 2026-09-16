@@ -40,7 +40,6 @@ useExtensionService().registerExtension({
 
       if (widget) {
         widget.value = { beforeImages, afterImages }
-        widget.callback?.(widget.value)
       }
     }
   }

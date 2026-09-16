@@ -8,7 +8,6 @@ import { TOUR_SEEN_SETTING } from '@/platform/onboarding/onboardingTours'
 import { CANVAS_NAVIGATION_PRESETS } from '@/platform/settings/constants/canvasNavigation'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import type { SettingParams } from '@/platform/settings/types'
-import type { ColorPalettes } from '@/schemas/colorPaletteSchema'
 import type { Keybinding } from '@/platform/keybindings/types'
 import { NodeBadgeMode } from '@/types/nodeSource'
 import { LinkReleaseTriggerAction } from '@/types/searchBoxTypes'
@@ -291,13 +290,6 @@ export const CORE_SETTINGS: SettingParams[] = [
       max: 1,
       step: 0.01
     }
-  },
-  {
-    id: 'Comfy.Workflow.ShowMissingModelsWarning',
-    name: 'Show missing models warning',
-    type: isCloud ? 'hidden' : 'boolean',
-    defaultValue: isCloud ? false : true,
-    experimental: true
   },
   {
     id: 'Comfy.Workflow.WarnBlueprintOverwrite',
@@ -859,7 +851,7 @@ export const CORE_SETTINGS: SettingParams[] = [
     tooltip: 'Server config values used for frontend display only',
     type: 'hidden',
     // Mapping from server config id to value.
-    defaultValue: {} as Record<string, unknown>,
+    defaultValue: {},
     versionAdded: '1.4.8'
   },
   {
@@ -868,7 +860,7 @@ export const CORE_SETTINGS: SettingParams[] = [
     tooltip:
       'These are the actual arguments that are passed to the server when it is launched.',
     type: 'hidden',
-    defaultValue: {} as Record<string, string>,
+    defaultValue: {},
     versionAdded: '1.4.8'
   },
   {
@@ -954,7 +946,7 @@ export const CORE_SETTINGS: SettingParams[] = [
     id: 'Comfy.CustomColorPalettes',
     name: 'Custom color palettes',
     type: 'hidden',
-    defaultValue: {} as ColorPalettes,
+    defaultValue: {},
     versionModified: '1.6.7'
   },
   {
@@ -1213,19 +1205,11 @@ export const CORE_SETTINGS: SettingParams[] = [
     defaultValue: false
   },
   {
-    id: 'Comfy.Assets.UseAssetAPI',
-    name: 'Use Asset API for model library',
-    type: 'hidden',
-    tooltip: 'Use new Asset API for model browsing',
-    defaultValue: isCloud ? true : false,
-    experimental: true
-  },
-  {
     id: 'Comfy.ModelLibrary.UseAssetBrowser',
     name: 'Use the asset browser for the model library',
     type: 'hidden',
     tooltip:
-      'When enabled alongside the asset API, the model library opens the asset browser. Otherwise it opens the sidebar tree.',
+      'When the backend supports assets, the model library opens the asset browser instead of the sidebar tree.',
     defaultValue: isCloud ? true : false,
     experimental: true
   },
@@ -1296,14 +1280,47 @@ export const CORE_SETTINGS: SettingParams[] = [
   },
   {
     id: 'Comfy.RightSidePanel.ShowErrorsTab',
-    category: ['Comfy', 'Error System'],
-    name: 'Show errors tab in side panel',
+    category: ['Comfy', 'Error System', 'IssuesTab'],
+    name: 'Show issues tab in side panel',
     tooltip:
-      'When enabled, an errors tab is displayed in the right side panel to show workflow execution errors at a glance.',
+      'When enabled, the Issues tab is displayed in the right side panel to show blocking errors and missing resources that need setup.',
     type: 'boolean',
     defaultValue: true,
     experimental: true,
     versionAdded: '1.40.0'
+  },
+  {
+    id: 'Comfy.Workflow.ShowMissingNodesWarning',
+    category: ['Comfy', 'Error System', 'MissingNodes'],
+    sortOrder: -1,
+    name: 'Show missing nodes in the issues tab',
+    tooltip:
+      'When disabled, missing node packs are not listed in the issues tab and their nodes are not highlighted. The workflow still cannot run until they are installed.',
+    type: 'boolean',
+    defaultValue: true,
+    versionAdded: '1.55.0'
+  },
+  {
+    id: 'Comfy.ErrorSystem.ShowMissingModels',
+    category: ['Comfy', 'Error System', 'MissingModels'],
+    sortOrder: -2,
+    name: 'Show missing models in the issues tab',
+    tooltip:
+      'When disabled, model files that are not found are not listed in the issues tab and their nodes are not highlighted.',
+    type: 'boolean',
+    defaultValue: true,
+    versionAdded: '1.55.0'
+  },
+  {
+    id: 'Comfy.Workflow.ShowMissingMediaWarning',
+    category: ['Comfy', 'Error System', 'MissingMedia'],
+    sortOrder: -3,
+    name: 'Show missing media in the issues tab',
+    tooltip:
+      'When disabled, input images, videos and audio that are not found are not listed in the issues tab and their nodes are not highlighted.',
+    type: 'boolean',
+    defaultValue: true,
+    versionAdded: '1.55.0'
   },
   {
     id: 'LiteGraph.Group.SelectChildrenOnClick',

@@ -1,5 +1,7 @@
 import type { Locator } from '@playwright/test'
 
+import type { PromptResponse } from '@/schemas/apiSchema'
+
 import {
   comfyExpect as expect,
   comfyPageFixture as test
@@ -29,8 +31,9 @@ async function selectNodeWithPan(comfyPage: ComfyPage, nodeRef: NodeReference) {
 }
 
 test.describe('Selection Toolbox - Button Actions', { tag: '@ui' }, () => {
+  test.use({ initialSettings: { 'Comfy.Canvas.SelectionToolbox': true } })
+
   test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.settings.setSetting('Comfy.Canvas.SelectionToolbox', true)
     await comfyPage.workflow.loadWorkflow('nodes/single_ksampler')
   })
 
@@ -39,7 +42,7 @@ test.describe('Selection Toolbox - Button Actions', { tag: '@ui' }, () => {
     await selectNodeWithPan(comfyPage, nodeRef)
 
     const initialCount = await comfyPage.page.evaluate(
-      () => window.app!.graph!._nodes.length
+      () => window.app!.graph._nodes.length
     )
 
     const deleteButton = comfyPage.page.getByTestId('delete-button')
@@ -49,7 +52,7 @@ test.describe('Selection Toolbox - Button Actions', { tag: '@ui' }, () => {
 
     await expect
       .poll(() =>
-        comfyPage.page.evaluate(() => window.app!.graph!._nodes.length)
+        comfyPage.page.evaluate(() => window.app!.graph._nodes.length)
       )
       .toBe(initialCount - 1)
   })
@@ -116,7 +119,7 @@ test.describe('Selection Toolbox - Button Actions', { tag: '@ui' }, () => {
     await comfyPage.nextFrame()
 
     const initialCount = await comfyPage.page.evaluate(
-      () => window.app!.graph!._nodes.length
+      () => window.app!.graph._nodes.length
     )
 
     const deleteButton = comfyPage.page.getByTestId('delete-button')
@@ -126,39 +129,43 @@ test.describe('Selection Toolbox - Button Actions', { tag: '@ui' }, () => {
 
     await expect
       .poll(() =>
-        comfyPage.page.evaluate(() => window.app!.graph!._nodes.length)
+        comfyPage.page.evaluate(() => window.app!.graph._nodes.length)
       )
       .toBe(initialCount - 2)
   })
 
-  test('bypass button toggles bypass on single node', async ({ comfyPage }) => {
-    await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', true)
-    await comfyPage.workflow.loadWorkflow('nodes/single_ksampler')
-    await comfyPage.vueNodes.waitForNodes()
+  test(
+    'bypass button toggles bypass on single node',
+    { tag: '@vue-nodes' },
+    async ({ comfyPage }) => {
+      await comfyPage.workflow.loadWorkflow('nodes/single_ksampler')
 
-    const nodeRef = (await comfyPage.nodeOps.getNodeRefsByTitle('KSampler'))[0]
-    await selectNodeWithPan(comfyPage, nodeRef)
+      const nodeRef = (
+        await comfyPage.nodeOps.getNodeRefsByTitle('KSampler')
+      )[0]
+      await selectNodeWithPan(comfyPage, nodeRef)
 
-    await expect.poll(() => nodeRef.isBypassed()).toBe(false)
+      await expect.poll(() => nodeRef.isBypassed()).toBe(false)
 
-    const bypassButton = comfyPage.page.getByTestId('bypass-button')
-    await expect(bypassButton).toBeVisible()
-    await bypassButton.click()
-    await comfyPage.nextFrame()
+      const bypassButton = comfyPage.page.getByTestId('bypass-button')
+      await expect(bypassButton).toBeVisible()
+      await bypassButton.click()
+      await comfyPage.nextFrame()
 
-    await expect.poll(() => nodeRef.isBypassed()).toBe(true)
-    await expect(getNodeWrapper(comfyPage, 'KSampler')).toHaveClass(
-      BYPASS_CLASS
-    )
+      await expect.poll(() => nodeRef.isBypassed()).toBe(true)
+      await expect(getNodeWrapper(comfyPage, 'KSampler')).toHaveClass(
+        BYPASS_CLASS
+      )
 
-    await bypassButton.click()
-    await comfyPage.nextFrame()
+      await bypassButton.click()
+      await comfyPage.nextFrame()
 
-    await expect.poll(() => nodeRef.isBypassed()).toBe(false)
-    await expect(getNodeWrapper(comfyPage, 'KSampler')).not.toHaveClass(
-      BYPASS_CLASS
-    )
-  })
+      await expect.poll(() => nodeRef.isBypassed()).toBe(false)
+      await expect(getNodeWrapper(comfyPage, 'KSampler')).not.toHaveClass(
+        BYPASS_CLASS
+      )
+    }
+  )
 
   test('convert-to-subgraph button converts node to subgraph', async ({
     comfyPage
@@ -277,5 +284,55 @@ test.describe('Selection Toolbox - Button Actions', { tag: '@ui' }, () => {
       name: /Execute to selected output nodes/i
     })
     await expect(executeButton).toBeHidden()
+  })
+
+  test('partial execution applies control_after_generate to seeds', async ({
+    comfyPage
+  }) => {
+    await comfyPage.workflow.loadWorkflow('default')
+
+    const readSeed = () =>
+      comfyPage.page.evaluate(() => {
+        const sampler = window.app!.graph._nodes.find(
+          (node) => node.type === 'KSampler'
+        )
+        return sampler!.widgets!.find((widget) => widget.name === 'seed')!.value
+      })
+
+    await comfyPage.page.evaluate(() => {
+      const sampler = window.app!.graph._nodes.find(
+        (node) => node.type === 'KSampler'
+      )
+      const control = sampler?.widgets?.find(
+        (widget) => widget.name === 'control_after_generate'
+      )
+      if (!control) throw new Error('seed control widget missing')
+      control.value = 'randomize'
+    })
+    const seedBefore = await readSeed()
+
+    await comfyPage.page.route('**/api/prompt', async (route) => {
+      const promptResponse: PromptResponse = {
+        prompt_id: '1',
+        node_errors: {},
+        error: ''
+      }
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify(promptResponse)
+      })
+    })
+
+    const saveImageRef = (
+      await comfyPage.nodeOps.getNodeRefsByTitle('Save Image')
+    )[0]
+    await selectNodeWithPan(comfyPage, saveImageRef)
+
+    await comfyPage.page
+      .getByRole('button', { name: /Execute to selected output nodes/i })
+      .click()
+
+    await expect.poll(readSeed).not.toBe(seedBefore)
   })
 })

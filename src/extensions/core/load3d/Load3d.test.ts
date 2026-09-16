@@ -1,4 +1,5 @@
 import * as THREE from 'three'
+import { fromAny } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { Load3dDeps } from '@/extensions/core/load3d/Load3d'
@@ -27,19 +28,19 @@ const {
   detectFormatFromURLMock: vi.fn()
 }))
 
-vi.mock('three/examples/jsm/utils/SkeletonUtils.js', () => ({
+vi.mock(import('three/examples/jsm/utils/SkeletonUtils.js'), () => ({
   clone: cloneSkinnedMock
 }))
 
-vi.mock('@/extensions/core/load3d/ModelExporter', () => ({
-  ModelExporter: {
+vi.mock(import('@/extensions/core/load3d/ModelExporter'), () => ({
+  ModelExporter: fromAny({
     exportGLB: exportGLBMock,
     exportOBJ: exportOBJMock,
     exportSTL: exportSTLMock,
     exportFBX: exportFBXMock,
     exportDirect: exportDirectMock,
     detectFormatFromURL: detectFormatFromURLMock
-  }
+  })
 }))
 
 type GizmoStub = {
@@ -136,7 +137,9 @@ function makeInstance() {
     eventManager,
     adapterRef: { current: null },
     forceRender: vi.fn(),
-    handleResize: vi.fn()
+    handleResize: vi.fn(),
+    preRenderCallbacks: [],
+    postRenderCallbacks: []
   })
 
   return {
@@ -991,7 +994,7 @@ describe('Load3d', () => {
       const mocks = setupLoadInternal()
 
       await ctx.load3d.loadModel('a.glb')
-      ;(ctx.cameraManager.reset as ReturnType<typeof vi.fn>).mockClear()
+      ctx.cameraManager.reset.mockClear()
       mocks.getCameraState.mockClear()
       mocks.setCameraState.mockClear()
 
@@ -1012,7 +1015,7 @@ describe('Load3d', () => {
       }))
       // First load (active type stays perspective per the default mock).
       await ctx.load3d.loadModel('a.glb')
-      ;(ctx.cameraManager.toggleCamera as ReturnType<typeof vi.fn>).mockClear()
+      ctx.cameraManager.toggleCamera.mockClear()
 
       await ctx.load3d.loadModel('b.glb')
 
@@ -1026,7 +1029,7 @@ describe('Load3d', () => {
       const mocks = setupLoadInternal()
       await ctx.load3d.loadModel('a.glb')
       ctx.load3d.clearModel()
-      ;(ctx.cameraManager.reset as ReturnType<typeof vi.fn>).mockClear()
+      ctx.cameraManager.reset.mockClear()
       mocks.getCameraState.mockClear()
 
       await ctx.load3d.loadModel('b.glb')
@@ -1112,7 +1115,7 @@ describe('Load3d', () => {
       return { cameraStub, sceneCaptureMock }
     }
 
-    it('throws when no model is loaded', async () => {
+    it('rejects thumbnail capture when no model is loaded', async () => {
       Object.assign(ctx.load3d, {
         modelManager: { ...ctx.modelManager, currentModel: null }
       })
@@ -1162,7 +1165,7 @@ describe('Load3d', () => {
       })
     }
 
-    it('throws when no model is loaded', async () => {
+    it('rejects export when no model is loaded', async () => {
       setupForExport({ currentModel: null })
 
       await expect(ctx.load3d.exportModel('fbx')).rejects.toThrow(
@@ -1310,7 +1313,7 @@ describe('Load3d', () => {
       )
     })
 
-    it('throws on unsupported format', async () => {
+    it('rejects an unsupported format', async () => {
       const model = new THREE.Object3D()
       setupForExport({ currentModel: model })
       vi.spyOn(console, 'error').mockImplementation(() => {})
@@ -1342,7 +1345,7 @@ describe('Load3d', () => {
       expect(cloneSkinnedMock).not.toHaveBeenCalled()
     })
 
-    it('refuses a direct export when the requested format differs from the source', async () => {
+    it('rejects direct export when the requested format differs from the source', async () => {
       exportDirectMock.mockReset()
       detectFormatFromURLMock.mockReturnValue('spz')
       vi.spyOn(console, 'error').mockImplementation(() => {})

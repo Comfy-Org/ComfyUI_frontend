@@ -58,7 +58,8 @@ export function useBuilderSave() {
         defaultOpenAsApp: workflow.initialMode !== 'graph',
         onSave: handleSaveAs,
         onClose: () => closeDialog(SAVE_DIALOG_KEY)
-      }
+      },
+      dialogComponentProps: { useAutomaticLabeling: true }
     })
   }
 

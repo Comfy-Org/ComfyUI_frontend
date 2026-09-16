@@ -10,12 +10,15 @@ import type { SharedWorkflowPayload } from '@/platform/workflow/sharing/types/sh
 
 const mockGetSharedWorkflow = vi.fn()
 
-vi.mock('@/platform/workflow/sharing/services/workflowShareService', () => ({
-  SharedWorkflowLoadError: class extends Error {},
-  useWorkflowShareService: () => ({
-    getSharedWorkflow: mockGetSharedWorkflow
+vi.mock<unknown>(
+  import('@/platform/workflow/sharing/services/workflowShareService'),
+  () => ({
+    SharedWorkflowLoadError: class extends Error {},
+    useWorkflowShareService: () => ({
+      getSharedWorkflow: mockGetSharedWorkflow
+    })
   })
-}))
+)
 
 const i18n = createI18n({
   legacy: false,
@@ -185,7 +188,7 @@ describe('OpenSharedWorkflowDialogContent', () => {
       await flushPromises()
 
       const buttons = container.querySelectorAll('footer button')
-      await userEvent.click(buttons[buttons.length - 1] as HTMLElement)
+      await userEvent.click(buttons[buttons.length - 1])
       expect(onConfirm).toHaveBeenCalledWith(payload)
     })
 
@@ -285,7 +288,7 @@ describe('OpenSharedWorkflowDialogContent', () => {
       await flushPromises()
 
       const buttons = container.querySelectorAll('footer button')
-      await userEvent.click(buttons[buttons.length - 1] as HTMLElement)
+      await userEvent.click(buttons[buttons.length - 1])
       expect(onConfirm).toHaveBeenCalledWith(assetsPayload)
     })
 

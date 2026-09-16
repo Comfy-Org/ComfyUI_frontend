@@ -56,7 +56,7 @@ export const useMissingNodes = createSharedComposable(() => {
    * @returns True if the node is a missing core node, false otherwise
    */
   const isMissingCoreNode = (node: LGraphNode) => {
-    const packId = node.properties?.cnr_id
+    const packId = node.properties.cnr_id
     if (packId === undefined || !isCorePack(packId)) return false
     const nodeName = node.type
     const isRegisteredNodeDef = !!nodeDefStore.nodeDefsByName[nodeName]
@@ -65,7 +65,7 @@ export const useMissingNodes = createSharedComposable(() => {
 
   const missingCoreNodes = computed<Record<string, LGraphNode[]>>(() => {
     const missingNodes = collectAllNodes(app.rootGraph, isMissingCoreNode)
-    return groupBy(missingNodes, (node) => String(node.properties?.ver || ''))
+    return groupBy(missingNodes, (node) => String(node.properties.ver || ''))
   })
 
   // Check if workflow has any missing nodes

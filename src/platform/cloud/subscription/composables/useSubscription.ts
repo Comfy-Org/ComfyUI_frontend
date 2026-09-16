@@ -57,7 +57,7 @@ function useSubscriptionInternal() {
 
   const authStore = useAuthStore()
   const workspaceStore = useTeamWorkspaceStore()
-  const { getAuthHeader, fetchWithCustomerRecovery } = authStore
+  const { getFirebaseAuthHeader, fetchWithCustomerRecovery } = authStore
   const { wrapWithErrorHandlingAsync } = useErrorHandling()
 
   const { isLoggedIn } = useCurrentUser()
@@ -153,10 +153,9 @@ function useSubscriptionInternal() {
       return
     }
 
-    const nextDelay =
-      PENDING_SUBSCRIPTION_CHECKOUT_RETRY_DELAYS_MS[
-        pendingCheckoutRecoveryAttempt
-      ]
+    const nextDelay = getPendingCheckoutRetryDelay(
+      pendingCheckoutRecoveryAttempt
+    )
 
     if (nextDelay === undefined) {
       return
@@ -211,7 +210,7 @@ function useSubscriptionInternal() {
   }
 
   const buildAuthHeaders = async (): Promise<Record<string, string>> => {
-    const authHeader = await getAuthHeader()
+    const authHeader = await getFirebaseAuthHeader()
     if (!authHeader) {
       throw new AuthStoreError(t('toastMessages.userNotAuthenticated'))
     }
@@ -533,6 +532,10 @@ function useSubscriptionInternal() {
     handleLearnMore,
     handleInvoiceHistory
   }
+}
+
+function getPendingCheckoutRetryDelay(attempt: number): number | undefined {
+  return PENDING_SUBSCRIPTION_CHECKOUT_RETRY_DELAYS_MS[attempt]
 }
 
 export const useSubscription = createSharedComposable(useSubscriptionInternal)

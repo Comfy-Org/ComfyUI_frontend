@@ -1,3 +1,4 @@
+import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { render, screen } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, nextTick, ref } from 'vue'
@@ -7,23 +8,20 @@ import FreeTierQuota from './FreeTierQuota.vue'
 
 const mockIsFreeTier = ref(true)
 const mockAvailable = ref(3)
-const mockShowSubscriptionDialog = vi.fn()
 
-vi.mock('@/composables/billing/useBillingContext', () => ({
-  useBillingContext: () => ({
-    isFreeTier: mockIsFreeTier,
-    showSubscriptionDialog: mockShowSubscriptionDialog
-  })
-}))
+vi.mock(import('@/composables/billing/useBillingContext'))
 
-vi.mock('@/platform/cloud/subscription/composables/useFreeTierQuota', () => ({
-  useFreeTierQuota: () => ({
-    available: computed(() => mockAvailable.value),
-    hasInvalidNodes: computed(() => false),
-    maxAvailable: computed(() => 5),
-    quotaEnabled: computed(() => true)
+vi.mock<unknown>(
+  import('@/platform/cloud/subscription/composables/useFreeTierQuota'),
+  () => ({
+    useFreeTierQuota: () => ({
+      available: computed(() => mockAvailable.value),
+      hasInvalidNodes: computed(() => false),
+      maxAvailable: computed(() => 5),
+      quotaEnabled: computed(() => true)
+    })
   })
-}))
+)
 
 const i18n = createI18n({
   legacy: false,
@@ -39,6 +37,10 @@ const i18n = createI18n({
 
 describe('FreeTierQuota', () => {
   beforeEach(() => {
+    const billing = useBillingContext()
+    billing.isFreeTier = computed(() => mockIsFreeTier.value)
+    vi.mocked(useBillingContext).mockReturnValue(billing)
+
     mockIsFreeTier.value = true
     mockAvailable.value = 3
   })

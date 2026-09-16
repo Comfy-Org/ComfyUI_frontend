@@ -1,5 +1,4 @@
-import { reactive } from 'vue'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import {
@@ -7,41 +6,15 @@ import {
   createTestSubgraphNode
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
-import { usePreviewExposureStore } from '@/stores/previewExposureStore'
+import {
+  getPreviewExposureHostLocator,
+  usePreviewExposureStore
+} from '@/stores/previewExposureStore'
 import { createNodeLocatorId } from '@/types/nodeIdentification'
 import { toNodeId } from '@/types/nodeId'
 
 import { CANVAS_IMAGE_PREVIEW_WIDGET } from './canvasImagePreviewTypes'
 import { usePromotedPreviews } from './usePromotedPreviews'
-
-type MockNodeOutputStore = Pick<
-  ReturnType<typeof useNodeOutputStore>,
-  | 'nodeOutputs'
-  | 'nodePreviewImages'
-  | 'getNodeImageUrls'
-  | 'getNodeImageUrlsByExecutionId'
-  | 'getNodeOutputByExecutionId'
-  | 'getNodePreviewImagesByExecutionId'
->
-
-vi.mock('@/stores/nodeOutputStore', () => {
-  const store: MockNodeOutputStore = {
-    nodeOutputs: reactive<MockNodeOutputStore['nodeOutputs']>({}),
-    nodePreviewImages: reactive<MockNodeOutputStore['nodePreviewImages']>({}),
-    getNodeImageUrls: vi.fn(),
-    getNodeImageUrlsByExecutionId: vi.fn(),
-    getNodeOutputByExecutionId: vi.fn(),
-    getNodePreviewImagesByExecutionId: vi.fn()
-  }
-  return { useNodeOutputStore: () => store }
-})
-
-function clearMockNodeOutputStore() {
-  const { nodeOutputs, nodePreviewImages } = useNodeOutputStore()
-  for (const key of Object.keys(nodeOutputs)) delete nodeOutputs[key]
-  for (const key of Object.keys(nodePreviewImages))
-    delete nodePreviewImages[key]
-}
 
 function createSetup() {
   const subgraph = createTestSubgraph()
@@ -91,9 +64,12 @@ function exposePreview(
   sourceNodeId: string,
   sourcePreviewName = CANVAS_IMAGE_PREVIEW_WIDGET
 ) {
+  const hostLocator = getPreviewExposureHostLocator(setup.subgraphNode)
+  expect(hostLocator).not.toBeNull()
+  if (!hostLocator) return
   usePreviewExposureStore().addExposure(
     setup.subgraphNode.rootGraph.id,
-    String(setup.subgraphNode.id),
+    hostLocator,
     { sourceNodeId, sourcePreviewName }
   )
 }
@@ -119,10 +95,6 @@ function arrangePromotedPreview(options: ArrangeOptions = {}) {
 }
 
 describe(usePromotedPreviews, () => {
-  beforeEach(() => {
-    clearMockNodeOutputStore()
-  })
-
   it('returns empty array for non-SubgraphNode', () => {
     const node = new LGraphNode('test')
     const { promotedPreviews } = usePromotedPreviews(() => node)
@@ -298,22 +270,21 @@ describe(usePromotedPreviews, () => {
     outerSetup.subgraph.add(innerHost)
 
     const store = usePreviewExposureStore()
-    store.addExposure(
-      outerSetup.subgraphNode.rootGraph.id,
-      String(innerHost.id),
-      {
-        sourceNodeId: String(leafNode.id),
-        sourcePreviewName: CANVAS_IMAGE_PREVIEW_WIDGET
-      }
+    const innerHostLocator = getPreviewExposureHostLocator(innerHost)
+    const outerHostLocator = getPreviewExposureHostLocator(
+      outerSetup.subgraphNode
     )
-    store.addExposure(
-      outerSetup.subgraphNode.rootGraph.id,
-      String(outerSetup.subgraphNode.id),
-      {
-        sourceNodeId: String(innerHost.id),
-        sourcePreviewName: CANVAS_IMAGE_PREVIEW_WIDGET
-      }
-    )
+    expect(innerHostLocator).not.toBeNull()
+    expect(outerHostLocator).not.toBeNull()
+    if (!innerHostLocator || !outerHostLocator) return
+    store.addExposure(outerSetup.subgraphNode.rootGraph.id, innerHostLocator, {
+      sourceNodeId: String(leafNode.id),
+      sourcePreviewName: CANVAS_IMAGE_PREVIEW_WIDGET
+    })
+    store.addExposure(outerSetup.subgraphNode.rootGraph.id, outerHostLocator, {
+      sourceNodeId: String(innerHost.id),
+      sourcePreviewName: CANVAS_IMAGE_PREVIEW_WIDGET
+    })
 
     const mockUrls = ['/view?filename=leaf.png']
     seedOutputs(innerSetup.subgraph.id, [leafNode.id])
@@ -348,10 +319,11 @@ describe(usePromotedPreviews, () => {
     const secondHost = createTestSubgraphNode(outerSetup.subgraph, { id: 12 })
     const firstHostLocator = String(firstHost.id)
     const secondHostLocator = String(secondHost.id)
-    const firstNestedLocator = `${firstHostLocator}:${innerHost.id}`
-    const secondNestedLocator = `${secondHostLocator}:${innerHost.id}`
-    const firstLeafExecutionId = `${firstNestedLocator}:${leafNode.id}`
-    const secondLeafExecutionId = `${secondNestedLocator}:${leafNode.id}`
+    const nestedLocator = getPreviewExposureHostLocator(innerHost)
+    expect(nestedLocator).not.toBeNull()
+    if (!nestedLocator) return
+    const firstLeafExecutionId = `${firstHostLocator}:${innerHost.id}:${leafNode.id}`
+    const secondLeafExecutionId = `${secondHostLocator}:${innerHost.id}:${leafNode.id}`
 
     const store = usePreviewExposureStore()
     store.addExposure(firstHost.rootGraph.id, firstHostLocator, {
@@ -362,11 +334,7 @@ describe(usePromotedPreviews, () => {
       sourceNodeId: String(innerHost.id),
       sourcePreviewName: CANVAS_IMAGE_PREVIEW_WIDGET
     })
-    store.addExposure(firstHost.rootGraph.id, firstNestedLocator, {
-      sourceNodeId: String(leafNode.id),
-      sourcePreviewName: CANVAS_IMAGE_PREVIEW_WIDGET
-    })
-    store.addExposure(firstHost.rootGraph.id, secondNestedLocator, {
+    store.addExposure(firstHost.rootGraph.id, nestedLocator, {
       sourceNodeId: String(leafNode.id),
       sourcePreviewName: CANVAS_IMAGE_PREVIEW_WIDGET
     })

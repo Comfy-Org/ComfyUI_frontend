@@ -1,3 +1,4 @@
+import { useModelToNodeStore } from '@/stores/modelToNodeStore'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
@@ -6,11 +7,7 @@ import { resolveModelNodeFromAsset } from '@/platform/assets/utils/resolveModelN
 const mockGetNodeProvider = vi.hoisted(() => vi.fn())
 const mockSupportsModelTypeTags = vi.hoisted(() => ({ value: false }))
 
-vi.mock('@/stores/modelToNodeStore', () => ({
-  useModelToNodeStore: () => ({ getNodeProvider: mockGetNodeProvider })
-}))
-
-vi.mock('@/composables/useFeatureFlags', () => ({
+vi.mock<unknown>(import('@/composables/useFeatureFlags'), () => ({
   useFeatureFlags: () => ({
     flags: {
       get supportsModelTypeTags() {
@@ -56,6 +53,12 @@ function mockProvider(
 ) {
   mockGetNodeProvider.mockReturnValue(provider)
 }
+
+beforeEach(() => {
+  vi.mocked(useModelToNodeStore().getNodeProvider).mockImplementation(
+    mockGetNodeProvider
+  )
+})
 
 describe('resolveModelNodeFromAsset', () => {
   beforeEach(() => {

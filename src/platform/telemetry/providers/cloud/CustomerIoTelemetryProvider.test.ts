@@ -40,12 +40,12 @@ const hoisted = vi.hoisted(() => {
   }
 })
 
-vi.mock('@customerio/cdp-analytics-browser', () => ({
+vi.mock<unknown>(import('@customerio/cdp-analytics-browser'), () => ({
   AnalyticsBrowser: { load: hoisted.load },
   InAppPlugin: hoisted.inAppPlugin
 }))
 
-vi.mock('@/composables/auth/useCurrentUser', () => ({
+vi.mock<unknown>(import('@/composables/auth/useCurrentUser'), () => ({
   useCurrentUser: () => ({
     userEmail: hoisted.userEmail,
     resolvedUserInfo: hoisted.resolvedUserInfo,
@@ -70,7 +70,7 @@ function createProvider(
     customer_io: { write_key: WRITE_KEY, site_id: SITE_ID }
   }
 ): CustomerIoTelemetryProvider {
-  window.__CONFIG__ = config as typeof window.__CONFIG__
+  window.__CONFIG__ = config
   return new CustomerIoTelemetryProvider()
 }
 
@@ -92,7 +92,7 @@ describe('CustomerIoTelemetryProvider', () => {
     hoisted.analytics.register.mockResolvedValue(undefined)
     hoisted.userEmail.value = null
     i18n.global.locale.value = 'en'
-    window.__CONFIG__ = {} as typeof window.__CONFIG__
+    window.__CONFIG__ = {}
   })
 
   it('loads the client and registers the in-app plugin with the site id', async () => {

@@ -71,8 +71,7 @@ const {
       canManageMembers: true,
       canLeaveWorkspace: true,
       canAccessWorkspaceMenu: true,
-      canManageSubscription: true,
-      canTopUp: true
+      canManageSubscription: true
     }),
     mockUiConfig: ref({
       showMembersList: true,
@@ -83,79 +82,83 @@ const {
       pendingGridCols: 'grid-cols-[50%_20%_20%_10%]',
       headerGridCols: 'grid-cols-[50%_40%_10%]',
       showEditWorkspaceMenuItem: true,
-      workspaceMenuAction: 'delete' as 'delete' | null,
+      workspaceMenuAction: 'delete',
       workspaceMenuDisabledTooltip: null as string | null
     })
   }
 })
 
-vi.mock('@/platform/workspace/composables/useMembersPanel', () => ({
-  useMembersPanel: () => ({
-    searchQuery: mockSearchQuery,
-    activeView: mockActiveView,
-    maxSeats: mockMaxSeats,
-    isInPersonalWorkspace: mockIsInPersonalWorkspace,
-    hasTeamPlan: mockHasTeamPlan,
-    hasMemberSeats: computed(
-      () => mockMaxSeats.value === 0 || (mockMaxSeats.value ?? 0) > 1
-    ),
-    isPlanLoading: mockIsPlanLoading,
-    isOnTeamPlan: mockIsOnTeamPlan,
-    hasLapsedTeamPlan: mockHasLapsedTeamPlan,
-    hasMultipleMembers: mockHasMultipleMembers,
-    showSearch: mockShowSearch,
-    showViewTabs: mockShowViewTabs,
-    showInviteButton: mockShowInviteButton,
-    isInviteDisabled: mockIsInviteDisabled,
-    inviteTooltip: computed(() => null),
-    handleInviteMember: mockHandleInviteMember,
-    personalWorkspaceMember: computed(() => ({
-      id: 'self',
-      name: 'Owner User',
-      email: 'owner@example.com',
-      role: 'owner' as const,
-      joinDate: new Date(0),
-      isOriginalOwner: true
-    })),
-    filteredMembers: mockFilteredMembers,
-    filteredPendingInvites: mockFilteredPendingInvites,
-    memberMenuItems: mockMemberMenuItems,
-    memberMenus: computed(
-      () =>
-        new Map(
-          mockFilteredMembers.value.map((member) => [
-            member.id,
-            member.email.toLowerCase() === 'owner@example.com' ||
-            member.id === mockOriginalOwnerId.value
-              ? []
-              : [
-                  { label: 'changeRole' },
-                  ...(member.role === 'member'
-                    ? [{ label: 'setCreditLimit' }]
-                    : []),
-                  { label: 'removeMember' }
-                ]
-          ])
-        )
-    ),
-    members: mockMembers,
-    pendingInvites: mockPendingInvites,
-    permissions: mockPermissions,
-    uiConfig: mockUiConfig,
-    userPhotoUrl: ref(null),
-    isCurrentUser: (m: WorkspaceMember) =>
-      m.email.toLowerCase() === 'owner@example.com',
-    isOriginalOwner: (m: WorkspaceMember) => m.id === mockOriginalOwnerId.value,
-    toggleSort: mockToggleSort,
-    showTeamPlans: mockShowTeamPlans,
-    handleResendInvite: mockHandleResendInvite,
-    handleRevokeInvite: mockHandleRevokeInvite,
-    handleRemoveMember: vi.fn(),
-    handleChangeRole: vi.fn()
+vi.mock<unknown>(
+  import('@/platform/workspace/composables/useMembersPanel'),
+  () => ({
+    useMembersPanel: () => ({
+      searchQuery: mockSearchQuery,
+      activeView: mockActiveView,
+      maxSeats: mockMaxSeats,
+      isInPersonalWorkspace: mockIsInPersonalWorkspace,
+      hasTeamPlan: mockHasTeamPlan,
+      hasMemberSeats: computed(
+        () => mockMaxSeats.value === 0 || (mockMaxSeats.value ?? 0) > 1
+      ),
+      isPlanLoading: mockIsPlanLoading,
+      isOnTeamPlan: mockIsOnTeamPlan,
+      hasLapsedTeamPlan: mockHasLapsedTeamPlan,
+      hasMultipleMembers: mockHasMultipleMembers,
+      showSearch: mockShowSearch,
+      showViewTabs: mockShowViewTabs,
+      showInviteButton: mockShowInviteButton,
+      isInviteDisabled: mockIsInviteDisabled,
+      inviteTooltip: computed(() => null),
+      handleInviteMember: mockHandleInviteMember,
+      personalWorkspaceMember: computed(() => ({
+        id: 'self',
+        name: 'Owner User',
+        email: 'owner@example.com',
+        role: 'owner' as const,
+        joinDate: new Date(0),
+        isOriginalOwner: true
+      })),
+      filteredMembers: mockFilteredMembers,
+      filteredPendingInvites: mockFilteredPendingInvites,
+      memberMenuItems: mockMemberMenuItems,
+      memberMenus: computed(
+        () =>
+          new Map(
+            mockFilteredMembers.value.map((member) => [
+              member.id,
+              member.email.toLowerCase() === 'owner@example.com' ||
+              member.id === mockOriginalOwnerId.value
+                ? []
+                : [
+                    { label: 'changeRole' },
+                    ...(member.role === 'member'
+                      ? [{ label: 'setCreditLimit' }]
+                      : []),
+                    { label: 'removeMember' }
+                  ]
+            ])
+          )
+      ),
+      members: mockMembers,
+      pendingInvites: mockPendingInvites,
+      permissions: mockPermissions,
+      uiConfig: mockUiConfig,
+      userPhotoUrl: ref(null),
+      isCurrentUser: (m: WorkspaceMember) =>
+        m.email.toLowerCase() === 'owner@example.com',
+      isOriginalOwner: (m: WorkspaceMember) =>
+        m.id === mockOriginalOwnerId.value,
+      toggleSort: mockToggleSort,
+      showTeamPlans: mockShowTeamPlans,
+      handleResendInvite: mockHandleResendInvite,
+      handleRevokeInvite: mockHandleRevokeInvite,
+      handleRemoveMember: vi.fn(),
+      handleChangeRole: vi.fn()
+    })
   })
-}))
+)
 
-vi.mock('@/components/button/MoreButton.vue', () => ({
+vi.mock<unknown>(import('@/components/button/MoreButton.vue'), () => ({
   default: (_: unknown, { slots }: { slots: Slots }) =>
     h('div', slots.default?.({ close: () => {} }))
 }))
@@ -253,8 +256,7 @@ describe('MembersPanelContent', () => {
       canManageMembers: true,
       canLeaveWorkspace: true,
       canAccessWorkspaceMenu: true,
-      canManageSubscription: true,
-      canTopUp: true
+      canManageSubscription: true
     }
     mockUiConfig.value = {
       showMembersList: true,
@@ -443,8 +445,7 @@ describe('MembersPanelContent', () => {
         canManageMembers: false,
         canLeaveWorkspace: true,
         canAccessWorkspaceMenu: true,
-        canManageSubscription: false,
-        canTopUp: false
+        canManageSubscription: false
       }
       mockUiConfig.value.showPendingTab = false
     })
@@ -593,7 +594,7 @@ describe('MembersPanelContent', () => {
         screen.getByText('workspacePanel.members.contactUs')
       )
       expect(openSpy).toHaveBeenCalledWith(
-        'https://comfy-org.portal.usepylon.com/forms/team-plan-requests',
+        'https://comfysupport.portal.usepylon.com/forms/team-plan-requests',
         '_blank',
         'noopener,noreferrer'
       )
