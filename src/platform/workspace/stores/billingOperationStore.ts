@@ -27,6 +27,7 @@ import type {
   BillingOperationPhase,
   BillingDeclineReason
 } from '@/platform/workspace/api/workspaceApi'
+import { needsCustomerAttention } from '@/platform/workspace/billing/customerAttention'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import {
@@ -173,11 +174,7 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
       (op) =>
         op.type === 'subscription' &&
         op.workspaceId === workspaceStore.activeWorkspaceId &&
-        ((op.status === 'pending' &&
-          (op.actionUrl !== null ||
-            op.authenticationState === 'requires_action' ||
-            op.authenticationState === 'failed_retryable')) ||
-          op.status === 'reconciliation_needed')
+        needsCustomerAttention(op)
     )
   )
 
@@ -187,11 +184,7 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
         op.type === 'topup' &&
         op.workspaceId === workspaceStore.activeWorkspaceId &&
         !op.dismissed &&
-        ((op.status === 'pending' &&
-          (op.actionUrl !== null ||
-            op.authenticationState === 'requires_action' ||
-            op.authenticationState === 'failed_retryable')) ||
-          op.status === 'reconciliation_needed')
+        needsCustomerAttention(op)
     )
   )
 

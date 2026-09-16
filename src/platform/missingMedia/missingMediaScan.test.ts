@@ -5,10 +5,12 @@ import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { LGraphEventMode } from '@/lib/litegraph/src/types/globalEnums'
 import type { IComboWidget } from '@/lib/litegraph/src/types/widgets'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
+import { assetService } from '@/platform/assets/services/assetService'
 import {
   createMediaNodeDef,
   seedMediaNodeDefs
 } from '@/platform/missingMedia/__fixtures__/promotedMedia'
+import { fetchHistoryPage } from '@/platform/remote/comfyui/jobs/fetchJobs'
 import type { JobListItem } from '@/platform/remote/comfyui/jobs/jobTypes'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import type { MissingMediaAssetResolver } from './missingMediaAssetResolver'
@@ -25,15 +27,6 @@ import {
   getMissingMediaReferences
 } from './missingMediaGrouping'
 import type { MissingMediaCandidate } from './types'
-
-const { mockGetAllAssetsByTag, mockGetAssetsPageByTag } = vi.hoisted(() => ({
-  mockGetAllAssetsByTag: vi.fn(),
-  mockGetAssetsPageByTag: vi.fn()
-}))
-
-const { mockFetchHistoryPage } = vi.hoisted(() => ({
-  mockFetchHistoryPage: vi.fn()
-}))
 
 vi.mock<unknown>(import('@/utils/graphTraversalUtil'), () => {
   type TestNode = LGraphNode & { _testExecutionId?: string }
@@ -76,16 +69,8 @@ vi.mock<unknown>(import('@/composables/useFeatureFlags'), () => ({
   useFeatureFlags: () => ({ flags: { assetsEnabled: true } })
 }))
 
-vi.mock<unknown>(import('@/platform/assets/services/assetService'), () => ({
-  assetService: {
-    getAllAssetsByTag: mockGetAllAssetsByTag,
-    getAssetsPageByTag: mockGetAssetsPageByTag
-  }
-}))
-
-vi.mock(import('@/platform/remote/comfyui/jobs/fetchJobs'), () => ({
-  fetchHistoryPage: mockFetchHistoryPage
-}))
+vi.mock(import('@/platform/assets/services/assetService'))
+vi.mock(import('@/platform/remote/comfyui/jobs/fetchJobs'))
 
 function makeCandidate(
   nodeId: string,
@@ -644,9 +629,11 @@ describe('verifyMediaCandidates', () => {
     'blake3:2222222222222222222222222222222222222222222222222222222222222222'
 
   beforeEach(() => {
-    mockGetAllAssetsByTag.mockResolvedValue([])
-    mockGetAssetsPageByTag.mockResolvedValue(makeAssetPage([]))
-    mockFetchHistoryPage.mockResolvedValue({
+    vi.mocked(assetService.getAllAssetsByTag).mockResolvedValue([])
+    vi.mocked(assetService.getAssetsPageByTag).mockResolvedValue(
+      makeAssetPage([])
+    )
+    vi.mocked(fetchHistoryPage).mockResolvedValue({
       jobs: [],
       total: 0,
       offset: 0,
@@ -830,7 +817,7 @@ describe('verifyMediaCandidates', () => {
         isMissing: undefined
       })
     ]
-    mockGetAssetsPageByTag.mockResolvedValueOnce(
+    vi.mocked(assetService.getAssetsPageByTag).mockResolvedValueOnce(
       makeAssetPage([makeAsset('ComfyUI_00001_.mp4', outputHash)], {
         hasMore: true
       })
@@ -838,7 +825,7 @@ describe('verifyMediaCandidates', () => {
 
     await verifyMediaCandidates(candidates, { isCloud: true })
 
-    expect(mockGetAssetsPageByTag).toHaveBeenCalledOnce()
+    expect(vi.mocked(assetService.getAssetsPageByTag)).toHaveBeenCalledOnce()
     expect(candidates[0]).toMatchObject({
       name: `video/${outputHash} [output]`,
       isMissing: false
@@ -880,7 +867,7 @@ describe('verifyMediaCandidates', () => {
       })
     ]
 
-    mockFetchHistoryPage.mockResolvedValueOnce({
+    vi.mocked(fetchHistoryPage).mockResolvedValueOnce({
       jobs: [makeHistoryJob('photo.png', { subfolder: 'subfolder' })],
       total: 1,
       offset: 0,
@@ -890,7 +877,7 @@ describe('verifyMediaCandidates', () => {
 
     await verifyMediaCandidates(candidates, { isCloud: false })
 
-    expect(mockFetchHistoryPage).toHaveBeenCalledWith(
+    expect(vi.mocked(fetchHistoryPage)).toHaveBeenCalledWith(
       expect.any(Function),
       200,
       0
@@ -957,14 +944,14 @@ describe('verifyMediaCandidates', () => {
     const candidates = [
       makeCandidate('1', existingHash, { isMissing: undefined })
     ]
-    mockGetAllAssetsByTag.mockResolvedValue([
+    vi.mocked(assetService.getAllAssetsByTag).mockResolvedValue([
       makeAsset('stored-photo.png', existingHash)
     ])
 
     await verifyMediaCandidates(candidates, { isCloud: true })
 
     expect(candidates[0].isMissing).toBe(false)
-    expect(mockFetchHistoryPage).not.toHaveBeenCalled()
+    expect(vi.mocked(fetchHistoryPage)).not.toHaveBeenCalled()
   })
 
   it('reads cloud output assets by tag for output candidates', async () => {
@@ -973,13 +960,13 @@ describe('verifyMediaCandidates', () => {
     const candidates = [
       makeCandidate('1', `${outputHash} [output]`, { isMissing: undefined })
     ]
-    mockGetAssetsPageByTag.mockResolvedValue(
+    vi.mocked(assetService.getAssetsPageByTag).mockResolvedValue(
       makeAssetPage([makeAsset(outputHash)])
     )
 
     await verifyMediaCandidates(candidates, { isCloud: true })
 
-    expect(mockGetAssetsPageByTag).toHaveBeenCalledWith(
+    expect(vi.mocked(assetService.getAssetsPageByTag)).toHaveBeenCalledWith(
       'output',
       true,
       expect.objectContaining({
@@ -988,7 +975,7 @@ describe('verifyMediaCandidates', () => {
         signal: expect.any(AbortSignal)
       })
     )
-    expect(mockFetchHistoryPage).not.toHaveBeenCalled()
+    expect(vi.mocked(fetchHistoryPage)).not.toHaveBeenCalled()
     expect(candidates[0].isMissing).toBe(false)
   })
 
@@ -998,7 +985,7 @@ describe('verifyMediaCandidates', () => {
     const candidates = [
       makeCandidate('1', `${outputHash} [output]`, { isMissing: undefined })
     ]
-    mockFetchHistoryPage
+    vi.mocked(fetchHistoryPage)
       .mockResolvedValueOnce({
         jobs: Array.from({ length: 200 }, (_, index) =>
           makeHistoryJob(`other-${index}.png`)
@@ -1018,13 +1005,13 @@ describe('verifyMediaCandidates', () => {
 
     await verifyMediaCandidates(candidates, { isCloud: false })
 
-    expect(mockFetchHistoryPage).toHaveBeenNthCalledWith(
+    expect(vi.mocked(fetchHistoryPage)).toHaveBeenNthCalledWith(
       1,
       expect.any(Function),
       200,
       0
     )
-    expect(mockFetchHistoryPage).toHaveBeenNthCalledWith(
+    expect(vi.mocked(fetchHistoryPage)).toHaveBeenNthCalledWith(
       2,
       expect.any(Function),
       200,
@@ -1039,7 +1026,7 @@ describe('verifyMediaCandidates', () => {
         isMissing: undefined
       })
     ]
-    mockFetchHistoryPage.mockResolvedValueOnce({
+    vi.mocked(fetchHistoryPage).mockResolvedValueOnce({
       jobs: Array.from({ length: 200 }, (_, index) =>
         makeHistoryJob(`other-${index}.png`)
       ),
@@ -1051,7 +1038,7 @@ describe('verifyMediaCandidates', () => {
 
     await verifyMediaCandidates(candidates, { isCloud: false })
 
-    expect(mockFetchHistoryPage).toHaveBeenCalledOnce()
+    expect(vi.mocked(fetchHistoryPage)).toHaveBeenCalledOnce()
     expect(candidates[0].isMissing).toBe(true)
   })
 
@@ -1123,7 +1110,7 @@ describe('verifyMediaCandidates', () => {
       makeAsset(`asset-${index}.png`)
     )
     inputAssets[42] = makeAsset('public-asset-record', 'public-photo.png')
-    mockGetAllAssetsByTag.mockResolvedValue(inputAssets)
+    vi.mocked(assetService.getAllAssetsByTag).mockResolvedValue(inputAssets)
 
     await verifyMediaCandidates(candidates, { isCloud: true })
 

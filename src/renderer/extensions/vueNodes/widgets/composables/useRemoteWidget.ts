@@ -1,4 +1,5 @@
 import axios from 'axios'
+import { shallowReactive } from 'vue'
 
 import { useChainCallback } from '@/composables/functional/useChainCallback'
 import type { IWidget, LGraphNode } from '@/lib/litegraph/src/litegraph'
@@ -32,7 +33,7 @@ async function getAuthHeaders() {
   return {}
 }
 
-const dataCache = new Map<string, CacheEntry<unknown>>()
+const dataCache = shallowReactive(new Map<string, CacheEntry<unknown>>())
 
 const createCacheKey = (config: RemoteWidgetConfig): string => {
   const { route, query_params = {}, refresh = 0 } = config
@@ -131,8 +132,9 @@ export function useRemoteWidget<
 
   const onFirstLoad = (data: T | T[]) => {
     isLoaded = true
-    const nextValue =
-      Array.isArray(data) && data.length > 0 ? data[0] : undefined
+    const nextValue = Array.isArray(data)
+      ? (data.find((value) => value === widget.value) ?? data[0])
+      : undefined
     widget.value = nextValue ?? (Array.isArray(data) ? defaultValue : data)
     widget.callback?.(widget.value)
     node.graph?.setDirtyCanvas(true)
@@ -148,9 +150,9 @@ export function useRemoteWidget<
     if (isValid || isBackingOff(entry) || isFetching(entry))
       return entry!.data as T
 
-    const currentEntry: CacheEntry<T> = (entry as
-      | CacheEntry<T>
-      | undefined) || { data: defaultValue }
+    const currentEntry: CacheEntry<T> = shallowReactive(
+      (entry as CacheEntry<T> | undefined) || { data: defaultValue }
+    )
     dataCache.set(cacheKey, currentEntry)
 
     try {
