@@ -56,7 +56,7 @@
           <div
             ref="actionbarCardRef"
             data-testid="action-bar-card"
-            class="pointer-events-auto relative z-1 flex flex-col rounded-lg border border-interface-stroke bg-comfy-menu-bg px-2 py-1.75 shadow-interface"
+            class="pointer-events-auto relative z-1 flex flex-col rounded-lg border border-base-foreground/9 bg-comfy-menu-bg px-2 py-1.75 shadow-interface"
           >
             <div
               :class="
@@ -141,15 +141,11 @@
         :to="queueStatusToastTarget ?? 'body'"
         :disabled="!queueStatusToastTarget"
       >
-        <div
-          :class="
-            cn(
-              'flex justify-end',
-              queueStatusToastTarget && 'absolute top-full right-0 pt-1'
-            )
-          "
-        >
-          <QueueStatusToast />
+        <div :class="queueStatusToastClass">
+          <QueueStatusToast
+            :above="toastAbove"
+            :align-start="toastAlignStart"
+          />
         </div>
       </Teleport>
       <template v-if="showLegacyQueueUi">
@@ -180,7 +176,12 @@
 </template>
 
 <script setup lang="ts">
-import { useMutationObserver, useLocalStorage } from '@vueuse/core'
+import {
+  useElementBounding,
+  useLocalStorage,
+  useMutationObserver,
+  useWindowSize
+} from '@vueuse/core'
 import { storeToRefs } from 'pinia'
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -301,6 +302,31 @@ function updateProgressTarget(target: HTMLElement | null) {
 const queueStatusToastTarget = computed(() =>
   isActionbarFloating.value ? progressTarget.value : null
 )
+const toastTargetBounds = useElementBounding(queueStatusToastTarget)
+const { width: windowWidth, height: windowHeight } = useWindowSize()
+/** Floating near the bottom or left edge, the toast opens toward the screen. */
+const toastAbove = computed(
+  () =>
+    !!queueStatusToastTarget.value &&
+    toastTargetBounds.top.value + toastTargetBounds.height.value / 2 >
+      windowHeight.value / 2
+)
+const toastAlignStart = computed(
+  () =>
+    !!queueStatusToastTarget.value &&
+    toastTargetBounds.left.value + toastTargetBounds.width.value / 2 <
+      windowWidth.value / 2
+)
+const queueStatusToastClass = computed(() => {
+  const anchored = !!queueStatusToastTarget.value
+  return cn(
+    'flex',
+    toastAlignStart.value ? 'justify-start' : 'justify-end',
+    anchored && 'absolute',
+    anchored && (toastAlignStart.value ? 'left-0' : 'right-0'),
+    anchored && (toastAbove.value ? 'bottom-full pb-1' : 'top-full pt-1')
+  )
+})
 const inlineProgressSummaryTarget = computed(() => {
   if (!shouldShowInlineProgressSummary.value || !isActionbarFloating.value) {
     return null

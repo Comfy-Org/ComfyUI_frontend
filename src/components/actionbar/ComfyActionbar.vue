@@ -328,6 +328,7 @@ const onMouseLeaveDropZone = () => {
 const inlineProgressTarget = computed(() => {
   if (
     !visible.value ||
+    isStatusToastEnabled.value ||
     !isQueuePanelV2Enabled.value ||
     !isRunProgressBarEnabled.value
   ) {
@@ -435,7 +436,7 @@ const panelClass = computed(() =>
     'actionbar pointer-events-auto',
     isDragging.value && 'pointer-events-none select-none',
     !isDocked.value &&
-      'fixed z-1300 rounded-lg border border-interface-stroke bg-interface-panel-surface p-1 shadow-interface'
+      'fixed z-1300 rounded-lg border border-base-foreground/9 bg-interface-panel-surface p-1 shadow-interface'
   )
 )
 </script>
