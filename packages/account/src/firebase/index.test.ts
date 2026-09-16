@@ -75,6 +75,10 @@ async function makeIdentity() {
 
 const hostAuth = { name: 'host-auth' } as Partial<Auth> as Auth
 
+const localStore = { type: 'LOCAL', store: 'localStorage' } as const
+const indexedDbStore = { type: 'LOCAL', store: 'indexedDB' } as const
+const sessionStore = { type: 'SESSION', store: 'sessionStorage' } as const
+
 async function makeHostBoundIdentity() {
   const { createFirebaseIdentity } = await import('./index.js')
   return createFirebaseIdentity({ auth: hostAuth })
@@ -140,25 +144,55 @@ describe('createFirebaseIdentity over package-initialized Firebase', () => {
     expect(sdk.getAuth).toHaveBeenCalledWith({ name: '[DEFAULT]' })
   })
 
-  it('initializes Auth with the host persistence and the popup resolver, since initializeAuth wires none and popup sign-in would throw auth/argument-error', async () => {
-    const persistence = { type: 'LOCAL' as const }
+  it("applies the host persistence to an app another script already created, so its Auth is not left on platform defaults or silently on that script's dependencies", async () => {
+    app.existing.push({ name: '[DEFAULT]' })
     const { createFirebaseIdentity } = await import('./index.js')
     const identity = createFirebaseIdentity({
       options: { apiKey: 'test' },
-      persistence
+      appName: '[DEFAULT]',
+      persistence: [localStore, indexedDbStore]
     })
 
     identity.onUserChanged(() => {})
 
+    expect(app.initializeApp).not.toHaveBeenCalled()
     expect(sdk.initializeAuth).toHaveBeenCalledWith(
-      { name: 'comfy-account' },
+      { name: '[DEFAULT]' },
       {
-        persistence,
+        persistence: [localStore, indexedDbStore],
         popupRedirectResolver: sdk.browserPopupRedirectResolver
       }
     )
     expect(sdk.getAuth).not.toHaveBeenCalled()
   })
+
+  it.for([
+    { shape: 'a single persistence', persistence: localStore },
+    {
+      shape: 'an ordered hierarchy',
+      persistence: [localStore, indexedDbStore, sessionStore]
+    }
+  ])(
+    'initializes Auth with $shape as the host listed it plus the popup resolver, since initializeAuth wires none and popup sign-in would throw auth/argument-error',
+    async ({ persistence }) => {
+      const { createFirebaseIdentity } = await import('./index.js')
+      const identity = createFirebaseIdentity({
+        options: { apiKey: 'test' },
+        persistence
+      })
+
+      identity.onUserChanged(() => {})
+
+      expect(sdk.initializeAuth).toHaveBeenCalledWith(
+        { name: 'comfy-account' },
+        {
+          persistence,
+          popupRedirectResolver: sdk.browserPopupRedirectResolver
+        }
+      )
+      expect(sdk.getAuth).not.toHaveBeenCalled()
+    }
+  )
 
   it('stays on getAuth when the host chooses no persistence', async () => {
     const identity = await makeIdentity()

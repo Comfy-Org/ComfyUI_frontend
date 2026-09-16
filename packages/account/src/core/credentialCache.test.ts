@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import type { CredentialStorage } from './credentialCache.js'
 import {
@@ -195,7 +195,7 @@ describe('selectFreshCredential', () => {
     }
   ])('$name', ({ memory, memoryTarget, stored, target, expected }) => {
     const selected = selectFreshCredential(
-      [{ credential: memory, target: memoryTarget }, stored],
+      [() => ({ credential: memory, target: memoryTarget }), () => stored],
       'uid-1',
       target,
       now,
@@ -208,12 +208,29 @@ describe('selectFreshCredential', () => {
   it('treats a storage miss as no candidate', () => {
     expect(
       selectFreshCredential(
-        [{ credential: undefined, target: undefined }, undefined],
+        [() => ({ credential: undefined, target: undefined }), () => undefined],
         'uid-1',
         undefined,
         now,
         margin
       )
     ).toBeUndefined()
+  })
+
+  it('does not consult a later candidate once an earlier one is fresh', () => {
+    const stored = vi.fn(() => ({
+      credential: makeCredential('stored'),
+      target: 'ws-1'
+    }))
+
+    selectFreshCredential(
+      [() => ({ credential: makeCredential('fresh'), target: 'ws-1' }), stored],
+      'uid-1',
+      'ws-1',
+      400_000,
+      300_000
+    )
+
+    expect(stored).not.toHaveBeenCalled()
   })
 })

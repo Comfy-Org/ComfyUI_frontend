@@ -1,3 +1,4 @@
+import type { Mock } from 'vitest'
 import { describe, expect, it, vi } from 'vitest'
 
 import { createTestIdentity } from '../testing.js'
@@ -277,22 +278,62 @@ describe('createLazyIdentity', () => {
     expect(listener).not.toHaveBeenCalled()
   })
 
-  it('rejects when the loader rejects and lets a later activation retry', async () => {
-    const inner = innerIdentity()
-    const load = vi
-      .fn<() => Promise<AccountIdentity>>()
-      .mockRejectedValueOnce(new Error('chunk failed'))
-      .mockResolvedValue(inner.identity)
+  it.for([
+    {
+      failure: 'the loader rejects',
+      failOnce: (load: Mock<() => Promise<AccountIdentity>>) =>
+        load.mockRejectedValueOnce(new Error('chunk failed'))
+    },
+    {
+      failure: 'the loader throws synchronously',
+      failOnce: (load: Mock<() => Promise<AccountIdentity>>) =>
+        load.mockImplementationOnce(() => {
+          throw new Error('chunk failed')
+        })
+    },
+    {
+      failure: 'the loaded identity throws on subscribe',
+      failOnce: (load: Mock<() => Promise<AccountIdentity>>) =>
+        load.mockResolvedValueOnce(
+          createTestIdentity<AccountUser>({
+            onUserChanged: () => {
+              throw new Error('chunk failed')
+            }
+          })
+        )
+    }
+  ])(
+    'rejects when $failure and lets a later activation retry',
+    async ({ failOnce }) => {
+      const inner = innerIdentity()
+      const load = vi.fn<() => Promise<AccountIdentity>>()
+      failOnce(load).mockResolvedValue(inner.identity)
+      const port = createLazyIdentity(load)
+
+      await expect(port.activate()).rejects.toThrow('chunk failed')
+      const retry = port.activate()
+      await inner.whenSubscribed()
+      inner.fire(null)
+      await retry
+
+      expect(load).toHaveBeenCalledTimes(2)
+      expect(inner.subscribed()).toBe(1)
+    }
+  )
+
+  it('resolves the activation even when a listener throws on the first delivery', async () => {
+    const { inner, release, load } = deferredLoader()
     const port = createLazyIdentity(load)
-
-    await expect(port.activate()).rejects.toThrow('chunk failed')
-    const retry = port.activate()
+    port.onUserChanged(() => {
+      throw new Error('listener failed')
+    })
+    const activation = port.activate()
+    release()
     await inner.whenSubscribed()
-    inner.fire(null)
-    await retry
 
-    expect(load).toHaveBeenCalledTimes(2)
-    expect(inner.subscribed()).toBe(1)
+    expect(() => inner.fire(alice)).toThrow('listener failed')
+
+    await expect(activation).resolves.toBeUndefined()
   })
 
   it('stops delivering to a listener that unsubscribed and tolerates deactivate afterwards', async () => {
