@@ -138,7 +138,98 @@ describe('DynamicGroup widgets', () => {
     expect(node.getInputLink(node.findInputSlot('loras.0.strength'))).toBe(link)
   })
 
-  it('removes remote combo controls and subscriptions with their row', () => {
+  it('leaves rows and links intact when row removal is rejected', () => {
+    const { node, graph, widget } = setup()
+    widget('loras').value = 2
+    const source = new LGraphNode('Source')
+    source.addOutput('strength', 'FLOAT')
+    graph.add(source)
+    const link = source.connect(0, node, node.findInputSlot('loras.1.strength'))
+    const saved = node.serialize()
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+    vi.spyOn(useLinkStore(), 'updateEndpoints').mockReturnValue({
+      ok: false,
+      error: { code: 'unowned-topology', message: 'Rejected' }
+    })
+
+    widget('loras.0').callback?.(undefined)
+    expect(node.serialize()).toEqual(saved)
+    widget('loras').value = 0
+    expect(node.serialize()).toEqual(saved)
+    expect(node.getInputLink(node.findInputSlot('loras.1.strength'))).toBe(link)
+  })
+
+  it('preserves unrelated widgets when cleanup removes another row widget', () => {
+    const { node, widget } = setup()
+    widget('loras').value = 1
+    const sibling = widget('loras.0.enabled')
+    widget('loras.0').onRemove = () => {
+      if (node.widgets?.includes(sibling)) node.removeWidget(sibling)
+    }
+    widget('loras.0').callback?.(undefined)
+    expect(widget('after').value).toBe('last')
+    expect(widget('loras').value).toBe(0)
+  })
+
+  it.for([false, true])(
+    'rejects unsupported saved row counts before allocating with named restoration = %s',
+    (named) => {
+      LiteGraph.namedValuesRestore = named
+      const { node } = setup()
+      const saved = node.serialize()
+      saved.widgets_values = ['first', 1e9, 'last']
+      saved.widgets_values_named = {
+        before: 'first',
+        loras: 1e9,
+        'loras.999999999.lora_name': 'C',
+        after: 'last'
+      }
+      const add = vi.spyOn(node, 'addCustomWidget').mockImplementation(() => {
+        throw new Error('Unexpected row allocation')
+      })
+      expect(() => node.configure(saved)).toThrow(
+        'Invalid saved row count for DynamicGroup'
+      )
+      expect(add).not.toHaveBeenCalled()
+    }
+  )
+
+  it('preserves saved values in an error node when the group definition is invalid', () => {
+    const { node, graph, widget } = setup()
+    const nodeType = 'test/InvalidDynamicGroup'
+    node.type = nodeType
+    widget('loras').value = 2
+    widget('loras.1.lora_name').value = 'C'
+    const saved = graph.serialize()
+    class InvalidDynamicGroup extends LGraphNode {
+      constructor() {
+        super('Invalid group')
+        useLitegraphService().addNodeInput(this, {
+          name: 'loras',
+          type: 'COMFY_DYNAMICGROUP_V3',
+          isOptional: false,
+          min: 0,
+          max: 101,
+          template: { required: { name: ['STRING', {}] } }
+        })
+      }
+    }
+    LiteGraph.registerNodeType(nodeType, InvalidDynamicGroup)
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+    try {
+      const restored = new LGraph()
+      restored.configure(saved)
+      const placeholder = restored.getNodeById(node.id)
+      expect(placeholder?.has_errors).toBe(true)
+      expect(placeholder?.serialize().widgets_values).toEqual(
+        saved.nodes[0].widgets_values
+      )
+    } finally {
+      LiteGraph.unregisterNodeType(nodeType)
+    }
+  })
+
+  it('removes remote combo controls and subscriptions with their row', async () => {
     const response: AxiosResponse<string[]> = {
       data: ['A', 'B'],
       status: 200,
@@ -177,6 +268,13 @@ describe('DynamicGroup widgets', () => {
     ])
     const first = widget('remote.0.model')
     const survivor = widget('remote.1.model')
+    await vi.waitFor(() => expect(first.options.values).toEqual(['A', 'B']))
+    expect(first.value).toBe('A')
+    first.options.values = undefined
+    expect(first.options.values).toEqual(['A', 'B'])
+    vi.mocked(axios.get).mockResolvedValue({ ...response, data: ['C'] })
+    first.refresh?.()
+    await vi.waitFor(() => expect(first.options.values).toEqual(['C']))
     const firstRefresh = vi.spyOn(first, 'refresh').mockImplementation(() => {})
     const survivorRefresh = vi
       .spyOn(survivor, 'refresh')

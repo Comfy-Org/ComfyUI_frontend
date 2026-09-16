@@ -23,27 +23,12 @@ export function dynamicGroupWidget(
   inputName: string,
   inputData: InputSpec
 ) {
-  const parsed = zDynamicGroupInputSpec.safeParse(inputData)
-  if (!parsed.success) {
-    console.warn(`Invalid DynamicGroup input '${inputName}'`, parsed.error)
-    return {
-      widget: node.addCustomWidget({
-        type: 'button',
-        name: inputName,
-        value: undefined,
-        y: 0,
-        serialize: false,
-        options: {
-          disabled: true,
-          socketless: true,
-          serialize: false,
-          surfaces: { canvas: 'never', vueNode: 'shown', panel: 'shown' }
-        }
-      })
-    }
-  }
-
-  const { min, max, template, group_name = inputName } = parsed.data[1]
+  const {
+    min,
+    max,
+    template,
+    group_name = inputName
+  } = zDynamicGroupInputSpec.parse(inputData)[1]
   const store = useWidgetValueStore()
   const { addNodeInput } = useLitegraphService()
   const controller: IBaseWidget = node.addCustomWidget({
@@ -133,18 +118,15 @@ export function dynamicGroupWidget(
   }
 
   function removeRow(index: number) {
-    if (!node.widgets) return
+    if (!node.widgets) return false
     const prefix = `${inputName}.${index}`
-    for (let slot = node.inputs.length - 1; slot >= 0; slot--)
-      if (node.inputs[slot].name.startsWith(`${prefix}.`))
-        node.removeInput(slot)
     const removed = node.widgets.filter(
       (widget) => widget.name === prefix || widget.name.startsWith(`${prefix}.`)
     )
-    for (const widget of removed) {
-      node.widgets.splice(node.widgets.indexOf(widget), 1)
-      widget.onRemove?.()
-      if (widget.widgetId) store.deleteWidget(widget.widgetId)
+    if (!removed.length) return false
+    if (!removeRowInputs(prefix)) return false
+    for (const widget of removed.toReversed()) {
+      if (node.widgets.includes(widget)) node.removeWidget(widget)
     }
     for (const header of rows()) {
       const oldPrefix = header.name
@@ -153,6 +135,32 @@ export function dynamicGroupWidget(
       const newPrefix = `${inputName}.${row - 1}`
       renameRow(oldPrefix, newPrefix)
     }
+    return true
+  }
+
+  function removeRowInputs(prefix: string) {
+    const previous = captureInputLayout(node)
+    const inputs = previous.inputs.filter(
+      (input) => !input.name.startsWith(`${prefix}.`)
+    )
+    const result = replaceNodeInputs(
+      node,
+      previous,
+      inputs,
+      previous.links,
+      true
+    )
+    if (!result.ok) return false
+    for (const link of node.graph?.floatingLinks.values() ?? []) {
+      if (link.target_id !== node.id) continue
+      const slot = inputs.indexOf(previous.inputs[link.target_slot])
+      if (slot === -1) node.graph?.removeFloatingLink(link)
+      else link.target_slot = slot
+    }
+    previous.inputs.forEach((input, slot) => {
+      if (!inputs.includes(input)) node.onInputRemoved?.(slot, input)
+    })
+    return true
   }
 
   function renameRow(oldPrefix: string, newPrefix: string) {
@@ -234,10 +242,12 @@ export function dynamicGroupWidget(
         })
         let auxiliaryIndex = 0
         node.widgets?.slice(fieldStart).forEach((widget) => {
-          widget.options = {
-            ...widget.options,
-            surfaces: { ...deriveWidgetSurfaces(widget), canvas: 'never' }
+          const options = widget.options
+          options.surfaces = {
+            ...deriveWidgetSurfaces(widget),
+            canvas: 'never'
           }
+          widget.options = options
           if (widget.name === name) return
           widget.label ??= widget.name
           widget.name = `${name}.${auxiliaryIndex++}`
@@ -246,12 +256,54 @@ export function dynamicGroupWidget(
     }
   }
 
+  function validateSavedRowCount(value: number, requested: number) {
+    const graphId = resolveNodeRootGraphId(node)
+    const position =
+      node.widgets
+        ?.filter((widget) => widget.serialize !== false)
+        .indexOf(controller) ?? -1
+    const restored = graphId
+      ? store.getRestoredWidgetValue(graphId, node.id, inputName, position)
+      : undefined
+    if (graphId && restored?.value === value) {
+      const firstField = Object.keys({
+        ...template.required,
+        ...template.optional
+      })[0]
+      // Every saved row contributes at least one serialized field.
+      for (let index = 0; index < requested; index++) {
+        if (
+          !store.getRestoredWidgetValue(
+            graphId,
+            node.id,
+            `${inputName}.${index}.${firstField}`,
+            position + index + 1
+          )
+        )
+          throw new RangeError(
+            `Invalid saved row count for DynamicGroup '${inputName}'`
+          )
+      }
+    }
+  }
+
   Object.defineProperty(controller, 'value', {
     get: () => rowCount,
     set(value: unknown) {
       if (typeof value !== 'number' || !Number.isFinite(value)) return
-      const count = Math.max(min, Math.trunc(value))
-      while (rows().length > count) removeRow(rows().length - 1)
+      const requested = Math.max(0, Math.trunc(value))
+      validateSavedRowCount(value, requested)
+      const count = Math.max(min, requested)
+      while (rows().length > count) {
+        const headers = rows()
+        const last = headers.at(-1)
+        if (
+          !last ||
+          !removeRow(Number(last.name.slice(inputName.length + 1))) ||
+          rows().length >= headers.length
+        )
+          break
+      }
       while (rows().length < count) {
         if (!addRow(rows().length)) break
       }

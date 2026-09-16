@@ -33,7 +33,9 @@ Deleting a row renumbers the remaining fields and preserves their values and
 connections. API import restores submitted rows in encounter order with contiguous
 indices, including rows exceeding `max`. Saving and reloading preserves those
 rows. Adding a row remains disabled at or above `max`; execution validity belongs
-to backend validation.
+to backend validation. Saved row counts are checked against available field values
+before allocating widgets. Invalid group definitions fail construction so the
+existing error-node restoration retains the original workflow data.
 
 Reject a second group-owned value store or a composite widget that renders its
 children itself: both would duplicate existing restoration, error, link and
