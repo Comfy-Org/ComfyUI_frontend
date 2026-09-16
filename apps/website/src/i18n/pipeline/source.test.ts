@@ -193,6 +193,18 @@ describe('pendingSource', () => {
     })
   })
 
+  /**
+   * A key the reviewer rejected is absent from the machine layer by design.
+   * Listing it as pending would buy the same translation and the same verdict
+   * again every night.
+   */
+  it('leaves out a key held back as rejected on review', () => {
+    expect(pendingSource(entries, 'ja', {}, new Set(['hero.new']))).toEqual({
+      'hero.title': 'Build anything',
+      'hero.brand': 'ComfyUI'
+    })
+  })
+
   it('never asks for a key with nothing to translate', () => {
     const withBlank: SourceEntry[] = [
       { key: 'frag', english: '', approved: {} }

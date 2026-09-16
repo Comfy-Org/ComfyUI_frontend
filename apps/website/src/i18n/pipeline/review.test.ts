@@ -11,13 +11,16 @@ import {
   glossaryFingerprint,
   planBatches,
   pruneOrphanedVerdicts,
+  rejectedUnderCurrentEnglish,
   resolveReviewModel,
   reviewAll,
   reviewViolations,
   selectKeysForReview,
   serializeReviewState,
-  summarize
+  summarize,
+  withRejections
 } from './review'
+import { hashValue } from './source'
 import type { Finding, ReviewState } from './review'
 
 const finding = (key: string, over: Partial<Finding> = {}): Finding => ({
@@ -297,6 +300,21 @@ describe('loadReviewState', () => {
     expect(loaded.entries.badFinding.findings).toEqual([])
   })
 
+  it('keeps rejections under the same rubric and drops them with it', () => {
+    const withRejected = { ...stored, rejected: { a: 'e1' } }
+    expect(loadReviewState(withRejected, 'g1').rejected).toEqual({ a: 'e1' })
+    expect(loadReviewState(withRejected, 'g2').rejected).toBeUndefined()
+  })
+
+  it('ignores a rejected map that is not key to hash', () => {
+    expect(
+      loadReviewState({ ...stored, rejected: ['a'] }, 'g1').rejected
+    ).toBeUndefined()
+    expect(
+      loadReviewState({ ...stored, rejected: { a: 3, b: '' } }, 'g1').rejected
+    ).toBeUndefined()
+  })
+
   it('reads an absent file as no verdicts', () => {
     expect(loadReviewState(null, 'g1').entries).toEqual({})
   })
@@ -355,6 +373,16 @@ describe('serializeReviewState', () => {
     }
     const written = serializeReviewState(original)
     expect(loadReviewState(written, 'g1')).toEqual(original)
+  })
+
+  it('round-trips rejections and omits the map when there are none', () => {
+    const rejected = { ...state({}), rejected: { b: 'e2', a: 'e1' } }
+    const written = serializeReviewState(rejected)
+    expect(Object.keys(written.rejected ?? {})).toEqual(['a', 'b'])
+    expect(loadReviewState(written, undefined).rejected).toEqual(
+      rejected.rejected
+    )
+    expect(serializeReviewState(state({}))).not.toHaveProperty('rejected')
   })
 
   it('writes a clean verdict as its hash and a flagged one in full', () => {
@@ -460,6 +488,45 @@ describe('reviewAll', () => {
     })
     expect(calls).toBe(0)
     expect(result.reviewed).toBe(0)
+  })
+})
+
+describe('rejection memory', () => {
+  const english = { a: 'Alpha', b: 'Beta' }
+
+  /**
+   * Dropping a key makes it absent from the machine layer, and absence is what
+   * the source build reads as untranslated. Without a record of the rejection
+   * every run re-bought the same verdict.
+   */
+  it('remembers a dropped key under the English it was judged against', () => {
+    const next = withRejections(state({}), english, ['a'], [])
+    expect(next.rejected).toEqual({ a: hashValue('Alpha') })
+    expect(rejectedUnderCurrentEnglish(next, english)).toEqual(new Set(['a']))
+  })
+
+  it('lifts a rejection once the English moves', () => {
+    const next = withRejections(state({}), english, ['a'], [])
+    expect(
+      rejectedUnderCurrentEnglish(next, { ...english, a: 'Alpha, revised' })
+    ).toEqual(new Set())
+  })
+
+  it('lifts a rejection for a key that published again', () => {
+    const before = withRejections(state({}), english, ['a', 'b'], [])
+    const next = withRejections(before, english, [], ['a'])
+    expect(next.rejected).toEqual({ b: hashValue('Beta') })
+  })
+
+  it('does not record a key that has no English to be judged against', () => {
+    expect(withRejections(state({}), english, ['gone'], []).rejected).toEqual(
+      {}
+    )
+  })
+
+  it('survives a review run untouched', () => {
+    const rejected = { ...state({}), rejected: { a: 'e1' } }
+    expect(pruneOrphanedVerdicts(rejected, {}).rejected).toEqual({ a: 'e1' })
   })
 })
 

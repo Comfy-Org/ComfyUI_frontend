@@ -34,6 +34,7 @@
 import { createHash } from 'node:crypto'
 
 import type { Locale } from '../../config/locales'
+import { hashValue } from './source'
 import type { EnglishSource, TranslationLayer } from './types'
 import type { Violation } from './validate'
 
@@ -129,6 +130,21 @@ export interface ReviewState {
    */
   glossary?: string
   entries: Record<string, KeyVerdict>
+  /**
+   * Keys whose translation enforcement dropped on a critical or major finding,
+   * each with the hash of the English it was rejected under.
+   *
+   * Without this a rejection lasted one night. Dropping the key made it absent
+   * from the machine layer, absence is what the source build reads as "not yet
+   * translated", and the next run paid to translate it, review it and reject
+   * it again. The 14 split-heading keys that no translation can fix would have
+   * churned the nightly pull request indefinitely.
+   *
+   * Keyed to the English hash rather than to the key alone, so a rejection is
+   * lifted the moment the English moves. Lifted too when the rubric moves,
+   * since it lives beside the verdicts and is discarded with them.
+   */
+  rejected?: Record<string, string>
 }
 
 const CATEGORIES: readonly FindingCategory[] = [
@@ -222,8 +238,47 @@ export function pruneOrphanedVerdicts(
   return {
     promptVersion: state.promptVersion,
     glossary: state.glossary,
+    rejected: state.rejected,
     entries
   }
+}
+
+/**
+ * The state after enforcement: `dropped` keys are remembered as rejected under
+ * the English they were judged against, and a key that published again has
+ * its rejection lifted, so a re-added English string is not blocked by a
+ * verdict about text that no longer exists.
+ */
+export function withRejections(
+  state: ReviewState,
+  english: EnglishSource,
+  dropped: readonly string[],
+  published: readonly string[]
+): ReviewState {
+  const rejected = { ...(state.rejected ?? {}) }
+  for (const key of published) delete rejected[key]
+  for (const key of dropped) {
+    if (Object.hasOwn(english, key)) rejected[key] = hashValue(english[key])
+  }
+  return { ...state, rejected }
+}
+
+/**
+ * The keys still rejected under the English now in force. A key whose English
+ * has moved since it was rejected is not in the answer: the verdict was about
+ * a sentence that no longer exists.
+ */
+export function rejectedUnderCurrentEnglish(
+  state: ReviewState,
+  english: EnglishSource
+): ReadonlySet<string> {
+  const still = new Set<string>()
+  for (const [key, hash] of Object.entries(state.rejected ?? {})) {
+    if (Object.hasOwn(english, key) && hashValue(english[key]) === hash) {
+      still.add(key)
+    }
+  }
+  return still
 }
 
 export interface BatchLimits {
@@ -454,6 +509,7 @@ type StoredVerdict = string | KeyVerdict
 export interface SerializedReviewState {
   promptVersion: number
   glossary?: string
+  rejected?: Record<string, string>
   entries: Record<string, StoredVerdict>
 }
 
@@ -473,9 +529,17 @@ export function serializeReviewState(
     const verdict = state.entries[key]
     entries[key] = verdict.findings.length > 0 ? verdict : verdict.hash
   }
+  const rejected = Object.keys(state.rejected ?? {}).length
+    ? Object.fromEntries(
+        Object.keys(state.rejected ?? {})
+          .sort()
+          .map((key) => [key, (state.rejected ?? {})[key]])
+      )
+    : undefined
   return {
     promptVersion: state.promptVersion,
     glossary: state.glossary,
+    ...(rejected ? { rejected } : {}),
     entries
   }
 }
@@ -501,6 +565,7 @@ export function loadReviewState(
   const state = stored as {
     promptVersion?: unknown
     glossary?: unknown
+    rejected?: unknown
     entries?: Record<string, unknown>
   } | null
 
@@ -523,11 +588,23 @@ export function loadReviewState(
   // the fingerprint the last real run recorded.
   const recorded =
     typeof state.glossary === 'string' ? state.glossary : undefined
+  const rejected = storedRejections(state.rejected)
   return {
     promptVersion: PROMPT_VERSION,
     glossary: glossary ?? recorded,
+    ...(rejected ? { rejected } : {}),
     entries
   }
+}
+
+/** A `key -> English hash` map, or nothing if the file holds anything else. */
+function storedRejections(raw: unknown): Record<string, string> | undefined {
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return undefined
+  const rejected: Record<string, string> = {}
+  for (const [key, hash] of Object.entries(raw)) {
+    if (typeof hash === 'string' && hash !== '') rejected[key] = hash
+  }
+  return Object.keys(rejected).length ? rejected : undefined
 }
 
 /**

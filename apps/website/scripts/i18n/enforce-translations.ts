@@ -17,6 +17,11 @@
  * grammar behaves exactly like one dropped for a lost brand name. The reviewer
  * writes verdicts and nothing else; it owns no gate of its own.
  *
+ * A key dropped on review is also recorded in `review/{locale}.json` under the
+ * English it was judged against, so the next source build holds it back rather
+ * than listing it as untranslated and paying for the same verdict again. The
+ * hold lifts when the English or the rubric moves, or when the key publishes.
+ *
  * Existing entries in `content` are merged with, never replaced, so a run that
  * translates ten new keys cannot discard the hundred already there.
  */
@@ -33,8 +38,11 @@ import {
 import {
   glossaryFingerprint,
   loadReviewState,
-  reviewViolations
+  reviewViolations,
+  serializeReviewState,
+  withRejections
 } from '../../src/i18n/pipeline/review'
+import type { ReviewState } from '../../src/i18n/pipeline/review'
 import type { Violation } from '../../src/i18n/pipeline/validate'
 import type { EnglishSource } from '../../src/i18n/pipeline/types'
 import { collectViolations } from '../../src/i18n/pipeline/validate'
@@ -53,6 +61,22 @@ function readReviewState(file: string): unknown {
     if ((error as NodeJS.ErrnoException).code === 'ENOENT') return null
     throw error
   }
+}
+
+/**
+ * Rejections are the one thing enforcement writes back to the review file.
+ *
+ * The verdicts stay the reviewer's. What enforcement adds is which of them it
+ * acted on, keyed to the English at the time, so the next source build does
+ * not list the key as untranslated and pay for the same verdict again.
+ */
+function writeReviewState(file: string, state: ReviewState): void {
+  fs.mkdirSync(path.dirname(file), { recursive: true })
+  fs.writeFileSync(
+    file,
+    `${JSON.stringify(serializeReviewState(state), null, 2)}\n`,
+    'utf8'
+  )
 }
 
 function writeJson(file: string, value: Record<string, string>): void {
@@ -173,8 +197,9 @@ function main(): void {
   // were reached, they describe a rule that is no longer in force, and pruning
   // real copy on them would be worse than not pruning at all.
   const merged = { ...existing, ...kept }
+  const reviewFile = path.join(I18N_DIR, 'review', `${locale}.json`)
   const reviewState = loadReviewState(
-    readReviewState(path.join(I18N_DIR, 'review', `${locale}.json`)),
+    readReviewState(reviewFile),
     glossaryFingerprint(terms, localeRubric(locale).guidance)
   )
   const findings = reviewViolations(locale, reviewState, english, merged)
@@ -198,6 +223,15 @@ function main(): void {
   reportReviewResult(locale, merged, findings, rejected, rejectedShare)
 
   writeJson(contentFile, published)
+
+  // Only when there is a decision to remember. A run with nothing rejected
+  // and nothing published anew leaves the reviewer's file as it wrote it.
+  if (rejected.length > 0 || Object.keys(reviewState.rejected ?? {}).length) {
+    writeReviewState(
+      reviewFile,
+      withRejections(reviewState, english, rejected, Object.keys(published))
+    )
+  }
 
   process.stdout.write(
     `[i18n] ${locale}: published ${Object.keys(kept).length}, ` +
