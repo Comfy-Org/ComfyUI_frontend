@@ -2,13 +2,6 @@ import { comfyExpect as expect } from '@e2e/fixtures/ComfyPage'
 import { packPersistenceTest as test } from '@e2e/fixtures/customNode/packPersistenceFixture'
 import { openWorkflowFromSidebar } from '@e2e/fixtures/utils/builderTestUtils'
 
-const expectedSelection = [
-  { name: 'A1', selected: true },
-  { name: 'A2', selected: false },
-  { name: 'B1', selected: false },
-  { name: 'B2', selected: true }
-]
-
 test.describe(
   'custom-drawn pack widget persistence @custom-nodes',
   { tag: ['@oss', '@node', '@widget', '@vue-nodes'] },
@@ -17,6 +10,12 @@ test.describe(
       comfyPage,
       savedWorkflows
     }, testInfo) => {
+      const expectedSelection = [
+        { name: 'A1', selected: true },
+        { name: 'A2', selected: false },
+        { name: 'B1', selected: false },
+        { name: 'B2', selected: true }
+      ]
       test.setTimeout(60_000)
       await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', true)
       await comfyPage.workflow.setupWorkflowsDirectory({})
