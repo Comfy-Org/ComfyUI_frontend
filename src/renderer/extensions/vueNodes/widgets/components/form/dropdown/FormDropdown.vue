@@ -289,15 +289,12 @@ async function getTopSearchResult() {
   const query = searchQuery.value
   if (query.trim() === '') return
 
-  const sourceItems = pagedItems(items)
   const matches =
     isShowingCurrentSearchResults.value && displayedSearchQuery.value === query
       ? filteredItems.value
-      : await searcher(query, sourceItems, () => {})
+      : await searcher(query, pagedItems(items), () => {})
 
-  if (query !== searchQuery.value || sourceItems !== items || !isOpen.value) {
-    return
-  }
+  if (query !== searchQuery.value || !isOpen.value) return
 
   return selectedSorter.value({ items: matches })[0]
 }

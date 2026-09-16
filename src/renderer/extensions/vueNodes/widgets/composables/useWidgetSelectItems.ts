@@ -201,11 +201,9 @@ export function useWidgetSelectItems(options: UseWidgetSelectItemsOptions) {
     }
     const targetKind = toValue(options.assetKind)
     const targetMediaType = targetKind === 'mesh' ? '3D' : targetKind
-    const kindFilter = (asset: AssetItem) => {
-      const kind = asset.metadata?.kind
-      if (kind !== undefined) return kind === targetKind
-      return getMediaTypeFromFilename(asset.name) === targetMediaType
-    }
+    const kindFilter = (asset: AssetItem) =>
+      asset.metadata?.kind === targetKind ||
+      getMediaTypeFromFilename(asset.name) === targetMediaType
 
     const base = baseAssets.value
     const baseItems = pagedItems(base).filter(kindFilter).map(assetToForm)
