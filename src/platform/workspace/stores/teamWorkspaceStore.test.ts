@@ -1,3 +1,4 @@
+import { reportError } from '@/platform/telemetry/reportError'
 import { useWorkspaceAuthStore } from '@/platform/workspace/stores/workspaceAuthStore'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -57,6 +58,8 @@ const mockWorkspaceApi = vi.hoisted(() => ({
   acceptInvite: vi.fn(),
   accessBillingPortal: vi.fn()
 }))
+
+vi.mock(import('@/platform/telemetry/reportError'), { spy: true })
 
 const mockWorkspaceApiError = vi.hoisted(
   () =>
@@ -2162,6 +2165,12 @@ describe('useTeamWorkspaceStore', () => {
       const result = await store.acceptInvite('invite-token')
 
       expect(mockWorkspaceApi.list).toHaveBeenCalledTimes(1)
+      expect(vi.mocked(reportError)).toHaveBeenCalledWith(
+        expect.objectContaining({ status: 503 }),
+        expect.objectContaining({
+          errorType: 'error_refreshing_workspaces_after_invite_accept'
+        })
+      )
       expect(result.workspaceId).toBe('ws-joined')
     })
   })
