@@ -515,8 +515,8 @@ async function run(argv: readonly string[]): Promise<void> {
         reasoningEffort: config.reasoningEffort,
         glossary: config.glossary,
         maxTruncationSplitDepth: config.maxTruncationSplitDepth,
-        onResponse: (response) => {
-          responseUsages.push(response.usage)
+        onUsage: (usage) => {
+          responseUsages.push(usage)
         }
       })
     : async () => {

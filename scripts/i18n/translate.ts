@@ -1,6 +1,6 @@
 import OpenAI from 'openai'
 import { zodTextFormat } from 'openai/helpers/zod'
-import type { Response } from 'openai/resources/responses/responses'
+import type { ResponseUsage } from 'openai/resources/responses/responses'
 import { z } from 'zod'
 
 import type { OutputLocale, TranslationPipelineConfig } from './config'
@@ -83,10 +83,9 @@ export function buildSystemPrompt(
   glossary: string
 ): string {
   return `You are a professional software localization translator for ComfyUI, a node-based interface for generative AI models.
-Translate each item's "source" string from English into ${locale.name}.
+Translate each item's "source" string from English into ${locale.name}, returning the translation under that item's "id".
 
 Rules:
-- Respond with a JSON object that maps every item "id" to its translated string — every id, no other keys, no commentary.
 - Every substring listed in an item's "preserve" array must appear in the translation exactly as written, byte for byte. Never translate, transliterate, or renumber them.
 - Interpolation placeholders such as {name} stay exactly as written.
 - The | character separates plural forms. Keep the same number of forms and translate each form.
@@ -129,7 +128,7 @@ interface OpenAiTranslatorOptions {
   glossary: string
   maxTruncationSplitDepth: number
   fetchFn?: typeof fetch
-  onResponse?: (response: Response) => void
+  onUsage?: (usage: ResponseUsage | undefined) => void
   requestTimeoutMs?: number
 }
 
@@ -154,7 +153,7 @@ export function createOpenAiTranslator(
       .strict()
     let deferralReason = 'the request was not attempted'
     for (let attempt = 0; attempt <= maxMalformedResponseRetries; attempt++) {
-      const response = await client.responses.create({
+      const request = client.responses.parse({
         model: options.model,
         reasoning: { effort: options.reasoningEffort },
         store: false,
@@ -162,7 +161,21 @@ export function createOpenAiTranslator(
         instructions: buildSystemPrompt(locale, options.glossary),
         input: JSON.stringify({ items })
       })
-      options.onResponse?.(response)
+      if (options.onUsage) {
+        const httpResponse = await request.asResponse()
+        const { usage }: { usage?: ResponseUsage } = await httpResponse
+          .clone()
+          .json()
+        options.onUsage(usage)
+      }
+      const response = await request.catch((error: unknown) => {
+        if (!(error instanceof SyntaxError || error instanceof z.ZodError)) {
+          throw error
+        }
+        deferralReason = error.message
+        return undefined
+      })
+      if (!response) continue
       if (
         response.status === 'incomplete' &&
         response.incomplete_details?.reason === 'max_output_tokens'
@@ -201,11 +214,8 @@ export function createOpenAiTranslator(
         deferralReason = 'the model refused the translation'
         break
       }
-      try {
-        return schema.parse(JSON.parse(response.output_text))
-      } catch (error) {
-        deferralReason = error instanceof Error ? error.message : String(error)
-      }
+      if (response.output_parsed !== null) return response.output_parsed
+      deferralReason = 'the response has no parsed translation'
     }
     console.warn(
       `${locale.code}: deferring ${items.length} strings for retry: ${deferralReason}`

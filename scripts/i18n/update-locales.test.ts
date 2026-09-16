@@ -578,7 +578,7 @@ describe('createOpenAiTranslator', () => {
     overrides: Partial<
       Pick<
         Parameters<typeof createOpenAiTranslator>[0],
-        'maxTruncationSplitDepth' | 'onResponse'
+        'maxTruncationSplitDepth' | 'onUsage'
       >
     > = {}
   ) {
@@ -701,6 +701,37 @@ describe('createOpenAiTranslator', () => {
   })
 
   it.for([
+    { name: 'invalid JSON', content: 'not json' },
+    { name: 'missing keys', content: '{"1":"Bonjour {name}"}' }
+  ])(
+    'recovers from $name and counts usage for both attempts',
+    async ({ content }) => {
+      const usages: OpenAiResponse['usage'][] = []
+      const usage = {
+        input_tokens: 10,
+        output_tokens: 4,
+        total_tokens: 14,
+        input_tokens_details: { cached_tokens: 0, cache_write_tokens: 0 },
+        output_tokens_details: { reasoning_tokens: 2 }
+      }
+      const { translate, callCount } = translatorFor(
+        [
+          response(content, { usage }),
+          response('{"1":"Bonjour {name}","2":"Au revoir {name}"}', { usage })
+        ],
+        { onUsage: (usage) => usages.push(usage) }
+      )
+      await expect(translate(locale, items)).resolves.toEqual({
+        '1': 'Bonjour {name}',
+        '2': 'Au revoir {name}'
+      })
+      expect(formatUsageSummary(usages, callCount())).toBe(
+        'OpenAI usage: 2 HTTP requests for 2 responses; 20 input, 8 output (4 reasoning), 28 total tokens.'
+      )
+    }
+  )
+
+  it.for([
     {
       name: 'content filtering',
       overrides: {
@@ -726,6 +757,27 @@ describe('createOpenAiTranslator', () => {
             status: 'completed',
             content: [
               { type: 'refusal', refusal: 'Cannot translate this input' }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      name: 'a refusal alongside valid translations',
+      overrides: {
+        output: [
+          {
+            id: 'refusal',
+            type: 'message',
+            role: 'assistant',
+            status: 'completed',
+            content: [
+              { type: 'refusal', refusal: 'Cannot translate this input' },
+              {
+                type: 'output_text',
+                text: '{"1":"Bonjour {name}","2":"Au revoir {name}"}',
+                annotations: []
+              }
             ]
           }
         ]
@@ -785,8 +837,8 @@ describe('createOpenAiTranslator', () => {
 
   it('reports usage for truncated and successful responses', async () => {
     const totalTokens: number[] = []
-    const onResponse = vi.fn((result: OpenAiResponse) => {
-      if (result.usage) totalTokens.push(result.usage.total_tokens)
+    const onUsage = vi.fn((usage: OpenAiResponse['usage']) => {
+      if (usage) totalTokens.push(usage.total_tokens)
     })
     const { translate } = translatorFor(
       (body, call) => {
@@ -811,10 +863,10 @@ describe('createOpenAiTranslator', () => {
           }
         )
       },
-      { onResponse }
+      { onUsage }
     )
     await translate(locale, items)
-    expect(onResponse).toHaveBeenCalledTimes(3)
+    expect(onUsage).toHaveBeenCalledTimes(3)
     expect(totalTokens[0]).toBe(14)
     expect(totalTokens.slice(1).sort((a, b) => a - b)).toEqual([12, 14])
   })
