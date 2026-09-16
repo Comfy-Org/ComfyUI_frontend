@@ -97,6 +97,7 @@ export type {
   BillingRecoveryAction,
   EmbeddedChallenge,
   FailedBillingOperation,
+  HostedBillingDestination,
   PendingBillingOperation
 } from './operationState.js'
 export {

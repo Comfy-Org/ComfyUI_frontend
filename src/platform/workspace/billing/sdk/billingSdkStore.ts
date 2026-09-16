@@ -76,6 +76,7 @@ export const useBillingSdkStore = defineStore('billingSdk', () => {
     embeddedCheckoutAvailable: () =>
       flags.embeddedCheckoutEnabled &&
       Boolean(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY),
+    hostedDestination: () => flags.hostedBillingDestination,
     onTelemetry: reportTelemetry,
     challengePort: loadChallengePort
   })

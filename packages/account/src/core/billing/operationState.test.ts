@@ -96,7 +96,8 @@ describe('reduceBillingOperation', () => {
     expect(
       reduceBillingOperation(succeeded, {
         type: 'presentation_switched',
-        presentation: 'hosted'
+        presentation: 'hosted',
+        hostedDestination: 'stripe'
       })
     ).toBe(succeeded)
   })
@@ -190,11 +191,13 @@ describe('reduceBillingOperation', () => {
 
     const hosted = reduceBillingOperation(failed, {
       type: 'presentation_switched',
-      presentation: 'hosted'
+      presentation: 'hosted',
+      hostedDestination: 'billing_web'
     })
     expect(hosted).toMatchObject({
       id: 'op-1',
       presentation: 'hosted',
+      hostedDestination: 'billing_web',
       actionUrl: 'https://billing.example/continue',
       challenge: { clientSecret: 'pi_secret', status: 'failed' }
     })
@@ -208,10 +211,12 @@ describe('reduceBillingOperation', () => {
       presentation: 'embedded',
       challenge: { clientSecret: 'pi_secret', status: 'required' }
     })
+    expect(rolledBack.hostedDestination).toBeUndefined()
     expect(
       reduceBillingOperation(hosted, {
         type: 'presentation_switched',
-        presentation: 'hosted'
+        presentation: 'hosted',
+        hostedDestination: 'billing_web'
       })
     ).toBe(hosted)
   })

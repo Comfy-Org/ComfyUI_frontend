@@ -15,6 +15,7 @@ import type {
   CreditsReader,
   EmbeddedChallengeOutcome,
   EmbeddedChallengePort,
+  HostedBillingDestination,
   PaymentMethodsReader,
   PlansReader,
   TopupCommand
@@ -39,6 +40,8 @@ export interface BillingSdkOptions {
   readonly workspaceId: () => string | undefined
   readonly pointerStorage?: BillingOperationPointerStorage
   readonly embeddedCheckoutAvailable: () => boolean
+  /** Which origin serves a hosted page. */
+  readonly hostedDestination: () => HostedBillingDestination
   readonly onTelemetry: (event: BillingOperationTelemetryEvent) => void
   /** The payment-provider port, loaded on first use; undefined or a rejection when it cannot load. */
   readonly challengePort: () => Promise<EmbeddedChallengePort | undefined>
@@ -71,6 +74,7 @@ export function createBillingSdk(options: BillingSdkOptions): BillingSdk {
     workspaceId,
     pointerStorage,
     embeddedCheckoutAvailable,
+    hostedDestination,
     onTelemetry,
     challengePort,
     fetchImpl
@@ -94,6 +98,7 @@ export function createBillingSdk(options: BillingSdkOptions): BillingSdk {
     statusReader: status,
     ...(pointerStorage === undefined ? {} : { pointerStorage }),
     embeddedCheckoutAvailable,
+    hostedDestination,
     onTelemetry
   })
   const topup = createTopupCommand({
