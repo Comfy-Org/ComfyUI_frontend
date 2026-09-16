@@ -1,27 +1,15 @@
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it } from 'vitest'
 import { createI18n } from 'vue-i18n'
+
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
+import { useDialogStore } from '@/stores/dialogStore'
 
 import SetMemberCreditLimitDialogContent from './SetMemberCreditLimitDialogContent.vue'
 
-const { mockSetMemberCreditLimit, mockCloseDialog } = vi.hoisted(() => ({
-  mockSetMemberCreditLimit: vi.fn(),
-  mockCloseDialog: vi.fn()
-}))
-
-vi.mock<unknown>(
-  import('@/platform/workspace/stores/teamWorkspaceStore'),
-  () => ({
-    useTeamWorkspaceStore: () => ({
-      setMemberCreditLimit: mockSetMemberCreditLimit
-    })
-  })
-)
-
-vi.mock<unknown>(import('@/stores/dialogStore'), () => ({
-  useDialogStore: () => ({ closeDialog: mockCloseDialog })
-}))
+let workspaceStore: ReturnType<typeof useTeamWorkspaceStore>
+let dialogStore: ReturnType<typeof useDialogStore>
 
 const i18n = createI18n({
   legacy: false,
@@ -68,6 +56,11 @@ function renderDialog(options: RenderDialogOptions = {}) {
 }
 
 describe('SetMemberCreditLimitDialogContent', () => {
+  beforeEach(() => {
+    workspaceStore = useTeamWorkspaceStore()
+    dialogStore = useDialogStore()
+  })
+
   it('updates an existing limit', async () => {
     const { user } = renderDialog()
     const input = screen.getByRole('textbox')
@@ -76,8 +69,11 @@ describe('SetMemberCreditLimitDialogContent', () => {
     await user.type(input, '2500')
     await user.click(screen.getByRole('button', { name: 'Update limit' }))
 
-    expect(mockSetMemberCreditLimit).toHaveBeenCalledWith('mem-1', 2500)
-    expect(mockCloseDialog).toHaveBeenCalledWith({
+    expect(workspaceStore.setMemberCreditLimit).toHaveBeenCalledWith(
+      'mem-1',
+      2500
+    )
+    expect(dialogStore.closeDialog).toHaveBeenCalledWith({
       key: 'set-member-credit-limit'
     })
   })
@@ -95,7 +91,10 @@ describe('SetMemberCreditLimitDialogContent', () => {
     const { user } = renderDialog()
     await user.click(screen.getByRole('radio', { name: 'No limit' }))
     await user.click(screen.getByRole('button', { name: 'Update limit' }))
-    expect(mockSetMemberCreditLimit).toHaveBeenCalledWith('mem-1', null)
+    expect(workspaceStore.setMemberCreditLimit).toHaveBeenCalledWith(
+      'mem-1',
+      null
+    )
   })
 
   it('supports keyboard navigation between limit modes', async () => {

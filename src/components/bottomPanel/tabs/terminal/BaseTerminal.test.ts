@@ -1,7 +1,7 @@
 /* eslint-disable testing-library/no-node-access */
 /* eslint-disable testing-library/prefer-user-event */
-import { createTestingPinia } from '@pinia/testing'
 import { fireEvent, render, screen } from '@testing-library/vue'
+import { getActivePinia } from 'pinia'
 import type { Mock } from 'vitest'
 import { describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
@@ -93,12 +93,7 @@ function renderBaseTerminal(props: Record<string, unknown> = {}) {
   return render(BaseTerminal, {
     props,
     global: {
-      plugins: [
-        createTestingPinia({
-          createSpy: vi.fn
-        }),
-        i18n
-      ],
+      plugins: [getActivePinia()!, i18n],
       stubs: {
         Button: {
           template: '<button v-bind="$attrs"><slot /></button>',

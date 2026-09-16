@@ -1,10 +1,11 @@
-import { createTestingPinia } from '@pinia/testing'
 import { render, screen } from '@testing-library/vue'
+import { getActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import LogsTerminal from '@/components/bottomPanel/tabs/terminal/LogsTerminal.vue'
+import { useExecutionStore } from '@/stores/executionStore'
 
 const apiMock = vi.hoisted(
   () =>
@@ -74,14 +75,7 @@ const i18n = createI18n({
 const renderLogsTerminal = () =>
   render(LogsTerminal, {
     global: {
-      plugins: [
-        createTestingPinia({
-          createSpy: vi.fn,
-          stubActions: false,
-          initialState: { execution: { clientId: 'test-client' } }
-        }),
-        i18n
-      ]
+      plugins: [getActivePinia()!, i18n]
     }
   })
 
@@ -101,6 +95,7 @@ describe('LogsTerminal', () => {
   beforeEach(() => {
     vi.spyOn(console, 'error').mockImplementation(() => {})
     apiMock.clientId = 'test-client'
+    useExecutionStore().clientId = 'test-client'
   })
 
   it('loads logs and subscribes to streaming on mount', async () => {

@@ -1,4 +1,4 @@
-import { createTestingPinia } from '@pinia/testing'
+import { getActivePinia } from 'pinia'
 import { fireEvent, render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
@@ -49,7 +49,7 @@ describe('VideoPreview', () => {
         typeof VideoPreview
       >,
       global: {
-        plugins: [createTestingPinia({ createSpy: vi.fn }), i18n],
+        plugins: [getActivePinia()!, i18n],
         stubs: {
           Skeleton: true
         }

@@ -1,4 +1,5 @@
-import { createTestingPinia } from '@pinia/testing'
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
+import { getActivePinia } from 'pinia'
 import { render, screen, waitFor } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import PrimeVue from 'primevue/config'
@@ -11,46 +12,37 @@ import enMessages from '@/locales/en/main.json'
 
 import CurrentUserPopoverWorkspace from './CurrentUserPopoverWorkspace.vue'
 
-const state = vi.hoisted(() => ({
-  isCloud: true,
-  billingStatus: 'paid',
-  canAccessSubscriptionFeatures: true,
-  isCancelled: false,
-  planSlug: 'pro-monthly' as string | null,
-  canTopUp: false,
-  canSubscribeSelfServe: false,
-  canManageSubscription: false,
-  canManageSubscriptionLifecycle: false,
-  canReactivate: false,
-  canReactivatePlan: false,
-  canOpenPricingSurface: false,
-  shouldUseWorkspaceBilling: true,
-  showCreateWorkspaceDialog: vi.fn(),
-  showTopUpCreditsDialog: vi.fn(),
-  showPricingTable: vi.fn(),
-  showSettingsDialog: vi.fn()
-}))
-
-const workspaceStoreMock = vi.hoisted(() => ({
-  store: null as null | {
-    initState: string
-    workspaceName: string
-    isInPersonalWorkspace: boolean
+const state = vi.hoisted(() => {
+  function initialPlanSlug(): string | null {
+    return 'pro-monthly'
   }
-}))
 
-vi.mock<unknown>(
-  import('@/platform/workspace/stores/teamWorkspaceStore'),
-  async () => {
-    const { reactive, ref } = await import('vue')
-    workspaceStoreMock.store = reactive({
-      initState: ref('ready'),
-      workspaceName: ref('Personal Workspace'),
-      isInPersonalWorkspace: ref(true)
-    })
-    return { useTeamWorkspaceStore: () => workspaceStoreMock.store }
+  function initialBillingWebUrl(): URL | null {
+    return new URL('http://localhost:5174')
   }
-)
+
+  return {
+    isCloud: true,
+    billingStatus: 'paid',
+    canAccessSubscriptionFeatures: true,
+    isCancelled: false,
+    planSlug: initialPlanSlug(),
+    canTopUp: false,
+    canSubscribeSelfServe: false,
+    canManageSubscription: false,
+    canManageSubscriptionLifecycle: false,
+    canReactivate: false,
+    canReactivatePlan: false,
+    canOpenPricingSurface: false,
+    shouldUseWorkspaceBilling: true,
+    hostedBillingWebEnabled: false,
+    billingWebUrl: initialBillingWebUrl(),
+    showCreateWorkspaceDialog: vi.fn(),
+    showTopUpCreditsDialog: vi.fn(),
+    showPricingTable: vi.fn(),
+    showSettingsDialog: vi.fn()
+  }
+})
 
 vi.mock<unknown>(import('@/composables/auth/useCurrentUser'), () => ({
   useCurrentUser: () => ({
@@ -135,15 +127,27 @@ vi.mock<unknown>(import('@/services/dialogService'), () => ({
   })
 }))
 
-vi.mock<unknown>(import('@/platform/telemetry'), () => ({
-  useTelemetry: () => undefined
-}))
+vi.mock(import('@/platform/telemetry'))
 
 vi.mock<unknown>(import('@/composables/useExternalLink'), () => ({
   useExternalLink: () => ({
     buildDocsUrl: vi.fn(() => 'https://docs.comfy.org'),
     docsPaths: { partnerNodesPricing: 'partner-nodes' }
   })
+}))
+
+vi.mock<unknown>(import('@/composables/useFeatureFlags'), () => ({
+  useFeatureFlags: () => ({
+    flags: {
+      get hostedBillingWebEnabled() {
+        return state.hostedBillingWebEnabled
+      }
+    }
+  })
+}))
+
+vi.mock<unknown>(import('@/config/billingWeb'), () => ({
+  getBillingWebUrl: () => state.billingWebUrl
 }))
 
 const WorkspaceSwitcherPopoverStub = defineComponent({
@@ -173,19 +177,17 @@ function renderComponent(
   type: 'personal' | 'team' = 'personal',
   accountActionsOnly = false
 ) {
-  if (!workspaceStoreMock.store) throw new Error('Workspace store not ready')
-  workspaceStoreMock.store.workspaceName = `${type === 'personal' ? 'Personal' : 'Team'} Workspace`
-  workspaceStoreMock.store.isInPersonalWorkspace = type === 'personal'
+  useTeamWorkspaceStore().initState = 'ready'
+  Object.assign(useTeamWorkspaceStore(), {
+    workspaceName: `${type === 'personal' ? 'Personal' : 'Team'} Workspace`
+  })
+  Object.assign(useTeamWorkspaceStore(), {
+    isInPersonalWorkspace: type === 'personal'
+  })
   return render(CurrentUserPopoverWorkspace, {
     props: { accountActionsOnly },
     global: {
-      plugins: [
-        createTestingPinia({
-          createSpy: vi.fn
-        }),
-        PrimeVue,
-        i18n
-      ],
+      plugins: [getActivePinia()!, PrimeVue, i18n],
       directives: {
         tooltip: Tooltip
       },
@@ -215,6 +217,8 @@ describe('CurrentUserPopoverWorkspace', () => {
     state.canOpenPricingSurface = false
     state.canReactivate = false
     state.shouldUseWorkspaceBilling = true
+    state.hostedBillingWebEnabled = false
+    state.billingWebUrl = new URL('http://localhost:5174')
   })
 
   it('toggles the workspace switcher panel from the selector row', async () => {
@@ -321,6 +325,66 @@ describe('CurrentUserPopoverWorkspace', () => {
     ).not.toBeInTheDocument()
   })
 
+  it('keeps Plans & pricing in-app when hosted billing is disabled', async () => {
+    const user = userEvent.setup()
+    state.canOpenPricingSurface = true
+    renderComponent('team')
+
+    await user.click(screen.getByTestId('plans-pricing-menu-item'))
+
+    expect(state.showPricingTable).toHaveBeenCalledWith({
+      reason: 'avatar_menu_plans'
+    })
+  })
+
+  it('opens hosted billing when its feature flag is enabled', async () => {
+    const user = userEvent.setup()
+    const open = vi.spyOn(window, 'open').mockReturnValue(window)
+    state.canOpenPricingSurface = true
+    state.hostedBillingWebEnabled = true
+    renderComponent('team')
+
+    await user.click(screen.getByTestId('plans-pricing-menu-item'))
+
+    expect(open).toHaveBeenCalledWith(
+      'http://localhost:5174/',
+      '_blank',
+      'noopener,noreferrer'
+    )
+    expect(state.showPricingTable).not.toHaveBeenCalled()
+  })
+
+  it('keeps Plans & pricing in-app when the hosted tab is blocked', async () => {
+    const user = userEvent.setup()
+    const open = vi.spyOn(window, 'open').mockReturnValue(null)
+    state.canOpenPricingSurface = true
+    state.hostedBillingWebEnabled = true
+    renderComponent('team')
+
+    await user.click(screen.getByTestId('plans-pricing-menu-item'))
+
+    expect(open).toHaveBeenCalledOnce()
+    expect(state.showPricingTable).toHaveBeenCalledWith({
+      reason: 'avatar_menu_plans'
+    })
+  })
+
+  it('keeps Plans & pricing in-app when the hosted URL is unavailable', async () => {
+    const user = userEvent.setup()
+    const open = vi.spyOn(window, 'open').mockImplementation(() => null)
+    state.canOpenPricingSurface = true
+    state.hostedBillingWebEnabled = true
+    state.billingWebUrl = null
+    renderComponent('team')
+
+    await user.click(screen.getByTestId('plans-pricing-menu-item'))
+
+    expect(open).not.toHaveBeenCalled()
+    expect(state.showPricingTable).toHaveBeenCalledWith({
+      reason: 'avatar_menu_plans'
+    })
+  })
+
   it('offers subscription when top-up is denied but self-serve is allowed', async () => {
     const user = userEvent.setup()
     state.canSubscribeSelfServe = true
@@ -349,7 +413,7 @@ describe('CurrentUserPopoverWorkspace', () => {
     }
   )
 
-  it('shows Subscribe instead of Manage plan when payment_failed has no plan', () => {
+  it('shows the upgrade upsell instead of Manage plan when payment_failed has no plan', () => {
     state.billingStatus = 'payment_failed'
     state.canAccessSubscriptionFeatures = false
     state.canManageSubscription = true
@@ -362,8 +426,11 @@ describe('CurrentUserPopoverWorkspace', () => {
       screen.queryByTestId('manage-plan-menu-item')
     ).not.toBeInTheDocument()
     expect(
-      screen.getByRole('button', { name: 'Subscribe' })
+      screen.getByTestId('upgrade-to-add-credits-button')
     ).toBeInTheDocument()
+    expect(
+      screen.queryByRole('button', { name: 'Subscribe' })
+    ).not.toBeInTheDocument()
   })
 
   it('keeps Subscribe hidden on Local after switching to an unsubscribed workspace', async () => {
@@ -376,9 +443,8 @@ describe('CurrentUserPopoverWorkspace', () => {
       screen.queryByRole('button', { name: 'Subscribe' })
     ).not.toBeInTheDocument()
 
-    if (!workspaceStoreMock.store) throw new Error('Workspace store not ready')
-    workspaceStoreMock.store.workspaceName = 'Team Workspace'
-    workspaceStoreMock.store.isInPersonalWorkspace = false
+    Object.assign(useTeamWorkspaceStore(), { workspaceName: 'Team Workspace' })
+    Object.assign(useTeamWorkspaceStore(), { isInPersonalWorkspace: false })
     await rerender({})
 
     expect(screen.getByTestId('workspace-switcher-trigger')).toHaveTextContent(
@@ -434,7 +500,8 @@ describe('CurrentUserPopoverWorkspace', () => {
     expect(screen.getByTestId('add-credits-button')).toBeInTheDocument()
   })
 
-  it('keeps the upgrade upsell for the Cloud free tier', () => {
+  it('shows one subscription CTA on the Cloud free tier', () => {
+    state.canAccessSubscriptionFeatures = false
     state.canTopUp = false
     state.canSubscribeSelfServe = true
 
@@ -444,6 +511,9 @@ describe('CurrentUserPopoverWorkspace', () => {
       screen.getByTestId('upgrade-to-add-credits-button')
     ).toBeInTheDocument()
     expect(screen.queryByTestId('add-credits-button')).not.toBeInTheDocument()
+    expect(
+      screen.queryByRole('button', { name: 'Subscribe' })
+    ).not.toBeInTheDocument()
   })
 
   it('keeps Resubscribe hidden on Local for a cancelled plan', () => {
@@ -468,6 +538,7 @@ describe('CurrentUserPopoverWorkspace', () => {
       canManageSubscriptionLifecycle: true,
       canReactivate: true,
       canSubscribeSelfServe: false,
+      canTopUp: false,
       action: 'Resubscribe',
       visible: true
     },
@@ -479,6 +550,7 @@ describe('CurrentUserPopoverWorkspace', () => {
       canManageSubscriptionLifecycle: false,
       canReactivate: false,
       canSubscribeSelfServe: false,
+      canTopUp: false,
       action: 'Resubscribe',
       visible: false
     },
@@ -490,6 +562,7 @@ describe('CurrentUserPopoverWorkspace', () => {
       canManageSubscriptionLifecycle: true,
       canReactivate: false,
       canSubscribeSelfServe: false,
+      canTopUp: false,
       action: 'Resubscribe',
       visible: false
     },
@@ -501,6 +574,7 @@ describe('CurrentUserPopoverWorkspace', () => {
       canManageSubscriptionLifecycle: false,
       canReactivate: false,
       canSubscribeSelfServe: true,
+      canTopUp: true,
       action: 'Subscribe',
       visible: true
     },
@@ -512,6 +586,7 @@ describe('CurrentUserPopoverWorkspace', () => {
       canManageSubscriptionLifecycle: true,
       canReactivate: true,
       canSubscribeSelfServe: false,
+      canTopUp: false,
       action: 'Subscribe',
       visible: false
     }
@@ -524,6 +599,7 @@ describe('CurrentUserPopoverWorkspace', () => {
       canManageSubscriptionLifecycle,
       canReactivate,
       canSubscribeSelfServe,
+      canTopUp,
       action,
       visible
     }) => {
@@ -533,6 +609,7 @@ describe('CurrentUserPopoverWorkspace', () => {
       state.canManageSubscriptionLifecycle = canManageSubscriptionLifecycle
       state.canReactivatePlan = canReactivate
       state.canSubscribeSelfServe = canSubscribeSelfServe
+      state.canTopUp = canTopUp
 
       renderComponent('team')
 
@@ -553,6 +630,7 @@ describe('CurrentUserPopoverWorkspace', () => {
     state.canManageSubscriptionLifecycle = true
     state.canReactivatePlan = true
     state.canOpenPricingSurface = true
+    state.hostedBillingWebEnabled = true
     renderComponent('team')
 
     expect(screen.getByTestId('add-credits-button')).toBeInTheDocument()

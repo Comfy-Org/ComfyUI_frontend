@@ -288,7 +288,6 @@ export function isComboWidget(widget: IBaseWidget): widget is IComboWidget {
 
 /**
  * Type guard: Narrow **from {@link IBaseWidget}** to {@link IAssetWidget}.
- * @knipIgnoreUnusedButUsedByCustomNodes
  */
 export function isAssetWidget(widget: IBaseWidget): widget is IAssetWidget {
   return widget.type === 'asset'

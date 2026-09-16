@@ -1,4 +1,7 @@
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+
+import { useTelemetry } from '@/platform/telemetry'
 
 import type { SubscriptionInfo } from '@/composables/billing/types'
 import type {
@@ -17,8 +20,7 @@ const mocks = vi.hoisted(() => ({
   activeWorkspaceId: 'workspace-1' as string | null,
   billingRail: 'stripe' as BillingRail | null,
   cancelSubscription: vi.fn(),
-  prepare: vi.fn(),
-  trackCancellation: vi.fn()
+  prepare: vi.fn()
 }))
 
 vi.mock<unknown>(import('@/composables/billing/useBillingContext'), () => ({
@@ -30,31 +32,15 @@ vi.mock<unknown>(import('@/composables/billing/useBillingContext'), () => ({
   })
 }))
 
-vi.mock(import('@/i18n'), () => ({ t: (key: string) => key }))
+vi.mock(import('@/i18n'), () => ({
+  t: (key: string) => key
+}))
 
 vi.mock(import('@/platform/cloud/churnkey/churnkeyClient'), () => ({
   prepareChurnkey: mocks.prepare
 }))
 
-vi.mock<unknown>(import('@/platform/telemetry'), () => ({
-  useTelemetry: () => ({
-    trackSubscriptionCancellation: mocks.trackCancellation
-  })
-}))
-
-vi.mock<unknown>(
-  import('@/platform/workspace/stores/teamWorkspaceStore'),
-  () => ({
-    useTeamWorkspaceStore: () => ({
-      get activeWorkspaceId() {
-        return mocks.activeWorkspaceId
-      },
-      get activeWorkspaceBillingRail() {
-        return mocks.billingRail
-      }
-    })
-  })
-)
+vi.mock(import('@/platform/telemetry'))
 
 import { launchCancellationFlow } from './launchCancellationFlow'
 
@@ -63,6 +49,23 @@ function session(
 ): ChurnkeySession {
   return { show }
 }
+
+beforeEach(() => {
+  vi.spyOn(
+    useTeamWorkspaceStore(),
+    'activeWorkspaceId',
+    'get'
+  ).mockImplementation(() => {
+    return mocks.activeWorkspaceId
+  })
+  vi.spyOn(
+    useTeamWorkspaceStore(),
+    'activeWorkspaceBillingRail',
+    'get'
+  ).mockImplementation(() => {
+    return mocks.billingRail
+  })
+})
 
 describe('launchCancellationFlow', () => {
   beforeEach(() => {
@@ -103,7 +106,7 @@ describe('launchCancellationFlow', () => {
     await launchCancellationFlow({ showFallback })
 
     expect(showFallback).toHaveBeenCalledOnce()
-    expect(mocks.trackCancellation).not.toHaveBeenCalled()
+    expect(useTelemetry()?.trackSubscriptionCancellation).not.toHaveBeenCalled()
   })
 
   it('cancels workspace billing through the existing API callback', async () => {
@@ -121,13 +124,17 @@ describe('launchCancellationFlow', () => {
     })
 
     expect(mocks.cancelSubscription).toHaveBeenCalledOnce()
-    expect(mocks.trackCancellation).toHaveBeenNthCalledWith(1, 'flow_opened', {
+    expect(
+      useTelemetry()?.trackSubscriptionCancellation
+    ).toHaveBeenNthCalledWith(1, 'flow_opened', {
       source: 'cancel_plan_menu',
       current_tier: 'pro',
       cycle: 'yearly',
       end_date: '2026-08-02T00:00:00Z'
     })
-    expect(mocks.trackCancellation).toHaveBeenNthCalledWith(
+    expect(
+      useTelemetry()?.trackSubscriptionCancellation
+    ).toHaveBeenNthCalledWith(
       2,
       'confirmed',
       expect.objectContaining({
@@ -143,7 +150,9 @@ describe('launchCancellationFlow', () => {
 
     await launchCancellationFlow({ showFallback: vi.fn() })
 
-    expect(mocks.trackCancellation).toHaveBeenLastCalledWith(
+    expect(
+      useTelemetry()?.trackSubscriptionCancellation
+    ).toHaveBeenLastCalledWith(
       'abandoned',
       expect.objectContaining({
         cycle: 'yearly',
@@ -162,7 +171,7 @@ describe('launchCancellationFlow', () => {
     await launchCancellationFlow({ showFallback: preparationFallback })
 
     expect(preparationFallback).toHaveBeenCalledWith()
-    expect(mocks.trackCancellation).not.toHaveBeenCalled()
+    expect(useTelemetry()?.trackSubscriptionCancellation).not.toHaveBeenCalled()
     expect(warn).toHaveBeenCalledWith(
       'Failed to prepare Churnkey cancellation flow:',
       preparationError
@@ -178,7 +187,9 @@ describe('launchCancellationFlow', () => {
     await launchCancellationFlow({ showFallback: runtimeFallback })
 
     expect(runtimeFallback).toHaveBeenCalledWith({ flowAlreadyOpened: true })
-    expect(mocks.trackCancellation).toHaveBeenLastCalledWith(
+    expect(
+      useTelemetry()?.trackSubscriptionCancellation
+    ).toHaveBeenLastCalledWith(
       'failed',
       expect.objectContaining({
         cycle: 'yearly',
@@ -200,11 +211,11 @@ describe('launchCancellationFlow', () => {
 
     await launchCancellationFlow({ showFallback })
 
-    expect(mocks.trackCancellation).toHaveBeenCalledWith(
+    expect(useTelemetry()?.trackSubscriptionCancellation).toHaveBeenCalledWith(
       'confirmed',
       expect.anything()
     )
-    expect(mocks.trackCancellation).toHaveBeenCalledWith(
+    expect(useTelemetry()?.trackSubscriptionCancellation).toHaveBeenCalledWith(
       'failed',
       expect.objectContaining({ error_message: 'API down' })
     )

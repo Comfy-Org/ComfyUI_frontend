@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { nextTick } from 'vue'
 
 import type { LGraph, Subgraph } from '@/lib/litegraph/src/litegraph'
@@ -53,15 +54,6 @@ vi.mock<unknown>(import('@/scripts/app'), () => {
   }
 })
 
-vi.mock<unknown>(
-  import('@/renderer/core/canvas/canvasStore'),
-
-  () => ({
-    useCanvasStore: () => ({
-      getCanvas: () => app.canvas
-    })
-  })
-)
 vi.mock(import('@vueuse/router'), () => ({ useRouteHash: vi.fn() }))
 
 vi.mock<unknown>(import('@/services/litegraphService'), () => ({
@@ -74,6 +66,7 @@ let rafCallbacks: FrameRequestCallback[] = []
 
 describe('useSubgraphNavigationStore - Viewport Persistence', () => {
   beforeEach(() => {
+    vi.mocked(useCanvasStore().getCanvas).mockImplementation(() => app.canvas)
     rafCallbacks = []
     vi.stubGlobal('requestAnimationFrame', (cb: FrameRequestCallback) => {
       rafCallbacks.push(cb)

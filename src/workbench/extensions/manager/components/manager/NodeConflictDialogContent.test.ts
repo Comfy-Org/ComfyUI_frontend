@@ -1,7 +1,7 @@
+import type { Pinia } from 'pinia'
+import { getActivePinia } from 'pinia'
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
@@ -36,11 +36,10 @@ vi.mock<unknown>(
 )
 
 describe('NodeConflictDialogContent', () => {
-  let pinia: ReturnType<typeof createTestingPinia>
+  let pinia: Pinia
 
   beforeEach(() => {
-    pinia = createTestingPinia({ stubActions: false })
-    setActivePinia(pinia)
+    pinia = getActivePinia()!
     mockConflictData.value = []
   })
 

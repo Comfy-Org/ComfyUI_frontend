@@ -1,5 +1,5 @@
-import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
+import { render, screen } from '@testing-library/vue'
 import { describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
@@ -7,14 +7,6 @@ import CustomizationDialog from './CustomizationDialog.vue'
 
 const DEFAULT_ICON = 'pi-bookmark-fill'
 const DEFAULT_COLOR = '#a1a1aa'
-
-vi.mock<unknown>(import('@/stores/nodeBookmarkStore'), () => ({
-  useNodeBookmarkStore: () => ({
-    defaultBookmarkIcon: DEFAULT_ICON,
-    defaultBookmarkColor: DEFAULT_COLOR,
-    bookmarksCustomization: {}
-  })
-}))
 
 vi.mock<unknown>(
   import('primevue/selectbutton'), // eslint-disable-line primevue-removal/no-imports

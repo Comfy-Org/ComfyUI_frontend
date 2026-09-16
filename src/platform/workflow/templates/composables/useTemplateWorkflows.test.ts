@@ -1,3 +1,5 @@
+import { useDialogStore } from '@/stores/dialogStore'
+import { usePartnerNodesEducationStore } from '@/platform/workflow/templates/stores/partnerNodesEducationStore'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { App } from 'vue'
 import { createApp, defineComponent } from 'vue'
@@ -9,14 +11,6 @@ import { useWorkflowTemplatesStore } from '@/platform/workflow/templates/reposit
 async function flushPromises() {
   await new Promise((r) => setTimeout(r, 0))
 }
-
-// Mock the store
-vi.mock<unknown>(
-  import('@/platform/workflow/templates/repositories/workflowTemplatesStore'),
-  () => ({
-    useWorkflowTemplatesStore: vi.fn()
-  })
-)
 
 // Mock the API
 vi.mock<unknown>(import('@/scripts/api'), () => ({
@@ -63,13 +57,6 @@ function useTemplateWorkflows() {
 
 afterEach(() => apps.splice(0).forEach((app) => app.unmount()))
 
-// Mock the dialog store
-vi.mock<unknown>(import('@/stores/dialogStore'), () => ({
-  useDialogStore: vi.fn(() => ({
-    closeDialog: vi.fn()
-  }))
-}))
-
 // useTelemetry() returns null in OSS, a dispatcher in cloud — toggle via mockIsCloud.
 const { mockIsCloud, mockTrackTemplate } = vi.hoisted(() => ({
   mockIsCloud: { value: true },
@@ -81,12 +68,9 @@ vi.mock<unknown>(import('@/platform/telemetry'), () => ({
     mockIsCloud.value ? { trackTemplate: mockTrackTemplate } : null
 }))
 
-const { mockDistributionIsCloud, mockRequestCard, mockDismissCard } =
-  vi.hoisted(() => ({
-    mockDistributionIsCloud: { value: false },
-    mockRequestCard: vi.fn(),
-    mockDismissCard: vi.fn()
-  }))
+const { mockDistributionIsCloud } = vi.hoisted(() => ({
+  mockDistributionIsCloud: { value: false }
+}))
 
 vi.mock(import('@/platform/distribution/types'), () => ({
   get isCloud() {
@@ -94,20 +78,14 @@ vi.mock(import('@/platform/distribution/types'), () => ({
   }
 }))
 
-vi.mock<unknown>(
-  import('@/platform/workflow/templates/stores/partnerNodesEducationStore'),
-  () => ({
-    usePartnerNodesEducationStore: () => ({
-      requestCard: mockRequestCard,
-      dismissCard: mockDismissCard
-    })
-  })
-)
-
 // Mock fetch
 global.fetch = vi.fn()
 
 type MockWorkflowTemplatesStore = ReturnType<typeof useWorkflowTemplatesStore>
+
+beforeEach(() => {
+  vi.mocked(useDialogStore().closeDialog).mockImplementation(() => {})
+})
 
 describe('useTemplateWorkflows', () => {
   let mockWorkflowTemplatesStore: MockWorkflowTemplatesStore
@@ -117,9 +95,12 @@ describe('useTemplateWorkflows', () => {
     mockDistributionIsCloud.value = false
     mockLoadedWorkflow.value = { key: 'loaded-template' }
 
-    mockWorkflowTemplatesStore = {
+    mockWorkflowTemplatesStore = useWorkflowTemplatesStore()
+    vi.mocked(
+      mockWorkflowTemplatesStore.loadWorkflowTemplates
+    ).mockResolvedValue(undefined)
+    Object.assign(mockWorkflowTemplatesStore, {
       isLoaded: false,
-      loadWorkflowTemplates: vi.fn().mockResolvedValue(true),
       enhancedTemplates: [],
       groupedTemplates: [
         {
@@ -165,11 +146,7 @@ describe('useTemplateWorkflows', () => {
           ]
         }
       ]
-    } as Partial<MockWorkflowTemplatesStore> as MockWorkflowTemplatesStore
-
-    vi.mocked(useWorkflowTemplatesStore).mockReturnValue(
-      mockWorkflowTemplatesStore
-    )
+    })
 
     // Mock fetch response
     vi.mocked(fetch).mockResolvedValue({
@@ -386,19 +363,22 @@ describe('useTemplateWorkflows', () => {
 
     await loadWorkflowTemplate('template1', 'default')
 
-    expect(mockRequestCard).toHaveBeenCalledWith('loaded-template')
+    expect(usePartnerNodesEducationStore().requestedForWorkflowKey).toBe(
+      'loaded-template'
+    )
   })
 
   it('retires the card instead of requesting it when no workflow was activated', async () => {
     const { loadWorkflowTemplate } = useTemplateWorkflows()
     mockWorkflowTemplatesStore.isLoaded = true
     mockWorkflowTemplatesStore.enhancedTemplates.push(enhancedTemplate(true))
+    usePartnerNodesEducationStore().requestedForWorkflowKey =
+      'previous-template'
     mockLoadedWorkflow.value = undefined
 
     await loadWorkflowTemplate('template1', 'default')
 
-    expect(mockRequestCard).not.toHaveBeenCalled()
-    expect(mockDismissCard).toHaveBeenCalled()
+    expect(usePartnerNodesEducationStore().isCardRequested).toBe(false)
   })
 
   it('binds to the workflow this load activated, resolved by loadGraphData', async () => {
@@ -413,7 +393,9 @@ describe('useTemplateWorkflows', () => {
 
     await loadWorkflowTemplate('template1', 'default')
 
-    expect(mockRequestCard).toHaveBeenCalledWith('template-a')
+    expect(usePartnerNodesEducationStore().requestedForWorkflowKey).toBe(
+      'template-a'
+    )
   })
 
   it('does not request the education card for open-source templates', async () => {
@@ -423,7 +405,7 @@ describe('useTemplateWorkflows', () => {
 
     await loadWorkflowTemplate('template1', 'default')
 
-    expect(mockRequestCard).not.toHaveBeenCalled()
+    expect(usePartnerNodesEducationStore().isCardRequested).toBe(false)
   })
 
   it('retires an earlier request when an open-source template loads next', async () => {
@@ -435,12 +417,14 @@ describe('useTemplateWorkflows', () => {
     )
 
     await loadWorkflowTemplate('template1', 'default')
-    expect(mockRequestCard).toHaveBeenCalledTimes(1)
+    expect(usePartnerNodesEducationStore().requestedForWorkflowKey).toBe(
+      'loaded-template'
+    )
 
     // The open-source template may still contain partner nodes, so the card
     // would otherwise linger and describe the wrong template.
     await loadWorkflowTemplate('template2', 'default')
-    expect(mockDismissCard).toHaveBeenCalledTimes(1)
+    expect(usePartnerNodesEducationStore().isCardRequested).toBe(false)
   })
 
   it('should handle errors when loading templates', async () => {

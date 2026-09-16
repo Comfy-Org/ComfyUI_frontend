@@ -1,3 +1,5 @@
+import { useAssetsStore } from '@/stores/assetsStore'
+import { useModelToNodeStore } from '@/stores/modelToNodeStore'
 import { fromPartial } from '@total-typescript/shoehorn'
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -14,24 +16,21 @@ const mockAssetsByKey = new Map<string, AssetItem[]>()
 const mockLoadingByKey = new Map<string, boolean>()
 const mockErrorByKey = new Map<string, Error | undefined>()
 const mockInitializedKeys = new Set<string>()
-const mockUpdateModelsForNodeType = vi.fn()
-const mockGetCategoryForNodeType = vi.fn()
 
-vi.mock<unknown>(import('@/stores/assetsStore'), () => ({
-  useAssetsStore: () => ({
-    getAssets: (key: string) => mockAssetsByKey.get(key) ?? [],
-    isModelLoading: (key: string) => mockLoadingByKey.get(key) ?? false,
-    getError: (key: string) => mockErrorByKey.get(key),
-    hasAssetKey: (key: string) => mockInitializedKeys.has(key),
-    updateModelsForNodeType: mockUpdateModelsForNodeType
-  })
-}))
-
-vi.mock<unknown>(import('@/stores/modelToNodeStore'), () => ({
-  useModelToNodeStore: () => ({
-    getCategoryForNodeType: mockGetCategoryForNodeType
-  })
-}))
+beforeEach(() => {
+  vi.mocked(useAssetsStore().getAssets).mockImplementation(
+    (key) => mockAssetsByKey.get(key) ?? []
+  )
+  vi.mocked(useAssetsStore().isModelLoading).mockImplementation(
+    (key) => mockLoadingByKey.get(key) ?? false
+  )
+  vi.mocked(useAssetsStore().getError).mockImplementation((key) =>
+    mockErrorByKey.get(key)
+  )
+  vi.mocked(useAssetsStore().hasAssetKey).mockImplementation((key) =>
+    mockInitializedKeys.has(key)
+  )
+})
 
 describe('useAssetWidgetData (cloud mode, isCloud=true)', () => {
   beforeEach(() => {
@@ -39,12 +38,12 @@ describe('useAssetWidgetData (cloud mode, isCloud=true)', () => {
     mockLoadingByKey.clear()
     mockErrorByKey.clear()
     mockInitializedKeys.clear()
-    mockGetCategoryForNodeType.mockReturnValue(undefined)
+    vi.mocked(useModelToNodeStore().getCategoryForNodeType).mockReturnValue(
+      undefined
+    )
 
-    mockUpdateModelsForNodeType.mockImplementation(
-      async (): Promise<AssetItem[]> => {
-        return []
-      }
+    vi.mocked(useAssetsStore().updateModelsForNodeType).mockResolvedValue(
+      undefined
     )
   })
 
@@ -75,14 +74,15 @@ describe('useAssetWidgetData (cloud mode, isCloud=true)', () => {
       createMockAsset('asset-2', 'Model B', 'model_b.safetensors', '/preview/2')
     ]
 
-    mockGetCategoryForNodeType.mockReturnValue('checkpoints')
+    vi.mocked(useModelToNodeStore().getCategoryForNodeType).mockReturnValue(
+      'checkpoints'
+    )
 
-    mockUpdateModelsForNodeType.mockImplementation(
-      async (_nodeType: string): Promise<AssetItem[]> => {
+    vi.mocked(useAssetsStore().updateModelsForNodeType).mockImplementation(
+      async (_nodeType: string) => {
         mockInitializedKeys.add(_nodeType)
         mockAssetsByKey.set(_nodeType, mockAssets)
         mockLoadingByKey.set(_nodeType, false)
-        return mockAssets
       }
     )
 
@@ -92,9 +92,9 @@ describe('useAssetWidgetData (cloud mode, isCloud=true)', () => {
     await nextTick()
     await vi.waitFor(() => !isLoading.value)
 
-    expect(mockUpdateModelsForNodeType).toHaveBeenCalledWith(
-      'CheckpointLoaderSimple'
-    )
+    expect(
+      vi.mocked(useAssetsStore().updateModelsForNodeType)
+    ).toHaveBeenCalledWith('CheckpointLoaderSimple')
     expect(category.value).toBe('checkpoints')
     expect(assets.value).toEqual(mockAssets)
     expect(assets.value).toHaveLength(2)
@@ -106,13 +106,12 @@ describe('useAssetWidgetData (cloud mode, isCloud=true)', () => {
   it('handles API errors gracefully', async () => {
     const mockError = new Error('Network error')
 
-    mockUpdateModelsForNodeType.mockImplementation(
-      async (_nodeType: string): Promise<AssetItem[]> => {
+    vi.mocked(useAssetsStore().updateModelsForNodeType).mockImplementation(
+      async (_nodeType: string) => {
         mockInitializedKeys.add(_nodeType)
         mockErrorByKey.set(_nodeType, mockError)
         mockAssetsByKey.set(_nodeType, [])
         mockLoadingByKey.set(_nodeType, false)
-        return []
       }
     )
 
@@ -127,14 +126,15 @@ describe('useAssetWidgetData (cloud mode, isCloud=true)', () => {
   })
 
   it('returns empty for unknown node type', async () => {
-    mockGetCategoryForNodeType.mockReturnValue(undefined)
+    vi.mocked(useModelToNodeStore().getCategoryForNodeType).mockReturnValue(
+      undefined
+    )
 
-    mockUpdateModelsForNodeType.mockImplementation(
-      async (_nodeType: string): Promise<AssetItem[]> => {
+    vi.mocked(useAssetsStore().updateModelsForNodeType).mockImplementation(
+      async (_nodeType: string) => {
         mockInitializedKeys.add(_nodeType)
         mockAssetsByKey.set(_nodeType, [])
         mockLoadingByKey.set(_nodeType, false)
-        return []
       }
     )
 
@@ -153,13 +153,14 @@ describe('useAssetWidgetData (cloud mode, isCloud=true)', () => {
         createMockAsset('asset-1', 'Model A', 'model_a.safetensors')
       ]
 
-      mockGetCategoryForNodeType.mockReturnValue('checkpoints')
-      mockUpdateModelsForNodeType.mockImplementation(
-        async (_nodeType: string): Promise<AssetItem[]> => {
+      vi.mocked(useModelToNodeStore().getCategoryForNodeType).mockReturnValue(
+        'checkpoints'
+      )
+      vi.mocked(useAssetsStore().updateModelsForNodeType).mockImplementation(
+        async (_nodeType: string) => {
           mockInitializedKeys.add(_nodeType)
           mockAssetsByKey.set(_nodeType, mockAssets)
           mockLoadingByKey.set(_nodeType, false)
-          return mockAssets
         }
       )
 
@@ -170,9 +171,9 @@ describe('useAssetWidgetData (cloud mode, isCloud=true)', () => {
       await nextTick()
       await vi.waitFor(() => !isLoading.value)
 
-      expect(mockUpdateModelsForNodeType).toHaveBeenCalledWith(
-        'CheckpointLoaderSimple'
-      )
+      expect(
+        vi.mocked(useAssetsStore().updateModelsForNodeType)
+      ).toHaveBeenCalledWith('CheckpointLoaderSimple')
       expect(category.value).toBe('checkpoints')
       expect(assets.value).toEqual(mockAssets)
     })
@@ -182,13 +183,14 @@ describe('useAssetWidgetData (cloud mode, isCloud=true)', () => {
         createMockAsset('asset-1', 'Model A', 'model_a.safetensors')
       ]
 
-      mockGetCategoryForNodeType.mockReturnValue('loras')
-      mockUpdateModelsForNodeType.mockImplementation(
-        async (_nodeType: string): Promise<AssetItem[]> => {
+      vi.mocked(useModelToNodeStore().getCategoryForNodeType).mockReturnValue(
+        'loras'
+      )
+      vi.mocked(useAssetsStore().updateModelsForNodeType).mockImplementation(
+        async (_nodeType: string) => {
           mockInitializedKeys.add(_nodeType)
           mockAssetsByKey.set(_nodeType, mockAssets)
           mockLoadingByKey.set(_nodeType, false)
-          return mockAssets
         }
       )
 
@@ -200,7 +202,9 @@ describe('useAssetWidgetData (cloud mode, isCloud=true)', () => {
       await nextTick()
       await vi.waitFor(() => !isLoading.value)
 
-      expect(mockUpdateModelsForNodeType).toHaveBeenCalledWith('LoraLoader')
+      expect(
+        vi.mocked(useAssetsStore().updateModelsForNodeType)
+      ).toHaveBeenCalledWith('LoraLoader')
       expect(category.value).toBe('loras')
       expect(assets.value).toEqual(mockAssets)
     })
@@ -210,13 +214,14 @@ describe('useAssetWidgetData (cloud mode, isCloud=true)', () => {
         createMockAsset('asset-1', 'Model A', 'model_a.safetensors')
       ]
 
-      mockGetCategoryForNodeType.mockReturnValue('checkpoints')
-      mockUpdateModelsForNodeType.mockImplementation(
-        async (_nodeType: string): Promise<AssetItem[]> => {
+      vi.mocked(useModelToNodeStore().getCategoryForNodeType).mockReturnValue(
+        'checkpoints'
+      )
+      vi.mocked(useAssetsStore().updateModelsForNodeType).mockImplementation(
+        async (_nodeType: string) => {
           mockInitializedKeys.add(_nodeType)
           mockAssetsByKey.set(_nodeType, mockAssets)
           mockLoadingByKey.set(_nodeType, false)
-          return mockAssets
         }
       )
 
@@ -226,9 +231,9 @@ describe('useAssetWidgetData (cloud mode, isCloud=true)', () => {
       await nextTick()
       await vi.waitFor(() => !isLoading.value)
 
-      expect(mockUpdateModelsForNodeType).toHaveBeenCalledWith(
-        'CheckpointLoaderSimple'
-      )
+      expect(
+        vi.mocked(useAssetsStore().updateModelsForNodeType)
+      ).toHaveBeenCalledWith('CheckpointLoaderSimple')
       expect(category.value).toBe('checkpoints')
       expect(assets.value).toEqual(mockAssets)
     })
@@ -239,7 +244,9 @@ describe('useAssetWidgetData (cloud mode, isCloud=true)', () => {
 
       await nextTick()
 
-      expect(mockUpdateModelsForNodeType).not.toHaveBeenCalled()
+      expect(
+        vi.mocked(useAssetsStore().updateModelsForNodeType)
+      ).not.toHaveBeenCalled()
       expect(category.value).toBeUndefined()
       expect(assets.value).toEqual([])
       expect(isLoading.value).toBe(false)

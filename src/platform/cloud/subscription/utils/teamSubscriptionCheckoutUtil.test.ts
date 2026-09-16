@@ -1,18 +1,11 @@
+import { useAuthStore } from '@/stores/authStore'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { computed, reactive } from 'vue'
 
-const {
-  mockIsCloud,
-  mockSubscribe,
-  mockTrackBeginCheckout,
-  mockTrackBillingEvent,
-  mockUserId
-} = vi.hoisted(() => ({
+import { useTelemetry } from '@/platform/telemetry'
+
+const { mockIsCloud, mockSubscribe } = vi.hoisted(() => ({
   mockIsCloud: { value: true },
-  mockSubscribe: vi.fn(),
-  mockTrackBeginCheckout: vi.fn(),
-  mockTrackBillingEvent: vi.fn(),
-  mockUserId: { value: 'user-1' }
+  mockSubscribe: vi.fn()
 }))
 
 vi.mock(import('@/platform/distribution/types'), () => ({
@@ -36,23 +29,13 @@ vi.mock<unknown>(import('@/platform/workspace/api/workspaceApi'), () => ({
     }
   }
 }))
-vi.mock<unknown>(import('@/platform/telemetry'), () => ({
-  useTelemetry: () => ({
-    trackBeginCheckout: mockTrackBeginCheckout,
-    trackBillingEvent: mockTrackBillingEvent
-  })
-}))
-vi.mock<unknown>(import('@/stores/authStore'), () => ({
-  useAuthStore: () => reactive({ userId: computed(() => mockUserId.value) }),
-  AuthStoreError: class AuthStoreError extends Error {
-    constructor(message: string) {
-      super(message)
-      this.name = 'AuthStoreError'
-    }
-  }
-}))
+vi.mock(import('@/platform/telemetry'))
 
 import { performTeamSubscriptionCheckout } from './teamSubscriptionCheckoutUtil'
+
+beforeEach(() => {
+  Object.assign(useAuthStore(), { userId: 'user-1' })
+})
 
 describe('performTeamSubscriptionCheckout', () => {
   let assignedHref: string | undefined
@@ -89,7 +72,7 @@ describe('performTeamSubscriptionCheckout', () => {
       teamCreditStopId: 'team_700'
     })
     expect(assignedHref).toBe('https://stripe.test/pay')
-    expect(mockTrackBeginCheckout).toHaveBeenCalledWith({
+    expect(useTelemetry()?.trackBeginCheckout).toHaveBeenCalledWith({
       user_id: 'user-1',
       tier: 'team',
       cycle: 'yearly',
@@ -126,7 +109,7 @@ describe('performTeamSubscriptionCheckout', () => {
     ).rejects.toThrow(/payment URL/)
 
     expect(assignedHref).toBeUndefined()
-    expect(mockTrackBillingEvent).toHaveBeenCalledWith({
+    expect(useTelemetry()?.trackBillingEvent).toHaveBeenCalledWith({
       operation: 'subscription_checkout',
       stage: 'failed',
       outcome: 'failure',
@@ -147,8 +130,8 @@ describe('performTeamSubscriptionCheckout', () => {
       })
     ).rejects.toThrow('subscribe failed')
 
-    expect(mockTrackBeginCheckout).not.toHaveBeenCalled()
-    expect(mockTrackBillingEvent).toHaveBeenCalledWith({
+    expect(useTelemetry()?.trackBeginCheckout).not.toHaveBeenCalled()
+    expect(useTelemetry()?.trackBillingEvent).toHaveBeenCalledWith({
       operation: 'subscription_checkout',
       stage: 'failed',
       outcome: 'failure',
@@ -169,3 +152,4 @@ describe('performTeamSubscriptionCheckout', () => {
     expect(assignedHref).toBeUndefined()
   })
 })
+vi.mock(import('firebase/auth'))

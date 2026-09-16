@@ -1,3 +1,5 @@
+import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import { toNodeId } from '@/types/nodeId'
 import { describe, expect, it, onTestFinished, vi } from 'vitest'
 
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
@@ -18,34 +20,6 @@ const { canvasMock } = vi.hoisted(() => ({
 vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: { rootGraph: { id: 'root' }, canvas: canvasMock }
 }))
-const { widgetStoreMock } = vi.hoisted(() => {
-  const map = new Map<
-    string,
-    { type: string; value: unknown; options: unknown }
-  >()
-  return {
-    widgetStoreMock: {
-      map,
-      getWidget: (id: string) => map.get(id),
-      registerWidget: (
-        id: string,
-        init: { type: string; value: unknown; options: unknown }
-      ) => {
-        const existing = map.get(id)
-        if (existing) return existing
-        const state = { ...init }
-        map.set(id, state)
-        return state
-      }
-    }
-  }
-})
-vi.mock<unknown>(import('@/stores/widgetValueStore'), () => ({
-  useWidgetValueStore: () => widgetStoreMock
-}))
-vi.mock<unknown>(import('@/platform/settings/settingStore'), () => ({
-  useSettingStore: () => ({ get: () => false })
-}))
 
 function createStringWidget(node: LGraphNode) {
   const inputSpec: InputSpec = {
@@ -63,7 +37,6 @@ function createStringWidget(node: LGraphNode) {
 describe('useStringWidget (multiline)', () => {
   function setup() {
     vi.clearAllMocks()
-    widgetStoreMock.map.clear()
     const node = createMockDOMWidgetNode()
     const widget = createStringWidget(node)
     const callback = vi.fn<(value: string) => void>()
@@ -87,7 +60,7 @@ describe('useStringWidget (multiline)', () => {
     }
     options.setValue('from-execution')
 
-    const entries = [...widgetStoreMock.map.values()]
+    const entries = useWidgetValueStore().getNodeWidgets('root', toNodeId(1))
     expect(entries.some((s) => s.value === 'from-execution')).toBe(true)
     expect(entries.every((s) => s.type === 'customtext')).toBe(true)
   })

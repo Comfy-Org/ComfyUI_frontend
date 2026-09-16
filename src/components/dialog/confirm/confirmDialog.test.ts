@@ -6,28 +6,24 @@
  */
 import { describe, expect, it, vi } from 'vitest'
 
-const showDialog = vi.hoisted(() => vi.fn())
-
-vi.mock<unknown>(import('@/stores/dialogStore'), () => ({
-  useDialogStore: () => ({ showDialog })
-}))
-
 import ConfirmBody from '@/components/dialog/confirm/ConfirmBody.vue'
+import { showConfirmDialog } from '@/components/dialog/confirm/confirmDialog'
 import ConfirmFooter from '@/components/dialog/confirm/ConfirmFooter.vue'
 import ConfirmHeader from '@/components/dialog/confirm/ConfirmHeader.vue'
-import { showConfirmDialog } from '@/components/dialog/confirm/confirmDialog'
+import { useDialogStore } from '@/stores/dialogStore'
 
 describe('showConfirmDialog Reka renderer opt-in', () => {
   it("sets renderer 'reka' with size 'md' and zeroed section padding", () => {
     showConfirmDialog()
 
-    const [args] = showDialog.mock.calls[0]
-    expect(args.dialogComponentProps.renderer).toBe('reka')
-    expect(args.dialogComponentProps.size).toBe('md')
-    expect(args.dialogComponentProps.headerClass).toBe('p-0 pr-3')
-    expect(args.dialogComponentProps.bodyClass).toBe('p-0')
-    expect(args.dialogComponentProps.footerClass).toBe('p-0')
-    expect(args.dialogComponentProps.pt).toBeUndefined()
+    const { showDialog } = useDialogStore()
+    const [args] = vi.mocked(showDialog).mock.calls[0]
+    expect(args.dialogComponentProps?.renderer).toBe('reka')
+    expect(args.dialogComponentProps?.size).toBe('md')
+    expect(args.dialogComponentProps?.headerClass).toBe('p-0 pr-3')
+    expect(args.dialogComponentProps?.bodyClass).toBe('p-0')
+    expect(args.dialogComponentProps?.footerClass).toBe('p-0')
+    expect(args.dialogComponentProps?.pt).toBeUndefined()
   })
 
   it('forwards the confirm section components and caller props', () => {
@@ -38,7 +34,8 @@ describe('showConfirmDialog Reka renderer opt-in', () => {
       footerProps: { confirmText: 'Delete' }
     })
 
-    const [args] = showDialog.mock.calls[0]
+    const { showDialog } = useDialogStore()
+    const [args] = vi.mocked(showDialog).mock.calls[0]
     expect(args.key).toBe('confirm-test')
     expect(args.headerComponent).toBe(ConfirmHeader)
     expect(args.component).toBe(ConfirmBody)

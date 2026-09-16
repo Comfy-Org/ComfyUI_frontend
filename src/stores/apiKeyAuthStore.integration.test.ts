@@ -1,7 +1,6 @@
 import type { User } from 'firebase/auth'
 import * as firebaseAuth from 'firebase/auth'
-import { disposePinia, getActivePinia } from 'pinia'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import * as vuefire from 'vuefire'
 
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
@@ -15,11 +14,15 @@ vi.mock(import('vuefire'), () => ({
 
 vi.mock(import('firebase/auth'))
 
-vi.mock<unknown>(import('@/platform/distribution/types'), () => ({
-  DISTRIBUTION: 'cloud',
-  isCloud: true,
-  isDesktop: false
-}))
+vi.mock(
+  import('@/platform/distribution/types'),
+  () =>
+    ({
+      DISTRIBUTION: 'cloud',
+      isCloud: true,
+      isDesktop: false
+    }) as const
+)
 
 vi.mock<unknown>(import('@/composables/useFeatureFlags'), () => ({
   useFeatureFlags: () => ({
@@ -27,31 +30,7 @@ vi.mock<unknown>(import('@/composables/useFeatureFlags'), () => ({
   })
 }))
 
-vi.mock<unknown>(
-  import('@/platform/workspace/stores/workspaceAuthStore'),
-  () => ({
-    useWorkspaceAuthStore: () => ({
-      clearWorkspaceContext: vi.fn(),
-      getWorkspaceAuthHeader: vi.fn().mockReturnValue(null),
-      getUnifiedToken: vi.fn().mockReturnValue(undefined),
-      mintAtLogin: vi.fn()
-    })
-  })
-)
-
-vi.mock<unknown>(
-  import('@/platform/workspace/stores/teamWorkspaceStore'),
-  () => ({
-    useTeamWorkspaceStore: () => ({
-      activeWorkspaceId: null,
-      resetForIdentityChange: vi.fn()
-    })
-  })
-)
-
-vi.mock<unknown>(import('@/platform/telemetry'), () => ({
-  useTelemetry: () => ({ trackAuth: vi.fn() })
-}))
+vi.mock(import('@/platform/telemetry'))
 
 vi.mock<unknown>(import('@/services/dialogService'), () => ({
   useDialogService: () => ({ showErrorDialog: vi.fn() })
@@ -77,11 +56,6 @@ describe('API key authentication initialization', () => {
       }
     )
     vi.mocked(firebaseAuth.onIdTokenChanged).mockReturnValue(vi.fn())
-  })
-
-  afterEach(() => {
-    const pinia = getActivePinia()
-    if (pinia) disposePinia(pinia)
   })
 
   const customerResponse = (id: string) => ({

@@ -1,49 +1,18 @@
+import { useMaskEditorStore } from '@/stores/maskEditorStore'
+import { useMaskEditorDataStore } from '@/stores/maskEditorDataStore'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { toNodeId } from '@/types/nodeId'
 
 import { useImageLoader } from '@/composables/maskeditor/useImageLoader'
-
-type MockStore = {
-  imgCanvas: HTMLCanvasElement | null
-  maskCanvas: HTMLCanvasElement | null
-  rgbCanvas: HTMLCanvasElement | null
-  imgCtx: CanvasRenderingContext2D | null
-  maskCtx: CanvasRenderingContext2D | null
-  image: HTMLImageElement | null
-}
-
-type MockDataStore = {
-  inputData: {
-    baseLayer: { image: HTMLImageElement }
-    maskLayer: { image: HTMLImageElement }
-    paintLayer: { image: HTMLImageElement } | null
-  } | null
-}
 
 const mockCanvasManager = {
   invalidateCanvas: vi.fn().mockResolvedValue(undefined),
   updateMaskColor: vi.fn().mockResolvedValue(undefined)
 }
 
-const mockStore: MockStore = {
-  imgCanvas: null,
-  maskCanvas: null,
-  rgbCanvas: null,
-  imgCtx: null,
-  maskCtx: null,
-  image: null
-}
+let mockStore: ReturnType<typeof useMaskEditorStore>
 
-const mockDataStore: MockDataStore = {
-  inputData: null
-}
-
-vi.mock<unknown>(import('@/stores/maskEditorStore'), () => ({
-  useMaskEditorStore: vi.fn(() => mockStore)
-}))
-
-vi.mock<unknown>(import('@/stores/maskEditorDataStore'), () => ({
-  useMaskEditorDataStore: vi.fn(() => mockDataStore)
-}))
+let mockDataStore: ReturnType<typeof useMaskEditorDataStore>
 
 vi.mock(import('@/composables/maskeditor/useCanvasManager'), () => ({
   useCanvasManager: vi.fn(() => mockCanvasManager)
@@ -60,20 +29,11 @@ describe('useImageLoader', () => {
   let mockPaintImage: HTMLImageElement
 
   beforeEach(() => {
-    mockBaseImage = {
-      width: 512,
-      height: 512
-    } as HTMLImageElement
-
-    mockMaskImage = {
-      width: 512,
-      height: 512
-    } as HTMLImageElement
-
-    mockPaintImage = {
-      width: 512,
-      height: 512
-    } as HTMLImageElement
+    mockStore = useMaskEditorStore()
+    mockDataStore = useMaskEditorDataStore()
+    mockBaseImage = new Image(512, 512)
+    mockMaskImage = new Image(512, 512)
+    mockPaintImage = new Image(512, 512)
 
     mockStore.imgCtx = {
       clearRect: vi.fn()
@@ -84,24 +44,29 @@ describe('useImageLoader', () => {
     } as Partial<CanvasRenderingContext2D> as CanvasRenderingContext2D
 
     mockStore.imgCanvas = {
+      getContext: vi.fn().mockImplementation(() => mockStore.imgCtx),
       width: 0,
       height: 0
     } as Partial<HTMLCanvasElement> as HTMLCanvasElement
 
     mockStore.maskCanvas = {
+      getContext: vi.fn().mockImplementation(() => mockStore.maskCtx),
       width: 0,
       height: 0
     } as Partial<HTMLCanvasElement> as HTMLCanvasElement
 
     mockStore.rgbCanvas = {
+      getContext: vi.fn().mockImplementation(() => mockStore.rgbCtx),
       width: 0,
       height: 0
     } as Partial<HTMLCanvasElement> as HTMLCanvasElement
 
     mockDataStore.inputData = {
-      baseLayer: { image: mockBaseImage },
-      maskLayer: { image: mockMaskImage },
-      paintLayer: { image: mockPaintImage }
+      baseLayer: { image: mockBaseImage, url: 'base.png' },
+      maskLayer: { image: mockMaskImage, url: 'mask.png' },
+      paintLayer: { image: mockPaintImage, url: 'paint.png' },
+      sourceRef: { filename: 'base.png' },
+      nodeId: toNodeId(1)
     }
   })
 
@@ -150,9 +115,10 @@ describe('useImageLoader', () => {
 
     it('should handle missing paintLayer', async () => {
       mockDataStore.inputData = {
-        baseLayer: { image: mockBaseImage },
-        maskLayer: { image: mockMaskImage },
-        paintLayer: null
+        baseLayer: { image: mockBaseImage, url: 'base.png' },
+        maskLayer: { image: mockMaskImage, url: 'mask.png' },
+        sourceRef: { filename: 'base.png', subfolder: '', type: 'input' },
+        nodeId: toNodeId(1)
       }
 
       const loader = useImageLoader()

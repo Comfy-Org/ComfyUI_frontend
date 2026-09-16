@@ -1,6 +1,5 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it } from 'vitest'
+import { useSettingStore } from '@/platform/settings/settingStore'
 import { effectScope } from 'vue'
 
 import { badgeDrawObjects } from '@/lib/litegraph/src/nodeBadgeDraw'
@@ -16,27 +15,13 @@ import { nodeBadges } from '@/systems/badgeSystem'
 import type { NodeState } from '@/types/nodeState'
 import { NodeBadgeMode } from '@/types/nodeSource'
 
-const settings = vi.hoisted(() => ({ values: new Map<string, unknown>() }))
-
-vi.mock<unknown>(import('@/platform/settings/settingStore'), () => ({
-  useSettingStore: () => ({ get: (key: string) => settings.values.get(key) })
-}))
-vi.mock<unknown>(import('@/stores/workspace/colorPaletteStore'), () => ({
-  useColorPaletteStore: () => ({
-    completedActivePalette: {
-      colors: {
-        litegraph_base: { BADGE_FG_COLOR: '#fff', BADGE_BG_COLOR: '#000' }
-      }
-    }
-  })
-}))
-
 const CORE_SOURCE_BADGE = '🦊'
 
 function setModes(mode: NodeBadgeMode) {
-  settings.values.set('Comfy.NodeBadge.NodeIdBadgeMode', mode)
-  settings.values.set('Comfy.NodeBadge.NodeLifeCycleBadgeMode', mode)
-  settings.values.set('Comfy.NodeBadge.NodeSourceBadgeMode', mode)
+  useSettingStore().settingValues['Comfy.NodeBadge.NodeIdBadgeMode'] = mode
+  useSettingStore().settingValues['Comfy.NodeBadge.NodeLifeCycleBadgeMode'] =
+    mode
+  useSettingStore().settingValues['Comfy.NodeBadge.NodeSourceBadgeMode'] = mode
 }
 
 function seedNodeDef(name: string, pythonModule: string) {
@@ -89,11 +74,6 @@ function vueBadgeText(node: LGraphNode): string {
 }
 
 describe('badge renderer parity (I2)', () => {
-  beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-    settings.values = new Map<string, unknown>()
-  })
-
   function setup(
     mode: NodeBadgeMode,
     type: string,

@@ -4,7 +4,6 @@ import {
 } from '@e2e/fixtures/ComfyPage'
 import type { NodeError, PromptResponse } from '@/schemas/apiSchema'
 import { ExecutionHelper } from '@e2e/fixtures/helpers/ExecutionHelper'
-import { enableErrorsOverlay } from '@e2e/fixtures/helpers/ErrorsTabHelper'
 import { TestIds } from '@e2e/fixtures/selectors'
 
 const SAVE_IMAGE_NODE_ID = '9'
@@ -28,8 +27,11 @@ test.describe(
   'App mode validation warning',
   { tag: ['@ui', '@workflow'] },
   () => {
+    test.use({
+      initialSettings: { 'Comfy.RightSidePanel.ShowErrorsTab': true }
+    })
+
     test.beforeEach(async ({ comfyPage }) => {
-      await enableErrorsOverlay(comfyPage)
       await comfyPage.workflow.loadWorkflow('linear-validation-warning')
       await comfyPage.appMode.toggleAppMode()
       await expect(comfyPage.appMode.linearWidgets).toBeVisible()

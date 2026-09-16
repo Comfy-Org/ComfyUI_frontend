@@ -1,35 +1,14 @@
 /* eslint-disable testing-library/no-container, testing-library/no-node-access -- shape buttons are unlabeled divs and number inputs have no aria labels */
-import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
+import { render, screen } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { reactive } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import BrushSettingsPanel from '@/components/maskeditor/BrushSettingsPanel.vue'
 import { BrushShape } from '@/extensions/core/maskeditor/types'
+import { useMaskEditorStore } from '@/stores/maskEditorStore'
 
-const initialMock = () => ({
-  brushSettings: reactive({
-    type: BrushShape.Arc,
-    size: 10,
-    opacity: 0.7,
-    hardness: 1,
-    stepSize: 5
-  }),
-  rgbColor: '#FF0000',
-  colorInput: null as HTMLInputElement | null,
-  setBrushSize: vi.fn(),
-  setBrushOpacity: vi.fn(),
-  setBrushHardness: vi.fn(),
-  setBrushStepSize: vi.fn(),
-  resetBrushToDefault: vi.fn()
-})
-
-let mockStore: ReturnType<typeof initialMock>
-
-vi.mock<unknown>(import('@/stores/maskEditorStore'), () => ({
-  useMaskEditorStore: () => mockStore
-}))
+let mockStore: ReturnType<typeof useMaskEditorStore>
 
 vi.mock<unknown>(
   import('@/components/maskeditor/controls/SliderControl.vue'),
@@ -72,7 +51,18 @@ const setNumberInput = (input: HTMLInputElement, value: string): void => {
 
 describe('BrushSettingsPanel', () => {
   beforeEach(() => {
-    mockStore = initialMock()
+    mockStore = useMaskEditorStore()
+    mockStore.$patch({
+      brushSettings: {
+        type: BrushShape.Arc,
+        size: 10,
+        opacity: 0.7,
+        hardness: 1,
+        stepSize: 5
+      },
+      rgbColor: '#FF0000',
+      colorInput: null
+    })
   })
 
   describe('brush shape buttons', () => {
@@ -183,7 +173,7 @@ describe('BrushSettingsPanel', () => {
     })
 
     it('should return cached raw slider value when size matches the mapping', async () => {
-      mockStore.setBrushSize.mockImplementation((size: number) => {
+      vi.mocked(mockStore.setBrushSize).mockImplementation((size: number) => {
         mockStore.brushSettings.size = size
       })
       const { container } = renderPanel()

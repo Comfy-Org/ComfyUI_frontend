@@ -1,35 +1,17 @@
 import { render } from '@testing-library/vue'
-import { nextTick, ref } from 'vue'
-import type { Ref } from 'vue'
+import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
-import { describe, it, expect, beforeEach, vi } from 'vitest'
+import { describe, it, expect, beforeEach } from 'vitest'
+import { useExecutionStore } from '@/stores/executionStore'
 
 import { useQueueProgress } from '@/composables/queue/useQueueProgress'
 import { formatPercent0 } from '@/utils/numberUtil'
-
-type ProgressValue = number | null
-
-const executionProgressRef: Ref<ProgressValue> = ref(null)
-const executingNodeProgressRef: Ref<ProgressValue> = ref(null)
 
 const i18n = createI18n({
   legacy: false,
   locale: 'en-US',
   messages: { 'en-US': {}, 'fr-FR': {} }
 })
-
-const createExecutionStoreMock = () => ({
-  get executionProgress() {
-    return executionProgressRef.value ?? undefined
-  },
-  get executingNodeProgress() {
-    return executingNodeProgressRef.value ?? undefined
-  }
-})
-
-vi.mock<unknown>(import('@/stores/executionStore'), () => ({
-  useExecutionStore: () => createExecutionStoreMock()
-}))
 
 const mountUseQueueProgress = () => {
   let composable: ReturnType<typeof useQueueProgress>
@@ -47,11 +29,13 @@ const mountUseQueueProgress = () => {
 }
 
 const setExecutionProgress = (value?: number | null) => {
-  executionProgressRef.value = value ?? null
+  Object.assign(useExecutionStore(), { executionProgress: value ?? undefined })
 }
 
 const setExecutingNodeProgress = (value?: number | null) => {
-  executingNodeProgressRef.value = value ?? null
+  Object.assign(useExecutionStore(), {
+    executingNodeProgress: value ?? undefined
+  })
 }
 
 describe('useQueueProgress', () => {

@@ -1,4 +1,6 @@
-import { describe, expect, it, vi } from 'vitest'
+import type { ComfyApp } from '@/scripts/app'
+import { useAssetsStore } from '@/stores/assetsStore'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import {
   findOutputAsset,
@@ -11,33 +13,35 @@ const mockFetchApi = vi.hoisted(() => vi.fn())
 const mockApiURL = vi.hoisted(() =>
   vi.fn((path: string) => `http://localhost:8188${path}`)
 )
-const mockGetServerFeature = vi.hoisted(() => vi.fn(() => false))
-const mockIsAssetAPIEnabled = vi.hoisted(() => vi.fn(() => false))
+const mockAssetsEnabled = vi.hoisted(() => ({ value: false }))
 const mockUploadAssetFromBase64 = vi.hoisted(() => vi.fn())
 const mockUpdateAsset = vi.hoisted(() => vi.fn())
 const mockInvalidateOutputAssets = vi.hoisted(() => vi.fn())
 
 vi.mock<unknown>(import('@/scripts/api'), () => ({
   api: {
+    addEventListener: vi.fn(),
     fetchApi: mockFetchApi,
     apiURL: mockApiURL,
-    api_base: '',
-    getServerFeature: mockGetServerFeature
+    api_base: ''
   }
+}))
+
+vi.mock<unknown>(import('@/composables/useFeatureFlags'), () => ({
+  useFeatureFlags: () => ({
+    flags: {
+      get assetsEnabled() {
+        return mockAssetsEnabled.value
+      }
+    }
+  })
 }))
 
 vi.mock<unknown>(import('@/platform/assets/services/assetService'), () => ({
   assetService: {
-    isAssetAPIEnabled: mockIsAssetAPIEnabled,
     uploadAssetFromBase64: mockUploadAssetFromBase64,
     updateAsset: mockUpdateAsset
   }
-}))
-
-vi.mock<unknown>(import('@/stores/assetsStore'), () => ({
-  useAssetsStore: () => ({
-    outputAssets: { invalidate: mockInvalidateOutputAssets }
-  })
 }))
 
 function mockFetchResponse(assets: Record<string, unknown>[]) {
@@ -83,20 +87,20 @@ const localAssetWithPreview = {
   preview_url: '/api/view?type=output&filename=preview.png'
 }
 
+beforeEach(() => {
+  vi.spyOn(useAssetsStore().outputAssets, 'invalidate').mockImplementation(
+    mockInvalidateOutputAssets
+  )
+})
+
 describe('isAssetPreviewSupported', () => {
-  it('returns true when asset API is enabled (cloud)', () => {
-    mockIsAssetAPIEnabled.mockReturnValue(true)
+  it('returns true when the assets feature flag is enabled', () => {
+    mockAssetsEnabled.value = true
     expect(isAssetPreviewSupported()).toBe(true)
   })
 
-  it('returns true when server assets feature is enabled (local)', () => {
-    mockGetServerFeature.mockReturnValue(true)
-    expect(isAssetPreviewSupported()).toBe(true)
-  })
-
-  it('returns false when neither is enabled', () => {
-    mockIsAssetAPIEnabled.mockReturnValue(false)
-    mockGetServerFeature.mockReturnValue(false)
+  it('returns false when the assets feature flag is disabled', () => {
+    mockAssetsEnabled.value = false
     expect(isAssetPreviewSupported()).toBe(false)
   })
 })
@@ -315,4 +319,9 @@ describe('persistThumbnail', () => {
 
     expect(mockInvalidateOutputAssets).not.toHaveBeenCalled()
   })
+})
+
+vi.mock(import('@/scripts/app'), async () => {
+  const { fromPartial } = await import('@total-typescript/shoehorn')
+  return { app: fromPartial<ComfyApp>({}) }
 })

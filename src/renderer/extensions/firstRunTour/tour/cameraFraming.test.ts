@@ -1,3 +1,5 @@
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import { fromPartial } from '@total-typescript/shoehorn'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { ReadOnlyRect } from '@/lib/litegraph/src/interfaces'
@@ -24,19 +26,10 @@ function scaleFor(bounds: ReadOnlyRect, fill: number): number {
   )
 }
 
-const appState = vi.hoisted(() => ({ canvas: undefined as unknown }))
-vi.mock<unknown>(import('@/renderer/core/canvas/canvasStore'), () => ({
-  useCanvasStore: () => ({
-    get canvas() {
-      return appState.canvas
-    }
-  })
-}))
-
 const camera = {
   animateToBounds: vi.fn(),
   setDirty: vi.fn(),
-  ds: { fitToBounds: vi.fn(), offset: [0, 0], scale: 1 }
+  ds: { fitToBounds: vi.fn(), offset: [0, 0] as [number, number], scale: 1 }
 }
 
 let canvasRect = new DOMRect(0, 0, VIEWPORT.width, VIEWPORT.height)
@@ -48,11 +41,13 @@ function mountCanvas(): LGraphNode {
   node.size = [50, 60]
   graph.add(node)
   node.updateArea()
-  appState.canvas = {
+  useCanvasStore().canvas = fromPartial({
     ...camera,
     graph,
-    canvas: { getBoundingClientRect: () => canvasRect }
-  }
+    canvas: Object.assign(document.createElement('canvas'), {
+      getBoundingClientRect: () => canvasRect
+    })
+  })
   return node
 }
 
@@ -158,7 +153,7 @@ describe('frameNode', () => {
     camera.ds.fitToBounds.mockClear()
     camera.ds.offset = [0, 0]
     camera.ds.scale = 1
-    appState.canvas = undefined
+    useCanvasStore().canvas = null
   })
 
   it('skips the flight for a step already framed, as Back lands on', async () => {

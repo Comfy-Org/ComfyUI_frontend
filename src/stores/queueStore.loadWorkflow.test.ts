@@ -16,10 +16,6 @@ vi.mock<unknown>(import('@/services/extensionService'), () => ({
   }))
 }))
 
-vi.mock<unknown>(import('@/stores/assetsStore'), () => ({
-  useAssetsStore: vi.fn(() => ({}))
-}))
-
 vi.mock(import('@/platform/assets/composables/media/assetMappers'))
 
 const mockWorkflow: ComfyWorkflowJSON = {

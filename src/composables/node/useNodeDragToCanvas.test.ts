@@ -1,14 +1,17 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
-import type { useNodeDragToCanvas as UseNodeDragToCanvasType } from './useNodeDragToCanvas'
+import { useNodeDragToCanvas } from './useNodeDragToCanvas'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import { useToastStore } from '@/platform/updates/common/toastStore'
+import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
+import { fromPartial } from '@total-typescript/shoehorn'
 
 const {
   mockAddNodeOnGraph,
   mockConvertEventToCanvasOffset,
   mockSelectItems,
-  mockCanvas,
-  mockToastAdd
+  mockCanvas
 } = vi.hoisted(() => {
   const mockConvertEventToCanvasOffset = vi.fn()
   const mockSelectItems = vi.fn()
@@ -16,9 +19,10 @@ const {
     mockAddNodeOnGraph: vi.fn(),
     mockConvertEventToCanvasOffset,
     mockSelectItems,
-    mockToastAdd: vi.fn(),
     mockCanvas: {
       canvas: {
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
         getBoundingClientRect: vi.fn()
       },
       convertEventToCanvasOffset: mockConvertEventToCanvasOffset,
@@ -27,37 +31,22 @@ const {
   }
 })
 
-vi.mock<unknown>(import('@/renderer/core/canvas/canvasStore'), () => ({
-  useCanvasStore: vi.fn(() => ({
-    canvas: mockCanvas
-  }))
-}))
-
 vi.mock<unknown>(import('@/services/litegraphService'), () => ({
   useLitegraphService: vi.fn(() => ({
     addNodeOnGraph: mockAddNodeOnGraph
   }))
 }))
 
-vi.mock<unknown>(import('@/platform/updates/common/toastStore'), () => ({
-  useToastStore: vi.fn(() => ({ add: mockToastAdd }))
-}))
-
 vi.mock(import('@/i18n'), () => ({ t: (key: string) => key }))
 
 describe('useNodeDragToCanvas', () => {
-  let useNodeDragToCanvas: typeof UseNodeDragToCanvasType
-
   const mockNodeDef = {
     name: 'TestNode',
     display_name: 'Test Node'
   } as ComfyNodeDefImpl
 
-  beforeEach(async () => {
-    vi.resetModules()
-
-    const module = await import('./useNodeDragToCanvas')
-    useNodeDragToCanvas = module.useNodeDragToCanvas
+  beforeEach(() => {
+    useCanvasStore().canvas = fromPartial<LGraphCanvas>(mockCanvas)
   })
 
   afterEach(() => {
@@ -313,7 +302,7 @@ describe('useNodeDragToCanvas', () => {
       )
 
       expect(mockSelectItems).toHaveBeenCalledWith([placedNode])
-      expect(mockToastAdd).toHaveBeenCalledWith(
+      expect(useToastStore().add).toHaveBeenCalledWith(
         expect.objectContaining({
           severity: 'warn',
           detail: 'assetBrowser.failedToSetModelValue'
@@ -346,7 +335,7 @@ describe('useNodeDragToCanvas', () => {
         })
       )
 
-      expect(mockToastAdd).toHaveBeenCalledWith(
+      expect(useToastStore().add).toHaveBeenCalledWith(
         expect.objectContaining({
           severity: 'error',
           detail: 'assetBrowser.failedToCreateNode'

@@ -1,6 +1,4 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { Subgraph } from '@/lib/litegraph/src/litegraph'
@@ -15,10 +13,6 @@ import { usePreviewExposureStore } from '@/stores/previewExposureStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 
 describe('node shell registration', () => {
-  beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-  })
-
   it('remints a colliding node id and warns with both ids', () => {
     const graph = new LGraph()
     const first = new LGraphNode('first')
@@ -45,10 +39,6 @@ describe('node shell registration', () => {
 })
 
 describe('node shell teardown', () => {
-  beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-  })
-
   function addWidgetedNode(graph: LGraph | Subgraph): LGraphNode {
     const node = new LGraphNode('Node')
     node.addWidget('text', 'prompt', 'a value', () => {})

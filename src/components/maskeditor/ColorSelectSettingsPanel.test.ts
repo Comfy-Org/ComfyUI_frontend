@@ -1,27 +1,13 @@
-import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
+import { render, screen } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
 import ColorSelectSettingsPanel from '@/components/maskeditor/ColorSelectSettingsPanel.vue'
 import { ColorComparisonMethod } from '@/extensions/core/maskeditor/types'
+import { useMaskEditorStore } from '@/stores/maskEditorStore'
 
-const mockStore = vi.hoisted(() => ({
-  colorSelectTolerance: 20,
-  selectionOpacity: 100,
-  colorSelectLivePreview: false,
-  applyWholeImage: false,
-  colorComparisonMethod: 'simple' as ColorComparisonMethod,
-  maskBoundary: false,
-  maskTolerance: 0,
-  setColorSelectTolerance: vi.fn(),
-  setSelectionOpacity: vi.fn(),
-  setMaskTolerance: vi.fn()
-}))
-
-vi.mock<unknown>(import('@/stores/maskEditorStore'), () => ({
-  useMaskEditorStore: () => mockStore
-}))
+let mockStore: ReturnType<typeof useMaskEditorStore>
 
 vi.mock<unknown>(
   import('@/components/maskeditor/controls/SliderControl.vue'),
@@ -83,13 +69,16 @@ const renderPanel = () =>
 
 describe('ColorSelectSettingsPanel', () => {
   beforeEach(() => {
-    mockStore.colorSelectTolerance = 20
-    mockStore.selectionOpacity = 100
-    mockStore.colorSelectLivePreview = false
-    mockStore.applyWholeImage = false
-    mockStore.colorComparisonMethod = ColorComparisonMethod.Simple
-    mockStore.maskBoundary = false
-    mockStore.maskTolerance = 0
+    mockStore = useMaskEditorStore()
+    mockStore.$patch({
+      colorSelectTolerance: 20,
+      selectionOpacity: 100,
+      colorSelectLivePreview: false,
+      applyWholeImage: false,
+      colorComparisonMethod: ColorComparisonMethod.Simple,
+      maskBoundary: false,
+      maskTolerance: 0
+    })
   })
 
   it('should call setColorSelectTolerance when tolerance slider emits', async () => {

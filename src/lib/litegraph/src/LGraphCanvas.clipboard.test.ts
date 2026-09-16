@@ -2,8 +2,6 @@ import {
   SUBGRAPH_INPUT_ID,
   SUBGRAPH_OUTPUT_ID
 } from '@/lib/litegraph/src/constants'
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
 import {
   afterEach,
   beforeEach,
@@ -43,18 +41,9 @@ import { graphScopeOf } from '@/types/graphScopeId'
 import { toRerouteId } from '@/types/rerouteId'
 import { createMockCanvasRenderingContext2D } from '@/utils/__tests__/litegraphTestUtils'
 
-vi.mock<unknown>(
-  import('@/renderer/core/canvas/canvasStore'), // eslint-disable-line import-x/no-restricted-paths
-
-  () => ({
-    useCanvasStore: () => ({})
-  })
-)
 vi.mock<unknown>(import('@/services/litegraphService'), () => ({
   useLitegraphService: () => ({ updatePreviews: () => ({}) })
 }))
-
-beforeEach(() => setActivePinia(createTestingPinia({ stubActions: false })))
 
 function createSerialisedNode(
   id: number,

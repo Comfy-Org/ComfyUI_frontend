@@ -1,5 +1,4 @@
-import { reactive } from 'vue'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import {
@@ -16,35 +15,6 @@ import { toNodeId } from '@/types/nodeId'
 
 import { CANVAS_IMAGE_PREVIEW_WIDGET } from './canvasImagePreviewTypes'
 import { usePromotedPreviews } from './usePromotedPreviews'
-
-type MockNodeOutputStore = Pick<
-  ReturnType<typeof useNodeOutputStore>,
-  | 'nodeOutputs'
-  | 'nodePreviewImages'
-  | 'getNodeImageUrls'
-  | 'getNodeImageUrlsByExecutionId'
-  | 'getNodeOutputByExecutionId'
-  | 'getNodePreviewImagesByExecutionId'
->
-
-vi.mock<unknown>(import('@/stores/nodeOutputStore'), () => {
-  const store: MockNodeOutputStore = {
-    nodeOutputs: reactive<MockNodeOutputStore['nodeOutputs']>({}),
-    nodePreviewImages: reactive<MockNodeOutputStore['nodePreviewImages']>({}),
-    getNodeImageUrls: vi.fn(),
-    getNodeImageUrlsByExecutionId: vi.fn(),
-    getNodeOutputByExecutionId: vi.fn(),
-    getNodePreviewImagesByExecutionId: vi.fn()
-  }
-  return { useNodeOutputStore: () => store }
-})
-
-function clearMockNodeOutputStore() {
-  const { nodeOutputs, nodePreviewImages } = useNodeOutputStore()
-  for (const key of Object.keys(nodeOutputs)) delete nodeOutputs[key]
-  for (const key of Object.keys(nodePreviewImages))
-    delete nodePreviewImages[key]
-}
 
 function createSetup() {
   const subgraph = createTestSubgraph()
@@ -125,10 +95,6 @@ function arrangePromotedPreview(options: ArrangeOptions = {}) {
 }
 
 describe(usePromotedPreviews, () => {
-  beforeEach(() => {
-    clearMockNodeOutputStore()
-  })
-
   it('returns empty array for non-SubgraphNode', () => {
     const node = new LGraphNode('test')
     const { promotedPreviews } = usePromotedPreviews(() => node)

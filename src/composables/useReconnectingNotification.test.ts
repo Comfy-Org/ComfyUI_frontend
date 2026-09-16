@@ -4,6 +4,7 @@ import { defineComponent, nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import { useReconnectingNotification } from '@/composables/useReconnectingNotification'
+import { useSettingStore } from '@/platform/settings/settingStore'
 
 const mockToastAdd = vi.fn()
 const mockToastRemove = vi.fn()
@@ -43,23 +44,10 @@ function setupComposable(): ReturnType<typeof useReconnectingNotification> {
   return result
 }
 
-const settingMocks = vi.hoisted(() => ({
-  disableToast: false
-}))
-
-vi.mock<unknown>(import('@/platform/settings/settingStore'), () => ({
-  useSettingStore: vi.fn(() => ({
-    get: vi.fn((key: string) => {
-      if (key === 'Comfy.Toast.DisableReconnectingToast')
-        return settingMocks.disableToast
-      return undefined
-    })
-  }))
-}))
-
 describe('useReconnectingNotification', () => {
   beforeEach(() => {
-    settingMocks.disableToast = false
+    useSettingStore().settingValues['Comfy.Toast.DisableReconnectingToast'] =
+      false
   })
 
   it('does not show toast immediately on reconnecting', () => {
@@ -121,7 +109,8 @@ describe('useReconnectingNotification', () => {
   })
 
   it('does nothing when toast is disabled via setting', () => {
-    settingMocks.disableToast = true
+    useSettingStore().settingValues['Comfy.Toast.DisableReconnectingToast'] =
+      true
     const { onReconnecting, onReconnected } = setupComposable()
 
     onReconnecting()

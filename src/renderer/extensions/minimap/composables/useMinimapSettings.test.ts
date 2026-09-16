@@ -1,36 +1,22 @@
-import { describe, expect, it, vi } from 'vitest'
+import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
+import { beforeEach, describe, expect, it } from 'vitest'
 
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useMinimapSettings } from '@/renderer/extensions/minimap/composables/useMinimapSettings'
 
-type MockSettingStore = ReturnType<typeof useSettingStore>
-
-const mockUseColorPaletteStore = vi.hoisted(() => vi.fn())
-
-vi.mock(import('@/platform/settings/settingStore'))
-vi.mock<unknown>(import('@/stores/workspace/colorPaletteStore'), () => ({
-  useColorPaletteStore: mockUseColorPaletteStore
-}))
+beforeEach(() => {
+  useSettingStore().settingValues = {
+    'Comfy.Minimap.NodeColors': true,
+    'Comfy.Minimap.ShowLinks': false,
+    'Comfy.Minimap.ShowGroups': true,
+    'Comfy.Minimap.RenderBypassState': false,
+    'Comfy.Minimap.RenderErrorState': true
+  }
+})
 
 describe('useMinimapSettings', () => {
   it('should return all minimap settings as computed refs', () => {
-    const mockSettingStore = {
-      get: vi.fn((key: string) => {
-        const settings: Record<string, unknown> = {
-          'Comfy.Minimap.NodeColors': true,
-          'Comfy.Minimap.ShowLinks': false,
-          'Comfy.Minimap.ShowGroups': true,
-          'Comfy.Minimap.RenderBypassState': false,
-          'Comfy.Minimap.RenderErrorState': true
-        }
-        return settings[key]
-      })
-    }
-
-    vi.mocked(useSettingStore).mockReturnValue(
-      mockSettingStore as Partial<MockSettingStore> as MockSettingStore
-    )
-    mockUseColorPaletteStore.mockReturnValue({
+    Object.assign(useColorPaletteStore(), {
       completedActivePalette: {
         id: 'test',
         name: 'Test Palette',
@@ -58,10 +44,7 @@ describe('useMinimapSettings', () => {
       }
     }
 
-    vi.mocked(useSettingStore).mockReturnValue({
-      get: vi.fn()
-    } as Partial<MockSettingStore> as MockSettingStore)
-    mockUseColorPaletteStore.mockReturnValue(mockColorPaletteStore)
+    Object.assign(useColorPaletteStore(), mockColorPaletteStore)
 
     const settings = useMinimapSettings()
     const styles = settings.containerStyles.value
@@ -82,10 +65,7 @@ describe('useMinimapSettings', () => {
       }
     }
 
-    vi.mocked(useSettingStore).mockReturnValue({
-      get: vi.fn()
-    } as Partial<MockSettingStore> as MockSettingStore)
-    mockUseColorPaletteStore.mockReturnValue(mockColorPaletteStore)
+    Object.assign(useColorPaletteStore(), mockColorPaletteStore)
 
     const settings = useMinimapSettings()
     const styles = settings.containerStyles.value
@@ -106,10 +86,7 @@ describe('useMinimapSettings', () => {
       }
     }
 
-    vi.mocked(useSettingStore).mockReturnValue({
-      get: vi.fn()
-    } as Partial<MockSettingStore> as MockSettingStore)
-    mockUseColorPaletteStore.mockReturnValue(mockColorPaletteStore)
+    Object.assign(useColorPaletteStore(), mockColorPaletteStore)
 
     const settings = useMinimapSettings()
     const styles = settings.panelStyles.value
@@ -121,17 +98,7 @@ describe('useMinimapSettings', () => {
   })
 
   it('should create computed properties that call the store getter', () => {
-    const mockGet = vi.fn((key: string) => {
-      if (key === 'Comfy.Minimap.NodeColors') return true
-      if (key === 'Comfy.Minimap.ShowLinks') return false
-      return true
-    })
-    const mockSettingStore = { get: mockGet }
-
-    vi.mocked(useSettingStore).mockReturnValue(
-      mockSettingStore as Partial<MockSettingStore> as MockSettingStore
-    )
-    mockUseColorPaletteStore.mockReturnValue({
+    Object.assign(useColorPaletteStore(), {
       completedActivePalette: {
         id: 'test',
         name: 'Test Palette',
@@ -147,7 +114,11 @@ describe('useMinimapSettings', () => {
     expect(settings.showLinks.value).toBe(false)
 
     // Verify the store getter was called with the correct keys
-    expect(mockGet).toHaveBeenCalledWith('Comfy.Minimap.NodeColors')
-    expect(mockGet).toHaveBeenCalledWith('Comfy.Minimap.ShowLinks')
+    expect(useSettingStore().get).toHaveBeenCalledWith(
+      'Comfy.Minimap.NodeColors'
+    )
+    expect(useSettingStore().get).toHaveBeenCalledWith(
+      'Comfy.Minimap.ShowLinks'
+    )
   })
 })

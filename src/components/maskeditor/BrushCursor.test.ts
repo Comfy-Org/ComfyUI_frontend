@@ -1,31 +1,11 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/vue'
-import { reactive } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import BrushCursor from '@/components/maskeditor/BrushCursor.vue'
 import { BrushShape } from '@/extensions/core/maskeditor/types'
+import { useMaskEditorStore } from '@/stores/maskEditorStore'
 
-const initialMock = () =>
-  reactive({
-    brushVisible: true,
-    brushPreviewGradientVisible: false,
-    brushSettings: {
-      type: BrushShape.Arc,
-      size: 20,
-      opacity: 0.7,
-      hardness: 1,
-      stepSize: 5
-    },
-    zoomRatio: 1,
-    cursorPoint: { x: 100, y: 50 },
-    panOffset: { x: 0, y: 0 }
-  })
-
-let mockStore: ReturnType<typeof initialMock>
-
-vi.mock<unknown>(import('@/stores/maskEditorStore'), () => ({
-  useMaskEditorStore: () => mockStore
-}))
+let mockStore: ReturnType<typeof useMaskEditorStore>
 
 const styleOf = (el: Element): string => el.getAttribute('style') ?? ''
 
@@ -41,7 +21,21 @@ const getGradientEl = (): HTMLElement =>
 
 describe('BrushCursor', () => {
   beforeEach(() => {
-    mockStore = initialMock()
+    mockStore = useMaskEditorStore()
+    mockStore.$patch({
+      brushVisible: true,
+      brushPreviewGradientVisible: false,
+      brushSettings: {
+        type: BrushShape.Arc,
+        size: 20,
+        opacity: 0.7,
+        hardness: 1,
+        stepSize: 5
+      },
+      zoomRatio: 1,
+      cursorPoint: { x: 100, y: 50 },
+      panOffset: { x: 0, y: 0 }
+    })
   })
 
   describe('opacity', () => {

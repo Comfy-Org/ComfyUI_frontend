@@ -20,9 +20,8 @@ const ctas = platformCtas(locale)
     title-class="text-primary-comfy-yellow text-3xl/tight font-bold tracking-[-1.44px] md:text-4xl/tight lg:text-5xl/tight"
     media-wrapper-class="hidden min-w-0 lg:block"
     :subtitle="t('platform.modelsHero.subtitle', locale)"
-    :primary-cta="ctas.getStarted"
-    :secondary-cta="{
-      label: ctas.docs.label,
+    :primary-cta="{
+      label: ctas.getStarted.label,
       href: externalLinks.docsComfyRouter,
       target: '_blank'
     }"

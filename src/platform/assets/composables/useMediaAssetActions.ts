@@ -24,7 +24,7 @@ import {
   getAssetStoredFilename
 } from '../utils/assetMetadataUtils'
 import { getAssetType } from '../utils/assetTypeUtil'
-import { getAssetUrl } from '../utils/assetUrlUtil'
+import { getAssetFileUrl } from '../utils/assetUrlUtil'
 import { clearDeletedAssetWidgetValues } from '../utils/clearDeletedAssetWidgetValues'
 import { clearNodePreviewCacheForValues } from '../utils/clearNodePreviewCacheForValues'
 import { markDeletedAssetsAsMissingMedia } from '../utils/markDeletedAssetsAsMissingMedia'
@@ -144,8 +144,7 @@ export function useMediaAssetActions() {
 
   function downloadSingleAsset(asset: AssetItem) {
     const filename = getAssetDisplayName(asset)
-    const downloadUrl = asset.preview_url || getAssetUrl(asset)
-    downloadFile(downloadUrl, filename)
+    downloadFile(getAssetFileUrl(asset), filename)
   }
 
   async function expandAssetForDownload(
@@ -647,15 +646,6 @@ export function useMediaAssetActions() {
         })
         return uniqBy(operations, (op) => op.id)
       }
-      if (!flags.assetDeletionEnabled) {
-        toast.add({
-          detail: t('mediaAsset.deletionUnsupported'),
-          life: 5000,
-          severity: 'error',
-          summary: t('g.error')
-        })
-        return []
-      }
       return assets.flatMap((asset) => {
         const markDeletionId = asset.id
         const metadata = getOutputAssetMetadata(asset.user_metadata)
@@ -770,9 +760,11 @@ export function useMediaAssetActions() {
     const deleteConfirmed = await dialogService.confirm({
       title: t('mediaAsset.deleteItems'),
       type: 'delete',
-      message: plannedAssetCount
-        ? t('mediaAsset.deletePermanent')
-        : t('mediaAsset.deleteHistoryOnly'),
+      message: !plannedAssetCount
+        ? t('mediaAsset.deleteHistoryOnly')
+        : flags.assetDeletionEnabled
+          ? t('mediaAsset.deletePermanent')
+          : t('mediaAsset.deleteTombstone'),
       itemList: deletionPlan.flatMap(getNames)
     })
     if (!deleteConfirmed) return false

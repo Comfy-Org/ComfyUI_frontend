@@ -40,39 +40,49 @@ vi.mock<unknown>(import('@/scripts/app'), () => ({
 const i18n = createI18n({ legacy: false, locale: 'en', messages: { en: {} } })
 
 describe('AppBuilder', () => {
-  it('does not select panel-hidden widgets as app inputs', async () => {
-    const canvasElement = document.createElement('canvas')
-    canvasElement.getContext = vi
-      .fn()
-      .mockReturnValue(createMockCanvasRenderingContext2D())
-    const graph = new LGraph()
-    const canvas = new LGraphCanvas(canvasElement, graph, { skip_render: true })
-    const node = new LGraphNode('Source', 'Source')
-    const widget = node.addWidget('text', 'hidden', '', () => {})
-    graph.add(node)
-    if (!widget.visibility)
-      throw new Error('Missing concrete widget visibility')
-    widget.visibility.surfaces.panel = 'never'
-    vi.spyOn(graph, 'getNodeOnPos').mockReturnValue(node)
-    vi.spyOn(node, 'getWidgetOnPos').mockReturnValue(widget)
-    vi.spyOn(canvas, 'adjustMouseEvent').mockImplementation(() => {})
-    useCanvasStore().canvas = canvas
+  it.for([
+    ['shown', true],
+    ['never', false]
+  ] as const)(
+    'selects a widget with panel visibility %s: %s',
+    async ([panelVisibility, selectable]) => {
+      const canvasElement = document.createElement('canvas')
+      canvasElement.getContext = vi
+        .fn()
+        .mockReturnValue(createMockCanvasRenderingContext2D())
+      const graph = new LGraph()
+      const canvas = new LGraphCanvas(canvasElement, graph, {
+        skip_render: true
+      })
+      const node = new LGraphNode('Source', 'Source')
+      const widget = node.addWidget('text', 'input', '', () => {})
+      graph.add(node)
+      if (!widget.visibility)
+        throw new Error('Missing concrete widget visibility')
+      widget.visibility.surfaces.panel = panelVisibility
+      vi.spyOn(graph, 'getNodeOnPos').mockReturnValue(node)
+      vi.spyOn(node, 'getWidgetOnPos').mockReturnValue(widget)
+      vi.spyOn(canvas, 'adjustMouseEvent').mockImplementation(() => {})
+      useCanvasStore().canvas = canvas
 
-    render(AppBuilder, {
-      global: {
-        plugins: [i18n],
-        stubs: {
-          AppModeWidgetList: true,
-          DraggableList: true,
-          IoItem: true,
-          PropertiesAccordionItem: true,
-          TransformPane: true
+      render(AppBuilder, {
+        global: {
+          plugins: [i18n],
+          stubs: {
+            AppModeWidgetList: true,
+            DraggableList: true,
+            IoItem: true,
+            PropertiesAccordionItem: true,
+            TransformPane: true
+          }
         }
-      }
-    })
+      })
 
-    await userEvent.click(screen.getByTestId('builder-selection-overlay'))
+      await userEvent.click(screen.getByTestId('builder-selection-overlay'))
 
-    expect(useAppModeStore().selectedInputs).toEqual([])
-  })
+      expect(useAppModeStore().selectedInputs).toEqual(
+        selectable ? [[widget.widgetId, widget.name, undefined]] : []
+      )
+    }
+  )
 })

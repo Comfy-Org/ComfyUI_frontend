@@ -1,61 +1,41 @@
 import { render } from '@testing-library/vue'
 import { fromPartial } from '@total-typescript/shoehorn'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, afterEach, describe, expect, it, vi } from 'vitest'
 import { nextTick, reactive, ref } from 'vue'
 
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { useSettingStore } from '@/platform/settings/settingStore'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import type { BaseDOMWidget } from '@/scripts/domWidget'
 import type { DomWidgetState } from '@/stores/domWidgetStore'
 import { useDomWidgetStore } from '@/stores/domWidgetStore'
 import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
+
 import DomWidget from './DomWidget.vue'
 
-const mockUpdateClipPath = vi.fn()
-const mockClippingStyle = ref<Record<string, string>>({})
-const mockDomClippingEnabled = ref(false)
-const mockCanvasElement = document.createElement('canvas')
-const mockCanvasStore = {
-  canvas: {
-    graph: {
-      getNodeById: vi.fn(() => true)
-    },
-    ds: {
-      offset: [0, 0],
-      scale: 1
-    },
+beforeEach(() => {
+  useCanvasStore().canvas = fromPartial({
+    graph: { getNodeById: vi.fn(() => true) },
+    ds: { offset: [0, 0], scale: 1 },
     canvas: mockCanvasElement,
     selected_nodes: {},
     selectNode: vi.fn(),
     bringToFront: vi.fn(),
     selectedItems: new Set()
-  },
-  getCanvas: () => ({
-    canvas: mockCanvasElement,
-    ds: mockCanvasStore.canvas.ds
-  }),
-  linearMode: false
-}
+  })
+  Object.assign(useCanvasStore(), { linearMode: false })
+  useSettingStore().settingValues['Comfy.DOMClippingEnabled'] = false
+})
+
+const mockUpdateClipPath = vi.fn()
+const mockClippingStyle = ref<Record<string, string>>({})
+
+const mockCanvasElement = document.createElement('canvas')
 
 vi.mock(import('@/composables/element/useDomClipping'), () => ({
   useDomClipping: () => ({
     style: mockClippingStyle,
     updateClipPath: mockUpdateClipPath
-  })
-}))
-
-vi.mock<unknown>(
-  import('@/renderer/core/canvas/canvasStore'),
-
-  () => ({
-    useCanvasStore: () => mockCanvasStore
-  })
-)
-
-vi.mock<unknown>(import('@/platform/settings/settingStore'), () => ({
-  useSettingStore: () => ({
-    get: vi.fn((key: string) =>
-      key === 'Comfy.DOMClippingEnabled' ? mockDomClippingEnabled.value : false
-    )
   })
 }))
 
@@ -95,10 +75,10 @@ function createWidgetState(
 describe('DomWidget style', () => {
   afterEach(() => {
     useDomWidgetStore().clear()
-    mockDomClippingEnabled.value = false
+    useSettingStore().settingValues['Comfy.DOMClippingEnabled'] = false
     mockClippingStyle.value = {}
-    mockCanvasStore.canvas.selected_nodes = {}
-    mockCanvasStore.canvas.selectedItems = new Set()
+    useCanvasStore().getCanvas().selected_nodes = {}
+    useCanvasStore().getCanvas().selectedItems = new Set()
   })
 
   it('positions a newly mounted widget', () => {
@@ -136,7 +116,7 @@ describe('DomWidget style', () => {
   })
 
   it('applies clipping style when DOM clipping is enabled', async () => {
-    mockDomClippingEnabled.value = true
+    useSettingStore().settingValues['Comfy.DOMClippingEnabled'] = true
     const widgetState = createWidgetState(false)
     const { container } = render(DomWidget, {
       props: {
@@ -161,7 +141,7 @@ describe('DomWidget style', () => {
     })
     mockUpdateClipPath.mockClear()
 
-    mockDomClippingEnabled.value = true
+    useSettingStore().settingValues['Comfy.DOMClippingEnabled'] = true
     await nextTick()
 
     expect(mockUpdateClipPath).toHaveBeenCalled()
@@ -177,8 +157,11 @@ describe('DomWidget style', () => {
     legacyFirst.pos = [50, 60]
     legacyFirst.size = [70, 80]
     legacyFirst.updateArea()
-    mockCanvasStore.canvas.selectedItems = new Set([firstSelected, legacyFirst])
-    mockCanvasStore.canvas.selected_nodes = {
+    useCanvasStore().getCanvas().selectedItems = new Set([
+      firstSelected,
+      legacyFirst
+    ])
+    useCanvasStore().getCanvas().selected_nodes = {
       1: legacyFirst,
       2: firstSelected
     }
@@ -188,7 +171,7 @@ describe('DomWidget style', () => {
         widgetState
       }
     })
-    mockDomClippingEnabled.value = true
+    useSettingStore().settingValues['Comfy.DOMClippingEnabled'] = true
     await nextTick()
 
     expect(mockUpdateClipPath).toHaveBeenCalledWith(
@@ -300,10 +283,10 @@ describe('native DOM widget interaction lifecycle', () => {
     await nextTick()
 
     input.dispatchEvent(new MouseEvent('click', { bubbles: true }))
-    expect(mockCanvasStore.canvas.selectNode).toHaveBeenCalledWith(
+    expect(useCanvasStore().getCanvas().selectNode).toHaveBeenCalledWith(
       widgetState.widget.node
     )
-    expect(mockCanvasStore.canvas.bringToFront).toHaveBeenCalledWith(
+    expect(useCanvasStore().getCanvas().bringToFront).toHaveBeenCalledWith(
       widgetState.widget.node
     )
 
@@ -311,12 +294,12 @@ describe('native DOM widget interaction lifecycle', () => {
     expect(blur).toHaveBeenCalledOnce()
 
     rendered.unmount()
-    vi.mocked(mockCanvasStore.canvas.selectNode).mockClear()
+    vi.mocked(useCanvasStore().getCanvas().selectNode).mockClear()
     blur.mockClear()
 
     input.dispatchEvent(new MouseEvent('click', { bubbles: true }))
     document.body.dispatchEvent(new MouseEvent('mousedown', { bubbles: true }))
-    expect(mockCanvasStore.canvas.selectNode).not.toHaveBeenCalled()
+    expect(useCanvasStore().getCanvas().selectNode).not.toHaveBeenCalled()
     expect(blur).not.toHaveBeenCalled()
   })
 

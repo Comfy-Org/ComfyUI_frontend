@@ -128,6 +128,9 @@ class NodeSlotReference {
       [this.type, this.node.id, this.index] as const
     )
   }
+  async expectLinkCount(expected: number, message?: string): Promise<void> {
+    await expect.poll(() => this.getLinkCount(), message).toBe(expected)
+  }
   async removeLinks() {
     await this.node.comfyPage.page.evaluate(
       ([type, id, index]) => {

@@ -1,7 +1,5 @@
 import { toGroupId } from '@/types/groupId'
 import { graphScopeOf } from '@/types/graphScopeId'
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { createGraphMutations } from '@/core/graph/graphMutations'
@@ -67,7 +65,6 @@ vi.mock(import('@/platform/telemetry/reportError'), () => ({
 }))
 
 beforeEach(() => {
-  setActivePinia(createTestingPinia({ stubActions: false }))
   LiteGraph.registerNodeType('dummy', DummyNode)
   mockReportError.mockClear()
 })
@@ -2306,10 +2303,6 @@ describe('deduplicateSubgraphNodeIds (via configure)', () => {
 })
 
 describe('Zero UUID handling in configure', () => {
-  beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-  })
-
   it('rejects zeroUuid for root graphs and assigns a new ID', () => {
     const graph = new LGraph()
     const data = graph.serialize()
@@ -2323,6 +2316,31 @@ describe('Zero UUID handling in configure', () => {
     const subgraphData = { ...createTestSubgraphData(), id: zeroUuid }
     const subgraph = graph.createSubgraph(subgraphData)
     expect(subgraph.id).toBe(zeroUuid)
+  })
+
+  it('keeps a subgraph registered under its own ID across clear()', () => {
+    const graph = new LGraph()
+    const subgraph = graph.createSubgraph(createTestSubgraphData())
+    const { id } = subgraph
+
+    subgraph.clear()
+
+    expect(subgraph.id).toBe(id)
+    expect(graph.subgraphs.get(id)).toBe(subgraph)
+    expect(graph.subgraphs.has(zeroUuid)).toBe(false)
+  })
+
+  it('creates a subgraph exposing IO without warning', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const graph = new LGraph()
+
+    graph.createSubgraph(
+      createTestSubgraphData({
+        inputs: [{ id: createUuidv4(), name: 'value', type: 'INT' }]
+      })
+    )
+
+    expect(warn).not.toHaveBeenCalled()
   })
 })
 

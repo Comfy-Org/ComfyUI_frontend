@@ -1,17 +1,13 @@
-import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
+import { render, screen } from '@testing-library/vue'
 import { describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
 import ViewerControls from '@/components/load3d/controls/ViewerControls.vue'
+import { useDialogStore } from '@/stores/dialogStore'
 import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
 
-const showDialog = vi.fn()
 const handleViewerClose = vi.fn()
-
-vi.mock<unknown>(import('@/stores/dialogStore'), () => ({
-  useDialogStore: () => ({ showDialog })
-}))
 
 vi.mock<unknown>(import('@/services/load3dService'), () => ({
   useLoad3dService: () => ({ handleViewerClose })
@@ -63,15 +59,16 @@ describe('ViewerControls', () => {
 
     await user.click(screen.getByRole('button', { name: 'Open in 3D viewer' }))
 
+    const { showDialog } = useDialogStore()
     expect(showDialog).toHaveBeenCalledOnce()
-    const callArgs = showDialog.mock.calls[0][0]
+    const callArgs = vi.mocked(showDialog).mock.calls[0][0]
     expect(callArgs.key).toBe('global-load3d-viewer')
     expect(callArgs.title).toBe('3D viewer')
     expect(callArgs.component).toMatchObject({
       name: 'Load3DViewerContentStub'
     })
     expect(callArgs.props).toEqual({ node: mockNode })
-    expect(callArgs.dialogComponentProps.maximizable).toBe(true)
+    expect(callArgs.dialogComponentProps?.maximizable).toBe(true)
   })
 
   it('routes the dialog onClose handler through useLoad3dService.handleViewerClose with the node', async () => {
@@ -86,8 +83,11 @@ describe('ViewerControls', () => {
 
     await user.click(screen.getByRole('button', { name: 'Open in 3D viewer' }))
 
-    const onClose = showDialog.mock.calls[0][0].dialogComponentProps.onClose
-    await onClose()
+    const { showDialog } = useDialogStore()
+    const onClose =
+      vi.mocked(showDialog).mock.calls[0][0].dialogComponentProps?.onClose
+    expect(onClose).toBeDefined()
+    await onClose?.()
 
     expect(handleViewerClose).toHaveBeenCalledWith(mockNode)
   })

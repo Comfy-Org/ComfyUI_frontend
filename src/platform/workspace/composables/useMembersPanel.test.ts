@@ -1,4 +1,4 @@
-import { createPinia, setActivePinia } from 'pinia'
+import { getActivePinia } from 'pinia'
 import type { Pinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createApp, defineComponent, ref } from 'vue'
@@ -17,53 +17,6 @@ import {
   sortPendingInvites,
   useMembersPanel
 } from './useMembersPanel'
-
-vi.mock<unknown>(
-  import('@/platform/workspace/stores/teamWorkspaceStore'),
-  async () => {
-    const { defineStore } = await import('pinia')
-    const { computed, ref } = await import('vue')
-    return {
-      useTeamWorkspaceStore: defineStore('teamWorkspace', () => {
-        const workspaces = ref<
-          Array<{
-            id: string
-            type: 'personal' | 'team'
-            members: WorkspaceMember[]
-            pendingInvites: WorkspacePendingInvite[]
-          }>
-        >([])
-        const activeWorkspaceId = ref<string | null>(null)
-        const activeWorkspace = computed(
-          () =>
-            workspaces.value.find(
-              (workspace) => workspace.id === activeWorkspaceId.value
-            ) ?? null
-        )
-        const members = computed(() => activeWorkspace.value?.members ?? [])
-        const pendingInvites = computed(
-          () => activeWorkspace.value?.pendingInvites ?? []
-        )
-        const originalOwnerId = computed(
-          () =>
-            members.value.find((member) => member.isOriginalOwner)?.id ?? null
-        )
-        return {
-          workspaces,
-          activeWorkspaceId,
-          activeWorkspace,
-          isInPersonalWorkspace: computed(
-            () => activeWorkspace.value?.type === 'personal'
-          ),
-          members,
-          pendingInvites,
-          originalOwnerId,
-          resendInvite: vi.fn()
-        }
-      })
-    }
-  }
-)
 
 function createMember(
   overrides: Partial<WorkspaceMember> = {}
@@ -528,8 +481,7 @@ describe('useMembersPanel', () => {
   let pinia: Pinia
 
   beforeEach(() => {
-    pinia = createPinia()
-    setActivePinia(pinia)
+    pinia = getActivePinia()!
     workspaceStore = useTeamWorkspaceStore(pinia)
     vi.spyOn(workspaceStore, 'resendInvite').mockImplementation(
       mockResendInvite

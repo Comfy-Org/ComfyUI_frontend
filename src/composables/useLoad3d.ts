@@ -967,7 +967,11 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
       const modelWidget = node?.widgets?.find(
         (w) => w.name === 'model_file' || w.name === 'image'
       )
-      const value = modelWidget?.value
+      const widgetValue = modelWidget?.value
+      const value =
+        typeof widgetValue === 'string' && widgetValue.trim()
+          ? widgetValue
+          : node?.properties['Last Time Model File']
       if (typeof value !== 'string' || !value) return
 
       const filename = value.trim().replace(/\s*\[output\]$/, '')

@@ -1,32 +1,19 @@
 import type { MockInstance } from 'vitest'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { fromPartial } from '@total-typescript/shoehorn'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { CompassCorners } from '@/lib/litegraph/src/interfaces'
+import type { LGraph } from '@/lib/litegraph/src/litegraph'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { MIN_NODE_WIDTH } from '@/renderer/core/layout/transform/graphRenderTransform'
 
+import { useNodeResize } from './useNodeResize'
 import type { ResizeCallbackPayload } from './useNodeResize'
 
 type ResizeCallback = (
   payload: ResizeCallbackPayload,
   element: HTMLElement
 ) => void
-
-// Capture pointermove/pointerup handlers registered via useEventListener
-const eventHandlers = vi.hoisted(() => ({
-  pointermove: null as ((e: PointerEvent) => void) | null,
-  pointerup: null as ((e: PointerEvent) => void) | null
-}))
-
-vi.mock<unknown>(import('@vueuse/core'), () => ({
-  useEventListener: vi.fn(
-    (eventName: string, handler: (...args: unknown[]) => void) => {
-      if (eventName === 'pointermove' || eventName === 'pointerup') {
-        eventHandlers[eventName] = handler
-      }
-      return vi.fn()
-    }
-  )
-}))
 
 vi.mock<unknown>(
   import('@/renderer/core/layout/transform/useTransformState'),
@@ -66,10 +53,6 @@ vi.mock(
     })
   })
 )
-
-vi.mock<unknown>(import('@/renderer/core/canvas/canvasStore'), () => ({
-  useCanvasStore: () => ({ rootGraphId: 'root-graph' })
-}))
 
 vi.mock<unknown>(import('@/renderer/core/layout/store/layoutStore'), () => ({
   layoutStore: {
@@ -157,7 +140,7 @@ function simulateMove(
     clientX: startX + deltaX,
     clientY: startY + deltaY
   })
-  eventHandlers.pointermove?.(moveEvent)
+  window.dispatchEvent(new PointerEvent('pointermove', moveEvent))
 }
 
 describe('useNodeResize', () => {
@@ -165,9 +148,14 @@ describe('useNodeResize', () => {
   let nodeElement: HTMLElement
   let handle: HTMLElement
 
-  beforeEach(async () => {
-    eventHandlers.pointermove = null
-    eventHandlers.pointerup = null
+  afterEach(() => {
+    window.dispatchEvent(new PointerEvent('pointercancel'))
+  })
+
+  beforeEach(() => {
+    useCanvasStore().currentGraph = fromPartial<LGraph>({
+      rootGraph: { id: 'root-graph' }
+    })
     snapState.shouldSnap = false
     snapState.applySnapToPosition = (pos) => pos
     snapState.applySnapToSize = (size) => size
@@ -176,8 +164,6 @@ describe('useNodeResize', () => {
     nodeElement = createMockNodeElement()
     handle = createMockHandle(nodeElement)
 
-    // Need fresh import after mocks are set up
-    const { useNodeResize } = await import('./useNodeResize')
     const { startResize } = useNodeResize(callback)
 
     // Store startResize for access in tests
@@ -325,12 +311,9 @@ describe('useNodeResize', () => {
 
     async function setupDynamic(getMinContentHeight: () => number) {
       vi.clearAllMocks()
-      eventHandlers.pointermove = null
-      eventHandlers.pointerup = null
       const cb = vi.fn<ResizeCallback>()
       const el = makeReflowingElement(300, 400, getMinContentHeight)
       const h = createMockHandle(el)
-      const { useNodeResize } = await import('./useNodeResize')
       const { startResize } = useNodeResize(cb)
       return { cb, el, handle: h, startResize }
     }
@@ -396,7 +379,7 @@ describe('useNodeResize', () => {
       const callsBeforeUp = cb.mock.calls.length
 
       const upEvent = createPointerEvent('pointerup', { pointerId: 1 })
-      eventHandlers.pointerup?.(upEvent)
+      window.dispatchEvent(new PointerEvent('pointerup', upEvent))
 
       // Subsequent moves should be ignored after cleanup
       simulateMove(40, 40)
@@ -413,7 +396,9 @@ describe('useNodeResize', () => {
       simulateMove(10, 10)
 
       const upEvent = createPointerEvent('pointerup', { pointerId: 1 })
-      expect(() => eventHandlers.pointerup?.(upEvent)).not.toThrow()
+      expect(() =>
+        window.dispatchEvent(new PointerEvent('pointerup', upEvent))
+      ).not.toThrow()
 
       // Further moves are ignored — cleanup still ran.
       const callsAfterUp = cb.mock.calls.length
@@ -496,7 +481,6 @@ describe('useNodeResize', () => {
       })()
       const cb = vi.fn<ResizeCallback>()
       const h = createMockHandle(breakpointAwareElement)
-      const { useNodeResize } = await import('./useNodeResize')
       const { startResize } = useNodeResize(cb)
 
       // Start at width=300 (still narrow side, but the breakpoint logic

@@ -3,14 +3,9 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import SettingsPanelContainer from '@/components/maskeditor/SettingsPanelContainer.vue'
 import { Tools } from '@/extensions/core/maskeditor/types'
+import { useMaskEditorStore } from '@/stores/maskEditorStore'
 
-const mockStore = vi.hoisted(() => ({
-  currentTool: 'pen' as Tools
-}))
-
-vi.mock<unknown>(import('@/stores/maskEditorStore'), () => ({
-  useMaskEditorStore: () => mockStore
-}))
+let mockStore: ReturnType<typeof useMaskEditorStore>
 
 vi.mock<unknown>(
   import('@/components/maskeditor/BrushSettingsPanel.vue'),
@@ -44,6 +39,7 @@ vi.mock<unknown>(
 
 describe('SettingsPanelContainer', () => {
   beforeEach(() => {
+    mockStore = useMaskEditorStore()
     mockStore.currentTool = Tools.MaskPen
   })
 

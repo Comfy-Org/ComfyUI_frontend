@@ -15,12 +15,6 @@ vi.mock<unknown>(import('@/composables/node/useNodeDragToCanvas'), () => ({
   })
 }))
 
-vi.mock<unknown>(import('@/platform/settings/settingStore'), () => ({
-  useSettingStore: () => ({
-    get: vi.fn().mockReturnValue('left')
-  })
-}))
-
 describe('useNodePreviewAndDrag', () => {
   const mockNodeDef = {
     name: 'TestNode',

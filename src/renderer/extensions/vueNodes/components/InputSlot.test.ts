@@ -1,4 +1,4 @@
-import { createTestingPinia } from '@pinia/testing'
+import { getActivePinia } from 'pinia'
 import { describe, expect, it, vi } from 'vitest'
 import { defineComponent } from 'vue'
 import type { DirectiveBinding } from 'vue'
@@ -73,7 +73,7 @@ function renderInputSlot(
   dotOnly = false,
   standalone = dotOnly
 ) {
-  const pinia = createTestingPinia({ stubActions: false })
+  const pinia = getActivePinia()!
   const settingStore = useSettingStore(pinia)
   vi.spyOn(settingStore, 'get').mockImplementation(
     <K extends keyof Settings>(key: K): Settings[K] => {

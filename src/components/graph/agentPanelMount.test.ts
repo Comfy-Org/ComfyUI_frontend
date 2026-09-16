@@ -1,13 +1,19 @@
-import { createTestingPinia } from '@pinia/testing'
 import { render, screen } from '@testing-library/vue'
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
+import { useSettingStore } from '@/platform/settings/settingStore'
 
 import LiteGraphCanvasSplitterOverlay from '../LiteGraphCanvasSplitterOverlay.vue'
+vi.mock(import('firebase/auth'))
+vi.mock(import('vuefire'), () => ({ useFirebaseAuth: vi.fn() }))
+
+beforeEach(() => {
+  useSettingStore().settingValues['Comfy.Sidebar.Location'] = 'left'
+})
 
 vi.mock<unknown>(import('@/composables/useAppMode'), async () => {
   const { ref } = await import('vue')
@@ -16,58 +22,6 @@ vi.mock<unknown>(import('@/composables/useAppMode'), async () => {
       isSelectMode: ref(false),
       isBuilderMode: ref(false)
     })
-  }
-})
-
-// The overlay's workspace stores reach Firebase auth and app bootstrap in
-// their real setups; the structure under test only needs these fields.
-vi.mock<unknown>(import('@/platform/settings/settingStore'), () => ({
-  useSettingStore: () => ({
-    get: vi.fn((key: string) =>
-      key === 'Comfy.Sidebar.Location' ? 'left' : undefined
-    ),
-    settingsById: {}
-  })
-}))
-
-vi.mock<unknown>(import('@/stores/workspaceStore'), async () => {
-  const { defineStore } = await import('pinia')
-  const { ref } = await import('vue')
-  return {
-    useWorkspaceStore: defineStore('workspace-stub', () => ({
-      focusMode: ref(false)
-    }))
-  }
-})
-
-vi.mock<unknown>(import('@/stores/workspace/rightSidePanelStore'), async () => {
-  const { defineStore } = await import('pinia')
-  const { ref } = await import('vue')
-  return {
-    useRightSidePanelStore: defineStore('right-side-panel-stub', () => ({
-      isOpen: ref(false)
-    }))
-  }
-})
-
-vi.mock<unknown>(import('@/stores/workspace/sidebarTabStore'), async () => {
-  const { defineStore } = await import('pinia')
-  const { ref } = await import('vue')
-  return {
-    useSidebarTabStore: defineStore('sidebar-tab-stub', () => ({
-      activeSidebarTabId: ref(null),
-      activeSidebarTab: ref(null)
-    }))
-  }
-})
-
-vi.mock<unknown>(import('@/stores/workspace/bottomPanelStore'), async () => {
-  const { defineStore } = await import('pinia')
-  const { ref } = await import('vue')
-  return {
-    useBottomPanelStore: defineStore('bottom-panel-stub', () => ({
-      bottomPanelVisible: ref(false)
-    }))
   }
 })
 
@@ -81,7 +35,7 @@ function renderOverlay() {
   })
   return render(LiteGraphCanvasSplitterOverlay, {
     global: {
-      plugins: [i18n, createTestingPinia()],
+      plugins: [i18n],
       stubs: {
         Splitter: { template: '<div><slot /></div>' },
         SplitterPanel: { template: '<div><slot /></div>' }

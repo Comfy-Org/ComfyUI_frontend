@@ -2,6 +2,8 @@ import { describe, expect, it, vi } from 'vitest'
 
 import { useLegacyBilling } from './useLegacyBilling'
 
+vi.mock(import('firebase/auth'))
+
 const mockSubscribe = vi.fn()
 const mockSubscribeDirect = vi.fn()
 
@@ -23,15 +25,7 @@ vi.mock<unknown>(
   })
 )
 
-vi.mock<unknown>(import('@/composables/auth/useAuthActions'), () => ({
-  useAuthActions: () => ({
-    purchaseCredits: vi.fn()
-  })
-}))
-
-vi.mock<unknown>(import('@/stores/authStore'), () => ({
-  useAuthStore: () => ({ balance: null })
-}))
+vi.mock(import('@/composables/auth/useAuthActions'))
 
 describe('useLegacyBilling', () => {
   describe('resubscribe', () => {

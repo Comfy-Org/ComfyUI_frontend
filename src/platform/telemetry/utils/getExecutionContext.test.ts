@@ -1,52 +1,16 @@
+import { fromPartial } from '@total-typescript/shoehorn'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import { useWorkflowTemplatesStore } from '@/platform/workflow/templates/repositories/workflowTemplatesStore'
+import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { NodeSourceType } from '@/types/nodeSource'
 
 const hoisted = vi.hoisted(() => ({
   mockNodeDefsByName: {} as Partial<Record<string, Record<string, unknown>>>,
-  mockNodes: [] as Pick<LGraphNode, 'type' | 'isSubgraphNode'>[],
-  mockActiveWorkflow: null as null | {
-    filename: string
-    fullFilename: string
-  },
-  mockKnownTemplateNames: new Set<string>(),
-  mockTemplateByName: null as null | { sourceModule?: string }
+  mockNodes: [] as Pick<LGraphNode, 'type' | 'isSubgraphNode'>[]
 }))
-
-vi.mock<unknown>(import('@/stores/nodeDefStore'), () => ({
-  useNodeDefStore: () => ({
-    fromLGraphNode: (node: Pick<LGraphNode, 'type'>) => {
-      const nodeDef = hoisted.mockNodeDefsByName[node.type]
-      return nodeDef
-        ? { nodeSource: { type: 'unknown' }, ...nodeDef }
-        : undefined
-    }
-  })
-}))
-
-vi.mock<unknown>(
-  import('@/platform/workflow/management/stores/workflowStore'),
-  () => ({
-    useWorkflowStore: () => ({
-      get activeWorkflow() {
-        return hoisted.mockActiveWorkflow
-      }
-    })
-  })
-)
-
-vi.mock<unknown>(
-  import('@/platform/workflow/templates/repositories/workflowTemplatesStore'),
-  () => ({
-    useWorkflowTemplatesStore: () => ({
-      get knownTemplateNames() {
-        return hoisted.mockKnownTemplateNames
-      },
-      getTemplateByName: (_name: string) => hoisted.mockTemplateByName,
-      getEnglishMetadata: () => null
-    })
-  })
-)
 
 function mockNode(
   type: string,
@@ -74,15 +38,35 @@ vi.mock<unknown>(import('@/scripts/app'), () => ({
 
 import { getExecutionContext } from './getExecutionContext'
 
+beforeEach(() => {
+  vi.mocked(useNodeDefStore().fromLGraphNode).mockImplementation(
+    (node: Pick<LGraphNode, 'type'>) => {
+      const nodeDef = hoisted.mockNodeDefsByName[node.type]
+      return nodeDef
+        ? fromPartial({
+            nodeSource: { type: NodeSourceType.Unknown },
+            ...nodeDef
+          })
+        : null
+    }
+  )
+})
+
+beforeEach(() => {
+  vi.mocked(useWorkflowTemplatesStore().getTemplateByName).mockReturnValue(
+    fromPartial({ sourceModule: 'default' })
+  )
+  vi.mocked(useWorkflowTemplatesStore().getEnglishMetadata).mockImplementation(
+    () => null
+  )
+})
+
 describe('getExecutionContext', () => {
   beforeEach(() => {
     hoisted.mockNodes.length = 0
     for (const key of Object.keys(hoisted.mockNodeDefsByName)) {
       delete hoisted.mockNodeDefsByName[key]
     }
-    hoisted.mockActiveWorkflow = null
-    hoisted.mockKnownTemplateNames = new Set()
-    hoisted.mockTemplateByName = null
   })
 
   it('returns has_toolkit_nodes false when no toolkit nodes are present', () => {
@@ -173,12 +157,13 @@ describe('getExecutionContext', () => {
 
   describe('template detection', () => {
     it('detects a regular template by name', () => {
-      hoisted.mockKnownTemplateNames = new Set(['flux-dev'])
-      hoisted.mockTemplateByName = { sourceModule: 'default' }
-      hoisted.mockActiveWorkflow = {
+      Object.assign(useWorkflowTemplatesStore(), {
+        knownTemplateNames: new Set(['flux-dev'])
+      })
+      useWorkflowStore().activeWorkflow = fromPartial({
         filename: 'flux-dev',
         fullFilename: 'flux-dev.json'
-      }
+      })
 
       const context = getExecutionContext()
 
@@ -187,16 +172,15 @@ describe('getExecutionContext', () => {
     })
 
     it('detects an app mode template whose name ends with .app', () => {
-      hoisted.mockKnownTemplateNames = new Set([
-        'templates-qwen_multiangle.app'
-      ])
-      hoisted.mockTemplateByName = { sourceModule: 'default' }
+      Object.assign(useWorkflowTemplatesStore(), {
+        knownTemplateNames: new Set(['templates-qwen_multiangle.app'])
+      })
       // getFilenameDetails strips ".app.json" as a compound extension, yielding
       // filename = "templates-qwen_multiangle" — the previous code would fail here.
-      hoisted.mockActiveWorkflow = {
+      useWorkflowStore().activeWorkflow = fromPartial({
         filename: 'templates-qwen_multiangle',
         fullFilename: 'templates-qwen_multiangle.app.json'
-      }
+      })
 
       const context = getExecutionContext()
 
@@ -205,11 +189,13 @@ describe('getExecutionContext', () => {
     })
 
     it('does not flag a non-template workflow as a template', () => {
-      hoisted.mockKnownTemplateNames = new Set(['flux-dev'])
-      hoisted.mockActiveWorkflow = {
+      Object.assign(useWorkflowTemplatesStore(), {
+        knownTemplateNames: new Set(['flux-dev'])
+      })
+      useWorkflowStore().activeWorkflow = fromPartial({
         filename: 'my-custom-workflow',
         fullFilename: 'my-custom-workflow.json'
-      }
+      })
 
       const context = getExecutionContext()
 

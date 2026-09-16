@@ -1,3 +1,4 @@
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore' // eslint-disable-line import-x/no-restricted-paths
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { App } from 'vue'
 import { createApp, defineComponent } from 'vue'
@@ -85,23 +86,14 @@ function useTemplateUrlLoader() {
 
 afterEach(() => apps.splice(0).forEach((app) => app.unmount()))
 
-// Mock canvas store
-const mockCanvasStore = {
-  linearMode: false
-}
-
-vi.mock<unknown>(
-  import('@/renderer/core/canvas/canvasStore'), // eslint-disable-line import-x/no-restricted-paths
-
-  () => ({
-    useCanvasStore: () => mockCanvasStore
-  })
-)
+beforeEach(() => {
+  Object.assign(useCanvasStore(), { linearMode: false })
+})
 
 describe('useTemplateUrlLoader', () => {
   beforeEach(() => {
     mockQueryParams = {}
-    mockCanvasStore.linearMode = false
+    Object.assign(useCanvasStore(), { linearMode: false })
   })
 
   it('does not load template when no query param present', () => {
@@ -309,7 +301,7 @@ describe('useTemplateUrlLoader', () => {
       'flux_simple',
       'default'
     )
-    expect(mockCanvasStore.linearMode).toBe(true)
+    expect(useCanvasStore().linearMode).toBe(true)
   })
 
   it('does not set linear mode when template loading fails', async () => {
@@ -319,7 +311,7 @@ describe('useTemplateUrlLoader', () => {
     const { loadTemplateFromUrl } = useTemplateUrlLoader()
     await loadTemplateFromUrl()
 
-    expect(mockCanvasStore.linearMode).toBe(false)
+    expect(useCanvasStore().linearMode).toBe(false)
   })
 
   it('does not set linear mode when mode parameter is not linear', async () => {
@@ -332,7 +324,7 @@ describe('useTemplateUrlLoader', () => {
       'flux_simple',
       'default'
     )
-    expect(mockCanvasStore.linearMode).toBe(false)
+    expect(useCanvasStore().linearMode).toBe(false)
   })
 
   it('rejects invalid mode parameter with special characters', () => {
@@ -372,7 +364,7 @@ describe('useTemplateUrlLoader', () => {
       'flux_simple',
       'default'
     )
-    expect(mockCanvasStore.linearMode).toBe(false)
+    expect(useCanvasStore().linearMode).toBe(false)
 
     consoleSpy.mockRestore()
   })
@@ -387,7 +379,7 @@ describe('useTemplateUrlLoader', () => {
       'flux_simple',
       'default'
     )
-    expect(mockCanvasStore.linearMode).toBe(true)
+    expect(useCanvasStore().linearMode).toBe(true)
   })
 
   it('accepts valid format but warns about unsupported modes', async () => {
@@ -397,7 +389,7 @@ describe('useTemplateUrlLoader', () => {
     for (const mode of unsupportedModes) {
       vi.clearAllMocks()
       consoleSpy.mockClear()
-      mockCanvasStore.linearMode = false
+      Object.assign(useCanvasStore(), { linearMode: false })
       mockQueryParams = { template: 'flux_simple', mode }
 
       const { loadTemplateFromUrl } = useTemplateUrlLoader()
@@ -410,7 +402,7 @@ describe('useTemplateUrlLoader', () => {
         'flux_simple',
         'default'
       )
-      expect(mockCanvasStore.linearMode).toBe(false)
+      expect(useCanvasStore().linearMode).toBe(false)
     }
 
     consoleSpy.mockRestore()

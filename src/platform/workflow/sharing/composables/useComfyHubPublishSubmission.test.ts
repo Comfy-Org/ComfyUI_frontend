@@ -1,3 +1,6 @@
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import type { LoadedComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
+import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { ComfyHubProfile } from '@/schemas/apiSchema'
@@ -40,19 +43,6 @@ vi.mock<unknown>(
   })
 )
 
-const mockWorkflowStore = vi.hoisted(() => ({
-  activeWorkflow: {
-    path: 'workflows/demo-workflow.json'
-  }
-}))
-
-vi.mock<unknown>(
-  import('@/platform/workflow/management/stores/workflowStore'),
-  () => ({
-    useWorkflowStore: () => mockWorkflowStore
-  })
-)
-
 const { useComfyHubPublishSubmission } =
   await import('./useComfyHubPublishSubmission')
 
@@ -78,6 +68,12 @@ function createFormData(
     ...overrides
   }
 }
+
+beforeEach(() => {
+  useWorkflowStore().activeWorkflow = fromPartial<LoadedComfyWorkflow>({
+    path: 'workflows/demo-workflow.json'
+  })
+})
 
 describe('useComfyHubPublishSubmission', () => {
   beforeEach(() => {

@@ -1,52 +1,25 @@
 import { Form } from '@primevue/forms'
-import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import Button from '@/components/ui/button/Button.vue'
+import { render, screen } from '@testing-library/vue'
 import PrimeVue from 'primevue/config'
 import InputText from 'primevue/inputtext'
 import Password from 'primevue/password'
 import ProgressSpinner from 'primevue/progressspinner'
 import ToastService from 'primevue/toastservice'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
+import Button from '@/components/ui/button/Button.vue'
+import { useAuthActions } from '@/composables/auth/useAuthActions'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
+import { useAuthStore } from '@/stores/authStore'
 
 import SignInForm from './SignInForm.vue'
-
-// Mock firebase auth modules
-vi.mock(import('firebase/app'), () => ({
-  initializeApp: vi.fn(),
-  getApp: vi.fn()
-}))
-
-vi.mock<unknown>(import('firebase/auth'), () => ({
-  getAuth: vi.fn(),
-  setPersistence: vi.fn(),
-  browserLocalPersistence: {},
-  onAuthStateChanged: vi.fn(),
-  signInWithEmailAndPassword: vi.fn(),
-  signOut: vi.fn(),
-  sendPasswordResetEmail: vi.fn()
-}))
+vi.mock(import('firebase/auth'))
+vi.mock(import('vuefire'), () => ({ useFirebaseAuth: vi.fn() }))
 
 // Mock the auth composables and stores
-const mockSendPasswordReset = vi.fn()
-vi.mock<unknown>(import('@/composables/auth/useAuthActions'), () => ({
-  useAuthActions: vi.fn(() => ({
-    sendPasswordReset: mockSendPasswordReset
-  }))
-}))
-
-const mockLoadingRef = ref(false)
-vi.mock<unknown>(import('@/stores/authStore'), () => ({
-  useAuthStore: vi.fn(() => ({
-    get loading() {
-      return mockLoadingRef.value
-    }
-  }))
-}))
+vi.mock(import('@/composables/auth/useAuthActions'))
 
 // Mock toast
 const mockToastAdd = vi.fn()
@@ -61,7 +34,7 @@ const loginButtonText = enMessages.auth.login.loginButton
 
 describe('SignInForm', () => {
   beforeEach(() => {
-    mockLoadingRef.value = false
+    useAuthStore().loading = false
   })
 
   function renderComponent(props: Record<string, unknown> = {}) {
@@ -108,7 +81,7 @@ describe('SignInForm', () => {
 
       expect(focusSpy).toHaveBeenCalled()
 
-      expect(mockSendPasswordReset).not.toHaveBeenCalled()
+      expect(useAuthActions().sendPasswordReset).not.toHaveBeenCalled()
     })
   })
 
@@ -141,7 +114,7 @@ describe('SignInForm', () => {
 
   describe('Loading State', () => {
     it('shows spinner when loading', () => {
-      mockLoadingRef.value = true
+      useAuthStore().loading = true
       renderComponent()
 
       expect(screen.getByRole('progressbar')).toBeInTheDocument()
@@ -187,7 +160,9 @@ describe('SignInForm', () => {
       await user.type(getEmailInput(), 'test@example.com')
       await user.click(screen.getByText(forgotPasswordText))
 
-      expect(mockSendPasswordReset).toHaveBeenCalledWith('test@example.com')
+      expect(useAuthActions().sendPasswordReset).toHaveBeenCalledWith(
+        'test@example.com'
+      )
       expect(mockToastAdd).not.toHaveBeenCalled()
     })
   })

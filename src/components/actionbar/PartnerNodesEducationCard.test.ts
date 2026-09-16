@@ -1,7 +1,6 @@
 import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
-import { setActivePinia } from 'pinia'
-import { createTestingPinia } from '@pinia/testing'
+import { getActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
@@ -70,11 +69,9 @@ const copy = enMessages.partnerNodesEducation
 
 const CARD_TESTID = 'partner-nodes-education-card'
 
-let pinia: ReturnType<typeof createTestingPinia>
-
 function renderCard() {
   return render(PartnerNodesEducationCard, {
-    global: { plugins: [pinia, i18n] }
+    global: { plugins: [getActivePinia()!, i18n] }
   })
 }
 
@@ -90,8 +87,6 @@ function loadPaidTemplate(workflowKey: string) {
 
 describe('PartnerNodesEducationCard', () => {
   beforeEach(() => {
-    pinia = createTestingPinia({ stubActions: false })
-    setActivePinia(pinia)
     __setHasPartnerNodes(true)
     __setGate('none')
     showApiNodesSignInDialog.mockClear()
