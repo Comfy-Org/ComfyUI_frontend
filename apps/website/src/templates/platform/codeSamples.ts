@@ -63,7 +63,7 @@ export const modelsApiCodeTabs: Record<string, CodeTab> = {
 // cycles, illustrating that switching providers only changes one argument.
 const ROUTER_MODEL = 'openai/gpt-image-2'
 const ROUTER_PROMPT = 'aerial view of a neon coral reef at dusk'
-const ROUTER_PROVIDERS = ['fal', 'wavespeed', 'runware', 'pika', 'replicate']
+const ROUTER_PROVIDERS = ['fal', 'runware', 'wavespeed']
 
 export const routerCodeTabs: Record<string, CodeTab> = {
   python: {

@@ -4,7 +4,7 @@ import { routerCodeTabs } from './codeSamples'
 
 describe('routerCodeTabs', () => {
   it('cycles every supported provider in each language sample', () => {
-    const providers = ['fal', 'wavespeed', 'runware', 'pika', 'replicate']
+    const providers = ['fal', 'runware', 'wavespeed']
 
     for (const tab of Object.values(routerCodeTabs)) {
       const providerSegment = tab.segments.find(

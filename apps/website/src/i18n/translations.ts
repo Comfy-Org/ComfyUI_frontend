@@ -8790,21 +8790,21 @@ Enterprise`
       '每新增一个供应商，就多一套 SDK、一个密钥、一套任务生命周期和一组错误处理。通过 Comfy Router 一次性搭建好这些，之后每加一个模型只需一行代码。'
   },
   'platform.router.section2.heading': {
-    en: 'Better availability. Better prices. Your choice of route.',
-    'zh-CN': '更高的可用性，更低的价格，路由由你选择。'
+    en: 'Better availability. Better prices. Your choice.',
+    'zh-CN': '更高可用性。更优价格。由你选择。'
   },
   'platform.router.section2.body': {
-    en: 'Run the same model on fal, Replicate, or another supported provider, and switch with one parameter when one is rate limited or another is cheaper. Comfy never switches the route for you, and every job reports the provider that ran it.',
+    en: 'Run the same model on fal, Runware, or Wavespeed, and switch with one parameter when one is rate limited or another is cheaper. Comfy never switches the route for you, and every job reports the provider that ran it.',
     'zh-CN':
-      '在 fal、Replicate 或其他受支持的供应商上运行同一个模型，当某个供应商限流或另一个更便宜时，只需修改一个参数即可切换。Comfy 不会替你切换路由，每个任务都会返回实际运行它的供应商。'
+      '同一个模型可在 fal、Runware 或 Wavespeed 上运行，当某个供应商被限流或另一个更便宜时，只需改一个参数即可切换。Comfy 绝不会替你切换路由，每个任务都会报告实际运行它的供应商。'
   },
   'platform.router.section2.providersLabel': {
     en: 'Supported providers',
     'zh-CN': '受支持的供应商'
   },
   'platform.router.section2.providers': {
-    en: 'fal · Wavespeed · Runware · Pika · Replicate',
-    'zh-CN': 'fal · Wavespeed · Runware · Pika · Replicate'
+    en: 'fal · Runware · Wavespeed',
+    'zh-CN': 'fal · Runware · Wavespeed'
   },
   'platform.router.section2.calloutHeading': {
     en: 'Hit a concurrency limit? Queue the job.',
@@ -8820,8 +8820,8 @@ Enterprise`
     'zh-CN': '路线图'
   },
   'platform.router.roadmap.heading': {
-    en: 'Coming to the same API.',
-    'zh-CN': '即将加入同一个 API。'
+    en: 'Coming soon to the same API.',
+    'zh-CN': '即将登陆同一个 API。'
   },
   'platform.router.roadmap.subtitle': {
     en: 'Provider choice is the foundation. Everything below arrives on the integration you ship today.',
@@ -8832,16 +8832,16 @@ Enterprise`
     'zh-CN': 'Comfy 工作流'
   },
   'platform.router.roadmap.1.description': {
-    en: 'Call a Comfy workflow the same way you call a model.',
-    'zh-CN': '以调用模型同样的方式调用一个 Comfy 工作流。'
+    en: 'Run a ComfyUI workflow from the same SDK. Just like models.',
+    'zh-CN': '用同一个 SDK 运行 ComfyUI 工作流，就像调用模型一样。'
   },
   'platform.router.roadmap.2.title': {
     en: 'Routing strategies',
     'zh-CN': '路由策略'
   },
   'platform.router.roadmap.2.description': {
-    en: 'Name the policy: reliable, fast_start, fast_finish, lowest_cost.',
-    'zh-CN': '指定策略即可：reliable、fast_start、fast_finish、lowest_cost。'
+    en: 'Name the policy: reliable, fast_start, fast_finish, or lowest_cost.',
+    'zh-CN': '指定策略：reliable、fast_start、fast_finish 或 lowest_cost。'
   },
   'platform.router.roadmap.3.title': {
     en: 'Route by use case',
@@ -8861,17 +8861,17 @@ Enterprise`
     'zh-CN': '常见问题'
   },
   'platform.router.faq.1.q': {
-    en: 'Why not call fal or Replicate directly?',
-    'zh-CN': '为什么不直接调用 fal 或 Replicate？'
+    en: 'Why not call fal, Runware, or Wavespeed directly?',
+    'zh-CN': '为什么不直接调用 fal、Runware 或 Wavespeed？'
   },
   'platform.router.faq.1.a': {
-    en: 'You can, and plenty of teams do. Comfy Router earns its place when you need more than one: the same model on more than one provider, one key and one job surface, and a route you pick. fal and Replicate route to themselves. Comfy Router routes to them.',
+    en: 'You can, and plenty of teams do. Comfy Router earns its place when you need more than one: the same model on more than one provider, one key and one job surface, and a route you pick. Each provider routes to itself. Comfy Router gives you one surface across them.',
     'zh-CN':
-      '你当然可以，很多团队也是这么做的。但当你需要不止一个供应商时，Comfy Router 就有了价值：同一个模型可在多个供应商上运行，只用一个密钥和一套任务接口，路由由你选择。fal 和 Replicate 只路由到它们自己，Comfy Router 路由到它们。'
+      '你当然可以，很多团队也是这么做的。但当你需要不止一个供应商时，Comfy Router 就有了价值：同一个模型可在多个供应商上运行，只用一个密钥和一套任务接口，路由由你选择。每个供应商只路由到它自己，Comfy Router 让你用一套接口覆盖所有供应商。'
   },
   'platform.router.faq.2.q': {
-    en: 'Is this OpenRouter for media?',
-    'zh-CN': '这是媒体版的 OpenRouter 吗？'
+    en: 'Is Comfy Router “OpenRouter for media”?',
+    'zh-CN': 'Comfy Router 是“媒体版的 OpenRouter”吗？'
   },
   'platform.router.faq.2.a': {
     en: 'OpenRouter is known for routing language models. Comfy Router is built for generative media: large assets, model-specific controls, and jobs that run for minutes.',
@@ -8901,60 +8901,68 @@ Enterprise`
     'zh-CN': '当我达到并发上限时会发生什么？'
   },
   'platform.router.faq.5.a': {
-    en: 'Queue the job instead of retrying on a 429. Use submit to send the job and receive a request ID immediately; use that ID to check progress and retrieve the result on your own terms. If you want Comfy to wait for the result, use subscribe, which submits the job and polls until it completes. Queueing is available for all supported models.\n\n<a href="https://docs.comfy.org/development/comfy-router/quickstart#comfy-router-quickstart">Learn more about concurrency limits.</a>',
+    en: 'Queue the job instead of retrying on a 429. Use submit to send the job and receive a request ID immediately; use that ID to check progress and retrieve the result on your own terms. If you want Comfy to wait for the result, use subscribe, which submits the job and polls until it completes. Queueing is available for all supported models.\n\n<a href="https://docs.comfy.org/tutorials/partner-nodes/concurrency-limits">Learn more about concurrency limits.</a>',
     'zh-CN':
-      '把任务排入队列，而不是在收到 429 后自行重试。使用 submit 发送任务并立即获得请求 ID，之后可按自己的节奏用该 ID 查询进度、获取结果。如果希望 Comfy 代为等待结果，可使用 subscribe，它会提交任务并轮询直到完成。所有受支持的模型都支持排队。\n\n<a href="https://docs.comfy.org/development/comfy-router/quickstart#comfy-router-quickstart">了解更多并发限制信息。</a>'
+      '把任务排入队列，而不是在收到 429 后自行重试。使用 submit 发送任务并立即获得请求 ID，之后可按自己的节奏用该 ID 查询进度、获取结果。如果希望 Comfy 代为等待结果，可使用 subscribe，它会提交任务并轮询直到完成。所有受支持的模型都支持排队。\n\n<a href="https://docs.comfy.org/tutorials/partner-nodes/concurrency-limits">了解更多并发限制信息。</a>'
   },
   'platform.router.faq.6.q': {
+    en: 'How long do you keep my inputs and outputs?',
+    'zh-CN': '我的输入和输出会保留多久？'
+  },
+  'platform.router.faq.6.a': {
+    en: 'Inputs are kept for 24 hours after upload and outputs for 24 hours after generation. Then they’re deleted.',
+    'zh-CN':
+      '输入在上传后保留 24 小时，输出在生成后保留 24 小时，之后即被删除。'
+  },
+  'platform.router.faq.7.q': {
     en: 'I already use ComfyUI. What does Comfy Router add?',
     'zh-CN': '我已经在使用 ComfyUI 了，Comfy Router 还能带来什么？'
   },
-  'platform.router.faq.6.a': {
-    en: 'The same models you already use, reachable from your own app, on the same pool of credits.',
-    'zh-CN':
-      '你已经在用的那些模型，现在可以从你自己的应用中调用，并共用同一个积分池。'
-  },
-  'platform.router.faq.7.q': {
-    en: 'Can I call Comfy workflows?',
-    'zh-CN': '我可以调用 Comfy 工作流吗？'
-  },
   'platform.router.faq.7.a': {
+    en: 'More ways to run the models you use. Reach supported models across providers, choose where they run, and switch when price, speed, or availability changes.',
+    'zh-CN':
+      '为你正在使用的模型提供更多运行方式。跨供应商调用受支持的模型，选择它们在哪里运行，并在价格、速度或可用性变化时随时切换。'
+  },
+  'platform.router.faq.8.q': {
+    en: 'Can I call Comfy workflows too?',
+    'zh-CN': '我也可以调用 Comfy 工作流吗？'
+  },
+  'platform.router.faq.8.a': {
     en: 'Not through Comfy Router yet. Workflows run today through the Comfy API on the Developer Platform, and Router support is on the roadmap.',
     'zh-CN':
       '目前还不能通过 Comfy Router 调用。工作流现在通过开发者平台上的 Comfy API 运行，Router 对工作流的支持已在路线图上。'
   },
-  'platform.router.faq.8.q': {
+  'platform.router.faq.9.q': {
     en: 'Where do my API keys, usage, and billing live?',
     'zh-CN': '我的 API 密钥、用量和账单在哪里管理？'
   },
-  'platform.router.faq.8.a': {
-    en: 'On the Developer Platform. API keys, run history, credits, and payment live there, and Comfy Router runs inside it.',
-    'zh-CN':
-      '都在开发者平台上。API 密钥、运行历史、积分和付款方式都在那里管理，Comfy Router 就运行在平台内部。'
+  'platform.router.faq.9.a': {
+    en: 'On the Developer Platform. Your API keys, run history, credits, and payments live there.',
+    'zh-CN': '在开发者平台。你的 API 密钥、运行记录、积分和付款都在那里。'
   },
-  'platform.router.faq.9.q': {
+  'platform.router.faq.10.q': {
     en: 'Can I bring my own provider key?',
     'zh-CN': '我可以使用自己的供应商密钥吗？'
   },
-  'platform.router.faq.9.a': {
-    en: 'BYOK is available for select models on Enterprise. Access is enabled by request.\n\n<a href="/contact">Contact Enterprise Sales</a>',
+  'platform.router.faq.10.a': {
+    en: 'BYOK is available for select models on Enterprise. Access is enabled by request.\n\n<a href="/enterprise">Contact Enterprise Sales</a>',
     'zh-CN':
       '在企业版中，部分模型支持自带密钥（BYOK），需申请开通。\n\n<a href="/contact">联系企业销售</a>'
   },
-  'platform.router.faq.10.q': {
+  'platform.router.faq.11.q': {
     en: 'How is Comfy Router priced?',
     'zh-CN': 'Comfy Router 如何计费？'
   },
-  'platform.router.faq.10.a': {
-    en: 'Comfy Router draws on your Comfy credits, the same balance that covers model calls across Comfy. Per-model pricing is listed with each model.',
+  'platform.router.faq.11.a': {
+    en: 'Comfy Router uses the same Comfy credits that cover Partner Nodes, Comfy Cloud workflow runs, and other supported model calls. Per-model pricing is listed in the model catalog, so you can see the cost for each model before you run it.',
     'zh-CN':
-      'Comfy Router 使用你的 Comfy 积分，与 Comfy 平台其他模型调用共用同一份余额。每个模型页面都列出了对应的价格。'
+      'Comfy Router 使用与 Partner Nodes、Comfy Cloud 工作流运行及其他受支持模型调用相同的 Comfy 积分。每个模型的价格都列在模型目录中，运行前即可查看费用。'
   },
-  'platform.router.faq.11.q': {
+  'platform.router.faq.12.q': {
     en: 'Do I need a Comfy subscription?',
     'zh-CN': '我需要订阅 Comfy 吗？'
   },
-  'platform.router.faq.11.a': {
+  'platform.router.faq.12.a': {
     en: 'No. Router runs on credits. Add credits and start calling models.',
     'zh-CN': '不需要。Router 使用积分运行。充值积分后即可开始调用模型。'
   },

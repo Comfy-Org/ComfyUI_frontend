@@ -37,23 +37,13 @@ const supportedProviders = [
     logoClass: 'w-28'
   },
   {
-    name: 'WaveSpeed',
-    src: '/icons/router-providers/wavespeed.svg',
-    logoClass: 'w-36'
-  },
-  {
     name: 'Runware',
     src: '/icons/router-providers/runware.svg',
     logoClass: 'w-36'
   },
   {
-    name: 'Pika',
-    src: '/icons/router-providers/pika.svg',
-    logoClass: 'w-32'
-  },
-  {
-    name: 'Replicate',
-    src: '/icons/router-providers/replicate.svg',
+    name: 'WaveSpeed',
+    src: '/icons/router-providers/wavespeed.svg',
     logoClass: 'w-36'
   }
 ]
