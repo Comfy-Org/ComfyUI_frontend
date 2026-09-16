@@ -14,6 +14,7 @@ export function restoreDynamicGroupInputs(
 ) {
   const definition = useNodeDefStore().fromLGraphNode(node)
   const names = new Map<string, string>()
+  const restoredCombos = new Set<string>()
 
   function restore(specs: ComfyInputsSpec, prefix = '') {
     for (const [key, spec] of Object.entries({
@@ -30,6 +31,8 @@ export function restoreDynamicGroupInputs(
         )
         if (selected) {
           controller.value = selected.key
+          controller.callback?.(selected.key)
+          restoredCombos.add(name)
           restore(selected.inputs, `${name}.`)
         }
         continue
@@ -67,9 +70,8 @@ export function restoreDynamicGroupInputs(
 
   if (definition) restore(definition.input)
   return Object.fromEntries(
-    Object.entries(inputs).map(([name, value]) => [
-      names.get(name) ?? name,
-      value
-    ])
+    Object.entries(inputs)
+      .filter(([name]) => !restoredCombos.has(name))
+      .map(([name, value]) => [names.get(name) ?? name, value])
   )
 }
