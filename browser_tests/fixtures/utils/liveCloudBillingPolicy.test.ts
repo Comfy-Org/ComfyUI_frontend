@@ -3,8 +3,10 @@ import { describe, expect, it } from 'vitest'
 import { liveCloudBillingConfigSchema } from '@e2e/fixtures/utils/liveCloudBillingConfig'
 
 import {
+  getBlockedRequestViolation,
   getLiveCloudDestinationViolation,
-  isLiveCloudMutationAllowed
+  isLiveCloudMutationAllowed,
+  isReportedViolation
 } from '@e2e/fixtures/utils/liveCloudBillingPolicy'
 
 const config = {
@@ -158,4 +160,43 @@ describe('live Cloud destinations', () => {
       )
     ).toBe(violation)
   })
+})
+
+describe('blocked request violations', () => {
+  it.for([
+    {
+      method: 'GET',
+      url: 'https://third.party/pixel.gif',
+      violation: 'GET https://third.party/pixel.gif'
+    },
+    {
+      method: 'POST',
+      url: 'https://third.party/collect',
+      violation: 'Mutation POST https://third.party/collect'
+    },
+    {
+      method: 'DELETE',
+      url: 'https://third.party/session?token=redacted',
+      violation: 'Mutation DELETE https://third.party/session'
+    }
+  ])('$method $url', ({ method, url, violation }) => {
+    expect(getBlockedRequestViolation(new URL(url), method)).toBe(violation)
+  })
+
+  it.for([
+    { method: 'GET', reported: false },
+    { method: 'POST', reported: true }
+  ])(
+    '$method survives the live report filter: $reported',
+    ({ method, reported }) => {
+      expect(
+        isReportedViolation(
+          getBlockedRequestViolation(
+            new URL('https://third.party/collect'),
+            method
+          )
+        )
+      ).toBe(reported)
+    }
+  )
 })

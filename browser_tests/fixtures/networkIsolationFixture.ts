@@ -5,7 +5,11 @@ import { config as dotenvConfig } from 'dotenv'
 import { HERO_SLIDES } from '@/platform/cloud/onboarding/constants/heroSlides'
 import type { LiveCloudBillingConfig } from '@e2e/fixtures/utils/liveCloudBillingConfig'
 import { installLiveCloudBillingRouting } from '@e2e/fixtures/utils/liveCloudBillingContext'
-import { isLiveCloudMutationAllowed } from '@e2e/fixtures/utils/liveCloudBillingPolicy'
+import {
+  getBlockedRequestViolation,
+  isLiveCloudMutationAllowed,
+  isReportedViolation
+} from '@e2e/fixtures/utils/liveCloudBillingPolicy'
 import type { NetworkPolicy } from '@e2e/fixtures/utils/networkPolicy'
 import { assetPath } from '@e2e/fixtures/utils/paths'
 
@@ -88,11 +92,7 @@ export const networkIsolationFixture = base.extend<{
         })
       }
       expect(
-        liveCloudBillingConfig
-          ? blocked.filter((entry) =>
-              /^(API|Navigation|Mutation|WebSocket) /.test(entry)
-            )
-          : blocked,
+        liveCloudBillingConfig ? blocked.filter(isReportedViolation) : blocked,
         liveCloudBillingConfig
           ? 'Forbidden live Cloud requests'
           : 'Unexpected external requests. Add a local mock.'
@@ -137,7 +137,7 @@ export const networkIsolationFixture = base.extend<{
         await route.continue()
         return
       }
-      unexpected.add(`${route.request().method()} ${url.origin}${url.pathname}`)
+      unexpected.add(getBlockedRequestViolation(url, route.request().method()))
       await route.abort('blockedbyclient')
     })
     await context.routeWebSocket(

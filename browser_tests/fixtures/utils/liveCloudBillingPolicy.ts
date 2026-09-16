@@ -17,6 +17,21 @@ export function getLiveCloudDestinationViolation(
   }
 }
 
+const SAFE_METHODS = ['GET', 'HEAD', 'OPTIONS']
+
+export function getBlockedRequestViolation(url: URL, method: string): string {
+  const destination = `${url.origin}${url.pathname}`
+  return SAFE_METHODS.includes(method.toUpperCase())
+    ? `${method} ${destination}`
+    : `Mutation ${method} ${destination}`
+}
+
+// A live run reports only these entries; an off-origin read the page happened
+// to attempt is aborted either way and is not worth failing the run over.
+export function isReportedViolation(violation: string): boolean {
+  return /^(API|Navigation|Mutation|WebSocket) /.test(violation)
+}
+
 export function isLiveCloudMutationAllowed(
   url: URL,
   method: string,
@@ -25,7 +40,7 @@ export function isLiveCloudMutationAllowed(
     'PLAYWRIGHT_SETUP_API_URL' | 'customerOrigin'
   >
 ): boolean {
-  if (['GET', 'HEAD', 'OPTIONS'].includes(method)) return true
+  if (SAFE_METHODS.includes(method)) return true
   if (method !== 'POST') return false
   if (url.origin === 'https://identitytoolkit.googleapis.com') {
     return ['/v1/accounts:signInWithPassword', '/v1/accounts:lookup'].includes(
