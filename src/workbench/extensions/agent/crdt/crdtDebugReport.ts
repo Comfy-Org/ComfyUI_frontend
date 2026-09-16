@@ -464,11 +464,29 @@ function serializeWorkflow(
   return { status: 'collected', section: fence('json', serialized) }
 }
 
-function sourceStatus(
-  result: Awaited<ReturnType<typeof attempt>> | null
-): string {
-  if (result === null) return 'turned off'
-  return result.ok ? 'collected' : 'failed (see source section)'
+function formatSource<T>(
+  result: Awaited<ReturnType<typeof attempt<T>>> | null,
+  warning: string,
+  renderValue: (value: T) => string
+): { status: string; section: string } {
+  if (result === null) {
+    return {
+      status: 'turned off',
+      section: '_Not included. Turned off by the tester._'
+    }
+  }
+  if (!result.ok) {
+    return {
+      status: 'failed (see source section)',
+      section: [warning, `_${result.label} unavailable: ${result.error}_`].join(
+        '\n\n'
+      )
+    }
+  }
+  return {
+    status: 'collected',
+    section: [warning, renderValue(result.value)].join('\n\n')
+  }
 }
 
 /**
@@ -496,16 +514,30 @@ export async function collectCrdtDebugReport(
     sources.serverLogs ? attempt('Server logs', () => api.getLogs()) : null,
     sources.settings ? attempt('Settings', () => api.getSettings()) : null
   ])
+  const systemReport = formatSource(
+    stats,
+    `${SHARING_WARNING} System details can identify your hardware, software versions and launch configuration.`,
+    systemSection
+  )
+  const logsReport = formatSource(
+    logs,
+    `${SHARING_WARNING} Backend logs can echo prompts, file paths and tokens.`,
+    (value) => fence('text', truncate(value, MAX_LOG_CHARS))
+  )
+  const settingsReport = formatSource(
+    settings,
+    `${SHARING_WARNING} Values under keys that look like credentials are replaced with \`${REDACTED}\`, at every depth — but a custom node may name a secret anything.`,
+    (value) =>
+      fence('json', truncate(json(redactSecrets(value)), MAX_SECTION_CHARS))
+  )
   const workflow = serializeWorkflow(input)
   const collectionStatus = (
     [
-      ['System stats', stats],
-      ['Server logs', logs],
-      ['Settings', settings]
+      ['System stats', systemReport],
+      ['Server logs', logsReport],
+      ['Settings', settingsReport]
     ] as const
-  ).map(([label, result]) => {
-    return `- ${label}: ${sourceStatus(result)}`
-  })
+  ).map(([label, result]) => `- ${label}: ${result.status}`)
 
   const sections: string[] = [
     '# ComfyUI Agent — CRDT debug report',
@@ -548,13 +580,7 @@ export async function collectCrdtDebugReport(
     ].join('\n')
   )
 
-  sections.push(
-    '## System',
-    `${SHARING_WARNING} System details can identify your hardware, software versions and launch configuration.`,
-    stats.ok
-      ? systemSection(stats.value)
-      : `_${stats.label} unavailable: ${stats.error}_`
-  )
+  sections.push('## System', systemReport.section)
 
   sections.push(
     '## CRDT event log',
@@ -579,32 +605,9 @@ export async function collectCrdtDebugReport(
     )
   }
 
-  sections.push(
-    '## Settings',
-    settings === null
-      ? `_Not included. Turned off by the tester._`
-      : [
-          `${SHARING_WARNING} Values under keys that look like credentials are replaced with \`${REDACTED}\`, at every depth — but a custom node may name a secret anything.`,
-          settings.ok
-            ? fence(
-                'json',
-                truncate(json(redactSecrets(settings.value)), MAX_SECTION_CHARS)
-              )
-            : `_${settings.label} unavailable: ${settings.error}_`
-        ].join('\n\n')
-  )
+  sections.push('## Settings', settingsReport.section)
 
-  sections.push(
-    '## Server logs',
-    logs === null
-      ? `_Not included. Turned off by the tester._`
-      : [
-          `${SHARING_WARNING} Backend logs can echo prompts, file paths and tokens.`,
-          logs.ok
-            ? fence('text', truncate(logs.value, MAX_LOG_CHARS))
-            : `_${logs.label} unavailable: ${logs.error}_`
-        ].join('\n\n')
-  )
+  sections.push('## Server logs', logsReport.section)
 
   return truncateReport(sections.join('\n\n'))
 }
