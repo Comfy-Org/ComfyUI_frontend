@@ -20,6 +20,7 @@ type CodeSegment = string | { values: string[]; highlight?: boolean }
 export interface CodeTab {
   name: string
   segments: CodeSegment[]
+  wrap?: boolean
 }
 
 const CYCLE_INTERVAL_MS = 3000
@@ -135,6 +136,7 @@ function cycleValue(values: string[]): string {
         :class="
           cn(
             'scrollbar-none h-[calc(var(--code-panel-h)*0.9)] overflow-auto rounded-3xl p-4 font-mono text-2xs/relaxed whitespace-pre-wrap text-primary-comfy-canvas sm:p-5 sm:text-xs/relaxed sm:whitespace-pre lg:h-(--code-panel-h) lg:p-6 lg:text-sm/relaxed',
+            tab.wrap && 'wrap-anywhere sm:whitespace-pre-wrap',
             contentClass
           )
         "

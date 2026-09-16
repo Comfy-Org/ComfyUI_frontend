@@ -1886,6 +1886,14 @@ Enterprise`
     en: 'GPT Image 2',
     'zh-CN': 'GPT Image 2'
   },
+  'cloud.aiModels.card.kling': {
+    en: 'Kling',
+    'zh-CN': 'Kling'
+  },
+  'cloud.aiModels.card.blackForestLabs': {
+    en: 'Black Forest Labs',
+    'zh-CN': 'Black Forest Labs'
+  },
   'cloud.aiModels.ctaDesktop': {
     en: 'EXPLORE WORKFLOWS WITH THE LATEST MODELS',
     'zh-CN': '探索最新模型工作流'
@@ -8741,8 +8749,8 @@ Enterprise`
       '一次集成前沿的图像、视频、3D 和音频模型，然后为每个任务选择供应商，获得更好的可用性和价格。'
   },
   'platform.router.badge.label': {
-    en: 'Comfy Router',
-    'zh-CN': 'Comfy Router'
+    en: 'ROUTER',
+    'zh-CN': 'ROUTER'
   },
   'platform.router.cta.getApiKey': {
     en: 'Get API Key',
@@ -8786,17 +8794,17 @@ Enterprise`
     'zh-CN': '更高的可用性，更低的价格，路由由你选择。'
   },
   'platform.router.section2.body': {
-    en: 'Run the same model on Fal, Replicate, or another supported provider, and switch with one parameter when one is rate limited or another is cheaper. Comfy never switches the route for you, and every job reports the provider that ran it.',
+    en: 'Run the same model on fal, Replicate, or another supported provider, and switch with one parameter when one is rate limited or another is cheaper. Comfy never switches the route for you, and every job reports the provider that ran it.',
     'zh-CN':
-      '在 Fal、Replicate 或其他受支持的供应商上运行同一个模型，当某个供应商限流或另一个更便宜时，只需修改一个参数即可切换。Comfy 不会替你切换路由，每个任务都会返回实际运行它的供应商。'
+      '在 fal、Replicate 或其他受支持的供应商上运行同一个模型，当某个供应商限流或另一个更便宜时，只需修改一个参数即可切换。Comfy 不会替你切换路由，每个任务都会返回实际运行它的供应商。'
   },
   'platform.router.section2.providersLabel': {
     en: 'Supported providers',
     'zh-CN': '受支持的供应商'
   },
   'platform.router.section2.providers': {
-    en: 'Fal · Wavespeed · Runware · Pika · Replicate',
-    'zh-CN': 'Fal · Wavespeed · Runware · Pika · Replicate'
+    en: 'fal · Wavespeed · Runware · Pika · Replicate',
+    'zh-CN': 'fal · Wavespeed · Runware · Pika · Replicate'
   },
   'platform.router.section2.calloutHeading': {
     en: 'Hit a concurrency limit? Queue the job.',
@@ -8845,7 +8853,7 @@ Enterprise`
       '请求一次放大、抠图或动画生成，Comfy 会自动选择能完成任务的模型或工作流。'
   },
   'platform.router.roadmap.learnMore': {
-    en: 'Learn More',
+    en: 'LEARN MORE',
     'zh-CN': '了解更多'
   },
   'platform.router.faq.heading': {
@@ -8948,7 +8956,7 @@ Enterprise`
   },
   'platform.router.faq.11.a': {
     en: 'No. Router runs on credits. Add credits and start calling models.',
-    'zh-CN': '不需要。Router 基于积分运行，充值积分即可开始调用模型。'
+    'zh-CN': '不需要。Router 使用积分运行。充值积分后即可开始调用模型。'
   },
   'platform.router.closing.headingAfterBadge': {
     en: 'Start building with Comfy Router today.',

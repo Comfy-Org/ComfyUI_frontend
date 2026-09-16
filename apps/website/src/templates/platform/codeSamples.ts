@@ -63,7 +63,7 @@ export const modelsApiCodeTabs: Record<string, CodeTab> = {
 // cycles, illustrating that switching providers only changes one argument.
 const ROUTER_MODEL = 'openai/gpt-image-2'
 const ROUTER_PROMPT = 'aerial view of a neon coral reef at dusk'
-const ROUTER_PROVIDERS = ['fal', 'replicate']
+const ROUTER_PROVIDERS = ['fal', 'wavespeed', 'runware', 'pika', 'replicate']
 
 export const routerCodeTabs: Record<string, CodeTab> = {
   python: {
@@ -92,6 +92,7 @@ export const routerCodeTabs: Record<string, CodeTab> = {
   },
   curl: {
     name: 'cURL',
+    wrap: true,
     segments: [
       'curl -X POST https://api.comfy.org/v1/models/' +
         ROUTER_MODEL +

@@ -10,13 +10,5 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
     <p class="text-sm text-primary-comfy-canvas/70">
       {{ t('platform.router.proof.caption', locale) }}
     </p>
-    <p
-      class="mt-6 text-lg font-medium tracking-tight text-primary-comfy-canvas md:text-xl"
-    >
-      {{ t('platform.router.proof.modelMakers', locale) }}
-    </p>
-    <p class="mt-3 text-xs text-primary-comfy-canvas/50">
-      {{ t('platform.router.proof.comingSoon', locale) }}
-    </p>
   </section>
 </template>
