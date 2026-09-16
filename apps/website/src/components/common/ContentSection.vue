@@ -269,7 +269,7 @@ function scrollToSection(id: string) {
         <!-- Read more CTA -->
         <div v-if="readMoreHref" class="mt-8 flex justify-center">
           <BrandButton :href="readMoreHref" variant="solid" size="lg">
-            <span class="inline-block items-center gap-2">
+            <span class="flex items-center gap-2">
               {{ t('customers.story.readMore' as TranslationKey, locale) }}
               <span class="text-base">↗</span>
             </span>

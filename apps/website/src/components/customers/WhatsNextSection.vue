@@ -52,7 +52,7 @@ const {
             <span class="text-lg font-bold">›</span>
           </span>
           <span
-            class="ppformula-text-center text-sm font-semibold tracking-wider text-primary-comfy-canvas uppercase"
+            class="inline-block text-sm font-semibold tracking-wider text-primary-comfy-canvas uppercase"
           >
             {{
               ctaLabel ??

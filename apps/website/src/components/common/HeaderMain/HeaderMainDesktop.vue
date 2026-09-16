@@ -88,8 +88,8 @@ function isNavItemActive(navItem: NavItem, path: string): boolean {
           "
         >
           <a :href="navItem.href">
-            <span class="ppformula-text-center">{{ navItem.label }}</span>
-            <span v-if="navItem.badge" class="inline-block 2xl:inline-flex">
+            <span class="inline-block">{{ navItem.label }}</span>
+            <span v-if="navItem.badge" class="hidden 2xl:inline-flex">
               <NewBadge :locale="locale" size="xxs" />
             </span>
           </a>

@@ -121,7 +121,7 @@ function cycleValue(values: string[]): string {
           )
         "
       >
-        <span class="ppformula-text-center">{{ tab.name }}</span>
+        <span class="inline-block">{{ tab.name }}</span>
       </TabsTrigger>
     </TabsList>
 

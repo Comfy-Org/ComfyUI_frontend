@@ -40,9 +40,7 @@ const {
   >
     <span
       :class="
-        cn(
-          'relative ppformula-text-center leading-none transition-all duration-500'
-        )
+        cn('relative inline-block leading-none transition-all duration-500')
       "
     >
       <slot />
