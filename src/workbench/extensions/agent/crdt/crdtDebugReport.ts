@@ -481,19 +481,15 @@ function serializeWorkflow(
   return { status: 'collected', section: fence('json', serialized) }
 }
 
-function agentToolSection(messages: readonly AssistantMessage[] | undefined) {
-  const context =
-    'Current conversation metadata retained in this tab only. Restored history may omit tool calls. Durations are backend-reported; missing ok or durationMs means no outcome or timing was observed. State is the retained UI state, not proof a request is still running. No arguments, responses, prompts or reasoning are included.'
-  if (messages === undefined) {
-    return { section: context, status: 'unavailable' }
-  }
+type RetainedToolCall = Pick<
+  ToolPart,
+  'callId' | 'name' | 'state' | 'ok' | 'durationMs'
+> & {
+  turnId: AssistantMessage['id']
+}
 
-  const calls: (Pick<
-    ToolPart,
-    'callId' | 'name' | 'state' | 'ok' | 'durationMs'
-  > & {
-    turnId: AssistantMessage['id']
-  })[] = []
+function collectAgentToolCalls(messages: readonly AssistantMessage[]) {
+  const calls: RetainedToolCall[] = []
   let total = 0
   for (const message of messages.toReversed()) {
     for (const part of message.parts.toReversed()) {
@@ -510,7 +506,17 @@ function agentToolSection(messages: readonly AssistantMessage[] | undefined) {
       })
     }
   }
-  calls.reverse()
+  return { calls: calls.toReversed(), total }
+}
+
+function agentToolSection(messages: readonly AssistantMessage[] | undefined) {
+  const context =
+    'Current conversation metadata retained in this tab only. Restored history may omit tool calls. Durations are backend-reported; missing ok or durationMs means no outcome or timing was observed. State is the retained UI state, not proof a request is still running. No arguments, responses, prompts or reasoning are included.'
+  if (messages === undefined) {
+    return { section: context, status: 'unavailable' }
+  }
+
+  const { calls, total } = collectAgentToolCalls(messages)
   const fitted = fitJsonArray(calls, MAX_SECTION_CHARS)
   return {
     section: [context, fence('json', fitted.body)].join('\n\n'),
