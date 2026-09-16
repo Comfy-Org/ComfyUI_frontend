@@ -1,11 +1,14 @@
 import { comfyExpect as expect } from '@e2e/fixtures/ComfyPage'
 import { packPersistenceTest as test } from '@e2e/fixtures/customNode/packPersistenceFixture'
 import { openWorkflowFromSidebar } from '@e2e/fixtures/utils/builderTestUtils'
+import { hasInstalledPack } from '@e2e/fixtures/utils/customNodeSuite'
 
 test.describe(
   'actual custom-pack persistence @custom-nodes',
   { tag: ['@oss', '@node', '@widget'] },
   () => {
+    if (!hasInstalledPack('ComfyUI-Easy-Use')) return
+
     test.beforeEach(async ({ comfyPage }) => {
       await comfyPage.nodeOps.clearGraph()
     })

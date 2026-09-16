@@ -1,11 +1,14 @@
 import { comfyExpect as expect } from '@e2e/fixtures/ComfyPage'
 import { packPersistenceTest as test } from '@e2e/fixtures/customNode/packPersistenceFixture'
 import { openWorkflowFromSidebar } from '@e2e/fixtures/utils/builderTestUtils'
+import { hasInstalledPack } from '@e2e/fixtures/utils/customNodeSuite'
 
 test.describe(
   'custom-drawn pack widget persistence @custom-nodes',
   { tag: ['@oss', '@node', '@widget', '@vue-nodes'] },
   () => {
+    if (!hasInstalledPack('rgthree-comfy')) return
+
     test.afterEach(async ({ comfyPage }) => {
       await comfyPage.canvasOps.resetView()
     })

@@ -8,6 +8,15 @@ import type {
 } from '@/platform/workflow/persistence/base/draftTypes'
 import { StorageKeys } from '@/platform/workflow/persistence/base/storageKeys'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
+import { loadManifest } from '@e2e/fixtures/customNode/manifest'
+
+export function hasInstalledPack(
+  pack: string,
+  entries: readonly { pack: string }[] = loadManifest()
+): boolean {
+  const normalizedPack = pack.toLowerCase()
+  return entries.some((entry) => entry.pack.toLowerCase() === normalizedPack)
+}
 
 const CUSTOM_NODE_BLANK_WORKFLOW_PATH =
   'workflows/Custom Nodes E2E Blank Workflow.json'

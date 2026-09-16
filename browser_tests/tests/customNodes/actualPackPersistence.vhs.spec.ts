@@ -2,12 +2,15 @@ import { readFile } from 'node:fs/promises'
 
 import { comfyExpect as expect } from '@e2e/fixtures/ComfyPage'
 import { packPersistenceTest as test } from '@e2e/fixtures/customNode/packPersistenceFixture'
+import { hasInstalledPack } from '@e2e/fixtures/utils/customNodeSuite'
 import { assetPath } from '@e2e/fixtures/utils/paths'
 
 test.describe(
   'actual custom-pack persistence @custom-nodes',
   { tag: ['@oss', '@node', '@widget'] },
   () => {
+    if (!hasInstalledPack('ComfyUI-VideoHelperSuite')) return
+
     test.beforeEach(async ({ comfyPage }) => {
       await comfyPage.nodeOps.clearGraph()
     })

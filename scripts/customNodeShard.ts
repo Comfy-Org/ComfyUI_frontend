@@ -20,6 +20,7 @@ import {
   loadApplicableAutogrowCases,
   loadManifest
 } from '../browser_tests/fixtures/customNode/manifest'
+import { packSpecTestCount } from './customNodePackTests'
 
 // Tests every run registers whatever the slice holds: allNodes's
 // manifest-coverage test, connectivity (three), coreSmoke (two), the regression
@@ -40,6 +41,7 @@ function expectedTestCount(): number {
     SLICE_INDEPENDENT_TESTS +
     expectedTierTestCount(entries) +
     TESTS_PER_PACK * entries.length +
+    packSpecTestCount(entries) +
     (customNodesManifest() === 'core' ? entries.length : 0) +
     entries.filter((entry) => entry.tiers.includes('run')).length +
     loadApplicableAutogrowCases().length

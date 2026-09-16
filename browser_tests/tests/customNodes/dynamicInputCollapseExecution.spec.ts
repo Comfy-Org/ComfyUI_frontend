@@ -1,6 +1,9 @@
 import { comfyExpect as expect } from '@e2e/fixtures/ComfyPage'
 import { packPersistenceTest as test } from '@e2e/fixtures/customNode/packPersistenceFixture'
-import { customNodeSuiteSettings } from '@e2e/fixtures/utils/customNodeSuite'
+import {
+  customNodeSuiteSettings,
+  hasInstalledPack
+} from '@e2e/fixtures/utils/customNodeSuite'
 
 test.use({ initialSettings: customNodeSuiteSettings })
 
@@ -8,6 +11,7 @@ test.describe(
   'dynamic input collapse execution @custom-nodes',
   { tag: ['@oss', '@node', '@canvas'] },
   () => {
+    if (!hasInstalledPack('ComfyUI-Impact-Pack')) return
     for (const vueNodesEnabled of [false, true])
       test(`Impact dynamic inputs stay connected through collapse (${vueNodesEnabled ? 'Vue' : 'legacy'} renderer)`, async ({
         comfyPage,

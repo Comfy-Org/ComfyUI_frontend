@@ -3,11 +3,14 @@ import {
   comfyPageFixture as test
 } from '@e2e/fixtures/ComfyPage'
 import { VueNodeFixture } from '@e2e/fixtures/utils/vueNodeFixtures'
+import { hasInstalledPack } from '@e2e/fixtures/utils/customNodeSuite'
 
 test.describe(
   'rgthree mode controls @custom-nodes',
   { tag: ['@oss', '@node', '@widget', '@vue-nodes'] },
   () => {
+    if (!hasInstalledPack('rgthree-comfy')) return
+
     test.beforeEach(async ({ comfyPage }) => {
       await comfyPage.nodeOps.clearGraph()
     })
