@@ -1,3 +1,4 @@
+import { computed } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
@@ -24,7 +25,6 @@ const userEmail = vi.hoisted((): { value: string | undefined } => ({
   value: undefined
 }))
 vi.mock(import('@/composables/auth/useCurrentUser'))
-const currentUser = useCurrentUser()
 
 vi.mock(import('@/platform/distribution/types'), () => ({
   isCloud: true,
@@ -33,9 +33,7 @@ vi.mock(import('@/platform/distribution/types'), () => ({
 
 describe('openFeedbackDialog', () => {
   beforeEach(() => {
-    vi.spyOn(currentUser.userEmail, 'value', 'get').mockImplementation(
-      () => userEmail.value
-    )
+    useCurrentUser().userEmail = computed(() => userEmail.value)
     userEmail.value = undefined
   })
 

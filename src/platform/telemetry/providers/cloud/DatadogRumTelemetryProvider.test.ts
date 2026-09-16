@@ -1,3 +1,4 @@
+import { computed } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
@@ -34,15 +35,12 @@ vi.mock<unknown>(import('@datadog/browser-rum'), () => ({
 }))
 
 vi.mock(import('@/composables/auth/useCurrentUser'))
-const currentUser = useCurrentUser()
 
 beforeEach(() => {
-  vi.spyOn(currentUser.resolvedUserInfo, 'value', 'get').mockReturnValue({
+  useCurrentUser().resolvedUserInfo = computed(() => ({
     id: 'restored-user'
-  })
-  vi.spyOn(currentUser.userEmail, 'value', 'get').mockReturnValue(
-    'restored@example.com'
-  )
+  }))
+  useCurrentUser().userEmail = computed(() => 'restored@example.com')
 })
 
 const workflowExecutionIntent = {
@@ -51,7 +49,6 @@ const workflowExecutionIntent = {
 
 describe('DatadogRumTelemetryProvider', () => {
   it('identifies restored sessions and replaces identity on account changes', () => {
-    const onUserLogout = vi.mocked(useCurrentUser().onUserLogout)
     const provider = new DatadogRumTelemetryProvider()
     provider.trackUserLoggedIn()
     provider.trackAuth({ user_id: 'new-user', email: 'new@example.com' })
@@ -66,21 +63,20 @@ describe('DatadogRumTelemetryProvider', () => {
       email: 'new@example.com'
     })
     expect(setUser).toHaveBeenNthCalledWith(3, { id: 'user-without-email' })
-    expect(onUserLogout).toHaveBeenCalledOnce()
-    onUserLogout.mock.calls[0][0]()
+    expect(useCurrentUser().onUserLogout).toHaveBeenCalledOnce()
+    vi.mocked(useCurrentUser().onUserLogout).mock.calls[0][0]()
     expect(clearUser).toHaveBeenCalledOnce()
   })
 
   it('does not identify an unresolved user or send email without an account ID', () => {
-    vi.spyOn(currentUser.resolvedUserInfo, 'value', 'get').mockReturnValue(null)
-    vi.spyOn(currentUser.userEmail, 'value', 'get').mockReturnValue(null)
-    const onUserLogout = vi.mocked(currentUser.onUserLogout)
+    useCurrentUser().resolvedUserInfo = computed(() => null)
+    useCurrentUser().userEmail = computed(() => null)
     const provider = new DatadogRumTelemetryProvider()
     provider.trackUserLoggedIn()
     provider.trackAuth({ email: 'unresolved@example.com' })
 
     expect(setUser).not.toHaveBeenCalled()
-    expect(onUserLogout).not.toHaveBeenCalled()
+    expect(useCurrentUser().onUserLogout).not.toHaveBeenCalled()
   })
 
   it('records fetch timeouts as RUM actions', () => {

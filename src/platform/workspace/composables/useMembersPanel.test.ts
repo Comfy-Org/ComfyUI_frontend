@@ -1,7 +1,7 @@
 import { getActivePinia } from 'pinia'
 import type { Pinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { createApp, defineComponent } from 'vue'
+import { computed, createApp, defineComponent } from 'vue'
 import type { App } from 'vue'
 import { createI18n } from 'vue-i18n'
 
@@ -412,7 +412,6 @@ vi.mock<unknown>(
 )
 
 vi.mock(import('@/composables/auth/useCurrentUser'))
-const currentUser = useCurrentUser()
 
 vi.mock<unknown>(
   import('@/platform/cloud/subscription/composables/useSubscriptionDialog'),
@@ -477,13 +476,9 @@ describe('useMembersPanel', () => {
   let pinia: Pinia
 
   beforeEach(() => {
-    vi.spyOn(currentUser.userPhotoUrl, 'value', 'get').mockReturnValue(null)
-    vi.spyOn(currentUser.userEmail, 'value', 'get').mockReturnValue(
-      'owner@example.com'
-    )
-    vi.spyOn(currentUser.userDisplayName, 'value', 'get').mockReturnValue(
-      'Owner User'
-    )
+    useCurrentUser().userPhotoUrl = computed(() => null)
+    useCurrentUser().userEmail = computed(() => 'owner@example.com')
+    useCurrentUser().userDisplayName = computed(() => 'Owner User')
     pinia = getActivePinia()!
     workspaceStore = useTeamWorkspaceStore(pinia)
     vi.spyOn(workspaceStore, 'resendInvite').mockImplementation(

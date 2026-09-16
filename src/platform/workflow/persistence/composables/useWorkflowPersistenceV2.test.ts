@@ -79,7 +79,6 @@ vi.mock<unknown>(import('vue-router'), () => ({
 }))
 
 vi.mock(import('@/composables/auth/useCurrentUser'))
-const currentUser = useCurrentUser()
 
 const preservedQueryMocks = vi.hoisted(() => ({
   payloads: {} as Record<string, Record<string, string> | undefined>
@@ -795,8 +794,8 @@ describe('useWorkflowPersistenceV2', () => {
     sessionStorage.setItem('Comfy.Workflow.ActivePath:test-client', '{}')
     mountWorkflowPersistence()
 
-    const onLogout = vi.mocked(currentUser.onUserLogout).mock.calls[0][0]
-    const onUserResolved = vi.mocked(currentUser.onUserResolved).mock
+    const onLogout = vi.mocked(useCurrentUser().onUserLogout).mock.calls[0][0]
+    const onUserResolved = vi.mocked(useCurrentUser().onUserResolved).mock
       .calls[0][0]
     onLogout()
 
@@ -838,8 +837,8 @@ describe('useWorkflowPersistenceV2', () => {
     )
     mountWorkflowPersistence()
 
-    const onLogout = vi.mocked(currentUser.onUserLogout).mock.calls[0][0]
-    const onUserResolved = vi.mocked(currentUser.onUserResolved).mock
+    const onLogout = vi.mocked(useCurrentUser().onUserLogout).mock.calls[0][0]
+    const onUserResolved = vi.mocked(useCurrentUser().onUserResolved).mock
       .calls[0][0]
     onLogout()
     onUserResolved({ id: 'user-b' })
@@ -861,8 +860,8 @@ describe('useWorkflowPersistenceV2', () => {
     )
     mountWorkflowPersistence()
 
-    const onLogout = vi.mocked(currentUser.onUserLogout).mock.calls[0][0]
-    const onUserResolved = vi.mocked(currentUser.onUserResolved).mock
+    const onLogout = vi.mocked(useCurrentUser().onUserLogout).mock.calls[0][0]
+    const onUserResolved = vi.mocked(useCurrentUser().onUserResolved).mock
       .calls[0][0]
     onLogout()
     onUserResolved({ id: 'user-a' })
@@ -892,8 +891,8 @@ describe('useWorkflowPersistenceV2', () => {
     mocks.state.currentGraph = { marker: 'stale-source-edit' }
     mocks.state.graphChangedHandler?.()
 
-    const onLogout = vi.mocked(currentUser.onUserLogout).mock.calls[0][0]
-    const onUserResolved = vi.mocked(currentUser.onUserResolved).mock
+    const onLogout = vi.mocked(useCurrentUser().onUserLogout).mock.calls[0][0]
+    const onUserResolved = vi.mocked(useCurrentUser().onUserResolved).mock
       .calls[0][0]
     onLogout()
     onUserResolved({ id: 'user-b' })

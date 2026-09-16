@@ -1,7 +1,7 @@
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useAuthStore } from '@/stores/authStore'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { effectScope } from 'vue'
+import { computed, effectScope } from 'vue'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useSubscription } from '@/platform/cloud/subscription/composables/useSubscription'
@@ -100,7 +100,6 @@ Object.defineProperty(globalThis, 'localStorage', {
 })
 
 vi.mock(import('@/composables/auth/useCurrentUser'))
-const currentUser = useCurrentUser()
 
 vi.mock<unknown>(import('@/platform/telemetry'), () => ({
   useTelemetry: vi.fn(() => mockTelemetry)
@@ -160,9 +159,7 @@ vi.mock<unknown>(import('@/services/dialogService'), () => ({
 global.fetch = vi.fn()
 
 beforeEach(() => {
-  vi.spyOn(currentUser.isLoggedIn, 'value', 'get').mockImplementation(
-    () => mockIsLoggedIn.value
-  )
+  useCurrentUser().isLoggedIn = computed(() => mockIsLoggedIn.value)
   Object.assign(useAuthStore(), { isInitialized: true, userId: 'user-123' })
   vi.mocked(useAuthStore().getFirebaseAuthHeader).mockImplementation(
     mockGetAuthHeader

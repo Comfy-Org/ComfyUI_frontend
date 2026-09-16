@@ -2,7 +2,7 @@ import { useDialogStore } from '@/stores/dialogStore'
 import { fromPartial } from '@total-typescript/shoehorn'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { App } from 'vue'
-import { createApp, defineComponent } from 'vue'
+import { computed, createApp, defineComponent } from 'vue'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { i18n } from '@/i18n'
@@ -38,7 +38,6 @@ const mockIsLoggedIn = vi.hoisted(() => ({ value: false }))
 const mockTrackShareLinkOpened = vi.hoisted(() => vi.fn())
 
 vi.mock(import('@/composables/auth/useCurrentUser'))
-const currentUser = useCurrentUser()
 
 vi.mock<unknown>(import('@/composables/useAppMode'), () => ({
   useAppMode: () => ({
@@ -199,9 +198,7 @@ function createDeferred() {
 }
 
 beforeEach(() => {
-  vi.spyOn(currentUser.isLoggedIn, 'value', 'get').mockImplementation(
-    () => mockIsLoggedIn.value
-  )
+  useCurrentUser().isLoggedIn = computed(() => mockIsLoggedIn.value)
   Object.assign(useDialogStore(), { dialogStack: [] })
   vi.mocked(useDialogStore().closeDialog).mockImplementation(() => {})
   vi.mocked(useDialogStore().updateDialog).mockReturnValue(false)

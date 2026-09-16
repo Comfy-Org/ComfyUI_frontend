@@ -1,5 +1,6 @@
 vi.mock(import('firebase/auth'))
 vi.mock(import('vuefire'), () => ({ useFirebaseAuth: vi.fn() }))
+import { computed } from 'vue'
 import type { GlobalSetting } from '@comfyorg/ingest-types'
 import { useAuthStore } from '@/stores/authStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
@@ -21,7 +22,6 @@ const authState = await vi.hoisted(async () => {
   })
 })
 vi.mock(import('@/composables/auth/useCurrentUser'))
-const currentUser = useCurrentUser()
 
 vi.mock(import('@/config/comfyApi'), () => ({
   getComfyApiBaseUrl: () => 'https://api.comfy.test'
@@ -97,11 +97,9 @@ async function startConsent() {
 
 describe('useAgentConsent', () => {
   beforeEach(() => {
-    vi.spyOn(currentUser.isLoggedIn, 'value', 'get').mockImplementation(
-      () => authState.loggedIn
-    )
-    vi.spyOn(currentUser.resolvedUserInfo, 'value', 'get').mockImplementation(
-      () => (authState.identity ? { id: authState.identity } : null)
+    useCurrentUser().isLoggedIn = computed(() => authState.loggedIn)
+    useCurrentUser().resolvedUserInfo = computed(() =>
+      authState.identity ? { id: authState.identity } : null
     )
     localStorage.clear()
     authState.loggedIn = true

@@ -3,7 +3,7 @@ import { fromPartial } from '@total-typescript/shoehorn'
 
 import { render } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { defineComponent, ref } from 'vue'
+import { computed, defineComponent, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
@@ -38,7 +38,6 @@ const env = vi.hoisted(() => {
 })
 
 vi.mock(import('@/composables/auth/useCurrentUser'))
-const currentUser = useCurrentUser()
 
 vi.mock<unknown>(import('@/composables/useFeatureFlags'), () => ({
   useFeatureFlags: () => ({
@@ -105,9 +104,7 @@ function useSettingUI(
 }
 
 beforeEach(() => {
-  vi.spyOn(currentUser.isLoggedIn, 'value', 'get').mockImplementation(
-    () => env.state.isLoggedIn
-  )
+  useCurrentUser().isLoggedIn = computed(() => env.state.isLoggedIn)
   vi.spyOn(usePartnerNodeGovernanceStore(), 'status', 'get').mockImplementation(
     () => {
       return env.state.partnerNodeGovernanceStatus

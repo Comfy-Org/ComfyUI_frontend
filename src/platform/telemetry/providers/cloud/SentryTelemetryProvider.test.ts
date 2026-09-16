@@ -1,3 +1,4 @@
+import { computed } from 'vue'
 import { fromPartial } from '@total-typescript/shoehorn'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -34,7 +35,6 @@ vi.mock(import('@sentry/vue'), () => ({
 }))
 
 vi.mock(import('@/composables/auth/useCurrentUser'))
-const currentUser = useCurrentUser()
 
 vi.mock(import('../../utils/getExecutionContext'), () => ({
   getExecutionContext: () => mocks.executionContext
@@ -52,8 +52,8 @@ const shellLayout: ShellLayoutMetadata = {
 }
 
 beforeEach(() => {
-  vi.spyOn(currentUser.resolvedUserInfo, 'value', 'get').mockImplementation(
-    () => (mocks.resolvedUserId ? { id: mocks.resolvedUserId } : null)
+  useCurrentUser().resolvedUserInfo = computed(() =>
+    mocks.resolvedUserId ? { id: mocks.resolvedUserId } : null
   )
   useWorkflowStore().activeWorkflow = fromPartial({
     isModified: mocks.workflowIsModified
@@ -67,7 +67,6 @@ describe('SentryTelemetryProvider', () => {
   })
 
   it('identifies resolved and newly authenticated users and clears logout', () => {
-    const onUserLogout = vi.mocked(useCurrentUser().onUserLogout)
     const provider = new SentryTelemetryProvider()
 
     provider.trackUserLoggedIn()
@@ -75,9 +74,9 @@ describe('SentryTelemetryProvider', () => {
 
     expect(mocks.setUser).toHaveBeenNthCalledWith(1, { id: 'existing-user' })
     expect(mocks.setUser).toHaveBeenNthCalledWith(2, { id: 'new-user' })
-    expect(onUserLogout).toHaveBeenCalledOnce()
+    expect(useCurrentUser().onUserLogout).toHaveBeenCalledOnce()
 
-    const onLogout = onUserLogout.mock.calls[0][0]
+    const onLogout = vi.mocked(useCurrentUser().onUserLogout).mock.calls[0][0]
     onLogout()
 
     expect(mocks.setUser).toHaveBeenLastCalledWith(null)

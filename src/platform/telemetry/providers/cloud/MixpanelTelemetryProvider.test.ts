@@ -15,7 +15,6 @@ vi.mock<unknown>(import('mixpanel-browser'), () => ({
 }))
 
 vi.mock(import('@/composables/auth/useCurrentUser'))
-const mockOnUserResolved = vi.mocked(useCurrentUser().onUserResolved)
 
 const mockNormalizeSurveyResponses = vi.hoisted(() => vi.fn())
 vi.mock(import('@/platform/telemetry/utils/surveyNormalization'), () => ({
@@ -256,8 +255,8 @@ describe('MixpanelTelemetryProvider — with configured token', () => {
     new MixpanelTelemetryProvider()
     await waitForMixpanelInit()
 
-    expect(mockOnUserResolved).toHaveBeenCalled()
-    const callback = mockOnUserResolved.mock.calls[0][0]
+    expect(useCurrentUser().onUserResolved).toHaveBeenCalled()
+    const callback = vi.mocked(useCurrentUser().onUserResolved).mock.calls[0][0]
     callback({ id: 'user-42' })
 
     expect(mockMixpanel.identify).toHaveBeenCalledWith('user-42')

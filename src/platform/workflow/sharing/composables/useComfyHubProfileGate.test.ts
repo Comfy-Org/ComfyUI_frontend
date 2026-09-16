@@ -1,3 +1,4 @@
+import { computed, ref } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
@@ -8,9 +9,7 @@ const mockRequestAssetUploadUrl = vi.hoisted(() => vi.fn())
 const mockUploadFileToPresignedUrl = vi.hoisted(() => vi.fn())
 const mockCreateProfile = vi.hoisted(() => vi.fn())
 const mockToastErrorHandler = vi.hoisted(() => vi.fn())
-const mockResolvedUserInfo = vi.hoisted(() => ({
-  value: { id: 'user-a' }
-}))
+const mockResolvedUserInfo = ref({ id: 'user-a' })
 
 vi.mock<unknown>(
   import('@/platform/workflow/sharing/services/comfyHubService'),
@@ -25,7 +24,6 @@ vi.mock<unknown>(
 )
 
 vi.mock(import('@/composables/auth/useCurrentUser'))
-const currentUser = useCurrentUser()
 
 vi.mock<unknown>(import('@/composables/useErrorHandling'), () => ({
   useErrorHandling: () => ({
@@ -58,7 +56,7 @@ describe('useComfyHubProfileGate', () => {
   let gate: ReturnType<typeof useComfyHubProfileGate>
 
   beforeEach(() => {
-    vi.spyOn(currentUser.resolvedUserInfo, 'value', 'get').mockImplementation(
+    useCurrentUser().resolvedUserInfo = computed(
       () => mockResolvedUserInfo.value
     )
     mockResolvedUserInfo.value = { id: 'user-a' }

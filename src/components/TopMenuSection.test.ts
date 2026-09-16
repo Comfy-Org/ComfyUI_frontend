@@ -33,12 +33,9 @@ const mockData = vi.hoisted(() => ({
 }))
 
 vi.mock(import('@/composables/auth/useCurrentUser'))
-const currentUser = useCurrentUser()
 
 beforeEach(() => {
-  vi.spyOn(currentUser.isLoggedIn, 'value', 'get').mockImplementation(
-    () => mockData.isLoggedIn
-  )
+  useCurrentUser().isLoggedIn = computed(() => mockData.isLoggedIn)
 })
 
 vi.mock(import('@/platform/distribution/types'), () => ({

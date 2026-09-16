@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { nextTick, ref } from 'vue'
+import { computed, nextTick, ref } from 'vue'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import type { RemoteConfig } from '@/platform/remoteConfig/types'
@@ -21,7 +21,6 @@ vi.mock<unknown>(import('@/platform/remoteConfig/remoteConfig'), async () => {
 })
 
 vi.mock(import('@/composables/auth/useCurrentUser'))
-const currentUser = useCurrentUser()
 
 import ManagerSurveyDialog from '@/workbench/extensions/manager/components/survey/ManagerSurveyDialog.vue'
 
@@ -38,9 +37,7 @@ describe('ManagerSurveyDialog', () => {
   beforeEach(() => {
     const resolvedUserInfo = ref<{ id: string } | null>(null)
     mocks.resolvedUserInfo = resolvedUserInfo
-    vi.spyOn(currentUser.resolvedUserInfo, 'value', 'get').mockImplementation(
-      () => resolvedUserInfo.value
-    )
+    useCurrentUser().resolvedUserInfo = computed(() => resolvedUserInfo.value)
     mocks.remoteConfig.value = {}
   })
 

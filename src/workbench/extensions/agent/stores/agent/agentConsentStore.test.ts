@@ -1,5 +1,6 @@
 vi.mock(import('firebase/auth'))
 vi.mock(import('vuefire'), () => ({ useFirebaseAuth: vi.fn() }))
+import { computed } from 'vue'
 import type { GlobalSetting } from '@comfyorg/ingest-types'
 import { useAuthStore } from '@/stores/authStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
@@ -32,7 +33,6 @@ const authState = await vi.hoisted(async () => {
   })
 })
 vi.mock(import('@/composables/auth/useCurrentUser'))
-const currentUser = useCurrentUser()
 const stored: GlobalSetting = {
   key: 'Comfy.AgentPanel.ConsentAccepted',
   value: true,
@@ -51,8 +51,8 @@ function deferred<T>() {
 
 describe('agentConsentStore', () => {
   beforeEach(() => {
-    vi.spyOn(currentUser.resolvedUserInfo, 'value', 'get').mockImplementation(
-      () => (authState.identity ? { id: authState.identity } : null)
+    useCurrentUser().resolvedUserInfo = computed(() =>
+      authState.identity ? { id: authState.identity } : null
     )
     authState.identity = 'account-a'
     Object.assign(useTeamWorkspaceStore(), { activeWorkspaceId: 'workspace-a' })

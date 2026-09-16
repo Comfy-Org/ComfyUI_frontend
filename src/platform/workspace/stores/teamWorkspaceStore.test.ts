@@ -1,3 +1,4 @@
+import { computed } from 'vue'
 import { useWorkspaceAuthStore } from '@/platform/workspace/stores/workspaceAuthStore'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -34,7 +35,6 @@ const mockCurrentUser = vi.hoisted(() => ({
 }))
 
 vi.mock(import('@/composables/auth/useCurrentUser'))
-const currentUser = useCurrentUser()
 
 // Mock workspaceApi
 const mockWorkspaceApi = vi.hoisted(() => ({
@@ -141,10 +141,8 @@ function expectCleanupBeforeContextAndReload(): void {
 }
 
 beforeEach(() => {
-  vi.spyOn(currentUser.userEmail, 'value', 'get').mockImplementation(
-    () => mockCurrentUser.userEmail.value
-  )
-  vi.spyOn(currentUser.isApiKeyLogin, 'value', 'get').mockImplementation(
+  useCurrentUser().userEmail = computed(() => mockCurrentUser.userEmail.value)
+  useCurrentUser().isApiKeyLogin = computed(
     () => mockCurrentUser.isApiKeyLogin.value
   )
   Object.assign(useWorkspaceAuthStore(), {

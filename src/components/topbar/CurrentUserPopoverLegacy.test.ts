@@ -2,7 +2,7 @@ import { getActivePinia } from 'pinia'
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { afterAll, beforeEach, describe, expect, it, vi } from 'vitest'
-import { h, ref } from 'vue'
+import { computed, h, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import { formatCreditsFromCents } from '@/base/credits/comfyCredits'
@@ -34,7 +34,6 @@ afterAll(() => {
 })
 
 vi.mock(import('@/composables/auth/useCurrentUser'))
-const currentUser = useCurrentUser()
 
 vi.mock<unknown>(import('@/services/dialogService'), () => ({
   useDialogService: vi.fn(() => ({
@@ -121,15 +120,11 @@ vi.mock<unknown>(import('@/platform/telemetry'), () => ({
 
 describe('CurrentUserPopoverLegacy', () => {
   beforeEach(() => {
-    vi.spyOn(currentUser.userPhotoUrl, 'value', 'get').mockReturnValue(
-      'https://example.com/avatar.jpg'
+    useCurrentUser().userPhotoUrl = computed(
+      () => 'https://example.com/avatar.jpg'
     )
-    vi.spyOn(currentUser.userDisplayName, 'value', 'get').mockReturnValue(
-      'Test User'
-    )
-    vi.spyOn(currentUser.userEmail, 'value', 'get').mockReturnValue(
-      'test@example.com'
-    )
+    useCurrentUser().userDisplayName = computed(() => 'Test User')
+    useCurrentUser().userEmail = computed(() => 'test@example.com')
     mockCanAccessSubscriptionFeatures.value = true
     mockTier.value = 'CREATOR'
     mockSubscription.value = makeSubscription()

@@ -1,3 +1,4 @@
+import { computed } from 'vue'
 import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -30,13 +31,10 @@ const userEmail = vi.hoisted((): { value: string | undefined } => ({
   value: undefined
 }))
 vi.mock(import('@/composables/auth/useCurrentUser'))
-const currentUser = useCurrentUser()
 
 describe('openFeedbackDialog (agent)', () => {
   beforeEach(() => {
-    vi.spyOn(currentUser.userEmail, 'value', 'get').mockImplementation(
-      () => userEmail.value
-    )
+    useCurrentUser().userEmail = computed(() => userEmail.value)
     userEmail.value = undefined
     vi.stubGlobal('__COMFYUI_FRONTEND_VERSION__', '1.55.4')
     vi.spyOn(window.navigator, 'platform', 'get').mockReturnValue('MacIntel')

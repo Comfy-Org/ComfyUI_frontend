@@ -1,3 +1,4 @@
+import { computed } from 'vue'
 import { mapValues } from 'es-toolkit'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createMemoryHistory, createRouter } from 'vue-router'
@@ -24,12 +25,9 @@ vi.mock<unknown>(import('@/platform/auth/session/useSessionCookie'), () => ({
 const isLoggedIn = { value: false }
 
 vi.mock(import('@/composables/auth/useCurrentUser'))
-const currentUser = useCurrentUser()
 
 beforeEach(() => {
-  vi.spyOn(currentUser.isLoggedIn, 'value', 'get').mockImplementation(
-    () => isLoggedIn.value
-  )
+  useCurrentUser().isLoggedIn = computed(() => isLoggedIn.value)
   isLoggedIn.value = false
 })
 
@@ -205,6 +203,7 @@ describe('cloudOnboardingRoutes', () => {
  */
 describe('legacy /login through the cloud-login guard', () => {
   beforeEach(() => {
+    vi.mocked(useCurrentUser).mockClear()
     clearOAuthRequestId()
   })
 

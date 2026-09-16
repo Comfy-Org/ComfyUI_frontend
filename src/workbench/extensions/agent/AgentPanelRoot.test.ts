@@ -191,7 +191,6 @@ vi.mock<unknown>(import('@/utils/litegraphUtil'), () => ({
 }))
 
 vi.mock(import('@/composables/auth/useCurrentUser'))
-const currentUser = useCurrentUser()
 
 const clipboard = vi.hoisted(() => ({ copy: vi.fn() }))
 
@@ -256,13 +255,11 @@ import { useAgentWorkflowTabBindingStore } from './stores/agent/agentWorkflowTab
 import AgentPanelRoot from './AgentPanelRoot.vue'
 
 beforeEach(() => {
-  vi.spyOn(currentUser.isLoggedIn, 'value', 'get').mockReturnValue(true)
-  vi.spyOn(currentUser.userDisplayName, 'value', 'get').mockReturnValue(
-    'Jo Rivera'
-  )
-  vi.spyOn(currentUser.resolvedUserInfo, 'value', 'get').mockReturnValue({
+  useCurrentUser().isLoggedIn = computed(() => true)
+  useCurrentUser().userDisplayName = computed(() => 'Jo Rivera')
+  useCurrentUser().resolvedUserInfo = computed(() => ({
     id: 'account-a'
-  })
+  }))
   Object.assign(useAgentConsentStore(), { accepted: true })
   vi.mocked(validateComfyWorkflow).mockImplementation(async (content) =>
     fromPartial<ComfyWorkflowJSON>(
