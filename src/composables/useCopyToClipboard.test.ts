@@ -1,18 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { useToastStore } from '@/platform/updates/common/toastStore'
+
 const mockWriteText = vi.fn()
 const mockWrite = vi.fn()
-const mockToastAdd = vi.fn()
-
-vi.mock<unknown>(
-  import('primevue/usetoast'), // eslint-disable-line primevue-removal/no-imports
-
-  () => ({
-    useToast: vi.fn(() => ({
-      add: mockToastAdd
-    }))
-  })
-)
 
 vi.mock(import('@/i18n'), () => ({
   t: (key: string) => key
@@ -37,7 +28,7 @@ describe('useCopyToClipboard', () => {
     expect(success).toBe(true)
     expect(copied.value).toBe(true)
     expect(mockWriteText).toHaveBeenCalledWith('hello')
-    expect(mockToastAdd).toHaveBeenCalledWith(
+    expect(useToastStore().messagesToAdd).toContainEqual(
       expect.objectContaining({ severity: 'success' })
     )
   })
@@ -56,7 +47,7 @@ describe('useCopyToClipboard', () => {
     expect(success).toBe(true)
     expect(copiedText).toBe('fallback payload')
     expect(document.execCommand).toHaveBeenCalledWith('copy')
-    expect(mockToastAdd).toHaveBeenCalledWith(
+    expect(useToastStore().messagesToAdd).toContainEqual(
       expect.objectContaining({ severity: 'success' })
     )
   })
@@ -78,7 +69,7 @@ describe('useCopyToClipboard', () => {
 
     expect(success).toBe(false)
     expect(copied.value).toBe(false)
-    expect(mockToastAdd).toHaveBeenCalledWith(
+    expect(useToastStore().messagesToAdd).toContainEqual(
       expect.objectContaining({ severity: 'error' })
     )
   })
@@ -97,7 +88,7 @@ describe('useCopyToClipboard', () => {
     expect(success).toBe(true)
     expect(mockWrite).toHaveBeenCalledWith([item])
     expect(mockWriteText).toHaveBeenCalledWith('plain payload')
-    expect(mockToastAdd).not.toHaveBeenCalled()
+    expect(useToastStore().messagesToAdd).toEqual([])
   })
 
   it('resets temporary copied status', async () => {
@@ -131,7 +122,7 @@ describe('useCopyToClipboard', () => {
 
     expect(mockWriteText).not.toHaveBeenCalled()
     expect(document.execCommand).toHaveBeenCalledWith('copy')
-    expect(mockToastAdd).toHaveBeenCalledWith(
+    expect(useToastStore().messagesToAdd).toContainEqual(
       expect.objectContaining({ severity: 'success' })
     )
   })

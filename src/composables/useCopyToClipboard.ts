@@ -1,7 +1,7 @@
-import { useToast } from 'primevue/usetoast'
 import { getCurrentScope, onScopeDispose, ref } from 'vue'
 
 import { t } from '@/i18n'
+import { useToastStore } from '@/platform/updates/common/toastStore'
 
 function legacyCopy(text: string): boolean {
   const textarea = document.createElement('textarea')
@@ -26,7 +26,7 @@ export function useCopyToClipboard({
   copiedDuring?: number
   showSuccessToast?: boolean
 } = {}) {
-  const toast = useToast()
+  const toast = useToastStore()
   const copied = ref(false)
   let copiedReset: ReturnType<typeof setTimeout> | undefined
 
