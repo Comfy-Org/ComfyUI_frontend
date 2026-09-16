@@ -37,6 +37,8 @@ const routes = getRoutes(locale)
           :tabs="routerCodeTabs"
           :label="t('platform.products.models.title', locale)"
           content-class="bg-[#2a2230]"
+          :copy-label="t('ui.copy', locale)"
+          :copied-label="t('ui.copied', locale)"
         />
       </div>
     </template>
@@ -45,6 +47,8 @@ const routes = getRoutes(locale)
         :tabs="routerCodeTabs"
         :label="t('platform.products.models.title', locale)"
         content-class="bg-[#2a2230]"
+        :copy-label="t('ui.copy', locale)"
+        :copied-label="t('ui.copied', locale)"
       />
     </template>
   </HeroSplit01>

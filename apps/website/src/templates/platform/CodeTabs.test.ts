@@ -28,4 +28,29 @@ describe('CodeTabs', () => {
     expect(screen.getByText('model-a')).toBeTruthy()
     expect(screen.queryByText('hello()')).toBeNull()
   })
+
+  it('renders no copy button unless labels are given', () => {
+    render(CodeTabs, { props: { tabs, label: 'Samples' } })
+
+    expect(screen.queryByRole('button', { name: 'Copy' })).toBeNull()
+  })
+
+  it('copies the active sample with its cycling values filled in', async () => {
+    const user = userEvent.setup()
+    render(CodeTabs, {
+      props: {
+        tabs,
+        label: 'Samples',
+        copyLabel: 'Copy',
+        copiedLabel: 'Copied'
+      }
+    })
+
+    await user.click(screen.getByRole('tab', { name: 'Tall' }))
+    await user.click(screen.getByRole('button', { name: 'Copy' }))
+
+    expect(await navigator.clipboard.readText()).toBe(
+      'run("model-a")\nsecond\nthird'
+    )
+  })
 })
