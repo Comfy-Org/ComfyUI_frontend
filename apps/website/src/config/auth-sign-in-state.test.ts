@@ -1,3 +1,4 @@
+import { ENUMERATION_ORACLE } from '@comfyorg/account/testing'
 import { describe, expect, it } from 'vitest'
 
 import { t } from '../i18n/translations'
@@ -6,13 +7,6 @@ import { authSignInTransition, signInErrorMessage } from './auth-sign-in-state'
 
 const idle: AuthSignInState = { step: 'idle' }
 const pending: AuthSignInState = { step: 'pending', provider: 'google' }
-
-// Mirrors the cloud host's ENUMERATION_ORACLE
-// (src/composables/auth/authErrorEnumeration.test.ts): any wording that
-// confirms an email already has an account, in any synonym, not just the two
-// phrasings the first draft happened to ship.
-const ENUMERATION_ORACLE =
-  /\bexists?\b|already (?:registered|in use|have|exists)|wrong password|no account|not found|is registered|different (?:sign-in method|credential)/i
 
 describe('authSignInTransition', () => {
   it('starts a popup from idle and ignores a second click while pending', () => {
@@ -153,6 +147,11 @@ describe('signInErrorMessage', () => {
       'a dismissed popup',
       { code: 'auth/popup-closed-by-user', message: 'x' },
       t('auth.errors.auth/popup-closed-by-user', 'en')
+    ],
+    [
+      'a cancelled second popup',
+      { code: 'auth/cancelled-popup-request', message: 'x' },
+      t('auth.errors.auth/cancelled-popup-request', 'en')
     ],
     [
       'a blocked signup',
