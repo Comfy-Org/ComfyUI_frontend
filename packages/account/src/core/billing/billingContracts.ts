@@ -11,6 +11,18 @@
  * copy: a command matches it against its own closed set, and a host stores it
  * where it already keeps `WorkspaceApiError.code`.
  */
+import type { SessionClient } from '../session.js'
+
+/**
+ * The session members the billing core reaches for. A host's client is typed
+ * for its own user, and the identity seam is contravariant in that user, so
+ * requiring the full client would reject every host whose user is more
+ * specific than the base.
+ */
+export type BillingSession = Pick<
+  SessionClient,
+  'getSnapshot' | 'subscribe' | 'ensureFresh' | 'remint'
+>
 
 /**
  * The failure buckets a billing request can produce, extracted from what the
@@ -75,6 +87,11 @@ export interface BillingHttpResponse {
   readonly body: unknown
   /** True when a 401 could not be retried because the write was not replayable. */
   readonly authenticationRetrySkipped?: true
+  /**
+   * True when the transport holds no credential of its own to re-prove with,
+   * so a 401 is the host's session ending rather than a refusal.
+   */
+  readonly authenticationNotRenewable?: true
   /**
    * Response header reader. The capability revision a mutation reports
    * (`X-Capability-Revision`) reaches the capabilities cache through this,

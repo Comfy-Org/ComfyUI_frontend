@@ -65,7 +65,7 @@ class ManageTemplates extends ComfyDialog {
       style: { display: 'none' },
       parent: document.body,
       onchange: () => this.importAll()
-    }) as HTMLInputElement
+    })
   }
 
   override createButtons() {
@@ -209,7 +209,7 @@ class ManageTemplates extends ComfyDialog {
                     // @ts-expect-error fixme ts strict error
                     .forEach((el: HTMLElement, i) => {
                       // @ts-expect-error fixme ts strict error
-                      var prev_i = Number.parseInt(el.dataset.id)
+                      const prev_i = Number.parseInt(el.dataset.id)
 
                       if (el == this.draggedEl && prev_i != i) {
                         this.templates.splice(
@@ -227,7 +227,7 @@ class ManageTemplates extends ComfyDialog {
                   e.preventDefault()
                   if (e.currentTarget == this.draggedEl) return
 
-                  let rect = e.currentTarget.getBoundingClientRect()
+                  const rect = e.currentTarget.getBoundingClientRect()
                   if (e.clientY > rect.top + rect.height / 2) {
                     e.currentTarget.parentNode.insertBefore(
                       this.draggedEl,
@@ -268,8 +268,8 @@ class ManageTemplates extends ComfyDialog {
                       onchange: (e) => {
                         // @ts-expect-error fixme ts strict error
                         clearTimeout(this.saveVisualCue)
-                        var el = e.target
-                        var row = el.parentNode.parentNode
+                        const el = e.target
+                        const row = el.parentNode.parentNode
                         this.templates[row.dataset.id].name =
                           el.value.trim() || 'untitled'
                         this.store()
@@ -284,7 +284,7 @@ class ManageTemplates extends ComfyDialog {
                       },
                       // @ts-expect-error fixme ts strict error
                       onkeypress: (e) => {
-                        var el = e.target
+                        const el = e.target
                         // @ts-expect-error fixme ts strict error
                         clearTimeout(this.saveVisualCue)
                         el.style.transitionDuration = '0s'
@@ -325,7 +325,7 @@ class ManageTemplates extends ComfyDialog {
                       this.templates.splice(item.dataset.id * 1, 1)
                       this.store()
                       // update the rows index, setTimeout ensures that the list is updated
-                      var that = this
+                      const that = this
                       setTimeout(function () {
                         that.element
                           .querySelectorAll('.templateManagerRow')

@@ -1,7 +1,10 @@
-import { fromAny } from '@total-typescript/shoehorn'
+import { fromAny, fromPartial } from '@total-typescript/shoehorn'
 import { expect, it, vi } from 'vitest'
 
 import { reportError } from '@/platform/telemetry/reportError'
+import type { ComfyApi } from '@/scripts/api'
+import type { ComfyApp } from '@/scripts/app'
+import type { useDialogService } from '@/services/dialogService'
 
 const { extensions, getUserData, reportErrorMock } = await vi.hoisted(
   async () => {
@@ -15,36 +18,39 @@ const { extensions, getUserData, reportErrorMock } = await vi.hoisted(
   }
 )
 
-vi.mock('@/base/common/downloadUtil', () => ({ downloadBlob: vi.fn() }))
+vi.mock(import('@/base/common/downloadUtil'), () => ({ downloadBlob: vi.fn() }))
 
-vi.mock('@/platform/telemetry/reportError', () => ({
+vi.mock(import('@/platform/telemetry/reportError'), () => ({
   reportError: reportErrorMock
 }))
 
-vi.mock('@/services/dialogService', () => ({
-  useDialogService: () => ({ prompt: vi.fn() })
+vi.mock(import('@/services/dialogService'), () => ({
+  useDialogService: () =>
+    fromPartial<ReturnType<typeof useDialogService>>({ prompt: vi.fn() })
 }))
 
-vi.mock('@/utils/vintageClipboard', () => ({
+vi.mock(import('@/utils/vintageClipboard'), () => ({
   deserialiseAndCreate: vi.fn()
 }))
 
-vi.mock('@/scripts/api', () => ({
-  api: { getUserData, storeUserData: vi.fn() }
+vi.mock(import('@/scripts/api'), () => ({
+  api: fromPartial<ComfyApi>({ getUserData, storeUserData: vi.fn() })
 }))
 
-vi.mock('@/scripts/app', () => ({
-  app: {
+vi.mock(import('@/scripts/app'), () => ({
+  app: fromPartial<ComfyApp>({
     registerExtension: extensions.registerExtension,
     canvas: { selected_nodes: {} }
-  }
+  })
 }))
 
-vi.mock('@/scripts/ui', () => ({
-  ComfyDialog: class {
-    element = document.createElement('div')
-  },
-  $el: (tag: string) => document.createElement(tag)
+vi.mock(import('@/scripts/ui'), () => ({
+  ComfyDialog: fromAny(
+    class {
+      element = document.createElement('div')
+    }
+  ),
+  $el: fromAny((tag: string) => document.createElement(tag))
 }))
 
 function createDeferred<T>() {

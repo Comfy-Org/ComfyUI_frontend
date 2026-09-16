@@ -782,6 +782,16 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
     return 'workspace_id' in target ? target.workspace_id : undefined
   }
 
+  function getUnifiedSessionClient() {
+    return unifiedSessionClient
+  }
+
+  // The session client caches per mint target, so a transport minting for any
+  // other target than this store's would re-mint on every request.
+  function getUnifiedMintWorkspaceId(): string | undefined {
+    return unifiedTarget ? unifiedWorkspaceIdFor(unifiedTarget) : undefined
+  }
+
   function unifiedSelectionInvalid(code: SessionErrorCode): boolean {
     return code === 'ACCESS_DENIED' || code === 'WORKSPACE_NOT_FOUND'
   }
@@ -1180,6 +1190,8 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
     ensureWorkspaceToken,
     getWorkspaceToken,
     getUnifiedToken,
+    getUnifiedSessionClient,
+    getUnifiedMintWorkspaceId,
     clearWorkspaceContext
   }
 })
