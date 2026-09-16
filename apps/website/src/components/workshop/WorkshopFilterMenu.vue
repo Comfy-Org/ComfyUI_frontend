@@ -11,6 +11,7 @@ import { useVisualViewport } from '../../composables/useVisualViewport'
 import type { UseCase } from '../../config/models-catalogue'
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
+import { filterLabel } from '../../lib/workshop/filter-label'
 import type { FacetSheetGroup } from './FacetSheet.vue'
 import FacetSheet from './FacetSheet.vue'
 
@@ -72,10 +73,8 @@ const selectedCount = computed(() =>
   groups.value.reduce((total, group) => total + group.selected.length, 0)
 )
 
-const filterLabel = computed(() =>
-  groups.value.length === 1
-    ? groups.value[0].label
-    : t('workshop.filter.label', locale)
+const label = computed(() =>
+  filterLabel(groups.value, t('workshop.filter.label', locale))
 )
 
 function toggle(_facet: string, value: string) {
@@ -91,7 +90,7 @@ function clearAll() {
 }
 
 const sheetLabels = computed(() => ({
-  title: filterLabel.value,
+  title: label.value,
   search: t('workshop.filter.search', locale),
   noMatches: t('workshop.filter.noMatches', locale),
   applied: t('workshop.filter.applied', locale),
@@ -109,7 +108,7 @@ const sheetLabels = computed(() => ({
       type="button"
       data-testid="workshop-filter"
       :aria-expanded="open"
-      :aria-label="filterLabel"
+      :aria-label="label"
       :class="
         cn(
           'relative inline-flex h-11 cursor-pointer items-center gap-2 rounded-2xl bg-transparency-white-t4 px-4 text-sm font-medium transition-colors outline-none hover:bg-transparency-white-t8 focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow/50 max-sm:size-10 max-sm:justify-center max-sm:rounded-xl max-sm:bg-white/8 max-sm:px-0',
@@ -122,7 +121,7 @@ const sheetLabels = computed(() => ({
     >
       <ListFilter class="size-4 shrink-0" aria-hidden="true" />
       <span class="max-sm:hidden">
-        {{ filterLabel }}
+        {{ label }}
       </span>
       <span
         v-if="selectedCount"
@@ -159,7 +158,7 @@ const sheetLabels = computed(() => ({
         <div
           ref="panel"
           role="dialog"
-          :aria-label="filterLabel"
+          :aria-label="label"
           :aria-modal="isPhone || undefined"
           data-testid="workshop-filter-menu"
           :style="{
