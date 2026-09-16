@@ -1,7 +1,13 @@
 /**
  * write-data-japanese — mirrors the machine's Japanese into `src/data/*.ts`.
  *
- * Run: `pnpm i18n:write-data [--dry-run]` (no API key needed).
+ * Run: `pnpm i18n:write-data [--dry-run | --check]` (no API key needed).
+ *
+ * `--check` writes nothing and exits non-zero when a data file is behind the
+ * machine layer. CI runs it on pull requests: editing the English above a
+ * machine-written `ja` prunes the key from `content/ja.json`, but the `ja` in
+ * the file is what the page reads, so without this it kept serving the
+ * translation of a sentence that no longer exists until the next nightly run.
  *
  * Every other locale layer is read at render time from JSON. Data files cannot
  * be: pages index them directly (`event.title[locale] || event.title.en`, 98
@@ -66,6 +72,7 @@ interface Planned {
   written: string
   inserted: number
   replaced: number
+  withdrawn: number
   problems: string[]
 }
 
@@ -87,7 +94,9 @@ function planDataWrites(japanese: Record<string, string>): Planned[] {
       original,
       written,
       inserted: edits.filter((edit) => edit.length === 0).length,
-      replaced: edits.filter((edit) => edit.length > 0).length,
+      replaced: edits.filter((edit) => edit.length > 0 && edit.text !== '')
+        .length,
+      withdrawn: edits.filter((edit) => edit.text === '').length,
       problems: verifyWrite(file, original, written, edits)
     })
   }
@@ -97,6 +106,7 @@ function planDataWrites(japanese: Record<string, string>): Planned[] {
 
 function main(): void {
   const dryRun = process.argv.includes('--dry-run')
+  const check = process.argv.includes('--check')
 
   const machine = readMachineLayer()
   const ownedKeys = new Set(dataAdapter.read().map((entry) => entry.key))
@@ -121,15 +131,30 @@ function main(): void {
 
   const inserted = planned.reduce((n, entry) => n + entry.inserted, 0)
   const replaced = planned.reduce((n, entry) => n + entry.replaced, 0)
+  const withdrawn = planned.reduce((n, entry) => n + entry.withdrawn, 0)
+
+  if (check && planned.length > 0) {
+    process.stderr.write(
+      `[i18n] ${inserted} to add, ${replaced} to refresh, ${withdrawn} to ` +
+        `withdraw across ${planned.length} file(s): src/data is behind the ` +
+        'machine layer. Run `pnpm i18n:write-data` and commit the result.\n'
+    )
+    process.exit(1)
+  }
+
+  if (check) {
+    process.stdout.write('[i18n] src/data is current with the machine layer.\n')
+    return
+  }
 
   if (dryRun) {
     for (const entry of planned) {
       process.stdout.write(
-        `[i18n] ${entry.file}: +${entry.inserted} new, ~${entry.replaced} refreshed\n`
+        `[i18n] ${entry.file}: +${entry.inserted} new, ~${entry.replaced} refreshed, -${entry.withdrawn} withdrawn\n`
       )
     }
     process.stdout.write(
-      `[i18n] dry run: ${inserted} to add, ${replaced} to refresh, across ${planned.length} file(s). Nothing written.\n`
+      `[i18n] dry run: ${inserted} to add, ${replaced} to refresh, ${withdrawn} to withdraw, across ${planned.length} file(s). Nothing written.\n`
     )
     return
   }
@@ -145,7 +170,7 @@ function main(): void {
   })
 
   process.stdout.write(
-    `[i18n] ${inserted} added, ${replaced} refreshed, across ${planned.length} file(s).\n`
+    `[i18n] ${inserted} added, ${replaced} refreshed, ${withdrawn} withdrawn, across ${planned.length} file(s).\n`
   )
   process.stdout.write('[i18n] run `pnpm format` — some lines will reflow.\n')
 }

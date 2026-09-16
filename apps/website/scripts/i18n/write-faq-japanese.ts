@@ -1,7 +1,11 @@
 /**
  * write-faq-japanese — writes the machine's Japanese FAQ answers as `.mdx`.
  *
- * Run: `pnpm i18n:write-faq [--dry-run]` (no API key needed).
+ * Run: `pnpm i18n:write-faq [--dry-run | --check]` (no API key needed).
+ *
+ * `--check` writes nothing and exits non-zero when what is on disk is behind
+ * the machine layer. CI runs it on pull requests, so a translation that was
+ * withdrawn or refreshed cannot merge with its old `.mdx` still published.
  *
  * `PricingFaq.astro` already selects entries by a `<category>/<locale>/` id
  * prefix, so a Japanese answer is simply a new file in a new folder. No page or
@@ -121,9 +125,19 @@ function planFaq(
   }
 
   const contents = buildFaqDocument(english, translation)
+  // Byte-identical to what is on disk is not a write. Reporting it as one made
+  // every run claim all 26 answers, which left a dry run unable to say whether
+  // anything had actually changed.
+  const file = path.join(
+    FAQ_DIR,
+    english.category,
+    TARGET,
+    `${english.slug}.mdx`
+  )
+  if (fs.existsSync(file) && fs.readFileSync(file, 'utf8') === contents) return
   planned.push({
     slug: id,
-    file: path.join(FAQ_DIR, english.category, TARGET, `${english.slug}.mdx`),
+    file,
     contents,
     problems: verifyFaqDocument(english, contents)
   })
@@ -196,6 +210,7 @@ function commitPlannedDocuments(
 
 function main(): void {
   const dryRun = process.argv.includes('--dry-run')
+  const check = process.argv.includes('--check')
   // A lookup can miss, and the type has to say so or the guards below read as
   // dead code to a type-aware linter.
   const machine: Readonly<Partial<Record<string, string>>> = readMachineLayer()
@@ -204,7 +219,7 @@ function main(): void {
   const changes = planned.length + withdrawn.length
   if (changes === 0) {
     process.stdout.write(
-      '[i18n] no Japanese for any FAQ answer yet — run `pnpm i18n:translate` first.\n'
+      '[i18n] Japanese FAQ answers are current with the machine layer.\n'
     )
     return
   }
@@ -215,6 +230,15 @@ function main(): void {
   )
 
   reportFaqPlan({ planned, skipped, withdrawn })
+
+  if (check) {
+    process.stderr.write(
+      `[i18n] ${planned.length} answer(s) to write and ${withdrawn.length} to ` +
+        'withdraw: the Japanese FAQ on disk is behind the machine layer. ' +
+        'Run `pnpm i18n:write-faq` and commit the result.\n'
+    )
+    process.exit(1)
+  }
 
   if (dryRun) {
     process.stdout.write(

@@ -19,6 +19,9 @@ on:
     paths:
       - 'apps/website/src/i18n/**'
       - 'apps/website/src/content/**'
+      # The data files are a translation source too: their `en` feeds the
+      # content-of-record and their machine-written `ja` is what the page reads.
+      - 'apps/website/src/data/**'
       - 'apps/website/scripts/i18n/**'
       - '.github/workflows/i18n-validate-website.yaml'
 
@@ -67,3 +70,18 @@ jobs:
             echo "$drift"
             exit 1
           fi
+
+      # The dictionaries are not the only place Japanese lives. Three writers
+      # mirror the machine layer into generated content -- `ja` properties in
+      # `src/data`, and `.mdx` under `src/content/faq` and
+      # `src/content/customers` -- and the page reads that content, not the
+      # JSON. So a key pruned above by `i18n:build-source` (its English moved)
+      # or dropped by enforcement is still served until the generated copy is
+      # withdrawn. The nightly reconciles it, but a pull request can land
+      # first. Each writer's `--check` exits non-zero when disk is behind the
+      # layer, and says which script to run.
+      - name: Check the generated Japanese content is current
+        run: |
+          pnpm --filter @comfyorg/website i18n:write-data --check
+          pnpm --filter @comfyorg/website i18n:write-faq --check
+          pnpm --filter @comfyorg/website i18n:write-story --check
