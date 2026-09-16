@@ -1,3 +1,4 @@
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { FirebaseError } from 'firebase/app'
@@ -31,12 +32,6 @@ const { mockDistributionTypes } = vi.hoisted(() => ({
     isCloud: true,
     isDesktop: false,
     DISTRIBUTION: 'cloud'
-  }
-}))
-
-const { mockFeatureFlags } = vi.hoisted(() => ({
-  mockFeatureFlags: {
-    unifiedCloudAuthEnabled: false
   }
 }))
 
@@ -106,11 +101,7 @@ vi.mock<unknown>(
   import('@/platform/distribution/types'),
   () => mockDistributionTypes
 )
-vi.mock<unknown>(import('@/composables/useFeatureFlags'), () => ({
-  useFeatureFlags: () => ({
-    flags: mockFeatureFlags
-  })
-}))
+vi.mock(import('@/composables/useFeatureFlags'))
 
 // Mock apiKeyAuthStore
 
@@ -129,11 +120,10 @@ describe('useAuthStore', () => {
   } as Partial<User> as MockUser
 
   beforeEach(() => {
+    vi.mocked(useFeatureFlags().flags).unifiedCloudAuthEnabled = false
     mockResetSocket = vi.spyOn(api, 'resetSocket').mockResolvedValue(undefined)
     vi.stubGlobal('fetch', mockFetch)
     clearPreservedQuery(PRESERVED_QUERY_NAMESPACES.SHARE_AUTH)
-
-    mockFeatureFlags.unifiedCloudAuthEnabled = false
 
     // Setup dialog service mock
     vi.mocked(useDialogService, { partial: true }).mockReturnValue({
@@ -225,7 +215,7 @@ describe('useAuthStore', () => {
     })
 
     it('does not increment on a Firebase token refresh when unified_cloud_auth is ON', () => {
-      mockFeatureFlags.unifiedCloudAuthEnabled = true
+      vi.mocked(useFeatureFlags().flags).unifiedCloudAuthEnabled = true
       idTokenCallback(mockUser) // initial event (always skipped)
       idTokenCallback(mockUser) // refresh — gated off; the unified lifecycle drives rotation
       expect(store.tokenRefreshTrigger).toBe(0)
@@ -353,7 +343,7 @@ describe('useAuthStore', () => {
 
   describe('unified identity source', () => {
     it('the session client listens to the same Auth instance through the package port', async () => {
-      mockFeatureFlags.unifiedCloudAuthEnabled = true
+      vi.mocked(useFeatureFlags().flags).unifiedCloudAuthEnabled = true
       vi.mocked(firebaseAuth.onAuthStateChanged).mockClear()
 
       await useWorkspaceAuthStore().mintAtLogin()
@@ -2356,13 +2346,12 @@ describe('useAuthStore in local/desktop distribution', () => {
   } as Partial<User> as MockUser
 
   beforeEach(() => {
+    vi.mocked(useFeatureFlags().flags).unifiedCloudAuthEnabled = false
     mockDistributionTypes.isCloud = false
     mockDistributionTypes.isDesktop = false
     mockDistributionTypes.DISTRIBUTION = 'localhost'
 
     vi.stubGlobal('fetch', mockFetch)
-    mockFeatureFlags.unifiedCloudAuthEnabled = false
-
     vi.mocked(useDialogService, { partial: true }).mockReturnValue({
       showErrorDialog: vi.fn()
     })
