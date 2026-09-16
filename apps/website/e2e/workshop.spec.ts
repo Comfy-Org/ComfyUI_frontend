@@ -78,7 +78,7 @@ test.describe('Models catalog', () => {
     )
     expect(recommended).toEqual([
       '/models/byteplus--seedream-5-pro--generate-images/',
-      '/models/openai--gpt-image-2--edit-images/',
+      '/models/openai--gpt-image-2--generate-images/',
       '/models/byteplus--seedream-4--generate-images/'
     ])
     expect(await recommendedIn('generate-videos', 7)).toEqual([
@@ -515,7 +515,7 @@ test.describe('Model playground', () => {
     await page.goto('/models/byteplus--seedream-4-5--edit-images/')
     const [chooser] = await Promise.all([
       page.waitForEvent('filechooser'),
-      page.getByText(/^Select or drop /).click()
+      page.getByRole('button', { name: /^Replace seedream-4-5-input-/ }).click()
     ])
     await chooser.setFiles('e2e/assets/placeholder-1x1.webp')
     await page.getByRole('tab', { name: 'API', exact: true }).click()

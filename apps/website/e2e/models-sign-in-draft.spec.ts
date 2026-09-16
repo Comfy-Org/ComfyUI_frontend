@@ -35,7 +35,9 @@ for (const { entry, randomUUID, failRead } of [
       })
     await page.goto(path)
     const chooser = page.waitForEvent('filechooser')
-    await page.getByText(/^Select or drop /).click()
+    await page
+      .getByRole('button', { name: /^Replace seedream-4-5-input-/ })
+      .click()
     await (await chooser).setFiles('e2e/assets/placeholder-1x1.webp')
     const replacement = page.getByRole('button', {
       name: 'Replace placeholder-1x1.webp'
