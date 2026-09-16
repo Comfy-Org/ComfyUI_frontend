@@ -1,7 +1,5 @@
-import { vi } from 'vitest'
+import { onTestFinished, vi } from 'vitest'
 import { ref } from 'vue'
-
-import { resetBeforeEachTest } from '@/utils/__tests__/mockStateReset'
 
 import type { useAuthActions as realUseAuthActions } from '../useAuthActions'
 
@@ -21,8 +19,9 @@ const actions: ReturnType<typeof realUseAuthActions> = {
   accessError: ref(false)
 }
 
-resetBeforeEachTest(() => {
-  actions.accessError.value = false
+export const useAuthActions = vi.fn<typeof realUseAuthActions>(() => {
+  onTestFinished(() => {
+    actions.accessError.value = false
+  })
+  return actions
 })
-
-export const useAuthActions = vi.fn<typeof realUseAuthActions>(() => actions)

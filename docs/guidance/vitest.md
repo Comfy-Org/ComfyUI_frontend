@@ -24,9 +24,9 @@ ESLint rule enforces the Testing Library query rule. Do not disable it.
 - Use `vi.hoisted()` only for bindings needed by a hoisted mock factory.
   Keep mutable scenario state inside the test that uses it.
 - Vitest automatically resets mocks, restores spies, and unstubs globals and
-  environment variables before each test, and `vitest.setup.ts` runs every
-  reset a shared mock registered with `resetBeforeEachTest`. Do not repeat
-  that cleanup in test lifecycle hooks.
+  environment variables before each test, and shared mocks restore their own
+  reactive state with `onTestFinished`. Do not repeat that cleanup in test
+  lifecycle hooks.
 - Install `vi.stubGlobal()` and `vi.spyOn()` calls in `beforeEach` or in the
   test that needs them. Module-scope stubs and spies are removed before the
   first test runs.
@@ -57,10 +57,11 @@ ESLint rule enforces the Testing Library query rule. Do not disable it.
 `mockReset` restores `vi.fn` implementations and call history, not plain
 fields, `reactive()` objects, or `ref` values. A test that writes
 `useFeatureFlags().flags.assetsEnabled = true` leaks it into every later test
-unless the mock module registers a restore:
+unless the mock restores it. Register the restore with `onTestFinished` inside
+the mock function, so every test that touches the mock cleans up after itself:
 
 ```ts
-import { resetBeforeEachTest } from '@/utils/__tests__/mockStateReset'
+import { onTestFinished, vi } from 'vitest'
 
 function defaultFlags() {
   return { assetsEnabled: false, maxUploadSize: 0 }
@@ -71,18 +72,22 @@ const featureFlags: ReturnType<typeof realUseFeatureFlags> = {
   featureFlag: vi.fn((_, defaultValue) => computed(() => defaultValue))
 }
 
-resetBeforeEachTest(() => Object.assign(featureFlags.flags, defaultFlags()))
-
-export const useFeatureFlags = vi.fn(() => featureFlags)
+export const useFeatureFlags = vi.fn(() => {
+  onTestFinished(() => Object.assign(featureFlags.flags, defaultFlags()))
+  return featureFlags
+})
 ```
 
 Restore in place (`Object.assign(reactiveObject, defaults())`,
 `someRef.value = default`) so consumer `computed`s are notified. Do not call
 `beforeEach` inside a mock module: it binds to the file being collected, so a
 cached module (`isolate: false`) registers no hook for later files, and a
-re-import after `vi.resetModules()` registers a duplicate. Test files
-configure state in `beforeEach` or in the test, never at module scope,
-because the reset runs before the first test.
+re-import after `vi.resetModules()` registers a duplicate.
+
+`onTestFinished` throws `Hook onTestFinished() can only be called inside a
+test` when the mock is called at `describe` scope or in `beforeAll`. That is
+intended: configure mock state in `beforeEach` or in the test, where the
+cleanup can be attached to the test that dirtied it.
 
 #### Reactive fields: match the real contract
 
@@ -91,8 +96,8 @@ because the reset runs before the first test.
   write through `vi.mocked(useFeatureFlags().flags).x = true`.
 - Derived with a real mutator (`mode` set by `setMode`): derive every
   `computed` from one private source and implement the mutator against it, so
-  related fields cannot disagree. Tests call the mutator; the mock registers
-  the source for reset:
+  related fields cannot disagree. Tests call the mutator; the mock restores
+  the source:
 
   ```ts
   const mode = ref<AppMode>('graph')
@@ -103,8 +108,11 @@ because the reset runs before the first test.
       mode.value = next
     })
   }
-  resetBeforeEachTest(() => {
-    mode.value = 'graph'
+  export const useAppMode = vi.fn(() => {
+    onTestFinished(() => {
+      mode.value = 'graph'
+    })
+    return appMode
   })
   ```
 

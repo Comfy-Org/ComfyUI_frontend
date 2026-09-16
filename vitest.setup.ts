@@ -5,10 +5,8 @@ import { afterEach, beforeEach, vi } from 'vitest'
 import 'vue'
 
 import { clearRegisteredLiteGraphTypes } from '@/lib/litegraph/src/litegraphInstance'
-import { runMockStateResets } from '@/utils/__tests__/mockStateReset'
 
 beforeEach(() => {
-  runMockStateResets()
   vi.stubGlobal('__VUE_DEVTOOLS_GLOBAL_HOOK__', { emit: vi.fn() })
   setActivePinia(createTestingPinia({ stubActions: false }))
 })

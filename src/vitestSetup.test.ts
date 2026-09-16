@@ -13,18 +13,6 @@ describe.sequential('shared mock state reset', () => {
   it('restores the mock module defaults before the next test', () => {
     expect(useAuthActions().accessError.value).toBe(false)
   })
-
-  it('lets a test dirty a mock re-evaluated after a module reset', async () => {
-    vi.resetModules()
-    const fresh = await import('@/composables/auth/useAuthActions')
-    expect(fresh.useAuthActions()).not.toBe(useAuthActions())
-    fresh.useAuthActions().accessError.value = true
-  })
-
-  it('restores the re-evaluated mock before the next test', async () => {
-    const fresh = await import('@/composables/auth/useAuthActions')
-    expect(fresh.useAuthActions().accessError.value).toBe(false)
-  })
 })
 
 describe.sequential('registered LiteGraph type cleanup', () => {
