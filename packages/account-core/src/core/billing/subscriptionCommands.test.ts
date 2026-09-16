@@ -307,14 +307,43 @@ describe('createBillingCommands', () => {
       expect(h.lifecycle.getSnapshot()).toEqual([])
     })
 
-    it('PRO active: subscribe is a no-op success without a request', async () => {
-      const h = harness({ status: PRO_ACTIVE })
+    it('PRO active: subscribe issues the plan change the server has to price', async () => {
+      const h = harness({
+        status: PRO_ACTIVE,
+        script: { [POST_SUBSCRIBE]: [subscribed], [GET_OP]: settledOk }
+      })
+
+      const result = await h.commands.subscribe({ plan_slug: 'pro-yearly' })
+
+      expect(result).toMatchObject({
+        status: 'ok',
+        value: { phase: 'succeeded', operation: { id: 'op-1' } }
+      })
+      expect(h.posts()).toEqual([
+        expect.objectContaining({
+          route: SUBSCRIBE_ROUTE,
+          body: { plan_slug: 'pro-yearly', idempotency_key: 'key-1' }
+        })
+      ])
+      expect(h.invalidate).toHaveBeenCalledOnce()
+    })
+
+    it('PRO active: subscribe leaves the server to refuse a transition, code intact', async () => {
+      const h = harness({
+        status: PRO_ACTIVE,
+        script: {
+          [POST_SUBSCRIBE]: [serverError(409, 'TRANSITION_NOT_ALLOWED')]
+        }
+      })
 
       const result = await h.commands.subscribe(PLAN)
 
-      expect(result).toEqual({ status: 'ok', value: { phase: 'succeeded' } })
-      expect(h.calls).toEqual([])
-      expect(h.invalidate).not.toHaveBeenCalled()
+      expect(result).toMatchObject({
+        status: 'error',
+        serverCode: 'TRANSITION_NOT_ALLOWED',
+        httpStatus: 409
+      })
+      expect(h.posts().map((call) => call.route)).toEqual([SUBSCRIBE_ROUTE])
     })
 
     it('PRO active: resubscribe already holds and re-reads status', async () => {
@@ -382,6 +411,22 @@ describe('createBillingCommands', () => {
         value: { phase: 'succeeded', operation: { kind: 'subscription' } }
       })
       expect(h.posts().map((call) => call.route)).toEqual([RESUBSCRIBE_ROUTE])
+    })
+
+    it('PRO canceled: subscribe reports the already-held code as a success', async () => {
+      const h = harness({
+        status: PRO_CANCELED,
+        script: {
+          [POST_RESUBSCRIBE]: [
+            serverError(409, 'NOT_SCHEDULED_FOR_CANCELLATION')
+          ]
+        }
+      })
+
+      const result = await h.commands.subscribe(PLAN)
+
+      expect(result).toEqual({ status: 'ok', value: { phase: 'succeeded' } })
+      expect(h.invalidate).toHaveBeenCalledOnce()
     })
 
     it('PRO canceled: resubscribe settles a pending reactivation through the lifecycle', async () => {
@@ -531,8 +576,8 @@ describe('createBillingCommands', () => {
         status: 'ok',
         value: {
           allowed: true,
-          cost_today_cents: 1500n,
-          new_plan: { slug: 'pro-monthly', price_cents: 2000n },
+          cost_today_cents: 1500,
+          new_plan: { slug: 'pro-monthly', price_cents: 2000 },
           transition_type: 'upgrade'
         }
       })
@@ -579,7 +624,7 @@ describe('createBillingCommands', () => {
         value: expect.objectContaining({
           discounts: [
             {
-              amount_off_cents: 500n,
+              amount_off_cents: 500,
               code: 'LAUNCH',
               kind: 'promotion',
               name: 'Launch offer'

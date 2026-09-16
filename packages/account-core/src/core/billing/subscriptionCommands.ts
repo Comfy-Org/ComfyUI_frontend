@@ -7,20 +7,23 @@
  * lifecycle: it only quotes a change.
  *
  * Eligibility is decided from the server's own status fields, never from a
- * client-side notion of the plan (`docs/billing-command-eligibility.md`).
- * Server codes are matched against the closed set named here; a code outside
- * it reaches the caller only as the transport's coded failure.
+ * client-side notion of the plan, and it only ever picks the route — it never
+ * refuses (`../../../docs/billing-command-eligibility.md`). Server codes are
+ * matched against the closed set named here; a code outside it reaches the
+ * caller only as the transport's coded failure.
  */
 import {
   zCancelSubscriptionResponse2,
   zPaymentPortalResponse,
+  zPreviewPlanInfo,
   zPreviewSubscribeRequest,
   zPreviewSubscribeResponse,
   zResubscribeResponse,
   zSubscribeRequest,
-  zSubscribeResponse
+  zSubscribeResponse,
+  zSubscriptionDiscount
 } from '@comfyorg/ingest-types/zod'
-import type { z } from 'zod'
+import { z } from 'zod'
 
 import type { BillingFailure, BillingTransport } from './billingContracts.js'
 import { matchesServerCode } from './billingContracts.js'
@@ -91,6 +94,38 @@ export type PaymentPortalResult =
   | BillingFailure
 
 /**
+ * The generated schema coerces every int64 to a `bigint`, which no caller can
+ * add to a price or hand to a currency formatter — and the generated *type*
+ * for the same field is a `number`. Money on this route is bounded to cents
+ * well inside the JavaScript-safe range, so the cents are read as numbers, the
+ * way `capabilities` reads `revision`.
+ */
+const cents = z.number()
+
+const PlanInfoSchema = zPreviewPlanInfo.extend({
+  credits_cents: cents,
+  price_cents: cents,
+  seat_summary: zPreviewPlanInfo.shape.seat_summary.extend({
+    total_cost_cents: cents,
+    total_credits_cents: cents
+  })
+})
+
+const PreviewSchema = zPreviewSubscribeResponse.extend({
+  amount_due_cents: cents.optional(),
+  cost_next_period_cents: cents,
+  cost_today_cents: cents,
+  credits_next_period_cents: cents,
+  credits_today_cents: cents,
+  renewal_amount_cents: cents.optional(),
+  current_plan: PlanInfoSchema.optional(),
+  new_plan: PlanInfoSchema,
+  discounts: z
+    .array(zSubscriptionDiscount.extend({ amount_off_cents: cents.optional() }))
+    .optional()
+})
+
+/**
  * The quote the server returns for a plan change, in the generated field names.
  *
  * Its strings are product copy, not `serverCode`'s kind of machine identifier:
@@ -98,7 +133,7 @@ export type PaymentPortalResult =
  * `promotion` one carries back the very `promotionCode` the caller sent, so a
  * host renders `code` and `name` rather than matching them.
  */
-export type SubscriptionPreview = z.infer<typeof zPreviewSubscribeResponse>
+export type SubscriptionPreview = z.infer<typeof PreviewSchema>
 
 export interface PreviewSubscribeInput {
   readonly planSlug: string
@@ -370,10 +405,12 @@ export function createBillingCommands(
     const status = await statusReader.read()
     if (status.status === 'error') return status
     switch (eligibilityOf(status.value.status)) {
-      case 'active':
-        return ALREADY_HELD
       case 'canceled':
         return resubscribe()
+      // A plan change is a subscribe against a live subscription, and only the
+      // server can price one. Refusing it here on the client would deny every
+      // upgrade, downgrade and duration change the host already allows.
+      case 'active':
       case 'free':
         return settle('subscription', () => issueSubscribe(request))
     }
@@ -398,7 +435,7 @@ export function createBillingCommands(
           ? {}
           : { timeoutMs: options.timeoutMs })
       },
-      (raw) => zPreviewSubscribeResponse.safeParse(raw)
+      (raw) => PreviewSchema.safeParse(raw)
     )
     return response.status === 'error'
       ? response
