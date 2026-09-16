@@ -1,8 +1,11 @@
 import userEvent from '@testing-library/user-event'
 import { render, screen, within } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { nextTick } from 'vue'
+import { createI18n } from 'vue-i18n'
 
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import messages from '@/locales/en/main.json'
 import { app } from '@/scripts/app'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import type { NodeLocatorId } from '@/types/nodeIdentification'
@@ -53,16 +56,17 @@ function setSavedImages(
   }
 }
 
+const i18n = createI18n({
+  legacy: false,
+  locale: 'en',
+  messages: {
+    en: { batch: messages.batch, imageCompare: messages.imageCompare }
+  }
+})
+
 function renderWidget(compare: LGraphNode) {
   return render(WidgetImageCompare, {
-    global: {
-      mocks: {
-        $t: (key: string, params?: Record<string, unknown>) =>
-          key === 'batch.index' && params
-            ? `${params.current} / ${params.total}`
-            : key
-      }
-    },
+    global: { plugins: [i18n] },
     props: {
       widget: {
         name: 'compare_view',
@@ -98,7 +102,7 @@ describe('WidgetImageCompare', () => {
       renderWidget(compare)
 
       expect(screen.queryByRole('img')).not.toBeInTheDocument()
-      expect(screen.getByText('imageCompare.noImages')).toBeInTheDocument()
+      expect(screen.getByText('No images to compare')).toBeInTheDocument()
     })
   })
 
@@ -110,8 +114,8 @@ describe('WidgetImageCompare', () => {
       renderWidget(compare)
 
       const images = screen.getAllByRole('img')
-      expect(images[0]).toHaveAttribute('alt', 'imageCompare.afterAlt')
-      expect(images[1]).toHaveAttribute('alt', 'imageCompare.beforeAlt')
+      expect(images[0]).toHaveAttribute('alt', 'After image')
+      expect(images[1]).toHaveAttribute('alt', 'Before image')
     })
 
     it.for([
@@ -231,7 +235,7 @@ describe('WidgetImageCompare', () => {
       const { compare } = buildGraph()
       setSavedImages(compare, ['a1.png', 'a2.png'], ['b1.png'])
 
-      const { rerender } = renderWidget(compare)
+      renderWidget(compare)
       await user.click(
         within(screen.getByTestId('before-batch')).getByTestId('batch-next')
       )
@@ -240,7 +244,7 @@ describe('WidgetImageCompare', () => {
       ).toHaveTextContent('2 / 2')
 
       setSavedImages(compare, ['a3.png', 'a4.png'], ['b1.png'])
-      await rerender({})
+      await nextTick()
 
       expect(screen.getAllByRole('img')[1]).toHaveAttribute(
         'src',
