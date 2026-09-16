@@ -7,25 +7,32 @@ import { DEFAULT_LOCALE, LOCALE_CODES } from '../src/config/locales'
 import { t } from '../src/i18n/translations'
 import { test } from './fixtures/blockExternalMedia'
 
-const assets = readdirSync(new URL('../dist/_website/', import.meta.url))
-const dictionaries = LOCALE_CODES.map((locale) => ({
-  locale,
-  chunks: assets.filter(
-    (file) => file.startsWith(`${locale}.`) && file.endsWith('.js')
-  ),
-  marker: t('pricing.meta.description', locale)
-}))
+function readDictionaries() {
+  const assets = readdirSync(new URL('../dist/_website/', import.meta.url))
+  return LOCALE_CODES.map((locale) => ({
+    locale,
+    chunks: assets.filter(
+      (file) => file.startsWith(`${locale}.`) && file.endsWith('.js')
+    ),
+    marker: t('pricing.meta.description', locale)
+  }))
+}
+
+test('build emits one distinct dictionary per locale', () => {
+  const dictionaries = readDictionaries()
+  expect(dictionaries.map(({ chunks }) => chunks.length)).toEqual(
+    LOCALE_CODES.map(() => 1)
+  )
+  expect(new Set(dictionaries.map(({ marker }) => marker)).size).toBe(
+    LOCALE_CODES.length
+  )
+})
 
 for (const locale of LOCALE_CODES) {
   test(`${locale} downloads only its own dictionary and hydrates legal content`, async ({
     page
   }) => {
-    expect(dictionaries.map(({ chunks }) => chunks.length)).toEqual(
-      LOCALE_CODES.map(() => 1)
-    )
-    expect(new Set(dictionaries.map(({ marker }) => marker)).size).toBe(
-      LOCALE_CODES.length
-    )
+    const dictionaries = readDictionaries()
     const scripts: Response[] = []
     page.on('response', (response) => {
       if (

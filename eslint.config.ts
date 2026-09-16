@@ -751,7 +751,7 @@ export default defineConfig([
     }
   },
   {
-    files: ['apps/website/src/pages/**/*.astro'],
+    files: ['apps/website/src/**/*.astro'],
     rules: {
       'no-restricted-syntax': [
         'error',

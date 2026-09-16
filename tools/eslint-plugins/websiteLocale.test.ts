@@ -63,6 +63,20 @@ describe('website locale lint policy', () => {
   })
 
   it.for([
+    'apps/website/src/layouts/BaseLayout.astro',
+    'apps/website/src/components/pricing/PricingFaq.astro',
+    'apps/website/src/templates/events/EventPage.astro',
+    'apps/website/src/routes/models/index.astro'
+  ])('requires a locale outside pages in %s', async (file) => {
+    expect(
+      await localeMessages(
+        '---\nconst label = t("key")\n---\n<p>{label}</p>',
+        file
+      )
+    ).toHaveLength(1)
+  })
+
+  it.for([
     {
       file: 'apps/website/src/config/contentSections.ts',
       code: 'const label = t("key")',
