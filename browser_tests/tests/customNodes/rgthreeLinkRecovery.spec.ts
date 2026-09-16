@@ -123,19 +123,22 @@ test.describe(
         await comfyPage.workflow.setupWorkflowsDirectory({})
         await comfyPage.workflow.loadWorkflow('links/rgthree_corrupt_link')
 
-        const banner = comfyPage.page.locator('[msg-id="bad-links"]')
-        await expect(banner).toContainText(
-          "workflow you've loaded has corrupt linking data"
+        const corruptLinkAlert = comfyPage.page.getByText(
+          "The workflow you've loaded has corrupt linking data that may be able to be fixed.",
+          { exact: true }
         )
-        await expect(
-          banner.getByText('Fix in place', { exact: true })
-        ).toBeVisible()
+        const fixInPlace = comfyPage.page.getByRole('link', {
+          name: 'Fix in place',
+          exact: true
+        })
+        await expect(corruptLinkAlert).toBeVisible()
+        await expect(fixInPlace).toBeVisible()
 
         comfyPage.page.on('dialog', async (dialog) => {
           await dialog.accept()
         })
-        await banner.getByText('Fix in place', { exact: true }).click()
-        await expect(banner).toBeHidden()
+        await fixInPlace.click()
+        await expect(corruptLinkAlert).toBeHidden()
 
         await expect
           .poll(() =>
@@ -160,9 +163,7 @@ test.describe(
         await comfyPage.workflow.reloadAndWaitForApp()
         await openWorkflowFromSidebar(comfyPage, workflowName)
 
-        await expect(
-          comfyPage.page.locator('[msg-id="bad-links"]')
-        ).toHaveCount(0)
+        await expect(corruptLinkAlert).toHaveCount(0)
         await expect
           .poll(() =>
             comfyPage.page.evaluate(() => {
