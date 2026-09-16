@@ -5,6 +5,7 @@ import type { App } from 'vue'
 import { createApp, defineComponent } from 'vue'
 
 import { i18n } from '@/i18n'
+import { useSettingStore } from '@/platform/settings/settingStore'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
@@ -540,6 +541,48 @@ describe('useTemplateWorkflows', () => {
     vi.mocked(fetch).mockImplementation(async () => Response.json(graph))
     return graph
   }
+
+  it.for([
+    { restoreNamed: false, positional: 'kitten_cop.mp4', named: 'stale.mp4' },
+    { restoreNamed: true, positional: 'stale.mp4', named: 'kitten_cop.mp4' }
+  ])(
+    'prepares the filename selected by the widget restoration setting ($restoreNamed)',
+    async ({ restoreNamed, positional, named }) => {
+      useSettingStore().settingValues['Comfy.Workflow.NamedValuesRestore'] =
+        restoreNamed
+      const graph = addVideoTemplate()
+      graph.nodes[0].widgets_values = [positional, 'image']
+      graph.nodes[0].widgets_values_named = { file: named, upload: 'image' }
+      vi.mocked(fetch).mockImplementation(async (url) => {
+        if (String(url).startsWith('mock-internal-url'))
+          return Response.json([])
+        return String(url).endsWith('.mp4')
+          ? new Response('video')
+          : Response.json(graph)
+      })
+      vi.mocked(api.fetchApi).mockResolvedValue(
+        Response.json({ name: 'saved.mp4', type: 'input' })
+      )
+
+      expect(
+        await useTemplateWorkflows().loadWorkflowTemplate('video', 'default')
+      ).toBe(true)
+      expect(app.loadGraphData).toHaveBeenCalledWith(
+        expect.objectContaining({
+          nodes: [
+            expect.objectContaining({
+              widgets_values: ['saved.mp4', 'image'],
+              widgets_values_named: { file: 'saved.mp4', upload: 'image' }
+            })
+          ]
+        }),
+        true,
+        true,
+        expect.any(String),
+        { openSource: 'template' }
+      )
+    }
+  )
 
   it('keeps the graph closed until sample upload and file-list refresh complete', async () => {
     const graph = addVideoTemplate()
