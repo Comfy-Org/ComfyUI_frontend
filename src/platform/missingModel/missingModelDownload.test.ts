@@ -1,3 +1,4 @@
+import { useSettingStore } from '@/platform/settings/settingStore'
 import { useElectronDownloadStore } from '@/stores/electronDownloadStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -14,17 +15,9 @@ import {
   toBrowsableUrl
 } from './missingModelDownload'
 
-const {
-  fetchMock,
-  mockHuggingFaceMirror,
-  mockIsDesktop,
-  mockSidebarTabStore,
-  mockStartDownload
-} = vi.hoisted(() => ({
+const { fetchMock, mockIsDesktop, mockStartDownload } = vi.hoisted(() => ({
   fetchMock: vi.fn(),
-  mockHuggingFaceMirror: { value: '' as string | undefined },
   mockIsDesktop: { value: false },
-  mockSidebarTabStore: { activeSidebarTabId: null as string | null },
   mockStartDownload: vi.fn()
 }))
 
@@ -41,39 +34,23 @@ vi.mock(
     }) as const
 )
 
-vi.mock('@/platform/settings/settingStore', () => ({
-  useSettingStore: () => ({
-    get: (key: string) =>
-      key === HUGGINGFACE_MIRROR_SETTING_ID
-        ? mockHuggingFaceMirror.value
-        : undefined
-  })
-}))
-
-vi.mock('@/stores/electronDownloadStore', () => ({
-  useElectronDownloadStore: () => ({
-    start: mockStartDownload
-  })
-}))
-
-vi.mock('@/stores/workspace/sidebarTabStore', () => ({
-  useSidebarTabStore: () => mockSidebarTabStore
-}))
-
 beforeEach(() => {
   mockIsDesktop.value = false
+  mockStartDownload.mockReset()
+  useSettingStore().settingValues[HUGGINGFACE_MIRROR_SETTING_ID] = ''
+  useSidebarTabStore().activeSidebarTabId = null
+  vi.spyOn(useElectronDownloadStore(), 'start').mockImplementation(
+    mockStartDownload
+  )
   vi.stubGlobal('fetch', fetchMock)
   clearMetadataCache()
   delete window.__comfyDesktop2Remote
   delete window.__comfyDesktop2
-  mockHuggingFaceMirror.value = ''
 })
 
-beforeEach(() => {
-  vi.mocked(useElectronDownloadStore().start).mockImplementation(
-    mockStartDownload
-  )
-})
+function setHuggingFaceMirror(value: string | undefined) {
+  useSettingStore().settingValues[HUGGINGFACE_MIRROR_SETTING_ID] = value
+}
 
 describe('fetchModelMetadata', () => {
   beforeEach(() => {
@@ -795,42 +772,42 @@ describe('downloadModel', () => {
 
 describe('resolveHuggingFaceUrl', () => {
   it('returns the URL unchanged when no mirror is configured', () => {
-    mockHuggingFaceMirror.value = ''
+    setHuggingFaceMirror('')
     expect(
       resolveHuggingFaceUrl('https://huggingface.co/org/model/resolve/main/x')
     ).toBe('https://huggingface.co/org/model/resolve/main/x')
   })
 
   it('returns the URL unchanged when the mirror is whitespace', () => {
-    mockHuggingFaceMirror.value = '   '
+    setHuggingFaceMirror('   ')
     expect(
       resolveHuggingFaceUrl('https://huggingface.co/org/model/resolve/main/x')
     ).toBe('https://huggingface.co/org/model/resolve/main/x')
   })
 
   it('rewrites huggingface.co to the configured mirror', () => {
-    mockHuggingFaceMirror.value = 'https://hf-mirror.com'
+    setHuggingFaceMirror('https://hf-mirror.com')
     expect(
       resolveHuggingFaceUrl('https://huggingface.co/org/model/resolve/main/x')
     ).toBe('https://hf-mirror.com/org/model/resolve/main/x')
   })
 
   it('strips a trailing slash from the mirror', () => {
-    mockHuggingFaceMirror.value = 'https://hf-mirror.com/'
+    setHuggingFaceMirror('https://hf-mirror.com/')
     expect(
       resolveHuggingFaceUrl('https://huggingface.co/org/model/resolve/main/x')
     ).toBe('https://hf-mirror.com/org/model/resolve/main/x')
   })
 
   it('trims surrounding whitespace from the mirror', () => {
-    mockHuggingFaceMirror.value = '  https://hf-mirror.com  '
+    setHuggingFaceMirror('  https://hf-mirror.com  ')
     expect(
       resolveHuggingFaceUrl('https://huggingface.co/org/model/resolve/main/x')
     ).toBe('https://hf-mirror.com/org/model/resolve/main/x')
   })
 
   it('ignores a mirror without a scheme', () => {
-    mockHuggingFaceMirror.value = 'hf-mirror.com'
+    setHuggingFaceMirror('hf-mirror.com')
     const consoleWarn = vi.spyOn(console, 'warn').mockImplementation(() => {})
     expect(
       resolveHuggingFaceUrl('https://huggingface.co/org/model/resolve/main/x')
@@ -839,7 +816,7 @@ describe('resolveHuggingFaceUrl', () => {
   })
 
   it('ignores a mirror with a non-http(s) scheme', () => {
-    mockHuggingFaceMirror.value = 'javascript:alert(1)'
+    setHuggingFaceMirror('javascript:alert(1)')
     const consoleWarn = vi.spyOn(console, 'warn').mockImplementation(() => {})
     expect(
       resolveHuggingFaceUrl('https://huggingface.co/org/model/resolve/main/x')
@@ -848,7 +825,7 @@ describe('resolveHuggingFaceUrl', () => {
   })
 
   it('ignores a mirror with a query component', () => {
-    mockHuggingFaceMirror.value = 'https://hf-mirror.com?token=abc'
+    setHuggingFaceMirror('https://hf-mirror.com?token=abc')
     const consoleWarn = vi.spyOn(console, 'warn').mockImplementation(() => {})
     expect(
       resolveHuggingFaceUrl('https://huggingface.co/org/model/resolve/main/x')
@@ -857,7 +834,7 @@ describe('resolveHuggingFaceUrl', () => {
   })
 
   it('ignores a mirror with a fragment component', () => {
-    mockHuggingFaceMirror.value = 'https://hf-mirror.com#section'
+    setHuggingFaceMirror('https://hf-mirror.com#section')
     const consoleWarn = vi.spyOn(console, 'warn').mockImplementation(() => {})
     expect(
       resolveHuggingFaceUrl('https://huggingface.co/org/model/resolve/main/x')
@@ -866,14 +843,14 @@ describe('resolveHuggingFaceUrl', () => {
   })
 
   it('leaves non-HuggingFace URLs untouched', () => {
-    mockHuggingFaceMirror.value = 'https://hf-mirror.com'
+    setHuggingFaceMirror('https://hf-mirror.com')
     expect(
       resolveHuggingFaceUrl('https://civitai.com/api/download/models/12345')
     ).toBe('https://civitai.com/api/download/models/12345')
   })
 
   it('does not rewrite URLs whose path merely contains huggingface.co', () => {
-    mockHuggingFaceMirror.value = 'https://hf-mirror.com'
+    setHuggingFaceMirror('https://hf-mirror.com')
     expect(
       resolveHuggingFaceUrl(
         'https://example.com/huggingface.co/org/model/resolve/main/x'
@@ -882,7 +859,7 @@ describe('resolveHuggingFaceUrl', () => {
   })
 
   it('routes the Desktop2 download through the mirror', () => {
-    mockHuggingFaceMirror.value = 'https://hf-mirror.com'
+    setHuggingFaceMirror('https://hf-mirror.com')
     const desktopDownloadModel = vi
       .fn<
         (url: string, filename: string, directory: string) => Promise<boolean>
@@ -910,7 +887,7 @@ describe('resolveHuggingFaceUrl', () => {
   })
 
   it('routes the Electron download store through the mirror', () => {
-    mockHuggingFaceMirror.value = 'https://hf-mirror.com'
+    setHuggingFaceMirror('https://hf-mirror.com')
     mockIsDesktop.value = true
 
     downloadModel(
@@ -930,7 +907,7 @@ describe('resolveHuggingFaceUrl', () => {
   })
 
   it('routes the file-size HEAD probe through the mirror', async () => {
-    mockHuggingFaceMirror.value = 'https://hf-mirror.com'
+    setHuggingFaceMirror('https://hf-mirror.com')
     fetchMock.mockResolvedValueOnce({
       ok: true,
       headers: new Headers({ 'content-length': '42' })
