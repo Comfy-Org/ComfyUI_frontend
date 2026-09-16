@@ -81,7 +81,7 @@ test.describe(
         const inputLinks = () => packPersistence.projectInputLinks(ids.list)
         await expect.poll(inputLinks).toEqual(expectedLinks)
 
-        await comfyPage.page.mouse.click(1_200, 700)
+        await comfyPage.canvasOps.clickEmptySpace()
         await list.click('title')
         await comfyPage.keyboard.press('Alt+KeyC')
         await expect.poll(() => list.isCollapsed()).toBe(true)
