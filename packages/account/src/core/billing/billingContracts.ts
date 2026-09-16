@@ -9,8 +9,9 @@
  * owned by the billing core and localized by the host. The one server value
  * that crosses this boundary is `serverCode`, a machine identifier and never
  * copy: a command matches it against its own closed set, and a host stores it
- * where it already keeps `WorkspaceApiError.code`. Its type is opaque, so
- * those two are the only things a holder can do with it.
+ * where it already keeps `WorkspaceApiError.code`. Its brand makes it
+ * unforgeable: only the response decoder mints one, and `unwrapServerCode`
+ * names the one sanctioned widening.
  */
 import type { SessionClient } from '../session.js'
 
@@ -49,9 +50,11 @@ export type BillingErrorCode =
 declare const billingServerCodeBrand: unique symbol
 
 /**
- * An unbounded server string that is only ever a machine identifier. The
- * brand is unforgeable outside `readBillingErrorCode`, which decodes it, so
- * the only thing a holder can do is compare it with `matchesServerCode`.
+ * An unbounded server string that is only ever a machine identifier. Nothing
+ * outside `readBillingErrorCode` mints one, so a command cannot invent a code
+ * to match. The value stays a `string` underneath: `matchesServerCode` and
+ * `unwrapServerCode` name the sanctioned uses rather than making the string
+ * unreadable.
  */
 export type BillingServerCode = string & {
   readonly [billingServerCodeBrand]: true
@@ -65,9 +68,9 @@ export type BillingFailure = {
   /**
    * The coded `code` of a generated `ErrorResponse` body, when the server
    * sent one. Its `message` is dropped on purpose: a command acts on codes
-   * it names, never on server text. Compare it only through
-   * `matchesServerCode`; it becomes a `string` only through
-   * `unwrapServerCode`, at a host's error-store boundary. Never render it.
+   * it names, never on server text. Compare it through `matchesServerCode`,
+   * and widen it through `unwrapServerCode` at a host's error-store
+   * boundary. Never render it.
    */
   readonly serverCode?: BillingServerCode
 }
