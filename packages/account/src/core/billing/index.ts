@@ -13,9 +13,11 @@ export type {
   BillingHttpResponse,
   BillingRequest,
   BillingResult,
+  BillingServerCode,
   BillingSession,
   BillingTransport
 } from './billingContracts.js'
+export { matchesServerCode, unwrapServerCode } from './billingContracts.js'
 export type { SessionBillingTransportOptions } from './transport.js'
 export { createSessionBillingTransport } from './transport.js'
 export type { CredentialedBillingTransportOptions } from './credentialedTransport.js'
