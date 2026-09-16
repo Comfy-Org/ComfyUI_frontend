@@ -110,6 +110,8 @@ import { cn } from '@comfyorg/tailwind-utils'
 
 const menuItemClass = 'w-full justify-start rounded-sm px-3 py-2'
 
+const toastStore = useToastStore()
+
 defineProps<{
   invites: WorkspacePendingInvite[]
   gridCols: string
@@ -136,13 +138,17 @@ function formatDate(date: Date): string {
 
 async function copyInviteLink(invite: WorkspacePendingInvite) {
   if (!invite.token) return
-  const copied = await copyTextSilently(buildInviteLink(invite.token))
-  useToastStore().add({
-    severity: copied ? 'success' : 'error',
-    summary: copied
-      ? t('workspacePanel.inviteLinks.copiedToast')
-      : t('workspacePanel.inviteLinks.copyFailedToast'),
-    life: 3000
-  })
+  if (await copyTextSilently(buildInviteLink(invite.token))) {
+    toastStore.add({
+      severity: 'success',
+      summary: t('workspacePanel.inviteLinks.copiedToast'),
+      life: 3000
+    })
+  } else {
+    toastStore.add({
+      severity: 'error',
+      summary: t('workspacePanel.inviteLinks.copyFailedToast')
+    })
+  }
 }
 </script>

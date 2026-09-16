@@ -127,6 +127,10 @@ describe('PendingInvitesList', () => {
       value: { writeText },
       configurable: true
     })
+    Object.defineProperty(document, 'execCommand', {
+      value: vi.fn().mockReturnValue(false),
+      configurable: true
+    })
     const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
     renderComponent([createInvite({ token: 'tok-9' })])
 
@@ -151,5 +155,6 @@ describe('PendingInvitesList', () => {
       })
     ).toBeInTheDocument()
     consoleError.mockRestore()
+    Reflect.deleteProperty(document, 'execCommand')
   })
 })
