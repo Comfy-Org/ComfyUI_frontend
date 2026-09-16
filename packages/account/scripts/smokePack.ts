@@ -4,8 +4,8 @@
  * export entry from there: the consumer path where an unrewritten
  * `catalog:` specifier or an export target missing from `files` first fails.
  *
- * Workspace siblings are not on npm yet, so they are packed too and pinned
- * through npm `overrides`; drop that once they are published.
+ * ingest-types is not on npm yet, so it is packed too and pinned through npm
+ * `overrides`; drop that once it is published.
  */
 import { execFileSync } from 'node:child_process'
 import {

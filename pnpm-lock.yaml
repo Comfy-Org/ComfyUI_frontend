@@ -1168,12 +1168,6 @@ importers:
       '@comfyorg/ingest-types':
         specifier: workspace:*
         version: link:../ingest-types
-      '@comfyorg/shared-frontend-utils':
-        specifier: workspace:*
-        version: link:../shared-frontend-utils
-      '@comfyorg/tailwind-utils':
-        specifier: workspace:*
-        version: link:../tailwind-utils
       clsx:
         specifier: ^2.1.1
         version: 2.1.1
