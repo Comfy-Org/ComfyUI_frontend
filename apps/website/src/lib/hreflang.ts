@@ -9,7 +9,6 @@ import {
 } from '../config/locales'
 import type { Locale } from '../config/locales'
 import { isLocaleInvariantPath, localizeHref } from '../config/routes'
-import { isWorkshopInBuild } from '../config/workshop-release'
 
 export interface Alternate {
   hreflang: Locale | 'x-default'
@@ -52,7 +51,7 @@ export function hreflangAlternates(
   pageLocale: Locale = DEFAULT_LOCALE
 ): Alternate[] {
   const en = englishPath(pathname)
-  if (en === '/404' || isLocaleInvariantPath(en, isWorkshopInBuild())) return []
+  if (en === '/404' || isLocaleInvariantPath(en, 'publication')) return []
 
   // A page whose OWN locale is held back belongs in no cluster. Astro's i18n
   // fallback builds /ja/<route> for every route while only / is on the Japanese
@@ -101,7 +100,7 @@ export function hreflangAlternates(
 export function canonicalPath(pathname: string, pageLocale: Locale): string {
   const en = englishPath(pathname)
   const path = isPageIndexable(pageLocale, en)
-    ? localizeHref(en, pageLocale, isWorkshopInBuild())
+    ? localizeHref(en, pageLocale, 'publication')
     : en
   // The site canonicalises with a trailing slash everywhere. Returning the bare
   // path here would rewrite the canonical of all 1,291 pages.

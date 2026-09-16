@@ -4,7 +4,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { pathToFileURL } from 'node:url'
 
-import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { markdownTwins } from './markdown-twins'
 
@@ -66,6 +66,20 @@ describe('the markdown-twins build hook', () => {
     expect(await readFile(join(root, 'about.md'), 'utf8')).toContain(
       'Who we are.'
     )
+  })
+
+  it('publishes the Chinese Models showcase when the catalogue is bundled', async () => {
+    vi.stubEnv('WORKSHOP_IN_BUILD', '1')
+    const body = '探索 ComfyUI 中的生成式模型。'
+    await page('models/showcase', article('Models', 'Explore AI models.'))
+    await page('zh-CN/models', article('ComfyUI 模型', '加载中'))
+    await page('zh-CN/models/showcase', article('ComfyUI 模型', body))
+
+    await run()
+
+    const twin = await readFile(join(root, 'zh-CN/models.md'), 'utf8')
+    expect(twin).toContain(body)
+    expect(twin).toContain('canonical: https://comfy.org/zh-CN/models/')
   })
 
   it.for(['zh-CN/enterprise', 'zh-CN/enterprise/managed-builds'])(

@@ -4,6 +4,7 @@ import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 import { isExcludedFromSitemap } from '../config/indexing'
+import { LOCALE_PREFIXES } from '../config/locales'
 import { htmlToTwin, renderTwin } from '../lib/markdown-twin'
 import { markdownTwinPath } from '../lib/markdown-twin-path'
 import { writeFullText, writeSectionIndexes } from '../lib/section-index'
@@ -36,7 +37,16 @@ const SECTIONS: SectionSpec[] = [
   }
 ]
 
-const ALTERNATE_TWIN_SOURCES = new Map([['models', 'models/showcase']])
+const ALTERNATE_TWIN_SOURCES = new Map([
+  ['models', 'models/showcase'],
+  ...LOCALE_PREFIXES.map(
+    (prefix) =>
+      [
+        `${prefix.slice(1)}/models`,
+        `${prefix.slice(1)}/models/showcase`
+      ] as const
+  )
+])
 
 export interface TwinReport {
   written: string[]

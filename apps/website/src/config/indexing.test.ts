@@ -4,7 +4,7 @@ import { isExcludedFromSitemap, isNoindexPathname } from './indexing'
 describe('indexing policy', () => {
   it.for([
     { workshopInBuild: '0', path: '/zh-CN/models/', excluded: false },
-    { workshopInBuild: '1', path: '/zh-CN/models/', excluded: true },
+    { workshopInBuild: '1', path: '/zh-CN/models/', excluded: false },
     { workshopInBuild: '0', path: '/ja/models/', excluded: true },
     { workshopInBuild: '0', path: '/zh-CN/models/example/', excluded: true },
     { workshopInBuild: '1', path: '/zh-CN/models/example/', excluded: true }

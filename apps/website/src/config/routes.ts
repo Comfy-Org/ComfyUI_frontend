@@ -131,10 +131,10 @@ const LOCALE_INVARIANT_PATHS = new Set<string>([
 /** True for a locale-invariant route or anything nested under one. */
 export function isLocaleInvariantPath(
   pathname: string,
-  workshopInBuild = true
+  purpose: 'navigation' | 'publication' = 'navigation'
 ): boolean {
   if (
-    !workshopInBuild &&
+    purpose === 'publication' &&
     pathname.replace(/\/$/, '') === baseRoutes.modelsShowcase
   ) {
     return false
@@ -147,7 +147,7 @@ export function isLocaleInvariantPath(
 export function localizeHref(
   href: string,
   locale: Locale = DEFAULT_LOCALE,
-  workshopInBuild = true
+  purpose: 'navigation' | 'publication' = 'navigation'
 ): string {
   if (locale === DEFAULT_LOCALE || !href.startsWith('/')) return href
   // A query or fragment is not part of the route. `/customers#hero-video` was
@@ -156,13 +156,13 @@ export function localizeHref(
   // locale. The suffix is set aside for the checks and put back afterwards.
   const suffixAt = href.search(/[?#]/)
   if (suffixAt !== -1) {
-    return `${localizeHref(href.slice(0, suffixAt), locale, workshopInBuild)}${href.slice(suffixAt)}`
+    return `${localizeHref(href.slice(0, suffixAt), locale, purpose)}${href.slice(suffixAt)}`
   }
   // The same predicate the hreflang emitter uses. It matched whole paths here
   // and prefixes there, so a page nested under an invariant route was localized
   // by one and not the other: /zh-CN/models linked to
   // /zh-CN/p/supported-models/grok-imagine, which has never existed.
-  if (isLocaleInvariantPath(href, workshopInBuild)) return href
+  if (isLocaleInvariantPath(href, purpose)) return href
   // Only localize a path the locale actually serves. This replaces a hardcoded
   // `locale === 'ja'` branch that sent every Japanese link except the home page
   // to the English page. Deleting that outright would have been worse than the

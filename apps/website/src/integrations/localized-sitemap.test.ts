@@ -14,7 +14,7 @@ const ORIGIN = 'https://comfy.org'
  */
 describe('missingSitemapEntries', () => {
   it('lists the Chinese release showcase with its language alternates', () => {
-    vi.stubEnv('WORKSHOP_IN_BUILD', '0')
+    vi.stubEnv('WORKSHOP_IN_BUILD', '1')
 
     expect(
       missingSitemapEntries(['/zh-CN/models/'], new Set(), ORIGIN)

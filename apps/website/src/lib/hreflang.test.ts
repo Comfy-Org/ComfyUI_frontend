@@ -47,16 +47,20 @@ describe('Models publication by build', () => {
       ]
     },
     {
-      name: 'Chinese catalogue fallback',
+      name: 'Chinese showcase with catalogue bundled',
       workshopInBuild: '1',
       locale: 'zh-CN',
       path: '/zh-CN/models/',
-      canonical: '/models/',
-      alternates: []
+      canonical: '/zh-CN/models/',
+      alternates: [
+        { hreflang: 'en', href: 'https://comfy.org/models/' },
+        { hreflang: 'zh-CN', href: 'https://comfy.org/zh-CN/models/' },
+        { hreflang: 'x-default', href: 'https://comfy.org/models/' }
+      ]
     },
     {
       name: 'unpublished Japanese showcase',
-      workshopInBuild: '0',
+      workshopInBuild: '1',
       locale: 'ja',
       path: '/ja/models/',
       canonical: '/models/',
@@ -64,7 +68,7 @@ describe('Models publication by build', () => {
     },
     {
       name: 'Chinese model detail fallback',
-      workshopInBuild: '0',
+      workshopInBuild: '1',
       locale: 'zh-CN',
       path: '/zh-CN/models/example/',
       canonical: '/models/example/',

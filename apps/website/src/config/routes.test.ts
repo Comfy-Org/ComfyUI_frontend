@@ -8,8 +8,8 @@ describe('localizeHref', () => {
     { href: '/models/', localized: '/zh-CN/models/' },
     { href: '/models?source=nav', localized: '/zh-CN/models?source=nav' },
     { href: '/models/example/', localized: '/models/example/' }
-  ])('localizes $href in a showcase build', ({ href, localized }) => {
-    expect(localizeHref(href, 'zh-CN', false)).toBe(localized)
+  ])('localizes $href for publication', ({ href, localized }) => {
+    expect(localizeHref(href, 'zh-CN', 'publication')).toBe(localized)
   })
 
   it('prefixes an internal path for a non-default locale', () => {

@@ -7,11 +7,7 @@ import {
 import type { Locale } from './locales'
 import { isLocaleInvariantPath } from './routes'
 import { models } from './models'
-import {
-  isLegacyWorkshopRoute,
-  isWorkshopInBuild,
-  isWorkshopRoute
-} from './workshop-release'
+import { isLegacyWorkshopRoute, isWorkshopRoute } from './workshop-release'
 
 const PAYMENT_STATUSES = ['success', 'failed'] as const
 const PLACEHOLDER_PATHNAMES = ['/case-studies', '/videos', '/demos'] as const
@@ -121,7 +117,7 @@ export function isExcludedFromSitemap(page: string): boolean {
   // them — this is the same answer on this surface.
   if (
     locale !== DEFAULT_LOCALE &&
-    isLocaleInvariantPath(englishRoute, isWorkshopInBuild())
+    isLocaleInvariantPath(englishRoute, 'publication')
   ) {
     return true
   }
