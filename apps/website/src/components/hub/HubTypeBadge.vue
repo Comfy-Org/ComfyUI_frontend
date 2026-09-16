@@ -29,7 +29,7 @@ const labels: Record<Kind, TranslationKey> = {
 
 <template>
   <span
-    class="pointer-events-none absolute top-4 left-4 z-20 inline-flex h-7 items-center rounded-lg bg-black/45 px-2.5 text-2xs/none font-medium tracking-wide text-white uppercase backdrop-blur-md"
+    class="pointer-events-none absolute top-4 left-4 z-20 inline-flex h-7 items-center rounded-lg bg-black/45 px-2.5 text-2xs/4 font-semibold tracking-wide text-white uppercase backdrop-blur-md"
     data-testid="hub-type-badge"
     :data-kind="kind"
   >
@@ -39,7 +39,7 @@ const labels: Record<Kind, TranslationKey> = {
     <span
       class="grid grid-cols-[0fr] overflow-hidden group-focus-within:grid-cols-[1fr] group-hover:grid-cols-[1fr] motion-safe:transition-[grid-template-columns] motion-safe:duration-200 motion-safe:ease-out"
     >
-      <span class="min-w-0 overflow-hidden ps-1.5 whitespace-nowrap">
+      <span class="min-w-0 ps-1.5 whitespace-nowrap">
         {{ t(labels[kind], locale) }}
       </span>
     </span>
