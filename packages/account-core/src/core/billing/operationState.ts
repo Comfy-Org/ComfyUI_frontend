@@ -27,6 +27,12 @@ export type BillingOperationKind = 'subscription' | 'topup' | 'cancel'
  */
 export type BillingPresentation = 'embedded' | 'hosted'
 
+/**
+ * Which origin serves a hosted presentation: the provider page behind the
+ * server's `action_url`, or the hosted billing app.
+ */
+export type HostedBillingDestination = 'stripe' | 'billing_web'
+
 export type BillingDeclineReason = NonNullable<
   BillingOpStatus['decline_reason']
 >
@@ -43,6 +49,8 @@ export interface BillingOperationIdentity {
   readonly kind: BillingOperationKind
   readonly scope: BillingScope
   readonly presentation: BillingPresentation
+  /** Where the hosted page is served; absent while the presentation is embedded. */
+  readonly hostedDestination?: HostedBillingDestination
   /** When this tab began observing the operation; the poll budget counts from here. */
   readonly observedAt: number
   /** When the attempt began, before the command was issued; telemetry durations count from here. */
@@ -102,7 +110,12 @@ export type BillingOperationEvent =
   | { readonly type: 'lost' }
   | {
       readonly type: 'presentation_switched'
-      readonly presentation: BillingPresentation
+      readonly presentation: 'hosted'
+      readonly hostedDestination: HostedBillingDestination
+    }
+  | {
+      readonly type: 'presentation_switched'
+      readonly presentation: 'embedded'
     }
   | { readonly type: 'challenge_started' }
   | {
@@ -135,7 +148,10 @@ function identityOf(state: BillingOperationState): BillingOperationIdentity {
     scope: state.scope,
     presentation: state.presentation,
     observedAt: state.observedAt,
-    attemptStartedAt: state.attemptStartedAt
+    attemptStartedAt: state.attemptStartedAt,
+    ...(state.hostedDestination === undefined
+      ? {}
+      : { hostedDestination: state.hostedDestination })
   }
 }
 
@@ -297,10 +313,15 @@ export function reduceBillingOperation(
       // The challenge record survives a hosted switch so a rollback keeps the
       // client secret; a failed challenge becomes required again on return.
       return event.presentation === 'hosted'
-        ? { ...state, presentation: 'hosted' }
+        ? {
+            ...state,
+            presentation: 'hosted',
+            hostedDestination: event.hostedDestination
+          }
         : {
             ...state,
             presentation: 'embedded',
+            hostedDestination: undefined,
             ...(state.challenge?.status === 'failed'
               ? { challenge: { ...state.challenge, status: 'required' } }
               : {})
