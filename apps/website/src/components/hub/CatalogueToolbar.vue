@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Search, X } from '@lucide/vue'
+import { X } from '@lucide/vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
@@ -38,7 +38,6 @@ const {
 
 const emit = defineEmits<{ clear: [] }>()
 
-const query = defineModel<string>('query', { required: true })
 const order = defineModel<CatalogueOrder>('order', { required: true })
 const type = defineModel<TypeFilter>('type', { required: true })
 const needs = defineModel<NeedsFilter>('needs', { required: true })
@@ -87,23 +86,7 @@ const narrowedLabel = () =>
 
 <template>
   <div class="sticky top-20 z-30 mb-6 bg-page py-4 lg:top-26">
-    <!-- One field reads both kinds, so it is not a property of any one facet
-      and sits above all of them. -->
     <div class="mb-2 flex flex-wrap items-center gap-2">
-      <div class="relative min-w-0 flex-1 sm:max-w-md">
-        <Search
-          class="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-content-muted"
-          aria-hidden="true"
-        />
-        <input
-          v-model="query"
-          type="search"
-          :placeholder="t('workshop.v2.search', locale)"
-          :aria-label="t('workshop.v2.search', locale)"
-          class="h-10 w-full rounded-2xl border border-transparency-white-t8 bg-transparency-white-t4 ps-9 pe-3 text-sm text-content outline-none focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow/50"
-        />
-      </div>
-
       <label class="sr-only" for="catalogue-order">
         {{ t('workshop.v2.sort.label', locale) }}
       </label>

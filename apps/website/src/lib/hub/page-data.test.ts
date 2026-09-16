@@ -77,7 +77,7 @@ describe('relatedCardViews', () => {
     expect(view.crossing).toEqual({
       to: 'model',
       name: 'Flux',
-      href: '/models-v2/model/flux/'
+      href: '/playground/model/flux/'
     })
   })
 
@@ -85,7 +85,7 @@ describe('relatedCardViews', () => {
     const [view] = relatedCardViews([template({ isApp: true })], [], new Set())
 
     expect(view.kind).toBe('app')
-    expect(view.href).toBe('/models-v2/workflow/poster/')
+    expect(view.href).toBe('/playground/workflow/poster/')
   })
 })
 

@@ -15,7 +15,7 @@ describe('getHubWorkflowPage', () => {
   it('gives every template in the snapshot a page of its own', () => {
     expect(listHubWorkflows().length).toBeGreaterThan(600)
     expect(hubWorkflowPath('api_nano_banana_pro')).toBe(
-      '/models-v2/workflow/api_nano_banana_pro/'
+      '/playground/workflow/api_nano_banana_pro/'
     )
   })
 

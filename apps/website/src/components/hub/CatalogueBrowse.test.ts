@@ -25,7 +25,7 @@ function entry(overrides: Partial<BrowseEntry> = {}): BrowseEntry {
     ...overrides,
     card: {
       kind: overrides.kind ?? 'model',
-      href: `/models-v2/model/${key}/`,
+      href: `/playground/model/${key}/`,
       title,
       media: undefined,
       hoverMedia: undefined,
@@ -61,17 +61,73 @@ const shown = () =>
 
 // The URL is read on mount, so the first paint is one tick behind it.
 async function at(search: string) {
-  window.history.replaceState({}, '', `/models-v2/${search}`)
+  window.history.replaceState({}, '', `/playground/${search}`)
   render(CatalogueBrowse, { props: { entries: ENTRIES } })
   await nextTick()
 }
 
 describe('CatalogueBrowse', () => {
-  afterEach(() => window.history.replaceState({}, '', '/models-v2/'))
+  afterEach(() => window.history.replaceState({}, '', '/playground/'))
 
-  it('leads with capabilities and follows with what is built on them', async () => {
+  // At rest the catalogue is one shelf per thing you might want to make, not a
+  // list you have to filter down.
+  it('opens on the use cases rather than on a list', async () => {
     await at('')
+    expect(screen.getByTestId('playground-sections')).toBeTruthy()
+    expect(screen.queryByTestId('catalogue-grid')).toBeNull()
+  })
+
+  it('puts a capability before a use of it inside a shelf', async () => {
+    await at('')
+    const shelf = screen.getByTestId('shelf-generate-images')
+    expect(
+      within(shelf)
+        .getAllByTestId('catalogue-card')
+        .map((card) => card.getAttribute('data-kind'))
+    ).toEqual(['model', 'workflow'])
+  })
+
+  // Every use case has more models than the row holds, so ordering by standing
+  // alone would spend all eight slots on models and the shelf would never show
+  // what people built.
+  it('keeps room on the shelf for what was built on the models', async () => {
+    window.history.replaceState({}, '', '/playground/')
+    render(CatalogueBrowse, {
+      props: {
+        entries: [
+          ...Array.from({ length: 6 }, (_, index) =>
+            entry({ key: `model-${index}`, title: `Model ${index}` })
+          ),
+          workflow({ key: 'poster', title: 'Movie poster' }),
+          workflow({ key: 'banner', title: 'Banner' })
+        ]
+      }
+    })
+    await nextTick()
+
+    expect(
+      within(screen.getByTestId('shelf-generate-images'))
+        .getAllByTestId('catalogue-card')
+        .map((card) => card.getAttribute('data-kind'))
+    ).toEqual([
+      'model',
+      'model',
+      'model',
+      'model',
+      'workflow',
+      'workflow',
+      'model',
+      'model'
+    ])
+  })
+
+  it('opens a shelf into the list for that use case', async () => {
+    await at('')
+    await userEvent.click(screen.getByTestId('shelf-generate-images-see-all'))
     expect(shown()).toEqual(['Flux', 'Movie poster'])
+    expect(screen.getByTestId('catalogue-heading').textContent).toMatch(
+      /image/i
+    )
   })
 
   it('opens already narrowed when a model card sent the reader here', async () => {
@@ -86,7 +142,7 @@ describe('CatalogueBrowse', () => {
   })
 
   it('keeps only what this site can run', async () => {
-    await at('')
+    await at('?useCase=generate-images')
     await userEvent.selectOptions(
       screen.getByLabelText('What it needs'),
       'runsHere'
@@ -103,7 +159,7 @@ describe('CatalogueBrowse', () => {
   // A price order over things that carry no price is a ranking over nothing,
   // so the order follows the type it was chosen for or gives way.
   it('drops a price order when the reader leaves the models behind', async () => {
-    await at('')
+    await at('?useCase=generate-images')
     const order = screen.getByLabelText('Sort')
     await userEvent.selectOptions(order, 'priceAsc')
     expect(shown()).toEqual(['Flux'])

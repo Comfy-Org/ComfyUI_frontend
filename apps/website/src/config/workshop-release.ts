@@ -17,9 +17,9 @@ export function isWorkshopRoute(pattern: string): boolean {
  * not delete it, and it stays out of the sitemap because it is something to
  * click through, not somewhere to land from a search.
  */
-export function isModelsV2Route(pattern: string): boolean {
+export function isPlaygroundRoute(pattern: string): boolean {
   const pathname = pattern.replace(/\/$/, '')
-  return pathname === '/models-v2' || pathname.startsWith('/models-v2/')
+  return pathname === '/playground' || pathname.startsWith('/playground/')
 }
 
 export function isLegacyWorkshopRoute(pattern: string): boolean {

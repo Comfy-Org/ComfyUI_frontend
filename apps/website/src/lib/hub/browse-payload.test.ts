@@ -73,7 +73,7 @@ describe('browseEntries', () => {
         kind: 'model',
         action: 'run',
         price: '12 credits/Run',
-        href: '/models-v2/model/flux/'
+        href: '/playground/model/flux/'
       })
     })
   })

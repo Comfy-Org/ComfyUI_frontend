@@ -10247,8 +10247,8 @@ Enterprise`
   'workshop.hub.docs': { en: 'Read docs', 'zh-CN': '阅读文档' },
 
   'workshop.v2.meta.title': {
-    en: 'Models and workflows - Comfy',
-    'zh-CN': '模型与工作流 - Comfy'
+    en: 'Playground - Comfy',
+    'zh-CN': 'Playground - Comfy'
   },
   'workshop.v2.meta.description': {
     en: 'Every model Comfy can run, and the workflows built on them, in one catalogue.',
@@ -10256,11 +10256,11 @@ Enterprise`
       'Comfy 可运行的全部模型，以及基于它们构建的工作流，集中于一个目录。'
   },
   'workshop.v2.heading': {
-    en: 'Models and workflows',
-    'zh-CN': '模型与工作流'
+    en: 'Playground',
+    'zh-CN': 'Playground'
   },
   'workshop.v2.subtitle': {
-    en: 'Capabilities you can run here, and the workflows built on them. Every card says which it is.',
+    en: 'Pick what you want to make. Every shelf holds the models that do it and the workflows built on them.',
     'zh-CN':
       '可在此运行的能力，以及基于它们构建的工作流。每张卡片都会说明它属于哪一种。'
   },

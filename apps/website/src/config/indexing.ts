@@ -1,7 +1,7 @@
 import { models } from './models'
 import {
   isLegacyWorkshopRoute,
-  isModelsV2Route,
+  isPlaygroundRoute,
   isWorkshopRoute
 } from './workshop-release'
 
@@ -50,7 +50,7 @@ function normalizePathname(pathname: string): string {
 
 export function isNoindexPathname(pathname: string): boolean {
   const normalized = normalizePathname(pathname)
-  return NOINDEX_PATHNAMES.has(normalized) || isModelsV2Route(normalized)
+  return NOINDEX_PATHNAMES.has(normalized) || isPlaygroundRoute(normalized)
 }
 
 export function isExcludedFromSitemap(page: string): boolean {

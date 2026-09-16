@@ -26,7 +26,7 @@ export function getStaticPaths() {
 
 const { name } = Astro.params
 const page = name ? getHubWorkflowPage(name) : undefined
-if (!page) return Astro.redirect('/models-v2/')
+if (!page) return Astro.redirect('/playground/')
 
 const { template, mediaType, details, runsOn, related } = page
 
@@ -69,7 +69,7 @@ const tagClass =
 >
   <main class="mx-auto max-w-10xl px-6 py-10 lg:px-8 lg:py-16">
     <a
-      href="/models-v2/"
+      href="/playground/"
       class="mb-8 inline-flex items-center gap-2 text-sm text-content-muted transition-colors hover:text-content-bright"
     >
       {t('workshop.v2.workflow.back')}
@@ -138,7 +138,7 @@ const tagClass =
             template.tags.map((tag) => (
               <li>
                 <a
-                  href={`/models-v2/?q=${encodeURIComponent(tagDisplayName(tag))}`}
+                  href={`/playground/?q=${encodeURIComponent(tagDisplayName(tag))}`}
                   class={tagClass}
                 >
                   {tagDisplayName(tag)}

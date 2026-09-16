@@ -360,7 +360,7 @@ const faqJsonLd = {
           </div>
           <div id="llms-menu" role="menu" class="absolute top-full right-0 z-40 mt-1.5 hidden w-60 overflow-hidden rounded-xl border border-transparency-white-t20 bg-site-dropdown py-1.5 shadow-2xl">
             <a href={mdUrl} class="block px-4 py-2.5 text-xs text-primary-warm-white hover:bg-transparency-white-t4">View as Markdown</a>
-            <a href="/models-v2/llms.txt" class="block px-4 py-2.5 text-xs text-primary-warm-white hover:bg-transparency-white-t4">llms.txt — full catalog</a>
+            <a href="/playground/llms.txt" class="block px-4 py-2.5 text-xs text-primary-warm-white hover:bg-transparency-white-t4">llms.txt — full catalog</a>
             {hfUrl && (
               <Fragment>
                 <div class="my-1.5 border-t border-transparency-white-t20"></div>
@@ -755,7 +755,7 @@ const faqJsonLd = {
               <p class:list={[bodyCopy, 'mt-2']}>Related files from the registry — every one runnable on the graph.</p>
               <div class="mt-4 divide-y divide-white/10 border-t border-white/10">
                 {familyVariants.map((v) => (
-                  <a href={`/models-v2/${v.slug}`} class="flex items-center justify-between gap-4 py-3 transition hover:bg-white/3">
+                  <a href={`/playground/${v.slug}`} class="flex items-center justify-between gap-4 py-3 transition hover:bg-white/3">
                     <div class="min-w-0">
                       <p class="truncate text-sm font-semibold text-primary-warm-white">{v.displayName}</p>
                       <p class="text-2xs font-light text-primary-warm-gray">{dirLabel[v.directory] ?? v.directory} · {v.workflowCount} workflows</p>

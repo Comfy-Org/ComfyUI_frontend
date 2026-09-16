@@ -70,7 +70,7 @@ describe('cardViewFor', () => {
 
     expect(view).toMatchObject({
       kind: 'model',
-      href: '/models-v2/model/flux/',
+      href: '/playground/model/flux/',
       title: 'Flux',
       action: 'run',
       price: '12 credits',
@@ -125,7 +125,7 @@ describe('cardViewFor', () => {
 
     expect(view).toMatchObject({
       kind: 'workflow',
-      href: '/models-v2/workflow/poster/',
+      href: '/playground/workflow/poster/',
       action: 'open',
       price: undefined
     })
@@ -143,7 +143,7 @@ describe('cardViewFor', () => {
     expect(view.crossing).toEqual({
       to: 'model',
       name: 'Seedance 2.5',
-      href: '/models-v2/model/seedance25/'
+      href: '/playground/model/seedance25/'
     })
   })
 
