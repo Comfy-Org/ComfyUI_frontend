@@ -385,6 +385,51 @@ describe('Composer', () => {
     expect(emitted().stop).toHaveLength(1)
   })
 
+  it('keeps handled Escapes inside the composer and lets idle Escape bubble', async () => {
+    const parentKeydown = vi.fn<(event: KeyboardEvent) => void>()
+    const escapesSeenByParent = () =>
+      parentKeydown.mock.calls.filter(([event]) => event.key === 'Escape')
+        .length
+    const onStop = vi.fn()
+    const mentionNodes = [{ id: '2', title: 'KSampler' }]
+    const streaming = ref(true)
+    const Host = defineComponent({
+      setup: () => () =>
+        h('div', { onKeydown: parentKeydown }, [
+          h(Composer, {
+            hasWorkflowTarget: true,
+            streaming: streaming.value,
+            getMentionNodes: () => mentionNodes,
+            onStop
+          })
+        ])
+    })
+    render(Host, {
+      global: {
+        plugins: [i18n],
+        directives: { tooltip: tooltipDirectiveStub }
+      }
+    })
+    const box = screen.getByRole('textbox')
+
+    await userEvent.type(box, '@')
+    expect(screen.getByRole('menu')).toBeInTheDocument()
+    await userEvent.keyboard('{Escape}')
+    expect(screen.queryByRole('menu')).not.toBeInTheDocument()
+    expect(onStop).not.toHaveBeenCalled()
+    expect(escapesSeenByParent()).toBe(0)
+
+    await userEvent.keyboard('{Escape}')
+    expect(onStop).toHaveBeenCalledTimes(1)
+    expect(escapesSeenByParent()).toBe(0)
+
+    streaming.value = false
+    await nextTick()
+    await userEvent.keyboard('{Escape}')
+    expect(onStop).toHaveBeenCalledTimes(1)
+    expect(escapesSeenByParent()).toBe(1)
+  })
+
   describe('run permissions popover', () => {
     beforeEach(() => {
       localStorage.clear()

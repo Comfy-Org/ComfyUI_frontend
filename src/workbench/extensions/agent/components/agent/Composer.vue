@@ -125,7 +125,7 @@ const composer = useComposer({
       )
     } else emit('send', text, attachments)
   },
-  isStreaming: () => running.value,
+  isRunning: () => running.value,
   onStop: () => emit('stop')
 })
 
