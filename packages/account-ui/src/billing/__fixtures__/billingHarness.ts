@@ -15,12 +15,16 @@ import type {
 } from '@comfyorg/account/billing'
 import {
   OPERATION_POLL_TIMING,
+  PAYMENT_METHODS_ROUTE,
+  PLANS_ROUTE,
   TOPUP_ROUTE,
   createBillingCommands,
   createBillingOperationLifecycle,
   createBillingStatusReader,
   createCapabilitiesReader,
   createCreditsReader,
+  createPaymentMethodsReader,
+  createPlansReader,
   createTopupCommand,
   operationRoute,
   sessionBillingScopeSource
@@ -111,6 +115,29 @@ export function balance(amountMicros: number) {
   return { amount_micros: amountMicros, currency: 'USD' }
 }
 
+const PLAN = {
+  availability: { available: true },
+  credits_cents: 2000,
+  duration: 'MONTHLY',
+  max_seats: 1,
+  price_cents: 2000,
+  seat_summary: {
+    seat_count: 1,
+    total_cost_cents: 2000,
+    total_credits_cents: 2000
+  },
+  slug: 'creator_monthly',
+  tier: 'CREATOR'
+}
+
+const CATALOG = { current_plan_slug: 'free', plans: [PLAN] }
+
+/** The default card is second, so picking it cannot be picking the first. */
+export const SAVED_CARDS = [
+  { brand: 'visa', id: 'pm_1', is_default: false, last4: '4242', type: 'card' },
+  { brand: 'amex', id: 'pm_2', is_default: true, last4: '1881', type: 'card' }
+]
+
 export const BASELINE_MICROS = 12_500_000
 const TOPPED_UP_MICROS = 22_500_000
 
@@ -176,6 +203,8 @@ export function createBillingHarness(options: HarnessOptions = {}) {
   const capabilities = createCapabilitiesReader(readerOptions)
   const credits = createCreditsReader(readerOptions)
   const statusReader = createBillingStatusReader(readerOptions)
+  const plans = createPlansReader(readerOptions)
+  const paymentMethods = createPaymentMethodsReader(readerOptions)
   const lifecycle = createBillingOperationLifecycle({
     transport,
     scopeSource,
@@ -189,6 +218,8 @@ export function createBillingHarness(options: HarnessOptions = {}) {
     capabilities,
     credits,
     status: statusReader,
+    plans,
+    paymentMethods,
     topup: createTopupCommand({
       transport,
       lifecycle,
@@ -212,6 +243,8 @@ export function createBillingHarness(options: HarnessOptions = {}) {
     httpOk(capabilitiesBody(options.capabilities))
   )
   answer('GET', '/billing/status', httpOk(STATUS_DATA))
+  answer('GET', PLANS_ROUTE, httpOk(CATALOG))
+  answer('GET', PAYMENT_METHODS_ROUTE, httpOk(SAVED_CARDS))
   answer(
     'GET',
     '/billing/balance',

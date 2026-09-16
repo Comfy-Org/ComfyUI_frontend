@@ -16,6 +16,15 @@ export type { BillingOperationSelector } from './useBillingOperation'
 export { useBillingOperation } from './useBillingOperation'
 export type { Credits, CreditsOptions } from './useCredits'
 export { useCredits } from './useCredits'
+export type { Plans, PlansOptions } from './usePlans'
+export { usePlans } from './usePlans'
+export type { PaymentMethods, PaymentMethodsOptions } from './usePaymentMethods'
+export { usePaymentMethods } from './usePaymentMethods'
+export type {
+  SubscriptionQuote,
+  SubscriptionQuoteOptions
+} from './usePreviewSubscribe'
+export { usePreviewSubscribe } from './usePreviewSubscribe'
 export type {
   OpenUrlMode,
   PaymentAttempt,
