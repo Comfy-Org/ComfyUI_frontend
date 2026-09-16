@@ -5,8 +5,18 @@ import type { App } from 'vue'
 import { createApp, defineComponent } from 'vue'
 
 import { i18n } from '@/i18n'
+import { useToastStore } from '@/platform/updates/common/toastStore'
+import { app } from '@/scripts/app'
 import { useTemplateWorkflows as createTemplateWorkflows } from '@/platform/workflow/templates/composables/useTemplateWorkflows'
 import { useWorkflowTemplatesStore } from '@/platform/workflow/templates/repositories/workflowTemplatesStore'
+
+function deferred<T>() {
+  let resolve: (value: T | PromiseLike<T>) => void = () => {}
+  const promise = new Promise<T>((done) => {
+    resolve = done
+  })
+  return { promise, resolve }
+}
 
 async function flushPromises() {
   await new Promise((r) => setTimeout(r, 0))
@@ -78,9 +88,6 @@ vi.mock(import('@/platform/distribution/types'), () => ({
   }
 }))
 
-// Mock fetch
-global.fetch = vi.fn()
-
 type MockWorkflowTemplatesStore = ReturnType<typeof useWorkflowTemplatesStore>
 
 beforeEach(() => {
@@ -91,6 +98,10 @@ describe('useTemplateWorkflows', () => {
   let mockWorkflowTemplatesStore: MockWorkflowTemplatesStore
 
   beforeEach(() => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => Response.json({ workflow: 'data' }))
+    )
     mockIsCloud.value = true
     mockDistributionIsCloud.value = false
     mockLoadedWorkflow.value = { key: 'loaded-template' }
@@ -147,11 +158,6 @@ describe('useTemplateWorkflows', () => {
         }
       ]
     })
-
-    // Mock fetch response
-    vi.mocked(fetch).mockResolvedValue({
-      json: vi.fn().mockResolvedValue({ workflow: 'data' })
-    } as Partial<Response> as Response)
   })
 
   it('should load templates from store', async () => {
@@ -449,4 +455,78 @@ describe('useTemplateWorkflows', () => {
     // Restore console.error
     consoleSpy.mockRestore()
   })
+
+  it('keeps the busy state until graph loading completes and rejects a second load', async () => {
+    mockWorkflowTemplatesStore.isLoaded = true
+    const loaded = deferred<Awaited<ReturnType<typeof app.loadGraphData>>>()
+    vi.mocked(app.loadGraphData).mockReturnValue(loaded.promise)
+    const loader = useTemplateWorkflows()
+    const first = loader.loadWorkflowTemplate('template1', 'default')
+    await vi.waitFor(() => expect(app.loadGraphData).toHaveBeenCalledOnce())
+    expect(loader.loadingTemplateId.value).toBe('template1')
+    expect(await loader.loadWorkflowTemplate('template2', 'default')).toBe(
+      false
+    )
+    expect(app.loadGraphData).toHaveBeenCalledOnce()
+    loaded.resolve(true)
+    expect(await first).toBe(true)
+    expect(loader.loadingTemplateId.value).toBeNull()
+  })
+
+  it('does not open the workflow when the loader unmounts while fetching the template', async () => {
+    mockWorkflowTemplatesStore.isLoaded = true
+    const templateJson = deferred<Response>()
+    vi.mocked(fetch).mockImplementation(() => templateJson.promise)
+    const loader = useTemplateWorkflows()
+    const component = apps.pop()
+    if (!component) throw new Error('Missing loader component')
+    const result = loader.loadWorkflowTemplate('template1', 'default')
+    await vi.waitFor(() => expect(fetch).toHaveBeenCalledOnce())
+    component.unmount()
+    templateJson.resolve(Response.json({ workflow: 'data' }))
+    expect(await result).toBe(false)
+    expect(app.loadGraphData).not.toHaveBeenCalled()
+    expect(loader.loadingTemplateId.value).toBeNull()
+  })
+
+  it('continues graph loading when closing the selector unmounts the loader', async () => {
+    mockWorkflowTemplatesStore.isLoaded = true
+    const loader = useTemplateWorkflows()
+    const component = apps.pop()
+    if (!component) throw new Error('Missing loader component')
+    vi.mocked(useDialogStore().closeDialog).mockImplementation(() =>
+      component.unmount()
+    )
+    expect(await loader.loadWorkflowTemplate('template1', 'default')).toBe(true)
+    expect(app.loadGraphData).toHaveBeenCalledOnce()
+    expect(loader.loadingTemplateId.value).toBeNull()
+  })
+
+  it.for([false, true])(
+    'does not open an older template after a newer selection finishes (separate loader: %s)',
+    async (separateLoader) => {
+      mockWorkflowTemplatesStore.isLoaded = true
+      const templateJson = deferred<Response>()
+      vi.mocked(fetch).mockImplementation((url) =>
+        String(url).includes('template1')
+          ? templateJson.promise
+          : Promise.resolve(Response.json({ workflow: 'data' }))
+      )
+      const loader = useTemplateWorkflows()
+      const first = loader.loadWorkflowTemplate('template1', 'default')
+      await vi.waitFor(() => expect(fetch).toHaveBeenCalledOnce())
+      const nextLoader = separateLoader ? useTemplateWorkflows() : loader
+      expect(
+        await nextLoader.loadWorkflowTemplate('template2', 'default')
+      ).toBe(true)
+      templateJson.resolve(Response.json({ workflow: 'data' }))
+      expect(await first).toBe(false)
+      expect(app.loadGraphData).toHaveBeenCalledTimes(1)
+      expect(
+        useToastStore().messagesToAdd.filter(
+          (message) => message.severity === 'error'
+        )
+      ).toEqual([])
+    }
+  )
 })
