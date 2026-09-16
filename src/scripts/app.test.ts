@@ -1987,17 +1987,14 @@ describe('ComfyApp', () => {
 
       const executionErrorStore = useExecutionErrorStore()
       executionErrorStore.recordNodeErrors(failedKSamplerErrors)
-      expect(executionErrorStore.totalErrorCount).toBe(1)
 
       await switchToWorkflow(workflowService, graph, workflowB, workflowBId)
 
       expect(executionErrorStore.lastNodeErrors).toBeNull()
-      expect(executionErrorStore.totalErrorCount).toBe(0)
 
       await switchToWorkflow(workflowService, graph, workflowA, workflowAId)
 
       expect(executionErrorStore.lastNodeErrors).toEqual(failedKSamplerErrors)
-      expect(executionErrorStore.totalErrorCount).toBe(1)
     })
 
     it('gives each imported workflow its own restorable run errors', async () => {

@@ -740,29 +740,6 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
     return ids
   })
 
-  const promptErrorCount = computed(() => (lastPromptError.value ? 1 : 0))
-
-  const nodeErrorCount = computed(() => {
-    if (!lastNodeErrors.value) return 0
-    let count = 0
-    for (const nodeError of Object.values(lastNodeErrors.value)) {
-      count += nodeError.errors.length
-    }
-    return count
-  })
-
-  const executionErrorCount = computed(() => (lastExecutionError.value ? 1 : 0))
-
-  const totalErrorCount = computed(
-    () =>
-      promptErrorCount.value +
-      nodeErrorCount.value +
-      executionErrorCount.value +
-      missingNodesStore.missingNodeCount +
-      missingModelStore.missingModelCount +
-      missingMediaStore.missingMediaCount
-  )
-
   /** Graph node IDs (as strings) that have errors in the current graph scope. */
   const activeGraphErrorNodeIds = computed<Set<string>>(() => {
     const ids = new Set<string>()
@@ -895,7 +872,6 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
     hasMissingError,
     hasAnyError,
     allErrorExecutionIds,
-    totalErrorCount,
     lastExecutionErrorNodeId,
     activeGraphErrorNodeIds,
 

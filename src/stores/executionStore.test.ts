@@ -1072,7 +1072,6 @@ describe('useExecutionStore - background workflow error routing', () => {
     fireExecutionError('job-b')
 
     expect(errorStore.lastExecutionError).toBeNull()
-    expect(errorStore.totalErrorCount).toBe(0)
   })
 
   it('surfaces the background failure after switching to its workflow', () => {
@@ -1082,7 +1081,6 @@ describe('useExecutionStore - background workflow error routing', () => {
     errorStore.setActiveGraph(graphBId, workflowB.path)
 
     expect(errorStore.lastExecutionError?.prompt_id).toBe('job-b')
-    expect(errorStore.totalErrorCount).toBe(1)
   })
 
   it('still records a failure produced by the visible workflow', () => {
@@ -1090,7 +1088,6 @@ describe('useExecutionStore - background workflow error routing', () => {
     fireExecutionError('job-a')
 
     expect(errorStore.lastExecutionError?.prompt_id).toBe('job-a')
-    expect(errorStore.totalErrorCount).toBe(1)
   })
 
   it('routes background validation node errors to their own workflow', () => {
@@ -1173,7 +1170,6 @@ describe('useExecutionStore - background workflow error routing', () => {
     errorStore.setActiveGraph(graphBId, workflowB.path)
 
     expect(errorStore.lastExecutionError).toBeNull()
-    expect(errorStore.totalErrorCount).toBe(0)
   })
 
   it('clears execution-start errors only for the producing workflow', () => {
@@ -2689,7 +2685,7 @@ describe('useExecutionStore - WebSocket event handlers', () => {
       })
     })
 
-    it('keeps a subscription precondition (no node_id) out of the error panel and count', () => {
+    it('keeps a subscription precondition (no node_id) out of the error panel', () => {
       const errorStore = useExecutionErrorStore()
 
       fire('execution_error', {
@@ -2706,7 +2702,7 @@ describe('useExecutionStore - WebSocket event handlers', () => {
       expect(errorStore.lastNodeErrors).toBeNull()
     })
 
-    it('keeps a sign-in precondition out of the error panel and count', () => {
+    it('keeps a sign-in precondition out of the error panel', () => {
       const errorStore = useExecutionErrorStore()
 
       fire('execution_error', {
@@ -2722,7 +2718,7 @@ describe('useExecutionStore - WebSocket event handlers', () => {
       expect(errorStore.lastPromptError).toBeNull()
     })
 
-    it('keeps a runtime credit precondition at a node out of the error panel and count', () => {
+    it('keeps a runtime credit precondition at a node out of the error panel', () => {
       const errorStore = useExecutionErrorStore()
 
       fire('execution_error', {

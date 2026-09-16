@@ -1528,6 +1528,60 @@ describe('useErrorGroups', () => {
       ).toHaveLength(1)
     })
 
+    it('absorbs a matching run error when pending media is confirmed, preserving sibling errors', async () => {
+      const { store, groups } = createErrorGroups()
+      const candidate: MissingMediaCandidate = {
+        ...makeMedia('portrait.png', { nodeId: '1', widgetName: 'image' }),
+        isMissing: undefined
+      }
+      store.surfaceMissingMedia([candidate])
+      store.recordNodeErrors({
+        '1': nodeError(
+          [
+            validationError(
+              'custom_validation_failed',
+              'image',
+              { received_value: 'portrait.png' },
+              'Invalid image file'
+            )
+          ],
+          'LoadImage'
+        ),
+        '2': nodeError(
+          [
+            validationError(
+              'custom_validation_failed',
+              'image',
+              { received_value: 'portrait.png' },
+              'Invalid image file'
+            )
+          ],
+          'LoadImage'
+        )
+      })
+      await nextTick()
+      expect(
+        groups.allErrorGroups.value.filter(
+          (group) => group.type === 'execution'
+        )
+      ).toMatchObject([{ count: 2 }])
+
+      candidate.isMissing = true
+      store.surfaceMissingMedia([candidate])
+      await nextTick()
+
+      expect(
+        groups.allErrorGroups.value.filter(
+          (group) => group.type === 'execution'
+        )
+      ).toMatchObject([{ count: 1, cards: [{ id: 'node-2' }] }])
+      expect(
+        groups.allErrorGroups.value.find(
+          (group) => group.type === 'missing_media'
+        )
+      ).toMatchObject({ blockedLastRun: true })
+    })
+
     it('marks a missing media group when its run error is absorbed', async () => {
       const { store, groups } = createErrorGroups()
       store.surfaceMissingMedia([

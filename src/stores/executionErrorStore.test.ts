@@ -1116,13 +1116,11 @@ describe('setActiveGraph', () => {
     expect(store.lastNodeErrors).toBeNull()
     expect(store.lastExecutionError).toBeNull()
     expect(store.lastPromptError).toBeNull()
-    expect(store.totalErrorCount).toBe(0)
 
     store.setActiveGraph(graphAId)
     expect(store.lastNodeErrors).toEqual(nodeErrors)
     expect(store.lastExecutionError).toEqual(executionError)
     expect(store.lastPromptError).toEqual(promptError)
-    expect(store.totalErrorCount).toBe(3)
   })
 
   it('keeps workflows with the same graph id separate', () => {
