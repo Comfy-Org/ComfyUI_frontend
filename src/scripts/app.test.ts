@@ -10,6 +10,7 @@ import { fromPartial } from '@total-typescript/shoehorn'
 import { ref } from 'vue'
 import { useLitegraphService } from '@/services/litegraphService'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
+import { transformInputSpecV1ToV2 } from '@/schemas/nodeDef/migration'
 
 vi.mock(import('@vueuse/router'), () => ({ useRouteHash: () => ref('') }))
 
@@ -1381,19 +1382,17 @@ describe('ComfyApp', () => {
 
   describe('workflow lifecycle', () => {
     it.for([
-      ['1', '3'],
-      ['99', '1', '3', '5', '7', '9']
+      { indices: ['1', '3'], nested: false },
+      { indices: ['99', '1', '3', '5', '7', '9'], nested: false },
+      { indices: ['1', '3'], nested: true }
     ])(
       'restores submitted DynamicGroup rows in encounter order: %j',
-      async (indices) => {
+      async ({ indices, nested }) => {
         const graph = new LGraph()
         Reflect.set(app, 'rootGraphInternal', graph)
         Reflect.set(singletonApp, 'rootGraphInternal', graph)
         const nodeType = 'test/ApiDynamicGroup'
         const group = {
-          name: 'loras',
-          type: 'COMFY_DYNAMICGROUP_V3',
-          isOptional: false,
           min: 0,
           max: 5,
           template: {
@@ -1403,12 +1402,38 @@ describe('ComfyApp', () => {
             }
           }
         } as const
+        const input: NonNullable<ComfyNodeDef['input']> = {
+          required: { loras: ['COMFY_DYNAMICGROUP_V3', group] }
+        }
+        const definitionInput: NonNullable<ComfyNodeDef['input']> = nested
+          ? {
+              required: {
+                mode: [
+                  'COMFY_DYNAMICCOMBO_V3',
+                  {
+                    options: [
+                      { key: 'off', inputs: {} },
+                      { key: 'on', inputs: input }
+                    ]
+                  }
+                ]
+              }
+            }
+          : input
+        const prefix = nested ? 'mode.loras' : 'loras'
         class ApiDynamicGroup extends LGraphNode {
           constructor() {
             super('API DynamicGroup')
             this.comfyClass = nodeType
             this.serialize_widgets = true
-            useLitegraphService().addNodeInput(this, group)
+            for (const [name, spec] of Object.entries(
+              definitionInput.required ?? {}
+            )) {
+              useLitegraphService().addNodeInput(
+                this,
+                transformInputSpecV1ToV2(spec, { name, isOptional: false })
+              )
+            }
           }
         }
         LiteGraph.registerNodeType(nodeType, ApiDynamicGroup)
@@ -1431,12 +1456,12 @@ describe('ComfyApp', () => {
             output_node: false,
             deprecated: false,
             experimental: false,
-            input: { required: { loras: ['COMFY_DYNAMICGROUP_V3', group] } }
+            input: definitionInput
           }
         ])
         const inputs = Object.fromEntries(
           indices.map((index, position) => [
-            `loras.${index}.strength`,
+            `${prefix}.${index}.strength`,
             position + 0.5
           ])
         )
@@ -1447,8 +1472,9 @@ describe('ComfyApp', () => {
                 class_type: nodeType,
                 inputs: {
                   ...inputs,
-                  [`loras.${indices.at(-1)}.strength`]: ['2', 0],
-                  'loras.10': 'malformed'
+                  [`${prefix}.${indices.at(-1)}.strength`]: ['2', 0],
+                  [`${prefix}.10`]: 'malformed',
+                  ...(nested ? { mode: 'on' } : {})
                 },
                 _meta: { title: nodeType }
               },
@@ -1470,7 +1496,7 @@ describe('ComfyApp', () => {
               .map((w) => [w.name, w.value])
           ).toEqual(
             indices.map((_, position) => [
-              `loras.${position}.strength`,
+              `${prefix}.${position}.strength`,
               position === indices.length - 1 ? 1 : position + 0.5
             ])
           )
@@ -1480,14 +1506,11 @@ describe('ComfyApp', () => {
               .map((w) => w.value)
           ).toEqual(indices.map(() => ''))
           const slot = node?.findInputSlot(
-            `loras.${indices.length - 1}.strength`
+            `${prefix}.${indices.length - 1}.strength`
           )
           const link = slot === undefined ? undefined : node?.getInputLink(slot)
           expect(link?.origin_id).toBe(toNodeId(2))
           expect(link?.origin_slot).toBe(0)
-          expect(Object.keys(inputs)).toEqual(
-            indices.map((index) => `loras.${index}.strength`)
-          )
         } finally {
           LiteGraph.unregisterNodeType(nodeType)
           LiteGraph.unregisterNodeType(sourceType)
