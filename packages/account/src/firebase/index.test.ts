@@ -7,15 +7,26 @@ import type { FirebaseIdentityConfig } from './index.js'
 const sdk = vi.hoisted(() => {
   const unsubscribe = vi.fn()
   const listeners: Array<(user: unknown) => void> = []
+  const tokenListeners: Array<(user: unknown) => void> = []
+  const resolvedAuth: { currentUser: unknown } = { currentUser: null }
   return {
     unsubscribe,
     listeners,
+    tokenListeners,
+    resolvedAuth,
+    browserPopupRedirectResolver: { resolver: 'popup' },
+    getAuth: vi.fn(() => resolvedAuth),
+    initializeAuth: vi.fn(() => resolvedAuth),
     onAuthStateChanged: vi.fn(
       (_auth: unknown, next: (user: unknown) => void) => {
         listeners.push(next)
         return unsubscribe
       }
     ),
+    onIdTokenChanged: vi.fn((_auth: unknown, next: (user: unknown) => void) => {
+      tokenListeners.push(next)
+      return unsubscribe
+    }),
     signInWithEmailAndPassword: vi.fn(() => new Promise(() => {})),
     createUserWithEmailAndPassword: vi.fn(() => new Promise(() => {})),
     sendPasswordResetEmail: vi.fn(() => new Promise(() => {})),
@@ -26,11 +37,12 @@ const sdk = vi.hoisted(() => {
 })
 
 const app = vi.hoisted(() => ({
-  initializeApp: vi.fn(() => ({ name: 'test-app' }))
+  existing: [] as Array<{ name: string }>,
+  initializeApp: vi.fn((_options: unknown, name: string) => ({ name }))
 }))
 
 vi.mock<unknown>(import('firebase/app'), () => ({
-  getApps: () => [],
+  getApps: () => app.existing,
   initializeApp: app.initializeApp
 }))
 
@@ -43,9 +55,11 @@ vi.mock<unknown>(import('firebase/auth'), () => ({
     addScope() {}
     setCustomParameters() {}
   },
-  getAuth: () => ({}),
-  initializeAuth: () => ({}),
+  browserPopupRedirectResolver: sdk.browserPopupRedirectResolver,
+  getAuth: sdk.getAuth,
+  initializeAuth: sdk.initializeAuth,
   onAuthStateChanged: sdk.onAuthStateChanged,
+  onIdTokenChanged: sdk.onIdTokenChanged,
   signInWithPopup: sdk.signInWithPopup,
   signInWithEmailAndPassword: sdk.signInWithEmailAndPassword,
   createUserWithEmailAndPassword: sdk.createUserWithEmailAndPassword,
@@ -89,8 +103,71 @@ function deferred<T>(): Deferred<T> {
 
 beforeEach(() => {
   sdk.listeners.length = 0
+  sdk.tokenListeners.length = 0
+  sdk.resolvedAuth.currentUser = null
+  app.existing.length = 0
   app.initializeApp.mockClear()
   vi.useFakeTimers()
+})
+
+describe('createFirebaseIdentity over package-initialized Firebase', () => {
+  it('initializes the app under the explicit default name, so a persisted session keyed by [DEFAULT] is restored', async () => {
+    const { createFirebaseIdentity } = await import('./index.js')
+    const identity = createFirebaseIdentity({
+      options: { apiKey: 'test' },
+      appName: '[DEFAULT]'
+    })
+
+    identity.onUserChanged(() => {})
+
+    expect(app.initializeApp).toHaveBeenCalledWith(
+      { apiKey: 'test' },
+      '[DEFAULT]'
+    )
+  })
+
+  it('reuses an app another entry already created under that name', async () => {
+    app.existing.push({ name: '[DEFAULT]' })
+    const { createFirebaseIdentity } = await import('./index.js')
+    const identity = createFirebaseIdentity({
+      options: { apiKey: 'test' },
+      appName: '[DEFAULT]'
+    })
+
+    identity.onUserChanged(() => {})
+
+    expect(app.initializeApp).not.toHaveBeenCalled()
+    expect(sdk.getAuth).toHaveBeenCalledWith({ name: '[DEFAULT]' })
+  })
+
+  it('initializes Auth with the host persistence and the popup resolver, since initializeAuth wires none and popup sign-in would throw auth/argument-error', async () => {
+    const persistence = { type: 'LOCAL' as const }
+    const { createFirebaseIdentity } = await import('./index.js')
+    const identity = createFirebaseIdentity({
+      options: { apiKey: 'test' },
+      persistence
+    })
+
+    identity.onUserChanged(() => {})
+
+    expect(sdk.initializeAuth).toHaveBeenCalledWith(
+      { name: 'comfy-account' },
+      {
+        persistence,
+        popupRedirectResolver: sdk.browserPopupRedirectResolver
+      }
+    )
+    expect(sdk.getAuth).not.toHaveBeenCalled()
+  })
+
+  it('stays on getAuth when the host chooses no persistence', async () => {
+    const identity = await makeIdentity()
+
+    identity.onUserChanged(() => {})
+
+    expect(sdk.getAuth).toHaveBeenCalledWith({ name: 'comfy-account' })
+    expect(sdk.initializeAuth).not.toHaveBeenCalled()
+  })
 })
 
 describe('createFirebaseIdentity over a host-owned Auth', () => {
@@ -340,5 +417,36 @@ describe('identity listener', () => {
     unsubscribe()
 
     expect(sdk.unsubscribe).toHaveBeenCalledOnce()
+  })
+
+  it('delivers every ID token change, refreshes for the same user included', async () => {
+    const identity = await makeIdentity()
+    const seen: Array<User | null> = []
+    identity.onTokenChanged((user) => seen.push(user))
+
+    sdk.tokenListeners.forEach((next) => next(testUser))
+    sdk.tokenListeners.forEach((next) => next(testUser))
+    sdk.tokenListeners.forEach((next) => next(null))
+
+    expect(seen).toEqual([testUser, testUser, null])
+  })
+
+  it('detaches the token listener on unsubscribe', async () => {
+    const identity = await makeIdentity()
+    const unsubscribe = identity.onTokenChanged(() => undefined)
+
+    unsubscribe()
+
+    expect(sdk.unsubscribe).toHaveBeenCalledOnce()
+  })
+
+  it.for([
+    ['nobody signed in', null],
+    ['a signed-in user', testUser]
+  ] as const)('reads %s from the Auth instance', async ([, user]) => {
+    sdk.resolvedAuth.currentUser = user
+    const identity = await makeIdentity()
+
+    expect(identity.currentUser()).toBe(user)
   })
 })

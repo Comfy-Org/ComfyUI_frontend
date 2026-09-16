@@ -18,10 +18,12 @@ import type { Auth, Persistence, User, UserCredential } from 'firebase/auth'
 import {
   GithubAuthProvider,
   GoogleAuthProvider,
+  browserPopupRedirectResolver,
   createUserWithEmailAndPassword,
   getAuth,
   initializeAuth,
   onAuthStateChanged,
+  onIdTokenChanged,
   sendPasswordResetEmail,
   signInWithEmailAndPassword,
   signInWithPopup,
@@ -44,8 +46,8 @@ export interface FirebaseIdentityAppConfig {
 }
 
 /**
- * A host that already holds an `Auth` (the cloud app's vuefire instance)
- * binds the entry to it: no second app, no second persistence store.
+ * A host that already holds an `Auth` binds the entry to it: no second app,
+ * no second persistence store.
  */
 export interface FirebaseIdentityAuthConfig {
   readonly auth: Auth
@@ -64,6 +66,9 @@ export interface FirebaseIdentity extends AccountIdentity<User> {
    * every change. This is the identity the session core binds to.
    */
   onUserChanged: (callback: (user: User | null) => void) => () => void
+  /** Fires on every ID token change, refreshes included. */
+  onTokenChanged: (callback: (user: User | null) => void) => () => void
+  currentUser: () => User | null
   signInWithGoogle: () => Promise<UserCredential>
   signInWithGitHub: () => Promise<UserCredential>
   signInWithEmail: (email: string, password: string) => Promise<UserCredential>
@@ -105,9 +110,11 @@ function resolveUnknownEmailAsSent(error: unknown): void {
 
 /**
  * Resolved once per identity. A named app this entry creates gets the
- * host's persistence through `initializeAuth`; an app another entry already
- * created keeps the persistence its creator chose, since Firebase allows one
- * Auth per app.
+ * host's persistence through `initializeAuth`, which unlike `getAuth` wires
+ * no popup resolver of its own, so the popup sign-ins would throw
+ * `auth/argument-error` without one; an app another entry already created
+ * keeps the persistence its creator chose, since Firebase allows one Auth
+ * per app.
  */
 function authResolver(config: FirebaseIdentityConfig): () => Auth {
   if (config.auth) {
@@ -125,7 +132,10 @@ function authResolver(config: FirebaseIdentityConfig): () => Auth {
     }
     const app = initializeApp(config.options, appName)
     resolved = config.persistence
-      ? initializeAuth(app, { persistence: config.persistence })
+      ? initializeAuth(app, {
+          persistence: config.persistence,
+          popupRedirectResolver: browserPopupRedirectResolver
+        })
       : getAuth(app)
     return resolved
   }
@@ -139,6 +149,8 @@ export function createFirebaseIdentity(
   return {
     [identityBrand]: true,
     onUserChanged: (callback) => onAuthStateChanged(auth(), callback),
+    onTokenChanged: (callback) => onIdTokenChanged(auth(), callback),
+    currentUser: () => auth().currentUser,
     signInWithGoogle: () => signInWithPopup(auth(), googleProvider()),
     signInWithGitHub: () => signInWithPopup(auth(), githubProvider()),
     signInWithEmail: (email, password) =>
