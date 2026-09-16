@@ -1174,6 +1174,12 @@ importers:
       '@comfyorg/tailwind-utils':
         specifier: workspace:*
         version: link:../tailwind-utils
+      clsx:
+        specifier: ^2.1.1
+        version: 2.1.1
+      tailwind-merge:
+        specifier: ^2.2.0
+        version: 2.6.1
       zod:
         specifier: 'catalog:'
         version: 3.25.76

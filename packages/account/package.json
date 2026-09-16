@@ -51,6 +51,8 @@
     "@comfyorg/ingest-types": "workspace:*",
     "@comfyorg/shared-frontend-utils": "workspace:*",
     "@comfyorg/tailwind-utils": "workspace:*",
+    "clsx": "^2.1.1",
+    "tailwind-merge": "^2.2.0",
     "zod": "catalog:"
   },
   "devDependencies": {
