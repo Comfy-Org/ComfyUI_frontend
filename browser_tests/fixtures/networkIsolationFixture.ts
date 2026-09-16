@@ -57,7 +57,7 @@ function guardApiRequests(
   }
 }
 
-async function installContextNetworkIsolation(
+export async function installContextNetworkIsolation(
   context: BrowserContext,
   networkPolicy: NetworkPolicy,
   baseURL?: string,

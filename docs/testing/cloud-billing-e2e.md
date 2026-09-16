@@ -82,3 +82,13 @@ Traces start after permanent-account sign-in and contain authenticated network
 traffic. Keep reports private. Disposable accounts require no reusable credentials.
 Completed-payment assertions verify saved cards through the real hosted billing
 portal, because Staging disables the embedded-checkout saved-card API.
+
+## Unpaid checkout recovery
+
+PR #17870 depends only on #17481. Run `--project=cloud-live` for smoke,
+abandon/retry, reload, and fresh-sign-in recovery. The recovery helper and fresh
+context fixture live in this PR. Each recovery must reuse the pending operation.
+Use a dedicated personal no-card account with no paid plan. Sandbox tests require
+a needs_payment_method response; production also requires a successful empty
+saved-card preflight. No card is submitted. Fresh sessions get their own private
+post-login trace.
