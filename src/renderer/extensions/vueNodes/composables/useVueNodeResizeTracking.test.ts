@@ -1,16 +1,18 @@
 import type * as VueUse from '@vueuse/core'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { fromPartial } from '@total-typescript/shoehorn'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { defineComponent, h, nextTick, ref } from 'vue'
+import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
+import { defineComponent, h, nextTick, ref, watch } from 'vue'
 import type { ComfyApp } from '@/scripts/app'
 
 import { render, screen } from '@testing-library/vue'
 
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
+import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import type { NodeLayout } from '@/renderer/core/layout/types'
 import { toNodeId } from '@/types/nodeId'
 import type { NodeId } from '@/types/nodeId'
+import { slotId } from '@/types/slotId'
 import type { UUID } from '@/utils/uuid'
 
 type ResizeEntryLike = Pick<
@@ -96,23 +98,22 @@ vi.mock<unknown>(
   })
 )
 
-vi.mock<unknown>(import('@/renderer/core/layout/store/layoutStore'), () => ({
-  layoutStore: {
-    reportContentSize: testState.reportContentSize,
-    contentSizeOf: (rootGraphId: UUID, nodeId: NodeId) =>
-      testState.contentSizes.get(`${rootGraphId}:${nodeId}`),
-    getNodeLayout: (_rootGraphId: UUID, rawNodeId: NodeId): NodeLayout | null =>
-      testState.nodeLayouts.get(rawNodeId) ?? null
+vi.mock(
+  import('@/renderer/core/layout/slots/syncSlotOffsets'),
+  async (importOriginal) => {
+    const { syncSlotOffsets } = await importOriginal()
+    return {
+      syncSlotOffsets: (
+        element: HTMLElement,
+        rootGraphId: UUID,
+        nodeId: NodeId
+      ) => {
+        testState.syncSlotOffsets(nodeId)
+        syncSlotOffsets(element, rootGraphId, nodeId)
+      }
+    }
   }
-}))
-
-vi.mock(import('@/renderer/core/layout/slots/syncSlotOffsets'), () => ({
-  syncSlotOffsets: (
-    _element: HTMLElement,
-    _rootGraphId: UUID,
-    nodeId: NodeId
-  ) => testState.syncSlotOffsets(nodeId)
-}))
+)
 
 import { useVueElementTracking } from './useVueNodeResizeTracking'
 
@@ -193,6 +194,17 @@ function seedNodeLayout(options: {
 
 beforeEach(() => {
   useCanvasStore().canvas = fromPartial({ setDirty: testState.setDirty })
+  layoutStore.resetForTests()
+  vi.spyOn(layoutStore, 'reportContentSize').mockImplementation(
+    testState.reportContentSize
+  )
+  vi.spyOn(layoutStore, 'contentSizeOf').mockImplementation(
+    (rootGraphId, nodeId) =>
+      testState.contentSizes.get(`${rootGraphId}:${nodeId}`)
+  )
+  vi.spyOn(layoutStore, 'getNodeLayout').mockImplementation(
+    (_rootGraphId, nodeId) => testState.nodeLayouts.get(nodeId) ?? null
+  )
 })
 
 describe('useVueNodeResizeTracking', () => {
@@ -566,5 +578,80 @@ describe('useVueNodeResizeTracking', () => {
 
     expect(testState.syncSlotOffsets).toHaveBeenCalledWith(nodeId)
     expect(testState.reportContentSize).not.toHaveBeenCalled()
+  })
+
+  it('tracks reordered and replacement rows without accepting stale geometry', async () => {
+    const nodeId = toNodeId('grid-node')
+    const rows = ref([0, 1])
+    const Grid = defineComponent({
+      setup() {
+        const { reconcile } = useVueElementTracking(nodeId, 'widgets-grid')
+        watch(rows, reconcile, { flush: 'post' })
+        return () =>
+          h(
+            'div',
+            { 'data-testid': 'tracked-grid' },
+            rows.value.map((index) =>
+              h('div', {
+                key: index,
+                'data-testid': 'tracked-row',
+                'data-slot-key': slotId(nodeId, 'input', index)
+              })
+            )
+          )
+      }
+    })
+    const { container, unmount } = render(Grid)
+    assert.instanceOf(container, HTMLElement)
+    container.dataset.nodeId = nodeId
+    Object.defineProperty(container, 'offsetWidth', { value: 200 })
+    container.getBoundingClientRect = () => new DOMRect(0, 0, 200, 300)
+    const grid = screen.getByTestId('tracked-grid')
+    const originalRows = screen.getAllByTestId('tracked-row')
+    const stored = (index: number) =>
+      layoutStore.getSlotOffset(
+        ROOT_GRAPH_ID,
+        nodeId,
+        index,
+        'input',
+        'expanded'
+      )
+    function resize(...elements: Element[]) {
+      resizeObserverState.callback?.(
+        elements.map((target) => fromPartial<ResizeObserverEntry>({ target })),
+        createObserverMock()
+      )
+    }
+    function measureRows() {
+      const elements = screen.getAllByTestId('tracked-row')
+      elements.forEach((element, index) => {
+        element.getBoundingClientRect = () =>
+          new DOMRect(0, 100 + index * 40, 8, 8)
+      })
+      resize(...elements)
+    }
+
+    measureRows()
+    expect(stored(0)).toEqual({ x: 0, y: 74 })
+    expect(stored(1)).toEqual({ x: 0, y: 114 })
+
+    rows.value = [1, 0]
+    await nextTick()
+    measureRows()
+    expect(stored(1)).toEqual({ x: 0, y: 74 })
+    expect(stored(0)).toEqual({ x: 0, y: 114 })
+
+    rows.value = [2]
+    await nextTick()
+    measureRows()
+    expect(stored(2)).toEqual({ x: 0, y: 74 })
+    expect(stored(0)).toBeNull()
+    const replacement = screen.getByTestId('tracked-row')
+    resize(...originalRows)
+    expect(stored(2)).toEqual({ x: 0, y: 74 })
+
+    unmount()
+    resize(grid, replacement)
+    expect(stored(2)).toEqual({ x: 0, y: 74 })
   })
 })

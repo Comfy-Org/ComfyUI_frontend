@@ -91,226 +91,97 @@ function widget(name: string, type: string, index: number): WidgetGridItem {
   }
 }
 
+function renderGrid(processedWidgets: WidgetGridItem[], syncLayout = true) {
+  return render(WidgetGrid, {
+    props: {
+      nodeId: toNodeId(1),
+      nodeType: 'TestNode',
+      syncLayout,
+      processedWidgets
+    },
+    global: {
+      plugins: [
+        createI18n({
+          legacy: false,
+          locale: 'en',
+          messages: { en: { g: { inputTooltip: 'Input: {name}' } } }
+        })
+      ],
+      directives: { tooltip: {} },
+      stubs: { AppInput: AppInputStub }
+    }
+  })
+}
+
+function renderLayoutGrid(syncLayout = true) {
+  const { container, rerender } = renderGrid(
+    [widget('width', 'number', 0)],
+    syncLayout
+  )
+  assert.instanceOf(container, HTMLElement)
+  container.dataset.nodeId = '1'
+  Object.defineProperty(container, 'offsetWidth', { value: 200 })
+  container.getBoundingClientRect = () => new DOMRect(0, 0, 200, 300)
+  const grid = screen.getByTestId('node-widgets')
+  grid.getBoundingClientRect = () => new DOMRect(0, 30, 200, 270)
+  const socket = screen.getByTestId('slot-dot')
+  socket.getBoundingClientRect = () => new DOMRect(0, 140, 8, 8)
+  const stored = () =>
+    layoutStore.getSlotOffset(
+      'widget-grid-graph',
+      toNodeId(1),
+      0,
+      'input',
+      'expanded'
+    )
+  return { grid, rerender, stored }
+}
+
 describe('WidgetGrid', () => {
   beforeEach(() => {
-    // The composable constructs its ResizeObserver at module load, so the stub
-    // is hoisted; the registry it fills is reset here so tests stay isolated.
     for (const observer of observers) observer.disconnect()
-  })
-
-  it.for([true, false])(
-    'tracks row geometry only when syncLayout is %s',
-    async (syncLayout) => {
-      const graphId = 'widget-grid-graph'
-      const nodeId = toNodeId(1)
-      useCanvasStore().canvas = fromPartial({
-        canvas: document.createElement('canvas'),
-        graph: fromPartial({ rootGraph: { id: graphId } }),
-        setDirty: vi.fn()
-      })
-      useCanvasStore().linearMode = false
-      layoutStore.resetForTests()
-      const { container, rerender, unmount } = render(WidgetGrid, {
-        props: {
-          nodeId,
-          nodeType: 'TestNode',
-          syncLayout,
-          processedWidgets: [widget('width', 'number', 0)]
-        },
-        global: {
-          plugins: [
-            createI18n({
-              legacy: false,
-              locale: 'en',
-              messages: { en: { g: { inputTooltip: 'Input: {name}' } } }
-            })
-          ],
-          directives: { tooltip: {} },
-          stubs: { AppInput: AppInputStub }
-        }
-      })
-      assert.instanceOf(container, HTMLElement)
-      container.dataset.nodeId = String(nodeId)
-      Object.defineProperty(container, 'offsetWidth', { value: 200 })
-      container.getBoundingClientRect = () => new DOMRect(0, 0, 200, 300)
-      const stored = () =>
-        layoutStore.getSlotOffset(graphId, nodeId, 0, 'input', 'expanded')
-      const expected = (y: number) => (syncLayout ? { x: 0, y } : null)
-      const resizeAll = (...elements: Element[]) => {
-        for (const observer of observers)
-          for (const element of elements) observer.resize(element)
-      }
-      const grid = screen.getByTestId('node-widgets')
-      grid.getBoundingClientRect = () => new DOMRect(0, 30, 200, 270)
-      const row = screen.getByTestId('node-widget')
-      const socket = screen.getByTestId('slot-dot')
-      socket.getBoundingClientRect = () => new DOMRect(0, 140, 8, 8)
-      resizeAll(grid)
-      expect(stored()).toEqual(expected(114))
-
-      // Internal rows redistribute space without changing the node or grid bounds.
-      socket.getBoundingClientRect = () => new DOMRect(0, 100, 8, 8)
-      resizeAll(row)
-      expect(stored()).toEqual(expected(74))
-
-      await rerender({ processedWidgets: [widget('steps', 'number', 0)] })
-      const replacement = screen.getByTestId('node-widget')
-      const replacementSocket = screen.getByTestId('slot-dot')
-      // The replacement row keeps the store current, and a late resize on the
-      // replaced row must not write its detached geometry over it.
-      replacementSocket.getBoundingClientRect = () => new DOMRect(0, 120, 8, 8)
-      resizeAll(replacement)
-      expect(stored()).toEqual(expected(94))
-      socket.getBoundingClientRect = () => new DOMRect(0, 60, 8, 8)
-      resizeAll(row)
-      expect(stored()).toEqual(expected(94))
-
-      unmount()
-      // Nothing survives unmount: a resize on the old grid or row cannot
-      // write a stale offset for the node.
-      replacementSocket.getBoundingClientRect = () => new DOMRect(0, 200, 8, 8)
-      resizeAll(grid, replacement)
-      expect(stored()).toEqual(expected(94))
-    }
-  )
-
-  it('keeps tracking rows after they are reordered', async () => {
-    const graphId = 'widget-grid-graph'
-    const nodeId = toNodeId(2)
     useCanvasStore().canvas = fromPartial({
       canvas: document.createElement('canvas'),
-      graph: fromPartial({ rootGraph: { id: graphId } }),
+      graph: fromPartial({ rootGraph: { id: 'widget-grid-graph' } }),
       setDirty: vi.fn()
     })
     useCanvasStore().linearMode = false
     layoutStore.resetForTests()
-    const widgets = [
-      widget('width', 'number', 0),
-      widget('height', 'number', 1)
-    ]
-    const { container, rerender } = render(WidgetGrid, {
-      props: {
-        nodeId,
-        nodeType: 'TestNode',
-        syncLayout: true,
-        processedWidgets: widgets
-      },
-      global: {
-        plugins: [
-          createI18n({
-            legacy: false,
-            locale: 'en',
-            messages: { en: { g: { inputTooltip: 'Input: {name}' } } }
-          })
-        ],
-        directives: { tooltip: {} },
-        stubs: { AppInput: AppInputStub }
-      }
-    })
-    assert.instanceOf(container, HTMLElement)
-    container.dataset.nodeId = String(nodeId)
-    Object.defineProperty(container, 'offsetWidth', { value: 200 })
-    container.getBoundingClientRect = () => new DOMRect(0, 0, 200, 300)
-    const offsetOf = (index: number) =>
-      layoutStore.getSlotOffset(graphId, nodeId, index, 'input', 'expanded')
-    const placeSockets = (tops: number[]) => {
-      screen.getAllByTestId('slot-dot').forEach((socket, i) => {
-        socket.getBoundingClientRect = () => new DOMRect(0, tops[i], 8, 8)
-      })
-    }
-
-    placeSockets([100, 140])
-    for (const row of screen.getAllByTestId('node-widget')) {
-      for (const observer of observers) observer.resize(row)
-    }
-    expect(offsetOf(0)).toEqual({ x: 0, y: 74 })
-    expect(offsetOf(1)).toEqual({ x: 0, y: 114 })
-
-    await rerender({ processedWidgets: [widgets[1], widgets[0]] })
-    // Same rows, swapped order: height now sits above width in the DOM.
-    placeSockets([100, 140])
-    for (const row of screen.getAllByTestId('node-widget')) {
-      for (const observer of observers) observer.resize(row)
-    }
-    expect(offsetOf(1)).toEqual({ x: 0, y: 74 })
-    expect(offsetOf(0)).toEqual({ x: 0, y: 114 })
   })
 
-  it('shows socket-only labels and restores controls when disconnected', async () => {
-    const connectedWidgets = ['width', 'height', 'prompt'].map(
-      (name, index) => ({
-        ...widget(name, name === 'prompt' ? 'text' : 'number', index),
-        slotMetadata: {
-          index,
-          linked: true,
-          promoted: false,
-          type: name === 'prompt' ? 'STRING' : 'INT'
-        },
-        visible: false,
-        suppressedByConnection: true
-      })
-    )
-    const otherWidgets = [
-      { ...widget('seed', 'converted-widget', 3), visible: false },
-      {
-        ...widget('hidden_by_extension', 'number', 4),
-        visible: false
-      },
-      {
-        ...widget('hidden_no_slot', 'text', 5),
-        visible: false,
-        suppressedByConnection: true,
-        slotMetadata: undefined
-      },
-      widget('steps', 'number', 6)
-    ]
-    const { rerender } = render(WidgetGrid, {
-      props: {
-        nodeId: toNodeId(1),
-        nodeType: 'TestNode',
-        syncLayout: false,
-        processedWidgets: [...connectedWidgets, ...otherWidgets]
-      },
-      global: {
-        plugins: [
-          createI18n({
-            legacy: false,
-            locale: 'en',
-            messages: { en: { g: { inputTooltip: 'Input: {name}' } } }
-          })
-        ],
-        directives: { tooltip: {} },
-        stubs: { AppInput: AppInputStub }
-      }
-    })
+  it('updates slot offsets when rows resize without changing grid bounds', async () => {
+    const { grid, rerender, stored } = renderLayoutGrid()
+    for (const observer of observers) observer.resize(grid)
+    expect(stored()).toEqual({ x: 0, y: 114 })
 
-    for (const name of ['width', 'height', 'prompt', 'seed']) {
-      expect(screen.getByText(name)).toBeVisible()
+    await rerender({ processedWidgets: [widget('steps', 'number', 0)] })
+    screen.getByTestId('slot-dot').getBoundingClientRect = () =>
+      new DOMRect(0, 100, 8, 8)
+    for (const observer of observers)
+      observer.resize(screen.getByTestId('node-widget'))
+    expect(stored()).toEqual({ x: 0, y: 74 })
+  })
+
+  it('does not track layout when syncLayout is disabled', () => {
+    const { grid, stored } = renderLayoutGrid(false)
+    for (const observer of observers) {
+      observer.resize(grid)
+      observer.resize(screen.getByTestId('node-widget'))
     }
-    expect(screen.queryByText('steps')).not.toBeInTheDocument()
-    expect(screen.queryByText('hidden_by_extension')).not.toBeInTheDocument()
-    expect(screen.queryByText('hidden_no_slot')).not.toBeInTheDocument()
-    expect(screen.getAllByTestId('slot-connection-dot')).toHaveLength(5)
-    expect(screen.getAllByTestId('widget-control')).toHaveLength(1)
+    expect(stored()).toBeNull()
+  })
 
-    await rerender({
-      processedWidgets: [
-        ...connectedWidgets.map((item) => ({
-          ...item,
-          slotMetadata: { ...item.slotMetadata, linked: false },
-          visible: true,
-          suppressedByConnection: false
-        })),
-        ...otherWidgets
-      ]
-    })
+  it('restores controls when disconnected', async () => {
+    const item = widget('prompt', 'text', 0)
+    const { rerender } = renderGrid([
+      { ...item, visible: false, suppressedByConnection: true }
+    ])
+    expect(screen.queryByTestId('widget-control')).not.toBeInTheDocument()
 
-    for (const name of ['width', 'height', 'prompt', 'steps']) {
-      expect(screen.queryByText(name)).not.toBeInTheDocument()
-    }
-    expect(screen.getByText('seed')).toBeVisible()
-    expect(screen.getAllByTestId('slot-connection-dot')).toHaveLength(5)
-    expect(screen.getAllByTestId('widget-control')).toHaveLength(4)
+    await rerender({ processedWidgets: [item] })
+
+    expect(screen.getByTestId('widget-control')).toBeVisible()
+    expect(screen.queryByText('prompt')).not.toBeInTheDocument()
   })
 
   it('renders hidden converted widgets as input sockets without controls', () => {
@@ -380,46 +251,31 @@ describe('WidgetGrid', () => {
   })
 
   it('renders connection-suppressed widgets as input sockets without controls', () => {
-    render(WidgetGrid, {
-      props: {
-        nodeId: toNodeId(1),
-        nodeType: 'TestNode',
-        processedWidgets: [
-          {
-            ...widget('prompt', 'text', 0),
-            visible: false,
-            suppressedByConnection: true
-          },
-          {
-            ...widget('hidden_no_slot', 'text', 1),
-            visible: false,
-            suppressedByConnection: true,
-            slotMetadata: undefined
-          },
-          {
-            ...widget('hidden_by_extension', 'text', 2),
-            visible: false
-          },
-          widget('steps', 'number', 3)
-        ]
+    renderGrid([
+      {
+        ...widget('prompt', 'text', 0),
+        visible: false,
+        suppressedByConnection: true
       },
-      global: {
-        directives: { tooltip: {} },
-        stubs: {
-          AppInput: AppInputStub,
-          InputSlot: InputSlotStub
-        }
-      }
-    })
+      {
+        ...widget('hidden_no_slot', 'text', 1),
+        visible: false,
+        suppressedByConnection: true,
+        slotMetadata: undefined
+      },
+      {
+        ...widget('hidden_by_extension', 'text', 2),
+        visible: false
+      },
+      widget('steps', 'number', 3)
+    ])
 
-    expect(
-      screen.getAllByTestId('input-slot').map((element) => element.dataset.name)
-    ).toEqual(['prompt', 'steps'])
-    expect(
-      screen
-        .getAllByTestId('input-slot')
-        .map((element) => element.dataset.standalone)
-    ).toEqual(['true', 'false'])
+    expect(screen.getByText('prompt')).toBeVisible()
+    expect(screen.getByLabelText('prompt')).toBeVisible()
+    expect(screen.queryByText('hidden_no_slot')).not.toBeInTheDocument()
+    expect(screen.queryByText('hidden_by_extension')).not.toBeInTheDocument()
+    expect(screen.getAllByTestId('slot-connection-dot')).toHaveLength(2)
+    expect(screen.getAllByTestId('widget-control')).toHaveLength(1)
     expect(screen.getAllByTestId('node-widget')).toHaveLength(1)
     expect(
       screen
