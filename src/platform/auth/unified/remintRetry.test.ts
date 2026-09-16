@@ -1,4 +1,5 @@
 import { useWorkspaceAuthStore } from '@/platform/workspace/stores/workspaceAuthStore'
+import { useAuthStore } from '@/stores/authStore'
 import type { AxiosAdapter } from 'axios'
 import axios, { AxiosError } from 'axios'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -17,6 +18,9 @@ const { mockRemint, flagState } = vi.hoisted(() => ({
 
 vi.mock(import('@/platform/telemetry'))
 
+vi.mock(import('vuefire'), () => ({ useFirebaseAuth: vi.fn() }))
+vi.mock(import('firebase/auth'))
+
 vi.mock<unknown>(import('@/composables/useFeatureFlags'), () => ({
   useFeatureFlags: () => ({
     flags: {
@@ -34,6 +38,7 @@ vi.mock(import('@/platform/distribution/types'), () => ({
 }))
 
 beforeEach(() => {
+  vi.spyOn(useAuthStore().identity, 'onUserChanged').mockReturnValue(() => {})
   vi.mocked(useWorkspaceAuthStore().remintUnifiedOnce).mockImplementation(
     mockRemint
   )

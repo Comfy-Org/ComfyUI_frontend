@@ -128,7 +128,7 @@ describe('useAuthStore', () => {
     delete: vi.fn().mockResolvedValue(undefined)
   } as Partial<User> as MockUser
 
-  beforeEach(() => {
+  beforeEach(async () => {
     mockResetSocket = vi.spyOn(api, 'resetSocket').mockResolvedValue(undefined)
     vi.stubGlobal('fetch', mockFetch)
     clearPreservedQuery(PRESERVED_QUERY_NAMESPACES.SHARE_AUTH)
@@ -148,7 +148,8 @@ describe('useAuthStore', () => {
     )
 
     // Every observer registered on the Auth instance (the store's listener
-    // and the package port) gets each auth-state event, as Firebase does.
+    // and the package port) gets each auth-state event, and a new observer
+    // is replayed on the next microtask, as Firebase does.
     const authStateObservers: Array<(user: User | null) => void> = []
     authStateCallback = (user) =>
       authStateObservers.forEach((observer) => observer(user))
@@ -156,7 +157,7 @@ describe('useAuthStore', () => {
       (_, callback) => {
         const observer = callback as (user: User | null) => void
         authStateObservers.push(observer)
-        observer(mockUser)
+        queueMicrotask(() => observer(mockUser))
         return vi.fn()
       }
     )
@@ -185,6 +186,7 @@ describe('useAuthStore', () => {
     })
 
     store = useAuthStore()
+    await vi.waitFor(() => expect(store.isInitialized).toBe(true))
 
     // Reset and set up getIdToken mock
     mockUser.getIdToken.mockResolvedValue('mock-id-token')
@@ -354,14 +356,21 @@ describe('useAuthStore', () => {
   describe('unified identity source', () => {
     it('the session client listens to the same Auth instance through the package port', async () => {
       mockFeatureFlags.unifiedCloudAuthEnabled = true
-      vi.mocked(firebaseAuth.onAuthStateChanged).mockClear()
+      const observedAuths = () =>
+        vi
+          .mocked(firebaseAuth.onAuthStateChanged)
+          .mock.calls.map(([auth]) => auth)
+      expect(
+        observedAuths(),
+        'the port registers its own observer on the same Auth instance when the session client is constructed; identity is not pushed from this store'
+      ).toEqual([mockAuth, mockAuth])
 
       await useWorkspaceAuthStore().mintAtLogin()
 
-      expect(
-        vi.mocked(firebaseAuth.onAuthStateChanged),
-        'the port registers its own observer on the same Auth instance; identity is not pushed from this store'
-      ).toHaveBeenCalledExactlyOnceWith(mockAuth, expect.any(Function))
+      expect(observedAuths(), 'a mint reuses the constructed port').toEqual([
+        mockAuth,
+        mockAuth
+      ])
     })
   })
 
@@ -2373,10 +2382,14 @@ describe('useAuthStore in local/desktop distribution', () => {
       > as ReturnType<typeof vuefire.useFirebaseAuth>
     )
 
+    const authStateObservers: Array<(user: User | null) => void> = []
+    authStateCallback = (user) =>
+      authStateObservers.forEach((observer) => observer(user))
     vi.mocked(firebaseAuth.onAuthStateChanged).mockImplementation(
       (_, callback) => {
-        authStateCallback = callback as (user: User | null) => void
-        ;(callback as (user: User | null) => void)(mockUser)
+        const observer = callback as (user: User | null) => void
+        authStateObservers.push(observer)
+        observer(mockUser)
         return vi.fn()
       }
     )

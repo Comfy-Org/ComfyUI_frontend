@@ -5,6 +5,7 @@ import { useToastStore } from '@/platform/updates/common/toastStore'
 import { WorkspaceApiError } from '@/platform/workspace/api/workspaceApi'
 import { workspaceApiUrl } from '@/platform/workspace/api/workspaceApiUrl'
 import { useWorkspaceAuthStore } from '@/platform/workspace/stores/workspaceAuthStore'
+import { useAuthStore } from '@/stores/authStore'
 import { useDialogStore } from '@/stores/dialogStore'
 
 import { useBillingSdkStore } from './billingSdkStore'
@@ -66,6 +67,9 @@ vi.mock<unknown>(import('@/composables/useFeatureFlags'), () => ({
 
 vi.mock(import('@/platform/distribution/types'), () => ({ isCloud: true }))
 
+vi.mock(import('vuefire'), () => ({ useFirebaseAuth: vi.fn() }))
+vi.mock(import('firebase/auth'))
+
 const mockLoadStripe = vi.hoisted(() => vi.fn())
 vi.mock<unknown>(import('@stripe/stripe-js/pure'), () => ({
   loadStripe: mockLoadStripe
@@ -75,6 +79,7 @@ let harness: ReturnType<typeof fakeBillingSdk>
 let options: BillingSdkOptions
 
 beforeEach(() => {
+  vi.spyOn(useAuthStore().identity, 'onUserChanged').mockReturnValue(() => {})
   flagState.embeddedCheckoutEnabled = false
   harness = fakeBillingSdk()
   mockCreateBillingSdk.mockImplementation((sdkOptions) => {

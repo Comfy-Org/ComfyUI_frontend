@@ -27,6 +27,7 @@ beforeEach(() => {
   vi.mocked(setPersistence).mockResolvedValue(undefined)
   vi.mocked(onAuthStateChanged).mockImplementation(vi.fn())
   vi.mocked(onIdTokenChanged).mockImplementation(vi.fn())
+  vi.spyOn(useAuthStore().identity, 'onUserChanged').mockReturnValue(() => {})
 })
 
 async function flushPromises() {

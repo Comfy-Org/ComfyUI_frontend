@@ -1,4 +1,5 @@
 import { useWorkspaceAuthStore } from '@/platform/workspace/stores/workspaceAuthStore'
+import { useAuthStore } from '@/stores/authStore'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { WORKSPACE_STORAGE_KEYS } from '@/platform/workspace/workspaceConstants'
@@ -8,6 +9,9 @@ import { sortWorkspaces, useTeamWorkspaceStore } from './teamWorkspaceStore'
 const mockDistributionTypes = vi.hoisted(() => ({ isCloud: true }))
 
 vi.mock(import('@/platform/distribution/types'), () => mockDistributionTypes)
+
+vi.mock(import('vuefire'), () => ({ useFirebaseAuth: vi.fn() }))
+vi.mock(import('firebase/auth'))
 
 const mockClearWorkflowRestoreState = vi.hoisted(() => vi.fn())
 const mockPrepareWorkflowWorkspaceTransition = vi.hoisted(() => vi.fn())
@@ -144,6 +148,7 @@ function expectCleanupBeforeContextAndReload(): void {
 }
 
 beforeEach(() => {
+  vi.spyOn(useAuthStore().identity, 'onUserChanged').mockReturnValue(() => {})
   Object.assign(useWorkspaceAuthStore(), {
     currentWorkspace: null,
     workspaceToken: null,
