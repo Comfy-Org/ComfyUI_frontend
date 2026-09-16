@@ -138,7 +138,7 @@
         v-if="showSubscribeAction && !isPersonalWorkspace"
         variant="primary"
         size="sm"
-        @click="handleOpenPlansAndPricing"
+        @click="handleOpenSubscriptionAction"
       >
         {{
           isCancelled
@@ -265,7 +265,9 @@ import Button from '@/components/ui/button/Button.vue'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 
 import { useExternalLink } from '@/composables/useExternalLink'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
+import { getBillingWebUrl } from '@/config/billingWeb'
 import SubscribeButton from '@/platform/cloud/subscription/components/SubscribeButton.vue'
 import { useSubscriptionDialog } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
 import { isCloud } from '@/platform/distribution/types'
@@ -307,6 +309,7 @@ const { accountActionsOnly = false } = defineProps<{
 }>()
 
 const { buildDocsUrl, docsPaths } = useExternalLink()
+const { flags } = useFeatureFlags()
 
 const {
   userDisplayName,
@@ -375,7 +378,8 @@ const showSubscribeAction = computed(
     ((isCancelled.value && canReactivatePlan.value) ||
       (!canAccessSubscriptionFeatures.value &&
         !hasDelinquentSubscription.value &&
-        canSubscribeSelfServe.value))
+        canSubscribeSelfServe.value &&
+        canTopUp.value))
 )
 
 const handleOpenUserSettings = () => {
@@ -389,6 +393,18 @@ const handleOpenWorkspaceSettings = () => {
 }
 
 const handleOpenPlansAndPricing = () => {
+  const billingWebUrl = getBillingWebUrl()
+  const hostedTab =
+    flags.hostedBillingWebEnabled && billingWebUrl
+      ? window.open(billingWebUrl.href, '_blank', 'noopener,noreferrer')
+      : null
+  if (!hostedTab) {
+    subscriptionDialog.showPricingTable({ reason: 'avatar_menu_plans' })
+  }
+  emit('close')
+}
+
+const handleOpenSubscriptionAction = () => {
   subscriptionDialog.showPricingTable({ reason: 'avatar_menu_plans' })
   emit('close')
 }

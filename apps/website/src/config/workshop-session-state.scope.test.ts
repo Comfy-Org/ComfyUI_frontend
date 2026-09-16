@@ -1,4 +1,3 @@
-// @vitest-environment happy-dom
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { effectScope } from 'vue'
 
@@ -10,11 +9,9 @@ const h = vi.hoisted(() => ({
 vi.mock<unknown>(import('../scripts/posthog'), async () => {
   const { ref } = await import('vue')
   const flag = ref(true)
-  const settled = ref(true)
   h.flag = flag
   return {
-    useWorkshopAuthFlag: () => flag,
-    useWorkshopAuthFlagSettled: () => settled
+    useWorkshopAuthFlag: () => flag
   }
 })
 

@@ -8,6 +8,8 @@ import { createNodeExecutionId } from '@/types/nodeIdentification'
 import { toNodeId } from '@/types/nodeId'
 import type { NodeId, SerializedNodeId } from '@/types/nodeId'
 
+import { hasPromotedWidgetTarget } from './hasPromotedWidgetTarget'
+
 type PromotedWidgetResolutionFailure =
   | 'invalid-host'
   | 'cycle'
@@ -27,56 +29,46 @@ function isNodeActive(node: LGraphNode): boolean {
   )
 }
 
-function hasActiveConsumer(
-  hostNode: SubgraphNode,
-  inputName: string,
-  depth: number,
-  visitedByHost: WeakMap<SubgraphNode, Set<string>>
-): boolean {
-  if (depth >= MAX_PROMOTED_WIDGET_CHAIN_DEPTH) return false
-
-  const visited = visitedByHost.get(hostNode) ?? new Set<string>()
-  if (visited.has(inputName)) return false
-  visited.add(inputName)
-  visitedByHost.set(hostNode, visited)
-
-  const inputSlot = hostNode.subgraph.inputNode.slots.find(
-    (slot) => slot.name === inputName
-  )
-  if (!inputSlot) return false
-
-  for (const linkId of inputSlot.linkIds) {
-    const link = hostNode.subgraph.getLink(linkId)
-    if (!link) continue
-
-    const { inputNode } = link.resolve(hostNode.subgraph)
-    if (!inputNode || !isNodeActive(inputNode)) continue
-    const targetInput = inputNode.inputs.find((entry) => entry.link === linkId)
-    if (!targetInput) continue
-
-    if (inputNode.isSubgraphNode()) {
-      if (
-        targetInput.widgetId &&
-        hasActiveConsumer(inputNode, targetInput.name, depth + 1, visitedByHost)
-      ) {
-        return true
-      }
-      continue
-    }
-
-    if (inputNode.getWidgetFromSlot(targetInput)) return true
-  }
-
-  return false
-}
-
 export function hasActivePromotedWidgetConsumer(
   hostNode: LGraphNode,
   inputName: string
 ): boolean {
-  return (
-    hostNode.isSubgraphNode() &&
-    hasActiveConsumer(hostNode, inputName, 0, new WeakMap())
+  if (!hostNode.isSubgraphNode()) return false
+  const input = hostNode.subgraph.inputNode.slots.find(
+    (slot) => slot.name === inputName
+  )
+  if (!input) return false
+  const root = { host: hostNode, input }
+
+  return hasPromotedWidgetTarget(
+    root,
+    MAX_PROMOTED_WIDGET_CHAIN_DEPTH,
+    ({ input }) => input,
+    ({ host, input }) => {
+      const nested: Array<typeof root> = []
+      let hasWidget = false
+      for (const linkId of input.linkIds) {
+        const link = host.subgraph.getLink(linkId)
+        if (!link) continue
+        const { inputNode } = link.resolve(host.subgraph)
+        if (!inputNode || !isNodeActive(inputNode)) continue
+        const targetInput = inputNode.inputs.find(
+          (entry) => entry.link === linkId
+        )
+        if (!targetInput) continue
+        if (!inputNode.isSubgraphNode()) {
+          hasWidget ||= Boolean(inputNode.getWidgetFromSlot(targetInput))
+          continue
+        }
+        const nestedInput = inputNode.subgraph.inputNode.slots.find(
+          (slot) => slot.name === targetInput.name
+        )
+        if (targetInput.widgetId && nestedInput) {
+          nested.push({ host: inputNode, input: nestedInput })
+        }
+      }
+      return { hasWidget, nested }
+    }
   )
 }
 

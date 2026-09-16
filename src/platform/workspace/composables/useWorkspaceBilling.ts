@@ -7,6 +7,7 @@ import {
   watch
 } from 'vue'
 
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useBillingPlans } from '@/platform/cloud/subscription/composables/useBillingPlans'
 import { useSubscriptionDialog } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
 import type { SubscriptionDialogOptions } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
@@ -26,6 +27,7 @@ import {
   WorkspaceApiError,
   workspaceApi
 } from '@/platform/workspace/api/workspaceApi'
+import { useBillingSdkStore } from '@/platform/workspace/billing/sdk/billingSdkStore'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 import { useBillingOperationStore } from '@/platform/workspace/stores/billingOperationStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
@@ -108,6 +110,28 @@ async function resyncQuietly(refresh: () => Promise<unknown>): Promise<void> {
   }
 }
 
+interface SeatCapacity {
+  maxSeats: number
+  occupiedSeats: number
+}
+
+function seatCapacityFrom(status: BillingStatusResponse): SeatCapacity | null {
+  if (
+    typeof status.max_seats === 'number' &&
+    Number.isInteger(status.max_seats) &&
+    status.max_seats >= 0 &&
+    typeof status.occupied_seats === 'number' &&
+    Number.isInteger(status.occupied_seats) &&
+    status.occupied_seats >= 0
+  ) {
+    return {
+      maxSeats: status.max_seats,
+      occupiedSeats: status.occupied_seats
+    }
+  }
+  return null
+}
+
 /**
  * Adapter for workspace-scoped billing via /billing/* endpoints.
  * Used for team workspaces.
@@ -118,16 +142,14 @@ export function useWorkspaceBilling(): BillingState & BillingActions {
   const billingOperationStore = useBillingOperationStore()
   const workspaceStore = useTeamWorkspaceStore()
   const telemetry = useTelemetry()
+  const { flags } = useFeatureFlags()
 
   const isInitialized = ref(false)
   const isLoading = ref(false)
   const error = ref<string | null>(null)
 
   const statusData = shallowRef<BillingStatusResponse | null>(null)
-  const seatCapacity = shallowRef<{
-    maxSeats: number
-    occupiedSeats: number
-  } | null>(null)
+  const seatCapacity = shallowRef<SeatCapacity | null>(null)
   const balanceData = shallowRef<BillingBalanceResponse | null>(null)
   // Prevent older status and balance responses from overwriting newer state.
   const latestBillingReadIds = { status: 0, balance: 0 }
@@ -218,6 +240,38 @@ export function useWorkspaceBilling(): BillingState & BillingActions {
     }
   }
 
+  function resumePendingOperation(status: BillingStatusResponse): void {
+    if (
+      !status.pending_billing_op_id ||
+      billingOperationStore.getOperation(status.pending_billing_op_id)
+    ) {
+      return
+    }
+    if (
+      flags.billingSdkTopupRailEnabled &&
+      status.pending_billing_op_type === 'topup'
+    ) {
+      useBillingSdkStore().recover()
+      return
+    }
+    void billingOperationStore.startOperation(
+      status.pending_billing_op_id,
+      resumeModeFor(status.pending_billing_op_type),
+      undefined,
+      status.action_url
+    )
+  }
+
+  function isStaleStatusRead(
+    requestId: number,
+    workspaceId: string | undefined
+  ): boolean {
+    return (
+      requestId !== latestBillingReadIds.status ||
+      workspaceId !== workspaceStore.activeWorkspace?.id
+    )
+  }
+
   async function fetchStatus(): Promise<void> {
     const requestId = ++latestBillingReadIds.status
     const workspaceId = workspaceStore.activeWorkspace?.id
@@ -225,44 +279,14 @@ export function useWorkspaceBilling(): BillingState & BillingActions {
     error.value = null
     try {
       const status = await workspaceApi.getBillingStatus()
-      if (
-        requestId !== latestBillingReadIds.status ||
-        workspaceId !== workspaceStore.activeWorkspace?.id
-      ) {
-        return
-      }
+      if (isStaleStatusRead(requestId, workspaceId)) return
 
-      if (
-        typeof status.max_seats === 'number' &&
-        Number.isInteger(status.max_seats) &&
-        status.max_seats >= 0 &&
-        typeof status.occupied_seats === 'number' &&
-        Number.isInteger(status.occupied_seats) &&
-        status.occupied_seats >= 0
-      ) {
-        seatCapacity.value = {
-          maxSeats: status.max_seats,
-          occupiedSeats: status.occupied_seats
-        }
-      } else {
-        seatCapacity.value = null
-      }
-
+      seatCapacity.value = seatCapacityFrom(status)
       statusData.value = status
       if (workspaceId && status.billing_rail) {
         workspaceStore.setWorkspaceBillingRail(workspaceId, status.billing_rail)
       }
-      if (
-        status.pending_billing_op_id &&
-        !billingOperationStore.getOperation(status.pending_billing_op_id)
-      ) {
-        void billingOperationStore.startOperation(
-          status.pending_billing_op_id,
-          resumeModeFor(status.pending_billing_op_type),
-          undefined,
-          status.action_url
-        )
-      }
+      resumePendingOperation(status)
     } catch (err) {
       if (requestId === latestBillingReadIds.status) {
         error.value =
@@ -535,7 +559,9 @@ export function useWorkspaceBilling(): BillingState & BillingActions {
     }
   }
 
-  async function topup(amountCents: number): Promise<CreateTopupResponse> {
+  async function topup(
+    amountCents: number
+  ): Promise<CreateTopupResponse | undefined> {
     isLoading.value = true
     error.value = null
     try {

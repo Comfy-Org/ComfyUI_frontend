@@ -11,6 +11,7 @@ import type {
 } from '@comfyorg/account/session'
 
 import type { WorkshopModelDetail } from '../../config/models-catalogue'
+import type { Locale } from '../../i18n/translations'
 import { subscribeToWorkshopBuyCredits } from '../../config/workshop-buy-credits'
 import { runWorkshopRouter } from '../../config/workshop-router'
 import { WorkshopRouterError } from '../../config/workshop-router-errors'
@@ -19,13 +20,20 @@ import { getRouterWorkshopModelDetail } from '../../config/workshop-router-conte
 import { refreshWorkshopCredits } from '../../config/workshop-credits'
 import type { useWorkshopCredits } from '../../config/workshop-credits'
 import * as draftStorage from '../../config/workshop-draft-storage'
+import {
+  cancelWorkshopRun,
+  workshopRunInFlight
+} from '../../config/workshop-run-state'
+import { captureWorkshopEvent } from '../../scripts/posthog'
 import ModelDetail from './ModelDetail.vue'
+import WorkshopGate from './WorkshopGate.vue'
 
 const auth = vi.hoisted(() => ({
   session: { value: undefined as AccountCredential | undefined },
   settled: { value: true },
   enabled: { value: true },
-  flagSettled: { value: true },
+  workshopEnabled: { value: true },
+  workshopEnabledSettled: { value: true },
   ensureFresh: vi.fn()
 }))
 
@@ -52,12 +60,19 @@ vi.mock(import('../../config/workshop-session-state'), () => ({
 }))
 
 vi.mock(import('../../scripts/posthog'), () => ({
-  useWorkshopAuthFlag: () => computed(() => auth.enabled.value),
-  useWorkshopAuthFlagSettled: () => computed(() => auth.flagSettled.value)
+  captureWorkshopEvent: vi.fn(),
+  useWorkshopEnabled: () => computed(() => auth.workshopEnabled.value),
+  useWorkshopEnabledSettled: () =>
+    computed(() => auth.workshopEnabledSettled.value),
+  useWorkshopAuthFlag: () => computed(() => auth.enabled.value)
 }))
 
 vi.mock(import('../../config/workshop-router'), () => ({
   runWorkshopRouter: vi.fn()
+}))
+
+vi.mock(import('../../config/workshop-output-download'), () => ({
+  downloadOutput: vi.fn().mockResolvedValue(true)
 }))
 
 vi.mock(import('../../config/workshop-credits'), () => ({
@@ -166,6 +181,7 @@ function mountDetail(options?: {
   clone?: { href: string }
   details?: () => ReturnType<typeof h>
   model?: WorkshopModelDetail
+  locale?: Locale
 }) {
   return render(
     defineComponent({
@@ -175,7 +191,8 @@ function mountDetail(options?: {
             ModelDetail,
             {
               model: options?.model ?? model,
-              clone: options?.clone
+              clone: options?.clone,
+              locale: options?.locale
             },
             options?.details ? { details: options.details } : undefined
           )
@@ -198,7 +215,8 @@ describe('ModelDetail', () => {
     auth.session = ref<AccountCredential>()
     auth.settled = ref(true)
     auth.enabled = ref(true)
-    auth.flagSettled = ref(true)
+    auth.workshopEnabled = ref(true)
+    auth.workshopEnabledSettled = ref(true)
     credits.balance = ref<
       ReturnType<typeof useWorkshopCredits>['balance']['value']
     >({ status: 'unknown' })
@@ -297,10 +315,192 @@ describe('ModelDetail', () => {
     }
   )
 
+  it('prevents generation while the feature is hidden', async () => {
+    auth.session.value = credential
+    auth.workshopEnabled.value = false
+    mountDetail({ model: runnable })
+    await nextTick()
+    expect(screen.queryByRole('button', { name: 'Run' })).toBeNull()
+    expect(runWorkshopRouter).not.toHaveBeenCalled()
+    expect(captureWorkshopEvent).not.toHaveBeenCalled()
+  })
+
+  it('reports API views only while Models is enabled', async () => {
+    auth.workshopEnabled.value = false
+    mountDetail({ model: runnable })
+    const visitor = user()
+    await visitor.click(screen.getByRole('tab', { name: 'API' }))
+    expect(captureWorkshopEvent).not.toHaveBeenCalled()
+    auth.workshopEnabled.value = true
+    await nextTick()
+    expect(captureWorkshopEvent).toHaveBeenCalledWith({
+      name: 'api_viewed',
+      properties: expect.objectContaining({ model_slug: runnable.slug })
+    })
+    vi.mocked(captureWorkshopEvent).mockClear()
+    auth.workshopEnabled.value = false
+    await nextTick()
+    await visitor.click(screen.getByRole('tab', { name: 'Playground' }))
+    await visitor.click(screen.getByRole('tab', { name: 'API' }))
+    expect(captureWorkshopEvent).not.toHaveBeenCalled()
+  })
+
+  it('tracks the render funnel and actions without sending inputs or output contents', async () => {
+    auth.session.value = credential
+    vi.mocked(runWorkshopRouter).mockResolvedValue(routerResult)
+    mountDetail({ model: runnable })
+    const visitor = user()
+    await visitor.type(
+      screen.getByRole('textbox', { name: 'Prompt' }),
+      'Private prompt'
+    )
+    await visitor.click(screen.getByRole('button', { name: 'Run' }))
+    const download = await screen.findByTestId('output-download')
+    download.addEventListener('click', (event) => event.preventDefault(), {
+      once: true
+    })
+    await visitor.click(download)
+    await visitor.click(screen.getByRole('tab', { name: 'API' }))
+
+    const events = vi
+      .mocked(captureWorkshopEvent)
+      .mock.calls.map(([event]) => event)
+    expect(events.map((event) => event.name)).toEqual([
+      'model_viewed',
+      'run_started',
+      'run_finished',
+      'output_download_clicked',
+      'api_viewed'
+    ])
+    const metadata = {
+      model_slug: runnable.slug,
+      router_id: runnable.routerId,
+      provider: 'Demo',
+      modality: 'image'
+    }
+    const started = events.find((event) => event.name === 'run_started')
+    expect(started).toEqual({
+      name: 'run_started',
+      properties: {
+        ...metadata,
+        attempt_id: expect.any(String),
+        user_id: credential.uid,
+        workspace_id: credential.workspace.id
+      }
+    })
+    expect(events.find((event) => event.name === 'run_finished')).toEqual({
+      name: 'run_finished',
+      properties: {
+        ...started?.properties,
+        status: 'succeeded',
+        duration_ms: expect.any(Number),
+        request_id: routerResult.requestId,
+        output_count: 1
+      }
+    })
+    expect(
+      events.find((event) => event.name === 'output_download_clicked')
+    ).toEqual({
+      name: 'output_download_clicked',
+      properties: { ...metadata, output_kind: 'image' }
+    })
+    expect(JSON.stringify(events)).not.toContain('Private prompt')
+    expect(JSON.stringify(events)).not.toContain(credential.token)
+    expect(JSON.stringify(events)).not.toContain(routerResult.outputs[0].url)
+  })
+
+  it('reports a failed attempt with a bounded reason and no error payload', async () => {
+    auth.session.value = credential
+    vi.mocked(runWorkshopRouter).mockRejectedValue(
+      new WorkshopRouterError(
+        'provider',
+        'request-failed',
+        {},
+        {
+          status: 503,
+          errorType: 'provider_timeout',
+          retryAfter: null,
+          concurrencyLimit: null,
+          concurrencyCurrent: null,
+          concurrencyRemaining: null,
+          body: 'Private provider response'
+        }
+      )
+    )
+    mountDetail({ model: runnable })
+    const visitor = user()
+    await visitor.type(
+      screen.getByRole('textbox', { name: 'Prompt' }),
+      'Private prompt'
+    )
+    await visitor.click(screen.getByRole('button', { name: 'Run' }))
+    await vi.waitFor(() =>
+      expect(captureWorkshopEvent).toHaveBeenCalledWith({
+        name: 'run_finished',
+        properties: expect.objectContaining({
+          status: 'failed',
+          reason: 'provider',
+          request_id: 'request-failed',
+          http_status: 503,
+          router_error_type: 'provider_timeout',
+          workspace_id: credential.workspace.id
+        })
+      })
+    )
+    expect(
+      JSON.stringify(vi.mocked(captureWorkshopEvent).mock.calls)
+    ).not.toContain('Private prompt')
+    expect(
+      JSON.stringify(vi.mocked(captureWorkshopEvent).mock.calls)
+    ).not.toContain('Private provider response')
+  })
+
+  it('omits an unrecognized Router error header from analytics', async () => {
+    auth.session.value = credential
+    vi.mocked(runWorkshopRouter).mockRejectedValue(
+      new WorkshopRouterError(
+        'provider',
+        'request-private-header',
+        {},
+        {
+          status: 503,
+          errorType: 'customer_account_suspended',
+          retryAfter: null,
+          concurrencyLimit: null,
+          concurrencyCurrent: null,
+          concurrencyRemaining: null,
+          body: 'Private provider response'
+        }
+      )
+    )
+    mountDetail({ model: runnable })
+    const visitor = user()
+    await visitor.type(
+      screen.getByRole('textbox', { name: 'Prompt' }),
+      'Private prompt'
+    )
+    await visitor.click(screen.getByRole('button', { name: 'Run' }))
+
+    await vi.waitFor(() =>
+      expect(captureWorkshopEvent).toHaveBeenCalledWith({
+        name: 'run_finished',
+        properties: expect.objectContaining({
+          status: 'failed',
+          reason: 'provider',
+          http_status: 503
+        })
+      })
+    )
+    const calls = JSON.stringify(vi.mocked(captureWorkshopEvent).mock.calls)
+    expect(calls).not.toContain('customer_account_suspended')
+    expect(calls).not.toContain('Private provider response')
+    expect(calls).not.toContain('Private prompt')
+  })
+
   it.for([
     {
       slug: 'vertexai--gemini-3-pro-image--edit-images',
-      label: 'Images',
+      label: 'Source images',
       count: 2
     },
     { slug: 'bfl--flux-2-max--generate-images', label: 'Image', count: 3 }
@@ -472,12 +672,12 @@ describe('ModelDetail', () => {
     {
       signedIn: false,
       reason: 'missing-input-schema',
-      explanation: /input schema is not available/
+      explanation: /cannot be run or called from code/
     },
     {
       signedIn: true,
       reason: 'missing-input-schema',
-      explanation: /input schema is not available/
+      explanation: /cannot be run or called from code/
     }
   ] as const)(
     'explains $reason with signedIn=$signedIn without offering a paid run',
@@ -524,6 +724,16 @@ describe('ModelDetail', () => {
     expect(auth.ensureFresh).toHaveBeenCalled()
     expect(screen.getByTestId('router-request-id').textContent).toContain(
       'request-123'
+    )
+    expect(screen.getByTestId('output-expires').textContent).toContain(
+      'expire 24 hours'
+    )
+    const copyRequestId = screen.getByRole('button', {
+      name: 'Copy request ID'
+    })
+    await user().click(copyRequestId)
+    await vi.waitFor(() =>
+      expect(copyRequestId.textContent).toContain('Copied')
     )
     expect(refreshWorkshopCredits).toHaveBeenCalledWith({ force: true })
   })
@@ -751,8 +961,11 @@ describe('ModelDetail', () => {
     expect(leaving()).toBe(true)
     expect(softLeaving()).toBe(true)
 
-    await user().type(screen.getByTestId('field-prompt'), 'A teapot')
-    await user().click(screen.getByTestId('run-button'))
+    await user().type(
+      screen.getByRole('textbox', { name: 'Prompt' }),
+      'A teapot'
+    )
+    await user().click(screen.getByRole('button', { name: 'Run' }))
     await vi.waitFor(() => expect(runWorkshopRouter).toHaveBeenCalledTimes(1))
     expect(leaving()).toBe(false)
     expect(softLeaving()).toBe(false)
@@ -765,6 +978,93 @@ describe('ModelDetail', () => {
     )
     expect(leaving()).toBe(true)
     expect(softLeaving()).toBe(true)
+  })
+
+  // The header is outside this island, so the only thing it can act on is what
+  // the run reports: that one is going, and how to end it.
+  it('hands the rest of the page a way to end the run while one is going', async () => {
+    auth.session.value = credential
+    const pending = Promise.withResolvers<typeof routerResult>()
+    vi.mocked(runWorkshopRouter).mockReturnValue(pending.promise)
+    mountDetail({ model: runnable })
+    expect(workshopRunInFlight.value).toBe(false)
+
+    await user().type(screen.getByTestId('field-prompt'), 'A teapot')
+    await user().click(screen.getByTestId('run-button'))
+    await vi.waitFor(() => expect(workshopRunInFlight.value).toBe(true))
+
+    cancelWorkshopRun()
+    await vi.waitFor(() =>
+      expect(
+        screen.getByTestId('playground-output').getAttribute('data-state')
+      ).toBe('cancelled')
+    )
+    expect(workshopRunInFlight.value).toBe(false)
+  })
+
+  it('takes that way back when the playground goes away mid-run', async () => {
+    auth.session.value = credential
+    vi.mocked(runWorkshopRouter).mockReturnValue(
+      Promise.withResolvers<typeof routerResult>().promise
+    )
+    const { unmount } = mountDetail({ model: runnable })
+
+    await user().type(screen.getByTestId('field-prompt'), 'A teapot')
+    await user().click(screen.getByTestId('run-button'))
+    await vi.waitFor(() => expect(workshopRunInFlight.value).toBe(true))
+
+    unmount()
+    expect(workshopRunInFlight.value).toBe(false)
+  })
+
+  it('answers an in-site link in its own words, and lets the link go when told to', async () => {
+    auth.session.value = credential
+    const pending = Promise.withResolvers<typeof routerResult>()
+    vi.mocked(runWorkshopRouter).mockReturnValue(pending.promise)
+    const assign = vi.spyOn(location, 'assign').mockImplementation(() => {})
+    const leaving = () =>
+      window.dispatchEvent(new Event('beforeunload', { cancelable: true }))
+    onTestFinished(() => assign.mockRestore())
+    mountDetail({ model: runnable })
+
+    const linkTo = (path: string) => {
+      const link = document.createElement('a')
+      link.href = `${location.origin}${path}`
+      document.body.append(link)
+      onTestFinished(() => link.remove())
+      return () =>
+        link.dispatchEvent(
+          new MouseEvent('click', { bubbles: true, cancelable: true })
+        )
+    }
+
+    expect(linkTo('/models/idle-model/')()).toBe(true)
+    expect(screen.queryByTestId('run-leave-dialog')).toBeNull()
+
+    await user().type(screen.getByTestId('field-prompt'), 'A teapot')
+    await user().click(screen.getByTestId('run-button'))
+    await vi.waitFor(() => expect(runWorkshopRouter).toHaveBeenCalledOnce())
+
+    const follow = linkTo('/models/another-model/')
+    expect(follow()).toBe(false)
+    await screen.findByTestId('run-leave-dialog')
+    expect(assign).not.toHaveBeenCalled()
+
+    await user().click(screen.getByTestId('run-leave-stay'))
+    await vi.waitFor(() =>
+      expect(screen.queryByTestId('run-leave-dialog')).toBeNull()
+    )
+    expect(assign).not.toHaveBeenCalled()
+
+    follow()
+    await user().click(await screen.findByTestId('run-leave-confirm'))
+    expect(assign).toHaveBeenCalledWith(
+      `${location.origin}/models/another-model/`
+    )
+    expect(
+      screen.getByTestId('playground-output').getAttribute('data-state')
+    ).toBe('cancelled')
+    expect(leaving()).toBe(true)
   })
 
   it('restores a declined history traversal without letting Astro unmount the run', async () => {
@@ -876,6 +1176,15 @@ describe('ModelDetail', () => {
     await nextTick()
     await user().click(screen.getByTestId('run-button'))
     expect(runWorkshopRouter).not.toHaveBeenCalled()
+    expect(captureWorkshopEvent).toHaveBeenCalledWith({
+      name: 'run_validation_failed',
+      properties: expect.objectContaining({ model_slug: runnable.slug })
+    })
+    expect(
+      vi
+        .mocked(captureWorkshopEvent)
+        .mock.calls.some(([event]) => event.name === 'run_started')
+    ).toBe(false)
     expect(
       screen.getByTestId('playground-output').getAttribute('data-state')
     ).toBe('failed')
@@ -984,27 +1293,99 @@ describe('ModelDetail', () => {
     ).toBe('cancelled')
     expect(screen.queryByTestId('router-request-id')).toBeNull()
     expect(runWorkshopRouter).toHaveBeenCalledTimes(1)
+    const outcomes = vi
+      .mocked(captureWorkshopEvent)
+      .mock.calls.map(([event]) => event)
+      .filter((event) => event.name === 'run_finished')
+    expect(outcomes).toEqual([
+      {
+        name: 'run_finished',
+        properties: expect.objectContaining({
+          status: 'cancelled',
+          workspace_id: credential.workspace.id
+        })
+      }
+    ])
   })
 
-  it('does not publish a result after sign-out', async () => {
+  it.for(['sign-out', 'workspace changed'] as const)(
+    'does not publish a result after %s',
+    async (change) => {
+      auth.session.value = credential
+      const late = Promise.withResolvers<typeof routerResult>()
+      vi.mocked(runWorkshopRouter).mockReturnValue(late.promise)
+      mountDetail({ model: runnable })
+      const visitor = user()
+      await visitor.type(
+        screen.getByRole('textbox', { name: 'Prompt' }),
+        'A teapot'
+      )
+      await visitor.click(screen.getByRole('button', { name: 'Run' }))
+      await vi.waitFor(() => expect(runWorkshopRouter).toHaveBeenCalledTimes(1))
+      if (change === 'sign-out') auth.session.value = undefined
+      else
+        auth.session.value = {
+          ...credential,
+          workspace: { ...credential.workspace, id: 'other-workspace' }
+        }
+      await nextTick()
+      late.resolve(routerResult)
+      await vi.waitFor(() => expect(refreshWorkshopCredits).toHaveBeenCalled())
+      expect(
+        screen.getByTestId('playground-output').getAttribute('data-state')
+      ).toBe('cancelled')
+      expect(screen.queryByTestId('router-request-id')).toBeNull()
+      const outcomes = vi
+        .mocked(captureWorkshopEvent)
+        .mock.calls.map(([event]) => event)
+        .filter((event) => event.name === 'run_finished')
+      expect(outcomes).toEqual([
+        {
+          name: 'run_finished',
+          properties: expect.objectContaining({
+            status: 'cancelled',
+            workspace_id: credential.workspace.id
+          })
+        }
+      ])
+    }
+  )
+
+  it('finishes an active render while the gate hides the page on revocation', async () => {
     auth.session.value = credential
     const late = Promise.withResolvers<typeof routerResult>()
     vi.mocked(runWorkshopRouter).mockReturnValue(late.promise)
-    mountDetail({ model: runnable })
+    render(WorkshopGate, {
+      props: { keepMounted: true },
+      slots: { default: () => h(ModelDetail, { model: runnable }) }
+    })
+    await nextTick()
     await user().type(screen.getByTestId('field-prompt'), 'A teapot')
     await user().click(screen.getByTestId('run-button'))
-    await vi.waitFor(() => expect(runWorkshopRouter).toHaveBeenCalledTimes(1))
-    auth.session.value = undefined
+    await vi.waitFor(() => expect(runWorkshopRouter).toHaveBeenCalledOnce())
+    auth.workshopEnabled.value = false
     await nextTick()
-    late.resolve(routerResult)
-    await vi.waitFor(() => expect(refreshWorkshopCredits).toHaveBeenCalled())
-    expect(screen.getByTestId('run-button').getAttribute('data-gate')).toBe(
-      'signedOut'
-    )
+    expect(screen.queryByRole('button', { name: 'Run' })).toBeNull()
     expect(
       screen.getByTestId('playground-output').getAttribute('data-state')
-    ).toBe('cancelled')
-    expect(screen.queryByTestId('router-request-id')).toBeNull()
+    ).toBe('running')
+    expect(vi.mocked(runWorkshopRouter).mock.calls[0][0].signal.aborted).toBe(
+      false
+    )
+    late.resolve(routerResult)
+    await vi.waitFor(() =>
+      expect(captureWorkshopEvent).toHaveBeenCalledWith({
+        name: 'run_finished',
+        properties: expect.objectContaining({ status: 'succeeded' })
+      })
+    )
+    expect(captureWorkshopEvent).not.toHaveBeenCalledWith({
+      name: 'run_finished',
+      properties: expect.objectContaining({ status: 'cancelled' })
+    })
+    expect(screen.getByTestId('run-button').getAttribute('data-gate')).toBe(
+      'unavailable'
+    )
   })
 
   it('refuses a refreshed credential for a different workspace', async () => {
@@ -1033,7 +1414,7 @@ describe('ModelDetail', () => {
     mountDetail({ model: runnable })
     expect(
       screen.getByRole('button', {
-        name: 'Comfy Router execution is not enabled for this model yet.'
+        name: 'This model cannot be run from the browser yet.'
       })
     ).toHaveProperty('disabled', true)
     expect(runWorkshopRouter).not.toHaveBeenCalled()
@@ -1133,34 +1514,30 @@ describe('ModelDetail', () => {
       expect(screen.queryByRole('link', { name: 'Sign in to run' })).toBeNull()
       expect(
         screen.getByRole('button', {
-          name: 'Comfy Router execution is not enabled for this model yet.'
+          name: 'This model cannot be run from the browser yet.'
         })
       ).toHaveProperty('disabled', true)
     }
   )
 
-  it.for(['session', 'flag'] as const)(
-    'waits for %s initialization before offering sign-in',
-    async (pending) => {
-      const readiness = pending === 'session' ? auth.settled : auth.flagSettled
-      readiness.value = false
-      mountDetail({ model: runnable })
-      expect(
-        screen
-          .getByRole('button', { name: 'Checking your session…' })
-          .hasAttribute('disabled')
-      ).toBe(true)
-      expect(screen.queryByRole('link', { name: 'Sign in to run' })).toBeNull()
-      auth.session.value = credential
-      readiness.value = true
-      await nextTick()
-      expect(
-        screen.getByRole('button', { name: 'Run' }).hasAttribute('disabled')
-      ).toBe(false)
-    }
-  )
+  it('waits for session initialization before offering sign-in', async () => {
+    auth.settled.value = false
+    mountDetail({ model: runnable })
+    expect(
+      screen
+        .getByRole('button', { name: 'Checking your session…' })
+        .hasAttribute('disabled')
+    ).toBe(true)
+    expect(screen.queryByRole('link', { name: 'Sign in to run' })).toBeNull()
+    auth.session.value = credential
+    auth.settled.value = true
+    await nextTick()
+    expect(
+      screen.getByRole('button', { name: 'Run' }).hasAttribute('disabled')
+    ).toBe(false)
+  })
 
-  it('keeps media and raw JSON in one run, then retains both in request history', async () => {
+  it('hides response metadata while retaining normal attachments in run history', async () => {
     auth.session.value = credential
     vi.mocked(runWorkshopRouter).mockResolvedValue({
       ...routerResult,
@@ -1168,6 +1545,13 @@ describe('ModelDetail', () => {
         ...routerResult.outputs,
         {
           kind: 'text',
+          url: 'blob:transcript',
+          fileName: 'transcript.txt',
+          text: 'A transcript'
+        },
+        {
+          kind: 'text',
+          purpose: 'response-metadata',
           url: 'blob:response',
           fileName: 'response.json',
           text: '{"id":"one"}'
@@ -1183,9 +1567,10 @@ describe('ModelDetail', () => {
     await visitor.click(screen.getByRole('button', { name: 'Run' }))
     expect(screen.queryByTestId('earlier-runs')).toBeNull()
     await visitor.click(
-      await screen.findByRole('button', { name: 'response.json' })
+      await screen.findByRole('button', { name: 'Raw response' })
     )
-    expect(screen.getByText('{"id":"one"}')).toBeTruthy()
+    expect(screen.getByText('A transcript')).toBeTruthy()
+    expect(screen.queryByTitle('response.json')).toBeNull()
 
     vi.mocked(runWorkshopRouter).mockResolvedValue({
       ...routerResult,
@@ -1203,8 +1588,9 @@ describe('ModelDetail', () => {
       within(screen.getByTestId('earlier-runs')).getAllByRole('button')
     ).toHaveLength(2)
     await visitor.click(screen.getByTestId('earlier-run-0'))
-    await visitor.click(screen.getByRole('button', { name: 'response.json' }))
-    expect(screen.getByText('{"id":"one"}')).toBeTruthy()
+    await visitor.click(screen.getByRole('button', { name: 'Raw response' }))
+    expect(screen.getByText('A transcript')).toBeTruthy()
+    expect(screen.queryByTitle('response.json')).toBeNull()
   })
 
   it('evicts old blob outputs and attachments when the retained byte budget is reached', async () => {
@@ -1267,7 +1653,7 @@ describe('ModelDetail', () => {
     expect(button.getAttribute('data-gate')).toBe('unavailable')
     expect(button.hasAttribute('disabled')).toBe(true)
     expect(button.textContent).toContain(
-      'Comfy Router execution is not enabled for this model yet'
+      'This model cannot be run from the browser yet'
     )
   })
 
@@ -1281,6 +1667,134 @@ describe('ModelDetail', () => {
     expect(
       screen.getByTestId('playground-output').getAttribute('data-state')
     ).toBe('example')
+  })
+
+  it('opens an example straight away when there is nothing to lose', async () => {
+    await signedInDetail()
+    await user().click(
+      screen.getByRole('button', { name: /Open in Playground$/ })
+    )
+    expect(screen.queryByTestId('example-replace-dialog')).toBeNull()
+    expect(screen.getByTestId<HTMLTextAreaElement>('field-prompt').value).toBe(
+      'a capybara'
+    )
+  })
+
+  it.for([
+    ['keeps', 'example-replace-keep', 'my own words'],
+    ['replaces', 'example-replace-confirm', 'a capybara']
+  ] as const)(
+    'asks before an example overwrites what was typed, and then %s it',
+    async ([, answer, expected]) => {
+      await signedInDetail()
+      const prompt = screen.getByTestId('field-prompt')
+      await user().clear(prompt)
+      await user().type(prompt, 'my own words')
+
+      await user().click(
+        screen.getByRole('button', { name: /Open in Playground$/ })
+      )
+
+      expect(screen.getByTestId('example-replace-dialog')).toBeTruthy()
+      expect(
+        screen.getByTestId<HTMLTextAreaElement>('field-prompt').value
+      ).toBe('my own words')
+
+      await user().click(screen.getByTestId(answer))
+
+      expect(screen.queryByTestId('example-replace-dialog')).toBeNull()
+      expect(
+        screen.getByTestId<HTMLTextAreaElement>('field-prompt').value
+      ).toBe(expected)
+    }
+  )
+
+  it('asks in the reader locale before it overwrites', async () => {
+    auth.session.value = credential
+    mountDetail({ locale: 'zh-CN' })
+    await nextTick()
+    const prompt = screen.getByTestId('field-prompt')
+    await user().clear(prompt)
+    await user().type(prompt, '我写的')
+
+    await user().click(
+      screen.getByRole('button', { name: /在 Playground 中打开$/ })
+    )
+
+    expect(screen.getByTestId('example-replace-dialog').textContent).toContain(
+      '要替换你的输入吗？'
+    )
+    expect(screen.getByTestId('example-replace-confirm').textContent).toContain(
+      '使用该示例'
+    )
+  })
+
+  it('asks for a draft restored after a sign-in, not only for fresh typing', async () => {
+    sessionStorage.setItem(
+      `comfy-workshop-form:${model.slug}`,
+      JSON.stringify({ prompt: 'what I wrote before signing in' })
+    )
+    auth.session.value = credential
+    mountDetail()
+    await nextTick()
+    expect(screen.getByTestId<HTMLTextAreaElement>('field-prompt').value).toBe(
+      'what I wrote before signing in'
+    )
+
+    await user().click(
+      screen.getByRole('button', { name: /Open in Playground$/ })
+    )
+
+    expect(screen.getByTestId('example-replace-dialog')).toBeTruthy()
+    expect(screen.getByTestId<HTMLTextAreaElement>('field-prompt').value).toBe(
+      'what I wrote before signing in'
+    )
+  })
+
+  it('asks for a form edit left behind in the other editor', async () => {
+    const jsonModel: WorkshopModelDetail = {
+      ...uncuratedRunnable,
+      fields: [prompt],
+      examples: [{ ...model.examples[0], fields: undefined }]
+    }
+    auth.session.value = credential
+    mountDetail({ model: jsonModel })
+    await nextTick()
+
+    const prompt_ = screen.getByTestId('field-prompt')
+    await user().clear(prompt_)
+    await user().type(prompt_, 'my own words')
+    await user().click(screen.getByRole('button', { name: 'Native JSON' }))
+
+    await user().click(
+      screen.getByRole('button', { name: /Open in Playground$/ })
+    )
+
+    expect(screen.getByTestId('example-replace-dialog')).toBeTruthy()
+  })
+
+  it('asks before an example overwrites a native JSON request too', async () => {
+    const jsonModel: WorkshopModelDetail = {
+      ...uncuratedRunnable,
+      examples: [{ ...model.examples[0], fields: undefined }]
+    }
+    auth.session.value = credential
+    mountDetail({ model: jsonModel })
+    await nextTick()
+
+    await user().click(screen.getByRole('button', { name: 'Native JSON' }))
+    const body = screen.getByTestId('field-request_body')
+    await user().clear(body)
+    await user().type(body, '{{"prompt":"mine"}')
+
+    await user().click(
+      screen.getByRole('button', { name: /Open in Playground$/ })
+    )
+
+    expect(screen.getByTestId('example-replace-dialog')).toBeTruthy()
+    expect(
+      screen.getByTestId<HTMLTextAreaElement>('field-request_body').value
+    ).toBe('{"prompt":"mine"}')
   })
 
   it.for(['My saved prompt', ''])(
@@ -1428,7 +1942,6 @@ describe('ModelDetail', () => {
       expect(
         screen.getByRole('heading', { name: 'Sample outputs' })
       ).toBeTruthy()
-      expect(screen.getByText(/without changing your inputs/)).toBeTruthy()
       if (nativeJson)
         await user().click(screen.getByRole('button', { name: 'Native JSON' }))
       const input = screen.getByTestId<HTMLTextAreaElement>(

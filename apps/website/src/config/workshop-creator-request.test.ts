@@ -333,7 +333,8 @@ describe('creator widgets to native Router requests', () => {
       const field = fields.find((entry) => entry.name === widget)
       if (field?.kind !== 'select')
         throw new Error(`Missing resolution dropdown: ${id}`)
-      expect(field.label).toBe('Resolution')
+      // Seedream and GPT Image widgets mix resolution tiers with pixel presets.
+      expect(['Resolution', 'Image size']).toContain(field.label)
       expect(field.options).toContain(value)
       expect(await prepare(id, { [widget]: value })).toMatchObject(expected)
       await expect(

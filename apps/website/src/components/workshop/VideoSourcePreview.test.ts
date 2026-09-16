@@ -1,4 +1,3 @@
-// @vitest-environment happy-dom
 import { render, screen, waitFor, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { expect, it, vi } from 'vitest'

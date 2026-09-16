@@ -120,7 +120,6 @@ app.registerExtension({
           touchZooming = true
 
           LiteGraph.closeAllContextMenus(window)
-          // @ts-expect-error
           app.canvas.search_box?.close()
           const newTouchDist = getMultiTouchPos(e)
 
@@ -154,8 +153,8 @@ app.registerExtension({
             center.clientX / scale - app.canvas.ds.offset[0],
             center.clientY / scale - app.canvas.ds.offset[1]
           ]
-          var oldCenter = convertScaleToOffset(oldScale)
-          var newCenter = convertScaleToOffset(newScale)
+          const oldCenter = convertScaleToOffset(oldScale)
+          const newCenter = convertScaleToOffset(newScale)
 
           app.canvas.ds.offset[0] += newX + newCenter[0] - oldCenter[0]
           app.canvas.ds.offset[1] += newY + newCenter[1] - oldCenter[1]

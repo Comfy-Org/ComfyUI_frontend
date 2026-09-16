@@ -11,12 +11,16 @@ test('GPT Image generation pages are discoverable as text-to-image while publish
   )
   await page.route('**/_website/ModelsCatalogue.*.js', async (route) => {
     await hydrated.promise
-    await route.continue()
+    await route.fallback()
   })
   try {
     await page.goto('/models/?useCase=generate-images', { waitUntil: 'commit' })
     await moduleRequested
-    await expect(page.getByTestId('workshop-search')).toBeDisabled()
+    await expect(page.getByTestId('workshop-search')).toHaveCount(0)
+    await expect(page.getByTestId('models-loading')).toBeVisible()
+    await expect(
+      page.getByRole('heading', { level: 1, name: /Grok Imagine/ })
+    ).toHaveCount(0)
   } finally {
     hydrated.resolve()
   }
@@ -24,7 +28,7 @@ test('GPT Image generation pages are discoverable as text-to-image while publish
   const cards = page
     .getByTestId('workshop-models-grid')
     .getByTestId('workshop-model-card')
-  await expect(cards).toHaveCount(3)
+  await expect(cards).toHaveCount(5)
   await page.getByRole('link', { name: /GPT Image 1\.5/ }).click()
   await expect(page).toHaveURL(
     /\/models\/openai--gpt-image-1\.5--edit-images\/$/
@@ -34,5 +38,31 @@ test('GPT Image generation pages are discoverable as text-to-image while publish
   ).toBeVisible()
   await page.goto('/models/?useCase=edit-images')
   await page.getByTestId('workshop-search').fill('gpt image')
-  await expect(cards).toHaveCount(0)
+  await expect(cards).toHaveCount(3)
+  await page.getByRole('link', { name: /GPT Image 2 Image Edit/ }).click()
+  await expect(page).toHaveURL(/\/models\/openai--gpt-image-2--edit-images\/$/)
+  await expect(
+    page.getByRole('group', { name: 'Source images', exact: true })
+  ).toBeVisible()
+})
+
+test('role-specific pages omit controls that their requests cannot accept', async ({
+  page
+}) => {
+  await page.goto('/models/vertexai--veo-3--animate-images/')
+  await expect(
+    page.getByRole('group', { name: 'First frame', exact: true })
+  ).toBeVisible()
+  await expect(
+    page.getByRole('group', { name: 'Reference images', exact: true })
+  ).toHaveCount(0)
+
+  await page.goto('/models/byteplus--seedream-5-pro--generate-images/')
+  await expect(
+    page.getByRole('group', { name: 'Source images', exact: true })
+  ).toHaveCount(0)
+  await page.getByTestId('playground-advanced').locator('summary').click()
+  await expect(page.getByText('Separate layers', { exact: true })).toHaveCount(
+    0
+  )
 })

@@ -22,6 +22,10 @@ to a section below.
 
 ## Prerequisites
 
+For real Cloud billing E2E setup and account prerequisites, see [Cloud billing E2E coverage](../docs/testing/cloud-billing-e2e.md).
+Its dedicated runner requires real authentication and a dedicated sandbox account;
+the live suite is excluded from the ordinary browser test configurations.
+
 **CRITICAL**: Start the ComfyUI backend with `--multi-user`:
 
 ```bash
@@ -116,15 +120,22 @@ TEST_COMFYUI_DIR=/path/to/your/ComfyUI
 ### Release API mocking
 
 By default all tests mock `api.comfy.org/releases` so release popups don't cover
-UI elements. To test real release data:
+UI elements. To supply a custom release response before the first app load:
 
 ```typescript
-await comfyPage.setup({ mockReleases: false })
+test.use({ mockReleases: false })
 ```
 
-See `tests/releaseNotifications.spec.ts` for release-specific tests.
+Install the replacement route in a test-scoped auto fixture that depends on
+`page`, before `comfyPage` boots. Disabling the default mock does not disable
+network isolation. See `fixtures/releaseNotificationFixture.ts` and
+`tests/releaseNotifications.spec.ts` for release-specific responses and request
+tracking.
 
 ### Network isolation
+
+The live Cloud routing infrastructure spec requires `openssl` on PATH to generate
+a disposable localhost TLS certificate; it does not use a live account.
 
 The shared fixtures allow HTTP and real WebSockets only to the configured
 frontend/backend origins: `PLAYWRIGHT_TEST_URL`, `PLAYWRIGHT_SETUP_API_URL`,
@@ -324,6 +335,11 @@ for adding packs - see
 [docs/custom-node-regression-suite.md](../docs/custom-node-regression-suite.md).
 
 ## Writing Tests
+
+Design rules that hold at every test level (behavioral assertions, lowest
+proving level, table-driven variants, isolation, no sleeps) are in
+`docs/guidance/testing-principles.md`, which auto-loads for `*.spec.ts`. This
+guide covers the Playwright and ComfyUI mechanics.
 
 ### Golden rules
 

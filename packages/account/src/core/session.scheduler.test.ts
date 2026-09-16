@@ -5,6 +5,7 @@ import type {
   AccountUser,
   CredentialStorage,
   CrossTabRefreshPort,
+  ScheduledRefreshReport,
   SessionClientOptions,
   SessionSnapshot
 } from './session.js'
@@ -134,7 +135,7 @@ describe('opt-in refresh scheduler', () => {
     const client = makeClient({
       fetchImpl,
       refreshScheduler: {
-        onScheduledOutcome: (outcome) => outcomes.push(outcome)
+        onScheduledOutcome: (report) => outcomes.push(report.outcome)
       }
     })
     const identity = manualIdentity()
@@ -311,7 +312,7 @@ describe('opt-in refresh scheduler', () => {
   })
 
   it('reports each scheduled outcome to the host hook, and only scheduled ones', async () => {
-    const outcomes: string[] = []
+    const reported: ScheduledRefreshReport[] = []
     const fetchImpl = vi
       .fn<typeof fetch>()
       .mockImplementationOnce(async () => mintResponse('jwt-1'))
@@ -321,7 +322,7 @@ describe('opt-in refresh scheduler', () => {
     const client = makeClient({
       fetchImpl,
       refreshScheduler: {
-        onScheduledOutcome: (outcome) => outcomes.push(outcome)
+        onScheduledOutcome: (report) => reported.push(report)
       }
     })
     const identity = manualIdentity()
@@ -332,31 +333,37 @@ describe('opt-in refresh scheduler', () => {
       expect(client.getToken()).toBe('jwt-1')
     })
     expect(
-      outcomes,
+      reported,
       'the login mint is not a scheduled refresh; cloud does not track it'
     ).toEqual([])
 
     await vi.advanceTimersByTimeAsync(
       NINETY_MINUTES_MS - DEFAULT_BUFFER_MS + 10
     )
-    expect(outcomes).toEqual(['retry_scheduled'])
+    expect(reported).toEqual([{ outcome: 'retry_scheduled' }])
     await vi.advanceTimersByTimeAsync(5000 + 10)
-    expect(outcomes).toEqual(['retry_scheduled', 'succeeded'])
+    expect(reported).toEqual([
+      { outcome: 'retry_scheduled' },
+      { outcome: 'succeeded' }
+    ])
 
     await vi.advanceTimersByTimeAsync(NINETY_MINUTES_MS * 10)
-    expect(outcomes).toEqual([
-      'retry_scheduled',
-      'succeeded',
-      'retry_scheduled',
-      'retry_scheduled',
-      'retry_scheduled',
-      'retries_exhausted',
-      'expired'
+    expect(reported).toEqual([
+      { outcome: 'retry_scheduled' },
+      { outcome: 'succeeded' },
+      { outcome: 'retry_scheduled' },
+      { outcome: 'retry_scheduled' },
+      { outcome: 'retry_scheduled' },
+      { outcome: 'retries_exhausted' },
+      {
+        outcome: 'expired',
+        failure: { status: 'error', code: 'TOKEN_EXCHANGE_FAILED' }
+      }
     ])
   })
 
   it('hands the committed failure to the host hook with a permanent outcome', async () => {
-    const reported: unknown[] = []
+    const reported: ScheduledRefreshReport[] = []
     const fetchImpl = vi
       .fn<typeof fetch>()
       .mockImplementationOnce(async () => mintResponse('jwt-1'))
@@ -364,8 +371,7 @@ describe('opt-in refresh scheduler', () => {
     const client = makeClient({
       fetchImpl,
       refreshScheduler: {
-        onScheduledOutcome: (outcome, failure) =>
-          reported.push([outcome, failure])
+        onScheduledOutcome: (report) => reported.push(report)
       }
     })
     const identity = manualIdentity()
@@ -377,10 +383,78 @@ describe('opt-in refresh scheduler', () => {
 
     await vi.advanceTimersByTimeAsync(NINETY_MINUTES_MS)
 
-    expect(reported.at(-1)).toEqual([
-      'permanent_failure',
-      { status: 'error', code: 'ACCESS_DENIED', httpStatus: 403 }
-    ])
+    expect(reported.at(-1)).toEqual({
+      outcome: 'permanent_failure',
+      failure: { status: 'error', code: 'ACCESS_DENIED', httpStatus: 403 }
+    })
+  })
+
+  it('reports a scheduled success as one tagged object with no failure', async () => {
+    const reported: ScheduledRefreshReport[] = []
+    const fetchImpl = vi
+      .fn<typeof fetch>()
+      .mockImplementationOnce(async () => mintResponse('jwt-1'))
+      .mockImplementation(async () => mintResponse('jwt-2'))
+    const client = makeClient({
+      fetchImpl,
+      refreshScheduler: {
+        onScheduledOutcome: (report) => reported.push(report)
+      }
+    })
+    const identity = manualIdentity()
+    client.attachIdentity(identity.port)
+    identity.fire(testUser())
+    await vi.waitFor(() => {
+      expect(client.getToken()).toBe('jwt-1')
+    })
+
+    await vi.advanceTimersByTimeAsync(
+      NINETY_MINUTES_MS - DEFAULT_BUFFER_MS + 10
+    )
+
+    expect(
+      reported.at(-1),
+      'the hook receives one tagged object, and a success carries no failure'
+    ).toEqual({ outcome: 'succeeded' })
+  })
+
+  it('cannot represent an outcome paired with the wrong failure payload', () => {
+    const permanentFailure: ScheduledRefreshReport = {
+      outcome: 'permanent_failure',
+      failure: { status: 'error', code: 'ACCESS_DENIED' }
+    }
+    // @ts-expect-error a permanent failure must carry its failure payload
+    const missingFailure: ScheduledRefreshReport = {
+      outcome: 'permanent_failure'
+    }
+    const successWithFailure: ScheduledRefreshReport = {
+      outcome: 'succeeded',
+      // @ts-expect-error a success cannot carry a failure payload
+      failure: { status: 'error', code: 'ACCESS_DENIED' }
+    }
+
+    expect(
+      [
+        permanentFailure.failure.code,
+        missingFailure.outcome,
+        successWithFailure.outcome
+      ],
+      'the two @ts-expect-error directives above are the real coverage; this only keeps the constructed values referenced'
+    ).toEqual(['ACCESS_DENIED', 'permanent_failure', 'succeeded'])
+  })
+
+  it('rejects a success carrying a failure that reaches the contract through a variable', () => {
+    const builtElsewhere = {
+      outcome: 'succeeded' as const,
+      failure: { status: 'error' as const, code: 'ACCESS_DENIED' as const }
+    }
+    // @ts-expect-error a success cannot carry a failure payload
+    const laundered: ScheduledRefreshReport = builtElsewhere
+
+    expect(
+      laundered.outcome,
+      'the @ts-expect-error above is the coverage, and only failure?: never earns it; excess-property checking accepts an invalid report once it is no longer a fresh object literal'
+    ).toBe('succeeded')
   })
 
   it('reports a permanent scheduled failure to the host hook', async () => {
@@ -392,7 +466,7 @@ describe('opt-in refresh scheduler', () => {
     const client = makeClient({
       fetchImpl,
       refreshScheduler: {
-        onScheduledOutcome: (outcome) => outcomes.push(outcome)
+        onScheduledOutcome: (report) => outcomes.push(report.outcome)
       }
     })
     const identity = manualIdentity()
@@ -769,7 +843,7 @@ describe('cross-tab refresh coordination', () => {
       fetchImpl,
       refreshScheduler: {
         crossTab: { port },
-        onScheduledOutcome: (outcome) => outcomes.push(outcome)
+        onScheduledOutcome: (report) => outcomes.push(report.outcome)
       }
     })
     const identity = manualIdentity()
@@ -936,7 +1010,7 @@ describe('cross-tab refresh coordination', () => {
       fetchImpl,
       refreshScheduler: {
         crossTab: { port },
-        onScheduledOutcome: (outcome) => outcomes.push(outcome)
+        onScheduledOutcome: (report) => outcomes.push(report.outcome)
       }
     })
     const identity = manualIdentity()

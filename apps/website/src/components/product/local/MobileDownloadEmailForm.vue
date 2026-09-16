@@ -91,7 +91,7 @@ async function onSubmit() {
       class="flex flex-col gap-4"
       @submit.prevent="onSubmit"
     >
-      <h2 class="text-primary-comfy-yellow text-[17px] font-medium">
+      <h2 class="text-[17px] font-medium text-primary-comfy-yellow">
         {{ t('download.emailForm.heading', locale) }}
       </h2>
       <input
@@ -113,7 +113,7 @@ async function onSubmit() {
           :aria-invalid="status === 'invalid' || undefined"
           :aria-describedby="errorMessage ? errorMessageId : undefined"
           :placeholder="t('download.emailForm.placeholder', locale)"
-          class="bg-transparency-white-t4 h-16 w-full rounded-3xl border border-primary-comfy-canvas pr-14 pl-4 text-[13px] font-semibold text-primary-comfy-canvas placeholder:text-primary-comfy-canvas/60"
+          class="h-16 w-full rounded-3xl border border-primary-comfy-canvas bg-transparency-white-t4 pr-14 pl-4 text-[13px] font-semibold text-primary-comfy-canvas placeholder:text-primary-comfy-canvas/60"
         />
         <IconButton
           type="submit"
@@ -136,7 +136,7 @@ async function onSubmit() {
         v-if="errorMessage"
         :id="errorMessageId"
         role="alert"
-        class="text-primary-comfy-orange -mt-2 text-sm"
+        class="-mt-2 text-sm text-primary-comfy-orange"
       >
         {{ errorMessage }}
       </p>
@@ -149,7 +149,7 @@ async function onSubmit() {
       tabindex="-1"
       :class="
         status === 'success'
-          ? 'bg-transparency-white-t4 flex h-16 items-center rounded-3xl px-4 text-[13px] font-semibold wrap-break-word text-primary-warm-gray focus:outline-none'
+          ? 'flex h-16 items-center rounded-3xl bg-transparency-white-t4 px-4 text-[13px] font-semibold wrap-break-word text-primary-warm-gray focus:outline-none'
           : undefined
       "
     >

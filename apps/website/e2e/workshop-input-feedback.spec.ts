@@ -40,7 +40,7 @@ test('FLUX Erase hydrates its local image and mask and shows an actual Erase res
 test('Kontext Pro shows a sourced price estimate', async ({ page }) => {
   await page.goto('/models/bfl--flux-kontext-pro--edit-images/')
   await expect(page.getByTestId('model-price')).toContainText(
-    'Estimated 8.44 credits/Run'
+    '8.44 credits/Run'
   )
 })
 
@@ -64,8 +64,13 @@ test('Beeble displays readable options while the API keeps its native values', a
 })
 
 test('HeyGen offers named language and locale choices and uses the supported voice without exposing its account-specific ID', async ({
+  context,
   page
 }) => {
+  await context.route(
+    'https://media.comfy.org/website/workshop/heygen/starfish-tts/harbour-radio-signs-off.mp3',
+    (route) => route.fulfill({ contentType: 'audio/mpeg', body: '' })
+  )
   await page.goto('/models/heygen--starfish-tts--audio/')
   await expect(
     page.getByRole('combobox', { name: 'Language', exact: true })
