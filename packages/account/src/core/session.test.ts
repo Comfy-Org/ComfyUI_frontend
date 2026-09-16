@@ -6,7 +6,8 @@ import type {
   AccountUser,
   CredentialStorage,
   SessionClientOptions,
-  SessionErrorCode
+  SessionErrorCode,
+  SessionSnapshot
 } from './session.js'
 import {
   SESSION_ERROR_CODES,
@@ -824,6 +825,27 @@ describe('storage outage', () => {
   })
 })
 
+describe('stored credential reads', () => {
+  it('serves a fresh in-memory credential without touching storage', async () => {
+    const storage = memoryStorage()
+    const read = vi.spyOn(storage, 'read')
+    const { client } = makeClient({ fetchImpl: okFetch(), storage })
+    const identity = manualIdentity()
+    client.attachIdentity(identity.port, { autoMint: false })
+    const user = testUser()
+    identity.fire(user)
+    await client.ensureFresh(user, {})
+    read.mockClear()
+
+    await client.ensureFresh(user, {})
+
+    expect(
+      read,
+      'a fresh live credential must not cost a storage read, parse and schema check on every call'
+    ).not.toHaveBeenCalled()
+  })
+})
+
 describe('stale storage', () => {
   it('serves the fresh in-memory credential when the stored record is stale because its write failed', async () => {
     const storage = memoryStorage()
@@ -1467,6 +1489,35 @@ describe('sign-in state ownership', () => {
     identity.fire(testUser())
 
     expect(client.getSnapshot().phase).toBe('pending')
+    expect(fetchImpl).not.toHaveBeenCalled()
+  })
+
+  it('detaches a subscription disposed from inside its first synchronous delivery', () => {
+    const fetchImpl = vi.fn<typeof fetch>()
+    const { client } = makeClient({ fetchImpl })
+    const first = testUser()
+    let deliver: ((user: AccountUser | null) => void) | undefined
+    const unsubscribe = vi.fn()
+    const port = createTestIdentity<AccountUser>({
+      onUserChanged: (callback) => {
+        deliver = callback
+        callback(first)
+        return unsubscribe
+      }
+    })
+    const seen: SessionSnapshot['phase'][] = []
+    client.subscribe((snapshot) => {
+      seen.push(snapshot.phase)
+      if (snapshot.phase === 'minting') client.dispose()
+    })
+
+    client.attachIdentity(port)
+    deliver?.(testUser('uid-2', 'id-token-2'))
+
+    expect(seen).toEqual(['pending', 'minting', 'pending'])
+    expect(client.getSnapshot().phase).toBe('pending')
+    expect(unsubscribe).toHaveBeenCalledOnce()
+    expect(first.getIdToken).not.toHaveBeenCalled()
     expect(fetchImpl).not.toHaveBeenCalled()
   })
 })

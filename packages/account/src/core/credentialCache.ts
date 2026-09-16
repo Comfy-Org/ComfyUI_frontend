@@ -103,23 +103,23 @@ interface CredentialCandidate {
  * session.
  */
 export function selectFreshCredential(
-  candidates: readonly (CredentialCandidate | undefined)[],
+  candidates: readonly (() => CredentialCandidate | undefined)[],
   uid: string,
   target: string | undefined,
   now: number,
   freshMarginMs: number
 ): AccountCredential | undefined {
-  return candidates
-    .map((candidate) =>
-      candidate?.credential?.uid === uid && candidate.target === target
-        ? candidate.credential
-        : undefined
-    )
-    .find(
-      (candidate): candidate is AccountCredential =>
-        candidate !== undefined &&
-        isCredentialFresh(candidate, now, freshMarginMs)
-    )
+  for (const supply of candidates) {
+    const candidate = supply()
+    if (
+      candidate?.credential?.uid === uid &&
+      candidate.target === target &&
+      isCredentialFresh(candidate.credential, now, freshMarginMs)
+    ) {
+      return candidate.credential
+    }
+  }
+  return undefined
 }
 
 export function createCredentialCache(
