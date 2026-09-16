@@ -6,6 +6,7 @@ import { computed, createApp, defineComponent, ref } from 'vue'
 import type { App } from 'vue'
 import { createI18n } from 'vue-i18n'
 
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import type {
   WorkspacePendingInvite,
   WorkspaceMember
@@ -453,18 +454,7 @@ vi.mock<unknown>(import('@/services/dialogService'), () => ({
   })
 }))
 
-const mockBillingControlEnabled = vi.hoisted(() => ({ value: true }))
-
-vi.mock<unknown>(import('@/composables/useFeatureFlags'), () => ({
-  useFeatureFlags: () => ({
-    flags: {
-      get billingControlEnabled() {
-        return mockBillingControlEnabled.value
-      }
-    }
-  })
-}))
-
+vi.mock(import('@/composables/useFeatureFlags'))
 describe('useMembersPanel', () => {
   const apps: App<Element>[] = []
   let pinia: Pinia
@@ -479,7 +469,7 @@ describe('useMembersPanel', () => {
     workspaceMembers = []
     workspacePendingInvites = []
     updateWorkspaceStore()
-    mockBillingControlEnabled.value = true
+    vi.mocked(useFeatureFlags().flags).billingControlEnabled = true
     mockMaxSeats.value = 73
     mockOccupiedSeats.value = 0
     mockCanAccessSubscriptionFeatures.value = true
@@ -885,7 +875,7 @@ describe('useMembersPanel', () => {
     })
 
     it('omits the credit-limit action when the flag is disabled', async () => {
-      mockBillingControlEnabled.value = false
+      vi.mocked(useFeatureFlags().flags).billingControlEnabled = false
       const panel = await setup()
 
       expect(panel.memberMenuItems(createMember()).map((i) => i.label)).toEqual(
@@ -897,7 +887,7 @@ describe('useMembersPanel', () => {
     })
 
     it('keeps the creator menu hidden when the flag is disabled', async () => {
-      mockBillingControlEnabled.value = false
+      vi.mocked(useFeatureFlags().flags).billingControlEnabled = false
       setOriginalOwner()
       const panel = await setup()
 

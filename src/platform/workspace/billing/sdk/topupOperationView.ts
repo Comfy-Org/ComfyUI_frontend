@@ -10,6 +10,7 @@ import type {
   TopupFailure,
   TopupResult
 } from '@comfyorg/account/billing'
+import { unwrapServerCode } from '@comfyorg/account/billing'
 
 import { t } from '@/i18n'
 import type {
@@ -80,10 +81,11 @@ export function projectTopupOperation(
 }
 
 function topupFailureError(failure: TopupFailure): WorkspaceApiError {
+  const serverCode = 'serverCode' in failure ? failure.serverCode : undefined
   return new WorkspaceApiError(
     t('credits.topUp.unknownError'),
     'httpStatus' in failure ? failure.httpStatus : undefined,
-    'serverCode' in failure ? failure.serverCode : failure.code
+    serverCode === undefined ? failure.code : unwrapServerCode(serverCode)
   )
 }
 

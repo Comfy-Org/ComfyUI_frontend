@@ -1,4 +1,5 @@
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -20,8 +21,6 @@ interface Subscription {
 }
 
 const state = vi.hoisted(() => ({
-  billingControlEnabled: true,
-  v1PaymentRecovery: true,
   canAccessSubscriptionFeatures: true,
   isTeamPlan: true,
   billingStatus: 'paid' as string | null,
@@ -50,18 +49,7 @@ vi.mock<unknown>(import('@/composables/billing/useBillingRouting'), () => ({
 
 vi.mock(import('@/platform/distribution/types'), () => ({ isCloud: true }))
 
-vi.mock<unknown>(import('@/composables/useFeatureFlags'), () => ({
-  useFeatureFlags: () => ({
-    flags: {
-      get billingControlEnabled() {
-        return state.billingControlEnabled
-      },
-      get v1PaymentRecovery() {
-        return state.v1PaymentRecovery
-      }
-    }
-  })
-}))
+vi.mock(import('@/composables/useFeatureFlags'))
 
 vi.mock<unknown>(import('@/composables/billing/useBillingContext'), () => ({
   useBillingContext: () => ({
@@ -217,8 +205,8 @@ function paymentFailedState() {
 
 describe('BillingStatusBanner', () => {
   beforeEach(() => {
-    state.billingControlEnabled = true
-    state.v1PaymentRecovery = true
+    vi.mocked(useFeatureFlags().flags).billingControlEnabled = true
+    vi.mocked(useFeatureFlags().flags).v1PaymentRecovery = true
     state.canAccessSubscriptionFeatures = true
     state.isTeamPlan = true
     state.billingStatus = 'paid'
@@ -235,6 +223,7 @@ describe('BillingStatusBanner', () => {
     useBillingCapabilities().canTopUp = computed(() => true)
     useBillingCapabilities().canSubscribeSelfServe = computed(() => false)
     useBillingCapabilities().canReactivate = computed(() => true)
+    state.canReactivatePlan = true
     state.shouldUseWorkspaceBilling = true
   })
 
@@ -244,7 +233,7 @@ describe('BillingStatusBanner', () => {
   })
 
   it('renders nothing when billing control is rolled back, even out of credits', () => {
-    state.billingControlEnabled = false
+    vi.mocked(useFeatureFlags().flags).billingControlEnabled = false
     state.subscription = {
       hasFunds: false,
       isCancelled: false,
@@ -397,7 +386,7 @@ describe('BillingStatusBanner', () => {
   })
 
   it('hides payment recovery states while preserving existing notices when the new flag is off', () => {
-    state.v1PaymentRecovery = false
+    vi.mocked(useFeatureFlags().flags).v1PaymentRecovery = false
     paymentFailedState()
     const { unmount } = renderBanner()
     expect(screen.queryByRole('status')).not.toBeInTheDocument()
