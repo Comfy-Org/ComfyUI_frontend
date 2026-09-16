@@ -117,11 +117,12 @@ interface AuthResolver {
 }
 
 /**
- * A named app this entry creates gets the host's persistence through
- * `initializeAuth`; an app another entry already created keeps the
- * persistence its creator chose, since Firebase allows one Auth per app.
- * Unlike `getAuth`, `initializeAuth` wires no popup resolver of its own, and
- * popup sign-in throws `auth/argument-error` without one.
+ * Host persistence goes through `initializeAuth`, whether this entry creates
+ * the named app or another script already did: Firebase allows one Auth per
+ * app, so an Auth another module initialized with different dependencies
+ * fails with `auth/already-initialized` instead of silently winning. Unlike
+ * `getAuth`, `initializeAuth` wires no popup resolver of its own, and popup
+ * sign-in throws `auth/argument-error` without one.
  */
 function authResolver(config: FirebaseIdentityConfig): AuthResolver {
   if (config.auth) {
@@ -129,18 +130,15 @@ function authResolver(config: FirebaseIdentityConfig): AuthResolver {
     return { resolve: () => auth, peek: () => auth }
   }
   const appName = config.appName ?? 'comfy-account'
+  const createApp = () => {
+    const options =
+      typeof config.options === 'function' ? config.options() : config.options
+    return initializeApp(options, appName)
+  }
   let resolved: Auth | undefined
   const resolve = (): Auth => {
     if (resolved) return resolved
-    // A pre-existing app keeps its creator's persistence and popup resolver; a host needing both must let this entry create it.
-    const existing = getApps().find((app) => app.name === appName)
-    if (existing) {
-      resolved = getAuth(existing)
-      return resolved
-    }
-    const options =
-      typeof config.options === 'function' ? config.options() : config.options
-    const app = initializeApp(options, appName)
+    const app = getApps().find((app) => app.name === appName) ?? createApp()
     resolved = config.persistence
       ? initializeAuth(app, {
           persistence: config.persistence,

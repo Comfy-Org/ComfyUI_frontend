@@ -144,6 +144,28 @@ describe('createFirebaseIdentity over package-initialized Firebase', () => {
     expect(sdk.getAuth).toHaveBeenCalledWith({ name: '[DEFAULT]' })
   })
 
+  it("applies the host persistence to an app another script already created, so its Auth is not left on platform defaults or silently on that script's dependencies", async () => {
+    app.existing.push({ name: '[DEFAULT]' })
+    const { createFirebaseIdentity } = await import('./index.js')
+    const identity = createFirebaseIdentity({
+      options: { apiKey: 'test' },
+      appName: '[DEFAULT]',
+      persistence: [localStore, indexedDbStore]
+    })
+
+    identity.onUserChanged(() => {})
+
+    expect(app.initializeApp).not.toHaveBeenCalled()
+    expect(sdk.initializeAuth).toHaveBeenCalledWith(
+      { name: '[DEFAULT]' },
+      {
+        persistence: [localStore, indexedDbStore],
+        popupRedirectResolver: sdk.browserPopupRedirectResolver
+      }
+    )
+    expect(sdk.getAuth).not.toHaveBeenCalled()
+  })
+
   it.for([
     { shape: 'a single persistence', persistence: localStore },
     {

@@ -113,24 +113,35 @@ describe('firebaseIdentity', () => {
     expect(consoleError).not.toHaveBeenCalled()
   })
 
-  it('reuses an existing [DEFAULT] app through getAuth without initializing Auth again', async () => {
+  it('initializes Auth on an existing [DEFAULT] app with the same persistence list and popup resolver instead of taking whatever its creator chose', async () => {
     const {
       firebaseIdentity,
       getApps,
       getAuth,
       initializeApp,
-      initializeAuth
+      initializeAuth,
+      browserLocalPersistence,
+      browserSessionPersistence,
+      indexedDBLocalPersistence,
+      browserPopupRedirectResolver
     } = await loadFresh()
     vi.mocked(getApps).mockReturnValue([defaultApp])
-    vi.mocked(getAuth).mockReturnValue(
+    vi.mocked(initializeAuth).mockReturnValue(
       fromPartial<Auth>({ currentUser: signedIn })
     )
 
     firebaseIdentity.initialize()
 
-    expect(getAuth).toHaveBeenCalledWith(defaultApp)
+    expect(initializeAuth).toHaveBeenCalledWith(defaultApp, {
+      persistence: [
+        browserLocalPersistence,
+        indexedDBLocalPersistence,
+        browserSessionPersistence
+      ],
+      popupRedirectResolver: browserPopupRedirectResolver
+    })
     expect(firebaseIdentity.currentUser()).toBe(signedIn)
     expect(initializeApp).not.toHaveBeenCalled()
-    expect(initializeAuth).not.toHaveBeenCalled()
+    expect(getAuth).not.toHaveBeenCalled()
   })
 })
