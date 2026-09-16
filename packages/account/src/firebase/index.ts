@@ -132,6 +132,7 @@ function authResolver(config: FirebaseIdentityConfig): AuthResolver {
   let resolved: Auth | undefined
   const resolve = (): Auth => {
     if (resolved) return resolved
+    // A pre-existing app keeps its creator's persistence and popup resolver; a host needing both must let this entry create it.
     const existing = getApps().find((app) => app.name === appName)
     if (existing) {
       resolved = getAuth(existing)
