@@ -12,32 +12,17 @@ const clustered = [
 ]
 
 describe('LanguageSwitcher', () => {
-  it('offers every language the page is published in', () => {
+  it('offers exactly the published languages with their page destinations', () => {
     render(LanguageSwitcher, { props: { locale: 'en', alternates: clustered } })
 
-    for (const name of ['English', '简体中文', '日本語']) {
-      expect(screen.getByRole('link', { name })).toBeTruthy()
-    }
-    expect(screen.getAllByRole('link')).toHaveLength(3)
-  })
-
-  /**
-   * `x-default` is a routing hint for crawlers, not a language. Rendering it
-   * would put a fourth entry in the list that duplicates English.
-   */
-  it('never offers x-default as a language', () => {
-    render(LanguageSwitcher, { props: { locale: 'en', alternates: clustered } })
-
-    expect(screen.queryByRole('link', { name: 'x-default' })).toBeNull()
-    expect(screen.getAllByRole('link')).toHaveLength(3)
-  })
-
-  it('links each language to that language of the same page', () => {
-    render(LanguageSwitcher, { props: { locale: 'en', alternates: clustered } })
-
+    expect(screen.getAllByRole('link')).toEqual([
+      screen.getByRole('link', { name: 'English' }),
+      screen.getByRole('link', { name: '简体中文' }),
+      screen.getByRole('link', { name: '日本語' })
+    ])
     expect(
-      screen.getByRole('link', { name: '日本語' }).getAttribute('href')
-    ).toBe('/ja/download/')
+      screen.getAllByRole('link').map((link) => link.getAttribute('href'))
+    ).toEqual(['/download/', '/zh-CN/download/', '/ja/download/'])
   })
 
   it('marks the language being read', () => {
@@ -94,12 +79,11 @@ describe('LanguageSwitcher', () => {
   it('forces a full page load, so the new locale dictionary is fetched', () => {
     render(LanguageSwitcher, { props: { locale: 'en', alternates: clustered } })
 
-    for (const name of ['English', '简体中文', '日本語']) {
-      expect(
-        screen.getByRole('link', { name }).hasAttribute('data-astro-reload'),
-        `${name} must force a full navigation`
-      ).toBe(true)
-    }
+    expect(
+      screen
+        .getAllByRole('link')
+        .map((link) => link.hasAttribute('data-astro-reload'))
+    ).toEqual([true, true, true])
   })
 
   /**

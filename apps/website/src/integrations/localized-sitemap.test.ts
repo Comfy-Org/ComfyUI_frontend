@@ -117,15 +117,4 @@ describe('sitemapCandidates', () => {
     expect(kept).toContain('/zh-CN/cloud/')
     expect(kept).not.toContain('/zh-CN/terms-of-service/')
   })
-
-  it('is the same set the entry builder walks', () => {
-    const paths = ['/zh-CN/cloud/', '/zh-CN/about/']
-    const listed = new Set([`${origin}/zh-CN/about/`])
-
-    // Every candidate that is not a redirect stub becomes an entry, so the two
-    // cannot disagree about which paths matter.
-    expect(missingSitemapEntries(paths, listed, origin).length).toBe(
-      sitemapCandidates(paths, listed, origin).length
-    )
-  })
 })

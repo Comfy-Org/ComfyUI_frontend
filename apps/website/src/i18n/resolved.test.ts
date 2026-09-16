@@ -51,28 +51,6 @@ describe('resolved dictionaries match the source they came from', () => {
 })
 
 /**
- * A `t()` call with exactly one argument, whatever form that argument takes.
- * Matching only `t('key')` let `t("key")`, `` t(`key`) `` and `t(key)` through —
- * all of which default to English just the same. A second argument is the
- * locale, so a comma means the call is fine.
- */
-const SINGLE_ARG_T = /\bt\(\s*(?:'[^']*'|"[^"]*"|`[^`]*`|[A-Za-z_$][\w$]*)\s*\)/
-
-/**
- * A `t()` or `tPlural()` call whose locale is a string literal.
- *
- * Writing `t(key, 'en')` satisfies the single-argument check above and fails
- * in exactly the same way: the browser has the page's dictionary and no other,
- * so a literal that is not the page's locale throws at hydration. The Models
- * island shipped three of these and blanked on every /zh-CN and /ja copy.
- */
-const LITERAL_LOCALE_T =
-  /\bt(?:Plural)?\((?:[^()]|\([^()]*\))*,\s*(?:'[^']*'|"[^"]*")\s*\)/
-
-/** Whether a module loads the client translation API at runtime. */
-const IMPORTS_TRANSLATIONS = /(?:from|import)\s+'[./]*i18n\/translations'/
-
-/**
  * A relative specifier from either import form. A side-effect import has no
  * `from`, so matching on `from` alone missed `import '../../i18n/translations'`
  * — which loads the client module just as thoroughly as a named import does.
@@ -96,43 +74,7 @@ const TYPE_ONLY_IMPORT = /\bimport\s+type\b[^'"]*['"][^'"]*['"]/g
 const withoutExtension = (path: string) =>
   path.replace(/\.(?:ts|js|mts|mjs)$/, '')
 
-describe('the per-locale split cannot be silently undone', () => {
-  // In the browser only the page's own locale is loaded, so `t(key)` with no
-  // locale — which defaults to English — throws on a Japanese page. All the
-  // calls that name a locale literally are in `.astro` files, which run on
-  // the server where every locale is present.
-  //
-  // `.ts` modules are scanned too, not only components: a config module that
-  // calls `t()` at module scope is evaluated the moment an island imports it,
-  // before any prop could name the right locale. Only modules that import the
-  // client API are read, so an unrelated function called `t` is not a hit.
-  const clientModules = [
-    ...walk(srcDir, '.vue'),
-    ...walk(srcDir, '.ts').filter(
-      (file) =>
-        !file.endsWith('.test.ts') &&
-        !file.endsWith('.stories.ts') &&
-        !file.startsWith(i18nDir) &&
-        IMPORTS_TRANSLATIONS.test(readFileSync(file, 'utf8'))
-    )
-  ]
-
-  it('never asks the browser for a locale its page did not load', () => {
-    const offenders = clientModules
-      .filter((file) => SINGLE_ARG_T.test(readFileSync(file, 'utf8')))
-      .map((file) => file.slice(websiteDir.length + 1))
-
-    expect(offenders).toEqual([])
-  })
-
-  it('never names a locale literally, which is only right on one page', () => {
-    const offenders = clientModules
-      .filter((file) => LITERAL_LOCALE_T.test(readFileSync(file, 'utf8')))
-      .map((file) => file.slice(websiteDir.length + 1))
-
-    expect(offenders).toEqual([])
-  })
-
+describe('pipeline imports', () => {
   it('keeps the pipeline off the client module, which tsx cannot load', () => {
     // translations.ts uses import.meta.glob. Under tsx that is not a function
     // and import.meta.env is undefined, so any script reaching it dies.

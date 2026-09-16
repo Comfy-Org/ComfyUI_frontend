@@ -4,8 +4,12 @@ import { join } from 'node:path'
 import {
   createSourceFile,
   forEachChild,
+  isArrayLiteralExpression,
+  isObjectLiteralExpression,
   isPropertyAssignment,
+  isStringLiteral,
   isTemplateExpression,
+  isVariableDeclaration,
   ScriptTarget
 } from 'typescript'
 import type { Node } from 'typescript'
@@ -13,60 +17,84 @@ import { describe, expect, it } from 'vitest'
 
 import { isLocale } from '../../../config/locales'
 
-/**
- * A `LocalizedText` value written as an interpolated template is invisible to
- * the translation pipeline.
- *
- * `literalText` in the adapter accepts a string literal and a template with no
- * substitutions, and returns `undefined` for anything else. A value like
- * `` `... [the blog](${links.post}).` `` is therefore never extracted, never
- * reaches `content/en.json`, and can never be translated — while the English
- * renders perfectly, so nothing looks wrong.
- *
- * That is how `ltx.faq.*` came to have Japanese questions with English answers:
- * not a missing translation, but copy the pipeline could not see.
- *
- * The real fix is to write these as plain strings with a `{placeholder}` and
- * substitute at render, the way `enterprise.faq.security.answer` does. Until
- * that conversion happens, this test pins the known set so the gap cannot grow.
- */
-const KNOWN_UNREACHABLE: Readonly<Record<string, number>> = {
-  'ltx.ts': 10,
-  'minimax.ts': 4,
-  'minimaxLicense.ts': 4,
-  'wan3.ts': 2
-}
+const KNOWN_UNREACHABLE = new Set([
+  'ltx.ts.ltxPage.faq.items.what-is-ltx.answer.en',
+  'ltx.ts.ltxPage.faq.items.what-is-ltx.answer.zh-CN',
+  'ltx.ts.ltxPage.faq.items.whats-new.answer.en',
+  'ltx.ts.ltxPage.faq.items.whats-new.answer.zh-CN',
+  'ltx.ts.ltxPage.faq.items.which-variant.answer.en',
+  'ltx.ts.ltxPage.faq.items.which-variant.answer.zh-CN',
+  'ltx.ts.ltxPage.faq.items.run-in-comfyui.answer.en',
+  'ltx.ts.ltxPage.faq.items.run-in-comfyui.answer.zh-CN',
+  'ltx.ts.ltxPage.faq.items.is-it-free.answer.en',
+  'ltx.ts.ltxPage.faq.items.is-it-free.answer.zh-CN',
+  'minimax.ts.minimaxPage.faq.items.what-is-minimax.answer.en',
+  'minimax.ts.minimaxPage.faq.items.what-is-minimax.answer.zh-CN',
+  'minimax.ts.minimaxPage.faq.items.run-in-comfyui.answer.en',
+  'minimax.ts.minimaxPage.faq.items.run-in-comfyui.answer.zh-CN',
+  'minimaxLicense.ts.minimaxLicensePage.steps.items.enterprise.description.en',
+  'minimaxLicense.ts.minimaxLicensePage.steps.items.enterprise.description.zh-CN',
+  'minimaxLicense.ts.minimaxLicensePage.faq.items.who-needs-a-license.answer.en',
+  'minimaxLicense.ts.minimaxLicensePage.faq.items.who-needs-a-license.answer.zh-CN',
+  'wan3.ts.wan3Page.faq.items.how-to-run.answer.en',
+  'wan3.ts.wan3Page.faq.items.how-to-run.answer.zh-CN'
+])
 
-function interpolatedLocaleValues(file: string, text: string): number {
+function interpolatedLocaleValues(file: string, text: string): string[] {
   const source = createSourceFile(file, text, ScriptTarget.Latest, true)
-  let count = 0
-  const walk = (node: Node) => {
-    if (
-      isPropertyAssignment(node) &&
-      isTemplateExpression(node.initializer) &&
-      isLocale(node.name.getText().replace(/['"]/g, ''))
-    ) {
-      count += 1
+  const found: string[] = []
+
+  function walk(node: Node, path: string[]): void {
+    if (isVariableDeclaration(node) || isPropertyAssignment(node)) {
+      const name = node.name.getText(source).replace(/^['"]|['"]$/g, '')
+      const nextPath = [...path, name]
+      if (
+        isPropertyAssignment(node) &&
+        isLocale(name) &&
+        isTemplateExpression(node.initializer)
+      ) {
+        found.push(nextPath.join('.'))
+      }
+      if (node.initializer) walk(node.initializer, nextPath)
+      return
     }
-    forEachChild(node, walk)
+    if (isArrayLiteralExpression(node)) {
+      node.elements.forEach((element, index) => {
+        const id = isObjectLiteralExpression(element)
+          ? element.properties.find(
+              (property) =>
+                isPropertyAssignment(property) &&
+                ['id', 'slug'].includes(property.name.getText(source)) &&
+                isStringLiteral(property.initializer)
+            )
+          : undefined
+        const key =
+          id && isPropertyAssignment(id) && isStringLiteral(id.initializer)
+            ? id.initializer.text
+            : String(index)
+        walk(element, [...path, key])
+      })
+      return
+    }
+    forEachChild(node, (child) => walk(child, path))
   }
-  forEachChild(source, walk)
-  return count
+
+  walk(source, [file])
+  return found
 }
 
 describe('localized copy the data adapter cannot reach', () => {
-  const dataDir = join(process.cwd(), 'src', 'data')
-  const counts: Record<string, number> = {}
+  it('allows existing violations to disappear but forbids new entries', () => {
+    const dataDir = join(process.cwd(), 'src', 'data')
+    const violations = readdirSync(dataDir)
+      .filter((file) => file.endsWith('.ts'))
+      .flatMap((file) =>
+        interpolatedLocaleValues(
+          file,
+          readFileSync(join(dataDir, file), 'utf8')
+        )
+      )
 
-  for (const file of readdirSync(dataDir).filter((f) => f.endsWith('.ts'))) {
-    const found = interpolatedLocaleValues(
-      file,
-      readFileSync(join(dataDir, file), 'utf8')
-    )
-    if (found > 0) counts[file] = found
-  }
-
-  it('has not grown beyond the recorded backlog', () => {
-    expect(counts).toEqual(KNOWN_UNREACHABLE)
+    expect(violations.filter((key) => !KNOWN_UNREACHABLE.has(key))).toEqual([])
   })
 })

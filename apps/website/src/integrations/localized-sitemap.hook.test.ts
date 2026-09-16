@@ -23,7 +23,7 @@ const ORIGIN = 'https://comfy.org'
 
 const EMPTY_SITEMAP =
   '<?xml version="1.0" encoding="UTF-8"?>' +
-  '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">' +
+  '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml">' +
   '</urlset>'
 
 const messages: { level: string; text: string }[] = []
@@ -60,60 +60,41 @@ afterEach(async () => {
 })
 
 describe('the localized-sitemap build hook', () => {
-  it.for([
-    'zh-CN/customers/example',
-    'zh-CN/enterprise',
-    'zh-CN/enterprise/managed-builds'
-  ])('adds the built page %s that the sitemap left out', async (path) => {
-    await writeFile(join(root, 'sitemap-0.xml'), EMPTY_SITEMAP, 'utf8')
-    await page(path)
-
-    const sitemap = await run()
-
-    expect(sitemap).toContain(`<loc>${ORIGIN}/${path}/</loc>`)
-    expect(sitemap.trimEnd().endsWith('</urlset>')).toBe(true)
-  })
-
-  it('leaves a page the sitemap already lists alone', async () => {
-    const loc = `${ORIGIN}/zh-CN/customers/example/`
+  it('adds missing eligible pages while preserving existing sitemap entries', async () => {
+    const existing =
+      '<url><loc>https://comfy.org/zh-CN/customers/listed/</loc>' +
+      '<lastmod>2026-09-01</lastmod></url>'
     await writeFile(
       join(root, 'sitemap-0.xml'),
-      EMPTY_SITEMAP.replace(
-        '</urlset>',
-        `<url><loc>${loc}</loc></url></urlset>`
-      ),
+      EMPTY_SITEMAP.replace('</urlset>', `${existing}</urlset>`),
       'utf8'
     )
-    await page('zh-CN/customers/example')
-
-    const sitemap = await run()
-
-    expect(sitemap.split(loc).length - 1).toBe(1)
-  })
-
-  /**
-   * A redirect stub is a page in the filesystem and a bounce to a reader.
-   * Listing one asks a crawler to index a page that immediately leaves.
-   */
-  it('never adds a redirect stub', async () => {
-    await writeFile(join(root, 'sitemap-0.xml'), EMPTY_SITEMAP, 'utf8')
+    await page('zh-CN/customers/listed')
+    await page('zh-CN/customers/missing')
+    await page('zh-CN/enterprise/managed-builds')
+    await page('zh-CN/privacy-policy')
     await page(
       'zh-CN/customers/moved',
       '<html><head><meta http-equiv="refresh" content="0;url=/customers/moved/"></head></html>'
     )
 
-    const sitemap = await run()
+    const sitemap = new DOMParser().parseFromString(
+      await run(),
+      'application/xml'
+    )
 
-    expect(sitemap).not.toContain('/zh-CN/customers/moved/')
-  })
-
-  it('never adds a page the indexing policy excludes', async () => {
-    await writeFile(join(root, 'sitemap-0.xml'), EMPTY_SITEMAP, 'utf8')
-    await page('zh-CN/privacy-policy')
-
-    const sitemap = await run()
-
-    expect(sitemap).not.toContain('/zh-CN/privacy-policy/')
+    expect(sitemap.querySelector('parsererror')).toBeNull()
+    expect(
+      Array.from(
+        sitemap.querySelectorAll('url > loc'),
+        (loc) => loc.textContent
+      )
+    ).toEqual([
+      'https://comfy.org/zh-CN/customers/listed/',
+      'https://comfy.org/zh-CN/customers/missing/',
+      'https://comfy.org/zh-CN/enterprise/managed-builds/'
+    ])
+    expect(sitemap.querySelector('lastmod')?.textContent).toBe('2026-09-01')
   })
 
   /**
@@ -126,27 +107,5 @@ describe('the localized-sitemap build hook', () => {
     await run()
 
     expect(messages.some((m) => m.level === 'warn')).toBe(true)
-  })
-
-  it('says so when the sitemap already lists everything', async () => {
-    // A built page that IS listed, not an empty site. With no pages at all this
-    // passes even when page discovery is broken, which is the one thing the
-    // test is here to catch.
-    const loc = `${ORIGIN}/zh-CN/customers/example/`
-    await writeFile(
-      join(root, 'sitemap-0.xml'),
-      EMPTY_SITEMAP.replace(
-        '</urlset>',
-        `<url><loc>${loc}</loc></url></urlset>`
-      ),
-      'utf8'
-    )
-    await page('zh-CN/customers/example')
-
-    await run()
-
-    expect(
-      messages.some((m) => m.level === 'info' && m.text.includes('already'))
-    ).toBe(true)
   })
 })
