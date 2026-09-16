@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ArrowLeftRight, Check } from '@lucide/vue'
+import { onMounted, ref, useTemplateRef } from 'vue'
 import {
   DropdownMenuItem,
   DropdownMenuPortal,
@@ -44,6 +45,20 @@ function workspaceTier(workspace: WorkspaceWithRole): string {
   )
 }
 
+const GAP = 12
+const trigger = useTemplateRef<{ $el: HTMLElement }>('trigger')
+const sideOffset = ref(GAP)
+
+// The switcher is a button inside the menu, so a submenu placed beside it lands
+// on top of the menu. It is offset to the menu's own left edge instead.
+onMounted(() => {
+  const el = trigger.value?.$el
+  const panel = el?.closest('[data-testid="header-account-menu"]')
+  if (!el || !panel) return
+  sideOffset.value =
+    el.getBoundingClientRect().left - panel.getBoundingClientRect().left + GAP
+})
+
 const itemClass =
   'flex w-full cursor-pointer items-center gap-3 rounded-xl px-3 py-3 text-sm text-primary-comfy-canvas outline-none hover:bg-transparency-white-t4 focus-visible:bg-transparency-white-t4'
 const surfaceClass =
@@ -53,6 +68,7 @@ const surfaceClass =
 <template>
   <DropdownMenuSub v-model:open="open">
     <DropdownMenuSubTrigger
+      ref="trigger"
       data-testid="account-workspace"
       :aria-label="t('nav.workspaces', locale)"
       class="grid size-8 shrink-0 cursor-pointer place-items-center rounded-lg text-primary-warm-gray outline-none hover:bg-transparency-white-t8 hover:text-primary-warm-white focus-visible:bg-transparency-white-t8 focus-visible:text-primary-warm-white"
@@ -63,7 +79,7 @@ const surfaceClass =
       <DropdownMenuSubContent
         side="left"
         align="start"
-        :side-offset="12"
+        :side-offset="sideOffset"
         :class="cn(surfaceClass, 'w-72')"
         data-testid="account-workspaces"
       >

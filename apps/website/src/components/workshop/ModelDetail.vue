@@ -872,6 +872,7 @@ function useInCode() {
               :value="requestId"
               :label="t('workshop.run.copyRequestId', locale)"
               :copied-label="t('workshop.api.copied', locale)"
+              icon-class="size-3.5"
               class="h-7 min-w-7 rounded-lg px-1.5 transition-opacity can-hover:opacity-0 can-hover:group-focus-within/request:opacity-100 can-hover:group-hover/request:opacity-100"
             />
           </div>
