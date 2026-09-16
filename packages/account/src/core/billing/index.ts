@@ -145,16 +145,21 @@ export type {
   BillingCommands,
   BillingCommandsOptions,
   PaymentPortalResult,
+  PreviewSubscribeInput,
+  PreviewSubscribeOptions,
+  PreviewSubscribeResult,
   SubscribeInput,
   SubscriptionCommandCode,
   SubscriptionCommandFailure,
   SubscriptionCommandOutcome,
   SubscriptionCommandResult,
+  SubscriptionPreview,
   TerminalBillingOperation
 } from './subscriptionCommands.js'
 export {
   CANCEL_SUBSCRIPTION_ROUTE,
   PAYMENT_PORTAL_ROUTE,
+  PREVIEW_SUBSCRIBE_ROUTE,
   RESUBSCRIBE_ROUTE,
   SUBSCRIBE_ROUTE,
   createBillingCommands
