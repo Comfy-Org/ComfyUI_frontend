@@ -52,6 +52,27 @@ export type {
 } from './credits.js'
 export { CREDITS_ROUTE, createCreditsReader } from './credits.js'
 export type {
+  BillingPlansData,
+  PlansReadOptions,
+  PlansReader,
+  PlansReaderOptions,
+  PlansScope,
+  PlansSnapshot
+} from './plans.js'
+export { PLANS_ROUTE, createPlansReader } from './plans.js'
+export type {
+  PaymentMethodsReadOptions,
+  PaymentMethodsReader,
+  PaymentMethodsReaderOptions,
+  PaymentMethodsScope,
+  PaymentMethodsSnapshot,
+  SavedPaymentMethod
+} from './paymentMethods.js'
+export {
+  PAYMENT_METHODS_ROUTE,
+  createPaymentMethodsReader
+} from './paymentMethods.js'
+export type {
   BillingStatusData,
   BillingStatusReader,
   BillingStatusReaderOptions,
