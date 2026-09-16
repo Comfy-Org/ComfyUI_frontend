@@ -2,6 +2,7 @@ import {
   comfyExpect as expect,
   comfyPageFixture as test
 } from '@e2e/fixtures/ComfyPage'
+import { VueNodeFixture } from '@e2e/fixtures/utils/vueNodeFixtures'
 
 test.describe(
   'rgthree mode controls @custom-nodes',
@@ -175,11 +176,10 @@ test.describe(
             throw error
           })
 
-        await comfyPage.page.evaluate((sourceId) => {
-          const sourceNode = window.app!.graph.getNodeById(sourceId)!
-          sourceNode.title = 'Renamed source'
-          sourceNode.setDirtyCanvas(true, true)
-        }, source.id)
+        const sourceFixture = new VueNodeFixture(
+          comfyPage.vueNodes.getNodeLocator(String(source.id))
+        )
+        await sourceFixture.setTitle('Renamed source')
 
         const renamedToggle = comfyPage.vueNodes.getWidgetByName(
           modeControl.type,
