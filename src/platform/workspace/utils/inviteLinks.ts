@@ -45,7 +45,13 @@ export async function copyTextSilently(text: string): Promise<boolean> {
     document.body.appendChild(el)
     try {
       el.select()
-      return document.execCommand('copy')
+      const copied = document.execCommand('copy')
+      if (!copied) {
+        reportError(new Error('execCommand copy reported failure'), {
+          errorType: 'error_copying_invite_link'
+        })
+      }
+      return copied
     } catch (error) {
       reportError(error, { errorType: 'error_copying_invite_link' })
       return false
