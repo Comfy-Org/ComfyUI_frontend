@@ -7,6 +7,7 @@ import type {
   BillingHttpResponse,
   BillingRequest,
   BillingResult,
+  BillingSession,
   BillingTransport
 } from './billingContracts.js'
 import {
@@ -62,7 +63,7 @@ function fakeSession(initial: SessionSnapshot = authenticated(credential())) {
     }
   }
   return {
-    scopeSource: sessionBillingScopeSource(fake as SessionClient),
+    scopeSource: sessionBillingScopeSource(fake),
     /** Moves the host to a new snapshot and notifies subscribers. */
     moveTo(next: SessionSnapshot) {
       snapshot = next
@@ -790,16 +791,13 @@ describe('createCapabilitiesReader over the session transport', () => {
       status: 'ok' as const,
       session: credentials[Math.min(index++, credentials.length - 1)]
     })
-    const fake: Pick<
-      SessionClient,
-      'ensureFresh' | 'remint' | 'getSnapshot' | 'subscribe'
-    > = {
+    const fake: BillingSession = {
       ensureFresh: vi.fn(next),
       remint: vi.fn(next),
       getSnapshot: () => snapshot,
       subscribe: () => () => {}
     }
-    return { session: fake as SessionClient, remint: fake.remint }
+    return { session: fake, remint: fake.remint }
   }
 
   function jsonResponse(status: number, body: unknown) {

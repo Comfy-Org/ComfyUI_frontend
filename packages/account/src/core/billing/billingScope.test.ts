@@ -65,7 +65,7 @@ function fakeSession(initial: SessionSnapshot) {
     }
   }
   return {
-    source: sessionBillingScopeSource(fake as SessionClient),
+    source: sessionBillingScopeSource(fake),
     moveTo(next: SessionSnapshot) {
       snapshot = next
       for (const listener of [...listeners]) listener(snapshot)

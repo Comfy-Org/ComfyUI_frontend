@@ -68,7 +68,7 @@ function fakeSession() {
     }
   }
   return {
-    scopeSource: sessionBillingScopeSource(fake as SessionClient),
+    scopeSource: sessionBillingScopeSource(fake),
     moveTo(next: SessionSnapshot) {
       snapshot = next
       for (const listener of [...listeners]) listener(snapshot)

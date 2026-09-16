@@ -44,9 +44,11 @@ export function sameBillingScope(a: BillingScope, b: BillingScope): boolean {
   )
 }
 
+type BillingScopeSession = Pick<BillingSession, 'getSnapshot' | 'subscribe'>
+
 /** The scope a workspace session client is currently minted for. */
 export function sessionBillingScopeSource(
-  session: BillingSession
+  session: BillingScopeSession
 ): BillingScopeSource {
   return {
     getScope: () => readSessionScope(session),
@@ -87,7 +89,9 @@ export function createBillingScopeTracker(
   }
 }
 
-function readSessionScope(session: BillingSession): BillingScope | undefined {
+function readSessionScope(
+  session: BillingScopeSession
+): BillingScope | undefined {
   const state = session.getSnapshot()
   if (state.user === null || state.session === undefined) return undefined
   return {
