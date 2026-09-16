@@ -141,7 +141,8 @@ const stubs = {
   DropdownMenuTrigger: { template: '<div><slot /></div>' },
   DropdownMenuPortal: { template: '<div><slot /></div>' },
   DropdownMenuContent: { template: '<div><slot /></div>' },
-  DropdownMenuItem: { template: '<div><slot /></div>' }
+  DropdownMenuRadioGroup: { template: '<div><slot /></div>' },
+  DropdownMenuRadioItem: { template: '<div><slot /></div>' }
 }
 
 function renderQueueButton(
@@ -258,7 +259,7 @@ describe('ComfyQueueButton', () => {
     const queueButton = screen.getByTestId('queue-button')
 
     expect(queueButton).toHaveTextContent('Run (Instant)')
-    expect(queueButton).toHaveAttribute('data-variant', 'primary')
+    expect(queueButton).toHaveAttribute('data-variant', 'inverted')
   })
 
   it('switches to stop presentation when instant mode is armed', async () => {
@@ -290,7 +291,7 @@ describe('ComfyQueueButton', () => {
     expect(queueSettingsStore.mode).toBe('instant-idle')
     const queueButton = screen.getByTestId('queue-button')
     expect(queueButton).toHaveTextContent('Run (Instant)')
-    expect(queueButton).toHaveAttribute('data-variant', 'primary')
+    expect(queueButton).toHaveAttribute('data-variant', 'inverted')
 
     expect(commandStore.execute).not.toHaveBeenCalled()
   })

@@ -549,6 +549,35 @@ describe('TopMenuSection', () => {
     expect(model[0]?.disabled).toBe(false)
   })
 
+  describe('queue status toast', () => {
+    it('renders the toast in place of the legacy queue UI when enabled', async () => {
+      const pinia = getActivePinia()!
+      const settingStore = useSettingStore(pinia)
+      vi.mocked(settingStore.get).mockImplementation((key) => {
+        if (key === 'Comfy.Queue.StatusToast') return true
+        if (key === 'Comfy.Queue.ShowRunProgressBar') return true
+        if (key === 'Comfy.UseNewMenu') return 'Top'
+        return undefined
+      })
+
+      const { container } = createWrapper({
+        pinia,
+        stubs: { QueueStatusToast: true }
+      })
+
+      await nextTick()
+
+      expect(container.querySelector('queue-status-toast-stub')).not.toBeNull()
+      expect(container.querySelector('queue-progress-overlay-stub')).toBeNull()
+      expect(
+        container.querySelector('queue-inline-progress-summary-stub')
+      ).toBeNull()
+      expect(
+        container.querySelector('queue-notification-banner-host-stub')
+      ).toBeNull()
+    })
+  })
+
   it('shows manager red dot only for manager conflicts', async () => {
     const { container } = createWrapper()
 

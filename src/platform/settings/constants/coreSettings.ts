@@ -1228,6 +1228,16 @@ export const CORE_SETTINGS: SettingParams[] = [
     versionAdded: '1.37.0'
   },
   {
+    id: 'Comfy.Queue.StatusToast',
+    category: ['Comfy', 'Queue', 'Layout'],
+    name: 'Active generations toast',
+    type: 'boolean',
+    tooltip:
+      'Shows running and queued jobs as a compact toast under the Run button, replacing the in-bar queue overlay and notification banners. Disable to return to the previous layout.',
+    defaultValue: isNightly,
+    experimental: true
+  },
+  {
     id: 'Comfy.Queue.QPOV2',
     category: ['Comfy', 'Queue', 'Layout'],
     name: 'Docked job history/queue panel',

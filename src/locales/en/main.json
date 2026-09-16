@@ -1141,7 +1141,9 @@
     "settings": "Settings",
     "help": "Help",
     "queue": "Queue Panel",
-    "fullscreen": "Fullscreen"
+    "fullscreen": "Fullscreen",
+    "runOnChange": "Run on change",
+    "onChangeDescription": "Automatically triggers a new generation queue every time you modify a parameter, tweak a prompt, or adjust a slider"
   },
   "tabMenu": {
     "duplicateTab": "Duplicate Tab",
@@ -5047,6 +5049,23 @@
     "training": "Training…",
     "processingVideo": "Processing video…",
     "running": "Running…"
+  },
+  "queueStatus": {
+    "cancelAll": "Cancel all",
+    "nothingRunning": "Nothing running yet",
+    "cancel": "Stop this run",
+    "recentResults": "Recent results",
+    "recentResultsCount": "Recent results ({count})",
+    "running": "Running",
+    "runningCount": "Running {count}",
+    "completed": "Completed",
+    "cancelled": "Cancelled",
+    "queuedBadge": "Queued {count}",
+    "clearQueue": "Clear queue",
+    "goToHistoryShort": "Go to history",
+    "queuedNextUp": "Queued · next up",
+    "queuedPosition": "Queued · #{position}",
+    "failed": "Failed"
   },
   "gettingStarted": {
     "title": "Let's make something",

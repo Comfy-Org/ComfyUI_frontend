@@ -1,7 +1,7 @@
 <template>
   <div
     v-if="!workspaceStore.focusMode"
-    class="ml-1 flex flex-col gap-1 pt-1"
+    class="ml-1 flex flex-col gap-2 pt-1"
     @mouseenter="isTopMenuHovered = true"
     @mouseleave="isTopMenuHovered = false"
   >
@@ -33,11 +33,11 @@
         >
           <div
             v-if="managerState.shouldShowManagerButtons.value || isCloud"
-            class="pointer-events-auto flex h-12 shrink-0 items-center rounded-lg border border-interface-stroke bg-comfy-menu-bg px-2 shadow-interface"
+            class="pointer-events-auto flex shrink-0 items-center rounded-lg bg-comfy-menu-bg px-2 py-1 shadow-interface"
           >
             <Button
               v-tooltip.bottom="customNodesManagerTooltipConfig"
-              variant="secondary"
+              variant="textonly"
               :aria-label="t('menu.manageExtensions')"
               class="relative"
               @click="openCustomNodeManager"
@@ -56,14 +56,14 @@
           <div
             ref="actionbarCardRef"
             data-testid="action-bar-card"
-            class="pointer-events-auto relative z-1 flex flex-col rounded-lg border border-interface-stroke bg-comfy-menu-bg px-2 py-1.75 shadow-interface"
+            class="pointer-events-auto relative z-1 flex flex-col rounded-lg border border-base-foreground/9 bg-comfy-menu-bg px-2 py-1.75 shadow-interface"
           >
             <div
               :class="
                 cn(
                   'actionbar-container relative flex items-center gap-2',
                   isActionbarContainerEmpty &&
-                    '-ml-2 w-0 min-w-0 border-transparent shadow-none has-[.border-dashed]:ml-0 has-[.border-dashed]:w-auto has-[.border-dashed]:min-w-auto has-[.border-dashed]:border-interface-stroke has-[.border-dashed]:pl-2 has-[.border-dashed]:shadow-interface'
+                    '-ml-2 w-0 min-w-0 border-transparent shadow-none has-[.border-dashed]:ml-0 has-[.border-dashed]:w-auto has-[.border-dashed]:min-w-auto has-[.border-dashed]:border has-[.border-dashed]:border-interface-stroke has-[.border-dashed]:pl-2 has-[.border-dashed]:shadow-interface'
                 )
               "
             >
@@ -88,15 +88,13 @@
               <Button
                 v-if="isCloud && flags.workflowSharingEnabled"
                 v-tooltip.bottom="shareTooltipConfig"
-                variant="secondary"
+                variant="textonly"
+                size="icon"
                 :aria-label="t('actionbar.shareTooltip')"
                 @click="() => openShareDialog().catch(toastErrorHandler)"
                 @pointerenter="prefetchShareDialog"
               >
                 <i class="icon-[comfy--send] size-4" />
-                <span class="not-md:hidden">
-                  {{ t('actionbar.share') }}
-                </span>
               </Button>
               <div v-if="!isRightSidePanelOpen" class="relative">
                 <Button
@@ -107,7 +105,7 @@
                         'outline-1 outline-destructive-background'
                     )
                   "
-                  variant="secondary"
+                  variant="textonly"
                   size="icon"
                   :aria-label="t('rightSidePanel.togglePanel')"
                   @click="openRightSidePanel"
@@ -130,33 +128,47 @@
         </div>
         <ErrorOverlay v-if="!isActionBarsHidden" />
         <QueueProgressOverlay
-          v-if="isQueueProgressOverlayEnabled"
+          v-if="showLegacyQueueUi && isQueueProgressOverlayEnabled"
           v-model:expanded="isQueueOverlayExpanded"
           :menu-hovered="isTopMenuHovered"
         />
       </div>
     </div>
 
-    <div class="flex flex-col items-end gap-1">
+    <div class="flex flex-col items-end gap-1 pr-1">
       <Teleport
-        v-if="inlineProgressSummaryTarget"
-        :to="inlineProgressSummaryTarget"
+        v-if="showStatusToast"
+        :to="queueStatusToastTarget ?? 'body'"
+        :disabled="!queueStatusToastTarget"
       >
-        <div
-          class="pointer-events-none absolute inset-x-0 top-full mt-1 flex justify-end pr-1"
-        >
-          <QueueInlineProgressSummary
-            :hidden="shouldHideInlineProgressSummary"
+        <div :class="queueStatusToastClass">
+          <QueueStatusToast
+            :above="toastAbove"
+            :align-start="toastAlignStart"
           />
         </div>
       </Teleport>
-      <QueueInlineProgressSummary
-        v-else-if="shouldShowInlineProgressSummary && !isActionbarFloating"
-        class="pr-1"
-        :hidden="shouldHideInlineProgressSummary"
-      />
+      <template v-if="showLegacyQueueUi">
+        <Teleport
+          v-if="inlineProgressSummaryTarget"
+          :to="inlineProgressSummaryTarget"
+        >
+          <div
+            class="pointer-events-none absolute inset-x-0 top-full mt-1 flex justify-end pr-1"
+          >
+            <QueueInlineProgressSummary
+              :hidden="shouldHideInlineProgressSummary"
+            />
+          </div>
+        </Teleport>
+        <QueueInlineProgressSummary
+          v-else-if="shouldShowInlineProgressSummary && !isActionbarFloating"
+          class="pr-1"
+          :hidden="shouldHideInlineProgressSummary"
+        />
+      </template>
       <QueueNotificationBannerHost
-        v-if="shouldShowQueueNotificationBanners"
+        v-if="showLegacyQueueUi && shouldShowQueueNotificationBanners"
         class="pr-1"
       />
     </div>
@@ -164,7 +176,12 @@
 </template>
 
 <script setup lang="ts">
-import { useLocalStorage, useMutationObserver } from '@vueuse/core'
+import {
+  useElementBounding,
+  useLocalStorage,
+  useMutationObserver,
+  useWindowSize
+} from '@vueuse/core'
 import { storeToRefs } from 'pinia'
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -172,6 +189,7 @@ import { useI18n } from 'vue-i18n'
 import ComfyActionbar from '@/components/actionbar/ComfyActionbar.vue'
 import PartnerNodesRunCaption from '@/components/actionbar/PartnerNodesRunCaption.vue'
 import SubgraphBreadcrumb from '@/components/breadcrumb/SubgraphBreadcrumb.vue'
+import QueueStatusToast from '@/components/queue/QueueStatusToast.vue'
 import QueueInlineProgressSummary from '@/components/queue/QueueInlineProgressSummary.vue'
 import QueueNotificationBannerHost from '@/components/queue/QueueNotificationBannerHost.vue'
 import QueueProgressOverlay from '@/components/queue/QueueProgressOverlay.vue'
@@ -257,6 +275,13 @@ const isIntegratedTabBar = computed(
 )
 const { isQueuePanelV2Enabled, isRunProgressBarEnabled } =
   useQueueFeatureFlags()
+const isStatusToastEnabled = computed(() =>
+  settingStore.get('Comfy.Queue.StatusToast')
+)
+const showStatusToast = computed(
+  () => isActionbarEnabled.value && isStatusToastEnabled.value
+)
+const showLegacyQueueUi = computed(() => !showStatusToast.value)
 const isQueueProgressOverlayEnabled = computed(
   () => !isQueuePanelV2Enabled.value
 )
@@ -273,6 +298,35 @@ const progressTarget = ref<HTMLElement | null>(null)
 function updateProgressTarget(target: HTMLElement | null) {
   progressTarget.value = target
 }
+/** Floating run bar hosts the toast; docked, it stays in the top menu column. */
+const queueStatusToastTarget = computed(() =>
+  isActionbarFloating.value ? progressTarget.value : null
+)
+const toastTargetBounds = useElementBounding(queueStatusToastTarget)
+const { width: windowWidth, height: windowHeight } = useWindowSize()
+/** Floating near the bottom or left edge, the toast opens toward the screen. */
+const toastAbove = computed(
+  () =>
+    !!queueStatusToastTarget.value &&
+    toastTargetBounds.top.value + toastTargetBounds.height.value / 2 >
+      windowHeight.value / 2
+)
+const toastAlignStart = computed(
+  () =>
+    !!queueStatusToastTarget.value &&
+    toastTargetBounds.left.value + toastTargetBounds.width.value / 2 <
+      windowWidth.value / 2
+)
+const queueStatusToastClass = computed(() => {
+  const anchored = !!queueStatusToastTarget.value
+  return cn(
+    'flex',
+    toastAlignStart.value ? 'justify-start' : 'justify-end',
+    anchored && 'absolute',
+    anchored && (toastAlignStart.value ? 'left-0' : 'right-0'),
+    anchored && (toastAbove.value ? 'bottom-full pb-1' : 'top-full pt-1')
+  )
+})
 const inlineProgressSummaryTarget = computed(() => {
   if (!shouldShowInlineProgressSummary.value || !isActionbarFloating.value) {
     return null

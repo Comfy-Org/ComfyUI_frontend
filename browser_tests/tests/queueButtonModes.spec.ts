@@ -4,7 +4,7 @@ import type { PromptResponse } from '@/schemas/apiSchema'
 
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 
-const queueModeLabels = ['Run', 'Run (On Change)', 'Run (Instant)']
+const queueModeLabels = ['Run', 'Run on change', 'Run (Instant)']
 const runOnChangeLabel = queueModeLabels[1]
 
 test.describe('Queue button modes', { tag: '@ui' }, () => {

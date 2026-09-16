@@ -8,7 +8,7 @@
     :aria-label="t('menu.batchCount')"
   >
     <div
-      class="flex h-full w-14 overflow-hidden rounded-l-lg bg-secondary-background"
+      class="flex h-full w-14 overflow-hidden rounded-lg bg-secondary-background"
     >
       <input
         ref="batchCountInputRef"
@@ -22,7 +22,7 @@
         @blur="onInputBlur"
         @keydown.enter.prevent="onInputEnter"
       />
-      <div class="flex h-full w-6 flex-col">
+      <div class="flex h-full w-6 flex-col border-l border-border-subtle">
         <Button
           variant="secondary"
           size="unset"

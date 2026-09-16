@@ -23,48 +23,40 @@
         <Suspense @resolve="comfyRunButtonResolved">
           <ComfyRunButton v-coachmark="FIRST_RUN_COACH_IDS.runButton" />
         </Suspense>
-        <Button
-          v-tooltip.bottom="cancelJobTooltipConfig"
-          variant="destructive"
-          size="icon"
-          :disabled="isExecutionIdle"
-          :aria-label="t('menu.interrupt')"
-          @click="cancelCurrentJob"
-        >
-          <i class="icon-[lucide--x] size-4" />
-        </Button>
-        <Button
-          v-tooltip.bottom="queueHistoryTooltipConfig"
-          variant="secondary"
-          size="md"
-          :aria-pressed="
-            isQueuePanelV2Enabled
-              ? activeSidebarTabId === 'job-history'
-              : queueOverlayExpanded
-          "
-          class="relative px-3"
-          data-testid="queue-overlay-toggle"
-          @click="toggleQueueOverlay"
-          @contextmenu.stop.prevent="showQueueContextMenu"
-        >
-          <span class="text-sm font-normal tabular-nums">
-            {{ activeJobsLabel }}
-          </span>
-          <StatusBadge
-            v-if="activeJobsCount > 0"
-            data-testid="active-jobs-indicator"
-            variant="dot"
-            class="pointer-events-none absolute -top-0.5 -right-0.5 animate-pulse"
-          />
-          <span class="sr-only">
-            {{
-              isQueuePanelV2Enabled
-                ? t('sideToolbar.queueProgressOverlay.viewJobHistory')
-                : t('sideToolbar.queueProgressOverlay.expandCollapsedQueue')
-            }}
-          </span>
-        </Button>
-        <ContextMenu ref="queueContextMenu" :model="queueContextMenuItems" />
+        <template v-if="!isStatusToastEnabled">
+          <Button
+            v-tooltip.bottom="cancelJobTooltipConfig"
+            variant="destructive"
+            size="icon"
+            :disabled="isExecutionIdle"
+            :aria-label="t('menu.interrupt')"
+            @click="cancelCurrentJob"
+          >
+            <i class="icon-[lucide--x] size-4" />
+          </Button>
+          <Button
+            v-tooltip.bottom="queueHistoryTooltipConfig"
+            variant="secondary"
+            size="md"
+            :aria-pressed="queueTogglePressed"
+            class="relative px-3"
+            data-testid="queue-overlay-toggle"
+            @click="toggleQueueOverlay"
+            @contextmenu.stop.prevent="showQueueContextMenu"
+          >
+            <span class="text-sm font-normal tabular-nums">
+              {{ activeJobsLabel }}
+            </span>
+            <StatusBadge
+              v-if="activeJobsCount > 0"
+              data-testid="active-jobs-indicator"
+              variant="dot"
+              class="pointer-events-none absolute -top-0.5 -right-0.5 animate-pulse"
+            />
+            <span class="sr-only">{{ queueToggleLabel }}</span>
+          </Button>
+          <ContextMenu ref="queueContextMenu" :model="queueContextMenuItems" />
+        </template>
       </div>
       <FreeTierQuota v-if="!isDocked" />
       <PartnerNodesRunCaption v-if="!isDocked" />
@@ -133,6 +125,19 @@ const executionStore = useExecutionStore()
 const queueStore = useQueueStore()
 const sidebarTabStore = useSidebarTabStore()
 const { t, n } = useI18n()
+const queueTogglePressed = computed(() =>
+  isQueuePanelV2Enabled.value
+    ? activeSidebarTabId.value === 'job-history'
+    : queueOverlayExpanded
+)
+const queueToggleLabel = computed(() =>
+  isQueuePanelV2Enabled.value
+    ? t('sideToolbar.queueProgressOverlay.viewJobHistory')
+    : t('sideToolbar.queueProgressOverlay.expandCollapsedQueue')
+)
+const isStatusToastEnabled = computed(() =>
+  settingStore.get('Comfy.Queue.StatusToast')
+)
 const { isIdle: isExecutionIdle } = storeToRefs(executionStore)
 const { activeJobsCount } = storeToRefs(queueStore)
 const { activeSidebarTabId } = storeToRefs(sidebarTabStore)
@@ -323,6 +328,7 @@ const onMouseLeaveDropZone = () => {
 const inlineProgressTarget = computed(() => {
   if (
     !visible.value ||
+    isStatusToastEnabled.value ||
     !isQueuePanelV2Enabled.value ||
     !isRunProgressBarEnabled.value
   ) {
@@ -430,7 +436,7 @@ const panelClass = computed(() =>
     'actionbar pointer-events-auto',
     isDragging.value && 'pointer-events-none select-none',
     !isDocked.value &&
-      'fixed z-1300 rounded-lg border border-interface-stroke bg-interface-panel-surface p-1 shadow-interface'
+      'fixed z-1300 rounded-lg border border-base-foreground/9 bg-interface-panel-surface p-1 shadow-interface'
   )
 )
 </script>

@@ -120,10 +120,10 @@ test.describe(
 
       const start = await getCenter(slot)
 
-      // Arbitrary value
+      // Empty canvas, clear of the run bar and its tooltip
       const dragTarget = {
         x: start.x + 180,
-        y: start.y - 140
+        y: start.y + 200
       }
 
       await comfyMouse.move(start)
