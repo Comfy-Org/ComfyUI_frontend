@@ -41,7 +41,7 @@ const {
     <span
       :class="
         cn(
-          'ppformula-text-center relative leading-none transition-all duration-500'
+          'relative ppformula-text-center leading-none transition-all duration-500'
         )
       "
     >
