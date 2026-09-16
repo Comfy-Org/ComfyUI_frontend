@@ -23,6 +23,14 @@ import { isRemoteMutationContext } from '@/types/graphMutationContext'
 // with its node is naturally released.
 const remoteModelUpdateSubscribed = new WeakSet<IBaseWidget>()
 
+type ModelWidgetBinding = {
+  onModelWidgetUpdate: (value: IBaseWidget['value']) => Promise<void>
+  onSceneInvalidated?: () => void
+  originalCallback?: IBaseWidget['callback']
+}
+
+const modelWidgetBindings = new WeakMap<IBaseWidget, ModelWidgetBinding>()
+
 type Load3DConfigurationSettings = {
   loadFolder: string
   modelWidget: IBaseWidget
@@ -142,7 +150,20 @@ class Load3DConfiguration {
       void onModelWidgetUpdate(modelWidget.value)
     }
 
-    const originalCallback = modelWidget.callback
+    const existingBinding = modelWidgetBindings.get(modelWidget)
+    if (existingBinding) {
+      existingBinding.onModelWidgetUpdate = onModelWidgetUpdate
+      existingBinding.onSceneInvalidated = onSceneInvalidated
+      this.subscribeToRemoteModelUpdates(modelWidget)
+      return
+    }
+
+    const binding: ModelWidgetBinding = {
+      onModelWidgetUpdate,
+      onSceneInvalidated,
+      originalCallback: modelWidget.callback
+    }
+    modelWidgetBindings.set(modelWidget, binding)
 
     let currentValue = modelWidget.value
     Object.defineProperty(modelWidget, 'value', {
@@ -160,13 +181,13 @@ class Load3DConfiguration {
     })
 
     modelWidget.callback = (value: string | number | boolean | object) => {
-      void onModelWidgetUpdate(value)
+      void binding.onModelWidgetUpdate(value)
 
-      if (originalCallback) {
-        originalCallback(value)
+      if (binding.originalCallback) {
+        binding.originalCallback(value)
       }
 
-      onSceneInvalidated?.()
+      binding.onSceneInvalidated?.()
     }
 
     this.subscribeToRemoteModelUpdates(modelWidget)

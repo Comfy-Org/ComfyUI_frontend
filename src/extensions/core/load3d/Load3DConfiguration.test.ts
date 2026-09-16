@@ -950,6 +950,7 @@ describe('Load3DConfiguration remote (agent) model updates', () => {
 
   it('does not register a second listener when configure runs again for the same widget', async () => {
     const load3d = makeLoad3dMock()
+    const onSceneInvalidated = vi.fn()
     const modelWidget = {
       value: 'none',
       widgetId: 'widget-4'
@@ -957,11 +958,24 @@ describe('Load3DConfiguration remote (agent) model updates', () => {
     widgetValueStoreMock.widgets.set('widget-4', modelWidget)
 
     const config = new Load3DConfiguration(load3d)
-    config.configure({ modelWidget, loadFolder: 'input' })
-    config.configure({ modelWidget, loadFolder: 'input' })
+    config.configure({ modelWidget, loadFolder: 'input', onSceneInvalidated })
+    config.configure({ modelWidget, loadFolder: 'input', onSceneInvalidated })
     await flush()
 
     expect(widgetValueStoreMock.onValueChange).toHaveBeenCalledTimes(1)
+
+    vi.mocked(load3d.loadModel).mockClear()
+    onSceneInvalidated.mockClear()
+    widgetValueStoreMock.emit({
+      widgetId: 'widget-4',
+      value: 'agent-model.glb',
+      oldValue: 'none',
+      context: REMOTE_CONTEXT
+    })
+    await flush()
+
+    expect(load3d.loadModel).toHaveBeenCalledTimes(1)
+    expect(onSceneInvalidated).toHaveBeenCalledTimes(1)
   })
 
   it('detaches once the widget is no longer registered (node removed)', async () => {
