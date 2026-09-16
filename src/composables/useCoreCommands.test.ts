@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useTelemetry } from '@/platform/telemetry'
 
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useCoreCommands } from '@/composables/useCoreCommands'
 import { useExternalLink } from '@/composables/useExternalLink'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
@@ -132,17 +133,7 @@ vi.mock<unknown>(
   })
 )
 
-const mockFeatureFlagState = vi.hoisted(() => ({ assetsEnabled: false }))
-vi.mock<unknown>(import('@/composables/useFeatureFlags'), () => ({
-  useFeatureFlags: () => ({
-    flags: {
-      get assetsEnabled() {
-        return mockFeatureFlagState.assetsEnabled
-      }
-    }
-  })
-}))
-
+vi.mock(import('@/composables/useFeatureFlags'))
 const mockAssetBrowse = vi.hoisted(() =>
   vi.fn<(options: { onAssetSelected?: (asset: AssetItem) => void }) => void>()
 )
@@ -164,9 +155,7 @@ const mockChangeTracker = vi.hoisted(() => ({
 
 let mockWorkflowStore: ReturnType<typeof useWorkflowStore>
 
-vi.mock<unknown>(import('@/composables/auth/useAuthActions'), () => ({
-  useAuthActions: vi.fn(() => ({}))
-}))
+vi.mock(import('@/composables/auth/useAuthActions'))
 
 vi.mock<unknown>(
   import('@/platform/cloud/subscription/composables/useSubscription'),
@@ -253,13 +242,13 @@ describe('useCoreCommands', () => {
   const mockSubgraph = createMockSubgraph()!
 
   beforeEach(() => {
+    vi.mocked(useFeatureFlags().flags).assetsEnabled = false
     mockWorkflowStore = useWorkflowStore()
     mockWorkflowStore.activeWorkflow = fromPartial<
       NonNullable<typeof mockWorkflowStore.activeWorkflow>
     >({ changeTracker: mockChangeTracker })
     useCanvasStore().canvas = app.canvas
     mockDistributionState.isCloud = false
-    mockFeatureFlagState.assetsEnabled = false
     mockBillingState.canAccessSubscriptionFeatures = true
     mockBillingState.subscriptionTier = null
     vi.mocked(app.refreshComboInNodes).mockResolvedValue(undefined)
@@ -776,7 +765,7 @@ describe('useCoreCommands', () => {
       useCoreCommands().find((cmd) => cmd.id === 'Comfy.BrowseModelAssets')!
 
     async function selectAssetFromBrowser() {
-      mockFeatureFlagState.assetsEnabled = true
+      vi.mocked(useFeatureFlags().flags).assetsEnabled = true
 
       await browseModelAssets().function()
 
@@ -785,8 +774,6 @@ describe('useCoreCommands', () => {
     }
 
     it('does not open the browser when the assets capability is missing', async () => {
-      mockFeatureFlagState.assetsEnabled = false
-
       await expect(browseModelAssets().function()).resolves.toBeUndefined()
 
       expect(mockAssetBrowse).not.toHaveBeenCalled()

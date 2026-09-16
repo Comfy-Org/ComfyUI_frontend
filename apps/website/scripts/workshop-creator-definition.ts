@@ -16,17 +16,40 @@ export const workshopCreatorDefinitionSchema = z.discriminatedUnion('family', [
         'bria-edit',
         'bria-expand',
         'text-input',
-        'seedream',
         'dialogue',
         'nested-settings',
         'kling-avatar',
         'kling-lip-sync',
         'meshy-source',
-        'qwen-image',
-        'veo',
-        'gemini-image'
+        'qwen-image'
       ]),
       options: options.prefault({})
+    })
+    .strict(),
+  // Image models whose generate and edit pages share one Router model: the
+  // edit page requires the source image(s) and the generate page hides them.
+  z
+    .object({
+      family: z.enum(['seedream', 'gemini-image']),
+      options: options
+        .extend({ mode: z.enum(['generate', 'edit']).optional() })
+        .prefault({})
+    })
+    .strict(),
+  z
+    .object({
+      family: z.literal('gpt-image'),
+      options: options
+        .extend({ mode: z.enum(['generate', 'edit']).optional() })
+        .prefault({})
+    })
+    .strict(),
+  z
+    .object({
+      family: z.literal('veo'),
+      options: options
+        .extend({ mode: z.enum(['text', 'image']).optional() })
+        .prefault({})
     })
     .strict(),
   z
@@ -70,7 +93,14 @@ export const workshopCreatorDefinitionSchema = z.discriminatedUnion('family', [
     .object({
       family: z.literal('seedance'),
       options: options.extend({
-        mode: z.enum(['mixed', 'first-last', 'reference', 'text', 'image']),
+        mode: z.enum([
+          'mixed',
+          'first-last',
+          'reference',
+          'text',
+          'image',
+          'edit'
+        ]),
         urlMedia: z.boolean().optional()
       })
     })
@@ -110,7 +140,7 @@ export const workshopCreatorDefinitionSchema = z.discriminatedUnion('family', [
     .object({
       family: z.literal('grok-video'),
       options: options
-        .extend({ mode: z.enum(['image', 'reference']).optional() })
+        .extend({ mode: z.enum(['image', 'reference', 'text']).optional() })
         .prefault({})
     })
     .strict(),
