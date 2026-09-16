@@ -2,10 +2,12 @@ import { describe, expect, it, vi } from 'vitest'
 
 import type { SessionClient, SessionSnapshot } from '../session.js'
 import type { AccountCredential } from '../sessionContracts.js'
+import { sessionBillingScopeSource } from './billingScope.js'
 import type {
   BillingHttpResponse,
   BillingRequest,
   BillingResult,
+  BillingSession,
   BillingTransport
 } from './billingContracts.js'
 import {
@@ -61,7 +63,7 @@ function fakeSession(initial: SessionSnapshot = authenticated(credential())) {
     }
   }
   return {
-    session: fake as SessionClient,
+    scopeSource: sessionBillingScopeSource(fake),
     /** Moves the host to a new snapshot and notifies subscribers. */
     moveTo(next: SessionSnapshot) {
       snapshot = next
@@ -134,11 +136,16 @@ function fakeTransport(answers: BillingResult<BillingHttpResponse>[]) {
   return { transport, calls }
 }
 
+interface SupersedeContext {
+  readonly host: ReturnType<typeof fakeSession>
+  readonly reader: ReturnType<typeof createCapabilitiesReader>
+}
+
 describe('createCapabilitiesReader', () => {
   it('decodes the server answer and reports the resolved scope', async () => {
-    const { session } = fakeSession()
+    const { scopeSource } = fakeSession()
     const { transport } = fakeTransport([httpOk(capabilitiesBody())])
-    const reader = createCapabilitiesReader({ transport, session })
+    const reader = createCapabilitiesReader({ transport, scopeSource })
 
     const result = await reader.read()
 
@@ -155,10 +162,10 @@ describe('createCapabilitiesReader', () => {
   })
 
   it('asks the capabilities route with production\u2019s 10s budget', async () => {
-    const { session } = fakeSession()
+    const { scopeSource } = fakeSession()
     const { transport, calls } = fakeTransport([httpOk(capabilitiesBody())])
 
-    await createCapabilitiesReader({ transport, session }).read()
+    await createCapabilitiesReader({ transport, scopeSource }).read()
 
     expect(calls).toHaveLength(1)
     expect(calls[0].method).toBe('GET')
@@ -168,9 +175,9 @@ describe('createCapabilitiesReader', () => {
 
   describe('deduplication', () => {
     it('serves concurrent readers of one scope from a single request', async () => {
-      const { session } = fakeSession()
+      const { scopeSource } = fakeSession()
       const { transport } = fakeTransport([httpOk(capabilitiesBody())])
-      const reader = createCapabilitiesReader({ transport, session })
+      const reader = createCapabilitiesReader({ transport, scopeSource })
 
       const [first, second, third] = await Promise.all([
         reader.read(),
@@ -195,7 +202,7 @@ describe('createCapabilitiesReader', () => {
       ])
       const reader = createCapabilitiesReader({
         transport,
-        session: host.session
+        scopeSource: host.scopeSource
       })
 
       const first = reader.read()
@@ -211,9 +218,9 @@ describe('createCapabilitiesReader', () => {
     })
 
     it('serves a fresh cached snapshot without asking again', async () => {
-      const { session } = fakeSession()
+      const { scopeSource } = fakeSession()
       const { transport } = fakeTransport([httpOk(capabilitiesBody())])
-      const reader = createCapabilitiesReader({ transport, session })
+      const reader = createCapabilitiesReader({ transport, scopeSource })
 
       await reader.read()
       await reader.read()
@@ -222,7 +229,7 @@ describe('createCapabilitiesReader', () => {
     })
 
     it('releases a joining caller that aborts, without disturbing the shared read', async () => {
-      const { session } = fakeSession()
+      const { scopeSource } = fakeSession()
       let release = () => {}
       const gate = new Promise<void>((resolve) => {
         release = resolve
@@ -231,7 +238,7 @@ describe('createCapabilitiesReader', () => {
         await gate
         return httpOk(capabilitiesBody())
       })
-      const reader = createCapabilitiesReader({ transport, session })
+      const reader = createCapabilitiesReader({ transport, scopeSource })
 
       const first = reader.read()
       const joiner = new AbortController()
@@ -252,7 +259,7 @@ describe('createCapabilitiesReader', () => {
     })
 
     it('keeps joined callers alive when the initiating caller aborts', async () => {
-      const { session } = fakeSession()
+      const { scopeSource } = fakeSession()
       let release = () => {}
       const gate = new Promise<void>((resolve) => {
         release = resolve
@@ -261,7 +268,7 @@ describe('createCapabilitiesReader', () => {
         await gate
         return httpOk(capabilitiesBody())
       })
-      const reader = createCapabilitiesReader({ transport, session })
+      const reader = createCapabilitiesReader({ transport, scopeSource })
 
       const initiator = new AbortController()
       const first = reader.read({ signal: initiator.signal })
@@ -280,9 +287,9 @@ describe('createCapabilitiesReader', () => {
     })
 
     it('releases a caller whose signal was already aborted', async () => {
-      const { session } = fakeSession()
+      const { scopeSource } = fakeSession()
       const { transport } = fakeTransport([httpOk(capabilitiesBody())])
-      const reader = createCapabilitiesReader({ transport, session })
+      const reader = createCapabilitiesReader({ transport, scopeSource })
 
       const result = await reader.read({ signal: AbortSignal.abort() })
 
@@ -290,9 +297,9 @@ describe('createCapabilitiesReader', () => {
     })
 
     it('refetches when the caller forces a refresh', async () => {
-      const { session } = fakeSession()
+      const { scopeSource } = fakeSession()
       const { transport } = fakeTransport([httpOk(capabilitiesBody())])
-      const reader = createCapabilitiesReader({ transport, session })
+      const reader = createCapabilitiesReader({ transport, scopeSource })
 
       await reader.read()
       await reader.read({ forceRefresh: true })
@@ -303,7 +310,7 @@ describe('createCapabilitiesReader', () => {
 
   describe('freshness', () => {
     it('refetches once the server-declared lifetime has passed', async () => {
-      const { session } = fakeSession()
+      const { scopeSource } = fakeSession()
       const { transport } = fakeTransport([
         httpOk(
           capabilitiesBody({
@@ -314,7 +321,7 @@ describe('createCapabilitiesReader', () => {
       let clock = Date.now()
       const reader = createCapabilitiesReader({
         transport,
-        session,
+        scopeSource,
         now: () => clock
       })
 
@@ -326,7 +333,7 @@ describe('createCapabilitiesReader', () => {
     })
 
     it('falls back to a fixed lifetime when the clock disagrees with the server', async () => {
-      const { session } = fakeSession()
+      const { scopeSource } = fakeSession()
       // Already expired on arrival: the client and server clocks disagree, so
       // expires_at cannot pace anything and the fixed interval is used.
       const { transport } = fakeTransport([
@@ -339,7 +346,7 @@ describe('createCapabilitiesReader', () => {
       const clock = Date.now()
       const reader = createCapabilitiesReader({
         transport,
-        session,
+        scopeSource,
         now: () => clock
       })
 
@@ -353,14 +360,14 @@ describe('createCapabilitiesReader', () => {
     })
 
     it('treats an unparseable expiry as the fixed lifetime rather than failing', async () => {
-      const { session } = fakeSession()
+      const { scopeSource } = fakeSession()
       const { transport } = fakeTransport([
         httpOk(capabilitiesBody({ expires_at: 'not-a-timestamp' }))
       ])
       const clock = Date.now()
       const reader = createCapabilitiesReader({
         transport,
-        session,
+        scopeSource,
         now: () => clock
       })
 
@@ -385,7 +392,7 @@ describe('createCapabilitiesReader', () => {
       })
       const reader = createCapabilitiesReader({
         transport,
-        session: host.session
+        scopeSource: host.scopeSource
       })
 
       const pending = reader.read()
@@ -413,7 +420,7 @@ describe('createCapabilitiesReader', () => {
       })
       const reader = createCapabilitiesReader({
         transport,
-        session: host.session
+        scopeSource: host.scopeSource
       })
 
       const pending = reader.read()
@@ -429,7 +436,7 @@ describe('createCapabilitiesReader', () => {
       const { transport } = fakeTransport([httpOk(capabilitiesBody())])
       const reader = createCapabilitiesReader({
         transport,
-        session: host.session
+        scopeSource: host.scopeSource
       })
 
       await reader.read()
@@ -449,7 +456,7 @@ describe('createCapabilitiesReader', () => {
       const { transport } = fakeTransport([httpOk(capabilitiesBody())])
       const reader = createCapabilitiesReader({
         transport,
-        session: host.session
+        scopeSource: host.scopeSource
       })
 
       await reader.read()
@@ -464,7 +471,7 @@ describe('createCapabilitiesReader', () => {
     })
 
     it('refuses an answer the server resolved for another workspace', async () => {
-      const { session } = fakeSession()
+      const { scopeSource } = fakeSession()
       const { transport } = fakeTransport([
         httpOk(
           capabilitiesBody({
@@ -472,7 +479,7 @@ describe('createCapabilitiesReader', () => {
           })
         )
       ])
-      const reader = createCapabilitiesReader({ transport, session })
+      const reader = createCapabilitiesReader({ transport, scopeSource })
 
       const result = await reader.read()
 
@@ -485,7 +492,7 @@ describe('createCapabilitiesReader', () => {
     })
 
     it('refuses another member\u2019s answer for the caller\u2019s own workspace', async () => {
-      const { session } = fakeSession()
+      const { scopeSource } = fakeSession()
       const { transport } = fakeTransport([
         httpOk(
           capabilitiesBody({
@@ -498,7 +505,7 @@ describe('createCapabilitiesReader', () => {
           })
         )
       ])
-      const reader = createCapabilitiesReader({ transport, session })
+      const reader = createCapabilitiesReader({ transport, scopeSource })
 
       const result = await reader.read()
 
@@ -511,12 +518,12 @@ describe('createCapabilitiesReader', () => {
     })
 
     it('reports NOT_AUTHENTICATED without asking when nobody is signed in', async () => {
-      const { session } = fakeSession(SIGNED_OUT)
+      const { scopeSource } = fakeSession(SIGNED_OUT)
       const { transport } = fakeTransport([httpOk(capabilitiesBody())])
 
       const result = await createCapabilitiesReader({
         transport,
-        session
+        scopeSource
       }).read()
 
       expect(result).toEqual({ status: 'error', code: 'NOT_AUTHENTICATED' })
@@ -533,23 +540,23 @@ describe('createCapabilitiesReader', () => {
       [500, 'REQUEST_FAILED'],
       [503, 'REQUEST_FAILED']
     ] as const)('maps %i to %s', async ([status, code]) => {
-      const { session } = fakeSession()
+      const { scopeSource } = fakeSession()
       const { transport } = fakeTransport([httpStatus(status)])
 
       const result = await createCapabilitiesReader({
         transport,
-        session
+        scopeSource
       }).read()
 
       expect(result).toEqual({ status: 'error', code, httpStatus: status })
     })
 
     it('reports a 2xx body that does not match the contract as malformed', async () => {
-      const { session } = fakeSession()
+      const { scopeSource } = fakeSession()
       const { transport } = fakeTransport([
         httpOk({ capabilities: { can_top_up: 'yes' } })
       ])
-      const reader = createCapabilitiesReader({ transport, session })
+      const reader = createCapabilitiesReader({ transport, scopeSource })
 
       const result = await reader.read()
 
@@ -562,26 +569,67 @@ describe('createCapabilitiesReader', () => {
     })
 
     it('passes a transport failure through without inventing a status', async () => {
-      const { session } = fakeSession()
+      const { scopeSource } = fakeSession()
       const { transport } = fakeTransport([
         { status: 'error', code: 'REQUEST_FAILED' }
       ])
 
       const result = await createCapabilitiesReader({
         transport,
-        session
+        scopeSource
       }).read()
 
       expect(result).toEqual({ status: 'error', code: 'REQUEST_FAILED' })
     })
 
+    it.for([
+      [
+        'the workspace changes',
+        ({ host }: SupersedeContext) =>
+          host.moveTo(
+            authenticated(
+              credential({
+                workspace: { id: 'ws-2', name: 'Team', type: 'team' }
+              })
+            )
+          )
+      ],
+      [
+        'the reader is disposed',
+        ({ reader }: SupersedeContext) => reader.dispose()
+      ]
+    ] as const)(
+      'reports SUPERSEDED when a failure lands after %s',
+      async ([, supersede]) => {
+        const host = fakeSession()
+        let release = () => {}
+        const gate = new Promise<void>((resolve) => {
+          release = resolve
+        })
+        const transport: BillingTransport = vi.fn(async () => {
+          await gate
+          return httpStatus(500)
+        })
+        const reader = createCapabilitiesReader({
+          transport,
+          scopeSource: host.scopeSource
+        })
+
+        const pending = reader.read()
+        supersede({ host, reader })
+        release()
+
+        expect(await pending).toEqual({ status: 'error', code: 'SUPERSEDED' })
+      }
+    )
+
     it('drops a prior snapshot when the server denies the current actor', async () => {
-      const { session } = fakeSession()
+      const { scopeSource } = fakeSession()
       const { transport } = fakeTransport([
         httpOk(capabilitiesBody()),
         httpStatus(403)
       ])
-      const reader = createCapabilitiesReader({ transport, session })
+      const reader = createCapabilitiesReader({ transport, scopeSource })
 
       await reader.read()
       const result = await reader.read({ forceRefresh: true })
@@ -597,7 +645,7 @@ describe('createCapabilitiesReader', () => {
 
   describe('denial reasons', () => {
     it('decodes a reason the server named', async () => {
-      const { session } = fakeSession()
+      const { scopeSource } = fakeSession()
       const { transport } = fakeTransport([
         httpOk(
           capabilitiesBody({
@@ -608,7 +656,7 @@ describe('createCapabilitiesReader', () => {
 
       const result = await createCapabilitiesReader({
         transport,
-        session
+        scopeSource
       }).read()
 
       expect(result.status).toBe('ok')
@@ -619,7 +667,7 @@ describe('createCapabilitiesReader', () => {
     })
 
     it('falls back to the generic reason for a value it does not recognize', async () => {
-      const { session } = fakeSession()
+      const { scopeSource } = fakeSession()
       const { transport } = fakeTransport([
         httpOk(
           capabilitiesBody({
@@ -632,7 +680,7 @@ describe('createCapabilitiesReader', () => {
 
       const result = await createCapabilitiesReader({
         transport,
-        session
+        scopeSource
       }).read()
 
       expect(result.status).toBe('ok')
@@ -643,7 +691,7 @@ describe('createCapabilitiesReader', () => {
     })
 
     it('keeps the capability set usable when a reason is unrecognized', async () => {
-      const { session } = fakeSession()
+      const { scopeSource } = fakeSession()
       const { transport } = fakeTransport([
         httpOk(
           capabilitiesBody({
@@ -654,7 +702,7 @@ describe('createCapabilitiesReader', () => {
 
       const result = await createCapabilitiesReader({
         transport,
-        session
+        scopeSource
       }).read()
 
       // The point of the lenient decode: a reason this client predates must
@@ -665,12 +713,12 @@ describe('createCapabilitiesReader', () => {
     })
 
     it('reads an absent denials object as no reasons, not as a granted capability', async () => {
-      const { session } = fakeSession()
+      const { scopeSource } = fakeSession()
       const { transport } = fakeTransport([httpOk(capabilitiesBody())])
 
       const result = await createCapabilitiesReader({
         transport,
-        session
+        scopeSource
       }).read()
 
       expect(result.status).toBe('ok')
@@ -682,9 +730,9 @@ describe('createCapabilitiesReader', () => {
 
   describe('revision invalidation', () => {
     it('refetches after a mutation reports a different revision', async () => {
-      const { session } = fakeSession()
+      const { scopeSource } = fakeSession()
       const { transport } = fakeTransport([httpOk(capabilitiesBody())])
-      const reader = createCapabilitiesReader({ transport, session })
+      const reader = createCapabilitiesReader({ transport, scopeSource })
 
       await reader.read()
       reader.invalidate(43)
@@ -694,9 +742,9 @@ describe('createCapabilitiesReader', () => {
     })
 
     it('ignores a revision the cached snapshot already carries', async () => {
-      const { session } = fakeSession()
+      const { scopeSource } = fakeSession()
       const { transport } = fakeTransport([httpOk(capabilitiesBody())])
-      const reader = createCapabilitiesReader({ transport, session })
+      const reader = createCapabilitiesReader({ transport, scopeSource })
 
       await reader.read()
       // The read echoes its own revision on the response header. Treating that
@@ -708,9 +756,9 @@ describe('createCapabilitiesReader', () => {
     })
 
     it('refetches after an unqualified invalidation', async () => {
-      const { session } = fakeSession()
+      const { scopeSource } = fakeSession()
       const { transport } = fakeTransport([httpOk(capabilitiesBody())])
-      const reader = createCapabilitiesReader({ transport, session })
+      const reader = createCapabilitiesReader({ transport, scopeSource })
 
       await reader.read()
       reader.invalidate()
@@ -720,7 +768,7 @@ describe('createCapabilitiesReader', () => {
     })
 
     it('publishes a read invalidated in flight as already stale', async () => {
-      const { session } = fakeSession()
+      const { scopeSource } = fakeSession()
       let release = () => {}
       const gate = new Promise<void>((resolve) => {
         release = resolve
@@ -731,7 +779,7 @@ describe('createCapabilitiesReader', () => {
         if (calls === 1) await gate
         return httpOk(capabilitiesBody())
       })
-      const reader = createCapabilitiesReader({ transport, session })
+      const reader = createCapabilitiesReader({ transport, scopeSource })
 
       const pending = reader.read()
       // A mutation committed while the read was in flight. The revision the
@@ -748,7 +796,7 @@ describe('createCapabilitiesReader', () => {
   })
 
   it('clears account data and rejects an in-flight result after dispose', async () => {
-    const { session } = fakeSession()
+    const { scopeSource } = fakeSession()
     let release = () => {}
     const gate = new Promise<void>((resolve) => {
       release = resolve
@@ -761,7 +809,7 @@ describe('createCapabilitiesReader', () => {
     })
     const reader = createCapabilitiesReader({
       transport,
-      session
+      scopeSource
     })
 
     await reader.read()
@@ -789,16 +837,13 @@ describe('createCapabilitiesReader over the session transport', () => {
       status: 'ok' as const,
       session: credentials[Math.min(index++, credentials.length - 1)]
     })
-    const fake: Pick<
-      SessionClient,
-      'ensureFresh' | 'remint' | 'getSnapshot' | 'subscribe'
-    > = {
+    const fake: BillingSession = {
       ensureFresh: vi.fn(next),
       remint: vi.fn(next),
       getSnapshot: () => snapshot,
       subscribe: () => () => {}
     }
-    return { session: fake as SessionClient, remint: fake.remint }
+    return { session: fake, remint: fake.remint }
   }
 
   function jsonResponse(status: number, body: unknown) {
@@ -823,7 +868,10 @@ describe('createCapabilitiesReader over the session transport', () => {
       fetchImpl
     })
     return {
-      reader: createCapabilitiesReader({ transport, session }),
+      reader: createCapabilitiesReader({
+        transport,
+        scopeSource: sessionBillingScopeSource(session)
+      }),
       fetchImpl,
       remint
     }

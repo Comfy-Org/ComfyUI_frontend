@@ -3,11 +3,7 @@ import { describe, expect, it } from 'vitest'
 import { WorkspaceApiError } from '@/platform/workspace/api/workspaceApi'
 
 import { failedTopup, pendingTopup, settledTopup } from './billingSdkTestUtils'
-import {
-  needsCustomerAttention,
-  projectTopupOperation,
-  projectTopupResult
-} from './topupOperationView'
+import { projectTopupOperation, projectTopupResult } from './topupOperationView'
 
 describe('projectTopupOperation', () => {
   it('hands the dialog the hosted verification link', () => {
@@ -21,13 +17,6 @@ describe('projectTopupOperation', () => {
       actionUrl: 'https://verify.example/op-1',
       errorMessage: null
     })
-    expect(view && needsCustomerAttention(view)).toBe(true)
-  })
-
-  it('keeps a merely processing top-up out of the verification step', () => {
-    const view = projectTopupOperation(pendingTopup())
-
-    expect(view && needsCustomerAttention(view)).toBe(false)
   })
 
   it.for([
@@ -65,7 +54,6 @@ describe('projectTopupOperation', () => {
       opId: 'op-1',
       status: 'reconciliation_needed'
     })
-    expect(view && needsCustomerAttention(view)).toBe(true)
   })
 
   it.for(['succeeded', 'timed_out', 'superseded'] as const)(

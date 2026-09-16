@@ -1,5 +1,4 @@
 import { zGlobalSettingValue } from '@comfyorg/ingest-types/zod'
-import { expect } from '@playwright/test'
 import type { Page, Route } from '@playwright/test'
 
 import type {
@@ -10,7 +9,6 @@ import type {
 
 import { comfyPageFixture } from '@e2e/fixtures/ComfyPage'
 
-import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import type { UserDataFullInfo } from '@/schemas/apiSchema'
 import type { RemoteConfig } from '@/platform/remoteConfig/types'
 import { AGENT_CONSENT_SETTING_ID } from '@/platform/settings/constants/agent'
@@ -20,6 +18,7 @@ import type {
   AgentWsEvent
 } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 
+import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 import { mockBilling } from '@e2e/fixtures/utils/cloudBillingMocks'
 import { mockCloudBootRoutes } from '@e2e/fixtures/utils/cloudBootMocks'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
@@ -145,21 +144,29 @@ function agentFeatures(agentFlag: boolean): RemoteConfig {
 async function mockAgentBoot(
   page: Page,
   {
-    agentFlagEnabled,
-    postedMessages,
     agentConsentAccepted,
-    agentPanelInitiallyOpen,
     agentConsentSave,
-    agentConsentWrites
-  }: AgentFixtures
+    agentConsentWrites,
+    agentFlagEnabled,
+    agentPanelInitiallyOpen,
+    crdtDebugEnabled,
+    postedMessages
+  }: Omit<AgentFixtures, 'agentPanel'>
 ): Promise<void> {
   let consentAccepted = agentConsentAccepted
 
-  await page.addInitScript((initiallyOpen) => {
-    if (localStorage.getItem('Comfy.AgentPanel.open') === null) {
-      localStorage.setItem('Comfy.AgentPanel.open', String(initiallyOpen))
-    }
-  }, agentPanelInitiallyOpen)
+  await page.addInitScript(
+    ({ initiallyOpen, debugEnabled }) => {
+      if (localStorage.getItem('Comfy.AgentPanel.open') === null) {
+        localStorage.setItem('Comfy.AgentPanel.open', String(initiallyOpen))
+      }
+      if (debugEnabled) {
+        localStorage.setItem('Comfy.Agent.CrdtDebug.enabled', 'true')
+        localStorage.setItem('Comfy.Agent.CrdtDevPanel.open', 'true')
+      }
+    },
+    { initiallyOpen: agentPanelInitiallyOpen, debugEnabled: crdtDebugEnabled }
+  )
 
   await mockBilling(page)
   await page.route(
@@ -332,58 +339,55 @@ async function mockAgentBoot(
 }
 
 type AgentFixtures = {
-  agentFlagEnabled: boolean
   agentConsentAccepted: boolean
-  agentPanelInitiallyOpen: boolean
   agentConsentSave: { status: number; pending?: Promise<void> }
   agentConsentWrites: boolean[]
+  agentFlagEnabled: boolean
+  agentPanel: AgentPanel
+  agentPanelInitiallyOpen: boolean
+  crdtDebugEnabled: boolean
   postedMessages: string[]
 }
 
 export const agentTest = comfyPageFixture.extend<AgentFixtures>({
-  agentFlagEnabled: [true, { option: true }],
   agentConsentAccepted: [true, { option: true }],
-  agentPanelInitiallyOpen: [false, { option: true }],
   agentConsentSave: async ({ agentFlagEnabled: _agentFlagEnabled }, use) => {
     await use({ status: 200 })
   },
   agentConsentWrites: async ({ agentFlagEnabled: _agentFlagEnabled }, use) => {
     await use([])
   },
-  postedMessages: async ({ agentFlagEnabled: _agentFlagEnabled }, use) => {
-    await use([])
+  agentFlagEnabled: [true, { option: true }],
+  agentPanel: async ({ comfyPage }, use) => {
+    await use(new AgentPanel(comfyPage.page))
   },
+  agentPanelInitiallyOpen: [false, { option: true }],
+  crdtDebugEnabled: [false, { option: true }],
   page: async (
     {
-      page,
-      agentFlagEnabled,
-      postedMessages,
       agentConsentAccepted,
-      agentPanelInitiallyOpen,
       agentConsentSave,
-      agentConsentWrites
+      agentConsentWrites,
+      agentFlagEnabled,
+      agentPanelInitiallyOpen,
+      crdtDebugEnabled,
+      page,
+      postedMessages
     },
     use
   ) => {
     await mockAgentBoot(page, {
-      agentFlagEnabled,
-      postedMessages,
       agentConsentAccepted,
-      agentPanelInitiallyOpen,
       agentConsentSave,
-      agentConsentWrites
+      agentConsentWrites,
+      agentFlagEnabled,
+      agentPanelInitiallyOpen,
+      crdtDebugEnabled,
+      postedMessages
     })
     await use(page)
+  },
+  postedMessages: async ({ agentFlagEnabled: _agentFlagEnabled }, use) => {
+    await use([])
   }
 })
-
-export async function selectAgentWorkflow(page: Page): Promise<void> {
-  const picker = page.locator('#agent-panel-root').getByRole('button', {
-    name: enMessages.agent.switchWorkflow
-  })
-  await picker.click()
-  await page
-    .getByRole('menuitemradio', { name: 'Unsaved Workflow', exact: true })
-    .click()
-  await expect(picker).toHaveText('Unsaved Workflow')
-}

@@ -23,24 +23,29 @@ export class TopUpCheckoutError extends Error {
 // checkout.comfy.org in every environment, so both are trusted destinations.
 const CHECKOUT_HOSTS = new Set(['checkout.stripe.com', 'checkout.comfy.org'])
 
+export function isStripeHostedCheckoutUrl(raw: string): boolean {
+  try {
+    const url = new URL(raw)
+    return (
+      url.protocol === 'https:' &&
+      CHECKOUT_HOSTS.has(url.hostname) &&
+      url.port === '' &&
+      url.username === '' &&
+      url.password === ''
+    )
+  } catch {
+    return false
+  }
+}
+
 const zTopUpCheckout = z.object({
   checkout_url: z
     .string()
     .url()
-    .refine((raw) => {
-      try {
-        const url = new URL(raw)
-        return (
-          url.protocol === 'https:' &&
-          CHECKOUT_HOSTS.has(url.hostname) &&
-          url.port === '' &&
-          url.username === '' &&
-          url.password === ''
-        )
-      } catch {
-        return false
-      }
-    }, 'checkout_url must be a Stripe-hosted HTTPS URL'),
+    .refine(
+      isStripeHostedCheckoutUrl,
+      'checkout_url must be a Stripe-hosted HTTPS URL'
+    ),
   session_id: z.string().optional()
 })
 
@@ -58,7 +63,9 @@ export interface CreateTopUpCheckoutOptions {
   readonly timeoutMs?: number
 }
 
-function returnUrlFor(options: CreateTopUpCheckoutOptions): string {
+export function topUpCheckoutReturnUrl(
+  options: Pick<CreateTopUpCheckoutOptions, 'locale' | 'idempotencyKey'>
+): string {
   if (typeof window === 'undefined') return WORKSHOP_CREDITS_URL
   const returnPath =
     options.locale === 'zh-CN' ? '/zh-CN/checkout-return' : '/checkout-return'
@@ -115,7 +122,7 @@ export async function createTopUpCheckout(
   const signal = options.signal
     ? AbortSignal.any([options.signal, timeout])
     : timeout
-  const ownReturnUrl = returnUrlFor(options)
+  const ownReturnUrl = topUpCheckoutReturnUrl(options)
   try {
     return await requestTopUpCheckout(options, ownReturnUrl, signal)
   } catch (error) {

@@ -33,10 +33,8 @@ import { useWorkshopSession } from '../../config/workshop-session-state'
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 import type { TopUpCheckoutSession } from '../../lib/workshop/buy-credits'
-import {
-  TopUpCheckoutError,
-  createTopUpCheckout
-} from '../../lib/workshop/buy-credits'
+import { TopUpCheckoutError } from '../../lib/workshop/buy-credits'
+import { createWorkshopTopUpCheckout } from '../../lib/workshop/buy-credits-sdk'
 import { subscribeToTopUpReturns } from '../../lib/workshop/topup-return'
 import Dialog from '../ui/dialog/Dialog.vue'
 import DialogContent from '../ui/dialog/DialogContent.vue'
@@ -372,7 +370,7 @@ async function continueToCheckout() {
     const previousCredits = await creditsBeforeCheckout(scope, controller)
     const token = await tokenForCheckout(scope, controller)
     const attemptId = crypto.randomUUID()
-    const checkout = await createTopUpCheckout({
+    const checkout = await createWorkshopTopUpCheckout({
       token,
       amountCents,
       idempotencyKey: attemptId,

@@ -10,6 +10,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
+import { useAuthActions } from '@/composables/auth/useAuthActions'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import { useAuthStore } from '@/stores/authStore'
 
@@ -18,12 +19,7 @@ vi.mock(import('firebase/auth'))
 vi.mock(import('vuefire'), () => ({ useFirebaseAuth: vi.fn() }))
 
 // Mock the auth composables and stores
-const mockSendPasswordReset = vi.fn()
-vi.mock<unknown>(import('@/composables/auth/useAuthActions'), () => ({
-  useAuthActions: vi.fn(() => ({
-    sendPasswordReset: mockSendPasswordReset
-  }))
-}))
+vi.mock(import('@/composables/auth/useAuthActions'))
 
 // Mock toast
 const mockToastAdd = vi.fn()
@@ -85,7 +81,7 @@ describe('SignInForm', () => {
 
       expect(focusSpy).toHaveBeenCalled()
 
-      expect(mockSendPasswordReset).not.toHaveBeenCalled()
+      expect(useAuthActions().sendPasswordReset).not.toHaveBeenCalled()
     })
   })
 
@@ -164,7 +160,9 @@ describe('SignInForm', () => {
       await user.type(getEmailInput(), 'test@example.com')
       await user.click(screen.getByText(forgotPasswordText))
 
-      expect(mockSendPasswordReset).toHaveBeenCalledWith('test@example.com')
+      expect(useAuthActions().sendPasswordReset).toHaveBeenCalledWith(
+        'test@example.com'
+      )
       expect(mockToastAdd).not.toHaveBeenCalled()
     })
   })

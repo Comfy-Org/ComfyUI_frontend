@@ -13,7 +13,7 @@
  * Behavior is ported from the cloud app's `billingOperationStore` — the
  * cadence, the budgets, the parked-on-customer rules, the challenge echo
  * suppression — and from the pending-checkout pointer's terminal rule; the
- * wiring onto the session client, the scope tracker, and the generated
+ * wiring onto the scope source, the scope tracker, and the generated
  * contract is new.
  */
 import { zBillingOpStatusResponse } from '@comfyorg/ingest-types/zod'
@@ -22,10 +22,13 @@ import { BILLING_OPERATION_TELEMETRY_EVENT } from '../../telemetry.js'
 import type {
   BillingFailure,
   BillingResult,
-  BillingSession,
   BillingTransport
 } from './billingContracts.js'
-import type { BillingScope, BillingScopeContext } from './billingScope.js'
+import type {
+  BillingScope,
+  BillingScopeContext,
+  BillingScopeSource
+} from './billingScope.js'
 import { createBillingScopeTracker } from './billingScope.js'
 import type {
   BillingOperationPointer,
@@ -100,7 +103,8 @@ export type PresentationSwitchOutcome =
 
 export interface BillingOperationLifecycleOptions {
   readonly transport: BillingTransport
-  readonly session: BillingSession
+  /** Where the core learns which user, workspace, and role it runs as. */
+  readonly scopeSource: BillingScopeSource
   /** The Phase 2 status reader; consulted before every start and recovery. */
   readonly statusReader: BillingStatusReader
   /** Tab-local storage for the operation pointer; absent means nothing survives a reload. */
@@ -278,7 +282,7 @@ export function createBillingOperationLifecycle(
 ): BillingOperationLifecycle {
   const {
     transport,
-    session,
+    scopeSource,
     statusReader,
     embeddedCheckoutAvailable = () => false,
     onTelemetry,
@@ -298,7 +302,7 @@ export function createBillingOperationLifecycle(
   // operation and this tab stops observing it. The pointer key omits role on
   // purpose: the charge still belongs to (user, workspace), so `recover` finds
   // it again under the new role. Keying the pointer by role would strand it.
-  const scopeTracker = createBillingScopeTracker(session, () => {
+  const scopeTracker = createBillingScopeTracker(scopeSource, () => {
     for (const record of operations.values()) {
       dispatch(record, { type: 'superseded' })
     }

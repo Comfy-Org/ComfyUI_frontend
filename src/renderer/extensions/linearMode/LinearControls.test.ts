@@ -1,9 +1,10 @@
 import { getActivePinia } from 'pinia'
 import { render, screen, within } from '@testing-library/vue'
-import { nextTick } from 'vue'
+import { computed, nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useMissingMediaStore } from '@/platform/missingMedia/missingMediaStore'
 import type { MissingMediaCandidate } from '@/platform/missingMedia/types'
 import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
@@ -16,20 +17,12 @@ import { useAppModeStore } from '@/stores/appModeStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { toNodeId } from '@/types/nodeId'
 
-const billingMock = vi.hoisted(() => ({
-  canRunWorkflows: true
-}))
-
 const overlayMock = vi.hoisted(() => ({
   overlayMessage: 'KSampler is missing a required input: model',
   overlayTitle: 'Required input missing'
 }))
 
-vi.mock<unknown>(import('@/composables/billing/useBillingContext'), () => ({
-  useBillingContext: () => ({
-    canRunWorkflows: billingMock.canRunWorkflows
-  })
-}))
+vi.mock(import('@/composables/billing/useBillingContext'))
 
 vi.mock<unknown>(import('@/components/error/useErrorOverlayState'), () => ({
   useErrorOverlayState: () => ({
@@ -111,7 +104,9 @@ function renderControls({
   canRunWorkflows?: boolean
   mobile?: boolean
 } = {}) {
-  billingMock.canRunWorkflows = canRunWorkflows
+  const billing = useBillingContext()
+  billing.canRunWorkflows = computed(() => canRunWorkflows)
+  vi.mocked(useBillingContext).mockReturnValue(billing)
 
   const pinia = getActivePinia()!
 
@@ -163,7 +158,6 @@ function clearMissingResource(resource: MissingResource) {
 
 describe('LinearControls', () => {
   beforeEach(() => {
-    billingMock.canRunWorkflows = true
     overlayMock.overlayMessage = 'KSampler is missing a required input: model'
     overlayMock.overlayTitle = 'Required input missing'
   })

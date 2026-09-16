@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from 'vitest'
 
 import type { SessionClient, SessionSnapshot } from '../session.js'
 import type { AccountCredential } from '../sessionContracts.js'
+import { sessionBillingScopeSource } from './billingScope.js'
 import type {
   BillingHttpResponse,
   BillingRequest,
@@ -51,7 +52,7 @@ function fakeSession(initial: SessionSnapshot = authenticated(credential())) {
     }
   }
   return {
-    session: fake as SessionClient,
+    scopeSource: sessionBillingScopeSource(fake),
     moveTo(next: SessionSnapshot) {
       snapshot = next
       for (const listener of [...listeners]) listener(snapshot)
@@ -96,12 +97,17 @@ function fakeTransport(answers: BillingResult<BillingHttpResponse>[]) {
   return { transport, calls }
 }
 
+interface SupersedeContext {
+  readonly host: ReturnType<typeof fakeSession>
+  readonly reader: ReturnType<typeof createCreditsReader>
+}
+
 describe('createCreditsReader', () => {
   it('reads the balance from the billing balance route', async () => {
-    const { session } = fakeSession()
+    const { scopeSource } = fakeSession()
     const { transport, calls } = fakeTransport([httpOk(BALANCE)])
 
-    const result = await createCreditsReader({ transport, session }).read()
+    const result = await createCreditsReader({ transport, scopeSource }).read()
 
     expect(calls).toHaveLength(1)
     expect(calls[0].method).toBe('GET')
@@ -117,10 +123,10 @@ describe('createCreditsReader', () => {
   })
 
   it('keeps the balance in micros rather than converting it', async () => {
-    const { session } = fakeSession()
+    const { scopeSource } = fakeSession()
     const { transport } = fakeTransport([httpOk(BALANCE)])
 
-    const result = await createCreditsReader({ transport, session }).read()
+    const result = await createCreditsReader({ transport, scopeSource }).read()
 
     expect(result.status).toBe('ok')
     if (result.status !== 'ok') return
@@ -131,12 +137,12 @@ describe('createCreditsReader', () => {
   })
 
   it('accepts a response carrying only the required fields', async () => {
-    const { session } = fakeSession()
+    const { scopeSource } = fakeSession()
     const { transport } = fakeTransport([
       httpOk({ amount_micros: 0, currency: 'USD' })
     ])
 
-    const result = await createCreditsReader({ transport, session }).read()
+    const result = await createCreditsReader({ transport, scopeSource }).read()
 
     expect(result.status).toBe('ok')
     if (result.status !== 'ok') return
@@ -146,9 +152,9 @@ describe('createCreditsReader', () => {
 
   describe('deduplication', () => {
     it('serves concurrent readers of one scope from a single request', async () => {
-      const { session } = fakeSession()
+      const { scopeSource } = fakeSession()
       const { transport } = fakeTransport([httpOk(BALANCE)])
-      const reader = createCreditsReader({ transport, session })
+      const reader = createCreditsReader({ transport, scopeSource })
 
       const [first, second] = await Promise.all([reader.read(), reader.read()])
 
@@ -157,7 +163,7 @@ describe('createCreditsReader', () => {
     })
 
     it('releases a joining caller that aborts, without disturbing the shared read', async () => {
-      const { session } = fakeSession()
+      const { scopeSource } = fakeSession()
       let release = () => {}
       const gate = new Promise<void>((resolve) => {
         release = resolve
@@ -166,7 +172,7 @@ describe('createCreditsReader', () => {
         await gate
         return httpOk(BALANCE)
       })
-      const reader = createCreditsReader({ transport, session })
+      const reader = createCreditsReader({ transport, scopeSource })
 
       const first = reader.read()
       const joiner = new AbortController()
@@ -182,7 +188,7 @@ describe('createCreditsReader', () => {
     })
 
     it('keeps joined callers alive when the initiating caller aborts', async () => {
-      const { session } = fakeSession()
+      const { scopeSource } = fakeSession()
       let release = () => {}
       const gate = new Promise<void>((resolve) => {
         release = resolve
@@ -191,7 +197,7 @@ describe('createCreditsReader', () => {
         await gate
         return httpOk(BALANCE)
       })
-      const reader = createCreditsReader({ transport, session })
+      const reader = createCreditsReader({ transport, scopeSource })
 
       const initiator = new AbortController()
       const first = reader.read({ signal: initiator.signal })
@@ -208,9 +214,9 @@ describe('createCreditsReader', () => {
     })
 
     it('requests again on a later read rather than serving the cache', async () => {
-      const { session } = fakeSession()
+      const { scopeSource } = fakeSession()
       const { transport } = fakeTransport([httpOk(BALANCE)])
-      const reader = createCreditsReader({ transport, session })
+      const reader = createCreditsReader({ transport, scopeSource })
 
       await reader.read()
       await reader.read()
@@ -229,7 +235,10 @@ describe('createCreditsReader', () => {
             releases.push((balance) => resolve(httpOk(balance)))
           })
       )
-      const reader = createCreditsReader({ transport, session: host.session })
+      const reader = createCreditsReader({
+        transport,
+        scopeSource: host.scopeSource
+      })
 
       const firstA = reader.read()
       host.moveTo(
@@ -263,7 +272,10 @@ describe('createCreditsReader', () => {
         await gate
         return httpOk(BALANCE)
       })
-      const reader = createCreditsReader({ transport, session: host.session })
+      const reader = createCreditsReader({
+        transport,
+        scopeSource: host.scopeSource
+      })
 
       const pending = reader.read()
       host.moveTo(
@@ -287,7 +299,10 @@ describe('createCreditsReader', () => {
         await gate
         return httpOk(BALANCE)
       })
-      const reader = createCreditsReader({ transport, session: host.session })
+      const reader = createCreditsReader({
+        transport,
+        scopeSource: host.scopeSource
+      })
 
       const pending = reader.read()
       host.moveTo(SIGNED_OUT)
@@ -300,7 +315,10 @@ describe('createCreditsReader', () => {
     it('drops a published balance when the host changes workspace', async () => {
       const host = fakeSession()
       const { transport } = fakeTransport([httpOk(BALANCE)])
-      const reader = createCreditsReader({ transport, session: host.session })
+      const reader = createCreditsReader({
+        transport,
+        scopeSource: host.scopeSource
+      })
 
       await reader.read()
       expect(reader.getSnapshot()).toBeDefined()
@@ -317,10 +335,13 @@ describe('createCreditsReader', () => {
     })
 
     it('reports NOT_AUTHENTICATED without asking when nobody is signed in', async () => {
-      const { session } = fakeSession(SIGNED_OUT)
+      const { scopeSource } = fakeSession(SIGNED_OUT)
       const { transport } = fakeTransport([httpOk(BALANCE)])
 
-      const result = await createCreditsReader({ transport, session }).read()
+      const result = await createCreditsReader({
+        transport,
+        scopeSource
+      }).read()
 
       expect(result).toEqual({ status: 'error', code: 'NOT_AUTHENTICATED' })
       expect(transport).not.toHaveBeenCalled()
@@ -334,20 +355,23 @@ describe('createCreditsReader', () => {
       [404, 'NOT_FOUND'],
       [500, 'REQUEST_FAILED']
     ] as const)('maps %i to %s', async ([status, code]) => {
-      const { session } = fakeSession()
+      const { scopeSource } = fakeSession()
       const { transport } = fakeTransport([httpStatus(status)])
 
-      const result = await createCreditsReader({ transport, session }).read()
+      const result = await createCreditsReader({
+        transport,
+        scopeSource
+      }).read()
 
       expect(result).toEqual({ status: 'error', code, httpStatus: status })
     })
 
     it('reports a 2xx body that does not match the contract as malformed', async () => {
-      const { session } = fakeSession()
+      const { scopeSource } = fakeSession()
       const { transport } = fakeTransport([
         httpOk({ amount_micros: 'a lot', currency: 'USD' })
       ])
-      const reader = createCreditsReader({ transport, session })
+      const reader = createCreditsReader({ transport, scopeSource })
 
       const result = await reader.read()
 
@@ -360,12 +384,12 @@ describe('createCreditsReader', () => {
     })
 
     it('keeps the last good balance when a later read fails', async () => {
-      const { session } = fakeSession()
+      const { scopeSource } = fakeSession()
       const { transport } = fakeTransport([
         httpOk(BALANCE),
         { status: 'error', code: 'REQUEST_FAILED' }
       ])
-      const reader = createCreditsReader({ transport, session })
+      const reader = createCreditsReader({ transport, scopeSource })
 
       await reader.read()
       const second = await reader.read()
@@ -376,10 +400,51 @@ describe('createCreditsReader', () => {
       expect(reader.getSnapshot()?.balance.amount_micros).toBe(12_500_000)
     })
 
+    it.for([
+      [
+        'the workspace changes',
+        ({ host }: SupersedeContext) =>
+          host.moveTo(
+            authenticated(
+              credential({
+                workspace: { id: 'ws-2', name: 'Team', type: 'team' }
+              })
+            )
+          )
+      ],
+      [
+        'the reader is disposed',
+        ({ reader }: SupersedeContext) => reader.dispose()
+      ]
+    ] as const)(
+      'reports SUPERSEDED when a failure lands after %s',
+      async ([, supersede]) => {
+        const host = fakeSession()
+        let release = () => {}
+        const gate = new Promise<void>((resolve) => {
+          release = resolve
+        })
+        const transport: BillingTransport = vi.fn(async () => {
+          await gate
+          return httpStatus(500)
+        })
+        const reader = createCreditsReader({
+          transport,
+          scopeSource: host.scopeSource
+        })
+
+        const pending = reader.read()
+        supersede({ host, reader })
+        release()
+
+        expect(await pending).toEqual({ status: 'error', code: 'SUPERSEDED' })
+      }
+    )
+
     it('drops the last good balance when a later read is denied', async () => {
-      const { session } = fakeSession()
+      const { scopeSource } = fakeSession()
       const { transport } = fakeTransport([httpOk(BALANCE), httpStatus(401)])
-      const reader = createCreditsReader({ transport, session })
+      const reader = createCreditsReader({ transport, scopeSource })
 
       await reader.read()
       const result = await reader.read()
@@ -394,7 +459,7 @@ describe('createCreditsReader', () => {
   })
 
   it('clears account data and rejects an in-flight result after dispose', async () => {
-    const { session } = fakeSession()
+    const { scopeSource } = fakeSession()
     let release = () => {}
     const gate = new Promise<void>((resolve) => {
       release = resolve
@@ -405,7 +470,7 @@ describe('createCreditsReader', () => {
       if (calls === 2) await gate
       return httpOk(BALANCE)
     })
-    const reader = createCreditsReader({ transport, session })
+    const reader = createCreditsReader({ transport, scopeSource })
 
     await reader.read()
     const pending = reader.read()

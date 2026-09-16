@@ -19,12 +19,12 @@ import {
 } from '@comfyorg/ingest-types/zod'
 import { z } from 'zod'
 
+import type { BillingResult, BillingTransport } from './billingContracts.js'
 import type {
-  BillingResult,
-  BillingSession,
-  BillingTransport
-} from './billingContracts.js'
-import type { BillingScope, BillingScopeContext } from './billingScope.js'
+  BillingScope,
+  BillingScopeContext,
+  BillingScopeSource
+} from './billingScope.js'
 import { createBillingScopeTracker, sameBillingScope } from './billingScope.js'
 import type { CapabilityDenials } from './capabilityDenials.js'
 import { decodeCapabilityDenials } from './capabilityDenials.js'
@@ -107,13 +107,14 @@ export interface CapabilitiesReader {
    * refetch forever.
    */
   invalidate: (revision?: number) => void
-  /** Detaches the session subscription. */
+  /** Detaches the scope subscription. */
   dispose: () => void
 }
 
 export interface CapabilitiesReaderOptions {
   readonly transport: BillingTransport
-  readonly session: BillingSession
+  /** Where the core learns which user, workspace, and role it runs as. */
+  readonly scopeSource: BillingScopeSource
   readonly now?: () => number
 }
 
@@ -168,12 +169,12 @@ interface InFlightRead {
 export function createCapabilitiesReader(
   options: CapabilitiesReaderOptions
 ): CapabilitiesReader {
-  const { transport, session, now = Date.now } = options
+  const { transport, scopeSource, now = Date.now } = options
 
   let snapshot: CapabilitiesSnapshot | undefined
   let inFlight: InFlightRead | undefined
   const lifetime = { disposed: false }
-  const scopeTracker = createBillingScopeTracker(session, () => {
+  const scopeTracker = createBillingScopeTracker(scopeSource, () => {
     snapshot = undefined
     inFlight = undefined
   })
@@ -263,21 +264,17 @@ export function createCapabilitiesReader(
     // waiting on it. Each caller's signal releases only that caller, below.
     const promise = (async (): Promise<BillingResult<CapabilitiesSnapshot>> => {
       const result = await requestCapabilities(scope)
-      if (result.status !== 'ok') {
-        if (
-          result.code === 'ACCESS_DENIED' &&
-          scopeTracker.isCurrent(context)
-        ) {
-          snapshot = undefined
-        }
-        return result
-      }
-
       // The publish guard. Between issuing the request and settling it the
-      // host may have changed workspace or signed out, and a snapshot cached
-      // now would be attributed to whoever is signed in next.
+      // host may have changed workspace or signed out, so a snapshot cached
+      // now would be attributed to whoever is signed in next, and a failure
+      // says nothing about the scope that has since taken over.
       if (lifetime.disposed || !scopeTracker.isCurrent(context)) {
         return { status: 'error', code: 'SUPERSEDED' }
+      }
+
+      if (result.status !== 'ok') {
+        if (result.code === 'ACCESS_DENIED') snapshot = undefined
+        return result
       }
 
       // A mutation committed while this read was in flight, and the revision

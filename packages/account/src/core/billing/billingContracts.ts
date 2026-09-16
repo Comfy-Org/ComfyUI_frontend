@@ -88,6 +88,11 @@ export interface BillingHttpResponse {
   /** True when a 401 could not be retried because the write was not replayable. */
   readonly authenticationRetrySkipped?: true
   /**
+   * True when the transport holds no credential of its own to re-prove with,
+   * so a 401 is the host's session ending rather than a refusal.
+   */
+  readonly authenticationNotRenewable?: true
+  /**
    * Response header reader. The capability revision a mutation reports
    * (`X-Capability-Revision`) reaches the capabilities cache through this,
    * mirroring the cloud app's `attachCapabilityRevisionInterceptor`. It is

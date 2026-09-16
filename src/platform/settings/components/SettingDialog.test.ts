@@ -16,7 +16,6 @@ const searchMocks = vi.hoisted(() => ({
   searchQuery: null as unknown as Ref<string>,
   searchResultsCategories: null as unknown as Ref<Set<string>>
 }))
-const mockFetchBalance = vi.hoisted(() => vi.fn())
 
 vi.mock<unknown>(
   import('@/platform/settings/composables/useSettingUI'),
@@ -64,9 +63,7 @@ vi.mock<unknown>(
   })
 )
 
-vi.mock<unknown>(import('@/composables/billing/useBillingContext'), () => ({
-  useBillingContext: () => ({ fetchBalance: mockFetchBalance })
-}))
+vi.mock(import('@/composables/billing/useBillingContext'))
 
 vi.mock(
   import('@/platform/telemetry/searchQuery/useSearchQueryTracking'),

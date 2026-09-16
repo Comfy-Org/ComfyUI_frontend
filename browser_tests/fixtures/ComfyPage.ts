@@ -597,6 +597,7 @@ export const comfyPageFixture = base.extend<{
   initialLocalStorage: Record<string, string>
   initialSettings: Record<string, unknown>
   initialUrl: string | undefined
+  mockReleases: boolean
   comfyPage: ComfyPage
   comfyMouse: ComfyMouse
   comfyFiles: ComfyFiles
@@ -611,6 +612,7 @@ export const comfyPageFixture = base.extend<{
   // the fixture's defaults so per-test values win.
   initialSettings: [{}, { option: true }],
   initialUrl: [undefined, { option: true }],
+  mockReleases: [true, { option: true }],
 
   page: async ({ page, browserName }, use) => {
     if (browserName !== 'chromium' || !COLLECT_COVERAGE) {
@@ -637,7 +639,8 @@ export const comfyPageFixture = base.extend<{
       initialFeatureFlags,
       initialLocalStorage,
       initialSettings,
-      initialUrl
+      initialUrl,
+      mockReleases
     },
     use,
     testInfo
@@ -711,7 +714,11 @@ export const comfyPageFixture = base.extend<{
         await comfyPage.featureFlags.seedFlags(initialFeatureFlags)
       }
 
-      await comfyPage.setup({ initialLocalStorage, url: initialUrl })
+      await comfyPage.setup({
+        initialLocalStorage,
+        url: initialUrl,
+        mockReleases
+      })
 
       if (startupErrorCollector) {
         startupErrorCollector.stop()

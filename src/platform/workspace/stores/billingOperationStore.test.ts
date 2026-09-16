@@ -12,6 +12,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { useTelemetry } from '@/platform/telemetry'
 
 import type { BillingOpStatusResponse } from '@/platform/workspace/api/workspaceApi'
+import { mockBillingContext } from '@/utils/__tests__/mockBillingContext'
 
 const { mockHandleNextAction, mockLoadStripe, mockFeatureFlags } = vi.hoisted(
   () => ({
@@ -25,21 +26,12 @@ vi.mock<unknown>(import('@stripe/stripe-js/pure'), () => ({
   loadStripe: mockLoadStripe
 }))
 
-const mockFetchStatus = vi.fn()
-const mockFetchBalance = vi.fn()
-const mockReconcileSubscriptionSuccess = vi.fn()
 const mockRefreshCapabilities = vi.fn()
 const mockDistributionTypes = vi.hoisted(() => ({ isCloud: true }))
 
 vi.mock(import('@/platform/distribution/types'), () => mockDistributionTypes)
 
-vi.mock<unknown>(import('@/composables/billing/useBillingContext'), () => ({
-  useBillingContext: () => ({
-    fetchStatus: mockFetchStatus,
-    fetchBalance: mockFetchBalance,
-    reconcileSubscriptionSuccess: mockReconcileSubscriptionSuccess
-  })
-}))
+vi.mock(import('@/composables/billing/useBillingContext'))
 
 vi.mock<unknown>(
   import('@/platform/workspace/composables/useBillingCapabilities'),
@@ -154,17 +146,19 @@ describe('billingOperationStore', () => {
       return store
     }
 
-    it('carries a parked-on-checkout phase onto the operation', async () => {
+    it('exposes checkout recovery after polling without an action URL', async () => {
       const store = await pollPhase('awaiting_payment_method')
 
       await vi.waitFor(() =>
-        expect(store.getOperation('op-phase')?.phase).toBe(
-          'awaiting_payment_method'
-        )
+        expect(store.subscriptionActionOperation).toMatchObject({
+          opId: 'op-phase',
+          phase: 'awaiting_payment_method',
+          actionUrl: null
+        })
       )
     })
 
-    it('carries a parked-on-invoice phase onto the operation', async () => {
+    it('does not expose checkout recovery from an invoice phase without an action URL', async () => {
       const store = await pollPhase('awaiting_invoice_payment')
 
       await vi.waitFor(() =>
@@ -172,6 +166,7 @@ describe('billingOperationStore', () => {
           'awaiting_invoice_payment'
         )
       )
+      expect(store.subscriptionActionOperation).toBeUndefined()
     })
 
     it('leaves the phase null when the server reports none', async () => {
@@ -459,6 +454,7 @@ describe('billingOperationStore', () => {
     })
 
     it('updates status and shows toast on success', async () => {
+      const billing = mockBillingContext()
       vi.mocked(workspaceApi.getBillingOpStatus).mockResolvedValue({
         id: 'op-1',
         status: 'succeeded',
@@ -475,9 +471,9 @@ describe('billingOperationStore', () => {
       expect(store.hasPendingOperations).toBe(false)
       expect(mockRefreshCapabilities).toHaveBeenCalledOnce()
 
-      expect(mockReconcileSubscriptionSuccess).toHaveBeenCalledOnce()
-      expect(mockFetchStatus).not.toHaveBeenCalled()
-      expect(mockFetchBalance).not.toHaveBeenCalled()
+      expect(billing.reconcileSubscriptionSuccess).toHaveBeenCalledOnce()
+      expect(billing.fetchStatus).not.toHaveBeenCalled()
+      expect(billing.fetchBalance).not.toHaveBeenCalled()
 
       expect(useToastStore().add).toHaveBeenCalledWith({
         severity: 'success',
@@ -886,14 +882,17 @@ describe('billingOperationStore', () => {
     })
 
     it('resolves the terminal promise even if reconciliation throws synchronously', async () => {
+      const billing = mockBillingContext()
       vi.mocked(workspaceApi.getBillingOpStatus).mockResolvedValue({
         id: 'op-1',
         status: 'succeeded',
         started_at: new Date().toISOString()
       })
-      mockReconcileSubscriptionSuccess.mockImplementationOnce(() => {
-        throw new Error('reconcile failed')
-      })
+      vi.mocked(billing.reconcileSubscriptionSuccess).mockImplementationOnce(
+        () => {
+          throw new Error('reconcile failed')
+        }
+      )
 
       const store = useBillingOperationStore()
       const terminal = store.startOperation('op-1', 'subscription')
@@ -1980,6 +1979,44 @@ describe('billingOperationStore', () => {
   })
 
   describe('polling timeout', () => {
+    it('keeps checkout recovery pending at a parked cadence until the long timeout', async () => {
+      const startedAt = Date.now()
+      vi.mocked(workspaceApi.getBillingOpStatus).mockResolvedValue({
+        id: 'op-checkout',
+        status: 'pending',
+        phase: 'awaiting_payment_method',
+        started_at: new Date(startedAt).toISOString()
+      })
+
+      const store = useBillingOperationStore()
+      const terminal = store.startOperation('op-checkout', 'subscription')
+      await vi.advanceTimersByTimeAsync(0)
+
+      await vi.advanceTimersByTimeAsync(29_999)
+      expect(workspaceApi.getBillingOpStatus).toHaveBeenCalledTimes(1)
+      await vi.advanceTimersByTimeAsync(1)
+      expect(workspaceApi.getBillingOpStatus).toHaveBeenCalledTimes(2)
+
+      await vi.advanceTimersByTimeAsync(5 * 60_000)
+      expect(store.subscriptionActionOperation).toMatchObject({
+        opId: 'op-checkout',
+        status: 'pending',
+        phase: 'awaiting_payment_method',
+        actionUrl: null
+      })
+      expect(useTelemetry()?.trackBillingEvent).not.toHaveBeenCalledWith(
+        expect.objectContaining({ stage: 'timeout' })
+      )
+
+      vi.setSystemTime(startedAt + 23 * 60 * 60_000 - 30_000)
+      await vi.advanceTimersByTimeAsync(30_000)
+      expect(store.subscriptionActionOperation?.status).toBe('pending')
+
+      await vi.advanceTimersByTimeAsync(30_000)
+      expect((await terminal).status).toBe('timeout')
+      expect(store.subscriptionActionOperation).toBeUndefined()
+    })
+
     it('times out a subscription while its workspace is inactive', async () => {
       vi.mocked(workspaceApi.getBillingOpStatus).mockResolvedValue({
         id: 'op-1',
@@ -2460,6 +2497,7 @@ describe('billingOperationStore', () => {
     })
 
     it('resolves with the succeeded operation and refreshes status', async () => {
+      const billing = mockBillingContext()
       vi.mocked(workspaceApi.getBillingOpStatus).mockResolvedValue({
         id: 'op-1',
         status: 'succeeded',
@@ -2473,7 +2511,7 @@ describe('billingOperationStore', () => {
       const operation = await terminal
 
       expect(operation.status).toBe('succeeded')
-      expect(mockFetchStatus).toHaveBeenCalled()
+      expect(billing.fetchStatus).toHaveBeenCalled()
       expect(
         useTeamWorkspaceStore().updateActiveWorkspace
       ).toHaveBeenCalledWith({
@@ -2490,7 +2528,10 @@ describe('billingOperationStore', () => {
     })
 
     it('resolves the terminal outcome even when the post-success refresh fails', async () => {
-      mockFetchStatus.mockRejectedValueOnce(new Error('refresh failed'))
+      const billing = mockBillingContext()
+      vi.mocked(billing.fetchStatus).mockRejectedValueOnce(
+        new Error('refresh failed')
+      )
       vi.mocked(workspaceApi.getBillingOpStatus).mockResolvedValue({
         id: 'op-1',
         status: 'succeeded',

@@ -27,6 +27,7 @@ import type {
   BillingOperationPhase,
   BillingDeclineReason
 } from '@/platform/workspace/api/workspaceApi'
+import { needsCustomerAttention } from '@/platform/workspace/billing/customerAttention'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import {
@@ -173,11 +174,8 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
       (op) =>
         op.type === 'subscription' &&
         op.workspaceId === workspaceStore.activeWorkspaceId &&
-        ((op.status === 'pending' &&
-          (op.actionUrl !== null ||
-            op.authenticationState === 'requires_action' ||
-            op.authenticationState === 'failed_retryable')) ||
-          op.status === 'reconciliation_needed')
+        (needsCustomerAttention(op) ||
+          (op.status === 'pending' && op.phase === 'awaiting_payment_method'))
     )
   )
 
@@ -187,11 +185,7 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
         op.type === 'topup' &&
         op.workspaceId === workspaceStore.activeWorkspaceId &&
         !op.dismissed &&
-        ((op.status === 'pending' &&
-          (op.actionUrl !== null ||
-            op.authenticationState === 'requires_action' ||
-            op.authenticationState === 'failed_retryable')) ||
-          op.status === 'reconciliation_needed')
+        needsCustomerAttention(op)
     )
   )
 
@@ -392,6 +386,7 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
   // settled payment spinning for half a minute.
   function isParkedAwaitingCustomer(operation: BillingOperation): boolean {
     return (
+      operation.phase === 'awaiting_payment_method' ||
       operation.authenticationState === 'requires_action' ||
       operation.actionUrl !== null ||
       (operation.authenticationState === 'failed_retryable' &&
@@ -430,7 +425,11 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
 
   function hasTimedOut(operation: BillingOperation): boolean {
     const elapsed = Date.now() - operation.startedAt
-    if (operation.type !== 'cancel' && operation.authenticationRequiredSeen) {
+    if (
+      operation.type !== 'cancel' &&
+      (operation.authenticationRequiredSeen ||
+        operation.phase === 'awaiting_payment_method')
+    ) {
       return elapsed > AUTHENTICATION_TIMEOUT_MS
     }
     return operation.type === 'subscription'
