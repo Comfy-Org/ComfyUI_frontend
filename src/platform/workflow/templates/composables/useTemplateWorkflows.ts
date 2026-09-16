@@ -1,4 +1,4 @@
-import { computed, onScopeDispose, ref, shallowRef } from 'vue'
+import { computed, onScopeDispose, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { useTelemetry } from '@/platform/telemetry'
@@ -34,15 +34,12 @@ export function useTemplateWorkflows() {
 
   // State
   const selectedTemplate = ref<WorkflowTemplates | null>(null)
-  const pendingLoad = shallowRef<{
-    id: string
-    controller: AbortController
-    phase: 'preparing' | 'loading'
-  } | null>(null)
-  const loadingTemplateId = computed(() => pendingLoad.value?.id ?? null)
+  let loadController: AbortController | undefined
+  const loadingTemplateId = computed(
+    () => workflowTemplatesStore.loadingTemplateId
+  )
   onScopeDispose(() => {
-    if (pendingLoad.value?.phase === 'preparing')
-      pendingLoad.value.controller.abort()
+    workflowTemplatesStore.cancelTemplateLoad(loadController)
   })
 
   // Computed
@@ -154,24 +151,21 @@ export function useTemplateWorkflows() {
     return { json, template }
   }
 
-  function finishTemplateLoad(controller: AbortController) {
-    if (pendingLoad.value?.controller === controller) pendingLoad.value = null
-  }
-
   async function loadWorkflowTemplate(id: string, sourceModule: string) {
     if (!isTemplatesLoaded.value) {
       showTemplateError(t('templateWorkflows.error.loading'))
       return false
     }
-    if (pendingLoad.value?.phase === 'loading') return false
-
-    const controller = workflowTemplatesStore.startTemplateLoad()
-    pendingLoad.value = { id, controller, phase: 'preparing' }
+    const controller = workflowTemplatesStore.startTemplateLoad(id)
+    if (!controller) return false
+    loadController = controller
     try {
       const source = resolveTemplateSource(id, sourceModule)
       if (!source) return false
       const data = await loadTemplateData(id, source, controller.signal)
       controller.signal.throwIfAborted()
+      if (!workflowTemplatesStore.startTemplateGraphLoad(controller))
+        return false
 
       const workflowName =
         source === 'default' ? t(`templateWorkflows.template.${id}`, id) : id
@@ -180,7 +174,6 @@ export function useTemplateWorkflows() {
         template_source: source
       })
 
-      pendingLoad.value = { id, controller, phase: 'loading' }
       dialogStore.closeDialog()
       const loadedWorkflow = await app.loadGraphData(
         data.json,
@@ -199,7 +192,8 @@ export function useTemplateWorkflows() {
       showTemplateError(t('templateWorkflows.error.loading'))
       return false
     } finally {
-      finishTemplateLoad(controller)
+      workflowTemplatesStore.finishTemplateLoad(controller)
+      if (loadController === controller) loadController = undefined
     }
   }
 
