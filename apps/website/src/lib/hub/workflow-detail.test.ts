@@ -11,40 +11,58 @@ describe('getHubWorkflowPage', () => {
     expect(getHubWorkflowPage('no-such-template')).toBeUndefined()
   })
 
-  it('adapts an image-to-video template into a video playground', () => {
+  it('gives every template in the snapshot a page of its own', () => {
+    expect(listHubWorkflows().length).toBeGreaterThan(600)
+    expect(hubWorkflowPath('api_nano_banana_pro')).toBe(
+      '/workshop/v2/workflows/api_nano_banana_pro/'
+    )
+  })
+
+  it('offers a destination only where the catalogue carries the model', () => {
+    const routed = getHubWorkflowPage('api_nano_banana_pro')!
+    expect(routed.callsPartnerModel).toBe(true)
+    expect(routed.destination?.name).toBe('Nano Banana Pro')
+
+    const absent = getHubWorkflowPage('api_minimax_h3_max_flf2v')!
+    expect(absent.callsPartnerModel).toBe(true)
+    expect(absent.destination).toBeUndefined()
+    expect(absent.runsOn).toEqual([{ name: 'MiniMax H3', model: undefined }])
+  })
+
+  it('separates a partner workflow from one that downloads weights', () => {
+    expect(getHubWorkflowPage('api_minimax_h3_max_flf2v')!.weightsBytes).toBe(0)
+
+    const local = getHubWorkflowPage('video_minimax_h3_i2v')!
+    expect(local.callsPartnerModel).toBe(false)
+    expect(local.destination).toBeUndefined()
+    expect(local.weightsBytes).toBeGreaterThan(0)
+  })
+
+  it('lists the custom nodes a workflow declares, and none otherwise', () => {
+    expect(
+      getHubWorkflowPage('video_ltx_2_audio_to_video')!.customNodes.length
+    ).toBeGreaterThan(0)
+    expect(getHubWorkflowPage('image_z_image_turbo')!.customNodes).toEqual([])
+  })
+
+  it('reads the ports the details declare, and falls back to the medium', () => {
+    const withPorts = getHubWorkflowPage('video_minimax_h3_i2v')!
+    expect(withPorts.inputs).toContainEqual({
+      name: 'LoadImage',
+      type: 'image'
+    })
+    expect(withPorts.mediaType).toBe('video')
+
+    const noOutputs = getHubWorkflowPage('api_minimax_h3_max_flf2v')!
+    expect(noOutputs.outputs).toEqual([{ name: 'video', type: 'video' }])
+  })
+
+  it('recommends only the same kind, and never the workflow itself', () => {
     const page = getHubWorkflowPage('video_minimax_h3_i2v')!
-    expect(page.mediaType).toBe('video')
-    expect(page.model.modality).toBe('video')
-    expect(page.model.href).toBe(hubWorkflowPath('video_minimax_h3_i2v'))
-    expect(page.model.fields.map((field) => field.name)).toEqual([
-      'prompt',
-      'image',
-      'aspect_ratio',
-      'resolution',
-      'duration',
-      'seed'
-    ])
-    expect(page.inputs).toContainEqual({ name: 'image', type: 'file' })
-    expect(page.outputs[0]).toEqual({ name: 'video', type: 'mp4' })
     expect(page.related).toHaveLength(8)
     expect(page.related.every((other) => !other.isApp)).toBe(true)
-    expect(page.related.map((t) => t.name)).not.toContain(
+    expect(page.related.map((other) => other.name)).not.toContain(
       'video_minimax_h3_i2v'
     )
-  })
-
-  it('gives image templates image options and every template a page', () => {
-    expect(listHubWorkflows().length).toBeGreaterThan(600)
-    const page = getHubWorkflowPage('image_z_image_turbo')!
-    expect(page.model.fields.map((field) => field.name)).toContain(
-      'output_format'
-    )
-    expect(page.inputs).toContainEqual({ name: 'n', type: 'int' })
-    expect(page.outputs[0].type).toBe('png')
-  })
-
-  it('includes the primary asset when detail metadata has no outputs', () => {
-    const page = getHubWorkflowPage('api_minimax_h3_max_flf2v')
-    expect(page?.outputs[0]).toEqual({ name: 'video', type: 'mp4' })
   })
 })

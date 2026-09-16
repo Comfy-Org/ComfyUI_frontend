@@ -1,0 +1,156 @@
+---
+import CatalogueCard from '../../../../components/hub/CatalogueCard.vue'
+import { useCaseFor } from '../../../../config/models-catalogue'
+import { workshopModels } from '../../../../config/workshop-browse-content'
+import { estimateWorkshopNodePrice } from '../../../../config/workshop-node-pricing'
+import { cardViewFor } from '../../../../lib/hub/catalogue-card'
+import {
+  getModelGroupPage,
+  listModelGroups
+} from '../../../../lib/hub/model-page'
+import { partnerModelFor } from '../../../../lib/hub/template-use-case'
+import { taskLabelFor } from '../../../../lib/workshop/task-label'
+import { t } from '../../../../i18n/translations'
+import BaseLayout from '../../../../layouts/BaseLayout.astro'
+
+export function getStaticPaths() {
+  return listModelGroups().map((entry) => ({ params: { key: entry.key } }))
+}
+
+const { key } = Astro.params
+const page = key ? getModelGroupPage(key) : undefined
+if (!page) return Astro.redirect('/workshop/v2/')
+
+const { name, provider, operations, uses, operationsFromWorkflows } = page
+
+const pricedOperations = await Promise.all(
+  operations.map(async (model) => ({
+    model,
+    task: taskLabelFor(model, 'en'),
+    price: await estimateWorkshopNodePrice(model, useCaseFor(model))
+  }))
+)
+
+const viewFor = (template: (typeof uses)[number]) =>
+  cardViewFor(
+    {
+      kind: template.isApp ? 'app' : 'workflow',
+      key: template.name,
+      template,
+      runsOn: partnerModelFor(template, workshopModels)
+    },
+    new Set<string>(),
+    new Map<string, string>()
+  )
+
+const sectionTitle =
+  'text-xs font-bold tracking-wider text-primary-comfy-canvas uppercase'
+---
+
+<BaseLayout
+  title={`${name} - Comfy`}
+  description={`${name} and the workflows built on it.`}
+  noindex
+>
+  <main class="mx-auto max-w-10xl px-6 py-10 lg:px-8 lg:py-16">
+    <a
+      href="/workshop/v2/"
+      class="mb-8 inline-flex items-center gap-2 text-sm text-content-muted transition-colors hover:text-content-bright"
+    >
+      {t('workshop.v2.workflow.back')}
+    </a>
+
+    <header class="mb-12 flex flex-col gap-3">
+      <span
+        class="inline-flex h-7 w-fit items-center rounded-full bg-transparency-white-t8 px-3 text-2xs/none font-bold tracking-wider text-primary-warm-white uppercase"
+      >
+        {t('workshop.v2.kind.model')}
+      </span>
+      <h1 class="text-3xl font-bold text-primary-comfy-canvas lg:text-5xl">
+        {name}
+      </h1>
+      {
+        provider && (
+          <p class="text-sm text-content-secondary" data-testid="model-provider">
+            {provider}
+          </p>
+        )
+      }
+    </header>
+
+    <section class="mb-16" data-testid="model-operations">
+      <h2 class={sectionTitle}>{t('workshop.v2.model.operations')}</h2>
+      <p class="mt-2 max-w-xl text-sm text-content-muted">
+        {t('workshop.v2.model.operationsNote')}
+      </p>
+      <ul class="mt-5 flex flex-col divide-y divide-transparency-white-t8">
+        {
+          pricedOperations.map((operation) => (
+            <li class="flex flex-wrap items-center justify-between gap-4 py-4">
+              <div class="flex min-w-0 flex-col gap-1">
+                <span class="text-base text-primary-comfy-canvas">
+                  {operation.task}
+                </span>
+                {operation.price && (
+                  <span class="font-mono text-xs text-primary-warm-gray">
+                    {operation.price}
+                  </span>
+                )}
+              </div>
+              <a
+                href={operation.model.href}
+                class="inline-flex h-9 shrink-0 items-center rounded-2xl border border-primary-comfy-yellow px-5 text-xs font-bold tracking-wider text-primary-comfy-yellow uppercase transition-colors hover:bg-primary-comfy-yellow hover:text-primary-comfy-ink"
+              >
+                {t('workshop.v2.action.run')}
+              </a>
+            </li>
+          ))
+        }
+      </ul>
+    </section>
+
+    {
+      operationsFromWorkflows.length > 0 && (
+        <section class="mb-16" data-testid="model-own-workflows">
+          <h2 class={sectionTitle}>{t('workshop.v2.model.ownWorkflows')}</h2>
+          <p class="mt-2 max-w-xl text-sm text-content-muted">
+            {t('workshop.v2.model.ownWorkflowsNote')}
+          </p>
+          <ul class="mt-5 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
+            {operationsFromWorkflows.map((template) => (
+              <li>
+                <CatalogueCard view={viewFor(template)} />
+              </li>
+            ))}
+          </ul>
+        </section>
+      )
+    }
+
+    {
+      uses.length > 0 && (
+        <section data-testid="model-uses">
+          <h2 class={sectionTitle}>{t('workshop.v2.model.workflows')}</h2>
+          <p class="mt-2 max-w-xl text-sm text-content-muted">
+            {t('workshop.v2.model.usesNote')}
+          </p>
+          <ul class="mt-5 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
+            {uses.slice(0, 8).map((template) => (
+              <li>
+                <CatalogueCard view={viewFor(template)} />
+              </li>
+            ))}
+          </ul>
+          {uses.length > 8 && (
+            <a
+              href={`/workshop/v2/?model=${encodeURIComponent(name)}`}
+              class="mt-6 inline-flex text-sm text-primary-comfy-yellow underline underline-offset-4"
+            >
+              {t('workshop.v2.loadMore')}
+            </a>
+          )}
+        </section>
+      )
+    }
+  </main>
+</BaseLayout>

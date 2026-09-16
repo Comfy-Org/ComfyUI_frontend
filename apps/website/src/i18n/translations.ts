@@ -10245,6 +10245,199 @@ Enterprise`
   'workshop.hub.models': { en: 'Model', 'zh-CN': '模型' },
   'workshop.hub.categories': { en: 'CATEGORIES', 'zh-CN': '分类' },
   'workshop.hub.docs': { en: 'Read docs', 'zh-CN': '阅读文档' },
+
+  'workshop.v2.meta.title': {
+    en: 'Models and workflows - Comfy',
+    'zh-CN': '模型与工作流 - Comfy'
+  },
+  'workshop.v2.meta.description': {
+    en: 'Every model Comfy can run, and the workflows built on them, in one catalogue.',
+    'zh-CN':
+      'Comfy 可运行的全部模型，以及基于它们构建的工作流，集中于一个目录。'
+  },
+  'workshop.v2.heading': {
+    en: 'Models and workflows',
+    'zh-CN': '模型与工作流'
+  },
+  'workshop.v2.subtitle': {
+    en: 'Capabilities you can run here, and the workflows built on them. Every card says which it is.',
+    'zh-CN':
+      '可在此运行的能力，以及基于它们构建的工作流。每张卡片都会说明它属于哪一种。'
+  },
+  'workshop.v2.kind.all': { en: 'Everything', 'zh-CN': '全部' },
+  'workshop.v2.kind.model': { en: 'Model', 'zh-CN': '模型' },
+  'workshop.v2.kind.workflow': { en: 'Workflow', 'zh-CN': '工作流' },
+  'workshop.v2.kind.app': { en: 'App', 'zh-CN': '应用' },
+  'workshop.v2.kind.models': { en: 'Models', 'zh-CN': '模型' },
+  'workshop.v2.kind.workflows': { en: 'Workflows', 'zh-CN': '工作流' },
+  'workshop.v2.kind.apps': { en: 'Apps', 'zh-CN': '应用' },
+  'workshop.v2.action.run': { en: 'Run', 'zh-CN': '运行' },
+  'workshop.v2.action.open': {
+    en: 'Open in ComfyUI',
+    'zh-CN': '在 ComfyUI 中打开'
+  },
+  'workshop.v2.card.credits': { en: '{n} credits', 'zh-CN': '{n} 积分' },
+  'workshop.v2.card.runsOn': {
+    en: 'Runs on {model}',
+    'zh-CN': '运行于 {model}'
+  },
+  'workshop.v2.card.usedBy': {
+    en: '{count} workflow uses this|{count} workflows use this',
+    'zh-CN': '{count} 个工作流使用'
+  },
+  'workshop.v2.card.customNodes': {
+    en: 'Custom nodes',
+    'zh-CN': '自定义节点'
+  },
+  'workshop.v2.filter.type': { en: 'Type', 'zh-CN': '类型' },
+  'workshop.v2.filter.needs': { en: 'What it needs', 'zh-CN': '运行条件' },
+  'workshop.v2.filter.output': { en: 'Output', 'zh-CN': '输出' },
+  'workshop.v2.filter.provider': { en: 'Provider', 'zh-CN': '提供商' },
+  'workshop.v2.filter.allProviders': {
+    en: 'All providers',
+    'zh-CN': '全部提供商'
+  },
+  'workshop.v2.needs.any': { en: 'Any requirement', 'zh-CN': '不限条件' },
+  'workshop.v2.output.any': { en: 'Any output', 'zh-CN': '不限输出' },
+  'workshop.v2.needs.runsHere': { en: 'Runs here', 'zh-CN': '可在此运行' },
+  'workshop.v2.needs.comfyui': { en: 'Needs ComfyUI', 'zh-CN': '需要 ComfyUI' },
+  'workshop.v2.needs.customNodes': {
+    en: 'Needs custom nodes',
+    'zh-CN': '需要自定义节点'
+  },
+  'workshop.v2.sort.label': { en: 'Sort', 'zh-CN': '排序' },
+  'workshop.v2.sort.popular': { en: 'Most used', 'zh-CN': '最常用' },
+  'workshop.v2.sort.name': { en: 'A to Z', 'zh-CN': '按名称' },
+  'workshop.v2.sort.newest': { en: 'Newest', 'zh-CN': '最新' },
+  'workshop.v2.sort.priceAsc': {
+    en: 'Cheapest first',
+    'zh-CN': '价格由低到高'
+  },
+  'workshop.v2.sort.priceDesc': {
+    en: 'Dearest first',
+    'zh-CN': '价格由高到低'
+  },
+  'workshop.v2.sort.narrowed': {
+    en: 'Only {type} can be ordered this way',
+    'zh-CN': '只有{type}支持这种排序'
+  },
+  'workshop.v2.search': {
+    en: 'Search models, workflows, creators',
+    'zh-CN': '搜索模型、工作流、创作者'
+  },
+  'workshop.v2.showing': {
+    en: 'Showing {shown} of {total}',
+    'zh-CN': '显示 {shown} / {total}'
+  },
+  'workshop.v2.loadMore': { en: 'Show more', 'zh-CN': '显示更多' },
+  'workshop.v2.empty': {
+    en: 'Nothing matches all of those',
+    'zh-CN': '没有同时满足这些条件的结果'
+  },
+  'workshop.v2.emptyHint': {
+    en: 'Drop a filter to widen the search.',
+    'zh-CN': '去掉一个筛选条件以扩大范围。'
+  },
+  'workshop.v2.clear': { en: 'Clear filters', 'zh-CN': '清除筛选' },
+  'workshop.v2.modelsHeld': {
+    en: '{n} more models sit behind the Models filter',
+    'zh-CN': '还有 {n} 个模型在「模型」筛选中'
+  },
+  'workshop.v2.seeModels': { en: 'See them', 'zh-CN': '查看' },
+  'workshop.v2.workflow.back': {
+    en: 'Back to the catalogue',
+    'zh-CN': '返回目录'
+  },
+  'workshop.v2.workflow.runsOn': { en: 'Runs on', 'zh-CN': '运行于' },
+  'workshop.v2.workflow.runsOnNote': {
+    en: 'The models this workflow calls. Linked where the catalogue carries them.',
+    'zh-CN': '此工作流调用的模型。目录中收录的会附带链接。'
+  },
+  'workshop.v2.workflow.notInCatalogue': {
+    en: 'not in the catalogue',
+    'zh-CN': '目录中暂无'
+  },
+  'workshop.v2.workflow.needs': { en: 'What you need', 'zh-CN': '所需条件' },
+  'workshop.v2.workflow.needsComfy': {
+    en: 'ComfyUI, on your own machine',
+    'zh-CN': '你自己机器上的 ComfyUI'
+  },
+  'workshop.v2.workflow.needsWeights': {
+    en: 'About {size} of model weights',
+    'zh-CN': '约 {size} 的模型权重'
+  },
+  'workshop.v2.workflow.needsCustom': {
+    en: 'These custom nodes installed',
+    'zh-CN': '需安装以下自定义节点'
+  },
+  'workshop.v2.workflow.needsNothing': {
+    en: 'Nothing to download. This one calls a partner model.',
+    'zh-CN': '无需下载。此工作流调用合作方模型。'
+  },
+  'workshop.v2.workflow.runHere': {
+    en: 'Run {model} here',
+    'zh-CN': '在此运行 {model}'
+  },
+  'workshop.v2.workflow.runHereNote': {
+    en: 'The workflow is a graph and opens in ComfyUI. What runs here is the model underneath it.',
+    'zh-CN':
+      '工作流是一张节点图，需在 ComfyUI 中打开。此处运行的是它背后的模型。'
+  },
+  'workshop.v2.workflow.form': {
+    en: 'What the app asks for',
+    'zh-CN': '应用需要的输入'
+  },
+  'workshop.v2.workflow.loads': {
+    en: 'What the graph loads',
+    'zh-CN': '节点图加载的内容'
+  },
+  'workshop.v2.workflow.produces': { en: 'What it produces', 'zh-CN': '产出' },
+  'workshop.v2.workflow.download': {
+    en: 'Download the JSON',
+    'zh-CN': '下载 JSON'
+  },
+  'workshop.v2.workflow.tutorial': {
+    en: 'Read the tutorial',
+    'zh-CN': '查看教程'
+  },
+  'workshop.v2.workflow.openWeights': {
+    en: 'Open weights',
+    'zh-CN': '开放权重'
+  },
+  'workshop.v2.workflow.related': {
+    en: 'Workflows like this one',
+    'zh-CN': '相似的工作流'
+  },
+  'workshop.v2.workflow.relatedApps': {
+    en: 'Apps like this one',
+    'zh-CN': '相似的应用'
+  },
+  'workshop.v2.model.operations': { en: 'Operations', 'zh-CN': '操作' },
+  'workshop.v2.model.operationsNote': {
+    en: 'The registry lists this model once per operation. Here they are one card, and the operation is a choice.',
+    'zh-CN':
+      '注册表按操作逐条列出该模型。这里它们合并为一张卡片，操作是一个选项。'
+  },
+  'workshop.v2.model.ownWorkflows': {
+    en: "This model's own workflows",
+    'zh-CN': '该模型自带的工作流'
+  },
+  'workshop.v2.model.ownWorkflowsNote': {
+    en: 'Titled after it, so they browse here rather than beside it in the grid.',
+    'zh-CN': '它们以该模型命名，因此在此展示，而非与其并列于网格中。'
+  },
+  'workshop.v2.model.usesNote': {
+    en: 'Built on it, with their own name and their own purpose.',
+    'zh-CN': '基于它构建，拥有各自的名称与用途。'
+  },
+  'workshop.v2.model.openModel': {
+    en: 'Open the model page',
+    'zh-CN': '打开模型页面'
+  },
+  'workshop.v2.model.workflows': {
+    en: 'Workflows that use this model',
+    'zh-CN': '使用此模型的工作流'
+  },
   'workshop.error.creditsTitle': {
     en: 'Not enough credits',
     'zh-CN': '积分不足'

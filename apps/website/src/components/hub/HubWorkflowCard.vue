@@ -127,7 +127,7 @@ function openCard() {
     <div
       class="relative aspect-4/3 overflow-hidden rounded-[1.75rem] bg-hub-surface"
     >
-      <HubTypeBadge :kind="template.isApp ? 'comfyApp' : 'nodeGraph'" :locale />
+      <HubTypeBadge :kind="template.isApp ? 'app' : 'workflow'" :locale />
       <div
         v-if="showCompare"
         ref="compareRoot"
