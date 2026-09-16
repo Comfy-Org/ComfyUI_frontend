@@ -327,6 +327,32 @@ describe('collectCrdtDebugReport', () => {
     expect(report).toContain('earlier characters trimmed')
   })
 
+  it.for([
+    {
+      delimiter: 'double',
+      workflowError: String.raw`"apiKey":"escaped\"double-do-not-leak"`,
+      redacted: '"apiKey":"[redacted by the debug report]"'
+    },
+    {
+      delimiter: 'single',
+      workflowError: String.raw`'secret':'escaped\'single-do-not-leak'`,
+      redacted: "'secret':'[redacted by the debug report]'"
+    }
+  ])(
+    'redacts quoted secrets containing escaped $delimiter quotes',
+    async ({ workflowError, redacted }) => {
+      const report = await collectCrdtDebugReport({
+        crdt: SNAPSHOT,
+        events: [],
+        sources: ALL_SOURCES,
+        workflowError
+      })
+
+      expect(report).not.toContain('do-not-leak')
+      expect(report).toContain(redacted)
+    }
+  )
+
   it('reports a thrown workflow JSON conversion as failed', async () => {
     const workflow = Object.defineProperty({}, 'broken', {
       enumerable: true,

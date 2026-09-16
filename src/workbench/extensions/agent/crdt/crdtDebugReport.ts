@@ -283,7 +283,7 @@ type SystemStats = Awaited<ReturnType<typeof api.getSystemStats>>
 const PRIVATE_VALUE_PATTERN =
   /(^|=)(\/|~|[A-Za-z]:[\\/]|\\\\|\.{1,2}[\\/])|:\/\//
 const SECRET_VALUE_PATTERN =
-  /((?:["']?)(?:token|secret|password|passwd|credential|api[-_]?key|apikey|authorization|auth|bearer|session|cookie|private)(?:["']?)\s*[:=]\s*)(?:bearer\s+)?(?:(['"])(?:(?!\2).)*\2|[^\s,;]+)/gi
+  /((?:["']?)(?:token|secret|password|passwd|credential|api[-_]?key|apikey|authorization|auth|bearer|session|cookie|private)(?:["']?)\s*[:=]\s*)(?:bearer\s+)?(?:(['"])(?:\\.|(?!\2).)*\2|[^\s,;]+)/gi
 
 function redactPrivateValue(value: string): string {
   if (PRIVATE_VALUE_PATTERN.test(value)) return REDACTED
