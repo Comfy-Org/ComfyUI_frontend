@@ -368,6 +368,17 @@
         "count": 1
       }
     },
+    "apps/website/src/components/workshop/ModelDetail.vue": {
+      "complexity_critical": {
+        "count": 2
+      },
+      "crap_critical": {
+        "count": 1
+      },
+      "crap_high": {
+        "count": 1
+      }
+    },
     "apps/website/src/composables/scrollLock.ts": {
       "crap_moderate": {
         "count": 1
