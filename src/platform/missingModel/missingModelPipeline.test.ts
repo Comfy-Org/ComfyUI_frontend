@@ -352,14 +352,26 @@ describe('missingModelPipeline', () => {
   })
 
   describe('runMissingModelPipeline', () => {
-    it('fetches folder paths for a remote-only pending candidate and surfaces it once verified', async () => {
+    it('surfaces a verified remote candidate without waiting for its download metadata', async () => {
       const remoteCandidate: MissingModelCandidate = {
         nodeType: 'RemoteFileNode',
         widgetName: 'file_name',
         name: 'selected.safetensors',
+        url: 'https://example.com/selected.safetensors',
+        directory: 'checkpoints',
         isMissing: undefined,
         isAssetSupported: false
       }
+      let finishMetadata = () => {}
+      mockHandles.fetchModelMetadata.mockReturnValue(
+        new Promise((resolve) => {
+          finishMetadata = () =>
+            resolve({
+              fileSize: 2048,
+              gatedRepoUrl: 'https://example.com/gated-repo'
+            })
+        })
+      )
       mockHandles.state.enrichedCandidates = [remoteCandidate]
       mockHandles.hasPendingVerification.mockImplementation(
         (candidate) => candidate === remoteCandidate
@@ -389,6 +401,18 @@ describe('missingModelPipeline', () => {
       expect(
         useExecutionErrorStore().surfaceMissingModels
       ).toHaveBeenCalledWith([remoteCandidate], { silent: false })
+
+      finishMetadata()
+      await vi.waitFor(() => {
+        expect(useMissingModelStore().setFileSize).toHaveBeenCalledWith(
+          remoteCandidate.url,
+          2048
+        )
+        expect(useMissingModelStore().setGatedRepoUrl).toHaveBeenCalledWith(
+          remoteCandidate.url,
+          'https://example.com/gated-repo'
+        )
+      })
     })
 
     it('drops a candidate whose selection changed while folder paths were loading', async () => {
@@ -684,7 +708,7 @@ describe('missingModelPipeline', () => {
       expect(useMissingModelStore().setFileSize).not.toHaveBeenCalled()
     })
 
-    it('does not store gated repo URLs after verification is aborted', async () => {
+    it('does not store gated repo URLs when verification is aborted during metadata retrieval', async () => {
       const controller = new AbortController()
       const downloadableCandidate = {
         nodeType: 'CheckpointLoaderSimple',
@@ -699,11 +723,16 @@ describe('missingModelPipeline', () => {
       vi.mocked(
         useMissingModelStore().createVerificationAbortController
       ).mockReturnValueOnce(controller)
-      mockHandles.fetchModelMetadata.mockResolvedValue({
-        fileSize: null,
-        gatedRepoUrl: 'https://huggingface.co/bfl/FLUX.1'
-      })
-      controller.abort()
+      let finishMetadata = () => {}
+      mockHandles.fetchModelMetadata.mockReturnValue(
+        new Promise((resolve) => {
+          finishMetadata = () =>
+            resolve({
+              fileSize: null,
+              gatedRepoUrl: 'https://huggingface.co/bfl/FLUX.1'
+            })
+        })
+      )
 
       await runMissingModelPipeline({
         graph: createGraph(),
@@ -715,6 +744,10 @@ describe('missingModelPipeline', () => {
       expect(mockHandles.fetchModelMetadata).toHaveBeenCalledWith(
         'https://huggingface.co/bfl/FLUX.1/resolve/main/gated.safetensors'
       )
+      controller.abort()
+      finishMetadata()
+      await vi.dynamicImportSettled()
+
       expect(useMissingModelStore().setGatedRepoUrl).not.toHaveBeenCalled()
     })
 

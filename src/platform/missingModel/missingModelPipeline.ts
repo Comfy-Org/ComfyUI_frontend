@@ -214,6 +214,21 @@ export async function runMissingModelPipeline({
         clearMissingModels(activeWf, silent)
         return
       }
+      const verifiedDownloadableCandidates = enrichedCandidates
+        .filter((c) => c.isMissing === true)
+        .filter(hasDownloadMetadata)
+      const missingModelMetadata =
+        import('@/platform/missingModel/missingModelMetadata')
+      void Promise.allSettled(
+        verifiedDownloadableCandidates.map(async (c) => {
+          const { fetchAndStoreModelMetadata } = await missingModelMetadata
+          await fetchAndStoreModelMetadata(
+            c.url,
+            missingModelStore,
+            controller.signal
+          )
+        })
+      )
       await api
         .getFolderPaths()
         .then((paths) => {
@@ -232,19 +247,6 @@ export async function runMissingModelPipeline({
         })
     })
     .catch(reportVerificationFailure)
-
-  const missingModelMetadata =
-    import('@/platform/missingModel/missingModelMetadata')
-  void Promise.allSettled(
-    downloadableCandidates.map(async (c) => {
-      const { fetchAndStoreModelMetadata } = await missingModelMetadata
-      await fetchAndStoreModelMetadata(
-        c.url,
-        missingModelStore,
-        controller.signal
-      )
-    })
-  )
 
   return { missingModels, confirmedCandidates }
 }

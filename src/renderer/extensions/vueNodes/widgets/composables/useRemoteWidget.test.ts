@@ -843,6 +843,19 @@ describe('useRemoteWidget', () => {
       expect(hook.getInventoryStatus()).toBe('ready')
     })
 
+    it('handles errors thrown by the completion callback', async () => {
+      const error = new Error('completion callback failed')
+      const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+      const hook = createHookWithData(['option1'])
+
+      hook.getValue(() => {
+        throw error
+      })
+
+      await vi.waitFor(() => expect(errorSpy).toHaveBeenCalledWith(error))
+      expect(hook.getInventoryStatus()).toBe('ready')
+    })
+
     it('settles even when the widget callback throws on first load', async () => {
       const options = createMockOptions()
       options.widget.callback = () => {

@@ -247,10 +247,10 @@ export function useRemoteWidget<
           refreshQueued = false
         }
       })
+      .finally(() => onFulfilled?.())
       .catch((err) => {
         console.error(err)
       })
-      .finally(() => onFulfilled?.())
     return getCachedValue()
   }
 
