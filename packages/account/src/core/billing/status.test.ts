@@ -100,6 +100,11 @@ function fakeTransport(answers: BillingResult<BillingHttpResponse>[]) {
   return { transport, calls }
 }
 
+interface SupersedeContext {
+  readonly host: ReturnType<typeof fakeSession>
+  readonly reader: ReturnType<typeof createBillingStatusReader>
+}
+
 describe('createBillingStatusReader', () => {
   it('reads and validates the authoritative billing status', async () => {
     const { scopeSource } = fakeSession()
@@ -270,6 +275,47 @@ describe('createBillingStatusReader', () => {
     })
     expect(reader.getSnapshot()).toBeUndefined()
   })
+
+  it.for([
+    [
+      'the workspace changes',
+      ({ host }: SupersedeContext) =>
+        host.moveTo(
+          authenticated(
+            credential({
+              workspace: { id: 'ws-2', name: 'Team', type: 'team' }
+            })
+          )
+        )
+    ],
+    [
+      'the reader is disposed',
+      ({ reader }: SupersedeContext) => reader.dispose()
+    ]
+  ] as const)(
+    'reports SUPERSEDED when a failure lands after %s',
+    async ([, supersede]) => {
+      const host = fakeSession()
+      let release = () => {}
+      const gate = new Promise<void>((resolve) => {
+        release = resolve
+      })
+      const transport: BillingTransport = vi.fn(async () => {
+        await gate
+        return httpStatus(500)
+      })
+      const reader = createBillingStatusReader({
+        transport,
+        scopeSource: host.scopeSource
+      })
+
+      const pending = reader.read()
+      supersede({ host, reader })
+      release()
+
+      expect(await pending).toEqual({ status: 'error', code: 'SUPERSEDED' })
+    }
+  )
 
   it('normalizes a throwing host transport to a coded failure', async () => {
     const { scopeSource } = fakeSession()
