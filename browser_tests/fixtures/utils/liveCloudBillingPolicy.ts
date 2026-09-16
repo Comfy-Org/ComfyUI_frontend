@@ -1,3 +1,20 @@
+export function getLiveCloudDestinationViolation(
+  url: URL,
+  origins: ReadonlySet<string>,
+  isNavigationRequest: boolean
+): string | undefined {
+  if (origins.has(url.origin)) return
+  if (
+    url.hostname.endsWith('.comfy.org') &&
+    /^\/(api|customers)(\/|$)/.test(url.pathname)
+  ) {
+    return `API ${url.origin}${url.pathname}`
+  }
+  if (isNavigationRequest) {
+    return `Navigation ${url.origin}${url.pathname}`
+  }
+}
+
 export function isLiveCloudMutationAllowed(url: URL, method: string): boolean {
   if (['GET', 'HEAD', 'OPTIONS'].includes(method)) return true
   if (method !== 'POST') return false

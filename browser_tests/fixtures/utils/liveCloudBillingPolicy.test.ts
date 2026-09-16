@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest'
 
-import { isLiveCloudMutationAllowed } from '@e2e/fixtures/utils/liveCloudBillingPolicy'
+import {
+  getLiveCloudDestinationViolation,
+  isLiveCloudMutationAllowed
+} from '@e2e/fixtures/utils/liveCloudBillingPolicy'
 
 describe('live Cloud mutation policy', () => {
   it.for([
@@ -44,5 +47,48 @@ describe('live Cloud mutation policy', () => {
     { url: 'https://securetoken.googleapis.com/customers', allowed: false }
   ])('auth POST $url allowed=$allowed', ({ url, allowed }) => {
     expect(isLiveCloudMutationAllowed(new URL(url), 'POST')).toBe(allowed)
+  })
+})
+
+describe('live Cloud destinations', () => {
+  it.for([
+    {
+      url: 'https://testcloud.comfy.org/api/billing/status',
+      navigation: true,
+      violation: undefined
+    },
+    {
+      url: 'https://cloud.comfy.org/api/billing/status?secret=redacted',
+      navigation: false,
+      violation: 'API https://cloud.comfy.org/api/billing/status'
+    },
+    {
+      url: 'https://api.comfy.org/customers',
+      navigation: true,
+      violation: 'API https://api.comfy.org/customers'
+    },
+    {
+      url: 'https://external.invalid/checkout',
+      navigation: true,
+      violation: 'Navigation https://external.invalid/checkout'
+    },
+    {
+      url: 'https://external.invalid/script.js',
+      navigation: false,
+      violation: undefined
+    },
+    {
+      url: 'https://cloud.comfy.org/apiary',
+      navigation: false,
+      violation: undefined
+    }
+  ])('$url navigation=$navigation', ({ url, navigation, violation }) => {
+    expect(
+      getLiveCloudDestinationViolation(
+        new URL(url),
+        new Set(['https://testcloud.comfy.org']),
+        navigation
+      )
+    ).toBe(violation)
   })
 })

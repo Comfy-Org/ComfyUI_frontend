@@ -5,7 +5,10 @@ import { FeatureFlagHelper } from '@e2e/fixtures/helpers/FeatureFlagHelper'
 import type { NetworkPolicy } from '@e2e/fixtures/networkIsolationFixture'
 import type { LiveCloudBillingConfig } from '@e2e/fixtures/utils/liveCloudBillingConfig'
 import { loadLiveCloudBillingConfig } from '@e2e/fixtures/utils/liveCloudBillingConfig'
-import { isLiveCloudMutationAllowed } from '@e2e/fixtures/utils/liveCloudBillingPolicy'
+import {
+  getLiveCloudDestinationViolation,
+  isLiveCloudMutationAllowed
+} from '@e2e/fixtures/utils/liveCloudBillingPolicy'
 
 export async function installLiveCloudBillingRouting(
   context: BrowserContext,
@@ -15,20 +18,13 @@ export async function installLiveCloudBillingRouting(
   await context.route('**/*', async (route) => {
     const request = route.request()
     const url = new URL(request.url())
-    if (
-      !networkPolicy.origins.has(url.origin) &&
-      url.hostname.endsWith('.comfy.org') &&
-      /^\/(api|customers)(\/|$)/.test(url.pathname)
-    ) {
-      networkPolicy.unexpected.add(`API ${url.origin}${url.pathname}`)
-      await route.abort('blockedbyclient')
-      return
-    }
-    if (
-      request.isNavigationRequest() &&
-      !networkPolicy.origins.has(url.origin)
-    ) {
-      networkPolicy.unexpected.add(`Navigation ${url.origin}${url.pathname}`)
+    const destinationViolation = getLiveCloudDestinationViolation(
+      url,
+      networkPolicy.origins,
+      request.isNavigationRequest()
+    )
+    if (destinationViolation) {
+      networkPolicy.unexpected.add(destinationViolation)
       await route.abort('blockedbyclient')
       return
     }
