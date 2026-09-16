@@ -233,16 +233,6 @@ function json(value: unknown): string {
   }
 }
 
-function fitJsonArray(values: readonly unknown[], max: number) {
-  let start = 0
-  let body = json(redactSecrets(values))
-  while (body.length > max && start < values.length) {
-    start++
-    body = json(redactSecrets(values.slice(start)))
-  }
-  return { body, retained: values.length - start }
-}
-
 function redactEventPayloads(value: unknown): unknown {
   if (Array.isArray(value)) return value.map(redactEventPayloads)
   if (!isRecord(value)) return value
@@ -491,6 +481,16 @@ type RetainedToolCall = Pick<
   turnId: AssistantMessage['id']
 }
 
+function fitToolCalls(calls: readonly RetainedToolCall[]) {
+  let start = 0
+  let body = json(redactSecrets(calls))
+  while (body.length > MAX_SECTION_CHARS) {
+    start++
+    body = json(redactSecrets(calls.slice(start)))
+  }
+  return { body, retained: calls.length - start }
+}
+
 function collectAgentToolCalls(messages: readonly AssistantMessage[]) {
   const calls: RetainedToolCall[] = []
   let total = 0
@@ -520,7 +520,7 @@ function agentToolSection(messages: readonly AssistantMessage[] | undefined) {
   }
 
   const { calls, total } = collectAgentToolCalls(messages)
-  const fitted = fitJsonArray(calls, MAX_SECTION_CHARS)
+  const fitted = fitToolCalls(calls)
   return {
     section: [context, fence('json', fitted.body)].join('\n\n'),
     status:
