@@ -145,10 +145,10 @@ async function mockAgentBoot(
   page: Page,
   {
     agentFlagEnabled,
+    crdtDebugEnabled,
     postedMessages,
     agentConsentAccepted,
     agentPanelInitiallyOpen,
-    crdtDebugEnabled,
     agentConsentSave,
     agentConsentWrites
   }: Omit<AgentFixtures, 'agentPanel'>
@@ -341,9 +341,9 @@ async function mockAgentBoot(
 type AgentFixtures = {
   agentPanel: AgentPanel
   agentFlagEnabled: boolean
+  crdtDebugEnabled: boolean
   agentConsentAccepted: boolean
   agentPanelInitiallyOpen: boolean
-  crdtDebugEnabled: boolean
   agentConsentSave: { status: number; pending?: Promise<void> }
   agentConsentWrites: boolean[]
   postedMessages: string[]
@@ -354,9 +354,9 @@ export const agentTest = comfyPageFixture.extend<AgentFixtures>({
     await use(new AgentPanel(page))
   },
   agentFlagEnabled: [true, { option: true }],
+  crdtDebugEnabled: [false, { option: true }],
   agentConsentAccepted: [true, { option: true }],
   agentPanelInitiallyOpen: [false, { option: true }],
-  crdtDebugEnabled: [false, { option: true }],
   agentConsentSave: async ({ agentFlagEnabled: _agentFlagEnabled }, use) => {
     await use({ status: 200 })
   },
@@ -370,10 +370,10 @@ export const agentTest = comfyPageFixture.extend<AgentFixtures>({
     {
       page,
       agentFlagEnabled,
+      crdtDebugEnabled,
       postedMessages,
       agentConsentAccepted,
       agentPanelInitiallyOpen,
-      crdtDebugEnabled,
       agentConsentSave,
       agentConsentWrites
     },
