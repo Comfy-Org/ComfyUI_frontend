@@ -158,9 +158,14 @@ export const NO_RESPONSE: BillingResult<BillingHttpResponse> = {
   code: 'REQUEST_FAILED'
 }
 
-type Answer = BillingResult<BillingHttpResponse>
+type Answer =
+  | BillingResult<BillingHttpResponse>
+  | Promise<BillingResult<BillingHttpResponse>>
 
-/** Answers per route are consumed in order; the last one repeats. */
+/**
+ * Answers per route are consumed in order; the last one repeats. A promise
+ * answer holds its request open until the test resolves it.
+ */
 function fakeTransport() {
   const calls: BillingRequest[] = []
   const queues = new Map<string, Answer[]>()

@@ -28,6 +28,11 @@ export interface Credits {
    * nothing for the user to retry.
    */
   readonly failure: Readonly<Ref<BillingFailure | undefined>>
+  /**
+   * Reads the balance again. Only the newest read publishes: an earlier one
+   * that settles after it still answers its own caller, so the scope change
+   * that condemned it cannot clear the balance that replaced it.
+   */
   readonly refresh: () => Promise<BillingResult<CreditsSnapshot>>
 }
 
@@ -40,9 +45,14 @@ export function useCredits(options: CreditsOptions = {}): Credits {
   const loading = ref(false)
   const failure = ref<BillingFailure | undefined>()
 
+  let latest = 0
+
   async function refresh() {
+    const attempt = ++latest
     loading.value = true
     const result = await credits.read()
+    if (attempt !== latest) return result
+
     loading.value = false
     if (result.status === 'ok') {
       balance.value = result.value.balance
