@@ -408,7 +408,20 @@ describe('ModelDetail', () => {
   it('reports a failed attempt with a bounded reason and no error payload', async () => {
     auth.session.value = credential
     vi.mocked(runWorkshopRouter).mockRejectedValue(
-      new WorkshopRouterError('rateLimit', 'request-failed')
+      new WorkshopRouterError(
+        'provider',
+        'request-failed',
+        {},
+        {
+          status: 503,
+          errorType: 'upstream_timeout',
+          retryAfter: null,
+          concurrencyLimit: null,
+          concurrencyCurrent: null,
+          concurrencyRemaining: null,
+          body: 'Private provider response'
+        }
+      )
     )
     mountDetail({ model: runnable })
     const visitor = user()
@@ -422,8 +435,10 @@ describe('ModelDetail', () => {
         name: 'run_finished',
         properties: expect.objectContaining({
           status: 'failed',
-          reason: 'rateLimit',
+          reason: 'provider',
           request_id: 'request-failed',
+          http_status: 503,
+          router_error_type: 'upstream_timeout',
           workspace_id: credential.workspace.id
         })
       })
@@ -431,6 +446,9 @@ describe('ModelDetail', () => {
     expect(
       JSON.stringify(vi.mocked(captureWorkshopEvent).mock.calls)
     ).not.toContain('Private prompt')
+    expect(
+      JSON.stringify(vi.mocked(captureWorkshopEvent).mock.calls)
+    ).not.toContain('Private provider response')
   })
 
   it.for([

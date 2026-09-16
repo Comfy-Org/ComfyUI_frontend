@@ -538,7 +538,9 @@ async function run() {
         status: 'failed',
         reason: failure.reason,
         duration_ms: Date.now() - startedAt,
-        request_id: failure.requestId ?? undefined
+        request_id: failure.requestId ?? undefined,
+        http_status: failure.response?.status,
+        router_error_type: failure.response?.errorType ?? undefined
       }
     })
   } finally {

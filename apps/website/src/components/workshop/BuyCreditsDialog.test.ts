@@ -16,6 +16,7 @@ import type {
   watchForTopUp
 } from '../../config/workshop-credits'
 import type { useWorkshopSession } from '../../config/workshop-session-state'
+import { captureWorkshopEvent } from '../../scripts/posthog'
 import BuyCreditsDialog from './BuyCreditsDialog.vue'
 
 type WorkshopCreditsState = ReturnType<typeof useWorkshopCredits>
@@ -86,6 +87,10 @@ vi.mock(import('../../config/workshop-session-state'), async () => {
     })
   }
 })
+
+vi.mock(import('../../scripts/posthog'), () => ({
+  captureWorkshopEvent: vi.fn()
+}))
 
 const credential = {
   token: 'workspace-jwt',
@@ -183,6 +188,7 @@ describe('BuyCreditsDialog', () => {
       credits.topUp!.value = { status: 'idle' }
     })
     credits.refresh.mockReset().mockResolvedValue(undefined)
+    vi.mocked(captureWorkshopEvent).mockReset()
     vi.spyOn(crypto, 'randomUUID').mockReturnValue(attemptId)
   })
 
@@ -556,6 +562,7 @@ describe('BuyCreditsDialog', () => {
     expect(screen.queryByTestId('checkout-error')).toBeNull()
     expect(credits.watchForTopUp).not.toHaveBeenCalled()
     expect(fetchCheckout).toHaveBeenCalledTimes(2)
+    expect(captureWorkshopEvent).not.toHaveBeenCalled()
   })
 
   it('keeps the rollout fallback link when the claimed tab cannot navigate', async () => {
@@ -588,6 +595,16 @@ describe('BuyCreditsDialog', () => {
 
     expect(await screen.findByTestId('checkout-error')).toBeTruthy()
     expect(tab.close).toHaveBeenCalled()
+    expect(captureWorkshopEvent).toHaveBeenCalledExactlyOnceWith({
+      name: 'checkout_failed',
+      properties: {
+        attempt_id: attemptId,
+        user_id: credential.uid,
+        workspace_id: credential.workspace.id,
+        stage: 'checkout',
+        http_status: 404
+      }
+    })
   })
 
   it('refuses checkout when the scoped balance is unavailable', async () => {
@@ -602,6 +619,14 @@ describe('BuyCreditsDialog', () => {
     expect(await screen.findByTestId('checkout-error')).toBeTruthy()
     expect(fetchCheckout).not.toHaveBeenCalled()
     expect(tab.close).toHaveBeenCalled()
+    expect(captureWorkshopEvent).toHaveBeenCalledExactlyOnceWith({
+      name: 'checkout_failed',
+      properties: {
+        user_id: credential.uid,
+        workspace_id: credential.workspace.id,
+        stage: 'balance'
+      }
+    })
   })
 
   it('refuses checkout if refreshing changes the signed-in identity', async () => {
@@ -647,6 +672,14 @@ describe('BuyCreditsDialog', () => {
     expect(fetchCheckout).not.toHaveBeenCalled()
     expect(tab.location.assign).not.toHaveBeenCalled()
     expect(tab.close).toHaveBeenCalled()
+    expect(captureWorkshopEvent).toHaveBeenCalledExactlyOnceWith({
+      name: 'checkout_failed',
+      properties: {
+        user_id: credential.uid,
+        workspace_id: credential.workspace.id,
+        stage: 'credential'
+      }
+    })
   })
 
   it('does not open checkout if the session changes while checkout is pending', async () => {
@@ -704,5 +737,6 @@ describe('BuyCreditsDialog', () => {
       timeoutMs: 15_000
     })
     expect(tab.close).toHaveBeenCalled()
+    expect(captureWorkshopEvent).not.toHaveBeenCalled()
   })
 })

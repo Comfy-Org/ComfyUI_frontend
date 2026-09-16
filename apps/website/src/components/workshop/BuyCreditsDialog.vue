@@ -32,6 +32,8 @@ import { WORKSHOP_CREDITS_URL } from '../../config/workshop-env'
 import { useWorkshopSession } from '../../config/workshop-session-state'
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
+import { captureWorkshopEvent } from '../../scripts/posthog'
+import type { WorkshopCheckoutFailureStage } from '../../scripts/workshop-analytics'
 import type { TopUpCheckoutSession } from '../../lib/workshop/buy-credits'
 import { TopUpCheckoutError } from '../../lib/workshop/buy-credits'
 import { createWorkshopTopUpCheckout } from '../../lib/workshop/buy-credits-sdk'
@@ -331,10 +333,24 @@ function checkoutEndpointIsUnavailable(error: unknown): boolean {
   )
 }
 
+function checkoutErrorDetails(error: unknown) {
+  if (!(error instanceof TopUpCheckoutError)) return {}
+  const errorCode = /^[A-Z][A-Z0-9_]{0,63}$/.test(error.code ?? '')
+    ? error.code
+    : undefined
+  return {
+    http_status: error.status,
+    ...(errorCode === undefined ? {} : { error_code: errorCode })
+  }
+}
+
 function handleCheckoutFailure(
   error: unknown,
   controller: AbortController,
-  tab: Window | null
+  tab: Window | null,
+  scope: CheckoutScope,
+  attemptId: string | undefined,
+  stage: WorkshopCheckoutFailureStage
 ): void {
   if (checkoutController !== controller) return
   checkoutAttempt = undefined
@@ -343,6 +359,18 @@ function handleCheckoutFailure(
     state.value = 'checkout'
     navigateCheckoutTab(tab, WORKSHOP_CREDITS_URL)
     return
+  }
+  if (!controller.signal.aborted) {
+    captureWorkshopEvent({
+      name: 'checkout_failed',
+      properties: {
+        ...(attemptId === undefined ? {} : { attempt_id: attemptId }),
+        user_id: scope.uid,
+        workspace_id: scope.workspaceId,
+        stage,
+        ...checkoutErrorDetails(error)
+      }
+    })
   }
   closeCheckoutTab(tab)
   state.value = 'failed'
@@ -366,10 +394,14 @@ async function continueToCheckout() {
   checkoutController = controller
   checkoutTab = tab
   state.value = 'pending'
+  let attemptId: string | undefined
+  let stage: WorkshopCheckoutFailureStage = 'balance'
   try {
     const previousCredits = await creditsBeforeCheckout(scope, controller)
+    stage = 'credential'
     const token = await tokenForCheckout(scope, controller)
-    const attemptId = crypto.randomUUID()
+    stage = 'checkout'
+    attemptId = crypto.randomUUID()
     const checkout = await createWorkshopTopUpCheckout({
       token,
       amountCents,
@@ -383,7 +415,7 @@ async function continueToCheckout() {
     requireCurrentCheckoutScope(scope, 'Session changed before checkout opened')
     recordCheckout(scope, attemptId, previousCredits, checkout, tab)
   } catch (error) {
-    handleCheckoutFailure(error, controller, tab)
+    handleCheckoutFailure(error, controller, tab, scope, attemptId, stage)
   } finally {
     releaseCheckoutAttempt(controller, tab)
   }

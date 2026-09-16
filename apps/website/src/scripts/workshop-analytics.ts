@@ -14,6 +14,8 @@ export interface WorkshopRunAnalytics extends WorkshopModelAnalytics {
   workspace_id: string
 }
 
+export type WorkshopCheckoutFailureStage = 'balance' | 'credential' | 'checkout'
+
 export type WorkshopAnalyticsEvent =
   | { name: 'catalogue_viewed'; properties: { model_count: number } }
   | {
@@ -28,9 +30,25 @@ export type WorkshopAnalyticsEvent =
         request_id?: string
       } & (
           | { status: 'succeeded'; output_count: number }
-          | { status: 'failed'; reason: RunFailure }
+          | {
+              status: 'failed'
+              reason: RunFailure
+              http_status?: number
+              router_error_type?: string
+            }
           | { status: 'cancelled' }
         )
+    }
+  | {
+      name: 'checkout_failed'
+      properties: {
+        attempt_id?: string
+        user_id: string
+        workspace_id: string
+        stage: WorkshopCheckoutFailureStage
+        http_status?: number
+        error_code?: string
+      }
     }
   | {
       name: 'output_download_clicked'
