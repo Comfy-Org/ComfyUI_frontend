@@ -117,21 +117,16 @@ export function createCreditsReader(
       context,
       promise: (async () => {
         const result = await requestBalance(scope)
-        if (result.status !== 'ok') {
-          if (
-            result.code === 'ACCESS_DENIED' &&
-            scopeTracker.isCurrent(context)
-          ) {
-            snapshot = undefined
-          }
-          return result
-        }
-
         // The publish guard: a balance that arrives after the host moved to
-        // another workspace or signed out belongs to neither, and showing it
-        // would state one account's credits under another's name.
+        // another workspace or signed out belongs to neither, and a failure
+        // says nothing about the scope that has since taken over.
         if (lifetime.disposed || !scopeTracker.isCurrent(context)) {
           return { status: 'error', code: 'SUPERSEDED' }
+        }
+
+        if (result.status !== 'ok') {
+          if (result.code === 'ACCESS_DENIED') snapshot = undefined
+          return result
         }
 
         snapshot = result.value

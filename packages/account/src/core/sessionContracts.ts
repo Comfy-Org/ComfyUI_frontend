@@ -66,11 +66,16 @@ export type SessionFailure = Extract<SessionResult, { status: 'error' }>
  * outcomes that committed a failure carry it and the rest structurally cannot,
  * so a permanent failure without its error — or a success with one — cannot be
  * represented.
+ *
+ * `failure?: never` is what makes "structurally cannot" true rather than
+ * aspirational. Without it, excess-property checking still rejects a bad
+ * object literal, but a report built in a variable or returned from a helper
+ * assigns cleanly.
  */
 export type ScheduledRefreshReport =
-  | { readonly outcome: 'succeeded' }
-  | { readonly outcome: 'retry_scheduled' }
-  | { readonly outcome: 'retries_exhausted' }
+  | { readonly outcome: 'succeeded'; readonly failure?: never }
+  | { readonly outcome: 'retry_scheduled'; readonly failure?: never }
+  | { readonly outcome: 'retries_exhausted'; readonly failure?: never }
   | { readonly outcome: 'permanent_failure'; readonly failure: SessionFailure }
   /** Retries ran out and the credential reached expiry; the client failed closed. */
   | { readonly outcome: 'expired'; readonly failure: SessionFailure }
