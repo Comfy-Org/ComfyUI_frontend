@@ -98,18 +98,16 @@ export function createBillingStatusReader(
       context,
       promise: (async () => {
         const result = await requestStatus(scope)
-        if (result.status !== 'ok') {
-          if (
-            result.code === 'ACCESS_DENIED' &&
-            scopeTracker.isCurrent(context)
-          ) {
-            snapshot = undefined
-          }
-          return result
-        }
-
+        // A status that arrives after the host moved to another workspace
+        // describes neither, and a failure says nothing about the scope that
+        // has since taken over.
         if (lifetime.disposed || !scopeTracker.isCurrent(context)) {
           return { status: 'error', code: 'SUPERSEDED' }
+        }
+
+        if (result.status !== 'ok') {
+          if (result.code === 'ACCESS_DENIED') snapshot = undefined
+          return result
         }
 
         snapshot = result.value
