@@ -24,21 +24,30 @@ import {
 import { tmpdir } from 'node:os'
 import { join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { z } from 'zod'
 
-type ExportTarget = string | { readonly types: string; readonly import: string }
+const zExportTarget = z.union([
+  z.string(),
+  z.object({ types: z.string(), import: z.string() })
+])
+const zSpecifiers = z.record(z.string(), z.string())
 
-interface Manifest {
-  readonly name: string
-  readonly version: string
-  readonly exports: Readonly<Record<string, ExportTarget>>
-  readonly dependencies?: Readonly<Record<string, string>>
-  readonly peerDependencies?: Readonly<Record<string, string>>
-}
+const zManifest = z.object({
+  name: z.string(),
+  version: z.string(),
+  exports: z.record(z.string(), zExportTarget),
+  dependencies: zSpecifiers.optional(),
+  peerDependencies: zSpecifiers.optional()
+})
 
-interface PackResult {
-  readonly filename: string
-  readonly files: ReadonlyArray<{ readonly path: string }>
-}
+const zPackResult = z.object({
+  filename: z.string(),
+  files: z.array(z.object({ path: z.string() }))
+})
+
+type ExportTarget = z.infer<typeof zExportTarget>
+type Manifest = z.infer<typeof zManifest>
+type PackResult = z.infer<typeof zPackResult>
 
 const packageDir = fileURLToPath(new URL('..', import.meta.url))
 const workspaceRoot = resolve(packageDir, '..', '..')
@@ -56,8 +65,16 @@ function run(command: string, args: string[], cwd: string): string {
   })
 }
 
+function parseJson<T>(schema: z.ZodType<T>, text: string, origin: string): T {
+  const result = schema.safeParse(JSON.parse(text))
+  return result.success
+    ? result.data
+    : fail(`${origin}: ${result.error.message}`)
+}
+
 function readManifest(dir: string): Manifest {
-  return JSON.parse(readFileSync(join(dir, 'package.json'), 'utf8'))
+  const path = join(dir, 'package.json')
+  return parseJson(zManifest, readFileSync(path, 'utf8'), path)
 }
 
 function workspacePackageDirs(): Map<string, string> {
@@ -96,14 +113,18 @@ function workspaceDependencyClosure(
 }
 
 function pack(dir: string, destination: string): PackResult {
-  return JSON.parse(
-    run('pnpm', ['pack', '--json', '--pack-destination', destination], dir)
+  return parseJson(
+    zPackResult,
+    run('pnpm', ['pack', '--json', '--pack-destination', destination], dir),
+    `pnpm pack --json in ${dir}`
   )
 }
 
 function packedManifest(tarball: string): Manifest {
-  return JSON.parse(
-    run('tar', ['-xzOf', tarball, 'package/package.json'], packageDir)
+  return parseJson(
+    zManifest,
+    run('tar', ['-xzOf', tarball, 'package/package.json'], packageDir),
+    `package/package.json in ${tarball}`
   )
 }
 
