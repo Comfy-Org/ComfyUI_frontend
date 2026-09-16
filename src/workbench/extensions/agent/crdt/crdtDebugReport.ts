@@ -18,8 +18,6 @@
  * is exactly when a report matters most, and a failed `getLogs()` must
  * degrade to a note in the log section rather than abort the whole bundle.
  */
-import { takeRight } from 'es-toolkit'
-
 import { DISTRIBUTION } from '@/platform/distribution/types'
 import { reportError } from '@/platform/telemetry/reportError'
 import { api } from '@/scripts/api'
@@ -483,30 +481,35 @@ type RetainedToolCall = Pick<
   turnId: AssistantMessage['id']
 }
 
-function fitToolCalls(calls: readonly RetainedToolCall[]): {
-  body: string
-  retained: number
-} {
-  const body = json(redactSecrets(calls))
-  return body.length <= MAX_SECTION_CHARS
-    ? { body, retained: calls.length }
-    : fitToolCalls(calls.slice(1))
+function fitToolCalls(calls: readonly RetainedToolCall[]) {
+  let start = 0
+  let body = json(redactSecrets(calls))
+  while (body.length > MAX_SECTION_CHARS) {
+    start++
+    body = json(redactSecrets(calls.slice(start)))
+  }
+  return { body, retained: calls.length - start }
 }
 
 function collectAgentToolCalls(messages: readonly AssistantMessage[]) {
-  const calls = messages.flatMap(({ id: turnId, parts }) =>
-    parts
-      .filter((part) => part.type === 'tool')
-      .map(({ callId, name, state, ok, durationMs }) => ({
-        turnId,
-        callId,
-        name,
-        state,
-        ok,
-        durationMs
-      }))
-  )
-  return { calls: takeRight(calls, MAX_TOOL_CALLS), total: calls.length }
+  const calls: RetainedToolCall[] = []
+  let total = 0
+  for (const message of messages.toReversed()) {
+    for (const part of message.parts.toReversed()) {
+      if (part.type !== 'tool') continue
+      total++
+      if (calls.length === MAX_TOOL_CALLS) continue
+      calls.push({
+        turnId: message.id,
+        callId: part.callId,
+        name: part.name,
+        state: part.state,
+        ok: part.ok,
+        durationMs: part.durationMs
+      })
+    }
+  }
+  return { calls: calls.toReversed(), total }
 }
 
 function agentToolSection(messages: readonly AssistantMessage[] | undefined) {
