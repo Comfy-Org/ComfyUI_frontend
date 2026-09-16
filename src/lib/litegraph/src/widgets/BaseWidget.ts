@@ -409,11 +409,7 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
       this._visibility
     )
     if (!registered) return
-    this._state = registered
-    const visibility = useWidgetValueStore().getWidgetVisibility(
-      widgetId(graphId, nodeId, this.name)
-    )
-    if (visibility) this._visibility = visibility
+    this.bindRegisteredState(nodeId)
   }
 
   bindRegisteredState(nodeId: NodeId): boolean {
