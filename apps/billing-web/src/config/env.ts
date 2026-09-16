@@ -13,6 +13,8 @@
  */
 import type { FirebaseOptions } from 'firebase/app'
 
+import type { BillingEnvironment } from '@comfyorg/billing-contract'
+
 const BILLING_WEB_ENVS = ['production', 'staging', 'test'] as const
 
 export type BillingWebEnv = (typeof BILLING_WEB_ENVS)[number]
@@ -63,7 +65,8 @@ export function readFirebaseOptions(
   }
 }
 
-const BILLING_WEB_ENV = resolveBillingWebEnv(
+/** The family named in the contract's own vocabulary, where the names coincide. */
+export const BILLING_WEB_ENV: BillingEnvironment = resolveBillingWebEnv(
   readString(import.meta.env, 'VITE_BILLING_ENV')
 )
 

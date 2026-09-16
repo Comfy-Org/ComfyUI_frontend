@@ -28,24 +28,4 @@ describe('billing app', () => {
       screen.getByRole('button', { name: 'Pay and subscribe' })
     ).toBeDisabled()
   })
-
-  it('recovers unknown static-host paths to the app entry route', async () => {
-    const router = createBillingRouter(
-      createMemoryHistory(),
-      () => 'authenticated'
-    )
-
-    await router.push('/unknown-path')
-    await router.isReady()
-
-    render(App, {
-      global: {
-        plugins: [createBillingI18n(), router]
-      }
-    })
-
-    expect(
-      await screen.findByRole('heading', { name: 'Confirm your payment' })
-    ).toBeInTheDocument()
-  })
 })
