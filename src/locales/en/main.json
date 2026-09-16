@@ -3270,6 +3270,7 @@
         "creditsUsed": "Monthly credits"
       },
       "actions": {
+        "copyInviteLink": "Copy invite link",
         "resendInvite": "Resend invite",
         "cancelInvite": "Cancel invite",
         "changeRole": "Change role",
@@ -3403,6 +3404,13 @@
       "pendingInviteSingle": "This person already has a pending invite",
       "pendingInviteCount": "{count} of these people already have a pending invite. They'll be skipped.",
       "seatLimitExceeded": "This workspace is capped at {max} members. Remove {overage} to continue."
+    },
+    "inviteLinks": {
+      "sentTitle": "{count} invite sent | {count} invites sent",
+      "sentLead": "Each invite has a personal link you can share directly:",
+      "copyLink": "Copy invite link",
+      "copied": "Copied!",
+      "copyAll": "Copy invite link | Copy all links ({count})"
     },
     "createWorkspaceDialog": {
       "title": "Create a new workspace",
