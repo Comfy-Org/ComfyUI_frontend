@@ -107,8 +107,6 @@
     "luma--ray-flash-2-text-to-video--generate-videos",
     "wan--reference-video--animate-images",
     "wan--reference-video--edit-videos",
-    "wan--happyhorse-text-to-video--generate-videos",
-    "kling--camera-control-text-to-video--generate-videos",
-    "kling--camera-control-image-to-video--animate-images"
+    "wan--happyhorse-text-to-video--generate-videos"
   ]
 }
