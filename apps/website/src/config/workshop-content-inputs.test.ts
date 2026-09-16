@@ -106,6 +106,34 @@ describe('use-case input contracts', () => {
     }
   })
 
+  it('renders a different input set for every page that shares a Router model with a sibling page', () => {
+    const routerLimited = new Set<string>()
+    const siblings = new Map<string, string[]>()
+    for (const entry of content) {
+      if (isWorkshopModelDisabled(entry.slug)) continue
+      if (!getRouterWorkshopModelDetail(entry.slug)?.execution) continue
+      siblings.set(entry.modelId, [
+        ...(siblings.get(entry.modelId) ?? []),
+        entry.slug
+      ])
+    }
+    let checked = 0
+    for (const [modelId, slugs] of siblings) {
+      if (slugs.length < 2 || routerLimited.has(modelId)) continue
+      checked += 1
+      const shapes = slugs.map((slug) =>
+        schemaForModel(detail(slug))
+          .map((field) => `${field.name}${field.required ? '*' : ''}`)
+          .sort()
+          .join(',')
+      )
+      expect({ modelId, slugs, distinct: new Set(shapes).size }).toMatchObject({
+        distinct: slugs.length
+      })
+    }
+    expect(checked).toBeGreaterThanOrEqual(7)
+  })
+
   it('offers image uploads on every Animate images page and video uploads on every file-based Edit videos page', () => {
     for (const model of workshopModels) {
       if (
@@ -138,6 +166,19 @@ describe('use-case input contracts', () => {
     expect(body).toHaveProperty('image.url', page.defaults.image_url)
     expect(body.aspect_ratio).toBe('16:9')
     expect(body).not.toHaveProperty('medias')
+  })
+
+  it('sends the Seedance 2.5 edit page source video as a reference_video content item', async () => {
+    const edit = detail('byteplus--seedance-2-5-edit-video--edit-videos')
+    const video = 'https://example.com/source.mp4'
+    const body = await request(edit.slug, { video_url: video })
+    expect(body.content).toEqual([
+      { type: 'text', text: expect.any(String) },
+      { type: 'video_url', role: 'reference_video', video_url: { url: video } }
+    ])
+    expect(edit.name).not.toBe(
+      detail('byteplus--seedance-2-5-reference--generate-videos').name
+    )
   })
 
   it.for(['byteplus--seedance-2-fast-', 'byteplus--seedance-2-5-'])(

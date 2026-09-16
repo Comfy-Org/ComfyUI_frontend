@@ -63,8 +63,9 @@ function seedance({
   values,
   files
 }: WorkshopRequestInputs): Record<string, unknown> {
-  const { prompt, first_frame_url, last_frame_url, ...rest } = values
+  const { prompt, first_frame_url, last_frame_url, video_url, ...rest } = values
   const body = withoutIndexed(rest, 'reference_image_url')
+  const videoUrls = typeof video_url === 'string' ? [video_url] : []
   const first = files.first_frame ?? []
   const last = files.last_frame ?? []
   const references = files.reference_images ?? []
@@ -101,6 +102,11 @@ function seedance({
         type: 'image_url',
         role,
         image_url: { url }
+      })),
+      ...videoUrls.map((url) => ({
+        type: 'video_url',
+        role: 'reference_video',
+        video_url: { url }
       }))
     ]
   }
@@ -280,6 +286,17 @@ export function prepareWorkshopRequestCallback(
   switch (request.callback) {
     case 'flat':
       return { ...values }
+    case 'gpt-image': {
+      // The Router takes GPT Image edits as `medias` (role image) next to the
+      // generation parameters; a generate page simply sends no media.
+      const images = (files.images ?? []).map(dataUrl)
+      return {
+        ...values,
+        ...(images.length
+          ? { medias: images.map((value) => ({ role: 'image', value })) }
+          : {})
+      }
+    }
     case 'ideogram': {
       const { prompt, ...rest } = values
       if (typeof prompt !== 'string' || !prompt.trim())

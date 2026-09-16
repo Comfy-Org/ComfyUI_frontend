@@ -500,7 +500,7 @@ describe('ModelDetail', () => {
   it.for([
     {
       slug: 'vertexai--gemini-3-pro-image--edit-images',
-      label: 'Images',
+      label: 'Source images',
       count: 2
     },
     { slug: 'bfl--flux-2-max--generate-images', label: 'Image', count: 3 }
