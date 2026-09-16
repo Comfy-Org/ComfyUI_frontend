@@ -114,6 +114,7 @@ describe('useWorkspaceMenuItems', () => {
   beforeEach(() => {
     state.billingStatus = 'paid'
 
+    useBillingCapabilities().canCancel = computed(() => false)
     state.canLeaveWorkspace = false
     state.canManageSubscription = false
     state.canManageSubscriptionLifecycle = false
@@ -128,10 +129,7 @@ describe('useWorkspaceMenuItems', () => {
   })
 
   it('allows a promoted owner to cancel an active plan', () => {
-    vi.mocked(useBillingCapabilities).mockReturnValue({
-      ...useBillingCapabilities(),
-      canCancel: computed(() => true)
-    })
+    useBillingCapabilities().canCancel = computed(() => true)
 
     const { menuItems } = useWorkspaceMenuItems()
     const cancelItem = menuItems.value.find(
@@ -157,10 +155,7 @@ describe('useWorkspaceMenuItems', () => {
   })
 
   it('withholds cancellation for a free plan the capability still allows', () => {
-    vi.mocked(useBillingCapabilities).mockReturnValue({
-      ...useBillingCapabilities(),
-      canCancel: computed(() => true)
-    })
+    useBillingCapabilities().canCancel = computed(() => true)
     state.isFreeTier = true
 
     const { menuItems } = useWorkspaceMenuItems()
@@ -171,10 +166,7 @@ describe('useWorkspaceMenuItems', () => {
   })
 
   it('defers to the capability for subscription state it already encodes', () => {
-    vi.mocked(useBillingCapabilities).mockReturnValue({
-      ...useBillingCapabilities(),
-      canCancel: computed(() => true)
-    })
+    useBillingCapabilities().canCancel = computed(() => true)
     state.isSubscriptionCancelled = true
     state.canAccessSubscriptionFeatures = false
     state.planSlug = null
@@ -304,10 +296,7 @@ describe('useWorkspaceMenuItems', () => {
 
   it('rechecks eligibility before opening the cancellation dialog', () => {
     const canCancel = ref(true)
-    vi.mocked(useBillingCapabilities).mockReturnValue({
-      ...useBillingCapabilities(),
-      canCancel: computed(() => canCancel.value)
-    })
+    useBillingCapabilities().canCancel = computed(() => canCancel.value)
 
     const { menuItems } = useWorkspaceMenuItems()
     const cancelItem = menuItems.value.find(

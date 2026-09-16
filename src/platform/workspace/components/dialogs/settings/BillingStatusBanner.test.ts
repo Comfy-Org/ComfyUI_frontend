@@ -232,10 +232,9 @@ describe('BillingStatusBanner', () => {
     state.workspaceType = 'team'
     state.canManageSubscription = true
     state.canManageSubscriptionLifecycle = true
-    vi.mocked(useBillingCapabilities).mockReturnValue({
-      ...useBillingCapabilities(),
-      canReactivate: computed(() => true)
-    })
+    useBillingCapabilities().canTopUp = computed(() => true)
+    useBillingCapabilities().canSubscribeSelfServe = computed(() => false)
+    useBillingCapabilities().canReactivate = computed(() => true)
     state.shouldUseWorkspaceBilling = true
   })
 
@@ -272,11 +271,8 @@ describe('BillingStatusBanner', () => {
 
   it('offers an upgrade when self-serve subscription is available', () => {
     exhausted()
-    vi.mocked(useBillingCapabilities).mockReturnValue({
-      ...useBillingCapabilities(),
-      canTopUp: computed(() => false),
-      canSubscribeSelfServe: computed(() => true)
-    })
+    useBillingCapabilities().canTopUp = computed(() => false)
+    useBillingCapabilities().canSubscribeSelfServe = computed(() => true)
 
     renderBanner()
 
@@ -299,10 +295,7 @@ describe('BillingStatusBanner', () => {
       scheduledChange: null
     }
     state.canManageSubscription = false
-    vi.mocked(useBillingCapabilities).mockReturnValue({
-      ...useBillingCapabilities(),
-      canTopUp: computed(() => false)
-    })
+    useBillingCapabilities().canTopUp = computed(() => false)
     renderBanner()
 
     expect(screen.getByRole('status')).toHaveTextContent(
@@ -354,10 +347,7 @@ describe('BillingStatusBanner', () => {
   it('shows the paused member notice without an action', () => {
     pausedState()
     state.canManageSubscription = false
-    vi.mocked(useBillingCapabilities).mockReturnValue({
-      ...useBillingCapabilities(),
-      canTopUp: computed(() => false)
-    })
+    useBillingCapabilities().canTopUp = computed(() => false)
     renderBanner()
 
     expect(screen.getByRole('status')).toHaveTextContent(
@@ -442,10 +432,7 @@ describe('BillingStatusBanner', () => {
     // Cloud personal on legacy_stripe: handleResubscribe skips its capability
     // guard, so the affordance must follow the client permission instead.
     state.shouldUseWorkspaceBilling = false
-    vi.mocked(useBillingCapabilities).mockReturnValue({
-      ...useBillingCapabilities(),
-      canReactivate: computed(() => false)
-    })
+    useBillingCapabilities().canReactivate = computed(() => false)
     state.canManageSubscriptionLifecycle = true
     state.subscription = {
       hasFunds: true,
@@ -470,10 +457,7 @@ describe('BillingStatusBanner', () => {
     }
     state.canManageSubscription = false
     state.canManageSubscriptionLifecycle = false
-    vi.mocked(useBillingCapabilities).mockReturnValue({
-      ...useBillingCapabilities(),
-      canReactivate: computed(() => false)
-    })
+    useBillingCapabilities().canReactivate = computed(() => false)
     renderBanner()
 
     expect(screen.queryByRole('status')).not.toBeInTheDocument()

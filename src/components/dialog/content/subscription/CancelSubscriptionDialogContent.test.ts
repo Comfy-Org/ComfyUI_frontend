@@ -137,10 +137,7 @@ describe('CancelSubscriptionDialogContent', () => {
   beforeEach(() => {
     mockTier.value = 'STANDARD'
     mockShouldUseWorkspaceBilling.value = false
-    vi.mocked(useBillingCapabilities).mockReturnValue({
-      ...useBillingCapabilities(),
-      canCancel: computed(() => true)
-    })
+    useBillingCapabilities().canCancel = computed(() => true)
     mockCanManageSubscriptionLifecycle.value = true
     mockDistributionTypes.isCloud = true
   })
@@ -322,10 +319,7 @@ describe('CancelSubscriptionDialogContent', () => {
 
     it('does not cancel after the workspace role loses permission', async () => {
       const canCancel = ref(true)
-      vi.mocked(useBillingCapabilities).mockReturnValue({
-        ...useBillingCapabilities(),
-        canCancel: computed(() => canCancel.value)
-      })
+      useBillingCapabilities().canCancel = computed(() => canCancel.value)
 
       mockSubscription.value = null
       mockShouldUseWorkspaceBilling.value = true
@@ -348,10 +342,7 @@ describe('CancelSubscriptionDialogContent', () => {
       mockSubscription.value = null
       mockShouldUseWorkspaceBilling.value = true
       mockDistributionTypes.isCloud = false
-      vi.mocked(useBillingCapabilities).mockReturnValue({
-        ...useBillingCapabilities(),
-        canCancel: computed(() => false)
-      })
+      useBillingCapabilities().canCancel = computed(() => false)
       mockCanManageSubscriptionLifecycle.value = true
       mockCancelSubscription.mockResolvedValueOnce(undefined)
 

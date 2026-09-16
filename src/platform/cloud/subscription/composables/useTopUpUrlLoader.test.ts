@@ -50,6 +50,8 @@ describe('useTopUpUrlLoader', () => {
   beforeEach(() => {
     mockRouteQuery.value = {}
 
+    useBillingCapabilities().canTopUp = computed(() => true)
+    useBillingCapabilities().canSubscribeSelfServe = computed(() => false)
     mockShowTopUpCreditsDialog.mockResolvedValue(undefined)
     preservedQueryMocks.mergePreservedQueryIntoQuery.mockReturnValue(null)
   })
@@ -89,10 +91,7 @@ describe('useTopUpUrlLoader', () => {
 
   it('retains the deep link until capability loading settles', async () => {
     const canTopUp = ref(false)
-    vi.mocked(useBillingCapabilities).mockReturnValue({
-      ...useBillingCapabilities(),
-      canTopUp: computed(() => canTopUp.value)
-    })
+    useBillingCapabilities().canTopUp = computed(() => canTopUp.value)
 
     let resolveCapabilities!: () => void
     mockRouteQuery.value = { topup: '1' }
@@ -120,10 +119,7 @@ describe('useTopUpUrlLoader', () => {
 
   it('is a silent no-op when the server denies top-up', async () => {
     mockRouteQuery.value = { topup: '1' }
-    vi.mocked(useBillingCapabilities).mockReturnValue({
-      ...useBillingCapabilities(),
-      canTopUp: computed(() => false)
-    })
+    useBillingCapabilities().canTopUp = computed(() => false)
 
     const { loadTopUpFromUrl } = useTopUpUrlLoader()
     await loadTopUpFromUrl()
@@ -136,11 +132,8 @@ describe('useTopUpUrlLoader', () => {
 
   it('opens the subscription path without top-up telemetry', async () => {
     mockRouteQuery.value = { topup: '1' }
-    vi.mocked(useBillingCapabilities).mockReturnValue({
-      ...useBillingCapabilities(),
-      canTopUp: computed(() => false),
-      canSubscribeSelfServe: computed(() => true)
-    })
+    useBillingCapabilities().canTopUp = computed(() => false)
+    useBillingCapabilities().canSubscribeSelfServe = computed(() => true)
 
     const { loadTopUpFromUrl } = useTopUpUrlLoader()
     await loadTopUpFromUrl()
@@ -153,10 +146,7 @@ describe('useTopUpUrlLoader', () => {
 
   it('denies, strips, and clears together when the user is not eligible', async () => {
     mockRouteQuery.value = { topup: '1', other: 'param' }
-    vi.mocked(useBillingCapabilities).mockReturnValue({
-      ...useBillingCapabilities(),
-      canTopUp: computed(() => false)
-    })
+    useBillingCapabilities().canTopUp = computed(() => false)
 
     const { loadTopUpFromUrl } = useTopUpUrlLoader()
     await loadTopUpFromUrl()

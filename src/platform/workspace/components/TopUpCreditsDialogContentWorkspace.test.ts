@@ -166,6 +166,7 @@ beforeEach(() => {
 })
 
 beforeEach(() => {
+  useBillingCapabilities().canTopUp = computed(() => true)
   vi.mocked(useDialogStore().closeDialog).mockImplementation(() => {})
   Object.assign(useAuthStore(), { userId: 'user-1' })
   Object.assign(useTeamWorkspaceStore(), { activeWorkspaceId: 'workspace-1' })
@@ -506,10 +507,7 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
   })
 
   it('hides topup verification after permission is revoked', () => {
-    vi.mocked(useBillingCapabilities).mockReturnValue({
-      ...useBillingCapabilities(),
-      canTopUp: computed(() => false)
-    })
+    useBillingCapabilities().canTopUp = computed(() => false)
     setTopupActionOperation({
       opId: 'op-action',
       status: 'pending',
@@ -525,10 +523,7 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
 
   it('enters verification once permission resolves after an operation already exists', async () => {
     const canTopUp = ref(false)
-    vi.mocked(useBillingCapabilities).mockReturnValue({
-      ...useBillingCapabilities(),
-      canTopUp: computed(() => canTopUp.value)
-    })
+    useBillingCapabilities().canTopUp = computed(() => canTopUp.value)
 
     setTopupActionOperation({
       opId: 'op-action',
@@ -901,10 +896,7 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
 
   it('does not top up after the server capability is revoked', async () => {
     const canTopUp = ref(true)
-    vi.mocked(useBillingCapabilities).mockReturnValue({
-      ...useBillingCapabilities(),
-      canTopUp: computed(() => canTopUp.value)
-    })
+    useBillingCapabilities().canTopUp = computed(() => canTopUp.value)
 
     renderDialog()
     await clickAddCredits()

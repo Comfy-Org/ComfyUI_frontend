@@ -212,6 +212,8 @@ function createDeferred() {
 
 describe('CreditsTile', () => {
   beforeEach(() => {
+    useBillingCapabilities().canTopUp = computed(() => true)
+    useBillingCapabilities().canSubscribeSelfServe = computed(() => false)
     state.balance = null
     state.subscription = null
     state.personalIsYearly = false
@@ -620,11 +622,8 @@ describe('CreditsTile', () => {
   it('offers the upgrade path when top-up is denied but self-serve subscribe is allowed', async () => {
     activeProSubscription()
     state.tier = 'FREE'
-    vi.mocked(useBillingCapabilities).mockReturnValue({
-      ...useBillingCapabilities(),
-      canTopUp: computed(() => false),
-      canSubscribeSelfServe: computed(() => true)
-    })
+    useBillingCapabilities().canTopUp = computed(() => false)
+    useBillingCapabilities().canSubscribeSelfServe = computed(() => true)
     renderTile()
     expect(screen.queryByText('Add credits')).toBeNull()
     await userEvent.click(screen.getByText('Upgrade to add credits'))

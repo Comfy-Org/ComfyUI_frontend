@@ -108,10 +108,7 @@ describe('useWorkspaceUI', () => {
     const { useBillingCapabilities } =
       await import('@/platform/workspace/composables/useBillingCapabilities')
 
-    vi.mocked(useBillingCapabilities).mockReturnValue({
-      ...useBillingCapabilities(),
-      canSubscribeSelfServe: computed(() => true)
-    })
+    useBillingCapabilities().canSubscribeSelfServe = computed(() => true)
   })
 
   afterEach(() => {
@@ -527,11 +524,8 @@ describe('useWorkspaceUI', () => {
       const { useBillingCapabilities } =
         await import('@/platform/workspace/composables/useBillingCapabilities')
 
-      vi.mocked(useBillingCapabilities).mockReturnValue({
-        ...useBillingCapabilities(),
-        canReactivate: computed(() => true),
-        canSubscribeSelfServe: computed(() => true)
-      })
+      useBillingCapabilities().canReactivate = computed(() => true)
+      useBillingCapabilities().canSubscribeSelfServe = computed(() => true)
       const allowed = await loadComposable()
       expect(allowed.canReactivatePlan.value).toBe(true)
     })
@@ -565,10 +559,7 @@ describe('useWorkspaceUI', () => {
         await import('@/platform/workspace/composables/useBillingCapabilities')
 
       mockShouldUseWorkspaceBilling.value = true
-      vi.mocked(useBillingCapabilities).mockReturnValue({
-        ...useBillingCapabilities(),
-        canSubscribeSelfServe: computed(() => false)
-      })
+      useBillingCapabilities().canSubscribeSelfServe = computed(() => false)
 
       const ui = await loadComposable()
       expect(ui.canOpenPricingSurface.value).toBe(false)
@@ -586,10 +577,7 @@ describe('useWorkspaceUI', () => {
         await import('@/platform/workspace/composables/useBillingCapabilities')
 
       mockShouldUseWorkspaceBilling.value = false
-      vi.mocked(useBillingCapabilities).mockReturnValue({
-        ...useBillingCapabilities(),
-        canSubscribeSelfServe: computed(() => false)
-      })
+      useBillingCapabilities().canSubscribeSelfServe = computed(() => false)
 
       const ui = await loadComposable()
       expect(ui.permissions.value.canManageSubscription).toBe(true)
@@ -602,10 +590,7 @@ describe('useWorkspaceUI', () => {
 
       mockIsCloud.value = false
       mockShouldUseWorkspaceBilling.value = true
-      vi.mocked(useBillingCapabilities).mockReturnValue({
-        ...useBillingCapabilities(),
-        canSubscribeSelfServe: computed(() => false)
-      })
+      useBillingCapabilities().canSubscribeSelfServe = computed(() => false)
 
       const ui = await loadComposable()
       expect(ui.canOpenPricingSurface.value).toBe(true)
@@ -615,11 +600,8 @@ describe('useWorkspaceUI', () => {
       const { useBillingCapabilities } =
         await import('@/platform/workspace/composables/useBillingCapabilities')
 
-      vi.mocked(useBillingCapabilities).mockReturnValue({
-        ...useBillingCapabilities(),
-        snapshotAuthoritative: computed(() => false),
-        canSubscribeSelfServe: computed(() => false)
-      })
+      useBillingCapabilities().snapshotAuthoritative = computed(() => false)
+      useBillingCapabilities().canSubscribeSelfServe = computed(() => false)
 
       const ui = await loadComposable()
       expect(ui.canOpenPricingSurface.value).toBe(true)
@@ -632,11 +614,8 @@ describe('useWorkspaceUI', () => {
       Object.assign(useTeamWorkspaceStore(), {
         activeWorkspace: teamMemberWorkspace
       })
-      vi.mocked(useBillingCapabilities).mockReturnValue({
-        ...useBillingCapabilities(),
-        snapshotAuthoritative: computed(() => false),
-        canSubscribeSelfServe: computed(() => false)
-      })
+      useBillingCapabilities().snapshotAuthoritative = computed(() => false)
+      useBillingCapabilities().canSubscribeSelfServe = computed(() => false)
 
       const ui = await loadComposable()
       expect(ui.permissions.value.canManageSubscription).toBe(false)

@@ -48,6 +48,9 @@ describe('showTopUpCreditsDialog', () => {
   beforeEach(() => {
     state.type = 'workspace'
 
+    useBillingCapabilities().canTopUp = computed(() => true)
+    useBillingCapabilities().canSubscribeSelfServe = computed(() => false)
+    useBillingCapabilities().isReady = computed(() => true)
     mockIsCloud.value = true
   })
 
@@ -64,10 +67,7 @@ describe('showTopUpCreditsDialog', () => {
   })
 
   it('shows the contact-admin notice to team members instead of the purchase dialog', async () => {
-    vi.mocked(useBillingCapabilities).mockReturnValue({
-      ...useBillingCapabilities(),
-      canTopUp: computed(() => false)
-    })
+    useBillingCapabilities().canTopUp = computed(() => false)
 
     await useDialogService().showTopUpCreditsDialog({
       isInsufficientCredits: true
@@ -99,10 +99,7 @@ describe('showTopUpCreditsDialog', () => {
 
   it('does not show workspace-admin copy for denied legacy billing', async () => {
     state.type = 'legacy'
-    vi.mocked(useBillingCapabilities).mockReturnValue({
-      ...useBillingCapabilities(),
-      canTopUp: computed(() => false)
-    })
+    useBillingCapabilities().canTopUp = computed(() => false)
 
     await useDialogService().showTopUpCreditsDialog()
 
@@ -113,11 +110,8 @@ describe('showTopUpCreditsDialog', () => {
   it('awaits an in-flight capability read instead of dropping the request', async () => {
     const canTopUp = ref(false)
     const isReady = ref(false)
-    vi.mocked(useBillingCapabilities).mockReturnValue({
-      ...useBillingCapabilities(),
-      canTopUp: computed(() => canTopUp.value),
-      isReady: computed(() => isReady.value)
-    })
+    useBillingCapabilities().canTopUp = computed(() => canTopUp.value)
+    useBillingCapabilities().isReady = computed(() => isReady.value)
 
     vi.mocked(useBillingCapabilities().initialize).mockImplementation(() => {
       canTopUp.value = true
@@ -137,11 +131,8 @@ describe('showTopUpCreditsDialog', () => {
   })
 
   it('does not route when capabilities stay unresolved after initializing', async () => {
-    vi.mocked(useBillingCapabilities).mockReturnValue({
-      ...useBillingCapabilities(),
-      canTopUp: computed(() => false),
-      isReady: computed(() => false)
-    })
+    useBillingCapabilities().canTopUp = computed(() => false)
+    useBillingCapabilities().isReady = computed(() => false)
 
     await useDialogService().showTopUpCreditsDialog()
 
@@ -153,11 +144,8 @@ describe('showTopUpCreditsDialog', () => {
   })
 
   it('routes self-serve subscribers to the subscription-required flow', async () => {
-    vi.mocked(useBillingCapabilities).mockReturnValue({
-      ...useBillingCapabilities(),
-      canTopUp: computed(() => false),
-      canSubscribeSelfServe: computed(() => true)
-    })
+    useBillingCapabilities().canTopUp = computed(() => false)
+    useBillingCapabilities().canSubscribeSelfServe = computed(() => true)
 
     await useDialogService().showTopUpCreditsDialog()
 

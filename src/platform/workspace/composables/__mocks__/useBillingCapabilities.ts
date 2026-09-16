@@ -1,9 +1,9 @@
 import { vi } from 'vitest'
 import { computed } from 'vue'
 
-import type * as realModule from '../useBillingCapabilities'
+import type { useBillingCapabilities as realUseBillingCapabilities } from '../useBillingCapabilities'
 
-const capabilities: ReturnType<typeof realModule.useBillingCapabilities> = {
+const capabilities: ReturnType<typeof realUseBillingCapabilities> = {
   canTopUp: computed(() => true),
   canSubscribeSelfServe: computed(() => false),
   canCancel: computed(() => false),
@@ -13,10 +13,10 @@ const capabilities: ReturnType<typeof realModule.useBillingCapabilities> = {
   canDowngradeToPersonal: computed(() => false),
   isReady: computed(() => true),
   snapshotAuthoritative: computed(() => true),
-  initialize: vi.fn(async () => {}),
-  refresh: vi.fn(async () => {})
+  initialize: vi.fn(async () => undefined),
+  refresh: vi.fn(async () => undefined)
 }
 
-export const useBillingCapabilities = vi.fn<
-  typeof realModule.useBillingCapabilities
->(() => capabilities)
+export const useBillingCapabilities = vi.fn<typeof realUseBillingCapabilities>(
+  () => capabilities
+)

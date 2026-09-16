@@ -4,6 +4,7 @@ import { nextTick } from 'vue'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { WorkspaceApiError } from '@/platform/workspace/api/workspaceApi'
 import { workspaceApiUrl } from '@/platform/workspace/api/workspaceApiUrl'
+import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 import { useWorkspaceAuthStore } from '@/platform/workspace/stores/workspaceAuthStore'
 import { useDialogStore } from '@/stores/dialogStore'
 
@@ -32,13 +33,7 @@ vi.mock<unknown>(import('@/composables/billing/useBillingContext'), () => ({
   })
 }))
 
-const mockCapabilitiesRefresh = vi.hoisted(() => vi.fn(async () => undefined))
-vi.mock<unknown>(
-  import('@/platform/workspace/composables/useBillingCapabilities'),
-  () => ({
-    useBillingCapabilities: () => ({ refresh: mockCapabilitiesRefresh })
-  })
-)
+vi.mock(import('@/platform/workspace/composables/useBillingCapabilities'))
 
 const mockShowSettings = vi.hoisted(() => vi.fn())
 vi.mock<unknown>(
@@ -118,7 +113,7 @@ describe('useBillingSdkStore', () => {
       status: 'completed',
       amount_cents: 1000
     })
-    expect(mockCapabilitiesRefresh).toHaveBeenCalledOnce()
+    expect(useBillingCapabilities().refresh).toHaveBeenCalledOnce()
   })
 
   it('reports a decline without touching capabilities', async () => {
@@ -130,7 +125,7 @@ describe('useBillingSdkStore', () => {
     await expect(useBillingSdkStore().createTopup(1000)).resolves.toMatchObject(
       { status: 'failed' }
     )
-    expect(mockCapabilitiesRefresh).not.toHaveBeenCalled()
+    expect(useBillingCapabilities().refresh).not.toHaveBeenCalled()
   })
 
   it('rejects a refused purchase with the error code the dialog reads', async () => {
@@ -243,7 +238,7 @@ describe('useBillingSdkStore', () => {
     )
     expect(mockFetchStatus).toHaveBeenCalledOnce()
     expect(mockFetchBalance).toHaveBeenCalledOnce()
-    expect(mockCapabilitiesRefresh).toHaveBeenCalledOnce()
+    expect(useBillingCapabilities().refresh).toHaveBeenCalledOnce()
     expect(useDialogStore().closeDialog).toHaveBeenCalledWith({
       key: 'top-up-credits'
     })

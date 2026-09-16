@@ -487,11 +487,8 @@ describe('useMembersPanel', () => {
     mockIsTeamPlan.value = true
     mockSubscriptionStatus.value = 'active'
     mockWorkspaceRole.value = 'owner'
-    vi.mocked(useBillingCapabilities).mockReturnValue({
-      ...useBillingCapabilities(),
-      canChangeSeats: computed(() => true),
-      canInviteMembers: computed(() => true)
-    })
+    useBillingCapabilities().canChangeSeats = computed(() => true)
+    useBillingCapabilities().canInviteMembers = computed(() => true)
     mockSubscription.value = { tier: 'PRO', isCancelled: false }
     mockPermissions.value = {
       canViewOtherMembers: true,
@@ -871,10 +868,7 @@ describe('useMembersPanel', () => {
 
     it('returns no actions without member-management permission', async () => {
       mockWorkspaceRole.value = 'member'
-      vi.mocked(useBillingCapabilities).mockReturnValue({
-        ...useBillingCapabilities(),
-        canChangeSeats: computed(() => false)
-      })
+      useBillingCapabilities().canChangeSeats = computed(() => false)
       const panel = await setup()
 
       expect(panel.memberMenuItems(createMember())).toEqual([])
@@ -1062,19 +1056,13 @@ describe('useMembersPanel', () => {
 
     it('hides the invite button for workspace members', async () => {
       mockWorkspaceRole.value = 'member'
-      vi.mocked(useBillingCapabilities).mockReturnValue({
-        ...useBillingCapabilities(),
-        canInviteMembers: computed(() => false)
-      })
+      useBillingCapabilities().canInviteMembers = computed(() => false)
       const panel = await setup()
       expect(panel.showInviteButton.value).toBe(false)
     })
 
     it('hides invite actions when the server denies invitations', async () => {
-      vi.mocked(useBillingCapabilities).mockReturnValue({
-        ...useBillingCapabilities(),
-        canInviteMembers: computed(() => false)
-      })
+      useBillingCapabilities().canInviteMembers = computed(() => false)
       const panel = await setup()
 
       expect(panel.showInviteButton.value).toBe(false)
@@ -1088,10 +1076,7 @@ describe('useMembersPanel', () => {
     })
 
     it('hides member management when the server denies seat changes', async () => {
-      vi.mocked(useBillingCapabilities).mockReturnValue({
-        ...useBillingCapabilities(),
-        canChangeSeats: computed(() => false)
-      })
+      useBillingCapabilities().canChangeSeats = computed(() => false)
       const panel = await setup()
       const member = createMember({ id: 'member-1' })
 
