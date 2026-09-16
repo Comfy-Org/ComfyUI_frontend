@@ -196,7 +196,7 @@ function harness(options: {
   session?: ReturnType<typeof fakeSession>
   storage?: BillingOperationPointerStorage
 }) {
-  const destination = options.destination
+  const destination = { current: options.destination ?? 'stripe' }
   const session = options.session ?? fakeSession()
   const status = fakeStatusReader(options.status ?? statusSnapshot())
   const { transport, calls } = fakeTransport(
@@ -210,13 +210,14 @@ function harness(options: {
     statusReader: status.reader,
     pointerStorage: storage,
     embeddedCheckoutAvailable: () => options.embedded === true,
-    ...(destination === undefined
+    ...(options.destination === undefined
       ? {}
-      : { hostedDestination: () => destination }),
+      : { hostedDestination: () => destination.current }),
     onTelemetry: (event) => telemetry.push(event)
   }
   return {
     lifecycle: createBillingOperationLifecycle(lifecycleOptions),
+    destination,
     session,
     status,
     calls,
@@ -885,11 +886,13 @@ describe('createBillingOperationLifecycle', () => {
           attemptStartedAt: NOW - 30_000
         })
       )
-      const { lifecycle } = harness({
+      const { lifecycle, destination } = harness({
         storage,
-        destination: 'billing_web',
+        destination: 'stripe',
         status: { status: 'error', code: 'REQUEST_FAILED' }
       })
+
+      destination.current = 'billing_web'
 
       await expect(lifecycle.recover()).resolves.toMatchObject({
         status: 'ok',
