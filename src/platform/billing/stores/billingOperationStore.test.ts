@@ -2051,23 +2051,30 @@ describe('billingOperationStore', () => {
       )
     })
 
-    it.for(['in_progress', 'awaiting_invoice_payment'] as const)(
-      'keeps a checkout pending after leaving a six-minute card-entry park for %s',
-      async (phase) => {
-        const response: BillingOpStatusResponse = {
-          id: 'op-parked',
-          status: 'pending',
-          phase: 'awaiting_payment_method',
-          started_at: new Date().toISOString()
-        }
-        vi.mocked(billingApi.getBillingOpStatus).mockResolvedValue(response)
+    const PARKED_DEADLINE_MS = 23 * 60 * 60_000
 
-        const store = useBillingOperationStore()
-        const terminal = store.startOperation('op-parked', 'subscription')
-        await vi.advanceTimersByTimeAsync(6 * 60_000)
+    async function parkOnCardEntry() {
+      const response: BillingOpStatusResponse = {
+        id: 'op-parked',
+        status: 'pending',
+        phase: 'awaiting_payment_method',
+        started_at: new Date().toISOString()
+      }
+      vi.mocked(billingApi.getBillingOpStatus).mockResolvedValue(response)
+      const store = useBillingOperationStore()
+      const terminal = store.startOperation('op-parked', 'subscription')
+      await vi.advanceTimersByTimeAsync(6 * 60_000)
+      return { store, terminal, response }
+    }
+
+    it.for([
+      { phase: 'in_progress', intervalMs: 8_000 },
+      { phase: 'awaiting_invoice_payment', intervalMs: 30_000 }
+    ] as const)(
+      'keeps a checkout pending after leaving a six-minute card-entry park for $phase',
+      async ({ phase, intervalMs }) => {
+        const { store, terminal, response } = await parkOnCardEntry()
         expect(store.getOperation('op-parked')).toMatchObject({
-          status: 'pending',
-          phase: 'awaiting_payment_method',
           actionUrl: null,
           authenticationState: null
         })
@@ -2080,7 +2087,7 @@ describe('billingOperationStore', () => {
         expect(store.getOperation('op-parked')?.phase).toBe(phase)
 
         vi.mocked(billingApi.getBillingOpStatus).mockClear()
-        await vi.advanceTimersByTimeAsync(8_000)
+        await vi.advanceTimersByTimeAsync(intervalMs)
         expect(billingApi.getBillingOpStatus).toHaveBeenCalledOnce()
         expect(store.getOperation('op-parked')?.status).toBe('pending')
         expect(useTelemetry()?.trackBillingEvent).not.toHaveBeenCalledWith(
@@ -2091,23 +2098,14 @@ describe('billingOperationStore', () => {
           ...response,
           status: 'succeeded'
         })
-        await vi.advanceTimersByTimeAsync(8_000)
+        await vi.advanceTimersByTimeAsync(intervalMs)
         expect((await terminal).status).toBe('succeeded')
       }
     )
 
     it('keeps the original 23-hour deadline after leaving a card-entry park', async () => {
       const adoptedAt = Date.now()
-      const response: BillingOpStatusResponse = {
-        id: 'op-parked',
-        status: 'pending',
-        phase: 'awaiting_payment_method',
-        started_at: new Date().toISOString()
-      }
-      vi.mocked(billingApi.getBillingOpStatus).mockResolvedValue(response)
-      const store = useBillingOperationStore()
-      const terminal = store.startOperation('op-parked', 'subscription')
-      await vi.advanceTimersByTimeAsync(6 * 60_000)
+      const { store, terminal, response } = await parkOnCardEntry()
 
       vi.mocked(billingApi.getBillingOpStatus).mockResolvedValue({
         ...response,
@@ -2116,9 +2114,8 @@ describe('billingOperationStore', () => {
       await vi.advanceTimersToNextTimerAsync()
       expect(store.getOperation('op-parked')?.phase).toBe('in_progress')
 
-      vi.setSystemTime(adoptedAt + 23 * 60 * 60_000)
-      store.pollPendingOperations()
-      await vi.advanceTimersByTimeAsync(0)
+      vi.setSystemTime(adoptedAt + PARKED_DEADLINE_MS - 8_000)
+      await vi.advanceTimersByTimeAsync(8_000)
       expect(store.getOperation('op-parked')?.status).toBe('pending')
       expect(useTelemetry()?.trackBillingEvent).not.toHaveBeenCalledWith(
         expect.objectContaining({ stage: 'timeout' })
@@ -2130,7 +2127,7 @@ describe('billingOperationStore', () => {
         expect.objectContaining({
           stage: 'timeout',
           failure_category: 'poll_timeout',
-          duration_ms: 23 * 60 * 60_000 + 8_000
+          duration_ms: PARKED_DEADLINE_MS + 8_000
         })
       )
     })
