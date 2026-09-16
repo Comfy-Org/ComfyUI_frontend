@@ -73,10 +73,34 @@ else
   echo "Using cached image $image"
 fi
 
+# Serving your own build is the only way a pack's web script reaches the page:
+# the dev server answers /api/extensions with an empty list, so port 5173 loads
+# no pack at all.
+frontend_mount=()
+frontend_args=()
+if [[ -n "${COMFYUI_FRONTEND_ROOT:-}" ]]; then
+  if [[ ! -d "$COMFYUI_FRONTEND_ROOT" ]]; then
+    echo "COMFYUI_FRONTEND_ROOT is not a directory: $COMFYUI_FRONTEND_ROOT" >&2
+    exit 1
+  fi
+  frontend_mount=(--mount
+    "type=bind,src=$COMFYUI_FRONTEND_ROOT,dst=/frontend-dist,readonly")
+  frontend_args=(--front-end-root /frontend-dist)
+fi
+
 "${docker[@]}" run --rm --name "$container" \
   --publish "127.0.0.1:$port:8188" \
+  "${frontend_mount[@]}" \
   --mount \
   "type=bind,src=$repo_root/tools/devtools,dst=/ComfyUI/custom_nodes/ComfyUI_devtools,readonly" \
+  --mount \
+  "type=bind,src=$repo_root/examples/node-api/how_to_frontend_nodes,dst=/ComfyUI/custom_nodes/how_to_frontend_nodes,readonly" \
+  --mount \
+  "type=bind,src=$repo_root/examples/node-api/how_to_widgets,dst=/ComfyUI/custom_nodes/how_to_widgets,readonly" \
+  --mount \
+  "type=bind,src=$repo_root/examples/node-api/how_to_graph_interaction,dst=/ComfyUI/custom_nodes/how_to_graph_interaction,readonly" \
+  --mount \
+  "type=bind,src=$repo_root/examples/node-api/how_to_execution,dst=/ComfyUI/custom_nodes/how_to_execution,readonly" \
   "$image" \
   bash -lc \
-  'cd /ComfyUI && exec python3 main.py --cpu --multi-user --listen 0.0.0.0'
+  "cd /ComfyUI && exec python3 main.py --cpu --multi-user --listen 0.0.0.0 ${frontend_args[*]}"
