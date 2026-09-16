@@ -31,9 +31,9 @@ const { locale } = pageContext(
   noindex
 >
   <ModelsPage slug={model.slug} locale={locale} client:load>
-    <ModelsShowcase slot="fallback" />
+    <ModelsShowcase locale={locale} slot="fallback" />
   </ModelsPage>
   <noscript>
-    <ModelsShowcase />
+    <ModelsShowcase locale={locale} />
   </noscript>
 </BaseLayout>

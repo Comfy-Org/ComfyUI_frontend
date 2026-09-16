@@ -8,10 +8,10 @@ import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 
 interface Props {
-  locale?: Locale
+  locale: Locale
 }
 
-const { locale = 'en' } = Astro.props
+const { locale } = Astro.props
 ---
 
 <ModelsHeroSection
