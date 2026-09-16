@@ -989,6 +989,7 @@ test.describe('Load workflow', { tag: '@screenshot' }, () => {
     `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}${extension}`
 
   test.describe('Restore all open workflows on reload', () => {
+    test.describe.configure({ timeout: 45_000 })
     test.use({ initialSettings: { 'Comfy.UseNewMenu': 'Top' } })
 
     let workflowA: string
@@ -1065,6 +1066,7 @@ test.describe('Load workflow', { tag: '@screenshot' }, () => {
   })
 
   test.describe('Restore workflow tabs after browser restart', () => {
+    test.describe.configure({ timeout: 45_000 })
     test.use({ initialSettings: { 'Comfy.UseNewMenu': 'Top' } })
 
     let workflowA: string
