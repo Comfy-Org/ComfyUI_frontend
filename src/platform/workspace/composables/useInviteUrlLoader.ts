@@ -8,7 +8,9 @@ import {
   mergePreservedQueryIntoQuery
 } from '@/platform/navigation/preservedQueryManager'
 import { PRESERVED_QUERY_NAMESPACES } from '@/platform/navigation/preservedQueryNamespaces'
+import { useDialogService } from '@/services/dialogService'
 
+import { WorkspaceApiError } from '../api/workspaceApi'
 import { useTeamWorkspaceStore } from '../stores/teamWorkspaceStore'
 
 /**
@@ -26,6 +28,7 @@ export function useInviteUrlLoader() {
   const router = useRouter()
   const { t } = useI18n()
   const toast = useToast()
+  const dialogService = useDialogService()
   const workspaceStore = useTeamWorkspaceStore()
   const INVITE_NAMESPACE = PRESERVED_QUERY_NAMESPACES.INVITE
 
@@ -94,11 +97,17 @@ export function useInviteUrlLoader() {
         closable: true
       })
     } catch (error) {
-      toast.add({
-        severity: 'error',
-        summary: t('workspace.inviteFailed'),
-        detail: error instanceof Error ? error.message : t('g.unknownError')
-      })
+      // 404 covers expired, revoked, and rotated-by-resend tokens alike; the
+      // BE cannot distinguish them, so one dialog covers all three (DES-1010).
+      if (error instanceof WorkspaceApiError && error.status === 404) {
+        await dialogService.showInviteLinkInvalidDialog()
+      } else {
+        toast.add({
+          severity: 'error',
+          summary: t('workspace.inviteFailed'),
+          detail: error instanceof Error ? error.message : t('g.unknownError')
+        })
+      }
     } finally {
       cleanupUrlParams()
       clearPreservedQuery(INVITE_NAMESPACE)

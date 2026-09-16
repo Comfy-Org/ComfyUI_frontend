@@ -690,6 +690,18 @@ export const useDialogService = () => {
     })
   }
 
+  async function showInviteLinkInvalidDialog() {
+    const { default: component } =
+      await import('@/platform/workspace/components/dialogs/InviteLinkInvalidDialogContent.vue')
+    return dialogStore.showDialog({
+      key: 'invite-link-invalid',
+      component,
+      dialogComponentProps: {
+        ...workspaceDialogProps
+      }
+    })
+  }
+
   async function showRevokeInviteDialog(inviteId: string) {
     const { default: component } =
       await import('@/platform/workspace/components/dialogs/RevokeInviteDialogContent.vue')
@@ -914,6 +926,7 @@ export const useDialogService = () => {
     showRevokeInviteDialog,
     showInviteMemberDialog,
     showInviteMemberUpsellDialog,
+    showInviteLinkInvalidDialog,
     showBillingComingSoonDialog,
     showCancelSubscriptionDialog,
     showCancelSubscriptionFlow,
