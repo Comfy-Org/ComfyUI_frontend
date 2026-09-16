@@ -66,13 +66,13 @@ describe('ModelDiscoverySection', async () => {
     }
   )
 
-  it('sends every provider to the catalog filtered by that provider', async () => {
+  it('sends every provider to a visible catalog search', async () => {
     render(ModelDiscoverySection, { props: { providers } })
     await nextTick()
 
     const provider = screen.getByRole('link', { name: /Fixture Studio & Co/ })
     expect(provider.getAttribute('href')).toBe(
-      '/models?provider=Fixture%20Studio%20%26%20Co'
+      '/models?q=Fixture+Studio+%26+Co'
     )
     expect(screen.queryByRole('link', { name: /ByteDance/ })).toBeNull()
 

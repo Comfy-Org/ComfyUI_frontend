@@ -4,6 +4,7 @@ import { computed, useTemplateRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { cn } from '@comfyorg/tailwind-utils'
+import AccessibleTooltip from '@/components/ui/tooltip/AccessibleTooltip.vue'
 import { iconForMediaType } from '@/platform/assets/utils/mediaIconUtil'
 import { api } from '@/scripts/api'
 import { getMediaTypeFromFilename } from '@/utils/formatUtil'
@@ -16,7 +17,6 @@ import type {
 import type { ReplyAsset } from '../../../utils/replyAssets'
 import { agentMessageText } from '../../../utils/agentMessageText'
 import { workflowReferenceParts } from '../../../utils/workflowReferenceParts'
-import AgentTooltip from '../AgentTooltip.vue'
 import ReplyAssetGroup from './ReplyAssetGroup.vue'
 import {
   selectedUserMessageClipboard,
@@ -145,7 +145,7 @@ const splitAttachments = computed(() => {
       <span
         v-for="(tag, index) in tags"
         :key="`${tag}:${index}`"
-        class="rounded-agent bg-agent-pill text-agent-fg-muted inline-flex items-center gap-1 px-1.5 py-0.5 text-xs"
+        class="inline-flex items-center gap-1 rounded-xl bg-secondary-background px-1.5 py-0.5 text-xs text-muted-foreground"
       >
         <span class="icon-[lucide--at-sign] size-3 shrink-0" />
         <span class="max-w-40 truncate">{{ tag }}</span>
@@ -164,15 +164,15 @@ const splitAttachments = computed(() => {
         class="m-0"
       >
         <div
-          class="bg-agent-surface-raised flex aspect-square w-full items-center justify-center rounded-lg"
+          class="flex aspect-square w-full items-center justify-center rounded-lg bg-secondary-background"
         >
           <span
             :class="
-              cn(attachmentIconClass(item.name), 'text-agent-fg-subtle size-6')
+              cn(attachmentIconClass(item.name), 'size-6 text-muted-foreground')
             "
           />
         </div>
-        <figcaption class="text-agent-fg-muted mt-0.5 truncate text-xs">
+        <figcaption class="mt-0.5 truncate text-xs text-muted-foreground">
           {{ item.name }}
         </figcaption>
       </figure>
@@ -181,7 +181,7 @@ const splitAttachments = computed(() => {
       v-if="text || workflowReferences.length"
       ref="bubble"
       data-testid="user-message-bubble"
-      class="border-agent-border bg-agent-surface-raised text-agent-fg-muted w-fit max-w-full rounded-[10px] border px-2.5 py-1.5 text-sm/5 font-normal wrap-break-word whitespace-pre-wrap"
+      class="w-fit max-w-full rounded-lg border border-component-node-border bg-secondary-background px-2.5 py-1.5 text-sm/5 font-normal wrap-break-word whitespace-pre-wrap text-muted-foreground"
     >
       <template v-for="(part, index) in promptParts" :key="index">
         <span
@@ -228,38 +228,50 @@ const splitAttachments = computed(() => {
     </div>
     <div
       v-if="readableText"
-      class="text-agent-fg-subtle flex opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100 touch:opacity-100"
+      class="flex text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100 touch:opacity-100"
     >
-      <AgentTooltip
+      <AccessibleTooltip
         v-if="editable && (text || workflowReferences.length)"
         :label="t('g.edit')"
+        :skip-delay-duration="0"
+        disable-hoverable-content
+        :collision-padding="8"
       >
-        <button
-          type="button"
-          :aria-label="t('g.edit')"
-          class="hover:bg-agent-surface-hover hover:text-agent-fg flex size-6 cursor-pointer items-center justify-center rounded-lg p-1 transition-colors"
-          @click="emit('edit', { text, workflowReferences })"
-        >
-          <span class="icon-[lucide--pencil] size-3" />
-        </button>
-      </AgentTooltip>
-      <AgentTooltip :label="copied ? t('agent.copied') : t('agent.copy')">
-        <button
-          type="button"
-          :aria-label="copied ? t('agent.copied') : t('agent.copy')"
-          class="hover:bg-agent-surface-hover hover:text-agent-fg flex size-6 cursor-pointer items-center justify-center rounded-lg p-1 transition-colors"
-          @click="copyMessage"
-        >
-          <span
-            :class="
-              cn(
-                'size-3',
-                copied ? 'icon-[lucide--check]' : 'icon-[lucide--copy]'
-              )
-            "
-          />
-        </button>
-      </AgentTooltip>
+        <template #trigger>
+          <button
+            type="button"
+            :aria-label="t('g.edit')"
+            class="flex size-6 cursor-pointer items-center justify-center rounded-lg p-1 transition-colors hover:bg-secondary-background-hover hover:text-base-foreground"
+            @click="emit('edit', { text, workflowReferences })"
+          >
+            <span class="icon-[lucide--pencil] size-3" />
+          </button>
+        </template>
+      </AccessibleTooltip>
+      <AccessibleTooltip
+        :label="copied ? t('agent.copied') : t('agent.copy')"
+        :skip-delay-duration="0"
+        disable-hoverable-content
+        :collision-padding="8"
+      >
+        <template #trigger>
+          <button
+            type="button"
+            :aria-label="copied ? t('agent.copied') : t('agent.copy')"
+            class="flex size-6 cursor-pointer items-center justify-center rounded-lg p-1 transition-colors hover:bg-secondary-background-hover hover:text-base-foreground"
+            @click="copyMessage"
+          >
+            <span
+              :class="
+                cn(
+                  'size-3',
+                  copied ? 'icon-[lucide--check]' : 'icon-[lucide--copy]'
+                )
+              "
+            />
+          </button>
+        </template>
+      </AccessibleTooltip>
     </div>
   </div>
 </template>

@@ -1,3 +1,4 @@
+// @vitest-environment happy-dom
 import userEvent from '@testing-library/user-event'
 import { fireEvent, render, screen, within } from '@testing-library/vue'
 import { IDBFactory } from 'fake-indexeddb'
@@ -10,6 +11,7 @@ import type {
 } from '@comfyorg/account/session'
 
 import type { WorkshopModelDetail } from '../../config/models-catalogue'
+import type { Locale } from '../../i18n/translations'
 import { subscribeToWorkshopBuyCredits } from '../../config/workshop-buy-credits'
 import { runWorkshopRouter } from '../../config/workshop-router'
 import { WorkshopRouterError } from '../../config/workshop-router-errors'
@@ -175,6 +177,7 @@ function mountDetail(options?: {
   clone?: { href: string }
   details?: () => ReturnType<typeof h>
   model?: WorkshopModelDetail
+  locale?: Locale
 }) {
   return render(
     defineComponent({
@@ -184,7 +187,8 @@ function mountDetail(options?: {
             ModelDetail,
             {
               model: options?.model ?? model,
-              clone: options?.clone
+              clone: options?.clone,
+              locale: options?.locale
             },
             options?.details ? { details: options.details } : undefined
           )
@@ -656,6 +660,16 @@ describe('ModelDetail', () => {
     expect(auth.ensureFresh).toHaveBeenCalled()
     expect(screen.getByTestId('router-request-id').textContent).toContain(
       'request-123'
+    )
+    expect(screen.getByTestId('output-expires').textContent).toContain(
+      'expire 24 hours'
+    )
+    const copyRequestId = screen.getByRole('button', {
+      name: 'Copy request ID'
+    })
+    await user().click(copyRequestId)
+    await vi.waitFor(() =>
+      expect(copyRequestId.textContent).toContain('Copied')
     )
     expect(refreshWorkshopCredits).toHaveBeenCalledWith({ force: true })
   })
@@ -1422,7 +1436,7 @@ describe('ModelDetail', () => {
     ).toBe(false)
   })
 
-  it('keeps media and raw JSON in one run, then retains both in request history', async () => {
+  it('hides response metadata while retaining normal attachments in run history', async () => {
     auth.session.value = credential
     vi.mocked(runWorkshopRouter).mockResolvedValue({
       ...routerResult,
@@ -1430,6 +1444,13 @@ describe('ModelDetail', () => {
         ...routerResult.outputs,
         {
           kind: 'text',
+          url: 'blob:transcript',
+          fileName: 'transcript.txt',
+          text: 'A transcript'
+        },
+        {
+          kind: 'text',
+          purpose: 'response-metadata',
           url: 'blob:response',
           fileName: 'response.json',
           text: '{"id":"one"}'
@@ -1447,7 +1468,8 @@ describe('ModelDetail', () => {
     await visitor.click(
       await screen.findByRole('button', { name: 'Raw response' })
     )
-    expect(screen.getByText('{"id":"one"}')).toBeTruthy()
+    expect(screen.getByText('A transcript')).toBeTruthy()
+    expect(screen.queryByTitle('response.json')).toBeNull()
 
     vi.mocked(runWorkshopRouter).mockResolvedValue({
       ...routerResult,
@@ -1466,7 +1488,8 @@ describe('ModelDetail', () => {
     ).toHaveLength(2)
     await visitor.click(screen.getByTestId('earlier-run-0'))
     await visitor.click(screen.getByRole('button', { name: 'Raw response' }))
-    expect(screen.getByText('{"id":"one"}')).toBeTruthy()
+    expect(screen.getByText('A transcript')).toBeTruthy()
+    expect(screen.queryByTitle('response.json')).toBeNull()
   })
 
   it('evicts old blob outputs and attachments when the retained byte budget is reached', async () => {
@@ -1543,6 +1566,134 @@ describe('ModelDetail', () => {
     expect(
       screen.getByTestId('playground-output').getAttribute('data-state')
     ).toBe('example')
+  })
+
+  it('opens an example straight away when there is nothing to lose', async () => {
+    await signedInDetail()
+    await user().click(
+      screen.getByRole('button', { name: /Open in Playground$/ })
+    )
+    expect(screen.queryByTestId('example-replace-dialog')).toBeNull()
+    expect(screen.getByTestId<HTMLTextAreaElement>('field-prompt').value).toBe(
+      'a capybara'
+    )
+  })
+
+  it.for([
+    ['keeps', 'example-replace-keep', 'my own words'],
+    ['replaces', 'example-replace-confirm', 'a capybara']
+  ] as const)(
+    'asks before an example overwrites what was typed, and then %s it',
+    async ([, answer, expected]) => {
+      await signedInDetail()
+      const prompt = screen.getByTestId('field-prompt')
+      await user().clear(prompt)
+      await user().type(prompt, 'my own words')
+
+      await user().click(
+        screen.getByRole('button', { name: /Open in Playground$/ })
+      )
+
+      expect(screen.getByTestId('example-replace-dialog')).toBeTruthy()
+      expect(
+        screen.getByTestId<HTMLTextAreaElement>('field-prompt').value
+      ).toBe('my own words')
+
+      await user().click(screen.getByTestId(answer))
+
+      expect(screen.queryByTestId('example-replace-dialog')).toBeNull()
+      expect(
+        screen.getByTestId<HTMLTextAreaElement>('field-prompt').value
+      ).toBe(expected)
+    }
+  )
+
+  it('asks in the reader locale before it overwrites', async () => {
+    auth.session.value = credential
+    mountDetail({ locale: 'zh-CN' })
+    await nextTick()
+    const prompt = screen.getByTestId('field-prompt')
+    await user().clear(prompt)
+    await user().type(prompt, '我写的')
+
+    await user().click(
+      screen.getByRole('button', { name: /在 Playground 中打开$/ })
+    )
+
+    expect(screen.getByTestId('example-replace-dialog').textContent).toContain(
+      '要替换你的输入吗？'
+    )
+    expect(screen.getByTestId('example-replace-confirm').textContent).toContain(
+      '使用该示例'
+    )
+  })
+
+  it('asks for a draft restored after a sign-in, not only for fresh typing', async () => {
+    sessionStorage.setItem(
+      `comfy-workshop-form:${model.slug}`,
+      JSON.stringify({ prompt: 'what I wrote before signing in' })
+    )
+    auth.session.value = credential
+    mountDetail()
+    await nextTick()
+    expect(screen.getByTestId<HTMLTextAreaElement>('field-prompt').value).toBe(
+      'what I wrote before signing in'
+    )
+
+    await user().click(
+      screen.getByRole('button', { name: /Open in Playground$/ })
+    )
+
+    expect(screen.getByTestId('example-replace-dialog')).toBeTruthy()
+    expect(screen.getByTestId<HTMLTextAreaElement>('field-prompt').value).toBe(
+      'what I wrote before signing in'
+    )
+  })
+
+  it('asks for a form edit left behind in the other editor', async () => {
+    const jsonModel: WorkshopModelDetail = {
+      ...uncuratedRunnable,
+      fields: [prompt],
+      examples: [{ ...model.examples[0], fields: undefined }]
+    }
+    auth.session.value = credential
+    mountDetail({ model: jsonModel })
+    await nextTick()
+
+    const prompt_ = screen.getByTestId('field-prompt')
+    await user().clear(prompt_)
+    await user().type(prompt_, 'my own words')
+    await user().click(screen.getByRole('button', { name: 'Native JSON' }))
+
+    await user().click(
+      screen.getByRole('button', { name: /Open in Playground$/ })
+    )
+
+    expect(screen.getByTestId('example-replace-dialog')).toBeTruthy()
+  })
+
+  it('asks before an example overwrites a native JSON request too', async () => {
+    const jsonModel: WorkshopModelDetail = {
+      ...uncuratedRunnable,
+      examples: [{ ...model.examples[0], fields: undefined }]
+    }
+    auth.session.value = credential
+    mountDetail({ model: jsonModel })
+    await nextTick()
+
+    await user().click(screen.getByRole('button', { name: 'Native JSON' }))
+    const body = screen.getByTestId('field-request_body')
+    await user().clear(body)
+    await user().type(body, '{{"prompt":"mine"}')
+
+    await user().click(
+      screen.getByRole('button', { name: /Open in Playground$/ })
+    )
+
+    expect(screen.getByTestId('example-replace-dialog')).toBeTruthy()
+    expect(
+      screen.getByTestId<HTMLTextAreaElement>('field-request_body').value
+    ).toBe('{"prompt":"mine"}')
   })
 
   it.for(['My saved prompt', ''])(
@@ -1690,7 +1841,6 @@ describe('ModelDetail', () => {
       expect(
         screen.getByRole('heading', { name: 'Sample outputs' })
       ).toBeTruthy()
-      expect(screen.getByText(/without touching your inputs/)).toBeTruthy()
       if (nativeJson)
         await user().click(screen.getByRole('button', { name: 'Native JSON' }))
       const input = screen.getByTestId<HTMLTextAreaElement>(

@@ -3127,6 +3127,7 @@
       "confirmChangeTitle": "Review your scheduled change",
       "paymentPopupBlocked": "Couldn't open the payment page — please allow popups and try again.",
       "paymentMethod": "Payment method",
+      "billingAddress": "Billing address",
       "stripeMethodChoice": "Your payment details are handled securely by Stripe.",
       "alipayRenewalNote": "Alipay authorization will also be used for automatic renewals and future purchases.",
       "payAndSubscribe": "Pay and subscribe",
@@ -5169,6 +5170,13 @@
   },
   "agent": {
     "title": "Comfy Agent",
+    "diagnosticReport": {
+      "retry": "Retry copy report",
+      "clipboardFailed": "Clipboard access failed. Select and copy the report below, or retry.",
+      "collectionFailed": "Could not collect the report. Retry, or turn off optional sources and retry.",
+      "manualCopy": "Report to copy",
+      "includedSources": "Include in the report (on by default)"
+    },
     "loadFailed": "The agent panel failed to load.",
     "askComfyAgent": "Ask Comfy Agent",
     "feedbackCaption": "Share feedback",

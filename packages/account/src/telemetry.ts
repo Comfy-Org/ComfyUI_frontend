@@ -9,6 +9,18 @@ export const SESSION_TELEMETRY_EVENT = {
   refreshFailed: 'auth.unified.refresh.failed'
 } as const
 
+/**
+ * The cloud app's `billing.operation.*` events, emitted by the billing
+ * operation lifecycle for every observed `billing_op_id` regardless of
+ * which presentation settled it.
+ */
+export const BILLING_OPERATION_TELEMETRY_EVENT = {
+  started: 'billing.operation.started',
+  succeeded: 'billing.operation.succeeded',
+  failed: 'billing.operation.failed',
+  timeout: 'billing.operation.timeout'
+} as const
+
 export const AUTH_TELEMETRY_EVENT = {
   signUpOpened: 'app:user_sign_up_opened',
   authCompleted: 'app:user_auth_completed',

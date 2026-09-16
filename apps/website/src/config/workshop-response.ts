@@ -54,7 +54,6 @@ async function automaticOutputs(
   const { id, signal, rasterizeSvg } = context
   const outputs: RunOutput[] = []
   const seen = new Set<string>()
-  const extracted = new Map<string, string>()
   function collectString(value: string, mimeHint?: string) {
     if (value.startsWith('https://')) {
       const url = URL.parse(value)
@@ -78,7 +77,6 @@ async function automaticOutputs(
       ),
       fileName: name
     })
-    extracted.set(value, name)
     seen.add(value)
   }
   function visit(value: unknown, depth: number, mimeHint?: string) {
@@ -123,24 +121,16 @@ async function automaticOutputs(
           fileName: fileName(id, mime, index)
         }
     }
-    const text = JSON.stringify(
-      data,
-      (_key, value: unknown) =>
-        typeof value === 'string' && extracted.has(value)
-          ? `[media saved as ${extracted.get(value)}]`
-          : value,
-      2
-    )
-    const document = responseDocument(id, text)
-    outputs.push(
-      extracted.size
-        ? {
-            ...document,
-            fileName: `${id.replaceAll('/', '-')}-metadata.json`
-          }
-        : document
-    )
-    return outputs
+    const document = responseDocument(id, JSON.stringify(data, null, 2))
+    if (!outputs.length) return [document]
+    return [
+      ...outputs,
+      {
+        ...document,
+        purpose: 'response-metadata',
+        fileName: `${id.replaceAll('/', '-')}-metadata.json`
+      }
+    ]
   } catch (error) {
     releaseRouterOutputs(outputs)
     throw error
