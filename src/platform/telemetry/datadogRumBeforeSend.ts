@@ -70,6 +70,32 @@ function isConsoleEchoOfReportedError(event: RumErrorEvent): boolean {
   )
 }
 
+function isNetworkNoiseFromKnownHost(message: string): boolean {
+  const isNetworkNoise =
+    message.includes('csp_violation') || message.includes('Failed to fetch')
+  return (
+    isNetworkNoise && RUM_NOISE_HOSTS.some((host) => message.includes(host))
+  )
+}
+
+/**
+ * A CSP violation is the browser correctly enforcing our policy, not a
+ * first-party bug — the bulk are third-party ad/tracking scripts (e.g. a `blob`
+ * `script-src` violation injected by an ad pixel) whose blocked URI carries no
+ * host to match against `RUM_NOISE_HOSTS`. Drop those, but scope the rule to the
+ * violation's ORIGIN, never its directive: a violation traced to first-party
+ * code is a genuine bug to fix in the CSP, so it must survive this filter. The
+ * SDK builds the report's stack from the offending `sourceFile`, so the shared
+ * origin classifier separates the two (an unattributable violation has no stack
+ * and classifies as third party).
+ */
+function isThirdPartyCspViolation(event: RumErrorEvent): boolean {
+  return (
+    event.error.message.includes('csp_violation') &&
+    classifyRumErrorOrigin(event.error.stack).origin === 'third_party'
+  )
+}
+
 function shouldKeepRumEvent(event: Parameters<RumBeforeSend>[0]): boolean {
   if (event.type !== 'error') return true
   if (isConsoleEchoOfReportedAssertion(event)) return false
@@ -79,11 +105,10 @@ function shouldKeepRumEvent(event: Parameters<RumBeforeSend>[0]): boolean {
   if (message.startsWith('intervention:')) return false
   if (message.includes('ResizeObserver loop')) return false
 
-  const isNetworkNoise =
-    message.includes('csp_violation') || message.includes('Failed to fetch')
-  return (
-    !isNetworkNoise || !RUM_NOISE_HOSTS.some((host) => message.includes(host))
-  )
+  if (isNetworkNoiseFromKnownHost(message)) return false
+  if (isThirdPartyCspViolation(event)) return false
+
+  return true
 }
 
 function tagRumErrorOrigin(event: RumErrorEvent): void {

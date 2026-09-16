@@ -38,6 +38,59 @@ describe('rumBeforeSend', () => {
     expect(rumBeforeSend(event, fromPartial({}))).toBe(false)
   })
 
+  it('drops fetch failures to the RUM intake itself (adblocker noise)', () => {
+    const event = createErrorEvent(
+      'Failed to fetch https://browser-intake-us5-datadoghq.com/api/v2/rum'
+    )
+
+    expect(rumBeforeSend(event, fromPartial({}))).toBe(false)
+  })
+
+  it('drops the CSP block of a third-party tracking pixel by host', () => {
+    const event = createErrorEvent(
+      "csp_violation: 'https://www.facebook.com/tr/' blocked by 'form-action' directive"
+    )
+
+    expect(rumBeforeSend(event, fromPartial({}))).toBe(false)
+  })
+
+  it('drops a third-party CSP violation whose blocked URI carries no host', () => {
+    // e.g. a `blob` script injected by an ad script the CSP correctly blocks.
+    // The report's stack points at the offending third-party sourceFile.
+    const event = createErrorEvent(
+      "csp_violation: 'blob' blocked by 'script-src-elem' directive",
+      'at eval (https://connect.facebook.net/en_US/fbevents.js:1:2)'
+    )
+
+    expect(rumBeforeSend(event, fromPartial({}))).toBe(false)
+  })
+
+  it('drops an unattributable CSP violation (no stack) as third party', () => {
+    const event = createErrorEvent(
+      "csp_violation: 'blob' blocked by 'script-src-elem' directive"
+    )
+
+    expect(rumBeforeSend(event, fromPartial({}))).toBe(false)
+  })
+
+  it('keeps a first-party CSP violation so it can be fixed in the CSP', () => {
+    const event = createErrorEvent(
+      "csp_violation: 'blob' blocked by 'script-src-elem' directive",
+      'at makeWorker (https://cloud.comfy.org/assets/app.js:1:2)'
+    )
+
+    expect(rumBeforeSend(event, fromPartial({}))).toBe(true)
+  })
+
+  it('keeps an extension-origin CSP violation (scoped to third party only)', () => {
+    const event = createErrorEvent(
+      "csp_violation: 'blob' blocked by 'script-src-elem' directive",
+      'at run (https://cloud.comfy.org/extensions/comfyui-foo/main.js:1:2)'
+    )
+
+    expect(rumBeforeSend(event, fromPartial({}))).toBe(true)
+  })
+
   it('drops the console echo of an assertion the reporter also reports', () => {
     const event = createErrorEvent(
       '[Assertion failed]: graph is corrupt',
