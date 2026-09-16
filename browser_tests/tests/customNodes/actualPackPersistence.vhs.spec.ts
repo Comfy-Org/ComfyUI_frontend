@@ -1,5 +1,7 @@
 import { readFile } from 'node:fs/promises'
 
+import type { Response } from '@playwright/test'
+
 import { comfyExpect as expect } from '@e2e/fixtures/ComfyPage'
 import { packPersistenceTest as test } from '@e2e/fixtures/customNode/packPersistenceFixture'
 import { openWorkflowFromSidebar } from '@e2e/fixtures/utils/builderTestUtils'
@@ -17,7 +19,7 @@ test.describe(
     })
 
     test.afterEach(async ({ comfyPage }) => {
-      await comfyPage.canvasOps.resetView()
+      await comfyPage.page.goto('about:blank')
     })
 
     test('VHS format-dependent widgets survive graph.configure()', async ({
@@ -93,7 +95,20 @@ test.describe(
           })
 
           const videoName = `vhs-controls-${crypto.randomUUID()}.mp4`
-          comfyFiles.deleteAfterTest({ filename: videoName, type: 'input' })
+          const previews = new Map<string, Response>()
+          comfyPage.page.on('response', (response) => {
+            const url = new URL(response.url())
+            if (
+              url.pathname.endsWith('/vhs/viewvideo') &&
+              url.searchParams.get('filename') === videoName
+            ) {
+              previews.set(response.url(), response)
+            }
+          })
+          comfyFiles.deleteAfterTest({
+            filename: videoName,
+            type: 'input'
+          })
           const upload = await comfyPage.request.post(
             `${comfyPage.apiUrl}/upload/image`,
             {
@@ -426,6 +441,13 @@ test.describe(
                 widgets: { format: 'video/h264-mp4' }
               }
             ])
+          const video = comfyPage.page.locator(`video[src*="${videoName}"]`)
+          await expect(video).toHaveJSProperty('readyState', 4)
+          const src = await video.getAttribute('src')
+          const preview = previews.get(new URL(src!, comfyPage.url).href)
+          expect(preview).toBeDefined()
+          expect(preview!.ok()).toBe(true)
+          expect(await preview!.finished()).toBeNull()
         }
       )
     }
