@@ -77,9 +77,11 @@ action.
 
 Five things differ, and all five have to:
 
-- **The badge is readable at rest.** Today it is an icon that opens into a word
-  on hover. A type that only appears on hover is a type the reader does not
-  have when they need it.
+- **The badge is a mark that opens into a word.** The icon sits on the media at
+  rest and the word slides out to its right on hover, so the type is available
+  without a label standing over every thumbnail. The word stays in the markup
+  throughout, so a screen reader always has it; hovering only decides whether it
+  takes room. Where there is no hover, the verb underneath still says the type.
 - **The verb says the type again.** `Run` on a model, `Save to Cloud` on a
   workflow or an app. Redundant on purpose: a badge can be missed, a button
   cannot.

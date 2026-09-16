@@ -28,14 +28,20 @@ const labels: Record<Kind, TranslationKey> = {
 </script>
 
 <template>
-  <!-- Spelled out at rest. A type that only appears on hover is a type the
-    reader does not have at the moment they need it. -->
   <span
-    class="pointer-events-none absolute top-4 left-4 z-20 inline-flex h-7 items-center gap-1.5 rounded-lg bg-black/45 px-2.5 text-2xs/none font-medium tracking-wide text-white uppercase backdrop-blur-md"
+    class="pointer-events-none absolute top-4 left-4 z-20 inline-flex h-7 items-center rounded-lg bg-black/45 px-2.5 text-2xs/none font-medium tracking-wide text-white uppercase backdrop-blur-md"
     data-testid="hub-type-badge"
     :data-kind="kind"
   >
     <component :is="icons[kind]" class="size-3.5 shrink-0" />
-    {{ t(labels[kind], locale) }}
+    <!-- A grid track running from 0fr to 1fr is what lets the word open to its
+      own width instead of to a guessed one. -->
+    <span
+      class="grid grid-cols-[0fr] overflow-hidden group-focus-within:grid-cols-[1fr] group-hover:grid-cols-[1fr] motion-safe:transition-[grid-template-columns] motion-safe:duration-200 motion-safe:ease-out"
+    >
+      <span class="min-w-0 overflow-hidden ps-1.5 whitespace-nowrap">
+        {{ t(labels[kind], locale) }}
+      </span>
+    </span>
   </span>
 </template>

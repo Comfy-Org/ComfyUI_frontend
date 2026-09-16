@@ -42,6 +42,25 @@ test.describe('V2 catalogue', () => {
     await expect(page.getByTestId('catalogue-heading')).toContainText(/image/i)
   })
 
+  test('the type is a mark on the card until the reader asks for it', async ({
+    page
+  }) => {
+    await page.goto(CATALOGUE)
+    await openShelf(page, 'generate-images')
+
+    const card = grid(page).getByTestId('catalogue-card').first()
+    const badge = card.getByTestId('hub-type-badge')
+    const width = async () => (await badge.boundingBox())?.width ?? 0
+
+    // The word is there for a screen reader the whole time; what hovering
+    // changes is whether it takes any room.
+    await expect(badge).toHaveText(/model|workflow|app/i)
+    const closed = await width()
+
+    await card.hover()
+    await expect.poll(width).toBeGreaterThan(closed)
+  })
+
   test('the type facet narrows to one kind and says how many', async ({
     page
   }) => {
