@@ -7,6 +7,7 @@ import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useBillingRouting } from '@/composables/billing/useBillingRouting'
 import { getComfyPlatformBaseUrl } from '@/config/comfyApi'
 import { paymentReturnUrl } from '@/platform/cloud/subscription/utils/paymentReturnUrl'
+import { amountDueTodayChanged } from '@/platform/cloud/subscription/utils/subscriptionQuoteFormatting'
 import { getTeamPlanSlug } from '@/platform/cloud/subscription/constants/teamPlanCreditStops'
 import type { TeamPlanSelection } from '@/platform/cloud/subscription/constants/teamPlanCreditStops'
 import type { TierKey } from '@/platform/cloud/subscription/constants/tierPricing'
@@ -607,7 +608,8 @@ export function useSubscriptionCheckout(
     }
 
     const amountChanged =
-      freshPreview.cost_today_cents !== previewData.value?.cost_today_cents
+      !previewData.value ||
+      amountDueTodayChanged(previewData.value, freshPreview)
     installPreview(freshPreview)
     toast.add({
       severity: 'error',
@@ -661,7 +663,7 @@ export function useSubscriptionCheckout(
       // amount against `undefined` and blocks again.
       const amountChanged =
         !!previewData.value &&
-        freshPreview.cost_today_cents !== previewData.value.cost_today_cents
+        amountDueTodayChanged(previewData.value, freshPreview)
       installPreview(freshPreview)
       if (!amountChanged) return false
       toast.add({

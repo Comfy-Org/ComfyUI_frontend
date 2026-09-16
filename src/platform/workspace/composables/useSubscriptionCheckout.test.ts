@@ -82,6 +82,13 @@ function errorWithCode(code: string, message = 'error') {
   return Object.assign(new Error(message), { code })
 }
 
+type QuoteFields = Readonly<
+  Pick<
+    PreviewSubscribeResponse,
+    'cost_today_cents' | 'amount_due_cents' | 'currency'
+  >
+>
+
 interface ReactivationPreviewPlanInput {
   slug: string
   tier: PreviewSubscribeResponse['new_plan']['tier']
@@ -1077,14 +1084,17 @@ describe('useSubscriptionCheckout', () => {
       expect(mockSubscribe).toHaveBeenCalled()
     })
 
-    it('installs the refreshed preview and subscribes when it is a plain new subscription', async () => {
+    async function confirmRefreshedNewSubscription(
+      installedQuote: QuoteFields,
+      refreshedQuote: QuoteFields
+    ) {
       mockSubscription.value = null
       mockPreviewSubscribe.mockResolvedValueOnce({
         allowed: true,
         transition_type: 'upgrade',
         is_immediate: true,
         requires_reactivation_confirmation: true,
-        cost_today_cents: 1600,
+        ...installedQuote,
         current_plan: { period_end: '2026-08-29T00:00:00Z' }
       })
       const checkout = await setup()
@@ -1099,53 +1109,69 @@ describe('useSubscriptionCheckout', () => {
         transition_type: 'new_subscription',
         is_immediate: true,
         requires_reactivation_confirmation: false,
-        cost_today_cents: 1600
-      }
-      mockPreviewSubscribe.mockResolvedValueOnce(refreshedPreview)
-
-      await checkout.handleConfirmTransition()
-
-      expect(checkout.previewData.value).toStrictEqual(refreshedPreview)
-      expect(checkout.checkoutStep.value).not.toBe('pricing')
-      expect(mockSubscribe).toHaveBeenCalled()
-    })
-
-    it('returns to confirmation when the refreshed quote charges a different amount', async () => {
-      mockSubscription.value = null
-      mockPreviewSubscribe.mockResolvedValueOnce({
-        allowed: true,
-        transition_type: 'upgrade',
-        is_immediate: true,
-        requires_reactivation_confirmation: true,
-        cost_today_cents: 1600,
-        current_plan: { period_end: '2026-08-29T00:00:00Z' }
-      })
-      const checkout = await setup()
-
-      await checkout.handleSubscribeClick({
-        tierKey: 'standard',
-        billingCycle: 'yearly'
-      })
-
-      const refreshedPreview = {
-        allowed: true,
-        transition_type: 'new_subscription',
-        is_immediate: true,
-        requires_reactivation_confirmation: false,
-        cost_today_cents: 2400
+        ...refreshedQuote
       }
       mockPreviewSubscribe.mockResolvedValueOnce(refreshedPreview)
       mockToastAdd.mockClear()
 
       await checkout.handleConfirmTransition()
 
-      expect(mockSubscribe).not.toHaveBeenCalled()
-      expect(checkout.previewData.value).toStrictEqual(refreshedPreview)
-      expect(checkout.checkoutStep.value).not.toBe('pricing')
-      expect(mockToastAdd).toHaveBeenCalledWith(
-        expect.objectContaining({ detail: 'Reactivation amount changed' })
-      )
-    })
+      return { checkout, refreshedPreview }
+    }
+
+    it.for([
+      [
+        'the payable amount is unchanged',
+        { cost_today_cents: 1600 },
+        { cost_today_cents: 1600 }
+      ],
+      [
+        'an exact quote replaces a legacy one at the same payable amount',
+        { cost_today_cents: 1600 },
+        { cost_today_cents: 1600, amount_due_cents: 1600, currency: 'usd' }
+      ]
+    ] as const)(
+      'installs the refreshed preview and subscribes when %s',
+      async ([, installedQuote, refreshedQuote]) => {
+        const { checkout, refreshedPreview } =
+          await confirmRefreshedNewSubscription(installedQuote, refreshedQuote)
+
+        expect(checkout.previewData.value).toStrictEqual(refreshedPreview)
+        expect(checkout.checkoutStep.value).not.toBe('pricing')
+        expect(mockSubscribe).toHaveBeenCalled()
+      }
+    )
+
+    it.for([
+      [
+        'the legacy cost rises',
+        { cost_today_cents: 1600 },
+        { cost_today_cents: 2400 }
+      ],
+      [
+        'the amount due rises behind an unchanged legacy cost',
+        { cost_today_cents: 1600, amount_due_cents: 1600 },
+        { cost_today_cents: 1600, amount_due_cents: 2400 }
+      ],
+      [
+        'the currency changes',
+        { cost_today_cents: 1600, amount_due_cents: 1600, currency: 'usd' },
+        { cost_today_cents: 1600, amount_due_cents: 1600, currency: 'eur' }
+      ]
+    ] as const)(
+      'returns to confirmation when %s',
+      async ([, installedQuote, refreshedQuote]) => {
+        const { checkout, refreshedPreview } =
+          await confirmRefreshedNewSubscription(installedQuote, refreshedQuote)
+
+        expect(mockSubscribe).not.toHaveBeenCalled()
+        expect(checkout.previewData.value).toStrictEqual(refreshedPreview)
+        expect(checkout.checkoutStep.value).not.toBe('pricing')
+        expect(mockToastAdd).toHaveBeenCalledWith(
+          expect.objectContaining({ detail: 'Reactivation amount changed' })
+        )
+      }
+    )
 
     it('subscribes after a failed plan-picker preview leaves no preview installed', async () => {
       mockIncompleteEmbeddedPreview.value = true
