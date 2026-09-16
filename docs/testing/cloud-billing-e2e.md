@@ -82,3 +82,47 @@ Traces start after permanent-account sign-in and contain authenticated network
 traffic. Keep reports private. Disposable accounts require no reusable credentials.
 Completed-payment assertions verify saved cards through the real hosted billing
 portal, because Staging disables the embedded-checkout saved-card API.
+
+## 3DS outcomes
+
+PR #17545 depends only on #17481. Run `--project=cloud-live-disposable` for
+successful and failed authentication. Challenge interaction, challenge permissions,
+and terminal-state assertions live in this PR. Success activates Creator and
+grants once; failure becomes retryable without adding credits. Earlier Test Cloud
+operations remained pending; no current-head 3DS pass is claimed.
+
+## Required sandbox controls
+
+### Team fixture
+
+Provide two service-owned accounts in one resettable Team workspace. The owner
+must have a saved Stripe test card and an active Team subscription. Both users
+must also retain personal workspaces. Setup must restore membership, roles,
+active workspace, subscription, and ledger balance before the suite. The tests
+must prove that owner writes succeed, member writes receive authorization
+errors, and selecting another workspace cannot mutate the Team ledger.
+
+### Clock control
+
+Provide a sandbox-only API that creates or resets a disposable billing customer
+under a Stripe test clock, advances it to a requested boundary, and waits until
+Cloud webhook and Temporal processing reach a stable checkpoint. It must cover
+renewal, credit reset, pending-checkout expiry, and subscription expiry. Return
+the workspace, billing operation, event, and clock identifiers for assertions.
+Advancing a Stripe clock alone is insufficient.
+
+### Fault control
+
+Provide a sandbox-only, operation-scoped fault API with automatic expiry. It
+must delay or fail a named billing phase once, replay duplicate and out-of-order
+events, and report delivery and retry attempts. Tests must then require one
+terminal operation, one charge, one ledger grant, and eventual UI and backend
+agreement.
+
+## Evidence and safety
+
+Retain operation IDs, expected and observed balances, status projections,
+screenshots, and blocked-egress attachments in the Playwright report. Exclude
+credentials, authorization headers, cookies, and payment secrets. Basic runs
+need no database, Stripe secret key, or Temporal admin access. Team, clock, and
+fault cases remain blocked until the sandbox exposes the scoped controls above.

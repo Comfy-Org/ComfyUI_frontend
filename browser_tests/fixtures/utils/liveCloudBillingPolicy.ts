@@ -27,7 +27,8 @@ export const LIVE_CHECKOUT_ORIGINS = [
   'https://r.stripe.com',
   'https://q.stripe.com',
   'https://b.stripecdn.com',
-  'https://newassets.hcaptcha.com'
+  'https://newassets.hcaptcha.com',
+  'https://testmode-acs.stripe.com'
 ]
 
 const SAFE_METHODS = ['GET', 'HEAD', 'OPTIONS']
@@ -118,6 +119,7 @@ function isOnboardingSurveyUpdate(data: unknown): boolean {
 }
 
 function isPaymentPostAllowed(url: URL, backend: string): boolean {
+  if (url.origin === 'https://testmode-acs.stripe.com') return true
   if (
     url.origin === 'https://checkout.comfy.org' &&
     url.pathname === '/ajax/metrics_batch'

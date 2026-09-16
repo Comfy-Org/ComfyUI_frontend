@@ -383,3 +383,23 @@ describe('Disposable payment permissions', () => {
     ).toBe(false)
   })
 })
+
+describe('Stripe test challenge permissions', () => {
+  it('requires sandbox payment permission for challenge responses', () => {
+    const url = new URL('https://testmode-acs.stripe.com/authorize')
+    expect(isLiveCloudMutationAllowed(url, 'POST', config)).toBe(false)
+    expect(
+      isLiveCloudMutationAllowed(url, 'POST', {
+        ...config,
+        allowPayments: true
+      })
+    ).toBe(true)
+    expect(
+      isLiveCloudMutationAllowed(url, 'POST', {
+        ...config,
+        allowPayments: true,
+        PLAYWRIGHT_SETUP_API_URL: 'https://cloud.comfy.org'
+      })
+    ).toBe(false)
+  })
+})
