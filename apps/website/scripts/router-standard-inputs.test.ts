@@ -29,13 +29,13 @@ describe('standard inputs across model families', () => {
     })
     expect(prepared.body).toMatchObject({ width: 2048, height: 1152 })
     const portrait = router.router_get_closest_value('9:16', 'aspect_ratio')
-    expect(portrait).toEqual({ width: 1024, height: 1820 })
+    expect(portrait).toEqual({ width: 1088, height: 1934 })
     expect(
       (await prepareRouterRender(slug, { aspect_ratio: '9:16' })).body
     ).toMatchObject(portrait)
     expect(router.router_get_default_value('aspect_ratio')).toEqual({
-      width: 1024,
-      height: 1024
+      width: 1920,
+      height: 1088
     })
   })
 

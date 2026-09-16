@@ -129,7 +129,9 @@ describe('use-case input contracts', () => {
 
   it('restores Grok’s source image and only schema-valid settings from the example', async () => {
     const page = detail('xai--grok-imagine-video--animate-images')
-    expect(page.defaults.image_url).toContain('sci-fi_mech.png')
+    expect(page.defaults.image_url).toContain(
+      'grok-imagine-video-input-4.1.png'
+    )
     const values = defaultValues(schemaForModel(page), page.defaults)
     expect(validateForm(schemaForModel(page), values)).toEqual({})
     const body = await request(page.slug)
@@ -211,7 +213,7 @@ describe('use-case input contracts', () => {
       values: { first_frame_url: image, last_frame_url: lastImage },
       expected: {
         mode: 'pro',
-        sound: 'off',
+        sound: 'on',
         image_list: [
           { image_url: image, type: 'first_frame' },
           { image_url: lastImage, type: 'end_frame' }
@@ -221,11 +223,11 @@ describe('use-case input contracts', () => {
     },
     {
       slug: 'kling--omni-pro-image-to-video--animate-images',
-      routerId: 'kling/kling-video-o1',
+      routerId: 'kling/kling-v3-omni',
       values: { reference_image_url: image },
       expected: {
         mode: 'pro',
-        sound: undefined,
+        sound: 'on',
         image_list: [{ image_url: image }],
         video_list: undefined
       }
@@ -243,7 +245,7 @@ describe('use-case input contracts', () => {
     },
     {
       slug: 'kling--omni-pro-video-to-video--edit-videos',
-      routerId: 'kling/kling-video-o1',
+      routerId: 'kling/kling-v3-omni',
       values: { reference_image_url: image, video_url: video },
       expected: {
         mode: 'pro',
@@ -253,7 +255,7 @@ describe('use-case input contracts', () => {
           {
             video_url: video,
             refer_type: 'feature',
-            keep_original_sound: 'yes'
+            keep_original_sound: 'no'
           }
         ]
       }
@@ -284,17 +286,18 @@ describe('use-case input contracts', () => {
     })
   })
 
-  it('offers Kling native audio only on the V3 Omni role that supports it', () => {
+  it('offers Kling native audio only on the V3 Omni roles that support it', () => {
     const fields = (slug: string) =>
       schemaForModel(detail(slug)).map((field) => field.name)
     expect(
       fields('kling--omni-pro-first-last-frame--animate-images')
     ).toContain('generate_audio')
-    for (const slug of [
-      'kling--omni-pro-image-to-video--animate-images',
-      'kling--omni-pro-text-to-video--generate-videos'
-    ])
-      expect(fields(slug)).not.toContain('generate_audio')
+    expect(fields('kling--omni-pro-image-to-video--animate-images')).toContain(
+      'generate_audio'
+    )
+    expect(
+      fields('kling--omni-pro-text-to-video--generate-videos')
+    ).not.toContain('generate_audio')
   })
 
   it('binds the authored LTX Pro page without exposing its old variant selector', async () => {
@@ -341,9 +344,10 @@ describe('use-case input contracts', () => {
     }
   )
 
-  it('keeps a supplied Wan reference URL and rehosts its authored companion', async () => {
+  it('keeps a supplied Wan reference URL and rehosts a pinned companion', async () => {
     const slug = 'wan--reference-to-video-3.0--animate-images'
-    const source = detail(slug).defaults.image_url_2
+    const source =
+      'https://cdn.jsdelivr.net/gh/Comfy-Org/workflow_templates@3db6490611e6a16b84b09110e61a07264ce47cd3/input/reference.png'
     expect(source).toEqual(expect.stringContaining('@'))
     const stored = 'https://storage.example/reference.png'
     const transport = vi.fn<typeof fetch>(async (url, init) => {
@@ -364,7 +368,9 @@ describe('use-case input contracts', () => {
     const uploader = createWorkshopUrlUploader()
     const upload = (file: File, signal: AbortSignal) =>
       uploader(file, 'token', 'owner:workspace', signal)
-    expect(await request(slug, { image_url: image }, upload)).toMatchObject({
+    expect(
+      await request(slug, { image_url: image, image_url_2: source }, upload)
+    ).toMatchObject({
       input: {
         media: [
           { type: 'reference_image', url: image },
