@@ -3,6 +3,15 @@ import { describe, expect, it } from 'vitest'
 import { getRoutes, localizeHref } from './routes'
 
 describe('localizeHref', () => {
+  it.for([
+    { href: '/models', localized: '/zh-CN/models' },
+    { href: '/models/', localized: '/zh-CN/models/' },
+    { href: '/models?source=nav', localized: '/zh-CN/models?source=nav' },
+    { href: '/models/example/', localized: '/models/example/' }
+  ])('localizes $href in a showcase build', ({ href, localized }) => {
+    expect(localizeHref(href, 'zh-CN', false)).toBe(localized)
+  })
+
   it('prefixes an internal path for a non-default locale', () => {
     expect(localizeHref('/mcp', 'zh-CN')).toBe('/zh-CN/mcp')
   })

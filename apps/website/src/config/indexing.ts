@@ -7,7 +7,11 @@ import {
 import type { Locale } from './locales'
 import { isLocaleInvariantPath } from './routes'
 import { models } from './models'
-import { isLegacyWorkshopRoute, isWorkshopRoute } from './workshop-release'
+import {
+  isLegacyWorkshopRoute,
+  isWorkshopInBuild,
+  isWorkshopRoute
+} from './workshop-release'
 
 const PAYMENT_STATUSES = ['success', 'failed'] as const
 const PLACEHOLDER_PATHNAMES = ['/case-studies', '/videos', '/demos'] as const
@@ -115,7 +119,10 @@ export function isExcludedFromSitemap(page: string): boolean {
   // INDEXABLE_PAGES, so without this they would enter the sitemap and advertise
   // Chinese pages that are English content. hreflang already refuses to cluster
   // them — this is the same answer on this surface.
-  if (locale !== DEFAULT_LOCALE && isLocaleInvariantPath(englishRoute)) {
+  if (
+    locale !== DEFAULT_LOCALE &&
+    isLocaleInvariantPath(englishRoute, isWorkshopInBuild())
+  ) {
     return true
   }
 

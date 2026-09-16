@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import { missingSitemapEntries, sitemapCandidates } from './localized-sitemap'
 
@@ -13,6 +13,20 @@ const ORIGIN = 'https://comfy.org'
  * caught it as 114 "advertises alternates but the sitemap omits it".
  */
 describe('missingSitemapEntries', () => {
+  it('lists the Chinese release showcase with its language alternates', () => {
+    vi.stubEnv('WORKSHOP_IN_BUILD', '0')
+
+    expect(
+      missingSitemapEntries(['/zh-CN/models/'], new Set(), ORIGIN)
+    ).toEqual([
+      '<url><loc>https://comfy.org/zh-CN/models/</loc>' +
+        '<xhtml:link rel="alternate" hreflang="en" href="https://comfy.org/models/"/>' +
+        '<xhtml:link rel="alternate" hreflang="zh-CN" href="https://comfy.org/zh-CN/models/"/>' +
+        '<xhtml:link rel="alternate" hreflang="x-default" href="https://comfy.org/models/"/>' +
+        '</url>'
+    ])
+  })
+
   it('adds a built page the sitemap left out', () => {
     const entries = missingSitemapEntries(
       ['/zh-CN/customers/acme/'],
