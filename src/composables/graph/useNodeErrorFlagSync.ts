@@ -108,12 +108,14 @@ export function useNodeErrorFlagSync(
     ],
     () => {
       if (!app.isGraphReady) return
+      const rootGraph = app.rootGraph
+      if (!rootGraph) return
       // Legacy (LGraphNode) only: suppress missing-resource error flags
       // when the Errors tab is hidden, since legacy nodes lack the per-widget
       // red highlight that Vue nodes use to indicate *why* a node has errors.
       // Vue nodes compute hasAnyError independently and are unaffected.
       reconcileNodeErrorFlags(
-        app.rootGraph,
+        rootGraph,
         nodeErrors.value,
         showErrorsTab.value
           ? missingModelStore.missingModelAncestorExecutionIds

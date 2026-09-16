@@ -64,7 +64,10 @@ vi.mock(import('@/scripts/api'), () => ({
   })
 }))
 
-import { app } from '@/scripts/app'
+import type { LGraph } from '@/lib/litegraph/src/litegraph'
+import { app as mockedApp } from '@/scripts/app'
+
+const app = mockedApp as typeof mockedApp & { rootGraph: LGraph }
 import { api } from '@/scripts/api'
 import { ChangeTracker } from '@/scripts/changeTracker'
 

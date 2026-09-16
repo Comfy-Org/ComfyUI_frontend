@@ -338,19 +338,34 @@ export class ComfyApp {
   private rootGraphInternal: LGraph | undefined
 
   // TODO: Migrate internal usage to the
-  /** @deprecated Use {@link rootGraph} instead */
-  get graph() {
-    return this.rootGraphInternal!
+  /**
+   * @deprecated Use {@link rootGraph} instead
+   * @returns `undefined` until {@link setup} completes.
+   */
+  get graph(): LGraph | undefined {
+    return this.rootGraphInternal
   }
 
-  get rootGraph(): LGraph {
+  /** @returns `undefined` until {@link setup} completes. */
+  get rootGraph(): LGraph | undefined {
     if (!this.rootGraphInternal) {
       console.error('ComfyApp graph accessed before initialization')
     }
-    return this.rootGraphInternal!
+    return this.rootGraphInternal
   }
 
   get rootGraphOrUndefined(): LGraph | undefined {
+    return this.rootGraphInternal
+  }
+
+  /**
+   * The root graph for internal callers that run after {@link setup} has
+   * assigned it. Throws if the graph has not been initialized yet.
+   */
+  private get rootGraphOrThrow(): LGraph {
+    if (!this.rootGraphInternal) {
+      throw new Error('ComfyApp graph accessed before initialization')
+    }
     return this.rootGraphInternal
   }
 
@@ -879,14 +894,14 @@ export class ComfyApp {
         merge: detail.merge
       })
 
-      const node = getNodeByExecutionId(this.rootGraph, executionId)
+      const node = getNodeByExecutionId(this.rootGraphOrThrow, executionId)
       if (node && node.onExecuted) {
         node.onExecuted(detail.output)
       }
     })
 
     api.addEventListener('execution_start', () => {
-      triggerCallbackOnAllNodes(this.rootGraph, 'onExecutionStart')
+      triggerCallbackOnAllNodes(this.rootGraphOrThrow, 'onExecutionStart')
     })
 
     api.addEventListener('execution_error', ({ detail }) => {
@@ -1058,7 +1073,7 @@ export class ComfyApp {
       }
     )
 
-    this.rootGraph.start()
+    this.rootGraphOrThrow.start()
 
     // Ensure the canvas fills the window
     useResizeObserver(this.canvasElRef, ([canvasEl]) => {
@@ -1308,7 +1323,7 @@ export class ComfyApp {
       // state from the previous workflow cannot leak into the newly loaded
       // one, and so `clean()` can clear the root graph even when the user is
       // currently inside a subgraph.
-      this.canvas.setGraph(this.rootGraph)
+      this.canvas.setGraph(this.rootGraphOrThrow)
 
       this.clean()
     }
@@ -1446,7 +1461,7 @@ export class ComfyApp {
             this.canvas.visible_area.width &&
             this.canvas.visible_area.height &&
             !anyItemOverlapsRect(
-              this.rootGraph._nodes,
+              this.rootGraphOrThrow._nodes,
               this.canvas.visible_area
             )
           ) {
@@ -1463,18 +1478,21 @@ export class ComfyApp {
     try {
       try {
         // @ts-expect-error Discrepancies between zod and litegraph - in progress
-        this.rootGraph.configure(graphData)
+        this.rootGraphOrThrow.configure(graphData)
 
         // Save original renderer version before scaling (it gets modified during scaling)
         const originalMainGraphRenderer =
-          this.rootGraph.extra.workflowRendererVersion
+          this.rootGraphOrThrow.extra.workflowRendererVersion
 
         // Scale main graph
-        ensureCorrectLayoutScale(originalMainGraphRenderer, this.rootGraph)
+        ensureCorrectLayoutScale(
+          originalMainGraphRenderer,
+          this.rootGraphOrThrow
+        )
 
         // Scale all subgraphs that were loaded with the workflow
         // Use original main graph renderer as fallback (not the modified one)
-        for (const subgraph of this.rootGraph.subgraphs.values()) {
+        for (const subgraph of this.rootGraphOrThrow.subgraphs.values()) {
           ensureCorrectLayoutScale(
             subgraph.extra.workflowRendererVersion || originalMainGraphRenderer,
             subgraph
@@ -1496,9 +1514,9 @@ export class ComfyApp {
         return false
       }
       const snapTo = LiteGraph.alwaysSnapToGrid
-        ? this.rootGraph.getSnapToGridSize()
+        ? this.rootGraphOrThrow.getSnapToGridSize()
         : 0
-      forEachNode(this.rootGraph, (node) => {
+      forEachNode(this.rootGraphOrThrow, (node) => {
         const size = node.computeSize()
         size[0] = Math.max(node.size[0], size[0])
         size[1] = Math.max(node.size[1], size[1])
@@ -1574,7 +1592,7 @@ export class ComfyApp {
       useTelemetry()?.trackWorkflowImported(telemetryPayload)
       await useWorkflowService().afterLoadNewGraph(
         workflow,
-        this.rootGraph.serialize() as unknown as ComfyWorkflowJSON,
+        this.rootGraphOrThrow.serialize() as unknown as ComfyWorkflowJSON,
         effectiveShareId
       )
       await useExtensionService().invokeExtensionsAsync('afterLoadGraph')
@@ -1597,12 +1615,12 @@ export class ComfyApp {
         (n) =>
           typeof n === 'string' ||
           n.nodeId == null ||
-          isAncestorPathActive(this.rootGraph, String(n.nodeId))
+          isAncestorPathActive(this.rootGraphOrThrow, String(n.nodeId))
       )
 
       if (!skipAssetScans) {
         await runMissingModelPipeline({
-          graph: this.rootGraph,
+          graph: this.rootGraphOrThrow,
           graphData,
           missingModelStore: useMissingModelStore(),
           missingNodeTypes: activeMissingNodeTypes,
@@ -1610,7 +1628,7 @@ export class ComfyApp {
         })
 
         await runMissingMediaPipeline({
-          rootGraph: this.rootGraph,
+          rootGraph: this.rootGraphOrThrow,
           silent: silentAssetErrors
         })
       }
@@ -1639,7 +1657,7 @@ export class ComfyApp {
     options: { silent?: boolean; reloadDefs?: boolean } = {}
   ): Promise<MissingModelPipelineResult> {
     return refreshMissingModelPipeline({
-      graph: this.rootGraph,
+      graph: this.rootGraphOrThrow,
       reloadNodeDefs:
         options.reloadDefs === false ? undefined : () => this.reloadNodeDefs(),
       missingModelStore: useMissingModelStore(),
@@ -1647,7 +1665,7 @@ export class ComfyApp {
     })
   }
 
-  async graphToPrompt(graph = this.rootGraph) {
+  async graphToPrompt(graph = this.rootGraphOrThrow) {
     return graphToPrompt(graph, {
       sortNodes: useSettingStore().get('Comfy.Workflow.SortNodeIdOnSave')
     })
@@ -1788,7 +1806,7 @@ export class ComfyApp {
 
           // Allow widgets to run callbacks before a prompt has been queued
           // e.g. random seed before every gen
-          forEachNode(this.rootGraph, (node) => {
+          forEachNode(this.rootGraphOrThrow, (node) => {
             for (const widget of node.widgets ?? []) {
               widget.beforeQueued?.({ isPartialExecution })
             }
@@ -1803,7 +1821,7 @@ export class ComfyApp {
           const queuedRunErrorKey = executionErrorStore.captureRunErrorKey()
           const queuedMode = getWorkflowMode(queuedWorkflow)
           const startTime = performance.now()
-          const p = await this.graphToPrompt(this.rootGraph).catch(
+          const p = await this.graphToPrompt(this.rootGraphOrThrow).catch(
             (error: unknown) => {
               telemetry?.trackExecutionOutcome({
                 startTime,
@@ -1815,7 +1833,7 @@ export class ComfyApp {
               throw error
             }
           )
-          const queuedNodes = collectAllNodes(this.rootGraph)
+          const queuedNodes = collectAllNodes(this.rootGraphOrThrow)
           let workflowContext: WorkflowExecutionContext | undefined
           if (executionContext) {
             workflowContext = toWorkflowExecutionContext(executionContext, {
@@ -1930,7 +1948,7 @@ export class ComfyApp {
               error.response.error?.type === 'missing_node_type'
             ) {
               // Re-scan the full graph instead of using the server's single-node response.
-              rescanAndSurfaceMissingNodes(this.rootGraph)
+              rescanAndSurfaceMissingNodes(this.rootGraphOrThrow)
             } else if (
               error instanceof PromptExecutionError &&
               error.status === 403 &&
@@ -2144,7 +2162,7 @@ export class ComfyApp {
     // Use parameters strictly as the final fallback
     if (parameters && typeof parameters === 'string') {
       const outcome = await importA1111(
-        this.rootGraph,
+        this.rootGraphOrThrow,
         parameters,
         async () => {
           try {
@@ -2154,7 +2172,7 @@ export class ComfyApp {
           } finally {
             useMissingNodesErrorStore().setMissingNodeTypes([])
           }
-          this.canvas.setGraph(this.rootGraph)
+          this.canvas.setGraph(this.rootGraphOrThrow)
         }
       )
       switch (outcome) {
@@ -2188,7 +2206,7 @@ export class ComfyApp {
       )
       await useWorkflowService().afterLoadNewGraph(
         fileName,
-        this.rootGraph.serialize() as unknown as ComfyWorkflowJSON
+        this.rootGraphOrThrow.serialize() as unknown as ComfyWorkflowJSON
       )
       await useExtensionService().invokeExtensionsAsync('afterLoadGraph')
       return
@@ -2327,7 +2345,7 @@ export class ComfyApp {
     // false: no workflow load follows to republish the hash.
     useWorkflowService().beforeLoadNewGraph(false)
     await useExtensionService().invokeExtensionsAsync('beforeLoadGraph')
-    this.canvas.setGraph(this.rootGraph)
+    this.canvas.setGraph(this.rootGraphOrThrow)
     this.clean()
 
     const ids = Object.keys(apiData)
@@ -2406,7 +2424,7 @@ export class ComfyApp {
       }
       node.id = nodeId
       node.title = data._meta?.title ?? node.title
-      app.rootGraph.add(node)
+      app.rootGraphOrThrow.add(node)
       if (placeholderEntry && node.last_serialization) {
         node.last_serialization.id = node.id
         placeholderEntry.nodeId = String(node.id)
@@ -2417,7 +2435,7 @@ export class ComfyApp {
     const processNodeInputs = (id: string) => {
       const data = apiData[id]
       const currentNodeId = importedNodeIds.get(id) ?? toNodeId(id)
-      const node = app.rootGraph.getNodeById(currentNodeId)
+      const node = app.rootGraphOrThrow.getNodeById(currentNodeId)
       if (!node) return
       const targetNode = node
 
@@ -2426,7 +2444,7 @@ export class ComfyApp {
         if (value instanceof Array) {
           function connectInput() {
             const [fromId, fromSlot] = value
-            const fromNode = app.rootGraph.getNodeById(
+            const fromNode = app.rootGraphOrThrow.getNodeById(
               importedNodeIds.get(String(fromId)) ?? toNodeId(fromId)
             )
             if (!fromNode?.outputs?.[fromSlot]) return false
@@ -2480,13 +2498,13 @@ export class ComfyApp {
       if (remainingInputs.length === pendingInputs.length) break
       pendingInputs = remainingInputs
     }
-    for (const node of app.rootGraph.nodes) {
+    for (const node of app.rootGraphOrThrow.nodes) {
       if (!node.last_serialization) continue
       node.last_serialization.inputs = node.inputs.map((input, i) =>
         inputAsSerialisable(input, node, i)
       )
     }
-    app.rootGraph.arrange()
+    app.rootGraphOrThrow.arrange()
 
     // Intentionally no beforeConfigureGraph: API JSON builds nodes directly
     // and never passes a ComfyWorkflowJSON through the configure stage.
@@ -2496,7 +2514,7 @@ export class ComfyApp {
     )
     await useWorkflowService().afterLoadNewGraph(
       fileName,
-      this.rootGraph.serialize() as unknown as ComfyWorkflowJSON
+      this.rootGraphOrThrow.serialize() as unknown as ComfyWorkflowJSON
     )
     await useExtensionService().invokeExtensionsAsync('afterLoadGraph')
     if (missingNodeTypes.length) {
@@ -2544,7 +2562,7 @@ export class ComfyApp {
     }
     // Refresh combo widgets in all nodes including those in subgraphs
     const nodeOutputStore = useNodeOutputStore()
-    forEachNode(this.rootGraph, (node) => {
+    forEachNode(this.rootGraphOrThrow, (node) => {
       const def = defs[node.type]
       // Allow primitive nodes to handle refresh
       node.refreshComboInNode?.(defs)
@@ -2590,7 +2608,7 @@ export class ComfyApp {
     )
 
     // Promoted widgets keep hosted option snapshots; sync them after source refresh hooks run.
-    syncPromotedComboHostOptions(this.rootGraph)
+    syncPromotedComboHostOptions(this.rootGraphOrThrow)
 
     if (this.vueAppReady) {
       this.updateVueAppNodeDefs(defs)

@@ -5,7 +5,9 @@ import { nextTick } from 'vue'
 import type { LGraph, Subgraph } from '@/lib/litegraph/src/litegraph'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
-import { app } from '@/scripts/app'
+import { app as mockedApp } from '@/scripts/app'
+
+const app = mockedApp as typeof mockedApp & { rootGraph: LGraph; graph: LGraph }
 import {
   useSubgraphNavigationStore,
   VIEWPORT_CACHE_MAX_SIZE

@@ -84,7 +84,7 @@ export const useAppModeStore = defineStore('appMode', () => {
     // Nodes are not reactive, so trigger recomputation when workflow changes
     void workflowStore.activeWorkflow
     void mode.value
-    return app.isGraphReady && app.rootGraph.nodes.length > 0
+    return app.isGraphReady && (app.rootGraph?.nodes.length ?? 0) > 0
   })
 
   function pruneLinearData(data: Partial<LinearData> | undefined): {
@@ -192,7 +192,7 @@ export const useAppModeStore = defineStore('appMode', () => {
   ) {
     if (ChangeTracker.isLoadingGraph) return
 
-    if (!app.isGraphReady || !app.rootGraph.nodes.length) return
+    if (!app.isGraphReady || !app.rootGraph?.nodes.length) return
 
     const hadConfig = !!(data?.inputs?.length || data?.outputs?.length)
     if (!hadConfig || resolvedInputs.length || resolvedOutputs.length) return
@@ -224,7 +224,7 @@ export const useAppModeStore = defineStore('appMode', () => {
   }
 
   useEventListener(
-    () => (app.isGraphReady ? app.rootGraph.events : undefined),
+    () => (app.isGraphReady ? app.rootGraph?.events : undefined),
     'configured',
     resetSelectedToWorkflow
   )
@@ -238,6 +238,7 @@ export const useAppModeStore = defineStore('appMode', () => {
       if (!data || ChangeTracker.isLoadingGraph) return
       if (!app.isGraphReady) return
       const graph = app.rootGraph
+      if (!graph) return
       const extra = graph.extra
       extra.linearData = {
         inputs: [...data.inputs],

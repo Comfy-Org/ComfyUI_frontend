@@ -8,7 +8,9 @@ import type * as VueRouter from 'vue-router'
 
 import type { LGraph, Subgraph } from '@/lib/litegraph/src/litegraph'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
-import { app } from '@/scripts/app'
+import { app as mockedApp } from '@/scripts/app'
+
+const app = mockedApp as typeof mockedApp & { rootGraph: LGraph }
 import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
 
 const ids = vi.hoisted(() => ({

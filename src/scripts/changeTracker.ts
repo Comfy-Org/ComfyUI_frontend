@@ -343,9 +343,11 @@ export class ChangeTracker {
       useNodeOutputStore().restoreOutputs(this.nodeOutputs)
     }
     if (this.subgraphState) {
+      const rootGraph = app.rootGraph
+      if (!rootGraph) return
       const { navigation } = this.subgraphState
       const firstInvalidIndex = navigation.findIndex(
-        (id) => !app.rootGraph.subgraphs.has(id)
+        (id) => !rootGraph.subgraphs.has(id)
       )
       if (firstInvalidIndex !== -1) navigation.splice(firstInvalidIndex)
       useSubgraphNavigationStore().restoreState(navigation)
@@ -353,13 +355,13 @@ export class ChangeTracker {
       const activeId = navigation.at(-1)
       if (activeId) {
         // Navigate to the saved subgraph
-        const subgraph = app.rootGraph.subgraphs.get(activeId)
+        const subgraph = rootGraph.subgraphs.get(activeId)
         if (subgraph) {
           app.canvas.setGraph(subgraph)
         }
       } else {
         // Empty navigation array means root level
-        app.canvas.setGraph(app.rootGraph)
+        app.canvas.setGraph(rootGraph)
       }
     }
   }
@@ -410,7 +412,9 @@ export class ChangeTracker {
       return
     }
 
-    const currentState = clone(app.rootGraph.serialize()) as ComfyWorkflowJSON
+    const rootGraph = app.rootGraph
+    if (!rootGraph) return
+    const currentState = clone(rootGraph.serialize()) as ComfyWorkflowJSON
     if (!this.activeState) {
       this.activeState = currentState
       return
@@ -435,7 +439,9 @@ export class ChangeTracker {
     )
       return
 
-    const currentState = clone(app.rootGraph.serialize()) as ComfyWorkflowJSON
+    const rootGraph = app.rootGraph
+    if (!rootGraph) return
+    const currentState = clone(rootGraph.serialize()) as ComfyWorkflowJSON
     if (ChangeTracker.graphEqual(this.activeState, currentState)) return
 
     const previousState = this.activeState

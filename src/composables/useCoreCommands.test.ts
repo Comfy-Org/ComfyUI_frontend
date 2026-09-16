@@ -275,7 +275,7 @@ describe('useCoreCommands', () => {
       await clearCommand.function()
 
       expect(app.clean).toHaveBeenCalled()
-      expect(app.rootGraph.clear).toHaveBeenCalled()
+      expect(app.rootGraph?.clear).toHaveBeenCalled()
       expect(mockRunMintPortsIntentionalClear).toHaveBeenCalledOnce()
       expect(api.dispatchCustomEvent).toHaveBeenCalledWith('graphCleared')
     })
@@ -291,7 +291,7 @@ describe('useCoreCommands', () => {
       await clearCommand.function()
 
       expect(app.clean).not.toHaveBeenCalled()
-      expect(app.rootGraph.clear).not.toHaveBeenCalled()
+      expect(app.rootGraph?.clear).not.toHaveBeenCalled()
       expect(mockRunMintPortsIntentionalClear).not.toHaveBeenCalled()
 
       const subgraph = app.canvas.subgraph
@@ -317,7 +317,7 @@ describe('useCoreCommands', () => {
       await clearCommand.function()
 
       expect(app.clean).not.toHaveBeenCalled()
-      expect(app.rootGraph.clear).not.toHaveBeenCalled()
+      expect(app.rootGraph?.clear).not.toHaveBeenCalled()
       expect(api.dispatchCustomEvent).not.toHaveBeenCalled()
     })
   })

@@ -59,9 +59,10 @@ export function useFocusNode() {
   ) {
     if (!canvasStore.canvas) return
 
+    const rootGraph = app.rootGraph
     const graphNode = executionIdMap
       ? executionIdMap.get(nodeId)
-      : getNodeByExecutionId(app.rootGraph, nodeId)
+      : rootGraph && getNodeByExecutionId(rootGraph, nodeId)
     if (!graphNode?.graph) return
 
     await focusNodeInstance(graphNode)

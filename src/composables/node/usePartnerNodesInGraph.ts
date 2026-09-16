@@ -23,9 +23,11 @@ export interface PartnerNodeInfo {
  */
 export function scanPartnerNodesInGraph(): PartnerNodeInfo[] {
   if (!app.isGraphReady) return []
+  const rootGraph = app.rootGraph
+  if (!rootGraph) return []
   const nodeDefStore = useNodeDefStore()
   const partnerNodesByName = reduceAllNodes<Map<string, PartnerNodeInfo>>(
-    app.rootGraph,
+    rootGraph,
     (found, node) => {
       const nodeDef = nodeDefStore.fromLGraphNode(node)
       if (nodeDef?.api_node) {
