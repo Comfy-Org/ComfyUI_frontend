@@ -222,15 +222,15 @@ export function useRemoteWidget<
   }
 
   async function waitForInventory(signal?: AbortSignal): Promise<void> {
-    if (signal?.aborted) return
-    let inFlight = dataCache.get(cacheKey)?.fetchPromise
-    while (inFlight) {
-      await inFlight.catch(() => undefined)
-      if (signal?.aborted) return
-      inFlight = dataCache.get(cacheKey)?.fetchPromise
+    while (!signal?.aborted) {
+      const inFlight = dataCache.get(cacheKey)?.fetchPromise
+      if (inFlight) {
+        await inFlight.catch(() => undefined)
+        continue
+      }
+      await new Promise<void>((resolve) => getValue(resolve))
+      if (!dataCache.get(cacheKey)?.fetchPromise) return
     }
-    await new Promise<void>((resolve) => getValue(resolve))
-    if (dataCache.get(cacheKey)?.fetchPromise) await waitForInventory(signal)
   }
 
   /**
