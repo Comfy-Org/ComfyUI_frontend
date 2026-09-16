@@ -97,3 +97,22 @@ function blobToDataUrl(blob: Blob): Promise<string> {
     reader.readAsDataURL(blob)
   })
 }
+
+/** Offscreen capture edge for generated model thumbnails, in pixels. */
+export const THUMBNAIL_CAPTURE_SIZE = 256
+
+/**
+ * Persist a captured thumbnail from its data URL. Best-effort: a failed
+ * conversion or upload never surfaces - the captured preview still renders.
+ */
+export async function persistThumbnailFromDataUrl(
+  name: string,
+  dataUrl: string
+): Promise<void> {
+  try {
+    const blob = await (await fetch(dataUrl)).blob()
+    await persistThumbnail(name, blob)
+  } catch {
+    return
+  }
+}
