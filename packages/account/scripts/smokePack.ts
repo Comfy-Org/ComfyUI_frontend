@@ -297,6 +297,17 @@ export interface Types {
 }
 
 export const exchange: Types['ingestTypes'] = zExchangeTokenResponse.parse({})
+
+export interface RejectedByRealDeclarations {
+  // @ts-expect-error an any-typed declaration would accept this
+  session: SessionSnapshot['noSuchProperty']
+  // @ts-expect-error an any-typed declaration would accept this
+  passwordRules: InstanceType<typeof PasswordRules>['$props']['noSuchProp']
+  // @ts-expect-error an any-typed declaration would accept this
+  socialAuthButtons: InstanceType<typeof SocialAuthButtons>['$props']['noSuchProp']
+  // @ts-expect-error an any-typed declaration would accept this
+  turnstileWidget: InstanceType<typeof TurnstileWidget>['$props']['noSuchProp']
+}
 `
 
 function assertTypedConsumerCoversEveryExport(manifest: Manifest): void {
