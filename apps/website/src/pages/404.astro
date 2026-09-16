@@ -14,7 +14,7 @@ const { locale } = pageContext(
   title={t('notFound.meta.title', locale)}
   noindex>
   <div
-    class="flex w-full flex-col items-center p-4 h-[calc(100dvh-12rem)]">
+    class="flex h-[calc(100dvh-12rem)] w-full flex-col items-center p-4">
     <div class="flex shrink-0 flex-col items-center gap-3 text-center">
       <div class="w-[220px] max-w-[60%]">
         <svg
@@ -36,7 +36,7 @@ const { locale } = pageContext(
         Looks like this node went off-grid.
       </p>
       <p
-        class="font-mono text-sm tracking-[0.05em] opacity-75"
+        class="font-mono text-sm tracking-wider opacity-75"
         >Score: <span id="scoreNow">0</span><span
           class="mx-2.5 opacity-50">|</span
         >Best: <span id="scoreBest">0</span></p

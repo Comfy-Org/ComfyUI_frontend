@@ -1,6 +1,8 @@
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { useTelemetry } from '@/platform/telemetry'
+
 import { useCoreCommands } from '@/composables/useCoreCommands'
 import { useExternalLink } from '@/composables/useExternalLink'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
@@ -116,14 +118,7 @@ vi.mock<unknown>(import('@/services/litegraphService'), () => ({
   }))
 }))
 
-const mockTrackHelpResourceClicked = vi.hoisted(() => vi.fn())
-vi.mock<unknown>(import('@/platform/telemetry'), () => ({
-  useTelemetry: vi.fn(() => ({
-    trackHelpResourceClicked: mockTrackHelpResourceClicked,
-    trackRunButton: vi.fn(),
-    trackWorkflowExecution: vi.fn()
-  }))
-}))
+vi.mock(import('@/platform/telemetry'))
 
 const mockShowAbout = vi.hoisted(() => vi.fn())
 const mockShowSettings = vi.hoisted(() => vi.fn())
@@ -169,9 +164,7 @@ const mockChangeTracker = vi.hoisted(() => ({
 
 let mockWorkflowStore: ReturnType<typeof useWorkflowStore>
 
-vi.mock<unknown>(import('@/composables/auth/useAuthActions'), () => ({
-  useAuthActions: vi.fn(() => ({}))
-}))
+vi.mock(import('@/composables/auth/useAuthActions'))
 
 vi.mock<unknown>(
   import('@/platform/cloud/subscription/composables/useSubscription'),
@@ -746,7 +739,7 @@ describe('useCoreCommands', () => {
     it('Comfy.Help.OpenComfyUIIssues opens the GitHub issues URL and tracks telemetry', async () => {
       await findCmd('Comfy.Help.OpenComfyUIIssues').function()
 
-      expect(mockTrackHelpResourceClicked).toHaveBeenCalledWith(
+      expect(useTelemetry()?.trackHelpResourceClicked).toHaveBeenCalledWith(
         expect.objectContaining({
           resource_type: 'github',
           is_external: true,
@@ -759,7 +752,7 @@ describe('useCoreCommands', () => {
     it('Comfy.Help.OpenComfyOrgDiscord opens the Discord URL and tracks telemetry', async () => {
       await findCmd('Comfy.Help.OpenComfyOrgDiscord').function()
 
-      expect(mockTrackHelpResourceClicked).toHaveBeenCalledWith(
+      expect(useTelemetry()?.trackHelpResourceClicked).toHaveBeenCalledWith(
         expect.objectContaining({
           resource_type: 'discord'
         })

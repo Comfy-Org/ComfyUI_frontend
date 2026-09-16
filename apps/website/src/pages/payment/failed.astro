@@ -18,3 +18,10 @@ const { locale } = pageContext(
 >
   <PaymentStatusSection locale={locale} status="failed" />
 </BaseLayout>
+
+<script>
+  if (window.opener) {
+    window.opener.focus()
+    window.close()
+  }
+</script>

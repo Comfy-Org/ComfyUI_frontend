@@ -40,7 +40,7 @@ const EXCLUDED_PAGES = new Set([
   '/login', // auth surface, noindex
   '/signup', // auth surface, noindex
   '/payment/failed', // checkout return page
-  '/payment/success', // checkout return page
+  '/payment/success', // payment status page
   '/case-studies', // "Coming Soon" placeholder
   '/videos', // "Coming Soon" placeholder
   '/demos', // index is a "Coming Soon" placeholder; the demo pages are listed

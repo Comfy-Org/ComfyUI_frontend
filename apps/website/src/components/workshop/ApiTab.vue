@@ -198,7 +198,7 @@ const highlightLanguage = {
 
     <div
       v-if="snippet"
-      class="bg-transparency-white-t4 overflow-hidden rounded-2xl border border-transparency-white-t20"
+      class="overflow-hidden rounded-2xl border border-transparency-white-t20 bg-transparency-white-t4"
     >
       <div
         class="flex items-center justify-between border-b border-transparency-white-t8 px-3 py-2"

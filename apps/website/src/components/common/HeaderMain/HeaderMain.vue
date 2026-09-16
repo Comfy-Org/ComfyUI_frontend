@@ -13,7 +13,6 @@ import type { Locale } from '../../../i18n/translations.ts'
 import { t } from '../../../i18n/translations.ts'
 import { externalLinks, getRoutes } from '../../../config/routes.ts'
 import { subscribeToWorkshopBuyCredits } from '../../../config/workshop-buy-credits.ts'
-import { announceTopUpReturnFromLocation } from '../../../lib/workshop/topup-return.ts'
 import {
   useWorkshopAuthFlag,
   useWorkshopEnabled
@@ -53,7 +52,6 @@ const buyCreditsDialogMounted = ref(false)
 let stopBuyCreditsRequests: (() => void) | undefined
 
 onMounted(() => {
-  announceTopUpReturnFromLocation()
   stopBuyCreditsRequests = subscribeToWorkshopBuyCredits(() => {
     if (showAccount.value) buyingCredits.value = true
   })
@@ -62,8 +60,6 @@ onBeforeUnmount(() => stopBuyCreditsRequests?.())
 watch(
   showAccount,
   (enabled) => {
-    // Once a checkout has started, a later flag refresh must not unmount its
-    // return listener or close the tab it owns.
     if (enabled) buyCreditsDialogMounted.value = true
   },
   { immediate: true }

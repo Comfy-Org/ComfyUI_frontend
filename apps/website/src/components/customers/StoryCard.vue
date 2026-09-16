@@ -26,7 +26,7 @@ const href = computed(() => localizeHref(`/customers/${story.slug}`, locale))
 <template>
   <a
     :href="href"
-    class="bg-transparency-white-t4 group flex flex-col overflow-hidden rounded-3xl transition-colors hover:bg-white/8"
+    class="group flex flex-col overflow-hidden rounded-3xl bg-transparency-white-t4 transition-colors hover:bg-white/8"
   >
     <div class="m-2 aspect-video overflow-hidden rounded-2xl">
       <div
@@ -38,7 +38,7 @@ const href = computed(() => localizeHref(`/customers/${story.slug}`, locale))
     <div class="flex flex-1 flex-col justify-between px-6 pt-4 pb-6">
       <div>
         <span
-          class="text-primary-comfy-yellow text-[10px] font-semibold tracking-widest uppercase"
+          class="text-[10px] font-semibold tracking-widest text-primary-comfy-yellow uppercase"
         >
           {{ story.category }}
         </span>
@@ -56,7 +56,7 @@ const href = computed(() => localizeHref(`/customers/${story.slug}`, locale))
         class="mt-8 flex items-center gap-3 text-xs font-semibold tracking-widest uppercase"
       >
         <span
-          class="bg-primary-comfy-yellow flex size-8 items-center justify-center rounded-full"
+          class="flex size-8 items-center justify-center rounded-full bg-primary-comfy-yellow"
         >
           <img src="/icons/arrow-right.svg" alt="" class="ml-0.5 size-3" />
         </span>

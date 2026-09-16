@@ -78,7 +78,7 @@ snapshot-diff, no `LitegraphMutator` in the end state.
 
 This supersedes the ADR-009-style `LitegraphMutator`/snapshot-diff/semantic-projector
 direction recorded in the workspace; that code remains only as the interim POC behind the
-env gate.
+product gate described below.
 
 **Distribution boundaries.** Keep one branch and one follower implementation, with
 surface differences isolated behind a small distribution-resolved boundary (rejecting
@@ -144,7 +144,8 @@ op-layer package DOM/litegraph-free via the import-graph guard.
 
 - The end-state follower depends on the semantic domain stores becoming Yjs-backed; only
   `layoutStore` is Yjs-backed today, so the real dependency is extending that pattern per
-  store. Until then the interim `LitegraphMutator` POC remains behind the env gate.
+  store. The product gate below controls follower lifetime, independently of the
+  renderer migration.
 - The largest risk is accidental cloud coupling in the existing same-origin `/ws`
   transport: if ingest-specific paths, M2M assumptions, or Vite proxy behavior leak past
   the seam, Local/Desktop can pass contract tests while failing as products. Boundary
@@ -208,3 +209,71 @@ The follower code on this branch splits into a durable core and a disposable spi
   the interim SUBGRAPH-PROMOTION-0009-lineage render path and are deleted when the
   apply-remote-update→store adapter lands. Coverage or review findings on these files
   route to the store-adapter work, not to polishing the spike.
+
+## Amendment (2026-09-12): product gate and developer diagnostics
+
+The runtime product flag, not a build flag, controls follower transport. The
+source of truth is `agentPanelStore.enabled`, also consumed by the docked panel
+and human-operation mint wiring. `useAgentCrdtFollower` observes that store:
+disabled means no client, bridge, adapter, subscription or operation sender;
+enablement starts one scoped follower; revocation synchronously disposes it,
+including listeners, retries and graph watchers. Re-enabling starts a new
+lifetime against the current workflow. Ordinary reconnects and sequence gaps
+within an enabled lifetime retain their existing state-vector recovery behavior.
+
+### Current gate map
+
+```text
+PostHog agent-in-app-experience ─┐
+existing development override ──┴─> agentPanelStore.enabled
+                                      ├─> docked panel mount
+                                      ├─> follower lifetime / transport
+                                      └─> human-operation mint admission
+
+crdtDebug URL / saved choice ─> diagnostics resolver ─┐
+agentPanelStore.enabled ──────────────────────────────┴─> debug panel
+
+host document updates ─> follower ─> frontend stores / canvas
+human semantic operations ─> host applier (never raw shared-doc writes)
+```
+
+`src/extensions/core/agentPanel.ts` currently obtains the product flag from
+`utils/postHogFlagSource.ts`. It retains the existing development-mode override
+and settles the panel gate separately from flag enablement. The general
+`useFeatureFlags` pipeline exists, but is not yet the agent flag's source on
+main. [The pending feature-pipeline migration](https://github.com/Comfy-Org/ComfyUI_frontend/pull/16208)
+changes that producer; the follower continues to consume the same store rather
+than adding a second PostHog or server-feature reader.
+
+| Surface       | Product transport control                               | Diagnostics                                              |
+| ------------- | ------------------------------------------------------- | -------------------------------------------------------- |
+| Cloud         | `agentPanelStore.enabled`                               | Existing production-hostname denial on `cloud.comfy.org` |
+| Desktop       | Same store; no distribution bypass                      | Existing `crdtDebug` resolver                            |
+| Local ComfyUI | Same store; no distribution bypass                      | Existing `crdtDebug` resolver                            |
+| Dev/ephemeral | Same store, including the existing development override | URL-controlled; existing development default retained    |
+
+`?crdtDebug=1` enables diagnostics on allowed hosts; `?crdtDebug=0` disables
+them. The existing persisted preference and log-level controls are unchanged.
+Diagnostics cannot enable follower transport, and disabling diagnostics does
+not disable product transport. `window.__agentCrdtPoc` is no longer installed;
+the debug panel consumes a read-only snapshot callback.
+
+The legacy `followerGate.ts` resolver remains unused by production callers.
+`agentCrdtFollower`, `Comfy.Agent.CrdtFollower`, and
+`VITE_AGENT_CRDT_FOLLOWER` are not product controls. The historical
+`dev:cloud:crdt` script still sets the latter, but it does not select transport
+enablement. This map supersedes the earlier env-gate descriptions in this ADR.
+
+This frontend gate is not a server authorization boundary. Endpoint selection,
+unified authentication, remote model access, and the one-way shared-document
+follower invariant above remain unchanged. No Local or Desktop transport is
+claimed operational solely because its feature gate is enabled.
+
+### Glossary
+
+- **Product gate:** the existing agent feature flag resolved into the panel store.
+- **Follower lifetime:** resources between product enablement and disablement or unmount.
+- **Diagnostics:** the optional debug panel, snapshot and logging controls.
+- **CRDT:** conflict-free replicated data type; here, the host-produced Yjs document.
+- **Distribution:** the build's cloud, desktop or localhost endpoint/configuration category,
+  not a rollout decision.

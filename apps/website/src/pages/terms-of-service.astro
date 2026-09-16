@@ -20,7 +20,7 @@ const { locale } = pageContext(
   noindex
 >
   <HeroSection title={t('tos.hero.title', locale)} />
-  <p class="text-primary-warm-gray mt-2 text-center text-sm">
+  <p class="mt-2 text-center text-sm text-primary-warm-gray">
     {t('tos.effectiveDateLabel', locale)}: {t('tos.effectiveDate', locale)}
   </p>
   <ContentSection locale={locale} prefix="tos" client:load />

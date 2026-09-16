@@ -76,7 +76,7 @@ const clearButtonClass =
       data-testid="workshop-search-button"
       :class="
         cn(
-          'focus-visible:ring-brand flex h-10 w-full cursor-pointer items-center gap-2 rounded-xl bg-white/8 px-3 text-left text-sm outline-none hover:bg-white/12 focus-visible:ring-2 sm:hidden',
+          'flex h-10 w-full cursor-pointer items-center gap-2 rounded-xl bg-white/8 px-3 text-left text-sm outline-none hover:bg-white/12 focus-visible:ring-2 focus-visible:ring-brand sm:hidden',
           query ? 'text-primary-warm-white' : 'text-primary-warm-gray'
         )
       "
@@ -120,7 +120,7 @@ const clearButtonClass =
     <DialogRoot v-model:open="sheetOpen">
       <DialogPortal>
         <DialogContent
-          class="bg-page fixed inset-x-0 top-0 z-50 flex flex-col sm:hidden"
+          class="fixed inset-x-0 top-0 z-50 flex flex-col bg-page sm:hidden"
           :style="sheetStyle"
           :aria-describedby="undefined"
           data-testid="workshop-search-sheet"
@@ -192,7 +192,7 @@ const clearButtonClass =
             </button>
             <button
               type="button"
-              class="bg-primary-comfy-yellow hover:bg-primary-comfy-yellow/90 h-11 flex-1 cursor-pointer rounded-2xl text-sm font-bold text-primary-comfy-ink"
+              class="h-11 flex-1 cursor-pointer rounded-2xl bg-primary-comfy-yellow text-sm font-bold text-primary-comfy-ink hover:bg-primary-comfy-yellow/90"
               data-testid="workshop-search-sheet-apply"
               @click="sheetOpen = false"
             >

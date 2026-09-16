@@ -71,13 +71,13 @@ export function buildTemplateModelJoin(
 
   for (const template of templates) {
     if (!template.tags.includes('API')) continue
-    if (modelNamedBy(template, models)) continue
 
     const exactId = EXACT_ROUTER_IDS.get(template.name)
+    const exactSlug = EXACT_MODEL_SLUGS.get(template.name)
+    if (!exactId && !exactSlug && modelNamedBy(template, models)) continue
     const family = decodeFromName(template.name)
     const sourceSlug =
-      EXACT_MODEL_SLUGS.get(template.name) ??
-      (exactId ? exactId.replace('/', '--') : family)
+      exactSlug ?? (exactId ? exactId.replace('/', '--') : family)
     if (!sourceSlug) continue
     const slug = routerModelSlugAliases.get(sourceSlug) ?? sourceSlug
     const model = partnerModelFor(template, models, slug)
