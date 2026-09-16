@@ -772,7 +772,7 @@ function fmtTime(at: number): string {
         </ToggleGroupItem>
       </ToggleGroup>
 
-      <div class="min-h-0 flex-1 space-y-3 overflow-y-auto p-2">
+      <div class="min-h-16 flex-1 space-y-3 overflow-y-auto p-2">
         <template v-if="tab === 'status'">
           <section>
             <div class="mb-1 font-bold text-muted-foreground">
@@ -1078,7 +1078,9 @@ function fmtTime(at: number): string {
         </template>
       </div>
 
-      <footer class="shrink-0 border-t border-component-node-border p-2">
+      <footer
+        class="min-h-0 overflow-y-auto border-t border-component-node-border p-2"
+      >
         <div class="mb-1 text-muted-foreground">
           {{ t('agent.diagnosticReport.includedSources') }}
         </div>
