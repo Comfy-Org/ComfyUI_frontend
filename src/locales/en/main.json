@@ -3456,7 +3456,10 @@
       "copyAll": "Copy invite link | Copy all links ({count})",
       "invalidTitle": "This invite link is no longer valid",
       "invalidBody": "It may have expired or been replaced. Ask the person who invited you for a new link.",
-      "invalidDismiss": "Got it"
+      "invalidDismiss": "Got it",
+      "wrongAccountTitle": "This invite was sent to a different email",
+      "wrongAccountBody": "You're signed in as {email}. Sign in with the email that received this invite to accept it.",
+      "switchAccount": "Switch account"
     },
     "createWorkspaceDialog": {
       "title": "Create a new workspace",

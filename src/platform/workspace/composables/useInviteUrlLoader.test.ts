@@ -47,9 +47,13 @@ vi.mock<unknown>(import('vue-router'), () => ({
 const mockShowInviteLinkInvalidDialog = vi.hoisted(() =>
   vi.fn<() => Promise<void>>()
 )
+const mockShowInviteWrongAccountDialog = vi.hoisted(() =>
+  vi.fn<(props: { inviteToken: string }) => Promise<void>>()
+)
 vi.mock<unknown>(import('@/services/dialogService'), () => ({
   useDialogService: () => ({
-    showInviteLinkInvalidDialog: mockShowInviteLinkInvalidDialog
+    showInviteLinkInvalidDialog: mockShowInviteLinkInvalidDialog,
+    showInviteWrongAccountDialog: mockShowInviteWrongAccountDialog
   })
 }))
 
@@ -183,7 +187,7 @@ describe('useInviteUrlLoader', () => {
       expect(mockRouterReplace).toHaveBeenCalledWith({ query: {} })
     })
 
-    it('keeps the error toast for a wrong-account 403', async () => {
+    it('shows the wrong-account dialog with the token on 403', async () => {
       mockRouteQuery.value = { invite: 'other-account-token' }
       vi.mocked(useTeamWorkspaceStore().acceptInvite).mockRejectedValue(
         new WorkspaceApiError('Email does not match invite', 403)
@@ -193,11 +197,10 @@ describe('useInviteUrlLoader', () => {
       await loadInviteFromUrl()
 
       expect(mockShowInviteLinkInvalidDialog).not.toHaveBeenCalled()
-      expect(mockToastAdd).toHaveBeenCalledWith({
-        severity: 'error',
-        summary: 'Failed to Accept Invite',
-        detail: 'Email does not match invite'
+      expect(mockShowInviteWrongAccountDialog).toHaveBeenCalledWith({
+        inviteToken: 'other-account-token'
       })
+      expect(mockToastAdd).not.toHaveBeenCalled()
     })
 
     it('shows error toast when invite acceptance fails', async () => {

@@ -702,6 +702,19 @@ export const useDialogService = () => {
     })
   }
 
+  async function showInviteWrongAccountDialog(props: { inviteToken: string }) {
+    const { default: component } =
+      await import('@/platform/workspace/components/dialogs/InviteWrongAccountDialogContent.vue')
+    return dialogStore.showDialog({
+      key: 'invite-wrong-account',
+      component,
+      props,
+      dialogComponentProps: {
+        ...workspaceDialogProps
+      }
+    })
+  }
+
   async function showRevokeInviteDialog(inviteId: string) {
     const { default: component } =
       await import('@/platform/workspace/components/dialogs/RevokeInviteDialogContent.vue')
@@ -927,6 +940,7 @@ export const useDialogService = () => {
     showInviteMemberDialog,
     showInviteMemberUpsellDialog,
     showInviteLinkInvalidDialog,
+    showInviteWrongAccountDialog,
     showBillingComingSoonDialog,
     showCancelSubscriptionDialog,
     showCancelSubscriptionFlow,
