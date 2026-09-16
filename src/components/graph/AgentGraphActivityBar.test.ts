@@ -155,6 +155,53 @@ describe('AgentGraphActivityBar', () => {
     expect(writingBar()).toBeInTheDocument()
   })
 
+  it('includes nodes delivered in the same task as turn start', async () => {
+    renderBar()
+
+    useWorkflowTabActivityStore().setAgentRunning(true)
+    await agentAddsNodes()
+
+    expect(writingBar()).toBeInTheDocument()
+    expect(viewButton()).toHaveTextContent(VIEW_NODE)
+  })
+
+  it('retains live additions when the activity view remounts', async () => {
+    const first = renderBar()
+    await turnRuns(true)
+    await agentAddsNodes(2)
+    expect(writingBar()).toBeInTheDocument()
+
+    first.unmount()
+    renderBar()
+    await nextTick()
+
+    expect(writingBar()).toBeInTheDocument()
+    expect(viewButton()).toHaveTextContent(VIEW_NODES)
+  })
+
+  it('keeps pending activity on the recipient when tabs switch before flush', async () => {
+    const workflowStore = useWorkflowStore()
+    const recipient = fromPartial<LoadedComfyWorkflow>({ path: 'agent.json' })
+    workflowStore.activeWorkflow = recipient
+    renderBar()
+    await turnRuns(true)
+
+    useAgentGeneratedNodesStore().markGenerated(
+      createNodeLocatorId(null, toNodeId(++nextNodeId))
+    )
+    workflowStore.activeWorkflow = fromPartial<LoadedComfyWorkflow>({
+      path: 'other.json'
+    })
+    await nextTick()
+
+    expect(writingBar()).not.toBeInTheDocument()
+
+    workflowStore.activeWorkflow = recipient
+    await nextTick()
+
+    expect(writingBar()).toBeInTheDocument()
+  })
+
   it('tells the user the graph is still theirs to edit', async () => {
     renderBar()
     await turnRuns(true)

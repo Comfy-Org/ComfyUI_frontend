@@ -128,6 +128,21 @@ describe('graphMutations', () => {
     ).toBeUndefined()
   })
 
+  it('does not transfer provenance through graph reset and historical hydration', () => {
+    const graph = mutations()
+    const locator = createNodeLocatorId(null, toNodeId(23))
+    const agentNodes = useAgentGeneratedNodesStore()
+    expect(graph.addNode(node(23), context)).toBe(true)
+    expect(agentNodes.generatedAtFor(locator)).toBeTypeOf('number')
+
+    expect(graph.clearSemanticGraph(context)).toBe(true)
+    expect(
+      graph.addNode(node(23, { seed: 987 }), { ...context, hydration: true })
+    ).toBe(true)
+
+    expect(agentNodes.generatedAtFor(locator)).toBeUndefined()
+  })
+
   it('drops a stale mark when a human takes the id', () => {
     const agentNodes = useAgentGeneratedNodesStore()
     const locatorId = createNodeLocatorId(null, toNodeId(21))
