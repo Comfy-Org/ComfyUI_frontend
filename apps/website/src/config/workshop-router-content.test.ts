@@ -141,11 +141,16 @@ describe('Router catalog form projection', () => {
     expect(create.href).not.toBe(edit.href)
     expect(create.useCases).toEqual(['generate-images'])
     expect(edit.useCases).toEqual(['edit-images'])
-    expect(edit.examples).toEqual([])
-    expect(create.examples).not.toEqual([])
-    expect(
-      create.examples.every((example) => example.name.startsWith(create.slug))
-    ).toBe(true)
+    for (const model of [create, edit]) {
+      expect(model.examples).not.toEqual([])
+      expect(
+        model.examples.every((example) => example.name.startsWith(model.slug))
+      ).toBe(true)
+    }
+    expect(edit.examples.every((example) => example.sampleOnly)).toBe(true)
+    expect(edit.examples.map((example) => example.name)).not.toEqual(
+      create.examples.map((example) => example.name)
+    )
     expect(getRouterWorkshopModelDetail('byteplus--seedream-4-5')).toBe(create)
     for (const model of [create, edit])
       expect(routerContentBySlug.get(model.slug)?.overlay.slug).toBe(model.slug)
@@ -156,7 +161,7 @@ describe('Router catalog form projection', () => {
     if (!model?.execution) throw new Error('Missing model')
     const prompt = routerContentById
       .get(model.routerId)
-      ?.filter(({ alias }) => !alias.contentIssue)
+      ?.filter(({ binding }) => !binding.contentIssue)
       .flatMap(({ overlay }) => overlay.examples)
       .map((example) => example.values.prompt)
       .find((value) => typeof value === 'string' && value.trim())

@@ -7,7 +7,7 @@ const { class: className } = defineProps<{
 </script>
 
 <template>
-  <div :class="cn('bg-transparency-white-t4 rounded-5xl p-2', className)">
+  <div :class="cn('rounded-5xl bg-transparency-white-t4 p-2', className)">
     <slot />
   </div>
 </template>

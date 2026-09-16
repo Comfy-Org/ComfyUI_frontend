@@ -35,9 +35,7 @@ for (const { entry, randomUUID, failRead } of [
       })
     await page.goto(path)
     const chooser = page.waitForEvent('filechooser')
-    await page
-      .getByText('Choose images or drop them here', { exact: true })
-      .click()
+    await page.getByText(/^Select or drop /).click()
     await (await chooser).setFiles('e2e/assets/placeholder-1x1.webp')
     const replacement = page.getByRole('button', {
       name: 'Replace placeholder-1x1.webp'
@@ -62,7 +60,7 @@ for (const { entry, randomUUID, failRead } of [
     if (failRead) {
       await expect(
         page.getByText(
-          'Some saved inputs could not be restored. Check your inputs and select your files again.'
+          'We could not restore all of your saved inputs. Check the form and pick your files again.'
         )
       ).toBeVisible()
       await page.reload()
@@ -154,16 +152,14 @@ test('unavailable draft storage does not trap sign-in and reports missing files 
   })
   await page.goto(path)
   const chooser = page.waitForEvent('filechooser')
-  await page
-    .getByText('Choose images or drop them here', { exact: true })
-    .click()
+  await page.getByText(/^Select or drop /).click()
   await (await chooser).setFiles('e2e/assets/placeholder-1x1.webp')
   await page.getByRole('link', { name: 'Sign in to run', exact: true }).click()
   await expect(page).toHaveURL(/\/login\/\?returnTo=/)
   await page.goto(path)
   await expect(
     page.getByText(
-      'Some saved inputs could not be restored. Check your inputs and select your files again.'
+      'We could not restore all of your saved inputs. Check the form and pick your files again.'
     )
   ).toBeVisible()
   await expect(
@@ -203,6 +199,31 @@ test.describe('Narrow account menu', () => {
         return box.x >= 0 && box.x + box.width <= viewport
       })
       .toBe(true)
+  })
+
+  test('names the workspace the credits belong to, apart from the person', async ({
+    page,
+    modelsAccount
+  }) => {
+    await page.goto('/login/')
+    await page.getByRole('button', { name: 'Use email instead' }).click()
+    await page.getByLabel('Email').fill(modelsAccount.email)
+    await page
+      .getByLabel('Password', { exact: true })
+      .fill(modelsAccount.password)
+    await page.getByRole('button', { name: 'Sign in', exact: true }).click()
+    await expect(page).toHaveURL('/')
+
+    await page
+      .getByTestId('mobile-nav-cta')
+      .getByTestId('header-account')
+      .click()
+
+    const workspace = page.getByTestId('account-workspace-current')
+    await expect(workspace).toContainText('Personal')
+    const identity = page.getByTestId('account-identity')
+    await expect(identity).toContainText(modelsAccount.email)
+    await expect(identity).not.toContainText('Personal')
   })
 
   test('opens one shared credits dialog and resets it after closing', async ({

@@ -1,9 +1,6 @@
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import {
-  type ComfyNodeDef,
-  type InputSpec,
-  isMediaUploadComboInput
-} from '@/schemas/nodeDefSchema'
+import { isMediaUploadComboInput } from '@/schemas/nodeDefSchema'
+import type { ComfyNodeDef, InputSpec } from '@/schemas/nodeDefSchema'
 
 import { app } from '../../scripts/app'
 

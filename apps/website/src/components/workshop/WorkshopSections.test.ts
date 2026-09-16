@@ -1,4 +1,3 @@
-// @vitest-environment happy-dom
 import userEvent from '@testing-library/user-event'
 import { fireEvent, render, screen, within } from '@testing-library/vue'
 import { afterEach, describe, expect, it } from 'vitest'
@@ -91,7 +90,8 @@ describe('WorkshopSections', () => {
       props: { models: entries, labelKey, sort: 'name' }
     })
     const shelf = within(screen.getByTestId('section-other-formats'))
-    expect(shelf.getByRole('button', { name: 'Other formats 10' })).toBeTruthy()
+    expect(shelf.getByRole('button', { name: 'Other formats' })).toBeTruthy()
+    expect(shelf.getByRole('button', { name: 'See all (10)' })).toBeTruthy()
     expect(
       shelf
         .getAllByRole('heading', { level: 3 })
@@ -138,15 +138,20 @@ describe('WorkshopSections', () => {
     expect(names).toEqual(['a', 'b'])
   })
 
-  it('asks the catalog to open the section behind its title', async () => {
-    const { emitted } = render(WorkshopSections, {
-      props: { models, labelKey }
-    })
+  it.for(['open', 'see-all'])(
+    'asks the catalog to open the section from its %s control',
+    async (control) => {
+      const { emitted } = render(WorkshopSections, {
+        props: { models, labelKey }
+      })
 
-    await userEvent.click(screen.getByTestId('section-generate-videos-open'))
+      await userEvent.click(
+        screen.getByTestId(`section-generate-videos-${control}`)
+      )
 
-    expect(emitted().open).toEqual([['generate-videos']])
-  })
+      expect(emitted().open).toEqual([['generate-videos']])
+    }
+  )
 
   it('opens the sparse formats as one combined section', async () => {
     const sparse = [
@@ -158,7 +163,7 @@ describe('WorkshopSections', () => {
       props: { models: sparse, labelKey }
     })
 
-    await userEvent.click(screen.getByTestId('section-other-formats-open'))
+    await userEvent.click(screen.getByTestId('section-other-formats-see-all'))
 
     expect(emitted().open).toEqual([['other']])
   })

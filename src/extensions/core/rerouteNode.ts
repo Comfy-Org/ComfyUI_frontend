@@ -79,7 +79,7 @@ app.registerExtension({
 
         // Find root input
         let currentNode: RerouteNode | null = this
-        let updateNodes: RerouteNode[] = []
+        const updateNodes: RerouteNode[] = []
         let inputType = null
         let inputNode = null
         while (currentNode) {

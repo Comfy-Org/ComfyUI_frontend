@@ -44,7 +44,7 @@ const {
 </script>
 
 <template>
-  <section :class="cn('max-w-9xl mx-auto px-6 py-16 lg:py-24', className)">
+  <section :class="cn('mx-auto max-w-9xl px-6 py-16 lg:py-24', className)">
     <SectionHeader v-if="heading" :label="eyebrow" max-width="xl">
       {{ heading }}
       <template v-if="description" #subtitle>
@@ -63,11 +63,11 @@ const {
       >
         <article
           v-if="featuredOffer"
-          class="bg-transparency-white-t4 flex min-h-96 flex-col rounded-4xl p-8 md:col-span-2 lg:p-10 xl:row-span-2"
+          class="flex min-h-96 flex-col rounded-4xl bg-transparency-white-t4 p-8 md:col-span-2 lg:p-10 xl:row-span-2"
         >
           <p
             v-if="featuredOffer.label"
-            class="text-primary-comfy-yellow text-xs font-bold tracking-[0.18em] uppercase"
+            class="text-xs font-bold tracking-[0.18em] text-primary-comfy-yellow uppercase"
           >
             {{ featuredOffer.label }}
           </p>
@@ -103,12 +103,12 @@ const {
         <article
           v-for="offer in offers"
           :key="offer.id"
-          class="bg-transparency-white-t4 flex min-h-64 flex-col rounded-4xl p-8"
+          class="flex min-h-64 flex-col rounded-4xl bg-transparency-white-t4 p-8"
           :class="featuredOffer && 'last:md:col-span-2 last:xl:col-span-2'"
         >
           <p
             v-if="offer.label"
-            class="text-primary-comfy-yellow text-xs font-bold tracking-[0.18em] uppercase"
+            class="text-xs font-bold tracking-[0.18em] text-primary-comfy-yellow uppercase"
           >
             {{ offer.label }}
           </p>

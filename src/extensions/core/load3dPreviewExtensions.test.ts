@@ -1,8 +1,13 @@
+import { fromAny, fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import type { useLoad3d } from '@/composables/useLoad3d'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { useToastStore } from '@/platform/updates/common/toastStore'
+import type { ComfyApp } from '@/scripts/app'
 import { app } from '@/scripts/app'
+import type { useExtensionService } from '@/services/extensionService'
+import type { useLoad3dService } from '@/services/load3dService'
 import { toNodeId } from '@/types/nodeId'
 import { createNodeLocatorId } from '@/types/nodeIdentification'
 
@@ -31,41 +36,50 @@ const {
   }
 })
 
-vi.mock('@/services/extensionService', () => ({
-  useExtensionService: () => ({ registerExtension: registerExtensionMock })
+vi.mock(import('@/services/extensionService'), () => ({
+  useExtensionService: () =>
+    fromPartial<ReturnType<typeof useExtensionService>>({
+      registerExtension: registerExtensionMock
+    })
 }))
 
-vi.mock('@/services/load3dService', () => ({
-  useLoad3dService: () => ({ getLoad3d: getLoad3dMock })
+vi.mock(import('@/services/load3dService'), () => ({
+  useLoad3dService: () =>
+    fromPartial<ReturnType<typeof useLoad3dService>>({
+      getLoad3d: getLoad3dMock
+    })
 }))
 
-vi.mock('@/composables/useLoad3d', () => ({
-  useLoad3d: () => ({
-    waitForLoad3d: waitForLoad3dMock,
-    onLoad3dReady: onLoad3dReadyMock
-  }),
-  nodeToLoad3dMap: nodeToLoad3dMapMock
+vi.mock(import('@/composables/useLoad3d'), () => ({
+  useLoad3d: () =>
+    fromPartial<ReturnType<typeof useLoad3d>>({
+      waitForLoad3d: waitForLoad3dMock,
+      onLoad3dReady: onLoad3dReadyMock
+    }),
+  nodeToLoad3dMap: fromAny(nodeToLoad3dMapMock)
 }))
 
-vi.mock('@/extensions/core/load3d/Load3DConfiguration', () => ({
-  default: class {
-    configureForSaveMesh = configureForSaveMeshMock
-  }
+vi.mock(import('@/extensions/core/load3d/Load3DConfiguration'), () => ({
+  default: fromAny(
+    class {
+      configureForSaveMesh = configureForSaveMeshMock
+    }
+  )
 }))
 
-vi.mock('@/extensions/core/load3d/exportMenuHelper', () => ({
+vi.mock(import('@/extensions/core/load3d/exportMenuHelper'), () => ({
   createExportMenuItems: vi.fn(() => [{ content: 'Export' }])
 }))
 
-vi.mock('@/scripts/app', () => ({
-  app: { rootGraph: {} }
+vi.mock(import('@/scripts/app'), () => ({
+  app: fromPartial<ComfyApp>({ rootGraph: {} })
 }))
 
-vi.mock('@/utils/graphTraversalUtil', () => ({
+vi.mock(import('@/utils/graphTraversalUtil'), () => ({
   getNodeByLocatorId: getNodeByLocatorIdMock
 }))
 
-vi.mock('@/i18n', () => ({
+vi.mock(import('@/i18n'), () => ({
   t: (key: string) => key
 }))
 

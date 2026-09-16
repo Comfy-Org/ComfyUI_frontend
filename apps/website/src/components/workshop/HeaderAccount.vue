@@ -239,7 +239,7 @@ async function signOutFromMenu() {
     <a
       v-if="!user"
       :href="signInHref"
-      class="hover:border-primary-comfy-yellow/60 flex h-10 items-center rounded-2xl border border-primary-comfy-canvas/25 px-4 text-xs font-bold tracking-wider text-primary-comfy-canvas uppercase transition-colors"
+      class="flex h-10 items-center rounded-2xl bg-transparency-white-t4 px-6 py-2.5 text-xs font-bold tracking-wider text-primary-comfy-canvas uppercase transition-colors outline-none hover:bg-transparency-white-t8 focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow/50 md:text-sm"
       @pointerdown="prepareSignInHref"
       @focus="prepareSignInHref"
       @click="goToSignIn"
@@ -287,6 +287,8 @@ async function signOutFromMenu() {
       :balance-error="balance.status === 'error'"
       :can-top-up="canTopUp"
       :account-label="accountLabel"
+      :account-name="user.displayName || user.email || user.uid"
+      :account-photo-url="user.photoURL"
       :account-identity="user.email ?? user.displayName"
       :locale
       @retry="retryWorkspaceList"

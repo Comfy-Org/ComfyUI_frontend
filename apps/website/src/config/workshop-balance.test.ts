@@ -1,4 +1,3 @@
-// @vitest-environment happy-dom
 import { describe, expect, it, vi } from 'vitest'
 
 import type { User } from 'firebase/auth'
@@ -226,6 +225,27 @@ describe('createBalanceReader', () => {
     release(balanceResponse(balanceBody(999)))
     await refreshing
 
+    expect(reader.getState()).toEqual({ status: 'unknown' })
+  })
+
+  it('drops a queued forced refresh when reset() runs before the active read settles', async () => {
+    const { fetchImpl, release } = deferredFetch()
+    const reader = createBalanceReader(
+      fakeSession(credentialFor('uid-1', 'jwt-1')),
+      BALANCE_URL,
+      fetchImpl
+    )
+
+    const first = reader.refresh()
+    const forced = reader.refresh({ force: true })
+    reader.reset()
+    release(balanceResponse(balanceBody(7)))
+    await Promise.all([first, forced])
+
+    expect(
+      fetchImpl,
+      'the queued forced read must not start a second fetch after reset'
+    ).toHaveBeenCalledOnce()
     expect(reader.getState()).toEqual({ status: 'unknown' })
   })
 
