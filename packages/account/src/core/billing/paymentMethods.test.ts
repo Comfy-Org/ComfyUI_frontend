@@ -101,6 +101,11 @@ function fakeTransport(answers: BillingResult<BillingHttpResponse>[]) {
   return { transport, calls }
 }
 
+interface SupersedeContext {
+  readonly host: ReturnType<typeof fakeSession>
+  readonly reader: ReturnType<typeof createPaymentMethodsReader>
+}
+
 describe('createPaymentMethodsReader', () => {
   it('reads the saved cards from the payment methods route', async () => {
     const { scopeSource } = fakeSession()
@@ -358,6 +363,41 @@ describe('createPaymentMethodsReader', () => {
       expect(second).toEqual({ status: 'error', code: 'REQUEST_FAILED' })
       expect(reader.getSnapshot()?.methods[0].id).toBe('pm_1')
     })
+
+    it.for([
+      [
+        'the workspace changes',
+        ({ host }: SupersedeContext) =>
+          host.moveTo(authenticated(credential({ workspace: TEAM })))
+      ],
+      [
+        'the reader is disposed',
+        ({ reader }: SupersedeContext) => reader.dispose()
+      ]
+    ] as const)(
+      'reports SUPERSEDED when a failure lands after %s',
+      async ([, supersede]) => {
+        const host = fakeSession()
+        let release = () => {}
+        const gate = new Promise<void>((resolve) => {
+          release = resolve
+        })
+        const transport: BillingTransport = vi.fn(async () => {
+          await gate
+          return httpStatus(500)
+        })
+        const reader = createPaymentMethodsReader({
+          transport,
+          scopeSource: host.scopeSource
+        })
+
+        const pending = reader.read()
+        supersede({ host, reader })
+        release()
+
+        expect(await pending).toEqual({ status: 'error', code: 'SUPERSEDED' })
+      }
+    )
 
     it('drops the published list when a later read is denied', async () => {
       const { scopeSource } = fakeSession()
