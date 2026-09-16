@@ -9,12 +9,11 @@ import MinimaxLicenseHeroSection from '../components/common/MinimaxLicenseHeroSe
 import { pricingOffers } from '../config/pricing'
 import { t } from '../i18n/translations'
 import {
-  absoluteUrl,
   jsonLdId,
   pageContext,
   productNode,
 } from '../utils/jsonLd'
-import { localizeHref } from '../config/routes'
+import { cloudCrumbs } from '../utils/cloudCrumbs'
 
 const { siteUrl, locale, canonicalUrl, canonicalLocale } = pageContext(
   Astro.site,
@@ -29,8 +28,7 @@ const productId = jsonLdId(canonicalUrl, 'product')
   description={t('pricing.meta.description', locale)}
   mainEntityId={productId}
   breadcrumbs={[
-    { name: t('breadcrumb.home', locale), url: absoluteUrl(Astro.site, localizeHref('/', canonicalLocale)) },
-    { name: 'Comfy Cloud', url: absoluteUrl(Astro.site, localizeHref('/cloud', canonicalLocale)) },
+    ...cloudCrumbs(Astro.site, locale, canonicalLocale),
     { name: t('breadcrumb.pricing', locale) },
   ]}
   extraJsonLd={[

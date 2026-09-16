@@ -19,7 +19,6 @@
 // environment variable instead, and dotenv leaves an already-set value alone.
 import 'dotenv/config'
 
-import fs from 'node:fs'
 import path from 'node:path'
 
 import { protectedTokens } from '../../../../scripts/i18n/protected-tokens'
@@ -37,15 +36,9 @@ import {
   preserveTerms,
   websiteTranslationConfig
 } from './config'
+import { writeSortedJson } from './write-json'
 
 const I18N_DIR = path.join(process.cwd(), 'src', 'i18n')
-
-function writeJson(file: string, value: Record<string, string>): void {
-  const sorted: Record<string, string> = {}
-  for (const key of Object.keys(value).sort()) sorted[key] = value[key]
-  fs.mkdirSync(path.dirname(file), { recursive: true })
-  fs.writeFileSync(file, `${JSON.stringify(sorted, null, 2)}\n`, 'utf8')
-}
 
 function requireApiKey(): string {
   const apiKey = process.env.OPENAI_API_KEY
@@ -141,7 +134,7 @@ async function main(): Promise<void> {
 
   const out: Record<string, string> = {}
   for (const [key, value] of translated) out[key] = value
-  writeJson(path.join(I18N_DIR, 'incoming', `${locale}.json`), out)
+  writeSortedJson(path.join(I18N_DIR, 'incoming', `${locale}.json`), out)
 
   const missed = items.length - translated.size
   process.stdout.write(

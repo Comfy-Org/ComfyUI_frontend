@@ -46,6 +46,12 @@ import type { Story } from '../../src/i18n/pipeline/adapters/story'
 import { readTranslationLayer } from '../../src/i18n/pipeline/artifacts'
 import { commitAll } from '../../src/i18n/pipeline/commit'
 import type { TranslationLayer } from '../../src/i18n/pipeline/types'
+import {
+  alreadyOnDisk,
+  exitCheck,
+  writeMode,
+  writtenByPerson
+} from './write-mode'
 
 const TARGET = 'ja'
 const CUSTOMERS_DIR = path.join(process.cwd(), 'src', 'content', 'customers')
@@ -181,7 +187,7 @@ function planStory(
 
   // Asked first, so a person's story is left alone whatever the machine
   // layer holds — it is never overwritten, and never withdrawn.
-  if (already?.machineWritten === false) {
+  if (writtenByPerson(already)) {
     skipped.push(story.slug)
     return
   }
@@ -195,9 +201,7 @@ function planStory(
   }
 
   const contents = buildStory(story, translation)
-  // Byte-identical to what is on disk is not a write, and reporting it as one
-  // left a dry run unable to say whether anything had actually changed.
-  if (fs.existsSync(file) && fs.readFileSync(file, 'utf8') === contents) return
+  if (alreadyOnDisk(file, contents)) return
   planned.push({
     slug: story.slug,
     file,
@@ -287,16 +291,37 @@ function commitPlannedDocuments(
   for (const entry of withdrawn) fs.rmSync(entry.file, { force: true })
 }
 
+function reportWritten(planned: Planned[], withdrawn: unknown[]): void {
+  process.stdout.write(
+    `[i18n] wrote ${planned.length} Japanese story/stories` +
+      (withdrawn.length > 0 ? `, withdrew ${withdrawn.length}` : '') +
+      '.\n'
+  )
+}
+
 function main(): void {
-  const dryRun = process.argv.includes('--dry-run')
-  const check = process.argv.includes('--check')
+  const mode = writeMode()
   // A lookup can miss, and the type has to say so or every guard below reads
   // as dead code to a type-aware linter.
   const machine: Readonly<Partial<Record<string, string>>> = readMachineLayer()
   const { planned, untranslated, skipped, withdrawn, english } =
     planStoryWrites(machine)
-
   const changes = planned.length + withdrawn.length
+
+  if (mode === 'check') {
+    reportStoryPlan(
+      { planned, untranslated, skipped, withdrawn },
+      english.length
+    )
+    exitCheck(
+      changes === 0,
+      'the Japanese story set',
+      `${planned.length} story/stories to write and ${withdrawn.length} to withdraw`,
+      'pnpm i18n:write-story'
+    )
+    return
+  }
+
   if (changes === 0) {
     process.stdout.write(
       '[i18n] Japanese stories are current with the machine layer.\n'
@@ -306,16 +331,7 @@ function main(): void {
 
   reportStoryPlan({ planned, untranslated, skipped, withdrawn }, english.length)
 
-  if (check) {
-    process.stderr.write(
-      `[i18n] ${planned.length} story/stories to write and ${withdrawn.length} ` +
-        'to withdraw: the Japanese stories on disk are behind the machine ' +
-        'layer. Run `pnpm i18n:write-story` and commit the result.\n'
-    )
-    process.exit(1)
-  }
-
-  if (dryRun) {
+  if (mode === 'dry-run') {
     process.stdout.write(
       `[i18n] dry run: ${planned.length} story/stories to write, ` +
         `${withdrawn.length} to withdraw. Nothing written.\n`
@@ -324,12 +340,7 @@ function main(): void {
   }
 
   commitPlannedDocuments(planned, withdrawn)
-
-  process.stdout.write(
-    `[i18n] wrote ${planned.length} Japanese story/stories` +
-      (withdrawn.length > 0 ? `, withdrew ${withdrawn.length}` : '') +
-      '.\n'
-  )
+  reportWritten(planned, withdrawn)
 }
 
 main()

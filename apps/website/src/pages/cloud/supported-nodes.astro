@@ -12,6 +12,7 @@ import {
   pageContext,
 } from '../../utils/jsonLd'
 import { localizeHref } from '../../config/routes'
+import { cloudCrumbs } from '../../utils/cloudCrumbs'
 
 const { locale, canonicalUrl, canonicalLocale } = pageContext(
   Astro.site,
@@ -41,8 +42,7 @@ const packList = itemListNode(
   pageType="CollectionPage"
   mainEntityId={jsonLdId(canonicalUrl, 'itemlist')}
   breadcrumbs={[
-    { name: t('breadcrumb.home', locale), url: absoluteUrl(Astro.site, localizeHref('/', canonicalLocale)) },
-    { name: 'Comfy Cloud', url: absoluteUrl(Astro.site, localizeHref('/cloud', canonicalLocale)) },
+    ...cloudCrumbs(Astro.site, locale, canonicalLocale),
     { name: t('breadcrumb.supportedNodes', locale) },
   ]}
   extraJsonLd={[packList]}

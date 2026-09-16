@@ -47,6 +47,7 @@ import type { Violation } from '../../src/i18n/pipeline/validate'
 import type { EnglishSource } from '../../src/i18n/pipeline/types'
 import { collectViolations } from '../../src/i18n/pipeline/validate'
 import { localeRubric, OUTPUT_LOCALES, preserveTerms } from './config'
+import { writeSortedJson } from './write-json'
 
 const I18N_DIR = path.join(process.cwd(), 'src', 'i18n')
 
@@ -77,13 +78,6 @@ function writeReviewState(file: string, state: ReviewState): void {
     `${JSON.stringify(serializeReviewState(state), null, 2)}\n`,
     'utf8'
   )
-}
-
-function writeJson(file: string, value: Record<string, string>): void {
-  const sorted: Record<string, string> = {}
-  for (const key of Object.keys(value).sort()) sorted[key] = value[key]
-  fs.mkdirSync(path.dirname(file), { recursive: true })
-  fs.writeFileSync(file, `${JSON.stringify(sorted, null, 2)}\n`, 'utf8')
 }
 
 function reportDeterministicResult(
@@ -157,6 +151,42 @@ function configuredLocale() {
   return { locale, output }
 }
 
+/**
+ * The English content-of-record. An absent layer reads as `{}`, which would
+ * pass every translation rather than fail the run: there is no key left to
+ * disagree with.
+ */
+function requireEnglish(): EnglishSource {
+  const englishFile = path.join(I18N_DIR, 'content', 'en.json')
+  const english: EnglishSource = readTranslationLayer(englishFile)
+  if (!isUsableEnglishSource(english)) {
+    throw new Error(
+      `${englishFile} is empty; every translation would enforce against nothing.`
+    )
+  }
+  return english
+}
+
+/**
+ * Remember what was rejected, and only when there is a decision to remember.
+ * A run with nothing rejected and nothing on record leaves the reviewer's
+ * file as it wrote it.
+ */
+function recordRejections(
+  reviewFile: string,
+  reviewState: ReviewState,
+  english: EnglishSource,
+  rejected: readonly string[],
+  published: readonly string[]
+): void {
+  const onRecord = Object.keys(reviewState.rejected ?? {}).length > 0
+  if (rejected.length === 0 && !onRecord) return
+  writeReviewState(
+    reviewFile,
+    withRejections(reviewState, english, rejected, published)
+  )
+}
+
 function main(): void {
   const { locale } = configuredLocale()
 
@@ -164,15 +194,7 @@ function main(): void {
   const incoming = readTranslationLayer(incomingFile)
   const contentFile = path.join(I18N_DIR, 'content', `${locale}.json`)
   const existing = readTranslationLayer(contentFile)
-  const englishFile = path.join(I18N_DIR, 'content', 'en.json')
-  const english: EnglishSource = readTranslationLayer(englishFile)
-  // An absent English layer is `{}`, which would pass every translation rather
-  // than fail the run: there is no key left to disagree with.
-  if (!isUsableEnglishSource(english)) {
-    throw new Error(
-      `${englishFile} is empty; every translation would enforce against nothing.`
-    )
-  }
+  const english = requireEnglish()
   const terms = preserveTerms()
 
   const violations = collectViolations(english, incoming, locale, terms)
@@ -222,16 +244,14 @@ function main(): void {
 
   reportReviewResult(locale, merged, findings, rejected, rejectedShare)
 
-  writeJson(contentFile, published)
-
-  // Only when there is a decision to remember. A run with nothing rejected
-  // and nothing published anew leaves the reviewer's file as it wrote it.
-  if (rejected.length > 0 || Object.keys(reviewState.rejected ?? {}).length) {
-    writeReviewState(
-      reviewFile,
-      withRejections(reviewState, english, rejected, Object.keys(published))
-    )
-  }
+  writeSortedJson(contentFile, published)
+  recordRejections(
+    reviewFile,
+    reviewState,
+    english,
+    rejected,
+    Object.keys(published)
+  )
 
   process.stdout.write(
     `[i18n] ${locale}: published ${Object.keys(kept).length}, ` +

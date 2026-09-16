@@ -45,6 +45,7 @@ import {
 } from '../../src/i18n/pipeline/source'
 import type { SourceAdapter } from '../../src/i18n/pipeline/types'
 import { localeRubric, OUTPUT_LOCALES, preserveTerms } from './config'
+import { writeSortedJson } from './write-json'
 
 /**
  * Sources, in the order their keys are collected. Every one of them plugs in
@@ -90,14 +91,6 @@ function rejectedKeys(
   return rejectedUnderCurrentEnglish(state, english)
 }
 
-/** Keys are written in sorted order so a diff shows content changes, not churn. */
-function writeJson(file: string, value: Record<string, string>): void {
-  const sorted: Record<string, string> = {}
-  for (const key of Object.keys(value).sort()) sorted[key] = value[key]
-  fs.mkdirSync(path.dirname(file), { recursive: true })
-  fs.writeFileSync(file, `${JSON.stringify(sorted, null, 2)}\n`, 'utf8')
-}
-
 function updateMachineLayers(
   entriesToTranslate: ReturnType<typeof translatableEntries>,
   currentKeys: Set<string>,
@@ -112,14 +105,14 @@ function updateMachineLayers(
       entriesToTranslate,
       locale
     )
-    writeJson(machineFile, machine)
+    writeSortedJson(machineFile, machine)
 
     const rejected = rejectedKeys(
       locale,
       buildEnglishSource(entriesToTranslate)
     )
     const pending = pendingSource(entriesToTranslate, locale, machine, rejected)
-    writeJson(path.join(PENDING_DIR, `${locale}.json`), pending)
+    writeSortedJson(path.join(PENDING_DIR, `${locale}.json`), pending)
 
     const dropped = Object.keys(before).length - Object.keys(machine).length
     summary.push(
@@ -157,14 +150,14 @@ function main(): void {
   const previousManifest = readTranslationLayer(MANIFEST_FILE)
   const stale = staleKeys(previousManifest, nextManifest)
 
-  writeJson(path.join(CONTENT_DIR, 'en.json'), english)
+  writeSortedJson(path.join(CONTENT_DIR, 'en.json'), english)
 
   const currentKeys = new Set(Object.keys(english))
   const summary: string[] = []
 
   updateMachineLayers(entriesToTranslate, currentKeys, stale, summary)
 
-  writeJson(MANIFEST_FILE, nextManifest)
+  writeSortedJson(MANIFEST_FILE, nextManifest)
 
   // process.stdout rather than console.log, matching generate-models.ts and the
   // repo's no-console lint rule, which permits only warn and error.

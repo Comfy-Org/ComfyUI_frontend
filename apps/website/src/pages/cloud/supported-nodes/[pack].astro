@@ -14,6 +14,7 @@ import {
   softwareApplicationNode,
 } from '../../../utils/jsonLd'
 import { localizeHref } from '../../../config/routes'
+import { cloudCrumbs } from '../../../utils/cloudCrumbs'
 
 const { siteUrl, locale, canonicalUrl, canonicalLocale } = pageContext(
   Astro.site,
@@ -67,8 +68,7 @@ const software = softwareApplicationNode({
   ogImage={pack.bannerUrl}
   mainEntityId={softwareId}
   breadcrumbs={[
-    { name: t('breadcrumb.home', locale), url: absoluteUrl(Astro.site, localizeHref('/', canonicalLocale)) },
-    { name: 'Comfy Cloud', url: absoluteUrl(Astro.site, localizeHref('/cloud', canonicalLocale)) },
+    ...cloudCrumbs(Astro.site, locale, canonicalLocale),
     {
       name: t('breadcrumb.supportedNodes', locale),
       url: absoluteUrl(Astro.site, localizeHref('/cloud/supported-nodes', canonicalLocale)),

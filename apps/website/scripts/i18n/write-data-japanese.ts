@@ -42,6 +42,7 @@ import {
 import { readTranslationLayer } from '../../src/i18n/pipeline/artifacts'
 import { commitAll } from '../../src/i18n/pipeline/commit'
 import type { TranslationLayer } from '../../src/i18n/pipeline/types'
+import { exitCheck, writeMode } from './write-mode'
 
 const DATA_DIR = path.join(process.cwd(), 'src', 'data')
 const MACHINE_FILE = path.join(
@@ -104,9 +105,37 @@ function planDataWrites(japanese: Record<string, string>): Planned[] {
   return planned
 }
 
+interface Totals {
+  inserted: number
+  replaced: number
+  withdrawn: number
+}
+
+function totals(planned: readonly Planned[]): Totals {
+  return {
+    inserted: planned.reduce((n, entry) => n + entry.inserted, 0),
+    replaced: planned.reduce((n, entry) => n + entry.replaced, 0),
+    withdrawn: planned.reduce((n, entry) => n + entry.withdrawn, 0)
+  }
+}
+
+function describe({ inserted, replaced, withdrawn }: Totals): string {
+  return `${inserted} to add, ${replaced} to refresh, ${withdrawn} to withdraw`
+}
+
+function reportDryRun(planned: readonly Planned[], sum: Totals): void {
+  for (const entry of planned) {
+    process.stdout.write(
+      `[i18n] ${entry.file}: +${entry.inserted} new, ~${entry.replaced} refreshed, -${entry.withdrawn} withdrawn\n`
+    )
+  }
+  process.stdout.write(
+    `[i18n] dry run: ${describe(sum)}, across ${planned.length} file(s). Nothing written.\n`
+  )
+}
+
 function main(): void {
-  const dryRun = process.argv.includes('--dry-run')
-  const check = process.argv.includes('--check')
+  const mode = writeMode()
 
   const machine = readMachineLayer()
   const ownedKeys = new Set(dataAdapter.read().map((entry) => entry.key))
@@ -129,33 +158,20 @@ function main(): void {
     'file(s)'
   )
 
-  const inserted = planned.reduce((n, entry) => n + entry.inserted, 0)
-  const replaced = planned.reduce((n, entry) => n + entry.replaced, 0)
-  const withdrawn = planned.reduce((n, entry) => n + entry.withdrawn, 0)
+  const sum = totals(planned)
 
-  if (check && planned.length > 0) {
-    process.stderr.write(
-      `[i18n] ${inserted} to add, ${replaced} to refresh, ${withdrawn} to ` +
-        `withdraw across ${planned.length} file(s): src/data is behind the ` +
-        'machine layer. Run `pnpm i18n:write-data` and commit the result.\n'
+  if (mode === 'check') {
+    exitCheck(
+      planned.length === 0,
+      'src/data',
+      `${describe(sum)} across ${planned.length} file(s)`,
+      'pnpm i18n:write-data'
     )
-    process.exit(1)
-  }
-
-  if (check) {
-    process.stdout.write('[i18n] src/data is current with the machine layer.\n')
     return
   }
 
-  if (dryRun) {
-    for (const entry of planned) {
-      process.stdout.write(
-        `[i18n] ${entry.file}: +${entry.inserted} new, ~${entry.replaced} refreshed, -${entry.withdrawn} withdrawn\n`
-      )
-    }
-    process.stdout.write(
-      `[i18n] dry run: ${inserted} to add, ${replaced} to refresh, ${withdrawn} to withdraw, across ${planned.length} file(s). Nothing written.\n`
-    )
+  if (mode === 'dry-run') {
+    reportDryRun(planned, sum)
     return
   }
 
@@ -170,7 +186,7 @@ function main(): void {
   })
 
   process.stdout.write(
-    `[i18n] ${inserted} added, ${replaced} refreshed, ${withdrawn} withdrawn, across ${planned.length} file(s).\n`
+    `[i18n] ${sum.inserted} added, ${sum.replaced} refreshed, ${sum.withdrawn} withdrawn, across ${planned.length} file(s).\n`
   )
   process.stdout.write('[i18n] run `pnpm format` — some lines will reflow.\n')
 }

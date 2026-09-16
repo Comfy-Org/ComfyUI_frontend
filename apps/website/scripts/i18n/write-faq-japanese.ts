@@ -38,6 +38,12 @@ import type { FaqDocument } from '../../src/i18n/pipeline/adapters/faq'
 import { readTranslationLayer } from '../../src/i18n/pipeline/artifacts'
 import { commitAll } from '../../src/i18n/pipeline/commit'
 import type { TranslationLayer } from '../../src/i18n/pipeline/types'
+import {
+  alreadyOnDisk,
+  exitCheck,
+  writeMode,
+  writtenByPerson
+} from './write-mode'
 
 const TARGET = 'ja'
 const FAQ_DIR = path.join(process.cwd(), 'src', 'content', 'faq')
@@ -109,7 +115,7 @@ function planFaq(
 
   // A person's translation is never overwritten, and never withdrawn.
   const already = existing.get(id)
-  if (already && !already.machineWritten) {
+  if (writtenByPerson(already)) {
     skipped.push(id)
     return
   }
@@ -125,16 +131,13 @@ function planFaq(
   }
 
   const contents = buildFaqDocument(english, translation)
-  // Byte-identical to what is on disk is not a write. Reporting it as one made
-  // every run claim all 26 answers, which left a dry run unable to say whether
-  // anything had actually changed.
   const file = path.join(
     FAQ_DIR,
     english.category,
     TARGET,
     `${english.slug}.mdx`
   )
-  if (fs.existsSync(file) && fs.readFileSync(file, 'utf8') === contents) return
+  if (alreadyOnDisk(file, contents)) return
   planned.push({
     slug: id,
     file,
@@ -208,15 +211,33 @@ function commitPlannedDocuments(
   for (const entry of withdrawn) fs.rmSync(entry.file, { force: true })
 }
 
+function reportWritten(planned: Planned[], withdrawn: unknown[]): void {
+  process.stdout.write(
+    `[i18n] wrote ${planned.length} Japanese FAQ answer(s)` +
+      (withdrawn.length > 0 ? `, withdrew ${withdrawn.length}` : '') +
+      `.\n`
+  )
+}
+
 function main(): void {
-  const dryRun = process.argv.includes('--dry-run')
-  const check = process.argv.includes('--check')
+  const mode = writeMode()
   // A lookup can miss, and the type has to say so or the guards below read as
   // dead code to a type-aware linter.
   const machine: Readonly<Partial<Record<string, string>>> = readMachineLayer()
   const { planned, skipped, withdrawn } = planFaqWrites(machine)
-
   const changes = planned.length + withdrawn.length
+
+  if (mode === 'check') {
+    reportFaqPlan({ planned, skipped, withdrawn })
+    exitCheck(
+      changes === 0,
+      'the Japanese FAQ',
+      `${planned.length} answer(s) to write and ${withdrawn.length} to withdraw`,
+      'pnpm i18n:write-faq'
+    )
+    return
+  }
+
   if (changes === 0) {
     process.stdout.write(
       '[i18n] Japanese FAQ answers are current with the machine layer.\n'
@@ -231,16 +252,7 @@ function main(): void {
 
   reportFaqPlan({ planned, skipped, withdrawn })
 
-  if (check) {
-    process.stderr.write(
-      `[i18n] ${planned.length} answer(s) to write and ${withdrawn.length} to ` +
-        'withdraw: the Japanese FAQ on disk is behind the machine layer. ' +
-        'Run `pnpm i18n:write-faq` and commit the result.\n'
-    )
-    process.exit(1)
-  }
-
-  if (dryRun) {
+  if (mode === 'dry-run') {
     process.stdout.write(
       `[i18n] dry run: ${planned.length} answer(s) to write, ` +
         `${withdrawn.length} to withdraw. Nothing written.\n`
@@ -249,12 +261,7 @@ function main(): void {
   }
 
   commitPlannedDocuments(planned, withdrawn)
-
-  process.stdout.write(
-    `[i18n] wrote ${planned.length} Japanese FAQ answer(s)` +
-      (withdrawn.length > 0 ? `, withdrew ${withdrawn.length}` : '') +
-      `.\n`
-  )
+  reportWritten(planned, withdrawn)
 }
 
 main()
