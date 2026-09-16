@@ -78,6 +78,8 @@ export function fakeBillingSdk() {
     status: fakeReader(),
     credits: fakeReader(),
     capabilities: fakeReader(),
+    plans: fakeReader(),
+    paymentMethods: fakeReader(),
     topup: {
       createTopupCheckout: vi.fn(),
       createHostedTopupCheckout: vi.fn()
