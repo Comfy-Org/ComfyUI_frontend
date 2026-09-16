@@ -4,6 +4,7 @@ import {
   authErrorMessage,
   classifyAuthError
 } from '@comfyorg/account/firebaseAuthError'
+import { ENUMERATION_ORACLE } from '@comfyorg/account/testing'
 
 import { localizedAuthErrorCopy } from '@/composables/auth/useAuthActions'
 
@@ -15,11 +16,6 @@ const resolveCloudCopy = (code: string): string =>
     classifyAuthError({ code, message: 'x' }),
     localizedAuthErrorCopy()
   )
-
-// Wording that confirms whether an email already has an account (or which of
-// the credential pair was wrong) — an enumeration oracle in any form.
-const ENUMERATION_ORACLE =
-  /\bexists?\b|already (?:registered|in use|have|exists)|wrong password|no account|not found|is registered|different (?:sign-in method|credential)/i
 
 describe('cloud auth copy never enumerates accounts', () => {
   it.for([
