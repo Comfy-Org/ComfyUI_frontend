@@ -136,16 +136,11 @@
     </div>
 
     <div class="flex flex-col items-end gap-1 pr-1">
-      <!-- Undocked, the toast follows the run bar onto the canvas: the stop
-           control has to travel with the Run button, not stay up here. It
-           hangs below the panel rather than inside it, so the run controls
-           keep their surface and the pill keeps its own. -->
       <Teleport
-        v-if="isActionbarEnabled"
+        v-if="isActionbarEnabled && isStatusToastEnabled"
         :to="queueStatusToastTarget ?? 'body'"
         :disabled="!queueStatusToastTarget"
       >
-        <!-- QueueStatusToast has several roots, so spacing lives on a wrapper -->
         <div
           :class="
             cn(
@@ -279,8 +274,10 @@ const isIntegratedTabBar = computed(
 )
 const { isQueuePanelV2Enabled, isRunProgressBarEnabled } =
   useQueueFeatureFlags()
-// The legacy in-bar queue UI, replaced by QueueStatusToast.
-const showLegacyQueueUi = false
+const isStatusToastEnabled = computed(() =>
+  settingStore.get('Comfy.Queue.StatusToast')
+)
+const showLegacyQueueUi = computed(() => !isStatusToastEnabled.value)
 const isQueueProgressOverlayEnabled = computed(
   () => !isQueuePanelV2Enabled.value
 )
