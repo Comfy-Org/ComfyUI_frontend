@@ -175,22 +175,10 @@ function confirmSwitch() {
   void switchWorkspace(workspaceId, { runAlreadyCancelled: true })
 }
 
-async function switchWorkspace(
+async function applySwitch(
   workspaceId: string,
-  options?: { runAlreadyCancelled?: boolean }
+  previous: ActiveWorkshopSession
 ) {
-  if (switching.value) return
-  const previous = session.value
-  if (!previous) return
-  const previousWorkspaceId = previous.workspace.id
-  if (workspaceId === previousWorkspaceId) {
-    menuOpen.value = false
-    return
-  }
-  if (workshopRunInFlight.value && !options?.runAlreadyCancelled) {
-    switchPending.value = workspaceId
-    return
-  }
   workspaceSwitchError.value = false
   switching.value = workspaceId
   try {
@@ -213,6 +201,24 @@ async function switchWorkspace(
   } finally {
     switching.value = undefined
   }
+}
+
+async function switchWorkspace(
+  workspaceId: string,
+  options?: { runAlreadyCancelled?: boolean }
+) {
+  if (switching.value) return
+  const previous = session.value
+  if (!previous) return
+  if (workspaceId === previous.workspace.id) {
+    menuOpen.value = false
+    return
+  }
+  if (workshopRunInFlight.value && !options?.runAlreadyCancelled) {
+    switchPending.value = workspaceId
+    return
+  }
+  await applySwitch(workspaceId, previous)
 }
 
 const hasCredits = computed(

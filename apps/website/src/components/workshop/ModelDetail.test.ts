@@ -20,6 +20,10 @@ import { getRouterWorkshopModelDetail } from '../../config/workshop-router-conte
 import { refreshWorkshopCredits } from '../../config/workshop-credits'
 import type { useWorkshopCredits } from '../../config/workshop-credits'
 import * as draftStorage from '../../config/workshop-draft-storage'
+import {
+  cancelWorkshopRun,
+  workshopRunInFlight
+} from '../../config/workshop-run-state'
 import { captureWorkshopEvent } from '../../scripts/posthog'
 import ModelDetail from './ModelDetail.vue'
 import WorkshopGate from './WorkshopGate.vue'
@@ -914,6 +918,43 @@ describe('ModelDetail', () => {
     )
     expect(leaving()).toBe(true)
     expect(softLeaving()).toBe(true)
+  })
+
+  // The header is outside this island, so the only thing it can act on is what
+  // the run reports: that one is going, and how to end it.
+  it('hands the rest of the page a way to end the run while one is going', async () => {
+    auth.session.value = credential
+    const pending = Promise.withResolvers<typeof routerResult>()
+    vi.mocked(runWorkshopRouter).mockReturnValue(pending.promise)
+    mountDetail({ model: runnable })
+    expect(workshopRunInFlight.value).toBe(false)
+
+    await user().type(screen.getByTestId('field-prompt'), 'A teapot')
+    await user().click(screen.getByTestId('run-button'))
+    await vi.waitFor(() => expect(workshopRunInFlight.value).toBe(true))
+
+    cancelWorkshopRun()
+    await vi.waitFor(() =>
+      expect(
+        screen.getByTestId('playground-output').getAttribute('data-state')
+      ).toBe('cancelled')
+    )
+    expect(workshopRunInFlight.value).toBe(false)
+  })
+
+  it('takes that way back when the playground goes away mid-run', async () => {
+    auth.session.value = credential
+    vi.mocked(runWorkshopRouter).mockReturnValue(
+      Promise.withResolvers<typeof routerResult>().promise
+    )
+    const { unmount } = mountDetail({ model: runnable })
+
+    await user().type(screen.getByTestId('field-prompt'), 'A teapot')
+    await user().click(screen.getByTestId('run-button'))
+    await vi.waitFor(() => expect(workshopRunInFlight.value).toBe(true))
+
+    unmount()
+    expect(workshopRunInFlight.value).toBe(false)
   })
 
   it('answers an in-site link in its own words, and lets the link go when told to', async () => {
