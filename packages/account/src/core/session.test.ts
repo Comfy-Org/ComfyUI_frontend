@@ -1,6 +1,12 @@
 import { describe, expect, it, vi } from 'vitest'
 
-import { createTestIdentity } from '../testing.js'
+import {
+  jsonResponse,
+  manualIdentity,
+  memoryStorage,
+  mintBody,
+  okFetch
+} from './__fixtures__/sessionFakes.js'
 import type {
   AccountCredential,
   AccountIdentity,
@@ -18,20 +24,6 @@ import {
 
 const EXCHANGE_URL = 'https://cloud.test/api/auth/token'
 
-function memoryStorage(): CredentialStorage & { raw: () => string | null } {
-  let value: string | null = null
-  return {
-    read: () => value,
-    write: (next) => {
-      value = next
-    },
-    clear: () => {
-      value = null
-    },
-    raw: () => value
-  }
-}
-
 function makeClient(
   overrides: Partial<SessionClientOptions> = {},
   identity?: AccountIdentity
@@ -46,28 +38,6 @@ function makeClient(
 
 function testUser(uid = 'uid-1', idToken = 'id-token-1'): AccountUser {
   return { uid, getIdToken: vi.fn(async () => idToken) }
-}
-
-function mintBody(overrides: Record<string, unknown> = {}) {
-  return {
-    token: 'workspace-jwt',
-    permissions: ['workspace:read'],
-    expires_at: new Date(Date.now() + 90 * 60 * 1000).toISOString(),
-    workspace: { id: 'ws-1', name: 'Personal', type: 'personal' },
-    role: 'owner',
-    ...overrides
-  }
-}
-
-function jsonResponse(status: number, body: unknown) {
-  return new Response(JSON.stringify(body), {
-    status,
-    headers: { 'Content-Type': 'application/json' }
-  })
-}
-
-function okFetch(token = 'workspace-jwt') {
-  return vi.fn<typeof fetch>(async () => jsonResponse(200, mintBody({ token })))
 }
 
 function seedCache(
@@ -86,22 +56,6 @@ function seedCache(
   }
   storage.write(JSON.stringify({ ...credential, target }))
   return credential
-}
-
-function manualIdentity() {
-  let deliver: ((user: AccountUser | null) => void) | undefined
-  const unsubscribe = vi.fn()
-  const port = createTestIdentity<AccountUser>({
-    onUserChanged: (callback) => {
-      deliver = callback
-      return unsubscribe
-    }
-  })
-  return {
-    port,
-    fire: (user: AccountUser | null) => deliver?.(user),
-    unsubscribe
-  }
 }
 
 function hangingFetch() {

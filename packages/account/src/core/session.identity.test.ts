@@ -1,9 +1,13 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { createTestIdentity } from '../testing.js'
+import {
+  manualIdentity,
+  memoryStorage,
+  mintResponse,
+  okFetch
+} from './__fixtures__/sessionFakes.js'
 import type {
   AccountUser,
-  CredentialStorage,
   SessionClientOptions,
   SessionSnapshot
 } from './session.js'
@@ -12,55 +16,8 @@ import { createSessionClient } from './session.js'
 const EXCHANGE_URL = 'https://cloud.test/api/auth/token'
 const NINETY_MINUTES_MS = 90 * 60 * 1000
 
-function memoryStorage(): CredentialStorage & { raw: () => string | null } {
-  let value: string | null = null
-  return {
-    read: () => value,
-    write: (next) => {
-      value = next
-    },
-    clear: () => {
-      value = null
-    },
-    raw: () => value
-  }
-}
-
 function testUser(uid = 'uid-1'): AccountUser {
   return { uid, getIdToken: vi.fn(async () => 'id-token') }
-}
-
-function mintResponse(token: string) {
-  return new Response(
-    JSON.stringify({
-      token,
-      permissions: ['workspace:read'],
-      expires_at: new Date(Date.now() + NINETY_MINUTES_MS).toISOString(),
-      workspace: { id: 'ws-1', name: 'Personal', type: 'personal' },
-      role: 'owner'
-    }),
-    { status: 200 }
-  )
-}
-
-function okFetch(token = 'workspace-jwt') {
-  return vi.fn<typeof fetch>(async () => mintResponse(token))
-}
-
-function manualIdentity() {
-  let deliver: ((user: AccountUser | null) => void) | undefined
-  const unsubscribe = vi.fn()
-  const port = createTestIdentity<AccountUser>({
-    onUserChanged: (callback) => {
-      deliver = callback
-      return unsubscribe
-    }
-  })
-  return {
-    port,
-    fire: (user: AccountUser | null) => deliver?.(user),
-    unsubscribe
-  }
 }
 
 function makeClient(overrides: Partial<SessionClientOptions> = {}) {
