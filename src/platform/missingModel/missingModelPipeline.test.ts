@@ -7,7 +7,8 @@ import { useModelToNodeStore } from '@/stores/modelToNodeStore'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { LGraph } from '@/lib/litegraph/src/litegraph'
+import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { MissingModelCandidate } from '@/platform/missingModel/types'
 import type {
   ComfyWorkflowJSON,
@@ -212,6 +213,11 @@ describe('missingModelPipeline', () => {
         isMissing: undefined
       }
       mockHandles.state.enrichedCandidates = [candidate]
+      const node = new LGraphNode(candidate.nodeType)
+      node.widgets = fromPartial([
+        { name: candidate.widgetName, value: candidate.name }
+      ])
+      mockHandles.getNodeByExecutionId.mockReturnValue(node)
       let finishVerification = () => {}
       const pending = new Promise<void>((resolve) => {
         finishVerification = resolve
@@ -408,6 +414,61 @@ describe('missingModelPipeline', () => {
   })
 
   describe('runMissingModelPipeline', () => {
+    it.for([
+      { change: 'removed', widgets: [] },
+      {
+        change: 'renamed',
+        widgets: [{ name: 'renamed_ckpt', value: 'missing.safetensors' }]
+      }
+    ])(
+      'excludes a candidate whose widget was $change during verification',
+      async ({ widgets }) => {
+        mockHandles.distribution.isCloud = true
+        const candidate: MissingModelCandidate = {
+          nodeId: '7',
+          nodeType: 'CheckpointLoaderSimple',
+          widgetName: 'ckpt_name',
+          name: 'missing.safetensors',
+          isMissing: undefined,
+          isAssetSupported: true
+        }
+        const node = new LGraphNode(candidate.nodeType)
+        node.widgets = fromPartial([
+          { name: candidate.widgetName, value: candidate.name }
+        ])
+        mockHandles.state.enrichedCandidates = [candidate]
+        mockHandles.getNodeByExecutionId.mockReturnValue(node)
+        let finishVerification = () => {}
+        mockHandles.verifyAssetSupportedCandidates.mockImplementationOnce(
+          () =>
+            new Promise<undefined>((resolve) => {
+              finishVerification = () => {
+                candidate.isMissing = true
+                resolve(undefined)
+              }
+            })
+        )
+        const onVerified = vi.fn()
+
+        await runMissingModelPipeline({
+          graph: createGraph(),
+          graphData: createWorkflowGraphData(),
+          missingModelStore: useMissingModelStore(),
+          onVerified
+        })
+        expect(onVerified).not.toHaveBeenCalled()
+        node.widgets = fromPartial(widgets)
+        finishVerification()
+
+        await vi.waitFor(() => {
+          expect(onVerified).toHaveBeenCalledWith([])
+          expect(
+            useExecutionErrorStore().surfaceMissingModels
+          ).toHaveBeenCalledWith([], { silent: false })
+        })
+      }
+    )
+
     it('surfaces a verified remote candidate without waiting for its download metadata', async () => {
       const remoteCandidate: MissingModelCandidate = {
         nodeType: 'RemoteFileNode',

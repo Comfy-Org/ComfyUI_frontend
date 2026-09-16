@@ -163,7 +163,7 @@ export async function runMissingModelPipeline({
     if (candidate.nodeId == null) return true
     const node = getNodeByExecutionId(graph, String(candidate.nodeId))
     const widget = node?.widgets?.find((w) => w.name === candidate.widgetName)
-    return !widget || widget.value === candidate.name
+    return widget?.value === candidate.name
   }
   const surfaceActiveCandidates = () => {
     const confirmed = enrichedCandidates.filter(
