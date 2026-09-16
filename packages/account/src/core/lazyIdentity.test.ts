@@ -27,9 +27,13 @@ function innerIdentity() {
     fire: (user: AccountUser | null) =>
       callbacks.forEach((callback) => callback(user)),
     subscriptions: () => subscriptions,
-    subscribed: () => callbacks.size
+    subscribed: () => callbacks.size,
+    whenSubscribed: () =>
+      vi.waitFor(() => expect(callbacks.size).toBeGreaterThan(0))
   }
 }
+
+type Inner = ReturnType<typeof innerIdentity>
 
 function deferredLoader() {
   const inner = innerIdentity()
@@ -38,6 +42,27 @@ function deferredLoader() {
     release = () => resolve(inner.identity)
   })
   return { inner, release, load: vi.fn(() => loaded) }
+}
+
+async function activated(
+  port: LazyIdentity<AccountUser>,
+  release: () => void,
+  inner: Inner,
+  user: AccountUser | null
+): Promise<void> {
+  const activation = port.activate()
+  release()
+  await inner.whenSubscribed()
+  inner.fire(user)
+  await activation
+}
+
+function settledFlag(promise: Promise<void>) {
+  let settled = false
+  void promise.then(() => {
+    settled = true
+  })
+  return () => settled
 }
 
 const noopStorage = { read: () => null, write: () => {}, clear: () => {} }
@@ -55,9 +80,41 @@ describe('createLazyIdentity', () => {
     expect(listener).not.toHaveBeenCalled()
   })
 
+  it('keeps the activation pending until the inner identity delivers, then resolves', async () => {
+    const { inner, release, load } = deferredLoader()
+    const port = createLazyIdentity(load)
+
+    const activation = port.activate()
+    const isSettled = settledFlag(activation)
+    release()
+    await inner.whenSubscribed()
+    await Promise.resolve()
+
+    expect(
+      isSettled(),
+      'a subscribed but silent identity has not answered yet'
+    ).toBe(false)
+    inner.fire(alice)
+    await activation
+  })
+
   it.for([
-    { phase: 'loading', settle: () => {} },
-    { phase: 'active', settle: (release: () => void) => release() }
+    { phase: 'loading', settle: async () => {} },
+    {
+      phase: 'awaiting the first delivery',
+      settle: async (release: () => void, inner: Inner) => {
+        release()
+        await inner.whenSubscribed()
+      }
+    },
+    {
+      phase: 'active',
+      settle: async (release: () => void, inner: Inner) => {
+        release()
+        await inner.whenSubscribed()
+        inner.fire(alice)
+      }
+    }
   ])(
     'reuses the activation while $phase: one load, one inner subscription',
     async ({ settle }) => {
@@ -65,10 +122,11 @@ describe('createLazyIdentity', () => {
       const port = createLazyIdentity(load)
 
       const first = port.activate()
-      settle(release)
-      await Promise.resolve()
+      await settle(release, inner)
       const second = port.activate()
       release()
+      await inner.whenSubscribed()
+      inner.fire(alice)
       await Promise.all([first, second])
 
       expect(second).toBe(first)
@@ -83,23 +141,20 @@ describe('createLazyIdentity', () => {
     const early = vi.fn()
     const late = vi.fn()
     port.onUserChanged(early)
-    release()
-    await port.activate()
+    await activated(port, release, inner, alice)
     port.onUserChanged(late)
 
-    inner.fire(alice)
+    inner.fire(bob)
     inner.fire(null)
 
-    expect(early.mock.calls).toEqual([[alice], [null]])
-    expect(late.mock.calls).toEqual([[alice], [null]])
+    expect(early.mock.calls).toEqual([[alice], [bob], [null]])
+    expect(late.mock.calls).toEqual([[alice], [bob], [null]])
   })
 
   it('replays the last delivered user to a listener that registers after delivery', async () => {
     const { inner, release, load } = deferredLoader()
     const port = createLazyIdentity(load)
-    release()
-    await port.activate()
-    inner.fire(alice)
+    await activated(port, release, inner, alice)
     inner.fire(bob)
     const listener = vi.fn()
 
@@ -121,12 +176,28 @@ describe('createLazyIdentity', () => {
       delivered: []
     },
     {
-      phase: 'active',
-      reach: async (port: LazyIdentity<AccountUser>, release: () => void) => {
+      phase: 'awaiting the first delivery',
+      reach: async (
+        port: LazyIdentity<AccountUser>,
+        release: () => void,
+        inner: Inner
+      ) => {
+        void port.activate()
         release()
-        await port.activate()
+        await inner.whenSubscribed()
       },
-      delivered: [[null]]
+      delivered: []
+    },
+    {
+      phase: 'active',
+      reach: async (
+        port: LazyIdentity<AccountUser>,
+        release: () => void,
+        inner: Inner
+      ) => {
+        await activated(port, release, inner, alice)
+      },
+      delivered: [[alice], [null]]
     }
   ])(
     'deactivate while $phase leaves the inner identity unsubscribed and delivers $delivered',
@@ -135,31 +206,43 @@ describe('createLazyIdentity', () => {
       const port = createLazyIdentity(load)
       const listener = vi.fn()
       port.onUserChanged(listener)
-      await reach(port, release)
+      await reach(port, release, inner)
 
       port.deactivate()
       release()
       await Promise.resolve()
       await Promise.resolve()
-      inner.fire(alice)
+      inner.fire(bob)
 
       expect(inner.subscribed()).toBe(0)
       expect(listener.mock.calls).toEqual(delivered)
     }
   )
 
+  it('resolves an activation that deactivate interrupts before the first delivery', async () => {
+    const { inner, release, load } = deferredLoader()
+    const port = createLazyIdentity(load)
+    const activation = port.activate()
+    release()
+    await inner.whenSubscribed()
+
+    port.deactivate()
+
+    await expect(
+      activation,
+      'the host re-checks liveness after the await, so an interrupted activation resolves'
+    ).resolves.toBeUndefined()
+  })
+
   it('re-activation after deactivate subscribes the inner identity again', async () => {
     const { inner, release, load } = deferredLoader()
     const port = createLazyIdentity(load)
     const listener = vi.fn()
     port.onUserChanged(listener)
-    release()
-    await port.activate()
-    inner.fire(alice)
+    await activated(port, release, inner, alice)
     port.deactivate()
 
-    await port.activate()
-    inner.fire(bob)
+    await activated(port, release, inner, bob)
 
     expect(inner.subscriptions()).toBe(2)
     expect(listener.mock.calls).toEqual([[alice], [null], [bob]])
@@ -168,9 +251,7 @@ describe('createLazyIdentity', () => {
   it('does not replay a user from before deactivation to a later listener', async () => {
     const { inner, release, load } = deferredLoader()
     const port = createLazyIdentity(load)
-    release()
-    await port.activate()
-    inner.fire(alice)
+    await activated(port, release, inner, alice)
     port.deactivate()
     const listener = vi.fn()
 
@@ -188,7 +269,10 @@ describe('createLazyIdentity', () => {
     const port = createLazyIdentity(load)
 
     await expect(port.activate()).rejects.toThrow('chunk failed')
-    await port.activate()
+    const retry = port.activate()
+    await inner.whenSubscribed()
+    inner.fire(null)
+    await retry
 
     expect(load).toHaveBeenCalledTimes(2)
     expect(inner.subscribed()).toBe(1)
@@ -199,11 +283,10 @@ describe('createLazyIdentity', () => {
     const port = createLazyIdentity(load)
     const listener = vi.fn()
     const unsubscribe = port.onUserChanged(listener)
-    release()
-    await port.activate()
-
     unsubscribe()
-    inner.fire(alice)
+    await activated(port, release, inner, alice)
+
+    inner.fire(bob)
     port.deactivate()
 
     expect(listener).not.toHaveBeenCalled()
@@ -217,11 +300,13 @@ describe('createLazyIdentity', () => {
       { exchangeUrl: 'https://example.test/token', storage: noopStorage },
       port
     )
+    const activation = port.activate()
+    release()
+    await inner.whenSubscribed()
 
     expect(client.getSnapshot().phase).toBe('pending')
-    release()
-    await port.activate()
     inner.fire(null)
+    await activation
 
     expect(client.getSnapshot().phase).toBe('signed-out')
   })

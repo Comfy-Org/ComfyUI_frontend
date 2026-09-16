@@ -10,9 +10,9 @@ import type { AccountUser } from './sessionContracts.js'
 export interface LazyIdentity<
   TUser extends AccountUser
 > extends AccountIdentity<TUser> {
-  /** Loads and subscribes the real identity; idempotent while loading or active; rejects if the loader rejects. */
+  /** Loads and subscribes the real identity; resolves once the identity has delivered its current user (or on deactivate); idempotent while pending or active; rejects if the loader rejects. */
   activate: () => Promise<void>
-  /** Unsubscribes the real identity and delivers null (signed-out) to subscribers; no-op unless active. */
+  /** Unsubscribes the real identity and, if it had delivered, delivers null (signed-out) to subscribers; no-op when inactive. */
   deactivate: () => void
 }
 
@@ -22,6 +22,7 @@ export function createLazyIdentity<TUser extends AccountUser>(
   const listeners = new Set<(user: TUser | null) => void>()
   let generation = 0
   let activation: Promise<void> | undefined
+  let settleActivation: (() => void) | undefined
   let unsubscribe: (() => void) | undefined
   let lastDelivered: { readonly user: TUser | null } | undefined
 
@@ -33,16 +34,25 @@ export function createLazyIdentity<TUser extends AccountUser>(
   function activate(): Promise<void> {
     if (activation) return activation
     const started = ++generation
-    activation = load().then(
-      (identity) => {
-        if (started !== generation) return
-        unsubscribe = identity.onUserChanged(deliver)
-      },
-      (error: unknown) => {
-        if (started === generation) activation = undefined
-        throw error
-      }
-    )
+    activation = new Promise<void>((resolve, reject) => {
+      settleActivation = resolve
+      load().then(
+        (identity) => {
+          if (started !== generation) return
+          unsubscribe = identity.onUserChanged((user) => {
+            deliver(user)
+            resolve()
+          })
+        },
+        (error: unknown) => {
+          if (started === generation) {
+            activation = undefined
+            settleActivation = undefined
+          }
+          reject(error)
+        }
+      )
+    })
     return activation
   }
 
@@ -50,11 +60,13 @@ export function createLazyIdentity<TUser extends AccountUser>(
     if (!activation) return
     generation += 1
     activation = undefined
-    const wasSubscribed = unsubscribe !== undefined
+    settleActivation?.()
+    settleActivation = undefined
     unsubscribe?.()
     unsubscribe = undefined
+    const hadDelivered = lastDelivered !== undefined
     lastDelivered = undefined
-    if (!wasSubscribed) return
+    if (!hadDelivered) return
     listeners.forEach((listener) => listener(null))
   }
 
