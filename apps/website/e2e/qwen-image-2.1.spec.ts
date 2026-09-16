@@ -19,6 +19,7 @@ test.describe('Qwen Image 2.1 announcement page — zh-CN', () => {
   test('renders the localized announcement page', async ({ page }) => {
     await page.goto('/zh-CN/qwen-image-2.1')
 
+    await expect(page.getByText('即将上线')).toBeVisible()
     await expect(
       page.getByRole('heading', { level: 1, name: 'Qwen Image 2.1' })
     ).toBeVisible()
@@ -27,6 +28,28 @@ test.describe('Qwen Image 2.1 announcement page — zh-CN', () => {
 })
 
 test.describe('Qwen Image 2.1 launch preview', () => {
+  test('plays the full hero reel on desktop', async ({ page }) => {
+    await page.goto('/qwen-image-2.1/launch-preview')
+
+    await expect(
+      page.getByRole('heading', { level: 1, name: 'Qwen Image 2.1 is here' })
+    ).toBeVisible()
+    await expect(page.locator('video')).toHaveAttribute(
+      'src',
+      'https://media.comfy.org/website/qwen-image-2.1/hero.mp4'
+    )
+  })
+
+  test('plays the lighter hero encode on phones', async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 })
+    await page.goto('/qwen-image-2.1/launch-preview')
+
+    await expect(page.locator('video')).toHaveAttribute(
+      'src',
+      'https://media.comfy.org/website/qwen-image-2.1/hero-mobile.mp4'
+    )
+  })
+
   test('shows every supplied image in the model gallery', async ({ page }) => {
     await page.goto('/qwen-image-2.1/launch-preview')
 

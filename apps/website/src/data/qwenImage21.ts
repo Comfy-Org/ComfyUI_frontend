@@ -8,7 +8,7 @@ import { externalLinks } from '../config/routes'
 const qwenImage21Links = {
   cloud:
     'https://cloud.comfy.org/?template=image_qwen_image_2_1&utm_source=comfy.org&utm_medium=referral&utm_campaign=qwen-image-2-1',
-  docs: 'https://docs.comfy.org/tutorials/image/qwen/qwen-image-2-1',
+  docs: 'https://docs.comfy.org/tutorials/image/qwen/qwen-image',
   hubModel: new URL('model/qwen/', externalLinks.workflows).href
 } as const
 
