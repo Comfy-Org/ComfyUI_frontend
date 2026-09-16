@@ -9,12 +9,12 @@
 import { zBillingBalanceResponse } from '@comfyorg/ingest-types/zod'
 import type { z } from 'zod'
 
+import type { BillingResult, BillingTransport } from './billingContracts.js'
 import type {
-  BillingResult,
-  BillingSession,
-  BillingTransport
-} from './billingContracts.js'
-import type { BillingScope, BillingScopeContext } from './billingScope.js'
+  BillingScope,
+  BillingScopeContext,
+  BillingScopeSource
+} from './billingScope.js'
 import { createBillingScopeTracker } from './billingScope.js'
 import {
   matchesScopedRead,
@@ -56,7 +56,8 @@ export interface CreditsReader {
 
 export interface CreditsReaderOptions {
   readonly transport: BillingTransport
-  readonly session: BillingSession
+  /** Where the core learns which user, workspace, and role it runs as. */
+  readonly scopeSource: BillingScopeSource
   readonly now?: () => number
 }
 
@@ -68,12 +69,12 @@ interface InFlightRead {
 export function createCreditsReader(
   options: CreditsReaderOptions
 ): CreditsReader {
-  const { transport, session, now = Date.now } = options
+  const { transport, scopeSource, now = Date.now } = options
 
   let snapshot: CreditsSnapshot | undefined
   let inFlight: InFlightRead | undefined
   const lifetime = { disposed: false }
-  const scopeTracker = createBillingScopeTracker(session, () => {
+  const scopeTracker = createBillingScopeTracker(scopeSource, () => {
     snapshot = undefined
     inFlight = undefined
   })

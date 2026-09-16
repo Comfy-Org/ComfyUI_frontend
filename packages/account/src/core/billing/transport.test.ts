@@ -8,6 +8,8 @@ import type {
   SessionSnapshot
 } from '../session.js'
 import type { AccountCredential, SessionResult } from '../sessionContracts.js'
+import type { BillingScope, BillingScopeSource } from './billingScope.js'
+import { createCredentialedBillingTransport } from './credentialedTransport.js'
 import { createSessionBillingTransport } from './transport.js'
 
 const BASE = 'https://cloud.test/api'
@@ -535,6 +537,173 @@ describe('createSessionBillingTransport', () => {
     })
 
     expect(result).toEqual({ status: 'error', code: 'REQUEST_FAILED' })
+  })
+
+  it('times out a body that never arrives', async () => {
+    const { transport } = makeTransport({ fetchImpl: stallingFetch() })
+
+    const pending = transport({
+      method: 'GET',
+      route: '/billing/status',
+      timeoutMs: 1_000
+    })
+    await vi.advanceTimersByTimeAsync(1_000)
+
+    await expect(pending).resolves.toEqual({
+      status: 'error',
+      code: 'REQUEST_FAILED'
+    })
+  })
+
+  it('cancels a body that never arrives when the caller aborts', async () => {
+    const { transport } = makeTransport({ fetchImpl: stallingFetch() })
+    const caller = new AbortController()
+
+    const pending = transport({
+      method: 'GET',
+      route: '/billing/status',
+      signal: caller.signal
+    })
+    await vi.advanceTimersByTimeAsync(0)
+    caller.abort()
+
+    await expect(pending).resolves.toEqual({
+      status: 'error',
+      code: 'REQUEST_FAILED'
+    })
+  })
+})
+
+describe('createCredentialedBillingTransport', () => {
+  const SCOPE: BillingScope = {
+    userId: 'uid-1',
+    workspaceId: 'ws-1',
+    role: 'owner'
+  }
+
+  function fakeScopeSource(initial: BillingScope | undefined) {
+    let scope = initial
+    const source: BillingScopeSource = {
+      getScope: () => scope,
+      subscribe: () => () => {}
+    }
+    return {
+      source,
+      moveTo(next: BillingScope | undefined) {
+        scope = next
+      }
+    }
+  }
+
+  function makeTransport(
+    options: {
+      initialScope?: BillingScope | undefined
+      credentials?: RequestCredentials
+      responses?: Response[]
+      fetchImpl?: MockedFunction<typeof fetch>
+    } = {}
+  ) {
+    const scope = fakeScopeSource(
+      'initialScope' in options ? options.initialScope : SCOPE
+    )
+    const queue = [...(options.responses ?? [jsonResponse(200, { ok: true })])]
+    const fetchImpl =
+      options.fetchImpl ??
+      vi.fn<typeof fetch>(async () => queue.shift() ?? jsonResponse(200, {}))
+    const transport = createCredentialedBillingTransport({
+      resolveUrl: (route) => `${BASE}${route}`,
+      scopeSource: scope.source,
+      fetchImpl,
+      ...(options.credentials === undefined
+        ? {}
+        : { credentials: options.credentials })
+    })
+    return { transport, fetchImpl, moveTo: scope.moveTo }
+  }
+
+  it.for([
+    [undefined, 'include'],
+    ['same-origin', 'same-origin'],
+    ['omit', 'omit']
+  ] as const)(
+    'sends the host credentials %s as %s and never an Authorization header',
+    async ([credentials, expected]) => {
+      const { transport, fetchImpl } = makeTransport(
+        credentials === undefined ? {} : { credentials }
+      )
+
+      await transport({ method: 'GET', route: '/billing/status' })
+
+      expect(fetchImpl.mock.calls[0]?.[0]).toBe(`${BASE}/billing/status`)
+      expect(fetchImpl.mock.calls[0]?.[1]?.credentials).toBe(expected)
+      expect(sentHeaders(fetchImpl).get('Authorization')).toBeNull()
+    }
+  )
+
+  it('forwards a write body and the key the backend deduplicates it by', async () => {
+    const { transport, fetchImpl } = makeTransport()
+
+    await transport({
+      method: 'POST',
+      route: '/billing/topup',
+      body: { amount_cents: 500 },
+      idempotencyKey: 'key-1'
+    })
+
+    expect(fetchImpl.mock.calls[0]?.[1]?.body).toBe('{"amount_cents":500}')
+    expect(sentHeaders(fetchImpl).get('Idempotency-Key')).toBe('key-1')
+  })
+
+  it('reports NOT_AUTHENTICATED without sending a request when no scope is established', async () => {
+    const { transport, fetchImpl } = makeTransport({ initialScope: undefined })
+
+    const result = await transport({ method: 'GET', route: '/billing/status' })
+
+    expect(result).toEqual({ status: 'error', code: 'NOT_AUTHENTICATED' })
+    expect(fetchImpl).not.toHaveBeenCalled()
+  })
+
+  it.for([
+    { moved: 'to another workspace', next: { ...SCOPE, workspaceId: 'ws-2' } },
+    { moved: 'to no scope', next: undefined }
+  ])(
+    'refuses to attribute a response to a scope the host has left, $moved',
+    async ({ next }: { next: BillingScope | undefined }) => {
+      const scope = fakeScopeSource(SCOPE)
+      const transport = createCredentialedBillingTransport({
+        resolveUrl: (route) => `${BASE}${route}`,
+        scopeSource: scope.source,
+        fetchImpl: vi.fn<typeof fetch>(async () => {
+          scope.moveTo(next)
+          return jsonResponse(200, { ok: true })
+        })
+      })
+
+      const result = await transport({
+        method: 'GET',
+        route: '/billing/status'
+      })
+
+      expect(result).toEqual({ status: 'error', code: 'SUPERSEDED' })
+    }
+  )
+
+  it('returns a refusal as the answer it is, with nothing to re-mint', async () => {
+    const { transport, fetchImpl } = makeTransport({
+      responses: [jsonResponse(401, { message: 'expired' })]
+    })
+
+    const result = await transport({ method: 'GET', route: '/billing/status' })
+
+    expect(result).toEqual({
+      status: 'ok',
+      value: {
+        httpStatus: 401,
+        body: { message: 'expired' },
+        header: expect.any(Function)
+      }
+    })
+    expect(fetchImpl).toHaveBeenCalledOnce()
   })
 
   it('times out a body that never arrives', async () => {

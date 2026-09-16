@@ -22,7 +22,8 @@ import {
   createCapabilitiesReader,
   createCreditsReader,
   createTopupCommand,
-  operationRoute
+  operationRoute,
+  sessionBillingScopeSource
 } from '@comfyorg/account/billing'
 import type {
   AccountCredential,
@@ -169,15 +170,15 @@ export interface HarnessOptions {
 }
 
 export function createBillingHarness(options: HarnessOptions = {}) {
-  const session = fakeSession()
+  const scopeSource = sessionBillingScopeSource(fakeSession())
   const { transport, calls, answer, routes } = fakeTransport()
-  const readerOptions = { transport, session }
+  const readerOptions = { transport, scopeSource }
   const capabilities = createCapabilitiesReader(readerOptions)
   const credits = createCreditsReader(readerOptions)
   const statusReader = createBillingStatusReader(readerOptions)
   const lifecycle = createBillingOperationLifecycle({
     transport,
-    session,
+    scopeSource,
     statusReader,
     embeddedCheckoutAvailable: () => options.embedded === true
   })
