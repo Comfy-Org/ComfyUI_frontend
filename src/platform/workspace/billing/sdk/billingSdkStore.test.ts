@@ -12,6 +12,7 @@ import {
   fakeBillingSdk,
   failedTopup,
   pendingTopup,
+  settledOperation,
   settledTopup
 } from './billingSdkTestUtils'
 import type { HostedBillingDestination } from '@comfyorg/account/billing'
@@ -27,10 +28,12 @@ vi.mock(import('./createBillingSdk'), () => ({
 
 const mockFetchStatus = vi.hoisted(() => vi.fn(async () => undefined))
 const mockFetchBalance = vi.hoisted(() => vi.fn(async () => undefined))
+const mockReconcileSubscription = vi.hoisted(() => vi.fn(async () => undefined))
 vi.mock<unknown>(import('@/composables/billing/useBillingContext'), () => ({
   useBillingContext: () => ({
     fetchStatus: mockFetchStatus,
-    fetchBalance: mockFetchBalance
+    fetchBalance: mockFetchBalance,
+    reconcileSubscriptionSuccess: mockReconcileSubscription
   })
 }))
 
@@ -363,5 +366,108 @@ describe('useBillingSdkStore', () => {
     window.dispatchEvent(new Event('focus'))
 
     expect(harness.sdk.lifecycle.wake).toHaveBeenCalledTimes(2)
+  })
+
+  it('reports a cancel it issued, which no dialog reports on this rail', () => {
+    useBillingSdkStore()
+
+    options.onTelemetry({
+      name: 'billing.operation.succeeded',
+      billing_op_id: 'op-cancel',
+      operation_type: 'cancel',
+      presentation: 'hosted',
+      resumed: false,
+      duration_ms: 900
+    })
+
+    expect(mockTrackBillingEvent).toHaveBeenCalledWith({
+      operation: 'operation',
+      operation_type: 'cancel',
+      billing_op_id: 'op-cancel',
+      duration_ms: 900,
+      stage: 'succeeded',
+      outcome: 'success'
+    })
+  })
+})
+
+describe('useBillingSdkStore subscription commands', () => {
+  const SETTLED = {
+    status: 'ok',
+    value: { phase: 'succeeded', operation: settledOperation('succeeded') }
+  } as const
+
+  const ROUTE_MISSING = {
+    status: 'error',
+    code: 'NOT_FOUND',
+    httpStatus: 404
+  } as const
+
+  it('refreshes what the poller refreshed after a cancel settles', async () => {
+    vi.mocked(harness.sdk.commands.cancelSubscription).mockResolvedValue(
+      SETTLED
+    )
+
+    await expect(
+      useBillingSdkStore().cancelSubscription('Failed to cancel subscription')
+    ).resolves.toEqual({ status: 'ok', value: undefined })
+    expect(mockFetchStatus).toHaveBeenCalledOnce()
+    expect(mockFetchBalance).toHaveBeenCalledOnce()
+    expect(mockCapabilitiesRefresh).toHaveBeenCalledOnce()
+  })
+
+  it('reconciles the subscription after a resubscribe settles', async () => {
+    vi.mocked(harness.sdk.commands.resubscribe).mockResolvedValue(SETTLED)
+
+    await expect(
+      useBillingSdkStore().resubscribe('Failed to resubscribe')
+    ).resolves.toEqual({ status: 'ok', value: undefined })
+    expect(mockReconcileSubscription).toHaveBeenCalledOnce()
+    expect(mockCapabilitiesRefresh).toHaveBeenCalledOnce()
+  })
+
+  it('stops sending to a route the backend answered 404, for every action', async () => {
+    vi.mocked(harness.sdk.commands.cancelSubscription).mockResolvedValue(
+      ROUTE_MISSING
+    )
+    const store = useBillingSdkStore()
+
+    await store.cancelSubscription('Failed to cancel subscription')
+    await store.cancelSubscription('Failed to cancel subscription')
+    await expect(store.resubscribe('Failed to resubscribe')).resolves.toEqual({
+      status: 'unavailable'
+    })
+    await expect(
+      store.openPaymentPortal(
+        'https://app.example/',
+        'Failed to open billing portal'
+      )
+    ).resolves.toEqual({ status: 'unavailable' })
+
+    expect(harness.sdk.commands.cancelSubscription).toHaveBeenCalledOnce()
+    expect(harness.sdk.commands.resubscribe).not.toHaveBeenCalled()
+    expect(harness.sdk.commands.openPaymentPortal).not.toHaveBeenCalled()
+    expect(mockFetchStatus).not.toHaveBeenCalled()
+  })
+
+  it('hands back the portal URL without refreshing anything', async () => {
+    vi.mocked(harness.sdk.commands.openPaymentPortal).mockResolvedValue({
+      status: 'ok',
+      value: { url: 'https://portal.example/session' }
+    })
+
+    await expect(
+      useBillingSdkStore().openPaymentPortal(
+        'https://app.example/',
+        'Failed to open billing portal'
+      )
+    ).resolves.toEqual({
+      status: 'ok',
+      value: 'https://portal.example/session'
+    })
+    expect(harness.sdk.commands.openPaymentPortal).toHaveBeenCalledWith({
+      returnUrl: 'https://app.example/'
+    })
+    expect(mockFetchStatus).not.toHaveBeenCalled()
   })
 })
