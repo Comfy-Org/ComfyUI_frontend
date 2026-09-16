@@ -5,13 +5,7 @@ import { createMemoryHistory, createRouter } from 'vue-router'
 
 import CloudSignupView from '@/platform/cloud/onboarding/CloudSignupView.vue'
 
-vi.mock<unknown>(import('@/composables/auth/useAuthActions'), () => ({
-  useAuthActions: () => ({
-    signInWithGoogle: vi.fn(),
-    signInWithGithub: vi.fn(),
-    signUpWithEmail: vi.fn()
-  })
-}))
+vi.mock(import('@/composables/auth/useAuthActions'))
 
 vi.mock(
   import('@/platform/cloud/onboarding/composables/usePostAuthRedirect'),
@@ -23,9 +17,7 @@ vi.mock(
 vi.mock(import('@comfyorg/account/webviewDetection'), () => ({
   isEmbeddedWebView: () => false
 }))
-vi.mock<unknown>(import('@/platform/telemetry'), () => ({
-  useTelemetry: () => undefined
-}))
+vi.mock(import('@/platform/telemetry'))
 
 const inChina = vi.hoisted(() => ({
   value: false,

@@ -37,13 +37,16 @@ export function workshopExampleState(
   example: PlaygroundExample
 ) {
   const schema = workshopPageSchema(model, example)
+  const exampleState = exampleValues(schema, example)
+  const seeded = applyRouterDefaultInputs(model, schema, exampleState)
   return {
     schema,
-    values: applyRouterDefaultInputs(
-      model,
-      schema,
-      exampleValues(schema, example)
-    )
+    values: {
+      ...seeded,
+      ...Object.fromEntries(
+        Object.keys(example.values).map((name) => [name, exampleState[name]])
+      )
+    }
   }
 }
 

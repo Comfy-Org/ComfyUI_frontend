@@ -1,9 +1,19 @@
-import { computed, onBeforeUnmount, readonly, ref, watch } from 'vue'
+import {
+  computed,
+  effectScope,
+  onScopeDispose,
+  readonly,
+  ref,
+  shallowRef,
+  watch
+} from 'vue'
 import type { Ref } from 'vue'
 
+import { reportError } from '@/platform/telemetry/reportError'
 import { api } from '@/scripts/api'
 import type { RemoteMutationContext } from '@/types/graphMutationContext'
 import { createUuidv4 } from '@/utils/uuid'
+import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 
 import type { MaterializableGraph } from './agentNodeMaterializer'
 import { AgentCrdtDocLifecycle, STALE_AFTER_MS } from './agentCrdtDocLifecycle'
@@ -39,7 +49,7 @@ export { apiTransport, STALE_AFTER_MS }
  * No payload bodies or actor identifiers are recorded here — see
  * `recordDevEvent` call sites for the (dev-only) frame detail surface.
  */
-export interface AgentCrdtOutcomeCounters {
+interface AgentCrdtOutcomeCounters {
   /** Every `doc_update` event the composable's listener was invoked with. */
   received: number
   /** Passed this composable's own filter and the adapter had a bound session to apply it to. */
@@ -71,6 +81,22 @@ export interface AgentCrdtStatus {
   outcomes: AgentCrdtOutcomeCounters
 }
 
+// Nothing is re-thrown: an error escaping onBeforeUnmount reaches Vue's
+// logError, which re-throws in dev/test builds (this app registers no
+// app.config.errorHandler) and aborts the rest of unmountComponent - leaving
+// this composable's watch alive to rebind against destroyed objects.
+function runFollowerTeardown(cleanups: readonly (() => void)[]): void {
+  for (const cleanup of cleanups) {
+    try {
+      cleanup()
+    } catch (error) {
+      reportError(error, {
+        errorType: 'failure_tearing_down_agent_crdt_follower'
+      })
+    }
+  }
+}
+
 export function useAgentCrdtFollower(
   workflowId: Ref<string | null>,
   graphMutations: MutationsForTarget,
@@ -82,6 +108,70 @@ export function useAgentCrdtFollower(
    * reconcile without waiting for the next remote frame.
    */
   getGraph: () => MaterializableGraph | null = () => null
+) {
+  const productGate = useAgentPanelStore()
+  const follower = shallowRef<ReturnType<typeof startAgentCrdtFollower>>()
+  const disabledStatus: AgentCrdtStatus = {
+    enabled: false,
+    connected: false,
+    workflowId: null,
+    updatesApplied: 0,
+    lastFrameType: null,
+    outcomes: {
+      received: 0,
+      applied: 0,
+      skipped: 0,
+      errored: 0,
+      gap: 0,
+      reset: 0,
+      dropped: 0
+    }
+  }
+  const status = computed(() => follower.value?.status.value ?? disabledStatus)
+
+  watch(
+    () => productGate.enabled,
+    (enabled, _previous, onCleanup) => {
+      if (!enabled) return
+      const scope = effectScope()
+      onCleanup(() => {
+        follower.value = undefined
+        scope.stop()
+      })
+      follower.value = scope.run(() =>
+        startAgentCrdtFollower(
+          workflowId,
+          graphMutations,
+          userId,
+          isTargetActive,
+          getGraph
+        )
+      )
+    },
+    { immediate: true, flush: 'sync' }
+  )
+
+  return {
+    status: readonly(status),
+    debugSnapshot: (): CrdtDebugSnapshot =>
+      follower.value?.debugSnapshot() ??
+      readCrdtSnapshot(null, {
+        status: status.value,
+        tabId: null,
+        lastSeq: null,
+        schemaError: null
+      }),
+    enqueueHumanOperations: (operations: GraphOperation[]) =>
+      follower.value?.enqueueHumanOperations(operations)
+  }
+}
+
+function startAgentCrdtFollower(
+  workflowId: Ref<string | null>,
+  graphMutations: MutationsForTarget,
+  userId: () => string | null,
+  isTargetActive: Ref<boolean>,
+  getGraph: () => MaterializableGraph | null
 ) {
   const connected = ref(false)
   const updatesApplied = ref(0)
@@ -427,27 +517,26 @@ export function useAgentCrdtFollower(
     { immediate: true }
   )
 
-  onBeforeUnmount(() => {
+  onScopeDispose(() => {
     // Teardown must be total. Anything that survives would apply every later
     // update twice after a remount.
-    try {
-      lifecycle.destroy()
-      api.removeEventListener('reconnected', onReconnected)
-      api.removeEventListener('status', onSocketActivity)
-      bridge.removeEventListener('doc_subscribed', onSubscribed)
-      bridge.removeEventListener('doc_update', onUpdate)
-      bridge.removeEventListener('doc_ops_result', onOpsResult)
-      bridge.removeEventListener('doc_reset', onDocReset)
-      bridge.removeEventListener('follower_replaced', onFollowerReplaced)
-      bridge.removeEventListener('schema_error', onSchemaError)
-      bridge.removeEventListener('doc_gap', onGap)
-      bridge.removeEventListener('doc_stale', onStale)
-      sender.detach()
-      projection.destroy()
-      bridge.destroy()
-    } finally {
-      client.destroy()
-    }
+    runFollowerTeardown([
+      () => lifecycle.destroy(),
+      () => api.removeEventListener('reconnected', onReconnected),
+      () => api.removeEventListener('status', onSocketActivity),
+      () => bridge.removeEventListener('doc_subscribed', onSubscribed),
+      () => bridge.removeEventListener('doc_update', onUpdate),
+      () => bridge.removeEventListener('doc_ops_result', onOpsResult),
+      () => bridge.removeEventListener('doc_reset', onDocReset),
+      () => bridge.removeEventListener('follower_replaced', onFollowerReplaced),
+      () => bridge.removeEventListener('schema_error', onSchemaError),
+      () => bridge.removeEventListener('doc_gap', onGap),
+      () => bridge.removeEventListener('doc_stale', onStale),
+      () => sender.detach(),
+      () => projection.destroy(),
+      () => bridge.destroy(),
+      () => client.destroy()
+    ])
   })
 
   const status = computed<AgentCrdtStatus>(() => ({

@@ -40,7 +40,7 @@ test('FLUX Erase hydrates its local image and mask and shows an actual Erase res
 test('Kontext Pro shows a sourced price estimate', async ({ page }) => {
   await page.goto('/models/bfl--flux-kontext-pro--edit-images/')
   await expect(page.getByTestId('model-price')).toContainText(
-    'Estimated 8.44 credits/Run'
+    '8.44 credits/Run'
   )
 })
 

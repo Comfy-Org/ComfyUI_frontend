@@ -12,6 +12,7 @@ import { api } from '@/scripts/api'
 import { useNodeDataStore } from '@/stores/nodeDataStore'
 import { toOwningGraphId, toRootGraphId } from '@/types/graphScopeId'
 import { toNodeId } from '@/types/nodeId'
+import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 
 import { encodeBase64 } from './docFrameClient'
 import { useAgentCrdtFollower } from './useAgentCrdtFollower'
@@ -47,6 +48,7 @@ describe('useAgentCrdtFollower projection recovery', () => {
   beforeEach(() => {
     sent.length = 0
     vi.stubGlobal('WebSocket', { OPEN: 1 })
+    useAgentPanelStore().enabled = true
     api.socket = fromPartial<WebSocket>({
       readyState: 1,
       send: vi.fn((frame) => {

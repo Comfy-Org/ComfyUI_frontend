@@ -56,6 +56,13 @@ describe('agentRestClient route + method', () => {
     expect(init.method).toBe('POST')
   })
 
+  it('percent-encodes a hostile thread id instead of retargeting the path', async () => {
+    respond(jsonResponse(202, turnAccepted))
+    await makeClient().postMessage('t1/x', { content: 'hi' })
+
+    expect(lastCall().route).toBe('/agent/threads/t1%2Fx/messages')
+  })
+
   it.for([undefined, [], [{ workflow_id: 'ref', name: 'Reference' }]])(
     'serializes explicit workflow references independently of open tabs: %j',
     async (workflowReferences) => {
@@ -78,10 +85,10 @@ describe('agentRestClient route + method', () => {
 
   it('getMessages GETs the thread messages path', async () => {
     respond(jsonResponse(200, []))
-    await makeClient().getMessages('t7')
+    await makeClient().getMessages('t7/x')
 
     const { route, init } = lastCall()
-    expect(route).toBe('/agent/threads/t7/messages')
+    expect(route).toBe('/agent/threads/t7%2Fx/messages')
     expect(init.method).toBe('GET')
   })
 
@@ -121,20 +128,20 @@ describe('agentRestClient route + method', () => {
 
   it('cancelMessage POSTs the cancel path with an empty JSON body', async () => {
     respond(jsonResponse(202, { status: 'cancelling' }))
-    await makeClient().cancelMessage('t7', 'm3')
+    await makeClient().cancelMessage('t7/x', 'm3/y')
 
     const { route, init } = lastCall()
-    expect(route).toBe('/agent/threads/t7/messages/m3/cancel')
+    expect(route).toBe('/agent/threads/t7%2Fx/messages/m3%2Fy/cancel')
     expect(init.method).toBe('POST')
     expect(init.body).toBe('{}')
   })
 
   it('answerAsk POSTs the selected option to the encoded ask path', async () => {
     respond(jsonResponse(202, { status: 'answered' }))
-    await makeClient().answerAsk('t7', 'turn-1:call/1', ['run'])
+    await makeClient().answerAsk('t7/x', 'turn-1:call/1', ['run'])
 
     const { route, init } = lastCall()
-    expect(route).toBe('/agent/threads/t7/asks/turn-1%3Acall%2F1/answer')
+    expect(route).toBe('/agent/threads/t7%2Fx/asks/turn-1%3Acall%2F1/answer')
     expect(init.method).toBe('POST')
     expect(JSON.parse(init.body as string)).toEqual({ selected: ['run'] })
   })

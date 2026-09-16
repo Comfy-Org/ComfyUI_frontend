@@ -286,7 +286,7 @@
 
 <script setup lang="ts">
 import { useToast } from 'primevue/usetoast'
-import { computed, ref, watch } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { creditsToUsd, usdToCredits } from '@/base/credits/comfyCredits'
@@ -297,13 +297,27 @@ import { useExternalLink } from '@/composables/useExternalLink'
 import { useTelemetry } from '@/platform/telemetry'
 import { usePendingTopup } from '@/composables/billing/usePendingTopup'
 import { isCloud } from '@/platform/distribution/types'
+import type { CheckoutJourneyPhaseEvent } from '@/platform/telemetry/types'
 import { categorizeBillingApiError } from '@/platform/telemetry/utils/billingFailureCategory'
 import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
 import { reportError } from '@/platform/telemetry/reportError'
 import { WorkspaceApiError } from '@/platform/workspace/api/workspaceApi'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 import { useHasSavedPaymentMethod } from '@/platform/workspace/composables/useHasSavedPaymentMethod'
+import { useTopupOperation } from '@/platform/workspace/composables/useTopupOperation'
 import { useBillingOperationStore } from '@/platform/workspace/stores/billingOperationStore'
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
+import {
+  bindOperationToCheckoutJourney,
+  clearCheckoutJourney,
+  getActiveCheckoutJourney,
+  resolveCheckoutAssignment,
+  resolveCheckoutJourney,
+  toCheckoutJourneyContext
+} from '@/platform/workspace/utils/checkoutJourney'
+import type { CheckoutJourneyRecord } from '@/platform/workspace/utils/checkoutJourney'
+import { api } from '@/scripts/api'
+import { useAuthStore } from '@/stores/authStore'
 import { useDialogStore } from '@/stores/dialogStore'
 import { cn } from '@comfyorg/tailwind-utils'
 
@@ -317,15 +331,51 @@ const settingsDialog = useSettingsDialog()
 const telemetry = useTelemetry()
 const toast = useToast()
 const { buildDocsUrl, docsPaths } = useExternalLink()
-const { fetchBalance, fetchStatus, manageSubscription, topup } =
-  useBillingContext()
+const { fetchBalance, fetchStatus, manageSubscription } = useBillingContext()
 const { canTopUp } = useBillingCapabilities()
 
 const billingOperationStore = useBillingOperationStore()
-const isAddingCredits = computed(() => billingOperationStore.isAddingCredits)
-const topupOperation = computed(
-  () => billingOperationStore.topupActionOperation
-)
+const workspaceStore = useTeamWorkspaceStore()
+
+function emitTopupJourneyPhase(
+  record: CheckoutJourneyRecord,
+  phase: CheckoutJourneyPhaseEvent
+): void {
+  telemetry?.trackCheckoutJourneyEvent({
+    ...toCheckoutJourneyContext(record),
+    ...phase
+  })
+}
+
+function enterTopupJourney(): void {
+  const workspaceId = workspaceStore.activeWorkspaceId
+  const ownerUid = useAuthStore().userId
+  if (!workspaceId || !ownerUid) return
+
+  const resolved = resolveCheckoutJourney({
+    actorUid: ownerUid,
+    workspaceId,
+    entryFlow: 'topup',
+    entrySource: 'settings_billing',
+    assignment: resolveCheckoutAssignment(api.getServerFeatures())
+  })
+  if (resolved.status === 'blocked' || resolved.resumed) return
+
+  emitTopupJourneyPhase(resolved.record, { phase: 'entered' })
+}
+
+onMounted(enterTopupJourney)
+const {
+  isAddingCredits,
+  topupOperation,
+  topup,
+  retryPaymentAuthentication,
+  dismissOperation
+} = useTopupOperation()
+// Start over invalidates the attempt in flight: on the SDK rail the purchase
+// call resolves only at settlement, so a superseded attempt must not unlock
+// or close the dialog for the attempt that replaced it.
+let purchaseAttempt = 0
 const topupActionUrl = computed(() => topupOperation.value?.actionUrl ?? null)
 const topupAuthenticationError = computed(
   () => topupOperation.value?.errorMessage ?? null
@@ -407,6 +457,7 @@ const paymentLocked = computed(
 watch(
   [isAddingCredits, topupOperation, canTopUp],
   ([addingCredits, operation, allowed]) => {
+    if (addingCredits || operation) loading.value = false
     if (step.value === 'verifying' && !addingCredits && !operation) {
       step.value = 'amount'
       return
@@ -474,12 +525,13 @@ function openTopupVerification() {
 function resumeTopupAuthentication() {
   const operation = topupOperation.value
   if (!operation || !canTopUp.value) return
-  void billingOperationStore.retryPaymentAuthentication(operation.opId)
+  void retryPaymentAuthentication(operation.opId)
 }
 
 function startOverTopup() {
+  purchaseAttempt += 1
   const operation = topupOperation.value
-  if (operation) billingOperationStore.dismissOperation(operation.opId)
+  if (operation) dismissOperation(operation.opId)
   paymentSubmitted.value = false
   step.value = 'amount'
 }
@@ -496,6 +548,9 @@ async function handleBuy() {
     return
   }
 
+  purchaseAttempt += 1
+  const attempt = purchaseAttempt
+  const isCurrentAttempt = () => attempt === purchaseAttempt
   loading.value = true
   paymentSubmitted.value = true
   const attemptStartedAt = Date.now()
@@ -513,10 +568,15 @@ async function handleBuy() {
       operation_type: 'topup'
     })
 
+    const submittingJourney = getActiveCheckoutJourney()
+    if (submittingJourney) {
+      emitTopupJourneyPhase(submittingJourney, { phase: 'submitted' })
+    }
+
     const amountCents = payAmount.value * 100
     const response = await topup(amountCents)
     if (!response) {
-      paymentSubmitted.value = false
+      if (isCurrentAttempt()) paymentSubmitted.value = false
       telemetry?.trackBillingEvent({
         operation: 'topup',
         stage: 'failed',
@@ -535,7 +595,30 @@ async function handleBuy() {
       return
     }
 
+    // Only correlate the response to the journey that submitted it: the user
+    // may have closed this dialog and started another journey while the
+    // request was in flight, and that later journey must not be bound here.
+    const submittingJourneyStillActive =
+      submittingJourney !== null &&
+      getActiveCheckoutJourney()?.journey_id === submittingJourney.journey_id
+    if (submittingJourneyStillActive) {
+      const linkedJourney = bindOperationToCheckoutJourney(
+        response.billing_op_id
+      )
+      if (linkedJourney) {
+        emitTopupJourneyPhase(linkedJourney, {
+          phase: 'operation_linked',
+          billing_op_id: response.billing_op_id
+        })
+      }
+    }
+
     if (response.status === 'completed') {
+      if (
+        getActiveCheckoutJourney()?.billing_op_id === response.billing_op_id
+      ) {
+        clearCheckoutJourney()
+      }
       telemetry?.trackBillingEvent({
         operation: 'topup',
         stage: 'succeeded',
@@ -557,6 +640,7 @@ async function handleBuy() {
         life: 5000
       })
       await Promise.allSettled([fetchBalance(), fetchStatus()])
+      if (!isCurrentAttempt()) return
       handleClose(false)
       settingsDialog.show(isCloud ? 'workspace' : 'credits')
     } else if (response.status === 'pending') {
@@ -566,14 +650,19 @@ async function handleBuy() {
           autoHandleRequiresAction: true
         })
         .then(() => {
-          paymentSubmitted.value = false
+          if (isCurrentAttempt()) paymentSubmitted.value = false
         })
         .catch(() => {
-          reportPurchaseError(attemptStartedAt, response.billing_op_id)
+          reportPurchaseError(
+            attemptStartedAt,
+            response.billing_op_id,
+            undefined,
+            isCurrentAttempt()
+          )
         })
     } else {
       // Synchronous 'failed' here means the charge was declined, not rejected pre-attempt.
-      paymentSubmitted.value = false
+      if (isCurrentAttempt()) paymentSubmitted.value = false
       telemetry?.trackBillingEvent({
         operation: 'topup',
         stage: 'failed',
@@ -598,18 +687,19 @@ async function handleBuy() {
       })
     }
   } catch (error) {
-    reportPurchaseError(attemptStartedAt, undefined, error)
+    reportPurchaseError(attemptStartedAt, undefined, error, isCurrentAttempt())
   } finally {
-    loading.value = false
+    if (isCurrentAttempt()) loading.value = false
   }
 }
 
 function reportPurchaseError(
   attemptStartedAt: number,
   billingOpId?: string,
-  error?: unknown
+  error?: unknown,
+  currentAttempt = true
 ) {
-  paymentSubmitted.value = false
+  if (currentAttempt) paymentSubmitted.value = false
   console.error('Purchase failed', ...(error === undefined ? [] : [error]))
 
   telemetry?.trackBillingEvent({

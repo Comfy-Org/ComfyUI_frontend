@@ -9,8 +9,9 @@ import ModelDetail from './ModelDetail.vue'
 vi.mock<unknown>(import('../../scripts/posthog'), async () => {
   const { ref } = await import('vue')
   return {
-    useWorkshopAuthFlag: () => ref(true),
-    useWorkshopAuthFlagSettled: () => ref(true)
+    captureWorkshopEvent: vi.fn(),
+    useWorkshopEnabled: () => ref(true),
+    useWorkshopAuthFlag: () => ref(true)
   }
 })
 

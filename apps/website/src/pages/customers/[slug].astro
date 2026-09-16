@@ -76,7 +76,7 @@ const relatedVideo = customerVideoForStory(storySlug(entry.id))
   <CustomerArticle entry={entry} />
   {
     relatedVideo && (
-      <div class="max-w-9xl mx-auto px-6 pb-10 lg:px-16">
+      <div class="mx-auto max-w-9xl px-6 pb-10 lg:px-16">
         <a
           href={`/customers/videos/${relatedVideo.slug}`}
           class="text-sm font-semibold tracking-wide text-primary-comfy-yellow uppercase hover:underline"

@@ -8,10 +8,10 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 
 <template>
   <section
-    class="max-w-9xl mx-auto flex flex-col items-center px-4 pt-16 pb-24 text-center lg:px-20 lg:pt-20 lg:pb-40"
+    class="mx-auto flex max-w-9xl flex-col items-center px-4 pt-16 pb-24 text-center lg:px-20 lg:pt-20 lg:pb-40"
   >
     <span
-      class="text-primary-comfy-yellow text-sm font-bold tracking-widest uppercase"
+      class="text-sm font-bold tracking-widest text-primary-comfy-yellow uppercase"
     >
       {{ t('gallery.contact.label', locale) }}
     </span>
