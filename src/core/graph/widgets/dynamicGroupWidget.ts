@@ -158,7 +158,11 @@ export function dynamicGroupWidget(
       value: undefined,
       y: 0,
       serialize: false,
-      options: { socketless: true, serialize: false },
+      options: {
+        socketless: true,
+        serialize: false,
+        surfaces: { canvas: 'never', vueNode: 'shown', panel: 'shown' }
+      },
       callback: () => {
         if (rows().length <= min) return
         changeRows(() => {
@@ -191,12 +195,6 @@ export function dynamicGroupWidget(
     const widgets = node.widgets
     if (!widgets) return false
     const added = widgets.splice(start)
-    for (const widget of added) {
-      widget.options = {
-        ...widget.options,
-        surfaces: { ...deriveWidgetSurfaces(widget), canvas: 'never' }
-      }
-    }
     widgets.splice(widgets.indexOf(add), 0, ...added)
     return true
   }
@@ -215,13 +213,16 @@ export function dynamicGroupWidget(
             transformInputSpecV1ToV2(spec, { name, isOptional })),
           display_name: spec[1]?.display_name ?? field
         })
-        node.widgets
-          ?.slice(fieldStart)
-          .filter((widget) => widget.name !== name)
-          .forEach((widget, index) => {
-            widget.label ??= widget.name
-            widget.name = `${name}.${index}`
-          })
+        let auxiliaryIndex = 0
+        node.widgets?.slice(fieldStart).forEach((widget) => {
+          widget.options = {
+            ...widget.options,
+            surfaces: { ...deriveWidgetSurfaces(widget), canvas: 'never' }
+          }
+          if (widget.name === name) return
+          widget.label ??= widget.name
+          widget.name = `${name}.${auxiliaryIndex++}`
+        })
       }
     }
   }
