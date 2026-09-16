@@ -9,6 +9,8 @@ import {
 } from 'firebase/auth'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { useTelemetry } from '@/platform/telemetry'
+
 import type {
   LoadedComfyWorkflow,
   PendingWarnings
@@ -87,9 +89,8 @@ function makeWorkflowDataWithId(id: string): ComfyWorkflowJSON {
   return { ...makeWorkflowData(), id }
 }
 
-const { mockConfirm, mockTrackWorkflowSaved } = vi.hoisted(() => ({
-  mockConfirm: vi.fn(),
-  mockTrackWorkflowSaved: vi.fn()
+const { mockConfirm } = vi.hoisted(() => ({
+  mockConfirm: vi.fn()
 }))
 
 vi.mock<unknown>(import('@/services/dialogService'), () => ({
@@ -131,13 +132,7 @@ vi.mock(import('@/platform/telemetry/reportError'), () => ({
   reportError: reportErrorMock
 }))
 
-vi.mock<unknown>(import('@/platform/telemetry'), () => ({
-  useTelemetry: () => ({
-    trackDefaultViewSet: vi.fn(),
-    trackWorkflowSaved: mockTrackWorkflowSaved,
-    trackEnterLinear: vi.fn()
-  })
-}))
+vi.mock(import('@/platform/telemetry'))
 
 function createWorkflow(
   warnings: PendingWarnings | null = null,
@@ -2530,8 +2525,8 @@ describe('useWorkflowService', () => {
         'workflows/test.app.json'
       )
       expect(workflowStore.saveWorkflow).toHaveBeenCalledWith(copy)
-      expect(mockTrackWorkflowSaved).toHaveBeenCalledTimes(1)
-      expect(mockTrackWorkflowSaved).toHaveBeenCalledWith({
+      expect(useTelemetry()?.trackWorkflowSaved).toHaveBeenCalledTimes(1)
+      expect(useTelemetry()?.trackWorkflowSaved).toHaveBeenCalledWith({
         is_app: true,
         is_new: true
       })
@@ -2568,8 +2563,8 @@ describe('useWorkflowService', () => {
         isApp: true
       })
 
-      expect(mockTrackWorkflowSaved).toHaveBeenCalledTimes(1)
-      expect(mockTrackWorkflowSaved).toHaveBeenCalledWith({
+      expect(useTelemetry()?.trackWorkflowSaved).toHaveBeenCalledTimes(1)
+      expect(useTelemetry()?.trackWorkflowSaved).toHaveBeenCalledWith({
         is_app: true,
         is_new: true
       })

@@ -32,7 +32,7 @@ export async function getOggMetadata(file: File) {
   }
   let workflow: ComfyWorkflowJSON | undefined
   let prompt: ComfyApiWorkflow | undefined
-  let prompt_s = header
+  const prompt_s = header
     .match(/prompt=(\{.*?(\}.*?\u0000))/s)?.[1]
     ?.match(/\{.*\}/)?.[0]
   if (prompt_s) {
@@ -42,7 +42,7 @@ export async function getOggMetadata(file: File) {
       console.error('Failed to parse Ogg prompt metadata', e)
     }
   }
-  let workflow_s = header
+  const workflow_s = header
     .match(/workflow=(\{.*?(\}.*?\u0000))/s)?.[1]
     ?.match(/\{.*\}/)?.[0]
   if (workflow_s) {

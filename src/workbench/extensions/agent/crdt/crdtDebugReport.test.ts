@@ -30,6 +30,7 @@ vi.mock(import('@/platform/telemetry/reportError'), () => ({
 
 import type { ReportIdentifiers, ReportSources } from './crdtDebugReport'
 import type { CrdtDebugSnapshot } from './crdtSnapshot'
+import type { DevEvent } from './devPanelLog'
 import { collectCrdtDebugReport } from './crdtDebugReport'
 
 const ALL_SOURCES: ReportSources = {
@@ -527,5 +528,45 @@ describe('collectCrdtDebugReport', () => {
     })
 
     expect(report).toContain('workflow omitted')
+  })
+
+  it('deterministically caps an oversized report without dropping its contract markers', async () => {
+    vi.useFakeTimers()
+    vi.setSystemTime(new Date('2026-09-12T00:00:00Z'))
+    const oversizedEvents: DevEvent[] = Array.from({ length: 4 }, (_, seq) => ({
+      seq,
+      at: seq,
+      kind: 'doc_update',
+      scope: 'doc',
+      level: 'info',
+      detail: { trace: '🧪'.repeat(80_000) }
+    }))
+
+    const first = await collectCrdtDebugReport({
+      crdt: SNAPSHOT,
+      events: oversizedEvents,
+      testerNote: 'n'.repeat(300_000)
+    })
+    const second = await collectCrdtDebugReport({
+      crdt: SNAPSHOT,
+      events: oversizedEvents,
+      testerNote: 'n'.repeat(300_000)
+    })
+
+    try {
+      expect(first.length).toBeLessThanOrEqual(256_000)
+      expect(second).toBe(first)
+      expect(first).toContain('report truncated')
+      expect(first).toContain(
+        'Report format version: 1 · Document schema version: 1'
+      )
+      expect(first).toContain('Schema version:** 1')
+      expect(first).toContain('[redacted by the debug report]')
+      expect(first).not.toMatch(
+        /[\uD800-\uDBFF](?![\uDC00-\uDFFF])|(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]/u
+      )
+    } finally {
+      vi.useRealTimers()
+    }
   })
 })

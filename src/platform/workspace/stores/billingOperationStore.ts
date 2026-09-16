@@ -27,8 +27,13 @@ import type {
   BillingOperationPhase,
   BillingDeclineReason
 } from '@/platform/workspace/api/workspaceApi'
+import { needsCustomerAttention } from '@/platform/workspace/billing/customerAttention'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
+import {
+  clearCheckoutJourney,
+  getActiveCheckoutJourney
+} from '@/platform/workspace/utils/checkoutJourney'
 import { useDialogStore } from '@/stores/dialogStore'
 
 const INITIAL_INTERVAL_MS = 1000
@@ -169,11 +174,7 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
       (op) =>
         op.type === 'subscription' &&
         op.workspaceId === workspaceStore.activeWorkspaceId &&
-        ((op.status === 'pending' &&
-          (op.actionUrl !== null ||
-            op.authenticationState === 'requires_action' ||
-            op.authenticationState === 'failed_retryable')) ||
-          op.status === 'reconciliation_needed')
+        needsCustomerAttention(op)
     )
   )
 
@@ -183,11 +184,7 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
         op.type === 'topup' &&
         op.workspaceId === workspaceStore.activeWorkspaceId &&
         !op.dismissed &&
-        ((op.status === 'pending' &&
-          (op.actionUrl !== null ||
-            op.authenticationState === 'requires_action' ||
-            op.authenticationState === 'failed_retryable')) ||
-          op.status === 'reconciliation_needed')
+        needsCustomerAttention(op)
     )
   )
 
@@ -671,6 +668,10 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
     if (!operation) return
 
     updateOperationStatus(opId, 'succeeded', null)
+
+    if (getActiveCheckoutJourney()?.billing_op_id === opId) {
+      clearCheckoutJourney()
+    }
 
     try {
       cleanup(opId)

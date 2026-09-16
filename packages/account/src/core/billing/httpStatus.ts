@@ -3,11 +3,25 @@
  * deliberately returns an answer of any status as `ok`, so that every typed
  * operation maps status the same way instead of each inventing its own.
  */
-import type { BillingErrorCode } from './billingContracts.js'
+import type {
+  BillingErrorCode,
+  BillingHttpResponse
+} from './billingContracts.js'
 
-export function codeForHttpStatus(status: number): BillingErrorCode {
-  // A 401 only reaches here having already survived the transport's single
-  // re-mint and retry, so it is a real refusal rather than an expired token.
+export function codeForHttpStatus(
+  response: Pick<
+    BillingHttpResponse,
+    'httpStatus' | 'authenticationRetrySkipped'
+  >
+): BillingErrorCode {
+  const status = response.httpStatus
+  // A 401 the transport re-minted and retried is a real refusal. One it had
+  // to leave alone, because the write was not replayable, says only that the
+  // token had gone stale; the caller's next attempt mints a fresh one, so it
+  // joins the transient bucket rather than reading as a permanent denial.
+  if (status === 401 && response.authenticationRetrySkipped) {
+    return 'REQUEST_FAILED'
+  }
   if (status === 401 || status === 403) return 'ACCESS_DENIED'
   if (status === 404) return 'NOT_FOUND'
   if (status === 409) return 'CONFLICT'

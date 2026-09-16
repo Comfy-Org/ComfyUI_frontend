@@ -32,7 +32,7 @@ function isActiveTracker(tracker: ChangeTracker): boolean {
 function isAutoQueueOnChange(): boolean {
   return (
     useQueueSettingsStore().mode === 'change' ||
-    (app.ui.autoQueueEnabled === true && app.ui.autoQueueMode === 'change')
+    (app.ui.autoQueueEnabled && app.ui.autoQueueMode === 'change')
   )
 }
 

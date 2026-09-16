@@ -173,11 +173,11 @@ const EVENT_KINDS: readonly DevEventKind[] = [
 ]
 
 const VERDICT_TONE: Record<string, string> = {
-  applied: 'text-agent-success border-agent-success',
-  'lww-dropped': 'text-agent-fg-muted border-agent-border-strong',
-  'no-op': 'text-agent-fg-muted border-agent-border-strong',
-  rejected: 'text-agent-danger border-agent-danger',
-  'not-reached': 'text-agent-fg-muted border-agent-border'
+  applied: 'text-success-background border-success-background',
+  'lww-dropped': 'text-muted-foreground border-border-default',
+  'no-op': 'text-muted-foreground border-border-default',
+  rejected: 'text-destructive-background border-destructive-background',
+  'not-reached': 'text-muted-foreground border-component-node-border'
 }
 
 // ── open/close state, persisted ───────────────────────────────────────────
@@ -622,7 +622,7 @@ function fmtTime(at: number): string {
       v-if="dismissed"
       type="button"
       :title="S.restore"
-      class="text-agent-fg-muted border-agent-border bg-agent-surface-raised hover:text-agent-fg hover:bg-agent-surface-hover mr-4 mb-1 flex h-6 cursor-pointer items-center gap-1 self-end rounded-full border px-2 transition-colors"
+      class="mr-4 mb-1 flex h-6 cursor-pointer items-center gap-1 self-end rounded-full border border-component-node-border bg-secondary-background px-2 text-muted-foreground transition-colors hover:bg-secondary-background-hover hover:text-base-foreground"
       data-testid="crdt-dev-panel-restore"
       @click="restore"
     >
@@ -635,7 +635,7 @@ function fmtTime(at: number): string {
       ref="chipButton"
       type="button"
       :title="S.open"
-      class="text-agent-fg-muted border-agent-border bg-agent-surface-raised hover:text-agent-fg hover:bg-agent-surface-hover mr-4 mb-1 flex h-6 cursor-pointer items-center gap-1 self-end rounded-full border px-2 transition-colors"
+      class="mr-4 mb-1 flex h-6 cursor-pointer items-center gap-1 self-end rounded-full border border-component-node-border bg-secondary-background px-2 text-muted-foreground transition-colors hover:bg-secondary-background-hover hover:text-base-foreground"
       data-testid="crdt-dev-panel-chip"
       @click="setOpen(true)"
     >
@@ -643,7 +643,9 @@ function fmtTime(at: number): string {
         :class="
           cn(
             'size-1.5 rounded-full',
-            status.connected ? 'bg-agent-success' : 'bg-agent-danger'
+            status.connected
+              ? 'bg-success-background'
+              : 'bg-destructive-background'
           )
         "
       />
@@ -652,18 +654,18 @@ function fmtTime(at: number): string {
 
     <section
       v-else
-      class="bg-agent-surface border-agent-border text-agent-fg flex min-h-0 grow flex-col overflow-hidden border-y"
+      class="flex min-h-0 grow flex-col overflow-hidden border-y border-component-node-border bg-base-background text-base-foreground"
       data-testid="crdt-dev-panel"
     >
       <header
-        class="border-agent-border flex h-8 shrink-0 items-center gap-2 border-b px-2"
+        class="flex h-8 shrink-0 items-center gap-2 border-b border-component-node-border px-2"
       >
         <span class="font-bold">{{ S.title }}</span>
-        <label class="text-agent-fg-muted ml-auto flex items-center gap-1">
+        <label class="ml-auto flex items-center gap-1 text-muted-foreground">
           {{ S.verbosity }}
           <select
             v-model="level"
-            class="border-agent-border bg-agent-surface-raised rounded-sm border px-1 py-0.5"
+            class="rounded-sm border border-component-node-border bg-secondary-background px-1 py-0.5"
             data-testid="crdt-dev-panel-verbosity"
             @change="onLevelChange(level)"
           >
@@ -679,7 +681,7 @@ function fmtTime(at: number): string {
         <button
           type="button"
           :title="S.hide"
-          class="text-agent-fg-muted hover:text-agent-danger cursor-pointer"
+          class="cursor-pointer text-muted-foreground hover:text-destructive-background"
           data-testid="crdt-dev-panel-dismiss"
           @click="dismiss"
         >
@@ -689,7 +691,7 @@ function fmtTime(at: number): string {
           ref="closeButton"
           type="button"
           :title="S.close"
-          class="text-agent-fg-muted hover:text-agent-fg cursor-pointer"
+          class="cursor-pointer text-muted-foreground hover:text-base-foreground"
           data-testid="crdt-dev-panel-close"
           @click="setOpen(false)"
         >
@@ -697,7 +699,7 @@ function fmtTime(at: number): string {
         </button>
       </header>
 
-      <nav class="border-agent-border flex shrink-0 border-b">
+      <nav class="flex shrink-0 border-b border-component-node-border">
         <button
           v-for="entry in [
             ['status', S.tabStatus],
@@ -710,8 +712,8 @@ function fmtTime(at: number): string {
             cn(
               'flex-1 cursor-pointer px-2 py-1 transition-colors',
               tab === entry[0]
-                ? 'text-agent-fg border-agent-accent border-b-2'
-                : 'text-agent-fg-muted hover:text-agent-fg'
+                ? 'border-b-2 border-primary-background text-base-foreground'
+                : 'text-muted-foreground hover:text-base-foreground'
             )
           "
           :data-testid="`crdt-dev-panel-tab-${entry[0]}`"
@@ -724,13 +726,13 @@ function fmtTime(at: number): string {
       <div class="min-h-0 flex-1 space-y-3 overflow-y-auto p-2">
         <template v-if="tab === 'status'">
           <section>
-            <div class="text-agent-fg-muted mb-1 font-bold">
+            <div class="mb-1 font-bold text-muted-foreground">
               {{ S.sectionFollower }}
             </div>
             <table class="w-full">
               <tbody>
                 <tr v-for="row in STATUS_ROWS" :key="row[0]">
-                  <td class="text-agent-fg-muted pr-2 align-top">
+                  <td class="pr-2 align-top text-muted-foreground">
                     {{ row[0] }}
                   </td>
                   <td class="break-all">
@@ -738,7 +740,7 @@ function fmtTime(at: number): string {
                     <button
                       v-if="row[0] === 'doc id' && status.workflowId"
                       type="button"
-                      class="border-agent-border hover:bg-agent-surface-hover ml-1 cursor-pointer rounded-sm border px-1.5 py-0.5"
+                      class="ml-1 cursor-pointer rounded-sm border border-component-node-border px-1.5 py-0.5 hover:bg-secondary-background-hover"
                       :aria-label="S.copyDocumentId"
                       @click="
                         copyItem(`doc:${status.workflowId}`, status.workflowId)
@@ -753,13 +755,13 @@ function fmtTime(at: number): string {
           </section>
 
           <section>
-            <div class="text-agent-fg-muted mb-1 font-bold">
+            <div class="mb-1 font-bold text-muted-foreground">
               {{ S.sectionDoc }}
             </div>
             <table class="w-full">
               <tbody>
                 <tr v-for="row in docRows" :key="row[0]">
-                  <td class="text-agent-fg-muted pr-2 align-top">
+                  <td class="pr-2 align-top text-muted-foreground">
                     {{ row[0] }}
                   </td>
                   <td class="break-all">{{ row[1] }}</td>
@@ -769,10 +771,10 @@ function fmtTime(at: number): string {
           </section>
 
           <section>
-            <div class="text-agent-fg-muted mb-1 font-bold">
+            <div class="mb-1 font-bold text-muted-foreground">
               {{ S.sectionProxy }}
             </div>
-            <div class="text-agent-fg-muted break-all">{{ proxyTarget }}</div>
+            <div class="break-all text-muted-foreground">{{ proxyTarget }}</div>
           </section>
         </template>
 
@@ -780,7 +782,7 @@ function fmtTime(at: number): string {
           <div class="flex flex-wrap items-center gap-1">
             <select
               v-model="scopeFilter"
-              class="border-agent-border bg-agent-surface-raised rounded-sm border px-1 py-0.5"
+              class="rounded-sm border border-component-node-border bg-secondary-background px-1 py-0.5"
               data-testid="crdt-dev-panel-scope-filter"
             >
               <option value="">{{ S.allScopes }}</option>
@@ -790,7 +792,7 @@ function fmtTime(at: number): string {
             </select>
             <select
               v-model="levelFilter"
-              class="border-agent-border bg-agent-surface-raised rounded-sm border px-1 py-0.5"
+              class="rounded-sm border border-component-node-border bg-secondary-background px-1 py-0.5"
             >
               <option value="">{{ S.allLevels }}</option>
               <option
@@ -803,7 +805,7 @@ function fmtTime(at: number): string {
             </select>
             <select
               v-model="kindFilter"
-              class="border-agent-border bg-agent-surface-raised rounded-sm border px-1 py-0.5"
+              class="rounded-sm border border-component-node-border bg-secondary-background px-1 py-0.5"
               data-testid="crdt-dev-panel-filter"
             >
               <option value="">{{ S.allKinds }}</option>
@@ -811,12 +813,12 @@ function fmtTime(at: number): string {
                 {{ kind }}
               </option>
             </select>
-            <span class="text-agent-fg-muted ml-auto"
+            <span class="ml-auto text-muted-foreground"
               >{{ matchingEvents.length }} {{ S.events }}</span
             >
             <button
               type="button"
-              class="border-agent-border hover:bg-agent-surface-hover cursor-pointer rounded-sm border px-1.5 py-0.5"
+              class="cursor-pointer rounded-sm border border-component-node-border px-1.5 py-0.5 hover:bg-secondary-background-hover"
               @click="clearDevEvents()"
             >
               {{ S.clear }}
@@ -827,32 +829,32 @@ function fmtTime(at: number): string {
             <div
               v-for="row in visibleLogRows"
               :key="row.event.seq"
-              class="border-agent-border border-b pb-1"
+              class="border-b border-component-node-border pb-1"
             >
               <button
                 type="button"
-                class="hover:bg-agent-surface-hover block w-full cursor-pointer text-left"
+                class="block w-full cursor-pointer text-left hover:bg-secondary-background-hover"
                 @click="
                   expanded = expanded === row.event.seq ? null : row.event.seq
                 "
               >
                 <div class="flex items-baseline gap-1">
-                  <span class="text-agent-fg-muted">{{
+                  <span class="text-muted-foreground">{{
                     fmtTime(row.event.at)
                   }}</span>
                   <span
                     :class="
                       cn(
-                        'border-agent-border rounded-sm border px-1',
+                        'rounded-sm border border-component-node-border px-1',
                         row.event.level === 'warn' &&
-                          'text-agent-danger border-agent-danger'
+                          'border-destructive-background text-destructive-background'
                       )
                     "
                     >{{ row.event.scope }}</span
                   >
                   <span class="font-bold">{{ row.event.kind }}</span>
                 </div>
-                <div class="text-agent-fg-muted break-all">
+                <div class="break-all text-muted-foreground">
                   {{
                     expanded === row.event.seq
                       ? truncateDetail(row.detail, 20_000)
@@ -867,7 +869,7 @@ function fmtTime(at: number): string {
                 <button
                   v-if="row.detail"
                   type="button"
-                  class="border-agent-border hover:bg-agent-surface-hover cursor-pointer rounded-sm border px-1.5 py-0.5"
+                  class="cursor-pointer rounded-sm border border-component-node-border px-1.5 py-0.5 hover:bg-secondary-background-hover"
                   :aria-label="S.copyLogDetail"
                   @click="copyItem(`detail:${row.event.seq}`, row.detail)"
                 >
@@ -877,7 +879,7 @@ function fmtTime(at: number): string {
                   v-for="nodeId in row.nodeIds"
                   :key="nodeId"
                   type="button"
-                  class="border-agent-border hover:bg-agent-surface-hover cursor-pointer rounded-sm border px-1.5 py-0.5"
+                  class="cursor-pointer rounded-sm border border-component-node-border px-1.5 py-0.5 hover:bg-secondary-background-hover"
                   :aria-label="`${S.copy} node id ${nodeId}`"
                   @click="copyItem(`node:${row.event.seq}:${nodeId}`, nodeId)"
                 >
@@ -890,14 +892,14 @@ function fmtTime(at: number): string {
 
         <template v-else>
           <div
-            class="border-agent-border bg-agent-surface-raised text-agent-fg-muted rounded-sm border px-2 py-1 font-bold"
+            class="rounded-sm border border-component-node-border bg-secondary-background px-2 py-1 font-bold text-muted-foreground"
             data-testid="crdt-dev-panel-simulation-label"
           >
             {{ S.simulated }}
           </div>
 
           <select
-            class="border-agent-border bg-agent-surface-raised w-full rounded-sm border p-1"
+            class="w-full rounded-sm border border-component-node-border bg-secondary-background p-1"
             data-testid="crdt-dev-panel-scenario"
             @change="selectScenario(($event.target as HTMLSelectElement).value)"
           >
@@ -911,13 +913,13 @@ function fmtTime(at: number): string {
             </option>
           </select>
 
-          <p class="text-agent-fg-muted">
+          <p class="text-muted-foreground">
             {{ S.question }}: {{ scenario.question }}
           </p>
 
           <button
             type="button"
-            class="border-agent-accent text-agent-fg hover:bg-agent-surface-hover w-full cursor-pointer rounded-sm border px-2 py-1"
+            class="w-full cursor-pointer rounded-sm border border-primary-background px-2 py-1 text-base-foreground hover:bg-secondary-background-hover"
             data-testid="crdt-dev-panel-run"
             @click="run"
           >
@@ -932,14 +934,14 @@ function fmtTime(at: number): string {
               <li
                 v-for="entry in simulation.entries"
                 :key="entry.index"
-                class="border-agent-border border-l-2 pl-2"
+                class="border-l-2 border-component-node-border pl-2"
               >
                 <div class="flex flex-wrap items-baseline gap-1">
-                  <span class="text-agent-fg-muted"
+                  <span class="text-muted-foreground"
                     >{{ entry.index + 1 }}.</span
                   >
                   <span class="font-bold">{{ entry.kind }}</span>
-                  <span class="text-agent-fg-muted">{{ entry.actor }}</span>
+                  <span class="text-muted-foreground">{{ entry.actor }}</span>
                   <span
                     :class="
                       cn(
@@ -950,20 +952,22 @@ function fmtTime(at: number): string {
                     >{{ verdictLabel(entry) }}</span
                   >
                 </div>
-                <div class="text-agent-fg-muted">{{ registerLine(entry) }}</div>
+                <div class="text-muted-foreground">
+                  {{ registerLine(entry) }}
+                </div>
                 <p class="mt-0.5 mb-0">{{ entry.explanation }}</p>
               </li>
             </ol>
 
             <section>
-              <div class="text-agent-fg-muted mb-1 font-bold">
+              <div class="mb-1 font-bold text-muted-foreground">
                 {{ S.sectionOutcome }}
               </div>
               <div>
                 {{ simulation.survivingNodeIds.length }} {{ S.survivingNodes }}:
                 {{ simulation.survivingNodeIds.join(', ') || S.none }}
               </div>
-              <div class="text-agent-fg-muted break-all">
+              <div class="break-all text-muted-foreground">
                 {{ S.survivingWidgets }}:
                 {{
                   truncateDetail(stringifyDetail(simulation.survivingWidgets))
@@ -972,7 +976,7 @@ function fmtTime(at: number): string {
             </section>
 
             <section v-if="registerGroups.length">
-              <div class="text-agent-fg-muted mb-1 font-bold">
+              <div class="mb-1 font-bold text-muted-foreground">
                 {{ S.sectionByRegister }}
               </div>
               <div v-for="group in registerGroups" :key="group.register">
@@ -980,7 +984,7 @@ function fmtTime(at: number): string {
                 <div
                   v-for="entry in group.entries"
                   :key="entry.index"
-                  class="text-agent-fg-muted pl-2"
+                  class="pl-2 text-muted-foreground"
                 >
                   {{ entry.kind }} · {{ entry.actor }} ·
                   {{ verdictLabel(entry) }}
@@ -989,13 +993,13 @@ function fmtTime(at: number): string {
             </section>
 
             <section v-if="lifecycle.length">
-              <div class="text-agent-fg-muted mb-1 font-bold">
+              <div class="mb-1 font-bold text-muted-foreground">
                 {{ S.sectionLifecycle }}
               </div>
               <div
                 v-for="row in lifecycle"
                 :key="`${row.nodeId}-${row.entry.index}`"
-                class="text-agent-fg-muted"
+                class="text-muted-foreground"
               >
                 {{ lifecycleLine(row) }}
               </div>
@@ -1003,13 +1007,13 @@ function fmtTime(at: number): string {
           </template>
 
           <section>
-            <div class="text-agent-fg-muted mb-1 font-bold">
+            <div class="mb-1 font-bold text-muted-foreground">
               {{ S.sectionVocab }}
             </div>
             <dl class="space-y-1">
               <div v-for="item in MERGE_VOCABULARY" :key="item.term">
                 <dt class="font-bold">{{ item.term }}</dt>
-                <dd class="text-agent-fg-muted ml-0">{{ item.meaning }}</dd>
+                <dd class="ml-0 text-muted-foreground">{{ item.meaning }}</dd>
               </div>
             </dl>
           </section>
@@ -1017,7 +1021,7 @@ function fmtTime(at: number): string {
           <section>
             <label
               for="crdt-tester-note"
-              class="text-agent-fg-muted mb-1 block font-bold"
+              class="mb-1 block font-bold text-muted-foreground"
               >{{ S.notePrompt }}</label
             >
             <textarea
@@ -1025,15 +1029,15 @@ function fmtTime(at: number): string {
               v-model="testerNote"
               rows="3"
               :placeholder="S.notePlaceholder"
-              class="border-agent-border bg-agent-surface-raised text-agent-fg w-full rounded-sm border p-1"
+              class="w-full rounded-sm border border-component-node-border bg-secondary-background p-1 text-base-foreground"
               data-testid="crdt-dev-panel-note"
             />
           </section>
         </template>
       </div>
 
-      <footer class="border-agent-border shrink-0 border-t p-2">
-        <div class="text-agent-fg-muted mb-1">{{ S.sectionInclude }}</div>
+      <footer class="shrink-0 border-t border-component-node-border p-2">
+        <div class="mb-1 text-muted-foreground">{{ S.sectionInclude }}</div>
         <div class="mb-1 flex flex-wrap gap-1">
           <button
             v-for="source in REPORT_SOURCE_LABELS"
@@ -1045,8 +1049,8 @@ function fmtTime(at: number): string {
               cn(
                 'flex cursor-pointer items-center gap-1 rounded-full border px-2 py-0.5 transition-colors',
                 reportSources[source.key]
-                  ? 'border-agent-accent text-agent-fg'
-                  : 'border-agent-border text-agent-fg-muted'
+                  ? 'border-primary-background text-base-foreground'
+                  : 'border-component-node-border text-muted-foreground'
               )
             "
             :data-testid="`crdt-dev-panel-include-${String(source.key)}`"
@@ -1065,11 +1069,11 @@ function fmtTime(at: number): string {
             {{ source.label }}
           </button>
         </div>
-        <p class="text-agent-fg-muted mt-0 mb-2">{{ S.includeHint }}</p>
+        <p class="mt-0 mb-2 text-muted-foreground">{{ S.includeHint }}</p>
         <div class="flex gap-1">
           <button
             type="button"
-            class="border-agent-border hover:bg-agent-surface-hover flex-1 cursor-pointer rounded-sm border px-2 py-1"
+            class="flex-1 cursor-pointer rounded-sm border border-component-node-border px-2 py-1 hover:bg-secondary-background-hover"
             @click="copyLog"
           >
             {{ copyLogLabel }}
@@ -1077,7 +1081,7 @@ function fmtTime(at: number): string {
           <button
             type="button"
             :disabled="reportCopyState === 'busy'"
-            class="border-agent-accent hover:bg-agent-surface-hover flex-2 cursor-pointer rounded-sm border px-2 py-1 disabled:cursor-default"
+            class="flex-2 cursor-pointer rounded-sm border border-primary-background px-2 py-1 hover:bg-secondary-background-hover disabled:cursor-default"
             data-testid="crdt-dev-panel-copy-report"
             @click="copyReport"
           >

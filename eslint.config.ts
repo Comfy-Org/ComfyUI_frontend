@@ -202,7 +202,11 @@ export default defineConfig([
         ...commonParserOptions,
         projectService: {
           allowDefaultProject: [
+            'packages/account/vitest.config.ts',
+            'packages/account-ui/vitest.config.ts',
+            'packages/design-system/vitest.config.ts',
             'packages/object-info-parser/vitest.config.ts',
+            'packages/shared-frontend-utils/vitest.config.ts',
             'vite.electron.config.mts',
             'vite.types.config.mts',
             'vitest.matrix.config.mts',

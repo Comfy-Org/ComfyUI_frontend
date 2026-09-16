@@ -2,6 +2,8 @@ import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 
+import { useTelemetry } from '@/platform/telemetry'
+
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useAppModeStore } from '@/stores/appModeStore'
 import { useDialogStore } from '@/stores/dialogStore'
@@ -15,8 +17,7 @@ beforeEach(() => {
 
 const mockSetMode = vi.hoisted(() => vi.fn())
 const mockToastErrorHandler = vi.hoisted(() => vi.fn())
-const mockTrackEnterLinear = vi.hoisted(() => vi.fn())
-const mockTrackDefaultViewSet = vi.hoisted(() => vi.fn())
+
 const mockSaveWorkflow = vi.hoisted(() => vi.fn<() => Promise<void>>())
 const mockSaveWorkflowAs = vi.hoisted(() =>
   vi.fn<() => Promise<boolean | null>>()
@@ -38,12 +39,7 @@ vi.mock<unknown>(import('@/composables/useErrorHandling'), () => ({
   useErrorHandling: () => ({ toastErrorHandler: mockToastErrorHandler })
 }))
 
-vi.mock<unknown>(import('@/platform/telemetry'), () => ({
-  useTelemetry: () => ({
-    trackEnterLinear: mockTrackEnterLinear,
-    trackDefaultViewSet: mockTrackDefaultViewSet
-  })
-}))
+vi.mock(import('@/platform/telemetry'))
 
 vi.mock<unknown>(
   import('@/platform/workflow/core/services/workflowService'),
@@ -214,7 +210,7 @@ describe('useBuilderSave', () => {
           isApp: true
         }
       )
-      expect(mockTrackDefaultViewSet).toHaveBeenCalledWith({
+      expect(useTelemetry()?.trackDefaultViewSet).toHaveBeenCalledWith({
         default_view: 'app'
       })
     })
@@ -232,7 +228,7 @@ describe('useBuilderSave', () => {
           isApp: false
         }
       )
-      expect(mockTrackDefaultViewSet).toHaveBeenCalledWith({
+      expect(useTelemetry()?.trackDefaultViewSet).toHaveBeenCalledWith({
         default_view: 'graph'
       })
     })
@@ -243,7 +239,7 @@ describe('useBuilderSave', () => {
 
       await onSave('new-name', false)
 
-      expect(mockTrackDefaultViewSet).not.toHaveBeenCalled()
+      expect(useTelemetry()?.trackDefaultViewSet).not.toHaveBeenCalled()
       expect(useDialogStore().closeDialog).not.toHaveBeenCalled()
     })
 
@@ -355,7 +351,7 @@ describe('useBuilderSave', () => {
       expect(useDialogStore().closeDialog).toHaveBeenCalledWith({
         key: SUCCESS_DIALOG_KEY
       })
-      expect(mockTrackEnterLinear).toHaveBeenCalledWith({
+      expect(useTelemetry()?.trackEnterLinear).toHaveBeenCalledWith({
         source: 'app_builder'
       })
       expect(mockSetMode).toHaveBeenCalledWith('app')
