@@ -66,6 +66,7 @@ describe('browseEntries', () => {
       runsHere: true,
       needsCustomNodes: false,
       models: [],
+      tags: [],
       standing: 3,
       date: undefined,
       credits: 12,

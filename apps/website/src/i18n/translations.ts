@@ -10260,9 +10260,8 @@ Enterprise`
     'zh-CN': 'Playground'
   },
   'workshop.v2.subtitle': {
-    en: 'Pick what you want to make. Every shelf holds the models that do it and the workflows built on them.',
-    'zh-CN':
-      '可在此运行的能力，以及基于它们构建的工作流。每张卡片都会说明它属于哪一种。'
+    en: 'Models, workflows and apps, by what you want to make.',
+    'zh-CN': '按你想做的东西浏览模型、工作流和应用。'
   },
   'workshop.v2.kind.all': { en: 'Everything', 'zh-CN': '全部' },
   'workshop.v2.kind.model': { en: 'Model', 'zh-CN': '模型' },
@@ -10272,10 +10271,6 @@ Enterprise`
   'workshop.v2.kind.workflows': { en: 'Workflows', 'zh-CN': '工作流' },
   'workshop.v2.kind.apps': { en: 'Apps', 'zh-CN': '应用' },
   'workshop.v2.action.run': { en: 'Run', 'zh-CN': '运行' },
-  'workshop.v2.action.open': {
-    en: 'Save to Cloud',
-    'zh-CN': '保存到 Cloud'
-  },
   'workshop.v2.card.credits': { en: '{n} credits', 'zh-CN': '{n} 积分' },
   'workshop.v2.card.runsOn': {
     en: 'Runs on {model}',
@@ -10302,6 +10297,7 @@ Enterprise`
     'zh-CN': '需要自定义节点'
   },
   'workshop.v2.sort.label': { en: 'Sort', 'zh-CN': '排序' },
+  'workshop.v2.filter.label': { en: 'Filter', 'zh-CN': '筛选' },
   'workshop.v2.sort.popular': { en: 'Most used', 'zh-CN': '最常用' },
   'workshop.v2.sort.name': { en: 'A to Z', 'zh-CN': '按名称' },
   'workshop.v2.sort.newest': { en: 'Newest', 'zh-CN': '最新' },
@@ -10392,10 +10388,6 @@ Enterprise`
     en: 'Download the JSON',
     'zh-CN': '下载 JSON'
   },
-  'workshop.v2.workflow.saveNote': {
-    en: 'Runs in your Comfy Cloud account. Nothing to install.',
-    'zh-CN': '在你的 Comfy Cloud 账户中运行，无需安装。'
-  },
   'workshop.v2.workflow.tutorial': {
     en: 'Read the tutorial',
     'zh-CN': '查看教程'
@@ -10403,6 +10395,42 @@ Enterprise`
   'workshop.v2.workflow.openWeights': {
     en: 'Open weights',
     'zh-CN': '开放权重'
+  },
+  'workshop.v2.workflow.graph': { en: 'Workflow', 'zh-CN': '工作流' },
+  'workshop.v2.workflow.graphNote': {
+    en: 'The node graph behind this workflow, read-only.',
+    'zh-CN': '此工作流背后的节点图，仅供查看。'
+  },
+  'workshop.v2.workflow.graphAlt': {
+    en: 'The nodes of this workflow and the links between them',
+    'zh-CN': '此工作流的节点及其连接'
+  },
+  'workshop.v2.workflow.graphHint': {
+    en: 'Read-only \u00b7 scroll to zoom \u00b7 drag to pan',
+    'zh-CN': '仅供查看 \u00b7 滚动缩放 \u00b7 拖动平移'
+  },
+  'workshop.v2.workflow.graphLoading': {
+    en: 'Loading the graph',
+    'zh-CN': '正在加载节点图'
+  },
+  'workshop.v2.workflow.graphFailed': {
+    en: 'The graph could not be loaded. The download still works.',
+    'zh-CN': '节点图加载失败，下载仍然可用。'
+  },
+  'workshop.v2.workflow.zoomIn': { en: 'Zoom in', 'zh-CN': '放大' },
+  'workshop.v2.workflow.zoomOut': { en: 'Zoom out', 'zh-CN': '缩小' },
+  'workshop.v2.workflow.zoomReset': { en: 'Reset', 'zh-CN': '重置' },
+  'workshop.v2.workflow.openCloud': {
+    en: 'Open in Comfy Cloud',
+    'zh-CN': '在 Comfy Cloud 中打开'
+  },
+  'workshop.v2.workflow.openCloudNote': {
+    en: 'Opens the graph in your own Cloud account, ready to run.',
+    'zh-CN': '在你自己的 Cloud 账户中打开该图，随时可运行。'
+  },
+  'workshop.v2.workflow.runsHereNote': {
+    en: 'This workflow is a single call to {model}, so you can run it here.',
+    'zh-CN': '此工作流只调用 {model} 一次，因此可以直接在这里运行。'
   },
   'workshop.v2.workflow.related': {
     en: 'Workflows like this one',

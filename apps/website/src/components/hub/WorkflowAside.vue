@@ -4,6 +4,7 @@ import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 
 const {
+  cloudUrl,
   downloadUrl,
   tutorialUrl,
   weights,
@@ -12,6 +13,8 @@ const {
   destination,
   locale = 'en'
 } = defineProps<{
+  /** Comfy Cloud, opened on this template. */
+  cloudUrl: string
   downloadUrl: string
   tutorialUrl: string | undefined
   /** Rounded to what a reader decides on, or absent for a partner workflow. */
@@ -34,12 +37,13 @@ const secondary =
   <aside class="flex flex-col gap-5 lg:sticky lg:top-28 lg:self-start">
     <div :class="panel" data-testid="workflow-actions">
       <a
-        :href="downloadUrl"
+        :href="cloudUrl"
         target="_blank"
         rel="noopener"
         class="inline-flex h-11 w-full items-center justify-center rounded-2xl bg-primary-comfy-yellow px-5 text-sm font-bold tracking-wider text-primary-comfy-ink uppercase transition-opacity hover:opacity-90"
+        data-testid="workflow-open-cloud"
       >
-        {{ t('workshop.v2.action.open', locale) }}
+        {{ t('workshop.v2.workflow.openCloud', locale) }}
       </a>
       <!-- The PRD's confirmed path for a 1P workflow: the user's own Cloud
         account runs it, and Desktop is not the first stop. -->
@@ -47,7 +51,7 @@ const secondary =
         class="mt-3 text-xs text-content-muted"
         data-testid="workflow-save-note"
       >
-        {{ t('workshop.v2.workflow.saveNote', locale) }}
+        {{ t('workshop.v2.workflow.openCloudNote', locale) }}
       </p>
       <div class="mt-4 flex flex-wrap items-center gap-x-5 gap-y-2 text-sm">
         <a :href="downloadUrl" download :class="secondary">

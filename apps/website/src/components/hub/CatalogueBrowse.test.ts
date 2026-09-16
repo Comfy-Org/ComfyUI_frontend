@@ -19,6 +19,7 @@ function entry(overrides: Partial<BrowseEntry> = {}): BrowseEntry {
     runsHere: true,
     needsCustomNodes: false,
     models: [],
+    tags: [],
     standing: 1,
     date: undefined,
     credits: 10,
@@ -32,7 +33,6 @@ function entry(overrides: Partial<BrowseEntry> = {}): BrowseEntry {
       maker: { label: 'BFL', logo: undefined },
       price: undefined,
       needsCustomNodes: overrides.needsCustomNodes ?? false,
-      tags: [],
       ...overrides.card
     }
   }
@@ -141,6 +141,7 @@ describe('CatalogueBrowse', () => {
 
   it('keeps only what this site can run', async () => {
     await at('?useCase=generate-images')
+    await userEvent.click(screen.getByTestId('catalogue-filter-toggle'))
     await userEvent.selectOptions(
       screen.getByLabelText('What it needs'),
       'runsHere'

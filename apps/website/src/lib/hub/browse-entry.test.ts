@@ -54,6 +54,7 @@ describe('sortBrowseEntries', () => {
     runsHere: false,
     needsCustomNodes: false,
     models: [],
+    tags: [],
     standing: 0,
     date: undefined,
     credits: undefined,

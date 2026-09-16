@@ -26,7 +26,6 @@ export interface CardView {
   /** What a run costs, as the Router prices it. Workflows have no price. */
   readonly price: string | undefined
   readonly needsCustomNodes: boolean
-  readonly tags: readonly string[]
 }
 
 function modelCard(
@@ -48,8 +47,7 @@ function modelCard(
       logo: getLogoPath(provider) ?? getLogoPath(model.name) ?? undefined
     },
     price: prices.get(cheapestOperation(entry).slug),
-    needsCustomNodes: false,
-    tags: model.capabilities
+    needsCustomNodes: false
   }
 }
 
@@ -70,8 +68,7 @@ function workflowCard(
     hoverMedia: template.thumbnails[1],
     maker: { label: template.username || 'ComfyUI', logo: undefined },
     price: undefined,
-    needsCustomNodes: needsCustomNodes.has(template.name),
-    tags: template.tags
+    needsCustomNodes: needsCustomNodes.has(template.name)
   }
 }
 

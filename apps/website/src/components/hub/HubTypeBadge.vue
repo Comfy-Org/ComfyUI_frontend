@@ -29,17 +29,19 @@ const labels: Record<Kind, TranslationKey> = {
 
 <template>
   <span
-    class="pointer-events-none absolute top-4 left-4 z-20 inline-flex h-7 items-center rounded-lg bg-black/45 px-2.5 text-2xs/4 font-semibold tracking-wide text-white uppercase backdrop-blur-md"
+    class="pointer-events-none absolute top-4 left-4 z-20 inline-flex h-7 min-w-7 items-center justify-center rounded-lg bg-black/45 text-2xs/4 font-semibold tracking-wide text-white uppercase backdrop-blur-md"
     data-testid="hub-type-badge"
     :data-kind="kind"
   >
     <component :is="icons[kind]" class="size-3.5 shrink-0" />
-    <!-- A grid track running from 0fr to 1fr is what lets the word open to its
-      own width instead of to a guessed one. -->
+    <!-- A grid track running from zero to its own width is what lets the word
+      open to that width instead of to a guessed one. The floor has to be
+      spelled out: an `fr` track keeps a min-content floor otherwise, and the
+      word would never close. -->
     <span
-      class="grid grid-cols-[0fr] overflow-hidden group-focus-within:grid-cols-[1fr] group-hover:grid-cols-[1fr] motion-safe:transition-[grid-template-columns] motion-safe:duration-200 motion-safe:ease-out"
+      class="grid grid-cols-[minmax(0,0fr)] overflow-hidden group-focus-within:grid-cols-[minmax(0,1fr)] group-hover:grid-cols-[minmax(0,1fr)] motion-safe:transition-[grid-template-columns] motion-safe:duration-200 motion-safe:ease-out"
     >
-      <span class="min-w-0 ps-1.5 whitespace-nowrap">
+      <span class="min-w-0 ps-1.5 pe-2 whitespace-nowrap">
         {{ t(labels[kind], locale) }}
       </span>
     </span>

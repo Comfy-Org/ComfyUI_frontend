@@ -1,12 +1,19 @@
 ---
 import CatalogueCard from '../../../components/hub/CatalogueCard.vue'
+import ModelRun from '../../../components/hub/ModelRun.vue'
 import WorkflowAside from '../../../components/hub/WorkflowAside.vue'
+import WorkflowGraph from '../../../components/hub/WorkflowGraph.vue'
 import WorkflowPorts from '../../../components/hub/WorkflowPorts.vue'
 import WorkflowRunsOn from '../../../components/hub/WorkflowRunsOn.vue'
+import { useCaseFor } from '../../../config/models-catalogue'
 import { workshopModels } from '../../../config/workshop-browse-content'
+import { WORKSHOP_CLOUD_BASE_URL } from '../../../config/workshop-env'
+import { estimateWorkshopNodePrice } from '../../../config/workshop-node-pricing'
+import { getRouterWorkshopModelDetail } from '../../../config/workshop-router-content'
 import hubTemplateDetails from '../../../data/hubTemplateDetails.json'
 import {
   customNodeNamesFrom,
+  pricedOperations,
   relatedCardViews
 } from '../../../lib/hub/page-data'
 import { tagDisplayName } from '../../../lib/hub/tag-aliases'
@@ -49,6 +56,27 @@ const inputsHeading = template.isApp
   ? t('workshop.v2.workflow.form')
   : t('workshop.v2.workflow.loads')
 
+// A workflow that is one call to a model we carry is that model with a graph
+// around it, so the page hands the reader the playground rather than a file to
+// take elsewhere. Everything the graph adds stays below it.
+const runnable = page.destination
+  ? getRouterWorkshopModelDetail(page.destination.slug)
+  : undefined
+const operations = runnable
+  ? (
+      await pricedOperations([runnable], (model) =>
+        estimateWorkshopNodePrice(model, useCaseFor(model))
+      )
+    ).map((row) => ({
+      slug: row.model.slug,
+      task: row.task,
+      price: row.price,
+      detail: runnable
+    }))
+  : []
+
+const cloudUrl = `${WORKSHOP_CLOUD_BASE_URL}/?template=${encodeURIComponent(template.name)}`
+
 const relatedViews = relatedCardViews(
   related.slice(0, 4),
   workshopModels,
@@ -89,6 +117,20 @@ const tagClass =
       </p>
     </header>
 
+    {
+      operations.length > 0 && page.destination && (
+        <section class="mb-16" data-testid="workflow-run">
+          <p class="mb-5 max-w-xl text-sm text-content-muted">
+            {t('workshop.v2.workflow.runsHereNote').replace(
+              '{model}',
+              page.destination.name
+            )}
+          </p>
+          <ModelRun operations={operations} client:load />
+        </section>
+      )
+    }
+
     <div class="grid gap-10 lg:grid-cols-12">
       <div class="flex flex-col gap-10 lg:col-span-7">
         {
@@ -116,6 +158,16 @@ const tagClass =
         }
 
         <WorkflowRunsOn models={runsOn} />
+
+        <section data-testid="workflow-graph-section">
+          <h2 class="text-xs font-bold tracking-wider text-primary-comfy-canvas uppercase">
+            {t('workshop.v2.workflow.graph')}
+          </h2>
+          <p class="mt-2 mb-4 text-sm text-content-muted">
+            {t('workshop.v2.workflow.graphNote')}
+          </p>
+          <WorkflowGraph source={page.downloadUrl} client:visible />
+        </section>
 
         <section class="grid gap-6 sm:grid-cols-2">
           {
@@ -151,12 +203,13 @@ const tagClass =
 
       <div class="lg:col-span-5">
         <WorkflowAside
+          cloudUrl={cloudUrl}
           downloadUrl={page.downloadUrl}
           tutorialUrl={details.tutorialUrl}
           weights={formatWeights(page.weightsBytes)}
           customNodes={page.customNodes}
           callsPartnerModel={page.callsPartnerModel}
-          destination={page.destination}
+          destination={operations.length > 0 ? undefined : page.destination}
         />
       </div>
     </div>

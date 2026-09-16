@@ -17,8 +17,9 @@ import {
   sortBrowseEntries
 } from '../../lib/hub/browse-entry'
 import { useCaseLabelKey } from '../../lib/workshop/use-case-label'
-import type { OrderOption } from './CatalogueToolbar.vue'
+import type { OrderOption } from './CatalogueControls.vue'
 import CatalogueCard from './CatalogueCard.vue'
+import CatalogueControls from './CatalogueControls.vue'
 import CatalogueToolbar from './CatalogueToolbar.vue'
 import PlaygroundSections from './PlaygroundSections.vue'
 
@@ -69,12 +70,7 @@ const haystacks = computed(
     new Map(
       entries.map((entry) => [
         entry.key,
-        [
-          entry.title,
-          entry.card.maker.label,
-          ...entry.models,
-          ...entry.card.tags
-        ]
+        [entry.title, entry.card.maker.label, ...entry.models, ...entry.tags]
           .join(' ')
           .toLowerCase()
       ])
@@ -218,9 +214,16 @@ const heading = computed(() =>
       <p class="mt-4 text-lg text-primary-comfy-canvas/70">
         {{ t('workshop.v2.subtitle', locale) }}
       </p>
-      <!-- One field reads every kind, so it belongs to the catalogue rather
-        than to the list, and it is there before anything has been asked. -->
-      <div class="relative mt-6 max-w-md">
+    </header>
+
+    <!-- One field and one set of controls read every kind, so they belong to
+      the catalogue rather than to the list, and they are there before
+      anything has been asked. -->
+    <div
+      class="mb-10 flex flex-wrap items-start justify-between gap-4"
+      data-testid="catalogue-header-controls"
+    >
+      <div class="relative min-w-60 flex-1 md:max-w-md">
         <Search
           class="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-content-muted"
           aria-hidden="true"
@@ -234,7 +237,19 @@ const heading = computed(() =>
           class="h-10 w-full rounded-2xl border border-transparency-white-t8 bg-transparency-white-t4 ps-9 pe-3 text-sm text-content outline-none focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow/50"
         />
       </div>
-    </header>
+
+      <CatalogueControls
+        v-model:order="order"
+        v-model:needs="needs"
+        v-model:output="output"
+        v-model:provider="provider"
+        :orders="ORDERS"
+        :providers
+        :filters-on="filtersOn"
+        :locale
+        @clear="clearFilters"
+      />
+    </div>
 
     <PlaygroundSections
       v-if="!browsing"
@@ -263,15 +278,9 @@ const heading = computed(() =>
       </div>
 
       <CatalogueToolbar
-        v-model:order="order"
         v-model:type="type"
-        v-model:needs="needs"
-        v-model:output="output"
-        v-model:provider="provider"
         v-model:uses-model="usesModel"
-        :orders="ORDERS"
         :counts
-        :providers
         :narrowed-by="narrowedBy"
         :filters-on="filtersOn"
         :locale

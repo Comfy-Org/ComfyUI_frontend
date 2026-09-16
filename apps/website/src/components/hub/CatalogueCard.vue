@@ -6,7 +6,6 @@ import { usePreviewVideo } from '../../composables/usePreviewVideo'
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 import type { CardView } from '../../lib/hub/catalogue-card'
-import TagRow from './TagRow.vue'
 import HubTypeBadge from './HubTypeBadge.vue'
 
 const { view, locale = 'en' } = defineProps<{
@@ -91,51 +90,45 @@ const previewSrc = usePreviewVideo(video, () =>
           {{ view.title.charAt(0) }}
         </span>
       </div>
+    </div>
 
-      <div
-        class="pointer-events-none absolute inset-x-0 bottom-0 h-2/3 bg-linear-to-t from-black/75 via-black/30 to-transparent"
-        aria-hidden="true"
-      />
+    <div class="flex flex-col gap-1 px-3">
       <h3
-        class="pointer-events-none absolute inset-x-5 bottom-5 z-20 line-clamp-2 text-sm/[1.35] font-medium text-content-bright drop-shadow-md lg:text-base"
+        class="truncate text-sm font-medium text-content-bright lg:text-base"
+        data-testid="catalogue-card-title"
       >
         {{ view.title }}
       </h3>
-    </div>
 
-    <div class="flex flex-col gap-2 px-3">
-      <div class="flex items-center gap-3">
+      <div class="flex items-center gap-3 text-content-secondary">
         <span
-          class="flex min-w-0 items-center gap-2 text-content-secondary"
+          class="flex min-w-0 items-center gap-2"
           data-testid="catalogue-card-maker"
         >
           <span
             v-if="view.maker.logo"
-            class="size-5 shrink-0 bg-content-secondary mask-contain mask-center mask-no-repeat"
+            class="size-4 shrink-0 bg-content-secondary mask-contain mask-center mask-no-repeat"
             :style="{ maskImage: `url(${view.maker.logo})` }"
             aria-hidden="true"
           />
           <span
             v-else
-            class="grid size-5 shrink-0 place-items-center rounded-full bg-brand text-2xs font-bold text-page"
+            class="grid size-4 shrink-0 place-items-center rounded-full bg-brand text-2xs font-bold text-page"
             aria-hidden="true"
           >
             {{ view.maker.label.charAt(0).toUpperCase() }}
           </span>
-          <span class="truncate text-sm">{{ view.maker.label }}</span>
+          <span class="truncate text-xs">{{ view.maker.label }}</span>
         </span>
-      </div>
 
-      <div class="flex h-6 min-w-0 items-center gap-2 overflow-hidden">
         <span
           v-if="view.price"
-          class="inline-flex h-6 shrink-0 items-center gap-1 rounded-full bg-hub-surface px-3 text-xs whitespace-nowrap text-content"
+          class="ms-auto inline-flex shrink-0 items-center gap-1 text-xs whitespace-nowrap"
           data-testid="catalogue-card-price"
         >
           <Coins class="size-3" aria-hidden="true" />
           {{ view.price }}
         </span>
-        <TagRow :tags="view.tags" :link-tags="false" class="min-w-0 flex-1" />
       </div>
     </div>
   </div>

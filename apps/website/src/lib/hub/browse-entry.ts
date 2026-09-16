@@ -24,6 +24,8 @@ export interface BrowseEntry {
   readonly needsCustomNodes: boolean
   /** The models it names, for search and for "the workflows that use this". */
   readonly models: readonly string[]
+  /** What it is good for, in the reader's words. Read by search only. */
+  readonly tags: readonly string[]
   /** Its kind's own measure: a rank for models, installs for the rest. */
   readonly standing: number
   readonly date: string | undefined

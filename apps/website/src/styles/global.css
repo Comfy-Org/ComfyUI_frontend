@@ -2,15 +2,17 @@
 @import '@comfyorg/design-system/css/base.css';
 @import 'tw-animate-css';
 
-/* PP Formula's native vertical metrics place the baseline too high, so caps
-   sit in the upper half of the line box. Overriding ascent/descent re-anchors
-   the baseline so caps render optically centered when line-height is tight. 
-    BUT, IT IS NOT WELL SUPPORTED:
-    ascent-override: 92%;
-    descent-override: 8%;
-    line-gap-override: 0%; */
+/* PP Formula ships an ascent of 91% and a descent of 31% against a cap height
+   of 84%, which leaves its caps sitting 12% of the em above the middle of the
+   line box. Every row that centres an icon beside a word inherits that, so the
+   fix belongs to the face rather than to each of them: moving the baseline to
+   103% and the descent to 19% keeps the same 122% content box and puts the cap
+   box exactly in the middle of it, at any line-height. The line gap is left
+   alone so `line-height: normal` stays where it was. */
 @font-face {
   font-family: 'PP Formula';
+  ascent-override: 103%;
+  descent-override: 19%;
   src: url('/fonts/PPFormula-Light.woff2') format('woff2');
   font-weight: 300;
   font-style: normal;
@@ -19,6 +21,8 @@
 
 @font-face {
   font-family: 'PP Formula';
+  ascent-override: 103%;
+  descent-override: 19%;
   src: url('/fonts/PPFormula-Regular.woff2') format('woff2');
   font-weight: 400;
   font-style: normal;
@@ -27,6 +31,8 @@
 
 @font-face {
   font-family: 'PP Formula';
+  ascent-override: 103%;
+  descent-override: 19%;
   src: url('/fonts/PPFormula-Medium.woff2') format('woff2');
   font-weight: 500;
   font-style: normal;
@@ -35,6 +41,8 @@
 
 @font-face {
   font-family: 'PP Formula';
+  ascent-override: 103%;
+  descent-override: 19%;
   src: url('/fonts/PPFormula-Semibold.woff2') format('woff2');
   font-weight: 600;
   font-style: normal;
@@ -43,6 +51,8 @@
 
 @font-face {
   font-family: 'PP Formula';
+  ascent-override: 103%;
+  descent-override: 19%;
   src: url('/fonts/PPFormula-Bold.woff2') format('woff2');
   font-weight: 700;
   font-style: normal;
@@ -51,6 +61,8 @@
 
 @font-face {
   font-family: 'PP Formula';
+  ascent-override: 103%;
+  descent-override: 19%;
   src: url('/fonts/PPFormula-Bold.woff2') format('woff2');
   font-weight: 800;
   font-style: normal;
@@ -59,6 +71,8 @@
 
 @font-face {
   font-family: 'PP Formula Narrow';
+  ascent-override: 103%;
+  descent-override: 19%;
   src: url('/fonts/PPFormula-NarrowSemibold.woff2') format('woff2');
   font-weight: 600;
   font-style: normal;

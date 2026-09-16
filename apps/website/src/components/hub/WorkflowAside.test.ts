@@ -16,6 +16,7 @@ const flux: WorkshopModel = {
 }
 
 const props = (overrides = {}) => ({
+  cloudUrl: 'https://cloud.example.test/?template=poster',
   downloadUrl: 'https://example.test/graph.json',
   tutorialUrl: undefined,
   weights: undefined,
@@ -26,14 +27,17 @@ const props = (overrides = {}) => ({
 })
 
 describe('WorkflowAside', () => {
-  // The PRD's confirmed path: the workflow goes to the reader's Cloud account,
-  // and the file stays available for the people who want it locally.
-  it('offers the graph to the Cloud and to download', () => {
+  // The PRD's confirmed path: the graph opens in the reader's own Cloud
+  // account, and the file stays available for the people who want it locally.
+  it('opens the graph in the Cloud and offers it to download', () => {
     render(WorkflowAside, { props: props() })
 
     expect(
-      screen.getAllByRole('link', { name: /Save to Cloud|Download the JSON/ })
-    ).toHaveLength(2)
+      screen.getByRole('link', { name: /Open in Comfy Cloud/ })
+    ).toHaveProperty('href', 'https://cloud.example.test/?template=poster')
+    expect(
+      screen.getByRole('link', { name: /Download the JSON/ })
+    ).toHaveProperty('href', 'https://example.test/graph.json')
     expect(screen.queryByRole('link', { name: /tutorial/i })).toBeNull()
   })
 
