@@ -16,7 +16,6 @@ import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workfl
 import type { TreeExplorerNode } from '@/types/treeExplorerTypes'
 import { flattenTree } from '@/utils/treeUtil'
 vi.mock(import('firebase/auth'))
-vi.mock(import('vuefire'), () => ({ useFirebaseAuth: vi.fn() }))
 
 beforeEach(() => {
   useSettingStore().settingValues['Comfy.Workflow.WorkflowTabsPosition'] =

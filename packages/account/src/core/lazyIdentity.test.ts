@@ -33,6 +33,23 @@ function innerIdentity() {
   }
 }
 
+function leakyIdentity() {
+  const callbacks = new Set<(user: AccountUser | null) => void>()
+  const identity = createTestIdentity<AccountUser>({
+    onUserChanged: (callback) => {
+      callbacks.add(callback)
+      return () => undefined
+    }
+  })
+  return {
+    identity,
+    fire: (user: AccountUser | null) =>
+      callbacks.forEach((callback) => callback(user)),
+    whenSubscribed: () =>
+      vi.waitFor(() => expect(callbacks.size).toBeGreaterThan(0))
+  }
+}
+
 type Inner = ReturnType<typeof innerIdentity>
 
 function deferredLoader() {
@@ -343,6 +360,58 @@ describe('createLazyIdentity', () => {
     port.deactivate()
 
     expect(listener.mock.calls).toEqual([[alice], [null]])
+  })
+
+  it('ignores an event from a subscription the inner identity failed to release after deactivate', async () => {
+    const leaky = leakyIdentity()
+    const port = createLazyIdentity(async () => leaky.identity)
+    const listener = vi.fn()
+    port.onUserChanged(listener)
+    const activation = port.activate()
+    await leaky.whenSubscribed()
+    leaky.fire(alice)
+    await activation
+
+    port.deactivate()
+    leaky.fire(bob)
+
+    expect(listener.mock.calls).toEqual([[alice], [null]])
+  })
+
+  it('ignores a late event from the previous generation after re-activation', async () => {
+    const leaky = leakyIdentity()
+    const port = createLazyIdentity(async () => leaky.identity)
+    const listener = vi.fn()
+    port.onUserChanged(listener)
+    const first = port.activate()
+    await leaky.whenSubscribed()
+    leaky.fire(alice)
+    await first
+    port.deactivate()
+    const second = port.activate()
+    await vi.waitFor(() => expect(leaky.fire).toBeDefined())
+    await Promise.resolve()
+    await Promise.resolve()
+
+    leaky.fire(bob)
+    await second
+
+    expect(
+      listener.mock.calls,
+      'the stale first-generation subscription must not deliver bob a second time'
+    ).toEqual([[alice], [null], [bob]])
+  })
+
+  it('delivers nothing on deactivate after a delivered null', async () => {
+    const { inner, release, load } = deferredLoader()
+    const port = createLazyIdentity(load)
+    const listener = vi.fn()
+    port.onUserChanged(listener)
+    await activated(port, release, inner, null)
+
+    port.deactivate()
+
+    expect(listener.mock.calls).toEqual([[null]])
   })
 
   it('is accepted by createSessionClient, which stays pending until activation delivers', async () => {

@@ -5,7 +5,6 @@ import type { User } from 'firebase/auth'
 import * as firebaseAuth from 'firebase/auth'
 import type { Mock } from 'vitest'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import * as vuefire from 'vuefire'
 
 import { useAuthStore } from '@/stores/authStore'
 const { mockFeatureFlags } = vi.hoisted(() => ({
@@ -27,10 +26,6 @@ vi.mock<unknown>(import('@/composables/useFeatureFlags'), () => ({
   })
 }))
 
-vi.mock(import('vuefire'), () => ({
-  useFirebaseAuth: vi.fn()
-}))
-
 vi.mock(import('firebase/auth'))
 
 vi.mock(import('@/platform/telemetry'))
@@ -44,8 +39,6 @@ describe('auth token priority chain', () => {
   let store: ReturnType<typeof useAuthStore>
   let authStateCallback: (user: User | null) => void
 
-  const mockAuth: Record<string, unknown> = {}
-
   const mockUser: MockUser = {
     uid: 'test-user-id',
     email: 'test@example.com',
@@ -55,9 +48,6 @@ describe('auth token priority chain', () => {
   beforeEach(() => {
     mockDistributionTypes.isCloud = true
     mockFeatureFlags.unifiedCloudAuthEnabled = false
-    vi.mocked(vuefire.useFirebaseAuth).mockReturnValue(
-      mockAuth as unknown as ReturnType<typeof vuefire.useFirebaseAuth>
-    )
     const authStateObservers: Array<(user: User | null) => void> = []
     authStateCallback = (user) =>
       authStateObservers.forEach((observer) => observer(user))
