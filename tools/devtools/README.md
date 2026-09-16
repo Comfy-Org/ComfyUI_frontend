@@ -29,7 +29,7 @@ cp -r tools/devtools/* /path/to/your/ComfyUI/custom_nodes/ComfyUI_devtools/
 `Node With Dynamic Group` repeats a LoRA-shaped widget template and returns its
 received rows as JSON. It does not load models. Connect its output to Preview as
 Text. Enable Modern Node Design (Node 2.0) to edit its dynamic rows; legacy
-canvas controls are not supported.
+canvas shows one Node 2.0-only notice per group instead of editable controls.
 
 This node requires a backend providing `io.DynamicGroup` (currently
 [feat: add DynamicGroup widget input](https://github.com/Comfy-Org/ComfyUI/pull/16260)).

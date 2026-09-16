@@ -18,7 +18,9 @@ before the following saved values are applied.
 DynamicGroup editing is Node 2.0-only. Group fields and presentation controls
 are excluded from the legacy canvas through widget surface visibility. Shared
 restoration and serialization remain active so switching renderers does not
-remove stored rows or values. No canvas renderer is provided for row headers.
+remove stored rows or values. Each group has one non-interactive canvas notice identifying it as Node 2.0-only,
+regardless of its row count. The notice is excluded from workflow values and
+prompts and hidden in Node 2.0 and the properties panel.
 
 Use ordinary widgets and their existing store, renderer and prompt serializer
 for each field. A hidden, workflow-serialized controller precedes the fields and

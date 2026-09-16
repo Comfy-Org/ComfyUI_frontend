@@ -70,10 +70,12 @@ describe('DynamicGroup widgets', () => {
 
     expect(restored.node.getLayoutWidgets().map((w) => w.name)).toEqual([
       'before',
+      'loras.$notice',
       'after'
     ])
     for (const field of restored.node.widgets ?? []) {
-      if (!field.name.startsWith('loras.')) continue
+      if (!field.name.startsWith('loras.') || field.name === 'loras.$notice')
+        continue
       expect(restored.node.isWidgetVisible(field)).toBe(false)
       expect(restored.node.isWidgetRowVisible(field)).toBe(false)
       if (!field.visibility) throw new Error('Missing widget visibility')
@@ -87,6 +89,27 @@ describe('DynamicGroup widgets', () => {
     restored.widget('loras.0').callback?.(undefined)
     expect(restored.widget('loras.0.lora_name').value).toBe('C')
     expect(restored.widget('loras').value).toBe(1)
+  })
+
+  it.for([0, 3])('shows one canvas notice per group with %s rows', (count) => {
+    const { node, widget } = setup()
+    widget('loras').value = count
+    const notice = widget('loras.$notice')
+    expect(node.getLayoutWidgets().map((w) => w.name)).toEqual([
+      'before',
+      'loras.$notice',
+      'after'
+    ])
+    expect(node.isWidgetVisible(notice)).toBe(true)
+    if (!notice.visibility) throw new Error('Missing notice visibility')
+    for (const surface of ['vueNode', 'panel'] as const) {
+      expect(
+        isWidgetVisibleOnSurface(notice.visibility, surface, {
+          showAdvanced: true
+        })
+      ).toBe(false)
+    }
+    expect(node.serialize().widgets_values).toHaveLength(3 + count * 3)
   })
 
   it('rolls back a rejected row addition without losing existing values or links', () => {
@@ -148,7 +171,9 @@ describe('DynamicGroup widgets', () => {
     widget('remote').value = 2
     expect(node.getLayoutWidgets().map((w) => w.name)).toEqual([
       'before',
-      'after'
+      'loras.$notice',
+      'after',
+      'remote.$notice'
     ])
     const first = widget('remote.0.model')
     const survivor = widget('remote.1.model')
@@ -178,6 +203,7 @@ describe('DynamicGroup widgets', () => {
         ?.filter((w) => w.name.startsWith('remote.'))
         .map((w) => w.name)
     ).toEqual([
+      'remote.$notice',
       'remote.0',
       'remote.0.model',
       'remote.0.model.0',
@@ -189,7 +215,7 @@ describe('DynamicGroup widgets', () => {
       node.widgets
         ?.filter((w) => w.name.startsWith('remote.'))
         .map((w) => w.name)
-    ).toEqual(['remote.$add'])
+    ).toEqual(['remote.$notice', 'remote.$add'])
     graph.remove(node)
     api.dispatchCustomEvent('execution_success', {
       prompt_id: 'test',
@@ -224,7 +250,7 @@ describe('DynamicGroup widgets', () => {
     expect(widget('seeds.0.seed.0').value).toBe('fixed')
     expect(
       node.widgets?.filter((w) => w.name.startsWith('seeds.'))
-    ).toHaveLength(4)
+    ).toHaveLength(5)
   })
 
   it('restores rows and their edited values after switching the containing DynamicCombo', () => {
