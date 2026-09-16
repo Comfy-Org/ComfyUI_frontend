@@ -1,12 +1,8 @@
 /**
- * The session's authoritative state and the one place it changes. Every
- * commit — an identity event, a mint settling, the scheduler refreshing,
- * expiring or adopting a sibling's credential — is a named event handed to
- * `transition`, which returns the next state plus the ordered side effects the
- * client must run against storage, the scheduler and its subscribers. The
- * order of those effects is the contract: a commit persists before it arms
- * the scheduler and publishes last, so a host reacting to a snapshot never
- * reads state that a later step would still change.
+ * The session's authoritative state and its only commit boundary. Effects
+ * come back in the order the client must run them: persist before arming
+ * the scheduler, publish last, so a host reacting to a snapshot never reads
+ * state a later step would still change.
  */
 import type {
   AccountCredential,
@@ -60,8 +56,7 @@ export function initialSessionState<
   }
 }
 
-/** Who settled the mint: a caller awaiting `ensureFresh`/`remint`, or the scheduler. */
-export type MintOrigin = 'caller' | 'scheduler'
+type MintOrigin = 'caller' | 'scheduler'
 
 export type SessionEvent<TUser extends AccountUser = AccountUser> =
   | { readonly type: 'identity-changed'; readonly user: TUser | null }
@@ -243,7 +238,6 @@ export function transition<TUser extends AccountUser>(
   }
 }
 
-/** What a caller captured when its mint started, re-checked once it settles. */
 export interface MintAttempt {
   readonly mintId: number
   /** Awaited another owner's in-flight mint instead of starting its own. */
@@ -311,7 +305,6 @@ export function arbitrateMint<TUser extends AccountUser>(
   return { verdict: 'commit' }
 }
 
-/** A scheduled mint's result may commit only if nothing superseded it. */
 export function scheduledMintHolds<TUser extends AccountUser>(
   state: SessionState<TUser>,
   guards: { readonly epoch: number; readonly invalidation: number },
