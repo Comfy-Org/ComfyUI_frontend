@@ -4,6 +4,7 @@ import type {
   ExchangeTokenResponse,
   ListWorkspacesResponse
 } from '@comfyorg/ingest-types'
+import { zExchangeTokenRequest } from '@comfyorg/ingest-types/zod'
 
 import { MODEL_PATH, test } from './fixtures/modelsAccount'
 
@@ -45,10 +46,11 @@ test('switching workspace during a run asks before it throws the run away', asyn
   // that asks for the team needs an answer of its own or the switch lands
   // back where it started and says nothing.
   await page.route('**/api/auth/token', (route) => {
-    const asked = route.request().postDataJSON() as {
-      workspace_id?: string
-    } | null
-    if (asked?.workspace_id !== TEAM.id) return route.fallback()
+    const asked = zExchangeTokenRequest.safeParse(
+      route.request().postDataJSON()
+    )
+    if (!asked.success || asked.data.workspace_id !== TEAM.id)
+      return route.fallback()
     return route.fulfill({
       status: 200,
       contentType: 'application/json',
