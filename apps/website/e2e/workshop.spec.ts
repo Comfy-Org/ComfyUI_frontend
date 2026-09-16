@@ -652,8 +652,14 @@ test.describe('Model playground', () => {
     await expect(cards).toHaveCount(3)
 
     await expect
-      .poll(async () => (await cards.nth(1).boundingBox())?.x ?? width)
-      .toBeLessThan(width - 24)
+      .poll(async () => {
+        const box = await cards.nth(1).boundingBox()
+        if (!box) return false
+        // Far enough in to be seen, and still running off the edge: a card
+        // that fitted whole would say the strip ends there.
+        return box.x < width - 24 && box.x + box.width > width
+      })
+      .toBe(true)
   })
 
   test('a lone sample takes the phone row @mobile', async ({ page }) => {
