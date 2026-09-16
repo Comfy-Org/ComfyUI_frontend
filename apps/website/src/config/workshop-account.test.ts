@@ -24,6 +24,7 @@ vi.mock<unknown>(import('./workshop-firebase'), async () => {
     workshopIdentity: createTestIdentity<User>({
       onUserChanged: (callback) => {
         h.deliver = callback
+        callback(null)
         return () => {
           h.deliver = undefined
         }

@@ -143,6 +143,5 @@ export function signOutWorkshop(): Promise<void> {
   return identity.signOut()
 }
 
-/** Fires with the restored user (or null) once Firebase settles, then on every change. */
-/** The identity the session client attaches; only the package can mint one. */
+/** Reached only through workshop-account's lazy port, so this chunk stays off the flag-off path. */
 export const workshopIdentity = identity
