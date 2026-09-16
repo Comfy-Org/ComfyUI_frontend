@@ -2,6 +2,7 @@ import type { RumBeforeSend, RumErrorEvent } from '@datadog/browser-rum'
 
 import { ASSERTION_FAILURE_PREFIX, hasRumAssertReporter } from '@/base/assert'
 
+import { syncDatadogViewFeatureFlags } from './datadogFeatureFlags'
 import { REPORTED_ERROR_PREFIX } from './reportError'
 
 const RUM_NOISE_HOSTS = [
@@ -105,6 +106,7 @@ function tagRumErrorOrigin(event: RumErrorEvent): void {
 }
 
 export const rumBeforeSend: RumBeforeSend = (event) => {
+  syncDatadogViewFeatureFlags(event)
   if (!shouldKeepRumEvent(event)) return false
   if (event.type === 'error') {
     fingerprintFirebasePendingPromise(event)
