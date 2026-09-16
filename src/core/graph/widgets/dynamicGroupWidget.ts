@@ -1,8 +1,6 @@
 import { t } from '@/i18n'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
-import type { DrawWidgetOptions } from '@/lib/litegraph/src/widgets/BaseWidget'
-import { ButtonWidget } from '@/lib/litegraph/src/widgets/ButtonWidget'
 import {
   captureInputLayout,
   replaceNodeInputs
@@ -17,6 +15,7 @@ import { zDynamicGroupInputSpec } from '@/schemas/nodeDefSchema'
 import { useLitegraphService } from '@/services/litegraphService'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import { deriveWidgetSurfaces } from '@/types/widgetVisibility'
 
 export function dynamicGroupWidget(
   node: LGraphNode,
@@ -33,7 +32,12 @@ export function dynamicGroupWidget(
         value: undefined,
         y: 0,
         serialize: false,
-        options: { disabled: true, socketless: true, serialize: false }
+        options: {
+          disabled: true,
+          socketless: true,
+          serialize: false,
+          surfaces: { canvas: 'never', vueNode: 'shown', panel: 'shown' }
+        }
       })
     }
   }
@@ -61,7 +65,8 @@ export function dynamicGroupWidget(
     options: {
       socketless: true,
       serialize: false,
-      iconClass: 'icon-[lucide--plus]'
+      iconClass: 'icon-[lucide--plus]',
+      surfaces: { canvas: 'never', vueNode: 'shown', panel: 'shown' }
     },
     callback: () =>
       changeRows(() => {
@@ -147,28 +152,21 @@ export function dynamicGroupWidget(
     const previousSize: [number, number] = [...node.size]
     const start = node.widgets?.length ?? 0
     const previous = captureInputLayout(node)
-    const header: IBaseWidget = node.addCustomWidget(
-      new DynamicGroupRowWidget(
-        {
-          name: `${inputName}.${index}`,
-          type: 'button',
-          clicked: false,
-          value: undefined,
-          y: 0,
-          serialize: false,
-          options: { socketless: true, serialize: false },
-          callback: () => {
-            if (rows().length <= min) return
-            changeRows(() => {
-              removeRow(Number(header.name.slice(inputName.length + 1)))
-              publish()
-            })
-          }
-        },
-        node
-      )
-    )
-    header.type = 'dynamic_group_row'
+    const header: IBaseWidget = node.addCustomWidget({
+      name: `${inputName}.${index}`,
+      type: 'dynamic_group_row',
+      value: undefined,
+      y: 0,
+      serialize: false,
+      options: { socketless: true, serialize: false },
+      callback: () => {
+        if (rows().length <= min) return
+        changeRows(() => {
+          removeRow(Number(header.name.slice(inputName.length + 1)))
+          publish()
+        })
+      }
+    })
     addRowFields(index)
     const addedInputs = node.inputs.splice(previous.inputs.length)
     const inputs = [
@@ -193,6 +191,12 @@ export function dynamicGroupWidget(
     const widgets = node.widgets
     if (!widgets) return false
     const added = widgets.splice(start)
+    for (const widget of added) {
+      widget.options = {
+        ...widget.options,
+        surfaces: { ...deriveWidgetSurfaces(widget), canvas: 'never' }
+      }
+    }
     widgets.splice(widgets.indexOf(add), 0, ...added)
     return true
   }
@@ -236,27 +240,4 @@ export function dynamicGroupWidget(
   })
   controller.value = initialCount
   return { widget: controller }
-}
-
-class DynamicGroupRowWidget extends ButtonWidget {
-  override drawWidget(
-    ctx: CanvasRenderingContext2D,
-    { width, showText = true }: DrawWidgetOptions
-  ) {
-    const { y, height } = this
-    const label = `${this.label}  ×`
-    ctx.save()
-    ctx.fillStyle = this.secondary_text_color
-    ctx.strokeStyle = this.outline_color
-    ctx.textAlign = 'right'
-    if (showText) ctx.fillText(label, width - 15, y + height * 0.7)
-    ctx.beginPath()
-    ctx.moveTo(15, y + height / 2)
-    ctx.lineTo(
-      width - (showText ? ctx.measureText(label).width + 25 : 15),
-      y + height / 2
-    )
-    ctx.stroke()
-    ctx.restore()
-  }
 }
