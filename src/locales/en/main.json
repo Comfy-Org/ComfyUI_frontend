@@ -1169,6 +1169,7 @@
     "removeFromBookmarks": "Remove from Bookmarks"
   },
   "templateWorkflows": {
+    "preparingMedia": "Preparing example media...",
     "title": "Get Started with a Template",
     "loadingMore": "Loading more templates...",
     "searchPlaceholder": "Search templates...",
@@ -1227,6 +1228,7 @@
       "default": "Default"
     },
     "error": {
+      "preparingMedia": "Some example media couldn't be prepared. The workflow will open; choose your own files for any missing inputs.",
       "loading": "Couldn't open the template. Please try again.",
       "templateNotFound": "Template \"{templateName}\" not found"
     }
