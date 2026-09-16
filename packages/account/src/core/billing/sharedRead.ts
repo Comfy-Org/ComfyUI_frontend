@@ -20,6 +20,7 @@ import type {
 } from './billingContracts.js'
 import type { BillingScopeContext } from './billingScope.js'
 import { sameBillingScope } from './billingScope.js'
+import { readBillingErrorCode } from './billingErrorBody.js'
 import { codeForHttpStatus } from './httpStatus.js'
 
 /**
@@ -32,11 +33,11 @@ const ABANDONED = {
   code: 'REQUEST_FAILED'
 } as const satisfies BillingResult<never>
 
-type ParsedBody<T> =
+export type ParsedBillingBody<T> =
   | { readonly success: true; readonly data: T }
   | { readonly success: false }
 
-interface ValidatedBillingResponse<T> {
+export interface ValidatedBillingResponse<T> {
   readonly data: T
   readonly body: unknown
   readonly httpStatus: number
@@ -55,17 +56,19 @@ export function matchesScopedRead<
 export async function readValidatedBillingResponse<T>(
   transport: BillingTransport,
   request: BillingRequest,
-  parse: (body: unknown) => ParsedBody<T>
+  parse: (body: unknown) => ParsedBillingBody<T>
 ): Promise<BillingResult<ValidatedBillingResponse<T>>> {
   const response = await transport(request)
   if (response.status === 'error') return response
 
   const { httpStatus, body } = response.value
   if (httpStatus < 200 || httpStatus >= 300) {
+    const serverCode = readBillingErrorCode(body)
     return {
       status: 'error',
-      code: codeForHttpStatus(httpStatus),
-      httpStatus
+      code: codeForHttpStatus(response.value),
+      httpStatus,
+      ...(serverCode === undefined ? {} : { serverCode })
     }
   }
 

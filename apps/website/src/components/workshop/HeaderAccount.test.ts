@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 
 import { subscribeToWorkshopBuyCredits } from '../../config/workshop-buy-credits'
+import { reportWorkshopRun } from '../../config/workshop-run-state'
 import HeaderAccount from './HeaderAccount.vue'
 
 const h = vi.hoisted(() => ({
@@ -230,7 +231,7 @@ describe('HeaderAccount menu', () => {
     h.balance!.value = { status: 'ok', credits: 42 }
   }
 
-  it('shows the user identity instead of the personal workspace in its lead card', async () => {
+  it('shows the mail beside sign out and the workspace above the credits', async () => {
     signIn()
     h.user!.value = {
       uid: 'user-1',
@@ -242,14 +243,32 @@ describe('HeaderAccount menu', () => {
     render(HeaderAccount)
 
     await user.click(screen.getByTestId('header-account'))
-    const card = await screen.findByTestId('account-identity')
+    const identity = await screen.findByTestId('account-identity')
+    const active = screen.getByTestId('account-workspace-current')
 
-    expect(card.textContent).toContain('Ada')
-    expect(card.textContent).toContain('a@b.co')
-    expect(card.textContent).not.toContain('Personal')
-    expect(screen.getByTestId('account-menu-avatar').getAttribute('src')).toBe(
-      'https://example.com/ada.jpg'
-    )
+    expect(identity.textContent).toContain('a@b.co')
+    expect(identity.textContent).not.toContain('Personal')
+    expect(active.textContent).toContain('Personal')
+    expect(active.textContent).toContain('Owner')
+    expect(active.textContent).not.toContain('Ada')
+  })
+
+  it('marks the workspace with its own name, not with the word workspace', async () => {
+    signIn()
+    h.session!.value = {
+      token: 'jwt',
+      uid: 'user-1',
+      workspace: { id: 'ws', name: 'Ada Studio Workspace', type: 'team' },
+      role: 'owner'
+    }
+    const user = userEvent.setup()
+    render(HeaderAccount)
+
+    await user.click(screen.getByTestId('header-account'))
+    const active = await screen.findByTestId('account-workspace-current')
+
+    expect(active.textContent).toContain('AS')
+    expect(active.textContent).toContain('Ada Studio Workspace')
   })
 
   it('uses the user ID when profile fields are empty', async () => {
@@ -329,6 +348,9 @@ describe('HeaderAccount menu', () => {
 
     await screen.findByTestId('account-workspace')
     expect(screen.queryByTestId('account-add-credits')).toBeNull()
+    expect(
+      screen.getByTestId('account-workspace-current').textContent
+    ).toContain('Member')
   })
 
   it('closes on Escape and hands focus back to the trigger', async () => {
@@ -380,6 +402,19 @@ describe('HeaderAccount workspace switcher', () => {
     ]
   }
 
+  it('names the sign out control in text, not only to a screen reader', async () => {
+    signIn()
+    const user = userEvent.setup()
+    render(HeaderAccount)
+
+    await user.click(screen.getByTestId('header-account'))
+
+    // The icon alone left sighted readers guessing what the door meant.
+    expect(await screen.findByTestId('account-sign-out')).toHaveTextContent(
+      'Log out'
+    )
+  })
+
   async function openSwitcher(user: ReturnType<typeof userEvent.setup>) {
     await user.click(screen.getByTestId('header-account'))
     await screen.findByTestId('account-workspace')
@@ -414,6 +449,75 @@ describe('HeaderAccount workspace switcher', () => {
       signal: expect.any(AbortSignal),
       timeoutMs: 15_000
     })
+  })
+
+  // A run belongs to the workspace paying for it. The playground guards every
+  // way off the page, and this is the way off the workspace.
+  it('asks before a switch throws away a run, and lets the reader stay', async () => {
+    signIn()
+    const cancel = vi.fn()
+    reportWorkshopRun(cancel)
+    onTestFinished(() => reportWorkshopRun(undefined))
+    vi.stubGlobal(
+      'fetch',
+      vi
+        .fn()
+        .mockResolvedValue(
+          new Response(JSON.stringify(listing), { status: 200 })
+        )
+    )
+    const user = userEvent.setup()
+    render(HeaderAccount)
+
+    await openSwitcher(user)
+    await user.click(await screen.findByTestId('account-workspace-team-1'))
+
+    expect(await screen.findByTestId('run-leave-dialog')).toBeTruthy()
+    expect(h.remint).not.toHaveBeenCalled()
+
+    await user.click(screen.getByTestId('run-leave-stay'))
+
+    expect(cancel).not.toHaveBeenCalled()
+    expect(h.remint).not.toHaveBeenCalled()
+  })
+
+  it('cancels the run and switches once the reader accepts', async () => {
+    signIn()
+    const cancel = vi.fn()
+    reportWorkshopRun(cancel)
+    onTestFinished(() => reportWorkshopRun(undefined))
+    vi.stubGlobal(
+      'fetch',
+      vi
+        .fn()
+        .mockResolvedValue(
+          new Response(JSON.stringify(listing), { status: 200 })
+        )
+    )
+    const team = {
+      token: 'team-jwt',
+      uid: 'user-1',
+      workspace: { id: 'team-1', name: 'Comfy team', type: 'team' as const },
+      role: 'member'
+    }
+    h.remint.mockImplementationOnce(async () => {
+      h.session!.value = team
+      return { status: 'ok', session: team }
+    })
+    const user = userEvent.setup()
+    render(HeaderAccount)
+
+    await openSwitcher(user)
+    await user.click(await screen.findByTestId('account-workspace-team-1'))
+    await user.click(await screen.findByTestId('run-leave-confirm'))
+
+    expect(cancel).toHaveBeenCalledOnce()
+    await waitFor(() =>
+      expect(h.remint).toHaveBeenCalledWith(undefined, {
+        workspaceId: 'team-1',
+        preserveCredentialOnTransientFailure: true
+      })
+    )
   })
 
   it('switches by reminting for the picked workspace', async () => {
@@ -451,7 +555,7 @@ describe('HeaderAccount workspace switcher', () => {
     await waitFor(() => expect(screen.queryByRole('menu')).toBeNull())
     await user.click(screen.getByTestId('header-account'))
     const account = await screen.findByTestId('account-identity')
-    expect(account.textContent).toContain('Ada')
+    expect(account.textContent).toContain('a@b.co')
     expect(account.textContent).not.toContain('Comfy team')
   })
 

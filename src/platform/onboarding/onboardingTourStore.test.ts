@@ -1,10 +1,15 @@
 import { useAppModeStore } from '@/stores/appModeStore'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import type { DetachedWindowAPI } from 'happy-dom'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { assert, afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
 import { useAppMode } from '@/composables/useAppMode'
+import { useTelemetry } from '@/platform/telemetry'
+import type {
+  OnboardingTourStepStage,
+  OnboardingTourStepMetadata
+} from '@/platform/telemetry/types'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
@@ -19,10 +24,13 @@ import { TOUR_SEEN_SETTING, tourDefinition } from './onboardingTours'
 import type { CoachId, CoachStep } from './onboardingTours'
 import { useOnboardingTourStore } from './onboardingTourStore'
 
-const telemetry = vi.hoisted(() => ({ track: vi.fn() }))
-vi.mock<unknown>(import('@/platform/telemetry'), () => ({
-  useTelemetry: () => ({ trackOnboardingTour: telemetry.track })
-}))
+vi.mock(import('@/platform/telemetry'))
+
+const dispatcher = useTelemetry()
+assert.exists(dispatcher)
+const trackOnboardingTour = vi.mocked<
+  (stage: OnboardingTourStepStage, metadata: OnboardingTourStepMetadata) => void
+>(dispatcher.trackOnboardingTour)
 
 const APP_MODE_TARGETS: CoachId[] = [
   'inputs-list',
@@ -49,7 +57,7 @@ function mountStore() {
 }
 
 function startedCount() {
-  return telemetry.track.mock.calls.filter(([stage]) => stage === 'started')
+  return trackOnboardingTour.mock.calls.filter(([stage]) => stage === 'started')
     .length
 }
 
@@ -58,7 +66,7 @@ function shownCoachId(step: CoachStep | null | undefined) {
 }
 
 function shownCount(coachId?: CoachId) {
-  return telemetry.track.mock.calls.filter(
+  return trackOnboardingTour.mock.calls.filter(
     ([stage, meta]) =>
       stage === 'step_shown' && (!coachId || meta.coach_id === coachId)
   ).length
@@ -93,7 +101,7 @@ describe('onboardingTourStore', () => {
     appendedTargets.forEach((el) => el.remove())
     appendedTargets.length = 0
     setViewport({ width: 1024, height: 768 })
-    telemetry.track.mockClear()
+    trackOnboardingTour.mockClear()
   })
 
   /** Register one laid-out element for a coach id, so its step resolves at once. */
@@ -184,7 +192,7 @@ describe('onboardingTourStore', () => {
     await nextTick()
 
     expect(store.step).toBeNull()
-    const skipped = telemetry.track.mock.calls.find(
+    const skipped = trackOnboardingTour.mock.calls.find(
       ([stage]) => stage === 'skipped'
     )
     expect(skipped?.[1]).toMatchObject({ skip_reason: 'trigger_lost' })
@@ -211,7 +219,7 @@ describe('onboardingTourStore', () => {
     expect(seenTours()).toContain('appMode')
 
     // A deliberate dismissal reports the user as the skip reason.
-    const skipped = telemetry.track.mock.calls.find(
+    const skipped = trackOnboardingTour.mock.calls.find(
       ([stage]) => stage === 'skipped'
     )
     expect(skipped?.[1]).toMatchObject({ skip_reason: 'user' })
@@ -342,7 +350,7 @@ describe('onboardingTourStore', () => {
 
     // The skipped event reports the timed-out step, not the prior landing,
     // and attributes the skip to the timeout rather than the user.
-    const skipped = telemetry.track.mock.calls.find(
+    const skipped = trackOnboardingTour.mock.calls.find(
       ([stage]) => stage === 'skipped'
     )
     expect(skipped?.[1]).toMatchObject({
@@ -397,7 +405,7 @@ describe('onboardingTourStore', () => {
     store.skip()
     await vi.advanceTimersByTimeAsync(8000)
 
-    const skipped = telemetry.track.mock.calls.filter(
+    const skipped = trackOnboardingTour.mock.calls.filter(
       ([stage]) => stage === 'skipped'
     )
     expect(skipped).toHaveLength(1)
@@ -417,7 +425,7 @@ describe('onboardingTourStore', () => {
 
     expect(store.step).toBeNull()
     expect(seenTours()).not.toContain('appMode')
-    const skipped = telemetry.track.mock.calls.find(
+    const skipped = trackOnboardingTour.mock.calls.find(
       ([stage]) => stage === 'skipped'
     )
     expect(skipped?.[1]).toMatchObject({ skip_reason: 'trigger_lost' })
@@ -438,7 +446,7 @@ describe('onboardingTourStore', () => {
     await vi.advanceTimersByTimeAsync(8000)
 
     expect(useToastStore().messagesToAdd).toHaveLength(0)
-    const skipReasons = telemetry.track.mock.calls
+    const skipReasons = trackOnboardingTour.mock.calls
       .filter(([stage]) => stage === 'skipped')
       .map(([, meta]) => meta.skip_reason)
     expect(skipReasons).toEqual(['trigger_lost'])
@@ -465,7 +473,7 @@ describe('onboardingTourStore', () => {
     }
 
     expect(seenTours()).toContain('appMode')
-    const completed = telemetry.track.mock.calls.find(
+    const completed = trackOnboardingTour.mock.calls.find(
       ([stage]) => stage === 'completed'
     )
     expect(completed).toBeTruthy()
@@ -583,19 +591,19 @@ describe('onboardingTourStore', () => {
     await nextTick()
 
     // The landing isn't numbered, so the four spotlight steps carry the count.
-    const started = telemetry.track.mock.calls.find(
+    const started = trackOnboardingTour.mock.calls.find(
       ([stage]) => stage === 'started'
     )
     expect(started?.[1]).toEqual({ tour: 'appMode', step_count: 4 })
 
-    const landingShown = telemetry.track.mock.calls.find(
+    const landingShown = trackOnboardingTour.mock.calls.find(
       ([stage]) => stage === 'step_shown'
     )
     expect(landingShown?.[1]).toEqual({ tour: 'appMode', step_count: 4 })
 
     store.next()
     await nextTick()
-    const shown = telemetry.track.mock.calls
+    const shown = trackOnboardingTour.mock.calls
       .filter(([stage]) => stage === 'step_shown')
       .at(-1)
     expect(shown?.[1]).toEqual({
@@ -617,7 +625,7 @@ describe('onboardingTourStore', () => {
     await nextTick()
 
     expect(store.step?.kind).not.toBe('landing')
-    const skipped = telemetry.track.mock.calls.some(
+    const skipped = trackOnboardingTour.mock.calls.some(
       ([stage]) => stage === 'skipped'
     )
     expect(skipped).toBe(false)
@@ -667,7 +675,7 @@ describe('onboardingTourStore', () => {
       useToastStore().messagesToAdd,
       'leaving app mode is an ordinary thing to do, so it must not read as an error'
     ).toEqual([])
-    const skipped = telemetry.track.mock.calls.findLast(
+    const skipped = trackOnboardingTour.mock.calls.findLast(
       ([stage]) => stage === 'skipped'
     )
     expect(skipped?.[1]).toMatchObject({ skip_reason: 'trigger_lost' })
@@ -883,7 +891,7 @@ describe('onboardingTourStore', () => {
       ).not.toBeNull()
       expect(useToastStore().messagesToAdd).toHaveLength(0)
       expect(
-        telemetry.track.mock.calls.filter(([stage]) => stage === 'skipped')
+        trackOnboardingTour.mock.calls.filter(([stage]) => stage === 'skipped')
       ).toHaveLength(0)
     })
   })

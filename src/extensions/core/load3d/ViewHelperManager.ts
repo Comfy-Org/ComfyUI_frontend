@@ -1,11 +1,11 @@
 import * as THREE from 'three'
-import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
+import type { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
 import { ViewHelper } from 'three/examples/jsm/helpers/ViewHelper'
 
-import {
-  type CameraState,
-  type EventManagerInterface,
-  type ViewHelperManagerInterface
+import type {
+  CameraState,
+  EventManagerInterface,
+  ViewHelperManagerInterface
 } from './interfaces'
 
 export class ViewHelperManager implements ViewHelperManagerInterface {
