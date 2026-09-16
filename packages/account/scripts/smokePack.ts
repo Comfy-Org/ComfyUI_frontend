@@ -1,8 +1,12 @@
 /**
  * Packs @comfyorg/account with `pnpm pack`, installs the tarball into a
- * throwaway npm project alongside the declared peers, and imports every
- * export entry from there: the consumer path where an unrewritten
- * `catalog:` specifier or an export target missing from `files` first fails.
+ * throwaway npm project alongside the declared peers, and proves the published
+ * shape from there: plain node imports every built entry, tsc under nodenext
+ * resolves a type and a value from each through the published `types`
+ * conditions, and the Vue SFC entries resolve their declaration and ship their
+ * source for a bundler. This is the consumer path where an unrewritten
+ * `catalog:` specifier or an export target missing from the tarball first
+ * fails.
  *
  * ingest-types is not on npm yet, so it is packed too and pinned through npm
  * `overrides`; drop that once it is published.
@@ -21,10 +25,12 @@ import { tmpdir } from 'node:os'
 import { join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
+type ExportTarget = string | { readonly types: string; readonly import: string }
+
 interface Manifest {
   readonly name: string
   readonly version: string
-  readonly exports: Readonly<Record<string, string>>
+  readonly exports: Readonly<Record<string, ExportTarget>>
   readonly dependencies?: Readonly<Record<string, string>>
   readonly peerDependencies?: Readonly<Record<string, string>>
 }
@@ -40,7 +46,7 @@ const packagesDir = resolve(packageDir, '..')
 const keep = process.argv.includes('--keep')
 
 const WORKSPACE_ONLY_SPECIFIER = /^(catalog|workspace):/
-const NON_PUBLIC_FILE = /(\.test\.ts$|(^|\/)__fixtures__\/)/
+const NON_PUBLIC_FILE = /(\.test\.ts$|(^|\/)__fixtures__\/|^src\/)/
 
 function run(command: string, args: string[], cwd: string): string {
   return execFileSync(command, args, {
@@ -92,6 +98,10 @@ function packedManifest(tarball: string): Manifest {
   )
 }
 
+function targetFiles(target: ExportTarget): string[] {
+  return typeof target === 'string' ? [target] : [target.types, target.import]
+}
+
 function log(line: string): void {
   process.stdout.write(`${line}\n`)
 }
@@ -100,9 +110,11 @@ function fail(message: string): never {
   throw new Error(message)
 }
 
-function assertPublishable(source: Manifest, packed: PackResult): void {
+function assertPublishable(packed: PackResult): Manifest {
+  const manifest = packedManifest(packed.filename)
   const shipped = new Set(packed.files.map((file) => file.path))
-  const missingTargets = Object.values(source.exports)
+  const missingTargets = Object.values(manifest.exports)
+    .flatMap(targetFiles)
     .map((target) => target.replace(/^\.\//, ''))
     .filter((target) => !shipped.has(target))
   if (missingTargets.length > 0) {
@@ -112,9 +124,8 @@ function assertPublishable(source: Manifest, packed: PackResult): void {
   }
   const nonPublic = [...shipped].filter((path) => NON_PUBLIC_FILE.test(path))
   if (nonPublic.length > 0) {
-    fail(`test-only files in the tarball:\n${nonPublic.join('\n')}`)
+    fail(`source or test-only files in the tarball:\n${nonPublic.join('\n')}`)
   }
-  const manifest = packedManifest(packed.filename)
   const unrewritten = Object.entries({
     ...manifest.dependencies,
     ...manifest.peerDependencies
@@ -126,25 +137,26 @@ function assertPublishable(source: Manifest, packed: PackResult): void {
         .join('\n')}`
     )
   }
-  log(`packed ${source.name}: ${shipped.size} files, specifiers rewritten`)
+  log(`packed ${manifest.name}: ${shipped.size} files, specifiers rewritten`)
+  return manifest
 }
 
-const CONSUMER_SOURCE = `
+const NODE_CONSUMER_SOURCE = `
 import { existsSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { createLazyIdentity } from '@comfyorg/account/lazyIdentity'
-import type { AccountUser } from '@comfyorg/account/session'
 import { createSessionClient } from '@comfyorg/account/session'
 import { createTestIdentity } from '@comfyorg/account/testing'
+import { zExchangeTokenResponse } from '@comfyorg/ingest-types/zod'
 
-const identity = createTestIdentity<AccountUser>({
+const identity = createTestIdentity({
   onUserChanged: (callback) => {
     callback(null)
     return () => {}
   }
 })
 const lazyIdentity = createLazyIdentity(async () => identity)
-const memory = new Map<string, string>()
+const memory = new Map()
 const client = createSessionClient(
   {
     exchangeUrl: 'https://example.invalid/api/auth/token',
@@ -166,6 +178,10 @@ if (beforeActivation !== 'pending' || afterActivation !== 'signed-out') {
   )
 }
 console.log(\`session client: \${beforeActivation} -> \${afterActivation}\`)
+if (typeof zExchangeTokenResponse.parse !== 'function') {
+  throw new Error('@comfyorg/ingest-types/zod did not load a zod schema')
+}
+console.log('@comfyorg/ingest-types/zod: imported under node')
 
 const { default: manifest } = await import('@comfyorg/account/package.json', {
   with: { type: 'json' }
@@ -175,23 +191,134 @@ for (const subpath of Object.keys(manifest.exports)) {
   const target = fileURLToPath(import.meta.resolve(specifier))
   if (!existsSync(target)) throw new Error(\`\${specifier} resolves to a missing file\`)
   if (target.endsWith('.vue')) {
-    console.log(\`\${specifier}: resolved (Vue SFC, needs a bundler to load)\`)
+    console.log(\`\${specifier}: source shipped for a bundler (\${target.slice(target.lastIndexOf('/dist/') + 1)})\`)
     continue
   }
   if (target.endsWith('.json')) await import(specifier, { with: { type: 'json' } })
   else await import(specifier)
-  console.log(\`\${specifier}: imported\`)
+  console.log(\`\${specifier}: imported under node\`)
 }
 `
 
+const TYPED_CONSUMER_SOURCE = `
+import type { OperationHandle } from '@comfyorg/account/boundedOperation'
+import { createBoundedOperation } from '@comfyorg/account/boundedOperation'
+import type { LazyIdentity } from '@comfyorg/account/lazyIdentity'
+import { createLazyIdentity } from '@comfyorg/account/lazyIdentity'
+import type { AccountUser, SessionSnapshot } from '@comfyorg/account/session'
+import { SESSION_ERROR_CODES, createSessionClient } from '@comfyorg/account/session'
+import type { BillingErrorCode } from '@comfyorg/account/billing'
+import { createSessionBillingTransport } from '@comfyorg/account/billing'
+import type { FirebaseIdentityAppConfig } from '@comfyorg/account/firebase'
+import { createFirebaseIdentity } from '@comfyorg/account/firebase'
+import { createWebCrossTabRefreshPort } from '@comfyorg/account/web'
+import type { IdentityPort } from '@comfyorg/account/testing'
+import { createTestIdentity } from '@comfyorg/account/testing'
+import type { CustomerRecoveryDeps } from '@comfyorg/account/customerRecovery'
+import { MISSING_CUSTOMER_MESSAGE } from '@comfyorg/account/customerRecovery'
+import type { AuthSchemaMessageKey } from '@comfyorg/account/signInSchemas'
+import { PASSWORD_RULES } from '@comfyorg/account/signInSchemas'
+import type { TurnstileMode } from '@comfyorg/account/turnstile'
+import { normalizeTurnstileMode } from '@comfyorg/account/turnstile'
+import type { TurnstileRenderOptions } from '@comfyorg/account/turnstileScript'
+import { loadTurnstile } from '@comfyorg/account/turnstileScript'
+import type { FirebaseAuthErrorLike } from '@comfyorg/account/firebaseAuthError'
+import { isFirebaseAuthErrorLike } from '@comfyorg/account/firebaseAuthError'
+import { signUpWithProvisioning } from '@comfyorg/account/provisioning'
+import { safeInternalPath } from '@comfyorg/account/redirect'
+import { getClientCountry } from '@comfyorg/account/region'
+import type { AuthMethod } from '@comfyorg/account/telemetry'
+import { SESSION_TELEMETRY_EVENT } from '@comfyorg/account/telemetry'
+import { isEmbeddedWebView } from '@comfyorg/account/webviewDetection'
+import type { RegionGateStatus } from '@comfyorg/account/vue/regionGate'
+import { useRegionGate } from '@comfyorg/account/vue/regionGate'
+import { useTurnstileGate } from '@comfyorg/account/vue/turnstileGate'
+import type { LifecycleScope } from '@comfyorg/account/vue/lifecycleScope'
+import { createLifecycleScope } from '@comfyorg/account/vue/lifecycleScope'
+import { useGenerationGuard } from '@comfyorg/account/vue/useGenerationGuard'
+import type PasswordRules from '@comfyorg/account/vue/PasswordRules'
+import type SocialAuthButtons from '@comfyorg/account/vue/SocialAuthButtons'
+import type TurnstileWidget from '@comfyorg/account/vue/TurnstileWidget'
+import type { ExchangeTokenResponse } from '@comfyorg/ingest-types'
+import { zExchangeTokenResponse } from '@comfyorg/ingest-types/zod'
+
+export const values = {
+  createBoundedOperation,
+  createLazyIdentity,
+  SESSION_ERROR_CODES,
+  createSessionClient,
+  createSessionBillingTransport,
+  createFirebaseIdentity,
+  createWebCrossTabRefreshPort,
+  createTestIdentity,
+  MISSING_CUSTOMER_MESSAGE,
+  PASSWORD_RULES,
+  normalizeTurnstileMode,
+  loadTurnstile,
+  isFirebaseAuthErrorLike,
+  signUpWithProvisioning,
+  safeInternalPath,
+  getClientCountry,
+  SESSION_TELEMETRY_EVENT,
+  isEmbeddedWebView,
+  useRegionGate,
+  useTurnstileGate,
+  createLifecycleScope,
+  useGenerationGuard,
+  zExchangeTokenResponse
+}
+
+export interface Types {
+  boundedOperation: OperationHandle
+  lazyIdentity: LazyIdentity<AccountUser>
+  session: SessionSnapshot
+  billing: BillingErrorCode
+  firebase: FirebaseIdentityAppConfig
+  web: ReturnType<typeof createWebCrossTabRefreshPort>
+  testing: IdentityPort<AccountUser>
+  customerRecovery: CustomerRecoveryDeps
+  signInSchemas: AuthSchemaMessageKey
+  turnstile: TurnstileMode
+  turnstileScript: TurnstileRenderOptions
+  firebaseAuthError: FirebaseAuthErrorLike
+  provisioning: Parameters<typeof signUpWithProvisioning>[0]
+  redirect: ReturnType<typeof safeInternalPath>
+  region: Awaited<ReturnType<typeof getClientCountry>>
+  telemetry: AuthMethod
+  webviewDetection: ReturnType<typeof isEmbeddedWebView>
+  regionGate: RegionGateStatus
+  turnstileGate: ReturnType<typeof useTurnstileGate>
+  lifecycleScope: LifecycleScope
+  useGenerationGuard: ReturnType<typeof useGenerationGuard>
+  passwordRules: InstanceType<typeof PasswordRules>['$props']
+  socialAuthButtons: InstanceType<typeof SocialAuthButtons>['$props']
+  turnstileWidget: InstanceType<typeof TurnstileWidget>['$props']
+  ingestTypes: ExchangeTokenResponse
+}
+
+export const exchange: Types['ingestTypes'] = zExchangeTokenResponse.parse({})
+`
+
+function assertTypedConsumerCoversEveryExport(manifest: Manifest): void {
+  const uncovered = Object.keys(manifest.exports)
+    .filter((subpath) => subpath !== './package.json')
+    .map((subpath) => subpath.replace(/^\./, manifest.name))
+    .filter((specifier) => !TYPED_CONSUMER_SOURCE.includes(`'${specifier}'`))
+  if (uncovered.length > 0) {
+    fail(
+      `TYPED_CONSUMER_SOURCE does not import these exports:\n${uncovered.join('\n')}`
+    )
+  }
+}
+
 function main(): void {
-  const source = readManifest(packageDir)
   const consumerDir = mkdtempSync(join(tmpdir(), 'comfyorg-account-smoke-'))
   const tarballDir = join(consumerDir, 'tarballs')
   mkdirSync(tarballDir)
   try {
     const packed = pack(packageDir, tarballDir)
-    assertPublishable(source, packed)
+    const manifest = assertPublishable(packed)
+    assertTypedConsumerCoversEveryExport(manifest)
 
     const siblings = workspaceDependencyClosure(
       packageDir,
@@ -200,11 +327,10 @@ function main(): void {
     const overrides = Object.fromEntries(
       [...siblings].map(([name, dir]) => {
         const packedSibling = pack(dir, tarballDir)
-        assertPublishable(readManifest(dir), packedSibling)
+        assertPublishable(packedSibling)
         return [name, `file:${packedSibling.filename}`]
       })
     )
-    const peers = packedManifest(packed.filename).peerDependencies ?? {}
     writeFileSync(
       join(consumerDir, 'package.json'),
       JSON.stringify(
@@ -213,8 +339,8 @@ function main(): void {
           private: true,
           type: 'module',
           dependencies: {
-            [source.name]: `file:${packed.filename}`,
-            ...peers
+            [manifest.name]: `file:${packed.filename}`,
+            ...manifest.peerDependencies
           },
           overrides
         },
@@ -229,9 +355,25 @@ function main(): void {
       consumerDir
     )
 
-    writeFileSync(join(consumerDir, 'consumer.ts'), CONSUMER_SOURCE)
-    const tsx = join(workspaceRoot, 'node_modules', '.bin', 'tsx')
-    process.stdout.write(run(tsx, ['consumer.ts'], consumerDir))
+    writeFileSync(join(consumerDir, 'consumer.mjs'), NODE_CONSUMER_SOURCE)
+    process.stdout.write(run('node', ['consumer.mjs'], consumerDir))
+
+    writeFileSync(join(consumerDir, 'consumer.ts'), TYPED_CONSUMER_SOURCE)
+    const tsc = join(workspaceRoot, 'node_modules', '.bin', 'tsc')
+    execFileSync(
+      tsc,
+      [
+        '--noEmit',
+        '--module',
+        'nodenext',
+        '--moduleResolution',
+        'nodenext',
+        '--strict',
+        'consumer.ts'
+      ],
+      { cwd: consumerDir, stdio: 'inherit' }
+    )
+    log('tsc (nodenext, strict): a type and a value resolved from every entry')
     log('packed tarball smoke test passed')
   } finally {
     if (keep) log(`kept ${consumerDir}`)

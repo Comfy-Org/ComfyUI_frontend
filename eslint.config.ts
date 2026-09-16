@@ -206,6 +206,7 @@ export default defineConfig([
             'packages/account-ui/vitest.config.ts',
             'packages/billing-contract/vitest.config.ts',
             'packages/design-system/vitest.config.ts',
+            'packages/ingest-types/openapi-ts.config.ts',
             'packages/object-info-parser/vitest.config.ts',
             'packages/shared-frontend-utils/vitest.config.ts',
             'vite.electron.config.mts',
