@@ -1,4 +1,4 @@
-import type { Settings } from '@/platform/settings/schemas/settingsSchema'
+import type { Settings } from '@/platform/settings/types'
 import type { ComfyApp } from '@/scripts/app'
 
 import type { ComfyComponent } from '.'

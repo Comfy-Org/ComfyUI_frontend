@@ -93,6 +93,12 @@ const reportErrorRestrictions = [
   }
 ] as const
 
+const apiSchemaRestriction = {
+  name: '@/schemas/apiSchema',
+  message:
+    'This module was removed. Use a generated or domain-owned contract as documented in browser_tests/README.md.'
+} as const
+
 const noPrimeVueImports: Rule.RuleModule = {
   meta: {
     type: 'problem',
@@ -757,6 +763,7 @@ export default defineConfig([
               message:
                 "In Vue components, use `const { t } = useI18n()` instead of importing from '@/i18n'."
             },
+            apiSchemaRestriction,
             useVirtualListRestriction,
             ...reportErrorRestrictions
           ]
@@ -779,6 +786,7 @@ export default defineConfig([
               message:
                 "useI18n() requires Vue setup context. Use `import { t } from '@/i18n'` instead."
             },
+            apiSchemaRestriction,
             useVirtualListRestriction,
             ...reportErrorRestrictions
           ]
@@ -793,7 +801,11 @@ export default defineConfig([
       'no-restricted-imports': [
         'error',
         {
-          paths: [useVirtualListRestriction, ...reportErrorRestrictions]
+          paths: [
+            apiSchemaRestriction,
+            useVirtualListRestriction,
+            ...reportErrorRestrictions
+          ]
         }
       ]
     }
@@ -809,7 +821,8 @@ export default defineConfig([
               name: '@vue/test-utils',
               message:
                 'Use @testing-library/vue with @testing-library/user-event instead.'
-            }
+            },
+            apiSchemaRestriction
           ]
         }
       ]
@@ -844,6 +857,7 @@ export default defineConfig([
               importNames: ['useI18n'],
               message: 'useI18n() requires Vue setup context.'
             },
+            apiSchemaRestriction,
             useVirtualListRestriction,
             ...reportErrorRestrictions
           ]
@@ -864,7 +878,8 @@ export default defineConfig([
               importNames: ['test'],
               message:
                 "Use `comfyPageFixture as test` from the ComfyPage fixture module instead of raw `test` from '@playwright/test'."
-            }
+            },
+            apiSchemaRestriction
           ],
           patterns: [
             {
@@ -889,6 +904,7 @@ export default defineConfig([
       'no-restricted-imports': [
         'error',
         {
+          paths: [apiSchemaRestriction],
           patterns: [
             {
               group: ['./**', '../**'],
@@ -900,26 +916,6 @@ export default defineConfig([
                 'browser_tests/helpers/ was removed. Use @e2e/fixtures/utils/, @e2e/fixtures/components/, or @e2e/fixtures/helpers/ instead.'
             }
           ]
-        }
-      ]
-    }
-  },
-
-  // Deprecate @/schemas/apiSchema — use generated types from
-  // @comfyorg/ingest-types instead. Uses no-restricted-syntax so it
-  // composes with other file-scoped no-restricted-imports blocks above
-  // (flat-config rules of the same key override rather than merge).
-  {
-    files: ['src/**/*.{ts,vue}'],
-    ignores: ['src/**/*.test.ts', 'src/**/*.spec.ts', 'src/**/*.stories.ts'],
-    rules: {
-      'no-restricted-syntax': [
-        'error',
-        {
-          selector:
-            "ImportDeclaration[source.value='@/schemas/apiSchema'], ExportNamedDeclaration[source.value='@/schemas/apiSchema'], ExportAllDeclaration[source.value='@/schemas/apiSchema']",
-          message:
-            'apiSchema is deprecated. Use generated types from @comfyorg/ingest-types instead. Only keep a hand-written schema if the ComfyUI webserver clearly diverges from the cloud ingest spec.'
         }
       ]
     }

@@ -47,15 +47,13 @@ import type {
 } from '@/platform/remote/comfyui/execution/types'
 import type {
   CustomNodesI18n,
+  PromptFailureResponse,
   PromptResponse,
   SystemStats,
-  User,
+  UserConfigResponse,
   UserDataFullInfo
 } from '@/platform/remote/comfyui/types'
-import type {
-  PreviewMethod,
-  Settings
-} from '@/platform/settings/schemas/settingsSchema'
+import type { PreviewMethod, Settings } from '@/platform/settings/types'
 import {
   zGetEmbeddingsResponse as zEmbeddingsResponse,
   zWorkflowApiAssetsResponse as zShareableAssetsResponse
@@ -381,10 +379,10 @@ export interface ComfyApi extends EventTarget {
 }
 
 export class PromptExecutionError extends Error {
-  response: PromptResponse
+  response: PromptFailureResponse
   status?: number
 
-  constructor(response: PromptResponse, status?: number) {
+  constructor(response: PromptFailureResponse, status?: number) {
     super('Prompt execution failed')
     this.response = response
     this.status = status
@@ -1462,7 +1460,7 @@ export class ComfyApi extends EventTarget {
   /**
    * Gets user configuration data and where data should be stored
    */
-  async getUserConfig(): Promise<User> {
+  async getUserConfig(): Promise<UserConfigResponse> {
     return (await this.fetchApi('/users')).json()
   }
 

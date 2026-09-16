@@ -36,8 +36,7 @@ test.describe(
         queuedRequest = route.request()
         const promptResponse: PromptResponse = {
           prompt_id: '1',
-          node_errors: {},
-          error: ''
+          node_errors: {}
         }
         await route.fulfill({
           status: 200,

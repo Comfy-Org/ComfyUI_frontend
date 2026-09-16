@@ -1,6 +1,9 @@
 import type { WebSocketRoute } from '@playwright/test'
 
-import type { NodeError, PromptResponse } from '@/platform/remote/comfyui/types'
+import type {
+  NodeError,
+  PromptFailureResponse
+} from '@/platform/remote/comfyui/types'
 import type { NodeProgressState } from '@/platform/remote/comfyui/execution/types'
 import type { RawJobListItem } from '@/platform/remote/comfyui/jobs/jobTypes'
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
@@ -109,7 +112,7 @@ export class ExecutionHelper {
   async mockValidationFailure(
     nodeErrors: Record<string, NodeError>
   ): Promise<void> {
-    const response: PromptResponse = {
+    const response: PromptFailureResponse = {
       node_errors: nodeErrors,
       error: {
         type: 'prompt_outputs_failed_validation',

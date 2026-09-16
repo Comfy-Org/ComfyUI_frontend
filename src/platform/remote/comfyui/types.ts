@@ -21,6 +21,11 @@ export type NodeError = {
 export type PromptResponse = IngestPromptResponse & {
   node_errors?: Record<string, NodeError>
   exec_info?: { queue_remaining?: number }
+}
+
+export type PromptFailureResponse = {
+  node_errors?: Record<string, NodeError>
+  exec_info?: { queue_remaining?: number }
   error: string | NodeError['errors'][number]
 }
 
@@ -46,7 +51,7 @@ export type SystemStats = {
   }
 }
 
-export type User = {
+export type UserConfigResponse = {
   storage: 'server'
   migrated?: boolean
   users?: Record<string, string>

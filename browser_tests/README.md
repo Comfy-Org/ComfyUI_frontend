@@ -793,7 +793,7 @@ them for any mock targeting their endpoints:
 | Manager (queue tasks, packages)                   | `generatedManagerTypes.ts` (`src/workbench/extensions/manager/types/`)             |
 | Local webserver responses that differ from ingest | `src/platform/remote/comfyui/types.ts`                                             |
 | WebSocket messages and custom-node outputs        | `src/platform/remote/comfyui/execution/types.ts`                                   |
-| Frontend settings                                 | `src/platform/settings/schemas/settingsSchema.ts`                                  |
+| Frontend settings                                 | `src/platform/settings/types.ts`                                                   |
 | Node definitions                                  | `src/schemas/nodeDefSchema.ts`, `src/schemas/nodeDef/nodeDefSchemaV2.ts`           |
 | Templates                                         | `src/platform/workflow/templates/types/template.ts`                                |
 | Jobs API                                          | `src/platform/remote/comfyui/jobs/jobTypes.ts` (`zJobDetail`, `zJobsListResponse`) |

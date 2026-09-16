@@ -77,7 +77,7 @@ app.registerExtension({
     function editAttention(event: KeyboardEvent) {
       // @ts-expect-error Runtime narrowing not impl.
       const inputField: HTMLTextAreaElement = event.composedPath()[0]
-      const delta = parseFloat(editAttentionDelta.value)
+      const delta = parseFloat(String(editAttentionDelta.value))
 
       if (inputField.tagName !== 'TEXTAREA') return
       if (!(event.key === 'ArrowUp' || event.key === 'ArrowDown')) return

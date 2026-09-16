@@ -1,7 +1,6 @@
 import { expect } from '@playwright/test'
 
-import type { Settings } from '@/platform/settings/schemas/settingsSchema'
-import type { SettingParams } from '@/platform/settings/types'
+import type { Settings, SettingParams } from '@/platform/settings/types'
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 
 /**

@@ -55,12 +55,9 @@ describe('DesktopCloudNotificationController', () => {
     settingStore.settingValues['Comfy.Desktop.CloudNotificationShown'] = false
     electron.getPlatform.mockReturnValue('darwin')
     vi.mocked(settingStore.load).mockResolvedValue(undefined)
-    vi.mocked(settingStore.set).mockImplementation(
-      async (_key: string, value: boolean) => {
-        settingStore.settingValues['Comfy.Desktop.CloudNotificationShown'] =
-          value
-      }
-    )
+    vi.mocked(settingStore.set).mockImplementation(async (key, value) => {
+      Object.assign(settingStore.settingValues, { [key]: value })
+    })
     dialogService.showCloudNotification.mockResolvedValue(undefined)
   })
 
@@ -128,8 +125,8 @@ describe('DesktopCloudNotificationController', () => {
 
   it('resets the shown state when unmounted before the initial save completes', async () => {
     const saveSettings = createDeferred()
-    vi.mocked(settingStore.set).mockImplementationOnce(async (_key, value) => {
-      settingStore.settingValues['Comfy.Desktop.CloudNotificationShown'] = value
+    vi.mocked(settingStore.set).mockImplementationOnce(async (key, value) => {
+      Object.assign(settingStore.settingValues, { [key]: value })
       await saveSettings.promise
     })
 
@@ -248,14 +245,11 @@ describe('DesktopCloudNotificationController', () => {
       if (failure === 'display') {
         dialogService.showCloudNotification.mockRejectedValue(initialError)
       }
-      vi.mocked(settingStore.set).mockImplementation(
-        async (_key: string, value: boolean) => {
-          if (!value) throw resetError
-          if (failure === 'save') throw initialError
-          settingStore.settingValues['Comfy.Desktop.CloudNotificationShown'] =
-            value
-        }
-      )
+      vi.mocked(settingStore.set).mockImplementation(async (key, value) => {
+        if (!value) throw resetError
+        if (failure === 'save') throw initialError
+        Object.assign(settingStore.settingValues, { [key]: value })
+      })
 
       const { unmount } = render(DesktopCloudNotificationController)
       await vi.advanceTimersByTimeAsync(2000)
