@@ -24,7 +24,9 @@ import { isRemoteMutationContext } from '@/types/graphMutationContext'
 const remoteModelUpdateSubscribed = new WeakSet<IBaseWidget>()
 
 type ModelWidgetBinding = {
-  onModelWidgetUpdate: (value: IBaseWidget['value']) => Promise<void>
+  onModelWidgetUpdate: (
+    value: string | number | boolean | object
+  ) => Promise<void>
   onSceneInvalidated?: () => void
   originalCallback?: IBaseWidget['callback']
 }
