@@ -170,6 +170,26 @@ describe('useTemplateWorkflows', () => {
     expect(mockWorkflowTemplatesStore.loadWorkflowTemplates).toHaveBeenCalled()
   })
 
+  it('reports a template load failure when the catalog could not be loaded', async () => {
+    const loader = useTemplateWorkflows()
+
+    expect(await loader.loadTemplates()).toBe(false)
+    expect(await loader.loadWorkflowTemplate('template1', 'default')).toBe(
+      false
+    )
+
+    expect(useToastStore().messagesToAdd).toEqual([
+      {
+        severity: 'error',
+        summary: i18n.global.t('g.error'),
+        detail: i18n.global.t('templateWorkflows.error.loading')
+      }
+    ])
+    expect(fetch).not.toHaveBeenCalled()
+    expect(app.loadGraphData).not.toHaveBeenCalled()
+    expect(loader.loadingTemplateId.value).toBeNull()
+  })
+
   it('should select the first template category', () => {
     const { selectFirstTemplateCategory, selectedTemplate } =
       useTemplateWorkflows()
@@ -310,7 +330,12 @@ describe('useTemplateWorkflows', () => {
     await flushPromises()
 
     expect(result).toBe(true)
-    expect(fetch).toHaveBeenCalledWith('mock-file-url/templates/template1.json')
+    expect(fetch).toHaveBeenCalledWith(
+      'mock-file-url/templates/template1.json',
+      {
+        signal: expect.any(AbortSignal)
+      }
+    )
     expect(loadingTemplateId.value).toBe(null) // Should reset after loading
   })
 
@@ -325,7 +350,12 @@ describe('useTemplateWorkflows', () => {
     await flushPromises()
 
     expect(result).toBe(true)
-    expect(fetch).toHaveBeenCalledWith('mock-file-url/templates/template1.json')
+    expect(fetch).toHaveBeenCalledWith(
+      'mock-file-url/templates/template1.json',
+      {
+        signal: expect.any(AbortSignal)
+      }
+    )
   })
 
   it('tracks template telemetry on load in cloud builds', async () => {
@@ -488,6 +518,37 @@ describe('useTemplateWorkflows', () => {
     expect(app.loadGraphData).not.toHaveBeenCalled()
     expect(loader.loadingTemplateId.value).toBeNull()
   })
+
+  it.for(['default', 'custom-module'])(
+    'aborts the %s template request and clears busy state on unmount',
+    async (sourceModule) => {
+      mockWorkflowTemplatesStore.isLoaded = true
+      let requestSignal: AbortSignal | null | undefined
+      vi.mocked(fetch).mockImplementation((_url, options) => {
+        requestSignal = options?.signal
+        return new Promise<Response>((_resolve, reject) => {
+          requestSignal?.addEventListener(
+            'abort',
+            () => reject(new DOMException('Aborted', 'AbortError')),
+            { once: true }
+          )
+        })
+      })
+      const loader = useTemplateWorkflows()
+
+      const result = loader.loadWorkflowTemplate('template1', sourceModule)
+      expect(requestSignal).toBeInstanceOf(AbortSignal)
+      const component = apps.pop()
+      if (!component) throw new Error('Missing loader component')
+      component.unmount()
+
+      expect(await result).toBe(false)
+      expect(requestSignal?.aborted).toBe(true)
+      expect(loader.loadingTemplateId.value).toBeNull()
+      expect(app.loadGraphData).not.toHaveBeenCalled()
+      expect(useToastStore().messagesToAdd).toEqual([])
+    }
+  )
 
   it('continues graph loading when closing the selector unmounts the loader', async () => {
     mockWorkflowTemplatesStore.isLoaded = true
