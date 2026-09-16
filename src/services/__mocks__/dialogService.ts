@@ -48,6 +48,4 @@ const dialogService = vi.mockObject<DialogService>(
   { spy: true }
 )
 
-export const useDialogService = vi.fn<typeof realUseDialogService>(
-  () => dialogService
-)
+export const useDialogService = vi.fn(() => dialogService)

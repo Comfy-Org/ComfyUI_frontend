@@ -1242,12 +1242,14 @@ describe('useAuthStore', () => {
 
       // Should call the error dialog instead of throwing
       const token = await store.getIdToken()
-      const dialogService = useDialogService()
 
-      expect(dialogService.showErrorDialog).toHaveBeenCalledWith(authError, {
-        title: i18n.global.t('errorDialog.defaultTitle'),
-        reportType: 'authenticationError'
-      })
+      expect(useDialogService().showErrorDialog).toHaveBeenCalledWith(
+        authError,
+        {
+          title: i18n.global.t('errorDialog.defaultTitle'),
+          reportType: 'authenticationError'
+        }
+      )
       expect(token).toBeUndefined()
     })
   })
