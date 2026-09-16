@@ -40,6 +40,7 @@ export function createLazyIdentity<TUser extends AccountUser>(
         (identity) => {
           if (started !== generation) return
           unsubscribe = identity.onUserChanged((user) => {
+            if (started !== generation) return
             deliver(user)
             resolve()
           })
@@ -63,9 +64,10 @@ export function createLazyIdentity<TUser extends AccountUser>(
     settleActivation = undefined
     unsubscribe?.()
     unsubscribe = undefined
-    const hadDelivered = lastDelivered !== undefined
+    const wasSignedIn =
+      lastDelivered !== undefined && lastDelivered.user !== null
     lastDelivered = undefined
-    if (!hadDelivered) return
+    if (!wasSignedIn) return
     listeners.forEach((listener) => listener(null))
   }
 
