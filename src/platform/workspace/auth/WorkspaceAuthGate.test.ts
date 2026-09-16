@@ -13,6 +13,7 @@ import {
 import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
+import { useAuthActions } from '@/composables/auth/useAuthActions'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import {
   remoteConfigErrorStatus,
@@ -38,11 +39,7 @@ vi.mock(import('@/platform/telemetry/reportError'), () => ({
   reportError: mockReportError
 }))
 
-const mockLogout = vi.fn()
-
-vi.mock<unknown>(import('@/composables/auth/useAuthActions'), () => ({
-  useAuthActions: () => ({ logout: mockLogout })
-}))
+vi.mock(import('@/composables/auth/useAuthActions'))
 
 const mockRefreshRemoteConfig = vi.fn()
 vi.mock(import('@/platform/remoteConfig/refreshRemoteConfig'), () => ({
@@ -465,7 +462,7 @@ describe('WorkspaceAuthGate', () => {
       ).toBeInTheDocument()
 
       await user.click(screen.getByRole('button', { name: 'Log Out' }))
-      expect(mockLogout).toHaveBeenCalledOnce()
+      expect(useAuthActions().logout).toHaveBeenCalledOnce()
     })
 
     it('shows a recoverable error when unified auth initialization fails', async () => {
@@ -600,7 +597,7 @@ describe('WorkspaceAuthGate', () => {
       await flushPromises()
 
       expect(retrySignal.aborted).toBe(true)
-      expect(mockLogout).toHaveBeenCalledOnce()
+      expect(useAuthActions().logout).toHaveBeenCalledOnce()
       expect(useTeamWorkspaceStore().initialize).not.toHaveBeenCalled()
     })
   })

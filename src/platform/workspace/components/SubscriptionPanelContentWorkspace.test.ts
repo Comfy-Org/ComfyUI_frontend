@@ -1,4 +1,5 @@
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
+import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { getActivePinia } from 'pinia'
 import { computed, ref, toRef } from 'vue'
 import { useBillingOperationStore } from '@/platform/workspace/stores/billingOperationStore'
@@ -104,9 +105,6 @@ const mockCurrentTeamCreditStop = ref<TeamCreditStopSummary | null>({
   stop_usd: 700
 })
 
-const mockManageSubscription = vi.fn()
-const mockShowSubscriptionDialog = vi.fn()
-const mockResubscribe = vi.fn()
 const mockShowLeaveWorkspaceDialog = vi.fn()
 const mockShowCancelSubscriptionFlow = vi.fn()
 const mockShowEditWorkspaceDialog = vi.fn()
@@ -175,33 +173,10 @@ const mockIsTeamPlan = computed(
   () => mockHasSubscription.value && mockHasTeamPlan.value
 )
 
-const mockInitialize = vi.fn()
 const mockIsLoading = ref(false)
 const mockError = ref<string | null>(null)
 
-vi.mock<unknown>(import('@/composables/billing/useBillingContext'), () => ({
-  useBillingContext: () => ({
-    type: mockBillingType,
-    canAccessSubscriptionFeatures: computed(
-      () => mockIsActiveSubscription.value
-    ),
-    isFreeTier: computed(() => mockSubscriptionTier.value === 'FREE'),
-    billingStatus: mockBillingStatus,
-    subscriptionStatus: mockSubscriptionStatus,
-    isTeamPlan: mockIsTeamPlan,
-    subscription: mockSubscription,
-    plans: mockPlans,
-    teamCreditStops: mockTeamCreditStops,
-    currentTeamCreditStop: mockCurrentTeamCreditStop,
-    isLoading: mockIsLoading,
-    error: mockError,
-    showSubscriptionDialog: mockShowSubscriptionDialog,
-    manageSubscription: mockManageSubscription,
-    resubscribe: mockResubscribe,
-    initialize: mockInitialize,
-    getMaxSeats: () => 5
-  })
-}))
+vi.mock(import('@/composables/billing/useBillingContext'))
 
 const mockIsTeamPlanCancelled = computed(
   () => mockHasTeamPlan.value && (mockSubscription.value?.isCancelled ?? false)
@@ -336,6 +311,25 @@ describe('SubscriptionPanelContentWorkspace', () => {
       canChangeSeats: computed(() => mockCanChangeSeats.value),
       canSubscribeSelfServe: computed(() => mockCanSubscribeSelfServe.value)
     })
+    const billing = useBillingContext()
+    Object.assign(billing, {
+      type: computed(() => mockBillingType.value),
+      canAccessSubscriptionFeatures: computed(
+        () => mockIsActiveSubscription.value
+      ),
+      isFreeTier: computed(() => mockSubscriptionTier.value === 'FREE'),
+      billingStatus: computed(() => mockBillingStatus.value),
+      subscriptionStatus: computed(() => mockSubscriptionStatus.value),
+      isTeamPlan: mockIsTeamPlan,
+      subscription: mockSubscription,
+      plans: computed(() => mockPlans.value),
+      teamCreditStops: computed(() => mockTeamCreditStops.value),
+      currentTeamCreditStop: computed(() => mockCurrentTeamCreditStop.value),
+      isLoading: mockIsLoading,
+      error: mockError
+    })
+    vi.mocked(billing.getMaxSeats).mockReturnValue(5)
+    vi.mocked(useBillingContext).mockReturnValue(billing)
 
     mockDistributionState.isCloud = true
     mockSubscriptionStatus.value = 'active'
@@ -674,10 +668,10 @@ describe('SubscriptionPanelContentWorkspace', () => {
     renderComponent()
 
     await user.click(screen.getByRole('button', { name: 'Billing & invoices' }))
-    expect(mockManageSubscription).toHaveBeenCalledOnce()
+    expect(useBillingContext().manageSubscription).toHaveBeenCalledOnce()
 
     await user.click(screen.getByRole('button', { name: 'Change plan' }))
-    expect(mockShowSubscriptionDialog).toHaveBeenCalledOnce()
+    expect(useBillingContext().showSubscriptionDialog).toHaveBeenCalledOnce()
   })
 
   it('hides Change plan when the server denies seat changes to a client-side owner', () => {
@@ -702,9 +696,9 @@ describe('SubscriptionPanelContentWorkspace', () => {
       screen.queryByRole('button', { name: 'Billing & invoices' })
     ).not.toBeInTheDocument()
     await user.click(screen.getByRole('button', { name: 'Manage billing' }))
-    expect(mockManageSubscription).toHaveBeenCalledOnce()
+    expect(useBillingContext().manageSubscription).toHaveBeenCalledOnce()
     await user.click(screen.getByRole('button', { name: 'Invoice history' }))
-    expect(mockManageSubscription).toHaveBeenCalledTimes(2)
+    expect(useBillingContext().manageSubscription).toHaveBeenCalledTimes(2)
   })
 
   it('keeps a Personal workspace Team-plan member view read-only', () => {
@@ -765,7 +759,7 @@ describe('SubscriptionPanelContentWorkspace', () => {
     ).not.toBeInTheDocument()
     expect(screen.getByRole('heading', { name: 'Free' })).toBeInTheDocument()
     await user.click(screen.getByRole('button', { name: 'Billing & invoices' }))
-    expect(mockManageSubscription).toHaveBeenCalledOnce()
+    expect(useBillingContext().manageSubscription).toHaveBeenCalledOnce()
     expect(
       screen.getByRole('button', { name: 'Subscribe' })
     ).toBeInTheDocument()
@@ -847,8 +841,8 @@ describe('SubscriptionPanelContentWorkspace', () => {
     await user.click(
       screen.getByRole('button', { name: 'Resume subscription' })
     )
-    expect(mockResubscribe).toHaveBeenCalledOnce()
-    expect(mockShowSubscriptionDialog).not.toHaveBeenCalled()
+    expect(useBillingContext().resubscribe).toHaveBeenCalledOnce()
+    expect(useBillingContext().showSubscriptionDialog).not.toHaveBeenCalled()
   })
 
   it('drops the state card for an inactive ended subscription without a date', () => {
@@ -879,9 +873,9 @@ describe('SubscriptionPanelContentWorkspace', () => {
       screen.getByRole('heading', { name: 'Inactive team subscription' })
     ).toBeInTheDocument()
     await user.click(screen.getByRole('button', { name: 'Billing & invoices' }))
-    expect(mockManageSubscription).toHaveBeenCalledOnce()
+    expect(useBillingContext().manageSubscription).toHaveBeenCalledOnce()
     await user.click(screen.getByRole('button', { name: 'Invoice history' }))
-    expect(mockManageSubscription).toHaveBeenCalledTimes(2)
+    expect(useBillingContext().manageSubscription).toHaveBeenCalledTimes(2)
   })
 
   it('renders an ended Team plan for its owner and routes reactivation to checkout', async () => {
@@ -935,10 +929,10 @@ describe('SubscriptionPanelContentWorkspace', () => {
       screen.getByRole('button', { name: 'Resume subscription' })
     )
 
-    expect(mockShowSubscriptionDialog).toHaveBeenCalledWith({
+    expect(useBillingContext().showSubscriptionDialog).toHaveBeenCalledWith({
       reason: 'settings_billing_panel'
     })
-    expect(mockResubscribe).not.toHaveBeenCalled()
+    expect(useBillingContext().resubscribe).not.toHaveBeenCalled()
   })
 
   it('keeps ended Team credits inactive when self-serve capabilities are unavailable', () => {
@@ -1033,7 +1027,7 @@ describe('SubscriptionPanelContentWorkspace', () => {
     )
 
     await user.click(screen.getByRole('button', { name: 'Billing & invoices' }))
-    expect(mockManageSubscription).toHaveBeenCalledOnce()
+    expect(useBillingContext().manageSubscription).toHaveBeenCalledOnce()
   })
 
   it('lets a never-subscribed team workspace top up on Local instead of upselling', () => {
@@ -1077,7 +1071,7 @@ describe('SubscriptionPanelContentWorkspace', () => {
     expect(screen.queryByText('Free')).not.toBeInTheDocument()
 
     await user.click(screen.getByRole('button', { name: 'Try again' }))
-    expect(mockInitialize).toHaveBeenCalledOnce()
+    expect(useBillingContext().initialize).toHaveBeenCalledOnce()
   })
 
   it('hides Subscribe Now when the server denies self-serve to a client-side owner', () => {
@@ -1141,10 +1135,10 @@ describe('SubscriptionPanelContentWorkspace', () => {
     )
 
     await user.click(screen.getByRole('button', { name: 'Billing & invoices' }))
-    expect(mockManageSubscription).toHaveBeenCalledOnce()
+    expect(useBillingContext().manageSubscription).toHaveBeenCalledOnce()
 
     await user.click(screen.getByRole('button', { name: 'Subscribe' }))
-    expect(mockShowSubscriptionDialog).toHaveBeenCalledOnce()
+    expect(useBillingContext().showSubscriptionDialog).toHaveBeenCalledOnce()
   })
 
   it.for([

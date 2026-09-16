@@ -116,6 +116,18 @@ export const workshopCreatorDefinitionSchema = z.discriminatedUnion('family', [
     .strict(),
   z
     .object({
+      family: z.literal('kling-omni-video'),
+      options: options
+        .extend({
+          mode: z
+            .enum(['text', 'image', 'first-last', 'edit', 'reference-video'])
+            .default('text')
+        })
+        .prefault({})
+    })
+    .strict(),
+  z
+    .object({
       family: z.literal('ideogram'),
       options: options
         .extend({ mode: z.enum(['text', 'json']).default('text') })
