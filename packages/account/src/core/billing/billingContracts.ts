@@ -9,7 +9,8 @@
  * owned by the billing core and localized by the host. The one server value
  * that crosses this boundary is `serverCode`, a machine identifier and never
  * copy: a command matches it against its own closed set, and a host stores it
- * where it already keeps `WorkspaceApiError.code`.
+ * where it already keeps `WorkspaceApiError.code`. Its type is opaque, so
+ * those two are the only things a holder can do with it.
  */
 import type { SessionClient } from '../session.js'
 
@@ -45,6 +46,17 @@ export type BillingErrorCode =
   /** A 2xx whose body does not match the generated contract. */
   | 'MALFORMED_RESPONSE'
 
+declare const billingServerCodeBrand: unique symbol
+
+/**
+ * An unbounded server string that is only ever a machine identifier. The
+ * brand is unforgeable outside `readBillingErrorCode`, which decodes it, so
+ * the only thing a holder can do is compare it with `matchesServerCode`.
+ */
+export type BillingServerCode = string & {
+  readonly [billingServerCodeBrand]: true
+}
+
 export type BillingFailure = {
   readonly status: 'error'
   readonly code: BillingErrorCode
@@ -53,10 +65,27 @@ export type BillingFailure = {
   /**
    * The coded `code` of a generated `ErrorResponse` body, when the server
    * sent one. Its `message` is dropped on purpose: a command acts on codes
-   * it names, never on server text. Never render it; the contract does not
-   * bound its shape, so it is a value to match, not to show.
+   * it names, never on server text. Compare it only through
+   * `matchesServerCode`; it becomes a `string` only through
+   * `unwrapServerCode`, at a host's error-store boundary. Never render it.
    */
-  readonly serverCode?: string
+  readonly serverCode?: BillingServerCode
+}
+
+/** Whether a failure carries the server code a command names. */
+export function matchesServerCode(
+  failure: Pick<BillingFailure, 'serverCode'>,
+  code: string
+): boolean {
+  return failure.serverCode === code
+}
+
+/**
+ * The one widening back to `string`, for a host storing the code beside the
+ * codes it already keeps. Rendering it is still a contract violation.
+ */
+export function unwrapServerCode(code: BillingServerCode): string {
+  return code
 }
 
 export type BillingResult<T> =
