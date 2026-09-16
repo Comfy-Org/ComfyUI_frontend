@@ -44,6 +44,7 @@ export const MODEL_NODE_MAPPINGS: ReadonlyArray<
   ['audio_encoders', 'AudioEncoderLoader', 'audio_encoder_name'],
   ['model_patches', 'ModelPatchLoader', 'name'],
   ['latent_upscale_models', 'LatentUpscaleModelLoader', 'model_name'],
+  ['embeddings', 'ConditioningLoader', 'conditioning_name'],
 
   // ---- AnimateDiff (comfyui-animatediff-evolved) ----
   ['animatediff_models', 'ADE_LoadAnimateDiffModel', 'model_name'],
