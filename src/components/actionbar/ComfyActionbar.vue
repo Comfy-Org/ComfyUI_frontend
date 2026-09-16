@@ -38,11 +38,7 @@
             v-tooltip.bottom="queueHistoryTooltipConfig"
             variant="secondary"
             size="md"
-            :aria-pressed="
-              isQueuePanelV2Enabled
-                ? activeSidebarTabId === 'job-history'
-                : queueOverlayExpanded
-            "
+            :aria-pressed="queueTogglePressed"
             class="relative px-3"
             data-testid="queue-overlay-toggle"
             @click="toggleQueueOverlay"
@@ -57,13 +53,7 @@
               variant="dot"
               class="pointer-events-none absolute -top-0.5 -right-0.5 animate-pulse"
             />
-            <span class="sr-only">
-              {{
-                isQueuePanelV2Enabled
-                  ? t('sideToolbar.queueProgressOverlay.viewJobHistory')
-                  : t('sideToolbar.queueProgressOverlay.expandCollapsedQueue')
-              }}
-            </span>
+            <span class="sr-only">{{ queueToggleLabel }}</span>
           </Button>
           <ContextMenu ref="queueContextMenu" :model="queueContextMenuItems" />
         </template>
@@ -135,6 +125,16 @@ const executionStore = useExecutionStore()
 const queueStore = useQueueStore()
 const sidebarTabStore = useSidebarTabStore()
 const { t, n } = useI18n()
+const queueTogglePressed = computed(() =>
+  isQueuePanelV2Enabled.value
+    ? activeSidebarTabId.value === 'job-history'
+    : queueOverlayExpanded
+)
+const queueToggleLabel = computed(() =>
+  isQueuePanelV2Enabled.value
+    ? t('sideToolbar.queueProgressOverlay.viewJobHistory')
+    : t('sideToolbar.queueProgressOverlay.expandCollapsedQueue')
+)
 const isStatusToastEnabled = computed(() =>
   settingStore.get('Comfy.Queue.StatusToast')
 )
