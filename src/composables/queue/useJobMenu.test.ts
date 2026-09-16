@@ -351,12 +351,10 @@ describe('useJobMenu', () => {
     await entry?.onClick?.()
 
     expect(useDialogService().showExecutionErrorDialog).not.toHaveBeenCalled()
-    expect(useDialogService().showErrorDialog).toHaveBeenCalledTimes(1)
-    const [errorArg, optionsArg] = vi.mocked(useDialogService().showErrorDialog)
-      .mock.calls[0]
-    expect(errorArg).toBeInstanceOf(Error)
-    expect(errorArg).toHaveProperty('message', 'Job failed with error')
-    expect(optionsArg).toEqual({ reportType: 'queueJobError' })
+    expect(useDialogService().showErrorDialog).toHaveBeenCalledExactlyOnceWith(
+      new Error('Job failed with error'),
+      { reportType: 'queueJobError' }
+    )
   })
 
   it('ignores error actions when message missing', async () => {

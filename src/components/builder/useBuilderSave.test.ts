@@ -1,7 +1,7 @@
 import type BuilderSaveDialogContent from './BuilderSaveDialogContent.vue'
 import { useDialogService } from '@/services/dialogService'
 import { fromPartial } from '@total-typescript/shoehorn'
-import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 
 import { useTelemetry } from '@/platform/telemetry'
@@ -160,15 +160,20 @@ describe('useBuilderSave', () => {
 
       saveAs()
 
-      expect(useDialogService().showLayoutDialog).toHaveBeenCalledOnce()
-      const { key, props, dialogComponentProps } = vi.mocked(
-        useDialogService().showLayoutDialog<typeof BuilderSaveDialogContent>
-      ).mock.calls[0][0]
-      expect(key).toBe(SAVE_DIALOG_KEY)
-      expect(props.defaultFilename).toBe('my-workflow')
-      expect(props.defaultOpenAsApp).toBe(true)
-      assert.exists(dialogComponentProps)
-      expect(dialogComponentProps.useAutomaticLabeling).toBe(true)
+      expect(
+        useDialogService().showLayoutDialog
+      ).toHaveBeenCalledExactlyOnceWith(
+        expect.objectContaining({
+          key: SAVE_DIALOG_KEY,
+          props: expect.objectContaining({
+            defaultFilename: 'my-workflow',
+            defaultOpenAsApp: true
+          }),
+          dialogComponentProps: expect.objectContaining({
+            useAutomaticLabeling: true
+          })
+        })
+      )
     })
 
     it('passes defaultOpenAsApp: false when initialMode is graph', () => {
@@ -180,10 +185,13 @@ describe('useBuilderSave', () => {
 
       saveAs()
 
-      const { props } = vi.mocked(
-        useDialogService().showLayoutDialog<typeof BuilderSaveDialogContent>
-      ).mock.calls[0][0]
-      expect(props.defaultOpenAsApp).toBe(false)
+      expect(
+        useDialogService().showLayoutDialog
+      ).toHaveBeenCalledExactlyOnceWith(
+        expect.objectContaining({
+          props: expect.objectContaining({ defaultOpenAsApp: false })
+        })
+      )
     })
   })
 
@@ -258,9 +266,9 @@ describe('useBuilderSave', () => {
       expect(useDialogStore().closeDialog).toHaveBeenCalledWith({
         key: SAVE_DIALOG_KEY
       })
-      expect(mockShowConfirmDialog).toHaveBeenCalledOnce()
-      const successCall = mockShowConfirmDialog.mock.calls[0][0]
-      expect(successCall.key).toBe(SUCCESS_DIALOG_KEY)
+      expect(mockShowConfirmDialog).toHaveBeenCalledExactlyOnceWith(
+        expect.objectContaining({ key: SUCCESS_DIALOG_KEY })
+      )
     })
 
     it('shows app success message when openAsApp is true', async () => {
@@ -269,8 +277,13 @@ describe('useBuilderSave', () => {
 
       await onSave('new-name', true)
 
-      const successCall = mockShowConfirmDialog.mock.calls[0][0]
-      expect(successCall.props.promptText).toBe('builderSave.successBodyApp')
+      expect(mockShowConfirmDialog).toHaveBeenCalledExactlyOnceWith(
+        expect.objectContaining({
+          props: expect.objectContaining({
+            promptText: 'builderSave.successBodyApp'
+          })
+        })
+      )
     })
 
     it('shows graph success message with exit builder button when openAsApp is false', async () => {
@@ -279,12 +292,17 @@ describe('useBuilderSave', () => {
 
       await onSave('new-name', false)
 
-      const successCall = mockShowConfirmDialog.mock.calls[0][0]
-      expect(successCall.props.promptText).toBe('builderSave.successBodyGraph')
-      expect(successCall.footerProps.confirmText).toBe(
-        'linearMode.builder.exit'
+      expect(mockShowConfirmDialog).toHaveBeenCalledExactlyOnceWith(
+        expect.objectContaining({
+          props: expect.objectContaining({
+            promptText: 'builderSave.successBodyGraph'
+          }),
+          footerProps: expect.objectContaining({
+            confirmText: 'linearMode.builder.exit',
+            cancelText: 'builderToolbar.viewApp'
+          })
+        })
       )
-      expect(successCall.footerProps.cancelText).toBe('builderToolbar.viewApp')
     })
 
     it('onSave toasts error and closes dialog on failure', async () => {
