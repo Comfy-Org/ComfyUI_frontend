@@ -1,12 +1,14 @@
 import { mint } from '@comfyorg/comfy-multi-player'
+import { fromPartial } from '@total-typescript/shoehorn'
 import { getActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, ref } from 'vue'
 import * as Y from 'yjs'
 
 import { render } from '@testing-library/vue'
 
 import { createGraphMutations } from '@/core/graph/graphMutations'
+import { api } from '@/scripts/api'
 import { useNodeDataStore } from '@/stores/nodeDataStore'
 import { toOwningGraphId, toRootGraphId } from '@/types/graphScopeId'
 import { toNodeId } from '@/types/nodeId'
@@ -14,31 +16,7 @@ import { toNodeId } from '@/types/nodeId'
 import { encodeBase64 } from './docFrameClient'
 import { useAgentCrdtFollower } from './useAgentCrdtFollower'
 
-const apiState = vi.hoisted(() => {
-  const state = {
-    events: new EventTarget(),
-    sent: Array<string>()
-  }
-  return {
-    state,
-    api: {
-      socket: {
-        readyState: 1,
-        send: vi.fn((frame: string) => state.sent.push(frame))
-      },
-      addCustomEventListener: (type: string, listener: EventListener) =>
-        state.events.addEventListener(type, listener),
-      removeCustomEventListener: (type: string, listener: EventListener) =>
-        state.events.removeEventListener(type, listener),
-      addEventListener: (type: string, listener: EventListener) =>
-        state.events.addEventListener(type, listener),
-      removeEventListener: (type: string, listener: EventListener) =>
-        state.events.removeEventListener(type, listener)
-    }
-  }
-})
-
-vi.mock<unknown>(import('@/scripts/api'), () => ({ api: apiState.api }))
+const sent: string[] = []
 
 const WORKFLOW_ID = 'wf-rejected-projection'
 const scope = {
@@ -47,11 +25,14 @@ const scope = {
 }
 
 function deliver(type: string, data: unknown): void {
-  apiState.state.events.dispatchEvent(new CustomEvent(type, { detail: data }))
+  EventTarget.prototype.dispatchEvent.call(
+    api,
+    new CustomEvent(type, { detail: data })
+  )
 }
 
 function sentFrames(type: string): unknown[] {
-  return apiState.state.sent
+  return sent
     .map((frame): unknown => JSON.parse(frame))
     .filter(
       (frame) =>
@@ -64,9 +45,18 @@ function sentFrames(type: string): unknown[] {
 
 describe('useAgentCrdtFollower projection recovery', () => {
   beforeEach(() => {
-    apiState.state.events = new EventTarget()
-    apiState.state.sent.length = 0
+    sent.length = 0
     vi.stubGlobal('WebSocket', { OPEN: 1 })
+    api.socket = fromPartial<WebSocket>({
+      readyState: 1,
+      send: vi.fn((frame) => {
+        if (typeof frame === 'string') sent.push(frame)
+      })
+    })
+  })
+
+  afterEach(() => {
+    api.socket = null
   })
 
   it('loses a rejected projection when resubscription has no host delta', () => {
@@ -116,7 +106,7 @@ describe('useAgentCrdtFollower projection recovery', () => {
       ).toEqual([toNodeId(99)])
 
       scopeAvailable = true
-      apiState.state.events.dispatchEvent(new CustomEvent('reconnected'))
+      api.dispatchCustomEvent('reconnected')
       expect(sentFrames('doc_subscribe').at(-1)).toMatchObject({
         data: {
           state_vector_b64: encodeBase64(Y.encodeStateVector(host))

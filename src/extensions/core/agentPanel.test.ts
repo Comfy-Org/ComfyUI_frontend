@@ -1,5 +1,6 @@
 vi.mock(import('firebase/auth'))
 vi.mock<unknown>(import('vuefire'), () => ({ useFirebaseAuth: vi.fn() }))
+import { fromPartial } from '@total-typescript/shoehorn'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { Mocked } from 'vitest'
 import { computed, effectScope, ref } from 'vue'
@@ -11,6 +12,7 @@ import type { ComfyExtension } from '@/types/comfy'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import type { ComfyApp } from '@/scripts/app'
 import { useAgentNodeSelectionStore } from '@/stores/agentNodeSelectionStore'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 import { createMockLoadedWorkflow } from '@/utils/__tests__/litegraphTestUtils'
@@ -362,9 +364,10 @@ describe('AgentPanel extension flag gate', () => {
     const extension = mocks.capturedExtensions.find(
       (item) => item.name === 'Comfy.AgentPanel'
     )
+    const app = fromPartial<ComfyApp>({})
 
-    extension!.beforeLoadGraph!({} as never)
-    extension!.onGraphLoadError!(new Error('bad workflow json'), {} as never)
+    extension!.beforeLoadGraph!(app)
+    extension!.onGraphLoadError!(new Error('bad workflow json'), app)
 
     expect(mocks.notifyBeforeGraphLoad).toHaveBeenCalledOnce()
     expect(mocks.notifyAfterGraphConfigure).not.toHaveBeenCalled()

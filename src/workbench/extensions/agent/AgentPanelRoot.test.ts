@@ -2318,6 +2318,9 @@ describe('AgentPanelRoot workflow binding', () => {
         if (url.includes('/agent/threads')) {
           return json(200, agentThreadList(threads))
         }
+        if (url.includes('/assets')) {
+          return json(200, { assets: [], total: 0, has_more: false })
+        }
         if (url.includes('/workflows')) {
           const workflows =
             typeof cloudWorkflows === 'function'
@@ -3413,10 +3416,10 @@ describe('AgentPanelRoot workflow binding', () => {
     })
   })
 
-  it('restores an explicitly detached workflow after a remount', async () => {
+  it('keeps an explicitly detached workflow after a remount', async () => {
     makeTab('wf-42')
     const bodies = mockMessagesEndpoint('wf-42')
-    const panel = render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    const panel = renderWithSelectedTarget()
 
     await sendFromComposer('attached turn')
     expect(bodies[0]).toHaveProperty('workflow_id', 'wf-42')
@@ -3425,20 +3428,18 @@ describe('AgentPanelRoot workflow binding', () => {
       thread_id: 'th-1'
     })
     await screen.findByRole('button', { name: 'Send' })
-    await userEvent.click(
-      screen.getByRole('button', {
-        name: i18n.global.t('agent.dontWorkInWorkflow')
-      })
-    )
-    expect(
-      await screen.findAllByText(i18n.global.t('agent.chooseWorkflow'))
-    ).not.toHaveLength(0)
+    useAgentPanelStore().setWorkflowTarget(null)
 
     panel.unmount()
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
-    await sendFromComposer('still detached')
+    const textbox = screen.getByRole('textbox')
+    await userEvent.type(textbox, 'still detached')
+    await userEvent.click(screen.getByRole('button', { name: 'Send' }))
 
-    expect(bodies[1]).toHaveProperty('workflow_id', 'wf-42')
+    expect(
+      await screen.findByPlaceholderText(i18n.global.t('agent.searchWorkflows'))
+    ).toHaveFocus()
+    expect(bodies).toHaveLength(1)
   })
 
   it('re-attaches by picking a row so the next send carries the workflow again', async () => {
