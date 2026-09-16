@@ -6,7 +6,7 @@
  * snapshot or the router catalogue is refreshed. Measure them rather than
  * quote them: pnpm hub:audit-overlap
  *
- * Recorded in ADR-WEBSITE-CATALOGUE-0032.
+ * Recorded in ADR-WEBSITE-CATALOGUE-0033.
  */
 import type { WorkshopModel } from '../src/config/models-catalogue'
 import { workshopModels } from '../src/config/workshop-browse-content'
@@ -43,6 +43,16 @@ export interface CatalogueOverlap {
   readonly mentioning: number
   readonly mentionedModels: number
   readonly mostMentioned: readonly CountedName[]
+  /**
+   * Workflows that call a partner model at all, and why most of them still do
+   * not reach a model page: the catalogue does not carry the model they name,
+   * or they name one but carry more than one task, so no single destination is
+   * safe. Both are coverage, not a ceiling.
+   */
+  readonly apiWorkflows: number
+  readonly apiRoutable: number
+  readonly apiOffCatalogue: number
+  readonly apiAmbiguous: number
   readonly needCustomNodes: number
   /** Models named by at least one runnable template. */
   readonly citedModels: number
@@ -119,6 +129,25 @@ function tallyMentions(
   }
 }
 
+function tallyApiReach(
+  templates: readonly HubTemplate[],
+  models: readonly WorkshopModel[]
+) {
+  const catalogued = new Set(models.map((model) => normalize(model.name)))
+  const api = templates.filter((template) => template.tags.includes('API'))
+  const names = (template: HubTemplate) =>
+    template.models.map(normalize).some((name) => catalogued.has(name))
+  const routable = api.filter((template) => partnerModelFor(template, models))
+  return {
+    apiWorkflows: api.length,
+    apiRoutable: routable.length,
+    apiOffCatalogue: api.filter((template) => !names(template)).length,
+    apiAmbiguous: api.filter(
+      (template) => names(template) && !partnerModelFor(template, models)
+    ).length
+  }
+}
+
 function tallyUseCases(
   templates: readonly HubTemplate[],
   models: readonly WorkshopModel[]
@@ -173,6 +202,7 @@ export function auditCatalogueOverlap(
     runnable,
     runnableApps,
     ...tallyMentions(templates, models),
+    ...tallyApiReach(templates, models),
     needCustomNodes: countingCustomNodes(templates, details),
     citedModels: cited.size,
     mostCited: counted(cited).slice(0, 5),
@@ -193,6 +223,7 @@ function report(overlap: CatalogueOverlap): string {
     `runnable here ${overlap.runnable} (${share(overlap.runnable)})`,
     `runnable apps ${overlap.runnableApps} of ${overlap.apps}`,
     `naming a catalogue model ${overlap.mentioning} across ${overlap.mentionedModels} models: ${list(overlap.mostMentioned)}`,
+    `api workflows ${overlap.apiWorkflows}: routable ${overlap.apiRoutable}, naming a model the catalogue lacks ${overlap.apiOffCatalogue}, naming one without a single destination ${overlap.apiAmbiguous}`,
     `need custom nodes ${overlap.needCustomNodes}`,
     `models cited ${overlap.citedModels}: ${list(overlap.mostCited)}`,
     `titles that are a model name: ${overlap.titleCollisions.join(', ')}`,

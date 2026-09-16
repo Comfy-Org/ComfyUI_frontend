@@ -168,6 +168,28 @@ describe('auditCatalogueOverlap', () => {
     ])
   })
 
+  it('separates an API workflow the catalogue cannot receive from one it can', () => {
+    const overlap = audit([
+      template(),
+      template({
+        name: 'api_unknown',
+        title: 'Hypernova: Text to Image',
+        models: ['Hypernova']
+      }),
+      template({
+        name: 'api_two_tasks',
+        title: 'Flux: anything',
+        tags: ['API', 'Text to Image', 'Image Edit']
+      }),
+      template({ name: 'local_upscale', title: 'Upscale', tags: ['Image'] })
+    ])
+
+    expect(overlap.apiWorkflows).toBe(3)
+    expect(overlap.apiRoutable).toBe(1)
+    expect(overlap.apiOffCatalogue).toBe(1)
+    expect(overlap.apiAmbiguous).toBe(1)
+  })
+
   it('keeps a title that only differs in case out of the collisions', () => {
     const overlap = audit([
       template({ name: 'api_flux_exact', title: 'Flux' }),
