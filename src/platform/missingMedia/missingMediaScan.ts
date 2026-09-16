@@ -120,11 +120,11 @@ export function scanNodeMediaCandidates(
     if (isCloud) {
       isMissing = undefined
     } else {
+      const options = resolveComboValues(widget)
       const type = getAnnotatedMediaPathTypeForDetection(value)
       if (type === 'output') {
-        isMissing = undefined
+        isMissing = options.includes(value) ? false : undefined
       } else {
-        const options = resolveComboValues(widget)
         const detectionNames = getMediaPathDetectionNames(value)
         const existsInOptions = detectionNames.some((name) =>
           options.includes(name)
