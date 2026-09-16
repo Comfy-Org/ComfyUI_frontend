@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, assert, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { Positionable, Rect } from '@/lib/litegraph/src/interfaces'
 import type { CanvasPointerEvent } from '@/lib/litegraph/src/types/events'
@@ -10,7 +10,10 @@ import {
   LiteGraph
 } from '@/lib/litegraph/src/litegraph'
 import { createTestSubgraph } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
-import { selectableKeyOf } from '@/lib/litegraph/src/utils/selectableItems'
+import {
+  resolveSelectable,
+  selectableKeyOf
+} from '@/lib/litegraph/src/utils/selectableItems'
 import { useSelectionStore } from '@/renderer/core/canvas/selectionStore'
 import { graphScopeOf } from '@/types/graphScopeId'
 import { createMockCanvasRenderingContext2D } from '@/utils/__tests__/litegraphTestUtils'
@@ -239,6 +242,123 @@ describe('LGraphCanvas selection', () => {
   })
 
   describe('programmatic API', () => {
+    it('publishes each selection before its synchronous node hook', () => {
+      const store = useSelectionStore()
+      const scope = graphScopeOf(graph)
+      const selections: string[][] = []
+      a.onSelected = () => selections.push([...store.selectedKeys(scope)])
+      b.onSelected = () => selections.push([...store.selectedKeys(scope)])
+
+      canvas.selectItems([a, b])
+
+      expect(selections).toEqual([
+        [`node:${a.id}`],
+        [`node:${a.id}`, `node:${b.id}`]
+      ])
+    })
+
+    it('bulk selection does at most linear key insertion work', () => {
+      const count = 128
+      const nodes = Array.from({ length: count }, (_, index) =>
+        addNode(graph, `Node ${index}`, 0, 0)
+      )
+      const add = Set.prototype.add
+      let keyInsertions = 0
+      vi.spyOn(Set.prototype, 'add').mockImplementation(function (
+        this: Set<unknown>,
+        value: unknown
+      ) {
+        if (typeof value === 'string' && value.startsWith('node:'))
+          keyInsertions++
+        return add.call(this, value)
+      })
+
+      canvas.selectItems(nodes)
+
+      expect(keyInsertions).toBeLessThanOrEqual(2 * count)
+      expect(canvas.selectedItems.size).toBe(count)
+      expect(
+        useSelectionStore().selectedKeys(graphScopeOf(graph))
+      ).toHaveLength(count)
+    })
+
+    it('does not classify an unsupported positionable as subgraph IO', () => {
+      const item: Positionable = {
+        id: a.id,
+        pos: [0, 0],
+        boundingRect: [0, 0, 10, 10],
+        move: vi.fn(),
+        snapToGrid: () => false
+      }
+
+      expect(selectableKeyOf(item)).toBeUndefined()
+    })
+
+    it.for([
+      { additive: false, selected: false, callbacks: 1 },
+      { additive: true, selected: true, callbacks: 0 }
+    ])(
+      'empty selectItems with additive=$additive',
+      ({ additive, selected, callbacks }) => {
+        canvas.select(a)
+        a.onDeselected = vi.fn()
+
+        canvas.selectItems([], additive)
+
+        expect(canvas.selectedItems.has(a)).toBe(selected)
+        expect(a.selected).toBe(selected)
+        expect(a.onDeselected).toHaveBeenCalledTimes(callbacks)
+        expect(
+          useSelectionStore().isSelected(
+            graphScopeOf(graph),
+            selectableKeyOf(a)
+          )
+        ).toBe(selected)
+      }
+    )
+
+    it.for(['group', 'reroute'] as const)(
+      'direct %s removal clears only its selection before id reuse',
+      (kind) => {
+        const group = addGroup(graph, 'G', [400, 200, 100, 100])
+        const reroute = graph.setReroute({ pos: [500, 500], linkIds: [] })!
+        const targets = {
+          group: {
+            item: group,
+            remove: () => graph.remove(group),
+            recreate: () => graph.add(new LGraphGroup('Replacement', group.id))
+          },
+          reroute: {
+            item: reroute,
+            remove: () => graph.removeReroute(reroute.id),
+            recreate: () =>
+              graph.setReroute({ id: reroute.id, pos: [500, 500], linkIds: [] })
+          }
+        }
+        const target = targets[kind]
+        canvas.selectItems([a, target.item])
+
+        target.remove()
+        target.recreate()
+
+        const replacement = resolveSelectable(
+          graph,
+          selectableKeyOf(target.item)
+        )
+        assert.exists(replacement)
+        expect(replacement).not.toBe(target.item)
+        expect(replacement.selected).toBeFalsy()
+        expect(canvas.selectedItems).toEqual(new Set([a]))
+        expect(target.item.selected).toBe(false)
+        expect(
+          useSelectionStore().isSelected(
+            graphScopeOf(graph),
+            selectableKeyOf(target.item)
+          )
+        ).toBe(false)
+      }
+    )
+
     it.fails('select() reports the change', () => {
       canvas.select(a)
 
@@ -288,7 +408,7 @@ describe('LGraphCanvas selection', () => {
       for (const scope of scopes) {
         store.apply(scope, {
           type: 'selection.add',
-          keys: [selectableKeyOf(a)]
+          key: selectableKeyOf(a)
         })
       }
 
@@ -307,7 +427,7 @@ describe('LGraphCanvas selection', () => {
       canvas.select(rootGroup)
       store.apply(scope, {
         type: 'selection.add',
-        keys: [selectableKeyOf(selectedGroup)]
+        key: selectableKeyOf(selectedGroup)
       })
 
       subgraph.clear()

@@ -2,6 +2,10 @@ import { computed } from 'vue'
 import { describe, expect, it } from 'vitest'
 
 import { toSelectableKey } from '@/core/selection/selectionState'
+import type {
+  SelectableKey,
+  SelectionCommand
+} from '@/core/selection/selectionState'
 import { useSelectionStore } from '@/renderer/core/canvas/selectionStore'
 import { toOwningGraphId, toRootGraphId } from '@/types/graphScopeId'
 import type { GraphScope } from '@/types/graphScopeId'
@@ -21,13 +25,92 @@ const otherRootScope: GraphScope = {
 }
 const node = toSelectableKey('node', 1)
 const group = toSelectableKey('group', 2)
+const otherNode = toSelectableKey('node', 3)
 
 describe('useSelectionStore', () => {
+  it.for<{
+    name: string
+    initial: SelectableKey[]
+    command: SelectionCommand
+    expected: SelectableKey[]
+  }>([
+    {
+      name: 'add appends',
+      initial: [node, group],
+      command: { type: 'selection.add', key: otherNode },
+      expected: [node, group, otherNode]
+    },
+    {
+      name: 'add preserves existing order',
+      initial: [node, group],
+      command: { type: 'selection.add', key: node },
+      expected: [node, group]
+    },
+    {
+      name: 'remove preserves remaining order',
+      initial: [node, group, otherNode],
+      command: { type: 'selection.remove', key: group },
+      expected: [node, otherNode]
+    },
+    {
+      name: 'remove ignores absent keys',
+      initial: [node],
+      command: { type: 'selection.remove', key: group },
+      expected: [node]
+    },
+    {
+      name: 'replace deduplicates in first-occurrence order',
+      initial: [node, group],
+      command: {
+        type: 'selection.replace',
+        keys: [otherNode, group, otherNode]
+      },
+      expected: [otherNode, group]
+    },
+    {
+      name: 'replace can reorder the same members',
+      initial: [node, group],
+      command: { type: 'selection.replace', keys: [group, node] },
+      expected: [group, node]
+    },
+    {
+      name: 'empty replace clears',
+      initial: [node, group],
+      command: { type: 'selection.replace', keys: [] },
+      expected: []
+    },
+    {
+      name: 'clear empties selection',
+      initial: [node, group],
+      command: { type: 'selection.clear' },
+      expected: []
+    },
+    {
+      name: 'clear ignores empty selection',
+      initial: [],
+      command: { type: 'selection.clear' },
+      expected: []
+    }
+  ])('$name and replay is unobservable', ({ initial, command, expected }) => {
+    const store = useSelectionStore()
+    store.apply(rootScope, { type: 'selection.replace', keys: initial })
+    const keys = computed(() => store.selectedKeys(rootScope))
+    const before = keys.value
+
+    store.apply(rootScope, command)
+
+    expect(keys.value).toEqual(expected)
+    expect(before).toEqual(initial)
+    const once = keys.value
+    store.apply(rootScope, command)
+    expect(keys.value).toBe(once)
+  })
+
   it('keeps each graph scope independent', () => {
     const store = useSelectionStore()
 
-    store.apply(rootScope, { type: 'selection.add', keys: [node] })
-    store.apply(subgraphScope, { type: 'selection.add', keys: [group] })
+    store.apply(rootScope, { type: 'selection.add', key: node })
+    store.apply(subgraphScope, { type: 'selection.add', key: group })
 
     expect(store.selectedKeys(rootScope)).toEqual([node])
     expect(store.selectedKeys(subgraphScope)).toEqual([group])
@@ -36,10 +119,10 @@ describe('useSelectionStore', () => {
 
   it('removing a key in one root leaves the same local id selected in another root', () => {
     const store = useSelectionStore()
-    store.apply(rootScope, { type: 'selection.add', keys: [node] })
-    store.apply(otherRootScope, { type: 'selection.add', keys: [node] })
+    store.apply(rootScope, { type: 'selection.add', key: node })
+    store.apply(otherRootScope, { type: 'selection.add', key: node })
 
-    store.apply(rootScope, { type: 'selection.remove', keys: [node] })
+    store.apply(rootScope, { type: 'selection.remove', key: node })
 
     expect(store.selectedKeys(rootScope)).toEqual([])
     expect(store.selectedKeys(otherRootScope)).toEqual([node])
@@ -47,9 +130,9 @@ describe('useSelectionStore', () => {
 
   it('clearRoot evicts every scope of that root only', () => {
     const store = useSelectionStore()
-    store.apply(rootScope, { type: 'selection.add', keys: [node] })
-    store.apply(subgraphScope, { type: 'selection.add', keys: [group] })
-    store.apply(otherRootScope, { type: 'selection.add', keys: [node] })
+    store.apply(rootScope, { type: 'selection.add', key: node })
+    store.apply(subgraphScope, { type: 'selection.add', key: group })
+    store.apply(otherRootScope, { type: 'selection.add', key: node })
 
     store.clearRoot(root)
 
@@ -58,17 +141,17 @@ describe('useSelectionStore', () => {
     expect(store.selectedKeys(otherRootScope)).toEqual([node])
   })
 
-  it('reports the transition status and leaves no-ops unobservable', () => {
+  it('leaves an identical replacement unobservable', () => {
     const store = useSelectionStore()
+    store.apply(rootScope, { type: 'selection.replace', keys: [node, group] })
     const keys = computed(() => store.selectedKeys(rootScope))
     const before = keys.value
 
-    expect(store.apply(rootScope, { type: 'selection.clear' })).toBe('no-op')
-    expect(keys.value).toBe(before)
+    store.apply(rootScope, {
+      type: 'selection.replace',
+      keys: [node, group, node]
+    })
 
-    expect(
-      store.apply(rootScope, { type: 'selection.add', keys: [node] })
-    ).toBe('applied')
-    expect(keys.value).toEqual([node])
+    expect(keys.value).toBe(before)
   })
 })

@@ -44,7 +44,7 @@ export function useGroupContextMenu() {
       this.state.selectionChanged = true
       useSelectionStore().apply(graphScopeOf(this.graph), {
         type: 'selection.add',
-        keys: [selectableKeyOf(group)]
+        key: selectableKeyOf(group)
       })
     }
     showNodeOptions(event)

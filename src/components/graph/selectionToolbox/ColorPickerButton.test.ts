@@ -4,12 +4,15 @@ import userEvent from '@testing-library/user-event'
 import PrimeVue from 'primevue/config'
 import Tooltip from 'primevue/tooltip'
 import { describe, expect, it, vi } from 'vitest'
+import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import ColorPickerButton from '@/components/graph/selectionToolbox/ColorPickerButton.vue'
 import type { Positionable } from '@/lib/litegraph/src/litegraph'
-import { setCanvasSelection } from '@/utils/__tests__/canvasSelectionTestUtils'
+import { LGraphCanvas, LGraphGroup } from '@/lib/litegraph/src/litegraph'
+import type { CanvasEventDetail } from '@/lib/litegraph/src/types/events'
 import { toGroupId } from '@/types/groupId'
+import { setCanvasSelection } from '@/utils/__tests__/canvasSelectionTestUtils'
 
 function createMockPositionable(): Positionable {
   return fromPartial<Positionable>({ id: toGroupId(1), pos: [0, 0] })
@@ -70,4 +73,29 @@ describe('ColorPickerButton', () => {
     await user.click(button)
     expect(screen.queryByTestId('noColor')).not.toBeInTheDocument()
   })
+
+  it.for([
+    { subType: 'after-change', color: '#533' },
+    { subType: 'before-change', color: '#335' }
+  ] as const)(
+    'shows $color after $subType without reselection',
+    async ({ subType, color }) => {
+      const group = new LGraphGroup()
+      group.color = LGraphCanvas.node_colors.blue.groupcolor
+      setCanvasSelection([group])
+      renderComponent()
+
+      group.color = LGraphCanvas.node_colors.red.groupcolor
+      document.dispatchEvent(
+        new CustomEvent<CanvasEventDetail>('litegraph:canvas', {
+          detail: { subType }
+        })
+      )
+      await nextTick()
+
+      expect(screen.getByTestId('color-picker-current-color')).toHaveStyle({
+        color
+      })
+    }
+  )
 })

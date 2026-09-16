@@ -1,15 +1,10 @@
+import { isEqual } from 'es-toolkit'
 import { defineStore } from 'pinia'
 import { reactive } from 'vue'
 
-import {
-  EMPTY_SELECTION,
-  reduceSelection
-} from '@/core/selection/selectionState'
 import type {
   SelectableKey,
-  SelectionCommand,
-  SelectionState,
-  SelectionTransition
+  SelectionCommand
 } from '@/core/selection/selectionState'
 import type {
   GraphScope,
@@ -17,41 +12,37 @@ import type {
   RootGraphId
 } from '@/types/graphScopeId'
 
-/**
- * Canvas selection, one insertion-ordered key list per graph scope. All
- * mutation goes through {@link apply}; everything else is derived.
- * See ADR-CANVAS-SELECTION-0028.
- */
 export const useSelectionStore = defineStore('selection', () => {
   const roots = reactive(
-    new Map<RootGraphId, Map<OwningGraphId, SelectionState>>()
+    new Map<RootGraphId, Map<OwningGraphId, Set<SelectableKey>>>()
   )
 
-  function stateOf(scope: GraphScope): SelectionState {
-    return (
-      roots.get(scope.rootGraphId)?.get(scope.owningGraphId) ?? EMPTY_SELECTION
-    )
-  }
-
-  function apply(
-    scope: GraphScope,
-    command: SelectionCommand
-  ): SelectionTransition['status'] {
-    const transition = reduceSelection(stateOf(scope), command)
-    if (transition.status === 'applied') {
-      ownersOf(scope.rootGraphId).set(scope.owningGraphId, transition.state)
+  function apply(scope: GraphScope, command: SelectionCommand): void {
+    const owners = roots.get(scope.rootGraphId)
+    const current = owners?.get(scope.owningGraphId)
+    let next: Set<SelectableKey>
+    switch (command.type) {
+      case 'selection.add':
+        if (current) {
+          current.add(command.key)
+          return
+        }
+        next = new Set([command.key])
+        break
+      case 'selection.remove':
+        current?.delete(command.key)
+        return
+      case 'selection.clear':
+        current?.clear()
+        return
+      case 'selection.replace':
+        next = new Set(command.keys)
+        if (isEqual([...(current ?? [])], [...next])) return
+        break
     }
-    return transition.status
-  }
 
-  function ownersOf(
-    rootGraphId: RootGraphId
-  ): Map<OwningGraphId, SelectionState> {
-    const existing = roots.get(rootGraphId)
-    if (existing) return existing
-    const created = reactive(new Map<OwningGraphId, SelectionState>())
-    roots.set(rootGraphId, created)
-    return created
+    if (owners) owners.set(scope.owningGraphId, next)
+    else roots.set(scope.rootGraphId, new Map([[scope.owningGraphId, next]]))
   }
 
   function clearRoot(rootGraphId: RootGraphId): void {
@@ -59,11 +50,13 @@ export const useSelectionStore = defineStore('selection', () => {
   }
 
   function selectedKeys(scope: GraphScope): readonly SelectableKey[] {
-    return stateOf(scope).order
+    return [...(roots.get(scope.rootGraphId)?.get(scope.owningGraphId) ?? [])]
   }
 
   function isSelected(scope: GraphScope, key: SelectableKey): boolean {
-    return stateOf(scope).order.includes(key)
+    return (
+      roots.get(scope.rootGraphId)?.get(scope.owningGraphId)?.has(key) ?? false
+    )
   }
 
   return { apply, clearRoot, selectedKeys, isSelected }

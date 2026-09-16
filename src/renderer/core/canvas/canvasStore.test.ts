@@ -4,7 +4,7 @@ import type { Ref } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { LGraphGroup } from '@/lib/litegraph/src/LGraphGroup'
-import type { LGraphCanvas, Positionable } from '@/lib/litegraph/src/litegraph'
+import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { selectableKeyOf } from '@/lib/litegraph/src/utils/selectableItems'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
@@ -113,10 +113,10 @@ describe('useCanvasStore', () => {
       const fakeCanvas = {
         canvas: document.createElement('canvas'),
         graph,
-        deselect: vi.fn((item: Positionable) => {
+        deselect: vi.fn((item: LGraphNode) => {
           selectionStore.apply(scope, {
             type: 'selection.remove',
-            keys: [selectableKeyOf(item)]
+            key: selectableKeyOf(item)
           })
         })
       }
@@ -124,7 +124,7 @@ describe('useCanvasStore', () => {
       await nextTick()
       selectionStore.apply(scope, {
         type: 'selection.add',
-        keys: [selectableKeyOf(node)]
+        key: selectableKeyOf(node)
       })
       expect(store.selectedItems).toContain(node)
 

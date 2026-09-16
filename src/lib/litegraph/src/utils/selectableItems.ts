@@ -9,12 +9,24 @@ import { toRerouteId } from '@/types/rerouteId'
 import type { LGraph } from '../LGraph'
 import type { Positionable } from '../interfaces'
 import { LGraphGroup, LGraphNode, Reroute, Subgraph } from '../litegraph'
+import { SubgraphIONodeBase } from '../subgraph/SubgraphIONodeBase'
+import type { SubgraphInputNode } from '../subgraph/SubgraphInputNode'
+import type { SubgraphOutputNode } from '../subgraph/SubgraphOutputNode'
 
-export function selectableKeyOf(item: Positionable): SelectableKey {
+export function selectableKeyOf(
+  item:
+    | LGraphNode
+    | LGraphGroup
+    | Reroute
+    | SubgraphInputNode
+    | SubgraphOutputNode
+): SelectableKey
+export function selectableKeyOf(item: Positionable): SelectableKey | undefined
+export function selectableKeyOf(item: Positionable): SelectableKey | undefined {
   if (item instanceof LGraphNode) return toSelectableKey('node', item.id)
   if (item instanceof LGraphGroup) return toSelectableKey('group', item.id)
   if (item instanceof Reroute) return toSelectableKey('reroute', item.id)
-  return toSelectableKey('io', item.id)
+  if (item instanceof SubgraphIONodeBase) return toSelectableKey('io', item.id)
 }
 
 export function resolveSelectable(
