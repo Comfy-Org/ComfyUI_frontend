@@ -10,6 +10,8 @@ import { useAssetsStore } from '@/stores/assetsStore'
 import type { Mock } from 'vitest'
 
 const mockFetchApi = vi.hoisted(() => vi.fn<typeof api.fetchApi>())
+const mockGetServerFeature = vi.hoisted(() => vi.fn())
+const mockT = vi.hoisted(() => vi.fn((key: string, _params?: unknown) => key))
 let mockInvalidateInputs: Mock<
   ReturnType<typeof useAssetsStore>['inputAssets']['invalidate']
 >
@@ -34,7 +36,7 @@ vi.mock(import('@/composables/node/useNodePaste'), () => ({
 }))
 
 vi.mock(import('@/i18n'), () => ({
-  t: (key: string) => key
+  t: mockT
 }))
 
 vi.mock<unknown>(import('@/scripts/api'), () => ({
@@ -42,7 +44,7 @@ vi.mock<unknown>(import('@/scripts/api'), () => ({
     fetchApi: mockFetchApi,
     addEventListener: vi.fn(),
     removeEventListener: vi.fn(),
-    getServerFeature: vi.fn()
+    getServerFeature: mockGetServerFeature
   }
 }))
 
@@ -77,6 +79,8 @@ describe('useNodeImageUpload', () => {
   let onUploadError: () => void
 
   beforeEach(() => {
+    mockGetServerFeature.mockReset()
+    mockT.mockClear()
     mockInvalidateInputs = vi
       .spyOn(useAssetsStore().inputAssets, 'invalidate')
       .mockResolvedValue(undefined)
@@ -184,6 +188,41 @@ describe('useNodeImageUpload', () => {
     await capturedDragOnDrop([createFile()])
     expect(onUploadError).toHaveBeenCalled()
     expect(onUploadComplete).not.toHaveBeenCalled()
+  })
+
+  it('shows a file-too-large toast on a 413 with no known upload limit', async () => {
+    mockGetServerFeature.mockReturnValue(undefined)
+    mockFetchApi.mockResolvedValueOnce(failResponse(413))
+
+    await capturedDragOnDrop([createFile()])
+
+    expect(mockT).toHaveBeenCalledWith('g.uploadFileTooLarge')
+    expect(useToastStore().addAlert).toHaveBeenCalledWith(
+      'g.uploadFileTooLarge'
+    )
+  })
+
+  it('shows a file-too-large toast with the limit on a 413 when the server reports one', async () => {
+    mockGetServerFeature.mockReturnValue(104_857_600)
+    mockFetchApi.mockResolvedValueOnce(failResponse(413))
+
+    await capturedDragOnDrop([createFile()])
+
+    expect(mockT).toHaveBeenCalledWith('g.uploadFileTooLargeWithLimit', {
+      limit: 100
+    })
+  })
+
+  it('shows a status-derived toast without a dangling separator for other failures', async () => {
+    mockFetchApi.mockResolvedValueOnce(
+      new Response(null, { status: 500, statusText: '' })
+    )
+
+    await capturedDragOnDrop([createFile()])
+
+    expect(mockT).toHaveBeenCalledWith('g.uploadFailed', {
+      reason: 'HTTP 500'
+    })
   })
 
   it('resets isUploading even when upload fails', async () => {
