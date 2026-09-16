@@ -176,6 +176,10 @@
       "default": "Default",
       "empty": "No payment method is saved for this workspace.",
       "manage": "Manage payment methods"
+    },
+    "paymentMethodType": {
+      "unknown": "Saved payment method",
+      "card": "Card"
     }
   }
 }

@@ -18,7 +18,8 @@ const ENTRY_QUERY = 'product=comfyui&return_to=comfyui_workspace'
 /** The default card is second, so picking it cannot be picking the first. */
 const SAVED_CARDS: SavedPaymentMethod[] = [
   { brand: 'visa', id: 'pm_1', is_default: false, last4: '4242', type: 'card' },
-  { brand: 'amex', id: 'pm_2', is_default: true, last4: '1881', type: 'card' }
+  { brand: 'amex', id: 'pm_2', is_default: true, last4: '1881', type: 'card' },
+  { id: 'pm_3', is_default: false, type: 'us_bank_account' }
 ]
 
 async function renderPaymentMethods(query: string) {
@@ -64,6 +65,13 @@ describe('PaymentMethodsView', () => {
     expect(await screen.findByText('visa •••• 4242')).toBeInTheDocument()
     expect(screen.getByText('amex •••• 1881')).toBeInTheDocument()
     expect(screen.getAllByText('Default')).toHaveLength(1)
+  })
+
+  it('names a method with no brand or last four in our own copy', async () => {
+    await renderPaymentMethods(ENTRY_QUERY)
+
+    expect(await screen.findByText('Saved payment method')).toBeInTheDocument()
+    expect(screen.queryByText('us_bank_account')).not.toBeInTheDocument()
   })
 
   it('sends the visitor to the portal it is given', async () => {

@@ -39,7 +39,7 @@ const rows = computed(() =>
 
 function describe(method: SavedPaymentMethod): string {
   if (method.brand === undefined || method.last4 === undefined)
-    return method.type
+    return coded('paymentMethodType', method.type)
   return t('hosted.paymentMethods.card', {
     brand: method.brand,
     last4: method.last4
