@@ -5,7 +5,7 @@ import { useToastStore } from '@/platform/updates/common/toastStore'
 import { WorkspaceApiError } from '@/platform/workspace/api/workspaceApi'
 import { workspaceApiUrl } from '@/platform/workspace/api/workspaceApiUrl'
 import { useWorkspaceAuthStore } from '@/platform/workspace/stores/workspaceAuthStore'
-import { useAuthStore } from '@/stores/authStore'
+import { stubAccountIdentityPort } from '@/utils/__tests__/stubAccountIdentityPort'
 import { useDialogStore } from '@/stores/dialogStore'
 
 import { useBillingSdkStore } from './billingSdkStore'
@@ -79,7 +79,7 @@ let harness: ReturnType<typeof fakeBillingSdk>
 let options: BillingSdkOptions
 
 beforeEach(() => {
-  vi.spyOn(useAuthStore().identity, 'onUserChanged').mockReturnValue(() => {})
+  stubAccountIdentityPort()
   flagState.embeddedCheckoutEnabled = false
   harness = fakeBillingSdk()
   mockCreateBillingSdk.mockImplementation((sdkOptions) => {

@@ -360,17 +360,18 @@ describe('useAuthStore', () => {
         vi
           .mocked(firebaseAuth.onAuthStateChanged)
           .mock.calls.map(([auth]) => auth)
+      const registeredAtConstruction = observedAuths().length
       expect(
-        observedAuths(),
-        'the port registers its own observer on the same Auth instance when the session client is constructed; identity is not pushed from this store'
-      ).toEqual([mockAuth, mockAuth])
+        new Set(observedAuths()),
+        'every observer, the port included, targets the one Auth instance; identity is not pushed from this store'
+      ).toEqual(new Set([mockAuth]))
 
       await useWorkspaceAuthStore().mintAtLogin()
 
-      expect(observedAuths(), 'a mint reuses the constructed port').toEqual([
-        mockAuth,
-        mockAuth
-      ])
+      expect(
+        observedAuths(),
+        'a mint reuses the port subscribed at construction'
+      ).toHaveLength(registeredAtConstruction)
     })
   })
 

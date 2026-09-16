@@ -852,6 +852,7 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
   const unifiedSessionClient = createSessionClient<User>(
     {
       exchangeUrl: workspaceApiUrl('/auth/token'),
+      autoMint: false,
       // In-memory only: a persisted JWT can outlive its server expiry, so a
       // reload re-mints instead of rehydrating.
       storage: {
@@ -872,9 +873,10 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
             onCredentialAdopted: () => useAuthStore().notifyTokenRefreshed()
           }
         })
-      },
-      autoMint: false
+      }
     },
+    // Firebase replays a new observer on a microtask, so authStore's setup
+    // completes before its listener can re-enter this store.
     useAuthStore().identity
   )
 
@@ -908,8 +910,7 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
     unifiedTokenOwnerUid.value = null
   })
 
-  // Identity is bound for the store's lifetime; the flag gates minting only:
-  // enabling must mint the current target, a rollback must stop rotation.
+  // Identity is bound for the store's lifetime; the flag gates minting only.
   const stopUnifiedFlagWatch = watch(
     () => flags.unifiedCloudAuthEnabled,
     (enabled) => {

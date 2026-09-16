@@ -2946,7 +2946,7 @@ describe('useWorkspaceAuthStore', () => {
       expect(store.getUnifiedToken()).toBeUndefined()
     })
 
-    it('turning the flag OFF keeps the identity subscribed, clears the slot, and stops minting', async () => {
+    it('turning the flag OFF keeps the identity subscribed, clears the slot, and does not mint or refresh while the flag is off', async () => {
       mockUnifiedCloudAuthEnabled.value = true
       vi.mocked(useAuthStore().getIdToken).mockResolvedValue(
         'firebase-token-xyz'
@@ -2983,13 +2983,17 @@ describe('useWorkspaceAuthStore', () => {
       ).toHaveBeenCalledTimes(1)
       expect(useAuthStore().notifyTokenRefreshed).not.toHaveBeenCalled()
 
-      mockCurrentUser.value = { uid: 'user-b' }
-      await vi.advanceTimersByTimeAsync(0)
       expect(
-        mockFetch,
-        'an identity event under the flag OFF must not mint'
-      ).toHaveBeenCalledTimes(1)
+        await store.mintAtLogin(),
+        'the login mint is the gate: it must refuse while the flag is off'
+      ).toBe(false)
+      expect(mockFetch).toHaveBeenCalledTimes(1)
       expect(unifiedToken.value).toBeNull()
+
+      mockUnifiedCloudAuthEnabled.value = true
+      expect(await store.mintAtLogin()).toBe(true)
+      expect(mockFetch).toHaveBeenCalledTimes(2)
+      expect(unifiedToken.value).toBe('unified-token-1')
     })
 
     it('is fully dormant under the flag OFF: no unified network, timer, or rotation', async () => {

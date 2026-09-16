@@ -1,5 +1,5 @@
 import { useWorkspaceAuthStore } from '@/platform/workspace/stores/workspaceAuthStore'
-import { useAuthStore } from '@/stores/authStore'
+import { stubAccountIdentityPort } from '@/utils/__tests__/stubAccountIdentityPort'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { WORKSPACE_STORAGE_KEYS } from '@/platform/workspace/workspaceConstants'
@@ -148,7 +148,7 @@ function expectCleanupBeforeContextAndReload(): void {
 }
 
 beforeEach(() => {
-  vi.spyOn(useAuthStore().identity, 'onUserChanged').mockReturnValue(() => {})
+  stubAccountIdentityPort()
   Object.assign(useWorkspaceAuthStore(), {
     currentWorkspace: null,
     workspaceToken: null,

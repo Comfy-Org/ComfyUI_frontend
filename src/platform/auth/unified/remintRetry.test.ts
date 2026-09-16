@@ -1,5 +1,5 @@
 import { useWorkspaceAuthStore } from '@/platform/workspace/stores/workspaceAuthStore'
-import { useAuthStore } from '@/stores/authStore'
+import { stubAccountIdentityPort } from '@/utils/__tests__/stubAccountIdentityPort'
 import type { AxiosAdapter } from 'axios'
 import axios, { AxiosError } from 'axios'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -38,7 +38,7 @@ vi.mock(import('@/platform/distribution/types'), () => ({
 }))
 
 beforeEach(() => {
-  vi.spyOn(useAuthStore().identity, 'onUserChanged').mockReturnValue(() => {})
+  stubAccountIdentityPort()
   vi.mocked(useWorkspaceAuthStore().remintUnifiedOnce).mockImplementation(
     mockRemint
   )

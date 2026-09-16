@@ -11,7 +11,7 @@ import type { BillingSdk } from '@/platform/workspace/billing/sdk/createBillingS
 import { billingOperation } from '@/platform/workspace/composables/billingOperationTestUtils'
 import { useTopupOperation } from '@/platform/workspace/composables/useTopupOperation'
 import { useBillingOperationStore } from '@/platform/workspace/stores/billingOperationStore'
-import { useAuthStore } from '@/stores/authStore'
+import { stubAccountIdentityPort } from '@/utils/__tests__/stubAccountIdentityPort'
 
 vi.mock(import('vuefire'), () => ({ useFirebaseAuth: vi.fn() }))
 vi.mock(import('firebase/auth'))
@@ -62,7 +62,7 @@ vi.mock(import('@/platform/workspace/billing/sdk/createBillingSdk'), () => ({
 let harness: ReturnType<typeof fakeBillingSdk>
 
 beforeEach(() => {
-  vi.spyOn(useAuthStore().identity, 'onUserChanged').mockReturnValue(() => {})
+  stubAccountIdentityPort()
   harness = fakeBillingSdk()
   mockCreateBillingSdk.mockReturnValue(harness.sdk)
   flagState.unifiedCloudAuthEnabled = true
