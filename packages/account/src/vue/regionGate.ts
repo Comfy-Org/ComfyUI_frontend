@@ -1,7 +1,7 @@
 import { onMounted, readonly, ref, watch } from 'vue'
 import type { Ref } from 'vue'
 
-import { isInChina } from '../region'
+import { isInChina } from '../region.js'
 
 export type RegionGateStatus = 'pending' | 'blocked' | 'allowed'
 

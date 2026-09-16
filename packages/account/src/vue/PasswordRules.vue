@@ -30,9 +30,9 @@
  */
 import { computed } from 'vue'
 
-import type { PasswordRule } from '../signInSchemas'
-import { passwordRuleChecks } from '../signInSchemas'
-import { cn } from './cn'
+import type { PasswordRule } from '../signInSchemas.js'
+import { passwordRuleChecks } from '../signInSchemas.js'
+import { cn } from './cn.js'
 
 export type PasswordRulesCopy = Readonly<
   Record<PasswordRule | 'requirements', string>
