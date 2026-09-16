@@ -315,6 +315,7 @@ it('preserves original and pasted subgraph connections above 100 million', () =>
   rootGraph.state.lastLinkId = toLinkId(100_000_000)
   const originalLink = source.connect(0, target, 0)
   if (!originalLink) throw new Error('Expected original subgraph link')
+  expect(originalLink.id).toBeGreaterThan(100_000_000)
   const original = LiteGraph.createNode(subgraph.id)
   if (!(original instanceof SubgraphNode))
     throw new Error('Expected original subgraph host')
