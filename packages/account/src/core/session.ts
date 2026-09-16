@@ -17,21 +17,23 @@
  * signed-in uid, so a token survives a reload but can never be served to a
  * different signed-in user.
  */
-import { z } from 'zod'
-
+import type { CredentialStorage } from './credentialCache.js'
+import { createCredentialCache, decodeAdopted } from './credentialCache.js'
 import type { AccountIdentity } from './identity.js'
 import { isAccountIdentity } from './identity.js'
+import { abortable, exchangeToken } from './exchange.js'
+import type { MintDispatch } from './mintCoordinator.js'
 import {
-  CredentialResponseSchema,
-  abortable,
-  exchangeToken
-} from './exchange.js'
+  DEFAULT_FRESH_MARGIN_MS,
+  createMintCoordinator,
+  isCredentialFresh,
+  selectFreshCredential
+} from './mintCoordinator.js'
 import type { RefreshHost } from './refreshScheduler.js'
 import { createRefreshScheduler } from './refreshScheduler.js'
 import type {
   AccountCredential,
   AccountUser,
-  MintHandle,
   RefreshSchedulerOptions,
   SessionErrorCode,
   SessionFailure,
@@ -63,19 +65,8 @@ export type {
   SessionResult
 } from './sessionContracts.js'
 export { isPermanentSessionError } from './sessionContracts.js'
-
-/** The generated contract for POST /api/auth/token, never a local copy of it. */
-const CachedCredentialSchema = CredentialResponseSchema.omit({
-  expires_at: true
-}).extend({
-  // Storage and broadcast are untrusted boundaries: an empty token can never
-  // authorize and a non-finite expiry can never lapse, so neither is a session.
-  token: z.string().min(1),
-  expiresAt: z.number().finite(),
-  uid: z.string(),
-  /** The workspace target the credential was minted for; absent = personal. */
-  target: z.string().optional()
-})
+export type { CredentialStorage } from './credentialCache.js'
+export { isCredentialFresh } from './mintCoordinator.js'
 
 /**
  * The session error codes, keys only. Hosts own the copy (the cloud app's
@@ -92,18 +83,6 @@ export const SESSION_ERROR_CODES: Readonly<Record<SessionErrorCode, true>> = {
 }
 
 export { SESSION_TELEMETRY_EVENT } from '../telemetry.js'
-
-/**
- * Raw string storage for the credential cache. Hosts wrap their medium —
- * per-tab browser storage today, a cookie-backed session tomorrow. Each client
- * instance sees only its own storage: signing out in one tab leaves another
- * tab's session live until the server revokes it and the next remint 401s.
- */
-export interface CredentialStorage {
-  read: () => string | null
-  write: (value: string) => void
-  clear: () => void
-}
 
 export interface SessionRequestOptions {
   readonly fetchImpl?: typeof fetch
@@ -221,16 +200,7 @@ export interface SessionClient<TUser extends AccountUser = AccountUser> {
   clearStoredCredential: () => void
 }
 
-const DEFAULT_FRESH_MARGIN_MS = 5 * 60 * 1000
 const DEFAULT_MINT_TIMEOUT_MS = 15_000
-
-export function isCredentialFresh(
-  session: AccountCredential,
-  now: number,
-  freshMarginMs: number = DEFAULT_FRESH_MARGIN_MS
-): boolean {
-  return session.expiresAt - now > freshMarginMs
-}
 
 /**
  * The status→code mapping from `requestToken`: 401/403/404 are permanent
@@ -250,16 +220,8 @@ export function createSessionClient<TUser extends AccountUser = AccountUser>(
   let state = initialSessionState<TUser>()
   let detachCurrent: (() => void) | undefined
   const listeners = new Set<(snapshot: SessionSnapshot<TUser>) => void>()
-
-  let inFlight:
-    | {
-        readonly promise: Promise<SessionResult>
-        readonly uid: string
-        readonly target: string | undefined
-        readonly forced: boolean
-        readonly mintId: number
-      }
-    | undefined
+  const cache = createCredentialCache(storage)
+  const mints = createMintCoordinator()
 
   function getSnapshot(): SessionSnapshot<TUser> {
     const { user, identitySettled, credential, failure } = state
@@ -282,29 +244,6 @@ export function createSessionClient<TUser extends AccountUser = AccountUser>(
     listeners.forEach((listener) => listener(snapshot))
   }
 
-  function safeRead(): string | null {
-    try {
-      return storage.read()
-    } catch {
-      return null
-    }
-  }
-
-  function safeWrite(value: string): void {
-    try {
-      storage.write(value)
-    } catch {
-      void 0
-    }
-  }
-
-  function persistCredential(
-    session: AccountCredential,
-    target: string | undefined
-  ): void {
-    safeWrite(JSON.stringify({ ...session, target }))
-  }
-
   // The exchange echoes the requested workspace on success (a non-member 404s),
   // so a scope mismatch is a backend regression to fail closed on — shared by
   // the direct commit and the scheduled-refresh commit.
@@ -315,40 +254,6 @@ export function createSessionClient<TUser extends AccountUser = AccountUser>(
     return target !== undefined && session.workspace.id !== target
       ? { status: 'error', code: 'ACCESS_DENIED' }
       : undefined
-  }
-
-  function safeClear(): void {
-    try {
-      storage.clear()
-    } catch {
-      void 0
-    }
-  }
-
-  function readCached(
-    uid: string
-  ): { credential: AccountCredential; target: string | undefined } | undefined {
-    const raw = safeRead()
-    if (raw === null) return undefined
-    let parsed: unknown
-    try {
-      parsed = JSON.parse(raw)
-    } catch {
-      return undefined
-    }
-    const result = CachedCredentialSchema.safeParse(parsed)
-    if (!result.success || result.data.uid !== uid) return undefined
-    return {
-      credential: {
-        token: result.data.token,
-        expiresAt: result.data.expiresAt,
-        uid: result.data.uid,
-        workspace: result.data.workspace,
-        role: result.data.role,
-        permissions: result.data.permissions
-      },
-      target: result.data.target
-    }
   }
 
   /**
@@ -384,10 +289,10 @@ export function createSessionClient<TUser extends AccountUser = AccountUser>(
   function runEffect(effect: SessionEffect, now: () => number): void {
     switch (effect.type) {
       case 'persist':
-        persistCredential(effect.session, effect.target)
+        cache.write(effect.session, effect.target)
         return
       case 'clearStorage':
-        safeClear()
+        cache.clear()
         return
       case 'stopScheduler':
         scheduler?.stop()
@@ -396,7 +301,7 @@ export function createSessionClient<TUser extends AccountUser = AccountUser>(
         scheduler?.armAfterCommit(effect.session, now())
         return
       case 'abandonInFlight':
-        inFlight = undefined
+        mints.abandon()
         return
       case 'publish':
         publish()
@@ -416,37 +321,16 @@ export function createSessionClient<TUser extends AccountUser = AccountUser>(
     apply(transition(state, event), now)
   }
 
-  // `joined` marks a caller that awaits another owner's in-flight mint rather
-  // than starting or cache-serving its own, so it can defer to that owner's
-  // commit instead of re-running the publication path.
-  type MintDispatch = MintHandle & { readonly joined: boolean }
-
   function sharedMint(
     user: AccountUser,
     options: SessionRequestOptions,
     forced: boolean
   ): MintDispatch {
     const target = options.workspaceId ?? clientOptions.workspaceId
-    if (
-      inFlight !== undefined &&
-      inFlight.uid === user.uid &&
-      inFlight.target === target &&
-      (!forced || inFlight.forced)
-    ) {
-      return {
-        mintId: inFlight.mintId,
-        response: inFlight.promise,
-        joined: true
-      }
-    }
-    commit({ type: 'mint-started' })
-    const mintId = state.mintSequence
-    const running = mint(user, options).finally(() => {
-      if (inFlight?.promise !== running) return
-      inFlight = undefined
+    return mints.dispatch(user.uid, target, forced, () => {
+      commit({ type: 'mint-started' })
+      return { mintId: state.mintSequence, response: mint(user, options) }
     })
-    inFlight = { promise: running, uid: user.uid, target, forced, mintId }
-    return { mintId, response: running, joined: false }
   }
 
   function ensureCore(
@@ -455,24 +339,15 @@ export function createSessionClient<TUser extends AccountUser = AccountUser>(
   ): MintDispatch {
     const now = options.now?.() ?? clientOptions.now?.() ?? Date.now()
     const target = options.workspaceId ?? clientOptions.workspaceId
-    // The live credential is authoritative; storage is recovery state, not a
-    // competing source. Prefer a fresh in-memory credential for this exact
-    // target and consult storage only when memory has none — expiry must not
-    // override this (a rejected token can outlive its shorter-lived
-    // replacement), and a target-less read must never adopt a team session.
-    const stored = readCached(user.uid)
-    const { credential, credentialTarget } = state
-    const fresh = [
-      credential?.uid === user.uid && credentialTarget === target
-        ? credential
-        : undefined,
-      stored !== undefined && stored.target === target
-        ? stored.credential
-        : undefined
-    ].find(
-      (candidate): candidate is AccountCredential =>
-        candidate !== undefined &&
-        isCredentialFresh(candidate, now, freshMarginMs)
+    const fresh = selectFreshCredential(
+      [
+        { credential: state.credential, target: state.credentialTarget },
+        cache.read(user.uid)
+      ],
+      user.uid,
+      target,
+      now,
+      freshMarginMs
     )
     if (fresh) {
       return {
@@ -488,7 +363,7 @@ export function createSessionClient<TUser extends AccountUser = AccountUser>(
     user: AccountUser,
     options: SessionRequestOptions
   ): MintDispatch {
-    safeClear()
+    cache.clear()
     return sharedMint(user, options, true)
   }
 
@@ -536,18 +411,7 @@ export function createSessionClient<TUser extends AccountUser = AccountUser>(
             apply(next, hostNow)
             return next.state.failure
           },
-          parseAdopted: (message) => {
-            const parsed = CachedCredentialSchema.safeParse(message)
-            if (!parsed.success) return undefined
-            return {
-              token: parsed.data.token,
-              expiresAt: parsed.data.expiresAt,
-              uid: parsed.data.uid,
-              workspace: parsed.data.workspace,
-              role: parsed.data.role,
-              permissions: parsed.data.permissions
-            }
-          },
+          parseAdopted: decodeAdopted,
           commitAdopted: (session) => {
             commit({ type: 'credential-adopted', session })
           }
@@ -665,7 +529,7 @@ export function createSessionClient<TUser extends AccountUser = AccountUser>(
       commit({ type: 'invalidated' })
     },
     clearStoredCredential() {
-      safeClear()
+      cache.clear()
     }
   }
 }

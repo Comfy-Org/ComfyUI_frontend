@@ -1,0 +1,123 @@
+import { describe, expect, it } from 'vitest'
+
+import type { CredentialStorage } from './credentialCache.js'
+import {
+  createCredentialCache,
+  decodeAdopted,
+  decodeCached,
+  encodeCached
+} from './credentialCache.js'
+import type { AccountCredential } from './sessionContracts.js'
+
+const credential: AccountCredential = {
+  token: 'cached-jwt',
+  expiresAt: 1_000_000,
+  uid: 'uid-1',
+  workspace: { id: 'ws-1', name: 'Personal', type: 'personal' },
+  role: 'owner',
+  permissions: ['workspace:read']
+}
+
+function memoryStorage(): CredentialStorage & { raw: () => string | null } {
+  let value: string | null = null
+  return {
+    read: () => value,
+    write: (next) => {
+      value = next
+    },
+    clear: () => {
+      value = null
+    },
+    raw: () => value
+  }
+}
+
+describe('decodeCached', () => {
+  it.for<{ name: string; raw: string }>([
+    { name: 'malformed JSON', raw: '{not json' },
+    { name: 'a record missing the contract fields', raw: '{"uid":"uid-1"}' },
+    {
+      name: 'a record for another user',
+      raw: encodeCached({ ...credential, uid: 'someone-else' }, undefined)
+    },
+    {
+      name: 'an empty token',
+      raw: encodeCached({ ...credential, token: '' }, undefined)
+    },
+    {
+      name: 'a non-finite expiry',
+      raw: encodeCached(credential, undefined).replace(
+        '"expiresAt":1000000',
+        '"expiresAt":1e999'
+      )
+    }
+  ])('rejects $name', ({ raw }) => {
+    expect(decodeCached(raw, 'uid-1')).toBeUndefined()
+  })
+
+  it.for<{ name: string; target: string | undefined }>([
+    { name: 'a workspace target', target: 'ws-9' },
+    { name: 'the absent personal target', target: undefined }
+  ])('round-trips a credential with $name', ({ target }) => {
+    expect(decodeCached(encodeCached(credential, target), 'uid-1')).toEqual({
+      credential,
+      target
+    })
+  })
+})
+
+describe('decodeAdopted', () => {
+  it('returns the credential without the storage-only target', () => {
+    expect(decodeAdopted({ ...credential, target: 'ws-9' })).toEqual(credential)
+  })
+
+  it.for<{ name: string; message: unknown }>([
+    { name: 'a non-object', message: 'not even an object' },
+    { name: 'a record missing the contract fields', message: { token: 'x' } },
+    {
+      name: 'a non-finite expiry',
+      message: { ...credential, expiresAt: Number.POSITIVE_INFINITY }
+    },
+    { name: 'an empty token', message: { ...credential, token: '' } }
+  ])('rejects $name', ({ message }) => {
+    expect(decodeAdopted(message)).toBeUndefined()
+  })
+})
+
+describe('createCredentialCache', () => {
+  it('writes and reads back a credential for its user only', () => {
+    const cache = createCredentialCache(memoryStorage())
+
+    cache.write(credential, 'ws-9')
+
+    expect(cache.read('uid-1')).toEqual({ credential, target: 'ws-9' })
+    expect(cache.read('someone-else')).toBeUndefined()
+  })
+
+  it('reads a miss after clear', () => {
+    const cache = createCredentialCache(memoryStorage())
+    cache.write(credential, undefined)
+
+    cache.clear()
+
+    expect(cache.read('uid-1')).toBeUndefined()
+  })
+
+  it('degrades a throwing medium to a miss and swallows failed writes and clears', () => {
+    const cache = createCredentialCache({
+      read: () => {
+        throw new Error('blocked')
+      },
+      write: () => {
+        throw new Error('quota')
+      },
+      clear: () => {
+        throw new Error('blocked')
+      }
+    })
+
+    expect(cache.read('uid-1')).toBeUndefined()
+    expect(() => cache.write(credential, undefined)).not.toThrow()
+    expect(() => cache.clear()).not.toThrow()
+  })
+})
