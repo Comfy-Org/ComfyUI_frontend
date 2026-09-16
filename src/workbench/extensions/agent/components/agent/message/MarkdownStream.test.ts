@@ -1,7 +1,5 @@
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-// eslint-disable-next-line primevue-removal/no-imports
-import ToastService from 'primevue/toastservice'
 import { describe, expect, it } from 'vitest'
 
 import { i18n } from '@/i18n'
@@ -146,7 +144,7 @@ describe('MarkdownStream', () => {
   it('renders a fenced block as a framed code block with its language and a copy button', () => {
     render(MarkdownStream, {
       props: { text: 'before\n```python\nprint("hi")\n```\nafter' },
-      global: { plugins: [i18n, ToastService] }
+      global: { plugins: [i18n] }
     })
     expect(screen.getByText('python')).toBeInTheDocument()
     expect(
@@ -160,7 +158,7 @@ describe('MarkdownStream', () => {
   it('handles a 4-backtick fence containing a 3-backtick fence', () => {
     render(MarkdownStream, {
       props: { text: '````md\n```js\ncode\n```\n````' },
-      global: { plugins: [i18n, ToastService] }
+      global: { plugins: [i18n] }
     })
     expect(screen.getByText(/```js/, { selector: 'code' })).toBeInTheDocument()
     expect(screen.getByText('md')).toBeInTheDocument()
@@ -188,7 +186,7 @@ describe('MarkdownStream', () => {
   it('labels a fence by the first word of its info string', () => {
     render(MarkdownStream, {
       props: { text: '```python title=x\nprint("hi")\n```' },
-      global: { plugins: [i18n, ToastService] }
+      global: { plugins: [i18n] }
     })
     expect(screen.getByText('python')).toBeInTheDocument()
     expect(screen.queryByText(/title=x/)).not.toBeInTheDocument()
@@ -197,7 +195,7 @@ describe('MarkdownStream', () => {
   it('labels a bare fence with no language as text', () => {
     render(MarkdownStream, {
       props: { text: '```\nplain body\n```' },
-      global: { plugins: [i18n, ToastService] }
+      global: { plugins: [i18n] }
     })
     expect(screen.getByText('text')).toBeInTheDocument()
     expect(
