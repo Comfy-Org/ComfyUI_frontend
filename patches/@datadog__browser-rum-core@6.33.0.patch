@@ -1,0 +1,65 @@
+diff --git a/cjs/domain/view/trackViews.js b/cjs/domain/view/trackViews.js
+index 124bff268b2cfe602f6802b0039f3f4119eb5115..b11fbe7a54bf5a3fe894ff784230e53f8c522333 100644
+--- a/cjs/domain/view/trackViews.js
++++ b/cjs/domain/view/trackViews.js
+@@ -139,11 +139,7 @@ function newView(lifeCycle, domMutationObservable, windowOpenObservable, configu
+     const { stop: stopEventCountsTracking, eventCounts } = (0, trackViewEventCounts_1.trackViewEventCounts)(lifeCycle, id, scheduleViewUpdate);
+     // Session keep alive
+     const keepAliveIntervalId = (0, browser_core_1.setInterval)(triggerViewUpdate, exports.SESSION_KEEP_ALIVE_INTERVAL);
+-    const pageMayExitSubscription = lifeCycle.subscribe(11 /* LifeCycleEventType.PAGE_MAY_EXIT */, (pageMayExitEvent) => {
+-        if (pageMayExitEvent.reason === browser_core_1.PageExitReason.UNLOADING) {
+-            triggerViewUpdate();
+-        }
+-    });
++    const pageMayExitSubscription = lifeCycle.subscribe(11 /* LifeCycleEventType.PAGE_MAY_EXIT */, triggerViewUpdate);
+     // Initial view update
+     triggerViewUpdate();
+     // View context update should always be throttled
+diff --git a/esm/domain/view/trackViews.js b/esm/domain/view/trackViews.js
+index 56d6b95ae6aa10e901a2d1d26cf91594b024826c..67075a6b28b621b8229a882f2684fe7a5b3023e7 100644
+--- a/esm/domain/view/trackViews.js
++++ b/esm/domain/view/trackViews.js
+@@ -1,4 +1,4 @@
+-import { noop, PageExitReason, shallowClone, elapsed, generateUUID, ONE_MINUTE, throttle, clocksNow, clocksOrigin, relativeToClocks, timeStampNow, display, looksLikeRelativeTime, setInterval, clearInterval, setTimeout, Observable, createContextManager, mockable, } from '@datadog/browser-core';
++import { noop, shallowClone, elapsed, generateUUID, ONE_MINUTE, throttle, clocksNow, clocksOrigin, relativeToClocks, timeStampNow, display, looksLikeRelativeTime, setInterval, clearInterval, setTimeout, Observable, createContextManager, mockable, } from '@datadog/browser-core';
+ import { ViewLoadingType } from '../../rawRumEvent.types';
+ import { trackViewEventCounts } from './trackViewEventCounts';
+ import { trackInitialViewMetrics } from './viewMetrics/trackInitialViewMetrics';
+@@ -135,11 +135,7 @@ function newView(lifeCycle, domMutationObservable, windowOpenObservable, configu
+     const { stop: stopEventCountsTracking, eventCounts } = trackViewEventCounts(lifeCycle, id, scheduleViewUpdate);
+     // Session keep alive
+     const keepAliveIntervalId = setInterval(triggerViewUpdate, SESSION_KEEP_ALIVE_INTERVAL);
+-    const pageMayExitSubscription = lifeCycle.subscribe(11 /* LifeCycleEventType.PAGE_MAY_EXIT */, (pageMayExitEvent) => {
+-        if (pageMayExitEvent.reason === PageExitReason.UNLOADING) {
+-            triggerViewUpdate();
+-        }
+-    });
++    const pageMayExitSubscription = lifeCycle.subscribe(11 /* LifeCycleEventType.PAGE_MAY_EXIT */, triggerViewUpdate);
+     // Initial view update
+     triggerViewUpdate();
+     // View context update should always be throttled
+diff --git a/src/domain/view/trackViews.ts b/src/domain/view/trackViews.ts
+index 3cbcb8d223297e6a38c9aaa8fc2adf6db5e71350..907e067947a93ce1c4c38a473148e3cc572c4a86 100644
+--- a/src/domain/view/trackViews.ts
++++ b/src/domain/view/trackViews.ts
+@@ -9,7 +9,6 @@ import type {
+ } from '@datadog/browser-core'
+ import {
+   noop,
+-  PageExitReason,
+   shallowClone,
+   elapsed,
+   generateUUID,
+@@ -286,11 +285,7 @@ function newView(
+   // Session keep alive
+   const keepAliveIntervalId = setInterval(triggerViewUpdate, SESSION_KEEP_ALIVE_INTERVAL)
+ 
+-  const pageMayExitSubscription = lifeCycle.subscribe(LifeCycleEventType.PAGE_MAY_EXIT, (pageMayExitEvent) => {
+-    if (pageMayExitEvent.reason === PageExitReason.UNLOADING) {
+-      triggerViewUpdate()
+-    }
+-  })
++  const pageMayExitSubscription = lifeCycle.subscribe(LifeCycleEventType.PAGE_MAY_EXIT, triggerViewUpdate)
+ 
+   // Initial view update
+   triggerViewUpdate()

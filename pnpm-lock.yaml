@@ -34,7 +34,7 @@ catalogs:
       specifier: ^0.5.3
       version: 0.5.6
     '@datadog/browser-rum':
-      specifier: ^6.33.0
+      specifier: 6.33.0
       version: 6.33.0
     '@eslint/js':
       specifier: ^10.0.1
@@ -482,6 +482,9 @@ overrides:
   brace-expansion@^4.0.0: ^5.0.9
   brace-expansion@^5.0.0: ^5.0.9
   sharp@^0.34.0: ^0.35.0
+
+patchedDependencies:
+  '@datadog/browser-rum-core@6.33.0': e1d6396fcf97ce1c9ec3e0b388282d79ee51547500322986bb1ab754e44aef61
 
 importers:
 
@@ -10548,14 +10551,14 @@ snapshots:
 
   '@datadog/browser-core@6.33.0': {}
 
-  '@datadog/browser-rum-core@6.33.0':
+  '@datadog/browser-rum-core@6.33.0(patch_hash=e1d6396fcf97ce1c9ec3e0b388282d79ee51547500322986bb1ab754e44aef61)':
     dependencies:
       '@datadog/browser-core': 6.33.0
 
   '@datadog/browser-rum@6.33.0':
     dependencies:
       '@datadog/browser-core': 6.33.0
-      '@datadog/browser-rum-core': 6.33.0
+      '@datadog/browser-rum-core': 6.33.0(patch_hash=e1d6396fcf97ce1c9ec3e0b388282d79ee51547500322986bb1ab754e44aef61)
 
   '@dimforge/rapier3d-compat@0.12.0': {}
 
