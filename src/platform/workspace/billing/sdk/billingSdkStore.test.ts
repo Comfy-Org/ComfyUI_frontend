@@ -14,6 +14,8 @@ import {
   pendingTopup,
   settledTopup
 } from './billingSdkTestUtils'
+import type { HostedBillingDestination } from '@comfyorg/account/billing'
+
 import type { BillingSdk, BillingSdkOptions } from './createBillingSdk'
 
 const mockCreateBillingSdk = vi.hoisted(() =>
@@ -53,12 +55,18 @@ vi.mock<unknown>(import('@/platform/telemetry'), () => ({
   useTelemetry: () => ({ trackBillingEvent: mockTrackBillingEvent })
 }))
 
-const flagState = vi.hoisted(() => ({ embeddedCheckoutEnabled: false }))
+const flagState = vi.hoisted(() => ({
+  embeddedCheckoutEnabled: false,
+  hostedBillingDestination: 'stripe' as HostedBillingDestination
+}))
 vi.mock<unknown>(import('@/composables/useFeatureFlags'), () => ({
   useFeatureFlags: () => ({
     flags: {
       get embeddedCheckoutEnabled() {
         return flagState.embeddedCheckoutEnabled
+      },
+      get hostedBillingDestination() {
+        return flagState.hostedBillingDestination
       }
     }
   })
@@ -76,6 +84,7 @@ let options: BillingSdkOptions
 
 beforeEach(() => {
   flagState.embeddedCheckoutEnabled = false
+  flagState.hostedBillingDestination = 'stripe'
   harness = fakeBillingSdk()
   mockCreateBillingSdk.mockImplementation((sdkOptions) => {
     options = sdkOptions
@@ -103,6 +112,24 @@ describe('useBillingSdkStore', () => {
     )
     expect(options.resolveUrl).toBe(workspaceApiUrl)
     expect(options.pointerStorage).toBe(sessionStorage)
+  })
+
+  it.for(['stripe', 'billing_web'] as const)(
+    'serves the hosted page from the destination the flag names, %s',
+    (destination: HostedBillingDestination) => {
+      flagState.hostedBillingDestination = destination
+      useBillingSdkStore()
+
+      expect(options.hostedDestination()).toBe(destination)
+    }
+  )
+
+  it('re-reads the destination flag rather than capturing it at composition', () => {
+    useBillingSdkStore()
+
+    flagState.hostedBillingDestination = 'billing_web'
+
+    expect(options.hostedDestination()).toBe('billing_web')
   })
 
   it('projects a settled purchase into the response the dialog handles and refreshes capabilities', async () => {
