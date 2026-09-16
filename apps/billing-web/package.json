@@ -15,6 +15,7 @@
   "dependencies": {
     "@comfyorg/account": "workspace:*",
     "@comfyorg/account-ui": "workspace:*",
+    "@comfyorg/billing-contract": "workspace:*",
     "@comfyorg/design-system": "workspace:*",
     "@comfyorg/tailwind-utils": "workspace:*",
     "@vueuse/core": "catalog:",
