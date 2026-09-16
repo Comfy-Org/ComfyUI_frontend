@@ -1,7 +1,11 @@
 import { describe, expect, it } from 'vitest'
 
 import { hubWorkflowPath } from './catalogue-entries'
-import { getHubWorkflowPage, listHubWorkflows } from './workflow-detail'
+import {
+  formatWeights,
+  getHubWorkflowPage,
+  listHubWorkflows
+} from './workflow-detail'
 
 describe('getHubWorkflowPage', () => {
   it('returns nothing for an unknown template', () => {
@@ -61,5 +65,27 @@ describe('getHubWorkflowPage', () => {
     expect(page.related.map((other) => other.name)).not.toContain(
       'video_minimax_h3_i2v'
     )
+  })
+
+  // An app is a form somebody finished; a node graph is one to open and edit.
+  // Recommending across that line offers the reader the wrong kind of thing.
+  it('recommends an app only other apps', () => {
+    const page = getHubWorkflowPage('templates-qwen_multiangle.app')!
+    expect(page.related.length).toBeGreaterThan(0)
+    expect(page.related.every((other) => other.isApp)).toBe(true)
+  })
+})
+
+describe('formatWeights', () => {
+  it.for([
+    [0, undefined],
+    [-1, undefined],
+    [800_000_000, '800 MB'],
+    [1_000_000_000, '1 GB'],
+    [6_400_000_000, '6 GB'],
+    // Rounded to what a reader decides on: 6.5 GB of disk or not.
+    [6_500_000_000, '7 GB']
+  ] as const)('reads %s bytes as %s', ([bytes, size]) => {
+    expect(formatWeights(bytes)).toBe(size)
   })
 })

@@ -33,11 +33,17 @@ export function listModelGroups(): readonly ModelEntry[] {
   return entries
 }
 
-export function getModelGroupPage(key: string): ModelGroupPage | undefined {
-  const entry = entries.find((candidate) => candidate.key === key)
-  if (!entry) return undefined
+/**
+ * The two ways a workflow can sit on a model page: titled after the model, so
+ * it reads as one more thing the model does, or merely naming it, so it reads
+ * as somebody's use of it. Both name the model; only the first speaks for it.
+ */
+export function modelGroupFrom(
+  entry: ModelEntry,
+  known: ReadonlySet<string>
+): ModelGroupPage {
   const owned = entry.workflows.filter(
-    (template) => ownerOf(template, known) === key
+    (template) => ownerOf(template, known) === entry.key
   )
   const ownedNames = new Set(owned.map((template) => template.name))
   return {
@@ -48,4 +54,9 @@ export function getModelGroupPage(key: string): ModelGroupPage | undefined {
     uses: entry.workflows.filter((template) => !ownedNames.has(template.name)),
     operationsFromWorkflows: owned
   }
+}
+
+export function getModelGroupPage(key: string): ModelGroupPage | undefined {
+  const entry = entries.find((candidate) => candidate.key === key)
+  return entry ? modelGroupFrom(entry, known) : undefined
 }

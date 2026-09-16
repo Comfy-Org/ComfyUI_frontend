@@ -36,6 +36,8 @@ export type CatalogueEntry = ModelEntry | WorkflowEntry
 const normalize = (value: string) =>
   value.toLowerCase().replace(/[^a-z0-9]/g, '')
 
+export const modelGroupKey = normalize
+
 function groupByName(
   models: readonly WorkshopModel[]
 ): Map<string, WorkshopModel[]> {
@@ -53,6 +55,31 @@ const namesInCatalogue = (
 ) =>
   [...new Set(template.models.map(normalize))].filter((key) => known.has(key))
 
+const isWordCharacter = (character: string) => /[a-z0-9]/i.test(character)
+
+/**
+ * How many of the title's own characters the name eats, or -1 when the title
+ * does not open with it. The comparison ignores spacing and punctuation, so
+ * "Seedance2.5" still finds "Seedance 2.5", but the count is kept in the
+ * title's characters so the caller can insist the match ends at a word.
+ */
+function consumed(title: string, key: string): number {
+  let taken = 0
+  for (let index = 0; index < title.length; index += 1) {
+    const character = title.charAt(index)
+    if (!isWordCharacter(character)) continue
+    if (character.toLowerCase() !== key[taken]) return -1
+    taken += 1
+    if (taken === key.length) return index + 1
+  }
+  return -1
+}
+
+const titleOpensWith = (title: string, key: string) => {
+  const end = consumed(title, key)
+  return end >= 0 && !isWordCharacter(title.charAt(end))
+}
+
 export const catalogueNameKeys = (models: readonly WorkshopModel[]) =>
   new Set(models.map((model) => normalize(model.name)))
 
@@ -60,13 +87,31 @@ export const catalogueNameKeys = (models: readonly WorkshopModel[]) =>
  * A workflow titled after a model it runs is that model's own operation, not a
  * competitor to it: "Seedance 2.5: Image to Video" beside "Seedance 2.5" reads
  * as two products with one name. It browses on the model's page instead.
+ *
+ * The title has to open with the whole name and stop at a word, and where a
+ * longer name also matches it wins: "Flux Pro: Generate" belongs to Flux Pro,
+ * not to Flux, and "Fluxion Portrait" belongs to neither.
  */
 export function ownerOf(
   template: FacetedTemplate,
   known: ReadonlySet<string>
 ): string | undefined {
-  const title = normalize(template.title)
-  return namesInCatalogue(template, known).find((key) => title.startsWith(key))
+  return namesInCatalogue(template, known)
+    .filter((key) => titleOpensWith(template.title, key))
+    .sort((a, b) => b.length - a.length)[0]
+}
+
+/**
+ * One card stands for every operation under a name, so the price it carries is
+ * the cheapest way in. Choosing between operations happens on the model page,
+ * where each one shows its own.
+ */
+export function cheapestOperation(entry: ModelEntry): WorkshopModel {
+  return [...entry.operations].sort(
+    (a, b) =>
+      (a.creditsPerRun ?? Number.POSITIVE_INFINITY) -
+      (b.creditsPerRun ?? Number.POSITIVE_INFINITY)
+  )[0]
 }
 
 export function buildCatalogue(

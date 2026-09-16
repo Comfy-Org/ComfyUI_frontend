@@ -1,0 +1,156 @@
+import { describe, expect, it } from 'vitest'
+
+import type { WorkshopModel } from '../../config/models-catalogue'
+import { cardViewFor } from './catalogue-card'
+import type { CatalogueEntry } from './catalogue-entries'
+import type { FacetedTemplate } from './facet-fields'
+
+function model(overrides: Partial<WorkshopModel> = {}): WorkshopModel {
+  return {
+    slug: 'bfl--flux--generate-images',
+    name: 'Flux',
+    workflowCount: 0,
+    href: '/workshop/models/bfl--flux--generate-images/',
+    routerId: 'bfl/flux',
+    provider: 'BFL',
+    modality: 'image',
+    capabilities: ['text to image'],
+    ...overrides
+  }
+}
+
+function template(overrides: Partial<FacetedTemplate> = {}): FacetedTemplate {
+  return {
+    name: 'poster',
+    title: 'Movie poster',
+    mediaType: 'image',
+    tags: ['Poster'],
+    models: [],
+    logos: [],
+    usage: 10,
+    date: '2026-09-10',
+    thumbnails: ['first.png', 'second.png'],
+    username: 'Ana',
+    isApp: false,
+    ...overrides
+  }
+}
+
+const modelEntry = (
+  overrides: Partial<Extract<CatalogueEntry, { kind: 'model' }>> = {}
+): CatalogueEntry => ({
+  kind: 'model',
+  key: 'flux',
+  model: model(),
+  operations: [model()],
+  workflows: [],
+  ...overrides
+})
+
+const workflowEntry = (
+  overrides: Partial<Extract<CatalogueEntry, { kind: 'workflow' | 'app' }>> = {}
+): CatalogueEntry => ({
+  kind: 'workflow',
+  key: 'poster',
+  template: template(),
+  runsOn: undefined,
+  ...overrides
+})
+
+const noNodes = new Set<string>()
+const noPrices = new Map<string, string>()
+
+describe('cardViewFor', () => {
+  it('opens a model at its group page and prices it from the registry', () => {
+    const view = cardViewFor(
+      modelEntry(),
+      noNodes,
+      new Map([['bfl--flux--generate-images', '12 credits']])
+    )
+
+    expect(view).toMatchObject({
+      kind: 'model',
+      href: '/models-v2/model/flux/',
+      title: 'Flux',
+      action: 'run',
+      price: '12 credits',
+      needsCustomNodes: false
+    })
+    expect(view.maker.label).toBe('BFL')
+  })
+
+  it('leaves off the crossing when no workflow uses the model', () => {
+    expect(
+      cardViewFor(modelEntry(), noNodes, noPrices).crossing
+    ).toBeUndefined()
+  })
+
+  it('counts the workflows that use a model and filters the grid to them', () => {
+    const view = cardViewFor(
+      modelEntry({ workflows: [template(), template({ name: 'other' })] }),
+      noNodes,
+      noPrices
+    )
+
+    expect(view.crossing).toEqual({
+      to: 'workflows',
+      count: 2,
+      href: '?model=Flux'
+    })
+  })
+
+  it('opens a workflow at the workflow page, never at the model behind it', () => {
+    const view = cardViewFor(workflowEntry(), noNodes, noPrices)
+
+    expect(view).toMatchObject({
+      kind: 'workflow',
+      href: '/models-v2/workflow/poster/',
+      action: 'open',
+      price: undefined
+    })
+    expect(view.media).toEqual({ url: 'first.png', kind: 'image' })
+    expect(view.hoverMedia).toBe('second.png')
+  })
+
+  it('keeps a workflow crossing inside the catalogue', () => {
+    const view = cardViewFor(
+      workflowEntry({ runsOn: model({ name: 'Seedance 2.5' }) }),
+      noNodes,
+      noPrices
+    )
+
+    expect(view.crossing).toEqual({
+      to: 'model',
+      name: 'Seedance 2.5',
+      href: '/models-v2/model/seedance25/'
+    })
+  })
+
+  it('marks a workflow that needs custom nodes installed', () => {
+    expect(
+      cardViewFor(workflowEntry(), new Set(['poster']), noPrices)
+        .needsCustomNodes
+    ).toBe(true)
+  })
+
+  it('carries the app kind through to the card', () => {
+    expect(
+      cardViewFor(
+        workflowEntry({ kind: 'app', template: template({ isApp: true }) }),
+        noNodes,
+        noPrices
+      ).kind
+    ).toBe('app')
+  })
+
+  it('shows no media for a workflow with no thumbnail', () => {
+    const view = cardViewFor(
+      workflowEntry({ template: template({ thumbnails: [] }) }),
+      noNodes,
+      noPrices
+    )
+
+    expect(view.media).toBeUndefined()
+    expect(view.hoverMedia).toBeUndefined()
+  })
+})

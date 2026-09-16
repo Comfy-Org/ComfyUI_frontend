@@ -2,7 +2,11 @@ import type { WorkshopModel } from '../../config/models-catalogue'
 import type { BrowseEntry } from './browse-entry'
 import { cardViewFor } from './catalogue-card'
 import type { CatalogueEntry } from './catalogue-entries'
-import { buildCatalogue, entryUseCases } from './catalogue-entries'
+import {
+  buildCatalogue,
+  cheapestOperation,
+  entryUseCases
+} from './catalogue-entries'
 import type { FacetedTemplate } from './facet-fields'
 
 function modelEntry(
@@ -26,7 +30,7 @@ function modelEntry(
     models: [],
     standing: model.recommendedRank ?? Number.POSITIVE_INFINITY,
     date: undefined,
-    credits: model.creditsPerRun,
+    credits: cheapestOperation(entry).creditsPerRun,
     card: cardViewFor(entry, new Set(), prices)
   }
 }

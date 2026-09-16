@@ -176,6 +176,13 @@ watch(order, (next) => {
   if (only) type.value = only
 })
 
+// Leaving that type behind leaves the order behind with it: a price ascending
+// over workflows that carry no price is a ranking over nothing.
+watch(type, (next) => {
+  const only = ORDERS.find((option) => option.value === order.value)?.only
+  if (only && only !== next) order.value = 'popular'
+})
+
 watch([matched, order], () => {
   shown.value = PAGE
 })

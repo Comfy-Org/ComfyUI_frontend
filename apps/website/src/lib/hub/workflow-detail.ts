@@ -6,21 +6,7 @@ import { partnerModelFor } from './template-use-case'
 import type { HubTemplate, HubTemplateDetails } from './types'
 import { hubTemplateDetailsSchema, hubTemplatesSchema } from './types'
 
-interface HubTemplateDetail {
-  readonly description?: string
-  readonly tutorialUrl?: string
-  readonly requiresCustomNodes?: readonly string[]
-  readonly inputs?: readonly {
-    readonly nodeType?: string
-    readonly mediaType?: string
-  }[]
-  readonly outputs?: readonly {
-    readonly nodeType?: string
-    readonly mediaType?: string
-  }[]
-  readonly size?: number
-  readonly openSource?: boolean
-}
+type HubTemplateDetail = HubTemplateDetails[string]
 
 /** A model the workflow names, linked only where the catalogue carries it. */
 interface HubWorkflowModelRef {

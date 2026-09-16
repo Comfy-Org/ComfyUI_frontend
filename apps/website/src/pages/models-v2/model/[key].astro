@@ -3,12 +3,16 @@ import CatalogueCard from '../../../components/hub/CatalogueCard.vue'
 import { useCaseFor } from '../../../config/models-catalogue'
 import { workshopModels } from '../../../config/workshop-browse-content'
 import { estimateWorkshopNodePrice } from '../../../config/workshop-node-pricing'
-import { cardViewFor } from '../../../lib/hub/catalogue-card'
+import hubTemplateDetails from '../../../data/hubTemplateDetails.json'
 import {
   getModelGroupPage,
   listModelGroups
 } from '../../../lib/hub/model-page'
-import { partnerModelFor } from '../../../lib/hub/template-use-case'
+import {
+  customNodeNames,
+  relatedCardViews
+} from '../../../lib/hub/page-data'
+import { hubTemplateDetailsSchema } from '../../../lib/hub/types'
 import { taskLabelFor } from '../../../lib/workshop/task-label'
 import { t } from '../../../i18n/translations'
 import BaseLayout from '../../../layouts/BaseLayout.astro'
@@ -31,17 +35,19 @@ const pricedOperations = await Promise.all(
   }))
 )
 
-const viewFor = (template: (typeof uses)[number]) =>
-  cardViewFor(
-    {
-      kind: template.isApp ? 'app' : 'workflow',
-      key: template.name,
-      template,
-      runsOn: partnerModelFor(template, workshopModels)
-    },
-    new Set<string>(),
-    new Map<string, string>()
-  )
+const needsCustomNodes = customNodeNames(
+  hubTemplateDetailsSchema.parse(hubTemplateDetails)
+)
+const ownViews = relatedCardViews(
+  operationsFromWorkflows,
+  workshopModels,
+  needsCustomNodes
+)
+const useViews = relatedCardViews(
+  uses.slice(0, 8),
+  workshopModels,
+  needsCustomNodes
+)
 
 const sectionTitle =
   'text-xs font-bold tracking-wider text-primary-comfy-canvas uppercase'
@@ -117,9 +123,9 @@ const sectionTitle =
             {t('workshop.v2.model.ownWorkflowsNote')}
           </p>
           <ul class="mt-5 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
-            {operationsFromWorkflows.map((template) => (
+            {ownViews.map((view) => (
               <li>
-                <CatalogueCard view={viewFor(template)} />
+                <CatalogueCard view={view} />
               </li>
             ))}
           </ul>
@@ -135,9 +141,9 @@ const sectionTitle =
             {t('workshop.v2.model.usesNote')}
           </p>
           <ul class="mt-5 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
-            {uses.slice(0, 8).map((template) => (
+            {useViews.map((view) => (
               <li>
-                <CatalogueCard view={viewFor(template)} />
+                <CatalogueCard view={view} />
               </li>
             ))}
           </ul>

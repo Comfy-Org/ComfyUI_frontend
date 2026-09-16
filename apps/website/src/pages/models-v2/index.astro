@@ -6,6 +6,7 @@ import { estimateWorkshopNodePrice } from '../../config/workshop-node-pricing'
 import hubTemplateDetails from '../../data/hubTemplateDetails.json'
 import hubTemplates from '../../data/hubTemplates.json'
 import { browseEntries } from '../../lib/hub/browse-payload'
+import { customNodeNames } from '../../lib/hub/page-data'
 import { withFacetFields } from '../../lib/hub/facet-fields'
 import {
   hubTemplateDetailsSchema,
@@ -23,11 +24,7 @@ const templates = hubTemplatesSchema
   .parse(hubTemplates)
   .map((template) => withFacetFields(template, workshopModels))
 const details = hubTemplateDetailsSchema.parse(hubTemplateDetails)
-const needsCustomNodes = new Set(
-  Object.entries(details)
-    .filter(([, detail]) => (detail.requiresCustomNodes?.length ?? 0) > 0)
-    .map(([name]) => name)
-)
+const needsCustomNodes = customNodeNames(details)
 const priced = await Promise.all(
   workshopModels.map(
     async (model) =>

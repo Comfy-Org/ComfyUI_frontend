@@ -135,6 +135,7 @@ const narrowedLabel = () =>
                 : 'text-content-secondary hover:text-content-bright'
             )
           "
+          :aria-pressed="type === option.value"
           :data-active="type === option.value"
           @click="type = option.value"
         >

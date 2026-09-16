@@ -1,5 +1,10 @@
 import type { CatalogueEntry, EntryKind } from './catalogue-entries'
-import { hubWorkflowPath, modelGroupPath } from './catalogue-entries'
+import {
+  cheapestOperation,
+  hubWorkflowPath,
+  modelGroupKey,
+  modelGroupPath
+} from './catalogue-entries'
 import { getLogoPath } from './model-logos'
 
 interface CardMedia {
@@ -54,7 +59,7 @@ function modelCard(
       logo: getLogoPath(provider) ?? getLogoPath(model.name) ?? undefined
     },
     action: 'run',
-    price: prices.get(model.slug),
+    price: prices.get(cheapestOperation(entry).slug),
     // A count of nothing is not worth a line, and 104 of the 122 names have
     // none: the crossing is an enhancement, never part of the card's frame.
     crossing:
@@ -88,8 +93,14 @@ function workflowCard(
     maker: { label: template.username || 'ComfyUI', logo: undefined },
     action: 'open',
     price: undefined,
+    // The crossing stays inside the catalogue: the model's own page carries
+    // every operation under that name, where its live URL carries one.
     crossing: runsOn
-      ? { to: 'model', name: runsOn.name, href: runsOn.href }
+      ? {
+          to: 'model',
+          name: runsOn.name,
+          href: modelGroupPath(modelGroupKey(runsOn.name))
+        }
       : undefined,
     needsCustomNodes: needsCustomNodes.has(template.name),
     tags: template.tags

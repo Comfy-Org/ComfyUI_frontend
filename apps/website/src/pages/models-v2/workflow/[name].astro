@@ -4,15 +4,18 @@ import WorkflowAside from '../../../components/hub/WorkflowAside.vue'
 import WorkflowPorts from '../../../components/hub/WorkflowPorts.vue'
 import WorkflowRunsOn from '../../../components/hub/WorkflowRunsOn.vue'
 import { workshopModels } from '../../../config/workshop-browse-content'
-import { cardViewFor } from '../../../lib/hub/catalogue-card'
-import { withFacetFields } from '../../../lib/hub/facet-fields'
+import hubTemplateDetails from '../../../data/hubTemplateDetails.json'
+import {
+  customNodeNames,
+  relatedCardViews
+} from '../../../lib/hub/page-data'
 import { tagDisplayName } from '../../../lib/hub/tag-aliases'
+import { hubTemplateDetailsSchema } from '../../../lib/hub/types'
 import {
   formatWeights,
   getHubWorkflowPage,
   listHubWorkflows
 } from '../../../lib/hub/workflow-detail'
-import { partnerModelFor } from '../../../lib/hub/template-use-case'
 import { t } from '../../../i18n/translations'
 import BaseLayout from '../../../layouts/BaseLayout.astro'
 
@@ -47,17 +50,10 @@ const inputsHeading = template.isApp
   ? t('workshop.v2.workflow.form')
   : t('workshop.v2.workflow.loads')
 
-const relatedViews = related.slice(0, 4).map((other) =>
-  cardViewFor(
-    {
-      kind: other.isApp ? 'app' : 'workflow',
-      key: other.name,
-      template: withFacetFields(other, workshopModels),
-      runsOn: partnerModelFor(other, workshopModels)
-    },
-    new Set<string>(),
-    new Map<string, string>()
-  )
+const relatedViews = relatedCardViews(
+  related.slice(0, 4),
+  workshopModels,
+  customNodeNames(hubTemplateDetailsSchema.parse(hubTemplateDetails))
 )
 
 const pill =

@@ -1,7 +1,15 @@
 import { describe, expect, it } from 'vitest'
 
 import type { WorkshopModel } from '../../config/models-catalogue'
-import { buildCatalogue, entryTitle, entryUseCases } from './catalogue-entries'
+import {
+  buildCatalogue,
+  catalogueNameKeys,
+  cheapestOperation,
+  entryTitle,
+  entryUseCases,
+  modelGroupPath,
+  ownerOf
+} from './catalogue-entries'
 import type { CatalogueEntry } from './catalogue-entries'
 import type { FacetedTemplate } from './facet-fields'
 
@@ -131,5 +139,63 @@ describe('buildCatalogue', () => {
 
     expect(routed.runsOn?.name).toBe('Flux')
     expect(unknown.runsOn).toBeUndefined()
+  })
+})
+
+describe('ownerOf', () => {
+  const known = new Set(['flux', 'fluxpro', 'seedance25'])
+
+  it.for([
+    ['Flux: Text to Image', ['Flux'], 'flux'],
+    // The registry writes the same model both ways, so spacing cannot decide.
+    ['Seedance2.5: Video Editing', ['Seedance 2.5'], 'seedance25'],
+    // A longer name that also matches is the more specific claim.
+    ['Flux Pro: Generate', ['Flux', 'Flux Pro'], 'fluxpro'],
+    // The name has to end where a word ends.
+    ['Fluxion Portrait', ['Flux'], undefined],
+    // Naming a model somewhere in the title is not being titled after it.
+    ['A poster, with Flux somewhere', ['Flux'], undefined],
+    // A name the catalogue does not carry owns nothing.
+    ['Hypernova: Upscale', ['Hypernova'], undefined]
+  ] as const)('reads %s as %s', ([title, models, owner]) => {
+    expect(ownerOf(template({ title, models: [...models] }), known)).toBe(owner)
+  })
+})
+
+describe('cheapestOperation', () => {
+  it('prices a collapsed name at the cheapest way in', () => {
+    const [flux] = buildCatalogue(
+      [],
+      [
+        model({ slug: 'flux--edit', creditsPerRun: 40 }),
+        model({ slug: 'flux--generate', creditsPerRun: 12 })
+      ]
+    )
+
+    expect(flux.kind === 'model' && cheapestOperation(flux).slug).toBe(
+      'flux--generate'
+    )
+  })
+
+  it('falls back to an operation the Router has not priced', () => {
+    const [flux] = buildCatalogue([], [model({ slug: 'flux--only' })])
+
+    expect(flux.kind === 'model' && cheapestOperation(flux).slug).toBe(
+      'flux--only'
+    )
+  })
+})
+
+describe('catalogueNameKeys', () => {
+  it('keys a name by what survives case and punctuation', () => {
+    expect(catalogueNameKeys([model({ name: 'Seedance 2.5' })])).toEqual(
+      new Set(['seedance25'])
+    )
+  })
+})
+
+describe('modelGroupPath', () => {
+  it('addresses a model by its group key, not by an operation slug', () => {
+    expect(modelGroupPath('seedance25')).toBe('/models-v2/model/seedance25/')
   })
 })
