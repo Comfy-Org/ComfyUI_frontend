@@ -14,7 +14,8 @@ import {
   createCapabilitiesReader,
   createCreditsReader,
   createSessionBillingTransport,
-  createTopupCommand
+  createTopupCommand,
+  sessionBillingScopeSource
 } from '@comfyorg/account/billing'
 
 import { workshopSessionClient } from './workshop-account'
@@ -34,13 +35,14 @@ function createWorkshopTopupCommand(session: BillingSession): TopupCommand {
     resolveUrl: (route) => `${WORKSHOP_CLOUD_BASE_URL}/api${route}`,
     workspaceId: () => mintWorkspaceId(session)
   })
-  const credits = createCreditsReader({ transport, session })
-  const capabilities = createCapabilitiesReader({ transport, session })
+  const scopeSource = sessionBillingScopeSource(session)
+  const credits = createCreditsReader({ transport, scopeSource })
+  const capabilities = createCapabilitiesReader({ transport, scopeSource })
   // No `onTelemetry`: the site has no billing-operation funnel to feed.
   const lifecycle = createBillingOperationLifecycle({
     transport,
-    session,
-    statusReader: createBillingStatusReader({ transport, session }),
+    scopeSource,
+    statusReader: createBillingStatusReader({ transport, scopeSource }),
     pointerStorage: sessionStorage,
     embeddedCheckoutAvailable: () => false
   })

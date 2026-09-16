@@ -155,7 +155,8 @@ function createWorkflow(
 function enableWarningSettings() {
   vi.spyOn(useSettingStore(), 'get').mockImplementation(
     (key: string): boolean => {
-      if (key === 'Comfy.Workflow.ShowMissingModelsWarning') return true
+      if (key === 'Comfy.ErrorSystem.ShowMissingModels') return true
+      if (key === 'Comfy.Workflow.ShowMissingNodesWarning') return true
       return false
     }
   )
@@ -258,7 +259,8 @@ describe('useWorkflowService', () => {
     it('should NOT call showErrorOverlay when silent is true even with missing nodes', () => {
       vi.spyOn(useSettingStore(), 'get').mockImplementation(
         (key: string): boolean => {
-          if (key === 'Comfy.Workflow.ShowMissingModelsWarning') return true
+          if (key === 'Comfy.ErrorSystem.ShowMissingModels') return true
+          if (key === 'Comfy.Workflow.ShowMissingNodesWarning') return true
           if (key === 'Comfy.RightSidePanel.ShowErrorsTab') return true
           return false
         }
@@ -278,7 +280,8 @@ describe('useWorkflowService', () => {
     it('should call showErrorOverlay when silent is false and missing nodes exist', () => {
       vi.spyOn(useSettingStore(), 'get').mockImplementation(
         (key: string): boolean => {
-          if (key === 'Comfy.Workflow.ShowMissingModelsWarning') return true
+          if (key === 'Comfy.ErrorSystem.ShowMissingModels') return true
+          if (key === 'Comfy.Workflow.ShowMissingNodesWarning') return true
           if (key === 'Comfy.RightSidePanel.ShowErrorsTab') return true
           return false
         }
