@@ -7746,6 +7746,101 @@ Enterprise`
     en: 'ChatGPT Images 2.5',
     'zh-CN': 'ChatGPT Images 2.5'
   },
+  // Qwen Image 2.1 model page (/qwen-image-2.1)
+  'qwenImage21.meta.title': {
+    en: 'Qwen Image 2.1 on Comfy: Open-Weight Image Generation and Editing',
+    'zh-CN': 'Comfy 上的 Qwen Image 2.1：开源权重图像生成与编辑'
+  },
+  'qwenImage21.meta.description': {
+    en: 'Run Qwen Image 2.1 in ComfyUI. Generate high-resolution images with accurate text, edit existing visuals with plain instructions, and keep every step in a repeatable workflow.',
+    'zh-CN':
+      '在 ComfyUI 中运行 Qwen Image 2.1。生成文字精准的高分辨率图像，用自然语言指令编辑现有视觉内容，并让每一步都留在可复用的工作流中。'
+  },
+  'qwenImage21.breadcrumb.model': {
+    en: 'Qwen Image 2.1',
+    'zh-CN': 'Qwen Image 2.1'
+  },
+  'qwenImage21.breadcrumb.updated': {
+    en: 'Updated September 2026',
+    'zh-CN': '更新于 2026 年 9 月'
+  },
+  'qwenImage21.hero.title': {
+    en: 'Qwen Image 2.1\nis here',
+    'zh-CN': 'Qwen Image 2.1 已上线'
+  },
+  'qwenImage21.hero.description': {
+    en: 'Generate posters, infographics, portraits, and scenes with the words exactly where you wrote them, then edit any image with a sentence. Qwen Image 2.1 brings generation and editing into one open-weight model that runs natively in ComfyUI.',
+    'zh-CN':
+      '生成海报、信息图、人像与场景，文字精准出现在你写下的位置，再用一句话编辑任意图像。Qwen Image 2.1 将生成与编辑合而为一，以开源权重模型在 ComfyUI 中原生运行。'
+  },
+  'qwenImage21.hero.tagOpenSource': { en: 'Open Source', 'zh-CN': '开源' },
+  'qwenImage21.hero.tagTextToImage': {
+    en: 'Text to Image',
+    'zh-CN': '文生图'
+  },
+  'qwenImage21.hero.tagImageEditing': {
+    en: 'Image Editing',
+    'zh-CN': '图像编辑'
+  },
+  'qwenImage21.hero.primaryCta': {
+    en: 'RUN QWEN IMAGE 2.1',
+    'zh-CN': '运行 Qwen Image 2.1'
+  },
+  'qwenImage21.hero.secondaryCta': {
+    en: 'READ THE GUIDE',
+    'zh-CN': '查看教程'
+  },
+  'qwenImage21.gallery.heading': {
+    en: 'Made with Qwen Image 2.1',
+    'zh-CN': '由 Qwen Image 2.1 创作'
+  },
+  'qwenImage21.pricing.banner.title': {
+    en: "Start Comfy Cloud for free. Upgrade when you're ready.",
+    'zh-CN': '免费开始使用 Comfy Cloud，准备好了再升级。'
+  },
+  'qwenImage21.pricing.banner.subtitle': {
+    en: '5 free runs on real GPUs — no credit card required.',
+    'zh-CN': '在真实 GPU 上免费运行 5 次 — 无需信用卡。'
+  },
+  'qwenImage21.pricing.banner.cta': {
+    en: 'TRY FREE',
+    'zh-CN': '免费试用'
+  },
+  'qwenImage21.faq.heading': { en: 'Q&A', 'zh-CN': '问答' },
+  'qwenImage21.runOptions.heading': {
+    en: 'One engine, every way to run it',
+    'zh-CN': '同一引擎，多种运行方式'
+  },
+  'qwenImage21.runOptions.subtitle': {
+    en: 'Build workflows in the browser today, run the open weights on your own GPU, or batch campaigns with the API and connect image generation to the rest of your creative pipeline.',
+    'zh-CN':
+      '今天就在浏览器中搭建工作流，在自己的 GPU 上运行开源权重，或用 API 批量制作，将图像生成接入完整创意流程。'
+  },
+  'qwenImage21.runOptions.cta': {
+    en: 'LEARN MORE',
+    'zh-CN': '了解更多'
+  },
+  'qwenImage21.reviews.heading': {
+    en: '4+ million Comfy creators say',
+    'zh-CN': '超过 400 万 Comfy 创作者这样说'
+  },
+  'qwenImage21.reviews.highlightTitle': {
+    en: 'Comfy MCP: now turn your agent into a creative technologist.',
+    'zh-CN': 'Comfy MCP：让你的智能体成为创意技术专家。'
+  },
+  'qwenImage21.reviews.highlightDescription': {
+    en: 'Your AI assistant can access the ecosystem, build workflows, and generate images, video, audio, or 3D.',
+    'zh-CN':
+      '你的 AI 助手可以接入整个生态、构建工作流，并生成图像、视频、音频或 3D 内容。'
+  },
+  'qwenImage21.reviews.highlightCta': {
+    en: 'GET STARTED',
+    'zh-CN': '开始使用'
+  },
+  'footer.qwenImage21': {
+    en: 'Qwen Image 2.1',
+    'zh-CN': 'Qwen Image 2.1'
+  },
   'minimax.meta.title': {
     en: 'MiniMax H3 on Comfy: Open-Weight Video Model',
     'zh-CN': 'Comfy 上的 MiniMax H3：开源权重视频模型'
