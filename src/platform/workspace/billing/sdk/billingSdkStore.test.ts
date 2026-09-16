@@ -466,4 +466,25 @@ describe('useBillingSdkStore subscription commands', () => {
     })
     expect(mockFetchStatus).not.toHaveBeenCalled()
   })
+
+  it('drops the saved cards it holds when it hands the portal URL out', async () => {
+    vi.mocked(harness.sdk.commands.openPaymentPortal).mockResolvedValue({
+      status: 'ok',
+      value: { url: 'https://portal.example/session' }
+    })
+
+    await useBillingSdkStore().openPaymentPortal('https://app.example/')
+
+    expect(harness.sdk.paymentMethods.invalidate).toHaveBeenCalledOnce()
+  })
+
+  it('keeps the saved cards it holds when the portal never opened', async () => {
+    vi.mocked(harness.sdk.commands.openPaymentPortal).mockResolvedValue(
+      ROUTE_MISSING
+    )
+
+    await useBillingSdkStore().openPaymentPortal('https://app.example/')
+
+    expect(harness.sdk.paymentMethods.invalidate).not.toHaveBeenCalled()
+  })
 })

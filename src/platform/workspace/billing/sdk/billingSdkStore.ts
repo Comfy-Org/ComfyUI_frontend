@@ -276,6 +276,9 @@ export const useBillingSdkStore = defineStore('billingSdk', () => {
       await sdk.commands.openPaymentPortal({ returnUrl })
     )
     if (outcome.status === 'unavailable') subscriptionRouteAvailable = false
+    // The portal may add or remove a card and says nothing on the way back, so
+    // handing the URL out is the last moment this tab's list is known good.
+    if (outcome.status === 'ok') sdk.paymentMethods.invalidate()
     return outcome
   }
 
