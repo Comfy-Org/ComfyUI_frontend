@@ -33,14 +33,9 @@ import { useWorkshopSession } from '../../config/workshop-session-state'
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 import type { TopUpCheckoutSession } from '../../lib/workshop/buy-credits'
-import {
-  TopUpCheckoutError,
-  createTopUpCheckout
-} from '../../lib/workshop/buy-credits'
-import {
-  subscribeToTopUpReturns,
-  topUpReturnUrl
-} from '../../lib/workshop/topup-return'
+import { TopUpCheckoutError } from '../../lib/workshop/buy-credits'
+import { createWorkshopTopUpCheckout } from '../../lib/workshop/buy-credits-sdk'
+import { subscribeToTopUpReturns } from '../../lib/workshop/topup-return'
 import Dialog from '../ui/dialog/Dialog.vue'
 import DialogContent from '../ui/dialog/DialogContent.vue'
 import DialogDescription from '../ui/dialog/DialogDescription.vue'
@@ -57,24 +52,21 @@ const state = ref<'amount' | 'pending' | 'checkout' | 'failed'>('amount')
 const topUp = useTopUpWatch()
 const lastCheckout = ref<TopUpCheckoutSession | undefined>(undefined)
 
-interface CheckoutAttempt {
-  readonly id: string
-  readonly uid: string
-  readonly workspaceId: string
-  readonly workspaceName: string
-  readonly previousCredits: number
-  readonly returned: boolean
-}
-
 interface CheckoutScope {
   readonly uid: string
   readonly workspaceId: string
   readonly workspaceName: string
 }
 
-const checkoutAttempt = ref<CheckoutAttempt | undefined>(undefined)
+interface CheckoutAttempt extends CheckoutScope {
+  readonly id: string
+  readonly previousCredits: number
+  readonly returned: boolean
+}
+
 let checkoutController: AbortController | undefined
 let checkoutTab: Window | null = null
+let checkoutAttempt: CheckoutAttempt | undefined
 let unsubscribeFromTopUpReturns: (() => void) | undefined
 
 // The hand-off owns the step from the moment it happens: waiting is 4a,
@@ -92,9 +84,7 @@ watch(
       return
     }
     if (latchedReturn.value !== undefined) {
-      latchedReturn.value = undefined
-      lastCheckout.value = undefined
-      checkoutAttempt.value = undefined
+      clearReturnReceipt()
       open.value = false
     }
   },
@@ -116,20 +106,26 @@ const topUpWorkspaceName = computed(() =>
 // A receipt nobody acknowledged within a minute was read off the chip
 // instead; greeting the next visit with it would look like a fresh grant.
 const STALE_RECEIPT_MS = 60_000
+const AUTO_CLOSE_MS = 3_600
+let autoCloseTimer: ReturnType<typeof setTimeout> | undefined
 
-watch(open, (value) => {
-  if (!value) {
-    cancelPendingCheckout()
-    usd.value = 25
-    state.value = 'amount'
-    if (
-      latchedReturn.value === 'landed' ||
-      latchedReturn.value === 'unresolved'
-    ) {
-      clearReturnReceipt()
-    }
-    return
-  }
+watch(open, handleOpenChange)
+
+function handleOpenChange(value: boolean): void {
+  if (value) prepareOpenDialog()
+  else resetClosedDialog()
+}
+
+function resetClosedDialog(): void {
+  stopAutoClose()
+  cancelPendingCheckout()
+  usd.value = 25
+  state.value = 'amount'
+  if (latchedReturn.value === 'landed' || latchedReturn.value === 'unresolved')
+    clearReturnReceipt()
+}
+
+function prepareOpenDialog(): void {
   if (
     topUp.value.status === 'landed' &&
     Date.now() - topUp.value.landedAt > STALE_RECEIPT_MS
@@ -138,29 +134,65 @@ watch(open, (value) => {
     latchedReturn.value = undefined
   } else if (topUp.value.status === 'idle') {
     latchedReturn.value = undefined
+    if (checkoutAttempt && lastCheckout.value) state.value = 'checkout'
   }
-})
+  if (step.value === 'landed') scheduleAutoClose()
+}
 
 function clearReturnReceipt(): void {
   latchedReturn.value = undefined
   lastCheckout.value = undefined
-  checkoutAttempt.value = undefined
+  checkoutAttempt = undefined
   if (topUp.value.status !== 'idle') clearTopUpWatch()
 }
 
 function finish() {
+  stopAutoClose()
   cancelPendingCheckout()
   clearReturnReceipt()
   open.value = false
 }
 
+function stopAutoClose(): void {
+  if (autoCloseTimer) clearTimeout(autoCloseTimer)
+  autoCloseTimer = undefined
+}
+
+function scheduleAutoClose(): void {
+  stopAutoClose()
+  if (document.hidden) return
+  autoCloseTimer = setTimeout(() => finish(), AUTO_CLOSE_MS)
+}
+
+function onVisibilityChange(): void {
+  if (step.value !== 'landed' || !open.value) return
+  if (document.hidden) stopAutoClose()
+  else scheduleAutoClose()
+}
+
+function cancelAutoClose(): void {
+  if (step.value === 'landed') stopAutoClose()
+}
+
+watch(step, (value) => {
+  if (value === 'landed' && open.value) scheduleAutoClose()
+  else stopAutoClose()
+})
+
 onMounted(() => {
   unsubscribeFromTopUpReturns = subscribeToTopUpReturns(onTopUpReturn)
+  document.addEventListener('visibilitychange', onVisibilityChange)
+  document.addEventListener('pointerdown', cancelAutoClose)
+  document.addEventListener('keydown', cancelAutoClose)
 })
 
 onBeforeUnmount(() => {
+  stopAutoClose()
   cancelPendingCheckout()
   unsubscribeFromTopUpReturns?.()
+  document.removeEventListener('visibilitychange', onVisibilityChange)
+  document.removeEventListener('pointerdown', cancelAutoClose)
+  document.removeEventListener('keydown', cancelAutoClose)
 })
 
 function setAmount(next: number) {
@@ -177,12 +209,25 @@ function cancelPendingCheckout(): void {
 
 function claimCheckoutTab(): Window | null {
   try {
-    const tab = window.open('about:blank', '_blank')
-    if (tab) tab.opener = null
-    return tab
+    return window.open(
+      locale === 'zh-CN' ? '/zh-CN/checkout-opening' : '/checkout-opening',
+      '_blank'
+    )
   } catch {
     return null
   }
+}
+
+function onTopUpReturn(attemptId: string): void {
+  const attempt = checkoutAttempt
+  if (!attempt || attempt.id !== attemptId || attempt.returned) return
+  checkoutAttempt = { ...attempt, returned: true }
+  watchForTopUp({
+    uid: attempt.uid,
+    workspaceId: attempt.workspaceId,
+    workspaceName: attempt.workspaceName,
+    previousCredits: attempt.previousCredits
+  })
 }
 
 function closeCheckoutTab(tab: Window | null): void {
@@ -199,18 +244,6 @@ function navigateCheckoutTab(tab: Window | null, url: string): void {
   } catch {
     closeCheckoutTab(tab)
   }
-}
-
-function onTopUpReturn(attemptId: string): void {
-  const attempt = checkoutAttempt.value
-  if (!attempt || attempt.id !== attemptId || attempt.returned) return
-  checkoutAttempt.value = { ...attempt, returned: true }
-  watchForTopUp({
-    uid: attempt.uid,
-    workspaceId: attempt.workspaceId,
-    workspaceName: attempt.workspaceName,
-    previousCredits: attempt.previousCredits
-  })
 }
 
 function captureCheckoutScope(): CheckoutScope | undefined {
@@ -278,7 +311,7 @@ function recordCheckout(
   tab: Window | null
 ): void {
   lastCheckout.value = checkout
-  checkoutAttempt.value = {
+  checkoutAttempt = {
     id: attemptId,
     uid: scope.uid,
     workspaceId: scope.workspaceId,
@@ -304,9 +337,9 @@ function handleCheckoutFailure(
   tab: Window | null
 ): void {
   if (checkoutController !== controller) return
+  checkoutAttempt = undefined
   if (checkoutEndpointIsUnavailable(error)) {
     lastCheckout.value = { url: WORKSHOP_CREDITS_URL }
-    checkoutAttempt.value = undefined
     state.value = 'checkout'
     navigateCheckoutTab(tab, WORKSHOP_CREDITS_URL)
     return
@@ -324,7 +357,7 @@ function releaseCheckoutAttempt(
 }
 
 async function continueToCheckout() {
-  if (state.value === 'pending') return
+  if (state.value === 'pending' || checkoutAttempt) return
   const amountCents = clampTopUp(usd.value) * 100
   const scope = captureCheckoutScope()
   if (!scope) return
@@ -337,11 +370,11 @@ async function continueToCheckout() {
     const previousCredits = await creditsBeforeCheckout(scope, controller)
     const token = await tokenForCheckout(scope, controller)
     const attemptId = crypto.randomUUID()
-    const checkout = await createTopUpCheckout({
+    const checkout = await createWorkshopTopUpCheckout({
       token,
       amountCents,
-      returnUrl: topUpReturnUrl(window.location.href, attemptId),
       idempotencyKey: attemptId,
+      locale,
       signal: controller.signal
     })
     controller.signal.throwIfAborted()
@@ -399,7 +432,7 @@ const stepperClass =
             as="a"
             :href="lastCheckout.url"
             target="_blank"
-            rel="noopener noreferrer"
+            rel="opener"
             size="lg"
             class="px-5"
             data-testid="buy-credits-open-checkout"
@@ -439,7 +472,7 @@ const stepperClass =
           <a
             :href="lastCheckout.url"
             target="_blank"
-            rel="noopener noreferrer"
+            rel="opener"
             class="text-primary-comfy-yellow underline-offset-4 hover:underline"
             data-testid="buy-credits-reopen"
           >
