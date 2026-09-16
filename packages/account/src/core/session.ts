@@ -339,8 +339,11 @@ export function createSessionClient<TUser extends AccountUser = AccountUser>(
     const target = options.workspaceId ?? clientOptions.workspaceId
     const fresh = selectFreshCredential(
       [
-        { credential: state.credential, target: state.credentialTarget },
-        cache.read(user.uid)
+        () => ({
+          credential: state.credential,
+          target: state.credentialTarget
+        }),
+        () => cache.read(user.uid)
       ],
       user.uid,
       target,
