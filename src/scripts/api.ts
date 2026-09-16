@@ -23,7 +23,8 @@ import { useToastStore } from '@/platform/updates/common/toastStore'
 import type {
   WorkflowApiAssetsResponse as ShareableAssetsResponse,
   GetEmbeddingsResponse as EmbeddingsResponse,
-  GetExtensionsResponse as ExtensionsResponse
+  GetExtensionsResponse as ExtensionsResponse,
+  GetI18nResponse
 } from '@comfyorg/ingest-types'
 import type {
   AssetDownloadWsMessage,
@@ -46,7 +47,6 @@ import type {
   StatusWsMessageStatus
 } from '@/platform/remote/comfyui/execution/types'
 import type {
-  CustomNodesI18n,
   PromptFailureResponse,
   PromptResponse,
   SystemStats,
@@ -1715,7 +1715,7 @@ export class ComfyApi extends EventTarget {
    *
    * @returns The custom nodes i18n data
    */
-  async getCustomNodesI18n(): Promise<CustomNodesI18n> {
+  async getCustomNodesI18n(): Promise<GetI18nResponse> {
     return (await axios.get(this.apiURL('/i18n'))).data
   }
 

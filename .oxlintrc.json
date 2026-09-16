@@ -208,14 +208,9 @@
       }
     },
     {
-      "files": ["src/**/*.{ts,vue}"],
-      "excludeFiles": [
-        "src/**/*.test.ts",
-        "src/**/*.spec.ts",
-        "src/**/*.stories.ts"
-      ],
+      "files": ["**/*.{ts,tsx,vue}"],
       "rules": {
-        "comfy/no-deprecated-api-schema": "warn"
+        "comfy/no-deprecated-api-schema": "error"
       }
     },
     {

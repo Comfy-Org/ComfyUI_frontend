@@ -29,8 +29,6 @@ export type PromptFailureResponse = {
   error: string | NodeError['errors'][number]
 }
 
-export type CustomNodesI18n = Record<string, unknown>
-
 export type DeviceStats = Required<SystemStatsResponse['devices'][number]> & {
   index: number
   torch_vram_total: number
