@@ -53,7 +53,7 @@ export const HUGGINGFACE_MIRROR_SETTING_ID =
 export function resolveHuggingFaceUrl(url: string): string {
   const mirror = useSettingStore()
     .get(HUGGINGFACE_MIRROR_SETTING_ID)
-    ?.trim()
+    .trim()
     .replace(/\/+$/, '')
   if (!mirror) return url
   if (!hasHuggingFaceHost(url)) return url
@@ -314,10 +314,11 @@ export async function fetchModelMetadata(url: string): Promise<ModelMetadata> {
     return { fileSize: null, gatedRepoUrl: null }
   }
 
-  const cached = metadataCache.get(url)
+  const resolvedUrl = resolveHuggingFaceUrl(url)
+  const cached = metadataCache.get(resolvedUrl)
   if (cached !== undefined) return cached
 
-  const existing = inflight.get(url)
+  const existing = inflight.get(resolvedUrl)
   if (existing) return existing
 
   const promise = (async () => {
@@ -325,15 +326,15 @@ export async function fetchModelMetadata(url: string): Promise<ModelMetadata> {
       ? await fetchCivitaiMetadata(url)
       : await fetchHeadMetadata(url)
     if (result.cacheable) {
-      metadataCache.set(url, result.metadata)
+      metadataCache.set(resolvedUrl, result.metadata)
     }
     return result.metadata
   })()
 
-  inflight.set(url, promise)
+  inflight.set(resolvedUrl, promise)
   try {
     return await promise
   } finally {
-    inflight.delete(url)
+    inflight.delete(resolvedUrl)
   }
 }
