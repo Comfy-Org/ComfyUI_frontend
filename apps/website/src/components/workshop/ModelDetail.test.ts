@@ -414,7 +414,7 @@ describe('ModelDetail', () => {
         {},
         {
           status: 503,
-          errorType: 'upstream_timeout',
+          errorType: 'provider_timeout',
           retryAfter: null,
           concurrencyLimit: null,
           concurrencyCurrent: null,
@@ -438,7 +438,7 @@ describe('ModelDetail', () => {
           reason: 'provider',
           request_id: 'request-failed',
           http_status: 503,
-          router_error_type: 'upstream_timeout',
+          router_error_type: 'provider_timeout',
           workspace_id: credential.workspace.id
         })
       })
@@ -449,6 +449,48 @@ describe('ModelDetail', () => {
     expect(
       JSON.stringify(vi.mocked(captureWorkshopEvent).mock.calls)
     ).not.toContain('Private provider response')
+  })
+
+  it('omits an unrecognized Router error header from analytics', async () => {
+    auth.session.value = credential
+    vi.mocked(runWorkshopRouter).mockRejectedValue(
+      new WorkshopRouterError(
+        'provider',
+        'request-private-header',
+        {},
+        {
+          status: 503,
+          errorType: 'customer_account_suspended',
+          retryAfter: null,
+          concurrencyLimit: null,
+          concurrencyCurrent: null,
+          concurrencyRemaining: null,
+          body: 'Private provider response'
+        }
+      )
+    )
+    mountDetail({ model: runnable })
+    const visitor = user()
+    await visitor.type(
+      screen.getByRole('textbox', { name: 'Prompt' }),
+      'Private prompt'
+    )
+    await visitor.click(screen.getByRole('button', { name: 'Run' }))
+
+    await vi.waitFor(() =>
+      expect(captureWorkshopEvent).toHaveBeenCalledWith({
+        name: 'run_finished',
+        properties: expect.objectContaining({
+          status: 'failed',
+          reason: 'provider',
+          http_status: 503
+        })
+      })
+    )
+    const calls = JSON.stringify(vi.mocked(captureWorkshopEvent).mock.calls)
+    expect(calls).not.toContain('customer_account_suspended')
+    expect(calls).not.toContain('Private provider response')
+    expect(calls).not.toContain('Private prompt')
   })
 
   it.for([

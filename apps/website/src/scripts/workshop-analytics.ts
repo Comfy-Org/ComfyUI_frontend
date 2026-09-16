@@ -16,6 +16,15 @@ export interface WorkshopRunAnalytics extends WorkshopModelAnalytics {
 
 export type WorkshopCheckoutFailureStage = 'balance' | 'credential' | 'checkout'
 
+export type WorkshopRouterErrorType =
+  | 'content_policy_violation'
+  | 'deadline_exceeded'
+  | 'forbidden'
+  | 'insufficient_credits'
+  | 'not_enabled'
+  | 'provider_error'
+  | 'provider_timeout'
+
 export type WorkshopAnalyticsEvent =
   | { name: 'catalogue_viewed'; properties: { model_count: number } }
   | {
@@ -34,7 +43,7 @@ export type WorkshopAnalyticsEvent =
               status: 'failed'
               reason: RunFailure
               http_status?: number
-              router_error_type?: string
+              router_error_type?: WorkshopRouterErrorType
             }
           | { status: 'cancelled' }
         )
@@ -63,5 +72,33 @@ export function workshopModelAnalytics(
     router_id: model.routerId,
     provider: model.provider,
     modality: model.modality
+  }
+}
+
+export function workshopHttpStatus(
+  status: number | undefined
+): number | undefined {
+  return status !== undefined &&
+    Number.isInteger(status) &&
+    status >= 100 &&
+    status <= 599
+    ? status
+    : undefined
+}
+
+export function workshopRouterErrorType(
+  errorType: string | null | undefined
+): WorkshopRouterErrorType | undefined {
+  switch (errorType) {
+    case 'content_policy_violation':
+    case 'deadline_exceeded':
+    case 'forbidden':
+    case 'insufficient_credits':
+    case 'not_enabled':
+    case 'provider_error':
+    case 'provider_timeout':
+      return errorType
+    default:
+      return undefined
   }
 }

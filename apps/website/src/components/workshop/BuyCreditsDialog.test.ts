@@ -4,6 +4,11 @@ import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import { defineComponent, h, nextTick, ref } from 'vue'
 import type { Ref } from 'vue'
 
+import type {
+  HostedTopupCheckoutResult,
+  TopupCommand
+} from '@comfyorg/account/billing'
+
 import {
   WORKSHOP_CLOUD_BASE_URL,
   WORKSHOP_CREDITS_URL
@@ -44,6 +49,12 @@ const credits = vi.hoisted(() => ({
   refresh: vi.fn<typeof refreshWorkshopCredits>()
 }))
 
+const sdk = vi.hoisted(() => ({
+  createHostedTopupCheckout: vi.fn<TopupCommand['createHostedTopupCheckout']>(),
+  createTopupCheckout: vi.fn<TopupCommand['createTopupCheckout']>(),
+  readFlag: vi.fn<() => Promise<boolean>>()
+}))
+
 vi.mock(import('../../config/workshop-credits'), async () => {
   const { computed, ref } = await import('vue')
   const balance = ref<WorkshopBalance>({ status: 'unknown' })
@@ -62,8 +73,15 @@ vi.mock(import('../../config/workshop-credits'), async () => {
   }
 })
 
+vi.mock(import('../../config/workshop-billing-sdk'), () => ({
+  workshopTopupCommand: (): TopupCommand => ({
+    createHostedTopupCheckout: sdk.createHostedTopupCheckout,
+    createTopupCheckout: sdk.createTopupCheckout
+  })
+}))
+
 vi.mock(import('../../config/workshop-features'), () => ({
-  readBillingSdkTopupEnabled: () => Promise.resolve(false)
+  readBillingSdkTopupEnabled: sdk.readFlag
 }))
 
 vi.mock(import('../../config/workshop-session-state'), async () => {
@@ -188,6 +206,8 @@ describe('BuyCreditsDialog', () => {
       credits.topUp!.value = { status: 'idle' }
     })
     credits.refresh.mockReset().mockResolvedValue(undefined)
+    sdk.createHostedTopupCheckout.mockReset()
+    sdk.readFlag.mockReset().mockResolvedValue(false)
     vi.spyOn(crypto, 'randomUUID').mockReturnValue(attemptId)
   })
 
@@ -602,6 +622,32 @@ describe('BuyCreditsDialog', () => {
         workspace_id: credential.workspace.id,
         stage: 'checkout',
         http_status: 404
+      }
+    })
+  })
+
+  it('omits an HTTP status when the billing SDK received no response', async () => {
+    const user = userEvent.setup()
+    const tab = claimTab()
+    sdk.readFlag.mockResolvedValue(true)
+    sdk.createHostedTopupCheckout.mockResolvedValue({
+      status: 'error',
+      code: 'REQUEST_FAILED'
+    } satisfies HostedTopupCheckoutResult)
+    renderOpenDialog()
+
+    await user.click(await screen.findByTestId('buy-credits-continue'))
+
+    expect(await screen.findByTestId('checkout-error')).toBeTruthy()
+    expect(tab.close).toHaveBeenCalled()
+    expect(captureWorkshopEvent).toHaveBeenCalledExactlyOnceWith({
+      name: 'checkout_failed',
+      properties: {
+        attempt_id: attemptId,
+        user_id: credential.uid,
+        workspace_id: credential.workspace.id,
+        stage: 'checkout',
+        error_code: 'REQUEST_FAILED'
       }
     })
   })
