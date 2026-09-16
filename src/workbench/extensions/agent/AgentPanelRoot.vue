@@ -27,7 +27,8 @@ import { MIME_ASSET_INFO } from '@/platform/assets/schemas/mediaAssetSchema'
 import {
   fetchDroppedAsset,
   getDroppedAsset,
-  hasVideoType
+  hasVideoType,
+  markDropEventHandled
 } from '@/utils/eventUtils'
 import { useAssetsStore } from '@/stores/assetsStore'
 import { AGENT_ATTACH_ACCEPT, isAgentAttachable } from './utils/attachableFiles'
@@ -1079,12 +1080,18 @@ function onPanelDragOver(event: DragEvent): void {
   if (isAttachableDrag(event)) event.preventDefault()
 }
 
+function claimPanelDrop(event: DragEvent): void {
+  event.preventDefault()
+  event.stopPropagation()
+  markDropEventHandled(event)
+}
+
 function onPanelDrop(event: DragEvent): void {
   clearAssetDrag()
   // A dropped asset card carries a URI, not a File, so the claim must happen
   // before the async fetch resolves it into one.
   if ((event.dataTransfer?.files.length ?? 0) === 0 && isAssetDrag(event)) {
-    event.preventDefault()
+    claimPanelDrop(event)
     void attachDroppedAsset(event)
     return
   }
@@ -1094,7 +1101,7 @@ function onPanelDrop(event: DragEvent): void {
     isAgentAttachable
   )
   if (files.length === 0) return
-  event.preventDefault()
+  claimPanelDrop(event)
   void attachment.addFiles(files)
 }
 </script>
