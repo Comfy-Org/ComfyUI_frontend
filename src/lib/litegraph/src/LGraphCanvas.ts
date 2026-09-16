@@ -803,7 +803,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
   bg_tint?: string | CanvasGradient | CanvasPattern
   // TODO: This looks like another panel thing
   prompt_box?: PromptDialog | null
-  search_box?: HTMLDivElement
+  search_box?: HTMLDivElement & ICloseable
   /** @deprecated Panels */
   SELECTED_NODE?: LGraphNode
   /** @deprecated Panels */
@@ -7507,9 +7507,8 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       }
     }
 
-    // @ts-expect-error Panel?
-    that.search_box?.close()
-    that.search_box = dialog
+    this.search_box?.close()
+    this.search_box = dialog
 
     let first: string | null = null
     let timeout: ReturnType<typeof setTimeout> | null = null
