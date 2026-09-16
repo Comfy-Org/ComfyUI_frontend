@@ -14,6 +14,7 @@ import type {
 import { t } from '@/i18n'
 import type {
   BillingAuthenticationState,
+  BillingOperationPhase,
   CreateTopupResponse
 } from '@/platform/workspace/api/workspaceApi'
 import { WorkspaceApiError } from '@/platform/workspace/api/workspaceApi'
@@ -22,6 +23,7 @@ export interface TopupOperationView {
   readonly opId: string
   readonly status: 'pending' | 'reconciliation_needed'
   readonly actionUrl: string | null
+  readonly phase: BillingOperationPhase | null
   readonly authenticationState: BillingAuthenticationState | null
   readonly isAuthenticating: boolean
   readonly canRetryAuthentication: boolean
@@ -56,6 +58,7 @@ export function projectTopupOperation(
       opId: state.id,
       status: 'reconciliation_needed',
       actionUrl: null,
+      phase: null,
       authenticationState: 'reconciliation_needed',
       isAuthenticating: false,
       canRetryAuthentication: false,
@@ -69,6 +72,7 @@ export function projectTopupOperation(
     opId: state.id,
     status: 'pending',
     actionUrl: state.actionUrl ?? null,
+    phase: state.serverPhase ?? null,
     authenticationState,
     isAuthenticating: state.challenge?.status === 'in_progress',
     canRetryAuthentication: state.challenge?.status === 'required',

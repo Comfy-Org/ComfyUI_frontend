@@ -503,6 +503,35 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
     expect(screen.queryByText('Select amount')).not.toBeInTheDocument()
   })
 
+  // The server holds an invoice parked on the customer's bank for hours, and
+  // only a billing manager is served a link to it. Without a way out the
+  // purchase stays locked behind a button that can never resolve.
+  it('offers a way out of a top-up parked with no link to send the customer to', async () => {
+    setIsAddingCredits(true)
+    setTopupActionOperation({
+      opId: 'op-parked',
+      status: 'pending',
+      phase: 'awaiting_invoice_payment',
+      actionUrl: null
+    })
+
+    renderDialog()
+
+    expect(screen.getByText('Verify your payment')).toBeInTheDocument()
+    expect(
+      screen.queryByRole('button', { name: 'Complete verification' })
+    ).not.toBeInTheDocument()
+
+    await userEvent.click(screen.getByRole('button', { name: 'Start over' }))
+    await nextTick()
+
+    expect(useBillingOperationStore().dismissOperation).toHaveBeenCalledWith(
+      'op-parked'
+    )
+    expect(screen.getByText('Select amount')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Add credits' })).toBeEnabled()
+  })
+
   it('returns to amount selection when a reopened operation ends', async () => {
     setIsAddingCredits(true)
     setTopupActionOperation({

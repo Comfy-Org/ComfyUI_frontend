@@ -219,7 +219,7 @@
           {{ $t('subscription.preview.completeVerification') }}
         </Button>
         <Button
-          v-else-if="topupIsFailedRetryable"
+          v-else-if="topupIsFailedRetryable || topupIsParkedWithoutLink"
           variant="primary"
           size="lg"
           class="h-10 w-full justify-center"
@@ -302,6 +302,7 @@ import { categorizeBillingApiError } from '@/platform/telemetry/utils/billingFai
 import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
 import { reportError } from '@/platform/telemetry/reportError'
 import { WorkspaceApiError } from '@/platform/workspace/api/workspaceApi'
+import { isBlockedOnCustomerPhase } from '@/platform/workspace/billing/customerAttention'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 import { useHasSavedPaymentMethod } from '@/platform/workspace/composables/useHasSavedPaymentMethod'
 import { useTopupOperation } from '@/platform/workspace/composables/useTopupOperation'
@@ -388,6 +389,14 @@ const topupIsAuthenticating = computed(
 )
 const topupIsFailedRetryable = computed(
   () => topupOperation.value?.authenticationState === 'failed_retryable'
+)
+// Parked on the customer with nothing to send them to: the server will hold the
+// operation for hours, so without a way out the purchase stays locked behind a
+// button that can never resolve. A link still arriving keeps the wait instead.
+const topupIsParkedWithoutLink = computed(
+  () =>
+    !topupActionUrl.value &&
+    isBlockedOnCustomerPhase(topupOperation.value?.phase)
 )
 const topupReconciliationOperationId = computed(() =>
   topupOperation.value?.status === 'reconciliation_needed'
