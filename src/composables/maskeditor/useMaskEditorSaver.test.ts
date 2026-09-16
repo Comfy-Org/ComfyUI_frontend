@@ -200,31 +200,50 @@ describe('useMaskEditorSaver', () => {
     )
   })
 
-  it('shows an instant local preview before the upload finishes', async () => {
-    let imgsDuringUpload: LGraphNode['imgs']
-    vi.mocked(api.fetchApi).mockImplementation(async () => {
-      imgsDuringUpload = mockNode.imgs
-      return {
-        ok: true,
-        json: () =>
-          Promise.resolve({
-            name: 'clipspace-painted-masked-123.png',
-            subfolder: 'clipspace',
-            type: 'input'
-          })
-      } as Response
+  it('shows an instant local preview before the upload finishes, then hands off to the persisted output', async () => {
+    let previewSrcDuringUpload: string | undefined
+    let dirtyBeforeUpload = false
+    let expectedPreviewUrl: string | undefined
+    let releaseUpload: (() => void) | undefined
+    const uploadGate = new Promise<void>((resolve) => {
+      releaseUpload = resolve
     })
 
-    await useMaskEditorSaver().save()
+    vi.mocked(api.fetchApi).mockImplementation(async () => {
+      if (previewSrcDuringUpload === undefined) {
+        previewSrcDuringUpload = mockNode.imgs?.[0]?.src
+        dirtyBeforeUpload = vi
+          .mocked(app.canvas.setDirty)
+          .mock.calls.some(([dirty]) => dirty)
+        expectedPreviewUrl =
+          mockDataStore.outputData?.paintedMaskedImage.canvas.toDataURL(
+            'image/png'
+          )
+        await uploadGate
+      }
+      return new Response(
+        JSON.stringify({
+          name: 'clipspace-painted-masked-123.png',
+          subfolder: 'clipspace',
+          type: 'input'
+        }),
+        { status: 200 }
+      )
+    })
 
-    // Before the first layer upload starts, the node's preview already
-    // shows the freshly-painted result rather than waiting on the network.
-    expect(imgsDuringUpload).toHaveLength(1)
-    expect(imgsDuringUpload?.[0]).toBeInstanceOf(Image)
-    expect(app.canvas.setDirty).toHaveBeenCalledWith(true)
+    const savePromise = useMaskEditorSaver().save()
 
-    // Once the server reference lands, the transient local preview is
-    // cleared in favor of the persisted node-output image.
+    await vi.waitFor(() => {
+      if (previewSrcDuringUpload === undefined) throw new Error('pending')
+    })
+
+    expect(previewSrcDuringUpload).toBe(expectedPreviewUrl)
+    expect(dirtyBeforeUpload).toBe(true)
+    expect(mockNode.imgs).toHaveLength(1)
+
+    releaseUpload?.()
+    await savePromise
+
     expect(mockNode.imgs).toBeUndefined()
   })
 
