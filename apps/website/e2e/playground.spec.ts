@@ -106,7 +106,10 @@ test.describe('V2 catalogue', () => {
     const href = await card
       .getByTestId('catalogue-card-link')
       .getAttribute('href')
-    expect(href).toMatch(/^\/playground\/model\/[a-z0-9]+\/$/)
+    // The key is the model half of a registry slug, so it stops before the
+    // operation every row appends: two segments where a row carries three.
+    expect(href).toMatch(/^\/playground\/model\/[a-z0-9.-]+--[a-z0-9.-]+\/$/)
+    expect(href!.split('--')).toHaveLength(2)
 
     await card.getByTestId('catalogue-card-link').click()
     await expect(page).toHaveURL(new RegExp(`${href}$`))
