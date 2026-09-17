@@ -57,11 +57,12 @@ package. Do not adopt Changesets yet.
 
 Three workflows carry it:
 
-| Workflow                        | Trigger                               | What it does                                                                                                            |
-| ------------------------------- | ------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
-| `version-bump-package.yaml`     | `workflow_dispatch`                   | Bumps one package on `main` and opens a `Release`-labelled PR titled `<package> <version>`                              |
-| `publish-package.yaml`          | `workflow_dispatch` + `workflow_call` | Validates, builds, smoke-tests, and publishes one package with provenance                                               |
-| `publish-package-on-merge.yaml` | `pull_request: closed` on `main`      | On a merged `Release` PR, publishes every package whose version changed, comments the release links, and posts to Slack |
+| Workflow                        | Trigger                                | What it does                                                                                                                         |
+| ------------------------------- | -------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
+| `version-bump-package.yaml`     | `workflow_dispatch`                    | Bumps one package on `main` and opens a `Release`-labelled PR titled `<package> <version>`                                           |
+| `publish-package.yaml`          | `workflow_dispatch` + `workflow_call`  | Validates, builds, smoke-tests, and publishes one package with provenance                                                            |
+| `publish-package-on-merge.yaml` | `pull_request: closed` on `main`       | On a merged `Release` PR, publishes every package whose version changed, writes the release links to an artifact, and posts to Slack |
+| `pr-publish-report.yaml`        | `workflow_run` of the on-merge publish | Posts the release links to the Release PR, the only job on this path with write permission on pull requests                          |
 
 Pre-merge snapshot publishing is a deliberate follow-up, not part of this
 decision; the constraint that shapes it is recorded under Follow-ups.
