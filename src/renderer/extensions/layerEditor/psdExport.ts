@@ -1,6 +1,5 @@
 import type { Layer, LayerMaskData, LinkedFile, Psd } from 'ag-psd'
 
-import type { Compositor } from './engine/compositor'
 import type { ContentEntry, ContentStore } from './engine/content'
 import type { Document } from './engine/document'
 import type { RasterData, Rect, SceneNode, Transform } from './engine/node'
@@ -181,7 +180,6 @@ export function rasterizeLeafPlaced(
   const bounds = leafPlacedBounds(node.transform, doc)
   const captured: HTMLCanvasElement[] = []
   const ctx: RenderNodeCtx = {
-    compositor: null as unknown as Compositor,
     content: content as ContentStore,
     renderChild: () => null,
     placed: (_key, _stamp, bitmap, tf, linear) => {
