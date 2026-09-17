@@ -10374,10 +10374,6 @@ Enterprise`
       'Comfy 可运行的全部模型，以及基于它们构建的工作流，集中于一个目录。'
   },
   'workshop.v2.eyebrow': { en: 'Playground', 'zh-CN': 'Playground' },
-  'workshop.v2.filter.show': {
-    en: 'Show {n} results',
-    'zh-CN': '显示 {n} 个结果'
-  },
   'workshop.outcome.upscaleRestore': {
     en: 'Upscale and restore',
     'zh-CN': '放大与修复'
@@ -10461,38 +10457,11 @@ Enterprise`
     en: 'Custom nodes',
     'zh-CN': '自定义节点'
   },
-  'workshop.v2.filter.type': { en: 'Type', 'zh-CN': '类型' },
-  'workshop.v2.filter.needs': {
-    en: 'What it takes to run',
-    'zh-CN': '运行条件'
-  },
-  'workshop.v2.filter.provider': { en: 'Provider', 'zh-CN': '提供商' },
   'workshop.v2.workflow.runsHere': { en: 'Runs here', 'zh-CN': '可在此运行' },
-  'workshop.v2.needs.runsHere': {
-    en: 'Nothing, it runs here',
-    'zh-CN': '无需任何准备，可在此运行'
-  },
-  'workshop.v2.needs.comfyui': {
-    en: 'ComfyUI on your machine',
-    'zh-CN': '需要本机的 ComfyUI'
-  },
-  'workshop.v2.needs.customNodes': {
-    en: 'ComfyUI and custom nodes',
-    'zh-CN': '需要 ComfyUI 与自定义节点'
-  },
   'workshop.v2.sort.label': { en: 'Sort', 'zh-CN': '排序' },
-  'workshop.v2.filter.label': { en: 'Filter', 'zh-CN': '筛选' },
-  'workshop.v2.sort.popular': { en: 'Most used', 'zh-CN': '最常用' },
-  'workshop.v2.sort.name': { en: 'A to Z', 'zh-CN': '按名称' },
+  'workshop.v2.sort.popular': { en: 'Most popular', 'zh-CN': '推荐' },
+  'workshop.v2.sort.name': { en: 'Name A to Z', 'zh-CN': '名称 A 到 Z' },
   'workshop.v2.sort.newest': { en: 'Newest', 'zh-CN': '最新' },
-  'workshop.v2.sort.priceAsc': {
-    en: 'Cheapest first',
-    'zh-CN': '价格由低到高'
-  },
-  'workshop.v2.sort.priceDesc': {
-    en: 'Most expensive first',
-    'zh-CN': '价格由高到低'
-  },
   'workshop.v2.sort.narrowed': {
     en: 'Only {type} can be ordered this way',
     'zh-CN': '只有{type}支持这种排序'

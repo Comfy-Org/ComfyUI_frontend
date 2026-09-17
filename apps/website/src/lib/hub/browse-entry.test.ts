@@ -49,15 +49,10 @@ describe('sortBrowseEntries', () => {
     kind: 'workflow',
     title: 'x',
     useCases: [],
-    outputs: [],
-    provider: undefined,
-    runsHere: false,
-    needsCustomNodes: false,
     models: [],
     tags: [],
     standing: 0,
     date: undefined,
-    credits: undefined,
     card: {} as BrowseEntry['card'],
     ...overrides
   })
@@ -101,27 +96,6 @@ describe('sortBrowseEntries', () => {
     ]
 
     expect(order(entries, 'newest')).toEqual(['Newer', 'Older', 'Undated'])
-  })
-
-  // Something with no price is neither the cheapest nor the dearest, so it
-  // waits at the end of both readings rather than winning one of them.
-  it('keeps the unpriced out of both ends of a price order', () => {
-    const entries = [
-      entry({ title: 'Free of charge' }),
-      entry({ title: 'Dear', credits: 90 }),
-      entry({ title: 'Cheap', credits: 10 })
-    ]
-
-    expect(order(entries, 'priceAsc')).toEqual([
-      'Cheap',
-      'Dear',
-      'Free of charge'
-    ])
-    expect(order(entries, 'priceDesc')).toEqual([
-      'Dear',
-      'Cheap',
-      'Free of charge'
-    ])
   })
 
   it('leaves the list it was given alone', () => {

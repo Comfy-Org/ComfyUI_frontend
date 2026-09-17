@@ -21,7 +21,7 @@ const previewSrc = usePreviewVideo(video, () =>
 
 <template>
   <div
-    class="group relative flex flex-col gap-3 rounded-4xl bg-hub-surface px-2 pt-2 pb-4 transition-colors duration-200 content-auto hover:bg-hub-surface-hover"
+    class="group relative flex flex-col gap-3 rounded-4xl bg-hub-surface px-2 pt-2 pb-4 transition-colors duration-200 hover:bg-hub-surface-hover"
     data-testid="catalogue-card"
     :data-kind="view.kind"
   >

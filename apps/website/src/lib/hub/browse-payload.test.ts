@@ -47,26 +47,18 @@ const titles = (entries: readonly BrowseEntry[]) =>
   entries.map((entry) => entry.title)
 
 describe('browseEntries', () => {
-  it('sends the card and the facets, and no catalogue rows', () => {
-    const [entry] = build(
-      [],
-      [model({ recommendedRank: 3, creditsPerRun: 12 })]
-    )
+  it('sends the card and what the browser reads, and no catalogue rows', () => {
+    const [entry] = build([], [model({ recommendedRank: 3 })])
 
     expect(entry).toEqual({
       key: 'bfl--flux',
       kind: 'model',
       title: 'Flux',
       useCases: ['generate-images'],
-      outputs: ['image'],
-      provider: 'BFL',
-      runsHere: true,
-      needsCustomNodes: false,
       models: [],
       tags: [],
       standing: 3,
       date: undefined,
-      credits: 12,
       card: expect.objectContaining({
         kind: 'model',
         href: '/playground/model/bfl--flux/'
@@ -74,32 +66,13 @@ describe('browseEntries', () => {
     })
   })
 
-  it('marks a workflow the site cannot run, and one it can', () => {
-    const [, routed, local] = build(
-      [
-        template({ name: 'poster', title: 'Make a poster' }),
-        template({
-          name: 'local',
-          title: 'Upscale a photo',
-          tags: ['Image'],
-          models: []
-        })
-      ],
-      [model()]
-    )
-
-    expect(routed.runsHere).toBe(true)
-    expect(local.runsHere).toBe(false)
-  })
-
-  it('carries the custom nodes mark onto the facet and the card', () => {
+  it('carries the custom nodes mark onto the card', () => {
     const [entry] = build(
       [template({ name: 'needy', title: 'Needs nodes', tags: ['Image'] })],
       [],
       ['needy']
     )
 
-    expect(entry.needsCustomNodes).toBe(true)
     expect(entry.card.needsCustomNodes).toBe(true)
   })
 })

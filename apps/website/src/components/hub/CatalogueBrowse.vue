@@ -8,7 +8,6 @@ import { t } from '../../i18n/translations'
 import type {
   BrowseEntry,
   CatalogueOrder,
-  NeedsFilter,
   TypeFilter
 } from '../../lib/hub/browse-entry'
 import {
@@ -21,18 +20,17 @@ import { useCaseLabelKey } from '../../lib/workshop/use-case-label'
 import { entrySlides } from '../../lib/workshop/featured-slides'
 import FeaturedBanner from '../workshop/FeaturedBanner.vue'
 import WorkshopHero from '../workshop/WorkshopHero.vue'
-import type { FacetSheetGroup } from '../workshop/FacetSheet.vue'
-import type { OrderOption } from './CatalogueControls.vue'
-import CatalogueControls from './CatalogueControls.vue'
+import type { OrderOption } from './CatalogueSort.vue'
 import CatalogueGrid from './CatalogueGrid.vue'
 import CatalogueToolbar from './CatalogueToolbar.vue'
+import CatalogueSort from './CatalogueSort.vue'
 import CatalogueTypeFilter from './CatalogueTypeFilter.vue'
 import OutcomeRows from './OutcomeRows.vue'
 import PlaygroundSections from './PlaygroundSections.vue'
 
 // The catalogue is resolved on the server and arrives card-sized: the browser
 // never receives the model list or the template index, only what the grid
-// draws and the facets read.
+// draws.
 const { entries, locale = 'en' } = defineProps<{
   entries: readonly BrowseEntry[]
   locale?: Locale
@@ -42,8 +40,6 @@ const PAGE = 30
 
 const useCase = ref<UseCase | 'all'>('all')
 const type = ref<TypeFilter>('all')
-const needs = ref<NeedsFilter>('any')
-const provider = ref('all')
 const order = ref<CatalogueOrder>('popular')
 const query = ref('')
 // Set by a model card's "N workflows use this": the catalogue arrives already
@@ -57,20 +53,11 @@ const shown = ref(PAGE)
 const ORDERS: readonly OrderOption[] = [
   { value: 'popular', label: 'workshop.v2.sort.popular' },
   { value: 'name', label: 'workshop.v2.sort.name' },
-  { value: 'newest', label: 'workshop.v2.sort.newest', only: 'workflow' },
-  { value: 'priceAsc', label: 'workshop.v2.sort.priceAsc', only: 'model' },
-  { value: 'priceDesc', label: 'workshop.v2.sort.priceDesc', only: 'model' }
+  { value: 'newest', label: 'workshop.v2.sort.newest', only: 'workflow' }
 ]
 
 const normalize = (value: string) =>
   value.toLowerCase().replace(/[^a-z0-9]/g, '')
-
-function meetsNeeds(entry: BrowseEntry, filter: NeedsFilter): boolean {
-  if (filter === 'any') return true
-  if (filter === 'runsHere') return entry.runsHere
-  if (filter === 'comfyui') return entry.kind !== 'model'
-  return entry.needsCustomNodes
-}
 
 // Built once from what the card already carries, rather than shipped a second
 // time as its own field.
@@ -102,15 +89,13 @@ const usesTheModel = (entry: BrowseEntry, name: string) =>
   name === '' ||
   entry.models.some((model) => normalize(model) === normalize(name))
 
-// Everything but the type, so a facet count says what choosing it would return
-// and the curated rows read the whole use case rather than one kind of it.
+// Everything but the type, so the curated rows read the whole use case rather
+// than one kind of it.
 const narrowings = computed<((entry: BrowseEntry) => boolean)[]>(() => {
   const text = query.value.trim().toLowerCase()
   return [
     (entry) =>
       useCase.value === 'all' || entry.useCases.includes(useCase.value),
-    (entry) => meetsNeeds(entry, needs.value),
-    (entry) => provider.value === 'all' || entry.provider === provider.value,
     (entry) => usesTheModel(entry, usesModel.value),
     (entry) => matchesOutcome(entry, outcome.value),
     (entry) => matchesQuery(entry, text)
@@ -135,77 +120,6 @@ const matched = computed(() =>
 const sorted = computed(() => sortBrowseEntries(matched.value, order.value))
 const visible = computed(() => sorted.value.slice(0, shown.value))
 
-const NEEDS: readonly { value: NeedsFilter; label: TranslationKey }[] = [
-  { value: 'runsHere', label: 'workshop.v2.needs.runsHere' },
-  { value: 'comfyui', label: 'workshop.v2.needs.comfyui' },
-  { value: 'customNodes', label: 'workshop.v2.needs.customNodes' }
-]
-
-// A count says what choosing that option would return, so it is taken with
-// every other narrowing still on and that one lifted.
-function countWithout(
-  lifted: (entry: BrowseEntry) => boolean,
-  holds: (entry: BrowseEntry) => boolean
-): number {
-  const others = narrowings.value.filter((one) => one !== lifted)
-  return entries.filter(
-    (entry) =>
-      holds(entry) &&
-      others.every((one) => one(entry)) &&
-      isType(entry, type.value)
-  ).length
-}
-
-const facetGroups = computed<FacetSheetGroup[]>(() => [
-  {
-    key: 'needs',
-    label: t('workshop.v2.filter.needs', locale),
-    selected: needs.value === 'any' ? [] : [needs.value],
-    options: NEEDS.map((option) => ({
-      value: option.value,
-      label: t(option.label, locale),
-      count: countWithout(narrowings.value[1], (entry) =>
-        meetsNeeds(entry, option.value)
-      )
-    }))
-  },
-  {
-    key: 'provider',
-    label: t('workshop.v2.filter.provider', locale),
-    selected: provider.value === 'all' ? [] : [provider.value],
-    options: providers.value.map((name) => ({
-      value: name,
-      label: name,
-      count: countWithout(
-        narrowings.value[2],
-        (entry) => entry.provider === name
-      )
-    }))
-  }
-])
-
-// A facet is one choice, so picking what is already picked is how it comes off.
-const PICKERS: Record<string, (value: string) => void> = {
-  needs: (value) => {
-    needs.value = needs.value === value ? 'any' : (value as NeedsFilter)
-  },
-  provider: (value) => {
-    provider.value = provider.value === value ? 'all' : value
-  }
-}
-
-function pickFacet(group: string, value: string) {
-  PICKERS[group]?.(value)
-}
-
-const providers = computed(() =>
-  [
-    ...new Set(
-      entries.flatMap((entry) => (entry.provider ? [entry.provider] : []))
-    )
-  ].sort()
-)
-
 // An order only one kind can honour narrows the type rather than vanishing from
 // the menu, and the chip that appears is the explanation.
 watch(order, (next) => {
@@ -213,8 +127,8 @@ watch(order, (next) => {
   if (only) type.value = only
 })
 
-// Leaving that type behind leaves the order behind with it: a price ascending
-// over workflows that carry no price is a ranking over nothing.
+// Leaving that type behind leaves the order behind with it: newest over models
+// that carry no date is a ranking over nothing.
 watch(type, (next) => {
   const only = ORDERS.find((option) => option.value === order.value)?.only
   if (only && only !== next) order.value = 'popular'
@@ -228,34 +142,35 @@ const narrowedBy = computed(
   () => ORDERS.find((option) => option.value === order.value)?.only
 )
 
-// Each filter beside the value that means "not filtering", so both asking
+// Each narrowing beside the value that means "not narrowing", so both asking
 // whether any is on and putting them all back is one pass over the same list.
+// The type is not among them: it says which kind you are looking at, the way
+// the shelf says which use case, and neither is something to be cleared.
 const resettable = computed(() => [
-  { ref: type, rest: 'all' as const },
-  { ref: needs, rest: 'any' as const },
-  { ref: provider, rest: 'all' },
   { ref: usesModel, rest: '' },
   { ref: outcome, rest: undefined },
   { ref: query, rest: '' }
 ])
 
-const filtersOn = computed(() =>
+const narrowed = computed(() =>
   resettable.value.some(({ ref, rest }) => ref.value !== rest)
 )
 
-function clearFilters() {
+function clearNarrowing() {
   for (const { ref, rest } of resettable.value) ref.value = rest
-  order.value = 'popular'
 }
 
 // The shelves are the catalogue at rest: one row per thing you might want to
-// make. Asking anything of it at all, a use case, a search, a facet, is what
-// turns it into a list.
-const browsing = computed(() => useCase.value !== 'all' || filtersOn.value)
+// make. Asking anything of it, a use case or a search, is what turns it into a
+// list. The type is not one of those: it says which kind of card the shelves
+// hold, so the three tabs read the same way and show the same card.
+const browsing = computed(() => useCase.value !== 'all' || narrowed.value)
 
 function backToShelves() {
-  clearFilters()
+  clearNarrowing()
+  type.value = 'all'
   useCase.value = 'all'
+  order.value = 'popular'
 }
 
 onMounted(() => {
@@ -294,7 +209,7 @@ const featured = computed(() =>
 
 // The rows are a way in, so they stand while the medium is the only thing
 // chosen: once a reader narrows further they are past being shown around.
-const showRows = computed(() => useCase.value !== 'all' && !filtersOn.value)
+const showRows = computed(() => useCase.value !== 'all' && !narrowed.value)
 
 function openOutcome(asked: WorkshopOutcome) {
   outcome.value = asked
@@ -316,17 +231,17 @@ const heading = computed(() =>
       :locale
     />
 
-    <!-- One field and one set of controls read every kind, so they belong to
-      the catalogue rather than to the list, and they are there before anything
-      has been asked. -->
+    <!-- One field and one order read every kind, so they belong to the
+      catalogue rather than to the list, and they are there before anything has
+      been asked. -->
     <div
       class="sticky top-20 z-30 -mx-1 mb-8 flex flex-wrap items-center gap-3 bg-page px-1 py-4 max-sm:mb-4 max-sm:py-2 lg:top-26"
       data-testid="catalogue-header-controls"
     >
       <CatalogueTypeFilter v-model="type" :locale />
 
-      <!-- The type says what is in the list; the search and the controls narrow
-        and order what it chose, so they group together away from it. -->
+      <!-- The type says what is in the list; the search and the order narrow
+        and rank what it chose, so they group together away from it. -->
       <div class="flex flex-1 items-center gap-3 sm:ms-auto sm:flex-none">
         <div class="relative min-w-56 flex-1 sm:w-80 sm:flex-none">
           <Search
@@ -343,16 +258,7 @@ const heading = computed(() =>
           />
         </div>
 
-        <CatalogueControls
-          v-model:order="order"
-          :orders="ORDERS"
-          :groups="facetGroups"
-          :filters-on="filtersOn"
-          :result-count="sorted.length"
-          :locale
-          @clear="clearFilters"
-          @pick="pickFacet"
-        />
+        <CatalogueSort v-model:order="order" :orders="ORDERS" :locale />
       </div>
     </div>
 
@@ -365,7 +271,7 @@ const heading = computed(() =>
 
     <PlaygroundSections
       v-if="!browsing"
-      :entries
+      :entries="matched"
       :locale
       @open="useCase = $event"
     />
@@ -396,9 +302,8 @@ const heading = computed(() =>
         v-model:uses-model="usesModel"
         :narrowed-by="narrowedBy"
         :outcome-label="outcome ? t(outcome.labelKey, locale) : undefined"
-        :filters-on="filtersOn"
         :locale
-        @clear="clearFilters"
+        @clear="clearNarrowing"
         @clear-outcome="outcome = undefined"
       />
 

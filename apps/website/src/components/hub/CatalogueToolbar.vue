@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { X } from '@lucide/vue'
+import { computed } from 'vue'
 
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
@@ -8,19 +9,23 @@ import type { EntryKind } from '../../lib/hub/catalogue-entries'
 const {
   narrowedBy,
   outcomeLabel,
-  filtersOn,
   locale = 'en'
 } = defineProps<{
   narrowedBy: EntryKind | undefined
   /** The curated row a reader asked to see in full, while it is narrowing. */
   outcomeLabel: string | undefined
-  filtersOn: boolean
   locale?: Locale
 }>()
 
 const emit = defineEmits<{ clear: []; clearOutcome: [] }>()
 
 const usesModel = defineModel<string>('usesModel', { required: true })
+
+// A row of chips with no chip in it is a clear button for nothing, so the row
+// answers to what it is holding rather than to whether anything was narrowed.
+const chips = computed(() =>
+  Boolean(outcomeLabel || usesModel.value || narrowedBy)
+)
 
 const chipClass =
   'inline-flex h-8 items-center gap-2 rounded-full bg-transparency-white-t8 px-3 text-xs text-content'
@@ -38,7 +43,7 @@ const narrowedLabel = () =>
 </script>
 
 <template>
-  <div v-if="filtersOn" class="mb-6">
+  <div v-if="chips" class="mb-6">
     <div
       class="flex flex-wrap items-center gap-2"
       data-testid="catalogue-chips"

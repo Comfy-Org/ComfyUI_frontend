@@ -15,15 +15,10 @@ function entry(overrides: Partial<BrowseEntry> = {}): BrowseEntry {
     kind: 'model',
     title,
     useCases: ['generate-images'],
-    outputs: ['image'],
-    provider: 'BFL',
-    runsHere: true,
-    needsCustomNodes: false,
     models: [],
     tags: [],
     standing: 1,
     date: undefined,
-    credits: 10,
     ...overrides,
     card: {
       kind: overrides.kind ?? 'model',
@@ -32,7 +27,7 @@ function entry(overrides: Partial<BrowseEntry> = {}): BrowseEntry {
       media: undefined,
       hoverMedia: undefined,
       maker: { label: 'BFL', logo: undefined },
-      needsCustomNodes: overrides.needsCustomNodes ?? false,
+      needsCustomNodes: false,
       ...overrides.card
     }
   }
@@ -44,9 +39,7 @@ const workflow = (overrides: Partial<BrowseEntry> = {}) =>
     kind: 'workflow',
     title: 'Movie poster',
     models: ['Flux'],
-    runsHere: false,
     standing: 400,
-    credits: undefined,
     ...overrides
   })
 
@@ -85,6 +78,11 @@ const shown = () =>
   within(screen.getByTestId('catalogue-grid'))
     .getAllByRole('heading')
     .map((heading) => heading.textContent.trim())
+
+const onShelf = (useCase: string) =>
+  within(screen.getByTestId(`shelf-${useCase}`))
+    .getAllByTestId('catalogue-card')
+    .map((card) => card.getAttribute('data-kind'))
 
 // The URL is read on mount, so the first paint is one tick behind it.
 async function at(search: string) {
@@ -163,16 +161,19 @@ describe('CatalogueBrowse', () => {
     expect(screen.getByTestId('catalogue-chips').textContent).toMatch(/Flux/)
   })
 
-  it('opens on the type the link asked for', async () => {
+  // The tab says which kind of card the shelves hold, not which list to show,
+  // so all three read the same way and the card keeps its size across them.
+  it('keeps the shelves and narrows what they hold to the type asked for', async () => {
     await at('?type=workflow')
-    expect(shown()).toEqual(['Movie poster'])
+    expect(screen.getByTestId('playground-sections')).toBeTruthy()
+    expect(onShelf('generate-images')).toEqual(['workflow'])
   })
 
-  it('keeps only what this site can run', async () => {
-    await at('?useCase=generate-images')
-    await userEvent.click(screen.getByTestId('catalogue-filter-toggle'))
-    await userEvent.click(await screen.findByTestId('filter-needs-runsHere'))
-    expect(shown()).toEqual(['Flux'])
+  // The tab says which kind you are looking at, the way the shelf says which
+  // use case. Neither is something a reader has to be offered a way out of.
+  it('offers nothing to clear when only the tab was chosen', async () => {
+    await at('?type=workflow')
+    expect(screen.queryByTestId('catalogue-chips')).toBeNull()
   })
 
   it('says so rather than showing an empty grid', async () => {
@@ -238,16 +239,16 @@ describe('CatalogueBrowse', () => {
     })
     await nextTick()
 
-    expect(shown()).toEqual(['Movie poster', 'Sketch to photo'])
+    expect(onShelf('generate-images')).toEqual(['workflow', 'app'])
   })
 
-  // A price order over things that carry no price is a ranking over nothing,
-  // so the order follows the type it was chosen for or gives way.
-  it('drops a price order when the reader leaves the models behind', async () => {
+  // Newest over models that carry no date is a ranking over nothing, so the
+  // order follows the type it was chosen for or gives way.
+  it('drops a dated order when the reader leaves the workflows behind', async () => {
     await at('?useCase=generate-images')
     await userEvent.click(screen.getByTestId('catalogue-sort'))
-    await userEvent.click(await screen.findByTestId('catalogue-sort-priceAsc'))
-    expect(shown()).toEqual(['Flux'])
+    await userEvent.click(await screen.findByTestId('catalogue-sort-newest'))
+    expect(shown()).toEqual(['Movie poster'])
 
     await userEvent.click(
       within(screen.getByTestId('catalogue-type-facet')).getByRole('button', {

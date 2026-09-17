@@ -159,11 +159,6 @@
   top: 0.12em;
 }
 
-@utility content-auto {
-  content-visibility: auto;
-  contain-intrinsic-size: auto 340px;
-}
-
 @utility scrollbar-hide {
   -ms-overflow-style: none;
   scrollbar-width: none;
