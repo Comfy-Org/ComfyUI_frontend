@@ -561,6 +561,23 @@ describe('useBillingSdkStore subscription commands', () => {
     expect(store.subscriptionActionUrl).toBe('https://pay.example/second')
   })
 
+  it('does not re-offer a hosted page this operation already offered', () => {
+    const openPage = vi.spyOn(window, 'open').mockReturnValue(null)
+    useBillingSdkStore()
+
+    harness.publish(
+      pendingSubscription({ actionUrl: 'https://pay.example/first' })
+    )
+    harness.publish(
+      pendingSubscription({ actionUrl: 'https://pay.example/second' })
+    )
+    harness.publish(
+      pendingSubscription({ actionUrl: 'https://pay.example/first' })
+    )
+
+    expect(openPage).toHaveBeenCalledTimes(2)
+  })
+
   it('offers nothing for a hosted page that is not https', () => {
     const openPage = vi.spyOn(window, 'open').mockReturnValue(null)
     const store = useBillingSdkStore()

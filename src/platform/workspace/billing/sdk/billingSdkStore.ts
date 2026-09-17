@@ -79,7 +79,7 @@ export const useBillingSdkStore = defineStore('billingSdk', () => {
   const dismissed = shallowRef<ReadonlySet<string>>(new Set())
   const resumedOperations = new Set<string>()
   const drivenChallenges = new Set<string>()
-  const offeredActions = new Map<string, string>()
+  const offeredActions = new Map<string, Set<string>>()
   const progressToasts = new Map<
     string,
     { kind: ProgressKind; message: ToastMessage }
@@ -206,22 +206,26 @@ export const useBillingSdkStore = defineStore('billingSdk', () => {
   // challenge and opening the hosted payment page — are performed here, or the
   // operation waits on a customer who was never shown anything.
   function onSubscriptionChanged(state: BillingOperationState) {
-    if (state.phase !== 'pending') return
+    if (state.phase !== 'pending') {
+      offeredActions.delete(state.id)
+      return
+    }
     void driveRequiredChallenge(state)
     openHostedAction(state)
   }
 
-  // One offer per hosted step, not per poll: the open runs off the lifecycle
-  // rather than a click, so a browser that blocked the first one blocks every
-  // retry and each retry would repeat the warning. A step the customer still
-  // owes stays on `subscriptionActionUrl` for the checkout to put behind a
-  // button of their own.
+  // One offer per hosted step, not per poll, and not again for a step this
+  // operation already offered: the open runs off the lifecycle rather than a
+  // click, so a browser that blocked the first one blocks every retry and each
+  // retry would repeat the warning. A step the customer still owes stays on
+  // `subscriptionActionUrl` for the checkout to put behind a button of their
+  // own.
   function openHostedAction(state: PendingBillingOperation) {
     const actionUrl = hostedActionUrl(state)
-    if (actionUrl === undefined || offeredActions.get(state.id) === actionUrl) {
-      return
-    }
-    offeredActions.set(state.id, actionUrl)
+    if (actionUrl === undefined) return
+    const offered = offeredActions.get(state.id) ?? new Set<string>()
+    if (offered.has(actionUrl)) return
+    offeredActions.set(state.id, offered.add(actionUrl))
     if (window.open(actionUrl, '_blank')) return
     toastStore.add({
       severity: 'warn',
