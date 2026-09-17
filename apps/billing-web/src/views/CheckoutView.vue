@@ -6,7 +6,7 @@
  * page renders what the SDK says and never keeps a payment state of its own.
  * A hosted continuation redirects this tab and comes back on `/v1/result`.
  */
-import { computed, onMounted } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 
@@ -31,7 +31,7 @@ import { BILLING_WEB_ENV, STRIPE_PUBLISHABLE_KEY } from '@/config/env'
 import { useBillingEntry } from '@/entry/billingEntry'
 import { createStripeChallengePort } from '@/session/stripeChallengePort'
 
-const { t } = useI18n()
+const { n, t } = useI18n()
 const { coded } = useHostedCopy()
 const route = useRoute()
 const router = useRouter()
@@ -55,6 +55,29 @@ const checkout = useCheckout({
 onMounted(() => {
   if (planSlug.value !== undefined) void quote({ planSlug: planSlug.value })
 })
+
+/**
+ * A cancelled subscription is reactivated by subscribing again, and the server
+ * wants that charge confirmed in so many words: the quote says so up front
+ * (`requires_reactivation_confirmation`), or the subscribe answers
+ * `REACTIVATION_CONFIRMATION_REQUIRED` and the plan is re-quoted before the
+ * customer is asked. Either way the form does not submit until they agree.
+ */
+const reactivationRequired = ref(false)
+const reactivationConfirmed = ref(false)
+const submitFailure = ref<string | undefined>()
+
+watch(preview, (quoted) => {
+  reactivationRequired.value =
+    quoted?.requires_reactivation_confirmation === true
+  reactivationConfirmed.value = false
+})
+
+const canSubmit = computed(
+  () =>
+    (preview.value?.allowed ?? false) &&
+    (!reactivationRequired.value || reactivationConfirmed.value)
+)
 
 const paymentCopy = computed<StripePaymentCopy>(() => ({
   paymentMethod: t('checkout.paymentMethod'),
@@ -136,19 +159,29 @@ function resultUrl(): string | undefined {
   return built.status === 'ok' ? built.url.href : undefined
 }
 
-function confirm(confirmationToken: string) {
+async function confirm(confirmationToken: string) {
   const quoted = preview.value
   if (planSlug.value === undefined || !quoted) return
   const returnUrl = resultUrl()
-  void checkout.subscribe({
+  submitFailure.value = undefined
+  const result = await checkout.subscribe({
     plan_slug: planSlug.value,
     confirmation_token: confirmationToken,
     ...(quoted.quote_id === undefined ? {} : { quote_id: quoted.quote_id }),
     ...(quoted.quote_version === undefined
       ? {}
       : { quote_version: quoted.quote_version }),
-    ...(returnUrl === undefined ? {} : { return_url: returnUrl })
+    ...(returnUrl === undefined ? {} : { return_url: returnUrl }),
+    ...(reactivationConfirmed.value ? { confirm_reactivation: true } : {})
   })
+  if (result.status === 'ok') return
+  if (result.code === 'REACTIVATION_CONFIRMATION_REQUIRED') {
+    // The quote did not say so, the server did: price it again and ask.
+    await quote({ planSlug: planSlug.value })
+    reactivationRequired.value = true
+    return
+  }
+  submitFailure.value = coded('failure', result.code)
 }
 
 function back() {
@@ -247,6 +280,29 @@ const subscriptionPath = computed(() => ({
             @confirm="confirm"
           >
             <template #submit="{ disabled, loading: submitting }">
+              <p
+                v-if="submitFailure"
+                class="mb-3 text-sm text-destructive-background"
+              >
+                {{ submitFailure }}
+              </p>
+              <label
+                v-if="reactivationRequired"
+                class="mb-3 flex items-start gap-3 rounded-xl bg-base-background/60 px-4 py-3 text-sm text-base-foreground"
+              >
+                <input
+                  v-model="reactivationConfirmed"
+                  type="checkbox"
+                  class="mt-0.5 size-4"
+                />
+                <span>
+                  {{
+                    t('checkout.reactivationConfirm', {
+                      amount: n(amountCents / 100, 'currency')
+                    })
+                  }}
+                </span>
+              </label>
               <button
                 type="submit"
                 :disabled="submitBlocked(disabled, submitting)"

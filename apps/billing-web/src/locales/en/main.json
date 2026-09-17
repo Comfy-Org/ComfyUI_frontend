@@ -83,7 +83,8 @@
     "noPlanTitle": "Choose a plan first",
     "noPlanBody": "This checkout link doesn't name a plan. Pick one and come back.",
     "choosePlan": "See plans",
-    "returnToProduct": "Return to {product}"
+    "returnToProduct": "Return to {product}",
+    "reactivationConfirm": "Your subscription was cancelled. I confirm the {amount} charge to reactivate it."
   },
   "hosted": {
     "loading": "Loading…",
