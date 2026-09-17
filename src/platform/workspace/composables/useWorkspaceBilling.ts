@@ -497,23 +497,48 @@ export function useWorkspaceBilling(): BillingState & BillingActions {
   }
 
   async function cancelSubscription(): Promise<void> {
-    const rail = useSubscriptionRail()
-    if (
-      rail &&
-      (await onSubscriptionRail(() => rail.cancelSubscription())) !== DECLINED
-    ) {
-      return
-    }
-
-    isLoading.value = true
-    error.value = null
     const attemptStartedAt = Date.now()
+    const trackCancelSucceeded = () =>
+      telemetry?.trackBillingEvent({
+        operation: 'operation',
+        stage: 'succeeded',
+        outcome: 'success',
+        operation_type: 'cancel',
+        duration_ms: Date.now() - attemptStartedAt
+      })
+    const trackCancelFailed = (err: unknown) =>
+      telemetry?.trackBillingEvent({
+        operation: 'operation',
+        stage: 'failed',
+        outcome: 'failure',
+        operation_type: 'cancel',
+        failure_category: categorizeBillingApiError(err),
+        duration_ms: Date.now() - attemptStartedAt
+      })
+
     telemetry?.trackBillingEvent({
       operation: 'operation',
       stage: 'started',
       outcome: 'pending',
       operation_type: 'cancel'
     })
+
+    const rail = useSubscriptionRail()
+    if (rail) {
+      const settled = await onSubscriptionRail(() =>
+        rail.cancelSubscription()
+      ).catch((err: unknown) => {
+        trackCancelFailed(err)
+        throw err
+      })
+      if (settled !== DECLINED) {
+        trackCancelSucceeded()
+        return
+      }
+    }
+
+    isLoading.value = true
+    error.value = null
     // Once set, the poller (billingOperationStore) owns failure telemetry; until then, this must report it.
     let billingOpId: string | undefined
     try {
@@ -536,25 +561,10 @@ export function useWorkspaceBilling(): BillingState & BillingActions {
         // fetchStatus records its own read failure; the cancellation still
         // holds, so the operation is not in error.
         error.value = null
-        telemetry?.trackBillingEvent({
-          operation: 'operation',
-          stage: 'succeeded',
-          outcome: 'success',
-          operation_type: 'cancel',
-          duration_ms: Date.now() - attemptStartedAt
-        })
+        trackCancelSucceeded()
         return
       }
-      if (billingOpId === undefined) {
-        telemetry?.trackBillingEvent({
-          operation: 'operation',
-          stage: 'failed',
-          outcome: 'failure',
-          operation_type: 'cancel',
-          failure_category: categorizeBillingApiError(err),
-          duration_ms: Date.now() - attemptStartedAt
-        })
-      }
+      if (billingOpId === undefined) trackCancelFailed(err)
       error.value =
         err instanceof Error ? err.message : 'Failed to cancel subscription'
       throw err

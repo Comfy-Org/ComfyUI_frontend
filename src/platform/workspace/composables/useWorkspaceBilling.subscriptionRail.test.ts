@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { effectScope } from 'vue'
 
+import type { BillingTelemetryEvent } from '@/platform/telemetry/types'
 import type { BillingStatusResponse } from '@/platform/workspace/api/workspaceApi'
 import {
   WorkspaceApiError,
@@ -59,8 +60,11 @@ vi.mock<unknown>(
   })
 )
 
+const trackBillingEvent = vi.hoisted(() =>
+  vi.fn<(event: BillingTelemetryEvent) => void>()
+)
 vi.mock<unknown>(import('@/platform/telemetry'), () => ({
-  useTelemetry: () => ({ trackBillingEvent: vi.fn() })
+  useTelemetry: () => ({ trackBillingEvent })
 }))
 
 const mockCreateBillingSdk = vi.hoisted(() => vi.fn<() => BillingSdk>())
@@ -100,6 +104,7 @@ function setupBilling() {
 }
 
 beforeEach(() => {
+  trackBillingEvent.mockClear()
   harness = fakeBillingSdk()
   mockCreateBillingSdk.mockReturnValue(harness.sdk)
   flagState.billingSdkSubscriptionEnabled = false
@@ -204,9 +209,58 @@ describe('cancel subscription on the billing SDK rail', () => {
     })
 
     await expect(setupBilling().cancelSubscription()).rejects.toThrow(
-      'phase: timed_out'
+      "We couldn't update your subscription. Please try again."
     )
     expect(workspaceApi.cancelSubscription).not.toHaveBeenCalled()
+  })
+})
+
+describe('cancel telemetry on the billing SDK rail', () => {
+  const stages = () =>
+    trackBillingEvent.mock.calls.map(([event]) => event.stage)
+
+  it('reports a rail cancel that settles as one started and one succeeded', async () => {
+    flagState.billingSdkSubscriptionEnabled = true
+    vi.mocked(harness.sdk.commands.cancelSubscription).mockResolvedValue(
+      SETTLED
+    )
+
+    await setupBilling().cancelSubscription()
+
+    expect(stages()).toEqual(['started', 'succeeded'])
+  })
+
+  it('reports a rail cancel that fails before any operation exists', async () => {
+    flagState.billingSdkSubscriptionEnabled = true
+    vi.mocked(harness.sdk.commands.cancelSubscription).mockResolvedValue({
+      status: 'error',
+      code: 'REQUEST_FAILED',
+      httpStatus: 500
+    })
+
+    await expect(setupBilling().cancelSubscription()).rejects.toBeInstanceOf(
+      WorkspaceApiError
+    )
+
+    expect(stages()).toEqual(['started', 'failed'])
+    expect(trackBillingEvent).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        operation_type: 'cancel',
+        failure_category: 'api_rejected'
+      })
+    )
+  })
+
+  it('reports one started when the missing route sends the cancel to the workspace client', async () => {
+    flagState.billingSdkSubscriptionEnabled = true
+    vi.mocked(harness.sdk.commands.cancelSubscription).mockResolvedValue(
+      ROUTE_MISSING
+    )
+
+    await setupBilling().cancelSubscription()
+
+    expect(workspaceApi.cancelSubscription).toHaveBeenCalledOnce()
+    expect(stages()).toEqual(['started'])
   })
 })
 
