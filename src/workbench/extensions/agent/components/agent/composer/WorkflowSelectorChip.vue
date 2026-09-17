@@ -12,6 +12,7 @@ import {
 import { computed, nextTick, ref, useTemplateRef, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import Button from '@/components/ui/button/Button.vue'
 import Input from '@/components/ui/input/Input.vue'
 import AccessibleTooltip from '@/components/ui/tooltip/AccessibleTooltip.vue'
 import { useWorkflowTabActivityStore } from '@/stores/workflowTabActivityStore'
@@ -123,16 +124,16 @@ function onSearchKeydown(event: KeyboardEvent): void {
       >
         <template #trigger>
           <DropdownMenuTrigger as-child>
-            <button
+            <Button
               type="button"
+              :variant="current ? 'textonly' : 'outline'"
+              size="unset"
               :disabled
               :aria-label="t('agent.switchWorkflow')"
               :class="
                 cn(
-                  'group inline-flex h-7 min-w-0 cursor-pointer items-center gap-2 rounded-lg px-2.5 text-xs/4 font-normal text-base-foreground transition-colors hover:bg-secondary-background-hover disabled:cursor-not-allowed disabled:opacity-50',
-                  current
-                    ? 'flex-1'
-                    : 'border border-border-default bg-secondary-background'
+                  'group h-7 min-w-0 gap-2 px-2.5 text-xs/4 font-normal',
+                  current && 'flex-1'
                 )
               "
             >
@@ -157,7 +158,7 @@ function onSearchKeydown(event: KeyboardEvent): void {
               >
                 <span class="size-[7px] rounded-full bg-base-foreground" />
               </span>
-            </button>
+            </Button>
           </DropdownMenuTrigger>
         </template>
       </AccessibleTooltip>

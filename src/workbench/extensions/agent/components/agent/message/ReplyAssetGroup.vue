@@ -2,6 +2,7 @@
 import { computed, defineAsyncComponent, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import Button from '@/components/ui/button/Button.vue'
 import {
   findOutputAsset,
   findServerPreviewUrl,
@@ -206,10 +207,12 @@ function stopPreview(event: Event): void {
       </button>
     </div>
 
-    <button
+    <Button
       v-if="collapsible"
       type="button"
-      class="flex cursor-pointer items-center gap-1 self-center rounded-full border border-component-node-border px-3 py-1 text-xs text-base-foreground hover:bg-secondary-background-hover"
+      variant="outline"
+      size="sm"
+      class="self-center rounded-full border-component-node-border"
       @click="expanded = !expanded"
     >
       {{ expanded ? t('agent.showLess') : t('agent.showMore') }}
@@ -218,7 +221,7 @@ function stopPreview(event: Event): void {
           cn('icon-[lucide--chevron-down] size-3', expanded && 'rotate-180')
         "
       />
-    </button>
+    </Button>
 
     <div v-if="audio.length" class="flex flex-col gap-1">
       <ReplyAudioCard
@@ -227,10 +230,12 @@ function stopPreview(event: Event): void {
         :asset
         :title="assetNames[asset.url] || asset.filename"
       />
-      <button
+      <Button
         v-if="audioCollapsible"
         type="button"
-        class="flex cursor-pointer items-center gap-1 self-center rounded-full border border-component-node-border px-3 py-1 text-xs text-base-foreground hover:bg-secondary-background-hover"
+        variant="outline"
+        size="sm"
+        class="self-center rounded-full border-component-node-border"
         @click="audioExpanded = !audioExpanded"
       >
         {{ audioExpanded ? t('agent.showLess') : t('agent.showMore') }}
@@ -242,7 +247,7 @@ function stopPreview(event: Event): void {
             )
           "
         />
-      </button>
+      </Button>
     </div>
 
     <MediaLightbox
