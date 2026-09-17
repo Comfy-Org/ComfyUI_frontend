@@ -141,6 +141,14 @@ export interface AssetExportWsMessage {
   status: AssetTaskStatus
   error?: string
 }
+export interface AssetSeedCompletedWsMessage {
+  created: number
+  elapsed: number
+  enriched: number
+  phase: 'fast' | 'enrich' | 'full'
+  skipped: number
+  total: number
+}
 
 export const zTaskOutput = z.record(zNodeId, zOutputs)
 export type TaskOutput = z.infer<typeof zTaskOutput>
