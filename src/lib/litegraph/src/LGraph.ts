@@ -1799,21 +1799,41 @@ export class LGraph
     }
   }
 
-  private removeNode(node: LGraphNode, options: GraphRemoveOptions): void {
-    const successor =
-      options.preserveCanonicalState &&
-      this._nodes_by_id[node.id] !== node &&
-      this._nodes_by_id[node.id] != null
-        ? this._nodes_by_id[node.id]
-        : undefined
+  /**
+   * Resolves what a removal means for the node's canonical state, once, so
+   * every cleanup step and observer reads the same decision.
+   *
+   * - `discard`: an ordinary removal; links, widget values, execution order
+   *   and store records go with the node.
+   * - `detach`: the caller asked to preserve canonical state, but nothing
+   *   else claims this record. Store records stay, node-owned state does not.
+   * - `replace`: another live node owns the record, either an explicit
+   *   replacement, a successor already indexed under the same id, or a
+   *   re-created record in this graph. Everything the successor needs stays.
+   */
+  private resolveRemovalMode(
+    node: LGraphNode,
+    options: GraphRemoveOptions
+  ): { mode: 'discard' | 'detach' | 'replace'; successor?: LGraphNode } {
+    if (!options.preserveCanonicalState && !options.replacement) {
+      return { mode: 'discard' }
+    }
+    const indexed = this._nodes_by_id[node.id]
+    const successor = indexed != null && indexed !== node ? indexed : undefined
+    if (options.replacement || successor) return { mode: 'replace', successor }
+
     const nodeStore = useNodeDataStore()
     const canonical = nodeStore.getNode(this.rootGraph.id, node.id)
-    const preserveReplacement =
-      options.replacement ||
-      successor ||
-      (options.preserveCanonicalState &&
-        canonical?.graphId === this.id &&
-        !nodeStore.ownsNode(graphScopeOf(this), node._state))
+    const recreated =
+      canonical?.graphId === this.id &&
+      !nodeStore.ownsNode(graphScopeOf(this), node._state)
+    return { mode: recreated ? 'replace' : 'detach' }
+  }
+
+  private removeNode(node: LGraphNode, options: GraphRemoveOptions): void {
+    const { mode, successor } = this.resolveRemovalMode(node, options)
+    const preserveCanonicalState = mode !== 'discard'
+    const preserveReplacement = mode === 'replace'
 
     // sure? - almost sure is wrong
     this.beforeChange()
@@ -1827,7 +1847,7 @@ export class LGraph
         successor,
         // Reports the outcome, not the requested option: listeners need to
         // know whether canonical state survives this removal.
-        preserveCanonicalState: !!preserveReplacement
+        preserveCanonicalState: preserveReplacement
       })
     )
 
@@ -1856,10 +1876,7 @@ export class LGraph
       const releasable = findReleasableSubgraphs(
         this.rootGraph,
         node,
-        canonicalSubgraphResolver(
-          this.rootGraph,
-          options.preserveCanonicalState
-        )
+        canonicalSubgraphResolver(this.rootGraph, preserveCanonicalState)
       )
       // Inside a canonical node adoption the release is postponed until the
       // replacement has succeeded, so a rollback can hand the incumbent back
@@ -1878,7 +1895,7 @@ export class LGraph
     if (!preserveReplacement) {
       useExecutionOrderStore().remove(graphScopeOf(this), node.id)
     }
-    if (options.preserveCanonicalState) {
+    if (preserveCanonicalState) {
       node._graphScope = undefined
       releaseNodeLayoutAttachment(node)
     } else {
