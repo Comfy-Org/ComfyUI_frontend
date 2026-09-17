@@ -210,7 +210,15 @@ describe('WidgetLegacy', () => {
 
   it('forwards node-local movement to the rebound host and retains pointer movement', async () => {
     const pointerMove = vi.spyOn(CanvasPointer.prototype, 'move')
-    const widget = fromPartial<IBaseWidget>({ name: 'compare', type: 'custom' })
+    vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue({
+      scale: vi.fn()
+    } as unknown as ReturnType<HTMLCanvasElement['getContext']>)
+    const draw = vi.fn()
+    const widget = fromPartial<IBaseWidget>({
+      name: 'compare',
+      type: 'custom',
+      draw
+    })
     const firstMove = vi.fn()
     const reboundMove = vi.fn()
     const firstHost = fromAny<LGraphNode, unknown>({
@@ -249,6 +257,7 @@ describe('WidgetLegacy', () => {
       props: { widget: simplifiedWidget, nodeId: toNodeId(7) }
     })
     await nextTick()
+    draw.mockClear()
     const canvasElement = screen.getByTestId('legacy-widget-canvas')
     const user = userEvent.setup()
 
@@ -259,6 +268,7 @@ describe('WidgetLegacy', () => {
       canvas
     )
     expect(pointerMove).toHaveBeenCalledOnce()
+    expect(draw).toHaveBeenCalledOnce()
 
     currentHost = reboundHost
     await user.pointer({ target: canvasElement, coords: { clientX: 2 } })
@@ -268,9 +278,11 @@ describe('WidgetLegacy', () => {
       canvas
     )
     expect(pointerMove).toHaveBeenCalledTimes(2)
+    expect(draw).toHaveBeenCalledTimes(2)
 
     currentHost = undefined
     await user.pointer({ target: canvasElement, coords: { clientX: 3 } })
     expect(pointerMove).toHaveBeenCalledTimes(2)
+    expect(draw).toHaveBeenCalledTimes(2)
   })
 })
