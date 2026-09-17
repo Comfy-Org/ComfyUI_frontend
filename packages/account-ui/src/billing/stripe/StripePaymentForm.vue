@@ -342,12 +342,16 @@ async function submit() {
       failSubmit('token_creation', result.error)
       return
     }
+    // Same hazard as reportPhase, with money on it: the customer may have
+    // closed this checkout while the token was minting, and a confirm the
+    // host acts on would charge them for a flow they left.
+    if (isUnmounted) return
     emit('confirm', result.confirmationToken.id)
   } catch {
     failSubmit('token_creation')
   } finally {
     isSubmitting.value = false
-    emit('submittingChange', false)
+    if (!isUnmounted) emit('submittingChange', false)
   }
 }
 
