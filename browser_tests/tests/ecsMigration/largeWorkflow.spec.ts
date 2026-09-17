@@ -45,13 +45,6 @@ test.describe(
         body: JSON.stringify(paintedLandmarks),
         contentType: 'application/json'
       })
-      const canvasBox = await comfyPage.canvas.boundingBox()
-      expect(canvasBox).not.toBeNull()
-      if (!canvasBox) throw new Error('Canvas bounding box not available')
-      const canvasCenter = {
-        x: canvasBox.x + canvasBox.width / 2,
-        y: canvasBox.y + canvasBox.height / 2
-      }
       await comfyMouse.middleDragFromCenter(comfyPage.canvas, {
         x: 120,
         y: 80
@@ -63,9 +56,7 @@ test.describe(
         .not.toEqual(graphSummary.offset)
 
       const initialScale = await comfyPage.canvasOps.getScale()
-      await comfyPage.page.mouse.move(canvasCenter.x, canvasCenter.y)
-      await comfyPage.page.mouse.wheel(0, -100)
-      await comfyPage.nextFrame()
+      await comfyPage.canvasOps.zoom(-100)
       await expect
         .poll(() => comfyPage.canvasOps.getScale())
         .toBeGreaterThan(initialScale)
