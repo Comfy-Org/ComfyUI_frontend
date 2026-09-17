@@ -12,7 +12,7 @@ const i18n = createI18n({
 })
 
 describe('Message', () => {
-  it.for(['error', 'warn', 'info'] as const)(
+  it.for(['error', 'warning', 'info'] as const)(
     'announces %s messages as alerts',
     (severity) => {
       render(Message, {

@@ -27,7 +27,7 @@
         </p>
       </div>
 
-      <Message v-if="!isSecureContext" severity="warn" class="mb-4">
+      <Message v-if="!isSecureContext" severity="warning" class="mb-4">
         {{ t('auth.login.insecureContextWarning') }}
       </Message>
 
@@ -45,7 +45,7 @@
         </div>
         <Message
           v-else-if="regionStatus === 'blocked'"
-          severity="warn"
+          severity="warning"
           class="mb-4"
         >
           {{ t('auth.signup.regionRestrictionChina') }}

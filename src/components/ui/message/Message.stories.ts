@@ -26,7 +26,7 @@ export const AllSeverities: Story = {
     template: `
       <div class="flex w-96 flex-col gap-3">
         <Message severity="error">Error message</Message>
-        <Message severity="warn">Warning message</Message>
+        <Message severity="warning">Warning message</Message>
         <Message severity="info">Information message</Message>
         <Message severity="success">Success message</Message>
       </div>`

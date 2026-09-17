@@ -44,7 +44,7 @@ const statusPropsMap: Record<Status, StatusProps> = {
   },
   NodeStatusDeleted: {
     label: 'deleted',
-    severity: 'warn'
+    severity: 'warning'
   },
   NodeStatusBanned: {
     label: 'banned',
@@ -56,11 +56,11 @@ const statusPropsMap: Record<Status, StatusProps> = {
   },
   NodeVersionStatusPending: {
     label: 'pending',
-    severity: 'warn'
+    severity: 'warning'
   },
   NodeVersionStatusDeleted: {
     label: 'deleted',
-    severity: 'warn'
+    severity: 'warning'
   },
   NodeVersionStatusFlagged: {
     label: 'flagged',

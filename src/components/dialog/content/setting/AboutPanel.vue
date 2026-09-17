@@ -13,7 +13,10 @@
         class="about-badge inline-flex items-center no-underline"
         :title="badge.url"
       >
-        <Badge class="mr-2" :severity="badge.severity">
+        <Badge
+          class="mr-2"
+          :severity="badge.severity === 'warn' ? 'warning' : badge.severity"
+        >
           <template #icon>
             <i :class="cn(badge.icon, 'mr-2 text-xl')" />
           </template>

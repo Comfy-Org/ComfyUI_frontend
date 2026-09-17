@@ -7,7 +7,8 @@ export const messageVariants = cva({
     severity: {
       error:
         'border-destructive-background/40 bg-destructive-background/10 text-base-foreground',
-      warn: 'border-warning-background/50 bg-warning-background/15 text-base-foreground',
+      warning:
+        'border-warning-background/50 bg-warning-background/15 text-base-foreground',
       info: 'border-primary-background/40 bg-primary-background/10 text-base-foreground',
       success:
         'border-success-background/50 bg-success-background/15 text-base-foreground',

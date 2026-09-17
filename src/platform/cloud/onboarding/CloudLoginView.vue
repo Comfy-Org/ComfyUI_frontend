@@ -21,7 +21,7 @@
       </span>
     </p>
 
-    <Message v-if="!isSecureContext" severity="warn" class="mt-4 w-full">
+    <Message v-if="!isSecureContext" severity="warning" class="mt-4 w-full">
       {{ t('auth.login.insecureContextWarning') }}
     </Message>
 
