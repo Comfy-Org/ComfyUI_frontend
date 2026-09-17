@@ -18,16 +18,16 @@ describe('ModelsApiHero', () => {
     expect(
       screen.getByText(/Integrate frontier image, video, 3D and audio/)
     ).toBeTruthy()
-    expect(
-      screen.getAllByText('client.models.run', { exact: false }).length
-    ).toBeGreaterThan(0)
+    for (const panel of screen.getAllByRole('tabpanel'))
+      expect(panel).toHaveTextContent('client.models.run')
     expect(
       screen.getAllByText(t('nav.badgeBeta', 'en')).length
     ).toBeGreaterThan(0)
-    expect(
-      screen.getAllByRole('link', {
-        name: t('platform.router.cta.browseModels', 'en')
-      }).length
-    ).toBeGreaterThan(0)
+    const browseModels = screen.getAllByRole('link', {
+      name: t('platform.router.cta.browseModels', 'en')
+    })
+    expect(browseModels.length).toBeGreaterThan(0)
+    for (const link of browseModels)
+      expect(link.getAttribute('href')).toBe('/models')
   })
 })
