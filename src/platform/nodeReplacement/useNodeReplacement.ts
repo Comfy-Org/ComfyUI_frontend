@@ -420,6 +420,39 @@ function removeReplacedMissingNodeTypes(types: string[]): void {
 export function useNodeReplacement() {
   const toastStore = useToast()
 
+  function replacePlaceholder(
+    node: LGraphNode,
+    selectedTypes: MissingNodeType[]
+  ): string | null {
+    const match = findMatchingType(node, selectedTypes)
+    if (!match?.replacement) return null
+
+    const nodeGraph = node.graph
+    if (!nodeGraph) return match.type
+
+    const idx = nodeGraph._nodes.indexOf(node)
+    if (idx === -1) return match.type
+
+    const newNode = LiteGraph.createNode(match.replacement.new_node_id)
+    if (!newNode) return match.type
+
+    const replacement =
+      match.replacement.input_mapping != null ||
+      match.replacement.output_mapping != null
+        ? match.replacement
+        : {
+            ...match.replacement,
+            ...generateDefaultMapping(
+              node.last_serialization ?? node.serialize(),
+              newNode
+            )
+          }
+
+    return replaceWithMapping(node, newNode, replacement, nodeGraph, idx)
+      ? null
+      : match.type
+  }
+
   function replaceNodesInPlace(selectedTypes: MissingNodeType[]): string[] {
     const replacedTypes: string[] = []
     const failedTypes = new Set<string>()
@@ -468,47 +501,9 @@ export function useNodeReplacement() {
         const match = findMatchingType(node, selectedTypes)
         if (!match?.replacement) continue
 
-        const replacement = match.replacement
-        const nodeGraph = node.graph
-        if (!nodeGraph) {
-          recordReplacementFailure(match.type)
-          continue
-        }
-
-        const idx = nodeGraph._nodes.indexOf(node)
-        if (idx === -1) {
-          recordReplacementFailure(match.type)
-          continue
-        }
-
-        const newNode = LiteGraph.createNode(replacement.new_node_id)
-        if (!newNode) {
-          recordReplacementFailure(match.type)
-          continue
-        }
-
-        const hasMapping =
-          replacement.input_mapping != null ||
-          replacement.output_mapping != null
-
-        const effectiveReplacement = hasMapping
-          ? replacement
-          : {
-              ...replacement,
-              ...generateDefaultMapping(
-                node.last_serialization ?? node.serialize(),
-                newNode
-              )
-            }
-        const replaced = replaceWithMapping(
-          node,
-          newNode,
-          effectiveReplacement,
-          nodeGraph,
-          idx
-        )
-        if (!replaced) {
-          recordReplacementFailure(match.type)
+        const failedType = replacePlaceholder(node, selectedTypes)
+        if (failedType) {
+          recordReplacementFailure(failedType)
           continue
         }
         anyNodeReplaced = true
