@@ -9,7 +9,7 @@ import type {
   GraphMutations,
   SemanticLinkPayload,
   SemanticNodePayload
-} from '@/core/graph/graphMutations'
+} from './graphMutations'
 import { reportError } from '@/platform/telemetry/reportError'
 import type { RemoteMutationContext } from '@/types/graphMutationContext'
 import { toNodeId } from '@/types/nodeId'

@@ -13,7 +13,7 @@ import type {
 import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import * as Y from 'yjs'
 
-import { createGraphMutations } from '@/core/graph/graphMutations'
+import { createGraphMutations } from './graphMutations'
 import {
   LGraph,
   LGraphNode,

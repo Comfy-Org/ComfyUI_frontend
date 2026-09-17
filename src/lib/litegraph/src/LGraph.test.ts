@@ -2,7 +2,7 @@ import { toGroupId } from '@/types/groupId'
 import { graphScopeOf } from '@/types/graphScopeId'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { createGraphMutations } from '@/core/graph/graphMutations'
+import { createGraphMutations } from '@/workbench/extensions/agent/crdt/graphMutations'
 import type { NodeLifecycleEvent } from '@/lib/litegraph/src/infrastructure/LGraphEventMap'
 import type { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
@@ -874,7 +874,7 @@ describe('Store-driven serialization parity', () => {
   }) => {
     // The CRDT follower's addNode path
     // (`graphMutations.commit()` -> nodeStore/widgetStore/layout, see
-    // `src/core/graph/graphMutations.ts`) never constructs an LGraphNode and
+    // `src/workbench/extensions/agent/crdt/graphMutations.ts`) never constructs an LGraphNode and
     // never calls `LGraph.add()`, so the node exists in the ECS node-data
     // store (and renders on canvas via the store-driven Vue node path) but
     // has no adapter in `LGraph._nodes`. `serialiseStoredNodes()` hits the
