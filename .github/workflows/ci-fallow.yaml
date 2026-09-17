@@ -34,7 +34,7 @@ jobs:
         uses: ./.github/actions/setup-frontend
 
       - name: Audit new findings
-        uses: fallow-rs/fallow@c2da9fcae5388226a87e986b1812f9c872d288c6 # v3.24.1
+        uses: fallow-rs/fallow@30167b42257ded3bef683f6c91b4aa4017a1ff59 # v3.25.0
         with:
           command: audit
           version: '3.24.1'
