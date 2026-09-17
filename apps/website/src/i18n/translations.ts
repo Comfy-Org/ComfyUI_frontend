@@ -24,9 +24,13 @@ const translations = {
   },
   'workshop.hero.eyebrow': { en: 'Models', 'zh-CN': '模型' },
   'workshop.workflows.eyebrow': { en: 'Workflows', 'zh-CN': '工作流' },
+  'workshop.workflows.heading': {
+    en: 'Start with a workflow. Make it yours.',
+    'zh-CN': '从工作流出发，创作属于你的作品。'
+  },
   'workshop.workflows.subtitle': {
-    en: 'Start with an outcome. Add your inputs. Make it yours.',
-    'zh-CN': '从你想要的结果出发，添加输入，创造属于你的作品。'
+    en: 'Models are the building blocks. Workflows bring them together—ready for your ideas.',
+    'zh-CN': '模型是创作的积木，工作流将它们串联起来，等你注入创意。'
   },
   'workshop.hero.heading': {
     en: 'What will you make next?',

@@ -61,6 +61,7 @@ const cardClass =
     <WorkshopBrowseTabs active="workflows" />
     <WorkshopHero
       eyebrow-key="workshop.workflows.eyebrow"
+      heading-key="workshop.workflows.heading"
       subtitle-key="workshop.workflows.subtitle"
     />
     <section
