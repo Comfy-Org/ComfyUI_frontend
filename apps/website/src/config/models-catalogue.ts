@@ -348,6 +348,12 @@ const CAPABILITY_MODALITY: Readonly<
   'Lip sync': 'video'
 }
 
+// The label a card shows for a tag the catalogue carries, so a curated row can
+// scope models and workflows from the same list of tags.
+export function capabilityLabelsFor(tags: readonly string[]): string[] {
+  return [...new Set(tags.flatMap((tag) => CAPABILITY_LABELS[tag] ?? []))]
+}
+
 export function capabilitiesFor(
   examples: readonly GeneratedExample[],
   modality?: string

@@ -16,6 +16,8 @@ import { groupModels } from '../../config/model-family'
 import hubTemplates from '../../data/hubTemplates.json'
 import { hubWorkflowPath } from '../../lib/hub/workflow-detail'
 import { templatesInTab } from '../../lib/hub/hub-tabs'
+import type { WorkshopOutcome } from '../../config/workshop-outcomes'
+import { capabilitiesOf } from '../../config/workshop-outcomes'
 import { modelSlides, templateSlides } from '../../lib/workshop/featured-slides'
 import {
   partnerModelFor,
@@ -33,6 +35,7 @@ import type {
   ToolbarLabels
 } from './BrowseToolbar.vue'
 import HubUseCaseNav from './HubUseCaseNav.vue'
+import OutcomeShelves from './OutcomeShelves.vue'
 import type { GridLabels } from './WorkflowGrid.vue'
 import WorkflowGrid from './WorkflowGrid.vue'
 import FeaturedBanner from '../workshop/FeaturedBanner.vue'
@@ -284,6 +287,28 @@ const bannerSlides = computed(() => {
     .slice(0, BANNER_SLIDES)
 })
 
+// The rows are a curated way in, so anything that narrows the list puts the
+// listing back: once a reader is filtering they are past being shown around.
+const narrowing = computed(
+  () =>
+    narrowed.value ||
+    store.searchQuery.value.trim() !== '' ||
+    store.filterBadges.value.length > 0
+)
+
+const showShelves = computed(
+  () => store.activeTab.value === 'all' && !narrowing.value
+)
+
+// A row's own name is a filter the catalogue can already express: the tags a
+// workflow carries and the capability a model lists for them.
+function openOutcome(outcome: WorkshopOutcome) {
+  store.clearBadges()
+  for (const tag of outcome.tags) store.toggleBadge({ type: 'tag', value: tag })
+  capabilities.value = capabilitiesOf(outcome)
+  useCase.value = outcome.useCase
+}
+
 const filteredTemplates = computed(() => {
   const badges = store.filterBadges.value
   const chosen = (type: FilterBadgeType) =>
@@ -350,6 +375,7 @@ const filteredTemplates = computed(() => {
           :href-for="hrefFor"
           :extra-filters="providers.length + capabilities.length"
           :model-count="modelFamilies.length"
+          :show-shelves="showShelves"
           @clear-extra="clearSearchFilters"
         >
           <template #banner>
@@ -358,6 +384,18 @@ const filteredTemplates = computed(() => {
               :slides="bannerSlides"
               :locale
               class="short:mb-6 mb-10"
+            />
+          </template>
+
+          <template #shelves>
+            <OutcomeShelves
+              :use-case="useCase"
+              :templates="scoped.templates"
+              :models="scoped.models"
+              :href-for="hrefFor"
+              :try-now-label="gridLabels.tryNow"
+              :locale
+              @see-all="openOutcome"
             />
           </template>
 

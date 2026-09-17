@@ -14,7 +14,9 @@ describe('HubBrowse', () => {
   it('scopes the grid to Comfy Apps and narrows it by search', async () => {
     const user = userEvent.setup()
     render(HubBrowse)
-    expect(screen.getAllByTestId('hub-card')).toHaveLength(30)
+    // All opens on the curated rows; a type is a listing of that type.
+    expect(screen.getByTestId('hub-shelves')).toBeTruthy()
+    expect(screen.queryByTestId('hub-grid')).toBeNull()
 
     await user.click(screen.getByTestId('hub-tab-comfyApps'))
     const apps = screen.getAllByTestId('hub-card')
@@ -76,13 +78,27 @@ describe('HubBrowse', () => {
     render(HubBrowse)
 
     await user.click(screen.getByTestId('hub-use-case-3d'))
-    const lead = screen.getAllByTestId('hub-models-lead')
-    expect(lead[0].textContent).toContain('Tripo')
-    expect(screen.getByTestId('hub-showing').textContent).toContain('of 39')
+    expect(screen.getByTestId('hub-shelf-model-from-a-photo')).toBeTruthy()
+    expect(screen.queryByTestId('hub-shelf-upscale-restore')).toBeNull()
 
     await user.click(screen.getByTestId('hub-tab-models'))
     expect(screen.getAllByTestId('workshop-model-card')).toHaveLength(5)
     expect(screen.queryByTestId('model-card-versions')).toBeNull()
+  })
+
+  it('opens the listing on the row a reader asks to see in full', async () => {
+    const user = userEvent.setup()
+    render(HubBrowse)
+
+    await user.click(screen.getByTestId('hub-shelf-all-upscale-restore'))
+
+    expect(screen.queryByTestId('hub-shelves')).toBeNull()
+    const cards = screen.getAllByTestId('hub-card')
+    expect(cards.length).toBeGreaterThan(0)
+    await user.click(screen.getByTestId('hub-tab-models'))
+    const models = screen.getAllByTestId('workshop-model-card')
+    expect(models.length).toBeGreaterThan(0)
+    models.forEach((card) => expect(card.textContent).toContain('Upscale'))
   })
 
   it('counts the applied filters in the popover and clears them', async () => {
