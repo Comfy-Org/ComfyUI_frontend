@@ -14,6 +14,7 @@ import type { MissingMediaCandidate } from '@/platform/missingMedia/types'
 import type { MissingModelCandidate } from '@/platform/missingModel/types'
 import { scanAllModelCandidates } from '@/platform/missingModel/missingModelScan'
 import {
+  createMissingMediaCandidate,
   createPromotedMediaRuntime,
   seedMediaNodeDefs
 } from '@/platform/missingMedia/__fixtures__/promotedMedia'
@@ -56,15 +57,10 @@ function missingModel(
 function missingMedia(
   overrides: Partial<MissingMediaCandidate> = {}
 ): MissingMediaCandidate {
-  return {
-    nodeId,
-    nodeType: 'LoadImage',
-    widgetName: 'image',
-    mediaType: 'image',
+  return createMissingMediaCandidate([toNodeId(12), toNodeId(4)], {
     name: 'portrait.png',
-    isMissing: true,
     ...overrides
-  }
+  })
 }
 
 function liftValidationError(
@@ -263,8 +259,36 @@ it.for([LGraphEventMode.BYPASS, LGraphEventMode.NEVER])(
   (mode) => {
     const { rootGraph, sources } = createPromotedModelFanout()
     sources[0].mode = mode
+    sources[1].type = 'AlternateCheckpointLoader'
+    sources[0].properties.models = [
+      {
+        name: 'missing.safetensors',
+        url: 'https://example.com/stored-model.safetensors',
+        directory: 'checkpoints'
+      }
+    ]
+    sources[1].properties.models = [
+      {
+        name: 'missing.safetensors',
+        url: 'https://example.com/other-model.safetensors',
+        directory: 'checkpoints'
+      }
+    ]
     const candidates = scanAllModelCandidates(rootGraph, () => false)
-    expect(candidates).toHaveLength(2)
+    expect(candidates).toMatchObject([
+      {
+        nodeId: '65',
+        nodeType: 'CheckpointLoaderSimple',
+        sourceExecutionId: '65:42',
+        url: 'https://example.com/stored-model.safetensors'
+      },
+      {
+        nodeId: '66',
+        nodeType: 'CheckpointLoaderSimple',
+        sourceExecutionId: '66:42',
+        url: 'https://example.com/stored-model.safetensors'
+      }
+    ])
     expect(
       candidates.flatMap((candidate) => candidate.promotedSources)
     ).toEqual([

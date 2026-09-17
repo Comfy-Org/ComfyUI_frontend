@@ -183,8 +183,8 @@ describe('FE-230 markDeletedAssetsAsMissingMedia', () => {
         widgetName: 'outer_image',
         promotedSources: [
           {
-            executionId: expect.stringContaining(':'),
-            widgetName: expect.any(String)
+            executionId: '50:100',
+            widgetName: 'image'
           }
         ],
         mediaType: 'image',

@@ -170,6 +170,7 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
     Map<NodeExecutionId, number>
   >()
   const pendingAddedNodeScanRevision = ref(0)
+  // Preserve the lifted host identity so retirement still matches after node deletion.
   const validationErrorSurfaces = new WeakMap<
     NodeValidationError,
     ValidationErrorSurface[]
@@ -360,7 +361,7 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
 
   function filterNodeErrors(
     record: Record<string, NodeError>,
-    keep: (
+    keepAndRecord: (
       surfaces: ValidationErrorSurface[],
       error: NodeValidationError
     ) => boolean
@@ -374,7 +375,7 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
         continue
       }
       const remaining = nodeError.errors.filter((error) =>
-        keep(
+        keepAndRecord(
           resolveValidationErrorSurfaces(executionId, nodeError, error),
           error
         )

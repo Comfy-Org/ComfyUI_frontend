@@ -48,6 +48,7 @@ import { useMissingMediaStore } from '@/platform/missingMedia/missingMediaStore'
 import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
 import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
 import { toNodeId } from '@/types/nodeId'
+import { createMissingMediaCandidate } from '@/platform/missingMedia/__fixtures__/promotedMedia'
 
 function mockGraphReady(rootGraph: typeof app.rootGraph) {
   vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(rootGraph)
@@ -1124,14 +1125,7 @@ describe('absorbed-error retirement on candidate resolution', () => {
       const store = useExecutionErrorStore()
       useMissingModelStore().setMissingModels([absorbedModelCandidate()])
       useMissingMediaStore().setMissingMedia([
-        {
-          nodeId: execId,
-          nodeType: 'LoadImage',
-          widgetName: 'image',
-          mediaType: 'image',
-          name: 'portrait.png',
-          isMissing: true
-        }
+        createMissingMediaCandidate([toNodeId(1)], { name: 'portrait.png' })
       ])
       store.recordNodeErrors({
         '1': nodeError([

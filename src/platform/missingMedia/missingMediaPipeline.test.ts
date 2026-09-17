@@ -13,6 +13,8 @@ import * as missingMediaScan from '@/platform/missingMedia/missingMediaScan'
 import { useMissingMediaStore } from '@/platform/missingMedia/missingMediaStore'
 import type { MissingMediaCandidate } from '@/platform/missingMedia/types'
 import { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
+import { t } from '@/i18n'
+import { useToastStore } from '@/platform/updates/common/toastStore'
 
 let activeWorkflow: ComfyWorkflow
 
@@ -27,23 +29,28 @@ beforeEach(() => {
 
 async function startPendingWorkflowLoadMediaVerification(
   rootGraph: LGraph,
-  pendingCandidate: MissingMediaCandidate
+  pendingCandidate: MissingMediaCandidate,
+  onVerified?: (candidates: MissingMediaCandidate[]) => void
 ): Promise<() => void> {
   vi.spyOn(missingMediaScan, 'scanAllMediaCandidates').mockReturnValue([
     pendingCandidate
   ])
   const { verifySpy, resolveVerification } = deferMediaVerification()
 
-  await runMissingMediaPipeline({ rootGraph, silent: true })
+  await runMissingMediaPipeline({ rootGraph, silent: true, onVerified })
   await vi.waitFor(() => expect(verifySpy).toHaveBeenCalledOnce())
 
   return resolveVerification
 }
 
 describe('runMissingMediaPipeline', () => {
-  it.for(['verified', 'failed', 'aborted'] as const)(
-    'reports verification completion only for a successful scan: %s',
-    async (outcome) => {
+  it.for([
+    { outcome: 'verified', completed: true, failed: false },
+    { outcome: 'failed', completed: false, failed: true },
+    { outcome: 'aborted', completed: false, failed: false }
+  ])(
+    'reports verification completion only for a successful scan: $outcome',
+    async ({ outcome, completed, failed }) => {
       const {
         rootGraph,
         hosts: [host]
@@ -71,12 +78,21 @@ describe('runMissingMediaPipeline', () => {
       expect(onVerified).not.toHaveBeenCalled()
       if (outcome === 'aborted') useMissingMediaStore().clearMissingMedia()
       finishVerification()
-      await pending
-      await new Promise((resolve) => setTimeout(resolve, 0))
+      await vi.runAllTimersAsync()
 
-      if (outcome === 'verified')
-        expect(onVerified).toHaveBeenCalledWith([candidate])
-      else expect(onVerified).not.toHaveBeenCalled()
+      expect(onVerified.mock.calls).toEqual(completed ? [[[candidate]]] : [])
+      expect(vi.mocked(useToastStore().add).mock.calls).toEqual(
+        failed
+          ? [
+              [
+                expect.objectContaining({
+                  severity: 'warn',
+                  summary: t('toastMessages.missingMediaVerificationFailed')
+                })
+              ]
+            ]
+          : []
+      )
     }
   )
 
@@ -115,16 +131,18 @@ describe('runMissingMediaPipeline', () => {
       ...createPromotedMissingMediaCandidate(host),
       isMissing: undefined
     }
+    const onVerified = vi.fn()
     const resolveVerification = await startPendingWorkflowLoadMediaVerification(
       rootGraph,
-      pendingCandidate
+      pendingCandidate,
+      onVerified
     )
 
     for (const sourceNode of sourceNodes) {
       sourceNode.mode = LGraphEventMode.BYPASS
     }
     resolveVerification()
-    await new Promise((resolve) => setTimeout(resolve, 0))
+    await vi.waitFor(() => expect(onVerified).toHaveBeenCalledWith([]))
 
     expect.soft(pendingCandidate.isMissing).toBe(true)
     expect(useMissingMediaStore().missingMediaCandidates).toBeNull()
@@ -139,16 +157,18 @@ describe('runMissingMediaPipeline', () => {
       ...createPromotedMissingMediaCandidate(host),
       isMissing: undefined
     }
+    const onVerified = vi.fn()
     const resolveVerification = await startPendingWorkflowLoadMediaVerification(
       rootGraph,
-      pendingCandidate
+      pendingCandidate,
+      onVerified
     )
 
     const hostWidget = host.widgets.at(0)
     if (!hostWidget) throw new Error('Expected promoted image host widget')
     hostWidget.value = 'user-picked-valid.png'
     resolveVerification()
-    await new Promise((resolve) => setTimeout(resolve, 0))
+    await vi.waitFor(() => expect(onVerified).toHaveBeenCalledWith([]))
 
     expect.soft(useMissingMediaStore().missingMediaCandidates).toBeNull()
     expect(activeWorkflow.pendingWarnings).toBeNull()
