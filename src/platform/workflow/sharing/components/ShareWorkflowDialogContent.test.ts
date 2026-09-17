@@ -43,7 +43,7 @@ vi.mock<unknown>(
   () => ({
     useWorkflowService: () => ({
       saveWorkflow: vi.fn(),
-      renameWorkflow: vi.fn()
+      renameWorkflow: vi.fn().mockResolvedValue(true)
     })
   })
 )
