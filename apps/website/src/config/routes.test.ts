@@ -3,6 +3,36 @@ import { describe, expect, it } from 'vitest'
 import { apiKeysLink, externalLinks, getRoutes, localizeHref } from './routes'
 
 describe('localizeHref', () => {
+  it.for([
+    {
+      href: '/cloud#pricing',
+      locale: 'zh-CN',
+      expected: '/zh-CN/cloud#pricing'
+    },
+    {
+      href: '/cloud?ref=nav',
+      locale: 'zh-CN',
+      expected: '/zh-CN/cloud?ref=nav'
+    },
+    { href: '/#features', locale: 'ja', expected: '/ja/#features' },
+    { href: '/about#team', locale: 'ja', expected: '/about#team' },
+    {
+      href: '/p/supported-models/grok-imagine',
+      locale: 'zh-CN',
+      expected: '/p/supported-models/grok-imagine'
+    },
+    {
+      href: '/terms-of-service#scope',
+      locale: 'zh-CN',
+      expected: '/terms-of-service#scope'
+    }
+  ] as const)(
+    'maps $href in $locale to $expected',
+    ({ href, locale, expected }) => {
+      expect(localizeHref(href, locale)).toBe(expected)
+    }
+  )
+
   it('prefixes an internal path for a non-default locale', () => {
     expect(localizeHref('/mcp', 'zh-CN')).toBe('/zh-CN/mcp')
   })

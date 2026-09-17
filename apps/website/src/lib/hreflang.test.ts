@@ -7,7 +7,9 @@ import { describe, expect, it } from 'vitest'
 import { isNoindexPathname } from '../config/indexing'
 import { redirects } from '../config/redirects'
 import { routeOf, ZH_PREFIX } from '../utils/hreflangRoutes'
+import type { Alternate } from './hreflang'
 import {
+  canonicalPath,
   hreflangAlternates,
   ogLocale,
   ogLocaleAlternate,
@@ -31,15 +33,45 @@ describe('hreflangAlternates', () => {
     )
   })
 
-  it('handles the home page in both locales', () => {
+  it('handles the home page in every locale that has one', () => {
+    // The home page is the one route with all three locales, so it is the only
+    // place the full cluster shape can be asserted today.
     const home = hreflangAlternates('/', ORIGIN)
-    expect(home.map((a) => a.href)).toEqual([
-      'https://comfy.org/',
-      'https://comfy.org/zh-CN/',
-      'https://comfy.org/'
+    expect(home).toEqual([
+      { hreflang: 'en', href: 'https://comfy.org/' },
+      { hreflang: 'zh-CN', href: 'https://comfy.org/zh-CN/' },
+      { hreflang: 'ja', href: 'https://comfy.org/ja/' },
+      { hreflang: 'x-default', href: 'https://comfy.org/' }
     ])
     expect(hreflangAlternates('/zh-CN/', ORIGIN)).toEqual(home)
     expect(hreflangAlternates('/zh-CN', ORIGIN)).toEqual(home)
+  })
+
+  // BE-11285. Previously `/ja/` was read as the English route `/ja`, so it was
+  // labelled `en` and its cluster pointed at `/zh-CN/ja/`, which 404s.
+  it('labels the Japanese home page ja and clusters it with the others', () => {
+    expect(hreflangAlternates('/ja/', ORIGIN)).toEqual(
+      hreflangAlternates('/', ORIGIN)
+    )
+    expect(hreflangAlternates('/ja', ORIGIN)).toEqual(
+      hreflangAlternates('/', ORIGIN)
+    )
+  })
+
+  it('never treats a locale prefix as part of the English path', () => {
+    const hrefs = hreflangAlternates('/ja/', ORIGIN).map((a) => a.href)
+    expect(hrefs).not.toContain('https://comfy.org/zh-CN/ja/')
+    expect(hrefs).not.toContain('https://comfy.org/ja/ja/')
+  })
+
+  // Japanese has exactly one page. A blanket rule like Chinese's would
+  // advertise a Japanese URL for every route on the site.
+  it('offers no ja alternate for routes that have no Japanese page', () => {
+    for (const pathname of ['/cli/', '/zh-CN/cli/', '/mcp/']) {
+      expect(
+        hreflangAlternates(pathname, ORIGIN).map((a) => a.hreflang)
+      ).toEqual(['en', 'zh-CN', 'x-default'])
+    }
   })
 
   it('covers dynamic routes that exist in both locales', () => {
@@ -73,12 +105,13 @@ describe('sitemapAlternates', () => {
     ])
   })
 
-  it('emits nothing for Japanese, from either locale prefix', () => {
-    // /ja/ has no twin rule yet, so a cluster here would advertise
-    // /zh-CN/ja/, which 404s. The prefixed form must be suppressed too, or a
-    // locale-prefixed request slips past a check that only reads the raw path.
-    expect(hreflangAlternates('/ja/', ORIGIN)).toEqual([])
-    expect(hreflangAlternates('/zh-CN/ja/', ORIGIN)).toEqual([])
+  it('gives the Japanese home page a cluster with no 404 in it', () => {
+    expect(sitemapAlternates('https://comfy.org/ja/')).toEqual([
+      { url: 'https://comfy.org/', lang: 'en' },
+      { url: 'https://comfy.org/zh-CN/', lang: 'zh-CN' },
+      { url: 'https://comfy.org/ja/', lang: 'ja' },
+      { url: 'https://comfy.org/', lang: 'x-default' }
+    ])
   })
 
   it('leaves English-only entries without links', () => {
@@ -100,6 +133,43 @@ describe('og locale', () => {
     expect(ogLocaleAlternate('en', clustered)).toBe('zh_CN')
     expect(ogLocaleAlternate('zh-CN', clustered)).toBe('en_US')
     expect(ogLocaleAlternate('en', [])).toBeNull()
+  })
+
+  it('pairs a Japanese page with English, not with Chinese', () => {
+    // OG takes one alternate. Testing for `zh-CN` rather than `en` sent every
+    // localized page to zh_CN, so a Japanese page named a language it has
+    // nothing to do with.
+    const clustered = hreflangAlternates('/ja/', ORIGIN)
+    expect(ogLocaleAlternate('ja', clustered)).toBe('en_US')
+  })
+})
+
+describe('ogLocaleAlternate', () => {
+  const alt = (...codes: Alternate['hreflang'][]): Alternate[] =>
+    codes.map((hreflang) => ({ hreflang, href: 'https://comfy.org/x/' }))
+
+  it('names the Chinese twin when the page has one', () => {
+    expect(ogLocaleAlternate('en', alt('en', 'zh-CN', 'x-default'))).toBe(
+      'zh_CN'
+    )
+  })
+
+  /**
+   * An English-only route still carries `en` and `x-default`, so a non-empty
+   * cluster was never evidence that a Chinese page exists.
+   */
+  it('names nothing when the target locale is not published', () => {
+    expect(ogLocaleAlternate('en', alt('en', 'x-default'))).toBeNull()
+  })
+
+  it('names nothing for a page outside any cluster', () => {
+    expect(ogLocaleAlternate('en', [])).toBeNull()
+  })
+
+  it('points a localized page back at English', () => {
+    expect(ogLocaleAlternate('zh-CN', alt('en', 'zh-CN', 'x-default'))).toBe(
+      'en_US'
+    )
   })
 })
 
@@ -130,7 +200,7 @@ describe('the emitter agrees with the page tree', () => {
     const route = routeOf(`/src/pages/${rel}`)
     if (route.startsWith(`${ZH_PREFIX}/`)) {
       chinese.add(route.slice(ZH_PREFIX.length) || '/')
-    } else {
+    } else if (!route.startsWith('/ja/')) {
       english.add(route)
     }
   }
@@ -160,5 +230,84 @@ describe('the emitter agrees with the page tree', () => {
       (route) => clusters(`${ZH_PREFIX}${route}`) && !english.has(route)
     )
     expect(lying, 'the English twin was moved or removed').toEqual([])
+  })
+})
+
+describe('a page whose own locale is held back', () => {
+  /**
+   * Astro's i18n fallback builds /ja/<route> for every route, but only / is on
+   * the Japanese allowlist. Those pages canonical to English, which is right.
+   * They were also emitting the English cluster, which is not: nothing in that
+   * cluster lists them back, so the site advertised a one-way relationship, and
+   * the pages appeared to claim membership of a group they are held out of.
+   *
+   * A page that is not published in its own locale belongs in no cluster.
+   */
+  it('emits no alternates for a Japanese page that is not indexable', () => {
+    // The English pathname is deliberate: that is what Astro reports during a
+    // rewritten fallback render. Only the locale argument reveals it is ja.
+    expect(hreflangAlternates('/mcp/', ORIGIN, 'ja')).toEqual([])
+  })
+
+  it('still emits them for the Japanese page that IS indexable', () => {
+    expect(
+      hreflangAlternates('/ja/', ORIGIN, 'ja').map((a) => a.hreflang)
+    ).toContain('ja')
+  })
+
+  it('leaves Chinese alone when Japanese is the one held back', () => {
+    expect(
+      hreflangAlternates('/zh-CN/mcp/', ORIGIN, 'zh-CN').map((a) => a.hreflang)
+    ).toEqual(['en', 'zh-CN', 'x-default'])
+  })
+
+  it('does not advertise Japanese pricing before publication', () => {
+    expect(
+      hreflangAlternates('/zh-CN/pricing/', ORIGIN, 'zh-CN').map(
+        (a) => a.hreflang
+      )
+    ).toEqual(['en', 'zh-CN', 'x-default'])
+  })
+})
+
+describe('canonicalPath', () => {
+  /**
+   * THE most dangerous line in the localization work.
+   *
+   * Deleting the Chinese page files makes every /zh-CN/ URL a rewritten
+   * fallback render, and Astro reports the ENGLISH pathname during those. A
+   * canonical built from that pathname told Google the English page was the
+   * original for a fully translated Chinese page. Shipped across all 47 files
+   * it would have de-indexed the entire Chinese site.
+   *
+   * The canonical must follow whether the page is PUBLISHED in its locale, not
+   * whatever path Astro happens to report.
+   */
+  it.for(['/pricing/'])(
+    'points the published Chinese page %s at itself',
+    (path) => {
+      expect(canonicalPath(path, 'zh-CN')).toBe(`/zh-CN${path}`)
+      expect(canonicalPath(`/zh-CN${path}`, 'zh-CN')).toBe(`/zh-CN${path}`)
+    }
+  )
+
+  it('points a held-back Japanese page at the English original', () => {
+    expect(canonicalPath('/mcp/', 'ja')).toBe('/mcp/')
+  })
+
+  it('holds Japanese pricing at its English original', () => {
+    expect(canonicalPath('/pricing/', 'ja')).toBe('/pricing/')
+  })
+
+  it('points the published Japanese home page at itself', () => {
+    expect(canonicalPath('/ja/', 'ja')).toBe('/ja/')
+  })
+
+  it('points a Chinese copy of an English-only route at English', () => {
+    expect(canonicalPath('/enterprise-msa/', 'zh-CN')).toBe('/enterprise-msa/')
+  })
+
+  it('leaves English alone', () => {
+    expect(canonicalPath('/pricing/', 'en')).toBe('/pricing/')
   })
 })
