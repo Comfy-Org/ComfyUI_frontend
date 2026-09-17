@@ -14,6 +14,12 @@ import {
   getSlotLayoutAtPoint,
   getSlotPosition
 } from '@/renderer/core/canvas/litegraph/slotCalculations'
+import {
+  clearRevealedLinks,
+  clearRootLinkReveals,
+  isLinkRevealed,
+  setRevealedLinks
+} from './canvas/linkRevealState'
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { LayoutSource } from '@/renderer/core/layout/types'
@@ -60,9 +66,13 @@ import {
   queryRenderedLinkSegmentsAtPoint
 } from './canvas/hitTesting'
 import { getCanvasContextMenuTarget } from './canvas/getCanvasContextMenuTarget'
-import { clearLinkBadgeHitAreas } from './canvas/linkBadges'
 import {
-  drawGraphLinkBadges,
+  clearLinkBadgeHitAreas,
+  drawHiddenLinkBadges,
+  queryLinkBadgeAtPoint
+} from './canvas/linkBadges'
+import {
+  layoutGraphLinkBadges,
   queryHiddenLinkBadgeAtPoint
 } from './canvas/linkBadgeRenderer'
 import {
@@ -799,7 +809,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
   bg_tint?: string | CanvasGradient | CanvasPattern
   // TODO: This looks like another panel thing
   prompt_box?: PromptDialog | null
-  search_box?: HTMLDivElement
+  search_box?: HTMLDivElement & ICloseable
   /** @deprecated Panels */
   SELECTED_NODE?: LGraphNode
   /** @deprecated Panels */
@@ -1885,6 +1895,8 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
    */
   setGraph(newGraph: LGraph | Subgraph): void {
     const { graph } = this
+    if (graph && clearRootLinkReveals(graphScopeOf(graph).rootGraphId))
+      this.dirty_bgcanvas = true
     if (newGraph === graph) return
     clearLinkBadgeHitAreas(this)
 
@@ -2057,6 +2069,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
    * unbinds mouse events from the canvas
    */
   unbindEvents(): void {
+    if (clearRevealedLinks(this)) this.dirty_bgcanvas = true
     if (!this._events_binded) {
       console.warn('LGraphCanvas: no events bound')
       return
@@ -3249,6 +3262,17 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     this.graph_mouse[0] = x
     this.graph_mouse[1] = y
 
+    const hoveredBadge = queryLinkBadgeAtPoint(this, x, y)
+    const nodeAtPoint =
+      hoveredBadge === undefined
+        ? null
+        : graph.getNodeOnPos(x, y, this.visible_nodes)
+    const revealed =
+      hoveredBadge !== undefined && !nodeAtPoint ? [hoveredBadge] : []
+    if (setRevealedLinks(graphScopeOf(graph).rootGraphId, revealed, this)) {
+      this.dirty_bgcanvas = true
+    }
+
     if (e.isPrimary) pointer.move(e)
 
     /** See {@link state}.{@link LGraphCanvasState.hoveringOver hoveringOver} */
@@ -3283,7 +3307,9 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     const node =
       LiteGraph.vueNodesMode && !isSubgraphIOLink
         ? null
-        : graph.getNodeOnPos(x, y, this.visible_nodes)
+        : hoveredBadge !== undefined
+          ? nodeAtPoint
+          : graph.getNodeOnPos(x, y, this.visible_nodes)
 
     const dragRect = this.dragging_rectangle
     if (dragRect) {
@@ -3870,11 +3896,13 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     // TODO: Check if document.contains(e.relatedTarget) - handle mouseover node textarea etc.
     this.adjustMouseEvent(e)
     this.updateMouseOverNodes(null, e)
+    if (clearRevealedLinks(this)) this.dirty_bgcanvas = true
   }
 
   processMouseCancel(): void {
     console.warn('Pointer cancel!')
     this.pointer.reset()
+    if (clearRevealedLinks(this)) this.dirty_bgcanvas = true
   }
 
   /**
@@ -6090,7 +6118,6 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
         : nodesInRenderOrder(graph)
     const linkStore = useLinkStore()
     const graphScope = graphScopeOf(graph)
-    const presentationStore = useLinkPresentationStore()
 
     // Ensure widget-input slot positions are computed before rendering links.
     // arrange() sets input.pos for widget-backed slots, but is normally called
@@ -6104,9 +6131,14 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       node.arrange()
     }
 
-    const hiddenIdSet = new Set(
-      presentationStore.graphHiddenLinkIds(graphScope)
+    const hiddenLinkLayouts = layoutGraphLinkBadges(
+      this,
+      ctx,
+      graph,
+      LGraphCanvas.link_type_colors,
+      this.default_link_color
     )
+    const renderedRerouteSegments = new Set<Reroute>()
 
     const renderConnection = (
       link: LLink,
@@ -6115,17 +6147,22 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       startDirection?: LinkDirection,
       endDirection?: LinkDirection
     ): void => {
-      if (hiddenIdSet.has(link.id)) return
+      const hiddenLayout = hiddenLinkLayouts.get(link.id)
+      if (hiddenLayout && !isLinkRevealed(graphScope.rootGraphId, link.id))
+        return
 
       this._renderAllLinkSegments(
         ctx,
         link,
-        startPos,
-        endPos,
+        hiddenLayout?.outputTip ?? startPos,
+        hiddenLayout?.inputTip ?? endPos,
         visibleReroutes,
+        renderedRerouteSegments,
         now,
         startDirection,
-        endDirection
+        endDirection,
+        false,
+        hiddenLayout !== undefined
       )
     }
 
@@ -6202,7 +6239,13 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     }
 
     if (graph.floatingLinks.size > 0) {
-      this._renderFloatingLinks(ctx, graph, visibleReroutes, now)
+      this._renderFloatingLinks(
+        ctx,
+        graph,
+        visibleReroutes,
+        renderedRerouteSegments,
+        now
+      )
     }
 
     const rerouteSet = this._visibleReroutes
@@ -6248,14 +6291,9 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       link.disconnectOnDrop = distSquared < radius ** 2
     })
 
-    drawGraphLinkBadges(
-      this,
-      ctx,
-      graph,
-      margin_area,
-      LGraphCanvas.link_type_colors,
-      this.default_link_color
-    )
+    for (const layout of hiddenLinkLayouts.values()) {
+      drawHiddenLinkBadges(ctx, layout, margin_area)
+    }
 
     ctx.globalAlpha = 1
   }
@@ -6273,6 +6311,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     ctx: CanvasRenderingContext2D,
     graph: LGraph,
     visibleReroutes: Reroute[],
+    renderedRerouteSegments: Set<Reroute>,
     now: number
   ) {
     // Render floating links with 3/4 current alpha
@@ -6304,6 +6343,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
           startPos,
           endPos,
           visibleReroutes,
+          renderedRerouteSegments,
           now,
           LinkDirection.CENTER,
           endDirection,
@@ -6326,6 +6366,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
           startPos,
           endPos,
           visibleReroutes,
+          renderedRerouteSegments,
           now,
           startDirection,
           LinkDirection.CENTER,
@@ -6342,10 +6383,12 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     startPos: Point,
     endPos: Point,
     visibleReroutes: Reroute[],
+    renderedRerouteSegments: Set<Reroute>,
     now: number,
     startDirection?: LinkDirection,
     endDirection?: LinkDirection,
-    disabled: boolean = false
+    disabled: boolean = false,
+    startsAtBadge: boolean = false
   ) {
     const { graph, renderedPaths } = this
     if (!graph) return
@@ -6379,15 +6422,18 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       const l = reroutes.length
       for (let j = 0; j < l; j++) {
         const reroute = reroutes[j]
+        const badgeEntry = j === 0 && startsAtBadge
 
-        // Only render once
-        if (!renderedPaths.has(reroute)) {
-          renderedPaths.add(reroute)
-          visibleReroutes.push(reroute)
-          reroute._colour =
-            link.color ||
-            LGraphCanvas.link_type_colors[link.type] ||
-            this.default_link_color
+        if (badgeEntry || !renderedRerouteSegments.has(reroute)) {
+          if (!badgeEntry) renderedRerouteSegments.add(reroute)
+          if (!renderedPaths.has(reroute)) {
+            renderedPaths.add(reroute)
+            visibleReroutes.push(reroute)
+            reroute._colour =
+              link.color ||
+              LGraphCanvas.link_type_colors[link.type] ||
+              this.default_link_color
+          }
 
           const prevReroute = graph.getReroute(reroute.parentId)
           const rerouteStartPos = prevReroute?.pos ?? startPos
@@ -6408,7 +6454,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
               {
                 startControl,
                 endControl: reroute.controlPoint,
-                reroute,
+                reroute: badgeEntry ? undefined : reroute,
                 disabled
               }
             )
@@ -7476,9 +7522,8 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       }
     }
 
-    // @ts-expect-error Panel?
-    that.search_box?.close()
-    that.search_box = dialog
+    this.search_box?.close()
+    this.search_box = dialog
 
     let first: string | null = null
     let timeout: ReturnType<typeof setTimeout> | null = null

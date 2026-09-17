@@ -23,18 +23,7 @@ vi.mock<unknown>(import('@/scripts/api'), () => ({
   }
 }))
 
-// Mock the asset service
-vi.mock<unknown>(import('@/platform/assets/services/assetService'), () => ({
-  assetService: {
-    getAssetsPageByTag: vi.fn(),
-    getAssetsPageForNodeType: vi.fn(),
-    updateAsset: vi.fn(),
-    addAssetTags: vi.fn(),
-    removeAssetTags: vi.fn()
-  },
-  INPUT_TAG: 'input',
-  OUTPUT_TAG: 'output'
-}))
+vi.mock(import('@/platform/assets/services/assetService'))
 
 // Mock distribution type - hoisted so it can be changed per test
 const mockIsCloud = vi.hoisted(() => ({ value: false }))

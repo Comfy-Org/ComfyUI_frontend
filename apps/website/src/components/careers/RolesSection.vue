@@ -157,10 +157,10 @@ function scrollToDepartment(deptKey: string) {
                 {{ role.location }}
               </span>
               <span
-                class="bg-primary-comfy-yellow/0 group-hover:bg-primary-comfy-yellow relative grid size-7 shrink-0 place-items-center rounded-sm transition-colors duration-300 ease-out"
+                class="relative grid size-7 shrink-0 place-items-center rounded-sm bg-primary-comfy-yellow/0 transition-colors duration-300 ease-out group-hover:bg-primary-comfy-yellow"
               >
                 <span
-                  class="bg-primary-comfy-yellow size-5 transition-colors duration-300 ease-out group-hover:bg-primary-comfy-ink"
+                  class="size-5 bg-primary-comfy-yellow transition-colors duration-300 ease-out group-hover:bg-primary-comfy-ink"
                   style="
                     mask: url('/icons/arrow-up-right.svg') center / contain
                       no-repeat;

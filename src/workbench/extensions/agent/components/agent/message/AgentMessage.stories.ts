@@ -65,7 +65,7 @@ const meta: Meta<typeof AgentMessage> = {
   decorators: [
     () => ({
       template:
-        '<div class="agent-scope bg-agent-surface-raised w-100 p-4"><story /></div>'
+        '<div class="agent-scope bg-secondary-background w-100 p-4"><story /></div>'
     })
   ]
 }
@@ -138,6 +138,28 @@ export const FailedCall: Story = {
         },
         { type: 'text', text: 'I could not set that widget.', state: 'done' }
       ],
+      false
+    )
+  }
+}
+
+export const Approval: Story = {
+  args: {
+    message: message(
+      [{ type: 'runApproval', askId: 'approval', workflowName: 'Portrait' }],
+      false
+    )
+  }
+}
+
+export const ApprovalPending: Story = {
+  args: { ...Approval.args, answeringAskIds: new Set(['approval']) }
+}
+
+export const ErrorNotice: Story = {
+  args: {
+    message: message(
+      [{ type: 'notice', level: 'error', text: 'The workflow could not run.' }],
       false
     )
   }

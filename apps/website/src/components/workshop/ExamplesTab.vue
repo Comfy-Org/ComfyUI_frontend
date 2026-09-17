@@ -25,6 +25,10 @@ const specsOf = (example: PlaygroundExample) => example.specs.join(' · ')
 const samplesOnly = computed(
   () => examples.length > 0 && examples.every((example) => example.sampleOnly)
 )
+// A sample exists to be judged, and on a phone it was 144px wide: an 81px
+// preview of a generated image decides nothing. A lone sample takes the row,
+// and several leave the next one peeking so the strip still reads as one.
+const phoneWidth = computed(() => (examples.length === 1 ? 'w-full' : 'w-72'))
 const desktopGridColumns = computed(() =>
   examples.length === 3
     ? 'sm:grid-cols-[repeat(auto-fit,minmax(14rem,1fr))]'
@@ -56,9 +60,6 @@ function actionFor(example: PlaygroundExample, active = false) {
           )
         }}
       </h2>
-      <p v-if="samplesOnly" class="text-sm text-primary-warm-gray">
-        {{ t('workshop.examples.samplesSubtitle', locale) }}
-      </p>
     </div>
 
     <p v-if="!examples.length" class="text-sm text-primary-warm-gray">
@@ -71,7 +72,7 @@ function actionFor(example: PlaygroundExample, active = false) {
       v-else
       :class="
         cn(
-          'flex scrollbar-hide snap-x gap-3 overflow-x-auto max-sm:-mx-6 max-sm:-my-1 max-sm:scroll-px-6 max-sm:px-6 max-sm:py-1 sm:grid sm:max-w-5xl sm:justify-start sm:overflow-visible',
+          'scrollbar-hide flex snap-x gap-3 overflow-x-auto max-sm:-mx-6 max-sm:-my-1 max-sm:scroll-px-6 max-sm:px-6 max-sm:py-1 sm:grid sm:max-w-5xl sm:justify-start sm:overflow-visible',
           desktopGridColumns
         )
       "
@@ -79,7 +80,8 @@ function actionFor(example: PlaygroundExample, active = false) {
       <li
         v-for="example in examples"
         :key="example.id"
-        class="w-36 shrink-0 snap-start sm:w-auto"
+        :class="cn('shrink-0 snap-start sm:w-auto', phoneWidth)"
+        data-testid="example-item"
       >
         <button
           type="button"
@@ -100,10 +102,10 @@ function actionFor(example: PlaygroundExample, active = false) {
           <span
             :class="
               cn(
-                'bg-primary-comfy-ink-light relative block aspect-video overflow-hidden rounded-lg ring-1 transition-all',
+                'relative block aspect-video overflow-hidden rounded-lg bg-primary-comfy-ink-light ring-1 transition-all',
                 example.id === activeId
-                  ? 'ring-primary-comfy-yellow ring-2'
-                  : 'group-focus-visible:ring-primary-comfy-yellow ring-transparency-white-t8 group-hover:-translate-y-0.5 group-hover:ring-transparency-white-t20 group-hover:brightness-110'
+                  ? 'ring-2 ring-primary-comfy-yellow'
+                  : 'ring-transparency-white-t8 group-hover:-translate-y-0.5 group-hover:ring-transparency-white-t20 group-hover:brightness-110 group-focus-visible:ring-primary-comfy-yellow'
               )
             "
           >
@@ -133,7 +135,7 @@ function actionFor(example: PlaygroundExample, active = false) {
 
             <span
               v-if="example.id === activeId"
-              class="bg-primary-comfy-yellow absolute top-1.5 right-1.5 grid size-5 place-items-center rounded-full text-primary-comfy-ink"
+              class="absolute top-1.5 right-1.5 grid size-5 place-items-center rounded-full bg-primary-comfy-yellow text-primary-comfy-ink"
               data-testid="example-chosen"
             >
               <Check class="size-3" :stroke-width="3" aria-hidden="true" />

@@ -8,13 +8,13 @@ import { fromZodError } from 'zod-validation-error'
 import type {
   ScheduledRefreshReport,
   SessionErrorCode
-} from '@comfyorg/account/session'
-import { createWebCrossTabRefreshPort } from '@comfyorg/account/web'
+} from '@comfyorg/account-core/session'
+import { createWebCrossTabRefreshPort } from '@comfyorg/account-core/web'
 import {
   SESSION_ERROR_MESSAGES,
   createSessionClient,
   isPermanentSessionError
-} from '@comfyorg/account/session'
+} from '@comfyorg/account-core/session'
 
 import { t } from '@/i18n'
 import { useTelemetry } from '@/platform/telemetry'
@@ -744,7 +744,7 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
 
   // --- Unified Cloud-JWT lifecycle (flag-gated: unified_cloud_auth) ----------
   //
-  // The mint/refresh machinery is delegated to @comfyorg/account's session
+  // The mint/refresh machinery is delegated to @comfyorg/account-core's session
   // client (its scheduler runs the proactive chain; reactive 401 re-mints
   // recover API traffic, and the proactive chain keeps cookie-authenticated
   // <img>/media loads alive past the session cookie expiry, FE-1595). This
@@ -774,6 +774,16 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
 
   function unifiedWorkspaceIdFor(target: UnifiedMintBody): string | undefined {
     return 'workspace_id' in target ? target.workspace_id : undefined
+  }
+
+  function getUnifiedSessionClient() {
+    return unifiedSessionClient
+  }
+
+  // The session client caches per mint target, so a transport minting for any
+  // other target than this store's would re-mint on every request.
+  function getUnifiedMintWorkspaceId(): string | undefined {
+    return unifiedTarget ? unifiedWorkspaceIdFor(unifiedTarget) : undefined
   }
 
   function unifiedSelectionInvalid(code: SessionErrorCode): boolean {
@@ -1174,6 +1184,8 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
     ensureWorkspaceToken,
     getWorkspaceToken,
     getUnifiedToken,
+    getUnifiedSessionClient,
+    getUnifiedMintWorkspaceId,
     clearWorkspaceContext
   }
 })
