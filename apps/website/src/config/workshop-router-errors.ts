@@ -34,8 +34,9 @@ export class WorkshopRouterError extends Error {
       readonly concurrencyRemaining: string | null
       readonly body: string
     },
-    readonly stage?: WorkshopFailureStage
+    readonly stage?: WorkshopFailureStage,
+    options?: ErrorOptions
   ) {
-    super(`Router request failed: ${reason}`)
+    super(`Router request failed: ${reason}`, options)
   }
 }

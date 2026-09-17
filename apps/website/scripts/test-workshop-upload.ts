@@ -7,6 +7,7 @@ import { build } from 'vite'
 import { isWorkshopCloudEnv } from '../src/config/workshop-cloud-env'
 import type { WorkshopCloudEnv } from '../src/config/workshop-cloud-env'
 import { WORKSHOP_ROUTER_BASE_URL } from '../src/config/workshop-env'
+import { workshopUploadOrigin } from './workshop-upload-origin'
 import type { runWorkshopUploadProbe } from './workshop-upload-probe'
 
 declare global {
@@ -17,17 +18,6 @@ declare global {
   }
 }
 
-function probeOrigin(value: string): URL {
-  const origin = new URL(value)
-  if (
-    !['http:', 'https:'].includes(origin.protocol) ||
-    origin.username ||
-    origin.password
-  )
-    throw new Error('Expected an HTTP(S) origin without credentials')
-  return origin
-}
-
 function probeSettings(value: string | undefined) {
   const environment = process.env.PUBLIC_WORKSHOP_CLOUD_ENV
   const token = process.env.COMFY_API_KEY
@@ -35,7 +25,7 @@ function probeSettings(value: string | undefined) {
     throw new Error(
       'Set COMFY_API_KEY, PUBLIC_WORKSHOP_CLOUD_ENV and --origin explicitly'
     )
-  return { environment, token, origin: probeOrigin(value) }
+  return { environment, token, origin: workshopUploadOrigin(value) }
 }
 
 async function uploadProbeBundle(

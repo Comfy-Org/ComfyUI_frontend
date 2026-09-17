@@ -28,11 +28,12 @@ function result() {
 
 describe('Router delivery failures', () => {
   it('does not resubmit a known HTTP failure even if its error body is interrupted', async () => {
+    const cause = new TypeError('Connection lost')
     const calls = vi.fn<typeof fetch>().mockResolvedValue(
       new Response(
         new ReadableStream({
           start(controller) {
-            controller.error(new TypeError('Connection lost'))
+            controller.error(cause)
           }
         }),
         { status: 402, headers: { 'X-Comfy-Request-Id': 'rejected-request' } }
@@ -42,7 +43,8 @@ describe('Router delivery failures', () => {
     await expect(runWorkshopRouter(options())).rejects.toMatchObject({
       reason: 'noCredits',
       requestId: 'rejected-request',
-      response: { status: 402 }
+      response: { status: 402, body: '' },
+      cause
     })
     expect(calls).toHaveBeenCalledOnce()
   })

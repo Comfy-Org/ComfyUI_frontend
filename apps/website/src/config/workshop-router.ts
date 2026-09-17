@@ -64,14 +64,14 @@ async function failureDetails(response: Response) {
         remaining -= value.byteLength
       }
       body += decoder.decode()
-    } catch {
-      body = ''
+    } catch (cause) {
+      return { response: workshopResponseDetails(response), cause }
     } finally {
       await reader.cancel().catch(() => {})
       reader.releaseLock()
     }
   }
-  return workshopResponseDetails(response, body)
+  return { response: workshopResponseDetails(response, body) }
 }
 
 function failureFor(response: Response): RunFailure {
@@ -200,14 +200,17 @@ async function handleAttemptResponse(
       await response.body?.cancel().catch(() => {})
       return retry
     }
-    if (!response.ok)
+    if (!response.ok) {
+      const details = await failureDetails(response)
       throw new WorkshopRouterError(
         failureFor(response),
         progress.requestId,
         {},
-        await failureDetails(response),
-        'request'
+        details.response,
+        'request',
+        { cause: details.cause }
       )
+    }
     const outputs = await parseRouterResponse(
       options.contract,
       response,
