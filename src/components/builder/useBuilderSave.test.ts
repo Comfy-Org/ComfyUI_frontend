@@ -1,7 +1,7 @@
-import type BuilderSaveDialogContent from './BuilderSaveDialogContent.vue'
+import { showConfirmDialog } from '@/components/dialog/confirm/confirmDialog'
 import { useDialogService } from '@/services/dialogService'
 import { fromPartial } from '@total-typescript/shoehorn'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 
 import { useTelemetry } from '@/platform/telemetry'
@@ -24,8 +24,6 @@ const mockSaveWorkflow = vi.hoisted(() => vi.fn<() => Promise<void>>())
 const mockSaveWorkflowAs = vi.hoisted(() =>
   vi.fn<() => Promise<boolean | null>>()
 )
-
-const mockShowConfirmDialog = vi.hoisted(() => vi.fn())
 
 vi.mock<unknown>(import('@/composables/useAppMode'), () => ({
   useAppMode: () => ({
@@ -55,9 +53,7 @@ vi.mock<unknown>(
 
 vi.mock(import('@/services/dialogService'))
 
-vi.mock(import('@/components/dialog/confirm/confirmDialog'), () => ({
-  showConfirmDialog: mockShowConfirmDialog
-}))
+vi.mock(import('@/components/dialog/confirm/confirmDialog'))
 
 vi.mock<unknown>(import('@/i18n'), () => ({
   t: (key: string, params?: Record<string, string>) => {
@@ -77,6 +73,21 @@ describe('useBuilderSave', () => {
   beforeEach(() => {
     useWorkflowStore().activeWorkflow = null
   })
+
+  function openSaveDialog() {
+    useWorkflowStore().activeWorkflow = fromPartial({
+      filename: 'my-workflow',
+      initialMode: 'app'
+    })
+    const { saveAs } = useBuilderSave()
+    saveAs()
+    const [options] = vi.mocked(useDialogService().showLayoutDialog).mock
+      .calls[0]
+    assert('onSave' in options.props)
+    const { onSave } = options.props
+    assert(typeof onSave === 'function')
+    return onSave
+  }
 
   describe('save()', () => {
     it('does nothing when there is no active workflow', async () => {
@@ -98,7 +109,7 @@ describe('useBuilderSave', () => {
       await save()
 
       expect(mockSaveWorkflow).toHaveBeenCalledOnce()
-      expect(mockShowConfirmDialog).not.toHaveBeenCalled()
+      expect(showConfirmDialog).not.toHaveBeenCalled()
     })
 
     it('toasts error on failure', async () => {
@@ -113,7 +124,7 @@ describe('useBuilderSave', () => {
       await save()
 
       expect(mockToastErrorHandler).toHaveBeenCalledWith(error)
-      expect(mockShowConfirmDialog).not.toHaveBeenCalled()
+      expect(showConfirmDialog).not.toHaveBeenCalled()
     })
 
     it('prevents concurrent saves', async () => {
@@ -196,24 +207,9 @@ describe('useBuilderSave', () => {
   })
 
   describe('save dialog callbacks', () => {
-    function getSaveDialogProps() {
-      useWorkflowStore().activeWorkflow = fromPartial({
-        filename: 'my-workflow',
-        initialMode: 'app'
-      })
-      const { saveAs } = useBuilderSave()
-      saveAs()
-      return vi.mocked(
-        useDialogService().showLayoutDialog<typeof BuilderSaveDialogContent>
-      ).mock.calls[0][0].props as {
-        onSave: (filename: string, openAsApp: boolean) => Promise<void>
-        onClose: () => void
-      }
-    }
-
     it('onSave calls saveWorkflowAs with isApp and tracks telemetry', async () => {
       mockSaveWorkflowAs.mockResolvedValueOnce(true)
-      const { onSave } = getSaveDialogProps()
+      const onSave = openSaveDialog()
 
       await onSave('new-name', true)
 
@@ -231,7 +227,7 @@ describe('useBuilderSave', () => {
 
     it('onSave passes isApp: false when saving as graph', async () => {
       mockSaveWorkflowAs.mockResolvedValueOnce(true)
-      const { onSave } = getSaveDialogProps()
+      const onSave = openSaveDialog()
 
       await onSave('new-name', false)
 
@@ -249,7 +245,7 @@ describe('useBuilderSave', () => {
 
     it('onSave does not track or close when saveWorkflowAs returns falsy', async () => {
       mockSaveWorkflowAs.mockResolvedValueOnce(null)
-      const { onSave } = getSaveDialogProps()
+      const onSave = openSaveDialog()
 
       await onSave('new-name', false)
 
@@ -259,25 +255,25 @@ describe('useBuilderSave', () => {
 
     it('onSave closes dialog and shows success dialog after successful save', async () => {
       mockSaveWorkflowAs.mockResolvedValueOnce(true)
-      const { onSave } = getSaveDialogProps()
+      const onSave = openSaveDialog()
 
       await onSave('new-name', true)
 
       expect(useDialogStore().closeDialog).toHaveBeenCalledWith({
         key: SAVE_DIALOG_KEY
       })
-      expect(mockShowConfirmDialog).toHaveBeenCalledExactlyOnceWith(
+      expect(showConfirmDialog).toHaveBeenCalledExactlyOnceWith(
         expect.objectContaining({ key: SUCCESS_DIALOG_KEY })
       )
     })
 
     it('shows app success message when openAsApp is true', async () => {
       mockSaveWorkflowAs.mockResolvedValueOnce(true)
-      const { onSave } = getSaveDialogProps()
+      const onSave = openSaveDialog()
 
       await onSave('new-name', true)
 
-      expect(mockShowConfirmDialog).toHaveBeenCalledExactlyOnceWith(
+      expect(showConfirmDialog).toHaveBeenCalledExactlyOnceWith(
         expect.objectContaining({
           props: expect.objectContaining({
             promptText: 'builderSave.successBodyApp'
@@ -288,11 +284,11 @@ describe('useBuilderSave', () => {
 
     it('shows graph success message with exit builder button when openAsApp is false', async () => {
       mockSaveWorkflowAs.mockResolvedValueOnce(true)
-      const { onSave } = getSaveDialogProps()
+      const onSave = openSaveDialog()
 
       await onSave('new-name', false)
 
-      expect(mockShowConfirmDialog).toHaveBeenCalledExactlyOnceWith(
+      expect(showConfirmDialog).toHaveBeenCalledExactlyOnceWith(
         expect.objectContaining({
           props: expect.objectContaining({
             promptText: 'builderSave.successBodyGraph'
@@ -308,7 +304,7 @@ describe('useBuilderSave', () => {
     it('onSave toasts error and closes dialog on failure', async () => {
       const error = new Error('save-as failed')
       mockSaveWorkflowAs.mockRejectedValueOnce(error)
-      const { onSave } = getSaveDialogProps()
+      const onSave = openSaveDialog()
 
       await onSave('new-name', false)
 
@@ -325,9 +321,10 @@ describe('useBuilderSave', () => {
           resolveSaveAs = r
         })
       )
-      const { onSave } = getSaveDialogProps()
+      const onSave = openSaveDialog()
 
       const firstSave = onSave('new-name', true)
+      expect(firstSave).toBeInstanceOf(Promise)
 
       await onSave('other-name', true)
       expect(mockSaveWorkflowAs).toHaveBeenCalledOnce()
@@ -339,23 +336,15 @@ describe('useBuilderSave', () => {
 
   describe('graph success dialog callbacks', () => {
     async function getGraphSuccessDialogProps() {
-      useWorkflowStore().activeWorkflow = fromPartial({
-        filename: 'my-workflow',
-        initialMode: 'app'
-      })
       mockSaveWorkflowAs.mockResolvedValueOnce(true)
-      const { saveAs } = useBuilderSave()
-      saveAs()
-      const { onSave } = vi.mocked(
-        useDialogService().showLayoutDialog<typeof BuilderSaveDialogContent>
-      ).mock.calls[0][0].props as {
-        onSave: (filename: string, openAsApp: boolean) => Promise<void>
-      }
+      const onSave = openSaveDialog()
       await onSave('new-name', false)
-      return mockShowConfirmDialog.mock.calls[0][0].footerProps as {
-        onConfirm: () => void
-        onCancel: () => void
-      }
+      const [options] = vi.mocked(showConfirmDialog).mock.calls[0]
+      assert.exists(options?.footerProps)
+      const { onConfirm, onCancel } = options.footerProps
+      assert(typeof onConfirm === 'function')
+      assert(typeof onCancel === 'function')
+      return { onConfirm, onCancel }
     }
 
     it('onConfirm closes dialog and exits builder', async () => {

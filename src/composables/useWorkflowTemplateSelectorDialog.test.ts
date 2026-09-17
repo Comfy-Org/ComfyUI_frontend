@@ -1,4 +1,3 @@
-import type WorkflowTemplateSelectorDialog from '@/components/custom/widget/WorkflowTemplateSelectorDialog.vue'
 import { useDialogService } from '@/services/dialogService'
 import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 import { useDialogStore } from '@/stores/dialogStore'
@@ -103,11 +102,10 @@ describe('useWorkflowTemplateSelectorDialog', () => {
       const dialog = useWorkflowTemplateSelectorDialog()
       dialog.show('command', { afterClose })
 
-      const onClose = vi.mocked(
-        useDialogService().showLayoutDialog<
-          typeof WorkflowTemplateSelectorDialog
-        >
-      ).mock.calls[0][0].props.onClose
+      const [options] = vi.mocked(useDialogService().showLayoutDialog).mock
+        .calls[0]
+      assert('onClose' in options.props)
+      const { onClose } = options.props
       assert(typeof onClose === 'function')
       onClose()
 
@@ -121,11 +119,10 @@ describe('useWorkflowTemplateSelectorDialog', () => {
       const dialog = useWorkflowTemplateSelectorDialog()
       dialog.show('command')
 
-      const onClose = vi.mocked(
-        useDialogService().showLayoutDialog<
-          typeof WorkflowTemplateSelectorDialog
-        >
-      ).mock.calls[0][0].props.onClose
+      const [options] = vi.mocked(useDialogService().showLayoutDialog).mock
+        .calls[0]
+      assert('onClose' in options.props)
+      const { onClose } = options.props
       assert(typeof onClose === 'function')
       expect(() => onClose()).not.toThrow()
     })
