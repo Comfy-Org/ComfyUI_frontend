@@ -338,7 +338,7 @@ describe('panZoomUtils', () => {
       expect(result.panOffset.y).toBeGreaterThan(0)
     })
 
-    it('centers horizontally for height-constrained fit', () => {
+    it('centers horizontally for height-constrained images', () => {
       const result = calculateFitView({
         rootWidth: 1200,
         rootHeight: 800,
