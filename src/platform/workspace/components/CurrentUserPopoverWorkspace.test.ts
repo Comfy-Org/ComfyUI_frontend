@@ -35,7 +35,7 @@ const state = vi.hoisted(() => {
     canReactivatePlan: false,
     canOpenPricingSurface: false,
     shouldUseWorkspaceBilling: true,
-    hostedBillingWebEnabled: false,
+    hostedBillingDestination: 'stripe',
     billingWebUrl: initialBillingWebUrl(),
     showCreateWorkspaceDialog: vi.fn(),
     showTopUpCreditsDialog: vi.fn(),
@@ -132,8 +132,8 @@ vi.mock(import('@/platform/telemetry'))
 vi.mock<unknown>(import('@/composables/useFeatureFlags'), () => ({
   useFeatureFlags: () => ({
     flags: {
-      get hostedBillingWebEnabled() {
-        return state.hostedBillingWebEnabled
+      get hostedBillingDestination() {
+        return state.hostedBillingDestination
       }
     }
   })
@@ -141,6 +141,11 @@ vi.mock<unknown>(import('@/composables/useFeatureFlags'), () => ({
 
 vi.mock<unknown>(import('@/config/billingWeb'), () => ({
   getBillingWebUrl: () => state.billingWebUrl
+}))
+
+// Pins the billing family the hosted route derives; an unmapped one fails closed to the provider.
+vi.mock(import('@/config/comfyApi'), () => ({
+  getComfyCloudBaseUrl: () => 'https://testcloud.comfy.org'
 }))
 
 const WorkspaceSwitcherPopoverStub = defineComponent({
@@ -210,7 +215,7 @@ describe('CurrentUserPopoverWorkspace', () => {
     state.canOpenPricingSurface = false
     state.canReactivate = false
     state.shouldUseWorkspaceBilling = true
-    state.hostedBillingWebEnabled = false
+    state.hostedBillingDestination = 'stripe'
     state.billingWebUrl = new URL('http://localhost:5174')
   })
 
@@ -320,6 +325,7 @@ describe('CurrentUserPopoverWorkspace', () => {
 
   it('keeps Plans & pricing in-app when hosted billing is disabled', async () => {
     const user = userEvent.setup()
+    const open = vi.spyOn(window, 'open').mockReturnValue(null)
     state.canOpenPricingSurface = true
     renderComponent('team')
 
@@ -328,45 +334,32 @@ describe('CurrentUserPopoverWorkspace', () => {
     expect(state.showPricingTable).toHaveBeenCalledWith({
       reason: 'avatar_menu_plans'
     })
+    expect(open).not.toHaveBeenCalled()
   })
 
-  it('opens hosted billing when its feature flag is enabled', async () => {
+  it('opens hosted billing alone when its feature flag is enabled', async () => {
     const user = userEvent.setup()
-    const open = vi.spyOn(window, 'open').mockReturnValue(window)
+    const open = vi.spyOn(window, 'open').mockReturnValue(null)
     state.canOpenPricingSurface = true
-    state.hostedBillingWebEnabled = true
+    state.hostedBillingDestination = 'billing_web'
     renderComponent('team')
 
     await user.click(screen.getByTestId('plans-pricing-menu-item'))
 
+    expect(open).toHaveBeenCalledOnce()
     expect(open).toHaveBeenCalledWith(
-      'http://localhost:5174/',
+      'http://localhost:5174/v1/pricing?product=comfyui&return_to=comfyui_workspace',
       '_blank',
       'noopener,noreferrer'
     )
     expect(state.showPricingTable).not.toHaveBeenCalled()
   })
 
-  it('keeps Plans & pricing in-app when the hosted tab is blocked', async () => {
-    const user = userEvent.setup()
-    const open = vi.spyOn(window, 'open').mockReturnValue(null)
-    state.canOpenPricingSurface = true
-    state.hostedBillingWebEnabled = true
-    renderComponent('team')
-
-    await user.click(screen.getByTestId('plans-pricing-menu-item'))
-
-    expect(open).toHaveBeenCalledOnce()
-    expect(state.showPricingTable).toHaveBeenCalledWith({
-      reason: 'avatar_menu_plans'
-    })
-  })
-
   it('keeps Plans & pricing in-app when the hosted URL is unavailable', async () => {
     const user = userEvent.setup()
     const open = vi.spyOn(window, 'open').mockImplementation(() => null)
     state.canOpenPricingSurface = true
-    state.hostedBillingWebEnabled = true
+    state.hostedBillingDestination = 'billing_web'
     state.billingWebUrl = null
     renderComponent('team')
 
@@ -623,7 +616,7 @@ describe('CurrentUserPopoverWorkspace', () => {
     state.canManageSubscriptionLifecycle = true
     state.canReactivatePlan = true
     state.canOpenPricingSurface = true
-    state.hostedBillingWebEnabled = true
+    state.hostedBillingDestination = 'billing_web'
     renderComponent('team')
 
     expect(screen.getByTestId('add-credits-button')).toBeInTheDocument()
