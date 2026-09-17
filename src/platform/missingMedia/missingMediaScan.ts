@@ -1,6 +1,6 @@
 import { groupBy } from 'es-toolkit'
 import {
-  buildPromotedSourceExecutionId,
+  buildPromotedWidgetExecutionSources,
   hasActivePromotedWidgetConsumer,
   resolveActivePromotedWidgetConsumers
 } from '@/core/graph/subgraph/resolveConcretePromotedWidget'
@@ -16,7 +16,6 @@ import type {
 } from './types'
 import type { LGraph } from '@/lib/litegraph/src/LGraph'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import type { NodeExecutionId } from '@/types/nodeIdentification'
 import type {
   IBaseWidget,
   IComboWidget
@@ -107,24 +106,6 @@ function resolveMediaMissingState(
   )
 }
 
-function resolvePromotedMediaSources(
-  node: LGraphNode,
-  executionId: NodeExecutionId,
-  widgetName: string
-) {
-  return resolveActivePromotedWidgetConsumers(node, widgetName).flatMap(
-    ({ nodePath, widget }) => {
-      const sourceExecutionId = buildPromotedSourceExecutionId(
-        executionId,
-        nodePath
-      )
-      return sourceExecutionId
-        ? [{ executionId: sourceExecutionId, widgetName: widget.name }]
-        : []
-    }
-  )
-}
-
 /** Scan a single node for missing media candidates (OSS immediate resolution). */
 export function scanNodeMediaCandidates(
   rootGraph: LGraph,
@@ -168,10 +149,10 @@ export function scanNodeMediaCandidates(
       isMissing
     }
     if (node.isSubgraphNode()) {
-      candidate.promotedSources = resolvePromotedMediaSources(
-        node,
+      const consumers = resolveActivePromotedWidgetConsumers(node, widget.name)
+      candidate.promotedSources = buildPromotedWidgetExecutionSources(
         executionId,
-        widget.name
+        consumers
       )
     }
     candidates.push(candidate)

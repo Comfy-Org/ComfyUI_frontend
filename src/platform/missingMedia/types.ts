@@ -1,5 +1,5 @@
 import type { SerializedNodeId } from '@/types/nodeId'
-import type { NodeExecutionId } from '@/types/nodeIdentification'
+import type { PromotedWidgetExecutionSource } from '@/core/graph/subgraph/promotedWidgetTypes'
 
 export type MediaType = 'image' | 'video' | 'audio'
 
@@ -11,10 +11,7 @@ export interface MissingMediaCandidate {
   nodeId: SerializedNodeId
   nodeType: string
   widgetName: string
-  promotedSources?: {
-    executionId: NodeExecutionId
-    widgetName: string
-  }[]
+  promotedSources?: PromotedWidgetExecutionSource[]
   mediaType: MediaType
   /** Display name (plain filename for OSS, asset hash for cloud). */
   name: string

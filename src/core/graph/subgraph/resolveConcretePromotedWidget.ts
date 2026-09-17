@@ -1,4 +1,7 @@
-import type { ResolvedPromotedWidget } from '@/core/graph/subgraph/promotedWidgetTypes'
+import type {
+  PromotedWidgetExecutionSource,
+  ResolvedPromotedWidget
+} from '@/core/graph/subgraph/promotedWidgetTypes'
 import { resolveSubgraphInputTarget } from '@/core/graph/subgraph/resolveSubgraphInputTarget'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
@@ -79,6 +82,21 @@ export function resolveActivePromotedWidgetConsumers(
   }
 
   return consumers
+}
+
+export function buildPromotedWidgetExecutionSources(
+  executionId: NodeExecutionId,
+  consumers: readonly ResolvedPromotedWidget[]
+): PromotedWidgetExecutionSource[] {
+  return consumers.flatMap(({ nodePath, widget }) => {
+    const sourceExecutionId = buildPromotedSourceExecutionId(
+      executionId,
+      nodePath
+    )
+    return sourceExecutionId
+      ? [{ executionId: sourceExecutionId, widgetName: widget.name }]
+      : []
+  })
 }
 
 export function hasActivePromotedWidgetConsumer(

@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest'
 import { liftNodeErrorsToBoundary } from '@/core/graph/subgraph/liftNodeErrorsToBoundary'
 import { promoteValueWidgetViaSubgraphInput } from '@/core/graph/subgraph/promotionUtils'
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { LGraphEventMode } from '@/lib/litegraph/src/types/globalEnums'
 import {
   createBoundaryLinkedSubgraph,
   createTestRootGraph,
@@ -17,7 +18,10 @@ import {
   seedMediaNodeDefs
 } from '@/platform/missingMedia/__fixtures__/promotedMedia'
 import { scanAllMediaCandidates } from '@/platform/missingMedia/missingMediaScan'
-import { getExecutionIdByNode } from '@/utils/graphTraversalUtil'
+import {
+  getExecutionIdByNode,
+  isCandidateScopeActive
+} from '@/utils/graphTraversalUtil'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { createNodeExecutionId } from '@/types/nodeIdentification'
 import { toNodeId } from '@/types/nodeId'
@@ -124,6 +128,167 @@ function createDuplicatePromotedModelFixture(secondModelValue = 'None') {
     })
   }
 }
+
+function createPromotedModelFanout(nested = false) {
+  const inner = createTestSubgraph({
+    inputs: [{ name: 'shared_model', type: 'COMBO' }]
+  })
+  const rootGraph = inner.rootGraph
+  const sources = [42, 43, 44].map((id) => {
+    const node = new LGraphNode(
+      'CheckpointLoaderSimple',
+      'CheckpointLoaderSimple'
+    )
+    node.id = toNodeId(id)
+    const input = node.addInput('ckpt_name', 'COMBO')
+    const widget = node.addWidget(
+      'combo',
+      'ckpt_name',
+      'present.safetensors',
+      () => {},
+      {
+        values: ['present.safetensors']
+      }
+    )
+    input.widget = { name: widget.name }
+    inner.add(node)
+    if (!inner.inputNode.slots[0].connect(input, node)) {
+      throw new Error('Expected shared model input connection')
+    }
+    return node
+  })
+  let subgraph = inner
+  if (nested) {
+    subgraph = createTestSubgraph({
+      rootGraph,
+      inputs: [{ name: 'outer_model', type: 'COMBO' }]
+    })
+    const middle = createTestSubgraphNode(inner, {
+      parentGraph: subgraph,
+      id: 77
+    })
+    subgraph.add(middle)
+    if (!subgraph.inputNode.slots[0].connect(middle.inputs[0], middle)) {
+      throw new Error('Expected nested model input connection')
+    }
+  }
+  const hosts = [65, 66].map((id) => {
+    const host = createTestSubgraphNode(subgraph, {
+      parentGraph: rootGraph,
+      id
+    })
+    rootGraph.add(host)
+    host.widgets[0].value = 'missing.safetensors'
+    return host
+  })
+  return { rootGraph, sources, hosts }
+}
+
+it.for([
+  {
+    nested: false,
+    paths: [
+      [65, 42],
+      [65, 43],
+      [65, 44],
+      [66, 42],
+      [66, 43],
+      [66, 44]
+    ]
+  },
+  {
+    nested: true,
+    paths: [
+      [65, 77, 42],
+      [65, 77, 43],
+      [65, 77, 44],
+      [66, 77, 42],
+      [66, 77, 43],
+      [66, 77, 44]
+    ]
+  }
+] as const)(
+  'absorbs every promoted model consumer without crossing host instances: nested=$nested',
+  ({ nested, paths }) => {
+    const { rootGraph } = createPromotedModelFanout(nested)
+    const candidates = scanAllModelCandidates(rootGraph, () => false)
+    expect(candidates).toHaveLength(2)
+    const ids = paths.map((path) => createNodeExecutionId(path))
+    expect
+      .soft(candidates.flatMap((candidate) => candidate.promotedSources))
+      .toEqual(
+        ids.map((executionId) => ({ executionId, widgetName: 'ckpt_name' }))
+      )
+    const error = validationError('value_not_in_list', 'ckpt_name')
+    expect(
+      ids.map((id) =>
+        classifyValidationErrorAbsorption(candidates, [], error, id)
+      )
+    ).toEqual(Array(6).fill('missing_model'))
+    expect(
+      classifyValidationErrorAbsorption([candidates[0]], [], error, ids[3])
+    ).toBeNull()
+    const result = classifyPanelErrors({
+      promptError: null,
+      executionError: null,
+      nodeErrors: liftNodeErrorsToBoundary(
+        rootGraph,
+        Object.fromEntries(ids.map((id) => [id, nodeError([error])]))
+      ),
+      missingModels: candidates,
+      missingMedia: [],
+      hasMissingNodes: false
+    })
+    expect(
+      result.nodeErrors.flatMap(({ errors }) =>
+        errors.map(({ absorption }) => absorption)
+      )
+    ).toEqual(Array(6).fill('missing_model'))
+    expect(result.hasBlockingError).toBe(false)
+    expect(
+      classifyValidationErrorAbsorption(
+        candidates,
+        [],
+        validationError('value_not_in_list', 'other_model', {
+          received_value: 'missing.safetensors'
+        }),
+        ids[0]
+      )
+    ).toBeNull()
+  }
+)
+
+it.for([LGraphEventMode.BYPASS, LGraphEventMode.NEVER])(
+  'keeps promoted models with other active consumers when the first consumer has mode %i',
+  (mode) => {
+    const { rootGraph, sources } = createPromotedModelFanout()
+    sources[0].mode = mode
+    const candidates = scanAllModelCandidates(rootGraph, () => false)
+    expect(candidates).toHaveLength(2)
+    expect(
+      candidates.flatMap((candidate) => candidate.promotedSources)
+    ).toEqual([
+      { executionId: '65:43', widgetName: 'ckpt_name' },
+      { executionId: '65:44', widgetName: 'ckpt_name' },
+      { executionId: '66:43', widgetName: 'ckpt_name' },
+      { executionId: '66:44', widgetName: 'ckpt_name' }
+    ])
+  }
+)
+
+it('keeps a pending promoted model active until its last consumer is inactive', () => {
+  const { rootGraph, sources } = createPromotedModelFanout()
+  const candidates = scanAllModelCandidates(rootGraph, () => false)
+  sources[0].mode = LGraphEventMode.BYPASS
+  expect(
+    candidates.map((candidate) => isCandidateScopeActive(rootGraph, candidate))
+  ).toEqual([true, true])
+  sources[1].mode = LGraphEventMode.NEVER
+  sources[2].mode = LGraphEventMode.BYPASS
+  expect(
+    candidates.map((candidate) => isCandidateScopeActive(rootGraph, candidate))
+  ).toEqual([false, false])
+})
 
 describe('missing resource validation error absorption', () => {
   it('matches a missing model by execution node and widget', () => {

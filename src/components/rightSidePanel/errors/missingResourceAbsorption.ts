@@ -1,6 +1,7 @@
 import type { MissingMediaCandidate } from '@/platform/missingMedia/types'
 import type { MissingModelCandidate } from '@/platform/missingModel/types'
 import type { NodeExecutionId } from '@/types/nodeIdentification'
+import type { PromotedWidgetExecutionSource } from '@/core/graph/subgraph/promotedWidgetTypes'
 import { getLiftedErrorSource } from '@/core/graph/subgraph/liftNodeErrorsToBoundary'
 import type { LiftedErrorExtraInfo } from '@/core/graph/subgraph/liftNodeErrorsToBoundary'
 import {
@@ -64,17 +65,8 @@ function matchesErrorInputName(
   )
 }
 
-/**
- * A promoted widget's own (interior node, widget) pair. Node-level errors are
- * never lifted to the host, so they can only be matched against this.
- */
-interface PromotedWidgetSource {
-  executionId: string | number
-  widgetName: string
-}
-
 function matchesPromotedSource(
-  source: PromotedWidgetSource,
+  source: PromotedWidgetExecutionSource,
   error: NodeValidationError,
   nodeId: NodeExecutionId
 ): boolean {
@@ -89,7 +81,7 @@ function matchesCandidate(
   isMissing: boolean | undefined,
   error: NodeValidationError,
   nodeId: NodeExecutionId,
-  promotedSources: readonly PromotedWidgetSource[] = []
+  promotedSources: readonly PromotedWidgetExecutionSource[] = []
 ): boolean {
   if (isMissing !== true) return false
   // Checked before the host-identity gate: an unlifted interior error never
@@ -134,7 +126,8 @@ function matchesMissingModel(
     candidate.name,
     candidate.isMissing,
     error,
-    nodeId
+    nodeId,
+    candidate.promotedSources
   )
 }
 
