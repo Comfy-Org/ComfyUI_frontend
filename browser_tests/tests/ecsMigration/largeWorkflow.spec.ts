@@ -11,67 +11,74 @@ test.describe(
       comfyPage,
       comfyMouse
     }, testInfo) => {
-      expect(
-        await comfyPage.settings.getSetting<boolean>('Comfy.VueNodes.Enabled')
-      ).toBe(false)
-      await comfyPage.workflow.loadWorkflow(
-        'ecs-qa-007-large-workflow-readiness'
-      )
-
-      const graphSummary = await comfyPage.page.evaluate(() => ({
-        nodeCount: window.app!.graph.nodes.length,
-        groupCount: window.app!.graph.groups.length,
-        nodeTitles: window.app!.graph.nodes.map((node) => node.title),
-        groupTitles: window.app!.graph.groups.map((group) => group.title),
-        offset: [...window.app!.canvas.ds.offset]
-      }))
-      expect(graphSummary.nodeCount).toBe(247)
-      expect(graphSummary.groupCount).toBe(3)
-      expect(graphSummary.nodeTitles).toEqual(
-        expect.arrayContaining(['CPU Output Input', 'CPU Output Landmark'])
-      )
-      expect(graphSummary.groupTitles).toEqual(
-        expect.arrayContaining([
-          'First Pipeline Landmark',
-          'Middle Pipeline Landmark',
-          'CPU Output Branch Landmark'
-        ])
-      )
-
-      const paintedLandmarks = await expectLargeWorkflowLandmarksPainted(
-        comfyPage.page
-      )
-      await testInfo.attach('painted-landmarks', {
-        body: JSON.stringify(paintedLandmarks),
-        contentType: 'application/json'
-      })
-      await comfyMouse.middleDragFromCenter(comfyPage.canvas, {
-        x: 120,
-        y: 80
-      })
-      await expect
-        .poll(() =>
-          comfyPage.page.evaluate(() => [...window.app!.canvas.ds.offset])
+      await test.step('loads the exact legacy graph and landmarks', async () => {
+        expect(
+          await comfyPage.settings.getSetting<boolean>('Comfy.VueNodes.Enabled')
+        ).toBe(false)
+        await comfyPage.workflow.loadWorkflow(
+          'ecs-qa-007-large-workflow-readiness'
         )
-        .not.toEqual(graphSummary.offset)
 
-      const initialScale = await comfyPage.canvasOps.getScale()
-      await comfyPage.canvasOps.zoom(-100)
-      await expect
-        .poll(() => comfyPage.canvasOps.getScale())
-        .toBeGreaterThan(initialScale)
+        const graphSummary = await comfyPage.page.evaluate(() => ({
+          nodeCount: window.app!.graph.nodes.length,
+          groupCount: window.app!.graph.groups.length,
+          nodeTitles: window.app!.graph.nodes.map((node) => node.title),
+          groupTitles: window.app!.graph.groups.map((group) => group.title)
+        }))
+        expect(graphSummary.nodeCount).toBe(247)
+        expect(graphSummary.groupCount).toBe(3)
+        expect(graphSummary.nodeTitles).toEqual(
+          expect.arrayContaining(['CPU Output Input', 'CPU Output Landmark'])
+        )
+        expect(graphSummary.groupTitles).toEqual(
+          expect.arrayContaining([
+            'First Pipeline Landmark',
+            'Middle Pipeline Landmark',
+            'CPU Output Branch Landmark'
+          ])
+        )
+      })
 
-      const output = await comfyPage.nodeOps.getNodeRefById(247)
-      expect(await (await output.getWidget(0)).getValue()).not.toBe(
-        'large-workflow-ready'
-      )
-
-      await comfyPage.command.executeCommand('Comfy.QueuePrompt')
-      await expect
-        .poll(async () => (await output.getWidget(0)).getValue(), {
-          timeout: 10_000
+      await test.step('paints every bounded graph landmark', async () => {
+        const paintedLandmarks = await expectLargeWorkflowLandmarksPainted(
+          comfyPage.page
+        )
+        await testInfo.attach('painted-landmarks', {
+          body: JSON.stringify(paintedLandmarks),
+          contentType: 'application/json'
         })
-        .toBe('large-workflow-ready')
+      })
+
+      await test.step('pans and zooms the loaded graph', async () => {
+        const initialOffset = await comfyPage.canvasOps.getOffset()
+        await comfyMouse.middleDragFromCenter(comfyPage.canvas, {
+          x: 120,
+          y: 80
+        })
+        await expect
+          .poll(() => comfyPage.canvasOps.getOffset())
+          .not.toEqual(initialOffset)
+
+        const initialScale = await comfyPage.canvasOps.getScale()
+        await comfyPage.canvasOps.zoom(-100)
+        await expect
+          .poll(() => comfyPage.canvasOps.getScale())
+          .toBeGreaterThan(initialScale)
+      })
+
+      await test.step('executes the CPU output branch', async () => {
+        const output = await comfyPage.nodeOps.getNodeRefById(247)
+        expect(await (await output.getWidget(0)).getValue()).not.toBe(
+          'large-workflow-ready'
+        )
+
+        await comfyPage.command.executeCommand('Comfy.QueuePrompt')
+        await expect
+          .poll(async () => (await output.getWidget(0)).getValue(), {
+            timeout: 10_000
+          })
+          .toBe('large-workflow-ready')
+      })
     })
   }
 )
