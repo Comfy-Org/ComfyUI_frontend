@@ -499,7 +499,7 @@ describe('Load3DConfiguration.configure forwards persisted + settings to load3d'
   let load3d: Load3d
 
   function makeLoad3dMock(): Load3d {
-    return {
+    return fromPartial<Load3d>({
       loadModel: vi.fn().mockResolvedValue(undefined),
       setUpDirection: vi.fn(),
       setMaterialMode: vi.fn(),
@@ -516,7 +516,7 @@ describe('Load3DConfiguration.configure forwards persisted + settings to load3d'
       setHDRIAsBackground: vi.fn(),
       setHDRIEnabled: vi.fn(),
       emitModelReady: vi.fn()
-    } as unknown as Load3d
+    })
   }
 
   async function flush() {
@@ -860,10 +860,10 @@ describe('Load3DConfiguration remote (agent) model updates', () => {
   it('reloads the model when the agent changes model_file via widgetValueStore', async () => {
     const load3d = makeLoad3dMock()
     const onSceneInvalidated = vi.fn()
-    const modelWidget = {
+    const modelWidget = fromPartial<IBaseWidget>({
       value: 'none',
       widgetId: 'widget-1'
-    } as unknown as IBaseWidget
+    })
     widgetValueStoreMock.widgets.set('widget-1', modelWidget)
 
     const config = new Load3DConfiguration(load3d)
@@ -898,10 +898,10 @@ describe('Load3DConfiguration remote (agent) model updates', () => {
   it('clears the model when the agent clears model_file via widgetValueStore', async () => {
     const load3d = makeLoad3dMock()
     const onSceneInvalidated = vi.fn()
-    const modelWidget = {
+    const modelWidget = fromPartial<IBaseWidget>({
       value: 'model.glb',
       widgetId: 'widget-clear'
-    } as unknown as IBaseWidget
+    })
     widgetValueStoreMock.widgets.set('widget-clear', modelWidget)
 
     const config = new Load3DConfiguration(load3d)
@@ -926,10 +926,10 @@ describe('Load3DConfiguration remote (agent) model updates', () => {
   it('ignores local (non-remote) store changes to avoid double-loading', async () => {
     const load3d = makeLoad3dMock()
     const onSceneInvalidated = vi.fn()
-    const modelWidget = {
+    const modelWidget = fromPartial<IBaseWidget>({
       value: 'none',
       widgetId: 'widget-2'
-    } as unknown as IBaseWidget
+    })
     widgetValueStoreMock.widgets.set('widget-2', modelWidget)
 
     const config = new Load3DConfiguration(load3d)
@@ -956,10 +956,10 @@ describe('Load3DConfiguration remote (agent) model updates', () => {
   it('ignores value changes for a different widget id', async () => {
     const load3d = makeLoad3dMock()
     const onSceneInvalidated = vi.fn()
-    const modelWidget = {
+    const modelWidget = fromPartial<IBaseWidget>({
       value: 'none',
       widgetId: 'widget-3'
-    } as unknown as IBaseWidget
+    })
     widgetValueStoreMock.widgets.set('widget-3', modelWidget)
 
     const config = new Load3DConfiguration(load3d)
@@ -986,10 +986,10 @@ describe('Load3DConfiguration remote (agent) model updates', () => {
   it('does not register a second listener when configure runs again for the same widget', async () => {
     const load3d = makeLoad3dMock()
     const onSceneInvalidated = vi.fn()
-    const modelWidget = {
+    const modelWidget = fromPartial<IBaseWidget>({
       value: 'none',
       widgetId: 'widget-4'
-    } as unknown as IBaseWidget
+    })
     widgetValueStoreMock.widgets.set('widget-4', modelWidget)
 
     const config = new Load3DConfiguration(load3d)
@@ -1050,10 +1050,10 @@ describe('Load3DConfiguration remote (agent) model updates', () => {
 
   it('subscribes again when the same widget is re-registered', async () => {
     const load3d = makeLoad3dMock()
-    const modelWidget = {
+    const modelWidget = fromPartial<IBaseWidget>({
       value: 'none',
       widgetId: 'widget-6'
-    } as unknown as IBaseWidget
+    })
     widgetValueStoreMock.widgets.set('widget-6', modelWidget)
 
     const config = new Load3DConfiguration(load3d)
