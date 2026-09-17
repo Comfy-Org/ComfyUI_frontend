@@ -129,7 +129,7 @@ describe('useWorkshopSession initialization failure', () => {
     expect(session.signedIn.value).toBe(false)
     expect(
       mocks.deactivate,
-      'deactivate signs the client out, which drops the stored credential; the integration suite pins the storage'
+      'the failed attempt reaches deactivate(); the integration suite pins the storage effect'
     ).toHaveBeenCalledOnce()
     errorSpy.mockRestore()
   })
