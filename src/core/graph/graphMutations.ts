@@ -1,10 +1,6 @@
 import { cloneDeep } from 'es-toolkit'
 
-import type {
-  ISerialisableNodeInput,
-  ISerialisableNodeOutput,
-  ISerialisedNode
-} from '@/lib/litegraph/src/types/serialisation'
+import type { ISerialisedNode } from '@/lib/litegraph/src/types/serialisation'
 import { useLinkPresentationStore } from '@/stores/linkPresentationStore'
 import { useLinkStore } from '@/stores/linkStore'
 import { useNodeDataStore } from '@/stores/nodeDataStore'
@@ -20,45 +16,38 @@ import type { NodeState } from '@/types/nodeState'
 import type { WidgetValue } from '@/types/simplifiedWidget'
 import { isWidgetId, widgetId } from '@/types/widgetId'
 
-export interface SemanticNodePayload extends Record<string, unknown> {
-  id: string | number
-  type: string
-}
+import {
+  isRecord,
+  prepareNode,
+  prepareTopology
+} from './graphMutations/prepare'
+import {
+  detachedLinkSlots,
+  nodeKey,
+  prepareInputSlots,
+  prepareOutputSlots,
+  reconcileInputSlots,
+  removeIncidentLinks,
+  removeSimulatedLink
+} from './graphMutations/slots'
+import type {
+  PreparedNode,
+  SemanticLayoutMutationPort,
+  SemanticLinkPayload,
+  SemanticNodePayload
+} from './graphMutations/types'
+import type { StoredWidgetValues } from './graphMutations/widgets'
+import {
+  setStoredWidgetValues,
+  storedWidgetValues,
+  syncSerializedWidgetValue,
+  widgetType
+} from './graphMutations/widgets'
 
-export interface SemanticLinkPayload {
-  id: number
-  originNodeId: string | number
-  originSlot: number
-  targetNodeId: string | number
-  targetSlot: number
-  type: string | number
-  /** Final semantic slot records after the shared applier handled this link. */
-  originOutputs?: readonly ISerialisableNodeOutput[]
-  targetInputs?: readonly ISerialisableNodeInput[]
-}
-
-interface SemanticNodeLayout {
-  position: { x: number; y: number }
-  size: { width: number; height: number }
-}
-
-/**
- * Renderer-owned layout mutation port. Semantic state never imports the
- * renderer or writes position into the shared follower Y.Doc.
- */
-interface SemanticLayoutMutationPort {
-  createNode(
-    scope: GraphScope,
-    nodeId: NodeId,
-    layout: SemanticNodeLayout,
-    context: RemoteMutationContext
-  ): void
-  deleteNodes(
-    scope: GraphScope,
-    nodeIds: readonly NodeId[],
-    context: RemoteMutationContext
-  ): void
-}
+export type {
+  SemanticLinkPayload,
+  SemanticNodePayload
+} from './graphMutations/types'
 
 interface GraphMutationBatch {
   addNode(payload: SemanticNodePayload): void
@@ -127,13 +116,6 @@ type QueuedMutation =
     }
   | { kind: 'clearSemanticGraph' }
 
-interface PreparedNode {
-  state: NodeState
-  layout: SemanticNodeLayout
-  widgets: Array<{ name: string; value: WidgetValue; type: string }>
-  widgetsAuthoritative: boolean
-}
-
 type PreparedMutation =
   | { kind: 'addNode'; node: PreparedNode }
   | { kind: 'reconcileNode'; node: PreparedNode }
@@ -179,305 +161,6 @@ interface PrepareDraft {
 interface ConnectSlots {
   originOutputs: NodeState['outputs']
   targetInputs: NodeState['inputs']
-}
-
-/**
- * `ISerialisedNode.widgets_values` is declared as an array, but some custom
- * nodes override it with a record (see its docs) and op-layer payloads carry
- * values keyed by widget name. These two accessors are the only place the
- * wider shape crosses that boundary; everything else narrows normally.
- */
-type StoredWidgetValues = WidgetValue[] | Record<string, WidgetValue>
-
-function storedWidgetValues(
-  serialised: ISerialisedNode | undefined
-): StoredWidgetValues | undefined {
-  return serialised?.widgets_values
-}
-
-function setStoredWidgetValues(
-  serialised: ISerialisedNode,
-  values: StoredWidgetValues | undefined
-): void {
-  serialised.widgets_values = values as ISerialisedNode['widgets_values']
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null && !Array.isArray(value)
-}
-
-function cloneRecord(value: unknown): Record<string, unknown> {
-  return isRecord(value) ? structuredClone(value) : {}
-}
-
-/**
- * A supplied input slot whose record has no `link` key carries no link
- * information (as opposed to `link: null`, which means unlinked). Such slots
- * keep the link of the `existing` slot at the same index, or `null` when the
- * node has no slot there yet.
- */
-function prepareInputSlots(
-  value: unknown,
-  existing?: NodeState['inputs']
-): NodeState['inputs'] {
-  if (!Array.isArray(value)) return []
-  return value.filter(isRecord).map((raw, index) => {
-    const slot = structuredClone(raw)
-    if (typeof slot.link === 'number') slot.link = toLinkId(slot.link)
-    if (slot.link === undefined) slot.link = existing?.[index]?.link ?? null
-    return {
-      ...slot,
-      boundingRect: [0, 0, 0, 0]
-    } as unknown as NodeState['inputs'][number]
-  })
-}
-
-function prepareOutputSlots(value: unknown): NodeState['outputs'] {
-  if (!Array.isArray(value)) return []
-  return value.filter(isRecord).map((raw) => {
-    const slot = structuredClone(raw)
-    if (Array.isArray(slot.links)) {
-      slot.links = slot.links.map((id) => toLinkId(Number(id)))
-    }
-    return {
-      ...slot,
-      boundingRect: [0, 0, 0, 0]
-    } as unknown as NodeState['outputs'][number]
-  })
-}
-
-function readPair(
-  value: unknown,
-  fallback: readonly [number, number]
-): readonly [number, number] {
-  if (!Array.isArray(value) || value.length < 2) return fallback
-  const first = Number(value[0])
-  const second = Number(value[1])
-  return Number.isFinite(first) && Number.isFinite(second)
-    ? [first, second]
-    : fallback
-}
-
-function widgetType(value: unknown): string {
-  switch (typeof value) {
-    case 'boolean':
-      return 'boolean'
-    case 'number':
-      return 'number'
-    case 'string':
-      return 'string'
-    default:
-      return 'legacy'
-  }
-}
-
-function widgetEntries(payload: SemanticNodePayload): PreparedNode['widgets'] {
-  const values = payload.widgets_values
-  if (Array.isArray(values)) {
-    return values.map((value, index) => ({
-      name: String(index),
-      value: structuredClone(value) as WidgetValue,
-      type: widgetType(value)
-    }))
-  }
-  if (!isRecord(values)) return []
-  return Object.entries(values).map(([name, value]) => ({
-    name,
-    value: structuredClone(value) as WidgetValue,
-    type: widgetType(value)
-  }))
-}
-
-/**
- * Snapshots are derived state: record-shaped values and the named record are
- * updated by name, while a positional array is left as saved because nothing
- * here can prove which slot a name owns.
- */
-function syncSerializedWidgetValue(
-  state: NodeState,
-  name: string,
-  value: unknown
-): void {
-  const serialised = state.lastSerialization
-  if (!serialised) return
-  const values = storedWidgetValues(serialised)
-  const named = serialised.widgets_values_named
-  const clone = structuredClone(value) as WidgetValue
-  if (isRecord(values)) values[name] = clone
-  if (isRecord(named)) named[name] = clone
-}
-
-function reconcileInputSlots(
-  current: NodeState,
-  next: Pick<NodeState, 'inputs' | 'properties'>
-): NodeState['inputs'] {
-  const promoted = new Map(
-    current.inputs
-      .filter((input) => '_subgraphSlot' in input && input._subgraphSlot)
-      .map((input) => [input.name, input])
-  )
-  const inputs = next.inputs.map((input) => {
-    const existing = promoted.get(input.name)
-    promoted.delete(input.name)
-    const { link: _link, boundingRect: _bounds, ...metadata } = input
-    return existing?.type === input.type
-      ? Object.assign(existing, metadata)
-      : input
-  })
-  return Array.isArray(next.properties.proxyWidgets)
-    ? [...inputs, ...promoted.values()]
-    : inputs
-}
-
-function nodeAppearance(
-  payload: SemanticNodePayload
-): Partial<
-  Pick<
-    NodeState,
-    'bgcolor' | 'boxcolor' | 'color' | 'resizable' | 'shape' | 'showAdvanced'
-  >
-> {
-  return {
-    ...(typeof payload.bgcolor === 'string' && { bgcolor: payload.bgcolor }),
-    ...(typeof payload.boxcolor === 'string' && { boxcolor: payload.boxcolor }),
-    ...(typeof payload.color === 'string' && { color: payload.color }),
-    ...(typeof payload.resizable === 'boolean' && {
-      resizable: payload.resizable
-    }),
-    ...(typeof payload.shape === 'number' && { shape: payload.shape }),
-    ...(typeof payload.showAdvanced === 'boolean' && {
-      showAdvanced: payload.showAdvanced
-    })
-  }
-}
-
-/** Remote payloads are open data: a named record counts only when record-shaped. */
-function serialisationOf(payload: SemanticNodePayload): ISerialisedNode {
-  const serialised = structuredClone(payload) as unknown as ISerialisedNode
-  if (!isRecord(payload.widgets_values_named)) {
-    delete serialised.widgets_values_named
-  }
-  return serialised
-}
-
-function prepareNode(
-  payload: SemanticNodePayload,
-  scope: GraphScope,
-  existing?: NodeState
-): PreparedNode {
-  const id = toNodeId(payload.id)
-  const [x, y] = readPair(payload.pos, [0, 0])
-  const [width, height] = readPair(payload.size, [270, 100])
-  const mode = Number(payload.mode)
-  const state: NodeState = {
-    id,
-    graphId: scope.owningGraphId,
-    type: payload.type,
-    title:
-      typeof payload.title === 'string' && payload.title.length > 0
-        ? payload.title
-        : payload.type,
-    flags: cloneRecord(payload.flags),
-    inputs: prepareInputSlots(payload.inputs, existing?.inputs),
-    outputs: prepareOutputSlots(payload.outputs),
-    mode: Number.isInteger(mode) ? mode : 0,
-    properties: cloneRecord(payload.properties) as NodeState['properties'],
-    lastSerialization: serialisationOf(payload),
-    ...nodeAppearance(payload)
-  }
-  return {
-    state,
-    widgets: widgetEntries(payload),
-    widgetsAuthoritative:
-      Array.isArray(payload.widgets_values) || isRecord(payload.widgets_values),
-    layout: {
-      position: { x, y },
-      size: { width, height }
-    }
-  }
-}
-
-function prepareTopology(
-  payload: SemanticLinkPayload,
-  scope: GraphScope
-): LinkTopology {
-  return {
-    id: toLinkId(payload.id),
-    graphId: scope.owningGraphId,
-    originNodeId: toNodeId(payload.originNodeId),
-    originSlot: payload.originSlot,
-    targetNodeId: toNodeId(payload.targetNodeId),
-    targetSlot: payload.targetSlot,
-    type: payload.type
-  }
-}
-
-function nodeKey(nodeId: NodeId): string {
-  return String(nodeId)
-}
-
-function detachedLinkSlots(
-  nodes: Iterable<NodeState>,
-  topology: LinkTopology
-): Map<NodeId, Pick<NodeState, 'inputs' | 'outputs'>> {
-  const nodesById = new Map([...nodes].map((node) => [nodeKey(node.id), node]))
-  const changed = new Map<NodeId, Pick<NodeState, 'inputs' | 'outputs'>>()
-  const slotsFor = (node: NodeState) => {
-    const prior = changed.get(node.id)
-    if (prior) return prior
-    const slots = { inputs: node.inputs, outputs: node.outputs }
-    changed.set(node.id, slots)
-    return slots
-  }
-
-  const origin = nodesById.get(nodeKey(topology.originNodeId))
-  if (origin?.outputs[topology.originSlot]) {
-    const slots = slotsFor(origin)
-    slots.outputs = slots.outputs.map((output, index) =>
-      index === topology.originSlot
-        ? {
-            ...output,
-            links: output.links?.filter((id) => id !== topology.id) ?? null
-          }
-        : output
-    )
-  }
-
-  const target = nodesById.get(nodeKey(topology.targetNodeId))
-  if (target?.inputs[topology.targetSlot]?.link === topology.id) {
-    const slots = slotsFor(target)
-    slots.inputs = slots.inputs.map((input, index) =>
-      index === topology.targetSlot ? { ...input, link: null } : input
-    )
-  }
-
-  return changed
-}
-
-function removeIncidentLinks(
-  nodes: Map<string, NodeState>,
-  links: Map<LinkId, LinkTopology>,
-  nodeId: NodeId
-): void {
-  for (const [id, topology] of [...links]) {
-    if (topology.originNodeId === nodeId || topology.targetNodeId === nodeId) {
-      removeSimulatedLink(nodes, links, id)
-    }
-  }
-}
-
-function removeSimulatedLink(
-  nodes: Map<string, NodeState>,
-  links: Map<LinkId, LinkTopology>,
-  linkId: LinkId
-): void {
-  const topology = links.get(linkId)
-  if (!topology) return
-  links.delete(linkId)
-  for (const [nodeId, slots] of detachedLinkSlots(nodes.values(), topology)) {
-    const node = nodes.get(nodeKey(nodeId))
-    if (node) nodes.set(nodeKey(nodeId), { ...node, ...slots })
-  }
 }
 
 /**
