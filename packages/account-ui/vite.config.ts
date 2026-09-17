@@ -14,6 +14,7 @@ const entries = {
   'auth/SocialAuthButtons': 'src/auth/SocialAuthButtons.vue',
   'auth/TurnstileWidget': 'src/auth/TurnstileWidget.vue',
   'auth/regionGate': 'src/auth/regionGate.ts',
+  'auth/regionProbe': 'src/auth/regionProbe.ts',
   'auth/turnstileGate': 'src/auth/turnstileGate.ts',
   'auth/lifecycleScope': 'src/auth/lifecycleScope.ts',
   'auth/useGenerationGuard': 'src/auth/useGenerationGuard.ts'
