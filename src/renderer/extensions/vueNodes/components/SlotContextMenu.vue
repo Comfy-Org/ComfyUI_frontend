@@ -1,24 +1,47 @@
 <template>
-  <ContextMenu
-    ref="contextMenu"
-    :model="menuItems"
-    class="max-h-[80vh] overflow-y-auto"
-    @show="onMenuShow"
-    @hide="onMenuHide"
-  >
-    <template #item="{ item, props: itemProps }">
-      <a v-bind="itemProps.action" class="flex items-center gap-2 px-3 py-1.5">
-        <span class="flex-1">{{ item.label }}</span>
-      </a>
-    </template>
-  </ContextMenu>
+  <ContextMenuRoot :open="isOpen" :modal="false" @update:open="setOpen">
+    <ContextMenuTrigger as-child>
+      <div
+        ref="contextMenuTrigger"
+        data-testid="slot-context-menu-anchor"
+        class="pointer-events-none fixed size-px"
+        :style="anchorStyle"
+      />
+    </ContextMenuTrigger>
+    <ContextMenuPortal>
+      <ContextMenuContent
+        class="z-1000 max-h-[80vh] min-w-56 overflow-y-auto rounded-lg border border-border-subtle bg-base-background px-2 py-3 shadow-interface"
+      >
+        <template v-for="(item, index) in menuItems" :key="index">
+          <ContextMenuSeparator
+            v-if="item.separator"
+            class="my-1 h-px bg-border-subtle"
+          />
+          <ContextMenuItem
+            v-else
+            class="flex cursor-pointer items-center gap-2 rounded-sm px-3 py-2 text-sm text-text-primary outline-none select-none hover:bg-node-component-surface-hovered focus:bg-node-component-surface-hovered data-disabled:cursor-default data-disabled:opacity-50"
+            :disabled="item.disabled"
+            @select="item.command"
+          >
+            <span class="flex-1">{{ item.label }}</span>
+          </ContextMenuItem>
+        </template>
+      </ContextMenuContent>
+    </ContextMenuPortal>
+  </ContextMenuRoot>
 </template>
 
 <script setup lang="ts">
 import { useElementBounding, useRafFn } from '@vueuse/core'
-import ContextMenu from 'primevue/contextmenu'
-import type { MenuItem } from 'primevue/menuitem'
-import { computed, onMounted, onUnmounted, ref, watchEffect } from 'vue'
+import {
+  ContextMenuContent,
+  ContextMenuItem,
+  ContextMenuPortal,
+  ContextMenuRoot,
+  ContextMenuSeparator,
+  ContextMenuTrigger
+} from 'reka-ui'
+import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import {
@@ -30,75 +53,54 @@ import {
 } from '@/renderer/extensions/vueNodes/composables/useSlotContextMenu'
 import type { SlotMenuContext } from '@/renderer/extensions/vueNodes/composables/useSlotContextMenu'
 
-const contextMenu = ref<InstanceType<typeof ContextMenu>>()
+interface SlotMenuItem {
+  label?: string
+  separator?: boolean
+  disabled?: boolean
+  command?: () => void
+}
+
+const contextMenuTrigger = ref<HTMLElement>()
 const isOpen = ref(false)
 const activeContext = ref<SlotMenuContext | null>(null)
 
 const canvasStore = useCanvasStore()
 const lgCanvas = canvasStore.getCanvas()
 const { left: canvasLeft, top: canvasTop } = useElementBounding(lgCanvas.canvas)
-
 const worldPosition = ref({ x: 0, y: 0 })
-let lastScale = 0
-let lastOffsetX = 0
-let lastOffsetY = 0
+const screenPosition = ref({ x: 0, y: 0 })
 
-function updateMenuPosition() {
-  if (!isOpen.value) return
+const anchorStyle = computed(() => ({
+  left: `${screenPosition.value.x}px`,
+  top: `${screenPosition.value.y}px`
+}))
 
-  const menuInstance = contextMenu.value as unknown as {
-    container?: HTMLElement
-  }
-  const menuEl = menuInstance?.container
-  if (!menuEl) return
-
+function updateAnchorPosition() {
   const { scale, offset } = lgCanvas.ds
-
-  if (
-    scale === lastScale &&
-    offset[0] === lastOffsetX &&
-    offset[1] === lastOffsetY
-  ) {
-    return
+  screenPosition.value = {
+    x: (worldPosition.value.x + offset[0]) * scale + canvasLeft.value,
+    y: (worldPosition.value.y + offset[1]) * scale + canvasTop.value
   }
-
-  lastScale = scale
-  lastOffsetX = offset[0]
-  lastOffsetY = offset[1]
-
-  const screenX = (worldPosition.value.x + offset[0]) * scale + canvasLeft.value
-  const screenY = (worldPosition.value.y + offset[1]) * scale + canvasTop.value
-
-  menuEl.style.left = `${screenX}px`
-  menuEl.style.top = `${screenY}px`
 }
 
-const { resume: startSync, pause: stopSync } = useRafFn(updateMenuPosition, {
+const { resume: startSync, pause: stopSync } = useRafFn(updateAnchorPosition, {
   immediate: false
 })
 
-watchEffect(() => {
-  if (isOpen.value) {
-    startSync()
-  } else {
-    stopSync()
-  }
-})
+watch(isOpen, (open) => (open ? startSync() : stopSync()))
 
-const menuItems = computed<MenuItem[]>(() => {
+const menuItems = computed<SlotMenuItem[]>(() => {
   const ctx = activeContext.value
   if (!ctx) return []
 
-  const items: MenuItem[] = []
+  const items: SlotMenuItem[] = []
 
   if (canRenameSlot(ctx)) {
     items.push({
       label: 'Rename slot',
       command: () => {
         const newLabel = window.prompt('New slot label:')
-        if (newLabel !== null) {
-          renameSlot(ctx, newLabel)
-        }
+        if (newLabel !== null) renameSlot(ctx, newLabel)
         hide()
       }
     })
@@ -125,45 +127,36 @@ const menuItems = computed<MenuItem[]>(() => {
   return items
 })
 
-function show(event: MouseEvent, context: SlotMenuContext) {
+async function show(event: MouseEvent, context: SlotMenuContext) {
   activeContext.value = context
-
-  const screenX = event.clientX - canvasLeft.value
-  const screenY = event.clientY - canvasTop.value
   const { scale, offset } = lgCanvas.ds
   worldPosition.value = {
-    x: screenX / scale - offset[0],
-    y: screenY / scale - offset[1]
+    x: (event.clientX - canvasLeft.value) / scale - offset[0],
+    y: (event.clientY - canvasTop.value) / scale - offset[1]
   }
+  updateAnchorPosition()
 
-  lastScale = scale
-  lastOffsetX = offset[0]
-  lastOffsetY = offset[1]
-
-  isOpen.value = true
-  contextMenu.value?.show(event)
+  await nextTick()
+  contextMenuTrigger.value?.dispatchEvent(
+    new MouseEvent('contextmenu', {
+      bubbles: true,
+      clientX: event.clientX,
+      clientY: event.clientY
+    })
+  )
 }
 
 function hide() {
-  contextMenu.value?.hide()
+  setOpen(false)
 }
 
-function onMenuShow() {
-  isOpen.value = true
-}
-
-function onMenuHide() {
-  isOpen.value = false
-  activeContext.value = null
+function setOpen(open: boolean) {
+  isOpen.value = open
+  if (!open) activeContext.value = null
 }
 
 defineExpose({ show, hide, isOpen })
 
-onMounted(() => {
-  registerSlotMenuInstance({ show, hide, isOpen })
-})
-
-onUnmounted(() => {
-  registerSlotMenuInstance(null)
-})
+onMounted(() => registerSlotMenuInstance({ show, hide, isOpen }))
+onUnmounted(() => registerSlotMenuInstance(null))
 </script>
