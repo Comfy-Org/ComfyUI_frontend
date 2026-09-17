@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { toRaw } from 'vue'
 
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 
@@ -18,10 +19,12 @@ import { reconcileAgentAdapters } from './agentNodeMaterializer'
 
 import {
   REMOTE,
+  ThrowsOnConfigureNode,
   WidgetNode,
   nodePayload,
   remoteMutations,
   seedAgentAddedNode,
+  setConfigureShouldThrow,
   setupMaterializerFixtures
 } from './__fixtures__/agentNodeMaterializer'
 
@@ -186,23 +189,73 @@ describe('reconcileAgentAdapters', () => {
       expect(useWidgetValueStore().getWidget(id)?.value).toBeUndefined()
     })
 
-    it('keeps the attached node when configure() throws', () => {
+    it('rolls the adoption back when configure() throws', () => {
       const graph = new LGraph()
-      const scope = seedAgentAddedNode(graph, 1)
+      const scope = seedAgentAddedNode(graph, 1, 'widget-node')
+      const record = useNodeDataStore().getNode(scope.rootGraphId, toNodeId(1))
+      const versionBefore = graph._version
       vi.spyOn(LGraphNode.prototype, 'configure').mockImplementation(() => {
         throw new Error('bad payload')
       })
 
-      expect(reconcileAgentAdapters(graph)).toEqual([toNodeId(1)])
-      expect(graph._nodes).toHaveLength(1)
+      expect(reconcileAgentAdapters(graph)).toEqual([])
+      expect(graph._nodes).toHaveLength(0)
+      expect(graph.getNodeById(toNodeId(1))).toBeNull()
+      // The canonical record survives the failed adoption by identity.
       expect(
-        useNodeDataStore().getNode(scope.rootGraphId, toNodeId(1))
-      ).toBeDefined()
+        toRaw(useNodeDataStore().getNode(scope.rootGraphId, toNodeId(1)))
+      ).toBe(toRaw(record))
+      // The successor's widget registrations do not outlive it.
+      expect(
+        useWidgetValueStore().getNodeWidgets(scope.rootGraphId, toNodeId(1))
+      ).toEqual([])
+      expect(graph._version).toBe(versionBefore)
       expect(reportError).toHaveBeenCalledWith(
         expect.any(Error),
         expect.objectContaining({
           errorType: 'agent_node_materialize_configure_failed'
         })
+      )
+      expect(reportError).not.toHaveBeenCalledWith(
+        expect.anything(),
+        expect.objectContaining({
+          errorType: 'agent_node_materialize_rollback_failed'
+        })
+      )
+    })
+
+    it('restores the incumbent when the successor throws in configure()', () => {
+      const graph = new LGraph()
+      const scope = seedAgentAddedNode(graph, 1)
+      reconcileAgentAdapters(graph)
+      const incumbent = graph.getNodeById(toNodeId(1))
+      const record = useNodeDataStore().getNode(scope.rootGraphId, toNodeId(1))
+      remoteMutations(scope).batch(REMOTE, (batch) =>
+        batch.reconcileNode(nodePayload(1, 'throws-on-configure'))
+      )
+      setConfigureShouldThrow(true)
+      const versionBefore = graph._version
+
+      expect(reconcileAgentAdapters(graph)).toEqual([])
+      expect(graph._nodes).toEqual([incumbent])
+      expect(graph.getNodeById(toNodeId(1))).toBe(incumbent)
+      expect(incumbent?.graph).toBe(graph)
+      expect(toRaw(incumbent?._state)).toBe(toRaw(record))
+      expect(
+        toRaw(useNodeDataStore().getNode(scope.rootGraphId, toNodeId(1)))
+      ).toBe(toRaw(record))
+      expect(graph._version).toBe(versionBefore)
+      expect(reportError).toHaveBeenCalledWith(
+        expect.any(Error),
+        expect.objectContaining({
+          errorType: 'agent_node_materialize_configure_failed'
+        })
+      )
+
+      setConfigureShouldThrow(false)
+      expect(reconcileAgentAdapters(graph)).toEqual([toNodeId(1)])
+      expect(graph.getNodeById(toNodeId(1))).toBeInstanceOf(
+        ThrowsOnConfigureNode
       )
     })
   })
