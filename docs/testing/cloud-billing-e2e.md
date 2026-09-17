@@ -80,4 +80,5 @@ collect tests only when their respective scenario PRs are present.
 
 Traces start after permanent-account sign-in and contain authenticated network
 traffic. Keep reports private. Disposable accounts require no reusable credentials.
-The saved-card endpoint must be available for completed-payment assertions.
+Completed-payment assertions verify saved cards through the real hosted billing
+portal, because Staging disables the embedded-checkout saved-card API.
