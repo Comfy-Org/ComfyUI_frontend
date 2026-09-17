@@ -1,5 +1,5 @@
 import { spawnSync } from 'node:child_process'
-import { mkdirSync, rmSync, writeFileSync } from 'node:fs'
+import { mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import path from 'node:path'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
@@ -53,6 +53,20 @@ void asserted
 `
   },
   {
+    file: path.join(probeDirs.source, 'doubleAssertion.test.ts'),
+    source: `import { fromAny, fromPartial } from '@total-typescript/shoehorn'
+interface Fixture { value: string; required: boolean }
+const fixture = { value: 'ok' } as unknown as Fixture
+const unresolved = value as unknown as Fixture
+const text = 'as unknown as'
+const single = value as Fixture
+void fixture
+void unresolved
+void text
+void single
+`
+  },
+  {
     file: path.join(probeDirs.source, 'computed.ts'),
     source: `const measured = computed(() => element.getBoundingClientRect())
 const styled = computed(() => window.getComputedStyle(element))
@@ -83,7 +97,6 @@ computed(() => element.getBoundingClientRect())
     const source = `import type { JobId } from '@/schemas/apiSchema'
 export { TaskOutput } from '@/schemas/apiSchema'
 export * from '@/schemas/apiSchema'
-void (0 as unknown as JobId)
 `
     return {
       file,
@@ -96,7 +109,6 @@ void (0 as unknown as JobId)
     file: path.join(probeDirs.source, 'generated.ts'),
     source: `import type { GetI18nResponse } from '@comfyorg/ingest-types'
 export type { GetI18nResponse } from '@comfyorg/ingest-types'
-void (0 as unknown as GetI18nResponse)
 `
   },
   {
@@ -226,6 +238,35 @@ describe('restricted syntax rules', () => {
       new Set([
         'Do not use Error type assertions. Use `instanceof Error` narrowing or `toError()` from @/utils/errorUtil instead. See issue #11429.'
       ])
+    )
+  })
+
+  it('warns on unknown double assertions and fixes partial literal fixtures', () => {
+    const doubleAssertionFindings = findingsFor('no-unknown-double-assertion')
+    expect(doubleAssertionFindings).toHaveLength(2)
+    expect(
+      doubleAssertionFindings.every(({ severity }) => severity === 'warning')
+    ).toBe(true)
+
+    const fixture = path.join(probeDirs.source, 'doubleAssertion.test.ts')
+    const result = spawnSync(
+      process.execPath,
+      [
+        path.resolve('node_modules/oxlint/bin/oxlint'),
+        '--fix',
+        '--config',
+        path.resolve('.oxlintrc.json'),
+        fixture
+      ],
+      { encoding: 'utf8', windowsHide: true }
+    )
+    expect(result.error).toBeUndefined()
+    expect(result.status).toBe(0)
+    expect(readFileSync(fixture, 'utf8')).toContain(
+      "const fixture = fromPartial<Fixture>({ value: 'ok' })"
+    )
+    expect(readFileSync(fixture, 'utf8')).toContain(
+      'const unresolved = fromAny<Fixture, unknown>(value)'
     )
   })
 

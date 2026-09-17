@@ -2,6 +2,8 @@ const ERROR_ASSERTION_MESSAGE =
   'Do not use Error type assertions. Use `instanceof Error` narrowing or `toError()` from @/utils/errorUtil instead. See issue #11429.'
 const DOM_INSPECTION_MESSAGE =
   'Do not inspect the DOM inside a computed. Derive from a store instead. See docs/guidance/state-and-effects.md.'
+const DOUBLE_ASSERTION_MESSAGE =
+  'Do not bypass type checking with `as unknown as`. Narrow or construct the value instead. In tests, use `fromPartial` from @total-typescript/shoehorn when a partial fixture is intentional.'
 const DOM_METHOD_MESSAGES = new Map([
   [
     'getBoundingClientRect',
@@ -27,6 +29,13 @@ interface StringLiteral extends Node {
 
 interface ImportDeclaration extends Node {
   readonly source: StringLiteral
+  readonly specifiers: readonly Node[]
+}
+
+interface ImportSpecifier extends Node {
+  readonly type: 'ImportSpecifier'
+  readonly imported: Identifier
+  readonly local: Identifier
 }
 
 interface ExportDeclaration extends Node {
@@ -47,15 +56,42 @@ interface TypeReference extends Node {
   readonly typeName: Node
 }
 
+interface TypeAssertion extends Node {
+  readonly type: 'TSAsExpression'
+  readonly expression: Node
+  readonly typeAnnotation: Node
+}
+
+interface RuleFixer {
+  replaceText(node: Node, text: string): unknown
+}
+
 interface RuleContext {
   readonly sourceCode: {
     getAncestors(node: Node): readonly Node[]
+    getText(node: Node): string
   }
-  report(descriptor: { node: Node; message: string }): void
+  report(descriptor: {
+    node: Node
+    message: string
+    fix?: (fixer: RuleFixer) => unknown
+  }): void
 }
 
 function identifierName(node: Node): string | undefined {
   return node.type === 'Identifier' ? (node as Identifier).name : undefined
+}
+
+function importedLocalName(
+  node: ImportDeclaration,
+  importedName: string
+): string | undefined {
+  const specifier = node.specifiers.find(
+    (specifier) =>
+      specifier.type === 'ImportSpecifier' &&
+      (specifier as ImportSpecifier).imported.name === importedName
+  )
+  return specifier ? (specifier as ImportSpecifier).local.name : undefined
 }
 
 function restrictImports(
@@ -126,6 +162,41 @@ export const noUnsafeErrorAssertion = {
           return
         }
         context.report({ node, message: ERROR_ASSERTION_MESSAGE })
+      }
+    }
+  }
+}
+
+export const noUnknownDoubleAssertion = {
+  meta: { fixable: 'code' },
+  create(context: RuleContext) {
+    let fromPartial: string | undefined
+    let fromAny: string | undefined
+
+    return {
+      ImportDeclaration(node: ImportDeclaration) {
+        if (node.source.value !== '@total-typescript/shoehorn') return
+        fromPartial = importedLocalName(node, 'fromPartial')
+        fromAny = importedLocalName(node, 'fromAny')
+      },
+      TSAsExpression(node: TypeAssertion) {
+        if (node.expression.type !== 'TSAsExpression') return
+        const inner = node.expression as TypeAssertion
+        if (inner.typeAnnotation.type !== 'TSUnknownKeyword') return
+
+        const isLiteralFixture =
+          inner.expression.type === 'ObjectExpression' ||
+          inner.expression.type === 'ArrayExpression'
+        const helper = isLiteralFixture ? (fromPartial ?? fromAny) : fromAny
+        const fix = helper
+          ? (fixer: RuleFixer) =>
+              fixer.replaceText(
+                node,
+                `${helper}<${context.sourceCode.getText(node.typeAnnotation)}${helper === fromAny ? ', unknown' : ''}>(${context.sourceCode.getText(inner.expression)})`
+              )
+          : undefined
+
+        context.report({ node, message: DOUBLE_ASSERTION_MESSAGE, fix })
       }
     }
   }

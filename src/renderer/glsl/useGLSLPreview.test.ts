@@ -95,7 +95,9 @@ function wrapNode(
 }
 
 function ensureImageBitmap(global: { ImageBitmap?: typeof ImageBitmap }): void {
-  global.ImageBitmap ??= class ImageBitmap {} as unknown as typeof ImageBitmap
+  global.ImageBitmap ??= fromAny<typeof ImageBitmap, unknown>(
+    class ImageBitmap {}
+  )
 }
 
 beforeEach(() => {

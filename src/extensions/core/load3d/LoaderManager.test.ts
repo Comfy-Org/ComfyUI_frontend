@@ -121,10 +121,12 @@ function makeLoaderManager() {
   const modelManager = makeModelManagerStub()
   const eventManager = makeEventManagerStub()
   const lm = new LoaderManager(
-    modelManager as unknown as ConstructorParameters<typeof LoaderManager>[0],
+    fromAny<ConstructorParameters<typeof LoaderManager>[0], unknown>(
+      modelManager
+    ),
     eventManager
   )
-  const internals = lm as unknown as LoaderManagerInternals
+  const internals = fromAny<LoaderManagerInternals, unknown>(lm)
   const pick = (ext: string) =>
     internals.pickAdapter.call(lm, ext, () => vi.mocked(fetchModelData)('', ''))
   return { lm, modelManager, eventManager, pick }
@@ -207,11 +209,11 @@ describe('LoaderManager', () => {
         load: vi.fn().mockResolvedValue(null)
       } satisfies ModelAdapter
 
-      const modelManager = {
+      const modelManager = fromAny<ModelManagerInterface, unknown>({
         originalMaterials: new WeakMap(),
         clearModel: vi.fn(),
         setupModel: vi.fn()
-      } as unknown as ModelManagerInterface
+      })
       const eventManager: EventManagerInterface = {
         addEventListener: vi.fn(),
         removeEventListener: vi.fn(),
@@ -475,10 +477,10 @@ describe('LoaderManager', () => {
     })
 
     it('dispatches .ply via the adapter matches() tiebreaker, not extension order — a splat adapter whose matches() returns false yields to point-cloud', async () => {
-      const modelManager =
-        makeModelManagerStub() as unknown as ConstructorParameters<
-          typeof LoaderManager
-        >[0]
+      const modelManager = fromAny<
+        ConstructorParameters<typeof LoaderManager>[0],
+        unknown
+      >(makeModelManagerStub())
       const eventManager = makeEventManagerStub()
       // A splat adapter that ALSO claims '.ply' and is listed first.
       // Without matches(), it would short-circuit. With matches() returning
