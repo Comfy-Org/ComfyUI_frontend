@@ -55,8 +55,7 @@ const rows = computed(() =>
     .filter((row) => row.total >= MIN_ENTRIES)
 )
 
-const cardClass =
-  'w-60 shrink-0 snap-start sm:w-[calc((100cqw-2*1.25rem)/2.5)] md:w-[calc((100cqw-3*1.25rem)/3.5)] lg:w-[calc((100cqw-4*1.25rem)/4.5)] xl:w-[calc((100cqw-5*1.25rem)/5.5)]'
+const cardClass = 'peek-card shrink-0 snap-start'
 </script>
 
 <template>

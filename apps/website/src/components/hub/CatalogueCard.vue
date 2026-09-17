@@ -33,7 +33,7 @@ const previewSrc = usePreviewVideo(video, () =>
       <span class="sr-only">{{ view.title }}</span>
     </a>
     <div
-      class="relative aspect-4/3 overflow-hidden rounded-[1.75rem] bg-hub-surface-hover"
+      class="relative aspect-4/3 overflow-hidden rounded-3.5xl bg-hub-surface-hover"
     >
       <HubTypeBadge :kind="view.kind" :locale />
 

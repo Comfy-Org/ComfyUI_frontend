@@ -34,12 +34,9 @@ const labels: Record<Kind, TranslationKey> = {
     :data-kind="kind"
   >
     <component :is="icons[kind]" class="size-3.5 shrink-0" />
-    <!-- A grid track running from zero to its own width is what lets the word
-      open to that width instead of to a guessed one. The floor has to be
-      spelled out: an `fr` track keeps a min-content floor otherwise, and the
-      word would never close. -->
+    <!-- The word opens to its own width rather than to a guessed one. -->
     <span
-      class="grid grid-cols-[minmax(0,0fr)] overflow-hidden group-focus-within:grid-cols-[minmax(0,1fr)] group-hover:grid-cols-[minmax(0,1fr)] motion-safe:transition-[grid-template-columns] motion-safe:duration-200 motion-safe:ease-out"
+      class="grid grid-cols-closed overflow-hidden group-focus-within:grid-cols-open group-hover:grid-cols-open motion-safe:transition-[grid-template-columns] motion-safe:duration-200 motion-safe:ease-out"
     >
       <span class="min-w-0 ps-1.5 whitespace-nowrap">
         {{ t(labels[kind], locale) }}

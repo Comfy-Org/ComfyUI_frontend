@@ -119,7 +119,7 @@ const sheetLabels = computed(() => ({
 
       <div
         v-if="open && !isPhone"
-        class="absolute inset-e-0 top-full z-50 mt-2 flex max-h-[70vh] scrollbar-thin w-80 flex-col gap-4 overflow-y-auto rounded-2xl border border-primary-comfy-ink-light bg-site-dropdown p-5 shadow-lg"
+        class="absolute inset-e-0 top-full z-50 mt-2 flex max-h-panel scrollbar-thin w-80 flex-col gap-4 overflow-y-auto rounded-2xl border border-primary-comfy-ink-light bg-site-dropdown p-5 shadow-lg"
         data-testid="catalogue-filter-panel"
       >
         <FacetSheet
@@ -192,7 +192,7 @@ const sheetLabels = computed(() => ({
       />
       <div
         v-if="open && isPhone"
-        class="fixed inset-x-0 bottom-0 z-50 flex max-h-[80vh] scrollbar-thin flex-col gap-4 overflow-y-auto rounded-t-3xl border border-white/10 bg-site-dropdown p-5 shadow-2xl"
+        class="fixed inset-x-0 bottom-0 z-50 flex max-h-panel scrollbar-thin flex-col gap-4 overflow-y-auto rounded-t-3xl border border-white/10 bg-site-dropdown p-5 shadow-2xl"
         data-testid="catalogue-sheet"
       >
         <FacetSheet

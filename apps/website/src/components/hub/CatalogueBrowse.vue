@@ -23,8 +23,8 @@ import FeaturedBanner from '../workshop/FeaturedBanner.vue'
 import WorkshopHero from '../workshop/WorkshopHero.vue'
 import type { FacetSheetGroup } from '../workshop/FacetSheet.vue'
 import type { OrderOption } from './CatalogueControls.vue'
-import CatalogueCard from './CatalogueCard.vue'
 import CatalogueControls from './CatalogueControls.vue'
+import CatalogueGrid from './CatalogueGrid.vue'
 import CatalogueToolbar from './CatalogueToolbar.vue'
 import CatalogueTypeFilter from './CatalogueTypeFilter.vue'
 import OutcomeRows from './OutcomeRows.vue'
@@ -273,12 +273,6 @@ onMounted(() => {
   query.value = asked.query
 })
 
-const showingText = computed(() =>
-  t('workshop.v2.showing', locale)
-    .replace('{shown}', String(visible.value.length))
-    .replace('{total}', String(sorted.value.length))
-)
-
 // The banner answers the two choices that say what you are browsing, the type
 // and the use case, and stays out of a search, which narrows a list rather
 // than changing what is in it.
@@ -421,45 +415,12 @@ const heading = computed(() =>
         @open="openOutcome"
       />
 
-      <div
-        v-if="visible.length > 0"
-        class="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3"
-        data-testid="catalogue-grid"
-      >
-        <CatalogueCard
-          v-for="entry in visible"
-          :key="entry.key"
-          :view="entry.card"
-          :locale
-        />
-      </div>
-      <div
-        v-else
-        class="py-20 text-center text-content-muted"
-        data-testid="catalogue-empty"
-      >
-        <p class="text-lg">{{ t('workshop.v2.empty', locale) }}</p>
-        <p class="mt-2 text-sm">{{ t('workshop.v2.emptyHint', locale) }}</p>
-      </div>
-
-      <div v-if="shown < sorted.length" class="flex justify-center pt-10 pb-4">
-        <button
-          type="button"
-          class="inline-flex h-10 cursor-pointer items-center justify-center rounded-2xl border border-brand px-12 text-sm font-semibold tracking-wider text-brand uppercase transition-colors hover:bg-brand hover:text-page"
-          data-testid="catalogue-load-more"
-          @click="shown += PAGE"
-        >
-          {{ t('workshop.v2.loadMore', locale) }}
-        </button>
-      </div>
-
-      <p
-        v-if="visible.length > 0"
-        class="pt-2 pb-4 text-center text-sm text-hub-muted"
-        data-testid="catalogue-showing"
-      >
-        {{ showingText }}
-      </p>
+      <CatalogueGrid
+        :visible
+        :total="sorted.length"
+        :locale
+        @more="shown += PAGE"
+      />
     </div>
   </section>
 </template>
