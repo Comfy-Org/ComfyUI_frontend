@@ -1,8 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { makeClient } from './__fixtures__/sessionClientFixture.js'
 import {
   NINETY_MINUTES_MS,
-  makeClient,
   manualIdentity,
   mintResponse,
   testUser
