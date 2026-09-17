@@ -3,9 +3,15 @@ import { render, screen, waitFor } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick, ref } from 'vue'
 
+import { createI18n } from 'vue-i18n'
+
+import TopbarSubscribeButton from '@/components/topbar/TopbarSubscribeButton.vue'
+import enMessages from '@/locales/en/main.json' with { type: 'json' }
+
 import CloudRunButtonWrapper from './CloudRunButtonWrapper.vue'
 
 const mockCanRunWorkflows = ref(true)
+const mockIsFreeTier = ref(true)
 const mockIsInitialized = ref(true)
 const mockBillingStatus = ref<string | null>('paid')
 const mockSubscriptionTier = ref<string | null>(null)
@@ -30,6 +36,7 @@ vi.mock('@/composables/billing/useBillingContext', async () => {
         () => mockIsInitialized.value && !mockCanRunWorkflows.value
       ),
       billingStatus: mockBillingStatus,
+      isFreeTier: mockIsFreeTier,
       subscription: computed(() =>
         mockSubscriptionTier.value ? { tier: mockSubscriptionTier.value } : null
       ),
@@ -39,6 +46,17 @@ vi.mock('@/composables/billing/useBillingContext', async () => {
     })
   }
 })
+
+vi.mock('@/platform/distribution/types', () => ({
+  isCloud: true
+}))
+
+vi.mock(
+  '@/platform/cloud/subscription/composables/useSubscriptionDialog',
+  () => ({
+    useSubscriptionDialog: () => ({ showPricingTable: vi.fn() })
+  })
+)
 
 vi.mock('@/composables/useFeatureFlags', () => ({
   useFeatureFlags: () => ({
@@ -86,12 +104,20 @@ vi.mock('@/components/actionbar/ComfyRunButton/ComfyQueueButton.vue', () => ({
   }
 }))
 
-vi.mock('@/platform/cloud/subscription/components/SubscribeToRun.vue', () => ({
-  default: {
-    name: 'SubscribeToRun',
-    template: '<div data-testid="subscribe-to-run-button" />'
+vi.mock(
+  '@/platform/cloud/subscription/components/SubscribeToRun.vue',
+  async () => {
+    const { registerSubscribeToRunPrompt } =
+      await import('@/platform/cloud/subscription/composables/useSubscribeCtaPresence')
+    return {
+      default: {
+        name: 'SubscribeToRun',
+        setup: () => registerSubscribeToRunPrompt(),
+        template: '<div data-testid="subscribe-to-run-button" />'
+      }
+    }
   }
-}))
+)
 
 function renderWrapper() {
   return render(CloudRunButtonWrapper)
@@ -105,6 +131,59 @@ describe('CloudRunButtonWrapper', () => {
     mockSubscriptionTier.value = null
     state.v1PaymentRecovery = true
     state.canManageSubscription = true
+    mockIsFreeTier.value = true
+  })
+
+  describe('one subscribe CTA at a time', () => {
+    const CtaSurface = {
+      components: { CloudRunButtonWrapper, TopbarSubscribeButton },
+      template: '<div><TopbarSubscribeButton /><CloudRunButtonWrapper /></div>'
+    }
+
+    function renderCtaSurface() {
+      const i18n = createI18n({
+        legacy: false,
+        locale: 'en',
+        messages: { en: enMessages }
+      })
+      return render(CtaSurface, { global: { plugins: [i18n] } })
+    }
+
+    it('keeps the topbar CTA on a sales-managed plan, where the prompt never mounts', () => {
+      mockCanRunWorkflows.value = false
+      mockSubscriptionTier.value = 'ENTERPRISE'
+
+      renderCtaSurface()
+
+      expect(
+        screen.queryByTestId('subscribe-to-run-button')
+      ).not.toBeInTheDocument()
+      expect(screen.getByTestId('topbar-subscribe-button')).toBeInTheDocument()
+    })
+
+    it('keeps the topbar CTA under payment recovery, where the prompt never mounts', () => {
+      mockCanRunWorkflows.value = false
+      mockBillingStatus.value = 'paused'
+
+      renderCtaSurface()
+
+      expect(
+        screen.queryByTestId('subscribe-to-run-button')
+      ).not.toBeInTheDocument()
+      expect(screen.getByTestId('topbar-subscribe-button')).toBeInTheDocument()
+    })
+
+    it('yields the topbar CTA only while the prompt is actually mounted', async () => {
+      mockCanRunWorkflows.value = false
+
+      renderCtaSurface()
+      await nextTick()
+
+      expect(screen.getByTestId('subscribe-to-run-button')).toBeInTheDocument()
+      expect(
+        screen.queryByTestId('topbar-subscribe-button')
+      ).not.toBeInTheDocument()
+    })
   })
 
   it('renders the runnable queue button when the subscription is active', () => {
