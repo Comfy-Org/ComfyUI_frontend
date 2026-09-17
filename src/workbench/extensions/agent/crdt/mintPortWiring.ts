@@ -7,7 +7,6 @@
  * suppressed until the next load's pair recloses.
  */
 import { registerDocBoundRootGraphProbe } from '@/lib/litegraph/src/docBoundGraphs'
-import type { LGraph } from '@/lib/litegraph/src/LGraph'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { RootGraphId } from '@/types/graphScopeId'
 import type { NodeId } from '@/types/nodeId'
@@ -136,9 +135,10 @@ export function runMintPortsIntentionalClear<T>(clear: () => T): T {
  * those keep the positional form `serialize()` already produced.
  */
 function serializeForMint(node: LGraphNode): WorkflowNode | null {
-  let serialized: Record<string, unknown>
+  let serialized: WorkflowNode
   try {
-    serialized = node.serialize() as unknown as Record<string, unknown>
+    const snapshot = node.serialize()
+    serialized = { ...snapshot, flags: { ...snapshot.flags } }
   } catch {
     return null
   }
@@ -149,7 +149,7 @@ function serializeForMint(node: LGraphNode): WorkflowNode | null {
       serialized.widgets_values = valueWidgetsOnly(node, named)
     delete serialized.widgets_values_named
   }
-  return serialized as unknown as WorkflowNode
+  return serialized
 }
 
 function valueWidgetsOnly(
@@ -242,7 +242,7 @@ export function attachMintPortWiring(deps: MintPortWiringDeps): MintPortWiring {
     resolveInteriorPath(owningGraphId) {
       const graph = deps.getGraph()
       if (!graph) return null
-      return findSubgraphNodePathById(graph as unknown as LGraph, owningGraphId)
+      return findSubgraphNodePathById(graph, owningGraphId)
     },
     enqueue
   })

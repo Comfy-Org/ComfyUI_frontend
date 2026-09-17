@@ -296,6 +296,10 @@ function createNodeOutputsMutationView(
   })
 }
 
+function serializeWorkflow(graph: LGraph): ComfyWorkflowJSON {
+  return graph.serialize() as ComfyWorkflowJSON
+}
+
 export class ComfyApp {
   /**
    * List of entries to queue
@@ -1634,7 +1638,7 @@ export class ComfyApp {
       useTelemetry()?.trackWorkflowImported(telemetryPayload)
       await useWorkflowService().afterLoadNewGraph(
         workflow,
-        this.rootGraph.serialize() as unknown as ComfyWorkflowJSON,
+        serializeWorkflow(this.rootGraph),
         effectiveShareId
       )
       await useExtensionService().invokeExtensionsAsync('afterLoadGraph')
@@ -2268,7 +2272,7 @@ export class ComfyApp {
       )
       await useWorkflowService().afterLoadNewGraph(
         fileName,
-        this.rootGraph.serialize() as unknown as ComfyWorkflowJSON
+        serializeWorkflow(this.rootGraph)
       )
       await useExtensionService().invokeExtensionsAsync('afterLoadGraph')
       return
@@ -2577,7 +2581,7 @@ export class ComfyApp {
     )
     await useWorkflowService().afterLoadNewGraph(
       fileName,
-      this.rootGraph.serialize() as unknown as ComfyWorkflowJSON
+      serializeWorkflow(this.rootGraph)
     )
     await useExtensionService().invokeExtensionsAsync('afterLoadGraph')
     if (missingNodeTypes.length) {

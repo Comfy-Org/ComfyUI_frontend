@@ -235,7 +235,7 @@ function hasSafeNestedDefinitions(value: unknown): boolean {
   )
 }
 
-function isSafeDefinition(value: unknown): boolean {
+function isSafeDefinition(value: unknown): value is ExportedSubgraph {
   return (
     isRecord(value) &&
     hasSafeInputs(value.inputs) &&
