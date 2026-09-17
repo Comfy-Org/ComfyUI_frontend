@@ -114,6 +114,7 @@ function seedSession(
 let mockFetch: ReturnType<typeof vi.fn>
 
 beforeEach(() => {
+  vi.useFakeTimers({ shouldAdvanceTime: false })
   mockDistributionTypes.isCloud = true
   mockEnsureSessionCookie.mockResolvedValue(undefined)
   mockFetch = vi.fn((_url: string, init: { body: string }) => {
@@ -542,13 +543,6 @@ describe('refreshToken', () => {
       fetches: 2,
       ended: [[undefined]],
       token: undefined
-    },
-    {
-      failure: 'repeated 500s',
-      response: () => failedResponse(500),
-      fetches: 5,
-      ended: [],
-      token: 'token-workspace-123'
     }
   ])(
     'settles $failure after $fetches exchange(s)',
@@ -566,6 +560,30 @@ describe('refreshToken', () => {
       expect(rail.getWorkspaceToken()).toBe(token)
     }
   )
+
+  it('retries repeated 500s on a doubling backoff, then keeps the held token', async () => {
+    const { rail, deps } = createRail()
+    await rail.switchLegacyWorkspace('workspace-123')
+    mockFetch.mockResolvedValue(failedResponse(500))
+
+    const refreshing = rail.refreshToken()
+    await vi.advanceTimersByTimeAsync(999)
+    expect(mockFetch).toHaveBeenCalledTimes(2)
+    await vi.advanceTimersByTimeAsync(1)
+    expect(mockFetch).toHaveBeenCalledTimes(3)
+    await vi.advanceTimersByTimeAsync(1999)
+    expect(mockFetch).toHaveBeenCalledTimes(3)
+    await vi.advanceTimersByTimeAsync(1)
+    expect(mockFetch).toHaveBeenCalledTimes(4)
+    await vi.advanceTimersByTimeAsync(3999)
+    expect(mockFetch).toHaveBeenCalledTimes(4)
+    await vi.advanceTimersByTimeAsync(1)
+    expect(mockFetch).toHaveBeenCalledTimes(5)
+    await refreshing
+
+    expect(deps.endWorkspaceSession).not.toHaveBeenCalled()
+    expect(rail.getWorkspaceToken()).toBe('token-workspace-123')
+  })
 
   it('ends the session without retrying when the mint fails before the exchange', async () => {
     const { rail, deps } = createRail()
