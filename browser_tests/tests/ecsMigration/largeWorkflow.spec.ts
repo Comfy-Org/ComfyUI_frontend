@@ -18,11 +18,13 @@ test.describe(
 
       const graphSummary = await comfyPage.page.evaluate(() => ({
         nodeCount: window.app!.graph.nodes.length,
+        groupCount: window.app!.graph.groups.length,
         nodeTitles: window.app!.graph.nodes.map((node) => node.title),
         groupTitles: window.app!.graph.groups.map((group) => group.title),
         offset: [...window.app!.canvas.ds.offset]
       }))
-      expect(graphSummary.nodeCount).toBeGreaterThanOrEqual(100)
+      expect(graphSummary.nodeCount).toBe(247)
+      expect(graphSummary.groupCount).toBe(3)
       expect(graphSummary.nodeTitles).toEqual(
         expect.arrayContaining(['CPU Output Input', 'CPU Output Landmark'])
       )
