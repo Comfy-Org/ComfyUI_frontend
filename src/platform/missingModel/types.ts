@@ -9,7 +9,7 @@ import type { PromotedWidgetExecutionSource } from '@/core/graph/subgraph/promot
 export interface MissingModelCandidate {
   /** Undefined for workflow-level models not tied to a specific node. */
   nodeId?: SerializedNodeId
-  /** Stored promotion owner; promotedSources tracks the active consumers separately. */
+  /** Stored owner of nodeType/embedded url; promotedSources tracks active consumers. */
   sourceExecutionId?: NodeExecutionId
   promotedSources?: PromotedWidgetExecutionSource[]
   nodeType: string

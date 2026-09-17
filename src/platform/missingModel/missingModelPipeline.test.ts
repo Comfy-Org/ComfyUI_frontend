@@ -8,7 +8,8 @@ import { useToastStore } from '@/platform/updates/common/toastStore'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
-import { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { LGraphNode, LGraphEventMode } from '@/lib/litegraph/src/litegraph'
+import { promoteValueWidgetViaSubgraphInput } from '@/core/graph/subgraph/promotionUtils'
 import type { MissingModelCandidate } from '@/platform/missingModel/types'
 import type {
   ComfyWorkflowJSON,
@@ -139,6 +140,21 @@ function createGraph(graphData = createWorkflowGraphData()): LGraph {
   } as unknown as LGraph
 }
 
+function deferModelVerification() {
+  let resolveVerification: (() => void) | undefined
+  const pending = new Promise<void>((resolve) => {
+    resolveVerification = resolve
+  })
+  mockHandles.verifyAssetSupportedCandidates.mockImplementationOnce(
+    async (candidates) => {
+      await pending
+      for (const candidate of candidates) candidate.isMissing = true
+    }
+  )
+  if (!resolveVerification) throw new Error('Expected pending verification')
+  return resolveVerification
+}
+
 describe('missingModelPipeline', () => {
   beforeEach(() => {
     mockHandles.distribution.isCloud = false
@@ -160,19 +176,7 @@ describe('missingModelPipeline', () => {
       fileSize: null,
       gatedRepoUrl: null
     })
-    vi.mocked(graphTraversal.isAncestorPathActive).mockReturnValue(true)
-    vi.mocked(graphTraversal.isCandidateScopeActive).mockImplementation(
-      (graph, candidate) => {
-        const executionId = candidate.sourceExecutionId ?? candidate.nodeId
-        return (
-          executionId == null ||
-          vi.mocked(graphTraversal.isAncestorPathActive)(
-            graph,
-            String(executionId)
-          )
-        )
-      }
-    )
+    vi.mocked(graphTraversal.isCandidateScopeActive).mockReturnValue(true)
     vi.mocked(graphTraversal.isMissingCandidateActive).mockImplementation(
       (graph, candidate) =>
         candidate.isMissing === true &&
@@ -449,16 +453,7 @@ describe('missingModelPipeline', () => {
         ])
         mockHandles.state.enrichedCandidates = [candidate]
         vi.mocked(graphTraversal.getNodeByExecutionId).mockReturnValue(node)
-        let finishVerification = () => {}
-        mockHandles.verifyAssetSupportedCandidates.mockImplementationOnce(
-          () =>
-            new Promise<undefined>((resolve) => {
-              finishVerification = () => {
-                candidate.isMissing = true
-                resolve(undefined)
-              }
-            })
-        )
+        const finishVerification = deferModelVerification()
         const onVerified = vi.fn()
 
         await runMissingModelPipeline({
@@ -481,60 +476,83 @@ describe('missingModelPipeline', () => {
     )
 
     it.for([
-      { selected: 'missing.safetensors', retained: true },
-      { selected: 'replacement.safetensors', retained: false }
+      {
+        selected: 'missing.safetensors',
+        consumerMode: LGraphEventMode.ALWAYS,
+        retained: true
+      },
+      {
+        selected: 'replacement.safetensors',
+        consumerMode: LGraphEventMode.ALWAYS,
+        retained: false
+      },
+      {
+        selected: 'missing.safetensors',
+        consumerMode: LGraphEventMode.NEVER,
+        retained: false
+      },
+      {
+        selected: 'missing.safetensors',
+        consumerMode: LGraphEventMode.BYPASS,
+        retained: false
+      }
     ])(
-      'checks the current promoted model selection after verification: $selected',
-      async ({ selected, retained }) => {
+      'checks the promoted selection and active consumer despite a bypassed owner: $selected, mode=$consumerMode',
+      async ({ selected, consumerMode, retained }) => {
         mockHandles.distribution.isCloud = true
         vi.mocked(graphTraversal.getNodeByExecutionId).mockReset()
         vi.mocked(graphTraversal.isCandidateScopeActive).mockReset()
         vi.mocked(graphTraversal.isMissingCandidateActive).mockReset()
-        const subgraph = createTestSubgraph({
-          inputs: [{ name: 'shared_model', type: 'COMBO' }]
-        })
-        const source = new LGraphNode('CheckpointLoaderSimple')
-        source.id = toNodeId(42)
-        const input = source.addInput('ckpt_name', 'COMBO')
-        const widget = source.addWidget(
-          'combo',
-          'ckpt_name',
-          'missing.safetensors',
-          () => {},
-          { values: ['missing.safetensors', 'replacement.safetensors'] }
-        )
-        input.widget = { name: widget.name }
-        subgraph.add(source)
-        expect(subgraph.inputNode.slots[0].connect(input, source)).toBeTruthy()
+        const subgraph = createTestSubgraph()
         const host = createTestSubgraphNode(subgraph, { id: 65 })
         subgraph.rootGraph.add(host)
+        const [storedOwner, activeConsumer] = [42, 43].map((id) => {
+          const node = new LGraphNode('CheckpointLoaderSimple')
+          node.id = toNodeId(id)
+          const input = node.addInput('ckpt_name', 'COMBO')
+          const widget = node.addWidget(
+            'combo',
+            'ckpt_name',
+            'missing.safetensors',
+            () => {},
+            { values: ['missing.safetensors', 'replacement.safetensors'] }
+          )
+          input.widget = { name: widget.name }
+          subgraph.add(node)
+          return { node, input, widget }
+        })
+        expect(
+          promoteValueWidgetViaSubgraphInput(
+            host,
+            storedOwner.node,
+            storedOwner.widget
+          ).ok
+        ).toBe(true)
+        expect(
+          subgraph.inputNode.slots[0].connect(
+            activeConsumer.input,
+            activeConsumer.node
+          )
+        ).toBeTruthy()
+        storedOwner.node.mode = LGraphEventMode.BYPASS
         host.widgets[0].value = 'missing.safetensors'
         const candidate: MissingModelCandidate = {
           nodeId: createNodeExecutionId([65]),
           sourceExecutionId: createNodeExecutionId([65, 42]),
           promotedSources: [
             {
-              executionId: createNodeExecutionId([65, 42]),
+              executionId: createNodeExecutionId([65, 43]),
               widgetName: 'ckpt_name'
             }
           ],
           nodeType: 'CheckpointLoaderSimple',
-          widgetName: 'shared_model',
+          widgetName: 'ckpt_name',
           name: 'missing.safetensors',
           isMissing: undefined,
           isAssetSupported: true
         }
         mockHandles.state.enrichedCandidates = [candidate]
-        let finishVerification = () => {}
-        mockHandles.verifyAssetSupportedCandidates.mockImplementationOnce(
-          () =>
-            new Promise<undefined>((resolve) => {
-              finishVerification = () => {
-                candidate.isMissing = true
-                resolve(undefined)
-              }
-            })
-        )
+        const finishVerification = deferModelVerification()
         const onVerified = vi.fn()
 
         await runMissingModelPipeline({
@@ -545,6 +563,7 @@ describe('missingModelPipeline', () => {
         })
         expect(onVerified).not.toHaveBeenCalled()
         host.widgets[0].value = selected
+        activeConsumer.node.mode = consumerMode
         finishVerification()
 
         await vi.waitFor(() => {
@@ -1025,8 +1044,8 @@ describe('missingModelPipeline', () => {
         inactiveCandidate
       ]
       useWorkflowStore().activeWorkflow = fromPartial(activeWorkflow)
-      vi.mocked(graphTraversal.isAncestorPathActive).mockImplementation(
-        (_graph, nodeId) => nodeId !== '2'
+      vi.mocked(graphTraversal.isCandidateScopeActive).mockImplementation(
+        (_graph, candidate) => candidate.nodeId !== '2'
       )
 
       const result = await runMissingModelPipeline({
@@ -1041,38 +1060,6 @@ describe('missingModelPipeline', () => {
         missingModelCandidates: [activeCandidate],
         missingMediaCandidates: undefined
       })
-    })
-
-    it('drops host-keyed promoted candidates whose source path is inactive', async () => {
-      const promotedCandidate = {
-        nodeId: '65',
-        sourceExecutionId: createNodeExecutionId([65, 77, 42]),
-        nodeType: 'CheckpointLoaderSimple',
-        widgetName: 'outer_ckpt',
-        name: 'inactive-source.safetensors',
-        directory: 'checkpoints',
-        isMissing: true,
-        isAssetSupported: true
-      }
-      const activeWorkflow = {
-        activeState: createWorkflowGraphData(),
-        pendingWarnings: null
-      }
-      const graph = createGraph()
-      mockHandles.state.enrichedCandidates = [promotedCandidate]
-      useWorkflowStore().activeWorkflow = fromPartial(activeWorkflow)
-      vi.mocked(graphTraversal.isAncestorPathActive).mockImplementation(
-        (_graph, nodeId) => nodeId !== '65:77:42'
-      )
-
-      const result = await runMissingModelPipeline({
-        graph,
-        graphData: createWorkflowGraphData(),
-        missingModelStore: useMissingModelStore()
-      })
-
-      expect(result.confirmedCandidates).toEqual([])
-      expect(activeWorkflow.pendingWarnings).toBeNull()
     })
 
     it('skips post-fetch surface when folder path refresh is aborted', async () => {

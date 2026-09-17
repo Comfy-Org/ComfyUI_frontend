@@ -14,7 +14,11 @@ import type { useComfyRegistryService } from '@/services/comfyRegistryService'
 import type { MissingNodeType } from '@/types/comfy'
 import type { NodeExecutionId } from '@/types/nodeIdentification'
 import { toNodeId } from '@/types/nodeId'
-import { nodeError, validationError } from '@/utils/__tests__/nodeErrorHelpers'
+import {
+  nodeError,
+  runtimeError,
+  validationError
+} from '@/utils/__tests__/nodeErrorHelpers'
 import {
   forEachNode,
   getExecutionIdByNode,
@@ -674,16 +678,7 @@ describe('useErrorGroups', () => {
 
     it('renders an unnormalisable execution error as a blocking unlocated card', async () => {
       const { store, groups } = createErrorGroups()
-      store.recordExecutionError({
-        prompt_id: 'test-prompt',
-        timestamp: Date.now(),
-        node_id: 'not::a-node',
-        node_type: 'KSampler',
-        executed: [],
-        exception_type: 'RuntimeError',
-        exception_message: 'Execution failed',
-        traceback: []
-      })
+      store.recordExecutionError(runtimeError('not::a-node'))
       await nextTick()
 
       const executionGroup = groups.allErrorGroups.value.find(
@@ -709,16 +704,10 @@ describe('useErrorGroups', () => {
           validationError('required_input_missing', 'clip')
         ])
       })
-      store.recordExecutionError({
-        prompt_id: 'test-prompt',
-        timestamp: Date.now(),
-        node_id: 'not::a-node',
-        node_type: 'KSampler',
-        executed: [],
-        exception_type: 'RuntimeError',
-        exception_message: 'Execution failed',
-        traceback: []
-      })
+      await nextTick()
+      expect(groups.errorNodeCount.value).toBe(1)
+
+      store.recordExecutionError(runtimeError('not::a-node'))
       await nextTick()
 
       expect(groups.errorNodeCount.value).toBe(1)
@@ -733,16 +722,7 @@ describe('useErrorGroups', () => {
           message: 'No outputs',
           details: ''
         })
-        store.recordExecutionError({
-          prompt_id: 'test-prompt',
-          timestamp: Date.now(),
-          node_id: nodeId,
-          node_type: 'KSampler',
-          executed: [],
-          exception_type: 'RuntimeError',
-          exception_message: 'Execution failed',
-          traceback: []
-        })
+        store.recordExecutionError(runtimeError(nodeId))
         await nextTick()
 
         expect(groups.allErrorGroups.value).toHaveLength(2)

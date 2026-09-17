@@ -403,7 +403,7 @@ it.for([
     badgeCount: 1
   }
 ])(
-  'shows the blocked-run badge only when $name',
+  'blocked-run badge count is $badgeCount when $name',
   ({ nodeErrors, badgeCount }) => {
     const pinia = getActivePinia()!
     useMissingModelStore(pinia).setMissingModels([

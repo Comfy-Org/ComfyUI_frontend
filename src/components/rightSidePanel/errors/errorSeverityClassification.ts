@@ -28,6 +28,7 @@ export interface ErrorClassification {
   } | null
   executionError: {
     error: ExecutionErrorWsMessage
+    rawNodeId: string | undefined
     nodeId: NodeExecutionId | null
   } | null
   nodeErrors: {
@@ -55,13 +56,17 @@ export function classifyPanelErrors(
       }
     : null
 
+  const executionNodeId = input.executionError?.node_id
+  const rawExecutionNodeId =
+    executionNodeId == null ? undefined : String(executionNodeId)
   const executionError = input.executionError
     ? {
         error: input.executionError,
+        rawNodeId: rawExecutionNodeId,
         nodeId:
-          input.executionError.node_id == null
+          rawExecutionNodeId === undefined
             ? null
-            : tryNormalizeNodeExecutionId(input.executionError.node_id)
+            : tryNormalizeNodeExecutionId(rawExecutionNodeId)
       }
     : null
 

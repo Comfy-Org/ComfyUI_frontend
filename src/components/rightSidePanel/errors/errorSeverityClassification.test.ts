@@ -1,8 +1,11 @@
 import { describe, expect, it } from 'vitest'
 
 import type { MissingModelCandidate } from '@/platform/missingModel/types'
-import type { ExecutionErrorWsMessage } from '@/platform/remote/comfyui/execution/types'
-import { nodeError, validationError } from '@/utils/__tests__/nodeErrorHelpers'
+import {
+  nodeError,
+  runtimeError,
+  validationError
+} from '@/utils/__tests__/nodeErrorHelpers'
 
 import { createUnnormalisableModelErrorFixture } from './__tests__/absorptionFixtures'
 import { classifyPanelErrors } from './errorSeverityClassification'
@@ -18,19 +21,6 @@ function classify(overrides: Partial<ErrorSeverityInput> = {}) {
     hasMissingNodes: false,
     ...overrides
   })
-}
-
-function runtimeError(nodeId: string): ExecutionErrorWsMessage {
-  return {
-    prompt_id: 'prompt',
-    timestamp: 0,
-    node_id: nodeId,
-    node_type: 'KSampler',
-    executed: [],
-    exception_type: 'RuntimeError',
-    exception_message: 'Execution failed',
-    traceback: []
-  }
 }
 
 describe('classifyPanelErrors', () => {

@@ -501,7 +501,7 @@ export function useErrorGroups(searchQuery: MaybeRefOrGetter<string>) {
     const classifiedExecutionError = errorClassification.value.executionError
     if (!classifiedExecutionError) return
 
-    const { error, nodeId } = classifiedExecutionError
+    const { error, nodeId, rawNodeId } = classifiedExecutionError
     if (filterBySelection && !nodeId) return
     const cataloguedError = {
       message: `${error.exception_type}: ${error.exception_message}`,
@@ -531,7 +531,7 @@ export function useErrorGroups(searchQuery: MaybeRefOrGetter<string>) {
         `exec-${error.node_id}`,
         error.node_type,
         cataloguedError,
-        error.node_id == null ? undefined : String(error.node_id)
+        rawNodeId
       )
     }
   }
