@@ -10,7 +10,7 @@ test('homepage animation preserves navigation and footer typography @interaction
   await page.goto('/')
   const products = page
     .getByRole('navigation', { name: 'Main navigation', exact: true })
-    .getByRole('button', { name: 'Products NEW', exact: true })
+    .getByRole('button', { name: 'Products', exact: true })
   await waitForIsland(page, products)
   await products.press('Enter')
   const dropdownLink = page
