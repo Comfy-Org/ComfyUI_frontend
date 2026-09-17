@@ -273,7 +273,7 @@ test.describe('Menu', { tag: '@ui' }, () => {
       await topbar.openSubmenu('Theme')
     })
 
-    test('Does not switch renderer while typing the label to search for it', async ({
+    test('Does not switch renderer when Space reaches the focused row', async ({
       comfyPage
     }) => {
       const { topbar } = comfyPage.menu

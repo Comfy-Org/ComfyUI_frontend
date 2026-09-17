@@ -225,7 +225,9 @@ export class Topbar {
     )
     if (!focusedItemId) return null
 
-    const label = this.page.locator(`#${focusedItemId} .p-menubar-item-label`)
+    const label = this.page.locator(
+      `[id="${focusedItemId}"] .p-menubar-item-label`
+    )
     if ((await label.count()) === 0) return null
     return (await label.first().innerText()).trim()
   }
