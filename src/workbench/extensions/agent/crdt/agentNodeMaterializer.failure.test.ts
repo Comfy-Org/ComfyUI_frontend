@@ -229,10 +229,14 @@ describe('reconcileAgentAdapters', () => {
       const scope = seedAgentAddedNode(graph, 1)
       reconcileAgentAdapters(graph)
       const incumbent = graph.getNodeById(toNodeId(1))
-      const record = useNodeDataStore().getNode(scope.rootGraphId, toNodeId(1))
+      const incumbentState = toRaw(incumbent?._state)
+      // A type change replaces the record; the incumbent keeps its old state
+      // and is no longer the record owner.
       remoteMutations(scope).batch(REMOTE, (batch) =>
         batch.reconcileNode(nodePayload(1, 'throws-on-configure'))
       )
+      const record = useNodeDataStore().getNode(scope.rootGraphId, toNodeId(1))
+      expect(toRaw(record)).not.toBe(incumbentState)
       setConfigureShouldThrow(true)
       const versionBefore = graph._version
 
@@ -240,10 +244,11 @@ describe('reconcileAgentAdapters', () => {
       expect(graph._nodes).toEqual([incumbent])
       expect(graph.getNodeById(toNodeId(1))).toBe(incumbent)
       expect(incumbent?.graph).toBe(graph)
-      expect(toRaw(incumbent?._state)).toBe(toRaw(record))
+      expect(toRaw(incumbent?._state)).toBe(incumbentState)
       expect(
         toRaw(useNodeDataStore().getNode(scope.rootGraphId, toNodeId(1)))
       ).toBe(toRaw(record))
+      expect(record?.type).toBe('throws-on-configure')
       expect(graph._version).toBe(versionBefore)
       expect(reportError).toHaveBeenCalledWith(
         expect.any(Error),
