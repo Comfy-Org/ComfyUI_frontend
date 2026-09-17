@@ -5,8 +5,7 @@ import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { fitToViewInstant } from '@e2e/fixtures/utils/fitToView'
 import {
   getPromotedWidgetNames,
-  getPromotedWidgetCount,
-  setPromotedHostWidgetValue
+  getPromotedWidgetCount
 } from '@e2e/fixtures/utils/promotedWidgets'
 
 async function expectPromotedWidgetNamesToContain(
@@ -198,7 +197,7 @@ test.describe(
               value: Number(parentValue)
             })
 
-            const workflowName = 'vue-advanced-promoted-host-value'
+            const workflowName = `vue-advanced-promoted-host-value-${Date.now()}`
             await comfyPage.workflow.saveWorkflow(workflowName)
             await comfyPage.workflow.reloadAndOpenPersistedWorkflow(
               workflowName
@@ -220,34 +219,29 @@ test.describe(
             await fitToViewInstant(comfyPage, { zoom: 1 })
             const liteGraphWidget = await restored.getWidgetByName('max_shift')
             expect(await liteGraphWidget.getValue()).toBe(Number(parentValue))
-            expect(
-              await setPromotedHostWidgetValue(
-                comfyPage,
-                restored.id,
-                'max_shift',
-                '2.5',
-                { useSetValue: true }
-              )
-            ).toBe('2.5')
-            await comfyPage.menu.topbar.setVueNodesEnabled(true)
+            await liteGraphWidget.click()
+            await comfyPage.nodeOps.fillLegacyWidgetDialog('2.5')
+            expect(await liteGraphWidget.getValue()).toBe(2.5)
 
-            const restoredInput = comfyPage.vueNodes
-              .getNodeLocator(subgraphNodeId)
-              .getByLabel('max_shift', { exact: true })
-              .getByRole('spinbutton')
-            await expect(restoredInput).toBeVisible()
-            await restoredInput.fill('2.75')
-            await restoredInput.press('Tab')
-            await expect(restoredInput).toHaveValue('2.75')
-            await comfyPage.subgraph.expectPromotedWidget(
-              restored,
-              'max_shift',
-              {
-                ...identity,
-                label: 'max_shift',
-                value: 2.75
-              }
+            const saveResponse = comfyPage.page.waitForResponse(
+              (response) =>
+                response.request().method() === 'POST' &&
+                new URL(response.url()).pathname.includes(
+                  encodeURIComponent(`workflows/${workflowName}.json`)
+                )
             )
+            await comfyPage.menu.topbar.triggerTopbarCommand(['File', 'Save'])
+            expect((await saveResponse).status()).toBe(200)
+            await comfyPage.workflow.reloadAndOpenPersistedWorkflow(
+              workflowName
+            )
+            const legacyRestored =
+              await comfyPage.nodeOps.getNodeRefById(subgraphNodeId)
+            expect(
+              await (
+                await legacyRestored.getWidgetByName('max_shift')
+              ).getValue()
+            ).toBe(2.5)
           }
         )
 
