@@ -19,11 +19,11 @@ const { mockGraph, mockCanvas } = vi.hoisted(() => {
   return { mockGraph, mockCanvas }
 })
 
-vi.mock('@/scripts/app', () => ({
+vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: { canvas: mockCanvas }
 }))
 
-vi.mock('@/lib/litegraph/src/litegraph', () => ({
+vi.mock<unknown>(import('@/lib/litegraph/src/litegraph'), () => ({
   LiteGraph: {
     isValidConnection: vi.fn((a: unknown, b: unknown) => a === b)
   }
