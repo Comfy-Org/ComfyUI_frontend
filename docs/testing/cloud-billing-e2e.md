@@ -82,3 +82,12 @@ Traces start after permanent-account sign-in and contain authenticated network
 traffic. Keep reports private. Disposable accounts require no reusable credentials.
 Completed-payment assertions verify saved cards through the real hosted billing
 portal, because Staging disables the embedded-checkout saved-card API.
+
+## Subscription lifecycle
+
+PR #17548 depends only on #17481. Run `--project=cloud-live-disposable` for
+cancellation/reactivation and plan transitions. The shared setup provisions a
+paid sandbox subscription; all lifecycle assertions and endpoint permissions live
+in this PR. Cancellation/reactivation preserves balance, upgrade grants the quote,
+and scheduled downgrade grants nothing. Paid setup verifies the saved card through
+the hosted billing portal.

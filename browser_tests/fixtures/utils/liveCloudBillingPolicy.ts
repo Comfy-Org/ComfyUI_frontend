@@ -123,7 +123,14 @@ function isPaymentPostAllowed(url: URL, backend: string): boolean {
     url.pathname === '/ajax/metrics_batch'
   )
     return true
-  if (url.origin === backend && url.pathname === '/api/billing/payment-portal')
+  if (
+    url.origin === backend &&
+    [
+      '/api/billing/payment-portal',
+      '/api/billing/subscription/cancel',
+      '/api/billing/subscription/resubscribe'
+    ].includes(url.pathname)
+  )
     return true
   return (
     url.origin === 'https://api.stripe.com' &&

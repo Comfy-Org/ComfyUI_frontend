@@ -383,3 +383,31 @@ describe('Disposable payment permissions', () => {
     ).toBe(false)
   })
 })
+
+describe('Subscription lifecycle permissions', () => {
+  it.for([
+    '/api/billing/subscription/cancel',
+    '/api/billing/subscription/resubscribe'
+  ])('limits %s to opted-in sandbox tests', (path) => {
+    const url = new URL(path, config.PLAYWRIGHT_SETUP_API_URL)
+    expect(isLiveCloudMutationAllowed(url, 'POST', config)).toBe(false)
+    expect(
+      isLiveCloudMutationAllowed(url, 'POST', {
+        ...config,
+        allowPayments: true
+      })
+    ).toBe(true)
+    const production = {
+      ...config,
+      PLAYWRIGHT_SETUP_API_URL: 'https://cloud.comfy.org',
+      allowPayments: true
+    }
+    expect(
+      isLiveCloudMutationAllowed(
+        new URL(path, production.PLAYWRIGHT_SETUP_API_URL),
+        'POST',
+        production
+      )
+    ).toBe(false)
+  })
+})
