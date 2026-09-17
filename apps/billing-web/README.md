@@ -200,5 +200,8 @@ production. The allowlist names what the app actually loads:
 
 Promote it to `Content-Security-Policy` once a preview has completed sign-in
 (email and Google), a card checkout with a 3DS challenge, and a portal
-round-trip with no violation in the console. Anything the console reports on
-that pass is an origin to add, not a reason to loosen a directive.
+round-trip with no violation in the console. Read each report before acting on
+it: add an origin only when the report names an expected, trusted external
+resource the flow loads. A report about inline code, a `data:` or `blob:`
+source, or framing is a resource to fix or a directive to keep, not a source
+to add.
