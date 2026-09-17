@@ -20,7 +20,7 @@ import type {
 } from './sessionContracts.js'
 import { isPermanentSessionError } from './sessionContracts.js'
 
-const DEFAULT_BUFFER_MS = 5 * 60 * 1000
+export const DEFAULT_BUFFER_MS = 5 * 60 * 1000
 
 /** Guards captured before a scheduled mint, re-checked before its commit. */
 interface RefreshGuards {

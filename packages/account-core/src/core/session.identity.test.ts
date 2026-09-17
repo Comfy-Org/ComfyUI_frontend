@@ -2,11 +2,11 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { SessionSnapshot } from './session.js'
 import { createSessionClient } from './session.js'
+import { makeClient } from './__fixtures__/sessionClientFixture.js'
 import {
   EXCHANGE_URL,
   NINETY_MINUTES_MS,
   deferred,
-  makeClient,
   manualIdentity,
   memoryStorage,
   mintResponse,
