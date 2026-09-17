@@ -632,46 +632,59 @@ describe('Floating Links / Reroutes', () => {
     expect(graph.reroutes.values().next().value!.floating).not.toBeUndefined()
   })
 
-  test('removes a rerouted floating chain after both endpoint nodes are removed', ({
-    expect,
-    linkedNodesGraph
-  }) => {
-    const graph = new LGraph(linkedNodesGraph)
-    const connectedLink = graph.links.values().next().value!
-    const reroute = graph.createReroute([0, 0], connectedLink)
-    assert(reroute)
-    const originId = connectedLink.origin_id
-    const target = graph.getNodeById(connectedLink.target_id)!
+  for (const { firstEndpointName, removeOriginFirst } of [
+    { firstEndpointName: 'target', removeOriginFirst: false },
+    { firstEndpointName: 'origin', removeOriginFirst: true }
+  ]) {
+    test(`removes a rerouted floating chain after the ${firstEndpointName} endpoint is removed first`, ({
+      expect,
+      linkedNodesGraph
+    }) => {
+      const graph = new LGraph(linkedNodesGraph)
+      const connectedLink = graph.links.values().next().value
+      assert(connectedLink)
+      const reroute = graph.createReroute([0, 0], connectedLink)
+      assert(reroute)
+      const originId = connectedLink.origin_id
+      const targetId = connectedLink.target_id
+      const firstEndpoint = graph.getNodeById(
+        removeOriginFirst ? originId : targetId
+      )
+      assert(firstEndpoint)
 
-    graph.remove(target)
+      graph.remove(firstEndpoint)
 
-    const [floatingLink] = graph.floatingLinks.values()
-    expect(floatingLink).toMatchObject({
-      origin_id: originId,
-      target_id: UNASSIGNED_NODE_ID,
-      parentId: reroute.id
+      const [floatingLink] = graph.floatingLinks.values()
+      expect(floatingLink).toMatchObject({
+        origin_id: removeOriginFirst ? UNASSIGNED_NODE_ID : originId,
+        target_id: removeOriginFirst ? targetId : UNASSIGNED_NODE_ID,
+        parentId: reroute.id
+      })
+      expect(graph.reroutes.get(reroute.id)?.floatingLinkIds).toEqual(
+        new Set([floatingLink.id])
+      )
+
+      const serialised = graph.asSerialisable()
+      const restored = new LGraph(serialised)
+      const remainingEndpoint = restored.getNodeById(
+        removeOriginFirst ? targetId : originId
+      )
+      assert(remainingEndpoint)
+      expect(restored.floatingLinks.get(floatingLink.id)).toMatchObject({
+        origin_id: removeOriginFirst ? UNASSIGNED_NODE_ID : originId,
+        target_id: removeOriginFirst ? targetId : UNASSIGNED_NODE_ID,
+        parentId: reroute.id
+      })
+
+      restored.remove(remainingEndpoint)
+
+      expect(restored.floatingLinks.has(floatingLink.id)).toBe(false)
+      expect(restored.reroutes.has(reroute.id)).toBe(false)
+      const pruned = restored.asSerialisable()
+      expect(pruned.floatingLinks).toBeUndefined()
+      expect(pruned.reroutes).toBeUndefined()
     })
-    expect(graph.reroutes.get(reroute.id)?.floatingLinkIds).toEqual(
-      new Set([floatingLink.id])
-    )
-
-    const serialised = graph.asSerialisable()
-    graph.id = createUuidv4()
-    const restored = new LGraph(serialised)
-    const restoredOrigin = restored.getNodeById(originId)!
-    expect(restored.floatingLinks.get(floatingLink.id)).toMatchObject({
-      origin_id: originId,
-      target_id: UNASSIGNED_NODE_ID,
-      parentId: reroute.id
-    })
-
-    restored.remove(restoredOrigin)
-
-    expect(restored.floatingLinks.has(floatingLink.id)).toBe(false)
-    expect(restored.reroutes.has(reroute.id)).toBe(false)
-    expect(restored.asSerialisable().floatingLinks).toBeUndefined()
-    expect(restored.asSerialisable().reroutes).toBeUndefined()
-  })
+  }
 
   test('Create floating reroute when one side of link is removed', ({
     expect,
