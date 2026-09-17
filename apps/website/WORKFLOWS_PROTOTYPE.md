@@ -5,7 +5,9 @@ existing Models catalog. Primary action: run with editable inputs on the page.
 Secondary action: open the original template in the Cloud canvas. The prototype
 has no marketplace, clone fees, creator earnings, ratings, or publishing tools.
 
-Categories: Product photography, Animate your character, Edit & enhance.
+Categories: Create product photos & ads, Animate characters, Edit & clean up
+photos, Upscale & restore. The catalog shares the Models hero and horizontal
+card rows, with matching banner dimensions, card proportions, and typography.
 The shortlist combines popular editing/animation templates with concrete product
 photography use cases. It is curated, not a ranked popularity chart. The category
 labels and customer-facing descriptions are editorial proposals for review.

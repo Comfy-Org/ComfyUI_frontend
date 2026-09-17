@@ -57,7 +57,7 @@ function setup() {
             slug: 'test',
             template: 'test',
             title: 'Test',
-            category: 'Test',
+            category: 'Edit & clean up photos',
             description: 'Test',
             fields: [
               { node: '1', input: 'text', kind: 'text', label: 'Prompt' }

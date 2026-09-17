@@ -19,14 +19,15 @@ export interface CuratedWorkflow {
   template: string
   title: string
   description: string
-  category: string
+  category: (typeof workflowCategories)[number]
   fields: WorkflowField[]
 }
 
 export const workflowCategories = [
-  'Product photography',
-  'Animate your character',
-  'Edit & enhance'
+  'Create product photos & ads',
+  'Animate characters',
+  'Edit & clean up photos',
+  'Upscale & restore'
 ] as const
 
 export const workflows: CuratedWorkflow[] = [
@@ -34,7 +35,7 @@ export const workflows: CuratedWorkflow[] = [
     slug: 'replace-product-background',
     template: 'templates-product_scene_relight',
     title: 'Put your product in a new scene',
-    category: 'Product photography',
+    category: 'Create product photos & ads',
     description:
       'Combine a product photo and a background. Match the lighting while preserving the product’s materials.',
     fields: [
@@ -52,7 +53,7 @@ export const workflows: CuratedWorkflow[] = [
     slug: 'change-material',
     template: 'image_qwen_image_edit_2511',
     title: 'Change a material',
-    category: 'Product photography',
+    category: 'Create product photos & ads',
     description:
       'Try a new fabric, texture, or finish on an object using a material reference.',
     fields: [
@@ -80,7 +81,7 @@ export const workflows: CuratedWorkflow[] = [
     slug: 'change-camera-angle',
     template: 'templates-qwen_multiangle.app',
     title: 'See your subject from a new angle',
-    category: 'Product photography',
+    category: 'Create product photos & ads',
     description:
       'Explore another viewpoint from a single reference image. Adjust the camera angle and distance.',
     fields: [
@@ -118,7 +119,7 @@ export const workflows: CuratedWorkflow[] = [
     slug: 'copy-movement',
     template: 'video_wan_animate2',
     title: 'Copy movement from a video',
-    category: 'Animate your character',
+    category: 'Animate characters',
     description:
       'Give your character the gestures, dance, or movement from a reference video.',
     fields: [
@@ -141,7 +142,7 @@ export const workflows: CuratedWorkflow[] = [
     slug: 'make-character-talk',
     template: 'video_ltx2_3_ia2v',
     title: 'Make your character talk',
-    category: 'Animate your character',
+    category: 'Animate characters',
     description:
       'Turn a portrait and voice recording into a talking character with matching expressions.',
     fields: [
@@ -159,7 +160,7 @@ export const workflows: CuratedWorkflow[] = [
     slug: 'match-portrait-lighting',
     template: 'templates_rob_portrait_light_migration.app',
     title: 'Match lighting from a reference',
-    category: 'Edit & enhance',
+    category: 'Edit & clean up photos',
     description:
       'Give a portrait the mood, light direction, and color of another image.',
     fields: [
@@ -171,7 +172,7 @@ export const workflows: CuratedWorkflow[] = [
     slug: 'extend-image',
     template: 'flux_fill_outpaint_example',
     title: 'Extend an image’s borders',
-    category: 'Edit & enhance',
+    category: 'Edit & clean up photos',
     description:
       'Make room for a wider crop or a different layout by filling beyond the original frame.',
     fields: [
@@ -197,7 +198,7 @@ export const workflows: CuratedWorkflow[] = [
     slug: 'upscale-image',
     template: 'utility_seedvr2_image_upscale',
     title: 'Upscale and restore detail',
-    category: 'Edit & enhance',
+    category: 'Upscale & restore',
     description: 'Give a small or soft image a sharper finish with SeedVR2.',
     fields: [{ node: '24', input: 'image', label: 'Your image', kind: 'image' }]
   }

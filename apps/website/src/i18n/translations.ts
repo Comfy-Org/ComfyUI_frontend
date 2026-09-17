@@ -23,6 +23,11 @@ const translations = {
     'zh-CN': '在 Comfy 上浏览并运行最新的 AI 图像、视频和音频模型。'
   },
   'workshop.hero.eyebrow': { en: 'Models', 'zh-CN': '模型' },
+  'workshop.workflows.eyebrow': { en: 'Workflows', 'zh-CN': '工作流' },
+  'workshop.workflows.subtitle': {
+    en: 'Start with an outcome. Add your inputs. Make it yours.',
+    'zh-CN': '从你想要的结果出发，添加输入，创造属于你的作品。'
+  },
   'workshop.hero.heading': {
     en: 'What will you make next?',
     'zh-CN': '接下来你想创造什么？'
