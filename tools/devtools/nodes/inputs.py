@@ -461,20 +461,20 @@ def _dynamic_combo_autogrow_model_inputs():
     ]
 
 
-class NodeWithDynamicComboAutogrowImages(IO.ComfyNode):
-    """Structural copy of the OpenAI GPT Image 2.5 node (`OpenAIGPTImageNodeV2`).
+class AutogrowImagesInDynamicCombo(IO.ComfyNode):
+    """Minimal node carrying `OpenAIGPTImageNodeV2`'s autogrow-in-dynamic-combo shape.
 
     An autogrow image group nested inside a dynamic combo option is the shape
     that loses its links on workflow load, so a test for that needs a node
-    built this way. Copied here rather than driven through the real API node so
-    the test does not depend on partner-node availability or pricing.
+    built this way. It reproduces that shape only and does not track the real
+    node's schema, so the test needs no partner-node availability or pricing.
     """
 
     @classmethod
     def define_schema(cls):
         return IO.Schema(
-            node_id="DevToolsNodeWithDynamicComboAutogrowImages",
-            display_name="Node With Dynamic Combo Autogrow Images",
+            node_id="DevToolsAutogrowImagesInDynamicCombo",
+            display_name="Autogrow Images In Dynamic Combo",
             description="A node whose dynamic combo options each carry an autogrow image group",
             inputs=[
                 IO.String.Input("prompt", default="", multiline=True),
@@ -518,7 +518,7 @@ NODE_CLASS_MAPPINGS = {
     "DevToolsNodeWithPriceBadge": NodeWithPriceBadge,
     "DevToolsNodeWithNumericCombo": NodeWithNumericCombo,
     "DevToolsNodeWithDynamicCombo": NodeWithDynamicCombo,
-    "DevToolsNodeWithDynamicComboAutogrowImages": NodeWithDynamicComboAutogrowImages,
+    "DevToolsAutogrowImagesInDynamicCombo": AutogrowImagesInDynamicCombo,
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
@@ -544,7 +544,7 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "DevToolsNodeWithPriceBadge": "Node With Price Badge",
     "DevToolsNodeWithNumericCombo": "Node With Numeric Combo",
     "DevToolsNodeWithDynamicCombo": "Node With Dynamic Combo",
-    "DevToolsNodeWithDynamicComboAutogrowImages": "Node With Dynamic Combo Autogrow Images",
+    "DevToolsAutogrowImagesInDynamicCombo": "Autogrow Images In Dynamic Combo",
 }
 
 __all__ = [

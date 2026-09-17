@@ -6,7 +6,7 @@
   "nodes": [
     {
       "id": 1,
-      "type": "DevToolsNodeWithDynamicComboAutogrowImages",
+      "type": "DevToolsAutogrowImagesInDynamicCombo",
       "pos": [460, 20],
       "size": [401.9, 204],
       "flags": {},
@@ -34,7 +34,7 @@
         }
       ],
       "properties": {
-        "Node name for S&R": "DevToolsNodeWithDynamicComboAutogrowImages"
+        "Node name for S&R": "DevToolsAutogrowImagesInDynamicCombo"
       },
       "widgets_values": ["", "model-flare", "auto", "low", 1],
       "widgets_values_named": {

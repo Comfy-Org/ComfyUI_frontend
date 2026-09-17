@@ -14,17 +14,19 @@ const SAVED_WORKFLOW_NAME = 'autogrow-images'
 
 // One image source per slot, so a rebuild that restores the links but pairs
 // them with the wrong ordinals is still a failure.
-const IMAGE_SOURCE_NODE_IDS = ['2', '3', '4', '5', '6']
-const CONNECTED_IMAGES = IMAGE_SOURCE_NODE_IDS.map((originNodeId, index) => ({
-  name: `${IMAGES_PREFIX}image_${index + 1}`,
-  originNodeId
-}))
-const WORKFLOW_NODE_COUNT = IMAGE_SOURCE_NODE_IDS.length + 1
+const CONNECTED_IMAGES = [
+  { name: `${IMAGES_PREFIX}image_1`, originNodeId: '2' },
+  { name: `${IMAGES_PREFIX}image_2`, originNodeId: '3' },
+  { name: `${IMAGES_PREFIX}image_3`, originNodeId: '4' },
+  { name: `${IMAGES_PREFIX}image_4`, originNodeId: '5' },
+  { name: `${IMAGES_PREFIX}image_5`, originNodeId: '6' }
+]
 // Autogrow keeps one empty slot past the last connected one.
 const IMAGE_SLOTS = [
   ...CONNECTED_IMAGES.map(({ name }) => name),
-  `${IMAGES_PREFIX}image_${IMAGE_SOURCE_NODE_IDS.length + 1}`
+  `${IMAGES_PREFIX}image_6`
 ]
+const WORKFLOW_NODE_COUNT = CONNECTED_IMAGES.length + 1
 
 test.describe(
   'Dynamic combo autogrow links across a workflow tab switch',
