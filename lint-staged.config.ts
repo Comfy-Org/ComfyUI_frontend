@@ -18,8 +18,9 @@ export default function lintStaged(stagedFiles: string[]) {
   const styleFiles = relativePaths.filter((fileName) =>
     /\.(css|vue)$/.test(fileName)
   )
-  const astroFiles = relativePaths.filter((fileName) =>
-    fileName.endsWith('.astro')
+  const astroFiles = relativePaths.filter(
+    (fileName) =>
+      fileName.startsWith('apps/website/src/') && fileName.endsWith('.astro')
   )
   const typecheckFiles = relativePaths.filter((fileName) =>
     /\.(astro|ts|tsx|vue|mts)$/.test(fileName)
@@ -31,6 +32,10 @@ export default function lintStaged(stagedFiles: string[]) {
       'pnpm exec oxfmt --write --no-error-on-unmatched-pattern'
     ),
     ...lintCommands(codeFiles, styleFiles, astroFiles),
+    ...commandsWithFiles(
+      astroFiles.map((fileName) => fileName.slice('apps/website/'.length)),
+      'pnpm --dir apps/website exec prettier --write'
+    ),
     ...typecheckCommands(typecheckFiles)
   ]
 }

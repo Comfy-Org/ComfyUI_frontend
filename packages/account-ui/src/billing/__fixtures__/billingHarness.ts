@@ -12,7 +12,7 @@ import type {
   BillingResult,
   BillingStatusData,
   BillingTransport
-} from '@comfyorg/account/billing'
+} from '@comfyorg/account-core/billing'
 import {
   OPERATION_POLL_TIMING,
   PAYMENT_METHODS_ROUTE,
@@ -28,12 +28,12 @@ import {
   createTopupCommand,
   operationRoute,
   sessionBillingScopeSource
-} from '@comfyorg/account/billing'
+} from '@comfyorg/account-core/billing'
 import type {
   AccountCredential,
   SessionClient,
   SessionSnapshot
-} from '@comfyorg/account/session'
+} from '@comfyorg/account-core/session'
 
 import type { BillingClient } from '../billingClient'
 
@@ -82,6 +82,7 @@ function fakeSession() {
       return () => listeners.delete(listener)
     },
     attachIdentity: outsideBillingContract('attachIdentity'),
+    dispose: outsideBillingContract('dispose'),
     getToken: outsideBillingContract('getToken'),
     ensureFresh: outsideBillingContract('ensureFresh'),
     remint: outsideBillingContract('remint'),

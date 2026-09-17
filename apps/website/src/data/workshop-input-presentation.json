@@ -1664,6 +1664,11 @@
       }
     },
     "freepik/ai-image-upscaler-precision-v2": {
+      "image": {
+        "label": "Source image",
+        "help": "Choose the image to upscale.",
+        "urlUpload": "image"
+      },
       "ultra_detail": {
         "label": "Fine detail",
         "help": "Adjust how much intricate detail to add.",
@@ -1671,7 +1676,19 @@
         "control": "slider"
       }
     },
+    "freepik/ai-skin-enhancer-creative": {
+      "image": {
+        "label": "Source image",
+        "help": "Choose the portrait to enhance.",
+        "urlUpload": "image"
+      }
+    },
     "freepik/ai-skin-enhancer-faithful": {
+      "image": {
+        "label": "Source image",
+        "help": "Choose the portrait to enhance.",
+        "urlUpload": "image"
+      },
       "skin_detail": {
         "label": "Skin detail",
         "help": "Adjust the amount of skin texture enhancement.",
@@ -1680,6 +1697,11 @@
       }
     },
     "freepik/ai-skin-enhancer-flexible": {
+      "image": {
+        "label": "Source image",
+        "help": "Choose the portrait to enhance.",
+        "urlUpload": "image"
+      },
       "optimized_for": {
         "label": "Enhancement target",
         "help": "Choose which aspect of the image to improve.",

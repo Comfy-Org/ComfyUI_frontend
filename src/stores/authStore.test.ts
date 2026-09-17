@@ -120,15 +120,9 @@ describe('useAuthStore', () => {
   } as Partial<User> as MockUser
 
   beforeEach(() => {
-    vi.mocked(useFeatureFlags().flags).unifiedCloudAuthEnabled = false
     mockResetSocket = vi.spyOn(api, 'resetSocket').mockResolvedValue(undefined)
     vi.stubGlobal('fetch', mockFetch)
     clearPreservedQuery(PRESERVED_QUERY_NAMESPACES.SHARE_AUTH)
-
-    // Setup dialog service mock
-    vi.mocked(useDialogService, { partial: true }).mockReturnValue({
-      showErrorDialog: vi.fn()
-    })
 
     // Mock useFirebaseAuth to return our mock auth object
     vi.mocked(vuefire.useFirebaseAuth).mockReturnValue(
@@ -579,11 +573,9 @@ describe('useAuthStore', () => {
       await expect(request).rejects.toMatchObject({
         message: i18n.global.t('toastMessages.userNotAuthenticated')
       })
-      expect(
-        mockFetch.mock.calls.some(([url]) =>
-          String(url).endsWith('/customers/credit')
-        )
-      ).toBe(false)
+      expect(mockFetch.mock.calls.map(([url]) => url)).not.toContainEqual(
+        expect.stringMatching(/\/customers\/credit$/)
+      )
     })
 
     it('withholds a portal URL that succeeds after an A->B API key switch', async () => {
@@ -1247,12 +1239,14 @@ describe('useAuthStore', () => {
 
       // Should call the error dialog instead of throwing
       const token = await store.getIdToken()
-      const dialogService = useDialogService()
 
-      expect(dialogService.showErrorDialog).toHaveBeenCalledWith(authError, {
-        title: i18n.global.t('errorDialog.defaultTitle'),
-        reportType: 'authenticationError'
-      })
+      expect(useDialogService().showErrorDialog).toHaveBeenCalledWith(
+        authError,
+        {
+          title: i18n.global.t('errorDialog.defaultTitle'),
+          reportType: 'authenticationError'
+        }
+      )
       expect(token).toBeUndefined()
     })
   })
@@ -2346,15 +2340,11 @@ describe('useAuthStore in local/desktop distribution', () => {
   } as Partial<User> as MockUser
 
   beforeEach(() => {
-    vi.mocked(useFeatureFlags().flags).unifiedCloudAuthEnabled = false
     mockDistributionTypes.isCloud = false
     mockDistributionTypes.isDesktop = false
     mockDistributionTypes.DISTRIBUTION = 'localhost'
 
     vi.stubGlobal('fetch', mockFetch)
-    vi.mocked(useDialogService, { partial: true }).mockReturnValue({
-      showErrorDialog: vi.fn()
-    })
 
     vi.mocked(vuefire.useFirebaseAuth).mockReturnValue(
       mockAuth as Partial<

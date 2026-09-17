@@ -12,12 +12,12 @@ import { defineStore } from 'pinia'
 import { computed, markRaw, ref } from 'vue'
 import { useFirebaseAuth } from 'vuefire'
 
-import { fetchWithCustomerRecovery as fetchHealingMissingCustomer } from '@comfyorg/account/customerRecovery'
-import { createFirebaseIdentity } from '@comfyorg/account/firebase'
+import { fetchWithCustomerRecovery as fetchHealingMissingCustomer } from '@comfyorg/account-core/customerRecovery'
+import { createFirebaseIdentity } from '@comfyorg/account-core/firebase'
 import {
   signUpWithProvisioning,
   socialSignInWithProvisioning
-} from '@comfyorg/account/provisioning'
+} from '@comfyorg/account-core/provisioning'
 
 import { getComfyApiBaseUrl } from '@/config/comfyApi'
 import { t } from '@/i18n'
@@ -551,7 +551,7 @@ export const useAuthStore = defineStore('auth', () => {
     return customerRecovery
   }
 
-  /** /customers/* fetch that self-heals a never-provisioned account (rule in @comfyorg/account). */
+  /** /customers/* fetch that self-heals a never-provisioned account (rule in @comfyorg/account-core). */
   const fetchWithCustomerRecovery = (
     input: string,
     init?: RequestInit

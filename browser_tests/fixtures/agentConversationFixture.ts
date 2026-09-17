@@ -3,7 +3,7 @@ import { expect } from '@playwright/test'
 import { z } from 'zod'
 
 import type { WorkflowListResponse } from '@comfyorg/ingest-types'
-import type { UserDataFullInfo } from '@/schemas/apiSchema'
+import type { UserDataFullInfo } from '@/platform/remote/comfyui/types'
 
 import { createI18n } from 'vue-i18n'
 

@@ -15,7 +15,7 @@ import type {
   PaymentMethodsReader,
   PlansReader,
   TopupCommand
-} from '@comfyorg/account/billing'
+} from '@comfyorg/account-core/billing'
 
 /**
  * The host owns this client's lifetime. Composables never dispose what they

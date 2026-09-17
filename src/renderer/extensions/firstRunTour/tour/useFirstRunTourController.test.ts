@@ -204,8 +204,8 @@ describe('useFirstRunTourController', () => {
     useWorkflowStore().activeWorkflow = null
     useCanvasStore().linearMode = false
     useSettingStore().settingValues['Comfy.VueNodes.Enabled'] = true
-    vi.mocked(useSettingStore().set).mockImplementation(async (_key, value) => {
-      useSettingStore().settingValues['Comfy.VueNodes.Enabled'] = value
+    vi.mocked(useSettingStore().set).mockImplementation(async (key, value) => {
+      Object.assign(useSettingStore().settingValues, { [key]: value })
       return Promise.resolve()
     })
     mocks.steps = []

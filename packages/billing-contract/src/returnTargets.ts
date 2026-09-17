@@ -13,8 +13,8 @@
  * product locally returns to the deployed destination of whichever environment
  * their backend belongs to.
  */
-import type { BillingEnvironment } from './contract'
-import { parseUrl } from './url'
+import type { BillingEnvironment } from './contract.js'
+import { parseUrl } from './url.js'
 
 export const RETURN_TARGETS = [
   'comfyui_workspace',

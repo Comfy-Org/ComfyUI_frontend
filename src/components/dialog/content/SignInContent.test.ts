@@ -7,7 +7,7 @@ import SignInContent from '@/components/dialog/content/SignInContent.vue'
 
 vi.mock(import('@/composables/auth/useAuthActions'))
 
-vi.mock(import('@comfyorg/account/webviewDetection'), () => ({
+vi.mock(import('@comfyorg/account-core/webviewDetection'), () => ({
   isEmbeddedWebView: () => false
 }))
 vi.mock(import('@/utils/hostWhitelist'), () => ({
