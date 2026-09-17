@@ -201,14 +201,17 @@ describe('dispose', () => {
     ).toBeNull()
   })
 
-  it('never publishes an explicit-user mint made after dispose', async () => {
-    const { client, identity } = makeClient({ fetchImpl: okFetch() })
+  it('still serves an explicit-user mint after dispose, like a detach, without publishing it', async () => {
+    const { client, storage, identity } = makeClient({ fetchImpl: okFetch() })
     identity.fire(testUser())
     await vi.waitFor(() => expect(client.getToken()).toBe('workspace-jwt'))
     client.dispose()
 
-    await client.ensureFresh(testUser())
+    await expect(client.ensureFresh(testUser())).resolves.toMatchObject({
+      status: 'ok'
+    })
 
+    expect(storage.raw()).not.toBeNull()
     expect(client.getSnapshot().phase).toBe('pending')
     expect(client.getToken()).toBeUndefined()
   })
