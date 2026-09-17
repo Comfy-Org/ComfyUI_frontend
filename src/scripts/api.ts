@@ -1536,7 +1536,10 @@ export class ComfyApi extends EventTarget {
 
   async getLogs(): Promise<string> {
     const url = isCloud ? this.apiURL('/logs') : this.internalURL('/logs')
-    return (await axios.get(url)).data
+    const { data } = await axios.get<unknown>(url)
+    return typeof data === 'string'
+      ? data
+      : (JSON.stringify(data, null, 2) ?? '')
   }
 
   async getRawLogs(): Promise<LogsRawResponse> {
