@@ -264,10 +264,10 @@ describe('importA1111', () => {
     })
   }
 
-  it.each([
+  it.for([
     ['has no steps', 'positive'],
     ['has no options', 'positive\nNegative prompt: negative\nSteps:']
-  ])('does not load embeddings when parameters %s', async (_case, input) => {
+  ])('does not load embeddings when parameters %s', async ([, input]) => {
     const graph = new LGraph()
     const beforeGraphClear = vi.fn()
     vi.mocked(api.getEmbeddings).mockRejectedValue(
@@ -341,10 +341,10 @@ describe('importA1111', () => {
     expect(clear).toHaveBeenCalledOnce()
   })
 
-  it.each([
+  it.for([
     ['with a negative prompt', parameters, 'negative'],
     ['without a negative prompt', parametersWithoutNegativePrompt, '']
-  ])('imports parameters %s', async (_case, input, expectedNegativePrompt) => {
+  ])('imports parameters %s', async ([, input, expectedNegativePrompt]) => {
     const graph = new LGraph()
     const clear = vi.spyOn(graph, 'clear')
     const beforeGraphClear = vi.fn()
