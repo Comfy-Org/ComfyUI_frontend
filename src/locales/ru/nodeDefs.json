@@ -5352,6 +5352,33 @@
       }
     }
   },
+  "EndLoop": {
+    "display_name": "Конец цикла",
+    "inputs": {
+      "accumulate": {
+        "name": "accumulate",
+        "tooltip": "При включении возвращает output_value из каждой итерации; иначе возвращает только последнюю итерацию."
+      },
+      "next_iteration_value": {
+        "name": "next_iteration_value",
+        "tooltip": "Значение, отправляемое из узла «Конец цикла» обратно в «Начало цикла» для следующей итерации."
+      },
+      "output_value": {
+        "name": "output_value",
+        "tooltip": "Значение, возвращаемое узлом «Конец цикла». В соответствии с accumulate возвращается последняя итерация или все итерации."
+      },
+      "terminations": {
+        "name": "terminations",
+        "tooltip": "Подключите выходы, которые должны выполняться на каждой итерации. Их значения не возвращаются."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "выходы",
+        "tooltip": "output_value последней итерации или значения, накопленные за все итерации при включённом accumulate."
+      }
+    }
+  },
   "Epsilon Scaling": {
     "display_name": "Масштабирование эпсилон",
     "inputs": {
@@ -6825,6 +6852,42 @@
       }
     }
   },
+  "GeminiNodeV3": {
+    "description": "Генерирует текстовые ответы с помощью моделей Gemini от Google. Укажите текстовый запрос и, при необходимости, одно или несколько изображений, аудиоклипов, видео или файлов в качестве мультимодального контекста.",
+    "display_name": "Google Gemini",
+    "inputs": {
+      "control_after_generate": {
+        "name": "управление после генерации"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Модель Gemini, используемая для генерации ответа."
+      },
+      "model_max_output_tokens": {
+        "name": "max_output_tokens"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_seed": {
+        "name": "seed"
+      },
+      "model_system_prompt": {
+        "name": "system_prompt"
+      },
+      "model_thinking_level": {
+        "name": "thinking_level"
+      },
+      "model_video_processing": {
+        "name": "video_processing"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "GeminiVideoOmni": {
     "description": "Генерируйте видео со звуком по текстовому промпту с помощью модели Google Gemini Omni Flash. Дополнительно можно добавить референсные изображения и/или видео для направления или редактирования результата. Опишите желаемую длительность (3-10 сек) и соотношение сторон (16:9 или 9:16) прямо в промпте.",
     "display_name": "Google Gemini Omni (Video)",
@@ -7012,6 +7075,22 @@
       },
       "2": {
         "name": "batch_size",
+        "tooltip": null
+      }
+    }
+  },
+  "GetItemFromList": {
+    "display_name": "Получить элемент из списка",
+    "inputs": {
+      "index": {
+        "name": "index"
+      },
+      "list": {
+        "name": "list"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -11623,6 +11702,73 @@
       "1": {
         "name": "тексты",
         "tooltip": "Список текстовых подписей."
+      }
+    }
+  },
+  "LoopIteration": {
+    "display_name": "LoopIteration",
+    "inputs": {
+      "current_iteration_value": {
+        "name": "current_iteration_value"
+      },
+      "is_first": {
+        "name": "is_first"
+      },
+      "is_last": {
+        "name": "is_last"
+      },
+      "iteration_index": {
+        "name": "iteration_index"
+      },
+      "list_item": {
+        "name": "list_item"
+      },
+      "reuse_cache": {
+        "name": "reuse_cache"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      },
+      "2": {
+        "tooltip": null
+      },
+      "3": {
+        "tooltip": null
+      },
+      "4": {
+        "tooltip": null
+      }
+    }
+  },
+  "LoopProgress": {
+    "display_name": "LoopProgress",
+    "inputs": {
+      "position": {
+        "name": "position"
+      },
+      "start_id": {
+        "name": "start_id"
+      },
+      "total": {
+        "name": "total"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "LoopResult": {
+    "display_name": "LoopResult",
+    "inputs": {
+      "close_id": {
+        "name": "close_id"
       }
     }
   },
@@ -18058,6 +18204,93 @@
       }
     }
   },
+  "PrunaImageToVideoNode": {
+    "description": "Анимирует изображение в видео с помощью видеомоделей Pruna, с возможностью указать последний кадр, сгенерированный звук или аудиодорожку.",
+    "display_name": "Pruna P-Video-2: изображение в видео",
+    "inputs": {
+      "control_after_generate": {
+        "name": "управление после генерации"
+      },
+      "model": {
+        "name": "модель",
+        "tooltip": "Используемая модель."
+      },
+      "model_draft": {
+        "name": "черновик"
+      },
+      "model_duration": {
+        "name": "длительность"
+      },
+      "model_enhance_prompt": {
+        "name": "улучшить промпт"
+      },
+      "model_fps": {
+        "name": "fps"
+      },
+      "model_generate_audio": {
+        "name": "генерировать аудио"
+      },
+      "model_prompt": {
+        "name": "промпт"
+      },
+      "model_resolution": {
+        "name": "разрешение"
+      },
+      "model_seed": {
+        "name": "сид"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PrunaTextToVideoNode": {
+    "description": "Генерирует видео из текстового промпта с помощью видеомоделей Pruna, с возможностью добавить сгенерированный звук или аудиодорожку для управления видео.",
+    "display_name": "Pruna P-Video-2: текст в видео",
+    "inputs": {
+      "control_after_generate": {
+        "name": "управление после генерации"
+      },
+      "model": {
+        "name": "модель",
+        "tooltip": "Используемая модель."
+      },
+      "model_aspect_ratio": {
+        "name": "соотношение сторон"
+      },
+      "model_draft": {
+        "name": "черновик"
+      },
+      "model_duration": {
+        "name": "длительность"
+      },
+      "model_enhance_prompt": {
+        "name": "улучшить промпт"
+      },
+      "model_fps": {
+        "name": "fps"
+      },
+      "model_generate_audio": {
+        "name": "генерировать аудио"
+      },
+      "model_prompt": {
+        "name": "промпт"
+      },
+      "model_resolution": {
+        "name": "разрешение"
+      },
+      "model_seed": {
+        "name": "сид"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "QuadrupleCLIPLoader": {
     "description": "[Рецепты]\n\nhidream: long clip-l, long clip-g, t5xxl, llama_8b_3.1_instruct",
     "display_name": "QuadrupleCLIPLoader",
@@ -22701,6 +22934,52 @@
       }
     }
   },
+  "StartLoop": {
+    "display_name": "Начало цикла",
+    "inputs": {
+      "cache_iterations": {
+        "name": "кэшировать итерации",
+        "tooltip": "Повторно использует неизменённые результаты итераций из предыдущих запусков. Отключите, чтобы выполнить все итерации заново."
+      },
+      "initial_iteration_value": {
+        "name": "начальное значение итерации",
+        "tooltip": "Значение, доступное как current_iteration_value на первой итерации."
+      },
+      "mode": {
+        "name": "режим",
+        "tooltip": "Режим итераций цикла."
+      },
+      "mode_num_iterations": {
+        "name": "количество итераций"
+      },
+      "parent_iteration": {
+        "name": "родительская итерация",
+        "tooltip": "Подключите iteration_index из внешнего Start Loop, чтобы вложить этот цикл."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "индекс итерации",
+        "tooltip": "Индекс текущей итерации цикла."
+      },
+      "1": {
+        "name": "первая",
+        "tooltip": "Истина во время первой итерации цикла."
+      },
+      "2": {
+        "name": "последняя",
+        "tooltip": "Истинно на последней итерации цикла."
+      },
+      "3": {
+        "name": "list_item",
+        "tooltip": "Текущий элемент списка при использовании режима списка. None в режимах Simple и For."
+      },
+      "4": {
+        "name": "current_iteration_value",
+        "tooltip": "Значение, передаваемое между итерациями, для текущей итерации: initial_iteration_value на первой итерации, затем next_iteration_value из End Loop на каждой последующей итерации."
+      }
+    }
+  },
   "StringCompare": {
     "display_name": "Сравнить",
     "inputs": {
@@ -24896,6 +25175,192 @@
       "2": {
         "name": "GLB",
         "tooltip": null
+      }
+    }
+  },
+  "TripoPSeriesImageToModelNode": {
+    "description": "Создаёт низкополигональную 3D-модель с чистой топологией по изображению в виде треугольной сетки (GLB) или сетки с преобладанием четырёхугольников (FBX).",
+    "display_name": "Tripo P2: Из изображения в модель",
+    "inputs": {
+      "control_after_generate": {
+        "name": "управление после генерации"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Модель Tripo серии P."
+      },
+      "model_auto_size": {
+        "name": "auto_size"
+      },
+      "model_compress_geometry": {
+        "name": "compress_geometry"
+      },
+      "model_enable_image_autofix": {
+        "name": "enable_image_autofix"
+      },
+      "model_export_uv": {
+        "name": "export_uv"
+      },
+      "model_face_limit": {
+        "name": "face_limit"
+      },
+      "model_model_seed": {
+        "name": "model_seed"
+      },
+      "model_orientation": {
+        "name": "orientation"
+      },
+      "model_pbr": {
+        "name": "pbr"
+      },
+      "model_quad": {
+        "name": "quad"
+      },
+      "model_texture": {
+        "name": "texture"
+      },
+      "model_texture_alignment": {
+        "name": "texture_alignment"
+      },
+      "model_texture_seed": {
+        "name": "texture_seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "идентификатор задачи модели",
+        "tooltip": null
+      },
+      "1": {
+        "name": "GLB",
+        "tooltip": "Пусто, когда включён quad."
+      },
+      "2": {
+        "name": "FBX",
+        "tooltip": "Заполняется только при включённом quad."
+      }
+    }
+  },
+  "TripoPSeriesMultiviewToModelNode": {
+    "description": "Создаёт низкополигональную 3D-модель с чистой топологией по виду спереди и от одного до трёх видов слева, сзади и справа в виде треугольной сетки (GLB) или сетки с преобладанием четырёхугольников (FBX).",
+    "display_name": "Tripo P2: Из нескольких ракурсов в модель",
+    "inputs": {
+      "control_after_generate": {
+        "name": "управление после генерации"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Модель Tripo серии P."
+      },
+      "model_auto_size": {
+        "name": "auto_size"
+      },
+      "model_compress_geometry": {
+        "name": "compress_geometry"
+      },
+      "model_export_uv": {
+        "name": "export_uv"
+      },
+      "model_face_limit": {
+        "name": "face_limit"
+      },
+      "model_model_seed": {
+        "name": "model_seed"
+      },
+      "model_orientation": {
+        "name": "orientation"
+      },
+      "model_pbr": {
+        "name": "pbr"
+      },
+      "model_quad": {
+        "name": "quad"
+      },
+      "model_texture": {
+        "name": "текстура"
+      },
+      "model_texture_alignment": {
+        "name": "texture_alignment"
+      },
+      "model_texture_seed": {
+        "name": "texture_seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "ID задачи модели",
+        "tooltip": null
+      },
+      "1": {
+        "name": "GLB",
+        "tooltip": "Пусто, когда включён quad."
+      },
+      "2": {
+        "name": "FBX",
+        "tooltip": "Заполняется только при включённом quad."
+      }
+    }
+  },
+  "TripoPSeriesTextToModelNode": {
+    "description": "Создаёт низкополигональную 3D-модель с чистой топологией по текстовому запросу в виде треугольной сетки (GLB) или сетки с преобладанием четырёхугольников (FBX).",
+    "display_name": "Tripo P2: Текст в модель",
+    "inputs": {
+      "control_after_generate": {
+        "name": "управление после генерации"
+      },
+      "model": {
+        "name": "модель",
+        "tooltip": "Модель серии Tripo P."
+      },
+      "model_auto_size": {
+        "name": "auto_size"
+      },
+      "model_compress_geometry": {
+        "name": "compress_geometry"
+      },
+      "model_export_uv": {
+        "name": "export_uv"
+      },
+      "model_face_limit": {
+        "name": "face_limit"
+      },
+      "model_image_seed": {
+        "name": "image_seed"
+      },
+      "model_model_seed": {
+        "name": "model_seed"
+      },
+      "model_negative_prompt": {
+        "name": "negative_prompt"
+      },
+      "model_pbr": {
+        "name": "pbr"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_quad": {
+        "name": "quad"
+      },
+      "model_texture": {
+        "name": "текстура"
+      },
+      "model_texture_seed": {
+        "name": "texture_seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "ID задачи модели",
+        "tooltip": null
+      },
+      "1": {
+        "name": "GLB",
+        "tooltip": "Пусто, когда включён quad."
+      },
+      "2": {
+        "name": "FBX",
+        "tooltip": "Заполняется только при включённом quad."
       }
     }
   },

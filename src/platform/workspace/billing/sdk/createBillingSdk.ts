@@ -1,5 +1,5 @@
 /**
- * The app's one composition of `@comfyorg/account/billing`: the session-backed
+ * The app's one composition of `@comfyorg/account-core/billing`: the session-backed
  * transport, the readers, the operation lifecycle, and the top-up command,
  * wired once over ports the host supplies. Everything browser-bound (storage,
  * the payment-provider script, the document listeners) stays with the caller;
@@ -18,7 +18,7 @@ import type {
   PaymentMethodsReader,
   PlansReader,
   TopupCommand
-} from '@comfyorg/account/billing'
+} from '@comfyorg/account-core/billing'
 import {
   createBillingOperationLifecycle,
   createBillingStatusReader,
@@ -30,7 +30,7 @@ import {
   createTopupCommand,
   driveEmbeddedChallenge,
   sessionBillingScopeSource
-} from '@comfyorg/account/billing'
+} from '@comfyorg/account-core/billing'
 
 export interface BillingSdkOptions {
   readonly session: BillingSession

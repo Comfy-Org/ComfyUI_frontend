@@ -1,5 +1,5 @@
 /**
- * This origin's one composition of `@comfyorg/account/billing`: the
+ * This origin's one composition of `@comfyorg/account-core/billing`: the
  * session-backed transport, the readers, the operation lifecycle, and the
  * commands, wired over ports this app owns. Every core constructor call lives
  * here, so the core's option shapes are one file's concern.
@@ -15,7 +15,7 @@
 import type {
   BillingOperationPointerStorage,
   BillingSession
-} from '@comfyorg/account/billing'
+} from '@comfyorg/account-core/billing'
 import {
   createBillingCommands,
   createBillingOperationLifecycle,
@@ -27,7 +27,7 @@ import {
   createSessionBillingTransport,
   createTopupCommand,
   sessionBillingScopeSource
-} from '@comfyorg/account/billing'
+} from '@comfyorg/account-core/billing'
 import type { BillingClient } from '@comfyorg/account-ui/billing'
 
 import { CLOUD_BASE_URL } from '@/config/env'

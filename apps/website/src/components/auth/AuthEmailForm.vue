@@ -5,10 +5,10 @@ import { computed, ref, useTemplateRef } from 'vue'
 import {
   TURNSTILE_MESSAGES,
   isTurnstileEnabled
-} from '@comfyorg/account/turnstile'
-import PasswordRules from '@comfyorg/account/vue/PasswordRules'
-import TurnstileWidget from '@comfyorg/account/vue/TurnstileWidget'
-import { useTurnstileGate } from '@comfyorg/account/vue/turnstileGate'
+} from '@comfyorg/account-core/turnstile'
+import PasswordRules from '@comfyorg/account-ui/auth/PasswordRules'
+import TurnstileWidget from '@comfyorg/account-ui/auth/TurnstileWidget'
+import { useTurnstileGate } from '@comfyorg/account-ui/auth/turnstileGate'
 
 import { authSchemasFor } from '../../config/auth-schemas'
 import { WORKSHOP_TURNSTILE_SITE_KEY } from '../../config/workshop-env'

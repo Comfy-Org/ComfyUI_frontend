@@ -1,7 +1,7 @@
 import { onScopeDispose } from 'vue'
 
-import { createBoundedOperation } from '../core/boundedOperation.js'
-import type { BoundedOperation } from '../core/boundedOperation.js'
+import { createBoundedOperation } from '@comfyorg/account-core/boundedOperation'
+import type { BoundedOperation } from '@comfyorg/account-core/boundedOperation'
 
 /**
  * A {@link createBoundedOperation} bound to the current Vue scope: when the

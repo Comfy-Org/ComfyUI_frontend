@@ -45,7 +45,6 @@ describe('auth token priority chain', () => {
   } as Partial<User> as MockUser
 
   beforeEach(() => {
-    vi.mocked(useFeatureFlags().flags).unifiedCloudAuthEnabled = false
     mockDistributionTypes.isCloud = true
     vi.mocked(vuefire.useFirebaseAuth).mockReturnValue(
       mockAuth as unknown as ReturnType<typeof vuefire.useFirebaseAuth>

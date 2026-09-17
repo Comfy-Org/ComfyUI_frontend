@@ -79,7 +79,6 @@ const localAssetWithPreview = {
 }
 
 beforeEach(() => {
-  vi.mocked(useFeatureFlags().flags).assetsEnabled = false
   vi.spyOn(useAssetsStore().outputAssets, 'invalidate').mockImplementation(
     mockInvalidateOutputAssets
   )
