@@ -121,10 +121,15 @@ const beforeType = computed(() =>
   entries.filter((entry) => narrowings.value.every((holds) => holds(entry)))
 )
 
+// An app is a workflow somebody wrapped in a form, so asking for workflows
+// returns it too and the badge on the card is what tells them apart.
+const isType = (entry: BrowseEntry, filter: TypeFilter) =>
+  filter === 'all' ||
+  entry.kind === filter ||
+  (filter === 'workflow' && entry.kind === 'app')
+
 const countOf = (value: TypeFilter) =>
-  value === 'all'
-    ? beforeType.value.length
-    : beforeType.value.filter((entry) => entry.kind === value).length
+  beforeType.value.filter((entry) => isType(entry, value)).length
 
 const counts = computed(() => ({
   all: countOf('all'),
@@ -134,9 +139,7 @@ const counts = computed(() => ({
 }))
 
 const matched = computed(() =>
-  type.value === 'all'
-    ? beforeType.value
-    : beforeType.value.filter((entry) => entry.kind === type.value)
+  beforeType.value.filter((entry) => isType(entry, type.value))
 )
 
 const sorted = computed(() => sortBrowseEntries(matched.value, order.value))
@@ -159,7 +162,7 @@ function countWithout(
     (entry) =>
       holds(entry) &&
       others.every((one) => one(entry)) &&
-      (type.value === 'all' || entry.kind === type.value)
+      isType(entry, type.value)
   ).length
 }
 
@@ -291,8 +294,7 @@ const featured = computed(() =>
         sortBrowseEntries(
           beforeType.value.filter(
             (entry) =>
-              entry.card.media !== undefined &&
-              (type.value === 'all' || entry.kind === type.value)
+              entry.card.media !== undefined && isType(entry, type.value)
           ),
           'popular'
         ).slice(0, BANNER_SLIDES),
@@ -325,40 +327,43 @@ const heading = computed(() =>
     />
 
     <!-- One field and one set of controls read every kind, so they belong to
-      the catalogue rather than to the list, and they are there before
-      anything has been asked. The type sits beside the search because it is
-      the same kind of choice: what you are looking at, not how it is ordered. -->
+      the catalogue rather than to the list, and they are there before anything
+      has been asked. -->
     <div
       class="sticky top-20 z-30 -mx-1 mb-8 flex flex-wrap items-center gap-3 bg-page px-1 py-4 max-sm:mb-4 max-sm:py-2 lg:top-26"
       data-testid="catalogue-header-controls"
     >
       <CatalogueTypeFilter v-model="type" :counts :locale />
 
-      <div class="relative min-w-56 flex-1 sm:max-w-sm">
-        <Search
-          class="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-content-muted"
-          aria-hidden="true"
-        />
-        <input
-          id="catalogue-search"
-          v-model="query"
-          type="search"
-          :placeholder="t('workshop.v2.search', locale)"
-          :aria-label="t('workshop.v2.search', locale)"
-          class="h-11 w-full rounded-2xl bg-transparency-white-t4 ps-9 pe-3 text-sm text-content transition-colors outline-none hover:bg-transparency-white-t8 focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow/50"
+      <!-- The type says what is in the list; the search and the controls narrow
+        and order what it chose, so they group together away from it. -->
+      <div class="flex flex-1 items-center gap-3 sm:ms-auto sm:flex-none">
+        <div class="relative min-w-56 flex-1 sm:w-80 sm:flex-none">
+          <Search
+            class="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-content-muted"
+            aria-hidden="true"
+          />
+          <input
+            id="catalogue-search"
+            v-model="query"
+            type="search"
+            :placeholder="t('workshop.v2.search', locale)"
+            :aria-label="t('workshop.v2.search', locale)"
+            class="h-11 w-full rounded-2xl bg-transparency-white-t4 ps-9 pe-3 text-sm text-content transition-colors outline-none hover:bg-transparency-white-t8 focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow/50"
+          />
+        </div>
+
+        <CatalogueControls
+          v-model:order="order"
+          :orders="ORDERS"
+          :groups="facetGroups"
+          :filters-on="filtersOn"
+          :result-count="sorted.length"
+          :locale
+          @clear="clearFilters"
+          @pick="pickFacet"
         />
       </div>
-
-      <CatalogueControls
-        v-model:order="order"
-        :orders="ORDERS"
-        :groups="facetGroups"
-        :filters-on="filtersOn"
-        :result-count="sorted.length"
-        :locale
-        @clear="clearFilters"
-        @pick="pickFacet"
-      />
     </div>
 
     <FeaturedBanner

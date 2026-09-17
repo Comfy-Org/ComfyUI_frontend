@@ -224,6 +224,23 @@ describe('CatalogueBrowse', () => {
     expect(lastShelf('/playground/model/flux/')).toBe('generate-images')
   })
 
+  // An app is a workflow somebody wrapped in a form, so it answers to the
+  // workflows tab rather than asking for a tab of its own.
+  it('returns the apps along with the workflows', async () => {
+    window.history.replaceState({}, '', '/playground/?type=workflow')
+    render(CatalogueBrowse, {
+      props: {
+        entries: [
+          ...ENTRIES,
+          workflow({ key: 'sketch', title: 'Sketch to photo', kind: 'app' })
+        ]
+      }
+    })
+    await nextTick()
+
+    expect(shown()).toEqual(['Movie poster', 'Sketch to photo'])
+  })
+
   // A price order over things that carry no price is a ranking over nothing,
   // so the order follows the type it was chosen for or gives way.
   it('drops a price order when the reader leaves the models behind', async () => {
@@ -234,7 +251,7 @@ describe('CatalogueBrowse', () => {
 
     await userEvent.click(
       within(screen.getByTestId('catalogue-type-facet')).getByRole('button', {
-        name: /everything/i
+        name: /^all/i
       })
     )
     expect(shown()).toEqual(['Flux', 'Movie poster'])

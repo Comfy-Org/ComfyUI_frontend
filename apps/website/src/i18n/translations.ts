@@ -10444,7 +10444,7 @@ Enterprise`
     en: 'Models, workflows and apps, by what you want to make.',
     'zh-CN': '按你想做的东西浏览模型、工作流和应用。'
   },
-  'workshop.v2.kind.all': { en: 'Everything', 'zh-CN': '全部' },
+  'workshop.v2.kind.all': { en: 'All', 'zh-CN': '全部' },
   'workshop.v2.kind.model': { en: 'Model', 'zh-CN': '模型' },
   'workshop.v2.kind.workflow': { en: 'Workflow', 'zh-CN': '工作流' },
   'workshop.v2.kind.app': { en: 'App', 'zh-CN': '应用' },

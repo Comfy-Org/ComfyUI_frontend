@@ -13,10 +13,11 @@ const { counts, locale = 'en' } = defineProps<{
 
 const type = defineModel<TypeFilter>({ required: true })
 
+// An app is a workflow somebody wrapped in a form, so it browses as one and
+// the badge on its card is what says which it is.
 const TYPES: readonly { value: TypeFilter; label: TranslationKey }[] = [
   { value: 'all', label: 'workshop.v2.kind.all' },
   { value: 'workflow', label: 'workshop.v2.kind.workflows' },
-  { value: 'app', label: 'workshop.v2.kind.apps' },
   { value: 'model', label: 'workshop.v2.kind.models' }
 ]
 </script>
