@@ -200,7 +200,8 @@ const {
   mockCanReactivatePlan,
   mockCapabilities,
   mockSubscription,
-  mockBillingStatus
+  mockBillingStatus,
+  mockSubscriptionRail
 } = vi.hoisted(() => {
   return {
     mockSubscribe: vi.fn(),
@@ -241,7 +242,10 @@ const {
         isCancelled: boolean
       } | null
     },
-    mockBillingStatus: { value: null as BillingStatus | null }
+    mockBillingStatus: { value: null as BillingStatus | null },
+    mockSubscriptionRail: {
+      value: null as { subscriptionActionUrl: string | null } | null
+    }
   }
 })
 
@@ -370,6 +374,11 @@ vi.mock<unknown>(import('@/platform/workspace/api/workspaceApi'), () => ({
   }
 }))
 
+vi.mock<unknown>(
+  import('@/platform/workspace/composables/useSubscriptionRail'),
+  () => ({ useSubscriptionRail: () => mockSubscriptionRail.value })
+)
+
 vi.mock(import('@/config/comfyApi'), () => ({
   getComfyPlatformBaseUrl: () => 'https://platform.comfy.org'
 }))
@@ -416,6 +425,9 @@ const i18n = createI18n({
             unavailable: 'Reactivation unavailable'
           }
         }
+      },
+      billingOperation: {
+        subscriptionSuccess: 'Subscription updated'
       },
       toastMessages: {
         failedToAccessBillingPortal: 'Billing portal unavailable',
@@ -531,6 +543,7 @@ describe('useSubscriptionCheckout', () => {
     }
     mockCanReactivatePlan.value = true
     mockSubscription.value = null
+    mockSubscriptionRail.value = null
     vi.mocked(useTelemetry()?.trackCheckoutJourneyEvent)?.mockClear()
     sessionStorage.clear()
     clearCheckoutJourney()
@@ -3085,6 +3098,28 @@ describe('useSubscriptionCheckout', () => {
     })
   })
 
+  describe('hosted payment step on the SDK rail', () => {
+    it('re-offers the hosted page the rail opened for itself', async () => {
+      mockSubscriptionRail.value = {
+        subscriptionActionUrl: 'https://pay.example/op-3'
+      }
+
+      const checkout = await setupWithApprovedPreview()
+
+      expect(checkout.activeCheckoutActionUrl.value).toBe(
+        'https://pay.example/op-3'
+      )
+    })
+
+    it('offers nothing while the rail is parked on no hosted page', async () => {
+      mockSubscriptionRail.value = { subscriptionActionUrl: null }
+
+      const checkout = await setupWithApprovedPreview()
+
+      expect(checkout.activeCheckoutActionUrl.value).toBeNull()
+    })
+  })
+
   describe('handleBackToPricing', () => {
     it('surfaces a subscription operation recovered from billing status', async () => {
       Object.assign(useBillingOperationStore(), {
@@ -3992,6 +4027,58 @@ describe('useSubscriptionCheckout', () => {
       expect(
         useTelemetry()?.trackMonthlySubscriptionSucceeded
       ).not.toHaveBeenCalled()
+    })
+
+    it('counts the conversion and announces a subscribe the server charged for', async () => {
+      const checkout = await setupWithApprovedPreview()
+      checkout.selectedTierKey.value = 'standard'
+      checkout.selectedBillingCycle.value = 'yearly'
+      mockSubscribe.mockResolvedValueOnce({
+        status: 'subscribed',
+        billing_op_id: 'op-3',
+        requiredPayment: true
+      })
+      mockFetchStatus.mockResolvedValueOnce(undefined)
+      mockFetchBalance.mockResolvedValueOnce(undefined)
+
+      await checkout.handleConfirmTransition()
+
+      expect(
+        useTelemetry()?.trackMonthlySubscriptionSucceeded
+      ).toHaveBeenCalledExactlyOnceWith({
+        tier: 'standard',
+        cycle: 'yearly',
+        checkout_type: 'new',
+        payment_intent_source: undefined,
+        billing_op_id: 'op-3'
+      })
+      expect(mockToastAdd).toHaveBeenCalledWith(
+        expect.objectContaining({
+          severity: 'success',
+          summary: 'Subscription updated'
+        })
+      )
+    })
+
+    it('counts neither for a subscribe the server activated without a payment', async () => {
+      const checkout = await setupWithApprovedPreview()
+      checkout.selectedTierKey.value = 'standard'
+      checkout.selectedBillingCycle.value = 'yearly'
+      mockSubscribe.mockResolvedValueOnce({
+        status: 'subscribed',
+        billing_op_id: 'op-3',
+        requiredPayment: false
+      })
+      mockFetchStatus.mockResolvedValueOnce(undefined)
+      mockFetchBalance.mockResolvedValueOnce(undefined)
+
+      await checkout.handleConfirmTransition()
+
+      expect(checkout.checkoutStep.value).toBe('success')
+      expect(
+        useTelemetry()?.trackMonthlySubscriptionSucceeded
+      ).not.toHaveBeenCalled()
+      expect(mockToastAdd).not.toHaveBeenCalled()
     })
 
     it('shows error toast on failure', async () => {
