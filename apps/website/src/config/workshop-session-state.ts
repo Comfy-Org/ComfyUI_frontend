@@ -51,6 +51,7 @@ let stopFocusListener: (() => void) | undefined
 
 function stopListeners(): void {
   running = false
+  // deactivate() publishes a signed-out frame; the host must be unsubscribed first.
   stopSnapshot?.()
   stopSnapshot = undefined
   workshopIdentity.deactivate()
