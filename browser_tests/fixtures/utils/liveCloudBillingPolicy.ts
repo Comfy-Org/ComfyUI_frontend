@@ -27,7 +27,10 @@ export const LIVE_CHECKOUT_ORIGINS = [
   'https://r.stripe.com',
   'https://q.stripe.com',
   'https://b.stripecdn.com',
-  'https://newassets.hcaptcha.com'
+  'https://newassets.hcaptcha.com',
+  'https://testmode-acs.stripe.com',
+  'https://invoice.stripe.com',
+  'https://hooks.stripe.com'
 ]
 
 const SAFE_METHODS = ['GET', 'HEAD', 'OPTIONS']
@@ -118,6 +121,7 @@ function isOnboardingSurveyUpdate(data: unknown): boolean {
 }
 
 function isPaymentPostAllowed(url: URL, backend: string): boolean {
+  if (isThreeDSPostAllowed(url)) return true
   if (
     url.origin === 'https://checkout.comfy.org' &&
     url.pathname === '/ajax/metrics_batch'
@@ -149,5 +153,22 @@ function isCheckoutPostAllowed(url: URL, backend: string): boolean {
     (url.origin === 'https://r.stripe.com' &&
       ['/b', '/0'].includes(url.pathname)) ||
     (url.origin === 'https://m.stripe.com' && url.pathname === '/6')
+  )
+}
+
+function isThreeDSPostAllowed(url: URL): boolean {
+  if (url.origin === 'https://testmode-acs.stripe.com') return true
+  if (url.origin === 'https://api.stripe.com') {
+    return [
+      '/v1/3ds2/authenticate',
+      '/v1/3ds2/challenge_complete',
+      '/v1/consumers/sessions/lookup'
+    ].includes(url.pathname)
+  }
+  return (
+    url.origin === 'https://hooks.stripe.com' &&
+    /^\/3d_secure_2\/notify\/acct_[A-Za-z0-9]+\/tds2_[A-Za-z0-9]+$/.test(
+      url.pathname
+    )
   )
 }

@@ -383,3 +383,29 @@ describe('Disposable payment permissions', () => {
     ).toBe(false)
   })
 })
+
+describe('Stripe test challenge permissions', () => {
+  it.for([
+    'https://testmode-acs.stripe.com/authorize',
+    'https://api.stripe.com/v1/3ds2/authenticate',
+    'https://api.stripe.com/v1/3ds2/challenge_complete',
+    'https://api.stripe.com/v1/consumers/sessions/lookup',
+    'https://hooks.stripe.com/3d_secure_2/notify/acct_example/tds2_example'
+  ])('requires sandbox payment permission for %s', (endpoint) => {
+    const url = new URL(endpoint)
+    expect(isLiveCloudMutationAllowed(url, 'POST', config)).toBe(false)
+    expect(
+      isLiveCloudMutationAllowed(url, 'POST', {
+        ...config,
+        allowPayments: true
+      })
+    ).toBe(true)
+    expect(
+      isLiveCloudMutationAllowed(url, 'POST', {
+        ...config,
+        allowPayments: true,
+        PLAYWRIGHT_SETUP_API_URL: 'https://cloud.comfy.org'
+      })
+    ).toBe(false)
+  })
+})
