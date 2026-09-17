@@ -311,6 +311,57 @@ describe('LGraph.adoptCanonicalNode', () => {
       expect(incumbent.widgets![0].value).toBe(5)
     })
 
+    it('restores nested record fields the configure hook mutated in place', () => {
+      // `LGraphNode.configure` writes into `properties`/`flags` in place
+      // rather than replacing them; a rollback must hand the incumbent back
+      // the values it had, not the containers the successor scribbled on.
+      const { graph, incumbent, record } = graphWithOwnedIncumbent()
+      incumbent.properties.seedMode = 'fixed'
+      incumbent.flags.collapsed = false
+      incumbent.inputs[0].label = 'before'
+      const recordBefore = JSON.parse(JSON.stringify(toRaw(record)))
+      const successor = new BNode()
+
+      const result = graph.adoptCanonicalNode(record, successor, {
+        incumbent,
+        configure: (node) => {
+          node.properties.seedMode = 'randomize'
+          node.properties.extra = 1
+          node.flags.collapsed = true
+          node.inputs[0].label = 'after'
+          node.title = 'renamed'
+          throw new Error('configure exploded')
+        }
+      })
+
+      expect(result.status).toBe('failed')
+      expect(JSON.parse(JSON.stringify(toRaw(record)))).toEqual(recordBefore)
+      expect(incumbent.properties).toEqual({ seedMode: 'fixed' })
+      expect(incumbent.flags.collapsed).toBe(false)
+      expect(incumbent.inputs[0].label).toBe('before')
+      expect(incumbent.title).toBe('a')
+    })
+
+    it('restores widget options the configure hook mutated in place', () => {
+      const { graph, incumbent, record } = graphWithOwnedIncumbent()
+      incumbent.widgets![0].options.max = 10
+      const seed = seedWidgetId(graph, incumbent)
+      const widgetStore = useWidgetValueStore()
+      const successor = new BNode()
+
+      graph.adoptCanonicalNode(record, successor, {
+        incumbent,
+        configure: (node) => {
+          node.widgets![0].options.max = 99
+          node.widgets![0].options.step = 5
+          throw new Error('configure exploded')
+        }
+      })
+
+      expect(widgetStore.getWidget(seed)?.options).toEqual({ max: 10 })
+      expect(incumbent.widgets![0].options).toEqual({ max: 10 })
+    })
+
     it('rebinds incumbent widgets the successor had re-typed', () => {
       const { graph, incumbent, record } = graphWithOwnedIncumbent()
       const successor = new TextSeedNode()
