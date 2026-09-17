@@ -1,8 +1,9 @@
 import type { Page } from '@playwright/test'
 
-import type { ListAssetsResponse } from '@comfyorg/ingest-types'
+import type { GlobalSetting, ListAssetsResponse } from '@comfyorg/ingest-types'
 
 import type { RemoteConfig } from '@/platform/remoteConfig/types'
+import { AGENT_CONSENT_SETTING_ID } from '@/platform/settings/constants/agent'
 
 import { cloudAppFixture, waitForCloudApp } from '@e2e/fixtures/cloudAppFixture'
 import { mockBilling } from '@e2e/fixtures/utils/cloudBillingMocks'
@@ -28,6 +29,8 @@ interface BootAgentAppOptions {
   settings?: Record<string, unknown>
   /** `'server'` loads real node definitions instead of the empty catalog. */
   objectInfo?: 'server'
+  /** Preserve existing tests by default; onboarding specs opt into the tour. */
+  onboardingCompleted?: boolean
 }
 
 async function mockAgentBoot(
@@ -48,6 +51,15 @@ async function mockAgentBoot(
     objectInfo
   })
   await mockBilling(page)
+  const storedConsent: GlobalSetting = {
+    key: AGENT_CONSENT_SETTING_ID,
+    value: true,
+    updated_at: '2026-09-09T00:00:00Z'
+  }
+  await page.route(
+    `**/api/global-settings/${AGENT_CONSENT_SETTING_ID}`,
+    (route) => route.fulfill(jsonRoute(storedConsent))
+  )
   const emptyAssets: ListAssetsResponse = {
     assets: [],
     total: 0,
@@ -81,11 +93,12 @@ export async function bootAgentApp(
   agentFlag: boolean,
   options: BootAgentAppOptions = {}
 ): Promise<void> {
-  // The shell's onboarding coach is a modal; pre-seed its dismissal so the
-  // panel chrome is interactable, as the canonical agent suite does.
-  await page.addInitScript(() => {
-    localStorage.setItem('Comfy.AgentPanel.onboarded', 'true')
-  })
+  const { onboardingCompleted = true } = options
+  await page.addInitScript((completed) => {
+    if (localStorage.getItem('Comfy.AgentPanel.onboarded') === null) {
+      localStorage.setItem('Comfy.AgentPanel.onboarded', String(completed))
+    }
+  }, onboardingCompleted)
   await mockAgentBoot(page, { agentFlag, ...options })
   await bootCloud(page)
   await page.goto(APP_URL)

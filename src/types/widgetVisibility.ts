@@ -10,13 +10,26 @@
  * `advanced` / `canvasOnly` fields are facades over this component.
  */
 
+import { isPlainObject } from 'es-toolkit'
+
 export const WIDGET_SURFACES = ['canvas', 'vueNode', 'panel'] as const
 
 export type WidgetSurface = (typeof WIDGET_SURFACES)[number]
 
-type WidgetSurfaceTier = 'shown' | 'advanced' | 'never'
+const WIDGET_SURFACE_TIERS = ['shown', 'advanced', 'never'] as const
+
+type WidgetSurfaceTier = (typeof WIDGET_SURFACE_TIERS)[number]
 
 export type WidgetSurfaces = Record<WidgetSurface, WidgetSurfaceTier>
+
+function isWidgetSurfaces(value: unknown): value is WidgetSurfaces {
+  return (
+    isPlainObject(value) &&
+    WIDGET_SURFACES.every((surface) =>
+      WIDGET_SURFACE_TIERS.some((tier) => value[surface] === tier)
+    )
+  )
+}
 
 interface WidgetSuppression {
   byExtension: boolean
@@ -35,6 +48,7 @@ export interface WidgetVisibilitySource {
   options?: {
     hidden?: boolean
     advanced?: boolean
+    surfaces?: WidgetSurfaces
     canvasOnly?: boolean
     hideInPanel?: boolean
   }
@@ -74,11 +88,19 @@ export function deriveWidgetSurfaces(
   const vueNode: WidgetSurfaceTier = source.options?.canvasOnly
     ? 'never'
     : specTier
-  return {
+  const surfaces: WidgetSurfaces = {
     canvas,
     vueNode,
     panel: source.options?.hideInPanel ? 'never' : vueNode
   }
+  const declaredSurfaces = source.options?.surfaces
+  return isWidgetSurfaces(declaredSurfaces)
+    ? {
+        canvas: declaredSurfaces.canvas,
+        vueNode: declaredSurfaces.vueNode,
+        panel: declaredSurfaces.panel
+      }
+    : surfaces
 }
 
 export function deriveWidgetVisibility(

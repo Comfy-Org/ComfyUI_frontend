@@ -1,4 +1,5 @@
 import * as THREE from 'three'
+import { fromAny } from '@total-typescript/shoehorn'
 import { describe, expect, it, vi } from 'vitest'
 
 import { useToastStore } from '@/platform/updates/common/toastStore'
@@ -19,38 +20,52 @@ const {
   fbxParseAsyncMock: vi.fn()
 }))
 
-vi.mock('@/base/common/downloadUtil', () => ({
+vi.mock(import('@/base/common/downloadUtil'), () => ({
   downloadBlob: downloadBlobMock
 }))
 
-vi.mock('@/i18n', () => ({
-  t: (key: string, vars?: Record<string, unknown>) =>
+vi.mock(import('@/i18n'), () => ({
+  t: fromAny((key: string, vars?: unknown) =>
     vars ? `${key}:${JSON.stringify(vars)}` : key
+  )
 }))
 
-vi.mock('three/examples/jsm/exporters/GLTFExporter', () => ({
-  GLTFExporter: class {
-    parse = gltfParseMock
-  }
+vi.mock(import('three/examples/jsm/exporters/GLTFExporter'), () => ({
+  GLTFExporter: fromAny(
+    class {
+      parse = gltfParseMock
+    }
+  )
 }))
 
-vi.mock('three/examples/jsm/exporters/OBJExporter', () => ({
-  OBJExporter: class {
-    parse = objParseMock
-  }
+vi.mock(import('three/examples/jsm/exporters/OBJExporter'), () => ({
+  OBJExporter: fromAny(
+    class {
+      parse = objParseMock
+    }
+  )
 }))
 
-vi.mock('three/examples/jsm/exporters/STLExporter', () => ({
-  STLExporter: class {
-    parse = stlParseMock
-  }
+vi.mock(import('three/examples/jsm/exporters/STLExporter'), () => ({
+  STLExporter: fromAny(
+    class {
+      parse = stlParseMock
+    }
+  )
 }))
 
-vi.mock('@comfyorg/fbx-exporter-three', () => ({
-  FBXExporter: class {
-    parseAsync = fbxParseAsyncMock
-  }
+vi.mock(import('@comfyorg/fbx-exporter-three'), () => ({
+  FBXExporter: fromAny(
+    class {
+      parseAsync = fbxParseAsyncMock
+    }
+  )
 }))
+
+const rejectedWith = (message: string) => ({
+  status: 'rejected',
+  reason: { message }
+})
 
 describe('ModelExporter', () => {
   describe('detectFormatFromURL', () => {
@@ -219,9 +234,9 @@ describe('ModelExporter', () => {
       )
 
       const promise = ModelExporter.exportGLB(new THREE.Object3D(), 'out.glb')
-      const assertion = expect(promise).rejects.toThrow('parse fail')
+      const settled = Promise.allSettled([promise])
       await vi.runAllTimersAsync()
-      await assertion
+      expect(await settled).toMatchObject([rejectedWith('parse fail')])
       expect(useToastStore().addAlert).toHaveBeenCalledWith(
         'toastMessages.failedToExportModel:{"format":"GLB"}'
       )
@@ -267,9 +282,9 @@ describe('ModelExporter', () => {
       })
 
       const promise = ModelExporter.exportOBJ(new THREE.Object3D(), 'out.obj')
-      const assertion = expect(promise).rejects.toThrow('obj fail')
+      const settled = Promise.allSettled([promise])
       await vi.runAllTimersAsync()
-      await assertion
+      expect(await settled).toMatchObject([rejectedWith('obj fail')])
       expect(useToastStore().addAlert).toHaveBeenCalledWith(
         'toastMessages.failedToExportModel:{"format":"OBJ"}'
       )
@@ -315,9 +330,9 @@ describe('ModelExporter', () => {
       })
 
       const promise = ModelExporter.exportSTL(new THREE.Object3D(), 'out.stl')
-      const assertion = expect(promise).rejects.toThrow('stl fail')
+      const settled = Promise.allSettled([promise])
       await vi.runAllTimersAsync()
-      await assertion
+      expect(await settled).toMatchObject([rejectedWith('stl fail')])
       expect(useToastStore().addAlert).toHaveBeenCalledWith(
         'toastMessages.failedToExportModel:{"format":"STL"}'
       )
@@ -391,9 +406,9 @@ describe('ModelExporter', () => {
       fbxParseAsyncMock.mockRejectedValue(new Error('fbx fail'))
 
       const promise = ModelExporter.exportFBX(new THREE.Object3D(), 'out.fbx')
-      const assertion = expect(promise).rejects.toThrow('fbx fail')
+      const settled = Promise.allSettled([promise])
       await vi.runAllTimersAsync()
-      await assertion
+      expect(await settled).toMatchObject([rejectedWith('fbx fail')])
       expect(useToastStore().addAlert).toHaveBeenCalledWith(
         'toastMessages.failedToExportModel:{"format":"FBX"}'
       )

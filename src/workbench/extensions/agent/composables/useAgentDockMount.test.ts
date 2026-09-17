@@ -4,9 +4,7 @@ import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/ag
 
 import { useAgentDockMount } from './useAgentDockMount'
 
-vi.mock<unknown>(import('@/platform/telemetry'), () => ({
-  useTelemetry: () => undefined
-}))
+vi.mock(import('@/platform/telemetry'))
 const { loadDockedAgentPanel } = vi.hoisted(() => ({
   loadDockedAgentPanel: vi.fn(() => ({ name: 'DockedAgentPanel' }))
 }))
@@ -51,6 +49,7 @@ describe('useAgentDockMount', () => {
     expect(loadDockedAgentPanel).not.toHaveBeenCalled()
     expect(docked.value).toBe(false)
     store.enabled = true
+    store.consentAccepted = true
     expect(loadDockedAgentPanel).not.toHaveBeenCalled()
     expect(docked.value).toBe(false)
     store.isOpen = true

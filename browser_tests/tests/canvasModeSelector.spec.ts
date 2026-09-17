@@ -26,8 +26,9 @@ const MODES = [
 ]
 
 test.describe('CanvasModeSelector', { tag: '@canvas' }, () => {
+  test.use({ initialSettings: { 'Comfy.Graph.CanvasMenu': true } })
+
   test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.settings.setSetting('Comfy.Graph.CanvasMenu', true)
     await comfyPage.command.executeCommand('Comfy.Canvas.Unlock')
   })
 

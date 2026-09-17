@@ -1,4 +1,4 @@
-import { type EventCallback, type EventManagerInterface } from './interfaces'
+import type { EventCallback, EventManagerInterface } from './interfaces'
 
 export class EventManager implements EventManagerInterface {
   private listeners: Record<string, EventCallback[]> = {}
@@ -18,7 +18,7 @@ export class EventManager implements EventManagerInterface {
     }
   }
 
-  emitEvent<T>(event: string, data: T): void {
+  emitEvent(event: string, data: unknown): void {
     if (this.listeners[event]) {
       this.listeners[event].forEach((callback) => callback(data))
     }

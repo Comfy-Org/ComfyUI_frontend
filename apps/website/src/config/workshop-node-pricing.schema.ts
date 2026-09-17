@@ -1,6 +1,17 @@
 import { zPriceBadge } from '@comfyorg/object-info-parser'
 import { z } from 'zod'
 
+export const workshopPublishedPricingSchema = z.object({
+  sourceUrl: z.string().url(),
+  verifiedOn: z.string().date(),
+  models: z.record(
+    z.object({
+      creditsPerRun: z.number().positive().finite(),
+      useCases: z.array(z.enum(['generate-images', 'edit-images'])).nonempty()
+    })
+  )
+})
+
 export const workshopNodePricingSchema = z
   .array(
     z

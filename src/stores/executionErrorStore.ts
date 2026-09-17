@@ -17,11 +17,8 @@ import { useWorkflowStore } from '@/platform/workflow/management/stores/workflow
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { app } from '@/scripts/app'
 import { useDialogService } from '@/services/dialogService'
-import type {
-  ExecutionErrorWsMessage,
-  NodeError,
-  PromptError
-} from '@/schemas/apiSchema'
+import type { ExecutionErrorWsMessage } from '@/platform/remote/comfyui/execution/types'
+import type { NodeError, PromptError } from '@/platform/remote/comfyui/types'
 import {
   getAncestorExecutionIds,
   tryNormalizeNodeExecutionId
@@ -503,7 +500,7 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
     missingModelStore.setMissingModels(models)
     if (
       !options?.silent &&
-      models.length &&
+      missingModelStore.hasMissingModels &&
       useSettingStore().get('Comfy.RightSidePanel.ShowErrorsTab')
     ) {
       showErrorOverlay()
@@ -518,7 +515,7 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
     missingMediaStore.setMissingMedia(media)
     if (
       !options?.silent &&
-      media.length &&
+      missingMediaStore.hasMissingMedia &&
       useSettingStore().get('Comfy.RightSidePanel.ShowErrorsTab')
     ) {
       showErrorOverlay()
@@ -696,7 +693,12 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
     return errorAncestorExecutionIds.value.has(execId)
   }
 
-  useNodeErrorFlagSync(surfacedNodeErrors, missingModelStore, missingMediaStore)
+  useNodeErrorFlagSync(
+    surfacedNodeErrors,
+    missingModelStore,
+    missingMediaStore,
+    missingNodesStore
+  )
 
   return {
     // Read-only state

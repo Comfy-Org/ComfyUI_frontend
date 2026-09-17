@@ -92,6 +92,7 @@ export interface FileValue {
   readonly previewUrl?: string
   readonly file?: File
   readonly sourceUrl?: string
+  readonly sourceDataUrl?: string
 }
 
 export type FieldValue =

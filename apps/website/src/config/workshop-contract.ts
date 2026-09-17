@@ -83,6 +83,7 @@ export const workshopContractSchema = z.object({
   inputSchema: jsonSchema,
   inputs: z.record(z.string(), workshopInputDefinitionSchema).optional(),
   defaultInput: jsonSchema.optional(),
+  rehostUrlInputs: z.boolean().optional(),
   creator: workshopCreatorFormSchema.optional(),
   creatorVariants: z.record(z.string(), workshopCreatorFormSchema).optional(),
   media: z.array(mediaSchema).default([]),

@@ -26,11 +26,9 @@ async function expectReferenceBadge(group: Locator, count: number) {
 }
 
 test.describe('Errors tab - Missing models', { tag: '@ui' }, () => {
+  test.use({ initialSettings: { 'Comfy.RightSidePanel.ShowErrorsTab': true } })
+
   test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.settings.setSetting(
-      'Comfy.RightSidePanel.ShowErrorsTab',
-      true
-    )
     await cleanupFakeModel(comfyPage)
   })
 

@@ -17,7 +17,7 @@ export function getDataFromJSON(
           reader.result
         )
         if (jsonContent?.templates) {
-          resolve({ templates: jsonContent.templates as object })
+          resolve({ templates: jsonContent.templates })
           return
         }
         if (isApiJson(jsonContent)) {
