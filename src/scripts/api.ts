@@ -1,3 +1,14 @@
+import type {
+  GetEmbeddingsResponse,
+  GetExtensionsResponse,
+  GetI18nResponse,
+  PostAssetsFromWorkflowResponse
+} from '@comfyorg/ingest-types'
+import {
+  zGetEmbeddingsResponse,
+  zGetExtensionsResponse,
+  zPostAssetsFromWorkflowResponse
+} from '@comfyorg/ingest-types/zod'
 import { promiseTimeout, until } from '@vueuse/core'
 import axios from 'axios'
 import { storeToRefs } from 'pinia'
@@ -20,12 +31,6 @@ import { isCloud } from '@/platform/distribution/types'
 import { addBreadcrumb } from '@sentry/vue'
 import { useTelemetry } from '@/platform/telemetry'
 import { useToastStore } from '@/platform/updates/common/toastStore'
-import type {
-  WorkflowApiAssetsResponse as ShareableAssetsResponse,
-  GetEmbeddingsResponse as EmbeddingsResponse,
-  GetExtensionsResponse as ExtensionsResponse,
-  GetI18nResponse
-} from '@comfyorg/ingest-types'
 import type {
   AssetDownloadWsMessage,
   AssetExportWsMessage,
@@ -54,10 +59,6 @@ import type {
   UserDataFullInfo
 } from '@/platform/remote/comfyui/types'
 import type { PreviewMethod, Settings } from '@/platform/settings/types'
-import {
-  zGetEmbeddingsResponse as zEmbeddingsResponse,
-  zWorkflowApiAssetsResponse as zShareableAssetsResponse
-} from '@comfyorg/ingest-types/zod'
 import type {
   TemplateIncludeOnDistributionEnum,
   WorkflowTemplates
@@ -1069,9 +1070,9 @@ export class ComfyApi extends EventTarget {
   /**
    * Gets a list of extension urls
    */
-  async getExtensions(): Promise<ExtensionsResponse> {
+  async getExtensions(): Promise<GetExtensionsResponse> {
     const resp = await this.fetchApi('/extensions', { cache: 'no-store' })
-    return await resp.json()
+    return zGetExtensionsResponse.parse(await resp.json())
   }
 
   /**
@@ -1115,12 +1116,12 @@ export class ComfyApi extends EventTarget {
    * Gets a list of embedding names
    * @throws When the request fails or the response does not match the schema
    */
-  async getEmbeddings(): Promise<EmbeddingsResponse> {
+  async getEmbeddings(): Promise<GetEmbeddingsResponse> {
     const resp = await this.fetchApi('/embeddings', { cache: 'no-store' })
     if (!resp.ok) {
       throw new Error(`Failed to fetch /embeddings: ${resp.status}`)
     }
-    return zEmbeddingsResponse.parse(await resp.json())
+    return zGetEmbeddingsResponse.parse(await resp.json())
   }
 
   /**
@@ -1205,7 +1206,7 @@ export class ComfyApi extends EventTarget {
   async getShareableAssets(
     prompt: ComfyApiWorkflow,
     options?: { owned?: boolean }
-  ): Promise<ShareableAssetsResponse> {
+  ): Promise<PostAssetsFromWorkflowResponse> {
     const body: Record<string, unknown> = { workflow_api_json: prompt }
     if (options?.owned !== undefined) {
       body.owned = options.owned
@@ -1219,7 +1220,7 @@ export class ComfyApi extends EventTarget {
       throw new Error(`Failed to fetch shareable assets: ${res.status}`)
     }
     const data = await res.json()
-    return zShareableAssetsResponse.parse(data)
+    return zPostAssetsFromWorkflowResponse.parse(data)
   }
 
   /**
