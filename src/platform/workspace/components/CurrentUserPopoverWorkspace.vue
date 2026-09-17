@@ -375,7 +375,8 @@ const showSubscribeAction = computed(
     ((isCancelled.value && canReactivatePlan.value) ||
       (!canAccessSubscriptionFeatures.value &&
         !hasDelinquentSubscription.value &&
-        canSubscribeSelfServe.value))
+        canSubscribeSelfServe.value &&
+        canTopUp.value))
 )
 
 const handleOpenUserSettings = () => {
