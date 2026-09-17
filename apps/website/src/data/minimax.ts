@@ -11,7 +11,7 @@ import { externalLinks } from '../config/routes'
 const media = {
   hero: {
     kind: 'video',
-    src: 'https://media.comfy.org/website/minimax/hero.mp4',
+    src: 'https://media.comfy.org/website/minimax/hero-sizzle.mp4',
     posterSrc: 'https://media.comfy.org/website/minimax/hero-poster.webp'
   },
   iceRider: {
@@ -48,6 +48,13 @@ const media = {
   }
 } as const satisfies Record<string, ModelLaunchMedia>
 
+// Not part of `media` above: it is a plain still, not a `ModelLaunchMedia`
+// video/image the gallery renders, so keeping it out of that record avoids
+// widening the `satisfies` shape for a value only the hero's mobile branch
+// consumes.
+const heroFallbackSrc =
+  'https://media.comfy.org/website/minimax/hero-fallback.jpg'
+
 export const minimaxLinks = {
   cloudRun: 'https://cloud.comfy.org/?share=a781503cf508',
   textToVideo: 'https://comfy.org/workflows/e8099b642c9f-e8099b642c9f/',
@@ -58,7 +65,7 @@ export const minimaxLinks = {
   blog: 'https://blog.comfy.org/p/minimax-h3-day-0-support-in-comfyui'
 } as const
 
-export const minimaxPage: ModelLaunchPage = {
+export const minimaxPage = {
   metaTitleKey: 'minimax.meta.title',
   metaDescriptionKey: 'minimax.meta.description',
   breadcrumbLabelKey: 'minimax.breadcrumb.model',
@@ -66,6 +73,7 @@ export const minimaxPage: ModelLaunchPage = {
   hero: {
     videoSrc: media.hero.src,
     posterSrc: media.hero.posterSrc,
+    mobileFallbackImageSrc: heroFallbackSrc,
     logoSrc: '/icons/ai-models/minimax.svg',
     titleKey: 'minimax.hero.titleModel',
     titleRestKey: 'minimax.hero.titleRest',
@@ -232,9 +240,9 @@ export const minimaxPage: ModelLaunchPage = {
           'zh-CN': 'MiniMax H3 提供开源权重吗？'
         },
         answer: {
-          en: 'Yes. H3 is available as Open Weights, so you can run it yourself, and through Partner Nodes on Comfy Cloud.',
+          en: 'Yes. H3 is available as Open Weights, so you can run it yourself, and through Partner Nodes on Comfy Cloud. To use what you make locally for commercial work, [get an H3 commercial license through Comfy](https://comfy.org/minimax/license).',
           'zh-CN':
-            '是的。H3 以开源权重形式提供，你可以自行运行；也可以通过 Comfy Cloud 上的合作伙伴节点使用。'
+            '是的。H3 以开源权重形式提供，你可以自行运行；也可以通过 Comfy Cloud 上的合作伙伴节点使用。如需将本地产出用于商业创作，请[通过 Comfy 获取 H3 商业许可](https://comfy.org/zh-CN/minimax/license)。'
         }
       },
       {
@@ -273,7 +281,8 @@ export const minimaxPage: ModelLaunchPage = {
     highlight: {
       titleKey: 'minimax.reviews.highlightTitle',
       descriptionKey: 'minimax.reviews.highlightDescription',
-      ctaKey: 'minimax.reviews.highlightCta'
+      ctaKey: 'minimax.reviews.highlightCta',
+      route: 'minimaxLicense'
     }
   }
-}
+} satisfies ModelLaunchPage

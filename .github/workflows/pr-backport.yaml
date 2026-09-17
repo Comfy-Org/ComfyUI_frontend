@@ -33,6 +33,12 @@ jobs:
       pull-requests: write
       issues: write
 
+    # `gh pr view <n>` fails with the auto-provided GITHUB_TOKEN even with
+    # pull-requests: write, which is what silently broke manual dispatch.
+    # Steps needing a different token still set GH_TOKEN themselves.
+    env:
+      GH_TOKEN: ${{ secrets.PR_GH_TOKEN || secrets.GH_TOKEN }}
+
     steps:
       - name: Validate inputs for manual triggers
         if: github.event_name == 'workflow_dispatch'
@@ -43,13 +49,15 @@ jobs:
             exit 1
           fi
 
-          # Validate PR exists and is merged
-          if ! gh pr view "${{ inputs.pr_number }}" --json merged >/dev/null 2>&1; then
-            echo "::error::PR #${{ inputs.pr_number }} not found or inaccessible."
+          # Validate PR exists and is merged. The gh error is surfaced rather
+          # than discarded: an auth failure and a genuinely missing PR are
+          # indistinguishable once it is swallowed.
+          if ! PR_VIEW_ERR=$(gh pr view "${{ inputs.pr_number }}" --json state 2>&1 >/dev/null); then
+            echo "::error::PR #${{ inputs.pr_number }} not found or inaccessible: ${PR_VIEW_ERR}"
             exit 1
           fi
 
-          MERGED=$(gh pr view "${{ inputs.pr_number }}" --json merged --jq '.merged')
+          MERGED=$(gh pr view "${{ inputs.pr_number }}" --json state --jq '.state == "MERGED"')
           if [ "$MERGED" != "true" ]; then
             echo "::error::PR #${{ inputs.pr_number }} is not merged. Only merged PRs can be backported."
             exit 1
@@ -61,7 +69,6 @@ jobs:
             exit 1
           fi
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GH_REPO: ${{ github.repository }}
 
       - name: Checkout repository
@@ -82,7 +89,6 @@ jobs:
       - name: Collect backport targets
         id: targets
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GH_REPO: ${{ github.repository }}
         run: |
           TARGETS=()
@@ -151,7 +157,6 @@ jobs:
           FORCE_RERUN_INPUT: >-
             ${{ github.event_name == 'workflow_dispatch' && inputs.force_rerun
             || 'false' }}
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PR_NUMBER: >-
             ${{ github.event_name == 'workflow_dispatch' && inputs.pr_number
             || github.event.pull_request.number }}
@@ -234,7 +239,6 @@ jobs:
         id: backport
         env:
           PR_NUMBER: ${{ github.event_name == 'workflow_dispatch' && inputs.pr_number || github.event.pull_request.number }}
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GH_REPO: ${{ github.repository }}
         run: |
           FAILED=""
@@ -379,7 +383,13 @@ jobs:
 
               if [ -n "${PR_NUM}" ]; then
                 if [ "${PR_AUTHOR_IS_BOT}" != "true" ]; then
-                  gh pr edit "${PR_NUM}" --add-assignee "${PR_AUTHOR}" \
+                  # REST, not `gh pr edit`: that command resolves `author`,
+                  # `assignees` and team `slug`/`name` over GraphQL, which needs
+                  # `read:org`. PR_GH_TOKEN does not carry it, so every
+                  # `gh pr edit` here failed and backports went unassigned.
+                  gh api --silent --method POST \
+                    "repos/${{ github.repository }}/issues/${PR_NUM}/assignees" \
+                    -f "assignees[]=${PR_AUTHOR}" \
                     || echo "::warning::Failed to assign @${PR_AUTHOR} to PR #${PR_NUM}"
                 fi
                 gh pr merge "${PR_NUM}" --auto --squash --repo "${{ github.repository }}" \
@@ -396,7 +406,6 @@ jobs:
       - name: Comment on failures
         if: steps.filter-targets.outputs.skip != 'true' && failure() && steps.backport.outputs.failed
         env:
-          GH_TOKEN: ${{ github.token }}
           BACKPORT_AGENT_PROMPT_TEMPLATE: |
             Backport PR #${PR_NUMBER} (${PR_URL}) to ${target}.
             Cherry-pick merge commit ${MERGE_COMMIT} onto new branch
@@ -538,6 +547,28 @@ jobs:
 
       - name: Remove needs-backport label
         if: steps.filter-targets.outputs.skip != 'true' && success()
-        run: gh pr edit ${{ github.event_name == 'workflow_dispatch' && inputs.pr_number || github.event.pull_request.number }} --remove-label "needs-backport"
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          PR_NUMBER: ${{ github.event_name == 'workflow_dispatch' && inputs.pr_number || github.event.pull_request.number }}
+        run: |
+          # REST, not `gh pr edit --remove-label`: that command resolves label
+          # and team `slug`/`name` fields over GraphQL, which needs `read:org`.
+          # PR_GH_TOKEN does not carry that scope, so this step failed after
+          # every otherwise-successful backport — reddening a job whose
+          # backport PRs had already been created, and leaving the label on,
+          # which re-arms the `labeled` trigger.
+          set -euo pipefail
+
+          # Read the labels into a variable first rather than piping straight
+          # into grep: under a pipe, a failed read is indistinguishable from a
+          # PR that simply does not carry the label, and would exit 0 here.
+          LABELS=$(gh api --paginate \
+            "repos/${GH_REPO}/issues/${PR_NUMBER}/labels" --jq '.[].name')
+
+          if ! printf '%s\n' "${LABELS}" | grep -qx 'needs-backport'; then
+            echo "Label 'needs-backport' already absent from PR #${PR_NUMBER}"
+            exit 0
+          fi
+
+          gh api --silent --method DELETE \
+            "repos/${GH_REPO}/issues/${PR_NUMBER}/labels/needs-backport"

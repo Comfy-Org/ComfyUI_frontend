@@ -20,26 +20,32 @@ const locatorNode = { id: 'inner' }
 const mocks = vi.hoisted(() => {
   // eslint-disable-next-line @typescript-eslint/no-require-imports
   const { ref: createRef } = require('vue')
-  return {
+  const mocks: {
+    getNodeByLocatorId: ReturnType<typeof vi.fn>
+    resolvedSource: unknown
+    filmstripError: { value: string | null }
+    filmstripRetry: ReturnType<typeof vi.fn>
+  } = {
     getNodeByLocatorId: vi.fn(),
-    resolvedSource: undefined as unknown,
+    resolvedSource: undefined,
     filmstripError: createRef(null) as { value: string | null },
     filmstripRetry: vi.fn()
   }
+  return mocks
 })
 
-vi.mock('@/scripts/app', () => ({
+vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: {
     rootGraph: {},
     canvas: { graph: { getNodeById: () => hostNode } }
   }
 }))
 
-vi.mock('@/utils/graphTraversalUtil', () => ({
+vi.mock<unknown>(import('@/utils/graphTraversalUtil'), () => ({
   getNodeByLocatorId: mocks.getNodeByLocatorId
 }))
 
-vi.mock('@/composables/video/useVideoSourceUrl', () => {
+vi.mock(import('@/composables/video/useVideoSourceUrl'), () => {
   // eslint-disable-next-line @typescript-eslint/no-require-imports
   const { ref: createRef } = require('vue')
   return {
@@ -50,7 +56,7 @@ vi.mock('@/composables/video/useVideoSourceUrl', () => {
   }
 })
 
-vi.mock('@/composables/video/useVideoFilmstrip', () => {
+vi.mock<unknown>(import('@/composables/video/useVideoFilmstrip'), () => {
   // eslint-disable-next-line @typescript-eslint/no-require-imports
   const { ref: createRef } = require('vue')
   return {
@@ -115,7 +121,7 @@ function createWidget(
     value: {},
     options,
     ...extra
-  } as SimplifiedWidget<VideoEditValue>
+  }
 }
 
 function renderWidget(widget = createWidget()) {

@@ -1,55 +1,63 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
+import { storeToRefs } from 'pinia'
+import type { Ref } from 'vue'
+import { fromPartial } from '@total-typescript/shoehorn'
 
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import type { BillingRail } from '@/platform/workspace/api/workspaceApi'
 
 import { useBillingRouting } from './useBillingRouting'
 
-const { mockIsCloud, mockActiveWorkspace, mockActiveWorkspaceBillingRail } =
-  vi.hoisted(() => ({
-    mockIsCloud: { value: true },
-    mockActiveWorkspace: {
-      value: null as { id: string; type: 'personal' | 'team' } | null
-    },
-    mockActiveWorkspaceBillingRail: {
-      value: null as BillingRail | null
-    }
-  }))
+const mockIsCloud = vi.hoisted(() => ({ value: true }))
 
-vi.mock('@/platform/distribution/types', () => ({
+let mockActiveWorkspace: Ref<
+  ReturnType<typeof useTeamWorkspaceStore>['activeWorkspace']
+>
+let mockActiveWorkspaceBillingRail: Ref<BillingRail | null>
+
+vi.mock(import('@/composables/useFeatureFlags'))
+vi.mock(import('@/platform/distribution/types'), () => ({
   get isCloud() {
     return mockIsCloud.value
   }
 }))
 
-vi.mock('@/platform/workspace/stores/teamWorkspaceStore', () => ({
-  useTeamWorkspaceStore: () => ({
-    get activeWorkspace() {
-      return mockActiveWorkspace.value
-    },
-    get activeWorkspaceBillingRail() {
-      return mockActiveWorkspaceBillingRail.value
-    }
-  })
-}))
-
-const personal = { id: 'w-personal', type: 'personal' as const }
-const team = { id: 'w-team', type: 'team' as const }
+const personal = fromPartial<
+  NonNullable<ReturnType<typeof useTeamWorkspaceStore>['activeWorkspace']>
+>({ id: 'w-personal', type: 'personal' })
+const team = fromPartial<
+  NonNullable<ReturnType<typeof useTeamWorkspaceStore>['activeWorkspace']>
+>({ id: 'w-team', type: 'team' })
 
 describe('useBillingRouting', () => {
   beforeEach(() => {
+    const refs = storeToRefs(useTeamWorkspaceStore())
+    mockActiveWorkspace = refs.activeWorkspace
+    mockActiveWorkspaceBillingRail = refs.activeWorkspaceBillingRail
     mockIsCloud.value = true
     mockActiveWorkspace.value = personal
     mockActiveWorkspaceBillingRail.value = null
   })
 
-  it('uses legacy billing off Cloud', () => {
+  it('uses legacy billing off Cloud until a workspace context loads', () => {
     mockIsCloud.value = false
-    mockActiveWorkspace.value = team
+    mockActiveWorkspace.value = null
 
     const { type, shouldUseWorkspaceBilling } = useBillingRouting()
 
     expect(type.value).toBe('legacy')
     expect(shouldUseWorkspaceBilling.value).toBe(false)
+  })
+
+  it('uses workspace billing off Cloud once a workspace context loads', () => {
+    mockIsCloud.value = false
+    mockActiveWorkspace.value = team
+
+    const { type, shouldUseWorkspaceBilling } = useBillingRouting()
+
+    expect(type.value).toBe('workspace')
+    expect(shouldUseWorkspaceBilling.value).toBe(true)
   })
 
   it('uses workspace billing for a Cloud personal workspace', () => {
@@ -60,7 +68,6 @@ describe('useBillingRouting', () => {
   })
 
   it('uses unified pricing while keeping legacy Stripe top-ups on Checkout', () => {
-    mockActiveWorkspace.value = personal
     mockActiveWorkspaceBillingRail.value = 'legacy_stripe'
 
     const { type, shouldUseWorkspaceBilling, shouldUseUnifiedPricing } =
@@ -69,6 +76,16 @@ describe('useBillingRouting', () => {
     expect(type.value).toBe('legacy')
     expect(shouldUseWorkspaceBilling.value).toBe(false)
     expect(shouldUseUnifiedPricing.value).toBe(true)
+  })
+
+  it('migrates legacy Stripe personal workspaces behind the rollout flag', () => {
+    vi.mocked(useFeatureFlags().flags).legacyBillingMigrationEnabled = true
+    mockActiveWorkspaceBillingRail.value = 'legacy_stripe'
+
+    const { type, shouldUseWorkspaceBilling } = useBillingRouting()
+
+    expect(type.value).toBe('workspace')
+    expect(shouldUseWorkspaceBilling.value).toBe(true)
   })
 
   it('uses workspace billing for migrated Stripe personal workspaces', () => {

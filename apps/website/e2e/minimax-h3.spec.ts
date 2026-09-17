@@ -23,8 +23,10 @@ const FIRST_FAQ = FAQS[0]
 const PRICING_HEADING = t('pricing.title', 'en')
 const REVIEWS_HEADING = t('minimax.reviews.heading', 'en')
 const HIGHLIGHT_CTA = t('minimax.reviews.highlightCta', 'en')
-const MCP_ROUTE = getRoutes('en').mcp
+const LICENSE_ROUTE = getRoutes('en').minimaxLicense
 const FIRST_REVIEW = creatorReviews[0]
+const HERO_VIDEO_PATTERN = /hero-sizzle\.mp4/
+const HERO_FALLBACK_IMAGE_SELECTOR = 'img[src*="hero-fallback.jpg"]'
 
 test.describe('MiniMax H3 page — desktop @smoke', () => {
   test.beforeEach(async ({ page }) => {
@@ -61,6 +63,27 @@ test.describe('MiniMax H3 page — desktop @smoke', () => {
   })
 })
 
+test.describe('MiniMax H3 page — hero video', () => {
+  test.beforeEach(async ({ page }) => {
+    await page.goto(PATH)
+  })
+
+  test('hydrates the hero video for a desktop viewport', async ({ page }) => {
+    // The models showcase further down the page renders its own <video>
+    // previews, so the hero's must be scoped to its own section.
+    const heroSection = page.locator('section').filter({
+      has: page.getByRole('heading', { level: 1, name: HERO_TITLE })
+    })
+    await expect(heroSection.locator('video')).toHaveAttribute(
+      'src',
+      HERO_VIDEO_PATTERN
+    )
+    await expect(heroSection.locator(HERO_FALLBACK_IMAGE_SELECTOR)).toHaveCount(
+      0
+    )
+  })
+})
+
 test.describe('MiniMax H3 page — link targets', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto(PATH)
@@ -87,13 +110,15 @@ test.describe('MiniMax H3 page — link targets', () => {
     await expect(primary).toHaveAttribute('rel', /noopener/)
   })
 
-  test('MCP highlight card CTA links to the MCP page', async ({ page }) => {
+  test('highlight card CTA links to the MiniMax license page', async ({
+    page
+  }) => {
     const reviewsSection = page.locator('section').filter({
       has: page.getByRole('heading', { level: 2, name: REVIEWS_HEADING })
     })
     const cta = reviewsSection.getByRole('link', { name: HIGHLIGHT_CTA })
     await cta.scrollIntoViewIfNeeded()
-    await expect(cta).toHaveAttribute('href', MCP_ROUTE)
+    await expect(cta).toHaveAttribute('href', LICENSE_ROUTE)
   })
 })
 
@@ -281,6 +306,28 @@ test.describe('MiniMax H3 page — mobile @mobile', () => {
     await expect(
       page.getByRole('heading', { level: 1, name: HERO_TITLE })
     ).toBeVisible()
+  })
+
+  test('shows the hero still instead of fetching the hero video', async ({
+    page
+  }) => {
+    const videoRequests: string[] = []
+    page.on('request', (request) => {
+      if (HERO_VIDEO_PATTERN.test(request.url())) {
+        videoRequests.push(request.url())
+      }
+    })
+
+    await page.goto(PATH)
+
+    const heroSection = page.locator('section').filter({
+      has: page.getByRole('heading', { level: 1, name: HERO_TITLE })
+    })
+    await expect(
+      heroSection.locator(HERO_FALLBACK_IMAGE_SELECTOR)
+    ).toBeVisible()
+    await expect(heroSection.locator('video')).toHaveCount(0)
+    expect(videoRequests).toEqual([])
   })
 
   test('closing CTA heading stays within the viewport width', async ({

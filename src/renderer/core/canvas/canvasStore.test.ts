@@ -1,6 +1,5 @@
 import { fromPartial } from '@total-typescript/shoehorn'
-import { nextTick, ref } from 'vue'
-import type { Ref } from 'vue'
+import { nextTick } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { LGraphGroup } from '@/lib/litegraph/src/LGraphGroup'
@@ -8,18 +7,7 @@ import type { LGraphCanvas, Positionable } from '@/lib/litegraph/src/litegraph'
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 
-const { appModeState } = vi.hoisted(() => ({
-  appModeState: {} as { isAppMode: Ref<boolean> }
-}))
-
-vi.mock('@/composables/useAppMode', () => ({
-  useAppMode: () => ({
-    isAppMode: appModeState.isAppMode,
-    setMode: vi.fn()
-  })
-}))
-
-vi.mock('@/scripts/app', () => ({
+vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: {
     canvas: {
       ds: {
@@ -54,7 +42,6 @@ describe('useCanvasStore', () => {
   let store: ReturnType<typeof useCanvasStore>
 
   beforeEach(() => {
-    appModeState.isAppMode = ref(false)
     store = useCanvasStore()
   })
 
@@ -93,7 +80,7 @@ describe('useCanvasStore', () => {
       store.initScaleSync()
 
       app.canvas.ds.scale = 2.0
-      app.canvas.ds.onChanged!(app.canvas.ds.scale, app.canvas.ds.offset)
+      app.canvas.ds.onChanged(app.canvas.ds.scale, app.canvas.ds.offset)
 
       expect(originalHandler).toHaveBeenCalledWith(2.0, app.canvas.ds.offset)
     })
@@ -131,6 +118,25 @@ describe('useCanvasStore', () => {
         'selectedItems must not contain the node when onRemoved fires'
       ).toBe(false)
       expect(store.selectedItems).toEqual([])
+    })
+  })
+
+  describe('rootGraphId', () => {
+    it('tracks the graph id reassigned by a workflow load', async () => {
+      const graph = new LGraph()
+      const fakeCanvas = {
+        canvas: document.createElement('canvas'),
+        graph,
+        selectedItems: new Set()
+      }
+      store.canvas = fakeCanvas as unknown as LGraphCanvas
+      await nextTick()
+      expect(store.rootGraphId).toBe(graph.id)
+
+      const workflowId = '11111111-1111-4111-8111-111111111111'
+      graph.configure({ ...graph.serialize(), id: workflowId })
+
+      expect(store.rootGraphId).toBe(workflowId)
     })
   })
 

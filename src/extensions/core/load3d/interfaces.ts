@@ -37,6 +37,8 @@ export interface CameraState {
   zoom: number
   cameraType: CameraType
   quaternion?: CameraQuaternion
+  useCustomUp?: boolean
+  customUp?: { x: number; y: number; z: number }
   fov?: number
   aspect?: number
   near?: number
@@ -78,11 +80,15 @@ export interface ModelConfig {
   gizmo?: GizmoConfig
 }
 
-export interface CameraConfig {
+type CustomUpConfig =
+  | { hasCustomUp?: false }
+  | { hasCustomUp: true; useCustomUp: boolean }
+
+export type CameraConfig = {
   cameraType: CameraType
   fov: number
   state?: CameraState
-}
+} & CustomUpConfig
 
 export interface LightConfig {
   intensity: number
@@ -159,6 +165,7 @@ export interface CameraManagerInterface extends BaseManager {
   setFOV(fov: number): void
   setCameraState(state: CameraState): void
   getCameraState(): CameraState
+  setUseCustomUp(use: boolean): void
   handleResize(width: number, height: number): void
   setControls(controls: OrbitControls): void
 }
@@ -184,7 +191,7 @@ export interface ViewHelperManagerInterface extends BaseManager {
 export interface EventManagerInterface {
   addEventListener<T>(event: string, callback: EventCallback<T>): void
   removeEventListener<T>(event: string, callback: EventCallback<T>): void
-  emitEvent<T>(event: string, data: T): void
+  emitEvent(event: string, data: unknown): void
 }
 
 export interface AnimationManagerInterface extends BaseManager {

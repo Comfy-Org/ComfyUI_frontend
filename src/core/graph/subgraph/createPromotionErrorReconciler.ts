@@ -1,14 +1,6 @@
 /**
- * Keeps the missing-media error surface aligned with promotion.
- *
- * Promoting a widget moves value ownership from the interior widget to the
- * host, and demoting moves it back. The error has to travel with ownership,
- * otherwise it stays keyed to a widget the user can no longer edit.
- *
- * Attach and detach are recursive and symmetric: a subgraph host that is added
- * brings its nested definitions with it, and one that is removed takes them
- * away again. Subscriptions are counted because several hosts can share one
- * definition, and removing one of them must not silence the others.
+ * Moves the missing-media error surface between the interior widget and its
+ * host as promotion transfers value ownership.
  */
 import type {
   LGraphNode,
@@ -19,7 +11,7 @@ import type {
 
 interface PromotionErrorReconcilerHandlers {
   /** Drops candidates whose widget is no longer the editable value owner. */
-  pruneOutOfScope: () => void
+  dropOutOfScope: () => void
   /** Rescans a host and its interior nodes for missing media. */
   rescanHost: (subgraphNode: SubgraphNode) => void
   /** Removes the host-keyed candidate for a widget that is being demoted. */
@@ -46,22 +38,18 @@ interface Subscription {
 }
 
 export function createPromotionErrorReconciler({
-  pruneOutOfScope,
+  dropOutOfScope,
   rescanHost,
   removeHostWidgetCandidate
 }: PromotionErrorReconcilerHandlers): PromotionErrorReconciler {
   const subscriptions = new Map<Subgraph, Subscription>()
-  // useGraphNodeManager chains onNodeAdded and replays it for every node
-  // already in the graph, so the same host arrives twice. Count hosts, not
-  // arrivals, or the definition never drops to zero and is never released.
+  /** Hosts already counted, since onNodeAdded is replayed for existing nodes. */
   const attachedHosts = new WeakSet<LGraphNode>()
 
-  // Ownership has not settled when the event fires, so reconcile on the next
-  // microtask: the side that lost it fails the scope check and is dropped, the
-  // side that gained it is scanned fresh.
+  /** Re-derives both sides once ownership has settled. */
   const reconcile = (subgraphNode: SubgraphNode) => {
     queueMicrotask(() => {
-      pruneOutOfScope()
+      dropOutOfScope()
       rescanHost(subgraphNode)
     })
   }
@@ -71,8 +59,8 @@ export function createPromotionErrorReconciler({
       event: CustomEvent<SubgraphEventMap['widget-demoted']>
     ) => {
       const { subgraphNode, widget } = event.detail
-      // The host input still carries the widget at this point, so the scope
-      // filter cannot see it as gone yet.
+      // Fires before the widget leaves the host input, so the scope filter
+      // cannot see it gone yet.
       removeHostWidgetCandidate(subgraphNode, widget.name)
       reconcile(subgraphNode)
     }
@@ -117,14 +105,14 @@ export function createPromotionErrorReconciler({
   }
 
   const attachNode = (node: LGraphNode): void => {
-    if (!node.isSubgraphNode?.()) return
+    if (!node.isSubgraphNode()) return
     if (attachedHosts.has(node)) return
     attachedHosts.add(node)
     attach(node.subgraph)
   }
 
   const detachNode = (node: LGraphNode): void => {
-    if (!node.isSubgraphNode?.()) return
+    if (!node.isSubgraphNode()) return
     if (!attachedHosts.delete(node)) return
     detach(node.subgraph)
   }

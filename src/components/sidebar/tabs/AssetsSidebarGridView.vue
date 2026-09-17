@@ -4,8 +4,9 @@
     <VirtualGrid
       class="flex-1"
       :items="assetItems"
-      :grid-style="gridStyle"
-      @approach-end="emit('approach-end')"
+      :grid-style
+      :on-load-more
+      :can-load-more
     >
       <template #item="{ item }">
         <MediaAssetCard
@@ -13,6 +14,9 @@
           :selected="isSelected(item.asset.id)"
           :show-output-count="showOutputCount(item.asset)"
           :output-count="getOutputCount(item.asset)"
+          :show-native-video-controls="
+            gridMode !== MEDIA_ASSET_GRID_MODE.gridSmall
+          "
           @select="emit('select-asset', item.asset)"
           @toggle-selection="emit('toggle-asset-selection', item.asset)"
           @context-menu="emit('context-menu', $event, item.asset)"
@@ -29,7 +33,10 @@ import { computed } from 'vue'
 
 import VirtualGrid from '@/components/common/VirtualGrid.vue'
 import MediaAssetCard from '@/platform/assets/components/MediaAssetCard.vue'
-import { getMediaAssetGridColumns } from '@/platform/assets/components/mediaAssetViewOptions'
+import {
+  getMediaAssetGridColumns,
+  MEDIA_ASSET_GRID_MODE
+} from '@/platform/assets/components/mediaAssetViewOptions'
 import type { MediaAssetGridMode } from '@/platform/assets/components/mediaAssetViewOptions'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 
@@ -40,13 +47,14 @@ const { assets, isSelected, showOutputCount, getOutputCount, gridMode } =
     showOutputCount: (asset: AssetItem) => boolean
     getOutputCount: (asset: AssetItem) => number
     gridMode: MediaAssetGridMode
+    onLoadMore?: () => unknown
+    canLoadMore?: boolean
   }>()
 
 const emit = defineEmits<{
   (e: 'select-asset', asset: AssetItem): void
   (e: 'toggle-asset-selection', asset: AssetItem): void
   (e: 'context-menu', event: MouseEvent, asset: AssetItem): void
-  (e: 'approach-end'): void
   (e: 'zoom', asset: AssetItem): void
   (e: 'output-count-click', asset: AssetItem): void
 }>()

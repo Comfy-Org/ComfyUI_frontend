@@ -46,7 +46,20 @@
           {{ t('auth.signup.emailNotEligibleForFreeTier') }}
         </Message>
 
-        <Message v-if="userIsInChina" severity="warn" class="w-full">
+        <div
+          v-if="regionStatus === 'pending'"
+          data-testid="region-check-pending"
+          class="flex flex-col gap-6"
+        >
+          <Skeleton class="h-10 w-full" />
+          <Skeleton class="h-10 w-full" />
+          <Skeleton class="h-10 w-full" />
+        </div>
+        <Message
+          v-else-if="regionStatus === 'blocked'"
+          severity="warn"
+          class="w-full"
+        >
           {{ t('auth.signup.regionRestrictionChina') }}
         </Message>
         <SignUpForm
@@ -78,7 +91,10 @@ import { onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { RouterLink, useRoute } from 'vue-router'
 
+import { useRegionGate } from '@comfyorg/account-ui/auth/regionGate'
+
 import SignUpForm from '@/components/dialog/content/signin/SignUpForm.vue'
+import Skeleton from '@/components/ui/skeleton/Skeleton.vue'
 import { useAuthActions } from '@/composables/auth/useAuthActions'
 import CloudSocialAuthButtons from '@/platform/cloud/onboarding/components/CloudSocialAuthButtons.vue'
 import { useCloudAuthPage } from '@/platform/cloud/onboarding/composables/useCloudAuthPage'
@@ -89,13 +105,13 @@ import {
 } from '@/platform/cloud/onboarding/constants/authClasses'
 import { useTelemetry } from '@/platform/telemetry'
 import type { SignUpData } from '@/schemas/signInSchema'
-import { isInChina } from '@/utils/networkUtil'
 
 const { t } = useI18n()
 const route = useRoute()
 const authActions = useAuthActions()
 const telemetry = useTelemetry()
-const userIsInChina = ref(false)
+
+const { status: regionStatus } = useRegionGate()
 const { isFreeTierEnabled } = useFreeTierOnboarding()
 
 const {
@@ -133,9 +149,7 @@ const signUpWithEmail = async (values: SignUpData, turnstileToken?: string) => {
   }
 }
 
-onMounted(async () => {
+onMounted(() => {
   telemetry?.trackSignupOpened()
-
-  userIsInChina.value = await isInChina()
 })
 </script>

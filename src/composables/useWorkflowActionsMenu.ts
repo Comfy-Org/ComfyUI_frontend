@@ -220,19 +220,26 @@ export function useWorkflowActionsMenu(
       prependSeparator: true
     })
 
+    if (!workflow) return items
     const isActive = workflow === workflowStore.activeWorkflow
+    const getLinearData = (
+      tracker: typeof workflow.changeTracker | undefined
+    ) => {
+      if (!tracker) return undefined
+      return tracker.activeState.extra?.linearData
+    }
     const rawLd = isActive
       ? {
           inputs: appModeStore.selectedInputs,
           outputs: appModeStore.selectedOutputs
         }
-      : workflow?.changeTracker?.activeState?.extra?.linearData
+      : getLinearData(workflow.changeTracker)
     let hasLinearData: boolean
     if (rawLd) {
       const { inputs, outputs } = pruneLinearData(rawLd)
       hasLinearData = inputs.length > 0 || outputs.length > 0
     } else {
-      hasLinearData = workflow?.path?.endsWith('.app.json') ?? false
+      hasLinearData = workflow.path.endsWith('.app.json')
     }
 
     addItem({
@@ -264,11 +271,7 @@ export function useWorkflowActionsMenu(
       id: 'publish',
       label: t('subgraphStore.publish'),
       icon: 'pi pi-upload',
-      command: async () => {
-        if (workflow) {
-          await workflowService.saveWorkflowAs(workflow)
-        }
-      },
+      command: async () => await workflowService.saveWorkflowAs(workflow),
       visible: isRoot && isBlueprint,
       prependSeparator: true
     })
@@ -279,11 +282,7 @@ export function useWorkflowActionsMenu(
         ? t('breadcrumbsMenu.deleteBlueprint')
         : t('breadcrumbsMenu.deleteWorkflow'),
       icon: 'pi pi-times',
-      command: async () => {
-        if (workflow) {
-          await workflowService.deleteWorkflow(workflow)
-        }
-      },
+      command: async () => await workflowService.deleteWorkflow(workflow),
       visible: isRoot && includeDelete,
       prependSeparator: true
     })

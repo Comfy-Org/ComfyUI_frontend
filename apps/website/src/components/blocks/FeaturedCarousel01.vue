@@ -141,7 +141,7 @@ useCarouselAutoplay({
   <div class="w-full px-6 lg:px-14">
     <div
       ref="rootEl"
-      class="border-primary-warm-gray relative mx-auto max-w-[1446px] rounded-[38px] border p-1.5 lg:p-5"
+      class="relative mx-auto max-w-[1446px] rounded-[38px] border border-primary-warm-gray p-1.5 lg:p-5"
     >
       <div class="relative overflow-clip rounded-4xl lg:rounded-[38px]">
         <div
@@ -199,7 +199,7 @@ useCarouselAutoplay({
             >
               <p
                 v-if="slide.eyebrow"
-                class="text-primary-comfy-yellow text-xs font-semibold tracking-wide uppercase"
+                class="text-xs font-semibold tracking-wide text-primary-comfy-yellow uppercase"
               >
                 {{ slide.eyebrow }}
               </p>
@@ -218,7 +218,7 @@ useCarouselAutoplay({
               :rel="resolveRel({ target: slide.newTab ? '_blank' : undefined })"
               :aria-label="slide.title ?? slide.media.alt"
               :tabindex="index === activeIndex ? undefined : -1"
-              class="focus-visible:ring-primary-comfy-yellow absolute inset-0 focus-visible:ring-2 focus-visible:outline-none"
+              class="absolute inset-0 focus-visible:ring-2 focus-visible:ring-primary-comfy-yellow focus-visible:outline-none"
             />
           </div>
         </div>
@@ -230,7 +230,7 @@ useCarouselAutoplay({
           <IconButton
             variant="ghost"
             size="lg"
-            class="text-primary-warm-white rounded-full bg-white/20 backdrop-blur-sm hover:bg-white/30"
+            class="rounded-full bg-white/20 text-primary-warm-white backdrop-blur-sm hover:bg-white/30"
             :aria-label="prevLabel"
             @click="goTo(activeIndex - 1)"
           >
@@ -239,7 +239,7 @@ useCarouselAutoplay({
           <IconButton
             variant="ghost"
             size="lg"
-            class="text-primary-warm-white rounded-full bg-white/20 backdrop-blur-sm hover:bg-white/30"
+            class="rounded-full bg-white/20 text-primary-warm-white backdrop-blur-sm hover:bg-white/30"
             :aria-label="nextLabel"
             @click="goTo(activeIndex + 1)"
           >

@@ -1,6 +1,9 @@
 // For more info, see https://github.com/storybookjs/eslint-plugin-storybook#configuration-flat-config-format
+import type { Rule } from 'eslint'
+
 import pluginJs from '@eslint/js'
 import pluginI18n from '@intlify/eslint-plugin-vue-i18n'
+import { configs as astroConfigs } from 'eslint-plugin-astro'
 import betterTailwindcss from 'eslint-plugin-better-tailwindcss'
 import { createTypeScriptImportResolver } from 'eslint-import-resolver-typescript'
 import { importX } from 'eslint-plugin-import-x'
@@ -19,6 +22,9 @@ import {
 } from 'typescript-eslint'
 import vueParser from 'vue-eslint-parser'
 import path from 'node:path'
+
+import { noNewErrorThrow } from './tools/eslint-plugins/noNewErrorThrow'
+import { primeVueImportAllowlist } from './scripts/primevue-import-allowlist'
 
 const extraFileExtensions = ['.vue']
 
@@ -72,23 +78,88 @@ const useVirtualListRestriction = {
     'useVirtualList requires uniform item heights. Use TanStack Virtual (via Reka UI virtualizer or @tanstack/vue-virtual) instead.'
 } as const
 
+const reportErrorRestrictions = [
+  {
+    name: '@sentry/vue',
+    importNames: ['captureException'],
+    message:
+      "Use reportError() from '@/platform/telemetry/reportError'. A raw captureException reaches Sentry only, so the failure stays invisible to every Datadog dashboard and alert."
+  },
+  {
+    name: '@datadog/browser-rum',
+    importNames: ['datadogRum'],
+    message:
+      "Use reportError() from '@/platform/telemetry/reportError'. A raw datadogRum.addError reaches Datadog only, and skips the pre-init buffer that keeps early-boot failures from being dropped."
+  }
+] as const
+
+const noPrimeVueImports: Rule.RuleModule = {
+  meta: {
+    type: 'problem',
+    messages: {
+      banned:
+        'New PrimeVue usage is banned per the PrimeVue removal effort. Remove this import. scripts/primevue-import-allowlist.ts only shrinks; do not add entries.'
+    },
+    schema: []
+  },
+  create(context) {
+    function report(node: Rule.Node, source: unknown) {
+      if (
+        typeof source === 'string' &&
+        /^(?:primevue(?:\/|$)|@primevue(?:\/|$))/.test(source)
+      ) {
+        context.report({ node, messageId: 'banned' })
+      }
+    }
+
+    return {
+      ImportDeclaration(node) {
+        report(node, node.source.value)
+      },
+      ImportExpression(node) {
+        if (node.source.type === 'Literal') {
+          report(node, node.source.value)
+        }
+      },
+      ExportNamedDeclaration(node) {
+        report(node, node.source?.value)
+      },
+      ExportAllDeclaration(node) {
+        report(node, node.source.value)
+      }
+    }
+  }
+}
+
+const primeVueRemovalPlugin = {
+  rules: {
+    'no-imports': noPrimeVueImports
+  }
+}
+
 export default defineConfig([
   {
     ignores: [
-      '.i18nrc.cjs',
       '**/vite.config.*.timestamp*',
       '**/vitest.config.*.timestamp*',
       'components.d.ts',
       'coverage/*',
       'dist/*',
+      'apps/*/dist/**',
+      'apps/*/.astro/**',
       'packages/registry-types/src/comfyRegistryTypes.ts',
       'playwright-report/*',
-      'src/extensions/core/*',
-      'src/scripts/*',
+      'scripts/registry-census/detection-proof/**',
+      'src/__ecs_matrix__/**',
       'src/types/generatedManagerTypes.ts',
       'src/types/vue-shim.d.ts',
       'packages/design-system/src/css/lucideStrokePlugin.js',
       'test-results/*',
+      'apps/website/dist/**',
+      'apps/website/.astro/**',
+      'apps/website/coverage/**',
+      'apps/website/playwright-report/**',
+      'apps/website/test-results/**',
       'vitest.setup.ts'
     ]
   },
@@ -101,9 +172,16 @@ export default defineConfig([
         ...commonParserOptions,
         projectService: {
           allowDefaultProject: [
+            'packages/account-core/vitest.config.ts',
+            'packages/account-ui/vitest.config.ts',
+            'packages/billing-contract/vitest.config.ts',
+            'packages/design-system/vitest.config.ts',
+            'packages/ingest-types/openapi-ts.config.ts',
             'packages/object-info-parser/vitest.config.ts',
+            'packages/shared-frontend-utils/vitest.config.ts',
             'vite.electron.config.mts',
             'vite.types.config.mts',
+            'vitest.matrix.config.mts',
             'vitest.timer.setup.ts'
           ]
         }
@@ -119,17 +197,59 @@ export default defineConfig([
       parserOptions: commonParserOptions
     }
   },
+  {
+    name: 'primevue-removal/no-imports',
+    files: ['src/**/*.{ts,tsx,vue}'],
+    plugins: {
+      'primevue-removal': primeVueRemovalPlugin
+    },
+    rules: {
+      'primevue-removal/no-imports': 'error'
+    }
+  },
+  {
+    name: 'primevue-removal/existing-imports',
+    files: [...primeVueImportAllowlist],
+    rules: {
+      'primevue-removal/no-imports': 'off'
+    }
+  },
   pluginJs.configs.recommended,
 
   tseslintConfigs.recommended,
   // Difference in typecheck on CI vs Local
   pluginVue.configs['flat/recommended'],
+  astroConfigs['flat/recommended'],
+  {
+    files: ['apps/website/**/*.astro'],
+    settings,
+    languageOptions: {
+      parserOptions: {
+        parser: tseslintParser,
+        projectService: false
+      }
+    }
+  },
+  {
+    files: ['apps/website/**/*.astro/*.{js,ts}'],
+    languageOptions: {
+      parserOptions: {
+        projectService: false
+      }
+    },
+    rules: {
+      'no-empty': ['error', { allowEmptyCatch: true }]
+    }
+  },
   // Tailwind CSS v4 linting (class ordering, duplicates, conflicts, etc.)
   betterTailwindcss.configs.recommended,
   {
     settings: {
       'better-tailwindcss': {
-        entryPoint: 'packages/design-system/src/css/style.css'
+        entryPoint: path.resolve(
+          import.meta.dirname,
+          'packages/design-system/src/css/style.css'
+        )
       }
     },
     rules: {
@@ -141,6 +261,17 @@ export default defineConfig([
       'better-tailwindcss/enforce-consistent-class-order': 'error',
       'better-tailwindcss/enforce-canonical-classes': 'error',
       'better-tailwindcss/no-deprecated-classes': 'error'
+    }
+  },
+  {
+    files: ['apps/billing-web/**/*.{ts,vue}'],
+    settings: {
+      'better-tailwindcss': {
+        entryPoint: path.resolve(
+          import.meta.dirname,
+          'apps/billing-web/src/styles.css'
+        )
+      }
     }
   },
   // Disables ESLint rules that conflict with formatters
@@ -162,6 +293,7 @@ export default defineConfig([
       '@typescript-eslint/consistent-type-imports': 'error',
       'import-x/no-useless-path-segments': 'error',
       'import-x/no-relative-packages': 'error',
+      'import-x/no-named-as-default': 'error',
       'unused-imports/no-unused-imports': 'error',
       'vue/no-v-html': 'off',
       // Prohibit dark-theme: and dark: prefixes
@@ -231,80 +363,6 @@ export default defineConfig([
     }
   },
   {
-    name: 'comfy/no-unsafe-error-assertion',
-    files: [
-      'src/**/*.ts',
-      'src/**/*.tsx',
-      'src/**/*.vue',
-      'apps/*/src/**/*.ts',
-      'apps/*/src/**/*.tsx',
-      'apps/*/src/**/*.vue'
-    ],
-    ignores: ['**/*.test.ts', '**/*.spec.ts'],
-    rules: {
-      'no-restricted-syntax': [
-        'error',
-        {
-          // Bans `value as Error` and `value as Error & { ... }`.
-          // Use `error instanceof Error` narrowing or `toError()` from
-          // @/utils/errorUtil instead — see issue #11429.
-          selector: "TSAsExpression TSTypeReference[typeName.name='Error']",
-          message:
-            'Do not use Error type assertions. Use `instanceof Error` narrowing or `toError()` from @/utils/errorUtil instead. See issue #11429.'
-        },
-        {
-          // Bans `<Error>value` and `<Error & { ... }>value`.
-          selector: "TSTypeAssertion TSTypeReference[typeName.name='Error']",
-          message:
-            'Do not use Error type assertions. Use `instanceof Error` narrowing or `toError()` from @/utils/errorUtil instead. See issue #11429.'
-        }
-      ]
-    }
-  },
-  {
-    files: ['**/*.spec.ts'],
-    ignores: ['browser_tests/tests/**/*.spec.ts', 'apps/*/e2e/**/*.spec.ts'],
-    rules: {
-      'no-restricted-syntax': [
-        'error',
-        {
-          selector: 'Program',
-          message:
-            '.spec.ts files are only allowed under browser_tests/tests/ or apps/*/e2e/'
-        }
-      ]
-    }
-  },
-  // fixtures/data/ must contain only static data — no executable code or
-  // Playwright imports. This enforces the architectural separation documented
-  // in browser_tests/AGENTS.md.
-  {
-    files: ['browser_tests/fixtures/data/**/*.ts'],
-    rules: {
-      'no-restricted-syntax': [
-        'error',
-        {
-          selector: 'ImportDeclaration[source.value=/^@playwright/]',
-          message:
-            'fixtures/data/ must contain only static data. No Playwright imports allowed.'
-        }
-      ]
-    }
-  },
-  {
-    files: ['browser_tests/tests/**/*.test.ts'],
-    rules: {
-      'no-restricted-syntax': [
-        'error',
-        {
-          selector: 'Program',
-          message:
-            '.test.ts files are not allowed in browser_tests/tests/; use .spec.ts instead'
-        }
-      ]
-    }
-  },
-  {
     files: ['**/*.test.ts'],
     rules: {
       'no-restricted-properties': [
@@ -368,10 +426,43 @@ export default defineConfig([
     }
   },
 
+  {
+    name: 'comfy/no-new-error-throw',
+    files: ['src/**/*.{ts,tsx,vue}'],
+    ignores: [
+      'src/**/*.d.ts',
+      'src/**/*.{test,spec,stories}.{ts,tsx,vue}',
+      'src/**/{test,tests,__test__,__tests__,__fixtures__,fixtures}/**',
+      'src/**/{generated,vendor}/**',
+      'src/__ecs_matrix__/**',
+      'src/types/generatedManagerTypes.ts',
+      'src/types/vue-shim.d.ts'
+    ],
+    plugins: {
+      comfy: { rules: { 'no-new-error-throw': noNewErrorThrow } }
+    },
+    rules: {
+      'comfy/no-new-error-throw': 'error'
+    }
+  },
+
   // Turn off ESLint rules that are already handled by oxlint
-  ...oxlint.buildFromOxlintConfigFile(
-    path.resolve(import.meta.dirname, '.oxlintrc.json')
-  ),
+  oxlint
+    .buildFromOxlintConfigFile(
+      path.resolve(import.meta.dirname, '.oxlintrc.json')
+    )
+    .map((config) =>
+      config.rules
+        ? {
+            ...config,
+            ignores: [
+              ...(config.ignores ?? []),
+              'apps/website/**/*.astro',
+              'apps/website/**/*.astro/**'
+            ]
+          }
+        : config
+    ),
   {
     rules: {
       'import-x/default': 'off',
@@ -432,19 +523,77 @@ export default defineConfig([
     }
   },
 
+  // src/lib/ holds vendored leaf libraries (litegraph). They may import from
+  // src/lib/ and from the shared base utilities, but never from an app layer —
+  // a vendored library depending on the app that vendors it is a dependency
+  // inversion. Reported as a warning while the pre-existing violations are
+  // worked off; see the tracking issue before promoting this to 'error'.
+  {
+    files: ['src/lib/**/*.{ts,vue}'],
+    rules: {
+      'import-x/no-restricted-paths': [
+        'warn',
+        {
+          zones: [
+            {
+              target: './src/lib/**',
+              from: [
+                './src/components/**',
+                './src/composables/**',
+                './src/extensions/**',
+                './src/platform/**',
+                './src/renderer/**',
+                './src/services/**',
+                './src/stores/**',
+                './src/views/**',
+                './src/workbench/**',
+                './src/world/**'
+              ],
+              message:
+                'src/lib/ is vendored leaf code and cannot import from app layers (violates layer architecture: lib → base → platform → workbench → renderer). Invert the dependency: have the app layer pass what it needs in, or move the shared type down into src/lib/ or src/base/.'
+            }
+          ]
+        }
+      ]
+    }
+  },
+
+  {
+    files: ['apps/website/**/*.{astro,ts,mts,vue}'],
+    settings: {
+      'better-tailwindcss': {
+        entryPoint: 'apps/website/src/styles/global.css'
+      }
+    }
+  },
   // The website app is a marketing site with no vue-i18n setup
   {
     files: ['apps/website/**/*.vue'],
     rules: {
-      '@intlify/vue-i18n/no-raw-text': 'off'
+      '@intlify/vue-i18n/no-raw-text': 'off',
+      'vue/no-v-html': 'error'
     }
   },
   // Astro exposes virtual modules (astro:content, astro:assets, ...) that the
   // TypeScript resolver cannot see but are valid at build time.
   {
-    files: ['apps/website/**/*.{ts,mts,vue}'],
+    files: ['apps/website/**/*.{astro,ts,mts,vue}'],
     rules: {
       'import-x/no-unresolved': ['error', { ignore: ['^astro:'] }]
+    }
+  },
+  // reka-ui wrappers forward props via v-bind, which the rule cannot trace.
+  {
+    files: [
+      'apps/website/src/components/ui/accordion/*.vue',
+      'apps/website/src/components/ui/dialog/*.vue',
+      'apps/website/src/components/ui/navigation-menu/*.vue',
+      'apps/website/src/components/ui/sheet/*.vue',
+      'apps/website/src/components/ui/slider/*.vue',
+      'apps/website/src/components/ui/toggle-group/*.vue'
+    ],
+    rules: {
+      'vue/no-unused-properties': 'off'
     }
   },
   // i18n import enforcement
@@ -462,7 +611,8 @@ export default defineConfig([
               message:
                 "In Vue components, use `const { t } = useI18n()` instead of importing from '@/i18n'."
             },
-            useVirtualListRestriction
+            useVirtualListRestriction,
+            ...reportErrorRestrictions
           ]
         }
       ]
@@ -483,7 +633,8 @@ export default defineConfig([
               message:
                 "useI18n() requires Vue setup context. Use `import { t } from '@/i18n'` instead."
             },
-            useVirtualListRestriction
+            useVirtualListRestriction,
+            ...reportErrorRestrictions
           ]
         }
       ]
@@ -496,7 +647,7 @@ export default defineConfig([
       'no-restricted-imports': [
         'error',
         {
-          paths: [useVirtualListRestriction]
+          paths: [useVirtualListRestriction, ...reportErrorRestrictions]
         }
       ]
     }
@@ -519,9 +670,39 @@ export default defineConfig([
     }
   },
   {
-    files: ['src/components/searchbox/**/*.vue'],
+    name: 'comfy/enforce-sanitized-html-boundary',
+    files: ['src/**/*.vue'],
     rules: {
       'vue/no-v-html': 'error'
+    }
+  },
+  {
+    files: ['apps/website/e2e/**/*.spec.ts'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          paths: [
+            {
+              name: '@playwright/test',
+              importNames: ['test', 'chromium', 'firefox', 'webkit', 'request'],
+              message:
+                'Use the blockExternalMedia fixture so website tests cannot access external services.'
+            },
+            {
+              name: 'playwright',
+              message: 'Use the blockExternalMedia fixture instead.'
+            },
+            {
+              name: 'vue-i18n',
+              importNames: ['useI18n'],
+              message: 'useI18n() requires Vue setup context.'
+            },
+            useVirtualListRestriction,
+            ...reportErrorRestrictions
+          ]
+        }
+      ]
     }
   },
   // Browser tests must use comfyPageFixture, not raw @playwright/test test

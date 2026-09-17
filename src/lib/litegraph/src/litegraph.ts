@@ -46,7 +46,7 @@ type ContextMenuEventListener = (
   value: IContextMenuItem,
   options: IContextMenuOptions,
   event: MouseEvent,
-  parentMenu: ContextMenu<unknown> | undefined,
+  parentMenu: ContextMenu | undefined,
   node: LGraphNode
 ) => boolean | void
 
@@ -114,9 +114,10 @@ export {
   type SubgraphId
 } from './LGraph'
 export type { LGraphTriggerEvent } from './types/graphTriggers'
-export { BadgePosition, LGraphBadge } from './LGraphBadge'
+export { LGraphBadge } from './LGraphBadge'
 export { LGraphCanvas } from './LGraphCanvas'
-export { LGraphGroup, type GroupId } from './LGraphGroup'
+export { LGraphGroup } from './LGraphGroup'
+export type { GroupId } from '@/types/groupId'
 export { LGraphNode } from './LGraphNode'
 export { LLink } from './LLink'
 export { createBounds } from './measure'
@@ -159,7 +160,6 @@ export { BaseWidget } from './widgets/BaseWidget'
 export { LegacyWidget } from './widgets/LegacyWidget'
 
 export { isComboWidget } from './widgets/widgetMap'
-/** @knipIgnoreUnusedButUsedByCustomNodes */
 export { isAssetWidget } from './widgets/widgetMap'
 // Additional test-specific exports
 export { LGraphButton } from './LGraphButton'

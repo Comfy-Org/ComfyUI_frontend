@@ -223,7 +223,7 @@ const { t } = useI18n()
         <i
           :class="
             cn(
-              'icon-[comfy--credits] size-3 shrink-0',
+              'icon-[lucide--coins] size-3 shrink-0',
               i === selectedIndex ? 'bg-amber-400' : 'bg-muted-foreground'
             )
           "

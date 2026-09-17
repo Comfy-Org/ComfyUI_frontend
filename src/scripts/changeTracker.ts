@@ -8,7 +8,7 @@ import { LGraphCanvas, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
-import type { ExecutedWsMessage } from '@/schemas/apiSchema'
+import type { ExecutedWsMessage } from '@/platform/remote/comfyui/execution/types'
 import { useDialogStore } from '@/stores/dialogStore'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
@@ -32,7 +32,7 @@ function isActiveTracker(tracker: ChangeTracker): boolean {
 function isAutoQueueOnChange(): boolean {
   return (
     useQueueSettingsStore().mode === 'change' ||
-    (app.ui.autoQueueEnabled === true && app.ui.autoQueueMode === 'change')
+    (app.ui.autoQueueEnabled && app.ui.autoQueueMode === 'change')
   )
 }
 
@@ -231,18 +231,11 @@ function getExecutionGraphState(value: unknown): unknown {
 
 const reportedInactiveCalls = new Set<string>()
 
-/**
- * Report a ChangeTracker method being called on an inactive tracker.
- * Deduplicates per method+workflow per session to avoid signal noise on hot paths.
- */
 function reportInactiveTrackerCall(method: string, workflowPath: string) {
   const key = `${method}:${workflowPath}`
   if (reportedInactiveCalls.has(key)) return
   reportedInactiveCalls.add(key)
-  assert(
-    false,
-    `ChangeTracker.${method}() called on inactive tracker for: ${workflowPath}`
-  )
+  assert(false, `ChangeTracker.${method}() called on inactive tracker`)
 }
 
 export class ChangeTracker {
@@ -432,7 +425,7 @@ export class ChangeTracker {
       this.activeState = currentState
       this.redoQueue.length = 0
       this.updateModified(previousState)
-      this.squashState()
+      void this.squashState()
     }
   }
   squashState = useDebounceFn(() => {

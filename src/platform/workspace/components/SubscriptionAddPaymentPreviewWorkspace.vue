@@ -27,7 +27,6 @@
         :class="cn('mb-8 flex items-center gap-3', captureMode && 'xl:mb-10')"
       >
         <Button
-          v-if="usePaymentElement"
           size="icon"
           variant="muted-textonly"
           class="shrink-0 rounded-full"
@@ -61,12 +60,6 @@
           >
             ${{ displayPrice }}
           </span>
-          <span
-            v-if="originalPrice"
-            class="text-base text-muted-foreground tabular-nums line-through"
-          >
-            ${{ originalPrice }}
-          </span>
           <span class="text-base text-base-foreground">
             {{ $t('subscription.usdPerMonth') }}
           </span>
@@ -97,7 +90,7 @@
             {{ $t(creditsRefillLabelKey) }}
           </span>
           <div class="flex items-center gap-1">
-            <i class="icon-[comfy--credits] size-4 shrink-0 bg-credit" />
+            <i class="icon-[lucide--coins] size-4 shrink-0 bg-credit" />
             <span class="font-bold text-base-foreground tabular-nums">
               {{ refillCredits }}
             </span>
@@ -107,6 +100,7 @@
 
       <!-- Total Due Section -->
       <div
+        v-if="totalDueToday"
         :class="
           cn(
             'flex flex-col gap-2 border-t border-border-subtle pt-8',
@@ -114,31 +108,6 @@
           )
         "
       >
-        <div
-          v-if="promotionDiscounts.length"
-          class="flex flex-col gap-2 pb-2 text-sm"
-        >
-          <div class="flex items-center justify-between text-muted-foreground">
-            <span>{{ $t('subscription.preview.subtotal') }}</span>
-            <span class="tabular-nums">{{ subtotalFormatted }}</span>
-          </div>
-          <div
-            v-for="discount in promotionDiscounts"
-            :key="discount.code"
-            class="flex items-center justify-between text-muted-foreground"
-          >
-            <span>{{ promoLedgerLabel(discount) }}</span>
-            <span v-if="discount.amount_off_cents" class="tabular-nums">
-              −{{
-                formatQuoteMoney(
-                  discount.amount_off_cents,
-                  previewData?.currency,
-                  locale
-                )
-              }}
-            </span>
-          </div>
-        </div>
         <div class="flex items-center justify-between text-base">
           <span class="text-base-foreground">
             {{ $t('subscription.preview.totalDueToday') }}
@@ -151,56 +120,56 @@
           {{ renewalTerms }}
         </span>
       </div>
-      <div class="pt-6">
+      <div
+        v-if="previewData?.discounts?.length"
+        class="flex flex-col gap-2 pt-4 text-sm"
+      >
+        <div
+          v-for="discount in previewData.discounts"
+          :key="`${discount.kind}:${discount.code}`"
+          class="flex items-center justify-between text-muted-foreground"
+        >
+          <span>{{
+            $t(`subscription.preview.discount.${discount.kind}`)
+          }}</span>
+          <span class="text-base-foreground">
+            {{ discount.name || discount.code
+            }}<template v-if="discount.amount_off_cents">
+              · −{{
+                formatQuoteMoney(
+                  discount.amount_off_cents,
+                  previewData?.currency,
+                  locale
+                )
+              }}</template
+            >
+          </span>
+        </div>
+      </div>
+      <div v-if="embeddedCheckoutEnabled" class="flex gap-2 pt-6">
+        <input
+          v-model="promotionCode"
+          :aria-label="$t('subscription.preview.promoCodePlaceholder')"
+          :disabled="interactionLocked"
+          class="h-10 min-w-0 flex-1 rounded-lg border border-interface-stroke bg-secondary-background px-3 text-base-foreground"
+          :placeholder="$t('subscription.preview.promoCodePlaceholder')"
+          @input="invalidateEditedPromotion"
+        />
         <Button
-          v-if="!appliedPromotionCode && !isPromoFieldOpen"
           variant="secondary"
           size="lg"
           :disabled="interactionLocked"
-          @click="openPromoField"
+          @click="$emit('applyPromotionCode', promotionCode)"
         >
-          {{ $t('subscription.preview.addPromoCode') }}
+          {{ $t('subscription.preview.applyPromoCode') }}
         </Button>
-        <div v-else-if="!appliedPromotionCode" class="flex gap-2">
-          <input
-            ref="promoInputRef"
-            v-model="promotionCode"
-            :aria-label="$t('subscription.preview.promoCodePlaceholder')"
-            :disabled="interactionLocked"
-            class="h-10 min-w-0 flex-1 rounded-lg border border-interface-stroke bg-secondary-background px-3 text-base-foreground"
-            :placeholder="$t('subscription.preview.promoCodePlaceholder')"
-            @input="invalidateEditedPromotion"
-          />
-          <Button
-            variant="secondary"
-            size="lg"
-            :disabled="interactionLocked"
-            @click="$emit('applyPromotionCode', promotionCode)"
-          >
-            {{ $t('subscription.preview.applyPromoCode') }}
-          </Button>
-        </div>
-        <div
-          v-else
-          class="flex h-10 w-fit items-center gap-2 rounded-lg bg-tertiary-background px-3"
-        >
-          <span class="text-sm text-base-foreground">
-            {{ appliedPromotionCode }}
-          </span>
-          <Button
-            size="icon"
-            variant="muted-textonly"
-            :aria-label="$t('subscription.preview.removePromoCode')"
-            :disabled="interactionLocked"
-            @click="clearPromotionCode"
-          >
-            <i class="icon-[lucide--x] size-4" />
-          </Button>
-        </div>
       </div>
       <!-- Saved method: no capture column; a card row with a change
            affordance stands in for the form. -->
-      <div v-if="savedMethods?.length" class="flex flex-col gap-2 pt-6">
+      <div
+        v-if="embeddedCheckoutEnabled && savedMethods?.length"
+        class="flex flex-col gap-2 pt-6"
+      >
         <span class="text-sm text-muted-foreground">
           {{ $t('subscription.preview.savedPaymentMethod') }}
         </span>
@@ -255,7 +224,7 @@
            the top of the column; the pay button below it is demoted and
            disabled while it shows. -->
       <div
-        v-if="reconciliationOperationId"
+        v-if="embeddedCheckoutEnabled && reconciliationOperationId"
         class="rounded-lg border border-interface-stroke bg-secondary-background p-4"
       >
         <p class="m-0 font-semibold text-base-foreground">
@@ -268,48 +237,41 @@
       </div>
 
       <div
-        v-if="authenticationState === 'failed_retryable'"
+        v-if="
+          embeddedCheckoutEnabled && authenticationState === 'failed_retryable'
+        "
         role="alert"
         class="rounded-lg border border-interface-stroke bg-secondary-background p-4 text-sm text-base-foreground"
       >
         {{
           authenticationError ||
-          (canRetryAuthentication
-            ? $t('billingOperation.authenticationFailedDetail')
-            : $t('billingOperation.authenticationManagerRequired'))
+          $t('billingOperation.authenticationFailedDetail')
         }}
       </div>
 
-      <Button
-        v-if="
-          (authenticationState === 'failed_retryable' ||
-            authenticationState === 'requires_action') &&
-          canRetryAuthentication
-        "
-        variant="inverted"
-        size="lg"
-        class="w-full rounded-lg"
-        :loading="isAuthenticating"
-        @click="$emit('retryAuthentication')"
-      >
-        {{
-          $t(
-            authenticationState === 'failed_retryable'
-              ? 'billingOperation.retryVerification'
-              : 'subscription.preview.completeVerification'
-          )
-        }}
-      </Button>
+      <div v-if="parkedCheckoutRecovery" class="flex flex-col gap-2">
+        <div
+          role="alert"
+          class="rounded-lg border border-interface-stroke bg-secondary-background p-4 text-sm text-base-foreground"
+        >
+          {{ $t('subscription.preview.parkedCheckoutDetail') }}
+        </div>
+        <Button
+          variant="inverted"
+          size="lg"
+          class="w-full rounded-lg"
+          :loading="isLoading"
+          :disabled="
+            interactionLocked || !quoteIsUsable || verificationRecoveryActive
+          "
+          @click="$emit('addCreditCard')"
+        >
+          {{ $t('subscription.preview.completePayment') }}
+        </Button>
+      </div>
 
       <Button
-        v-if="
-          actionUrl &&
-          !(
-            (authenticationState === 'failed_retryable' ||
-              authenticationState === 'requires_action') &&
-            canRetryAuthentication
-          )
-        "
+        v-if="actionUrl && authenticationState !== 'failed_retryable'"
         variant="inverted"
         size="lg"
         class="w-full rounded-lg"
@@ -319,7 +281,7 @@
       </Button>
 
       <UnifiedStripePaymentSelector
-        v-if="captureMode && quoteReady"
+        v-if="captureMode && quoteReady && !parkedCheckoutRecovery"
         :key="previewData?.payment_method_configuration_id ?? ''"
         :amount-cents="amountDueCents"
         :currency="previewData?.currency ?? ''"
@@ -334,13 +296,13 @@
       />
 
       <Button
-        v-if="captureMode && !quoteReady"
+        v-if="captureMode && !quoteReady && !parkedCheckoutRecovery"
         variant="inverted"
         size="lg"
         class="w-full rounded-lg"
         :loading="isLoading"
         :disabled="
-          interactionLocked || !quoteIsCurrent || verificationRecoveryActive
+          interactionLocked || !quoteIsUsable || verificationRecoveryActive
         "
         @click="$emit('addCreditCard')"
       >
@@ -348,13 +310,13 @@
       </Button>
 
       <Button
-        v-if="savedMethods?.length"
+        v-if="savedMethods?.length && !parkedCheckoutRecovery"
         variant="inverted"
         size="lg"
         class="w-full rounded-lg"
         :loading="isLoading"
         :disabled="
-          interactionLocked || !quoteIsCurrent || verificationRecoveryActive
+          interactionLocked || !quoteIsUsable || verificationRecoveryActive
         "
         @click="$emit('addCreditCard')"
       >
@@ -362,13 +324,15 @@
       </Button>
 
       <Button
-        v-if="!usePaymentElement && !savedMethods?.length"
+        v-if="
+          !usePaymentElement && !savedMethods?.length && !parkedCheckoutRecovery
+        "
         variant="tertiary"
         size="lg"
         class="w-full rounded-lg"
         :loading="isLoading"
         :disabled="
-          interactionLocked || !quoteIsCurrent || verificationRecoveryActive
+          interactionLocked || !quoteIsUsable || verificationRecoveryActive
         "
         @click="$emit('addCreditCard')"
       >
@@ -382,7 +346,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, nextTick, ref, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
@@ -394,7 +358,12 @@ import {
 } from '@/platform/cloud/subscription/constants/tierPricing'
 import type { TierKey } from '@/platform/cloud/subscription/constants/tierPricing'
 import { isYearlyCheckout } from '@/platform/cloud/subscription/utils/planDuration'
-import { formatQuoteMoney } from '@/platform/cloud/subscription/utils/subscriptionQuoteFormatting'
+import {
+  formatAmountDueToday,
+  formatQuoteMoney,
+  formatRenewalAmount,
+  resolveRenewalDate
+} from '@/platform/cloud/subscription/utils/subscriptionQuoteFormatting'
 import type { BillingCycle } from '@/platform/cloud/subscription/utils/subscriptionTierRank'
 import type {
   BillingAuthenticationState,
@@ -417,9 +386,10 @@ interface Props {
   actionUrl?: string | null
   authenticationState?: BillingAuthenticationState | null
   authenticationError?: string | null
-  canRetryAuthentication?: boolean
-  isAuthenticating?: boolean
   reconciliationOperationId?: string | null
+  /** Subscribe landed on a checkout already waiting for a card; only another
+   *  subscribe can re-issue its payment link. */
+  parkedCheckoutRecovery?: boolean
   usePaymentElement?: boolean
   /** Saved payment methods; when present the capture form is skipped and the
    *  confirm renders as a narrow summary. One method shows a Change
@@ -429,6 +399,7 @@ interface Props {
   savedMethods?: SavedPaymentMethod[] | null
   quoteIsCurrent?: boolean
   isApplyingPromotionCode?: boolean
+  embeddedCheckoutEnabled?: boolean
 }
 
 const {
@@ -440,13 +411,13 @@ const {
   actionUrl = null,
   authenticationState = null,
   authenticationError = null,
-  canRetryAuthentication = false,
-  isAuthenticating = false,
   reconciliationOperationId = null,
+  parkedCheckoutRecovery = false,
   usePaymentElement = false,
   savedMethods = null,
   quoteIsCurrent = false,
-  isApplyingPromotionCode = false
+  isApplyingPromotionCode = false,
+  embeddedCheckoutEnabled = false
 } = defineProps<Props>()
 
 const emit = defineEmits<{
@@ -456,8 +427,6 @@ const emit = defineEmits<{
   changePaymentMethod: []
   applyPromotionCode: [code: string]
   invalidateQuote: []
-  restoreQuote: []
-  retryAuthentication: []
 }>()
 
 const { locale, n, t } = useI18n()
@@ -484,10 +453,12 @@ const quoteReady = computed(
 )
 const verificationRecoveryActive = computed(
   () =>
-    authenticationState === 'requires_action' ||
-    authenticationState === 'failed_retryable' ||
-    Boolean(reconciliationOperationId)
+    embeddedCheckoutEnabled &&
+    (authenticationState === 'requires_action' ||
+      authenticationState === 'failed_retryable' ||
+      Boolean(reconciliationOperationId))
 )
+const quoteIsUsable = computed(() => !embeddedCheckoutEnabled || quoteIsCurrent)
 
 function methodLabel(m: SavedPaymentMethod) {
   if (m.type === 'alipay') return t('subscription.preview.alipay')
@@ -525,60 +496,12 @@ watch(
   () => previewData?.promotion_code,
   (code) => {
     promotionCode.value = code ?? ''
-    invalidatedByPromoEdit.value = false
   }
 )
 
-const isPromoFieldOpen = ref(false)
-const promoInputRef = ref<HTMLInputElement>()
-
-const appliedPromotionCode = computed(() => previewData?.promotion_code ?? null)
-
-type QuoteDiscount = NonNullable<PreviewSubscribeResponse['discounts']>[number]
-
-const promotionDiscounts = computed(() =>
-  (previewData?.discounts ?? []).filter((d) => d.kind === 'promotion')
-)
-
-const subtotalFormatted = computed(() =>
-  previewData?.new_plan
-    ? formatQuoteMoney(
-        previewData.new_plan.price_cents,
-        previewData.currency,
-        locale.value
-      )
-    : ''
-)
-
-function promoLedgerLabel(discount: QuoteDiscount) {
-  return discount.name
-    ? t('subscription.preview.promoLedgerLabel', {
-        code: discount.code,
-        name: discount.name
-      })
-    : t('subscription.preview.promoLedgerLabelBare', { code: discount.code })
-}
-
-function openPromoField() {
-  isPromoFieldOpen.value = true
-  void nextTick(() => promoInputRef.value?.focus())
-}
-
-function clearPromotionCode() {
-  isPromoFieldOpen.value = false
-  emit('applyPromotionCode', '')
-}
-
-const invalidatedByPromoEdit = ref(false)
-
 function invalidateEditedPromotion() {
-  const edited = promotionCode.value !== (previewData?.promotion_code ?? '')
-  if (edited && quoteIsCurrent) {
-    invalidatedByPromoEdit.value = true
+  if (promotionCode.value !== (previewData?.promotion_code ?? '')) {
     emit('invalidateQuote')
-  } else if (!edited && invalidatedByPromoEdit.value) {
-    invalidatedByPromoEdit.value = false
-    emit('restoreQuote')
   }
 }
 
@@ -610,17 +533,6 @@ const displayPrice = computed(() => {
   return tierKey ? getTierPrice(tierKey, isYearly.value) : 0
 })
 
-const originalPrice = computed(() => {
-  if (teamPlan) {
-    return teamPlan.usd !== teamPlan.discountedUsd ? n(teamPlan.usd) : null
-  }
-  if (!isYearly.value || !tierKey) return null
-  const monthlyListPrice = getTierPrice(tierKey, false)
-  return Number(displayPrice.value) < monthlyListPrice
-    ? n(monthlyListPrice)
-    : null
-})
-
 const annualTotalUsd = computed(() => {
   if (teamPlan) return teamPlan.discountedUsd * 12
   if (previewData?.new_plan) return previewData.new_plan.price_cents / 100
@@ -644,35 +556,21 @@ const creditsRefillLabelKey = computed(() =>
 )
 
 const totalDueToday = computed(() =>
-  previewData?.amount_due_cents === undefined
-    ? ''
-    : formatQuoteMoney(
-        previewData.amount_due_cents,
-        previewData.currency,
-        locale.value
-      )
+  previewData ? formatAmountDueToday(previewData, locale.value) : ''
 )
 
 const renewalTerms = computed(() => {
-  if (
-    previewData?.renewal_amount_cents === undefined ||
-    !previewData.renewal_at
-  ) {
-    return ''
-  }
-  const date = new Date(previewData.renewal_at).toLocaleDateString(undefined, {
+  if (!previewData) return ''
+  const amount = formatRenewalAmount(previewData, locale.value)
+  if (!amount) return ''
+  const renewsAt = resolveRenewalDate(previewData)
+  if (!renewsAt) return t('subscription.preview.renewsAtAmount', { amount })
+  const date = new Date(renewsAt).toLocaleDateString(locale.value, {
     month: 'short',
     day: 'numeric',
     year: 'numeric',
     timeZone: 'UTC'
   })
-  return t('subscription.preview.renewsAt', {
-    amount: formatQuoteMoney(
-      previewData.renewal_amount_cents,
-      previewData.currency,
-      locale.value
-    ),
-    date
-  })
+  return t('subscription.preview.renewsAt', { amount, date })
 })
 </script>

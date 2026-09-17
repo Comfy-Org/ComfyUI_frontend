@@ -1,0 +1,75 @@
+name: 'CI: Repair PR Lockfile'
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'package.json'
+      - '**/package.json'
+      - 'pnpm-lock.yaml'
+      - 'pnpm-workspace.yaml'
+
+permissions:
+  contents: read
+
+jobs:
+  repair:
+    if: >
+      github.repository == 'Comfy-Org/ComfyUI_frontend'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout trusted workflow revision
+        uses: actions/checkout@v7
+        with:
+          repository: ${{ github.repository }}
+          ref: ${{ github.event.pull_request.base.ref }}
+          persist-credentials: false
+
+      - name: Checkout pull request
+        uses: actions/checkout@v7
+        with:
+          repository: ${{ github.event.pull_request.head.repo.full_name }}
+          ref: ${{ github.event.pull_request.head.sha }}
+          path: pull-request
+          persist-credentials: false
+
+      - name: Detect lockfile-only conflict
+        id: conflict
+        uses: ./.github/actions/prepare-lockfile-merge
+        with:
+          base-sha: ${{ github.event.pull_request.base.sha }}
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@0ebf47130e4866e96fce0953f49152a61190b271 # v6.0.9
+        with:
+          package_json_file: pull-request/package.json
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version-file: pull-request/.nvmrc
+
+      - name: Repair lockfile
+        run: pnpm install --lockfile-only --ignore-scripts --no-frozen-lockfile
+        working-directory: pull-request
+
+      - name: Prepare repair artifact
+        env:
+          ARTIFACT_DIR: ${{ runner.temp }}/lockfile-repair
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          MODE: ${{ steps.conflict.outputs.mode }}
+        run: |
+          mkdir "$ARTIFACT_DIR"
+          cp pull-request/pnpm-lock.yaml "$ARTIFACT_DIR/pnpm-lock.yaml"
+          printf '%s\n' "$BASE_SHA" > "$ARTIFACT_DIR/base-sha"
+          printf '%s\n' "$HEAD_SHA" > "$ARTIFACT_DIR/head-sha"
+          printf '%s\n' "$MODE" > "$ARTIFACT_DIR/mode"
+
+      - name: Upload repair artifact
+        uses: actions/upload-artifact@v6
+        with:
+          name: pr-lockfile-repair
+          path: ${{ runner.temp }}/lockfile-repair
+          retention-days: 1

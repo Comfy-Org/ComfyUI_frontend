@@ -7,7 +7,7 @@ import type { SerialisableGraph } from '@/lib/litegraph/src/types/serialisation'
 /**
  * Root graph with two nodes (Source, Target) connected by one valid link
  * plus two duplicate links sharing the same connection tuple.
- * Tests that configure() deduplicates to a single link.
+ * Tests that configure() rejects persisted duplicates.
  */
 export const duplicateLinksRoot: SerialisableGraph = {
   id: 'dd000000-0000-4000-8000-000000000001',
@@ -67,6 +67,74 @@ export const duplicateLinksRoot: SerialisableGraph = {
       origin_id: 1,
       origin_slot: 0,
       target_id: 2,
+      target_slot: 0,
+      type: 'number'
+    }
+  ]
+}
+
+export const conflictingOriginLinksRoot: SerialisableGraph = {
+  id: 'dd000000-0000-4000-8000-000000000004',
+  version: 1,
+  revision: 0,
+  state: {
+    lastNodeId: 3,
+    lastLinkId: 2,
+    lastGroupId: 0,
+    lastRerouteId: 0
+  },
+  nodes: [
+    {
+      id: 1,
+      type: 'test/DupTestNode',
+      pos: [0, 0],
+      size: [200, 100],
+      flags: {},
+      order: 0,
+      mode: 0,
+      inputs: [{ name: 'input_0', type: 'number', link: null }],
+      outputs: [{ name: 'output_0', type: 'number', links: [1] }],
+      properties: {}
+    },
+    {
+      id: 2,
+      type: 'test/DupTestNode',
+      pos: [0, 200],
+      size: [200, 100],
+      flags: {},
+      order: 1,
+      mode: 0,
+      inputs: [{ name: 'input_0', type: 'number', link: null }],
+      outputs: [{ name: 'output_0', type: 'number', links: [2] }],
+      properties: {}
+    },
+    {
+      id: 3,
+      type: 'test/DupTestNode',
+      pos: [300, 0],
+      size: [200, 100],
+      flags: {},
+      order: 2,
+      mode: 0,
+      inputs: [{ name: 'input_0', type: 'number', link: 2 }],
+      outputs: [{ name: 'output_0', type: 'number', links: [] }],
+      properties: {}
+    }
+  ],
+  links: [
+    {
+      id: 1,
+      origin_id: 1,
+      origin_slot: 0,
+      target_id: 3,
+      target_slot: 0,
+      type: 'number'
+    },
+    {
+      id: 2,
+      origin_id: 2,
+      origin_slot: 0,
+      target_id: 3,
       target_slot: 0,
       type: 'number'
     }
@@ -140,7 +208,7 @@ export const duplicateLinksSlotShift: SerialisableGraph = {
 
 /**
  * Root graph containing a SubgraphNode whose subgraph definition has
- * duplicate links. Tests that configure() deduplicates links inside
+ * duplicate links. Tests that configure() rejects persisted duplicates inside
  * subgraph definitions during root-level configure.
  */
 export const duplicateLinksSubgraph: SerialisableGraph = {

@@ -19,7 +19,7 @@ const { tutorial, locale = 'en' } = defineProps<{
 
 <template>
   <article
-    class="bg-transparency-white-t4 rounded-4.5xl grid items-center gap-6 p-5 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)] lg:gap-10 lg:p-8"
+    class="grid items-center gap-6 rounded-4.5xl bg-transparency-white-t4 p-5 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)] lg:gap-10 lg:p-8"
   >
     <div class="flex flex-col gap-4">
       <div class="flex items-center gap-3">
@@ -37,7 +37,7 @@ const { tutorial, locale = 'en' } = defineProps<{
           :href="localizeHref(tutorialPath(tutorial), locale)"
           class="text-left hover:underline"
         >
-          {{ tutorial.title[locale] }}
+          {{ tutorial.title[locale] || tutorial.title.en }}
         </a>
       </h2>
       <ul class="flex flex-wrap gap-2">
@@ -56,7 +56,7 @@ const { tutorial, locale = 'en' } = defineProps<{
           size="default"
           class="ps-0"
         >
-          {{ t('cta.tryWorkflow', locale) }}
+          {{ t(tutorial.ctaLabelKey ?? 'cta.tryWorkflow', locale) }}
         </ButtonPill>
       </div>
     </div>
@@ -64,7 +64,7 @@ const { tutorial, locale = 'en' } = defineProps<{
     <a
       :href="localizeHref(tutorialPath(tutorial), locale)"
       class="group relative block aspect-video overflow-hidden rounded-3xl"
-      :aria-label="`${t('player.play', locale)} ${tutorial.title[locale]}`"
+      :aria-label="`${t('player.play', locale)} ${tutorial.title[locale] || tutorial.title.en}`"
     >
       <img :src="tutorial.poster" alt="" class="size-full object-cover" />
       <PlayOverlay class="text-white" />

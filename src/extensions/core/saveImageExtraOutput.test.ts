@@ -1,9 +1,10 @@
+import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { LGraph } from '@/lib/litegraph/src/litegraph'
-import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 import type { ComfyExtension } from '@/types/comfy'
+import type { ComfyApp } from '@/scripts/app'
 
 const { app } = vi.hoisted(() => ({
   app: {
@@ -12,7 +13,7 @@ const { app } = vi.hoisted(() => ({
   }
 }))
 
-vi.mock('@/scripts/app', () => ({ app }))
+vi.mock(import('@/scripts/app'), () => ({ app: fromPartial<ComfyApp>(app) }))
 
 type BeforeRegisterNodeDef = NonNullable<
   ComfyExtension['beforeRegisterNodeDef']
@@ -62,14 +63,14 @@ async function createNodeWithFilenamePrefix(
 describe('Comfy.SaveImageExtraOutput', () => {
   beforeEach(() => {
     const graph = new LGraph()
-    graph.add({
-      properties: { 'Node name for S&R': 'Sampler' },
-      widgets: [{ name: 'seed', value: 12345 }]
-    } as unknown as LGraphNode)
+    const sampler = new LGraphNode('Sampler')
+    sampler.properties['Node name for S&R'] = 'Sampler'
+    sampler.addWidget('number', 'seed', 12345, () => undefined, {})
+    graph.add(sampler)
     app.graph = graph
   })
 
-  it.each([
+  it.for([
     'SaveImage',
     'SaveImageAdvanced',
     'SaveSVGNode',

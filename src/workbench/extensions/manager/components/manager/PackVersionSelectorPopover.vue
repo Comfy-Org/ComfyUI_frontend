@@ -232,11 +232,11 @@ whenever(
 )
 
 const handleSubmit = async () => {
-  isQueueing.value = true
-
   if (!nodePack.id) {
-    throw new Error('Node ID is required for installation')
+    console.error('Node ID is required for installation')
+    return
   }
+  isQueueing.value = true
   // Convert 'latest' to actual version number for installation
   const actualVersion =
     selectedVersion.value === 'latest'

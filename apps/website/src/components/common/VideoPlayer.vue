@@ -4,6 +4,7 @@ import {
   refAutoReset,
   useElementHover,
   useEventListener,
+  useFocusWithin,
   useFullscreen,
   useMediaControls,
   useMouseInElement,
@@ -37,7 +38,11 @@ const {
   minimal = false,
   muteOnly = false,
   hideControls = false,
+  hideFullscreen = false,
+  controlsOnHover = false,
+  playButtonVariant = 'solid',
   fit = 'cover',
+  noCors = false,
   ariaLabel,
   class: className
 } = defineProps<{
@@ -59,7 +64,17 @@ const {
    * in the top-right corner. */
   muteOnly?: boolean
   hideControls?: boolean
+  hideFullscreen?: boolean
+  /** Where the video is the content rather than something to operate, a
+   * paused frame should not carry a bar across it: the controls wait for a
+   * pointer. */
+  controlsOnHover?: boolean
+  /** Style of the centered play/pause button in `minimal` mode. */
+  playButtonVariant?: 'solid' | 'overlay'
   fit?: 'cover' | 'contain'
+  /** Load without a CORS request, for hosts such as generated-output buckets
+   * that send no CORS headers. Caption tracks still require CORS. */
+  noCors?: boolean
   ariaLabel?: string
   class?: HTMLAttributes['class']
 }>()
@@ -81,12 +96,32 @@ const {
 const { isSupported: fullscreenSupported, toggle: toggleFs } =
   useFullscreen(playerEl)
 
+// A server-rendered `autoplay` video can start playing before hydration
+// attaches useMediaControls' listeners, so its play/volumechange events are
+// missed and the controls render stale state (e.g. a play icon over a
+// playing video). Sync the refs from the element once it binds; the
+// assignments are no-ops when the element already matches.
+watch(
+  videoEl,
+  (el) => {
+    if (!el) return
+    playing.value = !el.paused
+    muted.value = el.muted
+  },
+  { flush: 'post' }
+)
+
 // Controls fade
 const hovering = useElementHover(playerEl)
+const { focused } = useFocusWithin(playerEl)
 const recentActivity = refAutoReset(false, 800)
 
 const controlsVisible = computed(
-  () => !playing.value || hovering.value || recentActivity.value
+  () =>
+    focused.value ||
+    (controlsOnHover
+      ? hovering.value || recentActivity.value
+      : !playing.value || hovering.value || recentActivity.value)
 )
 
 function showControls() {
@@ -265,11 +300,11 @@ function toggleFullscreen() {
       :src
       :poster
       :preload="autoplay && !lazyAutoplay ? 'auto' : 'metadata'"
-      crossorigin="anonymous"
+      :crossorigin="noCors && !tracks.length ? undefined : 'anonymous'"
       playsinline
       :autoplay="autoplay && !lazyAutoplay"
       :loop
-      muted
+      :muted="autoplay"
       @click="hideControls || muteOnly ? undefined : (playing = !playing)"
     >
       <track
@@ -282,10 +317,11 @@ function toggleFullscreen() {
       />
     </video>
 
-    <!-- Persistent corner pause and mute toggles -->
+    <!-- Persistent corner pause and mute toggles. z-30 keeps them above the
+      overlay hero's scrim and content layers. -->
     <div
       v-if="src && muteOnly && !hideControls"
-      class="absolute top-4 right-4 flex gap-2 lg:top-6 lg:right-6"
+      class="absolute top-4 right-4 z-30 flex gap-2 lg:top-6 lg:right-6"
     >
       <PlayPauseButton
         :playing
@@ -297,7 +333,7 @@ function toggleFullscreen() {
       />
       <button
         type="button"
-        class="bg-primary-comfy-yellow flex size-8 items-center justify-center rounded-lg lg:size-10"
+        class="flex size-8 items-center justify-center rounded-lg bg-primary-comfy-yellow lg:size-10"
         :aria-label="
           muted ? t('player.unmute', locale) : t('player.mute', locale)
         "
@@ -321,6 +357,7 @@ function toggleFullscreen() {
     >
       <PlayPauseButton
         :playing
+        :variant="playButtonVariant"
         :aria-label="
           playing ? t('player.pause', locale) : t('player.play', locale)
         "
@@ -363,7 +400,7 @@ function toggleFullscreen() {
         @touchstart.passive="scrubbing = true"
       >
         <div
-          class="bg-primary-comfy-yellow h-full rounded-full"
+          class="h-full rounded-full bg-primary-comfy-yellow"
           :style="{ width: `${progress * 100}%` }"
         />
       </div>
@@ -375,8 +412,9 @@ function toggleFullscreen() {
 
       <!-- Fullscreen button -->
       <button
+        v-if="!hideFullscreen"
         type="button"
-        class="bg-primary-comfy-yellow flex size-8 shrink-0 items-center justify-center rounded-lg lg:size-10"
+        class="flex size-8 shrink-0 items-center justify-center rounded-lg bg-primary-comfy-yellow lg:size-10"
         :aria-label="t('player.fullscreen', locale)"
         @click="toggleFullscreen"
       >
@@ -420,7 +458,7 @@ function toggleFullscreen() {
       <!-- Mute / Unmute button -->
       <button
         type="button"
-        class="bg-primary-comfy-yellow flex size-8 shrink-0 items-center justify-center rounded-lg lg:size-10"
+        class="flex size-8 shrink-0 items-center justify-center rounded-lg bg-primary-comfy-yellow lg:size-10"
         :aria-label="
           muted ? t('player.unmute', locale) : t('player.mute', locale)
         "

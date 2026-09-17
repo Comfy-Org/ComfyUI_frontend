@@ -4,7 +4,7 @@ const OAUTH_REQUEST_ID_STORAGE_KEY = 'Comfy.OAuthRequestId'
 const UUID_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-7][0-9a-f]{3}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
-function readQueryString(value: LocationQuery[string]): string | null {
+function readQueryString(value: unknown): string | null {
   return typeof value === 'string' ? value : null
 }
 
@@ -22,7 +22,7 @@ export function captureOAuthRequestId(query: LocationQuery): string | null {
   // We DO clear on an explicitly invalid value (present but malformed): that
   // shape is either a stale deep-link or probing, and a stale Comfy.OAuthRequestId
   // contaminating later flows is worse than dropping the bad input.
-  const raw = query.oauth_request_id
+  const raw: unknown = query.oauth_request_id
   const value = readQueryString(raw)
   if (!value) {
     if (raw !== undefined) {
