@@ -5,7 +5,10 @@ import type { User } from 'firebase/auth'
 import type { AccountUser, SessionClient } from '@comfyorg/account-core/session'
 import { createTestIdentity } from '@comfyorg/account-core/testing'
 
-import * as posthog from '../scripts/posthog'
+import {
+  captureAuthRefreshFailed,
+  captureAuthRefreshSucceeded
+} from '../scripts/posthog'
 import {
   subscribeAuthRefreshTelemetry,
   workshopSessionClient
@@ -115,9 +118,9 @@ describe('auth refresh telemetry', () => {
     fire(testFirebaseUser())
 
     await vi.waitFor(() =>
-      expect(posthog.captureAuthRefreshSucceeded).toHaveBeenCalledOnce()
+      expect(captureAuthRefreshSucceeded).toHaveBeenCalledOnce()
     )
-    expect(posthog.captureAuthRefreshFailed).not.toHaveBeenCalled()
+    expect(captureAuthRefreshFailed).not.toHaveBeenCalled()
   })
 
   it('does not repeat the outcome for a cached read of the same token', async () => {
@@ -127,7 +130,7 @@ describe('auth refresh telemetry', () => {
 
     fire(testFirebaseUser())
     await vi.waitFor(() =>
-      expect(posthog.captureAuthRefreshSucceeded).toHaveBeenCalledOnce()
+      expect(captureAuthRefreshSucceeded).toHaveBeenCalledOnce()
     )
     fire(testFirebaseUser())
     await vi.waitFor(() =>
@@ -135,7 +138,7 @@ describe('auth refresh telemetry', () => {
     )
 
     expect(
-      posthog.captureAuthRefreshSucceeded,
+      captureAuthRefreshSucceeded,
       'a cached read is not a new refresh outcome'
     ).toHaveBeenCalledOnce()
   })
@@ -148,11 +151,11 @@ describe('auth refresh telemetry', () => {
     fire(testFirebaseUser())
 
     await vi.waitFor(() =>
-      expect(posthog.captureAuthRefreshFailed).toHaveBeenCalledExactlyOnceWith(
+      expect(captureAuthRefreshFailed).toHaveBeenCalledExactlyOnceWith(
         'permanent_failure'
       )
     )
-    expect(posthog.captureAuthRefreshSucceeded).not.toHaveBeenCalled()
+    expect(captureAuthRefreshSucceeded).not.toHaveBeenCalled()
   })
 
   it('stays silent on a transient failure', async () => {
@@ -166,9 +169,9 @@ describe('auth refresh telemetry', () => {
       expect(workshopSessionClient.getSnapshot().phase).toBe('error')
     )
     expect(
-      posthog.captureAuthRefreshFailed,
+      captureAuthRefreshFailed,
       'valid-on-read has no retry machinery, so transient outcomes are cloud-only vocabulary'
     ).not.toHaveBeenCalled()
-    expect(posthog.captureAuthRefreshSucceeded).not.toHaveBeenCalled()
+    expect(captureAuthRefreshSucceeded).not.toHaveBeenCalled()
   })
 })
