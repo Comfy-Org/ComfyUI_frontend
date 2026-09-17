@@ -1,4 +1,4 @@
-import type { Page } from '@playwright/test'
+import type { Page, Request } from '@playwright/test'
 import { expect } from '@playwright/test'
 
 import workflow from '@e2e/assets/3d/load3d_node.json' with { type: 'json' }
@@ -27,7 +27,7 @@ function promptImage(body: unknown): string {
   return (image as { image: string }).image
 }
 
-async function bootAgentLoad3d(page: Page): Promise<void> {
+async function bootAgentLoad3d(page: Page): Promise<Request[]> {
   await page.addInitScript(() => {
     localStorage.setItem('Comfy.AgentPanel.onboarded', 'true')
     localStorage.setItem('Comfy.Agent.CrdtFollower', 'true')
@@ -54,15 +54,17 @@ async function bootAgentLoad3d(page: Page): Promise<void> {
     route.fulfill(jsonRoute({ assets: [], total: 0, has_more: false }))
   )
   let capture = 0
-  await page.route('**/api/upload/image**', (route) =>
-    route.fulfill(
+  const uploadRequests: Request[] = []
+  await page.route('**/api/upload/image**', (route) => {
+    uploadRequests.push(route.request())
+    return route.fulfill(
       jsonRoute({
         name: `agent-load3d-capture-${++capture}.png`,
         subfolder: 'temp',
         type: 'temp'
       })
     )
-  )
+  })
   await page.route('**/api/view?*filename=cube.obj*', (route) =>
     route.fulfill({ path: assetPath('cube.obj') })
   )
@@ -97,6 +99,20 @@ async function bootAgentLoad3d(page: Page): Promise<void> {
     workflow as unknown as ComfyWorkflowJSON
   )
   await expect(page.locator('[data-node-id="1"]')).toBeVisible()
+  return uploadRequests
+}
+
+async function uploadedImageBytes(request: Request): Promise<Uint8Array> {
+  const body = request.postDataBuffer()
+  expect(body).not.toBeNull()
+  if (!body) throw new Error('upload request has no body')
+  const form = await new Response(new Uint8Array(body), {
+    headers: { 'content-type': request.headers()['content-type'] ?? '' }
+  }).formData()
+  const image = form.get('image')
+  expect(image).toBeInstanceOf(File)
+  if (!(image instanceof File)) throw new Error('upload has no image file')
+  return new Uint8Array(await image.arrayBuffer())
 }
 
 async function captureNextPrompt(page: Page): Promise<string> {
@@ -159,7 +175,7 @@ test.describe('Load3D agent updates', { tag: '@cloud' }, () => {
     page
   }) => {
     test.setTimeout(60_000)
-    await bootAgentLoad3d(page)
+    const uploadRequests = await bootAgentLoad3d(page)
     const load3d = new Load3DHelper(page.locator('[data-node-id="1"]'))
     await expect(load3d.canvas).toBeVisible()
     await setRemoteModel(page, 'cube.obj', 'load3d-model-a')
@@ -181,6 +197,11 @@ test.describe('Load3D agent updates', { tag: '@cloud' }, () => {
     await load3d.waitForModelLoaded()
     const afterImage = await captureNextPrompt(page)
     expect(afterImage).not.toBe(beforeImage)
+    expect(uploadRequests).toHaveLength(6)
+    const beforeImageBytes = await uploadedImageBytes(uploadRequests[0])
+    const afterImageBytes = await uploadedImageBytes(uploadRequests[3])
+    expect(beforeImageBytes.byteLength).toBeGreaterThan(0)
+    expect(afterImageBytes).not.toEqual(beforeImageBytes)
     await expect(load3d.canvas).toBeVisible()
     await test.info().attach('agent-updated-load3d.png', {
       body: await load3d.node.screenshot(),
