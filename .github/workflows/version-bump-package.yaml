@@ -48,18 +48,36 @@ jobs:
         id: resolve
         env:
           PACKAGE: ${{ github.event.inputs.package }}
+          VERSION_TYPE: ${{ github.event.inputs.version_type }}
+          PRE_RELEASE: ${{ github.event.inputs.pre_release }}
         shell: bash
         run: |
           set -euo pipefail
+          # ALPHA_GATED marks the hand-written packages ADR-RELEASES-PACKAGES-0033
+          # holds on 1.0.0-alpha.N. ingest-types is outside that gate; add
+          # account-ui to it when the package goes public.
           case "$PACKAGE" in
-            account-core) NPM_NAME='@comfyorg/account-core' ;;
-            billing-contract) NPM_NAME='@comfyorg/billing-contract' ;;
-            ingest-types) NPM_NAME='@comfyorg/ingest-types' ;;
+            account-core) NPM_NAME='@comfyorg/account-core'; ALPHA_GATED=true ;;
+            billing-contract) NPM_NAME='@comfyorg/billing-contract'; ALPHA_GATED=true ;;
+            ingest-types) NPM_NAME='@comfyorg/ingest-types'; ALPHA_GATED=false ;;
             *)
               echo "::error title=Unknown package::'$PACKAGE' is not a releasable package" >&2
               exit 1
               ;;
           esac
+          if [ "$ALPHA_GATED" = 'true' ]; then
+            case "$VERSION_TYPE" in
+              prerelease | prepatch | preminor | premajor) ;;
+              *)
+                echo "::error title=Prerelease gate::'$VERSION_TYPE' takes $NPM_NAME off its 1.0.0-alpha.N line, and the merge path publishes a non-prerelease version to 'latest'. ADR-RELEASES-PACKAGES-0033 ('Versioning policy') holds this package on a prerelease until the Phase 7 host proof; promoting it means amending that ADR and this gate, not picking a different increment here." >&2
+                exit 1
+                ;;
+            esac
+            if [ "$PRE_RELEASE" != 'alpha' ]; then
+              echo "::error title=Prerelease gate::$NPM_NAME uses the 'alpha' pre-release id, not '$PRE_RELEASE' (ADR-RELEASES-PACKAGES-0033, 'Versioning policy')." >&2
+              exit 1
+            fi
+          fi
           DIRECTORY="packages/$PACKAGE"
           if [ ! -f "$DIRECTORY/package.json" ]; then
             echo "::error title=Missing package::$DIRECTORY/package.json does not exist on main" >&2

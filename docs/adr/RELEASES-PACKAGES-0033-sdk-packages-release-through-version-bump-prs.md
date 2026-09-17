@@ -116,6 +116,11 @@ The decisions inside those workflows:
   until the Phase 7 host proof: Platform installs from the registry in a clean
   non-workspace checkout and `billing-web` runs a live top-up against it.
   `1.0.0` on `latest` is that proof's reward, not its precondition.
+  `version-bump-package.yaml` enforces this rather than trusting the operator
+  to pick the right increment: for those packages it accepts only a `pre*`
+  increment with the `alpha` id, because `patch` on `1.0.0-alpha.0` is
+  `1.0.0`, which the merge path would publish to `latest`. Promoting a
+  package means amending this section and that gate together.
 - `ingest-types` is outside that gate. It is a generated, runtime-free mirror
   of Cloud's ingest schemas, it is already at `1.0.0`, and its version is
   written by the regeneration bot in the Cloud repository rather than by
