@@ -839,9 +839,12 @@ test.describe(
         await comfyPage.nextFrame()
         const lower = await comfyPage.nodeOps.getNodeRefById('6')
         const overlapPosition = await lower.getTitlePosition()
-        const overlap = await comfyPage.canvasOps.toAbsolute(overlapPosition)
+        const overlap = await comfyPage.page.evaluate(({ x, y }) => {
+          const [clientX, clientY] = window.app!.canvasPosToClientPos([x, y])
+          return { x: clientX, y: clientY }
+        }, overlapPosition)
 
-        await comfyPage.canvasOps.mouseClickAt(overlapPosition)
+        await comfyPage.canvasOps.mouseClickGraphAt(overlapPosition)
         await expect
           .poll(() => comfyPage.nodeOps.getSelectedNodeIds())
           .toEqual([toNodeId('7')])
@@ -872,7 +875,7 @@ test.describe(
           'Send to Back changes overlap paint without a selection highlight'
         ).toBe(false)
 
-        await comfyPage.canvasOps.mouseClickAt(overlapPosition)
+        await comfyPage.canvasOps.mouseClickGraphAt(overlapPosition)
         await expect
           .poll(() => comfyPage.nodeOps.getSelectedNodeIds())
           .toEqual([toNodeId('6')])

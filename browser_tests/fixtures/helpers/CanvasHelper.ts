@@ -130,6 +130,15 @@ export class CanvasHelper {
     await nextFrame(this.page)
   }
 
+  async mouseClickGraphAt(position: Position): Promise<void> {
+    const [x, y] = await this.page.evaluate(
+      ({ x, y }) => window.app!.canvasPosToClientPos([x, y]),
+      position
+    )
+    await this.page.mouse.click(x, y)
+    await nextFrame(this.page)
+  }
+
   /**
    * Double-click at canvas-element-relative coordinates using `page.mouse`.
    */
