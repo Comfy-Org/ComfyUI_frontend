@@ -55,7 +55,7 @@ Release the three SDK packages through the same version-bump PR the
 design-system uses, generalized over a `package` input instead of copied per
 package. Do not adopt Changesets yet.
 
-Three workflows carry it:
+Four workflows carry it:
 
 | Workflow                        | Trigger                                | What it does                                                                                                                         |
 | ------------------------------- | -------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
