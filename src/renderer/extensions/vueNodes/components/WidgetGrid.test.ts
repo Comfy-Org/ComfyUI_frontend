@@ -130,6 +130,9 @@ function renderLayoutGrid(syncLayout = true) {
   const moveSocket = (top: number) => {
     socketTop = top
   }
+  const resizeGrid = () => {
+    for (const observer of observers) observer.resize(grid)
+  }
   const stored = () =>
     layoutStore.getSlotOffset(
       'widget-grid-graph',
@@ -138,7 +141,7 @@ function renderLayoutGrid(syncLayout = true) {
       'input',
       'expanded'
     )
-  return { grid, rerender, stored, moveSocket }
+  return { rerender, stored, moveSocket, resizeGrid }
 }
 
 describe('WidgetGrid', () => {
@@ -154,8 +157,8 @@ describe('WidgetGrid', () => {
   })
 
   it('resyncs slot offsets when a connected row swaps its control for a label', async () => {
-    const { grid, rerender, stored, moveSocket } = renderLayoutGrid()
-    for (const observer of observers) observer.resize(grid)
+    const { rerender, stored, moveSocket, resizeGrid } = renderLayoutGrid()
+    resizeGrid()
     expect(stored()).toEqual({ x: 0, y: 114 })
 
     moveSocket(100)
@@ -173,11 +176,8 @@ describe('WidgetGrid', () => {
   })
 
   it('does not track layout when syncLayout is disabled', () => {
-    const { grid, stored } = renderLayoutGrid(false)
-    for (const observer of observers) {
-      observer.resize(grid)
-      observer.resize(screen.getByTestId('node-widget'))
-    }
+    const { stored, resizeGrid } = renderLayoutGrid(false)
+    resizeGrid()
     expect(stored()).toBeNull()
   })
 
