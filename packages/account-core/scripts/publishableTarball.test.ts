@@ -201,6 +201,17 @@ describe('findPublishableViolations', () => {
     expect(detailsFor(packed, title)).toContain(detail)
   })
 
+  it.for([
+    ['a number', 1],
+    ['a boolean', false]
+  ] as const)('rejects an export leaf that is %s', ([, leaf]) => {
+    expect(() =>
+      findPublishableViolations(
+        packedWith({ manifest: { exports: { '.': leaf } } })
+      )
+    ).toThrow(String(leaf))
+  })
+
   it('reports a source file under src as both stray and non-public', () => {
     expect(titles(packedWith({ files: ['src/index.ts'] }))).toEqual([
       'Unexpected files in tarball',

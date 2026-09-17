@@ -1,5 +1,10 @@
 /**
- * The single definition of "publishable" for the tarballs this repo publishes.
+ * The single definition of "publishable" for the three dist-shipping tarballs:
+ * `@comfyorg/account-core`, `@comfyorg/billing-contract` and
+ * `@comfyorg/ingest-types`. `@comfyorg/design-system` publishes `src/css`,
+ * `src/icons` and `src/workspaceAvatar.ts` on purpose, which these dist-only
+ * rules would reject, so it keeps its own allowlist in
+ * `.github/workflows/ci-design-system-pack.yaml`.
  * Pure: callers hand over the packed file list and the packed manifest, so both
  * the pack smoke test and the per-package CI check enforce the same rules
  * instead of each re-deriving them.
@@ -51,8 +56,11 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 
 function exportTargets(value: unknown): string[] {
   if (typeof value === 'string') return [value]
+  if (value === null) return []
   if (isRecord(value)) return Object.values(value).flatMap(exportTargets)
-  return []
+  throw new Error(
+    `Malformed export target: expected a string, an object, or null, got ${typeof value} ${JSON.stringify(value)}`
+  )
 }
 
 /** Pattern exports such as `./dist/vue/*` match many packed files. */
