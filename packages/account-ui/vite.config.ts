@@ -29,6 +29,23 @@ const EXTERNAL = [/^vue$/, /^@vueuse\//, /^@comfyorg\//]
 const resolveEntry = (path: string) =>
   fileURLToPath(new URL(path, import.meta.url))
 
+/**
+ * A `nodenext` consumer rejects an extensionless relative specifier, and the
+ * emitted declarations carry the source's own — including the `./CheckoutSteps`
+ * that `cleanVueFileName` leaves behind. Point each at the `.js` the bundle
+ * writes beside it.
+ */
+const EXTENSIONLESS_RELATIVE = /(from |import\()(['"])(\.{1,2}\/[^'"]*)\2/g
+
+const withDeclarationExtensions = (content: string) =>
+  content.replace(
+    EXTENSIONLESS_RELATIVE,
+    (match, prefix: string, quote: string, specifier: string) =>
+      specifier.split('/').at(-1)?.includes('.')
+        ? match
+        : `${prefix}${quote}${specifier}.js${quote}`
+  )
+
 export default defineConfig({
   build: {
     lib: {
@@ -56,7 +73,10 @@ export default defineConfig({
     dts({
       tsconfigPath: 'tsconfig.build.json',
       cleanVueFileName: true,
-      logLevel: 'warn'
+      logLevel: 'warn',
+      beforeWriteFile: (_filePath, content) => ({
+        content: withDeclarationExtensions(content)
+      })
     })
   ]
 })
