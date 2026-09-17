@@ -14,7 +14,6 @@ and emits host events for the Billing SDK adapter. It does not contain:
 - a server runtime or BFF
 - a cookie-backed session transport
 - Stripe Elements initialization
-- production deployment configuration
 
 The hosted views read the SDK client, but the checkout's confirm action stays
 disabled until the payment slice connects it. Billing data, quotes, commands,
@@ -66,6 +65,80 @@ pnpm --filter @comfyorg/billing-web typecheck
 pnpm --filter @comfyorg/billing-web test:unit
 pnpm --filter @comfyorg/billing-web build
 ```
+
+## Deployment
+
+The app deploys to Vercel as a static SPA from
+`apps/billing-web/vercel.json`. Vercel hosts the MVP only;
+[ADR-BILLING-WEB-0031](../../docs/adr/BILLING-WEB-0031-static-spa-boundary.md)
+targets self-hosted nginx for production billing traffic, so keep the build a
+plain directory of static files and express hosting behavior in ways an nginx
+rule can reproduce. `.github/workflows/ci-vercel-billing-web-preview.yaml`
+builds and deploys it: a preview for a pull request carrying the
+`billing-preview` label, and production only when someone dispatches the
+workflow against `main`.
+
+Production never follows a merge. Merging to `main` changes nothing that
+customers see; a person runs the workflow from the Actions tab (or
+`gh workflow run ci-vercel-billing-web-preview.yaml --ref main`) when the
+hosted app should change. The job refuses any ref other than `main`, so a
+dispatch from a feature branch cannot reach customers.
+
+Previews are opt-in. The workflow triggers on pull requests touching
+`apps/billing-web/**`, `packages/design-system/**`,
+`packages/tailwind-utils/**`, `public/fonts/**` or `pnpm-workspace.yaml`, and
+never on one targeting `core/**` or `cloud/**`. The deploy job then runs only
+while the `billing-preview` label is on the pull request, and never from a
+fork. Adding the label deploys the current head; removing it stops subsequent
+deploys. The path filter keeps the workflow off unrelated pull requests, so the
+label alone will not deploy a branch that changes none of those paths.
+
+Vercel project settings:
+
+- Project Name: `billing-web`, under the `comfyui` team. Ingest matches
+  `billing-web-<hash>-comfyui.vercel.app` and
+  `billing-web-git-<branch>-comfyui.vercel.app` by pattern
+  (`services/ingest/server/server.go` in `Comfy-Org/cloud`), so a rename
+  CORS-blocks every preview until those patterns change with it.
+- Root Directory: `apps/billing-web`, with **Include source files outside of
+  the Root Directory** enabled — the build resolves workspace packages.
+- Framework Preset: Other. `vercel.json` supplies the install, build, and
+  output settings.
+- Git integration disabled (`github.enabled: false`); the workflow owns
+  deploys.
+
+Both deploy jobs sit behind a `preflight` job that checks the three Vercel
+secrets below. While any of them is missing the deploys skip with a notice
+instead of failing, so the workflow can merge before the Vercel project exists.
+
+Required GitHub Actions secrets:
+
+| Secret                          | Value                                        |
+| ------------------------------- | -------------------------------------------- |
+| `VERCEL_BILLING_WEB_ORG_ID`     | Vercel team ID for the `comfyui` scope       |
+| `VERCEL_BILLING_WEB_PROJECT_ID` | Project ID of the billing-web Vercel project |
+| `VERCEL_BILLING_WEB_TOKEN`      | Vercel access token scoped to the team       |
+
+The token has to carry team scope. A token scoped to the `billing-web`
+project alone cannot read project settings — the API answers `403` and
+`vercel pull` fails with `Could not retrieve Project Settings`, which reads as
+a linking problem rather than a permission one. Narrowing the blast radius
+belongs to a dedicated CI account that owns the token, not to the token's
+scope.
+
+Client-side routes fall back to `index.html` through the `rewrites` rule. The
+rule matches extensionless paths only, so a missing file stays a 404 instead of
+returning the HTML shell under a script, style, or font URL. The design-system
+stylesheet still carries absolute `/fonts/*.woff2` sources that this app does
+not host; they 404 and the browser falls through to the hashed `/assets/` faces
+in the same `@font-face` rule.
+
+A custom host is a separate step. `comfy.org` DNS is on Cloudflare, so
+`billing.comfy.org` needs a `CNAME` to `cname.vercel-dns.com` there plus the
+domain added to the Vercel project. Until that exists, the deployment is
+reachable at its `*.vercel.app` host, and the core frontend's
+`VITE_BILLING_WEB_URL` must point at whichever origin is live — it accepts
+`https` only outside local development.
 
 ## Path-prefixed hosting
 
