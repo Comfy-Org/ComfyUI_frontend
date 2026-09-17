@@ -4929,7 +4929,6 @@
   "config": {},
   "extra": {
     "frontendVersion": "1.55.9",
-    "fixtureVersion": "ecs-qa-007-v1",
     "ds": { "scale": 0.5, "offset": [0, 0] }
   },
   "version": 0.4
