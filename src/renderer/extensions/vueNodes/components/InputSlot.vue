@@ -46,14 +46,14 @@
             hasError && 'font-medium text-error'
           )
         "
-        :is-editing="isEditingLabel"
+        :is-editing
         :model-value="
           slotData.label ||
           slotData.localized_name ||
           (slotData.name ?? `Input ${index}`)
         "
-        @cancel="isEditingLabel = false"
-        @dblclick="isEditingLabel = true"
+        @cancel="isEditing = false"
+        @dblclick="isEditing = true"
         @edit="onEditLabel"
       >
       </EditableText>
@@ -154,10 +154,10 @@ const { onClick, onDoubleClick, onPointerDown } = useSlotLinkInteraction({
   type: 'input'
 })
 
-const isEditingLabel = ref(false)
+const isEditing = ref(false)
 function onEditLabel(val: string) {
   const canvas = useCanvasStore().getCanvas()
-  isEditingLabel.value = false
+  isEditing.value = false
   if (!props.nodeId) return
 
   const newLabel = val.trim() || undefined
