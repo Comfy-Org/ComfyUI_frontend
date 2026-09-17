@@ -1,4 +1,4 @@
-import { vi } from 'vitest'
+import { onTestFinished, vi } from 'vitest'
 import { ref } from 'vue'
 
 import type { useAuthActions as realUseAuthActions } from '../useAuthActions'
@@ -19,4 +19,9 @@ const actions: ReturnType<typeof realUseAuthActions> = {
   accessError: ref(false)
 }
 
-export const useAuthActions = vi.fn<typeof realUseAuthActions>(() => actions)
+export const useAuthActions = vi.fn<typeof realUseAuthActions>(() => {
+  onTestFinished(() => {
+    actions.accessError.value = false
+  })
+  return actions
+})

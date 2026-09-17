@@ -9,7 +9,8 @@ import type {
   BillingOperationState,
   TopupFailure,
   TopupResult
-} from '@comfyorg/account/billing'
+} from '@comfyorg/account-core/billing'
+import { unwrapServerCode } from '@comfyorg/account-core/billing'
 
 import { t } from '@/i18n'
 import type {
@@ -79,21 +80,12 @@ export function projectTopupOperation(
   }
 }
 
-/** The poller's rule for which top-up the dialog must show instead of the amount step. */
-export function needsCustomerAttention(view: TopupOperationView): boolean {
-  return (
-    view.status === 'reconciliation_needed' ||
-    view.actionUrl !== null ||
-    view.authenticationState === 'requires_action' ||
-    view.authenticationState === 'failed_retryable'
-  )
-}
-
 function topupFailureError(failure: TopupFailure): WorkspaceApiError {
+  const serverCode = 'serverCode' in failure ? failure.serverCode : undefined
   return new WorkspaceApiError(
     t('credits.topUp.unknownError'),
     'httpStatus' in failure ? failure.httpStatus : undefined,
-    'serverCode' in failure ? failure.serverCode : failure.code
+    serverCode === undefined ? failure.code : unwrapServerCode(serverCode)
   )
 }
 

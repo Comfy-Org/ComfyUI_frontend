@@ -43,14 +43,6 @@ vi.mock(import('@/utils/errorReportUtil'), () => ({
 
 vi.mock(import('@/platform/telemetry'))
 
-vi.mock<unknown>(import('@/composables/useExternalLink'), () => ({
-  useExternalLink: vi.fn(() => ({
-    staticUrls: {
-      githubIssues: 'https://github.com/Comfy-Org/ComfyUI/issues'
-    }
-  }))
-}))
-
 describe('ErrorNodeCard.vue', () => {
   let i18n: ReturnType<typeof createI18n>
 

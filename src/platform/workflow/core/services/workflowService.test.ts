@@ -1,3 +1,4 @@
+import { useDialogService } from '@/services/dialogService'
 import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore' // eslint-disable-line import-x/no-restricted-paths
 import { useWorkflowDraftStoreV2 } from '@/platform/workflow/persistence/stores/workflowDraftStoreV2'
@@ -31,6 +32,7 @@ import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
 import { useMissingMediaStore } from '@/platform/missingMedia/missingMediaStore'
 import { app } from '@/scripts/app'
+import { ChangeTracker } from '@/scripts/changeTracker'
 import { useAppMode } from '@/composables/useAppMode'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { createMockChangeTracker } from '@/utils/__tests__/litegraphTestUtils'
@@ -89,16 +91,7 @@ function makeWorkflowDataWithId(id: string): ComfyWorkflowJSON {
   return { ...makeWorkflowData(), id }
 }
 
-const { mockConfirm } = vi.hoisted(() => ({
-  mockConfirm: vi.fn()
-}))
-
-vi.mock<unknown>(import('@/services/dialogService'), () => ({
-  useDialogService: () => ({
-    prompt: vi.fn(),
-    confirm: mockConfirm
-  })
-}))
+vi.mock(import('@/services/dialogService'))
 
 vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: {
@@ -108,11 +101,6 @@ vi.mock<unknown>(import('@/scripts/app'), () => ({
     nodeOutputs: {},
     nodePreviewImages: {}
   }
-}))
-
-vi.mock<unknown>(import('@/scripts/defaultGraph'), () => ({
-  defaultGraph: {},
-  blankGraph: {}
 }))
 
 vi.mock<unknown>(
@@ -153,7 +141,8 @@ function createWorkflow(
 function enableWarningSettings() {
   vi.spyOn(useSettingStore(), 'get').mockImplementation(
     (key: string): boolean => {
-      if (key === 'Comfy.Workflow.ShowMissingModelsWarning') return true
+      if (key === 'Comfy.ErrorSystem.ShowMissingModels') return true
+      if (key === 'Comfy.Workflow.ShowMissingNodesWarning') return true
       return false
     }
   )
@@ -256,7 +245,8 @@ describe('useWorkflowService', () => {
     it('should NOT call showErrorOverlay when silent is true even with missing nodes', () => {
       vi.spyOn(useSettingStore(), 'get').mockImplementation(
         (key: string): boolean => {
-          if (key === 'Comfy.Workflow.ShowMissingModelsWarning') return true
+          if (key === 'Comfy.ErrorSystem.ShowMissingModels') return true
+          if (key === 'Comfy.Workflow.ShowMissingNodesWarning') return true
           if (key === 'Comfy.RightSidePanel.ShowErrorsTab') return true
           return false
         }
@@ -276,7 +266,8 @@ describe('useWorkflowService', () => {
     it('should call showErrorOverlay when silent is false and missing nodes exist', () => {
       vi.spyOn(useSettingStore(), 'get').mockImplementation(
         (key: string): boolean => {
-          if (key === 'Comfy.Workflow.ShowMissingModelsWarning') return true
+          if (key === 'Comfy.ErrorSystem.ShowMissingModels') return true
+          if (key === 'Comfy.Workflow.ShowMissingNodesWarning') return true
           if (key === 'Comfy.RightSidePanel.ShowErrorsTab') return true
           return false
         }
@@ -494,8 +485,13 @@ describe('useWorkflowService', () => {
       workflowStore.activeWorkflow = null
       await service.openWorkflow(cycled)
 
-      expect(app.loadGraphData).toHaveBeenCalledTimes(1)
-      expect(vi.mocked(app.loadGraphData).mock.calls[0][3]).toBe(cycled)
+      expect(app.loadGraphData).toHaveBeenCalledExactlyOnceWith(
+        expect.anything(),
+        expect.anything(),
+        expect.anything(),
+        expect.objectContaining({ path: 'workflows/close-then-reopen.json' }),
+        expect.anything()
+      )
     })
 
     it('falls back to the default workflow when closing the last, inactive workflow', async () => {
@@ -513,11 +509,7 @@ describe('useWorkflowService', () => {
         service.closeWorkflow(lastOpen, { warnIfUnsaved: false })
       ).resolves.toBe(true)
 
-      // loadDefaultWorkflow is detected by its payload, not by a missing
-      // workflow argument: the call must carry the default graph itself.
-      expect(app.loadGraphData).toHaveBeenCalledTimes(1)
-      expect(vi.mocked(app.loadGraphData).mock.calls[0][0]).toBe(defaultGraph)
-      expect(vi.mocked(app.loadGraphData).mock.calls[0][3]).toBeUndefined()
+      expect(app.loadGraphData).toHaveBeenCalledExactlyOnceWith(defaultGraph)
     })
 
     it('keeps the tab open and its draft intact when the replacement load fails', async () => {
@@ -640,10 +632,15 @@ describe('useWorkflowService', () => {
 
       // Second call = the retained workflow repainted from its saved state,
       // so selection, canvas, and change tracking agree after the abort.
-      const calls = vi.mocked(app.loadGraphData).mock.calls
-      expect(calls).toHaveLength(2)
-      expect(calls[1][3]).toMatchObject({ path: 'workflows/retained.json' })
-      expect(calls[1][0]).toEqual(retained.activeState)
+      expect(app.loadGraphData).toHaveBeenCalledTimes(2)
+      expect(app.loadGraphData).toHaveBeenNthCalledWith(
+        2,
+        retained.activeState,
+        true,
+        true,
+        expect.objectContaining({ path: 'workflows/retained.json' }),
+        expect.anything()
+      )
       expect(workflowStore.activeWorkflow.path).toBe('workflows/retained.json')
     })
 
@@ -689,14 +686,23 @@ describe('useWorkflowService', () => {
       await Promise.all([firstOpen, secondOpen])
 
       expect(maxConcurrentLoads).toBe(1)
-      expect(
-        vi.mocked(app.loadGraphData).mock.calls.map((call) => call[3])
-      ).toEqual([first, second])
-      expect(
-        vi
-          .mocked(app.loadGraphData)
-          .mock.calls.map((call) => call[4]?.workflowNavigationId)
-      ).toEqual([1, 2])
+      expect(app.loadGraphData).toHaveBeenCalledTimes(2)
+      expect(app.loadGraphData).toHaveBeenNthCalledWith(
+        1,
+        expect.anything(),
+        true,
+        true,
+        first,
+        expect.objectContaining({ workflowNavigationId: 1 })
+      )
+      expect(app.loadGraphData).toHaveBeenNthCalledWith(
+        2,
+        expect.anything(),
+        true,
+        true,
+        second,
+        expect.objectContaining({ workflowNavigationId: 2 })
+      )
       expect(workflowStore.activeWorkflow.path).toBe(second.path)
     })
 
@@ -731,9 +737,23 @@ describe('useWorkflowService', () => {
       expect(
         useSubgraphNavigationStore().endWorkflowNavigation
       ).toHaveBeenCalledWith(1)
-      expect(
-        vi.mocked(app.loadGraphData).mock.calls.map((call) => call[3])
-      ).toEqual([first, second])
+      expect(app.loadGraphData).toHaveBeenCalledTimes(2)
+      expect(app.loadGraphData).toHaveBeenNthCalledWith(
+        1,
+        expect.anything(),
+        true,
+        true,
+        first,
+        expect.anything()
+      )
+      expect(app.loadGraphData).toHaveBeenNthCalledWith(
+        2,
+        expect.anything(),
+        true,
+        true,
+        second,
+        expect.anything()
+      )
       expect(workflowStore.activeWorkflow.path).toBe(second.path)
     })
 
@@ -1033,9 +1053,31 @@ describe('useWorkflowService', () => {
 
       expect(workflowStore.openWorkflows).not.toContain(second)
       expect(workflowStore.activeWorkflow.path).toBe(final.path)
-      expect(
-        vi.mocked(app.loadGraphData).mock.calls.map((call) => call[3])
-      ).toEqual([first, second, final])
+      expect(app.loadGraphData).toHaveBeenCalledTimes(3)
+      expect(app.loadGraphData).toHaveBeenNthCalledWith(
+        1,
+        expect.anything(),
+        true,
+        true,
+        first,
+        expect.anything()
+      )
+      expect(app.loadGraphData).toHaveBeenNthCalledWith(
+        2,
+        expect.anything(),
+        true,
+        true,
+        second,
+        expect.anything()
+      )
+      expect(app.loadGraphData).toHaveBeenNthCalledWith(
+        3,
+        expect.anything(),
+        true,
+        true,
+        final,
+        expect.anything()
+      )
     })
 
     it('falls back after a newer workflow selection fails', async () => {
@@ -1153,9 +1195,16 @@ describe('useWorkflowService', () => {
       expect(maxConcurrentLoads).toBe(1)
       expect(workflowStore.openWorkflows).not.toContain(closing)
       expect(workflowStore.activeWorkflow.path).toBe(final.path)
-      expect(
-        vi.mocked(app.loadGraphData).mock.calls.map((call) => call[3])
-      ).toEqual([undefined, final])
+      expect(app.loadGraphData).toHaveBeenCalledTimes(2)
+      expect(app.loadGraphData).toHaveBeenNthCalledWith(1, expect.anything())
+      expect(app.loadGraphData).toHaveBeenNthCalledWith(
+        2,
+        expect.anything(),
+        true,
+        true,
+        final,
+        expect.anything()
+      )
     })
 
     it('does not reopen the workflow being closed', async () => {
@@ -1371,13 +1420,20 @@ describe('useWorkflowService', () => {
       while (storeCloseReleases.length) storeCloseReleases.shift()?.()
       await Promise.all([closingNeighborPromise, closingActive])
 
-      const loadedPaths = vi
-        .mocked(app.loadGraphData)
-        .mock.calls.map(
-          (call) => (call[3] as { path?: string } | undefined)?.path
-        )
-      expect(loadedPaths).toContain(survivor.path)
-      expect(loadedPaths).not.toContain(closingNeighbor.path)
+      expect(app.loadGraphData).toHaveBeenCalledWith(
+        expect.anything(),
+        true,
+        true,
+        expect.objectContaining({ path: survivor.path }),
+        expect.anything()
+      )
+      expect(app.loadGraphData).not.toHaveBeenCalledWith(
+        expect.anything(),
+        expect.anything(),
+        expect.anything(),
+        expect.objectContaining({ path: closingNeighbor.path }),
+        expect.anything()
+      )
     })
 
     it('reopens a renamed path after a close that renamed the workflow mid-flight', async () => {
@@ -1465,11 +1521,7 @@ describe('useWorkflowService', () => {
       releaseHeldLoad()
       await Promise.all([heldOpen, closePromise])
 
-      const defaultLoads = vi
-        .mocked(app.loadGraphData)
-        .mock.calls.filter((call) => call[3] === undefined)
-        .filter((call) => call[0] !== undefined && call.length === 1)
-      expect(defaultLoads).toHaveLength(0)
+      expect(app.loadGraphData).not.toHaveBeenCalledWith(defaultGraph)
       expect(workflowStore.openWorkflows.map((wf) => wf.path)).toContain(
         openedMidClose.path
       )
@@ -1795,7 +1847,7 @@ describe('useWorkflowService', () => {
       workflow.isModified = true
       Object.defineProperty(workflow, 'isTemporary', { get: () => true })
       vi.spyOn(workflow, 'promptSave').mockResolvedValue(null)
-      mockConfirm.mockResolvedValue(true)
+      vi.mocked(useDialogService().confirm).mockResolvedValue(true)
 
       const closed = await service.closeWorkflow(workflow)
 
@@ -2057,18 +2109,18 @@ describe('useWorkflowService', () => {
     })
 
     it('generates a fresh UUID when a workflow-object reload has no valid id', async () => {
-      existingWorkflow.changeTracker.activeState.id = 'legacy-workflow-name'
+      existingWorkflow.changeTracker = new ChangeTracker(
+        existingWorkflow,
+        makeWorkflowDataWithId('legacy-workflow-name')
+      )
 
       await useWorkflowService().afterLoadNewGraph(
         existingWorkflow,
         makeWorkflowDataWithId('different-legacy-name')
       )
 
-      const resetArg = vi.mocked(existingWorkflow.changeTracker.reset).mock
-        .calls[0]?.[0]
-      expect(isValidUuid(resetArg?.id)).toBe(true)
-      expect(resetArg?.id).not.toBe('different-legacy-name')
-      expect(resetArg?.id).not.toBe('legacy-workflow-name')
+      expect(isValidUuid(existingWorkflow.activeState.id)).toBe(true)
+      expect(existingWorkflow.legacyId).toBe('different-legacy-name')
     })
 
     describe('root graph id adoption', () => {
@@ -2538,7 +2590,7 @@ describe('useWorkflowService', () => {
         initialMode: 'app'
       })
       vi.spyOn(workflowStore, 'getWorkflowByPath').mockReturnValue(source)
-      mockConfirm.mockResolvedValue(true)
+      vi.mocked(useDialogService().confirm).mockResolvedValue(true)
 
       await service.saveWorkflowAs(source, {
         filename: 'test',
@@ -2556,7 +2608,7 @@ describe('useWorkflowService', () => {
         initialMode: 'app'
       })
       vi.spyOn(workflowStore, 'getWorkflowByPath').mockReturnValue(source)
-      mockConfirm.mockResolvedValue(true)
+      vi.mocked(useDialogService().confirm).mockResolvedValue(true)
 
       await service.saveWorkflowAs(source, {
         filename: 'test',
@@ -2576,7 +2628,7 @@ describe('useWorkflowService', () => {
         initialMode: 'app'
       })
       vi.spyOn(workflowStore, 'getWorkflowByPath').mockReturnValue(source)
-      mockConfirm.mockResolvedValue(true)
+      vi.mocked(useDialogService().confirm).mockResolvedValue(true)
 
       await service.saveWorkflowAs(source, {
         filename: 'test',
@@ -2817,11 +2869,11 @@ describe('useWorkflowService', () => {
       const existing = createSaveableWorkflow('workflows/test.app.json')
       vi.spyOn(workflowStore, 'getWorkflowByPath').mockReturnValue(existing)
       vi.spyOn(workflowStore, 'deleteWorkflow').mockResolvedValue()
-      mockConfirm.mockResolvedValue(true)
+      vi.mocked(useDialogService().confirm).mockResolvedValue(true)
 
       await service.saveWorkflow(workflow)
 
-      expect(mockConfirm).toHaveBeenCalled()
+      expect(useDialogService().confirm).toHaveBeenCalled()
       expect(workflowStore.renameWorkflow).toHaveBeenCalledWith(
         workflow,
         'workflows/test.app.json'
@@ -2835,11 +2887,11 @@ describe('useWorkflowService', () => {
 
       const existing = createSaveableWorkflow('workflows/test.app.json')
       vi.spyOn(workflowStore, 'getWorkflowByPath').mockReturnValue(existing)
-      mockConfirm.mockResolvedValue(false)
+      vi.mocked(useDialogService().confirm).mockResolvedValue(false)
 
       await service.saveWorkflow(workflow)
 
-      expect(mockConfirm).toHaveBeenCalled()
+      expect(useDialogService().confirm).toHaveBeenCalled()
       expect(workflowStore.renameWorkflow).not.toHaveBeenCalled()
       expect(workflowStore.saveWorkflow).toHaveBeenCalledWith(workflow)
     })

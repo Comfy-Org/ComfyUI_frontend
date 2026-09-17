@@ -2,7 +2,7 @@ import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
 import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { nextTick, ref, watchEffect } from 'vue'
+import { nextTick, watchEffect } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import BaseWorkflowsSidebarTab from '@/components/sidebar/tabs/BaseWorkflowsSidebarTab.vue'
@@ -180,10 +180,6 @@ vi.mock<unknown>(import('@/composables/useTreeExpansion'), () => ({
     expandNode: mockExpandNode,
     toggleNodeOnEvent: mockToggleNodeOnEvent
   })
-}))
-
-vi.mock<unknown>(import('@/composables/useAppMode'), () => ({
-  useAppMode: () => ({ isAppMode: ref(false) })
 }))
 
 vi.mock<unknown>(

@@ -1,7 +1,7 @@
 import { fromAny, fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type { StatusWsMessageStatus } from '@/schemas/apiSchema'
+import type { StatusWsMessageStatus } from '@/platform/remote/comfyui/execution/types'
 import type { ComfyApp } from './app'
 
 import { app } from './app'

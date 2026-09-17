@@ -169,8 +169,8 @@ import Message from 'primevue/message'
 import { computed, onUnmounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import { useRegionGate } from '@comfyorg/account/vue/regionGate'
-import { isEmbeddedWebView } from '@comfyorg/account/webviewDetection'
+import { useRegionGate } from '@comfyorg/account-ui/auth/regionGate'
+import { isEmbeddedWebView } from '@comfyorg/account-core/webviewDetection'
 
 import Button from '@/components/ui/button/Button.vue'
 import Skeleton from '@/components/ui/skeleton/Skeleton.vue'
