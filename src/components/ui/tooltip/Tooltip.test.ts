@@ -82,6 +82,34 @@ describe('Tooltip', () => {
     )
   })
 
+  it('closes a focused tooltip when another trigger is hovered', async () => {
+    const user = userEvent.setup()
+    render({
+      components: { Tooltip },
+      template: `
+        <Tooltip config="Change workflow" :ignore-non-keyboard-focus="false">
+          <button>Workflow</button>
+        </Tooltip>
+        <Tooltip config="Agent target for this chat">
+          <span role="img" aria-label="Target" />
+        </Tooltip>
+      `
+    })
+
+    await user.tab()
+    expect(await screen.findByRole('tooltip')).toHaveTextContent(
+      'Change workflow'
+    )
+    await user.hover(screen.getByRole('img', { name: 'Target' }))
+
+    await vi.waitFor(() => {
+      expect(screen.getAllByRole('tooltip')).toHaveLength(1)
+      expect(screen.getByRole('tooltip')).toHaveTextContent(
+        'Agent target for this chat'
+      )
+    })
+  })
+
   it('does not repeat an aria-label as its accessible description', async () => {
     const user = userEvent.setup()
     render({

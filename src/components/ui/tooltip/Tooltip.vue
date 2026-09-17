@@ -143,6 +143,7 @@ onBeforeUnmount(() => {
         <slot />
       </TooltipTrigger>
       <TooltipContent
+        v-if="open"
         :open
         :side
         :side-offset

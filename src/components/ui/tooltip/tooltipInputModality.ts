@@ -14,6 +14,10 @@ function dismissTooltipsOnWheel() {
   for (const dismiss of tooltipDismissals) dismiss()
 }
 
+function forwardTooltipOpen(event: Event) {
+  if (!event.bubbles) window.dispatchEvent(new CustomEvent(event.type))
+}
+
 export function registerTooltipWheelDismissal(dismiss: () => void) {
   if (tooltipDismissals.size === 0) {
     window.addEventListener('wheel', dismissTooltipsOnWheel, {
@@ -88,10 +92,12 @@ function removeListeners() {
   document.removeEventListener('pointerover', handlePointerOver, true)
   document.removeEventListener('touchstart', handleTouchStart, true)
   document.removeEventListener('keydown', handleKeyboardInteraction)
+  document.removeEventListener('tooltip.open', forwardTooltipOpen)
   resetTooltipInputModality()
 }
 
 if (typeof document !== 'undefined') {
+  document.addEventListener('tooltip.open', forwardTooltipOpen)
   document.addEventListener('pointerdown', handlePointerDown, {
     capture: true,
     passive: true
