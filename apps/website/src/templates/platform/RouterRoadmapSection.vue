@@ -1,30 +1,55 @@
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
+import { ChevronDown } from '@lucide/vue'
+import { ref } from 'vue'
+
 import SectionHeader from '../../components/common/SectionHeader.vue'
 import Button from '../../components/ui/button/Button.vue'
 import { externalLinks } from '../../config/routes'
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
+import type { RouterRoadmapCardId } from '../../scripts/posthog'
+import { captureRouterRoadmapCardExpanded } from '../../scripts/posthog'
 import FeatureCard from './FeatureCard.vue'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 
-const cards = [
+const cards: readonly {
+  id: RouterRoadmapCardId
+  title: string
+  description: string
+  details: string
+}[] = [
   {
     id: 'workflow',
     title: t('platform.router.roadmap.1.title', locale),
-    description: t('platform.router.roadmap.1.description', locale)
+    description: t('platform.router.roadmap.1.description', locale),
+    details: t('platform.router.roadmap.1.details', locale)
   },
   {
     id: 'strategy',
     title: t('platform.router.roadmap.2.title', locale),
-    description: t('platform.router.roadmap.2.description', locale)
+    description: t('platform.router.roadmap.2.description', locale),
+    details: t('platform.router.roadmap.2.details', locale)
   },
   {
     id: 'use-case',
     title: t('platform.router.roadmap.3.title', locale),
-    description: t('platform.router.roadmap.3.description', locale)
+    description: t('platform.router.roadmap.3.description', locale),
+    details: t('platform.router.roadmap.3.details', locale)
   }
 ]
+
+const expandedIds = ref<readonly RouterRoadmapCardId[]>([])
+
+function toggle(id: RouterRoadmapCardId): void {
+  if (expandedIds.value.includes(id)) {
+    expandedIds.value = expandedIds.value.filter((other) => other !== id)
+    return
+  }
+  expandedIds.value = [...expandedIds.value, id]
+  captureRouterRoadmapCardExpanded(id)
+}
 </script>
 
 <template>
@@ -48,7 +73,7 @@ const cards = [
         :key="card.id"
         :title="card.title"
         :description="card.description"
-        class="bg-transparency-white-t4"
+        class="relative bg-transparency-white-t4 transition-colors has-[button:hover]:bg-transparency-white-t8"
       >
         <template #visual>
           <div
@@ -150,6 +175,36 @@ const cards = [
             </svg>
           </div>
         </template>
+        <p
+          v-if="expandedIds.includes(card.id)"
+          class="mt-3 text-xs/relaxed font-light text-primary-comfy-canvas"
+        >
+          {{ card.details }}
+        </p>
+        <button
+          type="button"
+          :aria-expanded="expandedIds.includes(card.id)"
+          class="mt-4 inline-flex cursor-pointer items-center gap-1 text-xs font-medium text-primary-comfy-yellow after:absolute after:inset-0 after:rounded-3xl focus-visible:outline-none focus-visible:after:ring-2 focus-visible:after:ring-primary-comfy-yellow/50"
+          @click="toggle(card.id)"
+        >
+          {{
+            t(
+              expandedIds.includes(card.id)
+                ? 'platform.router.roadmap.readLess'
+                : 'platform.router.roadmap.readMore',
+              locale
+            )
+          }}
+          <ChevronDown
+            aria-hidden="true"
+            :class="
+              cn(
+                'size-4 transition-transform',
+                expandedIds.includes(card.id) && 'rotate-180'
+              )
+            "
+          />
+        </button>
       </FeatureCard>
     </div>
 
