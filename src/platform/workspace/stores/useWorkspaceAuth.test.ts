@@ -25,7 +25,10 @@ import {
   getWorkspaceId,
   StorageKeys
 } from '@/platform/workflow/persistence/base/storageKeys'
-import { WORKSPACE_STORAGE_KEYS } from '@/platform/workspace/workspaceConstants'
+import {
+  TOKEN_REFRESH_BUFFER_MS,
+  WORKSPACE_STORAGE_KEYS
+} from '@/platform/workspace/workspaceConstants'
 
 vi.mock(import('firebase/auth'), { spy: true })
 
@@ -3531,7 +3534,7 @@ describe('useWorkspaceAuthStore', () => {
       expect(workspaceToken.value).toBe('workspace-token-abc')
 
       vi.mocked(useFeatureFlags().flags).unifiedCloudAuthEnabled = true
-      vi.advanceTimersByTime(expiresInMs - 5 * 60 * 1000)
+      vi.advanceTimersByTime(expiresInMs - TOKEN_REFRESH_BUFFER_MS)
 
       await vi.waitFor(() => {
         expect(store.getUnifiedMintWorkspaceId()).toBe('workspace-123')

@@ -40,7 +40,7 @@ describe('createLegacyWorkspaceTokenRail', () => {
   let mockFetch: ReturnType<typeof vi.fn>
 
   beforeEach(() => {
-    vi.useFakeTimers()
+    vi.useFakeTimers({ shouldAdvanceTime: false })
     mockFetch = vi.fn().mockResolvedValue({
       ok: true,
       json: () =>
