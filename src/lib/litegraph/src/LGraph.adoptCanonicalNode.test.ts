@@ -2,6 +2,10 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { toRaw } from 'vue'
 
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
+import {
+  createTestSubgraphData,
+  createTestSubgraphNode
+} from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { useNodeDataStore } from '@/stores/nodeDataStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
@@ -502,6 +506,84 @@ describe('LGraph.adoptCanonicalNode', () => {
       expect(result.rollbackFailures).toEqual([rollbackCause])
       expect(graph._nodes).toEqual([incumbent])
       expect(incumbent.graph).toBe(graph)
+    })
+  })
+
+  describe('subgraph node incumbent', () => {
+    /**
+     * A root graph whose only live node is a `SubgraphNode` (the incumbent)
+     * whose canonical record was re-registered with the type `test/b`. The
+     * definition it instantiates has one interior node so the release side
+     * effects (interior `onRemoved`, `rootGraph.subgraphs`) are observable.
+     */
+    function graphWithOrphanSubgraphIncumbent() {
+      const graph = new LGraph()
+      const subgraph = graph.createSubgraph(createTestSubgraphData())
+      const interior = new LGraphNode('interior')
+      interior.onRemoved = vi.fn()
+      subgraph.add(interior)
+      const incumbent = createTestSubgraphNode(subgraph)
+      graph.add(incumbent)
+      if (!graph.subgraphs.has(subgraph.id))
+        throw new Error('definition should be registered on the root graph')
+
+      const scope = graphScopeOf(graph)
+      const nodeStore = useNodeDataStore()
+      const previous = toRaw(incumbent._state)
+      if (!nodeStore.deleteNode(scope, incumbent._state))
+        throw new Error('incumbent record should be deletable')
+      const record = nodeStore.registerNode(scope, {
+        ...previous,
+        type: 'test/b'
+      })
+      if (!record) throw new Error('replacement record should register')
+      return { graph, subgraph, interior, incumbent, record }
+    }
+
+    it('keeps the incumbent definition when the replacement fails', () => {
+      // Detaching the incumbent is what would normally release its
+      // definition (no canonical record holds that type any more). A failed
+      // replacement hands the incumbent back, so its definition must still
+      // exist and its interior nodes must not have been torn down.
+      const { graph, subgraph, interior, incumbent, record } =
+        graphWithOrphanSubgraphIncumbent()
+      const successor = new BNode()
+
+      const result = graph.adoptCanonicalNode(record, successor, {
+        incumbent,
+        configure: () => {
+          throw new Error('configure exploded')
+        }
+      })
+
+      expect(result.status).toBe('failed')
+      expect(graph.subgraphs.get(subgraph.id)).toBe(subgraph)
+      expect(subgraph.nodes).toEqual([interior])
+      expect(interior.onRemoved).not.toHaveBeenCalled()
+      expect(graph._nodes).toEqual([incumbent])
+      expect(incumbent.graph).toBe(graph)
+      expect(incumbent.subgraph).toBe(subgraph)
+      expectDetachedSuccessor(successor)
+    })
+
+    it('releases the incumbent definition once the replacement is live', () => {
+      const { graph, subgraph, interior, incumbent, record } =
+        graphWithOrphanSubgraphIncumbent()
+      const successor = new BNode()
+      const released: boolean[] = []
+
+      const result = graph.adoptCanonicalNode(record, successor, {
+        incumbent,
+        // The definition is still registered while the successor is being
+        // configured; it goes away only after the replacement has succeeded.
+        configure: () => released.push(graph.subgraphs.has(subgraph.id))
+      })
+
+      expect(result).toEqual({ status: 'replaced', node: successor })
+      expect(released).toEqual([true])
+      expect(graph.subgraphs.has(subgraph.id)).toBe(false)
+      expect(interior.onRemoved).toHaveBeenCalledOnce()
+      expect(graph._nodes).toEqual([successor])
     })
   })
 
