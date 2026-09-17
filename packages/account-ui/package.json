@@ -23,6 +23,7 @@
   "sideEffects": false,
   "exports": {
     "./billing": "./src/billing/index.ts",
+    "./billing/stripe": "./src/billing/stripe/index.ts",
     "./auth/PasswordRules": "./src/auth/PasswordRules.vue",
     "./auth/SocialAuthButtons": "./src/auth/SocialAuthButtons.vue",
     "./auth/TurnstileWidget": "./src/auth/TurnstileWidget.vue",
@@ -38,6 +39,10 @@
       "./billing": {
         "types": "./dist/billing/index.d.ts",
         "import": "./dist/billing/index.js"
+      },
+      "./billing/stripe": {
+        "types": "./dist/billing/stripe/index.d.ts",
+        "import": "./dist/billing/stripe/index.js"
       },
       "./auth/PasswordRules": {
         "types": "./dist/auth/PasswordRules.d.ts",
@@ -87,6 +92,7 @@
     "@comfyorg/account-core": "workspace:*"
   },
   "devDependencies": {
+    "@stripe/stripe-js": "catalog:",
     "@testing-library/user-event": "catalog:",
     "@testing-library/vue": "catalog:",
     "@types/node": "catalog:",
@@ -102,7 +108,13 @@
     "vue-tsc": "catalog:"
   },
   "peerDependencies": {
+    "@stripe/stripe-js": "^9.0.0",
     "@vueuse/core": "^14.4.0",
     "vue": "^3.5.40"
+  },
+  "peerDependenciesMeta": {
+    "@stripe/stripe-js": {
+      "optional": true
+    }
   }
 }

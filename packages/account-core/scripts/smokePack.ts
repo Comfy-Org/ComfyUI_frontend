@@ -45,6 +45,16 @@ const workspaceRoot = resolve(packageDir, '..', '..')
 const packagesDir = resolve(packageDir, '..')
 const keep = process.argv.includes('--keep')
 
+/**
+ * Entries a plain-node import cannot reach, through no fault of the tarball.
+ * `@stripe/stripe-js` publishes no `exports` map, so `@stripe/stripe-js/pure`
+ * is a legacy directory specifier: a bundler probes it for an extension, node
+ * ESM refuses it with ERR_UNSUPPORTED_DIR_IMPORT. Every host that renders this
+ * entry builds through a bundler, and the typed consumer still covers it, so
+ * the exclusion is about the provider's packaging rather than ours.
+ */
+const BUNDLER_ONLY_ENTRIES = ['@comfyorg/account-ui/billing/stripe']
+
 const PUBLISHED_PACKAGES = [
   'account-core',
   'account-ui',
@@ -168,6 +178,10 @@ for (const name of PACKAGES) {
   })
   for (const subpath of Object.keys(manifest.exports)) {
     const specifier = subpath.replace(/^\\./, name)
+    if (BUNDLER_ONLY.includes(specifier)) {
+      console.log(\`\${specifier}: bundler-only, skipped under node\`)
+      continue
+    }
     const target = fileURLToPath(import.meta.resolve(specifier))
     if (!existsSync(target)) {
       throw new Error(\`\${specifier} resolves to a missing file\`)
@@ -215,6 +229,8 @@ import type { ExchangeTokenResponse } from '@comfyorg/ingest-types'
 import { zExchangeTokenResponse } from '@comfyorg/ingest-types/zod'
 import type { Credits } from '@comfyorg/account-ui/billing'
 import { useCredits } from '@comfyorg/account-ui/billing'
+import type { StripePaymentPhase } from '@comfyorg/account-ui/billing/stripe'
+import { StripePaymentForm } from '@comfyorg/account-ui/billing/stripe'
 import type { PasswordRulesCopy } from '@comfyorg/account-ui/auth/PasswordRules'
 import PasswordRules from '@comfyorg/account-ui/auth/PasswordRules'
 import SocialAuthButtons from '@comfyorg/account-ui/auth/SocialAuthButtons'
@@ -247,6 +263,7 @@ export const values = {
   parseBillingEntry,
   zExchangeTokenResponse,
   useCredits,
+  StripePaymentForm,
   PasswordRules,
   SocialAuthButtons,
   TurnstileWidget,
@@ -277,6 +294,7 @@ export interface Types {
   returnTarget: ReturnTarget
   ingestTypes: ExchangeTokenResponse
   accountUiBilling: Credits
+  accountUiStripe: StripePaymentPhase
   passwordRules: PasswordRulesCopy
   socialAuthButtons: typeof SocialAuthButtons
   turnstileWidget: typeof TurnstileWidget
@@ -382,7 +400,9 @@ function main(): void {
       .join(', ')
     writeFileSync(
       join(consumerDir, 'consumer.mjs'),
-      `const PACKAGES = [${packageList}]\n${NODE_CONSUMER_SOURCE}`
+      `const PACKAGES = [${packageList}]\n` +
+        `const BUNDLER_ONLY = ${JSON.stringify(BUNDLER_ONLY_ENTRIES)}\n` +
+        NODE_CONSUMER_SOURCE
     )
     process.stdout.write(run('node', ['consumer.mjs'], consumerDir))
 
