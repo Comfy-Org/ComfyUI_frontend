@@ -13,7 +13,6 @@ import { useExtensionService } from '@/services/extensionService'
 import { useCommandStore } from '@/stores/commandStore'
 import { ComfyNodeDefImpl, useNodeDefStore } from '@/stores/nodeDefStore'
 import { createMockCanvas } from '@/utils/__tests__/litegraphTestUtils'
-import * as litegraphUtil from '@/utils/litegraphUtil'
 import * as nodeFilterUtil from '@/utils/nodeFilterUtil'
 
 function createMockExtensionService(): ReturnType<typeof useExtensionService> {
@@ -344,13 +343,11 @@ describe('SelectionToolbox', () => {
 
     it('should show Color picker button only for single Load3D nodes', () => {
       // Single Load3D node
-      vi.mocked(litegraphUtil.isLoad3dNode).mockReturnValue(true)
-      canvasStore.selectedItems = [new LGraphNode('Test Node')]
+      canvasStore.selectedItems = [new LGraphNode('Test Node', 'Load3D')]
       const { container } = renderComponent()
       expect(container.querySelector('.load-3d-viewer-button')).toBeTruthy()
 
       // Single non-Load3D node
-      vi.mocked(litegraphUtil.isLoad3dNode).mockReturnValue(false)
       canvasStore.selectedItems = [new LGraphNode('Test Node')]
       const { container: container2 } = renderComponent()
       expect(container2.querySelector('.load-3d-viewer-button')).toBeFalsy()
