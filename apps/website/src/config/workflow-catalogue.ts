@@ -24,10 +24,10 @@ export interface CuratedWorkflow {
 }
 
 export const workflowCategories = [
-  'Create product photos & ads',
   'Animate characters',
-  'Edit & clean up photos',
-  'Upscale & restore'
+  'Create product photos & ads',
+  'Upscale & restore',
+  'Edit & clean up photos'
 ] as const
 
 export const workflows: CuratedWorkflow[] = [

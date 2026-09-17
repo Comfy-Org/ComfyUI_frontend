@@ -5,11 +5,17 @@ existing Models catalog. Primary action: run with editable inputs on the page.
 Secondary action: open the original template in the Cloud canvas. The prototype
 has no marketplace, clone fees, creator earnings, ratings, or publishing tools.
 
-Categories: Create product photos & ads, Animate characters, Edit & clean up
-photos, Upscale & restore. The catalog shares the Models hero and horizontal
+Categories, in popularity order: Animate characters, Create product photos & ads,
+Upscale & restore, Edit & clean up photos. Shelf order is a snapshot of distinct
+Cloud users triggering `execution_start` for any of the shelf's included templates
+from August 17 to September 16, 2026 (America/Los_Angeles), with template-only and
+production-host filters and configured test-account exclusions. Users are
+deduplicated within each shelf; per-template counts are not summed. Re-query when
+the included templates change. This orders the current curated set, not the full
+template catalog. The catalog shares the Models hero and horizontal
 card rows, with matching banner dimensions, card proportions, and typography.
 The shortlist combines popular editing/animation templates with concrete product
-photography use cases. It is curated, not a ranked popularity chart. The category
+photography use cases. Cards remain curated within each ranked shelf. The category
 labels and customer-facing descriptions are editorial proposals for review.
 
 ## Run locally
