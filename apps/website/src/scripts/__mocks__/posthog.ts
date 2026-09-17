@@ -1,44 +1,75 @@
 import { vi } from 'vitest'
 import { readonly, ref } from 'vue'
 
-import type * as real from '../posthog'
+import type * as realPosthog from '../posthog'
 
-const workshopEnabled: ReturnType<typeof real.useWorkshopEnabled> = readonly(
-  ref(false)
-)
-const workshopEnabledSettled: ReturnType<
-  typeof real.useWorkshopEnabledSettled
-> = readonly(ref(true))
-const workshopAuthFlag: ReturnType<typeof real.useWorkshopAuthFlag> = readonly(
-  ref(true)
-)
-const workshopTurnstileMode: ReturnType<typeof real.useWorkshopTurnstileMode> =
-  readonly(ref('off'))
+const workshopEnabled = readonly(ref(false))
+const workshopEnabledSettled = readonly(ref(true))
+const workshopAuthFlag = readonly(ref(true))
+const workshopTurnstileMode = readonly(ref<'off'>('off'))
 
-export const useWorkshopEnabled = vi.fn(() => workshopEnabled)
-export const useWorkshopEnabledSettled = vi.fn(() => workshopEnabledSettled)
-export const useWorkshopAuthFlag = vi.fn(() => workshopAuthFlag)
-export const useWorkshopTurnstileMode = vi.fn(() => workshopTurnstileMode)
+const posthog: typeof realPosthog = {
+  useWorkshopEnabled: vi.fn(() => workshopEnabled),
+  useWorkshopEnabledSettled: vi.fn(() => workshopEnabledSettled),
+  useWorkshopAuthFlag: vi.fn(() => workshopAuthFlag),
+  useWorkshopTurnstileMode: vi.fn(() => workshopTurnstileMode),
+  initPostHog: vi.fn(),
+  identifyWorkshopUser: vi.fn(),
+  capturePageview: vi.fn(),
+  captureWorkshopEvent: vi.fn(),
+  captureDownloadClick: vi.fn(),
+  captureCliConnectionTabClick: vi.fn(),
+  captureCliClientTabClick: vi.fn(),
+  captureMcpConnectionTabClick: vi.fn(),
+  captureMcpClientTabClick: vi.fn(),
+  captureAuthRefreshSucceeded: vi.fn(),
+  captureSignupRollbackFailure: vi.fn(),
+  captureAuthRefreshFailed: vi.fn(),
+  captureSignupOpened: vi.fn(),
+  captureAuthCompleted: vi.fn(),
+  captureAuthFailed: vi.fn()
+}
 
-export const initPostHog = vi.fn<typeof real.initPostHog>()
-export const identifyWorkshopUser = vi.fn<typeof real.identifyWorkshopUser>()
-export const capturePageview = vi.fn<typeof real.capturePageview>()
-export const captureWorkshopEvent = vi.fn<typeof real.captureWorkshopEvent>()
-export const captureDownloadClick = vi.fn<typeof real.captureDownloadClick>()
-export const captureCliConnectionTabClick =
-  vi.fn<typeof real.captureCliConnectionTabClick>()
-export const captureCliClientTabClick =
-  vi.fn<typeof real.captureCliClientTabClick>()
-export const captureMcpConnectionTabClick =
-  vi.fn<typeof real.captureMcpConnectionTabClick>()
-export const captureMcpClientTabClick =
-  vi.fn<typeof real.captureMcpClientTabClick>()
-export const captureAuthRefreshSucceeded =
-  vi.fn<typeof real.captureAuthRefreshSucceeded>()
-export const captureSignupRollbackFailure =
-  vi.fn<typeof real.captureSignupRollbackFailure>()
-export const captureAuthRefreshFailed =
-  vi.fn<typeof real.captureAuthRefreshFailed>()
-export const captureSignupOpened = vi.fn<typeof real.captureSignupOpened>()
-export const captureAuthCompleted = vi.fn<typeof real.captureAuthCompleted>()
-export const captureAuthFailed = vi.fn<typeof real.captureAuthFailed>()
+const {
+  useWorkshopEnabled,
+  useWorkshopEnabledSettled,
+  useWorkshopAuthFlag,
+  useWorkshopTurnstileMode,
+  initPostHog,
+  identifyWorkshopUser,
+  capturePageview,
+  captureWorkshopEvent,
+  captureDownloadClick,
+  captureCliConnectionTabClick,
+  captureCliClientTabClick,
+  captureMcpConnectionTabClick,
+  captureMcpClientTabClick,
+  captureAuthRefreshSucceeded,
+  captureSignupRollbackFailure,
+  captureAuthRefreshFailed,
+  captureSignupOpened,
+  captureAuthCompleted,
+  captureAuthFailed
+} = posthog
+
+export {
+  useWorkshopEnabled,
+  useWorkshopEnabledSettled,
+  useWorkshopAuthFlag,
+  useWorkshopTurnstileMode,
+  initPostHog,
+  identifyWorkshopUser,
+  capturePageview,
+  captureWorkshopEvent,
+  captureDownloadClick,
+  captureCliConnectionTabClick,
+  captureCliClientTabClick,
+  captureMcpConnectionTabClick,
+  captureMcpClientTabClick,
+  captureAuthRefreshSucceeded,
+  captureSignupRollbackFailure,
+  captureAuthRefreshFailed,
+  captureSignupOpened,
+  captureAuthCompleted,
+  captureAuthFailed
+}
