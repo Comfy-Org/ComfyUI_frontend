@@ -18,7 +18,7 @@ runs:
       uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       with:
         repository: Comfy-Org/ComfyUI
-        ref: 47e136368149719a3ceb078ce605c5636bfccb87
+        ref: ded3c4496f4d925b824c93cc2cd04881c1e1d9eb
         path: .ci-backend
         persist-credentials: false
 
