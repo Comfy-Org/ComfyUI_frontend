@@ -24,6 +24,7 @@ import {
   buildReturnUrl
 } from '@comfyorg/billing-contract'
 
+import CheckoutSubmit from '@/components/CheckoutSubmit.vue'
 import EmbeddedCheckout from '@/components/EmbeddedCheckout.vue'
 import HostedSurface from '@/components/HostedSurface.vue'
 import { useHostedCopy } from '@/composables/useHostedCopy'
@@ -31,7 +32,7 @@ import { BILLING_WEB_ENV, STRIPE_PUBLISHABLE_KEY } from '@/config/env'
 import { useBillingEntry } from '@/entry/billingEntry'
 import { createStripeChallengePort } from '@/session/stripeChallengePort'
 
-const { n, t } = useI18n()
+const { t } = useI18n()
 const { coded } = useHostedCopy()
 const route = useRoute()
 const router = useRouter()
@@ -126,10 +127,6 @@ const phase = computed(() =>
 )
 
 const productName = computed(() => coded('product', entry.value?.product))
-
-function submitBlocked(disabled: boolean, submitting: boolean): boolean {
-  return disabled || submitting
-}
 
 const returnLink = computed(() => {
   const arrival = entry.value
@@ -278,36 +275,14 @@ const subscriptionPath = computed(() => ({
             @confirm="confirm"
           >
             <template #submit="{ disabled, loading: submitting }">
-              <p
-                v-if="submitFailure"
-                class="mb-3 text-sm text-destructive-background"
-              >
-                {{ submitFailure }}
-              </p>
-              <label
-                v-if="reactivationRequired"
-                class="mb-3 flex items-start gap-3 rounded-xl bg-base-background/60 px-4 py-3 text-sm text-base-foreground"
-              >
-                <input
-                  v-model="reactivationConfirmed"
-                  type="checkbox"
-                  class="mt-0.5 size-4"
-                />
-                <span>
-                  {{
-                    t('checkout.reactivationConfirm', {
-                      amount: n(amountCents / 100, 'currency')
-                    })
-                  }}
-                </span>
-              </label>
-              <button
-                type="submit"
-                :disabled="submitBlocked(disabled, submitting)"
-                class="h-12 w-full cursor-pointer rounded-lg bg-base-foreground px-5 font-semibold text-base-background transition-opacity hover:opacity-90 focus-visible:ring-2 focus-visible:ring-base-foreground focus-visible:ring-offset-2 focus-visible:ring-offset-secondary-background focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-40"
-              >
-                {{ t('checkout.payAndSubscribe') }}
-              </button>
+              <CheckoutSubmit
+                v-model:confirmed="reactivationConfirmed"
+                :amount-cents="amountCents"
+                :disabled="disabled"
+                :submitting="submitting"
+                :reactivation-required="reactivationRequired"
+                :failure="submitFailure"
+              />
             </template>
           </StripePaymentForm>
         </template>
