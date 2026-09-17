@@ -36,6 +36,20 @@ const TOPUP_STATUSES = [
   'failed'
 ] as const satisfies readonly TopupResponse['status'][]
 
+// Compile-time pins: a regen that moves these fails the package typecheck.
+
+// The amount the command validates, coerced to an int64 the transport never
+// serializes, and the idempotency key it mints per attempt.
+expectTypeOf<TopupRequest['amount_cents']>().toEqualTypeOf<bigint>()
+expectTypeOf<TopupRequest['idempotency_key']>().toEqualTypeOf<
+  string | undefined
+>()
+// The table above is exhaustive, so a new status reaches an `it.for` row.
+expectTypeOf<TopupResponse['status']>().toEqualTypeOf<
+  (typeof TOPUP_STATUSES)[number]
+>()
+expectTypeOf<TopupResponse['billing_op_id']>().toEqualTypeOf<string>()
+
 describe('topup contract', () => {
   it('accepts a request carrying only the amount', () => {
     expect(zCreateTopupRequest.safeParse(topupRequest())).toMatchObject({
@@ -44,8 +58,6 @@ describe('topup contract', () => {
   })
 
   it('validates the JSON number the command sends and coerces it to an int64 the transport never serializes', () => {
-    expectTypeOf<TopupRequest['amount_cents']>().toEqualTypeOf<bigint>()
-
     const parsed = zCreateTopupRequest.safeParse({
       amount_cents: MINIMUM_AMOUNT_CENTS
     })
@@ -62,22 +74,6 @@ describe('topup contract', () => {
     expect(
       zCreateTopupRequest.safeParse({ amount_cents: MINIMUM_AMOUNT_CENTS })
     ).toMatchObject({ success: true })
-  })
-
-  it('carries the idempotency key the command mints per attempt', () => {
-    expectTypeOf<TopupRequest['idempotency_key']>().toEqualTypeOf<
-      string | undefined
-    >()
-  })
-
-  it('returns the operation id the lifecycle adopts', () => {
-    expectTypeOf<TopupResponse['billing_op_id']>().toEqualTypeOf<string>()
-  })
-
-  it('carries exactly the three statuses a top-up settles into', () => {
-    expectTypeOf<TopupResponse['status']>().toEqualTypeOf<
-      (typeof TOPUP_STATUSES)[number]
-    >()
   })
 
   it.for(TOPUP_STATUSES)(

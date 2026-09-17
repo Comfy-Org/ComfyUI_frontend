@@ -29,23 +29,35 @@ const SUBSCRIBE_STATUSES = [
   'pending_payment'
 ] as const satisfies readonly SubscribeResponse['status'][]
 
+// Compile-time pins: a regen that moves these fails the package typecheck.
+
+// The payment credentials the command deconflicts before sending.
+expectTypeOf<SubscribeRequest['confirmation_token']>().toEqualTypeOf<
+  string | undefined
+>()
+expectTypeOf<SubscribeRequest['saved_payment_method_id']>().toEqualTypeOf<
+  string | undefined
+>()
+expectTypeOf<SubscribeRequest['idempotency_key']>().toEqualTypeOf<
+  string | undefined
+>()
+expectTypeOf<SubscribeRequest['confirm_reactivation']>().toEqualTypeOf<
+  boolean | undefined
+>()
+// The table above is exhaustive, so a new outcome reaches an `it.for` row.
+expectTypeOf<SubscribeResponse['status']>().toEqualTypeOf<
+  (typeof SUBSCRIBE_STATUSES)[number]
+>()
+expectTypeOf<SubscribeResponse['billing_op_id']>().toEqualTypeOf<string>()
+expectTypeOf<SubscribeResponse['payment_method_url']>().toEqualTypeOf<
+  string | undefined
+>()
+
 describe('subscribe contract', () => {
   it('accepts a request carrying only the plan slug', () => {
     expect(zSubscribeRequest.safeParse(subscribeRequest())).toMatchObject({
       success: true
     })
-  })
-
-  it('carries the payment credentials the command deconflicts before sending', () => {
-    expectTypeOf<SubscribeRequest['confirmation_token']>().toEqualTypeOf<
-      string | undefined
-    >()
-    expectTypeOf<SubscribeRequest['saved_payment_method_id']>().toEqualTypeOf<
-      string | undefined
-    >()
-    expectTypeOf<SubscribeRequest['idempotency_key']>().toEqualTypeOf<
-      string | undefined
-    >()
   })
 
   it('rejects a saved payment method that is not a Stripe payment-method id', () => {
@@ -59,23 +71,9 @@ describe('subscribe contract', () => {
   })
 
   it('accepts the reactivation confirmation the server asks callers to resend', () => {
-    expectTypeOf<SubscribeRequest['confirm_reactivation']>().toEqualTypeOf<
-      boolean | undefined
-    >()
-
     const body = subscribeRequest({ confirm_reactivation: true })
 
     expect(zSubscribeRequest.safeParse(body)).toMatchObject({ success: true })
-  })
-
-  it('returns the operation id the lifecycle adopts', () => {
-    expectTypeOf<SubscribeResponse['billing_op_id']>().toEqualTypeOf<string>()
-  })
-
-  it('carries the three subscribe outcomes the command distinguishes', () => {
-    expectTypeOf<SubscribeResponse['status']>().toEqualTypeOf<
-      (typeof SUBSCRIBE_STATUSES)[number]
-    >()
   })
 
   it.for(SUBSCRIBE_STATUSES)('accepts the %s outcome', (status) => {
@@ -85,10 +83,6 @@ describe('subscribe contract', () => {
   })
 
   it('leaves the hosted payment page optional, which the command reads as a missing url', () => {
-    expectTypeOf<SubscribeResponse['payment_method_url']>().toEqualTypeOf<
-      string | undefined
-    >()
-
     const parsed = zSubscribeResponse.safeParse(
       subscribeResponse({ status: 'needs_payment_method' })
     )

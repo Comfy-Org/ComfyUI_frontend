@@ -9,6 +9,9 @@ function portalResponse(overrides: Partial<PortalBody> = {}): PortalBody {
   return { url: 'https://billing.comfy.org/portal/session-1', ...overrides }
 }
 
+// Compile-time pins: a regen that moves these fails the package typecheck.
+expectTypeOf<Portal['url']>().toEqualTypeOf<string>()
+
 describe('payment portal contract', () => {
   it('accepts a response carrying only the portal url', () => {
     expect(zPaymentPortalResponse.safeParse(portalResponse())).toMatchObject({
@@ -17,7 +20,6 @@ describe('payment portal contract', () => {
   })
 
   it('requires the url', () => {
-    expectTypeOf<Portal['url']>().toEqualTypeOf<string>()
     expect(zPaymentPortalResponse.safeParse({}).success).toBe(false)
   })
 

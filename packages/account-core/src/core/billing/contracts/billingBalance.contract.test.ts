@@ -13,15 +13,28 @@ function balanceBody(overrides: Partial<BalanceBody> = {}): BalanceBody {
   }
 }
 
+// Compile-time pins: a regen that moves these fails the package typecheck.
+expectTypeOf<Balance['amount_micros']>().toEqualTypeOf<number>()
+expectTypeOf<
+  Pick<
+    Balance,
+    | 'cloud_credit_balance_micros'
+    | 'effective_balance_micros'
+    | 'pending_charges_micros'
+    | 'prepaid_balance_micros'
+  >
+>().toEqualTypeOf<{
+  cloud_credit_balance_micros?: number
+  effective_balance_micros?: number
+  pending_charges_micros?: number
+  prepaid_balance_micros?: number
+}>()
+
 describe('billing balance contract', () => {
   it('accepts a balance carrying only the required fields', () => {
     expect(zBillingBalanceResponse.safeParse(balanceBody())).toMatchObject({
       success: true
     })
-  })
-
-  it('reports micros as a number the reader compares against a baseline', () => {
-    expectTypeOf<Balance['amount_micros']>().toEqualTypeOf<number>()
   })
 
   it('keeps every balance breakdown optional beside the headline amount', () => {
@@ -35,19 +48,5 @@ describe('billing balance contract', () => {
     expect(zBillingBalanceResponse.safeParse(breakdown)).toMatchObject({
       success: true
     })
-    expectTypeOf<
-      Pick<
-        Balance,
-        | 'cloud_credit_balance_micros'
-        | 'effective_balance_micros'
-        | 'pending_charges_micros'
-        | 'prepaid_balance_micros'
-      >
-    >().toEqualTypeOf<{
-      cloud_credit_balance_micros?: number
-      effective_balance_micros?: number
-      pending_charges_micros?: number
-      prepaid_balance_micros?: number
-    }>()
   })
 })

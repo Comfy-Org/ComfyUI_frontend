@@ -31,6 +31,49 @@ const AUTHENTICATION_STATES = [
   'reconciliation_needed'
 ] as const satisfies readonly NonNullable<OpStatus['authentication_state']>[]
 
+// Compile-time pins: a regen that moves these fails the package typecheck.
+
+// The tables above are exhaustive, so a new member reaches an `it.for` row.
+expectTypeOf<OpStatus['status']>().toEqualTypeOf<
+  (typeof REDUCED_STATUSES)[number]
+>()
+expectTypeOf<OpStatus['authentication_state']>().toEqualTypeOf<
+  (typeof AUTHENTICATION_STATES)[number] | undefined
+>()
+// The decline reasons a failed operation reports, including the fallback.
+expectTypeOf<OpStatus['decline_reason']>().toEqualTypeOf<
+  | 'card_declined'
+  | 'insufficient_funds'
+  | 'expired_card'
+  | 'incorrect_cvc'
+  | 'authentication_required'
+  | 'authentication_failed'
+  | 'processing_error'
+  | 'generic'
+  | undefined
+>()
+// The recovery actions a host offers after a decline.
+expectTypeOf<OpStatus['recovery_action']>().toEqualTypeOf<
+  | 'retry'
+  | 'replace_payment_method'
+  | 'authenticate_payment'
+  | 'contact_support'
+  | undefined
+>()
+// The server phases the pending state mirrors.
+expectTypeOf<OpStatus['phase']>().toEqualTypeOf<
+  | 'awaiting_payment_method'
+  | 'awaiting_invoice_payment'
+  | 'in_progress'
+  | undefined
+>()
+expectTypeOf<OpStatus['id']>().toEqualTypeOf<string>()
+expectTypeOf<OpStatus['action_url']>().toEqualTypeOf<string | undefined>()
+expectTypeOf<OpStatus['payment_intent_client_secret']>().toEqualTypeOf<
+  string | undefined
+>()
+expectTypeOf<OpStatus['retryable']>().toEqualTypeOf<boolean | undefined>()
+
 describe('billing operation status contract', () => {
   it('accepts a status carrying only the required fields', () => {
     expect(zBillingOpStatusResponse.safeParse(opStatusBody())).toMatchObject({
@@ -46,22 +89,10 @@ describe('billing operation status contract', () => {
     ).toBe(false)
   })
 
-  it('carries exactly the four statuses the reducer handles', () => {
-    expectTypeOf<OpStatus['status']>().toEqualTypeOf<
-      (typeof REDUCED_STATUSES)[number]
-    >()
-  })
-
   it.for(REDUCED_STATUSES)('accepts the %s status', (status) => {
     expect(
       zBillingOpStatusResponse.safeParse(opStatusBody({ status }))
     ).toMatchObject({ success: true })
-  })
-
-  it('carries exactly the five authentication states the reducer reads', () => {
-    expectTypeOf<OpStatus['authentication_state']>().toEqualTypeOf<
-      (typeof AUTHENTICATION_STATES)[number] | undefined
-    >()
   })
 
   it.for(AUTHENTICATION_STATES)(
@@ -75,50 +106,7 @@ describe('billing operation status contract', () => {
     }
   )
 
-  it('carries the decline reasons a failed operation reports, including the generic fallback', () => {
-    expectTypeOf<OpStatus['decline_reason']>().toEqualTypeOf<
-      | 'card_declined'
-      | 'insufficient_funds'
-      | 'expired_card'
-      | 'incorrect_cvc'
-      | 'authentication_required'
-      | 'authentication_failed'
-      | 'processing_error'
-      | 'generic'
-      | undefined
-    >()
-  })
-
-  it('carries the recovery actions a host offers after a decline', () => {
-    expectTypeOf<OpStatus['recovery_action']>().toEqualTypeOf<
-      | 'retry'
-      | 'replace_payment_method'
-      | 'authenticate_payment'
-      | 'contact_support'
-      | undefined
-    >()
-  })
-
-  it('carries the server phases the pending state mirrors', () => {
-    expectTypeOf<OpStatus['phase']>().toEqualTypeOf<
-      | 'awaiting_payment_method'
-      | 'awaiting_invoice_payment'
-      | 'in_progress'
-      | undefined
-    >()
-  })
-
-  it('identifies the operation and its continuations as plain strings', () => {
-    expectTypeOf<OpStatus['id']>().toEqualTypeOf<string>()
-    expectTypeOf<OpStatus['action_url']>().toEqualTypeOf<string | undefined>()
-    expectTypeOf<OpStatus['payment_intent_client_secret']>().toEqualTypeOf<
-      string | undefined
-    >()
-  })
-
   it('leaves retryable absent by default, so a decline is not retryable unless the server says so', () => {
-    expectTypeOf<OpStatus['retryable']>().toEqualTypeOf<boolean | undefined>()
-
     const parsed = zBillingOpStatusResponse.safeParse(
       opStatusBody({ status: 'failed' })
     )

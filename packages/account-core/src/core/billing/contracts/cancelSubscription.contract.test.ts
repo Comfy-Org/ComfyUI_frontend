@@ -16,6 +16,11 @@ const CANCEL_VARIANTS = [
   }
 ] as const satisfies readonly { variant: string; body: CancelBody }[]
 
+// Compile-time pins: a regen that moves these fails the package typecheck.
+
+// Every member of the response union carries the operation id.
+expectTypeOf<Cancel['billing_op_id']>().toEqualTypeOf<string>()
+
 describe('cancel subscription contract', () => {
   it.for(CANCEL_VARIANTS)(
     'reads the operation id off the $variant response',
@@ -25,10 +30,6 @@ describe('cancel subscription contract', () => {
       expect(parsed.success && parsed.data.billing_op_id).toBe('op-1')
     }
   )
-
-  it('carries the operation id on every member of the response union', () => {
-    expectTypeOf<Cancel['billing_op_id']>().toEqualTypeOf<string>()
-  })
 
   it('rejects a scheduled cancellation dated by an unreadable timestamp', () => {
     const parsed = zCancelSubscriptionResponse2.safeParse({

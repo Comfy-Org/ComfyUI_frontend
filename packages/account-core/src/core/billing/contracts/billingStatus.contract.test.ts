@@ -37,6 +37,39 @@ const SUBSCRIPTION_STATUSES = [
   'canceled'
 ] as const satisfies readonly NonNullable<Status['subscription_status']>[]
 
+// Compile-time pins: a regen that moves these fails the package typecheck.
+
+// The tables above are exhaustive, so a new member reaches an `it.for` row.
+expectTypeOf<Status['billing_rail']>().toEqualTypeOf<
+  (typeof BILLING_RAILS)[number] | undefined
+>()
+expectTypeOf<Status['pending_billing_op_type']>().toEqualTypeOf<
+  (typeof PENDING_OP_TYPES)[number] | undefined
+>()
+expectTypeOf<Status['subscription_status']>().toEqualTypeOf<
+  (typeof SUBSCRIPTION_STATUSES)[number] | undefined
+>()
+expectTypeOf<Status['subscription_tier']>().toEqualTypeOf<
+  | 'FREE'
+  | 'STANDARD'
+  | 'CREATOR'
+  | 'PRO'
+  | 'FOUNDERS_EDITION'
+  | 'TEAM'
+  | 'ENTERPRISE'
+  | undefined
+>()
+expectTypeOf<Status['is_active']>().toEqualTypeOf<boolean>()
+// The pending operation the lifecycle reattaches to, and the continuations it
+// adopts alongside it.
+expectTypeOf<Status['pending_billing_op_id']>().toEqualTypeOf<
+  string | undefined
+>()
+expectTypeOf<Status['action_url']>().toEqualTypeOf<string | undefined>()
+expectTypeOf<Status['payment_intent_client_secret']>().toEqualTypeOf<
+  string | undefined
+>()
+
 describe('billing status contract', () => {
   it('accepts a status carrying only the required fields', () => {
     expect(zBillingStatusResponse.safeParse(statusBody())).toMatchObject({
@@ -44,25 +77,10 @@ describe('billing status contract', () => {
     })
   })
 
-  it('carries the three rails presentation routing distinguishes', () => {
-    expectTypeOf<Status['billing_rail']>().toEqualTypeOf<
-      (typeof BILLING_RAILS)[number] | undefined
-    >()
-  })
-
   it.for(BILLING_RAILS)('accepts the %s rail', (billing_rail) => {
     expect(
       zBillingStatusResponse.safeParse(statusBody({ billing_rail }))
     ).toMatchObject({ success: true })
-  })
-
-  it('names the pending operation the lifecycle reattaches to', () => {
-    expectTypeOf<Status['pending_billing_op_id']>().toEqualTypeOf<
-      string | undefined
-    >()
-    expectTypeOf<Status['pending_billing_op_type']>().toEqualTypeOf<
-      (typeof PENDING_OP_TYPES)[number] | undefined
-    >()
   })
 
   it.for(PENDING_OP_TYPES)(
@@ -78,30 +96,6 @@ describe('billing status contract', () => {
       })
     }
   )
-
-  it('carries the continuations the lifecycle adopts alongside a pending operation', () => {
-    expectTypeOf<Status['action_url']>().toEqualTypeOf<string | undefined>()
-    expectTypeOf<Status['payment_intent_client_secret']>().toEqualTypeOf<
-      string | undefined
-    >()
-  })
-
-  it('reports subscription eligibility as an active flag, a tier, and a status', () => {
-    expectTypeOf<Status['is_active']>().toEqualTypeOf<boolean>()
-    expectTypeOf<Status['subscription_status']>().toEqualTypeOf<
-      (typeof SUBSCRIPTION_STATUSES)[number] | undefined
-    >()
-    expectTypeOf<Status['subscription_tier']>().toEqualTypeOf<
-      | 'FREE'
-      | 'STANDARD'
-      | 'CREATOR'
-      | 'PRO'
-      | 'FOUNDERS_EDITION'
-      | 'TEAM'
-      | 'ENTERPRISE'
-      | undefined
-    >()
-  })
 
   it.for(SUBSCRIPTION_STATUSES)(
     'accepts the %s subscription status',

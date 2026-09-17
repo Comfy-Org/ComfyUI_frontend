@@ -67,6 +67,42 @@ const MONEY_FIELDS = [
 const INT64_MIN = -9223372036854775808n
 const INT64_MAX = 9223372036854775807n
 
+// Compile-time pins: a regen that moves these fails the package typecheck.
+
+// The plan slug is the only required request field.
+expectTypeOf<PreviewRequest>().toEqualTypeOf<{
+  plan_slug: string
+  checkout_attempt_id?: string
+  promotion_code?: string
+  team_credit_stop_id?: string
+}>()
+// The transition table above is exhaustive, so a new member reaches a row.
+expectTypeOf<PreviewResponse['transition_type']>().toEqualTypeOf<
+  (typeof TRANSITION_TYPES)[number]
+>()
+expectTypeOf<PreviewResponse['allowed']>().toEqualTypeOf<boolean>()
+expectTypeOf<PreviewResponse['is_immediate']>().toEqualTypeOf<boolean>()
+expectTypeOf<PreviewResponse['effective_at']>().toEqualTypeOf<string>()
+// Money is an int64, so a host formats a bigint rather than a number.
+expectTypeOf<PreviewResponse['cost_today_cents']>().toEqualTypeOf<bigint>()
+expectTypeOf<
+  PreviewResponse['cost_next_period_cents']
+>().toEqualTypeOf<bigint>()
+expectTypeOf<PreviewResponse['credits_today_cents']>().toEqualTypeOf<bigint>()
+expectTypeOf<
+  PreviewResponse['credits_next_period_cents']
+>().toEqualTypeOf<bigint>()
+expectTypeOf<PreviewResponse['amount_due_cents']>().toEqualTypeOf<
+  bigint | undefined
+>()
+expectTypeOf<PreviewResponse['renewal_amount_cents']>().toEqualTypeOf<
+  bigint | undefined
+>()
+// The reactivation confirmation the subscribe command is asked to resend.
+expectTypeOf<
+  PreviewResponse['requires_reactivation_confirmation']
+>().toEqualTypeOf<boolean | undefined>()
+
 describe('preview subscribe contract', () => {
   it('accepts the request the command builds from its camel-cased input', () => {
     const body = previewRequest({
@@ -80,13 +116,7 @@ describe('preview subscribe contract', () => {
     })
   })
 
-  it('requires the plan slug and leaves every other request field optional', () => {
-    expectTypeOf<PreviewRequest>().toEqualTypeOf<{
-      plan_slug: string
-      checkout_attempt_id?: string
-      promotion_code?: string
-      team_credit_stop_id?: string
-    }>()
+  it('requires the plan slug', () => {
     expect(zPreviewSubscribeRequest.safeParse({}).success).toBe(false)
   })
 
@@ -94,12 +124,6 @@ describe('preview subscribe contract', () => {
     expect(
       zPreviewSubscribeResponse.safeParse(previewResponse())
     ).toMatchObject({ success: true })
-  })
-
-  it('carries exactly the four transitions a host renders', () => {
-    expectTypeOf<PreviewResponse['transition_type']>().toEqualTypeOf<
-      (typeof TRANSITION_TYPES)[number]
-    >()
   })
 
   it.for(TRANSITION_TYPES)('quotes the %s transition', (transition_type) => {
@@ -110,37 +134,12 @@ describe('preview subscribe contract', () => {
     expect(parsed.success && parsed.data.transition_type).toBe(transition_type)
   })
 
-  it('states whether the change is allowed and when it takes effect', () => {
-    expectTypeOf<PreviewResponse['allowed']>().toEqualTypeOf<boolean>()
-    expectTypeOf<PreviewResponse['is_immediate']>().toEqualTypeOf<boolean>()
-    expectTypeOf<PreviewResponse['effective_at']>().toEqualTypeOf<string>()
-  })
-
   it('rejects an effective date a host could not read the change from', () => {
     expect(
       zPreviewSubscribeResponse.safeParse(
         previewResponse({ effective_at: 'not-a-date' })
       ).success
     ).toBe(false)
-  })
-
-  it('reports money as an int64, so a host formats a bigint rather than a number', () => {
-    expectTypeOf<PreviewResponse['cost_today_cents']>().toEqualTypeOf<bigint>()
-    expectTypeOf<
-      PreviewResponse['cost_next_period_cents']
-    >().toEqualTypeOf<bigint>()
-    expectTypeOf<
-      PreviewResponse['credits_today_cents']
-    >().toEqualTypeOf<bigint>()
-    expectTypeOf<
-      PreviewResponse['credits_next_period_cents']
-    >().toEqualTypeOf<bigint>()
-    expectTypeOf<PreviewResponse['amount_due_cents']>().toEqualTypeOf<
-      bigint | undefined
-    >()
-    expectTypeOf<PreviewResponse['renewal_amount_cents']>().toEqualTypeOf<
-      bigint | undefined
-    >()
   })
 
   it.for(MONEY_FIELDS)(
@@ -178,11 +177,5 @@ describe('preview subscribe contract', () => {
       code: 'LAUNCH',
       kind: 'promotion'
     })
-  })
-
-  it('flags the reactivation confirmation the subscribe command is asked to resend', () => {
-    expectTypeOf<
-      PreviewResponse['requires_reactivation_confirmation']
-    >().toEqualTypeOf<boolean | undefined>()
   })
 })

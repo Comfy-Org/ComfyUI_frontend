@@ -13,15 +13,16 @@ function errorBody(overrides: Partial<ErrorBody> = {}): ErrorBody {
   }
 }
 
+// Compile-time pins: a regen that moves these fails the package typecheck.
+
+// An open string the commands match against their own closed set of codes.
+expectTypeOf<ErrorResponse['code']>().toEqualTypeOf<string>()
+
 describe('billing error body contract', () => {
   it('accepts an error carrying only a code and a message', () => {
     expect(zErrorResponse.safeParse(errorBody())).toMatchObject({
       success: true
     })
-  })
-
-  it('reports the code as an open string the commands match against their own closed set', () => {
-    expectTypeOf<ErrorResponse['code']>().toEqualTypeOf<string>()
   })
 
   it('rejects a body without a message', () => {

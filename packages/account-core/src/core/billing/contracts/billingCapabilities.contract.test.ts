@@ -13,7 +13,7 @@ type Capabilities = z.infer<typeof zBillingCapabilities>
 type CapabilityScope = z.infer<typeof zBillingCapabilityScope>
 type RolloutDefaults = z.infer<typeof zBillingCapabilityRolloutDefaults>
 
-function capabilities(overrides: Partial<Capabilities> = {}): Capabilities {
+function capabilities(): Capabilities {
   return {
     can_cancel: true,
     can_change_seats: true,
@@ -21,8 +21,7 @@ function capabilities(overrides: Partial<Capabilities> = {}): Capabilities {
     can_invite_members: true,
     can_reactivate: false,
     can_subscribe_self_serve: true,
-    can_top_up: true,
-    ...overrides
+    can_top_up: true
   }
 }
 
@@ -43,52 +42,43 @@ function capabilitiesBody(
   }
 }
 
+// Compile-time pins: a regen that moves these fails the package typecheck.
+
+// The five fields the reader composes its own schema from.
+expectTypeOf<keyof CapabilitiesResponse>().toEqualTypeOf<
+  | 'capabilities'
+  | 'expires_at'
+  | 'resolved_for'
+  | 'revision'
+  | 'rollout_defaults_applied'
+>()
+expectTypeOf<Capabilities>().toEqualTypeOf<{
+  can_cancel: boolean
+  can_change_seats: boolean
+  can_downgrade_to_personal: boolean
+  can_invite_members: boolean
+  can_reactivate: boolean
+  can_subscribe_self_serve: boolean
+  can_top_up: boolean
+}>()
+expectTypeOf<CapabilityScope>().toEqualTypeOf<{
+  user_id: string
+  workspace_id: string
+}>()
+expectTypeOf<RolloutDefaults>().toEqualTypeOf<{
+  can_downgrade_to_personal: boolean
+  can_subscribe_self_serve: boolean
+  can_top_up: boolean
+}>()
+// The expiry the reader paces freshness from; the revision it reads as a number.
+expectTypeOf<CapabilitiesResponse['expires_at']>().toEqualTypeOf<string>()
+expectTypeOf<CapabilitiesResponse['revision']>().toEqualTypeOf<bigint>()
+
 describe('billing capabilities contract', () => {
   it('accepts the body the capabilities endpoint returns', () => {
     expect(
       zBillingCapabilitiesResponse.safeParse(capabilitiesBody())
     ).toMatchObject({ success: true })
-  })
-
-  it('carries exactly the five fields the reader composes its own schema from', () => {
-    expectTypeOf<keyof CapabilitiesResponse>().toEqualTypeOf<
-      | 'capabilities'
-      | 'expires_at'
-      | 'resolved_for'
-      | 'revision'
-      | 'rollout_defaults_applied'
-    >()
-  })
-
-  it('grants every capability as a boolean, including the top-up gate', () => {
-    expectTypeOf<Capabilities>().toEqualTypeOf<{
-      can_cancel: boolean
-      can_change_seats: boolean
-      can_downgrade_to_personal: boolean
-      can_invite_members: boolean
-      can_reactivate: boolean
-      can_subscribe_self_serve: boolean
-      can_top_up: boolean
-    }>()
-  })
-
-  it('resolves for a user and a workspace, both of which the reader matches against its scope', () => {
-    expectTypeOf<CapabilityScope>().toEqualTypeOf<{
-      user_id: string
-      workspace_id: string
-    }>()
-  })
-
-  it('reports rollout defaults for the three capabilities that have them', () => {
-    expectTypeOf<RolloutDefaults>().toEqualTypeOf<{
-      can_downgrade_to_personal: boolean
-      can_subscribe_self_serve: boolean
-      can_top_up: boolean
-    }>()
-  })
-
-  it('dates the snapshot with a string the reader paces freshness from', () => {
-    expectTypeOf<CapabilitiesResponse['expires_at']>().toEqualTypeOf<string>()
   })
 
   it('requires a datetime expiry, which the reader re-decodes leniently as a plain string', () => {
@@ -100,8 +90,6 @@ describe('billing capabilities contract', () => {
   })
 
   it('bounds the revision to the safe range the reader reads it back as a number over', () => {
-    expectTypeOf<CapabilitiesResponse['revision']>().toEqualTypeOf<bigint>()
-
     const safe = { ...capabilitiesBody(), revision: Number.MAX_SAFE_INTEGER }
     const unsafe = capabilitiesBody({
       revision: BigInt(Number.MAX_SAFE_INTEGER) + 1n

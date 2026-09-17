@@ -16,6 +16,14 @@ const RESUBSCRIBE_STATUSES = [
   'pending'
 ] as const satisfies readonly Resubscribe['status'][]
 
+// Compile-time pins: a regen that moves these fails the package typecheck.
+
+// The table above is exhaustive, so a new status reaches an `it.for` row.
+expectTypeOf<Resubscribe['status']>().toEqualTypeOf<
+  (typeof RESUBSCRIBE_STATUSES)[number]
+>()
+expectTypeOf<Resubscribe['billing_op_id']>().toEqualTypeOf<string>()
+
 describe('resubscribe contract', () => {
   it('accepts a response carrying only the operation id and its status', () => {
     expect(zResubscribeResponse.safeParse(resubscribeResponse())).toMatchObject(
@@ -23,16 +31,6 @@ describe('resubscribe contract', () => {
         success: true
       }
     )
-  })
-
-  it('returns the operation id the lifecycle adopts', () => {
-    expectTypeOf<Resubscribe['billing_op_id']>().toEqualTypeOf<string>()
-  })
-
-  it('carries exactly the two statuses a resubscribe settles into', () => {
-    expectTypeOf<Resubscribe['status']>().toEqualTypeOf<
-      (typeof RESUBSCRIBE_STATUSES)[number]
-    >()
   })
 
   it.for(RESUBSCRIBE_STATUSES)(

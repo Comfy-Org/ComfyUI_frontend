@@ -55,6 +55,15 @@ const INVALID_REQUESTS = [
   }
 ] as const
 
+// Compile-time pins: a regen that moves these fails the package typecheck.
+
+// The amount coerced to an int64 the transport never serializes.
+expectTypeOf<CheckoutRequest['amount_cents']>().toEqualTypeOf<bigint>()
+expectTypeOf<CheckoutResponse['checkout_url']>().toEqualTypeOf<string>()
+expectTypeOf<CheckoutResponse['session_id']>().toEqualTypeOf<
+  string | undefined
+>()
+
 describe('hosted topup checkout contract', () => {
   it('accepts a request carrying an in-range amount and a return url', () => {
     expect(
@@ -69,8 +78,6 @@ describe('hosted topup checkout contract', () => {
   })
 
   it('coerces the JSON amount to an int64 the transport never serializes', () => {
-    expectTypeOf<CheckoutRequest['amount_cents']>().toEqualTypeOf<bigint>()
-
     const parsed = zCreateTopupCheckoutRequest.safeParse({
       amount_cents: MINIMUM_AMOUNT_CENTS,
       return_url: RETURN_URL
@@ -91,7 +98,6 @@ describe('hosted topup checkout contract', () => {
   })
 
   it('requires the hosted page url', () => {
-    expectTypeOf<CheckoutResponse['checkout_url']>().toEqualTypeOf<string>()
     expect(
       zCreateTopupCheckoutResponse.safeParse(checkoutResponse())
     ).toMatchObject({ success: true })
@@ -112,10 +118,6 @@ describe('hosted topup checkout contract', () => {
   })
 
   it('leaves the provider session id optional, so the host correlates only when it is sent', () => {
-    expectTypeOf<CheckoutResponse['session_id']>().toEqualTypeOf<
-      string | undefined
-    >()
-
     const parsed = zCreateTopupCheckoutResponse.safeParse(checkoutResponse())
 
     expect(parsed.success && parsed.data.session_id).toBeUndefined()
