@@ -52,6 +52,9 @@ concurrency:
 jobs:
   publish_package:
     name: Publish @comfyorg/${{ inputs.package }}
+    # A dispatch publishes the ref it runs on, and a workflow_call carries the
+    # caller's event, so the on-merge path is unaffected by this.
+    if: github.event_name != 'workflow_dispatch' || github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     permissions:
       contents: read

@@ -100,10 +100,13 @@ The decisions inside those workflows:
   back to the workflow run and the commit. An external consumer installing an
   alpha of an auth package should be able to verify where the tarball came
   from.
-- **No `pull_request` trigger reaches the registry credentials.** Every
-  workflow here runs off `main` — a dispatch, or the merge of a reviewed PR.
-  `NPM_TOKEN` and `id-token: write` stay out of any job whose definition a
-  pull request can rewrite.
+- **No unmerged pull-request run reaches the registry credentials.** The
+  on-merge path runs on the merge commit of a reviewed, `Release`-labelled PR,
+  and the credentialed job refuses a `workflow_dispatch` on any ref but
+  `main`, so a branch cannot hand `NPM_TOKEN` its own tree by pressing the
+  button. A write-access holder can still edit that guard on a branch and
+  dispatch it; the control for that is a protected publish environment with a
+  branch rule, which this ADR does not yet claim.
 
 ### Versioning policy
 
