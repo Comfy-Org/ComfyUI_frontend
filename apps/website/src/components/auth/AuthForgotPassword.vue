@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import {
-  AUTH_TOAST_SUMMARIES,
   classifyAuthError,
   isFirebaseAuthErrorLike,
   severityForAuthError
@@ -157,7 +156,7 @@ function reportSendFailure(error: unknown) {
   const severity = severityForAuthError(classification)
   addToast({
     severity,
-    summary: AUTH_TOAST_SUMMARIES[locale][severity],
+    summary: t(severity === 'warn' ? 'g.warning' : 'g.error', locale),
     detail: signInErrorMessage(classification, locale, hostname)
   })
 }

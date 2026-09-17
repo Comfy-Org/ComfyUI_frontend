@@ -13,6 +13,7 @@ import {
   fakeBillingSdk,
   failedTopup,
   pendingTopup,
+  pendingSubscription,
   settledOperation,
   settledTopup
 } from './billingSdkTestUtils'
@@ -392,10 +393,45 @@ describe('useBillingSdkStore subscription commands', () => {
     value: { phase: 'succeeded', operation: settledOperation('succeeded') }
   } as const
 
+  // A subscribe the server activated on the spot, so the projection's
+  // `requiredPayment` reads off a status the fixture states rather than off a
+  // field it happens to omit.
+  const SETTLED_SUBSCRIBE = {
+    status: 'ok',
+    value: {
+      phase: 'succeeded',
+      operation: settledOperation('succeeded', 'subscription'),
+      issuedStatus: 'subscribed'
+    }
+  } as const
+
   const ROUTE_MISSING = {
     status: 'error',
     code: 'NOT_FOUND',
     httpStatus: 404
+  } as const
+
+  const QUOTE = {
+    allowed: true,
+    cost_next_period_cents: 2000,
+    cost_today_cents: 1500,
+    credits_next_period_cents: 2000,
+    credits_today_cents: 1500,
+    effective_at: '2026-10-01T00:00:00.000Z',
+    is_immediate: true,
+    new_plan: {
+      credits_cents: 2000,
+      duration: 'MONTHLY',
+      price_cents: 2000,
+      seat_summary: {
+        seat_count: 1,
+        total_cost_cents: 2000,
+        total_credits_cents: 2000
+      },
+      slug: 'pro-monthly',
+      tier: 'PRO'
+    },
+    transition_type: 'upgrade'
   } as const
 
   it('refreshes what the poller refreshed after a cancel settles', async () => {
@@ -409,7 +445,7 @@ describe('useBillingSdkStore subscription commands', () => {
     })
     expect(mockFetchStatus).toHaveBeenCalledOnce()
     expect(mockFetchBalance).toHaveBeenCalledOnce()
-    expect(mockCapabilitiesRefresh).toHaveBeenCalledOnce()
+    expect(useBillingCapabilities().refresh).toHaveBeenCalledOnce()
   })
 
   it('reconciles the subscription after a resubscribe settles', async () => {
@@ -420,7 +456,7 @@ describe('useBillingSdkStore subscription commands', () => {
       value: undefined
     })
     expect(mockReconcileSubscription).toHaveBeenCalledOnce()
-    expect(mockCapabilitiesRefresh).toHaveBeenCalledOnce()
+    expect(useBillingCapabilities().refresh).toHaveBeenCalledOnce()
   })
 
   it('stops sending to a route the backend answered 404, for every action', async () => {
@@ -437,11 +473,156 @@ describe('useBillingSdkStore subscription commands', () => {
     await expect(
       store.openPaymentPortal('https://app.example/')
     ).resolves.toEqual({ status: 'unavailable' })
+    await expect(store.subscribe({ plan_slug: 'pro-yearly' })).resolves.toEqual(
+      { status: 'unavailable' }
+    )
+    await expect(
+      store.previewSubscribe({ planSlug: 'pro-yearly' })
+    ).resolves.toEqual({ status: 'unavailable' })
 
     expect(harness.sdk.commands.cancelSubscription).toHaveBeenCalledOnce()
     expect(harness.sdk.commands.resubscribe).not.toHaveBeenCalled()
     expect(harness.sdk.commands.openPaymentPortal).not.toHaveBeenCalled()
+    expect(harness.sdk.commands.subscribe).not.toHaveBeenCalled()
+    expect(harness.sdk.commands.previewSubscribe).not.toHaveBeenCalled()
     expect(mockFetchStatus).not.toHaveBeenCalled()
+  })
+
+  it('reconciles the subscription after a plan change settles', async () => {
+    vi.mocked(harness.sdk.commands.subscribe).mockResolvedValue(
+      SETTLED_SUBSCRIBE
+    )
+
+    await expect(
+      useBillingSdkStore().subscribe({ plan_slug: 'pro-yearly' })
+    ).resolves.toEqual({
+      status: 'ok',
+      value: {
+        billing_op_id: 'op-1',
+        status: 'subscribed',
+        requiredPayment: false
+      }
+    })
+    expect(harness.sdk.commands.subscribe).toHaveBeenCalledWith({
+      plan_slug: 'pro-yearly'
+    })
+    expect(mockReconcileSubscription).toHaveBeenCalledOnce()
+    expect(useBillingCapabilities().refresh).toHaveBeenCalledOnce()
+  })
+
+  it('hands back the quote without refreshing anything', async () => {
+    vi.mocked(harness.sdk.commands.previewSubscribe).mockResolvedValue({
+      status: 'ok',
+      value: QUOTE
+    })
+
+    await expect(
+      useBillingSdkStore().previewSubscribe({ planSlug: 'pro-yearly' })
+    ).resolves.toEqual({ status: 'ok', value: QUOTE })
+    expect(mockReconcileSubscription).not.toHaveBeenCalled()
+    expect(mockFetchStatus).not.toHaveBeenCalled()
+  })
+
+  it('warns once and keeps a blocked payment page reachable however long it polls', () => {
+    const openPage = vi.spyOn(window, 'open').mockReturnValue(null)
+    const store = useBillingSdkStore()
+    const toasts = useToastStore()
+
+    harness.publish(
+      pendingSubscription({ actionUrl: 'https://pay.example/op-1' })
+    )
+    harness.publish(
+      pendingSubscription({
+        actionUrl: 'https://pay.example/op-1',
+        customerActionSeen: true
+      })
+    )
+    harness.publish(
+      pendingSubscription({
+        actionUrl: 'https://pay.example/op-1',
+        customerActionSeen: true,
+        authenticationState: 'requires_action'
+      })
+    )
+
+    expect(openPage).toHaveBeenCalledExactlyOnceWith(
+      'https://pay.example/op-1',
+      '_blank'
+    )
+    expect(toasts.messagesToAdd).toEqual([
+      expect.objectContaining({ severity: 'warn' })
+    ])
+    expect(store.subscriptionActionUrl).toBe('https://pay.example/op-1')
+  })
+
+  it('offers the next hosted page the same subscribe moves to', () => {
+    const openPage = vi.spyOn(window, 'open').mockReturnValue(null)
+    const store = useBillingSdkStore()
+
+    harness.publish(
+      pendingSubscription({ actionUrl: 'https://pay.example/first' })
+    )
+    harness.publish(
+      pendingSubscription({ actionUrl: 'https://pay.example/second' })
+    )
+
+    expect(openPage).toHaveBeenCalledTimes(2)
+    expect(store.subscriptionActionUrl).toBe('https://pay.example/second')
+  })
+
+  it('does not re-offer a hosted page this operation already offered', () => {
+    const openPage = vi.spyOn(window, 'open').mockReturnValue(null)
+    useBillingSdkStore()
+
+    harness.publish(
+      pendingSubscription({ actionUrl: 'https://pay.example/first' })
+    )
+    harness.publish(
+      pendingSubscription({ actionUrl: 'https://pay.example/second' })
+    )
+    harness.publish(
+      pendingSubscription({ actionUrl: 'https://pay.example/first' })
+    )
+
+    expect(openPage).toHaveBeenCalledTimes(2)
+  })
+
+  it('offers nothing for a hosted page that is not https', () => {
+    const openPage = vi.spyOn(window, 'open').mockReturnValue(null)
+    const store = useBillingSdkStore()
+
+    harness.publish(
+      pendingSubscription({ actionUrl: 'javascript:alert(document.cookie)' })
+    )
+
+    expect(openPage).not.toHaveBeenCalled()
+    expect(store.subscriptionActionUrl).toBeNull()
+  })
+
+  it('offers nothing once the subscribe has settled', () => {
+    vi.spyOn(window, 'open').mockReturnValue(null)
+    const store = useBillingSdkStore()
+
+    harness.publish(
+      pendingSubscription({ actionUrl: 'https://pay.example/op-1' })
+    )
+    harness.publish(settledOperation('succeeded', 'subscription'))
+
+    expect(store.subscriptionActionUrl).toBeNull()
+  })
+
+  it('drives the in-page challenge a subscribe raises, as it does for a top-up', async () => {
+    useBillingSdkStore()
+
+    harness.publish(
+      pendingSubscription({
+        presentation: 'embedded',
+        challenge: { clientSecret: 'cs_1', status: 'required' }
+      })
+    )
+    await nextTick()
+
+    expect(harness.sdk.driveChallenge).toHaveBeenCalledExactlyOnceWith('op-1')
   })
 
   it('hands back the portal URL without refreshing anything', async () => {

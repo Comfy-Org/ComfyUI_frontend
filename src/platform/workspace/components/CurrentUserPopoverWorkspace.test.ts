@@ -1,4 +1,5 @@
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
+import { useDialogService } from '@/services/dialogService'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { getActivePinia } from 'pinia'
 import { render, screen, waitFor } from '@testing-library/vue'
@@ -33,10 +34,8 @@ const state = vi.hoisted(() => {
     canReactivatePlan: false,
     canOpenPricingSurface: false,
     shouldUseWorkspaceBilling: true,
-    hostedBillingWebEnabled: false,
+    hostedBillingDestination: 'stripe',
     billingWebUrl: initialBillingWebUrl(),
-    showCreateWorkspaceDialog: vi.fn(),
-    showTopUpCreditsDialog: vi.fn(),
     showPricingTable: vi.fn(),
     showSettingsDialog: vi.fn()
   }
@@ -109,20 +108,15 @@ vi.mock(import('@/platform/distribution/types'), () => ({
   }
 }))
 
-vi.mock<unknown>(import('@/services/dialogService'), () => ({
-  useDialogService: () => ({
-    showCreateWorkspaceDialog: state.showCreateWorkspaceDialog,
-    showTopUpCreditsDialog: state.showTopUpCreditsDialog
-  })
-}))
+vi.mock(import('@/services/dialogService'))
 
 vi.mock(import('@/platform/telemetry'))
 
 vi.mock<unknown>(import('@/composables/useFeatureFlags'), () => ({
   useFeatureFlags: () => ({
     flags: {
-      get hostedBillingWebEnabled() {
-        return state.hostedBillingWebEnabled
+      get hostedBillingDestination() {
+        return state.hostedBillingDestination
       }
     }
   })
@@ -130,6 +124,11 @@ vi.mock<unknown>(import('@/composables/useFeatureFlags'), () => ({
 
 vi.mock<unknown>(import('@/config/billingWeb'), () => ({
   getBillingWebUrl: () => state.billingWebUrl
+}))
+
+// Pins the billing family the hosted route derives; an unmapped one fails closed to the provider.
+vi.mock(import('@/config/comfyApi'), () => ({
+  getComfyCloudBaseUrl: () => 'https://testcloud.comfy.org'
 }))
 
 const WorkspaceSwitcherPopoverStub = defineComponent({
@@ -185,6 +184,40 @@ function renderComponent(
   })
 }
 
+/**
+ * A blank tab the handler can disown and navigate. happy-dom's own child
+ * window exposes `opener` read-only and fetches whatever `location` is set to.
+ * The two writes are recorded in order: `opener` is no longer writable once
+ * the tab has left this origin, so disowning after navigating throws in a
+ * browser while both orders would satisfy plain properties.
+ */
+function stubHostedTab(): Window & { readonly writes: readonly string[] } {
+  const writes: string[] = []
+  let opener: Window | null = window
+  let href = 'about:blank'
+  const tab = Object.create(window) as Window & { writes: string[] }
+  Object.defineProperty(tab, 'opener', {
+    get: () => opener,
+    set: (value: Window | null) => {
+      writes.push('disown')
+      opener = value
+    }
+  })
+  Object.defineProperty(tab, 'location', {
+    get: () => ({
+      get href() {
+        return href
+      },
+      set href(value: string) {
+        writes.push('navigate')
+        href = value
+      }
+    })
+  })
+  Object.defineProperty(tab, 'writes', { get: () => writes })
+  return tab
+}
+
 describe('CurrentUserPopoverWorkspace', () => {
   beforeEach(() => {
     state.isCloud = true
@@ -199,7 +232,7 @@ describe('CurrentUserPopoverWorkspace', () => {
     state.canOpenPricingSurface = false
 
     state.shouldUseWorkspaceBilling = true
-    state.hostedBillingWebEnabled = false
+    state.hostedBillingDestination = 'stripe'
     state.billingWebUrl = new URL('http://localhost:5174')
   })
 
@@ -284,7 +317,7 @@ describe('CurrentUserPopoverWorkspace', () => {
     await user.click(screen.getByTestId('workspace-switcher-trigger'))
     await user.click(screen.getByTestId('stub-create-workspace'))
 
-    expect(state.showCreateWorkspaceDialog).toHaveBeenCalled()
+    expect(useDialogService().showCreateWorkspaceDialog).toHaveBeenCalled()
     expect(emitted('close')).toHaveLength(1)
     expect(
       screen.queryByTestId('workspace-switcher-panel')
@@ -309,6 +342,7 @@ describe('CurrentUserPopoverWorkspace', () => {
 
   it('keeps Plans & pricing in-app when hosted billing is disabled', async () => {
     const user = userEvent.setup()
+    const open = vi.spyOn(window, 'open').mockReturnValue(null)
     state.canOpenPricingSurface = true
     renderComponent('team')
 
@@ -317,30 +351,34 @@ describe('CurrentUserPopoverWorkspace', () => {
     expect(state.showPricingTable).toHaveBeenCalledWith({
       reason: 'avatar_menu_plans'
     })
+    expect(open).not.toHaveBeenCalled()
   })
 
-  it('opens hosted billing when its feature flag is enabled', async () => {
+  it('opens hosted billing alone when its feature flag is enabled', async () => {
     const user = userEvent.setup()
-    const open = vi.spyOn(window, 'open').mockReturnValue(window)
+    const tab = stubHostedTab()
+    const open = vi.spyOn(window, 'open').mockReturnValue(tab)
     state.canOpenPricingSurface = true
-    state.hostedBillingWebEnabled = true
+    state.hostedBillingDestination = 'billing_web'
     renderComponent('team')
 
     await user.click(screen.getByTestId('plans-pricing-menu-item'))
 
-    expect(open).toHaveBeenCalledWith(
-      'http://localhost:5174/',
-      '_blank',
-      'noopener,noreferrer'
+    expect(open).toHaveBeenCalledOnce()
+    expect(open).toHaveBeenCalledWith('', '_blank')
+    expect(tab.writes).toEqual(['disown', 'navigate'])
+    expect(tab.opener).toBeNull()
+    expect(tab.location.href).toBe(
+      'http://localhost:5174/v1/pricing?product=comfyui&return_to=comfyui_workspace'
     )
     expect(state.showPricingTable).not.toHaveBeenCalled()
   })
 
-  it('keeps Plans & pricing in-app when the hosted tab is blocked', async () => {
+  it('falls back to the in-app pricing table when the hosted tab is blocked', async () => {
     const user = userEvent.setup()
     const open = vi.spyOn(window, 'open').mockReturnValue(null)
     state.canOpenPricingSurface = true
-    state.hostedBillingWebEnabled = true
+    state.hostedBillingDestination = 'billing_web'
     renderComponent('team')
 
     await user.click(screen.getByTestId('plans-pricing-menu-item'))
@@ -355,7 +393,7 @@ describe('CurrentUserPopoverWorkspace', () => {
     const user = userEvent.setup()
     const open = vi.spyOn(window, 'open').mockImplementation(() => null)
     state.canOpenPricingSurface = true
-    state.hostedBillingWebEnabled = true
+    state.hostedBillingDestination = 'billing_web'
     state.billingWebUrl = null
     renderComponent('team')
 
@@ -450,7 +488,7 @@ describe('CurrentUserPopoverWorkspace', () => {
     ).not.toBeInTheDocument()
     await user.click(screen.getByTestId('add-credits-button'))
 
-    expect(state.showTopUpCreditsDialog).toHaveBeenCalledOnce()
+    expect(useDialogService().showTopUpCreditsDialog).toHaveBeenCalledOnce()
   })
 
   it('offers add-credits alongside Subscribe for an unsubscribed Cloud owner', () => {
@@ -613,7 +651,7 @@ describe('CurrentUserPopoverWorkspace', () => {
     state.canManageSubscriptionLifecycle = true
     state.canReactivatePlan = true
     state.canOpenPricingSurface = true
-    state.hostedBillingWebEnabled = true
+    state.hostedBillingDestination = 'billing_web'
     renderComponent('team')
 
     expect(screen.getByTestId('add-credits-button')).toBeInTheDocument()

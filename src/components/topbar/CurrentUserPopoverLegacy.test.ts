@@ -1,4 +1,5 @@
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
+import { useDialogService } from '@/services/dialogService'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { getActivePinia } from 'pinia'
 import { render, screen } from '@testing-library/vue'
@@ -15,7 +16,6 @@ import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspace
 import CurrentUserPopoverLegacy from './CurrentUserPopoverLegacy.vue'
 
 const mockShowSettingsDialog = vi.fn()
-const mockShowTopUpCreditsDialog = vi.fn()
 
 vi.mock(import('@/platform/settings/composables/useSettingsDialog'), () => ({
   useSettingsDialog: vi.fn(() => ({
@@ -57,11 +57,7 @@ vi.mock<unknown>(import('@/composables/auth/useCurrentUser'), () => ({
   }))
 }))
 
-vi.mock<unknown>(import('@/services/dialogService'), () => ({
-  useDialogService: vi.fn(() => ({
-    showTopUpCreditsDialog: mockShowTopUpCreditsDialog
-  }))
-}))
+vi.mock(import('@/services/dialogService'))
 
 function makeSubscription(
   overrides: Partial<SubscriptionInfo> = {}
@@ -272,7 +268,7 @@ describe('CurrentUserPopoverLegacy', () => {
 
     await user.click(screen.getByTestId('add-credits-button'))
 
-    expect(mockShowTopUpCreditsDialog).toHaveBeenCalled()
+    expect(useDialogService().showTopUpCreditsDialog).toHaveBeenCalled()
     expect(onClose).toHaveBeenCalledTimes(1)
   })
 

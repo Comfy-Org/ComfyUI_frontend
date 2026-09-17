@@ -1,4 +1,5 @@
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
+import { useDialogService } from '@/services/dialogService'
 import { render, screen, waitFor } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -33,7 +34,7 @@ const state = vi.hoisted(() => ({
   fetchBalance: vi.fn(),
   fetchStatus: vi.fn(),
   showPricingTable: vi.fn(),
-  showTopUpCreditsDialog: vi.fn(),
+
   trackAddApiCreditButtonClicked: vi.fn(),
   trackApiCreditTopupSucceeded: vi.fn(),
   telemetryUnavailable: false,
@@ -96,11 +97,7 @@ vi.mock<unknown>(
   })
 )
 
-vi.mock<unknown>(import('@/services/dialogService'), () => ({
-  useDialogService: () => ({
-    showTopUpCreditsDialog: state.showTopUpCreditsDialog
-  })
-}))
+vi.mock(import('@/services/dialogService'))
 
 vi.mock<unknown>(import('@/platform/telemetry'), () => ({
   useTelemetry: () =>
@@ -542,7 +539,7 @@ describe('CreditsTile', () => {
     renderTile()
     expect(screen.queryByText('Upgrade to add credits')).toBeNull()
     await userEvent.click(screen.getByText('Add credits'))
-    expect(state.showTopUpCreditsDialog).toHaveBeenCalledOnce()
+    expect(useDialogService().showTopUpCreditsDialog).toHaveBeenCalledOnce()
   })
 
   it('keeps add-credits available on local for an unsubscribed team workspace', async () => {
@@ -553,7 +550,7 @@ describe('CreditsTile', () => {
     renderTile()
     expect(screen.queryByText('Upgrade to add credits')).toBeNull()
     await userEvent.click(screen.getByText('Add credits'))
-    expect(state.showTopUpCreditsDialog).toHaveBeenCalledOnce()
+    expect(useDialogService().showTopUpCreditsDialog).toHaveBeenCalledOnce()
   })
 
   it('shows no depletion notice or in-use badge while monthly credits remain', () => {
@@ -614,7 +611,7 @@ describe('CreditsTile', () => {
     renderTile()
     await userEvent.click(screen.getByText('Add credits'))
     expect(state.trackAddApiCreditButtonClicked).toHaveBeenCalledOnce()
-    expect(state.showTopUpCreditsDialog).toHaveBeenCalledOnce()
+    expect(useDialogService().showTopUpCreditsDialog).toHaveBeenCalledOnce()
   })
 
   it('offers the upgrade path when top-up is denied but self-serve subscribe is allowed', async () => {
