@@ -147,6 +147,7 @@ class AgentConversationHarness {
   private readonly subscribed = new Promise<void>((resolve) => {
     this.resolveSubscribed = resolve
   })
+  private subscribes = 0
 
   constructor(
     private readonly page: Page,
@@ -603,7 +604,15 @@ class AgentConversationHarness {
       return
     this.send(this.host.subscribed())
     this.send(this.host.catchUp(state_vector_b64))
+    this.subscribes += 1
     this.resolveSubscribed?.()
+  }
+
+  // How many times the follower has subscribed to the conversation workflow.
+  // The follower unsubscribes when its tab goes inactive and subscribes again
+  // when the tab returns, so a rise here is the tab-return catch-up landing.
+  subscribeCount(): number {
+    return this.subscribes
   }
 
   private waitForSubscribe(): Promise<void> {
