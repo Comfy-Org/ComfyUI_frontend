@@ -150,7 +150,8 @@ export const useAssetExportStore = defineStore('assetExport', () => {
     async function pollSingleExport(staleExport: AssetExport) {
       try {
         const task = await taskService.getTask(staleExport.taskId)
-        const exp = exports.value.get(staleExport.taskId) ?? staleExport
+        const exp = exports.value.get(staleExport.taskId)
+        if (!exp) return
 
         if (!task) {
           handleAssetExport({

@@ -143,6 +143,26 @@ describe('useAssetExportStore', () => {
     }
   )
 
+  it('does not recreate a dismissed export when its poll resolves', async () => {
+    const store = useAssetExportStore()
+    let resolveTask: ((task: undefined) => void) | undefined
+    const request = new Promise<undefined>((resolve) => {
+      resolveTask = resolve
+    })
+    vi.mocked(taskService.getTask).mockReturnValue(request)
+    dispatchExport()
+
+    await vi.advanceTimersByTimeAsync(10_000)
+    expect(taskService.getTask).toHaveBeenCalledTimes(1)
+    dispatchExport({ status: 'failed' })
+    store.clearFinishedExports()
+    assert(resolveTask)
+    resolveTask(undefined)
+    await vi.advanceTimersByTimeAsync(0)
+
+    expect(store.exportList).toEqual([])
+  })
+
   it('marks a missing stale task as failed and stops polling it', async () => {
     const store = useAssetExportStore()
     const taskId = 'task-123'

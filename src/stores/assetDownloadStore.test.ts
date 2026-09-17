@@ -259,6 +259,26 @@ describe('useAssetDownloadStore', () => {
       }
     )
 
+    it('does not recreate a dismissed download when its poll resolves', async () => {
+      const store = useAssetDownloadStore()
+      let resolveTask: ((task: undefined) => void) | undefined
+      const request = new Promise<undefined>((resolve) => {
+        resolveTask = resolve
+      })
+      vi.mocked(taskService.getTask).mockReturnValue(request)
+      dispatch(createDownloadMessage())
+
+      await vi.advanceTimersByTimeAsync(10_000)
+      expect(taskService.getTask).toHaveBeenCalledTimes(1)
+      dispatch(createDownloadMessage({ status: 'completed' }))
+      store.clearFinishedDownloads()
+      assert(resolveTask)
+      resolveTask(undefined)
+      await vi.advanceTimersByTimeAsync(0)
+
+      expect(store.downloadList).toEqual([])
+    })
+
     it('marks a missing task as failed and stops polling it', async () => {
       const store = useAssetDownloadStore()
 
