@@ -176,6 +176,10 @@ export function useHeroLogo(
       const maxAnisotropy = renderer.capabilities.getMaxAnisotropy()
       const textures = await loadTextures(urls.slice(0, 1), maxAnisotropy)
       if (isDisposed()) return
+      if (!textures[0]) {
+        cleanup()
+        return
+      }
 
       renderer.domElement.style.opacity = '1'
       loaded.value = true
