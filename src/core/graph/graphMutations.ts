@@ -397,7 +397,7 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
       const slotName = slotOrder.at(index)
       if (slotName === undefined) return
       widget.name = slotName
-      if (!(slotName in named)) return
+      if (!Object.hasOwn(named, slotName)) return
       widget.value = structuredClone(named[slotName]) as WidgetValue
       widget.type = widgetType(named[slotName])
     })
@@ -851,11 +851,11 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
       ...(isRecord(stalePositional) ? Object.keys(stalePositional) : [])
     ])
     const named = { ...staleNamed }
-    const overlay: Record<string, WidgetValue> = {}
+    const overlay: Record<string, WidgetValue> = Object.create(null)
     for (const widget of serializableWidgets) {
       if (!staleNames.has(widget.name)) continue
       overlay[widget.name] = widget.value
-      if (widget.name in named) named[widget.name] = widget.value
+      if (Object.hasOwn(named, widget.name)) named[widget.name] = widget.value
     }
     return {
       staleNamed,
@@ -888,7 +888,9 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
     if (Array.isArray(stalePositional)) {
       return stalePositional.map((value, index) => {
         const name = positionalNames.at(index)
-        return name !== undefined && name in overlay ? overlay[name] : value
+        return name !== undefined && Object.hasOwn(overlay, name)
+          ? overlay[name]
+          : value
       })
     }
     if (isRecord(stalePositional)) return { ...stalePositional, ...overlay }
