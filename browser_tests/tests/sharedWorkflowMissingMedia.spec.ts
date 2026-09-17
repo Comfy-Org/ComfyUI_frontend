@@ -82,18 +82,14 @@ test.describe('Shared workflow missing media', { tag: '@cloud' }, () => {
   // Missing media only surfaces the overlay when the Errors tab is enabled
   // (src/stores/executionErrorStore.ts).
   test.use({
+    initialUrl: `/?share=${sharedWorkflowImportScenario.shareId}`,
     initialSettings: {
       'Comfy.RightSidePanel.ShowErrorsTab': true
     }
   })
 
-  test.beforeEach(async ({ comfyPage, sharedWorkflowImportMocks }) => {
+  test.beforeEach(async ({ sharedWorkflowImportMocks }) => {
     sharedWorkflowImportMocks.resetAndStartRecording()
-    // oxlint-disable-next-line comfy/no-comfy-page-setup-call -- pre-existing call, tracked by evfail-23; not fixed in this pass
-    await comfyPage.setup({
-      clearStorage: false,
-      url: `/?share=${sharedWorkflowImportScenario.shareId}`
-    })
   })
 
   test('imports shared media before loading workflow so missing media is not surfaced', async ({
