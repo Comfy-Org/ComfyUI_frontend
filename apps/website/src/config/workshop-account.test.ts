@@ -2,8 +2,8 @@ import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 
 import type { User } from 'firebase/auth'
 
-import type { LazyIdentity } from '@comfyorg/account/lazyIdentity'
-import type { AccountUser } from '@comfyorg/account/session'
+import type { LazyIdentity } from '@comfyorg/account-core/lazyIdentity'
+import type { AccountUser } from '@comfyorg/account-core/session'
 
 const h = vi.hoisted(() => ({
   captureSucceeded: vi.fn(),
@@ -18,7 +18,7 @@ vi.mock<unknown>(import('../scripts/posthog'), () => ({
 }))
 
 vi.mock<unknown>(import('./workshop-firebase'), async () => {
-  const { createTestIdentity } = await import('@comfyorg/account/testing')
+  const { createTestIdentity } = await import('@comfyorg/account-core/testing')
   h.firebaseEvaluated()
   return {
     workshopIdentity: createTestIdentity<User>({

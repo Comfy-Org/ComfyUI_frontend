@@ -1,3 +1,4 @@
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useWorkspaceAuthStore } from '@/platform/workspace/stores/workspaceAuthStore'
@@ -7,11 +8,6 @@ import type { Mock } from 'vitest'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useAuthStore } from '@/stores/authStore'
-const { mockFeatureFlags } = vi.hoisted(() => ({
-  mockFeatureFlags: {
-    unifiedCloudAuthEnabled: false
-  }
-}))
 
 const { mockDistributionTypes } = vi.hoisted(() => ({
   mockDistributionTypes: {
@@ -20,11 +16,7 @@ const { mockDistributionTypes } = vi.hoisted(() => ({
   }
 }))
 
-vi.mock<unknown>(import('@/composables/useFeatureFlags'), () => ({
-  useFeatureFlags: () => ({
-    flags: mockFeatureFlags
-  })
-}))
+vi.mock(import('@/composables/useFeatureFlags'))
 
 vi.mock(import('firebase/auth'))
 
@@ -47,7 +39,7 @@ describe('auth token priority chain', () => {
 
   beforeEach(() => {
     mockDistributionTypes.isCloud = true
-    mockFeatureFlags.unifiedCloudAuthEnabled = false
+    vi.mocked(useFeatureFlags().flags).unifiedCloudAuthEnabled = false
     const authStateObservers: Array<(user: User | null) => void> = []
     authStateCallback = (user) =>
       authStateObservers.forEach((observer) => observer(user))
@@ -60,7 +52,7 @@ describe('auth token priority chain', () => {
       }
     )
     store = useAuthStore()
-    useWorkspaceAuthStore().unifiedToken = null
+    useWorkspaceAuthStore().destroy()
     Object.assign(useTeamWorkspaceStore(), { activeWorkspaceId: null })
     useTeamWorkspaceStore().initState = 'ready'
     vi.mocked(useWorkspaceAuthStore().getWorkspaceAuthHeader).mockReturnValue(
@@ -439,7 +431,7 @@ describe('auth token priority chain', () => {
 
   describe('unified cloud auth (flag ON)', () => {
     beforeEach(() => {
-      mockFeatureFlags.unifiedCloudAuthEnabled = true
+      vi.mocked(useFeatureFlags().flags).unifiedCloudAuthEnabled = true
     })
 
     it('getAuthHeader returns only the unified Cloud JWT, never Firebase or API key', async () => {

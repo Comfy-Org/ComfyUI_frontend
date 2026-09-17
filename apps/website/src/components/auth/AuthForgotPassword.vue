@@ -3,8 +3,8 @@ import {
   classifyAuthError,
   isFirebaseAuthErrorLike,
   severityForAuthError
-} from '@comfyorg/account/firebaseAuthError'
-import { useGenerationGuard } from '@comfyorg/account/vue/useGenerationGuard'
+} from '@comfyorg/account-core/firebaseAuthError'
+import { useGenerationGuard } from '@comfyorg/account-core/vue/useGenerationGuard'
 import { cn } from '@comfyorg/tailwind-utils'
 import { useMounted } from '@vueuse/core'
 import { onBeforeUnmount, onMounted, ref, watch } from 'vue'

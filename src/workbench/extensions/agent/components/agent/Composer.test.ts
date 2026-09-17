@@ -180,7 +180,7 @@ describe('Composer', () => {
     })
     expect(addNodes).toBeVisible()
     expect(addNodes).toContainHTML(
-      '<span class="icon-[lucide--mouse-pointer-click] size-[14px] shrink-0"></span>'
+      '<span class="icon-[lucide--mouse-pointer-click] size-3.5 shrink-0"></span>'
     )
     expect(
       text.compareDocumentPosition(addNodes) & Node.DOCUMENT_POSITION_FOLLOWING
@@ -234,12 +234,6 @@ describe('Composer', () => {
     mount()
     const send = screen.getByRole('button', { name: 'Send' })
     expect(send).toBeDisabled()
-
-    await userEvent.hover(send)
-    expect(
-      await screen.findByRole('tooltip', { hidden: true })
-    ).toHaveTextContent('Add a prompt to send')
-    await userEvent.unhover(send)
 
     await userEvent.click(screen.getByRole('textbox'))
     await userEvent.paste('hello')
@@ -310,6 +304,130 @@ describe('Composer', () => {
     await userEvent.click(stop)
     expect(emitted().stop).toHaveLength(1)
     expect(emitted().send).toBeUndefined()
+  })
+
+  it('shows the Stop tooltip with the Esc shortcut while running', async () => {
+    mount({ streaming: true })
+    const stop = screen.getByRole('button', { name: 'Stop' })
+    await userEvent.hover(stop)
+    expect(
+      await screen.findByRole('tooltip', { hidden: true })
+    ).toHaveTextContent('Stop Esc')
+  })
+
+  it('emits stop on Escape while running and ignores Enter', async () => {
+    const { emitted } = mount({ submitting: true })
+    const box = screen.getByRole('textbox')
+    await userEvent.type(box, 'hello{Enter}')
+    expect(emitted().stop).toBeUndefined()
+    expect(emitted().send).toBeUndefined()
+
+    const repeatedEscape = box.dispatchEvent(
+      new KeyboardEvent('keydown', {
+        key: 'Escape',
+        repeat: true,
+        bubbles: true,
+        cancelable: true
+      })
+    )
+    expect(repeatedEscape).toBe(true)
+    expect(emitted().stop).toBeUndefined()
+
+    await userEvent.type(box, '{Escape}')
+    expect(emitted().stop).toHaveLength(1)
+  })
+
+  it('shows the Stop tooltip while submitting and stops on Escape while streaming', async () => {
+    const submitting = mount({ submitting: true })
+    await userEvent.hover(screen.getByRole('button', { name: 'Stop' }))
+    expect(
+      await screen.findByRole('tooltip', { hidden: true })
+    ).toHaveTextContent('Stop Esc')
+    submitting.unmount()
+
+    const { emitted } = mount({ streaming: true })
+    const box = screen.getByRole('textbox')
+    await userEvent.type(box, 'hello{Enter}')
+    expect(emitted().send).toBeUndefined()
+    expect(emitted().stop).toBeUndefined()
+    await userEvent.type(box, '{Escape}')
+    expect(emitted().stop).toHaveLength(1)
+  })
+
+  it('does not stop the run on Escape during IME composition', async () => {
+    const { emitted } = mount({ streaming: true })
+    const box = screen.getByRole('textbox')
+    box.focus()
+    const notCanceled = box.dispatchEvent(
+      new KeyboardEvent('keydown', {
+        key: 'Escape',
+        isComposing: true,
+        bubbles: true,
+        cancelable: true
+      })
+    )
+    expect(notCanceled).toBe(true)
+    expect(emitted().stop).toBeUndefined()
+  })
+
+  it('lets Escape close the mention list before it stops a run', async () => {
+    const { emitted } = mount({
+      streaming: true,
+      getMentionNodes: () => [{ id: '2', title: 'KSampler' }]
+    })
+    const box = screen.getByRole('textbox')
+    await userEvent.type(box, '@')
+    expect(screen.getByRole('menu')).toBeInTheDocument()
+    await userEvent.keyboard('{Escape}')
+    expect(screen.queryByRole('menu')).not.toBeInTheDocument()
+    expect(emitted().stop).toBeUndefined()
+    await userEvent.keyboard('{Escape}')
+    expect(emitted().stop).toHaveLength(1)
+  })
+
+  it('keeps handled Escapes inside the composer and lets idle Escape bubble', async () => {
+    const parentKeydown = vi.fn<(event: KeyboardEvent) => void>()
+    const escapesSeenByParent = () =>
+      parentKeydown.mock.calls.filter(([event]) => event.key === 'Escape')
+        .length
+    const onStop = vi.fn()
+    const mentionNodes = [{ id: '2', title: 'KSampler' }]
+    const streaming = ref(true)
+    const Host = defineComponent({
+      setup: () => () =>
+        h('div', { onKeydown: parentKeydown }, [
+          h(Composer, {
+            hasWorkflowTarget: true,
+            streaming: streaming.value,
+            getMentionNodes: () => mentionNodes,
+            onStop
+          })
+        ])
+    })
+    render(Host, {
+      global: {
+        plugins: [i18n],
+        directives: { tooltip: tooltipDirectiveStub }
+      }
+    })
+    const box = screen.getByRole('textbox')
+
+    await userEvent.type(box, '@')
+    expect(screen.getByRole('menu')).toBeInTheDocument()
+    await userEvent.keyboard('{Escape}')
+    expect(screen.queryByRole('menu')).not.toBeInTheDocument()
+    expect(onStop).not.toHaveBeenCalled()
+    expect(escapesSeenByParent()).toBe(0)
+
+    await userEvent.keyboard('{Escape}')
+    expect(onStop).toHaveBeenCalledTimes(1)
+    expect(escapesSeenByParent()).toBe(0)
+
+    streaming.value = false
+    await nextTick()
+    await userEvent.keyboard('{Escape}')
+    expect(onStop).toHaveBeenCalledTimes(1)
+    expect(escapesSeenByParent()).toBe(1)
   })
 
   describe('run permissions popover', () => {

@@ -116,9 +116,9 @@
   --color-hub-surface: var(--color-transparency-white-t4);
   --color-hub-surface-hover: var(--color-transparency-white-t8);
   --color-hub-muted: #8a8a8a;
-  /* The workspace monogram, from the Cloud design system, so one workspace
-     reads the same wherever it is shown. */
-  --color-workspace-mark: var(--color-ocean-600);
+  /* The workspace monogram reads as a lighter step of the panel it sits on
+     rather than a colour of its own, so it tints with whatever is behind it. */
+  --color-workspace-mark: var(--color-transparency-white-t20);
 }
 
 @utility ppformula-text-center-sm {

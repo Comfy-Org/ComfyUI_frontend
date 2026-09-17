@@ -2,6 +2,10 @@ import vue from '@vitejs/plugin-vue'
 import { fileURLToPath } from 'node:url'
 import { defineConfig } from 'vitest/config'
 
+// Dates render through Intl; a fixed zone keeps a formatted date the same
+// everywhere the suite runs.
+process.env.TZ = 'UTC'
+
 export default defineConfig({
   plugins: [vue()],
   resolve: {

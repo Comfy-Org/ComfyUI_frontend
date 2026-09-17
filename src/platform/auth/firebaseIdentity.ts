@@ -4,7 +4,7 @@ import {
   indexedDBLocalPersistence
 } from 'firebase/auth'
 
-import { createFirebaseIdentity } from '@comfyorg/account/firebase'
+import { createFirebaseIdentity } from '@comfyorg/account-core/firebase'
 
 import { getFirebaseConfig } from '@/config/firebase'
 import { remoteConfigState } from '@/platform/remoteConfig/remoteConfig'

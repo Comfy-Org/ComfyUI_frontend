@@ -62,6 +62,11 @@ vi.mock(import('@comfyorg/fbx-exporter-three'), () => ({
   )
 }))
 
+const rejectedWith = (message: string) => ({
+  status: 'rejected',
+  reason: { message }
+})
+
 describe('ModelExporter', () => {
   describe('detectFormatFromURL', () => {
     it('extracts the lowercase extension from the filename query parameter', () => {
@@ -229,9 +234,9 @@ describe('ModelExporter', () => {
       )
 
       const promise = ModelExporter.exportGLB(new THREE.Object3D(), 'out.glb')
-      const assertion = expect(promise).rejects.toThrow('parse fail')
+      const settled = Promise.allSettled([promise])
       await vi.runAllTimersAsync()
-      await assertion
+      expect(await settled).toMatchObject([rejectedWith('parse fail')])
       expect(useToastStore().addAlert).toHaveBeenCalledWith(
         'toastMessages.failedToExportModel:{"format":"GLB"}'
       )
@@ -277,9 +282,9 @@ describe('ModelExporter', () => {
       })
 
       const promise = ModelExporter.exportOBJ(new THREE.Object3D(), 'out.obj')
-      const assertion = expect(promise).rejects.toThrow('obj fail')
+      const settled = Promise.allSettled([promise])
       await vi.runAllTimersAsync()
-      await assertion
+      expect(await settled).toMatchObject([rejectedWith('obj fail')])
       expect(useToastStore().addAlert).toHaveBeenCalledWith(
         'toastMessages.failedToExportModel:{"format":"OBJ"}'
       )
@@ -325,9 +330,9 @@ describe('ModelExporter', () => {
       })
 
       const promise = ModelExporter.exportSTL(new THREE.Object3D(), 'out.stl')
-      const assertion = expect(promise).rejects.toThrow('stl fail')
+      const settled = Promise.allSettled([promise])
       await vi.runAllTimersAsync()
-      await assertion
+      expect(await settled).toMatchObject([rejectedWith('stl fail')])
       expect(useToastStore().addAlert).toHaveBeenCalledWith(
         'toastMessages.failedToExportModel:{"format":"STL"}'
       )
@@ -401,9 +406,9 @@ describe('ModelExporter', () => {
       fbxParseAsyncMock.mockRejectedValue(new Error('fbx fail'))
 
       const promise = ModelExporter.exportFBX(new THREE.Object3D(), 'out.fbx')
-      const assertion = expect(promise).rejects.toThrow('fbx fail')
+      const settled = Promise.allSettled([promise])
       await vi.runAllTimersAsync()
-      await assertion
+      expect(await settled).toMatchObject([rejectedWith('fbx fail')])
       expect(useToastStore().addAlert).toHaveBeenCalledWith(
         'toastMessages.failedToExportModel:{"format":"FBX"}'
       )

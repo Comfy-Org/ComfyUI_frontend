@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import { ref, watch } from 'vue'
 import type { Ref } from 'vue'
 
-import type { AccountUser } from '@comfyorg/account/session'
+import type { AccountUser } from '@comfyorg/account-core/session'
 
 const STORAGE_KEY = 'comfy.workshop.session.v1'
 
@@ -20,7 +20,7 @@ vi.mock<unknown>(import('../scripts/posthog'), () => ({
 }))
 
 vi.mock<unknown>(import('./workshop-firebase'), async () => {
-  const { createTestIdentity } = await import('@comfyorg/account/testing')
+  const { createTestIdentity } = await import('@comfyorg/account-core/testing')
   return {
     workshopIdentity: createTestIdentity<AccountUser>({
       onUserChanged: (callback) => {

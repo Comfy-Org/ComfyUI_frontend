@@ -273,7 +273,7 @@ export class SceneModelManager implements ModelManagerInterface {
             child.material = this.clayMaterial
             break
           case 'original':
-          case 'pointCloud':
+          case 'pointCloud': {
             const originalMaterial = this.originalMaterials.get(child)
             if (originalMaterial) {
               child.material = originalMaterial
@@ -290,6 +290,7 @@ export class SceneModelManager implements ModelManagerInterface {
               }
             }
             break
+          }
         }
       }
     })

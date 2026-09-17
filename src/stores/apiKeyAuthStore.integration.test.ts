@@ -19,11 +19,7 @@ vi.mock(
     }) as const
 )
 
-vi.mock<unknown>(import('@/composables/useFeatureFlags'), () => ({
-  useFeatureFlags: () => ({
-    flags: { unifiedCloudAuthEnabled: false }
-  })
-}))
+vi.mock(import('@/composables/useFeatureFlags'))
 
 vi.mock(import('@/platform/telemetry'))
 
