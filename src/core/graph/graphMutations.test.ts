@@ -510,6 +510,33 @@ describe('graphMutations', () => {
     ])
   })
 
+  it('treats inherited object keys as absent when binding named widget values', () => {
+    // `'toString' in {}` is true, so an `in` check would read
+    // Object.prototype.toString as the widget value and structuredClone would
+    // throw. Only own keys of the named record may bind.
+    const graph = mutations()
+    graph.addNode(node(1, { seed: 4, toString: 'a' }), context)
+
+    expect(
+      graph.batch(context, (batch) =>
+        batch.reconcileNode({
+          ...node(1),
+          widgets_values: [5, 'b'],
+          widgets_values_named: { seed: 5 }
+        })
+      )
+    ).toBe(true)
+
+    expect(
+      useWidgetValueStore()
+        .getNodeWidgets('root', toNodeId(1))
+        .map(({ name, value }) => ({ name, value }))
+    ).toEqual([
+      { name: 'seed', value: 5 },
+      { name: 'toString', value: 'b' }
+    ])
+  })
+
   it('binds a positional reconcile through a widget the same batch introduced', () => {
     const graph = mutations()
     graph.addNode(node(1, { seed: 4 }), context)
