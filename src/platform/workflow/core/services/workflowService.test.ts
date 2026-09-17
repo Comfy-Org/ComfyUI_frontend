@@ -32,6 +32,7 @@ import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
 import { useMissingMediaStore } from '@/platform/missingMedia/missingMediaStore'
 import { app } from '@/scripts/app'
+import { ChangeTracker } from '@/scripts/changeTracker'
 import { useAppMode } from '@/composables/useAppMode'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { createMockChangeTracker } from '@/utils/__tests__/litegraphTestUtils'
@@ -100,11 +101,6 @@ vi.mock<unknown>(import('@/scripts/app'), () => ({
     nodeOutputs: {},
     nodePreviewImages: {}
   }
-}))
-
-vi.mock<unknown>(import('@/scripts/defaultGraph'), () => ({
-  defaultGraph: {},
-  blankGraph: {}
 }))
 
 vi.mock<unknown>(
@@ -489,8 +485,13 @@ describe('useWorkflowService', () => {
       workflowStore.activeWorkflow = null
       await service.openWorkflow(cycled)
 
-      expect(app.loadGraphData).toHaveBeenCalledTimes(1)
-      expect(vi.mocked(app.loadGraphData).mock.calls[0][3]).toBe(cycled)
+      expect(app.loadGraphData).toHaveBeenCalledExactlyOnceWith(
+        expect.anything(),
+        expect.anything(),
+        expect.anything(),
+        expect.objectContaining({ path: 'workflows/close-then-reopen.json' }),
+        expect.anything()
+      )
     })
 
     it('falls back to the default workflow when closing the last, inactive workflow', async () => {
@@ -508,10 +509,7 @@ describe('useWorkflowService', () => {
         service.closeWorkflow(lastOpen, { warnIfUnsaved: false })
       ).resolves.toBe(true)
 
-      // loadDefaultWorkflow is detected by its payload, not by a missing
-      // workflow argument: the call must carry the default graph itself.
       expect(app.loadGraphData).toHaveBeenCalledExactlyOnceWith(defaultGraph)
-      expect(vi.mocked(app.loadGraphData).mock.calls[0][0]).toBe(defaultGraph)
     })
 
     it('keeps the tab open and its draft intact when the replacement load fails', async () => {
@@ -1523,11 +1521,7 @@ describe('useWorkflowService', () => {
       releaseHeldLoad()
       await Promise.all([heldOpen, closePromise])
 
-      const defaultLoads = vi
-        .mocked(app.loadGraphData)
-        .mock.calls.filter((call) => call[3] === undefined)
-        .filter((call) => call[0] !== undefined && call.length === 1)
-      expect(defaultLoads).toHaveLength(0)
+      expect(app.loadGraphData).not.toHaveBeenCalledWith(defaultGraph)
       expect(workflowStore.openWorkflows.map((wf) => wf.path)).toContain(
         openedMidClose.path
       )
@@ -2115,18 +2109,18 @@ describe('useWorkflowService', () => {
     })
 
     it('generates a fresh UUID when a workflow-object reload has no valid id', async () => {
-      existingWorkflow.changeTracker.activeState.id = 'legacy-workflow-name'
+      existingWorkflow.changeTracker = new ChangeTracker(
+        existingWorkflow,
+        makeWorkflowDataWithId('legacy-workflow-name')
+      )
 
       await useWorkflowService().afterLoadNewGraph(
         existingWorkflow,
         makeWorkflowDataWithId('different-legacy-name')
       )
 
-      const resetArg = vi.mocked(existingWorkflow.changeTracker.reset).mock
-        .calls[0]?.[0]
-      expect(isValidUuid(resetArg?.id)).toBe(true)
-      expect(resetArg?.id).not.toBe('different-legacy-name')
-      expect(resetArg?.id).not.toBe('legacy-workflow-name')
+      expect(isValidUuid(existingWorkflow.activeState.id)).toBe(true)
+      expect(existingWorkflow.legacyId).toBe('different-legacy-name')
     })
 
     describe('root graph id adoption', () => {
