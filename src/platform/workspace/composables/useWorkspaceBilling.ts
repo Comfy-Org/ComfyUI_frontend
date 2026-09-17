@@ -8,7 +8,6 @@ import {
 } from 'vue'
 
 import type {
-  BillingResult,
   PreviewSubscribeInput,
   SubscribeInput
 } from '@comfyorg/account-core/billing'
@@ -39,6 +38,7 @@ import type {
   SubscriptionRailOutcome
 } from '@/platform/workspace/billing/sdk/subscriptionOperationView'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
+import { readOnRail } from '@/platform/workspace/composables/readOnRail'
 import type { BillingReadRail } from '@/platform/workspace/composables/useBillingReadRail'
 import { useBillingReadRail } from '@/platform/workspace/composables/useBillingReadRail'
 import { useSubscriptionRail } from '@/platform/workspace/composables/useSubscriptionRail'
@@ -125,20 +125,6 @@ async function resyncQuietly(refresh: () => Promise<unknown>): Promise<void> {
 
 /** The SDK rail refusing an action, distinct from any value it could return. */
 const DECLINED = Symbol('subscription rail declined')
-
-/**
- * A read on the SDK rail, in the shape the legacy path throws in. `SUPERSEDED`
- * is not a failure: the scope moved on under the read, so there is nothing to
- * publish and nothing to report, the same outcome as a stale legacy read.
- */
-async function readOnRail<T>(
-  read: () => Promise<BillingResult<T>>
-): Promise<T | undefined> {
-  const result = await read()
-  if (result.status === 'ok') return result.value
-  if (result.code === 'SUPERSEDED') return undefined
-  throw new WorkspaceApiError(result.code, undefined, result.code)
-}
 
 /**
  * The host's options as the generated request body, field for field, including
