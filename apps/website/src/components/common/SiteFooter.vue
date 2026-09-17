@@ -183,9 +183,9 @@ const contactColumn: { title: string; links: FooterLink[] } = {
 
       <!-- Link columns -->
       <div class="flex flex-col gap-12 lg:row-span-2 lg:justify-between">
-        <!-- Mobile: 2×2 grid -->
+        <!-- Mobile: stacked columns -->
         <div class="flex flex-col gap-12 lg:hidden">
-          <div class="grid grid-cols-2 gap-12">
+          <div class="grid grid-cols-1 gap-12">
             <FooterLinkColumn
               v-for="column in topColumns"
               :key="column.title"
