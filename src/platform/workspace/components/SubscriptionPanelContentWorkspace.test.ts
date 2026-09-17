@@ -1,3 +1,4 @@
+import { useDialogService } from '@/services/dialogService'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { getActivePinia } from 'pinia'
 import { toRef, computed, ref } from 'vue'
@@ -103,11 +104,6 @@ const mockCurrentTeamCreditStop = ref<TeamCreditStopSummary | null>({
   credits_monthly: 147700,
   stop_usd: 700
 })
-
-const mockShowLeaveWorkspaceDialog = vi.fn()
-const mockShowCancelSubscriptionFlow = vi.fn()
-const mockShowEditWorkspaceDialog = vi.fn()
-const mockShowDeleteWorkspaceDialog = vi.fn()
 
 type MenuUiConfig = {
   showEditWorkspaceMenuItem: boolean
@@ -234,14 +230,7 @@ vi.mock<unknown>(
   })
 )
 
-vi.mock<unknown>(import('@/services/dialogService'), () => ({
-  useDialogService: () => ({
-    showCancelSubscriptionFlow: mockShowCancelSubscriptionFlow,
-    showLeaveWorkspaceDialog: mockShowLeaveWorkspaceDialog,
-    showEditWorkspaceDialog: mockShowEditWorkspaceDialog,
-    showDeleteWorkspaceDialog: mockShowDeleteWorkspaceDialog
-  })
-}))
+vi.mock(import('@/services/dialogService'))
 
 vi.mock<unknown>(
   import('@/platform/cloud/subscription/composables/useSubscriptionDialog'),
@@ -1193,7 +1182,7 @@ describe('SubscriptionPanelContentWorkspace', () => {
     await user.click(
       screen.getByRole('button', { name: 'Edit workspace details' })
     )
-    expect(mockShowEditWorkspaceDialog).toHaveBeenCalledOnce()
+    expect(useDialogService().showEditWorkspaceDialog).toHaveBeenCalledOnce()
   })
 
   it('offers a subscribed personal workspace Edit and Cancel without Delete', () => {
@@ -1313,7 +1302,7 @@ describe('SubscriptionPanelContentWorkspace', () => {
     renderComponent()
 
     await user.click(screen.getByRole('button', { name: 'Leave Workspace' }))
-    expect(mockShowLeaveWorkspaceDialog).toHaveBeenCalledOnce()
+    expect(useDialogService().showLeaveWorkspaceDialog).toHaveBeenCalledOnce()
   })
 
   it('offers an additional workspace owner Edit, Cancel, Leave, and locked Delete', async () => {
@@ -1331,7 +1320,9 @@ describe('SubscriptionPanelContentWorkspace', () => {
     ).toBeDisabled()
 
     await user.click(screen.getByRole('button', { name: 'Cancel plan' }))
-    expect(mockShowCancelSubscriptionFlow).toHaveBeenCalledWith(END_DATE_ISO)
+    expect(useDialogService().showCancelSubscriptionFlow).toHaveBeenCalledWith(
+      END_DATE_ISO
+    )
   })
 
   it('enables Delete for any additional workspace owner once the plan is cancelled', () => {

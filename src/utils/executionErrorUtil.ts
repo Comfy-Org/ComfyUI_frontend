@@ -1,4 +1,4 @@
-import type { NodeError, PromptError } from '@/schemas/apiSchema'
+import type { NodeError, PromptError } from '@/platform/remote/comfyui/types'
 import type { SerializedNodeId } from '@/types/nodeId'
 
 type RawPromptError =

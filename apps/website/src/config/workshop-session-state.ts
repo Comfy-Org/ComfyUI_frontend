@@ -1,6 +1,6 @@
 /**
  * Shared signed-in state for the website's Vue islands, projected from the
- * @comfyorg/account session client.
+ * @comfyorg/account-core session client.
  *
  * One `SessionSnapshot` ref is the single source of truth; the views below
  * derive from it, so the illegal combinations a set of parallel refs could
@@ -17,11 +17,11 @@ import { z } from 'zod'
 import type { User } from 'firebase/auth'
 import { computed, shallowRef, watch } from 'vue'
 
-import type { OperationHandle } from '@comfyorg/account/boundedOperation'
-import { createBoundedOperation } from '@comfyorg/account/boundedOperation'
-import type { SessionSnapshot } from '@comfyorg/account/session'
-import { isPermanentSessionError } from '@comfyorg/account/session'
-import { createLifecycleScope } from '@comfyorg/account/vue/lifecycleScope'
+import type { OperationHandle } from '@comfyorg/account-core/boundedOperation'
+import { createBoundedOperation } from '@comfyorg/account-core/boundedOperation'
+import type { SessionSnapshot } from '@comfyorg/account-core/session'
+import { isPermanentSessionError } from '@comfyorg/account-core/session'
+import { createLifecycleScope } from '@comfyorg/account-ui/auth/lifecycleScope'
 
 import { identifyWorkshopUser, useWorkshopAuthFlag } from '../scripts/posthog'
 import {
@@ -32,7 +32,7 @@ import {
 export type {
   AccountCredential as WorkshopSession,
   AccountUser as WorkshopSessionUser
-} from '@comfyorg/account/session'
+} from '@comfyorg/account-core/session'
 
 const PENDING: SessionSnapshot<User> = {
   phase: 'pending',

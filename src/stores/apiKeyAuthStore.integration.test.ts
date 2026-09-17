@@ -24,17 +24,11 @@ vi.mock(
     }) as const
 )
 
-vi.mock<unknown>(import('@/composables/useFeatureFlags'), () => ({
-  useFeatureFlags: () => ({
-    flags: { unifiedCloudAuthEnabled: false }
-  })
-}))
+vi.mock(import('@/composables/useFeatureFlags'))
 
 vi.mock(import('@/platform/telemetry'))
 
-vi.mock<unknown>(import('@/services/dialogService'), () => ({
-  useDialogService: () => ({ showErrorDialog: vi.fn() })
-}))
+vi.mock(import('@/services/dialogService'))
 
 describe('API key authentication initialization', () => {
   beforeEach(() => {

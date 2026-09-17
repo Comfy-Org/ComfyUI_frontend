@@ -17,15 +17,18 @@ import type {
   ModelFolderInfo
 } from '@/platform/assets/schemas/assetSchema'
 import { isCloud } from '@/platform/distribution/types'
-import * as Sentry from '@sentry/vue'
+import { addBreadcrumb } from '@sentry/vue'
 import { useTelemetry } from '@/platform/telemetry'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import type {
-  ShareableAssetsResponse,
+  WorkflowApiAssetsResponse as ShareableAssetsResponse,
+  GetEmbeddingsResponse as EmbeddingsResponse,
+  GetExtensionsResponse as ExtensionsResponse,
+  GetI18nResponse
+} from '@comfyorg/ingest-types'
+import type {
   AssetDownloadWsMessage,
   AssetExportWsMessage,
-  CustomNodesI18n,
-  EmbeddingsResponse,
   ExecutedWsMessage,
   ExecutingWsMessage,
   ExecutionCachedWsMessage,
@@ -33,27 +36,28 @@ import type {
   ExecutionInterruptedWsMessage,
   ExecutionStartWsMessage,
   ExecutionSuccessWsMessage,
-  ExtensionsResponse,
   FeatureFlagsWsMessage,
   LogsRawResponse,
   LogsWsMessage,
   NotificationWsMessage,
-  PreviewMethod,
   ProgressStateWsMessage,
   ProgressTextWsMessage,
   ProgressWsMessage,
-  PromptResponse,
-  Settings,
   StatusWsMessage,
-  StatusWsMessageStatus,
+  StatusWsMessageStatus
+} from '@/platform/remote/comfyui/execution/types'
+import type {
+  PromptFailureResponse,
+  PromptResponse,
   SystemStats,
-  User,
+  UserConfigResponse,
   UserDataFullInfo
-} from '@/schemas/apiSchema'
+} from '@/platform/remote/comfyui/types'
+import type { PreviewMethod, Settings } from '@/platform/settings/types'
 import {
-  zEmbeddingsResponse,
-  zShareableAssetsResponse
-} from '@/schemas/apiSchema'
+  zGetEmbeddingsResponse as zEmbeddingsResponse,
+  zWorkflowApiAssetsResponse as zShareableAssetsResponse
+} from '@comfyorg/ingest-types/zod'
 import type {
   TemplateIncludeOnDistributionEnum,
   WorkflowTemplates
@@ -375,10 +379,10 @@ export interface ComfyApi extends EventTarget {
 }
 
 export class PromptExecutionError extends Error {
-  response: PromptResponse
+  response: PromptFailureResponse
   status?: number
 
-  constructor(response: PromptResponse, status?: number) {
+  constructor(response: PromptFailureResponse, status?: number) {
     super('Prompt execution failed')
     this.response = response
     this.status = status
@@ -585,7 +589,7 @@ export class ComfyApi extends EventTarget {
           const method = (requestOptions.method ?? 'GET').toUpperCase()
           const routeTemplate = getFetchRouteTemplate(route)
 
-          Sentry.addBreadcrumb({
+          addBreadcrumb({
             category: 'fetch',
             message: `Timeout on ${method} ${routeTemplate}`,
             level: 'warning',
@@ -741,7 +745,7 @@ export class ComfyApi extends EventTarget {
    * @param type The type of event to emit
    * @param detail The detail property used for a custom event ({@link CustomEventInit.detail})
    */
-  dispatchCustomEvent<T extends SimpleApiEvents>(type: T): boolean
+  dispatchCustomEvent(type: SimpleApiEvents): boolean
   dispatchCustomEvent<T extends ComplexApiEvents>(
     type: T,
     detail: ApiEventTypes[T] | null
@@ -881,7 +885,6 @@ export class ComfyApi extends EventTarget {
           const view = new DataView(event.data)
           const eventType = view.getUint32(0)
 
-          let imageMime
           switch (eventType) {
             case 3: {
               try {
@@ -921,24 +924,17 @@ export class ComfyApi extends EventTarget {
               }
               break
             }
-            case 1:
+            case 1: {
               const imageType = view.getUint32(4)
               const imageData = event.data.slice(8)
-              switch (imageType) {
-                case 2:
-                  imageMime = 'image/png'
-                  break
-                case 1:
-                default:
-                  imageMime = 'image/jpeg'
-                  break
-              }
+              const imageMime = imageType === 2 ? 'image/png' : 'image/jpeg'
               const imageBlob = new Blob([imageData], {
                 type: imageMime
               })
               this.dispatchCustomEvent('b_preview', imageBlob)
               break
-            case 4:
+            }
+            case 4: {
               // PREVIEW_IMAGE_WITH_METADATA
               const decoder4 = new TextDecoder()
               const metadataLength = view.getUint32(4)
@@ -965,6 +961,7 @@ export class ComfyApi extends EventTarget {
               // Also dispatch legacy b_preview for backward compatibility
               this.dispatchCustomEvent('b_preview', imageBlob4)
               break
+            }
             default:
               console.error(
                 `Unknown binary websocket message of type ${eventType}`
@@ -1035,8 +1032,8 @@ export class ComfyApi extends EventTarget {
   /**
    * Initialises sockets and realtime updates
    */
-  init() {
-    this.createSocket()
+  async init() {
+    await this.createSocket()
   }
 
   /**
@@ -1456,7 +1453,7 @@ export class ComfyApi extends EventTarget {
   /**
    * Gets user configuration data and where data should be stored
    */
-  async getUserConfig(): Promise<User> {
+  async getUserConfig(): Promise<UserConfigResponse> {
     return (await this.fetchApi('/users')).json()
   }
 
@@ -1718,7 +1715,7 @@ export class ComfyApi extends EventTarget {
    *
    * @returns The custom nodes i18n data
    */
-  async getCustomNodesI18n(): Promise<CustomNodesI18n> {
+  async getCustomNodesI18n(): Promise<GetI18nResponse> {
     return (await axios.get(this.apiURL('/i18n'))).data
   }
 

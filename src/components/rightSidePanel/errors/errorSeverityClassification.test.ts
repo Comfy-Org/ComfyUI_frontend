@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import type { MissingModelCandidate } from '@/platform/missingModel/types'
-import type { ExecutionErrorWsMessage } from '@/schemas/apiSchema'
+import type { ExecutionErrorWsMessage } from '@/platform/remote/comfyui/execution/types'
 import { nodeError, validationError } from '@/utils/__tests__/nodeErrorHelpers'
 
 import { createUnnormalisableModelErrorFixture } from './__tests__/absorptionFixtures'

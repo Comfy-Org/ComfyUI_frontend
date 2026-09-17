@@ -1,3 +1,4 @@
+import { useDialogService } from '@/services/dialogService'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { getActivePinia } from 'pinia'
 import { render, screen } from '@testing-library/vue'
@@ -14,7 +15,6 @@ import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspace
 import CurrentUserPopoverLegacy from './CurrentUserPopoverLegacy.vue'
 
 const mockShowSettingsDialog = vi.fn()
-const mockShowTopUpCreditsDialog = vi.fn()
 
 vi.mock(import('@/platform/settings/composables/useSettingsDialog'), () => ({
   useSettingsDialog: vi.fn(() => ({
@@ -56,11 +56,7 @@ vi.mock<unknown>(import('@/composables/auth/useCurrentUser'), () => ({
   }))
 }))
 
-vi.mock<unknown>(import('@/services/dialogService'), () => ({
-  useDialogService: vi.fn(() => ({
-    showTopUpCreditsDialog: mockShowTopUpCreditsDialog
-  }))
-}))
+vi.mock(import('@/services/dialogService'))
 
 function makeSubscription(
   overrides: Partial<SubscriptionInfo> = {}
@@ -111,15 +107,6 @@ vi.mock<unknown>(import('@/components/common/UserAvatar.vue'), () => ({
 
 vi.mock(import('@/base/credits/comfyCredits'), () => ({
   formatCreditsFromCents: vi.fn(({ cents }) => (cents / 100).toString())
-}))
-
-vi.mock<unknown>(import('@/composables/useExternalLink'), () => ({
-  useExternalLink: vi.fn(() => ({
-    buildDocsUrl: vi.fn((path) => `https://docs.comfy.org${path}`),
-    docsPaths: {
-      partnerNodesPricing: '/tutorials/partner-nodes/pricing'
-    }
-  }))
 }))
 
 vi.mock(import('@/platform/telemetry'))
@@ -292,7 +279,7 @@ describe('CurrentUserPopoverLegacy', () => {
 
     await user.click(screen.getByTestId('add-credits-button'))
 
-    expect(mockShowTopUpCreditsDialog).toHaveBeenCalled()
+    expect(useDialogService().showTopUpCreditsDialog).toHaveBeenCalled()
     expect(onClose).toHaveBeenCalledTimes(1)
   })
 

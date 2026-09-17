@@ -1,7 +1,7 @@
 import { expect } from '@playwright/test'
 import type { Locator } from '@playwright/test'
 
-import type { NodeError } from '@/schemas/apiSchema'
+import type { NodeError } from '@/platform/remote/comfyui/types'
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { TestIds } from '@e2e/fixtures/selectors'
 import { ExecutionHelper } from '@e2e/fixtures/helpers/ExecutionHelper'

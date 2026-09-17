@@ -209,7 +209,23 @@ function primarySlug(sources: typeof contentSources): string {
   )
   const withMedia = candidates.filter(({ overlay }) => overlay.media.thumbnail)
   const preferred = withExamples.length ? withExamples : withMedia
-  const source = (preferred.length ? preferred : candidates).at(0)
+  const useCasePriority: readonly UseCase[] = [
+    'generate-images',
+    'generate-videos',
+    'audio',
+    '3d',
+    'text',
+    'animate-images',
+    'edit-images',
+    'edit-videos'
+  ]
+  const source = [...(preferred.length ? preferred : candidates)]
+    .sort(
+      (a, b) =>
+        useCasePriority.indexOf(a.overlay.useCase) -
+        useCasePriority.indexOf(b.overlay.useCase)
+    )
+    .at(0)
   if (!source) throw new Error('Missing content redirect target')
   return source.overlay.slug
 }

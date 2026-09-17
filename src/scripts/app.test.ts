@@ -31,7 +31,8 @@ import { useWorkflowService } from '@/platform/workflow/core/services/workflowSe
 import { createMockChangeTracker } from '@/utils/__tests__/litegraphTestUtils'
 import { useNodeReplacementStore } from '@/platform/nodeReplacement/nodeReplacementStore'
 import type { NodeReplacement } from '@/platform/nodeReplacement/types'
-import type { NodeExecutionOutput, NodeError } from '@/schemas/apiSchema'
+import type { NodeExecutionOutput } from '@/platform/remote/comfyui/execution/types'
+import type { NodeError } from '@/platform/remote/comfyui/types'
 import { ComfyApp, app as singletonApp } from './app'
 import { createNode } from '@/utils/litegraphUtil'
 import {
@@ -147,7 +148,9 @@ vi.mock(import('@/platform/missingModel/missingModelPipeline'), () => ({
   runMissingModelPipeline: vi.fn()
 }))
 
-function createMockNode(options: { [K in keyof LGraphNode]?: any } = {}) {
+function createMockNode(
+  options: Partial<Record<keyof LGraphNode, unknown>> = {}
+) {
   return {
     id: 1,
     pos: [0, 0],
@@ -678,7 +681,7 @@ describe('ComfyApp', () => {
         .spyOn(api, 'queuePrompt')
         .mockImplementation(() => {
           expect(api.authToken).toBe('workspace-token')
-          return Promise.resolve({ prompt_id: 'job-1', error: '' })
+          return Promise.resolve({ prompt_id: 'job-1' })
         })
 
       const submission = app.queuePrompt(0)
@@ -715,7 +718,7 @@ describe('ComfyApp', () => {
         .spyOn(api, 'queuePrompt')
         .mockImplementation(() => {
           expect(api.authToken).toBe('workspace-token-b')
-          return Promise.resolve({ prompt_id: 'job-1', error: '' })
+          return Promise.resolve({ prompt_id: 'job-1' })
         })
 
       const submission = app.queuePrompt(0)
@@ -771,7 +774,7 @@ describe('ComfyApp', () => {
           .spyOn(api, 'queuePrompt')
           .mockImplementation(() => {
             expect(api.authToken).toBe('workspace-token')
-            return Promise.resolve({ prompt_id: 'job-1', error: '' })
+            return Promise.resolve({ prompt_id: 'job-1' })
           })
 
         await expect(app.queuePrompt(0)).resolves.toBe(true)
@@ -897,7 +900,7 @@ describe('ComfyApp', () => {
         .spyOn(api, 'queuePrompt')
         .mockImplementation(() => {
           expect(api.apiKey).toBe('comfyui-valid-key')
-          return Promise.resolve({ prompt_id: 'job-1', error: '' })
+          return Promise.resolve({ prompt_id: 'job-1' })
         })
 
       await expect(app.queuePrompt(0)).resolves.toBe(true)
@@ -956,8 +959,7 @@ describe('ComfyApp', () => {
         traceback: []
       })
       vi.spyOn(api, 'queuePrompt').mockResolvedValue({
-        prompt_id: 'job-1',
-        error: ''
+        prompt_id: 'job-1'
       })
 
       await app.queuePrompt(0)
@@ -1006,8 +1008,7 @@ describe('ComfyApp', () => {
       vi.spyOn(api, 'dispatchCustomEvent').mockImplementation(() => true)
       vi.spyOn(api, 'queuePrompt').mockResolvedValue({
         prompt_id: 'job-1',
-        node_errors: nodeErrors,
-        error: ''
+        node_errors: nodeErrors
       })
 
       await expect(app.queuePrompt(0)).resolves.toBe(false)
@@ -1030,12 +1031,10 @@ describe('ComfyApp', () => {
       setTelemetryRegistry(registry)
       vi.spyOn(api, 'queuePrompt')
         .mockResolvedValueOnce({
-          prompt_id: 'job-1',
-          error: ''
+          prompt_id: 'job-1'
         })
         .mockResolvedValueOnce({
-          prompt_id: 'job-2',
-          error: ''
+          prompt_id: 'job-2'
         })
 
       try {
@@ -1090,8 +1089,7 @@ describe('ComfyApp', () => {
           })
       )
       vi.spyOn(api, 'queuePrompt').mockResolvedValue({
-        prompt_id: 'job-1',
-        error: ''
+        prompt_id: 'job-1'
       })
 
       try {
@@ -1123,9 +1121,7 @@ describe('ComfyApp', () => {
       const now = vi.spyOn(performance, 'now').mockReturnValue(42)
       vi.spyOn(api, 'queuePrompt').mockImplementation(async () => {
         now.mockReturnValue(62)
-        return {
-          error: 'Prompt rejected'
-        }
+        return {}
       })
 
       try {
@@ -1276,8 +1272,7 @@ describe('ComfyApp', () => {
         throw new Error('Context unavailable')
       })
       vi.spyOn(api, 'queuePrompt').mockResolvedValue({
-        prompt_id: 'job-1',
-        error: ''
+        prompt_id: 'job-1'
       })
 
       try {
@@ -1304,8 +1299,7 @@ describe('ComfyApp', () => {
       registry.registerProvider({ trackExecutionOutcome: vi.fn() })
       setTelemetryRegistry(registry)
       vi.spyOn(api, 'queuePrompt').mockResolvedValue({
-        prompt_id: 'job-1',
-        error: ''
+        prompt_id: 'job-1'
       })
 
       try {
@@ -1332,8 +1326,7 @@ describe('ComfyApp', () => {
     it('preserves legacy partial execution calls from extensions', async () => {
       prepareEmptyPromptQueue()
       vi.spyOn(api, 'queuePrompt').mockResolvedValue({
-        prompt_id: 'job-1',
-        error: ''
+        prompt_id: 'job-1'
       })
       const queueNodeIds = [createNodeExecutionId([1])]
 
@@ -1355,8 +1348,7 @@ describe('ComfyApp', () => {
         'getExecutionContext'
       )
       vi.spyOn(api, 'queuePrompt').mockResolvedValue({
-        prompt_id: 'job-1',
-        error: ''
+        prompt_id: 'job-1'
       })
 
       await app.queuePrompt(0)
@@ -1370,8 +1362,7 @@ describe('ComfyApp', () => {
       registry.registerProvider({ trackExecutionOutcome: vi.fn() })
       setTelemetryRegistry(registry)
       vi.spyOn(api, 'queuePrompt').mockResolvedValue({
-        prompt_id: 'job-1',
-        error: ''
+        prompt_id: 'job-1'
       })
       vi.spyOn(app.ui.queue, 'update').mockRejectedValue(
         new Error('Queue UI refresh failed')
@@ -1501,8 +1492,7 @@ describe('ComfyApp', () => {
       vi.spyOn(api, 'queuePrompt')
         .mockImplementationOnce(() => firstResponse)
         .mockResolvedValueOnce({
-          prompt_id: 'job-2',
-          error: ''
+          prompt_id: 'job-2'
         })
 
       const firstQueue = app.queuePrompt(0)
@@ -2150,7 +2140,7 @@ describe('ComfyApp', () => {
       })
       mockImportA1111.mockImplementation(
         async (_graph, _parameters, beforeGraphClear) => {
-          beforeGraphClear?.()
+          await beforeGraphClear?.()
           return 'imported'
         }
       )
@@ -2930,10 +2920,10 @@ describe('ComfyApp', () => {
       )
     })
 
-    it.each([
+    it.for([
       ['an invalid structure', '[]'],
       ['invalid JSON', '{invalid']
-    ])('shows one error for %s', async (_case, workflow) => {
+    ])('shows one error for %s', async ([, workflow]) => {
       const consoleError = vi
         .spyOn(console, 'error')
         .mockImplementation(() => {})
@@ -3056,11 +3046,11 @@ describe('ComfyApp', () => {
         ;(e as DragEvent & { canvasX: number; canvasY: number }).canvasX = 123
         ;(e as DragEvent & { canvasX: number; canvasY: number }).canvasY = 456
       })
-      app.canvas = {
-        ...mockCanvas,
+      app.canvas = fromPartial<LGraphCanvas>({
+        ...createMockCanvas(),
         graph_mouse: graphMouse,
         adjustMouseEvent
-      } as unknown as LGraphCanvas
+      })
 
       const graph = new LGraph()
       Reflect.set(app, 'rootGraphInternal', graph)
