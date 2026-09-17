@@ -10,6 +10,7 @@ import {
 } from './billingSdkTestUtils'
 import {
   projectPaymentPortalResult,
+  projectSubscribeResult,
   projectSubscriptionResult
 } from './subscriptionOperationView'
 
@@ -106,6 +107,50 @@ describe('projectSubscriptionResult', () => {
     expect(error).toBeInstanceOf(WorkspaceApiError)
     expect(error).toMatchObject(expected)
   })
+})
+
+describe('projectSubscribeResult', () => {
+  it('hands back the operation the checkout reports as subscribed', () => {
+    expect(
+      projectSubscribeResult({
+        status: 'ok',
+        value: {
+          phase: 'succeeded',
+          operation: settledOperation('succeeded', 'subscription')
+        }
+      })
+    ).toEqual({
+      status: 'ok',
+      value: { billing_op_id: 'op-1', status: 'subscribed' }
+    })
+  })
+
+  it.for([
+    {
+      phase: 'failed',
+      operation: failedOperation('subscription'),
+      detail:
+        'Your bank declined this payment. Try another payment method or contact your bank.'
+    },
+    {
+      phase: 'timed_out',
+      operation: settledOperation('timed_out', 'subscription'),
+      detail: "We couldn't update your subscription. Please try again."
+    }
+  ] as const)(
+    'reports a $phase subscribe as a sentence for the customer',
+    ({ phase, operation, detail }) => {
+      const outcome = projectSubscribeResult({
+        status: 'ok',
+        value: { phase, operation }
+      })
+
+      expect(outcome).toMatchObject({ status: 'error' })
+      expect(
+        outcome.status === 'error' ? outcome.error : undefined
+      ).toMatchObject({ message: detail, code: phase })
+    }
+  )
 })
 
 describe('projectPaymentPortalResult', () => {
