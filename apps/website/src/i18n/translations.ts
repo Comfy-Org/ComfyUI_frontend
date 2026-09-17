@@ -10490,8 +10490,8 @@ Enterprise`
   },
   'workshop.v2.seeModels': { en: 'See them', 'zh-CN': '查看' },
   'workshop.v2.workflow.back': {
-    en: 'Back to the catalogue',
-    'zh-CN': '返回目录'
+    en: 'Back to Playground',
+    'zh-CN': '返回 Playground'
   },
   'workshop.v2.workflow.runsOn': { en: 'Runs on', 'zh-CN': '运行于' },
   'workshop.v2.workflow.runsOnNote': {
