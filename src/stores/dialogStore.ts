@@ -137,6 +137,10 @@ interface UpdateDialogOptions {
   dialogComponentProps?: Partial<DialogComponentProps>
 }
 
+function notifyRemoved(dialog: DialogInstance | undefined) {
+  dialog?.dialogComponentProps.onRemoved?.()
+}
+
 export const useDialogStore = defineStore('dialog', () => {
   const dialogStack: Ref<DialogInstance[]> = ref([])
 
@@ -195,7 +199,7 @@ export const useDialogStore = defineStore('dialog', () => {
         : null
 
     updateCloseOnEscapeStates()
-    if (removed) targetDialog.dialogComponentProps.onRemoved?.()
+    if (removed) notifyRemoved(targetDialog)
   }
 
   function createDialog<
@@ -252,10 +256,7 @@ export const useDialogStore = defineStore('dialog', () => {
     insertDialogByPriority(dialog)
     activeKey.value = options.key
     updateCloseOnEscapeStates()
-    // Eviction is not a user close: fire only the cleanup hook, never
-    // onClose (which callers treat as user intent — telemetry, "don't show
-    // again" persistence).
-    evicted?.dialogComponentProps.onRemoved?.()
+    notifyRemoved(evicted)
 
     return dialog
   }
