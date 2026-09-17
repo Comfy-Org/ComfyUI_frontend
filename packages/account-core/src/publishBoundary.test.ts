@@ -12,15 +12,23 @@ const PACKAGE_JSON = join(
 /** Published from this repo alongside the core, so npm can resolve them. */
 const PUBLISHED_ALONGSIDE = ['@comfyorg/ingest-types']
 
+const INSTANCE_SHARED_WITH_CONSUMER = ['zod']
+
+interface Specifiers {
+  dependencies?: Record<string, string>
+  peerDependencies?: Record<string, string>
+}
+
+const readSpecifiers = (): Required<Specifiers> => {
+  const { dependencies = {}, peerDependencies = {} }: Specifiers = JSON.parse(
+    readFileSync(PACKAGE_JSON, 'utf8')
+  )
+  return { dependencies, peerDependencies }
+}
+
 describe('publish boundary', () => {
   it('reaches no workspace package a consumer cannot install from npm', () => {
-    const {
-      dependencies = {},
-      peerDependencies = {}
-    }: {
-      dependencies?: Record<string, string>
-      peerDependencies?: Record<string, string>
-    } = JSON.parse(readFileSync(PACKAGE_JSON, 'utf8'))
+    const { dependencies, peerDependencies } = readSpecifiers()
 
     const unreachable = Object.entries({ ...dependencies, ...peerDependencies })
       .filter(([, range]) => range.startsWith('workspace:'))
@@ -28,5 +36,15 @@ describe('publish boundary', () => {
       .filter((name) => !PUBLISHED_ALONGSIDE.includes(name))
 
     expect(unreachable).toEqual([])
+  })
+
+  it('takes the consumer copy of every library whose values it hands out', () => {
+    const { dependencies, peerDependencies } = readSpecifiers()
+
+    const privatelyOwned = INSTANCE_SHARED_WITH_CONSUMER.filter(
+      (name) => name in dependencies || !(name in peerDependencies)
+    )
+
+    expect(privatelyOwned).toEqual([])
   })
 })

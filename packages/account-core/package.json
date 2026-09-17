@@ -112,11 +112,10 @@
     "lint": "oxlint src --type-aware && eslint src",
     "smoke:pack": "tsx scripts/smokePack.ts",
     "test": "vitest run",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit && tsc -p scripts/tsconfig.json"
   },
   "dependencies": {
-    "@comfyorg/ingest-types": "workspace:^",
-    "zod": "catalog:"
+    "@comfyorg/ingest-types": "workspace:^"
   },
   "devDependencies": {
     "@types/node": "catalog:",
@@ -124,9 +123,11 @@
     "firebase": "catalog:",
     "happy-dom": "catalog:",
     "typescript": "catalog:",
-    "vitest": "catalog:"
+    "vitest": "catalog:",
+    "zod": "catalog:"
   },
   "peerDependencies": {
-    "firebase": "^11.6.0"
+    "firebase": "^11.6.0",
+    "zod": "catalog:"
   }
 }
