@@ -37,6 +37,7 @@ import type { components as ManagerComponents } from '@/workbench/extensions/man
 import type {
   AssetDownloadWsMessage,
   AssetExportWsMessage,
+  AssetSeedCompletedWsMessage,
   ExecutedWsMessage,
   ExecutingWsMessage,
   ExecutionCachedWsMessage,
@@ -265,6 +266,7 @@ interface BackendApiCalls {
   feature_flags: FeatureFlagsWsMessage
   asset_download: AssetDownloadWsMessage
   asset_export: AssetExportWsMessage
+  'assets.seed.completed': AssetSeedCompletedWsMessage
 }
 
 /** Dictionary of all api calls */
