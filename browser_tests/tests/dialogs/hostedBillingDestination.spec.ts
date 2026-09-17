@@ -122,13 +122,37 @@ async function bootApp(page: Page) {
   await new CloudAuthHelper(page).mockAuth()
   await page.addInitScript(() => {
     localStorage.setItem('Comfy.userId', 'test-user-e2e')
+    const recordDestination = (url: string) => {
+      document.documentElement.dataset.openedUrl = url
+    }
+    // A handle whose navigation is recorded rather than performed. Handing
+    // back the live `window` would let the disowned-tab open -- blank tab,
+    // null the opener, then assign `location.href` -- steer this page to the
+    // hosted origin instead.
+    const standInTab = new Proxy(window, {
+      get: (target, property) =>
+        property === 'location'
+          ? {
+              get href() {
+                return document.documentElement.dataset.openedUrl ?? ''
+              },
+              set href(destination: string) {
+                recordDestination(destination)
+              }
+            }
+          : Reflect.get(target, property),
+      // The tab is disowned before it navigates, and a stand-in that never
+      // navigates has nothing to disown, so the write is swallowed rather
+      // than reaching this page's own `window.opener`.
+      set: () => true
+    })
     // Records the destination instead of opening a tab the test would have to
     // dismiss. The handle follows the spec: a `noopener` open always yields
     // null, while a plain one returns a window and keeps the app's
     // portal-return refresh armed.
     window.open = (url, _target, features) => {
-      document.documentElement.dataset.openedUrl = String(url)
-      return (features ?? '').includes('noopener') ? null : window
+      if (url) recordDestination(String(url))
+      return (features ?? '').includes('noopener') ? null : standInTab
     }
   })
   await page.goto(APP_URL)
