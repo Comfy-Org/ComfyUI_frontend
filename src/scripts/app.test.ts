@@ -378,6 +378,30 @@ describe('ComfyApp', () => {
         )
       ).toEqual(['beforeLoadGraph', 'afterConfigureGraph', 'afterLoadGraph'])
     })
+
+    it('fires onGraphLoadError when an API JSON import fails after beforeLoadGraph', async () => {
+      app.canvasElRef.value = document.createElement('canvas')
+      const graph = new LGraph()
+      Reflect.set(app, 'rootGraphInternal', graph)
+      Reflect.set(singletonApp, 'rootGraphInternal', graph)
+      vi.spyOn(graph, 'arrange').mockImplementation(() => {
+        throw new Error('arrange exploded')
+      })
+
+      await expect(app.loadApiJson({}, 'broken.json')).rejects.toThrow(
+        'arrange exploded'
+      )
+
+      expect(
+        mockExtensionService.invokeExtensionsAsync.mock.calls.map(
+          ([hook]) => hook
+        )
+      ).toEqual(['beforeLoadGraph', 'onGraphLoadError'])
+      expect(mockExtensionService.invokeExtensionsAsync).toHaveBeenCalledWith(
+        'onGraphLoadError',
+        expect.objectContaining({ message: 'arrange exploded' })
+      )
+    })
   })
 
   describe('nodeOutputs', () => {
@@ -2892,6 +2916,43 @@ describe('ComfyApp', () => {
         )
       ).toEqual(['beforeLoadGraph', 'afterConfigureGraph', 'afterLoadGraph'])
       expect(settled).toBe(true)
+    })
+
+    it('fires onGraphLoadError when the A1111 import fails after beforeLoadGraph', async () => {
+      const graph = new LGraph()
+      const parameters = 'positive\nNegative prompt: negative\nSteps: 20'
+      Reflect.set(app, 'rootGraphInternal', graph)
+      vi.mocked(getWorkflowDataFromFile).mockResolvedValue({ parameters })
+      mockImportA1111.mockImplementation(
+        async (_graph, _parameters, beforeGraphClear) => {
+          await beforeGraphClear?.()
+          throw new Error('a1111 exploded')
+        }
+      )
+
+      await expect(
+        app.handleFile(createTestFile('a1111.png', 'image/png'))
+      ).rejects.toThrow('a1111 exploded')
+
+      expect(
+        mockExtensionService.invokeExtensionsAsync.mock.calls.map(
+          ([hook]) => hook
+        )
+      ).toEqual(['beforeLoadGraph', 'onGraphLoadError'])
+    })
+
+    it('does not fire onGraphLoadError when the A1111 import fails before beforeLoadGraph', async () => {
+      const graph = new LGraph()
+      const parameters = 'positive\nNegative prompt: negative\nSteps: 20'
+      Reflect.set(app, 'rootGraphInternal', graph)
+      vi.mocked(getWorkflowDataFromFile).mockResolvedValue({ parameters })
+      mockImportA1111.mockRejectedValue(new Error('a1111 exploded early'))
+
+      await expect(
+        app.handleFile(createTestFile('a1111.png', 'image/png'))
+      ).rejects.toThrow('a1111 exploded early')
+
+      expect(mockExtensionService.invokeExtensionsAsync).not.toHaveBeenCalled()
     })
   })
 
