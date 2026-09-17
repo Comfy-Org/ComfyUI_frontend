@@ -27,7 +27,7 @@ function makeCredential(
 
 const credential = makeCredential('cached-jwt')
 
-function memoryStorage(): CredentialStorage & { raw: () => string | null } {
+function memoryStorage(): CredentialStorage {
   let value: string | null = null
   return {
     read: () => value,
@@ -36,8 +36,7 @@ function memoryStorage(): CredentialStorage & { raw: () => string | null } {
     },
     clear: () => {
       value = null
-    },
-    raw: () => value
+    }
   }
 }
 

@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest'
 import type { AccountCredential, AccountUser } from './sessionContracts.js'
 import type {
   MintAttempt,
+  MintVerdict,
   SessionEffect,
   SessionEvent,
   SessionState
@@ -387,7 +388,7 @@ describe('arbitrateMint', () => {
     name: string
     state: SessionState
     attempt: MintAttempt
-    verdict: ReturnType<typeof arbitrateMint>
+    verdict: MintVerdict
   }>([
     {
       name: 'the newest mint for the same user and target commits',
