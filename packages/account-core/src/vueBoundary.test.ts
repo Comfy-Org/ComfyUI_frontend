@@ -5,10 +5,26 @@ import { describe, expect, it } from 'vitest'
 
 const SRC_DIR = dirname(fileURLToPath(import.meta.url))
 const PACKAGE_JSON = join(SRC_DIR, '..', 'package.json')
-const VUE_IMPORT = /from\s+['"](vue|@vueuse\/[^'"]+)['"]/
+const VUE_IMPORT =
+  /(?:from|import|require)\s*\(?\s*['"](?:vue|@vueuse\/[^'"]+)['"]/
 const VUE_DEPENDENCY = /^(vue|vue-tsc|@vueuse\/|@vitejs\/plugin-vue)/
 
 describe('vue boundary', () => {
+  it.for([
+    ["import { ref } from 'vue'", true],
+    ["import type { Ref } from 'vue'", true],
+    ["import 'vue'", true],
+    ["const { ref } = await import('vue')", true],
+    ["require('vue')", true],
+    ["import { useNow } from '@vueuse/core'", true],
+    ["await import('@vueuse/core')", true],
+    ["import { createSession } from './vue'", false],
+    ["import { useRoute } from 'vue-router'", false],
+    ["import { cn } from '@vueuse-lookalike/core'", false]
+  ] as const)('reads %s as a Vue import: %s', ([source, isVueImport]) => {
+    expect(VUE_IMPORT.test(source)).toBe(isVueImport)
+  })
+
   it('keeps the whole package free of Vue, so it is consumable without Vue', () => {
     const offenders = readdirSync(SRC_DIR, { recursive: true })
       .map(String)
