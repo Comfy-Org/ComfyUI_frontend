@@ -63,8 +63,7 @@ export function relatedCardViews(
         template: withFacetFields(template, models),
         runsOn: partnerModelFor(template, models)
       },
-      needsCustomNodes,
-      new Map<string, string>()
+      needsCustomNodes
     )
   )
 }

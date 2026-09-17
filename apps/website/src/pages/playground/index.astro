@@ -1,15 +1,12 @@
 ---
 import CatalogueBrowse from '../../components/hub/CatalogueBrowse.vue'
-import { useCaseFor } from '../../config/models-catalogue'
 import { workshopModels } from '../../config/workshop-browse-content'
-import { estimateWorkshopNodePrice } from '../../config/workshop-node-pricing'
 import hubTemplateDetails from '../../data/hubTemplateDetails.json'
 import hubTemplates from '../../data/hubTemplates.json'
 import { browseEntries } from '../../lib/hub/browse-payload'
 import {
   customNodeNamesFrom,
-  facetedTemplates,
-  priceBySlug
+  facetedTemplates
 } from '../../lib/hub/page-data'
 import { t } from '../../i18n/translations'
 import BaseLayout from '../../layouts/BaseLayout.astro'
@@ -22,10 +19,7 @@ import BaseLayout from '../../layouts/BaseLayout.astro'
 const entries = browseEntries(
   facetedTemplates(hubTemplates, workshopModels),
   workshopModels,
-  customNodeNamesFrom(hubTemplateDetails),
-  await priceBySlug(workshopModels, (model) =>
-    estimateWorkshopNodePrice(model, useCaseFor(model))
-  )
+  customNodeNamesFrom(hubTemplateDetails)
 )
 ---
 

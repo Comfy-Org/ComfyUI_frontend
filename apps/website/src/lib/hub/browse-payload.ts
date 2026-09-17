@@ -11,8 +11,7 @@ import type { FacetedTemplate } from './facet-fields'
 
 function modelEntry(
   entry: Extract<CatalogueEntry, { kind: 'model' }>,
-  models: readonly WorkshopModel[],
-  prices: ReadonlyMap<string, string>
+  models: readonly WorkshopModel[]
 ): BrowseEntry {
   const { model } = entry
   return {
@@ -32,7 +31,7 @@ function modelEntry(
     standing: model.recommendedRank ?? Number.POSITIVE_INFINITY,
     date: undefined,
     credits: cheapestOperation(entry).creditsPerRun,
-    card: cardViewFor(entry, new Set(), prices)
+    card: cardViewFor(entry, new Set())
   }
 }
 
@@ -56,19 +55,18 @@ function workflowEntry(
     standing: template.usage,
     date: template.date,
     credits: undefined,
-    card: cardViewFor(entry, needsCustomNodes, new Map())
+    card: cardViewFor(entry, needsCustomNodes)
   }
 }
 
 export function browseEntries(
   templates: readonly FacetedTemplate[],
   models: readonly WorkshopModel[],
-  needsCustomNodes: ReadonlySet<string>,
-  prices: ReadonlyMap<string, string>
+  needsCustomNodes: ReadonlySet<string>
 ): BrowseEntry[] {
   return buildCatalogue(templates, models).map((entry) =>
     entry.kind === 'model'
-      ? modelEntry(entry, models, prices)
+      ? modelEntry(entry, models)
       : workflowEntry(entry, models, needsCustomNodes)
   )
 }

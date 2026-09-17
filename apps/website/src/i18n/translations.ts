@@ -10255,9 +10255,10 @@ Enterprise`
     'zh-CN':
       'Comfy 可运行的全部模型，以及基于它们构建的工作流，集中于一个目录。'
   },
+  'workshop.v2.eyebrow': { en: 'Playground', 'zh-CN': 'Playground' },
   'workshop.v2.heading': {
-    en: 'Playground',
-    'zh-CN': 'Playground'
+    en: 'What will you make next?',
+    'zh-CN': '接下来你想创造什么？'
   },
   'workshop.v2.subtitle': {
     en: 'Models, workflows and apps, by what you want to make.',

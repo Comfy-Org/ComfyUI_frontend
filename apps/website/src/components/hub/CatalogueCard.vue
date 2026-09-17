@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Blocks, Coins } from '@lucide/vue'
+import { Blocks } from '@lucide/vue'
 import { useTemplateRef } from 'vue'
 
 import { usePreviewVideo } from '../../composables/usePreviewVideo'
@@ -119,15 +119,6 @@ const previewSrc = usePreviewVideo(video, () =>
             {{ view.maker.label.charAt(0).toUpperCase() }}
           </span>
           <span class="truncate text-xs">{{ view.maker.label }}</span>
-        </span>
-
-        <span
-          v-if="view.price"
-          class="ms-auto inline-flex shrink-0 items-center gap-1 text-xs whitespace-nowrap"
-          data-testid="catalogue-card-price"
-        >
-          <Coins class="size-3" aria-hidden="true" />
-          {{ view.price }}
         </span>
       </div>
     </div>

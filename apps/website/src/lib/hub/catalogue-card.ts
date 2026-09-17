@@ -1,9 +1,5 @@
 import type { CatalogueEntry, EntryKind } from './catalogue-entries'
-import {
-  cheapestOperation,
-  hubWorkflowPath,
-  modelGroupPath
-} from './catalogue-entries'
+import { hubWorkflowPath, modelGroupPath } from './catalogue-entries'
 import { getLogoPath } from './model-logos'
 
 interface CardMedia {
@@ -23,14 +19,11 @@ export interface CardView {
   readonly media: CardMedia | undefined
   readonly hoverMedia: string | undefined
   readonly maker: { readonly label: string; readonly logo: string | undefined }
-  /** What a run costs, as the Router prices it. Workflows have no price. */
-  readonly price: string | undefined
   readonly needsCustomNodes: boolean
 }
 
 function modelCard(
-  entry: Extract<CatalogueEntry, { kind: 'model' }>,
-  prices: ReadonlyMap<string, string>
+  entry: Extract<CatalogueEntry, { kind: 'model' }>
 ): CardView {
   const { model } = entry
   const provider = model.provider ?? ''
@@ -46,7 +39,6 @@ function modelCard(
       label: provider,
       logo: getLogoPath(provider) ?? getLogoPath(model.name) ?? undefined
     },
-    price: prices.get(cheapestOperation(entry).slug),
     needsCustomNodes: false
   }
 }
@@ -67,17 +59,15 @@ function workflowCard(
       : undefined,
     hoverMedia: template.thumbnails[1],
     maker: { label: template.username || 'ComfyUI', logo: undefined },
-    price: undefined,
     needsCustomNodes: needsCustomNodes.has(template.name)
   }
 }
 
 export function cardViewFor(
   entry: CatalogueEntry,
-  needsCustomNodes: ReadonlySet<string>,
-  prices: ReadonlyMap<string, string>
+  needsCustomNodes: ReadonlySet<string>
 ): CardView {
   return entry.kind === 'model'
-    ? modelCard(entry, prices)
+    ? modelCard(entry)
     : workflowCard(entry, needsCustomNodes)
 }

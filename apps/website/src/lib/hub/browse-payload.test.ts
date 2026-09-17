@@ -40,9 +40,8 @@ function template(overrides: Partial<FacetedTemplate> = {}): FacetedTemplate {
 const build = (
   templates: readonly FacetedTemplate[],
   models: readonly WorkshopModel[],
-  customNodes: readonly string[] = [],
-  prices: readonly (readonly [string, string])[] = []
-) => browseEntries(templates, models, new Set(customNodes), new Map(prices))
+  customNodes: readonly string[] = []
+) => browseEntries(templates, models, new Set(customNodes))
 
 const titles = (entries: readonly BrowseEntry[]) =>
   entries.map((entry) => entry.title)
@@ -51,9 +50,7 @@ describe('browseEntries', () => {
   it('sends the card and the facets, and no catalogue rows', () => {
     const [entry] = build(
       [],
-      [model({ recommendedRank: 3, creditsPerRun: 12 })],
-      [],
-      [['bfl--flux--generate-images', '12 credits/Run']]
+      [model({ recommendedRank: 3, creditsPerRun: 12 })]
     )
 
     expect(entry).toEqual({
@@ -72,7 +69,6 @@ describe('browseEntries', () => {
       credits: 12,
       card: expect.objectContaining({
         kind: 'model',
-        price: '12 credits/Run',
         href: '/playground/model/flux/'
       })
     })

@@ -3,7 +3,7 @@ import { ChevronLeft, Search } from '@lucide/vue'
 import { computed, onMounted, ref, watch } from 'vue'
 
 import type { UseCase } from '../../config/models-catalogue'
-import type { Locale } from '../../i18n/translations'
+import type { Locale, TranslationKey } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 import type {
   BrowseEntry,
@@ -17,10 +17,14 @@ import {
   sortBrowseEntries
 } from '../../lib/hub/browse-entry'
 import { useCaseLabelKey } from '../../lib/workshop/use-case-label'
+import { entrySlides } from '../../lib/workshop/featured-slides'
+import FeaturedBanner from '../workshop/FeaturedBanner.vue'
+import WorkshopHero from '../workshop/WorkshopHero.vue'
 import type { OrderOption } from './CatalogueControls.vue'
 import CatalogueCard from './CatalogueCard.vue'
 import CatalogueControls from './CatalogueControls.vue'
 import CatalogueToolbar from './CatalogueToolbar.vue'
+import CatalogueTypeFilter from './CatalogueTypeFilter.vue'
 import PlaygroundSections from './PlaygroundSections.vue'
 
 // The catalogue is resolved on the server and arrives card-sized: the browser
@@ -198,6 +202,33 @@ const showingText = computed(() =>
     .replace('{total}', String(sorted.value.length))
 )
 
+// The banner answers the two choices that say what you are browsing, the type
+// and the use case, and stays out of a search, which narrows a list rather
+// than changing what is in it.
+const BANNER_SLIDES = 6
+
+const kindLabelKey: Record<string, TranslationKey> = {
+  model: 'workshop.v2.kind.models',
+  workflow: 'workshop.v2.kind.workflows',
+  app: 'workshop.v2.kind.apps'
+}
+
+const featured = computed(() =>
+  query.value.trim() !== ''
+    ? []
+    : entrySlides(
+        sortBrowseEntries(
+          beforeType.value.filter(
+            (entry) =>
+              entry.card.media !== undefined &&
+              (type.value === 'all' || entry.kind === type.value)
+          ),
+          'popular'
+        ).slice(0, BANNER_SLIDES),
+        (entry) => t(kindLabelKey[entry.kind], locale)
+      )
+)
+
 const heading = computed(() =>
   useCase.value === 'all'
     ? t('workshop.v2.kind.all', locale)
@@ -207,23 +238,22 @@ const heading = computed(() =>
 
 <template>
   <section class="pb-32" data-testid="catalogue-browse">
-    <header class="mb-10 max-w-3xl">
-      <h1 class="text-4xl font-bold text-primary-comfy-canvas lg:text-6xl">
-        {{ t('workshop.v2.heading', locale) }}
-      </h1>
-      <p class="mt-4 text-lg text-primary-comfy-canvas/70">
-        {{ t('workshop.v2.subtitle', locale) }}
-      </p>
-    </header>
+    <WorkshopHero
+      eyebrow-key="workshop.v2.eyebrow"
+      heading-key="workshop.v2.heading"
+      subtitle-key="workshop.v2.subtitle"
+      :locale
+    />
 
     <!-- One field and one set of controls read every kind, so they belong to
       the catalogue rather than to the list, and they are there before
-      anything has been asked. -->
+      anything has been asked. The type sits beside the search because it is
+      the same kind of choice: what you are looking at, not how it is ordered. -->
     <div
-      class="mb-10 flex flex-wrap items-start justify-between gap-4"
+      class="sticky top-20 z-30 -mx-1 mb-8 flex flex-wrap items-center gap-3 bg-page px-1 py-4 max-sm:mb-4 max-sm:py-2 lg:top-26"
       data-testid="catalogue-header-controls"
     >
-      <div class="relative min-w-60 flex-1 md:max-w-md">
+      <div class="relative min-w-56 flex-1 sm:max-w-sm">
         <Search
           class="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-content-muted"
           aria-hidden="true"
@@ -234,9 +264,11 @@ const heading = computed(() =>
           type="search"
           :placeholder="t('workshop.v2.search', locale)"
           :aria-label="t('workshop.v2.search', locale)"
-          class="h-10 w-full rounded-2xl border border-transparency-white-t8 bg-transparency-white-t4 ps-9 pe-3 text-sm text-content outline-none focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow/50"
+          class="h-11 w-full rounded-2xl bg-transparency-white-t4 ps-9 pe-3 text-sm text-content transition-colors outline-none hover:bg-transparency-white-t8 focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow/50"
         />
       </div>
+
+      <CatalogueTypeFilter v-model="type" :counts :locale />
 
       <CatalogueControls
         v-model:order="order"
@@ -247,9 +279,17 @@ const heading = computed(() =>
         :providers
         :filters-on="filtersOn"
         :locale
+        class="ms-auto"
         @clear="clearFilters"
       />
     </div>
+
+    <FeaturedBanner
+      v-if="featured.length"
+      :slides="featured"
+      :locale
+      class="mb-10 short:mb-6"
+    />
 
     <PlaygroundSections
       v-if="!browsing"
@@ -259,7 +299,10 @@ const heading = computed(() =>
     />
 
     <div v-else class="min-w-0">
-      <div class="mb-6 flex flex-wrap items-baseline gap-4">
+      <div
+        v-if="useCase !== 'all'"
+        class="mb-6 flex flex-wrap items-baseline gap-4"
+      >
         <button
           type="button"
           class="inline-flex cursor-pointer items-center gap-1 rounded-lg text-sm text-content-muted transition-colors outline-none hover:text-content-bright focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow/50"
@@ -278,9 +321,7 @@ const heading = computed(() =>
       </div>
 
       <CatalogueToolbar
-        v-model:type="type"
         v-model:uses-model="usesModel"
-        :counts
         :narrowed-by="narrowedBy"
         :filters-on="filtersOn"
         :locale

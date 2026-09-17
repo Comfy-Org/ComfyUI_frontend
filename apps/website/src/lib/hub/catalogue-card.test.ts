@@ -58,54 +58,26 @@ const workflowEntry = (
 })
 
 const noNodes = new Set<string>()
-const noPrices = new Map<string, string>()
 
 describe('cardViewFor', () => {
-  it('opens a model at its group page and prices it from the registry', () => {
-    const view = cardViewFor(
-      modelEntry(),
-      noNodes,
-      new Map([['bfl--flux--generate-images', '12 credits']])
-    )
+  it('opens a model at its group page rather than at one of its operations', () => {
+    const view = cardViewFor(modelEntry(), noNodes)
 
     expect(view).toMatchObject({
       kind: 'model',
       href: '/playground/model/flux/',
       title: 'Flux',
-      price: '12 credits',
       needsCustomNodes: false
     })
     expect(view.maker.label).toBe('BFL')
   })
 
-  // One card stands for every operation under the name, so the first row the
-  // registry happens to list is not the one a reader decides on.
-  it('prices a collapsed name at its cheapest operation', () => {
-    const view = cardViewFor(
-      modelEntry({
-        model: model({ slug: 'flux--edit', creditsPerRun: 40 }),
-        operations: [
-          model({ slug: 'flux--edit', creditsPerRun: 40 }),
-          model({ slug: 'flux--generate', creditsPerRun: 12 })
-        ]
-      }),
-      noNodes,
-      new Map([
-        ['flux--edit', '40 credits'],
-        ['flux--generate', '12 credits']
-      ])
-    )
-
-    expect(view.price).toBe('12 credits')
-  })
-
   it('opens a workflow at the workflow page, never at the model behind it', () => {
-    const view = cardViewFor(workflowEntry(), noNodes, noPrices)
+    const view = cardViewFor(workflowEntry(), noNodes)
 
     expect(view).toMatchObject({
       kind: 'workflow',
-      href: '/playground/workflow/poster/',
-      price: undefined
+      href: '/playground/workflow/poster/'
     })
     expect(view.media).toEqual({ url: 'first.png', kind: 'image' })
     expect(view.hoverMedia).toBe('second.png')
@@ -113,8 +85,7 @@ describe('cardViewFor', () => {
 
   it('marks a workflow that needs custom nodes installed', () => {
     expect(
-      cardViewFor(workflowEntry(), new Set(['poster']), noPrices)
-        .needsCustomNodes
+      cardViewFor(workflowEntry(), new Set(['poster'])).needsCustomNodes
     ).toBe(true)
   })
 
@@ -122,8 +93,7 @@ describe('cardViewFor', () => {
     expect(
       cardViewFor(
         workflowEntry({ kind: 'app', template: template({ isApp: true }) }),
-        noNodes,
-        noPrices
+        noNodes
       ).kind
     ).toBe('app')
   })
@@ -131,8 +101,7 @@ describe('cardViewFor', () => {
   it('shows no media for a workflow with no thumbnail', () => {
     const view = cardViewFor(
       workflowEntry({ template: template({ thumbnails: [] }) }),
-      noNodes,
-      noPrices
+      noNodes
     )
 
     expect(view.media).toBeUndefined()
