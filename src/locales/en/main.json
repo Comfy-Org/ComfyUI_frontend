@@ -3739,6 +3739,20 @@
     "maxWorkspacesReached": "You can only own 10 workspaces. Delete one to create a new one.",
     "failedToSwitch": "Failed to switch workspace"
   },
+  "releaseSwitcher": {
+    "runningOn": "Running on",
+    "comfyCloud": "Comfy Cloud",
+    "comfyCloudCaption": "Comfy's own node set",
+    "release": "{build} v{version}",
+    "unnamedRelease": "Release {id}",
+    "deployedAs": "Deployed, {status}",
+    "notDeployed": "Not deployed",
+    "notDeployedTooltip": "Deploy this Release on the Developer Platform first.",
+    "noReleases": "This workspace has no Releases yet.",
+    "buildsHidden": "Build names are not visible to this account.",
+    "reloadNote": "The editor reloads to show the Release's nodes.",
+    "failedToSwitch": "Could not switch"
+  },
   "selectionToolbox": {
     "executeButton": {
       "tooltip": "Execute to selected output nodes (Highlighted with orange border)",
