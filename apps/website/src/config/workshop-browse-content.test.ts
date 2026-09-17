@@ -34,12 +34,25 @@ describe('canonical model display names', () => {
   it('preserves editorial names and distinguishes a native alias’s selected mode', () => {
     expect(
       getRouterWorkshopModelDetail('vertexai--gemini-3-pro-image')?.name
-    ).toBe('Nano Banana Pro')
+    ).toBe('Nano Banana Pro Text-to-Image')
     expect(
       getRouterWorkshopModelDetail(
         'byteplus--dreamina-seedance-2-0-fast-260128'
       )?.name
     ).toBe('Seedance 2.0 Fast Text-to-Video')
+  })
+
+  it.for([
+    {
+      slug: 'vertexai--veo-3--animate-images',
+      name: 'Veo 3 Image-to-Video'
+    },
+    {
+      slug: 'vertexai--veo-3--generate-videos',
+      name: 'Veo 3 Text-to-Video'
+    }
+  ])('keeps task-specific model names coherent for $slug', ({ slug, name }) => {
+    expect(getRouterWorkshopModelDetail(slug)?.name).toBe(name)
   })
 
   it('places reference and corrected text-to-image models in their intended use cases', () => {

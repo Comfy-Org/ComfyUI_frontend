@@ -8,15 +8,16 @@ import { fromZodError } from 'zod-validation-error'
 import type {
   ScheduledRefreshReport,
   SessionErrorCode
-} from '@comfyorg/account/session'
-import { createWebCrossTabRefreshPort } from '@comfyorg/account/web'
+} from '@comfyorg/account-core/session'
+import { createWebCrossTabRefreshPort } from '@comfyorg/account-core/web'
 import {
-  SESSION_ERROR_MESSAGES,
+  SESSION_ERROR_CODES,
   createSessionClient,
   isPermanentSessionError
-} from '@comfyorg/account/session'
+} from '@comfyorg/account-core/session'
 
 import { t } from '@/i18n'
+import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import { useTelemetry } from '@/platform/telemetry'
 import type { UnifiedAuthRefreshOutcome } from '@/platform/telemetry/types'
 import { parseErrorResponse } from '@/platform/remote/comfyui/errors'
@@ -102,12 +103,17 @@ function isPermanentAuthError(err: unknown): err is WorkspaceAuthError {
 function isSessionErrorCode(
   code: string | undefined
 ): code is SessionErrorCode {
-  return code !== undefined && code in SESSION_ERROR_MESSAGES
+  return code !== undefined && code in SESSION_ERROR_CODES
 }
 
-// The one code-to-copy mapping; exhaustive so a new code is a compile
-// error here instead of a silently wrong fallback toast.
-function sessionErrorMessageKey(code: SessionErrorCode): string {
+// Exhaustive switch and locale-shaped return: an unmapped code and a renamed
+// key are both compile errors here.
+type WorkspaceAuthErrorMessageKey =
+  `workspaceAuth.errors.${keyof (typeof enMessages)['workspaceAuth']['errors']}`
+
+function sessionErrorMessageKey(
+  code: SessionErrorCode
+): WorkspaceAuthErrorMessageKey {
   switch (code) {
     case 'ACCESS_DENIED':
       return 'workspaceAuth.errors.accessDenied'
@@ -744,7 +750,7 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
 
   // --- Unified Cloud-JWT lifecycle (flag-gated: unified_cloud_auth) ----------
   //
-  // The mint/refresh machinery is delegated to @comfyorg/account's session
+  // The mint/refresh machinery is delegated to @comfyorg/account-core's session
   // client (its scheduler runs the proactive chain; reactive 401 re-mints
   // recover API traffic, and the proactive chain keeps cookie-authenticated
   // <img>/media loads alive past the session cookie expiry, FE-1595). This

@@ -28,9 +28,8 @@ const translations = {
     'zh-CN': '接下来你想创造什么？'
   },
   'workshop.hero.subtitle': {
-    en: 'Try the latest AI models with your own ideas. Nothing to install: they run on Comfy Cloud.',
-    'zh-CN':
-      '用你自己的创意试用最新的 AI 模型。无需安装，模型在 Comfy Cloud 上运行。'
+    en: 'Try the latest AI models with your own ideas, right in your browser.',
+    'zh-CN': '用你自己的创意试用最新的 AI 模型，就在浏览器中。'
   },
   'workshop.search.label': {
     en: 'Search models, providers, and categories',
@@ -350,6 +349,111 @@ const translations = {
   'auth.signIn.retry': {
     en: 'Retry session',
     'zh-CN': '重试会话'
+  },
+  // Auth-failure copy this host owns. config/auth-sign-in-state.ts resolves a
+  // classified failure to one of these; the account package ships the rules,
+  // never the strings.
+  'auth.errors.auth/invalid-email': {
+    en: 'Please enter a valid email address.',
+    'zh-CN': '请输入有效的电子邮件地址。',
+    ja: '有効なメールアドレスを入力してください。'
+  },
+  'auth.errors.auth/user-disabled': {
+    en: 'This account has been disabled. Please contact support.',
+    'zh-CN': '此账户已被禁用。请联系客服。',
+    ja: 'このアカウントは無効化されています。サポートまでご連絡ください。'
+  },
+  'auth.errors.auth/email-already-in-use': {
+    en: "We couldn't create an account with this email. Try signing in or resetting your password instead.",
+    'zh-CN': '无法使用此电子邮件创建账户。请尝试登录或重置密码。',
+    ja: 'このメールアドレスではアカウントを作成できませんでした。代わりにサインインするか、パスワードをリセットしてください。'
+  },
+  'auth.errors.auth/weak-password': {
+    en: 'Password is too weak. Please use a stronger password with at least 6 characters.',
+    'zh-CN': '密码强度太弱。请使用至少6个字符的更强密码。',
+    ja: 'パスワードが弱すぎます。6文字以上のより強力なパスワードを使用してください。'
+  },
+  'auth.errors.auth/too-many-requests': {
+    en: 'Too many login attempts. Please wait a moment and try again.',
+    'zh-CN': '登录尝试次数过多。请稍等片刻再试。',
+    ja: 'ログイン試行回数が多すぎます。しばらく待ってからもう一度お試しください。'
+  },
+  'auth.errors.auth/operation-not-allowed': {
+    en: 'This sign-in method is not currently supported.',
+    'zh-CN': '此登录方法目前不受支持。',
+    ja: 'このサインイン方法は現在サポートされていません。'
+  },
+  'auth.errors.auth/invalid-credential': {
+    en: 'Invalid login credentials. Please check your email and password.',
+    'zh-CN': '登录凭据无效。请检查您的邮箱和密码。',
+    ja: 'ログイン認証情報が無効です。メールアドレスとパスワードを確認してください。'
+  },
+  'auth.errors.auth/network-request-failed': {
+    en: 'Network error. Please check your connection and try again.',
+    'zh-CN': '网络错误。请检查您的连接并重试。',
+    ja: 'ネットワークエラー。接続を確認してからもう一度お試しください。'
+  },
+  'auth.errors.auth/popup-closed-by-user': {
+    en: 'The sign-in window closed before sign-in finished. Please try again.',
+    'zh-CN': '登录完成前登录窗口已关闭。请重试。',
+    ja: 'サインインが完了する前にサインインウィンドウが閉じられました。もう一度お試しください。'
+  },
+  'auth.errors.auth/cancelled-popup-request': {
+    en: 'Another sign-in window was already open, so this one was cancelled. Please try again.',
+    'zh-CN': '另一个登录窗口已打开，因此此窗口已取消。请重试。',
+    ja: '別のサインインウィンドウがすでに開いていたため、このリクエストはキャンセルされました。もう一度お試しください。'
+  },
+  'auth.errors.auth/popup-blocked': {
+    en: 'Your browser blocked the sign-in window. Please allow pop-ups for this site and try again.',
+    'zh-CN': '您的浏览器阻止了登录窗口。请允许此网站的弹出窗口后重试。',
+    ja: 'ブラウザによってサインインウィンドウがブロックされました。このサイトのポップアップを許可して、もう一度お試しください。'
+  },
+  'auth.errors.auth/account-exists-with-different-credential': {
+    en: "We couldn't sign you in with this method. Try another sign-in option, or reset your password to continue.",
+    'zh-CN': '无法使用此方式登录。请尝试其他登录方式，或重置密码后继续。',
+    ja: 'この方法ではサインインできませんでした。別のサインイン方法をお試しいただくか、パスワードをリセットしてください。'
+  },
+  'auth.errors.generic': {
+    en: 'Something went wrong while signing you in. Please try again.',
+    'zh-CN': '登录时出现问题，请重试。',
+    ja: 'サインイン中に問題が発生しました。もう一度お試しください。'
+  },
+  'auth.errors.signupBlocked': {
+    en: "We couldn't create your account right now. Please try again later. If this keeps happening, email support@comfy.org.",
+    'zh-CN':
+      '我们目前无法创建您的账户。请稍后再试。如果问题持续，请发送邮件至 support@comfy.org。',
+    ja: '現在アカウントを作成できません。しばらくしてから再度お試しください。繰り返し発生する場合は support@comfy.org までご連絡ください。'
+  },
+  'auth.turnstile.expired': {
+    en: 'Verification expired. Please complete the challenge again.',
+    'zh-CN': '验证已过期。请重新完成验证。',
+    ja: '認証の有効期限が切れました。再度チャレンジを完了してください。'
+  },
+  'auth.turnstile.failed': {
+    en: 'Verification failed. Please try again.',
+    'zh-CN': '验证失败。请重试。',
+    ja: '認証に失敗しました。もう一度お試しください。'
+  },
+  'auth.turnstile.submitBlockedHint': {
+    en: 'Complete the verification challenge above to enable sign up.',
+    'zh-CN': '请先完成上方的验证挑战以启用注册。',
+    ja: '上記の認証チャレンジを完了すると、サインアップが有効になります。'
+  },
+  'toastMessages.unauthorizedDomain': {
+    en: 'Your domain {domain} is not authorized to use this service. Please contact {email} to add your domain to the whitelist.',
+    'zh-CN':
+      '您的域名 {domain} 未被授权使用此服务。请联系 {email} 将您的域名添加到白名单。',
+    ja: 'あなたのドメイン {domain} はこのサービスを利用する権限がありません。ご利用のドメインをホワイトリストに追加するには、{email} までご連絡ください。'
+  },
+  'g.error': {
+    en: 'Error',
+    'zh-CN': '错误',
+    ja: 'エラー'
+  },
+  'g.warning': {
+    en: 'Warning',
+    'zh-CN': '警告',
+    ja: '警告'
   },
   // Auth validation copy, matching the platform app's messages. The {length}
   // and {prefix} tokens are interpolated by config/auth-schemas.ts.
@@ -4264,10 +4368,11 @@ Enterprise`
 
   // SiteFooter
   'footer.tagline': {
-    en: 'The open standard for visual AI.',
-    'zh-CN': '视觉 AI 的开放标准。'
+    en: 'The open standard for visual AI',
+    'zh-CN': '视觉 AI 的开放标准'
   },
   'footer.products': { en: 'Products', 'zh-CN': '产品' },
+  'footer.models': { en: 'Models', 'zh-CN': '模型' },
   'footer.resources': { en: 'Resources', 'zh-CN': '资源' },
   'footer.company': { en: 'Company', 'zh-CN': '公司' },
   'footer.contact': { en: 'Contact', 'zh-CN': '联系我们' },
@@ -10007,6 +10112,18 @@ Enterprise`
   },
   'workshop.run.leaveStay': { en: 'Stay on this page', 'zh-CN': '留在此页面' },
   'workshop.run.leaveAnyway': { en: 'Leave and cancel', 'zh-CN': '离开并取消' },
+  'workshop.run.switchBody': {
+    en: 'If you switch workspace, the run is cancelled and you will not get back the credits it has already used.',
+    'zh-CN': '切换工作区会取消生成，已消耗的积分不会退回。'
+  },
+  'workshop.run.switchStay': {
+    en: 'Stay in this workspace',
+    'zh-CN': '留在此工作区'
+  },
+  'workshop.run.switchAnyway': {
+    en: 'Switch and cancel',
+    'zh-CN': '切换并取消'
+  },
   'workshop.examples.replaceTitle': {
     en: 'Replace your inputs?',
     'zh-CN': '要替换你的输入吗？'

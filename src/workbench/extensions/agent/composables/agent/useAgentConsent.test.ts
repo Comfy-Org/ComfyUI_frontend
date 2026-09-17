@@ -1,3 +1,4 @@
+import { useDialogService } from '@/services/dialogService'
 vi.mock(import('firebase/auth'))
 vi.mock(import('vuefire'), () => ({ useFirebaseAuth: vi.fn() }))
 import type { GlobalSetting } from '@comfyorg/ingest-types'
@@ -50,10 +51,7 @@ vi.mock(import('@/platform/auth/unified/remintRetry'), () => ({
   shouldRemintCloudRequest: () => Promise.resolve(false)
 }))
 
-const showSignInDialog = vi.hoisted(() => vi.fn<() => Promise<boolean>>())
-vi.mock<unknown>(import('@/services/dialogService'), () => ({
-  useDialogService: () => ({ showSignInDialog })
-}))
+vi.mock(import('@/services/dialogService'))
 
 const reportError = vi.hoisted(() => vi.fn())
 vi.mock(import('@/platform/telemetry/reportError'), () => ({
@@ -119,7 +117,6 @@ describe('useAgentConsent', () => {
     fetchApi.mockReset()
     fetchWithUnifiedRemint.mockReset()
     fetchWithUnifiedRemint.mockResolvedValue(settingResponse(false))
-    showSignInDialog.mockReset()
     reportError.mockReset()
     vi.mocked(useToastStore().add).mockReset()
   })
@@ -289,11 +286,13 @@ describe('useAgentConsent', () => {
         })
       }
     )
-    showSignInDialog.mockImplementationOnce(async () => {
-      authState.loggedIn = true
-      authState.identity = 'account-a'
-      return true
-    })
+    vi.mocked(useDialogService().showSignInDialog).mockImplementationOnce(
+      async () => {
+        authState.loggedIn = true
+        authState.identity = 'account-a'
+        return true
+      }
+    )
     fetchWithUnifiedRemint.mockResolvedValueOnce(savedResponse())
     const onOpen = vi.fn()
 
@@ -302,7 +301,7 @@ describe('useAgentConsent', () => {
     ;(dialog.contentProps.onAccept as () => void)()
     await request
 
-    expect(showSignInDialog).toHaveBeenCalledOnce()
+    expect(useDialogService().showSignInDialog).toHaveBeenCalledOnce()
     expect(vi.mocked(useTeamWorkspaceStore().initialize)).toHaveBeenCalledOnce()
     expect(fetchWithUnifiedRemint).toHaveBeenCalledOnce()
     expect(fetchWithUnifiedRemint).toHaveBeenCalledWith(
@@ -319,7 +318,7 @@ describe('useAgentConsent', () => {
   it('writes nothing when a signed-out Local user cancels sign-in', async () => {
     authState.loggedIn = false
     authState.identity = null
-    showSignInDialog.mockResolvedValueOnce(false)
+    vi.mocked(useDialogService().showSignInDialog).mockResolvedValueOnce(false)
     const onOpen = vi.fn()
 
     const request = useAgentConsent().withConsent(onOpen)
@@ -337,7 +336,7 @@ describe('useAgentConsent', () => {
     authState.loggedIn = false
     authState.identity = null
     const error = new Error('Sign-in chunk could not load')
-    showSignInDialog.mockRejectedValueOnce(error)
+    vi.mocked(useDialogService().showSignInDialog).mockRejectedValueOnce(error)
     const onOpen = vi.fn()
 
     const request = useAgentConsent().withConsent(onOpen)
@@ -357,11 +356,13 @@ describe('useAgentConsent', () => {
       })
     )
 
-    showSignInDialog.mockImplementationOnce(async () => {
-      authState.loggedIn = true
-      authState.identity = 'account-a'
-      return true
-    })
+    vi.mocked(useDialogService().showSignInDialog).mockImplementationOnce(
+      async () => {
+        authState.loggedIn = true
+        authState.identity = 'account-a'
+        return true
+      }
+    )
     fetchWithUnifiedRemint.mockResolvedValueOnce(savedResponse())
     const retry = useAgentConsent().withConsent(onOpen)
     await startConsent()

@@ -93,6 +93,8 @@ const assetDragActive = inject<Readonly<Ref<boolean>>>(
 const duplicateIdClass =
   'shrink-0 rounded-full bg-interface-menu-keybind-surface-default px-1 py-0.5 font-mono text-xs/4 font-medium text-base-foreground'
 
+const running = computed(() => streaming || submitting)
+
 const composer = useComposer({
   onSend: (text, attachments) => {
     if (workflowSelecting || submitting) return
@@ -123,7 +125,7 @@ const composer = useComposer({
       )
     } else emit('send', text, attachments)
   },
-  isStreaming: () => streaming,
+  isRunning: () => running.value,
   onStop: () => emit('stop')
 })
 
@@ -195,7 +197,18 @@ function onEditorSelectionChange(): void {
 }
 
 function onComposerKeydown(event: KeyboardEvent): void {
-  if (!handleMentionKeydown(event) && event.key === 'Enter') onEnter(event)
+  if (handleMentionKeydown(event)) return
+  if (event.key === 'Enter') onEnter(event)
+  if (
+    event.key === 'Escape' &&
+    running.value &&
+    !event.isComposing &&
+    !event.repeat
+  ) {
+    event.preventDefault()
+    event.stopPropagation()
+    emit('stop')
+  }
 }
 
 const mentionListRef = useTemplateRef<HTMLDivElement>('mentionListRef')
@@ -214,14 +227,15 @@ const placeholderHint = computed(() => {
 function onEnter(event: KeyboardEvent): void {
   if (event.isComposing || event.shiftKey) return
   event.preventDefault()
+  if (running.value) return
   composer.submit()
 }
 
-const running = computed(() => streaming || submitting)
 const primaryActionTooltip = computed(() =>
-  composer.canSend.value
-    ? t('agent.send')
-    : t('agent.addPromptToSend', 'Add a prompt to send')
+  running.value ? t('agent.stop') : t('agent.send')
+)
+const primaryActionShortcut = computed(() =>
+  running.value ? t('agent.stopShortcut') : undefined
 )
 
 function onPrimaryAction(): void {
@@ -250,6 +264,7 @@ defineExpose({
 
 <template>
   <div
+    id="agent-composer"
     class="relative flex flex-col rounded-lg border border-border-default bg-base-background"
   >
     <div
@@ -259,7 +274,7 @@ defineExpose({
       data-testid="agent-reference-menu"
       role="menu"
       :aria-label="t('agent.addToPrompt')"
-      class="absolute inset-x-0 bottom-full z-1100 mb-[-35px] max-h-64 overflow-y-auto rounded-lg border border-border-subtle bg-secondary-background p-1 font-inter shadow-md"
+      class="absolute inset-x-0 bottom-full z-1100 -mb-8.75 max-h-64 overflow-y-auto rounded-lg border border-border-subtle bg-secondary-background p-1 font-inter shadow-md"
       @mousedown.prevent
     >
       <div
@@ -390,17 +405,19 @@ defineExpose({
               >#{{ tag.id }}</span
             >
           </span>
-          <button
+          <Button
             v-tooltip.top="buildTooltipConfig(t('agent.remove'))"
             type="button"
+            variant="muted-textonly"
+            size="unset"
             :aria-label="
               t('agent.removeNodeLabel', { node: `${tag.title} #${tag.id}` })
             "
-            class="flex size-3.5 cursor-pointer items-center justify-center text-muted-foreground transition-colors hover:text-base-foreground"
+            class="size-3.5"
             @click.stop="emit('removeTag', selectedNodeKey(tag))"
           >
             <span class="icon-[lucide--x] size-3.5 shrink-0" />
-          </button>
+          </Button>
         </span>
       </div>
 
@@ -473,21 +490,23 @@ defineExpose({
               :collision-padding="8"
             >
               <template #trigger>
-                <button
+                <Button
                   type="button"
+                  variant="link"
+                  size="unset"
                   :aria-disabled="!!nodeReferenceDisabledReason || undefined"
                   :aria-description="nodeReferenceDisabledReason"
-                  class="pointer-events-auto -ml-1 inline-flex h-[20px] shrink-0 cursor-pointer items-center gap-[4px] rounded-lg px-[4px] align-top text-[14px]/[20px] text-muted-foreground transition-colors hover:text-base-foreground focus-visible:text-base-foreground focus-visible:outline-1 focus-visible:outline-base-foreground aria-disabled:cursor-not-allowed aria-disabled:opacity-50"
+                  class="pointer-events-auto -ml-1 h-5 shrink-0 gap-1 px-1 align-top text-sm/5 aria-disabled:cursor-not-allowed aria-disabled:opacity-50"
                   @click="onSelectNodes"
                 >
                   <span
-                    class="icon-[lucide--mouse-pointer-click] size-[14px] shrink-0"
+                    class="icon-[lucide--mouse-pointer-click] size-3.5 shrink-0"
                   />
                   <span
                     class="underline decoration-dashed underline-offset-2"
                     >{{ placeholderHint.mentionNodes }}</span
                   >
-                </button>
+                </Button>
               </template>
             </AccessibleTooltip>
           </div>
@@ -496,19 +515,22 @@ defineExpose({
 
       <div class="flex items-center justify-between px-3 py-2">
         <DropdownMenuRoot v-model:open="addMenuOpen">
-          <DropdownMenuTrigger
-            v-tooltip.top="buildTooltipConfig(t('agent.addToPrompt'))"
-            :aria-label="t('agent.addToPrompt')"
-            class="flex size-8 cursor-pointer items-center justify-center rounded-xl text-muted-foreground transition-colors hover:bg-secondary-background-hover hover:text-base-foreground"
-          >
-            <span class="icon-[lucide--plus] size-4" />
+          <DropdownMenuTrigger as-child>
+            <Button
+              v-tooltip.top="buildTooltipConfig(t('agent.addToPrompt'))"
+              variant="muted-textonly"
+              size="icon"
+              :aria-label="t('agent.addToPrompt')"
+            >
+              <span class="icon-[lucide--plus] size-4" />
+            </Button>
           </DropdownMenuTrigger>
           <DropdownMenuPortal>
             <DropdownMenuContent
               side="top"
               align="start"
               :side-offset="4"
-              class="agent-scope z-1100 box-border w-max min-w-[186px] rounded-lg border border-border-subtle bg-secondary-background p-1 font-inter shadow-lg"
+              class="agent-scope z-1100 box-border w-max min-w-46.5 rounded-lg border border-border-subtle bg-secondary-background p-1 font-inter shadow-lg"
             >
               <AccessibleTooltip
                 :label="nodeReferenceDisabledReason ?? ''"
@@ -547,7 +569,7 @@ defineExpose({
                 <DropdownMenuPortal>
                   <DropdownMenuSubContent
                     :side-offset="4"
-                    class="agent-scope z-1100 box-border max-h-64 min-w-[186px] overflow-y-auto rounded-lg border border-border-subtle bg-secondary-background p-1 font-inter shadow-lg"
+                    class="agent-scope z-1100 box-border max-h-64 min-w-46.5 overflow-y-auto rounded-lg border border-border-subtle bg-secondary-background p-1 font-inter shadow-lg"
                   >
                     <DropdownMenuItem
                       class="mb-0.5 box-border flex h-7 w-full cursor-pointer items-center gap-1.5 rounded-lg px-1.5 py-1 text-[14px]/5 font-normal text-base-foreground outline-none data-highlighted:bg-secondary-background-hover"
@@ -601,7 +623,7 @@ defineExpose({
                 class="box-border flex h-7 w-full cursor-pointer items-center gap-1.5 rounded-lg px-1.5 py-1 text-[14px]/5 font-normal text-base-foreground outline-none data-highlighted:bg-secondary-background-hover"
                 @select="emit('attach')"
               >
-                <span class="icon-[lucide--paperclip] size-4 shrink-0" />
+                <i-lucide:paperclip class="size-4 shrink-0" />
                 <span class="whitespace-nowrap">{{
                   t('agent.attachFiles')
                 }}</span>
@@ -614,7 +636,6 @@ defineExpose({
           <RunModePopover />
           <AccessibleTooltip
             :label="primaryActionTooltip"
-            :disabled="running"
             :skip-delay-duration="0"
             disable-hoverable-content
             :collision-padding="8"
@@ -630,17 +651,15 @@ defineExpose({
                 "
                 @click="onPrimaryAction"
               >
-                <span
-                  :class="
-                    cn(
-                      'size-4',
-                      running
-                        ? 'icon-[lucide--square]'
-                        : 'icon-[lucide--arrow-up]'
-                    )
-                  "
-                />
+                <i-lucide:square v-if="running" class="size-4" />
+                <i-lucide:arrow-up v-else class="size-4" />
               </Button>
+            </template>
+            <template #content>
+              {{ primaryActionTooltip }}
+              <span v-if="primaryActionShortcut" class="ml-1 opacity-50">{{
+                primaryActionShortcut
+              }}</span>
             </template>
           </AccessibleTooltip>
         </div>

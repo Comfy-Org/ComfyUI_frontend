@@ -83,7 +83,10 @@ describe('standard inputs across model families', () => {
   it.for([
     {
       slug: 'byteplus--seedream-4--generate-images',
-      expected: { prompt, size: '4K' }
+      // The Seedream size list carries FAL-style W×H presets next to the
+      // 1K/2K/4K tiers, so the standard `size` maps to the nearest preset
+      // instead of the resolution tier.
+      expected: { prompt, size: '2560x1440' }
     },
     {
       slug: 'vertexai--gemini-3-pro-image--generate-images',

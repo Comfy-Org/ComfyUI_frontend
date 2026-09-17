@@ -70,14 +70,6 @@ vi.mock<unknown>(import('@/composables/useErrorHandling'), () => ({
   }))
 }))
 
-vi.mock<unknown>(import('@/composables/useExternalLink'), () => ({
-  useExternalLink: vi.fn(() => ({
-    buildDocsUrl: vi.fn((path: string) => `https://docs.comfy.org${path}`),
-    staticUrls: {},
-    docsPaths: {}
-  }))
-}))
-
 // Mock release store
 
 beforeEach(() => {

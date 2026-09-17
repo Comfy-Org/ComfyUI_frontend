@@ -4,8 +4,8 @@ import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
+import { useAppMode } from '@/composables/useAppMode'
 import { useTelemetry } from '@/platform/telemetry'
-
 import { app } from '@/scripts/app'
 import { api } from '@/scripts/api'
 import { MAX_PROGRESS_JOBS, useExecutionStore } from '@/stores/executionStore'
@@ -17,7 +17,7 @@ import {
 } from '@/types/nodeIdentification'
 import { executionIdToNodeLocatorId } from '@/utils/graphTraversalUtil'
 import type { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
-import type { NodeProgressState } from '@/schemas/apiSchema'
+import type { NodeProgressState } from '@/platform/remote/comfyui/execution/types'
 
 const { mockShowTextPreview } = await vi.hoisted(async () => {
   return {
@@ -25,23 +25,12 @@ const { mockShowTextPreview } = await vi.hoisted(async () => {
   }
 })
 
-const mockAppModeState = vi.hoisted(() => ({
-  mode: { value: 'graph' },
-  isAppMode: { value: false }
-}))
-
 const defaultWorkflowExecutionIntent = {
   trigger_source: 'unknown'
 } as const
 
-vi.mock<unknown>(import('@/composables/useAppMode'), () => ({
-  useAppMode: () => mockAppModeState
-}))
+vi.mock(import('@/composables/useAppMode'))
 
-beforeEach(() => {
-  mockAppModeState.mode.value = 'graph'
-  mockAppModeState.isAppMode.value = false
-})
 import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
 import { toNodeId } from '@/types/nodeId'
 
@@ -2550,8 +2539,8 @@ describe('useExecutionStore - WebSocket event handlers', () => {
         mode: 'graph'
       })
 
-      mockAppModeState.mode.value = 'app'
-      mockAppModeState.isAppMode.value = true
+      vi.spyOn(useAppMode().mode, 'value', 'get').mockReturnValue('app')
+      vi.spyOn(useAppMode().isAppMode, 'value', 'get').mockReturnValue(true)
       fire('execution_success', { prompt_id: 'job-1', timestamp: 0 })
 
       expect(useTelemetry()?.trackSharedWorkflowRun).toHaveBeenCalledWith({
