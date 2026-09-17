@@ -57,14 +57,16 @@ Release the three SDK packages through the same version-bump PR the
 design-system uses, generalized over a `package` input instead of copied per
 package. Do not adopt Changesets yet.
 
-Four workflows carry it:
+Three workflows carry it:
 
-| Workflow                        | Trigger                                    | What it does                                                                                                                    |
-| ------------------------------- | ------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------- |
-| `version-bump-package.yaml`     | `workflow_dispatch`                        | Bumps one package on `main` and opens a `Release`-labelled PR titled `<package> <version>`                                      |
-| `publish-package.yaml`          | `workflow_dispatch` + `workflow_call`      | Validates, builds, smoke-tests, and publishes one package with provenance                                                       |
-| `publish-package-on-merge.yaml` | `pull_request: closed` on `main`           | On a merged `Release` PR, publishes every package whose version changed, comments the release links, and posts to Slack         |
-| `publish-package-snapshot.yaml` | `pull_request` labelled `publish-snapshot` | Publishes `0.0.0-pr-<N>-<sha7>` of each changed package under the `pr-<N>` dist-tag so a consumer can try a branch before merge |
+| Workflow                        | Trigger                               | What it does                                                                                                            |
+| ------------------------------- | ------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
+| `version-bump-package.yaml`     | `workflow_dispatch`                   | Bumps one package on `main` and opens a `Release`-labelled PR titled `<package> <version>`                              |
+| `publish-package.yaml`          | `workflow_dispatch` + `workflow_call` | Validates, builds, smoke-tests, and publishes one package with provenance                                               |
+| `publish-package-on-merge.yaml` | `pull_request: closed` on `main`      | On a merged `Release` PR, publishes every package whose version changed, comments the release links, and posts to Slack |
+
+Pre-merge snapshot publishing is a deliberate follow-up, not part of this
+decision; the constraint that shapes it is recorded under Follow-ups.
 
 The decisions inside those workflows:
 
@@ -93,21 +95,15 @@ The decisions inside those workflows:
 - **Prereleases go to `next`, releases to `latest`.** The dist-tag is derived
   from the version: a `-` after the patch segment means `next`. `latest` is
   never set by a workflow that a prerelease can reach.
-- **Provenance is on for releases, off for snapshots.** Every release publish
-  runs under `id-token: write` with `--provenance`, so the npm page carries a
-  signed link back to the workflow run and the commit. An external consumer
-  installing an alpha of an auth package should be able to verify where the
-  tarball came from. The snapshot job holds no `id-token: write` at all: it
-  runs `build` and `smoke:pack` out of the pull request under review, and a
-  job that runs an unreviewed script must not be able to mint an OIDC token.
-  A throwaway `0.0.0-pr-<N>-<sha7>` is not worth that capability.
-- **Snapshots are labelled, same-repo, and never `latest`.** The snapshot
-  workflow refuses fork PRs (which never receive `NPM_TOKEN` anyway), writes
-  the version into a working copy it restores afterwards rather than
-  committing it, and tags the result `pr-<N>`. Because a re-run replays the
-  original event payload, it re-reads the pull request's head SHA before
-  publishing and refuses to run when the branch has moved on, so `pr-<N>`
-  cannot be pointed back at a superseded snapshot.
+- **Provenance is on for every publish.** Each publish runs under
+  `id-token: write` with `--provenance`, so the npm page carries a signed link
+  back to the workflow run and the commit. An external consumer installing an
+  alpha of an auth package should be able to verify where the tarball came
+  from.
+- **No `pull_request` trigger reaches the registry credentials.** Every
+  workflow here runs off `main` — a dispatch, or the merge of a reviewed PR.
+  `NPM_TOKEN` and `id-token: write` stay out of any job whose definition a
+  pull request can rewrite.
 
 ### Versioning policy
 
@@ -180,8 +176,6 @@ monorepo was adopted ([ADR-DEVEX-MONOREPO-0002](DEVEX-MONOREPO-0002-adopt-a-pnpm
   someone owns. Nothing reaches the registry from a push to `main`.
 - Provenance and the `private` guard make the accidental-publish path explicit
   rather than a matter of care.
-- Snapshots let Platform install a branch before it merges, which shortens the
-  loop on the contract changes most likely to need one.
 - Adding the fourth package (`account-ui`, when it goes public) is two table
   entries and one `paths` line.
 
@@ -199,6 +193,9 @@ monorepo was adopted ([ADR-DEVEX-MONOREPO-0002](DEVEX-MONOREPO-0002-adopt-a-pnpm
   and merged after an unrelated package change still publishes the merge
   commit's tree, so the published contents can include work the bump author
   did not look at.
+- There is no way to install a branch before it merges. Platform tries a
+  contract change by merging it, or not at all, until the snapshot follow-up
+  below lands.
 
 ## Notes
 
@@ -226,11 +223,19 @@ merge — `ingest-types` first, then `billing-contract` and `account-core`.
   Picking the increment is the human judgement described under Versioning
   policy, so the safe default for the bot is `patch` with a reviewer free to
   raise it on the PR.
-- **Snapshot dependency resolution is best-effort.** A snapshot of
-  `account-core` in a PR that does not touch `ingest-types` resolves its
-  caret range against whatever is on the registry. That is correct, but it
-  means a snapshot cannot be used to test an unpublished `ingest-types`
-  change unless the same PR touches both.
+- **Pre-merge snapshots ship separately.** A `pull_request` run executes the
+  workflow definition from the pull request's own merge ref, so a publish step
+  triggered that way is PR-authored code holding `NPM_TOKEN`. This would be
+  the first `pull_request` path to the publish token in this repository, and
+  the snapshot cannot be used at all until `private` comes off the three
+  manifests, so it is not worth carrying that on the release path's timeline.
+  The replacement publishes from a workflow that runs the default branch's
+  definition — a `workflow_run` consumer of an artifact the pull-request job
+  produces — or from a protected environment with required reviewers. It also
+  has to answer a resolution question the release path does not: a snapshot of
+  `account-core` in a PR that does not touch `ingest-types` resolves its caret
+  range against the registry, so an unpublished `ingest-types` change can only
+  be tested when the same PR touches both.
 - **`account-ui` is the fourth candidate.** It joins the tables when an
   out-of-repo host needs the Vue layer.
 
