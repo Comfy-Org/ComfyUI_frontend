@@ -23,7 +23,7 @@ import {
 import { createBalanceReader } from './workshop-balance'
 import { WORKSHOP_CLOUD_BASE_URL } from './workshop-env'
 
-const STORAGE_KEY = 'comfy.workshop.session.v1'
+export const STORAGE_KEY = 'comfy.workshop.session.v1'
 
 const storage = {
   read(): string | null {

@@ -2,9 +2,18 @@ import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import { ref, watch } from 'vue'
 import type { Ref } from 'vue'
 
-import type { AccountUser } from '@comfyorg/account-core/session'
+import type {
+  AccountUser,
+  SessionSnapshot
+} from '@comfyorg/account-core/session'
 
-const STORAGE_KEY = 'comfy.workshop.session.v1'
+import {
+  mintBody,
+  okFetch,
+  testUser
+} from './__fixtures__/workshopSessionFakes'
+import { STORAGE_KEY } from './workshop-account'
+import { REMEMBERED_WORKSPACE_KEY } from './workshop-session-state'
 
 const h = vi.hoisted(() => ({
   flag: undefined as Ref<boolean> | undefined,
@@ -33,25 +42,9 @@ vi.mock<unknown>(import('./workshop-firebase'), async () => {
   }
 })
 
-const user: AccountUser = { uid: 'user-1', getIdToken: async () => 'id-token' }
+const user = testUser('user-1')
 
-function mintBody(token: string) {
-  return {
-    token,
-    permissions: ['workspace:read'],
-    expires_at: new Date(Date.now() + 90 * 60 * 1000).toISOString(),
-    workspace: { id: 'ws-1', name: 'Personal', type: 'personal' },
-    role: 'owner'
-  }
-}
-
-function okFetch(token = 'jwt-1') {
-  return vi.fn<typeof fetch>(
-    async () => new Response(JSON.stringify(mintBody(token)), { status: 200 })
-  )
-}
-
-type Phase = 'pending' | 'signed-out' | 'minting' | 'error' | 'authenticated'
+type Phase = SessionSnapshot['phase']
 
 async function boot(enabled: boolean) {
   vi.resetModules()
@@ -86,7 +79,7 @@ async function firebaseAnswers(answer: AccountUser | null): Promise<void> {
 
 beforeEach(() => {
   sessionStorage.clear()
-  window.localStorage.removeItem('workshop:workspace')
+  window.localStorage.removeItem(REMEMBERED_WORKSPACE_KEY)
   h.deliver = undefined
 })
 
@@ -152,14 +145,64 @@ describe('useWorkshopSession over the real session client', () => {
     flag.value = false
     await vi.waitFor(() => expect(session.settled.value).toBe(false))
     releaseMint()
+    await fetchSpy.mock.results[0]?.value
+    await new Promise((resolve) => setTimeout(resolve))
+
+    expect(client.getToken()).toBeUndefined()
+    expect(phases).not.toContain('authenticated')
+    expect(session.signedIn.value).toBe(false)
+    expect(
+      sessionStorage.getItem(STORAGE_KEY),
+      'a mint the flag flip abandoned must not be committed to storage'
+    ).toBeNull()
+  })
+
+  it('installs nothing when the flag turns off before the first Firebase answer lands', async () => {
+    const fetchSpy = okFetch()
+    vi.stubGlobal('fetch', fetchSpy)
+    const { session, flag, phases } = await boot(true)
+    await vi.waitFor(() => expect(h.deliver).toBeDefined())
+
+    flag.value = false
+    h.deliver?.(user)
+    await vi.waitFor(() => expect(h.deliver).toBeUndefined())
+    await fetchSpy.mock.results[0]?.value
     await new Promise((resolve) => setTimeout(resolve))
 
     expect(
-      client.getToken(),
-      'a mint the flag flip abandoned must not become the live token'
-    ).toBeUndefined()
-    expect(phases).not.toContain('authenticated')
-    expect(session.signedIn.value).toBe(false)
-    expect(sessionStorage.getItem(STORAGE_KEY)).toBeNull()
+      phases,
+      'a begin resumed by the flag-off deactivate must not subscribe the host'
+    ).toEqual([])
+    expect(session.settled.value).toBe(false)
+    expect(h.identifyWorkshopUser).not.toHaveBeenCalled()
+  })
+
+  it('clears the stored credential when a begin step fails after a signed-in delivery', async () => {
+    // The replayed minting snapshot reaches identify inside begin, so its
+    // throw fails a begin step after the signed-in delivery.
+    h.identifyWorkshopUser.mockImplementationOnce(() => {
+      throw new Error('identify exploded')
+    })
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const { expires_at, ...cached } = mintBody('jwt-cached')
+    sessionStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify({
+        ...cached,
+        uid: user.uid,
+        expiresAt: Date.parse(expires_at)
+      })
+    )
+    vi.stubGlobal('fetch', okFetch())
+    await boot(true)
+
+    await firebaseAnswers(user)
+    await vi.waitFor(() => expect(errorSpy).toHaveBeenCalledOnce())
+    await new Promise((resolve) => setTimeout(resolve))
+
+    expect(
+      sessionStorage.getItem(STORAGE_KEY),
+      'the failed attempt signs the client out, so the retry re-mints instead of reviving this credential'
+    ).toBeNull()
   })
 })

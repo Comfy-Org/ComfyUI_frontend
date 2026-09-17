@@ -11,6 +11,7 @@ const SIGNED_OUT = {
 
 const mocks = vi.hoisted(() => ({
   activate: vi.fn(async () => undefined),
+  deactivate: vi.fn(),
   subscribeAuthRefreshTelemetry: vi.fn(() => () => undefined),
   remint: vi.fn(),
   subscribers: new Set<(snapshot: unknown) => void>(),
@@ -40,7 +41,7 @@ vi.mock<unknown>(import('./workshop-account'), () => ({
     getSnapshot: () => mocks.liveSnapshot,
     getToken: vi.fn()
   },
-  workshopIdentity: { activate: mocks.activate, deactivate: vi.fn() },
+  workshopIdentity: { activate: mocks.activate, deactivate: mocks.deactivate },
   subscribeAuthRefreshTelemetry: mocks.subscribeAuthRefreshTelemetry
 }))
 
@@ -113,6 +114,7 @@ describe('useWorkshopSession initialization failure', () => {
     const sessionModule = await import('./workshop-session-state')
 
     const session = sessionModule.useWorkshopSession()
+    mocks.deactivate.mockClear()
     await vi.waitFor(() => expect(mocks.remint).toHaveBeenCalledOnce())
     await vi.waitFor(() => expect(errorSpy).toHaveBeenCalledOnce())
 
@@ -125,6 +127,10 @@ describe('useWorkshopSession initialization failure', () => {
       'a restore captured before begin threw must not publish after teardown'
     ).toBeUndefined()
     expect(session.signedIn.value).toBe(false)
+    expect(
+      mocks.deactivate,
+      'deactivate signs the client out, which drops the stored credential; the integration suite pins the storage'
+    ).toHaveBeenCalledOnce()
     errorSpy.mockRestore()
   })
 })

@@ -88,7 +88,7 @@ const ensureFreshHere: typeof workshopSessionClient.ensureFresh = (
  * every authenticated snapshot, restored with one targeted re-mint on the
  * first snapshot after a reload, and dropped if that restore is refused.
  */
-const REMEMBERED_WORKSPACE_KEY = 'workshop:workspace'
+export const REMEMBERED_WORKSPACE_KEY = 'workshop:workspace'
 
 const zRememberedWorkspace = z.object({
   uid: z.string(),
