@@ -12,8 +12,8 @@ import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { useNodeDataStore } from '@/stores/nodeDataStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { graphScopeOf } from '@/types/graphScopeId'
-import { toNodeId } from '@/types/nodeId';
-import type { NodeId } from '@/types/nodeId';
+import { toNodeId } from '@/types/nodeId'
+import type { NodeId } from '@/types/nodeId'
 import { widgetId } from '@/types/widgetId'
 
 import { reconcileAgentAdapters } from './agentNodeMaterializer'
