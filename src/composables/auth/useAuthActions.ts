@@ -6,8 +6,8 @@ import {
   authErrorMessage,
   classifyAuthError,
   severityForAuthError
-} from '@comfyorg/account/firebaseAuthError'
-import type { AuthErrorCopy } from '@comfyorg/account/firebaseAuthError'
+} from '@comfyorg/account-core/firebaseAuthError'
+import type { AuthErrorCopy } from '@comfyorg/account-core/firebaseAuthError'
 
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { watchForTopupBalanceUpdate } from '@/composables/billing/topupBalanceRefresh'

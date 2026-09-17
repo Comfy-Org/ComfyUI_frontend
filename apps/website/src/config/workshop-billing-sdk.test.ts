@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type {
   AccountCredential,
   SessionSnapshot
-} from '@comfyorg/account/session'
+} from '@comfyorg/account-core/session'
 
 import { WORKSHOP_CLOUD_BASE_URL } from './workshop-env'
 

@@ -5,7 +5,7 @@ import type {
   BillingOperationState,
   FailedBillingOperation,
   PendingBillingOperation
-} from '@comfyorg/account/billing'
+} from '@comfyorg/account-core/billing'
 import { vi } from 'vitest'
 
 import type { BillingSdk } from './createBillingSdk'

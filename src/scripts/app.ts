@@ -838,7 +838,7 @@ export class ComfyApp {
           keybinding &&
           keybinding.targetElementId === 'graph-canvas-container'
         ) {
-          useCommandStore().execute(keybinding.commandId)
+          void useCommandStore().execute(keybinding.commandId)
 
           this.graph.change()
           e.preventDefault()
@@ -926,7 +926,7 @@ export class ComfyApp {
       void useNodeReplacementStore().load()
     })
 
-    api.init()
+    void api.init()
   }
 
   /** Flag that the graph is configuring to prevent nodes from running checks while its still loading */
@@ -2540,7 +2540,7 @@ export class ComfyApp {
   async reloadNodeDefs() {
     const defs = await this.getNodeDefs()
     for (const nodeId in defs) {
-      this.registerNodeDef(nodeId, defs[nodeId])
+      await this.registerNodeDef(nodeId, defs[nodeId])
     }
     // Refresh combo widgets in all nodes including those in subgraphs
     const nodeOutputStore = useNodeOutputStore()
