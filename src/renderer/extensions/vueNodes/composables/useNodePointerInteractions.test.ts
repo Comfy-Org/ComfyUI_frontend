@@ -134,6 +134,7 @@ describe('useNodePointerInteractions', () => {
     const firstEnter = vi.fn()
     const firstLeave = vi.fn()
     const secondEnter = vi.fn()
+    const secondLeave = vi.fn()
     let host = fromAny<LGraphNode, unknown>({
       pos: [10, 20],
       onMouseEnter: firstEnter,
@@ -150,12 +151,15 @@ describe('useNodePointerInteractions', () => {
 
     host = fromAny<LGraphNode, unknown>({
       pos: [30, 40],
-      onMouseEnter: secondEnter
+      onMouseEnter: secondEnter,
+      onMouseLeave: secondLeave
     })
+    const leaveEvent = createPointerEvent('pointerleave')
     pointerHandlers.onPointerenter(createPointerEvent('pointerenter'))
-    pointerHandlers.onPointerleave(createPointerEvent('pointerleave'))
+    pointerHandlers.onPointerleave(leaveEvent)
 
     expect(secondEnter).toHaveBeenCalledOnce()
+    expect(secondLeave).toHaveBeenCalledWith(leaveEvent)
     expect(firstLeave).not.toHaveBeenCalled()
   })
 
