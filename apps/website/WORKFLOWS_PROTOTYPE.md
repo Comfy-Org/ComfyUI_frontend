@@ -13,7 +13,7 @@ labels and customer-facing descriptions are editorial proposals for review.
 ## Run locally
 
 ```sh
-WORKSHOP_IN_BUILD=1 PUBLIC_WORKSHOP_AUTH_FLAG=1 \
+WORKSHOP_IN_BUILD=1 PUBLIC_WORKSHOP_ENABLED=1 PUBLIC_WORKSHOP_AUTH_FLAG=1 \
 PUBLIC_WORKSHOP_CLOUD_ENV=prod pnpm --filter @comfyorg/website dev \
   --host 127.0.0.1 --port 4327
 ```

@@ -249,9 +249,7 @@ function downloadGraph() {
             <h2 class="font-medium text-primary-comfy-canvas">
               {{ outputs.length ? 'Your results' : 'Result' }}
             </h2>
-            <span
-              v-if="state.phase === 'idle'"
-              class="text-xs text-primary-warm-gray"
+            <span v-if="!outputs.length" class="text-xs text-primary-warm-gray"
               >Example preview</span
             >
           </div>
@@ -314,7 +312,7 @@ function downloadGraph() {
             >
           </div>
           <p
-            v-if="state.phase === 'idle'"
+            v-if="!outputs.length && !busy"
             class="px-5 py-4 text-sm text-primary-warm-gray"
           >
             An example from this template. Run the workflow to generate your own
@@ -342,6 +340,18 @@ function downloadGraph() {
             >Check plan and credits in Cloud ↗</a
           >
         </div>
+        <p
+          v-if="
+            state.phase === 'finished' &&
+            state.job.status === 'completed' &&
+            !outputs.length
+          "
+          role="status"
+          class="rounded-xl border border-transparency-white-t20 p-5 text-sm text-primary-comfy-canvas"
+        >
+          This run finished without a downloadable output. Open Cloud to inspect
+          the job.
+        </p>
         <div
           v-if="state.phase === 'finished' && state.job.status !== 'completed'"
           role="status"
