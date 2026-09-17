@@ -1,3 +1,4 @@
+import { useDialogService } from '@/services/dialogService'
 import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
 import { getActivePinia } from 'pinia'
@@ -46,10 +47,7 @@ vi.mock(import('@/composables/billing/usePartnerNodesRunGate'), async () => {
   }
 })
 
-const showApiNodesSignInDialog = vi.fn()
-vi.mock<unknown>(import('@/services/dialogService'), () => ({
-  useDialogService: () => ({ showApiNodesSignInDialog })
-}))
+vi.mock(import('@/services/dialogService'))
 
 const { __setHasPartnerNodes } =
   partnerNodesInGraphModule as typeof partnerNodesInGraphModule & {
@@ -89,7 +87,6 @@ describe('PartnerNodesEducationCard', () => {
   beforeEach(() => {
     __setHasPartnerNodes(true)
     __setGate('none')
-    showApiNodesSignInDialog.mockClear()
   })
 
   it('stays hidden until a paid template load requests it', () => {
@@ -211,7 +208,9 @@ describe('PartnerNodesEducationCard', () => {
     await nextTick()
 
     await userEvent.click(screen.getByTestId('partner-nodes-education-sign-in'))
-    expect(showApiNodesSignInDialog).toHaveBeenCalledWith(['Kling'])
+    expect(useDialogService().showApiNodesSignInDialog).toHaveBeenCalledWith([
+      'Kling'
+    ])
   })
 
   it('gives each audio toggle a distinct, side-specific accessible name', async () => {

@@ -503,6 +503,9 @@ importers:
       '@comfyorg/account-ui':
         specifier: workspace:*
         version: link:packages/account-ui
+      '@comfyorg/billing-contract':
+        specifier: workspace:*
+        version: link:packages/billing-contract
       '@comfyorg/comfy-multi-player':
         specifier: 0.2.1
         version: 0.2.1
