@@ -344,9 +344,9 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
         state.absorbedValidationErrors.set(rawError, kind)
         return true
       }
-      const wasAbsorbed = previous
-        ? classifyMissingResource(surfaces, previous)
-        : state.absorbedValidationErrors.get(rawError)
+      const wasAbsorbed =
+        state.absorbedValidationErrors.get(rawError) ??
+        (previous ? classifyMissingResource(surfaces, previous) : null)
       if (!wasAbsorbed) return true
       const wasVerified =
         wasAbsorbed === 'missing_model'

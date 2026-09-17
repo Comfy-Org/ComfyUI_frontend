@@ -1116,6 +1116,46 @@ describe('absorbed-error retirement on candidate resolution', () => {
     expect(store.lastNodeErrors).toBeNull()
   })
 
+  it.for(['present', 'removed'] as const)(
+    'retires both resource errors after unknown verification becomes %s',
+    async (outcome) => {
+      const store = useExecutionErrorStore()
+      const modelStore = useMissingModelStore()
+      const mediaStore = useMissingMediaStore()
+      const model = absorbedModelCandidate()
+      const media = createMissingMediaCandidate([toNodeId(1)], {
+        name: 'portrait.png'
+      })
+      const errors = [
+        absorbedError(),
+        validationError('value_not_in_list', 'image', {
+          received_value: 'portrait.png'
+        }),
+        blockingError()
+      ]
+      modelStore.setMissingModels([model])
+      mediaStore.setMissingMedia([media])
+      store.recordNodeErrors({ '1': nodeError(errors) })
+      await nextTick()
+      expect(store.lastNodeErrors?.['1'].errors).toEqual(errors)
+
+      modelStore.setMissingModels([{ ...model, isMissing: undefined }])
+      mediaStore.setMissingMedia([{ ...media, isMissing: undefined }])
+      await nextTick()
+      expect(store.lastNodeErrors?.['1'].errors).toEqual(errors)
+
+      modelStore.setMissingModels(
+        outcome === 'present' ? [{ ...model, isMissing: false }] : []
+      )
+      mediaStore.setMissingMedia(
+        outcome === 'present' ? [{ ...media, isMissing: false }] : []
+      )
+      await nextTick()
+
+      expect(store.lastNodeErrors?.['1'].errors).toEqual([blockingError()])
+    }
+  )
+
   it.for([
     { verified: { models: [] }, remainingInput: 'image' },
     { verified: { media: [] }, remainingInput: 'ckpt_name' }
