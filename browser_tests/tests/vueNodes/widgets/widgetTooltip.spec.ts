@@ -19,6 +19,9 @@ test.describe('Vue Node Widget Tooltip', { tag: '@vue-nodes' }, () => {
   test('renders a long widget tooltip with label and value on separate lines within bounds', async ({
     comfyPage
   }) => {
+    // Chromium project timeout is 15s unless test.slow() runs (same class as #17887).
+    test.slow()
+
     const label = 'Detection prompt for the segmentation model.'
     const longValue =
       'a very long default detection value that keeps going and going and going ' +
