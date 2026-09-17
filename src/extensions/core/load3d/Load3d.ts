@@ -62,6 +62,7 @@ class Load3d extends Viewport3d {
   animationManager: AnimationManager
   gizmoManager: GizmoManager
   adapterRef: AdapterRef
+  private configurationCleanup?: () => void
 
   private loadingPromise: Promise<void> | null = null
   private _loadGeneration: number = 0
@@ -666,7 +667,14 @@ class Load3d extends Viewport3d {
     this.forceRender()
   }
 
+  setConfigurationCleanup(cleanup: () => void): void {
+    this.configurationCleanup?.()
+    this.configurationCleanup = cleanup
+  }
+
   protected override disposeManagers(): void {
+    this.configurationCleanup?.()
+    this.configurationCleanup = undefined
     super.disposeManagers()
     this.hdriManager.dispose()
     this.loaderManager.dispose()

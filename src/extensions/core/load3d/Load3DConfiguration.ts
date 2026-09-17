@@ -1,3 +1,5 @@
+import { effectScope, watch } from 'vue'
+
 import { LOAD3D_NONE_MODEL } from '@/extensions/core/load3d/constants'
 import type Load3d from '@/extensions/core/load3d/Load3d'
 import Load3dUtils from '@/extensions/core/load3d/Load3dUtils'
@@ -14,24 +16,6 @@ import type { NodeProperty } from '@/lib/litegraph/src/LGraphNode'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { api } from '@/scripts/api'
-import { useWidgetValueStore } from '@/stores/widgetValueStore'
-import { isRemoteMutationContext } from '@/types/graphMutationContext'
-
-// One store subscription per widget instance, regardless of how many times
-// `configure()` re-runs across this node's lifecycle (queue results, preview
-// re-applies, etc). Keyed by the widget object itself so a widget torn down
-// with its node is naturally released.
-const remoteModelUpdateSubscribed = new WeakSet<IBaseWidget>()
-
-type ModelWidgetBinding = {
-  onModelWidgetUpdate: (
-    value: string | number | boolean | object
-  ) => Promise<void>
-  onSceneInvalidated?: () => void
-  originalCallback?: IBaseWidget['callback']
-}
-
-const modelWidgetBindings = new WeakMap<IBaseWidget, ModelWidgetBinding>()
 
 type Load3DConfigurationSettings = {
   loadFolder: string
@@ -85,38 +69,50 @@ class Load3DConfiguration {
   }
 
   configure(setting: Load3DConfigurationSettings) {
-    this.setupModelHandling(
+    const onModelWidgetUpdate = this.setupModelHandling(
       setting.modelWidget,
       setting.loadFolder,
       setting.cameraState,
-      setting.silentOnNotFound ?? false,
-      setting.onSceneInvalidated
+      setting.silentOnNotFound ?? false
     )
-    this.setupTargetSize(
-      setting.width,
-      setting.height,
-      setting.onSceneInvalidated
-    )
+    this.setupTargetSize(setting.width, setting.height)
+    this.setupReactiveHandling(setting, onModelWidgetUpdate)
     this.setupDefaultProperties(setting.bgImagePath)
   }
 
-  private setupTargetSize(
-    width?: IBaseWidget,
-    height?: IBaseWidget,
-    onSceneInvalidated?: () => void
-  ) {
+  private setupReactiveHandling(
+    setting: Load3DConfigurationSettings,
+    onModelWidgetUpdate: (value: IBaseWidget['value']) => Promise<void>
+  ): void {
+    const scope = effectScope()
+    scope.run(() => {
+      watch(
+        () => setting.modelWidget.value,
+        (value) => {
+          void onModelWidgetUpdate(value)
+          setting.onSceneInvalidated?.()
+        },
+        { flush: 'sync' }
+      )
+
+      const { width, height } = setting
+      if (width && height) {
+        watch(
+          [() => width.value, () => height.value],
+          ([nextWidth, nextHeight]) => {
+            this.load3d.setTargetSize(nextWidth as number, nextHeight as number)
+            setting.onSceneInvalidated?.()
+          },
+          { flush: 'sync' }
+        )
+      }
+    })
+    this.load3d.setConfigurationCleanup(() => scope.stop())
+  }
+
+  private setupTargetSize(width?: IBaseWidget, height?: IBaseWidget) {
     if (width && height) {
       this.load3d.setTargetSize(width.value as number, height.value as number)
-
-      width.callback = (value: number) => {
-        this.load3d.setTargetSize(value, height.value as number)
-        onSceneInvalidated?.()
-      }
-
-      height.callback = (value: number) => {
-        this.load3d.setTargetSize(width.value as number, value)
-        onSceneInvalidated?.()
-      }
     }
   }
 
@@ -140,8 +136,7 @@ class Load3DConfiguration {
     modelWidget: IBaseWidget,
     loadFolder: string,
     cameraState?: CameraState,
-    silentOnNotFound: boolean = false,
-    onSceneInvalidated?: () => void
+    silentOnNotFound: boolean = false
   ) {
     const onModelWidgetUpdate = this.createModelUpdateHandler(
       loadFolder,
@@ -152,84 +147,7 @@ class Load3DConfiguration {
       void onModelWidgetUpdate(modelWidget.value)
     }
 
-    const existingBinding = modelWidgetBindings.get(modelWidget)
-    if (existingBinding) {
-      existingBinding.onModelWidgetUpdate = onModelWidgetUpdate
-      existingBinding.onSceneInvalidated = onSceneInvalidated
-      this.subscribeToRemoteModelUpdates(modelWidget)
-      return
-    }
-
-    const binding: ModelWidgetBinding = {
-      onModelWidgetUpdate,
-      onSceneInvalidated,
-      originalCallback: modelWidget.callback
-    }
-    modelWidgetBindings.set(modelWidget, binding)
-
-    let currentValue = modelWidget.value
-    Object.defineProperty(modelWidget, 'value', {
-      get() {
-        return currentValue
-      },
-      set(newValue) {
-        currentValue = newValue
-        if (modelWidget.callback && newValue !== undefined) {
-          modelWidget.callback(newValue)
-        }
-      },
-      enumerable: true,
-      configurable: true
-    })
-
-    modelWidget.callback = (value: string | number | boolean | object) => {
-      void binding.onModelWidgetUpdate(value)
-
-      if (binding.originalCallback) {
-        binding.originalCallback(value)
-      }
-
-      binding.onSceneInvalidated?.()
-    }
-
-    this.subscribeToRemoteModelUpdates(modelWidget)
-  }
-
-  /**
-   * The agent/CRDT follower writes widget values straight into
-   * `widgetValueStore` (`graphMutations.ts`'s `setWidget`/`reconcileNode`
-   * commit path), never through this widget's own JS property. The
-   * `Object.defineProperty` override above only fires when something sets
-   * `modelWidget.value` directly, so a remote-origin `model_file` change
-   * would otherwise never reload the Three.js scene or invalidate the
-   * capture cache, leaving `serializeValue` (load3d.ts) returning a stale
-   * cached image/mask/normal/recording on the next queue or manual capture.
-   * Bridge the two by replaying the widget's own setter for value changes
-   * that originated remotely.
-   */
-  private subscribeToRemoteModelUpdates(modelWidget: IBaseWidget): void {
-    const targetWidgetId = modelWidget.widgetId
-    if (!targetWidgetId) return
-    if (remoteModelUpdateSubscribed.has(modelWidget)) return
-    remoteModelUpdateSubscribed.add(modelWidget)
-
-    const widgetValueStore = useWidgetValueStore()
-    const unsubscribe = widgetValueStore.onValueChange(
-      ({ widgetId, value, context }) => {
-        // The widget (and its node) may have been removed since this
-        // listener was registered; `onValueChange` has no per-widget scope,
-        // so detect staleness here and detach rather than leaking forever.
-        if (!widgetValueStore.getWidget(targetWidgetId)) {
-          remoteModelUpdateSubscribed.delete(modelWidget)
-          unsubscribe()
-          return
-        }
-        if (!isRemoteMutationContext(context)) return
-        if (widgetId !== targetWidgetId) return
-        if (value === modelWidget.value) return
-        modelWidget.value = value
-      }
-    )
+    return onModelWidgetUpdate
   }
 
   private setupDefaultProperties(bgImagePath?: string) {
@@ -372,7 +290,7 @@ class Load3DConfiguration {
     silentOnNotFound: boolean = false
   ) {
     let isFirstLoad = true
-    return async (value: string | number | boolean | object) => {
+    return async (value: IBaseWidget['value']) => {
       if (!value || value === LOAD3D_NONE_MODEL) {
         this.load3d.clearModel()
         return
