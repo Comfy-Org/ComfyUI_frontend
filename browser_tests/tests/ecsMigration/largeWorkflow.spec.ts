@@ -1,7 +1,7 @@
 import { expect } from '@playwright/test'
 
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
-import { expectLargeWorkflowLandmarksPainted } from '@e2e/fixtures/utils/largeWorkflowPaintProof'
+import { expectLargeWorkflowLandmarkTitlesPainted } from '@e2e/fixtures/utils/largeWorkflowPaintProof'
 
 test.describe(
   'Large workflow readiness',
@@ -43,8 +43,8 @@ test.describe(
         )
       })
 
-      await test.step('paints every bounded graph landmark', async () => {
-        const paintedLandmarks = await expectLargeWorkflowLandmarksPainted(
+      await test.step('paints every landmark title', async () => {
+        const paintedLandmarks = await expectLargeWorkflowLandmarkTitlesPainted(
           comfyPage.page
         )
         await testInfo.attach('painted-landmarks', {
@@ -66,6 +66,7 @@ test.describe(
         const initialScale = await comfyPage.canvasOps.getScale()
         await comfyPage.canvas.hover()
         await comfyPage.page.mouse.wheel(0, -100)
+        await comfyPage.nextFrame()
         await expect
           .poll(() => comfyPage.canvasOps.getScale())
           .toBeGreaterThan(initialScale)

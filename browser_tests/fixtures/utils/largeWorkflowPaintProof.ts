@@ -10,7 +10,7 @@ const landmarkTitles = [
   'CPU Output Landmark'
 ]
 
-export async function expectLargeWorkflowLandmarksPainted(page: Page) {
+export async function expectLargeWorkflowLandmarkTitlesPainted(page: Page) {
   const evidence = await page.evaluate((landmarkTitles) => {
     const canvas = window.app!.canvas
     const fillText = CanvasRenderingContext2D.prototype.fillText
