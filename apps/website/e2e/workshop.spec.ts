@@ -114,8 +114,8 @@ test.describe('Models catalog', () => {
       '/models/vertexai--gemini-nano-banana-2--edit-images/',
       '/models/vertexai--gemini-3-pro-image--edit-images/',
       '/models/byteplus--seedream-5-pro--edit-images/',
-      '/models/openai--gpt-image-2--edit-images/',
-      '/models/openai--gpt-image-2.5-sunburst--edit-images/'
+      '/models/byteplus--seedream-5-pro-layer-separation--edit-images/',
+      '/models/byteplus--seedream-4-5--edit-images/'
     ])
 
     await sort.click()
