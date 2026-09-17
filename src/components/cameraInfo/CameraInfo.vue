@@ -26,11 +26,11 @@
             :disabled="lookingThrough"
             :class="
               cn(
-                actionClass(!lookingThrough && gizmosOn),
+                actionClass(gizmosActive),
                 lookingThrough && 'cursor-not-allowed opacity-40'
               )
             "
-            :aria-pressed="!lookingThrough && gizmosOn"
+            :aria-pressed="gizmosActive"
             :aria-label="compact ? gizmosLabel : undefined"
             @click="toggleGizmos"
           >
@@ -54,19 +54,13 @@
         >
           <button
             type="button"
-            :disabled="lookingThrough || !option.enabled"
-            :aria-pressed="
-              !lookingThrough && effectiveTransformGizmoMode === option.value
-            "
+            :disabled="option.disabled"
+            :aria-pressed="option.active"
             :aria-label="compact ? $t(option.labelKey) : undefined"
             :class="
               cn(
-                actionClass(
-                  !lookingThrough &&
-                    effectiveTransformGizmoMode === option.value
-                ),
-                (lookingThrough || !option.enabled) &&
-                  'cursor-not-allowed opacity-40'
+                actionClass(option.active),
+                option.disabled && 'cursor-not-allowed opacity-40'
               )
             "
             @click="selectTransformGizmo(option.value)"
@@ -173,7 +167,9 @@ const lookThroughLabel = computed(() =>
   lookingThrough.value ? t('load3d.exitLookThrough') : t('load3d.lookThrough')
 )
 
-const transformGizmoOptions = computed(() => [
+const gizmosActive = computed(() => !lookingThrough.value && gizmosOn.value)
+
+const availableTransformGizmoOptions = computed(() => [
   {
     value: 'none' as const,
     labelKey: 'load3d.transformGizmo.none',
@@ -201,11 +197,21 @@ const transformGizmoOptions = computed(() => [
 ])
 
 const effectiveTransformGizmoMode = computed<TransformGizmoMode>(() =>
-  transformGizmoOptions.value.some(
+  availableTransformGizmoOptions.value.some(
     ({ value, enabled }) => value === transformGizmoMode.value && enabled
   )
     ? transformGizmoMode.value
     : 'none'
+)
+
+const transformGizmoOptions = computed(() =>
+  availableTransformGizmoOptions.value.map((option) => ({
+    ...option,
+    disabled: lookingThrough.value || !option.enabled,
+    active:
+      !lookingThrough.value &&
+      effectiveTransformGizmoMode.value === option.value
+  }))
 )
 
 function focusContainer() {

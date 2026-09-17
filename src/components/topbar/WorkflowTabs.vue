@@ -104,11 +104,7 @@
       class="ml-auto flex shrink-0 items-center gap-2 px-2"
     >
       <Button
-        v-if="
-          agentPanelStore.enabled &&
-          !agentPanelStore.isVisible &&
-          !(agentPanelStore.isOpen && isChecking)
-        "
+        v-if="showAgentEntry"
         variant="link"
         size="sm"
         class="no-drag shrink-0 border border-solid border-plum-600 bg-ink-700 text-base-foreground hover:border-plum-500"
@@ -118,7 +114,7 @@
         <span>{{ $t('agent.askComfyAgent') }}</span>
       </Button>
       <Tooltip
-        v-if="isCloud || isNightly"
+        v-if="showFeedback"
         :config="{ value: $t('actionbar.feedbackTooltip'), showDelay: 300 }"
         side="right"
       >
@@ -225,7 +221,14 @@ useWorkflowStatusDismissal()
 const isIntegratedTabBar = computed(
   () => settingStore.get('Comfy.UI.TabBarLayout') !== 'Legacy'
 )
+const showFeedback = isCloud || isNightly
 const showCurrentUser = computed(() => isCloud || isLoggedIn.value)
+const showAgentEntry = computed(
+  () =>
+    agentPanelStore.enabled &&
+    !agentPanelStore.isVisible &&
+    !(agentPanelStore.isOpen && isChecking.value)
+)
 
 function openFeedback() {
   openFeedbackDialog('topbar')

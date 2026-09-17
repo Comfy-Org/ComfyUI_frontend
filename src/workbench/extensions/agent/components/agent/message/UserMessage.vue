@@ -6,19 +6,16 @@ import { useI18n } from 'vue-i18n'
 import { cn } from '@comfyorg/tailwind-utils'
 import Button from '@/components/ui/button/Button.vue'
 import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
-import { iconForMediaType } from '@/platform/assets/utils/mediaIconUtil'
-import { api } from '@/scripts/api'
-import { getMediaTypeFromFilename } from '@/utils/formatUtil'
 
 import type { UserAttachment } from '../../../stores/agent/agentConversationStore'
 import type {
   PromptSnapshot,
   WorkflowReference
 } from '../../../types/workflowReference'
-import type { ReplyAsset } from '../../../utils/replyAssets'
 import { agentMessageText } from '../../../utils/agentMessageText'
 import { workflowReferenceParts } from '../../../utils/workflowReferenceParts'
-import ReplyAssetGroup from './ReplyAssetGroup.vue'
+import UserMessageAttachments from './UserMessageAttachments.vue'
+import WorkflowReferenceChip from './WorkflowReferenceChip.vue'
 import {
   selectedUserMessageClipboard,
   userMessageClipboard
@@ -43,6 +40,8 @@ const emit = defineEmits<{
 }>()
 
 const { t } = useI18n()
+const hasPrompt = computed(() => Boolean(text || workflowReferences.length))
+const canEdit = computed(() => editable && hasPrompt.value)
 const promptParts = computed(() =>
   workflowReferenceParts(text, workflowReferences)
 )
@@ -54,6 +53,9 @@ const plainClipboard = useClipboard({ copiedDuring: 2000, legacy: true })
 const richClipboard = useClipboardItems({ copiedDuring: 2000 })
 const copied = computed(
   () => plainClipboard.copied.value || richClipboard.copied.value
+)
+const copyLabel = computed(() =>
+  copied.value ? t('agent.copied') : t('agent.copy')
 )
 
 async function copyMessage(): Promise<void> {
@@ -101,129 +103,23 @@ function openReference(reference: WorkflowReference): void {
   if (reference.unavailable) return
   emit('openReferenceWorkflow', reference.id, reference.name)
 }
-
-/* The shared map's 'other' glyph is a checkmark, which reads as a status
-   rather than a file on this surface. */
-function attachmentIconClass(name: string): string {
-  const kind = getMediaTypeFromFilename(name)
-  return kind === 'other' ? 'icon-[lucide--file]' : iconForMediaType(kind)
-}
-
-/**
- * Sent uploads reuse the reply asset grid (Uy, FE-1323): media attachments
- * render as the DES-530 per-count grid with the same hover-play, inspect, and
- * audio-card behavior as agent replies. A ref resolves to the uploaded input
- * file; an image without one still has its local preview. Text and other
- * kinds have no grid treatment and keep the compact tiles.
- */
-const splitAttachments = computed(() => {
-  const grid: ReplyAsset[] = []
-  const plain: UserAttachment[] = []
-  for (const item of attachments) {
-    const kind = getMediaTypeFromFilename(item.name)
-    const url = item.ref
-      ? api.apiURL(`/view?filename=${encodeURIComponent(item.ref)}&type=input`)
-      : item.previewUrl
-    if (
-      url &&
-      (kind === 'image' ||
-        kind === 'video' ||
-        kind === 'audio' ||
-        kind === '3D')
-    ) {
-      grid.push({ url, filename: item.name, kind })
-    } else {
-      plain.push(item)
-    }
-  }
-  return { grid, plain }
-})
 </script>
 
 <template>
   <div class="group flex flex-col items-end gap-2 pl-16" @copy="copySelection">
-    <div v-if="tags.length" class="flex flex-wrap justify-end gap-1">
-      <span
-        v-for="(tag, index) in tags"
-        :key="`${tag}:${index}`"
-        class="inline-flex items-center gap-1 rounded-xl bg-secondary-background px-1.5 py-0.5 text-xs text-muted-foreground"
-      >
-        <span class="icon-[lucide--at-sign] size-3 shrink-0" />
-        <span class="max-w-40 truncate">{{ tag }}</span>
-      </span>
-    </div>
-    <div v-if="splitAttachments.grid.length" class="w-full">
-      <ReplyAssetGroup :assets="splitAttachments.grid" />
-    </div>
+    <UserMessageAttachments :attachments :tags />
     <div
-      v-if="splitAttachments.plain.length"
-      class="grid w-56 max-w-full grid-cols-2 gap-1.5"
-    >
-      <figure
-        v-for="(item, index) in splitAttachments.plain"
-        :key="`${item.name}:${index}`"
-        class="m-0"
-      >
-        <div
-          class="flex aspect-square w-full items-center justify-center rounded-lg bg-secondary-background"
-        >
-          <span
-            :class="
-              cn(attachmentIconClass(item.name), 'size-6 text-muted-foreground')
-            "
-          />
-        </div>
-        <figcaption class="mt-0.5 truncate text-xs text-muted-foreground">
-          {{ item.name }}
-        </figcaption>
-      </figure>
-    </div>
-    <div
-      v-if="text || workflowReferences.length"
+      v-if="hasPrompt"
       ref="bubble"
       data-testid="user-message-bubble"
       class="w-fit max-w-full rounded-lg border border-component-node-border bg-secondary-background px-2.5 py-1.5 text-sm/5 font-normal wrap-break-word whitespace-pre-wrap text-muted-foreground"
     >
       <template v-for="(part, index) in promptParts" :key="index">
-        <span
+        <WorkflowReferenceChip
           v-if="part.type === 'workflow'"
-          role="button"
-          tabindex="0"
-          :aria-label="
-            part.reference.unavailable
-              ? t('agent.unavailableWorkflowReference', {
-                  name: part.reference.name
-                })
-              : t('agent.openWorkflowTab', { name: part.reference.name })
-          "
-          data-testid="workflow-reference-chip"
-          data-comfy-workflow="1"
-          :data-workflow-id="part.reference.id"
-          :data-workflow-unavailable="
-            part.reference.unavailable ? 'true' : undefined
-          "
-          :aria-disabled="part.reference.unavailable"
-          :aria-description="
-            part.reference.unavailable
-              ? t('agent.workflowReferenceUnavailableReason')
-              : undefined
-          "
-          :title="
-            part.reference.unavailable
-              ? t('agent.workflowReferenceUnavailableReason')
-              : undefined
-          "
-          class="inline cursor-pointer rounded-sm bg-primary-background/30 box-decoration-clone px-1 py-0.5 font-inter text-xs/[15px] font-normal break-all whitespace-normal text-primary-background-hover ring-1 ring-primary-background/30 ring-inset focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-background aria-disabled:cursor-not-allowed aria-disabled:opacity-50"
-          @click="openReference(part.reference)"
-          @keydown.enter.prevent="openReference(part.reference)"
-          @keydown.space.prevent
-          @keyup.space.prevent="openReference(part.reference)"
-        >
-          <span
-            class="mr-1 icon-[comfy--workflow] inline-block size-3 align-middle"
-          />
-          <span>{{ part.reference.name }}</span>
-        </span>
+          :reference="part.reference"
+          @open="openReference"
+        />
         <template v-else>{{ part.text }}</template>
       </template>
     </div>
@@ -232,7 +128,7 @@ const splitAttachments = computed(() => {
       class="flex text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100 touch:opacity-100"
     >
       <Tooltip
-        v-if="editable && (text || workflowReferences.length)"
+        v-if="canEdit"
         :config="t('g.edit')"
         side="top"
         :delay-duration="300"
@@ -252,7 +148,7 @@ const splitAttachments = computed(() => {
         </Button>
       </Tooltip>
       <Tooltip
-        :config="copied ? t('agent.copied') : t('agent.copy')"
+        :config="copyLabel"
         side="top"
         :delay-duration="300"
         :ignore-non-keyboard-focus="false"
@@ -263,7 +159,7 @@ const splitAttachments = computed(() => {
           type="button"
           variant="muted-textonly"
           size="icon-sm"
-          :aria-label="copied ? t('agent.copied') : t('agent.copy')"
+          :aria-label="copyLabel"
           class="size-6 rounded-lg"
           @click="copyMessage"
         >

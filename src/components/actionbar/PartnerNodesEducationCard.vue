@@ -29,46 +29,26 @@
               :label="t('partnerNodesEducation.sliderLabel')"
               class="relative z-2 -mb-5 flex-1 rounded-t-xl"
             >
-              <Button
-                variant="textonly"
-                size="icon"
+              <PartnerNodesAudioButton
                 class="absolute bottom-2 left-2 size-7 rounded-full bg-black/40 text-white backdrop-blur-sm hover:bg-black/60 hover:text-white"
-                :aria-label="
+                :label="
                   audibleSide === 'open'
                     ? t('partnerNodesEducation.muteOpen')
                     : t('partnerNodesEducation.unmuteOpen')
                 "
+                :active="audibleSide === 'open'"
                 @click="toggleAudio('open')"
-              >
-                <i
-                  :class="
-                    audibleSide === 'open'
-                      ? 'icon-[lucide--volume-2]'
-                      : 'icon-[lucide--volume-x]'
-                  "
-                  class="size-4"
-                />
-              </Button>
-              <Button
-                variant="textonly"
-                size="icon"
+              />
+              <PartnerNodesAudioButton
                 class="absolute right-2 bottom-2 size-7 rounded-full bg-black/40 text-white backdrop-blur-sm hover:bg-black/60 hover:text-white"
-                :aria-label="
+                :label="
                   audibleSide === 'partner'
                     ? t('partnerNodesEducation.mutePartner')
                     : t('partnerNodesEducation.unmutePartner')
                 "
+                :active="audibleSide === 'partner'"
                 @click="toggleAudio('partner')"
-              >
-                <i
-                  :class="
-                    audibleSide === 'partner'
-                      ? 'icon-[lucide--volume-2]'
-                      : 'icon-[lucide--volume-x]'
-                  "
-                  class="size-4"
-                />
-              </Button>
+              />
 
               <Button
                 variant="textonly"
@@ -141,53 +121,13 @@
             </div>
 
             <div class="flex flex-col gap-2">
-              <div
+              <PartnerNodesComparisonRow
                 v-for="row in comparisonRows"
                 :key="row.key"
-                class="flex items-center pr-4.5"
-              >
-                <span class="flex-1 text-sm/snug text-text-secondary">
-                  {{ t(`partnerNodesEducation.benefits.${row.key}`) }}
-                </span>
-                <span class="flex w-15 justify-center">
-                  <i
-                    :class="
-                      row.open
-                        ? 'icon-[lucide--check] text-brand-yellow'
-                        : 'icon-[lucide--minus] text-muted-foreground'
-                    "
-                    class="size-4"
-                    aria-hidden="true"
-                  />
-                  <span class="sr-only">
-                    {{ t('partnerNodesEducation.openHeader') }}:
-                    {{
-                      row.open
-                        ? t('partnerNodesEducation.included')
-                        : t('partnerNodesEducation.notIncluded')
-                    }}
-                  </span>
-                </span>
-                <span class="flex w-15 justify-center">
-                  <i
-                    :class="
-                      row.partner
-                        ? 'icon-[lucide--check] text-brand-yellow'
-                        : 'icon-[lucide--minus] text-muted-foreground'
-                    "
-                    class="size-4"
-                    aria-hidden="true"
-                  />
-                  <span class="sr-only">
-                    {{ t('partnerNodesEducation.partnerHeader') }}:
-                    {{
-                      row.partner
-                        ? t('partnerNodesEducation.included')
-                        : t('partnerNodesEducation.notIncluded')
-                    }}
-                  </span>
-                </span>
-              </div>
+                :label="t(`partnerNodesEducation.benefits.${row.key}`)"
+                :open="row.open"
+                :partner="row.partner"
+              />
             </div>
 
             <Button
@@ -212,6 +152,8 @@ import { storeToRefs } from 'pinia'
 import { computed, ref, useId, useTemplateRef, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import PartnerNodesAudioButton from '@/components/actionbar/PartnerNodesAudioButton.vue'
+import PartnerNodesComparisonRow from '@/components/actionbar/PartnerNodesComparisonRow.vue'
 import VideoCompareSlider from '@/components/common/VideoCompareSlider.vue'
 import Button from '@/components/ui/button/Button.vue'
 import Tooltip from '@/components/ui/tooltip/Tooltip.vue'

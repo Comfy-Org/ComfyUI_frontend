@@ -38,6 +38,11 @@ interface ViewModeSegment {
   active: boolean
   /** Frame-lagged mirror of {@link active} that drives the morph order. */
   displayActive: boolean
+  tooltip: string
+  tooltipContentClass?: string
+  ariaLabel: string
+  buttonClass: string
+  labelClass: string
 }
 
 const { source, align = 'start' } = defineProps<{
@@ -87,7 +92,29 @@ const segments = computed<ViewModeSegment[]>(() =>
   ).map((seg) => ({
     ...seg,
     active: appModeStore.viewMode === seg.mode,
-    displayActive: appModeStore.displayViewMode === seg.mode
+    displayActive: appModeStore.displayViewMode === seg.mode,
+    tooltip:
+      appModeStore.viewMode === seg.mode
+        ? t('breadcrumbsMenu.workflowActions')
+        : seg.switchTooltip,
+    tooltipContentClass:
+      appModeStore.viewMode === seg.mode ? undefined : 'w-max max-w-none',
+    ariaLabel:
+      appModeStore.viewMode === seg.mode
+        ? t('breadcrumbsMenu.activeModeWorkflowActions', { mode: seg.label })
+        : seg.switchLabel,
+    buttonClass: cn(
+      'relative flex h-8 items-center gap-0 rounded-md font-normal transition-[background-color,color,transform] duration-200',
+      appModeStore.displayViewMode === seg.mode
+        ? 'bg-secondary-background pr-2 pl-2.5 text-base-foreground group-data-[state=open]:bg-secondary-background-hover group-data-[state=open]:shadow-interface hover:bg-secondary-background'
+        : 'w-8 justify-center bg-transparent text-muted-foreground hover:bg-secondary-background hover:text-base-foreground'
+    ),
+    labelClass: cn(
+      'grid transition-[grid-template-columns,opacity] duration-200',
+      appModeStore.displayViewMode === seg.mode
+        ? 'ml-1.5 grid-cols-[1fr] opacity-100'
+        : 'grid-cols-[0fr] opacity-0'
+    )
   }))
 )
 
@@ -177,50 +204,26 @@ onMounted(async () => {
             v-for="seg in orderedSegments"
             :key="seg.mode"
             :config="{
-              value: seg.active
-                ? t('breadcrumbsMenu.workflowActions')
-                : seg.switchTooltip,
+              value: seg.tooltip,
               showDelay: 300,
               hideDelay: 300
             }"
             side="bottom"
-            :content-class="seg.active ? undefined : 'w-max max-w-none'"
+            :content-class="seg.tooltipContentClass"
           >
             <Button
               type="button"
               variant="textonly"
               size="unset"
-              :aria-label="
-                seg.active
-                  ? t('breadcrumbsMenu.activeModeWorkflowActions', {
-                      mode: seg.label
-                    })
-                  : seg.switchLabel
-              "
+              :aria-label="seg.ariaLabel"
               :aria-haspopup="seg.active ? 'menu' : undefined"
               :aria-expanded="seg.active ? dropdownOpen : undefined"
-              :class="
-                cn(
-                  'relative flex h-8 items-center gap-0 rounded-md font-normal transition-[background-color,color,transform] duration-200',
-                  seg.displayActive
-                    ? 'bg-secondary-background pr-2 pl-2.5 text-base-foreground group-data-[state=open]:bg-secondary-background-hover group-data-[state=open]:shadow-interface hover:bg-secondary-background'
-                    : 'w-8 justify-center bg-transparent text-muted-foreground hover:bg-secondary-background hover:text-base-foreground'
-                )
-              "
+              :class="seg.buttonClass"
               @click="onSegmentClick(seg, $event)"
               @keydown="onSegmentKeydown(seg, $event)"
             >
               <i :class="cn('size-4 shrink-0', seg.icon)" aria-hidden="true" />
-              <span
-                :class="
-                  cn(
-                    'grid transition-[grid-template-columns,opacity] duration-200',
-                    seg.displayActive
-                      ? 'ml-1.5 grid-cols-[1fr] opacity-100'
-                      : 'grid-cols-[0fr] opacity-0'
-                  )
-                "
-              >
+              <span :class="seg.labelClass">
                 <span
                   class="flex min-w-0 items-center overflow-hidden text-sm leading-none whitespace-nowrap"
                 >
