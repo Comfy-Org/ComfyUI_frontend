@@ -418,6 +418,7 @@ const heading = computed(() =>
       <CatalogueGrid
         :visible
         :total="sorted.length"
+        :shelf="useCase"
         :locale
         @more="shown += PAGE"
       />

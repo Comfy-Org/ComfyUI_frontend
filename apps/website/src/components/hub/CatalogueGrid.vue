@@ -4,16 +4,21 @@ import { computed } from 'vue'
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 import type { BrowseEntry } from '../../lib/hub/browse-entry'
+import type { Shelf } from '../../lib/workshop/shelf-memory'
+import { rememberShelfOnClick } from '../../lib/workshop/shelf-memory'
 import CatalogueCard from './CatalogueCard.vue'
 
 const {
   visible,
   total,
+  shelf,
   locale = 'en'
 } = defineProps<{
   visible: readonly BrowseEntry[]
   /** Everything the narrowing matched, of which `visible` is the first page. */
   total: number
+  /** The use case this listing is narrowed to, so a card can offer it back. */
+  shelf: Shelf
   locale?: Locale
 }>()
 
@@ -37,6 +42,7 @@ const showingText = computed(() =>
       :key="entry.key"
       :view="entry.card"
       :locale
+      @click="rememberShelfOnClick($event, shelf, entry.card.href)"
     />
   </div>
   <div

@@ -10,6 +10,7 @@ import type { BrowseEntry } from '../../lib/hub/browse-entry'
 import { sortBrowseEntries } from '../../lib/hub/browse-entry'
 import { useCaseLabelKey } from '../../lib/workshop/use-case-label'
 import CardRow from '../workshop/CardRow.vue'
+import { rememberShelfOnClick } from '../../lib/workshop/shelf-memory'
 import CatalogueCard from './CatalogueCard.vue'
 
 const ROW_LIMIT = 8
@@ -108,7 +109,12 @@ const cardClass = 'peek-card shrink-0 snap-start'
           </button>
         </template>
 
-        <li v-for="entry in shelf.shown" :key="entry.key" :class="cardClass">
+        <li
+          v-for="entry in shelf.shown"
+          :key="entry.key"
+          :class="cardClass"
+          @click="rememberShelfOnClick($event, shelf.useCase, entry.card.href)"
+        >
           <CatalogueCard :view="entry.card" :locale />
         </li>
       </CardRow>

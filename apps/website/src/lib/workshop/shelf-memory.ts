@@ -22,6 +22,23 @@ export function rememberShelf(shelf: Shelf, modelHref: string): void {
   }
 }
 
+// Only a plain left click is this navigation. A new tab, or a click the
+// browser handles some other way, leaves this page where it is, so recording a
+// return from it would answer a question nobody asked.
+export function rememberShelfOnClick(
+  event: MouseEvent,
+  shelf: Shelf,
+  modelHref: string
+): void {
+  const handledElsewhere =
+    event.button !== 0 ||
+    event.metaKey ||
+    event.ctrlKey ||
+    event.shiftKey ||
+    event.altKey
+  if (!handledElsewhere) rememberShelf(shelf, modelHref)
+}
+
 // The intent belongs to one navigation. Matching the destination prevents an
 // old shelf from leaking onto a shared link; consuming it prevents a reload or
 // an unrelated later visit from reusing it.

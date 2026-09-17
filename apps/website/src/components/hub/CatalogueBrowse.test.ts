@@ -4,6 +4,7 @@ import { afterEach, describe, expect, it } from 'vitest'
 import { nextTick } from 'vue'
 
 import type { BrowseEntry } from '../../lib/hub/browse-entry'
+import { lastShelf } from '../../lib/workshop/shelf-memory'
 import CatalogueBrowse from './CatalogueBrowse.vue'
 
 function entry(overrides: Partial<BrowseEntry> = {}): BrowseEntry {
@@ -207,6 +208,20 @@ describe('CatalogueBrowse', () => {
     expect(screen.getByTestId('catalogue-chips').textContent).toContain(
       'Upscale and restore'
     )
+  })
+
+  // The way back a reader wants is the shelf they came from, which is what the
+  // live catalogue offers, so opening a card leaves that shelf behind it.
+  it('leaves the use case behind for the page the card opens', async () => {
+    await at('?useCase=generate-images')
+
+    await userEvent.click(
+      within(screen.getByTestId('catalogue-grid')).getAllByTestId(
+        'catalogue-card'
+      )[0]
+    )
+
+    expect(lastShelf('/playground/model/flux/')).toBe('generate-images')
   })
 
   // A price order over things that carry no price is a ranking over nothing,

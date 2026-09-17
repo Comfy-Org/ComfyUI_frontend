@@ -1,7 +1,6 @@
 ---
-import { ChevronLeft } from '@lucide/vue'
-
 import CatalogueCard from '../../../components/hub/CatalogueCard.vue'
+import CatalogueBackLink from '../../../components/workshop/CatalogueBackLink.vue'
 import ModelRun from '../../../components/hub/ModelRun.vue'
 import WorkflowAside from '../../../components/hub/WorkflowAside.vue'
 import WorkflowGraph from '../../../components/hub/WorkflowGraph.vue'
@@ -104,13 +103,12 @@ const tagClass =
   noindex
 >
   <main class="mx-auto max-w-10xl px-6 py-10 lg:px-8 lg:py-16">
-    <a
-      href="/playground/"
-      class="mb-8 inline-flex items-center gap-2 text-sm text-content-muted transition-colors hover:text-content-bright"
-    >
-      <ChevronLeft class="size-4" aria-hidden="true" />
-      {t('workshop.v2.workflow.back')}
-    </a>
+    <CatalogueBackLink
+      catalogue="/playground/"
+      fallback-key="workshop.v2.workflow.back"
+      class="mb-8"
+      client:load
+    />
 
     <header class="mb-10 flex flex-col gap-4">
       <ul class="flex flex-wrap items-center gap-2" data-testid="workflow-kind">
