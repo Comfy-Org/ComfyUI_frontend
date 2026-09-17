@@ -62,45 +62,60 @@ for (const renderer of [
   { name: 'Vue', tag: ['@slow', '@subgraph', '@ui', '@vue-nodes'] }
 ]) {
   test.describe(`${renderer.name} renderer`, { tag: renderer.tag }, () => {
-    test('editing a copied host does not change the original', async ({
-      comfyPage
-    }) => {
-      await comfyPage.workflow.loadWorkflow(
-        'subgraphs/subgraph-with-promoted-text-widget'
-      )
-      const original = await comfyPage.nodeOps.getNodeRefById('11')
-
-      await test.step('Edit the original host', async () => {
-        await original.fillPromotedTextWidget('text', 'original parent edit')
-      })
-
-      const copy = await test.step('Copy the host', () => original.duplicate())
-
-      await test.step('Edit only the copy', async () => {
-        await copy.fillPromotedTextWidget('text', 'copy-only edit')
-        await original.expectPromotedTextWidgetValue(
-          'text',
-          'original parent edit'
+    for (const scenario of [
+      { survivorName: 'copy', removedName: 'original' },
+      { survivorName: 'original', removedName: 'copy' }
+    ] as const) {
+      test(`the ${scenario.survivorName} keeps its independent value after deleting the ${scenario.removedName} and reopening`, async ({
+        comfyPage
+      }) => {
+        test.slow()
+        await comfyPage.workflow.setupWorkflowsDirectory({})
+        await comfyPage.workflow.loadWorkflow(
+          'subgraphs/subgraph-with-promoted-text-widget'
         )
-      })
+        const original = await comfyPage.nodeOps.getNodeRefById('11')
+        const copy = await original.duplicate()
+        const survivor = scenario.survivorName === 'copy' ? copy : original
+        const removed = scenario.removedName === 'copy' ? copy : original
+        const survivorValue = `${scenario.survivorName} durable value`
+        const removedValue = `${scenario.removedName} discarded value`
 
-      await test.step('Edit the original without changing the copy', async () => {
-        await original.fillPromotedTextWidget('text', 'original second edit')
-        await copy.expectPromotedTextWidgetValue('text', 'copy-only edit')
-      })
+        await test.step('Set independent host values', async () => {
+          await survivor.fillPromotedTextWidget('text', survivorValue)
+          await removed.fillPromotedTextWidget('text', removedValue)
+          await survivor.expectPromotedTextWidgetValue('text', survivorValue)
+          await removed.expectPromotedTextWidgetValue('text', removedValue)
+        })
 
-      await test.step('Delete the copy and continue editing the original', async () => {
-        await copy.delete()
-        await copy.expectExists(false)
-        await original.expectPromotedTextWidgetValue(
-          'text',
-          'original second edit'
-        )
-        await original.fillPromotedTextWidget(
-          'text',
-          'original survives duplicate deletion'
-        )
+        await test.step(`Delete the ${scenario.removedName}`, async () => {
+          await removed.delete()
+          await removed.expectExists(false)
+          await survivor.expectPromotedTextWidgetValue('text', survivorValue)
+        })
+
+        const workflowName = `${renderer.name.toLowerCase()}-${scenario.survivorName}-host-value`
+
+        await test.step('Save, reload, and reopen the workflow', async () => {
+          await comfyPage.workflow.saveWorkflow(workflowName)
+          await comfyPage.workflow.reloadAndOpenPersistedWorkflow(workflowName)
+        })
+
+        await test.step('Verify and edit the surviving host value', async () => {
+          const restored = await comfyPage.nodeOps.getNodeRefById(
+            String(survivor.id)
+          )
+          await restored.expectPromotedTextWidgetValue('text', survivorValue)
+          await restored.fillPromotedTextWidget(
+            'text',
+            `${survivorValue} edited after reopen`
+          )
+          await restored.expectPromotedTextWidgetValue(
+            'text',
+            `${survivorValue} edited after reopen`
+          )
+        })
       })
-    })
+    }
   })
 }
