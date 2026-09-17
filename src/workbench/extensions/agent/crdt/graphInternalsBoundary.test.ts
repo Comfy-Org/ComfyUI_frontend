@@ -4,7 +4,8 @@ import { describe, expect, it } from 'vitest'
  * Agent code may *read* graph internals but must not *write* them. Node
  * adoption (record ownership, `_nodes`, `_nodes_by_id`, `node.graph`,
  * `_graphScope`, `_state`) is owned by `LGraph` — see
- * `LGraph.adoptCanonicalNode` and ADR-0034.
+ * `LGraph.adoptCanonicalNode` and the ECS-0008 rule that entity records are
+ * owned by their stores and graph systems, not by workbench extensions.
  *
  * Reads such as `graph._nodes.filter(...)` or `graph._nodes_by_id[id]` are
  * fine and are not matched here. `batch.deleteNode(...)` on a graph-mutations
