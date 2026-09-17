@@ -27,11 +27,12 @@ app.registerExtension({
     }
 
     /**
-     * `e.touches` spans the whole document, so a finger on a toast or a
-     * body-level menu would otherwise count against the canvas. Detached
-     * targets drop out here too - that is the case that stranded the count.
+     * Counts live contacts instead of accumulating deltas, which is what let
+     * the old count drift. Touches whose target has detached drop out here -
+     * they are the ones whose `touchend` never reaches this listener. Scoped to
+     * the container because `e.touches` spans the whole document.
      */
-    function countTouchesOnCanvas(e: TouchEvent) {
+    function countTouchesInCanvasContainer(e: TouchEvent) {
       const root = app.canvasEl.parentElement
       return Array.from(e.touches).filter(
         (touch) => touch.target instanceof Node && root?.contains(touch.target)
@@ -41,7 +42,7 @@ app.registerExtension({
     app.canvasEl.parentElement?.addEventListener(
       'touchstart',
       (e: TouchEvent) => {
-        touchCount = countTouchesOnCanvas(e)
+        touchCount = countTouchesInCanvasContainer(e)
 
         lastTouch = null
         lastScale = null
@@ -68,7 +69,7 @@ app.registerExtension({
     app.canvasEl.parentElement?.addEventListener(
       'touchend',
       (e: TouchEvent) => {
-        touchCount = countTouchesOnCanvas(e)
+        touchCount = countTouchesInCanvasContainer(e)
 
         if (e.touches.length !== 1) touchZooming = false
         if (touchTime && !e.touches.length) {
@@ -123,7 +124,7 @@ app.registerExtension({
     app.canvasEl.parentElement?.addEventListener(
       'touchmove',
       (e) => {
-        touchCount = countTouchesOnCanvas(e)
+        touchCount = countTouchesInCanvasContainer(e)
 
         // make a threshold for touchmove to prevent clear touchTime for long press
         if (touchTime && lastTouch && e.touches.length === 1) {

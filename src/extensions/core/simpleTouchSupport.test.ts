@@ -89,6 +89,16 @@ function strandTouchesOnDetachedTarget(count: number) {
   dispatchTouch(doomed, 'touchend', [], touches)
 }
 
+function strandPinchOnDetachedTarget() {
+  const doomed = document.createElement('div')
+  container.append(doomed)
+  const touches = [touchAt(doomed), touchAt(doomed, 100)]
+  dispatchTouch(doomed, 'touchstart', touches)
+  dispatchTouch(doomed, 'touchmove', [touchAt(doomed), touchAt(doomed, 60)])
+  doomed.remove()
+  dispatchTouch(doomed, 'touchend', [], touches)
+}
+
 /**
  * Probes the guards without going through a primary pointerdown, which would
  * itself clear the state these cases are asserting on.
@@ -143,7 +153,7 @@ describe('Comfy.SimpleTouchSupport touch state', () => {
       expect(processMouseDown).not.toHaveBeenCalled()
     })
 
-    it('ignores a finger held outside the canvas container', () => {
+    it('does not count a finger held outside the canvas container', () => {
       const bodyLevelSurface = document.createElement('div')
       document.body.append(bodyLevelSurface)
       const stray = touchAt(bodyLevelSurface)
@@ -203,6 +213,20 @@ describe('Comfy.SimpleTouchSupport touch state', () => {
       strandTouchesOnDetachedTarget(1)
 
       tapDown()
+      expect(processMouseDown).toHaveBeenCalledOnce()
+    })
+
+    it('clears a stranded pinch when a new first finger lands', () => {
+      strandPinchOnDetachedTarget()
+      dispatchTouch(canvasEl, 'touchstart', [touchAt(canvasEl)])
+
+      expect(dragReachesCanvas()).toBe(true)
+    })
+
+    it('clears a stranded pinch on a primary touch pointerdown', () => {
+      strandPinchOnDetachedTarget()
+
+      pointerDown({ isPrimary: true })
       expect(processMouseDown).toHaveBeenCalledOnce()
     })
   })
