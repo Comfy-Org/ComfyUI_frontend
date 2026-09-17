@@ -6,14 +6,14 @@ import { useAuthStore } from '@/stores/authStore'
 export type IdentityObserver = (user: User | null) => void
 
 /**
- * Keeps the session client's construction-time port subscription off
- * Firebase. Pair with module-scope `vi.mock(import('vuefire'))` and
- * `vi.mock(import('firebase/auth'))` in the suite; hoisting keeps those there.
+ * Silences the session client's construction-time port subscription: the spy
+ * keeps the identity's lazy auth resolver from reaching `firebase/app`; the
+ * suite's `firebase/auth` automock already silences `onAuthStateChanged`.
+ * Call after the suite's `firebase/auth` stubs and before the first
+ * `useWorkspaceAuthStore()`.
  */
-export function stubAccountIdentityPort() {
-  return vi
-    .spyOn(useAuthStore().identity, 'onUserChanged')
-    .mockReturnValue(() => {})
+export function stubAccountIdentityPort(): void {
+  vi.spyOn(useAuthStore().identity, 'onUserChanged').mockReturnValue(() => {})
 }
 
 /**

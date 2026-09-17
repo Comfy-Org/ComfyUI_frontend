@@ -48,7 +48,13 @@ is not a contract to build on.
    port's user is what mints. The wait is bounded, so a silent port fails
    the mint closed instead of hanging the auth gate. Mints stay
    host-driven (`autoMint: false`), so telemetry and coalescing are
-   unchanged.
+   unchanged. The two stores construct each other (`workspaceAuthStore`
+   reads `useAuthStore().identity` in its setup, `authStore`'s listener
+   calls `useWorkspaceAuthStore()`), which holds only because the SDK
+   delivers a new observer's first emission asynchronously, after
+   persistence resolves; a synchronous identity source in its place would
+   re-enter a half-built store, leaving the client unsubscribed and every
+   mint waiting its ceiling.
 4. `syncUnifiedIdentity` is gone, and the flag gates minting, not
    subscription: identity is bound to the session client for the store's
    lifetime. With `unified_cloud_auth` off the port stays subscribed but

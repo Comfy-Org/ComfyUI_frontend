@@ -875,8 +875,8 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
         })
       }
     },
-    // Firebase replays a new observer on a microtask, so authStore's setup
-    // completes before its listener can re-enter this store.
+    // Keep synchronous within setup: Firebase's first delivery is a microtask,
+    // so this store is fully assigned before authStore's listener re-enters it.
     useAuthStore().identity
   )
 
@@ -910,7 +910,8 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
     unifiedTokenOwnerUid.value = null
   })
 
-  // Identity is bound for the store's lifetime; the flag gates minting only.
+  // Identity is bound for the store's lifetime; the flag gates minting, and a
+  // rollback invalidates the credential, so scheduler and cross-tab lease stop.
   const stopUnifiedFlagWatch = watch(
     () => flags.unifiedCloudAuthEnabled,
     (enabled) => {
