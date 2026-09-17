@@ -1667,7 +1667,6 @@
       "image": {
         "label": "Source image",
         "help": "Choose the image to upscale.",
-        "imageSource": "url",
         "urlUpload": "image"
       },
       "ultra_detail": {
@@ -1681,7 +1680,6 @@
       "image": {
         "label": "Source image",
         "help": "Choose the portrait to enhance.",
-        "imageSource": "url",
         "urlUpload": "image"
       }
     },
@@ -1689,7 +1687,6 @@
       "image": {
         "label": "Source image",
         "help": "Choose the portrait to enhance.",
-        "imageSource": "url",
         "urlUpload": "image"
       },
       "skin_detail": {
@@ -1703,7 +1700,6 @@
       "image": {
         "label": "Source image",
         "help": "Choose the portrait to enhance.",
-        "imageSource": "url",
         "urlUpload": "image"
       },
       "optimized_for": {
