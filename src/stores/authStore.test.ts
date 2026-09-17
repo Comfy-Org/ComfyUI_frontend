@@ -571,11 +571,9 @@ describe('useAuthStore', () => {
       await expect(request).rejects.toMatchObject({
         message: i18n.global.t('toastMessages.userNotAuthenticated')
       })
-      expect(
-        mockFetch.mock.calls.some(([url]) =>
-          String(url).endsWith('/customers/credit')
-        )
-      ).toBe(false)
+      expect(mockFetch.mock.calls.map(([url]) => url)).not.toContainEqual(
+        expect.stringMatching(/\/customers\/credit$/)
+      )
     })
 
     it('withholds a portal URL that succeeds after an A->B API key switch', async () => {
@@ -1239,12 +1237,14 @@ describe('useAuthStore', () => {
 
       // Should call the error dialog instead of throwing
       const token = await store.getIdToken()
-      const dialogService = useDialogService()
 
-      expect(dialogService.showErrorDialog).toHaveBeenCalledWith(authError, {
-        title: i18n.global.t('errorDialog.defaultTitle'),
-        reportType: 'authenticationError'
-      })
+      expect(useDialogService().showErrorDialog).toHaveBeenCalledWith(
+        authError,
+        {
+          title: i18n.global.t('errorDialog.defaultTitle'),
+          reportType: 'authenticationError'
+        }
+      )
       expect(token).toBeUndefined()
     })
   })
@@ -2342,9 +2342,6 @@ describe('useAuthStore in local/desktop distribution', () => {
     mockDistributionTypes.DISTRIBUTION = 'localhost'
 
     vi.stubGlobal('fetch', mockFetch)
-    vi.mocked(useDialogService, { partial: true }).mockReturnValue({
-      showErrorDialog: vi.fn()
-    })
 
     vi.mocked(firebaseAuth.initializeAuth).mockReturnValue(mockAuth)
 

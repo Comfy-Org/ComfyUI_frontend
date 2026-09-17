@@ -166,21 +166,21 @@ export function previewOf(
 ): SubscriptionPreview {
   return {
     allowed: true,
-    cost_today_cents: 2800n,
-    cost_next_period_cents: 2800n,
-    credits_today_cents: 6900n,
-    credits_next_period_cents: 6900n,
+    cost_today_cents: 2800,
+    cost_next_period_cents: 2800,
+    credits_today_cents: 6900,
+    credits_next_period_cents: 6900,
     effective_at: '2026-10-01T00:00:00.000Z',
     is_immediate: true,
     transition_type: 'upgrade',
     new_plan: {
-      credits_cents: 6900n,
+      credits_cents: 6900,
       duration: 'MONTHLY',
-      price_cents: 2800n,
+      price_cents: 2800,
       seat_summary: {
         seat_count: 1,
-        total_cost_cents: 2800n,
-        total_credits_cents: 6900n
+        total_cost_cents: 2800,
+        total_credits_cents: 6900
       },
       slug: 'creator_monthly',
       tier: 'CREATOR'
