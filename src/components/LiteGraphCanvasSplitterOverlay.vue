@@ -69,6 +69,7 @@
             </div>
 
             <Splitter
+              data-testid="graph-canvas-gutter"
               :class="
                 cn(
                   'splitter-overlay-bottom pointer-events-none mb-(--comfy-canvas-gutter) ml-(--comfy-canvas-gutter) flex-1 border-none bg-transparent',
