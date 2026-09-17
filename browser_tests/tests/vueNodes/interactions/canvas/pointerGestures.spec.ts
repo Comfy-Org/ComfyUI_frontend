@@ -78,6 +78,7 @@ test.describe(
       const a = await comfyPage.vueNodes.getFixtureByTitle('Node A')
       const title = await titleCenter(a.title)
       const before = await a.boundingBox()
+      if (!before) throw new Error('Node A must be rendered')
 
       await pressMoveRelease(comfyPage, title, { x: 4, y: 0 })
 
@@ -97,8 +98,14 @@ test.describe(
     test('group-title movement below ClickDrift is a click', async ({
       comfyPage
     }) => {
-      const isSlowMotion = Number(process.env.SLOW_MO) > 32
-      test.slow(isSlowMotion, 'Video recording runs pointer actions slowly')
+      test.slow(
+        Number(process.env.SLOW_MO) > 0,
+        'Video recording runs pointer actions slowly'
+      )
+      await comfyPage.settings.setSetting(
+        'Comfy.Pointer.ClickBufferTime',
+        10_000
+      )
       const title = await getGroupTitlePosition(comfyPage, 'Pair')
       const before = await groupBounds(comfyPage, 'Pair')
 
@@ -106,10 +113,6 @@ test.describe(
 
       await expect(comfyPage.selectionToolbox).toBeVisible()
       await expect(comfyPage.vueNodes.selectedNodes).toHaveCount(0)
-      test.fail(
-        isSlowMotion,
-        'FE-2040 / time-based promotion moves the group when slow motion exceeds ClickBufferTime'
-      )
       await expect
         .poll(() => groupBounds(comfyPage, 'Pair'), { timeout: 1500 })
         .toEqual(before)

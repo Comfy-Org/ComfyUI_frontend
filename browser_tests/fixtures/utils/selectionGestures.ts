@@ -5,7 +5,6 @@ import type { Position } from '@e2e/fixtures/types'
 import { sleep } from '@e2e/fixtures/utils/timing'
 
 export async function titleCenter(title: Locator): Promise<Position> {
-  await title.hover()
   const box = await title.boundingBox()
   if (!box) throw new Error('Title must be rendered before pressing')
   return { x: box.x + box.width / 2, y: box.y + box.height / 2 }
