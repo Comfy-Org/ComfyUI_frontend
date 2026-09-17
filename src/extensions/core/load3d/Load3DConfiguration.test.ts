@@ -18,6 +18,7 @@ import type {
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import type { Dictionary } from '@/lib/litegraph/src/interfaces'
 import type { NodeProperty } from '@/lib/litegraph/src/LGraphNode'
+import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import type { Settings } from '@/platform/settings/types'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
@@ -1002,23 +1003,31 @@ describe('Load3DConfiguration remote (agent) model updates', () => {
 
   it('detaches once the widget is no longer registered (node removed)', async () => {
     const load3d = makeLoad3dMock()
-    const modelWidget = {
-      value: 'none',
-      widgetId: 'widget-5'
-    } as unknown as IBaseWidget
-    widgetValueStoreMock.widgets.set('widget-5', modelWidget)
+    const graph = new LGraph()
+    const node = new LGraphNode('Load3D')
+    graph.add(node)
+    const modelWidget = node.addWidget(
+      'string',
+      'model_file',
+      'none',
+      () => undefined
+    )
+    const registeredWidgetId = modelWidget.widgetId
+    if (!registeredWidgetId) throw new Error('Expected a registered widget')
+    widgetValueStoreMock.widgets.set(registeredWidgetId, modelWidget)
 
     const config = new Load3DConfiguration(load3d)
     config.configure({ modelWidget, loadFolder: 'input' })
     await flush()
 
-    // Node removed: the widget is deregistered from the store.
-    widgetValueStoreMock.widgets.delete('widget-5')
+    graph.remove(node)
+    expect(modelWidget.widgetId).toBeUndefined()
+    widgetValueStoreMock.widgets.delete(registeredWidgetId)
 
     expect(widgetValueStoreMock.listeners.size).toBe(1)
 
     widgetValueStoreMock.emit({
-      widgetId: 'widget-5',
+      widgetId: 'some-other-widget',
       value: 'ignored.glb',
       oldValue: 'none',
       context: REMOTE_CONTEXT

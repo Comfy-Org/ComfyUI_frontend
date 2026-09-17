@@ -208,6 +208,8 @@ class Load3DConfiguration {
    * that originated remotely.
    */
   private subscribeToRemoteModelUpdates(modelWidget: IBaseWidget): void {
+    const targetWidgetId = modelWidget.widgetId
+    if (!targetWidgetId) return
     if (remoteModelUpdateSubscribed.has(modelWidget)) return
     remoteModelUpdateSubscribed.add(modelWidget)
 
@@ -217,13 +219,13 @@ class Load3DConfiguration {
         // The widget (and its node) may have been removed since this
         // listener was registered; `onValueChange` has no per-widget scope,
         // so detect staleness here and detach rather than leaking forever.
-        if (!widgetValueStore.getWidget(modelWidget.widgetId ?? widgetId)) {
+        if (!widgetValueStore.getWidget(targetWidgetId)) {
           remoteModelUpdateSubscribed.delete(modelWidget)
           unsubscribe()
           return
         }
         if (!isRemoteMutationContext(context)) return
-        if (widgetId !== modelWidget.widgetId) return
+        if (widgetId !== targetWidgetId) return
         if (value === modelWidget.value) return
         modelWidget.value = value
       }
