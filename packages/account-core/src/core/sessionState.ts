@@ -388,7 +388,7 @@ function popupSettled<TUser extends AccountUser>(
 
 // The explicit-user bypass is the popup path, valid only before the
 // identity port has ever fired; a settled null identity blocks it.
-function mintedForAnotherUser<TUser extends AccountUser>(
+function userMismatchBlocksCommit<TUser extends AccountUser>(
   state: SessionState<TUser>,
   attempt: MintAttempt
 ): boolean {
@@ -419,7 +419,7 @@ export function arbitrateMint<TUser extends AccountUser>(
   if (raced) return raced
   const stale = crossedIdentityEvent(state, attempt)
     ? !popupSettled(state, attempt)
-    : mintedForAnotherUser(state, attempt)
+    : userMismatchBlocksCommit(state, attempt)
   if (stale) return SUPERSEDED
   return joinerReuse(state, attempt) ?? { verdict: 'commit' }
 }
