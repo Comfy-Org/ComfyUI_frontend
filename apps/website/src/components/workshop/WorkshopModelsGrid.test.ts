@@ -282,10 +282,13 @@ describe('WorkshopModelsGrid', () => {
       await user.click(screen.getByTestId('browse-all-end'))
 
       const toolbar = screen.getByTestId('workshop-toolbar')
+      const heading = screen.getByRole('heading', { level: 1 })
 
-      expect(toolbar).not.toContainElement(
-        screen.getByRole('heading', { level: 1 })
-      )
+      expect(toolbar).not.toContainElement(heading)
+      expect(
+        heading.compareDocumentPosition(toolbar) &
+          Node.DOCUMENT_POSITION_FOLLOWING
+      ).toBe(Node.DOCUMENT_POSITION_FOLLOWING)
       expect(within(toolbar).getByRole('searchbox')).toBeVisible()
       expect(within(toolbar).getByTestId('workshop-filters')).toBeVisible()
       expect(within(toolbar).getByTestId('workshop-sort')).toBeVisible()
