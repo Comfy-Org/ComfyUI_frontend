@@ -7,6 +7,12 @@ test.describe(
   'Large workflow readiness',
   { tag: ['@workflow', '@smoke'] },
   () => {
+    test.use({
+      initialSettings: {
+        'Comfy.Canvas.MouseWheelScroll': 'zoom'
+      }
+    })
+
     test.afterEach(async ({ comfyPage }) => {
       await comfyPage.canvasOps.resetView()
     })
