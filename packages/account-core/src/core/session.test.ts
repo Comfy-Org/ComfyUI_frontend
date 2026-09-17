@@ -1,9 +1,9 @@
 import { describe, expect, it, vi } from 'vitest'
 
+import { makeClient } from './__fixtures__/sessionClientFixture.js'
 import {
   EXCHANGE_URL,
   jsonResponse,
-  makeClient,
   manualIdentity,
   memoryStorage,
   mintBody,
