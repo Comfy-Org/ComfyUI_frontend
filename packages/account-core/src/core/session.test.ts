@@ -1,11 +1,19 @@
 import { describe, expect, it, vi } from 'vitest'
 
-import { createTestIdentity } from '../testing.js'
+import { makeClient } from './__fixtures__/sessionClientFixture.js'
+import {
+  EXCHANGE_URL,
+  jsonResponse,
+  manualIdentity,
+  memoryStorage,
+  mintBody,
+  okFetch,
+  testUser
+} from './__fixtures__/sessionFakes.js'
 import type {
   AccountCredential,
   AccountUser,
   CredentialStorage,
-  SessionClientOptions,
   SessionErrorCode
 } from './session.js'
 import {
@@ -14,58 +22,6 @@ import {
   isCredentialFresh,
   isPermanentSessionError
 } from './session.js'
-
-const EXCHANGE_URL = 'https://cloud.test/api/auth/token'
-
-function memoryStorage(): CredentialStorage & { raw: () => string | null } {
-  let value: string | null = null
-  return {
-    read: () => value,
-    write: (next) => {
-      value = next
-    },
-    clear: () => {
-      value = null
-    },
-    raw: () => value
-  }
-}
-
-function makeClient(overrides: Partial<SessionClientOptions> = {}) {
-  const storage = memoryStorage()
-  const client = createSessionClient({
-    exchangeUrl: EXCHANGE_URL,
-    storage,
-    ...overrides
-  })
-  return { client, storage }
-}
-
-function testUser(uid = 'uid-1', idToken = 'id-token-1'): AccountUser {
-  return { uid, getIdToken: vi.fn(async () => idToken) }
-}
-
-function mintBody(overrides: Record<string, unknown> = {}) {
-  return {
-    token: 'workspace-jwt',
-    permissions: ['workspace:read'],
-    expires_at: new Date(Date.now() + 90 * 60 * 1000).toISOString(),
-    workspace: { id: 'ws-1', name: 'Personal', type: 'personal' },
-    role: 'owner',
-    ...overrides
-  }
-}
-
-function jsonResponse(status: number, body: unknown) {
-  return new Response(JSON.stringify(body), {
-    status,
-    headers: { 'Content-Type': 'application/json' }
-  })
-}
-
-function okFetch(token = 'workspace-jwt') {
-  return vi.fn<typeof fetch>(async () => jsonResponse(200, mintBody({ token })))
-}
 
 function seedCache(
   storage: CredentialStorage,
@@ -83,22 +39,6 @@ function seedCache(
   }
   storage.write(JSON.stringify({ ...credential, target }))
   return credential
-}
-
-function manualIdentity() {
-  let deliver: ((user: AccountUser | null) => void) | undefined
-  const unsubscribe = vi.fn()
-  const port = createTestIdentity<AccountUser>({
-    onUserChanged: (callback) => {
-      deliver = callback
-      return unsubscribe
-    }
-  })
-  return {
-    port,
-    fire: (user: AccountUser | null) => deliver?.(user),
-    unsubscribe
-  }
 }
 
 function hangingFetch() {
@@ -821,6 +761,27 @@ describe('storage outage', () => {
       fetchImpl,
       'a storage outage must degrade persistence only, never request volume'
     ).toHaveBeenCalledOnce()
+  })
+})
+
+describe('stored credential reads', () => {
+  it('serves a fresh in-memory credential without touching storage', async () => {
+    const storage = memoryStorage()
+    const read = vi.spyOn(storage, 'read')
+    const { client } = makeClient({ fetchImpl: okFetch(), storage })
+    const identity = manualIdentity()
+    client.attachIdentity(identity.port, { autoMint: false })
+    const user = testUser()
+    identity.fire(user)
+    await client.ensureFresh(user, {})
+    read.mockClear()
+
+    await client.ensureFresh(user, {})
+
+    expect(
+      read,
+      'a fresh live credential must not cost a storage read, parse and schema check on every call'
+    ).not.toHaveBeenCalled()
   })
 })
 
@@ -1672,5 +1633,25 @@ describe('session error code vocabulary', () => {
     const known: SessionErrorCode = 'ACCESS_DENIED'
     expect(known in SESSION_ERROR_CODES).toBe(true)
     expect('SOMETHING_ELSE' in SESSION_ERROR_CODES).toBe(false)
+  })
+})
+
+describe('subscribe', () => {
+  it('drops a listener whose immediate replay throws, so a later commit never calls it', async () => {
+    const { client } = makeClient({ fetchImpl: okFetch() })
+    const identity = manualIdentity()
+    const flaky = vi.fn(() => {
+      if (flaky.mock.calls.length === 1) throw new Error('listener exploded')
+    })
+    expect(() => client.subscribe(flaky)).toThrow('listener exploded')
+
+    client.attachIdentity(identity.port)
+    identity.fire(testUser())
+    await vi.waitFor(() => expect(client.getToken()).toBe('workspace-jwt'))
+
+    expect(
+      flaky,
+      'a listener removed for throwing on replay is never called by a later commit'
+    ).toHaveBeenCalledTimes(1)
   })
 })
