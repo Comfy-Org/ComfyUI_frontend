@@ -35,6 +35,12 @@ on:
       ref:
         required: false
         type: string
+    outputs:
+      published:
+        description: >-
+          'true' when this run uploaded a tarball, 'false' when the version
+          was already on npm and the publish step was skipped.
+        value: ${{ jobs.publish_package.outputs.published }}
     secrets:
       NPM_TOKEN:
         required: true
@@ -50,6 +56,8 @@ jobs:
     permissions:
       contents: read
       id-token: write
+    outputs:
+      published: ${{ steps.check_npm.outputs.exists == 'false' }}
     steps:
       - name: Resolve package
         id: resolve
@@ -109,9 +117,10 @@ jobs:
         env:
           PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: '1'
 
-      - name: Validate dist-tag
+      - name: Validate version and dist-tag
         env:
           DIST_TAG: ${{ inputs.dist_tag }}
+          INPUT_VERSION: ${{ inputs.version }}
         shell: bash
         run: |
           set -euo pipefail
@@ -121,6 +130,16 @@ jobs:
           fi
           if ! node -e "process.exit(require('semver').validRange(process.argv[1]) ? 1 : 0)" "$DIST_TAG"; then
             echo "::error title=Invalid dist-tag::Tag '$DIST_TAG' must not parse as a valid SemVer version or range (npm rejects such tags)" >&2
+            exit 1
+          fi
+          if ! node -e "process.exit(require('semver').valid(process.argv[1]) ? 0 : 1)" "$INPUT_VERSION"; then
+            echo "::error title=Invalid version::Version '$INPUT_VERSION' is not a valid SemVer version" >&2
+            exit 1
+          fi
+          # The on-merge caller derives the tag from the version, but a manual
+          # dispatch can pair any tag with any version.
+          if [ "$DIST_TAG" = 'latest' ] && node -e "process.exit(require('semver').prerelease(process.argv[1]) ? 0 : 1)" "$INPUT_VERSION"; then
+            echo "::error title=Prerelease on latest::Version '$INPUT_VERSION' is a prerelease and must not take the 'latest' dist-tag. Publish it to 'next' (ADR-RELEASES-PACKAGES-0033, 'Prereleases go to next, releases to latest')." >&2
             exit 1
           fi
 

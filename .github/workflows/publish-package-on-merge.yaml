@@ -127,6 +127,11 @@ jobs:
           issue-number: ${{ github.event.pull_request.number }}
           version_file: packages/${{ matrix.package }}/package.json
 
+  # publish is a matrix call, and GitHub attributes a matrix job's outputs to
+  # whichever entry finished last, so `needs.publish.outputs.published` cannot
+  # say which package published and which was skipped as already-on-npm. The
+  # wording below is therefore true of both outcomes; the per-package answer is
+  # the reusable workflow's `published` output, read by single-call consumers.
   notify_slack:
     name: Notify Slack
     needs:
@@ -147,7 +152,7 @@ jobs:
           PR_AUTHOR: ${{ github.event.pull_request.user.login }}
         run: |
           set -euo pipefail
-          TEXT=":package: *${SUMMARY}* published to npm — <${PR_URL}|#${PR_NUMBER}> by ${PR_AUTHOR}."
+          TEXT=":package: *${SUMMARY}* is live on npm — <${PR_URL}|#${PR_NUMBER}> by ${PR_AUTHOR}."
           BODY=$(jq -n --arg ch "$SLACK_CHANNEL_ID" --arg text "$TEXT" '{channel: $ch, text: $text}')
           RESPONSE=$(curl -sS -X POST \
             --connect-timeout 10 \
