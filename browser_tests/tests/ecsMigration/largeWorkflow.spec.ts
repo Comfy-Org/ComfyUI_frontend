@@ -7,6 +7,10 @@ test.describe(
   'Large workflow readiness',
   { tag: ['@workflow', '@smoke'] },
   () => {
+    test.afterEach(async ({ comfyPage }) => {
+      await comfyPage.canvasOps.resetView()
+    })
+
     test('legacy canvas loads, navigates, and executes its CPU branch', async ({
       comfyPage,
       comfyMouse
