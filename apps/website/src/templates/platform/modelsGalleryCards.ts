@@ -58,7 +58,7 @@ export const modelsGalleryCards: ModelsGalleryCard[] = [
     media: [{ src: `${AI_MODELS_BASE}/nano-banana-pro.webp` }]
   },
   {
-    titleKey: 'cloud.aiModels.card.gptImage2',
+    titleKey: 'cloud.aiModels.card.chatgptImages25',
     badgeIcon: '/icons/ai-models/openai.svg',
     media: [
       {
@@ -68,7 +68,7 @@ export const modelsGalleryCards: ModelsGalleryCard[] = [
     ]
   },
   {
-    titleKey: 'cloud.aiModels.card.kling',
+    titleKey: 'cloud.aiModels.card.klingAi30',
     badgeIcon: '/icons/ai-models/kling.svg',
     media: [
       {
@@ -77,7 +77,7 @@ export const modelsGalleryCards: ModelsGalleryCard[] = [
     ]
   },
   {
-    titleKey: 'cloud.aiModels.card.blackForestLabs',
+    titleKey: 'cloud.aiModels.card.flux3',
     badgeIcon: '/icons/ai-models/bfl.svg',
     media: [
       {
