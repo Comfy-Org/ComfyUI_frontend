@@ -138,7 +138,11 @@ test.describe('Live Cloud network boundary', { tag: '@smoke' }, () => {
           contentType: 'text/html',
           body: `
           <h1>Let's get to know you</h1>
-          <button id="intent-exploring" aria-pressed="false" onclick="this.hidden = true; document.getElementById('details').hidden = false">Explore</button>
+          <button id="intent-exploring" aria-pressed="false" onclick="this.hidden = true; document.getElementById('usage').hidden = false">Explore</button>
+          <section id="usage" hidden>
+            <input id="usage-answer" aria-label="Usage" oninput="document.getElementById('next').disabled = !this.value">
+            <button id="next" disabled onclick="document.getElementById('usage').hidden = true; document.getElementById('details').hidden = false">Next</button>
+          </section>
           <section id="details" hidden>
             <input id="details-answer" aria-label="Details" oninput="document.getElementById('submit').disabled = !this.value">
             <button id="submit" disabled>Submit</button>
@@ -149,7 +153,7 @@ test.describe('Live Cloud network boundary', { tag: '@smoke' }, () => {
               await fetch('/api/settings', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ onboarding_survey: { intent: 'exploring', details: document.getElementById('details-answer').value } })
+                body: JSON.stringify({ onboarding_survey: { intent: 'exploring', usage: document.getElementById('usage-answer').value, details: document.getElementById('details-answer').value } })
               })
               document.querySelector('h1').hidden = true
               document.getElementById('details').hidden = true
@@ -162,7 +166,7 @@ test.describe('Live Cloud network boundary', { tag: '@smoke' }, () => {
       await page.goto('http://localhost:5173/')
     })
 
-    await test.step('Submit both answers and reach the canvas', async () => {
+    await test.step('Advance with Next, submit all answers and reach the canvas', async () => {
       const [request] = await Promise.all([
         page.waitForRequest(
           (request) =>
@@ -176,6 +180,7 @@ test.describe('Live Cloud network boundary', { tag: '@smoke' }, () => {
       expect(request.postDataJSON()).toEqual({
         onboarding_survey: {
           intent: 'exploring',
+          usage: 'Automated billing E2E',
           details: 'Automated billing E2E'
         }
       })
