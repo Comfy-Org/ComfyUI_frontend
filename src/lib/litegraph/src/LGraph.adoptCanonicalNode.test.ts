@@ -6,6 +6,7 @@ import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { useNodeDataStore } from '@/stores/nodeDataStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { graphScopeOf } from '@/types/graphScopeId'
+import { toNodeId } from '@/types/nodeId'
 import type { NodeState } from '@/types/nodeState'
 import { widgetId } from '@/types/widgetId'
 
@@ -26,8 +27,8 @@ import { widgetId } from '@/types/widgetId'
  */
 
 class ANode extends LGraphNode {
-  constructor() {
-    super('a')
+  constructor(type = 'test/a') {
+    super('a', type)
     this.addInput('in', '*')
     this.addOutput('out', '*')
     this.addWidget('number', 'seed', 0, () => {})
@@ -36,7 +37,7 @@ class ANode extends LGraphNode {
 
 class BNode extends LGraphNode {
   constructor() {
-    super('b')
+    super('b', 'test/b')
     this.addInput('in', '*')
     this.addOutput('out', '*')
     this.addWidget('number', 'seed', 0, () => {})
@@ -47,7 +48,7 @@ class BNode extends LGraphNode {
 /** Same widget name as {@link ANode} but a different widget type. */
 class TextSeedNode extends LGraphNode {
   constructor() {
-    super('text-seed')
+    super('text-seed', 'test/text-seed')
     this.addInput('in', '*')
     this.addOutput('out', '*')
     this.addWidget('text', 'seed', 'x', () => {})
@@ -61,6 +62,10 @@ class ThrowsOnAddedNode extends BNode {
 }
 
 class ThrowsOnRemovedNode extends ANode {
+  constructor() {
+    super('test/throws-on-removed')
+  }
+
   override onRemoved(): void {
     throw new Error('onRemoved exploded')
   }
@@ -68,7 +73,7 @@ class ThrowsOnRemovedNode extends ANode {
 
 class SourceNode extends LGraphNode {
   constructor() {
-    super('source')
+    super('source', 'test/source')
     this.addOutput('out', '*')
   }
 }
@@ -82,6 +87,9 @@ beforeEach(() => {
   LiteGraph.registerNodeType('test/throws-on-removed', ThrowsOnRemovedNode)
   LiteGraph.registerNodeType('test/source', SourceNode)
 })
+
+/** Id of the record {@link graphWithDetachedRecord} registers without a live node. */
+const DETACHED_ID = toNodeId(42)
 
 function seedWidgetId(graph: LGraph, node: Pick<LGraphNode, 'id'>) {
   return widgetId(graph.rootGraph.id, node.id, 'seed')
@@ -123,7 +131,7 @@ function graphWithDetachedRecord() {
   const graph = new LGraph()
   const scope = graphScopeOf(graph)
   const prototype = new BNode()
-  prototype.id = 42
+  prototype.id = DETACHED_ID
   const record = useNodeDataStore().registerNode(scope, {
     ...toRaw(prototype._state),
     graphId: graph.id
@@ -188,6 +196,23 @@ describe('LGraph.adoptCanonicalNode', () => {
       expect(layoutStore.getNodeLayout(graph.id, successor.id)).not.toBeNull()
     })
 
+    it('adopts a successor whose constructor pre-bound `graph` before add', () => {
+      // SubgraphNode sets `this.graph = graph` in its constructor; a graph
+      // reference alone does not make a node attached.
+      const { graph, incumbent, record } = graphWithOwnedIncumbent()
+      const successor = new BNode()
+      successor.graph = graph
+
+      const result = graph.adoptCanonicalNode(record, successor, {
+        incumbent
+      })
+
+      expect(result).toEqual({ status: 'replaced', node: successor })
+      expect(graph._nodes).toEqual([successor])
+      expect(graph.getNodeById(incumbent.id)).toBe(successor)
+      expect(successor.graph).toBe(graph)
+    })
+
     it('keeps the same-name widget value across the hand-over', () => {
       const { graph, incumbent, record } = graphWithOwnedIncumbent()
       const successor = new BNode()
@@ -232,7 +257,7 @@ describe('LGraph.adoptCanonicalNode', () => {
 
       expect(result).toEqual({ status: 'replaced', node: successor })
       expect(graph._nodes).toEqual([successor])
-      expect(successor.id).toBe(42)
+      expect(successor.id).toBe(DETACHED_ID)
       expect(toRaw(successor._state)).toBe(toRaw(record))
       expect(successor.widgets![0].value).toBe(7)
     })
@@ -389,15 +414,17 @@ describe('LGraph.adoptCanonicalNode', () => {
 
       expect(result.status).toBe('failed')
       expect(graph._nodes).toEqual([])
-      expect(graph.getNodeById(42)).toBeNull()
-      expect(useNodeDataStore().getNode(graph.id, 42)).toBe(record)
+      expect(graph.getNodeById(DETACHED_ID)).toBeNull()
+      expect(useNodeDataStore().getNode(graph.id, DETACHED_ID)).toBe(record)
       expect(record.type).toBe('test/b')
       expect(graph._version).toBe(versionBefore)
       expectDetachedSuccessor(successor)
 
       const widgetStore = useWidgetValueStore()
       const seed = seedWidgetId(graph, record)
-      expect(widgetStore.getNodeWidgetIds(graph.id, 42)).toEqual([seed])
+      expect(widgetStore.getNodeWidgetIds(graph.id, DETACHED_ID)).toEqual([
+        seed
+      ])
       expect(widgetStore.getWidget(seed)?.value).toBe(7)
     })
 
@@ -442,15 +469,16 @@ describe('LGraph.adoptCanonicalNode', () => {
       expect(result.status).toBe('failed')
       if (result.status !== 'failed') return
       expect(result.stage).toBe('precondition')
+      expect(result.cause).toMatchObject({ code: 'successor_attached' })
       expectUnchangedGraph(graph, incumbent, record, versionBefore)
       expect(successor.graph).toBe(other)
     })
 
     it('rejects an incumbent that is not the live node for the record', () => {
       const { graph, incumbent, record } = graphWithOwnedIncumbent()
-      const versionBefore = graph._version
       const stranger = new ANode()
       graph.add(stranger)
+      const versionBefore = graph._version
 
       const result = graph.adoptCanonicalNode(record, new BNode(), {
         incumbent: stranger
@@ -459,6 +487,7 @@ describe('LGraph.adoptCanonicalNode', () => {
       expect(result.status).toBe('failed')
       if (result.status !== 'failed') return
       expect(result.stage).toBe('precondition')
+      expect(result.cause).toMatchObject({ code: 'incumbent_mismatch' })
       expect(graph._nodes).toEqual([incumbent, stranger])
       expect(graph._version).toBe(versionBefore)
     })
@@ -475,8 +504,85 @@ describe('LGraph.adoptCanonicalNode', () => {
       expect(result.status).toBe('failed')
       if (result.status !== 'failed') return
       expect(result.stage).toBe('precondition')
+      expect(result.cause).toMatchObject({ code: 'record_not_owned' })
       expect(graph._nodes).toEqual([incumbent])
       expect(graph._version).toBe(versionBefore)
+    })
+
+    it('rolls back when LGraph.add refuses the successor without throwing', () => {
+      const { graph, incumbent, record } = graphWithOwnedIncumbent()
+      const versionBefore = graph._version
+      const successor = new BNode()
+      vi.spyOn(graph, 'add').mockReturnValueOnce(undefined)
+
+      const result = graph.adoptCanonicalNode(record, successor, {
+        incumbent
+      })
+
+      expect(result.status).toBe('failed')
+      if (result.status !== 'failed') return
+      expect(result.stage).toBe('add')
+      expect(result.cause).toMatchObject({ code: 'add_rejected' })
+      expect(result.rollbackFailures).toEqual([])
+      expectUnchangedGraph(graph, incumbent, record, versionBefore)
+      expectDetachedSuccessor(successor)
+    })
+
+    it('disposes a successor that was never added when the detach stage fails', () => {
+      const { graph, incumbent, record } = graphWithOwnedIncumbent()
+      const successor = new BNode()
+      const onRemoved = vi.fn()
+      successor.onRemoved = onRemoved
+      incumbent.onRemoved = () => {
+        throw new Error('cleanup failed')
+      }
+
+      const result = graph.adoptCanonicalNode(record, successor, {
+        incumbent
+      })
+
+      expect(result.status).toBe('failed')
+      if (result.status !== 'failed') return
+      expect(result.stage).toBe('detach')
+      expect(onRemoved).toHaveBeenCalledOnce()
+      expectDetachedSuccessor(successor)
+    })
+
+    it('disposes an added successor exactly once when the configure stage fails', () => {
+      const { graph, incumbent, record } = graphWithOwnedIncumbent()
+      const successor = new BNode()
+      const onRemoved = vi.fn()
+      successor.onRemoved = onRemoved
+
+      const result = graph.adoptCanonicalNode(record, successor, {
+        incumbent,
+        configure: () => {
+          throw new Error('configure failed')
+        }
+      })
+
+      expect(result.status).toBe('failed')
+      if (result.status !== 'failed') return
+      expect(result.stage).toBe('configure')
+      expect(onRemoved).toHaveBeenCalledOnce()
+      expectDetachedSuccessor(successor)
+    })
+
+    it('restores a pre-bound `graph` reference on rollback instead of nulling it', () => {
+      const { graph, incumbent, record } = graphWithOwnedIncumbent()
+      const versionBefore = graph._version
+      const successor = new BNode()
+      successor.graph = graph
+      vi.spyOn(graph, 'add').mockReturnValueOnce(undefined)
+
+      const result = graph.adoptCanonicalNode(record, successor, {
+        incumbent
+      })
+
+      expect(result.status).toBe('failed')
+      expectUnchangedGraph(graph, incumbent, record, versionBefore)
+      expect(successor.graph).toBe(graph)
+      expect(successor._graphScope).toBeUndefined()
     })
 
     it('returns reentrant when called from within its own configure hook', () => {

@@ -9,7 +9,7 @@ import { createInputSlotView } from '@/lib/litegraph/src/node/slotDescriptorView
 import { createTestSubgraph } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import { useNodeDataStore } from '@/stores/nodeDataStore'
 import { graphScopeOf } from '@/types/graphScopeId'
-import { UNASSIGNED_NODE_ID } from '@/types/nodeId'
+import { UNASSIGNED_NODE_ID, toNodeId } from '@/types/nodeId'
 import type { NodeState } from '@/types/nodeState'
 import { createUuidv4, zeroUuid } from '@/utils/uuid'
 
@@ -197,7 +197,7 @@ describe('node registration invariants', () => {
 describe('adoptCanonicalNodeState', () => {
   class WidgetNode extends LGraphNode {
     constructor(type: string) {
-      super(type)
+      super(type, type)
       this.addInput('in', '*')
       this.addWidget('number', 'seed', 0, () => {})
     }
@@ -261,7 +261,8 @@ describe('adoptCanonicalNodeState', () => {
     const graph = new LGraph()
     const scope = graphScopeOf(graph)
     const prototype = new WidgetNode('b')
-    prototype.id = 7
+    const id = toNodeId(7)
+    prototype.id = id
     const record = useNodeDataStore().registerNode(scope, {
       ...toRaw(prototype._state),
       graphId: graph.id
@@ -272,7 +273,7 @@ describe('adoptCanonicalNodeState', () => {
     adoptCanonicalNodeState(graph, record, successor)
 
     expect(toRaw(successor._state)).toBe(toRaw(record))
-    expect(successor.id).toBe(7)
+    expect(successor.id).toBe(id)
     expect(successor._graphScope).toEqual(scope)
   })
 
