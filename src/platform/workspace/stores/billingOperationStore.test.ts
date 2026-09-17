@@ -1,3 +1,12 @@
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
+import {
+  bindOperationToCheckoutJourney,
+  clearCheckoutJourney,
+  getActiveCheckoutJourney,
+  resolveCheckoutJourney
+} from '@/platform/workspace/utils/checkoutJourney'
+import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useDialogStore } from '@/stores/dialogStore'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 
@@ -106,6 +115,20 @@ vi.mock('@/platform/workspace/stores/teamWorkspaceStore', () => ({
 import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
 
 import { useBillingOperationStore } from './billingOperationStore'
+
+beforeEach(() => {
+  vi.mocked(useToastStore().add).mockImplementation(() => {})
+  vi.mocked(useToastStore().remove).mockImplementation(() => {})
+  vi.mocked(useDialogStore().closeDialog).mockImplementation(() => {})
+  sessionStorage.clear()
+  clearCheckoutJourney()
+})
+
+beforeEach(() => {
+  vi.mocked(useTeamWorkspaceStore().updateActiveWorkspace).mockImplementation(
+    () => {}
+  )
+})
 
 describe('billingOperationStore', () => {
   beforeEach(() => {
@@ -265,6 +288,69 @@ describe('billingOperationStore', () => {
   })
 
   describe('polling success', () => {
+    function seedJourney(boundOpId: string) {
+      resolveCheckoutJourney({
+        actorUid: 'user-1',
+        workspaceId: 'workspace-1',
+        entryFlow: 'initial_subscription',
+        entrySource: 'pricing',
+        assignment: { status: 'resolved', arm: 'treatment' }
+      })
+      bindOperationToCheckoutJourney(boundOpId)
+    }
+
+    it('clears the checkout journey bound to a succeeding operation', async () => {
+      seedJourney('op-1')
+      vi.mocked(workspaceApi.getBillingOpStatus).mockResolvedValue({
+        id: 'op-1',
+        status: 'succeeded',
+        started_at: new Date().toISOString()
+      })
+
+      const store = useBillingOperationStore()
+      void store.startOperation('op-1', 'subscription')
+      await vi.advanceTimersByTimeAsync(0)
+
+      expect(getActiveCheckoutJourney()).toBeNull()
+    })
+
+    it.for([
+      { outcome: 'failed', status: 'failed' as const },
+      { outcome: 'timeout', status: 'pending' as const }
+    ])(
+      'retains the checkout journey when the bound operation ends in $outcome',
+      async ({ status }) => {
+        seedJourney('op-1')
+        vi.mocked(workspaceApi.getBillingOpStatus).mockResolvedValue({
+          id: 'op-1',
+          status,
+          started_at: new Date().toISOString()
+        })
+
+        const store = useBillingOperationStore()
+        void store.startOperation('op-1', 'subscription')
+        await vi.advanceTimersByTimeAsync(5 * 60_000 + 8001)
+
+        // Only success ends a journey; a retry must stay on the same one.
+        expect(getActiveCheckoutJourney()?.billing_op_id).toBe('op-1')
+      }
+    )
+
+    it('preserves a checkout journey bound to a different operation', async () => {
+      seedJourney('op-other')
+      vi.mocked(workspaceApi.getBillingOpStatus).mockResolvedValue({
+        id: 'op-1',
+        status: 'succeeded',
+        started_at: new Date().toISOString()
+      })
+
+      const store = useBillingOperationStore()
+      void store.startOperation('op-1', 'subscription')
+      await vi.advanceTimersByTimeAsync(0)
+
+      expect(getActiveCheckoutJourney()?.billing_op_id).toBe('op-other')
+    })
+
     it('emits only the generic lifecycle for a recovered subscription operation', async () => {
       vi.mocked(workspaceApi.getBillingOpStatus).mockResolvedValue({
         id: 'op-recovered',
