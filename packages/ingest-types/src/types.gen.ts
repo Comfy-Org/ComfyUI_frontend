@@ -3630,7 +3630,7 @@ export type CreateTopupCheckoutResponse = {
 export type CreateTopupCheckoutRequest = {
   /**
    * Amount to charge in cents, before any promotion code the customer
-   * enters. Whole dollars only, from $5.00 to $4,739.00. The ceiling is
+   * enters. Whole dollars only, from $5.00 to $16,000.00. The ceiling is
    * a fixed business limit (not a Stripe technical constraint) on how
    * much a single unauthenticated-approval session may sell. The
    * credits granted are derived server-side from this amount and
