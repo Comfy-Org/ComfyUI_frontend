@@ -32,6 +32,9 @@ import { mockBillingContext } from '@/utils/__tests__/mockBillingContext'
 import TopUpCreditsDialogContentWorkspace from './TopUpCreditsDialogContentWorkspace.vue'
 
 const mockReportError = vi.hoisted(() => vi.fn())
+const mockCreateUuidv4 = vi.hoisted(() => vi.fn())
+
+vi.mock(import('@/utils/uuid'), () => ({ createUuidv4: mockCreateUuidv4 }))
 
 vi.mock(import('@/platform/telemetry/reportError'), () => ({
   reportError: mockReportError
@@ -182,6 +185,7 @@ beforeEach(() => {
 })
 
 beforeEach(() => {
+  mockCreateUuidv4.mockReturnValue('topup-attempt-1')
   vi.mocked(useDialogStore().closeDialog).mockImplementation(() => {})
   Object.assign(useAuthStore(), { userId: 'user-1' })
   Object.assign(useTeamWorkspaceStore(), { activeWorkspaceId: 'workspace-1' })
@@ -905,6 +909,59 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
         failure_category: 'api_rejected',
         duration_ms: expect.any(Number)
       })
+    )
+  })
+
+  it('reuses the idempotency key after an uncertain request failure', async () => {
+    vi.mocked(mockBillingContext().topup)
+      .mockRejectedValueOnce(new Error('connection lost'))
+      .mockResolvedValueOnce(topupResponse('pending'))
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
+
+    renderDialog()
+    await clickAddCredits()
+    const payButton = screen.getByRole('button', { name: 'Pay $50.00' })
+    await userEvent.click(payButton)
+    await waitFor(() => expect(payButton).toBeEnabled())
+    await userEvent.click(payButton)
+
+    expect(vi.mocked(mockBillingContext().topup)).toHaveBeenNthCalledWith(
+      1,
+      5000,
+      'topup-attempt-1'
+    )
+    expect(vi.mocked(mockBillingContext().topup)).toHaveBeenNthCalledWith(
+      2,
+      5000,
+      'topup-attempt-1'
+    )
+    consoleError.mockRestore()
+  })
+
+  it('uses a new idempotency key after a definitive failure', async () => {
+    mockCreateUuidv4
+      .mockReturnValueOnce('topup-attempt-1')
+      .mockReturnValueOnce('topup-attempt-2')
+    vi.mocked(mockBillingContext().topup)
+      .mockResolvedValueOnce(topupResponse('failed'))
+      .mockResolvedValueOnce(topupResponse('pending'))
+
+    renderDialog()
+    await clickAddCredits()
+    const payButton = screen.getByRole('button', { name: 'Pay $50.00' })
+    await userEvent.click(payButton)
+    await waitFor(() => expect(payButton).toBeEnabled())
+    await userEvent.click(payButton)
+
+    expect(vi.mocked(mockBillingContext().topup)).toHaveBeenNthCalledWith(
+      1,
+      5000,
+      'topup-attempt-1'
+    )
+    expect(vi.mocked(mockBillingContext().topup)).toHaveBeenNthCalledWith(
+      2,
+      5000,
+      'topup-attempt-2'
     )
   })
 

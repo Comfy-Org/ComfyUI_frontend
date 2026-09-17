@@ -315,7 +315,7 @@ function useBillingContextInternal(): BillingContext {
     return activeContext.value.resubscribe(options)
   }
 
-  async function topup(amountCents: number) {
+  async function topup(amountCents: number, idempotencyKey?: string) {
     if (
       !Number.isInteger(amountCents) ||
       amountCents <= 0 ||
@@ -325,7 +325,7 @@ function useBillingContextInternal(): BillingContext {
         'Top-up amount must be a positive whole-dollar cent value'
       )
     }
-    return activeContext.value.topup(amountCents)
+    return activeContext.value.topup(amountCents, idempotencyKey)
   }
 
   async function fetchPlans() {
