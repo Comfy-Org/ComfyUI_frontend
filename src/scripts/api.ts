@@ -393,7 +393,7 @@ export class PromptExecutionError extends Error {
     let message = ''
     if (typeof this.response.error === 'string') {
       message += this.response.error
-    } else if (this.response.error) {
+    } else {
       message +=
         this.response.error.message + ': ' + this.response.error.details
     }
@@ -1548,7 +1548,7 @@ export class ComfyApi extends EventTarget {
       `/userdata/${encodeURIComponent(file)}?overwrite=${options.overwrite}&full_info=${options.full_info}`,
       {
         method: 'POST',
-        body: options?.stringify ? JSON.stringify(data) : (data as BodyInit),
+        body: options.stringify ? JSON.stringify(data) : (data as BodyInit),
         ...options
       }
     )
@@ -1583,7 +1583,7 @@ export class ComfyApi extends EventTarget {
     options = { overwrite: false }
   ) {
     const resp = await this.fetchApi(
-      `/userdata/${encodeURIComponent(source)}/move/${encodeURIComponent(dest)}?overwrite=${options?.overwrite}`,
+      `/userdata/${encodeURIComponent(source)}/move/${encodeURIComponent(dest)}?overwrite=${options.overwrite}`,
       {
         method: 'POST'
       }
@@ -1613,7 +1613,7 @@ export class ComfyApi extends EventTarget {
       )
     }
     const subgraph: GlobalSubgraphData = await resp.json()
-    if (!subgraph?.data) {
+    if (!subgraph.data) {
       throw new Error(`Global subgraph '${id}' returned empty data`)
     }
     return subgraph.data
@@ -1631,9 +1631,8 @@ export class ComfyApi extends EventTarget {
   async getLogs(): Promise<string> {
     const url = isCloud ? this.apiURL('/logs') : this.internalURL('/logs')
     const { data } = await axios.get<unknown>(url)
-    return typeof data === 'string'
-      ? data
-      : (JSON.stringify(data, null, 2) ?? '')
+    if (typeof data === 'string') return data
+    return data === undefined ? '' : JSON.stringify(data, null, 2)
   }
 
   async getRawLogs(): Promise<LogsRawResponse> {

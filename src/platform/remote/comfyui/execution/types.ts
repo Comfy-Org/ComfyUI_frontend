@@ -31,7 +31,7 @@ export type NodeOutputWith<T extends Record<string, unknown>> =
 type NodeId = z.infer<typeof zNodeId>
 
 export interface StatusWsMessageStatus {
-  exec_info: { queue_remaining: number }
+  exec_info?: { queue_remaining: number }
 }
 export interface StatusWsMessage {
   status?: StatusWsMessageStatus | null
