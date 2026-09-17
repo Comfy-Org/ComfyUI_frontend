@@ -27,6 +27,7 @@
     "./auth/SocialAuthButtons": "./src/auth/SocialAuthButtons.vue",
     "./auth/TurnstileWidget": "./src/auth/TurnstileWidget.vue",
     "./auth/regionGate": "./src/auth/regionGate.ts",
+    "./auth/regionProbe": "./src/auth/regionProbe.ts",
     "./auth/turnstileGate": "./src/auth/turnstileGate.ts",
     "./auth/lifecycleScope": "./src/auth/lifecycleScope.ts",
     "./auth/useGenerationGuard": "./src/auth/useGenerationGuard.ts",
@@ -54,6 +55,10 @@
         "types": "./dist/auth/regionGate.d.ts",
         "import": "./dist/auth/regionGate.js"
       },
+      "./auth/regionProbe": {
+        "types": "./dist/auth/regionProbe.d.ts",
+        "import": "./dist/auth/regionProbe.js"
+      },
       "./auth/turnstileGate": {
         "types": "./dist/auth/turnstileGate.d.ts",
         "import": "./dist/auth/turnstileGate.js"
@@ -79,9 +84,7 @@
     "typecheck": "vue-tsc --noEmit"
   },
   "dependencies": {
-    "@comfyorg/account-core": "workspace:*",
-    "@comfyorg/shared-frontend-utils": "workspace:*",
-    "@comfyorg/tailwind-utils": "workspace:*"
+    "@comfyorg/account-core": "workspace:*"
   },
   "devDependencies": {
     "@testing-library/user-event": "catalog:",
