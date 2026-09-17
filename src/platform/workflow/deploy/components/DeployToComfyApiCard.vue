@@ -66,13 +66,38 @@
           <p class="my-0 text-sm/5 text-muted-foreground">
             {{ $t('deployToComfyApi.body') }}
           </p>
+          <p
+            class="my-0 text-sm/5 text-muted-foreground"
+            data-testid="deploy-to-comfy-api-summary"
+          >
+            {{ summary }}
+          </p>
           <ReuseDocsLink class="@xl:hidden" />
         </div>
 
         <footer
-          class="flex flex-col gap-2.5 @xl:flex-row @xl:items-center @xl:justify-end"
+          class="flex flex-col-reverse gap-2.5 @xl:flex-row @xl:items-center @xl:justify-end"
         >
           <ReuseDocsLink class="hidden @xl:mr-auto @xl:inline-flex" />
+          <Button
+            ref="agentButton"
+            variant="secondary"
+            size="lg"
+            class="w-full @xl:w-auto"
+            :style="{ minWidth: lockedWidth }"
+            data-testid="deploy-to-comfy-api-agent"
+            :loading="isCopying"
+            @click="copyHandoff"
+          >
+            <template v-if="copiedLabel">
+              <i class="icon-[lucide--check] size-4" aria-hidden="true" />
+              {{ copiedLabel }}
+            </template>
+            <template v-else>
+              <i class="icon-[lucide--copy] size-4" aria-hidden="true" />
+              {{ $t('deployToComfyApi.deployWithAgent') }}
+            </template>
+          </Button>
           <Button
             variant="inverted"
             size="lg"
@@ -90,13 +115,25 @@
 
 <script setup lang="ts">
 import { createReusableTemplate } from '@vueuse/core'
-import { ref } from 'vue'
+import { computed, ref, useTemplateRef } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
+import { useCopyToClipboard } from '@/composables/useCopyToClipboard'
 import { useExternalLink } from '@/composables/useExternalLink'
 import { getComfyPlatformBaseUrl } from '@/config/comfyApi'
+import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
+import type { BuildInputs } from '@/platform/workflow/deploy/utils/buildInputs'
 
-const { videoSrc = '' } = defineProps<{
+const {
+  inputs,
+  handoff,
+  requiresExport,
+  videoSrc = ''
+} = defineProps<{
+  inputs: BuildInputs
+  handoff: string
+  requiresExport: boolean
   titleId?: string
   videoSrc?: string
 }>()
@@ -108,11 +145,68 @@ const emit = defineEmits<{
 
 defineOptions({ inheritAttrs: false })
 
+const ICON_WITH_GAP_PX = 24
+
+const { t } = useI18n()
+const { copyToClipboard } = useCopyToClipboard()
 const { buildDocsUrl } = useExternalLink()
+const workflowService = useWorkflowService()
 const [DefineDocsLink, ReuseDocsLink] = createReusableTemplate()
+const agentButton = useTemplateRef('agentButton')
+const isCopying = ref(false)
 const videoFailed = ref(false)
+const lockedWidth = ref<string>()
+const copiedLabel = ref<string>()
 
 const docsUrl = buildDocsUrl('/development/overview', { includeLocale: true })
+
+const summary = computed(() =>
+  [
+    t('deployToComfyApi.summaryPacks', inputs.nodePacks.length),
+    t('deployToComfyApi.summaryModels', inputs.models.length),
+    t('deployToComfyApi.summaryClasses', inputs.nodeClasses.length)
+  ].join(' · ')
+)
+
+function labelThatFits(button: HTMLElement) {
+  const full = t('deployToComfyApi.copied')
+  const short = t('deployToComfyApi.copiedShort')
+  const context = document.createElement('canvas').getContext('2d')
+  if (!context) return short
+  const style = getComputedStyle(button)
+  context.font = `${style.fontWeight} ${style.fontSize} ${style.fontFamily}`
+  const available =
+    button.clientWidth -
+    parseFloat(style.paddingLeft) -
+    parseFloat(style.paddingRight) -
+    ICON_WITH_GAP_PX
+  return context.measureText(full).width <= available ? full : short
+}
+
+function agentButtonElement(): HTMLElement | undefined {
+  const el = agentButton.value?.$el
+  return el instanceof HTMLElement ? el : undefined
+}
+
+async function copyHandoff() {
+  if (isCopying.value) return
+  const button = agentButtonElement()
+  if (button) lockedWidth.value = `${button.getBoundingClientRect().width}px`
+  const label = button
+    ? labelThatFits(button)
+    : t('deployToComfyApi.copiedShort')
+  isCopying.value = true
+  try {
+    if (requiresExport) {
+      await workflowService.exportWorkflow(inputs.workflowName, 'workflow')
+    }
+    if (await copyToClipboard(handoff, { toastOnSuccess: false })) {
+      copiedLabel.value = label
+    }
+  } finally {
+    isCopying.value = false
+  }
+}
 
 function openPlatform() {
   window.open(getComfyPlatformBaseUrl(), '_blank', 'noopener')

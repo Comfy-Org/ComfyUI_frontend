@@ -4073,7 +4073,13 @@
     "buttonLabel": "Deploy to ComfyAPI",
     "body": "Deploy this workflow as a production API in minutes. Package your custom nodes, models and Python dependencies into a reproducible build, and Comfy API runs it as an autoscaling endpoint.",
     "readDocs": "Read the docs",
-    "deployOnPlatform": "Deploy on Platform"
+    "deployOnPlatform": "Deploy on Platform",
+    "deployWithAgent": "Deploy with your agent",
+    "copied": "Copied to clipboard",
+    "copiedShort": "Copied",
+    "summaryPacks": "{count} node pack | {count} node packs",
+    "summaryModels": "{count} model | {count} models",
+    "summaryClasses": "{count} node class | {count} node classes"
   },
   "openSharedWorkflow": {
     "dialogTitle": "Open shared workflow",
