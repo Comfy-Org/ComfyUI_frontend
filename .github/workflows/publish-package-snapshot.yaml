@@ -44,21 +44,27 @@ jobs:
         env:
           PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: '1'
 
-      - name: Publish a snapshot of every changed package
-        id: snapshot
+      # No NODE_AUTH_TOKEN here: build and smoke:pack are scripts this pull
+      # request can rewrite, so they run before the token is in scope.
+      - name: Select and build every changed package
+        id: prepare
         env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
           HEAD_SHA: ${{ github.event.pull_request.head.sha }}
         shell: bash
         run: |
           set -euo pipefail
-          DIST_TAG="pr-${PR_NUMBER}"
           SNAPSHOT_VERSION="0.0.0-pr-${PR_NUMBER}-${HEAD_SHA:0:7}"
-          INSTALL_LINES=$(mktemp)
+          SELECTED="$RUNNER_TEMP/snapshot-packages.tsv"
+          : > "$SELECTED"
           # ingest-types first: the other packages resolve it through a
           # workspace range that npm rewrites at pack time.
           for PACKAGE in ingest-types billing-contract account-core; do
+            case "$PACKAGE" in
+              account-core) EXPECTED_NAME='@comfyorg/account-core' ;;
+              billing-contract) EXPECTED_NAME='@comfyorg/billing-contract' ;;
+              ingest-types) EXPECTED_NAME='@comfyorg/ingest-types' ;;
+            esac
             PACKAGE_JSON="packages/$PACKAGE/package.json"
             if [ ! -f "$PACKAGE_JSON" ]; then
               continue
@@ -66,11 +72,15 @@ jobs:
             if git diff --quiet HEAD^1 HEAD -- "packages/$PACKAGE"; then
               continue
             fi
+            NAME=$(node -p "require('./$PACKAGE_JSON').name")
+            if [ "$NAME" != "$EXPECTED_NAME" ]; then
+              echo "::error title=Package name mismatch::$PACKAGE_JSON name '$NAME' is not '$EXPECTED_NAME'" >&2
+              exit 1
+            fi
             if [ "$(node -p "String(require('./$PACKAGE_JSON').private === true)")" = "true" ]; then
               echo "::notice title=Snapshot skipped::packages/$PACKAGE still sets \"private\": true, so no snapshot was published."
               continue
             fi
-            NAME=$(node -p "require('./$PACKAGE_JSON').name")
             node -e '
               const fs = require("node:fs")
               const [file, version] = process.argv.slice(1)
@@ -80,35 +90,65 @@ jobs:
             ' "$PACKAGE_JSON" "$SNAPSHOT_VERSION"
             pnpm --filter "$NAME" run --if-present build
             pnpm --filter "$NAME" run --if-present smoke:pack
-            pnpm -C "packages/$PACKAGE" publish \
-              --access public \
-              --tag "$DIST_TAG" \
-              --no-git-checks \
-              --ignore-scripts \
-              --provenance
-            echo "- \`npm i ${NAME}@${DIST_TAG}\` (\`${SNAPSHOT_VERSION}\`)" >> "$INSTALL_LINES"
+            printf '%s\t%s\n' "$PACKAGE" "$NAME" >> "$SELECTED"
           done
-          if [ ! -s "$INSTALL_LINES" ]; then
-            echo "::notice title=No snapshot published::No publishable package changed in this pull request."
-            echo "published=false" >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
-          COMMENT_FILE="$RUNNER_TEMP/snapshot-comment.md"
           {
-            echo "Snapshot packages published for this pull request:"
-            echo ""
-            cat "$INSTALL_LINES"
-            echo ""
-          } > "$COMMENT_FILE"
-          echo "published=true" >> "$GITHUB_OUTPUT"
+            echo "version=$SNAPSHOT_VERSION"
+            echo "selected=$SELECTED"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Publish the prepared snapshots
+        id: snapshot
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          DIST_TAG: pr-${{ github.event.pull_request.number }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          SELECTED: ${{ steps.prepare.outputs.selected }}
+          SNAPSHOT_VERSION: ${{ steps.prepare.outputs.version }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          INSTALL_LINES=$(mktemp)
+          while IFS=$'\t' read -r PACKAGE NAME <&3; do
+            STATUS=0
+            PUBLISHED=$(npm view "${NAME}@${SNAPSHOT_VERSION}" version 2>&1) || STATUS=$?
+            if [ "$STATUS" -eq 0 ] && [ -n "$PUBLISHED" ]; then
+              echo "::notice title=Snapshot already published::${NAME}@${SNAPSHOT_VERSION} is already on npm, so this re-run reuses it."
+            elif [ "$STATUS" -eq 0 ] || printf '%s' "$PUBLISHED" | grep -q 'E404'; then
+              pnpm -C "packages/$PACKAGE" publish \
+                --access public \
+                --tag "$DIST_TAG" \
+                --no-git-checks \
+                --ignore-scripts \
+                --provenance
+            else
+              echo "::error title=Registry lookup failed::$PUBLISHED" >&2
+              exit "$STATUS"
+            fi
+            echo "- \`npm i ${NAME}@${DIST_TAG}\` (\`${SNAPSHOT_VERSION}\`)" >> "$INSTALL_LINES"
+          done 3< "$SELECTED"
+          COMMENT_FILE="$RUNNER_TEMP/snapshot-comment.md"
+          if [ -s "$INSTALL_LINES" ]; then
+            {
+              echo "Snapshot packages published for \`${HEAD_SHA:0:7}\`:"
+              echo ""
+              cat "$INSTALL_LINES"
+              echo ""
+            } > "$COMMENT_FILE"
+          else
+            echo "::notice title=No snapshot published::No publishable package changed in this pull request."
+            {
+              echo "No snapshot for \`${HEAD_SHA:0:7}\`: no publishable package changed in this pull request."
+              echo ""
+            } > "$COMMENT_FILE"
+          fi
           echo "comment_file=$COMMENT_FILE" >> "$GITHUB_OUTPUT"
 
       - name: Restore snapshot versions
         if: always()
         run: git checkout -- packages
 
-      - name: Comment the install lines on the pull request
-        if: steps.snapshot.outputs.published == 'true'
+      - name: Comment the snapshot status on the pull request
         uses: ./.github/actions/upsert-comment-section
         with:
           pr-number: ${{ github.event.pull_request.number }}

@@ -17,10 +17,6 @@ on:
         required: true
         default: next
         type: string
-      ref:
-        description: 'Git ref to checkout (commit SHA, tag, or branch)'
-        required: false
-        type: string
   workflow_call:
     inputs:
       package:
@@ -33,6 +29,9 @@ on:
         required: false
         type: string
         default: next
+      # Only an in-repo caller sets this. The dispatch path has no ref input
+      # on purpose: it publishes the ref it was dispatched on, so nobody who
+      # can press the button hands NPM_TOKEN an arbitrary commit.
       ref:
         required: false
         type: string
