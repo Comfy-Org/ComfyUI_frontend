@@ -10,7 +10,7 @@ import {
 
 const AUTOGROW_NODE_ID = '1'
 const IMAGES_PREFIX = 'model.images.'
-const SAVED_WORKFLOW_NAME = 'autogrow-images'
+const WORKFLOW_NAME = 'dynamic_combo_autogrow_images'
 
 // One image source per slot, so a rebuild that restores the links but pairs
 // them with the wrong ordinals is still a failure.
@@ -33,11 +33,9 @@ test.describe(
   { tag: ['@canvas', '@node', '@workflow'] },
   () => {
     test.beforeEach(async ({ comfyPage }) => {
+      // Five interactive drags, plus a poll the pinned test never satisfies.
       test.slow()
-      await comfyPage.workflow.setupWorkflowsDirectory({})
-      await comfyPage.workflow.loadWorkflow(
-        'links/dynamic_combo_autogrow_images'
-      )
+      await comfyPage.workflow.loadWorkflow(`links/${WORKFLOW_NAME}`)
 
       const autogrowNode =
         await comfyPage.nodeOps.getNodeRefById(AUTOGROW_NODE_ID)
@@ -46,10 +44,6 @@ test.describe(
         const slot = await getInputSlotIndex(comfyPage, AUTOGROW_NODE_ID, name)
         await source.connectOutput(0, autogrowNode, slot)
       }
-    })
-
-    test.afterEach(async ({ comfyPage }) => {
-      await comfyPage.workflow.setupWorkflowsDirectory({})
     })
 
     test('grows a slot per connected image', async ({ comfyPage }) => {
@@ -74,14 +68,10 @@ test.describe(
         )
         .toEqual(CONNECTED_IMAGES)
 
-      // Saving names this tab so the tab locator matches it alone; the blank
-      // tab opened next would otherwise share the "Unnamed Workflow" label.
-      await comfyPage.menu.topbar.saveWorkflow(SAVED_WORKFLOW_NAME)
-
-      await comfyPage.menu.topbar.triggerTopbarCommand(['New'])
+      await comfyPage.menu.topbar.newWorkflowButton.click()
       await expect.poll(() => comfyPage.nodeOps.getGraphNodesCount()).toBe(0)
 
-      await comfyPage.workflow.switchToTab(SAVED_WORKFLOW_NAME)
+      await comfyPage.workflow.switchToTab(WORKFLOW_NAME)
       await expect
         .poll(() => comfyPage.nodeOps.getGraphNodesCount())
         .toBe(WORKFLOW_NODE_COUNT)
