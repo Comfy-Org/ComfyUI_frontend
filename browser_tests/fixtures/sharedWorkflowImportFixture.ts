@@ -2,9 +2,9 @@ import { networkIsolationFixture as base } from '@e2e/fixtures/networkIsolationF
 import type { Page } from '@playwright/test'
 import type {
   Asset,
-  AssetInfo,
   ImportPublishedAssetsRequest,
-  ListAssetsResponse
+  ListAssetsResponse,
+  AssetInfo
 } from '@comfyorg/ingest-types'
 import type { z } from 'zod'
 

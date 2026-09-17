@@ -124,7 +124,6 @@ function expectRekaPricingDialogProps(
 }
 
 beforeEach(() => {
-  vi.mocked(useFeatureFlags().flags).embeddedCheckoutEnabled = false
   Object.assign(useAuthStore(), { userId: 'user-1' })
   vi.mocked(useDialogStore().closeDialog).mockImplementation(mockCloseDialog)
 

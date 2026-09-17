@@ -1,7 +1,7 @@
 import type {
-  AssetInfo,
   HubWorkflowDetail,
-  ImportPublishedAssetsRequest
+  ImportPublishedAssetsRequest,
+  AssetInfo
 } from '@comfyorg/ingest-types'
 import { zGetHubWorkflowResponse } from '@comfyorg/ingest-types/zod'
 

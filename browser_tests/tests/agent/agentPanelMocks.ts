@@ -9,7 +9,7 @@ import type {
 
 import { comfyPageFixture } from '@e2e/fixtures/ComfyPage'
 
-import type { UserDataFullInfo } from '@/schemas/apiSchema'
+import type { UserDataFullInfo } from '@/platform/remote/comfyui/types'
 import type { RemoteConfig } from '@/platform/remoteConfig/types'
 import { AGENT_CONSENT_SETTING_ID } from '@/platform/settings/constants/agent'
 import type {
