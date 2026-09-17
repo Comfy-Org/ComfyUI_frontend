@@ -113,6 +113,29 @@ describe('dialogService Reka renderer opt-in', () => {
     await expect(shared).resolves.toBeNull()
   })
 
+  it('serializes two concurrent confirms that share one caller-supplied key', async () => {
+    const showDialog = vi.mocked(useDialogStore().showDialog)
+    const service = useDialogService()
+    const options = { key: 'global-desktop-login-confirm', message: 'M' }
+
+    const first = service.confirm({ ...options, title: 'First' })
+    const second = service.confirm({ ...options, title: 'Second' })
+
+    await vi.waitFor(() => expect(showDialog).toHaveBeenCalledTimes(1))
+    expect(
+      showDialog.mock.calls[0][0].title,
+      'showDialog reuses an open dialog by key, so the second confirm must wait rather than have its resolver dropped'
+    ).toBe('First')
+
+    showDialog.mock.calls[0][0].dialogComponentProps?.onRemoved?.()
+    await expect(first).resolves.toBeNull()
+
+    await vi.waitFor(() => expect(showDialog).toHaveBeenCalledTimes(2))
+    expect(showDialog.mock.calls[1][0].title).toBe('Second')
+    showDialog.mock.calls[1][0].dialogComponentProps?.onRemoved?.()
+    await expect(second).resolves.toBeNull()
+  })
+
   it('releases the FIFO queue when showDialog throws for the head prompt', async () => {
     const showDialog = vi.mocked(useDialogStore().showDialog)
     showDialog.mockImplementationOnce(() => {

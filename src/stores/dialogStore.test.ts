@@ -265,6 +265,40 @@ describe('dialogStore', () => {
       expect(store.dialogStack).toHaveLength(10)
     })
 
+    it('leaves a same-key replacement open when onClose evicted the original', () => {
+      const store = useDialogStore()
+      const replacementRemoved = vi.fn()
+      const originalRemoved = vi.fn(() => {
+        store.showDialog({
+          key: 'target',
+          component: MockComponent,
+          dialogComponentProps: { onRemoved: replacementRemoved }
+        })
+      })
+
+      store.showDialog({
+        key: 'target',
+        component: MockComponent,
+        priority: 10,
+        dialogComponentProps: {
+          onRemoved: originalRemoved,
+          // Overflow the cap so closing `target` evicts `target` itself, and
+          // its onRemoved reopens the key before closeDialog looks it up.
+          onClose: () => {
+            for (let i = 0; i < 10; i++) {
+              store.showDialog({ key: `filler-${i}`, component: MockComponent })
+            }
+          }
+        }
+      })
+
+      store.closeDialog({ key: 'target' })
+
+      expect(originalRemoved).toHaveBeenCalledTimes(1)
+      expect(replacementRemoved).not.toHaveBeenCalled()
+      expect(store.isDialogOpen('target')).toBe(true)
+    })
+
     it('evicts the most recently shown dialog when priorities are equal', () => {
       const store = useDialogStore()
       const onRemoved = vi.fn()

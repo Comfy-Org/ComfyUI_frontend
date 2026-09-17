@@ -186,10 +186,10 @@ export const useDialogStore = defineStore('dialog', () => {
     if (!targetDialog) return
 
     targetDialog.dialogComponentProps.onClose?.()
-    const index = dialogStack.value.findIndex((d) => d.key === targetDialog.key)
-    // A reentrant onClose can remove targetDialog itself (e.g. by opening a
-    // dialog that triggers the cap eviction). Whoever actually removes the
-    // dialog from the stack fires onRemoved, so it fires exactly once.
+    // Identity, not key: a reentrant onClose can evict targetDialog and open a
+    // replacement under the same key. Whoever actually removes the dialog from
+    // the stack fires onRemoved, so it fires exactly once.
+    const index = dialogStack.value.findIndex((d) => d === targetDialog)
     const removed = index !== -1
     if (removed) dialogStack.value.splice(index, 1)
 

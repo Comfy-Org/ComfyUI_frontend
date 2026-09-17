@@ -109,19 +109,24 @@ export interface ExecutionErrorDialogInput {
 const GLOBAL_PROMPT_KEY = 'global-prompt'
 
 // dialogStore.showDialog raises an existing dialog with the same key instead of
-// wiring the new caller's callbacks, so a second concurrent caller on the
-// shared key would never settle. Serialize those FIFO. A caller passing its own
-// key has no collision to serialize against and must not wait behind the queue.
-let globalPromptTail: Promise<unknown> = Promise.resolve()
+// wiring the new caller's callbacks, so a second concurrent caller on that key
+// would never settle. Serialize FIFO per key; distinct keys stay concurrent.
+const promptTails = new Map<string, Promise<unknown>>()
 
-function enqueueGlobalPrompt<T>(
+function enqueuePrompt<T>(
+  key: string,
   show: (resolve: (value: T) => void) => void
 ): Promise<T> {
-  const result = globalPromptTail.then(() => new Promise<T>(show))
-  globalPromptTail = result.then(
+  const tail = promptTails.get(key) ?? Promise.resolve()
+  const result = tail.then(() => new Promise<T>(show))
+  const settled = result.then(
     () => undefined,
     () => undefined
   )
+  promptTails.set(key, settled)
+  void settled.then(() => {
+    if (promptTails.get(key) === settled) promptTails.delete(key)
+  })
   return result
 }
 
@@ -297,7 +302,7 @@ export const useDialogService = () => {
     defaultValue?: string
     placeholder?: string
   }): Promise<string | null> {
-    return enqueueGlobalPrompt<string | null>((resolve) => {
+    return enqueuePrompt<string | null>(GLOBAL_PROMPT_KEY, (resolve) => {
       dialogStore.showDialog({
         key: GLOBAL_PROMPT_KEY,
         title,
@@ -358,9 +363,7 @@ export const useDialogService = () => {
       dialogStore.showDialog(options)
     }
 
-    return key === GLOBAL_PROMPT_KEY
-      ? enqueueGlobalPrompt<boolean | null>(show)
-      : new Promise<boolean | null>(show)
+    return enqueuePrompt<boolean | null>(key, show)
   }
 
   async function showTopUpCreditsDialog(options?: {
