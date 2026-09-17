@@ -86,10 +86,10 @@ describe('hostedBillingRoute', () => {
   })
 
   it.for([
-    ['https://cloud.comfy.org', 'production'],
-    ['https://stagingcloud.comfy.org', 'staging'],
-    ['https://testcloud.comfy.org', 'test']
-  ] as const)('derives %s as its billing family', ([baseUrl]) => {
+    'https://cloud.comfy.org',
+    'https://stagingcloud.comfy.org',
+    'https://testcloud.comfy.org'
+  ] as const)('mints an entry for the %s backend', (baseUrl) => {
     cloudBaseUrl.value = baseUrl
     vi.stubEnv('VITE_BILLING_WEB_URL', 'https://billing.comfy.org')
 
