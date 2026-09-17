@@ -182,12 +182,13 @@ app.registerExtension({
 })
 
 /**
- * A primary pointer goes down with no other pointer active, so state surviving
- * here belongs to a gesture whose `touchend` never arrived. Mouse and pen count
- * too: on a touch laptop they are the way back from a stuck touch gesture.
+ * A primary *touch* pointer is the only finger on the screen, so state
+ * surviving here belongs to a gesture whose `touchend` never arrived. Mouse and
+ * pen are primary regardless of how many fingers are down, so they must not
+ * clear state that a live gesture still owns.
  */
 function discardStaleTouchState(e: PointerEvent) {
-  if (!e.isPrimary) return
+  if (e.pointerType !== 'touch' || !e.isPrimary) return
   touchCount = 0
   touchZooming = false
 }

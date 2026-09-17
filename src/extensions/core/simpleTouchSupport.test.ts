@@ -142,6 +142,19 @@ describe('Comfy.SimpleTouchSupport touch state', () => {
       pointerDown({ isPrimary: false })
       expect(processMouseDown).not.toHaveBeenCalled()
     })
+
+    it.for(['mouse', 'pen'] as const)(
+      'blocks a %s press during a live pinch, which is always primary',
+      (pointerType) => {
+        const twoFingers = [touchAt(canvasEl), touchAt(canvasEl, 100)]
+        dispatchTouch(canvasEl, 'touchstart', [touchAt(canvasEl)])
+        dispatchTouch(canvasEl, 'touchstart', twoFingers)
+        dispatchTouch(canvasEl, 'touchmove', twoFingers)
+
+        pointerDown({ pointerType, isPrimary: true })
+        expect(processMouseDown).not.toHaveBeenCalled()
+      }
+    )
   })
 
   describe('recovery from a touchend that never arrives (FE-2435)', () => {
@@ -177,13 +190,6 @@ describe('Comfy.SimpleTouchSupport touch state', () => {
       strandTouchesOnDetachedTarget(1)
 
       tapDown()
-      expect(processMouseDown).toHaveBeenCalledOnce()
-    })
-
-    it('lets a mouse recover a stuck touch gesture on a hybrid device', () => {
-      strandTouchesOnDetachedTarget(2)
-
-      pointerDown({ pointerType: 'mouse', isPrimary: true })
       expect(processMouseDown).toHaveBeenCalledOnce()
     })
   })
