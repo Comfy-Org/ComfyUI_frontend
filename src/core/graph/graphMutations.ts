@@ -179,6 +179,16 @@ type PreparedNodeMutation = Extract<
 >
 type PreparedConnectMutation = Extract<PreparedMutation, { kind: 'connect' }>
 
+function isPreparedNodeMutation(
+  mutation: PreparedMutation
+): mutation is PreparedNodeMutation {
+  return (
+    mutation.kind === 'addNode' ||
+    mutation.kind === 'reconcileNode' ||
+    mutation.kind === 'replaceNode'
+  )
+}
+
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value)
 }
@@ -975,45 +985,52 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
     nodeStore.clearOwner(scope, context)
   }
 
+  function commitNonNodeMutation(
+    scope: GraphScope,
+    mutation: Exclude<PreparedMutation, PreparedNodeMutation>,
+    context: RemoteMutationContext
+  ): void {
+    switch (mutation.kind) {
+      case 'reconcileNodeFields':
+        nodeStore.updateNodeFields(
+          scope,
+          mutation.state.id,
+          mutation.state,
+          context
+        )
+        break
+      case 'setWidget':
+        commitWidget(scope, mutation, context)
+        break
+      case 'connect':
+        commitConnection(scope, mutation, context)
+        break
+      case 'removeMissing':
+        commitRemovedLinks(scope, mutation.linkIds, context)
+        for (const id of mutation.nodeIds) deleteNode(scope, id, [], context)
+        break
+      case 'removeLinks':
+        commitRemovedLinks(scope, mutation.linkIds, context)
+        break
+      case 'deleteNode':
+        deleteNode(scope, mutation.nodeId, mutation.removedLinkIds, context)
+        break
+      case 'clearSemanticGraph':
+        commitClear(scope, mutation.nodeIds, context)
+        break
+    }
+  }
+
   function commit(
     scope: GraphScope,
     prepared: readonly PreparedMutation[],
     context: RemoteMutationContext
   ): void {
     for (const mutation of prepared) {
-      switch (mutation.kind) {
-        case 'addNode':
-        case 'reconcileNode':
-        case 'replaceNode':
-          commitNode(scope, mutation, context)
-          break
-        case 'reconcileNodeFields':
-          nodeStore.updateNodeFields(
-            scope,
-            mutation.state.id,
-            mutation.state,
-            context
-          )
-          break
-        case 'setWidget':
-          commitWidget(scope, mutation, context)
-          break
-        case 'connect':
-          commitConnection(scope, mutation, context)
-          break
-        case 'removeMissing':
-          commitRemovedLinks(scope, mutation.linkIds, context)
-          for (const id of mutation.nodeIds) deleteNode(scope, id, [], context)
-          break
-        case 'removeLinks':
-          commitRemovedLinks(scope, mutation.linkIds, context)
-          break
-        case 'deleteNode':
-          deleteNode(scope, mutation.nodeId, mutation.removedLinkIds, context)
-          break
-        case 'clearSemanticGraph':
-          commitClear(scope, mutation.nodeIds, context)
-          break
+      if (isPreparedNodeMutation(mutation)) {
+        commitNode(scope, mutation, context)
+      } else {
+        commitNonNodeMutation(scope, mutation, context)
       }
     }
   }
