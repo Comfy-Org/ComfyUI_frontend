@@ -15,6 +15,7 @@ import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useTelemetry } from '@/platform/telemetry'
 
 import {
+  UNIFIED_IDENTITY_SETTLE_TIMEOUT_MS,
   useWorkspaceAuthStore,
   WorkspaceAuthError
 } from '@/platform/workspace/stores/workspaceAuthStore'
@@ -2883,7 +2884,7 @@ describe('useWorkspaceAuthStore', () => {
       expect(mockFetch).not.toHaveBeenCalled()
 
       const mintAfterDestroy = store.mintAtLogin()
-      await vi.advanceTimersByTimeAsync(15_000)
+      await vi.advanceTimersByTimeAsync(UNIFIED_IDENTITY_SETTLE_TIMEOUT_MS)
       await expect(
         mintAfterDestroy,
         'destroy detaches identity with no path back, so a mint waits the settle ceiling and fails closed'
@@ -3333,7 +3334,7 @@ describe('useWorkspaceAuthStore', () => {
       expect(store.unifiedToken).toBeNull()
 
       const pending = store.mintAtLogin()
-      await vi.advanceTimersByTimeAsync(15_000)
+      await vi.advanceTimersByTimeAsync(UNIFIED_IDENTITY_SETTLE_TIMEOUT_MS)
 
       expect(
         await pending,
