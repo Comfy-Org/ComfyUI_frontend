@@ -401,6 +401,9 @@ const topupIsFailedRetryable = computed(
 // Leaving this screen keeps the pending-top-up marker: the copy sends the
 // customer off to pay elsewhere, and the marker outlives the wait, so it is
 // what refreshes the balance when they come back to a settled purchase.
+// Latent on this rail today — only the legacy hosted-checkout path sets the
+// marker, so usually there is none here to keep. Preserving it is still right,
+// and it starts paying off if this rail ever sets one when it parks.
 const topupIsParkedWithoutLink = computed(
   () =>
     !topupActionUrl.value &&
