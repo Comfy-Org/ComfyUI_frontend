@@ -6825,6 +6825,42 @@
       }
     }
   },
+  "GeminiNodeV3": {
+    "description": "Generieren Sie Textantworten mit den Gemini-Modellen von Google. Geben Sie einen Text-Prompt und optional ein oder mehrere Bilder, Audioclips, Videos oder Dateien als multimodalen Kontext an.",
+    "display_name": "Google Gemini",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Das Gemini-Modell, das zum Generieren der Antwort verwendet wird."
+      },
+      "model_max_output_tokens": {
+        "name": "max_output_tokens"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_seed": {
+        "name": "seed"
+      },
+      "model_system_prompt": {
+        "name": "system_prompt"
+      },
+      "model_thinking_level": {
+        "name": "thinking_level"
+      },
+      "model_video_processing": {
+        "name": "video_processing"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "GeminiVideoOmni": {
     "description": "Generieren Sie mit dem Gemini-Omni-Flash-Modell von Google ein Video mit Audio aus einem Text-Prompt. Optional können Sie Referenzbilder und/oder -videos bereitstellen, um das Ergebnis zu steuern oder zu bearbeiten. Beschreiben Sie die gewünschte Länge (3–10 s) und das Seitenverhältnis (16:9 oder 9:16) direkt im Prompt.",
     "display_name": "Google Gemini Omni (Video)",
