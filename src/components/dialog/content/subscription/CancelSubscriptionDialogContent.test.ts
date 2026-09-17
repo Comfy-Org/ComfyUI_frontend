@@ -1,4 +1,4 @@
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 import userEvent from '@testing-library/user-event'
 import { render, screen, waitFor } from '@testing-library/vue'
@@ -137,11 +137,7 @@ describe('CancelSubscriptionDialogContent', () => {
   beforeEach(() => {
     mockTier.value = 'STANDARD'
     mockShouldUseWorkspaceBilling.value = false
-    vi.spyOn(
-      useBillingCapabilities().canCancel,
-      'value',
-      'get'
-    ).mockReturnValue(true)
+    useBillingCapabilities().canCancel = computed(() => true)
     mockCanManageSubscriptionLifecycle.value = true
     mockDistributionTypes.isCloud = true
   })
@@ -323,11 +319,7 @@ describe('CancelSubscriptionDialogContent', () => {
 
     it('does not cancel after the workspace role loses permission', async () => {
       const canCancel = ref(true)
-      vi.spyOn(
-        useBillingCapabilities().canCancel,
-        'value',
-        'get'
-      ).mockImplementation(() => canCancel.value)
+      useBillingCapabilities().canCancel = computed(() => canCancel.value)
 
       mockSubscription.value = null
       mockShouldUseWorkspaceBilling.value = true
@@ -350,11 +342,7 @@ describe('CancelSubscriptionDialogContent', () => {
       mockSubscription.value = null
       mockShouldUseWorkspaceBilling.value = true
       mockDistributionTypes.isCloud = false
-      vi.spyOn(
-        useBillingCapabilities().canCancel,
-        'value',
-        'get'
-      ).mockReturnValue(false)
+      useBillingCapabilities().canCancel = computed(() => false)
       mockCanManageSubscriptionLifecycle.value = true
       mockCancelSubscription.mockResolvedValueOnce(undefined)
 

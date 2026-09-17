@@ -479,11 +479,7 @@ describe('CurrentUserPopoverLegacy', () => {
 
     it('keeps credits visible but hides top-up for workspace members', () => {
       mockCanAccessSubscriptionFeatures.value = false
-      vi.spyOn(
-        useBillingCapabilities().canTopUp,
-        'value',
-        'get'
-      ).mockReturnValue(false)
+      useBillingCapabilities().canTopUp = computed(() => false)
       renderComponent({
         ...readyWorkspaceState,
         activeWorkspaceId: 'ws-team'

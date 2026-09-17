@@ -620,14 +620,8 @@ describe('CreditsTile', () => {
   it('offers the upgrade path when top-up is denied but self-serve subscribe is allowed', async () => {
     activeProSubscription()
     state.tier = 'FREE'
-    vi.spyOn(useBillingCapabilities().canTopUp, 'value', 'get').mockReturnValue(
-      false
-    )
-    vi.spyOn(
-      useBillingCapabilities().canSubscribeSelfServe,
-      'value',
-      'get'
-    ).mockReturnValue(true)
+    useBillingCapabilities().canTopUp = computed(() => false)
+    useBillingCapabilities().canSubscribeSelfServe = computed(() => true)
     renderTile()
     expect(screen.queryByText('Add credits')).toBeNull()
     await userEvent.click(screen.getByText('Upgrade to add credits'))

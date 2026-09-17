@@ -16,7 +16,7 @@ import { useDialogStore } from '@/stores/dialogStore'
 import { render, screen, waitFor } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { nextTick, ref } from 'vue'
+import { computed, nextTick, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import { useTelemetry } from '@/platform/telemetry'
@@ -506,9 +506,7 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
   })
 
   it('hides topup verification after permission is revoked', () => {
-    vi.spyOn(useBillingCapabilities().canTopUp, 'value', 'get').mockReturnValue(
-      false
-    )
+    useBillingCapabilities().canTopUp = computed(() => false)
     setTopupActionOperation({
       opId: 'op-action',
       status: 'pending',
@@ -524,11 +522,7 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
 
   it('enters verification once permission resolves after an operation already exists', async () => {
     const canTopUp = ref(false)
-    vi.spyOn(
-      useBillingCapabilities().canTopUp,
-      'value',
-      'get'
-    ).mockImplementation(() => canTopUp.value)
+    useBillingCapabilities().canTopUp = computed(() => canTopUp.value)
 
     setTopupActionOperation({
       opId: 'op-action',
@@ -901,11 +895,7 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
 
   it('does not top up after the server capability is revoked', async () => {
     const canTopUp = ref(true)
-    vi.spyOn(
-      useBillingCapabilities().canTopUp,
-      'value',
-      'get'
-    ).mockImplementation(() => canTopUp.value)
+    useBillingCapabilities().canTopUp = computed(() => canTopUp.value)
 
     renderDialog()
     await clickAddCredits()

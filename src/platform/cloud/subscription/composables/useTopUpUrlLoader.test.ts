@@ -1,4 +1,4 @@
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 import { fromAny } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -89,11 +89,7 @@ describe('useTopUpUrlLoader', () => {
 
   it('retains the deep link until capability loading settles', async () => {
     const canTopUp = ref(false)
-    vi.spyOn(
-      useBillingCapabilities().canTopUp,
-      'value',
-      'get'
-    ).mockImplementation(() => canTopUp.value)
+    useBillingCapabilities().canTopUp = computed(() => canTopUp.value)
 
     let resolveCapabilities!: () => void
     mockRouteQuery.value = { topup: '1' }
@@ -121,9 +117,7 @@ describe('useTopUpUrlLoader', () => {
 
   it('is a silent no-op when the server denies top-up', async () => {
     mockRouteQuery.value = { topup: '1' }
-    vi.spyOn(useBillingCapabilities().canTopUp, 'value', 'get').mockReturnValue(
-      false
-    )
+    useBillingCapabilities().canTopUp = computed(() => false)
 
     const { loadTopUpFromUrl } = useTopUpUrlLoader()
     await loadTopUpFromUrl()
@@ -136,14 +130,8 @@ describe('useTopUpUrlLoader', () => {
 
   it('opens the subscription path without top-up telemetry', async () => {
     mockRouteQuery.value = { topup: '1' }
-    vi.spyOn(useBillingCapabilities().canTopUp, 'value', 'get').mockReturnValue(
-      false
-    )
-    vi.spyOn(
-      useBillingCapabilities().canSubscribeSelfServe,
-      'value',
-      'get'
-    ).mockReturnValue(true)
+    useBillingCapabilities().canTopUp = computed(() => false)
+    useBillingCapabilities().canSubscribeSelfServe = computed(() => true)
 
     const { loadTopUpFromUrl } = useTopUpUrlLoader()
     await loadTopUpFromUrl()
@@ -156,9 +144,7 @@ describe('useTopUpUrlLoader', () => {
 
   it('denies, strips, and clears together when the user is not eligible', async () => {
     mockRouteQuery.value = { topup: '1', other: 'param' }
-    vi.spyOn(useBillingCapabilities().canTopUp, 'value', 'get').mockReturnValue(
-      false
-    )
+    useBillingCapabilities().canTopUp = computed(() => false)
 
     const { loadTopUpFromUrl } = useTopUpUrlLoader()
     await loadTopUpFromUrl()

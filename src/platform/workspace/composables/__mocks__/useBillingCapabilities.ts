@@ -1,9 +1,9 @@
-import { vi } from 'vitest'
+import { onTestFinished, vi } from 'vitest'
 import { computed } from 'vue'
 
 import type { useBillingCapabilities as realUseBillingCapabilities } from '../useBillingCapabilities'
 
-const capabilities: ReturnType<typeof realUseBillingCapabilities> = {
+const defaults: ReturnType<typeof realUseBillingCapabilities> = {
   canTopUp: computed(() => true),
   canSubscribeSelfServe: computed(() => false),
   canCancel: computed(() => false),
@@ -17,4 +17,11 @@ const capabilities: ReturnType<typeof realUseBillingCapabilities> = {
   refresh: vi.fn(async () => undefined)
 }
 
-export const useBillingCapabilities = vi.fn(() => capabilities)
+const capabilities = { ...defaults }
+
+export const useBillingCapabilities = vi.fn(() => {
+  onTestFinished(() => {
+    Object.assign(capabilities, defaults)
+  })
+  return capabilities
+})

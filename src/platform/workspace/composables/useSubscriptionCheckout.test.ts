@@ -494,26 +494,10 @@ describe('useSubscriptionCheckout', () => {
       canManageSubscriptionLifecycle: true,
       canDowngradeToPersonal: true
     }
-    vi.spyOn(
-      useBillingCapabilities().canSubscribeSelfServe,
-      'value',
-      'get'
-    ).mockReturnValue(true)
-    vi.spyOn(
-      useBillingCapabilities().canReactivate,
-      'value',
-      'get'
-    ).mockReturnValue(true)
-    vi.spyOn(
-      useBillingCapabilities().canChangeSeats,
-      'value',
-      'get'
-    ).mockReturnValue(true)
-    vi.spyOn(
-      useBillingCapabilities().canDowngradeToPersonal,
-      'value',
-      'get'
-    ).mockReturnValue(true)
+    useBillingCapabilities().canSubscribeSelfServe = computed(() => true)
+    useBillingCapabilities().canReactivate = computed(() => true)
+    useBillingCapabilities().canChangeSeats = computed(() => true)
+    useBillingCapabilities().canDowngradeToPersonal = computed(() => true)
     mockCanReactivatePlan.value = true
     mockSubscription.value = null
     sessionStorage.clear()
@@ -1514,26 +1498,10 @@ describe('useSubscriptionCheckout', () => {
         canManageSubscriptionLifecycle: false,
         canDowngradeToPersonal: false
       }
-      vi.spyOn(
-        useBillingCapabilities().canSubscribeSelfServe,
-        'value',
-        'get'
-      ).mockReturnValue(false)
-      vi.spyOn(
-        useBillingCapabilities().canReactivate,
-        'value',
-        'get'
-      ).mockReturnValue(false)
-      vi.spyOn(
-        useBillingCapabilities().canChangeSeats,
-        'value',
-        'get'
-      ).mockReturnValue(false)
-      vi.spyOn(
-        useBillingCapabilities().canDowngradeToPersonal,
-        'value',
-        'get'
-      ).mockReturnValue(false)
+      useBillingCapabilities().canSubscribeSelfServe = computed(() => false)
+      useBillingCapabilities().canReactivate = computed(() => false)
+      useBillingCapabilities().canChangeSeats = computed(() => false)
+      useBillingCapabilities().canDowngradeToPersonal = computed(() => false)
       const checkout = await setup()
 
       await checkout.handleSubscribeClick({
@@ -1546,16 +1514,8 @@ describe('useSubscriptionCheckout', () => {
     })
 
     it('does not preview a plan when the server denies checkout to a client-side owner', async () => {
-      vi.spyOn(
-        useBillingCapabilities().canSubscribeSelfServe,
-        'value',
-        'get'
-      ).mockReturnValue(false)
-      vi.spyOn(
-        useBillingCapabilities().canChangeSeats,
-        'value',
-        'get'
-      ).mockReturnValue(false)
+      useBillingCapabilities().canSubscribeSelfServe = computed(() => false)
+      useBillingCapabilities().canChangeSeats = computed(() => false)
       const checkout = await setup()
 
       await checkout.handleSubscribeClick({
@@ -1570,11 +1530,7 @@ describe('useSubscriptionCheckout', () => {
     it('does not preview a personal plan for a promoted owner on a team plan', async () => {
       mockIsTeamPlan.value = true
       mockPermissions.value.canDowngradeToPersonal = false
-      vi.spyOn(
-        useBillingCapabilities().canDowngradeToPersonal,
-        'value',
-        'get'
-      ).mockReturnValue(false)
+      useBillingCapabilities().canDowngradeToPersonal = computed(() => false)
       const checkout = await setup()
 
       await checkout.handleSubscribeClick({
@@ -1589,11 +1545,7 @@ describe('useSubscriptionCheckout', () => {
 
     it('does not start the Team-to-personal downgrade when the server denies it to a client-side owner', async () => {
       mockIsTeamPlan.value = true
-      vi.spyOn(
-        useBillingCapabilities().canDowngradeToPersonal,
-        'value',
-        'get'
-      ).mockReturnValue(false)
+      useBillingCapabilities().canDowngradeToPersonal = computed(() => false)
       const checkout = await setup()
 
       await checkout.handleSubscribeClick({
@@ -1609,11 +1561,7 @@ describe('useSubscriptionCheckout', () => {
     it('allows a promoted owner to preview a legacy Team-plan change', async () => {
       mockIsTeamPlan.value = true
       mockPermissions.value.canDowngradeToPersonal = false
-      vi.spyOn(
-        useBillingCapabilities().canDowngradeToPersonal,
-        'value',
-        'get'
-      ).mockReturnValue(false)
+      useBillingCapabilities().canDowngradeToPersonal = computed(() => false)
       mockPreviewSubscribe.mockResolvedValueOnce({
         allowed: true,
         transition_type: 'upgrade'
@@ -2248,16 +2196,8 @@ describe('useSubscriptionCheckout', () => {
 
     it('does not prepare a team checkout for a member', async () => {
       mockPermissions.value.canManageSubscription = false
-      vi.spyOn(
-        useBillingCapabilities().canChangeSeats,
-        'value',
-        'get'
-      ).mockReturnValue(false)
-      vi.spyOn(
-        useBillingCapabilities().canSubscribeSelfServe,
-        'value',
-        'get'
-      ).mockReturnValue(false)
+      useBillingCapabilities().canChangeSeats = computed(() => false)
+      useBillingCapabilities().canSubscribeSelfServe = computed(() => false)
       const checkout = await setup()
 
       await checkout.handleSubscribeTeamClick({
@@ -2277,11 +2217,7 @@ describe('useSubscriptionCheckout', () => {
     })
 
     it('does not prepare a team checkout when the server denies seat changes to a client-side owner', async () => {
-      vi.spyOn(
-        useBillingCapabilities().canChangeSeats,
-        'value',
-        'get'
-      ).mockReturnValue(false)
+      useBillingCapabilities().canChangeSeats = computed(() => false)
       const checkout = await setup()
 
       await checkout.handleSubscribeTeamClick({
@@ -3993,16 +3929,12 @@ describe('useSubscriptionCheckout', () => {
     it('does not submit when workspace ownership is revoked', async () => {
       const canChangeSeats = ref(true)
       const canSubscribeSelfServe = ref(true)
-      vi.spyOn(
-        useBillingCapabilities().canChangeSeats,
-        'value',
-        'get'
-      ).mockImplementation(() => canChangeSeats.value)
-      vi.spyOn(
-        useBillingCapabilities().canSubscribeSelfServe,
-        'value',
-        'get'
-      ).mockImplementation(() => canSubscribeSelfServe.value)
+      useBillingCapabilities().canChangeSeats = computed(
+        () => canChangeSeats.value
+      )
+      useBillingCapabilities().canSubscribeSelfServe = computed(
+        () => canSubscribeSelfServe.value
+      )
 
       const checkout = await setupWithApprovedPreview()
       checkout.selectedTierKey.value = 'standard'
@@ -4452,16 +4384,12 @@ describe('useSubscriptionCheckout', () => {
     it('does not submit a previewed plan after permission is revoked', async () => {
       const canChangeSeats = ref(true)
       const canSubscribeSelfServe = ref(true)
-      vi.spyOn(
-        useBillingCapabilities().canChangeSeats,
-        'value',
-        'get'
-      ).mockImplementation(() => canChangeSeats.value)
-      vi.spyOn(
-        useBillingCapabilities().canSubscribeSelfServe,
-        'value',
-        'get'
-      ).mockImplementation(() => canSubscribeSelfServe.value)
+      useBillingCapabilities().canChangeSeats = computed(
+        () => canChangeSeats.value
+      )
+      useBillingCapabilities().canSubscribeSelfServe = computed(
+        () => canSubscribeSelfServe.value
+      )
 
       const checkout = await setup()
       mockPreviewSubscribe.mockResolvedValueOnce({
@@ -4653,11 +4581,7 @@ describe('useSubscriptionCheckout', () => {
     })
 
     it('resubscribes on the legacy rail even though the server withholds can_reactivate', async () => {
-      vi.spyOn(
-        useBillingCapabilities().canReactivate,
-        'value',
-        'get'
-      ).mockReturnValue(false)
+      useBillingCapabilities().canReactivate = computed(() => false)
       mockCanReactivatePlan.value = true
       const checkout = await setup()
       mockResubscribe.mockResolvedValueOnce({
@@ -4675,11 +4599,7 @@ describe('useSubscriptionCheckout', () => {
 
     it('does not resubscribe for a member', async () => {
       mockPermissions.value.canManageSubscriptionLifecycle = false
-      vi.spyOn(
-        useBillingCapabilities().canReactivate,
-        'value',
-        'get'
-      ).mockReturnValue(false)
+      useBillingCapabilities().canReactivate = computed(() => false)
       mockCanReactivatePlan.value = false
       const checkout = await setup()
 
@@ -4690,11 +4610,7 @@ describe('useSubscriptionCheckout', () => {
     })
 
     it('does not resubscribe when the server denies reactivation to a client-side owner', async () => {
-      vi.spyOn(
-        useBillingCapabilities().canReactivate,
-        'value',
-        'get'
-      ).mockReturnValue(false)
+      useBillingCapabilities().canReactivate = computed(() => false)
       mockCanReactivatePlan.value = false
       const checkout = await setup()
 

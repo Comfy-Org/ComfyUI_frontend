@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { createApp, defineComponent, ref } from 'vue'
+import { computed, createApp, defineComponent, ref } from 'vue'
 import type { App } from 'vue'
 import { createI18n } from 'vue-i18n'
 
@@ -90,21 +90,13 @@ describe('useResubscribe', () => {
   beforeEach(() => {
     state.shouldUseWorkspaceBilling = true
     state.canManageSubscriptionLifecycle = true
-    vi.spyOn(
-      useBillingCapabilities().canReactivate,
-      'value',
-      'get'
-    ).mockReturnValue(true)
+    useBillingCapabilities().canReactivate = computed(() => true)
     state.canReactivatePlan = true
   })
 
   it('does not resubscribe after the workspace role loses permission', async () => {
     const canReactivate = ref(true)
-    vi.spyOn(
-      useBillingCapabilities().canReactivate,
-      'value',
-      'get'
-    ).mockImplementation(() => canReactivate.value)
+    useBillingCapabilities().canReactivate = computed(() => canReactivate.value)
 
     const { handleResubscribe, isResubscribing } = useResubscribe()
     state.canManageSubscriptionLifecycle = false
@@ -121,11 +113,7 @@ describe('useResubscribe', () => {
 
   it('does not resubscribe when the server denies reactivation to a client-side owner', async () => {
     state.canManageSubscriptionLifecycle = true
-    vi.spyOn(
-      useBillingCapabilities().canReactivate,
-      'value',
-      'get'
-    ).mockReturnValue(false)
+    useBillingCapabilities().canReactivate = computed(() => false)
     state.canReactivatePlan = false
     const { handleResubscribe, isResubscribing } = useResubscribe()
 
@@ -141,11 +129,7 @@ describe('useResubscribe', () => {
     // The legacy rail resolves can_reactivate false while the workspace may
     // still reactivate; this composable must follow the derived policy. Which
     // rail produces which value is covered in useWorkspaceUI.test.ts.
-    vi.spyOn(
-      useBillingCapabilities().canReactivate,
-      'value',
-      'get'
-    ).mockReturnValue(false)
+    useBillingCapabilities().canReactivate = computed(() => false)
     state.canReactivatePlan = true
     const { handleResubscribe } = useResubscribe()
 
@@ -157,11 +141,7 @@ describe('useResubscribe', () => {
   it('refuses whenever the policy denies it', async () => {
     // Behaviour change: the old gate short-circuited on the legacy rail and ran
     // no membership check, so a denial there never reached this branch.
-    vi.spyOn(
-      useBillingCapabilities().canReactivate,
-      'value',
-      'get'
-    ).mockReturnValue(false)
+    useBillingCapabilities().canReactivate = computed(() => false)
     state.canReactivatePlan = false
     const { handleResubscribe } = useResubscribe()
 

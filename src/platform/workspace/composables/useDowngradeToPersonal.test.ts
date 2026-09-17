@@ -2,7 +2,7 @@ import { useBillingCapabilities } from '@/platform/workspace/composables/useBill
 import { getActivePinia } from 'pinia'
 import { useBillingOperationStore } from '@/platform/workspace/stores/billingOperationStore'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 
 import { useTelemetry } from '@/platform/telemetry'
 
@@ -160,11 +160,7 @@ describe('useDowngradeToPersonal', () => {
       canManageSubscription: true,
       canDowngradeToPersonal: true
     }
-    vi.spyOn(
-      useBillingCapabilities().canDowngradeToPersonal,
-      'value',
-      'get'
-    ).mockReturnValue(true)
+    useBillingCapabilities().canDowngradeToPersonal = computed(() => true)
     windowOpen = vi.spyOn(window, 'open').mockReturnValue({} as Window)
   })
 
@@ -228,11 +224,7 @@ describe('useDowngradeToPersonal', () => {
   describe('downgradeToPersonal', () => {
     it('rejects a promoted owner before previewing or removing members', async () => {
       mockPermissions.value.canDowngradeToPersonal = false
-      vi.spyOn(
-        useBillingCapabilities().canDowngradeToPersonal,
-        'value',
-        'get'
-      ).mockReturnValue(false)
+      useBillingCapabilities().canDowngradeToPersonal = computed(() => false)
       mockMembers.value = teamWithOwnerAnd('m1')
       const { downgradeToPersonal } = useDowngradeToPersonal()
 
@@ -246,11 +238,7 @@ describe('useDowngradeToPersonal', () => {
 
     it('rejects a client-side owner when the server denies the downgrade', async () => {
       mockPermissions.value.canDowngradeToPersonal = true
-      vi.spyOn(
-        useBillingCapabilities().canDowngradeToPersonal,
-        'value',
-        'get'
-      ).mockReturnValue(false)
+      useBillingCapabilities().canDowngradeToPersonal = computed(() => false)
       mockMembers.value = teamWithOwnerAnd('m1')
       const { downgradeToPersonal } = useDowngradeToPersonal()
 
@@ -264,11 +252,9 @@ describe('useDowngradeToPersonal', () => {
 
     it('stops before member removal when downgrade access is revoked during preview', async () => {
       const canDowngradeToPersonal = ref(true)
-      vi.spyOn(
-        useBillingCapabilities().canDowngradeToPersonal,
-        'value',
-        'get'
-      ).mockImplementation(() => canDowngradeToPersonal.value)
+      useBillingCapabilities().canDowngradeToPersonal = computed(
+        () => canDowngradeToPersonal.value
+      )
 
       mockMembers.value = teamWithOwnerAnd('m1')
       mockPreviewSubscribe.mockImplementation(async () => {
@@ -287,11 +273,9 @@ describe('useDowngradeToPersonal', () => {
 
     it('stops before submit when downgrade access is revoked during member removal', async () => {
       const canDowngradeToPersonal = ref(true)
-      vi.spyOn(
-        useBillingCapabilities().canDowngradeToPersonal,
-        'value',
-        'get'
-      ).mockImplementation(() => canDowngradeToPersonal.value)
+      useBillingCapabilities().canDowngradeToPersonal = computed(
+        () => canDowngradeToPersonal.value
+      )
 
       mockMembers.value = teamWithOwnerAnd('m1', 'm2')
       mockRemoveMember.mockImplementation(async () => {
@@ -994,11 +978,7 @@ describe('useDowngradeToPersonal', () => {
         canManageSubscription: false,
         canDowngradeToPersonal: false
       }
-      vi.spyOn(
-        useBillingCapabilities().canDowngradeToPersonal,
-        'value',
-        'get'
-      ).mockReturnValue(false)
+      useBillingCapabilities().canDowngradeToPersonal = computed(() => false)
       const { refreshMembers } = useDowngradeToPersonal()
 
       await expect(refreshMembers()).rejects.toThrow(
@@ -1009,11 +989,7 @@ describe('useDowngradeToPersonal', () => {
 
     it('rejects a promoted owner after refreshing the original-owner signal', async () => {
       mockPermissions.value.canDowngradeToPersonal = false
-      vi.spyOn(
-        useBillingCapabilities().canDowngradeToPersonal,
-        'value',
-        'get'
-      ).mockReturnValue(false)
+      useBillingCapabilities().canDowngradeToPersonal = computed(() => false)
       const { refreshMembers } = useDowngradeToPersonal()
 
       await expect(refreshMembers()).rejects.toThrow(

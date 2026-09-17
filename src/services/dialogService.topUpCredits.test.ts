@@ -1,4 +1,4 @@
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import { useDialogStore } from '@/stores/dialogStore'
 /**
  * showTopUpCreditsDialog routes the paired server capabilities to purchase,
@@ -64,9 +64,7 @@ describe('showTopUpCreditsDialog', () => {
   })
 
   it('shows the contact-admin notice to team members instead of the purchase dialog', async () => {
-    vi.spyOn(useBillingCapabilities().canTopUp, 'value', 'get').mockReturnValue(
-      false
-    )
+    useBillingCapabilities().canTopUp = computed(() => false)
 
     await useDialogService().showTopUpCreditsDialog({
       isInsufficientCredits: true
@@ -98,9 +96,7 @@ describe('showTopUpCreditsDialog', () => {
 
   it('does not show workspace-admin copy for denied legacy billing', async () => {
     state.type = 'legacy'
-    vi.spyOn(useBillingCapabilities().canTopUp, 'value', 'get').mockReturnValue(
-      false
-    )
+    useBillingCapabilities().canTopUp = computed(() => false)
 
     await useDialogService().showTopUpCreditsDialog()
 
@@ -111,16 +107,8 @@ describe('showTopUpCreditsDialog', () => {
   it('awaits an in-flight capability read instead of dropping the request', async () => {
     const canTopUp = ref(false)
     const isReady = ref(false)
-    vi.spyOn(
-      useBillingCapabilities().canTopUp,
-      'value',
-      'get'
-    ).mockImplementation(() => canTopUp.value)
-    vi.spyOn(
-      useBillingCapabilities().isReady,
-      'value',
-      'get'
-    ).mockImplementation(() => isReady.value)
+    useBillingCapabilities().canTopUp = computed(() => canTopUp.value)
+    useBillingCapabilities().isReady = computed(() => isReady.value)
 
     vi.mocked(useBillingCapabilities().initialize).mockImplementation(() => {
       canTopUp.value = true
@@ -140,12 +128,8 @@ describe('showTopUpCreditsDialog', () => {
   })
 
   it('does not route when capabilities stay unresolved after initializing', async () => {
-    vi.spyOn(useBillingCapabilities().canTopUp, 'value', 'get').mockReturnValue(
-      false
-    )
-    vi.spyOn(useBillingCapabilities().isReady, 'value', 'get').mockReturnValue(
-      false
-    )
+    useBillingCapabilities().canTopUp = computed(() => false)
+    useBillingCapabilities().isReady = computed(() => false)
 
     await useDialogService().showTopUpCreditsDialog()
 
@@ -157,14 +141,8 @@ describe('showTopUpCreditsDialog', () => {
   })
 
   it('routes self-serve subscribers to the subscription-required flow', async () => {
-    vi.spyOn(useBillingCapabilities().canTopUp, 'value', 'get').mockReturnValue(
-      false
-    )
-    vi.spyOn(
-      useBillingCapabilities().canSubscribeSelfServe,
-      'value',
-      'get'
-    ).mockReturnValue(true)
+    useBillingCapabilities().canTopUp = computed(() => false)
+    useBillingCapabilities().canSubscribeSelfServe = computed(() => true)
 
     await useDialogService().showTopUpCreditsDialog()
 

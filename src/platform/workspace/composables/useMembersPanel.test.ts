@@ -2,7 +2,7 @@ import { useBillingCapabilities } from '@/platform/workspace/composables/useBill
 import { getActivePinia } from 'pinia'
 import type { Pinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { createApp, defineComponent, ref } from 'vue'
+import { computed, createApp, defineComponent, ref } from 'vue'
 import type { App } from 'vue'
 import { createI18n } from 'vue-i18n'
 
@@ -477,16 +477,8 @@ describe('useMembersPanel', () => {
     mockIsTeamPlan.value = true
     mockSubscriptionStatus.value = 'active'
     mockWorkspaceRole.value = 'owner'
-    vi.spyOn(
-      useBillingCapabilities().canChangeSeats,
-      'value',
-      'get'
-    ).mockReturnValue(true)
-    vi.spyOn(
-      useBillingCapabilities().canInviteMembers,
-      'value',
-      'get'
-    ).mockReturnValue(true)
+    useBillingCapabilities().canChangeSeats = computed(() => true)
+    useBillingCapabilities().canInviteMembers = computed(() => true)
     mockSubscription.value = { tier: 'PRO', isCancelled: false }
     mockPermissions.value = {
       canViewOtherMembers: true,
@@ -866,11 +858,7 @@ describe('useMembersPanel', () => {
 
     it('returns no actions without member-management permission', async () => {
       mockWorkspaceRole.value = 'member'
-      vi.spyOn(
-        useBillingCapabilities().canChangeSeats,
-        'value',
-        'get'
-      ).mockReturnValue(false)
+      useBillingCapabilities().canChangeSeats = computed(() => false)
       const panel = await setup()
 
       expect(panel.memberMenuItems(createMember())).toEqual([])
@@ -1058,21 +1046,13 @@ describe('useMembersPanel', () => {
 
     it('hides the invite button for workspace members', async () => {
       mockWorkspaceRole.value = 'member'
-      vi.spyOn(
-        useBillingCapabilities().canInviteMembers,
-        'value',
-        'get'
-      ).mockReturnValue(false)
+      useBillingCapabilities().canInviteMembers = computed(() => false)
       const panel = await setup()
       expect(panel.showInviteButton.value).toBe(false)
     })
 
     it('hides invite actions when the server denies invitations', async () => {
-      vi.spyOn(
-        useBillingCapabilities().canInviteMembers,
-        'value',
-        'get'
-      ).mockReturnValue(false)
+      useBillingCapabilities().canInviteMembers = computed(() => false)
       const panel = await setup()
 
       expect(panel.showInviteButton.value).toBe(false)
@@ -1086,11 +1066,7 @@ describe('useMembersPanel', () => {
     })
 
     it('hides member management when the server denies seat changes', async () => {
-      vi.spyOn(
-        useBillingCapabilities().canChangeSeats,
-        'value',
-        'get'
-      ).mockReturnValue(false)
+      useBillingCapabilities().canChangeSeats = computed(() => false)
       const panel = await setup()
       const member = createMember({ id: 'member-1' })
 

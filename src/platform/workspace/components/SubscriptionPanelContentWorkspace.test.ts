@@ -335,26 +335,10 @@ describe('SubscriptionPanelContentWorkspace', () => {
     Object.assign(useTeamWorkspaceStore(), { isWorkspaceSubscribed: true })
     mockCanManageSubscription.value = true
     mockCanManageSubscriptionLifecycle.value = true
-    vi.spyOn(
-      useBillingCapabilities().canCancel,
-      'value',
-      'get'
-    ).mockReturnValue(true)
-    vi.spyOn(
-      useBillingCapabilities().canReactivate,
-      'value',
-      'get'
-    ).mockReturnValue(true)
-    vi.spyOn(
-      useBillingCapabilities().canChangeSeats,
-      'value',
-      'get'
-    ).mockReturnValue(true)
-    vi.spyOn(
-      useBillingCapabilities().canSubscribeSelfServe,
-      'value',
-      'get'
-    ).mockReturnValue(true)
+    useBillingCapabilities().canCancel = computed(() => true)
+    useBillingCapabilities().canReactivate = computed(() => true)
+    useBillingCapabilities().canChangeSeats = computed(() => true)
+    useBillingCapabilities().canSubscribeSelfServe = computed(() => true)
     mockCanReactivatePlan.value = true
     mockShouldUseWorkspaceBilling.value = true
     mockCanOpenPricingSurface.value = true
@@ -402,16 +386,8 @@ describe('SubscriptionPanelContentWorkspace', () => {
   it('hides verification from users without billing permission', () => {
     Object.assign(useBillingOperationStore(), { isSettingUp: true })
     mockCanManageSubscription.value = false
-    vi.spyOn(
-      useBillingCapabilities().canChangeSeats,
-      'value',
-      'get'
-    ).mockReturnValue(false)
-    vi.spyOn(
-      useBillingCapabilities().canSubscribeSelfServe,
-      'value',
-      'get'
-    ).mockReturnValue(false)
+    useBillingCapabilities().canChangeSeats = computed(() => false)
+    useBillingCapabilities().canSubscribeSelfServe = computed(() => false)
     Object.assign(useBillingOperationStore(), {
       subscriptionActionOperation: {
         actionUrl: 'https://verify.example/sensitive-token'
@@ -450,26 +426,10 @@ describe('SubscriptionPanelContentWorkspace', () => {
     // Mirrors billing-api hideLifecycleCapabilities: lifecycle actions and the
     // self-serve catalog close, credit top-up stays open.
     function useSalesManagedCapabilities() {
-      vi.spyOn(
-        useBillingCapabilities().canCancel,
-        'value',
-        'get'
-      ).mockReturnValue(false)
-      vi.spyOn(
-        useBillingCapabilities().canReactivate,
-        'value',
-        'get'
-      ).mockReturnValue(false)
-      vi.spyOn(
-        useBillingCapabilities().canChangeSeats,
-        'value',
-        'get'
-      ).mockReturnValue(false)
-      vi.spyOn(
-        useBillingCapabilities().canSubscribeSelfServe,
-        'value',
-        'get'
-      ).mockReturnValue(false)
+      useBillingCapabilities().canCancel = computed(() => false)
+      useBillingCapabilities().canReactivate = computed(() => false)
+      useBillingCapabilities().canChangeSeats = computed(() => false)
+      useBillingCapabilities().canSubscribeSelfServe = computed(() => false)
       mockCanReactivatePlan.value = false
       mockCanOpenPricingSurface.value = false
     }
@@ -555,11 +515,7 @@ describe('SubscriptionPanelContentWorkspace', () => {
       mockIsActiveSubscription.value = false
       mockSubscriptionStatus.value = 'ended'
       mockBillingStatus.value = 'inactive'
-      vi.spyOn(
-        useBillingCapabilities().canSubscribeSelfServe,
-        'value',
-        'get'
-      ).mockReturnValue(false)
+      useBillingCapabilities().canSubscribeSelfServe = computed(() => false)
       renderComponent()
 
       expect(screen.getByTestId('plan-status-badge')).toHaveTextContent(
@@ -711,11 +667,7 @@ describe('SubscriptionPanelContentWorkspace', () => {
 
   it('hides Change plan when the server denies seat changes to a client-side owner', () => {
     mockCanManageSubscription.value = true
-    vi.spyOn(
-      useBillingCapabilities().canChangeSeats,
-      'value',
-      'get'
-    ).mockReturnValue(false)
+    useBillingCapabilities().canChangeSeats = computed(() => false)
     renderComponent()
 
     expect(
@@ -744,26 +696,10 @@ describe('SubscriptionPanelContentWorkspace', () => {
     Object.assign(useTeamWorkspaceStore(), { isInPersonalWorkspace: true })
     mockCanManageSubscription.value = false
     mockCanManageSubscriptionLifecycle.value = false
-    vi.spyOn(
-      useBillingCapabilities().canCancel,
-      'value',
-      'get'
-    ).mockReturnValue(false)
-    vi.spyOn(
-      useBillingCapabilities().canReactivate,
-      'value',
-      'get'
-    ).mockReturnValue(false)
-    vi.spyOn(
-      useBillingCapabilities().canChangeSeats,
-      'value',
-      'get'
-    ).mockReturnValue(false)
-    vi.spyOn(
-      useBillingCapabilities().canSubscribeSelfServe,
-      'value',
-      'get'
-    ).mockReturnValue(false)
+    useBillingCapabilities().canCancel = computed(() => false)
+    useBillingCapabilities().canReactivate = computed(() => false)
+    useBillingCapabilities().canChangeSeats = computed(() => false)
+    useBillingCapabilities().canSubscribeSelfServe = computed(() => false)
     mockCanLeaveWorkspace.value = true
     mockUiConfig.value = memberUiConfig
     renderComponent()
@@ -994,11 +930,7 @@ describe('SubscriptionPanelContentWorkspace', () => {
     mockSubscriptionStatus.value = 'canceled'
     mockIsActiveSubscription.value = false
     Object.assign(useTeamWorkspaceStore(), { isWorkspaceSubscribed: false })
-    vi.spyOn(
-      useBillingCapabilities().canSubscribeSelfServe,
-      'value',
-      'get'
-    ).mockReturnValue(false)
+    useBillingCapabilities().canSubscribeSelfServe = computed(() => false)
     renderComponent()
 
     expect(screen.getByTestId('credits-tile')).toHaveAttribute(
@@ -1138,11 +1070,7 @@ describe('SubscriptionPanelContentWorkspace', () => {
     Object.assign(useTeamWorkspaceStore(), { isWorkspaceSubscribed: false })
     mockHasSubscription.value = false
     mockCanManageSubscription.value = true
-    vi.spyOn(
-      useBillingCapabilities().canSubscribeSelfServe,
-      'value',
-      'get'
-    ).mockReturnValue(false)
+    useBillingCapabilities().canSubscribeSelfServe = computed(() => false)
     renderComponent()
 
     expect(
@@ -1156,26 +1084,10 @@ describe('SubscriptionPanelContentWorkspace', () => {
     mockHasSubscription.value = false
     mockCanManageSubscription.value = false
     mockCanManageSubscriptionLifecycle.value = false
-    vi.spyOn(
-      useBillingCapabilities().canCancel,
-      'value',
-      'get'
-    ).mockReturnValue(false)
-    vi.spyOn(
-      useBillingCapabilities().canReactivate,
-      'value',
-      'get'
-    ).mockReturnValue(false)
-    vi.spyOn(
-      useBillingCapabilities().canChangeSeats,
-      'value',
-      'get'
-    ).mockReturnValue(false)
-    vi.spyOn(
-      useBillingCapabilities().canSubscribeSelfServe,
-      'value',
-      'get'
-    ).mockReturnValue(false)
+    useBillingCapabilities().canCancel = computed(() => false)
+    useBillingCapabilities().canReactivate = computed(() => false)
+    useBillingCapabilities().canChangeSeats = computed(() => false)
+    useBillingCapabilities().canSubscribeSelfServe = computed(() => false)
     renderComponent()
 
     expect(
@@ -1357,26 +1269,10 @@ describe('SubscriptionPanelContentWorkspace', () => {
   it('offers members only Leave Workspace in the menu', () => {
     mockCanManageSubscription.value = false
     mockCanManageSubscriptionLifecycle.value = false
-    vi.spyOn(
-      useBillingCapabilities().canCancel,
-      'value',
-      'get'
-    ).mockReturnValue(false)
-    vi.spyOn(
-      useBillingCapabilities().canReactivate,
-      'value',
-      'get'
-    ).mockReturnValue(false)
-    vi.spyOn(
-      useBillingCapabilities().canChangeSeats,
-      'value',
-      'get'
-    ).mockReturnValue(false)
-    vi.spyOn(
-      useBillingCapabilities().canSubscribeSelfServe,
-      'value',
-      'get'
-    ).mockReturnValue(false)
+    useBillingCapabilities().canCancel = computed(() => false)
+    useBillingCapabilities().canReactivate = computed(() => false)
+    useBillingCapabilities().canChangeSeats = computed(() => false)
+    useBillingCapabilities().canSubscribeSelfServe = computed(() => false)
     mockUiConfig.value = memberUiConfig
     renderComponent()
 
@@ -1398,26 +1294,10 @@ describe('SubscriptionPanelContentWorkspace', () => {
     const user = userEvent.setup()
     mockCanManageSubscription.value = false
     mockCanManageSubscriptionLifecycle.value = false
-    vi.spyOn(
-      useBillingCapabilities().canCancel,
-      'value',
-      'get'
-    ).mockReturnValue(false)
-    vi.spyOn(
-      useBillingCapabilities().canReactivate,
-      'value',
-      'get'
-    ).mockReturnValue(false)
-    vi.spyOn(
-      useBillingCapabilities().canChangeSeats,
-      'value',
-      'get'
-    ).mockReturnValue(false)
-    vi.spyOn(
-      useBillingCapabilities().canSubscribeSelfServe,
-      'value',
-      'get'
-    ).mockReturnValue(false)
+    useBillingCapabilities().canCancel = computed(() => false)
+    useBillingCapabilities().canReactivate = computed(() => false)
+    useBillingCapabilities().canChangeSeats = computed(() => false)
+    useBillingCapabilities().canSubscribeSelfServe = computed(() => false)
     mockUiConfig.value = memberUiConfig
     renderComponent()
 
