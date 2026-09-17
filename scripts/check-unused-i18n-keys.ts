@@ -49,7 +49,7 @@ function extractKeys(obj: LocaleData, prefix = ''): string[] {
   for (const [key, value] of Object.entries(obj)) {
     const fullKey = prefix ? `${prefix}.${key}` : key
 
-    if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
+    if (typeof value === 'object' && !Array.isArray(value)) {
       keys.push(...extractKeys(value, fullKey))
     } else {
       keys.push(fullKey)
