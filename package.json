@@ -96,6 +96,7 @@
     "@atlaskit/pragmatic-drag-and-drop": "^1.3.1",
     "@comfyorg/account-core": "workspace:*",
     "@comfyorg/account-ui": "workspace:*",
+    "@comfyorg/billing-contract": "workspace:*",
     "@comfyorg/comfy-multi-player": "0.2.1",
     "@comfyorg/comfyui-desktop-bridge-types": "catalog:",
     "@comfyorg/comfyui-electron-types": "catalog:",

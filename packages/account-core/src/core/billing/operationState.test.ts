@@ -2,7 +2,9 @@ import { describe, expect, it } from 'vitest'
 
 import type {
   BillingOpStatus,
+  BillingOperationIdentity,
   BillingOperationState,
+  BillingPresentationState,
   PendingBillingOperation
 } from './operationState.js'
 import { reduceBillingOperation, validateActionUrl } from './operationState.js'
@@ -10,13 +12,16 @@ import { reduceBillingOperation, validateActionUrl } from './operationState.js'
 const SCOPE = { userId: 'uid-1', workspaceId: 'ws-1', role: 'owner' } as const
 
 function pending(
-  overrides: Partial<PendingBillingOperation> = {}
+  overrides: Partial<
+    Omit<PendingBillingOperation, 'presentation' | 'hostedDestination'>
+  > = {},
+  presentation: BillingPresentationState = { presentation: 'embedded' }
 ): PendingBillingOperation {
   return {
     id: 'op-1',
     kind: 'subscription',
     scope: SCOPE,
-    presentation: 'embedded',
+    ...presentation,
     observedAt: 1_000,
     attemptStartedAt: 500,
     phase: 'pending',
@@ -96,7 +101,8 @@ describe('reduceBillingOperation', () => {
     expect(
       reduceBillingOperation(succeeded, {
         type: 'presentation_switched',
-        presentation: 'hosted'
+        presentation: 'hosted',
+        hostedDestination: 'stripe'
       })
     ).toBe(succeeded)
   })
@@ -106,10 +112,13 @@ describe('reduceBillingOperation', () => {
       authentication_state: 'requires_action',
       payment_intent_client_secret: 'pi_secret'
     })
-    const hosted = polled(pending({ presentation: 'hosted' }), {
-      authentication_state: 'requires_action',
-      payment_intent_client_secret: 'pi_secret'
-    })
+    const hosted = polled(
+      pending({}, { presentation: 'hosted', hostedDestination: 'stripe' }),
+      {
+        authentication_state: 'requires_action',
+        payment_intent_client_secret: 'pi_secret'
+      }
+    )
 
     expect(embedded).toMatchObject({
       challenge: { clientSecret: 'pi_secret', status: 'required' },
@@ -190,11 +199,13 @@ describe('reduceBillingOperation', () => {
 
     const hosted = reduceBillingOperation(failed, {
       type: 'presentation_switched',
-      presentation: 'hosted'
+      presentation: 'hosted',
+      hostedDestination: 'billing_web'
     })
     expect(hosted).toMatchObject({
       id: 'op-1',
       presentation: 'hosted',
+      hostedDestination: 'billing_web',
       actionUrl: 'https://billing.example/continue',
       challenge: { clientSecret: 'pi_secret', status: 'failed' }
     })
@@ -208,10 +219,12 @@ describe('reduceBillingOperation', () => {
       presentation: 'embedded',
       challenge: { clientSecret: 'pi_secret', status: 'required' }
     })
+    expect(rolledBack.hostedDestination).toBeUndefined()
     expect(
       reduceBillingOperation(hosted, {
         type: 'presentation_switched',
-        presentation: 'hosted'
+        presentation: 'hosted',
+        hostedDestination: 'billing_web'
       })
     ).toBe(hosted)
   })
@@ -226,5 +239,59 @@ describe('validateActionUrl', () => {
     expect(validateActionUrl('javascript:alert(1)')).toBeUndefined()
     expect(validateActionUrl('/relative')).toBeUndefined()
     expect(validateActionUrl(undefined)).toBeUndefined()
+  })
+})
+
+describe('BillingOperationIdentity', () => {
+  const core = {
+    id: 'op-1',
+    kind: 'subscription',
+    scope: SCOPE,
+    observedAt: 1_000,
+    attemptStartedAt: 500
+  } as const
+
+  function readDestination(
+    identity: BillingOperationIdentity
+  ): string | undefined {
+    return identity.hostedDestination
+  }
+
+  it('admits a hosted identity only with a destination', () => {
+    const hosted: BillingOperationIdentity = {
+      ...core,
+      presentation: 'hosted',
+      hostedDestination: 'billing_web'
+    }
+
+    // @ts-expect-error a hosted presentation without a destination
+    const missing: BillingOperationIdentity = {
+      ...core,
+      presentation: 'hosted'
+    }
+
+    expect(readDestination(hosted)).toBe('billing_web')
+    expect(missing.presentation).toBe('hosted')
+    // @ts-expect-error the same gap crossing a function boundary
+    expect(readDestination({ ...core, presentation: 'hosted' })).toBeUndefined()
+  })
+
+  it('refuses a destination on an embedded identity', () => {
+    const embedded: BillingOperationIdentity = {
+      ...core,
+      presentation: 'embedded',
+      // @ts-expect-error an embedded presentation is served from no origin
+      hostedDestination: 'stripe'
+    }
+
+    expect(readDestination(embedded)).toBe('stripe')
+    expect(
+      readDestination({
+        ...core,
+        presentation: 'embedded',
+        // @ts-expect-error the same conflict crossing a function boundary
+        hostedDestination: 'stripe'
+      })
+    ).toBe('stripe')
   })
 })
