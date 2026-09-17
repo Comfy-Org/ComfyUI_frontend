@@ -8,7 +8,7 @@ const PACKAGE_JSON = join(SRC_DIR, '..', 'package.json')
 const COMMENT_OR_STRING =
   /'(?:[^'\\\n]|\\.)*'|"(?:[^"\\\n]|\\.)*"|`(?:[^`\\]|\\.)*`|\/\*[\s\S]*?\*\/|\/\/[^\n]*/g
 const VUE_IMPORT =
-  /(?:from|import|require)\s*\(?\s*['"](?:vue|@vueuse\/[^'"]+)['"]/
+  /(?:from|import|require)\s*(?:\?\.)?\s*\(?\s*['"](?:vue|@vueuse\/[^'"]+)['"]/
 const VUE_DEPENDENCY = /^(vue|vue-tsc|@vueuse\/|@vitejs\/plugin-vue)/
 
 const withoutComments = (source: string) =>
@@ -25,6 +25,8 @@ describe('vue boundary', () => {
     ["import 'vue'", true],
     ["const { ref } = await import('vue')", true],
     ["require('vue')", true],
+    ["require?.('vue')", true],
+    ["require?.('@vueuse/core')", true],
     ["import { useNow } from '@vueuse/core'", true],
     ["await import('@vueuse/core')", true],
     ["import /* bypass */ 'vue'", true],
