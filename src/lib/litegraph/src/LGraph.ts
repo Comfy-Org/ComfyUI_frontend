@@ -1847,12 +1847,16 @@ export class LGraph
    * attached under that id. Links, execution order, layout and widget values
    * keyed by the id stay with the record, so the successor inherits them.
    *
-   * Either the successor ends up attached and owning the record, or every
-   * store, the record and the incumbent are put back as they were and the
-   * successor is disposed: its `onRemoved` hook has run once and it must not
-   * be reused. Failures are returned, not thrown; a throw from a rollback
-   * step is collected in `rollbackFailures` rather than aborting the rest of
-   * the rollback.
+   * Either the successor ends up attached and owning the record, or the
+   * structural state (node lists, record binding, link/layout/widget stores)
+   * is restored and the successor is disposed: its `onRemoved` hook has run
+   * once and it must not be reused. Rollback is structural, not a reversal:
+   * the incumbent's detach-side lifecycle hooks (`onRemoved`,
+   * `node:before-removed`) have already fired and are not un-fired, and a
+   * subgraph definition released during the detach is not re-acquired.
+   * Failures are returned, not thrown; a throw from a rollback step is
+   * collected in `rollbackFailures` rather than aborting the rest of the
+   * rollback.
    *
    * A `reentrant` result or a `precondition` failure is a refusal before
    * anything ran: the successor is untouched and still the caller's to

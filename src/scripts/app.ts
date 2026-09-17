@@ -2143,58 +2143,74 @@ export class ComfyApp {
 
     // Use parameters strictly as the final fallback
     if (parameters && typeof parameters === 'string') {
-      const outcome = await importA1111(
-        this.rootGraph,
-        parameters,
-        async () => {
-          try {
-            // false: final destination; no later load republishes the hash.
-            useWorkflowService().beforeLoadNewGraph(false)
-            await useExtensionService().invokeExtensionsAsync('beforeLoadGraph')
-          } finally {
-            useMissingNodesErrorStore().setMissingNodeTypes([])
-          }
-          this.canvas.setGraph(this.rootGraph)
-        }
-      )
-      switch (outcome) {
-        case 'core-nodes-unavailable':
-          useToastStore().addAlert(t('toastMessages.a1111CoreNodesUnavailable'))
-          return
-        case 'not-a1111':
-          this.showErrorOnFileLoad(file)
-          return
-        case 'imported-without-embeddings':
-          useToastStore().add({
-            severity: 'warn',
-            summary: t('g.warning'),
-            detail: t('toastMessages.a1111EmbeddingsUnavailable')
-          })
-          break
-        case 'imported':
-          break
-        default: {
-          const unexpectedOutcome: never = outcome
-          throw new Error(
-            `Unhandled A1111 import outcome: ${unexpectedOutcome}`
+      // importA1111 opens the load bracket from inside its callback, so a
+      // failure before that point must not report a load error.
+      let loadBracketOpened = false
+      try {
+        await this.importA1111Parameters(file, fileName, parameters, () => {
+          loadBracketOpened = true
+        })
+      } catch (error) {
+        if (loadBracketOpened) {
+          await useExtensionService().invokeExtensionsAsync(
+            'onGraphLoadError',
+            error
           )
         }
+        throw error
       }
-      // Intentionally no beforeConfigureGraph: A1111 has no mutable
-      // workflow JSON before graph construction, so there is no payload.
-      await useExtensionService().invokeExtensionsAsync(
-        'afterConfigureGraph',
-        []
-      )
-      await useWorkflowService().afterLoadNewGraph(
-        fileName,
-        this.rootGraph.serialize() as unknown as ComfyWorkflowJSON
-      )
-      await useExtensionService().invokeExtensionsAsync('afterLoadGraph')
       return
     }
 
     this.showErrorOnFileLoad(file)
+  }
+
+  private async importA1111Parameters(
+    file: File,
+    fileName: string,
+    parameters: string,
+    onLoadBracketOpened: () => void
+  ): Promise<void> {
+    const outcome = await importA1111(this.rootGraph, parameters, async () => {
+      try {
+        // false: final destination; no later load republishes the hash.
+        useWorkflowService().beforeLoadNewGraph(false)
+        await useExtensionService().invokeExtensionsAsync('beforeLoadGraph')
+        onLoadBracketOpened()
+      } finally {
+        useMissingNodesErrorStore().setMissingNodeTypes([])
+      }
+      this.canvas.setGraph(this.rootGraph)
+    })
+    switch (outcome) {
+      case 'core-nodes-unavailable':
+        useToastStore().addAlert(t('toastMessages.a1111CoreNodesUnavailable'))
+        return
+      case 'not-a1111':
+        this.showErrorOnFileLoad(file)
+        return
+      case 'imported-without-embeddings':
+        useToastStore().add({
+          severity: 'warn',
+          summary: t('g.warning'),
+          detail: t('toastMessages.a1111EmbeddingsUnavailable')
+        })
+        break
+      case 'imported':
+        break
+      default: {
+        const unexpectedOutcome: never = outcome
+        throw new Error(`Unhandled A1111 import outcome: ${unexpectedOutcome}`)
+      }
+    }
+    // Intentionally no beforeConfigureGraph: A1111 has no mutable
+    // workflow JSON before graph construction, so there is no payload.
+    await useExtensionService().invokeExtensionsAsync('afterConfigureGraph', [])
+    await useWorkflowService().afterLoadNewGraph(
+      fileName,
+      this.rootGraph.serialize() as unknown as ComfyWorkflowJSON
+    )
+    await useExtensionService().invokeExtensionsAsync('afterLoadGraph')
   }
 
   /**
@@ -2327,6 +2343,24 @@ export class ComfyApp {
     // false: no workflow load follows to republish the hash.
     useWorkflowService().beforeLoadNewGraph(false)
     await useExtensionService().invokeExtensionsAsync('beforeLoadGraph')
+    try {
+      await this.buildGraphFromApiJson(apiData, fileName, options)
+    } catch (error) {
+      // Extensions that opened state on beforeLoadGraph must be told the
+      // bracket ended without afterLoadGraph. The caller owns reporting.
+      await useExtensionService().invokeExtensionsAsync(
+        'onGraphLoadError',
+        error
+      )
+      throw error
+    }
+  }
+
+  private async buildGraphFromApiJson(
+    apiData: ComfyApiWorkflow,
+    fileName: string,
+    options: { deferWarnings?: boolean }
+  ): Promise<void> {
     this.canvas.setGraph(this.rootGraph)
     this.clean()
 

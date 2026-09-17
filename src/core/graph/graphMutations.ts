@@ -151,7 +151,17 @@ interface PrepareDraft {
   scope: GraphScope
   nodes: Map<string, NodeState>
   links: Map<LinkId, LinkTopology>
-  /** Serialisable widget names per node, in slot order, as the batch sees them. */
+  /**
+   * Serialisable widget names per node, in slot order, as the batch sees them.
+   *
+   * Batch-local reconciliation state only: it is rebuilt from the widget
+   * store's per-node order at `prepare` time and lives only for the duration
+   * of `prepare`/`commit`. The eligibility filter here (`serialize !== false`
+   * and not `button`) is one of two hand-kept copies; the other is
+   * `withNamedWidgetValues` in the agent node materializer. Widget ownership
+   * at the agent/litegraph boundary is redesigned under
+   * https://linear.app/comfyorg/issue/PM-1293; this map goes away with it.
+   */
   slotOrders: Map<string, string[]>
 }
 
