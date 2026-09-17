@@ -16,7 +16,7 @@ export interface WorkshopOutcome {
   readonly tags: readonly string[]
 }
 
-export const WORKSHOP_OUTCOMES: readonly WorkshopOutcome[] = [
+const WORKSHOP_OUTCOMES: readonly WorkshopOutcome[] = [
   {
     key: 'upscale-restore',
     useCase: 'edit-images',
