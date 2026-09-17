@@ -668,13 +668,17 @@ class Load3d extends Viewport3d {
   }
 
   setConfigurationCleanup(cleanup: () => void): void {
-    this.configurationCleanup?.()
+    this.clearConfigurationCleanup()
     this.configurationCleanup = cleanup
   }
 
-  protected override disposeManagers(): void {
+  clearConfigurationCleanup(): void {
     this.configurationCleanup?.()
     this.configurationCleanup = undefined
+  }
+
+  protected override disposeManagers(): void {
+    this.clearConfigurationCleanup()
     super.disposeManagers()
     this.hdriManager.dispose()
     this.loaderManager.dispose()

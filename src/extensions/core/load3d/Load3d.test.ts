@@ -159,6 +159,20 @@ function makeInstance() {
 describe('Load3d', () => {
   let ctx: ReturnType<typeof makeInstance>
 
+  it('replaces and clears reactive configuration cleanup exactly once', () => {
+    const load3d = Object.create(Load3d.prototype) as Load3d
+    const first = vi.fn()
+    const second = vi.fn()
+
+    load3d.setConfigurationCleanup(first)
+    load3d.setConfigurationCleanup(second)
+    load3d.clearConfigurationCleanup()
+    load3d.clearConfigurationCleanup()
+
+    expect(first).toHaveBeenCalledTimes(1)
+    expect(second).toHaveBeenCalledTimes(1)
+  })
+
   beforeEach(() => {
     ctx = makeInstance()
   })
