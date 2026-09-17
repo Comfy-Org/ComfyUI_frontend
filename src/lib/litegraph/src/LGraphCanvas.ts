@@ -4851,9 +4851,13 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     if (!graph) throw new NullGraphError()
 
     this.emitBeforeChange()
+    let changeFailed = false
+    let changeError: unknown
+    let cleanupFailed = false
+    let cleanupError: unknown
     try {
-      graph.beforeChange()
       try {
+        graph.beforeChange()
         // Snapshot to prevent mutation during iteration (e.g. group deselect cascade)
         const toDelete = [...this.selectedItems]
         for (const item of toDelete) {
@@ -4878,12 +4882,22 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
         this.state.selectionChanged = true
         this.onSelectionChange?.(this.selected_nodes)
         this.setDirty(true)
+      } catch (error) {
+        changeFailed = true
+        changeError = error
       } finally {
-        graph.afterChange()
+        try {
+          graph.afterChange()
+        } catch (error) {
+          cleanupFailed = true
+          cleanupError = error
+        }
       }
     } finally {
       this.emitAfterChange()
     }
+    if (changeFailed) throw changeError
+    if (cleanupFailed) throw cleanupError
   }
 
   /**
