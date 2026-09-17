@@ -7855,7 +7855,7 @@ Enterprise`
     'zh-CN': '即将上线'
   },
   'qwenImage21.announcement.hero.description': {
-    en: 'Introducing Qwen Image 2.1, the next open-weight image model from the Qwen team: generation and editing in one model, with the words exactly where you wrote them. Coming to ComfyUI and Comfy Cloud the day it ships.',
+    en: 'Introducing Qwen Image 2.1, the latest open-weight version of the Qwen-Image models series: image generation and editing in one single model, native 2k resolution, professional typography and support for alpha channel. Coming to ComfyUI and Comfy Cloud the day it ships.',
     'zh-CN':
       '隆重推出 Qwen Image 2.1，Qwen 团队新一代开源权重图像模型：生成与编辑合一，文字精准落在你写下的位置。发布当天即登陆 ComfyUI 与 Comfy Cloud。'
   },
