@@ -5,7 +5,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type {
   TurnstileApi,
   TurnstileRenderOptions
-} from '@comfyorg/account/turnstileScript'
+} from '@comfyorg/account-core/turnstileScript'
 
 import { removeAllToasts, useAuthToasts } from '../../config/auth-toast-state'
 import { t } from '../../i18n/translations'
@@ -56,11 +56,11 @@ const turnstileApi = vi.hoisted(
     }) satisfies TurnstileApi
 )
 
-vi.mock(import('@comfyorg/account/turnstileScript'), () => ({
+vi.mock(import('@comfyorg/account-core/turnstileScript'), () => ({
   loadTurnstile: () => Promise.resolve(turnstileApi)
 }))
 
-vi.mock<unknown>(import('@comfyorg/account/webviewDetection'), () => ({
+vi.mock<unknown>(import('@comfyorg/account-core/webviewDetection'), () => ({
   isEmbeddedWebView: () => handles.embedded
 }))
 

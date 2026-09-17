@@ -76,16 +76,14 @@ describe('router_render', () => {
 
     const text = await prepareRouterRender('vertexai--veo-3--generate-videos')
     expect(text.body).not.toHaveProperty('instances.0.image')
-    expect(text.body).toHaveProperty(
-      'instances.0.prompt',
-      animation.values.prompt
-    )
+    expect(text.body).toHaveProperty('instances.0.prompt', text.values.prompt)
+    expect(text.values.prompt).not.toBe(animation.values.prompt)
   })
 
   it.for([
     'openai--gpt-image-1--edit-images',
     'openai--gpt-image-1.5--edit-images',
-    'openai--gpt-image-2--edit-images'
+    'openai--gpt-image-2--generate-images'
   ])(
     'omits optional PNG compression for the initial %s request',
     async (slug) => {
