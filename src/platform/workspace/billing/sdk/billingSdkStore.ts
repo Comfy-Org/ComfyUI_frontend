@@ -10,8 +10,8 @@ import type {
   BillingOperationTelemetryEvent,
   EmbeddedChallengePort,
   PendingBillingOperation
-} from '@comfyorg/account/billing'
-import { BILLING_OPERATION_TELEMETRY_EVENT } from '@comfyorg/account/billing'
+} from '@comfyorg/account-core/billing'
+import { BILLING_OPERATION_TELEMETRY_EVENT } from '@comfyorg/account-core/billing'
 import { loadStripe } from '@stripe/stripe-js/pure'
 import { useEventListener } from '@vueuse/core'
 import { defineStore } from 'pinia'

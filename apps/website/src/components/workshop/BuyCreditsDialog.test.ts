@@ -7,7 +7,7 @@ import type { Ref } from 'vue'
 import type {
   HostedTopupCheckoutResult,
   TopupCommand
-} from '@comfyorg/account/billing'
+} from '@comfyorg/account-core/billing'
 
 import {
   WORKSHOP_CLOUD_BASE_URL,
