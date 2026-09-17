@@ -49,7 +49,7 @@ function makeMockEventManager() {
 }
 
 function makeOrbitControls(target = new THREE.Vector3()) {
-  return { target } as unknown as OrbitControls
+  return fromAny<OrbitControls, unknown>({ target })
 }
 
 describe('ViewHelperManager', () => {
@@ -166,11 +166,12 @@ describe('ViewHelperManager', () => {
     it('emits cameraChanged with the full camera state when the animation just finished', () => {
       manager.createViewHelper(document.createElement('div'))
       manager.viewHelper.animating = true
-      ;(
-        manager.viewHelper.update as unknown as {
+      fromAny<
+        {
           mockImplementation(fn: () => void): void
-        }
-      ).mockImplementation(() => {
+        },
+        unknown
+      >(manager.viewHelper.update).mockImplementation(() => {
         manager.viewHelper.animating = false
       })
 

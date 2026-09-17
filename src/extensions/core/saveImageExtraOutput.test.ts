@@ -38,9 +38,9 @@ async function createNodeWithFilenamePrefix(
 ): Promise<FilenamePrefixWidget> {
   const ext = await loadExtension()
 
-  const nodeType = {
+  const nodeType = fromPartial<Parameters<BeforeRegisterNodeDef>[0]>({
     prototype: {}
-  } as unknown as Parameters<BeforeRegisterNodeDef>[0]
+  })
   const nodeData = { name: nodeName } as ComfyNodeDef
 
   await ext.beforeRegisterNodeDef!(

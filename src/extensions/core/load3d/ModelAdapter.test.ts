@@ -33,11 +33,13 @@ describe('fetchModelData', () => {
 
   it('returns the arrayBuffer on a successful response', async () => {
     const buf = new ArrayBuffer(8)
-    mockFetchApi.mockResolvedValue({
-      ok: true,
-      status: 200,
-      arrayBuffer: vi.fn().mockResolvedValue(buf)
-    } as unknown as Response)
+    mockFetchApi.mockResolvedValue(
+      fromPartial<Response>({
+        ok: true,
+        status: 200,
+        arrayBuffer: vi.fn().mockResolvedValue(buf)
+      })
+    )
 
     const result = await fetchModelData('api/view?...&filename=', 'model.glb')
 
@@ -45,10 +47,12 @@ describe('fetchModelData', () => {
   })
 
   it('throws with status code when the response is not ok', async () => {
-    mockFetchApi.mockResolvedValue({
-      ok: false,
-      status: 404
-    } as unknown as Response)
+    mockFetchApi.mockResolvedValue(
+      fromPartial<Response>({
+        ok: false,
+        status: 404
+      })
+    )
 
     await expect(
       fetchModelData('api/view?type=input&subfolder=&filename=', 'missing.glb')
@@ -56,10 +60,12 @@ describe('fetchModelData', () => {
   })
 
   it('strips the leading api/ prefix and encodes the filename', async () => {
-    mockFetchApi.mockResolvedValue({
-      ok: true,
-      arrayBuffer: vi.fn().mockResolvedValue(new ArrayBuffer(0))
-    } as unknown as Response)
+    mockFetchApi.mockResolvedValue(
+      fromPartial<Response>({
+        ok: true,
+        arrayBuffer: vi.fn().mockResolvedValue(new ArrayBuffer(0))
+      })
+    )
 
     await fetchModelData(
       'api/view?type=input&subfolder=&filename=',
@@ -72,10 +78,12 @@ describe('fetchModelData', () => {
   })
 
   it('prepends a single slash when the path has no api/ prefix', async () => {
-    mockFetchApi.mockResolvedValue({
-      ok: true,
-      arrayBuffer: vi.fn().mockResolvedValue(new ArrayBuffer(0))
-    } as unknown as Response)
+    mockFetchApi.mockResolvedValue(
+      fromPartial<Response>({
+        ok: true,
+        arrayBuffer: vi.fn().mockResolvedValue(new ArrayBuffer(0))
+      })
+    )
 
     await fetchModelData('custom?filename=', 'scene.splat')
 

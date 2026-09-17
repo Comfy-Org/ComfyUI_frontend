@@ -14,6 +14,7 @@ import type {
   noNewZodServerResponseSchema as NoNewZodServerResponseSchema,
   noPlaywrightImportsInFixtureData as NoPlaywrightImportsInFixtureData,
   noUnitTestFilesInBrowserTests as NoUnitTestFilesInBrowserTests,
+  noUnknownDoubleAssertion as NoUnknownDoubleAssertion,
   noUnsafeErrorAssertion as NoUnsafeErrorAssertion
 } from './restrictedSyntax'
 import type {
@@ -46,6 +47,7 @@ const {
   noNewZodServerResponseSchema,
   noPlaywrightImportsInFixtureData,
   noUnitTestFilesInBrowserTests,
+  noUnknownDoubleAssertion,
   noUnsafeErrorAssertion
 } = requireFrom('./restrictedSyntax.ts') as {
   noDeprecatedApiSchema: typeof NoDeprecatedApiSchema
@@ -55,6 +57,7 @@ const {
   noNewZodServerResponseSchema: typeof NoNewZodServerResponseSchema
   noPlaywrightImportsInFixtureData: typeof NoPlaywrightImportsInFixtureData
   noUnitTestFilesInBrowserTests: typeof NoUnitTestFilesInBrowserTests
+  noUnknownDoubleAssertion: typeof NoUnknownDoubleAssertion
   noUnsafeErrorAssertion: typeof NoUnsafeErrorAssertion
 }
 const {
@@ -92,6 +95,7 @@ export default {
     'no-redundant-litegraph-cleanup': noRedundantLiteGraphCleanup,
     'no-redundant-vitest-cleanup': noRedundantVitestCleanup,
     'no-unit-test-files-in-browser-tests': noUnitTestFilesInBrowserTests,
+    'no-unknown-double-assertion': noUnknownDoubleAssertion,
     'no-unsafe-error-assertion': noUnsafeErrorAssertion,
     'prefer-initial-settings': preferInitialSettings,
     'use-global-pinia': useGlobalPinia

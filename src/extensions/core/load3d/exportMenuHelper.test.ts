@@ -25,7 +25,7 @@ class MockContextMenu {
   }
 }
 
-;(LiteGraph as unknown as { ContextMenu: unknown }).ContextMenu =
+fromAny<{ ContextMenu: unknown }, unknown>(LiteGraph).ContextMenu =
   MockContextMenu
 
 function makeLoad3d(
@@ -33,7 +33,7 @@ function makeLoad3d(
     .fn()
     .mockResolvedValue(undefined)
 ): Load3d {
-  return { exportModel: exportImpl } as unknown as Load3d
+  return fromAny<Load3d, unknown>({ exportModel: exportImpl })
 }
 
 describe('createExportMenuItems', () => {
@@ -71,7 +71,7 @@ describe('createExportMenuItems', () => {
 
   it('forwards the parent menu and event when opening the submenu', () => {
     const items = createExportMenuItems(makeLoad3d())
-    const event = { x: 100 } as unknown as MouseEvent
+    const event = fromAny<MouseEvent, unknown>({ x: 100 })
     const parentMenu = { id: 'prev' }
 
     ;(items[1]!.callback as (...args: unknown[]) => void)(

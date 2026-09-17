@@ -57,7 +57,7 @@ function setRootGraphNodes(nodes: LGraphNode[]) {
 }
 
 function dispatchRootGraphEvent(type: string) {
-  ;(app.rootGraph.events as unknown as EventTarget).dispatchEvent(
+  fromAny<EventTarget, unknown>(app.rootGraph.events).dispatchEvent(
     new Event(type)
   )
 }
