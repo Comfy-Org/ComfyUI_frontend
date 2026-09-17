@@ -534,6 +534,8 @@ export function useWorkspaceBilling(): BillingState & BillingActions {
   }
 
   function openPortalWindow(url: string): void {
+    // The handle arms the return refresh, so adding `noopener` here (which
+    // nulls it) silently stops billing state from re-reading on return.
     const portalWindow = window.open(url, '_blank')
     if (portalWindow) refreshOnPortalReturn()
   }
@@ -547,6 +549,7 @@ export function useWorkspaceBilling(): BillingState & BillingActions {
       'payment-methods'
     )
     if (hosted.kind === 'billing_web') {
+      error.value = null
       openPortalWindow(hosted.url.href)
       return
     }

@@ -18,7 +18,8 @@
  */
 import type {
   BillingEnvironment,
-  BillingIntent
+  BillingIntent,
+  ReturnTarget
 } from '@comfyorg/billing-contract'
 import {
   buildBillingEntryUrl,
@@ -28,6 +29,7 @@ import {
 import type { HostedBillingDestination } from '@/config/billingWeb'
 import { getBillingWebUrl } from '@/config/billingWeb'
 import { getComfyCloudBaseUrl } from '@/config/comfyApi'
+import type { DeployEnv } from '@/platform/telemetry/initDatadogRum'
 import { resolveDeployEnv } from '@/platform/telemetry/initDatadogRum'
 
 export type HostedBillingRoute =
@@ -37,10 +39,10 @@ export type HostedBillingRoute =
 const PROVIDER: HostedBillingRoute = { kind: 'provider' }
 
 const PRODUCT = 'comfyui'
-const RETURN_TO = 'comfyui_workspace'
+const RETURN_TO: ReturnTarget = 'comfyui_workspace'
 
 const BILLING_ENVIRONMENT_BY_DEPLOY_ENV: Readonly<
-  Record<string, BillingEnvironment>
+  Record<DeployEnv, BillingEnvironment>
 > = {
   'prod-v2': 'production',
   'stg-v2': 'staging',
