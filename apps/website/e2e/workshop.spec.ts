@@ -281,6 +281,39 @@ test.describe('Models catalog', () => {
       .toBeCloseTo(searching.y, 0)
   })
 
+  test('the category heading stays clear of the nav while searching', async ({
+    page
+  }) => {
+    await page.goto('/models/')
+    await page.getByTestId('section-generate-videos-open').click()
+    const heading = page.getByRole('heading', { level: 1 })
+    await expect(heading).toContainText('Generate videos')
+
+    // Typing scrolls the heading's row into view, which is what used to bury
+    // the heading and the result count it carries under the sticky nav.
+    await page.getByTestId('workshop-search').fill('kling')
+    await expect(
+      page
+        .getByTestId('workshop-models-grid')
+        .getByTestId('workshop-model-card')
+        .first()
+    ).toContainText('Kling')
+
+    // Both measured after the scroll settles: the nav only reaches its docked
+    // height once the banner above it has scrolled away.
+    const nav = page.getByRole('navigation', { name: 'Main navigation' })
+    await expect
+      .poll(async () => {
+        const [headingBox, navBox] = await Promise.all([
+          heading.boundingBox(),
+          nav.boundingBox()
+        ])
+        if (!headingBox || !navBox) return null
+        return headingBox.y - (navBox.y + navBox.height)
+      })
+      .toBeGreaterThanOrEqual(0)
+  })
+
   test('cards open canonical model pages with related models', async ({
     page
   }) => {
