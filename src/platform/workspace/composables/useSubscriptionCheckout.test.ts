@@ -3116,6 +3116,31 @@ describe('useSubscriptionCheckout', () => {
       )
     })
 
+    it('holds the rail it read at setup when the flag flips mid-checkout', async () => {
+      mockSubscriptionRail.value = {
+        subscriptionActionUrl: 'https://pay.example/op-3'
+      }
+
+      const checkout = await setupWithApprovedPreview()
+
+      expect(checkout.activeCheckoutActionUrl.value).toBe(
+        'https://pay.example/op-3'
+      )
+
+      mockSubscriptionRail.value = null
+      Object.assign(useBillingOperationStore(), {
+        subscriptionActionOperation: {
+          opId: 'op-3',
+          status: 'pending',
+          workspaceId: 'workspace-1'
+        }
+      })
+
+      expect(checkout.activeCheckoutActionUrl.value).toBe(
+        'https://pay.example/op-3'
+      )
+    })
+
     it('offers nothing while the rail is parked on no hosted page', async () => {
       mockSubscriptionRail.value = { subscriptionActionUrl: null }
 
