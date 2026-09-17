@@ -174,7 +174,7 @@ test.describe(
             )
             await (await combineNode.getWidgetByName('format')).click()
             await comfyPage.contextMenu.clickLitegraphMenuItem(value)
-            await comfyPage.nextFrame()
+            await comfyPage.contextMenu.waitForHidden()
           }
 
           const legacyLabelPixelDifference = (label: string) =>
