@@ -1771,18 +1771,22 @@ export class LGraph
     }
 
     if (node.isSubgraphNode()) {
-      failures.run(() =>
-        this.releaseSubgraphs(
-          findReleasableSubgraphs(
-            this.rootGraph,
-            node,
-            canonicalSubgraphResolver(
-              this.rootGraph,
-              options.preserveCanonicalState
-            )
-          )
+      const releasable = findReleasableSubgraphs(
+        this.rootGraph,
+        node,
+        canonicalSubgraphResolver(
+          this.rootGraph,
+          options.preserveCanonicalState
         )
       )
+      // Inside a canonical node adoption the release is postponed until the
+      // replacement has succeeded, so a rollback can hand the incumbent back
+      // with its definition intact.
+      if (this.deferredSubgraphRelease) {
+        this.deferredSubgraphRelease.push(...releasable)
+      } else {
+        failures.run(() => this.releaseSubgraphs(releasable))
+      }
     }
 
     failures.run(() => node.onRemoved?.())
@@ -1840,6 +1844,12 @@ export class LGraph
   }
 
   private adoptingCanonicalNode = false
+  /**
+   * Subgraph definitions whose release {@link removeNode} postponed because
+   * the removal is the detach stage of {@link adoptCanonicalNode}. Set only
+   * while an adoption is detaching and adding; `undefined` otherwise.
+   */
+  private deferredSubgraphRelease: Subgraph[] | undefined
 
   /**
    * Attaches `successor` as the live node for `canonical`, a record the node
@@ -1852,11 +1862,15 @@ export class LGraph
    * is restored and the successor is disposed: its `onRemoved` hook has run
    * once and it must not be reused. Rollback is structural, not a reversal:
    * the incumbent's detach-side lifecycle hooks (`onRemoved`,
-   * `node:before-removed`) have already fired and are not un-fired, and a
-   * subgraph definition released during the detach is not re-acquired.
-   * Failures are returned, not thrown; a throw from a rollback step is
-   * collected in `rollbackFailures` rather than aborting the rest of the
-   * rollback.
+   * `node:before-removed`) have already fired and are not un-fired. A
+   * subgraph definition the incumbent's detach would release is held until
+   * the replacement is committed, so a rollback returns the incumbent with
+   * its definition intact. Failures are returned, not thrown; a throw from a
+   * rollback step is collected in `rollbackFailures` rather than aborting the
+   * rest of the rollback. The one exception is the release of those held
+   * definitions after a successful replacement: as with {@link remove}, the
+   * structural teardown completes and interior lifecycle failures are
+   * rethrown.
    *
    * A `reentrant` result or a `precondition` failure is a refusal before
    * anything ran: the successor is untouched and still the caller's to
@@ -1956,6 +1970,9 @@ export class LGraph
         }
       }
 
+      // The incumbent's definitions were never released; dropping the list
+      // keeps them. From here on removals release definitions immediately.
+      this.deferredSubgraphRelease = undefined
       attempt(() => {
         // The inverse of the detach stage: the record stays held by the store
         // so it can be handed back, and the stores are restored below. A
@@ -1986,6 +2003,12 @@ export class LGraph
       return { status: 'failed', stage, cause, rollbackFailures }
     }
 
+    // Definitions the incumbent's detach would release are held back until
+    // the successor is live: a rollback must return the incumbent with its
+    // definition (and interior nodes) intact.
+    const releaseAfterAdoption: Subgraph[] = []
+    this.deferredSubgraphRelease = releaseAfterAdoption
+
     let stage: AdoptCanonicalNodeStage = 'detach'
     try {
       if (incumbent) {
@@ -2006,10 +2029,17 @@ export class LGraph
 
       stage = 'configure'
       configure?.(successor)
-      return { status: 'replaced', node: successor }
     } catch (cause) {
       return rollback(stage, cause)
+    } finally {
+      this.deferredSubgraphRelease = undefined
     }
+
+    // The replacement is committed. Like `remove`, the structural teardown of
+    // the released definitions always completes; interior lifecycle failures
+    // are rethrown to the caller.
+    this.releaseSubgraphs(releaseAfterAdoption)
+    return { status: 'replaced', node: successor }
   }
 
   /**
