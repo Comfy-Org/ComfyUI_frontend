@@ -1842,6 +1842,10 @@ export class LGraph
    * step is collected in `rollbackFailures` rather than aborting the rest of
    * the rollback.
    *
+   * A `reentrant` result or a `precondition` failure is a refusal before
+   * anything ran: the successor is untouched and still the caller's to
+   * dispose or reuse.
+   *
    * This is the one operation that hands a canonical record from one live
    * node to another. Callers never touch `_nodes`, `_nodes_by_id`, node
    * `graph`/`_graphScope`/`_state` or the stores themselves.

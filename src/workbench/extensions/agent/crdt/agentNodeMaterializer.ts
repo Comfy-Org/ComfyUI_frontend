@@ -315,6 +315,18 @@ function materialize(
   if (result.status === 'replaced') return true
 
   const context = { graphId: graph.id, nodeId: String(state.id) }
+  // The graph only disposes a successor it began attaching. When it refused
+  // up front, the node we built is still ours and nothing else holds it.
+  if (result.status === 'reentrant' || result.stage === 'precondition') {
+    try {
+      node.onRemoved?.()
+    } catch (failure) {
+      reportError(failure, {
+        errorType: 'agent_node_materialize_rollback_failed',
+        context
+      })
+    }
+  }
   if (result.status === 'reentrant') {
     reportError(
       'reconcileAgentAdapters re-entered from a node lifecycle hook',
