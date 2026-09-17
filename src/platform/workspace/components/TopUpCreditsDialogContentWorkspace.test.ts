@@ -92,13 +92,6 @@ vi.mock<unknown>(import('@/composables/billing/usePendingTopup'), () => ({
   usePendingTopup: () => ({ clearPendingTopup: mockClearPendingTopup })
 }))
 
-vi.mock<unknown>(import('@/composables/useExternalLink'), () => ({
-  useExternalLink: () => ({
-    buildDocsUrl: () => 'https://docs.comfy.org',
-    docsPaths: { partnerNodesPricing: '' }
-  })
-}))
-
 vi.mock<unknown>(
   import('primevue/usetoast'), // eslint-disable-line primevue-removal/no-imports
   () => ({
