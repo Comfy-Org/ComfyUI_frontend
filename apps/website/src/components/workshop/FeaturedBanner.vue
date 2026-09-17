@@ -2,37 +2,38 @@
 import { useElementHover, useEventListener, useRafFn } from '@vueuse/core'
 import { computed, ref, useTemplateRef, watch } from 'vue'
 
-import type { WorkshopModel } from '../../config/models-catalogue'
 import { prefersReducedMotion } from '../../composables/useReducedMotion'
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
-import { taskLabelFor } from '../../lib/workshop/task-label'
 import Badge from '../ui/badge/Badge.vue'
 import Button from '@/components/ui/button/Button.vue'
 
-const AUTOPLAY_MS = 7000
-const CAPABILITY_LIMIT = 3
+/** One thing worth opening, whatever kind of thing the catalogue holds. */
+export interface FeaturedSlide {
+  readonly key: string
+  readonly href: string
+  readonly title: string
+  /** What it is or what it makes, in the badge that leads the slide. */
+  readonly kind: string
+  readonly tags: readonly string[]
+  readonly summary?: string
+  readonly thumbnailUrl?: string
+}
 
-const { models, locale = 'en' } = defineProps<{
-  models: readonly WorkshopModel[]
+const AUTOPLAY_MS = 7000
+
+const { slides, locale = 'en' } = defineProps<{
+  slides: readonly FeaturedSlide[]
   locale?: Locale
 }>()
 
-const slides = computed(() =>
-  models.map((model) => ({
-    model,
-    task: taskLabelFor(model, locale),
-    capabilities: model.capabilities.slice(0, CAPABILITY_LIMIT)
-  }))
-)
-
 const activeIndex = ref(0)
 const active = computed(
-  () => slides.value[Math.min(activeIndex.value, slides.value.length - 1)]
+  () => slides[Math.min(activeIndex.value, slides.length - 1)]
 )
 
 function goTo(index: number) {
-  activeIndex.value = (index + slides.value.length) % slides.value.length
+  activeIndex.value = (index + slides.length) % slides.length
 }
 
 const banner = useTemplateRef<HTMLElement>('banner')
@@ -50,7 +51,7 @@ useEventListener(banner, 'focusout', () => (readingByKeyboard.value = false))
 
 const rotating = computed(
   () =>
-    slides.value.length > 1 &&
+    slides.length > 1 &&
     !hovered.value &&
     !readingByKeyboard.value &&
     !prefersReducedMotion()
@@ -84,14 +85,14 @@ const fill = computed(() =>
     data-testid="section-featured"
   >
     <a
-      :href="active.model.href"
+      :href="active.href"
       class="group short:h-76 sm:short:h-76 block h-112"
       data-testid="featured-slide"
     >
       <img
-        v-if="active.model.thumbnailUrl"
-        :key="active.model.slug"
-        :src="active.model.thumbnailUrl"
+        v-if="active.thumbnailUrl"
+        :key="active.key"
+        :src="active.thumbnailUrl"
         alt=""
         class="absolute inset-0 size-full object-cover"
         decoding="async"
@@ -106,30 +107,30 @@ const fill = computed(() =>
       >
         <div class="flex flex-wrap items-center gap-2">
           <Badge variant="subtle" size="md" class="text-primary-comfy-canvas">
-            {{ active.task }}
+            {{ active.kind }}
           </Badge>
           <Badge
-            v-for="capability in active.capabilities"
-            :key="capability"
+            v-for="tag in active.tags"
+            :key="tag"
             variant="subtle"
             size="md"
             class="text-content-secondary max-sm:hidden"
           >
-            {{ capability }}
+            {{ tag }}
           </Badge>
         </div>
 
         <h2
           class="lg:short:text-4xl text-4xl font-bold text-primary-warm-white lg:text-5xl"
         >
-          {{ active.model.name }}
+          {{ active.title }}
         </h2>
 
         <p
-          v-if="active.model.summary"
+          v-if="active.summary"
           class="text-content-secondary line-clamp-2 max-w-prose"
         >
-          {{ active.model.summary }}
+          {{ active.summary }}
         </p>
 
         <Button as="span" class="w-fit">
@@ -145,9 +146,9 @@ const fill = computed(() =>
     >
       <button
         v-for="(slide, index) in slides"
-        :key="slide.model.slug"
+        :key="slide.key"
         type="button"
-        :aria-label="slide.model.name"
+        :aria-label="slide.title"
         :aria-current="index === activeIndex ? 'true' : undefined"
         class="focus-visible:ring-primary-comfy-yellow/50 group w-12 cursor-pointer rounded-full py-3 outline-none focus-visible:ring-3"
         @click="goTo(index)"

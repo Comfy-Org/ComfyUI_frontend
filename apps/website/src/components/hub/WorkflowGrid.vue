@@ -128,6 +128,8 @@ const showingText = computed(() =>
       </BrowseToolbar>
     </div>
 
+    <slot name="banner" />
+
     <slot v-if="store.activeTab.value === 'models'" name="models" />
     <div
       v-else

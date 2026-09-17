@@ -15,6 +15,8 @@ import {
 import { groupModels } from '../../config/model-family'
 import hubTemplates from '../../data/hubTemplates.json'
 import { hubWorkflowPath } from '../../lib/hub/workflow-detail'
+import { templatesInTab } from '../../lib/hub/hub-tabs'
+import { modelSlides, templateSlides } from '../../lib/workshop/featured-slides'
 import {
   partnerModelFor,
   useCaseForTemplate
@@ -33,6 +35,7 @@ import type {
 import HubUseCaseNav from './HubUseCaseNav.vue'
 import type { GridLabels } from './WorkflowGrid.vue'
 import WorkflowGrid from './WorkflowGrid.vue'
+import FeaturedBanner from '../workshop/FeaturedBanner.vue'
 import WorkshopHero from '../workshop/WorkshopHero.vue'
 import WorkshopModelCard from '../workshop/WorkshopModelCard.vue'
 import WorkshopSearchField from '../workshop/WorkshopSearchField.vue'
@@ -239,6 +242,48 @@ const LEAD_MODELS = 5
 
 const modelFamilies = computed(() => groupModels(filteredModels.value))
 
+// The banner answers the two choices that say what you are browsing, the type
+// and the use case, and stays out of the way of the ones that narrow a list:
+// a hero over five results, reshuffling per keystroke, is noise.
+const BANNER_SLIDES = 6
+
+const popularTemplates = computed(() =>
+  [...templatesInTab(scoped.value.templates, store.activeTab.value)].sort(
+    (a, b) => b.usage - a.usage
+  )
+)
+
+const popularModels = computed(() =>
+  sortWorkshopModels(scoped.value.models, 'popular')
+)
+
+// On All the two kinds alternate, so the row that opens the catalogue shows
+// what it holds rather than the most-run half of it.
+const bannerSlides = computed(() => {
+  if (store.searchQuery.value.trim() !== '') return []
+  const half = Math.ceil(BANNER_SLIDES / 2)
+  const workflows = templateSlides(
+    popularTemplates.value.slice(
+      0,
+      store.activeTab.value === 'all' ? half : BANNER_SLIDES
+    ),
+    hrefFor
+  )
+  const models = modelSlides(
+    popularModels.value.slice(
+      0,
+      store.activeTab.value === 'models' ? BANNER_SLIDES : half
+    ),
+    locale
+  )
+  if (store.activeTab.value === 'models') return models
+  if (store.activeTab.value !== 'all') return workflows
+  return workflows
+    .flatMap((slide, index) => [slide, models[index]])
+    .filter((slide) => slide !== undefined)
+    .slice(0, BANNER_SLIDES)
+})
+
 const filteredTemplates = computed(() => {
   const badges = store.filterBadges.value
   const chosen = (type: FilterBadgeType) =>
@@ -307,6 +352,15 @@ const filteredTemplates = computed(() => {
           :model-count="modelFamilies.length"
           @clear-extra="clearSearchFilters"
         >
+          <template #banner>
+            <FeaturedBanner
+              v-if="bannerSlides.length"
+              :slides="bannerSlides"
+              :locale
+              class="short:mb-6 mb-10"
+            />
+          </template>
+
           <template #search>
             <WorkshopSearchField
               v-model="store.searchQuery.value"

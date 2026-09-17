@@ -3,7 +3,6 @@ import {
   ArrowRight,
   ArrowUpDown,
   ChevronDown,
-  LayoutGrid,
   SlidersHorizontal,
   X
 } from '@lucide/vue'
@@ -22,7 +21,6 @@ import {
   TabsRoot,
   TabsTrigger
 } from 'reka-ui'
-import type { Component } from 'vue'
 import { computed, ref, useTemplateRef, watchEffect } from 'vue'
 
 import { onClickOutside, useMediaQuery } from '@vueuse/core'
@@ -40,9 +38,6 @@ import type {
 import { useHubStore } from '../../composables/useHubStore'
 import type { FacetSheetGroup } from '../workshop/FacetSheet.vue'
 import FacetSheet from '../workshop/FacetSheet.vue'
-import IconApps from './IconApps.vue'
-import IconModel from './IconModel.vue'
-import IconWorkflow from './IconWorkflow.vue'
 
 export interface SortOption {
   readonly value: HubSort
@@ -110,13 +105,12 @@ const { facetsByType, isBadgeActive, activeCountForType } =
 const CHIP_LIMIT = 6
 const SEARCH_THRESHOLD = 12
 
-const TABS: { key: HubTab; labelKey: keyof ToolbarLabels; icon: Component }[] =
-  [
-    { key: 'all', labelKey: 'all', icon: LayoutGrid },
-    { key: 'nodeGraphs', labelKey: 'nodeGraphs', icon: IconWorkflow },
-    { key: 'comfyApps', labelKey: 'comfyApps', icon: IconApps },
-    { key: 'models', labelKey: 'models', icon: IconModel }
-  ]
+const TABS: { key: HubTab; labelKey: keyof ToolbarLabels }[] = [
+  { key: 'all', labelKey: 'all' },
+  { key: 'nodeGraphs', labelKey: 'nodeGraphs' },
+  { key: 'comfyApps', labelKey: 'comfyApps' },
+  { key: 'models', labelKey: 'models' }
+]
 
 const tabsRef = useTemplateRef<{ $el: HTMLElement }>('tabs')
 const tabsEl = computed(() => tabsRef.value?.$el ?? null)
@@ -286,21 +280,26 @@ function phoneToggle(key: string, value: string) {
 
 <template>
   <div class="relative flex flex-col gap-3">
-    <!-- Tabs and search share one row: below sm the row may wrap, from there
-      up the search shrinks instead of dropping under the tabs. -->
+    <!-- The search leads the row and the tabs sit to its right, beside the
+      controls that narrow the same list. On a phone the row wraps and the tabs
+      take the line under it, where the words still fit. -->
     <div class="flex flex-wrap items-center gap-2 sm:flex-nowrap">
+      <div class="flex min-w-0 flex-1 items-center">
+        <slot name="search" />
+      </div>
+
       <TabsRoot
         ref="tabs"
         :model-value="store.activeTab.value"
-        class="flex scrollbar-hide min-w-0 shrink-0 overflow-x-auto"
+        class="flex scrollbar-hide min-w-0 shrink-0 overflow-x-auto max-sm:order-1 max-sm:w-full"
         @update:model-value="store.setTab($event as HubTab)"
       >
         <TabsList
-          class="relative inline-flex items-center gap-1 rounded-xl bg-white/8 p-1"
+          class="relative inline-flex items-center gap-1 rounded-2xl bg-white/8 p-1 max-sm:w-full"
         >
           <span
             aria-hidden="true"
-            class="pointer-events-none absolute inset-y-1 left-0 rounded-lg bg-primary-warm-white transition-[translate,width] duration-300 ease-out"
+            class="pointer-events-none absolute inset-y-1 left-0 rounded-xl bg-primary-warm-white transition-[translate,width] duration-300 ease-out"
             :style="{
               width: `${pill.width}px`,
               translate: `${pill.left}px 0`
@@ -310,26 +309,15 @@ function phoneToggle(key: string, value: string) {
             v-for="tab in TABS"
             :key="tab.key"
             :value="tab.key"
-            :aria-label="labels[tab.labelKey]"
             :data-testid="`hub-tab-${tab.key}`"
-            class="group text-content-muted hover:text-content focus-visible:ring-brand focus-visible:ring-offset-page data-[state=active]:text-page relative z-10 inline-flex h-8 cursor-pointer items-center justify-center gap-1.5 rounded-lg px-2.5 text-xs font-semibold whitespace-nowrap transition-colors outline-none hover:bg-white/8 focus-visible:ring-2 focus-visible:ring-offset-1 sm:px-3.5"
+            class="group text-content-muted hover:text-content focus-visible:ring-brand focus-visible:ring-offset-page data-[state=active]:text-page relative z-10 inline-flex h-9 cursor-pointer items-center justify-center rounded-xl px-4 text-sm font-semibold whitespace-nowrap transition-colors outline-none hover:bg-white/8 focus-visible:ring-2 focus-visible:ring-offset-1 max-sm:flex-1"
           >
-            <component
-              :is="tab.icon"
-              class="size-3.5 shrink-0"
-              aria-hidden="true"
-            />
-            <!-- Below lg the row runs out of width, so the tabs keep the icon
-              and drop the word; the trigger's aria-label still names it. -->
-            <span class="ppformula-text-center-sm max-lg:hidden">
-              {{ labels[tab.labelKey] }}
-            </span>
+            {{ labels[tab.labelKey] }}
           </TabsTrigger>
         </TabsList>
       </TabsRoot>
 
-      <div class="ml-auto flex min-w-0 flex-1 items-center justify-end gap-2">
-        <slot name="search" />
+      <div class="flex items-center gap-2">
         <button
           type="button"
           :aria-expanded="filterOpen"

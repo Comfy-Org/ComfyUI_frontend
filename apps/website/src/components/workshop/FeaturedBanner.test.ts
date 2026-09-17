@@ -4,6 +4,7 @@ import userEvent from '@testing-library/user-event'
 import { describe, expect, it } from 'vitest'
 
 import type { WorkshopModel } from '../../config/models-catalogue'
+import { modelSlides } from '../../lib/workshop/featured-slides'
 import FeaturedBanner from './FeaturedBanner.vue'
 
 const base: WorkshopModel = {
@@ -32,7 +33,9 @@ const kling: WorkshopModel = {
 
 describe('FeaturedBanner', () => {
   it('leads with the first model and links the whole slide to its page', () => {
-    render(FeaturedBanner, { props: { models: [base, kling] } })
+    render(FeaturedBanner, {
+      props: { slides: modelSlides([base, kling], 'en') }
+    })
     expect(screen.getByRole('heading', { level: 2 }).textContent).toBe('Flux')
     expect(screen.getByText('Text to Image')).toBeTruthy()
     expect(screen.getByTestId('featured-slide').getAttribute('href')).toBe(
@@ -42,7 +45,9 @@ describe('FeaturedBanner', () => {
 
   it('shows the model a pagination bar names', async () => {
     const user = userEvent.setup()
-    render(FeaturedBanner, { props: { models: [base, kling] } })
+    render(FeaturedBanner, {
+      props: { slides: modelSlides([base, kling], 'en') }
+    })
 
     await user.click(screen.getByRole('button', { name: 'Kling' }))
 
@@ -54,7 +59,7 @@ describe('FeaturedBanner', () => {
   })
 
   it('drops the pagination when there is nothing to page through', () => {
-    render(FeaturedBanner, { props: { models: [base] } })
+    render(FeaturedBanner, { props: { slides: modelSlides([base], 'en') } })
     expect(screen.queryByTestId('featured-pagination')).toBeNull()
   })
 })

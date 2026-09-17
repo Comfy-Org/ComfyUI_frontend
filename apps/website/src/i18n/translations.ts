@@ -9571,7 +9571,7 @@ Enterprise`
     'zh-CN': '搜索工作流、模型、创作者...'
   },
   'workshop.hub.kind.all': { en: 'All', 'zh-CN': '全部' },
-  'workshop.hub.kind.graph': { en: 'Graphs', 'zh-CN': '节点图' },
+  'workshop.hub.kind.graph': { en: 'Workflows', 'zh-CN': '工作流' },
   'workshop.hub.kind.app': { en: 'Apps', 'zh-CN': '应用' },
   'workshop.hub.kind.models': { en: 'Models', 'zh-CN': '模型' },
   'workshop.hub.io.image': { en: 'Image', 'zh-CN': '图像' },
