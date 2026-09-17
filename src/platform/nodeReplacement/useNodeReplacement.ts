@@ -417,6 +417,30 @@ function removeReplacedMissingNodeTypes(types: string[]): void {
   })
 }
 
+function findReplacementPlaceholders(
+  graph: LGraph,
+  selectedTypes: MissingNodeType[]
+): LGraphNode[] {
+  const targetTypes = new Set(
+    selectedTypes.flatMap((selected) => {
+      const type = typeof selected === 'string' ? selected : selected.type
+      return [type, sanitizeNodeName(type)]
+    })
+  )
+
+  return collectAllNodes(graph, (node) => {
+    if (!node.last_serialization) return false
+    const originalType = node.last_serialization.type || node.type
+    return !!originalType && targetTypes.has(originalType)
+  })
+}
+
+interface ReplacementResult {
+  replacedTypes: string[]
+  failedTypes: Set<string>
+  anyNodeReplaced: boolean
+}
+
 export function useNodeReplacement() {
   const toastStore = useToast()
 
@@ -454,49 +478,21 @@ export function useNodeReplacement() {
   }
 
   function replaceNodesInPlace(selectedTypes: MissingNodeType[]): string[] {
-    const replacedTypes: string[] = []
-    const failedTypes = new Set<string>()
-    let replacementFailed: true | undefined
-    let anyNodeReplaced = false
+    const result: ReplacementResult = {
+      replacedTypes: [],
+      failedTypes: new Set(),
+      anyNodeReplaced: false
+    }
     const graph = app.rootGraph
-    const recordReplacementFailure = (type: string) => {
-      replacementFailed = true
-      failedTypes.add(type)
-      const replacedTypeIndex = replacedTypes.indexOf(type)
+    const recordReplacementFailure = (type: string): void => {
+      result.failedTypes.add(type)
+      const replacedTypeIndex = result.replacedTypes.indexOf(type)
       if (replacedTypeIndex !== -1) {
-        replacedTypes.splice(replacedTypeIndex, 1)
+        result.replacedTypes.splice(replacedTypeIndex, 1)
       }
     }
 
-    const changeTracker =
-      useWorkflowStore().activeWorkflow?.changeTracker ?? null
-    changeTracker?.beforeChange()
-
-    // Target types come from node_replacements fetched at workflow load time
-    // and the missing nodes detected at that point — not from the current
-    // registered_node_types. This ensures replacement still works even if
-    // the user has since installed the missing node pack.
-    // Also include sanitized variants so that when the fallback path reads
-    // n.type (which app.ts may have already run through sanitizeNodeName),
-    // we can still match against the original type stored in selectedTypes.
-    const targetTypes = new Set([
-      ...selectedTypes.map((t) => (typeof t === 'string' ? t : t.type)),
-      ...selectedTypes.map((t) =>
-        sanitizeNodeName(typeof t === 'string' ? t : t.type)
-      )
-    ])
-
-    try {
-      const placeholders = collectAllNodes(graph, (n) => {
-        if (!n.last_serialization) return false
-        // Prefer the original serialized type; fall back to the live type
-        // for nodes whose serialization predates the type field.
-        // n.type may have been sanitized by app.ts (HTML special chars stripped);
-        // the sanitized variants in targetTypes ensure we still match correctly.
-        const originalType = n.last_serialization.type || n.type
-        return !!originalType && targetTypes.has(originalType)
-      })
-
+    const replacePlaceholders = (placeholders: LGraphNode[]): void => {
       for (const node of placeholders) {
         const match = findMatchingType(node, selectedTypes)
         if (!match?.replacement) continue
@@ -506,30 +502,27 @@ export function useNodeReplacement() {
           recordReplacementFailure(failedType)
           continue
         }
-        anyNodeReplaced = true
+        result.anyNodeReplaced = true
 
         if (
-          !failedTypes.has(match.type) &&
-          !replacedTypes.includes(match.type)
+          !result.failedTypes.has(match.type) &&
+          !result.replacedTypes.includes(match.type)
         ) {
-          replacedTypes.push(match.type)
+          result.replacedTypes.push(match.type)
         }
       }
+    }
 
-      if (anyNodeReplaced) {
-        graph.updateExecutionOrder()
-        graph.setDirtyCanvas(true, true)
-      }
-
-      if (replacedTypes.length > 0) {
+    const notifyReplacementResult = (): void => {
+      if (result.replacedTypes.length > 0) {
         toastStore.success(t('g.success'), {
           description: t('nodeReplacement.replacedAllNodes', {
-            count: replacedTypes.length
+            count: result.replacedTypes.length
           }),
           duration: 3000
         })
       }
-      if (replacementFailed) {
+      if (result.failedTypes.size > 0) {
         toastStore.error(t('g.error', 'Error'), {
           description: t(
             'nodeReplacement.replaceFailed',
@@ -537,9 +530,23 @@ export function useNodeReplacement() {
           )
         })
       }
+    }
+
+    const changeTracker =
+      useWorkflowStore().activeWorkflow?.changeTracker ?? null
+    changeTracker?.beforeChange()
+
+    try {
+      replacePlaceholders(findReplacementPlaceholders(graph, selectedTypes))
+
+      if (result.anyNodeReplaced) {
+        graph.updateExecutionOrder()
+        graph.setDirtyCanvas(true, true)
+      }
+      notifyReplacementResult()
     } catch (error) {
       console.error('Failed to replace nodes:', error)
-      if (anyNodeReplaced) {
+      if (result.anyNodeReplaced) {
         graph.updateExecutionOrder()
         graph.setDirtyCanvas(true, true)
       }
@@ -549,12 +556,12 @@ export function useNodeReplacement() {
           'Failed to replace nodes'
         )
       })
-      return replacedTypes
+      return result.replacedTypes
     } finally {
       changeTracker?.afterChange()
     }
 
-    return replacedTypes
+    return result.replacedTypes
   }
 
   /**

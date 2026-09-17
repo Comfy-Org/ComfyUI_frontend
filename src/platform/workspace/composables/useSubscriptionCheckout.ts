@@ -884,6 +884,47 @@ export function useSubscriptionCheckout(
     await loadTeamSubscriptionPreview(payload, checkoutType, previewRequestId)
   }
 
+  async function requestTeamSubscriptionPreview(
+    billingCycle: BillingCycle,
+    teamCreditStopId: string
+  ): Promise<PreviewSubscribeResponse | null> {
+    const request = previewSubscribe(getTeamPlanSlug(billingCycle), {
+      teamCreditStopId
+    })
+    if (!embeddedCheckoutEnabled) return request
+
+    const [response] = await Promise.all([request, loadSavedPaymentMethods()])
+    return response
+  }
+
+  function acceptsTeamSubscriptionPreview(
+    response: PreviewSubscribeResponse | null,
+    checkoutType: SubscriptionCheckoutType
+  ): response is PreviewSubscribeResponse {
+    if (!embeddedCheckoutEnabled) {
+      return isUsableTeamPreview(response, checkoutType)
+    }
+    return Boolean(
+      response?.allowed &&
+      (response.requires_reactivation_confirmation === false ||
+        isReactivationCapablePreview(response))
+    )
+  }
+
+  function rejectTeamSubscriptionPreview(
+    response: PreviewSubscribeResponse | null,
+    previewError: unknown
+  ): void {
+    toast.error(t('subscription.teamPlan.name'), {
+      description:
+        previewError instanceof Error
+          ? previewError.message
+          : response?.reason || t('subscription.subscribeFailed')
+    })
+    checkoutStep.value = 'pricing'
+    selectedTeamCheckout.value = null
+  }
+
   async function loadTeamSubscriptionPreview(
     payload: {
       stop: TeamPlanSelection
@@ -892,71 +933,26 @@ export function useSubscriptionCheckout(
     checkoutType: SubscriptionCheckoutType,
     previewRequestId: number
   ) {
-    if (!embeddedCheckoutEnabled) {
-      const teamCreditStopId = payload.stop.id
-      if (!teamCreditStopId) {
+    const teamCreditStopId = payload.stop.id
+    if (!teamCreditStopId) {
+      if (!embeddedCheckoutEnabled) {
         toast.error(t('subscription.teamPlan.name'), {
           description: t('subscription.teamPlan.unavailable')
         })
         resetToPricing()
-        return
       }
-      isLoadingPreview.value = true
-
-      let response: PreviewSubscribeResponse | null = null
-      let previewError: unknown
-      try {
-        response = await previewSubscribe(
-          getTeamPlanSlug(payload.billingCycle),
-          { teamCreditStopId }
-        )
-      } catch (error) {
-        previewError = error
-        const recovery = await recoverOutstandingPayment(
-          error,
-          () => previewRequestId === teamPreviewRequestId
-        )
-        if (recovery === 'failed') {
-          resetToPricing()
-          return
-        }
-        if (recovery) return
-      } finally {
-        if (previewRequestId === teamPreviewRequestId) {
-          isLoadingPreview.value = false
-        }
-      }
-
-      if (previewRequestId !== teamPreviewRequestId) return
-      if (isUsableTeamPreview(response, checkoutType)) {
-        installPreview(response)
-        checkoutStep.value = 'preview'
-        return
-      }
-      toast.error(t('subscription.teamPlan.name'), {
-        description:
-          previewError instanceof Error
-            ? previewError.message
-            : response?.reason || t('subscription.subscribeFailed')
-      })
-      checkoutStep.value = 'pricing'
-      selectedTeamCheckout.value = null
       return
     }
 
-    if (!payload.stop.id) return
     isLoadingPreview.value = true
 
     let response: PreviewSubscribeResponse | null = null
     let previewError: unknown
     try {
-      const planSlug = getTeamPlanSlug(payload.billingCycle)
-      ;[response] = await Promise.all([
-        previewSubscribe(planSlug, {
-          teamCreditStopId: payload.stop.id
-        }),
-        loadSavedPaymentMethods()
-      ])
+      response = await requestTeamSubscriptionPreview(
+        payload.billingCycle,
+        teamCreditStopId
+      )
     } catch (error) {
       previewError = error
       const recovery = await recoverOutstandingPayment(
@@ -976,23 +972,12 @@ export function useSubscriptionCheckout(
 
     if (previewRequestId !== teamPreviewRequestId) return
 
-    if (
-      response?.allowed &&
-      (response.requires_reactivation_confirmation === false ||
-        isReactivationCapablePreview(response))
-    ) {
+    if (acceptsTeamSubscriptionPreview(response, checkoutType)) {
       installPreview(response)
       checkoutStep.value = 'preview'
       return
     }
-    toast.error(t('subscription.teamPlan.name'), {
-      description:
-        previewError instanceof Error
-          ? previewError.message
-          : response?.reason || t('subscription.subscribeFailed')
-    })
-    checkoutStep.value = 'pricing'
-    selectedTeamCheckout.value = null
+    rejectTeamSubscriptionPreview(response, previewError)
   }
 
   function resetToPricing() {
