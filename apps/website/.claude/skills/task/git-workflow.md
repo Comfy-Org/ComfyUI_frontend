@@ -17,8 +17,9 @@ re-reviews after its threads are fixed or answered (it approved PR 17373 that
 way). Comment `@coderabbitai review` when it has paused itself, which it does
 after several quick pushes.
 
-Never push to `main`, never merge the pull request yourself, and never add it
-to the merge queue. Merging is the approving engineer's call.
+Never push to `main`. The `task` skill never merges or queues a pull request.
+The `fix-it` skill may send one to the queue, and only when every line of its
+merge gate holds.
 
 ## Before the first commit
 
