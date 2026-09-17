@@ -29,11 +29,12 @@ import type {
   PreviewSubscribeOptions,
   PreviewSubscribeResponse,
   SavedPaymentMethod,
-  SubscribeOptions,
-  SubscribeResponse
+  SubscribeOptions
 } from '@/platform/workspace/api/workspaceApi'
 import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
+import type { SettledSubscribeResponse } from '@/platform/workspace/billing/sdk/subscriptionOperationView'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
+import { useSubscriptionRail } from '@/platform/workspace/composables/useSubscriptionRail'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import { useBillingOperationStore } from '@/platform/workspace/stores/billingOperationStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
@@ -156,6 +157,7 @@ export function useSubscriptionCheckout(
   const telemetry = useTelemetry()
   const billingOperationStore = useBillingOperationStore()
   const workspaceStore = useTeamWorkspaceStore()
+  const subscriptionRail = useSubscriptionRail()
 
   const checkoutStep = ref<CheckoutStep>('pricing')
   const isLoadingPreview = ref(false)
@@ -200,7 +202,10 @@ export function useSubscriptionCheckout(
       : undefined
   })
   const activeCheckoutActionUrl = computed(
-    () => activeCheckoutOperation.value?.actionUrl ?? null
+    () =>
+      activeCheckoutOperation.value?.actionUrl ??
+      subscriptionRail?.subscriptionActionUrl ??
+      null
   )
   // The server says whether the operation is parked; the client no longer
   // guesses. Only awaiting_payment_method offers this recovery — an operation
@@ -1365,7 +1370,7 @@ export function useSubscriptionCheckout(
   }
 
   async function handleSubscribeResponse(
-    response: SubscribeResponse | void,
+    response: SettledSubscribeResponse | void,
     context: SubscriptionOutcomeContext,
     shouldTrackSubscriptionSuccess = true,
     // 0 when the caller holds no lock; a release from a non-holder is a no-op.
@@ -1384,11 +1389,11 @@ export function useSubscriptionCheckout(
         const durationMs = Date.now() - context.attemptStartedAt
         // PostHog implements both trackBillingEvent and
         // trackMonthlySubscriptionSucceeded (PostHogTelemetryProvider.ts:405,
-        // :444), so also calling the legacy event here would double-count this
-        // success for it. billingOperationStore.ts's own success handler
-        // already restores trackMonthlySubscriptionSucceeded for the
-        // providers that need it (Mixpanel, GTM); this call site doesn't need
-        // a second one.
+        // :444), so calling the legacy event for a plan the server activated
+        // on the spot would double-count that success for it. Only a subscribe
+        // the server charged for reaches the legacy event below, which is the
+        // set billingOperationStore.ts's success handler counts for the
+        // providers that need it (Mixpanel, GTM) on the legacy path.
         telemetry?.trackBillingEvent({
           operation: 'subscription_checkout',
           stage: 'succeeded',
@@ -1411,6 +1416,24 @@ export function useSubscriptionCheckout(
           payment_intent_source: paymentIntentSource,
           billing_op_id: response.billing_op_id,
           duration_ms: durationMs
+        })
+        if (response.requiredPayment) {
+          telemetry?.trackMonthlySubscriptionSucceeded({
+            tier: context.tier,
+            cycle: context.cycle,
+            checkout_type: context.checkoutType,
+            payment_intent_source: paymentIntentSource,
+            billing_op_id: response.billing_op_id
+          })
+        }
+      }
+      // The poller announced every subscription operation it settled, whatever
+      // the caller was tracking; on this rail there is no poller to do it.
+      if (response.requiredPayment) {
+        toast.add({
+          severity: 'success',
+          summary: t('billingOperation.subscriptionSuccess'),
+          life: 5000
         })
       }
       checkoutStep.value = 'success'

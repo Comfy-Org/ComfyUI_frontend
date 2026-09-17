@@ -1,18 +1,25 @@
 import { describe, expect, it, vi } from 'vitest'
 
 import { driveEmbeddedChallenge } from './challengeDriver.js'
-import type { BillingOperationState } from './operationState.js'
+import type {
+  BillingOperationState,
+  BillingPresentationState,
+  PendingBillingOperation
+} from './operationState.js'
 
 const SCOPE = { userId: 'uid-1', workspaceId: 'ws-1', role: 'owner' } as const
 
 function challenged(
-  overrides: Partial<Extract<BillingOperationState, { phase: 'pending' }>> = {}
+  overrides: Partial<
+    Omit<PendingBillingOperation, 'presentation' | 'hostedDestination'>
+  > = {},
+  presentation: BillingPresentationState = { presentation: 'embedded' }
 ): BillingOperationState {
   return {
     id: 'op-1',
     kind: 'topup',
     scope: SCOPE,
-    presentation: 'embedded',
+    ...presentation,
     observedAt: 0,
     attemptStartedAt: 0,
     phase: 'pending',
@@ -73,7 +80,7 @@ describe('driveEmbeddedChallenge', () => {
     const handleNextAction = vi.fn(async () => ({}))
     for (const state of [
       undefined,
-      challenged({ presentation: 'hosted' }),
+      challenged({}, { presentation: 'hosted', hostedDestination: 'stripe' }),
       challenged({ challenge: undefined }),
       challenged({
         challenge: { clientSecret: 'pi_secret', status: 'in_progress' }
