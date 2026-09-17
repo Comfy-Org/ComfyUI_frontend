@@ -1,4 +1,4 @@
-import { shallowReactive } from 'vue'
+import { shallowReactive, toRaw } from 'vue'
 
 import { assert } from '@/base/assert'
 import {
@@ -152,9 +152,15 @@ function canTransferNodeState(
   )
 }
 
-function transferNodeState(node: LGraphNode, replacement: LGraphNode): void {
-  const registeredState = node._state
-  const detachedState = { ...registeredState }
+/**
+ * Overwrites a registered record with `replacement`'s shell state. Every
+ * optional field is reset first so nothing the previous occupant set survives
+ * unless the replacement carries it; `graphId` and `id` stay the record's own.
+ */
+function mergeReplacementState(
+  registeredState: NodeState,
+  replacement: LGraphNode
+): void {
   const { graphId: _graphId, id: _id, ...replacementState } = replacement._state
   Object.assign(registeredState, {
     bgcolor: undefined,
@@ -171,10 +177,62 @@ function transferNodeState(node: LGraphNode, replacement: LGraphNode): void {
       | NodeState[K]
       | undefined
   })
+}
+
+function transferNodeState(node: LGraphNode, replacement: LGraphNode): void {
+  const registeredState = node._state
+  const detachedState = { ...registeredState }
+  mergeReplacementState(registeredState, replacement)
   replacement._state = registeredState
   replacement._graphScope = node._graphScope
   node._state = detachedState
   node._graphScope = undefined
+}
+
+/**
+ * Makes `successor` the node that owns `canonical`, a record the store already
+ * holds for `graph`. The record keeps its identity (and so its reactive
+ * subscribers); its fields are replaced by the successor's shell state.
+ *
+ * If `incumbent` currently owns the record it is left with a detached copy of
+ * the record as it was before the merge. An incumbent that lost ownership to
+ * another authority (an orphaned adapter) is only marked unregistered — its
+ * detached state is already its own.
+ *
+ * Store membership is not changed here: the record stays registered under the
+ * same scope, so a following {@link registerNodeState} for the successor is a
+ * no-op. Callers own the graph-level steps (detach, add, configure, rollback);
+ * see `LGraph.adoptCanonicalNode`.
+ */
+export function adoptCanonicalNodeState(
+  graph: Pick<LGraph, 'rootGraph' | 'id'>,
+  canonical: NodeState,
+  successor: LGraphNode,
+  incumbent?: LGraphNode
+): void {
+  const graphScope = graphScopeOf(graph)
+  assert(
+    successor._graphScope === undefined,
+    'adoptCanonicalNodeState: successor already registered',
+    {
+      nodeId: canonical.id,
+      successorRootGraphId: successor._graphScope?.rootGraphId
+    }
+  )
+  assert(
+    useNodeDataStore().ownsNode(graphScope, canonical),
+    'adoptCanonicalNodeState: record not held by the store for this graph',
+    { nodeId: canonical.id, graphId: graph.id }
+  )
+
+  if (incumbent && toRaw(incumbent._state) === toRaw(canonical)) {
+    incumbent._state = { ...canonical }
+  }
+  if (incumbent) incumbent._graphScope = undefined
+
+  mergeReplacementState(canonical, successor)
+  successor._state = canonical
+  successor._graphScope = graphScope
 }
 
 /**

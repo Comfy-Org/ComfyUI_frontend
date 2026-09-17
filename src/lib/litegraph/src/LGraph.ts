@@ -16,6 +16,15 @@ import {
   detachAllNodesFromStores,
   detachNodeFromStores
 } from '@/core/graph/nodeShell/nodeShellLifecycle'
+import { adoptCanonicalNodeState } from '@/core/graph/nodeShell/nodeShellState'
+import type { NodeState } from '@/types/nodeState'
+import type { GraphScope } from '@/types/graphScopeId'
+import type { WidgetId } from '@/types/widgetId'
+import type { WidgetState } from '@/types/widgetState'
+import type { WidgetRenderState } from '@/stores/widgetValueStore'
+import type { WidgetVisibilityComponent } from '@/types/widgetVisibility'
+import { isNodeBindable } from '@/lib/litegraph/src/utils/type'
+import { getWidgetIds } from '@/lib/litegraph/src/utils/widget'
 import type { UUID } from '@/utils/uuid'
 import { createUuidv4, zeroUuid } from '@/utils/uuid'
 import { reportError } from '@/platform/telemetry/reportError'
@@ -248,6 +257,168 @@ export interface GraphRemoveOptions {
    * {@link preserveCanonicalState}.
    */
   replacement?: boolean
+}
+
+/** Options for {@link LGraph.adoptCanonicalNode}. */
+export interface AdoptCanonicalNodeOptions {
+  /**
+   * The live node currently attached under the record's id, if any. It is
+   * detached before the successor attaches and reattached if adoption fails.
+   */
+  incumbent?: LGraphNode
+  /**
+   * Runs once the successor is attached and owns the record. A throw fails
+   * the adoption and rolls everything back.
+   */
+  configure?: (successor: LGraphNode) => void
+}
+
+/** The step of {@link LGraph.adoptCanonicalNode} that failed. */
+export type AdoptCanonicalNodeStage =
+  | 'precondition'
+  | 'detach'
+  | 'add'
+  | 'configure'
+
+export type AdoptCanonicalNodeResult =
+  | { status: 'replaced'; node: LGraphNode }
+  /** Called from inside its own `configure` hook; nothing was changed. */
+  | { status: 'reentrant' }
+  | {
+      status: 'failed'
+      stage: AdoptCanonicalNodeStage
+      /**
+       * What went wrong: an {@link AdoptCanonicalNodeRejection} when the
+       * graph itself refused, otherwise whatever a lifecycle hook threw.
+       */
+      cause: unknown
+      /** Errors thrown while restoring the previous state, in order. */
+      rollbackFailures: unknown[]
+    }
+
+/** A refusal raised by the graph rather than a thrown hook. */
+interface AdoptCanonicalNodeRejection {
+  code:
+    | 'successor_attached'
+    | 'record_not_owned'
+    | 'incumbent_mismatch'
+    | 'incumbent_foreign'
+    | 'add_rejected'
+  message: string
+}
+
+interface TrackedWidgetSnapshot {
+  id: WidgetId
+  state: WidgetState
+  render: WidgetRenderState
+  visibility: WidgetVisibilityComponent
+}
+
+/** A node's registration as seen by the stores, restorable after a failed adoption. */
+interface NodeRegistrationSnapshot {
+  state: NodeState
+  graphScope: GraphScope | undefined
+  graph: LGraph | null
+}
+
+function snapshotRegistration(node: LGraphNode): NodeRegistrationSnapshot {
+  return {
+    state: node._state,
+    graphScope: node._graphScope,
+    graph: node.graph
+  }
+}
+
+function restoreRegistration(
+  node: LGraphNode,
+  snapshot: NodeRegistrationSnapshot
+): void {
+  node._state = snapshot.state
+  node._graphScope = snapshot.graphScope
+  node.graph = snapshot.graph
+}
+
+/**
+ * A node is attached once `LGraph.add` has registered it: it holds a graph
+ * scope or is indexed by its graph. A bare `graph` reference does not count;
+ * `SubgraphNode` binds `this.graph` in its constructor before it is added.
+ */
+function isAttachedToAGraph(node: LGraphNode): boolean {
+  return (
+    node._graphScope !== undefined || node.graph?._nodes_by_id[node.id] === node
+  )
+}
+
+/** Copies every own field of a record; `Object.assign` back restores it in place. */
+function snapshotRecord(record: NodeState): NodeState {
+  return { ...toRaw(record) }
+}
+
+function restoreRecord(record: NodeState, snapshot: NodeState): void {
+  for (const key of Object.keys(record)) {
+    if (!(key in snapshot)) delete record[key as keyof NodeState]
+  }
+  Object.assign(record, snapshot)
+}
+
+function snapshotTrackedWidgets(
+  rootGraphId: UUID,
+  nodeId: NodeId
+): TrackedWidgetSnapshot[] {
+  const widgetStore = useWidgetValueStore()
+  const snapshots: TrackedWidgetSnapshot[] = []
+  for (const id of widgetStore.getNodeWidgetIds(rootGraphId, nodeId)) {
+    const state = widgetStore.getWidget(id)
+    const render = widgetStore.getWidgetRenderState(id)
+    const visibility = widgetStore.getWidgetVisibility(id)
+    if (!state || !render || !visibility) continue
+    snapshots.push({
+      id,
+      state: { ...toRaw(state) },
+      render: { ...toRaw(render) },
+      visibility: {
+        surfaces: { ...toRaw(visibility.surfaces) },
+        suppression: { ...toRaw(visibility.suppression) }
+      }
+    })
+  }
+  return snapshots
+}
+
+/**
+ * Puts a node's tracked widgets back to a snapshot, in place. Widget entities
+ * that survived keep their identity, so live widgets bound to them stay bound;
+ * entities the failed successor added are dropped, ones it replaced are
+ * re-registered.
+ */
+function restoreTrackedWidgets(
+  rootGraphId: UUID,
+  nodeId: NodeId,
+  snapshots: readonly TrackedWidgetSnapshot[]
+): void {
+  const widgetStore = useWidgetValueStore()
+  const keep = new Set(snapshots.map((snapshot) => snapshot.id))
+  for (const id of widgetStore.getNodeWidgetIds(rootGraphId, nodeId)) {
+    if (!keep.has(id)) widgetStore.deleteWidget(id)
+  }
+  for (const { id, state, render, visibility } of snapshots) {
+    const existingState = widgetStore.getWidget(id)
+    const existingRender = widgetStore.getWidgetRenderState(id)
+    const existingVisibility = widgetStore.getWidgetVisibility(id)
+    if (existingState && existingRender && existingVisibility) {
+      Object.assign(existingState, state)
+      Object.assign(existingRender, render)
+      Object.assign(existingVisibility.surfaces, visibility.surfaces)
+      Object.assign(existingVisibility.suppression, visibility.suppression)
+    } else {
+      widgetStore.registerWidget(id, state, render, visibility)
+    }
+  }
+  widgetStore.setNodeWidgetOrder(
+    rootGraphId,
+    nodeId,
+    snapshots.map((snapshot) => snapshot.id)
+  )
 }
 
 /**
@@ -1654,6 +1825,212 @@ export class LGraph
 
     this.updateExecutionOrder()
     failures.rethrow('LGraph.remove: lifecycle callbacks failed')
+  }
+
+  private adoptingCanonicalNode = false
+
+  /**
+   * Attaches `successor` as the live node for `canonical`, a record the node
+   * store already holds for this graph, replacing `incumbent` if one is
+   * attached under that id. Links, execution order, layout and widget values
+   * keyed by the id stay with the record, so the successor inherits them.
+   *
+   * Either the successor ends up attached and owning the record, or every
+   * store, the record and the incumbent are put back as they were and the
+   * successor is disposed: its `onRemoved` hook has run once and it must not
+   * be reused. Failures are returned, not thrown; a throw from a rollback
+   * step is collected in `rollbackFailures` rather than aborting the rest of
+   * the rollback.
+   *
+   * This is the one operation that hands a canonical record from one live
+   * node to another. Callers never touch `_nodes`, `_nodes_by_id`, node
+   * `graph`/`_graphScope`/`_state` or the stores themselves.
+   */
+  adoptCanonicalNode(
+    canonical: NodeState,
+    successor: LGraphNode,
+    { incumbent, configure }: AdoptCanonicalNodeOptions = {}
+  ): AdoptCanonicalNodeResult {
+    if (this.adoptingCanonicalNode) return { status: 'reentrant' }
+
+    const scope = graphScopeOf(this)
+    const nodeStore = useNodeDataStore()
+    const precondition = (
+      ok: boolean,
+      code: AdoptCanonicalNodeRejection['code'],
+      message: string
+    ) =>
+      ok
+        ? undefined
+        : ({
+            status: 'failed',
+            stage: 'precondition',
+            cause: { code, message } satisfies AdoptCanonicalNodeRejection,
+            rollbackFailures: []
+          } satisfies AdoptCanonicalNodeResult)
+
+    const rejected =
+      precondition(
+        !isAttachedToAGraph(successor),
+        'successor_attached',
+        'successor is already attached to a graph'
+      ) ??
+      precondition(
+        nodeStore.ownsNode(scope, canonical),
+        'record_not_owned',
+        'record is not held by the node store for this graph'
+      ) ??
+      precondition(
+        this._nodes_by_id[canonical.id] === incumbent,
+        'incumbent_mismatch',
+        incumbent
+          ? 'incumbent is not the live node for the record'
+          : 'a live node is attached under the record id; pass it as incumbent'
+      ) ??
+      precondition(
+        incumbent === undefined || incumbent.graph === this,
+        'incumbent_foreign',
+        'incumbent does not belong to this graph'
+      )
+    if (rejected) return rejected
+
+    this.adoptingCanonicalNode = true
+    try {
+      return this.batchVersionUpdates(() =>
+        this.runCanonicalNodeAdoption(
+          canonical,
+          successor,
+          incumbent,
+          configure
+        )
+      )
+    } finally {
+      this.adoptingCanonicalNode = false
+    }
+  }
+
+  private runCanonicalNodeAdoption(
+    canonical: NodeState,
+    successor: LGraphNode,
+    incumbent: LGraphNode | undefined,
+    configure: AdoptCanonicalNodeOptions['configure']
+  ): AdoptCanonicalNodeResult {
+    const rootGraphId = this.rootGraph.id
+    const versionBefore = this._version
+    const recordBefore = snapshotRecord(canonical)
+    const successorBefore = snapshotRegistration(successor)
+    const incumbentBefore = incumbent && snapshotRegistration(incumbent)
+    const incumbentIndex = incumbent ? this._nodes.indexOf(incumbent) : -1
+    const widgetsBefore = snapshotTrackedWidgets(rootGraphId, canonical.id)
+
+    const rollback = (
+      stage: AdoptCanonicalNodeStage,
+      cause: unknown
+    ): AdoptCanonicalNodeResult => {
+      const rollbackFailures: unknown[] = []
+      const attempt = (step: () => void) => {
+        try {
+          step()
+        } catch (failure) {
+          rollbackFailures.push(failure)
+        }
+      }
+
+      attempt(() => {
+        // The inverse of the detach stage: the record stays held by the store
+        // so it can be handed back, and the stores are restored below. A
+        // successor that never made it into the graph still gets its
+        // `onRemoved` hook so constructor-acquired resources are released.
+        if (this._nodes.includes(successor)) {
+          this.remove(successor, {
+            preserveCanonicalState: true,
+            replacement: true
+          })
+        } else {
+          successor.onRemoved?.()
+        }
+      })
+      attempt(() => restoreRecord(canonical, recordBefore))
+      // Also restores the successor's pre-adoption `graph` reference.
+      attempt(() => restoreRegistration(successor, successorBefore))
+      attempt(() =>
+        restoreTrackedWidgets(rootGraphId, canonical.id, widgetsBefore)
+      )
+      if (incumbent && incumbentBefore && !this._nodes.includes(incumbent)) {
+        attempt(() =>
+          this.reattachDetachedNode(incumbent, incumbentBefore, incumbentIndex)
+        )
+      }
+      this._version = versionBefore
+
+      return { status: 'failed', stage, cause, rollbackFailures }
+    }
+
+    let stage: AdoptCanonicalNodeStage = 'detach'
+    try {
+      if (incumbent) {
+        this.remove(incumbent, {
+          preserveCanonicalState: true,
+          replacement: true
+        })
+      }
+      adoptCanonicalNodeState(this, canonical, successor, incumbent)
+
+      stage = 'add'
+      if (!this.add(successor)) {
+        return rollback(stage, {
+          code: 'add_rejected',
+          message: 'LGraph.add rejected the successor'
+        } satisfies AdoptCanonicalNodeRejection)
+      }
+
+      stage = 'configure'
+      configure?.(successor)
+      return { status: 'replaced', node: successor }
+    } catch (cause) {
+      return rollback(stage, cause)
+    }
+  }
+
+  /**
+   * Puts a node detached by a failed {@link adoptCanonicalNode} back exactly
+   * where it was. Unlike {@link add}, this never re-registers the node's
+   * shell state — the record it held (or the detached copy an orphaned
+   * adapter carries) is restored as-is — and it rebinds the node's widgets
+   * to the store entities restored for its id.
+   */
+  private reattachDetachedNode(
+    node: LGraphNode,
+    registration: NodeRegistrationSnapshot,
+    index: number
+  ): void {
+    restoreRegistration(node, registration)
+    node.graph = this
+    if (index < 0 || index > this._nodes.length) this._nodes.push(node)
+    else this._nodes.splice(index, 0, node)
+    this._nodes_by_id[node.id] = node
+
+    attachNodeLayout(this, node)
+    if (node.widgets) {
+      for (const widget of node.widgets) {
+        if (isNodeBindable(widget)) widget.setNodeId(node.id)
+      }
+      useWidgetValueStore().setNodeWidgetOrder(
+        this.rootGraph.id,
+        node.id,
+        getWidgetIds(node.widgets)
+      )
+    }
+
+    try {
+      node.onAdded?.(this)
+    } finally {
+      this.updateExecutionOrder()
+      this.onNodeAdded?.(node)
+      this.events.dispatch('node:added', { node })
+      this.setDirtyCanvas(true, true)
+      this.change()
+    }
   }
 
   /**

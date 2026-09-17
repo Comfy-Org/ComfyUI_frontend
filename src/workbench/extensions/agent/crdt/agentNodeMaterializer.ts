@@ -1,5 +1,8 @@
 import { reconcileAutogrowInputs } from '@/core/graph/widgets/dynamicWidgets'
-import type { LGraph } from '@/lib/litegraph/src/LGraph'
+import type {
+  AdoptCanonicalNodeStage,
+  LGraph
+} from '@/lib/litegraph/src/LGraph'
 import { materializeLinkAdapter } from '@/lib/litegraph/src/LLink'
 import { LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { topologicalSortSubgraphs } from '@/lib/litegraph/src/subgraph/subgraphDeduplication'
@@ -18,7 +21,6 @@ import type { NodeId } from '@/types/nodeId'
 import type { NodeState } from '@/types/nodeState'
 import type { WidgetValue } from '@/types/simplifiedWidget'
 import { widgetId } from '@/types/widgetId'
-import type { WidgetStateInit } from '@/types/widgetState'
 
 import { allSubgraphDefinitions } from './agentSubgraphDefinitions'
 import { runMintPortsSuppressed } from './mintPortWiring'
@@ -30,7 +32,7 @@ export type MaterializableGraph = Pick<
   | 'nodes'
   | '_nodes'
   | '_nodes_by_id'
-  | 'add'
+  | 'adoptCanonicalNode'
   | 'remove'
   | 'setDirtyCanvas'
 >
@@ -273,6 +275,17 @@ function isRebindablePlaceholder(node: LGraphNode, state: NodeState): boolean {
   )
 }
 
+/**
+ * Hands the record to a freshly built adapter through the graph's own
+ * adoption transaction. The graph owns every ownership step (detaching the
+ * orphan, binding the record, attaching, rolling back); this layer only
+ * builds the successor and fills it from the record once it is attached.
+ *
+ * The record's layout entry is adopted rather than recreated: the op layer
+ * created it with remote provenance, and the layout store delivers changes on
+ * a microtask, after the mint-suppression bracket has ended. Provenance on the
+ * operation, not the bracket, is what keeps the layout port quiet here.
+ */
 function materialize(
   graph: MaterializableGraph,
   scope: GraphScope,
@@ -283,46 +296,53 @@ function materialize(
   const node = createAdapterNode(graph, state)
   if (!node) return false
   const snapshot = snapshotStoreWidgets(scope, state, orphan)
-  const rollback = (cause: unknown, errorType?: string) =>
-    rollbackMaterialize(
-      graph,
-      scope,
-      state,
-      node,
-      snapshot,
-      orphan,
-      cause,
-      errorType
-    )
 
-  if (orphan) {
-    try {
-      graph.remove(orphan, { preserveCanonicalState: true, replacement: true })
-    } catch (cause) {
-      return rollback(cause, 'agent_node_materialize_remove_failed')
+  const result = graph.adoptCanonicalNode(state, node, {
+    incumbent: orphan,
+    configure: (successor) => {
+      withNamedValuesRestore(() =>
+        successor.configure(withNamedWidgetValues(serialised, successor))
+      )
+      applyStoredValues(successor, snapshot.storedValues)
+      dropPlaceholderMirrors(
+        scope,
+        state,
+        successor,
+        snapshot.placeholderWidgetNames
+      )
     }
-  }
-  node.id = state.id
+  })
+  if (result.status === 'replaced') return true
 
-  // `add()` only adopts the record's id into an empty slot; with the record
-  // still registered its collision loop would mint a fresh id instead.
-  //
-  // `add()` also adopts the record's layout entry rather than creating one:
-  // the op layer created it with remote provenance, and the layout store
-  // delivers changes on a microtask, after the mint-suppression bracket has
-  // ended. Provenance on the operation, not the bracket, is what keeps the
-  // layout port quiet here.
-  useNodeDataStore().deleteNode(scope, state)
-  let added: LGraphNode | null | undefined
-  try {
-    added = graph.add(node)
-  } catch (cause) {
-    return rollback(cause)
+  const context = { graphId: graph.id, nodeId: String(state.id) }
+  if (result.status === 'reentrant') {
+    reportError(
+      'reconcileAgentAdapters re-entered from a node lifecycle hook',
+      {
+        errorType: 'agent_node_materialize_reentrant',
+        context
+      }
+    )
+    return false
   }
-  if (!added) return rollback('LGraph.add returned no node')
+  reportError(result.cause, {
+    errorType: ADOPTION_FAILURE_ERROR_TYPE[result.stage],
+    context
+  })
+  for (const failure of result.rollbackFailures) {
+    reportError(failure, {
+      errorType: 'agent_node_materialize_rollback_failed',
+      context
+    })
+  }
+  return false
+}
 
-  configureAdapter(graph, scope, state, serialised, node, snapshot)
-  return true
+const ADOPTION_FAILURE_ERROR_TYPE: Record<AdoptCanonicalNodeStage, string> = {
+  precondition: 'agent_node_materialize_add_failed',
+  detach: 'agent_node_materialize_remove_failed',
+  add: 'agent_node_materialize_add_failed',
+  configure: 'agent_node_materialize_configure_failed'
 }
 
 function createAdapterNode(
@@ -342,7 +362,6 @@ function createAdapterNode(
 
 interface StoreWidgetSnapshot {
   storedValues: Map<string, WidgetValue>
-  widgets: WidgetStateInit[]
   placeholderWidgetNames: string[]
 }
 
@@ -357,142 +376,10 @@ function snapshotStoreWidgets(
   )
   return {
     storedValues: new Map(stored.map((widget) => [widget.name, widget.value])),
-    widgets: stored.map(
-      (widget): WidgetStateInit => ({
-        disabled: widget.disabled,
-        label: widget.label,
-        name: widget.name,
-        options: widget.options,
-        serialize: widget.serialize,
-        type: widget.type,
-        value: widget.value,
-        y: widget.y
-      })
-    ),
     placeholderWidgetNames:
       orphan?.constructor === LGraphNode
         ? (orphan.widgets ?? []).map((widget) => widget.name)
         : []
-  }
-}
-
-function restoreCanonical(
-  graph: MaterializableGraph,
-  scope: GraphScope,
-  state: NodeState,
-  widgets: WidgetStateInit[],
-  orphan: LGraphNode | undefined
-): void {
-  if (orphan && graph._nodes.includes(orphan)) {
-    graph._nodes_by_id[orphan.id] = orphan
-  } else if (orphan) {
-    reattachIncumbent(graph, scope, state, orphan)
-  }
-  const widgetStore = useWidgetValueStore()
-  for (const widget of widgets) {
-    widgetStore.registerWidget(
-      widgetId(scope.rootGraphId, state.id, widget.name ?? ''),
-      widget
-    )
-  }
-}
-
-/**
- * Put the detached incumbent back exactly as the failed replacement found it:
- * live in the graph, with the canonical record still `state`. `add()` can only
- * register the incumbent's own state, so a non-owning incumbent takes the id
- * slot first and hands the record back afterwards.
- */
-function reattachIncumbent(
-  graph: MaterializableGraph,
-  scope: GraphScope,
-  state: NodeState,
-  incumbent: LGraphNode
-): void {
-  const nodeStore = useNodeDataStore()
-  const ownsRecord = nodeStore.ownsNode(scope, incumbent._state)
-  if (!ownsRecord) nodeStore.deleteNode(scope, state)
-  graph.add(incumbent)
-  if (ownsRecord) return
-  nodeStore.deleteNode(scope, incumbent._state)
-  nodeStore.registerNode(scope, state)
-}
-
-function rollbackMaterialize(
-  graph: MaterializableGraph,
-  scope: GraphScope,
-  state: NodeState,
-  node: LGraphNode,
-  snapshot: StoreWidgetSnapshot,
-  orphan: LGraphNode | undefined,
-  cause: unknown,
-  errorType = 'agent_node_materialize_add_failed'
-): false {
-  const nodeStore = useNodeDataStore()
-  nodeStore.deleteNode(scope, node._state)
-  nodeStore.registerNode(scope, state)
-  const failures = [detachFailedSuccessor(graph, node)]
-  try {
-    restoreCanonical(graph, scope, state, snapshot.widgets, orphan)
-  } catch (error) {
-    failures.push(error)
-  }
-  reportError(cause, {
-    errorType,
-    context: { graphId: graph.id, nodeId: String(state.id) }
-  })
-  for (const failure of failures) {
-    if (failure === undefined) continue
-    reportError(failure, {
-      errorType: 'agent_node_materialize_rollback_failed',
-      context: { graphId: graph.id, nodeId: String(state.id) }
-    })
-  }
-  return false
-}
-
-/**
- * Take the successor back out of the graph. The graph finishes detaching it
- * even when its lifecycle hook throws; the error only needs reporting.
- * @returns the cleanup error, if any
- */
-function detachFailedSuccessor(
-  graph: MaterializableGraph,
-  node: LGraphNode
-): unknown {
-  try {
-    if (graph._nodes_by_id[node.id] === node) {
-      graph.remove(node, { preserveCanonicalState: true })
-    } else {
-      node.onRemoved?.()
-    }
-    return undefined
-  } catch (error) {
-    return error
-  }
-}
-
-function configureAdapter(
-  graph: MaterializableGraph,
-  scope: GraphScope,
-  state: NodeState,
-  serialised: ISerialisedNode,
-  node: LGraphNode,
-  snapshot: StoreWidgetSnapshot
-): void {
-  try {
-    withNamedValuesRestore(() =>
-      node.configure(withNamedWidgetValues(serialised, node))
-    )
-    applyStoredValues(node, snapshot.storedValues)
-    dropPlaceholderMirrors(scope, state, node, snapshot.placeholderWidgetNames)
-  } catch (cause) {
-    // The node is attached and consistent with the stores; removing it here
-    // would also drop the layout entry it adopted. Keep it and report.
-    reportError(cause, {
-      errorType: 'agent_node_materialize_configure_failed',
-      context: { graphId: graph.id, nodeId: String(state.id) }
-    })
   }
 }
 
