@@ -148,8 +148,10 @@ function loadSessionOverrides(): OverrideMap {
  *
  * The request is captured into `sessionStorage` on the first read, so it
  * survives reloads and in-app navigation but dies when the tab closes. Capture
- * happens before authentication resolves; the employee check is applied here on
- * every read instead, so a flag flips as soon as the user is known.
+ * happens before authentication resolves; the employee check is re-evaluated
+ * on every read instead, against the SDK's current user. That read carries no
+ * reactive dependency of its own, so a flag flips on the next read after the
+ * user is known, not the moment it is.
  *
  * Returns undefined (not null) as the "no override" sentinel, matching
  * `getDevOverride`.
