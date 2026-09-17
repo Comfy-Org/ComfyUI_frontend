@@ -24,6 +24,13 @@ instruction.
 Goal: a list of blockers taken from the live state, and a clear picture of what
 the pull request is meant to ship.
 
+Fix the target first. Take the pull request number from what the designer
+gave you (a number or a link) and pass it to every `gh` command in this skill:
+`gh pr view <number>`, `gh pr checkout <number>`, `gh pr checks <number>`,
+`gh pr merge <number>`. A `gh pr` command with no number acts on whatever
+branch is checked out, which can be a different pull request. When the
+designer named none, ask which one; never pick from a list.
+
 Read all of these fresh with `gh`: title, draft state, author, labels, the
 file list, every commit's author and message, check results, review decisions,
 review threads with their resolved state, and the merge state. Check out the
@@ -75,7 +82,7 @@ contradicts.
 Goal: the pull request goes to the merge queue only when merging is what its
 author, its reviewers, and its content all call for.
 
-Send it to merge with `gh pr merge --squash` (the repository's queue takes it
+Send it to merge with `gh pr merge <number> --squash` (the repository's queue takes it
 from there) only when every line below is true in one reading taken after your
 last push:
 
@@ -96,7 +103,7 @@ last push:
   "unblock it" is not that; ask once, as the last step, when every other line
   is true.
 
-You have merged it when `gh pr view` reports the state as merged; entering the
+You have merged it when `gh pr view <number>` reports the state as merged; entering the
 queue is not the same, so wait and read again, and if the queue removes it,
 read why and return to clearing blockers. Never bypass the queue, never use an
 admin override, and never dismiss a review.
