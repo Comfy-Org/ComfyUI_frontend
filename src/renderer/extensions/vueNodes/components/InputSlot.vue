@@ -68,7 +68,6 @@ import { useI18n } from 'vue-i18n'
 import EditableText from '@/components/common/EditableText.vue'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import type { INodeSlot } from '@/lib/litegraph/src/litegraph'
-import { NodeSlotType } from '@/lib/litegraph/src/types/globalEnums'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useSlotLinkDragUIState } from '@/renderer/core/canvas/links/slotLinkDragUIState'
 import { getSlotKey } from '@/renderer/core/layout/slots/slotIdentifier'
@@ -162,16 +161,10 @@ function onEditLabel(val: string) {
   if (!props.nodeId) return
 
   const newLabel = val.trim() || undefined
-  const node = canvas.graph?.getNodeById(props.nodeId)
-  const slot = node?.inputs?.[props.index]
-  if (!node || !slot || slot.label === newLabel) return
+  const slot = canvas.graph?.getNodeById(props.nodeId)?.inputs?.[props.index]
+  if (!slot || slot.label === newLabel) return
 
   slot.label = newLabel
-
-  node?.graph?.trigger('node:slot-label:changed', {
-    nodeId: props.nodeId,
-    slotType: NodeSlotType.INPUT
-  })
   canvas.setDirty(true, true)
 }
 </script>
