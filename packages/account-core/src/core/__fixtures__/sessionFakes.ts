@@ -1,8 +1,13 @@
+/**
+ * The storage, identity, user, credential and exchange fakes the session
+ * suites build on. A suite keeps what only it needs.
+ */
 import { vi } from 'vitest'
 
 import { createTestIdentity } from '../../testing.js'
 import type {
   AccountIdentity,
+  AccountCredential,
   AccountUser,
   CredentialStorage,
   SessionClientOptions
@@ -44,21 +49,51 @@ export function testUser(uid = 'uid-1', idToken = 'id-token-1'): AccountUser {
   return { uid, getIdToken: vi.fn(async () => idToken) }
 }
 
-export function mintResponse(token: string) {
-  return new Response(
-    JSON.stringify({
-      token,
-      permissions: ['workspace:read'],
-      expires_at: new Date(Date.now() + NINETY_MINUTES_MS).toISOString(),
-      workspace: { id: 'ws-1', name: 'Personal', type: 'personal' },
-      role: 'owner'
-    }),
-    { status: 200 }
-  )
+export function credential(
+  token: string,
+  overrides: Partial<AccountCredential> = {}
+): AccountCredential {
+  return {
+    token,
+    expiresAt: 1_000_000,
+    uid: 'uid-1',
+    workspace: { id: 'ws-1', name: 'Personal', type: 'personal' },
+    role: 'owner',
+    permissions: ['workspace:read'],
+    ...overrides
+  }
+}
+
+export function deferred<T>() {
+  let resolve!: (value: T) => void
+  const promise = new Promise<T>((r) => (resolve = r))
+  return { promise, resolve }
+}
+
+export function mintBody(overrides: Record<string, unknown> = {}) {
+  return {
+    token: 'workspace-jwt',
+    permissions: ['workspace:read'],
+    expires_at: new Date(Date.now() + NINETY_MINUTES_MS).toISOString(),
+    workspace: { id: 'ws-1', name: 'Personal', type: 'personal' },
+    role: 'owner',
+    ...overrides
+  }
+}
+
+export function jsonResponse(status: number, body: unknown) {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: { 'Content-Type': 'application/json' }
+  })
 }
 
 export function okFetch(token = 'workspace-jwt') {
-  return vi.fn<typeof fetch>(async () => mintResponse(token))
+  return vi.fn<typeof fetch>(async () => jsonResponse(200, mintBody({ token })))
+}
+
+export function mintResponse(token: string) {
+  return new Response(JSON.stringify(mintBody({ token })), { status: 200 })
 }
 
 export function manualIdentity() {
@@ -75,10 +110,4 @@ export function manualIdentity() {
     fire: (user: AccountUser | null) => deliver?.(user),
     unsubscribe
   }
-}
-
-export function deferred<T>() {
-  let resolve!: (value: T) => void
-  const promise = new Promise<T>((r) => (resolve = r))
-  return { promise, resolve }
 }
