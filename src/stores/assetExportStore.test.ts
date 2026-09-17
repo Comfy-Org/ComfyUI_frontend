@@ -103,32 +103,54 @@ describe('useAssetExportStore', () => {
     const getExportDownloadUrl = vi.spyOn(assetService, 'getExportDownloadUrl')
 
     vi.mocked(taskService.getTask).mockResolvedValue(undefined)
-    store.trackExport(taskId)
+    dispatchExport({
+      task_id: taskId,
+      export_name: 'partial.zip',
+      assets_total: 7,
+      assets_attempted: 3,
+      assets_failed: 1,
+      bytes_total: 250,
+      bytes_processed: 80,
+      progress: 0.32
+    })
 
     await vi.advanceTimersByTimeAsync(45_000)
 
     expect(store.activeExports).toHaveLength(0)
-    expect(store.finishedExports[0].status).toBe('failed')
+    expect(store.finishedExports).toMatchObject([
+      {
+        taskId,
+        exportName: 'partial.zip',
+        assetsTotal: 7,
+        assetsAttempted: 3,
+        assetsFailed: 1,
+        bytesTotal: 250,
+        bytesProcessed: 80,
+        progress: 0.32,
+        status: 'failed',
+        downloadTriggered: false
+      }
+    ])
     expect(taskService.getTask).toHaveBeenCalledTimes(1)
+    const failedExport = { ...store.finishedExports[0] }
 
-    assert(eventHandler.current)
-    eventHandler.current(
-      new CustomEvent('asset_export', {
-        detail: {
-          task_id: taskId,
-          export_name: 'late.zip',
-          assets_total: 1,
-          assets_attempted: 1,
-          assets_failed: 0,
-          bytes_total: 100,
-          bytes_processed: 100,
-          progress: 1,
-          status: 'completed'
-        }
-      })
-    )
+    dispatchExport({
+      task_id: taskId,
+      export_name: 'late.zip',
+      assets_total: 1,
+      assets_attempted: 1,
+      assets_failed: 0,
+      bytes_total: 100,
+      bytes_processed: 100,
+      progress: 1,
+      status: 'completed'
+    })
 
-    expect(store.finishedExports[0].status).toBe('failed')
+    await vi.advanceTimersByTimeAsync(45_000)
+
+    expect(store.activeExports).toHaveLength(0)
+    expect(store.finishedExports).toEqual([failedExport])
+    expect(taskService.getTask).toHaveBeenCalledTimes(1)
     expect(getExportDownloadUrl).not.toHaveBeenCalled()
   })
 })

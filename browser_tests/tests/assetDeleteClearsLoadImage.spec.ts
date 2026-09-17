@@ -14,7 +14,7 @@ import type { Page, Route } from '@playwright/test'
 import { expect } from '@playwright/test'
 
 import type { Asset, ListAssetsResponse } from '@comfyorg/ingest-types'
-import { comfyPageFixture } from '@e2e/fixtures/ComfyPage'
+import { assetDeleteImageFixture } from '@e2e/fixtures/assetDeleteImageFixture'
 import {
   STABLE_CHECKPOINT,
   STABLE_INPUT_IMAGE
@@ -68,7 +68,8 @@ function parseTagParam(value: string | null): string[] {
 async function registerAssetMocks(
   page: Page,
   assets: Asset[],
-  deleteCalls: string[]
+  deleteCalls: string[],
+  deleteStatus: number
 ): Promise<void> {
   await page.route(/\/api\/assets(?:\?.*)?$/, (route: Route) => {
     if (route.request().method() !== 'GET') return route.fallback()
@@ -91,7 +92,11 @@ async function registerAssetMocks(
     const id = new URL(route.request().url()).pathname.split('/').pop() ?? ''
     if (method === 'DELETE') {
       deleteCalls.push(id)
-      return route.fulfill({ status: 204, body: '' })
+      return route.fulfill(
+        deleteStatus === 204
+          ? { status: 204, body: '' }
+          : { status: deleteStatus, json: { error: 'delete refused' } }
+      )
     }
     if (method === 'GET') {
       const found = assets.find((asset) => asset.id === id)
@@ -102,10 +107,14 @@ async function registerAssetMocks(
   })
 }
 
-const baseTest = comfyPageFixture.extend<{ assetMock: AssetMockApi }>({
-  page: async ({ page }, use) => {
+const baseTest = assetDeleteImageFixture.extend<{
+  assetMock: AssetMockApi
+  deleteStatus: number
+}>({
+  deleteStatus: [204, { option: true }],
+  page: async ({ page, deleteStatus }, use) => {
     const deleteCalls: string[] = []
-    await registerAssetMocks(page, SEEDED_ASSETS, deleteCalls)
+    await registerAssetMocks(page, SEEDED_ASSETS, deleteCalls, deleteStatus)
     assetMockByPage.set(page, { deleteCalls })
     await use(page)
     assetMockByPage.delete(page)
@@ -127,53 +136,16 @@ baseTest.describe(
   () => {
     baseTest(
       'deleting an input asset clears widget value, preview cache, and marks workflow modified',
-      async ({ comfyPage, assetMock }) => {
-        await comfyPage.workflow.loadWorkflow('widgets/load_image_widget')
-
-        // Drive the production drag-and-drop flow to point the Load Image
-        // widget at the asset we are about to delete and populate the preview
-        // cache. FE-230 is asserting that the deletion tears these down.
-        const loadImageNode = (
-          await comfyPage.nodeOps.getNodeRefsByType('LoadImage')
-        )[0]
-        const { x, y } = await loadImageNode.getPosition()
-        await comfyPage.dragDrop.dragAndDropFile(DROPPED_FILE, {
-          dropPosition: { x, y },
-          waitForUpload: true
-        })
+      async ({ comfyPage, assetMock, loadImageNode }) => {
         const imageWidget = await loadImageNode.getWidget(0)
-        await expect.poll(() => imageWidget.getValue()).toBe(DROPPED_FILE)
-
-        // Re-baseline the change tracker so the deletion-side mutation is the
-        // only thing that can flip `isModified` later.
-        // `reset()` re-baselines `initialState`; only `updateModified()`
-        // recomputes `isModified` from it.
-        await comfyPage.page.evaluate(() => {
-          const tracker =
-            window.app?.extensionManager.workflow?.activeWorkflow?.changeTracker
-          tracker?.reset()
-          tracker?.updateModified()
-        })
-        await expect
-          .poll(() => comfyPage.workflow.isCurrentWorkflowModified())
-          .toBe(false)
-
-        // Drive the real production flow: assets sidebar → Imported tab →
-        // right-click asset card → Delete → confirm dialog.
         const sidebar = comfyPage.menu.assetsTab
-        // The default `open()` waits for assets on the Generated tab; we seed
-        // only an input asset, so skip that wait and let `waitForAssets(1)`
-        // gate on the Imported tab instead.
-        await sidebar.open({ waitForAssets: false })
-        await sidebar.switchToImported()
-        await sidebar.waitForAssets(1)
-        await sidebar.rightClickAsset(TARGET_CARD_TEXT)
-
-        const deleteMenuItem = sidebar.contextMenuItem('Delete')
-        await expect(deleteMenuItem).toBeVisible()
-        await deleteMenuItem.click()
-
-        await comfyPage.confirmDialog.click('delete')
+        await baseTest.step('Delete the imported image', async () => {
+          await sidebar.rightClickAsset(TARGET_CARD_TEXT)
+          const deleteMenuItem = sidebar.contextMenuItem('Delete')
+          await expect(deleteMenuItem).toBeVisible()
+          await deleteMenuItem.click()
+          await comfyPage.confirmDialog.click('delete')
+        })
 
         // Mocked DELETE was issued.
         await expect
@@ -200,67 +172,43 @@ baseTest.describe(
       }
     )
 
-    baseTest(
-      'refused asset deletion preserves widget, preview, and workflow state',
-      async ({ comfyPage, page }) => {
-        const deleteRequests: string[] = []
-        await page.route(/\/api\/assets\/([^/?#]+)$/, async (route) => {
-          if (route.request().method() !== 'DELETE') return route.fallback()
-          deleteRequests.push(route.request().url())
-          return route.fulfill({
-            status: 500,
-            contentType: 'application/json',
-            body: JSON.stringify({ error: 'delete refused' })
-          })
-        })
+    baseTest.describe('Refused deletion', () => {
+      baseTest.use({ deleteStatus: 500 })
 
-        await comfyPage.workflow.loadWorkflow('widgets/load_image_widget')
-        const loadImageNode = (
-          await comfyPage.nodeOps.getNodeRefsByType('LoadImage')
-        )[0]
-        const { x, y } = await loadImageNode.getPosition()
-        await comfyPage.dragDrop.dragAndDropFile(DROPPED_FILE, {
-          dropPosition: { x, y },
-          waitForUpload: true
-        })
-        const imageWidget = await loadImageNode.getWidget(0)
-        await expect.poll(() => imageWidget.getValue()).toBe(DROPPED_FILE)
-
-        await comfyPage.page.evaluate(() => {
-          const tracker =
-            window.app?.extensionManager.workflow?.activeWorkflow?.changeTracker
-          tracker?.reset()
-          tracker?.updateModified()
-        })
-        await expect
-          .poll(() => comfyPage.workflow.isCurrentWorkflowModified())
-          .toBe(false)
-
-        const sidebar = comfyPage.menu.assetsTab
-        await sidebar.open({ waitForAssets: false })
-        await sidebar.switchToImported()
-        await sidebar.waitForAssets(1)
-        await sidebar.rightClickAsset(TARGET_CARD_TEXT)
-        await sidebar.contextMenuItem('Delete').click()
-        await comfyPage.confirmDialog.click('delete')
-
-        await expect.poll(() => deleteRequests).toHaveLength(1)
-        await expect(comfyPage.toast.toastErrors).toBeVisible()
-        await expect(comfyPage.toast.toastSuccesses).toHaveCount(0)
-        await expect.poll(() => imageWidget.getValue()).toBe(DROPPED_FILE)
-        await expect
-          .poll(() =>
-            comfyPage.page.evaluate((nodeId) => {
-              const node = window.app!.graph.getNodeById(nodeId)
-              return node?.imgs?.length ?? 0
-            }, loadImageNode.id)
+      baseTest(
+        'refused asset deletion preserves widget, preview, and workflow state',
+        async ({ comfyPage, assetMock, loadImageNode }) => {
+          const imageWidget = await loadImageNode.getWidget(0)
+          const sidebar = comfyPage.menu.assetsTab
+          await baseTest.step(
+            'Attempt to delete the imported image',
+            async () => {
+              await sidebar.rightClickAsset(TARGET_CARD_TEXT)
+              await sidebar.contextMenuItem('Delete').click()
+              await comfyPage.confirmDialog.click('delete')
+            }
           )
-          .toBeGreaterThan(0)
-        await expect
-          .poll(() => comfyPage.workflow.isCurrentWorkflowModified())
-          .toBe(false)
-        await expect(sidebar.assetCards).toHaveCount(1)
-      }
-    )
+
+          await expect
+            .poll(() => assetMock.deleteCalls)
+            .toEqual([TARGET_ASSET.id])
+          await expect(comfyPage.toast.toastErrors).toBeVisible()
+          await expect(comfyPage.toast.toastSuccesses).toHaveCount(0)
+          await expect.poll(() => imageWidget.getValue()).toBe(DROPPED_FILE)
+          await expect
+            .poll(() =>
+              comfyPage.page.evaluate((nodeId) => {
+                const node = window.app!.graph.getNodeById(nodeId)
+                return node?.imgs?.length ?? 0
+              }, loadImageNode.id)
+            )
+            .toBeGreaterThan(0)
+          await expect
+            .poll(() => comfyPage.workflow.isCurrentWorkflowModified())
+            .toBe(false)
+          await expect(sidebar.assetCards).toHaveCount(1)
+        }
+      )
+    })
   }
 )

@@ -182,55 +182,77 @@ test.describe('Node library sidebar', () => {
     await expectBookmarks(comfyPage, ['bar/'])
   })
 
-  test('Refuses slash and duplicate bookmark folder names without mutating', async ({
-    comfyPage
-  }) => {
-    await comfyPage.settings.setSetting(bookmarksSettingId, ['foo/', 'bar/'])
-    const tab = comfyPage.menu.nodeLibraryTab
-    await expect(tab.getFolder('foo')).toBeVisible()
+  test.describe('Refused bookmark rename', () => {
+    test.use({
+      initialSettings: {
+        'Comfy.NodeLibrary.NewDesign': false,
+        [bookmarksSettingId]: ['foo/', 'bar/'],
+        [bookmarksCustomizationSettingId]: {}
+      }
+    })
 
-    await tab.getFolder('foo').click({ button: 'right' })
-    await comfyPage.page
-      .locator('.p-contextmenu-item-label:has-text("Rename")')
-      .click()
-    await renameInlineFolder(comfyPage, 'bad/name')
+    test('Refuses slash and duplicate bookmark folder names without mutating', async ({
+      comfyPage
+    }) => {
+      const tab = comfyPage.menu.nodeLibraryTab
 
-    await expect(comfyPage.toast.toastErrors).toContainText(
-      'Folder name cannot contain "/"'
-    )
-    await expect(comfyPage.page.locator('.editable-text input')).toHaveCount(0)
-    await expectBookmarks(comfyPage, ['foo/', 'bar/'])
+      await test.step('Refuse a folder name containing a slash', async () => {
+        await tab.getFolder('foo').click({ button: 'right' })
+        await comfyPage.contextMenu.clickMenuItem('Rename')
+        await renameInlineFolder(comfyPage, 'bad/name')
 
-    await comfyPage.toast.closeToasts()
-    await tab.getFolder('foo').click({ button: 'right' })
-    await comfyPage.page
-      .locator('.p-contextmenu-item-label:has-text("Rename")')
-      .click()
-    await renameInlineFolder(comfyPage, 'bar')
+        await expect(comfyPage.toast.toastErrors).toContainText(
+          'Folder name cannot contain "/"'
+        )
+        await expect(
+          comfyPage.page.locator('.editable-text input')
+        ).toHaveCount(0)
+        await expectBookmarks(comfyPage, ['foo/', 'bar/'])
+      })
 
-    await expect(comfyPage.toast.toastErrors).toContainText(
-      'Folder name "bar/" already exists'
-    )
-    await expect(comfyPage.page.locator('.editable-text input')).toHaveCount(0)
-    await expectBookmarks(comfyPage, ['foo/', 'bar/'])
+      await test.step('Refuse a duplicate folder name', async () => {
+        await comfyPage.toast.closeToasts()
+        await tab.getFolder('foo').click({ button: 'right' })
+        await comfyPage.contextMenu.clickMenuItem('Rename')
+        await renameInlineFolder(comfyPage, 'bar')
+
+        await expect(comfyPage.toast.toastErrors).toContainText(
+          'Folder name "bar/" already exists'
+        )
+        await expect(
+          comfyPage.page.locator('.editable-text input')
+        ).toHaveCount(0)
+        await expectBookmarks(comfyPage, ['foo/', 'bar/'])
+      })
+    })
   })
 
-  test('Closes the bookmark rename editor when the name is unchanged', async ({
-    comfyPage
-  }) => {
-    await comfyPage.settings.setSetting(bookmarksSettingId, ['foo/'])
-    const tab = comfyPage.menu.nodeLibraryTab
-    await expect(tab.getFolder('foo')).toBeVisible()
+  test.describe('Unchanged bookmark name', () => {
+    test.use({
+      initialSettings: {
+        'Comfy.NodeLibrary.NewDesign': false,
+        [bookmarksSettingId]: ['foo/'],
+        [bookmarksCustomizationSettingId]: {}
+      }
+    })
 
-    await tab.getFolder('foo').click({ button: 'right' })
-    await comfyPage.page
-      .locator('.p-contextmenu-item-label:has-text("Rename")')
-      .click()
-    await renameInlineFolder(comfyPage, 'foo')
+    test('Closes the bookmark rename editor when the name is unchanged', async ({
+      comfyPage
+    }) => {
+      await test.step('Submit the existing folder name', async () => {
+        await comfyPage.menu.nodeLibraryTab
+          .getFolder('foo')
+          .click({ button: 'right' })
+        await comfyPage.contextMenu.clickMenuItem('Rename')
+        await renameInlineFolder(comfyPage, 'foo')
+      })
 
-    await expect(comfyPage.page.locator('.editable-text input')).toHaveCount(0)
-    await expect(comfyPage.toast.visibleToasts).toHaveCount(0)
-    await expectBookmarks(comfyPage, ['foo/'])
+      await expect(comfyPage.page.locator('.editable-text input')).toHaveCount(
+        0
+      )
+      await expect(comfyPage.toast.visibleToasts).toHaveCount(0)
+      await expectBookmarks(comfyPage, ['foo/'])
+    })
   })
 
   test('Can add bookmark by dragging node to bookmark folder', async ({
