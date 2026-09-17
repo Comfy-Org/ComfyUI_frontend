@@ -69,6 +69,17 @@
 # Model-to-node mappings (cloud team)
 /src/platform/assets/mappings/                    @deepme987 @Comfy-Org/comfy_frontend_devs
 
+# Billing and account boundary - see ADR-AUTH-BILLING-0032.
+# The billing half only. The account layer's session and identity paths are
+# deliberately unlisted until their owner claims them; until then a change
+# crossing that side of the boundary still has no required reviewer.
+/packages/account-core/src/core/billing/               @dante01yoon @Comfy-Org/comfy_frontend_devs
+/apps/billing-web/                                @dante01yoon @Comfy-Org/comfy_frontend_devs
+/apps/website/src/lib/workshop/                   @dante01yoon @Comfy-Org/comfy_website_devs
+/apps/website/src/config/workshop-account.ts      @dante01yoon @Comfy-Org/comfy_website_devs
+/apps/website/src/config/workshop-balance.ts      @dante01yoon @Comfy-Org/comfy_website_devs
+/apps/website/src/config/workshop-credits.ts      @dante01yoon @Comfy-Org/comfy_website_devs
+
 # Translations - native-language reviewers
 # NOTE: GitHub only honors a code owner that has WRITE access to this repo.
 # Owners without write access are silently ignored: they are never auto-requested

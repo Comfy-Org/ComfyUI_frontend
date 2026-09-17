@@ -5,7 +5,7 @@
  * shape and the same `TopUpCheckoutError`, so the dialog's tab claim, return
  * announce, and balance watch are untouched either way.
  */
-import type { HostedTopupCheckoutFailure } from '@comfyorg/account/billing'
+import type { HostedTopupCheckoutFailure } from '@comfyorg/account-core/billing'
 
 import { workshopTopupCommand } from '../../config/workshop-billing-sdk'
 import { readBillingSdkTopupEnabled } from '../../config/workshop-features'

@@ -140,7 +140,9 @@ vi.mock(import('@/platform/missingModel/missingModelPipeline'), () => ({
   runMissingModelPipeline: vi.fn()
 }))
 
-function createMockNode(options: { [K in keyof LGraphNode]?: any } = {}) {
+function createMockNode(
+  options: Partial<Record<keyof LGraphNode, unknown>> = {}
+) {
   return {
     id: 1,
     pos: [0, 0],
@@ -2786,10 +2788,10 @@ describe('ComfyApp', () => {
       )
     })
 
-    it.each([
+    it.for([
       ['an invalid structure', '[]'],
       ['invalid JSON', '{invalid']
-    ])('shows one error for %s', async (_case, workflow) => {
+    ])('shows one error for %s', async ([, workflow]) => {
       const consoleError = vi
         .spyOn(console, 'error')
         .mockImplementation(() => {})
@@ -2912,11 +2914,11 @@ describe('ComfyApp', () => {
         ;(e as DragEvent & { canvasX: number; canvasY: number }).canvasX = 123
         ;(e as DragEvent & { canvasX: number; canvasY: number }).canvasY = 456
       })
-      app.canvas = {
-        ...mockCanvas,
+      app.canvas = fromPartial<LGraphCanvas>({
+        ...createMockCanvas(),
         graph_mouse: graphMouse,
         adjustMouseEvent
-      } as unknown as LGraphCanvas
+      })
 
       const graph = new LGraph()
       Reflect.set(app, 'rootGraphInternal', graph)
