@@ -148,6 +148,29 @@ describe('dispose', () => {
     ).toBeNull()
   })
 
+  it('does not mint when a listener disposes the client during the identity publish', async () => {
+    const fetchImpl = okFetch()
+    const { client, storage, identity } = makeClient({
+      fetchImpl,
+      refreshScheduler: {}
+    })
+    const user = testUser()
+    client.subscribe((snapshot) => {
+      if (snapshot.phase === 'minting') client.dispose()
+    })
+
+    identity.fire(user)
+    await vi.advanceTimersByTimeAsync(NINETY_MINUTES_MS * 10)
+
+    expect(client.getSnapshot().phase).toBe('pending')
+    expect(user.getIdToken).not.toHaveBeenCalled()
+    expect(
+      fetchImpl,
+      'a client disposed inside the publish no longer tracks the user it would mint for'
+    ).not.toHaveBeenCalled()
+    expect(storage.raw()).toBeNull()
+  })
+
   it('never publishes an explicit-user mint made after dispose', async () => {
     const { client, identity } = makeClient({ fetchImpl: okFetch() })
     identity.fire(testUser())
