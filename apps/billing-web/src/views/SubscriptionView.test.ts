@@ -139,6 +139,93 @@ describe('SubscriptionView', () => {
     ).toBeDisabled()
   })
 
+  it('offers cancel and resubscribe only when the server allows them', async () => {
+    await renderSubscription()
+    await screen.findByText('Current plan: Free · Monthly')
+
+    expect(
+      screen.queryByRole('button', { name: 'Cancel subscription' })
+    ).not.toBeInTheDocument()
+    expect(
+      screen.queryByRole('button', { name: 'Resubscribe' })
+    ).not.toBeInTheDocument()
+  })
+
+  it('cancels after a confirmation and refreshes what the change touched', async () => {
+    const fake = await renderSubscription({
+      capabilities: { can_cancel: true },
+      cancel: { status: 'ok', value: { phase: 'succeeded' } }
+    })
+
+    await userEvent.click(
+      await screen.findByRole('button', { name: 'Cancel subscription' })
+    )
+    expect(fake.cancelSubscription).not.toHaveBeenCalled()
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Confirm cancellation' })
+    )
+
+    expect(
+      await screen.findByText('Your subscription is cancelled.')
+    ).toBeInTheDocument()
+    expect(fake.cancelSubscription).toHaveBeenCalledOnce()
+    expect(fake.invalidateCapabilities).toHaveBeenCalledOnce()
+    expect(fake.readCapabilities).toHaveBeenLastCalledWith({
+      forceRefresh: true
+    })
+    expect(fake.readPlans).toHaveBeenCalledTimes(2)
+  })
+
+  it('keeps the plan when the customer backs out of cancelling', async () => {
+    const fake = await renderSubscription({
+      capabilities: { can_cancel: true }
+    })
+
+    await userEvent.click(
+      await screen.findByRole('button', { name: 'Cancel subscription' })
+    )
+    await userEvent.click(screen.getByRole('button', { name: 'Keep my plan' }))
+
+    expect(fake.cancelSubscription).not.toHaveBeenCalled()
+    expect(
+      screen.getByRole('button', { name: 'Cancel subscription' })
+    ).toBeInTheDocument()
+  })
+
+  it('resubscribes when the server allows it', async () => {
+    const fake = await renderSubscription({
+      capabilities: { can_reactivate: true },
+      resubscribe: { status: 'ok', value: { phase: 'succeeded' } }
+    })
+
+    await userEvent.click(
+      await screen.findByRole('button', { name: 'Resubscribe' })
+    )
+
+    expect(
+      await screen.findByText('Your subscription is active again.')
+    ).toBeInTheDocument()
+    expect(fake.resubscribe).toHaveBeenCalledOnce()
+  })
+
+  it('explains a change the server refused in our own words', async () => {
+    await renderSubscription({
+      capabilities: { can_cancel: true },
+      cancel: { status: 'error', code: 'NO_ACTIVE_SUBSCRIPTION' }
+    })
+
+    await userEvent.click(
+      await screen.findByRole('button', { name: 'Cancel subscription' })
+    )
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Confirm cancellation' })
+    )
+
+    expect(
+      await screen.findByText('There is no active subscription to change.')
+    ).toBeInTheDocument()
+  })
+
   it('explains a failed catalog read with copy of our own', async () => {
     await renderSubscription({
       plans: { status: 'error', code: 'REQUEST_FAILED' }

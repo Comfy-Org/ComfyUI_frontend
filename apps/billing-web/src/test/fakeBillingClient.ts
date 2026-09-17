@@ -10,10 +10,12 @@ import type { Mock } from 'vitest'
 import { vi } from 'vitest'
 
 import type {
+  BillingCapabilities,
   BillingDeclineReason,
   BillingOperationState,
   BillingPlansData,
   BillingResult,
+  CapabilitiesSnapshot,
   PaymentMethodsSnapshot,
   PaymentPortalResult,
   PendingBillingOperation,
@@ -48,7 +50,11 @@ export interface FakeBillingClientOptions {
   /** Overrides `portalUrl` when the portal itself should answer with a failure. */
   readonly portal?: PaymentPortalResult
   readonly subscribe?: SubscriptionCommandResult
+  readonly cancel?: SubscriptionCommandResult
+  readonly resubscribe?: SubscriptionCommandResult
   readonly recover?: BillingResult<BillingOperationState | undefined>
+  /** Every capability is denied unless named here. */
+  readonly capabilities?: Partial<BillingCapabilities>
 }
 
 export interface FakeBillingClient {
@@ -67,7 +73,11 @@ export interface FakeBillingClient {
   >
   readonly openPaymentPortal: BillingClient['commands']['openPaymentPortal']
   readonly subscribe: BillingClient['commands']['subscribe']
+  readonly cancelSubscription: BillingClient['commands']['cancelSubscription']
+  readonly resubscribe: BillingClient['commands']['resubscribe']
   readonly recover: BillingClient['lifecycle']['recover']
+  readonly readCapabilities: BillingClient['capabilities']['read']
+  readonly invalidateCapabilities: BillingClient['capabilities']['invalidate']
   /** Publishes an operation as the lifecycle would after a poll. */
   readonly publishOperation: (state: BillingOperationState) => void
 }
@@ -85,7 +95,13 @@ export function createFakeBillingClient(
     portalUrl = 'https://billing.stripe.test/session',
     portal: portalOutcome = { status: 'ok', value: { url: portalUrl } },
     subscribe: subscribeOutcome = { status: 'error', code: 'REQUEST_FAILED' },
-    recover: recoverOutcome = { status: 'ok', value: undefined }
+    cancel: cancelOutcome = { status: 'error', code: 'REQUEST_FAILED' },
+    resubscribe: resubscribeOutcome = {
+      status: 'error',
+      code: 'REQUEST_FAILED'
+    },
+    recover: recoverOutcome = { status: 'ok', value: undefined },
+    capabilities: granted = {}
   } = options
 
   const operations = new Map<string, BillingOperationState>()
@@ -131,6 +147,42 @@ export function createFakeBillingClient(
     }
     return subscribeOutcome
   })
+  function commandOf(outcome: SubscriptionCommandResult) {
+    return vi.fn(async () => {
+      if (outcome.status === 'ok' && outcome.value.operation) {
+        publishOperation(outcome.value.operation)
+      }
+      return outcome
+    })
+  }
+  const cancelSubscription = commandOf(cancelOutcome)
+  const resubscribe = commandOf(resubscribeOutcome)
+  const capabilitiesSnapshot: CapabilitiesSnapshot = {
+    capabilities: {
+      can_cancel: false,
+      can_change_seats: false,
+      can_downgrade_to_personal: false,
+      can_invite_members: false,
+      can_reactivate: false,
+      can_subscribe_self_serve: false,
+      can_top_up: false,
+      ...granted
+    },
+    denials: {},
+    rolloutDefaultsApplied: {
+      can_downgrade_to_personal: false,
+      can_subscribe_self_serve: false,
+      can_top_up: false
+    },
+    revision: 1,
+    scope: SCOPE,
+    freshUntil: READ_AT + 60_000
+  }
+  const readCapabilities = vi.fn(async () => ({
+    status: 'ok' as const,
+    value: capabilitiesSnapshot
+  }))
+  const invalidateCapabilities = vi.fn(() => {})
   const recover = vi.fn(async () => {
     if (recoverOutcome.status === 'ok' && recoverOutcome.value) {
       publishOperation(recoverOutcome.value)
@@ -158,9 +210,9 @@ export function createFakeBillingClient(
       dispose: () => {}
     },
     capabilities: {
-      read: unusedByHostedSurfaces('capabilities.read'),
+      read: readCapabilities,
       getSnapshot: () => undefined,
-      invalidate: () => {},
+      invalidate: invalidateCapabilities,
       dispose: () => {}
     },
     credits: {
@@ -193,8 +245,8 @@ export function createFakeBillingClient(
     commands: {
       subscribe,
       previewSubscribe,
-      resubscribe: unusedByHostedSurfaces('commands.resubscribe'),
-      cancelSubscription: unusedByHostedSurfaces('commands.cancelSubscription'),
+      resubscribe,
+      cancelSubscription,
       openPaymentPortal
     }
   }
@@ -209,7 +261,11 @@ export function createFakeBillingClient(
     previewSubscribe,
     openPaymentPortal,
     subscribe,
+    cancelSubscription,
+    resubscribe,
     recover,
+    readCapabilities,
+    invalidateCapabilities,
     publishOperation
   }
 }
