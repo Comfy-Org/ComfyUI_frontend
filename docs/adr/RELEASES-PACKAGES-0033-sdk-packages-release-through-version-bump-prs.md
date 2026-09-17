@@ -215,7 +215,11 @@ cut — the approach first drafted in #17838, #17839 and #17840), which in turn
 sits on the `account-core` rename (#17851) and the Vue move (#17854). With
 this merged, the remaining order to the first publish is bump and merge —
 `ingest-types` first, because `account-core` resolves it as a caret range
-from the registry, then `billing-contract` and `account-core`.
+from the registry, then `billing-contract` and `account-core`. `account-ui`
+comes after `account-core` on the same reasoning once #17929 (its library
+build) and #17932 (its dependency cut) have made it packable: `account-core`
+is its one runtime dependency, resolved as a caret range from the registry,
+so an `account-ui` published first is an artifact nothing can install.
 
 ### Follow-ups
 
@@ -244,7 +248,9 @@ from the registry, then `billing-contract` and `account-core`.
   range against the registry, so an unpublished `ingest-types` change can only
   be tested when the same PR touches both.
 - **`account-ui` is the fourth candidate.** It joins the tables when an
-  out-of-repo host needs the Vue layer.
+  out-of-repo host needs the Vue layer. What makes it packable is open as
+  #17929 and #17932; `private` stays on it until both land, and it publishes
+  after `account-core` per the sequencing above.
 
 ### When to revisit Changesets
 
