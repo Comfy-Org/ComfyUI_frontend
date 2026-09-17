@@ -4,7 +4,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { usePlatformBuildHandoff } from '@/platform/workflow/deploy/composables/usePlatformBuildHandoff'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 
-const distribution = vi.hoisted(() => ({ isCloud: true }))
+const distribution = vi.hoisted(() => ({ isCloud: true, isDesktop: false }))
 vi.mock(import('@/platform/distribution/types'), () => distribution)
 
 vi.mock(import('@/config/comfyApi'), () => ({
@@ -48,6 +48,7 @@ describe('usePlatformBuildHandoff', () => {
 
   beforeEach(() => {
     distribution.isCloud = true
+    distribution.isDesktop = false
     tab = { location: { href: '' } }
     open = vi
       .spyOn(window, 'open')
@@ -118,6 +119,17 @@ describe('usePlatformBuildHandoff', () => {
     )
     expect(fetchApi).not.toHaveBeenCalled()
     expect(tab.location.href).toBe(IMPORT_STEP)
+  })
+
+  it('opens the resolved link in one go on Desktop, where new windows go to the system browser', async () => {
+    distribution.isCloud = false
+    distribution.isDesktop = true
+    setActiveWorkflow()
+
+    await usePlatformBuildHandoff().open()
+
+    expect(open).toHaveBeenCalledOnce()
+    expect(open).toHaveBeenCalledWith(IMPORT_STEP, '_blank', 'noopener')
   })
 
   it('opens the resolved link directly when the popup was blocked', async () => {
