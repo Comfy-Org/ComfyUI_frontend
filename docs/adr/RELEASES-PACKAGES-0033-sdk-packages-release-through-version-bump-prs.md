@@ -12,9 +12,7 @@ Three workspace packages are about to leave the monorepo and become npm
 artifacts that a second repository installs:
 
 - `@comfyorg/account-core` — the framework-free session core (session,
-  billing transport, commands, readers). It is `packages/account` /
-  `@comfyorg/account` until the rename lands; everything below is written
-  against the post-rename name.
+  billing transport, commands, readers).
 - `@comfyorg/billing-contract` — the URL contract the hosted billing app
   shares with every Comfy product: the versioned route builder, the entry
   parser, and the closed `return_to` registry.
@@ -80,9 +78,11 @@ The decisions inside those workflows:
   the on-merge job compares each manifest's `version` against its first parent
   so a `Release` PR that edits a manifest for any other reason is inert.
 - **The `private: true` latch is checked, not assumed.** The publish job fails
-  with an explicit message while a package is still private. `private` comes
-  off in a reviewed PR, at the first publish, not as a side effect of running
-  a workflow.
+  with an explicit message while a package is still private. The latch came
+  off the three manifests in the same reviewed PR that added these workflows,
+  once the publish-readiness work (#17882) had proven the tarballs install
+  from plain Node; the check stays so a package that re-enters the tables
+  before it is ready fails loudly rather than shipping.
 - **Build and smoke-test before publish, tolerantly.** The job runs `build`
   and `smoke:pack` with `--if-present` so it works both before and after the
   packaging PRs that introduce those scripts land. `pnpm publish` passes
@@ -124,8 +124,7 @@ The decisions inside those workflows:
   of Cloud's ingest schemas, it is already at `1.0.0`, and its version is
   written by the regeneration bot in the Cloud repository rather than by
   anyone here — a prerelease line nothing in this repository can maintain. It
-  ships `latest` from `1.0.x` once its `private` latch comes off together with
-  the other two in the publish-readiness follow-up.
+  ships `latest` from `1.0.x`.
 - For the generated contract in `ingest-types`, a field or an endpoint being
   added is a minor; a field being removed, renamed, or changing meaning is a
   major. A human makes that call on the regeneration PR, because only a human
@@ -176,7 +175,8 @@ monorepo was adopted ([ADR-DEVEX-MONOREPO-0002](DEVEX-MONOREPO-0002-adopt-a-pnpm
 - The team already knows how to cut one of these releases; the only new input
   is which package.
 - A release is a PR: reviewable diff, a label a human attaches, and a merge
-  someone owns. Nothing reaches the registry from a push to `main`.
+  someone owns. Nothing reaches the registry from a push to `main`; the only
+  other path is a `workflow_dispatch` of `publish-package.yaml` on `main`.
 - Provenance and the `private` guard make the accidental-publish path explicit
   rather than a matter of care.
 - Adding the fourth package (`account-ui`, when it goes public) is two table
@@ -199,19 +199,23 @@ monorepo was adopted ([ADR-DEVEX-MONOREPO-0002](DEVEX-MONOREPO-0002-adopt-a-pnpm
 - There is no way to install a branch before it merges. Platform tries a
   contract change by merging it, or not at all, until the snapshot follow-up
   below lands.
+- With `private` off, the `workflow_dispatch` path publishes whatever version
+  `main` carries without a bump PR. It exists to re-run a publish the on-merge
+  job missed, and it is the one release that no PR reviews; the protected
+  publish environment noted under Decision is what would close it.
 
 ## Notes
 
 ### Sequencing
 
-This ADR describes the release machinery only. It deliberately does not flip
-`private: true` and does not add `publishConfig`; those arrive with the
-billing track's publish-readiness PR (files allowlist, `dist` build with
-declarations, pack smoke test, private-utility cut — the approach first
-drafted in #17838, #17839 and #17840), which sits on the `account-core` rename
-(#17851) and the Vue move (#17854). The order to the first publish is: rename,
-Vue move, publish readiness, remove `private` in a reviewed PR, then bump and
-merge — `ingest-types` first, then `billing-contract` and `account-core`.
+This ADR ships the release machinery and removes `private: true` from the
+three manifests. It sits on the publish-readiness PR (#17882: files
+allowlist, `dist` build with declarations, pack smoke test, private-utility
+cut — the approach first drafted in #17838, #17839 and #17840), which in turn
+sits on the `account-core` rename (#17851) and the Vue move (#17854). With
+this merged, the remaining order to the first publish is bump and merge —
+`ingest-types` first, because `account-core` resolves it as a caret range
+from the registry, then `billing-contract` and `account-core`.
 
 ### Follow-ups
 
