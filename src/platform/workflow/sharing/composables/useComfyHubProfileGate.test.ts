@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type { ComfyHubProfile } from '@/schemas/apiSchema'
+import type { ComfyHubProfile } from '@/platform/workflow/sharing/schemas/shareSchemas'
 
 const mockGetMyProfile = vi.hoisted(() => vi.fn())
 const mockRequestAssetUploadUrl = vi.hoisted(() => vi.fn())

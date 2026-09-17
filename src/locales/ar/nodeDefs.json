@@ -5352,6 +5352,33 @@
       }
     }
   },
+  "EndLoop": {
+    "display_name": "إنهاء الحلقة",
+    "inputs": {
+      "accumulate": {
+        "name": "accumulate",
+        "tooltip": "أعد output_value من كل تكرار عند تمكين accumulate؛ وإلا فأعد التكرار الأخير فقط."
+      },
+      "next_iteration_value": {
+        "name": "next_iteration_value",
+        "tooltip": "القيمة المُرسلة من «إنهاء الحلقة» إلى «بدء الحلقة» للتكرار التالي."
+      },
+      "output_value": {
+        "name": "output_value",
+        "tooltip": "القيمة التي تُرجعها «إنهاء الحلقة». تُرجع التكرار الأخير أو جميع التكرارات وفقًا لإعداد accumulate."
+      },
+      "terminations": {
+        "name": "terminations",
+        "tooltip": "وصّل المخرجات التي يجب تنفيذها في كل تكرار. لا تُرجع قيمها."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "المخرجات",
+        "tooltip": "قيمة output_value للتكرار الأخير، أو القيم المتراكمة عبر التكرارات عند تمكين accumulate."
+      }
+    }
+  },
   "Epsilon Scaling": {
     "display_name": "تحجيم إبسيلون",
     "inputs": {
@@ -6825,6 +6852,42 @@
       }
     }
   },
+  "GeminiNodeV3": {
+    "description": "أنشئ استجابات نصية باستخدام نماذج Gemini من Google. وفّر مطالبة نصية، واختياريًا، صورة واحدة أو أكثر أو مقاطع صوتية أو فيديوهات أو ملفات كسياق متعدد الوسائط.",
+    "display_name": "Google Gemini",
+    "inputs": {
+      "control_after_generate": {
+        "name": "التحكم بعد الإنشاء"
+      },
+      "model": {
+        "name": "النموذج",
+        "tooltip": "نموذج Gemini المستخدم لإنشاء الاستجابة."
+      },
+      "model_max_output_tokens": {
+        "name": "max_output_tokens"
+      },
+      "model_prompt": {
+        "name": "المطالبة"
+      },
+      "model_seed": {
+        "name": "البذرة"
+      },
+      "model_system_prompt": {
+        "name": "system_prompt"
+      },
+      "model_thinking_level": {
+        "name": "thinking_level"
+      },
+      "model_video_processing": {
+        "name": "video_processing"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "GeminiVideoOmni": {
     "description": "أنشئ فيديو مع صوت من مطالبة نصية باستخدام نموذج Google Gemini Omni Flash. يمكنك اختيار صور و/أو مقاطع فيديو مرجعية لتوجيه أو تعديل النتيجة. صف الطول المطلوب (٣-١٠ ثوانٍ) ونسبة العرض إلى الارتفاع (١٦:٩ أو ٩:١٦) مباشرة في المطالبة.",
     "display_name": "Google Gemini Omni (فيديو)",
@@ -7012,6 +7075,22 @@
       },
       "2": {
         "name": "حجم الدفعة",
+        "tooltip": null
+      }
+    }
+  },
+  "GetItemFromList": {
+    "display_name": "الحصول على عنصر من قائمة",
+    "inputs": {
+      "index": {
+        "name": "الفهرس"
+      },
+      "list": {
+        "name": "القائمة"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -11623,6 +11702,73 @@
       "1": {
         "name": "نصوص",
         "tooltip": "قائمة بالنصوص التوضيحية."
+      }
+    }
+  },
+  "LoopIteration": {
+    "display_name": "LoopIteration",
+    "inputs": {
+      "current_iteration_value": {
+        "name": "current_iteration_value"
+      },
+      "is_first": {
+        "name": "is_first"
+      },
+      "is_last": {
+        "name": "is_last"
+      },
+      "iteration_index": {
+        "name": "iteration_index"
+      },
+      "list_item": {
+        "name": "list_item"
+      },
+      "reuse_cache": {
+        "name": "reuse_cache"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      },
+      "2": {
+        "tooltip": null
+      },
+      "3": {
+        "tooltip": null
+      },
+      "4": {
+        "tooltip": null
+      }
+    }
+  },
+  "LoopProgress": {
+    "display_name": "LoopProgress",
+    "inputs": {
+      "position": {
+        "name": "الموضع"
+      },
+      "start_id": {
+        "name": "start_id"
+      },
+      "total": {
+        "name": "الإجمالي"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "LoopResult": {
+    "display_name": "LoopResult",
+    "inputs": {
+      "close_id": {
+        "name": "close_id"
       }
     }
   },
@@ -18058,6 +18204,93 @@
       }
     }
   },
+  "PrunaImageToVideoNode": {
+    "description": "يحوّل صورة إلى فيديو متحرك باستخدام نماذج فيديو Pruna، مع إطار أخير اختياري أو صوت مُولَّد أو مسار صوتي.",
+    "display_name": "Pruna P-Video-2 من صورة إلى فيديو",
+    "inputs": {
+      "control_after_generate": {
+        "name": "التحكم بعد التوليد"
+      },
+      "model": {
+        "name": "النموذج",
+        "tooltip": "النموذج المراد استخدامه."
+      },
+      "model_draft": {
+        "name": "مسودة"
+      },
+      "model_duration": {
+        "name": "المدة"
+      },
+      "model_enhance_prompt": {
+        "name": "enhance_prompt"
+      },
+      "model_fps": {
+        "name": "fps"
+      },
+      "model_generate_audio": {
+        "name": "generate_audio"
+      },
+      "model_prompt": {
+        "name": "المطالبة"
+      },
+      "model_resolution": {
+        "name": "الدقة"
+      },
+      "model_seed": {
+        "name": "البذرة"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PrunaTextToVideoNode": {
+    "description": "ينشئ فيديو من مطالبة نصية باستخدام نماذج فيديو Pruna، مع صوت مُولَّد اختياري أو مسار صوتي للتحكم به.",
+    "display_name": "Pruna P-Video-2 من نص إلى فيديو",
+    "inputs": {
+      "control_after_generate": {
+        "name": "التحكم بعد التوليد"
+      },
+      "model": {
+        "name": "النموذج",
+        "tooltip": "النموذج المراد استخدامه."
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_draft": {
+        "name": "مسودة"
+      },
+      "model_duration": {
+        "name": "المدة"
+      },
+      "model_enhance_prompt": {
+        "name": "enhance_prompt"
+      },
+      "model_fps": {
+        "name": "fps"
+      },
+      "model_generate_audio": {
+        "name": "generate_audio"
+      },
+      "model_prompt": {
+        "name": "المطالبة"
+      },
+      "model_resolution": {
+        "name": "الدقة"
+      },
+      "model_seed": {
+        "name": "البذرة"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "QuadrupleCLIPLoader": {
     "description": "[وصفات]\n\nhidream: long clip-l, long clip-g, t5xxl, llama_8b_3.1_instruct",
     "display_name": "محمل CLIP رباعي",
@@ -22701,6 +22934,52 @@
       }
     }
   },
+  "StartLoop": {
+    "display_name": "بدء الحلقة",
+    "inputs": {
+      "cache_iterations": {
+        "name": "cache_iterations",
+        "tooltip": "أعِد استخدام نتائج التكرارات غير المتغيرة من عمليات التنفيذ السابقة. عطّل هذا الخيار لتنفيذ كل تكرار مجددًا."
+      },
+      "initial_iteration_value": {
+        "name": "initial_iteration_value",
+        "tooltip": "القيمة التي تُعرض باعتبارها current_iteration_value في التكرار الأول."
+      },
+      "mode": {
+        "name": "الوضع",
+        "tooltip": "وضع تكرار الحلقة."
+      },
+      "mode_num_iterations": {
+        "name": "num_iterations"
+      },
+      "parent_iteration": {
+        "name": "parent_iteration",
+        "tooltip": "صِل iteration_index من عقدة «بدء الحلقة» خارجية لتعشيش هذه الحلقة."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "iteration_index",
+        "tooltip": "فهرس تكرار الحلقة الحالي."
+      },
+      "1": {
+        "name": "is_first",
+        "tooltip": "تكون القيمة صحيحة أثناء التكرار الأول للحلقة."
+      },
+      "2": {
+        "name": "is_last",
+        "tooltip": "صحيح أثناء التكرار الأخير للحلقة."
+      },
+      "3": {
+        "name": "list_item",
+        "tooltip": "العنصر الحالي من القائمة عند استخدام وضع القائمة. لا شيء في وضعي البسيط وFor."
+      },
+      "4": {
+        "name": "current_iteration_value",
+        "tooltip": "القيمة المنقولة عبر الحلقة للتكرار الحالي: initial_iteration_value في التكرار الأول، ثم next_iteration_value من End Loop في كل تكرار لاحق."
+      }
+    }
+  },
   "StringCompare": {
     "display_name": "مقارنة",
     "inputs": {
@@ -24896,6 +25175,192 @@
       "2": {
         "name": "GLB",
         "tooltip": null
+      }
+    }
+  },
+  "TripoPSeriesImageToModelNode": {
+    "description": "ينشئ نموذجًا ثلاثي الأبعاد منخفض المضلعات بطوبولوجيا نظيفة من صورة، على هيئة شبكة مثلثات (GLB) أو شبكة يغلب عليها الرباعيات (FBX).",
+    "display_name": "Tripo P2: من صورة إلى نموذج",
+    "inputs": {
+      "control_after_generate": {
+        "name": "التحكم بعد التوليد"
+      },
+      "model": {
+        "name": "النموذج",
+        "tooltip": "نموذج Tripo من سلسلة P."
+      },
+      "model_auto_size": {
+        "name": "auto_size"
+      },
+      "model_compress_geometry": {
+        "name": "compress_geometry"
+      },
+      "model_enable_image_autofix": {
+        "name": "enable_image_autofix"
+      },
+      "model_export_uv": {
+        "name": "export_uv"
+      },
+      "model_face_limit": {
+        "name": "face_limit"
+      },
+      "model_model_seed": {
+        "name": "model_seed"
+      },
+      "model_orientation": {
+        "name": "الاتجاه"
+      },
+      "model_pbr": {
+        "name": "pbr"
+      },
+      "model_quad": {
+        "name": "quad"
+      },
+      "model_texture": {
+        "name": "الخامة"
+      },
+      "model_texture_alignment": {
+        "name": "texture_alignment"
+      },
+      "model_texture_seed": {
+        "name": "texture_seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "معرّف مهمة النموذج",
+        "tooltip": null
+      },
+      "1": {
+        "name": "GLB",
+        "tooltip": "فارغ عند تمكين quad."
+      },
+      "2": {
+        "name": "FBX",
+        "tooltip": "يُملأ فقط عند تمكين quad."
+      }
+    }
+  },
+  "TripoPSeriesMultiviewToModelNode": {
+    "description": "ينشئ نموذجًا ثلاثي الأبعاد منخفض المضلعات بطوبولوجيا نظيفة من عرض أمامي بالإضافة إلى عرض واحد إلى ثلاثة عروض من اليسار والخلف واليمين، على هيئة شبكة مثلثات (GLB) أو شبكة يغلب عليها الرباعيات (FBX).",
+    "display_name": "Tripo P2: من عروض متعددة إلى نموذج",
+    "inputs": {
+      "control_after_generate": {
+        "name": "التحكم بعد التوليد"
+      },
+      "model": {
+        "name": "النموذج",
+        "tooltip": "نموذج Tripo من سلسلة P."
+      },
+      "model_auto_size": {
+        "name": "auto_size"
+      },
+      "model_compress_geometry": {
+        "name": "compress_geometry"
+      },
+      "model_export_uv": {
+        "name": "export_uv"
+      },
+      "model_face_limit": {
+        "name": "face_limit"
+      },
+      "model_model_seed": {
+        "name": "model_seed"
+      },
+      "model_orientation": {
+        "name": "الاتجاه"
+      },
+      "model_pbr": {
+        "name": "pbr"
+      },
+      "model_quad": {
+        "name": "quad"
+      },
+      "model_texture": {
+        "name": "النسيج"
+      },
+      "model_texture_alignment": {
+        "name": "texture_alignment"
+      },
+      "model_texture_seed": {
+        "name": "texture_seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "معرّف مهمة النموذج",
+        "tooltip": null
+      },
+      "1": {
+        "name": "GLB",
+        "tooltip": "فارغ عند تفعيل الرباعي."
+      },
+      "2": {
+        "name": "FBX",
+        "tooltip": "لا يُملأ إلا عند تفعيل الرباعي."
+      }
+    }
+  },
+  "TripoPSeriesTextToModelNode": {
+    "description": "ينشئ نموذجًا ثلاثي الأبعاد منخفض المضلع بطوبولوجيا نظيفة من موجّه نصي، على هيئة شبكة مثلثات (GLB) أو شبكة يغلب عليها الرباعيات (FBX).",
+    "display_name": "Tripo P2: من النص إلى نموذج",
+    "inputs": {
+      "control_after_generate": {
+        "name": "التحكم بعد الإنشاء"
+      },
+      "model": {
+        "name": "النموذج",
+        "tooltip": "نموذج Tripo من سلسلة P."
+      },
+      "model_auto_size": {
+        "name": "auto_size"
+      },
+      "model_compress_geometry": {
+        "name": "compress_geometry"
+      },
+      "model_export_uv": {
+        "name": "export_uv"
+      },
+      "model_face_limit": {
+        "name": "face_limit"
+      },
+      "model_image_seed": {
+        "name": "image_seed"
+      },
+      "model_model_seed": {
+        "name": "model_seed"
+      },
+      "model_negative_prompt": {
+        "name": "negative_prompt"
+      },
+      "model_pbr": {
+        "name": "pbr"
+      },
+      "model_prompt": {
+        "name": "الموجّه"
+      },
+      "model_quad": {
+        "name": "رباعي"
+      },
+      "model_texture": {
+        "name": "النسيج"
+      },
+      "model_texture_seed": {
+        "name": "texture_seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "معرّف مهمة النموذج",
+        "tooltip": null
+      },
+      "1": {
+        "name": "GLB",
+        "tooltip": "فارغ عند تفعيل الرباعي."
+      },
+      "2": {
+        "name": "FBX",
+        "tooltip": "لا يُملأ إلا عند تفعيل الرباعي."
       }
     }
   },

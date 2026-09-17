@@ -1,11 +1,10 @@
 <script setup lang="ts">
 import {
-  AUTH_TOAST_SUMMARIES,
   classifyAuthError,
   isFirebaseAuthErrorLike,
   severityForAuthError
-} from '@comfyorg/account/firebaseAuthError'
-import { useGenerationGuard } from '@comfyorg/account/vue/useGenerationGuard'
+} from '@comfyorg/account-core/firebaseAuthError'
+import { useGenerationGuard } from '@comfyorg/account-ui/auth/useGenerationGuard'
 import { cn } from '@comfyorg/tailwind-utils'
 import { useMounted } from '@vueuse/core'
 import { onBeforeUnmount, onMounted, ref, watch } from 'vue'
@@ -157,7 +156,7 @@ function reportSendFailure(error: unknown) {
   const severity = severityForAuthError(classification)
   addToast({
     severity,
-    summary: AUTH_TOAST_SUMMARIES[locale][severity],
+    summary: t(severity === 'warn' ? 'g.warning' : 'g.error', locale),
     detail: signInErrorMessage(classification, locale, hostname)
   })
 }

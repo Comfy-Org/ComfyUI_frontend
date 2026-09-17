@@ -21,6 +21,18 @@ parallel image/audio/video sweeps, targeted retests and result commits.
 [MODELS_TEST_RESULTS.md](MODELS_TEST_RESULTS.md) records every published page's
 latest check and last successful generation.
 
+## Formatting
+
+Run `pnpm format:astro` from the repository root to format Astro files, or
+`pnpm format:astro:check` to check them. Both are included in the root format
+commands and shared CI checks. Pre-commit formats staged Astro files after
+ESLint fixes.
+
+Astro files use Prettier with the official Astro plugin; other formats continue
+to use Oxfmt. The website's `.prettierrc.json` matches the repository's style
+and preserves whitespace around inline HTML elements. The Astro editor
+extension also reads this configuration.
+
 ## Ashby careers integration
 
 `/careers` and `/zh-CN/careers` are rendered from Ashby's public job board
@@ -259,6 +271,7 @@ All event names below have the prefix `website:workshop_`:
 | `run_validation_failed`   | Local form validation rejects a Run action.                                    |
 | `run_started`             | A validated Run action begins, including uploads and credential refresh.       |
 | `run_finished`            | The attempt succeeds, fails, or is cancelled, with `status` and `duration_ms`. |
+| `checkout_failed`         | A top-up attempt fails during balance, credential, or checkout setup.          |
 | `output_download_clicked` | The user requests an output download.                                          |
 
 The basic funnel is catalogue view → model view → run started → run finished
@@ -266,7 +279,9 @@ with `status=succeeded` → output download clicked. Model events include slug,
 Router ID, provider, and modality. Run events also retain the initiating
 `user_id`, `workspace_id`, and a unique `attempt_id` across their start and
 finish. Finished requests include `request_id` when available; success counts
-returned artifacts, and failures include only a bounded reason code.
+returned artifacts, and failures include a bounded reason plus allowlisted HTTP
+status and Router error type when available. Checkout failures include their
+stage and bounded SDK error code, plus a real HTTP status when one exists.
 
 Retries get new attempt IDs even when they reuse a Router idempotency key.
 Cancellation describes the browser stopping its wait, not a billing outcome.
