@@ -419,9 +419,9 @@
       "contactSupport": "계정을 삭제하려면 {email}으로 문의해 주세요."
     },
     "errors": {
-      "auth/account-exists-with-different-credential": "이 이메일 주소로 이미 계정이 존재하지만 다른 로그인 방법을 사용합니다. 처음에 사용한 방법으로 로그인하세요.",
+      "auth/account-exists-with-different-credential": "이 방법으로는 로그인할 수 없습니다. 다른 로그인 방법을 사용하거나 비밀번호를 재설정하여 계속하세요.",
       "auth/cancelled-popup-request": "다른 로그인 창이 이미 열려 있어 이 창은 취소되었습니다. 다시 시도하세요.",
-      "auth/email-already-in-use": "이 이메일로 이미 계정이 존재합니다. 로그인을 시도해 보세요.",
+      "auth/email-already-in-use": "이 이메일로 계정을 만들 수 없습니다. 대신 로그인하거나 비밀번호를 재설정해 보세요.",
       "auth/invalid-credential": "로그인 정보가 올바르지 않습니다. 이메일과 비밀번호를 확인해 주세요.",
       "auth/invalid-email": "유효한 이메일 주소를 입력해 주세요.",
       "auth/network-request-failed": "네트워크 오류입니다. 연결을 확인하고 다시 시도해 주세요.",
@@ -430,9 +430,7 @@
       "auth/popup-closed-by-user": "로그인이 완료되기 전에 로그인 창이 닫혔습니다. 다시 시도하세요.",
       "auth/too-many-requests": "로그인 시도가 너무 많습니다. 잠시 후 다시 시도해 주세요.",
       "auth/user-disabled": "이 계정이 비활성화되었습니다. 지원팀에 문의해 주세요.",
-      "auth/user-not-found": "로그인 자격 증명이 올바르지 않습니다. 이메일과 비밀번호를 확인하세요.",
       "auth/weak-password": "비밀번호가 너무 약합니다. 최소 6자 이상의 강력한 비밀번호를 사용해 주세요.",
-      "auth/wrong-password": "로그인 자격 증명이 올바르지 않습니다. 이메일과 비밀번호를 확인하세요.",
       "generic": "로그인 중 문제가 발생했습니다. 다시 시도해 주세요.",
       "signupBlocked": "현재 계정을 생성할 수 없습니다. 잠시 후 다시 시도해 주세요. 계속 문제가 발생하면 support@comfy.org로 문의해 주세요."
     },

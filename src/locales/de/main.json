@@ -419,9 +419,9 @@
       "contactSupport": "Um Ihr Konto zu löschen, kontaktieren Sie bitte {email}"
     },
     "errors": {
-      "auth/account-exists-with-different-credential": "Ein Konto mit dieser E-Mail-Adresse existiert bereits, verwendet jedoch eine andere Anmeldemethode. Bitte melden Sie sich so an, wie Sie es ursprünglich getan haben.",
+      "auth/account-exists-with-different-credential": "Wir konnten Sie mit dieser Methode nicht anmelden. Versuchen Sie eine andere Anmeldemethode oder setzen Sie Ihr Passwort zurück, um fortzufahren.",
       "auth/cancelled-popup-request": "Ein anderes Anmeldefenster war bereits geöffnet, daher wurde dieses abgebrochen. Bitte versuchen Sie es erneut.",
-      "auth/email-already-in-use": "Ein Konto mit dieser E-Mail-Adresse existiert bereits. Versuchen Sie stattdessen, sich anzumelden.",
+      "auth/email-already-in-use": "Wir konnten mit dieser E-Mail-Adresse kein Konto erstellen. Versuchen Sie stattdessen, sich anzumelden oder Ihr Passwort zurückzusetzen.",
       "auth/invalid-credential": "Ungültige Anmeldedaten. Bitte überprüfen Sie Ihre E-Mail-Adresse und Ihr Passwort.",
       "auth/invalid-email": "Bitte geben Sie eine gültige E-Mail-Adresse ein.",
       "auth/network-request-failed": "Netzwerkfehler. Bitte überprüfen Sie Ihre Verbindung und versuchen Sie es erneut.",
@@ -430,9 +430,7 @@
       "auth/popup-closed-by-user": "Das Anmeldefenster wurde geschlossen, bevor die Anmeldung abgeschlossen war. Bitte versuchen Sie es erneut.",
       "auth/too-many-requests": "Zu viele Anmeldeversuche. Bitte warten Sie einen Moment und versuchen Sie es erneut.",
       "auth/user-disabled": "Dieses Konto wurde deaktiviert. Bitte kontaktieren Sie den Support.",
-      "auth/user-not-found": "Ungültige Anmeldedaten. Bitte überprüfen Sie Ihre E-Mail-Adresse und Ihr Passwort.",
       "auth/weak-password": "Das Passwort ist zu schwach. Bitte verwenden Sie ein stärkeres Passwort mit mindestens 6 Zeichen.",
-      "auth/wrong-password": "Ungültige Anmeldedaten. Bitte überprüfen Sie Ihre E-Mail-Adresse und Ihr Passwort.",
       "generic": "Bei der Anmeldung ist ein Fehler aufgetreten. Bitte versuchen Sie es erneut.",
       "signupBlocked": "Ihr Konto konnte derzeit nicht erstellt werden. Bitte versuchen Sie es später erneut. Wenn dies weiterhin passiert, schreiben Sie an support@comfy.org."
     },
