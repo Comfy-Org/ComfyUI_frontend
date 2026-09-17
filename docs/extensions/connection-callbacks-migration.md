@@ -77,10 +77,18 @@ links were already disconnected: the node stayed in `graph.nodes` with its
 links gone. Now the graph treats every removal callback as an effect around
 one structural transaction. `node:before-removed` listeners, interior subgraph
 lifecycles, `node.onRemoved()`, `graph.onNodeRemoved()`, `node:removed`
-listeners and the change hooks all run, the node is fully detached (steps 4
-and 5 above always complete), and only then is the failure rethrown: the
-single error when one callback threw,
+listeners, `afterChange()` and `change()` each run in their own isolated
+step, the node is fully detached (steps 4 and 5 above always complete), and
+only then is the failure rethrown: the single error when one callback threw,
 an `AggregateError` listing them when several did.
+
+Which throws reach that rethrow is set by how each hook is called. Direct
+calls (`node.onRemoved()`, `graph.onNodeRemoved()`, interior lifecycles,
+`afterChange()`, `change()`) are collected. `node:before-removed` and
+`node:removed` are dispatched through `EventTarget`, which reports a
+throwing listener as an uncaught error and continues; those throws never
+reach the caller of `remove()` and are not in the `AggregateError`. Either
+way the removal itself completes.
 
 What this means for an extension:
 
@@ -90,6 +98,8 @@ What this means for an extension:
   nodes of a released subgraph from receiving theirs.
 - Cleanup that must run on removal belongs before anything that can throw,
   or in `node:removed`, which now fires even when an earlier callback failed.
+- A throwing event listener is only visible in the console or through the
+  window's error handler, not to whoever called `remove()`.
 
 To resolve the removed node from a peer's `onConnectionsChange` handler, do it
 at step 2 via `graph.getNodeById()`. By `node:removed`, the node is gone.

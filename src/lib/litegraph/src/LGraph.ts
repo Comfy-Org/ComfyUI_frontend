@@ -293,7 +293,13 @@ export type AdoptCanonicalNodeResult =
        * graph itself refused, otherwise whatever a lifecycle hook threw.
        */
       cause: unknown
-      /** Errors thrown while restoring the previous state, in order. */
+      /**
+       * Errors thrown while restoring the previous state, in order. Empty
+       * means the structural state is as it was before the call. Nonempty
+       * means the rollback was best-effort: every step was attempted, but
+       * the steps that threw may have left their part unrestored, so the
+       * graph should be treated as suspect and the failure surfaced.
+       */
       rollbackFailures: unknown[]
     }
 
@@ -1910,10 +1916,8 @@ export class LGraph
 
     this.setDirtyCanvas(true, true)
     // sure? - almost sure is wrong
-    failures.run(() => {
-      this.afterChange()
-      this.change()
-    })
+    failures.run(() => this.afterChange())
+    failures.run(() => this.change())
 
     this.updateExecutionOrder()
     failures.rethrow('LGraph.remove: lifecycle callbacks failed')
