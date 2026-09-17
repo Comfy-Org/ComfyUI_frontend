@@ -1,10 +1,10 @@
 import type { Ref } from 'vue'
 
+import type { LGraph } from '@/lib/litegraph/src/LGraph'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type {
   INodeInputSlot,
-  INodeOutputSlot,
-  IWidgetInputSlot
+  INodeOutputSlot
 } from '@/lib/litegraph/src/interfaces'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { LGraphEventMode } from '@/lib/litegraph/src/types/globalEnums'
@@ -48,57 +48,76 @@ function isWildcardType(type: unknown): boolean {
   return type === '*' || type === '' || type === 0
 }
 
+function findOutputTargets(
+  graph: LGraph,
+  sourceNode: LGraphNode,
+  sourceSlot: INodeInputSlot
+): CompatibleTarget[] {
+  return graph._nodes.flatMap((candidate) => {
+    if (
+      candidate.id === sourceNode.id ||
+      candidate.mode === LGraphEventMode.NEVER
+    )
+      return []
+
+    return candidate.outputs.flatMap((output, slotIndex) =>
+      !isWildcardType(output.type) &&
+      LiteGraph.isValidConnection(output.type, sourceSlot.type)
+        ? [{ node: candidate, slotIndex, slotInfo: output }]
+        : []
+    )
+  })
+}
+
+function findInputTargets(
+  graph: LGraph,
+  sourceNode: LGraphNode,
+  sourceSlot: INodeOutputSlot
+): CompatibleTarget[] {
+  return graph._nodes.flatMap((candidate) => {
+    if (
+      candidate.id === sourceNode.id ||
+      candidate.mode === LGraphEventMode.NEVER
+    )
+      return []
+
+    return candidate.inputs.flatMap((input, slotIndex) =>
+      input.link == null &&
+      !isWildcardType(input.type) &&
+      LiteGraph.isValidConnection(sourceSlot.type, input.type)
+        ? [{ node: candidate, slotIndex, slotInfo: input }]
+        : []
+    )
+  })
+}
+
 export function findCompatibleTargets(
   context: SlotMenuContext,
   maxResults: number = 15
 ): CompatibleTarget[] {
-  const graph = app.canvas?.graph
+  const graph = app.canvas.graph
   if (!graph) return []
 
   const sourceNode = graph.getNodeById(context.nodeId)
   if (!sourceNode) return []
 
   const sourceSlot = context.isInput
-    ? sourceNode.inputs?.[context.slotIndex]
-    : sourceNode.outputs?.[context.slotIndex]
+    ? sourceNode.inputs.at(context.slotIndex)
+    : sourceNode.outputs.at(context.slotIndex)
   if (!sourceSlot) return []
 
   if (isWildcardType(sourceSlot.type)) return []
 
-  const results: CompatibleTarget[] = []
-
-  for (const candidate of graph._nodes) {
-    if (candidate.id === sourceNode.id) continue
-    if (candidate.mode === LGraphEventMode.NEVER) continue
-
-    if (context.isInput) {
-      if (!candidate.outputs) continue
-      for (let i = 0; i < candidate.outputs.length; i++) {
-        const output = candidate.outputs[i]
-        if (isWildcardType(output.type)) continue
-        if (LiteGraph.isValidConnection(output.type, sourceSlot.type)) {
-          results.push({ node: candidate, slotIndex: i, slotInfo: output })
-        }
-      }
-    } else {
-      if (!candidate.inputs) continue
-      for (let i = 0; i < candidate.inputs.length; i++) {
-        const input = candidate.inputs[i]
-        if (input.link != null) continue
-        if (isWildcardType(input.type)) continue
-        if (LiteGraph.isValidConnection(sourceSlot.type, input.type)) {
-          results.push({ node: candidate, slotIndex: i, slotInfo: input })
-        }
-      }
-    }
-  }
+  const results = context.isInput
+    ? findOutputTargets(graph, sourceNode, sourceSlot)
+    : findInputTargets(graph, sourceNode, sourceSlot)
 
   results.sort((a, b) => a.node.pos[1] - b.node.pos[1])
   return results.slice(0, maxResults)
 }
 
 export function renameSlot(context: SlotMenuContext, newLabel: string): void {
-  const graph = app.canvas?.graph
+  const graph = app.canvas.graph
   if (!graph) return
 
   const node = graph.getNodeById(context.nodeId)
@@ -109,31 +128,29 @@ export function renameSlot(context: SlotMenuContext, newLabel: string): void {
     : node.getOutputInfo(context.slotIndex)
   if (!slotInfo) return
 
+  const normalizedLabel = newLabel.trim()
+  if (!normalizedLabel || normalizedLabel === slotInfo.label) return
+
   graph.beforeChange()
-  slotInfo.label = newLabel
-  app.canvas?.setDirty(true, true)
+  slotInfo.label = normalizedLabel
+  app.canvas.setDirty(true, true)
   graph.afterChange()
 }
 
 export function canRenameSlot(context: SlotMenuContext): boolean {
-  const graph = app.canvas?.graph
+  const graph = app.canvas.graph
   if (!graph) return false
 
   const node = graph.getNodeById(context.nodeId)
   if (!node) return false
 
   const slotInfo = context.isInput
-    ? node.inputs?.[context.slotIndex]
-    : node.outputs?.[context.slotIndex]
+    ? node.getInputInfo(context.slotIndex)
+    : node.getOutputInfo(context.slotIndex)
   if (!slotInfo) return false
 
   if (slotInfo.nameLocked) return false
-  if (
-    context.isInput &&
-    'link' in slotInfo &&
-    (slotInfo as IWidgetInputSlot).widget
-  )
-    return false
+  if (context.isInput && 'widget' in slotInfo && slotInfo.widget) return false
 
   return true
 }
@@ -142,7 +159,7 @@ export function connectSlots(
   context: SlotMenuContext,
   target: CompatibleTarget
 ): void {
-  const graph = app.canvas?.graph
+  const graph = app.canvas.graph
   if (!graph) return
 
   const sourceNode = graph.getNodeById(context.nodeId)
@@ -157,7 +174,8 @@ export function connectSlots(
   }
 
   graph.afterChange()
-  app.canvas?.setDirty(true, true)
+  app.canvas.setDirty(true, true)
 }
 
-export type { SlotMenuContext }
+export type { CompatibleTarget, SlotMenuContext }
+export type FindCompatibleTargets = typeof findCompatibleTargets

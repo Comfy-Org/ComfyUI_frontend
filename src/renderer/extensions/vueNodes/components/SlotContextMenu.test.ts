@@ -1,10 +1,16 @@
 import userEvent from '@testing-library/user-event'
 import { cleanup, render, screen, waitFor } from '@testing-library/vue'
+import { fromPartial } from '@total-typescript/shoehorn'
 import type { Ref } from 'vue'
 import { nextTick } from 'vue'
 import { afterEach, assert, describe, expect, it, vi } from 'vitest'
+import { createI18n } from 'vue-i18n'
 
+import type { INodeOutputSlot } from '@/lib/litegraph/src/interfaces'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import type { FindCompatibleTargets } from '@/renderer/extensions/vueNodes/composables/useSlotContextMenu'
 import { toNodeId } from '@/types/nodeId'
+import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
 
 const {
   canvasTransform,
@@ -14,25 +20,16 @@ const {
   connectSlots,
   renameSlot
 } = vi.hoisted(() => ({
-  canvasTransform: { scale: 1, offset: [0, 0] },
+  canvasTransform: { scale: 1, offset: [0, 0] as [number, number] },
   registerSlotMenuInstance: vi.fn(),
-  findCompatibleTargets: vi.fn(() => []),
+  findCompatibleTargets: vi.fn<FindCompatibleTargets>(() => []),
   canRenameSlot: vi.fn(() => false),
   connectSlots: vi.fn(),
   renameSlot: vi.fn()
 }))
 
-vi.mock('@/renderer/core/canvas/canvasStore', () => ({
-  useCanvasStore: () => ({
-    getCanvas: () => ({
-      canvas: document.createElement('canvas'),
-      ds: canvasTransform
-    })
-  })
-}))
-
 vi.mock(
-  '@/renderer/extensions/vueNodes/composables/useSlotContextMenu',
+  import('@/renderer/extensions/vueNodes/composables/useSlotContextMenu'),
   () => ({
     canRenameSlot,
     connectSlots,
@@ -42,19 +39,32 @@ vi.mock(
   })
 )
 
-vi.mock('vue-i18n', () => ({
-  useI18n: () => ({
-    t: (key: string) =>
-      ({
-        'g.renameSlot': 'Rename slot',
-        'g.newSlotLabel': 'New slot label:',
-        'g.noCompatibleNodes': 'No compatible nodes',
-        'g.connectTo': 'Connect to...'
-      })[key]
-  })
-}))
-
 import SlotContextMenu from './SlotContextMenu.vue'
+
+const i18n = createI18n({
+  legacy: false,
+  locale: 'en',
+  messages: {
+    en: {
+      g: {
+        renameSlot: 'Rename slot',
+        newSlotLabel: 'New slot label:',
+        noCompatibleNodes: 'No compatible nodes',
+        connectTo: 'Connect to...'
+      }
+    }
+  }
+})
+
+function renderMenu() {
+  vi.mocked(useCanvasStore().getCanvas).mockReturnValue(
+    fromPartial({
+      canvas: document.createElement('canvas'),
+      ds: canvasTransform
+    })
+  )
+  return render(SlotContextMenu, { global: { plugins: [i18n] } })
+}
 
 describe('SlotContextMenu', () => {
   afterEach(() => {
@@ -64,7 +74,7 @@ describe('SlotContextMenu', () => {
   })
 
   it('opens at the requested canvas position and closes imperatively', async () => {
-    render(SlotContextMenu)
+    renderMenu()
     const menu = registerSlotMenuInstance.mock.calls[0][0] as {
       show: (event: MouseEvent, context: object) => Promise<void>
       hide: () => void
@@ -93,13 +103,13 @@ describe('SlotContextMenu', () => {
 
   it('moves the rendered popup when the canvas camera changes', async () => {
     vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockImplementation(
-      function () {
+      function (this: HTMLElement) {
         const left = Number.parseFloat(this.style.left) || 0
         const top = Number.parseFloat(this.style.top) || 0
         return new DOMRect(left, top, 1, 1)
       }
     )
-    render(SlotContextMenu)
+    renderMenu()
     const menu = registerSlotMenuInstance.mock.calls[0][0] as {
       show: (event: MouseEvent, context: object) => Promise<void>
     }
@@ -130,7 +140,7 @@ describe('SlotContextMenu', () => {
       vi.fn(() => 'renamed')
     )
     const user = userEvent.setup()
-    render(SlotContextMenu)
+    renderMenu()
     const menu = registerSlotMenuInstance.mock.calls[0][0] as {
       show: (event: MouseEvent, context: object) => Promise<void>
       isOpen: Ref<boolean>
@@ -146,14 +156,18 @@ describe('SlotContextMenu', () => {
   })
 
   it('quick-connects to a compatible slot and closes the popup', async () => {
+    const targetNode = createMockLGraphNode({
+      title: 'Target node',
+      type: 'TargetType'
+    })
     const target = {
-      node: { title: 'Target node', type: 'TargetType' },
+      node: targetNode,
       slotIndex: 1,
-      slotInfo: { name: 'image' }
+      slotInfo: fromPartial<INodeOutputSlot>({ name: 'image', type: 'IMAGE' })
     }
     findCompatibleTargets.mockReturnValue([target])
     const user = userEvent.setup()
-    render(SlotContextMenu)
+    renderMenu()
     const menu = registerSlotMenuInstance.mock.calls[0][0] as {
       show: (event: MouseEvent, context: object) => Promise<void>
       isOpen: Ref<boolean>
@@ -169,7 +183,7 @@ describe('SlotContextMenu', () => {
   })
 
   it('unregisters its imperative interface when unmounted', () => {
-    const { unmount } = render(SlotContextMenu)
+    const { unmount } = renderMenu()
     expect(registerSlotMenuInstance).toHaveBeenCalledOnce()
 
     unmount()
