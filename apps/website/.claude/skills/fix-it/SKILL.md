@@ -59,6 +59,12 @@ before trying a fix of your own. Follow loop two's rules for comments (fix,
 rebut with evidence, or take a design decision to the designer), for whose
 threads you may resolve, for re-runs, and for when to stop looping.
 
+A review bot that stands at "changes requested" is a blocker of its own, apart
+from its comments: after you have replied to and resolved its threads and
+pushed, follow "CodeRabbit is blocking" in `git-workflow.md` to have it look
+again, and count the blocker cleared only when a fresh reading shows its block
+withdrawn.
+
 Changes you make stay inside what the pull request already set out to do. A
 reviewer's request that would widen it becomes a note for a follow-up, said in
 the thread. When the fix for a blocker is to remove something (a route that

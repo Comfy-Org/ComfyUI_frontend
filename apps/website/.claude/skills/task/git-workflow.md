@@ -12,14 +12,44 @@ describe the repository as read on 2026-09-17 and a workflow may have changed.
 review. The required checks are `test`, `lint-and-format`, `e2e-status`, and
 `website-e2e`. Every other check is advisory, but fix a red advisory check
 anyway, because reviewers read the whole list. A "changes requested" review
-from CodeRabbit blocks the merge like a human one; it lifts when CodeRabbit
-re-reviews after its threads are fixed or answered (it approved PR 17373 that
-way). Comment `@coderabbitai review` when it has paused itself, which it does
-after several quick pushes.
+from CodeRabbit blocks the merge like a human one; the section "CodeRabbit is
+blocking" below says how to lift it.
 
 Never push to `main`. The `task` skill never merges or queues a pull request.
 The `fix-it` skill may send one to the queue, and only when every line of its
 merge gate holds.
+
+## CodeRabbit is blocking
+
+`.coderabbit.yaml` sets `request_changes_workflow: true`, so CodeRabbit posts a
+"changes requested" review that blocks the merge, and withdraws it only after
+it has looked again. Fixing the code is not enough by itself: CodeRabbit pauses
+after several quick pushes, skips a review it could not recover, and then the
+old block stands on a branch that no longer has the problem.
+
+Find the block by reading the latest review from `coderabbitai` with
+`gh pr view <number> --json latestReviews,reviewDecision`. When it stands at
+"changes requested", do these in order, once per push:
+
+1. Deal with every open CodeRabbit thread first: fix it or rebut it with
+   evidence, reply in the thread, and resolve it. A re-review requested while
+   its threads are open returns the same block.
+2. Push, and wait until the `CodeRabbit` check on the new commit has finished.
+   It often re-reviews on the push alone and approves, as it did on PR 17373.
+3. Read the review state again. When the block still stands and no CodeRabbit
+   thread is open, comment `@coderabbitai review` on the pull request. When its
+   summary comment says "Reviews paused", comment `@coderabbitai resume`
+   instead. When it says "Review skipped" or that it could not recover the
+   incremental review, comment `@coderabbitai full review`.
+4. Wait for its reply and read the state once more. The block is lifted when
+   its latest review reads approved or dismissed and `reviewDecision` is no
+   longer `CHANGES_REQUESTED`. New findings in that review are a new round:
+   return to step 1.
+
+Ask for a review once per push, never twice in a row on the same commit. When
+two requests on two commits leave the block standing with nothing open, stop
+and escalate with the pull request link and both request comments. Never
+dismiss its review yourself, and never ask it to approve; ask it to review.
 
 ## Before the first commit
 
