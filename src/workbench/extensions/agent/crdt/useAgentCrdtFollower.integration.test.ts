@@ -303,16 +303,24 @@ describe('useAgentCrdtFollower graph catch-up', () => {
     expect(placeholder?.constructor).toBe(LGraphNode)
     expect(placeholder?.has_errors).toBe(true)
 
-    LiteGraph.registerNodeType('test/lateNode', LateNode)
+    // The registry is module-global; registration can also mutate it before a
+    // subscriber throws, so the cleanup guards on presence rather than success.
+    try {
+      LiteGraph.registerNodeType('test/lateNode', LateNode)
 
-    const live = graph.value.getNodeById(late.id)
-    expect(live).toBeInstanceOf(LateNode)
-    expect(live?.widgets?.[0]).toMatchObject({
-      name: 'late_widget',
-      value: 'late value'
-    })
-    expect(live?.inputs[0]?.link).toBe(link.id)
-    expect(live?.getInputLink(0)?.origin_id).toBe(origin.id)
+      const live = graph.value.getNodeById(late.id)
+      expect(live).toBeInstanceOf(LateNode)
+      expect(live?.widgets?.[0]).toMatchObject({
+        name: 'late_widget',
+        value: 'late value'
+      })
+      expect(live?.inputs[0]?.link).toBe(link.id)
+      expect(live?.getInputLink(0)?.origin_id).toBe(origin.id)
+    } finally {
+      if (Object.hasOwn(LiteGraph.registered_node_types, 'test/lateNode')) {
+        LiteGraph.unregisterNodeType('test/lateNode')
+      }
+    }
   })
 
   it('clears live nodes immediately on an explicit document reset', () => {
