@@ -337,12 +337,12 @@ describe('usePainter', () => {
 
       const { painter } = mountPainter()
 
-      const fakeEvent = {
+      const fakeEvent = fromAny<Event, unknown>({
         target: {
           naturalWidth: 1920,
           naturalHeight: 1080
         }
-      } as unknown as Event
+      })
 
       painter.handleInputImageLoad(fakeEvent)
 
@@ -491,12 +491,14 @@ describe('usePainter', () => {
     it('throws when the upload response body is not valid JSON', async () => {
       makePaintNode([{ name: 'mask', type: 'string', value: '' }])
 
-      vi.mocked(api.fetchApi).mockResolvedValueOnce({
-        status: 200,
-        json: async () => {
-          throw new SyntaxError('Unexpected token')
-        }
-      } as unknown as Response)
+      vi.mocked(api.fetchApi).mockResolvedValueOnce(
+        fromAny<Response, unknown>({
+          status: 200,
+          json: async () => {
+            throw new SyntaxError('Unexpected token')
+          }
+        })
+      )
 
       const fakeCanvas = fromPartial<HTMLCanvasElement>({
         width: 4,
@@ -617,12 +619,12 @@ describe('usePainter', () => {
       const { painter } = mountPainter()
 
       const mockReleasePointerCapture = vi.fn()
-      const event = {
+      const event = fromAny<PointerEvent, unknown>({
         button: 2,
         target: {
           releasePointerCapture: mockReleasePointerCapture
         }
-      } as unknown as PointerEvent
+      })
 
       painter.handlePointerUp(event)
 
@@ -632,7 +634,7 @@ describe('usePainter', () => {
     it('tolerates releasePointerCapture throwing for synthetic events', () => {
       const { painter } = mountPainter()
 
-      const event = {
+      const event = fromAny<PointerEvent, unknown>({
         button: 0,
         pointerId: 1,
         target: {
@@ -640,7 +642,7 @@ describe('usePainter', () => {
             throw new DOMException('NotFoundError')
           })
         }
-      } as unknown as PointerEvent
+      })
 
       expect(() => painter.handlePointerUp(event)).not.toThrow()
     })

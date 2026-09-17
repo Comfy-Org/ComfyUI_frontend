@@ -164,13 +164,13 @@ function makePreview3DNode(
     widgets: FakeWidget[]
   }> = {}
 ): LGraphNode {
-  return {
+  return fromAny<LGraphNode, unknown>({
     constructor: { comfyClass: overrides.comfyClass ?? 'Preview3D' },
     size: [400, 550],
     setSize: vi.fn(),
     widgets: overrides.widgets ?? [{ name: 'model_file', value: '' }],
     properties: overrides.properties ?? {}
-  } as unknown as LGraphNode
+  })
 }
 
 function makePreview3DAdvancedNode(
@@ -180,13 +180,13 @@ function makePreview3DAdvancedNode(
     widgets: FakeWidget[]
   }> = {}
 ): LGraphNode {
-  return {
+  return fromAny<LGraphNode, unknown>({
     constructor: { comfyClass: overrides.comfyClass ?? 'Preview3DAdvanced' },
     size: [400, 550],
     setSize: vi.fn(),
     widgets: overrides.widgets ?? [{ name: 'viewport_state', value: '' }],
     properties: overrides.properties ?? {}
-  } as unknown as LGraphNode
+  })
 }
 
 function makeLoad3DNode(
@@ -196,7 +196,7 @@ function makeLoad3DNode(
     widgets: FakeWidget[]
   }> = {}
 ): LGraphNode {
-  return {
+  return fromAny<LGraphNode, unknown>({
     constructor: { comfyClass: overrides.comfyClass ?? 'Load3D' },
     size: [300, 600],
     setSize: vi.fn(),
@@ -208,7 +208,7 @@ function makeLoad3DNode(
       { name: 'image', value: '' }
     ],
     properties: overrides.properties ?? {}
-  } as unknown as LGraphNode
+  })
 }
 
 interface FakeLoad3d {
@@ -274,10 +274,10 @@ describe('Comfy.Preview3D.beforeRegisterNodeDef', () => {
   beforeEach(setupBaseMocks)
 
   it('rewrites the image input spec for Preview3D nodes', async () => {
-    const nodeData = {
+    const nodeData = fromAny<ComfyNodeDef, unknown>({
       name: 'Preview3D',
       input: { required: { image: ['STRING', {}] } }
-    } as unknown as ComfyNodeDef
+    })
 
     await preview3DExt.beforeRegisterNodeDef!(
       {} as typeof LGraphNode,
@@ -289,10 +289,10 @@ describe('Comfy.Preview3D.beforeRegisterNodeDef', () => {
   })
 
   it('leaves non-Preview3D node defs unchanged', async () => {
-    const nodeData = {
+    const nodeData = fromAny<ComfyNodeDef, unknown>({
       name: 'Load3D',
       input: { required: { image: ['STRING', {}] } }
-    } as unknown as ComfyNodeDef
+    })
 
     await preview3DExt.beforeRegisterNodeDef!(
       {} as typeof LGraphNode,
@@ -611,44 +611,44 @@ describe('getNodeMenuItems', () => {
   beforeEach(setupBaseMocks)
 
   it('Comfy.Load3D returns [] for non-Load3D nodes', async () => {
-    const node = {
+    const node = fromAny<LGraphNode, unknown>({
       constructor: { comfyClass: 'OtherNode' }
-    } as unknown as LGraphNode
+    })
 
     expect(load3DExt.getNodeMenuItems!(node)).toEqual([])
   })
 
   it('Comfy.Preview3D returns [] for non-Preview3D nodes', async () => {
-    const node = {
+    const node = fromAny<LGraphNode, unknown>({
       constructor: { comfyClass: 'OtherNode' }
-    } as unknown as LGraphNode
+    })
 
     expect(preview3DExt.getNodeMenuItems!(node)).toEqual([])
   })
 
   it('returns [] when no load3d instance exists for the node', async () => {
     getLoad3dMock.mockReturnValue(null)
-    const node = {
+    const node = fromAny<LGraphNode, unknown>({
       constructor: { comfyClass: 'Preview3D' }
-    } as unknown as LGraphNode
+    })
 
     expect(preview3DExt.getNodeMenuItems!(node)).toEqual([])
   })
 
   it('returns [] for splat models', async () => {
     getLoad3dMock.mockReturnValue({ isSplatModel: () => true })
-    const node = {
+    const node = fromAny<LGraphNode, unknown>({
       constructor: { comfyClass: 'Preview3D' }
-    } as unknown as LGraphNode
+    })
 
     expect(preview3DExt.getNodeMenuItems!(node)).toEqual([])
   })
 
   it('returns export menu items for non-splat 3D nodes', async () => {
     getLoad3dMock.mockReturnValue({ isSplatModel: () => false })
-    const node = {
+    const node = fromAny<LGraphNode, unknown>({
       constructor: { comfyClass: 'Preview3D' }
-    } as unknown as LGraphNode
+    })
 
     expect(preview3DExt.getNodeMenuItems!(node)).toEqual([
       { content: 'Export' }
@@ -800,10 +800,10 @@ describe('Comfy.Preview3DAdvanced.nodeCreated', () => {
   })
 
   it('restores the saved camera state after model load when reloading the page', async () => {
-    const persistedCameraState = {
+    const persistedCameraState = fromAny<CameraState, unknown>({
       position: [1, 2, 3],
       target: [0, 0, 0]
-    } as unknown as CameraState
+    })
     const load3dInstance = makeLoad3dMock()
     onLoad3dReadyMock.mockImplementationOnce(
       (cb: (load3d: FakeLoad3d) => void) => {
@@ -1028,36 +1028,36 @@ describe('Comfy.Preview3DAdvanced.getNodeMenuItems', () => {
   beforeEach(setupBaseMocks)
 
   it('returns [] for non-Preview3DAdvanced nodes', async () => {
-    const node = {
+    const node = fromAny<LGraphNode, unknown>({
       constructor: { comfyClass: 'OtherNode' }
-    } as unknown as LGraphNode
+    })
 
     expect(preview3DAdvancedExt.getNodeMenuItems!(node)).toEqual([])
   })
 
   it('returns [] when no load3d instance exists for the node', async () => {
     getLoad3dMock.mockReturnValue(null)
-    const node = {
+    const node = fromAny<LGraphNode, unknown>({
       constructor: { comfyClass: 'Preview3DAdvanced' }
-    } as unknown as LGraphNode
+    })
 
     expect(preview3DAdvancedExt.getNodeMenuItems!(node)).toEqual([])
   })
 
   it('returns [] for splat models', async () => {
     getLoad3dMock.mockReturnValue({ isSplatModel: () => true })
-    const node = {
+    const node = fromAny<LGraphNode, unknown>({
       constructor: { comfyClass: 'Preview3DAdvanced' }
-    } as unknown as LGraphNode
+    })
 
     expect(preview3DAdvancedExt.getNodeMenuItems!(node)).toEqual([])
   })
 
   it('returns export menu items for non-splat models', async () => {
     getLoad3dMock.mockReturnValue({ isSplatModel: () => false })
-    const node = {
+    const node = fromAny<LGraphNode, unknown>({
       constructor: { comfyClass: 'Preview3DAdvanced' }
-    } as unknown as LGraphNode
+    })
 
     expect(preview3DAdvancedExt.getNodeMenuItems!(node)).toEqual([
       { content: 'Export' }

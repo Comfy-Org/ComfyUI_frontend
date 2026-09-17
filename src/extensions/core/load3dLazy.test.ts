@@ -187,7 +187,7 @@ describe('load3dLazy', () => {
       .mockReturnValueOnce([newExtension])
 
     const nodeData = makeNodeDef('Preview3D')
-    await hook({ id: 1 } as unknown as typeof LGraphNode, nodeData)
+    await hook(fromAny<typeof LGraphNode, unknown>({ id: 1 }), nodeData)
 
     expect(newExtension.beforeRegisterNodeDef).toHaveBeenCalledWith(
       { id: 1 },
