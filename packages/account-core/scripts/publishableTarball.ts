@@ -35,7 +35,8 @@ const PACKED_ROOT_FILES = new Set(['package.json', 'LICENSE', 'README.md'])
 const DIST_DIR = 'dist/'
 const DIST_TARGET = './dist/'
 const MANIFEST_TARGET = './package.json'
-const NON_PUBLIC_FILE = /(\.test\.ts$|(^|\/)__fixtures__\/|^src\/)/
+const NON_PUBLIC_FILE =
+  /(\.test\.(?:d\.)?[cm]?[jt]s$|(^|\/)__fixtures__\/|^src\/)/
 const WORKSPACE_ONLY_SPECIFIER = /^(catalog|workspace):/
 const REGEXP_SPECIAL = /[.+^${}()|[\]\\]/g
 const DEPENDENCY_GROUPS = [

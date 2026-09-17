@@ -106,7 +106,25 @@ describe('findPublishableViolations', () => {
       'README'
     ],
     [
-      'a test file that survived the build',
+      'a compiled test that survived the build',
+      packedWith({ files: ['dist/session.test.js'] }),
+      'Source files in tarball',
+      'dist/session.test.js'
+    ],
+    [
+      'the declaration emitted beside a compiled test',
+      packedWith({ files: ['dist/session.test.d.ts'] }),
+      'Source files in tarball',
+      'dist/session.test.d.ts'
+    ],
+    [
+      'a test authored as ESM that survived the build',
+      packedWith({ files: ['dist/session.test.mjs'] }),
+      'Source files in tarball',
+      'dist/session.test.mjs'
+    ],
+    [
+      'a test source that survived the build',
       packedWith({ files: ['dist/session.test.ts'] }),
       'Source files in tarball',
       'dist/session.test.ts'
