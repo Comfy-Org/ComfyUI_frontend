@@ -15,7 +15,6 @@
   "agent": {
     "addFromAssets": "アセットパネルからアセットをドラッグ",
     "addNodesFromGraph": "グラフのノードに言及",
-    "addPromptToSend": "送信するプロンプトを追加",
     "addToPrompt": "プロンプトに追加",
     "alpha": "アルファ",
     "askComfyAgent": "Comfy Agentに質問",
@@ -30,6 +29,15 @@
     "chooseWorkflow": "ワークフローを選択",
     "chooseWorkflowForChat": "このチャット用のワークフローを選択",
     "close": "閉じる",
+    "coachBody": "アイデアを説明し、ワークフローの作成と実行を依頼できます。エージェントはキャンバスとファイルを確認できます。",
+    "coachGraphBody": "エージェントの作業中も、グラフを編集したりタブを切り替えたりできます。",
+    "coachGraphTitle": "編集しながらエージェントを実行",
+    "coachHistoryBody": "以前のチャットはここに保存されます。開いて確認するか、エージェントとの作業を続けられます。",
+    "coachHistoryTitle": "前回の続きから再開",
+    "coachProgress": "{total}件中{current}件",
+    "coachTitle": "Comfy Agentの紹介",
+    "coachWorkflowBody": "エージェントが編集するのは、選択したワークフローのみです。参照ファイルをアップロードしたり、他のワークフローに言及したりすることもできます。",
+    "coachWorkflowTitle": "エージェントが編集するワークフローを選択",
     "consent": {
       "accept": "Comfy Agent を使い始める",
       "body1": "Comfy Agent は、ワークフローの計画、構築、実行、改善を支援します。作成したいものを説明すると、Comfy Agent が強力なチームメイトとして働きます。",
@@ -49,6 +57,13 @@
     "credits": "クレジット",
     "currentTab": "現在のタブ",
     "delete": "削除",
+    "diagnosticReport": {
+      "clipboardFailed": "クリップボードへのアクセスに失敗しました。以下のレポートを選択してコピーするか、再試行してください。",
+      "collectionFailed": "レポートを収集できませんでした。再試行するか、任意のソースをオフにしてから再試行してください。",
+      "includedSources": "レポートに含める（デフォルトでオン）",
+      "manualCopy": "コピーするレポート",
+      "retry": "レポートのコピーを再試行"
+    },
     "dismiss": "閉じる",
     "downloadAssets": "アセットをダウンロード",
     "dragAndDropAssets": "ここにアセットをドラッグ＆ドロップ",
@@ -144,6 +159,7 @@
     "showMore": "さらに表示",
     "skip": "スキップ",
     "stop": "停止",
+    "stopShortcut": "Esc",
     "suggestedPrompts": [
       "ホッケーマスクを着けた黄色いアヒルを生成",
       "保存済みのワークフローを一覧表示",
@@ -3163,6 +3179,7 @@
     "OpenAI": "OpenAI",
     "OpenRouter": "OpenRouter",
     "PixVerse": "PixVerse",
+    "Pruna": "Pruna",
     "Quiver": "Quiver",
     "Qwen": "Qwen",
     "Recraft": "Recraft",
@@ -3231,6 +3248,7 @@
     "latent": "潜在",
     "loaders": "ローダー",
     "logic": "ロジック",
+    "looping": "ループ",
     "lotus": "lotus",
     "ltxv": "LTXV",
     "lumina": "lumina",
@@ -3263,6 +3281,7 @@
     "scail": "scail",
     "schedulers": "スケジューラー",
     "scheduling": "スケジューリング",
+    "sd": "sd",
     "sensenova": "sensenova",
     "shader": "shader",
     "sigmas": "シグマ",
@@ -4500,6 +4519,7 @@
       "applyQuoteBeforeContinuing": "続行する前にプロモーションコードを適用して、見積もりを更新してください。",
       "backToAllPlans": "すべてのプランに戻る",
       "billedEachMonth": "毎月{amount}請求されます。いつでもキャンセル可能です。",
+      "billingAddress": "請求先住所",
       "changePaymentMethod": "変更",
       "commitment": "契約期間",
       "completePayment": "支払いを完了",
@@ -5143,6 +5163,13 @@
     },
     "invite": "招待",
     "inviteLimitReached": "メンバー数が上限の{count}人に達しました",
+    "inviteLinks": {
+      "copied": "コピーしました！",
+      "copyAll": "招待リンクをコピー | すべてのリンクをコピー（{count}件）",
+      "copyLink": "招待リンクをコピー",
+      "sentLead": "各招待には、直接共有できる個別リンクがあります：",
+      "sentTitle": "招待を{count}件送信済み | 招待を{count}件送信済み"
+    },
     "inviteMember": "メンバーを招待",
     "inviteMemberDialog": {
       "failedCount": "{count} 件の招待を送信できませんでした。再試行してください。",
@@ -5170,6 +5197,7 @@
       "actions": {
         "cancelInvite": "招待をキャンセル",
         "changeRole": "役割を変更",
+        "copyInviteLink": "招待リンクをコピー",
         "removeMember": "メンバーを削除",
         "resendInvite": "招待を再送信",
         "setCreditLimit": "クレジット上限を設定"

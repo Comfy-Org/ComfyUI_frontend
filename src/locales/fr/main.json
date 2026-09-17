@@ -15,7 +15,6 @@
   "agent": {
     "addFromAssets": "Glissez une ressource depuis le panneau des ressources",
     "addNodesFromGraph": "Mentionner des nœuds du graphe",
-    "addPromptToSend": "Ajouter un prompt à envoyer",
     "addToPrompt": "Ajouter au prompt",
     "alpha": "ALPHA",
     "askComfyAgent": "Demander à Comfy Agent",
@@ -30,6 +29,15 @@
     "chooseWorkflow": "Choisir un workflow",
     "chooseWorkflowForChat": "Choisir un workflow pour cette conversation",
     "close": "Fermer",
+    "coachBody": "Décrivez vos idées, demandez-lui de créer et d’exécuter des workflows. Il voit votre canevas et vos fichiers.",
+    "coachGraphBody": "Vous pouvez toujours modifier le graphe ou changer d’onglet pendant que l’agent travaille.",
+    "coachGraphTitle": "Laissez l’agent s’exécuter pendant que vous modifiez",
+    "coachHistoryBody": "Les conversations précédentes sont enregistrées ici. Ouvrez-en une pour la consulter ou continuer à travailler avec l’agent.",
+    "coachHistoryTitle": "Reprenez là où vous en étiez",
+    "coachProgress": "{current} sur {total}",
+    "coachTitle": "Faites connaissance avec votre agent Comfy",
+    "coachWorkflowBody": "L’agent modifie uniquement le workflow que vous choisissez. Vous pouvez aussi téléverser des fichiers de référence ou mentionner d’autres workflows.",
+    "coachWorkflowTitle": "Sélectionnez un workflow à modifier par votre agent",
     "consent": {
       "accept": "Commencer à utiliser Comfy Agent",
       "body1": "Comfy Agent vous aide à planifier, créer, exécuter et itérer sur vos workflows. Décrivez ce que vous souhaitez créer, et Comfy Agent sera votre puissant partenaire.",
@@ -49,6 +57,13 @@
     "credits": "crédits",
     "currentTab": "Onglet actuel",
     "delete": "Supprimer",
+    "diagnosticReport": {
+      "clipboardFailed": "Échec de l’accès au presse-papiers. Sélectionnez et copiez le rapport ci-dessous, ou réessayez.",
+      "collectionFailed": "Impossible de recueillir le rapport. Réessayez, ou désactivez les sources facultatives et réessayez.",
+      "includedSources": "Inclure dans le rapport (activé par défaut)",
+      "manualCopy": "Rapport à copier",
+      "retry": "Réessayer de copier le rapport"
+    },
     "dismiss": "Fermer",
     "downloadAssets": "Télécharger les ressources",
     "dragAndDropAssets": "Glissez-déposez des ressources ici",
@@ -144,6 +159,7 @@
     "showMore": "Afficher plus",
     "skip": "Passer",
     "stop": "Arrêter",
+    "stopShortcut": "Échap",
     "suggestedPrompts": [
       "Générez un canard jaune avec un masque de hockey",
       "Listez mes workflows enregistrés",
@@ -3163,6 +3179,7 @@
     "OpenAI": "OpenAI",
     "OpenRouter": "OpenRouter",
     "PixVerse": "PixVerse",
+    "Pruna": "Pruna",
     "Quiver": "Quiver",
     "Qwen": "Qwen",
     "Recraft": "Recraft",
@@ -3231,6 +3248,7 @@
     "latent": "latent",
     "loaders": "chargeurs",
     "logic": "logique",
+    "looping": "bouclage",
     "lotus": "lotus",
     "ltxv": "ltxv",
     "lumina": "lumina",
@@ -3263,6 +3281,7 @@
     "scail": "scail",
     "schedulers": "planificateurs",
     "scheduling": "planification",
+    "sd": "sd",
     "sensenova": "sensenova",
     "shader": "shader",
     "sigmas": "sigmas",
@@ -4500,6 +4519,7 @@
       "applyQuoteBeforeContinuing": "Appliquez le code promo pour actualiser votre devis avant de continuer.",
       "backToAllPlans": "Retour à toutes les offres",
       "billedEachMonth": "{amount} facturé chaque mois. Annulez à tout moment.",
+      "billingAddress": "Adresse de facturation",
       "changePaymentMethod": "Modifier",
       "commitment": "engagement",
       "completePayment": "Finaliser votre paiement",
@@ -5143,6 +5163,13 @@
     },
     "invite": "Inviter",
     "inviteLimitReached": "Vous avez atteint le maximum de {count} membres",
+    "inviteLinks": {
+      "copied": "Copié !",
+      "copyAll": "Copier le lien d’invitation | Copier tous les liens ({count})",
+      "copyLink": "Copier le lien d’invitation",
+      "sentLead": "Chaque invitation possède un lien personnel que vous pouvez partager directement :",
+      "sentTitle": "{count} invitation envoyée | {count} invitations envoyées"
+    },
     "inviteMember": "Inviter un membre",
     "inviteMemberDialog": {
       "failedCount": "Impossible d'envoyer {count} invitation. Réessayez. | Impossible d'envoyer {count} invitations. Réessayez.",
@@ -5170,6 +5197,7 @@
       "actions": {
         "cancelInvite": "Annuler l'invitation",
         "changeRole": "Changer de rôle",
+        "copyInviteLink": "Copier le lien d’invitation",
         "removeMember": "Retirer le membre",
         "resendInvite": "Renvoyer l'invitation",
         "setCreditLimit": "Définir une limite de crédits"
