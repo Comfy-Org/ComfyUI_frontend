@@ -425,7 +425,7 @@ export class ChangeTracker {
       this.activeState = currentState
       this.redoQueue.length = 0
       this.updateModified(previousState)
-      this.squashState()
+      void this.squashState()
     }
   }
   squashState = useDebounceFn(() => {
