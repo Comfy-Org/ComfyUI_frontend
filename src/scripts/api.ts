@@ -1028,8 +1028,8 @@ export class ComfyApi extends EventTarget {
   /**
    * Initialises sockets and realtime updates
    */
-  init() {
-    this.createSocket()
+  async init() {
+    await this.createSocket()
   }
 
   /**

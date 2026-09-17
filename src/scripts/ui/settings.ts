@@ -122,7 +122,7 @@ export class ComfySettingsDialog extends ComfyDialog<HTMLDialogElement> {
         return settingStore.get(params.id)
       },
       set value(v) {
-        settingStore.set(params.id, v)
+        void settingStore.set(params.id, v)
       }
     }
   }

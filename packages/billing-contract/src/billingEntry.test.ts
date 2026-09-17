@@ -52,6 +52,7 @@ describe('buildBillingEntryUrl', () => {
     ['https://billing.comfy.org', 'ok'],
     ['http://localhost:5174', 'ok'],
     ['http://127.0.0.1:5174', 'ok'],
+    ['http://[::1]:5174', 'ok'],
     ['http://billing.comfy.org', 'INVALID_ORIGIN'],
     ['https://user:secret@billing.comfy.org', 'INVALID_ORIGIN'],
     ['ftp://billing.comfy.org', 'INVALID_ORIGIN'],
