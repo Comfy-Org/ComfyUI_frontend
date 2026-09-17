@@ -10,10 +10,14 @@
 import type {
   PaymentPortalResult,
   SubscriptionCommandFailure,
+  SubscriptionCommandOutcome,
   SubscriptionCommandResult
 } from '@comfyorg/account-core/billing'
 
+import { t } from '@/i18n'
 import { WorkspaceApiError } from '@/platform/workspace/api/workspaceApi'
+
+import { declineDetail } from './topupOperationView'
 
 export type SubscriptionRailOutcome<T = void> =
   | { readonly status: 'ok'; readonly value: T }
@@ -71,6 +75,28 @@ function projectFailure(
 }
 
 /**
+ * A settle that ended anywhere but `succeeded` as a sentence for the customer:
+ * a declined card carries the reason the top-up view already localizes, and
+ * every other terminal phase is the generic subscription failure. The phase
+ * itself lands on `code`, where the adapter keeps machine identifiers.
+ */
+function projectUnsuccessfulSettle(
+  outcome: SubscriptionCommandOutcome
+): SubscriptionRailOutcome<never> {
+  const { operation, phase } = outcome
+  return {
+    status: 'error',
+    error: new WorkspaceApiError(
+      operation?.phase === 'failed'
+        ? declineDetail(operation.declineReason)
+        : t('billingOperation.subscriptionFailedDetail'),
+      undefined,
+      phase
+    )
+  }
+}
+
+/**
  * A command that settled anywhere but `succeeded` failed for the customer,
  * exactly as a poller operation that ends in any other status does.
  */
@@ -80,7 +106,7 @@ export function projectSubscriptionResult(
   if (result.status === 'error') return projectFailure(result)
   return result.value.phase === 'succeeded'
     ? SETTLED
-    : { status: 'error', error: new Error(`phase: ${result.value.phase}`) }
+    : projectUnsuccessfulSettle(result.value)
 }
 
 export function projectPaymentPortalResult(

@@ -33,19 +33,30 @@ describe('projectSubscriptionResult', () => {
   })
 
   it.for([
-    { phase: 'failed', operation: failedOperation(), detail: 'phase: failed' },
+    {
+      phase: 'failed',
+      operation: failedOperation(),
+      detail:
+        'Your bank declined this payment. Try another payment method or contact your bank.'
+    },
+    {
+      phase: 'failed',
+      operation: { ...failedOperation(), declineReason: 'insufficient_funds' },
+      detail:
+        'This payment method has insufficient funds. Try another payment method or contact your bank.'
+    },
     {
       phase: 'timed_out',
       operation: settledOperation('timed_out'),
-      detail: 'phase: timed_out'
+      detail: "We couldn't update your subscription. Please try again."
     },
     {
       phase: 'reconciliation_needed',
       operation: settledOperation('reconciliation_needed'),
-      detail: 'phase: reconciliation_needed'
+      detail: "We couldn't update your subscription. Please try again."
     }
   ] as const)(
-    'reports a $phase operation as a failure the caller surfaces',
+    'reports a $phase operation as a sentence for the customer',
     ({ phase, operation, detail }) => {
       const outcome = projectSubscriptionResult({
         status: 'ok',
@@ -54,8 +65,8 @@ describe('projectSubscriptionResult', () => {
 
       expect(outcome).toMatchObject({ status: 'error' })
       expect(
-        outcome.status === 'error' ? outcome.error.message : undefined
-      ).toBe(detail)
+        outcome.status === 'error' ? outcome.error : undefined
+      ).toMatchObject({ message: detail, code: phase })
     }
   )
 
