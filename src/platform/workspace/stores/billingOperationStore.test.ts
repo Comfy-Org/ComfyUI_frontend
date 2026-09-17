@@ -11,16 +11,14 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useTelemetry } from '@/platform/telemetry'
 
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import type { BillingOpStatusResponse } from '@/platform/workspace/api/workspaceApi'
 import { mockBillingContext } from '@/utils/__tests__/mockBillingContext'
 
-const { mockHandleNextAction, mockLoadStripe, mockFeatureFlags } = vi.hoisted(
-  () => ({
-    mockHandleNextAction: vi.fn(),
-    mockLoadStripe: vi.fn(),
-    mockFeatureFlags: { embeddedCheckoutEnabled: true }
-  })
-)
+const { mockHandleNextAction, mockLoadStripe } = vi.hoisted(() => ({
+  mockHandleNextAction: vi.fn(),
+  mockLoadStripe: vi.fn()
+}))
 
 vi.mock<unknown>(import('@stripe/stripe-js/pure'), () => ({
   loadStripe: mockLoadStripe
@@ -42,12 +40,7 @@ vi.mock<unknown>(
   })
 )
 
-vi.mock<unknown>(import('@/composables/useFeatureFlags'), () => ({
-  useFeatureFlags: () => ({
-    flags: mockFeatureFlags
-  })
-}))
-
+vi.mock(import('@/composables/useFeatureFlags'))
 const mockReportError = vi.hoisted(() => vi.fn())
 
 vi.mock(import('@/platform/telemetry/reportError'), () => ({
@@ -98,7 +91,7 @@ describe('billingOperationStore', () => {
   beforeEach(() => {
     mockDistributionTypes.isCloud = true
     Object.assign(useTeamWorkspaceStore(), { activeWorkspaceId: 'workspace-1' })
-    mockFeatureFlags.embeddedCheckoutEnabled = true
+    vi.mocked(useFeatureFlags().flags).embeddedCheckoutEnabled = true
     vi.stubEnv('VITE_STRIPE_PUBLISHABLE_KEY', 'pk_test_3ds')
     mockHandleNextAction.mockResolvedValue({})
     mockLoadStripe.mockResolvedValue({
@@ -1208,7 +1201,7 @@ describe('billingOperationStore', () => {
 
   describe('payment authentication recovery', () => {
     it('does not initialize embedded recovery while the flag is off', async () => {
-      mockFeatureFlags.embeddedCheckoutEnabled = false
+      vi.mocked(useFeatureFlags().flags).embeddedCheckoutEnabled = false
       vi.mocked(workspaceApi.getBillingOpStatus)
         .mockResolvedValueOnce({
           id: 'op-3ds',
@@ -1935,7 +1928,7 @@ describe('billingOperationStore', () => {
     })
 
     it('terminates polling for reconciliation_needed while the embedded flag is off', async () => {
-      mockFeatureFlags.embeddedCheckoutEnabled = false
+      vi.mocked(useFeatureFlags().flags).embeddedCheckoutEnabled = false
       vi.mocked(workspaceApi.getBillingOpStatus).mockResolvedValue({
         id: 'op-reconcile-legacy',
         status: 'reconciliation_needed',
@@ -1979,6 +1972,23 @@ describe('billingOperationStore', () => {
   })
 
   describe('polling timeout', () => {
+    it('keeps a topup pending past the short timeout while parked on a payment method', async () => {
+      vi.mocked(workspaceApi.getBillingOpStatus).mockResolvedValue({
+        id: 'op-topup-phase',
+        status: 'pending',
+        phase: 'awaiting_payment_method',
+        started_at: new Date().toISOString()
+      })
+      const store = useBillingOperationStore()
+      void store.startOperation('op-topup-phase', 'topup')
+
+      await vi.advanceTimersByTimeAsync(150_000)
+      expect(store.getOperation('op-topup-phase')).toMatchObject({
+        status: 'pending',
+        authenticationRequiredSeen: false
+      })
+    })
+
     it('keeps checkout recovery pending at a parked cadence until the long timeout', async () => {
       const startedAt = Date.now()
       vi.mocked(workspaceApi.getBillingOpStatus).mockResolvedValue({

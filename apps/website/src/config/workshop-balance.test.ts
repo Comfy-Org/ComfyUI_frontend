@@ -5,7 +5,7 @@ import type { User } from 'firebase/auth'
 import type {
   AccountCredential,
   SessionResult
-} from '@comfyorg/account/session'
+} from '@comfyorg/account-core/session'
 import type { BillingBalanceResponse } from '@comfyorg/ingest-types'
 
 import { createBalanceReader } from './workshop-balance'

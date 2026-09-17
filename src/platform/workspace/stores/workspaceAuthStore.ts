@@ -5,13 +5,13 @@ import { computed, ref, shallowRef, watch } from 'vue'
 import type {
   ScheduledRefreshReport,
   SessionErrorCode
-} from '@comfyorg/account/session'
-import { createWebCrossTabRefreshPort } from '@comfyorg/account/web'
+} from '@comfyorg/account-core/session'
+import { createWebCrossTabRefreshPort } from '@comfyorg/account-core/web'
 import {
   SESSION_ERROR_CODES,
   createSessionClient,
   isPermanentSessionError
-} from '@comfyorg/account/session'
+} from '@comfyorg/account-core/session'
 
 import { t } from '@/i18n'
 import { firebaseIdentity } from '@/platform/auth/firebaseIdentity'
@@ -194,7 +194,7 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
 
   // --- Unified Cloud-JWT lifecycle (flag-gated: unified_cloud_auth) ----------
   //
-  // The mint/refresh machinery is delegated to @comfyorg/account's session
+  // The mint/refresh machinery is delegated to @comfyorg/account-core's session
   // client (its scheduler runs the proactive chain; reactive 401 re-mints
   // recover API traffic, and the proactive chain keeps cookie-authenticated
   // <img>/media loads alive past the session cookie expiry, FE-1595). This

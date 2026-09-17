@@ -254,6 +254,7 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
     <template v-else>
       <div class="flex h-10 shrink-0 items-center px-2">
         <button
+          id="agent-chat-history"
           v-tooltip.bottom="buildTooltipConfig(t('agent.showChatHistory'))"
           type="button"
           :aria-label="t('agent.showChatHistory')"
