@@ -25,6 +25,10 @@ const specsOf = (example: PlaygroundExample) => example.specs.join(' · ')
 const samplesOnly = computed(
   () => examples.length > 0 && examples.every((example) => example.sampleOnly)
 )
+// A sample exists to be judged, and on a phone it was 144px wide: an 81px
+// preview of a generated image decides nothing. A lone sample takes the row,
+// and several leave the next one peeking so the strip still reads as one.
+const phoneWidth = computed(() => (examples.length === 1 ? 'w-full' : 'w-72'))
 const desktopGridColumns = computed(() =>
   examples.length === 3
     ? 'sm:grid-cols-[repeat(auto-fit,minmax(14rem,1fr))]'
@@ -76,7 +80,8 @@ function actionFor(example: PlaygroundExample, active = false) {
       <li
         v-for="example in examples"
         :key="example.id"
-        class="w-36 shrink-0 snap-start sm:w-auto"
+        :class="cn('shrink-0 snap-start sm:w-auto', phoneWidth)"
+        data-testid="example-item"
       >
         <button
           type="button"

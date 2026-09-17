@@ -13,7 +13,7 @@ The cloud app holds two consumers of Firebase identity:
 - The Pinia `authStore`, built on vuefire's default Firebase app. Its
   auth-state listener carries app-wide side effects: workspace teardown,
   socket re-handshake, balance and provisioning resets, telemetry.
-- The `@comfyorg/account` session client, which binds identity through an
+- The `@comfyorg/account-core` session client, which binds identity through an
   `IdentityPort`. The account TDD reserves that port for test fakes; real
   hosts pass the package's own Firebase entry, `createFirebaseIdentity`.
 

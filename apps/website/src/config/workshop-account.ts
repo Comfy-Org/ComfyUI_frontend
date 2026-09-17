@@ -1,6 +1,6 @@
 /**
  * The Workshop's account-layer wiring: one session client from
- * @comfyorg/account, bound to the env-selected Cloud origin, and the
+ * @comfyorg/account-core, bound to the env-selected Cloud origin, and the
  * site-owned balance reader over it. The credential
  * cache sits in sessionStorage so a token survives a reload but never
  * outlives the tab, and never crosses signed-in users (the client keys it
@@ -8,11 +8,11 @@
  */
 import type { User } from 'firebase/auth'
 
-import type { SessionClient } from '@comfyorg/account/session'
+import type { SessionClient } from '@comfyorg/account-core/session'
 import {
   createSessionClient,
   isPermanentSessionError
-} from '@comfyorg/account/session'
+} from '@comfyorg/account-core/session'
 
 import {
   captureAuthRefreshFailed,

@@ -1,4 +1,4 @@
-import { ENUMERATION_ORACLE } from '@comfyorg/account/testing'
+import { ENUMERATION_ORACLE } from '@comfyorg/account-core/testing'
 import { describe, expect, it } from 'vitest'
 
 import { t } from '../i18n/translations'

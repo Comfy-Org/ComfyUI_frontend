@@ -5,7 +5,7 @@ import type {
   BillingOperationState,
   FailedBillingOperation,
   PendingBillingOperation
-} from '@comfyorg/account/billing'
+} from '@comfyorg/account-core/billing'
 import { vi } from 'vitest'
 
 import type { BillingSdk } from './createBillingSdk'
@@ -78,6 +78,8 @@ export function fakeBillingSdk() {
     status: fakeReader(),
     credits: fakeReader(),
     capabilities: fakeReader(),
+    plans: fakeReader(),
+    paymentMethods: fakeReader(),
     topup: {
       createTopupCheckout: vi.fn(),
       createHostedTopupCheckout: vi.fn()

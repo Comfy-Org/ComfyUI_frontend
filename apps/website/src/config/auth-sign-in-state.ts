@@ -7,11 +7,11 @@
 import {
   authErrorMessage,
   classifyAuthError
-} from '@comfyorg/account/firebaseAuthError'
+} from '@comfyorg/account-core/firebaseAuthError'
 import type {
   AuthErrorClassification,
   AuthErrorCopy
-} from '@comfyorg/account/firebaseAuthError'
+} from '@comfyorg/account-core/firebaseAuthError'
 
 import type { Locale, TranslationKey } from '../i18n/translations'
 import { t, translationKeys } from '../i18n/translations'
