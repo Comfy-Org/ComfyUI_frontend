@@ -4,6 +4,7 @@ import { SUBGRAPH_OUTPUT_ID } from '@/lib/litegraph/src/constants'
 import { toNodeId } from '@/types/nodeId'
 
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
+import { collectConsoleErrors } from '@e2e/fixtures/utils/consoleErrorCollector'
 
 test.describe('Subgraph Operations', { tag: ['@slow', '@subgraph'] }, () => {
   test.use({ initialSettings: { 'Comfy.UseNewMenu': 'Disabled' } })
@@ -37,55 +38,56 @@ test.describe('Subgraph Operations', { tag: ['@slow', '@subgraph'] }, () => {
             },
             [toNodeId(2), SUBGRAPH_OUTPUT_ID] as const
           )
-          const pageErrors: Error[] = []
-          const reportedErrors: string[] = []
-          const onPageError = (error: Error) => pageErrors.push(error)
-          const onConsole = (message: { type(): string; text(): string }) => {
-            if (
-              message.type() === 'error' &&
-              message
-                .text()
-                .includes('[Reported error]: error_unpacking_subgraph_link')
-            ) {
-              reportedErrors.push(message.text())
-            }
-          }
-          comfyPage.page.on('pageerror', onPageError)
-          comfyPage.page.on('console', onConsole)
+          const consoleErrors = collectConsoleErrors(comfyPage.page)
           try {
-            await expect(comfyPage.toast.toastErrors).toHaveCount(0)
-            await host.click('title')
-            await expect
-              .poll(() => comfyPage.nodeOps.getSelectedNodeIds())
-              .toEqual([toNodeId(2)])
-            await host.clickContextMenuOption('Unpack Subgraph')
-            await expect.poll(() => host.exists()).toBe(true)
-            await expect
-              .poll(() =>
-                comfyPage.page.evaluate(() =>
-                  JSON.stringify(window.app!.rootGraph.serialize())
+            await test.step('rejects the unpack atomically', async () => {
+              await expect(comfyPage.toast.toastErrors).toHaveCount(0)
+              await host.click('title')
+              await expect
+                .poll(() => comfyPage.nodeOps.getSelectedNodeIds())
+                .toEqual([toNodeId(2)])
+              await host.clickContextMenuOption('Unpack Subgraph')
+              await expect.poll(() => host.exists()).toBe(true)
+              await expect
+                .poll(() =>
+                  comfyPage.page.evaluate(() =>
+                    JSON.stringify(window.app!.rootGraph.serialize())
+                  )
                 )
+                .toBe(before)
+            })
+
+            await test.step('keeps the canvas responsive', async () => {
+              await comfyPage.canvasOps.clickEmptySpace()
+              await expect
+                .poll(() => comfyPage.nodeOps.getSelectedNodeIds())
+                .toEqual([])
+              await host.click('title')
+              await expect
+                .poll(() => comfyPage.nodeOps.getSelectedNodeIds())
+                .toEqual([toNodeId(2)])
+            })
+
+            await test.step('reports the refusal once', async () => {
+              const reportedErrors = () =>
+                consoleErrors.errors.filter((error) =>
+                  error.includes(
+                    '[Reported error]: error_unpacking_subgraph_link'
+                  )
+                )
+              await expect.poll(reportedErrors).toHaveLength(1)
+              expect(reportedErrors()[0]).toContain(
+                'Cannot unpack subgraph: unresolvable inner link'
               )
-              .toBe(before)
-
-            await comfyPage.canvas.click({ position: { x: 1, y: 1 } })
-            await expect
-              .poll(() => comfyPage.nodeOps.getSelectedNodeIds())
-              .toEqual([])
-            await host.click('title')
-            await expect
-              .poll(() => comfyPage.nodeOps.getSelectedNodeIds())
-              .toEqual([toNodeId(2)])
-
-            await expect.poll(() => reportedErrors).toHaveLength(1)
-            expect(reportedErrors[0]).toContain(
-              'Cannot unpack subgraph: unresolvable inner link'
-            )
-            expect(pageErrors).toEqual([])
-            await expect(comfyPage.toast.toastErrors).toHaveCount(1)
+              expect(
+                consoleErrors.errors.filter((error) =>
+                  error.startsWith('Uncaught page error:')
+                )
+              ).toEqual([])
+              await expect(comfyPage.toast.toastErrors).toHaveCount(1)
+            })
           } finally {
-            comfyPage.page.off('pageerror', onPageError)
-            comfyPage.page.off('console', onConsole)
+            consoleErrors.stop()
           }
         })
       }
