@@ -9,15 +9,34 @@
  */
 import type {
   PaymentPortalResult,
+  PreviewSubscribeInput,
+  PreviewSubscribeResult,
+  SubscribeInput,
   SubscriptionCommandFailure,
   SubscriptionCommandOutcome,
   SubscriptionCommandResult
 } from '@comfyorg/account-core/billing'
 
 import { t } from '@/i18n'
+import type {
+  PreviewSubscribeResponse,
+  SubscribeResponse
+} from '@/platform/workspace/api/workspaceApi'
 import { WorkspaceApiError } from '@/platform/workspace/api/workspaceApi'
 
 import { declineDetail } from './topupOperationView'
+
+/**
+ * A subscribe response as the checkout reads it. `requiredPayment` is set only
+ * by the SDK rail, where `status` is always the settled `subscribed`: it says
+ * whether the server had to take a payment from the customer to get there.
+ * The legacy path leaves it unset — there a `subscribed` response is a plan
+ * that was already active, and the poller it never started is what drew the
+ * same line.
+ */
+export interface SettledSubscribeResponse extends SubscribeResponse {
+  readonly requiredPayment?: boolean
+}
 
 export type SubscriptionRailOutcome<T = void> =
   | { readonly status: 'ok'; readonly value: T }
@@ -26,11 +45,24 @@ export type SubscriptionRailOutcome<T = void> =
   | { readonly status: 'unavailable' }
 
 /**
- * The three subscription actions the host routes through the SDK. Cancel and
+ * The subscription actions the host routes through the SDK. Cancel and
  * resubscribe report only whether they settled; the portal hands back the URL
- * the host opens.
+ * the host opens; subscribe and its quote hand back the bodies the checkout
+ * already reads.
  */
 export interface SubscriptionRail {
+  /**
+   * The hosted step a subscribe on this rail is parked on, or null. The rail
+   * opens it once itself, so this is what the checkout puts behind a button
+   * when the browser blocked that open.
+   */
+  readonly subscriptionActionUrl: string | null
+  subscribe: (
+    input: SubscribeInput
+  ) => Promise<SubscriptionRailOutcome<SettledSubscribeResponse>>
+  previewSubscribe: (
+    input: PreviewSubscribeInput
+  ) => Promise<SubscriptionRailOutcome<PreviewSubscribeResponse>>
   cancelSubscription: () => Promise<SubscriptionRailOutcome>
   resubscribe: () => Promise<SubscriptionRailOutcome>
   openPaymentPortal: (
@@ -107,6 +139,48 @@ export function projectSubscriptionResult(
   return result.value.phase === 'succeeded'
     ? SETTLED
     : projectUnsuccessfulSettle(result.value)
+}
+
+/**
+ * A settled subscribe as the body `handleSubscribeResponse` already handles.
+ * The SDK waits for the operation, so by the time this projects there is
+ * nothing left to poll: the status is always the settled `subscribed`, never
+ * the response's `needs_payment_method` or `pending_payment`, both of which
+ * the lifecycle drove to a conclusion first. `issuedStatus` is what the
+ * server answered before that, so `requiredPayment` keeps the line the legacy
+ * poller drew: it watched — and so counted and announced — exactly the
+ * subscribes the server could not activate on the spot. An adopted operation
+ * carries no issued status and is one the server was still settling, which is
+ * the same side of that line.
+ *
+ * An outcome carries no operation only when the server answered that the
+ * requested state already held, which subscribe never reaches: the route
+ * documents no already-held code.
+ */
+export function projectSubscribeResult(
+  result: SubscriptionCommandResult
+): SubscriptionRailOutcome<SettledSubscribeResponse> {
+  if (result.status === 'error') return projectFailure(result)
+  const { phase, operation, issuedStatus } = result.value
+  if (phase !== 'succeeded' || operation === undefined) {
+    return projectUnsuccessfulSettle(result.value)
+  }
+  return {
+    status: 'ok',
+    value: {
+      billing_op_id: operation.id,
+      status: 'subscribed',
+      requiredPayment: issuedStatus !== 'subscribed'
+    }
+  }
+}
+
+export function projectPreviewSubscribeResult(
+  result: PreviewSubscribeResult
+): SubscriptionRailOutcome<PreviewSubscribeResponse> {
+  return result.status === 'error'
+    ? projectFailure(result)
+    : { status: 'ok', value: result.value }
 }
 
 export function projectPaymentPortalResult(
