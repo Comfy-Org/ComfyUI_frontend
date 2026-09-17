@@ -909,6 +909,22 @@ describe('Load3DConfiguration remote (agent) model updates', () => {
     expect(modelWidget.value).toBe('local-change.glb')
   })
 
+  it('invalidates synchronously before queueing can observe stale capture state', () => {
+    const load3d = makeLoad3dMock()
+    const onSceneInvalidated = vi.fn()
+    const modelWidget = reactiveWidget('none', 'sync-widget')
+    new Load3DConfiguration(load3d).configure({
+      modelWidget,
+      loadFolder: 'input',
+      onSceneInvalidated
+    })
+
+    modelWidget.value = 'replacement.glb'
+
+    expect(onSceneInvalidated).toHaveBeenCalledTimes(1)
+    expect(load3d.loadModel).toHaveBeenCalledTimes(1)
+  })
+
   it('preserves exactly-once model effects across generated value sequences', async () => {
     await fc.assert(
       fc.asyncProperty(
