@@ -1,3 +1,4 @@
+import { useDialogService } from '@/services/dialogService'
 import { useAuthStore } from '@/stores/authStore'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
@@ -30,10 +31,6 @@ let mockWorkflowStore: ReturnType<typeof useWorkflowStore>
 
 const mockWorkflowService = vi.hoisted(() => ({
   saveWorkflow: vi.fn(async () => true)
-}))
-
-const mockDialogService = vi.hoisted(() => ({
-  confirm: vi.fn()
 }))
 
 const mockToastErrorHandler = vi.hoisted(() => vi.fn())
@@ -97,9 +94,7 @@ vi.mock<unknown>(
   })
 )
 
-vi.mock<unknown>(import('@/services/dialogService'), () => ({
-  useDialogService: vi.fn(() => mockDialogService)
-}))
+vi.mock(import('@/services/dialogService'))
 
 vi.mock<unknown>(import('@/composables/billing/useBillingContext'), () => ({
   useBillingContext: vi.fn(() => ({
@@ -212,7 +207,7 @@ describe('useAuthActions.logout', () => {
 
     await logout()
 
-    expect(mockDialogService.confirm).not.toHaveBeenCalled()
+    expect(useDialogService().confirm).not.toHaveBeenCalled()
     expect(mockWorkflowService.saveWorkflow).not.toHaveBeenCalled()
     expect(mockAuthStore.logout).toHaveBeenCalledTimes(1)
     expect(mockClearAllWorkflowStorage).not.toHaveBeenCalled()
@@ -223,7 +218,7 @@ describe('useAuthActions.logout', () => {
 
     await logout()
 
-    expect(mockDialogService.confirm).not.toHaveBeenCalled()
+    expect(useDialogService().confirm).not.toHaveBeenCalled()
     expect(mockWorkflowService.saveWorkflow).not.toHaveBeenCalled()
     expect(mockAuthStore.logout).toHaveBeenCalledTimes(1)
   })
@@ -267,12 +262,12 @@ describe('useAuthActions.logout', () => {
     Object.assign(mockWorkflowStore, {
       modifiedWorkflows: [makeWorkflow('a.json')]
     })
-    mockDialogService.confirm.mockResolvedValueOnce(null)
+    vi.mocked(useDialogService().confirm).mockResolvedValueOnce(null)
     const { logout } = useAuthActions()
 
     await logout()
 
-    expect(mockDialogService.confirm).toHaveBeenCalledTimes(1)
+    expect(useDialogService().confirm).toHaveBeenCalledTimes(1)
     expect(mockWorkflowService.saveWorkflow).not.toHaveBeenCalled()
     expect(mockAuthStore.logout).not.toHaveBeenCalled()
   })
@@ -281,12 +276,12 @@ describe('useAuthActions.logout', () => {
     Object.assign(mockWorkflowStore, {
       modifiedWorkflows: [makeWorkflow('a.json')]
     })
-    mockDialogService.confirm.mockResolvedValueOnce(false)
+    vi.mocked(useDialogService().confirm).mockResolvedValueOnce(false)
     const { logout } = useAuthActions()
 
     await logout()
 
-    expect(mockDialogService.confirm).toHaveBeenCalledTimes(1)
+    expect(useDialogService().confirm).toHaveBeenCalledTimes(1)
     expect(mockWorkflowService.saveWorkflow).not.toHaveBeenCalled()
     expect(mockAuthStore.logout).toHaveBeenCalledTimes(1)
   })
@@ -295,7 +290,7 @@ describe('useAuthActions.logout', () => {
     Object.assign(mockWorkflowStore, {
       modifiedWorkflows: [makeWorkflow('a.json')]
     })
-    mockDialogService.confirm.mockResolvedValueOnce(true)
+    vi.mocked(useDialogService().confirm).mockResolvedValueOnce(true)
     mockWorkflowService.saveWorkflow.mockResolvedValueOnce(false)
     const { logout } = useAuthActions()
 
@@ -309,7 +304,7 @@ describe('useAuthActions.logout', () => {
     Object.assign(mockWorkflowStore, {
       modifiedWorkflows: [makeWorkflow('a.json'), makeWorkflow('b.json')]
     })
-    mockDialogService.confirm.mockResolvedValueOnce(true)
+    vi.mocked(useDialogService().confirm).mockResolvedValueOnce(true)
     mockWorkflowService.saveWorkflow.mockRejectedValueOnce(
       new Error('disk full')
     )
@@ -327,7 +322,7 @@ describe('useAuthActions.logout', () => {
   it('saves every modified workflow before signing out when user picks Save (true)', async () => {
     const workflows = [makeWorkflow('a.json'), makeWorkflow('b.json')]
     Object.assign(mockWorkflowStore, { modifiedWorkflows: workflows })
-    mockDialogService.confirm.mockResolvedValueOnce(true)
+    vi.mocked(useDialogService().confirm).mockResolvedValueOnce(true)
     const { logout } = useAuthActions()
 
     await logout()
@@ -354,12 +349,12 @@ describe('useAuthActions.logout', () => {
     Object.assign(mockWorkflowStore, {
       modifiedWorkflows: [makeWorkflow('a.json')]
     })
-    mockDialogService.confirm.mockResolvedValueOnce(null)
+    vi.mocked(useDialogService().confirm).mockResolvedValueOnce(null)
     const { logout } = useAuthActions()
 
     await logout()
 
-    expect(mockDialogService.confirm).toHaveBeenCalledWith(
+    expect(useDialogService().confirm).toHaveBeenCalledWith(
       expect.objectContaining({
         type: 'dirtyClose',
         title: 'auth.signOut.unsavedChangesTitle',
