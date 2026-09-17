@@ -635,8 +635,10 @@ describe('useJobMenu', () => {
       message: expect.stringContaining('workflowService.enterFilename'),
       defaultValue: 'Job job-1.json'
     })
-    const [filename] = downloadBlobMock.mock.calls[0]
-    expect(filename).toBe('custom-name.json')
+    expect(downloadBlobMock).toHaveBeenCalledExactlyOnceWith(
+      'custom-name.json',
+      expect.any(Blob)
+    )
   })
 
   it('keeps existing json extension when exporting workflow', async () => {
@@ -655,8 +657,10 @@ describe('useJobMenu', () => {
     const entry = findActionEntry(jobMenuEntries.value, 'export-workflow')
     await entry?.onClick?.()
 
-    const [filename] = downloadBlobMock.mock.calls[0]
-    expect(filename).toBe('existing.json')
+    expect(downloadBlobMock).toHaveBeenCalledExactlyOnceWith(
+      'existing.json',
+      expect.any(Blob)
+    )
   })
 
   it('abandons export when prompt cancelled', async () => {

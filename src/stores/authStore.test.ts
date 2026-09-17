@@ -574,11 +574,10 @@ describe('useAuthStore', () => {
       await expect(request).rejects.toMatchObject({
         message: i18n.global.t('toastMessages.userNotAuthenticated')
       })
-      expect(
-        mockFetch.mock.calls.some(([url]) =>
-          String(url).endsWith('/customers/credit')
-        )
-      ).toBe(false)
+      expect(mockFetch).not.toHaveBeenCalledWith(
+        expect.stringMatching(/\/customers\/credit$/),
+        expect.anything()
+      )
     })
 
     it('withholds a portal URL that succeeds after an A->B API key switch', async () => {

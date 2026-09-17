@@ -510,9 +510,8 @@ describe('useWorkflowService', () => {
 
       // loadDefaultWorkflow is detected by its payload, not by a missing
       // workflow argument: the call must carry the default graph itself.
-      expect(app.loadGraphData).toHaveBeenCalledTimes(1)
+      expect(app.loadGraphData).toHaveBeenCalledExactlyOnceWith(defaultGraph)
       expect(vi.mocked(app.loadGraphData).mock.calls[0][0]).toBe(defaultGraph)
-      expect(vi.mocked(app.loadGraphData).mock.calls[0][3]).toBeUndefined()
     })
 
     it('keeps the tab open and its draft intact when the replacement load fails', async () => {
@@ -635,10 +634,15 @@ describe('useWorkflowService', () => {
 
       // Second call = the retained workflow repainted from its saved state,
       // so selection, canvas, and change tracking agree after the abort.
-      const calls = vi.mocked(app.loadGraphData).mock.calls
-      expect(calls).toHaveLength(2)
-      expect(calls[1][3]).toMatchObject({ path: 'workflows/retained.json' })
-      expect(calls[1][0]).toEqual(retained.activeState)
+      expect(app.loadGraphData).toHaveBeenCalledTimes(2)
+      expect(app.loadGraphData).toHaveBeenNthCalledWith(
+        2,
+        retained.activeState,
+        true,
+        true,
+        expect.objectContaining({ path: 'workflows/retained.json' }),
+        expect.anything()
+      )
       expect(workflowStore.activeWorkflow.path).toBe('workflows/retained.json')
     })
 
@@ -684,14 +688,23 @@ describe('useWorkflowService', () => {
       await Promise.all([firstOpen, secondOpen])
 
       expect(maxConcurrentLoads).toBe(1)
-      expect(
-        vi.mocked(app.loadGraphData).mock.calls.map((call) => call[3])
-      ).toEqual([first, second])
-      expect(
-        vi
-          .mocked(app.loadGraphData)
-          .mock.calls.map((call) => call[4]?.workflowNavigationId)
-      ).toEqual([1, 2])
+      expect(app.loadGraphData).toHaveBeenCalledTimes(2)
+      expect(app.loadGraphData).toHaveBeenNthCalledWith(
+        1,
+        expect.anything(),
+        true,
+        true,
+        first,
+        expect.objectContaining({ workflowNavigationId: 1 })
+      )
+      expect(app.loadGraphData).toHaveBeenNthCalledWith(
+        2,
+        expect.anything(),
+        true,
+        true,
+        second,
+        expect.objectContaining({ workflowNavigationId: 2 })
+      )
       expect(workflowStore.activeWorkflow.path).toBe(second.path)
     })
 
@@ -726,9 +739,23 @@ describe('useWorkflowService', () => {
       expect(
         useSubgraphNavigationStore().endWorkflowNavigation
       ).toHaveBeenCalledWith(1)
-      expect(
-        vi.mocked(app.loadGraphData).mock.calls.map((call) => call[3])
-      ).toEqual([first, second])
+      expect(app.loadGraphData).toHaveBeenCalledTimes(2)
+      expect(app.loadGraphData).toHaveBeenNthCalledWith(
+        1,
+        expect.anything(),
+        true,
+        true,
+        first,
+        expect.anything()
+      )
+      expect(app.loadGraphData).toHaveBeenNthCalledWith(
+        2,
+        expect.anything(),
+        true,
+        true,
+        second,
+        expect.anything()
+      )
       expect(workflowStore.activeWorkflow.path).toBe(second.path)
     })
 
@@ -1028,9 +1055,31 @@ describe('useWorkflowService', () => {
 
       expect(workflowStore.openWorkflows).not.toContain(second)
       expect(workflowStore.activeWorkflow.path).toBe(final.path)
-      expect(
-        vi.mocked(app.loadGraphData).mock.calls.map((call) => call[3])
-      ).toEqual([first, second, final])
+      expect(app.loadGraphData).toHaveBeenCalledTimes(3)
+      expect(app.loadGraphData).toHaveBeenNthCalledWith(
+        1,
+        expect.anything(),
+        true,
+        true,
+        first,
+        expect.anything()
+      )
+      expect(app.loadGraphData).toHaveBeenNthCalledWith(
+        2,
+        expect.anything(),
+        true,
+        true,
+        second,
+        expect.anything()
+      )
+      expect(app.loadGraphData).toHaveBeenNthCalledWith(
+        3,
+        expect.anything(),
+        true,
+        true,
+        final,
+        expect.anything()
+      )
     })
 
     it('falls back after a newer workflow selection fails', async () => {
@@ -1148,9 +1197,16 @@ describe('useWorkflowService', () => {
       expect(maxConcurrentLoads).toBe(1)
       expect(workflowStore.openWorkflows).not.toContain(closing)
       expect(workflowStore.activeWorkflow.path).toBe(final.path)
-      expect(
-        vi.mocked(app.loadGraphData).mock.calls.map((call) => call[3])
-      ).toEqual([undefined, final])
+      expect(app.loadGraphData).toHaveBeenCalledTimes(2)
+      expect(app.loadGraphData).toHaveBeenNthCalledWith(1, expect.anything())
+      expect(app.loadGraphData).toHaveBeenNthCalledWith(
+        2,
+        expect.anything(),
+        true,
+        true,
+        final,
+        expect.anything()
+      )
     })
 
     it('does not reopen the workflow being closed', async () => {
@@ -1366,13 +1422,20 @@ describe('useWorkflowService', () => {
       while (storeCloseReleases.length) storeCloseReleases.shift()?.()
       await Promise.all([closingNeighborPromise, closingActive])
 
-      const loadedPaths = vi
-        .mocked(app.loadGraphData)
-        .mock.calls.map(
-          (call) => (call[3] as { path?: string } | undefined)?.path
-        )
-      expect(loadedPaths).toContain(survivor.path)
-      expect(loadedPaths).not.toContain(closingNeighbor.path)
+      expect(app.loadGraphData).toHaveBeenCalledWith(
+        expect.anything(),
+        true,
+        true,
+        expect.objectContaining({ path: survivor.path }),
+        expect.anything()
+      )
+      expect(app.loadGraphData).not.toHaveBeenCalledWith(
+        expect.anything(),
+        expect.anything(),
+        expect.anything(),
+        expect.objectContaining({ path: closingNeighbor.path }),
+        expect.anything()
+      )
     })
 
     it('reopens a renamed path after a close that renamed the workflow mid-flight', async () => {
