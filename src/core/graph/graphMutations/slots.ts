@@ -4,7 +4,7 @@ import type { LinkTopology } from '@/types/linkTopology'
 import type { NodeId } from '@/types/nodeId'
 import type { NodeState } from '@/types/nodeState'
 
-import { isRecord } from './prepare'
+import { isRecord } from './isRecord'
 
 /**
  * A supplied input slot whose record has no `link` key carries no link

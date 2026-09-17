@@ -5,6 +5,7 @@ import type { LinkTopology } from '@/types/linkTopology'
 import { toNodeId } from '@/types/nodeId'
 import type { NodeState } from '@/types/nodeState'
 
+import { isRecord } from './isRecord'
 import { prepareInputSlots, prepareOutputSlots } from './slots'
 import type {
   PreparedNode,
@@ -13,9 +14,6 @@ import type {
 } from './types'
 import { widgetEntries } from './widgets'
 
-export function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null && !Array.isArray(value)
-}
 function cloneRecord(value: unknown): Record<string, unknown> {
   return isRecord(value) ? structuredClone(value) : {}
 }

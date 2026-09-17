@@ -16,11 +16,8 @@ import type { NodeState } from '@/types/nodeState'
 import type { WidgetValue } from '@/types/simplifiedWidget'
 import { isWidgetId, widgetId } from '@/types/widgetId'
 
-import {
-  isRecord,
-  prepareNode,
-  prepareTopology
-} from './graphMutations/prepare'
+import { isRecord } from './graphMutations/isRecord'
+import { prepareNode, prepareTopology } from './graphMutations/prepare'
 import {
   detachedLinkSlots,
   nodeKey,

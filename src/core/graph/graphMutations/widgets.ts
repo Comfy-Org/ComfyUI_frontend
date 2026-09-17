@@ -2,7 +2,7 @@ import type { ISerialisedNode } from '@/lib/litegraph/src/types/serialisation'
 import type { NodeState } from '@/types/nodeState'
 import type { WidgetValue } from '@/types/simplifiedWidget'
 
-import { isRecord } from './prepare'
+import { isRecord } from './isRecord'
 import type { PreparedWidgetEntry, SemanticNodePayload } from './types'
 
 /**
