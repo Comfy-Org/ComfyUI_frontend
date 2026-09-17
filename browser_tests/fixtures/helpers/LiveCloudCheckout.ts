@@ -1,3 +1,4 @@
+import { getLiveCloudEnvironment } from '@e2e/fixtures/utils/liveCloudBillingConfig'
 import {
   zBillingBalanceResponse,
   zBillingOpStatusResponse,
@@ -20,17 +21,23 @@ function matchesBillingResponse(
 }
 
 export class LiveCloudCheckout {
+  private readonly environment: ReturnType<typeof getLiveCloudEnvironment>
   readonly page: Page
   readonly confirmation
   readonly resumePayment
+  readonly paymentMethodsHeading
+  readonly savedCards
   private readonly subscribe
 
   constructor(
     private readonly comfyPage: ComfyPage,
     private readonly frontend: string,
-    private readonly backend: string
+    backend: string
   ) {
+    this.environment = getLiveCloudEnvironment(backend)
     this.page = comfyPage.page
+    this.paymentMethodsHeading = this.page.getByText(/^Payment methods?$/)
+    this.savedCards = this.page.getByText(/•••• \d{4}$/)
     this.confirmation = this.page.getByRole('dialog').filter({
       has: this.page.getByRole('heading', {
         name: 'Confirm your payment',
@@ -203,10 +210,9 @@ export class LiveCloudCheckout {
     )
     expect(new URL(portal.url).origin).toBe('https://checkout.comfy.org')
     await this.page.goto(portal.url)
-    await expect(this.page.getByText(/^Payment methods?$/)).toBeVisible()
-    const cards = this.page.getByText(/•••• \d{4}$/)
-    await expect(cards).toHaveCount(expectedCount)
-    return await cards.count()
+    await expect(this.paymentMethodsHeading).toBeVisible()
+    await expect(this.savedCards).toHaveCount(expectedCount)
+    return expectedCount
   }
 
   async startCheckout(action = this.subscribe.or(this.resumePayment)) {
@@ -227,7 +233,7 @@ export class LiveCloudCheckout {
     const subscription = zSubscribeResponse.parse(await response.json())
     expect(subscription.status).toBe('needs_payment_method')
     expect(subscription.billing_op_id).not.toBe('')
-    const mode = this.backend === 'https://cloud.comfy.org' ? 'live' : 'test'
+    const mode = this.environment.stripeMode
     const testCheckoutUrl = new RegExp(
       `^https://checkout\\.(?:stripe\\.com|comfy\\.org)/c/pay/cs_${mode}_`
     )

@@ -42,8 +42,8 @@ backend and derives its matching customer API and Stripe checkout mode. A deploy
 frontend must match the selected backend origin; local URLs exercise the PR code.
 
 Live tests do not install shared response mocks or override feature flags.
-Sign-in completes the real onboarding survey when required and waits for the
-canvas. Known tutorial dialogs are dismissed through their Skip button whenever
+Permanent accounts must have completed onboarding when the survey flag is
+enabled. Disposable setup completes the real survey and waits for the canvas. Known tutorial dialogs are dismissed through their Skip button whenever
 they appear during an interaction, including after navigation. Billing dialogs
 are left to the scenario. Assets,
 location detection, Google auth scripts, analytics, and feature flags use their real
@@ -56,7 +56,9 @@ It attaches a post-login screenshot. The shared network boundary rejects Cloud a
 POST endpoints used for Firebase sign-in/token refresh, customer provisioning,
 Cloud auth tokens/session cookies, the startup write to
 `/api/settings/Comfy.InstalledVersion`, and onboarding survey/tutorial state.
-Bulk settings writes may contain only `onboarding_survey`.
+Bulk settings writes may contain only `onboarding_survey`. Observed analytics,
+customer-messaging, and feature-flag POST endpoints have exact URL allowances;
+unknown off-origin mutations are blocked and fail teardown.
 A rejected mutation fails the test even
 if the app catches the request error. The smoke fixture blocks checkout, payment, and reset mutations in both browser
 routing and Playwright API clients.
@@ -78,7 +80,7 @@ production; Staging remains the default backend. Select `cloud-live-paid` for
 saved-card tests and `cloud-live-disposable` for new-account tests. These projects
 collect tests only when their respective scenario PRs are present.
 
-Traces start after permanent-account sign-in and contain authenticated network
-traffic. Keep reports private. Disposable accounts require no reusable credentials.
+Automatic tracing stays disabled because authenticated traffic contains reusable
+credentials. Use screenshots for evidence.
 Completed-payment assertions verify saved cards through the real hosted billing
-portal, because Staging disables the embedded-checkout saved-card API.
+portal, because sandbox environments may disable the embedded-checkout saved-card API.

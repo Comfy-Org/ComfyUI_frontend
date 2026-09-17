@@ -13,6 +13,18 @@ const sandboxConfig = {
 }
 
 describe('Live Cloud billing prerequisites', () => {
+  it('routes an omitted backend to the Staging customer API', () => {
+    const selected = liveCloudBillingConfigSchema.parse({
+      PLAYWRIGHT_TEST_URL: 'http://localhost:5173',
+      CLOUD_ACCOUNT_EMAIL: sandboxConfig.CLOUD_ACCOUNT_EMAIL,
+      CLOUD_ACCOUNT_PASSWORD: sandboxConfig.CLOUD_ACCOUNT_PASSWORD
+    })
+    expect(selected.PLAYWRIGHT_SETUP_API_URL).toBe(
+      'https://stagingcloud.comfy.org'
+    )
+    expect(selected.customerOrigin).toBe('https://stagingapi.comfy.org')
+  })
+
   it.for([
     'https://testcloud.comfy.org.example.com',
     'https://testcloud.comfy.org/redirect',

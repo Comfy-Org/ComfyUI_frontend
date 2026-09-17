@@ -1,3 +1,4 @@
+import { getLiveCloudEnvironment } from '@e2e/fixtures/utils/liveCloudBillingConfig'
 import {
   zBillingStatusResponse,
   zCurrentWorkspaceResponse,
@@ -9,11 +10,14 @@ import { expect } from '@playwright/test'
 import type { z } from 'zod'
 
 export class LiveCloudBillingSession {
+  private readonly environment: ReturnType<typeof getLiveCloudEnvironment>
   constructor(
     private readonly request: APIRequestContext,
     private readonly backend: string,
     private readonly headers: Record<string, string>
-  ) {}
+  ) {
+    this.environment = getLiveCloudEnvironment(backend)
+  }
 
   async read<T>(path: string, schema: z.ZodType<T>): Promise<T> {
     const response = await this.request
@@ -58,7 +62,7 @@ export class LiveCloudBillingSession {
       '/api/billing/status',
       zBillingStatusResponse
     )
-    if (this.backend === 'https://cloud.comfy.org') {
+    if (this.environment.stripeMode === 'live') {
       const paymentMethods = await this.read(
         '/api/billing/payment-methods',
         zListSavedPaymentMethodsResponse
@@ -86,12 +90,10 @@ export class LiveCloudBillingSession {
   }
 
   async ensureProvisioned(returnUrl: string) {
-    await expect(async () => {
-      await this.post(
-        '/api/billing/payment-portal',
-        { return_url: returnUrl },
-        zPaymentPortalResponse
-      )
-    }).toPass({ timeout: 30_000 })
+    await this.post(
+      '/api/billing/payment-portal',
+      { return_url: returnUrl },
+      zPaymentPortalResponse
+    )
   }
 }

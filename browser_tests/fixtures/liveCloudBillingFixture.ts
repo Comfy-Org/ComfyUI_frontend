@@ -12,16 +12,8 @@ export const liveCloudBillingFixture = base.extend<{
   liveCloudBillingConfig: async ({ liveCloudBillingConfig }, use) => {
     await use(liveCloudBillingConfig ?? loadLiveCloudBillingConfig())
   },
-  billingSession: async ({ page, liveCloudBillingConfig }, use, testInfo) => {
-    const session = await signInToLiveCloud(page, liveCloudBillingConfig)
-    await page.context().tracing.start({ screenshots: true, snapshots: true })
-    try {
-      await use(session)
-    } finally {
-      const path = testInfo.outputPath('billing-trace.zip')
-      await page.context().tracing.stop({ path })
-      await testInfo.attach('trace', { path, contentType: 'application/zip' })
-    }
+  billingSession: async ({ page, liveCloudBillingConfig }, use) => {
+    await use(await signInToLiveCloud(page, liveCloudBillingConfig))
   },
   comfyPage: async (
     { page, request, billingSession: _billingSession },

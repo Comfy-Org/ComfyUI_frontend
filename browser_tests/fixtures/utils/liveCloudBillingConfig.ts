@@ -10,14 +10,26 @@ const originURL = z
   }, 'Use an origin without a path, query, credentials, or fragment')
   .transform((value) => new URL(value).origin)
 
-function getLiveCloudCustomerOrigin(cloudOrigin: string): string | undefined {
-  if (cloudOrigin === 'https://cloud.comfy.org') return 'https://api.comfy.org'
-  if (cloudOrigin === 'https://testcloud.comfy.org')
-    return 'https://testapi.comfy.org'
-  if (cloudOrigin === 'https://stagingcloud.comfy.org')
-    return 'https://stagingapi.comfy.org'
-  if (/^https:\/\/pr-\d+\.testenvs\.comfy\.org$/.test(cloudOrigin)) {
-    return cloudOrigin.replace('.testenvs.', '-registry.testenvs.')
+export function getLiveCloudEnvironment(cloudOrigin: string) {
+  const production = cloudOrigin === 'https://cloud.comfy.org'
+  const customerOrigin =
+    cloudOrigin === 'https://cloud.comfy.org'
+      ? 'https://api.comfy.org'
+      : cloudOrigin === 'https://testcloud.comfy.org'
+        ? 'https://testapi.comfy.org'
+        : cloudOrigin === 'https://stagingcloud.comfy.org'
+          ? 'https://stagingapi.comfy.org'
+          : /^https:\/\/pr-\d+\.testenvs\.comfy\.org$/.test(cloudOrigin)
+            ? cloudOrigin.replace('.testenvs.', '-registry.testenvs.')
+            : undefined
+  if (!customerOrigin) throw new Error('Unsupported Cloud environment')
+  const stripeMode: 'live' | 'test' = production ? 'live' : 'test'
+  return {
+    customerOrigin,
+    stripeMode,
+    firebaseOrigin: production
+      ? 'https://dreamboothy.firebaseapp.com'
+      : 'https://dreamboothy-dev.firebaseapp.com'
   }
 }
 
@@ -75,10 +87,16 @@ export const liveCloudBillingConfigSchema = z
     }
   })
   .transform((config, ctx) => {
-    const customerOrigin = getLiveCloudCustomerOrigin(
-      config.PLAYWRIGHT_SETUP_API_URL
-    )
-    if (!customerOrigin) {
+    try {
+      const environment = getLiveCloudEnvironment(
+        config.PLAYWRIGHT_SETUP_API_URL
+      )
+      return {
+        ...config,
+        customerOrigin: environment.customerOrigin,
+        environment
+      }
+    } catch {
       ctx.addIssue({
         code: 'custom',
         path: ['PLAYWRIGHT_SETUP_API_URL'],
@@ -86,7 +104,6 @@ export const liveCloudBillingConfigSchema = z
       })
       return z.NEVER
     }
-    return { ...config, customerOrigin }
   })
 
 export type LiveCloudBillingConfig = z.infer<

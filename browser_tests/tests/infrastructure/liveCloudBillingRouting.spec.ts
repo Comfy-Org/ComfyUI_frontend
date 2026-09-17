@@ -13,6 +13,7 @@ import {
   liveCloudDisposableBillingFixture
 } from '@e2e/fixtures/liveCloudDisposableBillingFixture'
 import { LiveCloudOnboarding } from '@e2e/fixtures/components/LiveCloudOnboarding'
+import { OnboardingCoachmarks } from '@e2e/fixtures/components/Tour'
 import { liveCloudBillingConfigSchema } from '@e2e/fixtures/utils/liveCloudBillingConfig'
 
 const test = liveCloudDisposableBillingFixture.extend<{
@@ -109,12 +110,13 @@ test.describe('Live Cloud network boundary', { tag: '@smoke' }, () => {
               <button>Continue billing</button>
             </section>
             <section id="tutorial" data-testid="${testId}" role="dialog" hidden>
+              <span>Step 1 of 3</span>
               <button onclick="document.getElementById('tutorial').hidden = true">Skip</button>
             </section>
           `
         })
       )
-      await new LiveCloudOnboarding(page).dismissTutorialsWhenVisible()
+      await new OnboardingCoachmarks(page).dismissWhenVisible()
       for (let visit = 0; visit < 2; visit++) {
         await page.goto('http://localhost:5173/')
         await page.getByRole('button', { name: 'Show tutorial' }).click()
@@ -126,6 +128,60 @@ test.describe('Live Cloud network boundary', { tag: '@smoke' }, () => {
       }
     })
   }
+
+  test('completes disposable survey questions before waiting for the canvas', async ({
+    page
+  }) => {
+    await test.step('Open a survey with option and text questions', async () => {
+      await page.route('http://localhost:5173/', (route) =>
+        route.fulfill({
+          contentType: 'text/html',
+          body: `
+          <h1>Let's get to know you</h1>
+          <button id="intent-exploring" aria-pressed="false" onclick="this.hidden = true; document.getElementById('details').hidden = false">Explore</button>
+          <section id="details" hidden>
+            <input id="details-answer" aria-label="Details" oninput="document.getElementById('submit').disabled = !this.value">
+            <button id="submit" disabled>Submit</button>
+          </section>
+
+          <script>
+            document.getElementById('submit').onclick = async () => {
+              await fetch('/api/settings', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ onboarding_survey: { intent: 'exploring', details: document.getElementById('details-answer').value } })
+              })
+              document.querySelector('h1').hidden = true
+              document.getElementById('details').hidden = true
+              document.body.insertAdjacentHTML('beforeend', '<canvas id="graph-canvas"></canvas>')
+            }
+          </script>
+        `
+        })
+      )
+      await page.goto('http://localhost:5173/')
+    })
+
+    await test.step('Submit both answers and reach the canvas', async () => {
+      const [request] = await Promise.all([
+        page.waitForRequest(
+          (request) =>
+            request.url() === 'http://localhost:5173/api/settings' &&
+            request.method() === 'POST'
+        ),
+        new LiveCloudOnboarding(page).completeSurveyIfNeeded(
+          'http://localhost:5173'
+        )
+      ])
+      expect(request.postDataJSON()).toEqual({
+        onboarding_survey: {
+          intent: 'exploring',
+          details: 'Automated billing E2E'
+        }
+      })
+      await expect(page.locator('#graph-canvas')).toBeVisible()
+    })
+  })
 
   test('rewrites browser auth to Cloud and provisions customers at the Comfy API', async ({
     page,
@@ -169,30 +225,44 @@ test.describe('Live Cloud network boundary', { tag: '@smoke' }, () => {
     context,
     sandboxProxy
   }) => {
-    const page = await context.newPage()
-    await page.route('http://localhost:5173/', (route) =>
-      route.fulfill({ contentType: 'text/html', body: '<html></html>' })
-    )
-    await page.goto('http://localhost:5173/')
-    for (const url of [
-      'https://cloud.comfy.org/cdn-cgi/trace',
-      'https://apis.google.com/js/api.js',
-      'https://huggingface.co/example/resolve/main/model.safetensors',
-      'https://t.comfy.org/flags/'
-    ]) {
+    const page = await test.step('Open the local frontend', async () => {
+      const page = await context.newPage()
+      await page.route('http://localhost:5173/', (route) =>
+        route.fulfill({ contentType: 'text/html', body: '<html></html>' })
+      )
+      await page.goto('http://localhost:5173/')
+      return page
+    })
+
+    await test.step('Verify auxiliary services use upstream responses', async () => {
+      for (const url of [
+        'https://cloud.comfy.org/cdn-cgi/trace',
+        'https://apis.google.com/js/api.js',
+        'https://huggingface.co/example/resolve/main/model.safetensors',
+        'https://t.comfy.org/flags/'
+      ]) {
+        expect(
+          await page.evaluate(async (url) => {
+            const response = await fetch(url)
+            return await response.text()
+          }, url)
+        ).toBe(`GET ${url}`)
+      }
       expect(
-        await page.evaluate(async (url) => {
-          const response = await fetch(url)
-          return await response.text()
-        }, url)
-      ).toBe(`GET ${url}`)
-    }
-    expect(sandboxProxy.requests).toContain('GET https://t.comfy.org/flags/')
+        await page.evaluate(() =>
+          fetch('https://t.comfy.org/flags/', { method: 'POST' }).then(
+            (response) => response.text()
+          )
+        )
+      ).toBe('POST https://t.comfy.org/flags/')
+      expect(sandboxProxy.requests).toContain('GET https://t.comfy.org/flags/')
+    })
   })
 
   for (const path of [
     '/api/billing/subscribe',
     '/customers',
+    'http://127.0.0.1:39281/collect',
     'https://api.stripe.com/v1/payment_pages/cs_test_example/init'
   ]) {
     test(`blocks POST ${path} and fails even when the app catches it`, async ({

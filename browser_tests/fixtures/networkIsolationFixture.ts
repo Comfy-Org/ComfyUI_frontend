@@ -9,6 +9,7 @@ import {
   LIVE_CHECKOUT_ORIGINS,
   getBlockedRequestViolation,
   isLiveCloudMutationAllowed,
+  isLiveCloudAuxiliaryPost,
   isReportedViolation
 } from '@e2e/fixtures/utils/liveCloudBillingPolicy'
 import type { NetworkPolicy } from '@e2e/fixtures/utils/networkPolicy'
@@ -73,7 +74,12 @@ async function installContextNetworkIsolation(
   )
   await context.route('**/*', async (route) => {
     const url = new URL(route.request().url())
-    if (origins.has(url.origin) || liveCloudBillingConfig) {
+    if (
+      origins.has(url.origin) ||
+      (liveCloudBillingConfig &&
+        (['GET', 'HEAD', 'OPTIONS'].includes(route.request().method()) ||
+          isLiveCloudAuxiliaryPost(url, route.request().method())))
+    ) {
       await route.continue()
       return
     }
@@ -149,10 +155,7 @@ export const networkIsolationFixture = base.extend<{
             liveCloudBillingConfig.customerOrigin,
             'https://identitytoolkit.googleapis.com',
             'https://securetoken.googleapis.com',
-            liveCloudBillingConfig.PLAYWRIGHT_SETUP_API_URL ===
-            'https://cloud.comfy.org'
-              ? 'https://dreamboothy.firebaseapp.com'
-              : 'https://dreamboothy-dev.firebaseapp.com',
+            liveCloudBillingConfig.environment.firebaseOrigin,
             ...(liveCloudBillingConfig.allowPayments
               ? [
                   'https://pay.google.com',

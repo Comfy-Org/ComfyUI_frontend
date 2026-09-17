@@ -1,11 +1,15 @@
 import { describe, expect, it } from 'vitest'
 
-import { liveCloudBillingConfigSchema } from '@e2e/fixtures/utils/liveCloudBillingConfig'
+import {
+  getLiveCloudEnvironment,
+  liveCloudBillingConfigSchema
+} from '@e2e/fixtures/utils/liveCloudBillingConfig'
 
 import {
   getBlockedRequestViolation,
   getLiveCloudDestinationViolation,
   isLiveCloudMutationAllowed,
+  isLiveCloudAuxiliaryPost,
   isReportedViolation
 } from '@e2e/fixtures/utils/liveCloudBillingPolicy'
 
@@ -13,6 +17,7 @@ const config = {
   PLAYWRIGHT_TEST_URL: 'http://localhost:5173',
   PLAYWRIGHT_SETUP_API_URL: 'https://testcloud.comfy.org',
   customerOrigin: 'https://testapi.comfy.org',
+  environment: getLiveCloudEnvironment('https://testcloud.comfy.org'),
   allowCheckout: false,
   allowPayments: false,
   allowAccountCreation: false
@@ -205,6 +210,7 @@ describe('production checkout', () => {
         {
           ...config,
           PLAYWRIGHT_SETUP_API_URL: 'https://cloud.comfy.org',
+          environment: getLiveCloudEnvironment('https://cloud.comfy.org'),
           allowCheckout: true
         }
       )
@@ -356,30 +362,77 @@ describe('blocked request violations', () => {
 
 describe('Disposable payment permissions', () => {
   it.for([
-    'https://identitytoolkit.googleapis.com/v1/accounts:signUp',
-    'https://api.stripe.com/v1/payment_methods',
-    'https://checkout.comfy.org/ajax/metrics_batch',
-    'https://api.stripe.com/v1/payment_pages/cs_test_example/confirm'
-  ])('allows %s only for opted-in sandbox tests', (url) => {
-    expect(isLiveCloudMutationAllowed(new URL(url), 'POST', config)).toBe(false)
-    const enabled = {
-      ...config,
-      allowAccountCreation: true,
-      allowPayments: true
+    {
+      url: 'https://identitytoolkit.googleapis.com/v1/accounts:signUp',
+      permission: 'allowAccountCreation',
+      opposite: 'allowPayments'
+    },
+    {
+      url: 'https://api.stripe.com/v1/payment_methods',
+      permission: 'allowPayments',
+      opposite: 'allowAccountCreation'
+    },
+    {
+      url: 'https://checkout.comfy.org/ajax/metrics_batch',
+      permission: 'allowPayments',
+      opposite: 'allowAccountCreation'
+    },
+    {
+      url: 'https://testcloud.comfy.org/api/billing/payment-portal',
+      permission: 'allowPayments',
+      opposite: 'allowAccountCreation'
+    },
+    {
+      url: 'https://api.stripe.com/v1/payment_pages/cs_test_example/confirm',
+      permission: 'allowPayments',
+      opposite: 'allowAccountCreation'
     }
+  ])('requires $permission for $url', ({ url, permission, opposite }) => {
+    const enabled = { ...config, [permission]: true }
+    expect(isLiveCloudMutationAllowed(new URL(url), 'POST', config)).toBe(false)
     expect(isLiveCloudMutationAllowed(new URL(url), 'POST', enabled)).toBe(true)
     expect(
       isLiveCloudMutationAllowed(new URL(url), 'POST', {
-        ...enabled,
-        PLAYWRIGHT_SETUP_API_URL: 'https://cloud.comfy.org'
+        ...config,
+        [opposite]: true
       })
     ).toBe(false)
     expect(
-      isLiveCloudMutationAllowed(
-        new URL(url.replace('cs_test_', 'cs_live_')),
-        'POST',
-        { ...enabled, allowPayments: false, allowAccountCreation: false }
-      )
+      isLiveCloudMutationAllowed(new URL(url), 'POST', {
+        ...enabled,
+        PLAYWRIGHT_SETUP_API_URL: 'https://cloud.comfy.org',
+        environment: getLiveCloudEnvironment('https://cloud.comfy.org')
+      })
     ).toBe(false)
+    expect(isLiveCloudMutationAllowed(new URL(url), 'PUT', enabled)).toBe(false)
+    const wrongOrigin = new URL(url)
+    wrongOrigin.hostname = 'untrusted.example.com'
+    expect(isLiveCloudMutationAllowed(wrongOrigin, 'POST', enabled)).toBe(false)
+    expect(
+      isLiveCloudMutationAllowed(new URL(`${url}/unexpected`), 'POST', enabled)
+    ).toBe(false)
+  })
+})
+
+describe('Live Cloud auxiliary services', () => {
+  it.for([
+    { url: 'https://t.comfy.org/flags/?v=2', method: 'POST', allowed: true },
+    {
+      url: 'https://www.google-analytics.com/g/collect',
+      method: 'POST',
+      allowed: true
+    },
+    { url: 'https://mp.comfy.org/track/', method: 'POST', allowed: true },
+    { url: 'https://cdp.customer.io/v1/i', method: 'POST', allowed: true },
+    {
+      url: 'https://unknown.example.com/collect',
+      method: 'POST',
+      allowed: false
+    },
+    { url: 'https://t.comfy.org/admin', method: 'POST', allowed: false },
+    { url: 'https://t.comfy.org/flags/', method: 'DELETE', allowed: false },
+    { url: 'http://t.comfy.org/flags/', method: 'POST', allowed: false }
+  ])('$method $url allowed=$allowed', ({ url, method, allowed }) => {
+    expect(isLiveCloudAuxiliaryPost(new URL(url), method)).toBe(allowed)
   })
 })

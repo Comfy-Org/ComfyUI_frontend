@@ -1,6 +1,8 @@
 import { zBillingStatusResponse } from '@comfyorg/ingest-types/zod'
 import type { BrowserContext, Page, Route } from '@playwright/test'
+import { expect } from '@playwright/test'
 
+import { OnboardingCoachmarks } from '@e2e/fixtures/components/Tour'
 import { LiveCloudOnboarding } from '@e2e/fixtures/components/LiveCloudOnboarding'
 import { LiveCloudBillingSession } from '@e2e/fixtures/helpers/LiveCloudBillingSession'
 import type { LiveCloudBillingConfig } from '@e2e/fixtures/utils/liveCloudBillingConfig'
@@ -79,8 +81,7 @@ export async function signInToLiveCloud(
 ) {
   if (!config.CLOUD_ACCOUNT_EMAIL || !config.CLOUD_ACCOUNT_PASSWORD)
     throw new Error('Live Cloud sign-in requires account credentials')
-  const onboarding = new LiveCloudOnboarding(page)
-  await onboarding.dismissTutorialsWhenVisible()
+  await new OnboardingCoachmarks(page).dismissWhenVisible()
   await page.goto(`${config.PLAYWRIGHT_TEST_URL}/cloud/login`)
   await page
     .getByRole('button', { name: 'Use email instead', exact: true })
@@ -102,7 +103,16 @@ export async function signInToLiveCloud(
   zBillingStatusResponse.parse(await response.json())
   const authorization = await response.request().headerValue('authorization')
   if (!authorization) throw new Error('Missing billing authorization')
-  await onboarding.completeSurveyIfNeeded(config.PLAYWRIGHT_TEST_URL)
+  if (config.allowAccountCreation) {
+    await new LiveCloudOnboarding(page).completeSurveyIfNeeded(
+      config.PLAYWRIGHT_TEST_URL
+    )
+  } else {
+    await expect(
+      page.locator('#graph-canvas'),
+      'Permanent accounts must complete onboarding when the survey flag is enabled'
+    ).toBeVisible()
+  }
   return new LiveCloudBillingSession(
     page.request,
     config.PLAYWRIGHT_SETUP_API_URL,

@@ -26,7 +26,14 @@ function collectLiveBilling(enabled: '0' | '1', args: string[]) {
       suites: z.array(
         z.object({
           suites: z.array(
-            z.object({ specs: z.array(z.object({ file: z.string() })) })
+            z.object({
+              specs: z.array(
+                z.object({
+                  file: z.string(),
+                  tests: z.array(z.object({ projectName: z.string() }))
+                })
+              )
+            })
           )
         })
       ),
@@ -37,12 +44,11 @@ function collectLiveBilling(enabled: '0' | '1', args: string[]) {
       })
     })
     .parse(JSON.parse(result.stdout))
-  const files = report.suites.flatMap((suite) =>
-    suite.suites.flatMap((child) =>
-      child.specs.map((spec) => spec.file.replaceAll('\\', '/'))
-    )
+  const specs = report.suites.flatMap((suite) =>
+    suite.suites.flatMap((child) => child.specs)
   )
-  return { status: result.status, config: report.config, files }
+  const files = specs.map((spec) => spec.file.replaceAll('\\', '/'))
+  return { status: result.status, config: report.config, files, specs }
 }
 
 describe('Live billing opt-in', () => {
@@ -73,7 +79,7 @@ describe('Live billing opt-in', () => {
     'collects only live billing when enabled $name',
     { timeout: 90_000 },
     ({ args }) => {
-      const { status, config, files } = collectLiveBilling('1', args)
+      const { status, config, files, specs } = collectLiveBilling('1', args)
       expect(status).toBe(0)
       expect(config.projects.map((project) => project.name)).toEqual([
         'cloud-live',
@@ -83,6 +89,15 @@ describe('Live billing opt-in', () => {
       expect(files.every((file) => file.startsWith('tests/liveCloud/'))).toBe(
         true
       )
+      for (const spec of specs) {
+        const file = spec.file.replaceAll('\\', '/')
+        const project = file.startsWith('tests/liveCloud/disposable/')
+          ? 'cloud-live-disposable'
+          : file.startsWith('tests/liveCloud/paid/')
+            ? 'cloud-live-paid'
+            : 'cloud-live'
+        expect(spec.tests.map((test) => test.projectName)).toEqual([project])
+      }
       const expectedFiles = globSync(
         'browser_tests/tests/liveCloud/**/*.spec.ts'
       ).map((file) => file.replace('browser_tests/', '').replaceAll('\\', '/'))

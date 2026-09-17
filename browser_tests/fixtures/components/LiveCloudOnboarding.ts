@@ -2,34 +2,32 @@ import { expect } from '@playwright/test'
 import type { Locator, Page } from '@playwright/test'
 
 export class LiveCloudOnboarding {
-  constructor(private readonly page: Page) {}
+  public readonly survey: Locator
+  public readonly canvas: Locator
+  public readonly next: Locator
+  public readonly submit: Locator
+  public readonly option: Locator
+  public readonly text: Locator
 
-  async dismissTutorialsWhenVisible() {
-    for (const testId of ['coach-landing', 'coach-card']) {
-      await this.page.addLocatorHandler(
-        this.page.getByTestId(testId),
-        async (dialog) => {
-          await dialog
-            .getByRole('button', { name: 'Skip', exact: true })
-            .click()
-        }
-      )
-    }
-  }
-
-  async completeSurveyIfNeeded(frontend: string) {
-    const survey = this.page.getByRole('heading', {
+  constructor(private readonly page: Page) {
+    this.survey = page.getByRole('heading', {
       name: "Let's get to know you",
       exact: true
     })
-    const canvas = this.page.locator('#graph-canvas')
+    this.canvas = page.locator('#graph-canvas')
+    this.next = page.getByRole('button', { name: 'Next', exact: true })
+    this.submit = page.getByRole('button', { name: 'Submit', exact: true })
+    this.option = page
+      .getByRole('button', { pressed: false })
+      .and(page.locator('[aria-pressed="false"]:not([id$="-other"])'))
+      .first()
+    this.text = page.getByRole('textbox')
+  }
+
+  async completeSurveyIfNeeded(frontend: string) {
+    const { survey, canvas, next, submit } = this
     await expect(survey.or(canvas)).toBeVisible()
     if (await survey.isVisible()) {
-      const next = this.page.getByRole('button', { name: 'Next', exact: true })
-      const submit = this.page.getByRole('button', {
-        name: 'Submit',
-        exact: true
-      })
       for (let step = 0; step < 20; step++) {
         if (await this.answerSurveyQuestion(next, submit)) break
       }
@@ -52,11 +50,7 @@ export class LiveCloudOnboarding {
   }
 
   private async answerSurveyQuestion(next: Locator, submit: Locator) {
-    const option = this.page
-      .getByRole('button', { pressed: false })
-      .and(this.page.locator(':not([id$="-other"])'))
-      .first()
-    const text = this.page.getByRole('textbox')
+    const { option, text } = this
     await expect(option.or(text)).toBeVisible()
     const control = (await option.isVisible()) ? option : text
     const id = await control.getAttribute('id')
