@@ -89,8 +89,11 @@ export interface SubscriptionCommandOutcome {
    * The `status` the subscribe response carried, before the lifecycle settled
    * the operation: `subscribed` is a plan the server activated on the spot,
    * the other two are payment steps it could not complete without the
-   * customer. Absent for every other command, and for a subscribe that
-   * adopted an operation the server was already settling.
+   * customer. Absent for every other command, and whenever this call read no
+   * subscribe response at all: `begin` adopted an operation the server was
+   * already settling, or joined one another `subscription` command had in
+   * flight. Both land on `requiredPayment: true`, the side an operation the
+   * server is mid-payment on belongs to.
    */
   readonly issuedStatus?: SubscribeIssuedStatus
 }
@@ -302,8 +305,9 @@ export function createBillingCommands(
   ): Promise<SubscriptionCommandResult> {
     // The lifecycle carries only the shared codes; the command's own verdict
     // and what it read off the issuing response wait here for `begin` to
-    // return. Both stay unset when `begin` adopted an operation the server was
-    // already settling instead of issuing this one.
+    // return. Both stay unset whenever `begin` never ran this caller's issue:
+    // it adopted an operation the server was already settling, or joined one
+    // another command of the same kind had in flight.
     const verdict: { value?: Exclude<IssueOutcome, { status: 'ok' }> } = {}
     const issued: { value?: IssuedOutcome } = {}
     const began = await lifecycle.begin(kind, async () => {

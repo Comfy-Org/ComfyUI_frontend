@@ -146,7 +146,12 @@ export type SessionSnapshot<TUser extends AccountUser = AccountUser> =
     }
 
 export interface SessionClient<TUser extends AccountUser = AccountUser> {
-  /** Detaches the constructed identity; the persisted credential stays until `clearStoredCredential`. */
+  /**
+   * Detaches the constructed identity; the persisted credential stays until
+   * `clearStoredCredential`. Not terminal: an explicit-user mint issued after
+   * `dispose()` still commits and can re-arm the scheduler and cross-tab
+   * lease, so dispose and then stop calling the client.
+   */
   dispose: () => void
   getSnapshot: () => SessionSnapshot<TUser>
   subscribe: (
