@@ -562,10 +562,7 @@ export function useWorkspaceBilling(): BillingState & BillingActions {
       const url = await onSubscriptionRail(() =>
         rail.openPaymentPortal(window.location.href)
       )
-      if (url !== DECLINED) {
-        openPortalWindow(url)
-        return
-      }
+      if (url !== DECLINED && openPortalWindow(url)) return
     }
 
     isLoading.value = true

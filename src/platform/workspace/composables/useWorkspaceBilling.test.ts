@@ -940,7 +940,7 @@ describe('useWorkspaceBilling', () => {
       ['the legacy client', false, 'https://billing.example/portal'],
       ['the SDK rail', true, 'https://billing.example/sdk-portal']
     ] as const)(
-      'falls through to %s when the hosted tab is blocked',
+      'attempts %s when the hosted tab is blocked',
       async ([, railEnabled, fallbackUrl]) => {
         const openSpy = vi.fn(() => null)
         vi.stubGlobal('open', openSpy)
@@ -962,9 +962,33 @@ describe('useWorkspaceBilling', () => {
           'https://billing.comfy.org/v1/payment-methods?product=comfyui&return_to=comfyui_workspace',
           '_blank'
         )
-        expect(openSpy).toHaveBeenLastCalledWith(fallbackUrl, '_blank')
+        expect(openSpy).toHaveBeenCalledWith(fallbackUrl, '_blank')
       }
     )
+
+    it('reaches the legacy portal when the hosted tab and the rail are both blocked', async () => {
+      const openSpy = vi.fn(() => null)
+      vi.stubGlobal('open', openSpy)
+      vi.stubEnv('VITE_BILLING_WEB_URL', 'https://billing.comfy.org')
+      localStorage.setItem('ff:hosted_billing_destination', '"billing_web"')
+      mockRail.enabled = true
+      mockRail.openPaymentPortal.mockResolvedValue({
+        status: 'ok',
+        value: 'https://billing.example/sdk-portal'
+      })
+      mockWorkspaceApi.getPaymentPortalUrl.mockResolvedValue({
+        url: 'https://billing.example/portal'
+      })
+
+      const billing = setupBilling()
+      await billing.manageSubscription()
+
+      expect(mockWorkspaceApi.getPaymentPortalUrl).toHaveBeenCalledTimes(1)
+      expect(openSpy).toHaveBeenLastCalledWith(
+        'https://billing.example/portal',
+        '_blank'
+      )
+    })
 
     it('clears a failure from the previous attempt when the hosted route opens', async () => {
       vi.stubGlobal(

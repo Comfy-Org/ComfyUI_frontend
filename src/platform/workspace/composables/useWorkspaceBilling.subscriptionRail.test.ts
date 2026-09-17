@@ -165,7 +165,8 @@ beforeEach(() => {
     status: 'subscribed'
   })
   vi.spyOn(workspaceApi, 'previewSubscribe').mockResolvedValue(LEGACY_QUOTE)
-  vi.spyOn(window, 'open').mockReturnValue(null)
+  // A tab that opens, so these routing tests are not all reading as blocked.
+  vi.spyOn(window, 'open').mockReturnValue(window)
   vi.mocked(useBillingOperationStore().startOperation).mockResolvedValue({
     status: 'succeeded'
   } as never)
