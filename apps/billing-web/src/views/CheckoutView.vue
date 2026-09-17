@@ -117,8 +117,6 @@ const paymentMethodConfigurationId = computed(
   () => preview.value?.payment_method_configuration_id ?? ''
 )
 
-const canSubmit = computed(() => preview.value?.allowed ?? false)
-
 const publishableKey = STRIPE_PUBLISHABLE_KEY ?? ''
 
 const quoting = computed(() => loading.value && summary.value === undefined)
