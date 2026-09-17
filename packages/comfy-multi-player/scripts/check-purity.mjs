@@ -24,7 +24,7 @@ import { existsSync, readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
-const root = dirname(dirname(fileURLToPath(import.meta.url)));
+const root = process.env.PURITY_ROOT ?? dirname(dirname(fileURLToPath(import.meta.url)));
 
 /** Banned dependency names. Exact-match strings or RegExp tested on the name. */
 const BANNED = [

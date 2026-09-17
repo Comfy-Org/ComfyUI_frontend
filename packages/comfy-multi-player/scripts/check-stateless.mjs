@@ -13,7 +13,7 @@ import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
-const root = dirname(dirname(fileURLToPath(import.meta.url)));
+const root = process.env.STATELESS_ROOT ?? dirname(dirname(fileURLToPath(import.meta.url)));
 const config = join(root, ".agents/checks/eslint.strict.config.js");
 const sourceFiles = readdirSync(join(root, "src"), { recursive: true })
   .filter((file) => typeof file === "string" && file.endsWith(".ts"))
