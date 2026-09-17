@@ -224,5 +224,7 @@ export const externalLinks = {
 type ApiKeysSource = { source: 'router' } | { source: 'model'; model: string }
 
 export function apiKeysLink(from: ApiKeysSource): string {
-  return `${externalLinks.apiKeys}?${new URLSearchParams(from)}`
+  const url = new URL(externalLinks.apiKeys)
+  url.search = new URLSearchParams(from).toString()
+  return url.href
 }

@@ -86,6 +86,6 @@ describe('apiKeysLink', () => {
     }
   ])('names the source in the query: $from.source', ({ from, href }) => {
     expect(apiKeysLink(from)).toBe(href)
-    expect(href.startsWith(externalLinks.apiKeys)).toBe(true)
+    expect(apiKeysLink(from).startsWith(externalLinks.apiKeys)).toBe(true)
   })
 })
