@@ -11,6 +11,7 @@ import { Load3DHelper } from '@e2e/tests/load3d/Load3DHelper'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 
 const test = cloudAppFixture
+const APP_URL = process.env.PLAYWRIGHT_TEST_URL || 'http://localhost:8188'
 const WORKFLOW_ID = 'a81718a4-02ae-41e6-ae85-c33b7bb880f6'
 const THREAD_ID = 'd4c016c4-3b8c-44cf-97de-1ae27e43e718'
 
@@ -86,7 +87,7 @@ async function bootAgentLoad3d(page: Page): Promise<void> {
     )
   })
   await bootCloud(page)
-  await page.goto('http://localhost:5173?agentCrdtFollower=1')
+  await page.goto(new URL('/?agentCrdtFollower=1', APP_URL).toString())
   await waitForCloudApp(page)
   await page.evaluate(
     async (data) => {
@@ -110,33 +111,43 @@ async function captureNextPrompt(page: Page): Promise<string> {
 async function setRemoteModel(page: Page, value: string, opId: string) {
   await page.evaluate(
     async ({ value, opId }) => {
-      const [
-        { createGraphMutations },
-        { toNodeId },
-        { toRootGraphId, toOwningGraphId },
-        { useWorkflowStore }
-      ] = await Promise.all([
-        // @ts-expect-error Vite resolves this browser-only module URL.
-        import('/src/core/graph/graphMutations.ts'),
-        // @ts-expect-error Vite resolves this browser-only module URL.
-        import('/src/types/nodeId.ts'),
-        // @ts-expect-error Vite resolves this browser-only module URL.
-        import('/src/types/graphScopeId.ts'),
-        // @ts-expect-error Vite resolves this browser-only module URL.
-        import('/src/platform/workflow/management/stores/workflowStore.ts')
-      ])
-      const graphId = useWorkflowStore().activeWorkflow?.activeState?.id
-      if (!graphId) throw new Error('active workflow has no graph id')
-      createGraphMutations({
-        getScope: () => ({
-          rootGraphId: toRootGraphId(graphId),
-          owningGraphId: toOwningGraphId(graphId)
+      const root = document.querySelector('#vue-app') as Element & {
+        __vue_app__?: {
+          _context: { provides: Record<PropertyKey, unknown> }
+        }
+      }
+      const pinia = Reflect.ownKeys(root.__vue_app__?._context.provides ?? {})
+        .map(
+          (key) =>
+            root.__vue_app__?._context.provides[key] as
+              | { _s?: Map<string, unknown> }
+              | undefined
+        )
+        .find((candidate) => candidate?._s instanceof Map)
+      const widgetStore = pinia?._s?.get('widgetValue') as
+        | {
+            setValue: (
+              id: string,
+              nextValue: string,
+              context: Record<string, string>
+            ) => boolean
+          }
+        | undefined
+      const modelWidget = window
+        .app!.graph.getNodeById('1' as never)
+        ?.widgets?.find((widget) => widget.name === 'model_file')
+      if (!widgetStore || !modelWidget?.widgetId) {
+        throw new Error('model_file widget store binding unavailable')
+      }
+      if (
+        !widgetStore.setValue(modelWidget.widgetId, value, {
+          source: 'agent-remote',
+          actor: 'agent:e2e',
+          opId
         })
-      }).setWidget(toNodeId(1), 'model_file', value, {
-        source: 'agent-remote',
-        actor: 'agent:e2e',
-        opId
-      })
+      ) {
+        throw new Error('remote model_file update was not applied')
+      }
     },
     { value, opId }
   )
