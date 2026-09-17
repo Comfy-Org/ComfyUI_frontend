@@ -13,7 +13,13 @@
     "typecheck": "vue-tsc --noEmit -p tsconfig.json"
   },
   "dependencies": {
+    "@comfyorg/account-core": "workspace:*",
+    "@comfyorg/account-ui": "workspace:*",
+    "@comfyorg/billing-contract": "workspace:*",
     "@comfyorg/design-system": "workspace:*",
+    "@comfyorg/tailwind-utils": "workspace:*",
+    "@vueuse/core": "catalog:",
+    "firebase": "catalog:",
     "vue": "catalog:",
     "vue-i18n": "catalog:",
     "vue-router": "catalog:"

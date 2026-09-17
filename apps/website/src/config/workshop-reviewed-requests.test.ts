@@ -27,6 +27,23 @@ function image(name = 'source.png') {
 }
 
 describe('reviewed model request regressions', () => {
+  it('sends GPT Image source images as Router media entries', () => {
+    expect(
+      prepareWorkshopRequestCallback(
+        { kind: 'callback', callback: 'gpt-image', options: {} },
+        {
+          values: { prompt: 'Restyle this image' },
+          files: {
+            images: [{ data: 'AAH/Ig==', mimeType: 'image/png' }]
+          }
+        }
+      )
+    ).toEqual({
+      prompt: 'Restyle this image',
+      medias: [{ role: 'image', value: 'data:image/png;base64,AAH/Ig==' }]
+    })
+  })
+
   it('preserves reference image order beyond the originally hardcoded three inputs', () => {
     const urls = {
       image_url_10: 'ten',

@@ -1,9 +1,8 @@
 import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { ref } from 'vue'
 
+import { useAppMode } from '@/composables/useAppMode'
 import { useTelemetry } from '@/platform/telemetry'
-
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useAppModeStore } from '@/stores/appModeStore'
 import { useDialogStore } from '@/stores/dialogStore'
@@ -15,7 +14,6 @@ beforeEach(() => {
   vi.mocked(useDialogStore().closeDialog).mockImplementation(() => {})
 })
 
-const mockSetMode = vi.hoisted(() => vi.fn())
 const mockToastErrorHandler = vi.hoisted(() => vi.fn())
 
 const mockSaveWorkflow = vi.hoisted(() => vi.fn<() => Promise<void>>())
@@ -25,15 +23,7 @@ const mockSaveWorkflowAs = vi.hoisted(() =>
 const mockShowLayoutDialog = vi.hoisted(() => vi.fn())
 const mockShowConfirmDialog = vi.hoisted(() => vi.fn())
 
-vi.mock<unknown>(import('@/composables/useAppMode'), () => ({
-  useAppMode: () => ({
-    setMode: mockSetMode,
-    mode: ref('builder:inputs'),
-    isAppMode: ref(false),
-    isBuilderMode: ref(true),
-    isSelectMode: ref(false)
-  })
-}))
+vi.mock(import('@/composables/useAppMode'))
 
 vi.mock<unknown>(import('@/composables/useErrorHandling'), () => ({
   useErrorHandling: () => ({ toastErrorHandler: mockToastErrorHandler })
@@ -354,7 +344,7 @@ describe('useBuilderSave', () => {
       expect(useTelemetry()?.trackEnterLinear).toHaveBeenCalledWith({
         source: 'app_builder'
       })
-      expect(mockSetMode).toHaveBeenCalledWith('app')
+      expect(useAppMode().setMode).toHaveBeenCalledWith('app')
     })
   })
 })
