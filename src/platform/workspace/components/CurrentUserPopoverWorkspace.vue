@@ -394,8 +394,10 @@ const handleOpenWorkspaceSettings = () => {
 
 /**
  * `noopener` returns a null handle even on success, so the blocked tab and the
- * opened one are told apart by opening a blank tab and disowning it by hand
- * before it leaves `about:blank`.
+ * opened one are told apart by opening a blank tab and clearing `opener` by
+ * hand before it leaves `about:blank`. Only that one property survives: the
+ * tab stays in this page's browsing-context group and sends this origin as
+ * the referrer, both of which `'noopener,noreferrer'` would have prevented.
  */
 const openDisownedTab = (url: URL): boolean => {
   const tab = window.open('', '_blank')
