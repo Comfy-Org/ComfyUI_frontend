@@ -403,6 +403,12 @@ test.describe('Subgraph Slots', { tag: ['@slow', '@subgraph'] }, () => {
     'Subgraph input slot rename propagation',
     { tag: '@vue-nodes' },
     () => {
+      test.beforeEach(() => {
+        // @slow on the parent describe is a grep tag only; Chromium still uses
+        // the 15s project timeout unless test.slow() runs (same class as #17887).
+        test.slow()
+      })
+
       test.use({
         initialSettings: {
           'Comfy.NodeSearchBoxImpl': 'v1 (legacy)'
