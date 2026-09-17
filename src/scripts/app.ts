@@ -1609,7 +1609,7 @@ export class ComfyApp {
         let models: MissingModelCandidate[] | undefined
         let media: MissingMediaCandidate[] | undefined
         const reconcile = () => {
-          if (!resourceScanLoadCompleted || !models || !media) return
+          if (!resourceScanLoadCompleted || (!models && !media)) return
           errorStore.retireResolvedMissingResourceErrors(
             { models, media },
             resourceScanKey

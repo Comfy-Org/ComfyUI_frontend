@@ -3,6 +3,7 @@ import { computed, ref, toRaw, watch } from 'vue'
 import { whenever } from '@vueuse/core'
 
 import { classifyValidationErrorAbsorption } from '@/components/rightSidePanel/errors/missingResourceAbsorption'
+import type { MissingResourceAbsorption } from '@/components/rightSidePanel/errors/missingResourceAbsorption'
 
 import { useNodeErrorFlagSync } from '@/composables/graph/useNodeErrorFlagSync'
 import {
@@ -62,12 +63,15 @@ interface ValidationErrorSurface {
 }
 
 interface MissingResourceCandidates {
-  models: MissingModelCandidate[] | null
-  media: MissingMediaCandidate[] | null
+  models?: MissingModelCandidate[] | null
+  media?: MissingMediaCandidate[] | null
 }
 
 interface RunErrorState {
-  absorbedValidationErrors: WeakSet<NodeValidationError>
+  absorbedValidationErrors: WeakMap<
+    NodeValidationError,
+    MissingResourceAbsorption
+  >
   nodeErrors: Record<string, NodeError> | null
   executionError: ExecutionErrorWsMessage | null
   promptError: PromptError | null
@@ -110,7 +114,7 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
     if (key === null) return
 
     const next: RunErrorState = {
-      absorbedValidationErrors: new WeakSet(),
+      absorbedValidationErrors: new WeakMap(),
       nodeErrors: null,
       executionError: null,
       promptError: null,
@@ -277,13 +281,20 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
     { flush: 'sync' }
   )
 
-  function matchesMissingResource(
+  function classifyMissingResource(
     surfaces: ValidationErrorSurface[],
     { models, media }: MissingResourceCandidates
-  ) {
-    return surfaces.some(({ executionId, error }) =>
-      classifyValidationErrorAbsorption(models, media, error, executionId)
-    )
+  ): MissingResourceAbsorption | null {
+    for (const { executionId, error } of surfaces) {
+      const kind = classifyValidationErrorAbsorption(
+        models ?? null,
+        media ?? null,
+        error,
+        executionId
+      )
+      if (kind) return kind
+    }
+    return null
   }
 
   /**
@@ -329,14 +340,23 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
     }
     const updated = filterNodeErrors(record, (surfaces, error) => {
       const rawError = toRaw(error)
-      if (matchesMissingResource(surfaces, current)) {
-        state.absorbedValidationErrors.add(rawError)
+      const kind = classifyMissingResource(surfaces, current)
+      if (kind) {
+        state.absorbedValidationErrors.set(rawError, kind)
         return true
       }
       const wasAbsorbed = previous
-        ? matchesMissingResource(surfaces, previous)
-        : state.absorbedValidationErrors.has(rawError)
-      return !wasAbsorbed || matchesMissingResource(surfaces, possiblyMissing)
+        ? classifyMissingResource(surfaces, previous)
+        : state.absorbedValidationErrors.get(rawError)
+      if (!wasAbsorbed) return true
+      const wasVerified =
+        wasAbsorbed === 'missing_model'
+          ? models !== undefined
+          : media !== undefined
+      return (
+        !wasVerified ||
+        classifyMissingResource(surfaces, possiblyMissing) !== null
+      )
     })
     if (updated !== record) updateRunErrors({ nodeErrors: updated }, key)
   }
@@ -408,7 +428,7 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
     const record =
       nodeErrors && Object.keys(nodeErrors).length > 0 ? nodeErrors : null
     updateRunErrors(
-      { nodeErrors: record, absorbedValidationErrors: new WeakSet() },
+      { nodeErrors: record, absorbedValidationErrors: new WeakMap() },
       key
     )
     if (record && key !== null && key === activeRunErrorKey.value) {

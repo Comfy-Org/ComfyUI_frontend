@@ -46,6 +46,8 @@ import Load3dUtils from '@/extensions/core/load3d/Load3dUtils'
 import { getWorkflowDataFromFile } from '@/scripts/metadata/parser'
 import { runMissingModelPipeline } from '@/platform/missingModel/missingModelPipeline'
 import * as missingMediaPipeline from '@/platform/missingMedia/missingMediaPipeline'
+import * as missingMediaScan from '@/platform/missingMedia/missingMediaScan'
+import { useMissingMediaStore } from '@/platform/missingMedia/missingMediaStore'
 import type { MissingMediaCandidate } from '@/platform/missingMedia/types'
 import type { MissingModelCandidate } from '@/platform/missingModel/types'
 import { nodeError, validationError } from '@/utils/__tests__/nodeErrorHelpers'
@@ -340,14 +342,82 @@ describe('ComfyApp', () => {
         expect(finishModels).toBeTypeOf('function')
         expect(finishMedia).toBeTypeOf('function')
         finishModels?.([])
-        expect(store.lastNodeErrors?.['1'].errors).toEqual([
-          absorbed,
-          unrelated
-        ])
+        expect(store.lastNodeErrors?.['1'].errors).toEqual([unrelated])
         finishMedia?.([])
         expect(store.lastNodeErrors?.['1'].errors).toEqual([unrelated])
       }
     )
+
+    it('retires verified model errors while preserving errors from failed media verification', async () => {
+      app.canvasElRef.value = document.createElement('canvas')
+      Reflect.set(app, 'rootGraphInternal', new LGraph())
+      const store = useExecutionErrorStore()
+      const graphId = '11111111-1111-4111-8111-111111111111'
+      store.setActiveGraph(graphId)
+      useMissingModelStore().setMissingModels([
+        {
+          nodeId: createNodeExecutionId([1]),
+          nodeType: 'CheckpointLoaderSimple',
+          widgetName: 'ckpt_name',
+          name: 'model.safetensors',
+          isAssetSupported: false,
+          isMissing: true
+        }
+      ])
+      const media: MissingMediaCandidate = {
+        nodeId: createNodeExecutionId([2]),
+        nodeType: 'LoadImage',
+        widgetName: 'image',
+        name: 'portrait.png',
+        mediaType: 'image',
+        isMissing: true
+      }
+      useMissingMediaStore().setMissingMedia([media])
+      const mediaError = validationError('value_not_in_list', 'image', {
+        received_value: 'portrait.png'
+      })
+      const unrelated = validationError('required_input_missing', 'positive')
+      store.recordNodeErrors({
+        '1': nodeError([
+          validationError('value_not_in_list', 'ckpt_name', {
+            received_value: 'model.safetensors'
+          }),
+          unrelated
+        ]),
+        '2': nodeError([mediaError])
+      })
+      mockWorkflowService.afterLoadNewGraph.mockImplementation(async () => {
+        store.setActiveGraph(graphId)
+      })
+      vi.mocked(runMissingModelPipeline).mockImplementation(
+        async ({ onVerified }) => {
+          onVerified?.([])
+          return { missingModels: [], confirmedCandidates: [] }
+        }
+      )
+      vi.spyOn(missingMediaScan, 'scanAllMediaCandidates').mockReturnValue([
+        { ...media, isMissing: undefined }
+      ])
+      vi.spyOn(
+        missingMediaScan,
+        'isMissingMediaCandidateScopeActive'
+      ).mockReturnValue(true)
+      vi.spyOn(missingMediaScan, 'verifyMediaCandidates').mockRejectedValue(
+        new Error('asset service unavailable')
+      )
+
+      await app.loadGraphData(createWorkflowGraphData(), false, true, null)
+
+      await vi.waitFor(() => {
+        expect(useToastStore().add).toHaveBeenCalledWith(
+          expect.objectContaining({ severity: 'warn' })
+        )
+      })
+      expect(store.lastNodeErrors).toEqual({
+        '1': nodeError([unrelated]),
+        '2': nodeError([mediaError])
+      })
+    })
 
     it('forwards clean and navigation intent to workflow navigation', async () => {
       app.canvasElRef.value = document.createElement('canvas')

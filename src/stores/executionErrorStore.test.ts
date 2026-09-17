@@ -1115,6 +1115,44 @@ describe('absorbed-error retirement on candidate resolution', () => {
     expect(store.lastNodeErrors).toBeNull()
   })
 
+  it.for([
+    { verified: { models: [] }, remainingInput: 'image' },
+    { verified: { media: [] }, remainingInput: 'ckpt_name' }
+  ])(
+    'preserves unverified $remainingInput errors when the other resource resolves',
+    ({ verified, remainingInput }) => {
+      const store = useExecutionErrorStore()
+      useMissingModelStore().setMissingModels([absorbedModelCandidate()])
+      useMissingMediaStore().setMissingMedia([
+        {
+          nodeId: execId,
+          nodeType: 'LoadImage',
+          widgetName: 'image',
+          mediaType: 'image',
+          name: 'portrait.png',
+          isMissing: true
+        }
+      ])
+      store.recordNodeErrors({
+        '1': nodeError([
+          absorbedError(),
+          validationError('value_not_in_list', 'image', {
+            received_value: 'portrait.png'
+          }),
+          blockingError()
+        ])
+      })
+
+      store.retireResolvedMissingResourceErrors(verified)
+
+      expect(
+        store.lastNodeErrors?.['1'].errors.map(
+          (error) => error.extra_info?.input_name
+        )
+      ).toEqual([remainingInput, 'positive'])
+    }
+  )
+
   it('ignores verification completed for a different workflow', () => {
     const store = useExecutionErrorStore()
     const previousKey = store.captureRunErrorKey()
