@@ -1,16 +1,10 @@
-import { fromPartial } from '@total-typescript/shoehorn'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
 import { useAuthStore } from '@/stores/authStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useWorkspaceAuthStore } from '@/platform/workspace/stores/workspaceAuthStore'
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import type { Auth } from 'firebase/auth'
-import {
-  initializeAuth,
-  onAuthStateChanged,
-  onIdTokenChanged
-} from 'firebase/auth'
+
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
@@ -22,16 +16,17 @@ import {
   remoteConfigState
 } from '@/platform/remoteConfig/remoteConfig'
 
-import { stubAccountIdentityPort } from '@/utils/__tests__/stubAccountIdentityPort'
+import {
+  stubAccountIdentityPort,
+  stubFirebaseAuthHarness
+} from '@/utils/__tests__/stubAccountIdentityPort'
 
 import WorkspaceAuthGate from './WorkspaceAuthGate.vue'
 
 vi.mock(import('firebase/auth'), { spy: true })
 
 beforeEach(() => {
-  vi.mocked(initializeAuth).mockReturnValue(fromPartial<Auth>({}))
-  vi.mocked(onAuthStateChanged).mockImplementation(vi.fn())
-  vi.mocked(onIdTokenChanged).mockImplementation(vi.fn())
+  stubFirebaseAuthHarness()
   stubAccountIdentityPort()
 })
 

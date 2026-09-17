@@ -34,71 +34,69 @@ async function loadFresh() {
 const defaultApp = fromPartial<FirebaseApp>({ name: '[DEFAULT]' })
 const signedIn = fromPartial<User>({ uid: 'user-1' })
 
+/** Identity checks: the mock persistences are structurally alike, so equality could not tell the order apart. */
+function expectPersistenceHierarchy(
+  sdk: Pick<
+    Awaited<ReturnType<typeof loadFresh>>,
+    | 'initializeAuth'
+    | 'browserLocalPersistence'
+    | 'browserSessionPersistence'
+    | 'indexedDBLocalPersistence'
+    | 'browserPopupRedirectResolver'
+  >
+) {
+  expect(sdk.initializeAuth).toHaveBeenCalledWith(
+    defaultApp,
+    expect.objectContaining({
+      popupRedirectResolver: sdk.browserPopupRedirectResolver
+    })
+  )
+  const persistence = vi.mocked(sdk.initializeAuth).mock.lastCall?.[1]
+    ?.persistence
+  assert(Array.isArray(persistence))
+  expect(persistence).toHaveLength(3)
+  expect(persistence[0]).toBe(sdk.browserLocalPersistence)
+  expect(persistence[1]).toBe(sdk.indexedDBLocalPersistence)
+  expect(persistence[2]).toBe(sdk.browserSessionPersistence)
+}
+
 describe('firebaseIdentity', () => {
   beforeEach(() => {
     window.history.replaceState({}, '', '/')
   })
 
   it('initializes the default app from the remote config present at initialize(), not at import, reading localStorage, then the IndexedDB store vuefire persisted sessions in, then session storage, with the popup resolver', async () => {
-    const {
-      firebaseIdentity,
-      initializeApp,
-      initializeAuth,
-      browserLocalPersistence,
-      browserSessionPersistence,
-      indexedDBLocalPersistence,
-      browserPopupRedirectResolver,
-      remoteConfig,
-      remoteConfigState
-    } = await loadFresh()
+    const sdk = await loadFresh()
+    const { firebaseIdentity, initializeApp, initializeAuth } = sdk
     vi.mocked(initializeApp).mockReturnValue(defaultApp)
     vi.mocked(initializeAuth).mockReturnValue(
       fromPartial<Auth>({ currentUser: signedIn })
     )
-    remoteConfigState.value = 'anonymous'
-    remoteConfig.value = {
-      ...remoteConfig.value,
+    sdk.remoteConfigState.value = 'anonymous'
+    sdk.remoteConfig.value = {
+      ...sdk.remoteConfig.value,
       firebase_config: RUNTIME_CONFIG
     }
 
     firebaseIdentity.initialize()
 
     expect(initializeApp).toHaveBeenCalledWith(RUNTIME_CONFIG, '[DEFAULT]')
-    expect(initializeAuth).toHaveBeenCalledWith(defaultApp, {
-      persistence: [
-        browserLocalPersistence,
-        indexedDBLocalPersistence,
-        browserSessionPersistence
-      ],
-      popupRedirectResolver: browserPopupRedirectResolver
-    })
-    const persistence =
-      vi.mocked(initializeAuth).mock.lastCall?.[1]?.persistence
-    assert(Array.isArray(persistence))
-    expect(persistence[0]).toBe(browserLocalPersistence)
-    expect(persistence[1]).toBe(indexedDBLocalPersistence)
+    expectPersistenceHierarchy(sdk)
     expect(firebaseIdentity.currentUser()).toBe(signedIn)
   })
 
-  it('refuses to resolve while remote config is still unloaded instead of booting on build-time config', async () => {
-    const { firebaseIdentity, initializeApp, remoteConfigState } =
-      await loadFresh()
-    remoteConfigState.value = 'unloaded'
-    vi.spyOn(console, 'error').mockImplementation(() => {})
+  it.for([{ dev: true }, { dev: false }])(
+    'refuses to resolve while remote config is still unloaded instead of booting on build-time config (DEV: $dev)',
+    async ({ dev }) => {
+      vi.stubEnv('DEV', dev)
+      const { firebaseIdentity, initializeApp, remoteConfigState } =
+        await loadFresh()
+      remoteConfigState.value = 'unloaded'
 
-    expect(() => firebaseIdentity.initialize()).toThrow(/remote config/)
-    expect(initializeApp).not.toHaveBeenCalled()
-  })
-
-  it('refuses to resolve while remote config is unloaded outside DEV too, where a soft assertion would report and boot on build-time config', async () => {
-    vi.stubEnv('DEV', false)
-    const { firebaseIdentity, initializeApp, remoteConfigState } =
-      await loadFresh()
-    remoteConfigState.value = 'unloaded'
-
-    expect(() => firebaseIdentity.initialize()).toThrow(/remote config/)
-    expect(initializeApp).not.toHaveBeenCalled()
-  })
+      expect(() => firebaseIdentity.initialize()).toThrow(/remote config/)
+      expect(initializeApp).not.toHaveBeenCalled()
+    }
+  )
 
   it('boots on the build-time fallback config, without asserting, when the config fetch failed', async () => {
     const {
@@ -124,17 +122,14 @@ describe('firebaseIdentity', () => {
   })
 
   it('initializes Auth on an existing [DEFAULT] app with the same persistence list and popup resolver instead of taking whatever its creator chose', async () => {
+    const sdk = await loadFresh()
     const {
       firebaseIdentity,
       getApps,
       getAuth,
       initializeApp,
-      initializeAuth,
-      browserLocalPersistence,
-      browserSessionPersistence,
-      indexedDBLocalPersistence,
-      browserPopupRedirectResolver
-    } = await loadFresh()
+      initializeAuth
+    } = sdk
     vi.mocked(getApps).mockReturnValue([defaultApp])
     vi.mocked(initializeAuth).mockReturnValue(
       fromPartial<Auth>({ currentUser: signedIn })
@@ -142,14 +137,7 @@ describe('firebaseIdentity', () => {
 
     firebaseIdentity.initialize()
 
-    expect(initializeAuth).toHaveBeenCalledWith(defaultApp, {
-      persistence: [
-        browserLocalPersistence,
-        indexedDBLocalPersistence,
-        browserSessionPersistence
-      ],
-      popupRedirectResolver: browserPopupRedirectResolver
-    })
+    expectPersistenceHierarchy(sdk)
     expect(firebaseIdentity.currentUser()).toBe(signedIn)
     expect(initializeApp).not.toHaveBeenCalled()
     expect(getAuth).not.toHaveBeenCalled()
