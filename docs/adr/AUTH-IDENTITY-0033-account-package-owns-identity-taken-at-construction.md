@@ -51,14 +51,21 @@ inert behind `unified_cloud_auth`:
    rejections that land after deactivation. Construct-with-identity holds
    without eager Firebase.
 5. **Package-initialized Firebase.** The cloud app's identity module creates
-   the `[DEFAULT]` app from remote config with `browserLocalPersistence`
-   through the package entry; vuefire no longer initializes Firebase, and
+   the `[DEFAULT]` app from remote config through the package entry, with an
+   ordered persistence hierarchy (`browserLocalPersistence`, then
+   `indexedDBLocalPersistence`, the store vuefire persisted into, then
+   `browserSessionPersistence`) so an existing session is restored from any
+   of them and settles in localStorage, and with
+   `browserPopupRedirectResolver`, which `initializeAuth` does not wire on its
+   own and popup sign-in needs; vuefire no longer initializes Firebase, and
    `main.ts` calls `initialize()` explicitly after remote config loads.
 6. **Seam deletion (this slice).** `attachIdentity`, `AttachIdentityOptions`,
    and the `isAccountIdentity` runtime gate are removed. The `AccountIdentity`
-   brand, mintable only by the package's Firebase entry, `createLazyIdentity`,
-   and the `testing` seam, makes a hand-rolled port a compile error; no
-   runtime check remains.
+   brand is a compile-time gate only: the package's Firebase entry and
+   `createLazyIdentity` mint it, and the `testing` seam deliberately exposes
+   the minter as `createTestIdentity` for fakes. A hand-rolled port is a
+   compile error; no runtime check remains, so a JavaScript consumer is not
+   stopped.
    Re-attaching or replacing an identity is no longer a behavior the client
    has.
 
