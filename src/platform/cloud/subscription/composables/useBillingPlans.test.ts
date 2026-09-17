@@ -237,6 +237,35 @@ describe('useBillingPlans', () => {
       expect(isLoading.value).toBe(false)
     })
 
+    it('leaves a reported failure standing when the next read is superseded', async () => {
+      railState.rail = {
+        readPlans: vi
+          .fn()
+          .mockResolvedValueOnce({
+            status: 'error' as const,
+            code: 'REQUEST_FAILED' as const
+          })
+          .mockResolvedValueOnce({
+            status: 'error' as const,
+            code: 'SUPERSEDED' as const
+          })
+      }
+
+      const useBillingPlans = await importUseBillingPlans()
+      const { fetchPlans, plans, error } = useBillingPlans()
+
+      await fetchPlans()
+      const reported = error.value
+      expect(reported).toBe('REQUEST_FAILED')
+
+      await fetchPlans()
+
+      // The superseded read published no catalog, so it may not clear the
+      // explanation for the empty one already on screen.
+      expect(plans.value).toEqual([])
+      expect(error.value).toBe(reported)
+    })
+
     it('surfaces a failed SDK read the way a failed client read is surfaced', async () => {
       railState.rail = {
         readPlans: vi.fn(async () => ({
