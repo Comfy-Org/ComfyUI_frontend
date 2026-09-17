@@ -13,6 +13,7 @@ import { cn } from '@comfyorg/tailwind-utils'
 import { useModalLiftedZIndex } from '@/composables/useModalLiftedZIndex'
 
 import MenuItems from './MenuItems.vue'
+import { getMenuAnchor } from './menuAnchor'
 import { menuContentClass } from './menuStyles'
 import type { MenuItem } from './types'
 
@@ -37,13 +38,10 @@ const overlayVisible = open
 const contentStyle = useModalLiftedZIndex(open)
 
 function show(event: Event) {
-  const mouseEvent = event instanceof MouseEvent ? event : undefined
-  const target = event.currentTarget
-  const rect = target instanceof Element ? target.getBoundingClientRect() : null
-  anchor.value = {
-    x: mouseEvent?.clientX ?? rect?.left ?? 0,
-    y: mouseEvent?.clientY ?? rect?.bottom ?? 0
-  }
+  anchor.value = getMenuAnchor(event, {
+    target: 'current',
+    verticalEdge: 'bottom'
+  })
   window.clearTimeout(showTimer.value)
   open.value = false
   const request = ++showRequest.value

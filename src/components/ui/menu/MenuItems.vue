@@ -11,6 +11,7 @@ import { toValue } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
+import MenuItemContent from './MenuItemContent.vue'
 import { menuContentClass, menuItemClass } from './menuStyles'
 import type { MenuItem } from './types'
 
@@ -55,9 +56,7 @@ function select(item: MenuItem, event: Event) {
         :class="cn(menuItemClass, item.class)"
       >
         <slot name="item" :item :props="{ action: {} }" :has-submenu="true">
-          <i v-if="item.icon" :class="cn(item.icon, 'size-4 shrink-0')" />
-          <span class="min-w-0 flex-1 truncate">{{ item.label }}</span>
-          <i class="ml-auto icon-[lucide--chevron-right] size-4" />
+          <MenuItemContent :item :has-submenu="true" />
         </slot>
       </DropdownMenuSubTrigger>
       <DropdownMenuPortal>
@@ -83,26 +82,7 @@ function select(item: MenuItem, event: Event) {
       @select="select(item, $event)"
     >
       <slot name="item" :item :props="{ action: {} }" :has-submenu="false">
-        <i v-if="item.icon" :class="cn(item.icon, 'size-4 shrink-0')" />
-        <span class="min-w-0 flex-1 truncate">{{ item.label }}</span>
-        <i
-          v-if="item.checked || item.comfyCommand?.active"
-          data-testid="menu-item-indicator"
-          :class="
-            cn(
-              'ml-auto icon-[lucide--check] size-4',
-              item.comfyCommand?.active &&
-                !item.comfyCommand.active() &&
-                'invisible'
-            )
-          "
-        />
-        <span
-          v-if="item.comfyCommand?.keybinding"
-          class="ml-auto rounded-sm border border-border-default bg-interface-menu-component-surface-hovered p-1 text-xs text-nowrap text-muted"
-        >
-          {{ item.comfyCommand.keybinding.combo.toString() }}
-        </span>
+        <MenuItemContent :item :has-submenu="false" />
       </slot>
     </DropdownMenuItem>
   </template>

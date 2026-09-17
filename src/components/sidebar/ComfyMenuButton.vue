@@ -40,9 +40,7 @@
         :href="item.url"
         target="_blank"
         :class="typeof item.class === 'function' ? item.class() : item.class"
-        @mousedown="
-          isZoomCommand(item) ? handleZoomMouseDown(item, $event) : undefined
-        "
+        @mousedown="handleZoomMouseDown(item, $event)"
         @click="handleItemClick(item, $event)"
       >
         <i
@@ -269,6 +267,7 @@ const isZoomCommand = (item: MenuItem) => {
 }
 
 const handleZoomMouseDown = (item: MenuItem, event: MouseEvent) => {
+  if (!isZoomCommand(item)) return
   const commandId = item.comfyCommand?.id
   if (commandId) {
     whileMouseDown(

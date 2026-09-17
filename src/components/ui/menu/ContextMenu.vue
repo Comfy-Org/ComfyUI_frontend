@@ -14,6 +14,7 @@ import { cn } from '@comfyorg/tailwind-utils'
 import { useModalLiftedZIndex } from '@/composables/useModalLiftedZIndex'
 
 import MenuItems from './MenuItems.vue'
+import { getMenuAnchor } from './menuAnchor'
 import { menuContentClass } from './menuStyles'
 import type { MenuItem } from './types'
 
@@ -43,13 +44,10 @@ function setOpen(value: boolean) {
 }
 
 function show(event: Event) {
-  const mouseEvent = event instanceof MouseEvent ? event : undefined
-  const target = event.currentTarget ?? event.target
-  const rect = target instanceof Element ? target.getBoundingClientRect() : null
-  anchor.value = {
-    x: mouseEvent?.clientX ?? rect?.left ?? 0,
-    y: mouseEvent?.clientY ?? rect?.top ?? 0
-  }
+  anchor.value = getMenuAnchor(event, {
+    target: 'current-or-event',
+    verticalEdge: 'top'
+  })
   if (!visible.value) {
     setOpen(true)
     return
