@@ -99,6 +99,17 @@ const SETTLED = {
   value: { phase: 'succeeded', operation: settledOperation('succeeded') }
 } as const
 
+// A subscribe the server activated on the spot, so `requiredPayment` below
+// reads off a status the fixture states rather than off a field it omits.
+const SETTLED_SUBSCRIBE = {
+  status: 'ok',
+  value: {
+    phase: 'succeeded',
+    operation: settledOperation('succeeded', 'subscription'),
+    issuedStatus: 'subscribed'
+  }
+} as const
+
 const PLAN_INFO = {
   credits_cents: 2000,
   duration: 'MONTHLY',
@@ -345,7 +356,9 @@ describe('subscribe on the billing SDK rail', () => {
 
   it('maps the host options onto the generated request body', async () => {
     flagState.billingSdkSubscriptionEnabled = true
-    vi.mocked(harness.sdk.commands.subscribe).mockResolvedValue(SETTLED)
+    vi.mocked(harness.sdk.commands.subscribe).mockResolvedValue(
+      SETTLED_SUBSCRIBE
+    )
 
     const response = await setupBilling().subscribe('pro-yearly', {
       confirmationToken: '',
@@ -378,7 +391,7 @@ describe('subscribe on the billing SDK rail', () => {
     expect(response).toEqual({
       billing_op_id: 'op-1',
       status: 'subscribed',
-      requiredPayment: true
+      requiredPayment: false
     })
     expect(workspaceApi.subscribe).not.toHaveBeenCalled()
   })

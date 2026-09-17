@@ -1696,6 +1696,59 @@ describe('useSubscriptionCheckout', () => {
       )
     })
 
+    it('announces a charged Team downgrade without counting it as a conversion', async () => {
+      const preview = {
+        allowed: true,
+        transition_type: 'downgrade' as const,
+        effective_at: '2099-02-20T00:00:00Z',
+        is_immediate: false,
+        cost_today_cents: 0,
+        cost_next_period_cents: 33_600,
+        credits_today_cents: 0,
+        credits_next_period_cents: 7_400,
+        new_plan: {
+          slug: 'creator-monthly',
+          tier: 'CREATOR' as const,
+          duration: 'MONTHLY' as const,
+          price_cents: 3_500,
+          credits_cents: 7_400,
+          seat_summary: {
+            seat_count: 1,
+            total_cost_cents: 3_500,
+            total_credits_cents: 7_400
+          }
+        }
+      }
+      // The rail's own shape: the server charged for this downgrade, so the
+      // announcement the poller made is still owed, while the conversion the
+      // downgrade orchestration owns stays excluded.
+      const response = {
+        status: 'subscribed' as const,
+        billing_op_id: 'charged-downgrade',
+        requiredPayment: true
+      }
+      mockIsTeamPlan.value = true
+      mockShowDowngradeToPersonalDialog.mockResolvedValue({ preview, response })
+      const checkout = await setup()
+
+      await checkout.handleSubscribeClick({
+        tierKey: 'creator',
+        billingCycle: 'monthly'
+      })
+
+      expect(checkout.checkoutStep.value).toBe('success')
+      expect(
+        useTelemetry()?.trackMonthlySubscriptionSucceeded
+      ).not.toHaveBeenCalled()
+      expect(useTelemetry()?.trackBillingEvent).not.toHaveBeenCalled()
+      expect(mockToastAdd).toHaveBeenCalledWith(
+        expect.objectContaining({
+          severity: 'success',
+          summary: 'Subscription updated'
+        })
+      )
+    })
+
     it('does not duplicate telemetry owned by the Team downgrade orchestration', async () => {
       mockIsTeamPlan.value = true
       mockShowDowngradeToPersonalDialog.mockResolvedValue({

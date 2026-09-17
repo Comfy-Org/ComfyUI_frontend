@@ -398,6 +398,18 @@ describe('useBillingSdkStore subscription commands', () => {
     value: { phase: 'succeeded', operation: settledOperation('succeeded') }
   } as const
 
+  // A subscribe the server activated on the spot, so the projection's
+  // `requiredPayment` reads off a status the fixture states rather than off a
+  // field it happens to omit.
+  const SETTLED_SUBSCRIBE = {
+    status: 'ok',
+    value: {
+      phase: 'succeeded',
+      operation: settledOperation('succeeded', 'subscription'),
+      issuedStatus: 'subscribed'
+    }
+  } as const
+
   const ROUTE_MISSING = {
     status: 'error',
     code: 'NOT_FOUND',
@@ -482,7 +494,9 @@ describe('useBillingSdkStore subscription commands', () => {
   })
 
   it('reconciles the subscription after a plan change settles', async () => {
-    vi.mocked(harness.sdk.commands.subscribe).mockResolvedValue(SETTLED)
+    vi.mocked(harness.sdk.commands.subscribe).mockResolvedValue(
+      SETTLED_SUBSCRIBE
+    )
 
     await expect(
       useBillingSdkStore().subscribe({ plan_slug: 'pro-yearly' })
@@ -491,7 +505,7 @@ describe('useBillingSdkStore subscription commands', () => {
       value: {
         billing_op_id: 'op-1',
         status: 'subscribed',
-        requiredPayment: true
+        requiredPayment: false
       }
     })
     expect(harness.sdk.commands.subscribe).toHaveBeenCalledWith({

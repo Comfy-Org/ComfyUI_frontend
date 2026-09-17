@@ -1273,10 +1273,13 @@ describe('createBillingCommands', () => {
 
       const result = await h.commands.subscribe(PLAN)
 
-      expect(result).toMatchObject({
-        status: 'ok',
-        value: { phase: 'succeeded', operation: { id: 'op-1' } }
+      assert(result.status === 'ok')
+      expect(result.value).toMatchObject({
+        phase: 'succeeded',
+        operation: { id: 'op-1' }
       })
+      // No subscribe response was read, so there is no status to carry out.
+      expect(result.value.issuedStatus).toBeUndefined()
       expect(h.posts()).toEqual([])
       expect(h.invalidate).toHaveBeenCalledOnce()
     })
