@@ -1,6 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
 
-import type { CredentialStorage } from './credentialCache.js'
 import {
   createCredentialCache,
   decodeAdopted,
@@ -9,6 +8,7 @@ import {
   selectFreshCredential
 } from './credentialCache.js'
 import type { AccountCredential } from './sessionContracts.js'
+import { memoryStorage } from './__fixtures__/sessionFakes.js'
 
 function makeCredential(
   token: string,
@@ -26,20 +26,6 @@ function makeCredential(
 }
 
 const credential = makeCredential('cached-jwt')
-
-function memoryStorage(): CredentialStorage & { raw: () => string | null } {
-  let value: string | null = null
-  return {
-    read: () => value,
-    write: (next) => {
-      value = next
-    },
-    clear: () => {
-      value = null
-    },
-    raw: () => value
-  }
-}
 
 describe('decodeCached', () => {
   it.for<{ name: string; raw: string }>([

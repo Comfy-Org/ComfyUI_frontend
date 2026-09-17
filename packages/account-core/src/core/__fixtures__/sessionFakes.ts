@@ -3,7 +3,12 @@ import { vi } from 'vitest'
 import { createTestIdentity } from '../../testing.js'
 import type { AccountUser, CredentialStorage } from '../session.js'
 
-const NINETY_MINUTES_MS = 90 * 60 * 1000
+export const EXCHANGE_URL = 'https://cloud.test/api/auth/token'
+export const NINETY_MINUTES_MS = 90 * 60 * 1000
+
+export function testUser(uid = 'uid-1', idToken = 'id-token-1'): AccountUser {
+  return { uid, getIdToken: vi.fn(async () => idToken) }
+}
 
 export function memoryStorage(): CredentialStorage & {
   raw: () => string | null
@@ -58,7 +63,11 @@ export function manualIdentity() {
   })
   return {
     port,
-    fire: (user: AccountUser | null) => deliver?.(user),
+    fire: (user: AccountUser | null) => {
+      if (!deliver)
+        throw new Error('fire() before a client subscribed the port')
+      deliver(user)
+    },
     unsubscribe
   }
 }

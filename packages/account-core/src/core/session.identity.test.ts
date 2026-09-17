@@ -1,24 +1,16 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import {
+  EXCHANGE_URL,
+  NINETY_MINUTES_MS,
   manualIdentity,
   memoryStorage,
   mintResponse,
-  okFetch
+  okFetch,
+  testUser
 } from './__fixtures__/sessionFakes.js'
-import type {
-  AccountUser,
-  SessionClientOptions,
-  SessionSnapshot
-} from './session.js'
+import type { SessionClientOptions, SessionSnapshot } from './session.js'
 import { createSessionClient } from './session.js'
-
-const EXCHANGE_URL = 'https://cloud.test/api/auth/token'
-const NINETY_MINUTES_MS = 90 * 60 * 1000
-
-function testUser(uid = 'uid-1'): AccountUser {
-  return { uid, getIdToken: vi.fn(async () => 'id-token') }
-}
 
 function makeClient(overrides: Partial<SessionClientOptions> = {}) {
   const storage = memoryStorage()
