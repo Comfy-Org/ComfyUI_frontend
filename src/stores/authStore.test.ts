@@ -574,9 +574,8 @@ describe('useAuthStore', () => {
       await expect(request).rejects.toMatchObject({
         message: i18n.global.t('toastMessages.userNotAuthenticated')
       })
-      expect(mockFetch).not.toHaveBeenCalledWith(
-        expect.stringMatching(/\/customers\/credit$/),
-        expect.anything()
+      expect(mockFetch.mock.calls.map(([url]) => url)).not.toContainEqual(
+        expect.stringMatching(/\/customers\/credit$/)
       )
     })
 

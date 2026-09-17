@@ -1,4 +1,7 @@
-import type { AccountIdentity, AccountUser } from '@comfyorg/account/session'
+import type {
+  AccountIdentity,
+  AccountUser
+} from '@comfyorg/account-core/session'
 
 /**
  * The identity is built from the freshly reset module graph on every
@@ -44,7 +47,7 @@ function hungFetch() {
 
 async function freshSession({ configured = true } = {}) {
   vi.resetModules()
-  const { createTestIdentity } = await import('@comfyorg/account/testing')
+  const { createTestIdentity } = await import('@comfyorg/account-core/testing')
   h.identity = configured
     ? createTestIdentity<AccountUser>({
         onUserChanged: (callback) => {

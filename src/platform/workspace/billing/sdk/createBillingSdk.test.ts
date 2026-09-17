@@ -2,7 +2,7 @@ import type {
   BillingOperationTelemetryEvent,
   BillingResult,
   BillingSession
-} from '@comfyorg/account/billing'
+} from '@comfyorg/account-core/billing'
 import {
   BILLING_STATUS_ROUTE,
   CAPABILITIES_ROUTE,
@@ -12,11 +12,11 @@ import {
   TOPUP_ROUTE,
   operationPointerKey,
   operationRoute
-} from '@comfyorg/account/billing'
+} from '@comfyorg/account-core/billing'
 import type {
   AccountCredential,
   SessionSnapshot
-} from '@comfyorg/account/session'
+} from '@comfyorg/account-core/session'
 import { describe, expect, it, onTestFinished, vi } from 'vitest'
 
 import type { BillingSdk, BillingSdkOptions } from './createBillingSdk'

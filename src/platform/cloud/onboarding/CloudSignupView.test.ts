@@ -14,7 +14,7 @@ vi.mock(
   })
 )
 
-vi.mock(import('@comfyorg/account/webviewDetection'), () => ({
+vi.mock(import('@comfyorg/account-core/webviewDetection'), () => ({
   isEmbeddedWebView: () => false
 }))
 vi.mock(import('@/platform/telemetry'))
