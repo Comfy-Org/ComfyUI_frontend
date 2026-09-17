@@ -182,7 +182,7 @@ class Load3d extends Viewport3d {
         Array.isArray(original.animations)
           ? original.animations
           : []
-      const clips = source.animations?.length
+      const clips = source.animations.length
         ? source.animations
         : clipsFromOriginal
       const model =
@@ -574,15 +574,11 @@ class Load3d extends Viewport3d {
         this.modelManager.currentModel
       )
 
-      if (this.controlsManager.controls) {
-        const box = new THREE.Box3().setFromObject(
-          this.modelManager.currentModel
-        )
-        this.controlsManager.controls.target.copy(
-          box.getCenter(new THREE.Vector3())
-        )
-        this.controlsManager.controls.update()
-      }
+      const box = new THREE.Box3().setFromObject(this.modelManager.currentModel)
+      this.controlsManager.controls.target.copy(
+        box.getCenter(new THREE.Vector3())
+      )
+      this.controlsManager.controls.update()
 
       const result = await this.captureScene(width, height)
       return result.scene
@@ -593,7 +589,7 @@ class Load3d extends Viewport3d {
         this.cameraManager.toggleCamera(savedCameraType)
       }
       this.cameraManager.setCameraState(savedState)
-      this.controlsManager.controls?.update()
+      this.controlsManager.controls.update()
 
       this.forceRender()
     }

@@ -25,6 +25,7 @@ import type {
   MaterialMode,
   Model3DInfo,
   ModelConfig,
+  StoredModelConfig,
   SceneConfig,
   UpDirection
 } from '@/extensions/core/load3d/interfaces'
@@ -299,9 +300,7 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
     }
 
     const savedModelConfig = node.properties['Model Config'] as
-      | (Omit<Partial<ModelConfig>, 'gizmo'> & {
-          gizmo?: Partial<GizmoConfig>
-        })
+      | StoredModelConfig
       | undefined
     if (savedModelConfig) {
       modelConfig.value = {
