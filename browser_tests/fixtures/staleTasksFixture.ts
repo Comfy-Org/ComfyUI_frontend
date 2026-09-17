@@ -1,9 +1,13 @@
 import type { Locator } from '@playwright/test'
+import { mergeTests } from '@playwright/test'
 
 import { comfyPageFixture } from '@e2e/fixtures/ComfyPage'
+import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { exportDownloadResponse } from '@e2e/fixtures/data/staleTasks'
+import { networkIsolationFixture as base } from '@e2e/fixtures/networkIsolationFixture'
 
-export const test = comfyPageFixture.extend<{
+const staleTasksFixture = base.extend<{
+  comfyPage: ComfyPage
   staleTasks: {
     taskRequests: string[]
     downloadRequests: string[]
@@ -41,3 +45,5 @@ export const test = comfyPageFixture.extend<{
     { auto: true }
   ]
 })
+
+export const test = mergeTests(comfyPageFixture, staleTasksFixture)

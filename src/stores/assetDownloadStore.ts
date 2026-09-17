@@ -172,9 +172,11 @@ export const useAssetDownloadStore = defineStore('assetDownload', () => {
 
     if (staleDownloads.length === 0) return
 
-    async function pollSingleDownload(download: AssetDownload) {
+    async function pollSingleDownload(staleDownload: AssetDownload) {
       try {
-        const task = await taskService.getTask(download.taskId)
+        const task = await taskService.getTask(staleDownload.taskId)
+        const download =
+          downloads.value.get(staleDownload.taskId) ?? staleDownload
 
         if (!task) {
           handleAssetDownload(createMissingTaskEvent(download))

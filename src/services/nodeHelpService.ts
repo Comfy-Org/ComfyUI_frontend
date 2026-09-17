@@ -41,12 +41,12 @@ class NodeHelpService {
     } catch (error) {
       localeError = error
     }
-    if (localeDoc) return localeDoc
+    if (localeDoc !== undefined) return localeDoc
 
     // Fall back to non-locale path
     const fallbackPath = `/extensions/${customNodeName}/docs/${node.name}.md`
     const fallbackDoc = await this.tryFetchMarkdown(fallbackPath)
-    if (fallbackDoc) return fallbackDoc
+    if (fallbackDoc !== undefined) return fallbackDoc
     if (localeError) throw localeError
     return undefined
   }
@@ -56,7 +56,7 @@ class NodeHelpService {
     locale: string
   ): Promise<string | undefined> {
     const mdUrl = `/docs/${node.name}/${locale}.md`
-    return (await this.tryFetchMarkdown(mdUrl)) || undefined
+    return this.tryFetchMarkdown(mdUrl)
   }
 
   /**
