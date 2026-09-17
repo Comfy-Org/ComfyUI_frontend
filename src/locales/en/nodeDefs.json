@@ -5352,6 +5352,33 @@
       }
     }
   },
+  "EndLoop": {
+    "display_name": "End Loop",
+    "inputs": {
+      "accumulate": {
+        "name": "accumulate",
+        "tooltip": "Return output_value from every iteration when enabled; otherwise return only the final iteration."
+      },
+      "output_value": {
+        "name": "output_value",
+        "tooltip": "Value returned by End Loop. It returns the final iteration or all iterations according to accumulate."
+      },
+      "next_iteration_value": {
+        "name": "next_iteration_value",
+        "tooltip": "Value sent from End Loop back to Start Loop for the next iteration."
+      },
+      "terminations": {
+        "name": "terminations",
+        "tooltip": "Connect outputs that must execute on every iteration. Their values are not returned."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "outputs",
+        "tooltip": "The final iteration's output_value, or values accumulated across iterations when accumulate is enabled."
+      }
+    }
+  },
   "Epsilon Scaling": {
     "display_name": "Epsilon Scaling",
     "inputs": {
@@ -6717,6 +6744,42 @@
       }
     }
   },
+  "GeminiNodeV3": {
+    "display_name": "Google Gemini",
+    "description": "Generate text responses with Google's Gemini models. Provide a text prompt and, optionally, one or more images, audio clips, videos, or files as multimodal context.",
+    "inputs": {
+      "model": {
+        "name": "model",
+        "tooltip": "The Gemini model used to generate the response."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model_max_output_tokens": {
+        "name": "max_output_tokens"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_seed": {
+        "name": "seed"
+      },
+      "model_system_prompt": {
+        "name": "system_prompt"
+      },
+      "model_thinking_level": {
+        "name": "thinking_level"
+      },
+      "model_video_processing": {
+        "name": "video_processing"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "GeminiVideoOmni": {
     "display_name": "Google Gemini Omni (Video)",
     "description": "Generate a video with audio from a text prompt using Google's Gemini Omni Flash model. Optionally provide reference images and/or videos to guide or edit the result. Describe the desired length (3-10s) and aspect ratio (16:9 or 9:16) directly in the prompt.",
@@ -6904,6 +6967,22 @@
       },
       "2": {
         "name": "batch_size",
+        "tooltip": null
+      }
+    }
+  },
+  "GetItemFromList": {
+    "display_name": "Get Item From List",
+    "inputs": {
+      "list": {
+        "name": "list"
+      },
+      "index": {
+        "name": "index"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -10839,6 +10918,73 @@
       "1": {
         "name": "texts",
         "tooltip": "List of text captions."
+      }
+    }
+  },
+  "LoopIteration": {
+    "display_name": "LoopIteration",
+    "inputs": {
+      "iteration_index": {
+        "name": "iteration_index"
+      },
+      "is_first": {
+        "name": "is_first"
+      },
+      "is_last": {
+        "name": "is_last"
+      },
+      "reuse_cache": {
+        "name": "reuse_cache"
+      },
+      "list_item": {
+        "name": "list_item"
+      },
+      "current_iteration_value": {
+        "name": "current_iteration_value"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      },
+      "2": {
+        "tooltip": null
+      },
+      "3": {
+        "tooltip": null
+      },
+      "4": {
+        "tooltip": null
+      }
+    }
+  },
+  "LoopProgress": {
+    "display_name": "LoopProgress",
+    "inputs": {
+      "start_id": {
+        "name": "start_id"
+      },
+      "position": {
+        "name": "position"
+      },
+      "total": {
+        "name": "total"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "LoopResult": {
+    "display_name": "LoopResult",
+    "inputs": {
+      "close_id": {
+        "name": "close_id"
       }
     }
   },
@@ -18058,6 +18204,93 @@
       }
     }
   },
+  "PrunaImageToVideoNode": {
+    "display_name": "Pruna P-Video-2 Image to Video",
+    "description": "Animates an image into a video using Pruna video models, with an optional last frame, generated sound or audio track.",
+    "inputs": {
+      "model": {
+        "name": "model",
+        "tooltip": "Model to use."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model_draft": {
+        "name": "draft"
+      },
+      "model_duration": {
+        "name": "duration"
+      },
+      "model_enhance_prompt": {
+        "name": "enhance_prompt"
+      },
+      "model_fps": {
+        "name": "fps"
+      },
+      "model_generate_audio": {
+        "name": "generate_audio"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_resolution": {
+        "name": "resolution"
+      },
+      "model_seed": {
+        "name": "seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PrunaTextToVideoNode": {
+    "display_name": "Pruna P-Video-2 Text to Video",
+    "description": "Generates a video from a text prompt using Pruna video models, with optional generated sound or an audio track to drive it.",
+    "inputs": {
+      "model": {
+        "name": "model",
+        "tooltip": "Model to use."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_draft": {
+        "name": "draft"
+      },
+      "model_duration": {
+        "name": "duration"
+      },
+      "model_enhance_prompt": {
+        "name": "enhance_prompt"
+      },
+      "model_fps": {
+        "name": "fps"
+      },
+      "model_generate_audio": {
+        "name": "generate_audio"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_resolution": {
+        "name": "resolution"
+      },
+      "model_seed": {
+        "name": "seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "QuadrupleCLIPLoader": {
     "display_name": "Load CLIP (Quadruple)",
     "description": "Recipes:\nhidream: long clip-l, long clip-g, t5xxl, llama_8b_3.1_instruct",
@@ -22580,6 +22813,52 @@
       }
     }
   },
+  "StartLoop": {
+    "display_name": "Start Loop",
+    "inputs": {
+      "mode": {
+        "name": "mode",
+        "tooltip": "The loop iteration mode."
+      },
+      "cache_iterations": {
+        "name": "cache_iterations",
+        "tooltip": "Reuse unchanged iteration results from previous executions. Disable to execute every iteration again."
+      },
+      "parent_iteration": {
+        "name": "parent_iteration",
+        "tooltip": "Connect iteration_index from an outer Start Loop to nest this loop."
+      },
+      "initial_iteration_value": {
+        "name": "initial_iteration_value",
+        "tooltip": "Value exposed as current_iteration_value on the first iteration."
+      },
+      "mode_num_iterations": {
+        "name": "num_iterations"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "iteration_index",
+        "tooltip": "Index of the current loop iteration."
+      },
+      "1": {
+        "name": "is_first",
+        "tooltip": "True during the first iteration of the loop."
+      },
+      "2": {
+        "name": "is_last",
+        "tooltip": "True during the last iteration of the loop."
+      },
+      "3": {
+        "name": "list_item",
+        "tooltip": "Current item from the list when using List mode. None in Simple and For modes."
+      },
+      "4": {
+        "name": "current_iteration_value",
+        "tooltip": "Loop-carried value for the current iteration: initial_iteration_value on the first iteration, then next_iteration_value from End Loop on each subsequent iteration."
+      }
+    }
+  },
   "StringCompare": {
     "display_name": "Compare Text",
     "inputs": {
@@ -24896,6 +25175,192 @@
       "2": {
         "name": "GLB",
         "tooltip": null
+      }
+    }
+  },
+  "TripoPSeriesImageToModelNode": {
+    "display_name": "Tripo P2: Image to Model",
+    "description": "Generates a low-poly 3D model with clean topology from an image, as a triangle mesh (GLB) or a quad-dominant mesh (FBX).",
+    "inputs": {
+      "model": {
+        "name": "model",
+        "tooltip": "Tripo P-series model."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model_auto_size": {
+        "name": "auto_size"
+      },
+      "model_compress_geometry": {
+        "name": "compress_geometry"
+      },
+      "model_enable_image_autofix": {
+        "name": "enable_image_autofix"
+      },
+      "model_export_uv": {
+        "name": "export_uv"
+      },
+      "model_face_limit": {
+        "name": "face_limit"
+      },
+      "model_model_seed": {
+        "name": "model_seed"
+      },
+      "model_orientation": {
+        "name": "orientation"
+      },
+      "model_pbr": {
+        "name": "pbr"
+      },
+      "model_quad": {
+        "name": "quad"
+      },
+      "model_texture": {
+        "name": "texture"
+      },
+      "model_texture_alignment": {
+        "name": "texture_alignment"
+      },
+      "model_texture_seed": {
+        "name": "texture_seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model task_id",
+        "tooltip": null
+      },
+      "1": {
+        "name": "GLB",
+        "tooltip": "Empty when quad is enabled."
+      },
+      "2": {
+        "name": "FBX",
+        "tooltip": "Only populated when quad is enabled."
+      }
+    }
+  },
+  "TripoPSeriesMultiviewToModelNode": {
+    "display_name": "Tripo P2: Multiview to Model",
+    "description": "Generates a low-poly 3D model with clean topology from a front view plus one to three of the left, back and right views, as a triangle mesh (GLB) or a quad-dominant mesh (FBX).",
+    "inputs": {
+      "model": {
+        "name": "model",
+        "tooltip": "Tripo P-series model."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model_auto_size": {
+        "name": "auto_size"
+      },
+      "model_compress_geometry": {
+        "name": "compress_geometry"
+      },
+      "model_export_uv": {
+        "name": "export_uv"
+      },
+      "model_face_limit": {
+        "name": "face_limit"
+      },
+      "model_model_seed": {
+        "name": "model_seed"
+      },
+      "model_orientation": {
+        "name": "orientation"
+      },
+      "model_pbr": {
+        "name": "pbr"
+      },
+      "model_quad": {
+        "name": "quad"
+      },
+      "model_texture": {
+        "name": "texture"
+      },
+      "model_texture_alignment": {
+        "name": "texture_alignment"
+      },
+      "model_texture_seed": {
+        "name": "texture_seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model task_id",
+        "tooltip": null
+      },
+      "1": {
+        "name": "GLB",
+        "tooltip": "Empty when quad is enabled."
+      },
+      "2": {
+        "name": "FBX",
+        "tooltip": "Only populated when quad is enabled."
+      }
+    }
+  },
+  "TripoPSeriesTextToModelNode": {
+    "display_name": "Tripo P2: Text to Model",
+    "description": "Generates a low-poly 3D model with clean topology from a text prompt, as a triangle mesh (GLB) or a quad-dominant mesh (FBX).",
+    "inputs": {
+      "model": {
+        "name": "model",
+        "tooltip": "Tripo P-series model."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model_auto_size": {
+        "name": "auto_size"
+      },
+      "model_compress_geometry": {
+        "name": "compress_geometry"
+      },
+      "model_export_uv": {
+        "name": "export_uv"
+      },
+      "model_face_limit": {
+        "name": "face_limit"
+      },
+      "model_image_seed": {
+        "name": "image_seed"
+      },
+      "model_model_seed": {
+        "name": "model_seed"
+      },
+      "model_negative_prompt": {
+        "name": "negative_prompt"
+      },
+      "model_pbr": {
+        "name": "pbr"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_quad": {
+        "name": "quad"
+      },
+      "model_texture": {
+        "name": "texture"
+      },
+      "model_texture_seed": {
+        "name": "texture_seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model task_id",
+        "tooltip": null
+      },
+      "1": {
+        "name": "GLB",
+        "tooltip": "Empty when quad is enabled."
+      },
+      "2": {
+        "name": "FBX",
+        "tooltip": "Only populated when quad is enabled."
       }
     }
   },

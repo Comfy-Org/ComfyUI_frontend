@@ -4,7 +4,7 @@ import { computed, ref, watch } from 'vue'
 
 import type { TaskId } from '@/platform/tasks/services/taskService'
 import { taskService } from '@/platform/tasks/services/taskService'
-import type { AssetDownloadWsMessage } from '@/schemas/apiSchema'
+import type { AssetDownloadWsMessage } from '@/platform/remote/comfyui/execution/types'
 import { api } from '@/scripts/api'
 
 export interface AssetDownload {
