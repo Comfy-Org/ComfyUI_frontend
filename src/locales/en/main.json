@@ -5137,6 +5137,13 @@
   },
   "agent": {
     "title": "Comfy Agent",
+    "diagnosticReport": {
+      "retry": "Retry copy report",
+      "clipboardFailed": "Clipboard access failed. Select and copy the report below, or retry.",
+      "collectionFailed": "Could not collect the report. Retry, or turn off optional sources and retry.",
+      "manualCopy": "Report to copy",
+      "includedSources": "Include in the report (on by default)"
+    },
     "loadFailed": "The agent panel failed to load.",
     "askComfyAgent": "Ask Comfy Agent",
     "caption": "The AI agent can make mistakes",

@@ -2,6 +2,8 @@ import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { i18n } from '@/i18n'
+
 const { writeText } = vi.hoisted(() => ({
   writeText: vi.fn<(value: string) => Promise<void>>(() => Promise.resolve())
 }))
@@ -14,6 +16,7 @@ vi.mock('@vueuse/core', async (importOriginal) => ({
 import type { AgentCrdtStatus } from './useAgentCrdtFollower'
 import CrdtDevPanel from './CrdtDevPanel.vue'
 import { setCrdtDebugEnabled } from './crdtDebugGate'
+import * as crdtDebugReport from './crdtDebugReport'
 import {
   clearDevEvents,
   devEvents,
@@ -56,7 +59,8 @@ const status: AgentCrdtStatus = {
 function renderPanel(overrides: Partial<AgentCrdtStatus> = {}) {
   localStorage.setItem('Comfy.Agent.CrdtDevPanel.open', 'true')
   return render(CrdtDevPanel, {
-    props: { status: { ...status, ...overrides } }
+    props: { status: { ...status, ...overrides } },
+    global: { plugins: [i18n] }
   })
 }
 
@@ -80,6 +84,37 @@ describe('CrdtDevPanel clipboard controls', () => {
     )
 
     expect(writeText).toHaveBeenCalledExactlyOnceWith('doc-123')
+  })
+
+  it('keeps a report available for manual copy after clipboard failure and retries', async () => {
+    const report = '# Diagnostic report\n\nCollected context'
+    const collectReport = vi
+      .spyOn(crdtDebugReport, 'collectCrdtDebugReport')
+      .mockResolvedValue(report)
+    const user = userEvent.setup()
+    const writeReport = vi
+      .spyOn(navigator.clipboard, 'writeText')
+      .mockResolvedValue(undefined)
+      .mockRejectedValueOnce(
+        new DOMException('Clipboard denied', 'NotAllowedError')
+      )
+    renderPanel()
+
+    await user.click(screen.getByRole('button', { name: 'Copy full report' }))
+
+    expect(screen.getByRole('alert')).toHaveTextContent(
+      'Clipboard access failed. Select and copy the report below, or retry.'
+    )
+    const manualCopy = screen.getByRole('textbox', { name: 'Report to copy' })
+    expect(manualCopy).toHaveValue(report)
+    expect(manualCopy).toHaveAttribute('readonly')
+
+    await user.click(screen.getByRole('button', { name: 'Retry copy report' }))
+
+    expect(writeReport).toHaveBeenLastCalledWith(report)
+    expect(collectReport).toHaveBeenCalledOnce()
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Copied' })).toBeInTheDocument()
   })
 
   it('copies each node id surfaced by doc_nodes_changed', async () => {

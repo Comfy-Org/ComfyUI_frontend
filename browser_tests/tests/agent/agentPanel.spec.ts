@@ -2,6 +2,11 @@ import type { WebSocketRoute } from '@playwright/test'
 import { expect, mergeTests } from '@playwright/test'
 
 import { webSocketFixture } from '@e2e/fixtures/ws'
+import {
+  agentTest as diagnosticTest,
+  bootAgentApp
+} from '@e2e/fixtures/agentPanelFixture'
+import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import type { AgentWsEvent } from '@/workbench/extensions/agent/schemas/agentApiSchema'
@@ -347,3 +352,128 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
     expect(postedMessages[1]).toContain(revisedPrompt)
   })
 })
+
+diagnosticTest.describe(
+  'In-App Agent diagnostic report',
+  { tag: '@cloud' },
+  () => {
+    diagnosticTest.use({
+      permissions: ['clipboard-read', 'clipboard-write']
+    })
+
+    diagnosticTest.beforeEach(async ({ page }) => {
+      await page.addInitScript(() => {
+        localStorage.setItem('Comfy.Agent.CrdtDebug.enabled', 'true')
+        localStorage.setItem('Comfy.Agent.CrdtDevPanel.open', 'true')
+      })
+      await page.route('**/api/logs', (route) =>
+        route.fulfill(
+          jsonRoute([{ level: 'info', message: 'Cloud diagnostic log line' }])
+        )
+      )
+      await bootAgentApp(page, true)
+    })
+
+    diagnosticTest(
+      'copies cloud logs and all optional sources by default',
+      async ({ page }) => {
+        await page.getByRole('button', { name: OPEN_AGENT_LABEL }).click()
+        const panel = page.locator('#agent-panel-root')
+
+        for (const name of ['Server logs', 'Settings', 'Workflow JSON']) {
+          await expect(panel.getByRole('switch', { name })).toBeChecked()
+        }
+
+        await panel.getByRole('button', { name: 'Copy full report' }).click()
+        await expect(
+          panel.getByRole('button', { name: 'Copied' })
+        ).toBeVisible()
+        await expect
+          .poll(() => page.evaluate(() => navigator.clipboard.readText()))
+          .toContain('Cloud diagnostic log line')
+      }
+    )
+
+    diagnosticTest(
+      'copies with privacy sources turned off',
+      async ({ page }) => {
+        await page.getByRole('button', { name: OPEN_AGENT_LABEL }).click()
+        const panel = page.locator('#agent-panel-root')
+
+        for (const name of ['Server logs', 'Settings', 'Workflow JSON']) {
+          await panel.getByRole('switch', { name }).click()
+        }
+
+        await panel.getByRole('button', { name: 'Copy full report' }).click()
+        await expect(
+          panel.getByRole('button', { name: 'Copied' })
+        ).toBeVisible()
+        await expect
+          .poll(async () => {
+            const report = await page.evaluate(() =>
+              navigator.clipboard.readText()
+            )
+            return {
+              serverLogs: report.includes('- Server logs: turned off'),
+              settings: report.includes('- Settings: turned off'),
+              workflow: report.includes('- Workflow: turned off')
+            }
+          })
+          .toEqual({ serverLogs: true, settings: true, workflow: true })
+      }
+    )
+
+    diagnosticTest(
+      'keeps a denied report for manual copy and retries without recollecting',
+      async ({ page }) => {
+        let logsRequests = 0
+        page.on('request', (request) => {
+          if (new URL(request.url()).pathname.endsWith('/api/logs')) {
+            logsRequests++
+          }
+        })
+        await page.getByRole('button', { name: OPEN_AGENT_LABEL }).click()
+        const panel = page.locator('#agent-panel-root')
+        await page.evaluate(() => {
+          const clipboard = navigator.clipboard
+          const originalWriteText = clipboard.writeText.bind(clipboard)
+          let denied = false
+          Object.defineProperty(clipboard, 'writeText', {
+            configurable: true,
+            value: (text: string) => {
+              if (!denied) {
+                denied = true
+                return Promise.reject(
+                  new DOMException('Clipboard denied', 'NotAllowedError')
+                )
+              }
+              return originalWriteText(text)
+            }
+          })
+        })
+
+        await panel.getByRole('button', { name: 'Copy full report' }).click()
+
+        await expect(panel.getByRole('alert')).toContainText(
+          'Clipboard access failed'
+        )
+        const manualCopy = panel.getByRole('textbox', {
+          name: 'Report to copy'
+        })
+        await expect(manualCopy).toBeVisible()
+        await expect(manualCopy).toHaveAttribute('readonly', '')
+        await page.screenshot({
+          path: 'test-results/diagnostic-report-clipboard-failed.png'
+        })
+
+        await panel.getByRole('button', { name: 'Retry copy report' }).click()
+
+        await expect(
+          panel.getByRole('button', { name: 'Copied' })
+        ).toBeVisible()
+        await expect(panel.getByRole('alert')).toHaveCount(0)
+        expect(logsRequests).toBe(1)
+      }
+    )
+  }
+)
