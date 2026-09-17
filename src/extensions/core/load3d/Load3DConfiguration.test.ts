@@ -925,6 +925,7 @@ describe('Load3DConfiguration remote (agent) model updates', () => {
 
   it('ignores local (non-remote) store changes to avoid double-loading', async () => {
     const load3d = makeLoad3dMock()
+    const onSceneInvalidated = vi.fn()
     const modelWidget = {
       value: 'none',
       widgetId: 'widget-2'
@@ -932,9 +933,11 @@ describe('Load3DConfiguration remote (agent) model updates', () => {
     widgetValueStoreMock.widgets.set('widget-2', modelWidget)
 
     const config = new Load3DConfiguration(load3d)
-    config.configure({ modelWidget, loadFolder: 'input' })
+    config.configure({ modelWidget, loadFolder: 'input', onSceneInvalidated })
     await flush()
     vi.mocked(load3d.loadModel).mockClear()
+    vi.mocked(load3d.clearModel).mockClear()
+    onSceneInvalidated.mockClear()
 
     widgetValueStoreMock.emit({
       widgetId: 'widget-2',
@@ -945,10 +948,14 @@ describe('Load3DConfiguration remote (agent) model updates', () => {
     await flush()
 
     expect(load3d.loadModel).not.toHaveBeenCalled()
+    expect(load3d.clearModel).not.toHaveBeenCalled()
+    expect(onSceneInvalidated).not.toHaveBeenCalled()
+    expect(modelWidget.value).toBe('none')
   })
 
   it('ignores value changes for a different widget id', async () => {
     const load3d = makeLoad3dMock()
+    const onSceneInvalidated = vi.fn()
     const modelWidget = {
       value: 'none',
       widgetId: 'widget-3'
@@ -956,9 +963,11 @@ describe('Load3DConfiguration remote (agent) model updates', () => {
     widgetValueStoreMock.widgets.set('widget-3', modelWidget)
 
     const config = new Load3DConfiguration(load3d)
-    config.configure({ modelWidget, loadFolder: 'input' })
+    config.configure({ modelWidget, loadFolder: 'input', onSceneInvalidated })
     await flush()
     vi.mocked(load3d.loadModel).mockClear()
+    vi.mocked(load3d.clearModel).mockClear()
+    onSceneInvalidated.mockClear()
 
     widgetValueStoreMock.emit({
       widgetId: 'some-other-widget',
@@ -969,6 +978,9 @@ describe('Load3DConfiguration remote (agent) model updates', () => {
     await flush()
 
     expect(load3d.loadModel).not.toHaveBeenCalled()
+    expect(load3d.clearModel).not.toHaveBeenCalled()
+    expect(onSceneInvalidated).not.toHaveBeenCalled()
+    expect(modelWidget.value).toBe('none')
   })
 
   it('does not register a second listener when configure runs again for the same widget', async () => {
