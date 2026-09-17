@@ -8,6 +8,7 @@
 import type {
   BillingOperationState,
   BillingOperationTelemetryEvent,
+  BillingResult,
   EmbeddedChallengePort,
   PendingBillingOperation,
   PreviewSubscribeInput,
@@ -30,6 +31,8 @@ import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDi
 import { useTelemetry } from '@/platform/telemetry'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import type {
+  BillingBalanceResponse,
+  BillingStatusResponse,
   CreateTopupResponse,
   PreviewSubscribeResponse,
   SubscribeResponse
@@ -41,6 +44,7 @@ import { useWorkspaceAuthStore } from '@/platform/workspace/stores/workspaceAuth
 import { useDialogStore } from '@/stores/dialogStore'
 
 import { toBillingTelemetryEvent } from './billingSdkTelemetry'
+import { projectBillingStatus } from './billingStatusView'
 import { createBillingSdk } from './createBillingSdk'
 import type { SubscriptionRailOutcome } from './subscriptionOperationView'
 import {
@@ -372,6 +376,25 @@ export const useBillingSdkStore = defineStore('billingSdk', () => {
     void sdk.lifecycle.recover()
   }
 
+  // The readers the commands above already refresh after a success, exposed
+  // so the panels read the state the rail settled rather than a second read
+  // through the workspace client.
+  async function readStatus(): Promise<BillingResult<BillingStatusResponse>> {
+    const result = await sdk.status.read()
+    if (result.status === 'error') return result
+    const status = projectBillingStatus(result.value.status)
+    return status === undefined
+      ? { status: 'error', code: 'MALFORMED_RESPONSE' }
+      : { status: 'ok', value: status }
+  }
+
+  async function readBalance(): Promise<BillingResult<BillingBalanceResponse>> {
+    const result = await sdk.credits.read()
+    return result.status === 'ok'
+      ? { status: 'ok', value: result.value.balance }
+      : result
+  }
+
   async function retryPaymentAuthentication(
     operationId: string
   ): Promise<boolean> {
@@ -395,6 +418,8 @@ export const useBillingSdkStore = defineStore('billingSdk', () => {
     resubscribe,
     openPaymentPortal,
     recover,
+    readStatus,
+    readBalance,
     retryPaymentAuthentication,
     dismissOperation
   }
