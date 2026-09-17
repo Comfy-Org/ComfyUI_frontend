@@ -2,6 +2,7 @@ import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspace
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useTelemetry } from '@/platform/telemetry'
+import { reportError } from '@/platform/telemetry/reportError'
 
 import type { SubscriptionInfo } from '@/composables/billing/types'
 import type {
@@ -20,6 +21,7 @@ const mocks = vi.hoisted(() => ({
   activeWorkspaceId: 'workspace-1' as string | null,
   billingRail: 'stripe' as BillingRail | null,
   cancelSubscription: vi.fn(),
+  fetchStatus: vi.fn(),
   prepare: vi.fn()
 }))
 
@@ -28,7 +30,8 @@ vi.mock<unknown>(import('@/composables/billing/useBillingContext'), () => ({
     type: mocks.billingType,
     tier: mocks.tier,
     subscription: mocks.subscription,
-    cancelSubscription: mocks.cancelSubscription
+    cancelSubscription: mocks.cancelSubscription,
+    fetchStatus: mocks.fetchStatus
   })
 }))
 
@@ -41,6 +44,7 @@ vi.mock(import('@/platform/cloud/churnkey/churnkeyClient'), () => ({
 }))
 
 vi.mock(import('@/platform/telemetry'))
+vi.mock(import('@/platform/telemetry/reportError'))
 
 import { launchCancellationFlow } from './launchCancellationFlow'
 
@@ -77,6 +81,54 @@ describe('launchCancellationFlow', () => {
     mocks.activeWorkspaceId = 'workspace-1'
     mocks.billingRail = 'stripe'
     mocks.cancelSubscription.mockResolvedValue(undefined)
+    mocks.fetchStatus.mockResolvedValue(undefined)
+  })
+
+  it('refreshes billing after a discount without canceling or recording abandonment', async () => {
+    mocks.prepare.mockResolvedValue(
+      session(async () => ({ discountApplied: true, aborted: true }))
+    )
+    const showFallback = vi.fn()
+
+    await launchCancellationFlow({ showFallback })
+
+    expect(mocks.fetchStatus).toHaveBeenCalledOnce()
+    expect(mocks.cancelSubscription).not.toHaveBeenCalled()
+    expect(showFallback).not.toHaveBeenCalled()
+    expect(useTelemetry()?.trackSubscriptionCancellation).toHaveBeenCalledTimes(
+      1
+    )
+  })
+
+  it('does not reopen cancellation when billing refresh fails after a discount', async () => {
+    const error = new Error('refresh offline')
+    mocks.fetchStatus.mockRejectedValue(error)
+    mocks.prepare.mockResolvedValue(
+      session(async () => ({ discountApplied: true }))
+    )
+    const showFallback = vi.fn()
+
+    await launchCancellationFlow({ showFallback })
+
+    expect(showFallback).not.toHaveBeenCalled()
+    expect(reportError).toHaveBeenCalledWith(error, {
+      errorType: 'churnkey_discount_billing_refresh'
+    })
+  })
+
+  it('does not refresh a different workspace after a discount', async () => {
+    mocks.prepare.mockResolvedValue(
+      session(async () => {
+        mocks.activeWorkspaceId = 'workspace-2'
+        return { discountApplied: true }
+      })
+    )
+    const showFallback = vi.fn()
+
+    await launchCancellationFlow({ showFallback })
+
+    expect(mocks.fetchStatus).not.toHaveBeenCalled()
+    expect(showFallback).not.toHaveBeenCalled()
   })
 
   it('uses the native dialog for legacy billing', async () => {

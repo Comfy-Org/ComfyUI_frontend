@@ -3,6 +3,7 @@ import { t } from '@/i18n'
 import { prepareChurnkey } from '@/platform/cloud/churnkey/churnkeyClient'
 import { getSubscriptionCancellationMetadata } from '@/platform/cloud/subscription/utils/subscriptionCancellationTelemetry'
 import { useTelemetry } from '@/platform/telemetry'
+import { reportError } from '@/platform/telemetry/reportError'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { getErrorMessage } from '@/utils/errorUtil'
 
@@ -76,6 +77,14 @@ export async function launchCancellationFlow({
       }
     })
 
+    if (results.discountApplied) {
+      if (isLaunchWorkspaceCurrent()) {
+        await billing.fetchStatus().catch((error) => {
+          reportError(error, { errorType: 'churnkey_discount_billing_refresh' })
+        })
+      }
+      return
+    }
     if (results.aborted === true) {
       telemetry?.trackSubscriptionCancellation('abandoned', metadata)
     }

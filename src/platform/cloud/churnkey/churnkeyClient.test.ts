@@ -76,23 +76,115 @@ describe('churnkeyClient', () => {
       config.handleCancel({ id: 'cus_test_1' }, 'Too expensive', 'Feedback')
     ).resolves.toEqual({ message: 'Canceled' })
     expect(handleCancel).toHaveBeenCalledWith('Too expensive', 'Feedback')
-    const unsupportedHandlers = [
-      config.handlePause,
-      config.handleDiscount,
-      config.handleTrialExtension,
-      config.handlePlanChange,
-      config.handleRebate,
-      config.handleRedirect
-    ]
-    for (const handler of unsupportedHandlers) {
-      await expect(handler()).rejects.toThrow(
-        'subscription.cancelDialog.offerUnavailable'
-      )
-    }
 
     config.onClose({ aborted: true })
     await expect(showPromise).resolves.toEqual({ aborted: true })
     expect(mocks.clearState).toHaveBeenCalledOnce()
+  })
+
+  it.for([
+    'handlePause',
+    'handleDiscount',
+    'handleTrialExtension',
+    'handlePlanChange',
+    'handleRebate',
+    'handleRedirect'
+  ] as const)('keeps %s blocked by default', async (handler) => {
+    const session = await prepareChurnkey()
+    if (!session) throw new Error('Expected a Churnkey session')
+    const showPromise = session.show({ handleCancel: vi.fn() })
+
+    await expect(capturedConfig()[handler]?.()).rejects.toThrow(
+      'subscription.cancelDialog.offerUnavailable'
+    )
+
+    capturedConfig().onClose({ aborted: true })
+    await showPromise
+  })
+
+  it.for(['live', 'sandbox'] as const)(
+    'does not enable a native discount in %s mode',
+    async (mode) => {
+      mocks.getChurnkeyAuth.mockResolvedValue({
+        ...authResponse(),
+        mode,
+        test_discount_subscription_id: 'sub_test_1'
+      })
+      const session = await prepareChurnkey()
+      if (!session) throw new Error('Expected a Churnkey session')
+      const showPromise = session.show({ handleCancel: vi.fn() })
+
+      expect(capturedConfig().subscriptionId).toBeUndefined()
+      expect(capturedConfig().onDiscount).toBeUndefined()
+      await expect(capturedConfig().handleDiscount?.()).rejects.toThrow(
+        'subscription.cancelDialog.offerUnavailable'
+      )
+      capturedConfig().onClose({ aborted: true })
+      await showPromise
+    }
+  )
+
+  it.for(['close', 'error'] as const)(
+    'preserves a confirmed native discount on subsequent %s',
+    async (ending) => {
+      mocks.getChurnkeyAuth.mockResolvedValue({
+        ...authResponse(),
+        test_discount_subscription_id: 'sub_test_1'
+      })
+      const session = await prepareChurnkey()
+      if (!session) throw new Error('Expected a Churnkey session')
+      const handleCancel = vi.fn()
+      const showPromise = session.show({ handleCancel })
+      const config = capturedConfig()
+
+      expect(config.subscriptionId).toBe('sub_test_1')
+      expect(config).not.toHaveProperty('handleDiscount')
+      await expect(config.handlePause()).rejects.toThrow(
+        'subscription.cancelDialog.offerUnavailable'
+      )
+      config.onDiscount?.({}, {})
+      const end = {
+        close: () => config.onClose({ aborted: true }),
+        error: () => config.onError('display failed after success')
+      }
+      end[ending]()
+
+      await expect(showPromise).resolves.toEqual({
+        aborted: false,
+        discountApplied: true
+      })
+      expect(handleCancel).not.toHaveBeenCalled()
+    }
+  )
+
+  it('requires a success notification before reporting a discount', async () => {
+    mocks.getChurnkeyAuth.mockResolvedValue({
+      ...authResponse(),
+      test_discount_subscription_id: 'sub_test_1'
+    })
+    const session = await prepareChurnkey()
+    if (!session) throw new Error('Expected a Churnkey session')
+    const showPromise = session.show({ handleCancel: vi.fn() })
+    const config = capturedConfig()
+    config.onClose({ aborted: true, discountApplied: true })
+    config.onDiscount?.({}, {})
+
+    await expect(showPromise).resolves.toEqual({ aborted: true })
+  })
+
+  it('reports a failed native action without claiming a discount or canceling', async () => {
+    mocks.getChurnkeyAuth.mockResolvedValue({
+      ...authResponse(),
+      test_discount_subscription_id: 'sub_test_1'
+    })
+    const session = await prepareChurnkey()
+    if (!session) throw new Error('Expected a Churnkey session')
+    const handleCancel = vi.fn()
+    const showPromise = session.show({ handleCancel })
+    capturedConfig().onError('Stripe rejected the coupon')
+
+    await expect(showPromise).rejects.toThrow('Stripe rejected the coupon')
+    expect(handleCancel).not.toHaveBeenCalled()
   })
 
   it('does not request a session when the app ID is empty', async () => {

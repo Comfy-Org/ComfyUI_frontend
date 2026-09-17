@@ -1,8 +1,7 @@
-import type { ChurnkeyAuthResponse } from '@comfyorg/ingest-types'
+import { zChurnkeyAuthResponse } from '@comfyorg/ingest-types/zod'
 import { z } from 'zod'
 
-export const churnkeyAuthResponseSchema = z.object({
+export const churnkeyAuthResponseSchema = zChurnkeyAuthResponse.extend({
   customer_id: z.string().min(1),
-  auth_hash: z.string().min(1),
-  mode: z.enum(['live', 'test', 'sandbox'])
-}) satisfies z.ZodType<ChurnkeyAuthResponse>
+  auth_hash: z.string().min(1)
+})

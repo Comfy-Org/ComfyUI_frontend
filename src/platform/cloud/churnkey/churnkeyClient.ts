@@ -55,10 +55,13 @@ function createSession(
   auth: ChurnkeyAuthResponse,
   configuredAppId: string
 ): ChurnkeySession {
+  const testSubscriptionId =
+    auth.mode === 'test' ? auth.test_discount_subscription_id : undefined
   return {
     show: (options) =>
       new Promise<ChurnkeySessionResults>((resolve, reject) => {
         let settled = false
+        let discountApplied = false
         let pendingCancellation: Promise<ChurnkeyHandlerResult> | null = null
 
         function settle(fn: () => void) {
@@ -82,18 +85,28 @@ function createSession(
             return pendingCancellation
           },
           handlePause: rejectUnsupportedOffer,
-          handleDiscount: rejectUnsupportedOffer,
+          ...(testSubscriptionId
+            ? {
+                subscriptionId: testSubscriptionId,
+                onDiscount: () => {
+                  if (!settled) discountApplied = true
+                }
+              }
+            : { handleDiscount: rejectUnsupportedOffer }),
           handleTrialExtension: rejectUnsupportedOffer,
           handlePlanChange: rejectUnsupportedOffer,
           handleRebate: rejectUnsupportedOffer,
           handleRedirect: rejectUnsupportedOffer,
           onClose: (results) => {
+            const outcome = discountApplied
+              ? { aborted: false, discountApplied: true }
+              : { aborted: results.aborted }
             if (!pendingCancellation) {
-              settle(() => resolve(results))
+              settle(() => resolve(outcome))
               return
             }
             void pendingCancellation.then(
-              () => settle(() => resolve(results)),
+              () => settle(() => resolve(outcome)),
               (error) => settle(() => reject(toError(error)))
             )
           },
@@ -101,7 +114,11 @@ function createSession(
             if (settled) return
             settled = true
             window.churnkey?.hide?.()
-            reject(churnkeyError(error, type))
+            if (discountApplied) {
+              resolve({ aborted: false, discountApplied: true })
+            } else {
+              reject(churnkeyError(error, type))
+            }
             queueMicrotask(() => window.churnkey?.clearState?.())
           }
         }

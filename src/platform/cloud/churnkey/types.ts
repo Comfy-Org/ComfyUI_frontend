@@ -8,6 +8,7 @@ export interface ChurnkeyHandlerResult {
 
 export interface ChurnkeySessionResults {
   aborted?: boolean
+  discountApplied?: boolean
 }
 
 type ChurnkeyUnsupportedHandler = (
@@ -18,6 +19,7 @@ export interface ChurnkeyInitConfig {
   appId: string
   authHash: string
   customerId: string
+  subscriptionId?: string
   provider: 'stripe'
   mode: ChurnkeyMode
   handleCancel: (
@@ -26,11 +28,12 @@ export interface ChurnkeyInitConfig {
     freeformFeedback?: string | null
   ) => Promise<ChurnkeyHandlerResult>
   handlePause: ChurnkeyUnsupportedHandler
-  handleDiscount: ChurnkeyUnsupportedHandler
+  handleDiscount?: ChurnkeyUnsupportedHandler
   handleTrialExtension: ChurnkeyUnsupportedHandler
   handlePlanChange: ChurnkeyUnsupportedHandler
   handleRebate: ChurnkeyUnsupportedHandler
   handleRedirect: ChurnkeyUnsupportedHandler
+  onDiscount?: (customer: unknown, coupon: unknown) => void
   onClose: (results: ChurnkeySessionResults) => void
   onError: (error: unknown, type?: string) => void
 }
